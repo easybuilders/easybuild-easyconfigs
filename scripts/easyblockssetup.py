@@ -17,7 +17,7 @@ os.mkdir(PREFIX)
 f=open(os.path.join(PREFIX,"__init__.py"),'w')
 f.write("""import pkg_resources
 pkg_resources.declare_namespace("%s")
-"""%PREFIX)
+"""%os.path.basename(PREFIX))
 
 def createdir(dr):
     os.mkdir(os.path.join(PREFIX,dr))
