@@ -50,6 +50,8 @@ def getGitRevision():
     """
     Returns the git revision (e.g. aab4afc016b742c6d4b157427e192942d0e131fe),
     or UNKNOWN is getting the git revision fails
+
+    relies on GitPython (see http://gitorious.org/git-python)
     """
     try:
         import git
