@@ -3,7 +3,7 @@ from distutils.version import LooseVersion
 
 VERSION = LooseVersion("0.5")
 
-def get_svn_revision(path=None):
+def getSvnRevision(path=None):
     """
     Returns the SVN revision in the form ABCD,
     where ABCD is the revision number.
@@ -22,10 +22,10 @@ def get_svn_revision(path=None):
     rev = None
     if path is None:
         path = os.path.dirname(__file__)
-    entries_path = '%s/.svn/entries' % path
+    entriesPath = '%s/.svn/entries' % path
 
     try:
-        entries = open(entries_path, 'r').read()
+        entries = open(entriesPath, 'r').read()
     except IOError:
         pass
     else:
@@ -39,14 +39,14 @@ def get_svn_revision(path=None):
         # the first entries node.
         else:
             from xml.dom import minidom
-            dom = minidom.parse(entries_path)
+            dom = minidom.parse(entriesPath)
             rev = dom.getElementsByTagName('entry')[0].getAttribute('revision')
 
     if rev:
         return rev
 
 
-def get_git_revision():
+def getGitRevision():
     """
     Returns the git revision (e.g. aab4afc016b742c6d4b157427e192942d0e131fe),
     or UNKNOWN is getting the git revision fails
@@ -59,4 +59,4 @@ def get_git_revision():
     except (ImportError, git.GitCommandError):
         return "UNKNOWN"
 
-VERBOSE_VERSION = LooseVersion("%s-r%s" % (VERSION, get_git_revision()))
+VERBOSE_VERSION = LooseVersion("%s-r%s" % (VERSION, getGitRevision()))
