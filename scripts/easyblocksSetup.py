@@ -1,3 +1,4 @@
+#!/usr/bin/python
 """
 This script creates the directory structure used by easybuild (https://github.com/easybuild/easybuild)
 You can use this to set up your private easyblocks directory
