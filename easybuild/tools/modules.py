@@ -1,3 +1,6 @@
+"""
+Modules functionality: loading modules, checking for available modules, ...
+"""
 import os, re, subprocess
 from easybuild.tools.buildLog import getLog, initLogger, EasyBuildError
 from easybuild.tools.fileTools import convertName
@@ -13,7 +16,9 @@ outputMatchers = {
 }
 
 class Modules:
-    """ Interact with modules """
+    """
+    Interact with modules.
+    """
     def __init__(self,modulepath=[]):
         self.modulepath=modulepath
         self.modules=[]
@@ -21,7 +26,9 @@ class Modules:
         self.checkModulePath()        
         
     def checkModulePath(self):
-        """Check if MODULEPATH is set and change it if necessary."""
+        """
+        Check if MODULEPATH is set and change it if necessary.
+        """
         if not os.environ.has_key('MODULEPATH'):
             log.error('MODULEPATH not found in environment')
         
@@ -36,7 +43,9 @@ class Modules:
             os.environ['LOADEDMODULES'] = ''
 
     def available(self, name=None, version=None, modulepath = None):
-        """ Return list of available modules """
+        """
+        Return list of available modules.
+        """
         if not name: name=''
         if not version: version=''
 
@@ -56,11 +65,15 @@ class Modules:
         return ans
     
     def exists(self, name, version, modulepath = None):
-        """ Check if module is available """
+        """
+        Check if module is available.
+        """
         return (name, version) in self.available(name, version, modulepath)
     
     def addModule(self, modules):
-        """ Check if module exist, if so add to list """
+        """
+        Check if module exist, if so add to list.
+        """
         for mod in modules:
             if type(mod) == list:
                 name,version=mod[0],mod[1]
@@ -88,11 +101,16 @@ class Modules:
                 continue
         
     def load(self):
-        """Load al requested modules."""
+        """
+        Load all requested modules.
+        """
         for mod in self.modules:
             self.runModule('load', "/".join(mod))
     
     def runModule(self, *args, **kwargs):
+        """
+        Run module command.
+        """
         if type(args[0]) == list:
             args = args[0]
         else:
@@ -154,6 +172,9 @@ def searchModule(path, query):
             pass
 
 def getSoftwareRoot(name):
+    """
+    Return the software root set for a particular package.
+    """
     environmentKey = "SOFTROOT%s" % convertName(name, upper=True)
     return os.getenv(environmentKey)
 
