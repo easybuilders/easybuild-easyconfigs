@@ -124,8 +124,8 @@ def main():
     if options.search:
         if not options.robot:
             error("Please provide a search-path to --robot when using --search")
-        from easybuild.tools.moduleSearcher import ModuleSearcher
-        ModuleSearcher(options.robot).search(options.search)
+        from easybuild.tools.modules import searchModule
+        searchModule(options.robot, options.search)
 
     if options.options or options.dump_classes or options.search or options.version:
         if logFile:
