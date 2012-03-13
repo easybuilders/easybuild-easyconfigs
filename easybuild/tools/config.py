@@ -135,7 +135,10 @@ def logFormat():
     """
     Return the log format
     """
-    return variables['logFormat'][1]
+    if variables.has_key('logFormat'):
+        return variables['logFormat'][1]
+    else:
+        return "easybuild-%(name)s-%(version)s-%(date)s.%(time)s.log"
 
 def logPath():
     """

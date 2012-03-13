@@ -26,7 +26,7 @@ import re
 import subprocess
 
 from easybuild.tools.build_log import getLog, initLogger, EasyBuildError
-from easybuild.tools.filetools import convertName
+from easybuild.tools.filetools import convertName, run_cmd
 
 log = getLog('Modules')
 outputMatchers = {
@@ -47,13 +47,21 @@ class Modules:
         self.modules=[]
         
         self.checkModulePath()        
-        
+
     def checkModulePath(self):
         """
         Check if MODULEPATH is set and change it if necessary.
         """
         if not os.environ.has_key('MODULEPATH'):
-            log.error('MODULEPATH not found in environment')
+            errormsg='MODULEPATH not found in environment'
+            # check if environment-modules is found
+            module_regexp=re.compile("^module is a function\s*\nmodule\s*()")
+            cmd="type module"
+            (out,ec) = run_cmd(cmd, log_all=False, log_ok=False)
+            if ec != 0 or not module_regexp.match(out):
+                errormsg += "; environment-modules doesn't seem to be installed: "
+                errormsg += "'%s' failed with exit code %s and output: '%s'" % (cmd, ec, out.strip('\n'))
+            log.error(errormsg)
         
         if self.modulePath:
             ## set the module path environment accordingly

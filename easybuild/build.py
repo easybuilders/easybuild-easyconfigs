@@ -139,7 +139,7 @@ def main():
     ## Dump possible options
     if options.options:
         app = get_instance(options.mod, log)
-        app.dumpConfigurationOptions()
+        app.dump_cfg_options()
 
     ## Dump available classes
     if options.dump_classes:
@@ -182,8 +182,10 @@ def main():
         packages, checkPackages = [], packages
         for package in checkPackages:
             module = package['module']
-            if m.exists(module[0], module[1], os.path.join(config.installPath("mod"), 'all')):
-                msg = "Module %s is already installed, skipping." % (package['module'],)
+            mod = "%s (version %s)" % (module[0], module[1])
+            modspath = os.path.join(config.installPath("mod"), 'all')
+            if m.exists(module[0], module[1], modspath):
+                msg = "%s is already installed (module found in %s), skipping (use -f/--force to override, but beware!)." % (mod, modspath)
                 print msg
                 log.info(msg)
             else:
@@ -218,7 +220,7 @@ def error(message, exitCode=1, showHelp=False):
     """
     Print error message and exit EasyBuild
     """
-    print message, "\n"
+    print "ERROR: %s\n" % message
     if showHelp:
         parser.print_help()
     sys.exit(exitCode)
@@ -261,9 +263,9 @@ def processSpecification(path, log, onlyBlocks=None):
 
         try:
             app = Application(debug=logDebug)
-            app.import_ebfile(spec)
-        except Exception:
-            msg = "Failed to read specification %s" % spec
+            app.process_ebfile(spec)
+        except EasyBuildError,err:
+            msg = "Failed to read specification %s: %s" % (spec, err)
             log.exception(msg)
             raise EasyBuildError(msg)
 
@@ -308,7 +310,7 @@ def resolveDependencies(unprocessed, robot, log):
     from easybuild.tools.modules import Modules
     availableModules = Modules().available()
     if len(availableModules) == 0:
-        log.warning("No installed modules. Your MODULEPATH is probably wrong.")
+        log.warning("No installed modules. Your MODULEPATH is probably incomplete.")
 
     orderedSpecs = []
     # All available modules can be used for resolving dependencies except
@@ -476,7 +478,7 @@ def build(module, options, log, origEnviron, exitOnFailure=True):
     """
     spec = module['spec']
 
-    print "Building specification %s" % spec
+    print "Processing EasyBuild specification file %s" % spec
 
     ## Restore original environment
     log.info("Resetting environment")
@@ -497,18 +499,21 @@ def build(module, options, log, origEnviron, exitOnFailure=True):
                 applicationClass = eval(match.group(1))
                 break
 
-    app = get_instance(applicationClass, log)
+    try:
+        app = get_instance(applicationClass, log)
+    except (ImportError,NameError), err:
+        error("Failed to get application instance of class %s: %s" % (applicationClass, err))
 
     ## Application settings
     if options.stop:
         log.debug("Stop set to %s" % options.stop)
-        app.setCfg('stop', options.stop)
+        app.setcfg('stop', options.stop)
 
     if options.skip:
         log.debug("Skip set to %s" % options.skip)
-        app.setCfg('skip', options.skip)
+        app.setcfg('skip', options.skip)
 
-    app.logDebug = options.debug
+    app.logdebug = options.debug
 
     ## Build specification
     try:
@@ -522,7 +527,7 @@ def build(module, options, log, origEnviron, exitOnFailure=True):
 
     ## Successful build
     if result:
-        if app.getCfg('stop'):
+        if app.getcfg('stop'):
             ended = "STOPPED"
             newLogDir = os.path.join(app.builddir, config.logPath())
         else:
@@ -533,9 +538,9 @@ def build(module, options, log, origEnviron, exitOnFailure=True):
                 from easybuild.tools.repository import getRepository
                 repo = getRepository()
                 if module.has_key('originalSpec'):
-                    repo.addSpecFile(module['originalSpec'], app.name(), app.installVersion + ".block")
-                repo.addSpecFile(spec, app.name(), app.installVersion)
-                repo.commit("Built %s/%s" % (app.name(), app.installVersion))
+                    repo.addSpecFile(module['originalSpec'], app.name(), app.installversion + ".block")
+                repo.addSpecFile(spec, app.name(), app.installversion)
+                repo.commit("Built %s/%s" % (app.name(), app.installversion))
                 del repo
             except EasyBuildError, err:
                 log.warn("Unable to commit specification-file to repository (%s)", err)
@@ -545,7 +550,7 @@ def build(module, options, log, origEnviron, exitOnFailure=True):
         summary = "COMPLETED"
 
         ## Cleanup logs
-        app.closeLog()
+        app.closelog()
         try:
             if not os.path.isdir(newLogDir):
                 os.makedirs(newLogDir)
@@ -555,7 +560,7 @@ def build(module, options, log, origEnviron, exitOnFailure=True):
             error("Failed to move log file %s to new log file %s: %s" % (app.logfile, applicationLog, err))
 
         try:
-            shutil.copy(spec, os.path.join(newLogDir, "%s-%s.eb" % (app.name(), app.installVersion)))
+            shutil.copy(spec, os.path.join(newLogDir, "%s-%s.eb" % (app.name(), app.installversion)))
         except IOError, err:
             error("Failed to move specification file %s to log dir %s: %s" % (spec, newLogDir, err))
 
@@ -565,13 +570,13 @@ def build(module, options, log, origEnviron, exitOnFailure=True):
         summary = "FAILED"
 
         buildDir = ''
-        if app.buildDir:
-            buildDir = " (build directory: %s)" % (app.buildDir)
+        if app.builddir:
+            buildDir = " (build directory: %s)" % (app.builddir)
         succ = "unsuccessfully%s" % buildDir
 
         ## Cleanup logs
-        app.closeLog()
-        applicationLog = app.logFile
+        app.closelog()
+        applicationLog = app.logfile
 
     del app
     os.chdir(cwd)
@@ -595,4 +600,8 @@ def build(module, options, log, origEnviron, exitOnFailure=True):
         return (True,applicationLog)
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except EasyBuildError,err:
+        sys.stderr.write('ERROR: %s\n' % err.msg)
+        sys.exit(1)

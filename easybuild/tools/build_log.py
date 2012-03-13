@@ -23,6 +23,7 @@ EasyBuild logger and log utilities, including our own EasybuildError class.
 """
 
 from socket import gethostname
+from copy import copy
 import logging
 import os
 import sys
@@ -47,19 +48,29 @@ class EasyBuildLog(logging.Logger):
     # necessary because logging.Logger.exception calls self.error
     raiseError = True
 
-    def error(self,msg,*args,**kwargs):
+    def callerInfo(self):
+        (filepath,line,function_name)=self.findCaller()
+        filepath_dirs=filepath.split(os.path.sep)
         
-        newMsg = "err %s %s"%(self.findCaller(),msg)
-        logging.Logger.error(self,msg,*args,**kwargs)
+        for dirName in copy(filepath_dirs):
+            if dirName != "easybuild":
+                 filepath_dirs.remove(dirName)
+            else:
+                break
+        return "(at %s:%s in %s)"%(os.path.sep.join(filepath_dirs),line,function_name)
+
+    def error(self,msg,*args,**kwargs):
+        newMsg = "EasyBuild crashed with an error %s: %s"%(self.callerInfo(),msg)
+        logging.Logger.error(self,newMsg,*args,**kwargs)
         if self.raiseError:
             raise EasyBuildError(newMsg)
 
     def exception(self,msg,*args):
         ## don't raise the exception from within error
-        newMsg="exc %s %s" % (self.findCaller(), msg)
+        newMsg="EasyBuild encountered an exception %s: %s" % (self.callerInfo(), msg)
 
         self.raiseError=False
-        logging.Logger.exception(self, msg, *args)
+        logging.Logger.exception(self, newMsg, *args)
         self.raiseError=True
 
         raise EasyBuildError(newMsg)
@@ -146,10 +157,10 @@ def logFilename(name, version):
         counter += 1
         filename = "%s.%d" % (filename, counter)
 
-    return name
+    return filename
 
 if __name__ == '__main__':
     initLogger('test', '1.0.0')
-    fn, testlog, _ = initLogger(typ='buildLog')
+    fn, testlog, _ = initLogger(typ='build_log')
     testlog.info('Testing buildLog...')
     print "Tested buildLog, see %s"%fn
