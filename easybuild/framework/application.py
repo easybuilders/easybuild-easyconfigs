@@ -435,7 +435,6 @@ class Application:
 
         if hasattr(self, 'extracfg') or hasattr(self, 'extraCfg'):
             self.log.error("extracfg is deprecated, please extend self.cfg in __init__")
-            self.extracfg(locs)
     
     def getcfg(self, key):
         """
@@ -1041,7 +1040,6 @@ class Application:
         if hasattr(self, 'makeModuleExtraExtra') or hasattr(self, 'make_module_extra_extra'):
             self.log.error("make_module_extra_extra is deprecated, please override makeModuleExtra" \
                           "and append to the parent result.")
-            txt += self.make_module_extra_extra() + "\n"
 
         ## SOFTROOT + SOFTVERSION
         environmentName = convertName(self.name(), upper=True)
