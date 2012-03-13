@@ -1,19 +1,19 @@
 #!/usr/bin/python
 # Copyright 2012 Jens Timmerman
 #
-# This file is part of easybuild.
+#This file is part of EasyBuild.
 #
-# Easybuild is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation v2.
+#EasyBuild is free software: you can redistribute it and/or modify
+#it under the terms of the GNU General Public License as published by
+#the Free Software Foundation v2.
 #
-# Easybuild is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
+#EasyBuild is distributed in the hope that it will be useful,
+#but WITHOUT ANY WARRANTY; without even the implied warranty of
+#MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#GNU General Public License for more details.
 #
-# You should have received a copy of the GNU General Public License
-# along with Easybuild.  If not, see <http://www.gnu.org/licenses/>.
+#You should have received a copy of the GNU General Public License
+#along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 
 """
 This script attempts to add a header to each file in the given directory 
