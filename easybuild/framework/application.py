@@ -120,15 +120,15 @@ class Application:
         if name and version:
             self.set_name_version(name, version, newBuild)
     
-    def autobuild(self, ebspec, runTests):
+    def autobuild(self, ebfile, runTests):
         """
         Build the software package described by cfg.
         """
-        self.import_ebspec(ebspec)
+        self.import_ebfile(ebfile)
 
         if self.getcfg('stop') and self.getcfg('stop') == 'cfg':
             return True        
-        self.log.info('Read specification file %s' % ebspec)
+        self.log.info('Read specification file %s' % ebfile)
 
         self.ready2build()
         self.build()
@@ -314,7 +314,7 @@ class Application:
     
     ## process EasyBuild spec file 
     
-    def import_ebspec(self,fn):
+    def import_ebfile(self,fn):
         """
         Read file fn, eval and add info
         - assume certain predefined variable names
@@ -332,7 +332,7 @@ class Application:
             else:
                 raise EasyBuildError("%s: %s"%(msg,err))
         
-        ## initialise logger
+        ## initialize logger
         if locs.has_key('name') and locs.has_key('version'):
             self.set_name_version(locs['name'], locs['version'])
         else:
