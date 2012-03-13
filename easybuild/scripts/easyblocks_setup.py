@@ -32,8 +32,7 @@ def createDir(dirName):
 
 alphabet = [chr(x) for x in xrange(ord('a'), ord('z') + 1)]
 for letter in alphabet:
-    dr = "%s%s" % (letter.upper(), letter)
-    createDir(dr)
+    createDir(letter)
 
 createDir("09")
 createDir("_-")
