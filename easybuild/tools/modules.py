@@ -19,8 +19,8 @@ class Modules:
     """
     Interact with modules.
     """
-    def __init__(self,modulepath=[]):
-        self.modulepath=modulepath
+    def __init__(self,modulePath=None):
+        self.modulePath=modulePath
         self.modules=[]
         
         self.checkModulePath()        
@@ -32,17 +32,17 @@ class Modules:
         if not os.environ.has_key('MODULEPATH'):
             log.error('MODULEPATH not found in environment')
         
-        if self.modulepath:
+        if self.modulePath:
             ## set the module path environment accordingly
-            os.environ['MODULEPATH'] = ":".join(self.modulepath)
+            os.environ['MODULEPATH'] = ":".join(self.modulePath)
         else:
             ## take module path from environment
-            self.modulepath = os.environ['MODULEPATH'].split(':')
+            self.modulePath = os.environ['MODULEPATH'].split(':')
         
         if not os.environ.has_key('LOADEDMODULES'):
             os.environ['LOADEDMODULES'] = ''
 
-    def available(self, name=None, version=None, modulepath = None):
+    def available(self, name=None, version=None, modulePath=None):
         """
         Return list of available modules.
         """
@@ -53,7 +53,7 @@ class Modules:
         if version:
             txt = "%s/%s" % (name,version)
         
-        modules = self.runModule('available', txt, modulepath = modulepath)
+        modules = self.runModule('available', txt, modulePath = modulePath)
 
         ## sort the answers in [name,version] pairs
         ## alphabetical order, default last
@@ -61,14 +61,14 @@ class Modules:
         ans = [(mod['name'], mod['version']) for mod in modules]
 
         log.debug("module available name '%s' version '%s' in %s gave %d answers: %s" % 
-            (name, version, modulepath, len(ans), ans))
+            (name, version, modulePath, len(ans), ans))
         return ans
     
-    def exists(self, name, version, modulepath = None):
+    def exists(self, name, version, modulePath=None):
         """
         Check if module is available.
         """
-        return (name, version) in self.available(name, version, modulepath)
+        return (name, version) in self.available(name, version, modulePath)
     
     def addModule(self, modules):
         """
@@ -116,23 +116,23 @@ class Modules:
         else:
             args = list(args)
         
-        original_module_path = os.environ['MODULEPATH']
-        if kwargs.get('modulepath', None):
-            os.environ['MODULEPATH'] = kwargs.get('modulepath')
+        originalModulePath = os.environ['MODULEPATH']
+        if kwargs.get('modulePath', None):
+            os.environ['MODULEPATH'] = kwargs.get('modulePath')
         
         proc = subprocess.Popen(['/usr/bin/modulecmd', 'python'] + args,
                                 stdout = subprocess.PIPE, stderr = subprocess.PIPE)
         # stdout will contain python code (to change environment etc)
         # stderr will contain text (just like the normal module command)
         (stdout, stderr) = proc.communicate()
-        os.environ['MODULEPATH'] = original_module_path
+        os.environ['MODULEPATH'] = originalModulePath
 
         # Change the environment
         exec stdout
 
         # Process stderr
         result = []
-        for line in stderr.split('\n'):
+        for line in stderr.split('\n'): #IGNORE:E1103
             if outputMatchers['whitespace'].search(line):
                 continue
             
