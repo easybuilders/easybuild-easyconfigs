@@ -58,7 +58,7 @@ def write_header(filename, header, skip=None):
         output.append(inpt[0])
         inpt = inpt[1:]
         
-    if skip and skip.match(inpt[0]): # skip matches, so skip this file
+    if skip and inpt and skip.match(''.join(inpt)): # skip matches, so skip this file
         print "Skip regexp '%s' matches in %s, so skipping this file."%(skip.pattern,filename)
         return
 
@@ -83,14 +83,17 @@ def add_header(directory, header, skipreg, filenamereg, dirregex):
     # for each file/dir in this dir
     for i in listing:
         # get the full name, this way subsubdirs with the same name don't get ignored
-        fullfn = os.path.join(directory, i) 
+        fullfn = os.path.join(os.path.abspath(directory), i)
+        basefn = os.path.basename(fullfn)
         if os.path.isdir(fullfn): # if dir, recursively go in
-            if (dirregex.match(fullfn)):
+            if (dirregex.match(basefn)):
                 print "going into %s" % fullfn
                 add_header(fullfn, header, skipreg, filenamereg, dirregex)
         else:
-            if (filenamereg.match(fullfn)): # if file matches file regex, write the header
+            if (filenamereg.match(basefn)): # if file matches file regex, write the header
                 write_header(fullfn, header, skipreg)
+            else:
+                print "Skipping file %s, doesn't match file regexp %s" % (fullfn,filenamereg.pattern)
 
 
 def main(arguments):
@@ -105,8 +108,10 @@ def main(arguments):
 
     # default skip regexp avoids readding the license header if it's already there
     skipreg = re.compile("[#\n]*#\s+Copyright\s+\d*")
-    fileregex = "^((?!\.).)*$"
-    dirregex = ".*"
+    # only files that don't start with '.' and end with .py or .sh
+    fileregex = "^((?!\.).)*\.(py|sh)$"
+    # only paths that don't have subdirs that start with '.'
+    dirregex = "^((?!\.).)*$"
     if len(arguments) > 5:
         skipreg = re.compile(arguments[5])
     if len(arguments) > 3:
