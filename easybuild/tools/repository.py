@@ -132,7 +132,7 @@ class Repository:
 
     def cleanup(self):
         """
-        Perform cleanup.
+        Clean up working copy.
         """
         return
 
@@ -226,18 +226,21 @@ class GitRepository(Repository):
         try:
             self.client.commit('-am "%s"' % completemsg)
         except GitCommandError,err:
-            log.warning("Commit from wc %s (msg: %s) failed, empty commit?\n%s"%(self.wc, msg,err))
+            log.warning("Commit from working copy %s (msg: %s) failed, empty commit?\n%s"%(self.wc, msg,err))
         try:
             info = self.client.push()
             log.debug("push info: %s " %info)
         except GitCommandError,err:
-            log.warning("Push from wc %s to remote %s (msg: %s) failed: %s"%(self.wc, self.remote, msg, err))
+            log.warning("Push from working copy %s to remote %s (msg: %s) failed: %s"%(self.wc, self.remote, msg, err))
 
     def cleanup(self):
+        """
+        Clean up git working copy.
+        """
         try:
-            shutil.rmtree(self.wc)        
+            shutil.rmtree(self.wc)
         except IOError,err:
-            log.exception("Can't remove wc %s: %s"%(self.wc, err))
+            log.exception("Can't remove working copy %s: %s"%(self.wc, err))
 
 
 class SvnRepository(Repository):
@@ -365,4 +368,3 @@ if __name__ == "__main__":
         s = getRepository()
     except EasyBuildError, e:
         print "Initialization failed: %s"%e
-
