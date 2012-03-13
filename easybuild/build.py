@@ -9,7 +9,10 @@ from optparse import OptionParser
 
 import easybuild
 import easybuild.tools.config as config
+import easybuild.tools.fileTools as fileTools
 from easybuild.tools.buildLog import initLogger, removeLogHandler, EasyBuildError
+from easybuild.framework.Application import Application, getInstance
+from easybuild.tools.classDumper import dumpClasses
 
 # applications use their own logger, we need to tell them to debug or not
 # so this global var is used.
@@ -111,13 +114,11 @@ def main():
 
     ## Dump possible options
     if options.options:
-        from easybuild.framework.Application import getInstance
         app = getInstance(options.mod, log)
         app.dumpConfigurationOptions()
 
     ## Dump available classes
     if options.dump_classes:
-        from easybuild.tools.classDumper import dumpClasses
         dumpClasses('easybuild.apps')
 
     ## Search for modules
@@ -228,7 +229,6 @@ def processSpecification(path, log, onlyBlocks=None):
     """
     blocks = retrieveBlocksInSpec(path, log, onlyBlocks)
 
-    from easybuild.framework.Application import Application
     packages = []
     for spec in blocks:
         ## Process for dependencies and real installversionname
@@ -452,7 +452,6 @@ def build(module, options, log, origEnviron, exitOnFailure=True):
     """
     spec = module['spec']
 
-    import easybuild.tools.fileTools as fileTools
     print "Building specification %s" % spec
 
     ## Restore original environment
@@ -474,7 +473,6 @@ def build(module, options, log, origEnviron, exitOnFailure=True):
                 applicationClass = eval(match.group(1))
                 break
 
-    from easybuild.framework.Application import getInstance
     app = getInstance(applicationClass, log)
 
     ## Application settings
@@ -491,7 +489,7 @@ def build(module, options, log, origEnviron, exitOnFailure=True):
     ## Build specification
     try:
         result = app.autoBuild(spec, runTests = not options.skip_tests)
-    except Exception, err:
+    except EasyBuildError, err:
         msg = "autoBuild Failed: %s" % err
         log.exception(msg)
         result = False
@@ -511,8 +509,8 @@ def build(module, options, log, origEnviron, exitOnFailure=True):
                 from easybuild.tools.repository import getRepository
                 repo = getRepository()
                 if module.has_key('originalSpec'):
-                    repo.addCfg(module['originalSpec'], app.name(), app.installVersion + ".block")
-                repo.addCfg(spec, app.name(), app.installVersion)
+                    repo.addSpecFile(module['originalSpec'], app.name(), app.installVersion + ".block")
+                repo.addSpecFile(spec, app.name(), app.installVersion)
                 repo.commit("Built %s/%s" % (app.name(), app.installVersion))
                 del repo
             except EasyBuildError, err:
