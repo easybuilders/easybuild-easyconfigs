@@ -104,8 +104,8 @@ def main(arguments):
         sys.exit(1)
 
     # default skip regexp avoids readding the license header if it's already there
-    skipreg = "[#\n]*#\s+Copyright\s+\d*"
-    fileregex = ".*"
+    skipreg = re.compile("[#\n]*#\s+Copyright\s+\d*")
+    fileregex = "^((?!\.).)*$"
     dirregex = ".*"
     if len(arguments) > 5:
         skipreg = re.compile(arguments[5])
