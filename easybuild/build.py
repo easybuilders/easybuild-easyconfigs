@@ -3,16 +3,20 @@
 """
 Main entry point for EasyBuildBuild: build software from .eb input file 
 """
-
-import sys, os, shutil, re, copy, tempfile
 from optparse import OptionParser
+import copy
+import re
+import os
+import shutil
+import sys
+import tempfile
 
 import easybuild
+from easybuild.framework.application import Application, getInstance
+from easybuild.tools.build_log import initLogger, removeLogHandler, EasyBuildError
+from easybuild.tools.class_dumper import dumpClasses
 import easybuild.tools.config as config
-import easybuild.tools.fileTools as fileTools
-from easybuild.tools.buildLog import initLogger, removeLogHandler, EasyBuildError
-from easybuild.framework.Application import Application, getInstance
-from easybuild.tools.classDumper import dumpClasses
+import easybuild.tools.filetools as filetools
 
 # applications use their own logger, we need to tell them to debug or not
 # so this global var is used.
@@ -21,7 +25,7 @@ logDebug = False
 # options parser
 parser = OptionParser()
 
-def addBuildOptions():
+def add_build_options():
     """
     Add build options to options parser
     """
@@ -75,7 +79,7 @@ def main():
     parser.description = "Builds software package based on specification file (or parse a directory)\n" \
                          "Provide one or more specification files or directories, use -h or --help more information."
 
-    addBuildOptions()
+    add_build_options()
 
     (options, paths) = parser.parse_args()
 
@@ -119,7 +123,7 @@ def main():
 
     ## Dump available classes
     if options.dump_classes:
-        dumpClasses('easybuild.apps')
+        dumpClasses('easybuild.easyblocks')
 
     ## Search for modules
     if options.search:
@@ -456,8 +460,8 @@ def build(module, options, log, origEnviron, exitOnFailure=True):
 
     ## Restore original environment
     log.info("Resetting environment")
-    fileTools.errorsFoundInLog = 0
-    if not fileTools.modifyEnv(os.environ, origEnviron):
+    filetools.errorsFoundInLog = 0
+    if not filetools.modifyEnv(os.environ, origEnviron):
         error("Failed changing the environment back to original")
 
     cwd = os.getcwd()
@@ -555,9 +559,9 @@ def build(module, options, log, origEnviron, exitOnFailure=True):
     print "%s: Installation %s %s." % (summary, ended, succ)
     
     ## Check for errors
-    if exitCode > 0 or fileTools.errorsFoundInLog > 0:
+    if exitCode > 0 or filetools.errorsFoundInLog > 0:
         print "WARNING: Build exited with exit code %d. %d possible error(s) were detected in the " \
-              "build logs, please verify the build." % (exitCode, fileTools.errorsFoundInLog)
+              "build logs, please verify the build." % (exitCode, filetools.errorsFoundInLog)
 
     print "Results of the build can be found in the log file %s" % applicationLog
 

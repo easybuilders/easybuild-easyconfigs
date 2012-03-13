@@ -1,9 +1,12 @@
 """
 Modules functionality: loading modules, checking for available modules, ...
 """
-import os, re, subprocess
-from easybuild.tools.buildLog import getLog, initLogger, EasyBuildError
-from easybuild.tools.fileTools import convertName
+import os
+import re
+import subprocess
+
+from easybuild.tools.build_log import getLog, initLogger, EasyBuildError
+from easybuild.tools.filetools import convertName
 
 log = getLog('Modules')
 outputMatchers = {

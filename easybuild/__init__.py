@@ -1,5 +1,5 @@
-import os
 from distutils.version import LooseVersion
+import os
 
 VERSION = LooseVersion("0.5")
 

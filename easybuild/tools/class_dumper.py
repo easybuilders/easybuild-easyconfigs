@@ -1,5 +1,7 @@
 # coding=utf-8
-import os, pyclbr, glob
+import glob
+import pyclbr
+import os
 
 def dumpClasses(root):
     """Get a class tree, starting at root"""

@@ -3,14 +3,17 @@ Set of repository tools
 
 We have a plain filesystem, an svn and a git repository
 """
-
+import getpass
 import os
-import sys
 import shutil
 import socket
+import sys
 import tempfile
 import time
-import getpass
+
+import easybuild
+from easybuild.tools.build_log import getLog, EasyBuildError
+from easybuild.tools.config import repositoryPath, repositoryType
 # try and load git (GitPython), OK if it fails if we don't use it
 try:
     import git
@@ -24,9 +27,6 @@ try:
 except ImportError:
     pass
 
-import easybuild
-from easybuild.tools.buildLog import getLog, EasyBuildError
-from easybuild.tools.config import repositoryPath,repositoryType
 
 log = getLog('repo')
 

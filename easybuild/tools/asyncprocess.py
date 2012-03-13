@@ -6,7 +6,11 @@ see http://code.activestate.com/recipes/440554/ (PSF license)
 -- added STDOUT handle
 """
 
-import os, subprocess, errno, time, sys
+import errno
+import os
+import subprocess
+import sys
+import time
 
 PIPE = subprocess.PIPE
 STDOUT = subprocess.STDOUT

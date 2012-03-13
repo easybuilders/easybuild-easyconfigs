@@ -1,9 +1,9 @@
 """
 EasyBuild configuration (paths, preferences, etc.)
 """
-
 import os
-from easybuild.tools.buildLog import getLog
+
+from easybuild.tools.build_log import getLog
 
 log = getLog('config')
 

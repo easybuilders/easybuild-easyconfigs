@@ -25,12 +25,12 @@ pkg_resources.declare_namespace("%s")
 """ % os.path.basename(PREFIX))
 
 # create subdirectories Aa, Bb, ..., Zz, 09, _-
-def createDir(dr):
-    os.mkdir(os.path.join(PREFIX, dr))
-    f = open(os.path.join(PREFIX, dr, "__init__.py"), 'w')
-    f.close()
+def createDir(dirName):
+    os.mkdir(os.path.join(PREFIX, dirName))
+    fh = open(os.path.join(PREFIX, dirName, "__init__.py"), 'w')
+    fh.close()
 
-alphabet = map(chr, xrange(ord('a'), ord('z') + 1))
+alphabet = [chr(x) for x in xrange(ord('a'), ord('z') + 1)]
 for letter in alphabet:
     dr = "%s%s" % (letter.upper(), letter)
     createDir(dr)

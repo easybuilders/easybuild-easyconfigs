@@ -1,7 +1,8 @@
 import os
 
-from easybuild.tools.buildLog import getLog
+from easybuild.tools.build_log import getLog
 import easybuild.tools.config as config
+
 
 log = getLog('easybuild_config')
 

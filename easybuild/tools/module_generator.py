@@ -1,18 +1,26 @@
+"""
+Generating module files.
+"""
 import os
 
-from easybuild.tools.buildLog import getLog
+from easybuild.tools.build_log import getLog
 from easybuild.tools.config import installPath
 
 log = getLog('moduleGenerator')
 
 class ModuleGenerator:
+    """
+    Class for generating module files.
+    """
     def __init__(self, application, fake = False):
         self.app = application
         self.fake = fake
         self.filename = None
 
     def createFiles(self):
-        """Creates the absolute filename for the module."""
+        """
+        Creates the absolute filename for the module.
+        """
         base = installPath('mod')
 
         # Fake mode: set installpath to builddir
@@ -49,7 +57,9 @@ class ModuleGenerator:
             log.exception("Failed to create symlink from %s to %s: %s" % (classPathFile, self.filename, err))
 
     def getDescription(self, conflict=True):
-        """Generate a description."""
+        """
+        Generate a description.
+        """
         description = "%s - Homepage: %s" % (self.app.getCfg('description'), self.app.getCfg('homepage'))
 
         txt = "#%Module\n"
@@ -81,7 +91,9 @@ if { ![is-loaded %(name)s/%(version)s] } {
         return txt
 
     def loadModule(self, name, version):
-        """Generate load statements for module with name and version"""
+        """
+        Generate load statements for module with name and version.
+        """
         return """
 if { ![is-loaded %(name)s/%(version)s] } {
     module load %(name)s/%(version)s
@@ -89,7 +101,9 @@ if { ![is-loaded %(name)s/%(version)s] } {
 """ % {'name': name, 'version': version}
 
     def unloadModule(self, name, version):
-        """Generate unload statements for module with name and version"""
+        """
+        Generate unload statements for module with name and version.
+        """
         return """
 if { ![is-loaded %(name)s/%(version)s] } {
     if { [is-loaded %(name)s] } {
@@ -99,6 +113,9 @@ if { ![is-loaded %(name)s/%(version)s] } {
 """ % {'name': name, 'version': version}
 
     def prependPaths(self, key, paths):
+        """
+        Generate prepend-path statements for the given list of paths.
+        """
         fullInstallPath = os.path.abspath(self.app.installdir) + '/'
         template = "prepend-path\t%s\t\t$root/%s\n" # $root = installdir
 
@@ -106,5 +123,7 @@ if { ![is-loaded %(name)s/%(version)s] } {
         return ''.join(statements)
 
     def setEnvironment(self, key, value):
+        """
+        Generate setenv statement for the given key/value pair.
+        """
         return "setenv\t%s\t\t%s\n" % (key, value)
-

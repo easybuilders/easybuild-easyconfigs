@@ -2,8 +2,11 @@
 EasyBuild logger and log utilities, including our own EasybuildError class.
 """
 
-import sys, os, logging
 from socket import gethostname
+import logging
+import os
+import sys
+
 import easybuild
 
 class EasyBuildError(Exception):
