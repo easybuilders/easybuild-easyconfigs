@@ -131,10 +131,16 @@ def main():
         print "This is EasyBuild %s" % easybuild.VERBOSE_VERSION
 
     ## Initialize configuration
-    if not options.config:
+    # - check environment variable EASYBUILDCONFIG
+    # - then, check command line option
+    # - last, use default config file easybuild_config.py in build.py directory
+    config_file = os.getenv('EASYBUILDCONFIG')
+    if not config_file and options.config:
+        config_file = options.config
+    else:
         appPath = os.path.dirname(os.path.realpath(sys.argv[0]))
-        options.config = os.path.join(appPath, "easybuild_config.py")
-    config.init(options.config, **configOptions)
+        config_file = os.path.join(appPath, "easybuild_config.py")
+    config.init(config_file, **configOptions)
 
     ## Dump possible options
     if options.options:
@@ -478,7 +484,7 @@ def build(module, options, log, origEnviron, exitOnFailure=True):
     """
     spec = module['spec']
 
-    print "Processing EasyBuild specification file %s" % spec
+    print "processing EasyBuild specification file %s" % spec
 
     ## Restore original environment
     log.info("Resetting environment")
