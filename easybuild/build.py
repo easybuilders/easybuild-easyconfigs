@@ -12,7 +12,7 @@ import sys
 import tempfile
 
 import easybuild
-from easybuild.framework.application import Application, getInstance
+from easybuild.framework.application import Application, get_instance
 from easybuild.tools.build_log import initLogger, removeLogHandler, EasyBuildError
 from easybuild.tools.class_dumper import dumpClasses
 import easybuild.tools.config as config
@@ -118,7 +118,7 @@ def main():
 
     ## Dump possible options
     if options.options:
-        app = getInstance(options.mod, log)
+        app = get_instance(options.mod, log)
         app.dumpConfigurationOptions()
 
     ## Dump available classes
@@ -241,7 +241,7 @@ def processSpecification(path, log, onlyBlocks=None):
 
         try:
             app = Application(debug=logDebug)
-            app.importCfg(spec)
+            app.import_ebfile(spec)
         except Exception:
             msg = "Failed to read specification %s" % spec
             log.exception(msg)
@@ -267,7 +267,7 @@ def processSpecification(path, log, onlyBlocks=None):
             package['dependencies'].append(dep)
 
         try:
-            app.closeLog()
+            app.closelog()
             os.remove(app.logfile)
         except:
             msg = "Failed to remove log file %s" % app.logfile
@@ -477,7 +477,7 @@ def build(module, options, log, origEnviron, exitOnFailure=True):
                 applicationClass = eval(match.group(1))
                 break
 
-    app = getInstance(applicationClass, log)
+    app = get_instance(applicationClass, log)
 
     ## Application settings
     if options.stop:
@@ -492,7 +492,7 @@ def build(module, options, log, origEnviron, exitOnFailure=True):
 
     ## Build specification
     try:
-        result = app.autoBuild(spec, runTests = not options.skip_tests)
+        result = app.autobuild(spec, runTests = not options.skip_tests)
     except EasyBuildError, err:
         msg = "autoBuild Failed: %s" % err
         log.exception(msg)
