@@ -115,48 +115,48 @@ class Application:
         self.sanityCheckPaths = None
         self.sanityCheckOK = True
 
-        self.buildInInstallDir = False
+        self.build_in_installdir = False
 
         if name and version:
-            self.setNameVersion(name, version, newBuild)
+            self.set_name_version(name, version, newBuild)
     
-    def autoBuild(self, cfg, runTests):
+    def autobuild(self, ebfile, runTests):
         """
         Build the software package described by cfg.
         """
-        self.importCfg(cfg)
+        self.import_ebfile(ebfile)
 
-        if self.getCfg('stop') and self.getCfg('stop') == 'cfg':
+        if self.getcfg('stop') and self.getcfg('stop') == 'cfg':
             return True        
-        self.log.info('Read specification file %s' % cfg)
+        self.log.info('Read specification file %s' % ebfile)
 
-        self.readyToBuild()
+        self.ready2build()
         self.build()
 
         # Last stop
-        if self.getCfg('stop'):
+        if self.getcfg('stop'):
             return True
-        self.makeModule()
+        self.make_module()
 
         # Run tests
-        if runTests and self.getCfg('tests'):
-            self.runTests()
+        if runTests and self.getcfg('tests'):
+            self.runtests()
         else:
             self.log.debug("Skipping tests")
                             
         return True
     
-    def setNameVersion(self,name,version,newBuild=True):
+    def set_name_version(self,name,version,newBuild=True):
         """
         Sets name and version
         - also starts logger
         """
-        self.setCfg('name', name)
-        self.setCfg('version', version)
+        self.setcfg('name', name)
+        self.setcfg('version', version)
         if newBuild:
-            self.setLogger()
+            self.setlogger()
 
-    def setLogger(self):
+    def setlogger(self):
         """
         Set the logger.
         """
@@ -164,7 +164,7 @@ class Application:
             self.logfile, self.log, self.loghandler = initLogger(self.name(), self.version(),self.logdebug,typ=self.__class__.__name__)
             self.log.info("Init completed for application name %s version %s"%(self.name(),self.version())) 
 
-    def closeLog(self):
+    def closelog(self):
         """
         Shutdown the logger.
         """
@@ -173,12 +173,12 @@ class Application:
         self.loghandler.close()
 
     ## PARALLELISM
-    def setParallelism(self,nr=None):
+    def setparallelism(self,nr=None):
         """
         Determines how many processes should be used (default: nr of procs - 1).
         """
-        if not nr and self.getCfg('parallel'):
-            nr=self.getCfg('parallel')
+        if not nr and self.getcfg('parallel'):
+            nr=self.getcfg('parallel')
         
         if nr:
             try:
@@ -203,12 +203,10 @@ class Application:
             except ValueError,err:
                 self.log.exception("Failed to determine max user processes (%s,%s): %s"%(ec,out,err))
 
-        self.setCfg('parallel', nr)
+        self.setcfg('parallel', nr)
         self.log.info("Setting parallelism: %s"%nr)
-        
-    ## ADD VALUE
 
-    def addPatch(self,listOfPatches=None):
+    def addpatch(self,listOfPatches=None):
         """
         Add a list of patches.
         All patches will be checked if a file exists (or can be located)
@@ -233,7 +231,7 @@ class Application:
                 else:
                     pf=patchFile
                     
-                path=self.fileLocate(pf)
+                path=self.file_locate(pf)
                 if path:
                     self.log.debug('File %s found for patch %s'%(path,patchFile))
                     tmppatch={'name':pf,'path':path}
@@ -248,7 +246,7 @@ class Application:
             self.log.info("Added patches: %s"%self.patches)
 
     
-    def addSource(self,listOfSources=None):
+    def addsource(self,listOfSources=None):
         """
         Add a list of source files (can be tarballs, isos, urls).
         All source files will be checked if a file exists (or can be located)
@@ -256,7 +254,7 @@ class Application:
         if listOfSources:
             for source in listOfSources:
                 ## check if the sources can be located
-                path=self.fileLocate(source)
+                path=self.file_locate(source)
                 if path:
                     self.log.debug('File %s found for source %s'%(path,source))
                     self.src.append({'name':source,'path':path})
@@ -265,14 +263,14 @@ class Application:
                 
             self.log.info("Added sources: %s"%self.src)
 
-    def setToolkit(self, name, version):
+    def settoolkit(self, name, version):
         """
         Add the build toolkit to be used.
         """
         self.tk = Toolkit(name, version)
         self.log.info("Added toolkit: name %s version %s"%(self.tk.name,self.tk.version))
 
-    def addDependency(self, dependencies=None):
+    def add_dependency(self, dependencies=None):
         """
         Add application dependencies. A dependency should be specified as a dictionary
         or as a list of the following form: [name, version, suffix, dummy_boolean]
@@ -280,9 +278,9 @@ class Application:
         """
         if dependencies and len(dependencies) > 0:
             self.log.info("Adding dependencies: %s" % dependencies)
-            self.dep.extend([self.parseDependency(d) for d in dependencies])
+            self.dep.extend([self.parse_dependency(d) for d in dependencies])
 
-    def parseDependency(self, dep):
+    def parse_dependency(self, dep):
         """
         Read a dependency declaration and transform it to a common format.
         """
@@ -314,9 +312,9 @@ class Application:
 
         return result
     
-    ## PROCESS CFG 
+    ## process EasyBuild spec file 
     
-    def importCfg(self,fn):
+    def import_ebfile(self,fn):
         """
         Read file fn, eval and add info
         - assume certain predefined variable names
@@ -334,13 +332,13 @@ class Application:
             else:
                 raise EasyBuildError("%s: %s"%(msg,err))
         
-        ## initialise logger
+        ## initialize logger
         if locs.has_key('name') and locs.has_key('version'):
-            self.setNameVersion(locs['name'], locs['version'])
+            self.set_name_version(locs['name'], locs['version'])
         else:
-            self.setLogger()
+            self.setlogger()
         
-        ## check easybuild version
+        ## check EasyBuild version
         easybuildVersion = locs.get('easybuildVersion', None)
         if not easybuildVersion:
             self.log.warn("Specification-file does not specify an EasyBuild-version (key 'easybuildVersion')! Assuming the latest version")
@@ -360,77 +358,76 @@ class Application:
 
         for k in self.cfg.keys():
             if locs.has_key(k):
-                self.setCfg(k, locs[k])
-                self.log.info("Using cfg option %s: value %s"%(k,self.getCfg(k)))
+                self.setcfg(k, locs[k])
+                self.log.info("Using cfg option %s: value %s"%(k,self.getcfg(k)))
 
         for k in self.mandatory:
             if not locs.has_key(k):
                 self.log.error("No cfg option %s provided"%k)
                 
-        if self.getCfg('stop') and not (self.getCfg('stop') in self.validstops):
+        if self.getcfg('stop') and not (self.getcfg('stop') in self.validstops):
             self.log.error("Stop provided %s is not valid: %s"%(self.cfg['stop'],self.validstops))
 
-        if not (self.getCfg('moduleclass') in self.validmoduleclasses):
+        if not (self.getcfg('moduleclass') in self.validmoduleclasses):
             self.log.error("Moduleclass provided %s is not valid: %s"%(self.cfg['moduleclass'],self.validmoduleclasses))                
 
-        if self.getCfg('stop') == 'cfg':
+        if self.getcfg('stop') == 'cfg':
             self.log.info("Stopping in parsing cfg")
             return
 
-        if self.getCfg('osdependencies'):
-            self.checkOsdeps(self.getCfg('osdependencies'))
+        if self.getcfg('osdependencies'):
+            self.check_osdeps(self.getcfg('osdependencies'))
         
-        if self.getCfg('sources'):
-            self.addSource(self.getCfg('sources'))
+        if self.getcfg('sources'):
+            self.addsource(self.getcfg('sources'))
         else:
             self.log.info('Cfg: no sources provided')
 
-        if self.getCfg('patches'):
-            self.addPatch(self.getCfg('patches'))
+        if self.getcfg('patches'):
+            self.addpatch(self.getcfg('patches'))
         else:
             self.log.info('Cfg: no patches provided')
         
-        if self.getCfg('toolkit'):
-            tk = self.getCfg('toolkit')
-            self.setToolkit(tk['name'], tk['version'])
+        if self.getcfg('toolkit'):
+            tk = self.getcfg('toolkit')
+            self.settoolkit(tk['name'], tk['version'])
         else:
             self.log.error('Cfg: no toolkit defined')
         
-        if self.getCfg('toolkitopts'):
-            self.tk.setOptions(self.getCfg('toolkitopts'))
+        if self.getcfg('toolkitopts'):
+            self.tk.setOptions(self.getcfg('toolkitopts'))
         
-        if self.getCfg('dependencies'):
-            self.addDependency(self.getCfg('dependencies'))
+        if self.getcfg('dependencies'):
+            self.add_dependency(self.getcfg('dependencies'))
         else:
             self.log.info('Cfg: no dependencies provided')
             
         # Build dependencies
-        builddeps = [self.parseDependency(d) for d in self.getCfg('builddependencies')]
-        self.addDependency(builddeps)
-        self.setCfg('builddependencies', builddeps)
+        builddeps = [self.parse_dependency(d) for d in self.getcfg('builddependencies')]
+        self.add_dependency(builddeps)
+        self.setcfg('builddependencies', builddeps)
 
-        self.setParallelism()
+        self.setparallelism()
         
-        self.makeInstallVersion()
+        self.make_installversion()
 
-        if hasattr(self, 'extraCfg'):
-            self.log.warn("extraCfg is deprecated, please extend self.cfg in __init__")
-            self.log.debug("extraCfg locs %s"%locs)
-            self.extraCfg(locs)
+        if hasattr(self, 'extracfg') or hasattr(self, 'extraCfg'):
+            self.log.error("extracfg is deprecated, please extend self.cfg in __init__")
+            self.extracfg(locs)
     
-    def getCfg(self, key):
+    def getcfg(self, key):
         """
         Get a configuration item.
         """
         return self.cfg[key][0]
 
-    def setCfg(self, key, value):
+    def setcfg(self, key, value):
         """
         Set configuration key to value.
         """
         self.cfg[key][0] = value
 
-    def checkOsdeps(self, osdeps):
+    def check_osdeps(self, osdeps):
         """
         Check if packages are available from OS. osdeps should be a list of dependencies.
         If an element of osdeps is a list, checks will pass if one of the elements of the list is found
@@ -459,7 +456,7 @@ class Application:
     
     ## BUILD 
 
-    def readyToBuild(self):
+    def ready2build(self):
         """
         Verify if all is ok to start build.
         """
@@ -477,7 +474,7 @@ class Application:
         # Check if main install needs to be skipped
         # - if a current module can be found, skip is ok
         # -- this is potentially very dangerous
-        if self.getCfg('skip'):
+        if self.getcfg('skip'):
             if Modules().exists(self.name(), self.installversion):
                 self.skip=True
                 self.log.info("Current version (name: %s, version: %s) found. Going to skip actually main build and potential exitsing packages. Expert only."%(self.name(),self.installversion))
@@ -485,7 +482,7 @@ class Application:
                 self.log.info("No current version (name: %s, version: %s) found. Not skipping anything."%(self.name(),self.installversion))
 
         
-    def fileLocate(self,url,pkg=False):
+    def file_locate(self,url,pkg=False):
         """
         Locates the file from url for this application
         - use predefined directories
@@ -534,7 +531,7 @@ class Application:
         else:
             self.log.error("Localfile %s from url %s not found"%(url,localfile))
 
-    def applyPatch(self,beginpath=None):
+    def apply_patch(self,beginpath=None):
         """
         Apply the patches
         """
@@ -565,13 +562,13 @@ class Application:
             if not patch(tmp['path'],src,copy=copy,level=level):
                 self.log.error("Applying patch %s failed"%tmp['name'])
 
-    def unpackSrc(self):
+    def unpack_src(self):
         """
         Unpack the source files.
         """
         for tmp in self.src:
             self.log.info("Unpacking source %s"%tmp['name'])
-            srcdir=unpack(tmp['path'],self.builddir,extraOptions=self.getCfg('unpackOptions'))
+            srcdir=unpack(tmp['path'],self.builddir,extraOptions=self.getcfg('unpackOptions'))
             if srcdir:
                 self.src[self.src.index(tmp)]['finalpath']=srcdir
             else:
@@ -593,46 +590,46 @@ class Application:
         - install
         """
         try:
-            self.genInstallDir()
-            self.makeBuildDir()
+            self.gen_installdir()
+            self.make_builddir()
 
             ## SOURCE
-            self.runStep('source', [self.unpackSrc], skippable=True)
+            self.runstep('source', [self.unpack_src], skippable=True)
 
             ## PATCH
-            self.runStep('patch', [self.applyPatch], skippable=True)
+            self.runstep('patch', [self.apply_patch], skippable=True)
 
-            self.tk.prepare(self.getCfg('onlytkmod'))
-            self.startFrom()
+            self.tk.prepare(self.getcfg('onlytkmod'))
+            self.startfrom()
 
             ## CONFIGURE
-            self.runStep('configure', [self.configure], skippable=True)
+            self.runstep('configure', [self.configure], skippable=True)
 
             ## MAKE
-            self.runStep('make', [self.make], skippable=True)
+            self.runstep('make', [self.make], skippable=True)
 
             ## TEST
-            self.runStep('test', [self.test], skippable=True)
+            self.runstep('test', [self.test], skippable=True)
 
             ## INSTALL
-            self.runStep('install', [self.makeInstallDir, self.makeInstall], skippable=True)
+            self.runstep('install', [self.make_installdir, self.make_install], skippable=True)
 
             ## Packages
-            self.runStep('packages', [self.packages])
+            self.runstep('packages', [self.packages])
 
             ## POSTPROC
-            self.runStep('postproc', [self.postProc], skippable=True)
+            self.runstep('postproc', [self.postproc], skippable=True)
 
             ## CLEANUP
-            self.runStep('cleanup', [self.cleanup])
+            self.runstep('cleanup', [self.cleanup])
             
             ## SANITY CHECK
-            self.runStep('sanity check', [self.sanityCheck], skippable=False)
+            self.runstep('sanity check', [self.sanitycheck], skippable=False)
 
         except StopException:
             pass
 
-    def runStep(self, step, methods, skippable=False):
+    def runstep(self, step, methods, skippable=False):
         """
         Run step, returns false when execution should be stopped
         """
@@ -642,19 +639,19 @@ class Application:
             for m in methods:
                 m()
 
-        if self.getCfg('stop') == step:
+        if self.getcfg('stop') == step:
             self.log.info("Stopping after %s step." % step)
             raise StopException(step)
 
-    def postProc(self):
+    def postproc(self):
         """
         Do some postprocessing
         - set file permissions ....
         Installing user must be member of the group that it is changed to
         """
-        if self.getCfg('group'):
+        if self.getcfg('group'):
             import grp
-            gid=grp.getgrnam(self.getCfg('group'))[2]
+            gid=grp.getgrnam(self.getcfg('group'))[2]
             chngsuccess=[]
             chngfailure=[]
             for root, _, files in os.walk(self.installdir):
@@ -678,7 +675,7 @@ class Application:
             if len(chngfailure) > 0:
                 self.log.error("Unable to change group permissions of file(s). Are you a member of this group?:\n --> %s"%"\n --> ".join(chngfailure))
             else:
-                self.log.info("Successfully made software only available for group %s"%self.getCfg('group'))
+                self.log.info("Successfully made software only available for group %s"%self.getcfg('group'))
 
     def cleanup(self):
         """
@@ -689,21 +686,21 @@ class Application:
         except when we're building in the installation directory, 
         otherwise we remove the installation
         """
-        if not self.buildInInstallDir:
+        if not self.build_in_installdir:
             try:
                 shutil.rmtree(self.builddir)
                 self.log.info("Cleaning up builddir %s"%(self.builddir))
             except OSError,err:
                 self.log.exception("Cleaning up builddir %s failed: %s"%(self.builddir,err))
 
-    def sanityCheck(self):
+    def sanitycheck(self):
         """
         Do a sanity check on the installation
         - if *any* of the files/subdirectories in the installation directory listed 
           in sanityCheckPaths are non-existent (or empty), the sanity check fails
         """
         # prepare sanity check paths
-        self.sanityCheckPaths=self.getCfg('sanityCheckPaths')
+        self.sanityCheckPaths=self.getcfg('sanityCheckPaths')
         if not self.sanityCheckPaths:
             self.sanityCheckPaths={'files':[],
                                    'dirs':["bin","lib"]
@@ -749,7 +746,7 @@ class Application:
             self.log.debug("Sanity check passed!")
 
 
-    def startFrom(self):
+    def startfrom(self):
         """
         Return the directory where to start the whole configure/make/make install cycle from
         - typically self.src[0]['finalpath']
@@ -758,27 +755,27 @@ class Application:
         -- else, treat it as subdir for regular procedure
         """
         tmpdir=''
-        if self.getCfg('startfrom'):
-            tmpdir=self.getCfg('startfrom')
+        if self.getcfg('startfrom'):
+            tmpdir=self.getcfg('startfrom')
 
         if not os.path.isabs(tmpdir):
             if len(self.src) > 0 and not self.skip:
-                self.setCfg('startfrom', os.path.join(self.src[0]['finalpath'],tmpdir))
+                self.setcfg('startfrom', os.path.join(self.src[0]['finalpath'],tmpdir))
             else:
-                self.setCfg('startfrom', os.path.join(self.builddir,tmpdir))
+                self.setcfg('startfrom', os.path.join(self.builddir,tmpdir))
         
         try:
-            os.chdir(self.getCfg('startfrom'))
-            self.log.debug("Changed to real build directory %s"%(self.getCfg('startfrom')))
+            os.chdir(self.getcfg('startfrom'))
+            self.log.debug("Changed to real build directory %s"%(self.getcfg('startfrom')))
         except OSError,err:
-            self.log.exception("Can't change to real build directory %s: %s"%(self.getCfg('startfrom'),err))
+            self.log.exception("Can't change to real build directory %s: %s"%(self.getcfg('startfrom'),err))
 
     def configure(self):
         """
         Configure step
         - typically ./configure --prefix=/install/path style
         """
-        cmd = "%s ./configure --prefix=%s %s" % (self.getCfg('preconfigopts'),self.installdir,self.getCfg('configopts'))
+        cmd = "%s ./configure --prefix=%s %s" % (self.getcfg('preconfigopts'),self.installdir,self.getcfg('configopts'))
         run_cmd(cmd, log_all=True, simple=True)
 
     def make(self):
@@ -787,10 +784,10 @@ class Application:
         - typical: make -j X
         """
         paracmd=''
-        if self.getCfg('parallel'):
-            paracmd="-j %s" % self.getCfg('parallel')
+        if self.getcfg('parallel'):
+            paracmd="-j %s" % self.getcfg('parallel')
 
-        cmd = "%s make %s %s" % (self.getCfg('premakeopts'), paracmd, self.getCfg('makeopts'))
+        cmd = "%s make %s %s" % (self.getcfg('premakeopts'), paracmd, self.getcfg('makeopts'))
 
         run_cmd(cmd, log_all=True, simple=True)
 
@@ -799,30 +796,30 @@ class Application:
         Test the compilation
         - default: None
         """
-        if self.getCfg('runtest'):
-            cmd = "make %s" % (self.getCfg('runtest'))
+        if self.getcfg('runtest'):
+            cmd = "make %s" % (self.getcfg('runtest'))
             run_cmd(cmd, log_all=True, simple=True)
 
-    def makeInstall(self):
+    def make_install(self):
         """
         Create the installation in correct location
         - typical: make install
         """
-        cmd = "make install %s" % (self.getCfg('installopts'))
+        cmd = "make install %s" % (self.getcfg('installopts'))
         run_cmd(cmd, log_all=True, simple=True)
 
-    def makeBuildDir(self):
+    def make_builddir(self):
         """
         Create the build directory.
         """
-        if not self.buildInInstallDir:
+        if not self.build_in_installdir:
             # make a unique build dir
             ## if a tookitversion starts with a -, remove the - so prevent a -- in the path name 
             tkversion=self.tk.version
             if tkversion.startswith('-'):
                 tkversion=tkversion[1:]
             
-            extra="%s%s-%s%s"%(self.getCfg('versionprefix'),self.tk.name,tkversion,self.getCfg('versionsuffix'))
+            extra="%s%s-%s%s"%(self.getcfg('versionprefix'),self.tk.name,tkversion,self.getcfg('versionsuffix'))
             localdir=os.path.join(buildPath(),self.name(),self.version(),extra)
             if not self.tk.name == 'dummy':
                 localdir=os.path.join(localdir,extra)
@@ -836,7 +833,7 @@ class Application:
             
             self.builddir=ald
     
-            self.log.debug("Creating the build directory %s (cleanup: %s)"%(self.builddir,self.getCfg('cleanupoldbuild')))
+            self.log.debug("Creating the build directory %s (cleanup: %s)"%(self.builddir,self.getcfg('cleanupoldbuild')))
         
         else:
             self.log.info("Changing build dir to %s"%self.installdir)
@@ -845,15 +842,15 @@ class Application:
             self.log.info("Overriding 'cleanupoldinstall' (to False), 'cleanupoldbuild' (to True) " \
                           "and 'keeppreviousinstall' because we're building in the installation directory.")
             # force cleanup before installation
-            self.setCfg('cleanupoldbuild',True)
-            self.setCfg('keeppreviousinstall',False)
+            self.setcfg('cleanupoldbuild',True)
+            self.setcfg('keeppreviousinstall',False)
             # avoid cleanup after installation
-            self.setCfg('cleanupoldinstall',False)
+            self.setcfg('cleanupoldinstall',False)
             
         # always make build dir
-        self.makeDir(self.builddir,self.getCfg('cleanupoldbuild'))
+        self.make_dir(self.builddir,self.getcfg('cleanupoldbuild'))
     
-    def genInstallDir(self):
+    def gen_installdir(self):
         """
         Generate the name of the installation directory.
         """
@@ -865,11 +862,11 @@ class Application:
         else:
             self.log.error("Can't set installation directory")
     
-    def makeInstallVersion(self):
+    def make_installversion(self):
         """
         Generate the installation version name.
         """
-        vpf, vsf = self.getCfg('versionprefix'), self.getCfg('versionsuffix')
+        vpf, vsf = self.getcfg('versionprefix'), self.getcfg('versionsuffix')
 
         if self.tk.name == 'dummy':
             name = "%s%s%s" % (vpf, self.version(), vsf)
@@ -879,22 +876,22 @@ class Application:
         
         self.installversion = name
         
-    def makeInstallDir(self):
+    def make_installdir(self):
         """
         Create the installation directory.
         """
-        self.log.debug("Creating the installation directory %s (cleanup: %s)"%(self.installdir,self.getCfg('cleanupoldinstall')))
-        if self.buildInInstallDir:
-            self.setCfg('keeppreviousinstall',True)
-        self.makeDir(self.installdir,self.getCfg('cleanupoldinstall'),self.getCfg('dontcreateinstalldir'))
+        self.log.debug("Creating the installation directory %s (cleanup: %s)"%(self.installdir,self.getcfg('cleanupoldinstall')))
+        if self.build_in_installdir:
+            self.setcfg('keeppreviousinstall',True)
+        self.make_dir(self.installdir,self.getcfg('cleanupoldinstall'),self.getcfg('dontcreateinstalldir'))
     
-    def makeDir(self,dirName,clean,dontcreateinstalldir=False):
+    def make_dir(self,dirName,clean,dontcreateinstalldir=False):
         """
         Create the directory.
         """
         if os.path.exists(dirName):
             self.log.info("Found old directory %s"%dirName)
-            if self.getCfg('keeppreviousinstall'):
+            if self.getcfg('keeppreviousinstall'):
                 self.log.info("Keeping old directory %s (hopefully you know what you are doing)"%dirName)
                 return 
             elif clean:
@@ -925,7 +922,7 @@ class Application:
         except OSError,err:
             self.log.exception("Can't create directory %s: %s"%(dirName,err))
 
-    def makeModule(self, fake = False):
+    def make_module(self, fake = False):
         """
         Generate a module file.
         """
@@ -933,12 +930,12 @@ class Application:
         self.moduleGenerator.createFiles()
 
         txt = ''
-        txt += self.makeModuleDescription()
-        txt += self.makeModuleDep()
-        txt += self.makeModuleReq()
-        txt += self.makeModuleExtra()
-        if self.getCfg('pkglist'):
-            txt += self.makeModuleExtraPackages()
+        txt += self.make_module_description()
+        txt += self.make_module_dep()
+        txt += self.make_module_req()
+        txt += self.make_module_extra()
+        if self.getcfg('pkglist'):
+            txt += self.make_module_extra_packages()
 
         try:
             f = open(self.moduleGenerator.filename, 'w')
@@ -949,13 +946,13 @@ class Application:
 
         self.log.info("Added modulefile: %s" % (self.moduleGenerator.filename))
     
-    def makeModuleDescription(self):
+    def make_module_description(self):
         """
         Create the module description.
         """
         return self.moduleGenerator.getDescription()
 
-    def makeModuleDep(self):
+    def make_module_dep(self):
         """
         Make the dependencies for the module file.
         """
@@ -967,7 +964,7 @@ class Application:
             unload += self.moduleGenerator.unloadModule(self.tk.name, self.tk.version)
         
         # Load dependencies
-        builddeps = self.getCfg('builddependencies')
+        builddeps = self.getcfg('builddependencies')
         for dep in self.tk.dependencies:
             if not dep in builddeps:
                 self.log.debug("Adding %s/%s as a module dependency" % (dep['name'], dep['tk']))
@@ -977,16 +974,16 @@ class Application:
                 self.log.debug("Skipping builddependency %s/%s" % (dep['name'], dep['tk']))
         
         # Force unloading any other modules
-        if self.getCfg('moduleforceunload'):
+        if self.getcfg('moduleforceunload'):
             return unload + load
         else:
             return load
         
-    def makeModuleReq(self):
+    def make_module_req(self):
         """
         Generate the environment-variables to run the module.
         """
-        requirements = self.makeModuleReqGuess()
+        requirements = self.make_module_req_guess()
 
         txt = "\n"
         for key in sorted(requirements):
@@ -995,7 +992,7 @@ class Application:
                 txt += self.moduleGenerator.prependPaths(key, globbedPaths)
         return txt
 
-    def makeModuleReqGuess(self):
+    def make_module_req_guess(self):
         """
         A dictionary of possible directories to look for.
         """
@@ -1005,16 +1002,16 @@ class Application:
             'MANPATH': ['man','share/man']
         }
 
-    def makeModuleExtra(self):
+    def make_module_extra(self):
         """
         Sets optional variables (SOFTROOT, MPI tuning variables).
         """
         txt = "\n"
 
-        if hasattr(self, 'makeModuleExtraExtra'):
-            self.log.warn("makeModuleExtraExtra is deprecated, please override makeModuleExtra" \
+        if hasattr(self, 'makeModuleExtraExtra') or hasattr(self, 'make_module_extra_extra'):
+            self.log.error("make_module_extra_extra is deprecated, please override makeModuleExtra" \
                           "and append to the parent result.")
-            txt += self.makeModuleExtraExtra() + "\n"
+            txt += self.make_module_extra_extra() + "\n"
 
         ## SOFTROOT + SOFTVERSION
         environmentName = convertName(self.name(), upper=True)
@@ -1022,14 +1019,14 @@ class Application:
         txt += self.moduleGenerator.setEnvironment("SOFTVERSION" + environmentName, self.version())
         
         txt += "\n"
-        for key, value in self.getCfg('modextravars').items():
+        for key, value in self.getcfg('modextravars').items():
             txt += self.moduleGenerator.setEnvironment(key, value)
       
         self.log.debug("makeModuleExtra added this: %s"%txt)
  
         return txt
     
-    def makeModuleExtraPackages(self):
+    def make_module_extra_packages(self):
         """
         Sets optional variables for packages.
         """
@@ -1044,14 +1041,14 @@ class Application:
         - run extraPackages
         """
         
-        if len(self.getCfg('pkglist')) == 0:
+        if len(self.getcfg('pkglist')) == 0:
             self.log.debug("No packages in pkglist")
             return
 
         if not self.skip:
-            self.makeModule(fake=True)
+            self.make_module(fake=True)
         # set MODULEPATH to self.builddir/all and load module
-        if self.getCfg('pkgloadmodule'):
+        if self.getcfg('pkgloadmodule'):
             self.log.debug(' '.join(["self.builddir/all: ",os.path.join(self.builddir,'all')]))
             if self.skip:
                 m=Modules()
@@ -1064,24 +1061,24 @@ class Application:
             else:
                 self.log.error("module %s version %s doesn't exist"%(self.name(),self.installversion))
         
-        self.extraPackagesPre()
+        self.extra_packages_pre()
         
-        self.pkgs=self.packagesFindSource()
+        self.pkgs=self.find_package_sources()
 
         if self.skip:
-            self.filterPackages()
+            self.filter_packages()
         
-        self.extraPackages()
+        self.extra_packages()
 
-    def findPackagePatches(self,pkgName):
+    def find_package_patches(self,pkgName):
         """
         Find patches for packages.
         """
-        for (name,patches) in self.getCfg('pkgpatches'):
+        for (name,patches) in self.getcfg('pkgpatches'):
             if name == pkgName:
                 pkgpatches=[]
                 for p in patches:
-                    pf=self.fileLocate(p,pkg=True)
+                    pf=self.file_locate(p,pkg=True)
                     if pf:
                         pkgpatches.append(pf)
                     else:
@@ -1089,12 +1086,12 @@ class Application:
                 return pkgpatches
         return []
 
-    def packagesFindSource(self):
+    def find_package_sources(self):
         """
         Find source file for packages.
         """
         pkgSources=[]
-        for pkg in self.getCfg('pkglist'):
+        for pkg in self.getcfg('pkglist'):
             if type(pkg) in [list, tuple] and pkg:
                 pkgName=pkg[0]
                 forceunknownsource=False
@@ -1102,7 +1099,7 @@ class Application:
                     pkgSources.append({'name':pkgName})
                 else:
                     if len(pkg) == 2:
-                        fn=self.getCfg('pkgtemplate')%(pkgName,pkg[1])
+                        fn=self.getcfg('pkgtemplate')%(pkgName,pkg[1])
                     elif len(pkg) == 3:
                         if type(pkg[2]) == bool:
                             forceunknownsource=pkg[2]
@@ -1115,13 +1112,13 @@ class Application:
                         pkgSources.append({'name':pkgName,
                                            'version':pkg[1]})
                     else:
-                        filename=self.fileLocate(fn,True)
+                        filename=self.file_locate(fn,True)
                         if filename:
                             pkgSrc={'name':pkgName,
                                     'version':pkg[1],
                                     'src':filename}
                                                 
-                            pkgPatches=self.findPackagePatches(pkgName)
+                            pkgPatches=self.find_package_patches(pkgName)
                             if pkgPatches:
                                 self.log.debug('Found patches for package %s: %s'%(pkgName,pkgPatches))
                                 pkgSrc.update({'patches':pkgPatches})
@@ -1140,12 +1137,12 @@ class Application:
 
         return pkgSources
                               
-    def extraPackagesPre(self):
+    def extra_packages_pre(self):
         """
         Also do this before (eg to set the template)
         """
 
-    def extraPackages(self):
+    def extra_packages(self):
         """
         Also do this (ie the real work)
         - based on original R version
@@ -1153,9 +1150,9 @@ class Application:
         -- the class is instantiated and the at the end <instance>.run() is called
         -- has defaultclass
         """
-        pkginstalldeps=self.getCfg('pkginstalldeps')
+        pkginstalldeps=self.getcfg('pkginstalldeps')
         self.log.debug("Installing packages")
-        pkgdefaultclass=self.getCfg('pkgdefaultclass')
+        pkgdefaultclass=self.getcfg('pkgdefaultclass')
         if not pkgdefaultclass:
             self.log.error("ERROR: No default package class set for %s"%self.name())
 
@@ -1189,20 +1186,20 @@ class Application:
                 self.moduleExtraPackages+=txt
             p.postrun()
 
-    def filterPackages(self):
+    def filter_packages(self):
         """
         Called when self.skip is True
         - use this to detect existing packages and to remove them from self.pkgs
         - based on initial R version 
         """
-        cmdtmpl=self.getCfg('pkgfilter')[0]
-        cmdinputtmpl=self.getCfg('pkgfilter')[1]
+        cmdtmpl=self.getcfg('pkgfilter')[0]
+        cmdinputtmpl=self.getcfg('pkgfilter')[1]
         
         res=[]
         for pkg in self.pkgs:
             name=pkg['name']
-            if self.getCfg('pkgmodulenames').has_key(name):
-                modname=self.getCfg('pkgmodulenames')[name]
+            if self.getcfg('pkgmodulenames').has_key(name):
+                modname=self.getcfg('pkgmodulenames')[name]
             else:
                 modname = name
             tmpldict={'name':modname,
@@ -1223,11 +1220,11 @@ class Application:
                 self.log.info("Skipping %s"%name)
         self.pkgs=res
     
-    def runTests(self):
+    def runtests(self):
         """
         Run tests.
         """
-        for test in self.getCfg('tests'):
+        for test in self.getcfg('tests'):
             # Current working dir no longer exists
             os.chdir(self.installdir)
             if os.path.isabs(test):
@@ -1245,15 +1242,15 @@ class Application:
         """
         Shortcut the get the module name.
         """
-        return self.getCfg('name')
+        return self.getcfg('name')
 
     def version(self):
         """
         Shortcut the get the module version.
         """
-        return self.getCfg('version')
+        return self.getcfg('version')
 
-    def dumpConfigurationOptions(self):
+    def dump_cfg_options(self):
         """
         Print a list of available configuration options.
         """
@@ -1267,7 +1264,7 @@ class StopException(Exception):
     """
     pass
 
-def getInstance(applicationClass, log):
+def get_instance(applicationClass, log):
     """
     Get instance for a particular application class (or Application)
     """
