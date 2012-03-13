@@ -93,7 +93,7 @@ def add_header(directory, header, skipreg, filenamereg, dirregex):
                 write_header(fullfn, header, skipreg)
 
 
-def main(arguments=sys.argv):
+def main(arguments):
     """
     main function: parses arguments and calls add_header
     """
@@ -123,4 +123,4 @@ def main(arguments=sys.argv):
     add_header(arguments[2], header, skipreg, fileregex, dirregex)
 
 # call the main method
-main()
+main(sys.argv)
