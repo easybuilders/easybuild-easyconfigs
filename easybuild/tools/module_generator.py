@@ -53,7 +53,7 @@ class ModuleGenerator:
         self.filename = os.path.join(allPath, self.app.installversion)
 
         # Make symlink in moduleclass category
-        classPath = os.path.join(base, self.app.getCfg('moduleclass'), self.app.name())
+        classPath = os.path.join(base, self.app.getcfg('moduleclass'), self.app.name())
         classPathFile = os.path.join(classPath, self.app.installversion)
 
         # Create directories and links
@@ -80,7 +80,7 @@ class ModuleGenerator:
         """
         Generate a description.
         """
-        description = "%s - Homepage: %s" % (self.app.getCfg('description'), self.app.getCfg('homepage'))
+        description = "%s - Homepage: %s" % (self.app.getcfg('description'), self.app.getcfg('homepage'))
 
         txt = "#%Module\n"
         txt += """
@@ -95,7 +95,7 @@ set root    %(installdir)s
 
 """ % {'description': description, 'installdir': self.app.installdir}
 
-        if self.app.getCfg('moduleloadnoconflict'):
+        if self.app.getcfg('moduleloadnoconflict'):
             txt += """
 if { ![is-loaded %(name)s/%(version)s] } {
     if { [is-loaded %(name)s] } {

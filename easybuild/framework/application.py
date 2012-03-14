@@ -95,7 +95,7 @@ class Application:
           'cleanupoldbuild':[True,'Boolean to remove (True) or backup (False) the previous build directory with identical name or not. Default True'],
           'cleanupoldinstall':[True,'Boolean to remove (True) or backup (False) the previous install directory with identical name or not. Default True'],
           'dontcreateinstalldir':[False,'Boolean to create (False) or not create (True) the install directory (Default False)'],
-          'toolkit':[{'name':None, 'version': None}, 'Name and version of toolkit'],
+          'toolkit':[None, 'Name and version of toolkit'],
           'toolkitopts':['','Extra options for compilers'],
           'keepsymlinks':[False,'Boolean to determine whether symlinks are to be kept during copying or if the content of the files pointed to should be copied'],
           'licenseServer':[None,'License server for software'],
@@ -144,7 +144,7 @@ class Application:
         """
         Build the software package described by cfg.
         """
-        self.import_ebfile(ebfile)
+        self.process_ebfile(ebfile)
 
         if self.getcfg('stop') and self.getcfg('stop') == 'cfg':
             return True        
@@ -181,7 +181,8 @@ class Application:
         Set the logger.
         """
         if not self.log:
-            self.logfile, self.log, self.loghandler = initLogger(self.name(), self.version(),self.logdebug,typ=self.__class__.__name__)
+            self.logfile, self.log, self.loghandler = initLogger(self.name(), self.version(),
+                                                                 self.logdebug, typ=self.__class__.__name__)
             self.log.info("Init completed for application name %s version %s"%(self.name(),self.version())) 
 
     def closelog(self):
@@ -334,7 +335,7 @@ class Application:
     
     ## process EasyBuild spec file 
     
-    def import_ebfile(self,fn):
+    def process_ebfile(self,fn):
         """
         Read file fn, eval and add info
         - assume certain predefined variable names
@@ -401,18 +402,19 @@ class Application:
         if self.getcfg('sources'):
             self.addsource(self.getcfg('sources'))
         else:
-            self.log.info('Cfg: no sources provided')
+            self.log.info('no sources provided')
 
         if self.getcfg('patches'):
             self.addpatch(self.getcfg('patches'))
         else:
-            self.log.info('Cfg: no patches provided')
+            self.log.info('no patches provided')
         
         if self.getcfg('toolkit'):
+            self.log.debug("toolkit: %s" % self.getcfg('toolkit'))
             tk = self.getcfg('toolkit')
             self.settoolkit(tk['name'], tk['version'])
         else:
-            self.log.error('Cfg: no toolkit defined')
+            self.log.error('no toolkit defined')
         
         if self.getcfg('toolkitopts'):
             self.tk.setOptions(self.getcfg('toolkitopts'))
@@ -420,7 +422,7 @@ class Application:
         if self.getcfg('dependencies'):
             self.add_dependency(self.getcfg('dependencies'))
         else:
-            self.log.info('Cfg: no dependencies provided')
+            self.log.info('no dependencies provided')
             
         # Build dependencies
         builddeps = [self.parse_dependency(d) for d in self.getcfg('builddependencies')]
@@ -433,7 +435,6 @@ class Application:
 
         if hasattr(self, 'extracfg') or hasattr(self, 'extraCfg'):
             self.log.error("extracfg is deprecated, please extend self.cfg in __init__")
-            self.extracfg(locs)
     
     def getcfg(self, key):
         """
@@ -549,7 +550,7 @@ class Application:
         if os.path.isfile(localfile):
             return localfile
         else:
-            self.log.error("Localfile %s from url %s not found"%(url,localfile))
+            self.log.error("Local file %s from url %s not found"%(url,localfile))
 
     def apply_patch(self,beginpath=None):
         """
@@ -610,10 +611,13 @@ class Application:
         - install
         """
         try:
+            print "preparing..."
+
             self.gen_installdir()
             self.make_builddir()
 
             ## SOURCE
+            print "unpacking..."
             self.runstep('source', [self.unpack_src], skippable=True)
 
             ## PATCH
@@ -623,19 +627,24 @@ class Application:
             self.startfrom()
 
             ## CONFIGURE
+            print "configuring..."
             self.runstep('configure', [self.configure], skippable=True)
 
             ## MAKE
+            print "building..."
             self.runstep('make', [self.make], skippable=True)
 
             ## TEST
             self.runstep('test', [self.test], skippable=True)
 
             ## INSTALL
+            print "installing..."
             self.runstep('install', [self.make_installdir, self.make_install], skippable=True)
 
             ## Packages
             self.runstep('packages', [self.packages])
+
+            print "finishing up..."
 
             ## POSTPROC
             self.runstep('postproc', [self.postproc], skippable=True)
@@ -1031,7 +1040,6 @@ class Application:
         if hasattr(self, 'makeModuleExtraExtra') or hasattr(self, 'make_module_extra_extra'):
             self.log.error("make_module_extra_extra is deprecated, please override makeModuleExtra" \
                           "and append to the parent result.")
-            txt += self.make_module_extra_extra() + "\n"
 
         ## SOFTROOT + SOFTVERSION
         environmentName = convertName(self.name(), upper=True)
@@ -1080,14 +1088,14 @@ class Application:
                 m.load()
             else:
                 self.log.error("module %s version %s doesn't exist"%(self.name(),self.installversion))
-        
+
         self.extra_packages_pre()
-        
+
         self.pkgs=self.find_package_sources()
 
         if self.skip:
             self.filter_packages()
-        
+
         self.extra_packages()
 
     def find_package_patches(self,pkgName):
@@ -1290,10 +1298,12 @@ def get_instance(applicationClass, log):
     """
     try:
         if not applicationClass:
-            applicationClass = "Application.Application"
-        (module, class_) = applicationClass.split('.')
-        exec("from easybuild.%s import %s" % (module, class_))
-        return eval("%s()" % class_)
+            applicationClass = "framework.application.Application"
+        (modulepath, module, className) = applicationClass.split('.')
+        execstr="from easybuild.%s import %s" % (modulepath, module)
+        log.debug(execstr)
+        execstr
+        return eval("%s()" % className)
     except (ImportError,NameError), err:
         log.exception("Can't process provided module and class pair %s" % (applicationClass))
         raise err
