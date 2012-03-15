@@ -40,17 +40,15 @@ import easybuild.tools.filetools as filetools
 
 # applications use their own logger, we need to tell them to debug or not
 # so this global var is used.
-logDebug = False
+LOGDEBUG = False
 
-# options parser
-parser = OptionParser()
-
-def add_build_options():
+def add_build_options(parser):
     """
     Add build options to options parser
     """
     parser.add_option("-C", "--config",
-                        help = "path to EasyBuild config file [default: easybuild_config.py in the EasyBuild directory]")
+                        help = "path to EasyBuild config file " + 
+                               "[default: easybuild_config.py in the EasyBuild directory]")
     parser.add_option("-r", "--robot", metavar = "path",
                         help = "path to search for specifications for missing dependencies")
 
@@ -65,10 +63,11 @@ def add_build_options():
                         help = "does the build/installation in a test directory " \
                                "located in $HOME/easybuildinstall")
 
-    stopOptions = ['cfg','source','patch','configure','make','install','test','postproc','cleanup','packages']
-    parser.add_option("-s", "--stop", type = "choice", choices = stopOptions,
+    stop_options = ['cfg', 'source', 'patch', 'configure', 'make', 'install', 
+                   'test', 'postproc', 'cleanup', 'packages']
+    parser.add_option("-s", "--stop", type = "choice", choices = stop_options,
                         help = "stop the installation after certain step" \
-                               "(valid: %s)" % ', '.join(stopOptions))
+                               "(valid: %s)" % ', '.join(stop_options))
     parser.add_option("-b", "--only-blocks", metavar = "blocks", help = "Only build blocks blk[,blk2]")
     parser.add_option("-k", "--skip", action = "store_true",
                         help = "skip existing software (useful for installing additional packages)")
@@ -92,14 +91,19 @@ def main():
     """
     # disallow running EasyBuild as root
     if (os.getuid() == 0) or (os.getlogin() == 'root'):
-        sys.stderr.write("ERROR: You seem to be running EasyBuild with root priveleges.\nThat's not wise, so let's end this here.\nExiting.\n")
+        sys.stderr.write("ERROR: You seem to be running EasyBuild with root priveleges.\n" + 
+                        "That's not wise, so let's end this here.\n" + 
+                        "Exiting.\n")
         sys.exit(1)
+
+    # options parser
+    parser = OptionParser()
 
     parser.usage = "%prog [options] specification [..]"
     parser.description = "Builds software package based on specification file (or parse a directory)\n" \
                          "Provide one or more specification files or directories, use -h or --help more information."
 
-    add_build_options()
+    add_build_options(parser)
 
     (options, paths) = parser.parse_args()
 
@@ -111,8 +115,8 @@ def main():
         os.remove(logFile)
         logFile = None
 
-    global logDebug
-    logDebug = options.debug
+    global LOGDEBUG
+    LOGDEBUG = options.debug
 
     configOptions = {}
     if options.pretend:
@@ -166,7 +170,7 @@ def main():
     ## Read specification files
     packages = []
     if len(paths) == 0:
-        error("Please provide one or more specification files", showHelp = True)
+        error("Please provide one or more specification files", optparser = parser)
     for path in paths:
         path = os.path.abspath(path)
         if not (os.path.exists(path)):
@@ -191,7 +195,7 @@ def main():
             mod = "%s (version %s)" % (module[0], module[1])
             modspath = os.path.join(config.installPath("mod"), 'all')
             if m.exists(module[0], module[1], modspath):
-                msg = "%s is already installed (module found in %s), skipping (use -f/--force to override, but beware!)." % (mod, modspath)
+                msg = "%s is already installed (module found in %s), skipping " % (mod, modspath)
                 print msg
                 log.info(msg)
             else:
@@ -222,13 +226,13 @@ def main():
     except IOError, err:
         error("Something went wrong closing and removing the log %s : %s" % (logFile, err))
 
-def error(message, exitCode=1, showHelp=False):
+def error(message, exitCode=1, optparser=None):
     """
     Print error message and exit EasyBuild
     """
     print "ERROR: %s\n" % message
-    if showHelp:
-        parser.print_help()
+    if optparser:
+        optparser.print_help()
     sys.exit(exitCode)
 
 def findSpecifications(path, log, onlyBlocks=None):
@@ -268,7 +272,7 @@ def processSpecification(path, log, onlyBlocks=None):
         log.debug("Processing specification %s" % spec)
 
         try:
-            app = Application(debug=logDebug)
+            app = Application(debug=LOGDEBUG)
             app.process_ebfile(spec)
         except EasyBuildError,err:
             msg = "Failed to read specification %s: %s" % (spec, err)
@@ -608,6 +612,6 @@ def build(module, options, log, origEnviron, exitOnFailure=True):
 if __name__ == "__main__":
     try:
         main()
-    except EasyBuildError,err:
-        sys.stderr.write('ERROR: %s\n' % err.msg)
+    except EasyBuildError,e:
+        sys.stderr.write('ERROR: %s\n' % e.msg)
         sys.exit(1)
