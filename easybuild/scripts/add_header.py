@@ -54,12 +54,12 @@ def write_header(filename, header, skip=None):
     f.close()
     output = []
     # skip shebang line if it's there
-    if len(inpt) > 0 and inpt[0].startswith("#!"): 
+    if len(inpt) > 0 and inpt[0].startswith("#!"):
         output.append(inpt[0])
         inpt = inpt[1:]
-        
+
     if skip and inpt and skip.match(''.join(inpt)): # skip matches, so skip this file
-        print "Skip regexp '%s' matches in %s, so skipping this file."%(skip.pattern,filename)
+        print "Skip regexp '%s' matches in %s, so skipping this file." % (skip.pattern, filename)
         return
 
     output.extend(header) # add the header
@@ -93,7 +93,7 @@ def add_header(directory, header, skipreg, filenamereg, dirregex):
             if (filenamereg.match(basefn)): # if file matches file regex, write the header
                 write_header(fullfn, header, skipreg)
             else:
-                print "Skipping file %s, doesn't match file regexp %s" % (fullfn,filenamereg.pattern)
+                print "Skipping file %s, doesn't match file regexp %s" % (fullfn, filenamereg.pattern)
 
 
 def main(arguments):

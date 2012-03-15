@@ -85,12 +85,12 @@ class Repository:
         Add specification file to repository.
         """
         if not name.startswith(self.wc):
-            name = os.path.join(self.wc,name)
+            name = os.path.join(self.wc, name)
         if not os.path.isdir(name):
             os.makedirs(name)
-        
+
         ## destination    
-        dest = os.path.join(self.wc,name, "%s.eb" % (version))
+        dest = os.path.join(self.wc, name, "%s.eb" % (version))
 
         ## check if it's new/different from what's in svn
         if os.path.exists(dest) and self.checkIdent(cfg, dest):
@@ -105,8 +105,8 @@ class Repository:
             dest_file.close()
 
         except IOError, err:
-            log.exception("Copying file %s to %s (wc: %s) failed (%s)"%(cfg, dest, self.wc, err))
-        return dest    
+            log.exception("Copying file %s to %s (wc: %s) failed (%s)" % (cfg, dest, self.wc, err))
+        return dest
 
     def commit(self, msg=None):
         """
@@ -117,7 +117,7 @@ class Repository:
         # does nothing by default
         pass
 
-    def removeStartingComments(self,text):
+    def removeStartingComments(self, text):
         """
         removes the first lines from a given text,
         if the line starts with a '#'
@@ -128,10 +128,10 @@ class Repository:
             if not line.startswith('#'):
                 break
             else:
-                i = i+1
+                i = i + 1
         return "\n".join(lines[i:])
 
-    def checkIdent(self,src,dest):
+    def checkIdent(self, src, dest):
         """
         Compare the content of 2 files.
         - return True is they are identical
@@ -144,10 +144,10 @@ class Repository:
         local = self.removeStartingComments(local)
 
         if local == srctxt:
-            log.debug("Identical content found for %s (%s) and %s (%s)"%(src,srctxt,dest,local))
+            log.debug("Identical content found for %s (%s) and %s (%s)" % (src, srctxt, dest, local))
             return True
         else:
-            log.debug("Different content found for %s (%s) and %s (%s)"%(src,srctxt,dest,local))
+            log.debug("Different content found for %s (%s) and %s (%s)" % (src, srctxt, dest, local))
             return False
 
     def cleanup(self):
@@ -165,11 +165,11 @@ class GitRepository(Repository):
     def __init__(self):
         Repository.__init__(self)
 
-        self.path=None
+        self.path = None
         self.remote = None
 
         # check whether git module was loaded (globally)
-        if not sys.modules.has_key('git') or not locals()['git'] == sys.modules['git']:
+        if not 'git' in sys.modules or not locals()['git'] == sys.modules['git']:
             log.exception("Failed to load GitPython. Make sure it is installed "
                           "properly. Run 'python -c \"import git\"' to test.")
 
@@ -182,7 +182,7 @@ class GitRepository(Repository):
         self.repo = self.wc[0]
         self.path = self.wc[1]
         self.wc = self.repo
-        log.debug("repository %s configured with path %s" % (self.repo,self.path))
+        log.debug("repository %s configured with path %s" % (self.repo, self.path))
 
     def createWorkingCopy(self):
         """
@@ -200,58 +200,58 @@ class GitRepository(Repository):
             # out  = 'Cloning into easybuild...'
             reponame = out.split()[-1].strip(".").strip("'")
             log.debug("rep name is %s" % reponame)
-        except GitCommandError,err:
+        except GitCommandError, err:
             # it might already have existed
-            log.warning("Git local repo initialization failed, it might already exist: %s"%err)
+            log.warning("Git local repo initialization failed, it might already exist: %s" % err)
 
         # local repo should now exist, let's connect to it again
         try:
-            self.wc = os.path.join(self.wc,reponame)
+            self.wc = os.path.join(self.wc, reponame)
             log.debug("connectiong to git repo in %s" % self.wc)
             self.client = git.Git(self.wc)
-        except GitCommandError,err:
-            log.error("Could not create a local git repo in wc %s: %s" %(self.wc,err))
+        except GitCommandError, err:
+            log.error("Could not create a local git repo in wc %s: %s" % (self.wc, err))
 
         # try to get the remote data in the local repo
         try:
             res = self.client.pull()
             log.debug("pulled succesfully to %s in %s" % (res, self.wc))
-        except GitCommandError,err:
-            log.exception("pull in working copy %s went wrong: %s"%(self.wc,err))
+        except GitCommandError, err:
+            log.exception("pull in working copy %s went wrong: %s" % (self.wc, err))
 
     def addSpecFile(self, cfg, name, version):
         """
         Add specification file to git repository.
         """
-        log.debug("Adding cfg: %s with name %s" %(cfg,name))
+        log.debug("Adding cfg: %s with name %s" % (cfg, name))
         if  name.startswith(self.wc):
-            name = name.replace(self.wc,"",1) #remove self.wc again
-        name = os.path.join(self.wc,self.path,name) #create proper name, with path inside repo in it
+            name = name.replace(self.wc, "", 1) #remove self.wc again
+        name = os.path.join(self.wc, self.path, name) #create proper name, with path inside repo in it
         dest = Repository.addSpecFile(self, cfg, name, version)
         ## add it to version control
         if dest:
             try:
                 #log.debug("Going to add %s (wc: %s, cwd %s)"%(dest, self.wc, os.getcwd()))
                 self.client.add(dest)
-            except GitCommandError,err:
-                log.warning("adding %s to git failed: %s" % (dest,err))
+            except GitCommandError, err:
+                log.warning("adding %s to git failed: %s" % (dest, err))
 
     def commit(self, msg=None):
         """
         Commit working copy to git repository
         """
         log.debug("committing in git: %s" % msg)
-        completemsg="EasyBuild-commit from %s (time: %s, user: %s) \n%s"%(socket.gethostname(), time.strftime("%Y-%m-%d_%H-%M-%S"),getpass.getuser(),msg)
-        log.debug("git status: %s" % self.client.status() )
+        completemsg = "EasyBuild-commit from %s (time: %s, user: %s) \n%s" % (socket.gethostname(), time.strftime("%Y-%m-%d_%H-%M-%S"), getpass.getuser(), msg)
+        log.debug("git status: %s" % self.client.status())
         try:
             self.client.commit('-am "%s"' % completemsg)
-        except GitCommandError,err:
-            log.warning("Commit from working copy %s (msg: %s) failed, empty commit?\n%s"%(self.wc, msg,err))
+        except GitCommandError, err:
+            log.warning("Commit from working copy %s (msg: %s) failed, empty commit?\n%s" % (self.wc, msg, err))
         try:
             info = self.client.push()
-            log.debug("push info: %s " %info)
-        except GitCommandError,err:
-            log.warning("Push from working copy %s to remote %s (msg: %s) failed: %s"%(self.wc, self.remote, msg, err))
+            log.debug("push info: %s " % info)
+        except GitCommandError, err:
+            log.warning("Push from working copy %s to remote %s (msg: %s) failed: %s" % (self.wc, self.remote, msg, err))
 
     def cleanup(self):
         """
@@ -259,8 +259,8 @@ class GitRepository(Repository):
         """
         try:
             shutil.rmtree(self.wc)
-        except IOError,err:
-            log.exception("Can't remove working copy %s: %s"%(self.wc, err))
+        except IOError, err:
+            log.exception("Can't remove working copy %s: %s" % (self.wc, err))
 
 
 class SvnRepository(Repository):
@@ -269,8 +269,8 @@ class SvnRepository(Repository):
     """
     def __init__(self):
         Repository.__init__(self)
-        
-        if not sys.modules.has_key('pysvn') or not locals()['pysvn'] == sys.modules['pysvn']:
+
+        if not 'pysvn' in sys.modules or not locals()['pysvn'] == sys.modules['pysvn']:
             log.exception("Failed to load pysvn. Make sure it is installed "
                           "properly. Run 'python -c \"import pysvn\"' to test.")
 
@@ -298,13 +298,13 @@ class SvnRepository(Repository):
         """
         Create SVN working copy.
         """
-        self.wc = tempfile.mkdtemp(prefix='svn-wc-')        
+        self.wc = tempfile.mkdtemp(prefix='svn-wc-')
 
         # Update wc (or part of it)
         try:
             os.chdir(self.wc)
-        except OSError,err:
-            log.exception("Couldn't chdir to wc %s: %s"%(self.wc, err))
+        except OSError, err:
+            log.exception("Couldn't chdir to wc %s: %s" % (self.wc, err))
 
         ## check if tmppath exists
         ## this will trigger an error if it does not exist
@@ -321,14 +321,14 @@ class SvnRepository(Repository):
 
         if len(res) == 0:
             log.error("Update returned empy list (working copy: %s)" % (self.wc))
-            
+
         if res[0].number == -1:
             ## revision number of update is -1
             ## means nothing has been checked out
             try:
                 res = self.client.checkout(self.repo, self.wc)
                 log.debug("Checked out revision %s in %s" % (res.number, self.wc))
-            except ClientError,err:
+            except ClientError, err:
                 log.exception("Checkout of path / in working copy %s went wrong: %s" % (self.wc, err))
 
     def addSpecFile(self, cfg, name, version):
@@ -341,21 +341,21 @@ class SvnRepository(Repository):
         log.debug("destination = %s" % dest)
         if dest:
             log.debug("destination status: %s" % self.client.status(dest))
-            
+
             if self.client and not self.client.status(dest)[0].is_versioned:
                 ## add it to version control
-                log.debug("Going to add %s (working copy: %s, cwd %s)"%(dest, self.wc, os.getcwd()))
+                log.debug("Going to add %s (working copy: %s, cwd %s)" % (dest, self.wc, os.getcwd()))
                 self.client.add(dest)
-        
+
     def commit(self, msg=None):
         """
         Commit working copy to SVN repository
         """
-        completemsg="EasyBuild-commit from %s (time: %s, user: %s) \n%s"%(socket.gethostname(), time.strftime("%Y-%m-%d_%H-%M-%S"),getpass.getuser(),msg)
+        completemsg = "EasyBuild-commit from %s (time: %s, user: %s) \n%s" % (socket.gethostname(), time.strftime("%Y-%m-%d_%H-%M-%S"), getpass.getuser(), msg)
         try:
             self.client.checkin(self.wc, completemsg, recurse=True)
         except ClientError, err:
-            log.exception("Commit from working copy %s (msg: %s) failed: %s"%(self.wc, msg, err))
+            log.exception("Commit from working copy %s (msg: %s) failed: %s" % (self.wc, msg, err))
 
     def cleanup(self):
         """
@@ -364,7 +364,7 @@ class SvnRepository(Repository):
         try:
             shutil.rmtree(self.wc)
         except OSError, err:
-            log.exception("Can't remove working copy %s: %s"%(self.wc, err))
+            log.exception("Can't remove working copy %s: %s" % (self.wc, err))
 
 
 def getRepository():
@@ -387,4 +387,4 @@ if __name__ == "__main__":
     try:
         s = getRepository()
     except EasyBuildError, e:
-        print "Initialization failed: %s"%e
+        print "Initialization failed: %s" % e

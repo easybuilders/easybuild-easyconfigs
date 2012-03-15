@@ -264,7 +264,7 @@ def run_cmd(cmd, log_ok=True, log_all=False, simple=False, inp=None, regexp=True
 
     # SuSE hack
     # - profile is not resourced, and functions (e.g. module) is not inherited
-    if os.environ.has_key('PROFILEREAD') and (len(os.environ['PROFILEREAD']) > 0):
+    if 'PROFILEREAD' in os.environ and (len(os.environ['PROFILEREAD']) > 0):
         files = ['/etc/profile.d/modules.sh']
         extra = ''
         for fil in files:
@@ -341,7 +341,7 @@ def run_cmd_qa(cmd, qa, no_qa=None, log_ok=True, log_all=False, simple=False, re
 
     # SuSE hack
     # - profile is not resourced, and functions (e.g. module) is not inherited
-    if os.environ.has_key('PROFILEREAD') and (len(os.environ['PROFILEREAD']) > 0):
+    if 'PROFILEREAD' in os.environ and (len(os.environ['PROFILEREAD']) > 0):
         files = ['/etc/profile.d/modules.sh']
         extra = ''
         for fil in files:
