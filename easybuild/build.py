@@ -50,36 +50,36 @@ def add_build_options():
     Add build options to options parser
     """
     parser.add_option("-C", "--config",
-                        help = "path to EasyBuild config file [default: easybuild_config.py in the EasyBuild directory]")
-    parser.add_option("-r", "--robot", metavar = "path",
-                        help = "path to search for specifications for missing dependencies")
+                        help="path to EasyBuild config file [default: easybuild_config.py in the EasyBuild directory]")
+    parser.add_option("-r", "--robot", metavar="path",
+                        help="path to search for specifications for missing dependencies")
 
-    parser.add_option("-o", "--options", action = "store_true", help = "show available configuration options")
-    parser.add_option("--dump-classes", action = "store_true", help = "show classes available")
-    parser.add_option("--search", help = "search for module-files in the robot-directory")
+    parser.add_option("-o", "--options", action="store_true", help="show available configuration options")
+    parser.add_option("--dump-classes", action="store_true", help="show classes available")
+    parser.add_option("--search", help="search for module-files in the robot-directory")
 
-    parser.add_option("-m", "--mod", metavar = "mod.class",
-                        help = "loads the class from module to process the spec file or dump " \
+    parser.add_option("-m", "--mod", metavar="mod.class",
+                        help="loads the class from module to process the spec file or dump " \
                                "the options for [default: Application.Application]")
-    parser.add_option("-p", "--pretend", action = "store_true",
-                        help = "does the build/installation in a test directory " \
+    parser.add_option("-p", "--pretend", action="store_true",
+                        help="does the build/installation in a test directory " \
                                "located in $HOME/easybuildinstall")
 
-    stopOptions = ['cfg','source','patch','configure','make','install','test','postproc','cleanup','packages']
-    parser.add_option("-s", "--stop", type = "choice", choices = stopOptions,
-                        help = "stop the installation after certain step" \
+    stopOptions = ['cfg', 'source', 'patch', 'configure', 'make', 'install', 'test', 'postproc', 'cleanup', 'packages']
+    parser.add_option("-s", "--stop", type="choice", choices=stopOptions,
+                        help="stop the installation after certain step" \
                                "(valid: %s)" % ', '.join(stopOptions))
-    parser.add_option("-b", "--only-blocks", metavar = "blocks", help = "Only build blocks blk[,blk2]")
-    parser.add_option("-k", "--skip", action = "store_true",
-                        help = "skip existing software (useful for installing additional packages)")
-    parser.add_option("-t", "--skip-tests", action = "store_true",
-                        help = "skip testing")
-    parser.add_option("-f", "--force", action = "store_true", dest="force",
-                        help = "force to rebuild software even if it's already installed (i.e. can be found as module)")
-    
-    parser.add_option("-l", action = "store_true", dest = "stdoutLog", help = "log to stdout")
-    parser.add_option("-d", "--debug" , action = "store_true", help = "log debug messages")
-    parser.add_option("-v", "--version", action = "store_true", help = "show version")
+    parser.add_option("-b", "--only-blocks", metavar="blocks", help="Only build blocks blk[,blk2]")
+    parser.add_option("-k", "--skip", action="store_true",
+                        help="skip existing software (useful for installing additional packages)")
+    parser.add_option("-t", "--skip-tests", action="store_true",
+                        help="skip testing")
+    parser.add_option("-f", "--force", action="store_true", dest="force",
+                        help="force to rebuild software even if it's already installed (i.e. can be found as module)")
+
+    parser.add_option("-l", action="store_true", dest="stdoutLog", help="log to stdout")
+    parser.add_option("-d", "--debug" , action="store_true", help="log debug messages")
+    parser.add_option("-v", "--version", action="store_true", help="show version")
 
 
 def main():
@@ -124,7 +124,7 @@ def main():
         blocks = None
 
     ## Initialize logger
-    logFile, log, hn = initLogger(filename = logFile, debug = options.debug, typ = None)
+    logFile, log, hn = initLogger(filename=logFile, debug=options.debug, typ=None)
 
     ## Show version
     if options.version:
@@ -166,7 +166,7 @@ def main():
     ## Read specification files
     packages = []
     if len(paths) == 0:
-        error("Please provide one or more specification files", showHelp = True)
+        error("Please provide one or more specification files", showHelp=True)
     for path in paths:
         path = os.path.abspath(path)
         if not (os.path.exists(path)):
@@ -270,7 +270,7 @@ def processSpecification(path, log, onlyBlocks=None):
         try:
             app = Application(debug=logDebug)
             app.process_ebfile(spec)
-        except EasyBuildError,err:
+        except EasyBuildError, err:
             msg = "Failed to read specification %s: %s" % (spec, err)
             log.exception(msg)
             raise EasyBuildError(msg)
@@ -288,7 +288,7 @@ def processSpecification(path, log, onlyBlocks=None):
             dep = (d['name'], d['tk'])
             log.debug("Adding dependency %s for app %s." % (dep, app.name()))
             package['dependencies'].append(dep)
-        
+
         if app.tk.name != 'dummy':
             dep = (app.tk.name, app.tk.version)
             log.debug("Adding toolkit %s as dependency for app %s." % (dep, app.name()))
@@ -444,7 +444,7 @@ def retrieveBlocksInSpec(spec, log, onlyBlocks):
                 print "Skipping block %s-%s" % (cfgName, name)
                 continue
 
-            (fd, blockPath) = tempfile.mkstemp(prefix = 'easybuild-', suffix = '%s-%s' % (cfgName, name))
+            (fd, blockPath) = tempfile.mkstemp(prefix='easybuild-', suffix='%s-%s' % (cfgName, name))
             os.close(fd)
             try:
                 f = open(blockPath, 'w')
@@ -464,7 +464,7 @@ def retrieveBlocksInSpec(spec, log, onlyBlocks):
                 f.write("\n## Main block %s" % name)
                 f.write(block['contents'])
                 f.close()
-            
+
             except Exception:
                 msg = "Failed to write block %s to specification file %s" % (name, spec)
                 log.exception(msg)
@@ -507,7 +507,7 @@ def build(module, options, log, origEnviron, exitOnFailure=True):
 
     try:
         app = get_instance(applicationClass, log)
-    except (ImportError,NameError), err:
+    except (ImportError, NameError), err:
         error("Failed to get application instance of class %s: %s" % (applicationClass, err))
 
     ## Application settings
@@ -523,12 +523,12 @@ def build(module, options, log, origEnviron, exitOnFailure=True):
 
     ## Build specification
     try:
-        result = app.autobuild(spec, runTests = not options.skip_tests)
+        result = app.autobuild(spec, runTests=not options.skip_tests)
     except EasyBuildError, err:
         msg = "autoBuild Failed: %s" % err
         log.exception(msg)
         result = False
-    
+
     ended = "ended"
 
     ## Successful build
@@ -588,7 +588,7 @@ def build(module, options, log, origEnviron, exitOnFailure=True):
     os.chdir(cwd)
 
     print "%s: Installation %s %s." % (summary, ended, succ)
-    
+
     ## Check for errors
     if exitCode > 0 or filetools.errorsFoundInLog > 0:
         print "WARNING: Build exited with exit code %d. %d possible error(s) were detected in the " \
@@ -601,13 +601,13 @@ def build(module, options, log, origEnviron, exitOnFailure=True):
         if exitOnFailure:
             sys.exit(exitCode)
         else:
-            return (False,applicationLog)
+            return (False, applicationLog)
     else:
-        return (True,applicationLog)
+        return (True, applicationLog)
 
 if __name__ == "__main__":
     try:
         main()
-    except EasyBuildError,err:
+    except EasyBuildError, err:
         sys.stderr.write('ERROR: %s\n' % err.msg)
         sys.exit(1)

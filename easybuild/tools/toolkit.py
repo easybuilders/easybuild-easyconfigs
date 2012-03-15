@@ -157,12 +157,12 @@ class Toolkit:
         }
 
         if preparationMethods.has_key(self.name):
-            m32=False
+            m32 = False
             if self.version.endswith("32bit"):
-                m32=True
+                m32 = True
             preparationMethods[self.name](m32=m32)
         else:
-            log.error("Don't know how to prepare toolkit '%s'."%self.name)
+            log.error("Don't know how to prepare toolkit '%s'." % self.name)
 
         ## set the variables
         if not (onlymod == True):
@@ -177,7 +177,7 @@ class Toolkit:
     def _addDependencyVariables(self, deps=None):
         """ Add LDFLAGS and CPPFLAGS to the self.vars based on the dependencies """
         cpp_paths = ['include']
-        ld_paths = ['lib64','lib']
+        ld_paths = ['lib64', 'lib']
 
         if not deps:
             deps = self.dependencies
@@ -185,14 +185,14 @@ class Toolkit:
         for dep in deps:
             softwareRoot = getSoftwareRoot(dep['name'])
             if not softwareRoot:
-                log.error("%s was not found in environment (dep: %s)"%(dep['name'], dep))
+                log.error("%s was not found in environment (dep: %s)" % (dep['name'], dep))
 
             self._flagsForSubdirs(softwareRoot, cpp_paths, flag="-I%s", varsKey="CPPFLAGS")
             self._flagsForSubdirs(softwareRoot, ld_paths, flag="-L%s", varsKey="LDFLAGS")
 
-    def _setVariables(self, dontset = None):
+    def _setVariables(self, dontset=None):
         """ Sets the environment variables """
-        log.debug("Setting variables: dontset=%s"%dontset)
+        log.debug("Setting variables: dontset=%s" % dontset)
 
         dontsetlist = []
         if type(dontset) == str:
@@ -236,7 +236,7 @@ class Toolkit:
         else:
             log.error("Don't know how to set optarch for %s." % self.arch)
 
-    def prepareGCCBased(self, withMPI = True, intelMPI = False, m32 = False):
+    def prepareGCCBased(self, withMPI=True, intelMPI=False, m32=False):
 
         if m32:
             log.error("ERROR: m32 not supported yet for GCC based toolkits.")
@@ -274,7 +274,7 @@ class Toolkit:
             flags.append("march=native")
 
         flags.append(self._getOptimizationLevel())
-        flags.extend(self._flagsForOptions(override = {
+        flags.extend(self._flagsForOptions(override={
             'i8': 'fdefault-integer-8',
             'unroll': 'funroll-loops',
             'f2c': 'ff2c',
@@ -284,16 +284,16 @@ class Toolkit:
 
         copts = []
         if self.opts['cstd']:
-            copts.append("std=%s"%self.opts['cstd'])
+            copts.append("std=%s" % self.opts['cstd'])
 
-        if len(flags+copts) > 0:
-            self.vars['CFLAGS'] = "%s" % ('-'+' -'.join(flags+copts))
+        if len(flags + copts) > 0:
+            self.vars['CFLAGS'] = "%s" % ('-' + ' -'.join(flags + copts))
         if len(flags) > 0:
-            self.vars['CXXFLAGS'] = "%s" % ('-'+' -'.join(flags))
+            self.vars['CXXFLAGS'] = "%s" % ('-' + ' -'.join(flags))
         if len(flags) > 0:
-            self.vars['FFLAGS'] = "%s" % ('-'+' -'.join(flags))
+            self.vars['FFLAGS'] = "%s" % ('-' + ' -'.join(flags))
         if len(flags) > 0:
-            self.vars['F90FLAGS'] = "%s" % ('-'+' -'.join(flags))
+            self.vars['F90FLAGS'] = "%s" % ('-' + ' -'.join(flags))
 
         self.vars["LDFLAGS"] = ""
         self.vars["CPPFLAGS"] = ""
@@ -318,39 +318,39 @@ class Toolkit:
                      {'name': 'BLACS'}, {'name': 'ScaLAPACK'}]
         self._addDependencyVariables(g_gfldeps)
 
-    def prepareGimkl(self,m32=False):
+    def prepareGimkl(self, m32=False):
         """ Prepare for gimkl toolkit: GCC+IMPI+IMKL """
-        self.prepareGCCBased(intelMPI=True,m32=m32)
+        self.prepareGCCBased(intelMPI=True, m32=m32)
         self.prepareIMKL(m32=m32)
 
         for var in ['LIBLAPACK', 'LIBLAPACK_MT', 'LIBSCALAPACK', 'LIBSCALAPACK_MT']:
             self.vars[var] = self.vars[var].replace('mkl_intel_lp64', 'mkl_gf_lp64')
 
-    def prepareG_acml(self,m32=False):
+    def prepareG_acml(self, m32=False):
         """ Prepare for g*acml toolkit: GCC+ACML and some MPI lib"""
         self.prepareGCCBased(m32=m32)
-        self.prepareACML('gfortran',m32=m32)
+        self.prepareACML('gfortran', m32=m32)
 
-    def prepareIccBased(self, withIMPI = False, m32=False):
+    def prepareIccBased(self, withIMPI=False, m32=False):
         """ Set basic ICC info """
         mpiprefix = ''
         if self.opts['usempi'] and withIMPI:
             mpiprefix = 'mpi'
 
-        m32flag=""
+        m32flag = ""
         if m32:
-            m32flag=" -m32"
+            m32flag = " -m32"
 
-        self.vars['CC'] = '%sicc%s' %(mpiprefix,m32flag)
-        self.vars['CXX'] = '%sicpc%s' %(mpiprefix,m32flag)
-        self.vars['F77'] = '%sifort%s' %(mpiprefix,m32flag)
-        self.vars['F90'] = '%sifort%s' %(mpiprefix,m32flag)
+        self.vars['CC'] = '%sicc%s' % (mpiprefix, m32flag)
+        self.vars['CXX'] = '%sicpc%s' % (mpiprefix, m32flag)
+        self.vars['F77'] = '%sifort%s' % (mpiprefix, m32flag)
+        self.vars['F90'] = '%sifort%s' % (mpiprefix, m32flag)
 
         if withIMPI:
-            self.vars['MPICC'] = 'mpiicc%s'%m32flag
-            self.vars['MPICXX'] = 'mpiicpc%s'%m32flag
-            self.vars['MPIF77'] = 'mpiifort%s'%m32flag
-            self.vars['MPIF90'] = 'mpiifort%s'%m32flag
+            self.vars['MPICC'] = 'mpiicc%s' % m32flag
+            self.vars['MPICXX'] = 'mpiicpc%s' % m32flag
+            self.vars['MPIF77'] = 'mpiifort%s' % m32flag
+            self.vars['MPIF90'] = 'mpiifort%s' % m32flag
 
         if self.opts['cciscxx']:
             self.vars['CXX'] = self.vars['CC']
@@ -362,17 +362,17 @@ class Toolkit:
             flags.append(self._getOptimalArchitecture())
 
         flags.append(self._getOptimizationLevel())
-        flags.extend(self._flagsForOptions(override = {
+        flags.extend(self._flagsForOptions(override={
             'intel-static': 'static-intel',
             'no-icc': 'no-icc'
         }))
 
         copts = []
         if self.opts['cstd']:
-            copts.append("std=%s"%self.opts['cstd'])
+            copts.append("std=%s" % self.opts['cstd'])
 
-        if len(flags+copts) > 0:
-            self.vars['CFLAGS'] = '-' + ' -'.join(flags+copts)
+        if len(flags + copts) > 0:
+            self.vars['CFLAGS'] = '-' + ' -'.join(flags + copts)
         if len(flags) > 0:
             self.vars['CXXFLAGS'] = '-' + ' -'.join(flags)
         if len(flags) > 0:
@@ -382,9 +382,9 @@ class Toolkit:
         self.vars['CPPFLAGS'] = ''
         self.vars['LIBS'] = ''
 
-    def prepareIctce(self,m32=False):
+    def prepareIctce(self, m32=False):
         """ Prepare for ictce toolkit """
-        self.prepareIccBased(withIMPI=True,m32=m32)
+        self.prepareIccBased(withIMPI=True, m32=m32)
         self.prepareIMKL(m32=m32)
 
         if LooseVersion(os.environ['SOFTVERSIONICC']) < LooseVersion('2011'):
@@ -392,10 +392,10 @@ class Toolkit:
         else:
             self.vars['LIBS'] += " -liomp5 -lpthread"
 
-    def prepareIqacml(self,m32=False):
+    def prepareIqacml(self, m32=False):
         """ Prepare for iqacml toolkit: icc+qlogic mpi+acml """
         self.prepareIccBased(m32=m32)
-        self.prepareACML('intel',m32=m32)
+        self.prepareACML('intel', m32=m32)
 
         ## QLogic specific
         self.vars['MPICC'] = 'mpicc -cc=icc'
@@ -403,7 +403,7 @@ class Toolkit:
         self.vars['MPIF77'] = 'mpif77 -fc=ifort'
         self.vars['MPIF90'] = 'mpif90 -f90=ifort'
 
-    def prepareIsmkl(self,m32=False):
+    def prepareIsmkl(self, m32=False):
         """ Prepare for ismkl toolkit: icc+ScaleMP mpi+mkl """
         self.prepareIccBased(m32=m32)
         self.prepareIMKL(m32=m32)
@@ -424,9 +424,9 @@ class Toolkit:
         self._addDependencyVariables(deps)
 
         self.vars['LIBBLAS'] = "%(acml)s/%(comp)s64/lib/libacml_mv.a " \
-                               "%(acml)s/%(comp)s64/lib/libacml.a -lpthread" % {'comp':compiler,'acml':os.environ['SOFTROOTACML']}
+                               "%(acml)s/%(comp)s64/lib/libacml.a -lpthread" % {'comp':compiler, 'acml':os.environ['SOFTROOTACML']}
 
-    def prepareIMKL(self,m32=False):
+    def prepareIMKL(self, m32=False):
         """ Prepare toolkit for IMKL: Intel Math Kernel Library """
 
         mklRoot = os.getenv('MKLROOT')
@@ -435,13 +435,13 @@ class Toolkit:
 
         # For more inspiration: see http://software.intel.com/en-us/articles/intel-mkl-link-line-advisor/
 
-        libsuffix="_lp64"
-        libsuffixsl="_lp64"
-        libdir="em64t"
+        libsuffix = "_lp64"
+        libsuffixsl = "_lp64"
+        libdir = "em64t"
         if m32:
-            libsuffix=""
-            libsuffixsl="_core"
-            libdir="32"
+            libsuffix = ""
+            libsuffixsl = "_core"
+            libdir = "32"
 
         self.vars['LIBLAPACK'] = \
             "-Wl,--start-group %(mkl)s/lib/%(libdir)s/libmkl_intel%(libsuffix)s.a " \
@@ -471,7 +471,7 @@ class Toolkit:
                                                                                             'libsuffixsl':libsuffixsl
                                                                                            }
         lib = self.vars['LIBSCALAPACK']
-        lib = lib.replace('libmkl_solver%s_sequential'%libsuffix, 'libmkl_solver')
+        lib = lib.replace('libmkl_solver%s_sequential' % libsuffix, 'libmkl_solver')
         lib = lib.replace('libmkl_sequential', 'libmkl_intel_thread') + ' -liomp5 -lpthread'
         self.vars['LIBSCALAPACK_MT'] = lib
 
@@ -484,7 +484,7 @@ class Toolkit:
             mklcpp = ['include', 'include/fftw']
         else:
             if m32:
-                log.error("32-bit libraries not supported yet for IMKL v%s (> v10.3)"%os.environ("SOFTROOTIMKL"))
+                log.error("32-bit libraries not supported yet for IMKL v%s (> v10.3)" % os.environ("SOFTROOTIMKL"))
 
             mklld = ['lib/intel64', 'mkl/lib/intel64']
             mklcpp = ['mkl/include', 'mkl/include/fftw']

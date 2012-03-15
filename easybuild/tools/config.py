@@ -28,7 +28,7 @@ from easybuild.tools.build_log import getLog
 log = getLog('config')
 
 variables = {}
-requiredVariables = ['buildPath','installPath','sourcePath','logFormat','repositoryType','repositoryPath']
+requiredVariables = ['buildPath', 'installPath', 'sourcePath', 'logFormat', 'repositoryType', 'repositoryPath']
 environmentVariables = {
     'buildPath': 'EASYBUILDBUILDPATH',
     'installPath': 'EASYBUILDINSTALLPATH'
