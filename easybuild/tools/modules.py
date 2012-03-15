@@ -52,7 +52,7 @@ class Modules:
         """
         Check if MODULEPATH is set and change it if necessary.
         """
-        if not os.environ.has_key('MODULEPATH'):
+        if not 'MODULEPATH' in os.environ:
             errormsg = 'MODULEPATH not found in environment'
             # check if environment-modules is found
             module_regexp = re.compile("^module is a function\s*\nmodule\s*()")
@@ -70,7 +70,7 @@ class Modules:
             ## take module path from environment
             self.modulePath = os.environ['MODULEPATH'].split(':')
 
-        if not os.environ.has_key('LOADEDMODULES'):
+        if not 'LOADEDMODULES' in os.environ:
             os.environ['LOADEDMODULES'] = ''
 
     def available(self, name=None, version=None, modulePath=None):
@@ -113,7 +113,7 @@ class Modules:
             elif type(mod) == dict:
                 name = mod['name']
                 ## deal with toolkit dependency calls
-                if mod.has_key('tk'):
+                if 'tk' in mod:
                     version = mod['tk']
                 else:
                     version = mod['version']

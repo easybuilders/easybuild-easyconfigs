@@ -309,7 +309,7 @@ class Application:
 
         if type(dep) == dict:
             ## check for name and version key
-            if not dep.has_key('name'):
+            if not 'name' in dep:
                 self.log.error('Dependency without name.')
                 return
             result.update(dep)
@@ -325,10 +325,10 @@ class Application:
             self.log.error('Dependency %s from unsupported type: %s.' % (dep, type(dep)))
             return
 
-        if not result.has_key('version'):
+        if not 'version' in result:
             self.log.warning('Dependency without version.')
 
-        if not result.has_key('tk'):
+        if not 'tk' in result:
             result['tk'] = self.tk.getDependencyVersion(result)
 
         return result
@@ -354,7 +354,7 @@ class Application:
                 raise EasyBuildError("%s: %s" % (msg, err))
 
         ## initialize logger
-        if locs.has_key('name') and locs.has_key('version'):
+        if 'name' in locs and 'version' in locs:
             self.set_name_version(locs['name'], locs['version'])
         else:
             self.setlogger()
@@ -378,12 +378,12 @@ class Application:
                 self.log.error("Don't you mean '%s' instead of '%s' as eb file variable." % (guess[0], variable))
 
         for k in self.cfg.keys():
-            if locs.has_key(k):
+            if k in locs:
                 self.setcfg(k, locs[k])
                 self.log.info("Using cfg option %s: value %s" % (k, self.getcfg(k)))
 
         for k in self.mandatory:
-            if not locs.has_key(k):
+            if not k in locs:
                 self.log.error("No cfg option %s provided" % k)
 
         if self.getcfg('stop') and not (self.getcfg('stop') in self.validstops):
@@ -489,7 +489,7 @@ class Application:
 
         # Check if the application is not loaded at the moment
         envName = "SOFTROOT%s" % convertName(self.name(), upper=True)
-        if os.environ.has_key(envName):
+        if envName in os.environ:
             self.log.error("Module is already loaded (%s is set), installation cannot continue." % envName)
 
         # Check if main install needs to be skipped
@@ -562,12 +562,12 @@ class Application:
             copy = False
             ## default: patch first source
             srcind = 0
-            if tmp.has_key('source'):
+            if 'source' in tmp:
                 srcind = tmp['source']
             srcpathsuffix = ''
-            if tmp.has_key('sourcepath'):
+            if 'sourcepaht' in tmp:
                 srcpathsuffix = tmp['sourcepath']
-            elif tmp.has_key('copy'):
+            elif 'copy' in tmp:
                 srcpathsuffix = tmp['copy']
                 copy = True
 
@@ -577,7 +577,7 @@ class Application:
             src = os.path.abspath("%s/%s" % (beginpath, srcpathsuffix))
 
             level = None
-            if tmp.has_key('level'):
+            if 'level' in tmp:
                 level = tmp['level']
 
             if not patch(tmp['path'], src, copy=copy, level=level):
@@ -1226,7 +1226,7 @@ class Application:
         res = []
         for pkg in self.pkgs:
             name = pkg['name']
-            if self.getcfg('pkgmodulenames').has_key(name):
+            if name in self.getcfg('pkgmodulenames'):
                 modname = self.getcfg('pkgmodulenames')[name]
             else:
                 modname = name
@@ -1286,6 +1286,8 @@ class Application:
             tabs = "\t" * (3 - (len(key) + 1) / 8)
             print "%s:%s%s" % (key, tabs, self.cfg[key][1])
 
+
+
 class StopException(Exception):
     """
     StopException class definition.
@@ -1296,13 +1298,16 @@ def get_instance(applicationClass, log):
     """
     Get instance for a particular application class (or Application)
     """
+    #TODO: create proper factory for this, as explained here 
+    #http://stackoverflow.com/questions/456672/class-factory-in-python
     try:
         if not applicationClass:
             applicationClass = "framework.application.Application"
         (modulepath, module, className) = applicationClass.split('.')
         execstr = "from easybuild.%s import %s" % (modulepath, module)
         log.debug(execstr)
-        execstr
+        exec(execstr)
+
         return eval("%s()" % className)
     except (ImportError, NameError), err:
         log.exception("Can't process provided module and class pair %s" % (applicationClass))
@@ -1322,7 +1327,7 @@ class ApplicationPackage:
         self.pkg = pkg
         self.pkginstalldeps = pkginstalldeps
 
-        if not self.pkg.has_key('name'):
+        if not 'name' in self.pkg:
             self.log.error("")
 
         self.name = self.pkg.get('name', None)

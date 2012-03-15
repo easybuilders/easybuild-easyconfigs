@@ -21,7 +21,7 @@
 ##
 
 """
-Main entry point for EasyBuildBuild: build software from .eb input file 
+Main entry point for EasyBuildBuild: build software from .eb input file
 """
 from optparse import OptionParser
 import copy
@@ -78,7 +78,7 @@ def add_build_options():
                         help="force to rebuild software even if it's already installed (i.e. can be found as module)")
 
     parser.add_option("-l", action="store_true", dest="stdoutLog", help="log to stdout")
-    parser.add_option("-d", "--debug" , action="store_true", help="log debug messages")
+    parser.add_option("-d", "--debug", action="store_true", help="log debug messages")
     parser.add_option("-v", "--version", action="store_true", help="show version")
 
 
@@ -216,7 +216,7 @@ def main():
             os.remove(logFile)
 
         for package in packages:
-            if package.has_key('originalSpec'):
+            if 'originalSpec' in package:
                 os.remove(package['spec'])
 
     except IOError, err:
@@ -450,7 +450,7 @@ def retrieveBlocksInSpec(spec, log, onlyBlocks):
                 f = open(blockPath, 'w')
                 f.write(common)
 
-                if block.has_key('dependencies'):
+                if 'dependencies' in block:
                     for dep in block['dependencies']:
                         if not dep in [b['name'] for b in blocks]:
                             msg = "Block %s depends on %s, but block was not found." % (name, dep)
@@ -543,7 +543,7 @@ def build(module, options, log, origEnviron, exitOnFailure=True):
                 ## Upload spec to central repository
                 from easybuild.tools.repository import getRepository
                 repo = getRepository()
-                if module.has_key('originalSpec'):
+                if 'originalSpec' in module:
                     repo.addSpecFile(module['originalSpec'], app.name(), app.installversion + ".block")
                 repo.addSpecFile(spec, app.name(), app.installversion)
                 repo.commit("Built %s/%s" % (app.name(), app.installversion))

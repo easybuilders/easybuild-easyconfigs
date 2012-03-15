@@ -45,7 +45,7 @@ def init(filename, **kwargs):
     variables.update(kwargs) # CLI options
 
     for key in requiredVariables:
-        if not variables.has_key(key):
+        if not key in variables:
             log.error('Cannot determine value for configuration variable %s. ' \
                       'Please specify it in your config file %s.' % (key, filename))
             continue
@@ -87,7 +87,7 @@ def readEnvironment(envVars, strict=False):
     result = {}
     for key in envVars.keys():
         environmentKey = envVars[key]
-        if os.environ.has_key(environmentKey):
+        if environmentKey in os.environ:
             result[key] = os.environ[environmentKey]
         elif strict:
             log.error("Can't determine value for %s. Environment variable %s is missing" % (key, environmentKey))
@@ -135,7 +135,7 @@ def logFormat():
     """
     Return the log format
     """
-    if variables.has_key('logFormat'):
+    if 'logFormat' in variables:
         return variables['logFormat'][1]
     else:
         return "easybuild-%(name)s-%(version)s-%(date)s.%(time)s.log"

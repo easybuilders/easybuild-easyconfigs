@@ -20,12 +20,14 @@
 ##
 """
 This initializes EasyBuild.
-The EasyBuild version is defined here in VERSION, appended by the git commit id in VERBOSE_VERSION.
+The EasyBuild version is defined here in VERSION,
+appended by the git commit id in VERBOSE_VERSION.
 """
 from distutils.version import LooseVersion
 import os
 
 VERSION = LooseVersion("0.5")
+
 
 def get_git_revision():
     """

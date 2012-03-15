@@ -38,7 +38,7 @@ def dumpClasses(root):
     classes = {}
     roots = []
     for className in sorted(modules):
-        if not classes.has_key(className):
+        if not className in classes:
             classes[className] = {'children': []}
 
         classes[className]['class'] = modules[className]
@@ -50,7 +50,7 @@ def dumpClasses(root):
             else:
                 parent = parents[0]
 
-            if not classes.has_key(parent):
+            if not parent in classes:
                 classes[parent] = {'children': []}
             classes[parent]['children'].append(className)
         else:
@@ -59,7 +59,7 @@ def dumpClasses(root):
     # Print the tree, start with the roots
     for root in roots:
         print "%s (%s)" % (root, classes[root]['class'].module)
-        if classes[root].has_key('children'):
+        if 'children' in classes[root]:
             printTree(classes, classes[root]['children'])
             print ""
 
@@ -67,7 +67,7 @@ def printTree(classes, classNames, depth=0):
     for className in classNames:
         classInfo = classes[className]
         print "%s|-- %s (%s)" % ("|   " * depth, className, classInfo['class'].module)
-        if classInfo.has_key('children'):
+        if 'children' in classInfo:
             printTree(classes, classInfo['children'], depth + 1)
 
 

@@ -169,7 +169,7 @@ class GitRepository(Repository):
         self.remote = None
 
         # check whether git module was loaded (globally)
-        if not sys.modules.has_key('git') or not locals()['git'] == sys.modules['git']:
+        if not 'git' in sys.modules or not locals()['git'] == sys.modules['git']:
             log.exception("Failed to load GitPython. Make sure it is installed "
                           "properly. Run 'python -c \"import git\"' to test.")
 
@@ -270,7 +270,7 @@ class SvnRepository(Repository):
     def __init__(self):
         Repository.__init__(self)
 
-        if not sys.modules.has_key('pysvn') or not locals()['pysvn'] == sys.modules['pysvn']:
+        if not 'pysvn' in sys.modules or not locals()['pysvn'] == sys.modules['pysvn']:
             log.exception("Failed to load pysvn. Make sure it is installed "
                           "properly. Run 'python -c \"import pysvn\"' to test.")
 

@@ -68,7 +68,7 @@ class Toolkit:
         """ Process toolkit options """
         for opt in options.keys():
             ## Only process supported opts
-            if self.opts.has_key(opt):
+            if opt in self.opts:
                 self.opts[opt] = options[opt]
             else:
                 log.warning("Undefined toolkit option %s specified." % opt)
@@ -83,12 +83,12 @@ class Toolkit:
             toolkit = '%s' % (self.version)
 
         # Check if dependency is independent of toolkit
-        if dependency.has_key('dummy') and dependency['dummy']:
+        if 'dummy' in dependency and dependency['dummy']:
             toolkit = ''
 
         suffix = dependency.get('suffix', '')
 
-        if dependency.has_key('version'):
+        if 'version' in dependency:
             return "%s%s%s" % (dependency['version'], toolkit, suffix)
         else:
             matches = Modules().available(dependency['name'], "%s%s" % (toolkit, suffix))
@@ -103,7 +103,7 @@ class Toolkit:
         """ Verify if the given dependencies exist and add them """
         mod = Modules()
         for dep in dependencies:
-            if not dep.has_key('tk'):
+            if not 'tk' in dep:
                 dep['tk'] = self.getDependencyVersion(dep)
 
             if not mod.exists(dep['name'], dep['tk']):
@@ -156,7 +156,7 @@ class Toolkit:
             'ismkl': self.prepareIsmkl,
         }
 
-        if preparationMethods.has_key(self.name):
+        if self.name in preparationMethods:
             m32 = False
             if self.version.endswith("32bit"):
                 m32 = True
@@ -220,7 +220,7 @@ class Toolkit:
         arch = regexp.search(open("/proc/cpuinfo").read()).groupdict()['vendorid']
 
         archd = {'GenuineIntel': 'Intel', 'AuthenticAMD': 'AMD'}
-        if archd.has_key(arch):
+        if arch in archd:
             self.arch = archd[arch]
         else:
             log.error("Unknown architecture detected: %s" % arch)
@@ -229,7 +229,7 @@ class Toolkit:
         """ Get options for the current architecture """
         optarchs = {'Intel':'xHOST', 'AMD':'msse3'}
 
-        if optarchs.has_key(self.arch):
+        if self.arch in optarchs:
             optarch = optarchs[self.arch]
             log.info("Using %s as optarch for %s." % (optarch, self.arch))
             return optarch
@@ -531,7 +531,7 @@ class Toolkit:
 
         return flags
 
-    def _flagsForSubdirs(self, base, subdirs, flag="-L%s", varsKey=None):
+    def _flagsForSubdirs(self, base, subdirs, flag="-L%s", varskey=None):
         """ Generate include flags to pass to the compiler """
         flags = []
         for subdir in subdirs:
@@ -541,7 +541,7 @@ class Toolkit:
             else:
                 log.warning("Directory %s was not found" % directory)
 
-        if not self.vars.has_key(varsKey):
-            self.vars[varsKey] = ''
-        self.vars[varsKey] += ' ' + ' '.join(flags)
+        if not varskey in self.vars:
+            self.vars[varskey] = ''
+        self.vars[varskey] += ' ' + ' '.join(flags)
 
