@@ -140,9 +140,6 @@ class Application:
         if name and version:
             self.set_name_version(name, version, newBuild)
 
-        # make sure we have a logger
-        self.setlogger()
-
     def autobuild(self, ebfile, runTests):
         """
         Build the software package described by cfg.
