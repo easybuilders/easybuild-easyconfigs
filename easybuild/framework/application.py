@@ -550,7 +550,7 @@ class Application:
         if os.path.isfile(localfile):
             return localfile
         else:
-            self.log.error("Local file %s from url %s not found" % (url, localfile))
+            self.log.error("Local file %s not found at %s" % (url, localfile))
 
     def apply_patch(self, beginpath=None):
         """

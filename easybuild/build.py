@@ -276,7 +276,7 @@ def processSpecification(path, log, onlyBlocks=None):
             app = Application(debug=LOGDEBUG)
             app.process_ebfile(spec)
         except EasyBuildError, err:
-            msg = "Failed to read specification %s: %s" % (spec, err)
+            msg = "Failed to process specification file %s:\n%s" % (spec, err.msg)
             log.exception(msg)
             raise EasyBuildError(msg)
 
