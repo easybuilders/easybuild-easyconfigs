@@ -140,9 +140,6 @@ class Application:
         if name and version:
             self.set_name_version(name, version, newBuild)
 
-        # make sure we have a logger
-        self.setlogger()
-
     def autobuild(self, ebfile, runTests):
         """
         Build the software package described by cfg.
@@ -553,7 +550,7 @@ class Application:
         if os.path.isfile(localfile):
             return localfile
         else:
-            self.log.error("Local file %s from url %s not found" % (url, localfile))
+            self.log.error("Local file %s not found at %s" % (url, localfile))
 
     def apply_patch(self, beginpath=None):
         """
