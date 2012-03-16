@@ -1,57 +1,28 @@
 ##
 # Copyright 2005 Josiah Carlson 
-# Copyright 2009 Stijn Deweirdt
-# Copyright 2011 Pieter De Baets
-# Copyright 2012 Kenneth Hoste
-
-# original code from http://code.activestate.com/recipes/440554/
-# Released under the PSF License:
+# The Asynchronous Python Subprocess recipe was originally created by Josiah Carlson.
+# and released under the GPL v2 on March 14, 2012
 #
-# 1. This LICENSE AGREEMENT is between the Python Software Foundation
-# ("PSF"), and the Individual or Organization ("Licensee") accessing and
-# otherwise using this software ("Python") in source or binary form and
-# its associated documentation.
+# http://code.activestate.com/recipes/440554/ 
 #
-# 2. Subject to the terms and conditions of this License Agreement, PSF
-# hereby grants Licensee a nonexclusive, royalty-free, world-wide
-# license to reproduce, analyze, test, perform and/or display publicly,
-# prepare derivative works, distribute, and otherwise use Python
-# alone or in any derivative version, provided, however, that PSF's
-# License Agreement and PSF's notice of copyright, i.e., "Copyright (c)
-# 2001, 2002, 2003, 2004, 2005, 2006 Python Software Foundation; All Rights
-# Reserved" are retained in Python alone or in any derivative version
-# prepared by Licensee.
+# Copyright 2009-2012 Stijn Deweirdt, Dries Verdegem, Kenneth Hoste, Pieter De Baets, Jens Timmerman
 #
-# 3. In the event Licensee prepares a derivative work that is based on
-# or incorporates Python or any part thereof, and wants to make
-# the derivative work available to others as provided herein, then
-# Licensee hereby agrees to include in any such work a brief summary of
-# the changes made to Python.
+# This file is part of EasyBuild,
+# originally created by the HPC team of the University of Ghent (http://ugent.be/hpc).
 #
-# 4. PSF is making Python available to Licensee on an "AS IS"
-# basis. PSF MAKES NO REPRESENTATIONS OR WARRANTIES, EXPRESS OR
-# IMPLIED. BY WAY OF EXAMPLE, BUT NOT LIMITATION, PSF MAKES NO AND
-# DISCLAIMS ANY REPRESENTATION OR WARRANTY OF MERCHANTABILITY OR FITNESS
-# FOR ANY PARTICULAR PURPOSE OR THAT THE USE OF PYTHON WILL NOT
-# INFRINGE ANY THIRD PARTY RIGHTS.
+# http://github.com/hpcugent/easybuild
 #
-# 5. PSF SHALL NOT BE LIABLE TO LICENSEE OR ANY OTHER USERS OF PYTHON
-# FOR ANY INCIDENTAL, SPECIAL, OR CONSEQUENTIAL DAMAGES OR LOSS AS
-# A RESULT OF MODIFYING, DISTRIBUTING, OR OTHERWISE USING PYTHON,
-# OR ANY DERIVATIVE THEREOF, EVEN IF ADVISED OF THE POSSIBILITY THEREOF.
+# EasyBuild is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation v2.
 #
-# 6. This License Agreement will automatically terminate upon a material
-# breach of its terms and conditions.
+# EasyBuild is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
 #
-# 7. Nothing in this License Agreement shall be deemed to create any
-# relationship of agency, partnership, or joint venture between PSF and
-# Licensee. This License Agreement does not grant permission to use PSF
-# trademarks or trade name in a trademark sense to endorse or promote
-# products or services of Licensee, or any third party.
-#
-# 8. By copying, installing or otherwise using Python, Licensee
-# agrees to be bound by the terms and conditions of this License
-# Agreement.
+# You should have received a copy of the GNU General Public License
+# along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
 
 """Module to allow Asynchronous subprocess use on Windows and Posix platforms 
@@ -99,6 +70,7 @@ if subprocess.mswindows:
 else:
     import select
     import fcntl
+
 
 class Popen(subprocess.Popen):
     def recv(self, maxsize=None):
@@ -185,7 +157,7 @@ class Popen(subprocess.Popen):
 
             flags = fcntl.fcntl(conn, fcntl.F_GETFL)
             if not conn.closed:
-                fcntl.fcntl(conn, fcntl.F_SETFL, flags| os.O_NONBLOCK)
+                fcntl.fcntl(conn, fcntl.F_SETFL, flags | os.O_NONBLOCK)
 
             try:
                 if not select.select([conn], [], [], 0)[0]:
@@ -207,7 +179,7 @@ message = "Other end disconnected!"
 def recv_some(p, t=.1, e=1, tr=5, stderr=0):
     if tr < 1:
         tr = 1
-    x = time.time()+t
+    x = time.time() + t
     y = []
     r = ''
     pr = p.recv
@@ -223,7 +195,7 @@ def recv_some(p, t=.1, e=1, tr=5, stderr=0):
         elif r:
             y.append(r)
         else:
-            time.sleep(max((x-time.time())/tr, 0))
+            time.sleep(max((x - time.time()) / tr, 0))
     return ''.join(y)
 
 def send_all(p, data):

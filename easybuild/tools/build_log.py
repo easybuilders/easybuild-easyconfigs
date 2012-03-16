@@ -35,7 +35,7 @@ class EasyBuildError(Exception):
     EasyBuildError is thrown when EasyBuild runs into something horribly wrong.
     """
     def __init__(self, msg):
-        super(EasyBuildError,self).__init__(msg)
+        super(EasyBuildError, self).__init__(msg)
         self.msg = msg
     def __str__(self):
         return repr(self.msg)
@@ -49,35 +49,35 @@ class EasyBuildLog(logging.Logger):
     raiseError = True
 
     def callerInfo(self):
-        (filepath,line,function_name)=self.findCaller()
-        filepath_dirs=filepath.split(os.path.sep)
-        
+        (filepath, line, function_name) = self.findCaller()
+        filepath_dirs = filepath.split(os.path.sep)
+
         for dirName in copy(filepath_dirs):
             if dirName != "easybuild":
-                 filepath_dirs.remove(dirName)
+                filepath_dirs.remove(dirName)
             else:
                 break
-        return "(at %s:%s in %s)"%(os.path.sep.join(filepath_dirs),line,function_name)
+        return "(at %s:%s in %s)" % (os.path.sep.join(filepath_dirs), line, function_name)
 
-    def error(self,msg,*args,**kwargs):
-        newMsg = "EasyBuild crashed with an error %s: %s"%(self.callerInfo(),msg)
-        logging.Logger.error(self,newMsg,*args,**kwargs)
+    def error(self, msg, *args, **kwargs):
+        newMsg = "EasyBuild crashed with an error %s: %s" % (self.callerInfo(), msg)
+        logging.Logger.error(self, newMsg, *args, **kwargs)
         if self.raiseError:
             raise EasyBuildError(newMsg)
 
-    def exception(self,msg,*args):
+    def exception(self, msg, *args):
         ## don't raise the exception from within error
-        newMsg="EasyBuild encountered an exception %s: %s" % (self.callerInfo(), msg)
+        newMsg = "EasyBuild encountered an exception %s: %s" % (self.callerInfo(), msg)
 
-        self.raiseError=False
+        self.raiseError = False
         logging.Logger.exception(self, newMsg, *args)
-        self.raiseError=True
+        self.raiseError = True
 
         raise EasyBuildError(newMsg)
 
 # set format for logger
-loggingFormat='%(asctime)s %(name)s %(levelname)s %(message)s'
-formatter=logging.Formatter(loggingFormat)
+loggingFormat = '%(asctime)s %(name)s %(levelname)s %(message)s'
+formatter = logging.Formatter(loggingFormat)
 
 # redirect standard handler of root logger to /dev/null
 logging.basicConfig(level=logging.ERROR, format=loggingFormat, filename='/dev/null')
@@ -163,4 +163,4 @@ if __name__ == '__main__':
     initLogger('test', '1.0.0')
     fn, testlog, _ = initLogger(typ='build_log')
     testlog.info('Testing buildLog...')
-    print "Tested buildLog, see %s"%fn
+    print "Tested buildLog, see %s" % fn

@@ -32,7 +32,7 @@ class ModuleGenerator:
     """
     Class for generating module files.
     """
-    def __init__(self, application, fake = False):
+    def __init__(self, application, fake=False):
         self.app = application
         self.fake = fake
         self.filename = None
@@ -46,7 +46,7 @@ class ModuleGenerator:
         # Fake mode: set installpath to builddir
         if self.fake:
             log.debug("Fake mode: using %s (instead of %s)" % (self.app.builddir, base))
-            base = self.app.builddir 
+            base = self.app.builddir
 
         # Real file goes in 'all' category
         allPath = os.path.join(base, 'all', self.app.name())
@@ -62,7 +62,7 @@ class ModuleGenerator:
                 try:
                     os.makedirs(directory)
                 except OSError, err:
-                    log.exception("Couldn't make directory %s: %s" % (directory,err))
+                    log.exception("Couldn't make directory %s: %s" % (directory, err))
 
         # Make a symlink from classpathFile to self.filename
         try:
@@ -73,7 +73,7 @@ class ModuleGenerator:
             if os.path.exists(self.filename):
                 os.remove(self.filename)
             os.symlink(self.filename, classPathFile)
-        except OSError,err:
+        except OSError, err:
             log.exception("Failed to create symlink from %s to %s: %s" % (classPathFile, self.filename, err))
 
     def getDescription(self, conflict=True):

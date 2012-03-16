@@ -42,102 +42,102 @@ class Modules:
     """
     Interact with modules.
     """
-    def __init__(self,modulePath=None):
-        self.modulePath=modulePath
-        self.modules=[]
-        
-        self.checkModulePath()        
+    def __init__(self, modulePath=None):
+        self.modulePath = modulePath
+        self.modules = []
+
+        self.checkModulePath()
 
     def checkModulePath(self):
         """
         Check if MODULEPATH is set and change it if necessary.
         """
-        if not os.environ.has_key('MODULEPATH'):
-            errormsg='MODULEPATH not found in environment'
+        if not 'MODULEPATH' in os.environ:
+            errormsg = 'MODULEPATH not found in environment'
             # check if environment-modules is found
-            module_regexp=re.compile("^module is a function\s*\nmodule\s*()")
-            cmd="type module"
-            (out,ec) = run_cmd(cmd, log_all=False, log_ok=False)
+            module_regexp = re.compile("^module is a function\s*\nmodule\s*()")
+            cmd = "type module"
+            (out, ec) = run_cmd(cmd, log_all=False, log_ok=False)
             if ec != 0 or not module_regexp.match(out):
                 errormsg += "; environment-modules doesn't seem to be installed: "
                 errormsg += "'%s' failed with exit code %s and output: '%s'" % (cmd, ec, out.strip('\n'))
             log.error(errormsg)
-        
+
         if self.modulePath:
             ## set the module path environment accordingly
             os.environ['MODULEPATH'] = ":".join(self.modulePath)
         else:
             ## take module path from environment
             self.modulePath = os.environ['MODULEPATH'].split(':')
-        
-        if not os.environ.has_key('LOADEDMODULES'):
+
+        if not 'LOADEDMODULES' in os.environ:
             os.environ['LOADEDMODULES'] = ''
 
     def available(self, name=None, version=None, modulePath=None):
         """
         Return list of available modules.
         """
-        if not name: name=''
-        if not version: version=''
+        if not name: name = ''
+        if not version: version = ''
 
         txt = name
         if version:
-            txt = "%s/%s" % (name,version)
-        
-        modules = self.runModule('available', txt, modulePath = modulePath)
+            txt = "%s/%s" % (name, version)
+
+        modules = self.runModule('available', txt, modulePath=modulePath)
 
         ## sort the answers in [name,version] pairs
         ## alphabetical order, default last
         modules.sort(key=lambda m: (m['name'] + (m['default'] or ''), m['version']))
         ans = [(mod['name'], mod['version']) for mod in modules]
 
-        log.debug("module available name '%s' version '%s' in %s gave %d answers: %s" % 
+        log.debug("module available name '%s' version '%s' in %s gave %d answers: %s" %
             (name, version, modulePath, len(ans), ans))
         return ans
-    
+
     def exists(self, name, version, modulePath=None):
         """
         Check if module is available.
         """
         return (name, version) in self.available(name, version, modulePath)
-    
+
     def addModule(self, modules):
         """
         Check if module exist, if so add to list.
         """
         for mod in modules:
             if type(mod) == list:
-                name,version=mod[0],mod[1]
+                name, version = mod[0], mod[1]
             elif type(mod) == str:
-                (name,version)=mod.split('/')
+                (name, version) = mod.split('/')
             elif type(mod) == dict:
-                name=mod['name']
+                name = mod['name']
                 ## deal with toolkit dependency calls
-                if mod.has_key('tk'):
-                    version=mod['tk']
+                if 'tk' in mod:
+                    version = mod['tk']
                 else:
-                    version=mod['version']
+                    version = mod['version']
             else:
-                log.error("Can't add module %s: unknown type"%mod)
-                
+                log.error("Can't add module %s: unknown type" % mod)
+
             mods = self.available(name, version)
             if (name, version) in mods:
                 ## ok
                 self.modules.append((name, version))
             else:
                 if len(mods) == 0:
-                    log.warning('No module %s available'%mod)
+                    log.warning('No module %s available' % mod)
                 else:
-                    log.warning('More then one module found for %s: %s'%(mod,mods))
+                    log.warning('More then one module found for %s: %s' % (mod, mods))
                 continue
-        
+
     def load(self):
         """
         Load all requested modules.
         """
         for mod in self.modules:
             self.runModule('load', "/".join(mod))
-    
+
     def runModule(self, *args, **kwargs):
         """
         Run module command.
@@ -146,13 +146,13 @@ class Modules:
             args = args[0]
         else:
             args = list(args)
-        
+
         originalModulePath = os.environ['MODULEPATH']
         if kwargs.get('modulePath', None):
             os.environ['MODULEPATH'] = kwargs.get('modulePath')
-        
+
         proc = subprocess.Popen(['/usr/bin/modulecmd', 'python'] + args,
-                                stdout = subprocess.PIPE, stderr = subprocess.PIPE)
+                                stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         # stdout will contain python code (to change environment etc)
         # stderr will contain text (just like the normal module command)
         (stdout, stderr) = proc.communicate()
@@ -166,7 +166,7 @@ class Modules:
         for line in stderr.split('\n'): #IGNORE:E1103
             if outputMatchers['whitespace'].search(line):
                 continue
-            
+
             error = outputMatchers['error'].search(line)
             if error:
                 log.error(line)
@@ -194,12 +194,12 @@ def searchModule(path, query):
         # TODO: get directories to ignore from  easybuild.tools.repository ?
         try:
             dirnames.remove('.svn')
-        except ValueError: 
+        except ValueError:
             pass
 
         try:
             dirnames.remove('.git')
-        except ValueError: 
+        except ValueError:
             pass
 
 def getSoftwareRoot(name):
@@ -211,17 +211,17 @@ def getSoftwareRoot(name):
 
 if __name__ == '__main__':
     # Run some tests, run as python -m easybuild.tools.modules
-    initLogger(debug=True,typ=None)   
+    initLogger(debug=True, typ=None)
 
-    testmods=Modules()
-    ms=testmods.available('',None)
+    testmods = Modules()
+    ms = testmods.available('', None)
     ## pick one
     if len(ms) == 0:
         print "No modules found"
     else:
         import random
-        m=random.choice(ms)
-        print "selected module %s"%m
+        m = random.choice(ms)
+        print "selected module %s" % m
         testmods.addModule([m])
         testmods.load()
 
