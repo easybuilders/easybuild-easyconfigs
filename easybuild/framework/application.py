@@ -1301,8 +1301,8 @@ def get_instance(applicationClass, log):
             applicationClass = "framework.application.Application"
         (modulepath, module, className) = applicationClass.split('.')
         execstr="from easybuild.%s import %s" % (modulepath, module)
-        log.debug(execstr)
-        execstr
+        log.debug("exec_str: %s"%execstr)
+        exec(execstr)
         return eval("%s()" % className)
     except (ImportError,NameError), err:
         log.exception("Can't process provided module and class pair %s" % (applicationClass))
