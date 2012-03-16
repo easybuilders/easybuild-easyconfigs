@@ -139,7 +139,10 @@ class Application:
 
         if name and version:
             self.set_name_version(name, version, newBuild)
-    
+
+        # make sure we have a logger
+        self.setlogger()
+
     def autobuild(self, ebfile, runTests):
         """
         Build the software package described by cfg.
@@ -1301,8 +1304,8 @@ def get_instance(applicationClass, log):
             applicationClass = "framework.application.Application"
         (modulepath, module, className) = applicationClass.split('.')
         execstr="from easybuild.%s import %s" % (modulepath, module)
-        log.debug(execstr)
-        execstr
+        log.debug("exec_str: %s"%execstr)
+        exec(execstr)
         return eval("%s()" % className)
     except (ImportError,NameError), err:
         log.exception("Can't process provided module and class pair %s" % (applicationClass))
