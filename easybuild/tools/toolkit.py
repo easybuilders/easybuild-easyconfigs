@@ -187,8 +187,8 @@ class Toolkit:
             if not softwareRoot:
                 log.error("%s was not found in environment (dep: %s)" % (dep['name'], dep))
 
-            self._flagsForSubdirs(softwareRoot, cpp_paths, flag="-I%s", varsKey="CPPFLAGS")
-            self._flagsForSubdirs(softwareRoot, ld_paths, flag="-L%s", varsKey="LDFLAGS")
+            self._flagsForSubdirs(softwareRoot, cpp_paths, flag="-I%s", varskey="CPPFLAGS")
+            self._flagsForSubdirs(softwareRoot, ld_paths, flag="-L%s", varskey="LDFLAGS")
 
     def _setVariables(self, dontset=None):
         """ Sets the environment variables """
@@ -494,8 +494,8 @@ class Toolkit:
                 self.vars[var] = self.vars[var].replace('/lib/em64t/', '/mkl/lib/intel64/')
 
         # Linker flags
-        self._flagsForSubdirs(mklRoot, mklld, flag="-L%s", varsKey="LDFLAGS")
-        self._flagsForSubdirs(mklRoot, mklcpp, flag="-I%s", varsKey="CPPFLAGS")
+        self._flagsForSubdirs(mklRoot, mklld, flag="-L%s", varskey="LDFLAGS")
+        self._flagsForSubdirs(mklRoot, mklcpp, flag="-I%s", varskey="CPPFLAGS")
 
     def _getOptimizationLevel(self):
         """ Default is 02, but set it explicitly (eg -g otherwise becomes -g -O0)"""
