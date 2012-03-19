@@ -1296,7 +1296,7 @@ class StopException(Exception):
 
 def get_instance_for(modulepath, class_name):
     """
-    Get instance for a given class and easyblock.
+    Get instance for a given class and easyblock module path.
     """
     # >>> import pkgutil
     # >>> loader = pkgutil.find_loader('easybuild.apps.Base')
@@ -1307,47 +1307,70 @@ def get_instance_for(modulepath, class_name):
     c = getattr(m, class_name)
     return c()
 
+def module_path_for_easyblock(easyblock):
+    """
+    Determine the module path for a given easyblock name,
+    based on first character:
+    - easybuild.easyblocks.a
+    - ...
+    - easybuild.easyblocks.z
+    - easybuild.easyblocks.0-9
+    - easybuild.easyblocks._other_
+    """
+    letters = [chr(ord('a')+x) for x in range(0,26)] # a-z
+    numbers = [chr(ord('0')+x) for x in range(0,10)] # 0-9
+
+    if not easyblock:
+        return None
+
+    first_char = easyblock[0].lower()
+
+    if first_char in letters:
+        return "easybuild.easyblocks.%s.%s" % (first_char, easyblock)
+    elif first_char in numbers:
+        return "easybuild.easyblocks.0-9.%s" % easyblock
+    else:
+        return "easybuild.easyblocks._other_.%s" % easyblock
+
 def get_instance(easyblock, log, name=None):
     """
     Get instance for a particular application class (or Application)
     """
     #TODO: create proper factory for this, as explained here 
     #http://stackoverflow.com/questions/456672/class-factory-in-python
-    letters = [chr(ord('a')+x) for x in range(0,26)] # a-z
-    numbers = [chr(ord('0')+x) for x in range(0,10)] # 0-9
     try:
         if not easyblock:
             if not name:
                 name="UNKNOWN"
 
             try:
-                first_char = name[0].lower()
-
-                if first_char in letters:
-                    modulepath = "easybuild.easyblocks.%s.%s" % (first_char, name.lower())
-                elif first_char in numbers:
-                    modulepath = "easybuild.easyblocks.0-9.%s" % name.lower()
-                else:
-                    modulepath = "easybuild.easyblocks._other_.%s" % name.lower()
-
+                modulepath = module_path_for_easyblock(name)
                 class_name = name
 
                 inst = get_instance_for(modulepath, class_name)
                 
                 log.info("Successfully obtained %s class instance from %s" % (class_name, modulepath))
 
-            except (ImportError, NameError), err:
+                return inst
+
+            except (AttributeError, ImportError, NameError), err:
                 log.info("Failed to use easyblock at %s for class %s: %s" % (modulepath, class_name, err))
                 modulepath = "easybuild.framework.application"
                 class_name = "Application"
                 log.info("Falling back to default %s class from %s" % (class_name, modulepath))
         else:
-            modulepath = easyblock
             class_name = easyblock.split('.')[-1]
+            # figure out if full path was specified or not
+            if len(easyblock.split('.')) > 1:
+                log.info("Assuming that full easyblock module path was specified.")
+                modulepath = easyblock
+            else:
+                modulepath= module_path_for_easyblock(easyblock)
+                log.info("Derived full easyblock module path for %s: %s" % (class_name, modulepath))
 
         return get_instance_for(modulepath, class_name)
 
-    except (ImportError, NameError), err:
+    except (AttributeError, ImportError, NameError, ValueError), err:
         log.exception("Can't process provided module and class pair %s: %s" % (easyblock, err))
         raise EasyBuildError(err)
 
