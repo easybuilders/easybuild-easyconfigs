@@ -56,9 +56,9 @@ def add_build_options(parser):
     parser.add_option("--dump-classes", action="store_true", help="show classes available")
     parser.add_option("--search", help="search for module-files in the robot-directory")
 
-    parser.add_option("-m", "--mod", metavar="mod.class",
+    parser.add_option("-e", "--easyblock", metavar="easyblock.class",
                         help="loads the class from module to process the spec file or dump " \
-                               "the options for [default: Application.Application]")
+                               "the options for [default: Application class]")
     parser.add_option("-p", "--pretend", action="store_true",
                         help="does the build/installation in a test directory " \
                                "located in $HOME/easybuildinstall")
@@ -148,7 +148,7 @@ def main():
 
     ## Dump possible options
     if options.options:
-        app = get_instance(options.mod, log)
+        app = get_instance(options.easyblock, log)
         app.dump_cfg_options()
 
     ## Dump available classes
@@ -500,18 +500,18 @@ def build(module, options, log, origEnviron, exitOnFailure=True):
     cwd = os.getcwd()
 
     ## Load applicationclass
-    applicationClass = options.mod
-    if not applicationClass:
+    easyblock = options.easyblock
+    if not easyblock:
         ## Try to look in spec file
-        reg = re.compile(r"^\s*mod\s*=(.*)$")
+        reg = re.compile(r"^\s*easyblock\s*=(.*)$")
         for line in open(spec).readlines():
             match = reg.search(line)
             if match:
-                applicationClass = eval(match.group(1))
+                easyblock = eval(match.group(1))
                 break
 
     try:
-        app = get_instance(applicationClass, log)
+        app = get_instance(easyblock, log, name=module['module'][0])
     except (ImportError, NameError), err:
         error("Failed to get application instance of class %s: %s" % (applicationClass, err))
 
