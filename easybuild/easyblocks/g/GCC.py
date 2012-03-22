@@ -251,23 +251,26 @@ class GCC(Application):
             if not self.getcfg('languages'):
                 # default languages are c, c++, fortran
                 bin_files = ["c++","cpp","g++","gcc","gcov","gfortran"]
-                lib64_files.append(["libstdc++.so", "libstdc++.a"])
+                lib64_files.extend(["libstdc++.so", "libstdc++.a"])
                 libexec_files = ['cc1', 'cc1plus', 'collect2', 'f951']
 
             if 'c' in self.getcfg('languages'):
-                bin_files.append(['cpp', 'gcc'])
+                bin_files.extend(['cpp', 'gcc'])
 
             if 'c++' in self.getcfg('languages'):
-                bin_files.append(['c++', 'g++'])
+                bin_files.extend(['c++', 'g++'])
                 dirs.append('include/c++/%s' % self.version())
-                lib64_files.append(["libstdc++.so", "libstdc++.a"])
+                lib64_files.extend(["libstdc++.so", "libstdc++.a"])
 
             if 'fortran' in self.getcfg('languages'):
                 bin_files.append('gfortran')
-                lib64_files.append(['libgfortran.so', 'libgfortran.a'])
+                lib64_files.extend(['libgfortran.so', 'libgfortran.a'])
 
             if 'lto' in self.getcfg('languages'):
-                libexec_files.append(['liblto_plugin.so', 'lto1', 'lto-wrapper'])
+                libexec_files.extend(['liblto_plugin.so', 'lto1', 'lto-wrapper'])
+
+            if self.getcfg('withcloog') or self.getcfg('withppl'):
+                self.log.error("Sanity check needs to be updated for CLooG/PPL?!?")
 
             bin_files = ["bin/%s"%x for x in bin_files]
             lib64_files = ["lib64/%s/%s" % (common_infix, x) for x in lib64_files]
