@@ -273,7 +273,7 @@ class GCC(Application):
             lib64_files = ["lib64/%s/%s" % (common_infix, x) for x in lib64_files]
             libexec_files = ["libexec/%s/%s" % (common_infix, x) for x in libexec_files]
 
-            self.setCfg('sanityCheckPaths',{'files':bin_files + lib64_files + libexec_files,
+            self.setcfg('sanityCheckPaths',{'files':bin_files + lib64_files + libexec_files,
                                             'dirs':dirs
                                            })
 
