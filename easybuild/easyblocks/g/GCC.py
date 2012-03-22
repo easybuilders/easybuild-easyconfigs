@@ -238,7 +238,7 @@ class GCC(Application):
         """
         Custom sanity check for GCC
         """
-        if not self.getCfg('sanityCheckPaths'):
+        if not self.getcfg('sanityCheckPaths'):
 
             common_infix = 'gcc/x86_64-unknown-linux-gnu/%s' % self.version()
 
@@ -277,7 +277,7 @@ class GCC(Application):
                                             'dirs':dirs
                                            })
 
-            self.log.info("Customized sanity check paths: %s"%self.getCfg('sanityCheckPaths'))
+            self.log.info("Customized sanity check paths: %s"%self.getcfg('sanityCheckPaths'))
 
         Application.sanitycheck(self)
 
