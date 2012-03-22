@@ -234,7 +234,7 @@ class GCC(Application):
 
     # make install is just default makeInstall, nothing special there
 
-    def sanityCheck(self):
+    def sanitycheck(self):
         """
         Custom sanity check for GCC
         """
@@ -279,7 +279,7 @@ class GCC(Application):
 
             self.log.info("Customized sanity check paths: %s"%self.getCfg('sanityCheckPaths'))
 
-        Application.sanityCheck(self)
+        Application.sanitycheck(self)
 
     def makeModuleReqGuess(self):
         """
