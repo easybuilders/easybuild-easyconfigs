@@ -331,7 +331,8 @@ class GCC(Application):
             ## reconfigure for stage 3 build
             self.log.info("Stage 2 of 3-staged build completed, continuing with stage 2 (with CLooG and/or PPL support enabled)...")
 
-            configopts = self.prep_extra_src_dirs("stage3")
+            stage3_info = self.prep_extra_src_dirs("stage3")
+            configopts = stage3_info['configopts']
             configopts += " --prefix=%(p)s --with-local-prefix=%(p)s" % {'p' : self.installdir }
 
             ## enable bootstrapping for self-containment
