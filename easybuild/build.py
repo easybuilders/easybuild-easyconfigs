@@ -499,7 +499,7 @@ def build(module, options, log, origEnviron, exitOnFailure=True):
 
     cwd = os.getcwd()
 
-    ## Load applicationclass
+    ## Load easyblock
     easyblock = options.easyblock
     if not easyblock:
         ## Try to look in spec file
@@ -513,7 +513,7 @@ def build(module, options, log, origEnviron, exitOnFailure=True):
     try:
         app = get_instance(easyblock, log, name=module['module'][0])
     except (ImportError, NameError), err:
-        error("Failed to get application instance of class %s: %s" % (applicationClass, err))
+        error("Failed to get application instance of class %s: %s" % (easyblock, err))
 
     ## Application settings
     if options.stop:
