@@ -90,7 +90,7 @@ def main():
     - build software
     """
     # disallow running EasyBuild as root
-    if (os.getuid() == 0) or (os.getlogin() == 'root'):
+    if os.getuid() == 0:
         sys.stderr.write("ERROR: You seem to be running EasyBuild with root priveleges.\n" + 
                         "That's not wise, so let's end this here.\n" + 
                         "Exiting.\n")
