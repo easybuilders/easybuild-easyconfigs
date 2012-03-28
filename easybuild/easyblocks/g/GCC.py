@@ -13,7 +13,8 @@ class GCC(Application):
     def __init__(self, *args, **kwargs):
         Application.__init__(self, *args, **kwargs)
 
-        self.cfg.update({'languages':[[], "List of languages to build GCC for (--enable-languages) (default: [])"],
+        self.cfg.update({'skipversioncheck':[False, "Skip the version check, try and build/install anyway."],
+                         'languages':[[], "List of languages to build GCC for (--enable-languages) (default: [])"],
                          'withlto':[True, "Enable LTO support (default: True)"],
                          'withcloog':[False, "Build GCC with CLooG support (default: False)."],
                          'withppl':[False, "Build GCC with PPL support (default: False)."],
@@ -144,11 +145,20 @@ class GCC(Application):
         - prepare extra source dirs (GMP, MPFR, MPC, ...)
         - create obj dir to build in (GCC doesn't like to be built in source dir)
         - add configure and make options, according to .eb spec file
+        - decide whether or not to do a staged build (which is required to enable PPL/CLooG support)
         """
 
         self.lv = LooseVersion(self.version())
-        if self.lv <= LooseVersion("4.6.3") or self.lv >= LooseVersion("4.7"):
-            self.log.warning("\n\nWARNING: This build procedure has only been well tested for GCC v4.6.x.\n" +
+
+        # refuse to build GCC versions prior to v4.5 (unless forced)
+        if not self.getcfg('skipversioncheck'):
+            if self.lv < LooseVersion("4.5"):
+                self.log.error("This build procedure is untested with GCC versions prior to v4.5.\n" +
+                               "To skip this version check and try and build anyway, set 'skipversioncheck' to True in the .eb spec file.")
+        
+        # warn if more recent versions are being built
+        if self.lv >= LooseVersion("4.8"):
+            self.log.warning("\n\nWARNING: This build procedure has only been tested for GCC versions 4.5 through 4.7 so far.\n" +
                              "If you run into any problems, please contact the EasyBuild developers.\n")
 
         # self.configopts will be reused in a 3-staged build,
