@@ -66,11 +66,12 @@ class GCC(Application):
             if envvar:
                 configopts += " --with-%s=%s" % (extra, envvar)
                 extra_src_dirs.remove(extra)
-            elif extra in ["cloog", "ppl"] and stage == "stage1":
+            elif extra in ["cloog", "ppl"] and stage in ["stage1", "stage3"]:
                 ## building CLooG or PPL requires a recent compiler
                 ## our best bet is to do a 3-staged build of GCC, and
                 ## build CLooG/PPL with the GCC we're building in stage 2
                 ## then (bootstrap) build GCC in stage 3
+                ## also, no need to stage cloog/ppl in stage3 (may even cause troubles)
                 self.stagedbuild=True
                 extra_src_dirs.remove(extra)
 
