@@ -308,7 +308,10 @@ class GCC(Application):
                                 self.log.error(errormsg)
 
                         ### make sure GMP is found
-                        cmd += "--with-gmp=%s " % stage2prefix
+                        if self.cloogver >= v0_15 and self.cloogver < v0_16:
+                            cmd += "--with-gmp=%s " % stage2prefix
+                        elif self.cloogver >= v0_16:
+                            cmd += "--with-gmp=system --with-gmp-prefix=%s " % stage2prefix
 
                     else:
                         self.log.error("Don't know how to configure for %s" % lib)
