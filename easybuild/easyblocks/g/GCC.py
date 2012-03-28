@@ -314,12 +314,17 @@ class GCC(Application):
 
                     if lib == "gmp":
                         ### make sure correct GMP is found
+                        libpath = os.path.join(stage2prefix, 'lib')
+                        incpath = os.path.join(stage2prefix, 'include')
+
                         cppflags = os.getenv('CPPFLAGS','')
-                        os.putenv('CPPFLAGS', "%s -L%s -I%s " % (cppflags, 
-                                                                os.path.join(stage2prefix, 'lib'),
-                                                                os.path.join(stage2prefix, 'include')
-                                                                )
-                                  )
+                        os.putenv('CPPFLAGS', "%s -L%s -I%s " % (cppflags, libpath, incpath))
+
+                        # motivated by http://www.mpfr.org/faq.html#undef_ref1
+                        c_include_path = os.getenv('C_INCLUDE_PATH', '')
+                        os.putenv('C_INCLUDE_PATH', '%s:%s' % (incpath, c_include_path))
+                        ld_library_path = os.getenv('LD_LIBRARY_PATH', '')
+                        os.putenv('LD_LIBRARY_PATH', '%s:%s' % (libpath, ld_library_path))
 
             #
             # STAGE 3: bootstrap build of final GCC (with PPL/CLooG support)
