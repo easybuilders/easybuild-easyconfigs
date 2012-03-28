@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 ##
 # Copyright 2009-2012 Stijn Deweirdt, Dries Verdegem, Kenneth Hoste, Pieter De Baets, Jens Timmerman
 #
