@@ -78,6 +78,7 @@ class GCC(Application):
         # so EasyBuild can unpack them in the build dir
         found_src_dirs = []
         versions = {}
+        names = {}
         all_dirs = os.listdir(self.builddir)
         for d in all_dirs:
             for sd in extra_src_dirs:
@@ -85,8 +86,11 @@ class GCC(Application):
                     found_src_dirs.append({'source_dir':d,
                                            'target_dir':sd
                                            })
-                    # expected format: name-[subname]-version
-                    ver = os.path.basename(d).split('-')[-1]
+                    # expected format: name[-subname]-version
+                    ds = os.path.basename(d).split('-')
+                    name = '-'.join(ds[0:-1])
+                    names.update({sd:name})
+                    ver = ds[-1]
                     versions.update({sd:ver})
 
         # we need to find all dirs specified, or else...
@@ -113,6 +117,7 @@ class GCC(Application):
 
         return {
                 'configopts':configopts,
+                'names':names,
                 'versions':versions
                 }
 
@@ -288,6 +293,7 @@ class GCC(Application):
 
                     elif lib == "cloog":
 
+                        self.cloogname = stage2_info['names']['cloog']
                         self.cloogver = LooseVersion(stage2_info['versions']['cloog'])
                         v0_15 = LooseVersion("0.15")
                         v0_16 = LooseVersion("0.16")
@@ -300,10 +306,10 @@ class GCC(Application):
                             else:
                                 self.log.error("Using ISL is only supported in CLooG >= v0.16 (detected v%s)." % self.cloogver)
                         else:
-                            if self.cloogver >= v0_15 and self.cloogver < v0_16:
+                            if self.cloogname == "cloog-ppl" and self.cloogver >= v0_15 and self.cloogver < v0_16:
                                 cmd += "--with-ppl=%s " % stage2prefix
                             else:
-                                errormsg = "PPL only supported with CLooG v0.15.x (detected v%s)" % self.cloogver
+                                errormsg = "PPL only supported with CLooG-PPL v0.15.x (detected v%s)" % self.cloogver
                                 errormsg += "\nNeither using PPL or ISL-based ClooG, I'm out of options..."
                                 self.log.error(errormsg)
 
@@ -312,6 +318,8 @@ class GCC(Application):
                             cmd += "--with-gmp=%s " % stage2prefix
                         elif self.cloogver >= v0_16:
                             cmd += "--with-gmp=system --with-gmp-prefix=%s " % stage2prefix
+                        else:
+                            self.log.error("Don't know how to specify location of GMP to configure of CLooG v%s." % self.cloogver)
 
                     else:
                         self.log.error("Don't know how to configure for %s" % lib)
