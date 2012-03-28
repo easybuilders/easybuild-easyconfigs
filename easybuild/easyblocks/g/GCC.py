@@ -357,7 +357,7 @@ class GCC(Application):
                 configopts += "--with-cloog=%s " % stage2prefix
 
                 if self.getcfg('clooguseisl') and self.cloogver >= LooseVersion("0.16"):
-                    cmd+="--enable-cloog-backend=isl "
+                    configopts += "--enable-cloog-backend=isl "
 
             # configure
             cmd = "%s ../configure %s %s" % (
