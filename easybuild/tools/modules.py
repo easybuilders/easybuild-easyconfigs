@@ -192,6 +192,8 @@ def searchModule(path, query):
                 print "- %s" % filename
 
         # TODO: get directories to ignore from  easybuild.tools.repository ?
+        # remove all hidden directories?:
+        #dirnames[:] = [d for d in dirnames if not d.startswith('.')]
         try:
             dirnames.remove('.svn')
         except ValueError:

@@ -45,6 +45,7 @@ class Toolkit:
            'i8': False, 'unroll': False, 'verbose': False, 'cstd': None,
            'shared': False, 'static': False, 'intel-static': False,
            'loop': False, 'f2c': False, 'no-icc': False,
+           'packed-groups': False,
         }
 
         self.name = name
@@ -351,6 +352,9 @@ class Toolkit:
             self.vars['MPICXX'] = 'mpiicpc%s' % m32flag
             self.vars['MPIF77'] = 'mpiifort%s' % m32flag
             self.vars['MPIF90'] = 'mpiifort%s' % m32flag
+            # used by mpicc and mpicxx to actually use mpiicc and mpicxx
+            self.vars['I_MPI_CXX'] = "icpc"
+            self.vars['I_MPI_CC'] = "icc"
 
         if self.opts['cciscxx']:
             self.vars['CXX'] = self.vars['CC']
@@ -470,6 +474,11 @@ class Toolkit:
                                                                                             'libsuffix':libsuffix,
                                                                                             'libsuffixsl':libsuffixsl
                                                                                            }
+
+        if self.opts['packed-groups']: #we pack groups toghether, since some tools like pkg-utils don't work well with them
+            for i in ['LIBLAPACK', 'LIBBLAS', 'LIBLAPACK_MT', 'LIBSCALAPACK' ]:
+                self.vars[i] = self.vars[i].replace(" ", ",").replace("-Wl,--end-group", "--end-group")
+
         lib = self.vars['LIBSCALAPACK']
         lib = lib.replace('libmkl_solver%s_sequential' % libsuffix, 'libmkl_solver')
         lib = lib.replace('libmkl_sequential', 'libmkl_intel_thread') + ' -liomp5 -lpthread'
