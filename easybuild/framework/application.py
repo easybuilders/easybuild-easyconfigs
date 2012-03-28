@@ -226,7 +226,7 @@ class Application:
                 self.log.exception("Failed to determine max user processes (%s,%s): %s" % (ec, out, err))
 
         maxpar = self.getcfg('maxparallel')
-        if maxpar:
+        if maxpar and maxpar < nr:
             self.log.info("Limiting parallellism from %s to %s" % (nr, maxpar))
             nr = min(nr, maxpar)
 
