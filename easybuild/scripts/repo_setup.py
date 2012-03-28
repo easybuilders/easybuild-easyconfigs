@@ -20,9 +20,9 @@
 ##
 """
 This script creates the directory structure used by easybuild (https://github.com/easybuild/easybuild)
-You can use this to set up your private easyblocks directory
+You can use this to set up your private repo with easyblocks and easyconfigs directories
 
-usage: easyblockssetup.py [easyblocks_privatename]
+usage: repo_setup.py
 
 you might want to put this directory under revision control
 """
@@ -30,29 +30,37 @@ you might want to put this directory under revision control
 import os
 import sys
 
-if len(sys.argv) > 2:
-    sys.stderr.write("Usage: %s [prefix]\n" % sys.argv[0])
+def create_dir(prefix, dirname, withinit=False):
+    os.mkdir(os.path.join(prefix, dirname))
+    if withinit:
+        fh = open(os.path.join(prefix, dirname, "__init__.py"), 'w')
+        fh.close()
 
-PREFIX = "easyblocks"
-if len(sys.argv) == 2:
-    PREFIX = sys.argv[1]
+def create_subdirs(prefix, withinit=False):
+    # create subdirectories a, b, ..., z, 0 (catchall)
+    alphabet = [chr(x) for x in xrange(ord('a'), ord('z') + 1)]
+    for letter in alphabet:
+        create_dir(prefix, letter, withinit=withinit)
 
-# create root dir, with default init
-os.mkdir(PREFIX)
-f = open(os.path.join(PREFIX, "__init__.py"), 'w')
+    create_dir(prefix, "0", withinit=withinit)
+
+#
+# MAIN
+#
+if len(sys.argv) > 1:
+    sys.stderr.write("Usage: %s\n" % sys.argv[0])
+
+# create easyblocks dir and subdirs, with default init
+dirname="easyblocks"
+os.mkdir(dirname)
+f = open(os.path.join(dirname, "__init__.py"), 'w')
 f.write("""import pkg_resources
 pkg_resources.declare_namespace("%s")
-""" % os.path.basename(PREFIX))
+""" % os.path.basename(dirname))
 
-# create subdirectories Aa, Bb, ..., Zz, 0-9, _other_
-def createDir(dirName):
-    os.mkdir(os.path.join(PREFIX, dirName))
-    fh = open(os.path.join(PREFIX, dirName, "__init__.py"), 'w')
-    fh.close()
+create_subdirs(dirname, withinit=True)
 
-alphabet = [chr(x) for x in xrange(ord('a'), ord('z') + 1)]
-for letter in alphabet:
-    createDir(letter)
-
-createDir("0-9")
-createDir("_other_")
+# create easyconfigs dir and subdirs
+dirname="easyconfigs"
+os.mkdir(dirname)
+create_subdirs(dirname)
