@@ -325,7 +325,8 @@ class GCC(Application):
                                              (libpath,['LD_LIBRARY_PATH', 'LD_RUN_PATH'])]:
                             for envvar in envvars:
                                 envvar_val = os.getenv(envvar, '')
-                                os.putenv(envvar, '%s:%s' % (path, envvar_val))
+                                # we need to update os.environ is we want to use os.getenv to see the updates
+                                os.environ[envvar] = '%s:%s' % (path, envvar_val) # also does os.putenv
                                 self.log.info("Updated %s: %s" % (envvar, os.getenv(envvar)))
 
             #
