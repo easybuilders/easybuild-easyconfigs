@@ -321,10 +321,12 @@ class GCC(Application):
                         os.putenv('CPPFLAGS', "%s -L%s -I%s " % (cppflags, libpath, incpath))
 
                         # motivated by http://www.mpfr.org/faq.html#undef_ref1
-                        c_include_path = os.getenv('C_INCLUDE_PATH', '')
-                        os.putenv('C_INCLUDE_PATH', '%s:%s' % (incpath, c_include_path))
-                        ld_library_path = os.getenv('LD_LIBRARY_PATH', '')
-                        os.putenv('LD_LIBRARY_PATH', '%s:%s' % (libpath, ld_library_path))
+                        for path,envvars in [(incpath,['C_INCLUDE_PATH']),
+                                             (libpath,['LD_LIBRARY_PATH', 'LD_RUN_PATH'])]:
+                            for envvar in envvars:
+                                envvar_val = os.getenv(envvar, '')
+                                os.putenv(envvar, '%s:%s' % (path, envvar_val))
+                                self.log.info("Updated %s: %s" % (envvar, os.getenv(envvar)))
 
             #
             # STAGE 3: bootstrap build of final GCC (with PPL/CLooG support)
