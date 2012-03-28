@@ -156,11 +156,7 @@ class GCC(Application):
         stage1_info = self.prep_extra_src_dirs("stage1")
         configopts = stage1_info['configopts']
 
-        # II) create obj dir to build in, and change to it
-        #     GCC doesn't like to be built in the source dir
-        self.stage1prefix = self.create_dir("stage1_obj")
-
-        # III) update config options
+        # II) update config options
 
         ## enable specified language support
         if self.getcfg('languages'):
@@ -202,6 +198,13 @@ class GCC(Application):
             ## set prefixes
             self.log.info("Performing regular GCC build...")
             configopts += " --prefix=%(p)s --with-local-prefix=%(p)s" % {'p' : self.installdir }
+
+        # III) create obj dir to build in, and change to it
+        #     GCC doesn't like to be built in the source dir
+        if self.stagedbuild:
+            self.stage1prefix = self.create_dir("stage1_obj")
+        else:
+            self.create_dir("obj")
 
         # IV) actual configure, but not on default path
         cmd = "%s ../configure  %s %s" % (
