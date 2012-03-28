@@ -35,7 +35,7 @@ class EasyBuildError(Exception):
     EasyBuildError is thrown when EasyBuild runs into something horribly wrong.
     """
     def __init__(self, msg):
-        super(EasyBuildError, self).__init__(msg)
+        Exception.__init__(self, msg)
         self.msg = msg
     def __str__(self):
         return repr(self.msg)
