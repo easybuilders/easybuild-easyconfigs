@@ -269,7 +269,10 @@ class GCC(Application):
 
                         self.pplver = LooseVersion(stage2_info['versions']['ppl'])
 
-                        cmd="./configure --prefix=%s --with-pic -disable-shared " % stage2prefix
+                        cmd = "./configure --prefix=%s --with-pic -disable-shared " % stage2prefix
+
+                        ### only enable C/C++ interfaces (Java interface is sometimes troublesome)
+                        cmd += "--enable-interfaces='c c++' "
 
                         ### enable watchdog (or not)
                         if self.pplver <= LooseVersion("0.11"):
