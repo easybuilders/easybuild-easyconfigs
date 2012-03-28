@@ -13,7 +13,8 @@ class GCC(Application):
     def __init__(self, *args, **kwargs):
         Application.__init__(self, *args, **kwargs)
 
-        self.cfg.update({'languages':[[], "List of languages to build GCC for (--enable-languages) [default: []]"],
+        self.cfg.update({'languages':[[], "List of languages to build GCC for (--enable-languages) (default: [])"],
+                         'withlto':[True, "Enable LTO support (default: True)"],
                          'withcloog':[False, "Build GCC with CLooG support (default: False)."],
                          'withppl':[False, "Build GCC with PPL support (default: False)."],
                          'pplwatchdog':[False, "Enable PPL watchdog (default: False)"],
@@ -163,11 +164,9 @@ class GCC(Application):
         if self.getcfg('languages'):
             self.configopts += " --enable-languages=%s" % ','.join(self.getcfg('languages'))
 
-        ## enable bootstrap build for self-containment (unless for staged build)
-        if not self.stagedbuild:
-            configopts += " --enable-bootstrap"
-        else:
-            configopts += " --disable-bootstrap"
+        ## enable link-time-optimization (LTO) support, if desired
+        if self.getcfg('withlto'):
+            self.configopts += " --enable-lto"
 
         ## configure for a release build
         self.configopts += " --enable-checking=release "
@@ -175,12 +174,18 @@ class GCC(Application):
         self.configopts += " --enable-cxx --disable-multilib"
         ## build both static and dynamic libraries (???)
         self.configopts += " --enable-shared=yes --enable-static=yes "
-        ## use POSIX threads, enable link-time-optimization (LTO) support
-        self.configopts += " --enable-threads=posix --enable-lto"
+        ## use POSIX threads
+        self.configopts += " --enable-threads=posix "
         ## use GOLD as default linker, enable plugin support
         self.configopts += " --enable-gold=default --enable-plugins "
         ##
         self.configopts += " --enable-ld --with-plugin-ld=ld.gold"
+
+        ## enable bootstrap build for self-containment (unless for staged build)
+        if not self.stagedbuild:
+            configopts += " --enable-bootstrap"
+        else:
+            configopts += " --disable-bootstrap"
 
         if self.stagedbuild:
             #
@@ -319,15 +324,6 @@ class GCC(Application):
 
                         cppflags = os.getenv('CPPFLAGS','')
                         os.putenv('CPPFLAGS', "%s -L%s -I%s " % (cppflags, libpath, incpath))
-
-                        # motivated by http://www.mpfr.org/faq.html#undef_ref1
-                        for path,envvars in [(incpath,['C_INCLUDE_PATH']),
-                                             (libpath,['LD_LIBRARY_PATH', 'LD_RUN_PATH'])]:
-                            for envvar in envvars:
-                                envvar_val = os.getenv(envvar, '')
-                                # we need to update os.environ is we want to use os.getenv to see the updates
-                                os.environ[envvar] = '%s:%s' % (path, envvar_val) # also does os.putenv
-                                self.log.info("Updated %s: %s" % (envvar, os.getenv(envvar)))
 
             #
             # STAGE 3: bootstrap build of final GCC (with PPL/CLooG support)
