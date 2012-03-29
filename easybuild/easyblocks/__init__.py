@@ -18,5 +18,10 @@
 # You should have received a copy of the GNU General Public License
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
-import pkg_resources
-pkg_resources.declare_namespace("easyblocks")
+import sys
+try:
+    import pkg_resources
+    pkg_resources.declare_namespace("%s")
+except ImportError, err:
+    sys.stderr.write("Failed to import pkg_resources during initialization of easyblocks module: %s\n" % err)
+    sys.exit(1)

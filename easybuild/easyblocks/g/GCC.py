@@ -1,4 +1,6 @@
-import re, os, shutil
+import re
+import os
+import shutil
 from copy import copy
 from distutils.version import LooseVersion
 
@@ -386,7 +388,7 @@ class GCC(Application):
             self.run_configure_cmd(cmd)
 
         # build with bootstrapping for self-containment
-        self.setcfg('makeopts', '%s bootstrap' % self.getcfg('makeopts'))
+        self.updatecfg('makeopts', 'bootstrap')
 
         # call standard make
         Application.make(self)

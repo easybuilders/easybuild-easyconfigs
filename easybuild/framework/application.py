@@ -355,7 +355,7 @@ class Application:
             locs = {"self": self}
             execfile(fn, {}, locs)
         except (IOError, SyntaxError), err:
-            msg = "Parsing cfg file %s failed" % (fn)
+            msg = "Parsing eb file %s failed: %s" % (fn, err)
             if self.log:
                 self.log.exception(msg)
             else:
@@ -455,6 +455,18 @@ class Application:
         Set configuration key to value.
         """
         self.cfg[key][0] = value
+
+    def updatecfg(self, key, value):
+        """
+        Update a string configuration value with a value (i.e. append to it).
+        """
+        prev_value = self.getcfg(key)
+        if not type(prev_value) == str:
+            self.log.error("Can't update configuration value for %s, because it's not a string." % key)
+
+        new_value = '%s %s' % (prev_value, value)
+
+        self.setcfg(key, new_value)
 
     def check_osdeps(self, osdeps):
         """
@@ -863,12 +875,13 @@ class Application:
         except OSError, err:
             self.log.exception("Can't change to real build directory %s: %s" % (self.getcfg('startfrom'), err))
 
-    def configure(self):
+    def configure(self, cmd_prefix=''):
         """
         Configure step
         - typically ./configure --prefix=/install/path style
         """
-        cmd = "%s ./configure --prefix=%s %s" % (self.getcfg('preconfigopts'), self.installdir, self.getcfg('configopts'))
+        cmd = "%s %s./configure --prefix=%s %s" % (self.getcfg('preconfigopts'), cmd_prefix,
+                                                    self.installdir, self.getcfg('configopts'))
         run_cmd(cmd, log_all=True, simple=True)
 
     def make(self):
@@ -1378,11 +1391,9 @@ def module_path_for_easyblock(easyblock):
     - easybuild.easyblocks.a
     - ...
     - easybuild.easyblocks.z
-    - easybuild.easyblocks.0-9
-    - easybuild.easyblocks._other_
+    - easybuild.easyblocks.0
     """
     letters = [chr(ord('a')+x) for x in range(0,26)] # a-z
-    numbers = [chr(ord('0')+x) for x in range(0,10)] # 0-9
 
     if not easyblock:
         return None
@@ -1391,10 +1402,8 @@ def module_path_for_easyblock(easyblock):
 
     if first_char in letters:
         return "easybuild.easyblocks.%s.%s" % (first_char, easyblock)
-    elif first_char in numbers:
-        return "easybuild.easyblocks.0-9.%s" % easyblock
     else:
-        return "easybuild.easyblocks._other_.%s" % easyblock
+        return "easybuild.easyblocks.0.%s" % easyblock
 
 def get_instance(easyblock, log, name=None):
     """
