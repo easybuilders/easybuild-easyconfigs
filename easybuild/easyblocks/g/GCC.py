@@ -1,4 +1,6 @@
-import re, os, shutil
+import re
+import os
+import shutil
 from copy import copy
 from distutils.version import LooseVersion
 

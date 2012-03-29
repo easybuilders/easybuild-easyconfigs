@@ -1,4 +1,6 @@
-import glob, os, shutil
+import glob
+import os
+import shutil
 from easybuild.framework.application import Application
 
 class BLACS(Application):
