@@ -386,7 +386,7 @@ class GCC(Application):
             self.run_configure_cmd(cmd)
 
         # build with bootstrapping for self-containment
-        self.setcfg('makeopts', '%s bootstrap' % self.getcfg('makeopts'))
+        self.updatecfg('makeopts', 'bootstrap')
 
         # call standard make
         Application.make(self)

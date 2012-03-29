@@ -456,6 +456,18 @@ class Application:
         """
         self.cfg[key][0] = value
 
+    def updatecfg(self, key, value):
+        """
+        Update a string configuration value with a value (i.e. append to it).
+        """
+        prev_value = self.getcfg(key)
+        if not type(prev_value) == str:
+            self.log.error("Can't update configuration value for %s, because it's not a string." % key)
+
+        new_value = '%s %s' % (prev_value, value)
+
+        self.setcfg(key, new_value)
+
     def check_osdeps(self, osdeps):
         """
         Check if packages are available from OS. osdeps should be a list of dependencies.
