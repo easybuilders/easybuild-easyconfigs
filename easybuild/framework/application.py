@@ -22,11 +22,13 @@ from distutils.version import LooseVersion
 import glob
 import os
 import shutil
+import sys
 import time
+import urllib
 
 import easybuild
 from easybuild.tools.build_log import initLogger, removeLogHandler, EasyBuildError
-from easybuild.tools.config import sourcePath, buildPath, installPath
+from easybuild.tools.config import source_path, buildPath, installPath
 from easybuild.tools.filetools import unpack, patch, run_cmd, convertName
 from easybuild.tools.module_generator import ModuleGenerator
 from easybuild.tools.modules import Modules
@@ -509,54 +511,110 @@ class Application:
                 self.log.info("No current version (name: %s, version: %s) found. Not skipping anything." % (self.name(), self.installversion))
 
 
-    def file_locate(self, url, pkg=False):
+    def file_locate(self, filename, pkg=False):
         """
-        Locates the file from url for this application
-        - use predefined directories
-        - homepage, urls, svn ...
+        Locate the file with the given name
+        - searches in different subdirectories of source path
+        - supports fetching file from the web if path is specified as an url (i.e. starts with "http://:")
         """
-        srcPath = sourcePath()
-        if type(srcPath) == list:
-            for sp in srcPath:
+        srcpath = source_path()
+
+        # make sure we always deal with a list, to avoid code duplication
+        if type(srcpath) == str:
+            srcpaths = [srcpath]
+        elif type(srcpath) == list:
+            srcpaths = srcpath
+        else:
+            self.log.error("Source path '%s' has incorrect type: %s" % (srcpath, type(srcpath)))
+
+
+        # should we download or just try and find it?
+        if filename.startswith("http://") or filename.startswith("ftp://"):
+
+            # URL detected, so let's try and download it
+
+            url = filename
+            filename = url.split('/')[-1]
+
+            # figure out where to download the file to
+            for srcpath in srcpaths:
+                filepath = os.path.join(srcpath, self.name()[0].lower(), self.name())
                 if pkg:
-                    localdir = os.path.join(sp, self.name(), "packages")
-                else:
-                    localdir = os.path.join(sp, self.name())
-                if os.path.isdir(localdir):
-                    self.log.info("Source directory %s found!" % localdir)
+                    filepath = os.path.join(filepath, "packages")
+                if os.path.isdir(filepath):
+                    self.log.info("Going to try and download file to %s" % filepath)
                     break
-        else:
-            if pkg:
-                localdir = os.path.join(srcPath, self.name(), "packages")
-            else:
-                localdir = os.path.join(srcPath, self.name())
 
-        if url.find("http://") == 0:
-            import urllib
-
-            # if last source path tried doesn't exist, create it for downloading the source
-            if not os.path.isdir(localdir):
+            # if no path was found, let's just create it in the last source path
+            if not os.path.isdir(filepath):
                 try:
-                    os.makedirs(localdir)
+                    self.log.info("No path found to download file to, so creating it: %s" % filepath)
+                    os.makedirs(filepath)
                 except OSError, err:
-                    self.log.exception("Can't create directory %s: %s" % (localdir, err))
-            try:
-                webFile = urllib.urlopen(url)
-                localfile = os.path.join(localdir, url.split('/')[-1])
-                lf = open(localfile, 'w')
-                lf.write(webFile.read())
-                webFile.close()
-                lf.close()
-                self.log.debug("Downloading file %s from url %s ok" % (localfile, url))
-            except IOError, err:
-                self.log.exception("Downloading file %s from url %s failed: %s" % (localfile, url, err))
-        else:
-            localfile = os.path.join(localdir, url)
+                    self.log.error("Failed to create %s: %s" % (filepath, err))
 
-        if os.path.isfile(localfile):
-            return localfile
+            try:
+                webfile = urllib.urlopen(url)
+                fullpath = os.path.join(filepath, filename)
+
+                f = open(fullpath, 'w')
+                f.write(webfile.read())
+                webfile.close()
+                f.close()
+
+                self.log.info("Downloading file %s from url %s: done" % (filename, url))
+
+                return fullpath
+
+            except IOError, err:
+                self.log.exception("Downloading file %s from url %s to %s failed: %s" % (filename, url, fullpath, err))
+
         else:
-            self.log.error("Local file %s not found at %s" % (url, localfile))
+            # try and find file in various locations
+            foundfile = None
+            failedpaths = []
+            for srcpath in srcpaths:
+                # create list of candidate filepaths
+                namepath = os.path.join(srcpath, self.name())
+                fst_letter_path_low = os.path.join(srcpath, self.name().lower()[0])
+
+                # most likely paths
+                candidate_filepaths = [namepath, # subdir with software package name
+                                       os.path.join(fst_letter_path_low, self.name()), # easyblocks-style subdir
+                                       srcpath, # directly in sources directory
+                                       ]
+
+                # also consider easyconfigs path for patch files
+                if filename.endswith(".patch"):
+                    easybuild_dir = os.path.dirname(os.path.realpath(sys.argv[0]))
+                    candidate_filepaths.append(os.path.join(easybuild_dir, "easyconfigs",self.name().lower()[0],self.name()))
+
+                # see if file can be found at that location
+                for cfp in candidate_filepaths:
+
+                    fullpath = os.path.join(cfp, filename)
+
+                    # also check in packages subdir for packages
+                    if pkg:
+                        fullpaths = [os.path.join(fullpath, "packages"), fullpath]
+                    else:
+                        fullpaths = [fullpath]
+
+                    for fp in fullpaths:
+                        if os.path.isfile(fp):
+                            self.log.info("Found file %s at %s" % (filename, fp))
+                            foundfile = fp
+                            break # no need to try further
+                        else:
+                            failedpaths.append(fp)
+
+                if foundfile:
+                    break # no need to try other source paths
+
+            if foundfile:
+                return foundfile
+            else:
+                self.log.error("Couldn't find file %s anywhere... Paths attempted (in order): %s " % (filename, ', '.join(failedpaths)))
 
     def apply_patch(self, beginpath=None):
         """
@@ -1264,7 +1322,7 @@ class Application:
             if os.path.isabs(test):
                 path = test
             else:
-                path = os.path.join(sourcePath(), self.name(), test)
+                path = os.path.join(source_path(), self.name(), test)
 
             try:
                 self.log.debug("Running test %s" % path)
