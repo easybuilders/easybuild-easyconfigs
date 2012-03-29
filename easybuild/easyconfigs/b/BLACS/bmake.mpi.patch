@@ -1,0 +1,67 @@
+--- BMAKES/Bmake.MPI-LINUX.orig	2000-02-25 01:22:28.000000000 +0100
++++ BMAKES/Bmake.MPI-LINUX	2009-08-09 16:59:49.978110000 +0200
+@@ -13,7 +13,7 @@
+ #  -----------------------------
+ #  The top level BLACS directory
+ #  -----------------------------
+-   BTOPdir = $(HOME)/BLACS
++   BTOPdir = $(BUILDDIR)
+ 
+ #  ---------------------------------------------------------------------------
+ #  The communication library your BLACS have been written for.
+@@ -47,10 +47,10 @@
+ #  -------------------------------------
+ #  Name and location of the MPI library.
+ #  -------------------------------------
+-   MPIdir = /usr/local/mpich
++   MPIdir = $(MPIBASE)
+    MPILIBdir = $(MPIdir)/lib/
+    MPIINCdir = $(MPIdir)/include
+-   MPILIB = $(MPILIBdir)/libmpich.a
++   MPILIB = 
+ 
+ #  -------------------------------------
+ #  All libraries required by the tester.
+@@ -93,7 +93,10 @@
+ #  setting for your platform, compile and run BLACS/INSTALL/xintface.
+ #  Choices are: Add_, NoChange, UpCase, or f77IsF2C.
+ #  ---------------------------------------------------------------------------
+-   INTFACE = -Df77IsF2C
++#   INTFACE = -Df77IsF2C
++#   INTFACE = -DAdd_
++
++   INTFACE = -D$(INTERFACE)
+ 
+ #  ------------------------------------------------------------------------
+ #  Allows the user to vary the topologies that the BLACS default topologies
+@@ -135,7 +138,14 @@
+ #  define -DPOINTER_64_BITS=1.)  For help on setting TRANSCOMM, you can
+ #  run BLACS/INSTALL/xtc_CsameF77 and BLACS/INSTALL/xtc_UseMpich as
+ #  explained in BLACS/INSTALL/README.
+-#   TRANSCOMM = -DUseMpich
++
++## OpenMPI needs Mpi2
++#TRANSCOMM = -DUseMpi2
++#TRANSCOMM = -DUseMpich
++#TRANSCOMM = -DCSameF77
++
++TRANSCOMM = -D$(TRANSCOMMPI)
++
+ #
+ #  If you know that your MPI uses the same handles for fortran and C
+ #  communicators, you can replace the empty macro definition below with
+@@ -195,12 +205,12 @@
+ #  optimization.  This is the F77NO_OPTFLAG.  The usage of the remaining
+ #  macros should be obvious from the names.
+ #=============================================================================
+-   F77            = g77
++   F77            = $(MPIF77)
+    F77NO_OPTFLAGS = 
+    F77FLAGS       = $(F77NO_OPTFLAGS) -O
+    F77LOADER      = $(F77)
+    F77LOADFLAGS   = 
+-   CC             = gcc
++   CC             = $(MPICC)
+    CCFLAGS        = -O4
+    CCLOADER       = $(CC)
+    CCLOADFLAGS    = 
