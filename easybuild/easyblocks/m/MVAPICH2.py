@@ -20,6 +20,11 @@ class MVAPICH2(Application):
 
     def configure(self):
 
+        # things might go wrong if a previous install dir is present, so let's get rid of it
+        if not self.getcfg('keeppreviousinstall'):
+            self.log.info("Making sure any old installation is removed before we start the build...")
+            Application.make_dir(self, self.installdir, True, dontcreateinstalldir=True)
+
         # additional configuration options
         add_configopts = '--with-rdma=%s ' % self.getcfg('rdma_type')
 
@@ -68,3 +73,21 @@ class MVAPICH2(Application):
         Application.configure(self)
 
     # make and make install are default
+
+    def sanitycheck(self):
+        """
+        Custom sanity check for MVAPICH2
+        """
+        if not self.getcfg('sanityCheckPaths'):
+
+            self.setcfg('sanityCheckPaths',{'files':["bin/%s" % x for x in ["mpicc", "mpicxx", "mpif77", 
+                                                                            "mpif90", "mpiexec.hydra"]] +
+                                                    ["lib/lib%s" % y for x in ["fmpich", "mpichcxx", "mpichf90",
+                                                                               "mpich", "mpl", "opa"]
+                                                                     for y in ["%s.so"%x, "%s.a"%x]],
+                                            'dirs':["include"]
+                                           })
+
+            self.log.info("Customized sanity check paths: %s"%self.getcfg('sanityCheckPaths'))
+
+        Application.sanitycheck(self)
