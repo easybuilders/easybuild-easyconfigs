@@ -90,7 +90,8 @@ class Application:
           'stop':[None, 'Keyword to halt the buildprocess at certain points. Valid are %s' % self.validstops],
           'homepage':[None, 'The homepage of the software'],
           'description':[None, 'A short description of the software'],
-          'parallel':[None, '(Default: based on the number of cores and restrictions in ulimit)'],
+          'parallel':[None, 'Degree of parallelism for e.g. make (default: based on the number of cores and restrictions in ulimit)'],
+          'maxparallel':[None,'Max degree of parallelism (default: None)'],
           'keeppreviousinstall':[False, 'Boolean to keep the previous installation with identical name. Default False, expert s only!'],
           'cleanupoldbuild':[True, 'Boolean to remove (True) or backup (False) the previous build directory with identical name or not. Default True'],
           'cleanupoldinstall':[True, 'Boolean to remove (True) or backup (False) the previous install directory with identical name or not. Default True'],
@@ -223,6 +224,11 @@ class Application:
                     self.log.info("Limit parallel builds to %s because max user processes is %s" % (nr, out))
             except ValueError, err:
                 self.log.exception("Failed to determine max user processes (%s,%s): %s" % (ec, out, err))
+
+        maxpar = self.getcfg('maxparallel')
+        if maxpar and maxpar < nr:
+            self.log.info("Limiting parallellism from %s to %s" % (nr, maxpar))
+            nr = min(nr, maxpar)
 
         self.setcfg('parallel', nr)
         self.log.info("Setting parallelism: %s" % nr)

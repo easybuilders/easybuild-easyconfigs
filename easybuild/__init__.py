@@ -38,10 +38,13 @@ def get_git_revision():
     """
     try:
         import git
+    except ImportError:
+        return "UNKNOWN"
+    try:
         path = os.path.dirname(__file__)
         gitrepo = git.Git(path)
         return gitrepo.rev_list("HEAD").splitlines()[0]
-    except (ImportError, git.GitCommandError):
+    except git.GitCommandError:
         return "UNKNOWN"
 
 VERBOSE_VERSION = LooseVersion("%s-r%s" % (VERSION, get_git_revision()))
