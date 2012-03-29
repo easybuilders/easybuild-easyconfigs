@@ -55,8 +55,13 @@ if len(sys.argv) > 1:
 dirname="easyblocks"
 os.mkdir(dirname)
 f = open(os.path.join(dirname, "__init__.py"), 'w')
-f.write("""import pkg_resources
-pkg_resources.declare_namespace("%s")
+f.write("""import sys
+try:
+    import pkg_resources
+    pkg_resources.declare_namespace("%s")
+except ImportError, err:
+    sys.stderr.write("Failed to import pkg_resources during initialization of easyblocks module: %s\n" % err)
+    sys.exit(1)
 """ % os.path.basename(dirname))
 
 create_subdirs(dirname, withinit=True)
