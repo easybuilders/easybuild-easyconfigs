@@ -57,5 +57,5 @@ try:
 except ImportError, err:
     sys.stderr.write("Failed to import pkg_resources module: %s\n" % err)
     sys.stderr.write("Please make sure that the pkg_resources module is available for your Python environment.")
-    sys.stderr.write("See http://pypi.python.org/pypi/distribute#downloads and http://packages.python.org/distribute/pkg_resources.html")
+    sys.stderr.write("See http://pypi.python.org/pypi/setuptools.")
     sys.exit(1)
