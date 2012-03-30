@@ -533,7 +533,8 @@ def build(module, options, log, origEnviron, exitOnFailure=True):
     try:
         result = app.autobuild(spec, runTests=not options.skip_tests)
     except EasyBuildError, err:
-        errormsg = "autoBuild Failed: %s" % err.msg
+        lastn = 300
+        errormsg = "autoBuild Failed (last %d chars): %s" % (lastn, err.msg[-lastn:])
         log.exception(errormsg)
         result = False
 
