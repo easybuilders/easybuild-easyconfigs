@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 ##
 # Copyright 2009-2012 Stijn Deweirdt, Dries Verdegem, Kenneth Hoste, Pieter De Baets, Jens Timmerman
 #
@@ -90,7 +90,7 @@ def main():
     - build software
     """
     # disallow running EasyBuild as root
-    if (os.getuid() == 0) or (os.getlogin() == 'root'):
+    if os.getuid() == 0:
         sys.stderr.write("ERROR: You seem to be running EasyBuild with root priveleges.\n" + 
                         "That's not wise, so let's end this here.\n" + 
                         "Exiting.\n")
@@ -499,7 +499,7 @@ def build(module, options, log, origEnviron, exitOnFailure=True):
 
     cwd = os.getcwd()
 
-    ## Load applicationclass
+    ## Load easyblock
     easyblock = options.easyblock
     if not easyblock:
         ## Try to look in spec file
@@ -510,10 +510,12 @@ def build(module, options, log, origEnviron, exitOnFailure=True):
                 easyblock = eval(match.group(1))
                 break
 
+    name = module['module'][0]
     try:
-        app = get_instance(easyblock, log, name=module['module'][0])
+        app = get_instance(easyblock, log, name = name)
+        log.info("Obtained application instance of class %s for %s" % (easyblock, name))
     except (ImportError, NameError), err:
-        error("Failed to get application instance of class %s: %s" % (applicationClass, err))
+        error("Failed to get application instance of class %s for %s: %s" % (easyblock, name, err))
 
     ## Application settings
     if options.stop:
@@ -527,11 +529,13 @@ def build(module, options, log, origEnviron, exitOnFailure=True):
     app.logdebug = options.debug
 
     ## Build specification
+    errormsg='(no error)'
     try:
         result = app.autobuild(spec, runTests=not options.skip_tests)
     except EasyBuildError, err:
-        msg = "autoBuild Failed: %s" % err
-        log.exception(msg)
+        lastn = 300
+        errormsg = "autoBuild Failed (last %d chars): %s" % (lastn, err.msg[-lastn:])
+        log.exception(errormsg)
         result = False
 
     ended = "ended"
@@ -583,7 +587,7 @@ def build(module, options, log, origEnviron, exitOnFailure=True):
         buildDir = ''
         if app.builddir:
             buildDir = " (build directory: %s)" % (app.builddir)
-        succ = "unsuccessfully%s" % buildDir
+        succ = "unsuccessfully%s:\n%s" % (buildDir, errormsg)
 
         ## Cleanup logs
         app.closelog()
@@ -592,7 +596,7 @@ def build(module, options, log, origEnviron, exitOnFailure=True):
     del app
     os.chdir(cwd)
 
-    print "%s: Installation %s %s." % (summary, ended, succ)
+    print "%s: Installation %s %s" % (summary, ended, succ)
 
     ## Check for errors
     if exitCode > 0 or filetools.errorsFoundInLog > 0:

@@ -100,7 +100,7 @@ def buildPath():
     """
     return variables['buildPath']
 
-def sourcePath():
+def source_path():
     """
     Return the source path
     """

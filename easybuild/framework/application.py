@@ -22,11 +22,13 @@ from distutils.version import LooseVersion
 import glob
 import os
 import shutil
+import sys
 import time
+import urllib
 
 import easybuild
 from easybuild.tools.build_log import initLogger, removeLogHandler, EasyBuildError
-from easybuild.tools.config import sourcePath, buildPath, installPath
+from easybuild.tools.config import source_path, buildPath, installPath
 from easybuild.tools.filetools import unpack, patch, run_cmd, convertName
 from easybuild.tools.module_generator import ModuleGenerator
 from easybuild.tools.modules import Modules
@@ -90,7 +92,8 @@ class Application:
           'stop':[None, 'Keyword to halt the buildprocess at certain points. Valid are %s' % self.validstops],
           'homepage':[None, 'The homepage of the software'],
           'description':[None, 'A short description of the software'],
-          'parallel':[None, '(Default: based on the number of cores and restrictions in ulimit)'],
+          'parallel':[None, 'Degree of parallelism for e.g. make (default: based on the number of cores and restrictions in ulimit)'],
+          'maxparallel':[None,'Max degree of parallelism (default: None)'],
           'keeppreviousinstall':[False, 'Boolean to keep the previous installation with identical name. Default False, expert s only!'],
           'cleanupoldbuild':[True, 'Boolean to remove (True) or backup (False) the previous build directory with identical name or not. Default True'],
           'cleanupoldinstall':[True, 'Boolean to remove (True) or backup (False) the previous install directory with identical name or not. Default True'],
@@ -224,6 +227,11 @@ class Application:
             except ValueError, err:
                 self.log.exception("Failed to determine max user processes (%s,%s): %s" % (ec, out, err))
 
+        maxpar = self.getcfg('maxparallel')
+        if maxpar and maxpar < nr:
+            self.log.info("Limiting parallellism from %s to %s" % (nr, maxpar))
+            nr = min(nr, maxpar)
+
         self.setcfg('parallel', nr)
         self.log.info("Setting parallelism: %s" % nr)
 
@@ -347,7 +355,7 @@ class Application:
             locs = {"self": self}
             execfile(fn, {}, locs)
         except (IOError, SyntaxError), err:
-            msg = "Parsing cfg file %s failed" % (fn)
+            msg = "Parsing eb file %s failed: %s" % (fn, err)
             if self.log:
                 self.log.exception(msg)
             else:
@@ -448,6 +456,18 @@ class Application:
         """
         self.cfg[key][0] = value
 
+    def updatecfg(self, key, value):
+        """
+        Update a string configuration value with a value (i.e. append to it).
+        """
+        prev_value = self.getcfg(key)
+        if not type(prev_value) == str:
+            self.log.error("Can't update configuration value for %s, because it's not a string." % key)
+
+        new_value = '%s %s' % (prev_value, value)
+
+        self.setcfg(key, new_value)
+
     def check_osdeps(self, osdeps):
         """
         Check if packages are available from OS. osdeps should be a list of dependencies.
@@ -503,54 +523,110 @@ class Application:
                 self.log.info("No current version (name: %s, version: %s) found. Not skipping anything." % (self.name(), self.installversion))
 
 
-    def file_locate(self, url, pkg=False):
+    def file_locate(self, filename, pkg=False):
         """
-        Locates the file from url for this application
-        - use predefined directories
-        - homepage, urls, svn ...
+        Locate the file with the given name
+        - searches in different subdirectories of source path
+        - supports fetching file from the web if path is specified as an url (i.e. starts with "http://:")
         """
-        srcPath = sourcePath()
-        if type(srcPath) == list:
-            for sp in srcPath:
+        srcpath = source_path()
+
+        # make sure we always deal with a list, to avoid code duplication
+        if type(srcpath) == str:
+            srcpaths = [srcpath]
+        elif type(srcpath) == list:
+            srcpaths = srcpath
+        else:
+            self.log.error("Source path '%s' has incorrect type: %s" % (srcpath, type(srcpath)))
+
+
+        # should we download or just try and find it?
+        if filename.startswith("http://") or filename.startswith("ftp://"):
+
+            # URL detected, so let's try and download it
+
+            url = filename
+            filename = url.split('/')[-1]
+
+            # figure out where to download the file to
+            for srcpath in srcpaths:
+                filepath = os.path.join(srcpath, self.name()[0].lower(), self.name())
                 if pkg:
-                    localdir = os.path.join(sp, self.name(), "packages")
-                else:
-                    localdir = os.path.join(sp, self.name())
-                if os.path.isdir(localdir):
-                    self.log.info("Source directory %s found!" % localdir)
+                    filepath = os.path.join(filepath, "packages")
+                if os.path.isdir(filepath):
+                    self.log.info("Going to try and download file to %s" % filepath)
                     break
-        else:
-            if pkg:
-                localdir = os.path.join(srcPath, self.name(), "packages")
-            else:
-                localdir = os.path.join(srcPath, self.name())
 
-        if url.find("http://") == 0:
-            import urllib
-
-            # if last source path tried doesn't exist, create it for downloading the source
-            if not os.path.isdir(localdir):
+            # if no path was found, let's just create it in the last source path
+            if not os.path.isdir(filepath):
                 try:
-                    os.makedirs(localdir)
+                    self.log.info("No path found to download file to, so creating it: %s" % filepath)
+                    os.makedirs(filepath)
                 except OSError, err:
-                    self.log.exception("Can't create directory %s: %s" % (localdir, err))
-            try:
-                webFile = urllib.urlopen(url)
-                localfile = os.path.join(localdir, url.split('/')[-1])
-                lf = open(localfile, 'w')
-                lf.write(webFile.read())
-                webFile.close()
-                lf.close()
-                self.log.debug("Downloading file %s from url %s ok" % (localfile, url))
-            except IOError, err:
-                self.log.exception("Downloading file %s from url %s failed: %s" % (localfile, url, err))
-        else:
-            localfile = os.path.join(localdir, url)
+                    self.log.error("Failed to create %s: %s" % (filepath, err))
 
-        if os.path.isfile(localfile):
-            return localfile
+            try:
+                webfile = urllib.urlopen(url)
+                fullpath = os.path.join(filepath, filename)
+
+                f = open(fullpath, 'w')
+                f.write(webfile.read())
+                webfile.close()
+                f.close()
+
+                self.log.info("Downloading file %s from url %s: done" % (filename, url))
+
+                return fullpath
+
+            except IOError, err:
+                self.log.exception("Downloading file %s from url %s to %s failed: %s" % (filename, url, fullpath, err))
+
         else:
-            self.log.error("Local file %s not found at %s" % (url, localfile))
+            # try and find file in various locations
+            foundfile = None
+            failedpaths = []
+            for srcpath in srcpaths:
+                # create list of candidate filepaths
+                namepath = os.path.join(srcpath, self.name())
+                fst_letter_path_low = os.path.join(srcpath, self.name().lower()[0])
+
+                # most likely paths
+                candidate_filepaths = [namepath, # subdir with software package name
+                                       os.path.join(fst_letter_path_low, self.name()), # easyblocks-style subdir
+                                       srcpath, # directly in sources directory
+                                       ]
+
+                # also consider easyconfigs path for patch files
+                if filename.endswith(".patch"):
+                    easybuild_dir = os.path.dirname(os.path.realpath(sys.argv[0]))
+                    candidate_filepaths.append(os.path.join(easybuild_dir, "easyconfigs",self.name().lower()[0],self.name()))
+
+                # see if file can be found at that location
+                for cfp in candidate_filepaths:
+
+                    fullpath = os.path.join(cfp, filename)
+
+                    # also check in packages subdir for packages
+                    if pkg:
+                        fullpaths = [os.path.join(fullpath, "packages"), fullpath]
+                    else:
+                        fullpaths = [fullpath]
+
+                    for fp in fullpaths:
+                        if os.path.isfile(fp):
+                            self.log.info("Found file %s at %s" % (filename, fp))
+                            foundfile = fp
+                            break # no need to try further
+                        else:
+                            failedpaths.append(fp)
+
+                if foundfile:
+                    break # no need to try other source paths
+
+            if foundfile:
+                return foundfile
+            else:
+                self.log.error("Couldn't find file %s anywhere... Paths attempted (in order): %s " % (filename, ', '.join(failedpaths)))
 
     def apply_patch(self, beginpath=None):
         """
@@ -799,12 +875,13 @@ class Application:
         except OSError, err:
             self.log.exception("Can't change to real build directory %s: %s" % (self.getcfg('startfrom'), err))
 
-    def configure(self):
+    def configure(self, cmd_prefix=''):
         """
         Configure step
         - typically ./configure --prefix=/install/path style
         """
-        cmd = "%s ./configure --prefix=%s %s" % (self.getcfg('preconfigopts'), self.installdir, self.getcfg('configopts'))
+        cmd = "%s %s./configure --prefix=%s %s" % (self.getcfg('preconfigopts'), cmd_prefix,
+                                                    self.installdir, self.getcfg('configopts'))
         run_cmd(cmd, log_all=True, simple=True)
 
     def make(self):
@@ -1258,7 +1335,7 @@ class Application:
             if os.path.isabs(test):
                 path = test
             else:
-                path = os.path.join(sourcePath(), self.name(), test)
+                path = os.path.join(source_path(), self.name(), test)
 
             try:
                 self.log.debug("Running test %s" % path)
@@ -1296,7 +1373,7 @@ class StopException(Exception):
 
 def get_instance_for(modulepath, class_name):
     """
-    Get instance for a given class and easyblock.
+    Get instance for a given class and easyblock module path.
     """
     # >>> import pkgutil
     # >>> loader = pkgutil.find_loader('easybuild.apps.Base')
@@ -1307,47 +1384,66 @@ def get_instance_for(modulepath, class_name):
     c = getattr(m, class_name)
     return c()
 
+def module_path_for_easyblock(easyblock):
+    """
+    Determine the module path for a given easyblock name,
+    based on first character:
+    - easybuild.easyblocks.a
+    - ...
+    - easybuild.easyblocks.z
+    - easybuild.easyblocks.0
+    """
+    letters = [chr(ord('a')+x) for x in range(0,26)] # a-z
+
+    if not easyblock:
+        return None
+
+    first_char = easyblock[0].lower()
+
+    if first_char in letters:
+        return "easybuild.easyblocks.%s.%s" % (first_char, easyblock)
+    else:
+        return "easybuild.easyblocks.0.%s" % easyblock
+
 def get_instance(easyblock, log, name=None):
     """
     Get instance for a particular application class (or Application)
     """
     #TODO: create proper factory for this, as explained here 
     #http://stackoverflow.com/questions/456672/class-factory-in-python
-    letters = [chr(ord('a')+x) for x in range(0,26)] # a-z
-    numbers = [chr(ord('0')+x) for x in range(0,10)] # 0-9
     try:
         if not easyblock:
             if not name:
                 name="UNKNOWN"
 
             try:
-                first_char = name[0].lower()
-
-                if first_char in letters:
-                    modulepath = "easybuild.easyblocks.%s.%s" % (first_char, name.lower())
-                elif first_char in numbers:
-                    modulepath = "easybuild.easyblocks.0-9.%s" % name.lower()
-                else:
-                    modulepath = "easybuild.easyblocks._other_.%s" % name.lower()
-
+                modulepath = module_path_for_easyblock(name)
                 class_name = name
 
                 inst = get_instance_for(modulepath, class_name)
                 
                 log.info("Successfully obtained %s class instance from %s" % (class_name, modulepath))
 
-            except (ImportError, NameError), err:
+                return inst
+
+            except (AttributeError, ImportError, NameError), err:
                 log.info("Failed to use easyblock at %s for class %s: %s" % (modulepath, class_name, err))
                 modulepath = "easybuild.framework.application"
                 class_name = "Application"
                 log.info("Falling back to default %s class from %s" % (class_name, modulepath))
         else:
-            modulepath = easyblock
             class_name = easyblock.split('.')[-1]
+            # figure out if full path was specified or not
+            if len(easyblock.split('.')) > 1:
+                log.info("Assuming that full easyblock module path was specified.")
+                modulepath = easyblock
+            else:
+                modulepath= module_path_for_easyblock(easyblock)
+                log.info("Derived full easyblock module path for %s: %s" % (class_name, modulepath))
 
         return get_instance_for(modulepath, class_name)
 
-    except (ImportError, NameError), err:
+    except (AttributeError, ImportError, NameError, ValueError), err:
         log.exception("Can't process provided module and class pair %s: %s" % (easyblock, err))
         raise EasyBuildError(err)
 

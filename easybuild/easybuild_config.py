@@ -31,7 +31,11 @@ log = getLog('easybuild_config')
 buildDir = 'easybuild_build'
 installDir = 'easybuild'
 sourceDir = "easybuild_sources"
-prefix = os.getenv('HOME')
+
+if os.getenv('EASYBUILDPREFIX'):
+    prefix = os.getenv('EASYBUILDPREFIX')
+else:
+    prefix = os.getenv('HOME')
 
 if not prefix:
     prefix = "/tmp"

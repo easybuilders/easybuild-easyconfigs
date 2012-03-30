@@ -252,12 +252,12 @@ def run_cmd(cmd, log_ok=True, log_all=False, simple=False, inp=None, regexp=True
     - returns exitcode and stdout+stderr (mixed)
     - no input though stdin
     """
-    log.debug("runrun: running cmd %s (in %s)" % (cmd, os.getcwd()))
+    log.debug("run_cmd: running cmd %s (in %s)" % (cmd, os.getcwd()))
 
     ## Log command output
     if log_output:
-        runLog = tempfile.NamedTemporaryFile(suffix='.log', prefix='easybuild-runrun-')
-        log.debug('runrun: Command output will be logged to %s' % runLog.name)
+        runLog = tempfile.NamedTemporaryFile(suffix='.log', prefix='easybuild-run_cmd-')
+        log.debug('run_cmd: Command output will be logged to %s' % runLog.name)
         runLog.write(cmd + "\n\n")
     else:
         runLog = None
@@ -280,7 +280,7 @@ def run_cmd(cmd, log_ok=True, log_all=False, simple=False, inp=None, regexp=True
         p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                            stdin=subprocess.PIPE, close_fds=True)
     except OSError, err:
-        log.error("runrun init cmd %s failed:%s" % (cmd, err))
+        log.error("run_cmd init cmd %s failed:%s" % (cmd, err))
     if inp:
         p.stdin.write(inp)
     p.stdin.close()
@@ -307,12 +307,12 @@ def run_cmd(cmd, log_ok=True, log_all=False, simple=False, inp=None, regexp=True
 
     ## log: if ec > 0, dump to output
     if ec and (log_all or log_ok):
-        log.error('runrun cmd "%s" exited with exitcode %s and output:\n%s' % (cmd, ec, stdouterr))
+        log.error('run_cmd "%s" exited with exitcode %s and output:\n%s' % (cmd, ec, stdouterr))
     if not ec:
         if log_all:
-            log.info('runrun cmd "%s" exited with exitcode %s and output:\n%s' % (cmd, ec, stdouterr))
+            log.info('run_cmd "%s" exited with exitcode %s and output:\n%s' % (cmd, ec, stdouterr))
         else:
-            log.debug('runrun cmd "%s" exited with exitcode %s and output:\n%s' % (cmd, ec, stdouterr))
+            log.debug('run_cmd "%s" exited with exitcode %s and output:\n%s' % (cmd, ec, stdouterr))
 
     ## Command log output
     if log_output:
