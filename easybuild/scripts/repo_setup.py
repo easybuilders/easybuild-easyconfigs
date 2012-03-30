@@ -52,21 +52,17 @@ if len(sys.argv) > 1:
     sys.stderr.write("Usage: %s\n" % sys.argv[0])
 
 # create easyblocks dir and subdirs, with default init
-dirname="easyblocks"
+dirname = "easyblocks"
 os.mkdir(dirname)
 f = open(os.path.join(dirname, "__init__.py"), 'w')
-f.write("""import sys
-try:
-    import pkg_resources
-    pkg_resources.declare_namespace("%s")
-except ImportError, err:
-    sys.stderr.write("Failed to import pkg_resources during initialization of easyblocks module: %s\n" % err)
-    sys.exit(1)
+f.write("""
+from pkgutil import extend_path
+__path__ = extend_path(__path__, __name__)
 """ % os.path.basename(dirname))
 
 create_subdirs(dirname, withinit=True)
 
 # create easyconfigs dir and subdirs
-dirname="easyconfigs"
+dirname = "easyconfigs"
 os.mkdir(dirname)
 create_subdirs(dirname)
