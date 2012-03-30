@@ -529,11 +529,12 @@ def build(module, options, log, origEnviron, exitOnFailure=True):
     app.logdebug = options.debug
 
     ## Build specification
+    errormsg='(no error)'
     try:
         result = app.autobuild(spec, runTests=not options.skip_tests)
     except EasyBuildError, err:
-        msg = "autoBuild Failed: %s" % err
-        log.exception(msg)
+        errormsg = "autoBuild Failed: %s" % err.msg
+        log.exception(errormsg)
         result = False
 
     ended = "ended"
@@ -585,7 +586,7 @@ def build(module, options, log, origEnviron, exitOnFailure=True):
         buildDir = ''
         if app.builddir:
             buildDir = " (build directory: %s)" % (app.builddir)
-        succ = "unsuccessfully%s" % buildDir
+        succ = "unsuccessfully%s:\n%s" % (buildDir, errormsg)
 
         ## Cleanup logs
         app.closelog()
@@ -594,7 +595,7 @@ def build(module, options, log, origEnviron, exitOnFailure=True):
     del app
     os.chdir(cwd)
 
-    print "%s: Installation %s %s." % (summary, ended, succ)
+    print "%s: Installation %s %s" % (summary, ended, succ)
 
     ## Check for errors
     if exitCode > 0 or filetools.errorsFoundInLog > 0:
