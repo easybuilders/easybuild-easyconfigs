@@ -464,7 +464,7 @@ class Application:
         if not type(prev_value) == str:
             self.log.error("Can't update configuration value for %s, because it's not a string." % key)
 
-        new_value = '%s %s' % (prev_value, value)
+        new_value = '%s %s ' % (prev_value, value)
 
         self.setcfg(key, new_value)
 
@@ -884,7 +884,7 @@ class Application:
                                                     self.installdir, self.getcfg('configopts'))
         run_cmd(cmd, log_all=True, simple=True)
 
-    def make(self):
+    def make(self, verbose=False):
         """
         Start the actual build
         - typical: make -j X
@@ -895,7 +895,7 @@ class Application:
 
         cmd = "%s make %s %s" % (self.getcfg('premakeopts'), paracmd, self.getcfg('makeopts'))
 
-        run_cmd(cmd, log_all=True, simple=True)
+        run_cmd(cmd, log_all=True, simple=True, log_output=verbose)
 
     def test(self):
         """
