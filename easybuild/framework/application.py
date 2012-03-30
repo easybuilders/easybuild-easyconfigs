@@ -711,6 +711,7 @@ class Application:
             self.runstep('make', [self.make], skippable=True)
 
             ## TEST
+            print "testing..."
             self.runstep('test', [self.test], skippable=True)
 
             ## INSTALL
