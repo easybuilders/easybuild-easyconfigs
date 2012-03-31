@@ -37,7 +37,7 @@ class GCC(Application):
             self.log.debug("Created dir at %s" % dirpath)
             return dirpath
         except OSError, err:
-            self.log.exception("Can't use dir %s to build in: %s"%(dirpath, err))
+            self.log.error("Can't use dir %s to build in: %s"%(dirpath, err))
 
     def prep_extra_src_dirs(self, stage, target_prefix=None):
         """
