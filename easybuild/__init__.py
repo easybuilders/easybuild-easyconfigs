@@ -49,13 +49,3 @@ def get_git_revision():
         return "UNKNOWN"
 
 VERBOSE_VERSION = LooseVersion("%s-r%s" % (VERSION, get_git_revision()))
-
-# make sure that required Python modules are present,
-# because EasyBuild will not work properly without it (and you won't notice)
-try:
-    import pkg_resources
-except ImportError, err:
-    sys.stderr.write("Failed to import pkg_resources module: %s\n" % err)
-    sys.stderr.write("Please make sure that the pkg_resources module is available for your Python environment.")
-    sys.stderr.write("See http://pypi.python.org/pypi/setuptools.")
-    sys.exit(1)
