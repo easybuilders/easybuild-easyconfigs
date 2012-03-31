@@ -11,17 +11,20 @@ class BLACS(Application):
     """
 
     def configure(self):
+
         src = os.path.join(self.getcfg('startfrom'), 'BMAKES', 'Bmake.MPI-LINUX')
         dest = os.path.join(self.getcfg('startfrom'), 'Bmake.inc')
+
         if not os.path.isfile(src):
             self.log.error("Can't find source file %s" % src)
+
         if os.path.exists(dest):
             self.log.error("Destination file %s exists" % dest)
 
         try:
-            os.symlink(src,dest)
+            shutil.copy(src, dest)
         except OSError, err:
-            self.log.exception("Symlinking %s to % failed: %s" % (src, dest, err))
+            self.log.error("Symlinking %s to % failed: %s" % (src, dest, err))
 
     def make(self):
 
@@ -36,14 +39,14 @@ class BLACS(Application):
             comm = 'UseMpi2'
             interface = 'f77IsF2C'
             base = os.getenv('SOFTROOTOPENMPI')
-
+    
         elif os.getenv('SOFTROOTMVAPICH2'):
             comm = 'CSameF77'
             interface = 'Add_'
             base = os.getenv('SOFTROOTMVAPICH2')
-
+    
         else:
-            self.log.error("Support for MPI library used not yet implemented.")
+            self.log.error("Support for obtaining specific settings for MPI library used not yet implemented.")
 
         opts = {
                 'mpicc':mpicc,
@@ -79,7 +82,7 @@ class BLACS(Application):
                 self.log.debug("Copied %s to %s and symlinked it to %s" % (lib, dest, symlink_name))
 
         except OSError, err:
-            self.log.exception("Copying %s/*.a to installation dir %s failed: %s"%(src, dest, err))
+            self.log.error("Copying %s/*.a to installation dir %s failed: %s"%(src, dest, err))
 
     def sanitycheck(self):
 
