@@ -3,6 +3,30 @@ import shutil
 from easybuild.framework.application import Application
 from easybuild.tools.filetools import run_cmd
 
+# also used for e.g. ScaLAPACK
+def get_blas_lib(log):
+    """
+    Determine BLAS lib to provide to e.g. LAPACK for building/testing
+    """
+    blaslib = None
+    known_blas_libs = {
+                       'GotoBLAS' : '-L%s -lgoto',
+                       'ATLAS' : '-L%s -latlas -lf77blas'
+                       }
+    for (key,val) in known_blas_libs.items():
+        softroot = 'SOFTROOT%s' % key.upper()
+        if os.getenv(softroot):
+            blaslib = val % os.path.join(os.getenv(softroot), 'lib')
+            log.debug("Found %s, so using %s as BLAS lib" % (softroot, key))
+            break
+        else:
+            log.debug("%s not defined, so %s not loaded" % (softroot, key))
+
+    if not blaslib:
+        log.error("No or unknown BLAS lib loaded; known BLAS libs: %s" % known_blas_libs.keys())
+
+    return blaslib
+
 class LAPACK(Application):
     """
     Support for building LAPACK
@@ -17,29 +41,6 @@ class LAPACK(Application):
                          'supply_blas':[False, "Supply BLAS lib to LAPACK for building (default: False)"],
                          'test_only':[False, "Only make tests, don't try and build LAPACK lib."]
                          })
-
-    def get_blas_lib(self):
-        """
-        Determine BLAS lib to provide to LAPACK for building/testing
-        """
-        blaslib = None
-        known_blas_libs = {
-                           'GotoBLAS' : '-L%s -lgoto',
-                           'ATLAS' : '-L%s -latlas -lf77blas'
-                           }
-        for (key,val) in known_blas_libs.items():
-            softroot = 'SOFTROOT%s' % key.upper()
-            if os.getenv(softroot):
-                blaslib = val % os.path.join(os.getenv(softroot), 'lib')
-                self.log.debug("Found %s, so using %s as BLAS lib" % (softroot, key))
-                break
-            else:
-                self.log.debug("%s not defined, so %s not loaded" % (softroot, key))
-
-        if not blaslib:
-            self.log.error("No or unknown BLAS lib loaded; known BLAS libs: %s" % known_blas_libs.keys())
-
-        return blaslib
 
     def configure(self):
         """
@@ -66,7 +67,7 @@ class LAPACK(Application):
         try:
             shutil.copy(src, dest)
         except OSError, err:
-            self.log.exception("Copying %s to %s failed: %s" % (src, dest, err))
+            self.log.error("Copying %s to %s failed: %s" % (src, dest, err))
 
         # set optimization flags
         fpic = ''
@@ -82,7 +83,7 @@ class LAPACK(Application):
         # supply blas lib (or not)
         if self.getcfg('supply_blas'):
 
-            blaslib=self.get_blas_lib()
+            blaslib = get_blas_lib(self.log)
 
             self.log.debug("Providing '%s' as BLAS lib" % blaslib)
             self.updatecfg('makeopts', 'BLASLIB="%s"' % blaslib)
