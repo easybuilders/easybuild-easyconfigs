@@ -3,29 +3,6 @@ import os
 import shutil
 from easybuild.framework.application import Application
 
-# also used in e.g. ScaLAPACK
-def get_mpilib_specifics(log):
-    """
-    Get MPI library specific settings
-    """
-    if os.getenv('SOFTROOTOPENMPI'):
-        return {
-                'comm':'UseMpi2',
-                'interface':'f77IsF2C',
-                'base':os.getenv('SOFTROOTOPENMPI')
-                }
-
-    elif os.getenv('SOFTROOTMVAPICH2'):
-        return {
-                'comm':'CSameF77',
-                'interface':'Add_',
-                'base':os.getenv('SOFTROOTMVAPICH2')
-                }
-
-    else:
-        log.error("Support for obtaining specific settings for MPI library used not yet implemented.")
-
-
 class BLACS(Application):
     """
     Support for building/installing BLACS
@@ -58,10 +35,18 @@ class BLACS(Application):
         mpif77 = 'mpif77'
 
         # MPI lib specific settings
-        mpi_specs = get_mpilib_specifics(self.log)
-        comm = mpi_specs['comm']
-        interface = mpi_specs['interface']
-        base = mpi_specs['base']
+        if os.getenv('SOFTROOTOPENMPI'):
+            comm = 'UseMpi2'
+            interface = 'f77IsF2C'
+            base = os.getenv('SOFTROOTOPENMPI')
+    
+        elif os.getenv('SOFTROOTMVAPICH2'):
+            comm = 'CSameF77'
+            interface = 'Add_'
+            base = os.getenv('SOFTROOTMVAPICH2')
+    
+        else:
+            self.log.error("Support for obtaining specific settings for MPI library used not yet implemented.")
 
         opts = {
                 'mpicc':mpicc,
