@@ -1417,21 +1417,30 @@ def get_instance(easyblock, log, name=None):
             if not name:
                 name="UNKNOWN"
 
-            try:
-                modulepath = module_path_for_easyblock(name)
-                class_name = name
+            modulepath = module_path_for_easyblock(name)
+            class_name = name
 
-                inst = get_instance_for(modulepath, class_name)
-                
-                log.info("Successfully obtained %s class instance from %s" % (class_name, modulepath))
+            # only try to import derived easyblock if it exists
+            easybuild_dir = os.path.dirname(os.path.realpath(sys.argv[0]))
+            easyblock_path = os.path.join(easybuild_dir, "..", "%s.py" % modulepath.replace('.', os.path.sep))
+            if os.path.exists(easyblock_path):
 
-                return inst
+                try:
 
-            except (AttributeError, ImportError, NameError), err:
-                log.info("Failed to use easyblock at %s for class %s: %s" % (modulepath, class_name, err))
+                    inst = get_instance_for(modulepath, class_name)
+
+                    log.info("Successfully obtained %s class instance from %s" % (class_name, modulepath))
+
+                    return inst
+
+                except (AttributeError, ImportError, NameError), err:
+                    log.error("Failed to use easyblock at %s for class %s: %s" % (modulepath, class_name, err))
+
+            else:
+                log.debug("Easyblock path %s does not exist, so falling back to default %s class from %s" % (easyblock_path, class_name, modulepath))
                 modulepath = "easybuild.framework.application"
                 class_name = "Application"
-                log.info("Falling back to default %s class from %s" % (class_name, modulepath))
+
         else:
             class_name = easyblock.split('.')[-1]
             # figure out if full path was specified or not
@@ -1442,7 +1451,9 @@ def get_instance(easyblock, log, name=None):
                 modulepath= module_path_for_easyblock(easyblock)
                 log.info("Derived full easyblock module path for %s: %s" % (class_name, modulepath))
 
-        return get_instance_for(modulepath, class_name)
+        inst = get_instance_for(modulepath, class_name)
+        log.info("Successfully obtained %s class instance from %s" % (class_name, modulepath))
+        return inst
 
     except (AttributeError, ImportError, NameError, ValueError), err:
         log.exception("Can't process provided module and class pair %s: %s" % (easyblock, err))
