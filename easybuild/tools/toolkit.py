@@ -37,6 +37,8 @@ class Toolkit:
         self.dependencies = []
         self.vars = {}
         self.arch = None
+        self.toolkit_deps = []
+        self.m32flag = ''
 
         ## Option flags
         self.opts = {
@@ -45,11 +47,16 @@ class Toolkit:
            'i8': False, 'unroll': False, 'verbose': False, 'cstd': None,
            'shared': False, 'static': False, 'intel-static': False,
            'loop': False, 'f2c': False, 'no-icc': False,
-           'packed-groups': False,
+           'packed-groups': False, '32bit' : False
         }
 
         self.name = name
         self.version = version
+
+        # 32-bit toolkit have version that ends with '32bit'
+        if self.version.endswith('32bit'):
+            self.opts['32bit'] = True
+            self.m32flag = " -m32"
 
     def _toolkitExists(self, name=None, version=None):
         """
@@ -100,9 +107,10 @@ class Toolkit:
                 log.error('No toolkit version for dependency name %s (suffix %s) found'
                            % (dependency['name'], "%s%s" % (toolkit, suffix)))
 
-    def addDependency(self, dependencies):
+    def addDependencies(self, dependencies):
         """ Verify if the given dependencies exist and add them """
         mod = Modules()
+        log.debug("Adding toolkit dependencies")
         for dep in dependencies:
             if not 'tk' in dep:
                 dep['tk'] = self.getDependencyVersion(dep)
@@ -110,7 +118,8 @@ class Toolkit:
             if not mod.exists(dep['name'], dep['tk']):
                 log.error('No module found for dependency %s/%s' % (dep['name'], dep['tk']))
             else:
-                self.dependencies += [dep]
+                self.dependencies.append(dep)
+                log.debug('Added toolkit dependency %s' % dep)
 
     def prepare(self, onlymod=None):
         """
@@ -137,33 +146,23 @@ class Toolkit:
 
         ## Load the toolkit module
         modules = Modules()
-        modules.addModule([[self.name, self.version]])
+        modules.addModule([(self.name, self.version)])
+        modules.load()
+
+        ## Determine modules that are dependencies of toolkit itself
+        self.toolkit_deps = modules.loaded_modules()
+        for dep in self.toolkit_deps:
+            if self.name == dep['name']:
+                self.toolkit_deps.remove(dep)
+
+        ## Load dependent modules
         modules.addModule(self.dependencies)
         modules.load()
 
         self._determineArchitecture()
 
         ## Generate the variables to be set
-        preparationMethods = {
-            'GCC': self.prepareGCC,
-            'gimkl': self.prepareGimkl,
-            'gmgfl': self.prepareG_gfl,
-            'gogfl': self.prepareG_gfl,
-            'gqacml': self.prepareG_acml,
-            'gmqacml': self.prepareG_acml,
-            'icc': self.prepareIccBased,
-            'ictce': self.prepareIctce,
-            'iqacml': self.prepareIqacml,
-            'ismkl': self.prepareIsmkl,
-        }
-
-        if self.name in preparationMethods:
-            m32 = False
-            if self.version.endswith("32bit"):
-                m32 = True
-            preparationMethods[self.name](m32=m32)
-        else:
-            log.error("Don't know how to prepare toolkit '%s'." % self.name)
+        self._generate_variables()
 
         ## set the variables
         if not (onlymod == True):
@@ -175,15 +174,18 @@ class Toolkit:
         else:
             log.debug("No variables set: onlymod=%s" % onlymod)
 
-    def _addDependencyVariables(self, deps=None):
+    def _addDependencyVariables(self, dep=None):
         """ Add LDFLAGS and CPPFLAGS to the self.vars based on the dependencies """
         cpp_paths = ['include']
         ld_paths = ['lib64', 'lib']
 
-        if not deps:
+        if not dep:
             deps = self.dependencies
+        else:
+            deps = [dep]
 
         for dep in deps:
+            log.debug("dep: %s" % dep)
             softwareRoot = getSoftwareRoot(dep['name'])
             if not softwareRoot:
                 log.error("%s was not found in environment (dep: %s)" % (dep['name'], dep))
@@ -237,36 +239,154 @@ class Toolkit:
         else:
             log.error("Don't know how to set optarch for %s." % self.arch)
 
-    def prepareGCCBased(self, withMPI=True, intelMPI=False, m32=False):
+    def _generate_variables(self):
 
-        if m32:
-            log.error("ERROR: m32 not supported yet for GCC based toolkits.")
+        preparation_methods = []
+
+        # list of preparation methods
+        # number are assigned to indicate order in which they need to be run
+        known_preparation_methods = {
+            # compilers always go first
+            '1_GCC':self.prepareGCC,
+            '1_icc':self.prepareIcc, # also for ifort
+            # MPI libraries
+            '2_impi':self.prepareIMPI,
+            '2_MPICH2':self.prepareMPICH2,
+            '2_MVAPICH2':self.prepareMVAPICH2,
+            '2_OpenMPI':self.prepareOpenMPI,
+            '2_QLogicMPI':self.prepareQLogicMPI,
+            # BLAS libraries, LAPACK, FFTW
+            '3_ATLAS':self.prepareATLAS,
+            '3_FFTW':self.prepareFFTW,
+            '3_GotoBLAS':self.prepareGotoBLAS,
+            '3_imkl':self.prepareIMKL,
+            '4_LAPACK':self.prepareLAPACK,
+            # BLACS, FLAME, ScaLAPACK, ...
+            '5_BLACS':self.prepareBLACS,
+            '5_FLAME':self.prepareFLAME,
+            '6_ScaLAPACK':self.prepareScaLAPACK
+        }
+
+        # obtain list of dependency names
+        depnames = []
+        for dep in self.toolkit_deps:
+            depnames.append(dep['name'].lower())
+        log.debug("depnames: %s" % depnames)
+
+        # figure out which preparation methods we need to run based on toolkit dependencies
+        meth_keys = known_preparation_methods.keys()
+        meth_keys.sort()
+        for dep in depnames:
+            dep_found = False
+            for meth in meth_keys:
+                # bit before first '_' is used for ordering
+                meth_name = '_'.join(meth.split('_')[1:])
+                if dep.lower() == meth_name.lower():
+                    preparation_methods.append(known_preparation_methods[meth])
+                    dep_found = True
+                    break
+            if not dep_found:
+                log.error("Don't know how to prepare for toolkit dependency %s" % meth_name)
+
+        log.debug("List of preparation methods: %s" % preparation_methods)
+
+        self.vars["LDFLAGS"] = ''
+        self.vars["CPPFLAGS"] = ''
+        self.vars['LIBS'] = ''
+
+        for preparation_method in preparation_methods:
+            preparation_method()
+
+        # old way, based on toolkit name
+        ## TODO: get rid of this
+        if not preparation_methods:
+            if self.name in known_preparation_methods:
+                known_preparation_methods[self.name]()
+            else:
+                log.error("Don't know how to prepare toolkit '%s'." % self.name)
+
+    def prepareACML(self):
+        """
+        Prepare for AMD Math Core Library (ACML)
+        """
+
+        if self.opts['32bit']:
+            log.error("ERROR: 32-bit not supported (yet) for ACML.")
+
+        self._addDependencyVariables([{'name':'ACML'}])
+
+        if os.getenv('SOFTROOTGCC'):
+            compiler = 'gfortran'
+        else:
+            log.error("Don't know which compiler-specific subdir for ACML to use.")
+
+        self.vars['LIBBLAS'] = "%(acml)s/%(comp)s64/lib/libacml_mv.a " \
+                               "%(acml)s/%(comp)s64/lib/libacml.a -lpthread" % {
+                                                                                'comp':compiler, 
+                                                                                'acml':os.environ['SOFTROOTACML']
+                                                                                }
+        self.vars['LIBBLAS_MT'] = self.vars['LIBBLAS']
+
+    def prepareATLAS(self):
+        """
+        Prepare for ATLAS BLAS/LAPACK library
+        """
+
+        self.vars['LIBBLAS'] = " -latlas -llapack -lcblas -lf77blas"
+        self.vars['LIBBLAS_MT'] = " -latlas -llapack -lptcblas -lptf77blas -lpthread"
+
+        self._addDependencyVariables({'name':'ATLAS'})
+
+    def prepareBLACS(self):
+        """
+        Prepare for BLACS library
+        """
+
+        self.vars['LIBSCALAPACK'] = " -lblacsF77init -lblacs "
+        self.vars['LIBSCALAPACK_MT'] = self.vars['LIBSCALAPACK']
+
+        self._addDependencyVariables({'name':'BLACS'})
+
+    def prepareFLAME(self):
+        """
+        Prepare for FLAME library
+        """
+
+        self.vars['LIBLAPACK'] += " -llapack2flame -lflame "
+        self.vars['LIBLAPACK_MT'] += " -llapack2flame -lflame "
+
+        self._addDependencyVariables({'name':'FLAME'})
+
+    def prepareFFTW(self):
+        """
+        Prepare for FFTW library
+        """
+
+        suffix = ''
+        if os.getenv('SOFTVERSIONFFTW').startswith('3.'):
+            suffix = '3' 
+        self.vars['LIBFFT'] = " -lfftw%s " % suffix
+        if self.opts['usempi']:
+            self.vars['LIBFFT'] += " -lfftw%s_mpi " % suffix
+
+        self._addDependencyVariables({'name':'FFTW'})
+
+    def prepareGCC(self, withMPI=True):
+        """
+        Prepare for a GCC-based compiler toolkit
+        """
+
+        if self.opts['32bit']:
+            log.error("ERROR: 32-bit not supported yet for GCC based toolkits.")
 
         # set basic GCC options
-        self.vars['CC'] = 'gcc'
-        self.vars['CXX'] = 'g++'
-        self.vars['F77'] = 'gfortran'
-        self.vars['F90'] = 'gfortran'
-
-        if intelMPI:
-            self.vars['MPICC'] = 'mpicc -cc=%s' % self.vars['CC']
-            self.vars['MPICXX'] = 'mpicxx -cxx=%s' % self.vars['CXX']
-            self.vars['MPIF77'] = 'mpif77 -fc=%s' % self.vars['F77']
-            self.vars['MPIF90'] = 'mpif90 -fc=%s' % self.vars['F90']
-        elif withMPI:
-            self.vars['MPICC'] = 'mpicc'
-            self.vars['MPICXX'] = 'mpicxx'
-            self.vars['MPIF77'] = 'mpif77'
-            self.vars['MPIF90'] = 'mpif90'
-
-        if self.opts['usempi']:
-            for i in ['CC', 'CXX', 'F77', 'F90']:
-                self.vars[i] = self.vars["MPI%s" % i]
+        self.vars['CC'] = 'gcc %s' % self.m32flag
+        self.vars['CXX'] = 'g++ %s' % self.m32flag
+        self.vars['F77'] = 'gfortran %s ' % self.m32flag
+        self.vars['F90'] = 'gfortran %s' % self.m32flag
 
         if self.opts['cciscxx']:
             self.vars['CXX'] = self.vars['CC']
-            if withMPI:
-                self.vars['MPICXX'] = self.vars['MPICC']
 
         flags = []
 
@@ -296,70 +416,32 @@ class Toolkit:
         if len(flags) > 0:
             self.vars['F90FLAGS'] = "%s" % ('-' + ' -'.join(flags))
 
-        self.vars["LDFLAGS"] = ""
-        self.vars["CPPFLAGS"] = ""
-        self.vars['LIBS'] = ""
-        self.vars['LIBSCALAPACK'] = "-lscalapack -lblacsF77init -lblacs"
-
         ## to get rid of lots of problems with libgfortranbegin
         ## or remove the system gcc-gfortran
-        ##self.vars['FLIBS']="-lgfortran"
+        self.vars['FLIBS']="-lgfortran"
 
-    def prepareGCC(self, m32=False):
-        """ Prepare for gcc toolkit """
-        self.prepareGCCBased(withMPI=False, m32=m32)
+    def prepareGotoBLAS(self):
+        """
+        Prepare for GotoBLAS BLAS library
+        """
 
-    def prepareG_gfl(self, m32=False):
-        """ Prepare for g*gfl toolkit: GCC+LAPACK+GotoBLAS+FLAME and some MPI lib """
-        self.prepareGCCBased(m32=m32)
+        self.vars['LIBBLAS'] = "-lgoto"
+        self.vars['LIBBLAS_MT'] = self.vars['LIBBLAS']
 
-        ## all is based on SOFTROOT environment variables
-        ## MVAPICH2 is dealt with by mpi{cc,cxx,f77,f90}
-        g_gfldeps = [{'name': 'GotoBLAS'}, {'name': 'FLAME'}, {'name': 'LAPACK'},
-                     {'name': 'BLACS'}, {'name': 'ScaLAPACK'}]
-        self._addDependencyVariables(g_gfldeps)
+        self._addDependencyVariables({'name':'GotoBLAS'})
 
-    def prepareGimkl(self, m32=False):
-        """ Prepare for gimkl toolkit: GCC+IMPI+IMKL """
-        self.prepareGCCBased(intelMPI=True, m32=m32)
-        self.prepareIMKL(m32=m32)
+    def prepareIcc(self):
+        """
+        Prepare for an icc/ifort based compiler toolkit
+        """
 
-        for var in ['LIBLAPACK', 'LIBLAPACK_MT', 'LIBSCALAPACK', 'LIBSCALAPACK_MT']:
-            self.vars[var] = self.vars[var].replace('mkl_intel_lp64', 'mkl_gf_lp64')
-
-    def prepareG_acml(self, m32=False):
-        """ Prepare for g*acml toolkit: GCC+ACML and some MPI lib"""
-        self.prepareGCCBased(m32=m32)
-        self.prepareACML('gfortran', m32=m32)
-
-    def prepareIccBased(self, withIMPI=False, m32=False):
-        """ Set basic ICC info """
-        mpiprefix = ''
-        if self.opts['usempi'] and withIMPI:
-            mpiprefix = 'mpi'
-
-        m32flag = ""
-        if m32:
-            m32flag = " -m32"
-
-        self.vars['CC'] = '%sicc%s' % (mpiprefix, m32flag)
-        self.vars['CXX'] = '%sicpc%s' % (mpiprefix, m32flag)
-        self.vars['F77'] = '%sifort%s' % (mpiprefix, m32flag)
-        self.vars['F90'] = '%sifort%s' % (mpiprefix, m32flag)
-
-        if withIMPI:
-            self.vars['MPICC'] = 'mpiicc%s' % m32flag
-            self.vars['MPICXX'] = 'mpiicpc%s' % m32flag
-            self.vars['MPIF77'] = 'mpiifort%s' % m32flag
-            self.vars['MPIF90'] = 'mpiifort%s' % m32flag
-            # used by mpicc and mpicxx to actually use mpiicc and mpicxx
-            self.vars['I_MPI_CXX'] = "icpc"
-            self.vars['I_MPI_CC'] = "icc"
+        self.vars['CC'] = 'icc%s' % self.m32flag
+        self.vars['CXX'] = 'icpc%s' % self.m32flag
+        self.vars['F77'] = 'ifort%s' % self.m32flag
+        self.vars['F90'] = 'ifort%s' % self.m32flag
 
         if self.opts['cciscxx']:
             self.vars['CXX'] = self.vars['CC']
-            if withIMPI:
-                self.vars['MPICXX'] = self.vars['MPICC']
 
         flags = []
         if self.opts['optarch']:
@@ -382,56 +464,15 @@ class Toolkit:
         if len(flags) > 0:
             self.vars['FFLAGS'] = '-' + ' -'.join(flags)
 
-        self.vars['LDFLAGS'] = ''
-        self.vars['CPPFLAGS'] = ''
-        self.vars['LIBS'] = ''
-
-    def prepareIctce(self, m32=False):
-        """ Prepare for ictce toolkit """
-        self.prepareIccBased(withIMPI=True, m32=m32)
-        self.prepareIMKL(m32=m32)
-
         if LooseVersion(os.environ['SOFTVERSIONICC']) < LooseVersion('2011'):
             self.vars['LIBS'] += " -liomp5 -lguide -lpthread"
         else:
             self.vars['LIBS'] += " -liomp5 -lpthread"
 
-    def prepareIqacml(self, m32=False):
-        """ Prepare for iqacml toolkit: icc+qlogic mpi+acml """
-        self.prepareIccBased(m32=m32)
-        self.prepareACML('intel', m32=m32)
-
-        ## QLogic specific
-        self.vars['MPICC'] = 'mpicc -cc=icc'
-        self.vars['MPICXX'] = 'mpicxx -CC=icpc'
-        self.vars['MPIF77'] = 'mpif77 -fc=ifort'
-        self.vars['MPIF90'] = 'mpif90 -f90=ifort'
-
-    def prepareIsmkl(self, m32=False):
-        """ Prepare for ismkl toolkit: icc+ScaleMP mpi+mkl """
-        self.prepareIccBased(m32=m32)
-        self.prepareIMKL(m32=m32)
-
-        # ScaleMP MPICH specific
-        self.vars['MPICC'] = 'mpicc -cc=icc'
-        self.vars['MPICXX'] = 'mpicxx -CC=icpc'
-        self.vars['MPIF77'] = 'mpif77 -fc=ifort'
-        self.vars['MPIF90'] = 'mpif90 -f90=ifort'
-
-    def prepareACML(self, compiler, m32=False):
-
-        if m32:
-            log.error("ERROR: m32 not supported yet for ACML.")
-
-        # prepare toolkit for AMD Core Math Library (ACML)
-        deps = [{'name': 'ACML'}, {'name': 'BLACS'}, {'name': 'ScaLAPACK'}]
-        self._addDependencyVariables(deps)
-
-        self.vars['LIBBLAS'] = "%(acml)s/%(comp)s64/lib/libacml_mv.a " \
-                               "%(acml)s/%(comp)s64/lib/libacml.a -lpthread" % {'comp':compiler, 'acml':os.environ['SOFTROOTACML']}
-
-    def prepareIMKL(self, m32=False):
-        """ Prepare toolkit for IMKL: Intel Math Kernel Library """
+    def prepareIMKL(self):
+        """
+        Prepare toolkit for IMKL: Intel Math Kernel Library
+        """
 
         mklRoot = os.getenv('MKLROOT')
         if not mklRoot:
@@ -442,7 +483,7 @@ class Toolkit:
         libsuffix = "_lp64"
         libsuffixsl = "_lp64"
         libdir = "em64t"
-        if m32:
+        if self.opts['32bit']:
             libsuffix = ""
             libsuffixsl = "_core"
             libdir = "32"
@@ -463,6 +504,7 @@ class Toolkit:
                                    'libdir':libdir,
                                    'libsuffix':libsuffix
                                   }
+        self.vars['LIBBLAS_MT'] = self.vars['LIBLAPACK_MT']
         self.vars['LIBSCALAPACK'] = \
             "%(mkl)s/lib/%(libdir)s/libmkl_scalapack%(libsuffixsl)s.a " \
             "%(mkl)s/lib/%(libdir)s/libmkl_solver%(libsuffix)s_sequential.a " \
@@ -486,25 +528,143 @@ class Toolkit:
 
         # Exact paths/linking statements depend on imkl version
         if LooseVersion(os.environ['SOFTVERSIONIMKL']) < LooseVersion('10.3'):
-            if m32:
+            if self.opts['32bit']:
                 mklld = ['lib/32']
             else:
                 mklld = ['lib/em64t']
             mklcpp = ['include', 'include/fftw']
         else:
-            if m32:
+            if self.opts['32bit']:
                 log.error("32-bit libraries not supported yet for IMKL v%s (> v10.3)" % os.environ("SOFTROOTIMKL"))
 
             mklld = ['lib/intel64', 'mkl/lib/intel64']
             mklcpp = ['mkl/include', 'mkl/include/fftw']
 
-            static_vars = ['LIBBLAS', 'LIBLAPACK', 'LIBLAPACK_MT', 'LIBSCALAPACK', 'LIBSCALAPACK_MT']
+            static_vars = ['LIBBLAS', 'LIBBLAS_MT', 'LIBLAPACK', 'LIBLAPACK_MT', 'LIBSCALAPACK', 'LIBSCALAPACK_MT']
             for var in static_vars:
                 self.vars[var] = self.vars[var].replace('/lib/em64t/', '/mkl/lib/intel64/')
 
         # Linker flags
         self._flagsForSubdirs(mklRoot, mklld, flag="-L%s", varskey="LDFLAGS")
         self._flagsForSubdirs(mklRoot, mklcpp, flag="-I%s", varskey="CPPFLAGS")
+
+        if os.getenv('SOFTROOTGCC'):
+            if not (os.getenv('SOFTROOTGCC') or os.getenv('SOFTROOTGCC')):
+                for var in ['LIBLAPACK', 'LIBLAPACK_MT', 'LIBSCALAPACK', 'LIBSCALAPACK_MT']:
+                    self.vars[var] = self.vars[var].replace('mkl_intel_lp64', 'mkl_gf_lp64')
+            else:
+                log.error("Toolkit preparation with both GCC and Intel compilers loaded is not supported.")
+
+    def prepareIMPI(self):
+        """
+        Prepare for Intel MPI library
+        """
+
+        if os.getenv('SOFTROOTICC') and os.getenv('SOFTROOTIFORT') and not os.getenv('SOFTROOTGCC'):
+            # Intel-based toolkit
+
+            self.vars['MPICC'] = 'mpiicc %s' % self.m32flag
+            self.vars['MPICXX'] = 'mpiicpc %s' % self.m32flag
+            self.vars['MPIF77'] = 'mpiifort %s' % self.m32flag
+            self.vars['MPIF90'] = 'mpiifort %s' % self.m32flag
+
+            if self.opts['usempi']:
+                for i in ['CC', 'CXX', 'F77', 'F90']:
+                    self.vars[i] = self.vars["MPI%s" % i]
+
+            # used by mpicc and mpicxx to actually use mpiicc and mpiicpc
+            self.vars['I_MPI_CXX'] = "icpc"
+            self.vars['I_MPI_CC'] = "icc"
+
+            if self.opts['cciscxx']:
+                self.vars['MPICXX'] = self.vars['MPICC']
+
+        else:
+            # other compilers (e.g. GCC) with Intel MPI
+            self.vars['MPICC'] = 'mpicc -cc=%s %s ' % (self.vars['CC'], self.m32flag)
+            self.vars['MPICXX'] = 'mpicxx -cxx=%s %s ' % (self.vars['CXX'], self.m32flag)
+            self.vars['MPIF77'] = 'mpif77 -fc=%s %s ' % (self.vars['F77'], self.m32flag)
+            self.vars['MPIF90'] = 'mpif90 -fc=%s %s ' % (self.vars['F90'], self.m32flag)
+
+    def prepareQLogicMPI(self):
+
+        ## QLogic specific
+        self.vars['MPICC'] = 'mpicc -cc="%s"' % os.getenv('CC')
+        self.vars['MPICXX'] = 'mpicxx -CC="%s"' % os.getenv('CXX')
+        self.vars['MPIF77'] = 'mpif77 -fc="%s"' % os.getenv('F77')
+        self.vars['MPIF90'] = 'mpif90 -f90="%s"' % os.getenv('F90')
+
+        if self.opts['usempi']:
+            for i in ['CC', 'CXX', 'F77', 'F90']:
+                self.vars[i] = self.vars["MPI%s" % i]
+
+    def prepareLAPACK(self):
+        """
+        Prepare for LAPACK library
+        """
+
+        self.vars['LIBLAPACK'] = "%s -llapack" % self.vars['LIBBLAS']
+        self.vars['LIBLAPACK_MT'] = "%s -llapack -lpthread" % self.vars['LIBBLAS_MT']
+
+        self._addDependencyVariables({'name':'LAPACK'})
+
+    def prepareMPICH2(self):
+        """
+        Prepare for MPICH2 MPI library (e.g. ScaleMP's version)
+        """
+        if "vSMP" in os.getenv('SOFTVERSIONMPICH2'):
+            # ScaleMP MPICH specific
+            self.vars['MPICC'] = 'mpicc -cc="%s %s"' % (os.getenv('CC'), self.m32flag)
+            self.vars['MPICXX'] = 'mpicxx -CC="%s %s"' % (os.getenv('CXX'), self.m32flag)
+            self.vars['MPIF77'] = 'mpif77 -fc="%s %s"' % (os.getenv('F77'), self.m32flag)
+            self.vars['MPIF90'] = 'mpif90 -f90="%s %s"' % (os.getenv('F90'), self.m32flag)
+
+            if self.opts['cciscxx']:
+                self.vars['MPICXX'] = self.vars['MPICC']
+
+            if self.opts['usempi']:
+                for i in ['CC', 'CXX', 'F77', 'F90']:
+                    self.vars[i] = self.vars["MPI%s" % i]
+        else:
+            self.log.error("Don't know how to prepare for a non-ScaleMP MPICH2 library.")
+
+    def prepareSimpleMPI(self):
+        """
+        Prepare for 'simple' MPI libraries (e.g. MVAPICH2, OpenMPI)
+        """
+
+        self.vars['MPICC'] = 'mpicc %s' % self.m32flag
+        self.vars['MPICXX'] = 'mpicxx %s' % self.m32flag
+        self.vars['MPIF77'] = 'mpif77 %s' % self.m32flag
+        self.vars['MPIF90'] = 'mpif90 %s' % self.m32flag
+
+        if self.opts['cciscxx']:
+            self.vars['MPICXX'] = self.vars['MPICC']
+
+        if self.opts['usempi']:
+            for i in ['CC', 'CXX', 'F77', 'F90']:
+                self.vars[i] = self.vars["MPI%s" % i]
+
+    def prepareMVAPICH2(self):
+        """
+        Prepare for MVAPICH2 MPI library
+        """
+        self.prepareSimpleMPI()
+
+    def prepareOpenMPI(self):
+        """
+        Prepare for OpenMPI MPI library
+        """
+        self.prepareSimpleMPI()
+
+    def prepareScaLAPACK(self):
+        """
+        Prepare for ScaLAPACK library
+        """
+        self.vars['LIBSCALAPACK'] += " -lscalapack"
+        self.vars['LIBSCALAPACK_MT'] += " %s -lpthread" % self.vars['LIBSCALAPACK']
+
+        self._addDependencyVariables({'name':'ScaLAPACK'})
 
     def _getOptimizationLevel(self):
         """ Default is 02, but set it explicitly (eg -g otherwise becomes -g -O0)"""

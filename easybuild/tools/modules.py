@@ -106,7 +106,7 @@ class Modules:
         Check if module exist, if so add to list.
         """
         for mod in modules:
-            if type(mod) == list:
+            if type(mod) == list or type(mod) == tuple:
                 name, version = mod[0], mod[1]
             elif type(mod) == str:
                 (name, version) = mod.split('/')
@@ -118,7 +118,7 @@ class Modules:
                 else:
                     version = mod['version']
             else:
-                log.error("Can't add module %s: unknown type" % mod)
+                log.error("Can't add module %s: unknown type" % str(mod))
 
             mods = self.available(name, version)
             if (name, version) in mods:
@@ -177,6 +177,22 @@ class Modules:
                 result.append(package.groupdict())
         return result
 
+    def loaded_modules(self):
+
+        loaded_modules = []
+
+        if os.getenv('LOADEDMODULES'):
+            for mod in os.getenv('LOADEDMODULES').split(':'):
+                (mod_name, mod_version) = mod.split('/')
+                loaded_modules.append({
+                                       'name':mod_name,
+                                       'version':mod_version
+                                       })
+
+        else:
+            log.error("No environment variable found to determine loaded modules")
+
+        return loaded_modules
 
 def searchModule(path, query):
     """
