@@ -498,6 +498,11 @@ class Application:
         """
         Verify if all is ok to start build.
         """
+        # Make sure no modules are loaded
+        ## this is to ensure that all the toolkit prepare functions are run
+        if len(Modules().loaded_modules()) > 0:
+            self.log.error("Loaded modules detected, please unload all modules ('module purge') before using EasyBuild.")
+
         # Do all dependencies have a toolkit version
         self.tk.addDependencies(self.dep)
         if not len(self.dep) == len(self.tk.dependencies):

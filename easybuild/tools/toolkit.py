@@ -144,15 +144,20 @@ class Toolkit:
                 modules.load()
             return
 
-        ## Load the toolkit module
+        ## Determine currently loaded modules
         modules = Modules()
+        prev_loaded_modules = modules.loaded_modules()
+        log.debug("Previous loaded modules: %s" % prev_loaded_modules)
+
+        ## Load the toolkit module
         modules.addModule([(self.name, self.version)])
         modules.load()
 
         ## Determine modules that are dependencies of toolkit itself
         self.toolkit_deps = modules.loaded_modules()
         for dep in self.toolkit_deps:
-            if self.name == dep['name']:
+            # remove previously loaded modules and compiler toolkit itself
+            if dep in prev_loaded_modules or self.name == dep['name']:
                 self.toolkit_deps.remove(dep)
 
         ## Load dependent modules
@@ -286,7 +291,7 @@ class Toolkit:
                     dep_found = True
                     break
             if not dep_found:
-                log.error("Don't know how to prepare for toolkit dependency %s" % meth_name)
+                log.error("Don't know how to prepare for toolkit dependency %s" % dep)
 
         log.debug("List of preparation methods: %s" % preparation_methods)
 
