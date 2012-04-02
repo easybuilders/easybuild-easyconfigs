@@ -441,9 +441,6 @@ class Application:
 
         self.make_installversion()
 
-        if hasattr(self, 'extracfg') or hasattr(self, 'extraCfg'):
-            self.log.error("extracfg is deprecated, please extend self.cfg in __init__")
-
     def getcfg(self, key):
         """
         Get a configuration item.
@@ -1115,10 +1112,6 @@ class Application:
         """
         txt = "\n"
 
-        if hasattr(self, 'makeModuleExtraExtra') or hasattr(self, 'make_module_extra_extra'):
-            self.log.error("make_module_extra_extra is deprecated, please override makeModuleExtra" \
-                          "and append to the parent result.")
-
         ## SOFTROOT + SOFTVERSION
         environmentName = convertName(self.name(), upper=True)
         txt += self.moduleGenerator.setEnvironment("SOFTROOT" + environmentName, "$root")
@@ -1128,7 +1121,7 @@ class Application:
         for key, value in self.getcfg('modextravars').items():
             txt += self.moduleGenerator.setEnvironment(key, value)
 
-        self.log.debug("makeModuleExtra added this: %s" % txt)
+        self.log.debug("make_module_extra added this: %s" % txt)
 
         return txt
 
