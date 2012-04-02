@@ -180,17 +180,23 @@ class Modules:
     def loaded_modules(self):
 
         loaded_modules = []
+        mods = []
 
         if os.getenv('LOADEDMODULES'):
-            for mod in os.getenv('LOADEDMODULES').split(':'):
-                (mod_name, mod_version) = mod.split('/')
-                loaded_modules.append({
-                                       'name':mod_name,
-                                       'version':mod_version
-                                       })
+            mods = os.getenv('LOADEDMODULES').split(':')
+
+        elif os.getenv('_LMFILES_'):
+            mods = ['/'.join(modfile.split('/')[-2:]) for modfile in os.getenv('_LMFILES_').split(':')]
 
         else:
-            log.error("No environment variable found to determine loaded modules")
+            log.debug("No environment variable found to determine loaded modules, assuming no modules are loaded.")
+
+        for mod in mods:
+            (mod_name, mod_version) = mod.split('/')
+            loaded_modules.append({
+                                   'name':mod_name,
+                                   'version':mod_version
+                                   })
 
         return loaded_modules
 
