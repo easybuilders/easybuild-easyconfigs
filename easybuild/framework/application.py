@@ -93,7 +93,7 @@ class Application:
           'homepage':[None, 'The homepage of the software'],
           'description':[None, 'A short description of the software'],
           'parallel':[None, 'Degree of parallelism for e.g. make (default: based on the number of cores and restrictions in ulimit)'],
-          'maxparallel':[None,'Max degree of parallelism (default: None)'],
+          'maxparallel':[None, 'Max degree of parallelism (default: None)'],
           'keeppreviousinstall':[False, 'Boolean to keep the previous installation with identical name. Default False, expert s only!'],
           'cleanupoldbuild':[True, 'Boolean to remove (True) or backup (False) the previous build directory with identical name or not. Default True'],
           'cleanupoldinstall':[True, 'Boolean to remove (True) or backup (False) the previous install directory with identical name or not. Default True'],
@@ -441,9 +441,6 @@ class Application:
 
         self.make_installversion()
 
-        if hasattr(self, 'extracfg') or hasattr(self, 'extraCfg'):
-            self.log.error("extracfg is deprecated, please extend self.cfg in __init__")
-
     def getcfg(self, key):
         """
         Get a configuration item.
@@ -599,7 +596,7 @@ class Application:
                 # also consider easyconfigs path for patch files
                 if filename.endswith(".patch"):
                     easybuild_dir = os.path.dirname(os.path.realpath(sys.argv[0]))
-                    candidate_filepaths.append(os.path.join(easybuild_dir, "easyconfigs",self.name().lower()[0],self.name()))
+                    candidate_filepaths.append(os.path.join(easybuild_dir, "easyconfigs", self.name().lower()[0], self.name()))
 
                 # see if file can be found at that location
                 for cfp in candidate_filepaths:
@@ -1115,10 +1112,6 @@ class Application:
         """
         txt = "\n"
 
-        if hasattr(self, 'makeModuleExtraExtra') or hasattr(self, 'make_module_extra_extra'):
-            self.log.error("make_module_extra_extra is deprecated, please override makeModuleExtra" \
-                          "and append to the parent result.")
-
         ## SOFTROOT + SOFTVERSION
         environmentName = convertName(self.name(), upper=True)
         txt += self.moduleGenerator.setEnvironment("SOFTROOT" + environmentName, "$root")
@@ -1128,7 +1121,7 @@ class Application:
         for key, value in self.getcfg('modextravars').items():
             txt += self.moduleGenerator.setEnvironment(key, value)
 
-        self.log.debug("makeModuleExtra added this: %s" % txt)
+        self.log.debug("make_module_extra added this: %s" % txt)
 
         return txt
 
@@ -1194,7 +1187,7 @@ class Application:
 
     def find_package_sources(self):
         """
-        Find source file for packages.
+        Find source file for packages. 
         """
         pkgSources = []
         for pkg in self.getcfg('pkglist'):
@@ -1381,7 +1374,7 @@ def get_instance_for(modulepath, class_name):
     # >>> d = loader.load_module('Base')
     # >>> c = getattr(d,'Likwid')
     # >>> c()
-    m =  __import__(modulepath, globals(), locals(), [''])
+    m = __import__(modulepath, globals(), locals(), [''])
     c = getattr(m, class_name)
     return c()
 
@@ -1394,7 +1387,7 @@ def module_path_for_easyblock(easyblock):
     - easybuild.easyblocks.z
     - easybuild.easyblocks.0
     """
-    letters = [chr(ord('a')+x) for x in range(0,26)] # a-z
+    letters = [chr(ord('a') + x) for x in range(0, 26)] # a-z
 
     if not easyblock:
         return None
@@ -1415,14 +1408,14 @@ def get_instance(easyblock, log, name=None):
     try:
         if not easyblock:
             if not name:
-                name="UNKNOWN"
+                name = "UNKNOWN"
 
             try:
                 modulepath = module_path_for_easyblock(name)
                 class_name = name
 
                 inst = get_instance_for(modulepath, class_name)
-                
+
                 log.info("Successfully obtained %s class instance from %s" % (class_name, modulepath))
 
                 return inst
@@ -1439,7 +1432,7 @@ def get_instance(easyblock, log, name=None):
                 log.info("Assuming that full easyblock module path was specified.")
                 modulepath = easyblock
             else:
-                modulepath= module_path_for_easyblock(easyblock)
+                modulepath = module_path_for_easyblock(easyblock)
                 log.info("Derived full easyblock module path for %s: %s" % (class_name, modulepath))
 
         return get_instance_for(modulepath, class_name)
