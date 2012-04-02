@@ -514,8 +514,8 @@ def build(module, options, log, origEnviron, exitOnFailure=True):
     try:
         app = get_instance(easyblock, log, name = name)
         log.info("Obtained application instance of class %s for %s" % (easyblock, name))
-    except (ImportError, NameError), err:
-        error("Failed to get application instance of class %s for %s: %s" % (easyblock, name, err))
+    except EasyBuildError, err:
+        error("Failed to get application instance of class %s for %s: %s" % (easyblock, name, err.msg))
 
     ## Application settings
     if options.stop:

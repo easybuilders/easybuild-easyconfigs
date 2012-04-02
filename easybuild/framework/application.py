@@ -499,7 +499,7 @@ class Application:
         Verify if all is ok to start build.
         """
         # Do all dependencies have a toolkit version
-        self.tk.addDependency(self.dep)
+        self.tk.addDependencies(self.dep)
         if not len(self.dep) == len(self.tk.dependencies):
             self.log.debug("dep %s (%s)\ntk.dep %s (%s)" % (len(self.dep), self.dep, len(self.tk.dependencies), self.tk.dependencies))
             self.log.error('Not all dependencies have a matching toolkit version')
@@ -1426,8 +1426,9 @@ def get_instance(easyblock, log, name=None):
 
                     return inst
 
-                except (AttributeError, ImportError, NameError), err:
+                except Exception, err:
                     log.error("Failed to use easyblock at %s for class %s: %s" % (modulepath, class_name, err))
+                    raise EasyBuildError(err)
 
             else:
                 log.debug("Easyblock path %s does not exist, so falling back to default %s class from %s" % (easyblock_path, class_name, modulepath))
@@ -1448,8 +1449,8 @@ def get_instance(easyblock, log, name=None):
         log.info("Successfully obtained %s class instance from %s" % (class_name, modulepath))
         return inst
 
-    except (AttributeError, ImportError, NameError, ValueError), err:
-        log.exception("Can't process provided module and class pair %s: %s" % (easyblock, err))
+    except Exception, err:
+        log.error("Can't process provided module and class pair %s: %s" % (easyblock, err))
         raise EasyBuildError(err)
 
 class ApplicationPackage:
