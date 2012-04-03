@@ -25,25 +25,26 @@ You can use this to set up your private repo with easyblocks and easyconfigs dir
 
 usage: repo_setup.py
 
-you might want to put this directory under revision control
+Note: you might want to put this directory under revision control.
 """
 
 import os
 import sys
 
-def create_dir(prefix, dirname, withinit=False):
+def create_dir(prefix, dirname, withinit=False, init_txt=''):
     os.mkdir(os.path.join(prefix, dirname))
     if withinit:
         fh = open(os.path.join(prefix, dirname, "__init__.py"), 'w')
+        fh.write(init_txt)
         fh.close()
 
-def create_subdirs(prefix, withinit=False):
+def create_subdirs(prefix, withinit=False, init_txt=''):
     # create subdirectories a, b, ..., z, 0 (catchall)
     alphabet = [chr(x) for x in xrange(ord('a'), ord('z') + 1)]
     for letter in alphabet:
-        create_dir(prefix, letter, withinit=withinit)
+        create_dir(prefix, letter, withinit=withinit, init_txt=init_txt)
 
-    create_dir(prefix, "0", withinit=withinit)
+    create_dir(prefix, "0", withinit=withinit, init_txt=init_txt)
 
 #
 # MAIN
@@ -51,18 +52,27 @@ def create_subdirs(prefix, withinit=False):
 if len(sys.argv) > 1:
     sys.stderr.write("Usage: %s\n" % sys.argv[0])
 
-# create easyblocks dir and subdirs, with default init
-dirname = "easyblocks"
-os.mkdir(dirname)
-f = open(os.path.join(dirname, "__init__.py"), 'w')
-f.write("""
-from pkgutil import extend_path
+try:
+    # create root dir 'easybuild' and change into it
+    dirname = "easybuild"
+    os.mkdir(dirname)
+    os.chdir(dirname)
+    
+    # create easyblocks dir and subdirs, with default init
+    dirname = "easyblocks"
+    os.mkdir(dirname)
+
+    init_txt="""from pkgutil import extend_path
 __path__ = extend_path(__path__, __name__)
-""" % os.path.basename(dirname))
+"""
 
-create_subdirs(dirname, withinit=True)
+    create_subdirs(dirname, withinit=True, init_txt=init_txt)
 
-# create easyconfigs dir and subdirs
-dirname = "easyconfigs"
-os.mkdir(dirname)
-create_subdirs(dirname)
+    # create easyconfigs dir and subdirs
+    dirname = "easyconfigs"
+    os.mkdir(dirname)
+    create_subdirs(dirname)
+
+except (IOError, OSError), err:
+    sys.stderr.write("Repo setup failed: %s" % err)
+    sys.exit(1)

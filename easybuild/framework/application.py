@@ -1425,6 +1425,7 @@ def get_instance(easyblock, log, name=None):
                 easyblock_path = os.path.join(pythonpath, "%s.py" % modulepath.replace('.', os.path.sep))
                 if os.path.exists(easyblock_path):
                     easyblock_found = True
+                    log.debug("Found easyblock for %s at %s" % (name, easyblock_path))
                     break
 
             # only try to import derived easyblock if it exists
