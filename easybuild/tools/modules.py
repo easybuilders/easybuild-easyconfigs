@@ -138,6 +138,24 @@ class Modules:
         for mod in self.modules:
             self.runModule('load', "/".join(mod))
 
+    def show(self, name, version):
+        """
+        Run 'module show' for the specified module.
+        """
+        return self.runModule('show', "%s/%s" % (name, version), return_output=True)
+
+    def modulefile_path(self, name, version):
+        """
+        Get the path of the module file for the specified module
+        """
+        if not self.exists(name, version):
+            return None
+        else:
+            modinfo = self.show(name, version)
+
+            # second line of module show output contains full path of module file
+            return modinfo.split('\n')[1].replace(':','')
+
     def runModule(self, *args, **kwargs):
         """
         Run module command.
@@ -158,24 +176,28 @@ class Modules:
         (stdout, stderr) = proc.communicate()
         os.environ['MODULEPATH'] = originalModulePath
 
-        # Change the environment
-        exec stdout
+        if kwargs.get('return_output', False):
+            return (stdout+stderr)
 
-        # Process stderr
-        result = []
-        for line in stderr.split('\n'): #IGNORE:E1103
-            if outputMatchers['whitespace'].search(line):
-                continue
+        else:
+            # Change the environment
+            exec stdout
 
-            error = outputMatchers['error'].search(line)
-            if error:
-                log.error(line)
-                raise EasyBuildError(line)
+            # Process stderr
+            result = []
+            for line in stderr.split('\n'): #IGNORE:E1103
+                if outputMatchers['whitespace'].search(line):
+                    continue
 
-            packages = outputMatchers['available'].finditer(line)
-            for package in packages:
-                result.append(package.groupdict())
-        return result
+                error = outputMatchers['error'].search(line)
+                if error:
+                    log.error(line)
+                    raise EasyBuildError(line)
+
+                packages = outputMatchers['available'].finditer(line)
+                for package in packages:
+                    result.append(package.groupdict())
+            return result
 
     def loaded_modules(self):
 
@@ -199,6 +221,37 @@ class Modules:
                                    })
 
         return loaded_modules
+
+    def dependencies_for(self, name, version):
+        """
+        Obtain a list of dependencies for the given module (recursively)
+        """
+        modfilepath = self.modulefile_path(name, version)
+        log.debug("modulefile path %s/%s: %s" % (name, version, modfilepath))
+
+        try:
+            f = open(modfilepath, "r")
+            modtxt = f.read()
+            f.close()
+        except IOError, err:
+            log.error("Failed to read module file %s to determine toolkit dependencies: %s" % (modfilepath, err))
+
+        loadregex = re.compile("^\s+module load\s+(.*)$", re.M)
+        mods = [mod.split('/') for mod in loadregex.findall(modtxt)]
+
+        # recursively determine dependencies for dependency modules
+        moddeps = [self.dependencies_for(modname, modversion) for (modname, modversion) in mods]
+
+        deps = [{'name':modname, 'version':modversion} for (modname, modversion) in mods]
+
+        # add dependencies of dependency modules only if they're not there yet 
+        for moddepdeps in moddeps:
+            for dep in moddepdeps:
+                if not dep in deps:
+                    deps.append(dep)
+
+        return deps
+
 
 def searchModule(path, query):
     """
