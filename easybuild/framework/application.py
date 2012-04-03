@@ -1418,10 +1418,16 @@ def get_instance(easyblock, log, name=None):
             modulepath = module_path_for_easyblock(name)
             class_name = name
 
+            # try and find easyblock by browsing through PYTHONPATH (all easyblocks paths should be there)
+            easyblock_found = False
+            for pythonpath in os.getenv('PYTHONPATH').split(':'):
+                easyblock_path = os.path.join(pythonpath, "%s.py" % modulepath.replace('.', os.path.sep))
+                if os.path.exists(easyblock_path):
+                    easyblock_found = True
+                    break
+
             # only try to import derived easyblock if it exists
-            easybuild_dir = os.path.dirname(os.path.realpath(sys.argv[0]))
-            easyblock_path = os.path.join(easybuild_dir, "..", "%s.py" % modulepath.replace('.', os.path.sep))
-            if os.path.exists(easyblock_path):
+            if easyblock_found:
 
                 try:
 
