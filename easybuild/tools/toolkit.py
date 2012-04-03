@@ -19,6 +19,7 @@
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
 from distutils.version import LooseVersion
+import copy
 import os
 import re
 
@@ -144,25 +145,15 @@ class Toolkit:
                 modules.load()
             return
 
-        ## Determine currently loaded modules
+        ## Load the toolkit and dependencies modules
         modules = Modules()
-        prev_loaded_modules = modules.loaded_modules()
-        log.debug("Previous loaded modules: %s" % prev_loaded_modules)
-
-        ## Load the toolkit module
         modules.addModule([(self.name, self.version)])
-        modules.load()
-
-        ## Determine modules that are dependencies of toolkit itself
-        self.toolkit_deps = modules.loaded_modules()
-        for dep in self.toolkit_deps:
-            # remove previously loaded modules and compiler toolkit itself
-            if dep in prev_loaded_modules or self.name == dep['name']:
-                self.toolkit_deps.remove(dep)
-
-        ## Load dependent modules
         modules.addModule(self.dependencies)
         modules.load()
+
+        ## Determine toolkit dependencies, so we can prepare for them
+        self.toolkit_deps = modules.dependencies_for(self.name, self.version)
+        log.debug('List of toolkit dependencies: %s' % self.toolkit_deps)
 
         self._determineArchitecture()
 
@@ -190,7 +181,6 @@ class Toolkit:
             deps = [dep]
 
         for dep in deps:
-            log.debug("dep: %s" % dep)
             softwareRoot = getSoftwareRoot(dep['name'])
             if not softwareRoot:
                 log.error("%s was not found in environment (dep: %s)" % (dep['name'], dep))
@@ -246,8 +236,6 @@ class Toolkit:
 
     def _generate_variables(self):
 
-        preparation_methods = []
-
         # list of preparation methods
         # number are assigned to indicate order in which they need to be run
         known_preparation_methods = {
@@ -275,23 +263,27 @@ class Toolkit:
         # obtain list of dependency names
         depnames = []
         for dep in self.toolkit_deps:
-            depnames.append(dep['name'].lower())
+            depnames.append(dep['name'])
         log.debug("depnames: %s" % depnames)
 
         # figure out which preparation methods we need to run based on toolkit dependencies
+        preparation_methods = {}
         meth_keys = known_preparation_methods.keys()
         meth_keys.sort()
-        for dep in depnames:
-            dep_found = False
-            for meth in meth_keys:
+        for meth in meth_keys:
+            for dep in depnames:
                 # bit before first '_' is used for ordering
                 meth_name = '_'.join(meth.split('_')[1:])
                 if dep.lower() == meth_name.lower():
-                    preparation_methods.append(known_preparation_methods[meth])
-                    dep_found = True
+                    preparation_methods.update({meth:known_preparation_methods[meth]})
                     break
-            if not dep_found:
-                log.error("Don't know how to prepare for toolkit dependency %s" % dep)
+
+        if not len(depnames) == len(preparation_methods.values()):
+            found_meths = preparation_methods.keys()
+            for depname in copy.copy(depnames):
+                if depname in found_meths:
+                    depnames.remove(depname)
+            log.error("Unable to find preparation methods for these toolkit dependencies: %s" % depnames)
 
         log.debug("List of preparation methods: %s" % preparation_methods)
 
@@ -299,16 +291,9 @@ class Toolkit:
         self.vars["CPPFLAGS"] = ''
         self.vars['LIBS'] = ''
 
-        for preparation_method in preparation_methods:
-            preparation_method()
-
-        # old way, based on toolkit name
-        ## TODO: get rid of this
-        if not preparation_methods:
-            if self.name in known_preparation_methods:
-                known_preparation_methods[self.name]()
-            else:
-                log.error("Don't know how to prepare toolkit '%s'." % self.name)
+        # run preparation methods, in order as determind by keys
+        for key in sorted(preparation_methods.keys()):
+            preparation_methods[key]()
 
     def prepareACML(self):
         """
