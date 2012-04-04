@@ -648,7 +648,7 @@ class Application:
                     fullurl = "%s/%s" % (url, filename)
                     try:
                         webfile = urllib.urlopen(fullurl)
-        
+
                         f = open(targetpath, 'w')
                         f.write(webfile.read())
                         webfile.close()
