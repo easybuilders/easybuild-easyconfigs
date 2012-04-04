@@ -601,8 +601,13 @@ class Application:
 
                 # also consider easyconfigs path for patch files
                 if filename.endswith(".patch"):
-                    easybuild_dir = os.path.dirname(os.path.realpath(sys.argv[0]))
-                    candidate_filepaths.append(os.path.join(easybuild_dir, "easyconfigs", self.name().lower()[0], self.name()))
+                    for path in get_paths_for(self.log, "easyconfigs"):
+                        candidate_filepaths.append(os.path.join(
+                                                                path,
+                                                                "easyconfigs",
+                                                                self.name().lower()[0],
+                                                                self.name()
+                                                                ))
 
                 # see if file can be found at that location
                 for cfp in candidate_filepaths:
@@ -1405,6 +1410,23 @@ def module_path_for_easyblock(easyblock):
     else:
         return "easybuild.easyblocks.0.%s" % easyblock
 
+def get_paths_for(log, subdir="easyblocks"):
+    """
+    Return a list of paths where the specified subdir can be found, determined by the PYTHONPATH
+    """
+    # browse through PYTHONPATH, all easyblocks repo paths should be there
+    paths = []
+    for pythonpath in os.getenv('PYTHONPATH').split(':'):
+        path = os.path.join(pythonpath, "easybuild", subdir)
+        log.debug("Looking for easybuild/%s in path %s" % (subdir, pythonpath))
+        try:
+            if os.path.isdir(path):
+                paths.append(pythonpath)
+        except OSError, err:
+            raise EasyBuildError(err)
+
+    return paths
+
 def get_instance(easyblock, log, name=None):
     """
     Get instance for a particular application class (or Application)
@@ -1419,10 +1441,12 @@ def get_instance(easyblock, log, name=None):
             modulepath = module_path_for_easyblock(name)
             class_name = name
 
-            # try and find easyblock by browsing through PYTHONPATH (all easyblocks paths should be there)
+            # try and find easyblock
             easyblock_found = False
-            for pythonpath in os.getenv('PYTHONPATH').split(':'):
-                easyblock_path = os.path.join(pythonpath, "%s.py" % modulepath.replace('.', os.path.sep))
+            easyblock_path = ''
+            for path in get_paths_for(log, "easyblocks"):
+                log.debug("Checking easyblocks path %s..." % path)
+                easyblock_path = os.path.join(path, "%s.py" % modulepath.replace('.', os.path.sep))
                 if os.path.exists(easyblock_path):
                     easyblock_found = True
                     log.debug("Found easyblock for %s at %s" % (name, easyblock_path))
