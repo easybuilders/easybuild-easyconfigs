@@ -26,7 +26,7 @@ version=`python -V 2>&1 | sed 's/^Python \([0-9]*\)\.\([0-9]*\).*/\1.\2/'`
 # determine absolute path name
 cd `dirname $0`
 absolute_path=$PWD
-cd -
+cd - > /dev/null
 
 export PYTHONPATH="${absolute_path}:$PYTHONPATH"
 if [[ "$version" = "2.4" ]]; then
