@@ -44,28 +44,38 @@ def init(filename, **kwargs):
     variables.update(readEnvironment(environmentVariables)) # environment
     variables.update(kwargs) # CLI options
 
+    def create_dir(dirtype, dirname):
+        log.warn('Will try to create the %s directory %s.' % (dirtype, dirname))
+        try:
+            os.makedirs(dirname)
+        except OSError, err:
+            log.error("Failed to create directory %s: %s" % (dirname, err))
+        log.warn("%s directory %s created" % (dirtype, dirname))
+
     for key in requiredVariables:
         if not key in variables:
             log.error('Cannot determine value for configuration variable %s. ' \
                       'Please specify it in your config file %s.' % (key, filename))
             continue
 
-        # verify directories, warn if they don't exist
+        # verify directories, try and create them if they don't exist
         value = variables[key]
         dirNotFound = key in ['buildPath', 'installPath'] and not os.path.isdir(value)
         srcDirNotFound = key in ['sourcePath'] and type(value) == str and not os.path.isdir(value)
         if dirNotFound or srcDirNotFound:
             log.warn('The %s directory %s does not exist or does not have proper permissions' % (key, value))
+            create_dir(key, value)
             continue
         if key in ['sourcePath'] and type(value) == list:
             for d in value:
                 if not os.path.isdir(d):
-                    log.warn('The %s directory %s does not exist or does not have proper permissions' % (key, d))
+                    create_dir(key, d)
                     continue
 
     if variables['repositoryType'] == 'fs' and not os.path.isdir(variables['repositoryPath']):
         strs = ('repositoryPath', variables['repositoryPath'])
         log.warn('The %s directory %s does not exist or does not have proper permissions' % strs)
+        create_dir('repositoryPath', variables['repositoryPath'])
 
 def readConfiguration(filename):
     """
