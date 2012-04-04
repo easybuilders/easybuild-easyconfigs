@@ -22,7 +22,13 @@
 version=`python -V 2>&1 | sed 's/^Python \([0-9]*\)\.\([0-9]*\).*/\1.\2/'`
 
 # See http://docs.python.org/using/cmdline.html#cmdoption-unittest-discover-m for -m support
-export PYTHONPATH="`dirname $0`:$PYTHONPATH"
+
+# determine absolute path name
+cd `dirname $0`
+absolute_path=$PWD
+cd -
+
+export PYTHONPATH="${absolute_path}:$PYTHONPATH"
 if [[ "$version" = "2.4" ]]; then
   python "`dirname $0`/easybuild/build.py" $@
 else
