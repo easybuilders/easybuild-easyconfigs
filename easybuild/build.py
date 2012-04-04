@@ -138,9 +138,9 @@ def main():
     # - check environment variable EASYBUILDCONFIG
     # - then, check command line option
     # - last, use default config file easybuild_config.py in build.py directory
-    config_file = os.getenv('EASYBUILDCONFIG')
-    if not config_file and options.config:
-        config_file = options.config
+    config_file = options.config
+    if not config_file and os.getenv('EASYBUILDCONFIG'):
+        config_file = os.getenv('EASYBUILDCONFIG')
     else:
         appPath = os.path.dirname(os.path.realpath(sys.argv[0]))
         config_file = os.path.join(appPath, "easybuild_config.py")
@@ -513,9 +513,9 @@ def build(module, options, log, origEnviron, exitOnFailure=True):
     name = module['module'][0]
     try:
         app = get_instance(easyblock, log, name = name)
-        log.info("Obtained application instance of class %s for %s" % (easyblock, name))
+        log.info("Obtained application instance of for %s (easyblock: %s)" % (name, easyblock))
     except EasyBuildError, err:
-        error("Failed to get application instance of class %s for %s: %s" % (easyblock, name, err.msg))
+        error("Failed to get application instance for %s (easyblock: %s): %s" % (name, easyblock, err.msg))
 
     ## Application settings
     if options.stop:
