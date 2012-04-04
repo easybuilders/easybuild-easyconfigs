@@ -56,7 +56,7 @@ sourcePath = os.path.join(prefix, sourceDir)
 ##           repositoryPath = ("svn+ssh://user@server/path/to/repo/path/inside/repo")
 ##           this requires pysvn
 repositoryType = 'fs'
-repositoryPath = (os.path.join(prefix, 'easybuild_ebFiles_repo'))
+repositoryPath = (os.path.join(prefix, 'easybuild_ebfiles_repo'))
 
 # log format: (dir, filename template)
 # supported in template: name, version, data, time
