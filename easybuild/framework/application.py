@@ -120,7 +120,8 @@ class Application:
           'unpackOptions':[None, "Extra options for unpacking source (default: None)"],
           'modextravars':[{}, "Extra environment variables to be added to module file (default: {})"],
           'osdependencies':[[], "Packages that should be present on the system"],
-          'sources': [[], "List of source-items"],
+          'sources': [[], "List of source files"],
+          'sourceURLs' : [[], "List of URLs for source files"],
           'patches': [[], "List of patches to apply"],
           'tests': [[], "List of test-scripts to run after install. A test script should return a non-zero exit status to fail"],
           'sanityCheckPaths': [{}, "List of files and directories to check (format: {'files':<list>, 'dirs':<list>}, default: {})"]
@@ -594,8 +595,8 @@ class Application:
                 fst_letter_path_low = os.path.join(srcpath, self.name().lower()[0])
 
                 # most likely paths
-                candidate_filepaths = [namepath, # subdir with software package name
-                                       os.path.join(fst_letter_path_low, self.name()), # easyblocks-style subdir
+                candidate_filepaths = [os.path.join(fst_letter_path_low, self.name()), # easyblocks-style subdir
+                                       namepath, # subdir with software package name
                                        srcpath, # directly in sources directory
                                        ]
 
@@ -634,7 +635,35 @@ class Application:
             if foundfile:
                 return foundfile
             else:
-                self.log.error("Couldn't find file %s anywhere... Paths attempted (in order): %s " % (filename, ', '.join(failedpaths)))
+                # try and download source files from specified source URLs 
+                sourceURLs = self.getcfg('sourceURLs')
+                targetdir = candidate_filepaths[0]
+                if not os.path.isdir(targetdir):
+                    try:
+                        os.makedirs(targetdir)
+                    except OSError, err:
+                        self.log.error("Failed to create directory %s to download source file %s into" % (targetdir, filename))
+                for url in sourceURLs:
+                    targetpath = os.path.join(targetdir, filename)
+                    fullurl = "%s/%s" % (url, filename)
+                    try:
+                        webfile = urllib.urlopen(fullurl)
+
+                        f = open(targetpath, 'w')
+                        f.write(webfile.read())
+                        webfile.close()
+                        f.close()
+
+                    except IOError, err:
+                        self.log.debug("Failed to download %s from %s: %s" % (filename, url, err))
+                        failedpaths.append(fullurl)
+                        continue
+
+                    # if fetching from source URL worked, we're done
+                    self.log.info("Successfully downloaded source file %s from %s" % (filename, fullurl))
+                    return fullpath
+
+                self.log.error("Couldn't find file %s anywhere...\nPaths attempted (in order): %s " % (filename, ', '.join(failedpaths)))
 
     def apply_patch(self, beginpath=None):
         """
