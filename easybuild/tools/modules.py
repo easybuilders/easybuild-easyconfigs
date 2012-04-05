@@ -53,7 +53,7 @@ class Modules:
         (out, ec) = run_cmd(cmd, log_all=False, log_ok=False, simple=False)
         if ec:
             msg = "Could not find the modulecmd command, environment-modules is not installed?\n"
-            msg += "Output of %s: %s" % (cmd, out)
+            msg += "Output of %s (exit code %d): %s" % (cmd, ec, out)
             log.error(msg)
             raise EasyBuildError(msg)
 
