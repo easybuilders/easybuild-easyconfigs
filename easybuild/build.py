@@ -204,6 +204,7 @@ def main():
 
     ## Determine an order that will allow all specs in the set to build
     if len(packages) > 0:
+        print "resolving dependencies ..."
         orderedSpecs = resolveDependencies(packages, options.robot, log)
     else:
         print "No packages left to be built."
