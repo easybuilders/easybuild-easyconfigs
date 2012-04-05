@@ -85,9 +85,11 @@ class ATLAS(Application):
         if ec != 0:
             throttling_regexp = re.compile("cpu throttling [a-zA-Z]* enabled", re.IGNORECASE)
             if throttling_regexp.search(out):
-                errormsg="Configure failed, because CPU throttling is enabled; ATLAS doesn't like that. \
-You can either disable CPU throttling, or set 'ignorethrottling' to True in the ATLAS .eb spec file. \
-Also see http://math-atlas.sourceforge.net/errata.html#cputhrottle ."
+                errormsg="""Configure failed, possible because CPU throttling is enabled; ATLAS doesn't like that.
+You can either disable CPU throttling, or set 'ignorethrottling' to True in the ATLAS .eb spec file.
+Also see http://math-atlas.sourceforge.net/errata.html#cputhrottle .
+Configure output:
+%s """ % out
             else:
                 errormsg="""configure output: %s
 Configure failed, not sure why (see output above).""" % out

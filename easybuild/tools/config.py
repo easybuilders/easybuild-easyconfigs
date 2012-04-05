@@ -77,6 +77,16 @@ def init(filename, **kwargs):
         log.warn('The %s directory %s does not exist or does not have proper permissions' % strs)
         create_dir('repositoryPath', variables['repositoryPath'])
 
+    # update MODULEPATH if required
+    ebmodpath = os.path.join(installPath(typ='mod'), 'all')
+    modulepath = os.getenv('MODULEPATH')
+    if not modulepath or not ebmodpath in modulepath:
+        if modulepath:
+            os.environ['MODULEPATH'] = "%s:%s" % (ebmodpath, modulepath)
+        else:
+            os.environ['MODULEPATH'] = ebmodpath
+        log.info("Extended MODULEPATH with module install path used by EasyBuild: %s" % os.getenv('MODULEPATH'))
+
 def readConfiguration(filename):
     """
     Read variables from the config file

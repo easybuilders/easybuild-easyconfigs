@@ -236,9 +236,9 @@ class Toolkit:
 
     def _generate_variables(self):
 
-        # list of preparation methods
+        # list of preparation function
         # number are assigned to indicate order in which they need to be run
-        known_preparation_methods = {
+        known_preparation_functions = {
             # compilers always go first
             '1_GCC':self.prepareGCC,
             '1_icc':self.prepareIcc, # also for ifort
@@ -260,40 +260,48 @@ class Toolkit:
             '6_ScaLAPACK':self.prepareScaLAPACK
         }
 
+        # sort to ensure correct order
+        meth_keys = known_preparation_functions.keys()
+        meth_keys.sort()
+
         # obtain list of dependency names
         depnames = []
         for dep in self.toolkit_deps:
             depnames.append(dep['name'])
+        ## if toolkit name has a preparation function, add it as well
+        for meth_key in meth_keys:
+            if meth_key.endswith("_%s" % self.name):
+                depnames.append(self.name)
+                log.debug("Going to add preparation function for toolkit %s itself also" % self.name)
+                break
         log.debug("depnames: %s" % depnames)
 
-        # figure out which preparation methods we need to run based on toolkit dependencies
-        preparation_methods = {}
-        meth_keys = known_preparation_methods.keys()
-        meth_keys.sort()
+        # figure out which preparation functions we need to run based on toolkit dependencies
+        preparation_functions = {}
         for meth in meth_keys:
             for dep in depnames:
                 # bit before first '_' is used for ordering
                 meth_name = '_'.join(meth.split('_')[1:])
                 if dep.lower() == meth_name.lower():
-                    preparation_methods.update({meth:known_preparation_methods[meth]})
+                    preparation_functions.update({meth:known_preparation_functions[meth]})
                     break
 
-        if not len(depnames) == len(preparation_methods.values()):
-            found_meths = preparation_methods.keys()
+        if not len(depnames) == len(preparation_functions.values()):
+            found_meths = preparation_functions.keys()
             for depname in copy.copy(depnames):
                 if depname in found_meths:
                     depnames.remove(depname)
-            log.error("Unable to find preparation methods for these toolkit dependencies: %s" % depnames)
+            log.error("Unable to find preparation functions for these toolkit dependencies: %s" % depnames)
 
-        log.debug("List of preparation methods: %s" % preparation_methods)
+        log.debug("List of preparation functions: %s" % preparation_functions)
 
         self.vars["LDFLAGS"] = ''
         self.vars["CPPFLAGS"] = ''
         self.vars['LIBS'] = ''
 
-        # run preparation methods, in order as determind by keys
-        for key in sorted(preparation_methods.keys()):
-            preparation_methods[key]()
+        # run preparation functions, in order as determined by keys
+        for key in sorted(preparation_functions.keys()):
+            preparation_functions[key]()
 
     def prepareACML(self):
         """

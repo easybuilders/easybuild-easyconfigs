@@ -330,9 +330,19 @@ def resolveDependencies(unprocessed, robot, log):
     processed = [m for m in availableModules if not m in beingInstalled]
 
     ## As long as there is progress in processing the modules, keep on trying
+    loopcnt = 0
+    maxloopcnt = 10000
     robotAddedDependency = True
     while robotAddedDependency:
+
         robotAddedDependency = False
+
+        # make sure this stops, we really don't want to get stuck in an infinite loop
+        loopcnt += 1
+        if loopcnt > maxloopcnt:
+            msg = "Maximum loop cnt %s reached, so quitting." % maxloopcnt
+            log.error(msg)
+            raise EasyBuildError(msg)
 
         ## First try resolving dependencies without using external dependencies
         lastProcessedCount = -1
@@ -342,24 +352,39 @@ def resolveDependencies(unprocessed, robot, log):
 
         ## Robot: look for an existing dependency, add one
         if robot and len(unprocessed) > 0:
+
             beingInstalled = [p['module'] for p in unprocessed]
+
             for module in unprocessed:
                 ## Do not choose a module that is being installed in the current run
                 ## if they depend, you probably want to rebuild them using the new dependency
                 candidates = [d for d in module['dependencies'] if not d in beingInstalled]
                 if len(candidates) > 0:
-                    path = robotFindSpecification(robot, candidates[0])
+                    ## find specification file, might not find any
+                    path = robotFindSpecification(log, robot, candidates[0])
+
                 else:
                     path = None
+                    log.debug("No more candidate dependencies to resolve for module %s" % str(module['module']))
 
                 if path:
                     log.info("Robot: resolving dependency %s with %s" % (candidates[0], path))
-                    unprocessed.extend(processSpecification(path, log))
+
+                    processedSpecs = processSpecification(path, log)
+                    mods = [spec['module'] for spec in processedSpecs]
+                    if not candidates[0] in mods:
+                        msg = "Expected specification file %s to resolve dependency for %s, but it does not" % (path, candidates[0])
+                        msg += " (list of obtained modules after processing specification file: %s)" % mods
+                        log.error(msg)
+                        raise EasyBuildError(msg)
+
+                    unprocessed.extend(processedSpecs)
                     robotAddedDependency = True
                     break
 
     ## There are dependencies that cannot be resolved
     if len(unprocessed) > 0:
+        log.debug("List of unresolved dependencies: %s" % unprocessed)
         missingDependencies = {}
         for module in unprocessed:
             for dep in module['dependencies']:
@@ -390,16 +415,24 @@ def findResolvedModules(unprocessed, processed, log):
 
     return orderedSpecs
 
-def robotFindSpecification(path, module):
+def robotFindSpecification(log, path, module):
     """
     Find a specification file for module in path
     """
     name, version = module
-    specificationPath = os.path.join(path, name, version + ".eb")
-    if os.path.isfile(specificationPath):
-        return os.path.abspath(specificationPath)
-    else:
-        return None
+    # candidate specification paths
+    speciicationPaths = [os.path.join(path, name, version + ".eb"),
+                         os.path.join(path, name, "%s-%s.eb" % (name, version)),
+                         os.path.join(path, name.lower()[0], name, "%s-%s.eb" % (name, version)),
+                         os.path.join(path, "%s-%s.eb" % (name, version)),
+                         ]
+    for specificationPath in speciicationPaths:
+        log.debug("Checking specification path %s" % specificationPath)
+        if os.path.isfile(specificationPath):
+            log.debug("Found specification file for %s at %s" % (module, specificationPath))
+            return os.path.abspath(specificationPath)
+
+    return None
 
 def retrieveBlocksInSpec(spec, log, onlyBlocks):
     """
