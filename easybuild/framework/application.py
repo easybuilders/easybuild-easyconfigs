@@ -543,6 +543,16 @@ class Application:
         else:
             self.log.error("Source path '%s' has incorrect type: %s" % (srcpath, type(srcpath)))
 
+        def download(filename, url, path):
+
+            (_, httpmsg) = urllib.urlretrieve(url, path)
+
+            if httpmsg.type == "text/html" and not filename.endswith('.html'):
+                self.log.warning("HTML file downloaded but not expecting it, so assuming invalid download.")
+                return None
+            else:
+                self.log.info("Downloading file %s from url %s: done" % (filename, url))
+                return path
 
         # should we download or just try and find it?
         if filename.startswith("http://") or filename.startswith("ftp://"):
@@ -570,17 +580,10 @@ class Application:
                     self.log.error("Failed to create %s: %s" % (filepath, err))
 
             try:
-                webfile = urllib.urlopen(url)
                 fullpath = os.path.join(filepath, filename)
 
-                f = open(fullpath, 'w')
-                f.write(webfile.read())
-                webfile.close()
-                f.close()
-
-                self.log.info("Downloading file %s from url %s: done" % (filename, url))
-
-                return fullpath
+                if download(filename, url, fullpath):
+                    return fullpath
 
             except IOError, err:
                 self.log.exception("Downloading file %s from url %s to %s failed: %s" % (filename, url, fullpath, err))
@@ -605,6 +608,7 @@ class Application:
                     for path in get_paths_for(self.log, "easyconfigs"):
                         candidate_filepaths.append(os.path.join(
                                                                 path,
+                                                                "easybuild",
                                                                 "easyconfigs",
                                                                 self.name().lower()[0],
                                                                 self.name()
@@ -643,27 +647,40 @@ class Application:
                         os.makedirs(targetdir)
                     except OSError, err:
                         self.log.error("Failed to create directory %s to download source file %s into" % (targetdir, filename))
-                for url in sourceURLs:
-                    targetpath = os.path.join(targetdir, filename)
-                    fullurl = "%s/%s" % (url, filename)
-                    try:
-                        webfile = urllib.urlopen(fullurl)
 
-                        f = open(targetpath, 'w')
-                        f.write(webfile.read())
-                        webfile.close()
-                        f.close()
+                for url in sourceURLs:
+
+                    targetpath = os.path.join(targetdir, filename)
+
+                    if type(url) == str:
+                        fullurl = "%s/%s" % (url, filename)
+                    elif type(url) == tuple:
+                        ## URLs that require a suffix, e.g., SourceForge download links
+                        ## e.g. http://sourceforge.net/projects/math-atlas/files/Stable/3.8.4/atlas3.8.4.tar.bz2/download
+                        fullurl = "%s/%s/%s" % (url[0], filename, url[1])
+                    else:
+                        self.log.warning("Source URL %s is of unknown type, so ignoring it." % url)
+                        continue
+
+                    self.log.debug("Trying to download file %s from %s to %s ..." % (filename, fullurl, targetpath))
+                    downloaded= False
+                    try:
+                        if download(filename, fullurl, targetpath):
+                            downloaded = True
 
                     except IOError, err:
                         self.log.debug("Failed to download %s from %s: %s" % (filename, url, err))
                         failedpaths.append(fullurl)
                         continue
 
-                    # if fetching from source URL worked, we're done
-                    self.log.info("Successfully downloaded source file %s from %s" % (filename, fullurl))
-                    return fullpath
+                    if downloaded:
+                        # if fetching from source URL worked, we're done
+                        self.log.info("Successfully downloaded source file %s from %s" % (filename, fullurl))
+                        return fullpath
+                    else:
+                        failedpaths.append(fullurl)
 
-                self.log.error("Couldn't find file %s anywhere...\nPaths attempted (in order): %s " % (filename, ', '.join(failedpaths)))
+                self.log.error("Couldn't find file %s anywhere, and downloading it didn't work either...\nPaths attempted (in order): %s " % (filename, ', '.join(failedpaths)))
 
     def apply_patch(self, beginpath=None):
         """
