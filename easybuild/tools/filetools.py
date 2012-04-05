@@ -278,7 +278,7 @@ def run_cmd(cmd, log_ok=True, log_all=False, simple=False, inp=None, regexp=True
 
     try:
         p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                           stdin=subprocess.PIPE, close_fds=True)
+                           stdin=subprocess.PIPE, close_fds=True, executable="/bin/bash")
     except OSError, err:
         log.error("run_cmd init cmd %s failed:%s" % (cmd, err))
     if inp:
@@ -415,7 +415,7 @@ def run_cmd_qa(cmd, qa, no_qa=None, log_ok=True, log_all=False, simple=False, re
     maxHitCount = 20
 
     try:
-        p = Popen(cmd, shell=True, stdout=PIPE, stderr=STDOUT, stdin=PIPE, close_fds=True)
+        p = Popen(cmd, shell=True, stdout=PIPE, stderr=STDOUT, stdin=PIPE, close_fds=True, executable="/bin/bash")
     except OSError, err:
         log.error("runQandA init cmd %s failed:%s" % (cmd, err))
 

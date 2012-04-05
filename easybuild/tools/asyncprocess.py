@@ -211,7 +211,7 @@ if __name__ == '__main__':
     else:
         shell, commands, tail = ('sh', ('ls', 'echo HELLO WORLD'), '\n')
 
-    a = Popen(shell, stdin=PIPE, stdout=PIPE)
+    a = Popen(shell, stdin=PIPE, stdout=PIPE, shell=True, executable="/bin/bash")
     print recv_some(a),
     for cmd in commands:
         send_all(a, cmd + tail)
