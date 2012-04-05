@@ -49,9 +49,11 @@ class Modules:
         self.checkModulePath()
 
         # make sure environment-modules is installed
-        ec = run_cmd("which modulecmd")
+        cmd = "which modulecmd"
+        (out, ec) = run_cmd(cmd, log_all=False, log_ok=False, simple=False)
         if ec:
-            msg = "Could not find the modulecmd command, environment-modules is not installed?"
+            msg = "Could not find the modulecmd command, environment-modules is not installed?\n"
+            msg += "Output of %s: %s" % (cmd, out)
             log.error(msg)
             raise EasyBuildError(msg)
 
