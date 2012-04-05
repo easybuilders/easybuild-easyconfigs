@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 ##
 # Copyright 2009-2012 Stijn Deweirdt, Dries Verdegem, Kenneth Hoste, Pieter De Baets, Jens Timmerman
 #
