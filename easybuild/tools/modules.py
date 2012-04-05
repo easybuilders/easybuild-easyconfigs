@@ -177,7 +177,7 @@ class Modules:
         if kwargs.get('modulePath', None):
             os.environ['MODULEPATH'] = kwargs.get('modulePath')
 
-        proc = subprocess.Popen(['/usr/bin/modulecmd', 'python'] + args,
+        proc = subprocess.Popen(['modulecmd', 'python'] + args,
                                 stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         # stdout will contain python code (to change environment etc)
         # stderr will contain text (just like the normal module command)
