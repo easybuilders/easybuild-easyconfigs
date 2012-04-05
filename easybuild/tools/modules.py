@@ -49,11 +49,10 @@ class Modules:
         self.checkModulePath()
 
         # make sure environment-modules is installed
-        cmd = "which modulecmd"
-        (out, ec) = run_cmd(cmd, log_all=False, log_ok=False, simple=False)
+        ec = subprocess.call(["which", "modulecmd"], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         if ec:
             msg = "Could not find the modulecmd command, environment-modules is not installed?\n"
-            msg += "Output of %s (exit code %d): %s" % (cmd, ec, out)
+            msg += "Exit code of 'which modulecmd': %d" % ec
             log.error(msg)
             raise EasyBuildError(msg)
 
@@ -179,8 +178,7 @@ class Modules:
             os.environ['MODULEPATH'] = kwargs.get('modulePath')
 
         proc = subprocess.Popen(['/usr/bin/modulecmd', 'python'] + args,
-                                stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                                shell=True, executable='/bin/bash')
+                                stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         # stdout will contain python code (to change environment etc)
         # stderr will contain text (just like the normal module command)
         (stdout, stderr) = proc.communicate()
