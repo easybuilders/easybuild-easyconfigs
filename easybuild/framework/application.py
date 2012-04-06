@@ -218,7 +218,7 @@ class Application:
             out, ec = run_cmd('ulimit -u')
             try:
                 if out.startswith("unlimited"):
-                    out = 2 ^ 32 - 1
+                    out = 2 ** 32 - 1
                 maxuserproc = int(out)
                 ## assume 6 proc per buildthread + 15 overhead
                 maxnr = int((maxuserproc - 15) / 6)
