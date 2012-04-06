@@ -18,6 +18,7 @@
 # You should have received a copy of the GNU General Public License
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
+import glob
 import os
 import shutil
 from easybuild.framework.application import Application
@@ -147,7 +148,6 @@ class LAPACK(Application):
 
             ## copy all .a files
             os.chdir(srcdir)
-            import glob
             for lib in glob.glob('*.a'):
                 srcfile = os.path.join(srcdir, lib)
                 self.log.debug("Copying file %s to dir %s" % (srcfile, destdir))

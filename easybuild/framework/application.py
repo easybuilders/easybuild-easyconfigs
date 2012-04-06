@@ -18,11 +18,12 @@
 # You should have received a copy of the GNU General Public License
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
+from difflib import get_close_matches
 from distutils.version import LooseVersion
 import glob
+import grp
 import os
 import shutil
-import sys
 import time
 import urllib
 
@@ -379,7 +380,6 @@ class Application:
                 self.log.error("EasyBuild-version %s is newer than the currently running one. Aborting!" % easybuildVersion)
 
         ## check for typos in eb file
-        from difflib import get_close_matches
         for variable in locs.keys():
             guess = get_close_matches(variable, self.cfg.keys(), 1, 0.85)
             if len(guess) == 1 and variable not in self.cfg.keys():
@@ -810,7 +810,6 @@ class Application:
         Installing user must be member of the group that it is changed to
         """
         if self.getcfg('group'):
-            import grp
             gid = grp.getgrnam(self.getcfg('group'))[2]
             chngsuccess = []
             chngfailure = []
