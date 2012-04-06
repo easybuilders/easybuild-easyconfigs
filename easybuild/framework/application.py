@@ -34,7 +34,7 @@ from easybuild.tools.filetools import unpack, patch, run_cmd, convertName
 from easybuild.tools.module_generator import ModuleGenerator
 from easybuild.tools.modules import Modules
 from easybuild.tools.toolkit import Toolkit
-
+from easybuild.tools.systemtools import get_cpu_count
 
 class Application:
     """
@@ -212,9 +212,7 @@ class Application:
             except ValueError, err:
                 self.log.error("Parallelism %s not integer: %s" % (nr, err))
         else:
-            # TODO: move out of Application, doesn't work on OS X
-            # should go to tools/systemTools.py (refs #)
-            nr = len([x for x in open('/proc/cpuinfo').readlines() if x.find("processor\t:") > -1]) - 1
+            nr = get_cpu_count()
             ## check ulimit -u
             out, ec = run_cmd('ulimit -u')
             try:
@@ -663,7 +661,7 @@ class Application:
                         continue
 
                     self.log.debug("Trying to download file %s from %s to %s ..." % (filename, fullurl, targetpath))
-                    downloaded= False
+                    downloaded = False
                     try:
                         if download(filename, fullurl, targetpath):
                             downloaded = True
