@@ -30,7 +30,6 @@ import sys
 import time
 
 import easybuild
-from easybuild.tools.config import logFormat
 
 class EasyBuildError(Exception):
     """
@@ -142,6 +141,9 @@ def logFilename(name, version):
     """
     Generate a filename to be used
     """
+    # this can't be imported at the top, otherwise we'd have a cyclic dependency
+    from easybuild.tools.config import logFormat
+
     date = time.strftime("%Y%m%d")
     timeStamp = time.strftime("%H%M%S")
 
