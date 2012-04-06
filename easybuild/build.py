@@ -37,6 +37,8 @@ from easybuild.tools.build_log import initLogger, removeLogHandler, EasyBuildErr
 from easybuild.tools.class_dumper import dumpClasses
 import easybuild.tools.config as config
 import easybuild.tools.filetools as filetools
+from easybuild.tools.modules import Modules, searchModule
+from easybuild.tools.repository import getRepository
 
 # applications use their own logger, we need to tell them to debug or not
 # so this global var is used.
@@ -159,7 +161,6 @@ def main():
     if options.search:
         if not options.robot:
             error("Please provide a search-path to --robot when using --search")
-        from easybuild.tools.modules import searchModule
         searchModule(options.robot, options.search)
 
     if options.options or options.dump_classes or options.search or options.version:
@@ -188,7 +189,6 @@ def main():
 
     ## Skip modules that are already installed unless forced
     if not options.force:
-        from easybuild.tools.modules import Modules
         m = Modules()
         packages, checkPackages = [], packages
         for package in checkPackages:
@@ -319,7 +319,6 @@ def resolveDependencies(unprocessed, robot, log):
     """
 
     ## Get a list of all available modules (format: [(name, installversion), ...])
-    from easybuild.tools.modules import Modules
     availableModules = Modules().available()
     if len(availableModules) == 0:
         log.warning("No installed modules. Your MODULEPATH is probably incomplete.")
@@ -584,7 +583,6 @@ def build(module, options, log, origEnviron, exitOnFailure=True):
 
             try:
                 ## Upload spec to central repository
-                from easybuild.tools.repository import getRepository
                 repo = getRepository()
                 if 'originalSpec' in module:
                     repo.addSpecFile(module['originalSpec'], app.name(), app.installversion + ".block")

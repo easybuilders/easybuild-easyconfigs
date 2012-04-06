@@ -27,8 +27,10 @@ from copy import copy
 import logging
 import os
 import sys
+import time
 
 import easybuild
+from easybuild.tools.config import logFormat
 
 class EasyBuildError(Exception):
     """
@@ -140,11 +142,9 @@ def logFilename(name, version):
     """
     Generate a filename to be used
     """
-    import time
     date = time.strftime("%Y%m%d")
     timeStamp = time.strftime("%H%M%S")
 
-    from easybuild.tools.config import logFormat
     filename = '/tmp/' + (logFormat() % {'name':name,
                                          'version':version,
                                          'date':date,
