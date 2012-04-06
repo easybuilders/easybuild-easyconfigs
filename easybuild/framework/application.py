@@ -1457,7 +1457,7 @@ def module_path_for_easyblock(easyblock):
 
 def get_paths_for(log, subdir="easyblocks"):
     """
-    Return a list of paths where the specified subdir can be found, determined by the PYTHONPATH
+    Return a list of absolute paths where the specified subdir can be found, determined by the PYTHONPATH
     """
     # browse through PYTHONPATH, all easyblocks repo paths should be there
     paths = []
@@ -1466,7 +1466,7 @@ def get_paths_for(log, subdir="easyblocks"):
         log.debug("Looking for easybuild/%s in path %s" % (subdir, pythonpath))
         try:
             if os.path.isdir(path):
-                paths.append(pythonpath)
+                paths.append(os.path.abspath(pythonpath))
         except OSError, err:
             raise EasyBuildError(err)
 
