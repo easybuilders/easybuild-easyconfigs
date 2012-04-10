@@ -1157,7 +1157,8 @@ class Application:
         return {
             'PATH': ['bin'],
             'LD_LIBRARY_PATH': ['lib', 'lib64'],
-            'MANPATH': ['man', 'share/man']
+            'MANPATH': ['man', 'share/man'],
+            'PKG_CONFIG_PATH' : ['lib/pkgconfig'],
         }
 
     def make_module_extra(self):
