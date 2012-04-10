@@ -21,10 +21,10 @@
 from distutils.version import LooseVersion
 import copy
 import os
-import re
 
 from easybuild.tools.build_log import getLog
 from easybuild.tools.modules import Modules, getSoftwareRoot
+from easybuild.tools import systemtools
 
 log = getLog('Toolkit')
 
@@ -155,8 +155,6 @@ class Toolkit:
         self.toolkit_deps = modules.dependencies_for(self.name, self.version)
         log.debug('List of toolkit dependencies: %s' % self.toolkit_deps)
 
-        self._determineArchitecture()
-
         ## Generate the variables to be set
         self._generate_variables()
 
@@ -212,21 +210,12 @@ class Toolkit:
             # references itself (eventually).  Stop' error
             os.environ["SOFTVAR%s" % key] = val
 
-    def _determineArchitecture(self):
-        """ Determine the CPU architecture """
-        regexp = re.compile(r"^vendor_id\s+:\s*(?P<vendorid>\S+)\s*$", re.M)
-        arch = regexp.search(open("/proc/cpuinfo").read()).groupdict()['vendorid']
-
-        archd = {'GenuineIntel': 'Intel', 'AuthenticAMD': 'AMD'}
-        if arch in archd:
-            self.arch = archd[arch]
-        else:
-            log.error("Unknown architecture detected: %s" % arch)
 
     def _getOptimalArchitecture(self):
         """ Get options for the current architecture """
-        optarchs = {'Intel':'xHOST', 'AMD':'msse3'}
-
+        optarchs = {systemtools.INTEL : 'xHOST', systemtools.AMD : 'msse3'}
+        if not self.arch:
+            self.arch = systemtools.get_cpu_vendor()
         if self.arch in optarchs:
             optarch = optarchs[self.arch]
             log.info("Using %s as optarch for %s." % (optarch, self.arch))
@@ -320,7 +309,7 @@ class Toolkit:
 
         self.vars['LIBBLAS'] = "%(acml)s/%(comp)s64/lib/libacml_mv.a " \
                                "%(acml)s/%(comp)s64/lib/libacml.a -lpthread" % {
-                                                                                'comp':compiler, 
+                                                                                'comp':compiler,
                                                                                 'acml':os.environ['SOFTROOTACML']
                                                                                 }
         self.vars['LIBBLAS_MT'] = self.vars['LIBBLAS']
@@ -362,7 +351,7 @@ class Toolkit:
 
         suffix = ''
         if os.getenv('SOFTVERSIONFFTW').startswith('3.'):
-            suffix = '3' 
+            suffix = '3'
         self.vars['LIBFFT'] = " -lfftw%s " % suffix
         if self.opts['usempi']:
             self.vars['LIBFFT'] += " -lfftw%s_mpi " % suffix
@@ -416,7 +405,7 @@ class Toolkit:
 
         ## to get rid of lots of problems with libgfortranbegin
         ## or remove the system gcc-gfortran
-        self.vars['FLIBS']="-lgfortran"
+        self.vars['FLIBS'] = "-lgfortran"
 
     def prepareGotoBLAS(self):
         """
@@ -624,7 +613,7 @@ class Toolkit:
                 for i in ['CC', 'CXX', 'F77', 'F90']:
                     self.vars[i] = self.vars["MPI%s" % i]
         else:
-            self.log.error("Don't know how to prepare for a non-ScaleMP MPICH2 library.")
+            log.error("Don't know how to prepare for a non-ScaleMP MPICH2 library.")
 
     def prepareSimpleMPI(self):
         """
