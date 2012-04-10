@@ -86,11 +86,13 @@ def get_cpu_vendor():
         pass
     #osX
     out, exitcode = run_cmd("sysctl -n machdep.cpu.vendor")
+    out = out.strip()
     if not exitcode and out and out in VENDORS:
         return VENDORS[out]
 
     #bsd
     out, exitcode = run_cmd("sysctl -n hw.model")
+    out = out.strip()
     if not exitcode and out:
         return out.split(' ')[0]
 
