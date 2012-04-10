@@ -26,6 +26,7 @@ from distutils.version import LooseVersion
 
 from easybuild.framework.application import Application
 from easybuild.tools.filetools import run_cmd
+from easybuild.tools.systemtools import get_kernel_name, get_shared_lib_ext, get_platform_name
 
 class GCC(Application):
     """
@@ -50,14 +51,14 @@ class GCC(Application):
         """
         Create a dir to build in.
         """
-        dirpath=os.path.join(self.getcfg('startfrom'),dirname)
+        dirpath = os.path.join(self.getcfg('startfrom'), dirname)
         try:
             os.mkdir(dirpath)
             os.chdir(dirpath)
             self.log.debug("Created dir at %s" % dirpath)
             return dirpath
         except OSError, err:
-            self.log.error("Can't use dir %s to build in: %s"%(dirpath, err))
+            self.log.error("Can't use dir %s to build in: %s" % (dirpath, err))
 
     def prep_extra_src_dirs(self, stage, target_prefix=None):
         """
@@ -77,7 +78,7 @@ class GCC(Application):
 
         ## add optional ones that were selected (e.g. CLooG, PPL, ...)
         for x in ["cloog", "ppl"]:
-            if self.getcfg('with%s'%x):
+            if self.getcfg('with%s' % x):
                 extra_src_dirs.append(x)
 
         ## see if modules are loaded
@@ -93,7 +94,7 @@ class GCC(Application):
                 ## build CLooG/PPL with the GCC we're building in stage 2
                 ## then (bootstrap) build GCC in stage 3
                 ## also, no need to stage cloog/ppl in stage3 (may even cause troubles)
-                self.stagedbuild=True
+                self.stagedbuild = True
                 extra_src_dirs.remove(extra)
 
         # try and find source directories with given prefixes
@@ -118,7 +119,7 @@ class GCC(Application):
 
         # we need to find all dirs specified, or else...
         if not len(found_src_dirs) == len(extra_src_dirs):
-            self.log.error("Couldn't find all source dirs %s: found %s from %s"%(extra_src_dirs, found_src_dirs, all_dirs))
+            self.log.error("Couldn't find all source dirs %s: found %s from %s" % (extra_src_dirs, found_src_dirs, all_dirs))
 
         # copy to a dir with name as expected by GCC build framework
         for d in found_src_dirs:
@@ -131,7 +132,7 @@ class GCC(Application):
                 try:
                     shutil.copytree(src, dst)
                 except OSError, err:
-                    self.log.error("Failed to copy src %s to dst %s: %s"%(src, dst, err))
+                    self.log.error("Failed to copy src %s to dst %s: %s" % (src, dst, err))
                 self.log.debug("Copied %s to %s, so GCC can build %s" % (src, dst, d['target_dir']))
             else:
                 self.log.debug("No need to copy %s to %s, it's already there." % (src, dst))
@@ -252,11 +253,11 @@ class GCC(Application):
             run_cmd(cmd, log_all=True, simple=True)
 
             # register built GCC as compiler to use for stage 2/3
-            path = "%s/bin:%s"%(self.stage1installdir, os.getenv('PATH'))
+            path = "%s/bin:%s" % (self.stage1installdir, os.getenv('PATH'))
             os.putenv('PATH', path)
 
-            ld_lib_path = "%(dir)s/lib64:%(dir)s/lib:%(val)s"% {
-                                      'dir':self.stage1installdir, 
+            ld_lib_path = "%(dir)s/lib64:%(dir)s/lib:%(val)s" % {
+                                      'dir':self.stage1installdir,
                                       'val':os.getenv('LD_LIBRARY_PATH')
                                       }
             os.putenv('LD_LIBRARY_PATH', ld_lib_path)
@@ -284,7 +285,7 @@ class GCC(Application):
                     libdir = os.path.join(stage2prefix, lib)
                     try:
                         os.chdir(libdir)
-                    except OSError,err:
+                    except OSError, err:
                         self.log.error("Failed to change to %s: %s" % (libdir, err))
 
                     if lib == "gmp":
@@ -311,7 +312,7 @@ class GCC(Application):
                             self.log.error("Enabling PPL watchdog only supported in PPL <= v0.11 .")
 
                         ### make sure GMP we just built is found
-                        cmd+="--with-gmp=%s " % stage2prefix
+                        cmd += "--with-gmp=%s " % stage2prefix
 
                     elif lib == "cloog":
 
@@ -350,7 +351,7 @@ class GCC(Application):
                     self.run_configure_cmd(cmd)
 
                     ### build and 'install'
-                    cmd="make %s install" % paracmd
+                    cmd = "make %s install" % paracmd
                     run_cmd(cmd, log_all=True, simple=True)
 
                     if lib == "gmp":
@@ -358,13 +359,13 @@ class GCC(Application):
                         libpath = os.path.join(stage2prefix, 'lib')
                         incpath = os.path.join(stage2prefix, 'include')
 
-                        cppflags = os.getenv('CPPFLAGS','')
+                        cppflags = os.getenv('CPPFLAGS', '')
                         os.putenv('CPPFLAGS', "%s -L%s -I%s " % (cppflags, libpath, incpath))
 
             #
             # STAGE 3: bootstrap build of final GCC (with PPL/CLooG support)
             #
-            
+
             ## create new obj dir and change into it
             self.create_dir("stage3_obj")
 
@@ -419,35 +420,30 @@ class GCC(Application):
         """
         Custom sanity check for GCC
         """
+
+        self.platform_lib = get_platform_name(withversion=True)
+
         if not self.getcfg('sanityCheckPaths'):
 
-            (sysname, _, release, _, machine) = os.uname()
+            kernel_name = get_kernel_name()
 
-            if sysname == 'Darwin':
-                vendor = 'apple'
-                dynlib_ext = 'dylib'
-            elif sysname == 'Linux':
-                vendor = 'unknown'
-                dynlib_ext = 'so'
-                release = '-gnu'
-            else:
-                self.log.error("Unknown system name (%s), don't know how to handle it." % sysname)
+            sharedlib_ext = get_shared_lib_ext()
 
-            common_infix = 'gcc/%s-%s-%s%s/%s' % (machine, vendor, sysname.lower(), release, self.version())
+            common_infix = 'gcc/%s/%s' % (self.platform_lib, self.version())
 
             bin_files = ["gcov"]
-            lib64_files = ["libgomp.%s" % dynlib_ext, "libgomp.a"]
-            if sysname == 'Linux':
-                lib64_files.extend(["libgcc_s.so", "libmudflap.so", "libmudflap.a"])
+            lib64_files = ["libgomp.%s" % sharedlib_ext, "libgomp.a"]
+            if kernel_name == 'Linux':
+                lib64_files.extend(["libgcc_s.%s" % sharedlib_ext, "libmudflap.%s" % sharedlib_ext, "libmudflap.a"])
             libexec_files = []
             dirs = ['lib/%s' % common_infix]
-            if sysname == 'Linux':
+            if kernel_name == 'Linux':
                 dirs.append('lib64')
 
             if not self.getcfg('languages'):
                 # default languages are c, c++, fortran
-                bin_files = ["c++","cpp","g++","gcc","gcov","gfortran"]
-                lib64_files.extend(["libstdc++.%s" % dynlib_ext, "libstdc++.a"])
+                bin_files = ["c++", "cpp", "g++", "gcc", "gcov", "gfortran"]
+                lib64_files.extend(["libstdc++.%s" % sharedlib_ext, "libstdc++.a"])
                 libexec_files = ['cc1', 'cc1plus', 'collect2', 'f951']
 
             if 'c' in self.getcfg('languages'):
@@ -456,29 +452,29 @@ class GCC(Application):
             if 'c++' in self.getcfg('languages'):
                 bin_files.extend(['c++', 'g++'])
                 dirs.append('include/c++/%s' % self.version())
-                lib64_files.extend(["libstdc++.%s" % dynlib_ext, "libstdc++.a"])
+                lib64_files.extend(["libstdc++.%s" % sharedlib_ext, "libstdc++.a"])
 
             if 'fortran' in self.getcfg('languages'):
                 bin_files.append('gfortran')
-                lib64_files.extend(['libgfortran.%s' % dynlib_ext, 'libgfortran.a'])
+                lib64_files.extend(['libgfortran.%s' % sharedlib_ext, 'libgfortran.a'])
 
             if 'lto' in self.getcfg('languages'):
                 libexec_files.extend(['lto1', 'lto-wrapper'])
-                if sysname == 'Linux':
-                    libexec_files.append('liblto_plugin.so')
+                if kernel_name in ['Linux']:
+                    libexec_files.append('liblto_plugin.%s' % sharedlib_ext)
 
-            bin_files = ["bin/%s"%x for x in bin_files]
-            if sysname == 'Darwin':
+            bin_files = ["bin/%s" % x for x in bin_files]
+            if kernel_name in ['Darwin']:
                 lib64_files = ["lib/%s" % x for x in lib64_files]
             else:
                 lib64_files = ["lib64/%s" % x for x in lib64_files]
             libexec_files = ["libexec/%s/%s" % (common_infix, x) for x in libexec_files]
 
-            self.setcfg('sanityCheckPaths',{'files':bin_files + lib64_files + libexec_files,
+            self.setcfg('sanityCheckPaths', {'files':bin_files + lib64_files + libexec_files,
                                             'dirs':dirs
                                            })
 
-            self.log.info("Customized sanity check paths: %s"%self.getcfg('sanityCheckPaths'))
+            self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
         Application.sanitycheck(self)
 
@@ -488,7 +484,7 @@ class GCC(Application):
         """
         return {
                 'PATH':['bin'],
-                'LD_LIBRARY_PATH':['lib','lib64',
-                                   'lib/gcc/x86_64-unknown-linux-gnu/%s'%self.getcfg('version')],
-                'MANPATH':['man','share/man']
+                'LD_LIBRARY_PATH':['lib', 'lib64',
+                                   'lib/gcc/%s' % (self.platform_lib, self.getcfg('version'))],
+                'MANPATH':['man', 'share/man']
                }
