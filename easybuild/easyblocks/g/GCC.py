@@ -421,18 +421,33 @@ class GCC(Application):
         """
         if not self.getcfg('sanityCheckPaths'):
 
-            common_infix = 'gcc/x86_64-unknown-linux-gnu/%s' % self.version()
+            (sysname, _, release, _, machine) = os.uname()
+
+            if sysname == 'Darwin':
+                vendor = 'apple'
+                dynlib_ext = 'dylib'
+            elif sysname == 'Linux':
+                vendor = 'unknown'
+                dynlib_ext = 'so'
+                release = '-gnu'
+            else:
+                self.log.error("Unknown system name (%s), don't know how to handle it." % sysname)
+
+            common_infix = 'gcc/%s-%s-%s%s/%s' % (machine, vendor, sysname.lower(), release, self.version())
 
             bin_files = ["gcov"]
-            lib64_files = ["libgcc_s.so", "libgomp.so", "libgomp.a", "libmudflap.so", "libmudflap.a"]
+            lib64_files = ["libgomp.%s" % dynlib_ext, "libgomp.a"]
+            if sysname == 'Linux':
+                lib64_files.extend(["libgcc_s.so", "libmudflap.so", "libmudflap.a"])
             libexec_files = []
-            dirs = ['lib/%s' % common_infix,
-                           'lib64']
+            dirs = ['lib/%s' % common_infix]
+            if sysname == 'Linux':
+                dirs.append('lib64')
 
             if not self.getcfg('languages'):
                 # default languages are c, c++, fortran
                 bin_files = ["c++","cpp","g++","gcc","gcov","gfortran"]
-                lib64_files.extend(["libstdc++.so", "libstdc++.a"])
+                lib64_files.extend(["libstdc++.%s" % dynlib_ext, "libstdc++.a"])
                 libexec_files = ['cc1', 'cc1plus', 'collect2', 'f951']
 
             if 'c' in self.getcfg('languages'):
@@ -441,17 +456,22 @@ class GCC(Application):
             if 'c++' in self.getcfg('languages'):
                 bin_files.extend(['c++', 'g++'])
                 dirs.append('include/c++/%s' % self.version())
-                lib64_files.extend(["libstdc++.so", "libstdc++.a"])
+                lib64_files.extend(["libstdc++.%s" % dynlib_ext, "libstdc++.a"])
 
             if 'fortran' in self.getcfg('languages'):
                 bin_files.append('gfortran')
-                lib64_files.extend(['libgfortran.so', 'libgfortran.a'])
+                lib64_files.extend(['libgfortran.%s' % dynlib_ext, 'libgfortran.a'])
 
             if 'lto' in self.getcfg('languages'):
-                libexec_files.extend(['liblto_plugin.so', 'lto1', 'lto-wrapper'])
+                libexec_files.extend(['lto1', 'lto-wrapper'])
+                if sysname == 'Linux':
+                    libexec_files.append('liblto_plugin.so')
 
             bin_files = ["bin/%s"%x for x in bin_files]
-            lib64_files = ["lib64/%s" % x for x in lib64_files]
+            if sysname == 'Darwin':
+                lib64_files = ["lib/%s" % x for x in lib64_files]
+            else:
+                lib64_files = ["lib64/%s" % x for x in lib64_files]
             libexec_files = ["libexec/%s/%s" % (common_infix, x) for x in libexec_files]
 
             self.setcfg('sanityCheckPaths',{'files':bin_files + lib64_files + libexec_files,
