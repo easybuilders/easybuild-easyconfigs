@@ -80,9 +80,10 @@ class Repository:
         """
         os.chdir(self.repo)
 
-    def addSpecFile(self, cfg, name, version):
+    def addSpecFile(self, cfg, name, version, stats):
         """
         Add specification file to repository.
+        Stats contains some build stats, this should be a dictionary.
         """
         if not name.startswith(self.wc):
             name = os.path.join(self.wc, name)
@@ -102,6 +103,7 @@ class Repository:
             dest_file = open(dest, 'w')
             dest_file.write("# Built with %s on %s\n" % (easybuild.VERBOSE_VERSION, time.strftime("%Y-%m-%d_%H-%M-%S")))
             dest_file.write(open(cfg).read())
+            dest_file.write("# Build statistics\nbuildstats=%s" % str(stats))
             dest_file.close()
 
         except IOError, err:
@@ -219,7 +221,7 @@ class GitRepository(Repository):
         except GitCommandError, err:
             log.exception("pull in working copy %s went wrong: %s" % (self.wc, err))
 
-    def addSpecFile(self, cfg, name, version):
+    def addSpecFile(self, cfg, name, version, stats):
         """
         Add specification file to git repository.
         """
@@ -227,7 +229,7 @@ class GitRepository(Repository):
         if  name.startswith(self.wc):
             name = name.replace(self.wc, "", 1) #remove self.wc again
         name = os.path.join(self.wc, self.path, name) #create proper name, with path inside repo in it
-        dest = Repository.addSpecFile(self, cfg, name, version)
+        dest = Repository.addSpecFile(self, cfg, name, version, stats)
         ## add it to version control
         if dest:
             try:
@@ -331,13 +333,13 @@ class SvnRepository(Repository):
             except ClientError, err:
                 log.exception("Checkout of path / in working copy %s went wrong: %s" % (self.wc, err))
 
-    def addSpecFile(self, cfg, name, version):
+    def addSpecFile(self, cfg, name, version, stats):
         """
         Add specification file to SVN repository.
         """
         if not os.path.isdir(name):
             self.client.mkdir(name, "Creating path %s" % name)
-        dest = Repository.addSpecFile(self, cfg, name, version)
+        dest = Repository.addSpecFile(self, cfg, name, version, stats)
         log.debug("destination = %s" % dest)
         if dest:
             log.debug("destination status: %s" % self.client.status(dest))
