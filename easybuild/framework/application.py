@@ -34,7 +34,7 @@ from easybuild.tools.filetools import unpack, patch, run_cmd, convertName
 from easybuild.tools.module_generator import ModuleGenerator
 from easybuild.tools.modules import Modules
 from easybuild.tools.toolkit import Toolkit
-from easybuild.tools.systemtools import get_cpu_count
+from easybuild.tools.systemtools import get_core_count
 
 class Application:
     """
@@ -212,7 +212,7 @@ class Application:
             except ValueError, err:
                 self.log.error("Parallelism %s not integer: %s" % (nr, err))
         else:
-            nr = get_cpu_count()
+            nr = get_core_count()
             ## check ulimit -u
             out, ec = run_cmd('ulimit -u')
             try:
