@@ -21,7 +21,7 @@
 from difflib import get_close_matches
 from distutils.version import LooseVersion
 import glob
-import grp
+import grp #@UnresolvedImport
 import os
 import shutil
 import time
@@ -125,7 +125,8 @@ class Application:
           'sourceURLs' : [[], "List of URLs for source files"],
           'patches': [[], "List of patches to apply"],
           'tests': [[], "List of test-scripts to run after install. A test script should return a non-zero exit status to fail"],
-          'sanityCheckPaths': [{}, "List of files and directories to check (format: {'files':<list>, 'dirs':<list>}, default: {})"]
+          'sanityCheckPaths': [{}, "List of files and directories to check (format: {'files':<list>, 'dirs':<list>}, default: {})"],
+          'buildstats' : [None, "A list of dicts with buildstats: build_time, platform, core_count, cpu_model, install_size, timestamp"],
         }
 
         # module generator

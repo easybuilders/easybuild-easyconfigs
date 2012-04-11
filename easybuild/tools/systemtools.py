@@ -89,6 +89,7 @@ def get_cpu_vendor():
     except IOError:
         pass
     # Darwin (OS X)
+
     out, exitcode = run_cmd("sysctl -n machdep.cpu.vendor")
     out = out.strip()
     if not exitcode and out and out in VENDORS:
@@ -101,6 +102,25 @@ def get_cpu_vendor():
         return out.split(' ')[0]
 
     raise SystemToolsException("Could not detect cpu vendor")
+
+def get_cpu_model():
+    """
+    returns cpu model
+    f.ex Intel(R) Core(TM) i5-2540M CPU @ 2.60GHz
+    """
+    #linux
+    regexp = re.compile(r"^model name\s+:\s*(?P<modelname>.+)\s*$", re.M)
+    try:
+        return regexp.search(open("/proc/cpuinfo").read()).groupdict()['modelname'].strip()
+    except IOError:
+        pass
+    #osX
+    out, exitcode = run_cmd("sysctl -n machdep.cpu.brand_string")
+    out = out.strip()
+    if not exitcode:
+        return out
+
+    return 'UNKNOWN'
 
 def get_kernel_name():
     """Try to determine kernel name
@@ -128,7 +148,8 @@ def get_shared_lib_ext():
         return shared_lib_exts[kernel_name]
 
     else:
-        raise SystemToolsException("Unable to determine extention for shared libraries, unknown kernel name: %s" % kernel_name)
+        raise SystemToolsException("Unable to determine extention for shared libraries," \
+                                   " unknown kernel name: %s" % kernel_name)
 
 def get_platform_name(withversion=False):
     """Try and determine platform name
@@ -150,3 +171,5 @@ def get_platform_name(withversion=False):
         platform_name = '%s-%s-%s' % (machine, vendor, kernel_name.lower())
 
     return platform_name
+
+
