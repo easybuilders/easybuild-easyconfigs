@@ -19,26 +19,30 @@
 # You should have received a copy of the GNU General Public License
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
+import os
+import re
+import shutil
+import sys
+import tempfile
+import time
+import copy
+import platform
+from easybuild.framework.application import Application, get_instance
+from easybuild.tools.build_log import initLogger, removeLogHandler, \
+    EasyBuildError
+from easybuild.tools.class_dumper import dumpClasses
+from easybuild.tools.modules import Modules, searchModule
+from easybuild.tools.repository import getRepository
+from optparse import OptionParser
+import easybuild
+import easybuild.tools.config as config
+import easybuild.tools.filetools as filetools
+from easybuild.tools import systemtools
 
 """
 Main entry point for EasyBuildBuild: build software from .eb input file
 """
-from optparse import OptionParser
-import copy
-import re
-import os
-import shutil
-import sys
-import tempfile
 
-import easybuild
-from easybuild.framework.application import Application, get_instance
-from easybuild.tools.build_log import initLogger, removeLogHandler, EasyBuildError
-from easybuild.tools.class_dumper import dumpClasses
-import easybuild.tools.config as config
-import easybuild.tools.filetools as filetools
-from easybuild.tools.modules import Modules, searchModule
-from easybuild.tools.repository import getRepository
 
 # applications use their own logger, we need to tell them to debug or not
 # so this global var is used.
@@ -49,10 +53,9 @@ def add_build_options(parser):
     Add build options to options parser
     """
     parser.add_option("-C", "--config",
-
-                        help = "path to EasyBuild config file [default: easybuild_config.py in the EasyBuild directory]")
+                        help="path to EasyBuild config file [default: easybuild_config.py in the EasyBuild directory]")
     parser.add_option("-r", "--robot", metavar="path",
-                        help = "path to search for specifications for missing dependencies")
+                        help="path to search for specifications for missing dependencies")
 
     parser.add_option("-o", "--options", action="store_true", help="show available configuration options")
     parser.add_option("--dump-classes", action="store_true", help="show classes available")
@@ -65,22 +68,22 @@ def add_build_options(parser):
                         help="does the build/installation in a test directory " \
                                "located in $HOME/easybuildinstall")
 
-    stop_options = ['cfg', 'source', 'patch', 'configure', 'make', 'install', 
+    stop_options = ['cfg', 'source', 'patch', 'configure', 'make', 'install',
                    'test', 'postproc', 'cleanup', 'packages']
-    parser.add_option("-s", "--stop", type = "choice", choices = stop_options,
-                        help = "stop the installation after certain step" \
+    parser.add_option("-s", "--stop", type="choice", choices=stop_options,
+                        help="stop the installation after certain step" \
                                "(valid: %s)" % ', '.join(stop_options))
-    parser.add_option("-b", "--only-blocks", metavar = "blocks", help = "Only build blocks blk[,blk2]")
-    parser.add_option("-k", "--skip", action = "store_true",
-                        help = "skip existing software (useful for installing additional packages)")
-    parser.add_option("-t", "--skip-tests", action = "store_true",
-                        help = "skip testing")
-    parser.add_option("-f", "--force", action = "store_true", dest="force",
-                        help = "force to rebuild software even if it's already installed (i.e. can be found as module)")
-    
-    parser.add_option("-l", action = "store_true", dest = "stdoutLog", help = "log to stdout")
-    parser.add_option("-d", "--debug" , action = "store_true", help = "log debug messages")
-    parser.add_option("-v", "--version", action = "store_true", help = "show version")
+    parser.add_option("-b", "--only-blocks", metavar="blocks", help="Only build blocks blk[,blk2]")
+    parser.add_option("-k", "--skip", action="store_true",
+                        help="skip existing software (useful for installing additional packages)")
+    parser.add_option("-t", "--skip-tests", action="store_true",
+                        help="skip testing")
+    parser.add_option("-f", "--force", action="store_true", dest="force",
+                        help="force to rebuild software even if it's already installed (i.e. can be found as module)")
+
+    parser.add_option("-l", action="store_true", dest="stdoutLog", help="log to stdout")
+    parser.add_option("-d", "--debug" , action="store_true", help="log debug messages")
+    parser.add_option("-v", "--version", action="store_true", help="show version")
 
 
 def main():
@@ -93,8 +96,8 @@ def main():
     """
     # disallow running EasyBuild as root
     if os.getuid() == 0:
-        sys.stderr.write("ERROR: You seem to be running EasyBuild with root priveleges.\n" + 
-                        "That's not wise, so let's end this here.\n" + 
+        sys.stderr.write("ERROR: You seem to be running EasyBuild with root priveleges.\n" \
+                        "That's not wise, so let's end this here.\n" \
                         "Exiting.\n")
         sys.exit(1)
 
@@ -171,7 +174,7 @@ def main():
     ## Read specification files
     packages = []
     if len(paths) == 0:
-        error("Please provide one or more specification files", optparser = parser)
+        error("Please provide one or more specification files", optparser=parser)
 
     for path in paths:
         path = os.path.abspath(path)
@@ -545,7 +548,7 @@ def build(module, options, log, origEnviron, exitOnFailure=True):
 
     name = module['module'][0]
     try:
-        app = get_instance(easyblock, log, name = name)
+        app = get_instance(easyblock, log, name=name)
         log.info("Obtained application instance of for %s (easyblock: %s)" % (name, easyblock))
     except EasyBuildError, err:
         error("Failed to get application instance for %s (easyblock: %s): %s" % (name, easyblock, err.msg))
@@ -562,7 +565,9 @@ def build(module, options, log, origEnviron, exitOnFailure=True):
     app.logdebug = options.debug
 
     ## Build specification
-    errormsg='(no error)'
+    errormsg = '(no error)'
+    #timing info
+    starttime = time.time()
     try:
         result = app.autobuild(spec, runTests=not options.skip_tests)
     except EasyBuildError, err:
@@ -570,6 +575,23 @@ def build(module, options, log, origEnviron, exitOnFailure=True):
         errormsg = "autoBuild Failed (last %d chars): %s" % (lastn, err.msg[-lastn:])
         log.exception(errormsg)
         result = False
+
+    #get build stats
+    buildtime = round(time.time() - starttime, 2)
+    installsize = 0
+    for dirpath, _, filenames in os.walk(app.installdir):
+        for filename in filenames:
+            installsize += os.path.getsize(os.path.join(dirpath, filename))
+
+    #collect stats
+    buildstats = app.getcfg('buildstats')
+    buildstats.append({'buildtime' : buildtime,
+             'platform' : platform.platform(),
+             'core_count' : systemtools.get_core_count(),
+             'cpu_vendor': systemtools.get_cpu_vendor(),
+             'installsize' : installsize,
+             'installed' : int(time.time())
+             })
 
     ended = "ended"
 
@@ -585,8 +607,8 @@ def build(module, options, log, origEnviron, exitOnFailure=True):
                 ## Upload spec to central repository
                 repo = getRepository()
                 if 'originalSpec' in module:
-                    repo.addSpecFile(module['originalSpec'], app.name(), app.installversion + ".block")
-                repo.addSpecFile(spec, app.name(), app.installversion)
+                    repo.addSpecFile(module['originalSpec'], app.name(), app.installversion + ".block", buildstats)
+                repo.addSpecFile(spec, app.name(), app.installversion, buildstats)
                 repo.commit("Built %s/%s" % (app.name(), app.installversion))
                 del repo
             except EasyBuildError, err:
@@ -649,6 +671,6 @@ def build(module, options, log, origEnviron, exitOnFailure=True):
 if __name__ == "__main__":
     try:
         main()
-    except EasyBuildError,e:
+    except EasyBuildError, e:
         sys.stderr.write('ERROR: %s\n' % e.msg)
         sys.exit(1)

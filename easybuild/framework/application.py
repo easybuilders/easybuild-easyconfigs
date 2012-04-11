@@ -125,7 +125,8 @@ class Application:
           'sourceURLs' : [[], "List of URLs for source files"],
           'patches': [[], "List of patches to apply"],
           'tests': [[], "List of test-scripts to run after install. A test script should return a non-zero exit status to fail"],
-          'sanityCheckPaths': [{}, "List of files and directories to check (format: {'files':<list>, 'dirs':<list>}, default: {})"]
+          'sanityCheckPaths': [{}, "List of files and directories to check (format: {'files':<list>, 'dirs':<list>}, default: {})"],
+          'buildstats' : [[], "A list of a dict with buildstats"],
         }
 
         # module generator
