@@ -80,10 +80,11 @@ class Repository:
         """
         os.chdir(self.repo)
 
-    def addSpecFile(self, cfg, name, version, stats):
+    def addSpecFile(self, cfg, name, version, stats, appendstats):
         """
         Add specification file to repository.
-        Stats contains some build stats, this should be a dictionary.
+        Stats contains some build stats, this should be a list of dictionaries.
+        appendstats is a boolean indicating if we should append to existing stats or not.
         """
         if not name.startswith(self.wc):
             name = os.path.join(self.wc, name)
@@ -94,16 +95,25 @@ class Repository:
         dest = os.path.join(self.wc, name, "%s.eb" % (version))
 
         ## check if it's new/different from what's in svn
-        if os.path.exists(dest) and self.checkIdent(cfg, dest):
-            log.info("Dest file %s already exist but is identical to what is in the repository." % dest)
-            return None
+        #nope, always commit
+        #if os.path.exists(dest) and self.checkIdent(cfg, dest):
+        #    log.info("Dest file %s already exist but is identical to what is in the repository." % dest)
+        #    return None
 
         try:
             ## copy file
+            oldf = open(cfg)
+            oldcontent = oldf.read()
+            oldf.close()
             dest_file = open(dest, 'w')
             dest_file.write("# Built with %s on %s\n" % (easybuild.VERBOSE_VERSION, time.strftime("%Y-%m-%d_%H-%M-%S")))
-            dest_file.write(open(cfg).read())
-            dest_file.write("# Build statistics\nbuildstats=%s" % str(stats))
+            dest_file.write(oldcontent)
+            if appendstats:
+                statstemplate = "buildstats.append(%s)\n"
+            else:
+                statstemplate = "\n#Build statistics\nbuildstats=[%s]\n"
+
+            dest_file.write(statstemplate % stats)
             dest_file.close()
 
         except IOError, err:
@@ -221,7 +231,7 @@ class GitRepository(Repository):
         except GitCommandError, err:
             log.exception("pull in working copy %s went wrong: %s" % (self.wc, err))
 
-    def addSpecFile(self, cfg, name, version, stats):
+    def addSpecFile(self, cfg, name, version, stats, append):
         """
         Add specification file to git repository.
         """
@@ -229,7 +239,7 @@ class GitRepository(Repository):
         if  name.startswith(self.wc):
             name = name.replace(self.wc, "", 1) #remove self.wc again
         name = os.path.join(self.wc, self.path, name) #create proper name, with path inside repo in it
-        dest = Repository.addSpecFile(self, cfg, name, version, stats)
+        dest = Repository.addSpecFile(self, cfg, name, version, stats, append)
         ## add it to version control
         if dest:
             try:
@@ -333,13 +343,13 @@ class SvnRepository(Repository):
             except ClientError, err:
                 log.exception("Checkout of path / in working copy %s went wrong: %s" % (self.wc, err))
 
-    def addSpecFile(self, cfg, name, version, stats):
+    def addSpecFile(self, cfg, name, version, stats, append):
         """
         Add specification file to SVN repository.
         """
         if not os.path.isdir(name):
             self.client.mkdir(name, "Creating path %s" % name)
-        dest = Repository.addSpecFile(self, cfg, name, version, stats)
+        dest = Repository.addSpecFile(self, cfg, name, version, stats, append)
         log.debug("destination = %s" % dest)
         if dest:
             log.debug("destination status: %s" % self.client.status(dest))

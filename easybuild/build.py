@@ -584,14 +584,15 @@ def build(module, options, log, origEnviron, exitOnFailure=True):
             installsize += os.path.getsize(os.path.join(dirpath, filename))
 
     #collect stats
-    buildstats = app.getcfg('buildstats')
-    buildstats.append({'buildtime' : buildtime,
+    currentbuildstats = bool(app.getcfg('buildstats'))
+    buildstats = {'build_time' : buildtime,
              'platform' : platform.platform(),
              'core_count' : systemtools.get_core_count(),
-             'cpu_vendor': systemtools.get_cpu_vendor(),
-             'installsize' : installsize,
-             'installed' : int(time.time())
-             })
+             'cpu_model': systemtools.get_cpu_model(),
+             'install_size' : installsize,
+             'timestamp' : int(time.time()),
+             'host' : os.uname()[1],
+             }
 
     ended = "ended"
 
@@ -607,8 +608,8 @@ def build(module, options, log, origEnviron, exitOnFailure=True):
                 ## Upload spec to central repository
                 repo = getRepository()
                 if 'originalSpec' in module:
-                    repo.addSpecFile(module['originalSpec'], app.name(), app.installversion + ".block", buildstats)
-                repo.addSpecFile(spec, app.name(), app.installversion, buildstats)
+                    repo.addSpecFile(module['originalSpec'], app.name(), app.installversion + ".block", buildstats, currentbuildstats)
+                repo.addSpecFile(spec, app.name(), app.installversion, buildstats, currentbuildstats)
                 repo.commit("Built %s/%s" % (app.name(), app.installversion))
                 del repo
             except EasyBuildError, err:
