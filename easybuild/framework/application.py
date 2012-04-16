@@ -548,6 +548,8 @@ class Application:
 
             if httpmsg.type == "text/html" and not filename.endswith('.html'):
                 self.log.warning("HTML file downloaded but not expecting it, so assuming invalid download.")
+                self.log.debug("removing downloaded file")
+                os.remove(path)
                 return None
             else:
                 self.log.info("Downloading file %s from url %s: done" % (filename, url))
@@ -1296,6 +1298,7 @@ class Application:
         """
         Also do this before (eg to set the template)
         """
+        pass
 
     def extra_packages(self):
         """
@@ -1314,7 +1317,7 @@ class Application:
         allclassmodule = pkgdefaultclass[0]
         defaultClass = pkgdefaultclass[1]
         for pkg in self.pkgs:
-            name = pkg['name']
+            name = pkg['name'].capitalize()  #classnames start with a capital
             self.log.debug("Starting package %s" % name)
 
             try:
@@ -1489,12 +1492,17 @@ def get_instance(easyblock, log, name=None):
             # try and find easyblock
             easyblock_found = False
             easyblock_path = ''
+            easyblock_paths = [modulepath, modulepath.lower()]
             for path in get_paths_for(log, "easyblocks"):
-                log.debug("Checking easyblocks path %s..." % path)
-                easyblock_path = os.path.join(path, "%s.py" % modulepath.replace('.', os.path.sep))
-                if os.path.exists(easyblock_path):
-                    easyblock_found = True
-                    log.debug("Found easyblock for %s at %s" % (name, easyblock_path))
+                for possible_path in easyblock_paths:
+                    easyblock_path = os.path.join(path, "%s.py" % possible_path.replace('.', os.path.sep))
+                    log.debug("Checking easyblocks path %s..." % easyblock_path)
+                    if os.path.exists(easyblock_path):
+                        easyblock_found = True
+                        log.debug("Found easyblock for %s at %s" % (name, easyblock_path))
+                        modulepath = possible_path
+                        break
+                if easyblock_found:
                     break
 
             # only try to import derived easyblock if it exists
