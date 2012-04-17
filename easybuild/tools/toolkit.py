@@ -498,11 +498,20 @@ class Toolkit:
             "-Wl,--start-group  %(mkl)s/lib/%(libdir)s/libmkl_intel%(libsuffix)s.a " \
             "%(mkl)s/lib/%(libdir)s/libmkl_sequential.a " \
             "%(mkl)s/lib/%(libdir)s/libmkl_core.a " \
-            "%(mkl)s/lib/%(libdir)s/libmkl_blacs_intelmpi%(libsuffix)s.a -Wl,--end-group" % {'mkl':mklRoot,
-                                                                                            'libdir':libdir,
-                                                                                            'libsuffix':libsuffix,
-                                                                                            'libsuffixsl':libsuffixsl
-                                                                                           }
+            "%(mkl)s/lib/%(libdir)s/libmkl_blacs_intelmpi%(libsuffix)s.a -Wl,--end-group" % \
+                {
+                 'mkl':mklRoot,
+                 'libdir':libdir,
+                 'libsuffix':libsuffix,
+                 'libsuffixsl':libsuffixsl
+                }
+
+
+        self.vars['LIBFFT'] = " %(mkl)s/lib/%(libdir)s/libmkl_core.a " % \
+            {'mkl':mklRoot,
+             'libdir':libdir,
+             }
+
 
         if self.opts['packed-groups']: #we pack groups toghether, since some tools like pkg-utils don't work well with them
             for i in ['LIBLAPACK', 'LIBBLAS', 'LIBLAPACK_MT', 'LIBSCALAPACK' ]:

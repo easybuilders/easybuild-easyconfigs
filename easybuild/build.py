@@ -592,6 +592,7 @@ def build(module, options, log, origEnviron, exitOnFailure=True):
              'install_size' : installsize,
              'timestamp' : int(time.time()),
              'host' : os.uname()[1],
+             'parallelbuild' : app.getcfg('parallel'),
              }
 
     ended = "ended"
