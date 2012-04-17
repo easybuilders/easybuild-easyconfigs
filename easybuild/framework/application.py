@@ -1487,7 +1487,7 @@ def get_instance(easyblock, log, name=None):
                 name = "UNKNOWN"
 
             modulepath = module_path_for_easyblock(name)
-            class_name = name
+            class_name = name.capitalize()
 
             # try and find easyblock
             easyblock_found = False

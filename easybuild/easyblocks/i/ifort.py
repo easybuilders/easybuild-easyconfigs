@@ -1,0 +1,49 @@
+##
+# Copyright 2009-2012 Stijn Deweirdt, Dries Verdegem, Kenneth Hoste, Pieter De Baets, Jens Timmerman
+#
+# This file is part of EasyBuild,
+# originally created by the HPC team of the University of Ghent (http://ugent.be/hpc).
+#
+# http://github.com/hpcugent/easybuild
+#
+# EasyBuild is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation v2.
+#
+# EasyBuild is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
+##
+
+from distutils.version import LooseVersion
+
+from easybuild.easyblocks.i.icc import Icc, IntelBase
+
+class Ifort(Icc):
+    """
+    Class that can be used to install ifort
+    - tested with 11.1.046
+    -- will fail for all older versions (due to newer silent installer)
+    """
+
+    def sanitycheck(self):
+
+        if not self.getcfg('sanityCheckPaths'):
+
+            libprefix = ""
+            if LooseVersion(self.version()) >= LooseVersion("2011"):
+                libprefix = "compiler/"
+
+            self.setcfg('sanityCheckPaths', {'files':["bin/intel64/%s" % x for x in ["ifort", "idb"]] +
+                                                     ["%slib/intel64/%s" % (libprefix, x) for x in ["libifcore.a", "libifcore.so",
+                                                                                                    "libiomp5.a", "libiomp5.so"]],
+                                            'dirs':[]
+                                           })
+
+            self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
+
+        IntelBase.sanitycheck(self)
