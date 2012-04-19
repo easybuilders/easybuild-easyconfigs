@@ -581,7 +581,9 @@ def build(module, options, log, origEnviron, exitOnFailure=True):
     installsize = 0
     for dirpath, _, filenames in os.walk(app.installdir):
         for filename in filenames:
-            installsize += os.path.getsize(os.path.join(dirpath, filename))
+            fullpath = os.path.join(dirpath, filename)
+            if os.path.exists(fullpath):
+                installsize += os.path.getsize(fullpath)
 
     #collect stats
     currentbuildstats = bool(app.getcfg('buildstats'))
