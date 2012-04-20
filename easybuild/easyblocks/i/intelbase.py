@@ -130,16 +130,11 @@ CONTINUE_WITH_OPTIONAL_ERROR=yes
     def cleanup(self):
         """Cleanup leftover mess
 
-        - move log file
-        - remove/clean build directory
-        - remove $HOME/intel
+        - clean home dir
+        - generic cleanup (get rid of build dir)
         """
-        try:
-            shutil.rmtree(self.builddir)
-            self.log.info("Cleaning up builddir %s" % (self.builddir))
-        except:
-            self.log.exception("Cleaning up builddir %s failed" % (self.builddir))
-
         self.clean_homedir()
+
+        Application.cleanup()
 
     # no default sanity check, needs to be implemented by derived class

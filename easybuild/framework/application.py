@@ -839,9 +839,7 @@ class Application:
 
     def cleanup(self):
         """
-        Cleanup leftover mess
-        - move log file
-        - remove/clean build directory
+        Cleanup leftover mess: remove/clean build directory
         
         except when we're building in the installation directory, 
         otherwise we remove the installation
