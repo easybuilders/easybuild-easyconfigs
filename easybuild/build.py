@@ -50,7 +50,7 @@ def add_build_options(parser):
     """
     parser.add_option("-C", "--config",
 
-                        help = "path to EasyBuild config file [default: easybuild_config.py in the EasyBuild directory]")
+                        help = "path to EasyBuild config file [default: $EASYBUILDCONFIG or easybuild/easybuild_config.py]")
     parser.add_option("-r", "--robot", metavar="path",
                         help = "path to search for specifications for missing dependencies")
 
