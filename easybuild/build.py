@@ -57,7 +57,7 @@ def add_build_options(parser):
     parser.add_option("-r", "--robot", metavar="path",
                         help="path to search for specifications for missing dependencies")
 
-    parser.add_option("-o", "--options", action="store_true", help="show available configuration options")
+    parser.add_option("-a", "--avail-spec-params", action="store_true", help="show available specification parameters")
     parser.add_option("--dump-classes", action="store_true", help="show classes available")
     parser.add_option("--search", help="search for module-files in the robot-directory")
 
