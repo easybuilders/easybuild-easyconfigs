@@ -135,6 +135,6 @@ CONTINUE_WITH_OPTIONAL_ERROR=yes
         """
         self.clean_homedir()
 
-        Application.cleanup()
+        Application.cleanup(self)
 
     # no default sanity check, needs to be implemented by derived class
