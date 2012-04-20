@@ -81,7 +81,7 @@ class Imkl(IntelBase):
         """Overwritten from Application to add extra txt"""
         txt = IntelBase.make_module_extra(self)
         txt += "prepend-path\t%s\t\t%s\n" % ('INTEL_LICENSE_FILE', self.license)
-        if self.getCfg('m32'):
+        if self.getcfg('m32'):
             txt += "prepend-path\t%s\t\t$root/%s\n" % ('NLSPATH', 'idb/32/locale/%l_%t/%N')
         else:
             txt += "prepend-path\t%s\t\t$root/%s\n" % ('NLSPATH', 'idb/intel64/locale/%l_%t/%N')
