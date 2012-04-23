@@ -230,7 +230,8 @@ class Toolkit:
         known_preparation_functions = {
             # compilers always go first
             '1_GCC':self.prepareGCC,
-            '1_icc':self.prepareIcc, # also for ifort
+            '1_icc':self.prepareIcc,
+            '1_ifort':self.prepareIfort,
             # MPI libraries
             '2_impi':self.prepareIMPI,
             '2_MPICH2':self.prepareMPICH2,
