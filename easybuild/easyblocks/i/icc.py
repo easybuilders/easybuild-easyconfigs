@@ -39,6 +39,8 @@ class Icc(IntelBase):
             libprefix = ""
             if LooseVersion(self.version()) >= LooseVersion("2011"):
                 libprefix = "compiler/lib/intel64/lib"
+            else:
+                libprefix = "lib/intel64/lib"
 
             self.setcfg('sanityCheckPaths', {'files':
                                              ["bin/intel64/%s" % x for x in ["icc", "icpc", "idb"]] +

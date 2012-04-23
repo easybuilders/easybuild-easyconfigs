@@ -36,11 +36,12 @@ class Ifort(Icc):
 
             libprefix = ""
             if LooseVersion(self.version()) >= LooseVersion("2011"):
-                libprefix = "compiler/"
+                libprefix = "compiler/lib/intel64/lib"
+            else:
+                libprefix = "lib/intel64/lib"
 
             self.setcfg('sanityCheckPaths', {'files':["bin/intel64/%s" % x for x in ["ifort", "idb"]] +
-                                                     ["%slib/intel64/%s" % (libprefix, x) for x in ["libifcore.a", "libifcore.so",
-                                                                                                    "libiomp5.a", "libiomp5.so"]],
+                                                     ["%s%s" % (libprefix, x) for x in ["ifcore.a", "ifcore.so", "iomp5.a", "iomp5.so"]],
                                             'dirs':[]
                                            })
 
