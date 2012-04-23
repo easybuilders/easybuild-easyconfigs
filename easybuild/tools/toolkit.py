@@ -276,7 +276,7 @@ class Toolkit:
                     break
 
         if not len(depnames) == len(preparation_functions.values()):
-            found_meths = preparation_functions.keys()
+            found_meths = ['_'.join(meth.split('_')[1:]) for meth in preparation_functions.keys()]
             for depname in copy.copy(depnames):
                 if depname in found_meths:
                     depnames.remove(depname)
@@ -419,13 +419,11 @@ class Toolkit:
 
     def prepareIcc(self):
         """
-        Prepare for an icc/ifort based compiler toolkit
+        Prepare for an icc based compiler toolkit
         """
 
         self.vars['CC'] = 'icc%s' % self.m32flag
         self.vars['CXX'] = 'icpc%s' % self.m32flag
-        self.vars['F77'] = 'ifort%s' % self.m32flag
-        self.vars['F90'] = 'ifort%s' % self.m32flag
 
         if self.opts['cciscxx']:
             self.vars['CXX'] = self.vars['CC']
@@ -448,13 +446,39 @@ class Toolkit:
             self.vars['CFLAGS'] = '-' + ' -'.join(flags + copts)
         if len(flags) > 0:
             self.vars['CXXFLAGS'] = '-' + ' -'.join(flags)
+
+        if "liomp5" not in self.vars['LIBS']:
+            if LooseVersion(os.environ['SOFTVERSIONICC']) < LooseVersion('2011'):
+                self.vars['LIBS'] += " -liomp5 -lguide -lpthread"
+            else:
+                self.vars['LIBS'] += " -liomp5 -lpthread"
+
+    def prepareIfort(self):
+        """
+        Prepare for an ifort based compiler toolkit
+        """
+
+        self.vars['F77'] = 'ifort%s' % self.m32flag
+        self.vars['F90'] = 'ifort%s' % self.m32flag
+
+        flags = []
+        if self.opts['optarch']:
+            flags.append(self._getOptimalArchitecture())
+
+        flags.append(self._getOptimizationLevel())
+        flags.extend(self._flagsForOptions(override={
+            'intel-static': 'static-intel'
+        }))
+
         if len(flags) > 0:
             self.vars['FFLAGS'] = '-' + ' -'.join(flags)
 
-        if LooseVersion(os.environ['SOFTVERSIONICC']) < LooseVersion('2011'):
-            self.vars['LIBS'] += " -liomp5 -lguide -lpthread"
-        else:
-            self.vars['LIBS'] += " -liomp5 -lpthread"
+        if "liomp5" not in self.vars['LIBS']:
+            if LooseVersion(os.environ['SOFTVERSIONIFORT']) < LooseVersion('2011'):
+                self.vars['LIBS'] += " -liomp5 -lguide -lpthread"
+            else:
+                self.vars['LIBS'] += " -liomp5 -lpthread"
+        
 
     def prepareIMKL(self):
         """
