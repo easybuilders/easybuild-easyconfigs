@@ -1469,7 +1469,7 @@ def get_paths_for(log, subdir="easyblocks"):
             if os.path.isdir(path):
                 paths.append(os.path.abspath(pythonpath))
         except OSError, err:
-            raise EasyBuildError(err)
+            raise EasyBuildError(str(err))
 
     return paths
 
@@ -1516,7 +1516,7 @@ def get_instance(easyblock, log, name=None):
 
                 except Exception, err:
                     log.error("Failed to use easyblock at %s for class %s: %s" % (modulepath, class_name, err))
-                    raise EasyBuildError(err)
+                    raise EasyBuildError(str(err))
 
             else:
                 modulepath = "easybuild.framework.application"
@@ -1539,7 +1539,7 @@ def get_instance(easyblock, log, name=None):
 
     except Exception, err:
         log.error("Can't process provided module and class pair %s: %s" % (easyblock, err))
-        raise EasyBuildError(err)
+        raise EasyBuildError(str(err))
 
 class ApplicationPackage:
     """
