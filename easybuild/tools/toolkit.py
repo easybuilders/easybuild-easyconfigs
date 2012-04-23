@@ -527,7 +527,14 @@ class Toolkit:
                                                                                             'libdir':libdir,
                                                                                             'libsuffix':libsuffix,
                                                                                             'libsuffixsl':libsuffixsl
-                                                                                           }
+                                                                                            }
+        fftwsuff=""
+        if self.opts['pic']:
+            fftwsuff="_pic"
+        self.vars['LIBFFT'] = "%(mkl)s/lib/%(libdir)s/libfftw3xc_intel%(suff)s.a" % {'mkl':mklRoot,
+                                                                                     'libdir':libdir,
+                                                                                     'suff':fftwsuff
+                                                                                     }
 
         if self.opts['packed-groups']: #we pack groups toghether, since some tools like pkg-utils don't work well with them
             for i in ['LIBLAPACK', 'LIBBLAS', 'LIBLAPACK_MT', 'LIBSCALAPACK' ]:
@@ -552,7 +559,7 @@ class Toolkit:
             mklld = ['lib/intel64', 'mkl/lib/intel64']
             mklcpp = ['mkl/include', 'mkl/include/fftw']
 
-            static_vars = ['LIBBLAS', 'LIBBLAS_MT', 'LIBLAPACK', 'LIBLAPACK_MT', 'LIBSCALAPACK', 'LIBSCALAPACK_MT']
+            static_vars = ['LIBBLAS', 'LIBBLAS_MT', 'LIBFFT', 'LIBLAPACK', 'LIBLAPACK_MT', 'LIBSCALAPACK', 'LIBSCALAPACK_MT']
             for var in static_vars:
                 self.vars[var] = self.vars[var].replace('/lib/em64t/', '/mkl/lib/intel64/')
 
