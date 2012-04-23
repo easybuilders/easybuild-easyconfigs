@@ -21,7 +21,7 @@
 
 from easybuild.easyblocks.i.intelbase import IntelBase
 
-class TBB(IntelBase):
+class Tbb(IntelBase):
 
     def sanitycheck(self):
 
