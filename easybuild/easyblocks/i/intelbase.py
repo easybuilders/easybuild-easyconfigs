@@ -37,13 +37,11 @@ class IntelBase(Application):
         self.cfg.update({
                          'license':[None,"License file path (default: None)"],
                          'license_activation':['license_server', "Indicates license activation type (default: 'license_server')"],
-                         'interfaces':[True, "Indicates whether interfaces should be built (default: True)"],
                          # 'usetmppath': 
                          # workaround for older SL5 version (5.5 and earlier)
                          # used to be True, but False since SL5.6/SL6
                          # disables TMP_PATH env and command line option 
                          'usetmppath':[False, "Use temporary path for installation (default: False)"],
-                         'preferredmpi':[None, "Preferred MPI type (default: None)"],
                          'm32':[False, "Enable 32-bit toolkit (default: False)"],
                          })
 

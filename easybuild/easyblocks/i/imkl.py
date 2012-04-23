@@ -36,6 +36,12 @@ class Imkl(IntelBase):
     -- will fail for all older versions (due to newer silent installer)
     """
 
+    def __init__(self, *args, **kwargs):
+        """Constructor, adds extra config options"""
+        IntelBase.__init__(self, args, kwargs)
+
+        self.cfg.update({'interfaces':[True, "Indicates whether interfaces should be built (default: True)"]})
+
     def configure(self):
         IntelBase.configure(self)
 
