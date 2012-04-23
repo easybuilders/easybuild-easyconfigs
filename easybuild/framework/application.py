@@ -1315,7 +1315,7 @@ class Application:
         allclassmodule = pkgdefaultclass[0]
         defaultClass = pkgdefaultclass[1]
         for pkg in self.pkgs:
-            name = pkg['name'].capitalize()  #classnames start with a capital
+            name = pkg['name'][0].upper() + pkg['name'][1:] # classnames start with a capital
             self.log.debug("Starting package %s" % name)
 
             try:
@@ -1485,7 +1485,8 @@ def get_instance(easyblock, log, name=None):
                 name = "UNKNOWN"
 
             modulepath = module_path_for_easyblock(name)
-            class_name = name.capitalize()
+            # don't use capitalize, and it changes 'GCC' into 'Gcc', we want to keep the capitals that are there already
+            class_name = name[0].upper() + name[1:]
 
             # try and find easyblock
             easyblock_found = False
