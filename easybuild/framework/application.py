@@ -1519,9 +1519,9 @@ def get_instance(easyblock, log, name=None):
                     raise EasyBuildError(err)
 
             else:
-                log.debug("Easyblock path %s does not exist, so falling back to default %s class from %s" % (easyblock_path, class_name, modulepath))
                 modulepath = "easybuild.framework.application"
                 class_name = "Application"
+                log.debug("Easyblock path %s does not exist, so falling back to default %s class from %s" % (easyblock_path, class_name, modulepath))
 
         else:
             class_name = easyblock.split('.')[-1]
