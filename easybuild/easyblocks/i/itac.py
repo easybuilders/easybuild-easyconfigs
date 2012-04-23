@@ -83,7 +83,7 @@ EULA=accept
                     'VT_SLIB_DIR':['itac/lib_s%s' % self.getcfg('preferredmpi')]
                    }
         
-        if self.getCfg('m32'):
+        if self.getcfg('m32'):
             guesses.update({
                             'PATH':['bin', 'bin/ia32', 'ia32/bin'],
                             'LD_LIBRARY_PATH':['lib', 'lib/ia32', 'ia32/lib'],
