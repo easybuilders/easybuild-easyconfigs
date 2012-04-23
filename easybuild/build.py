@@ -582,6 +582,7 @@ def build(module, options, log, origEnviron, exitOnFailure=True):
     if result:
 
         ## Collect build stats
+        log.info("Collecting build stats...")
         buildtime = round(time.time() - starttime, 2)
         installsize = 0
         for dirpath, _, filenames in os.walk(app.installdir):
@@ -599,6 +600,7 @@ def build(module, options, log, origEnviron, exitOnFailure=True):
                  'timestamp' : int(time.time()),
                  'host' : os.uname()[1],
                  }
+        log.debug("Build stats: %s" % buildstats)
 
         if app.getcfg('stop'):
             ended = "STOPPED"
