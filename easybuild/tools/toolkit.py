@@ -247,7 +247,9 @@ class Toolkit:
             # BLACS, FLAME, ScaLAPACK, ...
             '5_BLACS':self.prepareBLACS,
             '5_FLAME':self.prepareFLAME,
-            '6_ScaLAPACK':self.prepareScaLAPACK
+            '6_ScaLAPACK':self.prepareScaLAPACK,
+            # other stuff
+            '7_itac':self.prepareItac
         }
 
         # sort to ensure correct order
@@ -531,10 +533,14 @@ class Toolkit:
         fftwsuff=""
         if self.opts['pic']:
             fftwsuff="_pic"
-        self.vars['LIBFFT'] = "%(mkl)s/lib/%(libdir)s/libfftw3xc_intel%(suff)s.a" % {'mkl':mklRoot,
-                                                                                     'libdir':libdir,
-                                                                                     'suff':fftwsuff
-                                                                                     }
+        # only include interface lib if it's there
+        fftlib = "%(mkl)s/lib/%(libdir)s/libfftw3xc_intel%(suff)s.a" % {'mkl':mklRoot,
+                                                                        'libdir':libdir,
+                                                                        'suff':fftwsuff
+                                                                       }
+        self.vars['LIBFFT'] = ''
+        if os.path.exists(fftlib):
+            self.vars['LIBFFT'] += fftlib
 
         if self.opts['packed-groups']: #we pack groups toghether, since some tools like pkg-utils don't work well with them
             for i in ['LIBLAPACK', 'LIBBLAS', 'LIBLAPACK_MT', 'LIBSCALAPACK' ]:
@@ -604,6 +610,12 @@ class Toolkit:
             self.vars['MPICXX'] = 'mpicxx -cxx=%s %s ' % (self.vars['CXX'], self.m32flag)
             self.vars['MPIF77'] = 'mpif77 -fc=%s %s ' % (self.vars['F77'], self.m32flag)
             self.vars['MPIF90'] = 'mpif90 -fc=%s %s ' % (self.vars['F90'], self.m32flag)
+
+    def prepareItac(self):
+        """
+        Prepare for Intel Trace Collector library
+        """
+        pass
 
     def prepareQLogicMPI(self):
 
