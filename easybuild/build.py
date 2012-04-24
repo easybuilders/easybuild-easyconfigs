@@ -566,7 +566,7 @@ def build(module, options, log, origEnviron, exitOnFailure=True):
 
     ## Build specification
     errormsg = '(no error)'
-    #timing info
+    # timing info
     starttime = time.time()
     try:
         result = app.autobuild(spec, runTests=not options.skip_tests)
@@ -576,28 +576,39 @@ def build(module, options, log, origEnviron, exitOnFailure=True):
         log.exception(errormsg)
         result = False
 
-    #get build stats
-    buildtime = round(time.time() - starttime, 2)
-    installsize = 0
-    for dirpath, _, filenames in os.walk(app.installdir):
-        for filename in filenames:
-            installsize += os.path.getsize(os.path.join(dirpath, filename))
-
-    #collect stats
-    currentbuildstats = bool(app.getcfg('buildstats'))
-    buildstats = {'build_time' : buildtime,
-             'platform' : platform.platform(),
-             'core_count' : systemtools.get_core_count(),
-             'cpu_model': systemtools.get_cpu_model(),
-             'install_size' : installsize,
-             'timestamp' : int(time.time()),
-             'host' : os.uname()[1],
-             }
-
     ended = "ended"
 
     ## Successful build
     if result:
+
+        ## Collect build stats
+        log.info("Collecting build stats...")
+        buildtime = round(time.time() - starttime, 2)
+        installsize = 0
+        try:
+            # change to home dir, to avoid that cwd no longer exists
+            os.chdir(os.getenv('HOME'))
+
+            # walk install dir to determine total size
+            for dirpath, _, filenames in os.walk(app.installdir):
+                for filename in filenames:
+                    fullpath = os.path.join(dirpath, filename)
+                    if os.path.exists(fullpath):
+                        installsize += os.path.getsize(fullpath)
+        except OSError, err:
+            log.error("Failed to determine install size: %s" % err)
+
+        currentbuildstats = bool(app.getcfg('buildstats'))
+        buildstats = {'build_time' : buildtime,
+                 'platform' : platform.platform(),
+                 'core_count' : systemtools.get_core_count(),
+                 'cpu_model': systemtools.get_cpu_model(),
+                 'install_size' : installsize,
+                 'timestamp' : int(time.time()),
+                 'host' : os.uname()[1],
+                 }
+        log.debug("Build stats: %s" % buildstats)
+
         if app.getcfg('stop'):
             ended = "STOPPED"
             newLogDir = os.path.join(app.builddir, config.logPath())

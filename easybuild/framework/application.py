@@ -839,9 +839,7 @@ class Application:
 
     def cleanup(self):
         """
-        Cleanup leftover mess
-        - move log file
-        - remove/clean build directory
+        Cleanup leftover mess: remove/clean build directory
         
         except when we're building in the installation directory, 
         otherwise we remove the installation
@@ -1317,7 +1315,7 @@ class Application:
         allclassmodule = pkgdefaultclass[0]
         defaultClass = pkgdefaultclass[1]
         for pkg in self.pkgs:
-            name = pkg['name'].capitalize()  #classnames start with a capital
+            name = pkg['name'][0].upper() + pkg['name'][1:] # classnames start with a capital
             self.log.debug("Starting package %s" % name)
 
             try:
@@ -1471,7 +1469,7 @@ def get_paths_for(log, subdir="easyblocks"):
             if os.path.isdir(path):
                 paths.append(os.path.abspath(pythonpath))
         except OSError, err:
-            raise EasyBuildError(err)
+            raise EasyBuildError(str(err))
 
     return paths
 
@@ -1487,7 +1485,8 @@ def get_instance(easyblock, log, name=None):
                 name = "UNKNOWN"
 
             modulepath = module_path_for_easyblock(name)
-            class_name = name
+            # don't use capitalize, and it changes 'GCC' into 'Gcc', we want to keep the capitals that are there already
+            class_name = name[0].upper() + name[1:]
 
             # try and find easyblock
             easyblock_found = False
@@ -1518,12 +1517,12 @@ def get_instance(easyblock, log, name=None):
 
                 except Exception, err:
                     log.error("Failed to use easyblock at %s for class %s: %s" % (modulepath, class_name, err))
-                    raise EasyBuildError(err)
+                    raise EasyBuildError(str(err))
 
             else:
-                log.debug("Easyblock path %s does not exist, so falling back to default %s class from %s" % (easyblock_path, class_name, modulepath))
                 modulepath = "easybuild.framework.application"
                 class_name = "Application"
+                log.debug("Easyblock path %s does not exist, so falling back to default %s class from %s" % (easyblock_path, class_name, modulepath))
 
         else:
             class_name = easyblock.split('.')[-1]
@@ -1541,7 +1540,7 @@ def get_instance(easyblock, log, name=None):
 
     except Exception, err:
         log.error("Can't process provided module and class pair %s: %s" % (easyblock, err))
-        raise EasyBuildError(err)
+        raise EasyBuildError(str(err))
 
 class ApplicationPackage:
     """
