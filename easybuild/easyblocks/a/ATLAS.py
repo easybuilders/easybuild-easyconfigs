@@ -35,7 +35,7 @@ class ATLAS(Application):
 
         self.cfg.update({
                          'ignorethrottling':[False, "Ignore check done by ATLAS for CPU throttling (not recommended) (default: False)"],
-                         'full_lapack': [True, "Build a full LAPACK library (requires netlib's LAPACK) (default: True)"],
+                         'full_lapack': [False, "Build a full LAPACK library (requires netlib's LAPACK) (default: False)"],
                          'sharedlibs':[False, "Enable building of shared libs as well (default: False)"]
                          })
 
