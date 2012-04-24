@@ -585,11 +585,18 @@ def build(module, options, log, origEnviron, exitOnFailure=True):
         log.info("Collecting build stats...")
         buildtime = round(time.time() - starttime, 2)
         installsize = 0
-        for dirpath, _, filenames in os.walk(app.installdir):
-            for filename in filenames:
-                fullpath = os.path.join(dirpath, filename)
-                if os.path.exists(fullpath):
-                    installsize += os.path.getsize(fullpath)
+        try:
+            # change to home dir, to avoid that cwd no longer exists
+            os.chdir(os.getenv('HOME'))
+
+            # walk install dir to determine total size
+            for dirpath, _, filenames in os.walk(app.installdir):
+                for filename in filenames:
+                    fullpath = os.path.join(dirpath, filename)
+                    if os.path.exists(fullpath):
+                        installsize += os.path.getsize(fullpath)
+        except OSError, err:
+            log.error("Failed to determine install size: %s" % err)
 
         currentbuildstats = bool(app.getcfg('buildstats'))
         buildstats = {'build_time' : buildtime,
