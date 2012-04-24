@@ -322,8 +322,8 @@ class Toolkit:
         Prepare for ATLAS BLAS/LAPACK library
         """
 
-        self.vars['LIBBLAS'] = " -latlas -llapack -lcblas -lf77blas"
-        self.vars['LIBBLAS_MT'] = " -latlas -llapack -lptcblas -lptf77blas -lpthread"
+        self.vars['LIBBLAS'] = " -llapack -lcblas -lf77blas -latlas -lgfortran"
+        self.vars['LIBBLAS_MT'] = " -llapack -lptcblas -lptf77blas -latlas -lgfortran -lpthread"
 
         self._addDependencyVariables({'name':'ATLAS'})
 
