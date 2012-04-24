@@ -21,7 +21,6 @@
 
 from easybuild.framework.application import ApplicationPackage, Application
 from easybuild.tools.filetools import unpack, patch, run_cmd
-from shutil import SpecialFileError, ExecError
 import os
 import shutil
 
@@ -136,8 +135,8 @@ class DefaultPythonPackage(ApplicationPackage):
         if self.testinstall:
             try:
                 shutil.rmtree(testinstalldir)
-            except (OSError, SpecialFileError, ExecError):
-                self.log.exception("Removing testinstalldir %s failed" % testinstalldir)
+            except OSError, err:
+                self.log.exception("Removing testinstalldir %s failed: %s" % (testinstalldir, err))
 
     def run(self):
         """Perform the actual package build/installation procedure"""
