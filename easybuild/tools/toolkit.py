@@ -525,7 +525,6 @@ class Toolkit:
             "-Wl,--start-group  %(mkl)s/lib/%(libdir)s/libmkl_intel%(libsuffix)s.a " \
             "%(mkl)s/lib/%(libdir)s/libmkl_sequential.a " \
             "%(mkl)s/lib/%(libdir)s/libmkl_core.a " \
-<<<<<<< HEAD
             "%(mkl)s/lib/%(libdir)s/libmkl_blacs_intelmpi%(libsuffix)s.a -Wl,--end-group" % \
                 {
                  'mkl':mklRoot,
