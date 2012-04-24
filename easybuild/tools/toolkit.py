@@ -533,10 +533,14 @@ class Toolkit:
         fftwsuff=""
         if self.opts['pic']:
             fftwsuff="_pic"
-        self.vars['LIBFFT'] = "%(mkl)s/lib/%(libdir)s/libfftw3xc_intel%(suff)s.a" % {'mkl':mklRoot,
-                                                                                     'libdir':libdir,
-                                                                                     'suff':fftwsuff
-                                                                                     }
+        # only include interface lib if it's there
+        fftlib = "%(mkl)s/lib/%(libdir)s/libfftw3xc_intel%(suff)s.a" % {'mkl':mklRoot,
+                                                                        'libdir':libdir,
+                                                                        'suff':fftwsuff
+                                                                       }
+        self.vars['LIBFFT'] = ''
+        if os.path.exists(fftlib):
+            self.vars['LIBFFT'] += fftlib
 
         if self.opts['packed-groups']: #we pack groups toghether, since some tools like pkg-utils don't work well with them
             for i in ['LIBLAPACK', 'LIBBLAS', 'LIBLAPACK_MT', 'LIBSCALAPACK' ]:
