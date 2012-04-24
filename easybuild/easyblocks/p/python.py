@@ -26,8 +26,9 @@ import os
 import shutil
 
 class Python(Application):
-    """
-    Support for building/installing Python
+    """Support for building/installing Python
+    - default configure/make/make install works fine
+
     To extend Python by adding extra packages there are two ways:
     - list the packages in the pkglist, this will include the packages in this Python easyblock
     - create a seperate easyblock, so the packages can be loaded with module load
