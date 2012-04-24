@@ -1,6 +1,24 @@
-"""
-Python easyblock
-"""
+##
+# Copyright 2009-2012 Stijn Deweirdt, Dries Verdegem, Kenneth Hoste, Pieter De Baets, Jens Timmerman
+#
+# This file is part of EasyBuild,
+# originally created by the HPC team of the University of Ghent (http://ugent.be/hpc).
+#
+# http://github.com/hpcugent/easybuild
+#
+# EasyBuild is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation v2.
+#
+# EasyBuild is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
+##
+
 from easybuild.framework.application import ApplicationPackage, Application
 from easybuild.tools.filetools import unpack, patch, run_cmd
 from shutil import SpecialFileError, ExecError
@@ -9,19 +27,19 @@ import shutil
 
 class Python(Application):
     """
-    This is the python easyblock
-    To extend python by adding extra packages there are two ways:
-    - list the packages in the pkglist, this will include the packages in this python easyblock
+    Support for building/installing Python
+    To extend Python by adding extra packages there are two ways:
+    - list the packages in the pkglist, this will include the packages in this Python easyblock
     - create a seperate easyblock, so the packages can be loaded with module load
     
-    e.g., you can include numpy and scipy in a default python install
+    e.g., you can include numpy and scipy in a default Python installation
     but also provide newer updated numpy and scipy versions by creating a PythonPackageModule for it.
     """
     def extra_packages_pre(self):
         """
         We set some default configs here for packages included in python
         """
-        #insert new packages by  building them with DefaultPythonPackage
+        #insert new packages by building them with DefaultPythonPackage
         self.log.debug("setting extra packages options")
         # use __name__ here, since this is the module where DefaultPythonPackage is defined
         self.setcfg('pkgdefaultclass', (__name__, "DefaultPythonPackage"))
@@ -45,10 +63,10 @@ class DefaultPythonPackage(ApplicationPackage):
         self.pkgdir = "%s/%s" % (self.builddir, self.name)
 
     def configure(self):
+        """Configure Python package build
         """
-        configure step
-        """
-        if self.sitecfg: #used by some packages, like numpy, to find certain libs
+
+        if self.sitecfg: # used by some packages, like numpy, to find certain libs
             finaltxt = self.sitecfg
             if self.sitecfglibdir:
                 repl = self.sitecfglibdir
@@ -71,7 +89,8 @@ class DefaultPythonPackage(ApplicationPackage):
                 self.log.exception("Creating %s failed" % self.sitecfgfn)
 
     def make(self):
-        """Use setup.py to make python packages."""
+        """Build Python package via setup.py"""
+
         if  "SOFTROOTICC" in os.environ :
             cmd = "python setup.py build --compiler=intel "
         else:
@@ -80,18 +99,13 @@ class DefaultPythonPackage(ApplicationPackage):
         run_cmd(cmd, log_all=True, simple=True)
 
     def make_install(self):
-        """
-        install step
-        """
-        if not os.environ.has_key('SOFTROOTPYTHON'):
-            self.log.error("Couldn't find SOFTROOTPYTHON variable")
+        """Install built Python package"""
 
         cmd = "python setup.py install --skip-build --prefix=%s %s" % (os.environ['SOFTROOTPYTHON'], self.installopts)
         run_cmd(cmd, log_all=True, simple=True)
 
     def test(self):
-        """
-        Test the compilation
+        """Test the compilation
         - default: None
         """
         extrapath = ""
@@ -125,25 +139,32 @@ class DefaultPythonPackage(ApplicationPackage):
                 self.log.exception("Removing testinstalldir %s failed" % testinstalldir)
 
     def run(self):
+        """Perform the actual package build/installation procedure"""
+        # a Python module should be loaded
+        if not os.environ.has_key('SOFTROOTPYTHON'):
+            self.log.error("Couldn't find SOFTROOTPYTHON variable")
+
         # unpack
         if not self.src:
             self.log.error("No source found for Python package %s, required for installation. (src: %s)" % \
                            (self.name, self.src))
         self.pkgdir = unpack("%s" % self.src, "%s/%s" % (self.builddir, self.name))
+
         # patch if needed
         if self.patches:
             for patchfile in self.patches:
                 if not patch(patchfile, self.pkgdir):
                     self.log.error("Applying patch %s failed" % patchfile)
 
-        # configure, make, make tes, make install
+        # configure, make, test, make install
         self.configure()
         self.make()
         self.test()
         self.make_install()
 
+
 class FortranPythonPackage(DefaultPythonPackage):
-    """Extends DefaultPythonPackage to add a fortran compiler to the make call"""
+    """Extends DefaultPythonPackage to add a Fortran compiler to the make call"""
     def make(self):
         if  "SOFTROOTICC" in os.environ and "SOFTROOTIFORT" in os.environ:
             cmd = "python setup.py build --compiler=intel --fcompiler=intelem"
@@ -154,10 +175,9 @@ class FortranPythonPackage(DefaultPythonPackage):
 
         run_cmd(cmd, log_all=True, simple=True)
 
+
 class Numpy(FortranPythonPackage):
-    """
-    numpy package
-    """
+    """numpy package"""
     def __init__(self, mself, pkg, pkginstalldeps):
         DefaultPythonPackage.__init__(self, mself, pkg, pkginstalldeps)
 
@@ -213,8 +233,7 @@ libraries ='%s'
         self.runtest = "cd .. && python -c 'import numpy; numpy.test(verbose=2)'"
 
     def make_install(self):
-        """
-        install step
+        """Install numpy package
         We remove the numpy build dir here, so scipy doesn't find it by accident
         """
         FortranPythonPackage.make_install(self)
@@ -226,10 +245,11 @@ libraries ='%s'
 
 
 class Scipy(FortranPythonPackage):
+    """scipy package"""
     def __init__(self, mself, pkg, pkginstalldeps):
         DefaultPythonPackage.__init__(self, mself, pkg, pkginstalldeps)
 
-        #disable testing
+        # disable testing
         test = False
         if test:
             self.testinstall = True
