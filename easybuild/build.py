@@ -152,7 +152,7 @@ def main():
     config.init(config_file, **configOptions)
 
     ## Dump possible options
-    if options.options:
+    if options.avail_spec_params:
         app = get_instance(options.easyblock, log)
         app.dump_cfg_options()
 
@@ -166,7 +166,7 @@ def main():
             error("Please provide a search-path to --robot when using --search")
         searchModule(options.robot, options.search)
 
-    if options.options or options.dump_classes or options.search or options.version:
+    if options.avail_spec_params or options.dump_classes or options.search or options.version:
         if logFile:
             os.remove(logFile)
         sys.exit(0)
