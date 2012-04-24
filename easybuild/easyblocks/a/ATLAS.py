@@ -35,8 +35,8 @@ class ATLAS(Application):
 
         self.cfg.update({
                          'ignorethrottling':[False, "Ignore check done by ATLAS for CPU throttling (not recommended) (default: False)"],
-                         'full_lapack': [False, "Build a full LAPACK library (requires netlib's LAPACK) (default: False)"],
-                         'sharedlibs':[True, "Enable building of shared libs as well (default: True)"]
+                         'full_lapack': [True, "Build a full LAPACK library (requires netlib's LAPACK) (default: True)"],
+                         'sharedlibs':[False, "Enable building of shared libs as well (default: False)"]
                          })
 
     def configure(self):
@@ -56,23 +56,24 @@ class ATLAS(Application):
             if os.getenv('SOFTROOTLAPACK'):
                 self.updatecfg('configopts', ' --with-netlib-lapack=%s/lib/liblapack.a' % os.getenv('SOFTROOTLAPACK'))
             else:
-                self.log.error("netlib's LAPACK library not available, required to build ATLAS with a full LAPACK library.")
+                self.log.error("netlib's LAPACK library not available,"\
+                               " required to build ATLAS with a full LAPACK library.")
 
         # enable building of shared libraries (requires -fPIC)
         if self.getcfg('sharedlibs') or self.tk.opts['pic']:
             self.log.debug("Enabling -fPIC because we're building shared ATLAS libs, or just because.")
-            self.updatecfg('configopts','-Fa alg -fPIC')
+            self.updatecfg('configopts', '-Fa alg -fPIC')
 
         # ATLAS only wants to be configured/built in a separate dir'
         try:
-            objdir="obj"
+            objdir = "obj"
             os.makedirs(objdir)
             os.chdir(objdir)
         except OSError, err:
             self.log.error("Failed to create obj directory to build in: %s" % err)
 
         # specify compilers
-        self.updatecfg('configopts','-C ic %(cc)s -C if %(f77)s' % {
+        self.updatecfg('configopts', '-C ic %(cc)s -C if %(f77)s' % {
                                                                       'cc':os.getenv('CC'),
                                                                       'f77':os.getenv('F77')
                                                                       })
@@ -80,31 +81,37 @@ class ATLAS(Application):
         # call configure in parent dir
         cmd = "%s %s/configure --prefix=%s %s" % (self.getcfg('preconfigopts'), self.getcfg('startfrom'),
                                                  self.installdir, self.getcfg('configopts'))
-        (out, ec) = run_cmd(cmd, log_all=False, log_ok=False, simple=False)
+        (out, exitcode) = run_cmd(cmd, log_all=False, log_ok=False, simple=False)
 
-        if ec != 0:
+        if exitcode != 0:
             throttling_regexp = re.compile("cpu throttling [a-zA-Z]* enabled", re.IGNORECASE)
             if throttling_regexp.search(out):
-                errormsg="""Configure failed, possible because CPU throttling is enabled; ATLAS doesn't like that.
+                errormsg = """Configure failed, possible because CPU throttling is enabled; ATLAS doesn't like that.
 You can either disable CPU throttling, or set 'ignorethrottling' to True in the ATLAS .eb spec file.
 Also see http://math-atlas.sourceforge.net/errata.html#cputhrottle .
 Configure output:
 %s """ % out
             else:
-                errormsg="""configure output: %s
+                errormsg = """configure output: %s
 Configure failed, not sure why (see output above).""" % out
             self.log.error(errormsg)
 
-    # parallel build of ATLAS doesn't make sense (and doesn't work),
-    # because it collects timing etc., so let's disable it
-    def setparallelism(self):
+
+    def setparallelism(self, nr=None):
+        """
+        Parallel build of ATLAS doesn't make sense (and doesn't work),
+        because it collects timing etc., so disable it.
+        """
+        if not nr:
+            self.log.warning("Ignoring requested parallelism, it breaks ATLAS, so setting to 1")
         self.log.info("Disabling parallel build, makes no sense for ATLAS.")
         Application.setparallelism(self, 1)
 
-    def make(self):
+
+    def make(self, verbose=False):
 
         # default make is fine
-        Application.make(self, verbose=True)
+        Application.make(self, verbose=verbose)
 
         # optionally also build shared libs
         if self.getcfg('sharedlibs'):
@@ -112,7 +119,7 @@ Configure failed, not sure why (see output above).""" % out
                 os.chdir('lib')
             except OSError, err:
                 self.log.error("Failed to change to 'lib' directory for building the shared libs." % err)
-            
+
             self.log.debug("Building shared libraries")
             cmd = "make shared cshared ptshared cptshared"
             run_cmd(cmd, log_all=True, simple=True)
@@ -122,11 +129,29 @@ Configure failed, not sure why (see output above).""" % out
             except OSError, err:
                 self.log.error("Failed to get back to previous dir after building shared libs: %s " % err)
 
+    def make_install(self):
+        """Install step
+        
+        Default make install and optionally remove incomplete lapack libs.
+        If the full_lapack option was set to false we don't 
+        """
+        Application.make_install(self)
+        if not self.getcfg('full_lapack'):
+            for i in ['liblapack.a', 'liblapack.so']:
+                lib = os.path.join(self.installdir, "lib", i[0])
+                if os.path.exists(lib):
+                    os.rename(lib, os.path.join(self.installdir, "lib",
+                                                lib.replace("liblapack", "liblapack_atlas")))
+                else:
+                    self.log.warning("Tried to remove %s, but file didn't exist")
+
+
     def test(self):
 
         # always run tests
         if self.getcfg('runtest'):
-            self.log.warning("ATLAS testing is done using 'make check' and 'make ptcheck', so no need to set 'runtest' in the .eb spec file.")
+            self.log.warning("ATLAS testing is done using 'make check' and 'make ptcheck',"\
+                             " so no need to set 'runtest' in the .eb spec file.")
 
         # sanity tests
         self.setcfg('runtest', 'check')
@@ -157,11 +182,11 @@ Configure failed, not sure why (see output above).""" % out
             else:
                 shared_libs = []
 
-            self.setcfg('sanityCheckPaths',{'files':["include/%s" % x for x in ["cblas.h", "clapack.h"]] +
+            self.setcfg('sanityCheckPaths', {'files':["include/%s" % x for x in ["cblas.h", "clapack.h"]] +
                                                     static_libs + shared_libs,
                                             'dirs':["include/atlas"]
                                            })
 
-            self.log.info("Customized sanity check paths: %s"%self.getcfg('sanityCheckPaths'))
+            self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
         Application.sanitycheck(self)
