@@ -35,6 +35,7 @@ class Python(Application):
     e.g., you can include numpy and scipy in a default Python installation
     but also provide newer updated numpy and scipy versions by creating a PythonPackageModule for it.
     """
+
     def extra_packages_pre(self):
         """
         We set some default configs here for packages included in python
@@ -45,10 +46,12 @@ class Python(Application):
         self.setcfg('pkgdefaultclass', (__name__, "DefaultPythonPackage"))
         self.setcfg('pkgfilter', ('python -c "import %(name)s"', ""))
 
+
 class DefaultPythonPackage(ApplicationPackage):
     """
     Easyblock for python packages to be included in the python installation.
     """
+
     def __init__(self, mself, pkg, pkginstalldeps):
         ApplicationPackage.__init__(self, mself, pkg, pkginstalldeps)
         self.sitecfg = None
@@ -101,7 +104,7 @@ class DefaultPythonPackage(ApplicationPackage):
     def make_install(self):
         """Install built Python package"""
 
-        cmd = "python setup.py install --skip-build --prefix=%s %s" % (os.environ['SOFTROOTPYTHON'], self.installopts)
+        cmd = "python setup.py install --prefix=%s %s" % (os.environ['SOFTROOTPYTHON'], self.installopts)
         run_cmd(cmd, log_all=True, simple=True)
 
     def test(self):
@@ -165,12 +168,15 @@ class DefaultPythonPackage(ApplicationPackage):
 
 class FortranPythonPackage(DefaultPythonPackage):
     """Extends DefaultPythonPackage to add a Fortran compiler to the make call"""
+
     def make(self):
         if  "SOFTROOTICC" in os.environ and "SOFTROOTIFORT" in os.environ:
             cmd = "python setup.py build --compiler=intel --fcompiler=intelem"
         else:
-            self.log.debug("LDFLAGS was %s now cleared" % os.environ.pop('LDFLAGS'))
-            self.log.debug("LDFLAGS is now %s " % os.getenv("LDFLAGS", "cleared"))
+            if os.getenv('LDFLAGS'):
+                # LDFLAGS should not be set when building numpy/scipy, it may cause problems
+                ldflags = os.environ.pop('LDFLAGS')
+                self.log.debug("LDFLAGS was %s now cleared" % ldflags)
             cmd = "python setup.py build  "
 
         run_cmd(cmd, log_all=True, simple=True)
@@ -178,8 +184,9 @@ class FortranPythonPackage(DefaultPythonPackage):
 
 class Numpy(FortranPythonPackage):
     """numpy package"""
+
     def __init__(self, mself, pkg, pkginstalldeps):
-        DefaultPythonPackage.__init__(self, mself, pkg, pkginstalldeps)
+        FortranPythonPackage.__init__(self, mself, pkg, pkginstalldeps)
 
         self.pkgcfgs = self.cfg['pkgcfgs'][0]
         if self.pkgcfgs.has_key('numpysitecfglibsubdirs'):
@@ -239,15 +246,16 @@ libraries ='%s'
         FortranPythonPackage.make_install(self)
         builddir = os.path.join(self.builddir, "numpy")
         if os.path.isdir(builddir):
-            shutil.rmtree()
+            shutil.rmtree(builddir)
         else:
             self.log.debug("build dir %s already clean" % builddir)
 
 
 class Scipy(FortranPythonPackage):
     """scipy package"""
+
     def __init__(self, mself, pkg, pkginstalldeps):
-        DefaultPythonPackage.__init__(self, mself, pkg, pkginstalldeps)
+        FortranPythonPackage.__init__(self, mself, pkg, pkginstalldeps)
 
         # disable testing
         test = False

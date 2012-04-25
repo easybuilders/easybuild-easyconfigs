@@ -544,12 +544,22 @@ class Application:
 
         def download(filename, url, path):
 
+            self.log.debug("Downloading %s from %s to %s" % (filename, url, path))
+
+            # make sure directory exists
+            basedir = os.path.dirname(path)
+            if not os.path.exists(basedir):
+                os.makedirs(basedir)
+
             (_, httpmsg) = urllib.urlretrieve(url, path)
 
             if httpmsg.type == "text/html" and not filename.endswith('.html'):
                 self.log.warning("HTML file downloaded but not expecting it, so assuming invalid download.")
                 self.log.debug("removing downloaded file")
-                os.remove(path)
+                try:
+                    os.remove(path)
+                except OSError, err:
+                    self.log.error("Failed to remove downloaded file:" % err)
                 return None
             else:
                 self.log.info("Downloading file %s from url %s: done" % (filename, url))
@@ -622,7 +632,7 @@ class Application:
 
                     # also check in packages subdir for packages
                     if pkg:
-                        fullpaths = [os.path.join(fullpath, "packages"), fullpath]
+                        fullpaths = [os.path.join(cfp, "packages", filename), fullpath]
                     else:
                         fullpaths = [fullpath]
 
@@ -651,7 +661,10 @@ class Application:
 
                 for url in sourceURLs:
 
-                    targetpath = os.path.join(targetdir, filename)
+                    if pkg:
+                        targetpath = os.path.join(targetdir, "packages", filename)
+                    else:
+                        targetpath = os.path.join(targetdir, filename)
 
                     if type(url) == str:
                         fullurl = "%s/%s" % (url, filename)
@@ -677,7 +690,7 @@ class Application:
                     if downloaded:
                         # if fetching from source URL worked, we're done
                         self.log.info("Successfully downloaded source file %s from %s" % (filename, fullurl))
-                        return fullpath
+                        return targetpath
                     else:
                         failedpaths.append(fullurl)
 
