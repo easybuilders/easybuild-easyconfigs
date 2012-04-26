@@ -470,6 +470,7 @@ class Application:
         Check if packages are available from OS. osdeps should be a list of dependencies.
         If an element of osdeps is a list, checks will pass if one of the elements of the list is found
         """
+        not_found = []
         for check in osdeps:
             if type(check) != list:
                 check = [check]
@@ -477,20 +478,19 @@ class Application:
             # find at least one element of check
             # - using rpm -q for now --> can be run as non-root!!
             # - should be extended to files later?
-            found = False
             for d in check:
                 cmd = "rpm -q %s" % d
-                res = run_cmd(cmd, simple=True)
-                if res:
-                    found = res
-                    ## why continue?
-                    break
+                (rpmout, ec) = run_cmd(cmd, simple=False, log_all=False, log_ok=False)
+                if ec == 0:
+                    self.log.debug("Found osdep %s" % d)
+                else:
+                    not_found.append(d)
+                    self.log.info("Couldn't find OS dependency check %s: %s" % (check, rpmout))
 
-            if not found:
-                ## why continue?
-                self.log.error("Couldn't verify any OS dependency for check %s as part of total osdeps %s" % (check, osdeps))
-
-        self.log.info("OS dependencies ok: %s" % osdeps)
+        if not not_found:
+            self.log.info("OS dependencies ok: %s" % osdeps)
+        else:
+            self.log.error("One or more OS dependencies were not found: %s" % not_found)
 
     ## BUILD 
 
