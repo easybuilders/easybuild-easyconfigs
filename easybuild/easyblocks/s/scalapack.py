@@ -22,7 +22,7 @@ import os
 import shutil
 from distutils.version import LooseVersion
 from easybuild.framework.application import Application
-from easybuild.easyblocks.l.LAPACK import get_blas_lib
+from easybuild.easyblocks.l.lapack import get_blas_lib
 
 class ScaLAPACK(Application):
     """

@@ -1498,13 +1498,13 @@ def get_instance(easyblock, log, name=None):
                 name = "UNKNOWN"
 
             modulepath = module_path_for_easyblock(name)
-            # don't use capitalize, and it changes 'GCC' into 'Gcc', we want to keep the capitals that are there already
+            # don't use capitalize, as it changes 'GCC' into 'Gcc', we want to keep the capitals that are there already
             class_name = name[0].upper() + name[1:]
 
             # try and find easyblock
             easyblock_found = False
             easyblock_path = ''
-            easyblock_paths = [modulepath, modulepath.lower()]
+            easyblock_paths = [modulepath.lower()]
             for path in get_paths_for(log, "easyblocks"):
                 for possible_path in easyblock_paths:
                     easyblock_path = os.path.join(path, "%s.py" % possible_path.replace('.', os.path.sep))
