@@ -80,9 +80,9 @@ class Repository:
         """
         os.chdir(self.repo)
 
-    def addSpecFile(self, cfg, name, version, stats, appendstats):
+    def addEasyconfig(self, cfg, name, version, stats, appendstats):
         """
-        Add specification file to repository.
+        Add easyconfig to repository.
         Stats contains some build stats, this should be a list of dictionaries.
         appendstats is a boolean indicating if we should append to existing stats or not.
         """
@@ -231,15 +231,15 @@ class GitRepository(Repository):
         except GitCommandError, err:
             log.exception("pull in working copy %s went wrong: %s" % (self.wc, err))
 
-    def addSpecFile(self, cfg, name, version, stats, append):
+    def addEasyconfig(self, cfg, name, version, stats, append):
         """
-        Add specification file to git repository.
+        Add easyconfig to git repository.
         """
         log.debug("Adding cfg: %s with name %s" % (cfg, name))
         if  name.startswith(self.wc):
             name = name.replace(self.wc, "", 1) #remove self.wc again
         name = os.path.join(self.wc, self.path, name) #create proper name, with path inside repo in it
-        dest = Repository.addSpecFile(self, cfg, name, version, stats, append)
+        dest = Repository.addEasyconfig(self, cfg, name, version, stats, append)
         ## add it to version control
         if dest:
             try:
@@ -343,13 +343,13 @@ class SvnRepository(Repository):
             except ClientError, err:
                 log.exception("Checkout of path / in working copy %s went wrong: %s" % (self.wc, err))
 
-    def addSpecFile(self, cfg, name, version, stats, append):
+    def addEasyconfig(self, cfg, name, version, stats, append):
         """
-        Add specification file to SVN repository.
+        Add easyconfig to SVN repository.
         """
         if not os.path.isdir(name):
             self.client.mkdir(name, "Creating path %s" % name)
-        dest = Repository.addSpecFile(self, cfg, name, version, stats, append)
+        dest = Repository.addEasyconfig(self, cfg, name, version, stats, append)
         log.debug("destination = %s" % dest)
         if dest:
             log.debug("destination status: %s" % self.client.status(dest))

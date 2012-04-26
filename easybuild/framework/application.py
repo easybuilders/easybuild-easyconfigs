@@ -154,7 +154,7 @@ class Application:
 
         if self.getcfg('stop') and self.getcfg('stop') == 'cfg':
             return True
-        self.log.info('Read specification file %s' % ebfile)
+        self.log.info('Read easyconfig %s' % ebfile)
 
         self.ready2build()
         self.build()
@@ -371,7 +371,7 @@ class Application:
         ## check EasyBuild version
         easybuildVersion = locs.get('easybuildVersion', None)
         if not easybuildVersion:
-            self.log.warn("Specification-file does not specify an EasyBuild-version (key 'easybuildVersion')! Assuming the latest version")
+            self.log.warn("Easyconfig does not specify an EasyBuild-version (key 'easybuildVersion')! Assuming the latest version")
         else:
             if LooseVersion(easybuildVersion) < easybuild.VERSION:
                 self.log.warn("EasyBuild-version %s is older than the currently running one. Proceed with caution!" % easybuildVersion)
@@ -1544,7 +1544,7 @@ def get_instance(easyblock, log, name=None):
                 log.info("Assuming that full easyblock module path was specified.")
                 modulepath = easyblock
             else:
-                modulepath = module_path_for_easyblock(easyblock)
+                modulepath = module_path_for_easyblock(easyblock).lower()
                 log.info("Derived full easyblock module path for %s: %s" % (class_name, modulepath))
 
         inst = get_instance_for(modulepath, class_name)
