@@ -1,0 +1,26 @@
+--- Modules/_ctypes/libffi/src/x86/ffi64.c.orig	2010-03-10 16:03:44.510904611 +0100
++++ Modules/_ctypes/libffi/src/x86/ffi64.c	2010-03-10 16:14:12.541028289 +0100
+@@ -36,6 +36,8 @@
+ #define MAX_GPR_REGS 6
+ #define MAX_SSE_REGS 8
+ 
++typedef struct { int64_t m[2]; } __int128_t;
++
+ struct register_args
+ {
+   /* Registers for argument passing.  */
+@@ -415,10 +417,12 @@
+ 		  break;
+ 		case X86_64_SSE_CLASS:
+ 		case X86_64_SSEDF_CLASS:
+-		  reg_args->sse[ssecount++] = *(UINT64 *) a;
++		  reg_args->sse[ssecount++].m[0] = *(UINT64 *) a;
++		  reg_args->sse[ssecount++].m[1] = 0;
+ 		  break;
+ 		case X86_64_SSESF_CLASS:
+-		  reg_args->sse[ssecount++] = *(UINT32 *) a;
++		  reg_args->sse[ssecount++].m[0] = *(UINT32 *) a;
++		  reg_args->sse[ssecount++].m[1] = 0;
+ 		  break;
+ 		default:
+ 		  abort();
