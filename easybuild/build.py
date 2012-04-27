@@ -247,7 +247,7 @@ def findEasyconfigs(path, log, onlyBlocks=None):
     if os.path.isfile(path):
         return processEasyconfig(path, log, onlyBlocks)
 
-    ## Walk through the start directory
+    ## Walk through the start directory, retain all files that end in .eb
     files = []
     path = os.path.abspath(path)
     for dirpath, _, filenames in os.walk(path):
