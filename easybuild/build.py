@@ -84,7 +84,7 @@ def add_build_options(parser):
     parser.add_option("-l", action="store_true", dest="stdoutLog", help="log to stdout")
     parser.add_option("-d", "--debug" , action="store_true", help="log debug messages")
     parser.add_option("-v", "--version", action="store_true", help="show version")
-
+    parser.add_option("--regtest", action="store_true", help="enable regression test mode")
 
 def main():
     """
@@ -215,7 +215,7 @@ def main():
 
     ## Build software, will exit when errors occurs
     for spec in orderedSpecs:
-        build(spec, options, log, origEnviron)
+        build(spec, options, log, origEnviron, exitOnFailure=options.regtest)
 
     ## Cleanup tmp log file (all is well, all modules have their own log file)
     try:
