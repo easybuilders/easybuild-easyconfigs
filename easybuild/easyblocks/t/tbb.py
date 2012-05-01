@@ -18,5 +18,18 @@
 # You should have received a copy of the GNU General Public License
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
-from pkgutil import extend_path
-__path__ = extend_path(__path__, __name__) #@ReservedAssignment
+
+from easybuild.easyblocks.i.intelbase import IntelBase
+
+class Tbb(IntelBase):
+
+    def sanitycheck(self):
+
+        if not self.getcfg('sanityCheckPaths'):
+            self.setcfg('sanityCheckPaths', {'files':[],
+                                            'dirs':["tbb/bin", "tbb/lib/intel64"]
+                                           })
+
+            self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
+
+        IntelBase.sanitycheck(self)

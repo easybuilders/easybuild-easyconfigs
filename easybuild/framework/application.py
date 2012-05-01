@@ -154,7 +154,7 @@ class Application:
 
         if self.getcfg('stop') and self.getcfg('stop') == 'cfg':
             return True
-        self.log.info('Read specification file %s' % ebfile)
+        self.log.info('Read easyconfig %s' % ebfile)
 
         self.ready2build()
         self.build()
@@ -371,7 +371,7 @@ class Application:
         ## check EasyBuild version
         easybuildVersion = locs.get('easybuildVersion', None)
         if not easybuildVersion:
-            self.log.warn("Specification-file does not specify an EasyBuild-version (key 'easybuildVersion')! Assuming the latest version")
+            self.log.warn("Easyconfig does not specify an EasyBuild-version (key 'easybuildVersion')! Assuming the latest version")
         else:
             if LooseVersion(easybuildVersion) < easybuild.VERSION:
                 self.log.warn("EasyBuild-version %s is older than the currently running one. Proceed with caution!" % easybuildVersion)
@@ -544,12 +544,22 @@ class Application:
 
         def download(filename, url, path):
 
+            self.log.debug("Downloading %s from %s to %s" % (filename, url, path))
+
+            # make sure directory exists
+            basedir = os.path.dirname(path)
+            if not os.path.exists(basedir):
+                os.makedirs(basedir)
+
             (_, httpmsg) = urllib.urlretrieve(url, path)
 
             if httpmsg.type == "text/html" and not filename.endswith('.html'):
                 self.log.warning("HTML file downloaded but not expecting it, so assuming invalid download.")
                 self.log.debug("removing downloaded file")
-                os.remove(path)
+                try:
+                    os.remove(path)
+                except OSError, err:
+                    self.log.error("Failed to remove downloaded file:" % err)
                 return None
             else:
                 self.log.info("Downloading file %s from url %s: done" % (filename, url))
@@ -622,7 +632,7 @@ class Application:
 
                     # also check in packages subdir for packages
                     if pkg:
-                        fullpaths = [os.path.join(fullpath, "packages"), fullpath]
+                        fullpaths = [os.path.join(cfp, "packages", filename), fullpath]
                     else:
                         fullpaths = [fullpath]
 
@@ -651,7 +661,10 @@ class Application:
 
                 for url in sourceURLs:
 
-                    targetpath = os.path.join(targetdir, filename)
+                    if pkg:
+                        targetpath = os.path.join(targetdir, "packages", filename)
+                    else:
+                        targetpath = os.path.join(targetdir, filename)
 
                     if type(url) == str:
                         fullurl = "%s/%s" % (url, filename)
@@ -677,7 +690,7 @@ class Application:
                     if downloaded:
                         # if fetching from source URL worked, we're done
                         self.log.info("Successfully downloaded source file %s from %s" % (filename, fullurl))
-                        return fullpath
+                        return targetpath
                     else:
                         failedpaths.append(fullurl)
 
@@ -839,9 +852,7 @@ class Application:
 
     def cleanup(self):
         """
-        Cleanup leftover mess
-        - move log file
-        - remove/clean build directory
+        Cleanup leftover mess: remove/clean build directory
         
         except when we're building in the installation directory, 
         otherwise we remove the installation
@@ -1317,7 +1328,7 @@ class Application:
         allclassmodule = pkgdefaultclass[0]
         defaultClass = pkgdefaultclass[1]
         for pkg in self.pkgs:
-            name = pkg['name'].capitalize()  #classnames start with a capital
+            name = pkg['name'][0].upper() + pkg['name'][1:] # classnames start with a capital
             self.log.debug("Starting package %s" % name)
 
             try:
@@ -1471,7 +1482,7 @@ def get_paths_for(log, subdir="easyblocks"):
             if os.path.isdir(path):
                 paths.append(os.path.abspath(pythonpath))
         except OSError, err:
-            raise EasyBuildError(err)
+            raise EasyBuildError(str(err))
 
     return paths
 
@@ -1487,12 +1498,13 @@ def get_instance(easyblock, log, name=None):
                 name = "UNKNOWN"
 
             modulepath = module_path_for_easyblock(name)
-            class_name = name
+            # don't use capitalize, as it changes 'GCC' into 'Gcc', we want to keep the capitals that are there already
+            class_name = name[0].upper() + name[1:]
 
             # try and find easyblock
             easyblock_found = False
             easyblock_path = ''
-            easyblock_paths = [modulepath, modulepath.lower()]
+            easyblock_paths = [modulepath.lower()]
             for path in get_paths_for(log, "easyblocks"):
                 for possible_path in easyblock_paths:
                     easyblock_path = os.path.join(path, "%s.py" % possible_path.replace('.', os.path.sep))
@@ -1518,12 +1530,12 @@ def get_instance(easyblock, log, name=None):
 
                 except Exception, err:
                     log.error("Failed to use easyblock at %s for class %s: %s" % (modulepath, class_name, err))
-                    raise EasyBuildError(err)
+                    raise EasyBuildError(str(err))
 
             else:
-                log.debug("Easyblock path %s does not exist, so falling back to default %s class from %s" % (easyblock_path, class_name, modulepath))
                 modulepath = "easybuild.framework.application"
                 class_name = "Application"
+                log.debug("Easyblock path %s does not exist, so falling back to default %s class from %s" % (easyblock_path, class_name, modulepath))
 
         else:
             class_name = easyblock.split('.')[-1]
@@ -1532,7 +1544,7 @@ def get_instance(easyblock, log, name=None):
                 log.info("Assuming that full easyblock module path was specified.")
                 modulepath = easyblock
             else:
-                modulepath = module_path_for_easyblock(easyblock)
+                modulepath = module_path_for_easyblock(easyblock).lower()
                 log.info("Derived full easyblock module path for %s: %s" % (class_name, modulepath))
 
         inst = get_instance_for(modulepath, class_name)
@@ -1541,7 +1553,7 @@ def get_instance(easyblock, log, name=None):
 
     except Exception, err:
         log.error("Can't process provided module and class pair %s: %s" % (easyblock, err))
-        raise EasyBuildError(err)
+        raise EasyBuildError(str(err))
 
 class ApplicationPackage:
     """

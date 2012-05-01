@@ -1,0 +1,106 @@
+##
+# Copyright 2009-2012 Stijn Deweirdt, Dries Verdegem, Kenneth Hoste, Pieter De Baets, Jens Timmerman
+#
+# This file is part of EasyBuild,
+# originally created by the HPC team of the University of Ghent (http://ugent.be/hpc).
+#
+# http://github.com/hpcugent/easybuild
+#
+# EasyBuild is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation v2.
+#
+# EasyBuild is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
+##
+
+import os
+
+from easybuild.easyblocks.i.intelbase import IntelBase
+from easybuild.tools.filetools import run_cmd
+
+class Itac(IntelBase):
+    """
+    Class that can be used to install itac
+    - tested with Intel Trace Analyzer and Collector 7.2.1.008
+    """
+
+    def __init__(self, *args, **kwargs):
+        """Constructor, adds extra config options"""
+        IntelBase.__init__(self, args, kwargs)
+
+        self.cfg.update({'preferredmpi':['impi3', "Preferred MPI type (default: 'impi3')"]})
+
+    def make_install(self):
+        """
+        Actual installation
+        - create silent cfg file
+        - execute command
+        """
+
+        silent = \
+"""
+[itac]
+INSTALLDIR=%(ins)s
+LICENSEPATH=%(lic)s
+INSTALLMODE=NONRPM
+INSTALLUSER=NONROOT
+INSTALL_ITA=YES
+INSTALL_ITC=YES
+DEFAULT_MPI=%(mpi)s
+EULA=accept
+""" % {'lic':self.license, 'ins':self.installdir, 'mpi':self.getcfg('preferredmpi')}
+
+        ## already in correct directory
+        silentcfg = os.path.join(os.getcwd(), "silent.cfg")
+        f = open(silentcfg, 'w')
+        f.write(silent)
+        f.close()
+        ## tmpdir
+        tmpdir = os.path.join(os.getcwd(), self.version(), 'mytmpdir')
+        try:
+            os.makedirs(tmpdir)
+        except:
+            self.log.exception("Directory %s can't be created" % (tmpdir))
+
+        cmd = "./install.sh --tmp-dir=%s --silent=%s" % (tmpdir, silentcfg)
+
+        run_cmd(cmd, log_all=True, simple=True)
+
+    def make_module_req_guess(self):
+        """
+        A dictionary of possible directories to look for
+        """
+        guesses = {
+                    'MANPATH':['man'],
+                    'CLASSPATH':['itac/lib_%s' % self.getcfg('preferredmpi')],
+                    'VT_LIB_DIR':['itac/lib_%s' % self.getcfg('preferredmpi')],
+                    'VT_SLIB_DIR':['itac/lib_s%s' % self.getcfg('preferredmpi')]
+                   }
+        
+        if self.getcfg('m32'):
+            guesses.update({
+                            'PATH':['bin', 'bin/ia32', 'ia32/bin'],
+                            'LD_LIBRARY_PATH':['lib', 'lib/ia32', 'ia32/lib'],
+                            })
+        else:
+            guesses.update({
+                            'PATH':['bin', 'bin/intel64', 'bin64'],
+                            'LD_LIBRARY_PATH':['lib', 'lib/intel64', 'lib64'],
+                            })
+        return guesses
+
+    def make_module_extra(self):
+        """Overwritten from IntelBase to add extra txt"""
+        txt = IntelBase.make_module_extra(self)
+        txt += "prepend-path\t%s\t\t%s\n" % ('INTEL_LICENSE_FILE', self.license)
+        txt += "setenv\t%s\t\t$root\n" % ('VT_ROOT')
+        txt += "setenv\t%s\t\t%s\n" % ('VT_MPI', self.getcfg('preferredmpi'))
+        txt += "setenv\t%s\t\t%s\n" % ('VT_ADD_LIBS', '"-ldwarf -lelf -lvtunwind -lnsl -lm -ldl -lpthread"')
+
+        return txt

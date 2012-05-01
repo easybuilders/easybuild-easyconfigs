@@ -230,7 +230,8 @@ class Toolkit:
         known_preparation_functions = {
             # compilers always go first
             '1_GCC':self.prepareGCC,
-            '1_icc':self.prepareIcc, # also for ifort
+            '1_icc':self.prepareIcc,
+            '1_ifort':self.prepareIfort,
             # MPI libraries
             '2_impi':self.prepareIMPI,
             '2_MPICH2':self.prepareMPICH2,
@@ -246,7 +247,9 @@ class Toolkit:
             # BLACS, FLAME, ScaLAPACK, ...
             '5_BLACS':self.prepareBLACS,
             '5_FLAME':self.prepareFLAME,
-            '6_ScaLAPACK':self.prepareScaLAPACK
+            '6_ScaLAPACK':self.prepareScaLAPACK,
+            # other stuff
+            '7_itac':self.prepareItac
         }
 
         # sort to ensure correct order
@@ -276,7 +279,7 @@ class Toolkit:
                     break
 
         if not len(depnames) == len(preparation_functions.values()):
-            found_meths = preparation_functions.keys()
+            found_meths = ['_'.join(meth.split('_')[1:]) for meth in preparation_functions.keys()]
             for depname in copy.copy(depnames):
                 if depname in found_meths:
                     depnames.remove(depname)
@@ -319,8 +322,8 @@ class Toolkit:
         Prepare for ATLAS BLAS/LAPACK library
         """
 
-        self.vars['LIBBLAS'] = " -latlas -llapack -lcblas -lf77blas"
-        self.vars['LIBBLAS_MT'] = " -latlas -llapack -lptcblas -lptf77blas -lpthread"
+        self.vars['LIBBLAS'] = " -llapack -lcblas -lf77blas -latlas -lgfortran"
+        self.vars['LIBBLAS_MT'] = " -llapack -lptcblas -lptf77blas -latlas -lgfortran -lpthread"
 
         self._addDependencyVariables({'name':'ATLAS'})
 
@@ -419,13 +422,11 @@ class Toolkit:
 
     def prepareIcc(self):
         """
-        Prepare for an icc/ifort based compiler toolkit
+        Prepare for an icc based compiler toolkit
         """
 
         self.vars['CC'] = 'icc%s' % self.m32flag
         self.vars['CXX'] = 'icpc%s' % self.m32flag
-        self.vars['F77'] = 'ifort%s' % self.m32flag
-        self.vars['F90'] = 'ifort%s' % self.m32flag
 
         if self.opts['cciscxx']:
             self.vars['CXX'] = self.vars['CC']
@@ -448,13 +449,39 @@ class Toolkit:
             self.vars['CFLAGS'] = '-' + ' -'.join(flags + copts)
         if len(flags) > 0:
             self.vars['CXXFLAGS'] = '-' + ' -'.join(flags)
+
+        if "liomp5" not in self.vars['LIBS']:
+            if LooseVersion(os.environ['SOFTVERSIONICC']) < LooseVersion('2011'):
+                self.vars['LIBS'] += " -liomp5 -lguide -lpthread"
+            else:
+                self.vars['LIBS'] += " -liomp5 -lpthread"
+
+    def prepareIfort(self):
+        """
+        Prepare for an ifort based compiler toolkit
+        """
+
+        self.vars['F77'] = 'ifort%s' % self.m32flag
+        self.vars['F90'] = 'ifort%s' % self.m32flag
+
+        flags = []
+        if self.opts['optarch']:
+            flags.append(self._getOptimalArchitecture())
+
+        flags.append(self._getOptimizationLevel())
+        flags.extend(self._flagsForOptions(override={
+            'intel-static': 'static-intel'
+        }))
+
         if len(flags) > 0:
             self.vars['FFLAGS'] = '-' + ' -'.join(flags)
 
-        if LooseVersion(os.environ['SOFTVERSIONICC']) < LooseVersion('2011'):
-            self.vars['LIBS'] += " -liomp5 -lguide -lpthread"
-        else:
-            self.vars['LIBS'] += " -liomp5 -lpthread"
+        if "liomp5" not in self.vars['LIBS']:
+            if LooseVersion(os.environ['SOFTVERSIONIFORT']) < LooseVersion('2011'):
+                self.vars['LIBS'] += " -liomp5 -lguide -lpthread"
+            else:
+                self.vars['LIBS'] += " -liomp5 -lpthread"
+        
 
     def prepareIMKL(self):
         """
@@ -498,11 +525,25 @@ class Toolkit:
             "-Wl,--start-group  %(mkl)s/lib/%(libdir)s/libmkl_intel%(libsuffix)s.a " \
             "%(mkl)s/lib/%(libdir)s/libmkl_sequential.a " \
             "%(mkl)s/lib/%(libdir)s/libmkl_core.a " \
-            "%(mkl)s/lib/%(libdir)s/libmkl_blacs_intelmpi%(libsuffix)s.a -Wl,--end-group" % {'mkl':mklRoot,
-                                                                                            'libdir':libdir,
-                                                                                            'libsuffix':libsuffix,
-                                                                                            'libsuffixsl':libsuffixsl
-                                                                                           }
+            "%(mkl)s/lib/%(libdir)s/libmkl_blacs_intelmpi%(libsuffix)s.a -Wl,--end-group" % \
+                {
+                 'mkl':mklRoot,
+                 'libdir':libdir,
+                 'libsuffix':libsuffix,
+                 'libsuffixsl':libsuffixsl
+                }
+
+        fftwsuff=""
+        if self.opts['pic']:
+            fftwsuff="_pic"
+        # only include interface lib if it's there
+        fftlib = "%(mkl)s/lib/%(libdir)s/libfftw3xc_intel%(suff)s.a" % {'mkl':mklRoot,
+                                                                        'libdir':libdir,
+                                                                        'suff':fftwsuff
+                                                                       }
+        self.vars['LIBFFT'] = ''
+        if os.path.exists(fftlib):
+            self.vars['LIBFFT'] += fftlib
 
         if self.opts['packed-groups']: #we pack groups toghether, since some tools like pkg-utils don't work well with them
             for i in ['LIBLAPACK', 'LIBBLAS', 'LIBLAPACK_MT', 'LIBSCALAPACK' ]:
@@ -527,7 +568,7 @@ class Toolkit:
             mklld = ['lib/intel64', 'mkl/lib/intel64']
             mklcpp = ['mkl/include', 'mkl/include/fftw']
 
-            static_vars = ['LIBBLAS', 'LIBBLAS_MT', 'LIBLAPACK', 'LIBLAPACK_MT', 'LIBSCALAPACK', 'LIBSCALAPACK_MT']
+            static_vars = ['LIBBLAS', 'LIBBLAS_MT', 'LIBFFT', 'LIBLAPACK', 'LIBLAPACK_MT', 'LIBSCALAPACK', 'LIBSCALAPACK_MT']
             for var in static_vars:
                 self.vars[var] = self.vars[var].replace('/lib/em64t/', '/mkl/lib/intel64/')
 
@@ -572,6 +613,12 @@ class Toolkit:
             self.vars['MPICXX'] = 'mpicxx -cxx=%s %s ' % (self.vars['CXX'], self.m32flag)
             self.vars['MPIF77'] = 'mpif77 -fc=%s %s ' % (self.vars['F77'], self.m32flag)
             self.vars['MPIF90'] = 'mpif90 -fc=%s %s ' % (self.vars['F90'], self.m32flag)
+
+    def prepareItac(self):
+        """
+        Prepare for Intel Trace Collector library
+        """
+        pass
 
     def prepareQLogicMPI(self):
 

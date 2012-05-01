@@ -55,9 +55,9 @@ def add_build_options(parser):
     parser.add_option("-C", "--config",
                         help = "path to EasyBuild config file [default: $EASYBUILDCONFIG or easybuild/easybuild_config.py]")
     parser.add_option("-r", "--robot", metavar="path",
-                        help="path to search for specifications for missing dependencies")
+                        help="path to search for easyconfigs for missing dependencies")
 
-    parser.add_option("-a", "--avail-spec-params", action="store_true", help="show available specification parameters")
+    parser.add_option("-a", "--avail-easyconfig-params", action="store_true", help="show available easyconfig parameters")
     parser.add_option("--dump-classes", action="store_true", help="show classes available")
     parser.add_option("--search", help="search for module-files in the robot-directory")
 
@@ -91,7 +91,7 @@ def main():
     Main function:
     - parse command line options
     - initialize logger
-    - read specification file
+    - read easyconfig
     - build software
     """
     # disallow running EasyBuild as root
@@ -104,9 +104,9 @@ def main():
     # options parser
     parser = OptionParser()
 
-    parser.usage = "%prog [options] specification [..]"
-    parser.description = "Builds software package based on specification file (or parse a directory)\n" \
-                         "Provide one or more specification files or directories, use -h or --help more information."
+    parser.usage = "%prog [options] easyconfig [..]"
+    parser.description = "Builds software package based on easyconfig (or parse a directory)\n" \
+                         "Provide one or more easyconfigs or directories, use -h or --help more information."
 
     add_build_options(parser)
 
@@ -152,7 +152,7 @@ def main():
     config.init(config_file, **configOptions)
 
     ## Dump possible options
-    if options.options:
+    if options.avail_easyconfig_params:
         app = get_instance(options.easyblock, log)
         app.dump_cfg_options()
 
@@ -166,15 +166,15 @@ def main():
             error("Please provide a search-path to --robot when using --search")
         searchModule(options.robot, options.search)
 
-    if options.options or options.dump_classes or options.search or options.version:
+    if options.avail_easyconfig_params or options.dump_classes or options.search or options.version:
         if logFile:
             os.remove(logFile)
         sys.exit(0)
 
-    ## Read specification files
+    ## Read easyconfig files
     packages = []
     if len(paths) == 0:
-        error("Please provide one or more specification files", optparser=parser)
+        error("Please provide one or more easyconfig files", optparser=parser)
 
     for path in paths:
         path = os.path.abspath(path)
@@ -182,9 +182,9 @@ def main():
             error("Can't find path %s" % path)
 
         try:
-            packages.extend(findSpecifications(path, log, blocks))
+            packages.extend(findEasyconfigs(path, log, blocks))
         except IOError, err:
-            log.error("Processing specifications in path %s failed: %s" % (path, err))
+            log.error("Processing easyconfigs in path %s failed: %s" % (path, err))
 
     ## Before building starts, take snapshot of environment (watch out -t option!)
     origEnviron = copy.deepcopy(os.environ)
@@ -240,12 +240,12 @@ def error(message, exitCode=1, optparser=None):
         optparser.print_help()
     sys.exit(exitCode)
 
-def findSpecifications(path, log, onlyBlocks=None):
+def findEasyconfigs(path, log, onlyBlocks=None):
     """
-    Find .eb specification files in path and process them
+    Find .eb easyconfig files in path and process them
     """
     if os.path.isfile(path):
-        return processSpecification(path, log, onlyBlocks)
+        return processEasyconfig(path, log, onlyBlocks)
 
     ## Walk through the start directory
     files = []
@@ -256,17 +256,17 @@ def findSpecifications(path, log, onlyBlocks=None):
                 continue
 
             spec = os.path.join(dirpath, f)
-            log.debug("Found specification %s" % spec)
+            log.debug("Found easyconfig %s" % spec)
             files.append(spec)
 
     packages = []
     for filename in files:
-        packages.extend(processSpecification(filename, log, onlyBlocks))
+        packages.extend(processEasyconfig(filename, log, onlyBlocks))
     return packages
 
-def processSpecification(path, log, onlyBlocks=None):
+def processEasyconfig(path, log, onlyBlocks=None):
     """
-    Process specification, returning some information for each block
+    Process easyconfig, returning some information for each block
     """
     blocks = retrieveBlocksInSpec(path, log, onlyBlocks)
 
@@ -274,13 +274,13 @@ def processSpecification(path, log, onlyBlocks=None):
     for spec in blocks:
         ## Process for dependencies and real installversionname
         ## - use mod? __init__ and importCfg are ignored.
-        log.debug("Processing specification %s" % spec)
+        log.debug("Processing easyconfig %s" % spec)
 
         try:
             app = Application(debug=LOGDEBUG)
             app.process_ebfile(spec)
         except EasyBuildError, err:
-            msg = "Failed to process specification file %s:\n%s" % (spec, err.msg)
+            msg = "Failed to process easyconfig %s:\n%s" % (spec, err.msg)
             log.exception(msg)
             raise EasyBuildError(msg)
 
@@ -363,8 +363,8 @@ def resolveDependencies(unprocessed, robot, log):
                 ## if they depend, you probably want to rebuild them using the new dependency
                 candidates = [d for d in module['dependencies'] if not d in beingInstalled]
                 if len(candidates) > 0:
-                    ## find specification file, might not find any
-                    path = robotFindSpecification(log, robot, candidates[0])
+                    ## find easyconfig, might not find any
+                    path = robotFindEasyconfig(log, robot, candidates[0])
 
                 else:
                     path = None
@@ -373,11 +373,11 @@ def resolveDependencies(unprocessed, robot, log):
                 if path:
                     log.info("Robot: resolving dependency %s with %s" % (candidates[0], path))
 
-                    processedSpecs = processSpecification(path, log)
+                    processedSpecs = processEasyconfig(path, log)
                     mods = [spec['module'] for spec in processedSpecs]
                     if not candidates[0] in mods:
-                        msg = "Expected specification file %s to resolve dependency for %s, but it does not" % (path, candidates[0])
-                        msg += " (list of obtained modules after processing specification file: %s)" % mods
+                        msg = "Expected easyconfig %s to resolve dependency for %s, but it does not" % (path, candidates[0])
+                        msg += " (list of obtained modules after processing easyconfig: %s)" % mods
                         log.error(msg)
                         raise EasyBuildError(msg)
 
@@ -410,7 +410,7 @@ def findResolvedModules(unprocessed, processed, log):
         module['dependencies'] = [d for d in module['dependencies'] if not d in processed]
 
         if len(module['dependencies']) == 0:
-            log.debug("Adding specification %s to final list" % module['spec'])
+            log.debug("Adding easyconfig %s to final list" % module['spec'])
             orderedSpecs.append(module)
             processed.append(module['module'])
 
@@ -418,28 +418,28 @@ def findResolvedModules(unprocessed, processed, log):
 
     return orderedSpecs
 
-def robotFindSpecification(log, path, module):
+def robotFindEasyconfig(log, path, module):
     """
-    Find a specification file for module in path
+    Find an easyconfig for module in path
     """
     name, version = module
-    # candidate specification paths
-    speciicationPaths = [os.path.join(path, name, version + ".eb"),
+    # candidate easyconfig paths
+    easyconfigsPaths = [os.path.join(path, name, version + ".eb"),
                          os.path.join(path, name, "%s-%s.eb" % (name, version)),
                          os.path.join(path, name.lower()[0], name, "%s-%s.eb" % (name, version)),
                          os.path.join(path, "%s-%s.eb" % (name, version)),
                          ]
-    for specificationPath in speciicationPaths:
-        log.debug("Checking specification path %s" % specificationPath)
-        if os.path.isfile(specificationPath):
-            log.debug("Found specification file for %s at %s" % (module, specificationPath))
-            return os.path.abspath(specificationPath)
+    for easyconfigPath in easyconfigsPaths:
+        log.debug("Checking easyconfig path %s" % easyconfigPath)
+        if os.path.isfile(easyconfigPath):
+            log.debug("Found easyconfig file for %s at %s" % (module, easyconfigPath))
+            return os.path.abspath(easyconfigPath)
 
     return None
 
 def retrieveBlocksInSpec(spec, log, onlyBlocks):
     """
-    EasyBuild-specification files can contain blocks (headed by a [Title]-line)
+    Easyconfigs can contain blocks (headed by a [Title]-line)
     which contain commands specific to that block. Commands in the beginning of the file
     above any block headers are common and shared between each block.
     """
@@ -476,7 +476,7 @@ def retrieveBlocksInSpec(spec, log, onlyBlocks):
 
             blocks.append(block)
 
-        ## Make a new specification for each block
+        ## Make a new easyconfig for each block
         ## They will be processed in the same order as they are all described in the original file
         specs = []
         for block in blocks:
@@ -507,7 +507,7 @@ def retrieveBlocksInSpec(spec, log, onlyBlocks):
                 f.close()
 
             except Exception:
-                msg = "Failed to write block %s to specification file %s" % (name, spec)
+                msg = "Failed to write block %s to easyconfig %s" % (name, spec)
                 log.exception(msg)
                 raise EasyBuildError(msg)
 
@@ -525,7 +525,7 @@ def build(module, options, log, origEnviron, exitOnFailure=True):
     """
     spec = module['spec']
 
-    print "processing EasyBuild specification file %s" % spec
+    print "processing EasyBuild easyconfig %s" % spec
 
     ## Restore original environment
     log.info("Resetting environment")
@@ -564,9 +564,9 @@ def build(module, options, log, origEnviron, exitOnFailure=True):
 
     app.logdebug = options.debug
 
-    ## Build specification
+    ## Build easyconfig
     errormsg = '(no error)'
-    #timing info
+    # timing info
     starttime = time.time()
     try:
         result = app.autobuild(spec, runTests=not options.skip_tests)
@@ -576,28 +576,39 @@ def build(module, options, log, origEnviron, exitOnFailure=True):
         log.exception(errormsg)
         result = False
 
-    #get build stats
-    buildtime = round(time.time() - starttime, 2)
-    installsize = 0
-    for dirpath, _, filenames in os.walk(app.installdir):
-        for filename in filenames:
-            installsize += os.path.getsize(os.path.join(dirpath, filename))
-
-    #collect stats
-    currentbuildstats = bool(app.getcfg('buildstats'))
-    buildstats = {'build_time' : buildtime,
-             'platform' : platform.platform(),
-             'core_count' : systemtools.get_core_count(),
-             'cpu_model': systemtools.get_cpu_model(),
-             'install_size' : installsize,
-             'timestamp' : int(time.time()),
-             'host' : os.uname()[1],
-             }
-
     ended = "ended"
 
     ## Successful build
     if result:
+
+        ## Collect build stats
+        log.info("Collecting build stats...")
+        buildtime = round(time.time() - starttime, 2)
+        installsize = 0
+        try:
+            # change to home dir, to avoid that cwd no longer exists
+            os.chdir(os.getenv('HOME'))
+
+            # walk install dir to determine total size
+            for dirpath, _, filenames in os.walk(app.installdir):
+                for filename in filenames:
+                    fullpath = os.path.join(dirpath, filename)
+                    if os.path.exists(fullpath):
+                        installsize += os.path.getsize(fullpath)
+        except OSError, err:
+            log.error("Failed to determine install size: %s" % err)
+
+        currentbuildstats = bool(app.getcfg('buildstats'))
+        buildstats = {'build_time' : buildtime,
+                 'platform' : platform.platform(),
+                 'core_count' : systemtools.get_core_count(),
+                 'cpu_model': systemtools.get_cpu_model(),
+                 'install_size' : installsize,
+                 'timestamp' : int(time.time()),
+                 'host' : os.uname()[1],
+                 }
+        log.debug("Build stats: %s" % buildstats)
+
         if app.getcfg('stop'):
             ended = "STOPPED"
             newLogDir = os.path.join(app.builddir, config.logPath())
@@ -608,12 +619,12 @@ def build(module, options, log, origEnviron, exitOnFailure=True):
                 ## Upload spec to central repository
                 repo = getRepository()
                 if 'originalSpec' in module:
-                    repo.addSpecFile(module['originalSpec'], app.name(), app.installversion + ".block", buildstats, currentbuildstats)
-                repo.addSpecFile(spec, app.name(), app.installversion, buildstats, currentbuildstats)
+                    repo.addEasyconfig(module['originalSpec'], app.name(), app.installversion + ".block", buildstats, currentbuildstats)
+                repo.addEasyconfig(spec, app.name(), app.installversion, buildstats, currentbuildstats)
                 repo.commit("Built %s/%s" % (app.name(), app.installversion))
                 del repo
             except EasyBuildError, err:
-                log.warn("Unable to commit specification-file to repository (%s)", err)
+                log.warn("Unable to commit easyconfig to repository (%s)", err)
 
         exitCode = 0
         succ = "successfully"
@@ -632,7 +643,7 @@ def build(module, options, log, origEnviron, exitOnFailure=True):
         try:
             shutil.copy(spec, os.path.join(newLogDir, "%s-%s.eb" % (app.name(), app.installversion)))
         except IOError, err:
-            error("Failed to move specification file %s to log dir %s: %s" % (spec, newLogDir, err))
+            error("Failed to move easyconfig %s to log dir %s: %s" % (spec, newLogDir, err))
 
     ## Build failed
     else:
