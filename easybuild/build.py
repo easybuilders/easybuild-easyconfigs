@@ -215,7 +215,7 @@ def main():
 
     ## Build software, will exit when errors occurs
     for spec in orderedSpecs:
-        build(spec, options, log, origEnviron, exitOnFailure=options.regtest)
+        build(spec, options, log, origEnviron, exitOnFailure=(not options.regtest))
 
     ## Cleanup tmp log file (all is well, all modules have their own log file)
     try:
