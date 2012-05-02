@@ -174,7 +174,7 @@ class LAPACK(Application):
             if not os.getenv('SOFTROOTLAPACK'):
                 self.log.error("You need to make sure that the LAPACK module is loaded to perform testing.")
 
-            blaslib = get_blas_lib()
+            blaslib = get_blas_lib(self.log)
 
             self.log.info('Running BLAS and LAPACK tests included.')
 
