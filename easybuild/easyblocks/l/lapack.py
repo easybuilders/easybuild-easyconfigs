@@ -32,7 +32,7 @@ def get_blas_lib(log):
     blaslib = None
     known_blas_libs = {
                        'GotoBLAS' : '-L%s -lgoto',
-                       'ATLAS' : '-L%s -latlas -lf77blas'
+                       'ATLAS' : '-L%s -lf77blas -latlas'
                        }
     for (key,val) in known_blas_libs.items():
         softroot = 'SOFTROOT%s' % key.upper()
