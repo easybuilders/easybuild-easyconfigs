@@ -733,7 +733,7 @@ class Application:
         """
         for tmp in self.src:
             self.log.info("Unpacking source %s" % tmp['name'])
-            srcdir = unpack(tmp['path'], self.builddir, extraOptions=self.getcfg('unpackOptions'))
+            srcdir = unpack(tmp['path'], self.builddir, extra_options=self.getcfg('unpackOptions'))
             if srcdir:
                 self.src[self.src.index(tmp)]['finalpath'] = srcdir
             else:

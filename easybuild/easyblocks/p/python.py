@@ -64,6 +64,7 @@ class DefaultPythonPackage(ApplicationPackage):
         self.installopts = ''
         self.runtest = None
         self.pkgdir = "%s/%s" % (self.builddir, self.name)
+        self.unpack_options = ''
 
     def configure(self):
         """Configure Python package build
@@ -151,7 +152,7 @@ class DefaultPythonPackage(ApplicationPackage):
         if not self.src:
             self.log.error("No source found for Python package %s, required for installation. (src: %s)" % \
                            (self.name, self.src))
-        self.pkgdir = unpack("%s" % self.src, "%s/%s" % (self.builddir, self.name))
+        self.pkgdir = unpack("%s" % self.src, "%s/%s" % (self.builddir, self.name), extra_options=self.unpack_options)
 
         # patch if needed
         if self.patches:
@@ -165,6 +166,15 @@ class DefaultPythonPackage(ApplicationPackage):
         self.test()
         self.make_install()
 
+class Nose(DefaultPythonPackage):
+
+    def __init__(self, mself, pkg, pkginstalldeps):
+        DefaultPythonPackage.__init__(self, mself, pkg, pkginstalldeps)
+
+        # use extra unpack options to avoid problems like
+        # 'tar: Ignoring unknown extended header keyword `SCHILY.nlink'
+        # and tar exiting with non-zero exit code
+        self.unpack_options = ' --pax-option="delete=SCHILY.*" --pax-option="delete=LIBARCHIVE.*" '
 
 class FortranPythonPackage(DefaultPythonPackage):
     """Extends DefaultPythonPackage to add a Fortran compiler to the make call"""

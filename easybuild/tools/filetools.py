@@ -36,7 +36,7 @@ from easybuild.tools.build_log import getLog
 log = getLog('fileTools')
 errorsFoundInLog = 0
 
-def unpack(fn, dest, extraOptions=None, overwrite=False):
+def unpack(fn, dest, extra_options=None, overwrite=False):
     """
     Given filename fn, try to unpack in directory dest
     - returns the directory name in case of success
@@ -65,8 +65,8 @@ def unpack(fn, dest, extraOptions=None, overwrite=False):
     if not cmd:
         log.error("Can't unpack file %s with unknown filetype" % fn)
 
-    if extraOptions:
-        cmd = "%s %s" % (cmd, extraOptions)
+    if extra_options:
+        cmd = "%s %s" % (cmd, extra_options)
 
     run_cmd(cmd, simple=True)
 
