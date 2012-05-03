@@ -46,6 +46,19 @@ class Python(Application):
         self.setcfg('pkgdefaultclass', (__name__, "DefaultPythonPackage"))
         self.setcfg('pkgfilter', ('python -c "import %(name)s"', ""))
 
+    def make_install(self):
+        """Extend make install to make sure that the 'python' command is present."""
+        Application.make_install(self)
+
+        python_binary_path = os.path.join(self.installdir, 'bin', 'python')
+        if not os.path.isfile(python_binary_path):
+            pythonver = '.'.join(self.version().split('.')[0:2])
+            srcbin = "%s%s" % (python_binary_path, pythonver)
+            try:
+                os.symlink(srcbin, python_binary_path)
+            except OSError, err:
+                self.log.error("Failed to symlink %s to %s: %s" % err)
+
 
 class DefaultPythonPackage(ApplicationPackage):
     """
@@ -167,7 +180,7 @@ class DefaultPythonPackage(ApplicationPackage):
         self.make_install()
 
 class Nose(DefaultPythonPackage):
-
+    """nose package"""
     def __init__(self, mself, pkg, pkginstalldeps):
         DefaultPythonPackage.__init__(self, mself, pkg, pkginstalldeps)
 
