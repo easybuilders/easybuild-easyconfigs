@@ -110,6 +110,8 @@ class DefaultPythonPackage(ApplicationPackage):
 
         if "SOFTROOTICC" in os.environ :
             cmd = "python setup.py build --compiler=intel"
+        else:
+            cmd = "python setup.py build "
 
         run_cmd(cmd, log_all=True, simple=True)
 
