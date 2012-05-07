@@ -518,7 +518,7 @@ class Toolkit:
 
         self.vars['LIBSCALAPACK'] = "-Wl:-Bstatic -lmkl_scalapack%(libsfxsl)s " \
                                     "-lmkl_solver%(libsfx)s_sequential " \
-                                    "-Wl,--start-group -lmkl_intel%(libsuffix)s " \
+                                    "-Wl,--start-group -lmkl_intel%(libsfx)s " \
                                     "-lmkl_sequential -lmkl_core -lmkl_blacs_intelmpi%(libsfx)s " \
                                     "-Wl,--end-group -Wl:-Bdynamic" % {
                                                                        'libsfx':libsfx,
