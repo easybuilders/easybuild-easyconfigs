@@ -38,6 +38,8 @@ class CP2K(Application):
                          'libint':[True,"Use LibInt (default: True)"],
                          'modincprefix':['',"IMKL prefix for modinc include dir (default: '')"],                         
                          'modinc':[[],"List of modinc's to use (*.f90), or 'True' to use all found at given prefix (default: [])"],
+                         'extracflags':['',"Extra CFLAGS to be added (default: '')"],
+                         'extradflags':['',"Extra DFLAGS to be added (default: '')"],
                          })
 
         self.typearch = None
@@ -207,7 +209,7 @@ class CP2K(Application):
             regflags = 'NOOPT'
 
         # make sure a MPI-2 able MPI lib is used
-        mpi2libs = ['impi', 'MVAPICH2']
+        mpi2libs = ['impi', 'MVAPICH2', 'OpenMPI']
         mpi2 = False
         for mpi2lib in mpi2libs:
             if os.getenv('SOFTROOT%s' % mpi2lib.upper()):
@@ -234,8 +236,8 @@ class CP2K(Application):
             'FCFLAGS': '$(FCFLAGS%s)' % optflags,
             'FCFLAGS2': '$(FCFLAGS%s)' % regflags,
 
-            'CFLAGS' : '$(SOFTVARCPPFLAGS) $(SOFTVARLDFLAGS) $(FPIC) $(DEBUG) %s ' % self.extracflags,
-            'DFLAGS': '-D__parallel -D__BLACS -D__SCALAPACK -D__FFTSG %s' % self.extradflags,
+            'CFLAGS' : '$(SOFTVARCPPFLAGS) $(SOFTVARLDFLAGS) $(FPIC) $(DEBUG) %s ' % self.getcfg('extracflags'),
+            'DFLAGS': '-D__parallel -D__BLACS -D__SCALAPACK -D__FFTSG %s' % self.getcfg('extradflags'),
 
             'LIBS': os.getenv('LIBS'),
 
