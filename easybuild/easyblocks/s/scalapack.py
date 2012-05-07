@@ -81,12 +81,6 @@ class ScaLAPACK(Application):
 
             # determine interface
             interface = det_interface(self.log, os.path.join(os.getenv('SOFTROOTBLACS'),'bin'))
-            if os.getenv('SOFTROOTOPENMPI'):
-                interface = "f77IsF2C"
-            elif os.getenv('SOFTROOTMVAPICH2'):
-                interface = 'Add_'
-            else:
-                self.log.error("Don't know which interface to pick for the MPI library being used.")
 
             blacsroot = os.getenv('SOFTROOTBLACS')
 
