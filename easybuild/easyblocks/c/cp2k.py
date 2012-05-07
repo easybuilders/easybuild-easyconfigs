@@ -126,6 +126,8 @@ class CP2K(Application):
         if os.getenv('SOFTROOTSCALAPACK'):
             options = self.configureScaLAPACK(options)
 
+        options['LIBS'] = "-Wl,--start-group %s -Wl,--end-group" % options['LIBS']
+
         makeInstructions = "graphcon.o: graphcon.F\n\t$(FC) -c $(FCFLAGS2) $<\n"
 
         # create arch file using options set
