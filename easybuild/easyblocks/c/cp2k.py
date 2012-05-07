@@ -475,3 +475,17 @@ class CP2K(Application):
                 shutil.copytree(srctests, targetdir)
             except:
                 self.log.error("Copying tests from %s to %s failed" % (srctests, targetdir))
+
+    def sanitycheck(self):
+
+        if not self.getcfg('sanityCheckPaths'):
+            cp2k_type = self.getcfg('type')
+            self.setcfg('sanityCheckPaths',{'files':["bin/%s.%s" % (x, cp2k_type) for x in ["cp2k",
+                                                                                            "cp2k_shell",
+                                                                                            "fes"]],
+                                            'dirs':["tests"]
+                                           })
+
+            self.log.info("Customized sanity check paths: %s"%self.getcfg('sanityCheckPaths'))
+
+        Application.sanitycheck(self)
