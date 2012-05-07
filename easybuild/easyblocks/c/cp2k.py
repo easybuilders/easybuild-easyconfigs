@@ -224,8 +224,8 @@ class CP2K(Application):
             'CC': os.getenv('MPICC'),
             'CPP': '',
 
-            'FC': '%s %s' % (os.getenv('F77'), self.openmp),
-            'LD': '%s %s' % (os.getenv('F77'), self.openmp),
+            'FC': '%s %s' % (os.getenv('MPIF77'), self.openmp),
+            'LD': '%s %s' % (os.getenv('MPIF77'), self.openmp),
             'AR': 'ar -r',
 
             'CPPFLAGS': '',
