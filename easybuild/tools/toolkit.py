@@ -420,6 +420,23 @@ class Toolkit:
 
         self._addDependencyVariables({'name':'GotoBLAS'})
 
+    def prepareIntelCompiler(self, name):
+
+        version = os.getenv('SOFTVERSION%s' % name.upper())
+        root = os.getenv('SOFTROOT%s' % name.upper())
+
+        if "liomp5" not in self.vars['LIBS']:
+            if LooseVersion(version) < LooseVersion('2011'):
+                self.vars['LIBS'] += " -liomp5 -lguide -lpthread"
+            else:
+                self.vars['LIBS'] += " -liomp5 -lpthread"
+
+        if LooseVersion(version) < LooseVersion('2011'):
+            libs = ['compiler/lib/intel64', 'compiler/lib/ia32']
+        else:
+            libs = ['lib/intel64', 'lib/ia32']
+        self._flagsForSubdirs(root, libs, flag="-L%s", varsKey="LDFLAGS")
+
     def prepareIcc(self):
         """
         Prepare for an icc based compiler toolkit
@@ -450,11 +467,7 @@ class Toolkit:
         if len(flags) > 0:
             self.vars['CXXFLAGS'] = '-' + ' -'.join(flags)
 
-        if "liomp5" not in self.vars['LIBS']:
-            if LooseVersion(os.environ['SOFTVERSIONICC']) < LooseVersion('2011'):
-                self.vars['LIBS'] += " -liomp5 -lguide -lpthread"
-            else:
-                self.vars['LIBS'] += " -liomp5 -lpthread"
+        self.prepareIntelCompiler('icc')
 
     def prepareIfort(self):
         """
@@ -476,12 +489,7 @@ class Toolkit:
         if len(flags) > 0:
             self.vars['FFLAGS'] = '-' + ' -'.join(flags)
 
-        if "liomp5" not in self.vars['LIBS']:
-            if LooseVersion(os.environ['SOFTVERSIONIFORT']) < LooseVersion('2011'):
-                self.vars['LIBS'] += " -liomp5 -lguide -lpthread"
-            else:
-                self.vars['LIBS'] += " -liomp5 -lpthread"
-        
+        self.prepareIntelCompiler('ifort')
 
     def prepareIMKL(self):
         """
@@ -494,53 +502,35 @@ class Toolkit:
 
         # For more inspiration: see http://software.intel.com/en-us/articles/intel-mkl-link-line-advisor/
 
-        libsuffix = "_lp64"
-        libsuffixsl = "_lp64"
-        libdir = "em64t"
+        libsfx = "_lp64"
+        libsfxsl = "_lp64"
         if self.opts['32bit']:
-            libsuffix = ""
-            libsuffixsl = "_core"
-            libdir = "32"
+            libsfx = ""
+            libsfxsl = "_core"
 
-        self.vars['LIBLAPACK'] = \
-            "-Wl,--start-group %(mkl)s/lib/%(libdir)s/libmkl_intel%(libsuffix)s.a " \
-            "%(mkl)s/lib/%(libdir)s/libmkl_sequential.a " \
-            "%(mkl)s/lib/%(libdir)s/libmkl_core.a -Wl,--end-group" % {'mkl':mklRoot,
-                                                                      'libdir':libdir,
-                                                                      'libsuffix':libsuffix
-                                                                     }
+        self.vars['LIBLAPACK'] = "-Wl:-Bstatic -Wl,--start-group -lmkl_intel%s -lmkl_sequential " \
+                                 "-lmkl_core -Wl,--end-group -Wl:-Bdynamic" % libsfx
         self.vars['LIBBLAS'] = self.vars['LIBLAPACK']
-        self.vars['LIBLAPACK_MT'] = \
-            "-Wl,--start-group %(mkl)s/lib/%(libdir)s/libmkl_intel%(libsuffix)s.a " \
-            "%(mkl)s/lib/%(libdir)s/libmkl_intel_thread.a " \
-            "%(mkl)s/lib/%(libdir)s/libmkl_core.a -Wl,--end-group " \
-            "-liomp5 -lpthread" % {'mkl':mklRoot,
-                                   'libdir':libdir,
-                                   'libsuffix':libsuffix
-                                  }
+
+        self.vars['LIBLAPACK_MT'] = "-Wl:-Bstatic -Wl,--start-group -lmkl_intel%s -lmkl_intel_thread " \
+                                    "-lmkl_core -Wl,--end-group -Wl:-Bdynamic -liomp5 -lpthread" % libsfx
         self.vars['LIBBLAS_MT'] = self.vars['LIBLAPACK_MT']
-        self.vars['LIBSCALAPACK'] = \
-            "%(mkl)s/lib/%(libdir)s/libmkl_scalapack%(libsuffixsl)s.a " \
-            "%(mkl)s/lib/%(libdir)s/libmkl_solver%(libsuffix)s_sequential.a " \
-            "-Wl,--start-group  %(mkl)s/lib/%(libdir)s/libmkl_intel%(libsuffix)s.a " \
-            "%(mkl)s/lib/%(libdir)s/libmkl_sequential.a " \
-            "%(mkl)s/lib/%(libdir)s/libmkl_core.a " \
-            "%(mkl)s/lib/%(libdir)s/libmkl_blacs_intelmpi%(libsuffix)s.a -Wl,--end-group" % \
-                {
-                 'mkl':mklRoot,
-                 'libdir':libdir,
-                 'libsuffix':libsuffix,
-                 'libsuffixsl':libsuffixsl
-                }
+
+        self.vars['LIBSCALAPACK'] = "-Wl:-Bstatic -lmkl_scalapack%(libsfxsl)s " \
+                                    "-lmkl_solver%(libsfx)s_sequential " \
+                                    "-Wl,--start-group -lmkl_intel%(libsuffix)s " \
+                                    "-lmkl_sequential -lmkl_core -lmkl_blacs_intelmpi%(libsfx)s " \
+                                    "-Wl,--end-group -Wl:-Bdynamic" % {
+                                                                       'libsfx':libsfx,
+                                                                       'libsfxsl':libsfxsl
+                                                                       }
 
         fftwsuff=""
         if self.opts['pic']:
             fftwsuff="_pic"
         # only include interface lib if it's there
-        fftlib = "%(mkl)s/lib/%(libdir)s/libfftw3xc_intel%(suff)s.a" % {'mkl':mklRoot,
-                                                                        'libdir':libdir,
-                                                                        'suff':fftwsuff
-                                                                       }
+        fftlib = "-Wl:-Bstatic -lfftw3xc_intel%s -Wl:-Bdynamic" % fftwsuff
+
         self.vars['LIBFFT'] = ''
         if os.path.exists(fftlib):
             self.vars['LIBFFT'] += fftlib
@@ -550,8 +540,8 @@ class Toolkit:
                 self.vars[i] = self.vars[i].replace(" ", ",").replace("-Wl,--end-group", "--end-group")
 
         lib = self.vars['LIBSCALAPACK']
-        lib = lib.replace('libmkl_solver%s_sequential' % libsuffix, 'libmkl_solver')
-        lib = lib.replace('libmkl_sequential', 'libmkl_intel_thread') + ' -liomp5 -lpthread'
+        lib = lib.replace('mkl_solver%s_sequential' % libsfx, 'mkl_solver')
+        lib = lib.replace('mkl_sequential', 'mkl_intel_thread') + ' -liomp5 -lpthread'
         self.vars['LIBSCALAPACK_MT'] = lib
 
         # Exact paths/linking statements depend on imkl version
@@ -568,16 +558,12 @@ class Toolkit:
             mklld = ['lib/intel64', 'mkl/lib/intel64']
             mklcpp = ['mkl/include', 'mkl/include/fftw']
 
-            static_vars = ['LIBBLAS', 'LIBBLAS_MT', 'LIBFFT', 'LIBLAPACK', 'LIBLAPACK_MT', 'LIBSCALAPACK', 'LIBSCALAPACK_MT']
-            for var in static_vars:
-                self.vars[var] = self.vars[var].replace('/lib/em64t/', '/mkl/lib/intel64/')
-
         # Linker flags
         self._flagsForSubdirs(mklRoot, mklld, flag="-L%s", varskey="LDFLAGS")
         self._flagsForSubdirs(mklRoot, mklcpp, flag="-I%s", varskey="CPPFLAGS")
 
         if os.getenv('SOFTROOTGCC'):
-            if not (os.getenv('SOFTROOTGCC') or os.getenv('SOFTROOTGCC')):
+            if not (os.getenv('SOFTROOTICC') or os.getenv('SOFTROOTIFORT')):
                 for var in ['LIBLAPACK', 'LIBLAPACK_MT', 'LIBSCALAPACK', 'LIBSCALAPACK_MT']:
                     self.vars[var] = self.vars[var].replace('mkl_intel_lp64', 'mkl_gf_lp64')
             else:

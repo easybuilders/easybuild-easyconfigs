@@ -249,10 +249,22 @@ libraries = '%(lapack)s'
 [fftw]
 libraries ='%s'
         """ % os.getenv("LIBFFT")
+
         self.sitecfg = self.sitecfg + extrasiteconfig
+
+        lapack_libs = os.getenv("LIBLAPACK_MT").split(" -l")
+        blas_libs = os.getenv("LIBBLAS_MT").split(" -l")
+        if os.getenv('SOFTROOTIMKL'):
+            # with IMKL, get rid of all spaces because of use of -Wl
+            lapack = ','.join(lapack_libs).replace(' ', ',')
+            blas = lapack
+        else:
+            lapack = ", ".join(lapack_libs)
+            blas = ", ".join(blas_libs)
+
         self.sitecfg = self.sitecfg % \
-            { 'lapack' : ", ".join([lib for lib in os.getenv("LIBLAPACK_MT").split(" -l")]) ,
-              'blas' : ", ".join([lib for lib in os.getenv("LIBBLAS_MT").split(" -l")]),
+            { 'lapack' : lapack ,
+              'blas' : blas,
               'libs' : ":".join([lib for lib in os.getenv('LDFLAGS').split(" -L")]),
               'includes' : ":".join([lib for lib in os.getenv('CPPFLAGS').split(" -I")]),
             }
