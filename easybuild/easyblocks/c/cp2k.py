@@ -236,8 +236,8 @@ class CP2K(Application):
             'FCFLAGS': '$(FCFLAGS%s)' % optflags,
             'FCFLAGS2': '$(FCFLAGS%s)' % regflags,
 
-            'CFLAGS' : '$(SOFTVARCPPFLAGS) $(SOFTVARLDFLAGS) $(FPIC) $(DEBUG) %s ' % self.getcfg('extracflags'),
-            'DFLAGS': '-D__parallel -D__BLACS -D__SCALAPACK -D__FFTSG %s' % self.getcfg('extradflags'),
+            'CFLAGS' : ' $(SOFTVARCPPFLAGS) $(SOFTVARLDFLAGS) $(FPIC) $(DEBUG) %s ' % self.getcfg('extracflags'),
+            'DFLAGS': ' -D__parallel -D__BLACS -D__SCALAPACK -D__FFTSG %s' % self.getcfg('extradflags'),
 
             'LIBS': os.getenv('LIBS'),
 
@@ -337,9 +337,9 @@ class CP2K(Application):
 
         options['DFLAGS'] += ' -D__GFORTRAN'
 
-        options['FCFLAGSOPT'] += '$(DFLAGS) $(CFLAGS) -march=native -ffast-math ' \
+        options['FCFLAGSOPT'] += ' $(DFLAGS) $(CFLAGS) -march=native -ffast-math ' \
                                  '-funroll-loops -ftree-vectorize -fmax-stack-var-size=32768'
-        options['FCFLAGSOPT2'] += '$(DFLAGS) $(CFLAGS) -march=native'
+        options['FCFLAGSOPT2'] += ' $(DFLAGS) $(CFLAGS) -march=native'
 
         return options
 
@@ -352,7 +352,7 @@ class CP2K(Application):
 
         options['ACML_INC'] = '$(SOFTROOTACML)/gfortran64%s/include' % openmp_suffix
         options['CFLAGS'] += ' -I$(ACML_INC) -I$(FFTW_INC)'
-        options['DFLAGS'] += '-D__FFTACML'
+        options['DFLAGS'] += ' -D__FFTACML'
 
         blas = os.getenv('LIBBLAS')
         blas = blas.replace('gfortran64', 'gfortran64%s' % openmp_suffix)
