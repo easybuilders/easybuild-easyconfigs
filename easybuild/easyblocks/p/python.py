@@ -259,7 +259,7 @@ libraries ='%s'
         blas_libs = os.getenv("LIBBLAS_MT").split(" -l")
         if os.getenv('SOFTROOTIMKL'):
             # with IMKL, get rid of all spaces because of use of -Wl
-            lapack = ','.join(lapack_libs).replace(' ', ',')
+            lapack = ','.join(lapack_libs).replace(' ', ',').replace('Wl,','Wl:')
             blas = lapack
         else:
             lapack = ", ".join(lapack_libs)
