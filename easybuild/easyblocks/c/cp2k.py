@@ -432,7 +432,7 @@ class CP2K(Application):
                 self.log.error("Can't modify/write Makefile in %s: %s" % (makefiles, err))
     
         # update make options with ARCH and VERSION
-        self.updatecfg('makeopts', 'ARCH=%s VERSION=%s' % self.typearch, self.getcfg('type'))
+        self.updatecfg('makeopts', 'ARCH=%s VERSION=%s' % (self.typearch, self.getcfg('type')))
 
         cmd = "make %s" % self.getcfg('makeopts')
 
