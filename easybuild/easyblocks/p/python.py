@@ -200,7 +200,7 @@ class FortranPythonPackage(DefaultPythonPackage):
             if os.getenv('LDFLAGS'):
                 # LDFLAGS should not be set when building numpy/scipy, it may cause problems
                 ldflags = os.environ.pop('LDFLAGS')
-                self.log.debug("LDFLAGS was %s now cleared" % ldflags)
+                self.log.debug("LDFLAGS was %s, is now cleared: %s" % (ldflags, os.getenv('LDFLAGS')))
 
             cmd = "python setup.py build --fcompiler=gnu95"
 
