@@ -260,7 +260,8 @@ libraries ='%s'
         lapack_libs = os.getenv("LIBLAPACK_MT").split(" -l")
         blas_libs = os.getenv("LIBBLAS_MT").split(" -l")
         if os.getenv('SOFTROOTIMKL'):
-            # with IMKL, get rid of all spaces because of use of -Wl
+            # with IMKL, get rid of all spaces and use '-Wl:'
+            lapack_libs.remove("pthread")
             lapack = ','.join(lapack_libs).replace(' ', ',').replace('Wl,','Wl:')
             blas = lapack
         else:
