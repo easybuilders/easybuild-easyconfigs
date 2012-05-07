@@ -435,7 +435,7 @@ class Toolkit:
             libs = ['compiler/lib/intel64', 'compiler/lib/ia32']
         else:
             libs = ['lib/intel64', 'lib/ia32']
-        self._flagsForSubdirs(root, libs, flag="-L%s", varsKey="LDFLAGS")
+        self._flagsForSubdirs(root, libs, flag="-L%s", varskey="LDFLAGS")
 
     def prepareIcc(self):
         """
