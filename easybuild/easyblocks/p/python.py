@@ -109,9 +109,7 @@ class DefaultPythonPackage(ApplicationPackage):
         """Build Python package via setup.py"""
 
         if "SOFTROOTICC" in os.environ :
-            cmd = "python setup.py build --compiler=intel --fcompiler=intelem"
-        elif os.getenv('SOFTROOTGCC'):
-            cmd = "python setup.py build --fcompiler=gnu95"
+            cmd = "python setup.py build --compiler=intel"
 
         run_cmd(cmd, log_all=True, simple=True)
 
@@ -195,12 +193,17 @@ class FortranPythonPackage(DefaultPythonPackage):
     def make(self):
         if  "SOFTROOTICC" in os.environ and "SOFTROOTIFORT" in os.environ:
             cmd = "python setup.py build --compiler=intel --fcompiler=intelem"
-        else:
+
+        elif os.getenv('SOFTROOTGCC'):
             if os.getenv('LDFLAGS'):
                 # LDFLAGS should not be set when building numpy/scipy, it may cause problems
                 ldflags = os.environ.pop('LDFLAGS')
                 self.log.debug("LDFLAGS was %s now cleared" % ldflags)
-            cmd = "python setup.py build  "
+
+            cmd = "python setup.py build --fcompiler=gnu95"
+
+        else:
+            self.log.error("Unknown compiler being used?")
 
         run_cmd(cmd, log_all=True, simple=True)
 
