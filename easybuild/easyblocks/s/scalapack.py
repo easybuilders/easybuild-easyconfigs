@@ -22,6 +22,7 @@ import os
 import shutil
 from distutils.version import LooseVersion
 from easybuild.framework.application import Application
+from easybuild.easyblocks.b.blacs import det_interface
 from easybuild.easyblocks.l.lapack import get_blas_lib
 
 class ScaLAPACK(Application):
@@ -79,6 +80,7 @@ class ScaLAPACK(Application):
         if self.loosever < LooseVersion("2.0.0"):
 
             # determine interface
+            interface = det_interface(self.log, os.path.join(os.getenv('SOFTROOTBLACS'),'bin'))
             if os.getenv('SOFTROOTOPENMPI'):
                 interface = "f77IsF2C"
             elif os.getenv('SOFTROOTMVAPICH2'):
