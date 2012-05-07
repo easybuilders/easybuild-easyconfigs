@@ -98,9 +98,11 @@ class ScaLAPACK(Application):
                 extra_makeopts += '%s=%s/lib/libblacs%s.a ' % (var, blacsroot, lib)
 
             # set compilers and options
-            noopt = '-O0'
+            noopt = ''
+            if self.tk.opts['noopt']:
+                noopt += " -O0"
             if self.tk.opts['pic']:
-                noopt += ' -fPIC'
+                noopt += " -fPIC"
             extra_makeopts += 'F77="%(f77)s" CC="%(cc)s" NOOPT="%(noopt)s" CCFLAGS="-O3" ' % {
                                                                                               'f77':mpif77,
                                                                                               'cc':mpicc,
