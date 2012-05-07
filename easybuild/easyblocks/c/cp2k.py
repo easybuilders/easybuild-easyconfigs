@@ -370,7 +370,7 @@ class CP2K(Application):
             'INTEL_INCF': '$(INTEL_INC)/fftw',
         })
         
-        options['DFLAGS'] += ' -D__FFTWW3 -D__FFTMKL'
+        options['DFLAGS'] += ' -D__FFTW3 -D__FFTMKL'
 
         options['CFLAGS'] += ' -I$(INTEL_INC) -I$(INTEL_INCF) -I%s $(FPIC) $(DEBUG)' % self.modincpath
         
@@ -389,7 +389,7 @@ class CP2K(Application):
                         'FFTW3LIB': '%s/lib' % softroot, # Intel
                         })
 
-        options['DFLAGS'] += ' -D__FFTWW3'
+        options['DFLAGS'] += ' -D__FFTW3'
 
         options['LIBS'] += ' -lfftw3'
 
