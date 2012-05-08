@@ -199,8 +199,10 @@ class FortranPythonPackage(DefaultPythonPackage):
         elif os.getenv('SOFTROOTGCC'):
             if os.getenv('LDFLAGS'):
                 # LDFLAGS should not be set when building numpy/scipy, it may cause problems
-                ldflags = os.environ.pop('LDFLAGS')
-                self.log.debug("LDFLAGS was %s, is now cleared: %s" % (ldflags, os.getenv('LDFLAGS')))
+                ## don't unset it with os.environ.pop('LDFLAGS'), doesn't work in Python 2.4 (see http://bugs.python.org/issue1287)
+                ldflags = os.getenv('LDFLAGS')
+                os.putenv('LDFLAGS','')
+                self.log.debug("LDFLAGS was %s, is now cleared: LDFLAGS = '%s'" % (ldflags, os.getenv('LDFLAGS')))
 
             cmd = "python setup.py build --fcompiler=gnu95"
 
