@@ -431,7 +431,7 @@ class Toolkit:
             else:
                 self.vars['LIBS'] += " -liomp5 -lpthread"
 
-        if LooseVersion(version) < LooseVersion('2011'):
+        if LooseVersion(version) < LooseVersion('2011.4'):
             libs = ['lib/intel64', 'lib/ia32']
         else:
             libs = ['compiler/lib/intel64', 'compiler/lib/ia32']
