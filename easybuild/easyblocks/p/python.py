@@ -237,7 +237,7 @@ search_static_first=True
             #use mkl
             extrasiteconfig = """[mkl]
 lapack_libs = '%(lapack)s'
-mkl_libs = '%(blas)s '
+mkl_libs = '%(blas)s'
         """
         elif "SOFTROOTATLAS" in os.environ and "SOFTROOTLAPACK" in os.environ:
             extrasiteconfig = """
@@ -257,8 +257,8 @@ libraries ='%s'
 
         self.sitecfg = self.sitecfg + extrasiteconfig
 
-        lapack_libs = os.getenv("LIBLAPACK_MT").strip().split(" -l")
-        blas_libs = os.getenv("LIBBLAS_MT").strip().split(" -l")
+        lapack_libs = os.getenv("LIBLAPACK_MT").split(" -l")
+        blas_libs = os.getenv("LIBBLAS_MT").split(" -l")
         if os.getenv('SOFTROOTIMKL'):
             # with IMKL, get rid of all spaces and use '-Wl:'
             lapack_libs.remove("pthread")
@@ -269,7 +269,7 @@ libraries ='%s'
             blas = ", ".join(blas_libs)
 
         self.sitecfg = self.sitecfg % \
-            { 'lapack' : lapack ,
+            { 'lapack' : lapack,
               'blas' : blas,
               'libs' : ":".join([lib for lib in os.getenv('LDFLAGS').split(" -L")]),
               'includes' : ":".join([lib for lib in os.getenv('CPPFLAGS').split(" -I")]),
