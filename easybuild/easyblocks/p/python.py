@@ -257,8 +257,8 @@ libraries ='%s'
 
         self.sitecfg = self.sitecfg + extrasiteconfig
 
-        lapack_libs = os.getenv("LIBLAPACK_MT").split(" -l")
-        blas_libs = os.getenv("LIBBLAS_MT").split(" -l")
+        lapack_libs = os.getenv("LIBLAPACK_MT").strip().split(" -l")
+        blas_libs = os.getenv("LIBBLAS_MT").strip().split(" -l")
         if os.getenv('SOFTROOTIMKL'):
             # with IMKL, get rid of all spaces and use '-Wl:'
             lapack_libs.remove("pthread")
