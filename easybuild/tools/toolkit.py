@@ -432,9 +432,9 @@ class Toolkit:
                 self.vars['LIBS'] += " -liomp5 -lpthread"
 
         if LooseVersion(version) < LooseVersion('2011'):
-            libs = ['compiler/lib/intel64', 'compiler/lib/ia32']
-        else:
             libs = ['lib/intel64', 'lib/ia32']
+        else:
+            libs = ['compiler/lib/intel64', 'compiler/lib/ia32']
         self._flagsForSubdirs(root, libs, flag="-L%s", varskey="LDFLAGS")
 
     def prepareIcc(self):
