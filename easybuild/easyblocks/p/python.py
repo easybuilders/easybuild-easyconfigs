@@ -240,8 +240,8 @@ search_static_first=True
         if  "SOFTROOTIMKL" in os.environ:
             #use mkl
             extrasiteconfig = """[mkl]
-lapack_libs = '%(lapack)s'
-mkl_libs = '%(blas)s'
+lapack_libs = %(lapack)s
+mkl_libs = %(blas)s
         """
         elif "SOFTROOTATLAS" in os.environ and "SOFTROOTLAPACK" in os.environ:
             extrasiteconfig = """
