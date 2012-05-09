@@ -256,7 +256,7 @@ libraries = %(lapack)s
         if "SOFTROOTIMKL" in os.environ or "SOFTROOTFFTW" in os.environ:
             extrasiteconfig += """ 
 [fftw]
-libraries ='%s'
+libraries = %s
         """ % os.getenv("LIBFFT")
 
         self.sitecfg = self.sitecfg + extrasiteconfig
