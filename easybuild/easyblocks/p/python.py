@@ -201,6 +201,7 @@ class FortranPythonPackage(DefaultPythonPackage):
             ldflags = os.getenv('LDFLAGS')
             if ldflags:
                 # LDFLAGS should not be set when building numpy/scipy, because it overwrites whatever numpy/scipy sets
+                # see http://projects.scipy.org/numpy/ticket/182
                 ## don't unset it with os.environ.pop('LDFLAGS'), doesn't work in Python 2.4 (see http://bugs.python.org/issue1287)
                 cmdprefix = "unset LDFLAGS && "
                 self.log.debug("LDFLAGS was %s, will be cleared before numpy build with '%s'" % (ldflags, cmdprefix))
@@ -245,9 +246,9 @@ mkl_libs = '%(blas)s'
         elif "SOFTROOTATLAS" in os.environ and "SOFTROOTLAPACK" in os.environ:
             extrasiteconfig = """
 [blas_opt]
-libraries = '%(blas)s'
+libraries = %(blas)s
 [lapack_opt]
-libraries = '%(lapack)s'
+libraries = %(lapack)s
         """
         else:
             self.log.error("Could not detect math kernel (mkl, atlas)")
