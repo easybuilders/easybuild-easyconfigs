@@ -551,19 +551,29 @@ class Application:
             if not os.path.exists(basedir):
                 os.makedirs(basedir)
 
-            (_, httpmsg) = urllib.urlretrieve(url, path)
+            downloaded = False
+            attempt_cnt = 0
 
-            if httpmsg.type == "text/html" and not filename.endswith('.html'):
-                self.log.warning("HTML file downloaded but not expecting it, so assuming invalid download.")
-                self.log.debug("removing downloaded file")
-                try:
-                    os.remove(path)
-                except OSError, err:
-                    self.log.error("Failed to remove downloaded file:" % err)
-                return None
-            else:
-                self.log.info("Downloading file %s from url %s: done" % (filename, url))
-                return path
+            # try downloading three times max.
+            while not downloaded and attempt_cnt < 3:
+
+                (_, httpmsg) = urllib.urlretrieve(url, path)
+
+                if httpmsg.type == "text/html" and not filename.endswith('.html'):
+                    self.log.warning("HTML file downloaded but not expecting it, so assuming invalid download.")
+                    self.log.debug("removing downloaded file %s from %s" % (filename, path))
+                    try:
+                        os.remove(path)
+                    except OSError, err:
+                        self.log.error("Failed to remove downloaded file:" % err)
+                    return None
+                else:
+                    self.log.info("Downloading file %s from url %s: done" % (filename, url))
+                    downloaded = True
+                    return path
+
+                attempt_cnt += 1
+                self.log.warning("Downloading failed at attempt %s, retrying..." % attempt_cnt)
 
         # should we download or just try and find it?
         if filename.startswith("http://") or filename.startswith("ftp://"):
