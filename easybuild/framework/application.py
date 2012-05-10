@@ -566,7 +566,6 @@ class Application:
                         os.remove(path)
                     except OSError, err:
                         self.log.error("Failed to remove downloaded file:" % err)
-                    return None
                 else:
                     self.log.info("Downloading file %s from url %s: done" % (filename, url))
                     downloaded = True
@@ -574,6 +573,9 @@ class Application:
 
                 attempt_cnt += 1
                 self.log.warning("Downloading failed at attempt %s, retrying..." % attempt_cnt)
+
+            # failed to download after multiple attempts
+            return None
 
         # should we download or just try and find it?
         if filename.startswith("http://") or filename.startswith("ftp://"):
