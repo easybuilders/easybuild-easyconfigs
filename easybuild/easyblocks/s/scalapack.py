@@ -22,6 +22,7 @@ import os
 import shutil
 from distutils.version import LooseVersion
 from easybuild.framework.application import Application
+from easybuild.easyblocks.b.blacs import det_interface
 from easybuild.easyblocks.l.lapack import get_blas_lib
 
 class ScaLAPACK(Application):
@@ -79,12 +80,7 @@ class ScaLAPACK(Application):
         if self.loosever < LooseVersion("2.0.0"):
 
             # determine interface
-            if os.getenv('SOFTROOTOPENMPI'):
-                interface = "f77IsF2C"
-            elif os.getenv('SOFTROOTMVAPICH2'):
-                interface = 'Add_'
-            else:
-                self.log.error("Don't know which interface to pick for the MPI library being used.")
+            interface = det_interface(self.log, os.path.join(os.getenv('SOFTROOTBLACS'),'bin'))
 
             blacsroot = os.getenv('SOFTROOTBLACS')
 
@@ -98,9 +94,11 @@ class ScaLAPACK(Application):
                 extra_makeopts += '%s=%s/lib/libblacs%s.a ' % (var, blacsroot, lib)
 
             # set compilers and options
-            noopt = '-O0'
+            noopt = ''
+            if self.tk.opts['noopt']:
+                noopt += " -O0"
             if self.tk.opts['pic']:
-                noopt += ' -fPIC'
+                noopt += " -fPIC"
             extra_makeopts += 'F77="%(f77)s" CC="%(cc)s" NOOPT="%(noopt)s" CCFLAGS="-O3" ' % {
                                                                                               'f77':mpif77,
                                                                                               'cc':mpicc,

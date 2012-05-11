@@ -19,9 +19,23 @@
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
 import glob
+import re
 import os
 import shutil
 from easybuild.framework.application import Application
+from easybuild.tools.filetools import run_cmd
+
+def det_interface(log, path):
+    """Determine interface through xintface"""
+    
+    (out, _) = run_cmd(os.path.join(path,"xintface"), log_all=True, simple=False)
+    
+    intregexp = re.compile(".*INTFACE\s*=\s*-D(\S+)\s*")
+    res = intregexp.search(out)
+    if res:
+        return res.group(1)
+    else:
+        log.error("Failed to determine interface, output for xintface: %s" % out)
 
 class BLACS(Application):
     """
@@ -44,40 +58,94 @@ class BLACS(Application):
         try:
             shutil.copy(src, dest)
         except OSError, err:
-            self.log.error("Symlinking %s to % failed: %s" % (src, dest, err))
+            self.log.error("Copying %s to % failed: %s" % (src, dest, err))
 
     def make(self):
 
-        # tweak make options
+        # determine MPI base dir
+        if os.getenv('SOFTROOTOPENMPI'):
+            base = os.getenv('SOFTROOTOPENMPI')
+            mpilib = '-L$(MPILIBdir) -lmpi_f77'
+        elif os.getenv('SOFTROOTMVAPICH2'):
+            base = os.getenv('SOFTROOTMVAPICH2')
+            mpilib = '$(MPILIBdir)/libmpich.a'
+        else:
+            self.log.error("Don't know how to set MPI base dir, unknown MPI library used.")
 
-        # common settings(for now)
+        # common settings (for now)
         mpicc = 'mpicc'
         mpif77 = 'mpif77'
-
-        # MPI lib specific settings
-        if os.getenv('SOFTROOTOPENMPI'):
-            comm = 'UseMpi2'
-            interface = 'f77IsF2C'
-            base = os.getenv('SOFTROOTOPENMPI')
-    
-        elif os.getenv('SOFTROOTMVAPICH2'):
-            comm = 'CSameF77'
-            interface = 'Add_'
-            base = os.getenv('SOFTROOTMVAPICH2')
-    
-        else:
-            self.log.error("Support for obtaining specific settings for MPI library used not yet implemented.")
 
         opts = {
                 'mpicc':mpicc,
                 'mpif77':mpif77,
-                'comm':comm,
-                'int':interface,
+                'f77':os.getenv('F77'),
+                'cc':os.getenv('CC'),
+                'builddir':os.getcwd(),
                 'base':base,
-                'builddir':os.getcwd()
+                'mpilib':mpilib
                 }
-        add_makeopts = ' MPICC=%(mpicc)s MPIF77=%(mpif77)s TRANSCOMMPI=%(comm)s ' % opts
-        add_makeopts += ' INTERFACE=%(int)s MPIBASE=%(base)s BUILDDIR=%(builddir)s mpi ' % opts
+
+        # determine interface and transcomm settings
+        comm = ''
+        interface = 'UNKNOWN'
+        try:
+            cwd = os.getcwd()
+            os.chdir('INSTALL')
+
+            cmd = "make"
+            cmd += " MPICC='%(mpicc)s' MPIF77='%(mpif77)s' CC='%(cc)s' F77='%(f77)s -I$(MPIINCdir)' " \
+                   " MPIdir=%(base)s MPILIB='%(mpilib)s' BTOPdir=%(builddir)s INTERFACE=NONE" % opts
+            
+            # determine interface using xintface
+            run_cmd("%s xintface" % cmd, log_all=True, simple=True)
+
+            interface = det_interface(self.log, "./EXE")
+
+            # try and determine transcomm using xtc_CsameF77 and xtc_UseMpich
+            if not comm:
+
+                run_cmd("%s xtc_CsameF77" % cmd, log_all=True, simple=True)
+                (out, _) = run_cmd("mpirun -np 2 ./EXE/xtc_CsameF77", log_all=True, simple=False)
+    
+                notregexp = re.compile("_NOT_")
+    
+                if not notregexp.search(out):
+                    # if it doesn't say '_NOT_', set it
+                    comm = "TRANSCOMM='-DCSameF77'"
+                
+                else:
+                    (_, ec) = run_cmd("%s xtc_UseMpich" % cmd, log_all=False, log_ok=False, simple=False)
+                    if ec == 0:
+                        
+                        (out, _) = run_cmd("mpirun -np 2 ./EXE/xtc_UseMpich", log_all=True, simple=False)
+                        
+                        if not notregexp.search(out):
+                            
+                            commregexp = re.compile('Set TRANSCOMM\s*=\s*(.*)$')
+                            
+                            res = commregexp.search(out)
+                            if res:
+                                # found how to set TRANSCOMM, so set it
+                                comm = "TRANSCOMM='%s'" % res.group(1)
+                            else:
+                                # no match, don't set TRANSCOMM
+                                comm = ''
+                    else:
+                        # if it fails to compile, don't set TRANSCOMM
+                        comm = ''
+
+            os.chdir(cwd)
+        except OSError, err:
+            self.log.error("Failed to determine interface and transcomm settings: %s" % err)
+
+        opts.update({'comm':comm,
+                     'int':interface,
+                     'base':base,
+                     })
+
+        add_makeopts = ' MPICC=%(mpicc)s MPIF77=%(mpif77)s %(comm)s ' % opts
+        add_makeopts += ' INTERFACE=%(int)s MPIdir=%(base)s BTOPdir=%(builddir)s mpi ' % opts
 
         self.updatecfg('makeopts', add_makeopts)
 
@@ -104,12 +172,26 @@ class BLACS(Application):
         except OSError, err:
             self.log.error("Copying %s/*.a to installation dir %s failed: %s"%(src, dest, err))
 
+        src = os.path.join(self.getcfg('startfrom'), 'INSTALL', 'EXE', 'xintface')
+        dest = os.path.join(self.installdir, 'bin')
+
+        try:
+            os.makedirs(dest)
+            
+            shutil.copy2(src, dest)
+            
+            self.log.debug("Copied %s to %s" % (src, dest))
+            
+        except OSError, err:
+            self.log.error("Copying %s to installation dir %s failed: %s" % (src, dest, err))
+
     def sanitycheck(self):
 
         if not self.getcfg('sanityCheckPaths'):
             self.setcfg('sanityCheckPaths',{'files':[fil for filptrn in ["blacs", "blacsCinit", "blacsF77init"]
                                                          for fil in ["lib/lib%s.a"%filptrn,
-                                                                     "lib/%s_MPI-LINUX-0.a"%filptrn]],
+                                                                     "lib/%s_MPI-LINUX-0.a"%filptrn]] +
+                                                    ["bin/xintface"],
                                             'dirs':[]
                                            })
 

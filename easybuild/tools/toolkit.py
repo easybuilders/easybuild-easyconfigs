@@ -734,3 +734,16 @@ class Toolkit:
             self.vars[varskey] = ''
         self.vars[varskey] += ' ' + ' '.join(flags)
 
+def get_openmp_flag(log):
+    """Determine compiler flag for OpenMP"""
+
+    icc = os.getenv('SOFTROOTICC')
+    ifort = os.getenv('SOFTROOTIFORT')
+    gcc = os.getenv('SOFTROOTGCC')
+
+    if (icc or ifort) and not gcc:
+        return "-openmp"
+    elif gcc and not (icc or ifort):
+        return "-fopenmp"
+    else:
+        log.error("Can't determine compiler flag for OpenMP.")
