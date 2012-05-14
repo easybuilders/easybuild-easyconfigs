@@ -287,7 +287,7 @@ def searchModule(path, query):
         except ValueError:
             pass
 
-def getSoftwareRoot(name):
+def get_software_root(name):
     """
     Return the software root set for a particular package.
     """
