@@ -477,6 +477,7 @@ class CP2K(Application):
                 self.log.error("Copying tests from %s to %s failed" % (srctests, targetdir))
 
     def sanitycheck(self):
+        """Custom sanity check for CP2K"""
 
         if not self.getcfg('sanityCheckPaths'):
             cp2k_type = self.getcfg('type')
