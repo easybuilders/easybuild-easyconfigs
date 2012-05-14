@@ -116,6 +116,8 @@ class CP2K(Application):
             options = self.configureMKL(options)
         elif os.getenv('SOFTROOTACML'):
             options = self.configureACML(options) 
+        elif os.getenv('SOFTROOTATLAS'):
+            options = self.configureATLAS(options) 
 
         if os.getenv('SOFTROOTFFTW'):
             options = self.configureFFTW(options)
@@ -292,7 +294,7 @@ class CP2K(Application):
                 self.log.error("Don't know how to handle libint version %s" % libint_maj_ver)
             self.log.info("Using LibInt version %s" % (libint_maj_ver))
 
-            options['LIBINTLIB'] = '%/lib' % softrootlibint
+            options['LIBINTLIB'] = '%s/lib' % softrootlibint
             options['LIBS'] += ' -lstdc++ %s %s' % (libint_libs, libint_wrapper)
 
         return options
@@ -359,6 +361,13 @@ class CP2K(Application):
         blas = os.getenv('LIBBLAS')
         blas = blas.replace('gfortran64', 'gfortran64%s' % openmp_suffix)
         options['LIBS'] += ' %s $(LIBSCALAPACK) %s' % (self.libsmm, blas)
+
+        return options
+
+    def configureATLAS(self, options):
+        """Configure for ATLAS"""
+
+        options['LIBS'] += ' %s %s' % (self.libsmm, os.getenv('LIBBLAS'))
 
         return options
 
@@ -432,7 +441,10 @@ class CP2K(Application):
                     sys.stdout.write(line)
             except IOError, err:
                 self.log.error("Can't modify/write Makefile in %s: %s" % (makefiles, err))
-    
+
+        # update make options with MAKE
+        self.updatecfg('makeopts', 'MAKE="make -j %s" all' % self.getcfg('parallel'))
+
         # update make options with ARCH and VERSION
         self.updatecfg('makeopts', 'ARCH=%s VERSION=%s' % (self.typearch, self.getcfg('type')))
 
