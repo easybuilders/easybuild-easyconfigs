@@ -622,6 +622,19 @@ class Toolkit:
             self.vars['MPIF77'] = 'mpif77 -fc=%s %s ' % (self.vars['F77'], self.m32flag)
             self.vars['MPIF90'] = 'mpif90 -fc=%s %s ' % (self.vars['F90'], self.m32flag)
 
+        impiroot = os.getenv('SOFTROOTIMPI')
+        if self.opts['32bit']:
+            log.error("Don't know how to set IMPI paths for 32-bit.")
+        else:
+            if LooseVersion(os.getenv('SOFTVERSIONIMPI')) < LooseVersion("100"):
+                log.error("Don't know how to set IMPI paths for old versions.")
+            else:
+                mpi_lib = os.path.join(impiroot, 'lib64', 'libmpi')
+                self.vars['MPI_INC'] = os.path.join(impiroot, 'include64')
+
+        self.vars['MPI_LIB_SHARED'] = "%s.so" % mpi_lib
+        self.vars['MPI_LIB_STATIC'] = "%s.a" % mpi_lib
+
     def prepareItac(self):
         """
         Prepare for Intel Trace Collector library
