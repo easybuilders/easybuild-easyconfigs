@@ -67,9 +67,9 @@ class Dolfin(CMakePythonPackage):
 
         # specify Python paths
         python_short_ver = ".".join(os.getenv('SOFTVERSIONPYTHON').split(".")[0:2])
-        self.updatecfg('configopts', " -DPYTHON_INCLUDE_PATH=%s/include/python%s" % (depsdict['Python'], 
+        self.updatecfg('configopts', " -DPYTHON_INCLUDE_PATH=%s/include/python%s" % (depsdict['Python'],
                                                                                      python_short_ver))
-        self.updatecfg('configopts', " -DPYTHON_LIBRARIES=%s/lib/libpython%s.so" % (depsdict['Python'], 
+        self.updatecfg('configopts', " -DPYTHON_LIBRARIES=%s/lib/libpython%s.so" % (depsdict['Python'],
                                                                                     python_short_ver))
 
         # SuiteSparse config params
@@ -95,14 +95,14 @@ class Dolfin(CMakePythonPackage):
         openmp = get_openmp_flag(self.log)
         self.updatecfg('configopts', ' -DOpenMP_CXX_FLAGS="%s"' % openmp)
         self.updatecfg('configopts', ' -DOpenMP_C_FLAGS="%s"' % openmp)
-        
+
         CMakePythonPackage.configure(self)
 
     def make_module_extra(self):
         """Set extra environment variables for Dolfin."""
 
         txt = CMakePythonPackage.make_module_extra(self)
-    
+
         # Dolfin needs to find Boost and the UFC pkgconfig file
         txt += "setenv\tBOOST_DIR\t%s\n" % get_software_root('Boost')
         txt += "prepend-path\tPKG_CONFIG_PATH\t%s/lib/pkgconfig\n" % get_software_root('UFC')
@@ -115,7 +115,7 @@ class Dolfin(CMakePythonPackage):
                 self.log.error("%s not defined in environment, needed by DOLFIN" % envvar)
             else:
                 txt += "setenv\t%s\t%s\n" % (envvar, envar_val)
-    
+
         return txt
 
     def sanitycheck(self):
@@ -123,8 +123,8 @@ class Dolfin(CMakePythonPackage):
 
         if not self.getcfg('sanityCheckPaths'):
 
-            self.setcfg('sanityCheckPaths', {'files': ['bin/dolfin-%s' % x for x in ['version','convert',
-                                                                                     'order','plot']] 
+            self.setcfg('sanityCheckPaths', {'files': ['bin/dolfin-%s' % x for x in ['version', 'convert',
+                                                                                     'order', 'plot']]
                                                     + ['include/dolfin.h'],
                                              'dirs':['%s/dolfin' % self.pylibdir]
                                             })

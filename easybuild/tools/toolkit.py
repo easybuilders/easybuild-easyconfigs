@@ -550,9 +550,9 @@ class Toolkit:
                                                                        'libsfxsl':libsfxsl
                                                                        }
 
-        fftwsuff=""
+        fftwsuff = ""
         if self.opts['pic']:
-            fftwsuff="_pic"
+            fftwsuff = "_pic"
         # only include interface lib if it's there
         fftlib = "-Wl:-Bstatic -lfftw3xc_intel%s -Wl:-Bdynamic" % fftwsuff
 
