@@ -456,6 +456,50 @@ class CP2K(Application):
         # build
         run_cmd(cmd, log_all=True, simple=True, log_output=True)
 
+    def test(self):
+        """Run regression test."""
+
+        if self.getcfg('runtest'):
+
+            # change to root of build dir
+            sfdir = self.getcfg('startfrom')
+            try:
+                os.chdir(sfdir)
+            except OSError, err:
+                self.log.error("Failed to change to %s: %s" % sfdir)
+
+            # configure regression test
+            cfg_txt="""FORT_C_NAME="%(f90)s"
+dir_base=%(base)s
+cp2k_version=%(cp2k_version)s
+dir_triplet=%(triplet)s
+leakcheck="YES"
+            """ % {'f90':os.getenv('F90'),
+                   'base':self.builddir,
+                   'cp2k_version':self.getcfg('type'),
+                   'triplet':self.typearch
+                  }
+
+            cfg_fn = "cp2k_regtest.cfg"
+
+            try:
+                f= open(cfg_fn, "w")
+                f.write(cfg_txt)
+                f.close()
+            except IOError, err:
+                self.log.error("Failed to create config file %s: %s" % (cfg_fn, err))
+
+            # run regression test
+            cmd = "%s/cp2k/tools/do_regtest -nocvs -quick -nocompile -config %s" % (self.builddir, cfg_fn)
+
+            (regtest_output, ec) = run_cmd(cmd, log_all=True, simple=False, log_output=True)
+
+            if ec == 0:
+                self.log.info("Regression test output:\n%s" % regtest_output)
+            else:
+                self.log.error("Regression test failed (non-zero exit code): %s" % regtest_output)
+
+
     def make_install(self):
         """Install built CP2K
         - copy from exe to bin
@@ -499,6 +543,6 @@ class CP2K(Application):
                                             'dirs':["tests"]
                                            })
 
-            self.log.info("Customized sanity check paths: %s"%self.getcfg('sanityCheckPaths'))
+            self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
         Application.sanitycheck(self)
