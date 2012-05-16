@@ -38,17 +38,17 @@ class CMakePythonPackage(CMake, PythonPackage):
         """Main onfiguration is with cmake"""
 
         PythonPackage.configure(self)
- 
-        CMake.configure(self)
 
-    def make(self): 
+        return CMake.configure(self)
+
+    def make(self):
         """Build with make"""
-        CMake.make(self)
+        return CMake.make(self)
 
-    def make_install(self): 
+    def make_install(self):
         """Install with make install"""
-        CMake.make_install(self)
+        return CMake.make_install(self)
 
     def make_module_extra(self):
         """Extra Python package module parameters"""
-        PythonPackage.make_module_extra(self)
+        return PythonPackage.make_module_extra(self)

@@ -1,0 +1,38 @@
+name='UFC'
+version='2.0.5'
+
+easyblock="CMakePythonPackage"
+
+majorversion = "%s.x" % ".".join(version.split('.')[:-1])
+
+homepage='https://launchpad.net/ufc'
+sourceURLs=['https://launchpad.net/ufc/%s/%s/+download/' % (majorversion, version) ]
+
+description="UFC (Unified Form-assembly Code) is a unified framework for finite element assembly. More precisely, it defines a fixed interface for communicating low level routines (functions) for evaluating and assembling finite element variational forms."
+
+#dummy toolkit, but we want to load dependencies, so empty version
+toolkit={'name':'goalf','version':'1.1.0-no-OFED'}
+builddependencies = [
+                    ('CMake','2.8.4'),
+                    ]
+pythonversion = '2.7.3'
+pythonshortversion = ".".join(pythonversion.split(".")[:-1])
+pythonsuffix = "-Python-%s" % pythonversion
+
+#manually add toolkit suffix here, plus True for letting the dependency use it's own toolkit and not the dummy one
+dependencies=[
+               ('Python',pythonversion),
+               ('Boost','1.49.0'),
+               ('SWIG','2.0.6', pythonsuffix),
+               ('Instant','1.0.0', pythonsuffix),
+             ]
+
+sources=['%s-%s.tar.gz'%(name.lower(),version)]
+
+sanityCheckPaths = {'files': ['include/ufc.h'], 'dirs':['lib/python%s/site-packages/ufc_utils/' % pythonshortversion]}
+
+#extra options for cmake
+configopts=" -DBoost_DIR=$SOFTROOTBOOST -DBOOST_INCLUDEDIR=$SOFTROOTBOOST/include -DBoost_DEBUG=ON -DBOOST_ROOT=$SOFTROOTBOOST"
+configopts+=" -DUFC_ENABLE_PYTHON:BOOL=ON -DSWIG_FOUND:BOOL=ON -DPYTHON_LIBRARY=$SOFTROOTPYTHON/lib/libpython%s.so"%pythonshortversion
+configopts+=" -DPYTHON_INCLUDE_PATH=$SOFTROOTPYTHON/include/python%s"%pythonshortversion
+

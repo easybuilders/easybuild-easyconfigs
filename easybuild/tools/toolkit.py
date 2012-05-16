@@ -347,8 +347,8 @@ class Toolkit:
         Prepare for ATLAS BLAS/LAPACK library
         """
 
-        self.vars['LIBBLAS'] = " -lcblas -lf77blas -latlas -lgfortran"
-        self.vars['LIBBLAS_MT'] = " -lptcblas -lptf77blas -latlas -lgfortran -lpthread"
+        self.vars['LIBBLAS'] = "-lcblas -lf77blas -latlas -lgfortran"
+        self.vars['LIBBLAS_MT'] = "-lptcblas -lptf77blas -latlas -lgfortran -lpthread"
 
         self._addDependencyVariables(['ATLAS'])
 
@@ -704,12 +704,19 @@ class Toolkit:
         """
         Prepare for MVAPICH2 MPI library
         """
+        #TODO: 
+        #self.vars['MPI_LIB_STATIC'] = ??
+        #self.vars['MPI_LIB_SHARED'] = ??
         self.prepareSimpleMPI()
 
     def prepareOpenMPI(self):
         """
         Prepare for OpenMPI MPI library
         """
+
+        #TODO: 
+        #self.vars['MPI_LIB_STATIC'] = ??
+        self.vars['MPI_LIB_SHARED'] = "%s/lib/libmpi.so" % os.getenv('SOFTROOTOPENMPI')
         self.prepareSimpleMPI()
 
     def prepareScaLAPACK(self):

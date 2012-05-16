@@ -47,14 +47,14 @@ class PythonPackage(Application):
 
         cmd = "python setup.py build"
 
-        run_cmd(cmd, logall=True, simple=True)
+        run_cmd(cmd, log_all=True, simple=True)
 
     def make_install(self):
         """Install Python package to a custom path using setup.py"""
 
         cmd = "python setup.py install --prefix=%s %s" % (self.installdir, self.getcfg('installopts'))
 
-        run_cmd(cmd, logall=True, simple=True)
+        run_cmd(cmd, log_all=True, simple=True)
 
     def make_module_extra(self):
         """Add install path to PYTHONPATH"""
