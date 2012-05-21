@@ -34,6 +34,7 @@ import stat
 import subprocess
 import tempfile
 import time
+import errno
 
 import easybuild.tools.environment as env
 from easybuild.tools.asyncprocess import Popen, PIPE, STDOUT, send_all, recv_some
@@ -693,3 +694,32 @@ def patch_perl_script_autoflush(path):
 
     except IOError, err:
         log.error("Failed to patch Perl configure script: %s" % err)
+
+def mkdir(directory, parrents=False):
+    """
+    Create a directory
+    Directory is the path to make
+    log is the logger to which to log debugging or error info.
+    
+    When parents is True then no error if existing 
+    and make parent directories as needed
+    (this is the mkdir -p behaviour)
+    """
+    if parrents:
+        try:
+            os.makedirs(directory)
+            log.debug("Succesfully created directory %s and needed parents" % directory)
+        except OSError, err:
+            if err.errno == errno.EEXIST:
+                log.debug("Directory %s already exitst" % directory)
+            else:
+                log.error("Failed to create directory %s: %s" % (directory, err))
+    else:#not parrents
+        try:
+            os.mkdir(directory)
+            log.debug("Succesfully created directory %s" % directory)
+        except OSError, err:
+            if err.errno == errno.EEXIST:
+                log.warning("Directory %s already exitst" % directory)
+            else:
+                log.error("Failed to create directory %s: %s" % (directory, err))
