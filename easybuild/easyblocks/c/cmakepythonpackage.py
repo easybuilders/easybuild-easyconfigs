@@ -21,7 +21,7 @@ from easybuild.easyblocks.c.cmake import CMake
 from easybuild.easyblocks.p.pythonpackage import PythonPackage
 
 class CMakePythonPackage(CMake, PythonPackage):
-    """Build a Python module with cmake.
+    """Build a Python package and module with cmake.
     
     Some packages use cmake to first build and install c Python modules
     and then put the Python package in lib/pythonX.Y/site-packages
@@ -34,21 +34,22 @@ class CMakePythonPackage(CMake, PythonPackage):
     def __init__(self, *args, **kwargs):
         PythonPackage.__init__(self, *args, **kwargs)
 
-    def configure(self):
+    def configure(self, *args, **kwargs):
         """Main onfiguration is with cmake"""
 
-        PythonPackage.configure(self)
+        PythonPackage.configure(self, *args, **kwargs)
 
-        return CMake.configure(self)
+        CMake.configure(self, *args, **kwargs)
 
-    def make(self):
-        """Build with make"""
-        return CMake.make(self)
+    def make(self, *args, **kwargs):
+        """Build with cmake"""
+        return CMake.make(self, *args, **kwargs)
 
     def make_install(self):
-        """Install with make install"""
+        """Install with cmake install"""
         return CMake.make_install(self)
 
     def make_module_extra(self):
         """Extra Python package module parameters"""
+        #we return a string here.
         return PythonPackage.make_module_extra(self)

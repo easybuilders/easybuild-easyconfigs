@@ -18,52 +18,53 @@
 # You should have received a copy of the GNU General Public License
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
-from easybuild.framework.application import Application
+
 import os
 import shutil
+
+from easybuild.framework.application import Application
+from easybuild.tools.filetools import mkdir
+
 class METIS(Application):
 
-    def configure(self):
+
+    def configure(self, *args, **kwargs):
+        """No configuration is done for METIS"""
         pass
 
     def make_install(self):
-        #TODO: make a general mkdir function
-        try:
-            self.libdir = os.path.join(self.installdir, 'lib')
-            os.mkdir(self.libdir)
-            self.log.debug("Succesfully created directory %s" % self.libdir)
-        except Exception, err:
-            self.log.error("Failed to create directory %s: %s" % (self.libdir, err))
+        """ Manually copy the required files to the right place.
+        
+        And create symlins where expected by other applications
+        (in Lib instead of lib)"""
+        libdir = os.path.join(self.installdir, 'lib')
+        mkdir(libdir)
 
-        try:
-            self.includedir = os.path.join(self.installdir, 'include')
-            os.mkdir(self.includedir)
-            self.log.debug("Succesfully created directory %s" % self.includedir)
-        except Exception, err:
-            self.log.error("Failed to create directory %s: %s" % (self.includedir, err))
+        includedir = os.path.join(self.installdir, 'include')
+        mkdir(includedir)
 
         try:
             src = os.path.join(self.getcfg('startfrom'), 'libmetis.a')
-            dst = os.path.join(self.libdir, 'libmetis.a')
+            dst = os.path.join(libdir, 'libmetis.a')
             shutil.copy2(src, dst)
-        except Exception, err:
+        except OSError, err:
             self.log.error("Copying file libmetis.a to lib dir failed: %s" % err)
 
         try:
             for f in ['defs.h', 'macros.h', 'metis.h', 'proto.h', 'rename.h', 'struct.h']:
                 src = os.path.join(self.getcfg('startfrom'), 'Lib', f)
-                dst = os.path.join(self.includedir, f)
+                dst = os.path.join(includedir, f)
                 shutil.copy2(src, dst)
                 os.chmod(dst, 0755)
-        except Exception, err:
+        except OSError, err:
             self.log.error("Copying file metis.h to include dir failed: %s" % err)
 
         # Other applications depending on ParMETIS (SuiteSparse for one) look for both ParMETIS libraries
         # and headerfiles in the Lib directory (capital L). The following symlinks are hence created.
         try:
-            self.Libdir = os.path.join(self.installdir, 'Lib')
-            os.symlink(self.libdir, self.Libdir)
+            Libdir = os.path.join(self.installdir, 'Lib')
+            os.symlink(libdir, Libdir)
             for f in ['defs.h', 'macros.h', 'metis.h', 'proto.h', 'rename.h', 'struct.h']:
-                os.symlink(os.path.join(self.includedir, file), os.path.join(self.libdir, f))
-        except Exception, err:
+                os.symlink(os.path.join(includedir, file), os.path.join(libdir, f))
+        except OSError, err:
             self.log.error("Something went wrong during symlink creation: %s" % err)

@@ -18,22 +18,28 @@
 # You should have received a copy of the GNU General Public License
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
-from easybuild.framework.application import Application
-from easybuild.tools.filetools import run_cmd
+"""
+This module contains the SCOTCH easyblock.
+"""
 import os
 import re
 import shutil
+from easybuild.framework.application import Application
+from easybuild.tools.filetools import run_cmd
 
 class SCOTCH(Application):
     """
     Easyblock for building SCOTCH
-     - http://www.labri.fr/perso/pelegrin/scotch/
      """
     def configure(self):
+        """
+        Locate the correct makefile, and copy this to a general Makefile.inc
+        (as shipped and expected by SCOTCH)
+        """
         if self.tk.name in ['ictce', 'iqacml']:
             makefilename = 'Makefile.inc.x86-64_pc_linux2.icc'
 
-        elif self.tk.name in ['goalf'] :
+        elif self.tk.name in ['goalf']:
             makefilename = 'Makefile.inc.x86-64_pc_linux2'
         else:
             self.log.error("Don't know how to handle toolkit %s." % self.tk.name)
@@ -44,15 +50,18 @@ class SCOTCH(Application):
             dst = os.path.join(srcdir, 'Makefile.inc')
             shutil.copy2(src, dst)
             self.log.debug("Successfully copied Makefile.inc to src dir.")
-        except Exception:
-            self.log.exception("Copying Makefile.inc to src dir failed.")
+        except OSError:
+            self.log.error("Copying Makefile.inc to src dir failed.")
         try:
             os.chdir(srcdir)
             self.log.debug("Changing to src dir.")
-        except Exception, err:
+        except OSError, err:
             self.log.error("Failed to change to src dir: %s" % err)
 
     def make(self):
+        """
+        Run make, but with some special options for SCOTCH depending on the compiler
+        """
         ccs = os.environ['CC']
         ccp = os.environ['MPICC']
         ccd = os.environ['MPICC']
@@ -74,7 +83,7 @@ class SCOTCH(Application):
                 src = os.path.join(self.getcfg('startfrom'), d)
                 dst = os.path.join(self.installdir, d)
                 shutil.copytree(src, dst)
-        except Exception, err:
+        except OSError, err:
             self.log.error("Copying %s to installation dir %s failed: %s" % (src, dst, err))
 
         scotchlibdir = os.path.join(self.installdir, 'lib')

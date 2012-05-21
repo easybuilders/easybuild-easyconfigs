@@ -56,7 +56,6 @@ class Dolfin(CMakePythonPackage):
         self.updatecfg('configopts', "-DARMADILLO_DIR:PATH=%s " % depsdict['Armadillo'])
 
         # specify MPI library
-        # FIXME
         self.updatecfg('configopts', ' -DMPI_COMPILER="%s"' % os.getenv('MPICC'))
 
         if not os.getenv('MPI_LIB_SHARED') or not os.getenv('MPI_INC'):
