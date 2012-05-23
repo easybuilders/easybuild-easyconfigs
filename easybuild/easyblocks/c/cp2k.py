@@ -479,21 +479,26 @@ class CP2K(Application):
             # use regression test reference output if available
             ## try and find an unpacked directory that starts with 'LAST-'
             regtest_refdir = None
-            for d in os.listdir(os.getcwd()):
+            for d in os.listdir(self.builddir):
                 if d.startswith("LAST-"):
                     regtest_refdir = d
+                    break
 
             # location of do_regtest script
             regtest_script = "%s/cp2k/tools/do_regtest" % self.builddir
 
             # patch do_regtest so that reference output is used
             if regtest_refdir:
+                self.log.info("Using reference output available in %s" % regtest_refdir)
                 try:
                     for line in fileinput.input(regtest_script, inplace=1, backup='.orig.refout'):
                         line = re.sub(r"^(dir_last\s*=\${dir_base})/.*$", r"\1/%s" % regtest_refdir, line)
                         sys.stdout.write(line)
                 except IOError, err:
                     self.log.error("Failed to modify '%s': %s" % (regtest_script, err))
+
+            else:
+                self.log.info("No reference output found for regression test, just continuing without it...")
 
             # configure regression test
             cfg_txt="""FORT_C_NAME="%(f90)s"
@@ -616,6 +621,7 @@ leakcheck="YES"
                         target = os.path.join(self.installdir, "reg_test_%s" % fn)
                         shutil.copyfile(path, target)
                         self.log.info("Regression test %s file copied to %s" % (fn, target))
+                        break
             except (OSError, IOError), err:
                 self.log.error("Failed to error_summary file of regression test: %s" % err)
 
