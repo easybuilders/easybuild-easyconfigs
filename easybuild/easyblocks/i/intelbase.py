@@ -29,6 +29,7 @@ class IntelBase(Application):
     - no configure/make : binary release
     - add license variable
     """
+
     def __init__(self, *args, **kwargs):
         """Constructor, adds extra config options"""
         Application.__init__(self, args, kwargs)

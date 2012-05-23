@@ -28,9 +28,9 @@ from easybuild.tools.filetools import run_cmd
 
 class Impi(IntelBase):
     """
-    Class that can be used to install impi
-    - tested with Intel MPI 3.2.1.009
+    Support for installing Intel MPI library
     """
+
     def make_install(self):
         """
         Actual installation

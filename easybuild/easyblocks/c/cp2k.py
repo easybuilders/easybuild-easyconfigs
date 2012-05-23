@@ -29,8 +29,14 @@ from easybuild.tools.filetools import run_cmd
 from easybuild.tools.toolkit import get_openmp_flag
 
 class CP2K(Application):
-
-    EASYBLOCK_VERSION = "1.0"
+    """
+    Support for building CP2K
+    - prepare module include files if required
+    - generate custom config file in 'arch' directory
+    - build CP2K
+    - run regression test if desired
+    - install by copying binary executables
+    """
 
     def __init__(self, *args, **kwargs):
         Application.__init__(self, *args, **kwargs)

@@ -30,6 +30,7 @@ class ATLAS(Application):
     - avoid parallel build (doesn't make sense for ATLAS and doesn't work)
     - make (optionally with shared libs), and install
     """
+
     def __init__(self, *args, **kwargs):
         Application.__init__(self, *args, **kwargs)
 
