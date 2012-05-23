@@ -538,7 +538,7 @@ def build(module, options, log, origEnviron, exitOnFailure=True):
     ## Load easyblock
     easyblock = options.easyblock
     if not easyblock:
-        ## Try to look in spec file
+        ## Try to look in .eb file
         reg = re.compile(r"^\s*easyblock\s*=(.*)$")
         for line in open(spec).readlines():
             match = reg.search(line)

@@ -30,6 +30,8 @@ from easybuild.tools.toolkit import get_openmp_flag
 
 class CP2K(Application):
 
+    EASYBLOCK_VERSION = "1.0"
+
     def __init__(self, *args, **kwargs):
         Application.__init__(self, *args, **kwargs)
 
@@ -40,6 +42,7 @@ class CP2K(Application):
                          'modinc':[[],"List of modinc's to use (*.f90), or 'True' to use all found at given prefix (default: [])"],
                          'extracflags':['',"Extra CFLAGS to be added (default: '')"],
                          'extradflags':['',"Extra DFLAGS to be added (default: '')"],
+                         'runtest':[True, 'Indicates if a regression test should be run after make (default: True)']
                          })
 
         self.typearch = None
@@ -462,11 +465,29 @@ class CP2K(Application):
         if self.getcfg('runtest'):
 
             # change to root of build dir
-            sfdir = self.getcfg('startfrom')
             try:
-                os.chdir(sfdir)
+                os.chdir(self.builddir)
             except OSError, err:
-                self.log.error("Failed to change to %s: %s" % sfdir)
+                self.log.error("Failed to change to %s: %s" % self.builddir)
+
+            # use regression test reference output if available
+            ## try and find an unpacked directory that starts with 'LAST-'
+            regtest_refdir = None
+            for d in os.listdir(os.getcwd()):
+                if d.startswith("LAST-"):
+                    regtest_refdir = d
+
+            # location of do_regtest script
+            regtest_script = "%s/cp2k/tools/do_regtest" % self.builddir
+
+            # patch do_regtest so that reference output is used
+            if regtest_refdir:
+                try:
+                    for line in fileinput.input(regtest_script, inplace=1, backup='.orig.refout'):
+                        line = re.sub(r"^(dir_last\s*=\${dir_base})/.*$", r"\1/%s" % regtest_refdir, line)
+                        sys.stdout.write(line)
+                except IOError, err:
+                    self.log.error("Failed to modify '%s': %s" % (regtest_script, err))
 
             # configure regression test
             cfg_txt="""FORT_C_NAME="%(f90)s"
@@ -490,7 +511,7 @@ leakcheck="YES"
                 self.log.error("Failed to create config file %s: %s" % (cfg_fn, err))
 
             # run regression test
-            cmd = "%s/cp2k/tools/do_regtest -nocvs -quick -nocompile -config %s" % (self.builddir, cfg_fn)
+            cmd = "%s -nocvs -quick -nocompile -config %s" % (regtest_script, cfg_fn)
 
             (regtest_output, ec) = run_cmd(cmd, log_all=True, simple=False, log_output=True)
 
@@ -498,6 +519,51 @@ leakcheck="YES"
                 self.log.info("Regression test output:\n%s" % regtest_output)
             else:
                 self.log.error("Regression test failed (non-zero exit code): %s" % regtest_output)
+
+            # pattern to search for regression test summary
+            re_pattern = "^number\s+of\s+%s\s+tests\s+(?P<cnt>[0-9]+)"
+
+            # find total number of tests
+            regexp = re.compile(re_pattern % "", re.M)
+            res = regexp.search(regtest_output)
+            if not res:
+                self.log.error("Finding total number of tests in regression test summary failed")
+            msg = "Regression test reported %%s / %s %%s tests" % res.group('cnt')
+
+            # function to report on regtest results
+            def test_report(test_result, error_on_cnt=True):
+                """Report on tests with given result."""
+
+                regexp = re.compile(re_pattern % test_result.upper(), re.M)
+                test_result = test_result.lower()
+
+                cnt = None
+                res = regexp.search(regtest_output)
+                if not res:
+                    self.log.error("Finding number of %s tests in regression test summary failed" % test_result)
+                else:
+                    cnt = res.group('cnt')
+
+                logmsg = msg % (cnt, test_result)
+
+                if error_on_cnt and int(cnt) > 0:
+                    if test_result.upper() == "NEW":
+                        self.log.warning(logmsg)
+                    else:
+                        self.log.error(logmsg)
+                else:
+                    self.log.info(logmsg)
+
+            # number of failed/wrong tests, will report error if count is positive
+            test_report("FAILED")
+            test_report("WRONG")
+
+            # number of new tests, will be high if a non-suitable regtest reference was used
+            ## will report error if count is positive (is that what we want?)
+            test_report("NEW")
+
+            # number of correct tests: just report
+            test_report("CORRECT", error_on_cnt=False)
 
 
     def make_install(self):
