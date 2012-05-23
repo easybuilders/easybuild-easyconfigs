@@ -526,33 +526,36 @@ leakcheck="YES"
             # find total number of tests
             regexp = re.compile(re_pattern % "", re.M)
             res = regexp.search(regtest_output)
+            tot_cnt = None
             if not res:
+                tot_cnt = res.group('cnt')
                 self.log.error("Finding total number of tests in regression test summary failed")
-            msg = "Regression test reported %%s / %s %%s tests" % res.group('cnt')
+            msg = "Regression test reported %%s / %s %%s tests" % tot_cnt
 
             # function to report on regtest results
-            def test_report(test_result, error_on_cnt=True):
+            def test_report(test_result):
                 """Report on tests with given result."""
 
-                regexp = re.compile(re_pattern % test_result.upper(), re.M)
-                test_result = test_result.lower()
+                test_result = test_result.upper()
+                regexp = re.compile(re_pattern % test_result, re.M)
 
                 cnt = None
                 res = regexp.search(regtest_output)
                 if not res:
-                    self.log.error("Finding number of %s tests in regression test summary failed" % test_result)
+                    self.log.error("Finding number of %s tests in regression test summary failed" % test_result.lower())
                 else:
-                    cnt = res.group('cnt')
+                    cnt = int(res.group('cnt'))
 
-                logmsg = msg % (cnt, test_result)
+                logmsg = msg % (cnt, test_result.lower())
 
-                if error_on_cnt and int(cnt) > 0:
-                    if test_result.upper() == "NEW":
-                        self.log.warning(logmsg)
-                    else:
-                        self.log.error(logmsg)
-                else:
+                # failed tests indicate problem with installation
+                # wrong tests are only an issue when there are excessively many
+                if (test_result == "FAILED" and cnt > 0) or (test_result == "WRONG" and (cnt / tot_cnt) > 0.1):
+                    self.log.error(logmsg)
+                elif test_result == "CORRECT":
                     self.log.info(logmsg)
+                else:
+                    self.log.warning(logmsg)
 
             # number of failed/wrong tests, will report error if count is positive
             test_report("FAILED")
@@ -563,8 +566,7 @@ leakcheck="YES"
             test_report("NEW")
 
             # number of correct tests: just report
-            test_report("CORRECT", error_on_cnt=False)
-
+            test_report("CORRECT")
 
     def make_install(self):
         """Install built CP2K
@@ -597,6 +599,19 @@ leakcheck="YES"
                 shutil.copytree(srctests, targetdir)
             except:
                 self.log.error("Copying tests from %s to %s failed" % (srctests, targetdir))
+
+        # copy error_summary file of regression test
+        if self.getcfg('runtest'):
+            fn = "error_summary"
+            try:
+                for d in os.listdir(self.builddir):
+                    if d.startswith('TEST-%s-%s' % (self.typearch, self.getcfg('type'))):
+                        path = os.path.join(self.builddir, d, fn)
+                        target = os.path.join(self.installdir, "reg_test_%s" % fn)
+                        shutil.copyfile(path, target)
+                        self.log.info("Regression test %s file copied to %s" % (fn, target))
+            except (OSError, IOError), err:
+                self.log.error("Failed to error_summary file of regression test: %s" % err)
 
     def sanitycheck(self):
         """Custom sanity check for CP2K"""
