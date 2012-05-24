@@ -79,7 +79,7 @@ class Application:
           'group':[None, "Name of the user group for which the software should be available"],
           'versionsuffix':['', 'Additional suffix for software version (placed after toolkit name)'],
           'versionprefix':['', 'Additional prefix for software version (placed before version and toolkit name)'],
-          'runtest':[None, 'Indicates if a test should be run after make. Default: argument after make (for eg make test)'],
+          'runtest':[None, 'Indicates if a test should be run after make; should specify argument after make (for e.g., "test" for make test) (Default: None)'],
           'preconfigopts':['', 'Extra options pre-passed to configure.'],
           'configopts':['', 'Extra options passed to configure (Default already has --prefix)'],
           'premakeopts':['', 'Extra options pre-passed to make.'],
@@ -303,7 +303,7 @@ class Application:
     def add_dependency(self, dependencies=None):
         """
         Add application dependencies. A dependency should be specified as a dictionary
-        or as a list of the following form: [name, version, suffix, dummy_boolean]
+        or as a list of the following form: (name, version, suffix, dummy_boolean)
         (suffix and dummy_boolean are optional)
         """
         if dependencies and len(dependencies) > 0:
@@ -498,8 +498,7 @@ class Application:
         """
         Verify if all is ok to start build.
         """
-        # Make sure no modules are loaded
-        ## this is to ensure that all the toolkit prepare functions are run
+        # Check whether modules are loaded
         loadedmods = Modules().loaded_modules()
         if len(loadedmods) > 0:
             self.log.warning("Loaded modules detected: %s" % loadedmods)
@@ -1101,7 +1100,7 @@ class Application:
         self.moduleGenerator = ModuleGenerator(self, fake)
         self.moduleGenerator.createFiles()
 
-        txt = ''
+        txt = '# built with EasyBuild version %s' % easybuild.VERBOSE_VERSION
         txt += self.make_module_description()
         txt += self.make_module_dep()
         txt += self.make_module_req()
