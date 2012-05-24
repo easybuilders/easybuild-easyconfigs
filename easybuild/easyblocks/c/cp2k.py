@@ -137,6 +137,9 @@ class CP2K(Application):
         if os.getenv('SOFTROOTSCALAPACK'):
             options = self.configureScaLAPACK(options)
 
+        # avoid group nesting
+        options['LIBS'] = options['LIBS'].replace('-Wl,--start-group','').replace('-Wl,--end-group','')
+
         options['LIBS'] = "-Wl,--start-group %s -Wl,--end-group" % options['LIBS']
 
         makeInstructions = "graphcon.o: graphcon.F\n\t$(FC) -c $(FCFLAGS2) $<\n"
