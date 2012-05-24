@@ -551,7 +551,7 @@ leakcheck="YES"
             res = regexp.search(regtest_output)
             tot_cnt = None
             if res:
-                tot_cnt = res.group('cnt')
+                tot_cnt = int(res.group('cnt'))
             else:
                 self.log.error("Finding total number of tests in regression$G:q test summary failed")
             msg = "Regression test reported %%s / %s %%s tests" % tot_cnt
