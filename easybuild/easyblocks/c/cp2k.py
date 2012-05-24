@@ -318,6 +318,10 @@ class CP2K(Application):
 
         options = self.configureCommon()
 
+        extrainc = ''
+        if self.modincpath:
+            extrainc = '-I%s' % self.modincpath
+
         options.update({
 
             ## -Vaxlib : older options
@@ -326,7 +330,7 @@ class CP2K(Application):
             #SAFE = -assume protect_parens -fp-model precise -ftz # problems
             'SAFE': '-assume protect_parens -no-unroll-aggressive',
 
-            'INCFLAGS': '$(DFLAGS) -I$(INTEL_INC) -I$(INTEL_INCF) -I%s' % self.modincpath,
+            'INCFLAGS': '$(DFLAGS) -I$(INTEL_INC) -I$(INTEL_INCF) %s' % extrainc,
 
             'LDFLAGS': '$(INCFLAGS) -i-static',
             'OBJECTS_ARCHITECTURE': 'machine_intel.o',
@@ -395,7 +399,10 @@ class CP2K(Application):
         
         options['DFLAGS'] += ' -D__FFTW3 -D__FFTMKL'
 
-        options['CFLAGS'] += ' -I$(INTEL_INC) -I$(INTEL_INCF) -I%s $(FPIC) $(DEBUG)' % self.modincpath
+        extra = ''
+        if self.modincpath:
+            extra = '-I%s' % self.modincpath
+        options['CFLAGS'] += ' -I$(INTEL_INC) -I$(INTEL_INCF) %s $(FPIC) $(DEBUG)' % extra
         
         options['LIBS'] += ' %s %s' % (self.libsmm, os.getenv('LIBSCALAPACK'))
 
