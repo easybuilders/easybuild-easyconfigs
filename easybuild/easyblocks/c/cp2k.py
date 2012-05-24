@@ -630,7 +630,8 @@ leakcheck="YES"
                 for d in os.listdir(self.builddir):
                     if d.startswith('TEST-%s-%s' % (self.typearch, self.getcfg('type'))):
                         path = os.path.join(self.builddir, d)
-                        shutil.copytree(path, self.installdir)
+                        target = os.path.join(self.installdir, d)
+                        shutil.copytree(path, target)
                         self.log.info("Regression test results dir %s copied to %s" % (d, self.installdir))
                         break
             except (OSError, IOError), err:
