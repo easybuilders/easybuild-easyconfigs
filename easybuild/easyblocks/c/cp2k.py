@@ -48,7 +48,8 @@ class CP2K(Application):
                          'modinc':[[],"List of modinc's to use (*.f90), or 'True' to use all found at given prefix (default: [])"],
                          'extracflags':['',"Extra CFLAGS to be added (default: '')"],
                          'extradflags':['',"Extra DFLAGS to be added (default: '')"],
-                         'runtest':[True, 'Indicates if a regression test should be run after make (default: True)']
+                         'runtest':[True, 'Indicates if a regression test should be run after make (default: True)'],
+                         'ignore_regtest_fails':[False, "Ignore failures in regression test (should be used with care) (default: False)."]
                          })
 
         self.typearch = None
@@ -575,7 +576,11 @@ leakcheck="YES"
                 # failed tests indicate problem with installation
                 # wrong tests are only an issue when there are excessively many
                 if (test_result == "FAILED" and cnt > 0) or (test_result == "WRONG" and (cnt / tot_cnt) > 0.1):
-                    self.log.error(logmsg)
+                    if self.getcfg('ignore_regtest_fails'):
+                        self.log.warning(logmsg)
+                        self.log.info("Ignoring failures in regression test, as requested.")
+                    else:
+                        self.log.error(logmsg)
                 elif test_result == "CORRECT":
                     self.log.info(logmsg)
                 else:
