@@ -1100,13 +1100,14 @@ class Application:
         self.moduleGenerator = ModuleGenerator(self, fake)
         self.moduleGenerator.createFiles()
 
-        txt = '# built with EasyBuild version %s' % easybuild.VERBOSE_VERSION
+        txt = ''
         txt += self.make_module_description()
         txt += self.make_module_dep()
         txt += self.make_module_req()
         txt += self.make_module_extra()
         if self.getcfg('pkglist'):
             txt += self.make_module_extra_packages()
+        txt += '\n# built with EasyBuild version %s' % easybuild.VERBOSE_VERSION
 
         try:
             f = open(self.moduleGenerator.filename, 'w')
