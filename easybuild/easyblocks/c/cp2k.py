@@ -339,8 +339,8 @@ class CP2K(Application):
 
         options['DFLAGS'] += ' -D__INTEL'
 
-        options['FCFLAGSOPT'] += '$(INCFLAGS) -xHOST -heap-arrays 64 -funroll-loops'
-        options['FCFLAGSOPT2'] += '$(INCFLAGS) -xHOST -heap-arrays 64'
+        options['FCFLAGSOPT'] += ' $(INCFLAGS) -heap-arrays 64 -funroll-loops'
+        options['FCFLAGSOPT2'] += ' $(INCFLAGS) -heap-arrays 64'
 
         return options
 
