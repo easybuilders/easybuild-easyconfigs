@@ -538,9 +538,10 @@ leakcheck="YES"
             regexp = re.compile(re_pattern % "", re.M)
             res = regexp.search(regtest_output)
             tot_cnt = None
-            if not res:
+            if res:
                 tot_cnt = res.group('cnt')
-                self.log.error("Finding total number of tests in regression test summary failed")
+            else:
+                self.log.error("Finding total number of tests in regression$G:q test summary failed")
             msg = "Regression test reported %%s / %s %%s tests" % tot_cnt
 
             # function to report on regtest results
