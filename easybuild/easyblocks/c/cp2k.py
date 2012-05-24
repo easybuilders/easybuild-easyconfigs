@@ -624,19 +624,17 @@ leakcheck="YES"
             except:
                 self.log.error("Copying tests from %s to %s failed" % (srctests, targetdir))
 
-        # copy error_summary file of regression test
+        # copy regression test results
         if self.getcfg('runtest'):
-            fn = "error_summary"
             try:
                 for d in os.listdir(self.builddir):
                     if d.startswith('TEST-%s-%s' % (self.typearch, self.getcfg('type'))):
-                        path = os.path.join(self.builddir, d, fn)
-                        target = os.path.join(self.installdir, "reg_test_%s" % fn)
-                        shutil.copyfile(path, target)
-                        self.log.info("Regression test %s file copied to %s" % (fn, target))
+                        path = os.path.join(self.builddir, d)
+                        shutil.copytree(path, self.installdir)
+                        self.log.info("Regression test results dir %s copied to %s" % (d, self.installdir))
                         break
             except (OSError, IOError), err:
-                self.log.error("Failed to error_summary file of regression test: %s" % err)
+                self.log.error("Failed to copy regression test results dir: %s" % err)
 
     def sanitycheck(self):
         """Custom sanity check for CP2K"""
