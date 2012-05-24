@@ -252,7 +252,9 @@ class CP2K(Application):
             'FCFLAGS': '$(FCFLAGS%s)' % optflags,
             'FCFLAGS2': '$(FCFLAGS%s)' % regflags,
 
-            'CFLAGS' : ' $(SOFTVARCPPFLAGS) $(SOFTVARLDFLAGS) $(FPIC) $(DEBUG) %s ' % self.getcfg('extracflags'),
+            'CFLAGS' : ' %s %s $(FPIC) $(DEBUG) %s ' % (os.getenv('SOFTVARCPPFLAGS'),
+                                                        os.getenv('SOFTVARLDFLAGS'),
+                                                        self.getcfg('extracflags')),
             'DFLAGS': ' -D__parallel -D__BLACS -D__SCALAPACK -D__FFTSG %s' % self.getcfg('extradflags'),
 
             'LIBS': os.getenv('LIBS'),
@@ -366,13 +368,13 @@ class CP2K(Application):
         if self.openmp:
             openmp_suffix = '_mp'
 
-        options['ACML_INC'] = '$(SOFTROOTACML)/gfortran64%s/include' % openmp_suffix
+        options['ACML_INC'] = '%s/gfortran64%s/include' % (os.getenv('SOFTROOTACML'), openmp_suffix)
         options['CFLAGS'] += ' -I$(ACML_INC) -I$(FFTW_INC)'
         options['DFLAGS'] += ' -D__FFTACML'
 
         blas = os.getenv('LIBBLAS')
         blas = blas.replace('gfortran64', 'gfortran64%s' % openmp_suffix)
-        options['LIBS'] += ' %s $(LIBSCALAPACK) %s' % (self.libsmm, blas)
+        options['LIBS'] += ' %s %s %s' % (self.libsmm, os.getenv('LIBSCALAPACK'), blas)
 
         return options
 
@@ -395,7 +397,7 @@ class CP2K(Application):
 
         options['CFLAGS'] += ' -I$(INTEL_INC) -I$(INTEL_INCF) -I%s $(FPIC) $(DEBUG)' % self.modincpath
         
-        options['LIBS'] += ' %s $(LIBSCALAPACK)' % self.libsmm
+        options['LIBS'] += ' %s %s' % (self.libsmm, os.getenv('LIBSCALAPACK'))
 
         return options
 
