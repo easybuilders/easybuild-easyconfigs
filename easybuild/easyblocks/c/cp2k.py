@@ -153,7 +153,7 @@ class CP2K(Application):
         archfile = os.path.join(self.getcfg('startfrom'), 'arch', 
                                 '%s.%s' % (self.typearch, self.getcfg('type')))
         try:
-            txt = self._generateMakefile(options, self.make_instructions)
+            txt = self._generateMakefile(options)
             f = open(archfile, 'w')
             f.write(txt)
             f.close()
