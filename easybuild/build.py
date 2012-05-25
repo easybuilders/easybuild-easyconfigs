@@ -213,9 +213,16 @@ def main():
         print "No packages left to be built."
         orderedSpecs = []
 
-    ## Build software, will exit when errors occurs
+    ## Build software, will exit when errors occurs (except when regtesting)
+    correct_built_cnt = 0
+    all_built_cnt = 0
     for spec in orderedSpecs:
-        build(spec, options, log, origEnviron)
+        (success, _) = build(spec, options, log, origEnviron)
+        if success:
+            correct_built_cnt += 1
+        all_built_cnt += 1
+
+    print "Build succeeded for %s out of %s" % (correct_built_cnt, all_built_cnt)
 
     ## Cleanup tmp log file (all is well, all modules have their own log file)
     try:
