@@ -174,7 +174,7 @@ def check_clean_master_branch(home):
         error("Failed to determine status of git repository.")
 
     master_re = re.compile("^# On branch master$", re.M)
-    clean_re = re.compile("^nothing to commit (working directory clean)$", re.M)
+    clean_re = re.compile("^nothing to commit \(working directory clean\)$", re.M)
 
     if not master_re.search(git_status):
         warning("Make sure you're on the master branch when running this script.")
