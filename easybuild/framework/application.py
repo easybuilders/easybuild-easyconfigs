@@ -151,7 +151,7 @@ class Application:
         }
 
         # mandatory config entries
-        self.mandatory = ['name', 'version', 'homepage', 'description', 'toolkit', 'sources']
+        self.mandatory = ['name', 'version', 'homepage', 'description', 'toolkit']
 
     def autobuild(self, ebfile, runTests):
         """
