@@ -659,17 +659,20 @@ def build(module, options, log, origEnviron, exitOnFailure=True):
         app.closelog()
         applicationLog = app.logfile
 
-    del app
-    os.chdir(cwd)
-
     print "%s: Installation %s %s" % (summary, ended, succ)
 
     ## Check for errors
     if exitCode > 0 or filetools.errorsFoundInLog > 0:
-        print "WARNING: Build exited with exit code %d. %d possible error(s) were detected in the " \
-              "build logs, please verify the build." % (exitCode, filetools.errorsFoundInLog)
+        print "\nWARNING: Build exited with exit code %d. %d possible error(s) were detected in the " \
+              "build logs, please verify the build.\n" % (exitCode, filetools.errorsFoundInLog)
+
+    if app.postmsg:
+        print "\nWARNING: %s\n" % app.postmsg
 
     print "Results of the build can be found in the log file %s" % applicationLog
+
+    del app
+    os.chdir(cwd)
 
     if exitCode > 0:
         # don't exit on failure in test suite

@@ -60,6 +60,9 @@ class Application:
         self.builddir = None
         self.installdir = None
 
+        self.pkgs = None
+        self.skip = None
+
         ## final version
         self.installversion = 'NOT_VALID'
 
@@ -69,9 +72,27 @@ class Application:
         ## vaild stop options
         self.validstops = ['cfg', 'source', 'patch', 'configure', 'make', 'install', 'test', 'postproc', 'cleanup', 'packages']
 
-        ## mandatory cfg
-        self.mandatory = ['name', 'version', 'homepage', 'description']
+        # module generator
+        self.moduleGenerator = None
 
+        # extra stuff for module file required by packages
+        self.moduleExtraPackages = ''
+
+        # sanity check paths and result
+        self.sanityCheckPaths = None
+        self.sanityCheckOK = False
+
+        # indicates whether build should be performed in installation dir
+        self.build_in_installdir = False
+
+        # set name and version if they're provided
+        if name and version:
+            self.set_name_version(name, version, newBuild)
+
+        # allow a post message to be set, which can be shown as last output
+        self.postmsg = ''
+
+        # generic configuration parameters
         self.cfg = {
           'name':[None, "Name of software"],
           'version':[None, "Version of software"],
@@ -129,22 +150,8 @@ class Application:
           'buildstats' : [None, "A list of dicts with buildstats: build_time, platform, core_count, cpu_model, install_size, timestamp"],
         }
 
-        # module generator
-        self.moduleGenerator = None
-
-        # extra stuff for module file required by packages
-        self.moduleExtraPackages = ''
-
-        self.pkgs = None
-        self.skip = None
-
-        self.sanityCheckPaths = None
-        self.sanityCheckOK = True
-
-        self.build_in_installdir = False
-
-        if name and version:
-            self.set_name_version(name, version, newBuild)
+        # mandatory config entries
+        self.mandatory = ['name', 'version', 'homepage', 'description', 'toolkit', 'sources']
 
     def autobuild(self, ebfile, runTests):
         """

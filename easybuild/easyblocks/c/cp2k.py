@@ -561,6 +561,8 @@ leakcheck="YES"
             def test_report(test_result):
                 """Report on tests with given result."""
 
+                postmsg = ''
+
                 test_result = test_result.upper()
                 regexp = re.compile(re_pattern % test_result, re.M)
 
@@ -581,18 +583,20 @@ leakcheck="YES"
                         self.log.info("Ignoring failures in regression test, as requested.")
                     else:
                         self.log.error(logmsg)
-                elif test_result == "CORRECT":
+                elif test_result == "CORRECT" or cnt == 0:
                     self.log.info(logmsg)
                 else:
                     self.log.warning(logmsg)
 
+                return postmsg
+
             # number of failed/wrong tests, will report error if count is positive
-            test_report("FAILED")
-            test_report("WRONG")
+            self.postmsg += test_report("FAILED")
+            self.postmsg += test_report("WRONG")
 
             # number of new tests, will be high if a non-suitable regtest reference was used
             ## will report error if count is positive (is that what we want?)
-            test_report("NEW")
+            self.postmsg += test_report("NEW")
 
             # number of correct tests: just report
             test_report("CORRECT")
