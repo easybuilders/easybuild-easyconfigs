@@ -158,8 +158,8 @@ class CP2K(Application):
             f.write(txt)
             f.close()
             self.log.info("Content of makefile (%s):\n%s" % (archfile, txt))
-        except:
-            self.log.error("Writing makefile %s failed" % archfile)
+        except IOError, err:
+            self.log.error("Writing makefile %s failed: %s" % (archfile, err))
 
     def prepmodinc(self):
         """Prepare list of module files"""
