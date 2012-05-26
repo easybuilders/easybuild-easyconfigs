@@ -129,11 +129,11 @@ class BLACS(Application):
                                 # found how to set TRANSCOMM, so set it
                                 comm = "TRANSCOMM='%s'" % res.group(1)
                             else:
-                                # no match, don't set TRANSCOMM
-                                comm = ''
+                                # no match, set empty TRANSCOMM
+                                comm = "TRANSCOMM=''"
                     else:
-                        # if it fails to compile, don't set TRANSCOMM
-                        comm = ''
+                        # if it fails to compile, set empty TRANSCOMM
+                        comm = "TRANSCOMM=''"
 
             os.chdir(cwd)
         except OSError, err:

@@ -33,6 +33,7 @@ class GCC(Application):
     Self-contained build of GCC.
     Uses system compiler for initial build, then bootstraps.
     """
+
     def __init__(self, *args, **kwargs):
         Application.__init__(self, *args, **kwargs)
 

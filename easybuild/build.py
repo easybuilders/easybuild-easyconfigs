@@ -213,9 +213,16 @@ def main():
         print "No packages left to be built."
         orderedSpecs = []
 
-    ## Build software, will exit when errors occurs
+    ## Build software, will exit when errors occurs (except when regtesting)
+    correct_built_cnt = 0
+    all_built_cnt = 0
     for spec in orderedSpecs:
-        build(spec, options, log, origEnviron, exitOnFailure=(not options.regtest))
+        (success, _) = build(spec, options, log, origEnviron, exitOnFailure=(not options.regtest))
+        if success:
+            correct_built_cnt += 1
+        all_built_cnt += 1
+
+    print "Build succeeded for %s out of %s" % (correct_built_cnt, all_built_cnt)
 
     ## Cleanup tmp log file (all is well, all modules have their own log file)
     try:
@@ -538,7 +545,7 @@ def build(module, options, log, origEnviron, exitOnFailure=True):
     ## Load easyblock
     easyblock = options.easyblock
     if not easyblock:
-        ## Try to look in spec file
+        ## Try to look in .eb file
         reg = re.compile(r"^\s*easyblock\s*=(.*)$")
         for line in open(spec).readlines():
             match = reg.search(line)
@@ -659,17 +666,20 @@ def build(module, options, log, origEnviron, exitOnFailure=True):
         app.closelog()
         applicationLog = app.logfile
 
-    del app
-    os.chdir(cwd)
-
     print "%s: Installation %s %s" % (summary, ended, succ)
 
     ## Check for errors
     if exitCode > 0 or filetools.errorsFoundInLog > 0:
-        print "WARNING: Build exited with exit code %d. %d possible error(s) were detected in the " \
-              "build logs, please verify the build." % (exitCode, filetools.errorsFoundInLog)
+        print "\nWARNING: Build exited with exit code %d. %d possible error(s) were detected in the " \
+              "build logs, please verify the build.\n" % (exitCode, filetools.errorsFoundInLog)
+
+    if app.postmsg:
+        print "\nWARNING: %s\n" % app.postmsg
 
     print "Results of the build can be found in the log file %s" % applicationLog
+
+    del app
+    os.chdir(cwd)
 
     if exitCode > 0:
         # don't exit on failure in test suite

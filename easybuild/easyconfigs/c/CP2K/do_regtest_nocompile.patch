@@ -1,0 +1,46 @@
+diff -ru cp2k.orig/tools/do_regtest cp2k/tools/do_regtest
+--- cp2k.orig/tools/do_regtest	2010-11-04 05:35:04.000000000 +0100
++++ cp2k/tools/do_regtest	2012-05-14 15:17:15.629426256 +0200
+@@ -62,6 +62,7 @@
+ #  -restrictdir string : this switch can repeat, restrict regtesting to certain dirs, useful to 
+ #                        speed-up regtesting after very localised changes (e.g. -restrictdir QS/regtest)
+ #  -config string : loads a site/compiler/environment specific configuration
++#  -nocompile: don't try and compile CP2K, just assume a built version is available
+ #
+ # Script configuration. The value of the follow variables can be redefined, see below
+ #   dir_base, FORT_C_NAME, cp2k_version, dir_triplet, cp2k_dir, cp2k_prefix, cp2k_postfix,
+@@ -125,6 +126,7 @@
+ 
+ # *** default settings for command line switches
+ nocvs="nocvs"
++nocompile="compile"
+ quick="quick"
+ cvsdate="-D $datum_full"
+ noreset="reset"
+@@ -161,6 +163,8 @@
+         ;;
+   # do not update the CVS
+   -nocvs) nocvs="nocvs";;
++  # do not build
++  -nocompile) nocompile="nocompile";;
+   # do not reset reference outputs
+   -noreset) noreset="noreset";;
+   # do not do a realclean before building
+@@ -358,6 +362,7 @@
+ fi 
+ 
+ # *** from here failures are likely to be bugs in cp2k
++if [[ ${nocompile} != "nocompile" ]]; then
+ echo "-------------------------compiling cp2k-----------------------------------"
+ cd ${dir_base}/${cp2k_dir}/makefiles
+ ${make} -j ${maxtasks} ${ARCH_SPEC} VERSION=${cp2k_version} &> out
+@@ -372,6 +377,9 @@
+ compile_warnings=`grep "Warning:" out | wc | tail -1 |  ${awk} '{print $1}'`
+ echo "make VERSION=${cp2k_version} went fine (${compile_warnings} warnings)"
+ fi
++else
++  echo "no compilation of cp2k"
++fi
+ echo "-------------------------regtesting cp2k----------------------------------"
+ 
+ ###################################################################################

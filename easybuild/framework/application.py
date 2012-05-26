@@ -60,6 +60,9 @@ class Application:
         self.builddir = None
         self.installdir = None
 
+        self.pkgs = None
+        self.skip = None
+
         ## final version
         self.installversion = 'NOT_VALID'
 
@@ -69,9 +72,27 @@ class Application:
         ## vaild stop options
         self.validstops = ['cfg', 'source', 'patch', 'configure', 'make', 'install', 'test', 'postproc', 'cleanup', 'packages']
 
-        ## mandatory cfg
-        self.mandatory = ['name', 'version', 'homepage', 'description']
+        # module generator
+        self.moduleGenerator = None
 
+        # extra stuff for module file required by packages
+        self.moduleExtraPackages = ''
+
+        # sanity check paths and result
+        self.sanityCheckPaths = None
+        self.sanityCheckOK = False
+
+        # indicates whether build should be performed in installation dir
+        self.build_in_installdir = False
+
+        # set name and version if they're provided
+        if name and version:
+            self.set_name_version(name, version, newBuild)
+
+        # allow a post message to be set, which can be shown as last output
+        self.postmsg = ''
+
+        # generic configuration parameters
         self.cfg = {
           'name':[None, "Name of software"],
           'version':[None, "Version of software"],
@@ -79,7 +100,7 @@ class Application:
           'group':[None, "Name of the user group for which the software should be available"],
           'versionsuffix':['', 'Additional suffix for software version (placed after toolkit name)'],
           'versionprefix':['', 'Additional prefix for software version (placed before version and toolkit name)'],
-          'runtest':[None, 'Indicates if a test should be run after make. Default: argument after make (for eg make test)'],
+          'runtest':[None, 'Indicates if a test should be run after make; should specify argument after make (for e.g., "test" for make test) (Default: None)'],
           'preconfigopts':['', 'Extra options pre-passed to configure.'],
           'configopts':['', 'Extra options passed to configure (Default already has --prefix)'],
           'premakeopts':['', 'Extra options pre-passed to make.'],
@@ -129,22 +150,8 @@ class Application:
           'buildstats' : [None, "A list of dicts with buildstats: build_time, platform, core_count, cpu_model, install_size, timestamp"],
         }
 
-        # module generator
-        self.moduleGenerator = None
-
-        # extra stuff for module file required by packages
-        self.moduleExtraPackages = ''
-
-        self.pkgs = None
-        self.skip = None
-
-        self.sanityCheckPaths = None
-        self.sanityCheckOK = True
-
-        self.build_in_installdir = False
-
-        if name and version:
-            self.set_name_version(name, version, newBuild)
+        # mandatory config entries
+        self.mandatory = ['name', 'version', 'homepage', 'description', 'toolkit']
 
     def autobuild(self, ebfile, runTests):
         """
@@ -303,7 +310,7 @@ class Application:
     def add_dependency(self, dependencies=None):
         """
         Add application dependencies. A dependency should be specified as a dictionary
-        or as a list of the following form: [name, version, suffix, dummy_boolean]
+        or as a list of the following form: (name, version, suffix, dummy_boolean)
         (suffix and dummy_boolean are optional)
         """
         if dependencies and len(dependencies) > 0:
@@ -498,8 +505,7 @@ class Application:
         """
         Verify if all is ok to start build.
         """
-        # Make sure no modules are loaded
-        ## this is to ensure that all the toolkit prepare functions are run
+        # Check whether modules are loaded
         loadedmods = Modules().loaded_modules()
         if len(loadedmods) > 0:
             self.log.warning("Loaded modules detected: %s" % loadedmods)
@@ -1120,6 +1126,7 @@ class Application:
         txt += self.make_module_extra()
         if self.getcfg('pkglist'):
             txt += self.make_module_extra_packages()
+        txt += '\n# built with EasyBuild version %s' % easybuild.VERBOSE_VERSION
 
         try:
             f = open(self.moduleGenerator.filename, 'w')
