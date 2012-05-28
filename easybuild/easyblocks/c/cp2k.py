@@ -443,14 +443,14 @@ class CP2K(Application):
     def configureLAPACK(self, options):
         """Configure for LAPACK library"""
 
-        options['LIBS'] += os.getenv('LIBLAPACK_MT')
+        options['LIBS'] += ' %s' % os.getenv('LIBLAPACK_MT')
 
         return options
 
     def configureScaLAPACK(self, options):
         """Configure for ScaLAPACK library"""
 
-        options['LIBS'] += os.getenv('LIBSCALAPACK')
+        options['LIBS'] += ' %s' % os.getenv('LIBSCALAPACK')
 
         return options
 
