@@ -68,7 +68,7 @@ class BLACS(Application):
             mpilib = '-L$(MPILIBdir) -lmpi_f77'
         elif os.getenv('SOFTROOTMVAPICH2'):
             base = os.getenv('SOFTROOTMVAPICH2')
-            mpilib = '$(MPILIBdir)/libmpich.a $(MPILIBdir)/libfmpich.a'
+            mpilib = '$(MPILIBdir)/libmpich.a $(MPILIBdir)/libfmpich.a $(MPILIBdir)/libmpl.a -lpthread'
         else:
             self.log.error("Don't know how to set MPI base dir, unknown MPI library used.")
 
