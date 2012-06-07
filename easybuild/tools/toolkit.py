@@ -168,15 +168,16 @@ class Toolkit:
         else:
             log.debug("No variables set: onlymod=%s" % onlymod)
 
-    def _addDependencyVariables(self, dep=None):
-        """ Add LDFLAGS and CPPFLAGS to the self.vars based on the dependencies """
+    def _addDependencyVariables(self, names=None):
+        """ Add LDFLAGS and CPPFLAGS to the self.vars based on the dependencies
+        names should be a list of strings containing the name of the dependency"""
         cpp_paths = ['include']
         ld_paths = ['lib64', 'lib']
 
-        if not dep:
+        if not names:
             deps = self.dependencies
         else:
-            deps = [dep]
+            deps = [{'name':name} for name in names]
 
         for dep in deps:
             softwareRoot = get_software_root(dep['name'])
@@ -232,6 +233,7 @@ class Toolkit:
             '1_GCC':self.prepareGCC,
             '1_icc':self.prepareIcc,
             '1_ifort':self.prepareIfort,
+            '1_ACML': self.prepareACML,
             # MPI libraries
             '2_impi':self.prepareIMPI,
             '2_MPICH2':self.prepareMPICH2,
@@ -303,10 +305,12 @@ class Toolkit:
         if self.opts['32bit']:
             log.error("ERROR: 32-bit not supported (yet) for ACML.")
 
-        self._addDependencyVariables([{'name':'ACML'}])
+        self._addDependencyVariables(['ACML'])
 
         if os.getenv('SOFTROOTGCC'):
             compiler = 'gfortran'
+        elif os.getenv('SOFTROOTIFORT'):
+            compiler = 'ifort' 
         else:
             log.error("Don't know which compiler-specific subdir for ACML to use.")
 
@@ -325,7 +329,7 @@ class Toolkit:
         self.vars['LIBBLAS'] = " -lcblas -lf77blas -latlas -lgfortran"
         self.vars['LIBBLAS_MT'] = " -lptcblas -lptf77blas -latlas -lgfortran -lpthread"
 
-        self._addDependencyVariables({'name':'ATLAS'})
+        self._addDependencyVariables(['ATLAS'])
 
     def prepareBLACS(self):
         """
@@ -335,7 +339,7 @@ class Toolkit:
         self.vars['LIBSCALAPACK'] = " -lblacsF77init -lblacs "
         self.vars['LIBSCALAPACK_MT'] = self.vars['LIBSCALAPACK']
 
-        self._addDependencyVariables({'name':'BLACS'})
+        self._addDependencyVariables(['BLACS'])
 
     def prepareFLAME(self):
         """
@@ -345,7 +349,7 @@ class Toolkit:
         self.vars['LIBLAPACK'] += " -llapack2flame -lflame "
         self.vars['LIBLAPACK_MT'] += " -llapack2flame -lflame "
 
-        self._addDependencyVariables({'name':'FLAME'})
+        self._addDependencyVariables(['FLAME'])
 
     def prepareFFTW(self):
         """
@@ -359,7 +363,7 @@ class Toolkit:
         if self.opts['usempi']:
             self.vars['LIBFFT'] += " -lfftw%s_mpi " % suffix
 
-        self._addDependencyVariables({'name':'FFTW'})
+        self._addDependencyVariables(['FFTW'])
 
     def prepareGCC(self, withMPI=True):
         """
@@ -418,7 +422,7 @@ class Toolkit:
         self.vars['LIBBLAS'] = "-lgoto"
         self.vars['LIBBLAS_MT'] = self.vars['LIBBLAS']
 
-        self._addDependencyVariables({'name':'GotoBLAS'})
+        self._addDependencyVariables(['GotoBLAS'])
 
     def prepareIntelCompiler(self, name):
 
@@ -626,7 +630,7 @@ class Toolkit:
         self.vars['LIBLAPACK'] = "-llapack %s" % self.vars['LIBBLAS']
         self.vars['LIBLAPACK_MT'] = "-llapack %s -lpthread" % self.vars['LIBBLAS_MT']
 
-        self._addDependencyVariables({'name':'LAPACK'})
+        self._addDependencyVariables(['LAPACK'])
 
     def prepareMPICH2(self):
         """
@@ -684,7 +688,7 @@ class Toolkit:
         self.vars['LIBSCALAPACK'] += " -lscalapack"
         self.vars['LIBSCALAPACK_MT'] += " %s -lpthread" % self.vars['LIBSCALAPACK']
 
-        self._addDependencyVariables({'name':'ScaLAPACK'})
+        self._addDependencyVariables(['ScaLAPACK'])
 
     def _getOptimizationLevel(self):
         """ Default is 02, but set it explicitly (eg -g otherwise becomes -g -O0)"""
