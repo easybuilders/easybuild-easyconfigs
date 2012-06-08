@@ -233,7 +233,6 @@ class Toolkit:
             '1_GCC':self.prepareGCC,
             '1_icc':self.prepareIcc,
             '1_ifort':self.prepareIfort,
-            '1_ACML': self.prepareACML,
             # MPI libraries
             '2_impi':self.prepareIMPI,
             '2_MPICH2':self.prepareMPICH2,
@@ -245,6 +244,7 @@ class Toolkit:
             '3_FFTW':self.prepareFFTW,
             '3_GotoBLAS':self.prepareGotoBLAS,
             '3_imkl':self.prepareIMKL,
+            '3_ACML': self.prepareACML,
             '4_LAPACK':self.prepareLAPACK,
             # BLACS, FLAME, ScaLAPACK, ...
             '5_BLACS':self.prepareBLACS,
@@ -313,13 +313,17 @@ class Toolkit:
             compiler = 'ifort' 
         else:
             log.error("Don't know which compiler-specific subdir for ACML to use.")
+        self.vars['LDFLAGS'] += " -L%(acml)s/%(comp)s64/lib/ " % {
+        #                       "%(acml)s/%(comp)s64/lib/libacml.a -lpthread" % {
+                                                'comp':compiler,
+                                                'acml':os.environ['SOFTROOTACML']
+               }
+        self.vars['LIBBLAS'] = " -lacml_mv -lacml " #-lpthread" 
 
-        self.vars['LIBBLAS'] = "%(acml)s/%(comp)s64/lib/libacml_mv.a " \
-                               "%(acml)s/%(comp)s64/lib/libacml.a -lpthread" % {
-                                                                                'comp':compiler,
-                                                                                'acml':os.environ['SOFTROOTACML']
-                                                                                }
         self.vars['LIBBLAS_MT'] = self.vars['LIBBLAS']
+
+        self.vars['LIBLAPACK'] = self.vars['LIBBLAS']
+        self.vars['LIBLAPACK_MT'] = self.vars['LIBBLAS_MT']
 
     def prepareATLAS(self):
         """
