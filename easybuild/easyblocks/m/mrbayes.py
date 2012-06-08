@@ -28,13 +28,23 @@ class MrBayes(Application):
 
     def configure(self):
 
+        # set generic make options
         self.updatecfg('makeopts', 'CC="%s" OPTFLAGS="%s"' % (os.getenv('MPICC'), os.getenv('CFLAGS')))
 
         if LooseVersion(self.version()) >= LooseVersion("3.2"):
-            self.setcfg('startfrom', 'src')
+
+            # set correct startfrom dir, and change into it
+            self.setcfg('startfrom', os.path.join(self.getcfg('startfrom'),'src'))
+            try:
+              os.chdir(self.getcfg('startfrom'))
+            except OSError, err:
+              self.log.error("Failed to change to correct source dir %s: %s" % (self.getcfg('startfrom'), err))
+
+            # run autoconf to generate configure script
             cmd = "autoconf"
             run_cmd(cmd)
 
+            # set config opts
             if os.getenv('SOFTROOTBEAGLE'):
                 self.updatecfg('configopts', '--with-beagle=%s' % os.getenv('SOFTROOTBEAGLE'))
             else:
@@ -43,8 +53,11 @@ class MrBayes(Application):
             if self.tk.opts['usempi']:
                 self.updatecfg('configopts', '--enable-mpi')
 
+            # configure
             Application.configure(self)
         else:
+
+            # no configure script prior to v3.2
             self.updatecfg('makeopts', 'MPI=yes')
 
     def make_install(self):
