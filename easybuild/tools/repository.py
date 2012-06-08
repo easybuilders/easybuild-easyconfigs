@@ -181,7 +181,7 @@ class GitRepository(Repository):
         self.remote = None
 
         # check whether git module was loaded (globally)
-        if not 'git' in sys.modules or not locals()['git'] == sys.modules['git']:
+        if not 'git' in sys.modules or not (locals().has_key('git') and locals()['git'] == sys.modules['git']):
             log.exception("Failed to load GitPython. Make sure it is installed "
                           "properly. Run 'python -c \"import git\"' to test.")
 
