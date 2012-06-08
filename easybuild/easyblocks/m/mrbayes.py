@@ -30,6 +30,7 @@ class MrBayes(Application):
         self.updatecfg('makeopts', 'CC="%s" OPTFLAGS="%s"' % (self.getenv('MPICC'), self.getenv('CFLAGS'))
 
         if LooseVersion(self.version()) >= LooseVersion("3.2"):
+            self.setcfg('startfrom', 'src')
             cmd = "autoconf"
             run_cmd(cmd)
 
