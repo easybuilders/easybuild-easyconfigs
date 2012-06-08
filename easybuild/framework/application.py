@@ -28,7 +28,7 @@ import time
 import urllib
 
 import easybuild
-from easybuild.tools.build_log import initLogger, removeLogHandler, EasyBuildError
+from easybuild.tools.build_log import EasyBuildError, initLogger, removeLogHandler,print_msg
 from easybuild.tools.config import source_path, buildPath, installPath
 from easybuild.tools.filetools import unpack, patch, run_cmd, convertName
 from easybuild.tools.module_generator import ModuleGenerator
@@ -761,13 +761,13 @@ class Application:
         - install
         """
         try:
-            print "preparing..."
+            print_msg("preparing...", self.log)
 
             self.gen_installdir()
             self.make_builddir()
 
             ## SOURCE
-            print "unpacking..."
+            print_msg("unpacking...", self.log)
             self.runstep('source', [self.unpack_src], skippable=True)
 
             ## PATCH
@@ -777,25 +777,25 @@ class Application:
             self.startfrom()
 
             ## CONFIGURE
-            print "configuring..."
+            print_msg("configuring...", self.log)
             self.runstep('configure', [self.configure], skippable=True)
 
             ## MAKE
-            print "building..."
+            print_msg("building...", self.log)
             self.runstep('make', [self.make], skippable=True)
 
             ## TEST
-            print "testing..."
+            print_msg("testing...", self.log)
             self.runstep('test', [self.test], skippable=True)
 
             ## INSTALL
-            print "installing..."
+            print_msg("installing...", self.log)
             self.runstep('install', [self.make_installdir, self.make_install], skippable=True)
 
             ## Packages
             self.runstep('packages', [self.packages])
 
-            print "finishing up..."
+            print_msg("finishing up...", self.log)
 
             ## POSTPROC
             self.runstep('postproc', [self.postproc], skippable=True)

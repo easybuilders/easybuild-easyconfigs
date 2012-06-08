@@ -28,8 +28,8 @@ import time
 import copy
 import platform
 from easybuild.framework.application import Application, get_instance
-from easybuild.tools.build_log import initLogger, removeLogHandler, \
-    EasyBuildError
+from easybuild.tools.build_log import EasyBuildError, initLogger, \
+    removeLogHandler, print_msg
 from easybuild.tools.class_dumper import dumpClasses
 from easybuild.tools.modules import Modules, searchModule
 from easybuild.tools.repository import getRepository
@@ -137,7 +137,7 @@ def main():
 
     ## Show version
     if options.version:
-        print "This is EasyBuild %s" % easybuild.VERBOSE_VERSION
+        print_msg("This is EasyBuild %s" % easybuild.VERBOSE_VERSION, log)
 
     ## Initialize configuration
     # - check environment variable EASYBUILDCONFIG
@@ -200,17 +200,17 @@ def main():
             modspath = os.path.join(config.installPath("mod"), 'all')
             if m.exists(module[0], module[1], modspath):
                 msg = "%s is already installed (module found in %s), skipping " % (mod, modspath)
-                print msg
+                print_msg(msg, log)
                 log.info(msg)
             else:
                 packages.append(package)
 
     ## Determine an order that will allow all specs in the set to build
     if len(packages) > 0:
-        print "resolving dependencies ..."
+        print_msg("resolving dependencies ...", log)
         orderedSpecs = resolveDependencies(packages, options.robot, log)
     else:
-        print "No packages left to be built."
+        print_msg("No packages left to be built.", log)
         orderedSpecs = []
 
     ## Build software, will exit when errors occurs (except when regtesting)
@@ -222,7 +222,7 @@ def main():
             correct_built_cnt += 1
         all_built_cnt += 1
 
-    print "Build succeeded for %s out of %s" % (correct_built_cnt, all_built_cnt)
+    print_msg("Build succeeded for %s out of %s" % (correct_built_cnt, all_built_cnt), log)
 
     ## Cleanup tmp log file (all is well, all modules have their own log file)
     try:
@@ -242,7 +242,7 @@ def error(message, exitCode=1, optparser=None):
     """
     Print error message and exit EasyBuild
     """
-    print "ERROR: %s\n" % message
+    print_msg("ERROR: %s\n" % message)
     if optparser:
         optparser.print_help()
     sys.exit(exitCode)
@@ -489,7 +489,7 @@ def retrieveBlocksInSpec(spec, log, onlyBlocks):
         for block in blocks:
             name = block['name']
             if onlyBlocks and not (name in onlyBlocks):
-                print "Skipping block %s-%s" % (cfgName, name)
+                print_msg("Skipping block %s-%s" % (cfgName, name))
                 continue
 
             (fd, blockPath) = tempfile.mkstemp(prefix='easybuild-', suffix='%s-%s' % (cfgName, name))
@@ -532,7 +532,7 @@ def build(module, options, log, origEnviron, exitOnFailure=True):
     """
     spec = module['spec']
 
-    print "processing EasyBuild easyconfig %s" % spec
+    print_msg("processing EasyBuild easyconfig %s" % spec, log)
 
     ## Restore original environment
     log.info("Resetting environment")
@@ -666,17 +666,18 @@ def build(module, options, log, origEnviron, exitOnFailure=True):
         app.closelog()
         applicationLog = app.logfile
 
-    print "%s: Installation %s %s" % (summary, ended, succ)
+    print_msg("%s: Installation %s %s" % (summary, ended, succ), log)
 
     ## Check for errors
     if exitCode > 0 or filetools.errorsFoundInLog > 0:
-        print "\nWARNING: Build exited with exit code %d. %d possible error(s) were detected in the " \
-              "build logs, please verify the build.\n" % (exitCode, filetools.errorsFoundInLog)
+        print_msg("\nWARNING: Build exited with exit code %d. %d possible error(s) were detected in the " \
+                  "build logs, please verify the build.\n" % (exitCode, filetools.errorsFoundInLog), 
+                  log)
 
     if app.postmsg:
-        print "\nWARNING: %s\n" % app.postmsg
+        print_msg("\nWARNING: %s\n" % app.postmsg, log)
 
-    print "Results of the build can be found in the log file %s" % applicationLog
+    print_msg("Results of the build can be found in the log file %s" % applicationLog, log)
 
     del app
     os.chdir(cwd)
