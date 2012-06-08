@@ -291,7 +291,12 @@ libraries = %s
             shutil.rmtree(builddir)
         else:
             self.log.debug("build dir %s already clean" % builddir)
-
+class Tables(DefaultPythonPackage):
+    """install the pytables package"""
+    def __init__(self, mself, pkg, pkginstalldeps):
+         DefaultPythonPackage.__init__(self, mself, pkg, pkginstalldeps)
+         #pytables needs to k now where HDF5 is
+         os.environ['HDF5'] = os.environ['SOFTROOTHDF5']
 
 class Scipy(FortranPythonPackage):
     """scipy package"""
