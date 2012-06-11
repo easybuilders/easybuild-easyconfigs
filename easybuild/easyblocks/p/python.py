@@ -292,7 +292,10 @@ libraries = %s
         else:
             self.log.debug("build dir %s already clean" % builddir)
 class Tables(DefaultPythonPackage):
-    """install the pytables package"""
+    """install the pytables package
+
+    This requires HDF5, and mpi, so preferable don't use this, but create a PythonPackageModule for it
+    """
     def __init__(self, mself, pkg, pkginstalldeps):
          DefaultPythonPackage.__init__(self, mself, pkg, pkginstalldeps)
          #pytables needs to k now where HDF5 is
