@@ -617,10 +617,10 @@ class Toolkit:
     def prepareQLogicMPI(self):
 
         ## QLogic specific
-        self.vars['MPICC'] = 'mpicc -cc="%s"' % os.getenv('CC')
-        self.vars['MPICXX'] = 'mpicxx -CC="%s"' % os.getenv('CXX')
-        self.vars['MPIF77'] = 'mpif77 -fc="%s"' % os.getenv('F77')
-        self.vars['MPIF90'] = 'mpif90 -f90="%s"' % os.getenv('F90')
+        self.vars['MPICC'] = 'mpicc -cc="%s"' % self.vars['CC']
+        self.vars['MPICXX'] = 'mpicxx -CC="%s"' % self.vars['CXX']
+        self.vars['MPIF77'] = 'mpif77 -fc="%s"' % self.vars['F77']
+        self.vars['MPIF90'] = 'mpif90 -f90="%s"' % self.vars['F90']
 
         if self.opts['usempi']:
             for i in ['CC', 'CXX', 'F77', 'F90']:
@@ -642,10 +642,10 @@ class Toolkit:
         """
         if "vSMP" in os.getenv('SOFTVERSIONMPICH2'):
             # ScaleMP MPICH specific
-            self.vars['MPICC'] = 'mpicc -cc="%s %s"' % (os.getenv('CC'), self.m32flag)
-            self.vars['MPICXX'] = 'mpicxx -CC="%s %s"' % (os.getenv('CXX'), self.m32flag)
-            self.vars['MPIF77'] = 'mpif77 -fc="%s %s"' % (os.getenv('F77'), self.m32flag)
-            self.vars['MPIF90'] = 'mpif90 -f90="%s %s"' % (os.getenv('F90'), self.m32flag)
+            self.vars['MPICC'] = 'mpicc -cc="%s %s"' % (self.vars['CC'], self.m32flag)
+            self.vars['MPICXX'] = 'mpicxx -CC="%s %s"' % (self.vars['CXX'], self.m32flag)
+            self.vars['MPIF77'] = 'mpif77 -fc="%s %s"' % (self.vars['F77'], self.m32flag)
+            self.vars['MPIF90'] = 'mpif90 -f90="%s %s"' % (self.vars['F90'], self.m32flag)
 
             if self.opts['cciscxx']:
                 self.vars['MPICXX'] = self.vars['MPICC']
