@@ -316,3 +316,17 @@ class Scipy(FortranPythonPackage):
             self.testinstall = False
             self.runtest = None
 
+class Basemap(DefaultPythonPackage):
+    """install the pytables package"""
+
+    def make(self):
+        """This uses python setup.py build to build python packages"""
+        cmd = "export GEOS_DIR=$SOFTROOTGEOS; python setup.py build"
+
+        run_cmd(cmd, log_all=True, simple=True)
+
+    def make_install(self):
+        """Uses python setpu.py install to install to a custom path"""
+        cmd = "export GEOS_DIR=$SOFTROOTGEOS; python setup.py install --prefix=%s %s" % (os.environ['SOFTROOTPYTHON'], self.installopts)
+        run_cmd(cmd, log_all=True, simple=True)
+
