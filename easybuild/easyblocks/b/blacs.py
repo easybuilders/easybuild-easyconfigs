@@ -95,8 +95,8 @@ class BLACS(Application):
 
             # need to build
             cmd = "make"
-            cmd += " MPICC='%(mpicc)s' MPIF77='%(mpif77)s' CC='%(mpicc)s' F77='%(mpif77)s -I$(MPIINCdir)' " \
-                   " MPIdir=%(base)s MPILIB='%(mpilib)s' BTOPdir=%(builddir)s INTERFACE=NONE" % opts
+            cmd += " CC='%(mpicc)s' F77='%(mpif77)s -I$(MPIINCdir)'  MPIdir=%(base)s" \
+                   " MPILIB='%(mpilib)s' BTOPdir=%(builddir)s INTERFACE=NONE" % opts
             
             # determine interface using xintface
             run_cmd("%s xintface" % cmd, log_all=True, simple=True)
@@ -108,9 +108,12 @@ class BLACS(Application):
 
                 run_cmd("%s xtc_CsameF77" % cmd, log_all=True, simple=True)
                 (out, _) = run_cmd("mpirun -np 2 ./EXE/xtc_CsameF77", log_all=True, simple=False)
-    
+
+                # get rid of first two lines, that inform about how to use this tool
+                out = '\n'.join(out.split('\n')[2:])
+
                 notregexp = re.compile("_NOT_")
-    
+
                 if not notregexp.search(out):
                     # if it doesn't say '_NOT_', set it
                     comm = "TRANSCOMM='-DCSameF77'"
