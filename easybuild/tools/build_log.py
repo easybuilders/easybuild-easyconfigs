@@ -32,7 +32,7 @@ import time
 import easybuild
 
 # EasyBuild message prefix
-EB_MSG_PREFIX = "===EB==="
+EB_MSG_PREFIX = "=="
 
 class EasyBuildError(Exception):
     """
