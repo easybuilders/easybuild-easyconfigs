@@ -34,7 +34,7 @@ class PythonPackageModule(Application):
             self.log.error("Python module not loaded")
         #get major.minor version
         self.pythonversion = ".".join(pythonversion.split(".")[0:2])
-        self.installpath = os.path.join(self.installdir , "lib/python%s/site-packages" % pythonversion)
+        self.packagepath = os.path.join(self.installdir , "lib/python%s/site-packages" % pythonversion)
 
     def make(self):
         """This uses python setup.py build to build python packages"""
@@ -50,5 +50,5 @@ class PythonPackageModule(Application):
     def make_module_extra(self):
         """Extended from Application to add the install path to the PYTHONPATH in the module"""
         txt = Application.make_module_extra(self)
-        txt += "prepend-path\tPYTHONPATH\t%s\n" % self.installpath
+        txt += "prepend-path\tPYTHONPATH\t%s\n" % self.packagepath
         return txt
