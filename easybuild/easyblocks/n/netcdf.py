@@ -18,6 +18,7 @@
 # You should have received a copy of the GNU General Public License
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
+import os
 from distutils.version import LooseVersion
 from easybuild.framework.application import Application
 
@@ -28,8 +29,8 @@ class NetCDF(Application):
         """Configure build: set config options and configure"""
 
         self.updatecfg('configopts', "--enable-shared --with-pic ")
-        self.updatecfg('configopts', 'FCFLAGS="%s" CC="%s" ' % (self.getenv('$FFLAGS'),
-                                                                self.getenv('$MPICC') ))
+        self.updatecfg('configopts', 'FCFLAGS="%s" CC="%s" ' % (os.getenv('FFLAGS'),
+                                                                os.getenv('MPICC') ))
         
         Application.configure(self)
 
