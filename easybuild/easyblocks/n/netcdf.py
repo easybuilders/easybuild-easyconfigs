@@ -48,7 +48,7 @@ class NetCDF(Application):
             libs = ["libnetcdf.so", "libnetcdf.a"]
             # since v4.2, the non-C libraries have been split off in seperate packages
             # see netCDF-Fortran and netCDF-C++
-            if LooseVersion(self.version) < LooseVersion("4.2"):
+            if LooseVersion(self.version()) < LooseVersion("4.2"):
                 incs += ["netcdf%s" % x for x in ["cpp.h", ".hh", ".inc", ".mod"]] + \
                         ["ncvalues.h", "typesizes.mod"]
                 libs += ["libnetcdf_c++.so", "libnetcdff.so",
