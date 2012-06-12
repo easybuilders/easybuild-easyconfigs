@@ -43,7 +43,7 @@ class HDF5(Application):
         # make options
         self.updatecfg('makeopts', fcomp)
 
-        Application.configure()
+        Application.configure(self)
 
     # default make and make install are ok
 

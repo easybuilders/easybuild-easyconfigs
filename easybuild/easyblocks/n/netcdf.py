@@ -31,7 +31,7 @@ class netCDF(Application):
         self.updatecfg('configopts', 'FCFLAGS="%s" CC="%s" ' % (self.getenv('$FFLAGS'),
                                                                 self.getenv('$MPICC') ))
         
-        Application.configure()
+        Application.configure(self)
 
     def sanitycheck(self):
         """
