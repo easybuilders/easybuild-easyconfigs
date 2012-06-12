@@ -40,19 +40,20 @@ class NetCDF(Application):
         if not self.getcfg('sanityCheckPaths'):
 
             incs = ["netcdf.h"]
-            libs = ["libnetcdf.so"]
+            libs = ["libnetcdf.so", "libnetcdf.a"]
             # since v4.2, the non-C libraries have been split off in seperate packages
             # see netCDF-Fortran and netCDF-C++
             if LooseVersion(self.version) < LooseVersion("4.2"):
                 incs += ["netcdf%s" % x for x in ["cpp.h", ".hh", ".inc", ".mod"]] + \
                         ["ncvalues.h", "typesizes.mod"]
-                libs += ["libnetcdf_c++.so", "libnetcdff.so"]
+                libs += ["libnetcdf_c++.so", "libnetcdff.so",
+                         "libnetcdf_c++.a", "libnetcdff.a"]
 
             self.setcfg('sanityCheckPaths',{'files':["bin/nc%s" % x for x in ["-config", "copy", "dump",
                                                                               "gen", "gen3"]] +
                                                     ["lib/%s" % x for x in libs] +
                                                     ["include/%s" % x for x in incs],
-                                            'dirs':['include']
+                                            'dirs':[]
                                            })
 
             self.log.info("Customized sanity check paths: %s"%self.getcfg('sanityCheckPaths'))
