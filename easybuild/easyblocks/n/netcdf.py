@@ -28,10 +28,14 @@ class NetCDF(Application):
     def configure(self):
         """Configure build: set config options and configure"""
 
-        self.updatecfg('configopts', "--enable-shared --with-pic ")
+        self.updatecfg('configopts', "--enable-shared")
+
+        if self.tk.opts['pic']:
+            self.updatecfg('configopts', '--with-pic')
+
         self.updatecfg('configopts', 'FCFLAGS="%s" CC="%s" ' % (os.getenv('FFLAGS'),
                                                                 os.getenv('MPICC') ))
-        
+
         Application.configure(self)
 
     def sanitycheck(self):
