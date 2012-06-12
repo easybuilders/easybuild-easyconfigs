@@ -21,7 +21,7 @@
 from easybuild.framework.application import Application
 from easybuild.tools.filetools import run_cmd
 
-class netCDF_Fortran(Application):
+class Doxygen(Application):
     """Support for building/installing Doxygen"""
 
     def configure(self):
