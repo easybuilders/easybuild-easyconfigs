@@ -109,6 +109,7 @@ def refactor(txt):
                     'makeModuleExtra':'make_module_extra',
                     'makeModuleExtraPackages':'make_module_extra_packages',
                     'moduleGenerator':'module_generator',
+                    'noqanda=':'no_qa=',
                     'parseDependency':'parse_dependency',
                     'readyToBuild':'ready2build',
                     'runrun':'run_cmd',
@@ -124,6 +125,7 @@ def refactor(txt):
                     'setParallelism':'setparallelism',
                     'setToolkit':'settoolkit',
                     'startFrom':'startfrom',
+                    'stdqa=':'std_qa=',
                     'unpackSrc':'unpack_src',
                     }
 
