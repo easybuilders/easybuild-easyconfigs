@@ -21,7 +21,7 @@
 from distutils.version import LooseVersion
 from easybuild.framework.application import Application
 
-class netCDF(Application):
+class NetCDF(Application):
     """Support for building/installing netCDF"""
 
     def configure(self):
