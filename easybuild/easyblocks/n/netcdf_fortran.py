@@ -18,16 +18,15 @@
 # You should have received a copy of the GNU General Public License
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
-from distutils.version import LooseVersion
 from easybuild.framework.application import Application
 
-class netCDF_Fortran(Application):
+class NetCDF_Fortran(Application):
     """Support for building/installing the netCDF-Fortran library"""
 
     def configure(self):
         """Configure build: set config options and configure"""
 
-        if tk.opts['pic']:
+        if self.tk.opts['pic']:
             self.updatecfg('configopts', "--with-pic")
 
         Application.configure(self)
