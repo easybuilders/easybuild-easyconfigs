@@ -43,4 +43,30 @@ class HDF5(Application):
         # make options
         self.updatecfg('makeopts', fcomp)
 
+        Application.configure()
+
     # default make and make install are ok
+
+    def sanitycheck(self):
+        """
+        Custom sanity check for HDF5
+        """
+        if not self.getcfg('sanityCheckPaths'):
+
+            self.setcfg('sanityCheckPaths',{'files':["bin/h5%s" % x for x in ["2gif", "c++", "cc",
+                                                                              "copy", "debug", "diff",
+                                                                              "dump", "fc", "import",
+                                                                              "jam","ls", "mkgrp",
+                                                                              "perf_serial", "redeploy",
+                                                                              "repack", "repart", "stat",
+                                                                              "unjam"]] +
+                                                    ["bin/gif2h5"] +
+                                                    ["lib/libhdf5%s.so" % x for x in ["_cpp", "_fortran",
+                                                                                      "_hl_cpp", "_hl",
+                                                                                      "hl_fortran", ""]],
+                                            'dirs':['include']
+                                           })
+
+            self.log.info("Customized sanity check paths: %s"%self.getcfg('sanityCheckPaths'))
+
+        Application.sanitycheck(self)
