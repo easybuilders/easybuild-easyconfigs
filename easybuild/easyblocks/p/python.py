@@ -330,3 +330,21 @@ class Basemap(DefaultPythonPackage):
         cmd = "export GEOS_DIR=$SOFTROOTGEOS; python setup.py install --prefix=%s %s" % (os.environ['SOFTROOTPYTHON'], self.installopts)
         run_cmd(cmd, log_all=True, simple=True)
 
+class NetCDF4(DefaultPythonPackage):
+    """install the NetCDF4 python package
+
+    This requires the usempi option for the toolkit, so it's recommended to use the PythonPackageModule version of this instead
+    """
+
+
+    def make(self):
+        """This uses python setup.py build to build python packages"""
+        cmd = "export HDF5_DIR=$SOFTROOTHDF5; export NETCDF4_DIR=$SOFTROOTNETCDF; python setup.py build"
+
+        run_cmd(cmd, log_all=True, simple=True)
+
+    def make_install(self):
+        """Uses python setpu.py install to install to a custom path"""
+        cmd = "export HDF5_DIR=$SOFTROOTHDF5; export NETCDF4_DIR=$SOFTROOTNETCDF; python setup.py install --prefix=%s %s" % (os.environ['SOFTROOTPYTHON'], self.installopts)
+        run_cmd(cmd, log_all=True, simple=True)
+
