@@ -37,7 +37,7 @@ class NetCDF_Fortran(Application):
         """
         if not self.getcfg('sanityCheckPaths'):
 
-            self.setcfg('sanityCheckPaths',{'files':["bin/nfconfig"] +
+            self.setcfg('sanityCheckPaths',{'files':["bin/nf-config"] +
                                                     ["lib/%s" % x for x in ["libnetcdff.so",
                                                                             "libnetcdff.a"]] +
                                                     ["include/%s" % x for x in ["netcdf.inc",
