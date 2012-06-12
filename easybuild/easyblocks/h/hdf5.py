@@ -35,7 +35,7 @@ class HDF5(Application):
             else:
                 self.log.error("Dependency module %s not loaded." % dep)
 
-        fcomp = "FC=%s" % self.getenv('F77')
+        fcomp = "FC=%s" % os.getenv('F77')
 
         self.updatecfg('configopts', "--enable-cxx --enable-fortran %s" % fcomp)
         self.updatecfg('configopts', "--with-pic --with-pthread --enable-shared")
