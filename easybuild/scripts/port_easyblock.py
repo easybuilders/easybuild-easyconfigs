@@ -76,6 +76,7 @@ def refactor(txt):
                     'apps.Application import Application':'framework.application import Application',
                     'applyPatch':'apply_patch',
                     'autoBuild':'autobuild',
+                    'buildInInstallDir':'build_in_installdir',
                     'buildLog':'build_log',
                     'checkOsdeps':'check_osdeps',
                     'classDumper':'class_dumper',
