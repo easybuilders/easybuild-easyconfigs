@@ -27,7 +27,7 @@ class Doxygen(Application):
     def configure(self):
         """Configure build using non-standard configure script (see prefix option)"""
 
-        cmd = "%s %s./configure --prefix %s %s" % (self.getcfg('preconfigopts'), self.installdir,
+        cmd = "%s ./configure --prefix %s %s" % (self.getcfg('preconfigopts'), self.installdir,
                                                    self.getcfg('configopts'))
         run_cmd(cmd, log_all=True, simple=True)
 
