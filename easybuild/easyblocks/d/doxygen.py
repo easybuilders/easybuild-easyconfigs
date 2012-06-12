@@ -37,7 +37,7 @@ class Doxygen(Application):
         """
         if not self.getcfg('sanityCheckPaths'):
 
-            self.setcfg('sanityCheckPaths',{'files':["bin/doxygen", "bin/doxytag"],
+            self.setcfg('sanityCheckPaths',{'files':["bin/doxygen"],
                                             'dirs':[]
                                            })
 
