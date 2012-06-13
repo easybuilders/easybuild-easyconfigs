@@ -744,7 +744,11 @@ class Toolkit:
         toolkit_names = [dep['name'] for dep in self.toolkit_deps]
 
         for req_mods, comp_family in comp_families.items():
-            if all([req_mod in toolkit_names for req_mod in req_mods]):
+            match = True
+            for req_mod in req_mods:
+                if not req_mod in toolkit_names:
+                    match = False
+            if match:
                 return comp_family
 
         log.error("Failed to determine compiler family based on toolkit dependencies.")
