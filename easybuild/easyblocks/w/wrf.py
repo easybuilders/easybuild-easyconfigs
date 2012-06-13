@@ -46,11 +46,16 @@ class WRF(Application):
         """
 
         # netCDF dependency
-        netcdf=os.getenv('SOFTROOTNETCDF')
+        netcdf = os.getenv('SOFTROOTNETCDF')
         if not netcdf:
             self.log.error("netCDF module not loaded?")
         else:
             os.putenv('NETCDF', netcdf)
+            netcdff = os.getenv('SOFTROOTNETCDF_FORTRAN')
+            if not netcdff and LooseVersion(os.getenv('SOFTVERSIONNETCDF_FORTRAN')) >= LooseVersion("4.2"):
+                self.log.error("netCDF v4.2 no longer supplies Fortran library, also need netCDF-Fortran")
+            else:
+                os.putenv('NETCDFF', netcdff)
 
         # HDF5 (optional) dependency
         hdf5 = os.getenv('SOFTROOTHDF5')
