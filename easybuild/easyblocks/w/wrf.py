@@ -18,6 +18,7 @@
 # You should have received a copy of the GNU General Public License
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
+from distutils.version import LooseVersion
 import fileinput
 import os
 import re
@@ -51,8 +52,9 @@ class WRF(Application):
             self.log.error("netCDF module not loaded?")
         else:
             os.putenv('NETCDF', netcdf)
-            netcdff = os.getenv('SOFTROOTNETCDF_FORTRAN')
-            if not netcdff and LooseVersion(os.getenv('SOFTVERSIONNETCDF_FORTRAN')) >= LooseVersion("4.2"):
+            netcdff = os.getenv('SOFTROOTNETCDFMINFORTRAN')
+            netcdff_ver = os.getenv('SOFTVERSIONNETCDFMINFORTRAN')
+            if not netcdff and LooseVersion(netcdff_ver) >= LooseVersion("4.2"):
                 self.log.error("netCDF v4.2 no longer supplies Fortran library, also need netCDF-Fortran")
             else:
                 os.putenv('NETCDFF', netcdff)
