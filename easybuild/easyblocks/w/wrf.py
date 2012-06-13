@@ -124,13 +124,14 @@ class WRF(Application):
         cmd = "./configure"
         qa = {
               # named group in match will be used to construct answer
-              build_type_question:"%(nr)s"
+              build_type_question:"%(nr)s",
+              "Compile for nesting? (1=basic, 2=preset moves, 3=vortex following) [default 1]:":"1",
+              "Compile for nesting? (0=no nesting, 1=basic, 2=preset moves, 3=vortex following) [default 0]:":"0"
               }
-        no_qa = ["Will use"]
+        no_qa = []
         # hackish way of delivering answers to interactive installer
         # specifying questions to answer proved to be difficult (incomplete output?)
         std_qa = {
-                  r"[-]+":"1"
                  }
 
         run_cmd_qa(cmd, qa, no_qa=no_qa, std_qa=std_qa, log_all=True, simple=True)
