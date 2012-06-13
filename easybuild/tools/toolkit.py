@@ -738,7 +738,7 @@ class Toolkit:
         """Determine compiler family based on toolkit dependencies."""
         comp_families = {
                          ('icc', 'ifort'):'Intel', # Intel toolkit has both icc and ifot
-                         'GCC':'GCC' # GCC toolkit uses GCC as compiler suite
+                         ('GCC', ):'GCC' # GCC toolkit uses GCC as compiler suite
                          }
 
         toolkit_names = [dep['name'] for dep in self.toolkit_deps]
