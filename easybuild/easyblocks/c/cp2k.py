@@ -27,7 +27,6 @@ import shutil
 import sys
 from easybuild.framework.application import Application
 from easybuild.tools.filetools import run_cmd
-from easybuild.tools.toolkit import get_openmp_flag
 
 class CP2K(Application):
     """
@@ -219,7 +218,7 @@ class CP2K(Application):
         ## -automatic is default: -noautomatic -auto-scalar
         ## some mem-bandwidth optimisation
         if self.getcfg('type') == 'psmp':
-            self.openmp = get_openmp_flag(self.log)
+            self.openmp = self.tk.get_openmp_flag()
 
         # determine which opt flags to use
         if self.getcfg('typeopt'):

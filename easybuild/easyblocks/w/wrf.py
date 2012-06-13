@@ -36,7 +36,7 @@ class WRF(Application):
         
         self.build_in_installdir = True
 
-        self.cfg.update({'wrfbuildtype':[None, "Specify the type of build (smpar: OpenMP, dmpar: MPI, dm+sm: hybrid OpenMP/MPI)."],
+        self.cfg.update({'wrfbuildtype':[None, "Specify the type of build (serial, smpar (OpenMP), dmpar (MPI), dm+sm (hybrid OpenMP/MPI))."],
                          'rewriteopts':[True, "Replace default -O3 option in configure.wrf with CFLAGS/FFLAGS from environment (default: True)."]})
 
     def configure(self):        
@@ -79,15 +79,53 @@ class WRF(Application):
         # enable support for large file support in netCDF
         os.putenv('WRFIO_NCD_LARGE_FILE_SUPPORT', '1')
 
-        # build type
-        knownbuildtypes = {'smpar':10,
-                           'dmpar':11,
-                           'dm+sm':12}
+        # determine build type based on version and compiler
+        ## just determine start index, various options are right behind each other
+        build_type_start = None
+        if LooseVersion(self.version()) == LooseVersion("3.3.1"):
+
+            if self.tk.toolkit_comp_family() == "Intel":
+                # Linux x86_64 i486 i586 i686, ifort compiler with icc
+                build_type_start = 9
+
+            elif self.tk.toolkit_comp_family() == "GCC":
+                # x86_64 Linux, gfortran compiler with gcc
+                build_type_start = 15
+
+            else:
+                self.log.error("Don't know which compiler is being used, and thus don't know which build type to select.")
+
+        elif LooseVersion(self.version()) == LooseVersion("3.4"):
+
+            if self.tk.toolkit_comp_family() == "Intel":
+                # Linux x86_64 i486 i586 i686, ifort compiler with icc
+                build_type_start = 13
+
+            elif self.tk.toolkit_comp_family() == "GCC":
+                # x86_64 Linux, gfortran compiler with gcc
+                build_type_start = 23
+
+            else:
+                self.log.error("Don't know which compiler is being used, and thus don't know which build type to select.")
+
+        else:
+            self.log.error("Don't know how to select build types for version %s of WRF." % self.version())
+
+        # select suitable build type option
+        knownbuildtypes = {
+                           'serial':build_type_start,
+                           'smpar' :build_type_start+1,
+                           'dmpar' :build_type_start+2,
+                           'dm+sm' :build_type_start+3
+                           }
 
         bt = self.getcfg('wrfbuildtype')
 
         if not bt in knownbuildtypes.keys():
             self.log.error("Unknown build type: '%s'. Supported build types: %s" % (bt, knownbuildtypes))
+
+        selected_build_type = knownbuildtypes[bt]
+        self.log.info("Selected build type %d" % selected_build_type)
 
         # run configure script
         cmd = "./configure"
@@ -95,7 +133,7 @@ class WRF(Application):
         no_qa = []
         # hackish way of delivering answers to interactive installer
         # specifying questions to answer proved to be difficult (incomplete output?)
-        std_qa = {r"\)":"%s" % knownbuildtypes[bt],
+        std_qa = {r"\)":"%s" % selected_build_type,
                   r"[-]+":"1"
                  }
 

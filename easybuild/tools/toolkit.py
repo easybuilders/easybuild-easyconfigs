@@ -734,16 +734,27 @@ class Toolkit:
             self.vars[varskey] = ''
         self.vars[varskey] += ' ' + ' '.join(flags)
 
-def get_openmp_flag(log):
-    """Determine compiler flag for OpenMP"""
+    def toolkit_comp_family(self):
+        """Determine compiler family based on toolkit dependencies."""
+        comp_families = {
+                         ('icc', 'ifort'):'Intel', # Intel toolkit has both icc and ifot
+                         'GCC':'GCC' # GCC toolkit uses GCC as compiler suite
+                         }
 
-    icc = os.getenv('SOFTROOTICC')
-    ifort = os.getenv('SOFTROOTIFORT')
-    gcc = os.getenv('SOFTROOTGCC')
+        toolkit_names = [dep['name'] for dep in self.toolkit_deps]
 
-    if (icc or ifort) and not gcc:
-        return "-openmp"
-    elif gcc and not (icc or ifort):
-        return "-fopenmp"
-    else:
-        log.error("Can't determine compiler flag for OpenMP.")
+        for req_mods, comp_family in comp_families.items():
+            if all([req_mod in toolkit_names for req_mod in req_mods]):
+                return comp_family
+
+        log.error("Failed to determine compiler family based on toolkit dependencies.")
+
+    def get_openmp_flag(self):
+        """Determine compiler flag for OpenMP"""
+
+        if self.toolkit_comp_family() == "Intel":
+            return "-openmp"
+        elif self.toolkit_comp_family() == "GCC":
+            return "-fopenmp"
+        else:
+            log.error("Can't determine compiler flag for OpenMP.")
