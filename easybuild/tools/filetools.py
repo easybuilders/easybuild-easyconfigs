@@ -390,6 +390,7 @@ def run_cmd_qa(cmd, qa, no_qa=None, log_ok=True, log_all=False, simple=False, re
             if not answer.endswith('\n'):
                 answer += '\n'
             newstdQA[regQ] = answer
+            log.debug("newstdQA[%s]: %s" % (regQ.pattern, answer))
 
     new_no_qa = []
     if no_qa:
