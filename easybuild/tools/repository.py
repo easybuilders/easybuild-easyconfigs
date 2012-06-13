@@ -175,13 +175,14 @@ class GitRepository(Repository):
     """
 
     def __init__(self):
+        self.path = None
         Repository.__init__(self)
 
-        self.path = None
-        self.remote = None
 
         # check whether git module was loaded (globally)
-        if not 'git' in sys.modules or not locals()['git'] == sys.modules['git']:
+        try:
+            import git
+        except ImportError:
             log.exception("Failed to load GitPython. Make sure it is installed "
                           "properly. Run 'python -c \"import git\"' to test.")
 
@@ -236,6 +237,7 @@ class GitRepository(Repository):
         Add easyconfig to git repository.
         """
         log.debug("Adding cfg: %s with name %s" % (cfg, name))
+        log.debug("Adding cfg: in %s on path %s" % (self.wc, self.path))
         if  name.startswith(self.wc):
             name = name.replace(self.wc, "", 1) #remove self.wc again
         name = os.path.join(self.wc, self.path, name) #create proper name, with path inside repo in it
@@ -257,13 +259,14 @@ class GitRepository(Repository):
         log.debug("git status: %s" % self.client.status())
         try:
             self.client.commit('-am "%s"' % completemsg)
+            log.debug("succesfull commit")
         except GitCommandError, err:
             log.warning("Commit from working copy %s (msg: %s) failed, empty commit?\n%s" % (self.wc, msg, err))
         try:
             info = self.client.push()
             log.debug("push info: %s " % info)
         except GitCommandError, err:
-            log.warning("Push from working copy %s to remote %s (msg: %s) failed: %s" % (self.wc, self.remote, msg, err))
+            log.warning("Push from working copy %s to remote %s (msg: %s) failed: %s" % (self.wc, self.repo, msg, err))
 
     def cleanup(self):
         """

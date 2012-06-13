@@ -233,22 +233,22 @@ include_dirs = %(includes)s
 search_static_first=True
 
 """
-
-        if  "SOFTROOTIMKL" in os.environ:
-            #use mkl
-            extrasiteconfig = """[mkl]
+        extrasiteconfig = ""
+        if  "SOFTROOTIMKL" in os.environ or "SOFTROOTACML" in os.environ:
+            #use mkl or acml, we have set this in blas actually
+            extrasiteconfig +="""
+[mkl]
 lapack_libs = %(lapack)s
-mkl_libs = %(blas)s
-        """
-        elif "SOFTROOTATLAS" in os.environ and "SOFTROOTLAPACK" in os.environ:
-            extrasiteconfig = """
+mkl_libs = %(blas)s"""
+        else:
+            self.log.error("Could not detect math kernel (mkl, atlas)")
+        if "SOFTROOTATLAS" in os.environ and "SOFTROOTLAPACK" in os.environ:
+            extrasiteconfig += """
 [blas_opt]
 libraries = %(blas)s
 [lapack_opt]
 libraries = %(lapack)s
         """
-        else:
-            self.log.error("Could not detect math kernel (mkl, atlas)")
 
         if "SOFTROOTIMKL" in os.environ or "SOFTROOTFFTW" in os.environ:
             extrasiteconfig += """ 
@@ -258,9 +258,9 @@ libraries = %s
 
         self.sitecfg = self.sitecfg + extrasiteconfig
 
-        lapack_libs = os.getenv("LIBLAPACK_MT").split(" -l")
-        blas_libs = os.getenv("LIBBLAS_MT").split(" -l")
-        if os.getenv('SOFTROOTIMKL'):
+        lapack_libs = [lib for lib in os.getenv("LIBLAPACK_MT").split(" -l") if lib.strip()]
+        blas_libs = [lib for lib in os.getenv("LIBBLAS_MT").split(" -l") if lib.strip()]
+        if os.getenv('SOFTROOTIMKL') :
             # with IMKL, get rid of all spaces and use '-Wl:'
             lapack_libs.remove("pthread")
             lapack = ','.join(lapack_libs).replace(' ', ',').replace('Wl,','Wl:')
@@ -272,8 +272,8 @@ libraries = %s
         self.sitecfg = self.sitecfg % \
             { 'lapack' : lapack,
               'blas' : blas,
-              'libs' : ":".join([lib for lib in os.getenv('LDFLAGS').split(" -L")]),
-              'includes' : ":".join([lib for lib in os.getenv('CPPFLAGS').split(" -I")]),
+              'libs' : ":".join([lib.strip() for lib in os.getenv('LDFLAGS').split(" -L")]),
+              'includes' : ":".join([lib.strip() for lib in os.getenv('CPPFLAGS').split(" -I")]),
             }
 
         self.sitecfgfn = 'site.cfg'
@@ -291,7 +291,15 @@ libraries = %s
             shutil.rmtree(builddir)
         else:
             self.log.debug("build dir %s already clean" % builddir)
+class Tables(DefaultPythonPackage):
+    """install the pytables package
 
+    This requires HDF5, and mpi, so preferable don't use this, but create a PythonPackageModule for it
+    """
+    def __init__(self, mself, pkg, pkginstalldeps):
+         DefaultPythonPackage.__init__(self, mself, pkg, pkginstalldeps)
+         #pytables needs to k now where HDF5 is
+         os.environ['HDF5'] = os.environ['SOFTROOTHDF5']
 
 class Scipy(FortranPythonPackage):
     """scipy package"""
@@ -307,4 +315,36 @@ class Scipy(FortranPythonPackage):
         else:
             self.testinstall = False
             self.runtest = None
+
+class Basemap(DefaultPythonPackage):
+    """install the pytables package"""
+
+    def make(self):
+        """This uses python setup.py build to build python packages"""
+        cmd = "export GEOS_DIR=$SOFTROOTGEOS; python setup.py build"
+
+        run_cmd(cmd, log_all=True, simple=True)
+
+    def make_install(self):
+        """Uses python setpu.py install to install to a custom path"""
+        cmd = "export GEOS_DIR=$SOFTROOTGEOS; python setup.py install --prefix=%s %s" % (os.environ['SOFTROOTPYTHON'], self.installopts)
+        run_cmd(cmd, log_all=True, simple=True)
+
+class NetCDF4(DefaultPythonPackage):
+    """install the NetCDF4 python package
+
+    This requires the usempi option for the toolkit, so it's recommended to use the PythonPackageModule version of this instead
+    """
+
+
+    def make(self):
+        """This uses python setup.py build to build python packages"""
+        cmd = "export HDF5_DIR=$SOFTROOTHDF5; export NETCDF4_DIR=$SOFTROOTNETCDF; python setup.py build"
+
+        run_cmd(cmd, log_all=True, simple=True)
+
+    def make_install(self):
+        """Uses python setpu.py install to install to a custom path"""
+        cmd = "export HDF5_DIR=$SOFTROOTHDF5; export NETCDF4_DIR=$SOFTROOTNETCDF; python setup.py install --prefix=%s %s" % (os.environ['SOFTROOTPYTHON'], self.installopts)
+        run_cmd(cmd, log_all=True, simple=True)
 
