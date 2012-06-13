@@ -440,16 +440,20 @@ def run_cmd_qa(cmd, qa, no_qa=None, log_ok=True, log_all=False, simple=False, re
 
         hit = False
         for q, a in newQA.items():
-            if tmpOut and q.search(stdoutErr):
-                log.debug("runQandA answer %s question %s out %s" % (a, q.pattern, stdoutErr[-50:]))
-                send_all(p, a)
+            res = q.search(stdoutErr)
+            if tmpOut and res:
+                fa = a % res.groupdict()
+                log.debug("runQandA answer %s question %s out %s" % (fa, q.pattern, stdoutErr[-50:]))
+                send_all(p, fa)
                 hit = True
                 break
         if not hit:
             for q, a in newstdQA.items():
-                if tmpOut and q.search(stdoutErr):
-                    log.debug("runQandA answer %s standard question %s out %s" % (a, q.pattern, stdoutErr[-50:]))
-                    send_all(p, a)
+                res = q.search(stdoutErr)
+                if tmpOut and res:
+                    fa = a % res.groupdict()
+                    log.debug("runQandA answer %s standard question %s out %s" % (fa, q.pattern, stdoutErr[-50:]))
+                    send_all(p, fa)
                     hit = True
                     break
             if not hit:
