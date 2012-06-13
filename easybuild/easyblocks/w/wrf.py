@@ -129,10 +129,7 @@ class WRF(Application):
               "Compile for nesting? (0=no nesting, 1=basic, 2=preset moves, 3=vortex following) [default 0]:":"0"
               }
         no_qa = []
-        # hackish way of delivering answers to interactive installer
-        # specifying questions to answer proved to be difficult (incomplete output?)
-        std_qa = {
-                 }
+        std_qa = {}
 
         run_cmd_qa(cmd, qa, no_qa=no_qa, std_qa=std_qa, log_all=True, simple=True)
 
