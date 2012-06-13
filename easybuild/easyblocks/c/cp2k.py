@@ -50,7 +50,8 @@ class CP2K(Application):
                          'extracflags':['',"Extra CFLAGS to be added (default: '')"],
                          'extradflags':['',"Extra DFLAGS to be added (default: '')"],
                          'runtest':[True, 'Indicates if a regression test should be run after make (default: True)'],
-                         'ignore_regtest_fails':[False, "Ignore failures in regression test (should be used with care) (default: False)."]
+                         'ignore_regtest_fails':[False, "Ignore failures in regression test (should be used with care) (default: False)."],
+                         'maxtasks':[3, "Maximum number of CP2K instances run at the same time during testing (default: 3)"]
                          })
 
         self.typearch = None
@@ -533,10 +534,12 @@ dir_base=%(base)s
 cp2k_version=%(cp2k_version)s
 dir_triplet=%(triplet)s
 leakcheck="YES"
+maxtasks=%(maxtasks)s
             """ % {'f90':os.getenv('F90'),
                    'base':self.builddir,
                    'cp2k_version':self.getcfg('type'),
-                   'triplet':self.typearch
+                   'triplet':self.typearch,
+                   'maxtasks':self.getcfg('maxtasks')
                   }
 
             cfg_fn = "cp2k_regtest.cfg"
