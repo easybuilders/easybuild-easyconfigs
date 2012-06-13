@@ -31,6 +31,9 @@ import time
 
 import easybuild
 
+# EasyBuild message prefix
+EB_MSG_PREFIX = "=="
+
 class EasyBuildError(Exception):
     """
     EasyBuildError is thrown when EasyBuild runs into something horribly wrong.
@@ -45,6 +48,7 @@ class EasyBuildLog(logging.Logger):
     """
     The EasyBuild logger, with its own error and exception functions.
     """
+
     # self.raiseError can be set to False disable raising the exception which is
     # necessary because logging.Logger.exception calls self.error
     raiseError = True
@@ -77,7 +81,7 @@ class EasyBuildLog(logging.Logger):
         raise EasyBuildError(newMsg)
 
 # set format for logger
-loggingFormat = '%(asctime)s %(name)s %(levelname)s %(message)s'
+loggingFormat = EB_MSG_PREFIX + ' %(asctime)s %(name)s %(levelname)s %(message)s'
 formatter = logging.Formatter(loggingFormat)
 
 # redirect standard handler of root logger to /dev/null
@@ -161,8 +165,16 @@ def logFilename(name, version):
 
     return filename
 
+def print_msg(msg, log=None):
+    """
+    Print a message to stdout.
+    """
+    if log:
+        log.info(msg)
+    print "%s %s" % (EB_MSG_PREFIX, msg)
+
 if __name__ == '__main__':
     initLogger('test', '1.0.0')
     fn, testlog, _ = initLogger(typ='build_log')
     testlog.info('Testing buildLog...')
-    print "Tested buildLog, see %s" % fn
+    "Tested buildLog, see %s" % fn
