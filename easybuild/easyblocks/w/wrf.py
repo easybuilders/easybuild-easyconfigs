@@ -130,7 +130,7 @@ class WRF(Application):
         no_qa = []
         std_qa = {
                   # named group in match will be used to construct answer
-                  "%s.*\nEnter selection\s*\[[0-9]+-[0-9]+\]\s*:" % build_type_question:"%(nr)s",
+                  r"%s.*\n(.*\n)*Enter selection\s*\[[0-9]+-[0-9]+\]\s*:" % build_type_question:"%(nr)s",
                   }
 
         run_cmd_qa(cmd, qa, no_qa=no_qa, std_qa=std_qa, log_all=True, simple=True)
