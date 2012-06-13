@@ -404,8 +404,8 @@ def run_cmd_qa(cmd, qa, no_qa=None, log_ok=True, log_all=False, simple=False, re
     ## Log command output
     if log_all:
         try:
-            runLog = tempfile.NamedTemporaryFile(suffix='.log', prefix='easybuild-qanda-')
-            log.debug('runqanda: Command output will be logged to %s' % runLog.name)
+            runLog = tempfile.NamedTemporaryFile(suffix='.log', prefix='easybuild-cmdqa-')
+            log.debug('run_cmd_qa: Command output will be logged to %s' % runLog.name)
             runLog.write(cmd + "\n\n")
         except IOError, err:
             log.error("Opening log file for Q&A failed: %s" % err)
