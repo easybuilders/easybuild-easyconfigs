@@ -79,61 +79,37 @@ class WRF(Application):
         # enable support for large file support in netCDF
         os.putenv('WRFIO_NCD_LARGE_FILE_SUPPORT', '1')
 
-        # determine build type based on version and compiler
-        ## just determine start index, various options are right behind each other
-        build_type_start = None
-        if LooseVersion(self.version()) == LooseVersion("3.3.1"):
+        # determine build type option to look for
+        build_type_option = None
+        if self.tk.toolkit_comp_family() == "Intel":
+            build_type_option = "Linux x86_64 i486 i586 i686, ifort compiler with icc"
 
-            if self.tk.toolkit_comp_family() == "Intel":
-                # Linux x86_64 i486 i586 i686, ifort compiler with icc
-                build_type_start = 9
-
-            elif self.tk.toolkit_comp_family() == "GCC":
-                # x86_64 Linux, gfortran compiler with gcc
-                build_type_start = 15
-
-            else:
-                self.log.error("Don't know which compiler is being used, and thus don't know which build type to select.")
-
-        elif LooseVersion(self.version()) == LooseVersion("3.4"):
-
-            if self.tk.toolkit_comp_family() == "Intel":
-                # Linux x86_64 i486 i586 i686, ifort compiler with icc
-                build_type_start = 13
-
-            elif self.tk.toolkit_comp_family() == "GCC":
-                # x86_64 Linux, gfortran compiler with gcc
-                build_type_start = 23
-
-            else:
-                self.log.error("Don't know which compiler is being used, and thus don't know which build type to select.")
+        elif self.tk.toolkit_comp_family() == "GCC":
+            build_type_option = "x86_64 Linux, gfortran compiler with gcc"
 
         else:
-            self.log.error("Don't know how to select build types for version %s of WRF." % self.version())
+            self.log.error("Don't know how to figure out build type to select.")
 
-        # select suitable build type option
-        knownbuildtypes = {
-                           'serial':build_type_start,
-                           'smpar' :build_type_start+1,
-                           'dmpar' :build_type_start+2,
-                           'dm+sm' :build_type_start+3
-                           }
-
+        # fetch selected build type (and make sure it makes sense)
+        knownbuildtypes = ['serial', 'smpar', 'dmpar', 'dm+sm']
         bt = self.getcfg('wrfbuildtype')
 
-        if not bt in knownbuildtypes.keys():
+        if not bt in knownbuildtypes:
             self.log.error("Unknown build type: '%s'. Supported build types: %s" % (bt, knownbuildtypes))
 
-        selected_build_type = knownbuildtypes[bt]
-        self.log.info("Selected build type %d" % selected_build_type)
+        # fetch option number based on build type option and selected build type
+        build_type_question = "\s*(?P<nr>[0-9]+).\s*%s\s*\(%s\)" % (build_type_option, bt)
 
         # run configure script
         cmd = "./configure"
-        qa = {}
+        qa = {
+              # named group in match will be used to construct answer
+              build_type_question:"%(nr)s"
+              }
         no_qa = []
         # hackish way of delivering answers to interactive installer
         # specifying questions to answer proved to be difficult (incomplete output?)
-        std_qa = {r"\)":"%s" % selected_build_type,
+        std_qa = {
                   r"[-]+":"1"
                  }
 
