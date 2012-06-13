@@ -106,7 +106,7 @@ class WRF(Application):
               # named group in match will be used to construct answer
               build_type_question:"%(nr)s"
               }
-        no_qa = []
+        no_qa = ["Will use"]
         # hackish way of delivering answers to interactive installer
         # specifying questions to answer proved to be difficult (incomplete output?)
         std_qa = {
