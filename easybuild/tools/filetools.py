@@ -624,3 +624,25 @@ def recursiveChmod(path, permissionBits, add=True, onlyFiles=False):
                     os.chmod(absEl, perms & ~permissionBits)
             except OSError, err:
                 log.debug("Failed to chmod %s (but ignoring it): %s" % (path, err))
+
+def patch_perl_script_autoflush(path):
+    # patch Perl script to enable autoflush,
+    # so that e.g. run_cmd_qa receives all output to answer questions
+
+    try:
+        f = open(path, "r")
+        txt = f.readlines()
+        f.close()
+
+        # force autoflush for Perl print buffer
+        extra=["\nuse IO::Handle qw();\n",
+               "STDOUT->autoflush(1);\n\n"]
+
+        newtxt = ''.join([txt[0]] + extra + txt[1:])
+
+        f = open(path, "w")
+        f.write(newtxt)
+        f.close()
+
+    except IOError, err:
+        log.error("Failed to patch Perl configure script: %s" % err)

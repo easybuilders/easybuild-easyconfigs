@@ -23,7 +23,7 @@ import os
 import re
 import sys
 from easybuild.framework.application import Application
-from easybuild.tools.filetools import run_cmd, run_cmd_qa
+from easybuild.tools.filetools import patch_perl_script_autoflush, run_cmd, run_cmd_qa
 from easybuild.easyblocks.n.netcdf import set_netcdf_env_vars, get_netcdf_module_set_cmds
 
 class WPS(Application):
@@ -86,6 +86,9 @@ class WPS(Application):
                 sys.stdout.write(line)
         except IOError, err:
             self.log.error("Failed to patch %s: %s" % (fn, err))
+
+        # patch arch/Config_new.pl script, so that run_cmd_qa receives all output to answer questions
+        patch_perl_script_autoflush(os.path.join("arch", "Config_new.pl"))
 
         # configure
 

@@ -23,7 +23,7 @@ import os
 import re
 import sys
 from easybuild.framework.application import Application
-from easybuild.tools.filetools import run_cmd, run_cmd_qa
+from easybuild.tools.filetools import patch_perl_script_autoflush, run_cmd, run_cmd_qa
 from easybuild.easyblocks.n.netcdf import set_netcdf_env_vars, get_netcdf_module_set_cmds
 
 class WRF(Application):
@@ -71,25 +71,8 @@ class WRF(Application):
         # enable support for large file support in netCDF
         os.putenv('WRFIO_NCD_LARGE_FILE_SUPPORT', '1')
 
-        # patch Config_new.pl script, so that run_cmd_qa receives all output to answer questions
-        fn = os.path.join("arch", "Config_new.pl")
-        try:
-            f = open(fn, "r")
-            txt = f.readlines()
-            f.close()
-
-            # force autoflush for Perl print buffer
-            extra=["\nuse IO::Handle qw();\n",
-                   "STDOUT->autoflush(1);\n\n"]
-
-            newtxt = ''.join([txt[0]] + extra + txt[1:])
-
-            f = open(fn, "w")
-            f.write(newtxt)
-            f.close()
-
-        except IOError, err:
-            self.log.error("Failed to patch Perl configure script: %s" % err)
+        # patch arch/Config_new.pl script, so that run_cmd_qa receives all output to answer questions
+        patch_perl_script_autoflush(os.path.join("arch", "Config_new.pl"))
 
         # determine build type option to look for
         build_type_option = None
