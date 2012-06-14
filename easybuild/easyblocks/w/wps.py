@@ -87,8 +87,8 @@ class WPS(Application):
         except IOError, err:
             self.log.error("Failed to patch %s: %s" % (fn, err))
 
-        # patch arch/Config_new.pl script, so that run_cmd_qa receives all output to answer questions
-        patch_perl_script_autoflush(os.path.join("arch", "Config_new.pl"))
+        # patch arch/Config.pl script, so that run_cmd_qa receives all output to answer questions
+        patch_perl_script_autoflush(os.path.join("arch", "Config.pl"))
 
         # configure
 
