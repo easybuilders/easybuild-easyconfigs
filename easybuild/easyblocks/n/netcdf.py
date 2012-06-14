@@ -64,3 +64,35 @@ class NetCDF(Application):
             self.log.info("Customized sanity check paths: %s"%self.getcfg('sanityCheckPaths'))
 
         Application.sanitycheck(self)
+
+def set_netcdf_env_vars(log):
+    """Set netCDF environment variables used by other software."""
+
+    netcdf = os.getenv('SOFTROOTNETCDF')
+    if not netcdf:
+        log.error("netCDF module not loaded?")
+    else:
+        os.putenv('NETCDF', netcdf)
+        log.debug("Set NETCDF to %s" % netcdf)
+        netcdff = os.getenv('SOFTROOTNETCDFMINFORTRAN')
+        netcdf_ver = os.getenv('SOFTVERSIONNETCDF')
+        if not netcdff:
+            if LooseVersion(netcdf_ver) >= LooseVersion("4.2"):
+                log.error("netCDF v4.2 no longer supplies Fortran library, also need netCDF-Fortran")
+        else:
+            os.putenv('NETCDFF', netcdff)
+            log.debug("Set NETCDFF to %s" % netcdff)
+
+def get_netcdf_module_set_cmds(log):
+    """Get module setenv commands for netCDF."""
+
+    netcdf = os.getenv('NETCDF')
+    if netcdf:
+        txt = "setenv NETCDF %s\n" % netcdf
+        # netCDF-Fortran is optional (only for netCDF v4.2 and later)
+        netcdff = os.getenv('NETCDFF')
+        if netcdff:
+            txt += "setenv NETCDFF %s\n" % netcdff
+        return txt
+    else:
+        self.log.error("NETCDF environment variable not set?")
