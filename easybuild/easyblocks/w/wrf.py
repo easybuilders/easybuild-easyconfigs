@@ -18,13 +18,13 @@
 # You should have received a copy of the GNU General Public License
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
-from distutils.version import LooseVersion
 import fileinput
 import os
 import re
 import sys
 from easybuild.framework.application import Application
 from easybuild.tools.filetools import run_cmd, run_cmd_qa
+from easybuild.easyblocks.n.netcdf import set_netcdf_env_vars, get_netcdf_module_set_cmds
 
 class WRF(Application):
     """Support for building/installing WRF."""
@@ -36,7 +36,9 @@ class WRF(Application):
         
         self.build_in_installdir = True
 
-        self.cfg.update({'wrfbuildtype':[None, "Specify the type of build (serial, smpar (OpenMP), dmpar (MPI), dm+sm (hybrid OpenMP/MPI))."],
+        self.wrfsubdir = None
+
+        self.cfg.update({'buildtype':[None, "Specify the type of build (serial, smpar (OpenMP), dmpar (MPI), dm+sm (hybrid OpenMP/MPI))."],
                          'rewriteopts':[True, "Replace default -O3 option in configure.wrf with CFLAGS/FFLAGS from environment (default: True)."]})
 
     def configure(self):        
@@ -47,20 +49,7 @@ class WRF(Application):
         """
 
         # netCDF dependency
-        netcdf = os.getenv('SOFTROOTNETCDF')
-        if not netcdf:
-            self.log.error("netCDF module not loaded?")
-        else:
-            os.putenv('NETCDF', netcdf)
-            self.log.debug("Set NETCDF to %s" % netcdf)
-            netcdff = os.getenv('SOFTROOTNETCDFMINFORTRAN')
-            netcdf_ver = os.getenv('SOFTVERSIONNETCDF')
-            if not netcdff:
-                if LooseVersion(netcdf_ver) >= LooseVersion("4.2"):
-                    self.log.error("netCDF v4.2 no longer supplies Fortran library, also need netCDF-Fortran")
-            else:
-                os.putenv('NETCDFF', netcdff)
-                self.log.debug("Set NETCDFF to %s" % netcdff)
+        set_netcdf_env_vars(self.log)
 
         # HDF5 (optional) dependency
         hdf5 = os.getenv('SOFTROOTHDF5')
@@ -115,7 +104,7 @@ class WRF(Application):
 
         # fetch selected build type (and make sure it makes sense)
         knownbuildtypes = ['serial', 'smpar', 'dmpar', 'dm+sm']
-        bt = self.getcfg('wrfbuildtype')
+        bt = self.getcfg('buildtype')
 
         if not bt in knownbuildtypes:
             self.log.error("Unknown build type: '%s'. Supported build types: %s" % (bt, knownbuildtypes))
@@ -185,7 +174,7 @@ class WRF(Application):
                    "em_tropical_cyclone"]
         testcases2d=["em_grav2d_x","em_hill2d_x","em_seabreeze2d_x","em_squall2d_x","em_squall2d_y"]
 
-        if not self.getcfg('wrfbuildtype') in ["dmpar","smpar","dm+sm"]:
+        if not self.getcfg('buildtype') in ["dmpar","smpar","dm+sm"]:
             testcases += testcases2d
 
         for part in testcases:
@@ -200,8 +189,8 @@ class WRF(Application):
             mainver = self.version().split('.')[0]
             self.wrfsubdir = "WRFV%s"%mainver
 
-            fs = ["libwrflib.a","wrf.exe","ideal.exe","real.exe","ndown.exe","nup.exe","tc.exe"]
-            ds = ["main","run"]
+            fs = ["libwrflib.a", "wrf.exe", "ideal.exe", "real.exe", "ndown.exe", "nup.exe", "tc.exe"]
+            ds = ["main", "run"]
 
             self.setcfg('sanityCheckPaths',{'files':[os.path.join(self.wrfsubdir,"main",x) for x in fs],
                                             'dirs':[os.path.join(self.wrfsubdir,x) for x in ds]
@@ -210,3 +199,21 @@ class WRF(Application):
             self.log.info("Customized sanity check paths: %s"%self.getcfg('sanityCheckPaths'))
 
         Application.sanitycheck(self)
+
+    def make_module_req_guess(self):
+
+        maindir = os.path.join(self.wrfsubdir,"main")
+
+        return {
+            'PATH': [maindir],
+            'LD_LIBRARY_PATH': [maindir],
+            'MANPATH': [],
+        }
+
+    def make_module_extra(self):
+
+        txt = Application.make_module_extra(self)
+
+        txt += get_netcdf_module_set_cmds(self.log)
+
+        return txt
