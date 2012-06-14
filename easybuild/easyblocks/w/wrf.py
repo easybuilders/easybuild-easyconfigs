@@ -54,9 +54,10 @@ class WRF(Application):
             os.putenv('NETCDF', netcdf)
             self.log.debug("Set NETCDF to %s" % netcdf)
             netcdff = os.getenv('SOFTROOTNETCDFMINFORTRAN')
-            netcdff_ver = os.getenv('SOFTVERSIONNETCDFMINFORTRAN')
-            if not netcdff and LooseVersion(netcdff_ver) >= LooseVersion("4.2"):
-                self.log.error("netCDF v4.2 no longer supplies Fortran library, also need netCDF-Fortran")
+            netcdf_ver = os.getenv('SOFTVERSIONNETCDF')
+            if not netcdff:
+                if LooseVersion(netcdf_ver) >= LooseVersion("4.2"):
+                    self.log.error("netCDF v4.2 no longer supplies Fortran library, also need netCDF-Fortran")
             else:
                 os.putenv('NETCDFF', netcdff)
                 self.log.debug("Set NETCDFF to %s" % netcdff)
