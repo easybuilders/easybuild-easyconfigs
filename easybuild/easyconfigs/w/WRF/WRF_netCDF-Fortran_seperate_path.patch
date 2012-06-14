@@ -1,6 +1,6 @@
 diff -ru WRFV3.orig/arch/Config_new.pl WRFV3/arch/Config_new.pl
 --- WRFV3.orig/arch/Config_new.pl	2012-04-06 05:44:01.000000000 +0200
-+++ WRFV3/arch/Config_new.pl	2012-06-13 11:35:06.714152164 +0200
++++ WRFV3/arch/Config_new.pl	2012-06-14 10:50:30.764238151 +0200
 @@ -7,6 +7,7 @@
  
  $sw_perl_path = perl ;
@@ -20,7 +20,15 @@ diff -ru WRFV3.orig/arch/Config_new.pl WRFV3/arch/Config_new.pl
    if ( substr( $ARGV[0], 1, 8 ) eq "pnetcdf=" )
    {
      $sw_pnetcdf_path = substr( $ARGV[0], 9 ) ;
-@@ -322,6 +327,7 @@
+@@ -71,6 +76,7 @@
+   if ( substr( $ARGV[0], 1, 11 ) eq "USENETCDFF=" )
+   {
+     $sw_usenetcdff = substr( $ARGV[0], 12 ) ;
++    $sw_usenetcdff =~ s/!/ /g ;
+   }
+   if ( substr( $ARGV[0], 1, 5 ) eq "time=" )
+   {
+@@ -322,6 +328,7 @@
    {
      $_ =~ s/CONFIGURE_PERL_PATH/$sw_perl_path/g ;
      $_ =~ s/CONFIGURE_NETCDF_PATH/$sw_netcdf_path/g ;
@@ -30,7 +38,7 @@ diff -ru WRFV3.orig/arch/Config_new.pl WRFV3/arch/Config_new.pl
      $_ =~ s/CONFIGURE_LDFLAGS/$sw_ldflags/g ;
 diff -ru WRFV3.orig/arch/configure_new.defaults WRFV3/arch/configure_new.defaults
 --- WRFV3.orig/arch/configure_new.defaults	2012-03-27 10:26:05.000000000 +0200
-+++ WRFV3/arch/configure_new.defaults	2012-06-13 11:35:06.715152174 +0200
++++ WRFV3/arch/configure_new.defaults	2012-06-13 22:14:52.493169302 +0200
 @@ -1246,6 +1246,7 @@
  
  LIB_EXTERNAL    = \
@@ -41,7 +49,7 @@ diff -ru WRFV3.orig/arch/configure_new.defaults WRFV3/arch/configure_new.default
  LIB_BUNDLED     = \
 diff -ru WRFV3.orig/arch/conf_tokens WRFV3/arch/conf_tokens
 --- WRFV3.orig/arch/conf_tokens	2008-02-26 16:39:38.000000000 +0100
-+++ WRFV3/arch/conf_tokens	2012-06-13 11:35:06.716152185 +0200
++++ WRFV3/arch/conf_tokens	2012-06-13 22:14:52.494169314 +0200
 @@ -5,6 +5,7 @@
         CONFIGURE_DMPARALLEL
  CONFIGURE_RWORDSIZE
@@ -58,7 +66,7 @@ diff -ru WRFV3.orig/arch/conf_tokens WRFV3/arch/conf_tokens
  CONFIGURE_GRIB2_INC
 diff -ru WRFV3.orig/arch/postamble_new WRFV3/arch/postamble_new
 --- WRFV3.orig/arch/postamble_new	2011-09-01 18:34:24.000000000 +0200
-+++ WRFV3/arch/postamble_new	2012-06-13 11:35:06.717152197 +0200
++++ WRFV3/arch/postamble_new	2012-06-13 22:14:52.495169326 +0200
 @@ -42,6 +42,7 @@
                        -I$(WRF_SRC_ROOT_DIR)/phys \
                        -I$(WRF_SRC_ROOT_DIR)/chem -I$(WRF_SRC_ROOT_DIR)/inc \
@@ -86,7 +94,7 @@ diff -ru WRFV3.orig/arch/postamble_new WRFV3/arch/postamble_new
  
 diff -ru WRFV3.orig/configure WRFV3/configure
 --- WRFV3.orig/configure	2012-02-24 18:49:47.000000000 +0100
-+++ WRFV3/configure	2012-06-13 11:35:06.718152209 +0200
++++ WRFV3/configure	2012-06-14 10:50:59.255543151 +0200
 @@ -276,10 +276,18 @@
  USENETCDFF=""  # see below
  if [ -n "$NETCDF" ] ; then
@@ -101,7 +109,7 @@ diff -ru WRFV3.orig/configure WRFV3/configure
      USENETCDFF="-lnetcdff"
 +  else
 +    if [ -f "$NETCDFF/lib/libnetcdff.a" ] ; then
-+      USENETCDFF="-L$NETCDFF/lib -lnetcdff"
++      USENETCDFF="-L$NETCDFF/lib!-lnetcdff" # ! will be replaced with space
 +    fi
    fi
  else
@@ -115,9 +123,20 @@ diff -ru WRFV3.orig/configure WRFV3/configure
            -compileflags=$compileflags -opt_level=$opt_level -USENETCDFF=$USENETCDFF -time=$FORTRAN_COMPILER_TIMER \
            -wrf_core=$wrf_core
       if test ! -f configure.wrf ; then
+@@ -536,8 +544,8 @@
+ echo "If you wish to change the default options, edit the file:"
+ echo "     arch/configure_new.defaults"
+ 
+-if test -n "$NETCDF" ; then
+-  grep nf_format_64bit $NETCDF/include/netcdf.inc > /dev/null
++if test -n "$NETCDFF" ; then
++  grep nf_format_64bit $NETCDFF/include/netcdf.inc > /dev/null
+   configure_aaaa=$? ; export configure_aaaa
+   if [ $configure_aaaa -a -z "$WRFIO_NCD_LARGE_FILE_SUPPORT" ] ; then
+     echo "NetCDF users note:"
 diff -ru WRFV3.orig/external/io_netcdf/makefile WRFV3/external/io_netcdf/makefile
 --- WRFV3.orig/external/io_netcdf/makefile	2009-09-11 20:08:33.000000000 +0200
-+++ WRFV3/external/io_netcdf/makefile	2012-06-13 11:35:50.086550486 +0200
++++ WRFV3/external/io_netcdf/makefile	2012-06-13 22:14:52.496169337 +0200
 @@ -3,8 +3,8 @@
  OBJSL   = wrf_io.o field_routines.o module_wrfsi_static.o
  OBJS    = $(OBJSL)
@@ -156,11 +175,9 @@ diff -ru WRFV3.orig/external/io_netcdf/makefile WRFV3/external/io_netcdf/makefil
              $(FC) $(FFLAGS) $(LDFLAGS) -o diffwrf diffwrf.o $(OBJSL) ../../frame/wrf_debug.o ../../frame/module_wrf_error.o $(ESMF_IO_LIB_EXT) $(LIBS) -lnetcdff ;\
            else \
              $(FC) $(FFLAGS) $(LDFLAGS) -o diffwrf diffwrf.o $(OBJSL) ../../frame/wrf_debug.o ../../frame/module_wrf_error.o $(ESMF_IO_LIB_EXT) $(LIBS) ;\
-Only in WRFV3/external/io_netcdf: makefile.orig
-Only in WRFV3/external/io_netcdf: makefile.rej
 diff -ru WRFV3.orig/Makefile WRFV3/Makefile
 --- WRFV3.orig/Makefile	2012-04-06 05:41:20.000000000 +0200
-+++ WRFV3/Makefile	2012-06-13 11:35:06.719152220 +0200
++++ WRFV3/Makefile	2012-06-13 22:14:52.497169348 +0200
 @@ -529,7 +529,7 @@
  	@ echo '--------------------------------------'
  	( cd frame ; $(MAKE) $(J) framework; \
