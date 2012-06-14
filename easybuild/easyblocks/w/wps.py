@@ -114,14 +114,14 @@ class WPS(Application):
             self.log.error("Unknown build type: '%s'. Supported build types: %s" % (bt, knownbuildtypes.keys()))
 
         # fetch option number based on build type option and selected build type
-        build_type_question = "\s*(?P<nr>[0-9]+).\s*%s\s*%s\s*$" % (build_type_option, knownbuildtypes[bt])
+        build_type_question = "\s*(?P<nr>[0-9]+).\s*%s\s*%s\s*\n" % (build_type_option, knownbuildtypes[bt])
 
         cmd = "./configure"
         qa = {}
         no_qa = []
         std_qa = {
                   # named group in match will be used to construct answer
-                  r"%s.*\n(.*\n)*Enter selection\s*\[[0-9]+-[0-9]+\]\s*:" % build_type_question:"%(nr)s",
+                  r"%s(.*\n)*Enter selection\s*\[[0-9]+-[0-9]+\]\s*:" % build_type_question:"%(nr)s",
                   }
 
         run_cmd_qa(cmd, qa, no_qa=no_qa, std_qa=std_qa, log_all=True, simple=True)
