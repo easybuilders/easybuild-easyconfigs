@@ -98,7 +98,7 @@ class WPS(Application):
             build_type_option = "PC Linux x86_64, Intel compiler"
 
         elif self.tk.toolkit_comp_family() == "GCC":
-            build_type_option = "PC Linux x86_64, gfortran compiler"
+            build_type_option = "PC Linux x86_64, gfortran compiler,"
 
         else:
             self.log.error("Don't know how to figure out build type to select.")
@@ -114,7 +114,7 @@ class WPS(Application):
             self.log.error("Unknown build type: '%s'. Supported build types: %s" % (bt, knownbuildtypes.keys()))
 
         # fetch option number based on build type option and selected build type
-        build_type_question = "\s*(?P<nr>[0-9]+).\s*%s\s*,\s*%s\s*$" % (build_type_option, knownbuildtypes[bt])
+        build_type_question = "\s*(?P<nr>[0-9]+).\s*%s\s*%s\s*$" % (build_type_option, knownbuildtypes[bt])
 
         cmd = "./configure"
         qa = {}
