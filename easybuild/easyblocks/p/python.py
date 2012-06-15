@@ -291,15 +291,6 @@ libraries = %s
             shutil.rmtree(builddir)
         else:
             self.log.debug("build dir %s already clean" % builddir)
-class Tables(DefaultPythonPackage):
-    """install the pytables package
-
-    This requires HDF5, and mpi, so preferable don't use this, but create a PythonPackageModule for it
-    """
-    def __init__(self, mself, pkg, pkginstalldeps):
-         DefaultPythonPackage.__init__(self, mself, pkg, pkginstalldeps)
-         #pytables needs to k now where HDF5 is
-         os.environ['HDF5'] = os.environ['SOFTROOTHDF5']
 
 class Scipy(FortranPythonPackage):
     """scipy package"""
@@ -315,36 +306,4 @@ class Scipy(FortranPythonPackage):
         else:
             self.testinstall = False
             self.runtest = None
-
-class Basemap(DefaultPythonPackage):
-    """install the pytables package"""
-
-    def make(self):
-        """This uses python setup.py build to build python packages"""
-        cmd = "export GEOS_DIR=$SOFTROOTGEOS; python setup.py build"
-
-        run_cmd(cmd, log_all=True, simple=True)
-
-    def make_install(self):
-        """Uses python setpu.py install to install to a custom path"""
-        cmd = "export GEOS_DIR=$SOFTROOTGEOS; python setup.py install --prefix=%s %s" % (os.environ['SOFTROOTPYTHON'], self.installopts)
-        run_cmd(cmd, log_all=True, simple=True)
-
-class NetCDF4(DefaultPythonPackage):
-    """install the NetCDF4 python package
-
-    This requires the usempi option for the toolkit, so it's recommended to use the PythonPackageModule version of this instead
-    """
-
-
-    def make(self):
-        """This uses python setup.py build to build python packages"""
-        cmd = "export HDF5_DIR=$SOFTROOTHDF5; export NETCDF4_DIR=$SOFTROOTNETCDF; python setup.py build"
-
-        run_cmd(cmd, log_all=True, simple=True)
-
-    def make_install(self):
-        """Uses python setpu.py install to install to a custom path"""
-        cmd = "export HDF5_DIR=$SOFTROOTHDF5; export NETCDF4_DIR=$SOFTROOTNETCDF; python setup.py install --prefix=%s %s" % (os.environ['SOFTROOTPYTHON'], self.installopts)
-        run_cmd(cmd, log_all=True, simple=True)
 
