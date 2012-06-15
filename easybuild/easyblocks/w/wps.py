@@ -78,7 +78,7 @@ class WPS(Application):
 
         # patch ungrib Makefile so that JasPer is found
         fn = os.path.join("ungrib","src","Makefile")
-        jasperlibs = "%s -ljasper -lpng" % jasperlibdir
+        jasperlibs = "-L%s -ljasper -lpng" % jasperlibdir
         try:
             for line in fileinput.input(fn, inplace=1, backup='orig.JasPer'):
                 line = re.sub(r"^(\s*-L\.\s*-l\$\(LIBTARGET\))(\s*;.*)$", r"\1 %s\2" % jasperlibs, line)
