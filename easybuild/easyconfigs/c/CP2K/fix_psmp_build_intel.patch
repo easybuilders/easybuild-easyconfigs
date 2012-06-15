@@ -1,0 +1,34 @@
+diff -ru cp2k.orig/src/dbcsr_lib/dbcsr_work_operations.F cp2k/src/dbcsr_lib/dbcsr_work_operations.F
+--- cp2k.orig/src/dbcsr_lib/dbcsr_work_operations.F 2011-11-12 05:35:03.000000000 +0100
++++ cp2k/src/dbcsr_lib/dbcsr_work_operations.F  2012-06-14 20:44:12.972686488 +0200
+@@ -1473,6 +1473,7 @@
+     TYPE(i_array_p), DIMENSION(:), POINTER, &
+       SAVE                                   :: all_blk_p, all_col_i, &
+                                                 all_row_p
++    INTEGER                                  :: tmpsize
+ 
+ !   ---------------------------------------------------------------------------
+ 
+@@ -1550,8 +1551,9 @@
+     nblks_to_add = nblks_to_add + nblks
+     !$OMP ATOMIC
+     new_nblks = new_nblks + nblks
++    tmpsize = wm%datasize
+     !$OMP ATOMIC
+-    new_nze = new_nze + wm%datasize
++    new_nze = new_nze + tmpsize
+     !$OMP BARRIER
+     !
+     !$OMP MASTER
+diff -ru cp2k.orig/src/xc_exchange_gga.F cp2k/src/xc_exchange_gga.F
+--- cp2k.orig/src/xc_exchange_gga.F 2011-10-12 05:35:02.000000000 +0200
++++ cp2k/src/xc_exchange_gga.F  2012-06-14 21:31:23.910256253 +0200
+@@ -443,7 +443,7 @@
+ 
+     !$omp parallel do default(none) &
+     !$omp             shared(npoints, rho, eps_rho, r13, fact, e_rho_rho) &
+-    !$omp             shared(e_rho_ndrho, fs, sfac, tact, s) &
++    !$omp             shared(e_rho_ndrho, e_ndrho_ndrho, fs, sfac, tact, s) &
+     !$omp             private(ip,a0,a1,a2,sx,sy,sxx,sxy)
+ 
+     DO ip = 1, npoints
