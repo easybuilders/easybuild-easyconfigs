@@ -37,8 +37,12 @@ class HDF5(Application):
 
         fcomp = "FC=%s" % os.getenv('F77')
 
-        self.updatecfg('configopts', "--enable-cxx --enable-fortran %s" % fcomp)
         self.updatecfg('configopts', "--with-pic --with-pthread --enable-shared")
+        self.updatecfg('configopts', "--enable-cxx --enable-fortran %s" % fcomp)
+
+        # MPI and C++ support enabled requires --enable-unsupported, because this is untested by HDF5
+        if self.tk.opts['usempi']:
+            self.updatecfg('configopts', "--enable-unsupported")
 
         # make options
         self.updatecfg('makeopts', fcomp)
