@@ -21,10 +21,27 @@
 import glob
 import os
 import shutil
-from easybuild.easyblocks.g.g2lib import G2lib
+from easybuild.framework.application import Application
 
-class G2clib(G2lib):
+class G2clib(Application):
     """Support for building g2clib GRIB2 C library."""
+
+    def configure(self):
+        pass
+
+    def make(self):
+        """Build by supplying required make options, and running make."""
+
+        if not os.getenv('SOFTROOTJASPER'):
+            self.log.error("JasPer module not loaded?")
+
+        # beware: g2clib uses INC, while g2lib uses INCDIR !
+        makeopts = 'CC="%s" FC="%s" INC="-I%s/include"' % (os.getenv('CC'),
+                                                           os.getenv('F90'),
+                                                           os.getenv('SOFTROOTJASPER'))
+        self.updatecfg('makeopts', makeopts)
+
+        Application.make(self)
 
     def make_install(self):
         """Install by copying library and header files to install directory."""
@@ -55,4 +72,4 @@ class G2clib(G2lib):
                                             'dirs':["include"]
                                             })
 
-        G2lib.sanitycheck(self)
+        Application.sanitycheck(self)
