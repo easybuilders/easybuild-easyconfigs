@@ -52,7 +52,9 @@ class Maple(Application):
             '->1- Single User License 2- Network License ENTER THE NUMBER FOR YOUR CHOICE, OR PRESS <ENTER> TO ACCEPT THE DEFAULT::':'2',
             'PRESS <ENTER> TO EXIT THE INSTALLER:':'',
             'License server (DEFAULT: ):':self.getcfg('licenseServer'),
-            'Port number (optional) (DEFAULT: ):':''}
+            'Port number (optional) (DEFAULT: ):':'',
+            '->1- Configure toolbox for Matlab 2- Do not configure at this time ENTER THE NUMBER FOR YOUR CHOICE, OR PRESS <ENTER> TO ACCEPT THE DEFAULT::':'2'
+            }
 
         no_qa=['Graphical installers are not supported by the VM. The console mode will be used instead...',
                'Extracting the JRE from the installer archive...',
