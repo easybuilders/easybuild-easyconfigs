@@ -25,8 +25,10 @@ from easybuild.framework.application import Application
 from easybuild.tools.filetools import run_cmd
 
 class MrBayes(Application):
+    """Support for building/installing MrBayes."""
 
     def configure(self):
+        """Configure build: <single-line description how this deviates from standard configure>"""
 
         # set generic make options
         self.updatecfg('makeopts', 'CC="%s" OPTFLAGS="%s"' % (os.getenv('MPICC'), os.getenv('CFLAGS')))
@@ -61,6 +63,8 @@ class MrBayes(Application):
             self.updatecfg('makeopts', 'MPI=yes')
 
     def make_install(self):
+        """Install by copying bniaries to install dir."""
+
         bindir = os.path.join(self.installdir, 'bin')
         os.makedirs(bindir)
 
@@ -74,6 +78,7 @@ class MrBayes(Application):
                 self.log.error("Failed to copy %s to %s (%s)" % (src, dst, err))
 
     def sanitycheck(self):
+        """Custom sanity check for MrBayes."""
 
         if not self.getcfg('sanityCheckPaths'):
             self.setcfg('sanityCheckPaths', {'files':["bin/mb"],
@@ -84,3 +89,4 @@ class MrBayes(Application):
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
         Application.sanitycheck(self)
+
