@@ -210,8 +210,8 @@ def run_pylint(fn):
 
     # warnings/errors we choose to ignore
     ignores_re = [
-                  re.compile("^W:\s*[0-9,]*:[A-Za-z]*.configure: Arguments number differs from overridden method"),
-                  re.compile("^W:\s*[0-9,]*:[A-Za-z]*.make: Arguments number differs from overridden method")
+                  re.compile("^W:\s*[0-9,]*:[A-Za-z0-9_]*.configure: Arguments number differs from overridden method"),
+                  re.compile("^W:\s*[0-9,]*:[A-Za-z0-9_]*.make: Arguments number differs from overridden method")
                   ]
 
     warning_cnt = 0
