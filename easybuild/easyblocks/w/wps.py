@@ -98,6 +98,11 @@ class WPS(Application):
 
         if LooseVersion(self.version()) >= LooseVersion("3.4"):
 
+            knownbuildtypes = {
+                               'smpar':'serial',
+                               'dmpar':'dmpar'
+                               }
+
             if self.tk.toolkit_comp_family() == "Intel":
                 build_type_option = " Linux x86_64, Intel compiler"
 
@@ -109,6 +114,11 @@ class WPS(Application):
 
         else:
 
+            knownbuildtypes = {
+                               'smpar':'serial',
+                               'dmpar':'DM parallel'
+                               }
+
             if self.tk.toolkit_comp_family() == "Intel":
                 build_type_option = "PC Linux x86_64, Intel compiler"
 
@@ -118,11 +128,7 @@ class WPS(Application):
             else:
                 self.log.error("Don't know how to figure out build type to select.")
 
-        # fetch selected build type (and make sure it makes sense)
-        knownbuildtypes = {
-                           'smpar':'serial',
-                           'dmpar':'DM parallel'
-                           }
+        # check and fetch selected build type
         bt = self.getcfg('buildtype')
 
         if not bt in knownbuildtypes.keys():
