@@ -21,25 +21,28 @@
 """
 This module contains the SCOTCH easyblock.
 """
+import fileinput
 import os
 import re
+import sys
 import shutil
 from easybuild.framework.application import Application
-from easybuild.tools.filetools import run_cmd
+from easybuild.tools.filetools import run_cmd, copytree
+
 
 class SCOTCH(Application):
     """
     Easyblock for building SCOTCH
-     """
+    """
     def configure(self):
         """
         Locate the correct makefile, and copy this to a general Makefile.inc
         (as shipped and expected by SCOTCH)
         """
-        if self.tk.name in ['ictce', 'iqacml']:
+        if "SOFTROOTICC" in os.environ:
             makefilename = 'Makefile.inc.x86-64_pc_linux2.icc'
 
-        elif self.tk.name in ['goalf']:
+        elif "SOFTROOTGCC" in os.environ:
             makefilename = 'Makefile.inc.x86-64_pc_linux2'
         else:
             self.log.error("Don't know how to handle toolkit %s." % self.tk.name)
@@ -52,6 +55,22 @@ class SCOTCH(Application):
             self.log.debug("Successfully copied Makefile.inc to src dir.")
         except OSError:
             self.log.error("Copying Makefile.inc to src dir failed.")
+
+        #the default behaviour of these makefiles is still wrong
+        #e.g., we need -lpthread  
+        try:
+            for line in fileinput.input(dst, inplace=1, backup='.orig.patchictce'):
+                #use $CC and the like since we're at it.
+                line = re.sub(r"^CCS\s*=.*$", "CCS\t= $(CC)", line)
+                line = re.sub(r"^CCP\s*=.*$", "CCP\t= $(MPICC)", line)
+                line = re.sub(r"^CCD\s*=.*$", "CCD\t= $(MPICC)", line)
+                #append -lpthread to LDFLAGS
+                line = re.sub(r"^LDFLAGS\s*=(?P<ldflags>.*$)", "LDFLAGS\t=\g<ldflags> -lpthread", line)
+                line = re.sub(r"^CFLAGS\s*=(?P<cflags>.*$)", "CFLAGS\t=\g<cflags> -fPIC", line)
+                sys.stdout.write(line)
+        except IOError, err:
+            self.log.error("Can't modify/write Makefile in 'Makefile.inc': %s" % (err))
+
         try:
             os.chdir(srcdir)
             self.log.debug("Changing to src dir.")
@@ -78,11 +97,14 @@ class SCOTCH(Application):
         run_cmd(cmd, log_all=True, simple=True)
 
     def make_install(self):
+        self.log.debug("starting scotch's make_install")
+        regmetis = re.compile(r".*metis.*")
         try:
-            for d in ["include", "lib", "bin", "man"]:
+            for d in ["include", "lib", "bin", "man"]:#removed , here, we don't need metis.h etc.
                 src = os.path.join(self.getcfg('startfrom'), d)
                 dst = os.path.join(self.installdir, d)
-                shutil.copytree(src, dst)
+                #we don't need any metis stuff from scotch!
+                copytree(src, dst, ignore=lambda path, files: [x for x in files if regmetis.match(x)])
         except OSError, err:
             self.log.error("Copying %s to installation dir %s failed: %s" % (src, dst, err))
 
@@ -90,10 +112,10 @@ class SCOTCH(Application):
         scotchgrouplib = os.path.join(scotchlibdir, 'libscotch_group.a')
         liblistorig = os.listdir(scotchlibdir)
         liblist = []
-        regmetis = re.compile(r".*metis.*")
+
         for lib in liblistorig:
             if not regmetis.match(lib): liblist.append(lib)
-        line = ' '.join(liblist)
+        line = ' '.join(liblistorig)
         line = "GROUP (%s)" % line
         try:
             f = open(scotchgrouplib, 'w')

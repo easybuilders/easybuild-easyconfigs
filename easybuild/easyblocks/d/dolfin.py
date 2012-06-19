@@ -42,6 +42,9 @@ class Dolfin(CMakePythonPackage):
             else:
                 depsdict.update({dep:deproot})
 
+        #run cmake in debug mode
+
+        self.updatecfg('configopts', ' -DCMAKE_BUILD_TYPE=Debug')
         # set correct compilers to be used at runtime
         self.updatecfg('configopts', ' -DMPI_C_COMPILER="$MPICC"')
         self.updatecfg('configopts', ' -DMPI_CXX_COMPILER="$MPICXX"')
@@ -83,13 +86,15 @@ class Dolfin(CMakePythonPackage):
         self.updatecfg('configopts', umfpack_params)
 
         # ParMETIS and SCOTCH
-
-        self.updatecfg('configopts', ' -DSCOTCH_DIR="%s" -DSCOTCH_DEBUG:BOOL=ON' % depsdict['SCOTCH'])
         self.updatecfg('configopts', ' -DPARMETIS_DIR="%s"' % depsdict['ParMETIS'])
+        self.updatecfg('configopts', ' -DSCOTCH_DIR="%s" -DSCOTCH_DEBUG:BOOL=ON' % depsdict['SCOTCH'])
 
         # BLACS and LAPACK 
         self.updatecfg('configopts', ' -DBLAS_LIBRARIES:PATH="$LIBBLAS"')
         self.updatecfg('configopts', ' -DLAPACK_LIBRARIES:PATH="$LIBLAPACK"')
+
+        #CFLAGS
+        self.updatecfg('configopts', ' -DCGAL_DIR:PATH="$SOFTROOTCGAL"')
 
         #set correct openmp options
         openmp = get_openmp_flag(self.log)
