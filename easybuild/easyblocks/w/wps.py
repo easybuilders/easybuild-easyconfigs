@@ -18,6 +18,7 @@
 # You should have received a copy of the GNU General Public License
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
+from distutils.version import LooseVersion
 import fileinput
 import os
 import re
@@ -94,14 +95,28 @@ class WPS(Application):
 
         # determine build type option to look for
         build_type_option = None
-        if self.tk.toolkit_comp_family() == "Intel":
-            build_type_option = "PC Linux x86_64, Intel compiler"
 
-        elif self.tk.toolkit_comp_family() == "GCC":
-            build_type_option = "PC Linux x86_64, gfortran compiler,"
+        if LooseVersion(self.version()) >= LooseVersion("3.4"):
+
+            if self.tk.toolkit_comp_family() == "Intel":
+                build_type_option = " Linux x86_64, Intel compiler"
+
+            elif self.tk.toolkit_comp_family() == "GCC":
+                build_type_option = "Linux x86_64 g95 compiler"
+
+            else:
+                self.log.error("Don't know how to figure out build type to select.")
 
         else:
-            self.log.error("Don't know how to figure out build type to select.")
+
+            if self.tk.toolkit_comp_family() == "Intel":
+                build_type_option = "PC Linux x86_64, Intel compiler"
+
+            elif self.tk.toolkit_comp_family() == "GCC":
+                build_type_option = "PC Linux x86_64, gfortran compiler,"
+
+            else:
+                self.log.error("Don't know how to figure out build type to select.")
 
         # fetch selected build type (and make sure it makes sense)
         knownbuildtypes = {
@@ -114,7 +129,7 @@ class WPS(Application):
             self.log.error("Unknown build type: '%s'. Supported build types: %s" % (bt, knownbuildtypes.keys()))
 
         # fetch option number based on build type option and selected build type
-        build_type_question = "\s*(?P<nr>[0-9]+).\s*%s\s*%s\s*\n" % (build_type_option, knownbuildtypes[bt])
+        build_type_question = "\s*(?P<nr>[0-9]+).\s*%s\s*\(?%s\)?\s*\n" % (build_type_option, knownbuildtypes[bt])
 
         cmd = "./configure"
         qa = {}
