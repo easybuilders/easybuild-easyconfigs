@@ -1481,12 +1481,14 @@ def module_path_for_easyblock(easyblock):
     if not easyblock:
         return None
 
+    modname = easyblock.replace('-','_')
+
     first_char = easyblock[0].lower()
 
     if first_char in letters:
-        return "easybuild.easyblocks.%s.%s" % (first_char, easyblock)
+        return "easybuild.easyblocks.%s.%s" % (first_char, modname)
     else:
-        return "easybuild.easyblocks.0.%s" % easyblock
+        return "easybuild.easyblocks.0.%s" % modname
 
 def get_paths_for(log, subdir="easyblocks"):
     """
@@ -1518,7 +1520,7 @@ def get_instance(easyblock, log, name=None):
 
             modulepath = module_path_for_easyblock(name)
             # don't use capitalize, as it changes 'GCC' into 'Gcc', we want to keep the capitals that are there already
-            class_name = name[0].upper() + name[1:]
+            class_name = name[0].upper() + name[1:].replace('-','_')
 
             # try and find easyblock
             easyblock_found = False
