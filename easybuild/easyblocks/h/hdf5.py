@@ -49,23 +49,6 @@ class HDF5(Application):
 
         Application.configure(self)
 
-        # patch "-l " fails out of libtool script
-        fn = "libtool"
-        try:
-            f = open(fn, 'r')
-            txt = f.read()
-            f.close()
-
-            txt = txt.replace("-l -l", "-l")
-            txt = txt.replace("-l -L", "-L")
-
-            f = open(fn, 'w')
-            f.write(txt)
-            f.close()
-
-        except IOError, err:
-            self.log.error("Failed to patch %s: %s" % (fn, err))
-
 
     # default make and make install are ok
 
@@ -75,14 +58,18 @@ class HDF5(Application):
         """
         if not self.getcfg('sanityCheckPaths'):
 
-            self.setcfg('sanityCheckPaths',{'files':["bin/h5%s" % x for x in ["2gif", "c++", "cc",
-                                                                              "copy", "debug", "diff",
-                                                                              "dump", "fc", "import",
-                                                                              "jam","ls", "mkgrp",
-                                                                              "perf_serial", "redeploy",
-                                                                              "repack", "repart", "stat",
-                                                                              "unjam"]] +
-                                                    ["bin/gif2h5"] +
+            if self.tk.opts['usempi']:
+                extra_binaries = ["bin/%s" % x for x in ["h5perf", "h5pcc", "h5pfc", "ph5diff"]]
+            else:
+                extra_binaries = ["bin/%s" % x for x in ["h5cc", "h5fc"]]
+
+            self.setcfg('sanityCheckPaths',{'files':["bin/h5%s" % x for x in ["2gif", "c++", "copy",
+                                                                              "debug", "diff", "dump",
+                                                                              "import", "jam","ls",
+                                                                              "mkgrp", "perf_serial",
+                                                                              "redeploy", "repack",
+                                                                              "repart", "stat", "unjam"]] +
+                                                    ["bin/gif2h5"] + extra_binaries +
                                                     ["lib/libhdf5%s.so" % x for x in ["_cpp", "_fortran",
                                                                                       "_hl_cpp", "_hl",
                                                                                       "hl_fortran", ""]],
