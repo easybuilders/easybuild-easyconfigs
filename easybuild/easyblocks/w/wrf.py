@@ -110,13 +110,27 @@ class WRF(Application):
 
         run_cmd_qa(cmd, qa, no_qa=no_qa, std_qa=std_qa, log_all=True, simple=True)
 
+        cfgfile= 'configure.wrf'
+
+        # make sure correct compilers are being used
+        comps = {
+                 'SCC':os.getenv('CC'),
+                 'SFC':os.getenv('F90'),
+                 'CCOMP':os.getenv('CC'),
+                 'DM_FC':os.getenv('MPIF90'),
+                 'DM_CC':os.getenv('MPICC'),
+                 }
+        for line in fileinput.input(cfgfile, inplace=1, backup='orig.rewriteopts'):
+            for k,v in comps.items():
+                line = re.sub(r"^(%s\s*=\s*).*$" % k, r"\1 %s" % v, line)
+            sys.stdout.write(line)
+
         # rewrite optimization options if desired
         if self.getcfg('rewriteopts'):
 
             ## replace default -O3 option in configure.wrf with CFLAGS/FFLAGS from environment
-            fn='configure.wrf'
 
-            self.log.info("Rewriting optimization options in %s" % fn)
+            self.log.info("Rewriting optimization options in %s" % cfgfile)
 
             # set extra flags for Intel compilers
             # see http://software.intel.com/en-us/forums/showthread.php?t=72109&p=1#146748
@@ -130,7 +144,7 @@ class WRF(Application):
                         self.log.info("Updated %s to '%s'" % (envvar, os.getenv(envvar)))
 
             # replace -O3 with desired optimization options
-            for line in fileinput.input(fn, inplace=1, backup='orig.rewriteopts'):
+            for line in fileinput.input(cfgfile, inplace=1, backup='orig.rewriteopts'):
                 line = re.sub(r"^(FCOPTIM.*)(\s-O3)(\s.*)$", r"\1 %s \3" % os.getenv('FFLAGS'), line)
                 line = re.sub(r"^(CFLAGS_LOCAL.*)(\s-O3)(\s.*)$", r"\1 %s \3" % os.getenv('CFLAGS'), line)
                 sys.stdout.write(line)
