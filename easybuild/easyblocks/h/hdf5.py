@@ -41,9 +41,7 @@ class HDF5(Application):
         self.updatecfg('configopts', "--enable-cxx --enable-fortran %s" % fcomp)
 
         # MPI and C++ support enabled requires --enable-unsupported, because this is untested by HDF5
-        ## only required for GCC (?), even breaks stuff when enabled when Intel compilers are used
-        ## (in that case, the compiler complains on the order of mpi.h includes vs other includes (e.g. stdio.h))
-        if self.tk.toolkit_comp_family() == "GCC" and self.tk.opts['usempi']:
+        if self.tk.opts['usempi']:
             self.updatecfg('configopts', "--enable-unsupported")
 
         # make options
