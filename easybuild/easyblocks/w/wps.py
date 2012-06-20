@@ -68,6 +68,13 @@ class WPS(Application):
         except IOError, err:
             self.log.error("Failed to patch %s script: %s" % (self.compile_script, err))
 
+        # libpng dependency check
+        libpng = os.getenv('SOFTROOTLIBPNG')
+        libpnginc = "%s/include" % libpng
+        libpnglibdir = "%s/lib" % libpng
+        if not libpng:
+            self.log.error("libpng module not loaded?")
+
         # JasPer dependency check + setting env vars
         jasper = os.getenv('SOFTROOTJASPER')
         jasperlibdir = os.path.join(jasper, "lib")
@@ -79,7 +86,7 @@ class WPS(Application):
 
         # patch ungrib Makefile so that JasPer is found
         fn = os.path.join("ungrib","src","Makefile")
-        jasperlibs = "-L%s -ljasper -lpng" % jasperlibdir
+        jasperlibs = "-L%s -ljasper -L%s -lpng" % (jasperlibdir, libpnglibdir)
         try:
             for line in fileinput.input(fn, inplace=1, backup='.orig.JasPer'):
                 line = re.sub(r"^(\s*-L\.\s*-l\$\(LIBTARGET\))(\s*;.*)$", r"\1 %s\2" % jasperlibs, line)
@@ -124,6 +131,7 @@ class WPS(Application):
 
             elif self.tk.toolkit_comp_family() == "GCC":
                 build_type_option = "PC Linux x86_64, gfortran compiler,"
+                knownbuildtypes['dmpar'] = knownbuildtypes['dmpar'].upper()
 
             else:
                 self.log.error("Don't know how to figure out build type to select.")
@@ -147,12 +155,14 @@ class WPS(Application):
 
         run_cmd_qa(cmd, qa, no_qa=no_qa, std_qa=std_qa, log_all=True, simple=True)
 
-        # make sure correct compilers are being used
+        # make sure correct compilers and compiler flags are being used
         comps = {
-                 'SCC':"%s -I$(JASPERINC)" % os.getenv('CC'),
+                 'SCC':"%s -I$(JASPERINC) -I%s" % (os.getenv('CC'), libpnginc),
                  'SFC':os.getenv('F90'),
                  'DM_FC':os.getenv('MPIF90'),
-                 'DM_CC':"%s -DMPI2_SUPPORT" % os.getenv('MPICC'),
+                 'DM_CC':os.getenv('MPICC'),
+                 'FC':os.getenv('MPIF90'),
+                 'CC':os.getenv('MPICC'),
                  }
         fn='configure.wps'
         for line in fileinput.input(fn, inplace=1,backup='.orig.comps'):
