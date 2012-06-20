@@ -118,9 +118,9 @@ class WRF(Application):
                  'SFC':os.getenv('F90'),
                  'CCOMP':os.getenv('CC'),
                  'DM_FC':os.getenv('MPIF90'),
-                 'DM_CC':os.getenv('MPICC'),
+                 'DM_CC':"%s -DMPI2_SUPPORT" % os.getenv('MPICC'),
                  }
-        for line in fileinput.input(cfgfile, inplace=1, backup='orig.rewriteopts'):
+        for line in fileinput.input(cfgfile, inplace=1, backup='.orig.comps'):
             for k,v in comps.items():
                 line = re.sub(r"^(%s\s*=\s*).*$" % k, r"\1 %s" % v, line)
             sys.stdout.write(line)
@@ -144,7 +144,7 @@ class WRF(Application):
                         self.log.info("Updated %s to '%s'" % (envvar, os.getenv(envvar)))
 
             # replace -O3 with desired optimization options
-            for line in fileinput.input(cfgfile, inplace=1, backup='orig.rewriteopts'):
+            for line in fileinput.input(cfgfile, inplace=1, backup='.orig.rewriteopts'):
                 line = re.sub(r"^(FCOPTIM.*)(\s-O3)(\s.*)$", r"\1 %s \3" % os.getenv('FFLAGS'), line)
                 line = re.sub(r"^(CFLAGS_LOCAL.*)(\s-O3)(\s.*)$", r"\1 %s \3" % os.getenv('CFLAGS'), line)
                 sys.stdout.write(line)
@@ -164,7 +164,7 @@ class WRF(Application):
 
         # build wrf
         cmd="./compile %s wrf" % (par)
-        run_cmd(cmd, log_all=True, simple=True)
+        run_cmd(cmd, log_all=True, simple=True, log_output=True)
 
         # also build WRF test cases
         testcases=["em_b_wave","em_heldsuarez","em_les","em_quarter_ss","em_real","em_scm_xy",
