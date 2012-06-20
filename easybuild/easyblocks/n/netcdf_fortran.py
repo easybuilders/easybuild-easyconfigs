@@ -18,6 +18,7 @@
 # You should have received a copy of the GNU General Public License
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
+import os
 from easybuild.framework.application import Application
 
 class NetCDF_Fortran(Application):
@@ -28,6 +29,8 @@ class NetCDF_Fortran(Application):
 
         if self.tk.opts['pic']:
             self.updatecfg('configopts', "--with-pic")
+
+        self.updatecfg('configopts', 'FCFLAGS="%s" ' % os.getenv('FFLAGS'))
 
         Application.configure(self)
 

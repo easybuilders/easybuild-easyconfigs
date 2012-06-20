@@ -33,8 +33,7 @@ class NetCDF(Application):
         if self.tk.opts['pic']:
             self.updatecfg('configopts', '--with-pic')
 
-        self.updatecfg('configopts', 'FCFLAGS="%s" CC="%s" ' % (os.getenv('FFLAGS'),
-                                                                os.getenv('MPICC') ))
+        self.updatecfg('configopts', 'FCFLAGS="%s" ' % os.getenv('FFLAGS'))
 
         Application.configure(self)
 
