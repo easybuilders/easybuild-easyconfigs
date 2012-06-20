@@ -62,7 +62,7 @@ class WPS(Application):
         # patch compile script so that WRF is found
         self.compile_script = "compile"
         try:
-            for line in fileinput.input(self.compile_script, inplace=1, backup='orig.wrf'):
+            for line in fileinput.input(self.compile_script, inplace=1, backup='.orig.wrf'):
                 line = re.sub(r"^(\s*set\s*WRF_DIR_PRE\s*=\s*)\${DEV_TOP}(.*)$", r"\1%s\2" % self.wrfdir, line)
                 sys.stdout.write(line)
         except IOError, err:
@@ -81,7 +81,7 @@ class WPS(Application):
         fn = os.path.join("ungrib","src","Makefile")
         jasperlibs = "-L%s -ljasper -lpng" % jasperlibdir
         try:
-            for line in fileinput.input(fn, inplace=1, backup='orig.JasPer'):
+            for line in fileinput.input(fn, inplace=1, backup='.orig.JasPer'):
                 line = re.sub(r"^(\s*-L\.\s*-l\$\(LIBTARGET\))(\s*;.*)$", r"\1 %s\2" % jasperlibs, line)
                 line = re.sub(r"^(\s*\$\(COMPRESSION_LIBS\))(\s*;.*)$", r"\1 %s\2" % jasperlibs, line)
                 sys.stdout.write(line)
@@ -147,10 +147,17 @@ class WPS(Application):
 
         run_cmd_qa(cmd, qa, no_qa=no_qa, std_qa=std_qa, log_all=True, simple=True)
 
-        # correct default 'serial compiler' setting
+        # make sure correct compilers are being used
+        comps = {
+                 'SCC':"%s -I$(JASPERINC)" % os.getenv('CC'),
+                 'SFC':os.getenv('F90'),
+                 'DM_FC':os.getenv('MPIF90'),
+                 'DM_CC':"%s -DMPI2_SUPPORT" % os.getenv('MPICC'),
+                 }
         fn='configure.wps'
-        for line in fileinput.input(fn, inplace=1,backup='orig.rewriteopts'):
-            line = re.sub(r"^(SCC\s+=\s+)gcc", r"\1 %s -I$(JASPERINC)" % os.getenv('CC'), line)
+        for line in fileinput.input(fn, inplace=1,backup='.orig.comps'):
+            for k,v in comps.items():
+                line = re.sub(r"^(%s\s*=\s*).*$" % k, r"\1 %s" % v, line)
             sys.stdout.write(line)
 
     def make(self):
