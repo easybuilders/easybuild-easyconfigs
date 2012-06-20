@@ -27,13 +27,13 @@ class PythonPackage(Application):
 
     def __init__(self, *args, **kwargs):
         Application.__init__(self, *args, **kwargs)
-        
+
         # Python packages lib dir
-        self.pylibdir = os.path.join("lib","python%s", "site-packages")    
+        self.pylibdir = os.path.join("lib", "python%s", "site-packages")
 
     def configure(self):
         """Set Python packages lib dir."""
-
+        self.log.debug("PythonPackage: configuring")
         python_version = os.getenv('SOFTVERSIONPYTHON')
         if not python_version:
             self.log.error('Python not available.')
@@ -41,6 +41,8 @@ class PythonPackage(Application):
         python_short_ver = ".".join(python_version.split(".")[0:2])
 
         self.pylibdir = self.pylibdir % python_short_ver
+        self.log.debug("pylibdir: %s" % self.pylibdir)
+
 
     def make(self):
         """Build Python package using setup.py"""

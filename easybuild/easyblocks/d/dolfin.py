@@ -19,6 +19,7 @@
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
 import os
+from distutils.version import LooseVersion
 from easybuild.easyblocks.c.cmakepythonpackage import CMakePythonPackage
 from easybuild.tools.modules import get_software_root
 from easybuild.tools.toolkit import get_openmp_flag
@@ -31,6 +32,13 @@ class Dolfin(CMakePythonPackage):
 
     def configure(self):
         """Configure Dolfin build."""
+
+        #dolfin does not work with swig 2.0.5 and 2.0.6 
+        #is this fixed in 2.0.7?? see https://bugs.launchpad.net/dolfin/+bug/996398
+        # If so, change this check accordingly.
+        if LooseVersion(os.environ['SOFTVERSIONSWIG']) > '2.0.4':
+            self.log.error("Using bad version of SWIG, expecting swig <= 2.0.4." \
+                           " See https://bugs.launchpad.net/dolfin/+bug/996398")
 
         # make sure that required dependencies are loaded
         deps = ['Armadillo', 'Boost', 'ParMETIS', 'Python', 'SCOTCH', 'SuiteSparse', 'UFC']
@@ -61,7 +69,7 @@ class Dolfin(CMakePythonPackage):
         # specify MPI library
         self.updatecfg('configopts', ' -DMPI_COMPILER="%s"' % os.getenv('MPICC'))
 
-        if not os.getenv('MPI_LIB_SHARED') or not os.getenv('MPI_INC'):
+        if  os.getenv('MPI_LIB_SHARED') and os.getenv('MPI_INC'):
             self.updatecfg('configopts', ' -DMPI_LIBRARY="%s"' % os.getenv('MPI_LIB_SHARED'))
             self.updatecfg('configopts', ' -DMPI_INCLUDE_PATH="%s"' % os.getenv('MPI_INC'))
         else:
@@ -127,7 +135,6 @@ class Dolfin(CMakePythonPackage):
         """Custom sanity check for Dolfin."""
 
         if not self.getcfg('sanityCheckPaths'):
-
             self.setcfg('sanityCheckPaths', {'files': ['bin/dolfin-%s' % x for x in ['version', 'convert',
                                                                                      'order', 'plot']]
                                                     + ['include/dolfin.h'],

@@ -653,6 +653,9 @@ class Toolkit:
             for i in ['CC', 'CXX', 'F77', 'F90']:
                 self.vars[i] = self.vars["MPI%s" % i]
 
+        self.vars['MPI_INC'] = "%s/include" % os.getenv('SOFTROOTQLOGICMPI')
+        self.vars['MPI_LIB_SHARED'] = "%s/lib/libmpich.so" % os.getenv('SOFTROOTMPICH2')
+
     def prepareLAPACK(self):
         """
         Prepare for LAPACK library
@@ -680,6 +683,10 @@ class Toolkit:
             if self.opts['usempi']:
                 for i in ['CC', 'CXX', 'F77', 'F90']:
                     self.vars[i] = self.vars["MPI%s" % i]
+
+            self.vars['MPI_INC'] = "%s/include" % os.getenv('SOFTROOTMPICH2')
+            self.vars['MPI_LIB_SHARED'] = "%s/lib/libmpich.so" % os.getenv('SOFTROOTMPICH2')
+            self.vars['MPI_LIB_STATIC'] = "%s/lib/libmpich.a" % os.getenv('SOFTROOTMPICH2')
         else:
             self.log.error("Don't know how to prepare for a non-ScaleMP MPICH2 library.")
 
@@ -700,6 +707,7 @@ class Toolkit:
             for i in ['CC', 'CXX', 'F77', 'F90']:
                 self.vars[i] = self.vars["MPI%s" % i]
 
+
     def prepareMVAPICH2(self):
         """
         Prepare for MVAPICH2 MPI library
@@ -717,6 +725,7 @@ class Toolkit:
         #TODO: 
         #self.vars['MPI_LIB_STATIC'] = ??
         self.vars['MPI_LIB_SHARED'] = "%s/lib/libmpi.so" % os.getenv('SOFTROOTOPENMPI')
+        self.vars['MPI_INC'] = "%s/include" % os.getenv('SOFTROOTOPENMPI')
         self.prepareSimpleMPI()
 
     def prepareScaLAPACK(self):

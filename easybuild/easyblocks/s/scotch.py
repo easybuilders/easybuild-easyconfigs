@@ -66,7 +66,6 @@ class SCOTCH(Application):
                 line = re.sub(r"^CCD\s*=.*$", "CCD\t= $(MPICC)", line)
                 #append -lpthread to LDFLAGS
                 line = re.sub(r"^LDFLAGS\s*=(?P<ldflags>.*$)", "LDFLAGS\t=\g<ldflags> -lpthread", line)
-                line = re.sub(r"^CFLAGS\s*=(?P<cflags>.*$)", "CFLAGS\t=\g<cflags> -fPIC", line)
                 sys.stdout.write(line)
         except IOError, err:
             self.log.error("Can't modify/write Makefile in 'Makefile.inc': %s" % (err))
@@ -85,9 +84,10 @@ class SCOTCH(Application):
         ccp = os.environ['MPICC']
         ccd = os.environ['MPICC']
         cflags = ""
-        if self.tk.name == "iqacml":
-            cflags = "-fPIC -O3 -DCOMMON_FILE_COMPRESS_GZ -DCOMMON_PTHREAD -DCOMMON_RANDOM_FIXED_SEED -DSCOTCH_RENAME -restrict -DIDXSIZE64"
-        elif self.tk.name == 'ictce':
+        #if self.tk.name == "iqacml":
+        #    cflags = "-fPIC -O3 -DCOMMON_FILE_COMPRESS_GZ -DCOMMON_PTHREAD -DCOMMON_RANDOM_FIXED_SEED -DSCOTCH_RENAME -restrict -DIDXSIZE64"
+        #GCC doens't know -restrict
+        if not "SOFTROOTGCC" in os.environ:
             cflags = "-fPIC -O3 -DCOMMON_FILE_COMPRESS_GZ -DCOMMON_PTHREAD -DCOMMON_RANDOM_FIXED_SEED -DSCOTCH_RENAME -DSCOTCH_PTHREAD -restrict -DIDXSIZE64"
         else:
             cflags = "-fPIC -O3 -DCOMMON_FILE_COMPRESS_GZ -DCOMMON_PTHREAD -DCOMMON_RANDOM_FIXED_SEED -DSCOTCH_RENAME -DSCOTCH_PTHREAD -Drestrict=__restrict"
@@ -105,16 +105,14 @@ class SCOTCH(Application):
                 dst = os.path.join(self.installdir, d)
                 #we don't need any metis stuff from scotch!
                 copytree(src, dst, ignore=lambda path, files: [x for x in files if regmetis.match(x)])
+
         except OSError, err:
             self.log.error("Copying %s to installation dir %s failed: %s" % (src, dst, err))
 
         scotchlibdir = os.path.join(self.installdir, 'lib')
         scotchgrouplib = os.path.join(scotchlibdir, 'libscotch_group.a')
-        liblistorig = os.listdir(scotchlibdir)
-        liblist = []
 
-        for lib in liblistorig:
-            if not regmetis.match(lib): liblist.append(lib)
+        liblistorig = os.listdir(scotchlibdir)
         line = ' '.join(liblistorig)
         line = "GROUP (%s)" % line
         try:
@@ -122,5 +120,5 @@ class SCOTCH(Application):
             f.write(line)
             f.close()
             self.log.info("Successfully written group lib file: %s" % scotchgrouplib)
-        except Exception, err:
+        except IOError, err:
             self.log.error("Can't write to file %s: %s" % (scotchgrouplib, err))
