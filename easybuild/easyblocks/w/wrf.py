@@ -184,7 +184,17 @@ class WRF(Application):
             # exclude real testcases
             self.testcases = [test for test in self.testcases if not "_real" in test]
 
+            # exclude tests that should not be run
+            for test in ["em_esmf_exp", "em_scn_xy", "nmm_tropical_cyclone"]:
+                self.testcases.remove(test)
+
+            # determine parallel setting
+            n = self.getcfg('parallel')
+            if not n:
+                n = 1
+
             # reg exp to check for successful test run
+            regexp_success = re.compile("SUCCESS COMPLETE WRF")
 
             # build an run each test case individually
             for test in self.testcases:
@@ -198,13 +208,39 @@ class WRF(Application):
                 # prepare run command
 
                 ## stack limit needs to be set to unlimited for WRF to work well
-                cmd = "ulimit -s unlimited && mpirun -n 1 ideal.exe && mpirun -n %s wrf.exe" % self.par
+                cmd = "ulimit -s unlimited && mpirun -n 1 ideal.exe && mpirun -n %s wrf.exe" % n
 
                 # run test
                 try:
                     os.chdir('run')
 
-                    (out, _) = run_cmd(cmd, log_all=True, simple=False)
+                    def run_test():
+                        (out, _) = run_cmd(cmd, log_all=True, simple=False)
+                        if not regexp_success.search(out):
+                            self.log.error("Test %s seems to have failed." % test)
+
+                    if test in ["em_fire"]:
+
+                        # handle tests with subtests seperately
+                        testdir = os.path.join("..", "test", test)
+
+                        for subtest in [x for x in os.listdir(testdir) if os.path.isdir(x)]:
+
+                            subtestdir = os.path.join(testdir, subtest)
+
+                            # link required files
+                            for f in os.listdir(subtestdir):
+                                if os.path.exists(f):
+                                    os.remove(f)
+                                os.symlink(os.path.join(subtestdir, f), f)
+
+                            # run test
+                            run_test()
+
+                    else:
+
+                        # run test
+                        run_test()
 
                     os.chdir('..')
 
