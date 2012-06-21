@@ -197,8 +197,8 @@ class WRF(Application):
                 if test in self.testcases:
                     self.testcases.remove(test)
 
-            # determine parallel setting
-            n = self.getcfg('parallel')
+            # determine parallel setting (half of available processors)
+            n = self.getcfg('parallel') / 2 + 1
             if not n:
                 n = 1
 
