@@ -189,7 +189,7 @@ class WRF(Application):
             # build an run each test case individually
             for test in self.testcases:
 
-                self.log.error("Building and running test %s" % test)
+                self.log.debug("Building and running test %s" % test)
 
                 # build
                 cmd = "./compile %s %s"%(self.par, test)
