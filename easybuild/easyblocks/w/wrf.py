@@ -189,6 +189,8 @@ class WRF(Application):
             # build an run each test case individually
             for test in self.testcases:
 
+                self.log.error("Building and running test %s" % test)
+
                 # build
                 cmd = "./compile %s %s"%(self.par, test)
                 run_cmd(cmd, log_all=True, simple=True)
@@ -196,7 +198,7 @@ class WRF(Application):
                 # prepare run command
 
                 ## stack limit needs to be set to unlimited for WRF to work well
-                cmd += "ulimit -s unlimited && mpirun -n 1 ideal.exe && mpirun -n %s wrf.exe" % self.par
+                cmd = "ulimit -s unlimited && mpirun -n 1 ideal.exe && mpirun -n %s wrf.exe" % self.par
 
                 # run test
                 try:
