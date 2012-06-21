@@ -553,12 +553,8 @@ class Toolkit:
         fftwsuff = ""
         if self.opts['pic']:
             fftwsuff = "_pic"
-        # only include interface lib if it's there
-        fftlib = "-Wl:-Bstatic -lfftw3xc_intel%s -Wl:-Bdynamic" % fftwsuff
 
-        self.vars['LIBFFT'] = ''
-        if os.path.exists(fftlib):
-            self.vars['LIBFFT'] += fftlib
+        self.vars['LIBFFT'] = "-Wl:-Bstatic -lfftw3xc_intel%s -Wl:-Bdynamic" % fftwsuff
 
         if self.opts['packed-groups']: #we pack groups toghether, since some tools like pkg-utils don't work well with them
             for i in ['LIBLAPACK', 'LIBBLAS', 'LIBLAPACK_MT', 'LIBSCALAPACK' ]:
