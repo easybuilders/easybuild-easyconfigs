@@ -611,8 +611,14 @@ class Application:
             try:
                 fullpath = os.path.join(filepath, filename)
 
-                if download(filename, url, fullpath):
+                # only download when it's not there yet
+                if os.path.exists(fullpath):
+                    self.log.info("Found file %s at %s, no need to download it." % (filename, filepath))
                     return fullpath
+
+                else:
+                    if download(filename, url, fullpath):
+                        return fullpath
 
             except IOError, err:
                 self.log.exception("Downloading file %s from url %s to %s failed: %s" % (filename, url, fullpath, err))
