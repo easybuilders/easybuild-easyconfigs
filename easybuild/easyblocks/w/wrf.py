@@ -89,11 +89,12 @@ class WRF(Application):
             self.log.error("Don't know how to figure out build type to select.")
 
         # fetch selected build type (and make sure it makes sense)
-        knownbuildtypes = ['serial', 'smpar', 'dmpar', 'dm+sm']
+        known_build_types = ['serial', 'smpar', 'dmpar', 'dm+sm']
+        self.parallel_build_types = ["dmpar","smpar","dm+sm"]
         bt = self.getcfg('buildtype')
 
-        if not bt in knownbuildtypes:
-            self.log.error("Unknown build type: '%s'. Supported build types: %s" % (bt, knownbuildtypes))
+        if not bt in known_build_types:
+            self.log.error("Unknown build type: '%s'. Supported build types: %s" % (bt, known_build_types))
 
         # fetch option number based on build type option and selected build type
         build_type_question = "\s*(?P<nr>[0-9]+).\s*%s\s*\(%s\)" % (build_type_option, bt)
@@ -165,6 +166,11 @@ class WRF(Application):
         cmd = "./compile %s wrf" % self.par
         run_cmd(cmd, log_all=True, simple=True, log_output=True)
 
+        # build two testcases to produce ideal.exe and real.exe
+        for test in ["em_real", "em_b_wave"]:
+            cmd = "./compile %s %s" % (self.par, test)
+            run_cmd(cmd, log_all=True, simple=True, log_output=True)
+
     def test(self):
         """Build and run tests included in the WRF distribution."""
         if self.getcfg('runtest'):
@@ -178,23 +184,23 @@ class WRF(Application):
                 self.log.error("Failed to determine list of test cases: %s" % err)
 
             # exclude 2d testcases in non-parallel WRF builds
-            if self.getcfg('buildtype') in ["dmpar","smpar","dm+sm"]:
+            if self.getcfg('buildtype') in self.parallel_build_types:
                 self.testcases = [test for test in self.testcases if not "2d_" in test]
 
             # exclude real testcases
-            self.testcases = [test for test in self.testcases if not "_real" in test]
+            self.testcases = [test for test in self.testcases if not test.endswith("_real")]
+
+            self.log.debug("intermediate list of testcases: %s" % self.testcases)
 
             # exclude tests that should not be run
-            for test in ["em_esmf_exp", "em_scn_xy", "nmm_tropical_cyclone"]:
-                self.testcases.remove(test)
+            for test in ["em_esmf_exp", "em_scm_xy", "nmm_tropical_cyclone"]:
+                if test in self.testcases:
+                    self.testcases.remove(test)
 
             # determine parallel setting
             n = self.getcfg('parallel')
             if not n:
                 n = 1
-
-            # reg exp to check for successful test run
-            regexp_success = re.compile("SUCCESS COMPLETE WRF")
 
             # build an run each test case individually
             for test in self.testcases:
@@ -208,16 +214,49 @@ class WRF(Application):
                 # prepare run command
 
                 ## stack limit needs to be set to unlimited for WRF to work well
-                cmd = "ulimit -s unlimited && mpirun -n 1 ideal.exe && mpirun -n %s wrf.exe" % n
+                if self.getcfg('buildtype') in self.parallel_build_types:
+                    cmd = "ulimit -s unlimited && mpirun -n 1 ideal.exe && mpirun -n %s wrf.exe" % n
+                else:
+                    cmd = "ulimit -s unlimited && ./ideal.exe && ./wrf.exe" % n
 
                 # run test
                 try:
                     os.chdir('run')
 
                     def run_test():
-                        (out, _) = run_cmd(cmd, log_all=True, simple=False)
-                        if not regexp_success.search(out):
-                            self.log.error("Test %s seems to have failed." % test)
+                        """Run a single test and check for success."""
+
+                        # regex to check for successful test run
+                        re_success = re.compile("SUCCESS COMPLETE WRF")
+
+                        # run test
+                        run_cmd(cmd, log_all=True, simple=True)
+
+                        # check for success
+                        fn = "rsl.error.0000"
+                        try:
+                            f = open(fn, "r")
+                            txt = f.read()
+                            f.close()
+                        except IOError, err:
+                            self.log.error("Failed to read output file %s: %s" % (fn, err))
+
+                        if re_success.search(txt):
+                            self.log.info("Test %s ran successfully." % test)
+
+                        else:
+                            self.log.error("Test %s failed, pattern '%s' not found." % (test,
+                                                                                        re_success.pattern
+                                                                                        ))
+
+
+                        # clean up stuff that gets in the way
+                        fn_prefs = ["wrfinput_", "namelist.output", "wrfout_", "rsl.out.", "rsl.error."]
+                        for f in os.listdir('.'):
+                            for p in fn_prefs:
+                                if f.startswith(p):
+                                    os.remove(f)
+                                    self.log.debug("Cleaned up file %s." % f)
 
                     if test in ["em_fire"]:
 
