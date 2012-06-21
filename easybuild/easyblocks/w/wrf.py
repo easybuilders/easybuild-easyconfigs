@@ -38,8 +38,11 @@ class WRF(Application):
 
         self.wrfsubdir = None
 
-        self.cfg.update({'buildtype':[None, "Specify the type of build (serial, smpar (OpenMP), dmpar (MPI), dm+sm (hybrid OpenMP/MPI))."],
-                         'rewriteopts':[True, "Replace default -O3 option in configure.wrf with CFLAGS/FFLAGS from environment (default: True)."]})
+        self.cfg.update({
+                         'buildtype':[None, "Specify the type of build (serial, smpar (OpenMP), dmpar (MPI), dm+sm (hybrid OpenMP/MPI))."],
+                         'rewriteopts':[True, "Replace default -O3 option in configure.wrf with CFLAGS/FFLAGS from environment (default: True)."],
+                         'runtest':[True, "Build and run WRF tests (default: True)."]
+                         })
 
     def configure(self):        
         """Configure build: 
@@ -149,34 +152,66 @@ class WRF(Application):
                 line = re.sub(r"^(CFLAGS_LOCAL.*)(\s-O3)(\s.*)$", r"\1 %s \3" % os.getenv('CFLAGS'), line)
                 sys.stdout.write(line)
 
-    # building is done in make_install
     def make(self):
-        pass
-
-    def make_install(self):
         """Build and install WRF and testcases using provided compile script."""
 
         # enable parallel build
         p = self.getcfg('parallel')
-        par = ""
+        self.par = ""
         if p:
-            par="-j %s"%p
+            self.par="-j %s"%p
 
         # build wrf
-        cmd="./compile %s wrf" % (par)
+        cmd = "./compile %s wrf" % self.par
         run_cmd(cmd, log_all=True, simple=True, log_output=True)
 
-        # also build WRF test cases
-        testcases=["em_b_wave","em_heldsuarez","em_les","em_quarter_ss","em_real","em_scm_xy",
-                   "em_tropical_cyclone"]
-        testcases2d=["em_grav2d_x","em_hill2d_x","em_seabreeze2d_x","em_squall2d_x","em_squall2d_y"]
+    def test(self):
+        """Build and run tests included in the WRF distribution."""
+        if self.getcfg('runtest'):
 
-        if not self.getcfg('buildtype') in ["dmpar","smpar","dm+sm"]:
-            testcases += testcases2d
+            # get list of WRF test cases
+            self.testcases = []
+            try:
+                self.testcases = os.listdir('test')
 
-        for part in testcases:
-            cmd="./compile %s %s"%(par,part)
-            run_cmd(cmd, log_all=True, simple=True)
+            except OSError, err:
+                self.log.error("Failed to determine list of test cases: %s" % err)
+
+            # exclude 2d testcases in non-parallel WRF builds
+            if self.getcfg('buildtype') in ["dmpar","smpar","dm+sm"]:
+                self.testcases = [test for test in self.testcases if not "2d_" in test]
+
+            # exclude real testcases
+            self.testcases = [test for test in self.testcases if not "_real" in test]
+
+            # reg exp to check for successful test run
+
+            # build an run each test case individually
+            for test in self.testcases:
+
+                # build
+                cmd = "./compile %s %s"%(self.par, test)
+                run_cmd(cmd, log_all=True, simple=True)
+
+                # prepare run command
+
+                ## stack limit needs to be set to unlimited for WRF to work well
+                cmd += "ulimit -s unlimited && mpirun -n 1 ideal.exe && mpirun -n %s wrf.exe" % self.par
+
+                # run test
+                try:
+                    os.chdir('run')
+
+                    (out, _) = run_cmd(cmd, log_all=True, simple=False)
+
+                    os.chdir('..')
+
+                except OSError, err:
+                    self.log.error("An error occured when running test %s: %s" % (test, err))
+
+    # installing is done in make, so we can run tests
+    def make_install(self):
+        pass
 
     def sanitycheck(self):
         """Custom sanity check for WRF."""
