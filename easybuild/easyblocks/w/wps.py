@@ -22,9 +22,11 @@ from distutils.version import LooseVersion
 import fileinput
 import os
 import re
+import shutil
 import sys
+import tempfile
 from easybuild.framework.application import Application
-from easybuild.tools.filetools import patch_perl_script_autoflush, run_cmd, run_cmd_qa
+from easybuild.tools.filetools import patch_perl_script_autoflush, run_cmd, run_cmd_qa, unpack
 from easybuild.easyblocks.n.netcdf import set_netcdf_env_vars, get_netcdf_module_set_cmds
 
 class WPS(Application):
@@ -37,7 +39,14 @@ class WPS(Application):
 
         self.build_in_installdir = True
 
-        self.cfg.update({'buildtype':[None, "Specify the type of build (smpar: OpenMP, dmpar: MPI)."]
+        testdata_urls = [
+                         "http://www.mmm.ucar.edu/wrf/src/data/avn_data.tar.gz",
+                         "http://www.mmm.ucar.edu/wrf/src/wps_files/geog.tar.gz" # 697MB download, 16GB unpacked!
+                         ]
+
+        self.cfg.update({'buildtype':[None, "Specify the type of build (smpar: OpenMP, dmpar: MPI)."],
+                         'runtest':[True, "Build and run WPS tests (default: True)."],
+                         'testdata':[testdata_urls, "URL to test data required to run WPS test (default: %s)." % testdata_urls]
                          })
 
     def configure(self):
@@ -171,14 +180,121 @@ class WPS(Application):
             sys.stdout.write(line)
 
     def make(self):
-        """Building is performed in make_install."""
-        pass
-
-    def make_install(self):
         """Build in install dir using compile script."""
 
         cmd = "./%s" % self.compile_script
         run_cmd(cmd, log_all=True, simple=True)
+
+    def test(self):
+        """Run WPS test (requires large dataset to be downloaded). """
+
+        def run_wps_cmd(cmdname):
+            """Run a WPS command, and check for success."""
+
+            cmd = os.path.join(wpsdir, "%s.exe" % cmdname)
+            (out, _) = run_cmd(cmd, log_all=True, simple=False)
+
+            re_success = re.compile("Successful completion of %s" % cmdname)
+            if not re_success.search(out):
+                self.log.error("%s.exe failed (pattern '%s' not found)?" % (cmdname, re_success.pattern))
+
+        if self.getcfg('runtest'):
+            if not self.getcfg('testdata'):
+                self.log.error("List of URLs for testdata not provided.")
+
+            wpsdir = os.path.join(self.builddir, "WPS")
+
+            try:
+                # create temporary directory
+                tmpdir = tempfile.mkdtemp()
+                os.chdir(tmpdir)
+
+                # download data
+                testdata_paths = []
+                for testdata in self.getcfg('testdata'):
+                    path = self.file_locate(testdata)
+                    if not path:
+                        self.log.error("Downloading file from %s failed?" % testdata)
+                    testdata_paths .append(path)
+
+                # unpack data
+                for path in testdata_paths:
+                    unpack(path, tmpdir)
+
+                # copy namelist.wps file
+                fn = "namelist.wps"
+                shutil.copy2(os.path.join(wpsdir, fn), tmpdir)
+                namelist_file = os.path.join(tmpdir, fn)
+
+                # GEOGRID
+
+                # setup directories and files
+                for d in os.listdir(os.path.join(tmpdir, "geog")):
+                    os.symlink(os.path.join(tmpdir, "geog", d),
+                               os.path.join(tmpdir, d)
+                               )
+
+                # patch namelist.wps file for geogrib
+                for line in fileinput.input(namelist_file, inplace=1, backup='.orig.geogrid'):
+                    line = re.sub(r"^(\s*geog_data_path\s*=\s*).*$", r"\1 '%s'" % tmpdir, line)
+                    sys.stdout.write(line)
+
+                ## GEOGRID.TBL
+                geogrid_dir = os.path.join(tmpdir, "geogrid")
+                os.mkdir(geogrid_dir)
+                os.symlink(os.path.join(wpsdir, "geogrid", "GEOGRID.TBL.ARW"),
+                           os.path.join(geogrid_dir, "GEOGRID.TBL"))
+
+                # run geogrid.exe
+                run_wps_cmd("geogrid")
+
+                # UNGRIB
+
+                # determine start and end time stamps of grib files
+                grib_file_prefix = "fnl_"
+                k = len(grib_file_prefix)
+                fs = [f for f in sorted(os.listdir('.')) if f.startswith(grib_file_prefix)]
+                start = "%s:00:00" % fs[0][k:]
+                end = "%s:00:00" % fs[-1][k:]
+
+                # patch namelist.wps file for ungrib
+                shutil.copy2(os.path.join(wpsdir, "namelist.wps"), tmpdir)
+
+                for line in fileinput.input(namelist_file, inplace=1, backup='.orig.ungrib'):
+                    line = re.sub(r"^(\s*start_date\s*=\s*).*$", r"\1 '%s','%s'," % (start, start), line)
+                    line = re.sub(r"^(\s*end_date\s*=\s*).*$", r"\1 '%s','%s'," % (end, end), line)
+                    sys.stdout.write(line)
+
+                # copy correct Vtable
+                shutil.copy2(os.path.join(wpsdir, "ungrib", "Variable_Tables", "Vtable.ARW"),
+                             os.path.join(tmpdir, "Vtable"))
+
+                # run link_grib.csh script
+                cmd = "%s %s*" % (os.path.join(wpsdir, "link_grib.csh"), grib_file_prefix)
+                run_cmd(cmd, log_all=True, simple=True)
+
+                # run ungrib.exe
+                run_wps_cmd("ungrib")
+
+                # METGRID.TBL
+
+                metgrid_dir = os.path.join(tmpdir, "metgrid")
+                os.mkdir(metgrid_dir)
+                os.symlink(os.path.join(wpsdir, "metgrid", "METGRID.TBL.ARW"),
+                           os.path.join(metgrid_dir, "METGRID.TBL"))
+
+                # run metgrid.exe
+                run_wps_cmd('metgrid')
+
+                # clean up
+                shutil.rmtree(tmpdir)
+
+            except OSError, err:
+                self.log.error("Failed to run WPS test: %s" % err)
+
+    # installing is done in make, so we can run tests
+    def make_install(self):
+        pass
 
     def sanitycheck(self):
         """Custom sanity check for WPS."""
