@@ -626,7 +626,8 @@ class Toolkit:
         if self.opts['32bit']:
             log.error("Don't know how to set IMPI paths for 32-bit.")
         else:
-            if LooseVersion(os.getenv('SOFTVERSIONIMPI')) < LooseVersion("100"):
+            if LooseVersion(os.getenv('SOFTVERSIONIMPI')) < LooseVersion("3.2.1.009"):
+                #this could have been different in older versions, we only checked for 3.2.1.009 and up (to 4.0.2.003)
                 log.error("Don't know how to set IMPI paths for old versions.")
             else:
                 mpi_lib = os.path.join(impiroot, 'lib64', 'libmpi')
