@@ -222,14 +222,19 @@ class GitRepository(FileRepository):
     def addEasyconfig(self, cfg, name, version, stats, append):
         """
         Add easyconfig to git repository.
-        """
-        dest = FileRepository.addEasyconfig(self, cfg, name, version, stats, append)
+        log.debug("Adding cfg: %s with name %s" % (cfg, name))
+        if  name.startswith(self.wc):
+            name = name.replace(self.wc, "", 1) #remove self.wc again
+        name = os.path.join(self.wc, self.path, name) #create proper name, with path inside repo in it
+        dest = Repository.addEasyconfig(self, cfg, name, version, stats, append)
         ## add it to version control
         if dest:
             try:
                 self.client.add(dest)
             except GitCommandError, err:
                 log.warning("adding %s to git failed: %s" % (dest, err))
+        """
+        pass
 
     def commit(self, msg=None):
         """
