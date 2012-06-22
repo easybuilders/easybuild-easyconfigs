@@ -79,10 +79,11 @@ class WRF(Application):
 
         # determine build type option to look for
         build_type_option = None
-        if self.tk.toolkit_comp_family() == "Intel":
+        comp_fam = self.tk.toolkit_comp_family()
+        if comp_fam == "Intel":
             build_type_option = "Linux x86_64 i486 i586 i686, ifort compiler with icc"
 
-        elif self.tk.toolkit_comp_family() == "GCC":
+        elif comp_fam == "GCC":
             build_type_option = "x86_64 Linux, gfortran compiler with gcc"
 
         else:
@@ -197,10 +198,17 @@ class WRF(Application):
                 if test in self.testcases:
                     self.testcases.remove(test)
 
-            # determine parallel setting (half of available processors)
+            # determine parallel setting (1/2 of available processors + 1)
             n = self.getcfg('parallel') / 2 + 1
-            if not n:
-                n = 1
+
+            # prepare run command
+
+            ## stack limit needs to be set to unlimited for WRF to work well
+            if self.getcfg('buildtype') in self.parallel_build_types:
+                test_cmd = "ulimit -s unlimited && %s && %s" % (self.tk.mpi_cmd_for("ideal.exe", 1),
+                                                           self.tk.mpi_cmd_for("wrf.exe", n))
+            else:
+                test_cmd = "ulimit -s unlimited && ./ideal.exe && ./wrf.exe" % n
 
             # build an run each test case individually
             for test in self.testcases:
@@ -210,14 +218,6 @@ class WRF(Application):
                 # build
                 cmd = "./compile %s %s"%(self.par, test)
                 run_cmd(cmd, log_all=True, simple=True)
-
-                # prepare run command
-
-                ## stack limit needs to be set to unlimited for WRF to work well
-                if self.getcfg('buildtype') in self.parallel_build_types:
-                    cmd = "ulimit -s unlimited && mpirun -n 1 ideal.exe && mpirun -n %s wrf.exe" % n
-                else:
-                    cmd = "ulimit -s unlimited && ./ideal.exe && ./wrf.exe" % n
 
                 # run test
                 try:
@@ -230,7 +230,7 @@ class WRF(Application):
                         re_success = re.compile("SUCCESS COMPLETE WRF")
 
                         # run test
-                        run_cmd(cmd, log_all=True, simple=True)
+                        run_cmd(test_cmd, log_all=True, simple=True)
 
                         # check for success
                         fn = "rsl.error.0000"
