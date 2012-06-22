@@ -38,6 +38,9 @@ class WPS(Application):
         Application.__init__(self)
 
         self.build_in_installdir = True
+        self.comp_fam = None
+        self.wrfdir = None
+        self.compile_script = None
 
         testdata_urls = [
                          "http://www.mmm.ucar.edu/wrf/src/data/avn_data.tar.gz",
@@ -119,10 +122,11 @@ class WPS(Application):
                                'dmpar':'dmpar'
                                }
 
-            if self.tk.toolkit_comp_family() == "Intel":
+            self.comp_fam = self.tk.toolkit_comp_family()
+            if self.comp_fam == "Intel":
                 build_type_option = " Linux x86_64, Intel compiler"
 
-            elif self.tk.toolkit_comp_family() == "GCC":
+            elif self.comp_fam == "GCC":
                 build_type_option = "Linux x86_64 g95 compiler"
 
             else:
@@ -135,10 +139,10 @@ class WPS(Application):
                                'dmpar':'DM parallel'
                                }
 
-            if self.tk.toolkit_comp_family() == "Intel":
+            if self.comp_fam == "Intel":
                 build_type_option = "PC Linux x86_64, Intel compiler"
 
-            elif self.tk.toolkit_comp_family() == "GCC":
+            elif self.comp_fam == "GCC":
                 build_type_option = "PC Linux x86_64, gfortran compiler,"
                 knownbuildtypes['dmpar'] = knownbuildtypes['dmpar'].upper()
 
