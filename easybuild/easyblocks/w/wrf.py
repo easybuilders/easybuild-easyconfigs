@@ -205,8 +205,8 @@ class WRF(Application):
 
             ## stack limit needs to be set to unlimited for WRF to work well
             if self.getcfg('buildtype') in self.parallel_build_types:
-                test_cmd = "ulimit -s unlimited && %s && %s" % (self.tk.mpi_cmd_for("ideal.exe", 1),
-                                                           self.tk.mpi_cmd_for("wrf.exe", n))
+                test_cmd = "ulimit -s unlimited && %s && %s" % (self.tk.mpi_cmd_for("./ideal.exe", 1),
+                                                                self.tk.mpi_cmd_for("./wrf.exe", n))
             else:
                 test_cmd = "ulimit -s unlimited && ./ideal.exe && ./wrf.exe" % n
 
