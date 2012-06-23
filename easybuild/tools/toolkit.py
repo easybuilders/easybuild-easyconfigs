@@ -828,8 +828,8 @@ class Toolkit:
             try:
                 if os.path.exists(fn):
                     os.remove(fn)
-                f.write("localhost\n" * nr_ranks)
                 f = open(fn, "w")
+                f.write("localhost\n" * nr_ranks)
                 f.close()
             except (OSError, IOError), err:
                 self.log.error("Failed to create file %s: %s" % (fn, err))
