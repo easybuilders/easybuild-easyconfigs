@@ -38,6 +38,8 @@ class WRF(Application):
 
         self.wrfsubdir = None
 
+        self.comp_fam = None
+
         self.cfg.update({
                          'buildtype':[None, "Specify the type of build (serial, smpar (OpenMP), dmpar (MPI), dm+sm (hybrid OpenMP/MPI))."],
                          'rewriteopts':[True, "Replace default -O3 option in configure.wrf with CFLAGS/FFLAGS from environment (default: True)."],
@@ -79,11 +81,11 @@ class WRF(Application):
 
         # determine build type option to look for
         build_type_option = None
-        comp_fam = self.tk.toolkit_comp_family()
-        if comp_fam == "Intel":
+        self.comp_fam = self.tk.toolkit_comp_family()
+        if self.comp_fam == "Intel":
             build_type_option = "Linux x86_64 i486 i586 i686, ifort compiler with icc"
 
-        elif comp_fam == "GCC":
+        elif self.comp_fam == "GCC":
             build_type_option = "x86_64 Linux, gfortran compiler with gcc"
 
         else:
@@ -197,6 +199,12 @@ class WRF(Application):
             for test in ["em_esmf_exp", "em_scm_xy", "nmm_tropical_cyclone"]:
                 if test in self.testcases:
                     self.testcases.remove(test)
+
+            # some tests hang when WRF is built with Intel compilers
+            if self.comp_fam == "Intel":
+                for test in ["em_heldsuarez"]:
+                    if test in self.testcases:
+                        self.testcases.remove(test)
 
             # determine parallel setting (1/2 of available processors + 1)
             n = self.getcfg('parallel') / 2 + 1
