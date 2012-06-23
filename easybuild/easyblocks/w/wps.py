@@ -113,6 +113,7 @@ class WPS(Application):
         # configure
 
         # determine build type option to look for
+        self.comp_fam = self.tk.toolkit_comp_family()
         build_type_option = None
 
         if LooseVersion(self.version()) >= LooseVersion("3.4"):
@@ -122,7 +123,6 @@ class WPS(Application):
                                'dmpar':'dmpar'
                                }
 
-            self.comp_fam = self.tk.toolkit_comp_family()
             if self.comp_fam == "Intel":
                 build_type_option = " Linux x86_64, Intel compiler"
 
