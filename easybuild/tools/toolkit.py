@@ -760,6 +760,7 @@ class Toolkit:
     def toolkit_comp_family(self):
         """Determine compiler family based on toolkit dependencies."""
         comp_families = {
+                         # always use tuples as keys!
                          ('icc', 'ifort'):'Intel', # Intel toolkit has both icc and ifort
                          ('GCC', ):'GCC' # GCC toolkit uses GCC as compiler suite
                          }
@@ -779,7 +780,8 @@ class Toolkit:
     def toolkit_mpi_type(self):
         """Determine type of MPI library based on toolkit dependencies."""
         mpi_types = {
-                      ('impi'):'Intel', # Intel MPI
+                      # always use tuples as keys!
+                      ('impi', ):'Intel', # Intel MPI
                       ('OpenMPI', ):'OpenMPI' # OpenMPI
                       }
 
