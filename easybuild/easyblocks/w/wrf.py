@@ -218,6 +218,40 @@ class WRF(Application):
             else:
                 test_cmd = "ulimit -s unlimited && ./ideal.exe && ./wrf.exe" % n
 
+            def run_test():
+                """Run a single test and check for success."""
+
+                # regex to check for successful test run
+                re_success = re.compile("SUCCESS COMPLETE WRF")
+
+                # run test
+                run_cmd(test_cmd, log_all=True, simple=True)
+
+                # check for success
+                fn = "rsl.error.0000"
+                try:
+                    f = open(fn, "r")
+                    txt = f.read()
+                    f.close()
+                except IOError, err:
+                    self.log.error("Failed to read output file %s: %s" % (fn, err))
+
+                if re_success.search(txt):
+                    self.log.info("Test %s ran successfully." % test)
+
+                else:
+                    self.log.error("Test %s failed, pattern '%s' not found." % (test,
+                                                                                re_success.pattern
+                                                                                ))
+
+                # clean up stuff that gets in the way
+                fn_prefs = ["wrfinput_", "namelist.output", "wrfout_", "rsl.out.", "rsl.error."]
+                for f in os.listdir('.'):
+                    for p in fn_prefs:
+                        if f.startswith(p):
+                            os.remove(f)
+                            self.log.debug("Cleaned up file %s." % f)
+
             # build an run each test case individually
             for test in self.testcases:
 
@@ -230,41 +264,6 @@ class WRF(Application):
                 # run test
                 try:
                     os.chdir('run')
-
-                    def run_test():
-                        """Run a single test and check for success."""
-
-                        # regex to check for successful test run
-                        re_success = re.compile("SUCCESS COMPLETE WRF")
-
-                        # run test
-                        run_cmd(test_cmd, log_all=True, simple=True)
-
-                        # check for success
-                        fn = "rsl.error.0000"
-                        try:
-                            f = open(fn, "r")
-                            txt = f.read()
-                            f.close()
-                        except IOError, err:
-                            self.log.error("Failed to read output file %s: %s" % (fn, err))
-
-                        if re_success.search(txt):
-                            self.log.info("Test %s ran successfully." % test)
-
-                        else:
-                            self.log.error("Test %s failed, pattern '%s' not found." % (test,
-                                                                                        re_success.pattern
-                                                                                        ))
-
-
-                        # clean up stuff that gets in the way
-                        fn_prefs = ["wrfinput_", "namelist.output", "wrfout_", "rsl.out.", "rsl.error."]
-                        for f in os.listdir('.'):
-                            for p in fn_prefs:
-                                if f.startswith(p):
-                                    os.remove(f)
-                                    self.log.debug("Cleaned up file %s." % f)
 
                     if test in ["em_fire"]:
 
