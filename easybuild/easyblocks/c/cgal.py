@@ -19,13 +19,23 @@
 ##
 import os
 from easybuild.easyblocks.c.cmake import CMake
+from easybuild.tools.modules import get_software_root
 
 class CGAL(CMake):
+    """Support for building CGal."""
+
     def configure(self):
-        """add some extra environment variables here before doing the configure"""
-        os.environ['GMP_INC_DIR'] = "%s%s" % (os.environ['SOFTROOTGMP'], "/include/")
-        os.environ['GMP_LIB_DIR'] = "%s%s" % (os.environ['SOFTROOTGMP'], "/lib/")
-        os.environ['MPFR_INC_DIR'] = "%s%s" % (os.environ['SOFTROOTMPFR'], "/include/")
-        os.environ['MPFR_LIB_DIR'] = "%s%s" % (os.environ['SOFTROOTMPFR'], "/lib/")
-        os.environ['BOOST_ROOT'] = os.environ['SOFTROOTBOOST']
+        """Set some extra environment variables before configuring."""
+
+        deps = ["Boost", "GMP", "MPFR"]
+        for dep in deps:
+            if not get_software_root(dep):
+                self.log.error("Dependency module %s not loaded?" % dep)
+
+        for lib in ["GMP", "MPFR"]:
+            os.environ['%s_INC_DIR' % lib] = "%s%s" % (get_software_root(lib), "/include/")
+            os.environ['%s_LIB_DIR' % lib] = "%s%s" % (get_software_root(lib), "/lib/")
+
+        os.environ['BOOST_ROOT'] = get_software_root("Boost")
+
         CMake.configure(self)
