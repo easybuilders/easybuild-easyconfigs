@@ -709,9 +709,8 @@ class Toolkit:
         """
         Prepare for MVAPICH2 MPI library
         """
-        #TODO: 
-        #self.vars['MPI_LIB_STATIC'] = ??
-        #self.vars['MPI_LIB_SHARED'] = ??
+        self.vars['MPI_LIB_STATIC'] = "%s/lib/libmpich.a" % os.getenv('SOFTROOTMVAPICH2')
+        self.vars['MPI_LIB_SHARED'] = "%s/lib/libmpich.so" % os.getenv('SOFTROOTMVAPICH2')
         self.prepareSimpleMPI()
 
     def prepareOpenMPI(self):
@@ -719,8 +718,7 @@ class Toolkit:
         Prepare for OpenMPI MPI library
         """
 
-        #TODO: 
-        #self.vars['MPI_LIB_STATIC'] = ??
+        # no static libmpi.a available to set MPI_LIB_STATIC
         self.vars['MPI_LIB_SHARED'] = "%s/lib/libmpi.so" % os.getenv('SOFTROOTOPENMPI')
         self.vars['MPI_INC'] = "%s/include" % os.getenv('SOFTROOTOPENMPI')
         self.prepareSimpleMPI()
