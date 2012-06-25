@@ -117,13 +117,10 @@ class CP2K(Application):
         self.make_instructions = "graphcon.o: graphcon.F\n\t$(FC) -c $(FCFLAGS2) $<\n"
 
         # compiler toolkit specific configuration
-        icc = os.getenv('SOFTROOTICC')
-        ifort = os.getenv('SOFTROOTIFORT')
-        gcc = os.getenv('SOFTROOTGCC')
-
-        if icc and ifort and not gcc:
+        comp_fam = self.tk.toolkit_comp_family()
+        if comp_fam == "Intel":
             options = self.configureIntelBased()
-        elif gcc and not (icc or ifort):
+        elif comp_fam == "GCC":
             options = self.configureGCCBased()
         else:
             self.log.error("Don't know how to tweak configuration for compiler used.")

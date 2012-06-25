@@ -141,7 +141,7 @@ class WRF(Application):
 
             # set extra flags for Intel compilers
             # see http://software.intel.com/en-us/forums/showthread.php?t=72109&p=1#146748
-            if os.getenv('SOFTROOTICC') or os.getenv('SOFTROOTIFORT'):
+            if self.comp_fam == "Intel":
 
                 # -O3 -heap-arrays is required to resolve compilation error
                 for envvar in ['CFLAGS', 'FFLAGS']:
