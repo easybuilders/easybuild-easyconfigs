@@ -18,24 +18,18 @@
 # You should have received a copy of the GNU General Public License
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
-from easybuild.framework.application import Application
-from easybuild.tools.filetools import run_cmd
 import os
 import shutil
+from easybuild.framework.application import Application
 
 class SuiteSparse(Application):
+    """Support for building SuiteSparse."""
 
     def configure(self):
         pass
 
-    def make(self):
-        cmd = 'make'
-
-        run_cmd(cmd, log_all=True, simple=True)
-
     def make_install(self):
-        """
-        Just copy the contents of the builddir to the installdir
+        """Install by copying the contents of the builddir to the installdir
         - keep permissions with copy2 !!
         """
         for x in os.listdir(self.getcfg('startfrom')):
@@ -44,7 +38,7 @@ class SuiteSparse(Application):
             try:
                 if os.path.isdir(src):
                     shutil.copytree(src, dst)
-                    #symlink 
+                    # symlink 
                     # - dst/Lib to dst/lib
                     # - dst/Include to dst/include
                     for c in ['Lib', 'Include']:
@@ -58,27 +52,23 @@ class SuiteSparse(Application):
                 self.log.exception("Copying src %s to dst %s failed" % (src, dst))
 
         # Some extra symlinks are necessary for UMFPACK to work.
-        for f in ['AMD/include/amd.h', 'AMD/include/amd_internal.h', 'UFconfig/UFconfig.h']:
-            src = os.path.join(self.installdir, f)
-            dst = os.path.join(self.installdir, 'UMFPACK', 'include', f.split('/')[-1])
+        for p in ['AMD/include/amd.h', 'AMD/include/amd_internal.h', 'UFconfig/UFconfig.h', 'AMD/lib/libamd.a']:
+            src = os.path.join(self.installdir, p)
+            dn = p.split('/')[-2]
+            fn = p.split('/')[-1]
+            dst = os.path.join(self.installdir, 'UMFPACK', dn, fn)
             if os.path.exists(src):
-                try: os.symlink(src, dst)
-                except Exception, err:
-                    self.log.error("Failed to make symbolic link from %s to %s: %s" % (src, dst, err))
-
-        for f in ['AMD/lib/libamd.a']:
-            src = os.path.join(self.installdir, f)
-            dst = os.path.join(self.installdir, 'UMFPACK', 'lib', f.split('/')[-1])
-            if os.path.exists(src):
-                try: os.symlink(src, dst)
+                try:
+                    os.symlink(src, dst)
                 except Exception, err:
                     self.log.error("Failed to make symbolic link from %s to %s: %s" % (src, dst, err))
 
     def sanitycheck(self):
 
         if not self.getcfg('sanityCheckPaths'):
-            self.setcfg('sanityCheckPaths', {'files':["%s/lib/lib%s.a" % (x, x.lower()) for x in ["AMD", "BTF", "CAMD", "CCOLAMD", "CHOLMOD", "COLAMD",
-                                                                                             "CXSparse", "KLU", "LDL", "RBio", "SPQR", "UMFPACK"]] +
+            self.setcfg('sanityCheckPaths', {'files':["%s/lib/lib%s.a" % (x, x.lower()) for x in ["AMD", "BTF", "CAMD", "CCOLAMD", "CHOLMOD",
+                                                                                                  "COLAMD", "CXSparse", "KLU", "LDL", "RBio",
+                                                                                                  "SPQR", "UMFPACK"]] +
                                                     ["CSparse3/lib/libcsparse.a"],
                                             'dirs':[ "MATLAB_Tools"]
                                            })
