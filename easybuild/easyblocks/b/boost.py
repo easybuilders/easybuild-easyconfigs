@@ -24,9 +24,13 @@ from easybuild.framework.application import Application
 from easybuild.tools.filetools import run_cmd
 
 class Boost(Application):
+    """Support for building Boost."""
 
     def __init__(self, *args, **kwargs):
         Application.__init__(self, args, kwargs)
+
+        self.objdir = None
+
         self.cfg.update({'boost_mpi':[False, "Build mpi boost module (default: False)"]})
 
     def configure(self):
@@ -41,6 +45,7 @@ class Boost(Application):
             self.log.error("Failed to create directory %s: %s" % (self.objdir, err))
 
         # generate config depending on compiler used
+        # FIXME: use toolkit_comp_family for this
         toolset = None
         if os.getenv('SOFTROOTICC'):
             toolset = 'intel-linux'
@@ -50,7 +55,6 @@ class Boost(Application):
             self.log.error("Unknown compiler used, aborting.")
 
         cmd = "./bootstrap.sh --with-toolset=%s --prefix=%s" % (toolset, self.objdir)
-
         run_cmd(cmd, log_all=True, simple=True)
 
         if self.getcfg('boost_mpi'):
@@ -76,26 +80,18 @@ class Boost(Application):
             bjammpioptions = "%s --user-config=user-config.jam --with-mpi" % bjamoptions
 
             # build mpi lib first
-            try: 
-                # let bjam know about the user-config.jam file we created in the configure step
-                run_cmd("./bjam %s" % bjammpioptions, log_all=True, simple=True)
-            except Exception, err:
-                self.log.error("Failed to build the Boost MPI library: %s" % err)
 
-            try: 
-                # boost.mpi was built, let's 'install' it now
-                run_cmd("./bjam %s  install" % bjammpioptions, log_all=True, simple=True)
-            except Exception, err:
-                self.log.error("Failed to install the Boost MPI library in %s: %s" % (self.objdir, err))
+            # let bjam know about the user-config.jam file we created in the configure step
+            run_cmd("./bjam %s" % bjammpioptions, log_all=True, simple=True)
+
+            # boost.mpi was built, let's 'install' it now
+            run_cmd("./bjam %s  install" % bjammpioptions, log_all=True, simple=True)
 
         # install remainder of boost libraries
         self.log.info("Installing boost libraries")
 
         cmd = "./bjam %s install" % bjamoptions
-        try:
-            run_cmd(cmd, log_all=True, simple=True)
-        except Exception, err:
-            self.log.error("Failed to build the Boost libraries: %s" % err)
+        run_cmd(cmd, log_all=True, simple=True)
 
     def make_install(self):
         """Install Boost by copying file to install dir."""
