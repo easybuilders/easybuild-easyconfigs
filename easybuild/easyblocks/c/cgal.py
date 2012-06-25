@@ -1,4 +1,4 @@
-# Copyright 2012 Jens Timmerman
+# Copyright 2012 Jens Timmerman, Kenneth Hoste
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of the University of Ghent (http://ugent.be/hpc).
@@ -22,7 +22,7 @@ from easybuild.easyblocks.c.cmake import CMake
 from easybuild.tools.modules import get_software_root
 
 class CGAL(CMake):
-    """Support for building CGal."""
+    """Support for building CGAL."""
 
     def configure(self):
         """Set some extra environment variables before configuring."""
