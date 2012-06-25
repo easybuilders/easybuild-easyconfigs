@@ -33,48 +33,40 @@ class PythonPackage(Application):
 
     def configure(self):
         """Set Python packages lib dir."""
+
         self.log.debug("PythonPackage: configuring")
+
         python_version = os.getenv('SOFTVERSIONPYTHON')
         if not python_version:
-            self.log.error('Python not available.')
+            self.log.error('Python module not loaded.')
 
         python_short_ver = ".".join(python_version.split(".")[0:2])
 
         self.pylibdir = self.pylibdir % python_short_ver
-        self.log.debug("pylibdir: %s" % self.pylibdir)
 
+        self.log.debug("pylibdir: %s" % self.pylibdir)
 
     def make(self):
         """Build Python package using setup.py"""
 
         cmd = "python setup.py build"
-
         run_cmd(cmd, log_all=True, simple=True)
 
     def make_install(self):
         """Install Python package to a custom path using setup.py"""
 
         cmd = "python setup.py install --prefix=%s %s" % (self.installdir, self.getcfg('installopts'))
-
         run_cmd(cmd, log_all=True, simple=True)
 
     def make_module_extra(self):
         """Add install path to PYTHONPATH"""
 
-        pythonversion = os.getenv("SOFTVERSIONPYTHON")
-        if not pythonversion:
-            self.log.error("Python module not loaded.")
-
         txt = Application.make_module_extra(self)
 
-        # geting installation directory witrh distutils doesn't work in Python 2.4
+        # geting installation directory with distutils doesn't work in Python 2.4
         #installdir = distutils.sysconfig.get_python_lib(plat_specific=True,
         #                                                prefix=self.installdir)
 
-        # get major.minor version
-        shortver = ".".join(pythonversion.split(".")[0:2])
-        installdir = os.path.join(self.installdir , "lib/python%s/site-packages" % shortver)
-
-        txt += "prepend-path\tPYTHONPATH\t%s\n" % installdir
+        txt += "prepend-path\tPYTHONPATH\t%s\n" % os.path.join(self.installdir , self.pylibdir)
 
         return txt
