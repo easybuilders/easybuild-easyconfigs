@@ -36,6 +36,10 @@ class Boost(Application):
     def configure(self):
         """Configure Boost build using custom tools"""
 
+        # mpi sanity check
+        if self.getcfg('boost_mpi') and self.tk.opts['usempi']:
+            self.log.error("When enabling building boost_mpi, also enable the 'usempi' toolkit option.")
+
         # create build directory (Boost doesn't like being built in source dir)
         try:
             self.objdir = os.path.join(self.builddir, 'obj')
@@ -114,7 +118,12 @@ class Boost(Application):
 
         if not self.getcfg('sanityCheckPaths'):
 
-            self.setcfg('sanityCheckPaths', {'files': ['lib/libboost_%s.so' % x for x in ['python', 'system']],
+            mpifs = []
+            if self.getcfg('boost_mpi'):
+                mpifs = ['lib/libboost_mpi.so']
+
+            self.setcfg('sanityCheckPaths', {'files': mpifs + ['lib/libboost_%s.so' % x for x in ['python',
+                                                                                                  'system']],
                                              'dirs':['include/boost']})
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
