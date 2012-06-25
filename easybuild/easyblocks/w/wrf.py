@@ -41,8 +41,9 @@ class WRF(Application):
         self.comp_fam = None
 
         self.cfg.update({
-                         'buildtype':[None, "Specify the type of build (serial, smpar (OpenMP), dmpar (MPI), dm+sm (hybrid OpenMP/MPI))."],
-                         'rewriteopts':[True, "Replace default -O3 option in configure.wrf with CFLAGS/FFLAGS from environment (default: True)."],
+                         'buildtype':[None, "Specify the type of build (serial, smpar (OpenMP), " \
+                                            "dmpar (MPI), dm+sm (hybrid OpenMP/MPI))."],
+                         'rewriteopts':[True, "Replace -O3 with CFLAGS/FFLAGS (default: True)."],
                          'runtest':[True, "Build and run WRF tests (default: True)."]
                          })
 
