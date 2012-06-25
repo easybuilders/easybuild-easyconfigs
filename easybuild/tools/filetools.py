@@ -702,11 +702,10 @@ def mkdir(directory, parrents=False):
     Directory is the path to make
     log is the logger to which to log debugging or error info.
     
-    When parents is True then no error if existing 
-    and make parent directories as needed
-    (this is the mkdir -p behaviour)
+    When parents is True then no error if directory already exists
+    and make parent directories as needed (cfr. mkdir -p)
     """
-    if parrents:
+    if parents:
         try:
             os.makedirs(directory)
             log.debug("Succesfully created directory %s and needed parents" % directory)
@@ -759,7 +758,7 @@ def copytree(src, dst, symlinks=False, ignore=None):
     class Error(EnvironmentError):
         pass
     try:
-        WindowsError
+        WindowsError #@UndefinedVariable
     except NameError:
         WindowsError = None
 
