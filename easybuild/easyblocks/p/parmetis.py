@@ -22,6 +22,7 @@ import os
 import shutil
 
 from distutils.version import LooseVersion
+from easybuild.framework.application import Application
 from easybuild.easyblocks.m.metis import METIS
 from easybuild.tools.filetools import run_cmd, mkdir
 
@@ -127,3 +128,15 @@ class ParMETIS(METIS):
                        os.path.join(libdir, 'parmetis.h'))
         except OSError, err:
             self.log.error("Something went wrong during symlink creation: %s" % err)
+
+    def sanitycheck(self):
+        """Custom sanity check for ParMETIS."""
+
+        if not self.getcfg('sanityCheckPaths'):
+
+            self.setcfg('sanityCheckPaths', {'files': ['THIS_WILL_FAIL'],
+                                             'dirs':['THIS_WILL_FAIL_TOO']})
+
+            self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
+
+        Application.sanitycheck(self)

@@ -121,3 +121,15 @@ class SCOTCH(Application):
             self.log.info("Successfully written group lib file: %s" % scotchgrouplib)
         except (IOError, OSError), err:
             self.log.error("Can't write to file %s: %s" % (scotchgrouplib, err))
+
+    def sanitycheck(self):
+        """Custom sanity check for SCOTCH."""
+
+        if not self.getcfg('sanityCheckPaths'):
+
+            self.setcfg('sanityCheckPaths', {'files': ['THIS_WILL_FAIL'],
+                                             'dirs':['THIS_WILL_FAIL_TOO']})
+
+            self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
+
+        Application.sanitycheck(self)

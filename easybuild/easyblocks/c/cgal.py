@@ -39,3 +39,15 @@ class CGAL(CMake):
         os.environ['BOOST_ROOT'] = get_software_root("Boost")
 
         CMake.configure(self)
+
+    def sanitycheck(self):
+        """Custom sanity check for CGAL."""
+
+        if not self.getcfg('sanityCheckPaths'):
+
+            self.setcfg('sanityCheckPaths', {'files': ['THIS_WILL_FAIL'],
+                                             'dirs':['THIS_WILL_FAIL_TOO']})
+
+            self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
+
+        CMake.sanitycheck(self)

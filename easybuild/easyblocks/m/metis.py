@@ -68,3 +68,15 @@ class METIS(Application):
                 os.symlink(os.path.join(includedir, file), os.path.join(libdir, f))
         except OSError, err:
             self.log.error("Something went wrong during symlink creation: %s" % err)
+
+    def sanitycheck(self):
+        """Custom sanity check for METIS."""
+
+        if not self.getcfg('sanityCheckPaths'):
+
+            self.setcfg('sanityCheckPaths', {'files': ['THIS_WILL_FAIL'],
+                                             'dirs':['THIS_WILL_FAIL_TOO']})
+
+            self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
+
+        Application.sanitycheck(self)
