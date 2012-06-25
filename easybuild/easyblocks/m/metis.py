@@ -21,21 +21,19 @@
 
 import os
 import shutil
-
 from easybuild.framework.application import Application
 from easybuild.tools.filetools import mkdir
 
 class METIS(Application):
-
+    """Support for building METIS."""
 
     def configure(self, *args, **kwargs):
-        """No configuration is done for METIS"""
         pass
 
     def make_install(self):
-        """ Manually copy the required files to the right place.
+        """Manually copy the required files to the right place.
         
-        And create symlins where expected by other applications
+        And create symlinks where expected by other applications
         (in Lib instead of lib)"""
         libdir = os.path.join(self.installdir, 'lib')
         mkdir(libdir)
@@ -43,6 +41,7 @@ class METIS(Application):
         includedir = os.path.join(self.installdir, 'include')
         mkdir(includedir)
 
+        # copy libraries
         try:
             src = os.path.join(self.getcfg('startfrom'), 'libmetis.a')
             dst = os.path.join(libdir, 'libmetis.a')
@@ -50,6 +49,7 @@ class METIS(Application):
         except OSError, err:
             self.log.error("Copying file libmetis.a to lib dir failed: %s" % err)
 
+        # copy include files
         try:
             for f in ['defs.h', 'macros.h', 'metis.h', 'proto.h', 'rename.h', 'struct.h']:
                 src = os.path.join(self.getcfg('startfrom'), 'Lib', f)
@@ -60,7 +60,7 @@ class METIS(Application):
             self.log.error("Copying file metis.h to include dir failed: %s" % err)
 
         # Other applications depending on ParMETIS (SuiteSparse for one) look for both ParMETIS libraries
-        # and headerfiles in the Lib directory (capital L). The following symlinks are hence created.
+        # and header files in the Lib directory (capital L). The following symlinks are hence created.
         try:
             Libdir = os.path.join(self.installdir, 'Lib')
             os.symlink(libdir, Libdir)
