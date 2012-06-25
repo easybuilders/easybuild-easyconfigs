@@ -18,10 +18,6 @@
 # You should have received a copy of the GNU General Public License
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
-"""
-ParMETIS easyblock
-"""
-
 import os
 import shutil
 
@@ -30,68 +26,65 @@ from easybuild.easyblocks.m.metis import METIS
 from easybuild.tools.filetools import run_cmd, mkdir
 
 class ParMETIS(METIS):
-    """
-    Easyblock for the ParMETIS package
-    Parmetis 
-    """
+    """Support for building and installing ParMETIS."""
 
     def configure(self):
-        """
+        """Configure ParMETIS build.
         For versions of ParMETIS < 4 configure METIS separately
         New versions of ParMETIS include METIS
         
         Run 'cmake' in the build dir to get rid of a 'user friendly' 
         help message that is displayed without this step.
         """
-        if self.version() < LooseVersion("4"):
-            return METIS.configure(self)
-        #tested with 4.0.2, now actually requires cmake to be run first
-        #for bot parmetis and metis
-        for buildir in [ 'build' ] :
-            cmd = 'cd %s && cmake .. %s -DCMAKE_INSTALL_PREFIX="%s" && cd %s' % \
-                (buildir, self.getcfg('configopts'), self.installdir, self.getcfg('startfrom'))
-            run_cmd(cmd, log_all=True, simple=True)
+        if LooseVersion(self.version()) < LooseVersion("4"):
+            return METIS.configure(self)\
 
-
+        # tested with 4.0.2, now actually requires cmake to be run first
+        # for both parmetis and metis
+        self.parmetis_builddir = 'build'
+        cmd = 'cd %s && cmake .. %s -DCMAKE_INSTALL_PREFIX="%s" && cd %s' % \
+            (self.parmetis_builddir, self.getcfg('configopts'), self.installdir, self.getcfg('startfrom'))
+        run_cmd(cmd, log_all=True, simple=True)
 
     def make(self, verbose=False):
-        """
-        make ParMETIS and Metis
-        
-        Calling make
-        for version > 4 cmake is run in the build dir.
-        """
+        """Build METIS and ParMETIS using make."""
+
         paracmd = ''
         if self.getcfg('parallel'):
             paracmd = "-j %s" % self.getcfg('parallel')
 
         cmd = "%s make %s %s" % (self.getcfg('premakeopts'), paracmd, self.getcfg('makeopts'))
-        if self.version() >= LooseVersion("4"):
-            #this is done in the build dir.
-            cmd = "cd build && %s && cd %s " % (cmd, self.getcfg('startfrom'))
+
+        # run make in build dir as well for recent version
+        if LooseVersion(self.version()) >= LooseVersion("4"):
+            cmd = "cd %s && %s && cd %s " % (self.parmetis_builddir, cmd, self.getcfg('startfrom'))
+
         run_cmd(cmd, log_all=True, simple=True, log_output=verbose)
 
     def make_install(self):
-        """
-        Manually copy files over to the right places
-        (libmetis.a, libparmetis.a, metis.h, parmetis.h)
+        """Install by copying files over to the right places
+
         Also create symlinks where expected by other packages (Lib directory)
         """
         includedir = os.path.join(self.installdir, 'include')
         libdir = os.path.join(self.installdir, 'lib')
 
-        if self.version() >= LooseVersion("4"):
-            #includedir etc changed in v4, use a normal makeinstall
-            cmd = "cd build && make install %s && cd %s" % (self.getcfg('installopts'),
-                                                            self.getcfg('startfrom'))
+        if LooseVersion(self.version()) >= LooseVersion("4"):
+            #i ncludedir etc changed in v4, use a normal makeinstall
+            cmd = "cd %s && make install %s && cd %s" % (self.parmetis_builddir, 
+                                                         self.getcfg('installopts'),
+                                                         self.getcfg('startfrom'))
             run_cmd(cmd, log_all=True, simple=True)
 
+            # libraries
             try:
                 src = os.path.join(self.getcfg('startfrom'), 'build/libmetis/libmetis.a')
                 dst = os.path.join(libdir, 'libmetis.a')
                 shutil.copy2(src, dst)
             except OSError, err:
                 self.log.error("Copying files to installation dir failed: %s" % err)
+
+            # include files
             try:
                 src = os.path.join(self.getcfg('startfrom'), 'build/metis/include/metis.h')
                 dst = os.path.join(includedir, 'metis.h')
@@ -104,6 +97,7 @@ class ParMETIS(METIS):
             mkdir(libdir)
             mkdir(includedir)
 
+            # libraries
             try:
                 for fil in ['libmetis.a', 'libparmetis.a']:
                     src = os.path.join(self.getcfg('startfrom'), fil)
@@ -112,6 +106,7 @@ class ParMETIS(METIS):
             except OSError, err:
                 self.log.error("Copying files to installation dir failed: %s" % err)
 
+            # include files
             try:
                 src = os.path.join(self.getcfg('startfrom'), 'parmetis.h')
                 dst = os.path.join(includedir, 'parmetis.h')
@@ -123,7 +118,7 @@ class ParMETIS(METIS):
                 self.log.error("Copying files to installation dir failed: %s" % err)
 
         # Other applications depending on ParMETIS (SuiteSparse for one) look for both ParMETIS libraries
-        # and headerfiles in the Lib directory (capital L). The following symlink are hence created.
+        # and header files in the Lib directory (capital L). The following symlink are hence created.
         try:
             llibdir = os.path.join(self.installdir, 'Lib')
             os.symlink(libdir, llibdir)
