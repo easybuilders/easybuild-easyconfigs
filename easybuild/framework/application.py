@@ -1593,6 +1593,7 @@ class ApplicationPackage:
         self.master = mself
         self.log = self.master.log
         self.cfg = self.master.cfg
+        self.tk = self.master.tk
         self.pkg = pkg
         self.pkginstalldeps = pkginstalldeps
 
