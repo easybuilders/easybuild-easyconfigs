@@ -33,15 +33,8 @@ class Dolfin(CMakePythonPackage):
     def configure(self):
         """Configure Dolfin build."""
 
-        #dolfin does not work with swig 2.0.5 and 2.0.6 
-        #is this fixed in 2.0.7?? see https://bugs.launchpad.net/dolfin/+bug/996398
-        # If so, change this check accordingly.
-        if LooseVersion(os.environ['SOFTVERSIONSWIG']) > '2.0.4':
-            self.log.error("Using bad version of SWIG, expecting swig <= 2.0.4." \
-                           " See https://bugs.launchpad.net/dolfin/+bug/996398")
-
         # make sure that required dependencies are loaded
-        deps = ['Armadillo', 'Boost', 'ParMETIS', 'Python', 'SCOTCH', 'SuiteSparse', 'UFC']
+        deps = ['Armadillo', 'Boost', 'ParMETIS', 'Python', 'SCOTCH', 'SWIG', 'SuiteSparse', 'UFC']
         depsdict = {}
         for dep in deps:
             deproot = get_software_root(dep)
@@ -50,15 +43,21 @@ class Dolfin(CMakePythonPackage):
             else:
                 depsdict.update({dep:deproot})
 
-        #run cmake in debug mode
+        # dolfin does not work with swig 2.0.5 and 2.0.6
+        # is this fixed in 2.0.7?? see https://bugs.launchpad.net/dolfin/+bug/996398
+        # If so, change this check accordingly.
+        if LooseVersion(os.environ['SOFTVERSIONSWIG']) > '2.0.4':
+            self.log.error("Using bad version of SWIG, expecting swig <= 2.0.4." \
+                           " See https://bugs.launchpad.net/dolfin/+bug/996398")
 
+        # run cmake in debug mode
         self.updatecfg('configopts', ' -DCMAKE_BUILD_TYPE=Debug')
+
         # set correct compilers to be used at runtime
         self.updatecfg('configopts', ' -DMPI_C_COMPILER="$MPICC"')
         self.updatecfg('configopts', ' -DMPI_CXX_COMPILER="$MPICXX"')
 
         # Boost config parameters
-        #self.updatecfg('configopts', " -DBoost_DIR=%s" % depsdict['Boost'])
         self.updatecfg('configopts', " -DBOOST_INCLUDEDIR=%s/include" % depsdict['Boost'])
         self.updatecfg('configopts', " -DBoost_DEBUG=ON -DBOOST_ROOT=%s" % depsdict['Boost'])
 
@@ -80,7 +79,7 @@ class Dolfin(CMakePythonPackage):
         self.updatecfg('configopts', " -DPYTHON_INCLUDE_PATH=%s/include/python%s" % (depsdict['Python'],
                                                                                      python_short_ver))
         self.updatecfg('configopts', " -DPYTHON_LIBRARY=%s/lib/libpython%s.so" % (depsdict['Python'],
-                                                                                    python_short_ver))
+                                                                                  python_short_ver))
 
         # SuiteSparse config params
         suitesparse = depsdict['SuiteSparse']
@@ -101,14 +100,15 @@ class Dolfin(CMakePythonPackage):
         self.updatecfg('configopts', ' -DBLAS_LIBRARIES:PATH="$LIBBLAS"')
         self.updatecfg('configopts', ' -DLAPACK_LIBRARIES:PATH="$LIBLAPACK"')
 
-        #CFLAGS
+        # CGAL
         self.updatecfg('configopts', ' -DCGAL_DIR:PATH="$SOFTROOTCGAL"')
 
-        #set correct openmp options
+        # set correct openmp options
         openmp = get_openmp_flag(self.log)
         self.updatecfg('configopts', ' -DOpenMP_CXX_FLAGS="%s"' % openmp)
         self.updatecfg('configopts', ' -DOpenMP_C_FLAGS="%s"' % openmp)
 
+        # configure
         CMakePythonPackage.configure(self)
 
     def make_module_extra(self):
@@ -124,9 +124,8 @@ class Dolfin(CMakePythonPackage):
         envvars = ['I_MPI_CXX', 'I_MPI_CC']
         for envvar in envvars:
             envar_val = os.getenv(envvar)
-            if not envar_val and self.tk.name in ['ictce', 'iqacml']:
-                self.log.error("%s not defined in environment, needed by DOLFIN" % envvar)
-            else:
+            # if environment variable is set, also set it in module
+            if envar_val:
                 txt += "setenv\t%s\t%s\n" % (envvar, envar_val)
 
         return txt
