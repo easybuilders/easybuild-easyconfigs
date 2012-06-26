@@ -1700,7 +1700,10 @@ def get_instance(easyblock, log, name=None):
     """
     Get instance for a particular application class (or Application)
     """
-    #TODO: create proper factory for this, as explained here
+
+    app_mod_class = ("easybuild.framework.application", "Application")
+
+    #TODO: create proper factory for this, as explained here 
     #http://stackoverflow.com/questions/456672/class-factory-in-python
     try:
         if not easyblock:
@@ -1743,10 +1746,14 @@ def get_instance(easyblock, log, name=None):
                     raise EasyBuildError(str(err))
 
             else:
-                modulepath = "easybuild.framework.application"
-                class_name = "Application"
+                (modulepath, class_name) = app_mod_class
                 log.debug("Easyblock path %s does not exist, so falling back to default %s class from %s" % (easyblock_path, class_name, modulepath))
 
+        elif easyblock == "Application":
+            (modulepath, class_name) = app_mod_class
+            log.debug("Easyblock %s specified, so using default class %s from %s" % (easyblock,
+                                                                                     class_name,
+                                                                                     modulepath))
         else:
             class_name = easyblock.split('.')[-1]
             # figure out if full path was specified or not
