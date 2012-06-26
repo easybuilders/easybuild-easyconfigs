@@ -45,8 +45,10 @@ class CGAL(CMake):
 
         if not self.getcfg('sanityCheckPaths'):
 
-            self.setcfg('sanityCheckPaths', {'files': ['THIS_WILL_FAIL'],
-                                             'dirs':['THIS_WILL_FAIL_TOO']})
+            self.setcfg('sanityCheckPaths', {'files': ['bin/cgal_%s' % x for x in ["create_cmake_script",
+                                                                                   "make_macosx_app"]] +
+                                                      ['lib/libCGAL%s.so' % x for x in ["", "_Core"]],
+                                             'dirs':['include/CGAL', 'lib/CGAL']})
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
