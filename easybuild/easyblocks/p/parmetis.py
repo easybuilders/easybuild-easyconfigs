@@ -20,47 +20,73 @@
 ##
 import os
 import shutil
-
 from distutils.version import LooseVersion
 from easybuild.framework.application import Application
-from easybuild.easyblocks.m.metis import METIS
 from easybuild.tools.filetools import run_cmd, mkdir
+from easybuild.tools.toolkit import get_openmp_flag
 
-class ParMETIS(METIS):
+class ParMETIS(Application):
     """Support for building and installing ParMETIS."""
 
     def configure(self):
         """Configure ParMETIS build.
-        For versions of ParMETIS < 4 configure METIS separately
+        For versions of ParMETIS < 4 , METIS is a seperate build
         New versions of ParMETIS include METIS
         
         Run 'cmake' in the build dir to get rid of a 'user friendly' 
         help message that is displayed without this step.
         """
-        if LooseVersion(self.version()) < LooseVersion("4"):
-            return METIS.configure(self)\
+        if LooseVersion(self.version()) >= LooseVersion("4"):
+            # tested with 4.0.2, now actually requires cmake to be run first
+            # for both parmetis and metis
 
-        # tested with 4.0.2, now actually requires cmake to be run first
-        # for both parmetis and metis
-        self.parmetis_builddir = 'build'
-        cmd = 'cd %s && cmake .. %s -DCMAKE_INSTALL_PREFIX="%s" && cd %s' % \
-            (self.parmetis_builddir, self.getcfg('configopts'), self.installdir, self.getcfg('startfrom'))
-        run_cmd(cmd, log_all=True, simple=True)
+            self.updatecfg('configopts', '-DMETIS_PATH=../metis -DGKLIB_PATH=../metis/GKlib')
+
+            self.updatecfg('configopts', '-DOPENMP="%s"' % get_openmp_flag(self.log))
+
+            if self.tk.opts['usempi']:
+                self.updatecfg('configopts', '-DCMAKE_C_COMPILER="$MPICC"')
+
+            if self.tk.opts['pic']:
+                self.updatecfg('configopts', '-DCMAKE_C_FLAGS="-fPIC"')
+
+            self.parmetis_builddir = 'build'
+            try:
+                os.chdir(self.parmetis_builddir)
+                cmd = 'cmake .. %s -DCMAKE_INSTALL_PREFIX="%s"' % (self.getcfg('configopts'),
+                                                                   self.installdir)
+                run_cmd(cmd, log_all=True, simple=True)
+                os.chdir(self.getcfg('startfrom'))
+            except OSError, err:
+                self.log.error("Running cmake in %s failed: %s" % (self.parmetis_builddir, err))
 
     def make(self, verbose=False):
-        """Build METIS and ParMETIS using make."""
+        """Build ParMETIS (and METIS) using make."""
 
         paracmd = ''
         if self.getcfg('parallel'):
             paracmd = "-j %s" % self.getcfg('parallel')
 
+        self.updatecfg('makeopts', 'LIBDIR=""')
+
+        if self.tk.opts['usempi']:
+            if self.tk.opts['pic']:
+                self.updatecfg('makeopts', 'CC="$MPICC -fPIC"')
+            else:
+                self.updatecfg('makeopts', 'CC="$MPICC"')
+
         cmd = "%s make %s %s" % (self.getcfg('premakeopts'), paracmd, self.getcfg('makeopts'))
 
         # run make in build dir as well for recent version
         if LooseVersion(self.version()) >= LooseVersion("4"):
-            cmd = "cd %s && %s && cd %s " % (self.parmetis_builddir, cmd, self.getcfg('startfrom'))
-
-        run_cmd(cmd, log_all=True, simple=True, log_output=verbose)
+            try:
+                os.chdir(self.parmetis_builddir)
+                run_cmd(cmd, log_all=True, simple=True, log_output=verbose)
+                os.chdir(self.getcfg('startfrom'))
+            except OSError, err:
+                self.log.error("Running cmd '%s' in %s failed: %s" % (cmd, self.parmetis_builddir, err))
+        else:
+            run_cmd(cmd, log_all=True, simple=True, log_output=verbose)
 
     def make_install(self):
         """Install by copying files over to the right places
@@ -72,10 +98,13 @@ class ParMETIS(METIS):
 
         if LooseVersion(self.version()) >= LooseVersion("4"):
             #i ncludedir etc changed in v4, use a normal makeinstall
-            cmd = "cd %s && make install %s && cd %s" % (self.parmetis_builddir, 
-                                                         self.getcfg('installopts'),
-                                                         self.getcfg('startfrom'))
-            run_cmd(cmd, log_all=True, simple=True)
+            cmd = "make install %s" % self.getcfg('installopts')
+            try:
+                os.chdir(self.parmetis_builddir)
+                run_cmd(cmd, log_all=True, simple=True)
+                os.chdir(self.getcfg('startfrom'))
+            except OSError, err:
+                self.log.error("Running '%s' in %s failed: %s" % (cmd, self.parmetis_builddir, err))
 
             # libraries
             try:
@@ -134,8 +163,9 @@ class ParMETIS(METIS):
 
         if not self.getcfg('sanityCheckPaths'):
 
-            self.setcfg('sanityCheckPaths', {'files': ['THIS_WILL_FAIL'],
-                                             'dirs':['THIS_WILL_FAIL_TOO']})
+            self.setcfg('sanityCheckPaths', {'files': ['include/%smetis.h' % x for x in ["", "par"]] +
+                                                      ['lib/lib%smetis.a' % x for x in ["", "par"]],
+                                             'dirs':['Lib']})
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
