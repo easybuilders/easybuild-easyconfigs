@@ -152,9 +152,8 @@ class ParMETIS(Application):
         try:
             llibdir = os.path.join(self.installdir, 'Lib')
             os.symlink(libdir, llibdir)
-            os.symlink(os.path.join(includedir, 'metis.h'), os.path.join(libdir, 'metis.h'))
-            os.symlink(os.path.join(includedir, 'parmetis.h'),
-                       os.path.join(libdir, 'parmetis.h'))
+            for f in ['metis.h', 'parmetis.h']:
+                os.symlink(os.path.join(includedir, f), os.path.join(libdir, f))
         except OSError, err:
             self.log.error("Something went wrong during symlink creation: %s" % err)
 
