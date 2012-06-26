@@ -22,6 +22,7 @@ import os
 import shutil
 from easybuild.framework.application import Application
 from easybuild.tools.filetools import run_cmd
+from easybuild.tools.modules import get_software_root
 
 class Boost(Application):
     """Support for building Boost."""
@@ -76,6 +77,13 @@ class Boost(Application):
         """Build Boost with bjam tool."""
 
         bjamoptions = " --prefix=%s" % self.objdir
+
+        # specify path for bzip2 if module is loaded
+        bzip2 = get_software_root('bzip2')
+        if bzip2:
+            bjamoptions += " -sBZIP2_INCLUDE=%s/include" % bzip2
+            bjamoptions += " -sBZIP2_LIBPATH=%s/lib" % bzip2
+
 
         if self.getcfg('boost_mpi'):
 
