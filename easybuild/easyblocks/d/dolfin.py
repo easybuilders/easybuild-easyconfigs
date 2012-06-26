@@ -19,7 +19,6 @@
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
 import os
-from distutils.version import LooseVersion
 from easybuild.easyblocks.c.cmakepythonpackage import CMakePythonPackage
 from easybuild.tools.modules import get_software_root
 from easybuild.tools.toolkit import get_openmp_flag
@@ -34,7 +33,7 @@ class DOLFIN(CMakePythonPackage):
         """Configure Dolfin build."""
 
         # make sure that required dependencies are loaded
-        deps = ['Armadillo', 'Boost', 'ParMETIS', 'Python', 'SCOTCH', 'SWIG', 'SuiteSparse', 'UFC']
+        deps = ['Armadillo', 'Boost', 'ParMETIS', 'Python', 'SCOTCH', 'SuiteSparse', 'UFC']
         depsdict = {}
         for dep in deps:
             deproot = get_software_root(dep)
@@ -42,13 +41,6 @@ class DOLFIN(CMakePythonPackage):
                 self.log.error("Dependency %s not available." % dep)
             else:
                 depsdict.update({dep:deproot})
-
-        # dolfin does not work with swig 2.0.5 and 2.0.6
-        # is this fixed in 2.0.7?? see https://bugs.launchpad.net/dolfin/+bug/996398
-        # If so, change this check accordingly.
-        if LooseVersion(os.environ['SOFTVERSIONSWIG']) > '2.0.4':
-            self.log.error("Using bad version of SWIG, expecting swig <= 2.0.4." \
-                           " See https://bugs.launchpad.net/dolfin/+bug/996398")
 
         # run cmake in debug mode
         self.updatecfg('configopts', ' -DCMAKE_BUILD_TYPE=Debug')
