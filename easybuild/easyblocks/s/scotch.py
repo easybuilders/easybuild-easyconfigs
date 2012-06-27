@@ -127,8 +127,30 @@ class SCOTCH(Application):
 
         if not self.getcfg('sanityCheckPaths'):
 
-            self.setcfg('sanityCheckPaths', {'files': ['THIS_WILL_FAIL'],
-                                             'dirs':['THIS_WILL_FAIL_TOO']})
+            self.setcfg('sanityCheckPaths', {'files': ['bin/%s' % x for x in ["acpl","amk_fft2","amk_hy",
+                                                                              "amk_p2","dggath","dgord",
+                                                                              "dgscat","gbase","gmap",
+                                                                              "gmk_m2","gmk_msh","gmtst",
+                                                                              "gotst","gpart","gtst",
+                                                                              "mmk_m2","mord","amk_ccc",
+                                                                              "amk_grf","amk_m2","atst",
+                                                                              "dgmap","dgpart","dgtst",
+                                                                              "gcv","gmk_hy","gmk_m3",
+                                                                              "gmk_ub2","gord","gout",
+                                                                              "gscat","mcv","mmk_m3",
+                                                                              "mtst"]] +
+                                                      ['include/%s.h' % x for x in ["esmumps","ptscotchf",
+                                                                                    "ptscotch","scotchf",
+                                                                                    "scotch"]] +
+                                                      ['lib/lib%s.a' % x for x in ["esmumps","ptscotch",
+                                                                                   "ptscotcherrexit",
+                                                                                   "scotcherr",
+                                                                                   "scotch_group",
+                                                                                   "ptesmumps",
+                                                                                   "ptscotcherr",
+                                                                                   "scotch",
+                                                                                   "scotcherrexit"]],
+                                             'dirs':[]})
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
