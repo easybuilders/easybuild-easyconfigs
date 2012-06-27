@@ -18,15 +18,64 @@
 # You should have received a copy of the GNU General Public License
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
+import fileinput
+import re
 import os
 import shutil
+import sys
 from easybuild.framework.application import Application
+from easybuild.tools.filetools import mkdir
 
 class SuiteSparse(Application):
     """Support for building SuiteSparse."""
 
     def configure(self):
-        pass
+        """Configure build by patching UFconfig.mk."""
+
+        metis = os.getenv('SOFTROOTMETIS')
+        parmetis = os.getenv('SOFTROOTPARMETIS')
+        if not metis and not parmetis:
+            self.log.error("Neither METIS or ParMETIS module loaded.")
+
+        fp = os.path.join("UFconfig","UFconfig.mk")
+
+        cfgvars = {
+                   'CC':os.getenv('MPICC'),
+                   'CFLAGS':os.getenv('CFLAGS'),
+                   'CXX':os.getenv('MPICXX'),
+                   'F77':os.getenv('MPIF77'),
+                   'F77FLAGS':os.getenv('F77FLAGS'),
+                   'BLAS':os.getenv('LIBBLAS_MT'),
+                   'LAPACK':os.getenv('LIBLAPACK_MT'),
+               }
+
+        if parmetis:
+            cfgvars.update({
+                            'METIS_PATH':parmetis,
+                            'METIS':"%(p)s/lib/libparmetis.a %(p)s/lib/metis.a" % {'p':parmetis}
+                            })
+
+        # patch file
+        try:
+            for line in fileinput.input(fp, inplace=1, backup='.orig'):
+                for k,v in cfgvars.items():
+                    line = re.sub(r"^(%s\s*=\s*).*$" % k, r"\1 %s # patched by EasyBuild" % v, line)
+                    if k in line:
+                        cfgvars.pop(k)
+                sys.stdout.write(line)
+        except IOError, err:
+            self.log.error("Failed to patch %s in: %s" % (fp, err))
+
+        # add remaining entries at the end
+        if cfgvars:
+            try:
+                f = open(fp, "a")
+                f.write("# lines below added automatically by EasyBuild")
+                for k,v in cfgvars.items():
+                    f.write("%s = %s\n" % (k,v))
+                f.close()
+            except IOError, err:
+                self.log.error("Failed to complete %s: %s" % (fp, err))
 
     def make_install(self):
         """Install by copying the contents of the builddir to the installdir
@@ -52,14 +101,16 @@ class SuiteSparse(Application):
                 self.log.exception("Copying src %s to dst %s failed" % (src, dst))
 
         # Some extra symlinks are necessary for UMFPACK to work.
-        for p in ['AMD/include/amd.h', 'AMD/include/amd_internal.h', 'UFconfig/UFconfig.h', 'AMD/lib/libamd.a']:
+        for p in ['AMD/include/amd.h', 'AMD/include/amd_internal.h',
+                  'UFconfig/UFconfig.h', 'AMD/lib/libamd.a']:
             src = os.path.join(self.installdir, p)
             dn = p.split('/')[-2]
             fn = p.split('/')[-1]
-            dst = os.path.join(self.installdir, 'UMFPACK', dn, fn)
+            dstdir = os.path.join(self.installdir, 'UMFPACK', dn)
+            mkdir(dstdir)
             if os.path.exists(src):
                 try:
-                    os.symlink(src, dst)
+                    os.symlink(src, os.path.join(dstdir, fn))
                 except Exception, err:
                     self.log.error("Failed to make symbolic link from %s to %s: %s" % (src, dst, err))
 
