@@ -492,10 +492,11 @@ def run_cmd_qa(cmd, qa, no_qa=None, log_ok=True, log_all=False, simple=False, re
 
     # Process stopped. Read all remaining data
     try:
-        readTxt = p.stdout.read()
-        stdoutErr += readTxt
-        if runLog:
-            runLog.write(readTxt)
+        if p.stdout:
+            readTxt = p.stdout.read()
+            stdoutErr += readTxt
+            if runLog:
+                runLog.write(readTxt)
     except IOError, err:
         log.debug("runqanda cmd %s: remaining data read failed: %s" % (cmd, err))
 
