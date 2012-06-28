@@ -733,7 +733,7 @@ class Application:
             if 'source' in tmp:
                 srcind = tmp['source']
             srcpathsuffix = ''
-            if 'sourcepaht' in tmp:
+            if 'sourcepath' in tmp:
                 srcpathsuffix = tmp['sourcepath']
             elif 'copy' in tmp:
                 srcpathsuffix = tmp['copy']
