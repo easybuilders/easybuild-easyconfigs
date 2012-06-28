@@ -91,7 +91,7 @@ class Repository:
         if not os.path.isdir(name):
             os.makedirs(name)
 
-        ## destination    
+        ## destination
         dest = os.path.join(self.wc, name, "%s.eb" % (version))
 
         ## check if it's new/different from what's in svn
@@ -180,9 +180,7 @@ class GitRepository(Repository):
 
 
         # check whether git module was loaded (globally)
-        try:
-            import git
-        except ImportError:
+        if not 'git' in sys.modules or not ('git' in locals() and locals()['git'] == sys.modules['git']):
             log.exception("Failed to load GitPython. Make sure it is installed "
                           "properly. Run 'python -c \"import git\"' to test.")
 
@@ -206,7 +204,7 @@ class GitRepository(Repository):
         # create a local wc every time.
         self.wc = tempfile.mkdtemp(prefix='git-wc-')
 
-        ## try to get a copy of 
+        ## try to get a copy of
         try:
             client = git.Git(self.wc)
             out = client.clone(self.repo)
