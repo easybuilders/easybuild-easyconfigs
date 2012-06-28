@@ -33,7 +33,10 @@ class NetCDF(Application):
         if self.tk.opts['pic']:
             self.updatecfg('configopts', '--with-pic')
 
-        self.updatecfg('configopts', 'FCFLAGS="%s" CC="%s"' % (os.getenv('FFLAGS'), os.getenv('MPICC')))
+        self.updatecfg('configopts', 'FCFLAGS="%s" CC="%s" FC="%s"' % (os.getenv('FFLAGS'),
+                                                                       os.getenv('MPICC'),
+                                                                       os.getenv('MPIF90')
+                                                                       ))
 
         # add -DgFortran to CPPFLAGS when building with GCC
         if self.tk.toolkit_comp_family() == "GCC":
