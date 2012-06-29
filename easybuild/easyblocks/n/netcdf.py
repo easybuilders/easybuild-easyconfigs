@@ -35,7 +35,7 @@ class NetCDF(Application):
 
         self.updatecfg('configopts', 'FCFLAGS="%s" CC="%s" FC="%s"' % (os.getenv('FFLAGS'),
                                                                        os.getenv('MPICC'),
-                                                                       os.getenv('MPIF90')
+                                                                       os.getenv('F90')
                                                                        ))
 
         # add -DgFortran to CPPFLAGS when building with GCC
