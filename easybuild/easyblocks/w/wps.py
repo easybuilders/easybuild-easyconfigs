@@ -91,8 +91,8 @@ class WPS(Application):
         jasper = os.getenv('SOFTROOTJASPER')
         jasperlibdir = os.path.join(jasper, "lib")
         if jasper:
-            os.putenv('JASPERINC', os.path.join(jasper, "include"))
-            os.putenv('JASPERLIB', jasperlibdir)
+            os.environ['JASPERINC'] = os.path.join(jasper, "include")
+            os.environ['JASPERLIB'] = jasperlibdir
         else:
             self.log.error("JasPer module not loaded?")
 
@@ -298,7 +298,13 @@ class WPS(Application):
 
     # installing is done in make, so we can run tests
     def make_install(self):
-        pass
+
+        # make sure JASPER environment variables are unset
+        env_vars = ['JASPERINC', 'JASPERLIB']
+
+        for env_var in env_vars:
+            if os.environ.has_key(env_var):
+                os.environ.pop(env_var)
 
     def sanitycheck(self):
         """Custom sanity check for WPS."""
