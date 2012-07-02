@@ -240,8 +240,11 @@ class GCC(Application):
 
         # instead of relying on uname, we run the same command GCC uses to
         # determine the platform
-        (out, _) = run_cmd("../config.guess", simple=False)
-        self.platform_lib = out.rstrip()
+        out, ec = run_cmd("../config.guess", simple=False)
+        if not ec:
+            self.platform_lib = out.rstrip()
+        else:
+            self.platform_lib = get_platform_name(withversion=True)
 
         self.run_configure_cmd(cmd)
 
@@ -428,8 +431,6 @@ class GCC(Application):
         """
         Custom sanity check for GCC
         """
-        if not self.platform_lib:
-            self.platform_lib = get_platform_name(withversion=True)
 
         if not self.getcfg('sanityCheckPaths'):
 
