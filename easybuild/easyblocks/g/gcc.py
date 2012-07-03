@@ -241,7 +241,7 @@ class GCC(Application):
         # instead of relying on uname, we run the same command GCC uses to
         # determine the platform
         out, ec = run_cmd("../config.guess", simple=False)
-        if not ec:
+        if ec == 0:
             self.platform_lib = out.rstrip()
         else:
             self.platform_lib = get_platform_name(withversion=True)
