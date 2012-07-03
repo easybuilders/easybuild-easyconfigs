@@ -74,6 +74,19 @@ class WRF(Application):
         else:
             self.log.info("HDF5 module not loaded, assuming that's OK...")
 
+        # JasPer dependency check + setting env vars
+        jasper = os.getenv('SOFTROOTJASPER')
+        jasperlibdir = os.path.join(jasper, "lib")
+        if jasper:
+            os.environ['JASPERINC'] = os.path.join(jasper, "include")
+            os.environ['JASPERLIB'] = jasperlibdir
+
+        else:
+            if os.getenv('JASPERINC') or os.getenv('JASPERLIB'):
+                self.log.error("JasPer module not loaded, but JASPERINC and/or JASPERLIB still set?")
+            else:
+                self.log.info("JasPer module not loaded, assuming that's OK...")
+
         # enable support for large file support in netCDF
         os.putenv('WRFIO_NCD_LARGE_FILE_SUPPORT', '1')
 
