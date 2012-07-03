@@ -29,7 +29,7 @@ log = getLog('easybuild_config')
 # buildPath possibly overridden by EASYBUILDBUILDPATH
 # installPath possibly overridden by EASYBUILDINSTALLPATH
 
-# this should result in a MODULEPATH=($HOME|$EASYBUILDPREFIX)/.local/easybuild/install/modules/all
+# this should result in a MODULEPATH=($HOME/.local/easybuild|$EASYBUILDPREFIX)/install/modules/all
 buildDir = 'build'
 installDir = 'install'
 sourceDir = 'sources'
