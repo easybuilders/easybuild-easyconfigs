@@ -34,7 +34,6 @@ from easybuild.tools.class_dumper import dumpClasses
 from easybuild.tools.modules import Modules, searchModule
 from easybuild.tools.repository import getRepository
 from optparse import OptionParser
-import easybuild
 import easybuild.tools.config as config
 import easybuild.tools.filetools as filetools
 from easybuild.tools import systemtools
@@ -671,7 +670,7 @@ def build(module, options, log, origEnviron, exitOnFailure=True):
     ## Check for errors
     if exitCode > 0 or filetools.errorsFoundInLog > 0:
         print_msg("\nWARNING: Build exited with exit code %d. %d possible error(s) were detected in the " \
-                  "build logs, please verify the build.\n" % (exitCode, filetools.errorsFoundInLog), 
+                  "build logs, please verify the build.\n" % (exitCode, filetools.errorsFoundInLog),
                   log)
 
     if app.postmsg:
