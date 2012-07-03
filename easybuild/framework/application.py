@@ -349,7 +349,7 @@ class Application:
 
         return result
 
-    ## process EasyBuild spec file 
+    ## process EasyBuild spec file
 
     def process_ebfile(self, fn):
         """
@@ -448,6 +448,8 @@ class Application:
 
         self.make_installversion()
 
+        self.verify_homepage()
+
     def getcfg(self, key):
         """
         Get a configuration item.
@@ -499,7 +501,7 @@ class Application:
         else:
             self.log.error("One or more OS dependencies were not found: %s" % not_found)
 
-    ## BUILD 
+    ## BUILD
 
     def ready2build(self):
         """
@@ -668,7 +670,7 @@ class Application:
             if foundfile:
                 return foundfile
             else:
-                # try and download source files from specified source URLs 
+                # try and download source files from specified source URLs
                 sourceURLs = self.getcfg('sourceURLs')
                 targetdir = candidate_filepaths[0]
                 if not os.path.isdir(targetdir):
@@ -713,6 +715,35 @@ class Application:
                         failedpaths.append(fullurl)
 
                 self.log.error("Couldn't find file %s anywhere, and downloading it didn't work either...\nPaths attempted (in order): %s " % (filename, ', '.join(failedpaths)))
+
+
+    def verify_homepage(self):
+        """
+        Download homepage, verify if the name of the software is mentioned
+        """
+        homepage = self.getcfg("homepage")
+
+        try:
+            page = urllib.urlopen(homepage)
+        except IOError:
+            self.log.warn("Homepage (%s) is unavailable" % homepage)
+            return False
+
+        # if url contains software name and is available we are satisfied
+        if homepage.lower().find(self.name().lower()) != -1:
+            return True
+
+        # Perform a lowercase compare against the entire contents of the html page
+        # (does not care about html)
+        for line in page:
+            if line.lower().find(self.name().lower()) != -1:
+                return True
+
+        self.log.warn("Homepage (%s) does not seem to contain anything relevant to %s" % (homepage, self.name()))
+        return False
+
+
+
 
     def apply_patch(self, beginpath=None):
         """
@@ -871,8 +902,8 @@ class Application:
     def cleanup(self):
         """
         Cleanup leftover mess: remove/clean build directory
-        
-        except when we're building in the installation directory, 
+
+        except when we're building in the installation directory,
         otherwise we remove the installation
         """
         if not self.build_in_installdir:
@@ -885,7 +916,7 @@ class Application:
     def sanitycheck(self):
         """
         Do a sanity check on the installation
-        - if *any* of the files/subdirectories in the installation directory listed 
+        - if *any* of the files/subdirectories in the installation directory listed
           in sanityCheckPaths are non-existent (or empty), the sanity check fails
         """
         # prepare sanity check paths
@@ -918,7 +949,7 @@ class Application:
                 self.log.debug("Sanity check: found file %s in %s" % (f, self.installdir))
 
         if self.sanityCheckOK:
-            # check if directories exist, and whether they are non-empty     
+            # check if directories exist, and whether they are non-empty
             for d in self.sanityCheckPaths['dirs']:
                 p = os.path.join(self.installdir, d)
                 if not os.path.isdir(p) or not os.listdir(p):
@@ -1004,7 +1035,7 @@ class Application:
         """
         if not self.build_in_installdir:
             # make a unique build dir
-            ## if a tookitversion starts with a -, remove the - so prevent a -- in the path name 
+            ## if a tookitversion starts with a -, remove the - so prevent a -- in the path name
             tkversion = self.tk.version
             if tkversion.startswith('-'):
                 tkversion = tkversion[1:]
@@ -1222,7 +1253,7 @@ class Application:
     def packages(self):
         """
         After make install, run this.
-        - only if variable len(pkglist) > 0 
+        - only if variable len(pkglist) > 0
         - optionally: load module that was just created using temp module file
         - find source for packages, in pkgs
         - run extraPackages
@@ -1275,7 +1306,7 @@ class Application:
 
     def find_package_sources(self):
         """
-        Find source file for packages. 
+        Find source file for packages.
         """
         pkgSources = []
         for pkg in self.getcfg('pkglist'):
@@ -1378,7 +1409,7 @@ class Application:
         """
         Called when self.skip is True
         - use this to detect existing packages and to remove them from self.pkgs
-        - based on initial R version 
+        - based on initial R version
         """
         cmdtmpl = self.getcfg('pkgfilter')[0]
         cmdinputtmpl = self.getcfg('pkgfilter')[1]
@@ -1509,7 +1540,7 @@ def get_instance(easyblock, log, name=None):
     """
     Get instance for a particular application class (or Application)
     """
-    #TODO: create proper factory for this, as explained here 
+    #TODO: create proper factory for this, as explained here
     #http://stackoverflow.com/questions/456672/class-factory-in-python
     try:
         if not easyblock:
