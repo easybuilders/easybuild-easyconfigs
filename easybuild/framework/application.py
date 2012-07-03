@@ -349,7 +349,7 @@ class Application:
 
         return result
 
-    ## process EasyBuild spec file 
+    ## process EasyBuild spec file
 
     def process_ebfile(self, fn):
         """
@@ -499,7 +499,7 @@ class Application:
         else:
             self.log.error("One or more OS dependencies were not found: %s" % not_found)
 
-    ## BUILD 
+    ## BUILD
 
     def ready2build(self):
         """
@@ -668,7 +668,7 @@ class Application:
             if foundfile:
                 return foundfile
             else:
-                # try and download source files from specified source URLs 
+                # try and download source files from specified source URLs
                 sourceURLs = self.getcfg('sourceURLs')
                 targetdir = candidate_filepaths[0]
                 if not os.path.isdir(targetdir):
@@ -871,13 +871,21 @@ class Application:
     def cleanup(self):
         """
         Cleanup leftover mess: remove/clean build directory
-        
-        except when we're building in the installation directory, 
+
+        except when we're building in the installation directory,
         otherwise we remove the installation
         """
         if not self.build_in_installdir:
             try:
                 shutil.rmtree(self.builddir)
+                base = os.path.dirname(self.builddir)
+
+                # keep removing empty directories until we either find a non-empty one
+                # or we end up in the root builddir
+                while len(os.listdir(base)) == 0 and not os.path.samefile(base, buildPath()):
+                    os.rmdir(base)
+                    base = os.path.dirname(base)
+
                 self.log.info("Cleaning up builddir %s" % (self.builddir))
             except OSError, err:
                 self.log.exception("Cleaning up builddir %s failed: %s" % (self.builddir, err))
@@ -885,7 +893,7 @@ class Application:
     def sanitycheck(self):
         """
         Do a sanity check on the installation
-        - if *any* of the files/subdirectories in the installation directory listed 
+        - if *any* of the files/subdirectories in the installation directory listed
           in sanityCheckPaths are non-existent (or empty), the sanity check fails
         """
         # prepare sanity check paths
@@ -918,7 +926,7 @@ class Application:
                 self.log.debug("Sanity check: found file %s in %s" % (f, self.installdir))
 
         if self.sanityCheckOK:
-            # check if directories exist, and whether they are non-empty     
+            # check if directories exist, and whether they are non-empty
             for d in self.sanityCheckPaths['dirs']:
                 p = os.path.join(self.installdir, d)
                 if not os.path.isdir(p) or not os.listdir(p):
@@ -1004,7 +1012,7 @@ class Application:
         """
         if not self.build_in_installdir:
             # make a unique build dir
-            ## if a tookitversion starts with a -, remove the - so prevent a -- in the path name 
+            ## if a tookitversion starts with a -, remove the - so prevent a -- in the path name
             tkversion = self.tk.version
             if tkversion.startswith('-'):
                 tkversion = tkversion[1:]
@@ -1222,7 +1230,7 @@ class Application:
     def packages(self):
         """
         After make install, run this.
-        - only if variable len(pkglist) > 0 
+        - only if variable len(pkglist) > 0
         - optionally: load module that was just created using temp module file
         - find source for packages, in pkgs
         - run extraPackages
@@ -1275,7 +1283,7 @@ class Application:
 
     def find_package_sources(self):
         """
-        Find source file for packages. 
+        Find source file for packages.
         """
         pkgSources = []
         for pkg in self.getcfg('pkglist'):
@@ -1378,7 +1386,7 @@ class Application:
         """
         Called when self.skip is True
         - use this to detect existing packages and to remove them from self.pkgs
-        - based on initial R version 
+        - based on initial R version
         """
         cmdtmpl = self.getcfg('pkgfilter')[0]
         cmdinputtmpl = self.getcfg('pkgfilter')[1]
@@ -1509,7 +1517,7 @@ def get_instance(easyblock, log, name=None):
     """
     Get instance for a particular application class (or Application)
     """
-    #TODO: create proper factory for this, as explained here 
+    #TODO: create proper factory for this, as explained here
     #http://stackoverflow.com/questions/456672/class-factory-in-python
     try:
         if not easyblock:
