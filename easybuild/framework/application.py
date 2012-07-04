@@ -1,5 +1,5 @@
 ##
-# Copyright 2009-2012 Stijn Deweirdt, Dries Verdegem, Kenneth Hoste, Pieter De Baets, Jens Timmerman
+# Copyright 2009-2012 Stijn Deweirdt, Dries Verdegem, Kenneth Hoste, Pieter De Baets, Jens Timmerman, Toon Willems
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of the University of Ghent (http://ugent.be/hpc).
@@ -147,6 +147,7 @@ class Application:
           'patches': [[], "List of patches to apply"],
           'tests': [[], "List of test-scripts to run after install. A test script should return a non-zero exit status to fail"],
           'sanityCheckPaths': [{}, "List of files and directories to check (format: {'files':<list>, 'dirs':<list>}, default: {})"],
+          'sanityCheckCommand': ['', "Single command that will be run after install (e.g. <name> -h)"],
           'buildstats' : [None, "A list of dicts with buildstats: build_time, platform, core_count, cpu_model, install_size, timestamp"],
         }
 
@@ -349,7 +350,7 @@ class Application:
 
         return result
 
-    ## process EasyBuild spec file 
+    ## process EasyBuild spec file
 
     def process_ebfile(self, fn):
         """
@@ -499,7 +500,7 @@ class Application:
         else:
             self.log.error("One or more OS dependencies were not found: %s" % not_found)
 
-    ## BUILD 
+    ## BUILD
 
     def ready2build(self):
         """
@@ -668,7 +669,7 @@ class Application:
             if foundfile:
                 return foundfile
             else:
-                # try and download source files from specified source URLs 
+                # try and download source files from specified source URLs
                 sourceURLs = self.getcfg('sourceURLs')
                 targetdir = candidate_filepaths[0]
                 if not os.path.isdir(targetdir):
@@ -871,8 +872,8 @@ class Application:
     def cleanup(self):
         """
         Cleanup leftover mess: remove/clean build directory
-        
-        except when we're building in the installation directory, 
+
+        except when we're building in the installation directory,
         otherwise we remove the installation
         """
         if not self.build_in_installdir:
@@ -885,7 +886,7 @@ class Application:
     def sanitycheck(self):
         """
         Do a sanity check on the installation
-        - if *any* of the files/subdirectories in the installation directory listed 
+        - if *any* of the files/subdirectories in the installation directory listed
           in sanityCheckPaths are non-existent (or empty), the sanity check fails
         """
         # prepare sanity check paths
@@ -918,7 +919,7 @@ class Application:
                 self.log.debug("Sanity check: found file %s in %s" % (f, self.installdir))
 
         if self.sanityCheckOK:
-            # check if directories exist, and whether they are non-empty     
+            # check if directories exist, and whether they are non-empty
             for d in self.sanityCheckPaths['dirs']:
                 p = os.path.join(self.installdir, d)
                 if not os.path.isdir(p) or not os.listdir(p):
@@ -927,6 +928,20 @@ class Application:
                     break
                 else:
                     self.log.debug("Sanity check: found non-empty directory %s in %s" % (d, self.installdir))
+
+
+        # run sanity check command
+        command = self.getcfg('sanityCheckCommand')
+        if command:
+            # TODO: when issue 312 gets resolved and merged, place check in verify_config so that
+            # the sanityCheckCommand is not an absolute path
+            command = os.path.join(self.installdir, command)
+            # chdir to installdir otherwise os.getcwd() will fail
+            os.chdir(self.installdir)
+            out, ec = run_cmd(command, simple=False)
+            if ec != 0:
+                self.sanityCheckOK = False
+                self.log.debug("sanityCheckCommand exited with code %s (output: %s)" % (ec, out))
 
         # pass or fail
         if not self.sanityCheckOK:
@@ -1004,7 +1019,7 @@ class Application:
         """
         if not self.build_in_installdir:
             # make a unique build dir
-            ## if a tookitversion starts with a -, remove the - so prevent a -- in the path name 
+            ## if a tookitversion starts with a -, remove the - so prevent a -- in the path name
             tkversion = self.tk.version
             if tkversion.startswith('-'):
                 tkversion = tkversion[1:]
@@ -1222,7 +1237,7 @@ class Application:
     def packages(self):
         """
         After make install, run this.
-        - only if variable len(pkglist) > 0 
+        - only if variable len(pkglist) > 0
         - optionally: load module that was just created using temp module file
         - find source for packages, in pkgs
         - run extraPackages
@@ -1275,7 +1290,7 @@ class Application:
 
     def find_package_sources(self):
         """
-        Find source file for packages. 
+        Find source file for packages.
         """
         pkgSources = []
         for pkg in self.getcfg('pkglist'):
@@ -1378,7 +1393,7 @@ class Application:
         """
         Called when self.skip is True
         - use this to detect existing packages and to remove them from self.pkgs
-        - based on initial R version 
+        - based on initial R version
         """
         cmdtmpl = self.getcfg('pkgfilter')[0]
         cmdinputtmpl = self.getcfg('pkgfilter')[1]
@@ -1509,7 +1524,7 @@ def get_instance(easyblock, log, name=None):
     """
     Get instance for a particular application class (or Application)
     """
-    #TODO: create proper factory for this, as explained here 
+    #TODO: create proper factory for this, as explained here
     #http://stackoverflow.com/questions/456672/class-factory-in-python
     try:
         if not easyblock:
