@@ -23,6 +23,7 @@ from distutils.version import LooseVersion
 import glob
 import grp #@UnresolvedImport
 import os
+import re
 import shutil
 import time
 import urllib
@@ -726,20 +727,22 @@ class Application:
         try:
             page = urllib.urlopen(homepage)
         except IOError:
-            self.log.warn("Homepage (%s) is unavailable" % homepage)
+            self.log.error("Homepage (%s) is unavailable." % homepage)
             return False
 
+        regex = re.compile(self.name().lower())
+
         # if url contains software name and is available we are satisfied
-        if homepage.lower().find(self.name().lower()) != -1:
+        if regex.search(homepage.lower()):
             return True
 
         # Perform a lowercase compare against the entire contents of the html page
         # (does not care about html)
         for line in page:
-            if line.lower().find(self.name().lower()) != -1:
+            if regex.search(line.lower()):
                 return True
 
-        self.log.warn("Homepage (%s) does not seem to contain anything relevant to %s" % (homepage, self.name()))
+        self.log.error("Homepage (%s) does not seem to contain anything relevant to %s" % (homepage, self.name()))
         return False
 
 
