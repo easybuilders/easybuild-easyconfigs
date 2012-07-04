@@ -36,6 +36,8 @@ from easybuild.tools.build_log import getLog
 log = getLog('fileTools')
 errorsFoundInLog = 0
 
+strictness = None
+
 def unpack(fn, dest, extra_options=None, overwrite=False):
     """
     Given filename fn, try to unpack in directory dest
@@ -76,7 +78,7 @@ def findBaseDir():
     """
     Try to locate a possible new base directory
     - this is typically a single subdir, e.g. from untarring a tarball
-    - when unpacking multiple tarballs in the same directory, 
+    - when unpacking multiple tarballs in the same directory,
       expect only the first one to give the correct path
     """
     def getLocalDirsPurged():
@@ -108,7 +110,7 @@ def findBaseDir():
 
 def extractCmd(fn, overwrite=False):
     """
-    Determines the file type of file fn, returns extract cmd 
+    Determines the file type of file fn, returns extract cmd
     - based on file suffix
     - better to use Python magic?
     """
@@ -254,6 +256,7 @@ def run_cmd(cmd, log_ok=True, log_all=False, simple=False, inp=None, regexp=True
     """
     log.debug("run_cmd: running cmd %s (in %s)" % (cmd, os.getcwd()))
 
+
     ## Log command output
     if log_output:
         runLog = tempfile.NamedTemporaryFile(suffix='.log', prefix='easybuild-run_cmd-')
@@ -290,7 +293,7 @@ def run_cmd(cmd, log_ok=True, log_all=False, simple=False, inp=None, regexp=True
     ec = p.poll()
     stdouterr = ''
     while ec < 0:
-        # need to read from time to time. 
+        # need to read from time to time.
         # - otherwise the stdout/stderr buffer gets filled and it all stops working
         output = p.stdout.read(readSize)
         if runLog:
@@ -305,35 +308,16 @@ def run_cmd(cmd, log_ok=True, log_all=False, simple=False, inp=None, regexp=True
     # not needed anymore. subprocess does this correct?
     # ec=os.WEXITSTATUS(ec)
 
-    ## log: if ec > 0, dump to output
-    if ec and (log_all or log_ok):
-        log.error('run_cmd "%s" exited with exitcode %s and output:\n%s' % (cmd, ec, stdouterr))
-    if not ec:
-        if log_all:
-            log.info('run_cmd "%s" exited with exitcode %s and output:\n%s' % (cmd, ec, stdouterr))
-        else:
-            log.debug('run_cmd "%s" exited with exitcode %s and output:\n%s' % (cmd, ec, stdouterr))
-
     ## Command log output
     if log_output:
         runLog.close()
 
-    ## parse the stdout/stderr for errors?
-    if regexp:
-        parselogForError(stdouterr, regexp, msg="Command used: %s" % cmd)
-
-    if simple:
-        if ec:
-            return False
-        else:
-            return True
-    else:
-        return (stdouterr, ec)
+    return parse_cmd_output(cmd, stdouterr, ec, simple, log_all, log_ok)
 
 def run_cmd_qa(cmd, qa, no_qa=None, log_ok=True, log_all=False, simple=False, regexp=True, std_qa=None):
     """
     Executes a command cmd
-    - looks for questions and tries to answer 
+    - looks for questions and tries to answer
     - returns exitcode and stdout+stderr (mixed)
     - no input though stdin
     """
@@ -354,7 +338,7 @@ def run_cmd_qa(cmd, qa, no_qa=None, log_ok=True, log_all=False, simple=False, re
     # Part 1: process the QandA dictionary
     # given initial set of Q and A (in dict), return dict of reg. exp. and A
     #
-    # make regular expression that matches the string with 
+    # make regular expression that matches the string with
     # - replace whitespace
     # - replace newline
 
@@ -427,7 +411,7 @@ def run_cmd_qa(cmd, qa, no_qa=None, log_ok=True, log_all=False, simple=False, re
     hitCount = 0
 
     while ec < 0:
-        # need to read from time to time. 
+        # need to read from time to time.
         # - otherwise the stdout/stderr buffer gets filled and it all stops working
         try:
             tmpOut = recv_some(p)
@@ -496,26 +480,55 @@ def run_cmd_qa(cmd, qa, no_qa=None, log_ok=True, log_all=False, simple=False, re
     # Not needed anymore. Subprocess does this correct?
     # ec=os.WEXITSTATUS(ec)
 
-    ## log: if ec > 0, dump to output
+    return parse_cmd_output(cmd, stdoutErr, ec, simple, log_all, log_ok)
+
+def parse_cmd_output(cmd, stdouterr, ec, simple, log_all, log_ok):
+    """
+    will parse and perform error checks based on strictness setting
+    """
+    # Strict defaults
+    check_ec = True
+    regexp = True
+
+    if strictness != None:
+        log.debug("strictness option has been set (%s), using that" % strictness)
+        if strictness == 0:
+            check_ec = False
+            regexp = False
+        elif strictness == 5:
+            check_ec = True
+            regexp = False
+        else:
+            check_ec = True
+            regexp = True
+
     if ec and (log_all or log_ok):
-        log.error('runqanda cmd "%s" exited with exitcode %s and output\n%s' % (cmd, ec, stdoutErr))
+        # We don't want to error if the user doesn't care
+        if check_ec:
+            log.error('cmd "%s" exited with exitcode %s and output:\n%s' % (cmd, ec, stdouterr))
+        else:
+            log.warn('cmd "%s" exited with exitcode %s and output:\n%s' % (cmd, ec, stdouterr))
+
     if not ec:
         if log_all:
-            log.info('runqanda cmd "%s" exited with exitcode %s and output\n%s' % (cmd, ec, stdoutErr))
+            log.info('cmd "%s" exited with exitcode %s and output:\n%s' % (cmd, ec, stdouterr))
         else:
-            log.debug('runqanda cmd "%s" exited with exitcode %s and output\n%s' % (cmd, ec, stdoutErr))
+            log.debug('cmd "%s" exited with exitcode %s and output:\n%s' % (cmd, ec, stdouterr))
 
-    ## parse the stdouterr?
+
+    ## parse the stdout/stderr for errors?
     if regexp:
-        parselogForError(stdoutErr, regexp, msg="Command used: %s" % cmd)
+        parselogForError(stdouterr, regexp, msg="Command used: %s" % cmd)
 
     if simple:
         if ec:
-            return False
+            # If the user does not care -> will return true
+            return not check_ec
         else:
             return True
     else:
-        return (stdoutErr, ec)
+        # eventhough strictness could be set, you still want to know the exit code here
+        return (stdouterr, ec)
 
 def modifyEnv(old, new):
     """
@@ -567,7 +580,7 @@ def parselogForError(txt, regExp=None, stdout=True, msg=None):
     txt is multiline string.
     - in memory
     regExp is a one-line regular expression
-    - default 
+    - default
     """
     global errorsFoundInLog
 
