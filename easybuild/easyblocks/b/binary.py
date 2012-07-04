@@ -34,8 +34,9 @@ class Binary(Application):
         pass
 
     def make_installdir(self):
-        """Not doing anything, copytree in make_install doesn't like it's destination directory to already exist"""
-        pass
+        """Do not actually create installdir, copytree in make_install doesn't like it's destination directory to already exist
+        But before python 2.5 the actuall path has to exist."""
+        self.make_dir(self.installdir, clean=True, dontcreateinstalldir=True)
 
     def make_install(self):
         """Copy the unpacked source to the install directory"""
