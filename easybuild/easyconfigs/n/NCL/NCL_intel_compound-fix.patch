@@ -1,0 +1,114 @@
+diff -ru ncl_ncarg-6.0.0.orig/ni/src/ncl/DataSupport.c ncl_ncarg-6.0.0/ni/src/ncl/DataSupport.c
+--- ncl_ncarg-6.0.0.orig/ni/src/ncl/DataSupport.c	2012-05-09 14:32:12.965329655 +0200
++++ ncl_ncarg-6.0.0/ni/src/ncl/DataSupport.c	2012-05-09 14:33:17.595230621 +0200
+@@ -820,7 +820,7 @@
+ 		case NCL_group:
+ 			return(sizeof(group));	
+ 		case NCL_compound:
+-			return(sizeof(compound));
++			return(sizeof(nclcompound));
+ 		case NCL_logical:
+ 			return(sizeof(int));	
+ 		case NCL_list:
+@@ -2551,7 +2551,7 @@
+                 quarks[16] = NrmStringToQuark("ulong");
+                 quarks[17] = NrmStringToQuark("uint64");
+                 quarks[18] = NrmStringToQuark("group");
+-                quarks[19] = NrmStringToQuark("compound");
++                quarks[19] = NrmStringToQuark("nclcompound");
+                 quarks[20] = NrmStringToQuark("ubyte");
+                 quarks[21] = NrmStringToQuark("none");
+ 	}	
+diff -ru ncl_ncarg-6.0.0.orig/ni/src/ncl/h5reader.c ncl_ncarg-6.0.0/ni/src/ncl/h5reader.c
+--- ncl_ncarg-6.0.0.orig/ni/src/ncl/h5reader.c	2012-05-09 14:32:12.975329640 +0200
++++ ncl_ncarg-6.0.0/ni/src/ncl/h5reader.c	2012-05-09 14:35:15.185047681 +0200
+@@ -686,7 +686,7 @@
+ 
+                 NclHDF5data->ndims = dataset->ndims;
+ 
+-                if(0 == strcmp(NclHDF5data->type, "compound"))
++                if(0 == strcmp(NclHDF5data->type, "nclcompound"))
+                 {
+                   /*
+                    *size = (unsigned long) dataset->compound.size;
+@@ -846,7 +846,7 @@
+                 strcpy(NclHDF5data->name, dataset->name);
+                 strcpy(NclHDF5data->type, dataset->type_name);
+ 
+-                if(0 == strcmp(NclHDF5data->type, "compound"))
++                if(0 == strcmp(NclHDF5data->type, "nclcompound"))
+                 {
+                     size = (unsigned long) dataset->compound.size;
+                 }
+@@ -1276,7 +1276,7 @@
+     {
+         h5type = H5T_STRING;
+     }
+-    else if(strcmp("compound", type) == 0)
++    else if(strcmp("nclcompound", type) == 0)
+     {
+         h5type = H5T_COMPOUND;
+     }
+@@ -2731,7 +2731,7 @@
+ 
+                 NclHDF5datatype_t *COMPOUNDdatatype;
+ 
+-                strcpy(NclHDF5datatype->type_name, "compound");
++                strcpy(NclHDF5datatype->type_name, "nclcompound");
+ 
+                 nmembs=H5Tget_nmembers(type);
+ 
+diff -ru ncl_ncarg-6.0.0.orig/ni/src/ncl/NclDataDefs.h ncl_ncarg-6.0.0/ni/src/ncl/NclDataDefs.h
+--- ncl_ncarg-6.0.0.orig/ni/src/ncl/NclDataDefs.h	2012-05-09 14:32:12.965329655 +0200
++++ ncl_ncarg-6.0.0/ni/src/ncl/NclDataDefs.h	2012-05-09 14:32:46.655281093 +0200
+@@ -119,7 +119,7 @@
+ typedef int obj;
+ typedef int list;
+ typedef int group;
+-typedef int compound;
++typedef int nclcompound;
+ 
+ typedef union _NclScalar {
+ 	double             doubleval;
+@@ -140,7 +140,7 @@
+ 	logical            logicalval;
+ 	obj                objval;
+ 	group              groupval;
+-	compound           compoundval;
++	nclcompound           compoundval;
+ }NclScalar;
+ 
+ typedef struct _NclRefList{
+diff -ru ncl_ncarg-6.0.0.orig/ni/src/ncl/NclFile.c ncl_ncarg-6.0.0/ni/src/ncl/NclFile.c
+--- ncl_ncarg-6.0.0.orig/ni/src/ncl/NclFile.c	2012-05-09 14:32:12.975329640 +0200
++++ ncl_ncarg-6.0.0/ni/src/ncl/NclFile.c	2012-05-09 14:34:57.285075274 +0200
+@@ -983,7 +983,7 @@
+ 					_NclBasicDataTypeToName(thefile->file.var_info[i]->data_type),
+ 					NrmQuarkToString(thefile->file.var_info[i]->var_name_quark));
+ 			}
+-			else if(0 == strcmp("compound", _NclBasicDataTypeToName(thefile->file.var_info[i]->data_type)))
++			else if(0 == strcmp("nclcompound", _NclBasicDataTypeToName(thefile->file.var_info[i]->data_type)))
+ 			{
+ 				ret = nclfprintf(fp,"      %s <%s>",
+ 					_NclBasicDataTypeToName(thefile->file.var_info[i]->data_type),
+diff -ru ncl_ncarg-6.0.0.orig/ni/src/ncl/NclHDF5.c ncl_ncarg-6.0.0/ni/src/ncl/NclHDF5.c
+--- ncl_ncarg-6.0.0.orig/ni/src/ncl/NclHDF5.c	2012-05-09 14:32:12.965329655 +0200
++++ ncl_ncarg-6.0.0/ni/src/ncl/NclHDF5.c	2012-05-09 14:34:41.605098778 +0200
+@@ -682,7 +682,7 @@
+         type = NCL_byte;
+     else if(strcmp(type_name, "ubyte") == 0)
+         type = NCL_ubyte;
+-    else if(strcmp(type_name, "compound") == 0)
++    else if(strcmp(type_name, "nclcompound") == 0)
+         type = NCL_compound;
+     else
+     {
+@@ -749,7 +749,7 @@
+             HDF5type = strdup("ubyte");
+             break;
+         case NCL_compound:
+-            HDF5type = strdup("compound");
++            HDF5type = strdup("nclcompound");
+             break;
+         default:
+             return(NULL);

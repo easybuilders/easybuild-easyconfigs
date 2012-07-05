@@ -1,5 +1,5 @@
 ##
-# Copyright 2009-2012 Stijn Deweirdt, Dries Verdegem, Kenneth Hoste, Pieter De Baets, Jens Timmerman
+# Copyright 2009-2012 Stijn De Weirdt, Dries Verdegem, Kenneth Hoste, Pieter De Baets, Jens Timmerman
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of the University of Ghent (http://ugent.be/hpc).
@@ -611,8 +611,14 @@ class Application:
             try:
                 fullpath = os.path.join(filepath, filename)
 
-                if download(filename, url, fullpath):
+                # only download when it's not there yet
+                if os.path.exists(fullpath):
+                    self.log.info("Found file %s at %s, no need to download it." % (filename, filepath))
                     return fullpath
+
+                else:
+                    if download(filename, url, fullpath):
+                        return fullpath
 
             except IOError, err:
                 self.log.exception("Downloading file %s from url %s to %s failed: %s" % (filename, url, fullpath, err))
@@ -727,7 +733,7 @@ class Application:
             if 'source' in tmp:
                 srcind = tmp['source']
             srcpathsuffix = ''
-            if 'sourcepaht' in tmp:
+            if 'sourcepath' in tmp:
                 srcpathsuffix = tmp['sourcepath']
             elif 'copy' in tmp:
                 srcpathsuffix = tmp['copy']
@@ -1481,12 +1487,14 @@ def module_path_for_easyblock(easyblock):
     if not easyblock:
         return None
 
+    modname = easyblock.replace('-','_')
+
     first_char = easyblock[0].lower()
 
     if first_char in letters:
-        return "easybuild.easyblocks.%s.%s" % (first_char, easyblock)
+        return "easybuild.easyblocks.%s.%s" % (first_char, modname)
     else:
-        return "easybuild.easyblocks.0.%s" % easyblock
+        return "easybuild.easyblocks.0.%s" % modname
 
 def get_paths_for(log, subdir="easyblocks"):
     """
@@ -1518,7 +1526,7 @@ def get_instance(easyblock, log, name=None):
 
             modulepath = module_path_for_easyblock(name)
             # don't use capitalize, as it changes 'GCC' into 'Gcc', we want to keep the capitals that are there already
-            class_name = name[0].upper() + name[1:]
+            class_name = name[0].upper() + name[1:].replace('-','_')
 
             # try and find easyblock
             easyblock_found = False
@@ -1585,6 +1593,7 @@ class ApplicationPackage:
         self.master = mself
         self.log = self.master.log
         self.cfg = self.master.cfg
+        self.tk = self.master.tk
         self.pkg = pkg
         self.pkginstalldeps = pkginstalldeps
 
