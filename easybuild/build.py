@@ -182,7 +182,9 @@ def main():
             error("Can't find path %s" % path)
 
         try:
-            packages.extend(findEasyconfigs(path, log, blocks))
+            files = findEasyconfigs(path, log)
+            for eb_file in files:
+                packages.extend(processEasyconfig(eb_file, log, blocks))
         except IOError, err:
             log.error("Processing easyconfigs in path %s failed: %s" % (path, err))
 
@@ -247,12 +249,12 @@ def error(message, exitCode=1, optparser=None):
         optparser.print_help()
     sys.exit(exitCode)
 
-def findEasyconfigs(path, log, onlyBlocks=None):
+def findEasyconfigs(path, log):
     """
-    Find .eb easyconfig files in path and process them
+    Find .eb easyconfig files in path
     """
     if os.path.isfile(path):
-        return processEasyconfig(path, log, onlyBlocks)
+        return [path]
 
     ## Walk through the start directory, retain all files that end in .eb
     files = []
@@ -266,10 +268,7 @@ def findEasyconfigs(path, log, onlyBlocks=None):
             log.debug("Found easyconfig %s" % spec)
             files.append(spec)
 
-    packages = []
-    for filename in files:
-        packages.extend(processEasyconfig(filename, log, onlyBlocks))
-    return packages
+    return files
 
 def processEasyconfig(path, log, onlyBlocks=None):
     """
@@ -671,7 +670,7 @@ def build(module, options, log, origEnviron, exitOnFailure=True):
     ## Check for errors
     if exitCode > 0 or filetools.errorsFoundInLog > 0:
         print_msg("\nWARNING: Build exited with exit code %d. %d possible error(s) were detected in the " \
-                  "build logs, please verify the build.\n" % (exitCode, filetools.errorsFoundInLog), 
+                  "build logs, please verify the build.\n" % (exitCode, filetools.errorsFoundInLog),
                   log)
 
     if app.postmsg:
