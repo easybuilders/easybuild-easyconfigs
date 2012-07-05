@@ -27,6 +27,7 @@ class G2clib(Application):
     """Support for building g2clib GRIB2 C library."""
 
     def configure(self):
+        """No configuration needed"""
         pass
 
     def make(self):
@@ -48,18 +49,18 @@ class G2clib(Application):
 
         try:
             # copy library
-            targetdir = os.path.join(self.installdir,"lib")
+            targetdir = os.path.join(self.installdir, "lib")
             os.mkdir(targetdir)
             fn = "libgrib2c.a"
-            shutil.copyfile(os.path.join(self.getcfg('startfrom'),fn),
-                            os.path.join(targetdir,fn))
+            shutil.copyfile(os.path.join(self.getcfg('startfrom'), fn),
+                            os.path.join(targetdir, fn))
 
             # copy header files
-            targetdir = os.path.join(self.installdir,"include")
+            targetdir = os.path.join(self.installdir, "include")
             os.mkdir(targetdir)
             for fn in glob.glob('*.h'):
-                shutil.copyfile(os.path.join(self.getcfg('startfrom'),fn),
-                                os.path.join(targetdir,fn))
+                shutil.copyfile(os.path.join(self.getcfg('startfrom'), fn),
+                                os.path.join(targetdir, fn))
 
         except OSError, err:
             self.log.error("Failed to copy files to install dir: %s" % err)
@@ -68,7 +69,7 @@ class G2clib(Application):
         """Custom sanity check for g2clib."""
 
         if not self.getcfg('sanityCheckPaths'):
-            self.setcfg('sanityCheckPaths',{'files':["lib/libgrib2c.a"],
+            self.setcfg('sanityCheckPaths', {'files':["lib/libgrib2c.a"],
                                             'dirs':["include"]
                                             })
 

@@ -26,6 +26,7 @@ class G2lib(Application):
     """Support for building g2clib GRIB2 library."""
 
     def configure(self):
+        """No configuration needed"""
         pass
 
     def make(self):
@@ -45,11 +46,11 @@ class G2lib(Application):
         """Install by copying generated library to install directory."""
 
         try:
-            targetdir = os.path.join(self.installdir,"lib")
+            targetdir = os.path.join(self.installdir, "lib")
             os.mkdir(targetdir)
             fn = "libg2.a"
-            shutil.copyfile(os.path.join(self.getcfg('startfrom'),fn),
-                            os.path.join(targetdir,fn))
+            shutil.copyfile(os.path.join(self.getcfg('startfrom'), fn),
+                            os.path.join(targetdir, fn))
         except OSError, err:
             self.log.error("Failed to copy files to install dir: %s" % err)
 
@@ -57,7 +58,7 @@ class G2lib(Application):
         """Custom sanity check for g2lib."""
 
         if not self.getcfg('sanityCheckPaths'):
-            self.setcfg('sanityCheckPaths',{'files':["lib/libg2.a"],
+            self.setcfg('sanityCheckPaths', {'files':["lib/libg2.a"],
                                             'dirs':[]
                                             })
 
