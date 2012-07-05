@@ -730,16 +730,16 @@ class Application:
             self.log.error("Homepage (%s) is unavailable." % homepage)
             return False
 
-        regex = re.compile(self.name().lower())
+        regex = re.compile(self.name(), re.I)
 
         # if url contains software name and is available we are satisfied
-        if regex.search(homepage.lower()):
+        if regex.search(homepage):
             return True
 
         # Perform a lowercase compare against the entire contents of the html page
         # (does not care about html)
         for line in page:
-            if regex.search(line.lower()):
+            if regex.search(line):
                 return True
 
         self.log.error("Homepage (%s) does not seem to contain anything relevant to %s" % (homepage, self.name()))
