@@ -1,5 +1,5 @@
 ##
-# Copyright 2009-2012 Stijn Deweirdt, Dries Verdegem, Kenneth Hoste, Pieter De Baets, Jens Timmerman
+# Copyright 2009-2012 Stijn De Weirdt, Dries Verdegem, Kenneth Hoste, Pieter De Baets, Jens Timmerman
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of the University of Ghent (http://ugent.be/hpc).
@@ -190,10 +190,12 @@ class FortranPythonPackage(DefaultPythonPackage):
     """Extends DefaultPythonPackage to add a Fortran compiler to the make call"""
 
     def make(self):
-        if  "SOFTROOTICC" in os.environ and "SOFTROOTIFORT" in os.environ:
+        comp_fam = self.tk.toolkit_comp_family()
+
+        if comp_fam == "Intel":
             cmd = "python setup.py build --compiler=intel --fcompiler=intelem"
 
-        elif os.getenv('SOFTROOTGCC'):
+        elif comp_fam == "GCC":
             cmdprefix = ""
             ldflags = os.getenv('LDFLAGS')
             if ldflags:
@@ -206,7 +208,7 @@ class FortranPythonPackage(DefaultPythonPackage):
             cmd = "%s python setup.py build --fcompiler=gnu95" % cmdprefix
 
         else:
-            self.log.error("Unknown compiler being used?")
+            self.log.error("Unknown family of compilers being used?")
 
         run_cmd(cmd, log_all=True, simple=True)
 
