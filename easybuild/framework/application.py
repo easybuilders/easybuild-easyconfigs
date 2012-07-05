@@ -28,6 +28,7 @@ import time
 import urllib
 
 import easybuild
+from easybuild.framework.easy_block import EasyBlock
 from easybuild.tools.build_log import EasyBuildError, initLogger, removeLogHandler,print_msg
 from easybuild.tools.config import source_path, buildPath, installPath
 from easybuild.tools.filetools import unpack, patch, run_cmd, convertName
@@ -66,11 +67,8 @@ class Application:
         ## final version
         self.installversion = 'NOT_VALID'
 
-        ## valid moduleclasses
-        self.validmoduleclasses = ['base', 'compiler', 'lib']
-
-        ## vaild stop options
-        self.validstops = ['cfg', 'source', 'patch', 'configure', 'make', 'install', 'test', 'postproc', 'cleanup', 'packages']
+        # Easyblock for this Application
+        self.easyblock = None
 
         # module generator
         self.moduleGenerator = None
@@ -78,8 +76,6 @@ class Application:
         # extra stuff for module file required by packages
         self.moduleExtraPackages = ''
 
-        # sanity check paths and result
-        self.sanityCheckPaths = None
         self.sanityCheckOK = False
 
         # indicates whether build should be performed in installation dir
@@ -92,66 +88,6 @@ class Application:
         # allow a post message to be set, which can be shown as last output
         self.postmsg = ''
 
-        # generic configuration parameters
-        self.cfg = {
-          'name':[None, "Name of software"],
-          'version':[None, "Version of software"],
-          'easybuildVersion': [None, "EasyBuild-version this spec-file was written for"],
-          'group':[None, "Name of the user group for which the software should be available"],
-          'versionsuffix':['', 'Additional suffix for software version (placed after toolkit name)'],
-          'versionprefix':['', 'Additional prefix for software version (placed before version and toolkit name)'],
-          'runtest':[None, 'Indicates if a test should be run after make; should specify argument after make (for e.g., "test" for make test) (Default: None)'],
-          'preconfigopts':['', 'Extra options pre-passed to configure.'],
-          'configopts':['', 'Extra options passed to configure (Default already has --prefix)'],
-          'premakeopts':['', 'Extra options pre-passed to make.'],
-          'makeopts':['', 'Extra options passed to make (Default already has -j X)'],
-          'installopts':['', 'Extra options for installation (Default: nothing)'],
-          'moduleclass':['base', 'Module class to be used for this software (Default: base) (Valid: %s)' % self.validmoduleclasses],
-          'moduleforceunload':[False, 'Force unload of all modules when loading the package (Default: False)'],
-          'moduleloadnoconflict':[False, "Don't check for conflicts, unload other versions instead (Default: False)"],
-          'startfrom':[None, 'Path to start the make in. If the path is absolute, use that path. If not, this is added to the guessed path.'],
-          'onlytkmod':[False, 'Boolean/string to indicate if the toolkit should only load the enviornment with module (True) or also set all other variables (False) like compiler CC etc (If string: comma separated list of variables that will be ignored). (Default: False)'],
-          'stop':[None, 'Keyword to halt the buildprocess at certain points. Valid are %s' % self.validstops],
-          'homepage':[None, 'The homepage of the software'],
-          'description':[None, 'A short description of the software'],
-          'parallel':[None, 'Degree of parallelism for e.g. make (default: based on the number of cores and restrictions in ulimit)'],
-          'maxparallel':[None, 'Max degree of parallelism (default: None)'],
-          'keeppreviousinstall':[False, 'Boolean to keep the previous installation with identical name. Default False, expert s only!'],
-          'cleanupoldbuild':[True, 'Boolean to remove (True) or backup (False) the previous build directory with identical name or not. Default True'],
-          'cleanupoldinstall':[True, 'Boolean to remove (True) or backup (False) the previous install directory with identical name or not. Default True'],
-          'dontcreateinstalldir':[False, 'Boolean to create (False) or not create (True) the install directory (Default False)'],
-          'toolkit':[None, 'Name and version of toolkit'],
-          'toolkitopts':['', 'Extra options for compilers'],
-          'keepsymlinks':[False, 'Boolean to determine whether symlinks are to be kept during copying or if the content of the files pointed to should be copied'],
-          'licenseServer':[None, 'License server for software'],
-          'licenseServerPort':[None, 'Port for license server'],
-          'key':[None, 'Key for installing software'],
-          'pkglist':[[], 'List with packages added to the baseinstallation (Default: [])'],
-          'pkgmodulenames':[{}, 'Dictionary with real modules names for packages, if they are different from the package name (Default: {})'],
-          'pkgloadmodule':[True, 'Load the to-be installed software using temporary module (Default: True)'],
-          'pkgtemplate':["%s-%s.tar.gz", "Template for package source file names (Default: %s-%s.tar.gz)"],
-          'pkgfindsource':[True, "Find sources for packages (Default: True)"],
-          'pkginstalldeps':[True, "Install dependencies for specified packages if necessary (Default: True)"],
-          'pkgdefaultclass':[None, "List of module for and name of the default package class (Default: None)"],
-          'skip':[False, "Skip existing software (Default: False)"],
-          'pkgfilter':[None, "Package filter details. List with template for cmd and input to cmd (templates for name, version and src). (Default: None)"],
-          'pkgpatches':[[], 'List with patches for packages (default: [])'],
-          'pkgcfgs':[{}, 'Dictionary with config parameters for packages (default: {})'],
-          'dependencies':[[], "List of dependencies (default: [])"],
-          'builddependencies':[[], "List of build dependencies (default: [])"],
-          'unpackOptions':[None, "Extra options for unpacking source (default: None)"],
-          'modextravars':[{}, "Extra environment variables to be added to module file (default: {})"],
-          'osdependencies':[[], "Packages that should be present on the system"],
-          'sources': [[], "List of source files"],
-          'sourceURLs' : [[], "List of URLs for source files"],
-          'patches': [[], "List of patches to apply"],
-          'tests': [[], "List of test-scripts to run after install. A test script should return a non-zero exit status to fail"],
-          'sanityCheckPaths': [{}, "List of files and directories to check (format: {'files':<list>, 'dirs':<list>}, default: {})"],
-          'buildstats' : [None, "A list of dicts with buildstats: build_time, platform, core_count, cpu_model, install_size, timestamp"],
-        }
-
-        # mandatory config entries
-        self.mandatory = ['name', 'version', 'homepage', 'description', 'toolkit']
 
     def autobuild(self, ebfile, runTests):
         """
@@ -349,34 +285,21 @@ class Application:
 
         return result
 
-    ## process EasyBuild spec file 
+    ## process EasyBuild spec file
 
     def process_ebfile(self, fn):
         """
         Read file fn, eval and add info
         - assume certain predefined variable names
         """
-        if not os.path.isfile(fn) and self.log:
-            self.log.error("Can't import config from unknown filename %s" % fn)
 
-        try:
-            locs = {"self": self}
-            execfile(fn, {}, locs)
-        except (IOError, SyntaxError), err:
-            msg = "Parsing eb file %s failed: %s" % (fn, err)
-            if self.log:
-                self.log.exception(msg)
-            else:
-                raise EasyBuildError("%s: %s" % (msg, err))
+        self.easyblock = EasyBlock(fn)
 
-        ## initialize logger
-        if 'name' in locs and 'version' in locs:
-            self.set_name_version(locs['name'], locs['version'])
-        else:
-            self.setlogger()
+        # initialize logger
+        self.setlogger()
 
         ## check EasyBuild version
-        easybuildVersion = locs.get('easybuildVersion', None)
+        easybuildVersion = self.getcfg('easybuildVersion')
         if not easybuildVersion:
             self.log.warn("Easyconfig does not specify an EasyBuild-version (key 'easybuildVersion')! Assuming the latest version")
         else:
@@ -385,31 +308,6 @@ class Application:
             elif LooseVersion(easybuildVersion) > easybuild.VERSION:
                 self.log.error("EasyBuild-version %s is newer than the currently running one. Aborting!" % easybuildVersion)
 
-        ## check for typos in eb file
-        for variable in locs.keys():
-            guess = get_close_matches(variable, self.cfg.keys(), 1, 0.85)
-            if len(guess) == 1 and variable not in self.cfg.keys():
-                # We might have a typo here
-                self.log.error("Don't you mean '%s' instead of '%s' as eb file variable." % (guess[0], variable))
-
-        for k in self.cfg.keys():
-            if k in locs:
-                self.setcfg(k, locs[k])
-                self.log.info("Using cfg option %s: value %s" % (k, self.getcfg(k)))
-
-        for k in self.mandatory:
-            if not k in locs:
-                self.log.error("No cfg option %s provided" % k)
-
-        if self.getcfg('stop') and not (self.getcfg('stop') in self.validstops):
-            self.log.error("Stop provided %s is not valid: %s" % (self.cfg['stop'], self.validstops))
-
-        if not (self.getcfg('moduleclass') in self.validmoduleclasses):
-            self.log.error("Moduleclass provided %s is not valid: %s" % (self.cfg['moduleclass'], self.validmoduleclasses))
-
-        if self.getcfg('stop') == 'cfg':
-            self.log.info("Stopping in parsing cfg")
-            return
 
         if self.getcfg('osdependencies'):
             self.check_osdeps(self.getcfg('osdependencies'))
@@ -452,13 +350,13 @@ class Application:
         """
         Get a configuration item.
         """
-        return self.cfg[key][0]
+        return self.easyblock[key]
 
     def setcfg(self, key, value):
         """
         Set configuration key to value.
         """
-        self.cfg[key][0] = value
+        self.easyblock[key] = value
 
     def updatecfg(self, key, value):
         """
@@ -499,7 +397,7 @@ class Application:
         else:
             self.log.error("One or more OS dependencies were not found: %s" % not_found)
 
-    ## BUILD 
+    ## BUILD
 
     def ready2build(self):
         """
@@ -668,7 +566,7 @@ class Application:
             if foundfile:
                 return foundfile
             else:
-                # try and download source files from specified source URLs 
+                # try and download source files from specified source URLs
                 sourceURLs = self.getcfg('sourceURLs')
                 targetdir = candidate_filepaths[0]
                 if not os.path.isdir(targetdir):
@@ -871,8 +769,8 @@ class Application:
     def cleanup(self):
         """
         Cleanup leftover mess: remove/clean build directory
-        
-        except when we're building in the installation directory, 
+
+        except when we're building in the installation directory,
         otherwise we remove the installation
         """
         if not self.build_in_installdir:
@@ -885,7 +783,7 @@ class Application:
     def sanitycheck(self):
         """
         Do a sanity check on the installation
-        - if *any* of the files/subdirectories in the installation directory listed 
+        - if *any* of the files/subdirectories in the installation directory listed
           in sanityCheckPaths are non-existent (or empty), the sanity check fails
         """
         # prepare sanity check paths
@@ -918,7 +816,7 @@ class Application:
                 self.log.debug("Sanity check: found file %s in %s" % (f, self.installdir))
 
         if self.sanityCheckOK:
-            # check if directories exist, and whether they are non-empty     
+            # check if directories exist, and whether they are non-empty
             for d in self.sanityCheckPaths['dirs']:
                 p = os.path.join(self.installdir, d)
                 if not os.path.isdir(p) or not os.listdir(p):
@@ -1004,7 +902,7 @@ class Application:
         """
         if not self.build_in_installdir:
             # make a unique build dir
-            ## if a tookitversion starts with a -, remove the - so prevent a -- in the path name 
+            ## if a tookitversion starts with a -, remove the - so prevent a -- in the path name
             tkversion = self.tk.version
             if tkversion.startswith('-'):
                 tkversion = tkversion[1:]
@@ -1222,7 +1120,7 @@ class Application:
     def packages(self):
         """
         After make install, run this.
-        - only if variable len(pkglist) > 0 
+        - only if variable len(pkglist) > 0
         - optionally: load module that was just created using temp module file
         - find source for packages, in pkgs
         - run extraPackages
@@ -1275,7 +1173,7 @@ class Application:
 
     def find_package_sources(self):
         """
-        Find source file for packages. 
+        Find source file for packages.
         """
         pkgSources = []
         for pkg in self.getcfg('pkglist'):
@@ -1378,7 +1276,7 @@ class Application:
         """
         Called when self.skip is True
         - use this to detect existing packages and to remove them from self.pkgs
-        - based on initial R version 
+        - based on initial R version
         """
         cmdtmpl = self.getcfg('pkgfilter')[0]
         cmdinputtmpl = self.getcfg('pkgfilter')[1]
@@ -1442,7 +1340,7 @@ class Application:
         """
         Print a list of available configuration options.
         """
-        for key in sorted(self.cfg):
+        for key in sorted(self.easyblock):
             tabs = "\t" * (3 - (len(key) + 1) / 8)
             print "%s:%s%s" % (key, tabs, self.cfg[key][1])
 
@@ -1509,7 +1407,7 @@ def get_instance(easyblock, log, name=None):
     """
     Get instance for a particular application class (or Application)
     """
-    #TODO: create proper factory for this, as explained here 
+    #TODO: create proper factory for this, as explained here
     #http://stackoverflow.com/questions/456672/class-factory-in-python
     try:
         if not easyblock:
