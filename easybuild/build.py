@@ -27,7 +27,8 @@ import tempfile
 import time
 import copy
 import platform
-from easybuild.framework.application import Application, get_instance
+from easybuild.framework.application import Application, get_class
+from easybuild.framework.easy_block import EasyBlock
 from easybuild.tools.build_log import EasyBuildError, initLogger, \
     removeLogHandler, print_msg
 from easybuild.tools.class_dumper import dumpClasses
@@ -153,7 +154,9 @@ def main():
 
     ## Dump possible options
     if options.avail_easyconfig_params:
-        app = get_instance(options.easyblock, log)
+        # TODO: fix this with new easyblock class
+        app = get_class(options.easyblock, log)
+        app = app()
         app.dump_cfg_options()
 
     ## Dump available classes
@@ -283,40 +286,34 @@ def processEasyconfig(path, log, onlyBlocks=None):
         log.debug("Processing easyconfig %s" % spec)
 
         try:
-            app = Application(debug=LOGDEBUG)
-            app.process_ebfile(spec)
+            eb = EasyBlock(spec)
         except EasyBuildError, err:
             msg = "Failed to process easyconfig %s:\n%s" % (spec, err.msg)
             log.exception(msg)
             raise EasyBuildError(msg)
 
+        name = eb['name']
+
         ## this app will appear as following module in the list
         package = {
             'spec': spec,
-            'module': (app.name(), app.installversion),
+            'module': (eb['name'], eb['version']),
             'dependencies': []
         }
         if len(blocks) > 1:
             package['originalSpec'] = path
 
-        for d in app.dep:
+        for d in eb.dependencies():
             dep = (d['name'], d['tk'])
-            log.debug("Adding dependency %s for app %s." % (dep, app.name()))
+            log.debug("Adding dependency %s for app %s." % (dep, name))
             package['dependencies'].append(dep)
 
-        if app.tk.name != 'dummy':
-            dep = (app.tk.name, app.tk.version)
-            log.debug("Adding toolkit %s as dependency for app %s." % (dep, app.name()))
+        if eb.toolkit().name != 'dummy':
+            dep = (eb.toolkit().name, eb.toolkit().version)
+            log.debug("Adding toolkit %s as dependency for app %s." % (dep, name))
             package['dependencies'].append(dep)
 
-        try:
-            app.closelog()
-            os.remove(app.logfile)
-        except:
-            msg = "Failed to remove log file %s" % app.logfile
-            log.exception(msg)
-            raise EasyBuildError(msg)
-        del app
+        del eb
 
         packages.append(package)
 
@@ -554,7 +551,8 @@ def build(module, options, log, origEnviron, exitOnFailure=True):
 
     name = module['module'][0]
     try:
-        app = get_instance(easyblock, log, name=name)
+        app_cls = get_class(easyblock, log, name=name)
+        app = app_cls(spec)
         log.info("Obtained application instance of for %s (easyblock: %s)" % (name, easyblock))
     except EasyBuildError, err:
         error("Failed to get application instance for %s (easyblock: %s): %s" % (name, easyblock, err.msg))

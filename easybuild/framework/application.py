@@ -44,7 +44,8 @@ class Application:
     """
 
     ## INIT
-    def __init__(self, name=None, version=None, newBuild=True, debug=False):
+    # TODO: never initializd with other parameters, remove them
+    def __init__(self, path, extra_options={}, name=None, version=None, newBuild=True, debug=False):
         """
         Initialize the Application instance.
         """
@@ -55,8 +56,6 @@ class Application:
 
         self.patches = []
         self.src = []
-        self.dep = []
-        self.tk = None
 
         self.builddir = None
         self.installdir = None
@@ -68,7 +67,7 @@ class Application:
         self.installversion = 'NOT_VALID'
 
         # Easyblock for this Application
-        self.easyblock = None
+        self.cfg = EasyBlock(path, extra_options)
 
         # module generator
         self.moduleGenerator = None
@@ -87,17 +86,18 @@ class Application:
 
         # allow a post message to be set, which can be shown as last output
         self.postmsg = ''
-
+        self.setlogger()
 
     def autobuild(self, ebfile, runTests):
         """
         Build the software package described by cfg.
         """
-        self.process_ebfile(ebfile)
 
         if self.getcfg('stop') and self.getcfg('stop') == 'cfg':
             return True
         self.log.info('Read easyconfig %s' % ebfile)
+
+        self.prepare_build()
 
         self.ready2build()
         self.build()
@@ -236,67 +236,11 @@ class Application:
 
             self.log.info("Added sources: %s" % self.src)
 
-    def settoolkit(self, name, version):
+    def prepare_build(self):
         """
-        Add the build toolkit to be used.
+        prepare for building
+        TODO: this should be consolidated with ready2build
         """
-        self.tk = Toolkit(name, version)
-        self.log.info("Added toolkit: name %s version %s" % (self.tk.name, self.tk.version))
-
-    def add_dependency(self, dependencies=None):
-        """
-        Add application dependencies. A dependency should be specified as a dictionary
-        or as a list of the following form: (name, version, suffix, dummy_boolean)
-        (suffix and dummy_boolean are optional)
-        """
-        if dependencies and len(dependencies) > 0:
-            self.log.info("Adding dependencies: %s" % dependencies)
-            self.dep.extend([self.parse_dependency(d) for d in dependencies])
-
-    def parse_dependency(self, dep):
-        """
-        Read a dependency declaration and transform it to a common format.
-        """
-        result = {'name': '', 'version': '', 'prefix': '', 'suffix': ''}
-
-        if type(dep) == dict:
-            ## check for name and version key
-            if not 'name' in dep:
-                self.log.error('Dependency without name.')
-                return
-            result.update(dep)
-        elif type(dep) in [list, tuple]:
-            result['name'] = dep[0]
-            if len(dep) >= 2:
-                result['version'] = dep[1]
-            if len(dep) >= 3:
-                result['suffix'] = dep[2]
-            if len(dep) >= 4:
-                result['dummy'] = dep[3]
-        else:
-            self.log.error('Dependency %s from unsupported type: %s.' % (dep, type(dep)))
-            return
-
-        if not 'version' in result:
-            self.log.warning('Dependency without version.')
-
-        if not 'tk' in result:
-            result['tk'] = self.tk.getDependencyVersion(result)
-
-        return result
-
-    ## process EasyBuild spec file
-
-    def process_ebfile(self, fn):
-        """
-        Read file fn, eval and add info
-        - assume certain predefined variable names
-        """
-
-        self.easyblock = EasyBlock(fn)
-
-        # initialize logger
-        self.setlogger()
 
         ## check EasyBuild version
         easybuildVersion = self.getcfg('easybuildVersion')
@@ -322,26 +266,6 @@ class Application:
         else:
             self.log.info('no patches provided')
 
-        if self.getcfg('toolkit'):
-            self.log.debug("toolkit: %s" % self.getcfg('toolkit'))
-            tk = self.getcfg('toolkit')
-            self.settoolkit(tk['name'], tk['version'])
-        else:
-            self.log.error('no toolkit defined')
-
-        if self.getcfg('toolkitopts'):
-            self.tk.setOptions(self.getcfg('toolkitopts'))
-
-        if self.getcfg('dependencies'):
-            self.add_dependency(self.getcfg('dependencies'))
-        else:
-            self.log.info('no dependencies provided')
-
-        # Build dependencies
-        builddeps = [self.parse_dependency(d) for d in self.getcfg('builddependencies')]
-        self.add_dependency(builddeps)
-        self.setcfg('builddependencies', builddeps)
-
         self.setparallelism()
 
         self.make_installversion()
@@ -350,13 +274,13 @@ class Application:
         """
         Get a configuration item.
         """
-        return self.easyblock[key]
+        return self.cfg[key]
 
     def setcfg(self, key, value):
         """
         Set configuration key to value.
         """
-        self.easyblock[key] = value
+        self.cfg[key] = value
 
     def updatecfg(self, key, value):
         """
@@ -409,9 +333,10 @@ class Application:
             self.log.warning("Loaded modules detected: %s" % loadedmods)
 
         # Do all dependencies have a toolkit version
-        self.tk.addDependencies(self.dep)
-        if not len(self.dep) == len(self.tk.dependencies):
-            self.log.debug("dep %s (%s)\ntk.dep %s (%s)" % (len(self.dep), self.dep, len(self.tk.dependencies), self.tk.dependencies))
+        self.cfg.toolkit().addDependencies(self.cfg.dependencies())
+        if not len(self.cfg.dependencies()) == len(self.cfg.toolkit().dependencies):
+            self.log.debug("dep %s (%s)\ntk.dep %s (%s)" % (len(self.cfg.dependencies()), self.cfg.dependencies(),
+                len(self.cfg.toolkit().dependencies), self.cfg.toolkit().dependencies))
             self.log.error('Not all dependencies have a matching toolkit version')
 
         # Check if the application is not loaded at the moment
@@ -683,7 +608,7 @@ class Application:
             ## PATCH
             self.runstep('patch', [self.apply_patch], skippable=True)
 
-            self.tk.prepare(self.getcfg('onlytkmod'))
+            self.cfg.toolkit().prepare(self.getcfg('onlytkmod'))
             self.startfrom()
 
             ## CONFIGURE
@@ -903,13 +828,13 @@ class Application:
         if not self.build_in_installdir:
             # make a unique build dir
             ## if a tookitversion starts with a -, remove the - so prevent a -- in the path name
-            tkversion = self.tk.version
+            tkversion = self.cfg.toolkit().version
             if tkversion.startswith('-'):
                 tkversion = tkversion[1:]
 
-            extra = "%s%s-%s%s" % (self.getcfg('versionprefix'), self.tk.name, tkversion, self.getcfg('versionsuffix'))
+            extra = "%s%s-%s%s" % (self.getcfg('versionprefix'), self.cfg.toolkit().name, tkversion, self.getcfg('versionsuffix'))
             localdir = os.path.join(buildPath(), self.name(), self.version(), extra)
-            if not self.tk.name == 'dummy':
+            if not self.cfg.toolkit().name == 'dummy':
                 localdir = os.path.join(localdir, extra)
 
             ald = os.path.abspath(localdir)
@@ -956,10 +881,10 @@ class Application:
         """
         vpf, vsf = self.getcfg('versionprefix'), self.getcfg('versionsuffix')
 
-        if self.tk.name == 'dummy':
+        if self.cfg.toolkit().name == 'dummy':
             name = "%s%s%s" % (vpf, self.version(), vsf)
         else:
-            extra = "%s-%s" % (self.tk.name, self.tk.version)
+            extra = "%s-%s" % (self.cfg.toolkit().name, self.cfg.toolkit().version)
             name = "%s%s-%s%s" % (vpf, self.version(), extra, vsf)
 
         self.installversion = name
@@ -1048,13 +973,13 @@ class Application:
         load = unload = ''
 
         # Load toolkit
-        if self.tk.name != 'dummy':
-            load += self.moduleGenerator.loadModule(self.tk.name, self.tk.version)
-            unload += self.moduleGenerator.unloadModule(self.tk.name, self.tk.version)
+        if self.cfg.toolkit().name != 'dummy':
+            load += self.moduleGenerator.loadModule(self.cfg.toolkit().name, self.cfg.toolkit().version)
+            unload += self.moduleGenerator.unloadModule(self.cfg.toolkit().name, self.cfg.toolkit().version)
 
         # Load dependencies
-        builddeps = self.getcfg('builddependencies')
-        for dep in self.tk.dependencies:
+        builddeps = self.cfg.builddependencies()
+        for dep in self.cfg.toolkit().dependencies:
             if not dep in builddeps:
                 self.log.debug("Adding %s/%s as a module dependency" % (dep['name'], dep['tk']))
                 load += self.moduleGenerator.loadModule(dep['name'], dep['tk'])
@@ -1340,7 +1265,7 @@ class Application:
         """
         Print a list of available configuration options.
         """
-        for key in sorted(self.easyblock):
+        for key in sorted(self.cfg):
             tabs = "\t" * (3 - (len(key) + 1) / 8)
             print "%s:%s%s" % (key, tabs, self.cfg[key][1])
 
@@ -1352,7 +1277,7 @@ class StopException(Exception):
     """
     pass
 
-def get_instance_for(modulepath, class_name):
+def get_class_for(modulepath, class_name):
     """
     Get instance for a given class and easyblock module path.
     """
@@ -1363,7 +1288,7 @@ def get_instance_for(modulepath, class_name):
     # >>> c()
     m = __import__(modulepath, globals(), locals(), [''])
     c = getattr(m, class_name)
-    return c()
+    return c
 
 def module_path_for_easyblock(easyblock):
     """
@@ -1403,7 +1328,7 @@ def get_paths_for(log, subdir="easyblocks"):
 
     return paths
 
-def get_instance(easyblock, log, name=None):
+def get_class(easyblock, log, name=None):
     """
     Get instance for a particular application class (or Application)
     """
@@ -1439,11 +1364,11 @@ def get_instance(easyblock, log, name=None):
 
                 try:
 
-                    inst = get_instance_for(modulepath, class_name)
+                    cls = get_class_for(modulepath, class_name)
 
                     log.info("Successfully obtained %s class instance from %s" % (class_name, modulepath))
 
-                    return inst
+                    return cls
 
                 except Exception, err:
                     log.error("Failed to use easyblock at %s for class %s: %s" % (modulepath, class_name, err))
@@ -1464,9 +1389,9 @@ def get_instance(easyblock, log, name=None):
                 modulepath = module_path_for_easyblock(easyblock).lower()
                 log.info("Derived full easyblock module path for %s: %s" % (class_name, modulepath))
 
-        inst = get_instance_for(modulepath, class_name)
+        cls = get_class_for(modulepath, class_name)
         log.info("Successfully obtained %s class instance from %s" % (class_name, modulepath))
-        return inst
+        return cls
 
     except Exception, err:
         log.error("Can't process provided module and class pair %s: %s" % (easyblock, err))

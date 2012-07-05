@@ -107,7 +107,10 @@ class EasyBlock:
 
         # store dependencies in private field (avoid nameclash with function)
         self._dependencies = None
+        self._build_dependencies = None
         self._toolkit = None
+
+        self._update(extra_options)
 
         self.parse(path)
 
@@ -168,33 +171,29 @@ class EasyBlock:
             return self._dependencies
 
         deps = []
-        attr = ['name', 'version', 'suffix', 'dummy']
 
         for dep in self['dependencies']:
-            dependency = {'name': '', 'version': '', 'suffix': '', 'dummy': False}
-            if isinstance(dep, dict):
-                dependency.update(dep)
-            # Try and convert to list
-            else:
-                try:
-                    dep = list(dep)
-                    dependency.update(dict(zip(attr, dep)))
-                except TypeError:
-                    self.log.error('Dependency %s from unsupported type: %s.' % (dep, type(dep)))
+            deps.append(self._parse_dependency(dep))
 
-            # Validations
-            if not dependency['name']:
-                self.log.error("Dependency without name given")
 
-            if not dependency['version']:
-                self.log.error('Dependency without version.')
-
-            if not 'tk' in dependency:
-                dependency['tk'] = self.toolkit().getDependencyVersion(dependency)
-
-            deps.append(dependency)
         self._dependencies = deps
-        return self._dependencies
+        # dependencies include builddependencies as well
+        return self._dependencies + self.builddependencies()
+
+    def builddependencies(self):
+        """
+        return the parsed build dependencies
+        """
+        if self._build_dependencies:
+            return self._build_dependencies
+
+        deps = []
+
+        for dep in self['builddependencies']:
+            deps.append(self._parse_dependency(dep))
+
+        self._build_dependencies = deps
+        return self._build_dependencies
 
     def toolkit(self):
         """
@@ -205,11 +204,14 @@ class EasyBlock:
 
         tk = self['toolkit']
         self._toolkit = Toolkit(tk['name'], tk['version'])
+        if self['toolkitopts']:
+            self._toolkit.setOptions(self['toolkitopts'])
+
         return self._toolkit
 
-    def update(self, dict):
+    def _update(self, dict):
         """
-        Custom instances might want to update the underlying hash
+        Add extra variables to the underlying dict
         """
         self.config.update(dict)
 
@@ -217,6 +219,33 @@ class EasyBlock:
     def _validate(self, attr, values):
         if self[attr] and self[attr] not in values:
             self.log.error("%s provided %s is not valid: %s" % (attr, self[attr], values))
+
+
+    def _parse_dependency(self, dep):
+        attr = ['name', 'version', 'suffix', 'dummy']
+        dependency = {'name': '', 'version': '', 'suffix': '', 'dummy': False}
+        if isinstance(dep, dict):
+            dependency.update(dep)
+        # Try and convert to list
+        else:
+            try:
+                dep = list(dep)
+                dependency.update(dict(zip(attr, dep)))
+            except TypeError:
+                self.log.error('Dependency %s from unsupported type: %s.' % (dep, type(dep)))
+
+        # Validations
+        if not dependency['name']:
+            self.log.error("Dependency without name given")
+
+        if not dependency['version']:
+            self.log.error('Dependency without version.')
+
+        if not 'tk' in dependency:
+            dependency['tk'] = self.toolkit().getDependencyVersion(dependency)
+
+        return dependency
+
 
     def __getitem__(self, key):
         return self.config[key][0]
