@@ -127,9 +127,9 @@ class EasyBlock:
         try:
             execfile(path, {}, local_vars)
         except IOError, err:
-            log.exception("Unexpected IOError during execfile()")
+            self.log.exception("Unexpected IOError during execfile()")
         except SyntaxError, err:
-            log.exception("SyntaxError in easyblock %s" % path)
+            self.log.exception("SyntaxError in easyblock %s" % path)
 
         # validate mandatory keys
         for key in self.mandatory:
