@@ -24,6 +24,7 @@ import difflib
 import os
 
 from easybuild.tools.build_log import getLog, EasyBuildError
+from easybuild.tools.toolkit import Toolkit
 
 class EasyBlock:
     """
@@ -34,6 +35,7 @@ class EasyBlock:
     validmoduleclasses = ['base', 'compiler', 'lib']
     validstops = ['cfg', 'source', 'patch', 'configure', 'make', 'install', 'test', 'postproc', 'cleanup', 'packages']
 
+    # TODO: move this somewhere
     default_config = {
           'name':[None, "Name of software"],
           'version':[None, "Version of software"],
@@ -92,15 +94,20 @@ class EasyBlock:
         }
 
 
-    def __init__(self, path, validate=True):
+    def __init__(self, path, extra_options={}, validate=True):
         # perform a deepcopy of the default_config found in the easybuild.tools.easy_block module
         self.config = copy.deepcopy(self.default_config)
+        self.config.update(extra_options)
         self.log = getLog("EasyBlock")
 
         if not os.path.isfile(path):
             log.error("EasyBlock __init__ expected a valid path")
 
         self.validations = {'moduleclass': self.validmoduleclasses, 'stop': self.validstops }
+
+        # store dependencies in private field (avoid nameclash with function)
+        self._dependencies = None
+        self._toolkit = None
 
         self.parse(path)
 
@@ -109,6 +116,10 @@ class EasyBlock:
             self.validate()
 
     def parse(self, path):
+        """
+        Parse the file and set options
+        mandatory requirements are checked here
+        """
         local_vars = {}
         try:
             execfile(path, {}, local_vars)
@@ -126,18 +137,82 @@ class EasyBlock:
         for key in local_vars:
             if key not in self.config:
                 guesses = difflib.get_close_matches(key, self.config.keys(), 1, 0.85)
-                self.log.error("You set invalid variable %s, possible suggestions: %s" % (key, guesses[0:2]))
+                if len(guesses) == 1:
+                    self.log.error("You set invalid variable %s, possible suggestions: %s" % (key, guesses[0]))
 
         for key in local_vars:
-            self[key] = local_vars[key]
-            self.log.info("setting config option %s: value %s" % (key, self[key]))
+            # do not store variables we don't need
+            if key in self.config:
+                self[key] = local_vars[key]
+                self.log.info("setting config option %s: value %s" % (key, self[key]))
 
     def validate(self):
+        """
+        Validate this EasyBlock
+        - check certain variables
+        TODO: move more into here
+        """
         self.log.info("Validating easy block")
         for attr in self.validations:
             self._validate(attr, self.validations[attr])
 
         return True
+
+    def dependencies(self):
+        """
+        returns an array of parsed dependencies
+        dependency = {'name': '', 'version': '', 'prefix': '', 'suffix': ''}
+        """
+        # memoize dependencies
+        if self._dependencies:
+            return self._dependencies
+
+        deps = []
+        attr = ['name', 'version', 'suffix', 'dummy']
+
+        for dep in self['dependencies']:
+            dependency = {'name': '', 'version': '', 'suffix': '', 'dummy': False}
+            if isinstance(dep, dict):
+                dependency.update(dep)
+            # Try and convert to list
+            else:
+                try:
+                    dep = list(dep)
+                    dependency.update(dict(zip(attr, dep)))
+                except TypeError:
+                    self.log.error('Dependency %s from unsupported type: %s.' % (dep, type(dep)))
+
+            # Validations
+            if not dependency['name']:
+                self.log.error("Dependency without name given")
+
+            if not dependency['version']:
+                self.log.error('Dependency without version.')
+
+            if not 'tk' in dependency:
+                dependency['tk'] = self.toolkit().getDependencyVersion(dependency)
+
+            deps.append(dependency)
+        self._dependencies = deps
+        return self._dependencies
+
+    def toolkit(self):
+        """
+        returns the Toolkit used
+        """
+        if self._toolkit:
+            return self._toolkit
+
+        tk = self['toolkit']
+        self._toolkit = Toolkit(tk['name'], tk['version'])
+        return self._toolkit
+
+    def update(self, dict):
+        """
+        Custom instances might want to update the underlying hash
+        """
+        self.config.update(dict)
+
 
     def _validate(self, attr, values):
         if self[attr] and self[attr] not in values:
