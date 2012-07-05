@@ -1,5 +1,5 @@
 ##
-# Copyright 2009-2012 Stijn Deweirdt, Dries Verdegem, Kenneth Hoste, Pieter De Baets, Jens Timmerman
+# Copyright 2009-2012 Stijn De Weirdt, Dries Verdegem, Kenneth Hoste, Pieter De Baets, Jens Timmerman
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of the University of Ghent (http://ugent.be/hpc).
@@ -91,7 +91,7 @@ class Repository:
         if not os.path.isdir(name):
             os.makedirs(name)
 
-        ## destination    
+        ## destination
         dest = os.path.join(self.wc, name, "%s.eb" % (version))
 
         ## check if it's new/different from what's in svn
@@ -178,8 +178,6 @@ class GitRepository(Repository):
         self.path = None
         Repository.__init__(self)
 
-
-        # check whether git module was loaded (globally)
         try:
             import git
         except ImportError:
@@ -206,7 +204,7 @@ class GitRepository(Repository):
         # create a local wc every time.
         self.wc = tempfile.mkdtemp(prefix='git-wc-')
 
-        ## try to get a copy of 
+        ## try to get a copy of
         try:
             client = git.Git(self.wc)
             out = client.clone(self.repo)
