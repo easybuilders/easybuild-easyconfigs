@@ -34,17 +34,17 @@ class GCC(Application):
     Uses system compiler for initial build, then bootstraps.
     """
 
-    def __init__(self, *args, **kwargs):
-        Application.__init__(self, *args, **kwargs)
+    def __init__(self, *args):
 
-        self.cfg.update({'languages':[[], "List of languages to build GCC for (--enable-languages) (default: [])"],
+        extra_vars = {'languages':[[], "List of languages to build GCC for (--enable-languages) (default: [])"],
                          'withlto':[True, "Enable LTO support (default: True)"],
                          'withcloog':[False, "Build GCC with CLooG support (default: False)."],
                          'withppl':[False, "Build GCC with PPL support (default: False)."],
                          'pplwatchdog':[False, "Enable PPL watchdog (default: False)"],
                          'clooguseisl':[False, "Use ISL with CLooG or not (use PPL otherwise) (default: False)"]
-                         }
-                        )
+                      }
+
+        Application.__init__(self, *args, extra_options=extra_vars)
 
         self.stagedbuild = False
 
@@ -63,7 +63,7 @@ class GCC(Application):
 
     def prep_extra_src_dirs(self, stage, target_prefix=None):
         """
-        Prepare extra (optional) source directories, so GCC will build these as well. 
+        Prepare extra (optional) source directories, so GCC will build these as well.
         """
 
         known_stages = ["stage1", "stage2", "stage3"]
