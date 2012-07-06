@@ -106,8 +106,6 @@ class EasyBlock:
 
         self.validations = {'moduleclass': self.validmoduleclasses, 'stop': self.validstops }
 
-        self._update(extra_options)
-
         self.parse(path)
 
         # perform validations
@@ -208,14 +206,6 @@ class EasyBlock:
             name = "%s%s-%s%s" % (prefix, self['version'], extra, suffix)
 
         return name
-
-
-    def _update(self, dict):
-        """
-        Add extra variables to the underlying dict
-        """
-        self.config.update(dict)
-
 
     def _validate(self, attr, values):
         if self[attr] and self[attr] not in values:
