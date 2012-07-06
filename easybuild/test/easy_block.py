@@ -53,3 +53,22 @@ version = "3.14"
         self.assertEqual(eb['toolkit'], {"name":"dummy", "version": "dummy"})
         self.assertEqual(eb['description'], "test easyblock")
 
+class TestValidation(EasyBlockTest):
+
+    contents = """
+name = "pi"
+version = "3.14"
+homepage = "http://google.com"
+description = "test easyblock"
+toolkit = {"name":"dummy", "version": "dummy"}
+stop = 'not-valid'
+"""
+
+    def runTest(self):
+        eb = EasyBlock(self.eb_file, validate=False)
+        self.assertErrorRegex(EasyBuildError, "\w* provided \S* is not valid", eb.validate)
+
+        eb['stop'] = 'patch'
+        # this should now not crash
+        eb.validate()
+
