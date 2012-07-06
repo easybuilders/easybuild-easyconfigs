@@ -223,7 +223,7 @@ class EasyBlock:
             name = "%s%s%s" % (prefix, self['version'], suffix)
         else:
             extra = "%s-%s" % (self.toolkit().name, self.toolkit().version)
-            name = "%s%s-%s%s" % (prefix, self.version(), extra, suffix)
+            name = "%s%s-%s%s" % (prefix, self['version'], extra, suffix)
 
         self._installversion = name
         return self._installversion
