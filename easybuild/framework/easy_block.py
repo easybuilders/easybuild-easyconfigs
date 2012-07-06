@@ -101,7 +101,7 @@ class EasyBlock:
         self.log = getLog("EasyBlock")
 
         if not os.path.isfile(path):
-            log.error("EasyBlock __init__ expected a valid path")
+            self.log.error("EasyBlock __init__ expected a valid path")
 
         self.validations = {'moduleclass': self.validmoduleclasses, 'stop': self.validstops }
 
