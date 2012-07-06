@@ -1,4 +1,6 @@
 import os
+import re
+
 from unittest import TestCase
 from easybuild.framework.easy_block import EasyBlock
 from easybuild.tools.build_log import EasyBuildError
@@ -14,12 +16,19 @@ class EasyBlockTest(TestCase):
     def tearDown(self):
         os.remove(self.eb_file)
 
+    def assertErrorRegex(self, error, regex, call, *args):
+        try:
+            call(*args)
+        except error, err:
+            self.assertTrue(re.search(regex, err.msg))
+
 class TestEmpty(EasyBlockTest):
 
     contents = "# empty string"
 
     def runTest(self):
         self.assertRaises(EasyBuildError, EasyBlock, self.eb_file)
+        self.assertErrorRegex(EasyBuildError, "expected a valid path", EasyBlock, "")
 
 
 class TestMandatory(EasyBlockTest):
@@ -30,7 +39,8 @@ version = "3.14"
 """
 
     def runTest(self):
-        self.assertRaises(EasyBuildError, EasyBlock, self.eb_file)
+        self.assertErrorRegex(EasyBuildError, "mandatory variable \w* not provided", EasyBlock, self.eb_file)
+
         self.contents += "\n".join(['homepage = "http://google.com"', 'description = "test easyblock"',
                                     'toolkit = {"name": "dummy", "version": "dummy"}'])
         self.setUp()
