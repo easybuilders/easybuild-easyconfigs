@@ -2,7 +2,7 @@ import os
 import re
 
 from unittest import TestCase
-from easybuild.framework.easy_block import EasyBlock
+from easybuild.framework.easyblock import EasyBlock
 from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.systemtools import get_shared_lib_ext
 

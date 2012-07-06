@@ -28,7 +28,7 @@ import time
 import urllib
 
 import easybuild
-from easybuild.framework.easy_block import EasyBlock
+from easybuild.framework.easyblock import EasyBlock
 from easybuild.tools.build_log import EasyBuildError, initLogger, removeLogHandler,print_msg
 from easybuild.tools.config import source_path, buildPath, installPath
 from easybuild.tools.filetools import unpack, patch, run_cmd, convertName

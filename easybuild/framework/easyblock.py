@@ -96,7 +96,7 @@ class EasyBlock:
 
 
     def __init__(self, path, extra_options={}, validate=True):
-        # perform a deepcopy of the default_config found in the easybuild.tools.easy_block module
+        # perform a deepcopy of the default_config found in the easybuild.tools.easyblock module
         self.config = copy.deepcopy(self.default_config)
         self.config.update(extra_options)
         self.log = getLog("EasyBlock")

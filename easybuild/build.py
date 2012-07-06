@@ -28,7 +28,7 @@ import time
 import copy
 import platform
 from easybuild.framework.application import Application, get_class
-from easybuild.framework.easy_block import EasyBlock
+from easybuild.framework.easyblock import EasyBlock
 from easybuild.tools.build_log import EasyBuildError, initLogger, \
     removeLogHandler, print_msg
 from easybuild.tools.class_dumper import dumpClasses
