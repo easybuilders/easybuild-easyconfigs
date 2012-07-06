@@ -30,21 +30,22 @@ class IntelBase(Application):
     - add license variable
     """
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, extra_options={}):
         """Constructor, adds extra config options"""
-        Application.__init__(self, args, kwargs)
         self.license = None
 
-        self.cfg.update({
-                         'license':[None,"License file path (default: None)"],
-                         'license_activation':['license_server', "Indicates license activation type (default: 'license_server')"],
-                         # 'usetmppath': 
-                         # workaround for older SL5 version (5.5 and earlier)
-                         # used to be True, but False since SL5.6/SL6
-                         # disables TMP_PATH env and command line option 
-                         'usetmppath':[False, "Use temporary path for installation (default: False)"],
-                         'm32':[False, "Enable 32-bit toolkit (default: False)"],
-                         })
+        extra_vars = {'license':[None,"License file path (default: None)"],
+                      'license_activation':['license_server', "Indicates license activation type (default: 'license_server')"],
+                       # 'usetmppath':
+                       # workaround for older SL5 version (5.5 and earlier)
+                       # used to be True, but False since SL5.6/SL6
+                       # disables TMP_PATH env and command line option
+                       'usetmppath':[False, "Use temporary path for installation (default: False)"],
+                       'm32':[False, "Enable 32-bit toolkit (default: False)"],
+                      }
+        extra_vars.update(extra_options)
+
+        Application.__init__(self, args, extra_options=extra_vars)
 
     def clean_homedir(self):
         """Remove 'intel' directory from home directory, where stuff is cached."""

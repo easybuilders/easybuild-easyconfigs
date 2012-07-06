@@ -31,24 +31,19 @@ class WRF(Application):
 
     def __init__(self,*args,**kwargs):
         """Add extra config options specific to WRF."""
+        extra_vars = {'buildtype':[None, "Specify the type of build (serial, smpar (OpenMP), " \
+                                         "dmpar (MPI), dm+sm (hybrid OpenMP/MPI))."],
+                      'rewriteopts':[True, "Replace -O3 with CFLAGS/FFLAGS (default: True)."],
+                      'runtest':[True, "Build and run WRF tests (default: True)."]
+                     }
+        Application.__init__(self, *args, extra_options=extra_vars)
 
-        Application.__init__(self, args,kwargs)
-        
         self.build_in_installdir = True
-
         self.wrfsubdir = None
-
         self.comp_fam = None
 
-        self.cfg.update({
-                         'buildtype':[None, "Specify the type of build (serial, smpar (OpenMP), " \
-                                            "dmpar (MPI), dm+sm (hybrid OpenMP/MPI))."],
-                         'rewriteopts':[True, "Replace -O3 with CFLAGS/FFLAGS (default: True)."],
-                         'runtest':[True, "Build and run WRF tests (default: True)."]
-                         })
-
-    def configure(self):        
-        """Configure build: 
+    def configure(self):
+        """Configure build:
             - set some magic environment variables
             - run configure script
             - adjust configure.wrf file if needed

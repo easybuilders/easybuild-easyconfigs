@@ -31,7 +31,7 @@ class Python(Application):
     To extend Python by adding extra packages there are two ways:
     - list the packages in the pkglist, this will include the packages in this Python easyblock
     - create a seperate easyblock, so the packages can be loaded with module load
-    
+
     e.g., you can include numpy and scipy in a default Python installation
     but also provide newer updated numpy and scipy versions by creating a PythonPackageModule for it.
     """
@@ -219,7 +219,7 @@ class Numpy(FortranPythonPackage):
     def __init__(self, mself, pkg, pkginstalldeps):
         FortranPythonPackage.__init__(self, mself, pkg, pkginstalldeps)
 
-        self.pkgcfgs = self.cfg['pkgcfgs'][0]
+        self.pkgcfgs = self.getcfg('pkgcfgs')
         if self.pkgcfgs.has_key('numpysitecfglibsubdirs'):
             self.numpysitecfglibsubdirs = self.pkgcfgs['numpysitecfglibsubdirs']
         else:
@@ -253,7 +253,7 @@ libraries = %(lapack)s
             self.log.error("Could not detect math kernel (mkl, atlas)")
 
         if "SOFTROOTIMKL" in os.environ or "SOFTROOTFFTW" in os.environ:
-            extrasiteconfig += """ 
+            extrasiteconfig += """
 [fftw]
 libraries = %s
         """ % os.getenv("LIBFFT")

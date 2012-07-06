@@ -32,13 +32,12 @@ class ATLAS(Application):
     """
 
     def __init__(self, *args, **kwargs):
-        Application.__init__(self, *args, **kwargs)
 
-        self.cfg.update({
-                         'ignorethrottling':[False, "Ignore check done by ATLAS for CPU throttling (not recommended) (default: False)"],
-                         'full_lapack': [False, "Build a full LAPACK library (requires netlib's LAPACK) (default: False)"],
-                         'sharedlibs':[False, "Enable building of shared libs as well (default: False)"]
-                         })
+        extra_vars = { 'ignorethrottling':[False, "Ignore check done by ATLAS for CPU throttling (not recommended) (default: False)"],
+                       'full_lapack': [False, "Build a full LAPACK library (requires netlib's LAPACK) (default: False)"],
+                       'sharedlibs':[False, "Enable building of shared libs as well (default: False)"]
+                     }
+        Application.__init__(self, *args, extra_options=extra_vars)
 
     def configure(self):
 
@@ -132,9 +131,9 @@ Configure failed, not sure why (see output above).""" % out
 
     def make_install(self):
         """Install step
-        
+
         Default make install and optionally remove incomplete lapack libs.
-        If the full_lapack option was set to false we don't 
+        If the full_lapack option was set to false we don't
         """
         Application.make_install(self)
         if not self.getcfg('full_lapack'):

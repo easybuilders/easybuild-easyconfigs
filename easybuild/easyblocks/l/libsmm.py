@@ -34,15 +34,15 @@ class Libsmm(Application):
     """
 
     def __init__(self, *args, **kwargs):
-        Application.__init__(self, *args, **kwargs)
-
         # default dimensions
         dd = [1,4,5,6,9,13,16,17,22]
 
-        self.cfg.update({'transpose_flavour':[1, "Transpose flavour of routines (default: 1)"],
-                         'max_tiny_dim':[12, "Maximum tiny dimension (default: 12)"],
-                         'dims':[dd, "Generate routines for these matrix dims (default: %s)" % dd]
-                         })
+        extra_vars = {'transpose_flavour':[1, "Transpose flavour of routines (default: 1)"],
+                      'max_tiny_dim':[12, "Maximum tiny dimension (default: 12)"],
+                      'dims':[dd, "Generate routines for these matrix dims (default: %s)" % dd]
+                     }
+
+        Application.__init__(self, *args, extra_options=extra_vars)
 
     def configure(self):
         """Configure build: change to tools/build_libsmm dir"""
@@ -106,7 +106,7 @@ dims_small="%(dims)s"
 
 # tiny dimensions are used as primitves and generated in an 'exhaustive' search.
 # They should be a sequence from 1 to N,
-# where N is a number that is large enough to have good in cache performance 
+# where N is a number that is large enough to have good in cache performance
 # (e.g. for modern SSE cpus 8 to 12)
 # Too large (>12?) is not beneficial, but increases the time needed to build the library
 # Too small (<8)   will lead to a slow library, but the build might proceed quickly
@@ -114,7 +114,7 @@ dims_small="%(dims)s"
 #
 dims_tiny="%(tiny_dims)s"
 
-# host compiler... this is used only to compile a few tools needed to build the library. 
+# host compiler... this is used only to compile a few tools needed to build the library.
 # The library itself is not compiled this way.
 # This compiler needs to be able to deal with some Fortran2003 constructs.
 #
@@ -152,7 +152,7 @@ tasks=%(tasks)s
                 blas_found = True
             else:
                 self.log.info("BLAS library %s not found" % blas_lib)
-                
+
         if not blas_found:
             self.log.error('No known BLAS library found!')
 
@@ -169,7 +169,7 @@ tasks=%(tasks)s
         }
 
         # configure for various iterations
-        datatypes = [(1, 'double precision real'), 
+        datatypes = [(1, 'double precision real'),
                      (3, 'double precision complex')
                      ]
         for (dt, descr) in datatypes:

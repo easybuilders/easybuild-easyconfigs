@@ -88,8 +88,8 @@ class ScaLAPACK(Application):
             extra_makeopts += 'home=%s BLACSdir=%s ' % (self.getcfg('startfrom'), blacsroot)
 
             # set BLACS libs correctly
-            for (var, lib) in [('BLACSFINIT', "F77init"), 
-                               ('BLACSCINIT', "Cinit"), 
+            for (var, lib) in [('BLACSFINIT', "F77init"),
+                               ('BLACSCINIT', "Cinit"),
                                ('BLACSLIB', "")]:
                 extra_makeopts += '%s=%s/lib/libblacs%s.a ' % (var, blacsroot, lib)
 

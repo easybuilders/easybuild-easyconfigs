@@ -37,12 +37,12 @@ class GCC(Application):
     def __init__(self, *args):
 
         extra_vars = {'languages':[[], "List of languages to build GCC for (--enable-languages) (default: [])"],
-                         'withlto':[True, "Enable LTO support (default: True)"],
-                         'withcloog':[False, "Build GCC with CLooG support (default: False)."],
-                         'withppl':[False, "Build GCC with PPL support (default: False)."],
-                         'pplwatchdog':[False, "Enable PPL watchdog (default: False)"],
-                         'clooguseisl':[False, "Use ISL with CLooG or not (use PPL otherwise) (default: False)"]
-                      }
+                      'withlto':[True, "Enable LTO support (default: True)"],
+                      'withcloog':[False, "Build GCC with CLooG support (default: False)."],
+                      'withppl':[False, "Build GCC with PPL support (default: False)."],
+                      'pplwatchdog':[False, "Enable PPL watchdog (default: False)"],
+                      'clooguseisl':[False, "Use ISL with CLooG or not (use PPL otherwise) (default: False)"]
+                     }
 
         Application.__init__(self, *args, extra_options=extra_vars)
 

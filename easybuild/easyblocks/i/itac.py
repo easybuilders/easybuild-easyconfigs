@@ -32,9 +32,9 @@ class Itac(IntelBase):
 
     def __init__(self, *args, **kwargs):
         """Constructor, adds extra config options"""
-        IntelBase.__init__(self, args, kwargs)
+        extra_vars = {'preferredmpi':['impi3', "Preferred MPI type (default: 'impi3')"]}
+        IntelBase.__init__(self, args, extra_options=extra_vars)
 
-        self.cfg.update({'preferredmpi':['impi3', "Preferred MPI type (default: 'impi3')"]})
 
     def make_install(self):
         """
@@ -82,7 +82,7 @@ EULA=accept
                     'VT_LIB_DIR':['itac/lib_%s' % self.getcfg('preferredmpi')],
                     'VT_SLIB_DIR':['itac/lib_s%s' % self.getcfg('preferredmpi')]
                    }
-        
+
         if self.getcfg('m32'):
             guesses.update({
                             'PATH':['bin', 'bin/ia32', 'ia32/bin'],

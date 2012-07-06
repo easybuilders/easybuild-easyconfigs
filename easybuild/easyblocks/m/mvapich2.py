@@ -28,15 +28,13 @@ class MVAPICH2(Application):
     """
 
     def __init__(self, *args, **kwargs):
-        Application.__init__(self, *args, **kwargs)
-
-        self.cfg.update({
-                         'withchkpt':[False, "Enable checkpointing support (required BLCR) (default: False)"],
-                         'withlimic2':[False, "Enable LiMIC2 support for intra-node communication (default: False)"],
-                         'withmpe':[False, "Build MPE routines (default: False)"],
-                         'debug':[False, "Enable debug build (which is slower) (default: False)"],
-                         'rdma_type':["gen2", "Specify the RDMA type (gen2/udapl) (default: gen2)"]
-                         })
+        extra_vars = {'withchkpt':[False, "Enable checkpointing support (required BLCR) (default: False)"],
+                      'withlimic2':[False, "Enable LiMIC2 support for intra-node communication (default: False)"],
+                      'withmpe':[False, "Build MPE routines (default: False)"],
+                      'debug':[False, "Enable debug build (which is slower) (default: False)"],
+                      'rdma_type':["gen2", "Specify the RDMA type (gen2/udapl) (default: gen2)"]
+                     }
+        Application.__init__(self, *args, extra_options=extra_vars)
 
     def configure(self):
 
@@ -65,7 +63,7 @@ class MVAPICH2(Application):
         # enable Fortran 77/90 and C++ bindings
         add_configopts += '--enable-f77 --enable-fc --enable-cxx '
 
-        # MVAPICH configure script complains when F90 or F90FLAGS are set, 
+        # MVAPICH configure script complains when F90 or F90FLAGS are set,
         # they should be replaced with FC/FCFLAGS instead
         for (envvar, new_envvar) in [("F90", "FC"), ("F90FLAGS", "FCFLAGS")]:
             envvar_val = os.getenv(envvar)
@@ -100,7 +98,7 @@ class MVAPICH2(Application):
         """
         if not self.getcfg('sanityCheckPaths'):
 
-            self.setcfg('sanityCheckPaths',{'files':["bin/%s" % x for x in ["mpicc", "mpicxx", "mpif77", 
+            self.setcfg('sanityCheckPaths',{'files':["bin/%s" % x for x in ["mpicc", "mpicxx", "mpif77",
                                                                             "mpif90", "mpiexec.hydra"]] +
                                                     ["lib/lib%s" % y for x in ["fmpich", "mpichcxx", "mpichf90",
                                                                                "mpich", "mpl", "opa"]

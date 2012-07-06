@@ -32,28 +32,27 @@ from easybuild.easyblocks.n.netcdf import set_netcdf_env_vars, get_netcdf_module
 class WPS(Application):
     """Support for building/installing WPS."""
 
-    def __init__(self):
+    def __init__(self, *args):
         """Add extra config options specific to WPS."""
-
-        Application.__init__(self)
-
-        self.build_in_installdir = True
-        self.comp_fam = None
-        self.wrfdir = None
-        self.compile_script = None
 
         testdata_urls = [
                          "http://www.mmm.ucar.edu/wrf/src/data/avn_data.tar.gz",
                          "http://www.mmm.ucar.edu/wrf/src/wps_files/geog.tar.gz" # 697MB download, 16GB unpacked!
                          ]
 
-        self.cfg.update({'buildtype':[None, "Specify the type of build (smpar: OpenMP, dmpar: MPI)."],
-                         'runtest':[True, "Build and run WPS tests (default: True)."],
-                         'testdata':[testdata_urls, "URL to test data required to run WPS test (default: %s)." % testdata_urls]
-                         })
+        extra_vars = {'buildtype':[None, "Specify the type of build (smpar: OpenMP, dmpar: MPI)."],
+                      'runtest':[True, "Build and run WPS tests (default: True)."],
+                      'testdata':[testdata_urls, "URL to test data required to run WPS test (default: %s)." % testdata_urls]
+                     }
+        Application.__init__(self, *args, extra_options=extra_vars)
+
+        self.build_in_installdir = True
+        self.comp_fam = None
+        self.wrfdir = None
+        self.compile_script = None
 
     def configure(self):
-        """Configure build: 
+        """Configure build:
         - set required environment variables (for netCDF, JasPer)
         - patch compile script and ungrib Makefile for non-default install paths of WRF and JasPer
         - run configure script and figure how to select desired build option
