@@ -106,12 +106,6 @@ class EasyBlock:
 
         self.validations = {'moduleclass': self.validmoduleclasses, 'stop': self.validstops }
 
-        # store dependencies in private field (avoid nameclash with function)
-        self._dependencies = None
-        self._build_dependencies = None
-        self._toolkit = None
-        self._installversion = None
-
         self._update(extra_options)
 
         self.parse(path)
@@ -170,9 +164,6 @@ class EasyBlock:
         returns an array of parsed dependencies
         dependency = {'name': '', 'version': '', 'prefix': '', 'suffix': ''}
         """
-        # memoize dependencies
-        if self._dependencies:
-            return self._dependencies
 
         deps = []
 
@@ -180,46 +171,34 @@ class EasyBlock:
             deps.append(self._parse_dependency(dep))
 
 
-        self._dependencies = deps + self.builddependencies()
-        # dependencies include builddependencies as well
-        return self._dependencies
+        return deps + self.builddependencies()
 
     def builddependencies(self):
         """
         return the parsed build dependencies
         """
-        if self._build_dependencies:
-            return self._build_dependencies
-
         deps = []
 
         for dep in self['builddependencies']:
             deps.append(self._parse_dependency(dep))
 
-        self._build_dependencies = deps
-        return self._build_dependencies
+        return deps
 
     def toolkit(self):
         """
         returns the Toolkit used
         """
-        if self._toolkit:
-            return self._toolkit
-
         tk = self['toolkit']
-        self._toolkit = Toolkit(tk['name'], tk['version'])
+        tk = Toolkit(tk['name'], tk['version'])
         if self['toolkitopts']:
-            self._toolkit.setOptions(self['toolkitopts'])
+            tk.setOptions(self['toolkitopts'])
 
-        return self._toolkit
+        return tk
 
     def installversion(self):
         """
         return the installation version name
         """
-        if self._installversion:
-            return self._installversion
-
         prefix, suffix = self['versionprefix'], self['versionsuffix']
 
         if self.toolkit().name == 'dummy':
@@ -228,8 +207,7 @@ class EasyBlock:
             extra = "%s-%s" % (self.toolkit().name, self.toolkit().version)
             name = "%s%s-%s%s" % (prefix, self['version'], extra, suffix)
 
-        self._installversion = name
-        return self._installversion
+        return name
 
 
     def _update(self, dict):

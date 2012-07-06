@@ -62,12 +62,12 @@ version = "3.14"
 homepage = "http://google.com"
 description = "test easyblock"
 toolkit = {"name":"dummy", "version": "dummy"}
-stop = 'not-valid'
+stop = 'notvalid'
 """
 
     def runTest(self):
         eb = EasyBlock(self.eb_file, validate=False)
-        self.assertErrorRegex(EasyBuildError, "\w* provided \S* is not valid", eb.validate)
+        self.assertErrorRegex(EasyBuildError, "\w* provided \w* is not valid", eb.validate)
 
         eb['stop'] = 'patch'
         # this should now not crash
@@ -88,4 +88,30 @@ sanityCheckPaths = { 'files': ["lib/lib.%s" % shared_lib_ext] }
         eb = EasyBlock(self.eb_file)
         self.assertEqual(eb['sanityCheckPaths']['files'][0], "lib/lib.%s" % get_shared_lib_ext())
 
+class TestDependency(EasyBlockTest):
+
+    contents = """
+name = "pi"
+version = "3.14"
+homepage = "http://google.com"
+description = "test easyblock"
+toolkit = {"name":"GCC", "version": "4.6.3"}
+dependencies = [('first', '1.1'), {'name': 'second', 'version': '2.2'}]
+"""
+
+    def runTest(self):
+        eb = EasyBlock(self.eb_file)
+        self.assertEqual(len(eb.dependencies()), 2)
+
+        first = eb.dependencies()[0]
+        second = eb.dependencies()[1]
+
+        self.assertEqual(first['name'], "first")
+        self.assertEqual(second['name'], "second")
+
+        self.assertEqual(first['version'], "1.1")
+        self.assertEqual(second['version'], "2.2")
+
+        self.assertEqual(first['tk'], '1.1-GCC-4.6.3')
+        self.assertEqual(second['tk'], '2.2-GCC-4.6.3')
 
