@@ -4,6 +4,7 @@ import re
 from unittest import TestCase
 from easybuild.framework.easy_block import EasyBlock
 from easybuild.tools.build_log import EasyBuildError
+from easybuild.tools.systemtools import get_shared_lib_ext
 
 class EasyBlockTest(TestCase):
 
@@ -71,4 +72,20 @@ stop = 'not-valid'
         eb['stop'] = 'patch'
         # this should now not crash
         eb.validate()
+
+class TestSharedLibExt(EasyBlockTest):
+
+    contents = """
+name = "pi"
+version = "3.14"
+homepage = "http://google.com"
+description = "test easyblock"
+toolkit = {"name":"dummy", "version": "dummy"}
+sanityCheckPaths = { 'files': ["lib/lib.%s" % shared_lib_ext] }
+"""
+
+    def runTest(self):
+        eb = EasyBlock(self.eb_file)
+        self.assertEqual(eb['sanityCheckPaths']['files'][0], "lib/lib.%s" % get_shared_lib_ext())
+
 

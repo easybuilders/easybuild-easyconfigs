@@ -136,7 +136,7 @@ def get_kernel_name():
 def get_shared_lib_ext():
     """Determine extention for shared libraries
 
-    Linux: 'so', Darwin: 'dylib' 
+    Linux: 'so', Darwin: 'dylib'
     """
     shared_lib_exts = {
                        'Linux':'so',
@@ -171,5 +171,3 @@ def get_platform_name(withversion=False):
         platform_name = '%s-%s-%s' % (machine, vendor, kernel_name.lower())
 
     return platform_name
-
-

@@ -25,6 +25,7 @@ import os
 
 from easybuild.tools.build_log import getLog, EasyBuildError
 from easybuild.tools.toolkit import Toolkit
+from easybuild.tools.systemtools import get_shared_lib_ext
 
 class EasyBlock:
     """
@@ -124,9 +125,11 @@ class EasyBlock:
         Parse the file and set options
         mandatory requirements are checked here
         """
+        global_vars = {"shared_lib_ext": get_shared_lib_ext()}
         local_vars = {}
+
         try:
-            execfile(path, {}, local_vars)
+            execfile(path, global_vars, local_vars)
         except IOError, err:
             self.log.exception("Unexpected IOError during execfile()")
         except SyntaxError, err:
