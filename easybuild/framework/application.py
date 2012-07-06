@@ -343,13 +343,13 @@ class Application:
         # - if a current module can be found, skip is ok
         # -- this is potentially very dangerous
         if self.getcfg('skip'):
-            if Modules().exists(self.name(), self.cfg.installversion()):
+            if Modules().exists(self.name(), self.installversion()):
                 self.skip = True
                 self.log.info("Current version (name: %s, version: %s) found. Going to skip actually main build and\
-                        potential exitsing packages. Expert only." % (self.name(), self.cfg.installversion()))
+                        potential exitsing packages. Expert only." % (self.name(), self.installversion()))
             else:
                 self.log.info("No current version (name: %s, version: %s) found. Not skipping anything." % (self.name(),
-                    self.cfg.installversion()))
+                    self.installversion()))
 
 
     def file_locate(self, filename, pkg=False):
@@ -873,7 +873,7 @@ class Application:
         basepath = installPath()
 
         if basepath:
-            installdir = os.path.join(basepath, self.name(), self.cfg.installversion())
+            installdir = os.path.join(basepath, self.name(), self.installversion())
             self.installdir = os.path.abspath(installdir)
         else:
             self.log.error("Can't set installation directory")
@@ -1031,6 +1031,9 @@ class Application:
         """
         return self.moduleExtraPackages
 
+    def installversion(self):
+        return self.cfg.installversion()
+
     def packages(self):
         """
         After make install, run this.
@@ -1054,11 +1057,11 @@ class Application:
             else:
                 m = Modules([os.path.join(self.builddir, 'all')] + os.environ['MODULEPATH'].split(':'))
 
-            if m.exists(self.name(), self.cfg.installversion()):
-                m.addModule([[self.name(), self.cfg.installversion()]])
+            if m.exists(self.name(), self.installversion()):
+                m.addModule([[self.name(), self.installversion()]])
                 m.load()
             else:
-                self.log.error("module %s version %s doesn't exist" % (self.name(), self.cfg.installversion()))
+                self.log.error("module %s version %s doesn't exist" % (self.name(), self.installversion()))
 
         self.extra_packages_pre()
 

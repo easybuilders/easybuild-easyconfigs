@@ -623,9 +623,9 @@ def build(module, options, log, origEnviron, exitOnFailure=True):
                 ## Upload spec to central repository
                 repo = getRepository()
                 if 'originalSpec' in module:
-                    repo.addEasyconfig(module['originalSpec'], app.name(), app.installversion + ".block", buildstats, currentbuildstats)
-                repo.addEasyconfig(spec, app.name(), app.installversion, buildstats, currentbuildstats)
-                repo.commit("Built %s/%s" % (app.name(), app.installversion))
+                    repo.addEasyconfig(module['originalSpec'], app.name(), app.installversion() + ".block", buildstats, currentbuildstats)
+                repo.addEasyconfig(spec, app.name(), app.installversion(), buildstats, currentbuildstats)
+                repo.commit("Built %s/%s" % (app.name(), app.installversion()))
                 del repo
             except EasyBuildError, err:
                 log.warn("Unable to commit easyconfig to repository (%s)", err)
@@ -645,7 +645,7 @@ def build(module, options, log, origEnviron, exitOnFailure=True):
             error("Failed to move log file %s to new log file %s: %s" % (app.logfile, applicationLog, err))
 
         try:
-            shutil.copy(spec, os.path.join(newLogDir, "%s-%s.eb" % (app.name(), app.installversion)))
+            shutil.copy(spec, os.path.join(newLogDir, "%s-%s.eb" % (app.name(), app.installversion())))
         except IOError, err:
             error("Failed to move easyconfig %s to log dir %s: %s" % (spec, newLogDir, err))
 
