@@ -177,9 +177,9 @@ class EasyBlock:
             deps.append(self._parse_dependency(dep))
 
 
-        self._dependencies = deps
+        self._dependencies = deps + self.builddependencies()
         # dependencies include builddependencies as well
-        return self._dependencies + self.builddependencies()
+        return self._dependencies
 
     def builddependencies(self):
         """
