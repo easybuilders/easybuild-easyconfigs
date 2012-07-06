@@ -109,6 +109,7 @@ class EasyBlock:
         self._dependencies = None
         self._build_dependencies = None
         self._toolkit = None
+        self._installversion = None
 
         self._update(extra_options)
 
@@ -208,6 +209,25 @@ class EasyBlock:
             self._toolkit.setOptions(self['toolkitopts'])
 
         return self._toolkit
+
+    def installversion(self):
+        """
+        return the installation version name
+        """
+        if self._installversion:
+            return self._installversion
+
+        prefix, suffix = self['versionprefix'], self['versionsuffix']
+
+        if self.toolkit().name == 'dummy':
+            name = "%s%s%s" % (prefix, self['version'], suffix)
+        else:
+            extra = "%s-%s" % (self.toolkit().name, self.toolkit().version)
+            name = "%s%s-%s%s" % (prefix, self.version(), extra, suffix)
+
+        self._installversion = name
+        return self._installversion
+
 
     def _update(self, dict):
         """

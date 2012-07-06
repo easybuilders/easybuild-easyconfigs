@@ -63,9 +63,6 @@ class Application:
         self.pkgs = None
         self.skip = None
 
-        ## final version
-        self.installversion = 'NOT_VALID'
-
         # Easyblock for this Application
         self.cfg = EasyBlock(path, extra_options)
 
@@ -268,8 +265,6 @@ class Application:
 
         self.setparallelism()
 
-        self.make_installversion()
-
     def getcfg(self, key):
         """
         Get a configuration item.
@@ -348,11 +343,13 @@ class Application:
         # - if a current module can be found, skip is ok
         # -- this is potentially very dangerous
         if self.getcfg('skip'):
-            if Modules().exists(self.name(), self.installversion):
+            if Modules().exists(self.name(), self.cfg.installversion()):
                 self.skip = True
-                self.log.info("Current version (name: %s, version: %s) found. Going to skip actually main build and potential exitsing packages. Expert only." % (self.name(), self.installversion))
+                self.log.info("Current version (name: %s, version: %s) found. Going to skip actually main build and\
+                        potential exitsing packages. Expert only." % (self.name(), self.cfg.installversion()))
             else:
-                self.log.info("No current version (name: %s, version: %s) found. Not skipping anything." % (self.name(), self.installversion))
+                self.log.info("No current version (name: %s, version: %s) found. Not skipping anything." % (self.name(),
+                    self.cfg.installversion()))
 
 
     def file_locate(self, filename, pkg=False):
@@ -876,24 +873,10 @@ class Application:
         basepath = installPath()
 
         if basepath:
-            installdir = os.path.join(basepath, self.name(), self.installversion)
+            installdir = os.path.join(basepath, self.name(), self.cfg.installversion())
             self.installdir = os.path.abspath(installdir)
         else:
             self.log.error("Can't set installation directory")
-
-    def make_installversion(self):
-        """
-        Generate the installation version name.
-        """
-        vpf, vsf = self.getcfg('versionprefix'), self.getcfg('versionsuffix')
-
-        if self.cfg.toolkit().name == 'dummy':
-            name = "%s%s%s" % (vpf, self.version(), vsf)
-        else:
-            extra = "%s-%s" % (self.cfg.toolkit().name, self.cfg.toolkit().version)
-            name = "%s%s-%s%s" % (vpf, self.version(), extra, vsf)
-
-        self.installversion = name
 
     def make_installdir(self):
         """
@@ -1071,11 +1054,11 @@ class Application:
             else:
                 m = Modules([os.path.join(self.builddir, 'all')] + os.environ['MODULEPATH'].split(':'))
 
-            if m.exists(self.name(), self.installversion):
-                m.addModule([[self.name(), self.installversion]])
+            if m.exists(self.name(), self.cfg.installversion()):
+                m.addModule([[self.name(), self.cfg.installversion()]])
                 m.load()
             else:
-                self.log.error("module %s version %s doesn't exist" % (self.name(), self.installversion))
+                self.log.error("module %s version %s doesn't exist" % (self.name(), self.cfg.installversion()))
 
         self.extra_packages_pre()
 
