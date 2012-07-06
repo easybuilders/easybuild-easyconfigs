@@ -159,6 +159,11 @@ class Imkl(IntelBase):
             except:
                 self.log.exception("Can't change to interfaces directory %s" % (interfacedir))
 
+            # compiler defaults to icc, but we could be using gcc to create gimkl.
+            makeopts = ''
+            if os.getenv('SOFTROOTGCC'):
+                makeopts += 'compiler=gnu '
+
             for i in lis1 + lis2 + lis3:
                 if i in lis1:
                     # use INSTALL_DIR and CFLAGS and COPTS
@@ -170,9 +175,10 @@ class Imkl(IntelBase):
                     # use INSTALL_DIR and SPEC_OPT
                     extramakeopts = ''
                     if os.getenv('SOFTROOTMPICH2'):
-                        extramakeopts = 'mpi=mpich2'
-                    cmd = "make -f makefile libintel64 %s" % extramakeopts
+                        extramakeopts += 'mpi=mpich2'
 
+                ## Use INSTALL_DIR and CFLAGS and COPTS
+                cmd = "make -f makefile libintel64 %s %s" % (makeopts, extramakeopts)
 
                 for opt in ['', '-fPIC']:
                     try:
