@@ -1,5 +1,5 @@
 ##
-# Copyright 2009-2012 Stijn De Weirdt, Dries Verdegem, Kenneth Hoste, Pieter De Baets, Jens Timmerman
+# Copyright 2009-2012 Stijn De weirdt, Dries Verdegem, Kenneth Hoste, Pieter De Baets, Jens Timmerman, Toon Willems
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of the University of Ghent (http://ugent.be/hpc).
@@ -63,7 +63,7 @@ class GCC(Application):
 
     def prep_extra_src_dirs(self, stage, target_prefix=None):
         """
-        Prepare extra (optional) source directories, so GCC will build these as well. 
+        Prepare extra (optional) source directories, so GCC will build these as well.
         """
 
         known_stages = ["stage1", "stage2", "stage3"]
@@ -170,6 +170,7 @@ class GCC(Application):
         - create obj dir to build in (GCC doesn't like to be built in source dir)
         - add configure and make options, according to .eb spec file
         - decide whether or not to do a staged build (which is required to enable PPL/CLooG support)
+        - set platform_lib based on config.guess output
         """
 
         # self.configopts will be reused in a 3-staged build,
@@ -236,6 +237,15 @@ class GCC(Application):
                                            self.configopts,
                                            configopts
                                           )
+
+        # instead of relying on uname, we run the same command GCC uses to
+        # determine the platform
+        out, ec = run_cmd("../config.guess", simple=False)
+        if ec == 0:
+            self.platform_lib = out.rstrip()
+        else:
+            self.platform_lib = get_platform_name(withversion=True)
+
         self.run_configure_cmd(cmd)
 
     def make(self):
@@ -421,8 +431,6 @@ class GCC(Application):
         """
         Custom sanity check for GCC
         """
-
-        self.platform_lib = get_platform_name(withversion=True)
 
         if not self.getcfg('sanityCheckPaths'):
 
