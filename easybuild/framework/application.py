@@ -238,6 +238,7 @@ class Application:
         Extra options method which will be passed to the EasyBlock constructor.
         Subclasses should overwrite this method (but not forget to call super,
         unless they plan on disregarding parent options)
+        NOTE: update on dictionary returns None, so fancy one-liners will NOT work
         """
         return {}
 
@@ -256,10 +257,6 @@ class Application:
                 self.log.warn("EasyBuild-version %s is older than the currently running one. Proceed with caution!" % easybuildVersion)
             elif LooseVersion(easybuildVersion) > easybuild.VERSION:
                 self.log.error("EasyBuild-version %s is newer than the currently running one. Aborting!" % easybuildVersion)
-
-
-        if self.getcfg('osdependencies'):
-            self.check_osdeps(self.getcfg('osdependencies'))
 
         if self.getcfg('sources'):
             self.addsource(self.getcfg('sources'))
@@ -296,33 +293,6 @@ class Application:
         new_value = '%s %s ' % (prev_value, value)
 
         self.setcfg(key, new_value)
-
-    def check_osdeps(self, osdeps):
-        """
-        Check if packages are available from OS. osdeps should be a list of dependencies.
-        If an element of osdeps is a list, checks will pass if one of the elements of the list is found
-        """
-        not_found = []
-        for check in osdeps:
-            if type(check) != list:
-                check = [check]
-
-            # find at least one element of check
-            # - using rpm -q for now --> can be run as non-root!!
-            # - should be extended to files later?
-            for d in check:
-                cmd = "rpm -q %s" % d
-                (rpmout, ec) = run_cmd(cmd, simple=False, log_all=False, log_ok=False)
-                if ec == 0:
-                    self.log.debug("Found osdep %s" % d)
-                else:
-                    not_found.append(d)
-                    self.log.info("Couldn't find OS dependency check %s: %s" % (check, rpmout))
-
-        if not not_found:
-            self.log.info("OS dependencies ok: %s" % osdeps)
-        else:
-            self.log.error("One or more OS dependencies were not found: %s" % not_found)
 
     ## BUILD
 

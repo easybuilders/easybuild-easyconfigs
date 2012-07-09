@@ -26,6 +26,7 @@ import os
 from easybuild.tools.build_log import getLog, EasyBuildError
 from easybuild.tools.toolkit import Toolkit
 from easybuild.tools.systemtools import get_shared_lib_ext
+from easybuild.tools.filetools import run_cmd
 
 class EasyBlock:
     """
@@ -155,12 +156,33 @@ class EasyBlock:
         for attr in self.validations:
             self._validate(attr, self.validations[attr])
 
+        self.log.info("Checking OS dependencies")
+        self.validate_os_deps()
+
+        return True
+
+    def validate_os_deps(self):
+        """
+        validate presence of OS dependencies
+        osdependencies should be a single list (do not rely on documentation found in application.py!
+        """
+        not_found = []
+        for dep in self['osdependencies']:
+            # TODO: make _os_dependency_check work all platforms
+            if not self._os_dependency_check(d):
+                not_found.append(dep)
+
+        if not_found:
+            self.log.error("One or more OS dependencies were not found: %s" % not_found)
+        else:
+            self.log.info("OS dependencies ok: %s" % self['osdependencies'])
+
         return True
 
     def dependencies(self):
         """
         returns an array of parsed dependencies
-        dependency = {'name': '', 'version': '', 'prefix': '', 'suffix': ''}
+        dependency = {'name': '', 'version': '', 'dummy': (False|True), 'suffix': ''}
         """
 
         deps = []
@@ -210,6 +232,15 @@ class EasyBlock:
     def _validate(self, attr, values):
         if self[attr] and self[attr] not in values:
             self.log.error("%s provided %s is not valid: %s" % (attr, self[attr], values))
+
+
+    def _os_dependency_check(self, dep):
+        """
+        will run rpm -q $dep, to see if dependency is available
+        """
+        # TODO: extend this with more cross platform functionality
+        cmd = "rpm -q %s" % dep
+        return run_cmd(cmd, simple=True)
 
 
     def _parse_dependency(self, dep):
