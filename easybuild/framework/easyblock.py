@@ -169,7 +169,7 @@ class EasyBlock:
         not_found = []
         for dep in self['osdependencies']:
             # TODO: make _os_dependency_check work all platforms
-            if not self._os_dependency_check(d):
+            if not self._os_dependency_check(dep):
                 not_found.append(dep)
 
         if not_found:
