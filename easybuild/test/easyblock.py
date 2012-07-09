@@ -115,3 +115,41 @@ dependencies = [('first', '1.1'), {'name': 'second', 'version': '2.2'}]
         self.assertEqual(first['tk'], '1.1-GCC-4.6.3')
         self.assertEqual(second['tk'], '2.2-GCC-4.6.3')
 
+class TestExtraOptions(EasyBlockTest):
+
+    contents = """
+name = "pi"
+version = "3.14"
+homepage = "http://google.com"
+description = "test easyblock"
+toolkit = {"name":"GCC", "version": "4.6.3"}
+dependencies = [('first', '1.1'), {'name': 'second', 'version': '2.2'}]
+"""
+
+    def runTest(self):
+        eb = EasyBlock(self.eb_file)
+        self.assertRaises(KeyError, lambda: eb['custom_key'])
+
+        extra_vars = { 'custom_key': ['default', "This is a default key"]}
+
+        eb = EasyBlock(self.eb_file, extra_vars)
+        self.assertEqual(eb['custom_key'], 'default')
+
+        eb['custom_key'] = "not so default"
+        self.assertEqual(eb['custom_key'], 'not so default')
+
+        self.contents += "\ncustom_key = 'test'"
+
+        self.setUp()
+
+        eb = EasyBlock(self.eb_file, extra_vars)
+        self.assertEqual(eb['custom_key'], 'test')
+
+        eb['custom_key'] = "not so default"
+        self.assertEqual(eb['custom_key'], 'not so default')
+
+
+
+
+
+
