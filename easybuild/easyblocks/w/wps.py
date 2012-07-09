@@ -32,9 +32,17 @@ from easybuild.easyblocks.n.netcdf import set_netcdf_env_vars, get_netcdf_module
 class WPS(Application):
     """Support for building/installing WPS."""
 
-    def __init__(self, *args):
+    def __init__(self, *args, **kwargs):
         """Add extra config options specific to WPS."""
 
+        Application.__init__(self, *args, **kwargs)
+
+        self.build_in_installdir = True
+        self.comp_fam = None
+        self.wrfdir = None
+        self.compile_script = None
+
+    def extra_options(self):
         testdata_urls = [
                          "http://www.mmm.ucar.edu/wrf/src/data/avn_data.tar.gz",
                          "http://www.mmm.ucar.edu/wrf/src/wps_files/geog.tar.gz" # 697MB download, 16GB unpacked!
@@ -44,12 +52,8 @@ class WPS(Application):
                       'runtest':[True, "Build and run WPS tests (default: True)."],
                       'testdata':[testdata_urls, "URL to test data required to run WPS test (default: %s)." % testdata_urls]
                      }
-        Application.__init__(self, extra_options=extra_vars, *args)
 
-        self.build_in_installdir = True
-        self.comp_fam = None
-        self.wrfdir = None
-        self.compile_script = None
+        return Application.extra_options(self).update(extra_vars)
 
     def configure(self):
         """Configure build:

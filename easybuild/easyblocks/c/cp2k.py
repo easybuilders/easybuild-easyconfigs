@@ -39,20 +39,7 @@ class CP2K(Application):
     """
 
     def __init__(self, *args, **kwargs):
-
-        extra_vars = {'type':['popt',"Type of build ('popt' or 'psmp') (default: 'popt)"],
-                      'typeopt':[True,"Enable optimization (default: True)"],
-                      'libint':[True,"Use LibInt (default: True)"],
-                      'modincprefix':['',"IMKL prefix for modinc include dir (default: '')"],
-                      'modinc':[[],"List of modinc's to use (*.f90), or 'True' to use all found at given prefix (default: [])"],
-                      'extracflags':['',"Extra CFLAGS to be added (default: '')"],
-                      'extradflags':['',"Extra DFLAGS to be added (default: '')"],
-                      'runtest':[True, 'Indicates if a regression test should be run after make (default: True)'],
-                      'ignore_regtest_fails':[False, "Ignore failures in regression test (should be used with care) (default: False)."],
-                      'maxtasks':[3, "Maximum number of CP2K instances run at the same time during testing (default: 3)"]
-                     }
-
-        Application.__init__(self, extra_options=extra_vars, *args)
+        Application.__init__(self, *args, **kwargs)
 
         self.typearch = None
 
@@ -68,6 +55,21 @@ class CP2K(Application):
         self.openmp = ''
 
         self.make_instructions = ''
+
+    def extra_options(self):
+        extra_vars = {'type':['popt',"Type of build ('popt' or 'psmp') (default: 'popt)"],
+                      'typeopt':[True,"Enable optimization (default: True)"],
+                      'libint':[True,"Use LibInt (default: True)"],
+                      'modincprefix':['',"IMKL prefix for modinc include dir (default: '')"],
+                      'modinc':[[],"List of modinc's to use (*.f90), or 'True' to use all found at given prefix (default: [])"],
+                      'extracflags':['',"Extra CFLAGS to be added (default: '')"],
+                      'extradflags':['',"Extra DFLAGS to be added (default: '')"],
+                      'runtest':[True, 'Indicates if a regression test should be run after make (default: True)'],
+                      'ignore_regtest_fails':[False, "Ignore failures in regression test (should be used with care) (default: False)."],
+                      'maxtasks':[3, "Maximum number of CP2K instances run at the same time during testing (default: 3)"]
+                     }
+        return Application.extra_options(self).update(extra_vars)
+
 
     def _generateMakefile(self, options):
         """Generate Makefile based on options dictionary and optional make instructions"""

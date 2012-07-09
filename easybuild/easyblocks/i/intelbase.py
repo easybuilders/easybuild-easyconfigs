@@ -30,10 +30,13 @@ class IntelBase(Application):
     - add license variable
     """
 
-    def __init__(self, extra_options={}, *args):
+    def __init__(self, *args, **kwargs):
         """Constructor, adds extra config options"""
         self.license = None
 
+        Application.__init__(self, *args, **kwargs)
+
+    def extra_options(self):
         extra_vars = {'license':[None,"License file path (default: None)"],
                       'license_activation':['license_server', "Indicates license activation type (default: 'license_server')"],
                        # 'usetmppath':
@@ -43,9 +46,8 @@ class IntelBase(Application):
                        'usetmppath':[False, "Use temporary path for installation (default: False)"],
                        'm32':[False, "Enable 32-bit toolkit (default: False)"],
                       }
-        extra_vars.update(extra_options)
+        return Application.extra_options(self).update(extra_vars)
 
-        Application.__init__(self, extra_options=extra_vars, *args)
 
     def clean_homedir(self):
         """Remove 'intel' directory from home directory, where stuff is cached."""

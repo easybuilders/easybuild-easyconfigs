@@ -45,7 +45,7 @@ class Application:
 
     ## INIT
     # TODO: never initializd with other parameters, remove them
-    def __init__(self, path, extra_options={}, name=None, version=None, newBuild=True, debug=False):
+    def __init__(self, path, name=None, version=None, newBuild=True, debug=False):
         """
         Initialize the Application instance.
         """
@@ -64,7 +64,7 @@ class Application:
         self.skip = None
 
         # Easyblock for this Application
-        self.cfg = EasyBlock(path, extra_options)
+        self.cfg = EasyBlock(path, self.extra_options())
 
         # module generator
         self.moduleGenerator = None
@@ -232,6 +232,14 @@ class Application:
                     self.log.error('No file found for source %s' % source)
 
             self.log.info("Added sources: %s" % self.src)
+
+    def extra_options(self):
+        """
+        Extra options method which will be passed to the EasyBlock constructor.
+        Subclasses should overwrite this method (but not forget to call super,
+        unless they plan on disregarding parent options)
+        """
+        return {}
 
     def prepare_build(self):
         """
