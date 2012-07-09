@@ -1,5 +1,5 @@
 ##
-# Copyright 2009-2012 Stijn Deweirdt, Dries Verdegem, Kenneth Hoste, Pieter De Baets, Jens Timmerman
+# Copyright 2009-2012 Stijn De Weirdt, Dries Verdegem, Kenneth Hoste, Pieter De Baets, Jens Timmerman
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of the University of Ghent (http://ugent.be/hpc).
@@ -742,16 +742,101 @@ class Toolkit:
             self.vars[varskey] = ''
         self.vars[varskey] += ' ' + ' '.join(flags)
 
-def get_openmp_flag(log):
-    """Determine compiler flag for OpenMP"""
+    def det_toolkit_type(self, name, type_map):
+        """Determine type of toolkit based on toolkit dependencies."""
 
-    icc = os.getenv('SOFTROOTICC')
-    ifort = os.getenv('SOFTROOTIFORT')
-    gcc = os.getenv('SOFTROOTGCC')
+        toolkit_dep_names = [dep['name'] for dep in self.toolkit_deps]
 
-    if (icc or ifort) and not gcc:
-        return "-openmp"
-    elif gcc and not (icc or ifort):
-        return "-fopenmp"
-    else:
-        log.error("Can't determine compiler flag for OpenMP.")
+        for req_mods, tk_type in type_map.items():
+            match = True
+            for req_mod in req_mods:
+                if not req_mod in toolkit_dep_names:
+                    match = False
+            if match:
+                return tk_type
+
+        log.error("Failed to determine %s based on toolkit dependencies." % name)
+
+    def toolkit_comp_family(self):
+        """Determine compiler family based on toolkit dependencies."""
+        comp_families = {
+                         # always use tuples as keys!
+                         ('icc', 'ifort'):'Intel', # Intel toolkit has both icc and ifort
+                         ('GCC', ):'GCC' # GCC toolkit uses GCC as compiler suite
+                         }
+
+        return self.det_toolkit_type("compiler family", comp_families)
+
+    def get_openmp_flag(self):
+        """Determine compiler flag for OpenMP"""
+
+        if self.toolkit_comp_family() == "Intel":
+            return "-openmp"
+        elif self.toolkit_comp_family() == "GCC":
+            return "-fopenmp"
+        else:
+            log.error("Can't determine compiler flag for OpenMP.")
+
+    def toolkit_mpi_type(self):
+        """Determine type of MPI library based on toolkit dependencies."""
+        mpi_types = {
+                      # always use tuples as keys!
+                      ('impi', ):'Intel', # Intel MPI
+                      ('OpenMPI', ):'OpenMPI' # OpenMPI
+                      }
+
+        return self.det_toolkit_type("type of mpi library", mpi_types)
+
+    def mpi_cmd_for(self, cmd, nr_ranks):
+        """Construct an MPI command for the given command and number of ranks."""
+
+        # parameter values for mpirun command
+        params = {'nr_ranks':nr_ranks, 'cmd':cmd}
+
+        # different known mpirun commands
+        mpi_cmds = {
+                    "OpenMPI":"mpirun -n %(nr_ranks)d %(cmd)s",
+                    "Intel":"mpirun %(mpdbootfile)s %(nodesfile)s -np %(nr_ranks)d %(cmd)s",
+                    }
+
+        mpi_type = self.toolkit_mpi_type()
+
+        # Intel MPI mpirun needs more work
+        if mpi_type == "Intel":
+
+            # set temporary dir for mdp
+            os.environ['I_MPI_MPD_TMPDIR'] = "/tmp"
+
+            # set PBS_ENVIRONMENT, so that --file option for mpdboot isn't stripped away
+            os.environ['PBS_ENVIRONMENT'] = "PBS_BATCH_MPI"
+
+            # create mpdboot file
+            fn = "/tmp/mpdboot"
+            try:
+                if os.path.exists(fn):
+                    os.remove(fn)
+                f = open(fn, "w")
+                f.write("localhost ifhn=localhost")
+                f.close()
+            except (OSError, IOError), err:
+                self.log.error("Failed to create file %s: %s" % (fn, err))
+
+            params.update({'mpdbootfile':"--file=%s"%fn})
+
+            # create nodes file
+            fn = "/tmp/nodes"
+            try:
+                if os.path.exists(fn):
+                    os.remove(fn)
+                f = open(fn, "w")
+                f.write("localhost\n" * nr_ranks)
+                f.close()
+            except (OSError, IOError), err:
+                self.log.error("Failed to create file %s: %s" % (fn, err))
+
+            params.update({'nodesfile':"-machinefile %s"%fn})
+
+        if mpi_type in mpi_cmds.keys():
+            return mpi_cmds[mpi_type] % params
+        else:
+            log.error("Don't know how to create an MPI command for MPI library of type '%s'." % mpi_type)

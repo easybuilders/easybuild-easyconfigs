@@ -1,5 +1,5 @@
 ##
-# Copyright 2009-2012 Stijn Deweirdt, Dries Verdegem, Kenneth Hoste, Pieter De Baets, Jens Timmerman
+# Copyright 2009-2012 Stijn De Weirdt, Dries Verdegem, Kenneth Hoste, Pieter De Baets, Jens Timmerman
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of the University of Ghent (http://ugent.be/hpc).
@@ -27,7 +27,6 @@ import shutil
 import sys
 from easybuild.framework.application import Application
 from easybuild.tools.filetools import run_cmd
-from easybuild.tools.toolkit import get_openmp_flag
 
 class CP2K(Application):
     """
@@ -118,13 +117,10 @@ class CP2K(Application):
         self.make_instructions = "graphcon.o: graphcon.F\n\t$(FC) -c $(FCFLAGS2) $<\n"
 
         # compiler toolkit specific configuration
-        icc = os.getenv('SOFTROOTICC')
-        ifort = os.getenv('SOFTROOTIFORT')
-        gcc = os.getenv('SOFTROOTGCC')
-
-        if icc and ifort and not gcc:
+        comp_fam = self.tk.toolkit_comp_family()
+        if comp_fam == "Intel":
             options = self.configureIntelBased()
-        elif gcc and not (icc or ifort):
+        elif comp_fam == "GCC":
             options = self.configureGCCBased()
         else:
             self.log.error("Don't know how to tweak configuration for compiler used.")
@@ -220,7 +216,7 @@ class CP2K(Application):
         ## -automatic is default: -noautomatic -auto-scalar
         ## some mem-bandwidth optimisation
         if self.getcfg('type') == 'psmp':
-            self.openmp = get_openmp_flag(self.log)
+            self.openmp = self.tk.get_openmp_flag()
 
         # determine which opt flags to use
         if self.getcfg('typeopt'):
