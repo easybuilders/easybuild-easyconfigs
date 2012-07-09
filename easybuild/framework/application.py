@@ -927,6 +927,14 @@ class Application:
         if not self.build_in_installdir:
             try:
                 shutil.rmtree(self.builddir)
+                base = os.path.dirname(self.builddir)
+
+                # keep removing empty directories until we either find a non-empty one
+                # or we end up in the root builddir
+                while len(os.listdir(base)) == 0 and not os.path.samefile(base, buildPath()):
+                    os.rmdir(base)
+                    base = os.path.dirname(base)
+
                 self.log.info("Cleaning up builddir %s" % (self.builddir))
             except OSError, err:
                 self.log.exception("Cleaning up builddir %s failed: %s" % (self.builddir, err))
