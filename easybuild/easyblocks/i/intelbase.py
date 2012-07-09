@@ -37,6 +37,7 @@ class IntelBase(Application):
         Application.__init__(self, *args, **kwargs)
 
     def extra_options(self):
+        vars = Application.extra_options(self)
         extra_vars = {'license':[None,"License file path (default: None)"],
                       'license_activation':['license_server', "Indicates license activation type (default: 'license_server')"],
                        # 'usetmppath':
@@ -46,7 +47,8 @@ class IntelBase(Application):
                        'usetmppath':[False, "Use temporary path for installation (default: False)"],
                        'm32':[False, "Enable 32-bit toolkit (default: False)"],
                       }
-        return Application.extra_options(self).update(extra_vars)
+        vars.update(extra_vars)
+        return vars
 
 
     def clean_homedir(self):

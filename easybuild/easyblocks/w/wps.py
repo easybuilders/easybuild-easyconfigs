@@ -48,12 +48,14 @@ class WPS(Application):
                          "http://www.mmm.ucar.edu/wrf/src/wps_files/geog.tar.gz" # 697MB download, 16GB unpacked!
                          ]
 
+        vars = Application.extra_options(self)
         extra_vars = {'buildtype':[None, "Specify the type of build (smpar: OpenMP, dmpar: MPI)."],
                       'runtest':[True, "Build and run WPS tests (default: True)."],
                       'testdata':[testdata_urls, "URL to test data required to run WPS test (default: %s)." % testdata_urls]
                      }
+        vars.update(extra_vars)
 
-        return Application.extra_options(self).update(extra_vars)
+        return vars
 
     def configure(self):
         """Configure build:

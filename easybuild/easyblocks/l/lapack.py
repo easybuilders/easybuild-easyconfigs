@@ -59,10 +59,12 @@ class LAPACK(Application):
         Application.__init__(self, *args, **kwargs)
 
     def extra_options(self):
+        vars = Application.extra_options(self)
         extra_vars = {'supply_blas':[False, "Supply BLAS lib to LAPACK for building (default: False)"],
                       'test_only':[False, "Only make tests, don't try and build LAPACK lib."]
                      }
-        return Application.extra_options(self).update(extra_vars)
+        vars.update(extra_vars)
+        return vars
 
 
     def configure(self):

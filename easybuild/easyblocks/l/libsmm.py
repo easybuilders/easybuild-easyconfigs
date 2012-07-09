@@ -39,12 +39,13 @@ class Libsmm(Application):
     def extra_options(self):
         # default dimensions
         dd = [1,4,5,6,9,13,16,17,22]
-
+        vars = Application.extra_options(self)
         extra_vars = {'transpose_flavour':[1, "Transpose flavour of routines (default: 1)"],
                       'max_tiny_dim':[12, "Maximum tiny dimension (default: 12)"],
                       'dims':[dd, "Generate routines for these matrix dims (default: %s)" % dd]
                      }
-        return Application.extra_options(self).update(extra_vars)
+        vars.update(extra_vars)
+        return vars
 
 
 
