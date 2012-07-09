@@ -30,7 +30,7 @@ class IntelBase(Application):
     - add license variable
     """
 
-    def __init__(self, *args, extra_options={}):
+    def __init__(self, extra_options={}, *args):
         """Constructor, adds extra config options"""
         self.license = None
 
