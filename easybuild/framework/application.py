@@ -1,5 +1,5 @@
 ##
-# Copyright 2009-2012 Stijn De Weirdt, Dries Verdegem, Kenneth Hoste, Pieter De Baets, Jens Timmerman
+# Copyright 2009-2012 Stijn De Weirdt, Dries Verdegem, Kenneth Hoste, Pieter De Baets, Jens Timmerman, Toon Willems
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of the University of Ghent (http://ugent.be/hpc).
@@ -23,6 +23,7 @@ from distutils.version import LooseVersion
 import glob
 import grp #@UnresolvedImport
 import os
+import re
 import shutil
 import time
 import urllib
@@ -153,11 +154,11 @@ class Application:
         # mandatory config entries
         self.mandatory = ['name', 'version', 'homepage', 'description', 'toolkit']
 
-    def autobuild(self, ebfile, runTests):
+    def autobuild(self, ebfile, runTests, regtest_online):
         """
         Build the software package described by cfg.
         """
-        self.process_ebfile(ebfile)
+        self.process_ebfile(ebfile, regtest_online)
 
         if self.getcfg('stop') and self.getcfg('stop') == 'cfg':
             return True
@@ -349,9 +350,9 @@ class Application:
 
         return result
 
-    ## process EasyBuild spec file 
+    ## process EasyBuild spec file
 
-    def process_ebfile(self, fn):
+    def process_ebfile(self, fn, regtest_online=False):
         """
         Read file fn, eval and add info
         - assume certain predefined variable names
@@ -397,16 +398,7 @@ class Application:
                 self.setcfg(k, locs[k])
                 self.log.info("Using cfg option %s: value %s" % (k, self.getcfg(k)))
 
-        for k in self.mandatory:
-            if not k in locs:
-                self.log.error("No cfg option %s provided" % k)
-
-        if self.getcfg('stop') and not (self.getcfg('stop') in self.validstops):
-            self.log.error("Stop provided %s is not valid: %s" % (self.cfg['stop'], self.validstops))
-
-        if not (self.getcfg('moduleclass') in self.validmoduleclasses):
-            self.log.error("Moduleclass provided %s is not valid: %s" % (self.cfg['moduleclass'], self.validmoduleclasses))
-
+        # NOTE: this option ('cfg') cannot be provided on the commandline because it will not yet be set by Easybuild
         if self.getcfg('stop') == 'cfg':
             self.log.info("Stopping in parsing cfg")
             return
@@ -428,8 +420,6 @@ class Application:
             self.log.debug("toolkit: %s" % self.getcfg('toolkit'))
             tk = self.getcfg('toolkit')
             self.settoolkit(tk['name'], tk['version'])
-        else:
-            self.log.error('no toolkit defined')
 
         if self.getcfg('toolkitopts'):
             self.tk.setOptions(self.getcfg('toolkitopts'))
@@ -447,6 +437,29 @@ class Application:
         self.setparallelism()
 
         self.make_installversion()
+        self.verify_config(regtest_online)
+
+    def verify_config(self, regtest_online=False):
+        """
+        verify the config settings
+        """
+        for k in self.mandatory:
+            if not self.getcfg(k):
+                self.log.error("No cfg option %s provided" % k)
+
+        if self.getcfg('stop') and not (self.getcfg('stop') in self.validstops):
+            self.log.error("Stop provided %s is not valid: %s" % (self.cfg['stop'], self.validstops))
+
+        if not (self.getcfg('moduleclass') in self.validmoduleclasses):
+            self.log.error("Moduleclass provided %s is not valid: %s" % (self.cfg['moduleclass'], self.validmoduleclasses))
+
+        if not self.getcfg('toolkit'):
+            self.log.error('no toolkit defined')
+
+        if regtest_online and not self.verify_homepage():
+            self.log.error("Homepage (%s) does not seem to contain anything relevant to %s" % (self.getcfg("homepage"),
+                                                                                               self.name()))
+
 
     def getcfg(self, key):
         """
@@ -499,7 +512,7 @@ class Application:
         else:
             self.log.error("One or more OS dependencies were not found: %s" % not_found)
 
-    ## BUILD 
+    ## BUILD
 
     def ready2build(self):
         """
@@ -674,7 +687,7 @@ class Application:
             if foundfile:
                 return foundfile
             else:
-                # try and download source files from specified source URLs 
+                # try and download source files from specified source URLs
                 sourceURLs = self.getcfg('sourceURLs')
                 targetdir = candidate_filepaths[0]
                 if not os.path.isdir(targetdir):
@@ -719,6 +732,36 @@ class Application:
                         failedpaths.append(fullurl)
 
                 self.log.error("Couldn't find file %s anywhere, and downloading it didn't work either...\nPaths attempted (in order): %s " % (filename, ', '.join(failedpaths)))
+
+
+    def verify_homepage(self):
+        """
+        Download homepage, verify if the name of the software is mentioned
+        """
+        homepage = self.getcfg("homepage")
+
+        try:
+            page = urllib.urlopen(homepage)
+        except IOError:
+            self.log.error("Homepage (%s) is unavailable." % homepage)
+            return False
+
+        regex = re.compile(self.name(), re.I)
+
+        # if url contains software name and is available we are satisfied
+        if regex.search(homepage):
+            return True
+
+        # Perform a lowercase compare against the entire contents of the html page
+        # (does not care about html)
+        for line in page:
+            if regex.search(line):
+                return True
+
+        return False
+
+
+
 
     def apply_patch(self, beginpath=None):
         """
@@ -877,8 +920,8 @@ class Application:
     def cleanup(self):
         """
         Cleanup leftover mess: remove/clean build directory
-        
-        except when we're building in the installation directory, 
+
+        except when we're building in the installation directory,
         otherwise we remove the installation
         """
         if not self.build_in_installdir:
@@ -891,7 +934,7 @@ class Application:
     def sanitycheck(self):
         """
         Do a sanity check on the installation
-        - if *any* of the files/subdirectories in the installation directory listed 
+        - if *any* of the files/subdirectories in the installation directory listed
           in sanityCheckPaths are non-existent (or empty), the sanity check fails
         """
         # prepare sanity check paths
@@ -924,7 +967,7 @@ class Application:
                 self.log.debug("Sanity check: found file %s in %s" % (f, self.installdir))
 
         if self.sanityCheckOK:
-            # check if directories exist, and whether they are non-empty     
+            # check if directories exist, and whether they are non-empty
             for d in self.sanityCheckPaths['dirs']:
                 p = os.path.join(self.installdir, d)
                 if not os.path.isdir(p) or not os.listdir(p):
@@ -1010,7 +1053,7 @@ class Application:
         """
         if not self.build_in_installdir:
             # make a unique build dir
-            ## if a tookitversion starts with a -, remove the - so prevent a -- in the path name 
+            ## if a tookitversion starts with a -, remove the - so prevent a -- in the path name
             tkversion = self.tk.version
             if tkversion.startswith('-'):
                 tkversion = tkversion[1:]
@@ -1228,7 +1271,7 @@ class Application:
     def packages(self):
         """
         After make install, run this.
-        - only if variable len(pkglist) > 0 
+        - only if variable len(pkglist) > 0
         - optionally: load module that was just created using temp module file
         - find source for packages, in pkgs
         - run extraPackages
@@ -1281,7 +1324,7 @@ class Application:
 
     def find_package_sources(self):
         """
-        Find source file for packages. 
+        Find source file for packages.
         """
         pkgSources = []
         for pkg in self.getcfg('pkglist'):
@@ -1384,7 +1427,7 @@ class Application:
         """
         Called when self.skip is True
         - use this to detect existing packages and to remove them from self.pkgs
-        - based on initial R version 
+        - based on initial R version
         """
         cmdtmpl = self.getcfg('pkgfilter')[0]
         cmdinputtmpl = self.getcfg('pkgfilter')[1]
@@ -1517,7 +1560,7 @@ def get_instance(easyblock, log, name=None):
     """
     Get instance for a particular application class (or Application)
     """
-    #TODO: create proper factory for this, as explained here 
+    #TODO: create proper factory for this, as explained here
     #http://stackoverflow.com/questions/456672/class-factory-in-python
     try:
         if not easyblock:

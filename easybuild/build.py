@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 ##
-# Copyright 2009-2012 Stijn De Weirdt, Dries Verdegem, Kenneth Hoste, Pieter De Baets, Jens Timmerman
+# Copyright 2009-2012 Stijn De Weirdt, Dries Verdegem, Kenneth Hoste, Pieter De Baets, Jens Timmerman, Toon Willems
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of the University of Ghent (http://ugent.be/hpc).
@@ -85,6 +85,7 @@ def add_build_options(parser):
     parser.add_option("-d", "--debug" , action="store_true", help="log debug messages")
     parser.add_option("-v", "--version", action="store_true", help="show version")
     parser.add_option("--regtest", action="store_true", help="enable regression test mode")
+    parser.add_option("--regtest-online", action="store_true", help="enable online regression test mode")
 
 def main():
     """
@@ -182,7 +183,7 @@ def main():
             error("Can't find path %s" % path)
 
         try:
-            packages.extend(findEasyconfigs(path, log, blocks))
+            packages.extend(findEasyconfigs(path, log, blocks, options.regtest_online))
         except IOError, err:
             log.error("Processing easyconfigs in path %s failed: %s" % (path, err))
 
@@ -247,12 +248,12 @@ def error(message, exitCode=1, optparser=None):
         optparser.print_help()
     sys.exit(exitCode)
 
-def findEasyconfigs(path, log, onlyBlocks=None):
+def findEasyconfigs(path, log, onlyBlocks=None, regtest_online=False):
     """
     Find .eb easyconfig files in path and process them
     """
     if os.path.isfile(path):
-        return processEasyconfig(path, log, onlyBlocks)
+        return processEasyconfig(path, log, onlyBlocks, regtest_online)
 
     ## Walk through the start directory, retain all files that end in .eb
     files = []
@@ -268,10 +269,10 @@ def findEasyconfigs(path, log, onlyBlocks=None):
 
     packages = []
     for filename in files:
-        packages.extend(processEasyconfig(filename, log, onlyBlocks))
+        packages.extend(processEasyconfig(filename, log, onlyBlocks, regtest_online))
     return packages
 
-def processEasyconfig(path, log, onlyBlocks=None):
+def processEasyconfig(path, log, onlyBlocks=None, regtest_online=False):
     """
     Process easyconfig, returning some information for each block
     """
@@ -285,7 +286,7 @@ def processEasyconfig(path, log, onlyBlocks=None):
 
         try:
             app = Application(debug=LOGDEBUG)
-            app.process_ebfile(spec)
+            app.process_ebfile(spec, regtest_online)
         except EasyBuildError, err:
             msg = "Failed to process easyconfig %s:\n%s" % (spec, err.msg)
             log.exception(msg)
@@ -576,7 +577,7 @@ def build(module, options, log, origEnviron, exitOnFailure=True):
     # timing info
     starttime = time.time()
     try:
-        result = app.autobuild(spec, runTests=not options.skip_tests)
+        result = app.autobuild(spec, runTests=not options.skip_tests, regtest_online=options.regtest_online)
     except EasyBuildError, err:
         lastn = 300
         errormsg = "autoBuild Failed (last %d chars): %s" % (lastn, err.msg[-lastn:])
@@ -671,7 +672,7 @@ def build(module, options, log, origEnviron, exitOnFailure=True):
     ## Check for errors
     if exitCode > 0 or filetools.errorsFoundInLog > 0:
         print_msg("\nWARNING: Build exited with exit code %d. %d possible error(s) were detected in the " \
-                  "build logs, please verify the build.\n" % (exitCode, filetools.errorsFoundInLog), 
+                  "build logs, please verify the build.\n" % (exitCode, filetools.errorsFoundInLog),
                   log)
 
     if app.postmsg:
