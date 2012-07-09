@@ -552,7 +552,7 @@ def build(module, options, log, origEnviron, exitOnFailure=True):
     name = module['module'][0]
     try:
         app_cls = get_class(easyblock, log, name=name)
-        app = app_cls(spec)
+        app = app_cls(spec, debug=options.debug)
         log.info("Obtained application instance of for %s (easyblock: %s)" % (name, easyblock))
     except EasyBuildError, err:
         error("Failed to get application instance for %s (easyblock: %s): %s" % (name, easyblock, err.msg))
@@ -565,8 +565,6 @@ def build(module, options, log, origEnviron, exitOnFailure=True):
     if options.skip:
         log.debug("Skip set to %s" % options.skip)
         app.setcfg('skip', options.skip)
-
-    app.logdebug = options.debug
 
     ## Build easyconfig
     errormsg = '(no error)'
