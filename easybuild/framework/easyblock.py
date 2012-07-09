@@ -218,12 +218,11 @@ class EasyBlock:
         if isinstance(dep, dict):
             dependency.update(dep)
         # Try and convert to list
+        elif isinstance(dep, list) or isinstance(dep, tuple):
+            dep = list(dep)
+            dependency.update(dict(zip(attr, dep)))
         else:
-            try:
-                dep = list(dep)
-                dependency.update(dict(zip(attr, dep)))
-            except TypeError:
-                self.log.error('Dependency %s from unsupported type: %s.' % (dep, type(dep)))
+            self.log.error('Dependency %s from unsupported type: %s.' % (dep, type(dep)))
 
         # Validations
         if not dependency['name']:
