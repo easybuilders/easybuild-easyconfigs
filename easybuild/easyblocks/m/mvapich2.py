@@ -34,7 +34,7 @@ class MVAPICH2(Application):
                       'debug':[False, "Enable debug build (which is slower) (default: False)"],
                       'rdma_type':["gen2", "Specify the RDMA type (gen2/udapl) (default: gen2)"]
                      }
-        Application.__init__(self, *args, extra_options=extra_vars)
+        Application.__init__(self, extra_options=extra_vars, *args)
 
     def configure(self):
 

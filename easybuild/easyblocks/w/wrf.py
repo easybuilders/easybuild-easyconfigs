@@ -36,7 +36,7 @@ class WRF(Application):
                       'rewriteopts':[True, "Replace -O3 with CFLAGS/FFLAGS (default: True)."],
                       'runtest':[True, "Build and run WRF tests (default: True)."]
                      }
-        Application.__init__(self, *args, extra_options=extra_vars)
+        Application.__init__(self, extra_options=extra_vars, *args)
 
         self.build_in_installdir = True
         self.wrfsubdir = None

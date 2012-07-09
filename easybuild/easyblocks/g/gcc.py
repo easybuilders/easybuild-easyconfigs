@@ -44,7 +44,7 @@ class GCC(Application):
                       'clooguseisl':[False, "Use ISL with CLooG or not (use PPL otherwise) (default: False)"]
                      }
 
-        Application.__init__(self, *args, extra_options=extra_vars)
+        Application.__init__(self, extra_options=extra_vars, *args)
 
         self.stagedbuild = False
 

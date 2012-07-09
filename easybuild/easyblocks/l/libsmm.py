@@ -42,7 +42,7 @@ class Libsmm(Application):
                       'dims':[dd, "Generate routines for these matrix dims (default: %s)" % dd]
                      }
 
-        Application.__init__(self, *args, extra_options=extra_vars)
+        Application.__init__(self, extra_options=extra_vars, *args)
 
     def configure(self):
         """Configure build: change to tools/build_libsmm dir"""

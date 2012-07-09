@@ -44,7 +44,7 @@ class WPS(Application):
                       'runtest':[True, "Build and run WPS tests (default: True)."],
                       'testdata':[testdata_urls, "URL to test data required to run WPS test (default: %s)." % testdata_urls]
                      }
-        Application.__init__(self, *args, extra_options=extra_vars)
+        Application.__init__(self, extra_options=extra_vars, *args)
 
         self.build_in_installdir = True
         self.comp_fam = None

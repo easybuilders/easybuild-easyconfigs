@@ -45,7 +45,7 @@ class IntelBase(Application):
                       }
         extra_vars.update(extra_options)
 
-        Application.__init__(self, args, extra_options=extra_vars)
+        Application.__init__(self, extra_options=extra_vars, *args)
 
     def clean_homedir(self):
         """Remove 'intel' directory from home directory, where stuff is cached."""

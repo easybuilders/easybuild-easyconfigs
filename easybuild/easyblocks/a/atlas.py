@@ -37,7 +37,7 @@ class ATLAS(Application):
                        'full_lapack': [False, "Build a full LAPACK library (requires netlib's LAPACK) (default: False)"],
                        'sharedlibs':[False, "Enable building of shared libs as well (default: False)"]
                      }
-        Application.__init__(self, *args, extra_options=extra_vars)
+        Application.__init__(self, extra_options=extra_vars, *args)
 
     def configure(self):
 

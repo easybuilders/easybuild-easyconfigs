@@ -52,7 +52,7 @@ class CP2K(Application):
                       'maxtasks':[3, "Maximum number of CP2K instances run at the same time during testing (default: 3)"]
                      }
 
-        Application.__init__(self, *args, extra_options=extra_vars)
+        Application.__init__(self, extra_options=extra_vars, *args)
 
         self.typearch = None
 
