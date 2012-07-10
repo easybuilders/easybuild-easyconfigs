@@ -1,6 +1,7 @@
 import os
 import re
 import sys
+import unittest
 
 from unittest import TestCase
 from easybuild.tools.build_log import getLog, EasyBuildError
@@ -74,3 +75,5 @@ class BuildTest(TestCase):
         # TODO: might want to have more control here (so we can get better error messages
         self.performStep("build", self.apps, lambda x: x.build())
 
+if __name__ == '__main__':
+    unittest.main()
