@@ -34,7 +34,6 @@ from easybuild.tools.class_dumper import dumpClasses
 from easybuild.tools.modules import Modules, searchModule
 from easybuild.tools.repository import getRepository
 from optparse import OptionParser
-import easybuild
 import easybuild.tools.config as config
 import easybuild.tools.filetools as filetools
 from easybuild.tools import systemtools
