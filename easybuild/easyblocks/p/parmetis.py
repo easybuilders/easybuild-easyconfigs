@@ -23,7 +23,6 @@ import shutil
 from distutils.version import LooseVersion
 from easybuild.framework.application import Application
 from easybuild.tools.filetools import run_cmd, mkdir
-from easybuild.tools.toolkit import get_openmp_flag
 
 class ParMETIS(Application):
     """Support for building and installing ParMETIS."""
@@ -42,7 +41,7 @@ class ParMETIS(Application):
 
             self.updatecfg('configopts', '-DMETIS_PATH=../metis -DGKLIB_PATH=../metis/GKlib')
 
-            self.updatecfg('configopts', '-DOPENMP="%s"' % get_openmp_flag(self.log))
+            self.updatecfg('configopts', '-DOPENMP="%s"' % self.tk.get_openmp_flag())
 
             if self.tk.opts['usempi']:
                 self.updatecfg('configopts', '-DCMAKE_C_COMPILER="$MPICC"')
