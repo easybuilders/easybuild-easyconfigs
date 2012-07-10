@@ -246,8 +246,11 @@ class EasyBlock:
         will run rpm -q $dep, to see if dependency is available
         """
         # TODO: extend this with more cross platform functionality
-        cmd = "rpm -q %s" % dep
-        return run_cmd(cmd, simple=True)
+        try:
+            cmd = "rpm -q %s" % dep
+            return run_cmd(cmd, simple=True)
+        except:
+            return False
 
 
     def _parse_dependency(self, dep):
