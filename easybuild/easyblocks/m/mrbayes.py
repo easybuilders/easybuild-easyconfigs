@@ -53,7 +53,7 @@ class MrBayes(Application):
             else:
                 self.log.error("BEAGLE module not loaded?")
 
-            if self.tk.opts['usempi']:
+            if self.toolkit().opts['usempi']:
                 self.updatecfg('configopts', '--enable-mpi')
 
             # configure

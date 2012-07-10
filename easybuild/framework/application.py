@@ -793,6 +793,11 @@ class Application:
         if self.getcfg('runtest'):
             cmd = "make %s" % (self.getcfg('runtest'))
             run_cmd(cmd, log_all=True, simple=True)
+    def toolkit(self):
+        """
+        The toolkit used to build this Application
+        """
+        return self.cfg.toolkit()
 
     def make_install(self):
         """
@@ -1380,7 +1385,6 @@ class ApplicationPackage:
         self.master = mself
         self.log = self.master.log
         self.cfg = self.master.cfg
-        self.tk = self.master.tk
         self.pkg = pkg
         self.pkginstalldeps = pkginstalldeps
 
@@ -1409,3 +1413,9 @@ class ApplicationPackage:
         Stuff to do after installing a package.
         """
         pass
+
+    def toolkit(self):
+        """
+        Toolkit used to build this package
+        """
+        return self.master.toolkit()

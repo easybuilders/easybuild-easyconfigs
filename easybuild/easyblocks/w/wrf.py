@@ -95,7 +95,7 @@ class WRF(Application):
 
         # determine build type option to look for
         build_type_option = None
-        self.comp_fam = self.tk.toolkit_comp_family()
+        self.comp_fam = self.toolkit().toolkit_comp_family()
         if self.comp_fam == "Intel":
             build_type_option = "Linux x86_64 i486 i586 i686, ifort compiler with icc"
 
@@ -227,8 +227,8 @@ class WRF(Application):
 
             ## stack limit needs to be set to unlimited for WRF to work well
             if self.getcfg('buildtype') in self.parallel_build_types:
-                test_cmd = "ulimit -s unlimited && %s && %s" % (self.tk.mpi_cmd_for("./ideal.exe", 1),
-                                                                self.tk.mpi_cmd_for("./wrf.exe", n))
+                test_cmd = "ulimit -s unlimited && %s && %s" % (self.toolkit().mpi_cmd_for("./ideal.exe", 1),
+                                                                self.toolkit().mpi_cmd_for("./wrf.exe", n))
             else:
                 test_cmd = "ulimit -s unlimited && ./ideal.exe && ./wrf.exe" % n
 

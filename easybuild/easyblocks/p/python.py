@@ -190,7 +190,7 @@ class FortranPythonPackage(DefaultPythonPackage):
     """Extends DefaultPythonPackage to add a Fortran compiler to the make call"""
 
     def make(self):
-        comp_fam = self.tk.toolkit_comp_family()
+        comp_fam = self.toolkit().toolkit_comp_family()
 
         if comp_fam == "Intel":
             cmd = "python setup.py build --compiler=intel --fcompiler=intelem"

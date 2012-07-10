@@ -90,10 +90,10 @@ class CP2K(Application):
         # set compilers options according to toolkit config
         ## full debug: -g -traceback -check all -fp-stack-check
         ## -g links to mpi debug libs
-        if self.tk.opts['debug']:
+        if self.toolkit().opts['debug']:
             self.debug = '-g'
             self.log.info("Debug build")
-        if self.tk.opts['pic']:
+        if self.toolkit().opts['pic']:
             self.fpic = "-fPIC"
             self.log.info("Using fPIC")
 
@@ -116,13 +116,13 @@ class CP2K(Application):
             self.modincpath = self.prepmodinc()
 
         # set typearch
-        self.typearch = "Linux-x86-64-%s" % self.tk.name
+        self.typearch = "Linux-x86-64-%s" % self.toolkit().name
 
         # extra make instructions
         self.make_instructions = "graphcon.o: graphcon.F\n\t$(FC) -c $(FCFLAGS2) $<\n"
 
         # compiler toolkit specific configuration
-        comp_fam = self.tk.toolkit_comp_family()
+        comp_fam = self.toolkit().toolkit_comp_family()
         if comp_fam == "Intel":
             options = self.configureIntelBased()
         elif comp_fam == "GCC":
@@ -221,7 +221,7 @@ class CP2K(Application):
         ## -automatic is default: -noautomatic -auto-scalar
         ## some mem-bandwidth optimisation
         if self.getcfg('type') == 'psmp':
-            self.openmp = self.tk.get_openmp_flag()
+            self.openmp = self.toolkit().get_openmp_flag()
 
         # determine which opt flags to use
         if self.getcfg('typeopt'):

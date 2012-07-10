@@ -102,6 +102,9 @@ class EasyBlock:
         self.config.update(extra_options)
         self.log = getLog("EasyBlock")
 
+        # store toolkit
+        self._tk = None
+
         if not os.path.isfile(path):
             self.log.error("EasyBlock __init__ expected a valid path")
 
@@ -208,12 +211,16 @@ class EasyBlock:
         """
         returns the Toolkit used
         """
+        if self._tk:
+            return self._tk
+
         tk = self['toolkit']
         tk = Toolkit(tk['name'], tk['version'])
         if self['toolkitopts']:
             tk.setOptions(self['toolkitopts'])
 
-        return tk
+        self._tk = tk
+        return self._tk
 
     def installversion(self):
         """

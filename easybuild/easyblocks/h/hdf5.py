@@ -41,7 +41,7 @@ class HDF5(Application):
         self.updatecfg('configopts', "--enable-cxx --enable-fortran %s" % fcomp)
 
         # MPI and C++ support enabled requires --enable-unsupported, because this is untested by HDF5
-        if self.tk.opts['usempi']:
+        if self.toolkit().opts['usempi']:
             self.updatecfg('configopts', "--enable-unsupported")
 
         # make options
@@ -58,7 +58,7 @@ class HDF5(Application):
         """
         if not self.getcfg('sanityCheckPaths'):
 
-            if self.tk.opts['usempi']:
+            if self.toolkit().opts['usempi']:
                 extra_binaries = ["bin/%s" % x for x in ["h5perf", "h5pcc", "h5pfc", "ph5diff"]]
             else:
                 extra_binaries = ["bin/%s" % x for x in ["h5cc", "h5fc"]]

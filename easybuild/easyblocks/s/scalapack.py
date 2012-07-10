@@ -95,9 +95,9 @@ class ScaLAPACK(Application):
 
             # set compilers and options
             noopt = ''
-            if self.tk.opts['noopt']:
+            if self.toolkit().opts['noopt']:
                 noopt += " -O0"
-            if self.tk.opts['pic']:
+            if self.toolkit().opts['pic']:
                 noopt += " -fPIC"
             extra_makeopts += 'F77="%(f77)s" CC="%(cc)s" NOOPT="%(noopt)s" CCFLAGS="-O3" ' % {
                                                                                               'f77':mpif77,

@@ -30,7 +30,7 @@ class NetCDF(Application):
 
         self.updatecfg('configopts', "--enable-shared")
 
-        if self.tk.opts['pic']:
+        if self.toolkit().opts['pic']:
             self.updatecfg('configopts', '--with-pic')
 
         self.updatecfg('configopts', 'FCFLAGS="%s" CC="%s" FC="%s"' % (os.getenv('FFLAGS'),
@@ -39,7 +39,7 @@ class NetCDF(Application):
                                                                        ))
 
         # add -DgFortran to CPPFLAGS when building with GCC
-        if self.tk.toolkit_comp_family() == "GCC":
+        if self.toolkit().toolkit_comp_family() == "GCC":
             os.environ['CPPFLAGS'] = "%s -DgFortran" % os.getenv('CPPFLAGS')
 
         Application.configure(self)

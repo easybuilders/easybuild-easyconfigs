@@ -118,7 +118,7 @@ class WPS(Application):
         # configure
 
         # determine build type option to look for
-        self.comp_fam = self.tk.toolkit_comp_family()
+        self.comp_fam = self.toolkit().toolkit_comp_family()
         build_type_option = None
 
         if LooseVersion(self.version()) >= LooseVersion("3.4"):

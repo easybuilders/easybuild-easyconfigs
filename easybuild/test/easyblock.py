@@ -75,8 +75,6 @@ stop = 'notvalid'
 
         # dummy toolkit, installversion == version
         self.assertEqual(eb.installversion(), "3.14")
-        eb['toolkit'] = {"name": "GCC", "version": "4.6.3"}
-        self.assertEqual(eb.installversion(), "3.14-GCC-4.6.3")
 
         os.chmod(self.eb_file, 0000)
         self.assertErrorRegex(EasyBuildError, "Unexpected IOError", EasyBlock, self.eb_file)

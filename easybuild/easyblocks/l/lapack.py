@@ -96,7 +96,7 @@ class LAPACK(Application):
 
         # set optimization flags
         fpic = ''
-        if self.tk.opts['pic']:
+        if self.toolkit().opts['pic']:
             fpic = '-fPIC'
         self.updatecfg('makeopts', 'OPTS="$FFLAGS -m64" NOOPT="%s -m64 -O0"' % fpic)
 

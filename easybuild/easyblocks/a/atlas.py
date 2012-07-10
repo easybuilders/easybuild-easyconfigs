@@ -65,7 +65,7 @@ class ATLAS(Application):
                                " required to build ATLAS with a full LAPACK library.")
 
         # enable building of shared libraries (requires -fPIC)
-        if self.getcfg('sharedlibs') or self.tk.opts['pic']:
+        if self.getcfg('sharedlibs') or self.toolkit().opts['pic']:
             self.log.debug("Enabling -fPIC because we're building shared ATLAS libs, or just because.")
             self.updatecfg('configopts', '-Fa alg -fPIC')
 

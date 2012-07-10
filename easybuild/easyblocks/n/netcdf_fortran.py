@@ -27,13 +27,13 @@ class NetCDF_Fortran(Application):
     def configure(self):
         """Configure build: set config options and configure"""
 
-        if self.tk.opts['pic']:
+        if self.toolkit().opts['pic']:
             self.updatecfg('configopts', "--with-pic")
 
         self.updatecfg('configopts', 'FCFLAGS="%s" FC="%s"' % (os.getenv('FFLAGS'), os.getenv('F90')))
 
         # add -DgFortran to CPPFLAGS when building with GCC
-        if self.tk.toolkit_comp_family() == "GCC":
+        if self.toolkit().toolkit_comp_family() == "GCC":
             os.environ['CPPFLAGS'] = "%s -DgFortran" % os.getenv('CPPFLAGS')
 
         Application.configure(self)
