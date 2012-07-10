@@ -55,7 +55,7 @@ class BuildTest(TestCase):
                 # Remove this object from the array
                 # we cannot continue building it
                 arr.remove(obj)
-                print "Encountered error: %s (ErrorClass: %s)" % (err, fase)
+                print "%s encountered error: %s (ErrorClass: %s)" % (obj, err, fase)
 
         print "%s errors during %s" % (errors, fase)
 
