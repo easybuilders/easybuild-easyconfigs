@@ -21,7 +21,6 @@
 import os
 from easybuild.easyblocks.c.cmakepythonpackage import CMakePythonPackage
 from easybuild.tools.modules import get_software_root
-from easybuild.tools.toolkit import get_openmp_flag
 
 class DOLFIN(CMakePythonPackage):
     """Extension of the CMakePythonPackage for Dolfin.
@@ -96,7 +95,7 @@ class DOLFIN(CMakePythonPackage):
         self.updatecfg('configopts', ' -DCGAL_DIR:PATH="$SOFTROOTCGAL"')
 
         # set correct openmp options
-        openmp = get_openmp_flag(self.log)
+        openmp = self.tk.get_openmp_flag()
         self.updatecfg('configopts', ' -DOpenMP_CXX_FLAGS="%s"' % openmp)
         self.updatecfg('configopts', ' -DOpenMP_C_FLAGS="%s"' % openmp)
 
