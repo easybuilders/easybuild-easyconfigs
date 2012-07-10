@@ -28,5 +28,31 @@ class FileToolsTest(TestCase):
         cmd = ft.extractCmd("/tmp/test.tar.bz2")
         self.assertEqual("tar xfj /tmp/test.tar.bz2", cmd)
 
+
+        (out, ec) = ft.run_cmd("echo hello")
+        self.assertEqual(out, "hello\n")
+        # no reason echo hello could fail
+        self.assertEqual(ec, 0)
+
+        (out, ec) = ft.run_cmd_qa("echo question", {"question":"answer"})
+        self.assertEqual(out, "question\n")
+        # no reason echo hello could fail
+        self.assertEqual(ec, 0)
+
+        self.assertEqual(True, ft.run_cmd("echo hello", simple=True))
+        self.assertEqual(False, ft.run_cmd("exit 1", simple=True, log_all=False,log_ok=False))
+
+        name = ft.convertName("test+test-test")
+        self.assertEqual(name, "testplustestmintest")
+        name = ft.convertName("test+test-test", True)
+        self.assertEqual(name, "TESTPLUSTESTMINTEST")
+
+
+        errors = ft.parselogForError("error failed", True)
+        self.assertEqual(len(errors), 1)
+
+        # I expect tests to be run from the base easybuild directory
+        self.assertEqual(os.getcwd(), ft.findBaseDir())
+
 def suite():
     return TestSuite([FileToolsTest()])
