@@ -69,6 +69,8 @@ class BuildTest(TestCase):
 
         print "Continuing building other packages"
         # take manual control over the building
-        self.performStep("preparation", self.apps, Application.prepare_build)
-        self.performStep("pre-build verification", self.apps, Application.ready2build)
+        self.performStep("preparation", self.apps, lambda x: x.prepare_build())
+        self.performStep("pre-build verification", self.apps, lambda x: x.ready2build())
+        # TODO: might want to have more control here (so we can get better error messages
+        self.performStep("build", self.apps, lambda x: x.build())
 
