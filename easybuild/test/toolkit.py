@@ -28,9 +28,13 @@ class MockModule(modules.Modules):
     def dependencies_for(*args):
         return []
 
+    def get_software_root(*args):
+        return "tmp"
+
 
 
 modules.Modules = MockModule
+modules.get_software_root = MockModule().get_software_root
 
 from easybuild.tools.toolkit import Toolkit
 
@@ -82,7 +86,7 @@ class ToolkitTest(TestCase):
         os.environ["SOFTVERSIONICC"] = "2011"
         os.environ["SOFTROOTICC"] = "/tmp"
 
-        self.tk_32bit.prepare(onlymod=True)
+        self.tk_32bit.prepare()
 
         self.assertEqual(MockModule.modules, [(self.tk_32bit.name, self.tk_32bit.version), dep])
         MockModule.modules = []
