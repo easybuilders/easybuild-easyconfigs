@@ -1,6 +1,6 @@
 import os
 
-from unittest import TestCase
+from unittest import TestCase, TestSuite
 from easybuild.tools.build_log import EasyBuildError
 import easybuild.tools.modules as modules
 
@@ -94,3 +94,5 @@ class ToolkitTest(TestCase):
     def tearDown(self):
         modules.Modules = OrigModules
 
+def suite():
+    return TestSuite([ToolkitTest()])

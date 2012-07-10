@@ -1,7 +1,7 @@
 import os
 import re
 
-from unittest import TestCase
+from unittest import TestCase, TestSuite
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.systemtools import get_shared_lib_ext
@@ -207,3 +207,6 @@ dependencis = [('first', '1.1'), {'name': 'second', 'version': '2.2'}]
 
 
 
+def suite():
+    return TestSuite([TestDependency(), TestEmpty(), TestExtraOptions(), TestMandatory(), TestSharedLibExt(),
+        TestSuggestions(), TestValidation()])

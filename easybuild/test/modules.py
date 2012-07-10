@@ -1,6 +1,6 @@
 import os
 
-from unittest import TestCase
+from unittest import TestCase, TestSuite
 from easybuild.tools.build_log import EasyBuildError, initLogger
 import easybuild.tools.modules as modules
 
@@ -17,4 +17,8 @@ class ModulesTest(TestCase):
 
             tmp = {"name": m[0], "version": m[1]}
             assert(tmp in testmods.loaded_modules())
+
+def suite():
+    return TestSuite([ModulesTest()])
+
 

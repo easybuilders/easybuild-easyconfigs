@@ -1,7 +1,7 @@
 import os
 import re
 
-from unittest import TestCase
+from unittest import TestCase, TestSuite
 from easybuild.tools.asyncprocess import Popen
 import easybuild.tools.asyncprocess as p
 
@@ -20,3 +20,7 @@ class AsyncProcessTest(TestCase):
         p.send_all(self.shell, "exit\n")
         self.assertEqual("", p.recv_some(self.shell, e=0))
         self.assertRaises(Exception, p.recv_some, self.shell)
+
+def suite():
+    return TestSuite([AsyncProcessTest()])
+

@@ -1,7 +1,7 @@
 import os
 import re
 
-from unittest import TestCase
+from unittest import TestCase, TestSuite
 from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.module_generator import ModuleGenerator
 from easybuild.framework.application import Application
@@ -58,3 +58,5 @@ prepend-path	key		$root/path2
         # test setEnvironment
         self.assertEqual("setenv\tkey\t\tvalue\n", self.modgen.setEnvironment("key", "value"))
 
+def suite():
+    return TestSuite([ModuleGeneratorTest()])
