@@ -103,7 +103,7 @@ class Toolkit:
             matches = Modules().available(dependency['name'], "%s%s" % (toolkit, suffix))
             # Find the most recent (or default) one
             if len(matches) > 0:
-                return matches[-1]
+                return matches[-1][-1]
             else:
                 log.error('No toolkit version for dependency name %s (suffix %s) found'
                            % (dependency['name'], "%s%s" % (toolkit, suffix)))
@@ -310,7 +310,7 @@ class Toolkit:
         if os.getenv('SOFTROOTGCC'):
             compiler = 'gfortran'
         elif os.getenv('SOFTROOTIFORT'):
-            compiler = 'ifort' 
+            compiler = 'ifort'
         else:
             log.error("Don't know which compiler-specific subdir for ACML to use.")
         self.vars['LDFLAGS'] += " -L%(acml)s/%(comp)s64/lib/ " % {
@@ -318,7 +318,7 @@ class Toolkit:
                                                 'comp':compiler,
                                                 'acml':os.environ['SOFTROOTACML']
                }
-        self.vars['LIBBLAS'] = " -lacml_mv -lacml " #-lpthread" 
+        self.vars['LIBBLAS'] = " -lacml_mv -lacml " #-lpthread"
 
         self.vars['LIBBLAS_MT'] = self.vars['LIBBLAS']
 
