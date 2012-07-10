@@ -1,9 +1,9 @@
 ##
-# Copyright 2005 Josiah Carlson 
+# Copyright 2005 Josiah Carlson
 # The Asynchronous Python Subprocess recipe was originally created by Josiah Carlson.
 # and released under the GPL v2 on March 14, 2012
 #
-# http://code.activestate.com/recipes/440554/ 
+# http://code.activestate.com/recipes/440554/
 #
 # Copyright 2009-2012 Stijn De Weirdt, Dries Verdegem, Kenneth Hoste, Pieter De Baets, Jens Timmerman
 #
@@ -25,12 +25,12 @@
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
 
-"""Module to allow Asynchronous subprocess use on Windows and Posix platforms 
+"""Module to allow Asynchronous subprocess use on Windows and Posix platforms
 
 The 'subprocess' module in Python 2.4 has made creating and accessing subprocess
 streams in Python relatively convenient for all supported platforms,
-but what if you want to interact with the started subprocess? 
-That is, what if you want to send a command, read the response, 
+but what if you want to interact with the started subprocess?
+That is, what if you want to send a command, read the response,
 and send a new command based on that response?
 
 Now there is a solution.
@@ -38,7 +38,7 @@ The included subprocess.Popen subclass adds three new commonly used methods:
  recv(maxsize=None)
  recv_err(maxsize=None)
  and send(input)
- 
+
 along with a utility method:
  send_recv(input='', maxsize=None).
 
