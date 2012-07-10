@@ -76,7 +76,7 @@ def findBaseDir():
     """
     Try to locate a possible new base directory
     - this is typically a single subdir, e.g. from untarring a tarball
-    - when unpacking multiple tarballs in the same directory, 
+    - when unpacking multiple tarballs in the same directory,
       expect only the first one to give the correct path
     """
     def getLocalDirsPurged():
@@ -108,7 +108,7 @@ def findBaseDir():
 
 def extractCmd(fn, overwrite=False):
     """
-    Determines the file type of file fn, returns extract cmd 
+    Determines the file type of file fn, returns extract cmd
     - based on file suffix
     - better to use Python magic?
     """
@@ -127,7 +127,7 @@ def extractCmd(fn, overwrite=False):
     if ff[-1] == 'bz2':
         ftype = 'bunzip2 %s'
         if ff[-2] == 'tar':
-            ftype = 'tar xjf %s'
+            ftype = 'tar xfj %s'
     if ff[-1] == 'tbz':
         ftype = 'tar xfj %s'
 
@@ -290,7 +290,7 @@ def run_cmd(cmd, log_ok=True, log_all=False, simple=False, inp=None, regexp=True
     ec = p.poll()
     stdouterr = ''
     while ec < 0:
-        # need to read from time to time. 
+        # need to read from time to time.
         # - otherwise the stdout/stderr buffer gets filled and it all stops working
         output = p.stdout.read(readSize)
         if runLog:
@@ -333,7 +333,7 @@ def run_cmd(cmd, log_ok=True, log_all=False, simple=False, inp=None, regexp=True
 def run_cmd_qa(cmd, qa, no_qa=None, log_ok=True, log_all=False, simple=False, regexp=True, std_qa=None):
     """
     Executes a command cmd
-    - looks for questions and tries to answer 
+    - looks for questions and tries to answer
     - returns exitcode and stdout+stderr (mixed)
     - no input though stdin
     """
@@ -354,7 +354,7 @@ def run_cmd_qa(cmd, qa, no_qa=None, log_ok=True, log_all=False, simple=False, re
     # Part 1: process the QandA dictionary
     # given initial set of Q and A (in dict), return dict of reg. exp. and A
     #
-    # make regular expression that matches the string with 
+    # make regular expression that matches the string with
     # - replace whitespace
     # - replace newline
 
@@ -428,7 +428,7 @@ def run_cmd_qa(cmd, qa, no_qa=None, log_ok=True, log_all=False, simple=False, re
     hitCount = 0
 
     while ec < 0:
-        # need to read from time to time. 
+        # need to read from time to time.
         # - otherwise the stdout/stderr buffer gets filled and it all stops working
         try:
             tmpOut = recv_some(p)
@@ -574,7 +574,7 @@ def parselogForError(txt, regExp=None, stdout=True, msg=None):
     txt is multiline string.
     - in memory
     regExp is a one-line regular expression
-    - default 
+    - default
     """
     global errorsFoundInLog
 
