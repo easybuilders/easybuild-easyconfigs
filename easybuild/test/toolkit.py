@@ -4,9 +4,9 @@ from unittest import TestCase
 from easybuild.tools.build_log import EasyBuildError
 import easybuild.tools.modules as modules
 
-
-
 # Change the Modules class so i have complete control over its behaviour
+# NOTE: this heavily relies on the correct order of running tests
+# This one should be run first
 OrigModules = modules.Modules
 
 class MockModule(modules.Modules):
@@ -91,4 +91,6 @@ class ToolkitTest(TestCase):
         self.assertEqual(MockModule.modules, [(self.tk_32bit.name, self.tk_32bit.version), dep])
         MockModule.modules = []
 
+    def tearDown(self):
+        modules.Modules = OrigModules
 
