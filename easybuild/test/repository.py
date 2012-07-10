@@ -22,6 +22,7 @@ class RepositoryTest(TestCase):
 
     def tearDown(self):
         del config.variables['repositoryPath']
+        shutil.rmtree(self.path, True)
         os.chdir(self.cwd)
 
 def suite():
