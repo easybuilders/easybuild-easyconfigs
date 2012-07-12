@@ -1,5 +1,5 @@
 ##
-# Copyright 2009-2012 Stijn Deweirdt, Dries Verdegem, Kenneth Hoste, Pieter De Baets, Jens Timmerman
+# Copyright 2009-2012 Stijn De Weirdt, Dries Verdegem, Kenneth Hoste, Pieter De Baets, Jens Timmerman
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of the University of Ghent (http://ugent.be/hpc).
@@ -390,6 +390,7 @@ def run_cmd_qa(cmd, qa, no_qa=None, log_ok=True, log_all=False, simple=False, re
             if not answer.endswith('\n'):
                 answer += '\n'
             newstdQA[regQ] = answer
+            log.debug("newstdQA[%s]: %s" % (regQ.pattern, answer))
 
     new_no_qa = []
     if no_qa:
@@ -404,8 +405,8 @@ def run_cmd_qa(cmd, qa, no_qa=None, log_ok=True, log_all=False, simple=False, re
     ## Log command output
     if log_all:
         try:
-            runLog = tempfile.NamedTemporaryFile(suffix='.log', prefix='easybuild-qanda-')
-            log.debug('runqanda: Command output will be logged to %s' % runLog.name)
+            runLog = tempfile.NamedTemporaryFile(suffix='.log', prefix='easybuild-cmdqa-')
+            log.debug('run_cmd_qa: Command output will be logged to %s' % runLog.name)
             runLog.write(cmd + "\n\n")
         except IOError, err:
             log.error("Opening log file for Q&A failed: %s" % err)
@@ -434,22 +435,27 @@ def run_cmd_qa(cmd, qa, no_qa=None, log_ok=True, log_all=False, simple=False, re
             if runLog:
                 runLog.write(tmpOut)
             stdoutErr += tmpOut
-        except IOError, err:
+        # recv_some may throw Exception
+        except (IOError, Exception), err:
             log.debug("runQandA cmd %s: read failed: %s" % (cmd, err))
             tmpOut = None
 
         hit = False
         for q, a in newQA.items():
-            if tmpOut and q.search(stdoutErr):
-                log.debug("runQandA answer %s question %s out %s" % (a, q.pattern, stdoutErr[-50:]))
-                send_all(p, a)
+            res = q.search(stdoutErr)
+            if tmpOut and res:
+                fa = a % res.groupdict()
+                log.debug("runQandA answer %s question %s out %s" % (fa, q.pattern, stdoutErr[-50:]))
+                send_all(p, fa)
                 hit = True
                 break
         if not hit:
             for q, a in newstdQA.items():
-                if tmpOut and q.search(stdoutErr):
-                    log.debug("runQandA answer %s standard question %s out %s" % (a, q.pattern, stdoutErr[-50:]))
-                    send_all(p, a)
+                res = q.search(stdoutErr)
+                if tmpOut and res:
+                    fa = a % res.groupdict()
+                    log.debug("runQandA answer %s standard question %s out %s" % (fa, q.pattern, stdoutErr[-50:]))
+                    send_all(p, fa)
                     hit = True
                     break
             if not hit:
@@ -486,10 +492,11 @@ def run_cmd_qa(cmd, qa, no_qa=None, log_ok=True, log_all=False, simple=False, re
 
     # Process stopped. Read all remaining data
     try:
-        readTxt = p.stdout.read()
-        stdoutErr += readTxt
-        if runLog:
-            runLog.write(readTxt)
+        if p.stdout:
+            readTxt = p.stdout.read()
+            stdoutErr += readTxt
+            if runLog:
+                runLog.write(readTxt)
     except IOError, err:
         log.debug("runqanda cmd %s: remaining data read failed: %s" % (cmd, err))
 
@@ -619,3 +626,25 @@ def recursiveChmod(path, permissionBits, add=True, onlyFiles=False):
                     os.chmod(absEl, perms & ~permissionBits)
             except OSError, err:
                 log.debug("Failed to chmod %s (but ignoring it): %s" % (path, err))
+
+def patch_perl_script_autoflush(path):
+    # patch Perl script to enable autoflush,
+    # so that e.g. run_cmd_qa receives all output to answer questions
+
+    try:
+        f = open(path, "r")
+        txt = f.readlines()
+        f.close()
+
+        # force autoflush for Perl print buffer
+        extra=["\nuse IO::Handle qw();\n",
+               "STDOUT->autoflush(1);\n\n"]
+
+        newtxt = ''.join([txt[0]] + extra + txt[1:])
+
+        f = open(path, "w")
+        f.write(newtxt)
+        f.close()
+
+    except IOError, err:
+        log.error("Failed to patch Perl configure script: %s" % err)
