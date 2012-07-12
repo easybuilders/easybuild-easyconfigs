@@ -31,7 +31,7 @@ log = getLog('easybuild_config')
 
 # this should result in a MODULEPATH=($HOME/.local/easybuild|$EASYBUILDPREFIX)/install/modules/all
 buildDir = 'build'
-installDir = 'install'
+installDir = ''
 sourceDir = 'sources'
 
 if os.getenv('EASYBUILDPREFIX'):
