@@ -73,7 +73,7 @@ class DefaultPythonPackage(ApplicationPackage):
         self.sitecfgincdir = None
         self.testinstall = False
         self.builddir = mself.builddir
-        self.cfg = mself.cfg
+        self.mself = mself
         self.installopts = ''
         self.runtest = None
         self.pkgdir = "%s/%s" % (self.builddir, self.name)
@@ -176,6 +176,9 @@ class DefaultPythonPackage(ApplicationPackage):
         self.test()
         self.make_install()
 
+    def getcfg(self, *args):
+        return self.mself.getcfg(*args)
+
 class Nose(DefaultPythonPackage):
     """nose package"""
     def __init__(self, mself, pkg, pkginstalldeps):
@@ -219,7 +222,7 @@ class Numpy(FortranPythonPackage):
     def __init__(self, mself, pkg, pkginstalldeps):
         FortranPythonPackage.__init__(self, mself, pkg, pkginstalldeps)
 
-        self.pkgcfgs = self.getcfg('pkgcfgs')
+        self.pkgcfgs = mself.getcfg('pkgcfgs')
         if self.pkgcfgs.has_key('numpysitecfglibsubdirs'):
             self.numpysitecfglibsubdirs = self.pkgcfgs['numpysitecfglibsubdirs']
         else:
