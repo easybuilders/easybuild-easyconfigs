@@ -40,7 +40,7 @@ class Binary(Application):
 
     def make_install(self):
         """Copy the unpacked source to the install directory"""
-        shutil.copytree(os.path.join(self.builddir, '%s-%s' % (self.name().lower(), self.version())), self.installdir, symlinks=True)
+        shutil.copytree(self.getcfg('startfrom'), self.installdir, symlinks=True)
 
     def make_module_extra(self):
         """
