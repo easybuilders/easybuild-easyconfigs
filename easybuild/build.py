@@ -32,7 +32,7 @@ from easybuild.tools.build_log import EasyBuildError, initLogger, \
     removeLogHandler, print_msg
 from easybuild.tools.class_dumper import dumpClasses
 from easybuild.tools.modules import Modules, searchModule
-from easybuild.tools.repository import getRepository
+from easybuild.tools.config import getRepository
 from optparse import OptionParser
 import easybuild.tools.config as config
 import easybuild.tools.filetools as filetools
@@ -224,6 +224,7 @@ def main():
 
     print_msg("Build succeeded for %s out of %s" % (correct_built_cnt, all_built_cnt), log)
 
+    getRepository().cleanup()
     ## Cleanup tmp log file (all is well, all modules have their own log file)
     try:
         removeLogHandler(hn)
@@ -605,7 +606,7 @@ def build(module, options, log, origEnviron, exitOnFailure=True):
         except OSError, err:
             log.error("Failed to determine install size: %s" % err)
 
-        currentbuildstats = bool(app.getcfg('buildstats'))
+        currentbuildstats = app.getcfg('buildstats')
         buildstats = {'build_time' : buildtime,
                  'platform' : platform.platform(),
                  'core_count' : systemtools.get_core_count(),
