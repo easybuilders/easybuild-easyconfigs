@@ -125,10 +125,6 @@ class FileRepository(Repository):
         if not os.path.isdir(full_path):
             os.makedirs(full_path)
 
-        # create array for previous if they are not given
-        if not previous:
-            previous = []
-
         ## destination
         dest = os.path.join(full_path, "%s.eb" % (version))
 
@@ -140,10 +136,13 @@ class FileRepository(Repository):
             for line in open(cfg):
                 dest_file.write(line)
 
-            statstemplate = "\n#Build statistics\nbuildstats=%s\n"
-            previous.append(stats)
-            dest_file.write(statstemplate % previous)
+            # append a line to the eb file so we don't have git merge conflicts
+            if not previous:
+                statstemplate = "\n#Build statistics\nbuildstats=[%s]t\n"
+            else:
+                statstemplate = "\nbuildstats.append(%s)\n"
 
+            dest_file.write(statstemplate % stats)
             dest_file.close()
 
         except IOError, err:
