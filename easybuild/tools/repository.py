@@ -151,9 +151,6 @@ class FileRepository(Repository):
 
         return dest
 
-    def __del__(self):
-        print os.path.islink
-
 
 class GitRepository(FileRepository):
     """
@@ -233,14 +230,11 @@ class GitRepository(FileRepository):
         except GitCommandError, err:
             log.warning("Push from working copy %s to remote %s (msg: %s) failed: %s" % (self.wc, self.repo, msg, err))
 
-    def __del__(self):
+    def cleanup(self):
         """
         Clean up git working copy.
         """
         try:
-            print sys.path
-            print os.path
-            print os.path.islink
             shutil.rmtree(self.wc)
         except IOError, err:
             log.exception("Can't remove working copy %s: %s" % (self.wc, err))
