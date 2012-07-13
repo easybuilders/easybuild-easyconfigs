@@ -116,10 +116,17 @@ class FileRepository(Repository):
             os.makedirs(full_path)
 
     def createWorkingCopy(self):
+        """ set the working directory to the repo directory """
         # for sake of convenience
         self.wc = self.repo
 
     def addEasyconfig(self, cfg, name, version, stats, previous):
+        """
+        Add the eb-file for for package name and version to the repository.
+        stats should be a dict containing stats.
+        if previous is true -> append the stats to the file
+        This will return the path to the created file (for use in subclasses)
+        """
         # create directory for eb file
         full_path = os.path.join(self.wc, self.subdir, name)
         if not os.path.isdir(full_path):
@@ -156,6 +163,10 @@ class GitRepository(FileRepository):
     Class representing a git repository.
     """
     def __init__(self, *args):
+        """
+        Initialize git client to None (will be set later)
+        All the real logic is in the setupRepo and createWorkingCopy methods
+        """
         self.client = None
         FileRepository.__init__(self, *args)
 
@@ -244,6 +255,9 @@ class SvnRepository(FileRepository):
     class representing an svn repository
     """
     def __init__(self, *args):
+        """
+        Set self.client to None. Real logic is in setupRepo and createWorkingCopy
+        """
         self.client = None
         FileRepository.__init__(self, *args)
 
