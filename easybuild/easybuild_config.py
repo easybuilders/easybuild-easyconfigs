@@ -29,17 +29,19 @@ log = getLog('easybuild_config')
 
 # buildPath possibly overridden by EASYBUILDBUILDPATH
 # installPath possibly overridden by EASYBUILDINSTALLPATH
-buildDir = 'easybuild_build'
-installDir = 'easybuild'
-sourceDir = "easybuild_sources"
+
+# this should result in a MODULEPATH=($HOME/.local/easybuild|$EASYBUILDPREFIX)/install/modules/all
+buildDir = 'build'
+installDir = ''
+sourceDir = 'sources'
 
 if os.getenv('EASYBUILDPREFIX'):
     prefix = os.getenv('EASYBUILDPREFIX')
 else:
-    prefix = os.getenv('HOME')
+    prefix = os.path.join(os.getenv('HOME'), ".local", "easybuild")
 
 if not prefix:
-    prefix = "/tmp"
+    prefix = "/tmp/easybuild"
 
 buildPath = os.path.join(prefix, buildDir)
 installPath = os.path.join(prefix, installDir)
@@ -60,7 +62,7 @@ sourcePath = os.path.join(prefix, sourceDir)
 ##           subdir = "/path/inside/repo"
 ##           repository = SvnRepository(repositoryPath)
 ##           this requires pysvn
-repositoryPath = os.path.join(prefix, 'easybuild_ebfiles_repo')
+repositoryPath = os.path.join(prefix, 'ebfiles_repo')
 repository = FileRepository(repositoryPath)
 
 # log format: (dir, filename template)
