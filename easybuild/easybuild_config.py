@@ -68,4 +68,4 @@ repository = FileRepository(repositoryPath)
 logFormat = ("easybuildlog", "easybuild-%(name)s-%(version)s-%(date)s.%(time)s.log")
 
 # general cleanliness
-# del os, getLog, config, log, prefix, buildDir, installDir, sourceDir
+del os, getLog, config, log, prefix, buildDir, installDir, sourceDir
