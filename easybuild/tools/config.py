@@ -136,7 +136,7 @@ def installPath(typ=None):
 
 def getRepository():
     """
-    Return the repository type (e.g. fs, git, svn)
+    Return the repository (git, svn or file)
     """
     return variables['repository']
 
