@@ -280,12 +280,6 @@ class SvnRepository(FileRepository):
         """
         self.wc = tempfile.mkdtemp(prefix='svn-wc-')
 
-        # Update wc (or part of it)
-        try:
-            os.chdir(self.wc)
-        except OSError, err:
-            log.exception("Couldn't chdir to wc %s: %s" % (self.wc, err))
-
         ## check if tmppath exists
         ## this will trigger an error if it does not exist
         try:
@@ -315,7 +309,7 @@ class SvnRepository(FileRepository):
         """
         Add easyconfig to SVN repository.
         """
-        dest = Repository.addEasyconfig(self, cfg, name, version, stats, append)
+        dest = FileRepository.addEasyconfig(self, cfg, name, version, stats, append)
         log.debug("destination = %s" % dest)
         if dest:
             log.debug("destination status: %s" % self.client.status(dest))
@@ -324,6 +318,7 @@ class SvnRepository(FileRepository):
                 ## add it to version control
                 log.debug("Going to add %s (working copy: %s, cwd %s)" % (dest, self.wc, os.getcwd()))
                 self.client.add(dest)
+
 
     def commit(self, msg=None):
         """
