@@ -41,6 +41,12 @@ try:
 except ImportError:
     pass
 
+try:
+    import pysvn
+    from pysvn import ClientError #IGNORE:E0611 pysvn fails to recognize ClientError is available
+except ImportError:
+    pass
+
 class Repository:
     """
     Interface for repositories
@@ -56,9 +62,6 @@ class Repository:
         self.wc = None
         self.setupRepo()
         self.createWorkingCopy()
-
-    def __del__(self):
-        self.cleanup()
 
     def setupRepo(self):
         """
@@ -94,7 +97,7 @@ class Repository:
         """
         Clean up working copy.
         """
-        pass
+        return
 
 class FileRepository(Repository):
 
@@ -148,6 +151,9 @@ class FileRepository(Repository):
 
         return dest
 
+    def __del__(self):
+        print os.path.islink
+
 
 class GitRepository(FileRepository):
     """
@@ -161,6 +167,11 @@ class GitRepository(FileRepository):
         """
         Set up git repository.
         """
+        try:
+            import git
+            from git import GitCommandError
+        except ImportError:
+            log.exception("GitPython failed to load")
         self.wc = tempfile.mkdtemp(prefix='git-wc-')
 
     def createWorkingCopy(self):
@@ -222,11 +233,14 @@ class GitRepository(FileRepository):
         except GitCommandError, err:
             log.warning("Push from working copy %s to remote %s (msg: %s) failed: %s" % (self.wc, self.repo, msg, err))
 
-    def cleanup(self):
+    def __del__(self):
         """
         Clean up git working copy.
         """
         try:
+            print sys.path
+            print os.path
+            print os.path.islink
             shutil.rmtree(self.wc)
         except IOError, err:
             log.exception("Can't remove working copy %s: %s" % (self.wc, err))

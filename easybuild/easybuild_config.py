@@ -22,7 +22,7 @@ import os
 
 from easybuild.tools.build_log import getLog
 import easybuild.tools.config as config
-from easybuild.tools.repository import GitRepository
+from easybuild.tools.repository import FileRepository
 
 
 log = getLog('easybuild_config')
@@ -57,11 +57,11 @@ sourcePath = os.path.join(prefix, sourceDir)
 ##           repositoryPath = ("svn+ssh://user@server/path/to/repo/path/inside/repo")
 ##           this requires pysvn
 repositoryPath = (os.path.join(prefix, 'easybuild_ebfiles_repo'))
-repository = GitRepository("/Users/nudded/test/")
+repository = FileRepository("/Users/nudded/repo/")
 
 # log format: (dir, filename template)
 # supported in template: name, version, data, time
 logFormat = ("easybuildlog", "easybuild-%(name)s-%(version)s-%(date)s.%(time)s.log")
 
 # general cleanliness
-del os, getLog, config, log, prefix, buildDir, installDir, sourceDir
+# del os, getLog, config, log, prefix, buildDir, installDir, sourceDir
