@@ -496,7 +496,8 @@ class Application:
                 check = [check]
 
             # find at least one element of check
-            # - using rpm -q for now --> can be run as non-root!!
+            # - using rpm -q and dpkg -s --> can be run as non-root!!
+            # - fallback on which
             # - should be extended to files later?
             for d in check:
                 if run_cmd('which rpm', simple=True):
