@@ -1,5 +1,5 @@
 ##
-# Copyright 2009-2012 Stijn De Weirdt, Dries Verdegem, Kenneth Hoste, Pieter De Baets, Jens Timmerman
+# Copyright 2009-2012 Stijn De Weirdt, Dries Verdegem, Kenneth Hoste, Pieter De Baets, Jens Timmerman, Toon Willems
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of the University of Ghent (http://ugent.be/hpc).
@@ -23,6 +23,7 @@ from distutils.version import LooseVersion
 import glob
 import grp #@UnresolvedImport
 import os
+import re
 import shutil
 import time
 import urllib
@@ -85,11 +86,10 @@ class Application:
         self.postmsg = ''
         self.setlogger()
 
-    def autobuild(self, ebfile, runTests):
+    def autobuild(self, ebfile, runTests, regtest_online):
         """
         Build the software package described by cfg.
         """
-
         if self.getcfg('stop') and self.getcfg('stop') == 'cfg':
             return True
         self.log.info('Read easyconfig %s' % ebfile)
@@ -518,6 +518,36 @@ class Application:
 
                 self.log.error("Couldn't find file %s anywhere, and downloading it didn't work either...\nPaths attempted (in order): %s " % (filename, ', '.join(failedpaths)))
 
+
+    def verify_homepage(self):
+        """
+        Download homepage, verify if the name of the software is mentioned
+        """
+        homepage = self.getcfg("homepage")
+
+        try:
+            page = urllib.urlopen(homepage)
+        except IOError:
+            self.log.error("Homepage (%s) is unavailable." % homepage)
+            return False
+
+        regex = re.compile(self.name(), re.I)
+
+        # if url contains software name and is available we are satisfied
+        if regex.search(homepage):
+            return True
+
+        # Perform a lowercase compare against the entire contents of the html page
+        # (does not care about html)
+        for line in page:
+            if regex.search(line):
+                return True
+
+        return False
+
+
+
+
     def apply_patch(self, beginpath=None):
         """
         Apply the patches
@@ -682,6 +712,14 @@ class Application:
         if not self.build_in_installdir:
             try:
                 shutil.rmtree(self.builddir)
+                base = os.path.dirname(self.builddir)
+
+                # keep removing empty directories until we either find a non-empty one
+                # or we end up in the root builddir
+                while len(os.listdir(base)) == 0 and not os.path.samefile(base, buildPath()):
+                    os.rmdir(base)
+                    base = os.path.dirname(base)
+
                 self.log.info("Cleaning up builddir %s" % (self.builddir))
             except OSError, err:
                 self.log.exception("Cleaning up builddir %s failed: %s" % (self.builddir, err))

@@ -33,92 +33,56 @@ import time
 
 import easybuild
 from easybuild.tools.build_log import getLog, EasyBuildError
-from easybuild.tools.config import repositoryPath, repositoryType
-# try and load git (GitPython), OK if it fails if we don't use it
+
+log = getLog('repo')
 try:
     import git
     from git import GitCommandError
 except ImportError:
     pass
-# try and load pysvn, OK if it fails if we don't use it
+
 try:
     import pysvn
     from pysvn import ClientError #IGNORE:E0611 pysvn fails to recognize ClientError is available
 except ImportError:
     pass
 
-
-log = getLog('repo')
-
 class Repository:
     """
-    Class representing an file system repository.
+    Interface for repositories
     """
-    def __init__(self):
-        log.debug("creating repository")
-        self.repo = None
-        self.wc = ""
-
-        self.client = None
-
+    def __init__(self, repo_path, subdir=''):
+        """
+        Initialize a repository. self.repo and self.subdir will be set.
+        self.wc will be set to None.
+        Then, setupRepo and createWorkingCopy will be called (in that order)
+        """
+        self.subdir = subdir
+        self.repo = repo_path
+        self.wc = None
         self.setupRepo()
         self.createWorkingCopy()
 
-    def __del__(self):
-        self.cleanup()
-
     def setupRepo(self):
         """
-        Set up file system repository.
+        Set up repository.
         """
-        log.debug("setting up repository")
-        self.repo = self.wc = repositoryPath()
+        pass
 
     def createWorkingCopy(self):
         """
         Create working copy.
         """
-        os.chdir(self.repo)
+        pass
 
-    def addEasyconfig(self, cfg, name, version, stats, appendstats):
+    def addEasyconfig(self, cfg, name, version, stats, previous):
         """
         Add easyconfig to repository.
+        cfg is the filename of the eb file
         Stats contains some build stats, this should be a list of dictionaries.
-        appendstats is a boolean indicating if we should append to existing stats or not.
+        previous is the list of previous buildstats
         """
-        if not name.startswith(self.wc):
-            name = os.path.join(self.wc, name)
-        if not os.path.isdir(name):
-            os.makedirs(name)
-
-        ## destination
-        dest = os.path.join(self.wc, name, "%s.eb" % (version))
-
-        ## check if it's new/different from what's in svn
-        #nope, always commit
-        #if os.path.exists(dest) and self.checkIdent(cfg, dest):
-        #    log.info("Dest file %s already exist but is identical to what is in the repository." % dest)
-        #    return None
-
-        try:
-            ## copy file
-            oldf = open(cfg)
-            oldcontent = oldf.read()
-            oldf.close()
-            dest_file = open(dest, 'w')
-            dest_file.write("# Built with %s on %s\n" % (easybuild.VERBOSE_VERSION, time.strftime("%Y-%m-%d_%H-%M-%S")))
-            dest_file.write(oldcontent)
-            if appendstats:
-                statstemplate = "buildstats.append(%s)\n"
-            else:
-                statstemplate = "\n#Build statistics\nbuildstats=[%s]\n"
-
-            dest_file.write(statstemplate % stats)
-            dest_file.close()
-
-        except IOError, err:
-            log.exception("Copying file %s to %s (wc: %s) failed (%s)" % (cfg, dest, self.wc, err))
-        return dest
+        pass
 
     def commit(self, msg=None):
         """
@@ -129,89 +93,106 @@ class Repository:
         # does nothing by default
         pass
 
-    def removeStartingComments(self, text):
-        """
-        removes the first lines from a given text,
-        if the line starts with a '#'
-        """
-        lines = text.splitlines(True)
-        i = 0
-        for line in lines:
-            if not line.startswith('#'):
-                break
-            else:
-                i = i + 1
-        return "\n".join(lines[i:])
-
-    def checkIdent(self, src, dest):
-        """
-        Compare the content of 2 files.
-        - return True is they are identical
-        - assume wc is up-to-date (local == remote)
-        """
-        srctxt = file(src).read()
-        local = file(dest).read()
-
-        srctxt = self.removeStartingComments(srctxt)
-        local = self.removeStartingComments(local)
-
-        if local == srctxt:
-            log.debug("Identical content found for %s (%s) and %s (%s)" % (src, srctxt, dest, local))
-            return True
-        else:
-            log.debug("Different content found for %s (%s) and %s (%s)" % (src, srctxt, dest, local))
-            return False
-
     def cleanup(self):
         """
         Clean up working copy.
         """
         return
 
+class FileRepository(Repository):
 
-class GitRepository(Repository):
+    def setupRepo(self):
+        """
+        for file based repos this will create the repo directory
+        if it doesn't exist.
+
+        if a subdir is specified also create the subdir
+        """
+        if not os.path.isdir(self.repo):
+            os.makedirs(self.repo)
+
+        full_path = os.path.join(self.repo, self.subdir)
+        if not os.path.isdir(full_path):
+            os.makedirs(full_path)
+
+    def createWorkingCopy(self):
+        """ set the working directory to the repo directory """
+        # for sake of convenience
+        self.wc = self.repo
+
+    def addEasyconfig(self, cfg, name, version, stats, previous):
+        """
+        Add the eb-file for for package name and version to the repository.
+        stats should be a dict containing stats.
+        if previous is true -> append the stats to the file
+        This will return the path to the created file (for use in subclasses)
+        """
+        # create directory for eb file
+        full_path = os.path.join(self.wc, self.subdir, name)
+        if not os.path.isdir(full_path):
+            os.makedirs(full_path)
+
+        ## destination
+        dest = os.path.join(full_path, "%s.eb" % (version))
+
+        try:
+            dest_file = open(dest, 'w')
+            dest_file.write("# Built with %s on %s\n" % (easybuild.VERBOSE_VERSION, time.strftime("%Y-%m-%d_%H-%M-%S")))
+
+            # copy file
+            for line in open(cfg):
+                dest_file.write(line)
+
+            # append a line to the eb file so we don't have git merge conflicts
+            if not previous:
+                statstemplate = "\n#Build statistics\nbuildstats=[%s]t\n"
+            else:
+                statstemplate = "\nbuildstats.append(%s)\n"
+
+            dest_file.write(statstemplate % stats)
+            dest_file.close()
+
+        except IOError, err:
+            log.exception("Copying file %s to %s (wc: %s) failed (%s)" % (cfg, dest, self.wc, err))
+
+        return dest
+
+
+class GitRepository(FileRepository):
     """
     Class representing a git repository.
     """
-
-    def __init__(self):
-        self.path = None
-        Repository.__init__(self)
-
-        try:
-            import git
-        except ImportError:
-            log.exception("Failed to load GitPython. Make sure it is installed "
-                          "properly. Run 'python -c \"import git\"' to test.")
+    def __init__(self, *args):
+        """
+        Initialize git client to None (will be set later)
+        All the real logic is in the setupRepo and createWorkingCopy methods
+        """
+        self.client = None
+        FileRepository.__init__(self, *args)
 
     def setupRepo(self):
         """
         Set up git repository.
         """
-        Repository.setupRepo(self)
-        log.debug("setting up git repository")
-        self.repo = self.wc[0]
-        self.path = self.wc[1]
-        self.wc = self.repo
-        log.debug("repository %s configured with path %s" % (self.repo, self.path))
+        try:
+            import git
+            from git import GitCommandError
+        except ImportError:
+            log.exception("GitPython failed to load")
+        self.wc = tempfile.mkdtemp(prefix='git-wc-')
 
     def createWorkingCopy(self):
         """
         Create git working copy.
         """
-        # GitPython version 0.1.x (identified as 'git') has no init method, but uses create instead
-        # TODO make a config option to add a directory to a local wc somewhere, so we don't need to
-        # create a local wc every time.
-        self.wc = tempfile.mkdtemp(prefix='git-wc-')
-
         ## try to get a copy of
         try:
             client = git.Git(self.wc)
             out = client.clone(self.repo)
             # out  = 'Cloning into easybuild...'
-            reponame = out.split()[-1].strip(".").strip("'")
+            reponame = out.split("\n")[0].split()[-1].strip(".").strip("'")
             log.debug("rep name is %s" % reponame)
-        except GitCommandError, err:
+        except git.GitCommandError, err:
             # it might already have existed
             log.warning("Git local repo initialization failed, it might already exist: %s" % err)
 
@@ -220,30 +201,23 @@ class GitRepository(Repository):
             self.wc = os.path.join(self.wc, reponame)
             log.debug("connectiong to git repo in %s" % self.wc)
             self.client = git.Git(self.wc)
-        except GitCommandError, err:
+        except git.GitCommandError, err:
             log.error("Could not create a local git repo in wc %s: %s" % (self.wc, err))
-
         # try to get the remote data in the local repo
         try:
             res = self.client.pull()
             log.debug("pulled succesfully to %s in %s" % (res, self.wc))
-        except GitCommandError, err:
+        except git.GitCommandError, err:
             log.exception("pull in working copy %s went wrong: %s" % (self.wc, err))
 
     def addEasyconfig(self, cfg, name, version, stats, append):
         """
         Add easyconfig to git repository.
         """
-        log.debug("Adding cfg: %s with name %s" % (cfg, name))
-        log.debug("Adding cfg: in %s on path %s" % (self.wc, self.path))
-        if  name.startswith(self.wc):
-            name = name.replace(self.wc, "", 1) #remove self.wc again
-        name = os.path.join(self.wc, self.path, name) #create proper name, with path inside repo in it
-        dest = Repository.addEasyconfig(self, cfg, name, version, stats, append)
+        dest = FileRepository.addEasyconfig(self, cfg, name, version, stats, append)
         ## add it to version control
         if dest:
             try:
-                #log.debug("Going to add %s (wc: %s, cwd %s)"%(dest, self.wc, os.getcwd()))
                 self.client.add(dest)
             except GitCommandError, err:
                 log.warning("adding %s to git failed: %s" % (dest, err))
@@ -276,22 +250,28 @@ class GitRepository(Repository):
             log.exception("Can't remove working copy %s: %s" % (self.wc, err))
 
 
-class SvnRepository(Repository):
+class SvnRepository(FileRepository):
     """
     class representing an svn repository
     """
-    def __init__(self):
-        Repository.__init__(self)
-
-        if not 'pysvn' in sys.modules or not locals()['pysvn'] == sys.modules['pysvn']:
-            log.exception("Failed to load pysvn. Make sure it is installed "
-                          "properly. Run 'python -c \"import pysvn\"' to test.")
+    def __init__(self, *args):
+        """
+        Set self.client to None. Real logic is in setupRepo and createWorkingCopy
+        """
+        self.client = None
+        FileRepository.__init__(self, *args)
 
     def setupRepo(self):
         """
         Set up SVN repository.
         """
-        Repository.setupRepo(self)
+        self.repo = os.path.join(self.repo, self.subdir)
+        try:
+            import pysvn
+            from pysvn import ClientError #IGNORE:E0611 pysvn fails to recognize ClientError is available
+        except ImportError:
+            log.exception("Failed to load pysvn. Make sure it is installed "
+                          "properly. Run 'python -c \"import pysvn\"' to test.")
 
         ## try to connect to the repository
         log.debug("Try to connect to repository %s" % self.repo)
@@ -312,12 +292,6 @@ class SvnRepository(Repository):
         Create SVN working copy.
         """
         self.wc = tempfile.mkdtemp(prefix='svn-wc-')
-
-        # Update wc (or part of it)
-        try:
-            os.chdir(self.wc)
-        except OSError, err:
-            log.exception("Couldn't chdir to wc %s: %s" % (self.wc, err))
 
         ## check if tmppath exists
         ## this will trigger an error if it does not exist
@@ -348,9 +322,7 @@ class SvnRepository(Repository):
         """
         Add easyconfig to SVN repository.
         """
-        if not os.path.isdir(name):
-            self.client.mkdir(name, "Creating path %s" % name)
-        dest = Repository.addEasyconfig(self, cfg, name, version, stats, append)
+        dest = FileRepository.addEasyconfig(self, cfg, name, version, stats, append)
         log.debug("destination = %s" % dest)
         if dest:
             log.debug("destination status: %s" % self.client.status(dest))
@@ -359,6 +331,7 @@ class SvnRepository(Repository):
                 ## add it to version control
                 log.debug("Going to add %s (working copy: %s, cwd %s)" % (dest, self.wc, os.getcwd()))
                 self.client.add(dest)
+
 
     def commit(self, msg=None):
         """
@@ -379,25 +352,3 @@ class SvnRepository(Repository):
         except OSError, err:
             log.exception("Can't remove working copy %s: %s" % (self.wc, err))
 
-
-def getRepository():
-    """
-    Factory method, returning a repository depending on the configuration file
-    """
-    typ = repositoryType()
-    if typ == 'fs':
-        return Repository()
-    elif typ == 'git':
-        return GitRepository()
-    elif typ == 'svn':
-        return SvnRepository()
-    else:
-        log.error("invalid repositoryType detected, check config file")
-        return None
-
-
-if __name__ == "__main__":
-    try:
-        s = getRepository()
-    except EasyBuildError, e:
-        print "Initialization failed: %s" % e

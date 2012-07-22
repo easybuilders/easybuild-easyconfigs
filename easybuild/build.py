@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 ##
-# Copyright 2009-2012 Stijn De Weirdt, Dries Verdegem, Kenneth Hoste, Pieter De Baets, Jens Timmerman
+# Copyright 2009-2012 Stijn De Weirdt, Dries Verdegem, Kenneth Hoste, Pieter De Baets, Jens Timmerman, Toon Willems
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of the University of Ghent (http://ugent.be/hpc).
@@ -33,9 +33,8 @@ from easybuild.tools.build_log import EasyBuildError, initLogger, \
     removeLogHandler, print_msg
 from easybuild.tools.class_dumper import dumpClasses
 from easybuild.tools.modules import Modules, searchModule
-from easybuild.tools.repository import getRepository
+from easybuild.tools.config import getRepository
 from optparse import OptionParser
-import easybuild
 import easybuild.tools.config as config
 import easybuild.tools.filetools as filetools
 from easybuild.tools import systemtools
@@ -86,6 +85,7 @@ def add_build_options(parser):
     parser.add_option("-d", "--debug" , action="store_true", help="log debug messages")
     parser.add_option("-v", "--version", action="store_true", help="show version")
     parser.add_option("--regtest", action="store_true", help="enable regression test mode")
+    parser.add_option("--regtest-online", action="store_true", help="enable online regression test mode")
 
 def main():
     """
@@ -229,6 +229,7 @@ def main():
 
     print_msg("Build succeeded for %s out of %s" % (correct_built_cnt, all_built_cnt), log)
 
+    getRepository().cleanup()
     ## Cleanup tmp log file (all is well, all modules have their own log file)
     try:
         removeLogHandler(hn)
@@ -273,7 +274,7 @@ def findEasyconfigs(path, log):
 
     return files
 
-def processEasyconfig(path, log, onlyBlocks=None):
+def processEasyconfig(path, log, onlyBlocks=None, regtest_online=False):
     """
     Process easyconfig, returning some information for each block
     """
@@ -571,7 +572,7 @@ def build(module, options, log, origEnviron, exitOnFailure=True):
     # timing info
     starttime = time.time()
     try:
-        result = app.autobuild(spec, runTests=not options.skip_tests)
+        result = app.autobuild(spec, runTests=not options.skip_tests, regtest_online=options.regtest_online)
     except EasyBuildError, err:
         lastn = 300
         errormsg = "autoBuild Failed (last %d chars): %s" % (lastn, err.msg[-lastn:])
@@ -600,7 +601,7 @@ def build(module, options, log, origEnviron, exitOnFailure=True):
         except OSError, err:
             log.error("Failed to determine install size: %s" % err)
 
-        currentbuildstats = bool(app.getcfg('buildstats'))
+        currentbuildstats = app.getcfg('buildstats')
         buildstats = {'build_time' : buildtime,
                  'platform' : platform.platform(),
                  'core_count' : systemtools.get_core_count(),
