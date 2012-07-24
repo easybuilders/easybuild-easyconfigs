@@ -496,10 +496,18 @@ class Application:
                 check = [check]
 
             # find at least one element of check
-            # - using rpm -q for now --> can be run as non-root!!
+            # - using rpm -q and dpkg -s --> can be run as non-root!!
+            # - fallback on which
             # - should be extended to files later?
             for d in check:
-                cmd = "rpm -q %s" % d
+                if run_cmd('which rpm', simple=True):
+                    cmd = "rpm -q %s" % d
+                elif run_cmd('which dpkg', simple=True):
+                    cmd = "dpkg -s %s" % d
+                else:
+                    # fallback for when os-Dependency is a binary
+                    cmd = "which %s" % d
+
                 (rpmout, ec) = run_cmd(cmd, simple=False, log_all=False, log_ok=False)
                 if ec == 0:
                     self.log.debug("Found osdep %s" % d)
