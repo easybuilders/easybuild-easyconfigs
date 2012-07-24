@@ -36,7 +36,7 @@ from easybuild.tools.build_log import getLog
 log = getLog('fileTools')
 errorsFoundInLog = 0
 
-strictness = None
+strictness = 'warn'
 
 def unpack(fn, dest, extra_options=None, overwrite=False):
     """
@@ -493,21 +493,18 @@ def parse_cmd_output(cmd, stdouterr, ec, simple, log_all, log_ok):
     """
     will parse and perform error checks based on strictness setting
     """
-    # Strict defaults
-    check_ec = True
-    regexp = True
 
-    if strictness != None:
-        log.debug("strictness option has been set (%s), using that" % strictness)
-        if strictness == 0:
-            check_ec = False
-            regexp = False
-        elif strictness == 5:
-            check_ec = True
-            regexp = False
-        else:
-            check_ec = True
-            regexp = True
+    if strictness == 'ignore':
+        check_ec = False
+        regexp = False
+    elif strictness == 'warn':
+        check_ec = True
+        regexp = False
+    elif strictness == 'error':
+        check_ec = True
+        regexp = True
+    else:
+        log.error("invalid strictness setting: %s" % strictness)
 
     if ec and (log_all or log_ok):
         # We don't want to error if the user doesn't care
@@ -522,10 +519,14 @@ def parse_cmd_output(cmd, stdouterr, ec, simple, log_all, log_ok):
         else:
             log.debug('cmd "%s" exited with exitcode %s and output:\n%s' % (cmd, ec, stdouterr))
 
-
-    ## parse the stdout/stderr for errors?
-    if regexp:
-        parselogForError(stdouterr, regexp, msg="Command used: %s" % cmd)
+    ## parse the stdout/stderr for errors when not run in ignore mode
+    if regexp or check_ec:
+        res = parselogForError(stdouterr, True, msg="Command used: %s" % cmd)
+        if errorsFoundInLog > 0:
+            if regexp:
+                log.error("Found %s errors in command output (output: %s)" % (errorsFoundInLog, res))
+            else:
+                log.warn("Found %s errors in command output (output: %s)" % (errorsFoundInLog, res))
 
     if simple:
         if ec:
@@ -534,7 +535,7 @@ def parse_cmd_output(cmd, stdouterr, ec, simple, log_all, log_ok):
         else:
             return True
     else:
-        # eventhough strictness could be set, you still want to know the exit code here
+        # Because we are not running in simple mode, we return the output and ec to the user
         return (stdouterr, ec)
 
 def modifyEnv(old, new):
