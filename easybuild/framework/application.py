@@ -998,9 +998,10 @@ class Application:
         # run sanity check command
         command = self.getcfg('sanityCheckCommand')
         if command:
-            # TODO: when issue 312 gets resolved and merged, place check in verify_config so that
-            # the sanityCheckCommand is not an absolute path
-            command = os.path.join(self.installdir, command)
+            # load the module before running the command
+            m = Modules()
+            m.addModule([[self.name(), self.installversion]])
+            m.load()
             # chdir to installdir otherwise os.getcwd() will fail
             os.chdir(self.installdir)
             out, ec = run_cmd(command, simple=False)
