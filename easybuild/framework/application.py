@@ -1111,8 +1111,6 @@ class Application:
 
             extra = "%s%s-%s%s" % (self.getcfg('versionprefix'), self.tk.name, tkversion, self.getcfg('versionsuffix'))
             localdir = os.path.join(buildPath(), self.name(), self.version(), extra)
-            if not self.tk.name == 'dummy':
-                localdir = os.path.join(localdir, extra)
 
             ald = os.path.abspath(localdir)
             tmpald = ald
