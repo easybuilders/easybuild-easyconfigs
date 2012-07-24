@@ -148,6 +148,7 @@ class Application:
           'patches': [[], "List of patches to apply"],
           'tests': [[], "List of test-scripts to run after install. A test script should return a non-zero exit status to fail"],
           'sanityCheckPaths': [{}, "List of files and directories to check (format: {'files':<list>, 'dirs':<list>}, default: {})"],
+          'sanityCheckCommand': [None, "format: (name, options) e.g. ('gzip','-h') . If set to True it will use (name, '-h')"],
           'buildstats' : [None, "A list of dicts with buildstats: build_time, platform, core_count, cpu_model, install_size, timestamp"],
         }
 
@@ -992,6 +993,40 @@ class Application:
                     break
                 else:
                     self.log.debug("Sanity check: found non-empty directory %s in %s" % (d, self.installdir))
+
+
+        # run sanity check command
+        command = self.getcfg('sanityCheckCommand')
+        if command:
+            # load the module before running the command
+            m = Modules()
+            m.addModule([[self.name(), self.installversion]])
+            m.load()
+
+            # set command to default. This allows for config files with
+            # sanityCheckCommand = True
+            if not isinstance(command, tuple):
+                self.log.debug("Setting sanity check command to default")
+                command = (None, None)
+
+
+            # Build substition dictionary
+            check_cmd = { 'name': self.name().lower(), 'options': '-h' }
+
+            if command[0] != None:
+                check_cmd['name'] = command[0]
+
+            if command[1] != None:
+                check_cmd['options'] = command[1]
+
+            cmd = "%(name)s %(options)s" % check_cmd
+
+            # chdir to installdir otherwise os.getcwd() in run_cmd will fail
+            os.chdir(self.installdir)
+            out, ec = run_cmd(cmd, simple=False)
+            if ec != 0:
+                self.sanityCheckOK = False
+                self.log.debug("sanityCheckCommand exited with code %s (output: %s)" % (ec, out))
 
         # pass or fail
         if not self.sanityCheckOK:
