@@ -522,14 +522,15 @@ def parse_cmd_output(cmd, stdouterr, ec, simple, log_all, log_ok, regexp):
         else:
             log.debug('cmd "%s" exited with exitcode %s and output:\n%s' % (cmd, ec, stdouterr))
 
-    ## parse the stdout/stderr for errors when not run in ignore mode
+    # parse the stdout/stderr for errors when strictness dictates this or when regexp is passed in
     if use_regexp or regexp:
         res = parselogForError(stdouterr, regexp, msg="Command used: %s" % cmd)
-        if errorsFoundInLog > 0:
+        if len(res) > 0:
+            message = "Found %s errors in command output (output: %s)" % (len(res), ", ".join([r[0] for r in res]))
             if use_regexp:
-                log.error("Found %s errors in command output (output: %s)" % (errorsFoundInLog, res))
+                log.error(message)
             else:
-                log.warn("Found %s errors in command output (output: %s)" % (errorsFoundInLog, res))
+                log.warn(message)
 
     if simple:
         if ec:
