@@ -1,5 +1,5 @@
 ##
-# Copyright 2009-2012 Stijn Deweirdt, Dries Verdegem, Kenneth Hoste, Pieter De Baets, Jens Timmerman, Toon Willems
+# Copyright 2009-2012 Stijn De Weirdt, Dries Verdegem, Kenneth Hoste, Pieter De Baets, Jens Timmerman, Toon Willems
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of the University of Ghent (http://ugent.be/hpc).
@@ -23,6 +23,7 @@ from distutils.version import LooseVersion
 import glob
 import grp #@UnresolvedImport
 import os
+import re
 import shutil
 import time
 import urllib
@@ -154,11 +155,11 @@ class Application:
         # mandatory config entries
         self.mandatory = ['name', 'version', 'homepage', 'description', 'toolkit']
 
-    def autobuild(self, ebfile, runTests):
+    def autobuild(self, ebfile, runTests, regtest_online):
         """
         Build the software package described by cfg.
         """
-        self.process_ebfile(ebfile)
+        self.process_ebfile(ebfile, regtest_online)
 
         if self.getcfg('stop') and self.getcfg('stop') == 'cfg':
             return True
@@ -352,7 +353,7 @@ class Application:
 
     ## process EasyBuild spec file
 
-    def process_ebfile(self, fn):
+    def process_ebfile(self, fn, regtest_online=False):
         """
         Read file fn, eval and add info
         - assume certain predefined variable names
@@ -398,16 +399,7 @@ class Application:
                 self.setcfg(k, locs[k])
                 self.log.info("Using cfg option %s: value %s" % (k, self.getcfg(k)))
 
-        for k in self.mandatory:
-            if not k in locs:
-                self.log.error("No cfg option %s provided" % k)
-
-        if self.getcfg('stop') and not (self.getcfg('stop') in self.validstops):
-            self.log.error("Stop provided %s is not valid: %s" % (self.cfg['stop'], self.validstops))
-
-        if not (self.getcfg('moduleclass') in self.validmoduleclasses):
-            self.log.error("Moduleclass provided %s is not valid: %s" % (self.cfg['moduleclass'], self.validmoduleclasses))
-
+        # NOTE: this option ('cfg') cannot be provided on the commandline because it will not yet be set by Easybuild
         if self.getcfg('stop') == 'cfg':
             self.log.info("Stopping in parsing cfg")
             return
@@ -429,8 +421,6 @@ class Application:
             self.log.debug("toolkit: %s" % self.getcfg('toolkit'))
             tk = self.getcfg('toolkit')
             self.settoolkit(tk['name'], tk['version'])
-        else:
-            self.log.error('no toolkit defined')
 
         if self.getcfg('toolkitopts'):
             self.tk.setOptions(self.getcfg('toolkitopts'))
@@ -448,6 +438,29 @@ class Application:
         self.setparallelism()
 
         self.make_installversion()
+        self.verify_config(regtest_online)
+
+    def verify_config(self, regtest_online=False):
+        """
+        verify the config settings
+        """
+        for k in self.mandatory:
+            if not self.getcfg(k):
+                self.log.error("No cfg option %s provided" % k)
+
+        if self.getcfg('stop') and not (self.getcfg('stop') in self.validstops):
+            self.log.error("Stop provided %s is not valid: %s" % (self.cfg['stop'], self.validstops))
+
+        if not (self.getcfg('moduleclass') in self.validmoduleclasses):
+            self.log.error("Moduleclass provided %s is not valid: %s" % (self.cfg['moduleclass'], self.validmoduleclasses))
+
+        if not self.getcfg('toolkit'):
+            self.log.error('no toolkit defined')
+
+        if regtest_online and not self.verify_homepage():
+            self.log.error("Homepage (%s) does not seem to contain anything relevant to %s" % (self.getcfg("homepage"),
+                                                                                               self.name()))
+
 
     def getcfg(self, key):
         """
@@ -484,10 +497,18 @@ class Application:
                 check = [check]
 
             # find at least one element of check
-            # - using rpm -q for now --> can be run as non-root!!
+            # - using rpm -q and dpkg -s --> can be run as non-root!!
+            # - fallback on which
             # - should be extended to files later?
             for d in check:
-                cmd = "rpm -q %s" % d
+                if run_cmd('which rpm', simple=True):
+                    cmd = "rpm -q %s" % d
+                elif run_cmd('which dpkg', simple=True):
+                    cmd = "dpkg -s %s" % d
+                else:
+                    # fallback for when os-Dependency is a binary
+                    cmd = "which %s" % d
+
                 (rpmout, ec) = run_cmd(cmd, simple=False, log_all=False, log_ok=False)
                 if ec == 0:
                     self.log.debug("Found osdep %s" % d)
@@ -612,8 +633,14 @@ class Application:
             try:
                 fullpath = os.path.join(filepath, filename)
 
-                if download(filename, url, fullpath):
+                # only download when it's not there yet
+                if os.path.exists(fullpath):
+                    self.log.info("Found file %s at %s, no need to download it." % (filename, filepath))
                     return fullpath
+
+                else:
+                    if download(filename, url, fullpath):
+                        return fullpath
 
             except IOError, err:
                 self.log.exception("Downloading file %s from url %s to %s failed: %s" % (filename, url, fullpath, err))
@@ -715,6 +742,36 @@ class Application:
 
                 self.log.error("Couldn't find file %s anywhere, and downloading it didn't work either...\nPaths attempted (in order): %s " % (filename, ', '.join(failedpaths)))
 
+
+    def verify_homepage(self):
+        """
+        Download homepage, verify if the name of the software is mentioned
+        """
+        homepage = self.getcfg("homepage")
+
+        try:
+            page = urllib.urlopen(homepage)
+        except IOError:
+            self.log.error("Homepage (%s) is unavailable." % homepage)
+            return False
+
+        regex = re.compile(self.name(), re.I)
+
+        # if url contains software name and is available we are satisfied
+        if regex.search(homepage):
+            return True
+
+        # Perform a lowercase compare against the entire contents of the html page
+        # (does not care about html)
+        for line in page:
+            if regex.search(line):
+                return True
+
+        return False
+
+
+
+
     def apply_patch(self, beginpath=None):
         """
         Apply the patches
@@ -728,7 +785,7 @@ class Application:
             if 'source' in tmp:
                 srcind = tmp['source']
             srcpathsuffix = ''
-            if 'sourcepaht' in tmp:
+            if 'sourcepath' in tmp:
                 srcpathsuffix = tmp['sourcepath']
             elif 'copy' in tmp:
                 srcpathsuffix = tmp['copy']
@@ -879,6 +936,14 @@ class Application:
         if not self.build_in_installdir:
             try:
                 shutil.rmtree(self.builddir)
+                base = os.path.dirname(self.builddir)
+
+                # keep removing empty directories until we either find a non-empty one
+                # or we end up in the root builddir
+                while len(os.listdir(base)) == 0 and not os.path.samefile(base, buildPath()):
+                    os.rmdir(base)
+                    base = os.path.dirname(base)
+
                 self.log.info("Cleaning up builddir %s" % (self.builddir))
             except OSError, err:
                 self.log.exception("Cleaning up builddir %s failed: %s" % (self.builddir, err))
@@ -1496,12 +1561,14 @@ def module_path_for_easyblock(easyblock):
     if not easyblock:
         return None
 
+    modname = easyblock.replace('-','_')
+
     first_char = easyblock[0].lower()
 
     if first_char in letters:
-        return "easybuild.easyblocks.%s.%s" % (first_char, easyblock)
+        return "easybuild.easyblocks.%s.%s" % (first_char, modname)
     else:
-        return "easybuild.easyblocks.0.%s" % easyblock
+        return "easybuild.easyblocks.0.%s" % modname
 
 def get_paths_for(log, subdir="easyblocks"):
     """
@@ -1533,7 +1600,7 @@ def get_instance(easyblock, log, name=None):
 
             modulepath = module_path_for_easyblock(name)
             # don't use capitalize, as it changes 'GCC' into 'Gcc', we want to keep the capitals that are there already
-            class_name = name[0].upper() + name[1:]
+            class_name = name[0].upper() + name[1:].replace('-','_')
 
             # try and find easyblock
             easyblock_found = False
@@ -1600,6 +1667,7 @@ class ApplicationPackage:
         self.master = mself
         self.log = self.master.log
         self.cfg = self.master.cfg
+        self.tk = self.master.tk
         self.pkg = pkg
         self.pkginstalldeps = pkginstalldeps
 
