@@ -1,5 +1,5 @@
 ##
-# Copyright 2009-2012 Stijn Deweirdt, Dries Verdegem, Kenneth Hoste, Pieter De Baets, Jens Timmerman
+# Copyright 2009-2012 Stijn De Weirdt, Dries Verdegem, Kenneth Hoste, Pieter De Baets, Jens Timmerman, Toon Willems
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of the University of Ghent (http://ugent.be/hpc).
@@ -22,23 +22,26 @@ import os
 
 from easybuild.tools.build_log import getLog
 import easybuild.tools.config as config
+from easybuild.tools.repository import SvnRepository, GitRepository, FileRepository
 
 
 log = getLog('easybuild_config')
 
 # buildPath possibly overridden by EASYBUILDBUILDPATH
 # installPath possibly overridden by EASYBUILDINSTALLPATH
-buildDir = 'easybuild_build'
-installDir = 'easybuild'
-sourceDir = "easybuild_sources"
+
+# this should result in a MODULEPATH=($HOME/.local/easybuild|$EASYBUILDPREFIX)/install/modules/all
+buildDir = 'build'
+installDir = ''
+sourceDir = 'sources'
 
 if os.getenv('EASYBUILDPREFIX'):
     prefix = os.getenv('EASYBUILDPREFIX')
 else:
-    prefix = os.getenv('HOME')
+    prefix = os.path.join(os.getenv('HOME'), ".local", "easybuild")
 
 if not prefix:
-    prefix = "/tmp"
+    prefix = "/tmp/easybuild"
 
 buildPath = os.path.join(prefix, buildDir)
 installPath = os.path.join(prefix, installDir)
@@ -47,16 +50,20 @@ sourcePath = os.path.join(prefix, sourceDir)
 # repository for eb files
 ## possible repository types are:
 ## 'fs'    : plain filesystem
-##           repositoryPath = ("path/to/directory")
+##           repositoryPath = "path/to/directory"
+##           repository = FileRepository(repositoryPath)
 ## 'git'   : bare git repository (created git clone --bare or git init --bare (but make sure to have at least
 ##           one push to it once, we can't handle empty git repos)
-##           repositoryPath = ("ssh://user@server/path/to/repo.git","path/inside/repo") #not starting with '/' !
+##           repositoryPath = "ssh://user@server/path/to/repo.git" #not starting with '/' !
+##           repository = GitRepository(repositoryPath, subdir='path/in/repo' )
 ##           this requires GitPython
 ## 'svn'   " svn repository
-##           repositoryPath = ("svn+ssh://user@server/path/to/repo/path/inside/repo")
+##           repositoryPath = "svn+ssh://user@server/path/to/repo"
+##           subdir = "/path/inside/repo"
+##           repository = SvnRepository(repositoryPath)
 ##           this requires pysvn
-repositoryType = 'fs'
-repositoryPath = (os.path.join(prefix, 'easybuild_ebfiles_repo'))
+repositoryPath = os.path.join(prefix, 'ebfiles_repo')
+repository = FileRepository(repositoryPath)
 
 # log format: (dir, filename template)
 # supported in template: name, version, data, time
