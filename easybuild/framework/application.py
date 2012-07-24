@@ -1003,6 +1003,13 @@ class Application:
             m.addModule([[self.name(), self.installversion]])
             m.load()
 
+            # set command to default. This allows for config files with
+            # sanityCheckCommand = True
+            if not isinstance(command, tuple):
+                self.log.debug("Setting sanity check command to default")
+                command = (None, None)
+
+
             # Build substition dictionary
             check_cmd = { 'name': self.name().lower(), 'options': '-h' }
 
