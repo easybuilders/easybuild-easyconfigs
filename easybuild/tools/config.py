@@ -24,6 +24,7 @@ EasyBuild configuration (paths, preferences, etc.)
 import os
 
 from easybuild.tools.build_log import getLog
+import easybuild.tools.repository as repo
 
 log = getLog('config')
 
@@ -86,7 +87,10 @@ def readConfiguration(filename):
     """
     Read variables from the config file
     """
-    fileVariables = {}
+    fileVariables = {'FileRepository': repo.FileRepository,
+                     'GitRepository': repo.GitRepository,
+                     'SvnRepository': repo.SvnRepository
+                    }
     try:
         execfile(filename, {}, fileVariables)
     except (IOError, SyntaxError), err:
