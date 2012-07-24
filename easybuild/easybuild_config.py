@@ -22,8 +22,6 @@ import os
 
 from easybuild.tools.build_log import getLog
 import easybuild.tools.config as config
-from easybuild.tools.repository import SvnRepository, GitRepository, FileRepository
-
 
 log = getLog('easybuild_config')
 
