@@ -312,7 +312,7 @@ def run_cmd(cmd, log_ok=True, log_all=False, simple=False, inp=None, regexp=True
     if log_output:
         runLog.close()
 
-    return parse_cmd_output(cmd, stdouterr, ec, simple, log_all, log_ok)
+    return parse_cmd_output(cmd, stdouterr, ec, simple, log_all, log_ok, regexp)
 
 def run_cmd_qa(cmd, qa, no_qa=None, log_ok=True, log_all=False, simple=False, regexp=True, std_qa=None):
     """
@@ -487,24 +487,27 @@ def run_cmd_qa(cmd, qa, no_qa=None, log_ok=True, log_all=False, simple=False, re
     # Not needed anymore. Subprocess does this correct?
     # ec=os.WEXITSTATUS(ec)
 
-    return parse_cmd_output(cmd, stdoutErr, ec, simple, log_all, log_ok)
+    return parse_cmd_output(cmd, stdoutErr, ec, simple, log_all, log_ok, regexp)
 
-def parse_cmd_output(cmd, stdouterr, ec, simple, log_all, log_ok):
+def parse_cmd_output(cmd, stdouterr, ec, simple, log_all, log_ok, regexp):
     """
     will parse and perform error checks based on strictness setting
     """
-
     if strictness == 'ignore':
         check_ec = False
-        regexp = False
+        use_regexp = False
     elif strictness == 'warn':
         check_ec = True
-        regexp = False
+        use_regexp = False
     elif strictness == 'error':
         check_ec = True
-        regexp = True
+        use_regexp = True
     else:
         log.error("invalid strictness setting: %s" % strictness)
+
+    # allow for overriding the regexp setting
+    if not regexp:
+        use_regexp = False
 
     if ec and (log_all or log_ok):
         # We don't want to error if the user doesn't care
@@ -520,10 +523,10 @@ def parse_cmd_output(cmd, stdouterr, ec, simple, log_all, log_ok):
             log.debug('cmd "%s" exited with exitcode %s and output:\n%s' % (cmd, ec, stdouterr))
 
     ## parse the stdout/stderr for errors when not run in ignore mode
-    if regexp or check_ec:
-        res = parselogForError(stdouterr, True, msg="Command used: %s" % cmd)
+    if use_regexp or regexp:
+        res = parselogForError(stdouterr, regexp, msg="Command used: %s" % cmd)
         if errorsFoundInLog > 0:
-            if regexp:
+            if use_regexp:
                 log.error("Found %s errors in command output (output: %s)" % (errorsFoundInLog, res))
             else:
                 log.warn("Found %s errors in command output (output: %s)" % (errorsFoundInLog, res))
