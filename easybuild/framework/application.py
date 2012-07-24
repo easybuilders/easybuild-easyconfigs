@@ -1004,7 +1004,7 @@ class Application:
             m.load()
 
             # Build substition dictionary
-            check_cmd = { 'name': self.name(), 'options': '-h' }
+            check_cmd = { 'name': self.name().lower(), 'options': '-h' }
 
             if command[0] != None:
                 check_cmd['name'] = command[0]
