@@ -85,6 +85,9 @@ def add_build_options(parser):
     parser.add_option("-v", "--version", action="store_true", help="show version")
     parser.add_option("--regtest", action="store_true", help="enable regression test mode")
     parser.add_option("--regtest-online", action="store_true", help="enable online regression test mode")
+    strictness_options = ['ignore', 'warn', 'error']
+    parser.add_option("--strict", type="choice", choices=strictness_options, help="set strictness \
+                        level (possible levels: %s" % ', '.join(strictness_options))
 
 def main():
     """
@@ -170,6 +173,11 @@ def main():
         if logFile:
             os.remove(logFile)
         sys.exit(0)
+
+    # set strictness of filetools module
+    if options.strict:
+        filetools.strictness = options.strict
+
 
     ## Read easyconfig files
     packages = []
