@@ -26,6 +26,7 @@ import os
 import shutil
 import glob
 
+import os
 from easybuild.easyblocks.i.intelbase import IntelBase
 
 class Tbb(IntelBase):
