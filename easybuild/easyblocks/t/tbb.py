@@ -19,6 +19,7 @@
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
 
+import os
 from easybuild.easyblocks.i.intelbase import IntelBase
 
 class Tbb(IntelBase):
@@ -41,7 +42,7 @@ class Tbb(IntelBase):
         """Add correct path to lib to LD_LIBRARY_PATH. and intel license file"""
 
         txt = IntelBase.make_module_extra(self)
-        txt += "prepend-path\t%s\t\t$root/%s/%s/lib\n" %
-                ('LD_LIBRARY_PATH', os.environ['ARCHITECTURE'], os.environ['TBB_COMPILER'])
+        txt += "prepend-path\t%s\t\t$root/%s/%s/lib\n" % \
+             ('LD_LIBRARY_PATH', os.environ['ARCHITECTURE'], os.environ['TBB_COMPILER'])
 
         return txt
