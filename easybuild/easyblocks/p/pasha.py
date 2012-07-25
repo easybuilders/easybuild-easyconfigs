@@ -21,6 +21,8 @@
 """
 pasha easyblock
 """
+import shutil
+import os
 from easybuild.framework.application import Application
 
 class Pasha(Application):
@@ -34,6 +36,19 @@ class Pasha(Application):
         """
         makeopts = self.getcfg('makeopts')
         makeopts = "%s TBB_DIR=$SOFTROOTTBB/tbb MPI_CXX=$MPICXX OPM_FLAG=%s "\
-                   "MPI_DIR='' MPI_INC='' MPI_LIB='' MY_CXX=$CXX " % (makeopts, self.tk.get_openmp_flag())
+                  "MPI_DIR='' MPI_INC='' MPI_LIB='' MY_CXX=$CXX MPICH_IGNORE_CXX_SEEK=1" % (makeopts, self.tk.get_openmp_flag())
 
         self.setcfg('makeopts', makeopts)
+
+    def make_install(self):
+        """Overwriting make_install, since there is no install defined in the makefile"""
+        shutil.copytree(os.path.join(self.builddir, "%s-%s" % (self.name(), self.version()), 'bin'), os.path.join(self.installdir, 'bin'))
+
+    def sanitycheck(self):
+        """Custom sanity check"""
+        self.setcfg('sanityCheckPaths', {
+                                        'files':["bin/pasha-%s" % x for x in ["kmergen", "pregraph", "graph"]],
+                                        'dirs':[""],
+                                        })
+
+
