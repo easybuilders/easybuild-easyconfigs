@@ -870,11 +870,13 @@ class Application:
             ## POSTPROC
             self.runstep('postproc', [self.postproc], skippable=True)
 
-            ## CLEANUP
-            self.runstep('cleanup', [self.cleanup])
-
             ## SANITY CHECK
-            self.runstep('sanity check', [self.sanitycheck], skippable=False)
+            try:
+                self.runstep('sanity check', [self.sanitycheck], skippable=False)
+            finally:
+                self.runstep('cleanup', [self.cleanup])
+
+
 
         except StopException:
             pass
@@ -994,12 +996,16 @@ class Application:
                 else:
                     self.log.debug("Sanity check: found non-empty directory %s in %s" % (d, self.installdir))
 
+        # make fake module
+        self.make_module(True)
 
         # run sanity check command
         command = self.getcfg('sanityCheckCommand')
         if command:
             # load the module before running the command
-            m = Modules()
+            mod_path = [self.moduleGenerator.module_path]
+            m = Modules(mod_path)
+            self.log.debug("created module instance")
             m.addModule([[self.name(), self.installversion]])
             m.load()
 

@@ -36,6 +36,7 @@ class ModuleGenerator:
         self.app = application
         self.fake = fake
         self.filename = None
+        self.module_path = None
 
     def createFiles(self):
         """
@@ -49,15 +50,15 @@ class ModuleGenerator:
             base = self.app.builddir
 
         # Real file goes in 'all' category
-        allPath = os.path.join(base, 'all', self.app.name())
-        self.filename = os.path.join(allPath, self.app.installversion)
+        self.module_path = os.path.join(base, 'all')
+        self.filename = os.path.join(self.module_path, self.app.name(), self.app.installversion)
 
         # Make symlink in moduleclass category
         classPath = os.path.join(base, self.app.getcfg('moduleclass'), self.app.name())
         classPathFile = os.path.join(classPath, self.app.installversion)
 
         # Create directories and links
-        for directory in [allPath, classPath]:
+        for directory in [os.path.dirname(x) for x in [self.filename, classPathFile]]:
             if not os.path.isdir(directory):
                 try:
                     os.makedirs(directory)
