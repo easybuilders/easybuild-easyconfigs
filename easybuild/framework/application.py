@@ -877,6 +877,9 @@ class Application:
                 ## CLEANUP
                 self.runstep('cleanup', [self.cleanup])
                 raise
+            else:
+                self.runstep('cleanup', [self.cleanup])
+
 
 
         except StopException:
