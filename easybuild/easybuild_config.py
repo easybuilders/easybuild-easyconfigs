@@ -22,8 +22,6 @@ import os
 
 from easybuild.tools.build_log import getLog
 import easybuild.tools.config as config
-from easybuild.tools.repository import SvnRepository, GitRepository, FileRepository
-
 
 log = getLog('easybuild_config')
 
@@ -48,20 +46,18 @@ installPath = os.path.join(prefix, installDir)
 sourcePath = os.path.join(prefix, sourceDir)
 
 # repository for eb files
-## possible repository types are:
-## 'fs'    : plain filesystem
-##           repositoryPath = "path/to/directory"
-##           repository = FileRepository(repositoryPath)
-## 'git'   : bare git repository (created git clone --bare or git init --bare (but make sure to have at least
-##           one push to it once, we can't handle empty git repos)
-##           repositoryPath = "ssh://user@server/path/to/repo.git" #not starting with '/' !
-##           repository = GitRepository(repositoryPath, subdir='path/in/repo' )
-##           this requires GitPython
-## 'svn'   " svn repository
-##           repositoryPath = "svn+ssh://user@server/path/to/repo"
-##           subdir = "/path/inside/repo"
-##           repository = SvnRepository(repositoryPath)
-##           this requires pysvn
+## Currently, EasyBuild supports the following repository types:
+
+## * `FileRepository`: a plain flat file repository. In this case, the `repositoryPath` contains the directory where the files are stored,
+## * `GitRepository`: a _non-empty_ **bare** git repository (created with `git init --bare` or `git clone --bare`).
+##   Here, the `repositoryPath` contains the git repository location, which can be a directory or an URL.
+## * `SvnRepository`: an SVN repository. In this case, the `repositoryPath` contains the subversion repository location, again, this can be a directory or an URL.
+
+## you have to set the `repository` variable inside the config like so:
+## `repository = FileRepository(repositoryPath)`
+
+## optionally a subdir argument can be specified:
+## `repository = FileRepository(repositoryPath, subdir)`
 repositoryPath = os.path.join(prefix, 'ebfiles_repo')
 repository = FileRepository(repositoryPath)
 

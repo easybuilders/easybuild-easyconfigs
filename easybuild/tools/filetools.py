@@ -36,6 +36,8 @@ from easybuild.tools.build_log import getLog
 log = getLog('fileTools')
 errorsFoundInLog = 0
 
+strictness = 'warn'
+
 def unpack(fn, dest, extra_options=None, overwrite=False):
     """
     Given filename fn, try to unpack in directory dest
@@ -254,6 +256,7 @@ def run_cmd(cmd, log_ok=True, log_all=False, simple=False, inp=None, regexp=True
     """
     log.debug("run_cmd: running cmd %s (in %s)" % (cmd, os.getcwd()))
 
+
     ## Log command output
     if log_output:
         runLog = tempfile.NamedTemporaryFile(suffix='.log', prefix='easybuild-run_cmd-')
@@ -305,30 +308,11 @@ def run_cmd(cmd, log_ok=True, log_all=False, simple=False, inp=None, regexp=True
     # not needed anymore. subprocess does this correct?
     # ec=os.WEXITSTATUS(ec)
 
-    ## log: if ec > 0, dump to output
-    if ec and (log_all or log_ok):
-        log.error('run_cmd "%s" exited with exitcode %s and output:\n%s' % (cmd, ec, stdouterr))
-    if not ec:
-        if log_all:
-            log.info('run_cmd "%s" exited with exitcode %s and output:\n%s' % (cmd, ec, stdouterr))
-        else:
-            log.debug('run_cmd "%s" exited with exitcode %s and output:\n%s' % (cmd, ec, stdouterr))
-
     ## Command log output
     if log_output:
         runLog.close()
 
-    ## parse the stdout/stderr for errors?
-    if regexp:
-        parselogForError(stdouterr, regexp, msg="Command used: %s" % cmd)
-
-    if simple:
-        if ec:
-            return False
-        else:
-            return True
-    else:
-        return (stdouterr, ec)
+    return parse_cmd_output(cmd, stdouterr, ec, simple, log_all, log_ok, regexp)
 
 def run_cmd_qa(cmd, qa, no_qa=None, log_ok=True, log_all=False, simple=False, regexp=True, std_qa=None):
     """
@@ -503,26 +487,60 @@ def run_cmd_qa(cmd, qa, no_qa=None, log_ok=True, log_all=False, simple=False, re
     # Not needed anymore. Subprocess does this correct?
     # ec=os.WEXITSTATUS(ec)
 
-    ## log: if ec > 0, dump to output
+    return parse_cmd_output(cmd, stdoutErr, ec, simple, log_all, log_ok, regexp)
+
+def parse_cmd_output(cmd, stdouterr, ec, simple, log_all, log_ok, regexp):
+    """
+    will parse and perform error checks based on strictness setting
+    """
+    if strictness == 'ignore':
+        check_ec = False
+        use_regexp = False
+    elif strictness == 'warn':
+        check_ec = True
+        use_regexp = False
+    elif strictness == 'error':
+        check_ec = True
+        use_regexp = True
+    else:
+        log.error("invalid strictness setting: %s" % strictness)
+
+    # allow for overriding the regexp setting
+    if not regexp:
+        use_regexp = False
+
     if ec and (log_all or log_ok):
-        log.error('runqanda cmd "%s" exited with exitcode %s and output\n%s' % (cmd, ec, stdoutErr))
+        # We don't want to error if the user doesn't care
+        if check_ec:
+            log.error('cmd "%s" exited with exitcode %s and output:\n%s' % (cmd, ec, stdouterr))
+        else:
+            log.warn('cmd "%s" exited with exitcode %s and output:\n%s' % (cmd, ec, stdouterr))
+
     if not ec:
         if log_all:
-            log.info('runqanda cmd "%s" exited with exitcode %s and output\n%s' % (cmd, ec, stdoutErr))
+            log.info('cmd "%s" exited with exitcode %s and output:\n%s' % (cmd, ec, stdouterr))
         else:
-            log.debug('runqanda cmd "%s" exited with exitcode %s and output\n%s' % (cmd, ec, stdoutErr))
+            log.debug('cmd "%s" exited with exitcode %s and output:\n%s' % (cmd, ec, stdouterr))
 
-    ## parse the stdouterr?
-    if regexp:
-        parselogForError(stdoutErr, regexp, msg="Command used: %s" % cmd)
+    # parse the stdout/stderr for errors when strictness dictates this or when regexp is passed in
+    if use_regexp or regexp:
+        res = parselogForError(stdouterr, regexp, msg="Command used: %s" % cmd)
+        if len(res) > 0:
+            message = "Found %s errors in command output (output: %s)" % (len(res), ", ".join([r[0] for r in res]))
+            if use_regexp:
+                log.error(message)
+            else:
+                log.warn(message)
 
     if simple:
         if ec:
-            return False
+            # If the user does not care -> will return true
+            return not check_ec
         else:
             return True
     else:
-        return (stdoutErr, ec)
+        # Because we are not running in simple mode, we return the output and ec to the user
+        return (stdouterr, ec)
 
 def modifyEnv(old, new):
     """
