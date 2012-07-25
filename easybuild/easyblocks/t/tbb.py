@@ -27,6 +27,7 @@ import shutil
 import glob
 
 import os
+import shutil
 from easybuild.easyblocks.i.intelbase import IntelBase
 
 class Tbb(IntelBase):
@@ -54,12 +55,22 @@ class Tbb(IntelBase):
         shutil.move(install_libpath, os.path.join(self.installdir, 'tbb', 'libs'))
         os.symlink(self.libpath, install_libpath)
 
+    def make_install(self):
+        """overwrite make_install to add extra symlinks"""
+        IntelBase.make_install(self)
+        self.libpath = "%s/tbb/libs/intel64/%s/" % (self.installdir, "cc4.1.0_libc2.4_kernel2.6.16.21")
+        installibpath = os.path.join(self.installdir, 'tbb', 'lib')
+        shutil.move(installibpath, os.path.join(self.installdir, 'tbb', 'libs'))
+        os.symlink(self.libpath, installibpath)
+
+
     def sanitycheck(self):
 
         if not self.getcfg('sanityCheckPaths'):
-            self.setcfg('sanityCheckPaths', {'files':[],
-                                            'dirs':["tbb/bin", "tbb/lib/", "tbb/libs/"]
-                                           })
+            self.setcfg('sanityCheckPaths', {
+                                             'files':[],
+                                             'dirs':["tbb/bin", "tbb/lib/", "tbb/libs/"]
+                                            })
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
