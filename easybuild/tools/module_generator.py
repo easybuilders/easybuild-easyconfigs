@@ -51,7 +51,7 @@ class ModuleGenerator:
 
         # Real file goes in 'all' category
         self.module_path = os.path.join(base, 'all')
-        self.filename = os.path.join(self.module_path, self.app.name(), self.app.installversion)
+        self.filename = os.path.join(self.module_path, self.app.name(), self.app.installversion())
 
         # Make symlink in moduleclass category
         classPath = os.path.join(base, self.app.getcfg('moduleclass'), self.app.name())

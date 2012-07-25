@@ -782,7 +782,7 @@ class Application:
             mod_path = [self.moduleGenerator.module_path]
             m = Modules(mod_path)
             self.log.debug("created module instance")
-            m.addModule([[self.name(), self.installversion]])
+            m.addModule([[self.name(), self.installversion()]])
             m.load()
 
             # set command to default. This allows for config files with
