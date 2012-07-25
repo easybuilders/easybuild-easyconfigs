@@ -649,11 +649,7 @@ class Application:
             ## SANITY CHECK
             try:
                 self.runstep('sanity check', [self.sanitycheck], skippable=False)
-            except:
-                ## CLEANUP
-                self.runstep('cleanup', [self.cleanup])
-                raise
-            else:
+            finally:
                 self.runstep('cleanup', [self.cleanup])
 
 
