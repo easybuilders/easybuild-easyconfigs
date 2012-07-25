@@ -20,6 +20,7 @@
 ##
 
 import os
+import shutil
 from easybuild.easyblocks.i.intelbase import IntelBase
 
 class Tbb(IntelBase):
@@ -27,11 +28,20 @@ class Tbb(IntelBase):
     EasyBlock for tbb, threading building blocks
     """
 
+    def make_install(self):
+        """overwrite make_install to add extra symlinks"""
+        IntelBase.make_install(self)
+        self.libpath = "%s/tbb/libs/intel64/%s/" % (self.installdir, "cc4.1.0_libc2.4_kernel2.6.16.21")
+        installibpath = os.path.join(self.installdir, 'tbb', 'lib')
+        shutil.move(installibpath, os.path.join(self.installdir, 'tbb', 'libs'))
+        os.symlink(self.libpath, installibpath)
+
+
     def sanitycheck(self):
 
         if not self.getcfg('sanityCheckPaths'):
             self.setcfg('sanityCheckPaths', {'files':[],
-                                            'dirs':["tbb/bin", "tbb/lib/intel64"]
+                                            'dirs':["tbb/bin", "tbb/lib/"]
                                            })
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
@@ -42,7 +52,6 @@ class Tbb(IntelBase):
         """Add correct path to lib to LD_LIBRARY_PATH. and intel license file"""
 
         txt = IntelBase.make_module_extra(self)
-        txt += "prepend-path\t%s\t\t$root/%s/%s/lib\n" % \
-             ('LD_LIBRARY_PATH', os.environ['ARCHITECTURE'], os.environ['TBB_COMPILER'])
+        txt += "prepend-path\t%s\t\t%s\n" % ('LD_LIBRARY_PATH', self.libpath)
 
         return txt
