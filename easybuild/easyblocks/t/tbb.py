@@ -53,7 +53,6 @@ class Tbb(IntelBase):
         shutil.move(install_libpath, os.path.join(self.installdir, 'tbb', 'libs'))
         os.symlink(self.libpath, install_libpath)
 
-
     def sanitycheck(self):
 
         if not self.getcfg('sanityCheckPaths'):
