@@ -22,6 +22,9 @@
 from easybuild.easyblocks.i.intelbase import IntelBase
 
 class Tbb(IntelBase):
+    """
+    EasyBlock for tbb, threading building blocks
+    """
 
     def sanitycheck(self):
 
@@ -33,3 +36,12 @@ class Tbb(IntelBase):
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
         IntelBase.sanitycheck(self)
+
+    def make_module_extra(self):
+        """Add correct path to lib to LD_LIBRARY_PATH. and intel license file"""
+
+        txt = IntelBase.make_module_extra(self)
+        txt += "prepend-path\t%s\t\t$root/%s/%s/lib\n" %
+                ('LD_LIBRARY_PATH', os.environ['ARCHITECTURE'], os.environ['TBB_COMPILER'])
+
+        return txt
