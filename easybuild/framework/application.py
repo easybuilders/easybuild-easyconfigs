@@ -906,15 +906,14 @@ class Application:
         Prints the environment changes and loaded modules to the debug log
         - pretty prints the environment for easy copy-pasting
         """
-        mods = Modules().loaded_modules()
-        env = os.environ
-        text = ""
-        for key in env:
-            if key not in self.orig_environ:
-                text += 'export %s="%s"\n' % (key, env[key])
+        mods = "\n".join(["module load %s/%s" % (m['name'], m['version']) for m in Modules().loaded_modules()])
 
-        self.log.debug("Loaded modules: %s" % mods)
-        self.log.debug("Changes to environment:\n%s" % text)
+        env = os.environ
+        changed = [(k,env[k]) for k in env if k not in self.orig_environ]
+        text = "\n".join(['export %s="%s"' % change for change in changed])
+
+        self.log.debug("Load modules:\n%s" % mods)
+        self.log.debug("Change environment:\n%s" % text)
 
 
     def postproc(self):
