@@ -1734,6 +1734,8 @@ class ApplicationPackage:
                     'src': self.src
                    }
         cmd = cmd % template
+        # TODO: come up with a better way to deal with these run_cmd errors
+        os.chdir(self.master.installdir)
         if inp:
             stdin = inp % template
             (output, ec) = run_cmd(cmd, log_all=False, log_ok=False, simple=False, inp=stdin, regexp=False)
