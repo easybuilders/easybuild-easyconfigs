@@ -914,12 +914,18 @@ class Application:
             if k in self.orig_environ and env[k] != self.orig_environ[k]:
                 changed.append((k, env[k]))
 
-        text = "\n".join(['export %s="%s"' % change for change in changed])
-        text += "\n"
-        text += "\n".join(['unset %s' % key for key in self.orig_environ if key not in env])
+        unset = [key for key in self.orig_environ if key not in env]
 
-        self.log.debug("Load modules:\n%s" % mods)
-        self.log.debug("Change environment:\n%s" % text)
+        text = "\n".join(['export %s="%s"' % change for change in changed])
+        unset_text = "\n".join(['unset %s' % key for key in unset])
+
+
+        if mods:
+            self.log.debug("Loaded modules:\n%s" % mods)
+        if changed:
+            self.log.debug("Added to environment:\n%s" % text)
+        if unset:
+            self.log.debug("Removed from environment:\n%s" % unset_text)
 
         self.orig_environ = copy.deepcopy(os.environ)
 
