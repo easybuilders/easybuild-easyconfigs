@@ -4,7 +4,7 @@ import sys
 import unittest
 
 from unittest import TestCase
-from easybuild.tools.build_log import getLog, EasyBuildError
+from easybuild.tools.build_log import getLog, EasyBuildError, initLogger
 from easybuild.framework.application import get_class, Application
 from easybuild.build import findEasyconfigs, processEasyconfig, resolveDependencies
 
@@ -20,16 +20,18 @@ class BuildTest(TestCase):
 
     def setUp(self):
         """ fetch application instances, report eb-file errors """
+        logFile, log, hn = initLogger(filename=None, debug=True, typ=None)
+
         config.init('easybuild/easybuild_config.py')
         self.errors = []
 
-        log = getLog("BuildTest")
+        self.log = getLog("BuildTest")
         path = "easybuild/easyconfigs/"
         packages = []
         files = findEasyconfigs(path, log)
         for file in files:
             try:
-                packages.extend(processEasyconfig(file, log, None))
+                packages.extend(processEasyconfig(file, self.log, None))
             except EasyBuildError, err:
                 self.errors.append([file, err, 'eb-file error'])
 
@@ -40,7 +42,7 @@ class BuildTest(TestCase):
             name = pkg['module'][0]
             try:
                 # pass None so get_class will infer it
-                app_class = get_class(None, log, name=name)
+                app_class = get_class(None, self.log, name=name)
                 self.apps.append(app_class(spec, debug=True))
             except EasyBuildError, err:
                 self.errors.append([spec, err, 'Initialization error'])
@@ -55,20 +57,20 @@ class BuildTest(TestCase):
                 # Remove this object from the array
                 # we cannot continue building it
                 arr.remove(obj)
-                print "%s encountered error: %s (ErrorClass: %s)" % (obj, err, fase)
+                self.log.info("%s encountered error: %s (ErrorClass: %s)" % (obj, err, fase))
 
-        print "%s errors during %s" % (errors, fase)
+        self.log.info("%s errors during %s" % (errors, fase))
 
 
     def runTest(self):
 
-        print "%s errors encountered before we can begin building" % len(self.errors)
+        self.log.info("%s errors encountered before we can begin building" % len(self.errors))
         for (obj, err, name) in self.errors:
-            print "%s encountered error: %s (ErrorClass: %s)" % (obj, err, name)
+            self.log.info("%s encountered error: %s (ErrorClass: %s)" % (obj, err, name))
 
         self.errors = []
 
-        print "Continuing building other packages"
+        self.log.info("Continuing building other packages")
         # take manual control over the building
         self.performStep("preparation", self.apps, lambda x: x.prepare_build())
         self.performStep("pre-build verification", self.apps, lambda x: x.ready2build())
