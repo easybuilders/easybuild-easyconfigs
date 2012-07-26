@@ -1725,8 +1725,8 @@ class ApplicationPackage:
             self.log.debug("no pkgfilter setting found, skipping postrun")
             return
 
-        if self.name in self.getcfg('pkgmodulenames'):
-            modname = self.getcfg('pkgmodulenames')[self.name]
+        if self.name in self.master.getcfg('pkgmodulenames'):
+            modname = self.master.getcfg('pkgmodulenames')[self.name]
         else:
             modname = self.name
         template = {'name': modname,
