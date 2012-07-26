@@ -156,8 +156,8 @@ class Application:
         # mandatory config entries
         self.mandatory = ['name', 'version', 'homepage', 'description', 'toolkit']
 
-        # copy of the original environ
-        self.orig_environ = copy.deepcopy(os.environ)
+        # original environ will be set later
+        self.orig_environ = {}
 
     def autobuild(self, ebfile, runTests, regtest_online):
         """
@@ -840,8 +840,7 @@ class Application:
             self.gen_installdir()
             self.make_builddir()
 
-            self.log.debug("starting environment: %s" % self.orig_environ)
-            self.log.debug("loaded modules: %s" % Modules().loaded_modules())
+            self.print_environ()
 
             ## SOURCE
             print_msg("unpacking...", self.log)
@@ -909,11 +908,18 @@ class Application:
         mods = "\n".join(["module load %s/%s" % (m['name'], m['version']) for m in Modules().loaded_modules()])
 
         env = os.environ
+
         changed = [(k,env[k]) for k in env if k not in self.orig_environ]
+        for k in env:
+            if k in self.orig_environ and env[k] != self.orig_environ[k]:
+                changed.append((k, env[k]))
+
         text = "\n".join(['export %s="%s"' % change for change in changed])
 
         self.log.debug("Load modules:\n%s" % mods)
         self.log.debug("Change environment:\n%s" % text)
+
+        self.orig_environ = copy.deepcopy(os.environ)
 
 
     def postproc(self):
