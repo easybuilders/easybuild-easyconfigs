@@ -915,6 +915,8 @@ class Application:
                 changed.append((k, env[k]))
 
         text = "\n".join(['export %s="%s"' % change for change in changed])
+        text += "\n"
+        text += "\n".join(['unset %s' % key for key in self.orig_environ if key not in env])
 
         self.log.debug("Load modules:\n%s" % mods)
         self.log.debug("Change environment:\n%s" % text)
