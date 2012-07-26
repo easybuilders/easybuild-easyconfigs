@@ -187,7 +187,7 @@ class LAPACK(Application):
             Application.test(self)
 
     # don't create a module if we're only testing
-    def make_module(self):
+    def make_module(self, fake=False):
         """
         Only make LAPACK module when we're not testing.
         """
@@ -195,7 +195,7 @@ class LAPACK(Application):
             pass
 
         else:
-            Application.make_module(self)
+            Application.make_module(self, fake)
 
     def sanitycheck(self):
         """
