@@ -1720,8 +1720,9 @@ class ApplicationPackage:
         Stuff to do after installing a package.
         """
         try:
-            cmd, inp = self.getcfg('pkgfilter')
+            cmd, inp = self.master.getcfg('pkgfilter')
         except:
+            self.log.debug("no pkgfilter setting found, skipping postrun")
             return
 
         if self.name in self.getcfg('pkgmodulenames'):
