@@ -20,6 +20,7 @@
 ##
 from difflib import get_close_matches
 from distutils.version import LooseVersion
+import copy
 import glob
 import grp #@UnresolvedImport
 import os
@@ -154,6 +155,9 @@ class Application:
 
         # mandatory config entries
         self.mandatory = ['name', 'version', 'homepage', 'description', 'toolkit']
+
+        # copy of the original environ
+        self.orig_environ = copy.deepcopy(os.environ)
 
     def autobuild(self, ebfile, runTests, regtest_online):
         """
@@ -836,6 +840,9 @@ class Application:
             self.gen_installdir()
             self.make_builddir()
 
+            self.log.debug("starting environment: %s" % self.orig_environ)
+            self.log.debug("loaded modules: %s" % Modules().loaded_modules())
+
             ## SOURCE
             print_msg("unpacking...", self.log)
             self.runstep('source', [self.unpack_src], skippable=True)
@@ -876,8 +883,6 @@ class Application:
             finally:
                 self.runstep('cleanup', [self.cleanup])
 
-
-
         except StopException:
             pass
 
@@ -889,11 +894,28 @@ class Application:
             self.log.info("Skipping %s" % step)
         else:
             for m in methods:
+                self.print_environ()
                 m()
 
         if self.getcfg('stop') == step:
             self.log.info("Stopping after %s step." % step)
             raise StopException(step)
+
+    def print_environ(self):
+        """
+        Prints the environment changes and loaded modules to the debug log
+        - pretty prints the environment for easy copy-pasting
+        """
+        mods = Modules().loaded_modules()
+        env = os.environ
+        text = ""
+        for key in env:
+            if key not in self.orig_environ:
+                text += 'export %s="%s"\n' % (key, env[key])
+
+        self.log.debug("Loaded modules: %s" % mods)
+        self.log.debug("Changes to environment:\n%s" % text)
+
 
     def postproc(self):
         """
