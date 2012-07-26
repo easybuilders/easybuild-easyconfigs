@@ -1719,4 +1719,25 @@ class ApplicationPackage:
         """
         Stuff to do after installing a package.
         """
-        pass
+        try:
+            cmd, inp = self.getcfg('pkgfilter')
+        except:
+            return
+
+        if self.name in self.getcfg('pkgmodulenames'):
+            modname = self.getcfg('pkgmodulenames')[self.name]
+        else:
+            modname = self.name
+        template = {'name': modname,
+                    'version': self.version,
+                    'src': self.src
+                   }
+        cmd = cmd % template
+        if inp:
+            stdin = inp % template
+            (output, ec) = run_cmd(cmd, log_all=False, log_ok=False, simple=False, inp=stdin, regexp=False)
+        else:
+            (output, ec) = run_cmd(cmd, log_all=False, log_ok=False, simple=False, regexp=False)
+        if ec:
+            self.log.warn("package: %s failed to install!" % name)
+            self.log.error("check: %s failed with %s" % (cmd, output))
