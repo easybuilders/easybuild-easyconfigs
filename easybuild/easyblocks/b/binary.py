@@ -18,12 +18,16 @@
 # You should have received a copy of the GNU General Public License
 # along with EasyBuild. If not, see <http://www.gnu.org/licenses/>.
 ##
+"""
+EasyBlock for binary applications
+"""
 import shutil
 import os
 from easybuild.framework.application import Application
 
 class Binary(Application):
-    """Support for installing a binary package."""
+    """Support for installing a binary package.
+    Just unpack it and copy it to the installdir"""
 
     def configure(self):
         """No configuration, this is a binary package"""
@@ -34,8 +38,9 @@ class Binary(Application):
         pass
 
     def make_installdir(self):
-        """Do not actually create installdir, copytree in make_install doesn't like it's destination directory to already exist
-        But before python 2.5 the actuall path has to exist."""
+        """Do not actually create installdir, copytree in make_install doesn't 
+        want the destination directory already exist
+        But in python < 2.5 the actual path leading up to the directory has to exist."""
         self.make_dir(self.installdir, clean=True, dontcreateinstalldir=True)
 
     def make_install(self):
@@ -44,7 +49,7 @@ class Binary(Application):
 
     def make_module_extra(self):
         """
-        Sets optional variables (SOFTROOT, MPI tuning variables).
+        Add the install directory to the PATH.
         """
         txt = Application.make_module_extra(self)
         txt += self.moduleGenerator.prependPaths("PATH", [""])
