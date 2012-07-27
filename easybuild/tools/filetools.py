@@ -255,15 +255,13 @@ def run_cmd(cmd, log_ok=True, log_all=False, simple=False, inp=None, regexp=True
     - no input though stdin
     """
     try:
-        cwd = os.getcwd()
+        log.debug("run_cmd: running cmd %s (in %s)" % (cmd, os.getcwd()))
     except:
         if path:
             os.chdir(path)
+            log.debug("run_cmd: running cmd %s (in %s)" % (cmd, os.getcwd()))
         else:
             log.info("running cmd %s in non-existing directory, might fail!" % cmd)
-
-    log.debug("run_cmd: running cmd %s (in %s)" % (cmd, os.getcwd()))
-
 
     ## Log command output
     if log_output:
@@ -330,14 +328,14 @@ def run_cmd_qa(cmd, qa, no_qa=None, log_ok=True, log_all=False, simple=False, re
     - no input though stdin
     """
     try:
-        cwd = os.getcwd()
+        log.debug("runQandA: running cmd %s (in %s)" % (cmd, os.getcwd()))
     except:
         if path:
             os.chdir(path)
+            log.debug("runQandA: running cmd %s (in %s)" % (cmd, os.getcwd()))
         else:
             log.info("running cmd %s in non-existing directory, might fail!" % cmd)
 
-    log.debug("runQandA: running cmd %s (in %s)" % (cmd, os.getcwd()))
 
     # SuSE hack
     # - profile is not resourced, and functions (e.g. module) is not inherited
