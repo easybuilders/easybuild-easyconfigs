@@ -19,15 +19,16 @@
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
 """
-pasha easyblock
+EasyBuild support for Pasha, implemented as an easyblock
 """
+
 import shutil
 import os
 from easybuild.framework.application import Application
 
 class Pasha(Application):
     """
-    Extend Application to add extra configuration (overwrite variables in makefile)
+    Support for building and installing Pasha"
     """
 
     def configure(self):
