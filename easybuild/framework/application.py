@@ -1738,9 +1738,9 @@ class ApplicationPackage:
         os.chdir(self.master.installdir)
         if inp:
             stdin = inp % template
-            (output, ec) = run_cmd(cmd, log_all=False, log_ok=False, simple=False, inp=stdin, regexp=False)
+            (output, ec) = run_cmd(cmd, simple=False, inp=stdin, regexp=False)
         else:
-            (output, ec) = run_cmd(cmd, log_all=False, log_ok=False, simple=False, regexp=False)
+            (output, ec) = run_cmd(cmd, simple=False, regexp=False)
         if ec:
             self.log.warn("package: %s failed to install!" % name)
             self.log.error("check: %s failed with %s" % (cmd, output))
