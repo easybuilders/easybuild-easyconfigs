@@ -1037,10 +1037,10 @@ class Application:
                 self.sanityCheckOK = False
                 self.log.debug("sanityCheckCommand exited with code %s (output: %s)" % (ec, out))
 
-        failed_pgks = [pkg.name for pkg in self.instance_pkgs if not pkg.sanitycheck()]
+        failed_pkgs = [pkg.name for pkg in self.instance_pkgs if not pkg.sanitycheck()]
 
-        if failed_pgks:
-            self.log.info("Sanity check for packages %s failed!" % failed_pgks)
+        if failed_pkgs:
+            self.log.info("Sanity check for packages %s failed!" % failed_pkgs)
             self.sanityCheckOK = False
 
         # pass or fail
@@ -1739,7 +1739,7 @@ class ApplicationPackage:
         try:
             cmd, inp = self.master.getcfg('pkgfilter')
         except:
-            self.log.debug("no pkgfilter setting found, skipping postrun")
+            self.log.debug("no pkgfilter setting found, skipping sanitycheck")
             return
 
         if self.name in self.master.getcfg('pkgmodulenames'):
