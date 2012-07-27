@@ -248,14 +248,25 @@ def patch(patchFile, dest, fn=None, copy=False, level=None):
 
     return result
 
-def run_cmd(cmd, log_ok=True, log_all=False, simple=False, inp=None, regexp=True, log_output=False):
+def run_cmd(cmd, log_ok=True, log_all=False, simple=False, inp=None, regexp=True, log_output=False, path=None):
     """
     Executes a command cmd
     - returns exitcode and stdout+stderr (mixed)
     - no input though stdin
+    - if log_ok or log_all are set -> will log.error if non-zero exit-code
+    - if simple is True -> instead of returning a tuple (output, ec) it will just return True or False signifying succes
+    - inp is the input given to the command
+    - regexp -> Regex used to check the output for errors. If True will use default (see parselogForError)
+    - if log_output is True -> all output of command will be logged to a tempfile
+    - path is the path run_cmd should chdir to before doing anything
     """
-    log.debug("run_cmd: running cmd %s (in %s)" % (cmd, os.getcwd()))
+    try:
+        if path:
+            os.chdir(path)
 
+        log.debug("run_cmd: running cmd %s (in %s)" % (cmd, os.getcwd()))
+    except:
+        log.info("running cmd %s in non-existing directory, might fail!" % cmd)
 
     ## Log command output
     if log_output:
@@ -314,14 +325,26 @@ def run_cmd(cmd, log_ok=True, log_all=False, simple=False, inp=None, regexp=True
 
     return parse_cmd_output(cmd, stdouterr, ec, simple, log_all, log_ok, regexp)
 
-def run_cmd_qa(cmd, qa, no_qa=None, log_ok=True, log_all=False, simple=False, regexp=True, std_qa=None):
+def run_cmd_qa(cmd, qa, no_qa=None, log_ok=True, log_all=False, simple=False, regexp=True, std_qa=None, path=None):
     """
     Executes a command cmd
-    - looks for questions and tries to answer
+    - looks for questions and tries to answer based on qa dictionary
     - returns exitcode and stdout+stderr (mixed)
     - no input though stdin
+    - if log_ok or log_all are set -> will log.error if non-zero exit-code
+    - if simple is True -> instead of returning a tuple (output, ec) it will just return True or False signifying succes
+    - regexp -> Regex used to check the output for errors. If True will use default (see parselogForError)
+    - if log_output is True -> all output of command will be logged to a tempfile
+    - path is the path run_cmd should chdir to before doing anything
     """
-    log.debug("runQandA: running cmd %s (in %s)" % (cmd, os.getcwd()))
+    try:
+        if path:
+            os.chdir(path)
+
+        log.debug("runQandA: running cmd %s (in %s)" % (cmd, os.getcwd()))
+    except:
+        log.info("running cmd %s in non-existing directory, might fail!" % cmd)
+
 
     # SuSE hack
     # - profile is not resourced, and functions (e.g. module) is not inherited
