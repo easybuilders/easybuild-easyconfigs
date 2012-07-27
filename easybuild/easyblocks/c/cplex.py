@@ -87,10 +87,7 @@ class CPLEX(Binary):
         except OSError:
             self.log.exception("Can't set permissions on %s" % self.installdir)
 
-    def make_module_extra(self):
-        """
-        Add installdir to path
-        """
+        # save bindir
         os.chdir(self.installdir)
         binglob = 'cplex/bin/x86-64*'
         bins = glob.glob(binglob)
@@ -103,8 +100,13 @@ class CPLEX(Binary):
             self.log.error("No bins found using %s in %s" % (binglob, self.installdir))
         self.bindir = bindir
 
+    def make_module_extra(self):
+        """
+        Add installdir to path
+        """
+
         txt = Binary.make_module_extra(self)
-        txt += "prepend-path\tPATH\t\t$root/%s\n" % bindir
+        txt += "prepend-path\tPATH\t\t$root/%s\n" % self.bindir
         txt += "setenv\tCPLEX_HOME\t\t$root/cplex"
         self.log.debug("make_module_extra added %s" % txt)
         return txt
