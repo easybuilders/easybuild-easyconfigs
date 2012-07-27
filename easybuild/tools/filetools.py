@@ -248,12 +248,20 @@ def patch(patchFile, dest, fn=None, copy=False, level=None):
 
     return result
 
-def run_cmd(cmd, log_ok=True, log_all=False, simple=False, inp=None, regexp=True, log_output=False):
+def run_cmd(cmd, log_ok=True, log_all=False, simple=False, inp=None, regexp=True, log_output=False, path=None):
     """
     Executes a command cmd
     - returns exitcode and stdout+stderr (mixed)
     - no input though stdin
     """
+    try:
+        cwd = os.getcwd()
+    except:
+        if path:
+            os.chdir(path)
+        else:
+            log.info("running cmd %s in non-existing directory, might fail!" % cmd)
+
     log.debug("run_cmd: running cmd %s (in %s)" % (cmd, os.getcwd()))
 
 
@@ -314,13 +322,21 @@ def run_cmd(cmd, log_ok=True, log_all=False, simple=False, inp=None, regexp=True
 
     return parse_cmd_output(cmd, stdouterr, ec, simple, log_all, log_ok, regexp)
 
-def run_cmd_qa(cmd, qa, no_qa=None, log_ok=True, log_all=False, simple=False, regexp=True, std_qa=None):
+def run_cmd_qa(cmd, qa, no_qa=None, log_ok=True, log_all=False, simple=False, regexp=True, std_qa=None, path=None):
     """
     Executes a command cmd
     - looks for questions and tries to answer
     - returns exitcode and stdout+stderr (mixed)
     - no input though stdin
     """
+    try:
+        cwd = os.getcwd()
+    except:
+        if path:
+            os.chdir(path)
+        else:
+            log.info("running cmd %s in non-existing directory, might fail!" % cmd)
+
     log.debug("runQandA: running cmd %s (in %s)" % (cmd, os.getcwd()))
 
     # SuSE hack
