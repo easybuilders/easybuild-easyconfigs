@@ -33,7 +33,17 @@ class CPLEX(Binary):
     """
     Version 12.2 has a self-extratcing package with a java installer
     """
+
+    def unpack_src(self):
+        """overwrite unpack, this is non compressed binary file"""
+        self.src[0]['finalpath'] = self.builddir
+
+
+
     def make_install(self):
+        """CPLEX has an installer that prompts for information, 
+        so use Q&A here
+        """
         tmpdir = os.path.join(self.builddir, 'tmp')
         try:
             os.chdir(self.builddir)
@@ -91,9 +101,23 @@ class CPLEX(Binary):
                 bindir = bins[0]
         else:
             self.log.error("No bins found using %s in %s" % (binglob, self.installdir))
+        self.bindir = bindir
 
         txt = Binary.make_module_extra(self)
         txt += "prepend-path\tPATH\t\t$root/%s\n" % bindir
         txt += "setenv\tCPLEX_HOME\t\t$root/cplex"
-
+        self.log.debug("make_module_extra added %s" % txt)
         return txt
+
+    def sanitycheck(self):
+        """Custom sanity check for CPLEX"""
+
+        if not self.getcfg('sanityCheckPaths'):
+            self.setcfg('sanityCheckPaths', {'files':["%s/%s" % (self.bindir, x) for x in
+                                                       ["convert", "cplex", "cplexamp"]],
+                                            'dirs':[]
+                                           })
+
+            self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
+
+        Binary.sanitycheck(self)
