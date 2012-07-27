@@ -62,6 +62,8 @@ class Application:
         self.installdir = None
 
         self.pkgs = None
+        # keep the objects inside an array as well
+        self.instance_pkgs = []
         self.skip = None
 
         ## final version
@@ -1034,6 +1036,12 @@ class Application:
                 self.sanityCheckOK = False
                 self.log.debug("sanityCheckCommand exited with code %s (output: %s)" % (ec, out))
 
+        failed_pgks = [pkg.name for pkg in self.instance_pkgs if not pkg.sanitycheck()]
+
+        if failed_pgks:
+            self.log.info("Sanity check for packages %s failed!" % failed_pgks)
+            self.sanityCheckOK = False
+
         # pass or fail
         if not self.sanityCheckOK:
             self.log.error("Sanity check failed!")
@@ -1477,6 +1485,8 @@ class Application:
             if txt:
                 self.moduleExtraPackages += txt
             p.postrun()
+            # Append so we can make us of it later (in sanity_check)
+            self.instance_pkgs.append(p)
 
     def filter_packages(self):
         """
@@ -1719,6 +1729,12 @@ class ApplicationPackage:
         """
         Stuff to do after installing a package.
         """
+        pass
+
+    def sanitycheck(self):
+        """
+        sanity check to run after installing
+        """
         try:
             cmd, inp = self.master.getcfg('pkgfilter')
         except:
@@ -1734,13 +1750,15 @@ class ApplicationPackage:
                     'src': self.src
                    }
         cmd = cmd % template
-        # TODO: come up with a better way to deal with these run_cmd errors
-        os.chdir(self.master.installdir)
+
         if inp:
             stdin = inp % template
             (output, ec) = run_cmd(cmd, simple=False, inp=stdin, regexp=False)
         else:
             (output, ec) = run_cmd(cmd, simple=False, regexp=False)
         if ec:
-            self.log.warn("package: %s failed to install!" % name)
-            self.log.error("check: %s failed with %s" % (cmd, output))
+            self.log.warn("package: %s failed to install! (output: %s)" % (self.name, output))
+            return False
+        else:
+            return True
+
