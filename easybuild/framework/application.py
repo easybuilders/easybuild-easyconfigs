@@ -1008,6 +1008,9 @@ class Application:
         m.addModule([[self.name(), self.installversion]])
         m.load()
 
+        # chdir to installdir (beter environment for running tests)
+        os.chdir(self.installdir)
+
         # run sanity check command
         command = self.getcfg('sanityCheckCommand')
         if command:
@@ -1030,8 +1033,6 @@ class Application:
 
             cmd = "%(name)s %(options)s" % check_cmd
 
-            # chdir to installdir otherwise os.getcwd() in run_cmd will fail
-            os.chdir(self.installdir)
             out, ec = run_cmd(cmd, simple=False)
             if ec != 0:
                 self.sanityCheckOK = False
