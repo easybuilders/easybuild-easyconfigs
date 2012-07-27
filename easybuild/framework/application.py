@@ -20,6 +20,7 @@
 ##
 from difflib import get_close_matches
 from distutils.version import LooseVersion
+import copy
 import glob
 import grp #@UnresolvedImport
 import os
@@ -154,6 +155,9 @@ class Application:
 
         # mandatory config entries
         self.mandatory = ['name', 'version', 'homepage', 'description', 'toolkit']
+
+        # original environ will be set later
+        self.orig_environ = {}
 
     def autobuild(self, ebfile, runTests, regtest_online):
         """
@@ -836,6 +840,8 @@ class Application:
             self.gen_installdir()
             self.make_builddir()
 
+            self.print_environ()
+
             ## SOURCE
             print_msg("unpacking...", self.log)
             self.runstep('source', [self.unpack_src], skippable=True)
@@ -876,8 +882,6 @@ class Application:
             finally:
                 self.runstep('cleanup', [self.cleanup])
 
-
-
         except StopException:
             pass
 
@@ -889,11 +893,42 @@ class Application:
             self.log.info("Skipping %s" % step)
         else:
             for m in methods:
+                self.print_environ()
                 m()
 
         if self.getcfg('stop') == step:
             self.log.info("Stopping after %s step." % step)
             raise StopException(step)
+
+    def print_environ(self):
+        """
+        Prints the environment changes and loaded modules to the debug log
+        - pretty prints the environment for easy copy-pasting
+        """
+        mods = "\n".join(["module load %s/%s" % (m['name'], m['version']) for m in Modules().loaded_modules()])
+
+        env = os.environ
+
+        changed = [(k,env[k]) for k in env if k not in self.orig_environ]
+        for k in env:
+            if k in self.orig_environ and env[k] != self.orig_environ[k]:
+                changed.append((k, env[k]))
+
+        unset = [key for key in self.orig_environ if key not in env]
+
+        text = "\n".join(['export %s="%s"' % change for change in changed])
+        unset_text = "\n".join(['unset %s' % key for key in unset])
+
+
+        if mods:
+            self.log.debug("Loaded modules:\n%s" % mods)
+        if changed:
+            self.log.debug("Added to environment:\n%s" % text)
+        if unset:
+            self.log.debug("Removed from environment:\n%s" % unset_text)
+
+        self.orig_environ = copy.deepcopy(os.environ)
+
 
     def postproc(self):
         """
