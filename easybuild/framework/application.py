@@ -63,6 +63,8 @@ class Application:
         self.installdir = None
 
         self.pkgs = None
+        # keep the objects inside an array as well
+        self.instance_pkgs = []
         self.skip = None
 
         ## final version
@@ -1034,15 +1036,19 @@ class Application:
         # make fake module
         self.make_module(True)
 
+        # load the module
+        mod_path = [self.moduleGenerator.module_path, Modules().modulePath]
+        m = Modules(mod_path)
+        self.log.debug("created module instance")
+        m.addModule([[self.name(), self.installversion]])
+        m.load()
+
+        # chdir to installdir (beter environment for running tests)
+        os.chdir(self.installdir)
+
         # run sanity check command
         command = self.getcfg('sanityCheckCommand')
         if command:
-            # load the module before running the command
-            mod_path = [self.moduleGenerator.module_path]
-            m = Modules(mod_path)
-            self.log.debug("created module instance")
-            m.addModule([[self.name(), self.installversion]])
-            m.load()
 
             # set command to default. This allows for config files with
             # sanityCheckCommand = True
@@ -1062,12 +1068,16 @@ class Application:
 
             cmd = "%(name)s %(options)s" % check_cmd
 
-            # chdir to installdir otherwise os.getcwd() in run_cmd will fail
-            os.chdir(self.installdir)
             out, ec = run_cmd(cmd, simple=False)
             if ec != 0:
                 self.sanityCheckOK = False
                 self.log.debug("sanityCheckCommand exited with code %s (output: %s)" % (ec, out))
+
+        failed_pkgs = [pkg.name for pkg in self.instance_pkgs if not pkg.sanitycheck()]
+
+        if failed_pkgs:
+            self.log.info("Sanity check for packages %s failed!" % failed_pkgs)
+            self.sanityCheckOK = False
 
         # pass or fail
         if not self.sanityCheckOK:
@@ -1512,6 +1522,8 @@ class Application:
             if txt:
                 self.moduleExtraPackages += txt
             p.postrun()
+            # Append so we can make us of it later (in sanity_check)
+            self.instance_pkgs.append(p)
 
     def filter_packages(self):
         """
@@ -1755,3 +1767,36 @@ class ApplicationPackage:
         Stuff to do after installing a package.
         """
         pass
+
+    def sanitycheck(self):
+        """
+        sanity check to run after installing
+        """
+        try:
+            cmd, inp = self.master.getcfg('pkgfilter')
+        except:
+            self.log.debug("no pkgfilter setting found, skipping sanitycheck")
+            return
+
+        if self.name in self.master.getcfg('pkgmodulenames'):
+            modname = self.master.getcfg('pkgmodulenames')[self.name]
+        else:
+            modname = self.name
+        template = {'name': modname,
+                    'version': self.version,
+                    'src': self.src
+                   }
+        cmd = cmd % template
+
+        if inp:
+            stdin = inp % template
+            # set log_ok to False so we can catch the error instead of run_cmd
+            (output, ec) = run_cmd(cmd, log_ok=False, simple=False, inp=stdin, regexp=False)
+        else:
+            (output, ec) = run_cmd(cmd, log_ok=False, simple=False, regexp=False)
+        if ec:
+            self.log.warn("package: %s failed to install! (output: %s)" % (self.name, output))
+            return False
+        else:
+            return True
+
