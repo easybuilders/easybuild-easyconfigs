@@ -1001,15 +1001,16 @@ class Application:
         # make fake module
         self.make_module(True)
 
+        # load the module
+        mod_path = [self.moduleGenerator.module_path]
+        m = Modules(mod_path)
+        self.log.debug("created module instance")
+        m.addModule([[self.name(), self.installversion]])
+        m.load()
+
         # run sanity check command
         command = self.getcfg('sanityCheckCommand')
         if command:
-            # load the module before running the command
-            mod_path = [self.moduleGenerator.module_path]
-            m = Modules(mod_path)
-            self.log.debug("created module instance")
-            m.addModule([[self.name(), self.installversion]])
-            m.load()
 
             # set command to default. This allows for config files with
             # sanityCheckCommand = True
