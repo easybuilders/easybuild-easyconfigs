@@ -1037,7 +1037,7 @@ class Application:
         self.make_module(True)
 
         # load the module
-        mod_path = [self.moduleGenerator.module_path, Modules().modulePath]
+        mod_path = [self.moduleGenerator.module_path].extend(Modules().modulePath)
         m = Modules(mod_path)
         self.log.debug("created module instance")
         m.addModule([[self.name(), self.installversion]])
