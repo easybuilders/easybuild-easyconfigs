@@ -9,8 +9,7 @@ from easybuild.framework.application import Application
 class ModuleGeneratorTest(TestCase):
 
     def setUp(self):
-        # TODO: include gzip.eb as test file
-        self.modgen = ModuleGenerator(Application('easybuild/test/gzip.eb'))
+        self.modgen = ModuleGenerator(Application('easybuild/test/easyconfigs/gzip-1.4.eb'))
         self.modgen.app.installdir = "/tmp"
 
     def runTest(self):
