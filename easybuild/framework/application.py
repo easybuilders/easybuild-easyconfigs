@@ -817,7 +817,7 @@ class Application:
         mod_path.extend(Modules().modulePath)
         m = Modules(mod_path)
         self.log.debug("created module instance")
-        m.addModule([[self.name(), self.installversion]])
+        m.addModule([[self.name(), self.installversion()]])
         m.load()
 
         # chdir to installdir (beter environment for running tests)
