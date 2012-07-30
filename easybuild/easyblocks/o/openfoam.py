@@ -58,6 +58,9 @@ class OpenFOAM(Application):
         elif comp_fam == "Intel":
             self.wm_compiler="Icc"
 
+            # make sure -no-prec-div is used with Intel compilers
+            self.updatecfg('premakeopts', 'CFLAGS="$CFLAGS -no-prec-div" CXXFLAGS="$CXXFLAGS -no-prec-div"')
+
         else:
             self.log.error("Unknown compiler family, don't know how to set WM_COMPILER")
 
@@ -99,7 +102,7 @@ class OpenFOAM(Application):
         cmd="%(precmd)s && %(premakeopts)s %(makecmd)s"%{'precmd':precmd,
                                                          'premakeopts':self.getcfg('premakeopts'),
                                                          'makecmd':os.path.join(self.builddir, nameversion, "Allwmake")}
-        run_cmd(cmd,log_all=True,simple=True,logOutput=True)
+        run_cmd(cmd,log_all=True,simple=True,log_output=True)
 
         # fix file permissions of various files (only known to be required for v1.x)
         if LooseVersion(self.version()) <= LooseVersion('2'):
