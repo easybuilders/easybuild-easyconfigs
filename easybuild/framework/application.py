@@ -20,6 +20,7 @@
 ##
 from difflib import get_close_matches
 from distutils.version import LooseVersion
+import copy
 import glob
 import grp #@UnresolvedImport
 import os
@@ -62,6 +63,8 @@ class Application:
         self.installdir = None
 
         self.pkgs = None
+        # keep the objects inside an array as well
+        self.instance_pkgs = []
         self.skip = None
 
         # Easyblock for this Application
@@ -85,6 +88,9 @@ class Application:
         # allow a post message to be set, which can be shown as last output
         self.postmsg = ''
         self.setlogger()
+
+        # original environ will be set later
+        self.orig_environ = {}
 
     def autobuild(self, ebfile, runTests, regtest_online):
         """
@@ -612,6 +618,8 @@ class Application:
             self.gen_installdir()
             self.make_builddir()
 
+            self.print_environ()
+
             ## SOURCE
             print_msg("unpacking...", self.log)
             self.runstep('source', [self.unpack_src], skippable=True)
@@ -652,8 +660,6 @@ class Application:
             finally:
                 self.runstep('cleanup', [self.cleanup])
 
-
-
         except StopException:
             pass
 
@@ -665,11 +671,42 @@ class Application:
             self.log.info("Skipping %s" % step)
         else:
             for m in methods:
+                self.print_environ()
                 m()
 
         if self.getcfg('stop') == step:
             self.log.info("Stopping after %s step." % step)
             raise StopException(step)
+
+    def print_environ(self):
+        """
+        Prints the environment changes and loaded modules to the debug log
+        - pretty prints the environment for easy copy-pasting
+        """
+        mods = "\n".join(["module load %s/%s" % (m['name'], m['version']) for m in Modules().loaded_modules()])
+
+        env = os.environ
+
+        changed = [(k,env[k]) for k in env if k not in self.orig_environ]
+        for k in env:
+            if k in self.orig_environ and env[k] != self.orig_environ[k]:
+                changed.append((k, env[k]))
+
+        unset = [key for key in self.orig_environ if key not in env]
+
+        text = "\n".join(['export %s="%s"' % change for change in changed])
+        unset_text = "\n".join(['unset %s' % key for key in unset])
+
+
+        if mods:
+            self.log.debug("Loaded modules:\n%s" % mods)
+        if changed:
+            self.log.debug("Added to environment:\n%s" % text)
+        if unset:
+            self.log.debug("Removed from environment:\n%s" % unset_text)
+
+        self.orig_environ = copy.deepcopy(os.environ)
+
 
     def postproc(self):
         """
@@ -775,16 +812,20 @@ class Application:
         # make fake module
         self.make_module(True)
 
+        # load the module
+        mod_path = [self.moduleGenerator.module_path]
+        mod_path.extend(Modules().modulePath)
+        m = Modules(mod_path)
+        self.log.debug("created module instance")
+        m.addModule([[self.name(), self.installversion]])
+        m.load()
+
+        # chdir to installdir (beter environment for running tests)
+        os.chdir(self.installdir)
+
         # run sanity check command
         command = self.getcfg('sanityCheckCommand')
         if command:
-            # load the module before running the command
-            mod_path = [self.moduleGenerator.module_path]
-            m = Modules(mod_path)
-            self.log.debug("created module instance")
-            m.addModule([[self.name(), self.installversion()]])
-            m.load()
-
             # set command to default. This allows for config files with
             # sanityCheckCommand = True
             if not isinstance(command, tuple):
@@ -803,12 +844,16 @@ class Application:
 
             cmd = "%(name)s %(options)s" % check_cmd
 
-            # chdir to installdir otherwise os.getcwd() in run_cmd will fail
-            os.chdir(self.installdir)
             out, ec = run_cmd(cmd, simple=False)
             if ec != 0:
                 self.sanityCheckOK = False
                 self.log.debug("sanityCheckCommand exited with code %s (output: %s)" % (ec, out))
+
+        failed_pkgs = [pkg.name for pkg in self.instance_pkgs if not pkg.sanitycheck()]
+
+        if failed_pkgs:
+            self.log.info("Sanity check for packages %s failed!" % failed_pkgs)
+            self.sanityCheckOK = False
 
         # pass or fail
         if not self.sanityCheckOK:
@@ -1247,6 +1292,8 @@ class Application:
             if txt:
                 self.moduleExtraPackages += txt
             p.postrun()
+            # Append so we can make us of it later (in sanity_check)
+            self.instance_pkgs.append(p)
 
     def filter_packages(self):
         """
@@ -1495,3 +1542,36 @@ class ApplicationPackage:
         Toolkit used to build this package
         """
         return self.master.toolkit()
+
+    def sanitycheck(self):
+        """
+        sanity check to run after installing
+        """
+        try:
+            cmd, inp = self.master.getcfg('pkgfilter')
+        except:
+            self.log.debug("no pkgfilter setting found, skipping sanitycheck")
+            return
+
+        if self.name in self.master.getcfg('pkgmodulenames'):
+            modname = self.master.getcfg('pkgmodulenames')[self.name]
+        else:
+            modname = self.name
+        template = {'name': modname,
+                    'version': self.version,
+                    'src': self.src
+                   }
+        cmd = cmd % template
+
+        if inp:
+            stdin = inp % template
+            # set log_ok to False so we can catch the error instead of run_cmd
+            (output, ec) = run_cmd(cmd, log_ok=False, simple=False, inp=stdin, regexp=False)
+        else:
+            (output, ec) = run_cmd(cmd, log_ok=False, simple=False, regexp=False)
+        if ec:
+            self.log.warn("package: %s failed to install! (output: %s)" % (self.name, output))
+            return False
+        else:
+            return True
+
