@@ -23,7 +23,7 @@ class BuildTest(TestCase):
         logFile, log, hn = initLogger(filename=None, debug=True, typ=None)
 
         config.init('easybuild/easybuild_config.py')
-        self.errors = []
+        self.test_results = []
 
         self.log = getLog("BuildTest")
         self.build_ok = True
@@ -43,7 +43,7 @@ class BuildTest(TestCase):
                 packages.extend(processEasyconfig(file, self.log, None))
             except EasyBuildError, err:
                 self.build_ok = False
-                self.errors.append([file, err, 'eb-file error'])
+                self.test_results.append((file, 'eb-file error', err))
 
         # TODO: confirm that build-order doesn't matter
         self.apps = []
@@ -56,7 +56,7 @@ class BuildTest(TestCase):
                 self.apps.append(app_class(spec, debug=True))
             except EasyBuildError, err:
                 self.build_ok = False
-                self.errors.append([spec, err, 'Initialization error'])
+                self.test_results.append((spec, 'Initialization error', err))
 
     def performStep(self, fase, method):
         errors = 0
@@ -69,7 +69,7 @@ class BuildTest(TestCase):
                 errors += 1
                 # we cannot continue building it
                 self.build_ok = False
-                self.log.info("%s encountered error: %s (ErrorClass: %s)" % (obj, err, fase))
+                self.test_results.append((obj, fase, err))
 
         self.apps = new_apps
 
@@ -78,16 +78,21 @@ class BuildTest(TestCase):
 
     def runTest(self):
 
-        self.log.info("%s errors encountered before we can begin building" % len(self.errors))
-        for (obj, err, name) in self.errors:
-            self.log.info("%s encountered error: %s (ErrorClass: %s)" % (obj, err, name))
-
         self.log.info("Continuing building other packages")
         # take manual control over the building
         self.performStep("preparation", lambda x: x.prepare_build())
         self.performStep("pre-build verification", lambda x: x.ready2build())
-        # TODO: might want to have more control here (so we can get better error messages
         self.performStep("build", lambda x: x.build())
+
+        # At this stage, self.apps contains the succesfully build packages
+
+        for result in self.test_results:
+            self.log.info("%s crashed with an error during fase: %s, error: %s" % result)
+
+        failed = len(self.test_results)
+        total = failed + len(self.apps)
+
+        self.log.info("%s from %s packages failed to build!" % (failed, total))
 
         # exit with non-zero exit-code when not build_ok
         if not self.build_ok:
