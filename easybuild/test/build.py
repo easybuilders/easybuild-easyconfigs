@@ -51,8 +51,16 @@ class BuildTest(TestCase):
             spec = pkg['spec']
             name = pkg['module'][0]
             try:
-                # pass None so get_class will infer it
-                app_class = get_class(None, self.log, name=name)
+                # handle easyconfigs with custom easyblocks
+                easyblock = None
+                reg = re.compile(r"^\s*easyblock\s*=(.*)$")
+                for line in open(spec).readlines():
+                    match = reg.search(line)
+                    if match:
+                        easyblock = eval(match.group(1))
+                        break
+
+                app_class = get_class(easyblock, self.log, name=name)
                 self.apps.append(app_class(spec, debug=True))
             except EasyBuildError, err:
                 self.build_ok = False
