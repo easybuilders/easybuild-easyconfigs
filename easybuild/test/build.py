@@ -27,9 +27,6 @@ class BuildTest(TestCase):
 
         self.log = getLog("BuildTest")
 
-        print sys.argv[1:]
-        sys.exit()
-
         files = []
         if len(sys.argv) > 1:
             for path in sys.argv[1:]:
