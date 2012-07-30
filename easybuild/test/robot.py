@@ -52,6 +52,14 @@ class RobotTest(TestCase):
         # this should not resolve (cannot find gzip-1.4.eb)
         self.assertRaises(EasyBuildError, build.resolveDependencies, [deepcopy(package_dep)], None, self.log)
 
+        # test if dependencies of an automatically found file are also loaded
+        package_dep['dependencies'] = [('gzip', "1.4-GCC-4.6.3")]
+        res = build.resolveDependencies([deepcopy(package_dep)], base_easyconfig_dir, self.log)
+
+        # GCC should be first (required by gzip dependency)
+        self.assertEqual(('GCC', '4.6.3'), res[0]['module'])
+        self.assertEqual(('name', 'version'), res[-1]['module'])
+
 
     def tearDown(self):
         modules.Modules = orig_modules
