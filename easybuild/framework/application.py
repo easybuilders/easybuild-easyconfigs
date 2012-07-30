@@ -26,6 +26,7 @@ import grp #@UnresolvedImport
 import os
 import re
 import shutil
+import tempfile
 import time
 import urllib
 
@@ -95,6 +96,9 @@ class Application:
 
         # allow a post message to be set, which can be shown as last output
         self.postmsg = ''
+
+        # tempfile for the script which can be sourced
+        self.script_file = tempfile.NamedTemporaryFile(dir='/tmp')
 
         # generic configuration parameters
         self.cfg = {
@@ -926,8 +930,10 @@ class Application:
             self.log.debug("Loaded modules:\n%s" % mods)
         if changed:
             self.log.debug("Added to environment:\n%s" % text)
+            self.script_file.write(text)
         if unset:
             self.log.debug("Removed from environment:\n%s" % unset_text)
+            self.script_file.write(unset_text)
 
         self.orig_environ = copy.deepcopy(os.environ)
 
