@@ -47,14 +47,14 @@ class Application:
 
     ## INIT
     # TODO: never initializd with other parameters, remove them
-    def __init__(self, path, name=None, version=None, newBuild=True, debug=False):
+    def __init__(self, path):
         """
         Initialize the Application instance.
         """
         self.log = None
         self.logfile = None
         self.loghandler = None
-        self.logdebug = debug
+        self.logdebug = False
 
         self.patches = []
         self.src = []
@@ -80,10 +80,6 @@ class Application:
 
         # indicates whether build should be performed in installation dir
         self.build_in_installdir = False
-
-        # set name and version if they're provided
-        if name and version:
-            self.set_name_version(name, version, newBuild)
 
         # allow a post message to be set, which can be shown as last output
         self.postmsg = ''
@@ -252,7 +248,6 @@ class Application:
     def prepare_build(self):
         """
         prepare for building
-        TODO: this should be consolidated with ready2build
         """
 
         ## check EasyBuild version
