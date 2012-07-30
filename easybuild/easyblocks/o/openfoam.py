@@ -131,6 +131,6 @@ class OpenFOAM(Application):
                     ]
 
         for env_var in env_vars:
-            txt += "setenv\t%s\t%s" % env_var
+            txt += "setenv\t%s\t%s\n" % env_var
 
         return txt
