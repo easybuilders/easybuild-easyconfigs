@@ -31,16 +31,13 @@ class MVAPICH2(Application):
         Application.__init__(self, *args, **kwargs)
 
     def extra_options(self):
-        vars = Application.extra_options(self)
         extra_vars = {'withchkpt':[False, "Enable checkpointing support (required BLCR) (default: False)"],
                       'withlimic2':[False, "Enable LiMIC2 support for intra-node communication (default: False)"],
                       'withmpe':[False, "Build MPE routines (default: False)"],
                       'debug':[False, "Enable debug build (which is slower) (default: False)"],
                       'rdma_type':["gen2", "Specify the RDMA type (gen2/udapl) (default: gen2)"]
                      }
-        vars.update(extra_vars)
-        return vars
-
+        return Application.extra_options(self, extra_vars)
 
     def configure(self):
 

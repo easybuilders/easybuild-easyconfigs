@@ -239,14 +239,15 @@ class Application:
 
             self.log.info("Added sources: %s" % self.src)
 
-    def extra_options(self):
+    def extra_options(self, extra=None):
         """
         Extra options method which will be passed to the EasyBlock constructor.
-        Subclasses should overwrite this method (but not forget to call super,
-        unless they plan on disregarding parent options)
-        NOTE: update on dictionary returns None, so fancy one-liners will NOT work
+        Subclasses should call this method with a dict
         """
-        return {}
+        if extra == None:
+            return {}
+        else
+            return extra
 
     def prepare_build(self):
         """

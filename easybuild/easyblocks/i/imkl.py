@@ -41,10 +41,8 @@ class Imkl(IntelBase):
         IntelBase.__init__(self, *args, **kwargs)
 
     def extra_options(self):
-        vars = IntelBase.extra_options(self)
         extra_vars = {'interfaces':[True, "Indicates whether interfaces should be built (default: True)"]}
-        vars.update(extra_vars)
-        return vars
+        return IntelBase.extra_options(self, extra_vars)
 
 
     def configure(self):

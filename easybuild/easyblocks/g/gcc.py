@@ -40,7 +40,6 @@ class GCC(Application):
         self.stagedbuild = False
 
     def extra_options(self):
-        vars = Application.extra_options(self)
         extra_vars = {'languages':[[], "List of languages to build GCC for (--enable-languages) (default: [])"],
                       'withlto':[True, "Enable LTO support (default: True)"],
                       'withcloog':[False, "Build GCC with CLooG support (default: False)."],
@@ -48,8 +47,7 @@ class GCC(Application):
                       'pplwatchdog':[False, "Enable PPL watchdog (default: False)"],
                       'clooguseisl':[False, "Use ISL with CLooG or not (use PPL otherwise) (default: False)"]
                      }
-        vars.update(extra_vars)
-        return vars
+        return Application.extra_options(self, extra_vars)
 
 
     def create_dir(self, dirname):

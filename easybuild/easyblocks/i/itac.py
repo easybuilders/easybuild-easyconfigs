@@ -35,10 +35,8 @@ class Itac(IntelBase):
         IntelBase.__init__(self, *args, **kwargs)
 
     def extra_options(self):
-        vars = IntelBase.extra_options(self)
         extra_vars = {'preferredmpi':['impi3', "Preferred MPI type (default: 'impi3')"]}
-        vars.update(extra_vars)
-        return vars
+        return IntelBase.extra_options(self, extra_vars)
 
     def make_install(self):
         """
