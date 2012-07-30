@@ -314,11 +314,10 @@ class Toolkit:
         else:
             log.error("Don't know which compiler-specific subdir for ACML to use.")
         self.vars['LDFLAGS'] += " -L%(acml)s/%(comp)s64/lib/ " % {
-        #                       "%(acml)s/%(comp)s64/lib/libacml.a -lpthread" % {
                                                 'comp':compiler,
                                                 'acml':os.environ['SOFTROOTACML']
                }
-        self.vars['LIBBLAS'] = " -lacml_mv -lacml " #-lpthread"
+        self.vars['LIBBLAS'] = " -lacml_mv -lacml "
 
         self.vars['LIBBLAS_MT'] = self.vars['LIBBLAS']
 
