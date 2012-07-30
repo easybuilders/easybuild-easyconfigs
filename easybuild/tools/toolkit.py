@@ -782,7 +782,8 @@ class Toolkit:
         mpi_types = {
                       # always use tuples as keys!
                       ('impi', ):'Intel', # Intel MPI
-                      ('OpenMPI', ):'OpenMPI' # OpenMPI
+                      ('OpenMPI', ):'OpenMPI', # OpenMPI
+                      ('QLogicMPI', ):'QLogic' # QLogic MPI
                       }
 
         return self.det_toolkit_type("type of mpi library", mpi_types)
