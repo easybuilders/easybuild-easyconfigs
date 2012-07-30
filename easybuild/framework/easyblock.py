@@ -244,12 +244,21 @@ class EasyBlock:
 
     def _os_dependency_check(self, dep):
         """
-        will run rpm -q $dep, to see if dependency is available
+        Check if package is available from OS.
         """
-        # TODO: extend this with more cross platform functionality
+        # - uses rpm -q and dpkg -s --> can be run as non-root!!
+        # - fallback on which
+        # - should be extended to files later?
+        if run_cmd('which rpm', simple=True):
+            cmd = "rpm -q %s" % d
+        elif run_cmd('which dpkg', simple=True):
+            cmd = "dpkg -s %s" % d
+        else:
+            # fallback for when os-Dependency is a binary
+            cmd = "which %s" % d
+
         try:
-            cmd = "rpm -q %s" % dep
-            return run_cmd(cmd, simple=True)
+            return run_cmd(cmd, simple=True, log_all=False, log_ok=False)
         except:
             return False
 
