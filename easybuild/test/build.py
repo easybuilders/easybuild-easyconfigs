@@ -26,6 +26,7 @@ class BuildTest(TestCase):
         self.errors = []
 
         self.log = getLog("BuildTest")
+        self.build_ok = True
 
         files = []
         if len(sys.argv) > 1:
@@ -41,6 +42,7 @@ class BuildTest(TestCase):
             try:
                 packages.extend(processEasyconfig(file, self.log, None))
             except EasyBuildError, err:
+                self.build_ok = False
                 self.errors.append([file, err, 'eb-file error'])
 
         # TODO: confirm that build-order doesn't matter
@@ -53,19 +55,23 @@ class BuildTest(TestCase):
                 app_class = get_class(None, self.log, name=name)
                 self.apps.append(app_class(spec, debug=True))
             except EasyBuildError, err:
+                self.build_ok = False
                 self.errors.append([spec, err, 'Initialization error'])
 
-    def performStep(self, fase, arr, method):
+    def performStep(self, fase, method):
         errors = 0
-        for obj in arr:
+        new_apps = []
+        for obj in self.apps:
             try:
                 method(obj)
+                new_apps.append(obj)
             except EasyBuildError, err:
                 errors += 1
-                # Remove this object from the array
                 # we cannot continue building it
-                arr.remove(obj)
+                self.build_ok = False
                 self.log.info("%s encountered error: %s (ErrorClass: %s)" % (obj, err, fase))
+
+        self.apps = new_apps
 
         self.log.info("%s errors during %s" % (errors, fase))
 
@@ -76,14 +82,16 @@ class BuildTest(TestCase):
         for (obj, err, name) in self.errors:
             self.log.info("%s encountered error: %s (ErrorClass: %s)" % (obj, err, name))
 
-        self.errors = []
-
         self.log.info("Continuing building other packages")
         # take manual control over the building
-        self.performStep("preparation", self.apps, lambda x: x.prepare_build())
-        self.performStep("pre-build verification", self.apps, lambda x: x.ready2build())
+        self.performStep("preparation", lambda x: x.prepare_build())
+        self.performStep("pre-build verification", lambda x: x.ready2build())
         # TODO: might want to have more control here (so we can get better error messages
-        self.performStep("build", self.apps, lambda x: x.build())
+        self.performStep("build", lambda x: x.build())
+
+        # exit with non-zero exit-code when not build_ok
+        if not self.build_ok:
+            sys.exit(1)
 
 if __name__ == '__main__':
     # do not use unittest.main() as it will annoyingly parse command line arguments
