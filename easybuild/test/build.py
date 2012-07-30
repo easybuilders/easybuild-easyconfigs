@@ -26,9 +26,20 @@ class BuildTest(TestCase):
         self.errors = []
 
         self.log = getLog("BuildTest")
-        path = "easybuild/easyconfigs/"
+
+        print sys.argv[1:]
+        sys.exit()
+
+        files = []
+        if len(sys.argv) > 1:
+            for path in sys.argv[1:]:
+                files += findEasyconfigs(path, log)
+        else:
+            # Default path
+            path = "easybuild/easyconfigs/"
+            files = findEasyconfigs(path, log)
+
         packages = []
-        files = findEasyconfigs(path, log)
         for file in files:
             try:
                 packages.extend(processEasyconfig(file, self.log, None))
@@ -78,4 +89,6 @@ class BuildTest(TestCase):
         self.performStep("build", self.apps, lambda x: x.build())
 
 if __name__ == '__main__':
-    unittest.main()
+    # do not use unittest.main() as it will annoyingly parse command line arguments
+    suite = unittest.TestLoader().loadTestsFromTestCase(BuildTest)
+    unittest.TextTestRunner(verbosity=2).run(suite)
