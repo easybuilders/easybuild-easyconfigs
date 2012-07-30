@@ -250,12 +250,12 @@ class EasyBlock:
         # - fallback on which
         # - should be extended to files later?
         if run_cmd('which rpm', simple=True):
-            cmd = "rpm -q %s" % d
+            cmd = "rpm -q %s" % dep
         elif run_cmd('which dpkg', simple=True):
-            cmd = "dpkg -s %s" % d
+            cmd = "dpkg -s %s" % dep
         else:
             # fallback for when os-Dependency is a binary
-            cmd = "which %s" % d
+            cmd = "which %s" % dep
 
         try:
             return run_cmd(cmd, simple=True, log_all=False, log_ok=False)
