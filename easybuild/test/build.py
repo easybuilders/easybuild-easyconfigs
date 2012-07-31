@@ -90,7 +90,25 @@ class BuildTest(TestCase):
         # take manual control over the building
         self.performStep("preparation", lambda x: x.prepare_build())
         self.performStep("pre-build verification", lambda x: x.ready2build())
-        self.performStep("build", lambda x: x.build())
+
+        self.performStep("generate installdir name", lambda x: x.gen_installdir())
+        self.performStep("make builddir", lambda x: x.make_builddir())
+
+        self.performStep("unpacking", lambda x: x.unpack_src())
+        self.performStep("patching", lambda x: x.apply_patch())
+
+
+        self.performStep("prepare toolkit", lambda x: x.toolkit().prepare(x.getcfg('onlytkmod')))
+        self.performStep("setup startfrom", lambda x: x.startfrom())
+        self.performStep('configure', lambda x: x.configure())
+        self.performStep('make', lambda x: x.make())
+        self.performStep('test', lambda x: x.test())
+        self.performStep('create installdir', lambda x: x.make_installdir())
+        self.performStep('make install', lambda x: x.make_install())
+        self.performStep('packages', lambda x: x.packages())
+        self.performStep('postproc', lambda x: x.postproc())
+        self.performStep('sanity check', lambda x: x.sanitycheck())
+        self.performStep('cleanup', lambda x: x.cleanup())
 
         # At this stage, self.apps contains the succesfully build packages
 
