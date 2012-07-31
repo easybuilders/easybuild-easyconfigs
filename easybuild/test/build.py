@@ -88,6 +88,9 @@ class BuildTest(TestCase):
                 self.test_results.append((spec, 'initialization', err))
 
     def performStep(self, fase, method):
+        """
+        Perform method for all easyblocks which can still be build
+        """
         errors = 0
         new_apps = []
         for obj in self.apps:
@@ -106,6 +109,9 @@ class BuildTest(TestCase):
 
 
     def runTest(self):
+        """
+        Actual test, loop over all the different steps in a build
+        """
         self.log.info("Continuing building other packages")
 
         # take manual control over the building
