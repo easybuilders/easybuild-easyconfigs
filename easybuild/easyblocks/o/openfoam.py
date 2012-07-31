@@ -128,7 +128,7 @@ class OpenFOAM(Application):
             pdir = "linux64%s" % self.wm_compiler
 
             self.setcfg('sanityCheckPaths',{'files':["%s/etc/%s" % (odir, x) for x in ["bashrc", "cshrc"]],
-                                            'dirs':["%s/platforms/%s/%s" % (odir, pdir, x) for x in ["bin", "lib"]] +
+                                            'dirs':["%s/platforms/%s/%s" % (odir, pdiro, x) for x in ["bin", "lib"]] +
                                                    ["%s/platforms/%s/bin" % (tdir, pdiro), "%s/platforms/%s/lib" % (tdir, pdir)]
                                            })
 
