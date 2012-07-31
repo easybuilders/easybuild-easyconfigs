@@ -26,10 +26,13 @@ import grp #@UnresolvedImport
 import os
 import re
 import shutil
+import tempfile
 import time
 import urllib
 
 import easybuild
+import easybuild.tools.config as config
+import easybuild.tools.environment as env
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.tools.build_log import EasyBuildError, initLogger, removeLogHandler,print_msg
 from easybuild.tools.config import source_path, buildPath, installPath
@@ -87,6 +90,7 @@ class Application:
 
         # original environ will be set later
         self.orig_environ = {}
+        self.loaded_modules = []
 
     def autobuild(self, ebfile, runTests, regtest_online):
         """
@@ -616,6 +620,9 @@ class Application:
 
             self.print_environ()
 
+            # reset tracked changes
+            env.reset_changes()
+
             ## SOURCE
             print_msg("unpacking...", self.log)
             self.runstep('source', [self.unpack_src], skippable=True)
@@ -656,6 +663,13 @@ class Application:
             finally:
                 self.runstep('cleanup', [self.cleanup])
 
+            # write changes to the environment to logdir
+            logdir = os.path.join(self.installdir, config.logPath())
+            if not os.path.isdir(logdir):
+                os.makedirs(logdir)
+
+            env.write_changes(os.path.join(logdir, "easybuild-env-vars.sh"))
+
         except StopException:
             pass
 
@@ -679,9 +693,11 @@ class Application:
         Prints the environment changes and loaded modules to the debug log
         - pretty prints the environment for easy copy-pasting
         """
-        mods = "\n".join(["module load %s/%s" % (m['name'], m['version']) for m in Modules().loaded_modules()])
+        mods = [(mod['name'], mod['version']) for mod in Modules().loaded_modules()]
+        mods_text = "\n".join(["module load %s/%s" % m for m in mods if m not in self.loaded_modules])
+        self.loaded_modules = mods
 
-        env = os.environ
+        env = copy.deepcopy(os.environ)
 
         changed = [(k,env[k]) for k in env if k not in self.orig_environ]
         for k in env:
@@ -693,16 +709,14 @@ class Application:
         text = "\n".join(['export %s="%s"' % change for change in changed])
         unset_text = "\n".join(['unset %s' % key for key in unset])
 
-
         if mods:
-            self.log.debug("Loaded modules:\n%s" % mods)
+            self.log.debug("Loaded modules:\n%s" % mods_text)
         if changed:
             self.log.debug("Added to environment:\n%s" % text)
         if unset:
             self.log.debug("Removed from environment:\n%s" % unset_text)
 
-        self.orig_environ = copy.deepcopy(os.environ)
-
+        self.orig_environ = env
 
     def postproc(self):
         """

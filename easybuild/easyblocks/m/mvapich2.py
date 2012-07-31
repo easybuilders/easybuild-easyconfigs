@@ -20,6 +20,7 @@
 ##
 import os
 from easybuild.framework.application import Application
+import easybuild.tools.environment as env
 
 class MVAPICH2(Application):
     """
@@ -72,8 +73,8 @@ class MVAPICH2(Application):
             envvar_val = os.getenv(envvar)
             if envvar_val:
                 if not os.getenv(new_envvar):
-                    os.putenv(new_envvar, envvar_val)
-                    os.putenv(envvar, '')
+                    env.set(new_envvar, envvar_val)
+                    env.set(envvar, '')
                 else:
                     self.log.error("Both %(ev)s and %(nev)s set, can I overwrite %(nev)s with %(ev)s (%(evv)s) ?" % {
                                                                                                                    'ev':envvar,
