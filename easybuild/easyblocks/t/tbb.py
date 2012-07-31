@@ -21,6 +21,7 @@
 
 import os
 import shutil
+import glob
 from easybuild.easyblocks.i.intelbase import IntelBase
 
 class Tbb(IntelBase):
@@ -31,7 +32,21 @@ class Tbb(IntelBase):
     def make_install(self):
         """overwrite make_install to add extra symlinks"""
         IntelBase.make_install(self)
-        self.libpath = "%s/tbb/libs/intel64/%s/" % (self.installdir, "cc4.1.0_libc2.4_kernel2.6.16.21")
+
+        # save libdir
+        os.chdir(self.installdir)
+        libglob = 'tbb/libs/intel64/cc*libc*_kernel*'
+        libs = glob.glob(libglob)
+        if len(libs):
+            libdir = libs[-1] # take the last one, should be ordered by cc version.
+        else:
+            self.log.error("No libs found using %s in %s" % (libglob, self.installdir))
+        self.libdir = libdir
+
+
+        self.libpath = "%s/tbb/libs/intel64/%s/" % (self.installdir, libdir)
+        # applications go looking into tbb/lib so we move what's in there to libs
+        # and symlink the right lib from /tbb/libs/intel64/... to lib
         installibpath = os.path.join(self.installdir, 'tbb', 'lib')
         shutil.move(installibpath, os.path.join(self.installdir, 'tbb', 'libs'))
         os.symlink(self.libpath, installibpath)
@@ -41,7 +56,7 @@ class Tbb(IntelBase):
 
         if not self.getcfg('sanityCheckPaths'):
             self.setcfg('sanityCheckPaths', {'files':[],
-                                            'dirs':["tbb/bin", "tbb/lib/"]
+                                            'dirs':["tbb/bin", "tbb/lib/", "tbb/libs/"]
                                            })
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
@@ -52,6 +67,7 @@ class Tbb(IntelBase):
         """Add correct path to lib to LD_LIBRARY_PATH. and intel license file"""
 
         txt = IntelBase.make_module_extra(self)
+        # since we have symlinked it we could also use $SOFTROOTTBB/tbb/lib here
         txt += "prepend-path\t%s\t\t%s\n" % ('LD_LIBRARY_PATH', self.libpath)
 
         return txt
