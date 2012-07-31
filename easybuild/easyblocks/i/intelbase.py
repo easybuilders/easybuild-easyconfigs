@@ -72,7 +72,7 @@ class IntelBase(Application):
             self.log.error("Can't find license at %s" % self.license)
 
         ## set INTEL_LICENSE_FILE
-        env.putenv("INTEL_LICENSE_FILE", self.license)
+        env.set("INTEL_LICENSE_FILE", self.license)
 
         # clean home directory
         self.clean_homedir()
@@ -114,14 +114,14 @@ CONTINUE_WITH_OPTIONAL_ERROR=yes
             self.log.exception("Directory %s can't be created" % (tmpdir))
         tmppathopt = ''
         if self.getcfg('usetmppath'):
-            env.putenv('TMP_PATH', tmpdir)
+            env.set('TMP_PATH', tmpdir)
             tmppathopt = "-t %s" % tmpdir
 
         ## set some extra env variables
-        env.putenv('LOCAL_INSTALL_VERBOSE','1')
-        env.putenv['VERBOSE_MODE', '1')
+        env.set('LOCAL_INSTALL_VERBOSE','1')
+        env.set('VERBOSE_MODE', '1')
 
-        env.putenv('INSTALL_PATH', self.installdir)
+        env.set('INSTALL_PATH', self.installdir)
 
         ## perform installation
         cmd = "./install.sh %s -s %s" % (tmppathopt, silentcfg)

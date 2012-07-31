@@ -35,7 +35,7 @@ class NetCDF_Fortran(Application):
 
         # add -DgFortran to CPPFLAGS when building with GCC
         if self.tk.toolkit_comp_family() == "GCC":
-            env.putenv('CPPFLAGS', "%s -DgFortran" % os.getenv('CPPFLAGS'))
+            env.set('CPPFLAGS', "%s -DgFortran" % os.getenv('CPPFLAGS'))
 
         Application.configure(self)
 

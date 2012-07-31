@@ -176,10 +176,10 @@ class Imkl(IntelBase):
                         self.log.exception("Creating temporary directory failed")
 
                     ## always set INSTALL_DIR, SPEC_OPT, COPTS and CFLAGS
-                    env.putenv('INSTALL_DIR', tmpbuild)
-                    env.putenv('SPEC_OPT', opt)
-                    env.putenv('COPTS', opt)
-                    env.putenv('CFLAGS', opt)
+                    env.set('INSTALL_DIR', tmpbuild)
+                    env.set('SPEC_OPT', opt)
+                    env.set('COPTS', opt)
+                    env.set('CFLAGS', opt)
 
                     try:
                         intdir = os.path.join(interfacedir, i)
@@ -295,9 +295,9 @@ class Imkl(IntelBase):
                         self.log.exception("Creating temporary directory failed")
 
                     ## always set INSTALL_DIR, SPEC_OPT and CFLAGS
-                    env.putenv('INSTALL_DIR', tmpbuild)
-                    env.putenv('SPEC_OPT', opt)
-                    env.putenv('CFLAGS', opt)
+                    env.set('INSTALL_DIR', tmpbuild)
+                    env.set('SPEC_OPT', opt)
+                    env.set('CFLAGS', opt)
 
                     try:
                         intdir = os.path.join(interfacedir, i)

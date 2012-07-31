@@ -93,8 +93,8 @@ class WPS(Application):
         jasper = os.getenv('SOFTROOTJASPER')
         jasperlibdir = os.path.join(jasper, "lib")
         if jasper:
-            env.putenv('JASPERINC', os.path.join(jasper, "include"))
-            env.putenv('JASPERLIB', jasperlibdir)
+            env.set('JASPERINC', os.path.join(jasper, "include"))
+            env.set('JASPERLIB', jasperlibdir)
         else:
             self.log.error("JasPer module not loaded?")
 

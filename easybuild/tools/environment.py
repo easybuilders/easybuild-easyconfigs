@@ -18,7 +18,7 @@ def reset_changes():
     global changes
     changes = {}
 
-def putenv(key, value):
+def set(key, value):
     """
     put key in the environment with value
     tracks added keys until write_changes has been called

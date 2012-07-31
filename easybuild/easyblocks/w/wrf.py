@@ -72,7 +72,7 @@ class WRF(Application):
             if not (hdf5 or parallel_hdf5):
                 self.log.error("Parallel HDF5 module not loaded?")
             else:
-                env.putenv('PHDF5', hdf5)
+                env.set('PHDF5', hdf5)
         else:
             self.log.info("HDF5 module not loaded, assuming that's OK...")
 
@@ -80,8 +80,8 @@ class WRF(Application):
         jasper = os.getenv('SOFTROOTJASPER')
         jasperlibdir = os.path.join(jasper, "lib")
         if jasper:
-            env.putenv('JASPERINC', os.path.join(jasper, "include"))
-            env.putenv('JASPERLIB', jasperlibdir)
+            env.set('JASPERINC', os.path.join(jasper, "include"))
+            env.set('JASPERLIB', jasperlibdir)
 
         else:
             if os.getenv('JASPERINC') or os.getenv('JASPERLIB'):
@@ -90,7 +90,7 @@ class WRF(Application):
                 self.log.info("JasPer module not loaded, assuming that's OK...")
 
         # enable support for large file support in netCDF
-        env.putenv('WRFIO_NCD_LARGE_FILE_SUPPORT', '1')
+        env.set('WRFIO_NCD_LARGE_FILE_SUPPORT', '1')
 
         # patch arch/Config_new.pl script, so that run_cmd_qa receives all output to answer questions
         patch_perl_script_autoflush(os.path.join("arch", "Config_new.pl"))
@@ -163,7 +163,7 @@ class WRF(Application):
                 for envvar in ['CFLAGS', 'FFLAGS']:
                     val = os.getenv(envvar)
                     if '-O3' in val:
-                        env.putenv(envvar, '%s -heap-arrays' % val)
+                        env.set(envvar, '%s -heap-arrays' % val)
                         self.log.info("Updated %s to '%s'" % (envvar, os.getenv(envvar)))
 
             # replace -O3 with desired optimization options
