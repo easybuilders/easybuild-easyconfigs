@@ -242,7 +242,7 @@ class Application:
         """
         if extra == None:
             return {}
-        else
+        else:
             return extra
 
     def prepare_build(self):
