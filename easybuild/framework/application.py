@@ -847,6 +847,9 @@ class Application:
             self.gen_installdir()
             self.make_builddir()
 
+            self.script_file.write("# EasyBuild version: %s for module %s/%s\n" % (easybuild.VERBOSE_VERSION,
+                self.name(), self.installversion))
+
             self.print_environ()
 
             ## SOURCE
