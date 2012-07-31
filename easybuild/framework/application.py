@@ -914,7 +914,12 @@ class Application:
         """
         mods = "\n".join(["module load %s/%s" % (m['name'], m['version']) for m in Modules().loaded_modules()])
 
-        env = os.environ
+        filter = ["_LMFILES_","LOADEDMODULES"]
+
+        env = copy.deepcopy(os.environ)
+
+        for key in filter:
+            env.pop(key, '')
 
         changed = [(k,env[k]) for k in env if k not in self.orig_environ]
         for k in env:
@@ -937,7 +942,7 @@ class Application:
         if text or unset_text:
             self.script_file.write("\n".join([text, unset_text]))
 
-        self.orig_environ = copy.deepcopy(os.environ)
+        self.orig_environ = env
 
 
     def postproc(self):
