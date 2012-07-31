@@ -32,6 +32,7 @@ import urllib
 
 import easybuild
 import easybuild.tools.config as config
+import easybuild.tools.environment as env
 from easybuild.tools.build_log import EasyBuildError, initLogger, removeLogHandler,print_msg
 from easybuild.tools.config import source_path, buildPath, installPath
 from easybuild.tools.filetools import unpack, patch, run_cmd, convertName
@@ -847,6 +848,9 @@ class Application:
 
             self.print_environ()
 
+            # reset tracked changes
+            env.reset_changes()
+
             ## SOURCE
             print_msg("unpacking...", self.log)
             self.runstep('source', [self.unpack_src], skippable=True)
@@ -886,6 +890,15 @@ class Application:
                 self.runstep('sanity check', [self.sanitycheck], skippable=False)
             finally:
                 self.runstep('cleanup', [self.cleanup])
+
+            # write changes to the environment to logdir
+            logdir = os.path.join(self.installdir, config.logPath())
+            if not os.path.isdir(logdir):
+                os.makedirs(logdir)
+
+            env.write_changes(os.path.join(logdir, "easybuild-env-vars.sh"))
+
+
 
         except StopException:
             pass
@@ -971,7 +984,6 @@ class Application:
     def cleanup(self):
         """
         Cleanup leftover mess: remove/clean build directory
-        Move temporary files into log directory
 
         except when we're building in the installation directory,
         otherwise we remove the installation
