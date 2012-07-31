@@ -28,8 +28,8 @@ import tempfile
 from easybuild.framework.application import Application
 from easybuild.tools.filetools import patch_perl_script_autoflush, run_cmd, run_cmd_qa, unpack
 from easybuild.easyblocks.n.netcdf import set_netcdf_env_vars, get_netcdf_module_set_cmds
-
 import easybuild.tools.environment as env
+import easybuild.tools.toolkit as toolkit
 
 class WPS(Application):
     """Support for building/installing WPS."""
@@ -125,10 +125,10 @@ class WPS(Application):
                                'dmpar':'dmpar'
                                }
 
-            if self.comp_fam == "Intel":
+            if self.comp_fam == toolkit.INTEL:
                 build_type_option = " Linux x86_64, Intel compiler"
 
-            elif self.comp_fam == "GCC":
+            elif self.comp_fam == toolkit.GCC:
                 build_type_option = "Linux x86_64 g95 compiler"
 
             else:
@@ -141,10 +141,10 @@ class WPS(Application):
                                'dmpar':'DM parallel'
                                }
 
-            if self.comp_fam == "Intel":
+            if self.comp_fam == toolkit.INTEL:
                 build_type_option = "PC Linux x86_64, Intel compiler"
 
-            elif self.comp_fam == "GCC":
+            elif self.comp_fam == toolkit.GCC:
                 build_type_option = "PC Linux x86_64, gfortran compiler,"
                 knownbuildtypes['dmpar'] = knownbuildtypes['dmpar'].upper()
 

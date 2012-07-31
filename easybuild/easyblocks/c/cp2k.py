@@ -27,6 +27,7 @@ import shutil
 import sys
 from easybuild.framework.application import Application
 from easybuild.tools.filetools import run_cmd
+import easybuild.tools.toolkit as toolkit
 
 class CP2K(Application):
     """
@@ -118,9 +119,9 @@ class CP2K(Application):
 
         # compiler toolkit specific configuration
         comp_fam = self.tk.toolkit_comp_family()
-        if comp_fam == "Intel":
+        if comp_fam == toolkit.INTEL:
             options = self.configureIntelBased()
-        elif comp_fam == "GCC":
+        elif comp_fam == toolkit.GCC:
             options = self.configureGCCBased()
         else:
             self.log.error("Don't know how to tweak configuration for compiler used.")

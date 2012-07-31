@@ -18,11 +18,11 @@
 # You should have received a copy of the GNU General Public License
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
-
-from easybuild.framework.application import ApplicationPackage, Application
-from easybuild.tools.filetools import unpack, patch, run_cmd
 import os
 import shutil
+from easybuild.framework.application import ApplicationPackage, Application
+from easybuild.tools.filetools import unpack, patch, run_cmd
+import easybuild.tools.toolkit as toolkit
 
 class Python(Application):
     """Support for building/installing Python
@@ -192,10 +192,10 @@ class FortranPythonPackage(DefaultPythonPackage):
     def make(self):
         comp_fam = self.tk.toolkit_comp_family()
 
-        if comp_fam == "Intel":
+        if comp_fam == toolkit.INTEL:
             cmd = "python setup.py build --compiler=intel --fcompiler=intelem"
 
-        elif comp_fam == "GCC":
+        elif comp_fam == toolkit.GCC:
             cmdprefix = ""
             ldflags = os.getenv('LDFLAGS')
             if ldflags:

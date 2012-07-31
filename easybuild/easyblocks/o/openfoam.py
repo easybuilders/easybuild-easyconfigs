@@ -23,6 +23,7 @@ import os
 import stat
 from easybuild.framework.application import Application
 from easybuild.tools.filetools import run_cmd, recursiveChmod
+import easybuild.tools.toolkit as toolkit
 
 class OpenFOAM(Application):
     """Support for building and installing OpenFOAM."""
@@ -30,7 +31,7 @@ class OpenFOAM(Application):
     def __init__(self,*args,**kwargs):
         """Specify that OpenFOAM should be built in install dir."""
 
-        Application.__init__(self, args,kwargs)
+        Application.__init__(self, *args, **kwargs)
 
         self.build_in_installdir = True
 
@@ -52,10 +53,10 @@ class OpenFOAM(Application):
         # compiler
         comp_fam = self.tk.toolkit_comp_family()
 
-        if comp_fam == "GCC":
+        if comp_fam == toolkit.GCC:
             self.wm_compiler="Gcc"
 
-        elif comp_fam == "Intel":
+        elif comp_fam == toolkit.INTEL:
             self.wm_compiler="Icc"
 
             # make sure -no-prec-div is used with Intel compilers
@@ -69,11 +70,11 @@ class OpenFOAM(Application):
         # type of MPI
         mpi_type = self.tk.toolkit_mpi_type()
 
-        if mpi_type == "Intel":
+        if mpi_type == toolkit.INTEL:
             self.mpipath = os.path.join(os.environ['SOFTROOTIMPI'],'intel64')
             self.wm_mplib = "IMPI"
 
-        elif mpi_type == "QLogic":
+        elif mpi_type == toolkit.QLOGIC:
             self.mpipath = os.environ['SOFTROOTQLOGICMPI']
             self.wm_mplib = "MPICH"
 
