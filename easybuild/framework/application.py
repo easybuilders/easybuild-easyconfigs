@@ -931,10 +931,11 @@ class Application:
             self.log.debug("Loaded modules:\n%s" % mods)
         if changed:
             self.log.debug("Added to environment:\n%s" % text)
-            self.script_file.write(text)
         if unset:
             self.log.debug("Removed from environment:\n%s" % unset_text)
-            self.script_file.write(unset_text)
+
+        if text or unset_text:
+            self.script_file.write("\n".join([text, unset_text]))
 
         self.orig_environ = copy.deepcopy(os.environ)
 
