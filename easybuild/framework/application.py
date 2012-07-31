@@ -165,6 +165,7 @@ class Application:
 
         # original environ will be set later
         self.orig_environ = {}
+        self.loaded_modules = []
 
     def autobuild(self, ebfile, runTests, regtest_online):
         """
@@ -915,7 +916,9 @@ class Application:
         Prints the environment changes and loaded modules to the debug log
         - pretty prints the environment for easy copy-pasting
         """
-        mods = "\n".join(["module load %s/%s" % (m['name'], m['version']) for m in Modules().loaded_modules()])
+        mods = [(mod['name'], mod['version']) for mod in Modules().loaded_modules()]
+        mods_text = "\n".join(["module load %s/%s" % m for m in mods if m not in self.loaded_modules])
+        self.loaded_modules = mods
 
         filter = ["_LMFILES_","LOADEDMODULES"]
 
@@ -936,7 +939,7 @@ class Application:
 
 
         if mods:
-            self.log.debug("Loaded modules:\n%s" % mods)
+            self.log.debug("Loaded modules:\n%s" % mods_text)
         if changed:
             self.log.debug("Added to environment:\n%s" % text)
         if unset:
