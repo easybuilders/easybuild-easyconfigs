@@ -26,10 +26,12 @@ import grp #@UnresolvedImport
 import os
 import re
 import shutil
+import tempfile
 import time
 import urllib
 
 import easybuild
+import easybuild.tools.config as config
 from easybuild.tools.build_log import EasyBuildError, initLogger, removeLogHandler,print_msg
 from easybuild.tools.config import source_path, buildPath, installPath
 from easybuild.tools.filetools import unpack, patch, run_cmd, convertName
@@ -95,6 +97,9 @@ class Application:
 
         # allow a post message to be set, which can be shown as last output
         self.postmsg = ''
+
+        # tempfile for the script which can be sourced
+        self.script_file = tempfile.NamedTemporaryFile()
 
         # generic configuration parameters
         self.cfg = {
@@ -909,7 +914,12 @@ class Application:
         """
         mods = "\n".join(["module load %s/%s" % (m['name'], m['version']) for m in Modules().loaded_modules()])
 
-        env = os.environ
+        filter = ["_LMFILES_","LOADEDMODULES"]
+
+        env = copy.deepcopy(os.environ)
+
+        for key in filter:
+            env.pop(key, '')
 
         changed = [(k,env[k]) for k in env if k not in self.orig_environ]
         for k in env:
@@ -929,7 +939,10 @@ class Application:
         if unset:
             self.log.debug("Removed from environment:\n%s" % unset_text)
 
-        self.orig_environ = copy.deepcopy(os.environ)
+        if text or unset_text:
+            self.script_file.write("\n".join([text, unset_text]))
+
+        self.orig_environ = env
 
 
     def postproc(self):
@@ -968,6 +981,7 @@ class Application:
     def cleanup(self):
         """
         Cleanup leftover mess: remove/clean build directory
+        Move temporary files into log directory
 
         except when we're building in the installation directory,
         otherwise we remove the installation
@@ -986,6 +1000,19 @@ class Application:
                 self.log.info("Cleaning up builddir %s" % (self.builddir))
             except OSError, err:
                 self.log.exception("Cleaning up builddir %s failed: %s" % (self.builddir, err))
+
+        logdir = os.path.join(self.installdir, config.logPath())
+        actual_script_path = os.path.join(logdir, "env-vars.sh")
+
+        if not os.path.isdir(logdir):
+            os.makedirs(logdir)
+
+        # move the temporary file to the actual destination
+        self.script_file.seek(0)
+        dest = open(actual_script_path, "w")
+        shutil.copyfileobj(self.script_file, dest)
+        dest.close()
+        self.script_file.close()
 
     def sanitycheck(self):
         """
