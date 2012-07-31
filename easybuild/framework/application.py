@@ -26,7 +26,6 @@ import grp #@UnresolvedImport
 import os
 import re
 import shutil
-import tempfile
 import time
 import urllib
 
@@ -1061,6 +1060,9 @@ class Application:
         except EasyBuildError, err:
             self.log.debug("Loading module failed: %s" % err)
             self.sanityCheckOK = False
+
+        # clean up path for fake module
+        self.moduleGenerator.cleanup()
 
         # chdir to installdir (beter environment for running tests)
         os.chdir(self.installdir)
