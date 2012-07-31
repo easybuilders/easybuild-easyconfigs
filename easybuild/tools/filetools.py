@@ -33,6 +33,8 @@ import time
 from easybuild.tools.asyncprocess import Popen, PIPE, STDOUT, send_all, recv_some
 from easybuild.tools.build_log import getLog
 
+import easybuild.tools.environment as env
+
 log = getLog('fileTools')
 errorsFoundInLog = 0
 
@@ -568,7 +570,6 @@ def parse_cmd_output(cmd, stdouterr, ec, simple, log_all, log_ok, regexp):
 def modifyEnv(old, new):
     """
     Compares 2 os.environ dumps. Adapts final environment.
-    - Assinging to os.environ doesn't seem to work, need to use os.putenv
     """
     oldKeys = old.keys()
     newKeys = new.keys()
@@ -578,12 +579,10 @@ def modifyEnv(old, new):
             ## hmm, smart checking with debug logging
             if not new[key] == old[key]:
                 log.debug("Key in new environment found that is different from old one: %s (%s)" % (key, new[key]))
-                os.putenv(key, new[key])
-                os.environ[key] = new[key]
+                env.set(key, new[key])
         else:
             log.debug("Key in new environment found that is not in old one: %s (%s)" % (key, new[key]))
-            os.putenv(key, new[key])
-            os.environ[key] = new[key]
+            env.set(key, new[key])
 
     for key in oldKeys:
         if not key in newKeys:

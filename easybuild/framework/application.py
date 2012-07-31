@@ -32,6 +32,7 @@ import urllib
 
 import easybuild
 import easybuild.tools.config as config
+import easybuild.tools.environment as env
 from easybuild.tools.build_log import EasyBuildError, initLogger, removeLogHandler,print_msg
 from easybuild.tools.config import source_path, buildPath, installPath
 from easybuild.tools.filetools import unpack, patch, run_cmd, convertName
@@ -97,9 +98,6 @@ class Application:
 
         # allow a post message to be set, which can be shown as last output
         self.postmsg = ''
-
-        # tempfile for the script which can be sourced
-        self.script_file = tempfile.NamedTemporaryFile()
 
         # generic configuration parameters
         self.cfg = {
@@ -848,10 +846,10 @@ class Application:
             self.gen_installdir()
             self.make_builddir()
 
-            self.script_file.write("# EasyBuild version: %s for module %s/%s\n" % (easybuild.VERBOSE_VERSION,
-                self.name(), self.installversion))
-
             self.print_environ()
+
+            # reset tracked changes
+            env.reset_changes()
 
             ## SOURCE
             print_msg("unpacking...", self.log)
@@ -893,6 +891,13 @@ class Application:
             finally:
                 self.runstep('cleanup', [self.cleanup])
 
+            # write changes to the environment to logdir
+            logdir = os.path.join(self.installdir, config.logPath())
+            if not os.path.isdir(logdir):
+                os.makedirs(logdir)
+
+            env.write_changes(os.path.join(logdir, "easybuild-env-vars.sh"))
+
         except StopException:
             pass
 
@@ -920,12 +925,7 @@ class Application:
         mods_text = "\n".join(["module load %s/%s" % m for m in mods if m not in self.loaded_modules])
         self.loaded_modules = mods
 
-        filter = ["_LMFILES_","LOADEDMODULES"]
-
         env = copy.deepcopy(os.environ)
-
-        for key in filter:
-            env.pop(key, '')
 
         changed = [(k,env[k]) for k in env if k not in self.orig_environ]
         for k in env:
@@ -937,7 +937,6 @@ class Application:
         text = "\n".join(['export %s="%s"' % change for change in changed])
         unset_text = "\n".join(['unset %s' % key for key in unset])
 
-
         if mods:
             self.log.debug("Loaded modules:\n%s" % mods_text)
         if changed:
@@ -945,11 +944,7 @@ class Application:
         if unset:
             self.log.debug("Removed from environment:\n%s" % unset_text)
 
-        if text or unset_text:
-            self.script_file.write("\n".join([text, unset_text]))
-
         self.orig_environ = env
-
 
     def postproc(self):
         """
@@ -987,7 +982,6 @@ class Application:
     def cleanup(self):
         """
         Cleanup leftover mess: remove/clean build directory
-        Move temporary files into log directory
 
         except when we're building in the installation directory,
         otherwise we remove the installation
@@ -1006,19 +1000,6 @@ class Application:
                 self.log.info("Cleaning up builddir %s" % (self.builddir))
             except OSError, err:
                 self.log.exception("Cleaning up builddir %s failed: %s" % (self.builddir, err))
-
-        logdir = os.path.join(self.installdir, config.logPath())
-        actual_script_path = os.path.join(logdir, "easybuild-env-vars.sh")
-
-        if not os.path.isdir(logdir):
-            os.makedirs(logdir)
-
-        # move the temporary file to the actual destination
-        self.script_file.seek(0)
-        dest = open(actual_script_path, "w")
-        shutil.copyfileobj(self.script_file, dest)
-        dest.close()
-        self.script_file.close()
 
     def sanitycheck(self):
         """

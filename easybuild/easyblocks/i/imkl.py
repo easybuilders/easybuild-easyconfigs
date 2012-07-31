@@ -29,6 +29,8 @@ from easybuild.easyblocks.i.intelbase import IntelBase
 from easybuild.tools.filetools import run_cmd
 from easybuild.tools.modules import Modules
 
+import easybuild.tools.environment as env
+
 class Imkl(IntelBase):
     """
     Class that can be used to install mkl
@@ -174,10 +176,10 @@ class Imkl(IntelBase):
                         self.log.exception("Creating temporary directory failed")
 
                     ## always set INSTALL_DIR, SPEC_OPT, COPTS and CFLAGS
-                    os.putenv('INSTALL_DIR', tmpbuild)
-                    os.putenv('SPEC_OPT', opt)
-                    os.putenv('COPTS', opt)
-                    os.putenv('CFLAGS', opt)
+                    env.set('INSTALL_DIR', tmpbuild)
+                    env.set('SPEC_OPT', opt)
+                    env.set('COPTS', opt)
+                    env.set('CFLAGS', opt)
 
                     try:
                         intdir = os.path.join(interfacedir, i)
@@ -293,9 +295,9 @@ class Imkl(IntelBase):
                         self.log.exception("Creating temporary directory failed")
 
                     ## always set INSTALL_DIR, SPEC_OPT and CFLAGS
-                    os.putenv('INSTALL_DIR', tmpbuild)
-                    os.putenv('SPEC_OPT', opt)
-                    os.putenv('CFLAGS', opt)
+                    env.set('INSTALL_DIR', tmpbuild)
+                    env.set('SPEC_OPT', opt)
+                    env.set('CFLAGS', opt)
 
                     try:
                         intdir = os.path.join(interfacedir, i)

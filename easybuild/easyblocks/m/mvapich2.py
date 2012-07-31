@@ -20,6 +20,7 @@
 ##
 import os
 from easybuild.framework.application import Application
+import easybuild.tools.environment as env
 
 class MVAPICH2(Application):
     """
@@ -65,14 +66,14 @@ class MVAPICH2(Application):
         # enable Fortran 77/90 and C++ bindings
         add_configopts += '--enable-f77 --enable-fc --enable-cxx '
 
-        # MVAPICH configure script complains when F90 or F90FLAGS are set, 
+        # MVAPICH configure script complains when F90 or F90FLAGS are set,
         # they should be replaced with FC/FCFLAGS instead
         for (envvar, new_envvar) in [("F90", "FC"), ("F90FLAGS", "FCFLAGS")]:
             envvar_val = os.getenv(envvar)
             if envvar_val:
                 if not os.getenv(new_envvar):
-                    os.putenv(new_envvar, envvar_val)
-                    os.putenv(envvar, '')
+                    env.set(new_envvar, envvar_val)
+                    env.set(envvar, '')
                 else:
                     self.log.error("Both %(ev)s and %(nev)s set, can I overwrite %(nev)s with %(ev)s (%(evv)s) ?" % {
                                                                                                                    'ev':envvar,
@@ -100,7 +101,7 @@ class MVAPICH2(Application):
         """
         if not self.getcfg('sanityCheckPaths'):
 
-            self.setcfg('sanityCheckPaths',{'files':["bin/%s" % x for x in ["mpicc", "mpicxx", "mpif77", 
+            self.setcfg('sanityCheckPaths',{'files':["bin/%s" % x for x in ["mpicc", "mpicxx", "mpif77",
                                                                             "mpif90", "mpiexec.hydra"]] +
                                                     ["lib/lib%s" % y for x in ["fmpich", "mpichcxx", "mpichf90",
                                                                                "mpich", "mpl", "opa"]

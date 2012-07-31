@@ -26,6 +26,8 @@ from easybuild.framework.application import Application
 from easybuild.tools.filetools import patch_perl_script_autoflush, run_cmd, run_cmd_qa
 from easybuild.easyblocks.n.netcdf import set_netcdf_env_vars, get_netcdf_module_set_cmds
 
+import easybuild.tools.environment as env
+
 class WRF(Application):
     """Support for building/installing WRF."""
 
@@ -33,7 +35,7 @@ class WRF(Application):
         """Add extra config options specific to WRF."""
 
         Application.__init__(self, args,kwargs)
-        
+
         self.build_in_installdir = True
 
         self.wrfsubdir = None
@@ -47,8 +49,8 @@ class WRF(Application):
                          'runtest':[True, "Build and run WRF tests (default: True)."]
                          })
 
-    def configure(self):        
-        """Configure build: 
+    def configure(self):
+        """Configure build:
             - set some magic environment variables
             - run configure script
             - adjust configure.wrf file if needed
@@ -70,7 +72,7 @@ class WRF(Application):
             if not (hdf5 or parallel_hdf5):
                 self.log.error("Parallel HDF5 module not loaded?")
             else:
-                os.putenv('PHDF5', hdf5)
+                env.set('PHDF5', hdf5)
         else:
             self.log.info("HDF5 module not loaded, assuming that's OK...")
 
@@ -78,8 +80,8 @@ class WRF(Application):
         jasper = os.getenv('SOFTROOTJASPER')
         jasperlibdir = os.path.join(jasper, "lib")
         if jasper:
-            os.environ['JASPERINC'] = os.path.join(jasper, "include")
-            os.environ['JASPERLIB'] = jasperlibdir
+            env.set('JASPERINC', os.path.join(jasper, "include"))
+            env.set('JASPERLIB', jasperlibdir)
 
         else:
             if os.getenv('JASPERINC') or os.getenv('JASPERLIB'):
@@ -88,7 +90,7 @@ class WRF(Application):
                 self.log.info("JasPer module not loaded, assuming that's OK...")
 
         # enable support for large file support in netCDF
-        os.putenv('WRFIO_NCD_LARGE_FILE_SUPPORT', '1')
+        env.set('WRFIO_NCD_LARGE_FILE_SUPPORT', '1')
 
         # patch arch/Config_new.pl script, so that run_cmd_qa receives all output to answer questions
         patch_perl_script_autoflush(os.path.join("arch", "Config_new.pl"))
@@ -161,7 +163,7 @@ class WRF(Application):
                 for envvar in ['CFLAGS', 'FFLAGS']:
                     val = os.getenv(envvar)
                     if '-O3' in val:
-                        os.environ[envvar] = '%s -heap-arrays' % val
+                        env.set(envvar, '%s -heap-arrays' % val)
                         self.log.info("Updated %s to '%s'" % (envvar, os.getenv(envvar)))
 
             # replace -O3 with desired optimization options

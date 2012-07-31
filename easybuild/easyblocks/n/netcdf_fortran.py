@@ -20,6 +20,7 @@
 ##
 import os
 from easybuild.framework.application import Application
+import easybuild.tools.environment as env
 
 class NetCDF_Fortran(Application):
     """Support for building/installing the netCDF-Fortran library"""
@@ -34,7 +35,7 @@ class NetCDF_Fortran(Application):
 
         # add -DgFortran to CPPFLAGS when building with GCC
         if self.tk.toolkit_comp_family() == "GCC":
-            os.environ['CPPFLAGS'] = "%s -DgFortran" % os.getenv('CPPFLAGS')
+            env.set('CPPFLAGS', "%s -DgFortran" % os.getenv('CPPFLAGS'))
 
         Application.configure(self)
 
