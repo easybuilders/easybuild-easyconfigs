@@ -45,7 +45,7 @@ class BuildTest(TestCase):
                 self.build_ok = False
                 self.test_results.append((file, 'eb-file error', err))
 
-        # TODO: confirm that build-order doesn't matter
+        # Since build-order doesn't matter we don't have to use the resolveDependencies method
         self.apps = []
         for pkg in packages:
             spec = pkg['spec']
