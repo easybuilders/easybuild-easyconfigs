@@ -98,9 +98,6 @@ class Application:
         # allow a post message to be set, which can be shown as last output
         self.postmsg = ''
 
-        # tempfile for the script which can be sourced
-        self.script_file = tempfile.NamedTemporaryFile()
-
         # generic configuration parameters
         self.cfg = {
           'name':[None, "Name of software"],
@@ -848,9 +845,6 @@ class Application:
             self.gen_installdir()
             self.make_builddir()
 
-            self.script_file.write("# EasyBuild version: %s for module %s/%s\n" % (easybuild.VERBOSE_VERSION,
-                self.name(), self.installversion))
-
             self.print_environ()
 
             ## SOURCE
@@ -996,19 +990,6 @@ class Application:
                 self.log.info("Cleaning up builddir %s" % (self.builddir))
             except OSError, err:
                 self.log.exception("Cleaning up builddir %s failed: %s" % (self.builddir, err))
-
-        logdir = os.path.join(self.installdir, config.logPath())
-        actual_script_path = os.path.join(logdir, "easybuild-env-vars.sh")
-
-        if not os.path.isdir(logdir):
-            os.makedirs(logdir)
-
-        # move the temporary file to the actual destination
-        self.script_file.seek(0)
-        dest = open(actual_script_path, "w")
-        shutil.copyfileobj(self.script_file, dest)
-        dest.close()
-        self.script_file.close()
 
     def sanitycheck(self):
         """
