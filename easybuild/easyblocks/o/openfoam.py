@@ -116,6 +116,26 @@ class OpenFOAM(Application):
                 # Make directories executable for others
                 recursiveChmod(os.path.join(installPath, path), stat.S_IXOTH, add=True)
 
+    def sanitycheck(self):
+        """Custom sanity check for OpenFOAM"""
+
+        if not self.getcfg('sanityCheckPaths'):
+
+            odir = "%s-%s" % (self.name(), self.version())
+            tdir = "ThirdParty-%s" % self.version()
+
+            pdiro = "linux64%sDPOpt" % self.wm_compiler
+            pdir = "linux64%s" % self.wm_compiler
+
+            self.setcfg('sanityCheckPaths',{'files':["%s/etc/%s" % (odir, x) for x in ["bashrc", "cshrc"]],
+                                            'dirs':["%s/platforms/%s/%s" % (odir, pdir, x) for x in ["bin", "lib"]] +
+                                                   ["%s/platforms/%s/bin" % (tdir, pdiro), "%s/platforms/%s/lib" % (tdir, pdir)]
+                                           })
+
+            self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
+
+        Application.sanitycheck(self)
+
     def make_module_extra(self):
         """Define extra environment variables required by OpenFOAM"""
 
