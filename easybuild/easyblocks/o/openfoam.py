@@ -128,7 +128,7 @@ class OpenFOAM(Application):
             pdir = "linux64%s" % self.wm_compiler
 
             scotchdir = "scotch_???"
-            d = os.path.join(tdir, "platforms", pdir)
+            d = os.path.join(self.installdir, tdir, "platforms", pdir)
             if not os.path.exists(d):
                 for x in os.listdir(d):
                     if x.startswith("scotch_"):
