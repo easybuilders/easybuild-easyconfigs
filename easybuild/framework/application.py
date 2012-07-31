@@ -308,10 +308,10 @@ class Application:
             self.log.warning("Loaded modules detected: %s" % loadedmods)
 
         # Do all dependencies have a toolkit version
-        self.cfg.toolkit().addDependencies(self.cfg.dependencies())
-        if not len(self.cfg.dependencies()) == len(self.cfg.toolkit().dependencies):
+        self.toolkit().addDependencies(self.cfg.dependencies())
+        if not len(self.cfg.dependencies()) == len(self.toolkit().dependencies):
             self.log.debug("dep %s (%s)\ntk.dep %s (%s)" % (len(self.cfg.dependencies()), self.cfg.dependencies(),
-                len(self.cfg.toolkit().dependencies), self.cfg.toolkit().dependencies))
+                len(self.toolkit().dependencies), self.toolkit().dependencies))
             self.log.error('Not all dependencies have a matching toolkit version')
 
         # Check if the application is not loaded at the moment
@@ -623,7 +623,7 @@ class Application:
             ## PATCH
             self.runstep('patch', [self.apply_patch], skippable=True)
 
-            self.cfg.toolkit().prepare(self.getcfg('onlytkmod'))
+            self.toolkit().prepare(self.getcfg('onlytkmod'))
             self.startfrom()
 
             ## CONFIGURE
@@ -933,11 +933,11 @@ class Application:
         if not self.build_in_installdir:
             # make a unique build dir
             ## if a tookitversion starts with a -, remove the - so prevent a -- in the path name
-            tkversion = self.cfg.toolkit().version
+            tkversion = self.toolkit().version
             if tkversion.startswith('-'):
                 tkversion = tkversion[1:]
 
-            extra = "%s%s-%s%s" % (self.getcfg('versionprefix'), self.cfg.toolkit().name, tkversion, self.getcfg('versionsuffix'))
+            extra = "%s%s-%s%s" % (self.getcfg('versionprefix'), self.toolkit().name, tkversion, self.getcfg('versionsuffix'))
             localdir = os.path.join(buildPath(), self.name(), self.version(), extra)
 
             ald = os.path.abspath(localdir)
@@ -1062,13 +1062,13 @@ class Application:
         load = unload = ''
 
         # Load toolkit
-        if self.cfg.toolkit().name != 'dummy':
-            load += self.moduleGenerator.loadModule(self.cfg.toolkit().name, self.cfg.toolkit().version)
-            unload += self.moduleGenerator.unloadModule(self.cfg.toolkit().name, self.cfg.toolkit().version)
+        if self.toolkit().name != 'dummy':
+            load += self.moduleGenerator.loadModule(self.toolkit().name, self.toolkit().version)
+            unload += self.moduleGenerator.unloadModule(self.toolkit().name, self.toolkit().version)
 
         # Load dependencies
         builddeps = self.cfg.builddependencies()
-        for dep in self.cfg.toolkit().dependencies:
+        for dep in self.toolkit().dependencies:
             if not dep in builddeps:
                 self.log.debug("Adding %s/%s as a module dependency" % (dep['name'], dep['tk']))
                 load += self.moduleGenerator.loadModule(dep['name'], dep['tk'])
