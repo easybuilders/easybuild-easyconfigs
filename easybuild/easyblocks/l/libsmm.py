@@ -107,7 +107,7 @@ dims_small="%(dims)s"
 
 # tiny dimensions are used as primitves and generated in an 'exhaustive' search.
 # They should be a sequence from 1 to N,
-# where N is a number that is large enough to have good in cache performance
+# where N is a number that is large enough to have good cache performance
 # (e.g. for modern SSE cpus 8 to 12)
 # Too large (>12?) is not beneficial, but increases the time needed to build the library
 # Too small (<8)   will lead to a slow library, but the build might proceed quickly
