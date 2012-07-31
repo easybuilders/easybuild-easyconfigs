@@ -920,12 +920,7 @@ class Application:
         mods_text = "\n".join(["module load %s/%s" % m for m in mods if m not in self.loaded_modules])
         self.loaded_modules = mods
 
-        filter = ["_LMFILES_","LOADEDMODULES"]
-
         env = copy.deepcopy(os.environ)
-
-        for key in filter:
-            env.pop(key, '')
 
         changed = [(k,env[k]) for k in env if k not in self.orig_environ]
         for k in env:
@@ -937,7 +932,6 @@ class Application:
         text = "\n".join(['export %s="%s"' % change for change in changed])
         unset_text = "\n".join(['unset %s' % key for key in unset])
 
-
         if mods:
             self.log.debug("Loaded modules:\n%s" % mods_text)
         if changed:
@@ -945,11 +939,7 @@ class Application:
         if unset:
             self.log.debug("Removed from environment:\n%s" % unset_text)
 
-        if text or unset_text:
-            self.script_file.write("\n".join([text, unset_text]))
-
         self.orig_environ = env
-
 
     def postproc(self):
         """
