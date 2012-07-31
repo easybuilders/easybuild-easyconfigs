@@ -201,13 +201,14 @@ class LAPACK(Application):
 
     def sanitycheck(self):
         """
-        Custom sanity check for LAPACK.
+        Custom sanity check for LAPACK. only run when not testing
         """
-        if not self.getcfg('sanityCheckPaths'):
-            self.setcfg('sanityCheckPaths',{'files':["lib/%s"%x for x in ["liblapack.a","libtmglib.a"]],
-                                            'dirs':[]
-                                           })
+        if not self.getcfg('test_only'):
+            if not self.getcfg('sanityCheckPaths'):
+                self.setcfg('sanityCheckPaths',{'files':["lib/%s"%x for x in ["liblapack.a","libtmglib.a"]],
+                                                'dirs':[]
+                                               })
 
-            self.log.info("Customized sanity check paths: %s"%self.getcfg('sanityCheckPaths'))
+                self.log.info("Customized sanity check paths: %s"%self.getcfg('sanityCheckPaths'))
 
-        Application.sanitycheck(self)
+            Application.sanitycheck(self)
