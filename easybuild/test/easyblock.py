@@ -73,7 +73,7 @@ stop = 'notvalid'
         # this should now not crash
         eb.validate()
 
-        eb['osdependencies'] = ['tcsh']
+        eb['osdependencies'] = ['non-existent-dep']
         self.assertErrorRegex(EasyBuildError, "OS dependencies were not found", eb.validate)
 
         # dummy toolkit, installversion == version

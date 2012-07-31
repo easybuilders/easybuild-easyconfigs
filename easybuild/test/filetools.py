@@ -24,9 +24,9 @@ class FileToolsTest(TestCase):
         self.assertEqual("bunzip2 /tmp/test.bz2", cmd)
 
         cmd = ft.extractCmd("/tmp/test.tbz")
-        self.assertEqual("tar xfj /tmp/test.tbz", cmd)
+        self.assertEqual("tar xjf /tmp/test.tbz", cmd)
         cmd = ft.extractCmd("/tmp/test.tar.bz2")
-        self.assertEqual("tar xfj /tmp/test.tar.bz2", cmd)
+        self.assertEqual("tar xjf /tmp/test.tar.bz2", cmd)
 
 
         (out, ec) = ft.run_cmd("echo hello")

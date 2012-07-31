@@ -172,7 +172,6 @@ class EasyBlock:
         """
         not_found = []
         for dep in self['osdependencies']:
-            # TODO: make _os_dependency_check work all platforms
             if not self._os_dependency_check(dep):
                 not_found.append(dep)
 
@@ -249,9 +248,9 @@ class EasyBlock:
         # - uses rpm -q and dpkg -s --> can be run as non-root!!
         # - fallback on which
         # - should be extended to files later?
-        if run_cmd('which rpm', simple=True):
+        if run_cmd('which rpm', simple=True, log_ok=False):
             cmd = "rpm -q %s" % dep
-        elif run_cmd('which dpkg', simple=True):
+        elif run_cmd('which dpkg', simple=True, log_ok=False):
             cmd = "dpkg -s %s" % dep
         else:
             # fallback for when os-Dependency is a binary
