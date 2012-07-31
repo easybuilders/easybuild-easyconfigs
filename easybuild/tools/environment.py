@@ -3,6 +3,9 @@ import os
 changes = {}
 
 def write_changes(filename):
+    """
+    Write current changes to filename and reset environment afterwards
+    """
     script = open(filename,'w')
 
     for key in changes:

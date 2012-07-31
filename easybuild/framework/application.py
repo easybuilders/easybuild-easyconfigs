@@ -898,8 +898,6 @@ class Application:
 
             env.write_changes(os.path.join(logdir, "easybuild-env-vars.sh"))
 
-
-
         except StopException:
             pass
 
