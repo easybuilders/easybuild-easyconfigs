@@ -30,7 +30,7 @@ from easybuild.tools.filetools import run_cmd
 
 class EasyBlock:
     """
-    Class which handles loading, reading, validation of easyblocks
+    Class which handles loading, reading, validation of easyconfigs
     """
     # mandatory entries
     mandatory = ['name', 'version', 'homepage', 'description', 'toolkit']
