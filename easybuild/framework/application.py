@@ -47,14 +47,14 @@ class Application:
 
     ## INIT
     # TODO: never initializd with other parameters, remove them
-    def __init__(self, path):
+    def __init__(self, path, debug=False):
         """
         Initialize the Application instance.
         """
         self.log = None
         self.logfile = None
         self.loghandler = None
-        self.logdebug = False
+        self.logdebug = debug
 
         self.patches = []
         self.src = []
