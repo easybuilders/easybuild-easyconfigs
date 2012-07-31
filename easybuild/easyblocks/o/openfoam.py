@@ -127,9 +127,17 @@ class OpenFOAM(Application):
             pdiro = "linux64%sDPOpt" % self.wm_compiler
             pdir = "linux64%s" % self.wm_compiler
 
+            scotchdir = "scotch_???"
+            d = os.path.join(tdir, "platforms", pdir)
+            if not os.path.exists(d):
+                for x in os.listdir(d):
+                    if x.startswith("scotch_"):
+                        scotchdir = x
+
             self.setcfg('sanityCheckPaths',{'files':["%s/etc/%s" % (odir, x) for x in ["bashrc", "cshrc"]],
                                             'dirs':["%s/platforms/%s/%s" % (odir, pdiro, x) for x in ["bin", "lib"]] +
-                                                   ["%s/platforms/%s/bin" % (tdir, pdiro), "%s/platforms/%s/lib" % (tdir, pdir)]
+                                                   ["%s/platforms/%s/%s/bin" % (tdir, pdir, scotchdir),
+                                                    "%s/platforms/%s/lib" % (tdir, pdiro)]
                                            })
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
