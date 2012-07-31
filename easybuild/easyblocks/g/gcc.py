@@ -28,6 +28,8 @@ from easybuild.framework.application import Application
 from easybuild.tools.filetools import run_cmd
 from easybuild.tools.systemtools import get_kernel_name, get_shared_lib_ext, get_platform_name
 
+import easybuild.tools.environment as env
+
 class GCC(Application):
     """
     Self-contained build of GCC.
@@ -265,13 +267,13 @@ class GCC(Application):
 
             # register built GCC as compiler to use for stage 2/3
             path = "%s/bin:%s" % (self.stage1installdir, os.getenv('PATH'))
-            os.putenv('PATH', path)
+            env.set('PATH', path)
 
             ld_lib_path = "%(dir)s/lib64:%(dir)s/lib:%(val)s" % {
                                       'dir':self.stage1installdir,
                                       'val':os.getenv('LD_LIBRARY_PATH')
                                       }
-            os.putenv('LD_LIBRARY_PATH', ld_lib_path)
+            env.set('LD_LIBRARY_PATH', ld_lib_path)
 
             #
             # STAGE 2: build GMP/PPL/CLooG for stage 3
@@ -371,7 +373,7 @@ class GCC(Application):
                         incpath = os.path.join(stage2prefix, 'include')
 
                         cppflags = os.getenv('CPPFLAGS', '')
-                        os.putenv('CPPFLAGS', "%s -L%s -I%s " % (cppflags, libpath, incpath))
+                        env.set('CPPFLAGS', "%s -L%s -I%s " % (cppflags, libpath, incpath))
 
             #
             # STAGE 3: bootstrap build of final GCC (with PPL/CLooG support)

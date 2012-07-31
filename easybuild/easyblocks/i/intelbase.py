@@ -22,6 +22,7 @@ import os
 import shutil
 from easybuild.framework.application import Application
 from easybuild.tools.filetools import run_cmd
+import easybuild.tools.environment as env
 
 class IntelBase(Application):
     """
@@ -38,10 +39,10 @@ class IntelBase(Application):
         self.cfg.update({
                          'license':[None,"License file path (default: None)"],
                          'license_activation':['license_server', "Indicates license activation type (default: 'license_server')"],
-                         # 'usetmppath': 
+                         # 'usetmppath':
                          # workaround for older SL5 version (5.5 and earlier)
                          # used to be True, but False since SL5.6/SL6
-                         # disables TMP_PATH env and command line option 
+                         # disables TMP_PATH env and command line option
                          'usetmppath':[False, "Use temporary path for installation (default: False)"],
                          'm32':[False, "Enable 32-bit toolkit (default: False)"],
                          })
@@ -71,7 +72,7 @@ class IntelBase(Application):
             self.log.error("Can't find license at %s" % self.license)
 
         ## set INTEL_LICENSE_FILE
-        os.environ["INTEL_LICENSE_FILE"] = self.license
+        env.set("INTEL_LICENSE_FILE", self.license)
 
         # clean home directory
         self.clean_homedir()
@@ -113,14 +114,14 @@ CONTINUE_WITH_OPTIONAL_ERROR=yes
             self.log.exception("Directory %s can't be created" % (tmpdir))
         tmppathopt = ''
         if self.getcfg('usetmppath'):
-            os.putenv('TMP_PATH', tmpdir)
+            env.set('TMP_PATH', tmpdir)
             tmppathopt = "-t %s" % tmpdir
 
         ## set some extra env variables
-        os.environ['LOCAL_INSTALL_VERBOSE'] = '1'
-        os.environ['VERBOSE_MODE'] = '1'
+        env.set('LOCAL_INSTALL_VERBOSE','1')
+        env.set('VERBOSE_MODE', '1')
 
-        os.environ['INSTALL_PATH'] = self.installdir
+        env.set('INSTALL_PATH', self.installdir)
 
         ## perform installation
         cmd = "./install.sh %s -s %s" % (tmppathopt, silentcfg)

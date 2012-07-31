@@ -29,6 +29,8 @@ from easybuild.framework.application import Application
 from easybuild.tools.filetools import patch_perl_script_autoflush, run_cmd, run_cmd_qa, unpack
 from easybuild.easyblocks.n.netcdf import set_netcdf_env_vars, get_netcdf_module_set_cmds
 
+import easybuild.tools.environment as env
+
 class WPS(Application):
     """Support for building/installing WPS."""
 
@@ -53,7 +55,7 @@ class WPS(Application):
                          })
 
     def configure(self):
-        """Configure build: 
+        """Configure build:
         - set required environment variables (for netCDF, JasPer)
         - patch compile script and ungrib Makefile for non-default install paths of WRF and JasPer
         - run configure script and figure how to select desired build option
@@ -91,8 +93,8 @@ class WPS(Application):
         jasper = os.getenv('SOFTROOTJASPER')
         jasperlibdir = os.path.join(jasper, "lib")
         if jasper:
-            os.environ['JASPERINC'] = os.path.join(jasper, "include")
-            os.environ['JASPERLIB'] = jasperlibdir
+            env.set('JASPERINC', os.path.join(jasper, "include"))
+            env.set('JASPERLIB', jasperlibdir)
         else:
             self.log.error("JasPer module not loaded?")
 
