@@ -14,8 +14,29 @@ class BuildTest(TestCase):
     """
     This class will build everything in the path given to it.
     There are several possibilities why some applications fail to build,
-    this test will try to distinguish between: 'eb-file error', 'preparation error', 'configure',
-    'make', 'make install', 'sanitycheck', 'test'
+    this test will distinguish between the different phases in the build:
+       * eb-file parsing
+       * initialization
+       * preparation
+       * pre-build verification
+       * generate installdir name
+       * make builddir
+       * unpacking
+       * patching
+       * prepare toolkit
+       * setup startfrom
+       * configure
+       * make
+       * test
+       * create installdir
+       * make install
+       * packages
+       * postproc
+       * sanity check
+       * cleanup
+
+    At the end of its run, this test will report which easyblocks failed (the fase and the error are included)
+    via the log to stdout
     """
 
     def setUp(self):
@@ -64,7 +85,7 @@ class BuildTest(TestCase):
                 self.apps.append(app_class(spec, debug=True))
             except EasyBuildError, err:
                 self.build_ok = False
-                self.test_results.append((spec, 'Initialization error', err))
+                self.test_results.append((spec, 'initialization', err))
 
     def performStep(self, fase, method):
         errors = 0
@@ -85,19 +106,15 @@ class BuildTest(TestCase):
 
 
     def runTest(self):
-
         self.log.info("Continuing building other packages")
+
         # take manual control over the building
         self.performStep("preparation", lambda x: x.prepare_build())
         self.performStep("pre-build verification", lambda x: x.ready2build())
-
         self.performStep("generate installdir name", lambda x: x.gen_installdir())
         self.performStep("make builddir", lambda x: x.make_builddir())
-
         self.performStep("unpacking", lambda x: x.unpack_src())
         self.performStep("patching", lambda x: x.apply_patch())
-
-
         self.performStep("prepare toolkit", lambda x: x.toolkit().prepare(x.getcfg('onlytkmod')))
         self.performStep("setup startfrom", lambda x: x.startfrom())
         self.performStep('configure', lambda x: x.configure())
