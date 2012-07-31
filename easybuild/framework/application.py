@@ -1005,7 +1005,7 @@ class Application:
                 self.log.exception("Cleaning up builddir %s failed: %s" % (self.builddir, err))
 
         logdir = os.path.join(self.installdir, config.logPath())
-        actual_script_path = os.path.join(logdir, "env-vars.sh")
+        actual_script_path = os.path.join(logdir, "easybuild-env-vars.sh")
 
         if not os.path.isdir(logdir):
             os.makedirs(logdir)
