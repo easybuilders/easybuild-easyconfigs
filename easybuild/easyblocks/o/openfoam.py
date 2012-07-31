@@ -128,7 +128,7 @@ class OpenFOAM(Application):
                 pdirs = ["%s/platforms/linux64%sDPOpt/%s" % (odir, self.wm_compiler, x) for x in ["bin", "lib"]]
 
             self.setcfg('sanityCheckPaths',{'files':["%s/etc/%s" % (odir, x) for x in ["bashrc", "cshrc"]],
-                                            'dirs':["bin"] + pdirs
+                                            'dirs':["%s/bin" % odir] + pdirs
                                            })
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
