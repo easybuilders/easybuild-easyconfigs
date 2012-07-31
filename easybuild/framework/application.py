@@ -847,6 +847,9 @@ class Application:
             self.gen_installdir()
             self.make_builddir()
 
+            self.script_file.write("# EasyBuild version: %s for module %s/%s\n" % (easybuild.VERBOSE_VERSION,
+                self.name(), self.installversion))
+
             self.print_environ()
 
             ## SOURCE
@@ -1002,7 +1005,7 @@ class Application:
                 self.log.exception("Cleaning up builddir %s failed: %s" % (self.builddir, err))
 
         logdir = os.path.join(self.installdir, config.logPath())
-        actual_script_path = os.path.join(logdir, "env-vars.sh")
+        actual_script_path = os.path.join(logdir, "easybuild-env-vars.sh")
 
         if not os.path.isdir(logdir):
             os.makedirs(logdir)
