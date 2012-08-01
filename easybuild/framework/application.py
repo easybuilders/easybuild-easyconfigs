@@ -48,7 +48,6 @@ class Application:
     """
 
     ## INIT
-    # TODO: never initializd with other parameters, remove them
     def __init__(self, path, debug=False):
         """
         Initialize the Application instance.
