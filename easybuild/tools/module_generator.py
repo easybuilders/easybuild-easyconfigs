@@ -158,8 +158,8 @@ if { ![is-loaded %(name)s/%(version)s] } {
         Clean up temporary directory used for fake modules, if any.
         """
         if self.fake:
-            self.log.info("Cleaning up fake modules dir %s" % self.tmpdir)
+            log.info("Cleaning up fake modules dir %s" % self.tmpdir)
             try:
                 shutil.rmtree(self.tmpdir)
             except OSError, err:
-                self.log.exception("Cleaning up fake module dir failed: %s" % err)
+                log.exception("Cleaning up fake module dir failed: %s" % err)
