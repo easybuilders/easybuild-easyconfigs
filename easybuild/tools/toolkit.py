@@ -30,6 +30,12 @@ import easybuild.tools.environment as env
 
 log = getLog('Toolkit')
 
+# constant used for recognizing compilers, MPI libraries, ...
+GCC = "GCC"
+INTEL = "Intel"
+OPENMPI = "OpenMPI"
+QLOGIC = "QLogic"
+
 class Toolkit:
     """
     Class for compiler toolkits, consisting out of a compiler and dependencies (libraries).
@@ -763,8 +769,8 @@ class Toolkit:
         """Determine compiler family based on toolkit dependencies."""
         comp_families = {
                          # always use tuples as keys!
-                         ('icc', 'ifort'):'Intel', # Intel toolkit has both icc and ifort
-                         ('GCC', ):'GCC' # GCC toolkit uses GCC as compiler suite
+                         ('icc', 'ifort'):INTEL, # Intel toolkit has both icc and ifort
+                         ('GCC', ):GCC # GCC toolkit uses GCC as compiler suite
                          }
 
         return self.det_toolkit_type("compiler family", comp_families)
@@ -772,9 +778,9 @@ class Toolkit:
     def get_openmp_flag(self):
         """Determine compiler flag for OpenMP"""
 
-        if self.toolkit_comp_family() == "Intel":
+        if self.toolkit_comp_family() == INTEL:
             return "-openmp"
-        elif self.toolkit_comp_family() == "GCC":
+        elif self.toolkit_comp_family() == GCC:
             return "-fopenmp"
         else:
             log.error("Can't determine compiler flag for OpenMP.")
@@ -783,8 +789,9 @@ class Toolkit:
         """Determine type of MPI library based on toolkit dependencies."""
         mpi_types = {
                       # always use tuples as keys!
-                      ('impi', ):'Intel', # Intel MPI
-                      ('OpenMPI', ):'OpenMPI' # OpenMPI
+                      ('impi', ):INTEL, # Intel MPI
+                      ('OpenMPI', ):OPENMPI, # OpenMPI
+                      ('QLogicMPI', ):QLOGIC # QLogic MPI
                       }
 
         return self.det_toolkit_type("type of mpi library", mpi_types)
@@ -797,14 +804,14 @@ class Toolkit:
 
         # different known mpirun commands
         mpi_cmds = {
-                    "OpenMPI":"mpirun -n %(nr_ranks)d %(cmd)s",
-                    "Intel":"mpirun %(mpdbootfile)s %(nodesfile)s -np %(nr_ranks)d %(cmd)s",
+                    OPENMPI:"mpirun -n %(nr_ranks)d %(cmd)s",
+                    INTEL:"mpirun %(mpdbootfile)s %(nodesfile)s -np %(nr_ranks)d %(cmd)s",
                     }
 
         mpi_type = self.toolkit_mpi_type()
 
         # Intel MPI mpirun needs more work
-        if mpi_type == "Intel":
+        if mpi_type == INTEL:
 
             # set temporary dir for mdp
             env.set('I_MPI_MPD_TMPDIR', "/tmp")

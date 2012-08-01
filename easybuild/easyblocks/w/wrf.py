@@ -25,8 +25,8 @@ import sys
 from easybuild.framework.application import Application
 from easybuild.tools.filetools import patch_perl_script_autoflush, run_cmd, run_cmd_qa
 from easybuild.easyblocks.n.netcdf import set_netcdf_env_vars, get_netcdf_module_set_cmds
-
 import easybuild.tools.environment as env
+import easybuild.tools.toolkit as toolkit
 
 class WRF(Application):
     """Support for building/installing WRF."""
@@ -98,10 +98,10 @@ class WRF(Application):
         # determine build type option to look for
         build_type_option = None
         self.comp_fam = self.tk.toolkit_comp_family()
-        if self.comp_fam == "Intel":
+        if self.comp_fam == toolkit.INTEL:
             build_type_option = "Linux x86_64 i486 i586 i686, ifort compiler with icc"
 
-        elif self.comp_fam == "GCC":
+        elif self.comp_fam == toolkit.GCC:
             build_type_option = "x86_64 Linux, gfortran compiler with gcc"
 
         else:
@@ -157,7 +157,7 @@ class WRF(Application):
 
             # set extra flags for Intel compilers
             # see http://software.intel.com/en-us/forums/showthread.php?t=72109&p=1#146748
-            if self.comp_fam == "Intel":
+            if self.comp_fam == toolkit.INTEL:
 
                 # -O3 -heap-arrays is required to resolve compilation error
                 for envvar in ['CFLAGS', 'FFLAGS']:
@@ -217,7 +217,7 @@ class WRF(Application):
                     self.testcases.remove(test)
 
             # some tests hang when WRF is built with Intel compilers
-            if self.comp_fam == "Intel":
+            if self.comp_fam == toolkit.INTEL:
                 for test in ["em_heldsuarez"]:
                     if test in self.testcases:
                         self.testcases.remove(test)

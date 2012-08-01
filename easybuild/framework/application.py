@@ -26,7 +26,6 @@ import grp #@UnresolvedImport
 import os
 import re
 import shutil
-import tempfile
 import time
 import urllib
 
@@ -1055,8 +1054,15 @@ class Application:
         mod_path.extend(Modules().modulePath)
         m = Modules(mod_path)
         self.log.debug("created module instance")
-        m.addModule([[self.name(), self.installversion]])
-        m.load()
+        m.addModule([(self.name(), self.installversion)])
+        try:
+            m.load()
+        except EasyBuildError, err:
+            self.log.debug("Loading module failed: %s" % err)
+            self.sanityCheckOK = False
+
+        # clean up path for fake module
+        self.moduleGenerator.cleanup()
 
         # chdir to installdir (beter environment for running tests)
         os.chdir(self.installdir)
@@ -1070,7 +1076,6 @@ class Application:
             if not isinstance(command, tuple):
                 self.log.debug("Setting sanity check command to default")
                 command = (None, None)
-
 
             # Build substition dictionary
             check_cmd = { 'name': self.name().lower(), 'options': '-h' }
@@ -1086,7 +1091,9 @@ class Application:
             out, ec = run_cmd(cmd, simple=False)
             if ec != 0:
                 self.sanityCheckOK = False
-                self.log.debug("sanityCheckCommand exited with code %s (output: %s)" % (ec, out))
+                self.log.debug("sanityCheckCommand %s exited with code %s (output: %s)" % (cmd, ec, out))
+            else:
+                self.log.debug("sanityCheckCommand %s ran successfully! (output: %s)" % (cmd, out))
 
         failed_pkgs = [pkg.name for pkg in self.instance_pkgs if not pkg.sanitycheck()]
 

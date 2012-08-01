@@ -105,6 +105,7 @@ def refactor(txt):
                     'importCfg':'process_ebfile',
                     'logall':'log_all',
                     'logok':'log_ok',
+                    'logOutput':'log_output',
                     'makeBuildDir':'make_builddir',
                     'makeDir':'make_dir',
                     'makeInstall':'make_install',

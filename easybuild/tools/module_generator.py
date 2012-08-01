@@ -22,6 +22,8 @@
 Generating module files.
 """
 import os
+import shutil
+import tempfile
 
 from easybuild.tools.build_log import getLog
 from easybuild.tools.config import installPath
@@ -37,6 +39,7 @@ class ModuleGenerator:
         self.fake = fake
         self.filename = None
         self.module_path = None
+        self.tmpdir = None
 
     def createFiles(self):
         """
@@ -44,10 +47,11 @@ class ModuleGenerator:
         """
         base = installPath('mod')
 
-        # Fake mode: set installpath to builddir
+        # Fake mode: set installpath to temporary dir
         if self.fake:
-            log.debug("Fake mode: using %s (instead of %s)" % (self.app.builddir, base))
-            base = self.app.builddir
+            self.tmpdir = tempfile.mkdtemp()
+            log.debug("Fake mode: using %s (instead of %s)" % (self.tmpdir, base))
+            base = self.tmpdir
 
         # Real file goes in 'all' category
         self.module_path = os.path.join(base, 'all')
@@ -148,3 +152,14 @@ if { ![is-loaded %(name)s/%(version)s] } {
         Generate setenv statement for the given key/value pair.
         """
         return "setenv\t%s\t\t%s\n" % (key, value)
+
+    def cleanup(self):
+        """
+        Clean up temporary directory used for fake modules, if any.
+        """
+        if self.fake:
+            log.info("Cleaning up fake modules dir %s" % self.tmpdir)
+            try:
+                shutil.rmtree(self.tmpdir)
+            except OSError, err:
+                log.exception("Cleaning up fake module dir failed: %s" % err)
