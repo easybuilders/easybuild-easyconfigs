@@ -108,9 +108,10 @@ class BuildTest(TestCase):
         Actual test, loop over all the different steps in a build
         """
         self.log.info("Continuing building other packages")
-
+        base_dir = os.getcwd()
 
         for app in self.apps:
+            os.chdir(base_dir)
             # take manual control over the building
             self.performStep("preparation", app, lambda x: x.prepare_build())
             self.performStep("pre-build verification", app, lambda x: x.ready2build())
