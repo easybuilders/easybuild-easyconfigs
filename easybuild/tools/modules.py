@@ -189,7 +189,10 @@ class Modules:
 
         else:
             # Change the environment
-            exec stdout
+            try:
+                exec stdout
+            except Exception, err:
+                raise EasyBuildError("Changing environment as dictated by module failed: %s" % err)
 
             # Process stderr
             result = []
