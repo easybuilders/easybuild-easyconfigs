@@ -715,7 +715,7 @@ def submit_build_job(log):
     command = " ".join([arg for arg in sys.argv if arg != '--job'])
 
     easybuild_vars = {}
-    for key in os.environ:
+    for name in os.environ:
         if name.startswith("EASYBUILD"):
             easybuild_vars[name] = os.environ[name]
 
