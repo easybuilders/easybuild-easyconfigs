@@ -23,7 +23,6 @@ EasyBuild support for CPLEX, implemented as an easyblock
 """
 import os
 import shutil
-import stat
 import glob
 from easybuild.easyblocks.b.binary import Binary
 from easybuild.tools.filetools import run_cmd_qa
@@ -38,19 +37,6 @@ class CPLEX(Binary):
         Binary.__init__(self, *args, **kwargs)
         self.bindir = None
 
-    def unpack_src(self):
-        """overwrite unpack, this is non compressed binary file"""
-        self.src[0]['finalpath'] = self.builddir
-
-        #copy source to build dir.
-        src = self.src[0]['path']
-        dst = os.path.join(self.builddir, self.src[0]['name'])
-        try:
-            shutil.copy2(src, self.builddir)
-            os.chmod(dst, stat.S_IRWXU)
-        except (OSError, IOError):
-            self.log.exception("Couldn't copy %s to %s" % (src, self.builddir))
-
     def make_install(self):
         """CPLEX has an installer that prompts for information, 
         so use Q&A here
@@ -61,7 +47,7 @@ class CPLEX(Binary):
             os.makedirs(tmpdir)
 
         except OSError, err:
-            self.log.exception("Failed to change directory to %s: %s" % (self.builddir, err))
+            self.log.exception("Failed to prepare for installation: %s" % err)
 
         os.putenv('IATEMPDIR', tmpdir)
         os.environ['IATEMPDIR'] = tmpdir

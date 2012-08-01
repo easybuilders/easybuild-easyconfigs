@@ -1,5 +1,5 @@
 ##
-# Copyright 2009-2012 Stijn Deweirdt, Dries Verdegem, Kenneth Hoste, Pieter De Baets, Jens Timmerman
+# Copyright 2009-2012 Stijn De Weirdt, Dries Verdegem, Kenneth Hoste, Pieter De Baets, Jens Timmerman
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of the University of Ghent (http://ugent.be/hpc).
@@ -23,13 +23,30 @@ General EasyBuild support for software with a binary installer
 """
 
 import shutil
+import os
+import stat
 
 from easybuild.framework.application import Application
 
 
 class Binary(Application):
     """Support for installing a binary package.
-    Just unpack it and copy it to the installdir"""
+    Just copy it's sources to the installdir"""
+
+    def unpack_src(self):
+        """Move all source files to the build directory"""
+        self.src[0]['finalpath'] = self.builddir
+
+        # copy source to build dir.
+        for source in self.src:
+            src = source['path']
+            dst = os.path.join(self.builddir, source['name'])
+            try:
+                shutil.copy2(src, self.builddir)
+                os.chmod(dst, stat.S_IRWXU)
+            except (OSError, IOError):
+                self.log.exception("Couldn't copy %s to %s" % (src, self.builddir))
+
 
     def configure(self):
         """No configuration, this is a binary package"""
