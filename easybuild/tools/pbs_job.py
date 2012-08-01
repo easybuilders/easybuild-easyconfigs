@@ -61,7 +61,7 @@ class PbsJob:
 
         defvars = ['MAIL', 'HOME', 'PATH', 'SHELL', 'WORKDIR']
         vars = ["PBS_O_%s=%s" % (x, os.environ.get(x, 'NOTFOUND_%s' % x)) for x in defvars]
-        vars.extend(["%s=%s" %(name, value) for (name, value) inself.env_vars.items()])
+        vars.extend(["%s=%s" % (name, value) for (name, value) in self.env_vars.items()])
         tmpattropl = pbs.new_attropl(1)
         tmpattropl[0].name = 'Variable_List'
         tmpattropl[0].value = ",".join(vars)
