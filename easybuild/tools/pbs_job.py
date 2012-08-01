@@ -1,5 +1,5 @@
 
-# Copyright 2012 Stijn De Weirdt
+# Copyright 2012 Stijn De Weirdt, Toon Willems
 #
 # This file is part of HanythingOnDemand,
 # originally created by the HPC team of the University of Ghent (http://ugent.be/hpc).
@@ -13,12 +13,13 @@ from easybuild.tools.build_log import getLog
 class PbsJob:
     """Interaction with torque"""
 
-    def __init__(self, script, name):
+    def __init__(self, script, env_vars, name)
         """
         create a new Job to be submitted to PBS
         """
         self.log = getLog("PBS")
         self.script = script
+        self.env_vars = env_vars
         self.name = name
 
         global pbs
@@ -41,11 +42,9 @@ class PbsJob:
 
         resources = {"walltime": "72:00:00", "nodes": "1:ppn=%s" % self.get_ppn() }
 
-        attropl = pbs.new_attropl(2) ## jobparams
+        attropl = pbs.new_attropl(1) ## jobparams
         attropl[0].name = 'Job_Name'
         attropl[0].value = self.name
-        attropl[1].name = 'Rerunable'
-        attropl[1].value = 'y'
 
         tmpattropl = pbs.new_attropl(len(resources)) ## jobparams
         idx = 0
@@ -61,10 +60,11 @@ class PbsJob:
         os.environ.setdefault('WORKDIR', os.getcwd())
 
         defvars = ['MAIL', 'HOME', 'PATH', 'SHELL', 'WORKDIR']
-
+        vars = ["PBS_O_%s=%s" % (x, os.environ.get(x, 'NOTFOUND_%s' % x)) for x in defvars]
+        vars.extend(["%s=%s" %(name, value) for (name, value) inself.env_vars.items()])
         tmpattropl = pbs.new_attropl(1)
         tmpattropl[0].name = 'Variable_List'
-        tmpattropl[0].value = ",".join([ "PBS_O_%s=%s" % (x, os.environ.get(x, 'NOTFOUND_%s' % x)) for x in defvars ])
+        tmpattropl[0].value = ",".join(vars)
         attropl.extend(tmpattropl)
 
         import tempfile
