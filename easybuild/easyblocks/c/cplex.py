@@ -19,7 +19,7 @@
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
 """
-EasyBuild support for cplex, implemented as an easyblock
+EasyBuild support for CPLEX, implemented as an easyblock
 """
 import os
 import shutil
@@ -33,12 +33,23 @@ class CPLEX(Binary):
     """
     Version 12.2 has a self-extratcing package with a java installer
     """
+    def __init__(self, *args, **kwargs):
+        """Constructor"""
+        Binary.__init__(self, *args, **kwargs)
+        self.bindir = None
 
     def unpack_src(self):
         """overwrite unpack, this is non compressed binary file"""
         self.src[0]['finalpath'] = self.builddir
 
-
+        #copy source to build dir.
+        src = self.src[0]['path']
+        dst = os.path.join(self.builddir, self.src[0]['name'])
+        try:
+            shutil.copy2(src, self.builddir)
+            os.chmod(dst, stat.S_IRWXU)
+        except (OSError, IOError):
+            self.log.exception("Couldn't copy %s to %s" % (src, self.builddir))
 
     def make_install(self):
         """CPLEX has an installer that prompts for information, 
@@ -49,22 +60,14 @@ class CPLEX(Binary):
             os.chdir(self.builddir)
             os.makedirs(tmpdir)
 
-            os.putenv('IATEMPDIR', tmpdir)
-            os.environ['IATEMPDIR'] = tmpdir
+        except OSError, err:
+            self.log.exception("Failed to change directory to %s: %s" % (self.builddir, err))
 
-        except OSError:
-            self.log.exception("Failed to change directory to %s" % self.builddir)
+        os.putenv('IATEMPDIR', tmpdir)
+        os.environ['IATEMPDIR'] = tmpdir
+        dst = os.path.join(self.builddir, self.src[0]['name'])
 
         # Run the source
-        # - self.src: first one is source. others ignored
-        src = self.src[0]['path']
-        dst = os.path.join(self.builddir, self.src[0]['name'])
-        try:
-            shutil.copy2(src, self.builddir)
-            os.chmod(dst, stat.S_IRWXU)
-        except (OSError, IOError):
-            self.log.exception("Couldn't copy %s to %s" % (src, self.builddir))
-
         cmd = "%s -i console" % dst
 
         qanda = {"PRESS <ENTER> TO CONTINUE:":"",
@@ -87,7 +90,7 @@ class CPLEX(Binary):
         except OSError:
             self.log.exception("Can't set permissions on %s" % self.installdir)
 
-        # save bindir
+        # determine bin dir
         os.chdir(self.installdir)
         binglob = 'cplex/bin/x86-64*'
         bins = glob.glob(binglob)
@@ -95,16 +98,14 @@ class CPLEX(Binary):
             if len(bins) > 1:
                 self.log.error("More then one possible path for bin found: %s" % bins)
             else:
-                bindir = bins[0]
+                self.bindir = bins[0]
         else:
             self.log.error("No bins found using %s in %s" % (binglob, self.installdir))
-        self.bindir = bindir
 
     def make_module_extra(self):
         """
-        Add installdir to path
+        Add installdir to path and set CPLEX_HOME
         """
-
         txt = Binary.make_module_extra(self)
         txt += "prepend-path\tPATH\t\t$root/%s\n" % self.bindir
         txt += "setenv\tCPLEX_HOME\t\t$root/cplex"
