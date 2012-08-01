@@ -20,6 +20,7 @@
 ##
 import difflib
 import os
+import re
 import shutil
 import easybuild.tools.environment as env
 from easybuild.framework.application import Application
@@ -73,6 +74,16 @@ class FSL(Application):
 
         cmd = ". %s/etc/fslconf/fsl.sh && ./build" % self.fsldir
         run_cmd(cmd, log_all=True, simple=True)
+
+        # check build.log file for success
+        buildlog = os.path.join(self.installdir, "fsl", "build.log")
+        f = open(buildlog, "r")
+        txt = f.read()
+        f.close()
+
+        error_regexp = re.compile("ERROR in BUILD")
+        if error_regexp.search(txt):
+            self.log.error("Error detected in build log %s." % buildlog)
 
     def make_module_req_guess(self):
 
