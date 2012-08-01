@@ -1,0 +1,90 @@
+--- Common/AlshaTypes.h.orig    2010-12-27 12:12:32.000000000 +0100
++++ Common/AlshaTypes.h 2012-07-24 17:26:16.571882868 +0200
+@@ -10,6 +10,10 @@
+ #ifndef ALAHSTYPES_H_
+ #define ALAHSTYPES_H_
+ 
++#ifdef ALSHA_MPI
++#include <mpi.h>
++#endif
++
+ #include <algorithm>
+ #include <map>
+ #include <ext/hash_set>
+@@ -27,9 +31,7 @@
+ #include <string.h>
+ #include <assert.h>
+ 
+-#ifdef ALSHA_MPI
+-#include <mpi.h>
+-#endif
++
+ 
+ using namespace std;
+ using namespace __gnu_cxx;
+--- Common/AlshaUtils.cpp.orig  2012-07-24 17:31:17.000000000 +0200
++++ Common/AlshaUtils.cpp   2012-07-24 17:31:41.294903288 +0200
+@@ -7,12 +7,14 @@
+  *     Emails: liuy0039@ntu.edu.sg; nkcslyc@hotmail.com
+  */
+ 
++
++#include "AlshaTypes.h"
++#include "AlshaUtils.h"
++
+ #include <stdarg.h>
+ #include <stdio.h>
+ #include <errno.h>
+ 
+-#include "AlshaTypes.h"
+-#include "AlshaUtils.h"
+ 
+ void* AlshaUtils::memAlloc(NumType size)
+ {
+--- Common/AlshaFileParser.h.orig   2012-07-24 17:37:26.000000000 +0200
++++ Common/AlshaFileParser.h    2012-07-24 17:37:54.934926782 +0200
+@@ -10,8 +10,8 @@
+ #ifndef ALSHAFILEPARSER_H_
+ #define ALSHAFILEPARSER_H_
+ 
+-#include "../zlib/zlib.h"
+ #include "AlshaTypes.h"
++#include "../zlib/zlib.h"
+ #include "AlshaUtils.h"
+ #include <stdio.h>
+ #include <string.h>
+--- PreGraph/AlshaMessage.cpp.orig  2012-07-24 18:07:42.123039163 +0200
++++ PreGraph/AlshaMessage.cpp   2012-07-24 18:06:33.783034865 +0200
+@@ -7,6 +7,9 @@
+  *     Emails: liuy0039@ntu.edu.sg; nkcslyc@hotmail.com
+  */
+ 
++#define MPICH_IGNORE_CXX_SEEK
++#define MPICH_SKIP_MPICXX 
++
+ #include "AlshaMessage.h"
+ #include "AlshaComms.h"
+ #include "AlshaParams.h"
+--- PreGraph/AlshaComms.cpp.orig    2010-08-18 14:53:36.000000000 +0200
++++ PreGraph/AlshaComms.cpp 2012-07-24 18:09:14.332044961 +0200
+@@ -1,6 +1,6 @@
++#include <mpi.h>
+ #include "AlshaComms.h"
+ #include "AlshaParams.h"
+-#include <mpi.h>
+ 
+ MPI_Request AlshaComms::msgRequest = MPI_REQUEST_NULL;
+ uint8_t* AlshaComms::RX_BUFFER = NULL;
+--- PreGraph/AlshaThread.cpp.orig   2012-07-24 18:12:46.000000000 +0200
++++ PreGraph/AlshaThread.cpp    2012-07-24 18:13:18.485060314 +0200
+@@ -7,6 +7,9 @@
+  *     Emails: liuy0039@ntu.edu.sg; nkcslyc@hotmail.com
+  */
+ 
++#define MPICH_IGNORE_CXX_SEEK
++#define MPICH_SKIP_MPICXX 
++
+ #include "AlshaThread.h"
+ #include "Alsha.h"
+ 
+
