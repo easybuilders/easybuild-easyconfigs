@@ -88,6 +88,9 @@ def add_build_options(parser):
     strictness_options = ['ignore', 'warn', 'error']
     parser.add_option("--strict", type="choice", choices=strictness_options, help="set strictness \
                         level (possible levels: %s" % ', '.join(strictness_options))
+    # only allow --job so we can filter it afterwards
+    parser.add_option("--job" , action="store_true", help="will submit the build as a job")
+
 
 def main():
     """
@@ -178,6 +181,10 @@ def main():
     if options.strict:
         filetools.strictness = options.strict
 
+    if options.job:
+        submit_build_job(log)
+        log.info("submitted job, exiting now")
+        sys.exit(0)
 
     ## Read easyconfig files
     packages = []
@@ -699,6 +706,25 @@ def build(module, options, log, origEnviron, exitOnFailure=True):
             return (False, applicationLog)
     else:
         return (True, applicationLog)
+
+def submit_build_job(log):
+    """
+    will submit the current command (sys.argv) without the --job paramater as a job
+    any environment variable that is been set that starts with EASYBUILD will be passed on the job
+    """
+    command = " ".join([arg for arg in sys.argv if arg != '--job'])
+
+    easybuild_vars = {}
+    for name in os.environ:
+        if name.startswith("EASYBUILD"):
+            easybuild_vars[name] = os.environ[name]
+
+    # import here so it only loads when needed
+    from easybuild.tools.pbs_job import PbsJob
+    job = PbsJob(command, easybuild_vars, "easybuild-build-job")
+    job.submit()
+    log.info("job submitted. info: %s", job.info())
+
 
 if __name__ == "__main__":
     try:
