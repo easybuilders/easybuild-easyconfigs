@@ -19,7 +19,6 @@
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
 import difflib
-from distutils.version import LooseVersion
 import os
 import shutil
 import easybuild.tools.environment as env
