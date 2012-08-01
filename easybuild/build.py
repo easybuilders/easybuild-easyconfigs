@@ -28,6 +28,8 @@ import time
 import copy
 import platform
 from datetime import datetime
+
+import easybuild  # required for VERBOSE_VERSION
 from easybuild.framework.application import Application, get_instance
 from easybuild.tools.build_log import EasyBuildError, initLogger, \
     removeLogHandler, print_msg

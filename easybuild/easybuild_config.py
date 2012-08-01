@@ -59,7 +59,7 @@ sourcePath = os.path.join(prefix, sourceDir)
 ## optionally a subdir argument can be specified:
 ## `repository = FileRepository(repositoryPath, subdir)`
 repositoryPath = os.path.join(prefix, 'ebfiles_repo')
-repository = FileRepository(repositoryPath)
+repository = FileRepository(repositoryPath)  #@UndefinedVariable
 
 # log format: (dir, filename template)
 # supported in template: name, version, data, time
