@@ -233,9 +233,9 @@ class Modules:
 
         return loaded_modules
 
-    def dependencies_for(self, name, version):
+    def dependencies_for(self, name, version, depth=-1):
         """
-        Obtain a list of dependencies for the given module (recursively)
+        Obtain a list of dependencies for the given module, determined recursively, up to a specified depth (optionally)
         """
         modfilepath = self.modulefile_path(name, version)
         log.debug("modulefile path %s/%s: %s" % (name, version, modfilepath))
@@ -250,8 +250,15 @@ class Modules:
         loadregex = re.compile("^\s+module load\s+(.*)$", re.M)
         mods = [mod.split('/') for mod in loadregex.findall(modtxt)]
 
-        # recursively determine dependencies for dependency modules
-        moddeps = [self.dependencies_for(modname, modversion) for (modname, modversion) in mods]
+        if depth > 0:
+            # recursively determine dependencies for these dependency modules
+            moddeps = [self.dependencies_for(modname, modversion, depth=depth-1) for (modname, modversion) in mods]
+        elif depth==0:
+            # stop recursion
+            moddeps = []
+        else:
+            # recursively determine dependencies for dependency modules until all dependencies are resolved (no or negative depth given)
+            moddeps = [self.dependencies_for(modname, modversion) for (modname, modversion) in mods]
 
         deps = [{'name':modname, 'version':modversion} for (modname, modversion) in mods]
 
