@@ -1,3 +1,4 @@
+import copy
 import os
 import re
 import sys
@@ -7,6 +8,7 @@ from unittest import TestCase
 from easybuild.tools.build_log import getLog, EasyBuildError, initLogger
 from easybuild.framework.application import get_class, Application
 from easybuild.build import findEasyconfigs, processEasyconfig, resolveDependencies
+from easybuild.tools.filetools import modifyEnv
 
 import easybuild.tools.config as config
 
@@ -49,7 +51,6 @@ class BuildTest(TestCase):
 
         self.log = getLog("BuildTest")
         self.build_ok = True
-
 
         files = []
         if len(sys.argv) > 1:
@@ -109,9 +110,13 @@ class BuildTest(TestCase):
         """
         self.log.info("Continuing building other packages")
         base_dir = os.getcwd()
+        base_env = copy.deepcopy(os.environ)
 
         for app in self.apps:
+            # start with a clean slate
             os.chdir(base_dir)
+            modifyEnv(os.environ, base_env)
+
             # take manual control over the building
             self.performStep("preparation", app, lambda x: x.prepare_build())
             self.performStep("pre-build verification", app, lambda x: x.ready2build())
@@ -134,8 +139,8 @@ class BuildTest(TestCase):
         for result in self.test_results:
             self.log.info("%s crashed with an error during fase: %s, error: %s" % result)
 
-        failed = len(self.test_results)
-        total = failed + len(self.apps)
+        failed = len(self.build_status)
+        total = len(self.apps)
 
         self.log.info("%s from %s packages failed to build!" % (failed, total))
 
