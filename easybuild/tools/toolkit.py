@@ -159,9 +159,9 @@ class Toolkit:
         modules.addModule(self.dependencies)
         modules.load()
 
-        ## Determine toolkit dependencies, so we can prepare for them
-        self.toolkit_deps = modules.dependencies_for(self.name, self.version)
-        log.debug('List of toolkit dependencies: %s' % self.toolkit_deps)
+        ## Determine direct toolkit dependencies, so we can prepare for them
+        self.toolkit_deps = modules.dependencies_for(self.name, self.version, depth=1)
+        log.debug('List of direct toolkit dependencies: %s' % self.toolkit_deps)
 
         ## Generate the variables to be set
         self._generate_variables()
