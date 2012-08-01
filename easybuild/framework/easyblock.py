@@ -38,7 +38,6 @@ class EasyBlock:
     validmoduleclasses = ['base', 'compiler', 'lib']
     validstops = ['cfg', 'source', 'patch', 'configure', 'make', 'install', 'test', 'postproc', 'cleanup', 'packages']
 
-    # TODO: move this somewhere
     default_config = {
           'name':[None, "Name of software"],
           'version':[None, "Version of software"],
@@ -273,6 +272,7 @@ class EasyBlock:
         dep can be a dict a tuple or a list.
         if it is a tuple or a list the attributes are expected to be in the following order:
         ['name', 'version', 'suffix', 'dummy']
+        of these attributes, 'name' and 'version' are mandatory
 
         output dict contains these attributes:
         ['name', 'version', 'suffix', 'dummy', 'tk']
