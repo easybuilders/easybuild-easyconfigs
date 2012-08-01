@@ -13,7 +13,7 @@ from easybuild.tools.build_log import getLog
 class PbsJob:
     """Interaction with torque"""
 
-    def __init__(self, script, env_vars, name)
+    def __init__(self, script, env_vars, name):
         """
         create a new Job to be submitted to PBS
         """
@@ -35,7 +35,7 @@ class PbsJob:
 
         self.jobid = None
 
-    def submit(self) :
+    def submit(self):
         """Submit the jobscript txt, set self.jobid"""
         txt = self.script
         self.log.debug("Going to submit script %s" % txt)
