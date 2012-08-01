@@ -250,9 +250,10 @@ class Modules:
         loadregex = re.compile("^\s+module load\s+(.*)$", re.M)
         mods = [mod.split('/') for mod in loadregex.findall(modtxt)]
 
+        depth = depth - 1
         if depth > 0:
             # recursively determine dependencies for these dependency modules
-            moddeps = [self.dependencies_for(modname, modversion, depth=depth-1) for (modname, modversion) in mods]
+            moddeps = [self.dependencies_for(modname, modversion, depth=depth) for (modname, modversion) in mods]
         elif depth==0:
             # stop recursion
             moddeps = []
