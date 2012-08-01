@@ -263,6 +263,17 @@ class EasyBlock:
 
 
     def _parse_dependency(self, dep):
+        """
+        parses the dependency into a usable dict with a common format
+        dep can be a dict a tuple or a list.
+        if it is a tuple or a list the attributes are expected to be in the following order:
+        ['name', 'version', 'suffix', 'dummy']
+
+        output dict contains these attributes:
+        ['name', 'version', 'suffix', 'dummy', 'tk']
+
+        """
+
         attr = ['name', 'version', 'suffix', 'dummy']
         dependency = {'name': '', 'version': '', 'suffix': '', 'dummy': False}
         if isinstance(dep, dict):
