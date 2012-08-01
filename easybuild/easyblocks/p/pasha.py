@@ -33,12 +33,9 @@ class Pasha(Application):
 
     def configure(self):
         """Configure Pasha by setting make options."""
-        makeopts = self.getcfg('makeopts')
-        makeopts = "%s TBB_DIR=$SOFTROOTTBB/tbb MPI_CXX=$MPICXX OPM_FLAG=%s "\
-                  "MPI_DIR='' MPI_INC='' MPI_LIB='' MY_CXX=$CXX MPICH_IGNORE_CXX_SEEK=1" % \
-                  (makeopts, self.tk.get_openmp_flag())
-
-        self.setcfg('makeopts', makeopts)
+        self.updatecfg('makeopts', "TBB_DIR=$SOFTROOTTBB/tbb MPI_CXX=$MPICXX OPM_FLAG=%s" % self.tk.get_openmp_flag())
+        self.updatecfg('makeopts', "MPI_DIR='' MPI_INC='' MPI_LIB='' MY_CXX=$CXX MPICH_IGNORE_CXX_SEEK=1")
+        
 
     def make_install(self):
         """install by copying everything from 'bin' subdir in build dir to install dir"""
