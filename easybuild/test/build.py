@@ -203,7 +203,12 @@ def write_to_xml(succes, failed, filename):
         return el
 
     for (obj, fase, error) in failed:
-        el = create_failure("%s/%s" % (obj.name(), obj.installversion()), fase, error)
+        # try to pretty print
+        try:
+            el = create_failure("%s/%s" % (obj.name(), obj.installversion()), fase, error)
+        except:
+            el = create_failure(obj, fase, error)
+
         root.firstChild.appendChild(el)
 
     for obj in succes:
