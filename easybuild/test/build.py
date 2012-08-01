@@ -23,6 +23,7 @@ import os
 import re
 import sys
 import unittest
+import xml.dom.minidom as xml
 
 from unittest import TestCase
 from easybuild.tools.build_log import getLog, EasyBuildError, initLogger
@@ -31,6 +32,7 @@ from easybuild.build import findEasyconfigs, processEasyconfig, resolveDependenc
 from easybuild.tools.filetools import modifyEnv
 
 import easybuild.tools.config as config
+
 
 class BuildTest(TestCase):
     """
@@ -162,11 +164,56 @@ class BuildTest(TestCase):
         failed = len(self.build_status)
         total = len(self.apps)
 
+        succes = [app for app in self.apps if app not in self.build_status]
+
         self.log.info("%s from %s packages failed to build!" % (failed, total))
+
+        filename = "easybuild-test-output.xml"
+        test_path = os.path.dirname(__file__)
+        filename = os.path.join(test_path, filename)
+        self.log.debug("writing xml output to %s" % filename)
+        write_to_xml(succes, self.test_results, filename)
 
         # exit with non-zero exit-code when not build_ok
         if not self.build_ok:
             sys.exit(1)
+
+def write_to_xml(succes, failed, filename):
+    """
+    Create xml output, using minimal output required according to
+    http://stackoverflow.com/questions/4922867/junit-xml-format-specification-that-hudson-supports
+    """
+    dom = xml.getDOMImplementation()
+    root = dom.createDocument(None, "testsuite", None)
+
+    def create_testcase(name):
+        el = root.createElement("testcase")
+        el.setAttribute("name", name)
+        return el
+
+    def create_failure(name, error_type, error):
+        el = create_testcase(name)
+
+        # encapsulate in CDATA section
+        error_text = root.createCDATASection("\n%s\n" % error)
+        failure_el = root.createElement("failure")
+        failure_el.setAttribute("type", error_type)
+        el.appendChild(failure_el)
+        el.lastChild.appendChild(error_text)
+        return el
+
+    for (obj, fase, error) in failed:
+        el = create_failure("%s/%s" % (obj.name(), obj.installversion()), fase, error)
+        root.firstChild.appendChild(el)
+
+    for obj in succes:
+        el = create_testcase("%s/%s" % (obj.name(), obj.installversion()))
+        root.firstChild.appendChild(el)
+
+    output_file = open(filename, "w")
+    root.writexml(output_file, addindent="\t", newl="\n")
+    output_file.close()
+
 
 # do not use unittest.main() as it will annoyingly parse command line arguments
 suite = unittest.TestLoader().loadTestsFromTestCase(BuildTest)
