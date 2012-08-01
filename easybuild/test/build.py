@@ -168,7 +168,6 @@ class BuildTest(TestCase):
         if not self.build_ok:
             sys.exit(1)
 
-if __name__ == '__main__':
-    # do not use unittest.main() as it will annoyingly parse command line arguments
-    suite = unittest.TestLoader().loadTestsFromTestCase(BuildTest)
-    unittest.TextTestRunner(verbosity=2).run(suite)
+# do not use unittest.main() as it will annoyingly parse command line arguments
+suite = unittest.TestLoader().loadTestsFromTestCase(BuildTest)
+unittest.TextTestRunner(verbosity=2).run(suite)
