@@ -581,8 +581,6 @@ class Toolkit:
         if self.toolkit_comp_family() == GCC:
             for var in ['LIBLAPACK', 'LIBLAPACK_MT', 'LIBSCALAPACK', 'LIBSCALAPACK_MT']:
                 self.vars[var] = self.vars[var].replace('mkl_intel_lp64', 'mkl_gf_lp64')
-            else:
-                log.error("Toolkit preparation with both GCC and Intel compilers loaded is not supported.")
 
     def prepareIMPI(self):
         """
