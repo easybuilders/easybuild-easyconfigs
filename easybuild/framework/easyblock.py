@@ -237,6 +237,10 @@ class EasyBlock:
         return name
 
     def _validate(self, attr, values):
+        """
+        validation helper method. attr is the attribute it will check, values are the possible values.
+        if the value of the attribute is not in the is array, it will report an error
+        """
         if self[attr] and self[attr] not in values:
             self.log.error("%s provided %s is not valid: %s" % (attr, self[attr], values))
 
@@ -299,9 +303,16 @@ class EasyBlock:
 
 
     def __getitem__(self, key):
+        """
+        will return the value without the help text
+        """
         return self.config[key][0]
 
 
     def __setitem__(self, key, value):
+        """
+        sets the value of key in config.
+        help text is untouched
+        """
         self.config[key][0] = value
 
