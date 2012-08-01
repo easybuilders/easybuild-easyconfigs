@@ -33,12 +33,17 @@ class Pasha(Application):
 
     def configure(self):
         """Configure Pasha by setting make options."""
-        self.updatecfg('makeopts', "TBB_DIR=$SOFTROOTTBB/tbb MPI_CXX=$MPICXX OPM_FLAG=%s" % self.tk.get_openmp_flag())
+
+        tbb = os.getenv('SOFTROOTTBB')
+        if not tbb:
+            self.log.error("TBB module not loaded.")
+
+        self.updatecfg('makeopts', "TBB_DIR=%s/tbb MPI_CXX=$MPICXX OPM_FLAG=%s" % (tbb, self.tk.get_openmp_flag()))
         self.updatecfg('makeopts', "MPI_DIR='' MPI_INC='' MPI_LIB='' MY_CXX=$CXX MPICH_IGNORE_CXX_SEEK=1")
-        
 
     def make_install(self):
-        """install by copying everything from 'bin' subdir in build dir to install dir"""
+        """Install by copying everything from 'bin' subdir in build dir to install dir"""
+
         srcdir = os.path.join(self.builddir, "%s-%s" % (self.name(), self.version()), 'bin')
         shutil.copytree(srcdir, os.path.join(self.installdir, 'bin'))
 
@@ -48,5 +53,4 @@ class Pasha(Application):
                                         'files':["bin/pasha-%s" % x for x in ["kmergen", "pregraph", "graph"]],
                                         'dirs':[""],
                                         })
-
 
