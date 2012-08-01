@@ -315,9 +315,9 @@ class Toolkit:
 
         self._addDependencyVariables(['ACML'])
 
-        if os.getenv('SOFTROOTGCC'):
+        if self.toolkit_comp_family() == GCC:
             compiler = 'gfortran'
-        elif os.getenv('SOFTROOTIFORT'):
+        elif self.toolkit_comp_family() == INTEL:
             compiler = 'ifort'
         else:
             log.error("Don't know which compiler-specific subdir for ACML to use.")
@@ -578,10 +578,9 @@ class Toolkit:
         self._flagsForSubdirs(mklRoot, mklld, flag="-L%s", varskey="LDFLAGS")
         self._flagsForSubdirs(mklRoot, mklcpp, flag="-I%s", varskey="CPPFLAGS")
 
-        if os.getenv('SOFTROOTGCC'):
-            if not (os.getenv('SOFTROOTICC') or os.getenv('SOFTROOTIFORT')):
-                for var in ['LIBLAPACK', 'LIBLAPACK_MT', 'LIBSCALAPACK', 'LIBSCALAPACK_MT']:
-                    self.vars[var] = self.vars[var].replace('mkl_intel_lp64', 'mkl_gf_lp64')
+        if self.toolkit_comp_family() == GCC:
+            for var in ['LIBLAPACK', 'LIBLAPACK_MT', 'LIBSCALAPACK', 'LIBSCALAPACK_MT']:
+                self.vars[var] = self.vars[var].replace('mkl_intel_lp64', 'mkl_gf_lp64')
             else:
                 log.error("Toolkit preparation with both GCC and Intel compilers loaded is not supported.")
 
@@ -590,7 +589,7 @@ class Toolkit:
         Prepare for Intel MPI library
         """
 
-        if os.getenv('SOFTROOTICC') and os.getenv('SOFTROOTIFORT') and not os.getenv('SOFTROOTGCC'):
+        if self.toolkit_comp_family() == INTEL:
             # Intel-based toolkit
 
             self.vars['MPICC'] = 'mpiicc %s' % self.m32flag
