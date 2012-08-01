@@ -299,7 +299,6 @@ def processEasyconfig(path, log, onlyBlocks=None, regtest_online=False):
         except EasyBuildError, err:
             msg = "Failed to process easyconfig %s:\n%s" % (spec, err.msg)
             log.exception(msg)
-            raise EasyBuildError(msg)
 
         name = eb['name']
 
@@ -357,7 +356,6 @@ def resolveDependencies(unprocessed, robot, log):
         if loopcnt > maxloopcnt:
             msg = "Maximum loop cnt %s reached, so quitting." % maxloopcnt
             log.error(msg)
-            raise EasyBuildError(msg)
 
         ## First try resolving dependencies without using external dependencies
         lastProcessedCount = -1
@@ -391,7 +389,6 @@ def resolveDependencies(unprocessed, robot, log):
                         msg = "Expected easyconfig %s to resolve dependency for %s, but it does not" % (path, candidates[0])
                         msg += " (list of obtained modules after processing easyconfig: %s)" % mods
                         log.error(msg)
-                        raise EasyBuildError(msg)
 
                     unprocessed.extend(processedSpecs)
                     robotAddedDependency = True
@@ -407,7 +404,6 @@ def resolveDependencies(unprocessed, robot, log):
 
         msg = "Dependencies not met. Cannot resolve %s" % missingDependencies.keys()
         log.error(msg)
-        raise EasyBuildError(msg)
 
     log.info("Dependency resolution complete, building as follows:\n%s" % orderedSpecs)
     return orderedSpecs
@@ -473,7 +469,6 @@ def retrieveBlocksInSpec(spec, log, onlyBlocks):
             if blockName in [b['name'] for b in blocks]:
                 msg = "Found block %s twice in %s." % (blockName, spec)
                 log.error(msg)
-                raise EasyBuildError(msg)
 
             block = {'name': blockName, 'contents': blockContents}
 
@@ -508,7 +503,6 @@ def retrieveBlocksInSpec(spec, log, onlyBlocks):
                         if not dep in [b['name'] for b in blocks]:
                             msg = "Block %s depends on %s, but block was not found." % (name, dep)
                             log.error(msg)
-                            raise EasyBuildError(msg)
 
                         dep = [b for b in blocks if b['name'] == dep][0]
                         f.write("\n## Dependency block %s" % (dep['name']))
@@ -521,7 +515,6 @@ def retrieveBlocksInSpec(spec, log, onlyBlocks):
             except Exception:
                 msg = "Failed to write block %s to easyconfig %s" % (name, spec)
                 log.exception(msg)
-                raise EasyBuildError(msg)
 
             specs.append(blockPath)
 
