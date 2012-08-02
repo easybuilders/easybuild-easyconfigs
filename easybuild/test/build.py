@@ -151,7 +151,7 @@ class BuildTest(TestCase):
 
         for easyconfig in files:
             easybuild_vars['EASYBUILDTESTOUTPUT'] = "%s.xml" % easyconfig
-            command = "python build.py %s" % easyconfig
+            command = "cd %s && python %s %s" % (self.cur_dir, sys.argv[0], easyconfig)
             self.log.debug("submitting: %s" % command)
             self.log.debug("env vars set: %s" % easybuild_vars)
             job = PbsJob(command, easybuild_vars, easyconfig)
