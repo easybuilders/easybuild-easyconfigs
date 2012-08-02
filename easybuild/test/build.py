@@ -158,7 +158,7 @@ class BuildTest(TestCase):
             command = "cd %s && python %s %s" % (self.cur_dir, sys.argv[0], easyconfig)
             self.log.debug("submitting: %s" % command)
             self.log.debug("env vars set: %s" % easybuild_vars)
-            job = PbsJob(command, easybuild_vars, easyconfig)
+            job = PbsJob(command, easyconfig, easybuild_vars)
             try:
                 job.submit()
                 self.jobs.append(job)
