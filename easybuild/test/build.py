@@ -153,7 +153,7 @@ class BuildTest(TestCase):
             job = PbsJob(command, easybuild_vars, easyconfig)
             try:
                 job.submit()
-                self.jobs.append((easyconfig, job))
+                self.jobs.append(job)
             except EasyBuildError, err:
                 self.log.warn("Failed to submit job for easyconfig: %s, error: %s" % (easyconfig, err))
 
@@ -185,7 +185,7 @@ class BuildTest(TestCase):
                 # we can afford to sleep 5 minutes since we don't expect fast completion
                 time.sleep(5 * 60)
                 done = True
-                for (_, job) in self.jobs:
+                for job in self.jobs:
                     if job.info():
                         done = False
                         break
@@ -195,8 +195,10 @@ class BuildTest(TestCase):
 
             dom = xml.getDOMImplementation()
             root = dom.createDocument(None, "testsuite", None)
-            for (easyconfig_file, _) in self.jobs:
-                dom = xml.parse(os.path.join(test_dir, "%s.xml" % easyconfig_file))
+            for job in self.jobs:
+                # we set this earlier on (cannot be changed inside job)
+                xml_output = job.env_vars['EASYBUILDTESTOUTPUT']
+                dom = xml.parse(xml_output)
                 children = dom.documentElement.getElementsByTagName("testcase")
                 for child in children:
                     root.firstChild.appendChild(child)
