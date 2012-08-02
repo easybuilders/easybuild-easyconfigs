@@ -201,8 +201,8 @@ class BuildTest(TestCase):
                 for child in children:
                     root.firstChild.appendChild(child)
 
-            output_file = open("parallel-test.xml", "w")
-            root.writexml(os.path.join(test_dir, output_file), addindent="\t", newl="\n")
+            output_file = open(os.path.join(test_dir, "parallel-test.xml"), "w")
+            root.writexml(output_file, addindent="\t", newl="\n")
             output_file.close()
             return
 
