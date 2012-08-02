@@ -53,9 +53,11 @@ class PbsJob:
 
         resources = {"walltime": "72:00:00", "nodes": "1:ppn=%s" % self.get_ppn() }
 
-        attropl = pbs.new_attropl(1) ## jobparams
+        attropl = pbs.new_attropl(2) ## jobparams
         attropl[0].name = 'Job_Name'
         attropl[0].value = self.name
+        attropl[1].name = 'Rerunable'
+        attropl[1].value = 'y'
 
         tmpattropl = pbs.new_attropl(len(resources)) ## jobparams
         idx = 0
