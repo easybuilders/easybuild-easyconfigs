@@ -144,10 +144,10 @@ class PbsJob:
         ehosts = get_uniq_hosts(state.get('exec_host', ''), 1)
 
         self.log.debug("Jobid %s jid %s state %s ehosts %s (%s)" % (self.jobid, jid, jstate, ehosts, state))
-        if len(ehosts) > 0:
-            return 'running'
-        else:
+        if jstate == 'Q':
             return 'queued'
+        else:
+            return 'running'
 
     def info(self, types=None):
         """
