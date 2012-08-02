@@ -86,6 +86,7 @@ class FSL(Application):
             self.log.error("Error detected in build log %s." % buildlog)
 
     def make_module_req_guess(self):
+        """Set correct PATH and LD_LIBRARY_PATH variables."""
 
         guesses = Application.make_module_req_guess(self)
 
@@ -95,6 +96,15 @@ class FSL(Application):
         })
 
         return guesses
+
+    def make_module_extra(self):
+        """Add setting of FSLDIR in module."""
+
+        txt = Application.make_module_extra(self)
+
+        txt += self.moduleGenerator.setEnvironment("FSLDIR", "$root/fsl")
+
+        return txt
 
     def sanitycheck(self):
         """Custom sanity check for FSL"""
