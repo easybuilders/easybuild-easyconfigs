@@ -132,7 +132,7 @@ class BuildTest(TestCase):
                 self.build_ok = False
                 self.test_results.append((spec, 'initialization', err))
 
-    def submit_jobs(files):
+    def submit_jobs(self, files):
         """
         Build the given files in parallel using (for now) PBS
         """
@@ -196,7 +196,7 @@ class BuildTest(TestCase):
             dom = xml.getDOMImplementation()
             root = dom.createDocument(None, "testsuite", None)
             for (easyconfig_file, _) in self.jobs:
-                dom = xml.parse(test_dir, "%s.xml" % easybuild_config))
+                dom = xml.parse(os.path.join(test_dir, "%s.xml" % easyconfig_file))
                 children = dom.documentElement.getElementsByTagName("testcase")
                 for child in children:
                     root.firstChild.appendChild(child)
