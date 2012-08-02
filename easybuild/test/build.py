@@ -34,6 +34,7 @@ from easybuild.build import findEasyconfigs, processEasyconfig, resolveDependenc
 from easybuild.tools.filetools import modifyEnv
 from easybuild.tools.pbs_job import PbsJob
 
+import easybuild
 import easybuild.tools.config as config
 
 
@@ -285,6 +286,18 @@ def write_to_xml(succes, failed, filename):
         el.appendChild(failure_el)
         el.lastChild.appendChild(error_text)
         return el
+    properties = root.createElement("properties")
+    version = root.createElement("property")
+    version.setAttribute("name", "easybuild-version")
+    version.setAttribute("value", str(easybuild.VERBOSE_VERSION))
+    properties.appendChild(version)
+
+    time = root.createElement("property")
+    time.setAttribute("name", "timestamp")
+    time.setAttribute("value", str(datetime.now()))
+    properties.appendChild(time)
+
+    root.firstChild.appendChild(properties)
 
     for (obj, fase, error) in failed:
         # try to pretty print
