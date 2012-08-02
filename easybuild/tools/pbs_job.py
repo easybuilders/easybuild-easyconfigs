@@ -142,6 +142,10 @@ class PbsJob:
 
     def info(self, types=None):
         """Return jobinfo"""
+        if not self.jobid:
+            self.log.debug("no jobid, job is not yet submitted?")
+            return
+
         if type(types) is str:
             types = [types]
         self.log.debug("Return info types %s" % types)
