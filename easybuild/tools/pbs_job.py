@@ -24,13 +24,16 @@ from easybuild.tools.build_log import getLog
 class PbsJob:
     """Interaction with torque"""
 
-    def __init__(self, script, env_vars, name):
+    def __init__(self, script, name, env_vars=None):
         """
         create a new Job to be submitted to PBS
         """
         self.log = getLog("PBS")
         self.script = script
-        self.env_vars = env_vars
+        if env_vars:
+            self.env_vars = env_vars
+        else:
+            self.env_vars = {}
         self.name = name
 
         global pbs
@@ -142,6 +145,7 @@ class PbsJob:
 
     def info(self, types=None):
         """Return jobinfo"""
+
         if not self.jobid:
             self.log.debug("no jobid, job is not yet submitted?")
             return

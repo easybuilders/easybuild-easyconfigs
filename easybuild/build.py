@@ -27,6 +27,7 @@ import tempfile
 import time
 import copy
 import platform
+from datetime import datetime
 from easybuild.framework.application import Application, get_instance
 from easybuild.tools.build_log import EasyBuildError, initLogger, \
     removeLogHandler, print_msg
@@ -721,7 +722,8 @@ def submit_build_job(log):
 
     # import here so it only loads when needed
     from easybuild.tools.pbs_job import PbsJob
-    job = PbsJob(command, easybuild_vars, "easybuild-build-job")
+    name = "easybuild-build-%s" % datetime.now().strftime("%m-%d-%Y-%H:%M:%S")
+    job = PbsJob(command, name, easybuild_vars )
     job.submit()
     log.info("job submitted. info: %s", job.info())
 
