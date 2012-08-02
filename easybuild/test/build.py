@@ -69,7 +69,7 @@ class BuildTest(TestCase):
 
         config.init('easybuild/easybuild_config.py')
         self.test_results = []
-        self.build_status = {}
+        self.build_stopped = {}
 
         self.log = getLog("BuildTest")
         self.build_ok = True
@@ -116,7 +116,7 @@ class BuildTest(TestCase):
         """
         Perform method on object if it can be build
         """
-        if obj not in self.build_status:
+        if obj not in self.build_stopped:
             try:
                 method(obj)
             except EasyBuildError, err:
@@ -124,7 +124,7 @@ class BuildTest(TestCase):
                 self.build_ok = False
                 self.test_results.append((obj, fase, err))
                 # keep a dict of so we can check in O(1) if objects can still be build
-                self.build_status[obj] = fase
+                self.build_stopped[obj] = fase
 
     def runTest(self):
         """
@@ -161,10 +161,10 @@ class BuildTest(TestCase):
         for result in self.test_results:
             self.log.info("%s crashed with an error during fase: %s, error: %s" % result)
 
-        failed = len(self.build_status)
+        failed = len(self.build_stopped)
         total = len(self.apps)
 
-        succes = [app for app in self.apps if app not in self.build_status]
+        succes = [app for app in self.apps if app not in self.build_stopped]
 
         self.log.info("%s from %s packages failed to build!" % (failed, total))
 
