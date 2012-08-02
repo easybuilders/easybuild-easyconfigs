@@ -25,6 +25,7 @@ import sys
 import time
 import unittest
 import xml.dom.minidom as xml
+from datetime import datetime
 
 from unittest import TestCase
 from easybuild.tools.build_log import getLog, EasyBuildError, initLogger
@@ -72,6 +73,7 @@ class BuildTest(TestCase):
         config.init('easybuild/easybuild_config.py')
         self.test_results = []
         self.build_stopped = {}
+        self.cur_dir = os.getcwd()
 
         self.log = getLog("BuildTest")
         self.build_ok = True
@@ -136,6 +138,8 @@ class BuildTest(TestCase):
         """
         Build the given files in parallel using (for now) PBS
         """
+        # change to current
+        os.chdir(self.cur_dir)
         # capture PYTHONPATH and all variables starting with EASYBUILD
         easybuild_vars = {}
         for name in os.environ:
@@ -147,7 +151,7 @@ class BuildTest(TestCase):
 
         for easyconfig in files:
             easybuild_vars['EASYBUILDTESTOUTPUT'] = "%s.xml" % easyconfig
-            command = "python %s %s" % (sys.argv[0], easyconfig)
+            command = "python build.py %s" % easyconfig
             self.log.debug("submitting: %s" % command)
             self.log.debug("env vars set: %s" % easybuild_vars)
             job = PbsJob(command, easybuild_vars, easyconfig)
@@ -191,8 +195,6 @@ class BuildTest(TestCase):
                         break
 
             # all build jobs have finished -> aggregate results
-            test_dir = os.path.dirname(__file__)
-
             dom = xml.getDOMImplementation()
             root = dom.createDocument(None, "testsuite", None)
             for job in self.jobs:
@@ -203,7 +205,7 @@ class BuildTest(TestCase):
                 for child in children:
                     root.firstChild.appendChild(child)
 
-            output_file = open(os.path.join(test_dir, "parallel-test.xml"), "w")
+            output_file = open(os.path.join(self.cur_dir, "parallel-test.xml"), "w")
             root.writexml(output_file, addindent="\t", newl="\n")
             output_file.close()
             return
@@ -250,10 +252,9 @@ class BuildTest(TestCase):
         if "EASYBUILDTESTOUTPUT" in os.environ:
             filename = os.environ["EASYBUILDTESTOUTPUT"]
         else:
-            filename = "easybuild-test-output.xml"
+            filename = "easybuild-test-%s.xml" % datetime.now().strftime("%d-%m-%Y-%H:%M:%S")
 
-        test_path = os.path.dirname(__file__)
-        filename = os.path.join(test_path, filename)
+        filename = os.path.join(self.cur_dir, filename)
         self.log.debug("writing xml output to %s" % filename)
         write_to_xml(succes, self.test_results, filename)
 
