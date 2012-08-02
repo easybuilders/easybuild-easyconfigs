@@ -19,6 +19,7 @@
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
 import copy
+import platform
 import os
 import re
 import sys
@@ -36,6 +37,7 @@ from easybuild.tools.pbs_job import PbsJob
 
 import easybuild
 import easybuild.tools.config as config
+import easybuild.tools.systemtools as systemtools
 
 
 class BuildTest(TestCase):
@@ -74,6 +76,7 @@ class BuildTest(TestCase):
         config.init('easybuild/easybuild_config.py')
         self.test_results = []
         self.build_stopped = {}
+        self.succes = []
         self.cur_dir = os.getcwd()
 
         self.log = getLog("BuildTest")
@@ -217,6 +220,7 @@ class BuildTest(TestCase):
         base_env = copy.deepcopy(os.environ)
 
         for app in self.apps:
+            start_time = time.time()
             # start with a clean slate
             os.chdir(base_dir)
             modifyEnv(os.environ, base_env)
@@ -240,13 +244,26 @@ class BuildTest(TestCase):
             self.performStep('sanity check', app, lambda x: x.sanitycheck())
             self.performStep('cleanup', app, lambda x: x.cleanup())
 
+            if app not in self.build_stopped:
+                # gather build stats
+                build_time = round(time.time() - start_time, 2)
+
+                buildstats = {'build_time': build_time,
+                              'platform': platform.platform(),
+                              'core_count': systemtools.get_core_count(),
+                              'cpu_model': systemtools.get_cpu_model(),
+                              'install_size': app.installsize(),
+                              'timestamp': int(time.time()),
+                              'host': os.uname()[1],
+                             }
+                self.succes.append((app, buildstats))
+
         for result in self.test_results:
             self.log.info("%s crashed with an error during fase: %s, error: %s" % result)
 
         failed = len(self.build_stopped)
         total = len(self.apps)
 
-        succes = [app for app in self.apps if app not in self.build_stopped]
 
         self.log.info("%s from %s packages failed to build!" % (failed, total))
 
@@ -257,7 +274,7 @@ class BuildTest(TestCase):
 
         filename = os.path.join(self.cur_dir, filename)
         self.log.debug("writing xml output to %s" % filename)
-        write_to_xml(succes, self.test_results, filename)
+        write_to_xml(self.succes, self.test_results, filename)
 
         # exit with non-zero exit-code when not build_ok
         if not self.build_ok:
@@ -286,6 +303,16 @@ def write_to_xml(succes, failed, filename):
         el.appendChild(failure_el)
         el.lastChild.appendChild(error_text)
         return el
+
+    def create_succes(name, stats):
+        el = create_testcase(name)
+        text = "\n".join(["%s=%s" % (key, value) for (key, value) in stats.items()])
+        build_stats = root.createCDATASection("\n%s\n" % text)
+        system_out = root.createElement("system-out")
+        el.appendChild(system_out)
+        el.lastChild.appendChild(build_stats)
+        return el
+
     properties = root.createElement("properties")
     version = root.createElement("property")
     version.setAttribute("name", "easybuild-version")
@@ -308,8 +335,8 @@ def write_to_xml(succes, failed, filename):
 
         root.firstChild.appendChild(el)
 
-    for obj in succes:
-        el = create_testcase("%s/%s" % (obj.name(), obj.installversion()))
+    for (obj, stats) in succes:
+        el = create_succes("%s/%s" % (obj.name(), obj.installversion()), stats)
         root.firstChild.appendChild(el)
 
     output_file = open(filename, "w")

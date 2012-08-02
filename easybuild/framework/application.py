@@ -1154,6 +1154,25 @@ class Application:
     def installversion(self):
         return self.cfg.installversion()
 
+    def installsize(self):
+        installsize = 0
+        try:
+            # change to home dir, to avoid that cwd no longer exists
+            os.chdir(os.getenv('HOME'))
+
+            # walk install dir to determine total size
+            for dirpath, _, filenames in os.walk(self.installdir):
+                for filename in filenames:
+                    fullpath = os.path.join(dirpath, filename)
+                    if os.path.exists(fullpath):
+                        installsize += os.path.getsize(fullpath)
+        except OSError, err:
+            self.log.warn("could not determine installsize")
+
+        return installsize
+
+
+
     def packages(self):
         """
         After make install, run this.
