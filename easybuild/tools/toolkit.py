@@ -694,8 +694,11 @@ class Toolkit:
         """
         Prepare for ScaLAPACK library
         """
-        self.vars['LIBSCALAPACK'] += " -lscalapack"
-        self.vars['LIBSCALAPACK_MT'] += " %s -lpthread" % self.vars['LIBSCALAPACK']
+
+        # we need to be careful here, LIBSCALAPACK(_MT) may be set by prepareBLACS, or not
+        self.vars['LIBSCALAPACK'] = "%s -lscalapack" % self.vars.get('LIBSCALAPACK', '')
+        self.vars['LIBSCALAPACK_MT'] = "%s %s -lpthread" % (self.vars['LIBSCALAPACK'],
+                                                            self.vars.get('LIBSCALAPACK_MT', ''))
 
         self._addDependencyVariables(['ScaLAPACK'])
 
