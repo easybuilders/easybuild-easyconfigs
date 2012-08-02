@@ -38,6 +38,7 @@ from optparse import OptionParser
 import easybuild.tools.config as config
 import easybuild.tools.filetools as filetools
 from easybuild.tools import systemtools
+from easybuild.tools.pbs_job import PbsJob
 
 """
 Main entry point for EasyBuildBuild: build software from .eb input file
@@ -720,8 +721,6 @@ def submit_build_job(log):
         if name.startswith("EASYBUILD"):
             easybuild_vars[name] = os.environ[name]
 
-    # import here so it only loads when needed
-    from easybuild.tools.pbs_job import PbsJob
     name = "easybuild-%s" % datetime.now().strftime("%m-%d-%Y-%H:%M:%S")
     job = PbsJob(command, name, easybuild_vars)
     job.submit()
