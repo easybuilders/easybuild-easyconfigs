@@ -22,6 +22,7 @@ import difflib
 import os
 import re
 import shutil
+
 import easybuild.tools.environment as env
 from easybuild.framework.application import Application
 from easybuild.tools.filetools import run_cmd
@@ -30,7 +31,9 @@ class FSL(Application):
     """Support for building and installing FSL."""
 
     def __init__(self,*args,**kwargs):
-        Application.__init__(self, args,kwargs)
+        """Specify building in install dir, initialize custom variables."""
+
+        Application.__init__(self, *args, **kwargs)
 
         self.build_in_installdir = True
 
