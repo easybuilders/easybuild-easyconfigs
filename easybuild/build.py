@@ -723,7 +723,7 @@ def submit_build_job(log):
     # import here so it only loads when needed
     from easybuild.tools.pbs_job import PbsJob
     name = "easybuild-%s" % datetime.now().strftime("%m-%d-%Y-%H:%M:%S")
-    job = PbsJob(command, name, easybuild_vars )
+    job = PbsJob(command, name, easybuild_vars)
     job.submit()
     log.info("job submitted. info: %s", job.info())
 
