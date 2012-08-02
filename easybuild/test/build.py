@@ -22,6 +22,7 @@ import copy
 import os
 import re
 import sys
+import time
 import unittest
 import xml.dom.minidom as xml
 
@@ -30,6 +31,7 @@ from easybuild.tools.build_log import getLog, EasyBuildError, initLogger
 from easybuild.framework.application import get_class, Application
 from easybuild.build import findEasyconfigs, processEasyconfig, resolveDependencies
 from easybuild.tools.filetools import modifyEnv
+from easybuild.tools.pbs_job import PbsJob
 
 import easybuild.tools.config as config
 
@@ -73,6 +75,17 @@ class BuildTest(TestCase):
 
         self.log = getLog("BuildTest")
         self.build_ok = True
+        self.parallel = False
+        self.jobs = []
+
+        # rudimentary option parsing
+        try:
+            sys.argv.remove("--job")
+            self.log.debug("--job has been specified, parallel build test initiated!")
+            self.parallel = True
+        except ValueError:
+            # just continue as we were
+            pass
 
         files = []
         if len(sys.argv) > 1:
@@ -83,6 +96,12 @@ class BuildTest(TestCase):
             path = "easybuild/easyconfigs/"
             files = findEasyconfigs(path, log)
 
+        # if we want to build with jobs, we should do it now, since we have very little time on the login node
+        if self.parallel:
+            # this method will submit the jobs, in runTest we will handle the aggregation of the results
+            self.submit_jobs(files)
+            return
+
         packages = []
         for file in files:
             try:
@@ -90,6 +109,7 @@ class BuildTest(TestCase):
             except EasyBuildError, err:
                 self.build_ok = False
                 self.test_results.append((file, 'eb-file error', err))
+
 
         # Since build-order doesn't matter we don't have to use the resolveDependencies method
         self.apps = []
@@ -112,6 +132,33 @@ class BuildTest(TestCase):
                 self.build_ok = False
                 self.test_results.append((spec, 'initialization', err))
 
+    def submit_jobs(files):
+        """
+        Build the given files in parallel using (for now) PBS
+        """
+        # capture PYTHONPATH and all variables starting with EASYBUILD
+        easybuild_vars = {}
+        for name in os.environ:
+            if name.startswith("EASYBUILD"):
+                easybuild_vars[name] = os.environ[name]
+
+        if "PYTHONPATH" in os.environ:
+            easybuild_vars["PYTHONPATH"] = os.environ["PYTHONPATH"]
+
+        for easyconfig in files:
+            easybuild_vars['EASYBUILDTESTOUTPUT'] = "%s.xml" % easyconfig
+            command = "python %s %s" % (sys.argv[0], easyconfig)
+            self.log.debug("submitting: %s" % command)
+            self.log.debug("env vars set: %s" % easybuild_vars)
+            job = PbsJob(command, easybuild_vars, easyconfig)
+            try:
+                job.submit()
+                self.jobs.append((easyconfig, job))
+            except EasyBuildError, err:
+                self.log.warn("Failed to submit job for easyconfig: %s, error: %s" % (easyconfig, err))
+
+
+
     def performStep(self, fase, obj, method):
         """
         Perform method on object if it can be build
@@ -130,6 +177,36 @@ class BuildTest(TestCase):
         """
         Actual test, loop over all the different steps in a build
         """
+        # handle parallel build
+        if self.parallel:
+            # ugly while loop to check if some jobs are stilling running (minimizing job.info() calls)
+            done = False
+            while not done:
+                # we can afford to sleep 5 minutes since we don't expect fast completion
+                time.sleep(5 * 60)
+                done = True
+                for (_, job) in self.jobs:
+                    if job.info():
+                        done = False
+                        break
+
+            # all build jobs have finished -> aggregate results
+            test_dir = os.path.dirname(__file__)
+
+            dom = xml.getDOMImplementation()
+            root = dom.createDocument(None, "testsuite", None)
+            for (easyconfig_file, _) in self.jobs:
+                dom = xml.parse(test_dir, "%s.xml" % easybuild_config))
+                children = dom.documentElement.getElementsByTagName("testcase")
+                for child in children:
+                    root.firstChild.appendChild(child)
+
+            output_file = open("parallel-test.xml", "w")
+            root.writexml(os.path.join(test_dir, output_file), addindent="\t", newl="\n")
+            output_file.close()
+            return
+
+
         self.log.info("Continuing building other packages")
         base_dir = os.getcwd()
         base_env = copy.deepcopy(os.environ)
@@ -168,7 +245,11 @@ class BuildTest(TestCase):
 
         self.log.info("%s from %s packages failed to build!" % (failed, total))
 
-        filename = "easybuild-test-output.xml"
+        if "EASYBUILDTESTOUTPUT" in os.environ:
+            filename = os.environ["EASYBUILDTESTOUTPUT"]
+        else:
+            filename = "easybuild-test-output.xml"
+
         test_path = os.path.dirname(__file__)
         filename = os.path.join(test_path, filename)
         self.log.debug("writing xml output to %s" % filename)
