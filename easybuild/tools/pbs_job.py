@@ -31,7 +31,7 @@ class PbsJob:
         self.log = getLog("PBS")
         self.script = script
         if env_vars:
-            self.env_vars = env_vars
+            self.env_vars = env_vars.copy()
         else:
             self.env_vars = {}
         self.name = name
