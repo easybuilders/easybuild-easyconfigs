@@ -60,7 +60,7 @@ class PbsJob:
         resources = {"walltime": "72:00:00", "nodes": "1:ppn=%s" % self.get_ppn() }
 
         # Build default pbs_attributes list
-        pbs_attributes = pbs.new_attropl(2)
+        pbs_attributes = pbs.new_attropl(1)
         pbs_attributes[0].name = 'Job_Name'
         pbs_attributes[0].value = self.name
 
