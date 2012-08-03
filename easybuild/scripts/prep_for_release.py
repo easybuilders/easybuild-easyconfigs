@@ -1,6 +1,11 @@
 #!/usr/bin/env python
 ##
-# Copyright 2009-2012 Stijn De Weirdt, Dries Verdegem, Kenneth Hoste, Pieter De Baets, Jens Timmerman
+# Copyright 2009-2012 Stijn De Weirdt
+# Copyright 2010 Dries Verdegem
+# Copyright 2010-2012 Kenneth Hoste
+# Copyright 2011 Pieter De Baets
+# Copyright 2011-2012 Jens Timmerman
+# Copyright 2012 Toon Willems
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of the University of Ghent (http://ugent.be/hpc).
@@ -190,9 +195,9 @@ def check_clean_master_branch(home):
 
     return ok
 
-# 
+#
 # MAIN
-# 
+#
 
 # determine EasyBuild home dir, assuming this script is in <EasyBuild home>/easybuild/scripts
 easybuild_home = os.path.sep.join(os.path.abspath(sys.argv[0]).split(os.path.sep)[:-3])
