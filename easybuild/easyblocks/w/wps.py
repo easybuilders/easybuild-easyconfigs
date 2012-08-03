@@ -36,6 +36,7 @@ from easybuild.framework.application import Application
 from easybuild.tools.filetools import patch_perl_script_autoflush, run_cmd, run_cmd_qa, unpack
 from easybuild.easyblocks.n.netcdf import set_netcdf_env_vars, get_netcdf_module_set_cmds
 
+
 class WPS(Application):
     """Support for building/installing WPS."""
 

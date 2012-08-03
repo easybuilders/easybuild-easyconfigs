@@ -29,6 +29,7 @@ import easybuild.tools.environment as env
 import easybuild.tools.toolkit as toolkit
 from easybuild.framework.application import Application
 
+
 class NetCDF(Application):
     """Support for building/installing netCDF"""
 
