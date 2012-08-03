@@ -1,5 +1,6 @@
 import os
 
+
 changes = {}
 
 def write_changes(filename):

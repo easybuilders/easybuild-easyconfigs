@@ -18,18 +18,20 @@
 # You should have received a copy of the GNU General Public License
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
+"""
+EasyBuild support for installing the Intel Math Kernel Library (MKL), implemented as an easyblock
+"""
 
 import os
 import shutil
 import tempfile
-
 from distutils.version import LooseVersion
 
+import easybuild.tools.environment as env
 from easybuild.easyblocks.i.intelbase import IntelBase
 from easybuild.tools.filetools import run_cmd
 from easybuild.tools.modules import Modules
 
-import easybuild.tools.environment as env
 
 class Imkl(IntelBase):
     """

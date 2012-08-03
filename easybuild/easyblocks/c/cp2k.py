@@ -18,6 +18,10 @@
 # You should have received a copy of the GNU General Public License
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
+"""
+EasyBuild support for building and installing CP2K, implemented as an easyblock
+"""
+
 from distutils.version import LooseVersion
 import fileinput
 import glob
@@ -25,9 +29,11 @@ import re
 import os
 import shutil
 import sys
+
 from easybuild.framework.application import Application
 from easybuild.tools.filetools import run_cmd
 import easybuild.tools.toolkit as toolkit
+
 
 class CP2K(Application):
     """

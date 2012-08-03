@@ -18,11 +18,17 @@
 # You should have received a copy of the GNU General Public License
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
+"""
+EasyBuild support for building and installing LAPACK, implemented as an easyblock
+"""
+
 import glob
 import os
 import shutil
+
 from easybuild.framework.application import Application
 from easybuild.tools.filetools import run_cmd
+
 
 # also used for e.g. ScaLAPACK
 def get_blas_lib(log):
@@ -47,6 +53,7 @@ def get_blas_lib(log):
         log.error("No or unknown BLAS lib loaded; known BLAS libs: %s" % known_blas_libs.keys())
 
     return blaslib
+
 
 class LAPACK(Application):
     """

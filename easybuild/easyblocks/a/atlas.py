@@ -18,10 +18,16 @@
 # You should have received a copy of the GNU General Public License
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
+"""
+EasyBuild support for building and installing ATLAS, implemented as an easyblock
+"""
+
 import re
 import os
+
 from easybuild.framework.application import Application
 from easybuild.tools.filetools import run_cmd
+
 
 class ATLAS(Application):
     """

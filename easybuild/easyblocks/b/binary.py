@@ -19,11 +19,13 @@
 # along with EasyBuild. If not, see <http://www.gnu.org/licenses/>.
 ##
 """
-EasyBlock for binary applications
+General EasyBuild support for software with a binary installer
 """
+
 import shutil
-import os
+
 from easybuild.framework.application import Application
+
 
 class Binary(Application):
     """Support for installing a binary package.

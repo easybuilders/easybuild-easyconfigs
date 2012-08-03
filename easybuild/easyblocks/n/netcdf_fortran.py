@@ -18,10 +18,16 @@
 # You should have received a copy of the GNU General Public License
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
+"""
+EasyBuild support for building and installing netCDF-Fortran, implemented as an easyblock
+"""
+
 import os
-from easybuild.framework.application import Application
+
 import easybuild.tools.environment as env
 import easybuild.tools.toolkit as toolkit
+from easybuild.framework.application import Application
+
 
 class NetCDF_Fortran(Application):
     """Support for building/installing the netCDF-Fortran library"""

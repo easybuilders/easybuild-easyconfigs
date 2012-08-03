@@ -28,7 +28,9 @@ import tempfile
 from easybuild.tools.build_log import getLog
 from easybuild.tools.config import installPath
 
+
 log = getLog('moduleGenerator')
+
 
 class ModuleGenerator:
     """

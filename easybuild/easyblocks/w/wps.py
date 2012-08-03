@@ -18,18 +18,24 @@
 # You should have received a copy of the GNU General Public License
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
-from distutils.version import LooseVersion
+"""
+EasyBuild support for building and installing WPS, implemented as an easyblock
+"""
+
 import fileinput
 import os
 import re
 import shutil
 import sys
 import tempfile
+from distutils.version import LooseVersion
+
+import easybuild.tools.environment as env
+import easybuild.tools.toolkit as toolkit
 from easybuild.framework.application import Application
 from easybuild.tools.filetools import patch_perl_script_autoflush, run_cmd, run_cmd_qa, unpack
 from easybuild.easyblocks.n.netcdf import set_netcdf_env_vars, get_netcdf_module_set_cmds
-import easybuild.tools.environment as env
-import easybuild.tools.toolkit as toolkit
+
 
 class WPS(Application):
     """Support for building/installing WPS."""

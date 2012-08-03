@@ -18,16 +18,21 @@
 # You should have received a copy of the GNU General Public License
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
-from difflib import get_close_matches
-from distutils.version import LooseVersion
+"""
+Generic EasyBuild support for building and installing software,
+using the 'standard' configure/make/make install procedure.
+"""
+
 import copy
 import glob
-import grp #@UnresolvedImport
+import grp  #@UnresolvedImport
 import os
 import re
 import shutil
 import time
 import urllib
+from difflib import get_close_matches
+from distutils.version import LooseVersion
 
 import easybuild
 import easybuild.tools.config as config
@@ -40,10 +45,10 @@ from easybuild.tools.modules import Modules
 from easybuild.tools.toolkit import Toolkit
 from easybuild.tools.systemtools import get_core_count
 
+
 class Application:
     """
-    This is the dummy Application class.
-    All other Application classes should be inherited from this one
+    Support for building and installing applications with configure/make/make install
     """
 
     ## INIT
@@ -1755,9 +1760,10 @@ def get_instance(easyblock, log, name=None):
         log.error("Can't process provided module and class pair %s: %s" % (easyblock, err))
         raise EasyBuildError(str(err))
 
+
 class ApplicationPackage:
     """
-    Class for packages.
+    Support for installing packages.
     """
     def __init__(self, mself, pkg, pkginstalldeps):
         """

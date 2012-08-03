@@ -28,11 +28,13 @@ from easybuild.tools import systemtools
 
 import easybuild.tools.environment as env
 
-# constant used for recognizing compilers, MPI libraries, ...
+
+# constants used for recognizing compilers, MPI libraries, ...
 GCC = "GCC"
 INTEL = "Intel"
 OPENMPI = "OpenMPI"
 QLOGIC = "QLogic"
+
 
 class Toolkit:
     """

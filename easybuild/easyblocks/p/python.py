@@ -18,11 +18,17 @@
 # You should have received a copy of the GNU General Public License
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
+"""
+EasyBuild support for building and installing Python, implemented as an easyblock
+"""
+
 import os
 import shutil
+
 from easybuild.framework.application import ApplicationPackage, Application
 from easybuild.tools.filetools import unpack, patch, run_cmd
 import easybuild.tools.toolkit as toolkit
+
 
 class Python(Application):
     """Support for building/installing Python

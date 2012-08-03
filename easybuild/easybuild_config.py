@@ -18,6 +18,10 @@
 # You should have received a copy of the GNU General Public License
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
+"""
+EasyBuild configuration file.
+"""
+
 import os
 
 from easybuild.tools.build_log import getLog
@@ -59,7 +63,7 @@ sourcePath = os.path.join(prefix, sourceDir)
 ## optionally a subdir argument can be specified:
 ## `repository = FileRepository(repositoryPath, subdir)`
 repositoryPath = os.path.join(prefix, 'ebfiles_repo')
-repository = FileRepository(repositoryPath)  #@UndefinedVariable
+repository = FileRepository(repositoryPath)  #@UndefinedVariable (this file gets exec'ed, so ignore this)
 
 # log format: (dir, filename template)
 # supported in template: name, version, data, time

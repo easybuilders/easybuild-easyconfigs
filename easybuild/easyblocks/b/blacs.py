@@ -18,12 +18,18 @@
 # You should have received a copy of the GNU General Public License
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
+"""
+EasyBuild support for building and installing BLACS, implemented as an easyblock
+"""
+
 import glob
 import re
 import os
 import shutil
+
 from easybuild.framework.application import Application
 from easybuild.tools.filetools import run_cmd
+
 
 def det_interface(log, path):
     """Determine interface through xintface"""
@@ -36,6 +42,7 @@ def det_interface(log, path):
         return res.group(1)
     else:
         log.error("Failed to determine interface, output for xintface: %s" % out)
+
 
 class BLACS(Application):
     """

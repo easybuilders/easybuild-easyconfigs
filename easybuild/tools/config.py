@@ -21,10 +21,12 @@
 """
 EasyBuild configuration (paths, preferences, etc.)
 """
+
 import os
 
 from easybuild.tools.build_log import getLog
 import easybuild.tools.repository as repo
+
 
 log = getLog('config')
 

@@ -18,15 +18,21 @@
 # You should have received a copy of the GNU General Public License
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
+"""
+EasyBuild support for building and installing WRF, implemented as an easyblock
+"""
+
 import fileinput
 import os
 import re
 import sys
+
+import easybuild.tools.environment as env
+import easybuild.tools.toolkit as toolkit
 from easybuild.framework.application import Application
 from easybuild.tools.filetools import patch_perl_script_autoflush, run_cmd, run_cmd_qa
 from easybuild.easyblocks.n.netcdf import set_netcdf_env_vars, get_netcdf_module_set_cmds
-import easybuild.tools.environment as env
-import easybuild.tools.toolkit as toolkit
+
 
 class WRF(Application):
     """Support for building/installing WRF."""

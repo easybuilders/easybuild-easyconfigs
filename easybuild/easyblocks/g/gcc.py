@@ -18,6 +18,10 @@
 # You should have received a copy of the GNU General Public License
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
+"""
+EasyBuild support for building and installing GCC, implemented as an easyblock
+"""
+
 import re
 import os
 import shutil
@@ -29,6 +33,7 @@ from easybuild.tools.filetools import run_cmd
 from easybuild.tools.systemtools import get_kernel_name, get_shared_lib_ext, get_platform_name
 
 import easybuild.tools.environment as env
+
 
 class GCC(Application):
     """

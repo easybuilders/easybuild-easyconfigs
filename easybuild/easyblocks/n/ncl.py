@@ -18,14 +18,20 @@
 # You should have received a copy of the GNU General Public License
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
+"""
+EasyBuild support for building and installing NCL, implemented as an easyblock
+"""
+
 from distutils.version import LooseVersion
 import fileinput
 import os
 import re
 import sys
+
 from easybuild.framework.application import Application
 from easybuild.tools.filetools import run_cmd
 from easybuild.tools.modules import get_software_root
+
 
 class NCL(Application):
     """Support for building/installing NCL."""
