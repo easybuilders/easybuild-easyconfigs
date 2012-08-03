@@ -20,6 +20,7 @@
 ##
 import os
 import shutil
+
 from easybuild.framework.application import Application
 from easybuild.tools.filetools import run_cmd
 
@@ -27,7 +28,7 @@ class HPL(Application):
     """
     Support for building HPL (High Performance Linpack)
     - create Make.UNKNOWN
-    - build with make and install 
+    - build with make and install
     """
 
     def configure(self, subdir=None):
@@ -74,11 +75,10 @@ class HPL(Application):
         extra_makeopts = 'TOPdir="%s" ' % self.getcfg('startfrom')
 
         # compilers
-        extra_makeopts += 'CC="%(mpicc)s" MPICC="%(mpicc)s" LINKER="%(mpicc)s" ' % { 'mpicc':os.getenv('MPICC') }
+        extra_makeopts += 'CC="%(mpicc)s" MPICC="%(mpicc)s" LINKER="%(mpicc)s" ' % {'mpicc': os.getenv('MPICC')}
 
         # libraries: LAPACK and FFTW
-        extra_makeopts += 'LAlib="%s %s" ' % (os.getenv('LIBFFT'),
-                                              os.getenv('LIBLAPACK_MT'))
+        extra_makeopts += 'LAlib="%s %s" ' % (os.getenv('LIBFFT'), os.getenv('LIBLAPACK_MT'))
 
         # HPL options
         extra_makeopts += 'HPL_OPTS="%s -DUSING_FFTW" ' % os.getenv('CPPFLAGS')
@@ -114,10 +114,11 @@ class HPL(Application):
         """
         if not self.getcfg('sanityCheckPaths'):
 
-            self.setcfg('sanityCheckPaths',{'files':["bin/xhpl"],
-                                            'dirs':[]
+            self.setcfg('sanityCheckPaths',{
+                                            'files': ["bin/xhpl"],
+                                            'dirs': []
                                            })
 
-            self.log.info("Customized sanity check paths: %s"%self.getcfg('sanityCheckPaths'))
+            self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
         Application.sanitycheck(self)

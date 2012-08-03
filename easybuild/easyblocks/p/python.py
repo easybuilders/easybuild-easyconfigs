@@ -20,9 +20,10 @@
 ##
 import os
 import shutil
+
+import easybuild.tools.toolkit as toolkit
 from easybuild.framework.application import ApplicationPackage, Application
 from easybuild.tools.filetools import unpack, patch, run_cmd
-import easybuild.tools.toolkit as toolkit
 
 class Python(Application):
     """Support for building/installing Python
@@ -125,7 +126,7 @@ class DefaultPythonPackage(ApplicationPackage):
         extrapath = ""
         testinstalldir = os.path.join(self.builddir, "mytemporarytestinstalldir")
         if self.testinstall:
-            #Install in test directory and export PYTHONPATH
+            # Install in test directory and export PYTHONPATH
             try:
                 os.makedirs(testinstalldir)
             except OSError:
@@ -143,7 +144,6 @@ class DefaultPythonPackage(ApplicationPackage):
 
         if self.runtest:
             cmd = "%s%s" % (extrapath, self.runtest)
-
             run_cmd(cmd, log_all=True, simple=True)
 
         if self.testinstall:
@@ -275,10 +275,11 @@ libraries = %s
             blas = ", ".join(blas_libs)
 
         self.sitecfg = self.sitecfg % \
-            { 'lapack' : lapack,
-              'blas' : blas,
-              'libs' : ":".join([lib for lib in os.getenv('LDFLAGS').split(" -L")]),
-              'includes' : ":".join([lib for lib in os.getenv('CPPFLAGS').split(" -I")]),
+            {
+             'lapack': lapack,
+             'blas': blas,
+             'libs': ":".join([lib for lib in os.getenv('LDFLAGS').split(" -L")]),
+             'includes': ":".join([lib for lib in os.getenv('CPPFLAGS').split(" -I")]),
             }
 
         self.sitecfgfn = 'site.cfg'

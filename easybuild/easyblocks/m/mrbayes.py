@@ -22,6 +22,7 @@
 import os
 import shutil
 from distutils.version import LooseVersion
+
 from easybuild.framework.application import Application
 from easybuild.tools.filetools import run_cmd
 
@@ -82,10 +83,10 @@ class MrBayes(Application):
         """Custom sanity check for MrBayes."""
 
         if not self.getcfg('sanityCheckPaths'):
-            self.setcfg('sanityCheckPaths', {'files':["bin/mb"],
-                                            'dirs':[]
-                                            }
-                        )
+            self.setcfg('sanityCheckPaths', {
+                                             'files': ["bin/mb"],
+                                             'dirs': []
+                                            })
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 

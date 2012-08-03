@@ -19,9 +19,10 @@
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
 import os
-from easybuild.framework.application import Application
+
 import easybuild.tools.environment as env
 import easybuild.tools.toolkit as toolkit
+from easybuild.framework.application import Application
 
 class NetCDF_Fortran(Application):
     """Support for building/installing the netCDF-Fortran library"""
@@ -46,15 +47,14 @@ class NetCDF_Fortran(Application):
         """
         if not self.getcfg('sanityCheckPaths'):
 
-            self.setcfg('sanityCheckPaths',{'files':["bin/nf-config"] +
-                                                    ["lib/%s" % x for x in ["libnetcdff.so",
-                                                                            "libnetcdff.a"]] +
-                                                    ["include/%s" % x for x in ["netcdf.inc",
-                                                                                "netcdf.mod",
-                                                                                "typesizes.mod"]],
-                                            'dirs':[]
+            self.setcfg('sanityCheckPaths',{
+                                            'files': ["bin/nf-config"] +
+                                                     ["lib/%s" % x for x in ["libnetcdff.so", "libnetcdff.a"]] +
+                                                     ["include/%s" % x for x in ["netcdf.inc", "netcdf.mod",
+                                                                                 "typesizes.mod"]],
+                                            'dirs': []
                                            })
 
-            self.log.info("Customized sanity check paths: %s"%self.getcfg('sanityCheckPaths'))
+            self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
         Application.sanitycheck(self)

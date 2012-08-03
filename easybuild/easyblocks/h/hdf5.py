@@ -19,6 +19,7 @@
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
 import os
+
 from easybuild.framework.application import Application
 
 class HDF5(Application):
@@ -49,7 +50,6 @@ class HDF5(Application):
 
         Application.configure(self)
 
-
     # default make and make install are ok
 
     def sanitycheck(self):
@@ -63,19 +63,20 @@ class HDF5(Application):
             else:
                 extra_binaries = ["bin/%s" % x for x in ["h5cc", "h5fc"]]
 
-            self.setcfg('sanityCheckPaths',{'files':["bin/h5%s" % x for x in ["2gif", "c++", "copy",
-                                                                              "debug", "diff", "dump",
-                                                                              "import", "jam","ls",
-                                                                              "mkgrp", "perf_serial",
-                                                                              "redeploy", "repack",
-                                                                              "repart", "stat", "unjam"]] +
-                                                    ["bin/gif2h5"] + extra_binaries +
-                                                    ["lib/libhdf5%s.so" % x for x in ["_cpp", "_fortran",
-                                                                                      "_hl_cpp", "_hl",
-                                                                                      "hl_fortran", ""]],
-                                            'dirs':['include']
+            self.setcfg('sanityCheckPaths',{
+                                            'files': ["bin/h5%s" % x for x in ["2gif", "c++", "copy",
+                                                                               "debug", "diff", "dump",
+                                                                               "import", "jam","ls",
+                                                                               "mkgrp", "perf_serial",
+                                                                               "redeploy", "repack",
+                                                                               "repart", "stat", "unjam"]] +
+                                                     ["bin/gif2h5"] + extra_binaries +
+                                                     ["lib/libhdf5%s.so" % x for x in ["_cpp", "_fortran",
+                                                                                       "_hl_cpp", "_hl",
+                                                                                       "hl_fortran", ""]],
+                                            'dirs': ['include']
                                            })
 
-            self.log.info("Customized sanity check paths: %s"%self.getcfg('sanityCheckPaths'))
+            self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
         Application.sanitycheck(self)

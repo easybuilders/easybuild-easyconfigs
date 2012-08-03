@@ -90,7 +90,7 @@ def add_build_options(parser):
     parser.add_option("--strict", type="choice", choices=strictness_options, help="set strictness \
                         level (possible levels: %s" % ', '.join(strictness_options))
     # only allow --job so we can filter it afterwards
-    parser.add_option("--job" , action="store_true", help="will submit the build as a job")
+    parser.add_option("--job", action="store_true", help="will submit the build as a job")
 
 
 def main():

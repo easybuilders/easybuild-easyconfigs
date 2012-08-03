@@ -21,6 +21,7 @@
 import os
 import shutil
 from distutils.version import LooseVersion
+
 import easybuild
 from easybuild.framework.application import Application
 from easybuild.tools.filetools import run_cmd
@@ -39,9 +40,10 @@ class Libsmm(Application):
     def extra_options(self):
         # default dimensions
         dd = [1,4,5,6,9,13,16,17,22]
-        extra_vars = {'transpose_flavour':[1, "Transpose flavour of routines (default: 1)"],
-                      'max_tiny_dim':[12, "Maximum tiny dimension (default: 12)"],
-                      'dims':[dd, "Generate routines for these matrix dims (default: %s)" % dd]
+        extra_vars = {
+                      'transpose_flavour': [1, "Transpose flavour of routines (default: 1)"],
+                      'max_tiny_dim': [12, "Maximum tiny dimension (default: 12)"],
+                      'dims': [dd, "Generate routines for these matrix dims (default: %s)" % dd]
                      }
         return Application.extra_options(self, extra_vars)
 
@@ -158,21 +160,20 @@ tasks=%(tasks)s
             self.log.error('No known BLAS library found!')
 
         cfgdict = {
-            'eb_version' : easybuild.VERBOSE_VERSION,
-            'datatype': None,
-            'transposeflavour': self.getcfg('transpose_flavour'),
-            'targetcompile': targetcompile,
-            'hostcompile': hostcompile,
-            'dims':' '.join([str(d) for d in self.getcfg('dims')]),
-            'tiny_dims':' '.join([str(d) for d in range(1, self.getcfg('max_tiny_dim')+1)]),
-            'tasks': self.getcfg('parallel'),
-            'LIBBLAS':"%s %s" % (os.getenv('LDFLAGS'), os.getenv('LIBBLAS'))
-        }
+                   'eb_version': easybuild.VERBOSE_VERSION,
+                   'datatype': None,
+                   'transposeflavour': self.getcfg('transpose_flavour'),
+                   'targetcompile': targetcompile,
+                   'hostcompile': hostcompile,
+                   'dims': ' '.join([str(d) for d in self.getcfg('dims')]),
+                   'tiny_dims': ' '.join([str(d) for d in range(1, self.getcfg('max_tiny_dim')+1)]),
+                   'tasks': self.getcfg('parallel'),
+                   'LIBBLAS': "%s %s" % (os.getenv('LDFLAGS'), os.getenv('LIBBLAS'))
+                  }
 
         # configure for various iterations
-        datatypes = [(1, 'double precision real'),
-                     (3, 'double precision complex')
-                     ]
+        datatypes = [(1, 'double precision real'), (3, 'double precision complex')]
+
         for (dt, descr) in datatypes:
             cfgdict['datatype'] = dt
             try:
@@ -201,9 +202,10 @@ tasks=%(tasks)s
         """Custom sanity check for libsmm"""
 
         if not self.getcfg('sanityCheckPaths'):
-            self.setcfg('sanityCheckPaths', {'files':["lib/libsmm_%s.a" % x for x in ["dnn", "znn"]],
-                                            'dirs':[]
-                                           })
+            self.setcfg('sanityCheckPaths', {
+                                             'files': ["lib/libsmm_%s.a" % x for x in ["dnn", "znn"]],
+                                             'dirs': []
+                                            })
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 

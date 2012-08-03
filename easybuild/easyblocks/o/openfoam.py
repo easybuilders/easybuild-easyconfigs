@@ -18,12 +18,13 @@
 # You should have received a copy of the GNU General Public License
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
-from distutils.version import LooseVersion
 import os
 import stat
+from distutils.version import LooseVersion
+
+import easybuild.tools.toolkit as toolkit
 from easybuild.framework.application import Application
 from easybuild.tools.filetools import run_cmd, recursiveChmod
-import easybuild.tools.toolkit as toolkit
 
 class OpenFOAM(Application):
     """Support for building and installing OpenFOAM."""

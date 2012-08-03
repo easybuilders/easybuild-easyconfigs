@@ -21,6 +21,7 @@
 import glob
 import os
 import shutil
+
 from easybuild.framework.application import Application
 from easybuild.tools.filetools import run_cmd
 
@@ -31,9 +32,9 @@ def get_blas_lib(log):
     """
     blaslib = None
     known_blas_libs = {
-                       'GotoBLAS' : '-L%s -lgoto',
-                       'ATLAS' : '-L%s -lf77blas -latlas'
-                       }
+                       'GotoBLAS': '-L%s -lgoto',
+                       'ATLAS': '-L%s -lf77blas -latlas'
+                      }
     for (key,val) in known_blas_libs.items():
         softroot = 'SOFTROOT%s' % key.upper()
         if os.getenv(softroot):
@@ -59,8 +60,9 @@ class LAPACK(Application):
         Application.__init__(self, *args, **kwargs)
 
     def extra_options(self):
-        extra_vars = {'supply_blas':[False, "Supply BLAS lib to LAPACK for building (default: False)"],
-                      'test_only':[False, "Only make tests, don't try and build LAPACK lib."]
+        extra_vars = {
+                      'supply_blas': [False, "Supply BLAS lib to LAPACK for building (default: False)"],
+                      'test_only': [False, "Only make tests, don't try and build LAPACK lib."]
                      }
         return Application.extra_options(self, extra_vars)
 
@@ -132,7 +134,6 @@ class LAPACK(Application):
             # default make suffices (for now)
             Application.make(self)
 
-
     def make_install(self):
         """
         Install LAPACK: copy all .a files to lib dir in install directory
@@ -165,7 +166,7 @@ class LAPACK(Application):
                     os.symlink(frompath, topath)
 
         except OSError, err:
-            self.log.error("Copying %s to installation dir %s failed: %s"%(srcdir, destdir, err))
+            self.log.error("Copying %s to installation dir %s failed: %s" % (srcdir, destdir, err))
 
     def test(self):
         """
@@ -205,10 +206,11 @@ class LAPACK(Application):
         """
         if not self.getcfg('test_only'):
             if not self.getcfg('sanityCheckPaths'):
-                self.setcfg('sanityCheckPaths',{'files':["lib/%s"%x for x in ["liblapack.a","libtmglib.a"]],
-                                                'dirs':[]
+                self.setcfg('sanityCheckPaths',{
+                                                'files': ["lib/%s" % x for x in ["liblapack.a", "libtmglib.a"]],
+                                                'dirs': []
                                                })
 
-                self.log.info("Customized sanity check paths: %s"%self.getcfg('sanityCheckPaths'))
+                self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
             Application.sanitycheck(self)

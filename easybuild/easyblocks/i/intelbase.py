@@ -20,9 +20,10 @@
 ##
 import os
 import shutil
+
+import easybuild.tools.environment as env
 from easybuild.framework.application import Application
 from easybuild.tools.filetools import run_cmd
-import easybuild.tools.environment as env
 
 class IntelBase(Application):
     """
@@ -38,14 +39,15 @@ class IntelBase(Application):
 
     def extra_options(self, extra_vars=None):
         vars = Application.extra_options(self, extra_vars)
-        intel_vars = {'license':[None,"License file path (default: None)"],
-                      'license_activation':['license_server', "Indicates license activation type (default: 'license_server')"],
+        intel_vars = {
+                      'license':[None, "License file path (default: None)"],
+                      'license_activation': ['license_server', "Indicates license activation type (default: 'license_server')"],
                        # 'usetmppath':
                        # workaround for older SL5 version (5.5 and earlier)
                        # used to be True, but False since SL5.6/SL6
                        # disables TMP_PATH env and command line option
-                       'usetmppath':[False, "Use temporary path for installation (default: False)"],
-                       'm32':[False, "Enable 32-bit toolkit (default: False)"],
+                       'usetmppath': [False, "Use temporary path for installation (default: False)"],
+                       'm32': [False, "Enable 32-bit toolkit (default: False)"],
                       }
         intel_vars.update(vars)
         return intel_vars
@@ -57,7 +59,7 @@ class IntelBase(Application):
         if os.path.exists(intelhome):
             try:
                 shutil.rmtree(intelhome)
-                self.log.info("Cleaning up intel dir %s" % (intelhome))
+                self.log.info("Cleaning up intel dir %s" % intelhome)
             except OSError, err:
                 self.log.exception("Cleaning up intel dir %s failed: %s" % (intelhome, err))
 
@@ -122,7 +124,7 @@ CONTINUE_WITH_OPTIONAL_ERROR=yes
             tmppathopt = "-t %s" % tmpdir
 
         ## set some extra env variables
-        env.set('LOCAL_INSTALL_VERBOSE','1')
+        env.set('LOCAL_INSTALL_VERBOSE', '1')
         env.set('VERBOSE_MODE', '1')
 
         env.set('INSTALL_PATH', self.installdir)

@@ -20,9 +20,10 @@
 ##
 import os
 from distutils.version import LooseVersion
-from easybuild.framework.application import Application
+
 import easybuild.tools.environment as env
 import easybuild.tools.toolkit as toolkit
+from easybuild.framework.application import Application
 
 class NetCDF(Application):
     """Support for building/installing netCDF"""
@@ -38,7 +39,7 @@ class NetCDF(Application):
         self.updatecfg('configopts', 'FCFLAGS="%s" CC="%s" FC="%s"' % (os.getenv('FFLAGS'),
                                                                        os.getenv('MPICC'),
                                                                        os.getenv('F90')
-                                                                       ))
+                                                                      ))
 
         # add -DgFortran to CPPFLAGS when building with GCC
         if self.toolkit().toolkit_comp_family() == toolkit.GCC:
@@ -62,14 +63,15 @@ class NetCDF(Application):
                 libs += ["libnetcdf_c++.so", "libnetcdff.so",
                          "libnetcdf_c++.a", "libnetcdff.a"]
 
-            self.setcfg('sanityCheckPaths',{'files':["bin/nc%s" % x for x in ["-config", "copy", "dump",
+            self.setcfg('sanityCheckPaths',{
+                                            'files': ["bin/nc%s" % x for x in ["-config", "copy", "dump",
                                                                               "gen", "gen3"]] +
-                                                    ["lib/%s" % x for x in libs] +
-                                                    ["include/%s" % x for x in incs],
-                                            'dirs':[]
+                                                     ["lib/%s" % x for x in libs] +
+                                                     ["include/%s" % x for x in incs],
+                                            'dirs': []
                                            })
 
-            self.log.info("Customized sanity check paths: %s"%self.getcfg('sanityCheckPaths'))
+            self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
         Application.sanitycheck(self)
 

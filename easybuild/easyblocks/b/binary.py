@@ -23,7 +23,9 @@ EasyBlock for binary applications
 """
 import shutil
 import os
+
 from easybuild.framework.application import Application
+
 
 class Binary(Application):
     """Support for installing a binary package.
@@ -38,7 +40,7 @@ class Binary(Application):
         pass
 
     def make_installdir(self):
-        """Do not actually create installdir, copytree in make_install doesn't 
+        """Do not actually create installdir, copytree in make_install doesn't
         want the destination directory already exist
         But in python < 2.5 the actual path leading up to the directory has to exist."""
         self.make_dir(self.installdir, clean=True, dontcreateinstalldir=True)

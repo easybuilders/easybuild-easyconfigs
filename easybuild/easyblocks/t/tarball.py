@@ -19,11 +19,12 @@
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
 import shutil
+
 from easybuild.framework.application import Application
 
 class Tarball(Application):
     """
-    Precompiled software packaged as tarball: 
+    Precompiled software packaged as tarball:
     - will unpack binary and copy it to the install dir
     """
 
@@ -41,7 +42,7 @@ class Tarball(Application):
 
     def make_install(self):
 
-        src=self.getcfg('startfrom')
+        src = self.getcfg('startfrom')
         # shutil.copytree cannot handle destination dirs that exist already.
         # On the other hand, Python2.4 cannot create entire paths during copytree.
         # Therefore, only the final directory is deleted.
@@ -50,4 +51,4 @@ class Tarball(Application):
             # self.getcfg('keepsymlinks') is False by default except when explicitly put to True in .eb file
             shutil.copytree(src,self.installdir, symlinks=self.getcfg('keepsymlinks'))
         except:
-            self.log.exception("Copying %s to installation dir %s failed"%(src,self.installdir))
+            self.log.exception("Copying %s to installation dir %s failed" % (src,self.installdir))

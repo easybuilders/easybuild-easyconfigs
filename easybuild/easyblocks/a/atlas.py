@@ -35,9 +35,10 @@ class ATLAS(Application):
         Application.__init__(self, *args, **kwargs)
 
     def extra_options(self):
-        extra_vars = { 'ignorethrottling':[False, "Ignore check done by ATLAS for CPU throttling (not recommended) (default: False)"],
-                       'full_lapack': [False, "Build a full LAPACK library (requires netlib's LAPACK) (default: False)"],
-                       'sharedlibs':[False, "Enable building of shared libs as well (default: False)"]
+        extra_vars = {
+                      'ignorethrottling': [False, "Ignore check done by ATLAS for CPU throttling (not recommended) (default: False)"],
+                      'full_lapack': [False, "Build a full LAPACK library (requires netlib's LAPACK) (default: False)"],
+                      'sharedlibs': [False, "Enable building of shared libs as well (default: False)"]
                      }
         return Application.extra_options(self, extra_vars)
 
@@ -76,9 +77,9 @@ class ATLAS(Application):
 
         # specify compilers
         self.updatecfg('configopts', '-C ic %(cc)s -C if %(f77)s' % {
-                                                                      'cc':os.getenv('CC'),
-                                                                      'f77':os.getenv('F77')
-                                                                      })
+                                                                     'cc':os.getenv('CC'),
+                                                                     'f77':os.getenv('F77')
+                                                                    })
 
         # call configure in parent dir
         cmd = "%s %s/configure --prefix=%s %s" % (self.getcfg('preconfigopts'), self.getcfg('startfrom'),
@@ -184,10 +185,11 @@ Configure failed, not sure why (see output above).""" % out
             else:
                 shared_libs = []
 
-            self.setcfg('sanityCheckPaths', {'files':["include/%s" % x for x in ["cblas.h", "clapack.h"]] +
+            self.setcfg('sanityCheckPaths', {
+                                             'files': ["include/%s" % x for x in ["cblas.h", "clapack.h"]] +
                                                     static_libs + shared_libs,
-                                            'dirs':["include/atlas"]
-                                           })
+                                             'dirs': ["include/atlas"]
+                                            })
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 

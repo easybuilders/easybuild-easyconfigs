@@ -22,14 +22,16 @@ import glob
 import re
 import os
 import shutil
+
 from easybuild.framework.application import Application
 from easybuild.tools.filetools import run_cmd
 
+
 def det_interface(log, path):
     """Determine interface through xintface"""
-    
+
     (out, _) = run_cmd(os.path.join(path,"xintface"), log_all=True, simple=False)
-    
+
     intregexp = re.compile(".*INTFACE\s*=\s*-D(\S+)\s*")
     res = intregexp.search(out)
     if res:
@@ -77,14 +79,14 @@ class BLACS(Application):
         mpif77 = 'mpif77'
 
         opts = {
-                'mpicc':mpicc,
-                'mpif77':mpif77,
-                'f77':os.getenv('F77'),
-                'cc':os.getenv('CC'),
-                'builddir':os.getcwd(),
-                'base':base,
-                'mpilib':mpilib
-                }
+                'mpicc': mpicc,
+                'mpif77': mpif77,
+                'f77': os.getenv('F77'),
+                'cc': os.getenv('CC'),
+                'builddir': os.getcwd(),
+                'base': base,
+                'mpilib': mpilib
+               }
 
         # determine interface and transcomm settings
         comm = ''
@@ -97,7 +99,7 @@ class BLACS(Application):
             cmd = "make"
             cmd += " CC='%(mpicc)s' F77='%(mpif77)s -I$(MPIINCdir)'  MPIdir=%(base)s" \
                    " MPILIB='%(mpilib)s' BTOPdir=%(builddir)s INTERFACE=NONE" % opts
-            
+
             # determine interface using xintface
             run_cmd("%s xintface" % cmd, log_all=True, simple=True)
 
@@ -117,17 +119,17 @@ class BLACS(Application):
                 if not notregexp.search(out):
                     # if it doesn't say '_NOT_', set it
                     comm = "TRANSCOMM='-DCSameF77'"
-                
+
                 else:
                     (_, ec) = run_cmd("%s xtc_UseMpich" % cmd, log_all=False, log_ok=False, simple=False)
                     if ec == 0:
-                        
+
                         (out, _) = run_cmd("mpirun -np 2 ./EXE/xtc_UseMpich", log_all=True, simple=False)
-                        
+
                         if not notregexp.search(out):
-                            
+
                             commregexp = re.compile('Set TRANSCOMM\s*=\s*(.*)$')
-                            
+
                             res = commregexp.search(out)
                             if res:
                                 # found how to set TRANSCOMM, so set it
@@ -143,10 +145,11 @@ class BLACS(Application):
         except OSError, err:
             self.log.error("Failed to determine interface and transcomm settings: %s" % err)
 
-        opts.update({'comm':comm,
-                     'int':interface,
-                     'base':base,
-                     })
+        opts.update({
+                     'comm': comm,
+                     'int': interface,
+                     'base': base
+                    })
 
         add_makeopts = ' MPICC=%(mpicc)s MPIF77=%(mpif77)s %(comm)s ' % opts
         add_makeopts += ' INTERFACE=%(int)s MPIdir=%(base)s BTOPdir=%(builddir)s mpi ' % opts
@@ -181,24 +184,25 @@ class BLACS(Application):
 
         try:
             os.makedirs(dest)
-            
+
             shutil.copy2(src, dest)
-            
+
             self.log.debug("Copied %s to %s" % (src, dest))
-            
+
         except OSError, err:
             self.log.error("Copying %s to installation dir %s failed: %s" % (src, dest, err))
 
     def sanitycheck(self):
 
         if not self.getcfg('sanityCheckPaths'):
-            self.setcfg('sanityCheckPaths',{'files':[fil for filptrn in ["blacs", "blacsCinit", "blacsF77init"]
-                                                         for fil in ["lib/lib%s.a"%filptrn,
-                                                                     "lib/%s_MPI-LINUX-0.a"%filptrn]] +
-                                                    ["bin/xintface"],
-                                            'dirs':[]
+            self.setcfg('sanityCheckPaths',{
+                                            'files': [fil for filptrn in ["blacs", "blacsCinit", "blacsF77init"]
+                                                          for fil in ["lib/lib%s.a" % filptrn,
+                                                                      "lib/%s_MPI-LINUX-0.a" % filptrn]] +
+                                                     ["bin/xintface"],
+                                            'dirs': []
                                            })
 
-            self.log.info("Customized sanity check paths: %s"%self.getcfg('sanityCheckPaths'))
+            self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
         Application.sanitycheck(self)
