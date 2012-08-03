@@ -75,14 +75,16 @@ class DOLFIN(CMakePythonPackage):
 
         # SuiteSparse config params
         suitesparse = depsdict['SuiteSparse']
-        umfpack_params = ' -DUMFPACK_DIR="%s/UMFPACK"' % suitesparse
-        umfpack_params += ' -DAMD_DIR="%s/UMFPACK"' % suitesparse
-        umfpack_params += ' -DCHOLMOD_DIR="%s/CHOLMOD"' % suitesparse
-        umfpack_params += ' -DUFCONFIG_DIR="%s/UFconfig"' % suitesparse
-        umfpack_params += ' -DCAMD_LIBRARY:PATH="%s/CAMD/lib/libcamd.a"' % suitesparse
-        umfpack_params += ' -DCCOLAMD_LIBRARY:PATH="%s/CCOLAMD/lib/libccolamd.a"' % suitesparse
-        umfpack_params += ' -DCOLAMD_LIBRARY:PATH="%s/COLAMD/lib/libcolamd.a"' % suitesparse
-        self.updatecfg('configopts', umfpack_params)
+        umfpack_params = ' -DUMFPACK_DIR="%(sp)s/UMFPACK"'
+        umfpack_params += ' -DUMFPACK_INCLUDE_DIRS="%(sp)s/UMFPACK/include;%(sp)s/UFconfig"'
+        umfpack_params += ' -DAMD_DIR="%(sp)s/UMFPACK"'
+        umfpack_params += ' -DCHOLMOD_DIR="%(sp)s/CHOLMOD"'
+        umfpack_params += ' -DCHOLMOD_INCLUDE_DIRS="%(sp)s/CHOLMOD/include;%(sp)s/UFconfig"'
+        umfpack_params += ' -DUFCONFIG_DIR="%(sp)s/UFconfig"'
+        umfpack_params += ' -DCAMD_LIBRARY:PATH="%(sp)s/CAMD/lib/libcamd.a"'
+        umfpack_params += ' -DCCOLAMD_LIBRARY:PATH="%(sp)s/CCOLAMD/lib/libccolamd.a"'
+        umfpack_params += ' -DCOLAMD_LIBRARY:PATH="%(sp)s/COLAMD/lib/libcolamd.a"'
+        self.updatecfg('configopts', umfpack_params % {'sp':suitesparse})
 
         # ParMETIS and SCOTCH
         self.updatecfg('configopts', ' -DPARMETIS_DIR="%s"' % depsdict['ParMETIS'])
