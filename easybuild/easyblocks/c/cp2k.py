@@ -34,6 +34,7 @@ from easybuild.framework.application import Application
 from easybuild.tools.filetools import run_cmd
 import easybuild.tools.toolkit as toolkit
 
+
 class CP2K(Application):
     """
     Support for building CP2K

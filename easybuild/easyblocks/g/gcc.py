@@ -34,6 +34,7 @@ from easybuild.tools.systemtools import get_kernel_name, get_shared_lib_ext, get
 
 import easybuild.tools.environment as env
 
+
 class GCC(Application):
     """
     Self-contained build of GCC.

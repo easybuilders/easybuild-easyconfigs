@@ -27,6 +27,7 @@ import os
 from easybuild.easyblocks.i.intelbase import IntelBase
 from easybuild.tools.filetools import run_cmd
 
+
 class Itac(IntelBase):
     """
     Class that can be used to install itac

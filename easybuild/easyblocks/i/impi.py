@@ -28,6 +28,7 @@ from distutils.version import LooseVersion
 from easybuild.easyblocks.i.intelbase import IntelBase
 from easybuild.tools.filetools import run_cmd
 
+
 class Impi(IntelBase):
     """
     Support for installing Intel MPI library

@@ -29,6 +29,7 @@ from easybuild.framework.application import ApplicationPackage, Application
 from easybuild.tools.filetools import unpack, patch, run_cmd
 import easybuild.tools.toolkit as toolkit
 
+
 class Python(Application):
     """Support for building/installing Python
     - default configure/make/make install works fine

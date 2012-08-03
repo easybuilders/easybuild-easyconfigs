@@ -27,6 +27,7 @@ from distutils.version import LooseVersion
 
 from easybuild.easyblocks.i.intelbase import IntelBase
 
+
 class Icc(IntelBase):
     """Support for installing icc
 

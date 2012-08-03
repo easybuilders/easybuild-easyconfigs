@@ -29,6 +29,7 @@ import shutil
 from easybuild.framework.application import Application
 from easybuild.tools.filetools import run_cmd
 
+
 # also used for e.g. ScaLAPACK
 def get_blas_lib(log):
     """
@@ -52,6 +53,7 @@ def get_blas_lib(log):
         log.error("No or unknown BLAS lib loaded; known BLAS libs: %s" % known_blas_libs.keys())
 
     return blaslib
+
 
 class LAPACK(Application):
     """

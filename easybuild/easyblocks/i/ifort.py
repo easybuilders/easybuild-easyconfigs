@@ -26,6 +26,7 @@ from distutils.version import LooseVersion
 
 from easybuild.easyblocks.i.icc import Icc, IntelBase
 
+
 class Ifort(Icc):
     """
     Class that can be used to install ifort

@@ -26,6 +26,7 @@ import shutil
 
 from easybuild.framework.application import Application
 
+
 class Binary(Application):
     """Support for installing a binary package.
     Just unpack it and copy it to the installdir"""

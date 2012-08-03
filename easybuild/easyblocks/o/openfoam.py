@@ -25,6 +25,7 @@ from easybuild.framework.application import Application
 from easybuild.tools.filetools import run_cmd, recursiveChmod
 import easybuild.tools.toolkit as toolkit
 
+
 class OpenFOAM(Application):
     """Support for building and installing OpenFOAM."""
 

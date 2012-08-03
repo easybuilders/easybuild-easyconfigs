@@ -25,6 +25,7 @@ EasyBuild support for building and installing Doxygen, implemented as an easyblo
 from easybuild.framework.application import Application
 from easybuild.tools.filetools import run_cmd
 
+
 class Doxygen(Application):
     """Support for building/installing Doxygen"""
 

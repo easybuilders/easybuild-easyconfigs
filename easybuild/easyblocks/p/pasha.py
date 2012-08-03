@@ -26,6 +26,7 @@ import shutil
 import os
 from easybuild.framework.application import Application
 
+
 class Pasha(Application):
     """Support for building and installing Pasha"""
 

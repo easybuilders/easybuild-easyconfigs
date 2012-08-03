@@ -17,12 +17,17 @@
 # You should have received a copy of the GNU General Public License
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
-import os, sys, re
+"""
+Interface module to TORQUE (PBS).
+"""
+
+import os
 
 from easybuild.tools.build_log import getLog
 
+
 class PbsJob:
-    """Interaction with torque"""
+    """Interaction with TORQUE"""
 
     def __init__(self, script, name, env_vars=None):
         """
@@ -80,12 +85,12 @@ class PbsJob:
         os.environ.setdefault('WORKDIR', os.getcwd())
 
         defvars = ['MAIL', 'HOME', 'PATH', 'SHELL', 'WORKDIR']
-        vars = ["PBS_O_%s=%s" % (x, os.environ.get(x, 'NOTFOUND_%s' % x)) for x in defvars]
+        pbsvars = ["PBS_O_%s=%s" % (x, os.environ.get(x, 'NOTFOUND_%s' % x)) for x in defvars]
         # extend PBS variables with specified variables
-        vars.extend(["%s=%s" % (name, value) for (name, value) in self.env_vars.items()])
+        pbsvars.extend(["%s=%s" % (name, value) for (name, value) in self.env_vars.items()])
         variable_attributes = pbs.new_attropl(1)
         variable_attributes[0].name = 'Variable_List'
-        variable_attributes[0].value = ",".join(vars)
+        variable_attributes[0].value = ",".join(pbsvars)
 
         pbs_attributes.extend(variable_attributes)
 
