@@ -194,8 +194,10 @@ def check_clean_master_branch(home):
     return ok
 
 
-# check wheter os.putenv or os.environ[]= is used inside easyblocks
+# check whether os.putenv or os.environ[]= is used inside easyblocks
 def check_easyblocks_for_environment(home):
+    """ check whether os.putenv or os.environ[]= is used inside easyblocks """
+
     files = glob.glob(os.path.join(home, 'easybuild/easyblocks/[a-z]/*.py'))
     eb_files = filter(lambda x: os.path.basename(x) != '__init__.py', files)
 
