@@ -215,7 +215,7 @@ def check_easyblocks_for_environment(home):
 
     for faulty in found:
         warning("found os.environ or os.putenv inside eb_file: %s" % faulty)
-
+    
     return len(found) == 0
 
 
