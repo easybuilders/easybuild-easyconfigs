@@ -30,10 +30,11 @@ Things that are checked include:
 usage: prep_for_release.py
 """
 
-from distutils.version import LooseVersion
+import glob
 import re
 import os
 import sys
+from distutils.version import LooseVersion
 try:
     import git
 except ImportError, err:
@@ -189,10 +190,32 @@ def check_clean_master_branch(home):
         print "Current branch is clean, great work!"
 
     return ok
+# check wheter os.putenv or os.environ[]= is used inside easyblocks
+def check_easyblocks_for_environment(home):
+    files = glob.glob(os.path.join(home, 'easybuild/easyblocks/[a-z]/*.py'))
+    eb_files = filter(lambda x: os.path.basename(x) != '__init__.py', files)
 
-# 
+    os_environ = re.compile("os\.environ\[\w+\]\s*=\s*")
+    os_putenv = re.compile("os\.putenv")
+
+    found = []
+    for eb_file in eb_files:
+        f = open(eb_file, "r")
+        text = f.read()
+        f.close()
+
+        if os_putenv.search(text) or os_environ.search(text):
+            found.append(eb_file)
+
+    for faulty in found:
+        warning("found os.environ or os.putenv inside eb_file: %s" % faulty)
+
+    return len(found) == 0
+
+
+#
 # MAIN
-# 
+#
 
 # determine EasyBuild home dir, assuming this script is in <EasyBuild home>/easybuild/scripts
 easybuild_home = os.path.sep.join(os.path.abspath(sys.argv[0]).split(os.path.sep)[:-3])
@@ -224,6 +247,7 @@ print "Done!"
 
 # check for clean master branch
 all_checks.append(check_clean_master_branch(easybuild_home))
+all_checks.append(check_easyblocks_for_environment(easybuild_home))
 
 if not all(all_checks):
     error("One or multiple checks have failed, EasyBuild is not ready to be released!")
