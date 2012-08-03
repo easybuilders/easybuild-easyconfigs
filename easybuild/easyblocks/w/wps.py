@@ -245,7 +245,7 @@ class WPS(Application):
                     line = re.sub(r"^(\s*geog_data_path\s*=\s*).*$", r"\1 '%s'" % tmpdir, line)
                     sys.stdout.write(line)
 
-                ## GEOGRID.TBL
+                # GEOGRID.TBL
                 geogrid_dir = os.path.join(tmpdir, "geogrid")
                 os.mkdir(geogrid_dir)
                 os.symlink(os.path.join(wpsdir, "geogrid", "GEOGRID.TBL.ARW"),
@@ -300,6 +300,7 @@ class WPS(Application):
 
     # installing is done in make, so we can run tests
     def make_install(self):
+        """Building was done in install dir, so just do some cleanup here."""
 
         # make sure JASPER environment variables are unset
         env_vars = ['JASPERINC', 'JASPERLIB']

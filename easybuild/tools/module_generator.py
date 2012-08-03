@@ -38,27 +38,28 @@ class ModuleGenerator:
         self.app = application
         self.fake = fake
         self.filename = None
-        self.module_path = None
         self.tmpdir = None
 
     def createFiles(self):
         """
         Creates the absolute filename for the module.
         """
-        base = installPath('mod')
+        module_path = installPath('mod')
+
+        # general module class
+        general_class = 'all'
 
         # Fake mode: set installpath to temporary dir
         if self.fake:
             self.tmpdir = tempfile.mkdtemp()
-            log.debug("Fake mode: using %s (instead of %s)" % (self.tmpdir, base))
-            base = self.tmpdir
+            log.debug("Fake mode: using %s (instead of %s)" % (self.tmpdir, module_path))
+            module_path = self.tmpdir
 
         # Real file goes in 'all' category
-        self.module_path = os.path.join(base, 'all')
-        self.filename = os.path.join(self.module_path, self.app.name(), self.app.installversion)
+        self.filename = os.path.join(module_path, general_class, self.app.name(), self.app.installversion)
 
         # Make symlink in moduleclass category
-        classPath = os.path.join(base, self.app.getcfg('moduleclass'), self.app.name())
+        classPath = os.path.join(module_path, self.app.getcfg('moduleclass'), self.app.name())
         classPathFile = os.path.join(classPath, self.app.installversion)
 
         # Create directories and links
@@ -80,6 +81,8 @@ class ModuleGenerator:
             os.symlink(self.filename, classPathFile)
         except OSError, err:
             log.exception("Failed to create symlink from %s to %s: %s" % (classPathFile, self.filename, err))
+
+        return os.path.join(module_path, general_class)
 
     def getDescription(self, conflict=True):
         """
@@ -153,9 +156,9 @@ if { ![is-loaded %(name)s/%(version)s] } {
         """
         return "setenv\t%s\t\t%s\n" % (key, value)
 
-    def cleanup(self):
+    def __del__(self):
         """
-        Clean up temporary directory used for fake modules, if any.
+        Desconstructor: clean up temporary directory used for fake modules, if any.
         """
         if self.fake:
             log.info("Cleaning up fake modules dir %s" % self.tmpdir)

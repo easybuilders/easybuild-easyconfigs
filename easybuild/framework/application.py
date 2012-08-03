@@ -263,16 +263,20 @@ class Application:
             for patchFile in listOfPatches:
 
                 ## check if the patches can be located
+                copy = False
                 suff = None
                 level = None
-                if type(patchFile) == list:
+                if type(patchFile) in [list, tuple]:
                     if not len(patchFile) == 2:
-                        self.log.error("Unknown patch specification '%s', only two-element lists are supported!" % patchFile)
+                        self.log.error("Unknown patch specification '%s', only two-element lists/tuples are supported!" % patchFile)
                     pf = patchFile[0]
 
                     if type(patchFile[1]) == int:
                         level = patchFile[1]
                     elif type(patchFile[1]) == str:
+                        # non-patch files are assumed to be files to copy
+                        if not patchFile[0].endswith('.patch'):
+                            copy = True
                         suff = patchFile[1]
                     else:
                         self.log.error("Wrong patch specification '%s', only int and string are supported as second element!" % patchFile)
@@ -284,7 +288,10 @@ class Application:
                     self.log.debug('File %s found for patch %s' % (path, patchFile))
                     tmppatch = {'name':pf, 'path':path}
                     if suff:
-                        tmppatch['copy'] = suff
+                        if copy:
+                            tmppatch['copy'] = suff
+                        else:
+                            tmppatch['sourcepath'] = suff
                     if level:
                         tmppatch['level'] = level
                     self.patches.append(tmppatch)
@@ -907,6 +914,7 @@ class Application:
         if skippable and self.skip:
             self.log.info("Skipping %s" % step)
         else:
+            self.log.info("Starting %s" % step)
             for m in methods:
                 self.print_environ()
                 m()
@@ -1047,10 +1055,9 @@ class Application:
                     self.log.debug("Sanity check: found non-empty directory %s in %s" % (d, self.installdir))
 
         # make fake module
-        self.make_module(True)
+        mod_path = [self.make_module(True)]
 
         # load the module
-        mod_path = [self.moduleGenerator.module_path]
         mod_path.extend(Modules().modulePath)
         m = Modules(mod_path)
         self.log.debug("created module instance")
@@ -1060,9 +1067,6 @@ class Application:
         except EasyBuildError, err:
             self.log.debug("Loading module failed: %s" % err)
             self.sanityCheckOK = False
-
-        # clean up path for fake module
-        self.moduleGenerator.cleanup()
 
         # chdir to installdir (beter environment for running tests)
         os.chdir(self.installdir)
@@ -1288,7 +1292,7 @@ class Application:
         Generate a module file.
         """
         self.moduleGenerator = ModuleGenerator(self, fake)
-        self.moduleGenerator.createFiles()
+        modpath = self.moduleGenerator.createFiles()
 
         txt = ''
         txt += self.make_module_description()
@@ -1307,6 +1311,8 @@ class Application:
             self.log.error("Writing to the file %s failed: %s" % (self.moduleGenerator.filename, err))
 
         self.log.info("Added modulefile: %s" % (self.moduleGenerator.filename))
+
+        return modpath
 
     def make_module_description(self):
         """
@@ -1404,14 +1410,14 @@ class Application:
             return
 
         if not self.skip:
-            self.make_module(fake=True)
-        # set MODULEPATH to self.builddir/all and load module
+            modpath = self.make_module(fake=True)
+        # adjust MODULEPATH tand load module
         if self.getcfg('pkgloadmodule'):
-            self.log.debug(' '.join(["self.builddir/all: ", os.path.join(self.builddir, 'all')]))
+            self.log.debug("Adding %s to MODULEPATH" % modpath)
             if self.skip:
                 m = Modules()
             else:
-                m = Modules([os.path.join(self.builddir, 'all')] + os.environ['MODULEPATH'].split(':'))
+                m = Modules([modpath] + os.environ['MODULEPATH'].split(':'))
 
             if m.exists(self.name(), self.installversion):
                 m.addModule([[self.name(), self.installversion]])

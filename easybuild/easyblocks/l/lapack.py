@@ -146,14 +146,14 @@ class LAPACK(Application):
         try:
             os.makedirs(destdir)
 
-            ## copy all .a files
+            # copy all .a files
             os.chdir(srcdir)
             for lib in glob.glob('*.a'):
                 srcfile = os.path.join(srcdir, lib)
                 self.log.debug("Copying file %s to dir %s" % (srcfile, destdir))
                 shutil.copy2(srcfile, destdir)
 
-            ## symlink libraries to sensible names, if they aren't renamed already
+            # symlink libraries to sensible names, if they aren't renamed already
             for (fromfile, tofile) in [('liblapack_LINUX.a', 'liblapack.a'),
                                        ('tmglib_LINUX.a', 'libtmglib.a')]:
                 frompath = os.path.join(destdir, fromfile)

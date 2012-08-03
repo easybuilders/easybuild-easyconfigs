@@ -60,18 +60,18 @@ class IntelBase(Application):
     def configure(self):
         """Configure: handle license file and clean home dir."""
 
-        ## obtain license path
+        # obtain license path
         self.license = self.getcfg('license')
         if self.license:
             self.log.info("Using license %s" % self.license)
         else:
             self.log.error("No license defined")
 
-        ## verify license path
+        # verify license path
         if not os.path.exists(self.license):
             self.log.error("Can't find license at %s" % self.license)
 
-        ## set INTEL_LICENSE_FILE
+        # set INTEL_LICENSE_FILE
         env.set("INTEL_LICENSE_FILE", self.license)
 
         # clean home directory
@@ -97,7 +97,7 @@ INSTALL_MODE=NONRPM
 CONTINUE_WITH_OPTIONAL_ERROR=yes
 """ % (self.getcfg('license_activation'), self.license, self.installdir)
 
-        ## we should be already in the correct directory
+        # we should be already in the correct directory
         silentcfg = os.path.join(os.getcwd(), "silent.cfg")
         try:
             f = open(silentcfg, 'w')
@@ -106,7 +106,7 @@ CONTINUE_WITH_OPTIONAL_ERROR=yes
         except:
             self.log.exception("Writing silent cfg % failed" % silent)
 
-        ## workaround for mktmp: create tmp dir and use it
+        # workaround for mktmp: create tmp dir and use it
         tmpdir = os.path.join(self.getcfg('startfrom'), 'mytmpdir')
         try:
             os.makedirs(tmpdir)
@@ -117,13 +117,13 @@ CONTINUE_WITH_OPTIONAL_ERROR=yes
             env.set('TMP_PATH', tmpdir)
             tmppathopt = "-t %s" % tmpdir
 
-        ## set some extra env variables
+        # set some extra env variables
         env.set('LOCAL_INSTALL_VERBOSE','1')
         env.set('VERBOSE_MODE', '1')
 
         env.set('INSTALL_PATH', self.installdir)
 
-        ## perform installation
+        # perform installation
         cmd = "./install.sh %s -s %s" % (tmppathopt, silentcfg)
         return run_cmd(cmd, log_all=True, simple=True)
 

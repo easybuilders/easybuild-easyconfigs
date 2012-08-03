@@ -58,7 +58,7 @@ class HPL(Application):
         except OSError, err:
             self.log.exception("Failed to symlink Make.UNKNOWN from %s to %s: %s" % (setupdir, makeincfile, err))
 
-        ## go back
+        # go back
         os.chdir(self.getcfg('startfrom'))
 
     def make(self):

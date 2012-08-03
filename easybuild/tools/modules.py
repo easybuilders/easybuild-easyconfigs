@@ -24,6 +24,7 @@ Modules functionality: loading modules, checking for available modules, ...
 import os
 import re
 import subprocess
+import sys
 
 from easybuild.tools.build_log import getLog, initLogger, EasyBuildError
 from easybuild.tools.filetools import convertName, run_cmd
@@ -233,9 +234,10 @@ class Modules:
 
         return loaded_modules
 
-    def dependencies_for(self, name, version):
+    # depth=sys.maxint should be equivalent to infinite recursion depth
+    def dependencies_for(self, name, version, depth=sys.maxint):
         """
-        Obtain a list of dependencies for the given module (recursively)
+        Obtain a list of dependencies for the given module, determined recursively, up to a specified depth (optionally)
         """
         modfilepath = self.modulefile_path(name, version)
         log.debug("modulefile path %s/%s: %s" % (name, version, modfilepath))
@@ -250,8 +252,12 @@ class Modules:
         loadregex = re.compile("^\s+module load\s+(.*)$", re.M)
         mods = [mod.split('/') for mod in loadregex.findall(modtxt)]
 
-        # recursively determine dependencies for dependency modules
-        moddeps = [self.dependencies_for(modname, modversion) for (modname, modversion) in mods]
+        if depth > 0:
+            # recursively determine dependencies for these dependency modules, until depth is non-positive
+            moddeps = [self.dependencies_for(modname, modversion, depth=depth-1) for (modname, modversion) in mods]
+        else:
+            # ignore any deeper dependencies
+            moddeps = []
 
         deps = [{'name':modname, 'version':modversion} for (modname, modversion) in mods]
 
