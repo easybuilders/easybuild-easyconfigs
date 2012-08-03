@@ -56,12 +56,12 @@ DEFAULT_MPI=%(mpi)s
 EULA=accept
 """ % {'lic':self.license, 'ins':self.installdir, 'mpi':self.getcfg('preferredmpi')}
 
-        ## already in correct directory
+        # already in correct directory
         silentcfg = os.path.join(os.getcwd(), "silent.cfg")
         f = open(silentcfg, 'w')
         f.write(silent)
         f.close()
-        ## tmpdir
+
         tmpdir = os.path.join(os.getcwd(), self.version(), 'mytmpdir')
         try:
             os.makedirs(tmpdir)

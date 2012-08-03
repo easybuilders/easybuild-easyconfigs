@@ -107,7 +107,7 @@ class NCL(Application):
         # let's just generate the config/Site.local file ourselves...
 
         # order of deps is important
-        ## HDF needs to go after netCDF, because both have a netcdf.h include file
+        # HDF needs to go after netCDF, because both have a netcdf.h include file
         deps = ["HDF5", "JasPer", "netCDF", "HDF", "g2lib", "g2clib", "Szip"]
 
         libs = ''

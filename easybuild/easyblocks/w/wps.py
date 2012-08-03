@@ -245,7 +245,7 @@ class WPS(Application):
                     line = re.sub(r"^(\s*geog_data_path\s*=\s*).*$", r"\1 '%s'" % tmpdir, line)
                     sys.stdout.write(line)
 
-                ## GEOGRID.TBL
+                # GEOGRID.TBL
                 geogrid_dir = os.path.join(tmpdir, "geogrid")
                 os.mkdir(geogrid_dir)
                 os.symlink(os.path.join(wpsdir, "geogrid", "GEOGRID.TBL.ARW"),

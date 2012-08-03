@@ -151,7 +151,7 @@ class WRF(Application):
         # rewrite optimization options if desired
         if self.getcfg('rewriteopts'):
 
-            ## replace default -O3 option in configure.wrf with CFLAGS/FFLAGS from environment
+            # replace default -O3 option in configure.wrf with CFLAGS/FFLAGS from environment
 
             self.log.info("Rewriting optimization options in %s" % cfgfile)
 
@@ -227,7 +227,7 @@ class WRF(Application):
 
             # prepare run command
 
-            ## stack limit needs to be set to unlimited for WRF to work well
+            # stack limit needs to be set to unlimited for WRF to work well
             if self.getcfg('buildtype') in self.parallel_build_types:
                 test_cmd = "ulimit -s unlimited && %s && %s" % (self.tk.mpi_cmd_for("./ideal.exe", 1),
                                                                 self.tk.mpi_cmd_for("./wrf.exe", n))
