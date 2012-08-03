@@ -192,6 +192,8 @@ def check_clean_master_branch(home):
         print "Current branch is clean, great work!"
 
     return ok
+
+
 # check wheter os.putenv or os.environ[]= is used inside easyblocks
 def check_easyblocks_for_environment(home):
     files = glob.glob(os.path.join(home, 'easybuild/easyblocks/[a-z]/*.py'))
