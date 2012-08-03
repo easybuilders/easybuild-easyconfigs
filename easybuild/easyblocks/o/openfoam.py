@@ -18,9 +18,14 @@
 # You should have received a copy of the GNU General Public License
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
+"""
+EasyBuild support for building and installing OpenFOAM, implemented as an easyblock
+"""
+
 from distutils.version import LooseVersion
 import os
 import stat
+
 from easybuild.framework.application import Application
 from easybuild.tools.filetools import run_cmd, recursiveChmod
 import easybuild.tools.toolkit as toolkit
@@ -39,6 +44,7 @@ class OpenFOAM(Application):
         self.wm_compiler= None
         self.wm_mplib = None
         self.mpipath = None
+        self.thrdpartydir = None
 
     def configure(self):
         """Configure OpenFOAM build by setting appropriate environment variables."""
@@ -47,9 +53,9 @@ class OpenFOAM(Application):
         os.putenv("FOAM_INST_DIR", self.installdir)
 
         # third party directory
-        thrdpartydir = "ThirdParty-%s" % self.version()
-        os.symlink(os.path.join("..", thrdpartydir), thrdpartydir)
-        os.putenv("WM_THIRD_PARTY_DIR", os.path.join(self.installdir, thrdpartydir))
+        self.thrdpartydir = "ThirdParty-%s" % self.version()
+        os.symlink(os.path.join("..", self.thrdpartydir), self.thrdpartydir)
+        os.putenv("WM_THIRD_PARTY_DIR", os.path.join(self.installdir, self.thrdpartydir))
 
         # compiler
         comp_fam = self.tk.toolkit_comp_family()
@@ -79,6 +85,10 @@ class OpenFOAM(Application):
             self.mpipath = os.environ['SOFTROOTQLOGICMPI']
             self.wm_mplib = "MPICH"
 
+        elif mpi_type == toolkit.OPENMPI:
+            self.mpipath = os.environ['SOFTROOTOPENMPI']
+            self.wm_mplib = "MPI-MVAPICH2"
+
         else:
             self.log.error("Unknown MPI, don't know how to set MPI_ARCH_PATH, WM_MPLIB or FOAM_MPI_LIBBIN")
 
@@ -90,11 +100,7 @@ class OpenFOAM(Application):
         os.putenv("WM_NCOMPPROCS", str(self.getcfg('parallel')))
 
     def make(self):
-        """Building is done in make_install."""
-        pass
-
-    def make_install(self):
-        """Build and install OpenFOAM."""
+        """Build OpenFOAM using make after sourcing script to set environment."""
 
         nameversion = "%s-%s"%(self.name(), self.version())
 
@@ -106,17 +112,20 @@ class OpenFOAM(Application):
                                                          'makecmd':os.path.join(self.builddir, nameversion, "Allwmake")}
         run_cmd(cmd,log_all=True,simple=True,log_output=True)
 
-        # fix file permissions of various files (only known to be required for v1.x)
+    def make_install(self):
+        """Building was performed in install dir, so just fix permissions."""
+
+        # fix permissions of various OpenFOAM-x subdirectories (only known to be required for v1.x)
         if LooseVersion(self.version()) <= LooseVersion('2'):
             installPath = "%s/%s-%s"%(self.installdir, self.name(), self.version())
 
-            for path in ["applications", "bin", "doc", "etc", "lib", "src", "tutorials"]:
-                # Make directories readable for others
-                recursiveChmod(os.path.join(installPath, path), stat.S_IROTH, add=True)
+            for d in ["applications", "bin", "doc", "etc", "lib", "src", "tutorials"]:
+                # Make directories readable and executable for others
+                recursiveChmod(os.path.join(installPath, d), stat.S_IROTH|stat.S_IXOTH, add=True)
 
-            for path in ["applications", "bin", "lib"]:
-                # Make directories executable for others
-                recursiveChmod(os.path.join(installPath, path), stat.S_IXOTH, add=True)
+        # fix permissions of ThirdParty subdirectories (also for 2.x)
+        for d in ["etc", "platforms"]:
+            recursiveChmod(os.path.join(self.installdir, self.thrdpartydir, d), stat.S_IROTH|stat.S_IXOTH, add=True)
 
     def sanitycheck(self):
         """Custom sanity check for OpenFOAM"""
@@ -125,12 +134,28 @@ class OpenFOAM(Application):
 
             odir = "%s-%s" % (self.name(), self.version())
 
+            psubdir = "linux64%sDPOpt" % self.wm_compiler
+
+            if LooseVersion(self.version()) < LooseVersion("2"):
+                toolsdir = os.path.join(odir, "applications", "bin", psubdir)
+
+            else:
+                toolsdir = os.path.join(odir, "platforms", psubdir, "bin")
+
             pdirs = []
             if LooseVersion(self.version()) >= LooseVersion("2"):
-                pdirs = ["%s/platforms/linux64%sDPOpt/%s" % (odir, self.wm_compiler, x) for x in ["bin", "lib"]]
+                pdirs = [toolsdir, os.path.join(odir, "platforms", psubdir, "lib")]
 
-            self.setcfg('sanityCheckPaths',{'files':["%s/etc/%s" % (odir, x) for x in ["bashrc", "cshrc"]],
-                                            'dirs':["%s/bin" % odir] + pdirs
+            # some randomly selected binaries
+            # if one of these is missing, it's very likely something went wrong
+            bins = [os.path.join(odir, "bin", x) for x in []] + \
+                   [os.path.join(toolsdir, "buoyant%sSimpleFoam" % x) for x in ["", "Boussinesq"]] + \
+                   [os.path.join(toolsdir, "%sFoam" % x) for x in ["bubble", "engine", "sonic"]] + \
+                   [os.path.join(toolsdir, "surface%s" % x) for x in ["Add", "Find", "Smooth"]] + \
+                   [os.path.join(toolsdir, x) for x in ["deformedGeom", "engineSwirl", "modifyMesh", "refineMesh", "vorticity"]]
+
+            self.setcfg('sanityCheckPaths',{'files':["%s/etc/%s" % (odir, x) for x in ["bashrc", "cshrc"]] + bins,
+                                            'dirs':pdirs
                                            })
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
