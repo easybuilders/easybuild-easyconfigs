@@ -248,7 +248,8 @@ class BuildTest(TestCase):
                 # gather build stats
                 build_time = round(time.time() - start_time, 2)
 
-                buildstats = {'build_time': build_time,
+                buildstats = {
+                              'build_time': build_time,
                               'platform': platform.platform(),
                               'core_count': systemtools.get_core_count(),
                               'cpu_model': systemtools.get_cpu_model(),
