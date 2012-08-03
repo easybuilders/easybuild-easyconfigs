@@ -287,10 +287,11 @@ class Application:
                 if path:
                     self.log.debug('File %s found for patch %s' % (path, patchFile))
                     tmppatch = {'name':pf, 'path':path}
-                    if suff and copy:
-                        tmppatch['copy'] = suff
-                    elif suff:
-                        tmppatch['sourcepath'] = suff
+                    if suff:
+                        if copy:
+                            tmppatch['copy'] = suff
+                        else:
+                            tmppatch['sourcepath'] = suff
                     if level:
                         tmppatch['level'] = level
                     self.patches.append(tmppatch)
