@@ -64,12 +64,12 @@ PIPE = subprocess.PIPE
 STDOUT = subprocess.STDOUT
 
 if subprocess.mswindows:
-    from win32file import ReadFile, WriteFile #IGNORE:F0401 #@UnresolvedImport
-    from win32pipe import PeekNamedPipe #IGNORE:F0401 #@UnresolvedImport
-    import msvcrt #IGNORE:F0401
+    from win32file import ReadFile, WriteFile  #@UnresolvedImport
+    from win32pipe import PeekNamedPipe  ##@UnresolvedImport
+    import msvcrt  #@UnresolvedImport
 else:
-    import select
-    import fcntl
+    import select  #@UnresolvedImport
+    import fcntl  #@UnresolvedImport
 
 
 class Popen(subprocess.Popen):

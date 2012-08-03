@@ -30,6 +30,7 @@ import easybuild.tools.environment as env
 from easybuild.framework.application import Application
 from easybuild.tools.filetools import run_cmd
 
+
 class FSL(Application):
     """Support for building and installing FSL."""
 

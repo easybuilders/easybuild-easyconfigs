@@ -31,6 +31,7 @@ from easybuild.framework.application import Application
 from easybuild.tools.filetools import run_cmd
 from easybuild.tools.modules import get_software_root
 
+
 class Libsmm(Application):
     """
     Support for the CP2K small matrix library

@@ -27,6 +27,7 @@ import shutil
 
 from easybuild.framework.application import Application
 
+
 class Tarball(Application):
     """
     Precompiled software packaged as tarball: 

@@ -28,6 +28,7 @@ import shutil
 from easybuild.framework.application import Application
 from easybuild.tools.filetools import run_cmd_qa
 
+
 class Maple(Application):
     """Support for installing Maple."""
 

@@ -26,6 +26,7 @@ import os
 
 from easybuild.framework.application import Application
 
+
 class HDF5(Application):
     """Support for building/installing HDF5"""
 

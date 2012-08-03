@@ -28,6 +28,7 @@ import glob
 
 from easybuild.easyblocks.i.intelbase import IntelBase
 
+
 class Tbb(IntelBase):
     """EasyBlock for tbb, threading building blocks"""
 

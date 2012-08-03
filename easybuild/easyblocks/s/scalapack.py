@@ -30,6 +30,7 @@ from easybuild.framework.application import Application
 from easybuild.easyblocks.b.blacs import det_interface
 from easybuild.easyblocks.l.lapack import get_blas_lib
 
+
 class ScaLAPACK(Application):
     """
     Support for building and installing ScaLAPACK, both versions 1.x and 2.x

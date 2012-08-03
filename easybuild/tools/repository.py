@@ -27,12 +27,12 @@ import getpass
 import os
 import shutil
 import socket
-import sys
 import tempfile
 import time
 
 import easybuild
-from easybuild.tools.build_log import getLog, EasyBuildError
+from easybuild.tools.build_log import getLog
+
 
 log = getLog('repo')
 try:
@@ -42,10 +42,11 @@ except ImportError:
     pass
 
 try:
-    import pysvn
+    import pysvn  #@UnusedImport
     from pysvn import ClientError #IGNORE:E0611 pysvn fails to recognize ClientError is available
 except ImportError:
     pass
+
 
 class Repository:
     """
@@ -99,7 +100,9 @@ class Repository:
         """
         return
 
+
 class FileRepository(Repository):
+    """Class for file repositories."""
 
     def setupRepo(self):
         """
@@ -160,8 +163,9 @@ class FileRepository(Repository):
 
 class GitRepository(FileRepository):
     """
-    Class representing a git repository.
+    Class for git repositories.
     """
+
     def __init__(self, *args):
         """
         Initialize git client to None (will be set later)
@@ -175,8 +179,8 @@ class GitRepository(FileRepository):
         Set up git repository.
         """
         try:
-            import git
-            from git import GitCommandError
+            import git  #@UnusedImport
+            from git import GitCommandError  #@UnusedImport
         except ImportError:
             log.exception("GitPython failed to load")
         self.wc = tempfile.mkdtemp(prefix='git-wc-')
@@ -252,8 +256,9 @@ class GitRepository(FileRepository):
 
 class SvnRepository(FileRepository):
     """
-    class representing an svn repository
+    Class for svn repositories
     """
+
     def __init__(self, *args):
         """
         Set self.client to None. Real logic is in setupRepo and createWorkingCopy

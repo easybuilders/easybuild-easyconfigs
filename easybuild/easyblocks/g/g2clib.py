@@ -28,6 +28,7 @@ import shutil
 
 from easybuild.framework.application import Application
 
+
 class G2clib(Application):
     """Support for building g2clib GRIB2 C library."""
 

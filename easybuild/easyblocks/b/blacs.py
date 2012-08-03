@@ -30,6 +30,7 @@ import shutil
 from easybuild.framework.application import Application
 from easybuild.tools.filetools import run_cmd
 
+
 def det_interface(log, path):
     """Determine interface through xintface"""
     
@@ -41,6 +42,7 @@ def det_interface(log, path):
         return res.group(1)
     else:
         log.error("Failed to determine interface, output for xintface: %s" % out)
+
 
 class BLACS(Application):
     """

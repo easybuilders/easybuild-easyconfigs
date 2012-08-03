@@ -19,36 +19,36 @@
 # You should have received a copy of the GNU General Public License
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
+"""
+Main entry point for EasyBuild: build software from .eb input file
+"""
+
+import copy
+import platform
 import os
 import re
 import shutil
 import sys
 import tempfile
 import time
-import copy
-import platform
 from datetime import datetime
+from optparse import OptionParser
 
 import easybuild  # required for VERBOSE_VERSION
+import easybuild.tools.config as config
+import easybuild.tools.filetools as filetools
 from easybuild.framework.application import Application, get_instance
 from easybuild.tools.build_log import EasyBuildError, initLogger, \
     removeLogHandler, print_msg
 from easybuild.tools.class_dumper import dumpClasses
 from easybuild.tools.modules import Modules, searchModule
 from easybuild.tools.config import getRepository
-from optparse import OptionParser
-import easybuild.tools.config as config
-import easybuild.tools.filetools as filetools
 from easybuild.tools import systemtools
 from easybuild.tools.pbs_job import PbsJob
 
-"""
-Main entry point for EasyBuildBuild: build software from .eb input file
-"""
-
 
 # applications use their own logger, we need to tell them to debug or not
-# so this global var is used.
+# so this global variable is used.
 LOGDEBUG = False
 
 def add_build_options(parser):
