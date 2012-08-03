@@ -256,6 +256,7 @@ print "Done!"
 
 # check for clean master branch
 all_checks.append(check_clean_master_branch(easybuild_home))
+# check for use of os.putenv and os.environ adjustments
 all_checks.append(check_easyblocks_for_environment(easybuild_home))
 
 if not all(all_checks):
