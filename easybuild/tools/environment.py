@@ -18,6 +18,9 @@
 # You should have received a copy of the GNU General Public License
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
+"""
+utility module for modifying os.environ
+"""
 import os
 
 changes = {}
