@@ -22,6 +22,7 @@ import os
 from easybuild.framework.application import Application
 from easybuild.tools.filetools import run_cmd
 
+
 class CMake(Application):
     """Support for configuring build with CMake instead of traditional configure script"""
 

@@ -22,6 +22,7 @@ import os
 from easybuild.easyblocks.c.cmakepythonpackage import CMakePythonPackage
 from easybuild.tools.modules import get_software_root
 
+
 class DOLFIN(CMakePythonPackage):
     """Extension of the CMakePythonPackage for Dolfin.
     
