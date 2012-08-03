@@ -22,6 +22,7 @@
 import os
 import shutil
 from distutils.version import LooseVersion
+
 from easybuild.framework.application import Application
 from easybuild.tools.filetools import run_cmd
 

@@ -22,7 +22,7 @@
 EasyBlock for binary applications
 """
 import shutil
-import os
+
 from easybuild.framework.application import Application
 
 class Binary(Application):

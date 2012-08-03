@@ -21,6 +21,7 @@
 import difflib
 import os
 import shutil
+
 import easybuild.tools.environment as env
 from easybuild.framework.application import Application
 from easybuild.tools.filetools import run_cmd
