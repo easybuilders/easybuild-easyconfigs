@@ -201,8 +201,8 @@ def check_easyblocks_for_environment(home):
     files = glob.glob(os.path.join(home, 'easybuild/easyblocks/[a-z]/*.py'))
     eb_files = filter(lambda x: os.path.basename(x) != '__init__.py', files)
 
-    os_environ = re.compile("os\.environ\[\w+\]\s*=\s*")
-    os_putenv = re.compile("os\.putenv")
+    os_env_re = re.compile("os\.environ\[\w+\]\s*=\s*")
+    os_putenv_re = re.compile("os\.putenv")
 
     found = []
     for eb_file in eb_files:
@@ -210,7 +210,7 @@ def check_easyblocks_for_environment(home):
         text = f.read()
         f.close()
 
-        if os_putenv.search(text) or os_environ.search(text):
+        if os_putenv_re.search(text) or os_env_re.search(text):
             found.append(eb_file)
 
     for faulty in found:
