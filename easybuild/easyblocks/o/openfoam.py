@@ -122,11 +122,15 @@ class OpenFOAM(Application):
 
             for d in ["applications", "bin", "doc", "etc", "lib", "src", "tutorials"]:
                 # Make directories readable and executable for others
-                recursiveChmod(os.path.join(installPath, d), stat.S_IROTH|stat.S_IXOTH, add=True)
+                fullpath = os.path.join(installPath, d)
+                self.log.info("Fixing permissions for dir %s" % fullpath)
+                recursiveChmod(fullpath, stat.S_IROTH|stat.S_IXOTH, add=True)
 
         # fix permissions of ThirdParty dir and subdirs (also for 2.x)
         for d in ["", "etc", "platforms"]:
-            recursiveChmod(os.path.join(self.installdir, self.thrdpartydir, d), stat.S_IROTH|stat.S_IXOTH, add=True)
+            fullpath = os.path.join(self.installdir, self.thrdpartydir, d)
+            self.log.info("Fixing permissions for dir %s" % fullpath)
+            recursiveChmod(fullpath, stat.S_IROTH|stat.S_IXOTH, add=True)
 
     def sanitycheck(self):
         """Custom sanity check for OpenFOAM"""
