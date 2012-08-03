@@ -18,6 +18,11 @@
 # You should have received a copy of the GNU General Public License
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
+"""
+EasyBuild support for installing (precompiled) software packages which are packaged as a tarball,
+implemented as an easyblock
+"""
+
 import shutil
 
 from easybuild.framework.application import Application

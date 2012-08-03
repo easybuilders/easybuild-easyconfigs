@@ -18,6 +18,9 @@
 # You should have received a copy of the GNU General Public License
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
+"""
+EasyBuild support for installing the Intel Trace Analyzer and Collector (ITAC), implemented as an easyblock
+"""
 
 import os
 
