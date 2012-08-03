@@ -57,29 +57,6 @@ class Tbb(IntelBase):
         shutil.move(install_libpath, os.path.join(self.installdir, 'tbb', 'libs'))
         os.symlink(self.libpath, install_libpath)
 
-    def make_install(self):
-        """overwrite make_install to add extra symlinks"""
-        IntelBase.make_install(self)
-
-        # save libdir
-        os.chdir(self.installdir)
-        libglob = 'tbb/libs/intel64/cc*libc*_kernel*'
-        libs = glob.glob(libglob)
-        if len(libs):
-            libdir = libs[-1]  # take the last one, should be ordered by cc version.
-        else:
-            self.log.error("No libs found using %s in %s" % (libglob, self.installdir))
-        self.libdir = libdir
-
-
-        self.libpath = "%s/tbb/libs/intel64/%s/" % (self.installdir, libdir)
-        # applications go looking into tbb/lib so we move what's in there to libs
-        # and symlink the right lib from /tbb/libs/intel64/... to lib
-        install_libpath = os.path.join(self.installdir, 'tbb', 'lib')
-        shutil.move(install_libpath, os.path.join(self.installdir, 'tbb', 'libs'))
-        os.symlink(self.libpath, install_libpath)
-
-
     def sanitycheck(self):
 
         if not self.getcfg('sanityCheckPaths'):
