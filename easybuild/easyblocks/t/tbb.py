@@ -26,10 +26,6 @@ import os
 import shutil
 import glob
 
-import os
-import shutil
-import glob
-
 from easybuild.easyblocks.i.intelbase import IntelBase
 
 
