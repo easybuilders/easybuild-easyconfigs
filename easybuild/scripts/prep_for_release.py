@@ -46,6 +46,7 @@ except ImportError, err:
     sys.stderr.write("Failed to import git Python module, which is required to run this script: %s\n" % err)
     sys.exit(1)
 
+
 # error function (exits)
 def error(msg):
     """Error function: print message to stderr and exit with non-zero exit code."""
