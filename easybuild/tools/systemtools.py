@@ -1,5 +1,5 @@
 ##
-# Copyright 2009-2012 Jens Timmerman
+# Copyright 2011-2012 Jens Timmerman
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of the University of Ghent (http://ugent.be/hpc).
@@ -138,7 +138,7 @@ def get_kernel_name():
 def get_shared_lib_ext():
     """Determine extention for shared libraries
 
-    Linux: 'so', Darwin: 'dylib' 
+    Linux: 'so', Darwin: 'dylib'
     """
     shared_lib_exts = {
                        'Linux':'so',
