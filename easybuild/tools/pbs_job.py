@@ -1,3 +1,4 @@
+##
 # Copyright 2012 Stijn De Weirdt, Toon Willems
 #
 # This file is part of EasyBuild,
