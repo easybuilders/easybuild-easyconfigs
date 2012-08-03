@@ -216,6 +216,9 @@ def check_easyblocks_for_environment(home):
     for faulty in found:
         warning("found os.environ or os.putenv inside eb_file: %s" % faulty)
 
+    if found:
+        warning("Only easybuild.tools.environment.set should be used for setting environment variables.")
+
     return len(found) == 0
 
 
