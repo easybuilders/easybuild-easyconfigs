@@ -18,6 +18,9 @@
 # You should have received a copy of the GNU General Public License
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
+"""
+EasyBuild support for installing the Intel Threading Building Blocks (TBB) library, implemented as an easyblock
+"""
 
 import os
 import shutil
@@ -26,9 +29,7 @@ import glob
 from easybuild.easyblocks.i.intelbase import IntelBase
 
 class Tbb(IntelBase):
-    """
-    EasyBlock for tbb, threading building blocks
-    """
+    """EasyBlock for tbb, threading building blocks"""
 
     def make_install(self):
         """overwrite make_install to add extra symlinks"""

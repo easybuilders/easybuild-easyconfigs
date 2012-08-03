@@ -19,8 +19,9 @@
 # along with EasyBuild. If not, see <http://www.gnu.org/licenses/>.
 ##
 """
-EasyBlock for binary applications
+General EasyBuild support for software with a binary installer
 """
+
 import shutil
 
 from easybuild.framework.application import Application
