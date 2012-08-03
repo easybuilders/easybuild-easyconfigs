@@ -88,12 +88,19 @@ class BuildTest(TestCase):
         parser = OptionParser()
         parser.add_option("--job", action="store_true", dest="parallel",
                   help="submit jobs to build in parallel")
-        parser.add_option("--output-file", action="store", dest="output_file",
-                  help="submit jobs to build in parallel")
+        parser.add_option("--output-file", dest="filename", help="submit jobs to build in parallel")
 
         (opts, args) = parser.parse_args()
         self.parallel = opts.parallel
-        self.output_file = output_file
+
+        if opts.filename:
+            filename = opts.filename
+        elif "EASYBILDTESTOUTPUT" in os.environ:
+            filename = os.environ["EASYBUILDTESTOUTPUT"]
+        else:
+            filename = "easybuild-test-%s.xml" % datetime.now().strftime("%d-%m-%Y-%H:%M:%S")
+
+        self.output_file = os.path.join(self.cur_dir, filename)
 
         files = []
         if args:
@@ -273,14 +280,8 @@ class BuildTest(TestCase):
 
         self.log.info("%s from %s packages failed to build!" % (failed, total))
 
-        if "EASYBUILDTESTOUTPUT" in os.environ:
-            filename = os.environ["EASYBUILDTESTOUTPUT"]
-        else:
-            filename = "easybuild-test-%s.xml" % datetime.now().strftime("%d-%m-%Y-%H:%M:%S")
-
-        filename = os.path.join(self.cur_dir, filename)
-        self.log.debug("writing xml output to %s" % filename)
-        write_to_xml(self.succes, self.test_results, filename)
+        self.log.debug("writing xml output to %s" % self.output_file)
+        write_to_xml(self.succes, self.test_results, self.output_file)
 
         # exit with non-zero exit-code when not build_ok
         if not self.build_ok:
