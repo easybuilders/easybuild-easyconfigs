@@ -20,6 +20,7 @@
 ##
 import re
 import os
+
 from easybuild.framework.application import Application
 from easybuild.tools.filetools import run_cmd
 

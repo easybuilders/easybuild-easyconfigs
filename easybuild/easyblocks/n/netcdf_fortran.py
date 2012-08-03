@@ -19,6 +19,7 @@
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
 import os
+
 from easybuild.framework.application import Application
 import easybuild.tools.environment as env
 import easybuild.tools.toolkit as toolkit

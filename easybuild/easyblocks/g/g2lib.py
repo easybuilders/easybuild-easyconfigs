@@ -20,6 +20,7 @@
 ##
 import os
 import shutil
+
 from easybuild.framework.application import Application
 
 class G2lib(Application):
