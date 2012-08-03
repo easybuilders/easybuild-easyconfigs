@@ -20,6 +20,7 @@
 ##
 import os
 import shutil
+
 from easybuild.framework.application import ApplicationPackage, Application
 from easybuild.tools.filetools import unpack, patch, run_cmd
 import easybuild.tools.toolkit as toolkit

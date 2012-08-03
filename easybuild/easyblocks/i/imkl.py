@@ -22,13 +22,11 @@
 import os
 import shutil
 import tempfile
-
 from distutils.version import LooseVersion
 
 from easybuild.easyblocks.i.intelbase import IntelBase
 from easybuild.tools.filetools import run_cmd
 from easybuild.tools.modules import Modules
-
 import easybuild.tools.environment as env
 
 class Imkl(IntelBase):

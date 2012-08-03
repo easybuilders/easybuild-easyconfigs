@@ -19,6 +19,7 @@
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
 import os
+
 from easybuild.framework.application import Application
 
 class HDF5(Application):

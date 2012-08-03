@@ -21,6 +21,7 @@
 import os
 import shutil
 from distutils.version import LooseVersion
+
 from easybuild.framework.application import Application
 from easybuild.easyblocks.b.blacs import det_interface
 from easybuild.easyblocks.l.lapack import get_blas_lib

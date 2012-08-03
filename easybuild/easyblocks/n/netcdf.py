@@ -20,6 +20,7 @@
 ##
 import os
 from distutils.version import LooseVersion
+
 from easybuild.framework.application import Application
 import easybuild.tools.environment as env
 import easybuild.tools.toolkit as toolkit

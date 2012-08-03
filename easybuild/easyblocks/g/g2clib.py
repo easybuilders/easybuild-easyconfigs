@@ -21,6 +21,7 @@
 import glob
 import os
 import shutil
+
 from easybuild.framework.application import Application
 
 class G2clib(Application):

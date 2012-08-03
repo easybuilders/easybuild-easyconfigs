@@ -23,6 +23,7 @@ import fileinput
 import os
 import re
 import sys
+
 from easybuild.framework.application import Application
 from easybuild.tools.filetools import run_cmd
 from easybuild.tools.modules import get_software_root

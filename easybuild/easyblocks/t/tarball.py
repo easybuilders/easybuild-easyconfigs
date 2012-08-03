@@ -19,6 +19,7 @@
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
 import shutil
+
 from easybuild.framework.application import Application
 
 class Tarball(Application):

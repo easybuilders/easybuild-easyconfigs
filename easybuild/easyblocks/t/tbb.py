@@ -22,6 +22,7 @@
 import os
 import shutil
 import glob
+
 from easybuild.easyblocks.i.intelbase import IntelBase
 
 class Tbb(IntelBase):
@@ -38,7 +39,7 @@ class Tbb(IntelBase):
         libglob = 'tbb/libs/intel64/cc*libc*_kernel*'
         libs = glob.glob(libglob)
         if len(libs):
-            libdir = libs[-1] # take the last one, should be ordered by cc version.
+            libdir = libs[-1]  # take the last one, should be ordered by cc version.
         else:
             self.log.error("No libs found using %s in %s" % (libglob, self.installdir))
         self.libdir = libdir
@@ -67,7 +68,6 @@ class Tbb(IntelBase):
         """Add correct path to lib to LD_LIBRARY_PATH. and intel license file"""
 
         txt = IntelBase.make_module_extra(self)
-        # since we have symlinked it we could also use $SOFTROOTTBB/tbb/lib here
         txt += "prepend-path\t%s\t\t%s\n" % ('LD_LIBRARY_PATH', self.libpath)
 
         return txt
