@@ -27,6 +27,7 @@ import time
 import unittest
 import xml.dom.minidom as xml
 from datetime import datetime
+from optparse import OptionParser
 
 from unittest import TestCase
 from easybuild.tools.build_log import getLog, EasyBuildError, initLogger
@@ -84,18 +85,19 @@ class BuildTest(TestCase):
         self.parallel = False
         self.jobs = []
 
-        # rudimentary option parsing
-        try:
-            sys.argv.remove("--job")
-            self.log.debug("--job has been specified, parallel build test initiated!")
-            self.parallel = True
-        except ValueError:
-            # just continue as we were
-            pass
+        parser = OptionParser()
+        parser.add_option("--job", action="store_true", dest="parallel",
+                  help="submit jobs to build in parallel")
+        parser.add_option("--output-file", action="store", dest="output_file",
+                  help="submit jobs to build in parallel")
+
+        (opts, args) = parser.parse_args()
+        self.parallel = opts.parallel
+        self.output_file = output_file
 
         files = []
-        if len(sys.argv) > 1:
-            for path in sys.argv[1:]:
+        if args:
+            for path in args:
                 files += findEasyconfigs(path, log)
         else:
             # Default path
@@ -150,8 +152,11 @@ class BuildTest(TestCase):
             if name.startswith("EASYBUILD"):
                 easybuild_vars[name] = os.environ[name]
 
-        if "PYTHONPATH" in os.environ:
-            easybuild_vars["PYTHONPATH"] = os.environ["PYTHONPATH"]
+        others = ["PYTHONPATH", "MODULEPATH"]
+
+        for env_var in others:
+          if env_var in os.environ:
+              easybuild_vars[env_var] = os.environ[env_var]
 
         for easyconfig in files:
             easybuild_vars['EASYBUILDTESTOUTPUT'] = "%s.xml" % easyconfig
