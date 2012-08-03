@@ -24,13 +24,16 @@ from easybuild.tools.build_log import getLog
 class PbsJob:
     """Interaction with torque"""
 
-    def __init__(self, script, env_vars, name):
+    def __init__(self, script, name, env_vars=None):
         """
         create a new Job to be submitted to PBS
         """
         self.log = getLog("PBS")
         self.script = script
-        self.env_vars = env_vars
+        if env_vars:
+            self.env_vars = env_vars.copy()
+        else:
+            self.env_vars = {}
         self.name = name
 
         global pbs
@@ -41,8 +44,11 @@ class PbsJob:
         except ImportError:
             self.log.error("Cannot import PBSQuery or pbs. Please make sure pbs_python is installed and usable.")
 
-        self.pbs_server = pbs.pbs_default()
-        self.pbsconn = pbs.pbs_connect (self.pbs_server)
+        try:
+            self.pbs_server = pbs.pbs_default()
+            self.pbsconn = pbs.pbs_connect(self.pbs_server)
+        except:
+            self.log.error("Could not connect to the default pbs server, is this correctly configured?")
 
         self.jobid = None
 
@@ -53,18 +59,21 @@ class PbsJob:
 
         resources = {"walltime": "72:00:00", "nodes": "1:ppn=%s" % self.get_ppn() }
 
-        attropl = pbs.new_attropl(1) ## jobparams
-        attropl[0].name = 'Job_Name'
-        attropl[0].value = self.name
+        # Build default pbs_attributes list
+        pbs_attributes = pbs.new_attropl(1)
+        pbs_attributes[0].name = 'Job_Name'
+        pbs_attributes[0].value = self.name
 
-        tmpattropl = pbs.new_attropl(len(resources)) ## jobparams
+
+        # set resource requirements
+        resourse_attributes = pbs.new_attropl(len(resources))
         idx = 0
         for k, v in resources.items():
-            tmpattropl[idx].name = 'Resource_List' ## resources
-            tmpattropl[idx].resource = k
-            tmpattropl[idx].value = v
+            resourse_attributes[idx].name = 'Resource_List'
+            resourse_attributes[idx].resource = k
+            resourse_attributes[idx].value = v
             idx += 1
-        attropl.extend(tmpattropl)
+        pbs_attributes.extend(resourse_attributes)
 
         ## add a bunch of variables (added by qsub)
         ## also set PBS_O_WORKDIR to os.getcwd()
@@ -72,24 +81,27 @@ class PbsJob:
 
         defvars = ['MAIL', 'HOME', 'PATH', 'SHELL', 'WORKDIR']
         vars = ["PBS_O_%s=%s" % (x, os.environ.get(x, 'NOTFOUND_%s' % x)) for x in defvars]
+        # extend PBS variables with specified variables
         vars.extend(["%s=%s" % (name, value) for (name, value) in self.env_vars.items()])
-        tmpattropl = pbs.new_attropl(1)
-        tmpattropl[0].name = 'Variable_List'
-        tmpattropl[0].value = ",".join(vars)
-        attropl.extend(tmpattropl)
+        variable_attributes = pbs.new_attropl(1)
+        variable_attributes[0].name = 'Variable_List'
+        variable_attributes[0].value = ",".join(vars)
+
+        pbs_attributes.extend(variable_attributes)
 
         import tempfile
         fh, scriptfn = tempfile.mkstemp()
         f = os.fdopen(fh, 'w')
-        self.log.debug("Writing temp jobscript to %s" % scriptfn)
+        self.log.debug("Writing temporary job script to %s" % scriptfn)
         f.write(txt)
         f.close()
 
-        queue='long'
+        queue = 'long'
         self.log.debug("Going to submit to queue %s" % queue)
 
-        extend = 'NULL' ## always
-        jobid = pbs.pbs_submit(self.pbsconn, attropl, scriptfn, queue, extend)
+        # extend paramater should be 'NULL' because this is required by the python api
+        extend = 'NULL'
+        jobid = pbs.pbs_submit(self.pbsconn, pbs_attributes, scriptfn, queue, extend)
 
         is_error, errormsg = pbs.error()
         if is_error:
@@ -102,58 +114,67 @@ class PbsJob:
     def state(self):
         """
         Return the state of the job
+        State can be 'not submitted', 'running', 'queued' or 'finished',
         """
-
         state = self.info(types=['job_state', 'exec_host'])
 
-        jid = [x['id'] for x in state]
+        if state == None:
+            if self.jobid == None:
+                return 'not submitted'
+            else:
+                return 'finished'
 
-        jstate = [ x.get('job_state', None) for x in state]
+        jid = state['id']
 
-        def get_uniq_hosts(txt, num= -1):
-            """txt host1/cpuid+host2/cpuid
-                - num: number of nodes to return
+        jstate = state.get('job_state', None)
+
+        def get_uniq_hosts(txt, num=-1):
+            """
+            - txt: format: host1/cpuid+host2/cpuid
+            - num: number of nodes to return (default: all)
             """
             res = []
             for h_c in txt.split('+'):
                 h = h_c.split('/')[0]
-                if h in res: continue
+                if h in res:
+                    continue
                 res.append(h)
             return res[:num]
-        ehosts = [ get_uniq_hosts(x.get('exec_host', '')) for x in state]
 
-        self.log.debug("Jobid  %s jid %s state %s ehosts %s (%s)" % (self.jobid, jid, jstate, ehosts, state))
+        ehosts = get_uniq_hosts(state.get('exec_host', ''), 1)
 
-        joined = zip(jid, jstate, [''.join(x[:1]) for x in ehosts]) ## only use first node (don't use [0], job in Q have empty list; use ''.join to make string)
-        temp = "Id %s State %s Node %s"
-        if len(joined) == 0:
-            msg = "No jobs found."
-        elif len(joined) == 1:
-            msg = "Found 1 job %s" % (temp % tuple(joined[0]))
+        self.log.debug("Jobid %s jid %s state %s ehosts %s (%s)" % (self.jobid, jid, jstate, ehosts, state))
+        if jstate == 'Q':
+            return 'queued'
         else:
-            msg = "Found %s jobs\n" % len(joined)
-            for j in joined:
-                msg += "    %s\n" % (temp % tuple(j))
-        self.log.debug("msg %s" % msg)
-
-        return msg
+            return 'running'
 
     def info(self, types=None):
-        """Return jobinfo"""
+        """
+        Return jobinfo
+        """
+        if not self.jobid:
+            self.log.debug("no jobid, job is not submitted yet?")
+            return None
+
+        # convert single type into list
         if type(types) is str:
             types = [types]
+
         self.log.debug("Return info types %s" % types)
 
+        # create attribute list to query pbs with
         if types is None:
             jobattr = 'NULL'
         else:
             jobattr = pbs.new_attrl(len(types))
-            for idx in range(len(types)):
-                jobattr[idx].name = types[idx]
+            for idx, attr in enumerate(types):
+                jobattr[idx].name = attr
 
         jobs = pbs.pbs_statjob(self.pbsconn, self.jobid, jobattr, 'NULL')
         if len(jobs) == 0:
-            res = [] ## return nothing
+            # no job found, return None info
+            res = None
             self.log.debug("No job found. Wrong id %s or job finished? Returning %s" % (self.jobid, res))
             return res
         elif len(jobs) == 1:
@@ -161,14 +182,14 @@ class PbsJob:
         else:
             self.log.error("Request for jobid %s returned more then one result %s" % (self.jobid, jobs))
 
-        ## more then one, return value
-        res = []
-        for j in jobs:
-            job_details = dict([ (attrib.name, attrib.value) for attrib in j.attribs ])
-            job_details['id'] = j.name ## add id
-            res.append(job_details)
-        self.log.debug("Found jobinfo %s" % res)
-        return res
+        # only expect to have a list with one element
+        j = jobs[0]
+        # convert attribs into useable dict
+        job_details = dict([ (attrib.name, attrib.value) for attrib in j.attribs ])
+        # manually set 'id' attribute
+        job_details['id'] = j.name
+        self.log.debug("Found jobinfo %s" % job_details)
+        return job_details
 
     def remove(self):
         """Remove the job with id jobid"""

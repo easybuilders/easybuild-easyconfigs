@@ -27,6 +27,10 @@ import tempfile
 import time
 import copy
 import platform
+from datetime import datetime
+
+import easybuild.tools.config as config
+import easybuild.tools.filetools as filetools
 from easybuild.framework.application import Application, get_class
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.tools.build_log import EasyBuildError, initLogger, \
@@ -35,9 +39,8 @@ from easybuild.tools.class_dumper import dumpClasses
 from easybuild.tools.modules import Modules, searchModule
 from easybuild.tools.config import getRepository
 from optparse import OptionParser
-import easybuild.tools.config as config
-import easybuild.tools.filetools as filetools
 from easybuild.tools import systemtools
+from easybuild.tools.pbs_job import PbsJob
 
 """
 Main entry point for EasyBuildBuild: build software from .eb input file
@@ -707,9 +710,8 @@ def submit_build_job(log):
         if name.startswith("EASYBUILD"):
             easybuild_vars[name] = os.environ[name]
 
-    # import here so it only loads when needed
-    from easybuild.tools.pbs_job import PbsJob
-    job = PbsJob(command, easybuild_vars, "easybuild-build-job")
+    name = "easybuild-%s" % datetime.now().strftime("%m-%d-%Y-%H:%M:%S")
+    job = PbsJob(command, name, easybuild_vars)
     job.submit()
     log.info("job submitted. info: %s", job.info())
 
