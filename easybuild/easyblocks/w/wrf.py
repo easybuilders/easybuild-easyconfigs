@@ -309,8 +309,9 @@ class WRF(Application):
                 except OSError, err:
                     self.log.error("An error occured when running test %s: %s" % (test, err))
 
-    # installing is done in make, so we can run tests
+    # building/installing is done in make, so we can run tests
     def make_install(self):
+        """Building was done in install dir, so nothing to do in make_install."""
         pass
 
     def sanitycheck(self):
