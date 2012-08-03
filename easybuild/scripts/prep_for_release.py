@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 ##
 # Copyright 2009-2012 Stijn De Weirdt, Dries Verdegem, Kenneth Hoste, Pieter De Baets, Jens Timmerman
+# Copyright 2012 Toon Willems
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of the University of Ghent (http://ugent.be/hpc).
@@ -40,6 +41,7 @@ try:
 except ImportError, err:
     sys.stderr.write("Failed to import git Python module, which is required to run this script: %s\n" % err)
     sys.exit(1)
+
 
 # error function (exits)
 def error(msg):
