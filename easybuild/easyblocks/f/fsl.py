@@ -69,10 +69,6 @@ class FSL(Application):
             self.log.error("Failed to copy closest matching config dir: %s" % err)
 
     def make(self):
-        """Building is performed in make_install."""
-        pass
-
-    def make_install(self):
         """Build FSL using supplied script."""
 
         cmd = ". %s/etc/fslconf/fsl.sh && ./build" % self.fsldir
@@ -87,6 +83,10 @@ class FSL(Application):
         error_regexp = re.compile("ERROR in BUILD")
         if error_regexp.search(txt):
             self.log.error("Error detected in build log %s." % buildlog)
+
+    def make_install(self):
+        """Building was performed in install dir, no explicit install step required."""
+        pass
 
     def make_module_req_guess(self):
         """Set correct PATH and LD_LIBRARY_PATH variables."""

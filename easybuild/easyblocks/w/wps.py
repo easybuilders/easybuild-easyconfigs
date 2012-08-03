@@ -300,6 +300,7 @@ class WPS(Application):
 
     # installing is done in make, so we can run tests
     def make_install(self):
+        """Building was done in install dir, so just do some cleanup here."""
 
         # make sure JASPER environment variables are unset
         env_vars = ['JASPERINC', 'JASPERLIB']
