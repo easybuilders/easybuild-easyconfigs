@@ -19,7 +19,7 @@
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
 """
-EasyBuild support for Pasha, implemented as an easyblock
+EasyBuild support for building and installing Pasha, implemented as an easyblock
 """
 
 import shutil
