@@ -162,8 +162,8 @@ class BuildTest(TestCase):
         others = ["PYTHONPATH", "MODULEPATH"]
 
         for env_var in others:
-          if env_var in os.environ:
-              easybuild_vars[env_var] = os.environ[env_var]
+            if env_var in os.environ:
+                easybuild_vars[env_var] = os.environ[env_var]
 
         for easyconfig in files:
             easybuild_vars['EASYBUILDTESTOUTPUT'] = "%s.xml" % easyconfig
