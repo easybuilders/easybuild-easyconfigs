@@ -52,7 +52,7 @@ class FSL(Application):
         self.log.debug("FSL machine type: %s" % fslmachtype)
 
         # prepare config
-        ## either using matching config, or copy closest match
+        # either using matching config, or copy closest match
         cfgdir = os.path.join(self.fsldir, "config")
         try:
             cfgs = os.listdir(cfgdir)
@@ -114,9 +114,9 @@ class FSL(Application):
 
         if not self.getcfg('sanityCheckPaths'):
 
-            self.setcfg('sanityCheckPaths',{'files':[],
-                                            'dirs':["fsl/%s" % x for x in ["bin", "data", "etc", "extras", "include", "lib"]]
-                                           })
+            self.setcfg('sanityCheckPaths', {'files':[],
+                                             'dirs':["fsl/%s" % x for x in ["bin", "data", "etc", "extras", "include", "lib"]]
+                                            })
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 

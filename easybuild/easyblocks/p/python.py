@@ -201,7 +201,7 @@ class FortranPythonPackage(DefaultPythonPackage):
             if ldflags:
                 # LDFLAGS should not be set when building numpy/scipy, because it overwrites whatever numpy/scipy sets
                 # see http://projects.scipy.org/numpy/ticket/182
-                ## don't unset it with os.environ.pop('LDFLAGS'), doesn't work in Python 2.4 (see http://bugs.python.org/issue1287)
+                # don't unset it with os.environ.pop('LDFLAGS'), doesn't work in Python 2.4 (see http://bugs.python.org/issue1287)
                 cmdprefix = "unset LDFLAGS && "
                 self.log.debug("LDFLAGS was %s, will be cleared before numpy build with '%s'" % (ldflags, cmdprefix))
 

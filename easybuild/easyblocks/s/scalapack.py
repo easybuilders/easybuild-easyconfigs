@@ -49,7 +49,7 @@ class ScaLAPACK(Application):
 
         # make sure required dependencies are available
         deps = ["LAPACK"]
-        ## BLACS is only a dependency for ScaLAPACK versions prior to v2.0.0
+        # BLACS is only a dependency for ScaLAPACK versions prior to v2.0.0
         if self.loosever < LooseVersion("2.0.0"):
             deps.append("BLACS")
         for dep in deps:

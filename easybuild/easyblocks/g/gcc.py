@@ -79,24 +79,24 @@ class GCC(Application):
         else:
             extra_src_dirs = ["gmp", "mpfr", "mpc"]
 
-        ## add optional ones that were selected (e.g. CLooG, PPL, ...)
+        # add optional ones that were selected (e.g. CLooG, PPL, ...)
         for x in ["cloog", "ppl"]:
             if self.getcfg('with%s' % x):
                 extra_src_dirs.append(x)
 
-        ## see if modules are loaded
-        ## if module is available, just use the --with-X GCC configure option
+        # see if modules are loaded
+        # if module is available, just use the --with-X GCC configure option
         for extra in copy(extra_src_dirs):
             envvar = os.getenv('SOFTROOT%s' % extra.upper())
             if envvar:
                 configopts += " --with-%s=%s" % (extra, envvar)
                 extra_src_dirs.remove(extra)
             elif extra in ["cloog", "ppl"] and stage in ["stage1", "stage3"]:
-                ## building CLooG or PPL requires a recent compiler
-                ## our best bet is to do a 3-staged build of GCC, and
-                ## build CLooG/PPL with the GCC we're building in stage 2
-                ## then (bootstrap) build GCC in stage 3
-                ## also, no need to stage cloog/ppl in stage3 (may even cause troubles)
+                # building CLooG or PPL requires a recent compiler
+                # our best bet is to do a 3-staged build of GCC, and
+                # build CLooG/PPL with the GCC we're building in stage 2
+                # then (bootstrap) build GCC in stage 3
+                # also, no need to stage cloog/ppl in stage3 (may even cause troubles)
                 self.stagedbuild = True
                 extra_src_dirs.remove(extra)
 
@@ -185,28 +185,27 @@ class GCC(Application):
 
         # II) update config options
 
-        ## enable specified language support
+        # enable specified language support
         if self.getcfg('languages'):
             self.configopts += " --enable-languages=%s" % ','.join(self.getcfg('languages'))
 
-        ## enable link-time-optimization (LTO) support, if desired
+        # enable link-time-optimization (LTO) support, if desired
         if self.getcfg('withlto'):
             self.configopts += " --enable-lto"
 
-        ## configure for a release build
+        # configure for a release build
         self.configopts += " --enable-checking=release "
-        ## enable C++ support (required for GMP build), disable multilib (???)
+        # enable C++ support (required for GMP build), disable multilib (???)
         self.configopts += " --enable-cxx --disable-multilib"
-        ## build both static and dynamic libraries (???)
+        # build both static and dynamic libraries (???)
         self.configopts += " --enable-shared=yes --enable-static=yes "
-        ## use POSIX threads
+        # use POSIX threads
         self.configopts += " --enable-threads=posix "
-        ## use GOLD as default linker, enable plugin support
+        # use GOLD as default linker, enable plugin support
         self.configopts += " --enable-gold=default --enable-plugins "
-        ##
         self.configopts += " --enable-ld --with-plugin-ld=ld.gold"
 
-        ## enable bootstrap build for self-containment (unless for staged build)
+        # enable bootstrap build for self-containment (unless for staged build)
         if not self.stagedbuild:
             configopts += " --enable-bootstrap"
         else:
@@ -222,7 +221,7 @@ class GCC(Application):
 
         else:
             # unstaged build, so just run standard configure/make/make install
-            ## set prefixes
+            # set prefixes
             self.log.info("Performing regular GCC build...")
             configopts += " --prefix=%(p)s --with-local-prefix=%(p)s" % {'p' : self.installdir }
 
@@ -279,15 +278,15 @@ class GCC(Application):
             # STAGE 2: build GMP/PPL/CLooG for stage 3
             #
 
-            ## create dir to build GMP/PPL/CLooG in
+            # create dir to build GMP/PPL/CLooG in
             stage2dir = "stage2_stuff"
             stage2prefix = self.create_dir(stage2dir)
 
-            ## prepare directories to build GMP/PPL/CLooG
+            # prepare directories to build GMP/PPL/CLooG
             stage2_info = self.prep_extra_src_dirs("stage2", target_prefix=stage2prefix)
             configopts = stage2_info['configopts']
 
-            ## build PPL and CLooG (GMP as dependency)
+            # build PPL and CLooG (GMP as dependency)
 
             for lib in ["gmp", "ppl", "cloog"]:
 
@@ -312,10 +311,10 @@ class GCC(Application):
 
                         cmd = "./configure --prefix=%s --with-pic -disable-shared " % stage2prefix
 
-                        ### only enable C/C++ interfaces (Java interface is sometimes troublesome)
+                        # only enable C/C++ interfaces (Java interface is sometimes troublesome)
                         cmd += "--enable-interfaces='c c++' "
 
-                        ### enable watchdog (or not)
+                        # enable watchdog (or not)
                         if self.pplver <= LooseVersion("0.11"):
                             if self.getcfg('pplwatchdog'):
                                 cmd += "--enable-watchdog "
@@ -324,7 +323,7 @@ class GCC(Application):
                         elif self.getcfg('pplwatchdog'):
                             self.log.error("Enabling PPL watchdog only supported in PPL <= v0.11 .")
 
-                        ### make sure GMP we just built is found
+                        # make sure GMP we just built is found
                         cmd += "--with-gmp=%s " % stage2prefix
 
                     elif lib == "cloog":
@@ -335,7 +334,7 @@ class GCC(Application):
                         v0_16 = LooseVersion("0.16")
 
                         cmd = "./configure --prefix=%s --with-pic --disable-shared " % stage2prefix
-                        ### use isl or PPL
+                        # use isl or PPL
                         if self.getcfg('clooguseisl'):
                             if self.cloogver >= v0_16:
                                 cmd += "--with-isl=bundled "
@@ -349,7 +348,7 @@ class GCC(Application):
                                 errormsg += "\nNeither using PPL or ISL-based ClooG, I'm out of options..."
                                 self.log.error(errormsg)
 
-                        ### make sure GMP is found
+                        # make sure GMP is found
                         if self.cloogver >= v0_15 and self.cloogver < v0_16:
                             cmd += "--with-gmp=%s " % stage2prefix
                         elif self.cloogver >= v0_16:
@@ -360,15 +359,15 @@ class GCC(Application):
                     else:
                         self.log.error("Don't know how to configure for %s" % lib)
 
-                    ### configure
+                    # configure
                     self.run_configure_cmd(cmd)
 
-                    ### build and 'install'
+                    # build and 'install'
                     cmd = "make %s install" % paracmd
                     run_cmd(cmd, log_all=True, simple=True)
 
                     if lib == "gmp":
-                        ### make sure correct GMP is found
+                        # make sure correct GMP is found
                         libpath = os.path.join(stage2prefix, 'lib')
                         incpath = os.path.join(stage2prefix, 'include')
 
@@ -379,22 +378,22 @@ class GCC(Application):
             # STAGE 3: bootstrap build of final GCC (with PPL/CLooG support)
             #
 
-            ## create new obj dir and change into it
+            # create new obj dir and change into it
             self.create_dir("stage3_obj")
 
-            ## reconfigure for stage 3 build
+            # reconfigure for stage 3 build
             self.log.info("Stage 2 of 3-staged build completed, continuing with stage 2 (with CLooG and/or PPL support enabled)...")
 
             stage3_info = self.prep_extra_src_dirs("stage3")
             configopts = stage3_info['configopts']
             configopts += " --prefix=%(p)s --with-local-prefix=%(p)s" % {'p' : self.installdir }
 
-            ## enable bootstrapping for self-containment
+            # enable bootstrapping for self-containment
             configopts += " --enable-bootstrap "
 
-            ## PPL config options
+            # PPL config options
             if self.getcfg('withppl'):
-                ### for PPL build and CLooG-PPL linking
+                # for PPL build and CLooG-PPL linking
                 libstdcxxpath = "%s/lib64/libstdc++.a" % self.stage1installdir
                 configopts += "--with-host-libstdcxx='-static-libgcc %s -lm' " % libstdcxxpath
 
@@ -406,7 +405,7 @@ class GCC(Application):
                     else:
                         configopts += "--disable-watchdog "
 
-            ## CLooG config options
+            # CLooG config options
             if self.getcfg('withcloog'):
                 configopts += "--with-cloog=%s " % stage2prefix
 

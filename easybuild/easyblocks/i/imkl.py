@@ -128,8 +128,8 @@ class Imkl(IntelBase):
                     except:
                         self.log.exception("Can't write file %s" % (dest))
 
-            #build the mkl interfaces (pic and no-pic)
-            ## load the dependencies
+            # build the mkl interfaces (pic and no-pic)
+            # load the dependencies
             m = Modules()
             m.addModule(self.dep)
             m.load()
@@ -137,7 +137,7 @@ class Imkl(IntelBase):
             if not self.getcfg('interfaces'):
                 return
 
-            #Build the interfaces
+            # build the interfaces
             #- blas95 and lapack95 need more work, ignore for now
 
             #lis1=['blas95','fftw2xc','fftw2xf','lapack95']
@@ -155,13 +155,13 @@ class Imkl(IntelBase):
 
             for i in lis1 + lis2 + lis3:
                 if i in lis1:
-                    ## Use INSTALL_DIR and CFLAGS and COPTS
+                    # use INSTALL_DIR and CFLAGS and COPTS
                     cmd = "make -f makefile libintel64"
                 if i in lis2:
-                    ## Use install_to and CFLAGS
+                    # use install_to and CFLAGS
                     cmd = "make -f makefile libintel64 install_to=$INSTALL_DIR"
                 if i in lis3:
-                    ## Use INSTALL_DIR and SPEC_OPT
+                    # use INSTALL_DIR and SPEC_OPT
                     extramakeopts = ''
                     if os.getenv('SOFTROOTMPICH2'):
                         extramakeopts = 'mpi=mpich2'
@@ -175,7 +175,7 @@ class Imkl(IntelBase):
                     except:
                         self.log.exception("Creating temporary directory failed")
 
-                    ## always set INSTALL_DIR, SPEC_OPT, COPTS and CFLAGS
+                    # always set INSTALL_DIR, SPEC_OPT, COPTS and CFLAGS
                     env.set('INSTALL_DIR', tmpbuild)
                     env.set('SPEC_OPT', opt)
                     env.set('COPTS', opt)
@@ -193,7 +193,7 @@ class Imkl(IntelBase):
 
                     for fil in os.listdir(tmpbuild):
                         if opt == '-fPIC':
-                            ## add _pic to filename
+                            # add _pic to filename
                             ff = fil.split('.')
                             newfil = '.'.join(ff[:-1]) + '_pic.' + ff[-1]
                         else:
@@ -253,7 +253,7 @@ class Imkl(IntelBase):
                     except:
                         self.log.exception("Can't write file %s" % (dest))
 
-            ## load the dependencies
+            # load the dependencies
             m = Modules()
             m.addModule(self.dep)
             m.load()
@@ -261,8 +261,8 @@ class Imkl(IntelBase):
             if not self.getcfg('interfaces'):
                 return
 
-            #Build the interfaces
-            #- blas95 and lapack95 need more work, ignore for now
+            # build the interfaces
+            # - blas95 and lapack95 need more work, ignore for now
             #lis1=['blas95','fftw2xc','fftw2x_cdft','fftw2xf','lapack95']
             # blas95 and lapack also need include/.mod to be processed
             lis1 = ['fftw2xc', 'fftw2x_cdft', 'fftw2xf']
@@ -280,10 +280,10 @@ class Imkl(IntelBase):
 
             for i in lis1 + lis2:
                 if i in lis1:
-                    ## Use INSTALL_DIR and SPEC_OPT
+                    # use INSTALL_DIR and SPEC_OPT
                     cmd = "make -f makefile %s" % interfacestarget
                 if i in lis2:
-                    ## Use install_to and CFLAGS
+                    # use install_to and CFLAGS
                     cmd = "make -f makefile %s install_to=$INSTALL_DIR" % interfacestarget
 
 
@@ -294,7 +294,7 @@ class Imkl(IntelBase):
                     except:
                         self.log.exception("Creating temporary directory failed")
 
-                    ## always set INSTALL_DIR, SPEC_OPT and CFLAGS
+                    # always set INSTALL_DIR, SPEC_OPT and CFLAGS
                     env.set('INSTALL_DIR', tmpbuild)
                     env.set('SPEC_OPT', opt)
                     env.set('CFLAGS', opt)
@@ -310,7 +310,7 @@ class Imkl(IntelBase):
 
                     for fil in os.listdir(tmpbuild):
                         if opt == '-fPIC':
-                            ## add _pic to filename
+                            # add _pic to filename
                             ff = fil.split('.')
                             newfil = '.'.join(ff[:-1]) + '_pic.' + ff[-1]
                         else:
