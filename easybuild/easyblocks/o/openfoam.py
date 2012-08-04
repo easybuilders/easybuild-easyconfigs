@@ -127,7 +127,9 @@ class OpenFOAM(Application):
                 recursiveChmod(fullpath, stat.S_IROTH|stat.S_IXOTH, add=True)
 
         # fix permissions of ThirdParty dir and subdirs (also for 2.x)
-        for d in ["", "etc", "platforms"]:
+        fullpath = os.path.join(self.installdir, self.thrdpartydir)
+        recursiveChmod(fullpath, stat.S_IROTH|stat.S_IXOTH, add=True)
+        for d in ["etc", "platforms"]:
             fullpath = os.path.join(self.installdir, self.thrdpartydir, d)
             self.log.info("Fixing permissions for dir %s" % fullpath)
             recursiveChmod(fullpath, stat.S_IROTH|stat.S_IXOTH, add=True)
