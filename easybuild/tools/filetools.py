@@ -644,28 +644,40 @@ def parselogForError(txt, regExp=None, stdout=True, msg=None):
 
     return res
 
-def recursiveChmod(path, permissionBits, add=True, onlyFiles=False):
+def adjust_permissions(name, permissionBits, add=True, onlyFiles=False, recursive=True):
     """
     Add or remove (if add is False) permissionBits from all files
     and directories (if onlyFiles is False) in path
     """
-    for root, dirs, files in os.walk(path):
-        paths = files
-        if not onlyFiles:
-            paths += dirs
 
-        for path in paths:
-            # Ignore errors while walking (for example caused by bad links)
-            try:
-                absEl = os.path.join(root, path)
-                perms = os.stat(absEl)[stat.ST_MODE]
+    allpaths = []
 
-                if add:
-                    os.chmod(absEl, perms | permissionBits)
-                else:
-                    os.chmod(absEl, perms & ~permissionBits)
-            except OSError, err:
-                log.debug("Failed to chmod %s (but ignoring it): %s" % (path, err))
+    if recursive:
+        log.info("Adjusting permissions recursively for %s" % name)
+        for root, dirs, files in os.walk(name):
+            paths = files
+            if not onlyFiles:
+                paths += dirs
+
+            for path in paths:
+                allpaths.append(os.path.join(root, path))
+
+    else:
+        log.info("Adjusting permissions for %s" % name)
+        allpaths = [name]
+
+    for path in allpaths:
+        log.info("Adjusting permissions for %s" % path)
+        # ignore errors while adjusting permissions (for example caused by bad links)
+        try:
+            perms = os.stat(path)[stat.ST_MODE]
+
+            if add:
+                os.chmod(path, perms | permissionBits)
+            else:
+                os.chmod(path, perms & ~permissionBits)
+        except OSError, err:
+            log.info("Failed to chmod %s (but ignoring it): %s" % (path, err))
 
 def patch_perl_script_autoflush(path):
     # patch Perl script to enable autoflush,
