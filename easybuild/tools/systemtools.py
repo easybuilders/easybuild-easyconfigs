@@ -1,5 +1,5 @@
 ##
-# Copyright 2009-2012 Jens Timmerman, Kenneth Hoste
+# Copyright 2009-2012 Jens Timmerman
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of the University of Ghent (http://ugent.be/hpc).
