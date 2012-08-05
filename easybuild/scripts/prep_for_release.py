@@ -35,15 +35,17 @@ Things that are checked include:
 usage: prep_for_release.py
 """
 
-from distutils.version import LooseVersion
+import glob
 import re
 import os
 import sys
+from distutils.version import LooseVersion
 try:
     import git
 except ImportError, err:
     sys.stderr.write("Failed to import git Python module, which is required to run this script: %s\n" % err)
     sys.exit(1)
+
 
 # error function (exits)
 def error(msg):
@@ -195,6 +197,34 @@ def check_clean_master_branch(home):
 
     return ok
 
+# check whether os.putenv or os.environ[]= is used inside easyblocks
+def check_easyblocks_for_environment(home):
+    """ check whether os.putenv or os.environ[]= is used inside easyblocks """
+
+    files = glob.glob(os.path.join(home, 'easybuild/easyblocks/[a-z]/*.py'))
+    eb_files = filter(lambda x: os.path.basename(x) != '__init__.py', files)
+
+    os_environ = re.compile("os\.environ\[\w+\]\s*=\s*")
+    os_putenv = re.compile("os\.putenv")
+
+    found = []
+    for eb_file in eb_files:
+        f = open(eb_file, "r")
+        text = f.read()
+        f.close()
+
+        if os_putenv.search(text) or os_environ.search(text):
+            found.append(eb_file)
+
+    for faulty in found:
+        warning("found os.environ or os.putenv inside eb_file: %s" % faulty)
+
+    if found:
+        warning("Only easybuild.tools.environment.set should be used for setting environment variables.")
+
+    return len(found) == 0
+
+
 #
 # MAIN
 #
@@ -229,6 +259,8 @@ print "Done!"
 
 # check for clean master branch
 all_checks.append(check_clean_master_branch(easybuild_home))
+# check for use of os.putenv and os.environ adjustments
+all_checks.append(check_easyblocks_for_environment(easybuild_home))
 
 if not all(all_checks):
     error("One or multiple checks have failed, EasyBuild is not ready to be released!")
