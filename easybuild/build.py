@@ -698,6 +698,7 @@ def build(module, options, log, origEnviron, exitOnFailure=True):
     else:
         return (True, applicationLog)
 
+
 def submit_build_job(log):
     """
     will submit the current command (sys.argv) without the --job paramater as a job
