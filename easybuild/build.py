@@ -32,29 +32,17 @@ import sys
 import tempfile
 import time
 from datetime import datetime
-<<<<<<< HEAD
-
-import easybuild.tools.config as config
-import easybuild.tools.filetools as filetools
-from easybuild.framework.application import Application, get_class
-from easybuild.framework.easyblock import EasyBlock
-=======
 from optparse import OptionParser
 
 import easybuild  # required for VERBOSE_VERSION
 import easybuild.tools.config as config
 import easybuild.tools.filetools as filetools
 from easybuild.framework.application import Application, get_instance
->>>>>>> develop
 from easybuild.tools.build_log import EasyBuildError, initLogger, \
     removeLogHandler, print_msg
 from easybuild.tools.class_dumper import dumpClasses
 from easybuild.tools.modules import Modules, searchModule
 from easybuild.tools.config import getRepository
-<<<<<<< HEAD
-from optparse import OptionParser
-=======
->>>>>>> develop
 from easybuild.tools import systemtools
 from easybuild.tools.pbs_job import PbsJob
 
