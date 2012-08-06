@@ -236,6 +236,12 @@ class EasyBlock:
 
         return name
 
+    def name(self):
+        """
+        return name of the package
+        """
+        return self['name']
+
     def _validate(self, attr, values):
         """
         validation helper method. attr is the attribute it will check, values are the possible values.

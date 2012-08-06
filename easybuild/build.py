@@ -316,7 +316,7 @@ def processEasyconfig(path, log, onlyBlocks=None, regtest_online=False):
         ## this app will appear as following module in the list
         package = {
             'spec': spec,
-            'module': (eb['name'], eb.installversion()),
+            'module': (eb.name(), eb.installversion()),
             'dependencies': []
         }
         if len(blocks) > 1:
