@@ -19,6 +19,7 @@
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
 import copy
+import logging
 import platform
 import os
 import re
@@ -39,6 +40,7 @@ from easybuild.tools.pbs_job import PbsJob
 import easybuild
 import easybuild.tools.config as config
 import easybuild.tools.systemtools as systemtools
+import easybuild.tools.build_log as build_log
 
 
 class BuildTest(TestCase):
@@ -93,15 +95,23 @@ class BuildTest(TestCase):
         (opts, args) = parser.parse_args()
         self.parallel = opts.parallel
 
+        # Create base directory inside the current directory. This will be used to place
+        # all log files and the test output as xml
+        basename = "easybuild-test-%s" % datetime.now().strftime("%d-%m-%Y-%H:%M:%S")
         if opts.filename:
             filename = opts.filename
-        elif "EASYBILDTESTOUTPUT" in os.environ:
+        elif "EASYBUILDTESTOUTPUT" in os.environ:
             filename = os.environ["EASYBUILDTESTOUTPUT"]
         else:
-            filename = "easybuild-test-%s.xml" % datetime.now().strftime("%d-%m-%Y-%H:%M:%S")
+            filename = "easybuild-test.xml"
 
-        self.output_file = os.path.join(self.cur_dir, filename)
+        self.output_file = os.path.join(self.cur_dir, basename, filename)
+        self.output_dir = os.path.dirname(self.output_file)
 
+        if not os.path.isdir(self.output_dir):
+            os.makedirs(self.output_dir)
+
+        # find all easyconfigs (either in specified paths or in 'easybuild/easyblocks')
         files = []
         if args:
             for path in args:
@@ -117,6 +127,7 @@ class BuildTest(TestCase):
             self.submit_jobs(files)
             return
 
+        # process all the found easyconfig files
         packages = []
         for file in files:
             try:
@@ -237,6 +248,12 @@ class BuildTest(TestCase):
             os.chdir(base_dir)
             modifyEnv(os.environ, base_env)
 
+            # create a handler per app so we can capture debug output per application
+            handler = logging.FileHandler(os.path.join(self.output_dir, "%s-%s.log" % (app.name(), app.installversion())))
+            handler.setFormatter(build_log.formatter)
+
+            app.log.addHandler(handler)
+
             # take manual control over the building
             self.performStep("preparation", app, lambda x: x.prepare_build())
             self.performStep("pre-build verification", app, lambda x: x.ready2build())
@@ -255,6 +272,9 @@ class BuildTest(TestCase):
             self.performStep('postproc', app, lambda x: x.postproc())
             self.performStep('sanity check', app, lambda x: x.sanitycheck())
             self.performStep('cleanup', app, lambda x: x.cleanup())
+
+            # remove handler
+            app.log.removeHandler(handler)
 
             if app not in self.build_stopped:
                 # gather build stats
