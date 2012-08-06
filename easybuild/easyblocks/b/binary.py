@@ -52,7 +52,6 @@ class Binary(Application):
             except (OSError, IOError), err:
                 self.log.exception("Couldn't copy %s to %s: %s" % (src, self.builddir, err))
 
-
     def configure(self):
         """No configuration, this is a binary package"""
         pass
