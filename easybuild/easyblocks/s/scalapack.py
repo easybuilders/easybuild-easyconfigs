@@ -1,5 +1,9 @@
 ##
-# Copyright 2009-2012 Stijn De Weirdt, Dries Verdegem, Kenneth Hoste, Pieter De Baets, Jens Timmerman
+# Copyright 2009-2012 Stijn De Weirdt
+# Copyright 2010 Dries Verdegem
+# Copyright 2010-2012 Kenneth Hoste
+# Copyright 2011 Pieter De Baets
+# Copyright 2011-2012 Jens Timmerman
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of the University of Ghent (http://ugent.be/hpc).
@@ -94,8 +98,8 @@ class ScaLAPACK(Application):
             extra_makeopts += 'home=%s BLACSdir=%s ' % (self.getcfg('startfrom'), blacsroot)
 
             # set BLACS libs correctly
-            for (var, lib) in [('BLACSFINIT', "F77init"), 
-                               ('BLACSCINIT', "Cinit"), 
+            for (var, lib) in [('BLACSFINIT', "F77init"),
+                               ('BLACSCINIT', "Cinit"),
                                ('BLACSLIB', "")]:
                 extra_makeopts += '%s=%s/lib/libblacs%s.a ' % (var, blacsroot, lib)
 

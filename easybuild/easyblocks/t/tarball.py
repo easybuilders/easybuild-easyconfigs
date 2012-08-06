@@ -1,5 +1,9 @@
 ##
-# Copyright 2009-2012 Stijn De Weirdt, Dries Verdegem, Kenneth Hoste, Pieter De Baets, Jens Timmerman
+# Copyright 2009-2012 Stijn De Weirdt
+# Copyright 2010 Dries Verdegem
+# Copyright 2010-2012 Kenneth Hoste
+# Copyright 2011 Pieter De Baets
+# Copyright 2011-2012 Jens Timmerman
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of the University of Ghent (http://ugent.be/hpc).
@@ -30,7 +34,7 @@ from easybuild.framework.application import Application
 
 class Tarball(Application):
     """
-    Precompiled software packaged as tarball: 
+    Precompiled software packaged as tarball:
     - will unpack binary and copy it to the install dir
     """
 

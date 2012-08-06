@@ -1,5 +1,9 @@
 ##
-# Copyright 2009-2012 Stijn De Weirdt, Dries Verdegem, Kenneth Hoste, Pieter De Baets, Jens Timmerman
+# Copyright 2009-2012 Stijn De Weirdt
+# Copyright 2010 Dries Verdegem
+# Copyright 2010-2012 Kenneth Hoste
+# Copyright 2011 Pieter De Baets
+# Copyright 2011-2012 Jens Timmerman
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of the University of Ghent (http://ugent.be/hpc).
@@ -37,12 +41,12 @@ class NCL(Application):
     """Support for building/installing NCL."""
 
     def configure(self):
-        """Configure build: 
+        """Configure build:
         - create Makefile.ini using make and run ymake script to create config file
         - patch config file with correct settings, and add missing config entries
         - create config/Site.local file to avoid interactive install
         - generate Makefile using config/ymkmf sciprt
-        - 
+        -
         """
 
         try:
@@ -109,7 +113,7 @@ class NCL(Application):
         except OSError, err:
             self.log.error("Failed to change to the build dir %s: %s" % (self.getcfg('startfrom'), err))
 
-        # instead of running the Configure script that asks a zillion questions, 
+        # instead of running the Configure script that asks a zillion questions,
         # let's just generate the config/Site.local file ourselves...
 
         # order of deps is important

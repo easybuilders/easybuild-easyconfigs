@@ -1,5 +1,9 @@
 ##
-# Copyright 2009-2012 Stijn De Weirdt, Dries Verdegem, Kenneth Hoste, Pieter De Baets, Jens Timmerman
+# Copyright 2009-2012 Stijn De Weirdt
+# Copyright 2010 Dries Verdegem
+# Copyright 2010-2012 Kenneth Hoste
+# Copyright 2011 Pieter De Baets
+# Copyright 2011-2012 Jens Timmerman
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of the University of Ghent (http://ugent.be/hpc).
@@ -138,9 +142,9 @@ Configure failed, not sure why (see output above).""" % out
 
     def make_install(self):
         """Install step
-        
+
         Default make install and optionally remove incomplete lapack libs.
-        If the full_lapack option was set to false we don't 
+        If the full_lapack option was set to false we don't
         """
         Application.make_install(self)
         if not self.getcfg('full_lapack'):
