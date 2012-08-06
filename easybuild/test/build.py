@@ -29,18 +29,17 @@ import unittest
 import xml.dom.minidom as xml
 from datetime import datetime
 from optparse import OptionParser
-
 from unittest import TestCase
-from easybuild.tools.build_log import getLog, EasyBuildError, initLogger
-from easybuild.framework.application import get_class, Application
-from easybuild.build import findEasyconfigs, processEasyconfig, resolveDependencies
-from easybuild.tools.filetools import modifyEnv
-from easybuild.tools.pbs_job import PbsJob
 
 import easybuild
 import easybuild.tools.config as config
 import easybuild.tools.systemtools as systemtools
 import easybuild.tools.build_log as build_log
+from easybuild.tools.build_log import getLog, EasyBuildError, initLogger
+from easybuild.framework.application import get_class, Application
+from easybuild.build import findEasyconfigs, processEasyconfig, resolveDependencies
+from easybuild.tools.filetools import modifyEnv
+from easybuild.tools.pbs_job import PbsJob
 
 
 class BuildTest(TestCase):
