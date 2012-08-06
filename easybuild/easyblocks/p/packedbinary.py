@@ -26,9 +26,11 @@ e.g., binary applications shipped as a .tar.gz file
 from easybuild.framework.application import Application
 from easybuild.easyblocks.b.binary import Binary
 
+
 class PackedBinary(Binary, Application):
     """Support for installing a packed binary package.
-    Just unpack it's source in the installdir"""
+    Just unpack its source in the installdir
+    """
 
     def unpack_src(self):
         """Unpack the source"""

@@ -33,7 +33,7 @@ from easybuild.tools.filetools import run_cmd_qa
 class CPLEX(Binary):
     """
     Support for installing CPLEX.
-    Version 12.2 has a self-extratcing package with a Java installer
+    Version 12.2 has a self-extracting package with a Java installer
     """
 
     def __init__(self, *args, **kwargs):
