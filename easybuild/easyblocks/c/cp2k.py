@@ -1,5 +1,9 @@
 ##
-# Copyright 2009-2012 Stijn De Weirdt, Dries Verdegem, Kenneth Hoste, Pieter De Baets, Jens Timmerman
+# Copyright 2009-2012 Stijn De Weirdt
+# Copyright 2010 Dries Verdegem
+# Copyright 2010-2012 Kenneth Hoste
+# Copyright 2011 Pieter De Baets
+# Copyright 2011-2012 Jens Timmerman
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of the University of Ghent (http://ugent.be/hpc).
@@ -51,7 +55,7 @@ class CP2K(Application):
         self.cfg.update({'type':['popt',"Type of build ('popt' or 'psmp') (default: 'popt)"],
                          'typeopt':[True,"Enable optimization (default: True)"],
                          'libint':[True,"Use LibInt (default: True)"],
-                         'modincprefix':['',"IMKL prefix for modinc include dir (default: '')"],                         
+                         'modincprefix':['',"IMKL prefix for modinc include dir (default: '')"],
                          'modinc':[[],"List of modinc's to use (*.f90), or 'True' to use all found at given prefix (default: [])"],
                          'extracflags':['',"Extra CFLAGS to be added (default: '')"],
                          'extradflags':['',"Extra DFLAGS to be added (default: '')"],
@@ -135,9 +139,9 @@ class CP2K(Application):
         if os.getenv('SOFTROOTIMKL'):
             options = self.configureMKL(options)
         elif os.getenv('SOFTROOTACML'):
-            options = self.configureACML(options) 
+            options = self.configureACML(options)
         elif os.getenv('SOFTROOTATLAS'):
-            options = self.configureATLAS(options) 
+            options = self.configureATLAS(options)
 
         if os.getenv('SOFTROOTFFTW'):
             options = self.configureFFTW(options)
@@ -154,7 +158,7 @@ class CP2K(Application):
         options['LIBS'] = "-Wl,--start-group %s -Wl,--end-group" % options['LIBS']
 
         # create arch file using options set
-        archfile = os.path.join(self.getcfg('startfrom'), 'arch', 
+        archfile = os.path.join(self.getcfg('startfrom'), 'arch',
                                 '%s.%s' % (self.typearch, self.getcfg('type')))
         try:
             txt = self._generateMakefile(options)
@@ -194,7 +198,7 @@ class CP2K(Application):
 
             else:
                 self.log.error("prepmodinc: Please specify either a boolean value " \
-                               "or a list of files in modinc (found: %s)." % 
+                               "or a list of files in modinc (found: %s)." %
                                self.getcfg("modinc"))
 
             f77 = os.getenv('F77')
@@ -241,7 +245,7 @@ class CP2K(Application):
                 mpi2 = True
             else:
                 self.log.debug("MPI-2 supporting MPI library %s not loaded.")
-        
+
         if not mpi2:
             self.log.error("CP2K needs MPI-2, no known MPI-2 supporting library loaded?")
 
@@ -254,7 +258,7 @@ class CP2K(Application):
             'AR': 'ar -r',
 
             'CPPFLAGS': '',
-            
+
             'FPIC': self.fpic,
             'DEBUG': self.debug,
 
@@ -415,14 +419,14 @@ class CP2K(Application):
             'INTEL_INC': '$(MKLROOT)/include',
             'INTEL_INCF': '$(INTEL_INC)/fftw',
         })
-        
+
         options['DFLAGS'] += ' -D__FFTW3 -D__FFTMKL'
 
         extra = ''
         if self.modincpath:
             extra = '-I%s' % self.modincpath
         options['CFLAGS'] += ' -I$(INTEL_INC) -I$(INTEL_INCF) %s $(FPIC) $(DEBUG)' % extra
-        
+
         options['LIBS'] += ' %s %s' % (self.libsmm, os.getenv('LIBSCALAPACK'))
 
         return options
@@ -638,8 +642,8 @@ maxtasks=%(maxtasks)s
                 if os.path.isfile(exefile):
                     shutil.copy2(exefile, targetdir)
         except OSError, err:
-            self.log.error("Copying executables from %s to bin dir %s failed: %s" % (exedir, 
-                                                                                     targetdir, 
+            self.log.error("Copying executables from %s to bin dir %s failed: %s" % (exedir,
+                                                                                     targetdir,
                                                                                      err) )
 
         # copy tests

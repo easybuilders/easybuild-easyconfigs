@@ -1,5 +1,9 @@
 ##
-# Copyright 2009-2012 Stijn De Weirdt, Dries Verdegem, Kenneth Hoste, Pieter De Baets, Jens Timmerman
+# Copyright 2009-2012 Stijn De Weirdt
+# Copyright 2010 Dries Verdegem
+# Copyright 2010-2012 Kenneth Hoste
+# Copyright 2011 Pieter De Baets
+# Copyright 2011-2012 Jens Timmerman
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of the University of Ghent (http://ugent.be/hpc).
@@ -112,7 +116,7 @@ dims_small="%(dims)s"
 
 # tiny dimensions are used as primitves and generated in an 'exhaustive' search.
 # They should be a sequence from 1 to N,
-# where N is a number that is large enough to have good in cache performance 
+# where N is a number that is large enough to have good in cache performance
 # (e.g. for modern SSE cpus 8 to 12)
 # Too large (>12?) is not beneficial, but increases the time needed to build the library
 # Too small (<8)   will lead to a slow library, but the build might proceed quickly
@@ -120,7 +124,7 @@ dims_small="%(dims)s"
 #
 dims_tiny="%(tiny_dims)s"
 
-# host compiler... this is used only to compile a few tools needed to build the library. 
+# host compiler... this is used only to compile a few tools needed to build the library.
 # The library itself is not compiled this way.
 # This compiler needs to be able to deal with some Fortran2003 constructs.
 #
@@ -158,7 +162,7 @@ tasks=%(tasks)s
                 blas_found = True
             else:
                 self.log.info("BLAS library %s not found" % blas_lib)
-                
+
         if not blas_found:
             self.log.error('No known BLAS library found!')
 
@@ -175,7 +179,7 @@ tasks=%(tasks)s
         }
 
         # configure for various iterations
-        datatypes = [(1, 'double precision real'), 
+        datatypes = [(1, 'double precision real'),
                      (3, 'double precision complex')
                      ]
         for (dt, descr) in datatypes:

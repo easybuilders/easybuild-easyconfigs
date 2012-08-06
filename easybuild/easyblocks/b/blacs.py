@@ -1,5 +1,9 @@
 ##
-# Copyright 2009-2012 Stijn De Weirdt, Dries Verdegem, Kenneth Hoste, Pieter De Baets, Jens Timmerman
+# Copyright 2009-2012 Stijn De Weirdt
+# Copyright 2010 Dries Verdegem
+# Copyright 2010-2012 Kenneth Hoste
+# Copyright 2011 Pieter De Baets
+# Copyright 2011-2012 Jens Timmerman
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of the University of Ghent (http://ugent.be/hpc).
@@ -33,9 +37,9 @@ from easybuild.tools.filetools import run_cmd
 
 def det_interface(log, path):
     """Determine interface through xintface"""
-    
+
     (out, _) = run_cmd(os.path.join(path,"xintface"), log_all=True, simple=False)
-    
+
     intregexp = re.compile(".*INTFACE\s*=\s*-D(\S+)\s*")
     res = intregexp.search(out)
     if res:
@@ -104,7 +108,7 @@ class BLACS(Application):
             cmd = "make"
             cmd += " CC='%(mpicc)s' F77='%(mpif77)s -I$(MPIINCdir)'  MPIdir=%(base)s" \
                    " MPILIB='%(mpilib)s' BTOPdir=%(builddir)s INTERFACE=NONE" % opts
-            
+
             # determine interface using xintface
             run_cmd("%s xintface" % cmd, log_all=True, simple=True)
 
@@ -124,17 +128,17 @@ class BLACS(Application):
                 if not notregexp.search(out):
                     # if it doesn't say '_NOT_', set it
                     comm = "TRANSCOMM='-DCSameF77'"
-                
+
                 else:
                     (_, ec) = run_cmd("%s xtc_UseMpich" % cmd, log_all=False, log_ok=False, simple=False)
                     if ec == 0:
-                        
+
                         (out, _) = run_cmd("mpirun -np 2 ./EXE/xtc_UseMpich", log_all=True, simple=False)
-                        
+
                         if not notregexp.search(out):
-                            
+
                             commregexp = re.compile('Set TRANSCOMM\s*=\s*(.*)$')
-                            
+
                             res = commregexp.search(out)
                             if res:
                                 # found how to set TRANSCOMM, so set it
@@ -188,11 +192,11 @@ class BLACS(Application):
 
         try:
             os.makedirs(dest)
-            
+
             shutil.copy2(src, dest)
-            
+
             self.log.debug("Copied %s to %s" % (src, dest))
-            
+
         except OSError, err:
             self.log.error("Copying %s to installation dir %s failed: %s" % (src, dest, err))
 

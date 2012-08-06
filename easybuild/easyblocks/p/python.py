@@ -1,5 +1,9 @@
 ##
-# Copyright 2009-2012 Stijn De Weirdt, Dries Verdegem, Kenneth Hoste, Pieter De Baets, Jens Timmerman
+# Copyright 2009-2012 Stijn De Weirdt
+# Copyright 2010 Dries Verdegem
+# Copyright 2010-2012 Kenneth Hoste
+# Copyright 2011 Pieter De Baets
+# Copyright 2011-2012 Jens Timmerman
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of the University of Ghent (http://ugent.be/hpc).
@@ -37,7 +41,7 @@ class Python(Application):
     To extend Python by adding extra packages there are two ways:
     - list the packages in the pkglist, this will include the packages in this Python easyblock
     - create a seperate easyblock, so the packages can be loaded with module load
-    
+
     e.g., you can include numpy and scipy in a default Python installation
     but also provide newer updated numpy and scipy versions by creating a PythonPackageModule for it.
     """
@@ -259,7 +263,7 @@ libraries = %(lapack)s
             self.log.error("Could not detect math kernel (mkl, atlas)")
 
         if "SOFTROOTIMKL" in os.environ or "SOFTROOTFFTW" in os.environ:
-            extrasiteconfig += """ 
+            extrasiteconfig += """
 [fftw]
 libraries = %s
         """ % os.getenv("LIBFFT")

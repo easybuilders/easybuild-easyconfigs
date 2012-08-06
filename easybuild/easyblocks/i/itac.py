@@ -1,5 +1,9 @@
 ##
-# Copyright 2009-2012 Stijn De Weirdt, Dries Verdegem, Kenneth Hoste, Pieter De Baets, Jens Timmerman
+# Copyright 2009-2012 Stijn De Weirdt
+# Copyright 2010 Dries Verdegem
+# Copyright 2010-2012 Kenneth Hoste
+# Copyright 2011 Pieter De Baets
+# Copyright 2011-2012 Jens Timmerman
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of the University of Ghent (http://ugent.be/hpc).
@@ -86,7 +90,7 @@ EULA=accept
                     'VT_LIB_DIR':['itac/lib_%s' % self.getcfg('preferredmpi')],
                     'VT_SLIB_DIR':['itac/lib_s%s' % self.getcfg('preferredmpi')]
                    }
-        
+
         if self.getcfg('m32'):
             guesses.update({
                             'PATH':['bin', 'bin/ia32', 'ia32/bin'],
