@@ -82,11 +82,12 @@ EULA=accept
         """
         A dictionary of possible directories to look for
         """
+        preferredmpi = self.getcfg("preferredmpi")
         guesses = {
                    'MANPATH': ['man'],
-                   'CLASSPATH': ['itac/lib_%s' % self.getcfg('preferredmpi')],
-                   'VT_LIB_DIR': ['itac/lib_%s' % self.getcfg('preferredmpi')],
-                   'VT_SLIB_DIR': ['itac/lib_s%s' % self.getcfg('preferredmpi')]
+                   'CLASSPATH': ['itac/lib_%s' % preferredmpi],
+                   'VT_LIB_DIR': ['itac/lib_%s' % preferredmpi)],
+                   'VT_SLIB_DIR': ['itac/lib_s%s' % preferredmpi)]
                   }
 
         if self.getcfg('m32'):
