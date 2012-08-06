@@ -99,13 +99,13 @@ class BuildTest(TestCase):
         # all log files and the test output as xml
         basename = "easybuild-test-%s" % datetime.now().strftime("%d-%m-%Y-%H:%M:%S")
         if opts.filename:
-            filename = opts.filename
+            filename = os.path.abspath(opts.filename)
         elif "EASYBUILDTESTOUTPUT" in os.environ:
             filename = os.environ["EASYBUILDTESTOUTPUT"]
         else:
-            filename = "easybuild-test.xml"
+            filename = os.path.join(self.cur_dir, basename, "easybuild-test.xml")
 
-        self.output_file = os.path.join(self.cur_dir, basename, filename)
+        self.output_file = filename
         self.output_dir = os.path.dirname(self.output_file)
 
         if not os.path.isdir(self.output_dir):
