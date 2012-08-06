@@ -33,7 +33,7 @@ OrigModules = modules.Modules
 
 class MockModule(modules.Modules):
     modules = []
-    def available(self, name=None, *args):
+    def available(self, name=None, *args, **kwargs):
         if name == 'gzip':
             return [('gzip', '1.4')]
         elif name == 'icc':
@@ -41,16 +41,16 @@ class MockModule(modules.Modules):
         else:
             return []
 
-    def addModule(self, *args):
+    def addModule(self, *args, **kwargs):
         MockModule.modules.extend(*args)
 
-    def load(*args):
+    def load(*args, **kwargs):
         pass
 
-    def dependencies_for(*args):
+    def dependencies_for(*args, **kwargs):
         return []
 
-    def get_software_root(*args):
+    def get_software_root(*args, **kwargs):
         return "tmp"
 
 
