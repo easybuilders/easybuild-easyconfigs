@@ -177,7 +177,8 @@ class BuildTest(TestCase):
                 easybuild_vars[env_var] = os.environ[env_var]
 
         for easyconfig in files:
-            easybuild_vars['EASYBUILDTESTOUTPUT'] = os.path.join(self.output_dir, "%s.xml" % easyconfig)
+            easybuild_vars['EASYBUILDTESTOUTPUT'] = os.path.join(self.output_dir, "%s.xml" %
+                                                                 os.path.basename(easyconfig))
             command = "cd %s && python %s %s" % (self.cur_dir, sys.argv[0], easyconfig)
             self.log.debug("submitting: %s" % command)
             self.log.debug("env vars set: %s" % easybuild_vars)
