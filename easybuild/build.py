@@ -563,8 +563,8 @@ def build(module, options, log, origEnviron, exitOnFailure=True):
 
     name = module['module'][0]
     try:
-        app_cls = get_class(easyblock, log, name=name)
-        app = app_cls(spec, debug=options.debug)
+        app_class = get_class(easyblock, log, name=name)
+        app = app_class(spec, debug=options.debug)
         log.info("Obtained application instance of for %s (easyblock: %s)" % (name, easyblock))
     except EasyBuildError, err:
         error("Failed to get application instance for %s (easyblock: %s): %s" % (name, easyblock, err.msg))
