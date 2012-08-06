@@ -1429,7 +1429,7 @@ class StopException(Exception):
 
 def get_class_for(modulepath, class_name):
     """
-    Get instance for a given class and easyblock module path.
+    Get class for a given class name and easyblock module path.
     """
     # >>> import pkgutil
     # >>> loader = pkgutil.find_loader('easybuild.apps.Base')
