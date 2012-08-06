@@ -19,18 +19,18 @@
 # along with EasyBuild. If not, see <http://www.gnu.org/licenses/>.
 ##
 """
-EasyBlock for binary applications that need unpacking
-E.g., binary applications shipped as a .tar.gz file.
+EasyBlock for binary applications that need unpacking,
+e.g., binary applications shipped as a .tar.gz file
 """
+
 from easybuild.framework.application import Application
 from easybuild.easyblocks.b.binary import Binary
 
 class PackedBinary(Binary, Application):
-    """Support for installing a binary package.
-    Just copy it's sources to the installdir"""
+    """Support for installing a packed binary package.
+    Just unpack it's source in the installdir"""
 
     def unpack_src(self):
         """Unpack the source"""
         Application.unpack_src(self)
-
 

@@ -35,6 +35,7 @@ class Binary(Application):
 
     def unpack_src(self):
         """Move all source files to the build directory"""
+
         self.src[0]['finalpath'] = self.builddir
 
         # copy source to build dir.
@@ -44,8 +45,8 @@ class Binary(Application):
             try:
                 shutil.copy2(src, self.builddir)
                 os.chmod(dst, stat.S_IRWXU)
-            except (OSError, IOError):
-                self.log.exception("Couldn't copy %s to %s" % (src, self.builddir))
+            except (OSError, IOError), err:
+                self.log.exception("Couldn't copy %s to %s: %s" % (src, self.builddir, err))
 
 
     def configure(self):
@@ -67,12 +68,9 @@ class Binary(Application):
         shutil.copytree(self.getcfg('startfrom'), self.installdir, symlinks=True)
 
     def make_module_extra(self):
-        """
-        Add the install directory to the PATH.
-        """
+        """Add the install directory to the PATH."""
+
         txt = Application.make_module_extra(self)
         txt += self.moduleGenerator.prependPaths("PATH", [""])
-
         self.log.debug("make_module_extra added this: %s" % txt)
-
         return txt
