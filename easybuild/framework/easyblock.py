@@ -98,6 +98,12 @@ class EasyBlock:
         }
 
     def __init__(self, path, extra_options={}, validate=True):
+        """
+        initialize an easyconfig.
+        path should be a path to a file that can be parsed
+        extra_options is a dict of extra variables that can be set in this specific instance
+        validate specifies whether validations should happen
+        """
         # perform a deepcopy of the default_config found in the easybuild.tools.easyblock module
         self.config = copy.deepcopy(self.default_config)
         self.config.update(extra_options)
@@ -282,9 +288,7 @@ class EasyBlock:
 
         output dict contains these attributes:
         ['name', 'version', 'suffix', 'dummy', 'tk']
-
         """
-
         attr = ['name', 'version', 'suffix', 'dummy']
         dependency = {'name': '', 'version': '', 'suffix': '', 'dummy': False}
         if isinstance(dep, dict):
@@ -308,13 +312,11 @@ class EasyBlock:
 
         return dependency
 
-
     def __getitem__(self, key):
         """
         will return the value without the help text
         """
         return self.config[key][0]
-
 
     def __setitem__(self, key, value):
         """

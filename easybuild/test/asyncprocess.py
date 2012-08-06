@@ -20,10 +20,11 @@
 ##
 import os
 import re
-
 from unittest import TestCase, TestSuite
-from easybuild.tools.asyncprocess import Popen
+
 import easybuild.tools.asyncprocess as p
+from easybuild.tools.asyncprocess import Popen
+
 
 class AsyncProcessTest(TestCase):
 
