@@ -1,6 +1,10 @@
 #!/usr/bin/env python
 ##
-# Copyright 2009-2012 Stijn De Weirdt, Dries Verdegem, Kenneth Hoste, Pieter De Baets, Jens Timmerman
+# Copyright 2009-2012 Stijn De Weirdt
+# Copyright 2010 Dries Verdegem
+# Copyright 2010-2012 Kenneth Hoste
+# Copyright 2011 Pieter De Baets
+# Copyright 2011-2012 Jens Timmerman
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of the University of Ghent (http://ugent.be/hpc).
@@ -29,7 +33,7 @@ It checks (and fixes, if needed and possible) whether:
     e.g. getCfg, setCfg, makeInstall, sanityCheck, runrun and runqanda (+ arguments)
  * Exception is no longer used and all except blocks catch specific errors only
  * the code is free of errors and warnings, according to PyLint
-* 
+*
 
 usage: check_code_cleanup.py
 """
@@ -241,10 +245,10 @@ def run_pylint(fn):
 
     else:
         print "No warnings or errors reported by PyLint we care about, nice job!\n"
-        return True 
+        return True
 
 # MAIN
-# 
+#
 
 # fetch easyblock to check from command line
 if len(sys.argv) == 2:
