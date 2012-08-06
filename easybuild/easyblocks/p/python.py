@@ -185,8 +185,9 @@ class DefaultPythonPackage(ApplicationPackage):
         self.test()
         self.make_install()
 
-    def getcfg(self, *args):
-        return self.mself.getcfg(*args)
+    def getcfg(self, *args, **kwargs):
+        return self.mself.getcfg(*args, **kwargs)
+
 
 class Nose(DefaultPythonPackage):
     """nose package"""
@@ -197,6 +198,7 @@ class Nose(DefaultPythonPackage):
         # 'tar: Ignoring unknown extended header keyword `SCHILY.nlink'
         # and tar exiting with non-zero exit code
         self.unpack_options = ' --pax-option="delete=SCHILY.*" --pax-option="delete=LIBARCHIVE.*" '
+
 
 class FortranPythonPackage(DefaultPythonPackage):
     """Extends DefaultPythonPackage to add a Fortran compiler to the make call"""
