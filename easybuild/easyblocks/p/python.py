@@ -55,7 +55,6 @@ class Python(Application):
         # use __name__ here, since this is the module where DefaultPythonPackage is defined
         self.setcfg('pkgdefaultclass', (__name__, "DefaultPythonPackage"))
         self.setcfg('pkgfilter', ('python -c "import %(name)s"', ""))
-        self.setcfg('pkgmodulenames', {'distribute': 'setuptools'})
 
     def make_install(self):
         """Extend make install to make sure that the 'python' command is present."""
