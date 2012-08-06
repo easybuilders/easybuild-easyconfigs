@@ -18,6 +18,10 @@
 # You should have received a copy of the GNU General Public License
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
+"""
+EasyBuild support for building and installing WPS, implemented as an easyblock
+"""
+
 import fileinput
 import os
 import re
@@ -31,6 +35,7 @@ import easybuild.tools.toolkit as toolkit
 from easybuild.framework.application import Application
 from easybuild.tools.filetools import patch_perl_script_autoflush, run_cmd, run_cmd_qa, unpack
 from easybuild.easyblocks.n.netcdf import set_netcdf_env_vars, get_netcdf_module_set_cmds
+
 
 class WPS(Application):
     """Support for building/installing WPS."""
@@ -247,7 +252,7 @@ class WPS(Application):
                     line = re.sub(r"^(\s*geog_data_path\s*=\s*).*$", r"\1 '%s'" % tmpdir, line)
                     sys.stdout.write(line)
 
-                ## GEOGRID.TBL
+                # GEOGRID.TBL
                 geogrid_dir = os.path.join(tmpdir, "geogrid")
                 os.mkdir(geogrid_dir)
                 os.symlink(os.path.join(wpsdir, "geogrid", "GEOGRID.TBL.ARW"),
@@ -302,6 +307,7 @@ class WPS(Application):
 
     # installing is done in make, so we can run tests
     def make_install(self):
+        """Building was done in install dir, so just do some cleanup here."""
 
         # make sure JASPER environment variables are unset
         env_vars = ['JASPERINC', 'JASPERLIB']

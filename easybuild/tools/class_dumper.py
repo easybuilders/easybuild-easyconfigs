@@ -22,6 +22,7 @@ import glob
 import pyclbr
 import os
 
+
 def dumpClasses(root):
     """Get a class tree, starting at root"""
     moduleRoot = None

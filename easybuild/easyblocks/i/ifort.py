@@ -18,10 +18,14 @@
 # You should have received a copy of the GNU General Public License
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
+"""
+EasyBuild support for installing the Intel Fortran compiler suite, implemented as an easyblock
+"""
 
 from distutils.version import LooseVersion
 
 from easybuild.easyblocks.i.icc import Icc, IntelBase
+
 
 class Ifort(Icc):
     """

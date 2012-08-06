@@ -18,7 +18,12 @@
 # You should have received a copy of the GNU General Public License
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
+"""
+EasyBuild support for installing compiler toolkits, implemented as an easyblock
+"""
+
 from easybuild.framework.application import Application
+
 
 class Toolkit(Application):
     """

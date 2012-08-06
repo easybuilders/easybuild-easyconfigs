@@ -19,15 +19,17 @@
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
 """
-This module contains some usefull functions for getting system information
+Module with useful functions for getting system information
 """
 import os
 import re
 from easybuild.tools.filetools import run_cmd
 
+
 INTEL = 'Intel'
 AMD = 'AMD'
 VENDORS = {'GenuineIntel': INTEL, 'AuthenticAMD': AMD}
+
 
 class SystemToolsException(Exception):
     """raised when systemtools fails"""

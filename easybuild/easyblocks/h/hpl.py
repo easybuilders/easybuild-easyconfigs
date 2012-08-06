@@ -18,11 +18,16 @@
 # You should have received a copy of the GNU General Public License
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
+"""
+EasyBuild support for building and installing HPL, implemented as an easyblock
+"""
+
 import os
 import shutil
 
 from easybuild.framework.application import Application
 from easybuild.tools.filetools import run_cmd
+
 
 class HPL(Application):
     """
@@ -59,7 +64,7 @@ class HPL(Application):
         except OSError, err:
             self.log.exception("Failed to symlink Make.UNKNOWN from %s to %s: %s" % (setupdir, makeincfile, err))
 
-        ## go back
+        # go back
         os.chdir(self.getcfg('startfrom'))
 
     def make(self):

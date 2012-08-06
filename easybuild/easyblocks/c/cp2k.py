@@ -18,6 +18,10 @@
 # You should have received a copy of the GNU General Public License
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
+"""
+EasyBuild support for building and installing CP2K, implemented as an easyblock
+"""
+
 import fileinput
 import glob
 import re
@@ -29,6 +33,7 @@ from distutils.version import LooseVersion
 import easybuild.tools.toolkit as toolkit
 from easybuild.framework.application import Application
 from easybuild.tools.filetools import run_cmd
+
 
 class CP2K(Application):
     """
@@ -89,9 +94,9 @@ class CP2K(Application):
         """
 
         # set compilers options according to toolkit config
-        ## full debug: -g -traceback -check all -fp-stack-check
-        ## -g links to mpi debug libs
-        if self.toolkit().opts['debug']:
+        # full debug: -g -traceback -check all -fp-stack-check
+        # -g links to mpi debug libs
+        if self.tk.opts['debug']:
             self.debug = '-g'
             self.log.info("Debug build")
         if self.toolkit().opts['pic']:
@@ -173,7 +178,7 @@ class CP2K(Application):
 
         if softrootimkl:
 
-            ## prepare modinc target path
+            # prepare modinc target path
             modincpath = os.path.join(self.builddir, 'modinc')
             self.log.debug("Preparing module files in %s" % modincpath)
 
@@ -182,7 +187,7 @@ class CP2K(Application):
             except OSError, err:
                 self.log.error("Failed to create directory for module include files: %s" % err)
 
-            ## get list of modinc source files
+            # get list of modinc source files
             modincdir = os.path.join(softrootimkl, self.getcfg("modincprefix"), 'include')
 
             if type(self.getcfg("modinc")) == list:
@@ -200,7 +205,7 @@ class CP2K(Application):
             if not f77:
                 self.log.error("F77 environment variable not set, can't continue.")
 
-            ## create modinc files
+            # create modinc files
             for f in modfiles:
                 if f77.endswith('ifort'):
                     cmd = "%s -module %s -c %s" % (f77, modincpath, f)
@@ -219,8 +224,8 @@ class CP2K(Application):
         """Common configuration for all toolkits"""
 
         # openmp introduces 2 major differences
-        ## -automatic is default: -noautomatic -auto-scalar
-        ## some mem-bandwidth optimisation
+        # -automatic is default: -noautomatic -auto-scalar
+        # some mem-bandwidth optimisation
         if self.getcfg('type') == 'psmp':
             self.openmp = self.toolkit().get_openmp_flag()
 
@@ -283,11 +288,11 @@ class CP2K(Application):
             # Build libint-wrapper, if required
             libint_wrapper = ''
 
-            ## required for old versions of GCC
+            # required for old versions of GCC
             if not self.compilerISO_C_BINDING:
                 options['DFLAGS'] += ' -D__HAS_NO_ISO_C_BINDING'
 
-                ## determine path for libint_tools dir
+                # determine path for libint_tools dir
                 libinttools_paths = ['libint_tools', 'tools/hfx_tools/libint_tools']
                 libinttools_path = None
                 for path in libinttools_paths:
@@ -298,7 +303,7 @@ class CP2K(Application):
                 if not libinttools_path:
                     self.log.error("No libinttools dir found")
 
-                ## build libint wrapper
+                # build libint wrapper
                 cmd = "%s -c libint_cpp_wrapper.cpp -I%s/include" % (libintcompiler, softrootlibint)
                 if not run_cmd(cmd, log_all=True, simple=True):
                     self.log.error("Building the libint wrapper failed")
@@ -363,7 +368,7 @@ class CP2K(Application):
         options = self.configureCommon()
 
         options.update({
-                        ## need this to prevent "Unterminated character constant beginning" errors
+                        # need this to prevent "Unterminated character constant beginning" errors
                         'FREE': '-ffree-form -ffree-line-length-none',
 
                         'LDFLAGS': '$(FCFLAGS)',
@@ -502,7 +507,7 @@ class CP2K(Application):
                 self.log.error("Failed to change to %s: %s" % self.builddir)
 
             # use regression test reference output if available
-            ## try and find an unpacked directory that starts with 'LAST-'
+            # try and find an unpacked directory that starts with 'LAST-'
             regtest_refdir = None
             for d in os.listdir(self.builddir):
                 if d.startswith("LAST-"):
@@ -610,7 +615,7 @@ maxtasks=%(maxtasks)s
             self.postmsg += test_report("WRONG")
 
             # number of new tests, will be high if a non-suitable regtest reference was used
-            ## will report error if count is positive (is that what we want?)
+            # will report error if count is positive (is that what we want?)
             self.postmsg += test_report("NEW")
 
             # number of correct tests: just report

@@ -18,11 +18,15 @@
 # You should have received a copy of the GNU General Public License
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
+"""
+EasyBuild support for installing the Intel Trace Analyzer and Collector (ITAC), implemented as an easyblock
+"""
 
 import os
 
 from easybuild.easyblocks.i.intelbase import IntelBase
 from easybuild.tools.filetools import run_cmd
+
 
 class Itac(IntelBase):
     """
@@ -58,12 +62,12 @@ DEFAULT_MPI=%(mpi)s
 EULA=accept
 """ % {'lic': self.license, 'ins': self.installdir, 'mpi': self.getcfg('preferredmpi')}
 
-        ## already in correct directory
+        # already in correct directory
         silentcfg = os.path.join(os.getcwd(), "silent.cfg")
         f = open(silentcfg, 'w')
         f.write(silent)
         f.close()
-        ## tmpdir
+
         tmpdir = os.path.join(os.getcwd(), self.version(), 'mytmpdir')
         try:
             os.makedirs(tmpdir)

@@ -18,6 +18,10 @@
 # You should have received a copy of the GNU General Public License
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
+"""
+EasyBuild support for building and installing NCL, implemented as an easyblock
+"""
+
 import fileinput
 import os
 import re
@@ -27,6 +31,7 @@ from distutils.version import LooseVersion
 from easybuild.framework.application import Application
 from easybuild.tools.filetools import run_cmd
 from easybuild.tools.modules import get_software_root
+
 
 class NCL(Application):
     """Support for building/installing NCL."""
@@ -108,7 +113,7 @@ class NCL(Application):
         # let's just generate the config/Site.local file ourselves...
 
         # order of deps is important
-        ## HDF needs to go after netCDF, because both have a netcdf.h include file
+        # HDF needs to go after netCDF, because both have a netcdf.h include file
         deps = ["HDF5", "JasPer", "netCDF", "HDF", "g2lib", "g2clib", "Szip"]
 
         libs = ''

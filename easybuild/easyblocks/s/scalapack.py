@@ -18,6 +18,10 @@
 # You should have received a copy of the GNU General Public License
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
+"""
+EasyBuild support for building and installing ScaLAPACK, implemented as an easyblock
+"""
+
 import os
 import shutil
 from distutils.version import LooseVersion
@@ -25,6 +29,7 @@ from distutils.version import LooseVersion
 from easybuild.framework.application import Application
 from easybuild.easyblocks.b.blacs import det_interface
 from easybuild.easyblocks.l.lapack import get_blas_lib
+
 
 class ScaLAPACK(Application):
     """
@@ -50,7 +55,7 @@ class ScaLAPACK(Application):
 
         # make sure required dependencies are available
         deps = ["LAPACK"]
-        ## BLACS is only a dependency for ScaLAPACK versions prior to v2.0.0
+        # BLACS is only a dependency for ScaLAPACK versions prior to v2.0.0
         if self.loosever < LooseVersion("2.0.0"):
             deps.append("BLACS")
         for dep in deps:

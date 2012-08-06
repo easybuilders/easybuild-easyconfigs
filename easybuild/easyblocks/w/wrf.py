@@ -18,6 +18,10 @@
 # You should have received a copy of the GNU General Public License
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
+"""
+EasyBuild support for building and installing WRF, implemented as an easyblock
+"""
+
 import fileinput
 import os
 import re
@@ -28,6 +32,7 @@ import easybuild.tools.toolkit as toolkit
 from easybuild.framework.application import Application
 from easybuild.tools.filetools import patch_perl_script_autoflush, run_cmd, run_cmd_qa
 from easybuild.easyblocks.n.netcdf import set_netcdf_env_vars, get_netcdf_module_set_cmds
+
 
 class WRF(Application):
     """Support for building/installing WRF."""
@@ -151,7 +156,7 @@ class WRF(Application):
         # rewrite optimization options if desired
         if self.getcfg('rewriteopts'):
 
-            ## replace default -O3 option in configure.wrf with CFLAGS/FFLAGS from environment
+            # replace default -O3 option in configure.wrf with CFLAGS/FFLAGS from environment
             self.log.info("Rewriting optimization options in %s" % cfgfile)
 
             # set extra flags for Intel compilers
@@ -226,7 +231,7 @@ class WRF(Application):
 
             # prepare run command
 
-            ## stack limit needs to be set to unlimited for WRF to work well
+            # stack limit needs to be set to unlimited for WRF to work well
             if self.getcfg('buildtype') in self.parallel_build_types:
                 test_cmd = "ulimit -s unlimited && %s && %s" % (self.toolkit().mpi_cmd_for("./ideal.exe", 1),
                                                                 self.toolkit().mpi_cmd_for("./wrf.exe", n))
@@ -308,8 +313,9 @@ class WRF(Application):
                 except OSError, err:
                     self.log.error("An error occured when running test %s: %s" % (test, err))
 
-    # installing is done in make, so we can run tests
+    # building/installing is done in make, so we can run tests
     def make_install(self):
+        """Building was done in install dir, so nothing to do in make_install."""
         pass
 
     def sanitycheck(self):

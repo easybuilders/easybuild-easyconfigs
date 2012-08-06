@@ -63,8 +63,8 @@ import time
 PIPE = subprocess.PIPE
 STDOUT = subprocess.STDOUT
 
-import select
-import fcntl
+import select  #@UnresolvedImport
+import fcntl  #@UnresolvedImport
 
 
 class Popen(subprocess.Popen):
