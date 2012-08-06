@@ -208,7 +208,7 @@ class LAPACK(Application):
 
     def sanitycheck(self):
         """
-        Custom sanity check for LAPACK. only run when not testing
+        Custom sanity check for LAPACK (only run when not testing)
         """
         if not self.getcfg('test_only'):
             if not self.getcfg('sanityCheckPaths'):
