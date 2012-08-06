@@ -1377,6 +1377,7 @@ class Application:
         return {
             'PATH': ['bin'],
             'LD_LIBRARY_PATH': ['lib', 'lib64'],
+            'CPATH':['include'],
             'MANPATH': ['man', 'share/man'],
             'PKG_CONFIG_PATH' : ['lib/pkgconfig'],
         }
