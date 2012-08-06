@@ -345,7 +345,7 @@ class Application:
             if Modules().exists(self.name(), self.installversion()):
                 self.skip = True
                 self.log.info("Current version (name: %s, version: %s) found. Going to skip actually main build and\
-                        potential exitsing packages. Expert only." % (self.name(), self.installversion()))
+                        potential existing packages. Expert only." % (self.name(), self.installversion()))
             else:
                 self.log.info("No current version (name: %s, version: %s) found. Not skipping anything." % (self.name(),
                     self.installversion()))
