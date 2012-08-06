@@ -45,7 +45,9 @@ class EasyBlockTest(TestCase):
         except error, err:
             self.assertTrue(re.search(regex, err.msg))
 
+
 class TestEmpty(EasyBlockTest):
+    """ Test empty easyblocks """
 
     contents = "# empty string"
 
@@ -55,6 +57,7 @@ class TestEmpty(EasyBlockTest):
 
 
 class TestMandatory(EasyBlockTest):
+    """ Test mandatory variable validation """
 
     contents = """
 name = "pi"
@@ -76,7 +79,9 @@ version = "3.14"
         self.assertEqual(eb['toolkit'], {"name":"dummy", "version": "dummy"})
         self.assertEqual(eb['description'], "test easyblock")
 
+
 class TestValidation(EasyBlockTest):
+    """ test other validations """
 
     contents = """
 name = "pi"
@@ -109,7 +114,9 @@ stop = 'notvalid'
         self.setUp()
         self.assertErrorRegex(EasyBuildError, "SyntaxError", EasyBlock, self.eb_file)
 
+
 class TestSharedLibExt(EasyBlockTest):
+    """ test availability of shared_lib_ext in easyblock context """
 
     contents = """
 name = "pi"
@@ -124,7 +131,9 @@ sanityCheckPaths = { 'files': ["lib/lib.%s" % shared_lib_ext] }
         eb = EasyBlock(self.eb_file)
         self.assertEqual(eb['sanityCheckPaths']['files'][0], "lib/lib.%s" % get_shared_lib_ext())
 
+
 class TestDependency(EasyBlockTest):
+    """ Test parsing of dependencies """
 
     contents = """
 name = "pi"
@@ -175,7 +184,9 @@ builddependencies = [('first', '1.1'), {'name': 'second', 'version': '2.2'}]
         eb['dependencies'] = [{'name': "test"}]
         self.assertErrorRegex(EasyBuildError, "without version", eb.dependencies)
 
+
 class TestExtraOptions(EasyBlockTest):
+    """ test extra options constructor """
 
     contents = """
 name = "pi"
@@ -212,7 +223,9 @@ dependencies = [('first', '1.1'), {'name': 'second', 'version': '2.2'}]
         # test if extra toolkit options are being passed
         self.assertEqual(eb.toolkit().opts['static'], True)
 
+
 class TestSuggestions(EasyBlockTest):
+    """ test suggestions on typos """
 
     contents = """
 name = "pi"
@@ -228,7 +241,7 @@ dependencis = [('first', '1.1'), {'name': 'second', 'version': '2.2'}]
         self.assertErrorRegex(EasyBuildError, "suggestions: dependencies", EasyBlock, self.eb_file)
 
 
-
 def suite():
+    """ return all the tests in this file """
     return TestSuite([TestDependency(), TestEmpty(), TestExtraOptions(), TestMandatory(), TestSharedLibExt(),
         TestSuggestions(), TestValidation()])
