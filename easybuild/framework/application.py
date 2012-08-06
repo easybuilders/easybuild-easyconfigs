@@ -329,8 +329,8 @@ class Application:
         # Do all dependencies have a toolkit version
         self.toolkit().addDependencies(self.cfg.dependencies())
         if not len(self.cfg.dependencies()) == len(self.toolkit().dependencies):
-            self.log.debug("dep %s (%s)\ntk.dep %s (%s)" % (len(self.cfg.dependencies()), self.cfg.dependencies(),
-                len(self.toolkit().dependencies), self.toolkit().dependencies))
+            self.log.debug("dep %s (%s)" % (len(self.cfg.dependencies()), self.cfg.dependencies()))
+            self.log.debug("tk.dep %s (%s)" % (len(self.toolkit().dependencies), self.toolkit().dependencies))
             self.log.error('Not all dependencies have a matching toolkit version')
 
         # Check if the application is not loaded at the moment
