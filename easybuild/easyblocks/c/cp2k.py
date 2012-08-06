@@ -198,8 +198,7 @@ class CP2K(Application):
 
             else:
                 self.log.error("prepmodinc: Please specify either a boolean value " \
-                               "or a list of files in modinc (found: %s)." %
-                               self.getcfg("modinc"))
+                               "or a list of files in modinc (found: %s)." % self.getcfg("modinc"))
 
             f77 = os.getenv('F77')
             if not f77:
