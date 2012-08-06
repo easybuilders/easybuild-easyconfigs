@@ -26,8 +26,13 @@ from unittest import TestCase, TestSuite
 import easybuild.tools.filetools as ft
 
 class FileToolsTest(TestCase):
+    """ Testcase for filetools module """
 
     def runTest(self):
+        """
+        verify all the possible extract commands
+        also run_cmd should work with some basic echo/exit combos
+        """
         cmd = ft.extractCmd("test.zip")
         self.assertEqual("unzip -qq test.zip", cmd)
 
@@ -75,4 +80,5 @@ class FileToolsTest(TestCase):
         self.assertEqual(os.getcwd(), ft.findBaseDir())
 
 def suite():
+    """ returns all the testcases in this module """
     return TestSuite([FileToolsTest()])

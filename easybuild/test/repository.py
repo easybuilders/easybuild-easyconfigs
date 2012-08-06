@@ -21,24 +21,29 @@
 import os
 import re
 import shutil
-
 from unittest import TestCase, TestSuite
-import easybuild.tools.config as config
 
+import easybuild.tools.config as config
 from easybuild.tools.repository import FileRepository
 
+
 class RepositoryTest(TestCase):
+    """ very basis FileRepository test, we don't want git / svn dependency """
 
     def setUp(self):
+        """ make sure temporary path does not exist """
         self.path = '/tmp/tmp-easybuild-repo'
         shutil.rmtree(self.path, True)
 
     def runTest(self):
+        """ after initialization it should be the working copy """
         repo = FileRepository(self.path)
         self.assertEqual(repo.wc, self.path)
 
     def tearDown(self):
+        """ clean up after myself """
         shutil.rmtree(self.path, True)
 
 def suite():
+    """ returns all the testcases in this module """
     return TestSuite([RepositoryTest()])

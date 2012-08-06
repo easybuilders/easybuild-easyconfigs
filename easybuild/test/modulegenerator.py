@@ -26,13 +26,17 @@ from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.module_generator import ModuleGenerator
 from easybuild.framework.application import Application
 
+
 class ModuleGeneratorTest(TestCase):
+    """ testcase for ModuleGenerator """
 
     def setUp(self):
+        """ initialize ModuleGenerator with test Application """
         self.modgen = ModuleGenerator(Application('easybuild/test/easyconfigs/gzip-1.4.eb'))
         self.modgen.app.installdir = "/tmp"
 
     def runTest(self):
+        """ since we set the installdir above, we can predict the output """
         expected = """#%Module
 
 proc ModulesHelp { } {
@@ -78,4 +82,5 @@ prepend-path	key		$root/path2
         self.assertEqual("setenv\tkey\t\tvalue\n", self.modgen.setEnvironment("key", "value"))
 
 def suite():
+    """ returns all the testcases in this module """
     return TestSuite([ModuleGeneratorTest()])

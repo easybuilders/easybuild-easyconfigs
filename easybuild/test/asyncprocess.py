@@ -27,11 +27,14 @@ from easybuild.tools.asyncprocess import Popen
 
 
 class AsyncProcessTest(TestCase):
+    """ Testcase for asyncprocess """
 
     def setUp(self):
+        """ setup a basic shell """
         self.shell = Popen('sh', stdin=p.PIPE, stdout=p.PIPE, shell=True, executable='/bin/bash')
 
     def runTest(self):
+        """ try echoing some text and see if it comes back out """
         p.send_all(self.shell, "echo hello\n")
         self.assertEqual(p.recv_some(self.shell), "hello\n")
 
@@ -43,5 +46,6 @@ class AsyncProcessTest(TestCase):
         self.assertRaises(Exception, p.recv_some, self.shell)
 
 def suite():
+    """ returns all the testcases in this module """
     return TestSuite([AsyncProcessTest()])
 

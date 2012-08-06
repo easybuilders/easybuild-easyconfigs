@@ -32,8 +32,10 @@ import easybuild.tools.toolkit as toolkit
 OrigModules = modules.Modules
 
 class MockModule(modules.Modules):
+    """ MockModule class, which mocks Modules behaviour """
     modules = []
     def available(self, name=None, *args, **kwargs):
+        """ Change available to return values based on the given name """
         if name == 'gzip':
             return [('gzip', '1.4')]
         elif name == 'icc':
@@ -42,21 +44,27 @@ class MockModule(modules.Modules):
             return []
 
     def addModule(self, *args, **kwargs):
+        """ convenience method, just appends to a list we can access """
         MockModule.modules.extend(*args)
 
     def load(*args, **kwargs):
+        """ Modules can handle this """
         pass
 
     def dependencies_for(*args, **kwargs):
+        """ customize dependencies_for to always return an empty list """
         return []
 
     def get_software_root(*args, **kwargs):
+        """ this function is here so I can later replace the original """
         return "tmp"
 
 
 class ToolkitTest(TestCase):
+    """ testcase for Toolkit """
 
     def setUp(self):
+        """ set some toolkit objects, replace Modules class """
         # dynamically replace Modules class
         toolkit.Modules = MockModule
         modules.Modules = MockModule
@@ -68,6 +76,7 @@ class ToolkitTest(TestCase):
         self.dummy_tk = Toolkit("dummy", "1.0")
 
     def runTest(self):
+        """ check parsing and interaction with Modules """
         self.assertEqual(self.tk_32bit.name, 'icc')
         # assert m32flag has been set
         self.assertEqual(self.tk_32bit.m32flag, ' -m32')
@@ -114,7 +123,9 @@ class ToolkitTest(TestCase):
         MockModule.modules = []
 
     def tearDown(self):
+        """ reset Modules to its original """
         modules.Modules = OrigModules
 
 def suite():
+    """ returns all the testcases in this module """
     return TestSuite([ToolkitTest()])

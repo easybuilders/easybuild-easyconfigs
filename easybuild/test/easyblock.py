@@ -31,15 +31,18 @@ class EasyBlockTest(TestCase):
     """ Baseclass for easyblock testcases """
 
     def setUp(self):
+        """ create temporary easyconfig file """
         self.eb_file = "tmp-test-file"
         f = open(self.eb_file, "w")
         f.write(self.contents)
         f.close()
 
     def tearDown(self):
+        """ make sure to remove the temporary file """
         os.remove(self.eb_file)
 
     def assertErrorRegex(self, error, regex, call, *args):
+        """ convenience method to match regex with the error message """
         try:
             call(*args)
         except error, err:
@@ -52,6 +55,7 @@ class TestEmpty(EasyBlockTest):
     contents = "# empty string"
 
     def runTest(self):
+        """ empty files should not parse! """
         self.assertRaises(EasyBuildError, EasyBlock, self.eb_file)
         self.assertErrorRegex(EasyBuildError, "expected a valid path", EasyBlock, "")
 
@@ -65,6 +69,7 @@ version = "3.14"
 """
 
     def runTest(self):
+        """ make sure all checking of mandatory variables works """
         self.assertErrorRegex(EasyBuildError, "mandatory variable \w* not provided", EasyBlock, self.eb_file)
 
         self.contents += "\n".join(['homepage = "http://google.com"', 'description = "test easyblock"',
@@ -93,6 +98,7 @@ stop = 'notvalid'
 """
 
     def runTest(self):
+        """ test other validations beside mandatory variables """
         eb = EasyBlock(self.eb_file, validate=False)
         self.assertErrorRegex(EasyBuildError, "\w* provided \w* is not valid", eb.validate)
 
@@ -128,6 +134,7 @@ sanityCheckPaths = { 'files': ["lib/lib.%s" % shared_lib_ext] }
 """
 
     def runTest(self):
+        """ inside easyconfigs shared_lib_ext should be set """
         eb = EasyBlock(self.eb_file)
         self.assertEqual(eb['sanityCheckPaths']['files'][0], "lib/lib.%s" % get_shared_lib_ext())
 
@@ -146,6 +153,7 @@ builddependencies = [('first', '1.1'), {'name': 'second', 'version': '2.2'}]
 """
 
     def runTest(self):
+        """ test all possible ways of specifying dependencies """
         eb = EasyBlock(self.eb_file)
         # should include builddependencies
         self.assertEqual(len(eb.dependencies()), 4)
@@ -199,6 +207,7 @@ dependencies = [('first', '1.1'), {'name': 'second', 'version': '2.2'}]
 """
 
     def runTest(self):
+        """ extra_options should allow other variables to be stored """
         eb = EasyBlock(self.eb_file)
         self.assertRaises(KeyError, lambda: eb['custom_key'])
 
@@ -237,6 +246,7 @@ dependencis = [('first', '1.1'), {'name': 'second', 'version': '2.2'}]
 """
 
     def runTest(self):
+        """ If a typo is present, suggestion should be provided (if possible) """
         self.assertErrorRegex(EasyBuildError, "invalid variable dependencis", EasyBlock, self.eb_file)
         self.assertErrorRegex(EasyBuildError, "suggestions: dependencies", EasyBlock, self.eb_file)
 

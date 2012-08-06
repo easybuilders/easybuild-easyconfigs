@@ -20,24 +20,30 @@
 ##
 import os
 from copy import deepcopy
-
 from unittest import TestCase, TestSuite
-from easybuild.tools.build_log import EasyBuildError, getLog
-import easybuild.build as build
+
 import easybuild.tools.modules as modules
+import easybuild.build as build
+from easybuild.tools.build_log import EasyBuildError, getLog
 from easybuild.tools.modules import Modules
 
 orig_modules = modules.Modules
-class MockModule(modules.Modules):
-
-    def available(self, *args):
-        return []
-
 base_easyconfig_dir = "easybuild/test/easyconfigs/"
 
+
+class MockModule(modules.Modules):
+    """ MockModule class, allows for controlling what Modules() will return """
+
+    def available(self, *args):
+        """ no module should be available """
+        return []
+
+
 class RobotTest(TestCase):
+    """ Testcase for the robot dependency resolution """
 
     def setUp(self):
+        """ dynamically replace Modules class with MockModule """
         # replace Modules class with something we have control over
         modules.Modules = MockModule
         build.Modules = MockModule
@@ -45,6 +51,7 @@ class RobotTest(TestCase):
         self.log = getLog("RobotTest")
 
     def runTest(self):
+        """ Test with some basic testcases (also check if he can find dependencies inside the given directory """
         package = {
             'spec': '_',
             'module': ("name", "version"),
@@ -82,8 +89,10 @@ class RobotTest(TestCase):
 
 
     def tearDown(self):
+        """ reset the Modules back to its original """
         modules.Modules = orig_modules
 
 
 def suite():
+    """ returns all the testcases in this module """
     return TestSuite([RobotTest()])
