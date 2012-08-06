@@ -22,14 +22,14 @@
 EasyBuild support for building and installing OpenFOAM, implemented as an easyblock
 """
 
-from distutils.version import LooseVersion
 import os
 import stat
+from distutils.version import LooseVersion
 
-from easybuild.framework.application import Application
-from easybuild.tools.filetools import run_cmd, adjust_permissions
 import easybuild.tools.environment as env
 import easybuild.tools.toolkit as toolkit
+from easybuild.framework.application import Application
+from easybuild.tools.filetools import run_cmd, adjust_permissions
 
 
 class OpenFOAM(Application):

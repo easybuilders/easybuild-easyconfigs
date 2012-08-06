@@ -40,6 +40,7 @@ errorsFoundInLog = 0
 
 strictness = 'warn'
 
+
 def unpack(fn, dest, extra_options=None, overwrite=False):
     """
     Given filename fn, try to unpack in directory dest
@@ -76,6 +77,7 @@ def unpack(fn, dest, extra_options=None, overwrite=False):
 
     return findBaseDir()
 
+
 def findBaseDir():
     """
     Try to locate a possible new base directory
@@ -109,6 +111,7 @@ def findBaseDir():
     log.debug("Last dir list %s" % lst)
     log.debug("Possible new dir %s found" % newDir)
     return newDir
+
 
 def extractCmd(fn, overwrite=False):
     """
@@ -150,6 +153,7 @@ def extractCmd(fn, overwrite=False):
         log.error('Unknown file type from file %s (%s)' % (fn, ff))
 
     return ftype % fn
+
 
 def patch(patchFile, dest, fn=None, copy=False, level=None):
     """
@@ -250,6 +254,7 @@ def patch(patchFile, dest, fn=None, copy=False, level=None):
 
     return result
 
+
 def run_cmd(cmd, log_ok=True, log_all=False, simple=False, inp=None, regexp=True, log_output=False, path=None):
     """
     Executes a command cmd
@@ -326,6 +331,7 @@ def run_cmd(cmd, log_ok=True, log_all=False, simple=False, inp=None, regexp=True
         runLog.close()
 
     return parse_cmd_output(cmd, stdouterr, ec, simple, log_all, log_ok, regexp)
+
 
 def run_cmd_qa(cmd, qa, no_qa=None, log_ok=True, log_all=False, simple=False, regexp=True, std_qa=None, path=None):
     """
@@ -514,6 +520,7 @@ def run_cmd_qa(cmd, qa, no_qa=None, log_ok=True, log_all=False, simple=False, re
 
     return parse_cmd_output(cmd, stdoutErr, ec, simple, log_all, log_ok, regexp)
 
+
 def parse_cmd_output(cmd, stdouterr, ec, simple, log_all, log_ok, regexp):
     """
     will parse and perform error checks based on strictness setting
@@ -567,6 +574,7 @@ def parse_cmd_output(cmd, stdouterr, ec, simple, log_all, log_ok, regexp):
         # Because we are not running in simple mode, we return the output and ec to the user
         return (stdouterr, ec)
 
+
 def modifyEnv(old, new):
     """
     Compares 2 os.environ dumps. Adapts final environment.
@@ -592,6 +600,7 @@ def modifyEnv(old, new):
 
     return 'ok'
 
+
 def convertName(name, upper=False):
     """
     Converts name so it can be used as variable name
@@ -608,6 +617,7 @@ def convertName(name, upper=False):
         return name.upper()
     else:
         return name
+
 
 def parselogForError(txt, regExp=None, stdout=True, msg=None):
     """
@@ -644,6 +654,7 @@ def parselogForError(txt, regExp=None, stdout=True, msg=None):
 
     return res
 
+
 def adjust_permissions(name, permissionBits, add=True, onlyFiles=False, recursive=True):
     """
     Add or remove (if add is False) permissionBits from all files
@@ -678,6 +689,7 @@ def adjust_permissions(name, permissionBits, add=True, onlyFiles=False, recursiv
                 os.chmod(path, perms & ~permissionBits)
         except OSError, err:
             log.info("Failed to chmod %s (but ignoring it): %s" % (path, err))
+
 
 def patch_perl_script_autoflush(path):
     # patch Perl script to enable autoflush,
