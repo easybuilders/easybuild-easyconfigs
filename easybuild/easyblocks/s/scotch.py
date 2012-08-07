@@ -38,7 +38,7 @@ class SCOTCH(Application):
         elif "SOFTROOTGCC" in os.environ:
             makefilename = 'Makefile.inc.x86-64_pc_linux2'
         else:
-            self.log.error("Don't know how to handle toolkit %s." % self.tk.name)
+            self.log.error("Don't know how to handle toolkit %s." % self.toolkit().name)
 
         # create Makefile.inc
         try:

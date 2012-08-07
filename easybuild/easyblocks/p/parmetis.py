@@ -41,12 +41,12 @@ class ParMETIS(Application):
 
             self.updatecfg('configopts', '-DMETIS_PATH=../metis -DGKLIB_PATH=../metis/GKlib')
 
-            self.updatecfg('configopts', '-DOPENMP="%s"' % self.tk.get_openmp_flag())
+            self.updatecfg('configopts', '-DOPENMP="%s"' % self.toolkit().get_openmp_flag())
 
-            if self.tk.opts['usempi']:
+            if self.toolkit().opts['usempi']:
                 self.updatecfg('configopts', '-DCMAKE_C_COMPILER="$MPICC"')
 
-            if self.tk.opts['pic']:
+            if self.toolkit().opts['pic']:
                 self.updatecfg('configopts', '-DCMAKE_C_FLAGS="-fPIC"')
 
             self.parmetis_builddir = 'build'
@@ -68,8 +68,8 @@ class ParMETIS(Application):
 
         self.updatecfg('makeopts', 'LIBDIR=""')
 
-        if self.tk.opts['usempi']:
-            if self.tk.opts['pic']:
+        if self.toolkit().opts['usempi']:
+            if self.toolkit().opts['pic']:
                 self.updatecfg('makeopts', 'CC="$MPICC -fPIC"')
             else:
                 self.updatecfg('makeopts', 'CC="$MPICC"')

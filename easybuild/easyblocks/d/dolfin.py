@@ -98,7 +98,7 @@ class DOLFIN(CMakePythonPackage):
         self.updatecfg('configopts', ' -DCGAL_DIR:PATH="$SOFTROOTCGAL"')
 
         # set correct openmp options
-        openmp = self.tk.get_openmp_flag()
+        openmp = self.toolkit().get_openmp_flag()
         self.updatecfg('configopts', ' -DOpenMP_CXX_FLAGS="%s"' % openmp)
         self.updatecfg('configopts', ' -DOpenMP_C_FLAGS="%s"' % openmp)
 

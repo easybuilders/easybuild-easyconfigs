@@ -41,7 +41,7 @@ class METIS(Application):
 
         self.updatecfg('makeopts', 'LIBDIR=""')
 
-        if self.tk.opts['pic']:
+        if self.toolkit().opts['pic']:
             self.updatecfg('makeopts', 'CC="$CC -fPIC"')
 
         Application.make(self)

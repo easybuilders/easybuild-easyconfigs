@@ -38,7 +38,7 @@ class Boost(Application):
         """Configure Boost build using custom tools"""
 
         # mpi sanity check
-        if self.getcfg('boost_mpi') and not self.tk.opts['usempi']:
+        if self.getcfg('boost_mpi') and not self.toolkit().opts['usempi']:
             self.log.error("When enabling building boost_mpi, also enable the 'usempi' toolkit option.")
 
         # create build directory (Boost doesn't like being built in source dir)
@@ -64,7 +64,7 @@ class Boost(Application):
 
         if self.getcfg('boost_mpi'):
 
-            self.tk.opts['usempi'] = True
+            self.toolkit().opts['usempi'] = True
             # configure the boost mpi module
             # http://www.boost.org/doc/libs/1_47_0/doc/html/mpi/getting_started.html
             # let Boost.Build know to look here for the config file
