@@ -238,7 +238,7 @@ def build_packages_in_parallel(packages, output_dir):
     """
     # first find those without dependencies
     no_dependencies = [pkg for pkg in packages if len(pkg['unresolvedDependencies']) == 0]
-    with_dependencies = list(set(packages) - set(no_dependencies))
+    with_dependencies = [pkg for pkg in packages if pkg not in no_dependencies]
 
     # we submit all the jobs which can be trivially build.
     jobs = [submit_job(pkg, output_dir) for pkg in no_dependencies]
@@ -264,7 +264,7 @@ def build_packages_in_parallel(packages, output_dir):
 
         # find other jobs without dependencies and extend the jobs array!
         no_dependencies = [pkg for pkg in with_dependencies if len(pkg['unresolvedDependencies']) == 0]
-        with_dependencies = list(set(with_dependencies) - set(no_dependencies))
+        with_dependencies = [pkg for pkg in with_dependencies if pkg not in no_dependencies]
 
         jobs.extend([submit_job(pkg, output_dir) for pkg in no_dependencies])
 
