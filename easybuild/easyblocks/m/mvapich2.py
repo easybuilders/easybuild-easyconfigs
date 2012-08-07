@@ -41,13 +41,15 @@ class MVAPICH2(Application):
     def __init__(self, *args, **kwargs):
         Application.__init__(self, *args, **kwargs)
 
-        self.cfg.update({
-                         'withchkpt':[False, "Enable checkpointing support (required BLCR) (default: False)"],
-                         'withlimic2':[False, "Enable LiMIC2 support for intra-node communication (default: False)"],
-                         'withmpe':[False, "Build MPE routines (default: False)"],
-                         'debug':[False, "Enable debug build (which is slower) (default: False)"],
-                         'rdma_type':["gen2", "Specify the RDMA type (gen2/udapl) (default: gen2)"]
-                         })
+    def extra_options(self):
+        extra_vars = {
+                      'withchkpt': [False, "Enable checkpointing support (required BLCR) (default: False)"],
+                      'withlimic2': [False, "Enable LiMIC2 support for intra-node communication (default: False)"],
+                      'withmpe': [False, "Build MPE routines (default: False)"],
+                      'debug': [False, "Enable debug build (which is slower) (default: False)"],
+                      'rdma_type': ["gen2", "Specify the RDMA type (gen2/udapl) (default: gen2)"]
+                     }
+        return Application.extra_options(self, extra_vars)
 
     def configure(self):
 
@@ -85,11 +87,12 @@ class MVAPICH2(Application):
                     env.set(new_envvar, envvar_val)
                     env.set(envvar, '')
                 else:
-                    self.log.error("Both %(ev)s and %(nev)s set, can I overwrite %(nev)s with %(ev)s (%(evv)s) ?" % {
-                                                                                                                   'ev':envvar,
-                                                                                                                   'nev':new_envvar,
-                                                                                                                   'evv':envvar_val
-                                                                                                                   })
+                    self.log.error("Both %(ev)s and %(nev)s set, can I overwrite %(nev)s with %(ev)s (%(evv)s) ?" %
+                                     {
+                                      'ev': envvar,
+                                      'nev': new_envvar,
+                                      'evv': envvar_val
+                                     })
 
         # enable specific support options (if desired)
         if self.getcfg('withmpe'):
@@ -111,14 +114,15 @@ class MVAPICH2(Application):
         """
         if not self.getcfg('sanityCheckPaths'):
 
-            self.setcfg('sanityCheckPaths',{'files':["bin/%s" % x for x in ["mpicc", "mpicxx", "mpif77",
+            self.setcfg('sanityCheckPaths',{
+                                            'files': ["bin/%s" % x for x in ["mpicc", "mpicxx", "mpif77",
                                                                             "mpif90", "mpiexec.hydra"]] +
-                                                    ["lib/lib%s" % y for x in ["fmpich", "mpichcxx", "mpichf90",
+                                                     ["lib/lib%s" % y for x in ["fmpich", "mpichcxx", "mpichf90",
                                                                                "mpich", "mpl", "opa"]
                                                                      for y in ["%s.so"%x, "%s.a"%x]],
-                                            'dirs':["include"]
+                                            'dirs': ["include"]
                                            })
 
-            self.log.info("Customized sanity check paths: %s"%self.getcfg('sanityCheckPaths'))
+            self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
         Application.sanitycheck(self)

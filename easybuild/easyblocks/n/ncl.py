@@ -26,11 +26,11 @@
 EasyBuild support for building and installing NCL, implemented as an easyblock
 """
 
-from distutils.version import LooseVersion
 import fileinput
 import os
 import re
 import sys
+from distutils.version import LooseVersion
 
 from easybuild.framework.application import Application
 from easybuild.tools.filetools import run_cmd
@@ -61,7 +61,7 @@ class NCL(Application):
         run_cmd(cmd, log_all=True, simple=True)
 
         # figure out name of config file
-        cfg_regexp = re.compile('^\s*SYSTEM_INCLUDE\s*=\s*"(.*)"\s*$',re.M)
+        cfg_regexp = re.compile('^\s*SYSTEM_INCLUDE\s*=\s*"(.*)"\s*$', re.M)
         f = open("Makefile", "r")
         txt = f.read()
         f.close()
@@ -77,15 +77,15 @@ class NCL(Application):
         elif os.getenv('SOFTROOTGCC'):
             ctof_libs = '-lgfortran -lm'
         macrodict = {
-                     'CCompiler':os.getenv('CC'),
-                     'FCompiler':os.getenv('F77'),
-                     'CcOptions':'-ansi %s' % os.getenv('CFLAGS'),
-                     'FcOptions':os.getenv('FFLAGS'),
-                     'COptimizeFlag':os.getenv('CFLAGS'),
-                     'FOptimizeFlag':os.getenv('FFLAGS'),
-                     'ExtraSysLibraries':os.getenv('LDFLAGS'),
-                     'CtoFLibraries':ctof_libs
-                     }
+                     'CCompiler': os.getenv('CC'),
+                     'FCompiler': os.getenv('F77'),
+                     'CcOptions': '-ansi %s' % os.getenv('CFLAGS'),
+                     'FcOptions': os.getenv('FFLAGS'),
+                     'COptimizeFlag': os.getenv('CFLAGS'),
+                     'FOptimizeFlag': os.getenv('FFLAGS'),
+                     'ExtraSysLibraries': os.getenv('LDFLAGS'),
+                     'CtoFLibraries': ctof_libs
+                    }
 
         # replace config entries that are already there
         for line in fileinput.input(cfg_filename, inplace=1, backup='%s.orig' % cfg_filename):
@@ -154,10 +154,10 @@ class NCL(Application):
 
 #endif /* SecondSite */
 """ % {
-       'installdir' : self.installdir,
-       'libs' : libs,
-       'includes' : includes
-       }
+       'installdir': self.installdir,
+       'libs': libs,
+       'includes': includes
+      }
 
         f = open("config/Site.local", "w")
         f.write(cfgtxt)
@@ -180,8 +180,7 @@ class NCL(Application):
     def make_module_extra(self):
         """Set NCARG_ROOT environment variable in module."""
 
-        txt=Application.make_module_extra(self)
-
-        txt+="setenv\tNCARG_ROOT\t$root\n"
+        txt = Application.make_module_extra(self)
+        txt += "setenv\tNCARG_ROOT\t$root\n"
 
         return txt

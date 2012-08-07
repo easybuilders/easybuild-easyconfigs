@@ -18,39 +18,19 @@
 # You should have received a copy of the GNU General Public License
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
-"""
-utility module for modifying os.environ
-"""
-import os
+""" this module is a collection of all the testcases """
+import unittest
 
-changes = {}
+# toolkit should be first to allow hacks to work
+import easybuild.test.toolkit as t
+import easybuild.test.asyncprocess as a
+import easybuild.test.easyblock as e
+import easybuild.test.modulegenerator as mg
+import easybuild.test.modules as m
+import easybuild.test.filetools as f
+import easybuild.test.repository as r
+import easybuild.test.robot as robot
 
-def write_changes(filename):
-    """
-    Write current changes to filename and reset environment afterwards
-    """
-    script = open(filename,'w')
-
-    for key in changes:
-        script.write('export %s="%s"\n' % (key, changes[key]))
-
-    script.close()
-    reset_changes()
-
-
-def reset_changes():
-    """
-    Reset the changes tracked by this module
-    """
-    global changes
-    changes = {}
-
-
-def set(key, value):
-    """
-    put key in the environment with value
-    tracks added keys until write_changes has been called
-    """
-    # os.putenv() is not necessary. os.environ will call this.
-    os.environ[key] = value
-    changes[key] = value
+# call suite() for each module and then run them all
+suite = unittest.TestSuite(map(lambda x: x.suite(), [t, r, e, mg, m, f, a, robot]))
+unittest.TextTestRunner().run(suite)

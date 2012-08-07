@@ -173,5 +173,3 @@ def get_platform_name(withversion=False):
         platform_name = '%s-%s-%s' % (machine, vendor, kernel_name.lower())
 
     return platform_name
-
-

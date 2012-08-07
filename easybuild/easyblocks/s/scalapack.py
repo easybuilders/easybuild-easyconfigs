@@ -84,13 +84,13 @@ class ScaLAPACK(Application):
         extra_makeopts = 'BLASLIB="%s -lpthread" LAPACKLIB=%s/lib/liblapack.a ' % (
                                                                                    get_blas_lib(self.log),
                                                                                    os.getenv('SOFTROOTLAPACK')
-                                                                                   )
+                                                                                  )
 
         # build procedure changed in v2.0.0
         if self.loosever < LooseVersion("2.0.0"):
 
             # determine interface
-            interface = det_interface(self.log, os.path.join(os.getenv('SOFTROOTBLACS'),'bin'))
+            interface = det_interface(self.log, os.path.join(os.getenv('SOFTROOTBLACS'), 'bin'))
 
             blacsroot = os.getenv('SOFTROOTBLACS')
 
@@ -105,16 +105,15 @@ class ScaLAPACK(Application):
 
             # set compilers and options
             noopt = ''
-            if self.tk.opts['noopt']:
+            if self.toolkit().opts['noopt']:
                 noopt += " -O0"
-            if self.tk.opts['pic']:
+            if self.toolkit().opts['pic']:
                 noopt += " -fPIC"
             extra_makeopts += 'F77="%(f77)s" CC="%(cc)s" NOOPT="%(noopt)s" CCFLAGS="-O3" ' % {
-                                                                                              'f77':mpif77,
-                                                                                              'cc':mpicc,
-                                                                                              'noopt':noopt
-                                                                                              }
-
+                                                                                              'f77': mpif77,
+                                                                                              'cc': mpicc,
+                                                                                              'noopt': noopt
+                                                                                             }
             # set interface
             extra_makeopts += "CDEFS='-D%s -DNO_IEEE $(USEMPI)' " % interface
 
@@ -128,9 +127,9 @@ class ScaLAPACK(Application):
 
             # set compilers and options
             extra_makeopts += 'FC="%(fc)s" CC="%(cc)s" ' % {
-                                                            'fc':mpif90,
-                                                            'cc':mpicc,
-                                                            }
+                                                            'fc': mpif90,
+                                                            'cc': mpicc,
+                                                           }
 
             # set interface
             extra_makeopts += 'CDEFS="-D%s" ' % interface
@@ -149,15 +148,16 @@ class ScaLAPACK(Application):
             os.makedirs(dest)
             shutil.copy2(src,dest)
         except OSError, err:
-            self.log.error("Copying %s to installation dir %s failed: %s"%(src, dest, err))
+            self.log.error("Copying %s to installation dir %s failed: %s" % (src, dest, err))
 
     def sanitycheck(self):
 
         if not self.getcfg('sanityCheckPaths'):
-            self.setcfg('sanityCheckPaths',{'files':["lib/libscalapack.a"],
-                                            'dirs':[]
+            self.setcfg('sanityCheckPaths',{
+                                            'files': ["lib/libscalapack.a"],
+                                            'dirs': []
                                            })
 
-            self.log.info("Customized sanity check paths: %s"%self.getcfg('sanityCheckPaths'))
+            self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
         Application.sanitycheck(self)

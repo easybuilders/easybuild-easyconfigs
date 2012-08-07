@@ -120,7 +120,7 @@ class Toolkit:
             matches = Modules().available(dependency['name'], "%s%s" % (toolkit, suffix))
             # Find the most recent (or default) one
             if len(matches) > 0:
-                return matches[-1]
+                return matches[-1][-1]
             else:
                 self.log.error('No toolkit version for dependency name %s (suffix %s) found'
                            % (dependency['name'], "%s%s" % (toolkit, suffix)))
@@ -331,11 +331,10 @@ class Toolkit:
         else:
             self.log.error("Don't know which compiler-specific subdir for ACML to use.")
         self.vars['LDFLAGS'] += " -L%(acml)s/%(comp)s64/lib/ " % {
-        #                       "%(acml)s/%(comp)s64/lib/libacml.a -lpthread" % {
                                                 'comp':compiler,
                                                 'acml':os.environ['SOFTROOTACML']
                }
-        self.vars['LIBBLAS'] = " -lacml_mv -lacml " #-lpthread"
+        self.vars['LIBBLAS'] = " -lacml_mv -lacml "
 
         self.vars['LIBBLAS_MT'] = self.vars['LIBBLAS']
 
@@ -778,9 +777,9 @@ class Toolkit:
         """Determine compiler family based on toolkit dependencies."""
         comp_families = {
                          # always use tuples as keys!
-                         ('icc', 'ifort'):INTEL, # Intel toolkit has both icc and ifort
-                         ('GCC', ):GCC # GCC toolkit uses GCC as compiler suite
-                         }
+                         ('icc', 'ifort'): INTEL,  # Intel toolkit has both icc and ifort
+                         ('GCC', ): GCC  # GCC toolkit uses GCC as compiler suite
+                        }
 
         return self.det_toolkit_type("compiler family", comp_families)
 

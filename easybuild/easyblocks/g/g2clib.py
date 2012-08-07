@@ -79,8 +79,9 @@ class G2clib(Application):
         """Custom sanity check for g2clib."""
 
         if not self.getcfg('sanityCheckPaths'):
-            self.setcfg('sanityCheckPaths', {'files':["lib/libgrib2c.a"],
-                                            'dirs':["include"]
+            self.setcfg('sanityCheckPaths', {
+                                             'files': ["lib/libgrib2c.a"],
+                                             'dirs': ["include"]
                                             })
 
         Application.sanitycheck(self)

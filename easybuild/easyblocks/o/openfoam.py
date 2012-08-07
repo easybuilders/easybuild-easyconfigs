@@ -25,7 +25,6 @@
 """
 EasyBuild support for building and installing OpenFOAM, implemented as an easyblock
 """
-
 import os
 import stat
 from distutils.version import LooseVersion

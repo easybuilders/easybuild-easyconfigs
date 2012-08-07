@@ -46,9 +46,12 @@ class Imkl(IntelBase):
 
     def __init__(self, *args, **kwargs):
         """Constructor, adds extra config options"""
-        IntelBase.__init__(self, args, kwargs)
+        IntelBase.__init__(self, *args, **kwargs)
 
-        self.cfg.update({'interfaces':[True, "Indicates whether interfaces should be built (default: True)"]})
+    def extra_options(self):
+        extra_vars = {'interfaces': [True, "Indicates whether interfaces should be built (default: True)"]}
+        return IntelBase.extra_options(self, extra_vars)
+
 
     def configure(self):
         IntelBase.configure(self)
@@ -64,31 +67,32 @@ class Imkl(IntelBase):
             if self.getcfg('m32'):
                 self.log.error("32-bit not supported yet for IMKL v%s (>= 10.3)" % self.version())
             return {
-                    'PATH':['bin', 'mkl/bin', 'mkl/bin/intel64', 'composerxe-2011/bin'],
-                    'LD_LIBRARY_PATH':['lib/intel64', 'mkl/lib/intel64'],
-                    'LIBRARY_PATH':['lib/intel64', 'mkl/lib/intel64'],
-                    'MANPATH':['man', 'man/en_US'],
-                    'CPATH':['mkl/include', 'mkl/include/fftw'],
-                    'FPATH':['mkl/include', 'mkl/include/fftw']
+                    'PATH': ['bin', 'mkl/bin', 'mkl/bin/intel64', 'composerxe-2011/bin'],
+                    'LD_LIBRARY_PATH': ['lib/intel64', 'mkl/lib/intel64'],
+                    'LIBRARY_PATH': ['lib/intel64', 'mkl/lib/intel64'],
+                    'MANPATH': ['man', 'man/en_US'],
+                    'CPATH': ['mkl/include', 'mkl/include/fftw'],
+                    'FPATH': ['mkl/include', 'mkl/include/fftw']
                    }
         else:
             if self.getcfg('m32'):
                 return {
-                    'PATH':['bin', 'bin/ia32', 'tbb/bin/ia32'],
-                    'LD_LIBRARY_PATH':['lib', 'lib/32'],
-                    'LIBRARY_PATH':['lib', 'lib/32'],
-                    'MANPATH':['man', 'share/man', 'man/en_US'],
-                    'CPATH':['include'],
-                    'FPATH':['include']
-                   }
+                        'PATH': ['bin', 'bin/ia32', 'tbb/bin/ia32'],
+                        'LD_LIBRARY_PATH': ['lib', 'lib/32'],
+                        'LIBRARY_PATH': ['lib', 'lib/32'],
+                        'MANPATH': ['man', 'share/man', 'man/en_US'],
+                        'CPATH': ['include'],
+                        'FPATH': ['include']
+                       }
+
             else:
                 return {
-                        'PATH':['bin', 'bin/intel64', 'tbb/bin/em64t'],
-                        'LD_LIBRARY_PATH':['lib', 'lib/em64t'],
-                        'LIBRARY_PATH':['lib', 'lib/em64t'],
-                        'MANPATH':['man', 'share/man', 'man/en_US'],
-                        'CPATH':['include'],
-                        'FPATH':['include']
+                        'PATH': ['bin', 'bin/intel64', 'tbb/bin/em64t'],
+                        'LD_LIBRARY_PATH': ['lib', 'lib/em64t'],
+                        'LIBRARY_PATH': ['lib', 'lib/em64t'],
+                        'MANPATH': ['man', 'share/man', 'man/en_US'],
+                        'CPATH': ['include'],
+                        'FPATH': ['include']
                        }
 
     def make_module_extra(self):
@@ -99,7 +103,7 @@ class Imkl(IntelBase):
             txt += "prepend-path\t%s\t\t$root/%s\n" % ('NLSPATH', 'idb/32/locale/%l_%t/%N')
         else:
             txt += "prepend-path\t%s\t\t$root/%s\n" % ('NLSPATH', 'idb/intel64/locale/%l_%t/%N')
-        txt += "setenv\t%s\t\t$root\n" % ('MKLROOT')
+        txt += "setenv\t%s\t\t$root\n" % 'MKLROOT'
 
         return txt
 
@@ -116,13 +120,13 @@ class Imkl(IntelBase):
                 self.log.error("32-bit not supported yet for IMKL v%s (>=10.3)" % self.version())
 
             extra = {
-                   'libmkl.so':'GROUP (-lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core)',
-                   'libmkl_em64t.a':'GROUP (libmkl_intel_lp64.a libmkl_intel_thread.a libmkl_core.a)',
-                   'libmkl_solver.a':'GROUP (libmkl_solver_lp64.a)',
-                   'libmkl_scalapack.a':'GROUP (libmkl_scalapack_lp64.a)',
-                   'libmkl_lapack.a':'GROUP (libmkl_intel_lp64.a libmkl_intel_thread.a libmkl_core.a)',
-                   'libmkl_cdft.a':'GROUP (libmkl_cdft_core.a)'
-                  }
+                     'libmkl.so': 'GROUP (-lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core)',
+                     'libmkl_em64t.a': 'GROUP (libmkl_intel_lp64.a libmkl_intel_thread.a libmkl_core.a)',
+                     'libmkl_solver.a': 'GROUP (libmkl_solver_lp64.a)',
+                     'libmkl_scalapack.a': 'GROUP (libmkl_scalapack_lp64.a)',
+                     'libmkl_lapack.a': 'GROUP (libmkl_intel_lp64.a libmkl_intel_thread.a libmkl_core.a)',
+                     'libmkl_cdft.a': 'GROUP (libmkl_cdft_core.a)'
+                    }
             for fil, txt in extra.items():
                 dest = os.path.join(self.installdir, 'mkl/lib/intel64', fil)
                 if not os.path.exists(dest):
@@ -157,7 +161,7 @@ class Imkl(IntelBase):
                 os.chdir(interfacedir)
                 self.log.info("Changed to interfaces directory %s" % interfacedir)
             except:
-                self.log.exception("Can't change to interfaces directory %s" % (interfacedir))
+                self.log.exception("Can't change to interfaces directory %s" % interfacedir)
 
             for i in lis1 + lis2 + lis3:
                 if i in lis1:
@@ -217,7 +221,7 @@ class Imkl(IntelBase):
                         shutil.rmtree(tmpbuild)
                         self.log.debug('Removed temporary directory %s' % tmpbuild)
                     except:
-                        self.log.exception("Removing temporary directory %s failed" % (tmpbuild))
+                        self.log.exception("Removing temporary directory %s failed" % tmpbuild)
 
 
         else:
@@ -229,22 +233,22 @@ class Imkl(IntelBase):
             #- form imkl 10.1
             if self.getcfg('m32'):
                 extra = {
-                       'libmkl.so':'GROUP (-lmkl_intel -lmkl_intel_thread -lmkl_core)',
-                       'libmkl_em64t.a':'GROUP (libmkl_intel.a libmkl_intel_thread.a libmkl_core.a)',
-                       'libmkl_solver.a':'GROUP (libmkl_solver.a)',
-                       'libmkl_scalapack.a':'GROUP (libmkl_scalapack_core.a)',
-                       'libmkl_lapack.a':'GROUP (libmkl_intel.a libmkl_intel_thread.a libmkl_core.a)',
-                       'libmkl_cdft.a':'GROUP (libmkl_cdft_core.a)'
-                      }
+                         'libmkl.so': 'GROUP (-lmkl_intel -lmkl_intel_thread -lmkl_core)',
+                         'libmkl_em64t.a': 'GROUP (libmkl_intel.a libmkl_intel_thread.a libmkl_core.a)',
+                         'libmkl_solver.a': 'GROUP (libmkl_solver.a)',
+                         'libmkl_scalapack.a': 'GROUP (libmkl_scalapack_core.a)',
+                         'libmkl_lapack.a': 'GROUP (libmkl_intel.a libmkl_intel_thread.a libmkl_core.a)',
+                         'libmkl_cdft.a': 'GROUP (libmkl_cdft_core.a)'
+                        }
             else:
                 extra = {
-                       'libmkl.so':'GROUP (-lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core)',
-                       'libmkl_em64t.a':'GROUP (libmkl_intel_lp64.a libmkl_intel_thread.a libmkl_core.a)',
-                       'libmkl_solver.a':'GROUP (libmkl_solver_lp64.a)',
-                       'libmkl_scalapack.a':'GROUP (libmkl_scalapack_lp64.a)',
-                       'libmkl_lapack.a':'GROUP (libmkl_intel_lp64.a libmkl_intel_thread.a libmkl_core.a)',
-                       'libmkl_cdft.a':'GROUP (libmkl_cdft_core.a)'
-                      }
+                         'libmkl.so': 'GROUP (-lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core)',
+                         'libmkl_em64t.a': 'GROUP (libmkl_intel_lp64.a libmkl_intel_thread.a libmkl_core.a)',
+                         'libmkl_solver.a': 'GROUP (libmkl_solver_lp64.a)',
+                         'libmkl_scalapack.a': 'GROUP (libmkl_scalapack_lp64.a)',
+                         'libmkl_lapack.a': 'GROUP (libmkl_intel_lp64.a libmkl_intel_thread.a libmkl_core.a)',
+                         'libmkl_cdft.a': 'GROUP (libmkl_cdft_core.a)'
+                        }
             for fil, txt in extra.items():
                 if self.getcfg('m32'):
                     dest = os.path.join(self.installdir, 'lib/32', fil)
@@ -278,7 +282,7 @@ class Imkl(IntelBase):
             try:
                 os.chdir(interfacedir)
             except:
-                self.log.exception("Can't change to interfaces directory %s" % (interfacedir))
+                self.log.exception("Can't change to interfaces directory %s" % interfacedir)
 
             interfacestarget = "libem64t"
             if self.getcfg('m32'):
@@ -360,9 +364,10 @@ class Imkl(IntelBase):
                     mklfiles = ["lib/em64t/libmkl.so", "include/mkl.h"]
                     mkldirs = ["lib/em64t", "include/em64t", "interfaces"]
 
-            self.setcfg('sanityCheckPaths', {'files':mklfiles,
-                                            'dirs':mkldirs
-                                           })
+            self.setcfg('sanityCheckPaths', {
+                                             'files': mklfiles,
+                                             'dirs': mkldirs
+                                            })
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 

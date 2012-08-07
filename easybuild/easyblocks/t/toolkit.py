@@ -41,10 +41,22 @@ class Toolkit(Application):
         self.gen_installdir()
         self.make_installdir()
 
-    def makeModuleReq(self):
+    def configure(self):
+        """ Do nothing """
+        pass
+
+    def make(self):
+        """ Do nothing """
+        pass
+
+    def make_install(self):
+        """ Do nothing """
+        pass
+
+    def make_module_req(self):
         return ''
 
-    def sanityCheck(self):
+    def sanitycheck(self):
         """
         As a toolkit doens't install anything really, this is always true
         """

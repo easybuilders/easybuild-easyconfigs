@@ -39,13 +39,13 @@ class NetCDF_Fortran(Application):
     def configure(self):
         """Configure build: set config options and configure"""
 
-        if self.tk.opts['pic']:
+        if self.toolkit().opts['pic']:
             self.updatecfg('configopts', "--with-pic")
 
         self.updatecfg('configopts', 'FCFLAGS="%s" FC="%s"' % (os.getenv('FFLAGS'), os.getenv('F90')))
 
         # add -DgFortran to CPPFLAGS when building with GCC
-        if self.tk.toolkit_comp_family() == toolkit.GCC:
+        if self.toolkit().toolkit_comp_family() == toolkit.GCC:
             env.set('CPPFLAGS', "%s -DgFortran" % os.getenv('CPPFLAGS'))
 
         Application.configure(self)
@@ -56,15 +56,14 @@ class NetCDF_Fortran(Application):
         """
         if not self.getcfg('sanityCheckPaths'):
 
-            self.setcfg('sanityCheckPaths',{'files':["bin/nf-config"] +
-                                                    ["lib/%s" % x for x in ["libnetcdff.so",
-                                                                            "libnetcdff.a"]] +
-                                                    ["include/%s" % x for x in ["netcdf.inc",
-                                                                                "netcdf.mod",
-                                                                                "typesizes.mod"]],
-                                            'dirs':[]
+            self.setcfg('sanityCheckPaths',{
+                                            'files': ["bin/nf-config"] +
+                                                     ["lib/%s" % x for x in ["libnetcdff.so", "libnetcdff.a"]] +
+                                                     ["include/%s" % x for x in ["netcdf.inc", "netcdf.mod",
+                                                                                 "typesizes.mod"]],
+                                            'dirs': []
                                            })
 
-            self.log.info("Customized sanity check paths: %s"%self.getcfg('sanityCheckPaths'))
+            self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
         Application.sanitycheck(self)

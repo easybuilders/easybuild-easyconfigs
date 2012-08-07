@@ -18,39 +18,31 @@
 # You should have received a copy of the GNU General Public License
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
-"""
-utility module for modifying os.environ
-"""
 import os
 
-changes = {}
-
-def write_changes(filename):
-    """
-    Write current changes to filename and reset environment afterwards
-    """
-    script = open(filename,'w')
-
-    for key in changes:
-        script.write('export %s="%s"\n' % (key, changes[key]))
-
-    script.close()
-    reset_changes()
+import easybuild.tools.modules as modules
+from unittest import TestCase, TestSuite
+from easybuild.tools.build_log import EasyBuildError, initLogger
 
 
-def reset_changes():
-    """
-    Reset the changes tracked by this module
-    """
-    global changes
-    changes = {}
+class ModulesTest(TestCase):
+    """ small test for Modules """
+
+    def runTest(self):
+        """ test if we load one module it is in the loaded_modules """
+        testmods = modules.Modules()
+        ms = testmods.available('', None)
+        if len(ms) != 0:
+            import random
+            m = random.choice(ms)
+            testmods.addModule([m])
+            testmods.load()
+
+            tmp = {"name": m[0], "version": m[1]}
+            assert(tmp in testmods.loaded_modules())
+
+def suite():
+    """ returns all the testcases in this module """
+    return TestSuite([ModulesTest()])
 
 
-def set(key, value):
-    """
-    put key in the environment with value
-    tracks added keys until write_changes has been called
-    """
-    # os.putenv() is not necessary. os.environ will call this.
-    os.environ[key] = value
-    changes[key] = value

@@ -62,11 +62,11 @@ class ModuleGenerator:
             module_path = self.tmpdir
 
         # Real file goes in 'all' category
-        self.filename = os.path.join(module_path, general_class, self.app.name(), self.app.installversion)
+        self.filename = os.path.join(module_path, general_class, self.app.name(), self.app.installversion())
 
         # Make symlink in moduleclass category
         classPath = os.path.join(module_path, self.app.getcfg('moduleclass'), self.app.name())
-        classPathFile = os.path.join(classPath, self.app.installversion)
+        classPathFile = os.path.join(classPath, self.app.installversion())
 
         # Create directories and links
         for directory in [os.path.dirname(x) for x in [self.filename, classPathFile]]:
