@@ -250,14 +250,9 @@ def build_packages_in_parallel(packages, output_dir, script_dir):
         # sleep 5 minutes
         time.sleep(5 * 60)
 
-        log.info("%s jobs are being run" % len(jobs))
-        log.info("%s packages still need to be build" % len(with_dependencies))
-
         done_jobs = [job for job in jobs if job.state() == 'finished']
         # filter the done_jobs
         jobs = [job for job in jobs if job not in done_jobs]
-
-        log.info("%s jobs finished completion: %s" % (len(done_jobs), [job.name for job in done_jobs]))
 
         # remove from unresolvedDependencies in with_dependencies array
         for job in done_jobs:
@@ -273,6 +268,10 @@ def build_packages_in_parallel(packages, output_dir, script_dir):
         with_dependencies = [pkg for pkg in with_dependencies if pkg not in no_dependencies]
 
         jobs.extend([submit_job(pkg, output_dir, script_dir) for pkg in no_dependencies])
+
+        log.info("%s jobs finished completion: %s" % (len(done_jobs), [job.name for job in done_jobs]))
+        log.info("%s jobs are being run" % len(jobs))
+        log.info("%s packages still need to be build" % len(with_dependencies))
 
 def submit_job(package, output_dir, script_dir):
     """
