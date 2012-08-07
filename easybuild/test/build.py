@@ -159,7 +159,7 @@ class BuildTest(TestCase):
 
     def submit_jobs(self, files):
         """
-        Build the given files in parallel using (for now) PBS
+        Build the given files in parallel by submitting jobs
         """
         # change to current
         os.chdir(self.cur_dir)
@@ -187,8 +187,6 @@ class BuildTest(TestCase):
                 self.jobs.append(job)
             except EasyBuildError, err:
                 self.log.warn("Failed to submit job for easyconfig: %s, error: %s" % (easyconfig, err))
-
-
 
     def performStep(self, fase, obj, method):
         """
