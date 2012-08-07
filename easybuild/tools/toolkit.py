@@ -346,17 +346,22 @@ class Toolkit:
         """
         Prepare for ATLAS BLAS/LAPACK library
         """
+        blas_libs = ["cblas", "f77blas", "atlas"]
+        blas_mt_libs = ["ptcblas", "ptf77blas", "atlas"]
 
-        atlas = os.environ['SOFTROOTATLAS']
+        self.vars['LIBBLAS'] = ' '.join(["-l%s" % x for x in blas_libs] + ["-lgfortran"])
+        self.vars['LIBBLAS_MT'] = ' '.join(["-l%s" % x for x in blas_mt_libs] + ["-lgfortran", "-lpthread"])
+        self.vars['BLAS_LIB_DIR'] = os.path.join(os.environ['SOFTROOTATLAS'], "lib")
+        self.vars['BLAS_STATIC_LIBS'] = ','.join(["lib%s.a" % x for x in blas_libs])
+        self.vars['BLAS_MT_STATIC_LIBS'] = ','.join(["lib%s.a" % x for x in blas_mt_libs])
 
-        self.vars['LIBBLAS'] = "-lcblas -lf77blas -latlas -lgfortran"
-        self.vars['LIBBLAS_MT'] = "-lptcblas -lptf77blas -latlas -lgfortran -lpthread"
-        self.vars['BLAS_STATIC_LIBS'] = ','.join(["%s/lib/lib%s.a" % (atlas, x) for x in ["cblas",
-                                                                                          "f77blas",
-                                                                                          "atlas"]])
-        self.vars['BLAS_MT_STATIC_LIBS'] = ','.join(["%s/lib/lib%s.a" % (atlas, x) for x in ["ptcblas",
-                                                                                             "ptf77blas",
-                                                                                             "atlas"]])
+        self.vars['LAPACK_LIB_DIR'] = self.vars['BLAS_LIB_DIR']
+        self.vars['LAPACK_STATIC_LIBS'] = "liblapack.a," + self.vars['BLAS_STATIC_LIBS']
+        self.vars['LAPACK_MT_STATIC_LIBS'] = "liblapack.a," + self.vars['BLAS_MT_STATIC_LIBS']
+
+        self.vars['BLAS_LAPACK_DIR'] = self.vars['LAPACK_LIB_DIR']
+        self.vars['BLAS_LAPACK_STATIC_LIBS'] = self.vars['LAPACK_STATIC_LIBS']
+        self.vars['BLAS_LAPACK_MT_STATIC_LIBS'] =  self.vars['LAPACK_MT_STATIC_LIBS']
 
         self._addDependencyVariables(['ATLAS'])
 
@@ -576,20 +581,28 @@ class Toolkit:
         self.vars['LIBBLAS_MT'] =  ' '.join(prefix, ' '.join(["-lmkl_%s" % x for x in blas_mt_libs]), suffix)
         self.vars['LIBLAPACK_MT'] = self.vars['LIBBLAS_MT']
 
-        # construct library lists
-        def construct_lib_list(libs):
-            """Construct a list of existing libraries."""
-            l = []
-            for path in ["%s/%s/libmkl_%s.a" % (mklroot, x, y) for x in mklld for y in libs ]:
-                if os.path.isfile(path):
-                    l.append(path)
-            return ','.join(l)
+        # determine BLAS/LAPACK library dir
+        bl_libdir = None
+        for ld in mklld:
+            fld = os.path.join(mklroot, ld)
+            if os.path.isdir(fld):
+                bl_libdir = fld
+        if not bl_libdir:
+            self.log.error("")
+        else:
+            self.vars['BLAS_LIB_DIR'] = bl_libdir
+            self.vars['LAPACK_LIB_DIR'] = bl_libdir
+            self.vars['BLAS_LAPACK_LIB_DIR'] = bl_libdir
 
-        self.vars['BLAS_STATIC_LIBS'] = construct_lib_list(blas_libs)
-        self.vars['BLAS_MT_STATIC_LIBS'] = construct_lib_list(blas_mt_libs)
+        # list of libraries for BLAS/LAPACK
+        self.vars['BLAS_STATIC_LIBS'] = ','.join(blas_libs)
+        self.vars['BLAS_MT_STATIC_LIBS'] = ','.join(blas_mt_libs)
 
         self.vars['LAPACK_STATIC_LIBS'] = self.vars['BLAS_STATIC_LIBS']
         self.vars['LAPACK_MT_STATIC_LIBS'] = self.vars['BLAS_MT_STATIC_LIBS']
+
+        self.vars['BLAS_LAPACK_STATIC_LIBS'] = self.vars['LAPACK_STATIC_LIBS']
+        self.vars['BLAS_LAPACK_MT_STATIC_LIBS'] = self.vars['LAPACK_MT_STATIC_LIBS']
 
         # sequential ScaLAPACK
         prefix = "-Wl:-Bstatic -lmkl_scalapack%s -lmkl_solver%s_sequential -Wl,--start-group" % (libsfxsl, libsfx)
@@ -682,7 +695,7 @@ class Toolkit:
                 self.vars[i] = self.vars["MPI%s" % i]
 
         self.vars['MPI_INC'] = "%s/include" % os.getenv('SOFTROOTQLOGICMPI')
-        self.vars['MPI_LIB_SHARED'] = "%s/lib/libmpich.so" % os.getenv('SOFTROOTMPICH2')
+        self.vars['MPI_LIB_SHARED'] = "%s/lib64/libmpich.so" % os.getenv('SOFTROOTQLOGICMPI')
 
     def prepareLAPACK(self):
         """
@@ -692,8 +705,9 @@ class Toolkit:
         self.vars['LIBLAPACK'] = "-llapack %s" % self.vars['LIBBLAS']
         self.vars['LIBLAPACK_MT'] = "-llapack %s -lpthread" % self.vars['LIBBLAS_MT']
 
-        self.vars['LAPACK_LIBS'] = "%s/lib/lapack.a" % os.getenv('SOFTROOTLAPACK')
-        self.vars['LAPACK_MT_LIBS'] = self.vars['LAPACK_LIBS']
+        self.vars['LAPACK_LIB_DIR'] = os.path.join(os.getenv('SOFTROOTLAPACK'), "lib")
+        self.vars['LAPACK_STATIC_LIBS'] =  "liblapack.a"
+        self.vars['LAPACK_MT_STATIC_LIBS'] = self.vars['LAPACK_STATIC_LIBS']
 
         self._addDependencyVariables(['LAPACK'])
 
@@ -752,7 +766,7 @@ class Toolkit:
         Prepare for OpenMPI MPI library
         """
 
-        # no static libmpi.a available to set MPI_LIB_STATIC
+        self.vars['MPI_LIB_STATIC'] = "%s/lib/libmpi.a" % os.getenv('SOFTROOTOPENMPI')
         self.vars['MPI_LIB_SHARED'] = "%s/lib/libmpi.so" % os.getenv('SOFTROOTOPENMPI')
         self.vars['MPI_INC'] = "%s/include" % os.getenv('SOFTROOTOPENMPI')
         self.prepareSimpleMPI()

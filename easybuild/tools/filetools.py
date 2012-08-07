@@ -720,7 +720,7 @@ def patch_perl_script_autoflush(path):
     except IOError, err:
         log.error("Failed to patch Perl configure script: %s" % err)
 
-def mkdir(directory, parrents=False):
+def mkdir(directory, parents=False):
     """
     Create a directory
     Directory is the path to make
