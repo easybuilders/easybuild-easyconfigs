@@ -110,7 +110,7 @@ class EasyBlock:
         self.log = getLog("EasyBlock")
 
         # store toolkit
-        self._tk = None
+        self._toolkit = None
 
         if not os.path.isfile(path):
             self.log.error("EasyBlock __init__ expected a valid path")
@@ -174,7 +174,7 @@ class EasyBlock:
     def validate_os_deps(self):
         """
         validate presence of OS dependencies
-        osdependencies should be a single list (do not rely on documentation found in application.py!
+        osdependencies should be a single list
         """
         not_found = []
         for dep in self['osdependencies']:
@@ -217,16 +217,16 @@ class EasyBlock:
         """
         returns the Toolkit used
         """
-        if self._tk:
-            return self._tk
+        if self._toolkit:
+            return self._toolkit
 
         tk = self['toolkit']
         tk = Toolkit(tk['name'], tk['version'])
         if self['toolkitopts']:
             tk.setOptions(self['toolkitopts'])
 
-        self._tk = tk
-        return self._tk
+        self._toolkit = tk
+        return self._toolkit
 
     def installversion(self):
         """
@@ -248,6 +248,7 @@ class EasyBlock:
         """
         return self['name']
 
+    # private method
     def _validate(self, attr, values):
         """
         validation helper method. attr is the attribute it will check, values are the possible values.
@@ -256,7 +257,7 @@ class EasyBlock:
         if self[attr] and self[attr] not in values:
             self.log.error("%s provided %s is not valid: %s" % (attr, self[attr], values))
 
-
+    # private method
     def _os_dependency_check(self, dep):
         """
         Check if package is available from OS.
@@ -269,7 +270,7 @@ class EasyBlock:
         elif run_cmd('which dpkg', simple=True, log_ok=False):
             cmd = "dpkg -s %s" % dep
         else:
-            # fallback for when os-Dependency is a binary
+            # fallback for when os-dependency is a binary
             cmd = "which %s" % dep
 
         try:
@@ -277,11 +278,11 @@ class EasyBlock:
         except:
             return False
 
-
+    # private method
     def _parse_dependency(self, dep):
         """
         parses the dependency into a usable dict with a common format
-        dep can be a dict a tuple or a list.
+        dep can be a dict, a tuple or a list.
         if it is a tuple or a list the attributes are expected to be in the following order:
         ['name', 'version', 'suffix', 'dummy']
         of these attributes, 'name' and 'version' are mandatory
@@ -289,6 +290,8 @@ class EasyBlock:
         output dict contains these attributes:
         ['name', 'version', 'suffix', 'dummy', 'tk']
         """
+        self.log.debug("Parsing %s as a dependency" % dep)
+
         attr = ['name', 'version', 'suffix', 'dummy']
         dependency = {'name': '', 'version': '', 'suffix': '', 'dummy': False}
         if isinstance(dep, dict):
