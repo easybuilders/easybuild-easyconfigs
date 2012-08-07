@@ -26,17 +26,17 @@
 EasyBuild support for building and installing CP2K, implemented as an easyblock
 """
 
-from distutils.version import LooseVersion
 import fileinput
 import glob
 import re
 import os
 import shutil
 import sys
+from distutils.version import LooseVersion
 
+import easybuild.tools.toolkit as toolkit
 from easybuild.framework.application import Application
 from easybuild.tools.filetools import run_cmd
-import easybuild.tools.toolkit as toolkit
 
 
 class CP2K(Application):
@@ -52,18 +52,6 @@ class CP2K(Application):
     def __init__(self, *args, **kwargs):
         Application.__init__(self, *args, **kwargs)
 
-        self.cfg.update({'type':['popt',"Type of build ('popt' or 'psmp') (default: 'popt)"],
-                         'typeopt':[True,"Enable optimization (default: True)"],
-                         'libint':[True,"Use LibInt (default: True)"],
-                         'modincprefix':['',"IMKL prefix for modinc include dir (default: '')"],
-                         'modinc':[[],"List of modinc's to use (*.f90), or 'True' to use all found at given prefix (default: [])"],
-                         'extracflags':['',"Extra CFLAGS to be added (default: '')"],
-                         'extradflags':['',"Extra DFLAGS to be added (default: '')"],
-                         'runtest':[True, 'Indicates if a regression test should be run after make (default: True)'],
-                         'ignore_regtest_fails':[False, "Ignore failures in regression test (should be used with care) (default: False)."],
-                         'maxtasks':[3, "Maximum number of CP2K instances run at the same time during testing (default: 3)"]
-                         })
-
         self.typearch = None
 
         # this should be set to False for old versions of GCC (e.g. v4.1)
@@ -78,6 +66,22 @@ class CP2K(Application):
         self.openmp = ''
 
         self.make_instructions = ''
+
+    def extra_options(self):
+        extra_vars = {
+                      'type': ['popt', "Type of build ('popt' or 'psmp') (default: 'popt)"],
+                      'typeopt': [True, "Enable optimization (default: True)"],
+                      'libint': [True, "Use LibInt (default: True)"],
+                      'modincprefix': ['', "IMKL prefix for modinc include dir (default: '')"],
+                      'modinc': [[], "List of modinc's to use (*.f90), or 'True' to use all found at given prefix (default: [])"],
+                      'extracflags': ['', "Extra CFLAGS to be added (default: '')"],
+                      'extradflags': ['', "Extra DFLAGS to be added (default: '')"],
+                      'runtest': [True, 'Indicates if a regression test should be run after make (default: True)'],
+                      'ignore_regtest_fails': [False, "Ignore failures in regression test (should be used with care) (default: False)."],
+                      'maxtasks': [3, "Maximum number of CP2K instances run at the same time during testing (default:3)"]
+                     }
+        return Application.extra_options(self, extra_vars)
+
 
     def _generateMakefile(self, options):
         """Generate Makefile based on options dictionary and optional make instructions"""
@@ -99,7 +103,7 @@ class CP2K(Application):
         if self.tk.opts['debug']:
             self.debug = '-g'
             self.log.info("Debug build")
-        if self.tk.opts['pic']:
+        if self.toolkit().opts['pic']:
             self.fpic = "-fPIC"
             self.log.info("Using fPIC")
 
@@ -122,13 +126,13 @@ class CP2K(Application):
             self.modincpath = self.prepmodinc()
 
         # set typearch
-        self.typearch = "Linux-x86-64-%s" % self.tk.name
+        self.typearch = "Linux-x86-64-%s" % self.toolkit().name
 
         # extra make instructions
         self.make_instructions = "graphcon.o: graphcon.F\n\t$(FC) -c $(FCFLAGS2) $<\n"
 
         # compiler toolkit specific configuration
-        comp_fam = self.tk.toolkit_comp_family()
+        comp_fam = self.toolkit().toolkit_comp_family()
         if comp_fam == toolkit.INTEL:
             options = self.configureIntelBased()
         elif comp_fam == toolkit.GCC:
@@ -198,8 +202,7 @@ class CP2K(Application):
 
             else:
                 self.log.error("prepmodinc: Please specify either a boolean value " \
-                               "or a list of files in modinc (found: %s)." %
-                               self.getcfg("modinc"))
+                               "or a list of files in modinc (found: %s)." % self.getcfg("modinc"))
 
             f77 = os.getenv('F77')
             if not f77:
@@ -207,9 +210,9 @@ class CP2K(Application):
 
             # create modinc files
             for f in modfiles:
-                if f77.endswith('ifort') :
+                if f77.endswith('ifort'):
                     cmd = "%s -module %s -c %s" % (f77, modincpath, f)
-                elif f77 in ['gfortran', 'mpif77'] :
+                elif f77 in ['gfortran', 'mpif77']:
                     cmd = "%s -J%s -c %s" % (f77, modincpath, f)
                 else:
                     self.log.error("prepmodinc: Unknown value specified for F77 (%s)" % f77)
@@ -227,7 +230,7 @@ class CP2K(Application):
         # -automatic is default: -noautomatic -auto-scalar
         # some mem-bandwidth optimisation
         if self.getcfg('type') == 'psmp':
-            self.openmp = self.tk.get_openmp_flag()
+            self.openmp = self.toolkit().get_openmp_flag()
 
         # determine which opt flags to use
         if self.getcfg('typeopt'):
@@ -250,32 +253,30 @@ class CP2K(Application):
             self.log.error("CP2K needs MPI-2, no known MPI-2 supporting library loaded?")
 
         options = {
-            'CC': os.getenv('MPICC'),
-            'CPP': '',
+                   'CC': os.getenv('MPICC'),
+                   'CPP': '',
+                   'FC': '%s %s' % (os.getenv('MPIF77'), self.openmp),
+                   'LD': '%s %s' % (os.getenv('MPIF77'), self.openmp),
+                   'AR': 'ar -r',
+                   'CPPFLAGS': '',
 
-            'FC': '%s %s' % (os.getenv('MPIF77'), self.openmp),
-            'LD': '%s %s' % (os.getenv('MPIF77'), self.openmp),
-            'AR': 'ar -r',
+                   'FPIC': self.fpic,
+                   'DEBUG': self.debug,
 
-            'CPPFLAGS': '',
+                   'FCFLAGS': '$(FCFLAGS%s)' % optflags,
+                   'FCFLAGS2': '$(FCFLAGS%s)' % regflags,
 
-            'FPIC': self.fpic,
-            'DEBUG': self.debug,
+                   'CFLAGS': ' %s %s $(FPIC) $(DEBUG) %s ' % (os.getenv('SOFTVARCPPFLAGS'),
+                                                              os.getenv('SOFTVARLDFLAGS'),
+                                                              self.getcfg('extracflags')),
+                   'DFLAGS': ' -D__parallel -D__BLACS -D__SCALAPACK -D__FFTSG %s' % self.getcfg('extradflags'),
 
-            'FCFLAGS': '$(FCFLAGS%s)' % optflags,
-            'FCFLAGS2': '$(FCFLAGS%s)' % regflags,
+                   'LIBS': os.getenv('LIBS'),
 
-            'CFLAGS' : ' %s %s $(FPIC) $(DEBUG) %s ' % (os.getenv('SOFTVARCPPFLAGS'),
-                                                        os.getenv('SOFTVARLDFLAGS'),
-                                                        self.getcfg('extracflags')),
-            'DFLAGS': ' -D__parallel -D__BLACS -D__SCALAPACK -D__FFTSG %s' % self.getcfg('extradflags'),
-
-            'LIBS': os.getenv('LIBS'),
-
-            'FCFLAGSNOOPT': '$(DFLAGS) $(CFLAGS) -O0  $(FREE) $(FPIC) $(DEBUG)',
-            'FCFLAGSOPT': '-O2 $(FREE) $(SAFE) $(FPIC) $(DEBUG)',
-            'FCFLAGSOPT2': '-O1 $(FREE) $(SAFE) $(FPIC) $(DEBUG)',
-        }
+                   'FCFLAGSNOOPT': '$(DFLAGS) $(CFLAGS) -O0  $(FREE) $(FPIC) $(DEBUG)',
+                   'FCFLAGSOPT': '-O2 $(FREE) $(SAFE) $(FPIC) $(DEBUG)',
+                   'FCFLAGSOPT2': '-O1 $(FREE) $(SAFE) $(FPIC) $(DEBUG)'
+                  }
 
         if self.getcfg('libint'):
 
@@ -336,19 +337,17 @@ class CP2K(Application):
             extrainc = '-I%s' % self.modincpath
 
         options.update({
+                        ## -Vaxlib : older options
+                        'FREE': '-fpp -free',
 
-            # -Vaxlib : older options
-            'FREE': '-fpp -free',
+                        #SAFE = -assume protect_parens -fp-model precise -ftz # problems
+                        'SAFE': '-assume protect_parens -no-unroll-aggressive',
 
-            #SAFE = -assume protect_parens -fp-model precise -ftz # problems
-            'SAFE': '-assume protect_parens -no-unroll-aggressive',
+                        'INCFLAGS': '$(DFLAGS) -I$(INTEL_INC) -I$(INTEL_INCF) %s' % extrainc,
 
-            'INCFLAGS': '$(DFLAGS) -I$(INTEL_INC) -I$(INTEL_INCF) %s' % extrainc,
-
-            'LDFLAGS': '$(INCFLAGS) -i-static',
-            'OBJECTS_ARCHITECTURE': 'machine_intel.o',
-
-        })
+                        'LDFLAGS': '$(INCFLAGS) -i-static',
+                        'OBJECTS_ARCHITECTURE': 'machine_intel.o',
+                       })
 
         options['DFLAGS'] += ' -D__INTEL'
 
@@ -372,13 +371,12 @@ class CP2K(Application):
         options = self.configureCommon()
 
         options.update({
+                        # need this to prevent "Unterminated character constant beginning" errors
+                        'FREE': '-ffree-form -ffree-line-length-none',
 
-            # need this to prevent "Unterminated character constant beginning" errors
-            'FREE': '-ffree-form -ffree-line-length-none',
-
-            'LDFLAGS': '$(FCFLAGS)',
-            'OBJECTS_ARCHITECTURE': 'machine_gfortran.o',
-        })
+                        'LDFLAGS': '$(FCFLAGS)',
+                        'OBJECTS_ARCHITECTURE': 'machine_gfortran.o',
+                       })
 
         options['DFLAGS'] += ' -D__GFORTRAN'
 
@@ -416,9 +414,9 @@ class CP2K(Application):
         """Configure for Intel Math Kernel Library (MKL)"""
 
         options.update({
-            'INTEL_INC': '$(MKLROOT)/include',
-            'INTEL_INCF': '$(INTEL_INC)/fftw',
-        })
+                        'INTEL_INC': '$(MKLROOT)/include',
+                        'INTEL_INCF': '$(INTEL_INC)/fftw',
+                       })
 
         options['DFLAGS'] += ' -D__FFTW3 -D__FFTMKL'
 
@@ -440,7 +438,7 @@ class CP2K(Application):
                         'FFTW_INC': '%s/include' % softroot, # GCC
                         'FFTW3INC': '%s/include' % softroot, # Intel
                         'FFTW3LIB': '%s/lib' % softroot, # Intel
-                        })
+                       })
 
         options['DFLAGS'] += ' -D__FFTW3'
 
@@ -542,11 +540,12 @@ cp2k_version=%(cp2k_version)s
 dir_triplet=%(triplet)s
 leakcheck="YES"
 maxtasks=%(maxtasks)s
-            """ % {'f90':os.getenv('F90'),
-                   'base':self.builddir,
-                   'cp2k_version':self.getcfg('type'),
-                   'triplet':self.typearch,
-                   'maxtasks':self.getcfg('maxtasks')
+            """ % {
+                   'f90': os.getenv('F90'),
+                   'base': self.builddir,
+                   'cp2k_version': self.getcfg('type'),
+                   'triplet': self.typearch,
+                   'maxtasks': self.getcfg('maxtasks')
                   }
 
             cfg_fn = "cp2k_regtest.cfg"
@@ -642,9 +641,7 @@ maxtasks=%(maxtasks)s
                 if os.path.isfile(exefile):
                     shutil.copy2(exefile, targetdir)
         except OSError, err:
-            self.log.error("Copying executables from %s to bin dir %s failed: %s" % (exedir,
-                                                                                     targetdir,
-                                                                                     err) )
+            self.log.error("Copying executables from %s to bin dir %s failed: %s" % (exedir, targetdir, err))
 
         # copy tests
         srctests = os.path.join(self.getcfg('startfrom'), 'tests')
@@ -675,10 +672,11 @@ maxtasks=%(maxtasks)s
 
         if not self.getcfg('sanityCheckPaths'):
             cp2k_type = self.getcfg('type')
-            self.setcfg('sanityCheckPaths',{'files':["bin/%s.%s" % (x, cp2k_type) for x in ["cp2k",
-                                                                                            "cp2k_shell",
-                                                                                            "fes"]],
-                                            'dirs':["tests"]
+            self.setcfg('sanityCheckPaths',{
+                                            'files': ["bin/%s.%s" % (x, cp2k_type) for x in ["cp2k",
+                                                                                             "cp2k_shell",
+                                                                                             "fes"]],
+                                            'dirs': ["tests"]
                                            })
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))

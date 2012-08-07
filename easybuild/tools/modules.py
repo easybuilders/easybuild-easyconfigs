@@ -308,19 +308,3 @@ def get_software_root(name):
     environmentKey = "SOFTROOT%s" % convertName(name, upper=True)
     return os.getenv(environmentKey)
 
-if __name__ == '__main__':
-    # Run some tests, run as python -m easybuild.tools.modules
-    initLogger(debug=True, typ=None)
-
-    testmods = Modules()
-    ms = testmods.available('', None)
-    ## pick one
-    if len(ms) == 0:
-        print "No modules found"
-    else:
-        import random
-        m = random.choice(ms)
-        print "selected module %s" % m
-        testmods.addModule([m])
-        testmods.load()
-

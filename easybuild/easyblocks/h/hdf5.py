@@ -51,14 +51,13 @@ class HDF5(Application):
         self.updatecfg('configopts', "--enable-cxx --enable-fortran %s" % fcomp)
 
         # MPI and C++ support enabled requires --enable-unsupported, because this is untested by HDF5
-        if self.tk.opts['usempi']:
+        if self.toolkit().opts['usempi']:
             self.updatecfg('configopts', "--enable-unsupported")
 
         # make options
         self.updatecfg('makeopts', fcomp)
 
         Application.configure(self)
-
 
     # default make and make install are ok
 
@@ -68,24 +67,25 @@ class HDF5(Application):
         """
         if not self.getcfg('sanityCheckPaths'):
 
-            if self.tk.opts['usempi']:
+            if self.toolkit().opts['usempi']:
                 extra_binaries = ["bin/%s" % x for x in ["h5perf", "h5pcc", "h5pfc", "ph5diff"]]
             else:
                 extra_binaries = ["bin/%s" % x for x in ["h5cc", "h5fc"]]
 
-            self.setcfg('sanityCheckPaths',{'files':["bin/h5%s" % x for x in ["2gif", "c++", "copy",
-                                                                              "debug", "diff", "dump",
-                                                                              "import", "jam","ls",
-                                                                              "mkgrp", "perf_serial",
-                                                                              "redeploy", "repack",
-                                                                              "repart", "stat", "unjam"]] +
-                                                    ["bin/gif2h5"] + extra_binaries +
-                                                    ["lib/libhdf5%s.so" % x for x in ["_cpp", "_fortran",
-                                                                                      "_hl_cpp", "_hl",
-                                                                                      "hl_fortran", ""]],
-                                            'dirs':['include']
+            self.setcfg('sanityCheckPaths',{
+                                            'files': ["bin/h5%s" % x for x in ["2gif", "c++", "copy",
+                                                                               "debug", "diff", "dump",
+                                                                               "import", "jam","ls",
+                                                                               "mkgrp", "perf_serial",
+                                                                               "redeploy", "repack",
+                                                                               "repart", "stat", "unjam"]] +
+                                                     ["bin/gif2h5"] + extra_binaries +
+                                                     ["lib/libhdf5%s.so" % x for x in ["_cpp", "_fortran",
+                                                                                       "_hl_cpp", "_hl",
+                                                                                       "hl_fortran", ""]],
+                                            'dirs': ['include']
                                            })
 
-            self.log.info("Customized sanity check paths: %s"%self.getcfg('sanityCheckPaths'))
+            self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
         Application.sanitycheck(self)

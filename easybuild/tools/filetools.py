@@ -143,7 +143,7 @@ def extractCmd(fn, overwrite=False):
         if ff[-2] == 'tar':
             ftype = 'tar xjf %s'
     if ff[-1] == 'tbz':
-        ftype = 'tar xfj %s'
+        ftype = 'tar xjf %s'
 
     # tarball
     if ff[-1] == 'tar':

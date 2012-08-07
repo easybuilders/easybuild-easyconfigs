@@ -29,9 +29,9 @@ EasyBuild support for building and installing Python, implemented as an easybloc
 import os
 import shutil
 
+import easybuild.tools.toolkit as toolkit
 from easybuild.framework.application import ApplicationPackage, Application
 from easybuild.tools.filetools import unpack, patch, run_cmd
-import easybuild.tools.toolkit as toolkit
 
 
 class Python(Application):
@@ -83,7 +83,7 @@ class DefaultPythonPackage(ApplicationPackage):
         self.sitecfgincdir = None
         self.testinstall = False
         self.builddir = mself.builddir
-        self.cfg = mself.cfg
+        self.mself = mself
         self.installopts = ''
         self.runtest = None
         self.pkgdir = "%s/%s" % (self.builddir, self.name)
@@ -135,7 +135,7 @@ class DefaultPythonPackage(ApplicationPackage):
         extrapath = ""
         testinstalldir = os.path.join(self.builddir, "mytemporarytestinstalldir")
         if self.testinstall:
-            #Install in test directory and export PYTHONPATH
+            # Install in test directory and export PYTHONPATH
             try:
                 os.makedirs(testinstalldir)
             except OSError:
@@ -153,7 +153,6 @@ class DefaultPythonPackage(ApplicationPackage):
 
         if self.runtest:
             cmd = "%s%s" % (extrapath, self.runtest)
-
             run_cmd(cmd, log_all=True, simple=True)
 
         if self.testinstall:
@@ -186,6 +185,10 @@ class DefaultPythonPackage(ApplicationPackage):
         self.test()
         self.make_install()
 
+    def getcfg(self, *args, **kwargs):
+        return self.mself.getcfg(*args, **kwargs)
+
+
 class Nose(DefaultPythonPackage):
     """nose package"""
     def __init__(self, mself, pkg, pkginstalldeps):
@@ -196,11 +199,12 @@ class Nose(DefaultPythonPackage):
         # and tar exiting with non-zero exit code
         self.unpack_options = ' --pax-option="delete=SCHILY.*" --pax-option="delete=LIBARCHIVE.*" '
 
+
 class FortranPythonPackage(DefaultPythonPackage):
     """Extends DefaultPythonPackage to add a Fortran compiler to the make call"""
 
     def make(self):
-        comp_fam = self.tk.toolkit_comp_family()
+        comp_fam = self.toolkit().toolkit_comp_family()
 
         if comp_fam == toolkit.INTEL:
             cmd = "python setup.py build --compiler=intel --fcompiler=intelem"
@@ -229,7 +233,7 @@ class Numpy(FortranPythonPackage):
     def __init__(self, mself, pkg, pkginstalldeps):
         FortranPythonPackage.__init__(self, mself, pkg, pkginstalldeps)
 
-        self.pkgcfgs = self.cfg['pkgcfgs'][0]
+        self.pkgcfgs = mself.getcfg('pkgcfgs')
         if self.pkgcfgs.has_key('numpysitecfglibsubdirs'):
             self.numpysitecfglibsubdirs = self.pkgcfgs['numpysitecfglibsubdirs']
         else:
@@ -282,10 +286,11 @@ libraries = %s
             blas = ", ".join(blas_libs)
 
         self.sitecfg = self.sitecfg % \
-            { 'lapack' : lapack,
-              'blas' : blas,
-              'libs' : ":".join([lib for lib in os.getenv('LDFLAGS').split(" -L")]),
-              'includes' : ":".join([lib for lib in os.getenv('CPPFLAGS').split(" -I")]),
+            {
+             'lapack': lapack,
+             'blas': blas,
+             'libs': ":".join([lib for lib in os.getenv('LDFLAGS').split(" -L")]),
+             'includes': ":".join([lib for lib in os.getenv('CPPFLAGS').split(" -I")]),
             }
 
         self.sitecfgfn = 'site.cfg'

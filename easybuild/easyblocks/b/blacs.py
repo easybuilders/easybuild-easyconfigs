@@ -88,14 +88,14 @@ class BLACS(Application):
         mpif77 = 'mpif77'
 
         opts = {
-                'mpicc':mpicc,
-                'mpif77':mpif77,
-                'f77':os.getenv('F77'),
-                'cc':os.getenv('CC'),
-                'builddir':os.getcwd(),
-                'base':base,
-                'mpilib':mpilib
-                }
+                'mpicc': mpicc,
+                'mpif77': mpif77,
+                'f77': os.getenv('F77'),
+                'cc': os.getenv('CC'),
+                'builddir': os.getcwd(),
+                'base': base,
+                'mpilib': mpilib
+               }
 
         # determine interface and transcomm settings
         comm = ''
@@ -154,10 +154,11 @@ class BLACS(Application):
         except OSError, err:
             self.log.error("Failed to determine interface and transcomm settings: %s" % err)
 
-        opts.update({'comm':comm,
-                     'int':interface,
-                     'base':base,
-                     })
+        opts.update({
+                     'comm': comm,
+                     'int': interface,
+                     'base': base
+                    })
 
         add_makeopts = ' MPICC=%(mpicc)s MPIF77=%(mpif77)s %(comm)s ' % opts
         add_makeopts += ' INTERFACE=%(int)s MPIdir=%(base)s BTOPdir=%(builddir)s mpi ' % opts
@@ -203,13 +204,14 @@ class BLACS(Application):
     def sanitycheck(self):
 
         if not self.getcfg('sanityCheckPaths'):
-            self.setcfg('sanityCheckPaths',{'files':[fil for filptrn in ["blacs", "blacsCinit", "blacsF77init"]
-                                                         for fil in ["lib/lib%s.a"%filptrn,
-                                                                     "lib/%s_MPI-LINUX-0.a"%filptrn]] +
-                                                    ["bin/xintface"],
-                                            'dirs':[]
+            self.setcfg('sanityCheckPaths',{
+                                            'files': [fil for filptrn in ["blacs", "blacsCinit", "blacsF77init"]
+                                                          for fil in ["lib/lib%s.a" % filptrn,
+                                                                      "lib/%s_MPI-LINUX-0.a" % filptrn]] +
+                                                     ["bin/xintface"],
+                                            'dirs': []
                                            })
 
-            self.log.info("Customized sanity check paths: %s"%self.getcfg('sanityCheckPaths'))
+            self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
         Application.sanitycheck(self)

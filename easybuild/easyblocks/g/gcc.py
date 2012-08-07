@@ -33,11 +33,11 @@ import shutil
 from copy import copy
 from distutils.version import LooseVersion
 
+import easybuild.tools.environment as env
 from easybuild.framework.application import Application
 from easybuild.tools.filetools import run_cmd
 from easybuild.tools.systemtools import get_kernel_name, get_shared_lib_ext, get_platform_name
 
-import easybuild.tools.environment as env
 
 
 class GCC(Application):
@@ -49,16 +49,18 @@ class GCC(Application):
     def __init__(self, *args, **kwargs):
         Application.__init__(self, *args, **kwargs)
 
-        self.cfg.update({'languages':[[], "List of languages to build GCC for (--enable-languages) (default: [])"],
-                         'withlto':[True, "Enable LTO support (default: True)"],
-                         'withcloog':[False, "Build GCC with CLooG support (default: False)."],
-                         'withppl':[False, "Build GCC with PPL support (default: False)."],
-                         'pplwatchdog':[False, "Enable PPL watchdog (default: False)"],
-                         'clooguseisl':[False, "Use ISL with CLooG or not (use PPL otherwise) (default: False)"]
-                         }
-                        )
-
         self.stagedbuild = False
+
+    def extra_options(self):
+        extra_vars = {
+                      'languages': [[], "List of languages to build GCC for (--enable-languages) (default: [])"],
+                      'withlto': [True, "Enable LTO support (default: True)"],
+                      'withcloog': [False, "Build GCC with CLooG support (default: False)."],
+                      'withppl': [False, "Build GCC with PPL support (default: False)."],
+                      'pplwatchdog': [False, "Enable PPL watchdog (default: False)"],
+                      'clooguseisl': [False, "Use ISL with CLooG or not (use PPL otherwise) (default: False)"]
+                     }
+        return Application.extra_options(self, extra_vars)
 
     def create_dir(self, dirname):
         """
@@ -120,15 +122,16 @@ class GCC(Application):
         for d in all_dirs:
             for sd in extra_src_dirs:
                 if d.startswith(sd):
-                    found_src_dirs.append({'source_dir':d,
-                                           'target_dir':sd
-                                           })
+                    found_src_dirs.append({
+                                           'source_dir': d,
+                                           'target_dir': sd
+                                          })
                     # expected format: name[-subname]-version
                     ds = os.path.basename(d).split('-')
                     name = '-'.join(ds[0:-1])
-                    names.update({sd:name})
+                    names.update({sd: name})
                     ver = ds[-1]
-                    versions.update({sd:ver})
+                    versions.update({sd: ver})
 
         # we need to find all dirs specified, or else...
         if not len(found_src_dirs) == len(extra_src_dirs):
@@ -153,10 +156,10 @@ class GCC(Application):
         self.log.debug("Prepared extra src dirs for %s: %s (configopts: %s)" % (stage, found_src_dirs, configopts))
 
         return {
-                'configopts':configopts,
-                'names':names,
-                'versions':versions
-                }
+                'configopts': configopts,
+                'names': names,
+                'versions': versions
+               }
 
     def run_configure_cmd(self, cmd):
         """
@@ -233,7 +236,7 @@ class GCC(Application):
             # unstaged build, so just run standard configure/make/make install
             # set prefixes
             self.log.info("Performing regular GCC build...")
-            configopts += " --prefix=%(p)s --with-local-prefix=%(p)s" % {'p' : self.installdir }
+            configopts += " --prefix=%(p)s --with-local-prefix=%(p)s" % {'p' : self.installdir}
 
         # III) create obj dir to build in, and change to it
         #     GCC doesn't like to be built in the source dir
@@ -244,10 +247,10 @@ class GCC(Application):
 
         # IV) actual configure, but not on default path
         cmd = "%s ../configure  %s %s" % (
-                                           self.getcfg('preconfigopts'),
-                                           self.configopts,
-                                           configopts
-                                          )
+                                          self.getcfg('preconfigopts'),
+                                          self.configopts,
+                                          configopts
+                                         )
 
         # instead of relying on uname, we run the same command GCC uses to
         # determine the platform
@@ -279,9 +282,9 @@ class GCC(Application):
             env.set('PATH', path)
 
             ld_lib_path = "%(dir)s/lib64:%(dir)s/lib:%(val)s" % {
-                                      'dir':self.stage1installdir,
-                                      'val':os.getenv('LD_LIBRARY_PATH')
-                                      }
+                                                                 'dir': self.stage1installdir,
+                                                                 'val': os.getenv('LD_LIBRARY_PATH')
+                                                                }
             env.set('LD_LIBRARY_PATH', ld_lib_path)
 
             #
@@ -427,7 +430,7 @@ class GCC(Application):
                                              self.getcfg('preconfigopts'),
                                              self.configopts,
                                              configopts
-                                             )
+                                            )
             self.run_configure_cmd(cmd)
 
         # build with bootstrapping for self-containment
@@ -490,9 +493,10 @@ class GCC(Application):
                 lib64_files = ["lib64/%s" % x for x in lib64_files]
             libexec_files = ["libexec/%s/%s" % (common_infix, x) for x in libexec_files]
 
-            self.setcfg('sanityCheckPaths', {'files':bin_files + lib64_files + libexec_files,
-                                            'dirs':dirs
-                                           })
+            self.setcfg('sanityCheckPaths', {
+                                             'files': bin_files + lib64_files + libexec_files,
+                                             'dirs': dirs
+                                            })
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
@@ -503,8 +507,8 @@ class GCC(Application):
         Make sure all GCC libs are in LD_LIBRARY_PATH
         """
         return {
-                'PATH':['bin'],
-                'LD_LIBRARY_PATH':['lib', 'lib64',
-                                   'lib/gcc/%s' % (self.platform_lib, self.getcfg('version'))],
-                'MANPATH':['man', 'share/man']
+                'PATH': ['bin'],
+                'LD_LIBRARY_PATH': ['lib', 'lib64',
+                                    'lib/gcc/%s' % (self.platform_lib, self.getcfg('version'))],
+                'MANPATH': ['man', 'share/man']
                }

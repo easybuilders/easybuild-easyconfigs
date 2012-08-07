@@ -40,9 +40,11 @@ class Itac(IntelBase):
 
     def __init__(self, *args, **kwargs):
         """Constructor, adds extra config options"""
-        IntelBase.__init__(self, args, kwargs)
+        IntelBase.__init__(self, *args, **kwargs)
 
-        self.cfg.update({'preferredmpi':['impi3', "Preferred MPI type (default: 'impi3')"]})
+    def extra_options(self):
+        extra_vars = {'preferredmpi': ['impi3', "Preferred MPI type (default: 'impi3')"]}
+        return IntelBase.extra_options(self, extra_vars)
 
     def make_install(self):
         """
@@ -62,7 +64,7 @@ INSTALL_ITA=YES
 INSTALL_ITC=YES
 DEFAULT_MPI=%(mpi)s
 EULA=accept
-""" % {'lic':self.license, 'ins':self.installdir, 'mpi':self.getcfg('preferredmpi')}
+""" % {'lic': self.license, 'ins': self.installdir, 'mpi': self.getcfg('preferredmpi')}
 
         # already in correct directory
         silentcfg = os.path.join(os.getcwd(), "silent.cfg")
@@ -84,30 +86,31 @@ EULA=accept
         """
         A dictionary of possible directories to look for
         """
+        preferredmpi = self.getcfg("preferredmpi")
         guesses = {
-                    'MANPATH':['man'],
-                    'CLASSPATH':['itac/lib_%s' % self.getcfg('preferredmpi')],
-                    'VT_LIB_DIR':['itac/lib_%s' % self.getcfg('preferredmpi')],
-                    'VT_SLIB_DIR':['itac/lib_s%s' % self.getcfg('preferredmpi')]
-                   }
+                   'MANPATH': ['man'],
+                   'CLASSPATH': ['itac/lib_%s' % preferredmpi],
+                   'VT_LIB_DIR': ['itac/lib_%s' % preferredmpi],
+                   'VT_SLIB_DIR': ['itac/lib_s%s' % preferredmpi]
+                  }
 
         if self.getcfg('m32'):
             guesses.update({
-                            'PATH':['bin', 'bin/ia32', 'ia32/bin'],
-                            'LD_LIBRARY_PATH':['lib', 'lib/ia32', 'ia32/lib'],
-                            })
+                            'PATH': ['bin', 'bin/ia32', 'ia32/bin'],
+                            'LD_LIBRARY_PATH': ['lib', 'lib/ia32', 'ia32/lib'],
+                           })
         else:
             guesses.update({
-                            'PATH':['bin', 'bin/intel64', 'bin64'],
-                            'LD_LIBRARY_PATH':['lib', 'lib/intel64', 'lib64'],
-                            })
+                            'PATH': ['bin', 'bin/intel64', 'bin64'],
+                            'LD_LIBRARY_PATH': ['lib', 'lib/intel64', 'lib64'],
+                           })
         return guesses
 
     def make_module_extra(self):
         """Overwritten from IntelBase to add extra txt"""
         txt = IntelBase.make_module_extra(self)
         txt += "prepend-path\t%s\t\t%s\n" % ('INTEL_LICENSE_FILE', self.license)
-        txt += "setenv\t%s\t\t$root\n" % ('VT_ROOT')
+        txt += "setenv\t%s\t\t$root\n" % 'VT_ROOT'
         txt += "setenv\t%s\t\t%s\n" % ('VT_MPI', self.getcfg('preferredmpi'))
         txt += "setenv\t%s\t\t%s\n" % ('VT_ADD_LIBS', '"-ldwarf -lelf -lvtunwind -lnsl -lm -ldl -lpthread"')
 

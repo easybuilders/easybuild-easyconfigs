@@ -46,10 +46,11 @@ class Doxygen(Application):
         """
         if not self.getcfg('sanityCheckPaths'):
 
-            self.setcfg('sanityCheckPaths',{'files':["bin/doxygen"],
-                                            'dirs':[]
+            self.setcfg('sanityCheckPaths',{
+                                            'files': ["bin/doxygen"],
+                                            'dirs': []
                                            })
 
-            self.log.info("Customized sanity check paths: %s"%self.getcfg('sanityCheckPaths'))
+            self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
         Application.sanitycheck(self)

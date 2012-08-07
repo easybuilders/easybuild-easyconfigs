@@ -48,10 +48,12 @@ class Ifort(Icc):
             else:
                 libprefix = "lib/intel64/lib"
 
-            self.setcfg('sanityCheckPaths', {'files':["bin/intel64/%s" % x for x in ["ifort", "idb"]] +
-                                                     ["%s%s" % (libprefix, x) for x in ["ifcore.a", "ifcore.so", "iomp5.a", "iomp5.so"]],
-                                            'dirs':[]
-                                           })
+            self.setcfg('sanityCheckPaths', {
+                                             'files': ["bin/intel64/%s" % x for x in ["ifort", "idb"]] +
+                                                      ["%s%s" % (libprefix, x) for x in ["ifcore.a", "ifcore.so",
+                                                                                         "iomp5.a", "iomp5.so"]],
+                                             'dirs': []
+                                            })
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 

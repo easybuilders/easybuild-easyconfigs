@@ -43,21 +43,20 @@ class WRF(Application):
 
     def __init__(self,*args,**kwargs):
         """Add extra config options specific to WRF."""
-
-        Application.__init__(self, args,kwargs)
+        Application.__init__(self, *args, **kwargs)
 
         self.build_in_installdir = True
-
         self.wrfsubdir = None
-
         self.comp_fam = None
 
-        self.cfg.update({
-                         'buildtype':[None, "Specify the type of build (serial, smpar (OpenMP), " \
-                                            "dmpar (MPI), dm+sm (hybrid OpenMP/MPI))."],
-                         'rewriteopts':[True, "Replace -O3 with CFLAGS/FFLAGS (default: True)."],
-                         'runtest':[True, "Build and run WRF tests (default: True)."]
-                         })
+    def extra_options(self):
+        extra_vars = {
+                      'buildtype': [None, "Specify the type of build (serial, smpar (OpenMP), " \
+                                          "dmpar (MPI), dm+sm (hybrid OpenMP/MPI))."],
+                      'rewriteopts': [True, "Replace -O3 with CFLAGS/FFLAGS (default: True)."],
+                      'runtest': [True, "Build and run WRF tests (default: True)."]
+                     }
+        return Application.extra_options(self, extra_vars)
 
     def configure(self):
         """Configure build:
@@ -107,7 +106,7 @@ class WRF(Application):
 
         # determine build type option to look for
         build_type_option = None
-        self.comp_fam = self.tk.toolkit_comp_family()
+        self.comp_fam = self.toolkit().toolkit_comp_family()
         if self.comp_fam == toolkit.INTEL:
             build_type_option = "Linux x86_64 i486 i586 i686, ifort compiler with icc"
 
@@ -132,14 +131,14 @@ class WRF(Application):
         cmd = "./configure"
         qa = {
               # named group in match will be used to construct answer
-              "Compile for nesting? (1=basic, 2=preset moves, 3=vortex following) [default 1]:":"1",
-              "Compile for nesting? (0=no nesting, 1=basic, 2=preset moves, 3=vortex following) [default 0]:":"0"
-              }
+              "Compile for nesting? (1=basic, 2=preset moves, 3=vortex following) [default 1]:": "1",
+              "Compile for nesting? (0=no nesting, 1=basic, 2=preset moves, 3=vortex following) [default 0]:": "0"
+             }
         no_qa = []
         std_qa = {
                   # named group in match will be used to construct answer
-                  r"%s.*\n(.*\n)*Enter selection\s*\[[0-9]+-[0-9]+\]\s*:" % build_type_question:"%(nr)s",
-                  }
+                  r"%s.*\n(.*\n)*Enter selection\s*\[[0-9]+-[0-9]+\]\s*:" % build_type_question: "%(nr)s",
+                 }
 
         run_cmd_qa(cmd, qa, no_qa=no_qa, std_qa=std_qa, log_all=True, simple=True)
 
@@ -147,12 +146,12 @@ class WRF(Application):
 
         # make sure correct compilers are being used
         comps = {
-                 'SCC':os.getenv('CC'),
-                 'SFC':os.getenv('F90'),
-                 'CCOMP':os.getenv('CC'),
-                 'DM_FC':os.getenv('MPIF90'),
-                 'DM_CC':"%s -DMPI2_SUPPORT" % os.getenv('MPICC'),
-                 }
+                 'SCC': os.getenv('CC'),
+                 'SFC': os.getenv('F90'),
+                 'CCOMP': os.getenv('CC'),
+                 'DM_FC': os.getenv('MPIF90'),
+                 'DM_CC': "%s -DMPI2_SUPPORT" % os.getenv('MPICC'),
+                }
         for line in fileinput.input(cfgfile, inplace=1, backup='.orig.comps'):
             for k,v in comps.items():
                 line = re.sub(r"^(%s\s*=\s*).*$" % k, r"\1 %s" % v, line)
@@ -162,7 +161,6 @@ class WRF(Application):
         if self.getcfg('rewriteopts'):
 
             # replace default -O3 option in configure.wrf with CFLAGS/FFLAGS from environment
-
             self.log.info("Rewriting optimization options in %s" % cfgfile)
 
             # set extra flags for Intel compilers
@@ -239,8 +237,8 @@ class WRF(Application):
 
             # stack limit needs to be set to unlimited for WRF to work well
             if self.getcfg('buildtype') in self.parallel_build_types:
-                test_cmd = "ulimit -s unlimited && %s && %s" % (self.tk.mpi_cmd_for("./ideal.exe", 1),
-                                                                self.tk.mpi_cmd_for("./wrf.exe", n))
+                test_cmd = "ulimit -s unlimited && %s && %s" % (self.toolkit().mpi_cmd_for("./ideal.exe", 1),
+                                                                self.toolkit().mpi_cmd_for("./wrf.exe", n))
             else:
                 test_cmd = "ulimit -s unlimited && ./ideal.exe && ./wrf.exe" % n
 
@@ -335,28 +333,28 @@ class WRF(Application):
             fs = ["libwrflib.a", "wrf.exe", "ideal.exe", "real.exe", "ndown.exe", "nup.exe", "tc.exe"]
             ds = ["main", "run"]
 
-            self.setcfg('sanityCheckPaths',{'files':[os.path.join(self.wrfsubdir,"main",x) for x in fs],
-                                            'dirs':[os.path.join(self.wrfsubdir,x) for x in ds]
-                                            })
+            self.setcfg('sanityCheckPaths',{
+                                            'files': [os.path.join(self.wrfsubdir, "main", x) for x in fs],
+                                            'dirs': [os.path.join(self.wrfsubdir, x) for x in ds]
+                                           })
 
-            self.log.info("Customized sanity check paths: %s"%self.getcfg('sanityCheckPaths'))
+            self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
         Application.sanitycheck(self)
 
     def make_module_req_guess(self):
 
-        maindir = os.path.join(self.wrfsubdir,"main")
+        maindir = os.path.join(self.wrfsubdir, "main")
 
         return {
-            'PATH': [maindir],
-            'LD_LIBRARY_PATH': [maindir],
-            'MANPATH': [],
-        }
+                'PATH': [maindir],
+                'LD_LIBRARY_PATH': [maindir],
+                'MANPATH': [],
+               }
 
     def make_module_extra(self):
 
         txt = Application.make_module_extra(self)
-
         txt += get_netcdf_module_set_cmds(self.log)
 
         return txt

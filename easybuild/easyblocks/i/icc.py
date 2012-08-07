@@ -49,11 +49,11 @@ class Icc(IntelBase):
             else:
                 libprefix = "lib/intel64/lib"
 
-            self.setcfg('sanityCheckPaths', {'files':
-                                             ["bin/intel64/%s" % x for x in ["icc", "icpc", "idb"]] +
-                                             ["%s%s" % (libprefix, x) for x in ["iomp5.a", "iomp5.so"]],
-                                            'dirs':[]
-                                           })
+            self.setcfg('sanityCheckPaths', {
+                                             'files': ["bin/intel64/%s" % x for x in ["icc", "icpc", "idb"]] +
+                                                      ["%s%s" % (libprefix, x) for x in ["iomp5.a", "iomp5.so"]],
+                                             'dirs': []
+                                            })
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
@@ -65,18 +65,18 @@ class Icc(IntelBase):
         if self.getcfg('m32'):
             # 32-bit toolkit
             dirmap = {
-                    'PATH':['bin', 'bin/ia32', 'tbb/bin/ia32'],
-                    'LD_LIBRARY_PATH':['lib', 'lib/ia32'],
-                    'MANPATH':['man', 'share/man', 'man/en_US'],
-                    'IDB_HOME':['bin/intel64']
-                   }
+                      'PATH': ['bin', 'bin/ia32', 'tbb/bin/ia32'],
+                      'LD_LIBRARY_PATH': ['lib', 'lib/ia32'],
+                      'MANPATH': ['man', 'share/man', 'man/en_US'],
+                      'IDB_HOME': ['bin/intel64']
+                     }
         else:
             # 64-bit toolit
             dirmap = {
-                    'PATH':['bin', 'bin/intel64', 'tbb/bin/emt64'],
-                    'LD_LIBRARY_PATH':['lib', 'lib/intel64'],
-                    'MANPATH':['man', 'share/man', 'man/en_US'],
-                    'IDB_HOME':['bin/intel64']
+                      'PATH': ['bin', 'bin/intel64', 'tbb/bin/emt64'],
+                      'LD_LIBRARY_PATH': ['lib', 'lib/intel64'],
+                      'MANPATH': ['man', 'share/man', 'man/en_US'],
+                      'IDB_HOME': ['bin/intel64']
                    }
 
         # in recent Intel compiler distributions, the actual binaries are
@@ -117,7 +117,6 @@ class Icc(IntelBase):
         txt = IntelBase.make_module_extra(self)
 
         txt += "prepend-path\t%s\t\t%s\n" % ('INTEL_LICENSE_FILE', self.license)
-
         txt += "prepend-path\t%s\t\t$root/%s\n" % ('NLSPATH', 'idb/intel64/locale/%l_%t/%N')
 
         return txt

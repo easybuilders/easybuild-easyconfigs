@@ -63,7 +63,7 @@ class MrBayes(Application):
             else:
                 self.log.error("BEAGLE module not loaded?")
 
-            if self.tk.opts['usempi']:
+            if self.toolkit().opts['usempi']:
                 self.updatecfg('configopts', '--enable-mpi')
 
             # configure
@@ -92,10 +92,10 @@ class MrBayes(Application):
         """Custom sanity check for MrBayes."""
 
         if not self.getcfg('sanityCheckPaths'):
-            self.setcfg('sanityCheckPaths', {'files':["bin/mb"],
-                                            'dirs':[]
-                                            }
-                        )
+            self.setcfg('sanityCheckPaths', {
+                                             'files': ["bin/mb"],
+                                             'dirs': []
+                                            })
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
