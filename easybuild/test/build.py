@@ -243,9 +243,15 @@ def build_packages_in_parallel(packages, output_dir, script_dir):
     # we submit all the jobs which can be trivially build.
     jobs = [submit_job(pkg, output_dir, script_dir) for pkg in no_dependencies]
 
+    log.info("Submitted %s jobs" % len(jobs))
+    log.info("Still %s left to be submitted" % len(with_dependencies))
+
     while len(jobs) > 0:
         # sleep 5 minutes
         time.sleep(5 * 60)
+
+        log.info("%s jobs are being run" % len(jobs))
+        log.info("%s packages still need to be build" % len(with_dependencies))
 
         done_jobs = [job for job in jobs if job.state() == 'finished']
         # filter the done_jobs
