@@ -777,9 +777,9 @@ class Toolkit:
         """Determine compiler family based on toolkit dependencies."""
         comp_families = {
                          # always use tuples as keys!
-                         ('icc', 'ifort'):INTEL, # Intel toolkit has both icc and ifort
-                         ('GCC', ):GCC # GCC toolkit uses GCC as compiler suite
-                         }
+                         ('icc', 'ifort'): INTEL,  # Intel toolkit has both icc and ifort
+                         ('GCC', ): GCC  # GCC toolkit uses GCC as compiler suite
+                        }
 
         return self.det_toolkit_type("compiler family", comp_families)
 

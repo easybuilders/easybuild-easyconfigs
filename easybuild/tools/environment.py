@@ -23,7 +23,6 @@ utility module for modifying os.environ
 """
 import os
 
-
 changes = {}
 
 def write_changes(filename):
@@ -38,12 +37,14 @@ def write_changes(filename):
     script.close()
     reset_changes()
 
+
 def reset_changes():
     """
     Reset the changes tracked by this module
     """
     global changes
     changes = {}
+
 
 def set(key, value):
     """
