@@ -351,12 +351,12 @@ class Toolkit:
 
         self.vars['LIBBLAS'] = "-lcblas -lf77blas -latlas -lgfortran"
         self.vars['LIBBLAS_MT'] = "-lptcblas -lptf77blas -latlas -lgfortran -lpthread"
-        self.vars['BLAS_STATIC_LIBS'] = ["%s/lib/lib%s.a" % (atlas, x) for x in ["cblas",
-                                                                                 "f77blas",
-                                                                                 "atlas"]]
-        self.vars['BLAS_MT_STATIC_LIBS'] = ["%s/lib/lib%s.a" % (atlas, x) for x in ["ptcblas",
-                                                                                    "ptf77blas",
-                                                                                    "atlas"]]
+        self.vars['BLAS_STATIC_LIBS'] = ','.join(["%s/lib/lib%s.a" % (atlas, x) for x in ["cblas",
+                                                                                          "f77blas",
+                                                                                          "atlas"]])
+        self.vars['BLAS_MT_STATIC_LIBS'] = ','.join(["%s/lib/lib%s.a" % (atlas, x) for x in ["ptcblas",
+                                                                                             "ptf77blas",
+                                                                                             "atlas"]])
 
         self._addDependencyVariables(['ATLAS'])
 
@@ -577,16 +577,16 @@ class Toolkit:
         self.vars['LIBLAPACK_MT'] = self.vars['LIBBLAS_MT']
 
         # construct library lists
-        def construct_lib_list(l, libs):
+        def construct_lib_list(libs):
             """Construct a list of existing libraries."""
+            l = []
             for path in ["%s/%s/libmkl_%s.a" % (mklroot, x, y) for x in mklld for y in libs ]:
                 if os.path.isfile(path):
                     l.append(path)
+            return ','.join(l)
 
-        self.vars['BLAS_STATIC_LIBS'] = []
-        self.vars['BLAS_MT_STATIC_LIBS'] = []
-        construct_lib_list(self.vars['BLAS_STATIC_LIBS'], blas_libs)
-        construct_lib_list(self.vars['BLAS_MT_STATIC_LIBS'], blas_mt_libs)
+        self.vars['BLAS_STATIC_LIBS'] = construct_lib_list(blas_libs)
+        self.vars['BLAS_MT_STATIC_LIBS'] = construct_lib_list(blas_mt_libs)
 
         self.vars['LAPACK_STATIC_LIBS'] = self.vars['BLAS_STATIC_LIBS']
         self.vars['LAPACK_MT_STATIC_LIBS'] = self.vars['BLAS_MT_STATIC_LIBS']
@@ -692,7 +692,7 @@ class Toolkit:
         self.vars['LIBLAPACK'] = "-llapack %s" % self.vars['LIBBLAS']
         self.vars['LIBLAPACK_MT'] = "-llapack %s -lpthread" % self.vars['LIBBLAS_MT']
 
-        self.vars['LAPACK_LIBS'] = ["%s/lib/lapack.a" % os.getenv('SOFTROOTLAPACK')]
+        self.vars['LAPACK_LIBS'] = "%s/lib/lapack.a" % os.getenv('SOFTROOTLAPACK')
         self.vars['LAPACK_MT_LIBS'] = self.vars['LAPACK_LIBS']
 
         self._addDependencyVariables(['LAPACK'])
