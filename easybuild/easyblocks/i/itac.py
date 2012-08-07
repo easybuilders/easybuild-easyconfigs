@@ -90,8 +90,8 @@ EULA=accept
         guesses = {
                    'MANPATH': ['man'],
                    'CLASSPATH': ['itac/lib_%s' % preferredmpi],
-                   'VT_LIB_DIR': ['itac/lib_%s' % preferredmpi)],
-                   'VT_SLIB_DIR': ['itac/lib_s%s' % preferredmpi)]
+                   'VT_LIB_DIR': ['itac/lib_%s' % preferredmpi],
+                   'VT_SLIB_DIR': ['itac/lib_s%s' % preferredmpi]
                   }
 
         if self.getcfg('m32'):

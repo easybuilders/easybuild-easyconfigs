@@ -290,7 +290,8 @@ class EasyBlock:
         output dict contains these attributes:
         ['name', 'version', 'suffix', 'dummy', 'tk']
         """
-        self.log.debug("Parsing %s as a dependency" % dep)
+        # convert tuple to string otherwise python might complain about the formatting
+        self.log.debug("Parsing %s as a dependency" % str(dep))
 
         attr = ['name', 'version', 'suffix', 'dummy']
         dependency = {'name': '', 'version': '', 'suffix': '', 'dummy': False}
