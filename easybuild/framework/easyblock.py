@@ -290,7 +290,7 @@ class EasyBlock:
         output dict contains these attributes:
         ['name', 'version', 'suffix', 'dummy', 'tk']
         """
-        self.log.debug("Parsing %s as a dependency" % dep)
+        self.log.debug("Parsing %s as a dependency" % (dep,) )
 
         attr = ['name', 'version', 'suffix', 'dummy']
         dependency = {'name': '', 'version': '', 'suffix': '', 'dummy': False}
