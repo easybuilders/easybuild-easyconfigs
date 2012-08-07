@@ -122,7 +122,7 @@ def main():
 
     if opts.parallel:
         resolved = resolveDependencies(packages, opts.robot, log)
-        build_packages_in_parallel(resolved, output_dir)
+        build_packages_in_parallel(resolved, output_dir, cur_dir)
     else:
         build_packages(packages, output_dir)
 
@@ -231,7 +231,7 @@ def build_packages(packages, output_dir):
     write_to_xml(succes, test_results, output_file)
 
 
-def build_packages_in_parallel(packages, output_dir):
+def build_packages_in_parallel(packages, output_dir, script_dir):
     """
     list is a list of packages which can be build! (e.g. they have no unresolved dependencies)
     this function will build them in parallel by submitting jobs
@@ -241,7 +241,7 @@ def build_packages_in_parallel(packages, output_dir):
     with_dependencies = [pkg for pkg in packages if pkg not in no_dependencies]
 
     # we submit all the jobs which can be trivially build.
-    jobs = [submit_job(pkg, output_dir) for pkg in no_dependencies]
+    jobs = [submit_job(pkg, output_dir, script_dir) for pkg in no_dependencies]
 
     while len(jobs) > 0:
         # sleep 5 minutes
@@ -255,7 +255,7 @@ def build_packages_in_parallel(packages, output_dir):
 
         # remove from unresolvedDependencies in with_dependencies array
         for job in done_jobs:
-            name, version = job.name.split('-', maxsplit=1)
+            name, version = job.name.split('-', 1)
             for pkg in with_dependencies:
                 try:
                     pkg['unresolvedDependencies'].remove((name, version))
@@ -266,15 +266,15 @@ def build_packages_in_parallel(packages, output_dir):
         no_dependencies = [pkg for pkg in with_dependencies if len(pkg['unresolvedDependencies']) == 0]
         with_dependencies = [pkg for pkg in with_dependencies if pkg not in no_dependencies]
 
-        jobs.extend([submit_job(pkg, output_dir) for pkg in no_dependencies])
+        jobs.extend([submit_job(pkg, output_dir, script_dir) for pkg in no_dependencies])
 
-def submit_job(package, output_dir):
+def submit_job(package, output_dir, script_dir):
     """
     submits a job, to build a *single* package
     returns the job
     """
     # command is pyton script/regtest.py file_name --single
-    command = "python %s %s --no-parallel" % (sys.argv[0], package['spec'])
+    command = "cd %s && python %s %s --no-parallel" % (script_dir, sys.argv[0], package['spec'])
 
     # capture PYTHONPATH, MODULEPATH and all variables starting with EASYBUILD
     easybuild_vars = {}
