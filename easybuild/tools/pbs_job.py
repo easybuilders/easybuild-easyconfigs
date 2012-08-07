@@ -177,6 +177,10 @@ class PbsJob:
             for idx, attr in enumerate(types):
                 jobattr[idx].name = attr
 
+
+        # get a new connection (otherwise this seems to fail)
+        pbs.pbs_disconnect(self.pbsconn)
+        self.pbsconn = pbs.connect(self.pbs_server)
         jobs = pbs.pbs_statjob(self.pbsconn, self.jobid, jobattr, 'NULL')
         if len(jobs) == 0:
             # no job found, return None info
