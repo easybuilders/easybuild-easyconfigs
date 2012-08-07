@@ -67,6 +67,7 @@ from easybuild.tools.filetools import modifyEnv
 from easybuild.tools.pbs_job import PbsJob
 
 # some variables used by different functions
+initLogger(filename=None, debug=True, typ=None)
 log = getLog("ParallelBuild")
 test_results = []
 build_stopped = {}
@@ -74,15 +75,13 @@ build_stopped = {}
 
 def main():
     """ main entry point """
-    logFile, log, hn = initLogger(filename=None, debug=True, typ=None)
-
     # assume default config path
     config.init('easybuild/easybuild_config.py')
     cur_dir = os.getcwd()
 
     # Option parsing
     parser = OptionParser()
-    parser.add_option("--no-parallel", action="store_false", dest="parallel", default=True
+    parser.add_option("--no-parallel", action="store_false", dest="parallel", default=True,
               help="submit jobs to build in parallel")
     parser.add_option("--output-dir", dest="directory", help="set output directory for test-run")
     parser.add_option("-r", "--robot", help="specify robot directory")
@@ -95,7 +94,7 @@ def main():
     if opts.directory:
         output_dir = opts.directory
     elif "EASYBUILDTESTOUTPUT" in os.environ:
-        output_dir = os.path.abspath(os.environ['EASYBUILDTESTOUTPUT']
+        output_dir = os.path.abspath(os.environ['EASYBUILDTESTOUTPUT'])
     else:
         # Use default: Current dir + easybuil-test-timestamp
         output_dir = os.path.join(cur_dir, basename)
@@ -159,7 +158,7 @@ def build_packages(packages, output_dir):
                     easyblock = eval(match.group(1))
                     break
 
-            app_class = get_class(easyblock, self.log, name=name)
+            app_class = get_class(easyblock, log, name=name)
             apps.append(app_class(spec, debug=True))
         except EasyBuildError, err:
             test_results.append((spec, 'initialization', err))
