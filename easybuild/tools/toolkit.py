@@ -359,7 +359,7 @@ class Toolkit:
         self.vars['LAPACK_STATIC_LIBS'] = "liblapack.a," + self.vars['BLAS_STATIC_LIBS']
         self.vars['LAPACK_MT_STATIC_LIBS'] = "liblapack.a," + self.vars['BLAS_MT_STATIC_LIBS']
 
-        self.vars['BLAS_LAPACK_DIR'] = self.vars['LAPACK_LIB_DIR']
+        self.vars['BLAS_LAPACK_LIB_DIR'] = self.vars['LAPACK_LIB_DIR']
         self.vars['BLAS_LAPACK_STATIC_LIBS'] = self.vars['LAPACK_STATIC_LIBS']
         self.vars['BLAS_LAPACK_MT_STATIC_LIBS'] =  self.vars['LAPACK_MT_STATIC_LIBS']
 
