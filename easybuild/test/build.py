@@ -18,6 +18,33 @@
 # You should have received a copy of the GNU General Public License
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
+"""
+regtest script which will build (in parallel) the given easyconfigs.
+reports errors afterwards (in log and in junit-compatible xml file)
+
+There are several possibilities why some applications fail to build,
+this test will distinguish between the different phases in the build:
+   * eb-file parsing
+   * initialization
+   * preparation
+   * pre-build verification
+   * generate installdir name
+   * make builddir
+   * unpacking
+   * patching
+   * prepare toolkit
+   * setup startfrom
+   * configure
+   * make
+   * test
+   * create installdir
+   * make install
+   * packages
+   * postproc
+   * sanity check
+   * cleanup
+
+"""
 import copy
 import logging
 import platform
@@ -25,11 +52,9 @@ import os
 import re
 import sys
 import time
-import unittest
 import xml.dom.minidom as xml
 from datetime import datetime
 from optparse import OptionParser
-from unittest import TestCase
 
 import easybuild
 import easybuild.tools.config as config
@@ -41,269 +66,239 @@ from easybuild.build import findEasyconfigs, processEasyconfig, resolveDependenc
 from easybuild.tools.filetools import modifyEnv
 from easybuild.tools.pbs_job import PbsJob
 
+# some variables used by different functions
+log = getLog("ParallelBuild")
+test_results = []
+build_stopped = {}
 
-class BuildTest(TestCase):
+
+def main():
+    """ main entry point """
+    logFile, log, hn = initLogger(filename=None, debug=True, typ=None)
+
+    # assume default config path
+    config.init('easybuild/easybuild_config.py')
+    cur_dir = os.getcwd()
+
+    # Option parsing
+    parser = OptionParser()
+    parser.add_option("--no-parallel", action="store_false", dest="parallel", default=True
+              help="submit jobs to build in parallel")
+    parser.add_option("--output-dir", dest="directory", help="set output directory for test-run")
+    parser.add_option("-r", "--robot", help="specify robot directory")
+
+    (opts, args) = parser.parse_args()
+
+    # Create base directory inside the current directory. This will be used to place
+    # all log files and the test output as xml
+    basename = "easybuild-test-%s" % datetime.now().strftime("%d-%m-%Y-%H:%M:%S")
+    if opts.directory:
+        output_dir = opts.directory
+    elif "EASYBUILDTESTOUTPUT" in os.environ:
+        output_dir = os.path.abspath(os.environ['EASYBUILDTESTOUTPUT']
+    else:
+        # Use default: Current dir + easybuil-test-timestamp
+        output_dir = os.path.join(cur_dir, basename)
+
+    if not os.path.isdir(output_dir):
+        os.makedirs(output_dir)
+
+    # find all easyconfigs (either in specified paths or in 'easybuild/easyblocks')
+    files = []
+    if args:
+        for path in args:
+            files += findEasyconfigs(path, log)
+    else:
+        # Default path
+        path = "easybuild/easyconfigs/"
+        files = findEasyconfigs(path, log)
+
+    # process all the found easyconfig files
+    packages = []
+    for file in files:
+        try:
+            packages.extend(processEasyconfig(file, log, None))
+        except EasyBuildError, err:
+            test_results.append((file, 'eb-file error', err))
+
+    if opts.parallel:
+        resolved = resolveDependencies(packages, opts.robot, log)
+        build_packages_in_parallel(resolved, output_dir)
+    else:
+        build_packages(packages, output_dir)
+
+
+def perform_step(fase, obj, method):
     """
-    This class will build everything in the path given to it.
-    There are several possibilities why some applications fail to build,
-    this test will distinguish between the different phases in the build:
-       * eb-file parsing
-       * initialization
-       * preparation
-       * pre-build verification
-       * generate installdir name
-       * make builddir
-       * unpacking
-       * patching
-       * prepare toolkit
-       * setup startfrom
-       * configure
-       * make
-       * test
-       * create installdir
-       * make install
-       * packages
-       * postproc
-       * sanity check
-       * cleanup
-
-    At the end of its run, this test will report which easyblocks failed (the fase and the error are included)
-    via the log to stdout
+    Perform method on object if it can be build
     """
+    if obj not in build_stopped:
+        try:
+            method(obj)
+        except EasyBuildError, err:
+            # we cannot continue building it
+            test_results.append((obj, fase, err))
+            # keep a dict of so we can check in O(1) if objects can still be build
+            build_stopped[obj] = fase
 
-    def setUp(self):
-        """ fetch application instances, report eb-file errors """
-        logFile, log, hn = initLogger(filename=None, debug=True, typ=None)
+def build_packages(packages, output_dir):
+    """
+    build the packages
+    """
+    apps = []
+    for pkg in packages:
+        spec = pkg['spec']
+        name = pkg['module'][0]
+        try:
+            # handle easyconfigs with custom easyblocks
+            easyblock = None
+            reg = re.compile(r"^\s*easyblock\s*=(.*)$")
+            for line in open(spec).readlines():
+                match = reg.search(line)
+                if match:
+                    easyblock = eval(match.group(1))
+                    break
 
-        config.init('easybuild/easybuild_config.py')
-        self.test_results = []
-        self.build_stopped = {}
-        self.succes = []
-        self.cur_dir = os.getcwd()
-
-        self.log = getLog("BuildTest")
-        self.build_ok = True
-        self.parallel = False
-        self.jobs = []
-
-        parser = OptionParser()
-        parser.add_option("--job", action="store_true", dest="parallel",
-                  help="submit jobs to build in parallel")
-        parser.add_option("--output-file", dest="filename", help="submit jobs to build in parallel")
-
-        (opts, args) = parser.parse_args()
-        self.parallel = opts.parallel
-
-        # Create base directory inside the current directory. This will be used to place
-        # all log files and the test output as xml
-        basename = "easybuild-test-%s" % datetime.now().strftime("%d-%m-%Y-%H:%M:%S")
-        if opts.filename:
-            filename = os.path.abspath(opts.filename)
-        elif "EASYBUILDTESTOUTPUT" in os.environ:
-            filename = os.environ["EASYBUILDTESTOUTPUT"]
-        else:
-            filename = os.path.join(self.cur_dir, basename, "easybuild-test.xml")
-
-        self.output_file = filename
-        self.output_dir = os.path.dirname(self.output_file)
-
-        if not os.path.isdir(self.output_dir):
-            os.makedirs(self.output_dir)
-
-        # find all easyconfigs (either in specified paths or in 'easybuild/easyblocks')
-        files = []
-        if args:
-            for path in args:
-                files += findEasyconfigs(path, log)
-        else:
-            # Default path
-            path = "easybuild/easyconfigs/"
-            files = findEasyconfigs(path, log)
-
-        # if we want to build with jobs, we should do it now, since we have very little time on the login node
-        if self.parallel:
-            # this method will submit the jobs, in runTest we will handle the aggregation of the results
-            self.submit_jobs(files)
-            return
-
-        # process all the found easyconfig files
-        packages = []
-        for file in files:
-            try:
-                packages.extend(processEasyconfig(file, self.log, None))
-            except EasyBuildError, err:
-                self.build_ok = False
-                self.test_results.append((file, 'eb-file error', err))
+            app_class = get_class(easyblock, self.log, name=name)
+            apps.append(app_class(spec, debug=True))
+        except EasyBuildError, err:
+            test_results.append((spec, 'initialization', err))
 
 
-        # Since build-order doesn't matter we don't have to use the resolveDependencies method
-        self.apps = []
-        for pkg in packages:
-            spec = pkg['spec']
-            name = pkg['module'][0]
-            try:
-                # handle easyconfigs with custom easyblocks
-                easyblock = None
-                reg = re.compile(r"^\s*easyblock\s*=(.*)$")
-                for line in open(spec).readlines():
-                    match = reg.search(line)
-                    if match:
-                        easyblock = eval(match.group(1))
-                        break
+    base_dir = os.getcwd()
+    base_env = copy.deepcopy(os.environ)
+    succes = []
 
-                app_class = get_class(easyblock, self.log, name=name)
-                self.apps.append(app_class(spec, debug=True))
-            except EasyBuildError, err:
-                self.build_ok = False
-                self.test_results.append((spec, 'initialization', err))
+    for app in apps:
+        start_time = time.time()
+        # start with a clean slate
+        os.chdir(base_dir)
+        modifyEnv(os.environ, base_env)
 
-    def submit_jobs(self, files):
-        """
-        Build the given files in parallel by submitting jobs
-        """
-        # change to current
-        os.chdir(self.cur_dir)
-        # capture PYTHONPATH and all variables starting with EASYBUILD
-        easybuild_vars = {}
-        for name in os.environ:
-            if name.startswith("EASYBUILD"):
-                easybuild_vars[name] = os.environ[name]
+        # create a handler per app so we can capture debug output per application
+        handler = logging.FileHandler(os.path.join(output_dir, "%s-%s.log" % (app.name(), app.installversion())))
+        handler.setFormatter(build_log.formatter)
 
-        others = ["PYTHONPATH", "MODULEPATH"]
+        app.log.addHandler(handler)
 
-        for env_var in others:
-            if env_var in os.environ:
-                easybuild_vars[env_var] = os.environ[env_var]
+        # take manual control over the building
+        perform_step("preparation", app, lambda x: x.prepare_build())
+        perform_step("pre-build verification", app, lambda x: x.ready2build())
+        perform_step("generate installdir name", app, lambda x: x.gen_installdir())
+        perform_step("make builddir", app, lambda x: x.make_builddir())
+        perform_step("unpacking", app, lambda x: x.unpack_src())
+        perform_step("patching", app, lambda x: x.apply_patch())
+        perform_step("prepare toolkit", app, lambda x: x.toolkit().prepare(x.getcfg('onlytkmod')))
+        perform_step("setup startfrom", app, lambda x: x.startfrom())
+        perform_step('configure', app, lambda x: x.configure())
+        perform_step('make', app, lambda x: x.make())
+        perform_step('test', app, lambda x: x.test())
+        perform_step('create installdir', app, lambda x: x.make_installdir())
+        perform_step('make install', app, lambda x: x.make_install())
+        perform_step('packages', app, lambda x: x.packages())
+        perform_step('postproc', app, lambda x: x.postproc())
+        perform_step('sanity check', app, lambda x: x.sanitycheck())
+        perform_step('cleanup', app, lambda x: x.cleanup())
+        perform_step('make module', app, lambda x: x.make_module())
 
-        for easyconfig in files:
-            easybuild_vars['EASYBUILDTESTOUTPUT'] = os.path.join(self.output_dir, "%s.xml" %
-                                                                 os.path.basename(easyconfig))
-            command = "cd %s && python %s %s" % (self.cur_dir, sys.argv[0], easyconfig)
-            self.log.debug("submitting: %s" % command)
-            self.log.debug("env vars set: %s" % easybuild_vars)
-            job = PbsJob(command, easyconfig, easybuild_vars)
-            try:
-                job.submit()
-                self.jobs.append(job)
-            except EasyBuildError, err:
-                self.log.warn("Failed to submit job for easyconfig: %s, error: %s" % (easyconfig, err))
+        # remove handler
+        app.log.removeHandler(handler)
 
-    def performStep(self, fase, obj, method):
-        """
-        Perform method on object if it can be build
-        """
-        if obj not in self.build_stopped:
-            try:
-                method(obj)
-            except EasyBuildError, err:
-                # we cannot continue building it
-                self.build_ok = False
-                self.test_results.append((obj, fase, err))
-                # keep a dict of so we can check in O(1) if objects can still be build
-                self.build_stopped[obj] = fase
+        if app not in build_stopped:
+            # gather build stats
+            build_time = round(time.time() - start_time, 2)
 
-    def runTest(self):
-        """
-        Actual test, loop over all the different steps in a build
-        """
-        # handle parallel build
-        if self.parallel:
-            # ugly while loop to check if some jobs are stilling running (minimizing job.info() calls)
-            done = False
-            while not done:
-                # we can afford to sleep 5 minutes since we don't expect fast completion
-                time.sleep(5 * 60)
-                done = True
-                for job in self.jobs:
-                    if job.info():
-                        done = False
-                        break
+            buildstats = {
+                          'build_time': build_time,
+                          'platform': platform.platform(),
+                          'core_count': systemtools.get_core_count(),
+                          'cpu_model': systemtools.get_cpu_model(),
+                          'install_size': app.installsize(),
+                          'timestamp': int(time.time()),
+                          'host': os.uname()[1],
+                         }
+            succes.append((app, buildstats))
 
-            # all build jobs have finished -> aggregate results
-            dom = xml.getDOMImplementation()
-            root = dom.createDocument(None, "testsuite", None)
-            for job in self.jobs:
-                # we set this earlier on (cannot be changed inside job)
-                xml_output = job.env_vars['EASYBUILDTESTOUTPUT']
-                dom = xml.parse(xml_output)
-                children = dom.documentElement.getElementsByTagName("testcase")
-                for child in children:
-                    root.firstChild.appendChild(child)
+    for result in test_results:
+        log.info("%s crashed with an error during fase: %s, error: %s" % result)
 
-            output_file = open(os.path.join(self.cur_dir, "parallel-test.xml"), "w")
-            root.writexml(output_file, addindent="\t", newl="\n")
-            output_file.close()
-            return
+    failed = len(build_stopped)
+    total = len(apps)
+
+    log.info("%s from %s packages failed to build!" % (failed, total))
+
+    output_file = os.path.join(output_dir, "easybuild-test.xml")
+    log.debug("writing xml output to %s" % output_file)
+    write_to_xml(succes, test_results, output_file)
 
 
-        self.log.info("Continuing building other packages")
-        base_dir = os.getcwd()
-        base_env = copy.deepcopy(os.environ)
+def build_packages_in_parallel(packages, output_dir):
+    """
+    list is a list of packages which can be build! (e.g. they have no unresolved dependencies)
+    this function will build them in parallel by submitting jobs
+    """
+    # first find those without dependencies
+    no_dependencies = [pkg for pkg in packages if len(pkg['unresolvedDependencies']) == 0]
+    with_dependencies = list(set(packages) - set(no_dependencies))
 
-        for app in self.apps:
-            start_time = time.time()
-            # start with a clean slate
-            os.chdir(base_dir)
-            modifyEnv(os.environ, base_env)
+    # we submit all the jobs which can be trivially build.
+    jobs = [submit_job(pkg, output_dir) for pkg in no_dependencies]
 
-            # create a handler per app so we can capture debug output per application
-            handler = logging.FileHandler(os.path.join(self.output_dir, "%s-%s.log" % (app.name(), app.installversion())))
-            handler.setFormatter(build_log.formatter)
+    while len(jobs) > 0:
+        # sleep 5 minutes
+        time.sleep(5 * 60)
 
-            app.log.addHandler(handler)
+        done_jobs = [job for job in jobs if job.state() == 'finished']
+        # filter the done_jobs
+        jobs = [job for job in jobs if job not in done_jobs]
 
-            # take manual control over the building
-            self.performStep("preparation", app, lambda x: x.prepare_build())
-            self.performStep("pre-build verification", app, lambda x: x.ready2build())
-            self.performStep("generate installdir name", app, lambda x: x.gen_installdir())
-            self.performStep("make builddir", app, lambda x: x.make_builddir())
-            self.performStep("unpacking", app, lambda x: x.unpack_src())
-            self.performStep("patching", app, lambda x: x.apply_patch())
-            self.performStep("prepare toolkit", app, lambda x: x.toolkit().prepare(x.getcfg('onlytkmod')))
-            self.performStep("setup startfrom", app, lambda x: x.startfrom())
-            self.performStep('configure', app, lambda x: x.configure())
-            self.performStep('make', app, lambda x: x.make())
-            self.performStep('test', app, lambda x: x.test())
-            self.performStep('create installdir', app, lambda x: x.make_installdir())
-            self.performStep('make install', app, lambda x: x.make_install())
-            self.performStep('packages', app, lambda x: x.packages())
-            self.performStep('postproc', app, lambda x: x.postproc())
-            self.performStep('sanity check', app, lambda x: x.sanitycheck())
-            self.performStep('cleanup', app, lambda x: x.cleanup())
+        log.info("%s jobs finished completion: %s" % (len(done_jobs), [job.name for job in done_jobs]))
 
-            # remove handler
-            app.log.removeHandler(handler)
+        # remove from unresolvedDependencies in with_dependencies array
+        for job in done_jobs:
+            name, version = job.name.split('-', maxsplit=1)
+            for pkg in with_dependencies:
+                try:
+                    pkg['unresolvedDependencies'].remove((name, version))
+                except:
+                    pass
 
-            if app not in self.build_stopped:
-                # gather build stats
-                build_time = round(time.time() - start_time, 2)
+        # find other jobs without dependencies and extend the jobs array!
+        no_dependencies = [pkg for pkg in with_dependencies if len(pkg['unresolvedDependencies']) == 0]
+        with_dependencies = list(set(with_dependencies) - set(no_dependencies))
 
-                buildstats = {
-                              'build_time': build_time,
-                              'platform': platform.platform(),
-                              'core_count': systemtools.get_core_count(),
-                              'cpu_model': systemtools.get_cpu_model(),
-                              'install_size': app.installsize(),
-                              'timestamp': int(time.time()),
-                              'host': os.uname()[1],
-                             }
-                self.succes.append((app, buildstats))
+        jobs.extend([submit_job(pkg, output_dir) for pkg in no_dependencies])
 
-        for result in self.test_results:
-            self.log.info("%s crashed with an error during fase: %s, error: %s" % result)
+def submit_job(package, output_dir):
+    """
+    submits a job, to build a *single* package
+    returns the job
+    """
+    # command is pyton script/regtest.py file_name --single
+    command = "python %s %s --no-parallel" % (sys.argv[0], package['spec'])
 
-        failed = len(self.build_stopped)
-        total = len(self.apps)
+    # capture PYTHONPATH, MODULEPATH and all variables starting with EASYBUILD
+    easybuild_vars = {}
+    for name in os.environ:
+        if name.startswith("EASYBUILD"):
+            easybuild_vars[name] = os.environ[name]
 
+    others = ["PYTHONPATH", "MODULEPATH"]
 
-        self.log.info("%s from %s packages failed to build!" % (failed, total))
+    for env_var in others:
+        if env_var in os.environ:
+            easybuild_vars[env_var] = os.environ[env_var]
 
-        self.log.debug("writing xml output to %s" % self.output_file)
-        write_to_xml(self.succes, self.test_results, self.output_file)
+    # create unique name based on module name
+    name = "%s-%s" % package['module']
 
-        # exit with non-zero exit-code when not build_ok
-        if not self.build_ok:
-            sys.exit(1)
+    easybuild_vars['EASYBUILDTESTOUTPUT'] = os.path.join(os.path.abspath(output_dir), name)
+
+    job = PbsJob(command, name, easybuild_vars)
+    job.submit()
+
+    return job
+
 
 def write_to_xml(succes, failed, filename):
     """
@@ -368,7 +363,5 @@ def write_to_xml(succes, failed, filename):
     root.writexml(output_file, addindent="\t", newl="\n")
     output_file.close()
 
-
-# do not use unittest.main() as it will annoyingly parse command line arguments
-suite = unittest.TestLoader().loadTestsFromTestCase(BuildTest)
-unittest.TextTestRunner(verbosity=2).run(suite)
+if __name__ == "__main__":
+    main()

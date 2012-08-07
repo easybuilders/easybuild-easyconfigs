@@ -339,6 +339,9 @@ def processEasyconfig(path, log, onlyBlocks=None, regtest_online=False):
 
         del eb
 
+        # this is used by the parallel builder
+        package['unresolvedDependencies'] = copy.copy(package['dependencies'])
+
         packages.append(package)
 
     return packages
