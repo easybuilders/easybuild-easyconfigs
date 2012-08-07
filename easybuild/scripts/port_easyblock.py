@@ -1,6 +1,10 @@
 #!/usr/bin/env python
 ##
-# Copyright 2009-2012 Stijn De Weirdt, Dries Verdegem, Kenneth Hoste, Pieter De Baets, Jens Timmerman
+# Copyright 2009-2012 Stijn De Weirdt
+# Copyright 2010 Dries Verdegem
+# Copyright 2010-2012 Kenneth Hoste
+# Copyright 2011 Pieter De Baets
+# Copyright 2011-2012 Jens Timmerman
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of the University of Ghent (http://ugent.be/hpc).
@@ -29,7 +33,7 @@ It checks (and fixes, if needed and possible) whether:
     e.g. getCfg, setCfg, makeInstall, sanityCheck, runrun and runqanda (+ arguments)
  * Exception is no longer used and all except blocks catch specific errors only
  * the code is free of errors and warnings, according to PyLint
-* 
+*
 
 usage: check_code_cleanup.py
 """
@@ -78,64 +82,65 @@ def rename_module(path):
 def refactor(txt):
     """Refactor given text, by refactoring function names, etc."""
     refactor_map = {
-                    'addDependency':'add_dependency',
-                    'addPatch':'addpatch',
-                    'addSource':'addsource',
-                    'apps.Application import Application':'framework.application import Application',
-                    'applyPatch':'apply_patch',
-                    'autoBuild':'autobuild',
-                    'buildInInstallDir':'build_in_installdir',
-                    'buildLog':'build_log',
-                    'checkOsdeps':'check_osdeps',
-                    'classDumper':'class_dumper',
-                    'closeLog':'closelog',
-                    'dumpConfigurationOptions':'dump_cfg_options',
-                    'easybuild.buildsoft':'easybuild.tools',
-                    'escapeSpecial':'escapespecial',
-                    'extraPackages':'extra_packages',
-                    'extraPackagesPre':'extra_packages_pre',
-                    'fileLocate':'file_locate',
-                    'fileTools':'filetools',
-                    'filterPackages':'filter_packages',
-                    'findPackagePatches':'find_package_patches',
-                    'genInstallDir':'gen_installdir',
-                    'getCfg':'getcfg',
-                    'getSoftwareRoot':'get_software_root',
-                    'getInstance':'get_instance',
-                    'importCfg':'process_ebfile',
-                    'logall':'log_all',
-                    'logok':'log_ok',
-                    'makeBuildDir':'make_builddir',
-                    'makeDir':'make_dir',
-                    'makeInstall':'make_install',
-                    'makeInstallDir':'make_installdir',
-                    'makeInstallVersion':'make_installversion',
-                    'makeModule':'make_module',
-                    'makeModuleDescription':'make_module_description',
-                    'makeModuleDep':'make_module_dep',
-                    'makeModuleReq':'make_module_req',
-                    'makeModuleReqGuess':'make_module_req_guess',
-                    'makeModuleExtra':'make_module_extra',
-                    'makeModuleExtraPackages':'make_module_extra_packages',
-                    'moduleGenerator':'module_generator',
-                    'noqanda=':'no_qa=',
-                    'parseDependency':'parse_dependency',
-                    'readyToBuild':'ready2build',
-                    'runrun':'run_cmd',
-                    'runqanda':'run_cmd_qa',
-                    'runTests':'runtests',
-                    'runStep':'runstep',
-                    'packagesFindSource':'find_package_sources',
-                    'postProc':'postproc',
-                    'sanityCheck':'sanitycheck',
-                    'setCfg':'setcfg',
-                    'setLogger':'setlogger',
-                    'setNameVersion':'set_name_version',
-                    'setParallelism':'setparallelism',
-                    'setToolkit':'settoolkit',
-                    'startFrom':'startfrom',
-                    'stdqa=':'std_qa=',
-                    'unpackSrc':'unpack_src',
+                    'addDependency': 'add_dependency',
+                    'addPatch': 'addpatch',
+                    'addSource': 'addsource',
+                    'apps.Application import Application': 'framework.application import Application',
+                    'applyPatch': 'apply_patch',
+                    'autoBuild': 'autobuild',
+                    'buildInInstallDir': 'build_in_installdir',
+                    'buildLog': 'build_log',
+                    'checkOsdeps': 'check_osdeps',
+                    'classDumper': 'class_dumper',
+                    'closeLog': 'closelog',
+                    'dumpConfigurationOptions': 'dump_cfg_options',
+                    'easybuild.buildsoft': 'easybuild.tools',
+                    'escapeSpecial': 'escapespecial',
+                    'extraPackages': 'extra_packages',
+                    'extraPackagesPre': 'extra_packages_pre',
+                    'fileLocate': 'file_locate',
+                    'fileTools': 'filetools',
+                    'filterPackages': 'filter_packages',
+                    'findPackagePatches': 'find_package_patches',
+                    'genInstallDir': 'gen_installdir',
+                    'getCfg': 'getcfg',
+                    'getSoftwareRoot': 'get_software_root',
+                    'getInstance': 'get_instance',
+                    'importCfg': 'process_ebfile',
+                    'logall': 'log_all',
+                    'logok': 'log_ok',
+                    'logOutput': 'log_output',
+                    'makeBuildDir': 'make_builddir',
+                    'makeDir': 'make_dir',
+                    'makeInstall': 'make_install',
+                    'makeInstallDir': 'make_installdir',
+                    'makeInstallVersion': 'make_installversion',
+                    'makeModule': 'make_module',
+                    'makeModuleDescription': 'make_module_description',
+                    'makeModuleDep': 'make_module_dep',
+                    'makeModuleReq': 'make_module_req',
+                    'makeModuleReqGuess': 'make_module_req_guess',
+                    'makeModuleExtra': 'make_module_extra',
+                    'makeModuleExtraPackages': 'make_module_extra_packages',
+                    'moduleGenerator': 'module_generator',
+                    'noqanda=': 'no_qa=',
+                    'parseDependency': 'parse_dependency',
+                    'readyToBuild': 'ready2build',
+                    'runrun': 'run_cmd',
+                    'runqanda': 'run_cmd_qa',
+                    'runTests': 'runtests',
+                    'runStep': 'runstep',
+                    'packagesFindSource': 'find_package_sources',
+                    'postProc': 'postproc',
+                    'sanityCheck': 'sanitycheck',
+                    'setCfg': 'setcfg',
+                    'setLogger': 'setlogger',
+                    'setNameVersion': 'set_name_version',
+                    'setParallelism': 'setparallelism',
+                    'setToolkit': 'settoolkit',
+                    'startFrom': 'startfrom',
+                    'stdqa=': 'std_qa=',
+                    'unpackSrc': 'unpack_src',
                     }
 
     totn = 0
@@ -240,10 +245,10 @@ def run_pylint(fn):
 
     else:
         print "No warnings or errors reported by PyLint we care about, nice job!\n"
-        return True 
+        return True
 
 # MAIN
-# 
+#
 
 # fetch easyblock to check from command line
 if len(sys.argv) == 2:

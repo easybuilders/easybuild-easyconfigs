@@ -1,5 +1,10 @@
 ##
-# Copyright 2009-2012 Stijn De Weirdt, Dries Verdegem, Kenneth Hoste, Pieter De Baets, Jens Timmerman
+# Copyright 2009-2012 Stijn De Weirdt
+# Copyright 2010 Dries Verdegem
+# Copyright 2010-2012 Kenneth Hoste
+# Copyright 2011 Pieter De Baets
+# Copyright 2011-2012 Jens Timmerman
+# Copyright 2012 Toon Willems
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of the University of Ghent (http://ugent.be/hpc).
@@ -30,13 +35,16 @@ import subprocess
 import tempfile
 import time
 
+import easybuild.tools.environment as env
 from easybuild.tools.asyncprocess import Popen, PIPE, STDOUT, send_all, recv_some
 from easybuild.tools.build_log import getLog
+
 
 log = getLog('fileTools')
 errorsFoundInLog = 0
 
 strictness = 'warn'
+
 
 def unpack(fn, dest, extra_options=None, overwrite=False):
     """
@@ -74,6 +82,7 @@ def unpack(fn, dest, extra_options=None, overwrite=False):
 
     return findBaseDir()
 
+
 def findBaseDir():
     """
     Try to locate a possible new base directory
@@ -108,6 +117,7 @@ def findBaseDir():
     log.debug("Possible new dir %s found" % newDir)
     return newDir
 
+
 def extractCmd(fn, overwrite=False):
     """
     Determines the file type of file fn, returns extract cmd
@@ -131,7 +141,7 @@ def extractCmd(fn, overwrite=False):
         if ff[-2] == 'tar':
             ftype = 'tar xjf %s'
     if ff[-1] == 'tbz':
-        ftype = 'tar xfj %s'
+        ftype = 'tar xjf %s'
 
     # tarball
     if ff[-1] == 'tar':
@@ -148,6 +158,7 @@ def extractCmd(fn, overwrite=False):
         log.error('Unknown file type from file %s (%s)' % (fn, ff))
 
     return ftype % fn
+
 
 def patch(patchFile, dest, fn=None, copy=False, level=None):
     """
@@ -248,6 +259,7 @@ def patch(patchFile, dest, fn=None, copy=False, level=None):
 
     return result
 
+
 def run_cmd(cmd, log_ok=True, log_all=False, simple=False, inp=None, regexp=True, log_output=False, path=None):
     """
     Executes a command cmd
@@ -324,6 +336,7 @@ def run_cmd(cmd, log_ok=True, log_all=False, simple=False, inp=None, regexp=True
         runLog.close()
 
     return parse_cmd_output(cmd, stdouterr, ec, simple, log_all, log_ok, regexp)
+
 
 def run_cmd_qa(cmd, qa, no_qa=None, log_ok=True, log_all=False, simple=False, regexp=True, std_qa=None, path=None):
     """
@@ -512,6 +525,7 @@ def run_cmd_qa(cmd, qa, no_qa=None, log_ok=True, log_all=False, simple=False, re
 
     return parse_cmd_output(cmd, stdoutErr, ec, simple, log_all, log_ok, regexp)
 
+
 def parse_cmd_output(cmd, stdouterr, ec, simple, log_all, log_ok, regexp):
     """
     will parse and perform error checks based on strictness setting
@@ -565,10 +579,10 @@ def parse_cmd_output(cmd, stdouterr, ec, simple, log_all, log_ok, regexp):
         # Because we are not running in simple mode, we return the output and ec to the user
         return (stdouterr, ec)
 
+
 def modifyEnv(old, new):
     """
     Compares 2 os.environ dumps. Adapts final environment.
-    - Assinging to os.environ doesn't seem to work, need to use os.putenv
     """
     oldKeys = old.keys()
     newKeys = new.keys()
@@ -578,12 +592,10 @@ def modifyEnv(old, new):
             ## hmm, smart checking with debug logging
             if not new[key] == old[key]:
                 log.debug("Key in new environment found that is different from old one: %s (%s)" % (key, new[key]))
-                os.putenv(key, new[key])
-                os.environ[key] = new[key]
+                env.set(key, new[key])
         else:
             log.debug("Key in new environment found that is not in old one: %s (%s)" % (key, new[key]))
-            os.putenv(key, new[key])
-            os.environ[key] = new[key]
+            env.set(key, new[key])
 
     for key in oldKeys:
         if not key in newKeys:
@@ -592,6 +604,7 @@ def modifyEnv(old, new):
             del os.environ[key]
 
     return 'ok'
+
 
 def convertName(name, upper=False):
     """
@@ -609,6 +622,7 @@ def convertName(name, upper=False):
         return name.upper()
     else:
         return name
+
 
 def parselogForError(txt, regExp=None, stdout=True, msg=None):
     """
@@ -645,28 +659,42 @@ def parselogForError(txt, regExp=None, stdout=True, msg=None):
 
     return res
 
-def recursiveChmod(path, permissionBits, add=True, onlyFiles=False):
+
+def adjust_permissions(name, permissionBits, add=True, onlyFiles=False, recursive=True):
     """
     Add or remove (if add is False) permissionBits from all files
     and directories (if onlyFiles is False) in path
     """
-    for root, dirs, files in os.walk(path):
-        paths = files
-        if not onlyFiles:
-            paths += dirs
 
-        for path in paths:
-            # Ignore errors while walking (for example caused by bad links)
-            try:
-                absEl = os.path.join(root, path)
-                perms = os.stat(absEl)[stat.ST_MODE]
+    allpaths = []
 
-                if add:
-                    os.chmod(absEl, perms | permissionBits)
-                else:
-                    os.chmod(absEl, perms & ~permissionBits)
-            except OSError, err:
-                log.debug("Failed to chmod %s (but ignoring it): %s" % (path, err))
+    if recursive:
+        log.info("Adjusting permissions recursively for %s" % name)
+        for root, dirs, files in os.walk(name):
+            paths = files
+            if not onlyFiles:
+                paths += dirs
+
+            for path in paths:
+                allpaths.append(os.path.join(root, path))
+
+    else:
+        log.info("Adjusting permissions for %s" % name)
+        allpaths = [name]
+
+    for path in allpaths:
+        log.info("Adjusting permissions for %s" % path)
+        # ignore errors while adjusting permissions (for example caused by bad links)
+        try:
+            perms = os.stat(path)[stat.ST_MODE]
+
+            if add:
+                os.chmod(path, perms | permissionBits)
+            else:
+                os.chmod(path, perms & ~permissionBits)
+        except OSError, err:
+            log.info("Failed to chmod %s (but ignoring it): %s" % (path, err))
+
 
 def patch_perl_script_autoflush(path):
     # patch Perl script to enable autoflush,

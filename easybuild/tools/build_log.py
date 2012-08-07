@@ -1,5 +1,9 @@
 ##
-# Copyright 2009-2012 Stijn De Weirdt, Dries Verdegem, Kenneth Hoste, Pieter De Baets, Jens Timmerman
+# Copyright 2009-2012 Stijn De Weirdt
+# Copyright 2010 Dries Verdegem
+# Copyright 2010-2012 Kenneth Hoste
+# Copyright 2011 Pieter De Baets
+# Copyright 2011-2012 Jens Timmerman
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of the University of Ghent (http://ugent.be/hpc).
@@ -22,17 +26,18 @@
 EasyBuild logger and log utilities, including our own EasybuildError class.
 """
 
-from socket import gethostname
-from copy import copy
 import logging
 import os
 import sys
 import time
+from socket import gethostname
+from copy import copy
 
 import easybuild
 
 # EasyBuild message prefix
 EB_MSG_PREFIX = "=="
+
 
 class EasyBuildError(Exception):
     """
@@ -43,6 +48,7 @@ class EasyBuildError(Exception):
         self.msg = msg
     def __str__(self):
         return repr(self.msg)
+
 
 class EasyBuildLog(logging.Logger):
     """
@@ -79,6 +85,7 @@ class EasyBuildLog(logging.Logger):
         self.raiseError = True
 
         raise EasyBuildError(newMsg)
+
 
 # set format for logger
 loggingFormat = EB_MSG_PREFIX + ' %(asctime)s %(name)s %(levelname)s %(message)s'

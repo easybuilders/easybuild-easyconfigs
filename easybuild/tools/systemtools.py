@@ -1,5 +1,5 @@
 ##
-# Copyright 2009-2012 Jens Timmerman
+# Copyright 2011-2012 Jens Timmerman
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of the University of Ghent (http://ugent.be/hpc).
@@ -19,15 +19,17 @@
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
 """
-This module contains some usefull functions for getting system information
+Module with useful functions for getting system information
 """
 import os
 import re
 from easybuild.tools.filetools import run_cmd
 
+
 INTEL = 'Intel'
 AMD = 'AMD'
 VENDORS = {'GenuineIntel': INTEL, 'AuthenticAMD': AMD}
+
 
 class SystemToolsException(Exception):
     """raised when systemtools fails"""
@@ -136,7 +138,7 @@ def get_kernel_name():
 def get_shared_lib_ext():
     """Determine extention for shared libraries
 
-    Linux: 'so', Darwin: 'dylib' 
+    Linux: 'so', Darwin: 'dylib'
     """
     shared_lib_exts = {
                        'Linux':'so',
@@ -171,5 +173,3 @@ def get_platform_name(withversion=False):
         platform_name = '%s-%s-%s' % (machine, vendor, kernel_name.lower())
 
     return platform_name
-
-

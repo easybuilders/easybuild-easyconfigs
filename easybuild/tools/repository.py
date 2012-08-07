@@ -1,5 +1,10 @@
 ##
-# Copyright 2009-2012 Stijn De Weirdt, Dries Verdegem, Kenneth Hoste, Pieter De Baets, Jens Timmerman
+# Copyright 2009-2012 Stijn De Weirdt
+# Copyright 2010 Dries Verdegem
+# Copyright 2010-2012 Kenneth Hoste
+# Copyright 2011 Pieter De Baets
+# Copyright 2011-2012 Jens Timmerman
+# Copyright 2012 Toon Willems
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of the University of Ghent (http://ugent.be/hpc).
@@ -27,12 +32,12 @@ import getpass
 import os
 import shutil
 import socket
-import sys
 import tempfile
 import time
 
 import easybuild
-from easybuild.tools.build_log import getLog, EasyBuildError
+from easybuild.tools.build_log import getLog
+
 
 log = getLog('repo')
 try:
@@ -42,10 +47,11 @@ except ImportError:
     pass
 
 try:
-    import pysvn
+    import pysvn  #@UnusedImport
     from pysvn import ClientError #IGNORE:E0611 pysvn fails to recognize ClientError is available
 except ImportError:
     pass
+
 
 class Repository:
     """
@@ -99,7 +105,9 @@ class Repository:
         """
         return
 
+
 class FileRepository(Repository):
+    """Class for file repositories."""
 
     def setupRepo(self):
         """
@@ -160,8 +168,9 @@ class FileRepository(Repository):
 
 class GitRepository(FileRepository):
     """
-    Class representing a git repository.
+    Class for git repositories.
     """
+
     def __init__(self, *args):
         """
         Initialize git client to None (will be set later)
@@ -175,8 +184,8 @@ class GitRepository(FileRepository):
         Set up git repository.
         """
         try:
-            import git
-            from git import GitCommandError
+            import git  #@UnusedImport
+            from git import GitCommandError  #@UnusedImport
         except ImportError:
             log.exception("GitPython failed to load")
         self.wc = tempfile.mkdtemp(prefix='git-wc-')
@@ -252,8 +261,9 @@ class GitRepository(FileRepository):
 
 class SvnRepository(FileRepository):
     """
-    class representing an svn repository
+    Class for svn repositories
     """
+
     def __init__(self, *args):
         """
         Set self.client to None. Real logic is in setupRepo and createWorkingCopy

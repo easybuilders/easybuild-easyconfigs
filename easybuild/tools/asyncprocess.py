@@ -1,9 +1,9 @@
 ##
-# Copyright 2005 Josiah Carlson 
+# Copyright 2005 Josiah Carlson
 # The Asynchronous Python Subprocess recipe was originally created by Josiah Carlson.
 # and released under the GPL v2 on March 14, 2012
 #
-# http://code.activestate.com/recipes/440554/ 
+# http://code.activestate.com/recipes/440554/
 #
 # Copyright 2009-2012 Stijn De Weirdt, Dries Verdegem, Kenneth Hoste, Pieter De Baets, Jens Timmerman
 #
@@ -25,12 +25,12 @@
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
 
-"""Module to allow Asynchronous subprocess use on Windows and Posix platforms 
+"""Module to allow Asynchronous subprocess use on Windows and Posix platforms
 
 The 'subprocess' module in Python 2.4 has made creating and accessing subprocess
 streams in Python relatively convenient for all supported platforms,
-but what if you want to interact with the started subprocess? 
-That is, what if you want to send a command, read the response, 
+but what if you want to interact with the started subprocess?
+That is, what if you want to send a command, read the response,
 and send a new command based on that response?
 
 Now there is a solution.
@@ -38,7 +38,7 @@ The included subprocess.Popen subclass adds three new commonly used methods:
  recv(maxsize=None)
  recv_err(maxsize=None)
  and send(input)
- 
+
 along with a utility method:
  send_recv(input='', maxsize=None).
 
@@ -63,13 +63,8 @@ import time
 PIPE = subprocess.PIPE
 STDOUT = subprocess.STDOUT
 
-if subprocess.mswindows:
-    from win32file import ReadFile, WriteFile #IGNORE:F0401 #@UnresolvedImport
-    from win32pipe import PeekNamedPipe #IGNORE:F0401 #@UnresolvedImport
-    import msvcrt #IGNORE:F0401
-else:
-    import select
-    import fcntl
+import select  #@UnresolvedImport
+import fcntl  #@UnresolvedImport
 
 
 class Popen(subprocess.Popen):
@@ -93,86 +88,45 @@ class Popen(subprocess.Popen):
         getattr(self, which).close()
         setattr(self, which, None)
 
-    if subprocess.mswindows:
-        def send(self, inp):
-            if not self.stdin:
-                return None
+    def send(self, inp):
+        if not self.stdin:
+            return None
 
-            try:
-                x = msvcrt.get_osfhandle(self.stdin.fileno()) #@UndefinedVariable
-                (_, written) = WriteFile(x, inp)
-            except ValueError:
+        if not select.select([], [self.stdin], [], 0)[1]:
+            return 0
+
+        try:
+            written = os.write(self.stdin.fileno(), inp)
+        except OSError, why:
+            if why[0] == errno.EPIPE: #broken pipe
                 return self._close('stdin')
-            except (subprocess.pywintypes.error, Exception), why:
-                if why[0] in (109, errno.ESHUTDOWN):
-                    return self._close('stdin')
-                raise
+            raise
 
-            return written
+        return written
 
-        def _recv(self, which, maxsize):
-            conn, maxsize = self.get_conn_maxsize(which, maxsize)
-            if conn is None:
-                return None
+    def _recv(self, which, maxsize):
+        conn, maxsize = self.get_conn_maxsize(which, maxsize)
+        if conn is None:
+            return None
 
-            try:
-                x = msvcrt.get_osfhandle(conn.fileno()) #@UndefinedVariable
-                (read, nAvail, _) = PeekNamedPipe(x, 0)
-                if maxsize < nAvail:
-                    nAvail = maxsize
-                if nAvail > 0:
-                    (_, read) = ReadFile(x, nAvail, None)
-            except ValueError:
+        flags = fcntl.fcntl(conn, fcntl.F_GETFL)
+        if not conn.closed:
+            fcntl.fcntl(conn, fcntl.F_SETFL, flags | os.O_NONBLOCK)
+
+        try:
+            if not select.select([conn], [], [], 0)[0]:
+                return ''
+
+            r = conn.read(maxsize)
+            if not r:
                 return self._close(which)
-            except (subprocess.pywintypes.error, Exception), why:
-                if why[0] in (109, errno.ESHUTDOWN):
-                    return self._close(which)
-                raise
 
             if self.universal_newlines:
-                read = self._translate_newlines(read)
-            return read
-
-    else:
-        def send(self, inp):
-            if not self.stdin:
-                return None
-
-            if not select.select([], [self.stdin], [], 0)[1]:
-                return 0
-
-            try:
-                written = os.write(self.stdin.fileno(), inp)
-            except OSError, why:
-                if why[0] == errno.EPIPE: #broken pipe
-                    return self._close('stdin')
-                raise
-
-            return written
-
-        def _recv(self, which, maxsize):
-            conn, maxsize = self.get_conn_maxsize(which, maxsize)
-            if conn is None:
-                return None
-
-            flags = fcntl.fcntl(conn, fcntl.F_GETFL)
+                r = self._translate_newlines(r)
+            return r
+        finally:
             if not conn.closed:
-                fcntl.fcntl(conn, fcntl.F_SETFL, flags | os.O_NONBLOCK)
-
-            try:
-                if not select.select([conn], [], [], 0)[0]:
-                    return ''
-
-                r = conn.read(maxsize)
-                if not r:
-                    return self._close(which)
-
-                if self.universal_newlines:
-                    r = self._translate_newlines(r)
-                return r
-            finally:
-                if not conn.closed:
-                    fcntl.fcntl(conn, fcntl.F_SETFL, flags)
+                fcntl.fcntl(conn, fcntl.F_SETFL, flags)
 
 message = "Other end disconnected!"
 
@@ -205,17 +159,4 @@ def send_all(p, data):
             raise Exception(message)
         data = buffer(data, sent)
 
-if __name__ == '__main__':
-    if sys.platform == 'win32':
-        shell, commands, tail = ('cmd', ('dir /w', 'echo HELLO WORLD'), '\r\n')
-    else:
-        shell, commands, tail = ('sh', ('ls', 'echo HELLO WORLD'), '\n')
 
-    a = Popen(shell, stdin=PIPE, stdout=PIPE, shell=True, executable="/bin/bash")
-    print recv_some(a),
-    for cmd in commands:
-        send_all(a, cmd + tail)
-        print recv_some(a),
-    send_all(a, 'exit' + tail)
-    print recv_some(a, e=0)
-    a.wait()

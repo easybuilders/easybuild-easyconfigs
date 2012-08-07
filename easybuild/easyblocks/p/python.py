@@ -1,5 +1,9 @@
 ##
-# Copyright 2009-2012 Stijn De Weirdt, Dries Verdegem, Kenneth Hoste, Pieter De Baets, Jens Timmerman
+# Copyright 2009-2012 Stijn De Weirdt
+# Copyright 2010 Dries Verdegem
+# Copyright 2010-2012 Kenneth Hoste
+# Copyright 2011 Pieter De Baets
+# Copyright 2011-2012 Jens Timmerman
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of the University of Ghent (http://ugent.be/hpc).
@@ -18,11 +22,17 @@
 # You should have received a copy of the GNU General Public License
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
+"""
+EasyBuild support for building and installing Python, implemented as an easyblock
+"""
 
-from easybuild.framework.application import ApplicationPackage, Application
-from easybuild.tools.filetools import unpack, patch, run_cmd
 import os
 import shutil
+
+import easybuild.tools.toolkit as toolkit
+from easybuild.framework.application import ApplicationPackage, Application
+from easybuild.tools.filetools import unpack, patch, run_cmd
+
 
 class Python(Application):
     """Support for building/installing Python
@@ -31,7 +41,7 @@ class Python(Application):
     To extend Python by adding extra packages there are two ways:
     - list the packages in the pkglist, this will include the packages in this Python easyblock
     - create a seperate easyblock, so the packages can be loaded with module load
-    
+
     e.g., you can include numpy and scipy in a default Python installation
     but also provide newer updated numpy and scipy versions by creating a PythonPackageModule for it.
     """
@@ -73,7 +83,7 @@ class DefaultPythonPackage(ApplicationPackage):
         self.sitecfgincdir = None
         self.testinstall = False
         self.builddir = mself.builddir
-        self.cfg = mself.cfg
+        self.mself = mself
         self.installopts = ''
         self.runtest = None
         self.pkgdir = "%s/%s" % (self.builddir, self.name)
@@ -125,7 +135,7 @@ class DefaultPythonPackage(ApplicationPackage):
         extrapath = ""
         testinstalldir = os.path.join(self.builddir, "mytemporarytestinstalldir")
         if self.testinstall:
-            #Install in test directory and export PYTHONPATH
+            # Install in test directory and export PYTHONPATH
             try:
                 os.makedirs(testinstalldir)
             except OSError:
@@ -143,7 +153,6 @@ class DefaultPythonPackage(ApplicationPackage):
 
         if self.runtest:
             cmd = "%s%s" % (extrapath, self.runtest)
-
             run_cmd(cmd, log_all=True, simple=True)
 
         if self.testinstall:
@@ -176,6 +185,10 @@ class DefaultPythonPackage(ApplicationPackage):
         self.test()
         self.make_install()
 
+    def getcfg(self, *args, **kwargs):
+        return self.mself.getcfg(*args, **kwargs)
+
+
 class Nose(DefaultPythonPackage):
     """nose package"""
     def __init__(self, mself, pkg, pkginstalldeps):
@@ -186,22 +199,23 @@ class Nose(DefaultPythonPackage):
         # and tar exiting with non-zero exit code
         self.unpack_options = ' --pax-option="delete=SCHILY.*" --pax-option="delete=LIBARCHIVE.*" '
 
+
 class FortranPythonPackage(DefaultPythonPackage):
     """Extends DefaultPythonPackage to add a Fortran compiler to the make call"""
 
     def make(self):
-        comp_fam = self.tk.toolkit_comp_family()
+        comp_fam = self.toolkit().toolkit_comp_family()
 
-        if comp_fam == "Intel":
+        if comp_fam == toolkit.INTEL:
             cmd = "python setup.py build --compiler=intel --fcompiler=intelem"
 
-        elif comp_fam == "GCC":
+        elif comp_fam == toolkit.GCC:
             cmdprefix = ""
             ldflags = os.getenv('LDFLAGS')
             if ldflags:
                 # LDFLAGS should not be set when building numpy/scipy, because it overwrites whatever numpy/scipy sets
                 # see http://projects.scipy.org/numpy/ticket/182
-                ## don't unset it with os.environ.pop('LDFLAGS'), doesn't work in Python 2.4 (see http://bugs.python.org/issue1287)
+                # don't unset it with os.environ.pop('LDFLAGS'), doesn't work in Python 2.4 (see http://bugs.python.org/issue1287)
                 cmdprefix = "unset LDFLAGS && "
                 self.log.debug("LDFLAGS was %s, will be cleared before numpy build with '%s'" % (ldflags, cmdprefix))
 
@@ -219,7 +233,7 @@ class Numpy(FortranPythonPackage):
     def __init__(self, mself, pkg, pkginstalldeps):
         FortranPythonPackage.__init__(self, mself, pkg, pkginstalldeps)
 
-        self.pkgcfgs = self.cfg['pkgcfgs'][0]
+        self.pkgcfgs = mself.getcfg('pkgcfgs')
         if self.pkgcfgs.has_key('numpysitecfglibsubdirs'):
             self.numpysitecfglibsubdirs = self.pkgcfgs['numpysitecfglibsubdirs']
         else:
@@ -253,7 +267,7 @@ libraries = %(lapack)s
             self.log.error("Could not detect math kernel (mkl, atlas)")
 
         if "SOFTROOTIMKL" in os.environ or "SOFTROOTFFTW" in os.environ:
-            extrasiteconfig += """ 
+            extrasiteconfig += """
 [fftw]
 libraries = %s
         """ % os.getenv("LIBFFT")
@@ -272,10 +286,11 @@ libraries = %s
             blas = ", ".join(blas_libs)
 
         self.sitecfg = self.sitecfg % \
-            { 'lapack' : lapack,
-              'blas' : blas,
-              'libs' : ":".join([lib for lib in os.getenv('LDFLAGS').split(" -L")]),
-              'includes' : ":".join([lib for lib in os.getenv('CPPFLAGS').split(" -I")]),
+            {
+             'lapack': lapack,
+             'blas': blas,
+             'libs': ":".join([lib for lib in os.getenv('LDFLAGS').split(" -L")]),
+             'includes': ":".join([lib for lib in os.getenv('CPPFLAGS').split(" -I")]),
             }
 
         self.sitecfgfn = 'site.cfg'

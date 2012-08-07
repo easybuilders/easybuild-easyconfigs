@@ -1,5 +1,9 @@
 ##
-# Copyright 2009-2012 Stijn De Weirdt, Dries Verdegem, Kenneth Hoste, Pieter De Baets, Jens Timmerman
+# Copyright 2009-2012 Stijn De Weirdt
+# Copyright 2010 Dries Verdegem
+# Copyright 2010-2012 Kenneth Hoste
+# Copyright 2011 Pieter De Baets
+# Copyright 2011-2012 Jens Timmerman
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of the University of Ghent (http://ugent.be/hpc).
@@ -18,16 +22,22 @@
 # You should have received a copy of the GNU General Public License
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
+"""
+EasyBuild support for building and installing HPL, implemented as an easyblock
+"""
+
 import os
 import shutil
+
 from easybuild.framework.application import Application
 from easybuild.tools.filetools import run_cmd
+
 
 class HPL(Application):
     """
     Support for building HPL (High Performance Linpack)
     - create Make.UNKNOWN
-    - build with make and install 
+    - build with make and install
     """
 
     def configure(self, subdir=None):
@@ -58,7 +68,7 @@ class HPL(Application):
         except OSError, err:
             self.log.exception("Failed to symlink Make.UNKNOWN from %s to %s: %s" % (setupdir, makeincfile, err))
 
-        ## go back
+        # go back
         os.chdir(self.getcfg('startfrom'))
 
     def make(self):
@@ -74,11 +84,10 @@ class HPL(Application):
         extra_makeopts = 'TOPdir="%s" ' % self.getcfg('startfrom')
 
         # compilers
-        extra_makeopts += 'CC="%(mpicc)s" MPICC="%(mpicc)s" LINKER="%(mpicc)s" ' % { 'mpicc':os.getenv('MPICC') }
+        extra_makeopts += 'CC="%(mpicc)s" MPICC="%(mpicc)s" LINKER="%(mpicc)s" ' % {'mpicc': os.getenv('MPICC')}
 
         # libraries: LAPACK and FFTW
-        extra_makeopts += 'LAlib="%s %s" ' % (os.getenv('LIBFFT'),
-                                              os.getenv('LIBLAPACK_MT'))
+        extra_makeopts += 'LAlib="%s %s" ' % (os.getenv('LIBFFT'), os.getenv('LIBLAPACK_MT'))
 
         # HPL options
         extra_makeopts += 'HPL_OPTS="%s -DUSING_FFTW" ' % os.getenv('CPPFLAGS')
@@ -114,10 +123,11 @@ class HPL(Application):
         """
         if not self.getcfg('sanityCheckPaths'):
 
-            self.setcfg('sanityCheckPaths',{'files':["bin/xhpl"],
-                                            'dirs':[]
+            self.setcfg('sanityCheckPaths',{
+                                            'files': ["bin/xhpl"],
+                                            'dirs': []
                                            })
 
-            self.log.info("Customized sanity check paths: %s"%self.getcfg('sanityCheckPaths'))
+            self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
         Application.sanitycheck(self)

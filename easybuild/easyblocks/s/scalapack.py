@@ -1,5 +1,9 @@
 ##
-# Copyright 2009-2012 Stijn De Weirdt, Dries Verdegem, Kenneth Hoste, Pieter De Baets, Jens Timmerman
+# Copyright 2009-2012 Stijn De Weirdt
+# Copyright 2010 Dries Verdegem
+# Copyright 2010-2012 Kenneth Hoste
+# Copyright 2011 Pieter De Baets
+# Copyright 2011-2012 Jens Timmerman
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of the University of Ghent (http://ugent.be/hpc).
@@ -18,12 +22,18 @@
 # You should have received a copy of the GNU General Public License
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
+"""
+EasyBuild support for building and installing ScaLAPACK, implemented as an easyblock
+"""
+
 import os
 import shutil
 from distutils.version import LooseVersion
+
 from easybuild.framework.application import Application
 from easybuild.easyblocks.b.blacs import det_interface
 from easybuild.easyblocks.l.lapack import get_blas_lib
+
 
 class ScaLAPACK(Application):
     """
@@ -49,7 +59,7 @@ class ScaLAPACK(Application):
 
         # make sure required dependencies are available
         deps = ["LAPACK"]
-        ## BLACS is only a dependency for ScaLAPACK versions prior to v2.0.0
+        # BLACS is only a dependency for ScaLAPACK versions prior to v2.0.0
         if self.loosever < LooseVersion("2.0.0"):
             deps.append("BLACS")
         for dep in deps:
@@ -74,13 +84,13 @@ class ScaLAPACK(Application):
         extra_makeopts = 'BLASLIB="%s -lpthread" LAPACKLIB=%s/lib/liblapack.a ' % (
                                                                                    get_blas_lib(self.log),
                                                                                    os.getenv('SOFTROOTLAPACK')
-                                                                                   )
+                                                                                  )
 
         # build procedure changed in v2.0.0
         if self.loosever < LooseVersion("2.0.0"):
 
             # determine interface
-            interface = det_interface(self.log, os.path.join(os.getenv('SOFTROOTBLACS'),'bin'))
+            interface = det_interface(self.log, os.path.join(os.getenv('SOFTROOTBLACS'), 'bin'))
 
             blacsroot = os.getenv('SOFTROOTBLACS')
 
@@ -88,23 +98,22 @@ class ScaLAPACK(Application):
             extra_makeopts += 'home=%s BLACSdir=%s ' % (self.getcfg('startfrom'), blacsroot)
 
             # set BLACS libs correctly
-            for (var, lib) in [('BLACSFINIT', "F77init"), 
-                               ('BLACSCINIT', "Cinit"), 
+            for (var, lib) in [('BLACSFINIT', "F77init"),
+                               ('BLACSCINIT', "Cinit"),
                                ('BLACSLIB', "")]:
                 extra_makeopts += '%s=%s/lib/libblacs%s.a ' % (var, blacsroot, lib)
 
             # set compilers and options
             noopt = ''
-            if self.tk.opts['noopt']:
+            if self.toolkit().opts['noopt']:
                 noopt += " -O0"
-            if self.tk.opts['pic']:
+            if self.toolkit().opts['pic']:
                 noopt += " -fPIC"
             extra_makeopts += 'F77="%(f77)s" CC="%(cc)s" NOOPT="%(noopt)s" CCFLAGS="-O3" ' % {
-                                                                                              'f77':mpif77,
-                                                                                              'cc':mpicc,
-                                                                                              'noopt':noopt
-                                                                                              }
-
+                                                                                              'f77': mpif77,
+                                                                                              'cc': mpicc,
+                                                                                              'noopt': noopt
+                                                                                             }
             # set interface
             extra_makeopts += "CDEFS='-D%s -DNO_IEEE $(USEMPI)' " % interface
 
@@ -118,9 +127,9 @@ class ScaLAPACK(Application):
 
             # set compilers and options
             extra_makeopts += 'FC="%(fc)s" CC="%(cc)s" ' % {
-                                                            'fc':mpif90,
-                                                            'cc':mpicc,
-                                                            }
+                                                            'fc': mpif90,
+                                                            'cc': mpicc,
+                                                           }
 
             # set interface
             extra_makeopts += 'CDEFS="-D%s" ' % interface
@@ -139,15 +148,16 @@ class ScaLAPACK(Application):
             os.makedirs(dest)
             shutil.copy2(src,dest)
         except OSError, err:
-            self.log.error("Copying %s to installation dir %s failed: %s"%(src, dest, err))
+            self.log.error("Copying %s to installation dir %s failed: %s" % (src, dest, err))
 
     def sanitycheck(self):
 
         if not self.getcfg('sanityCheckPaths'):
-            self.setcfg('sanityCheckPaths',{'files':["lib/libscalapack.a"],
-                                            'dirs':[]
+            self.setcfg('sanityCheckPaths',{
+                                            'files': ["lib/libscalapack.a"],
+                                            'dirs': []
                                            })
 
-            self.log.info("Customized sanity check paths: %s"%self.getcfg('sanityCheckPaths'))
+            self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
         Application.sanitycheck(self)

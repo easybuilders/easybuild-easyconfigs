@@ -1,5 +1,10 @@
 ##
-# Copyright 2009-2012 Stijn De Weirdt, Dries Verdegem, Kenneth Hoste, Pieter De Baets, Jens Timmerman
+# Copyright 2009-2012 Stijn De Weirdt
+# Copyright 2010 Dries Verdegem
+# Copyright 2010-2012 Kenneth Hoste
+# Copyright 2011 Pieter De Baets
+# Copyright 2011-2012 Jens Timmerman
+# Copyright 2012 Toon Willems
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of the University of Ghent (http://ugent.be/hpc).
@@ -26,7 +31,15 @@ from easybuild.tools.build_log import getLog
 from easybuild.tools.modules import Modules, get_software_root
 from easybuild.tools import systemtools
 
-log = getLog('Toolkit')
+import easybuild.tools.environment as env
+
+
+# constants used for recognizing compilers, MPI libraries, ...
+GCC = "GCC"
+INTEL = "Intel"
+OPENMPI = "OpenMPI"
+QLOGIC = "QLogic"
+
 
 class Toolkit:
     """
@@ -34,14 +47,18 @@ class Toolkit:
     """
 
     def __init__(self, name, version):
-        """ Initialise toolkit name version """
+        """ Initialise toolkit variables."""
+
         self.dependencies = []
         self.vars = {}
         self.arch = None
         self.toolkit_deps = []
         self.m32flag = ''
 
-        ## Option flags
+        # logger
+        self.log = getLog('Toolkit')
+
+        # option flags
         self.opts = {
            'usempi': False, 'cciscxx': False, 'pic': False, 'opt': False,
            'noopt': False, 'lowopt': False, 'debug': False, 'optarch':True,
@@ -80,7 +97,7 @@ class Toolkit:
             if opt in self.opts:
                 self.opts[opt] = options[opt]
             else:
-                log.warning("Undefined toolkit option %s specified." % opt)
+                self.log.warning("Undefined toolkit option %s specified." % opt)
 
     def getDependencyVersion(self, dependency):
         """ Generate a version string for a dependency on a module using this toolkit """
@@ -103,24 +120,24 @@ class Toolkit:
             matches = Modules().available(dependency['name'], "%s%s" % (toolkit, suffix))
             # Find the most recent (or default) one
             if len(matches) > 0:
-                return matches[-1]
+                return matches[-1][-1]
             else:
-                log.error('No toolkit version for dependency name %s (suffix %s) found'
+                self.log.error('No toolkit version for dependency name %s (suffix %s) found'
                            % (dependency['name'], "%s%s" % (toolkit, suffix)))
 
     def addDependencies(self, dependencies):
         """ Verify if the given dependencies exist and add them """
         mod = Modules()
-        log.debug("Adding toolkit dependencies")
+        self.log.debug("Adding toolkit dependencies")
         for dep in dependencies:
             if not 'tk' in dep:
                 dep['tk'] = self.getDependencyVersion(dep)
 
             if not mod.exists(dep['name'], dep['tk']):
-                log.error('No module found for dependency %s/%s' % (dep['name'], dep['tk']))
+                self.log.error('No module found for dependency %s/%s' % (dep['name'], dep['tk']))
             else:
                 self.dependencies.append(dep)
-                log.debug('Added toolkit dependency %s' % dep)
+                self.log.debug('Added toolkit dependency %s' % dep)
 
     def prepare(self, onlymod=None):
         """
@@ -133,13 +150,13 @@ class Toolkit:
         (If string: comma separated list of variables that will be ignored).
         """
         if not self._toolkitExists():
-            log.error("No module found for toolkit name '%s' (%s)" % (self.name, self.version))
+            self.log.error("No module found for toolkit name '%s' (%s)" % (self.name, self.version))
 
         if self.name == 'dummy':
             if self.version == 'dummy':
-                log.info('Toolkit: dummy mode')
+                self.log.info('Toolkit: dummy mode')
             else:
-                log.info('Toolkit: dummy mode, but loading dependencies')
+                self.log.info('Toolkit: dummy mode, but loading dependencies')
                 modules = Modules()
                 modules.addModule(self.dependencies)
                 modules.load()
@@ -151,22 +168,22 @@ class Toolkit:
         modules.addModule(self.dependencies)
         modules.load()
 
-        ## Determine toolkit dependencies, so we can prepare for them
-        self.toolkit_deps = modules.dependencies_for(self.name, self.version)
-        log.debug('List of toolkit dependencies: %s' % self.toolkit_deps)
+        ## Determine direct toolkit dependencies, so we can prepare for them
+        self.toolkit_deps = modules.dependencies_for(self.name, self.version, depth=1)
+        self.log.debug('List of direct toolkit dependencies: %s' % self.toolkit_deps)
 
         ## Generate the variables to be set
         self._generate_variables()
 
         ## set the variables
         if not (onlymod == True):
-            log.debug("Variables being set: onlymod=%s" % onlymod)
+            self.log.debug("Variables being set: onlymod=%s" % onlymod)
 
             ## add LDFLAGS and CPPFLAGS from dependencies to self.vars
             self._addDependencyVariables()
             self._setVariables(onlymod)
         else:
-            log.debug("No variables set: onlymod=%s" % onlymod)
+            self.log.debug("No variables set: onlymod=%s" % onlymod)
 
     def _addDependencyVariables(self, names=None):
         """ Add LDFLAGS and CPPFLAGS to the self.vars based on the dependencies
@@ -182,14 +199,14 @@ class Toolkit:
         for dep in deps:
             softwareRoot = get_software_root(dep['name'])
             if not softwareRoot:
-                log.error("%s was not found in environment (dep: %s)" % (dep['name'], dep))
+                self.log.error("%s was not found in environment (dep: %s)" % (dep['name'], dep))
 
             self._flagsForSubdirs(softwareRoot, cpp_paths, flag="-I%s", varskey="CPPFLAGS")
             self._flagsForSubdirs(softwareRoot, ld_paths, flag="-L%s", varskey="LDFLAGS")
 
     def _setVariables(self, dontset=None):
         """ Sets the environment variables """
-        log.debug("Setting variables: dontset=%s" % dontset)
+        self.log.debug("Setting variables: dontset=%s" % dontset)
 
         dontsetlist = []
         if type(dontset) == str:
@@ -199,17 +216,17 @@ class Toolkit:
 
         for key, val in self.vars.items():
             if key in dontsetlist:
-                log.debug("Not setting environment variable %s (value: %s)." % (key, val))
+                self.log.debug("Not setting environment variable %s (value: %s)." % (key, val))
                 continue
 
-            log.debug("Setting environment variable %s to %s" % (key, val))
-            os.environ[key] = val
+            self.log.debug("Setting environment variable %s to %s" % (key, val))
+            env.set(key, val)
 
             # also set unique named variables that can be used in Makefiles
             # - so you can have 'CFLAGS = $(SOFTVARCFLAGS)'
             # -- 'CLFLAGS = $(CFLAGS)' gives  '*** Recursive variable `CFLAGS'
             # references itself (eventually).  Stop' error
-            os.environ["SOFTVAR%s" % key] = val
+            env.set("SOFTVAR%s" % key, val)
 
 
     def _getOptimalArchitecture(self):
@@ -219,10 +236,10 @@ class Toolkit:
             self.arch = systemtools.get_cpu_vendor()
         if self.arch in optarchs:
             optarch = optarchs[self.arch]
-            log.info("Using %s as optarch for %s." % (optarch, self.arch))
+            self.log.info("Using %s as optarch for %s." % (optarch, self.arch))
             return optarch
         else:
-            log.error("Don't know how to set optarch for %s." % self.arch)
+            self.log.error("Don't know how to set optarch for %s." % self.arch)
 
     def _generate_variables(self):
 
@@ -266,9 +283,9 @@ class Toolkit:
         for meth_key in meth_keys:
             if meth_key.endswith("_%s" % self.name):
                 depnames.append(self.name)
-                log.debug("Going to add preparation function for toolkit %s itself also" % self.name)
+                self.log.debug("Going to add preparation function for toolkit %s itself also" % self.name)
                 break
-        log.debug("depnames: %s" % depnames)
+        self.log.debug("depnames: %s" % depnames)
 
         # figure out which preparation functions we need to run based on toolkit dependencies
         preparation_functions = {}
@@ -285,9 +302,9 @@ class Toolkit:
             for depname in copy.copy(depnames):
                 if depname in found_meths:
                     depnames.remove(depname)
-            log.error("Unable to find preparation functions for these toolkit dependencies: %s" % depnames)
+            self.log.error("Unable to find preparation functions for these toolkit dependencies: %s" % depnames)
 
-        log.debug("List of preparation functions: %s" % preparation_functions)
+        self.log.debug("List of preparation functions: %s" % preparation_functions)
 
         self.vars["LDFLAGS"] = ''
         self.vars["CPPFLAGS"] = ''
@@ -303,22 +320,21 @@ class Toolkit:
         """
 
         if self.opts['32bit']:
-            log.error("ERROR: 32-bit not supported (yet) for ACML.")
+            self.log.error("ERROR: 32-bit not supported (yet) for ACML.")
 
         self._addDependencyVariables(['ACML'])
 
-        if os.getenv('SOFTROOTGCC'):
+        if self.toolkit_comp_family() == GCC:
             compiler = 'gfortran'
-        elif os.getenv('SOFTROOTIFORT'):
-            compiler = 'ifort' 
+        elif self.toolkit_comp_family() == INTEL:
+            compiler = 'ifort'
         else:
-            log.error("Don't know which compiler-specific subdir for ACML to use.")
+            self.log.error("Don't know which compiler-specific subdir for ACML to use.")
         self.vars['LDFLAGS'] += " -L%(acml)s/%(comp)s64/lib/ " % {
-        #                       "%(acml)s/%(comp)s64/lib/libacml.a -lpthread" % {
                                                 'comp':compiler,
                                                 'acml':os.environ['SOFTROOTACML']
                }
-        self.vars['LIBBLAS'] = " -lacml_mv -lacml " #-lpthread" 
+        self.vars['LIBBLAS'] = " -lacml_mv -lacml "
 
         self.vars['LIBBLAS_MT'] = self.vars['LIBBLAS']
 
@@ -375,7 +391,7 @@ class Toolkit:
         """
 
         if self.opts['32bit']:
-            log.error("ERROR: 32-bit not supported yet for GCC based toolkits.")
+            self.log.error("ERROR: 32-bit not supported yet for GCC based toolkits.")
 
         # set basic GCC options
         self.vars['CC'] = 'gcc %s' % self.m32flag
@@ -506,7 +522,7 @@ class Toolkit:
 
         mklRoot = os.getenv('MKLROOT')
         if not mklRoot:
-            log.error("MKLROOT not found in environment")
+            self.log.error("MKLROOT not found in environment")
 
         # For more inspiration: see http://software.intel.com/en-us/articles/intel-mkl-link-line-advisor/
 
@@ -561,7 +577,7 @@ class Toolkit:
             mklcpp = ['include', 'include/fftw']
         else:
             if self.opts['32bit']:
-                log.error("32-bit libraries not supported yet for IMKL v%s (> v10.3)" % os.environ("SOFTROOTIMKL"))
+                self.log.error("32-bit libraries not supported yet for IMKL v%s (> v10.3)" % os.environ("SOFTROOTIMKL"))
 
             mklld = ['lib/intel64', 'mkl/lib/intel64']
             mklcpp = ['mkl/include', 'mkl/include/fftw']
@@ -570,19 +586,16 @@ class Toolkit:
         self._flagsForSubdirs(mklRoot, mklld, flag="-L%s", varskey="LDFLAGS")
         self._flagsForSubdirs(mklRoot, mklcpp, flag="-I%s", varskey="CPPFLAGS")
 
-        if os.getenv('SOFTROOTGCC'):
-            if not (os.getenv('SOFTROOTICC') or os.getenv('SOFTROOTIFORT')):
-                for var in ['LIBLAPACK', 'LIBLAPACK_MT', 'LIBSCALAPACK', 'LIBSCALAPACK_MT']:
-                    self.vars[var] = self.vars[var].replace('mkl_intel_lp64', 'mkl_gf_lp64')
-            else:
-                log.error("Toolkit preparation with both GCC and Intel compilers loaded is not supported.")
+        if self.toolkit_comp_family() == GCC:
+            for var in ['LIBLAPACK', 'LIBLAPACK_MT', 'LIBSCALAPACK', 'LIBSCALAPACK_MT']:
+                self.vars[var] = self.vars[var].replace('mkl_intel_lp64', 'mkl_gf_lp64')
 
     def prepareIMPI(self):
         """
         Prepare for Intel MPI library
         """
 
-        if os.getenv('SOFTROOTICC') and os.getenv('SOFTROOTIFORT') and not os.getenv('SOFTROOTGCC'):
+        if self.toolkit_comp_family() == INTEL:
             # Intel-based toolkit
 
             self.vars['MPICC'] = 'mpiicc %s' % self.m32flag
@@ -654,7 +667,7 @@ class Toolkit:
                 for i in ['CC', 'CXX', 'F77', 'F90']:
                     self.vars[i] = self.vars["MPI%s" % i]
         else:
-            log.error("Don't know how to prepare for a non-ScaleMP MPICH2 library.")
+            self.log.error("Don't know how to prepare for a non-ScaleMP MPICH2 library.")
 
     def prepareSimpleMPI(self):
         """
@@ -689,8 +702,11 @@ class Toolkit:
         """
         Prepare for ScaLAPACK library
         """
-        self.vars['LIBSCALAPACK'] += " -lscalapack"
-        self.vars['LIBSCALAPACK_MT'] += " %s -lpthread" % self.vars['LIBSCALAPACK']
+
+        # we need to be careful here, LIBSCALAPACK(_MT) may be set by prepareBLACS, or not
+        self.vars['LIBSCALAPACK'] = "%s -lscalapack" % self.vars.get('LIBSCALAPACK', '')
+        self.vars['LIBSCALAPACK_MT'] = "%s %s -lpthread" % (self.vars['LIBSCALAPACK'],
+                                                            self.vars.get('LIBSCALAPACK_MT', ''))
 
         self._addDependencyVariables(['ScaLAPACK'])
 
@@ -736,7 +752,7 @@ class Toolkit:
             if os.path.isdir(directory):
                 flags.append(flag % directory)
             else:
-                log.warning("Directory %s was not found" % directory)
+                self.log.warning("Directory %s was not found" % directory)
 
         if not varskey in self.vars:
             self.vars[varskey] = ''
@@ -755,34 +771,35 @@ class Toolkit:
             if match:
                 return tk_type
 
-        log.error("Failed to determine %s based on toolkit dependencies." % name)
+        self.log.error("Failed to determine %s based on toolkit dependencies." % name)
 
     def toolkit_comp_family(self):
         """Determine compiler family based on toolkit dependencies."""
         comp_families = {
                          # always use tuples as keys!
-                         ('icc', 'ifort'):'Intel', # Intel toolkit has both icc and ifort
-                         ('GCC', ):'GCC' # GCC toolkit uses GCC as compiler suite
-                         }
+                         ('icc', 'ifort'): INTEL,  # Intel toolkit has both icc and ifort
+                         ('GCC', ): GCC  # GCC toolkit uses GCC as compiler suite
+                        }
 
         return self.det_toolkit_type("compiler family", comp_families)
 
     def get_openmp_flag(self):
         """Determine compiler flag for OpenMP"""
 
-        if self.toolkit_comp_family() == "Intel":
+        if self.toolkit_comp_family() == INTEL:
             return "-openmp"
-        elif self.toolkit_comp_family() == "GCC":
+        elif self.toolkit_comp_family() == GCC:
             return "-fopenmp"
         else:
-            log.error("Can't determine compiler flag for OpenMP.")
+            self.log.error("Can't determine compiler flag for OpenMP.")
 
     def toolkit_mpi_type(self):
         """Determine type of MPI library based on toolkit dependencies."""
         mpi_types = {
                       # always use tuples as keys!
-                      ('impi', ):'Intel', # Intel MPI
-                      ('OpenMPI', ):'OpenMPI' # OpenMPI
+                      ('impi', ):INTEL, # Intel MPI
+                      ('OpenMPI', ):OPENMPI, # OpenMPI
+                      ('QLogicMPI', ):QLOGIC # QLogic MPI
                       }
 
         return self.det_toolkit_type("type of mpi library", mpi_types)
@@ -795,20 +812,20 @@ class Toolkit:
 
         # different known mpirun commands
         mpi_cmds = {
-                    "OpenMPI":"mpirun -n %(nr_ranks)d %(cmd)s",
-                    "Intel":"mpirun %(mpdbootfile)s %(nodesfile)s -np %(nr_ranks)d %(cmd)s",
+                    OPENMPI:"mpirun -n %(nr_ranks)d %(cmd)s",
+                    INTEL:"mpirun %(mpdbootfile)s %(nodesfile)s -np %(nr_ranks)d %(cmd)s",
                     }
 
         mpi_type = self.toolkit_mpi_type()
 
         # Intel MPI mpirun needs more work
-        if mpi_type == "Intel":
+        if mpi_type == INTEL:
 
             # set temporary dir for mdp
-            os.environ['I_MPI_MPD_TMPDIR'] = "/tmp"
+            env.set('I_MPI_MPD_TMPDIR', "/tmp")
 
             # set PBS_ENVIRONMENT, so that --file option for mpdboot isn't stripped away
-            os.environ['PBS_ENVIRONMENT'] = "PBS_BATCH_MPI"
+            env.set('PBS_ENVIRONMENT', "PBS_BATCH_MPI")
 
             # create mpdboot file
             fn = "/tmp/mpdboot"
@@ -839,4 +856,4 @@ class Toolkit:
         if mpi_type in mpi_cmds.keys():
             return mpi_cmds[mpi_type] % params
         else:
-            log.error("Don't know how to create an MPI command for MPI library of type '%s'." % mpi_type)
+            self.log.error("Don't know how to create an MPI command for MPI library of type '%s'." % mpi_type)

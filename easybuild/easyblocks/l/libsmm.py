@@ -1,5 +1,9 @@
 ##
-# Copyright 2009-2012 Stijn De Weirdt, Dries Verdegem, Kenneth Hoste, Pieter De Baets, Jens Timmerman
+# Copyright 2009-2012 Stijn De Weirdt
+# Copyright 2010 Dries Verdegem
+# Copyright 2010-2012 Kenneth Hoste
+# Copyright 2011 Pieter De Baets
+# Copyright 2011-2012 Jens Timmerman
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of the University of Ghent (http://ugent.be/hpc).
@@ -18,13 +22,19 @@
 # You should have received a copy of the GNU General Public License
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
+"""
+EasyBuild support for building and installing the libsmm library, implemented as an easyblock
+"""
+
 import os
 import shutil
 from distutils.version import LooseVersion
-import easybuild
+
+import easybuild  # required for VERBOSE_VERSION
 from easybuild.framework.application import Application
 from easybuild.tools.filetools import run_cmd
 from easybuild.tools.modules import get_software_root
+
 
 class Libsmm(Application):
     """
@@ -36,13 +46,15 @@ class Libsmm(Application):
     def __init__(self, *args, **kwargs):
         Application.__init__(self, *args, **kwargs)
 
+    def extra_options(self):
         # default dimensions
         dd = [1,4,5,6,9,13,16,17,22]
-
-        self.cfg.update({'transpose_flavour':[1, "Transpose flavour of routines (default: 1)"],
-                         'max_tiny_dim':[12, "Maximum tiny dimension (default: 12)"],
-                         'dims':[dd, "Generate routines for these matrix dims (default: %s)" % dd]
-                         })
+        extra_vars = {
+                      'transpose_flavour': [1, "Transpose flavour of routines (default: 1)"],
+                      'max_tiny_dim': [12, "Maximum tiny dimension (default: 12)"],
+                      'dims': [dd, "Generate routines for these matrix dims (default: %s)" % dd]
+                     }
+        return Application.extra_options(self, extra_vars)
 
     def configure(self):
         """Configure build: change to tools/build_libsmm dir"""
@@ -106,7 +118,7 @@ dims_small="%(dims)s"
 
 # tiny dimensions are used as primitves and generated in an 'exhaustive' search.
 # They should be a sequence from 1 to N,
-# where N is a number that is large enough to have good in cache performance 
+# where N is a number that is large enough to have good cache performance
 # (e.g. for modern SSE cpus 8 to 12)
 # Too large (>12?) is not beneficial, but increases the time needed to build the library
 # Too small (<8)   will lead to a slow library, but the build might proceed quickly
@@ -114,7 +126,7 @@ dims_small="%(dims)s"
 #
 dims_tiny="%(tiny_dims)s"
 
-# host compiler... this is used only to compile a few tools needed to build the library. 
+# host compiler... this is used only to compile a few tools needed to build the library.
 # The library itself is not compiled this way.
 # This compiler needs to be able to deal with some Fortran2003 constructs.
 #
@@ -152,26 +164,25 @@ tasks=%(tasks)s
                 blas_found = True
             else:
                 self.log.info("BLAS library %s not found" % blas_lib)
-                
+
         if not blas_found:
             self.log.error('No known BLAS library found!')
 
         cfgdict = {
-            'eb_version' : easybuild.VERBOSE_VERSION,
-            'datatype': None,
-            'transposeflavour': self.getcfg('transpose_flavour'),
-            'targetcompile': targetcompile,
-            'hostcompile': hostcompile,
-            'dims':' '.join([str(d) for d in self.getcfg('dims')]),
-            'tiny_dims':' '.join([str(d) for d in range(1, self.getcfg('max_tiny_dim')+1)]),
-            'tasks': self.getcfg('parallel'),
-            'LIBBLAS':"%s %s" % (os.getenv('LDFLAGS'), os.getenv('LIBBLAS'))
-        }
+                   'eb_version': easybuild.VERBOSE_VERSION,
+                   'datatype': None,
+                   'transposeflavour': self.getcfg('transpose_flavour'),
+                   'targetcompile': targetcompile,
+                   'hostcompile': hostcompile,
+                   'dims': ' '.join([str(d) for d in self.getcfg('dims')]),
+                   'tiny_dims': ' '.join([str(d) for d in range(1, self.getcfg('max_tiny_dim')+1)]),
+                   'tasks': self.getcfg('parallel'),
+                   'LIBBLAS': "%s %s" % (os.getenv('LDFLAGS'), os.getenv('LIBBLAS'))
+                  }
 
         # configure for various iterations
-        datatypes = [(1, 'double precision real'), 
-                     (3, 'double precision complex')
-                     ]
+        datatypes = [(1, 'double precision real'), (3, 'double precision complex')]
+
         for (dt, descr) in datatypes:
             cfgdict['datatype'] = dt
             try:
@@ -200,9 +211,10 @@ tasks=%(tasks)s
         """Custom sanity check for libsmm"""
 
         if not self.getcfg('sanityCheckPaths'):
-            self.setcfg('sanityCheckPaths', {'files':["lib/libsmm_%s.a" % x for x in ["dnn", "znn"]],
-                                            'dirs':[]
-                                           })
+            self.setcfg('sanityCheckPaths', {
+                                             'files': ["lib/libsmm_%s.a" % x for x in ["dnn", "znn"]],
+                                             'dirs': []
+                                            })
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 

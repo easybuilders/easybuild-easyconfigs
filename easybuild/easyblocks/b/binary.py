@@ -1,5 +1,9 @@
 ##
-# Copyright 2009-2012 Stijn Deweirdt, Dries Verdegem, Kenneth Hoste, Pieter De Baets, Jens Timmerman
+# Copyright 2009-2012 Stijn De Weirdt
+# Copyright 2010 Dries Verdegem
+# Copyright 2010-2012 Kenneth Hoste
+# Copyright 2011 Pieter De Baets
+# Copyright 2011-2012 Jens Timmerman
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of the University of Ghent (http://ugent.be/hpc).
@@ -19,11 +23,14 @@
 # along with EasyBuild. If not, see <http://www.gnu.org/licenses/>.
 ##
 """
-EasyBlock for binary applications
+General EasyBuild support for software with a binary installer
 """
+
 import shutil
 import os
+
 from easybuild.framework.application import Application
+
 
 class Binary(Application):
     """Support for installing a binary package.
@@ -38,7 +45,7 @@ class Binary(Application):
         pass
 
     def make_installdir(self):
-        """Do not actually create installdir, copytree in make_install doesn't 
+        """Do not actually create installdir, copytree in make_install doesn't
         want the destination directory already exist
         But in python < 2.5 the actual path leading up to the directory has to exist."""
         self.make_dir(self.installdir, clean=True, dontcreateinstalldir=True)

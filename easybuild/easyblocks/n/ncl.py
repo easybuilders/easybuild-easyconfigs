@@ -1,5 +1,9 @@
 ##
-# Copyright 2009-2012 Stijn De Weirdt, Dries Verdegem, Kenneth Hoste, Pieter De Baets, Jens Timmerman
+# Copyright 2009-2012 Stijn De Weirdt
+# Copyright 2010 Dries Verdegem
+# Copyright 2010-2012 Kenneth Hoste
+# Copyright 2011 Pieter De Baets
+# Copyright 2011-2012 Jens Timmerman
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of the University of Ghent (http://ugent.be/hpc).
@@ -18,25 +22,31 @@
 # You should have received a copy of the GNU General Public License
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
-from distutils.version import LooseVersion
+"""
+EasyBuild support for building and installing NCL, implemented as an easyblock
+"""
+
 import fileinput
 import os
 import re
 import sys
+from distutils.version import LooseVersion
+
 from easybuild.framework.application import Application
 from easybuild.tools.filetools import run_cmd
 from easybuild.tools.modules import get_software_root
+
 
 class NCL(Application):
     """Support for building/installing NCL."""
 
     def configure(self):
-        """Configure build: 
+        """Configure build:
         - create Makefile.ini using make and run ymake script to create config file
         - patch config file with correct settings, and add missing config entries
         - create config/Site.local file to avoid interactive install
         - generate Makefile using config/ymkmf sciprt
-        - 
+        -
         """
 
         try:
@@ -51,7 +61,7 @@ class NCL(Application):
         run_cmd(cmd, log_all=True, simple=True)
 
         # figure out name of config file
-        cfg_regexp = re.compile('^\s*SYSTEM_INCLUDE\s*=\s*"(.*)"\s*$',re.M)
+        cfg_regexp = re.compile('^\s*SYSTEM_INCLUDE\s*=\s*"(.*)"\s*$', re.M)
         f = open("Makefile", "r")
         txt = f.read()
         f.close()
@@ -67,15 +77,15 @@ class NCL(Application):
         elif os.getenv('SOFTROOTGCC'):
             ctof_libs = '-lgfortran -lm'
         macrodict = {
-                     'CCompiler':os.getenv('CC'),
-                     'FCompiler':os.getenv('F77'),
-                     'CcOptions':'-ansi %s' % os.getenv('CFLAGS'),
-                     'FcOptions':os.getenv('FFLAGS'),
-                     'COptimizeFlag':os.getenv('CFLAGS'),
-                     'FOptimizeFlag':os.getenv('FFLAGS'),
-                     'ExtraSysLibraries':os.getenv('LDFLAGS'),
-                     'CtoFLibraries':ctof_libs
-                     }
+                     'CCompiler': os.getenv('CC'),
+                     'FCompiler': os.getenv('F77'),
+                     'CcOptions': '-ansi %s' % os.getenv('CFLAGS'),
+                     'FcOptions': os.getenv('FFLAGS'),
+                     'COptimizeFlag': os.getenv('CFLAGS'),
+                     'FOptimizeFlag': os.getenv('FFLAGS'),
+                     'ExtraSysLibraries': os.getenv('LDFLAGS'),
+                     'CtoFLibraries': ctof_libs
+                    }
 
         # replace config entries that are already there
         for line in fileinput.input(cfg_filename, inplace=1, backup='%s.orig' % cfg_filename):
@@ -103,11 +113,11 @@ class NCL(Application):
         except OSError, err:
             self.log.error("Failed to change to the build dir %s: %s" % (self.getcfg('startfrom'), err))
 
-        # instead of running the Configure script that asks a zillion questions, 
+        # instead of running the Configure script that asks a zillion questions,
         # let's just generate the config/Site.local file ourselves...
 
         # order of deps is important
-        ## HDF needs to go after netCDF, because both have a netcdf.h include file
+        # HDF needs to go after netCDF, because both have a netcdf.h include file
         deps = ["HDF5", "JasPer", "netCDF", "HDF", "g2lib", "g2clib", "Szip"]
 
         libs = ''
@@ -144,10 +154,10 @@ class NCL(Application):
 
 #endif /* SecondSite */
 """ % {
-       'installdir' : self.installdir,
-       'libs' : libs,
-       'includes' : includes
-       }
+       'installdir': self.installdir,
+       'libs': libs,
+       'includes': includes
+      }
 
         f = open("config/Site.local", "w")
         f.write(cfgtxt)
@@ -170,8 +180,7 @@ class NCL(Application):
     def make_module_extra(self):
         """Set NCARG_ROOT environment variable in module."""
 
-        txt=Application.make_module_extra(self)
-
-        txt+="setenv\tNCARG_ROOT\t$root\n"
+        txt = Application.make_module_extra(self)
+        txt += "setenv\tNCARG_ROOT\t$root\n"
 
         return txt

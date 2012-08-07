@@ -1,5 +1,9 @@
 ##
-# Copyright 2009-2012 Stijn De Weirdt, Dries Verdegem, Kenneth Hoste, Pieter De Baets, Jens Timmerman
+# Copyright 2009-2012 Stijn De Weirdt
+# Copyright 2010 Dries Verdegem
+# Copyright 2010-2012 Kenneth Hoste
+# Copyright 2011 Pieter De Baets
+# Copyright 2011-2012 Jens Timmerman
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of the University of Ghent (http://ugent.be/hpc).
@@ -22,11 +26,15 @@
 Generating module files.
 """
 import os
+import shutil
+import tempfile
 
 from easybuild.tools.build_log import getLog
 from easybuild.tools.config import installPath
 
+
 log = getLog('moduleGenerator')
+
 
 class ModuleGenerator:
     """
@@ -36,26 +44,29 @@ class ModuleGenerator:
         self.app = application
         self.fake = fake
         self.filename = None
-        self.module_path = None
+        self.tmpdir = None
 
     def createFiles(self):
         """
         Creates the absolute filename for the module.
         """
-        base = installPath('mod')
+        module_path = installPath('mod')
 
-        # Fake mode: set installpath to builddir
+        # general module class
+        general_class = 'all'
+
+        # Fake mode: set installpath to temporary dir
         if self.fake:
-            log.debug("Fake mode: using %s (instead of %s)" % (self.app.builddir, base))
-            base = self.app.builddir
+            self.tmpdir = tempfile.mkdtemp()
+            log.debug("Fake mode: using %s (instead of %s)" % (self.tmpdir, module_path))
+            module_path = self.tmpdir
 
         # Real file goes in 'all' category
-        self.module_path = os.path.join(base, 'all')
-        self.filename = os.path.join(self.module_path, self.app.name(), self.app.installversion)
+        self.filename = os.path.join(module_path, general_class, self.app.name(), self.app.installversion())
 
         # Make symlink in moduleclass category
-        classPath = os.path.join(base, self.app.getcfg('moduleclass'), self.app.name())
-        classPathFile = os.path.join(classPath, self.app.installversion)
+        classPath = os.path.join(module_path, self.app.getcfg('moduleclass'), self.app.name())
+        classPathFile = os.path.join(classPath, self.app.installversion())
 
         # Create directories and links
         for directory in [os.path.dirname(x) for x in [self.filename, classPathFile]]:
@@ -76,6 +87,8 @@ class ModuleGenerator:
             os.symlink(self.filename, classPathFile)
         except OSError, err:
             log.exception("Failed to create symlink from %s to %s: %s" % (classPathFile, self.filename, err))
+
+        return os.path.join(module_path, general_class)
 
     def getDescription(self, conflict=True):
         """
@@ -148,3 +161,14 @@ if { ![is-loaded %(name)s/%(version)s] } {
         Generate setenv statement for the given key/value pair.
         """
         return "setenv\t%s\t\t%s\n" % (key, value)
+
+    def __del__(self):
+        """
+        Desconstructor: clean up temporary directory used for fake modules, if any.
+        """
+        if self.fake:
+            log.info("Cleaning up fake modules dir %s" % self.tmpdir)
+            try:
+                shutil.rmtree(self.tmpdir)
+            except OSError, err:
+                log.exception("Cleaning up fake module dir failed: %s" % err)

@@ -1,5 +1,9 @@
 ##
-# Copyright 2009-2012 Stijn De Weirdt, Dries Verdegem, Kenneth Hoste, Pieter De Baets, Jens Timmerman
+# Copyright 2009-2012 Stijn De Weirdt
+# Copyright 2010 Dries Verdegem
+# Copyright 2010-2012 Kenneth Hoste
+# Copyright 2011 Pieter De Baets
+# Copyright 2011-2012 Jens Timmerman
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of the University of Ghent (http://ugent.be/hpc).
@@ -18,37 +22,44 @@
 # You should have received a copy of the GNU General Public License
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
+"""
+EasyBuild support for building and installing WRF, implemented as an easyblock
+"""
+
 import fileinput
 import os
 import re
 import sys
+
+import easybuild.tools.environment as env
+import easybuild.tools.toolkit as toolkit
 from easybuild.framework.application import Application
 from easybuild.tools.filetools import patch_perl_script_autoflush, run_cmd, run_cmd_qa
 from easybuild.easyblocks.n.netcdf import set_netcdf_env_vars, get_netcdf_module_set_cmds
+
 
 class WRF(Application):
     """Support for building/installing WRF."""
 
     def __init__(self,*args,**kwargs):
         """Add extra config options specific to WRF."""
+        Application.__init__(self, *args, **kwargs)
 
-        Application.__init__(self, args,kwargs)
-        
         self.build_in_installdir = True
-
         self.wrfsubdir = None
-
         self.comp_fam = None
 
-        self.cfg.update({
-                         'buildtype':[None, "Specify the type of build (serial, smpar (OpenMP), " \
-                                            "dmpar (MPI), dm+sm (hybrid OpenMP/MPI))."],
-                         'rewriteopts':[True, "Replace -O3 with CFLAGS/FFLAGS (default: True)."],
-                         'runtest':[True, "Build and run WRF tests (default: True)."]
-                         })
+    def extra_options(self):
+        extra_vars = {
+                      'buildtype': [None, "Specify the type of build (serial, smpar (OpenMP), " \
+                                          "dmpar (MPI), dm+sm (hybrid OpenMP/MPI))."],
+                      'rewriteopts': [True, "Replace -O3 with CFLAGS/FFLAGS (default: True)."],
+                      'runtest': [True, "Build and run WRF tests (default: True)."]
+                     }
+        return Application.extra_options(self, extra_vars)
 
-    def configure(self):        
-        """Configure build: 
+    def configure(self):
+        """Configure build:
             - set some magic environment variables
             - run configure script
             - adjust configure.wrf file if needed
@@ -70,7 +81,7 @@ class WRF(Application):
             if not (hdf5 or parallel_hdf5):
                 self.log.error("Parallel HDF5 module not loaded?")
             else:
-                os.putenv('PHDF5', hdf5)
+                env.set('PHDF5', hdf5)
         else:
             self.log.info("HDF5 module not loaded, assuming that's OK...")
 
@@ -78,8 +89,8 @@ class WRF(Application):
         jasper = os.getenv('SOFTROOTJASPER')
         jasperlibdir = os.path.join(jasper, "lib")
         if jasper:
-            os.environ['JASPERINC'] = os.path.join(jasper, "include")
-            os.environ['JASPERLIB'] = jasperlibdir
+            env.set('JASPERINC', os.path.join(jasper, "include"))
+            env.set('JASPERLIB', jasperlibdir)
 
         else:
             if os.getenv('JASPERINC') or os.getenv('JASPERLIB'):
@@ -88,18 +99,18 @@ class WRF(Application):
                 self.log.info("JasPer module not loaded, assuming that's OK...")
 
         # enable support for large file support in netCDF
-        os.putenv('WRFIO_NCD_LARGE_FILE_SUPPORT', '1')
+        env.set('WRFIO_NCD_LARGE_FILE_SUPPORT', '1')
 
         # patch arch/Config_new.pl script, so that run_cmd_qa receives all output to answer questions
         patch_perl_script_autoflush(os.path.join("arch", "Config_new.pl"))
 
         # determine build type option to look for
         build_type_option = None
-        self.comp_fam = self.tk.toolkit_comp_family()
-        if self.comp_fam == "Intel":
+        self.comp_fam = self.toolkit().toolkit_comp_family()
+        if self.comp_fam == toolkit.INTEL:
             build_type_option = "Linux x86_64 i486 i586 i686, ifort compiler with icc"
 
-        elif self.comp_fam == "GCC":
+        elif self.comp_fam == toolkit.GCC:
             build_type_option = "x86_64 Linux, gfortran compiler with gcc"
 
         else:
@@ -120,14 +131,14 @@ class WRF(Application):
         cmd = "./configure"
         qa = {
               # named group in match will be used to construct answer
-              "Compile for nesting? (1=basic, 2=preset moves, 3=vortex following) [default 1]:":"1",
-              "Compile for nesting? (0=no nesting, 1=basic, 2=preset moves, 3=vortex following) [default 0]:":"0"
-              }
+              "Compile for nesting? (1=basic, 2=preset moves, 3=vortex following) [default 1]:": "1",
+              "Compile for nesting? (0=no nesting, 1=basic, 2=preset moves, 3=vortex following) [default 0]:": "0"
+             }
         no_qa = []
         std_qa = {
                   # named group in match will be used to construct answer
-                  r"%s.*\n(.*\n)*Enter selection\s*\[[0-9]+-[0-9]+\]\s*:" % build_type_question:"%(nr)s",
-                  }
+                  r"%s.*\n(.*\n)*Enter selection\s*\[[0-9]+-[0-9]+\]\s*:" % build_type_question: "%(nr)s",
+                 }
 
         run_cmd_qa(cmd, qa, no_qa=no_qa, std_qa=std_qa, log_all=True, simple=True)
 
@@ -135,12 +146,12 @@ class WRF(Application):
 
         # make sure correct compilers are being used
         comps = {
-                 'SCC':os.getenv('CC'),
-                 'SFC':os.getenv('F90'),
-                 'CCOMP':os.getenv('CC'),
-                 'DM_FC':os.getenv('MPIF90'),
-                 'DM_CC':"%s -DMPI2_SUPPORT" % os.getenv('MPICC'),
-                 }
+                 'SCC': os.getenv('CC'),
+                 'SFC': os.getenv('F90'),
+                 'CCOMP': os.getenv('CC'),
+                 'DM_FC': os.getenv('MPIF90'),
+                 'DM_CC': "%s -DMPI2_SUPPORT" % os.getenv('MPICC'),
+                }
         for line in fileinput.input(cfgfile, inplace=1, backup='.orig.comps'):
             for k,v in comps.items():
                 line = re.sub(r"^(%s\s*=\s*).*$" % k, r"\1 %s" % v, line)
@@ -149,19 +160,18 @@ class WRF(Application):
         # rewrite optimization options if desired
         if self.getcfg('rewriteopts'):
 
-            ## replace default -O3 option in configure.wrf with CFLAGS/FFLAGS from environment
-
+            # replace default -O3 option in configure.wrf with CFLAGS/FFLAGS from environment
             self.log.info("Rewriting optimization options in %s" % cfgfile)
 
             # set extra flags for Intel compilers
             # see http://software.intel.com/en-us/forums/showthread.php?t=72109&p=1#146748
-            if self.comp_fam == "Intel":
+            if self.comp_fam == toolkit.INTEL:
 
                 # -O3 -heap-arrays is required to resolve compilation error
                 for envvar in ['CFLAGS', 'FFLAGS']:
                     val = os.getenv(envvar)
                     if '-O3' in val:
-                        os.environ[envvar] = '%s -heap-arrays' % val
+                        env.set(envvar, '%s -heap-arrays' % val)
                         self.log.info("Updated %s to '%s'" % (envvar, os.getenv(envvar)))
 
             # replace -O3 with desired optimization options
@@ -215,7 +225,7 @@ class WRF(Application):
                     self.testcases.remove(test)
 
             # some tests hang when WRF is built with Intel compilers
-            if self.comp_fam == "Intel":
+            if self.comp_fam == toolkit.INTEL:
                 for test in ["em_heldsuarez"]:
                     if test in self.testcases:
                         self.testcases.remove(test)
@@ -225,10 +235,10 @@ class WRF(Application):
 
             # prepare run command
 
-            ## stack limit needs to be set to unlimited for WRF to work well
+            # stack limit needs to be set to unlimited for WRF to work well
             if self.getcfg('buildtype') in self.parallel_build_types:
-                test_cmd = "ulimit -s unlimited && %s && %s" % (self.tk.mpi_cmd_for("./ideal.exe", 1),
-                                                                self.tk.mpi_cmd_for("./wrf.exe", n))
+                test_cmd = "ulimit -s unlimited && %s && %s" % (self.toolkit().mpi_cmd_for("./ideal.exe", 1),
+                                                                self.toolkit().mpi_cmd_for("./wrf.exe", n))
             else:
                 test_cmd = "ulimit -s unlimited && ./ideal.exe && ./wrf.exe" % n
 
@@ -307,8 +317,9 @@ class WRF(Application):
                 except OSError, err:
                     self.log.error("An error occured when running test %s: %s" % (test, err))
 
-    # installing is done in make, so we can run tests
+    # building/installing is done in make, so we can run tests
     def make_install(self):
+        """Building was done in install dir, so nothing to do in make_install."""
         pass
 
     def sanitycheck(self):
@@ -322,28 +333,28 @@ class WRF(Application):
             fs = ["libwrflib.a", "wrf.exe", "ideal.exe", "real.exe", "ndown.exe", "nup.exe", "tc.exe"]
             ds = ["main", "run"]
 
-            self.setcfg('sanityCheckPaths',{'files':[os.path.join(self.wrfsubdir,"main",x) for x in fs],
-                                            'dirs':[os.path.join(self.wrfsubdir,x) for x in ds]
-                                            })
+            self.setcfg('sanityCheckPaths',{
+                                            'files': [os.path.join(self.wrfsubdir, "main", x) for x in fs],
+                                            'dirs': [os.path.join(self.wrfsubdir, x) for x in ds]
+                                           })
 
-            self.log.info("Customized sanity check paths: %s"%self.getcfg('sanityCheckPaths'))
+            self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
         Application.sanitycheck(self)
 
     def make_module_req_guess(self):
 
-        maindir = os.path.join(self.wrfsubdir,"main")
+        maindir = os.path.join(self.wrfsubdir, "main")
 
         return {
-            'PATH': [maindir],
-            'LD_LIBRARY_PATH': [maindir],
-            'MANPATH': [],
-        }
+                'PATH': [maindir],
+                'LD_LIBRARY_PATH': [maindir],
+                'MANPATH': [],
+               }
 
     def make_module_extra(self):
 
         txt = Application.make_module_extra(self)
-
         txt += get_netcdf_module_set_cmds(self.log)
 
         return txt

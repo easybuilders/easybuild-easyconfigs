@@ -1,5 +1,9 @@
 ##
-# Copyright 2009-2012 Stijn De Weirdt, Dries Verdegem, Kenneth Hoste, Pieter De Baets, Jens Timmerman
+# Copyright 2009-2012 Stijn De Weirdt
+# Copyright 2010 Dries Verdegem
+# Copyright 2010-2012 Kenneth Hoste
+# Copyright 2011 Pieter De Baets
+# Copyright 2011-2012 Jens Timmerman
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of the University of Ghent (http://ugent.be/hpc).
@@ -18,10 +22,16 @@
 # You should have received a copy of the GNU General Public License
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
+"""
+EasyBuild support for building and installing ATLAS, implemented as an easyblock
+"""
+
 import re
 import os
+
 from easybuild.framework.application import Application
 from easybuild.tools.filetools import run_cmd
+
 
 class ATLAS(Application):
     """
@@ -34,11 +44,13 @@ class ATLAS(Application):
     def __init__(self, *args, **kwargs):
         Application.__init__(self, *args, **kwargs)
 
-        self.cfg.update({
-                         'ignorethrottling':[False, "Ignore check done by ATLAS for CPU throttling (not recommended) (default: False)"],
-                         'full_lapack': [False, "Build a full LAPACK library (requires netlib's LAPACK) (default: False)"],
-                         'sharedlibs':[False, "Enable building of shared libs as well (default: False)"]
-                         })
+    def extra_options(self):
+        extra_vars = {
+                      'ignorethrottling': [False, "Ignore check done by ATLAS for CPU throttling (not recommended) (default: False)"],
+                      'full_lapack': [False, "Build a full LAPACK library (requires netlib's LAPACK) (default: False)"],
+                      'sharedlibs': [False, "Enable building of shared libs as well (default: False)"]
+                     }
+        return Application.extra_options(self, extra_vars)
 
     def configure(self):
 
@@ -61,7 +73,7 @@ class ATLAS(Application):
                                " required to build ATLAS with a full LAPACK library.")
 
         # enable building of shared libraries (requires -fPIC)
-        if self.getcfg('sharedlibs') or self.tk.opts['pic']:
+        if self.getcfg('sharedlibs') or self.toolkit().opts['pic']:
             self.log.debug("Enabling -fPIC because we're building shared ATLAS libs, or just because.")
             self.updatecfg('configopts', '-Fa alg -fPIC')
 
@@ -75,9 +87,9 @@ class ATLAS(Application):
 
         # specify compilers
         self.updatecfg('configopts', '-C ic %(cc)s -C if %(f77)s' % {
-                                                                      'cc':os.getenv('CC'),
-                                                                      'f77':os.getenv('F77')
-                                                                      })
+                                                                     'cc':os.getenv('CC'),
+                                                                     'f77':os.getenv('F77')
+                                                                    })
 
         # call configure in parent dir
         cmd = "%s %s/configure --prefix=%s %s" % (self.getcfg('preconfigopts'), self.getcfg('startfrom'),
@@ -132,9 +144,9 @@ Configure failed, not sure why (see output above).""" % out
 
     def make_install(self):
         """Install step
-        
+
         Default make install and optionally remove incomplete lapack libs.
-        If the full_lapack option was set to false we don't 
+        If the full_lapack option was set to false we don't
         """
         Application.make_install(self)
         if not self.getcfg('full_lapack'):
@@ -183,10 +195,11 @@ Configure failed, not sure why (see output above).""" % out
             else:
                 shared_libs = []
 
-            self.setcfg('sanityCheckPaths', {'files':["include/%s" % x for x in ["cblas.h", "clapack.h"]] +
+            self.setcfg('sanityCheckPaths', {
+                                             'files': ["include/%s" % x for x in ["cblas.h", "clapack.h"]] +
                                                     static_libs + shared_libs,
-                                            'dirs':["include/atlas"]
-                                           })
+                                             'dirs': ["include/atlas"]
+                                            })
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 

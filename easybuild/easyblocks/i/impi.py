@@ -1,5 +1,9 @@
 ##
-# Copyright 2009-2012 Stijn De Weirdt, Dries Verdegem, Kenneth Hoste, Pieter De Baets, Jens Timmerman
+# Copyright 2009-2012 Stijn De Weirdt
+# Copyright 2010 Dries Verdegem
+# Copyright 2010-2012 Kenneth Hoste
+# Copyright 2011 Pieter De Baets
+# Copyright 2011-2012 Jens Timmerman
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of the University of Ghent (http://ugent.be/hpc).
@@ -18,13 +22,16 @@
 # You should have received a copy of the GNU General Public License
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
+"""
+EasyBuild support for installing the Intel MPI library, implemented as an easyblock
+"""
 
 import os
-
 from distutils.version import LooseVersion
 
 from easybuild.easyblocks.i.intelbase import IntelBase
 from easybuild.tools.filetools import run_cmd
+
 
 class Impi(IntelBase):
     """
@@ -66,7 +73,7 @@ EULA=accept
 
 """ % {'lic':self.license, 'ins':self.installdir}
 
-            ##already in correct directory
+            # already in correct directory
             silentcfg = os.path.join(os.getcwd(), "silent.cfg")
             try:
                 f = open(silentcfg, 'w')
@@ -74,7 +81,7 @@ EULA=accept
                 f.close()
             except:
                 self.log.exception("Writing silent cfg file %s failed." % silent)
-            ## tmpdir
+
             tmpdir = os.path.join(os.getcwd(), self.version(), 'mytmpdir')
             try:
                 os.makedirs(tmpdir)
