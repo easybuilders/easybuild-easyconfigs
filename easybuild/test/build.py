@@ -293,10 +293,10 @@ def build_packages_in_parallel(packages, output_dir, script_dir):
     version.setAttribute("value", str(easybuild.VERBOSE_VERSION))
     properties.appendChild(version)
 
-    time = root.createElement("property")
-    time.setAttribute("name", "timestamp")
-    time.setAttribute("value", str(datetime.now()))
-    properties.appendChild(time)
+    time_el = root.createElement("property")
+    time_el.setAttribute("name", "timestamp")
+    time_el.setAttribute("value", str(datetime.now()))
+    properties.appendChild(time_el)
 
     root.firstChild.appendChild(properties)
 
