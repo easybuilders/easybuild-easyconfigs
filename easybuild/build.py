@@ -149,7 +149,7 @@ def main():
         blocks = None
 
     ## Initialize logger
-    logFile, log, hn = initLogger(filename=logFile, debug=options.debug, typ=None)
+    logFile, log, hn = initLogger(filename=logFile, debug=options.debug, typ="build")
 
     ## Show version
     if options.version:
