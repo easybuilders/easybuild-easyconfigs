@@ -30,6 +30,7 @@ import glob
 import os
 import shutil
 
+import easybuild.tools.toolkit as toolkit
 from easybuild.framework.application import Application
 from easybuild.tools.filetools import run_cmd
 from easybuild.tools.modules import get_software_root
@@ -84,9 +85,9 @@ class LAPACK(Application):
         """
 
         # copy make.inc file from examples
-        if os.getenv('SOFTROOTGCC'):
+        if self.toolkit().toolkit_comp_family() == toolkit.GCC:
             makeinc = 'gfortran'
-        elif os.getenv('SOFTROOTIFORT'):
+        elif self.toolkit().toolkit_comp_family() == toolkit.INTEL:
             makeinc = 'ifort'
         else:
             self.log.error("Don't know which make.inc file to pick, unknown compiler being used...")
@@ -185,7 +186,7 @@ class LAPACK(Application):
         """
         if self.getcfg('test_only'):
 
-            if not os.getenv('SOFTROOTLAPACK'):
+            if not get_software_root('LAPACK'):
                 self.log.error("You need to make sure that the LAPACK module is loaded to perform testing.")
 
             blaslib = get_blas_lib(self.log)

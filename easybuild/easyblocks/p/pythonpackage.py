@@ -19,8 +19,11 @@
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
 import os
+
 from easybuild.framework.application import Application
 from easybuild.tools.filetools import run_cmd
+from easybuild.tools.modules import get_software_version
+
 
 class PythonPackage(Application):
     """Builds and installs a Python package, and provides a dedicated module file"""
@@ -36,7 +39,7 @@ class PythonPackage(Application):
 
         self.log.debug("PythonPackage: configuring")
 
-        python_version = os.getenv('SOFTVERSIONPYTHON')
+        python_version = get_software_version('Python')
         if not python_version:
             self.log.error('Python module not loaded.')
 

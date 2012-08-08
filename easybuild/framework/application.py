@@ -36,7 +36,6 @@ import re
 import shutil
 import time
 import urllib
-from difflib import get_close_matches
 from distutils.version import LooseVersion
 
 import easybuild
@@ -47,8 +46,7 @@ from easybuild.tools.build_log import EasyBuildError, initLogger, removeLogHandl
 from easybuild.tools.config import source_path, buildPath, installPath
 from easybuild.tools.filetools import unpack, patch, run_cmd, convertName
 from easybuild.tools.module_generator import ModuleGenerator
-from easybuild.tools.modules import Modules
-from easybuild.tools.toolkit import Toolkit
+from easybuild.tools.modules import Modules, get_software_root, sofware_env_var_name
 from easybuild.tools.systemtools import get_core_count
 
 
@@ -334,9 +332,8 @@ class Application:
             self.log.error('Not all dependencies have a matching toolkit version')
 
         # Check if the application is not loaded at the moment
-        envName = "SOFTROOT%s" % convertName(self.name(), upper=True)
-        if envName in os.environ:
-            self.log.error("Module is already loaded (%s is set), installation cannot continue." % envName)
+        if get_software_root(self.name()):
+            self.log.error("Module is already loaded (%s is set), installation cannot continue." % sofware_env_var_name('root', self.name()))
 
         # Check if main install needs to be skipped
         # - if a current module can be found, skip is ok
@@ -1184,7 +1181,7 @@ class Application:
                     if os.path.exists(fullpath):
                         installsize += os.path.getsize(fullpath)
         except OSError, err:
-            self.log.warn("could not determine installsize")
+            self.log.warn("Could not determine install size: %s" % err)
 
         return installsize
 

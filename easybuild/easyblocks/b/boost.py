@@ -20,9 +20,12 @@
 ##
 import os
 import shutil
+
+import easybuild.tools.toolkit as toolkit
 from easybuild.framework.application import Application
 from easybuild.tools.filetools import run_cmd
 from easybuild.tools.modules import get_software_root
+
 
 class Boost(Application):
     """Support for building Boost."""
@@ -50,11 +53,10 @@ class Boost(Application):
             self.log.error("Failed to create directory %s: %s" % (self.objdir, err))
 
         # generate config depending on compiler used
-        # FIXME: use toolkit_comp_family for this
         toolset = None
-        if os.getenv('SOFTROOTICC'):
+        if self.toolkit().toolkit_comp_family() == toolkit.INTEL:
             toolset = 'intel-linux'
-        elif os.getenv('SOFTROOTGCC'):
+        elif self.toolkit().toolkit_comp_family() == toolkit.GCC:
             toolset = 'gcc'
         else:
             self.log.error("Unknown compiler used, aborting.")

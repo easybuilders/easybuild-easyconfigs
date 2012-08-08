@@ -23,8 +23,11 @@ import re
 import os
 import shutil
 import sys
+
 from easybuild.framework.application import Application
 from easybuild.tools.filetools import mkdir
+from easybuild.tools.modules import get_software_root
+
 
 class SuiteSparse(Application):
     """Support for building SuiteSparse."""
@@ -32,8 +35,8 @@ class SuiteSparse(Application):
     def configure(self):
         """Configure build by patching UFconfig.mk."""
 
-        metis = os.getenv('SOFTROOTMETIS')
-        parmetis = os.getenv('SOFTROOTPARMETIS')
+        metis = get_software_root('METIS')
+        parmetis = get_software_root('ParMETIS')
         if not metis and not parmetis:
             self.log.error("Neither METIS or ParMETIS module loaded.")
 

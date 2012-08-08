@@ -19,8 +19,9 @@
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
 import os
+
 from easybuild.easyblocks.c.cmakepythonpackage import CMakePythonPackage
-from easybuild.tools.modules import get_software_root
+from easybuild.tools.modules import get_software_root, get_software_version
 
 
 class DOLFIN(CMakePythonPackage):
@@ -33,7 +34,7 @@ class DOLFIN(CMakePythonPackage):
         """Configure Dolfin build."""
 
         # make sure that required dependencies are loaded
-        deps = ['Armadillo', 'Boost', 'ParMETIS', 'Python', 'SCOTCH', 'SuiteSparse', 'UFC']
+        deps = ['Armadillo', 'Boost', 'CGAL', 'ParMETIS', 'Python', 'SCOTCH', 'SuiteSparse', 'UFC']
         depsdict = {}
         for dep in deps:
             deproot = get_software_root(dep)
@@ -67,7 +68,7 @@ class DOLFIN(CMakePythonPackage):
             self.log.error('MPI_LIB_SHARED or MPI_INC not set, could not determine MPI-related paths.')
 
         # specify Python paths
-        python_short_ver = ".".join(os.getenv('SOFTVERSIONPYTHON').split(".")[0:2])
+        python_short_ver = ".".join(get_software_version('Python').split(".")[0:2])
         self.updatecfg('configopts', " -DPYTHON_INCLUDE_PATH=%s/include/python%s" % (depsdict['Python'],
                                                                                      python_short_ver))
         self.updatecfg('configopts', " -DPYTHON_LIBRARY=%s/lib/libpython%s.so" % (depsdict['Python'],
@@ -95,7 +96,7 @@ class DOLFIN(CMakePythonPackage):
         self.updatecfg('configopts', ' -DLAPACK_LIBRARIES:PATH="$LIBLAPACK"')
 
         # CGAL
-        self.updatecfg('configopts', ' -DCGAL_DIR:PATH="$SOFTROOTCGAL"')
+        self.updatecfg('configopts', ' -DCGAL_DIR:PATH="%s"' % depsdict['CGAL'])
 
         # set correct openmp options
         openmp = self.toolkit().get_openmp_flag()

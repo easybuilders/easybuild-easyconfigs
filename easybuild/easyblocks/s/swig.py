@@ -17,8 +17,9 @@
 # You should have received a copy of the GNU General Public License
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
-import os
 from easybuild.framework.application import Application
+from easybuild.tools.modules import get_software_root
+
 
 class SWIG(Application):
     """Support for building SWIG."""
@@ -32,7 +33,7 @@ class SWIG(Application):
                   "octave", "perl5", "python3", "tcl"]:
             self.updatecfg('configopts', "--without-%s" % x)
 
-        python = os.getenv('SOFTROOTPYTHON')
+        python = get_software_root('Python')
         if python:
             self.updatecfg('configopts', "--with-python=%s/bin/python" % python)
         else:

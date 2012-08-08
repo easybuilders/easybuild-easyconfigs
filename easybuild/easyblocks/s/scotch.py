@@ -23,6 +23,8 @@ import os
 import re
 import sys
 import shutil
+
+import easybuild.tools.toolkit as toolkit
 from easybuild.framework.application import Application
 from easybuild.tools.filetools import run_cmd, copytree
 
@@ -32,10 +34,9 @@ class SCOTCH(Application):
     def configure(self):
         """Configure SCOTCH build: locate the correct makefile, and copy this to a general Makefile.inc"""
 
-        # FIXME: use toolkit_comp_family for this
-        if "SOFTROOTICC" in os.environ:
+        if self.toolkit().toolkit_comp_family() == toolkit.INTEL:
             makefilename = 'Makefile.inc.x86-64_pc_linux2.icc'
-        elif "SOFTROOTGCC" in os.environ:
+        elif self.toolkit().toolkit_comp_family() == toolkit.GCC:
             makefilename = 'Makefile.inc.x86-64_pc_linux2'
         else:
             self.log.error("Don't know how to handle toolkit %s." % self.toolkit().name)
@@ -77,13 +78,12 @@ class SCOTCH(Application):
         ccs = os.environ['CC']
         ccp = os.environ['MPICC']
         ccd = os.environ['MPICC']
-        cflags = ""
 
-        # FIXME: use toolkit_comp_family for this
-        if not "SOFTROOTGCC" in os.environ:
-            cflags = "-fPIC -O3 -DCOMMON_FILE_COMPRESS_GZ -DCOMMON_PTHREAD -DCOMMON_RANDOM_FIXED_SEED -DSCOTCH_RENAME -DSCOTCH_PTHREAD -restrict -DIDXSIZE64"
+        cflags = "-fPIC -O3 -DCOMMON_FILE_COMPRESS_GZ -DCOMMON_PTHREAD -DCOMMON_RANDOM_FIXED_SEED -DSCOTCH_RENAME -DSCOTCH_PTHREAD"
+        if self.toolkit().toolkit_comp_family() == toolkit.GCC:
+            cflags += " -Drestrict=__restrict"
         else:
-            cflags = "-fPIC -O3 -DCOMMON_FILE_COMPRESS_GZ -DCOMMON_PTHREAD -DCOMMON_RANDOM_FIXED_SEED -DSCOTCH_RENAME -DSCOTCH_PTHREAD -Drestrict=__restrict"
+            cflags = " -restrict -DIDXSIZE64"
 
         # actually build
         for app in ["scotch", "ptscotch"]:

@@ -30,7 +30,7 @@ import re
 import subprocess
 import sys
 
-from easybuild.tools.build_log import getLog, initLogger, EasyBuildError
+from easybuild.tools.build_log import getLog, EasyBuildError
 from easybuild.tools.filetools import convertName, run_cmd
 
 
@@ -301,16 +301,22 @@ def searchModule(path, query):
         except ValueError:
             pass
 
+def sofware_env_var_name(infix, name):
+    """
+    Return environment variable name for this software, with a given infix.
+    """
+    return "SOFT%s%s" % (infix.upper(), convertName(name, upper=True))
+
 def get_software_root(name):
     """
     Return the software root set for a particular package.
     """
-    environmentKey = "SOFTROOT%s" % convertName(name, upper=True)
+    environmentKey = sofware_env_var_name("root", name)
     return os.getenv(environmentKey)
 
 def get_software_version(name):
     """
     Return the software version set for a particular package.
     """
-    environmentKey = "SOFTVERSION%s" % convertName(name, upper=True)
+    environmentKey = sofware_env_var_name("version", name)
     return os.getenv(environmentKey)

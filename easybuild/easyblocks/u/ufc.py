@@ -17,10 +17,12 @@
 # You should have received a copy of the GNU General Public License
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
-from distutils.version import LooseVersion
 import os
+from distutils.version import LooseVersion
+
 from easybuild.easyblocks.c.cmakepythonpackage import CMakePythonPackage
-from easybuild.tools.modules import get_software_root
+from easybuild.tools.modules import get_software_root, get_software_version
+
 
 class UFC(CMakePythonPackage):
     """Support for building UFC."""
@@ -41,11 +43,11 @@ class UFC(CMakePythonPackage):
         # SWIG version more recent than 2.0.4 have a regression
         # which causes problems with DOLFIN if UFC was built with it
         # fixed in 2.0.7? see https://bugs.launchpad.net/dolfin/+bug/996398
-        if LooseVersion(os.environ['SOFTVERSIONSWIG']) > '2.0.4':
+        if LooseVersion(get_software_version('SWIG')) > '2.0.4':
             self.log.error("Using bad version of SWIG, expecting swig <= 2.0.4." \
                            " See https://bugs.launchpad.net/dolfin/+bug/996398")
 
-        self.pyver = ".".join(os.getenv('SOFTVERSIONPYTHON').split(".")[:-1])
+        self.pyver = ".".join(get_software_version('Python').split(".")[:-1])
 
         self.updatecfg('configopts', "-DBoost_DIR=%s" % depsdict['Boost'])
         self.updatecfg('configopts', "-DBOOST_INCLUDEDIR=%s/include" % depsdict['Boost'])

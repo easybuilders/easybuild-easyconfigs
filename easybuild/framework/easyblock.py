@@ -24,7 +24,6 @@ import copy
 import difflib
 import os
 
-from easybuild.tools.build_log import getLog, EasyBuildError
 from easybuild.tools.toolkit import Toolkit
 from easybuild.tools.systemtools import get_shared_lib_ext
 from easybuild.tools.filetools import run_cmd
