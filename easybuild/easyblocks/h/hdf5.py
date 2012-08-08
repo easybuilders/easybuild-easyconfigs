@@ -29,6 +29,7 @@ EasyBuild support for building and installing HDF5, implemented as an easyblock
 import os
 
 from easybuild.framework.application import Application
+from easybuild.tools.modules import get_software_root
 
 
 class HDF5(Application):
@@ -40,8 +41,9 @@ class HDF5(Application):
         # configure options
         deps = ["Szip", "zlib"]
         for dep in deps:
-            if os.getenv('SOFTROOT%s' % dep.upper()):
-                self.updatecfg('configopts', '--with-%s=$SOFTROOT%s' % (dep.lower(), dep.upper()))
+            root = get_software_root(dep)
+            if root:
+                self.updatecfg('configopts', '--with-%s=%s' % (dep.lower(), root))
             else:
                 self.log.error("Dependency module %s not loaded." % dep)
 

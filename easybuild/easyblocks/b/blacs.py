@@ -33,6 +33,7 @@ import shutil
 
 from easybuild.framework.application import Application
 from easybuild.tools.filetools import run_cmd
+from easybuild.tools.modules import get_software_root
 
 
 def det_interface(log, path):
@@ -73,15 +74,22 @@ class BLACS(Application):
 
     def make(self):
 
-        # determine MPI base dir
-        if os.getenv('SOFTROOTOPENMPI'):
-            base = os.getenv('SOFTROOTOPENMPI')
-            mpilib = '-L$(MPILIBdir) -lmpi_f77'
-        elif os.getenv('SOFTROOTMVAPICH2'):
-            base = os.getenv('SOFTROOTMVAPICH2')
-            mpilib = '$(MPILIBdir)/libmpich.a $(MPILIBdir)/libfmpich.a $(MPILIBdir)/libmpl.a -lpthread'
-        else:
-            self.log.error("Don't know how to set MPI base dir, unknown MPI library used.")
+        # determine MPI base dir and lib
+        known_mpi_libs = {
+                          'OpenMPI': "-L$(MPILIBdir) -lmpi_f77",
+                          'MVAPICH2': "$(MPILIBdir)/libmpich.a $(MPILIBdir)/libfmpich.a " + \
+                                      "$(MPILIBdir)/libmpl.a -lpthread"
+                          }
+
+        base, mpilib = None, None
+        for key, val in known_mpi_libs.items():
+            root = get_software_root(key)
+            if root:
+                base = root
+                mpilib = val
+
+        if base and mpilib:
+            self.log.error("Unknown MPI library used (known MPI libs: %s)" % known_mpi_libs.keys())
 
         # common settings (for now)
         mpicc = 'mpicc'

@@ -308,3 +308,9 @@ def get_software_root(name):
     environmentKey = "SOFTROOT%s" % convertName(name, upper=True)
     return os.getenv(environmentKey)
 
+def get_software_version(name):
+    """
+    Return the software version set for a particular package.
+    """
+    environmentKey = "SOFTVERSION%s" % convertName(name, upper=True)
+    return os.getenv(environmentKey)

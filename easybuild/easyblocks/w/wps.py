@@ -38,6 +38,7 @@ import easybuild.tools.environment as env
 import easybuild.tools.toolkit as toolkit
 from easybuild.framework.application import Application
 from easybuild.tools.filetools import patch_perl_script_autoflush, run_cmd, run_cmd_qa, unpack
+from easybuild.tools.modules import get_software_root
 from easybuild.easyblocks.n.netcdf import set_netcdf_env_vars, get_netcdf_module_set_cmds
 
 
@@ -79,10 +80,10 @@ class WPS(Application):
         set_netcdf_env_vars(self.log)
 
         # WRF dependency check
-        softrootwrf = os.getenv('SOFTROOTWRF')
-        if softrootwrf:
-            majver = os.getenv('SOFTVERSIONWRF').split('.')[0]
-            self.wrfdir = os.path.join(softrootwrf, "WRFV%s" % majver)
+        wrf = get_software_root('WRF')
+        if wrf:
+            majver = get_software_version('WRF').split('.')[0]
+            self.wrfdir = os.path.join(wrf, "WRFV%s" % majver)
         else:
             self.log.error("WRF module not loaded?")
 
@@ -96,14 +97,14 @@ class WPS(Application):
             self.log.error("Failed to patch %s script: %s" % (self.compile_script, err))
 
         # libpng dependency check
-        libpng = os.getenv('SOFTROOTLIBPNG')
+        libpng = get_software_root('libpng')
         libpnginc = "%s/include" % libpng
         libpnglibdir = "%s/lib" % libpng
         if not libpng:
             self.log.error("libpng module not loaded?")
 
         # JasPer dependency check + setting env vars
-        jasper = os.getenv('SOFTROOTJASPER')
+        jasper = get_software_root('JasPer')
         jasperlibdir = os.path.join(jasper, "lib")
         if jasper:
             env.set('JASPERINC', os.path.join(jasper, "include"))

@@ -33,6 +33,7 @@ from distutils.version import LooseVersion
 
 from easybuild.framework.application import Application
 from easybuild.tools.filetools import run_cmd
+from easybuild.tools.modules import get_software_root
 
 
 class MrBayes(Application):
@@ -51,15 +52,16 @@ class MrBayes(Application):
             try:
               os.chdir(self.getcfg('startfrom'))
             except OSError, err:
-              self.log.error("Failed to change to correct source dir %s: %s" % (self.getcfg('startfrom'), err))
+                self.log.error("Failed to change to correct source dir %s: %s" % (self.getcfg('startfrom'), err))
 
             # run autoconf to generate configure script
             cmd = "autoconf"
             run_cmd(cmd)
 
             # set config opts
-            if os.getenv('SOFTROOTBEAGLE'):
-                self.updatecfg('configopts', '--with-beagle=%s' % os.getenv('SOFTROOTBEAGLE'))
+            beagle = get_software_root('BEAGLE')
+            if beagle:
+                self.updatecfg('configopts', '--with-beagle=%s' % beagle)
             else:
                 self.log.error("BEAGLE module not loaded?")
 
