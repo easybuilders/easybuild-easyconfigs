@@ -1,4 +1,4 @@
-##
+ta#
 # Copyright 2009-2012 Stijn De Weirdt
 # Copyright 2010 Dries Verdegem
 # Copyright 2010-2012 Kenneth Hoste
@@ -482,17 +482,17 @@ class Application:
                     for fp in fullpaths:
                         if os.path.isfile(fp):
                             self.log.info("Found file %s at %s" % (filename, fp))
-                            self.log.debug("If it is not being accessed in 3 seconds, i'll assume it's safe")
+                            self.log.debug("If the size of the file stays the same for 5 seconds, assume it's good")
 
                             self.log.debug("filesize: %s" % os.path.getsize(fp))
 
-                            diff = 1
-                            while diff > 0.001:
-                                time1 = os.path.getatime(fp)
-                                time.sleep(3)
-                                time2 = os.path.getatime(fp)
-                                diff = time2 - time1
-                                self.log.debug("%s diff in atime" % diff)
+                            size1 = 0
+                            size2 = 1
+                            while size1 != size2:
+                                size1 = os.path.getsize(fp)
+                                time.sleep(5)
+                                size2 = os.path.getsize(fp)
+                                self.log.debug("size change: %s" % (size2 - size1))
 
                             foundfile = fp
                             break # no need to try further
