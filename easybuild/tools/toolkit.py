@@ -333,10 +333,7 @@ class Toolkit:
             compiler = 'ifort'
         else:
             self.log.error("Don't know which compiler-specific subdir for ACML to use.")
-        self.vars['LDFLAGS'] += " -L%(acml)s/%(comp)s64/lib/ " % {
-                                                'comp':compiler,
-                                                'acml':os.environ['SOFTROOTACML']
-               }
+        self.vars['LDFLAGS'] += " -L%s/%s64/lib/ " % (acml, compiler)
         self.vars['LIBBLAS'] = " -lacml_mv -lacml "
 
         self.vars['LIBBLAS_MT'] = self.vars['LIBBLAS']

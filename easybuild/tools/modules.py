@@ -30,7 +30,7 @@ import re
 import subprocess
 import sys
 
-from easybuild.tools.build_log import getLog, initLogger, EasyBuildError
+from easybuild.tools.build_log import getLog, EasyBuildError
 from easybuild.tools.filetools import convertName, run_cmd
 
 
