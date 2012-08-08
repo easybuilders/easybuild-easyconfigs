@@ -482,6 +482,16 @@ class Application:
                     for fp in fullpaths:
                         if os.path.isfile(fp):
                             self.log.info("Found file %s at %s" % (filename, fp))
+                            self.log.debug("If it is not being written to in 3 seconds, i'll assume it's safe")
+
+                            diff = 1
+                            while diff > 0.001:
+                                time1 = os.stat(fp).st_mtime
+                                time.sleep(3)
+                                time2 = os.stat(fp).st_mtime
+                                diff = time2 - time1
+                                self.log.debug("%s diff in m_time" % diff)
+
                             foundfile = fp
                             break # no need to try further
                         else:
