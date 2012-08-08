@@ -571,10 +571,12 @@ class Toolkit:
             libsfx = ""
             libsfxsl = "_core"
 
-        # MKL libraries for BLAS, LAPACK, ScaLAPACK routines
+        # MKL libraries for BLACS, BLAS, LAPACK, ScaLAPACK routines
+        blacs_libs = ["blacs%s" % libsfx]
         blas_libs = ["intel%s" % libsfx, "sequential", "core"]
         blas_mt_libs = ["intel%s" % libsfx, "intel_thread", "core"]
-        scalapack_libs = blas_libs + ["blacs_intelmpi%s" % libsfx]
+        scalapack_libs = ["scalapack%s" % libsfxsl, "solver%s_sequential" % libsfx] + blas_libs + ["blacs_intelmpi%s" % libsfx]
+        scalapack_mt_libs = ["scalapack%s" % libsfxsl, "solver" % libsfx] + blas_mt_libs + ["blacs_intelmpi%s" % libsfx]
 
         # adjust lib subdir if GCC is used
         if self.toolkit_comp_family() == GCC:
@@ -605,7 +607,7 @@ class Toolkit:
             self.vars['LAPACK_LIB_DIR'] = bl_libdir
             self.vars['BLAS_LAPACK_LIB_DIR'] = bl_libdir
 
-        # list of libraries for BLAS/LAPACK
+        # BLAS/LAPACK library
         self.vars['BLAS_STATIC_LIBS'] = ','.join(blas_libs)
         self.vars['BLAS_MT_STATIC_LIBS'] = ','.join(blas_mt_libs)
 
@@ -615,16 +617,24 @@ class Toolkit:
         self.vars['BLAS_LAPACK_STATIC_LIBS'] = self.vars['LAPACK_STATIC_LIBS']
         self.vars['BLAS_LAPACK_MT_STATIC_LIBS'] = self.vars['LAPACK_MT_STATIC_LIBS']
 
+        # BLACS library
+        self.vars['BLACS_INC'] = os.path.join(mklroot, "mkl", "include")
+        self.vars['BLACS_LIB_DIR'] = bl_libdir
+        self.vars['BLACS_STATIC_LIBS'] = ','.join(["libmkl_%s.a" % x for x in blacs_libs])
+        self.vars['BLACS_MT_STATIC_LIBS'] = self.vars['BLACS_STATIC_LIBS']
+
         # sequential ScaLAPACK
-        prefix = "-Wl:-Bstatic -lmkl_scalapack%s -lmkl_solver%s_sequential -Wl,--start-group" % (libsfxsl, libsfx)
+        self.vars['SCALAPACK_INC'] = os.path.join(mklroot, "mkl", "include")
+        self.vars['SCALAPACK_LIB_DIR'] = bl_libdir
+
         suffix = "-Wl,--end-group -Wl:-Bdynamic"
-        self.vars['LIBSCALAPACK'] = ' '.join((prefix, ' '.join(scalapack_libs), suffix))
+        self.vars['LIBSCALAPACK'] = ' '.join((prefix, ' '.join(["-lmkl_%s" % x for x in scalapack_libs]), suffix))
+        self.vars['SCALAPACK_STATIC_LIBS'] = ','.join(["libmkl_%s.a" % x for x in scalapack_libs])
 
         # multi-threaded ScaLAPACK
-        lib = self.vars['LIBSCALAPACK']
-        lib = lib.replace('mkl_solver%s_sequential' % libsfx, 'mkl_solver')
-        lib = lib.replace('mkl_sequential', 'mkl_intel_thread') + ' -liomp5 -lpthread'
-        self.vars['LIBSCALAPACK_MT'] = lib
+        suffix += ' -liomp5 -lpthread'
+        self.vars['LIBSCALAPACK_MT'] = ' '.join((prefix, ' '.join(["-lmkl_%s" % x for x in scalapack_mt_libs]), suffix))
+        self.vars['SCALAPACK_MT_STATIC_LIBS'] = ','.join(["libmkl_%s.a" % x for x in scalapack_mt_libs])
 
         # FFT library
         fftwsuff = ""
@@ -796,10 +806,17 @@ class Toolkit:
         Prepare for ScaLAPACK library
         """
 
+        scalapack = get_software_root("ScaLAPACK")
+
         # we need to be careful here, LIBSCALAPACK(_MT) may be set by prepareBLACS, or not
         self.vars['LIBSCALAPACK'] = "%s -lscalapack" % self.vars.get('LIBSCALAPACK', '')
         self.vars['LIBSCALAPACK_MT'] = "%s %s -lpthread" % (self.vars['LIBSCALAPACK'],
                                                             self.vars.get('LIBSCALAPACK_MT', ''))
+
+        self.vars['SCALAPACK_INC'] = os.path.join(scalapack, "include")
+        self.vars['SCALAPACK_LIB_DIR'] = os.path.join(scalapack, "include")
+        self.vars['SCALAPACK_STATIC_LIBS'] = "libscalapack.a"
+        self.vars['SCALAPACK_MT_STATIC_LIBS'] = self.vars['SCALAPACK_STATIC_LIBS']
 
         self._addDependencyVariables(['ScaLAPACK'])
 
