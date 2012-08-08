@@ -117,6 +117,8 @@ def initLogger(name=None, version=None, debug=False, filename=None, typ='UNKNOWN
     - does not append
     - sets log handlers
     """
+
+    # obtain root logger
     log = logging.getLogger()
 
     # set log level
@@ -135,6 +137,7 @@ def initLogger(name=None, version=None, debug=False, filename=None, typ='UNKNOWN
     hand.setFormatter(formatter)
     log.addHandler(hand)
 
+    # initialize our logger
     log = logging.getLogger(typ)
     log.setLevel(defaultLogLevel)
 
