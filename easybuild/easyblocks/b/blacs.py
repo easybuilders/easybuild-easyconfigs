@@ -36,8 +36,9 @@ from easybuild.tools.filetools import run_cmd
 from easybuild.tools.modules import get_software_root
 
 
+# also used by ScaLAPACK
 def det_interface(log, path):
-    """Determine interface through xintface"""
+    """Determine interface through 'xintface' heuristic tool"""
 
     (out, _) = run_cmd(os.path.join(path,"xintface"), log_all=True, simple=False)
 
@@ -57,6 +58,7 @@ class BLACS(Application):
     """
 
     def configure(self):
+        """Configure BLACS build by copying Bmake.inc file."""
 
         src = os.path.join(self.getcfg('startfrom'), 'BMAKES', 'Bmake.MPI-LINUX')
         dest = os.path.join(self.getcfg('startfrom'), 'Bmake.inc')
@@ -73,6 +75,7 @@ class BLACS(Application):
             self.log.error("Copying %s to % failed: %s" % (src, dest, err))
 
     def make(self):
+        """Build BLACS using make, after figuring out the make options based on the heuristic tools available."""
 
         # determine MPI base dir and lib
         known_mpi_libs = {
@@ -87,8 +90,9 @@ class BLACS(Application):
             if root:
                 base = root
                 mpilib = val
+                break
 
-        if base and mpilib:
+        if not base or not mpilib:
             self.log.error("Unknown MPI library used (known MPI libs: %s)" % known_mpi_libs.keys())
 
         # common settings (for now)
@@ -176,26 +180,41 @@ class BLACS(Application):
         Application.make(self)
 
     def make_install(self):
+        """Install by copying files to install dir."""
+
+        # include files
         src = os.path.join(self.getcfg('startfrom'), 'LIB')
-        dest = os.path.join(self.installdir, 'lib')
 
-        try:
-            os.makedirs(dest)
-            os.chdir(src)
+        # include files and libraries
+        for (srcdir, destdir, ext) in [
+                                       (os.path.join("SRC", "MPI"), "include", ".h"),  # include files
+                                       ("LIB", "lib", ".a"),  # libraries
+                                       ]:
 
-            for lib in glob.glob('*.a'):
+            src = os.path.join(self.getcfg('startfrom'), srcdir)
+            dest = os.path.join(self.installdir, destdir)
 
-                # copy file
-                shutil.copy2(os.path.join(src, lib), dest)
+            try:
+                os.makedirs(dest)
+                os.chdir(src)
 
-                # create symlink with more standard name
-                symlink_name = "lib%s.a" % lib.split('_')[0]
-                os.symlink(os.path.join(dest, lib), os.path.join(dest, symlink_name))
-                self.log.debug("Copied %s to %s and symlinked it to %s" % (lib, dest, symlink_name))
+                for lib in glob.glob('*%s' % ext):
 
-        except OSError, err:
-            self.log.error("Copying %s/*.a to installation dir %s failed: %s"%(src, dest, err))
+                    # copy file
+                    shutil.copy2(os.path.join(src, lib), dest)
 
+                    self.log.debug("Copied %s to %s" % (lib, dest))
+
+                    if destdir == 'lib':
+                        # create symlink with more standard name for libraries
+                        symlink_name = "lib%s.a" % lib.split('_')[0]
+                        os.symlink(os.path.join(dest, lib), os.path.join(dest, symlink_name))
+                        self.log.debug("Symlinked %s/%s to %s" % (dest, lib, symlink_name))
+
+            except OSError, err:
+                self.log.error("Copying %s/*.%s to installation dir %s failed: %s"%(src, ext, dest, err))
+
+        # utilities
         src = os.path.join(self.getcfg('startfrom'), 'INSTALL', 'EXE', 'xintface')
         dest = os.path.join(self.installdir, 'bin')
 
@@ -210,6 +229,7 @@ class BLACS(Application):
             self.log.error("Copying %s to installation dir %s failed: %s" % (src, dest, err))
 
     def sanitycheck(self):
+        """Custom sanity check for BLACS."""
 
         if not self.getcfg('sanityCheckPaths'):
             self.setcfg('sanityCheckPaths',{
