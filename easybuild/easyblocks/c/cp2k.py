@@ -438,9 +438,9 @@ class CP2K(Application):
         fftw = get_software_root('FFTW')
 
         options.update({
-                        'FFTW_INC': '%s/include' % fftw, # GCC
-                        'FFTW3INC': '%s/include' % fftw, # Intel
-                        'FFTW3LIB': '%s/lib' % fftw, # Intel
+                        'FFTW_INC': '%s/include' % fftw,  # GCC
+                        'FFTW3INC': '%s/include' % fftw,  # Intel
+                        'FFTW3LIB': '%s/lib' % fftw,  # Intel
                        })
 
         options['DFLAGS'] += ' -D__FFTW3'

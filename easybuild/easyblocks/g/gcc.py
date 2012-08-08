@@ -36,8 +36,8 @@ from distutils.version import LooseVersion
 import easybuild.tools.environment as env
 from easybuild.framework.application import Application
 from easybuild.tools.filetools import run_cmd
-from easybuild.tools.systemtools import get_kernel_name, get_shared_lib_ext, get_platform_name
 from easybuild.tools.modules import get_software_root
+from easybuild.tools.systemtools import get_kernel_name, get_shared_lib_ext, get_platform_name
 
 
 class GCC(Application):
