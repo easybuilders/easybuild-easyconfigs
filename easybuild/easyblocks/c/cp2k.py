@@ -37,6 +37,7 @@ from distutils.version import LooseVersion
 import easybuild.tools.toolkit as toolkit
 from easybuild.framework.application import Application
 from easybuild.tools.filetools import run_cmd
+from easybuild.tools.modules import get_software_root, get_software_version
 
 
 class CP2K(Application):
@@ -114,9 +115,11 @@ class CP2K(Application):
             self.log.info("Using extra CFLAGS: %s" % self.getcfg('extradflags'))
 
         # libsmm support
-        if os.environ.has_key('SOFTROOTLIBSMM'):
-            libsmms = glob.glob(os.path.join(os.environ['SOFTROOTLIBSMM'], 'lib') + '/libsmm_*nn.a')
-            moredflags = ' ' + ' '.join([os.path.basename(os.path.splitext(x)[0]).replace('lib', '-D__HAS_') for x in libsmms])
+        libsmm = get_software_root('libsmm')
+        if libsmm:
+            libsmms = glob.glob(os.path.join(libsmm, 'lib', 'libsmm_*nn.a'))
+            dfs = [os.path.basename(os.path.splitext(x)[0]).replace('lib', '-D__HAS_') for x in libsmms]
+            moredflags = ' ' + ' '.join(dfs)
             self.updatecfg('extradflags', moredflags)
             self.libsmm = ' '.join(libsmms)
             self.log.debug('Using libsmm %s (extradflags %s)' % (self.libsmm, moredflags))
@@ -132,7 +135,7 @@ class CP2K(Application):
         self.make_instructions = "graphcon.o: graphcon.F\n\t$(FC) -c $(FCFLAGS2) $<\n"
 
         # compiler toolkit specific configuration
-        comp_fam = self.toolkit().toolkit_comp_family()
+        comp_fam = self.toolkit().comp_family()
         if comp_fam == toolkit.INTEL:
             options = self.configureIntelBased()
         elif comp_fam == toolkit.GCC:
@@ -140,20 +143,20 @@ class CP2K(Application):
         else:
             self.log.error("Don't know how to tweak configuration for compiler used.")
 
-        if os.getenv('SOFTROOTIMKL'):
+        if get_software_root('IMKL'):
             options = self.configureMKL(options)
-        elif os.getenv('SOFTROOTACML'):
+        elif get_software_root('ACML'):
             options = self.configureACML(options)
-        elif os.getenv('SOFTROOTATLAS'):
+        elif get_software_root('ATLAS'):
             options = self.configureATLAS(options)
 
-        if os.getenv('SOFTROOTFFTW'):
+        if get_software_root('FFTW'):
             options = self.configureFFTW(options)
 
-        if os.getenv('SOFTROOTLAPACK'):
+        if get_software_root('LAPACK'):
             options = self.configureLAPACK(options)
 
-        if os.getenv('SOFTROOTSCALAPACK'):
+        if get_software_root('ScaLAPACK'):
             options = self.configureScaLAPACK(options)
 
         # avoid group nesting
@@ -178,9 +181,9 @@ class CP2K(Application):
 
         self.log.debug("Preparing module files")
 
-        softrootimkl = os.getenv('SOFTROOTIMKL')
+        imkl = get_software_root('IMKL')
 
-        if softrootimkl:
+        if imkl:
 
             # prepare modinc target path
             modincpath = os.path.join(self.builddir, 'modinc')
@@ -192,7 +195,7 @@ class CP2K(Application):
                 self.log.error("Failed to create directory for module include files: %s" % err)
 
             # get list of modinc source files
-            modincdir = os.path.join(softrootimkl, self.getcfg("modincprefix"), 'include')
+            modincdir = os.path.join(imkl, self.getcfg("modincprefix"), 'include')
 
             if type(self.getcfg("modinc")) == list:
                 modfiles = [os.path.join(modincdir, x) for x in self.getcfg("modinc")]
@@ -244,7 +247,7 @@ class CP2K(Application):
         mpi2libs = ['impi', 'MVAPICH2', 'OpenMPI']
         mpi2 = False
         for mpi2lib in mpi2libs:
-            if os.getenv('SOFTROOT%s' % mpi2lib.upper()):
+            if get_software_root(mpi2lib):
                 mpi2 = True
             else:
                 self.log.debug("MPI-2 supporting MPI library %s not loaded.")
@@ -280,8 +283,8 @@ class CP2K(Application):
 
         if self.getcfg('libint'):
 
-            softrootlibint = os.getenv('SOFTROOTLIBINT')
-            if not softrootlibint:
+            libint = get_software_root('LibInt')
+            if not libint:
                 self.log.error("LibInt module not loaded.")
 
             options['DFLAGS'] += ' -D__LIBINT'
@@ -307,13 +310,13 @@ class CP2K(Application):
                     self.log.error("No libinttools dir found")
 
                 # build libint wrapper
-                cmd = "%s -c libint_cpp_wrapper.cpp -I%s/include" % (libintcompiler, softrootlibint)
+                cmd = "%s -c libint_cpp_wrapper.cpp -I%s/include" % (libintcompiler, libint)
                 if not run_cmd(cmd, log_all=True, simple=True):
                     self.log.error("Building the libint wrapper failed")
                 libint_wrapper = '%s/libint_cpp_wrapper.o' % libinttools_path
 
             # determine LibInt libraries based on major version number
-            libint_maj_ver = os.getenv('SOFTVERSIONLIBINT').split('.')[0]
+            libint_maj_ver = get_software_version('LibInt').split('.')[0]
             if libint_maj_ver == '1':
                 libint_libs = "$(LIBINTLIB)/libderiv.a $(LIBINTLIB)/libint.a $(LIBINTLIB)/libr12.a"
             elif libint_maj_ver == '2':
@@ -322,7 +325,7 @@ class CP2K(Application):
                 self.log.error("Don't know how to handle libint version %s" % libint_maj_ver)
             self.log.info("Using LibInt version %s" % (libint_maj_ver))
 
-            options['LIBINTLIB'] = '%s/lib' % softrootlibint
+            options['LIBINTLIB'] = '%s/lib' % libint
             options['LIBS'] += ' -lstdc++ %s %s' % (libint_libs, libint_wrapper)
 
         return options
@@ -357,11 +360,11 @@ class CP2K(Application):
         # see http://software.intel.com/en-us/articles/build-cp2k-using-intel-fortran-compiler-professional-edition/
         self.make_instructions += "qs_vxc_atom.o: qs_vxc_atom.F\n\t$(FC) -c $(FCFLAGS2) $<\n"
 
-        if LooseVersion(os.getenv('SOFTVERSIONIFORT')) >= LooseVersion("2011.8"):
+        if LooseVersion(get_software_version('ifort')) >= LooseVersion("2011.8"):
             self.make_instructions += "et_coupling.o: et_coupling.F\n\t$(FC) -c $(FCFLAGS2) $<\n"
             self.make_instructions += "qs_vxc_atom.o: qs_vxc_atom.F\n\t$(FC) -c $(FCFLAGS2) $<\n"
 
-        elif LooseVersion(os.getenv('SOFTVERSIONIFORT')) >= LooseVersion("2011"):
+        elif LooseVersion(get_software_version('ifort')) >= LooseVersion("2011"):
             self.log.error("CP2K won't build correctly with the Intel v12 compilers before version 2011.8.")
 
         return options
@@ -393,7 +396,7 @@ class CP2K(Application):
         if self.openmp:
             openmp_suffix = '_mp'
 
-        options['ACML_INC'] = '%s/gfortran64%s/include' % (os.getenv('SOFTROOTACML'), openmp_suffix)
+        options['ACML_INC'] = '%s/gfortran64%s/include' % (get_software_root('ACML'), openmp_suffix)
         options['CFLAGS'] += ' -I$(ACML_INC) -I$(FFTW_INC)'
         options['DFLAGS'] += ' -D__FFTACML'
 
@@ -432,12 +435,12 @@ class CP2K(Application):
     def configureFFTW(self, options):
         """Configure for Fastest Fourier Transform in the West (FFTW)"""
 
-        softroot = os.getenv('SOFTROOTFFTW')
+        fftw = get_software_root('FFTW')
 
         options.update({
-                        'FFTW_INC': '%s/include' % softroot, # GCC
-                        'FFTW3INC': '%s/include' % softroot, # Intel
-                        'FFTW3LIB': '%s/lib' % softroot, # Intel
+                        'FFTW_INC': '%s/include' % fftw,  # GCC
+                        'FFTW3INC': '%s/include' % fftw,  # Intel
+                        'FFTW3LIB': '%s/lib' % fftw,  # Intel
                        })
 
         options['DFLAGS'] += ' -D__FFTW3'

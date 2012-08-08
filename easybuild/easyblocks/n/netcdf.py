@@ -32,6 +32,7 @@ from distutils.version import LooseVersion
 import easybuild.tools.environment as env
 import easybuild.tools.toolkit as toolkit
 from easybuild.framework.application import Application
+from easybuild.tools.modules import get_software_root, get_software_version
 
 
 class NetCDF(Application):
@@ -51,7 +52,7 @@ class NetCDF(Application):
                                                                       ))
 
         # add -DgFortran to CPPFLAGS when building with GCC
-        if self.toolkit().toolkit_comp_family() == toolkit.GCC:
+        if self.toolkit().comp_family() == toolkit.GCC:
             env.set('CPPFLAGS', "%s -DgFortran" % os.getenv('CPPFLAGS'))
 
         Application.configure(self)
@@ -87,14 +88,14 @@ class NetCDF(Application):
 def set_netcdf_env_vars(log):
     """Set netCDF environment variables used by other software."""
 
-    netcdf = os.getenv('SOFTROOTNETCDF')
+    netcdf = get_software_root('netCDF')
     if not netcdf:
         log.error("netCDF module not loaded?")
     else:
         env.set('NETCDF', netcdf)
         log.debug("Set NETCDF to %s" % netcdf)
-        netcdff = os.getenv('SOFTROOTNETCDFMINFORTRAN')
-        netcdf_ver = os.getenv('SOFTVERSIONNETCDF')
+        netcdff = get_software_root('netCDF-Fortran')
+        netcdf_ver = get_software_version('netCDF')
         if not netcdff:
             if LooseVersion(netcdf_ver) >= LooseVersion("4.2"):
                 log.error("netCDF v4.2 no longer supplies Fortran library, also need netCDF-Fortran")

@@ -32,6 +32,7 @@ import shutil
 import easybuild.tools.toolkit as toolkit
 from easybuild.framework.application import ApplicationPackage, Application
 from easybuild.tools.filetools import unpack, patch, run_cmd
+from easybuild.tools.modules import get_software_root
 
 
 class Python(Application):
@@ -89,6 +90,8 @@ class DefaultPythonPackage(ApplicationPackage):
         self.pkgdir = "%s/%s" % (self.builddir, self.name)
         self.unpack_options = ''
 
+        self.python = get_software_root('Python')
+
     def configure(self):
         """Configure Python package build
         """
@@ -125,7 +128,7 @@ class DefaultPythonPackage(ApplicationPackage):
     def make_install(self):
         """Install built Python package"""
 
-        cmd = "python setup.py install --prefix=%s %s" % (os.environ['SOFTROOTPYTHON'], self.installopts)
+        cmd = "python setup.py install --prefix=%s %s" % (self.python, self.installopts)
         run_cmd(cmd, log_all=True, simple=True)
 
     def test(self):
@@ -163,9 +166,6 @@ class DefaultPythonPackage(ApplicationPackage):
 
     def run(self):
         """Perform the actual package build/installation procedure"""
-        # a Python module should be loaded
-        if not os.environ.has_key('SOFTROOTPYTHON'):
-            self.log.error("Couldn't find SOFTROOTPYTHON variable")
 
         # unpack
         if not self.src:
@@ -204,7 +204,7 @@ class FortranPythonPackage(DefaultPythonPackage):
     """Extends DefaultPythonPackage to add a Fortran compiler to the make call"""
 
     def make(self):
-        comp_fam = self.toolkit().toolkit_comp_family()
+        comp_fam = self.toolkit().comp_family()
 
         if comp_fam == toolkit.INTEL:
             cmd = "python setup.py build --compiler=intel --fcompiler=intelem"
@@ -250,13 +250,13 @@ search_static_first=True
 
 """
 
-        if  "SOFTROOTIMKL" in os.environ:
+        if get_software_root("IMKL"):
             #use mkl
             extrasiteconfig = """[mkl]
 lapack_libs = %(lapack)s
 mkl_libs = %(blas)s
         """
-        elif "SOFTROOTATLAS" in os.environ and "SOFTROOTLAPACK" in os.environ:
+        elif get_software_root("ATLAS") and get_software_root("LAPACK"):
             extrasiteconfig = """
 [blas_opt]
 libraries = %(blas)s
@@ -266,7 +266,7 @@ libraries = %(lapack)s
         else:
             self.log.error("Could not detect math kernel (mkl, atlas)")
 
-        if "SOFTROOTIMKL" in os.environ or "SOFTROOTFFTW" in os.environ:
+        if get_software_root("IMKL") or get_software_root("FFTW"):
             extrasiteconfig += """
 [fftw]
 libraries = %s
@@ -276,7 +276,7 @@ libraries = %s
 
         lapack_libs = os.getenv("LIBLAPACK_MT").split(" -l")
         blas_libs = os.getenv("LIBBLAS_MT").split(" -l")
-        if os.getenv('SOFTROOTIMKL'):
+        if get_software_root("IMKL"):
             # with IMKL, get rid of all spaces and use '-Wl:'
             lapack_libs.remove("pthread")
             lapack = ','.join(lapack_libs).replace(' ', ',').replace('Wl,','Wl:')

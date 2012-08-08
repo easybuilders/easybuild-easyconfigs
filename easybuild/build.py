@@ -42,7 +42,7 @@ from optparse import OptionParser
 import easybuild  # required for VERBOSE_VERSION
 import easybuild.tools.config as config
 import easybuild.tools.filetools as filetools
-from easybuild.framework.application import Application, get_class
+from easybuild.framework.application import get_class
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.tools.build_log import EasyBuildError, initLogger, \
     removeLogHandler, print_msg
