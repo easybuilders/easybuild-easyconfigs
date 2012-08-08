@@ -117,7 +117,7 @@ class CP2K(Application):
         # libsmm support
         libsmm = get_software_root('libsmm')
         if libsmm:
-            libsmms = glob.glob(os.path.join(libsmm, 'lib') + '/libsmm_*nn.a')
+            libsmms = glob.glob(os.path.join(libsmm, 'lib', 'libsmm_*nn.a'))
             dfs = [os.path.basename(os.path.splitext(x)[0]).replace('lib', '-D__HAS_') for x in libsmms]
             moredflags = ' ' + ' '.join(dfs)
             self.updatecfg('extradflags', moredflags)
