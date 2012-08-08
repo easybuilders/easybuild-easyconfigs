@@ -72,7 +72,7 @@ repository = FileRepository(repositoryPath)  #@UndefinedVariable (this file gets
 
 # log format: (dir, filename template)
 # supported in template: name, version, data, time
-logFormat = ("easybuildlog", "easybuild-%(name)s-%(version)s-%(date)s.%(time)s.log")
+logFormat = ("easybuild", "easybuild-%(name)s-%(version)s-%(date)s.%(time)s.log")
 
 # general cleanliness
 del os, getLog, config, log, prefix, buildDir, installDir, sourceDir
