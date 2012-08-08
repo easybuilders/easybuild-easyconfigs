@@ -31,6 +31,7 @@ import os
 
 from easybuild.framework.application import Application
 from easybuild.tools.filetools import run_cmd
+from easybuild.tools.modules import get_software_root
 
 
 class ATLAS(Application):
@@ -66,8 +67,9 @@ class ATLAS(Application):
         # if LAPACK is found, instruct ATLAS to provide a full LAPACK library
         # ATLAS only provides a few LAPACK routines natively
         if self.getcfg('full_lapack'):
-            if os.getenv('SOFTROOTLAPACK'):
-                self.updatecfg('configopts', ' --with-netlib-lapack=%s/lib/liblapack.a' % os.getenv('SOFTROOTLAPACK'))
+            lapack = get_software_root('LAPACK')
+            if lapack:
+                self.updatecfg('configopts', ' --with-netlib-lapack=%s/lib/liblapack.a' % lapack)
             else:
                 self.log.error("netlib's LAPACK library not available,"\
                                " required to build ATLAS with a full LAPACK library.")

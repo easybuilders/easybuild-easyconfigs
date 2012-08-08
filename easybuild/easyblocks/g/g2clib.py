@@ -31,6 +31,7 @@ import os
 import shutil
 
 from easybuild.framework.application import Application
+from easybuild.tools.modules import get_software_root
 
 
 class G2clib(Application):
@@ -43,13 +44,12 @@ class G2clib(Application):
     def make(self):
         """Build by supplying required make options, and running make."""
 
-        if not os.getenv('SOFTROOTJASPER'):
+        jasper = get_software_root('JASPER')
+        if not jasper:
             self.log.error("JasPer module not loaded?")
 
         # beware: g2clib uses INC, while g2lib uses INCDIR !
-        makeopts = 'CC="%s" FC="%s" INC="-I%s/include"' % (os.getenv('CC'),
-                                                           os.getenv('F90'),
-                                                           os.getenv('SOFTROOTJASPER'))
+        makeopts = 'CC="%s" FC="%s" INC="-I%s/include"' % (os.getenv('CC'), os.getenv('F90'), jasper)
         self.updatecfg('makeopts', makeopts)
 
         Application.make(self)

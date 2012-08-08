@@ -33,6 +33,7 @@ import easybuild.tools.environment as env
 import easybuild.tools.toolkit as toolkit
 from easybuild.framework.application import Application
 from easybuild.tools.filetools import run_cmd, adjust_permissions
+from easybuild.tools.modules import get_software_root
 
 
 class OpenFOAM(Application):
@@ -82,15 +83,15 @@ class OpenFOAM(Application):
         mpi_type = self.tk.toolkit_mpi_type()
 
         if mpi_type == toolkit.INTEL:
-            self.mpipath = os.path.join(os.environ['SOFTROOTIMPI'],'intel64')
+            self.mpipath = os.path.join(get_software_root('IMPI'),'intel64')
             self.wm_mplib = "IMPI"
 
         elif mpi_type == toolkit.QLOGIC:
-            self.mpipath = os.environ['SOFTROOTQLOGICMPI']
+            self.mpipath = get_software_root('QLogicMPI')
             self.wm_mplib = "MPICH"
 
         elif mpi_type == toolkit.OPENMPI:
-            self.mpipath = os.environ['SOFTROOTOPENMPI']
+            self.mpipath = get_software_root('OpenMPI')
             self.wm_mplib = "MPI-MVAPICH2"
 
         else:

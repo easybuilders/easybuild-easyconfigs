@@ -32,6 +32,7 @@ import shutil
 
 from easybuild.framework.application import Application
 from easybuild.tools.filetools import run_cmd
+from easybuild.tools.modules import get_software_root
 
 
 # also used for e.g. ScaLAPACK
@@ -45,13 +46,13 @@ def get_blas_lib(log):
                        'ATLAS': '-L%s -lf77blas -latlas'
                       }
     for (key,val) in known_blas_libs.items():
-        softroot = 'SOFTROOT%s' % key.upper()
-        if os.getenv(softroot):
-            blaslib = val % os.path.join(os.getenv(softroot), 'lib')
-            log.debug("Found %s, so using %s as BLAS lib" % (softroot, key))
+        root = get_software_root(key)
+        if root:
+            blaslib = val % os.path.join(root, 'lib')
+            log.debug("Using %s as BLAS lib" % root)
             break
         else:
-            log.debug("%s not defined, so %s not loaded" % (softroot, key))
+            log.debug("%s module not loaded" % key)
 
     if not blaslib:
         log.error("No or unknown BLAS lib loaded; known BLAS libs: %s" % known_blas_libs.keys())

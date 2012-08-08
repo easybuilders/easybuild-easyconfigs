@@ -35,6 +35,7 @@ import easybuild.tools.environment as env
 import easybuild.tools.toolkit as toolkit
 from easybuild.framework.application import Application
 from easybuild.tools.filetools import patch_perl_script_autoflush, run_cmd, run_cmd_qa
+from easybuild.tools.modules import get_software_root
 from easybuild.easyblocks.n.netcdf import set_netcdf_env_vars, get_netcdf_module_set_cmds
 
 
@@ -69,7 +70,7 @@ class WRF(Application):
         set_netcdf_env_vars(self.log)
 
         # HDF5 (optional) dependency
-        hdf5 = os.getenv('SOFTROOTHDF5')
+        hdf5 = get_software_root('HDF5')
         if hdf5:
             # check if this is parallel HDF5
             phdf5_bins = ['h5pcc','ph5diff']
@@ -86,7 +87,7 @@ class WRF(Application):
             self.log.info("HDF5 module not loaded, assuming that's OK...")
 
         # JasPer dependency check + setting env vars
-        jasper = os.getenv('SOFTROOTJASPER')
+        jasper = get_software_root('JasPer')
         jasperlibdir = os.path.join(jasper, "lib")
         if jasper:
             env.set('JASPERINC', os.path.join(jasper, "include"))
