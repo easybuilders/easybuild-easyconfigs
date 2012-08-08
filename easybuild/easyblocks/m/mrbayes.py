@@ -50,7 +50,7 @@ class MrBayes(Application):
             # set correct startfrom dir, and change into it
             self.setcfg('startfrom', os.path.join(self.getcfg('startfrom'),'src'))
             try:
-              os.chdir(self.getcfg('startfrom'))
+                os.chdir(self.getcfg('startfrom'))
             except OSError, err:
                 self.log.error("Failed to change to correct source dir %s: %s" % (self.getcfg('startfrom'), err))
 

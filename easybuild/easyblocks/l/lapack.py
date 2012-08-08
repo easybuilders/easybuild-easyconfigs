@@ -208,9 +208,8 @@ class LAPACK(Application):
         """
         if self.getcfg('test_only'):
             pass
-
         else:
-            Application.make_module(self, fake)
+            return Application.make_module(self, fake)
 
     def sanitycheck(self):
         """

@@ -36,10 +36,10 @@ from distutils.version import LooseVersion
 
 import easybuild.tools.environment as env
 import easybuild.tools.toolkit as toolkit
+from easybuild.easyblocks.n.netcdf import set_netcdf_env_vars, get_netcdf_module_set_cmds
 from easybuild.framework.application import Application
 from easybuild.tools.filetools import patch_perl_script_autoflush, run_cmd, run_cmd_qa, unpack
-from easybuild.tools.modules import get_software_root
-from easybuild.easyblocks.n.netcdf import set_netcdf_env_vars, get_netcdf_module_set_cmds
+from easybuild.tools.modules import get_software_root, get_software_version
 
 
 class WPS(Application):

@@ -31,9 +31,9 @@ import shutil
 from distutils.version import LooseVersion
 
 import easybuild.tools.toolkit as toolkit
-from easybuild.framework.application import Application
 from easybuild.easyblocks.b.blacs import det_interface
 from easybuild.easyblocks.l.lapack import get_blas_lib
+from easybuild.framework.application import Application
 from easybuild.tools.modules import get_software_root
 
 
