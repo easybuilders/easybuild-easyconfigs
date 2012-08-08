@@ -82,9 +82,10 @@ def main():
     # Option parsing
     parser = OptionParser()
     parser.add_option("--no-parallel", action="store_false", dest="parallel", default=True,
-              help="submit jobs to build in parallel")
+            help="specify this option if you want to prevent parallel build")
     parser.add_option("--output-dir", dest="directory", help="set output directory for test-run")
-    parser.add_option("-r", "--robot", help="specify robot directory")
+    parser.add_option("-r", "--robot", default="easybuild/easyconfigs",
+            help="specify robot directory (default: %default)")
 
     (opts, args) = parser.parse_args()
 
@@ -248,6 +249,9 @@ def build_packages_in_parallel(packages, output_dir, script_dir):
     no_dependencies = [pkg for pkg in packages if len(pkg['unresolvedDependencies']) == 0]
     with_dependencies = [pkg for pkg in packages if pkg not in no_dependencies]
 
+    # This is very important, otherwise we might have race conditions
+    # e.g. GCC-4.5.3 finds cloog.tar.gz but it was incorrectly downloaded by GCC-4.6.3
+    # running this step here, prevents this
     log.info("preparing packages: %s" % no_dependencies)
     for pkg in no_dependencies:
         prepare_package(pkg)
