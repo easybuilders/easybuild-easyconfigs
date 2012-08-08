@@ -918,31 +918,42 @@ class Application:
         Configure step
         - typically ./configure --prefix=/install/path style
         """
+
         cmd = "%s %s./configure --prefix=%s %s" % (self.getcfg('preconfigopts'), cmd_prefix,
                                                     self.installdir, self.getcfg('configopts'))
-        run_cmd(cmd, log_all=True, simple=True)
+
+        (out, _) = run_cmd(cmd, log_all=True, simple=False)
+
+        return out
 
     def make(self, verbose=False):
         """
         Start the actual build
         - typical: make -j X
         """
+
         paracmd = ''
         if self.getcfg('parallel'):
             paracmd = "-j %s" % self.getcfg('parallel')
 
         cmd = "%s make %s %s" % (self.getcfg('premakeopts'), paracmd, self.getcfg('makeopts'))
 
-        run_cmd(cmd, log_all=True, simple=True, log_output=verbose)
+        (out, _) = run_cmd(cmd, log_all=True, simple=False, log_output=verbose)
+
+        return out
 
     def test(self):
         """
         Test the compilation
         - default: None
         """
+
         if self.getcfg('runtest'):
             cmd = "make %s" % (self.getcfg('runtest'))
-            run_cmd(cmd, log_all=True, simple=True)
+            (out, _) = run_cmd(cmd, log_all=True, simple=False)
+
+            return out
+
     def toolkit(self):
         """
         The toolkit used to build this Application
@@ -954,8 +965,12 @@ class Application:
         Create the installation in correct location
         - typical: make install
         """
+
         cmd = "make install %s" % (self.getcfg('installopts'))
-        run_cmd(cmd, log_all=True, simple=True)
+
+        (out, _) = run_cmd(cmd, log_all=True, simple=False)
+
+        return out
 
     def make_builddir(self):
         """
