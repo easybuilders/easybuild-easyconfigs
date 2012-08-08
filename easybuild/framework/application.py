@@ -484,6 +484,8 @@ class Application:
                             self.log.info("Found file %s at %s" % (filename, fp))
                             self.log.debug("If it is not being accessed in 3 seconds, i'll assume it's safe")
 
+                            self.log.debug("filesize: %s" % os.path.getsize(fp))
+
                             diff = 1
                             while diff > 0.001:
                                 time1 = os.path.getatime(fp)
