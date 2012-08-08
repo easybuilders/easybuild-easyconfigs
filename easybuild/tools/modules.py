@@ -320,3 +320,15 @@ def get_software_version(name):
     """
     environmentKey = sofware_env_var_name("version", name)
     return os.getenv(environmentKey)
+
+def curr_module_paths():
+    """
+    Return a list of current module paths.
+    """
+    return os.environ['MODULEPATH'].split(':')
+
+def mk_module_path(paths):
+    """
+    Create a string representing the list of module paths.
+    """
+    return ':'.join(paths)
