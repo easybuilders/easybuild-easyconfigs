@@ -334,7 +334,7 @@ def prepare_package(pkg):
         instance = get_instance(pkg)
         instance.prepare_build()
     except EasyBuildError, err:
-        log.warn("%s failed to prepare. Submitting anyway, for proper error resolution" % pkg['name'])
+        log.warn("%s failed to prepare. Submitting anyway, for proper error resolution" % str(pkg['module']))
 
 def submit_job(package, output_dir, script_dir):
     """
