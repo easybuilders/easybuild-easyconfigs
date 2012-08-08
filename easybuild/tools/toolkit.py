@@ -327,9 +327,9 @@ class Toolkit:
 
         acml = get_software_root('ACML')
 
-        if self.toolkit_comp_family() == GCC:
+        if self.comp_family() == GCC:
             compiler = 'gfortran'
-        elif self.toolkit_comp_family() == INTEL:
+        elif self.comp_family() == INTEL:
             compiler = 'ifort'
         else:
             self.log.error("Don't know which compiler-specific subdir for ACML to use.")
@@ -657,7 +657,7 @@ class Toolkit:
         Prepare for Intel MPI library
         """
 
-        if self.toolkit_comp_family() == INTEL:
+        if self.comp_family() == INTEL:
             # Intel-based toolkit
 
             self.vars['MPICC'] = 'mpiicc %s' % self.m32flag
@@ -868,7 +868,7 @@ class Toolkit:
             self.vars[varskey] = ''
         self.vars[varskey] += ' ' + ' '.join(flags)
 
-    def det_toolkit_type(self, name, type_map):
+    def get_type(self, name, type_map):
         """Determine type of toolkit based on toolkit dependencies."""
 
         toolkit_dep_names = [dep['name'] for dep in self.toolkit_deps]
@@ -883,7 +883,7 @@ class Toolkit:
 
         self.log.error("Failed to determine %s based on toolkit dependencies." % name)
 
-    def toolkit_comp_family(self):
+    def comp_family(self):
         """Determine compiler family based on toolkit dependencies."""
         comp_families = {
                          # always use tuples as keys!
@@ -891,19 +891,19 @@ class Toolkit:
                          ('GCC', ): GCC
                         }
 
-        return self.det_toolkit_type("compiler family", comp_families)
+        return self.get_type("compiler family", comp_families)
 
     def get_openmp_flag(self):
         """Determine compiler flag for OpenMP"""
 
-        if self.toolkit_comp_family() == INTEL:
+        if self.comp_family() == INTEL:
             return "-openmp"
-        elif self.toolkit_comp_family() == GCC:
+        elif self.comp_family() == GCC:
             return "-fopenmp"
         else:
             self.log.error("Can't determine compiler flag for OpenMP.")
 
-    def toolkit_mpi_type(self):
+    def mpi_type(self):
         """Determine type of MPI library based on toolkit dependencies."""
         mpi_types = {
                       # always use tuples as keys!
@@ -914,7 +914,7 @@ class Toolkit:
                       ('QLogicMPI', ):QLOGIC
                       }
 
-        return self.det_toolkit_type("type of mpi library", mpi_types)
+        return self.get_type("type of mpi library", mpi_types)
 
     def mpi_cmd_for(self, cmd, nr_ranks):
         """Construct an MPI command for the given command and number of ranks."""
@@ -928,7 +928,7 @@ class Toolkit:
                     INTEL:"mpirun %(mpdbootfile)s %(nodesfile)s -np %(nr_ranks)d %(cmd)s",
                     }
 
-        mpi_type = self.toolkit_mpi_type()
+        mpi_type = self.mpi_type()
 
         # Intel MPI mpirun needs more work
         if mpi_type == INTEL:

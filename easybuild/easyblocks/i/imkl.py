@@ -166,7 +166,7 @@ class Imkl(IntelBase):
 
             # compiler defaults to icc, but we could be using gcc to create gimkl.
             makeopts = ''
-            if self.toolkit().toolkit_comp_family() == toolkit.GCC:
+            if self.toolkit().comp_family() == toolkit.GCC:
                 makeopts += 'compiler=gnu '
 
             for i in lis1 + lis2 + lis3:
@@ -179,7 +179,7 @@ class Imkl(IntelBase):
                 if i in lis3:
                     # use INSTALL_DIR and SPEC_OPT
                     extramakeopts = ''
-                    if self.toolkit().toolkit_mpi_type() == toolkit.MPICH2:
+                    if self.toolkit().mpi_type() == toolkit.MPICH2:
                         extramakeopts += 'mpi=mpich2'
                     cmd = "make -f makefile libintel64 %s" % extramakeopts
 

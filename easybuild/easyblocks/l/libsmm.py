@@ -141,7 +141,7 @@ tasks=%(tasks)s
         """
 
         # only GCC is supported for now
-        if self.toolkit().toolkit_comp_family() == toolkit.GCC:
+        if self.toolkit().comp_family() == toolkit.GCC:
             hostcompile = os.getenv('F90')
 
             # optimizations

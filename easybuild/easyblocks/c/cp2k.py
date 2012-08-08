@@ -135,7 +135,7 @@ class CP2K(Application):
         self.make_instructions = "graphcon.o: graphcon.F\n\t$(FC) -c $(FCFLAGS2) $<\n"
 
         # compiler toolkit specific configuration
-        comp_fam = self.toolkit().toolkit_comp_family()
+        comp_fam = self.toolkit().comp_family()
         if comp_fam == toolkit.INTEL:
             options = self.configureIntelBased()
         elif comp_fam == toolkit.GCC:
