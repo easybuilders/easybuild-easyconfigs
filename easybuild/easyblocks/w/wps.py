@@ -195,7 +195,7 @@ class WPS(Application):
                 }
         fn = 'configure.wps'
         for line in fileinput.input(fn, inplace=1,backup='.orig.comps'):
-            for k,v in comps.items():
+            for (k,v) in comps.items():
                 line = re.sub(r"^(%s\s*=\s*).*$" % k, r"\1 %s" % v, line)
             sys.stdout.write(line)
 
