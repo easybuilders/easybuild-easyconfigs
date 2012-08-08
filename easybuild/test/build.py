@@ -140,26 +140,34 @@ def perform_step(fase, obj, method):
             # keep a dict of so we can check in O(1) if objects can still be build
             build_stopped[obj] = fase
 
+
+def get_instance(package):
+    """ get an instance for this package """
+    spec = package['spec']
+    name = package['module'][0]
+
+    # handle easyconfigs with custom easyblocks
+    easyblock = None
+    reg = re.compile(r"^\s*easyblock\s*=(.*)$")
+    for line in open(spec).readlines():
+        match = reg.search(line)
+        if match:
+            easyblock = eval(match.group(1))
+            break
+
+    app_class = get_class(easyblock, log, name=name)
+    return app_class(spec, debug=True)
+
+
 def build_packages(packages, output_dir):
     """
     build the packages
     """
     apps = []
     for pkg in packages:
-        spec = pkg['spec']
-        name = pkg['module'][0]
         try:
-            # handle easyconfigs with custom easyblocks
-            easyblock = None
-            reg = re.compile(r"^\s*easyblock\s*=(.*)$")
-            for line in open(spec).readlines():
-                match = reg.search(line)
-                if match:
-                    easyblock = eval(match.group(1))
-                    break
-
-            app_class = get_class(easyblock, log, name=name)
-            apps.append(app_class(spec, debug=True))
+            instance = get_instance(pkg)
+            apps.append(instance)
         except EasyBuildError, err:
             test_results.append((spec, 'initialization', err))
 
@@ -240,6 +248,10 @@ def build_packages_in_parallel(packages, output_dir, script_dir):
     no_dependencies = [pkg for pkg in packages if len(pkg['unresolvedDependencies']) == 0]
     with_dependencies = [pkg for pkg in packages if pkg not in no_dependencies]
 
+    log.info("preparing packages: %s" % no_dependencies)
+    for pkg in no_dependencies:
+        prepare_package(pkg)
+
     # we submit all the jobs which can be trivially build.
     jobs = [submit_job(pkg, output_dir, script_dir) for pkg in no_dependencies]
 
@@ -269,6 +281,10 @@ def build_packages_in_parallel(packages, output_dir, script_dir):
         # find other jobs without dependencies and extend the jobs array!
         no_dependencies = [pkg for pkg in with_dependencies if len(pkg['unresolvedDependencies']) == 0]
         with_dependencies = [pkg for pkg in with_dependencies if pkg not in no_dependencies]
+
+        log.info("preparing packages: %s" % no_dependencies)
+        for pkg in no_dependencies:
+            prepare_package(pkg)
 
         new_jobs = [submit_job(pkg, output_dir, script_dir) for pkg in no_dependencies]
         jobs.extend(new_jobs)
@@ -312,6 +328,13 @@ def build_packages_in_parallel(packages, output_dir, script_dir):
     root.writexml(output_file, addindent="\t", newl="\n")
     output_file.close()
 
+def prepare_package(pkg):
+    """ prepare for building """
+    try:
+        instance = get_instance(pkg)
+        instance.prepare_build()
+    except EasyBuildError, err:
+        log.warn("%s failed to prepare. Submitting anyway, for proper error resolution" % pkg['name'])
 
 def submit_job(package, output_dir, script_dir):
     """
