@@ -154,7 +154,7 @@ class WRF(Application):
                  'DM_CC': "%s -DMPI2_SUPPORT" % os.getenv('MPICC'),
                 }
         for line in fileinput.input(cfgfile, inplace=1, backup='.orig.comps'):
-            for k,v in comps.items():
+            for (k, v) in comps.items():
                 line = re.sub(r"^(%s\s*=\s*).*$" % k, r"\1 %s" % v, line)
             sys.stdout.write(line)
 

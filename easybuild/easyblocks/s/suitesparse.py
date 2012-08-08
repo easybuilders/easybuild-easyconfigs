@@ -61,7 +61,7 @@ class SuiteSparse(Application):
         # patch file
         try:
             for line in fileinput.input(fp, inplace=1, backup='.orig'):
-                for k,v in cfgvars.items():
+                for (k, v) in cfgvars.items():
                     line = re.sub(r"^(%s\s*=\s*).*$" % k, r"\1 %s # patched by EasyBuild" % v, line)
                     if k in line:
                         cfgvars.pop(k)
@@ -74,7 +74,7 @@ class SuiteSparse(Application):
             try:
                 f = open(fp, "a")
                 f.write("# lines below added automatically by EasyBuild")
-                for k,v in cfgvars.items():
+                for (k, v) in cfgvars.items():
                     f.write("%s = %s\n" % (k,v))
                 f.close()
             except IOError, err:

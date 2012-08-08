@@ -90,7 +90,7 @@ class NCL(Application):
 
         # replace config entries that are already there
         for line in fileinput.input(cfg_filename, inplace=1, backup='%s.orig' % cfg_filename):
-            for key,val in macrodict.items():
+            for (key, val) in macrodict.items():
                 regexp = re.compile("(#define %s\s*).*" % key)
                 match = regexp.search(line)
                 if match:
@@ -100,7 +100,7 @@ class NCL(Application):
 
         # add remaining config entries
         f = open(cfg_filename, "a")
-        for key,val in macrodict.items():
+        for (key, val) in macrodict.items():
             f.write("#define %s %s\n" % (key, val))
         f.close()
 

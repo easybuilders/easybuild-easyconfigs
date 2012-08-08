@@ -741,7 +741,7 @@ class Application:
             gid = grp.getgrnam(self.getcfg('group'))[2]
             chngsuccess = []
             chngfailure = []
-            for root, _, files in os.walk(self.installdir):
+            for (root, _, files) in os.walk(self.installdir):
                 try:
                     os.chown(root, -1, gid)
                     os.chmod(root, 0750)
@@ -1167,7 +1167,7 @@ class Application:
         txt += self.moduleGenerator.setEnvironment("SOFTVERSION" + environmentName, self.version())
 
         txt += "\n"
-        for key, value in self.getcfg('modextravars').items():
+        for (key, value) in self.getcfg('modextravars').items():
             txt += self.moduleGenerator.setEnvironment(key, value)
 
         self.log.debug("make_module_extra added this: %s" % txt)
@@ -1190,7 +1190,7 @@ class Application:
             os.chdir(os.getenv('HOME'))
 
             # walk install dir to determine total size
-            for dirpath, _, filenames in os.walk(self.installdir):
+            for (dirpath, _, filenames) in os.walk(self.installdir):
                 for filename in filenames:
                     fullpath = os.path.join(dirpath, filename)
                     if os.path.exists(fullpath):
