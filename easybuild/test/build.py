@@ -246,6 +246,8 @@ def build_packages_in_parallel(packages, output_dir, script_dir):
     log.info("Submitted %s jobs" % len(jobs))
     log.info("Still %s left to be submitted" % len(with_dependencies))
 
+    output_paths = []
+
     while len(jobs) > 0:
         # sleep 5 minutes
         time.sleep(5 * 60)
@@ -256,6 +258,7 @@ def build_packages_in_parallel(packages, output_dir, script_dir):
 
         # remove from unresolvedDependencies in with_dependencies array
         for job in done_jobs:
+            output_paths.append(job.env_vars['EASYBUILDTESTOUTPUT'])
             name, version = job.name.split('-', 1)
             for pkg in with_dependencies:
                 try:
@@ -275,6 +278,40 @@ def build_packages_in_parallel(packages, output_dir, script_dir):
         log.info("%s jobs have been submitted: %s" % (len(new_jobs), [job.name for job in new_jobs]))
         log.info("%s jobs are being run: %s" % (len(jobs), [job.name for job in jobs]))
         log.info("%s packages still need to be build" % len(with_dependencies))
+
+    if len(with_dependencies) > 0:
+        log.error("For some reason, you still have unresolved dependencies: %s" % with_dependencies)
+
+
+    # capture xml output and generate a single one
+    # TODO: move into proper function (used 2 times)
+    dom = xml.getDOMImplementation()
+    root = dom.createDocument(None, "testsuite", None)
+    properties = root.createElement("properties")
+    version = root.createElement("property")
+    version.setAttribute("name", "easybuild-version")
+    version.setAttribute("value", str(easybuild.VERBOSE_VERSION))
+    properties.appendChild(version)
+
+    time = root.createElement("property")
+    time.setAttribute("name", "timestamp")
+    time.setAttribute("value", str(datetime.now()))
+    properties.appendChild(time)
+
+    root.firstChild.appendChild(properties)
+
+    for dir in output_paths:
+        # take the first one (should be only one present)
+        xml_file = glob.glob(os.path.join(dir, "*.xml"))[0]
+        dom = xml.parse(xml_file)
+        # only one should be present, we are just discarding the rest
+        testcase = dom.getElementsByTagName("testcase")[0]
+        root.firstChild.appendChild(testcase)
+
+    output_file = open(os.path.join(output_dir, "easybuild-parallel-results.xml"), "w")
+    root.writexml(output_file, addindent="\t", newl="\n")
+    output_file.close()
+
 
 def submit_job(package, output_dir, script_dir):
     """
