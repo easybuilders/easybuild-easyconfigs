@@ -24,6 +24,7 @@ import copy
 import difflib
 import os
 
+from easybuild.tools.build_log import getLog
 from easybuild.tools.toolkit import Toolkit
 from easybuild.tools.systemtools import get_shared_lib_ext
 from easybuild.tools.filetools import run_cmd
@@ -133,9 +134,9 @@ class EasyBlock:
         try:
             execfile(path, global_vars, local_vars)
         except IOError, err:
-            self.log.exception("Unexpected IOError during execfile()")
+            self.log.exception("Unexpected IOError during execfile(): %s" % err)
         except SyntaxError, err:
-            self.log.exception("SyntaxError in easyblock %s" % path)
+            self.log.exception("SyntaxError in easyblock %s: %s" % (path, err))
 
         # validate mandatory keys
         for key in self.mandatory:
