@@ -1089,7 +1089,9 @@ class Application:
 
         env_txt = ""
         for (key, val) in env.changes.items():
-            if val:
+            # check if non-empty string
+            # TODO: add unset for empty vars?
+            if val.strip():
                 env_txt += mod_gen.setEnvironment(key, val)
 
         load_txt = ""
