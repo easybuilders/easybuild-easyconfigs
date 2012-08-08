@@ -37,7 +37,7 @@ from distutils.version import LooseVersion
 import easybuild.tools.toolkit as toolkit
 from easybuild.framework.application import Application
 from easybuild.tools.filetools import run_cmd
-from easybuild.tools.modules import get_software_root
+from easybuild.tools.modules import get_software_root, get_software_version
 
 
 class CP2K(Application):
@@ -316,7 +316,7 @@ class CP2K(Application):
                 libint_wrapper = '%s/libint_cpp_wrapper.o' % libinttools_path
 
             # determine LibInt libraries based on major version number
-            libint_maj_ver = os.getenv('SOFTVERSIONLIBINT').split('.')[0]
+            libint_maj_ver = get_software_version('LibInt').split('.')[0]
             if libint_maj_ver == '1':
                 libint_libs = "$(LIBINTLIB)/libderiv.a $(LIBINTLIB)/libint.a $(LIBINTLIB)/libr12.a"
             elif libint_maj_ver == '2':
@@ -360,11 +360,11 @@ class CP2K(Application):
         # see http://software.intel.com/en-us/articles/build-cp2k-using-intel-fortran-compiler-professional-edition/
         self.make_instructions += "qs_vxc_atom.o: qs_vxc_atom.F\n\t$(FC) -c $(FCFLAGS2) $<\n"
 
-        if LooseVersion(os.getenv('SOFTVERSIONIFORT')) >= LooseVersion("2011.8"):
+        if LooseVersion(get_software_version('ifort')) >= LooseVersion("2011.8"):
             self.make_instructions += "et_coupling.o: et_coupling.F\n\t$(FC) -c $(FCFLAGS2) $<\n"
             self.make_instructions += "qs_vxc_atom.o: qs_vxc_atom.F\n\t$(FC) -c $(FCFLAGS2) $<\n"
 
-        elif LooseVersion(os.getenv('SOFTVERSIONIFORT')) >= LooseVersion("2011"):
+        elif LooseVersion(get_software_version('ifort')) >= LooseVersion("2011"):
             self.log.error("CP2K won't build correctly with the Intel v12 compilers before version 2011.8.")
 
         return options
