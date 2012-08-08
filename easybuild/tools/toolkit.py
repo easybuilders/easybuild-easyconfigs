@@ -371,11 +371,13 @@ class Toolkit:
         """
 
         blacs = get_software_root("BLACS")
+        blacs_libs = ["blacs", "blacsCinit", "blacsF77init"]
 
-        self.vars['BLACS_INC'] = 
-        self.vars['BLACS_LIB'] = 
+        self.vars['BLACS_INC'] = os.path.join(blacs, "include")
+        self.vars['BLACS_LIB_DIR'] = os.path.join(blacs, "lib")
+        self.vars['BLACS_STATIC_LIBS'] = ','.join(["lib%s.a" % x for x in blacs_libs])
 
-        self.vars['LIBSCALAPACK'] = " -lblacsF77init -lblacs "
+        self.vars['LIBSCALAPACK'] = ' '.join(["-l%s" % x for x in blacs_libs])
         self.vars['LIBSCALAPACK_MT'] = self.vars['LIBSCALAPACK']
 
         self._addDependencyVariables(['BLACS'])
@@ -544,7 +546,7 @@ class Toolkit:
             self.log.error("MKLROOT not found in environment")
 
         # exact paths/linking statements depend on imkl version
-        if LooseVersion(get_software_version('IMKL']) < LooseVersion('10.3'):
+        if LooseVersion(get_software_version('IMKL')) < LooseVersion('10.3'):
             if self.opts['32bit']:
                 mklld = ['lib/32']
             else:
@@ -552,8 +554,8 @@ class Toolkit:
             mklcpp = ['include', 'include/fftw']
         else:
             if self.opts['32bit']:
-                root = get_software_root("IMKL"))
-                self.log.error("32-bit libraries not supported yet for IMKL v%s (> v10.3)" % root
+                root = get_software_root("IMKL")
+                self.log.error("32-bit libraries not supported yet for IMKL v%s (> v10.3)" % root)
 
             mklld = ['lib/intel64', 'mkl/lib/intel64']
             mklcpp = ['mkl/include', 'mkl/include/fftw']
