@@ -40,9 +40,11 @@ from easybuild.tools.modules import get_software_root
 class ScaLAPACK(Application):
     """
     Support for building and installing ScaLAPACK, both versions 1.x and 2.x
-    - configure: copy SLmake.inc.example to SLmake.inc
     """
+
     def configure(self):
+        """Configure ScaLAPACK build by copying SLmake.inc.example to SLmake.inc and checking dependencies."""
+
         src = os.path.join(self.getcfg('startfrom'), 'SLmake.inc.example')
         dest = os.path.join(self.getcfg('startfrom'), 'SLmake.inc')
 
@@ -69,6 +71,7 @@ class ScaLAPACK(Application):
                 self.log.error("Dependency %s not available/loaded." % dep)
 
     def make(self):
+        """Build ScaLAPACK using make after setting make options."""
 
         # MPI compiler commands
         if os.getenv('MPICC') and os.getenv('MPIF77') and os.getenv('MPIF90'):
@@ -140,6 +143,7 @@ class ScaLAPACK(Application):
         Application.make(self)
 
     def make_install(self):
+        """Install by copying files to install dir."""
 
         src = os.path.join(self.getcfg('startfrom'), 'libscalapack.a')
         dest = os.path.join(self.installdir, 'lib')
@@ -151,6 +155,7 @@ class ScaLAPACK(Application):
             self.log.error("Copying %s to installation dir %s failed: %s" % (src, dest, err))
 
     def sanitycheck(self):
+        """Custom sanity check for ScaLAPACK."""
 
         if not self.getcfg('sanityCheckPaths'):
             self.setcfg('sanityCheckPaths',{
