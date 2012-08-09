@@ -311,6 +311,9 @@ def aggregate_xml_in_dirs(base_dir, output_filename):
 
     dirs = filter(os.path.isdir, [os.path.join(base_dir, dir) for dir in os.listdir(base_dir)])
 
+    succes = 0
+    total = 0
+
     for dir in dirs:
         xml_file = glob.glob(os.path.join(dir, "*.xml"))
         if xml_file:
@@ -320,9 +323,15 @@ def aggregate_xml_in_dirs(base_dir, output_filename):
             # only one should be present, we are just discarding the rest
             testcase = dom.getElementsByTagName("testcase")[0]
             root.firstChild.appendChild(testcase)
+            total += 1
+            if not testcase.getElementsByTagName("failure"):
+                succes += 1
 
+
+    comment = root.createComment("%s out of %s builds succeeded" % (succes, total))
+    root.firstChild.insertBefore(comment, properties)
     output_file = open(output_filename, "w")
-    root.writexml(output_file)
+    root.writexml(output_file, addindent="\t", newl="\n")
     output_file.close()
 
 
@@ -425,7 +434,7 @@ def write_to_xml(succes, failed, filename):
         root.firstChild.appendChild(el)
 
     output_file = open(filename, "w")
-    root.writexml(output_file, addindent="\t", newl="\n")
+    root.writexml(output_file)
     output_file.close()
 
 if __name__ == "__main__":
