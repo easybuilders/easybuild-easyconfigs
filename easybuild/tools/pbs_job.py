@@ -61,8 +61,10 @@ class PbsJob:
 
     def add_dependencies(self, job_ids):
         """ add dependencies to this job. """
-        self.deps.extend(job_ids)
+        if isinstance(job_ids, str):
+            job_ids = list(job_ids)
 
+        self.deps.extend(job_ids)
 
     def submit(self):
         """Submit the jobscript txt, set self.jobid"""
@@ -91,7 +93,7 @@ class PbsJob:
         if self.deps:
             deps_attributes = pbs.new_attropl(1)
             deps_attributes[0].name = pbs.ATTR_depend
-            deps_attributes[0].value = "depend=%s" % ",".join(["afterok:%s" % dep for dep in self.deps])
+            deps_attributes[0].value = ",".join(["afterok:%s" % dep for dep in self.deps])
             pbs_attributes.extend(deps_attributes)
 
         ## add a bunch of variables (added by qsub)
