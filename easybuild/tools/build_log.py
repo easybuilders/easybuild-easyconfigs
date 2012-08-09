@@ -92,7 +92,7 @@ logging_format = EB_MSG_PREFIX + ' %(asctime)s %(name)s %(levelname)s %(message)
 formatter = logging.Formatter(logging_format)
 
 # redirect standard handler of root logger to stderr
-logging.basicConfig(level=logging.ERROR, format=logging_format, stream=sys.stderr)
+logging.basicConfig(level=logging.ERROR, format=logging_format, filename='/dev/null')
 
 logging.setLoggerClass(EasyBuildLog)
 
