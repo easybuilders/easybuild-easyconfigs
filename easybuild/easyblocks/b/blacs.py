@@ -31,6 +31,7 @@ import re
 import os
 import shutil
 
+import easybuild.tools.toolkit as toolkit
 from easybuild.framework.application import Application
 from easybuild.tools.filetools import run_cmd
 from easybuild.tools.modules import get_software_root
@@ -78,22 +79,21 @@ class BLACS(Application):
         """Build BLACS using make, after figuring out the make options based on the heuristic tools available."""
 
         # determine MPI base dir and lib
-        known_mpi_libs = {
-                          'OpenMPI': "-L$(MPILIBdir) -lmpi_f77",
-                          'MVAPICH2': "$(MPILIBdir)/libmpich.a $(MPILIBdir)/libfmpich.a " + \
-                                      "$(MPILIBdir)/libmpl.a -lpthread"
+        known_mpis = {
+                      toolkit.OPENMPI: "-L$(MPILIBdir) -lmpi_f77",
+                      toolkit.MVAPICH2: "$(MPILIBdir)/libmpich.a $(MPILIBdir)/libfmpich.a " + \
+                                        "$(MPILIBdir)/libmpl.a -lpthread"
                           }
 
-        base, mpilib = None, None
-        for key, val in known_mpi_libs.items():
-            root = get_software_root(key)
-            if root:
-                base = root
-                mpilib = val
-                break
+        mpi_type = self.toolkit().mpi_type()
 
-        if not base or not mpilib:
-            self.log.error("Unknown MPI library used (known MPI libs: %s)" % known_mpi_libs.keys())
+        base, mpilib = None, None
+        if mpi_type in known_mpis.keys():
+            base = get_software_root(mpi_type)
+            mpilib = known_mpis[mpi_type]
+
+        else:
+            self.log.error("Unknown MPI lib %s used (known MPI libs: %s)" % (mpi_type, known_mpis.keys()))
 
         # common settings (for now)
         mpicc = 'mpicc'
