@@ -58,21 +58,19 @@ from datetime import datetime
 from optparse import OptionParser
 
 import easybuild
-import easybuild.tools.config as config
-import easybuild.tools.systemtools as systemtools
 import easybuild.tools.build_log as build_log
+import easybuild.tools.config as config
+import easybuild.tools.parallelbuild as parbuild
+import easybuild.tools.systemtools as systemtools
 from easybuild.tools.build_log import getLog, EasyBuildError, initLogger
-from easybuild.framework.application import get_class, Application
 from easybuild.build import findEasyconfigs, processEasyconfig, resolveDependencies
 from easybuild.tools.filetools import modifyEnv
-from easybuild.tools.pbs_job import PbsJob
 
 # some variables used by different functions
 initLogger(filename=None, debug=True, typ=None)
 log = getLog("ParallelBuild")
 test_results = []
 build_stopped = {}
-
 
 def main():
     """ main entry point """
@@ -131,7 +129,9 @@ def main():
 
     if opts.parallel:
         resolved = resolveDependencies(packages, opts.robot, log)
-        build_packages_in_parallel(resolved, output_dir, cur_dir)
+        # use %%s so i can later replace it
+        command = "cd %s && python %s %%s --no-parallel" % (cur_dir, sys.argv[0])
+        parbuild.build_packages_in_parallel(command, resolved, output_dir)
     else:
         build_packages(packages, output_dir)
 
@@ -149,25 +149,6 @@ def perform_step(fase, obj, method):
             # keep a dict of so we can check in O(1) if objects can still be build
             build_stopped[obj] = fase
 
-
-def get_instance(package):
-    """ get an instance for this package """
-    spec = package['spec']
-    name = package['module'][0]
-
-    # handle easyconfigs with custom easyblocks
-    easyblock = None
-    reg = re.compile(r"^\s*easyblock\s*=(.*)$")
-    for line in open(spec).readlines():
-        match = reg.search(line)
-        if match:
-            easyblock = eval(match.group(1))
-            break
-
-    app_class = get_class(easyblock, log, name=name)
-    return app_class(spec, debug=True)
-
-
 def build_packages(packages, output_dir):
     """
     build the packages
@@ -175,7 +156,7 @@ def build_packages(packages, output_dir):
     apps = []
     for pkg in packages:
         try:
-            instance = get_instance(pkg)
+            instance = parbuild.get_instance(pkg)
             apps.append(instance)
         except EasyBuildError, err:
             test_results.append((pkg['spec'], 'initialization', err))
@@ -248,47 +229,6 @@ def build_packages(packages, output_dir):
     write_to_xml(succes, test_results, output_file)
 
 
-def build_packages_in_parallel(packages, output_dir, script_dir):
-    """
-    list is a list of packages which can be build! (e.g. they have no unresolved dependencies)
-    this function will build them in parallel by submitting jobs
-    """
-    # first find those without dependencies
-    no_dependencies = [pkg for pkg in packages if len(pkg['unresolvedDependencies']) == 0]
-    with_dependencies = [pkg for pkg in packages if pkg not in no_dependencies]
-
-    # This is very important, otherwise we might have race conditions
-    # e.g. GCC-4.5.3 finds cloog.tar.gz but it was incorrectly downloaded by GCC-4.6.3
-    # running this step here, prevents this
-    log.info("preparing packages: %s" % no_dependencies)
-    for pkg in no_dependencies:
-        prepare_package(pkg)
-
-    # we submit all the jobs which can be trivially build.
-    jobs = [create_job(pkg, output_dir, script_dir) for pkg in no_dependencies]
-    job_module_dict = {}
-
-    # submit in different loop (otherwise we'd have an array of None)
-    for job in jobs:
-        job.submit()
-        job_module_dict[job.module] = job.jobid
-
-    log.info("Submitted %s jobs" % len(jobs))
-    log.info("Still %s left to be submitted" % len(with_dependencies))
-
-    # dependencies have already been resolved this means i can linearly walk over the list and use previous job id's
-    for pkg in with_dependencies:
-        # don't forgot to prepare each package
-        prepare_package(pkg)
-
-        # the new job will only depend on already submitted jobs
-        new_job = create_job(pkg, output_dir, script_dir)
-        job_deps = [job_module_dict[dep] for dep in pkg['unresolvedDependencies']]
-        new_job.add_dependencies(job_deps)
-        new_job.submit()
-        # update dictionary
-        job_module_dict[new_job.module] = new_job.jobid
-
 def aggregate_xml_in_dirs(base_dir, output_filename):
     """
     finds all the xml files in the dirs and takes the testcase attribute out of them.
@@ -333,45 +273,6 @@ def aggregate_xml_in_dirs(base_dir, output_filename):
     output_file = open(output_filename, "w")
     root.writexml(output_file, addindent="\t", newl="\n")
     output_file.close()
-
-
-def prepare_package(pkg):
-    """ prepare for building """
-    try:
-        instance = get_instance(pkg)
-        instance.prepare_build()
-    except EasyBuildError, err:
-        log.warn("%s failed to prepare. Submitting anyway, for proper error resolution" % str(pkg['module']))
-
-def create_job(package, output_dir, script_dir):
-    """
-    creates a job, to build a *single* package
-    returns the job
-    """
-    # command is pyton script/regtest.py file_name --single
-    command = "cd %s && python %s %s --no-parallel" % (script_dir, sys.argv[0], package['spec'])
-
-    # capture PYTHONPATH, MODULEPATH and all variables starting with EASYBUILD
-    easybuild_vars = {}
-    for name in os.environ:
-        if name.startswith("EASYBUILD"):
-            easybuild_vars[name] = os.environ[name]
-
-    others = ["PYTHONPATH", "MODULEPATH"]
-
-    for env_var in others:
-        if env_var in os.environ:
-            easybuild_vars[env_var] = os.environ[env_var]
-
-    # create unique name based on module name
-    name = "%s-%s" % package['module']
-
-    easybuild_vars['EASYBUILDTESTOUTPUT'] = os.path.join(os.path.abspath(output_dir), name)
-
-    job = PbsJob(command, name, easybuild_vars)
-    job.module = package['module']
-
-    return job
 
 
 def write_to_xml(succes, failed, filename):

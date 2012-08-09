@@ -18,6 +18,18 @@
 # You should have received a copy of the GNU General Public License
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
+"""
+module for doing parallel builds
+"""
+import os
+import re
+
+from easybuild.framework.application import get_class
+from easybuild.tools.build_log import getLog
+from easybuild.tools.pbs_job import PbsJob
+
+log = getLog("ParallelBuild")
+
 def build_packages_in_parallel(build_command, packages, output_dir):
     """
     list is a list of packages which can be build! (e.g. they have no unresolved dependencies)
@@ -70,6 +82,7 @@ def create_job(build_command, package, output_dir):
 
     return job
 
+
 def get_instance(package):
     """ get an instance for this package """
     spec = package['spec']
@@ -86,3 +99,12 @@ def get_instance(package):
 
     app_class = get_class(easyblock, log, name=name)
     return app_class(spec, debug=True)
+
+
+def prepare_package(pkg):
+    """ prepare for building """
+    try:
+        instance = get_instance(pkg)
+        instance.prepare_build()
+    except:
+        pass
