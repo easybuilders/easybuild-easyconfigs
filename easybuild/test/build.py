@@ -87,8 +87,15 @@ def main():
     parser.add_option("--output-dir", dest="directory", help="set output directory for test-run")
     parser.add_option("-r", "--robot", default="easybuild/easyconfigs",
             help="specify robot directory (default: %default)")
+    parser.add_option("-a", "--aggregate", help="collect all the xmls inside the given directory and generate a single file")
 
     (opts, args) = parser.parse_args()
+
+    if opts.aggregate:
+        output_file = os.path.join(opts.aggregate, "easybuild-aggregate.xml")
+        aggregate_xml_in_dirs(opts.aggregate, output_file)
+        log.info("aggregated xml files inside %s, output written to: %s" % (opts.aggregate, output_file))
+        sys.exit(0)
 
     # Create base directory inside the current directory. This will be used to place
     # all log files and the test output as xml
@@ -282,7 +289,7 @@ def build_packages_in_parallel(packages, output_dir, script_dir):
         # update dictionary
         job_module_dict[new_job.module] = new_job.jobid
 
-def aggregate_xml_in_dirs(dirs, output_filename):
+def aggregate_xml_in_dirs(base_dir, output_filename):
     """
     finds all the xml files in the dirs and takes the testcase attribute out of them.
     These are then put in a single output file
@@ -302,15 +309,19 @@ def aggregate_xml_in_dirs(dirs, output_filename):
 
     root.firstChild.appendChild(properties)
 
-    for dir in dirs:
-        # take the first one (should be only one present)
-        xml_file = glob.glob(os.path.join(dir, "*.xml"))[0]
-        dom = xml.parse(xml_file)
-        # only one should be present, we are just discarding the rest
-        testcase = dom.getElementsByTagName("testcase")[0]
-        root.firstChild.appendChild(testcase)
+    dirs = filter(os.path.isdir, [os.path.join(base_dir, dir) for dir in os.listdir(base_dir)])
 
-    output_file = open(output_filename)
+    for dir in dirs:
+        xml_file = glob.glob(os.path.join(dir, "*.xml"))
+        if xml_file:
+            # take the first one (should be only one present)
+            xml_file = xml_file[0]
+            dom = xml.parse(xml_file)
+            # only one should be present, we are just discarding the rest
+            testcase = dom.getElementsByTagName("testcase")[0]
+            root.firstChild.appendChild(testcase)
+
+    output_file = open(output_filename, "w")
     root.writexml(output_file, addindent="\t", newl="\n")
     output_file.close()
 
