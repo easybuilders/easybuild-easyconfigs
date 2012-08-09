@@ -86,8 +86,10 @@ class ScaLAPACK(Application):
             self.log.error("Don't know which compiler commands to use.")
 
         # set BLAS and LAPACK libs
-        extra_makeopts = 'BLASLIB="%s -lpthread"' % get_blas_lib(self.log)
-        extra_makeopts += ' LAPACKLIB=%s/lib/liblapack.a ' % get_software_root('LAPACK')
+        extra_makeopts = [
+                          'BLASLIB="%s -lpthread"' % get_blas_lib(self.log), 
+                          'LAPACKLIB=%s/lib/liblapack.a' % get_software_root('LAPACK')
+                         ]
 
         # build procedure changed in v2.0.0
         if self.loosever < LooseVersion("2.0.0"):
@@ -98,13 +100,15 @@ class ScaLAPACK(Application):
             interface = det_interface(self.log, os.path.join(blacs, 'bin'))
 
             # set build and BLACS dir correctly
-            extra_makeopts += 'home=%s BLACSdir=%s ' % (self.getcfg('startfrom'), blacs)
+            extra_makeopts.append('home=%s BLACSdir=%s' % (self.getcfg('startfrom'), blacs))
 
             # set BLACS libs correctly
-            for (var, lib) in [('BLACSFINIT', "F77init"),
+            for (var, lib) in [
+                               ('BLACSFINIT', "F77init"),
                                ('BLACSCINIT', "Cinit"),
-                               ('BLACSLIB', "")]:
-                extra_makeopts += '%s=%s/lib/libblacs%s.a ' % (var, blacs, lib)
+                               ('BLACSLIB', "")
+                              ]:
+                extra_makeopts.append('%s=%s/lib/libblacs%s.a' % (var, blacs, lib))
 
             # set compilers and options
             noopt = ''
@@ -112,13 +116,15 @@ class ScaLAPACK(Application):
                 noopt += " -O0"
             if self.toolkit().opts['pic']:
                 noopt += " -fPIC"
-            extra_makeopts += 'F77="%(f77)s"' %  mpif77
-            extra_makeopts += ' CC="%(cc)s"' % mpicc
-            extra_makeopts += ' NOOPT="%(noopt)s"' % noopt
-            extra_makeopts += ' CCFLAGS="-O3" '
+            extra_makeopts += [
+                               'F77="%s"' % mpif77,
+                               'CC="%s"' % mpicc,
+                               'NOOPT="%s"' % noopt,
+                               'CCFLAGS="-O3"'
+                              ]
 
             # set interface
-            extra_makeopts += "CDEFS='-D%s -DNO_IEEE $(USEMPI)' " % interface
+            extra_makeopts.append("CDEFS='-D%s -DNO_IEEE $(USEMPI)'" % interface)
 
         else:
 
@@ -129,16 +135,16 @@ class ScaLAPACK(Application):
                 self.log.error("Don't know which interface to pick for the MPI library being used.")
 
             # set compilers and options
-            extra_makeopts += 'FC="%(fc)s" CC="%(cc)s" ' % {
-                                                            'fc': mpif90,
-                                                            'cc': mpicc,
-                                                           }
+            extra_makeopts += [
+                               'FC="%s"' % mpif90, 
+                               'CC="%s"' % mpicc
+                              ]
 
             # set interface
-            extra_makeopts += 'CDEFS="-D%s" ' % interface
+            extra_makeopts.append('CDEFS="-D%s"' % interface)
 
         # update make opts, and make
-        self.updatecfg('makeopts', extra_makeopts)
+        self.updatecfg('makeopts', ' '.join(extra_makeopts))
 
         Application.make(self)
 
