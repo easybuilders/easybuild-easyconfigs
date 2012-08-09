@@ -23,20 +23,21 @@
 # You should have received a copy of the GNU General Public License
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
-from distutils.version import LooseVersion
 import copy
 import os
-
-from easybuild.tools.build_log import getLog
-from easybuild.tools.modules import Modules, get_software_root
-from easybuild.tools import systemtools
+from distutils.version import LooseVersion
 
 import easybuild.tools.environment as env
+from easybuild.tools import systemtools
+from easybuild.tools.build_log import getLog
+from easybuild.tools.modules import Modules, get_software_root, get_software_version
 
 
 # constants used for recognizing compilers, MPI libraries, ...
 GCC = "GCC"
 INTEL = "Intel"
+MPICH2 = "MPICH2"
+MVAPICH2 = "MVAPICH2"
 OPENMPI = "OpenMPI"
 QLOGIC = "QLogic"
 
@@ -324,16 +325,15 @@ class Toolkit:
 
         self._addDependencyVariables(['ACML'])
 
-        if self.toolkit_comp_family() == GCC:
+        acml = get_software_root('ACML')
+
+        if self.comp_family() == GCC:
             compiler = 'gfortran'
-        elif self.toolkit_comp_family() == INTEL:
+        elif self.comp_family() == INTEL:
             compiler = 'ifort'
         else:
             self.log.error("Don't know which compiler-specific subdir for ACML to use.")
-        self.vars['LDFLAGS'] += " -L%(acml)s/%(comp)s64/lib/ " % {
-                                                'comp':compiler,
-                                                'acml':os.environ['SOFTROOTACML']
-               }
+        self.vars['LDFLAGS'] += " -L%s/%s64/lib/ " % (acml, compiler)
         self.vars['LIBBLAS'] = " -lacml_mv -lacml "
 
         self.vars['LIBBLAS_MT'] = self.vars['LIBBLAS']
@@ -345,9 +345,20 @@ class Toolkit:
         """
         Prepare for ATLAS BLAS/LAPACK library
         """
+        blas_libs = ["cblas", "f77blas", "atlas"]
+        blas_mt_libs = ["ptcblas", "ptf77blas", "atlas"]
 
-        self.vars['LIBBLAS'] = " -lcblas -lf77blas -latlas -lgfortran"
-        self.vars['LIBBLAS_MT'] = " -lptcblas -lptf77blas -latlas -lgfortran -lpthread"
+        atlas = get_software_root("ATLAS")
+
+        self.vars['LIBBLAS'] = ' '.join(["-l%s" % x for x in blas_libs] + ["-lgfortran"])
+        self.vars['LIBBLAS_MT'] = ' '.join(["-l%s" % x for x in blas_mt_libs] + ["-lgfortran", "-lpthread"])
+        self.vars['BLAS_LIB_DIR'] = os.path.join(atlas, "lib")
+        self.vars['BLAS_STATIC_LIBS'] = ','.join(["lib%s.a" % x for x in blas_libs])
+        self.vars['BLAS_MT_STATIC_LIBS'] = ','.join(["lib%s.a" % x for x in blas_mt_libs])
+
+        self.vars['LAPACK_LIB_DIR'] = self.vars['BLAS_LIB_DIR']
+        self.vars['LAPACK_STATIC_LIBS'] = "liblapack.a," + self.vars['BLAS_STATIC_LIBS']
+        self.vars['LAPACK_MT_STATIC_LIBS'] = "liblapack.a," + self.vars['BLAS_MT_STATIC_LIBS']
 
         self._addDependencyVariables(['ATLAS'])
 
@@ -356,7 +367,14 @@ class Toolkit:
         Prepare for BLACS library
         """
 
-        self.vars['LIBSCALAPACK'] = " -lblacsF77init -lblacs "
+        blacs = get_software_root("BLACS")
+        blacs_libs = ["blacs", "blacsCinit", "blacsF77init"]
+
+        self.vars['BLACS_INC'] = os.path.join(blacs, "include")
+        self.vars['BLACS_LIB_DIR'] = os.path.join(blacs, "lib")
+        self.vars['BLACS_STATIC_LIBS'] = ','.join(["lib%s.a" % x for x in blacs_libs])
+
+        self.vars['LIBSCALAPACK'] = ' '.join(["-l%s" % x for x in blacs_libs])
         self.vars['LIBSCALAPACK_MT'] = self.vars['LIBSCALAPACK']
 
         self._addDependencyVariables(['BLACS'])
@@ -377,7 +395,7 @@ class Toolkit:
         """
 
         suffix = ''
-        if os.getenv('SOFTVERSIONFFTW').startswith('3.'):
+        if get_software_version('FFTW').startswith('3.'):
             suffix = '3'
         self.vars['LIBFFT'] = " -lfftw%s " % suffix
         if self.opts['usempi']:
@@ -446,8 +464,8 @@ class Toolkit:
 
     def prepareIntelCompiler(self, name):
 
-        version = os.getenv('SOFTVERSION%s' % name.upper())
-        root = os.getenv('SOFTROOT%s' % name.upper())
+        root = get_software_root(name)
+        version = get_software_version(name)
 
         if "liomp5" not in self.vars['LIBS']:
             if LooseVersion(version) < LooseVersion('2011'):
@@ -524,7 +542,22 @@ class Toolkit:
         if not mklRoot:
             self.log.error("MKLROOT not found in environment")
 
-        # For more inspiration: see http://software.intel.com/en-us/articles/intel-mkl-link-line-advisor/
+        # exact paths/linking statements depend on imkl version
+        if LooseVersion(get_software_version('IMKL')) < LooseVersion('10.3'):
+            if self.opts['32bit']:
+                mklld = ['lib/32']
+            else:
+                mklld = ['lib/em64t']
+            mklcpp = ['include', 'include/fftw']
+        else:
+            if self.opts['32bit']:
+                root = get_software_root("IMKL")
+                self.log.error("32-bit libraries not supported yet for IMKL v%s (> v10.3)" % root)
+
+            mklld = ['lib/intel64', 'mkl/lib/intel64']
+            mklcpp = ['mkl/include', 'mkl/include/fftw']
+
+        # for more inspiration: see http://software.intel.com/en-us/articles/intel-mkl-link-line-advisor/
 
         libsfx = "_lp64"
         libsfxsl = "_lp64"
@@ -568,25 +601,11 @@ class Toolkit:
         lib = lib.replace('mkl_sequential', 'mkl_intel_thread') + ' -liomp5 -lpthread'
         self.vars['LIBSCALAPACK_MT'] = lib
 
-        # Exact paths/linking statements depend on imkl version
-        if LooseVersion(os.environ['SOFTVERSIONIMKL']) < LooseVersion('10.3'):
-            if self.opts['32bit']:
-                mklld = ['lib/32']
-            else:
-                mklld = ['lib/em64t']
-            mklcpp = ['include', 'include/fftw']
-        else:
-            if self.opts['32bit']:
-                self.log.error("32-bit libraries not supported yet for IMKL v%s (> v10.3)" % os.environ("SOFTROOTIMKL"))
-
-            mklld = ['lib/intel64', 'mkl/lib/intel64']
-            mklcpp = ['mkl/include', 'mkl/include/fftw']
-
         # Linker flags
         self._flagsForSubdirs(mklRoot, mklld, flag="-L%s", varskey="LDFLAGS")
         self._flagsForSubdirs(mklRoot, mklcpp, flag="-I%s", varskey="CPPFLAGS")
 
-        if self.toolkit_comp_family() == GCC:
+        if self.comp_family() == GCC:
             for var in ['LIBLAPACK', 'LIBLAPACK_MT', 'LIBSCALAPACK', 'LIBSCALAPACK_MT']:
                 self.vars[var] = self.vars[var].replace('mkl_intel_lp64', 'mkl_gf_lp64')
 
@@ -595,7 +614,7 @@ class Toolkit:
         Prepare for Intel MPI library
         """
 
-        if self.toolkit_comp_family() == INTEL:
+        if self.comp_family() == INTEL:
             # Intel-based toolkit
 
             self.vars['MPICC'] = 'mpiicc %s' % self.m32flag
@@ -621,6 +640,20 @@ class Toolkit:
             self.vars['MPIF77'] = 'mpif77 -fc=%s %s ' % (self.vars['F77'], self.m32flag)
             self.vars['MPIF90'] = 'mpif90 -fc=%s %s ' % (self.vars['F90'], self.m32flag)
 
+        impiroot = get_software_root('IMPI')
+        if self.opts['32bit']:
+            self.log.error("Don't know how to set IMPI paths for 32-bit.")
+        else:
+            if LooseVersion(get_software_version('IMPI')) < LooseVersion("3.2.1.009"):
+                # this could have been different in older versions, we only checked for 3.2.1.009 and up (to 4.0.2.003)
+                self.log.error("Don't know how to set IMPI paths for old versions.")
+            else:
+                mpi_lib = os.path.join(impiroot, 'lib64', 'libmpi')
+                self.vars['MPI_INC'] = os.path.join(impiroot, 'include64')
+
+        self.vars['MPI_LIB_SHARED'] = "%s.so" % mpi_lib
+        self.vars['MPI_LIB_STATIC'] = "%s.a" % mpi_lib
+
     def prepareItac(self):
         """
         Prepare for Intel Trace Collector library
@@ -639,13 +672,23 @@ class Toolkit:
             for i in ['CC', 'CXX', 'F77', 'F90']:
                 self.vars[i] = self.vars["MPI%s" % i]
 
+        qlogic = get_software_root('QLogicMPI')
+        self.vars['MPI_INC'] = "%s/include" % qlogic
+        self.vars['MPI_LIB_SHARED'] = "%s/lib64/libmpich.so" % qlogic
+
     def prepareLAPACK(self):
         """
         Prepare for LAPACK library
         """
 
+        lapack = get_software_root("LAPACK")
+
         self.vars['LIBLAPACK'] = "-llapack %s" % self.vars['LIBBLAS']
         self.vars['LIBLAPACK_MT'] = "-llapack %s -lpthread" % self.vars['LIBBLAS_MT']
+
+        self.vars['LAPACK_LIB_DIR'] = os.path.join(lapack, "lib")
+        self.vars['LAPACK_STATIC_LIBS'] =  "liblapack.a"
+        self.vars['LAPACK_MT_STATIC_LIBS'] = self.vars['LAPACK_STATIC_LIBS']
 
         self._addDependencyVariables(['LAPACK'])
 
@@ -653,7 +696,7 @@ class Toolkit:
         """
         Prepare for MPICH2 MPI library (e.g. ScaleMP's version)
         """
-        if "vSMP" in os.getenv('SOFTVERSIONMPICH2'):
+        if "vSMP" in get_software_version('MPICH2'):
             # ScaleMP MPICH specific
             self.vars['MPICC'] = 'mpicc -cc="%s %s"' % (self.vars['CC'], self.m32flag)
             self.vars['MPICXX'] = 'mpicxx -CC="%s %s"' % (self.vars['CXX'], self.m32flag)
@@ -666,6 +709,11 @@ class Toolkit:
             if self.opts['usempi']:
                 for i in ['CC', 'CXX', 'F77', 'F90']:
                     self.vars[i] = self.vars["MPI%s" % i]
+
+            mpich2 = get_software_root('MPICH2')
+            self.vars['MPI_INC'] = "%s/include" % mpich2
+            self.vars['MPI_LIB_SHARED'] = "%s/lib/libmpich.so" % mpich2
+            self.vars['MPI_LIB_STATIC'] = "%s/lib/libmpich.a" % mpich2
         else:
             self.log.error("Don't know how to prepare for a non-ScaleMP MPICH2 library.")
 
@@ -690,12 +738,23 @@ class Toolkit:
         """
         Prepare for MVAPICH2 MPI library
         """
+
+        mvapich2 = get_software_root('MVAPICH2')
+
+        self.vars['MPI_LIB_STATIC'] = "%s/lib/libmpich.a" % mvapich2
+        self.vars['MPI_LIB_SHARED'] = "%s/lib/libmpich.so" % mvapich2
         self.prepareSimpleMPI()
 
     def prepareOpenMPI(self):
         """
         Prepare for OpenMPI MPI library
         """
+
+        openmpi = get_software_root('OpenMPI')
+
+        self.vars['MPI_LIB_STATIC'] = "%s/lib/libmpi.a" % openmpi
+        self.vars['MPI_LIB_SHARED'] = "%s/lib/libmpi.so" % openmpi
+        self.vars['MPI_INC'] = "%s/include" % openmpi
         self.prepareSimpleMPI()
 
     def prepareScaLAPACK(self):
@@ -758,7 +817,7 @@ class Toolkit:
             self.vars[varskey] = ''
         self.vars[varskey] += ' ' + ' '.join(flags)
 
-    def det_toolkit_type(self, name, type_map):
+    def get_type(self, name, type_map):
         """Determine type of toolkit based on toolkit dependencies."""
 
         toolkit_dep_names = [dep['name'] for dep in self.toolkit_deps]
@@ -773,36 +832,38 @@ class Toolkit:
 
         self.log.error("Failed to determine %s based on toolkit dependencies." % name)
 
-    def toolkit_comp_family(self):
+    def comp_family(self):
         """Determine compiler family based on toolkit dependencies."""
         comp_families = {
                          # always use tuples as keys!
-                         ('icc', 'ifort'): INTEL,  # Intel toolkit has both icc and ifort
-                         ('GCC', ): GCC  # GCC toolkit uses GCC as compiler suite
+                         ('icc', 'ifort'): INTEL,
+                         ('GCC', ): GCC
                         }
 
-        return self.det_toolkit_type("compiler family", comp_families)
+        return self.get_type("compiler family", comp_families)
 
     def get_openmp_flag(self):
         """Determine compiler flag for OpenMP"""
 
-        if self.toolkit_comp_family() == INTEL:
+        if self.comp_family() == INTEL:
             return "-openmp"
-        elif self.toolkit_comp_family() == GCC:
+        elif self.comp_family() == GCC:
             return "-fopenmp"
         else:
             self.log.error("Can't determine compiler flag for OpenMP.")
 
-    def toolkit_mpi_type(self):
+    def mpi_type(self):
         """Determine type of MPI library based on toolkit dependencies."""
         mpi_types = {
                       # always use tuples as keys!
-                      ('impi', ):INTEL, # Intel MPI
-                      ('OpenMPI', ):OPENMPI, # OpenMPI
-                      ('QLogicMPI', ):QLOGIC # QLogic MPI
+                      ('impi', ):INTEL,
+                      ('MPICH2', ):MPICH2,
+                      ('MVAPICH2', ):MVAPICH2,
+                      ('OpenMPI', ):OPENMPI,
+                      ('QLogicMPI', ):QLOGIC
                       }
 
-        return self.det_toolkit_type("type of mpi library", mpi_types)
+        return self.get_type("type of mpi library", mpi_types)
 
     def mpi_cmd_for(self, cmd, nr_ranks):
         """Construct an MPI command for the given command and number of ranks."""
@@ -816,7 +877,7 @@ class Toolkit:
                     INTEL:"mpirun %(mpdbootfile)s %(nodesfile)s -np %(nr_ranks)d %(cmd)s",
                     }
 
-        mpi_type = self.toolkit_mpi_type()
+        mpi_type = self.mpi_type()
 
         # Intel MPI mpirun needs more work
         if mpi_type == INTEL:

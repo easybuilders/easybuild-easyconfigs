@@ -31,9 +31,10 @@ import shutil
 from distutils.version import LooseVersion
 
 import easybuild  # required for VERBOSE_VERSION
+import easybuild.tools.toolkit as toolkit
 from easybuild.framework.application import Application
 from easybuild.tools.filetools import run_cmd
-from easybuild.tools.modules import get_software_root
+from easybuild.tools.modules import get_software_root, get_software_version
 
 
 class Libsmm(Application):
@@ -140,7 +141,7 @@ tasks=%(tasks)s
         """
 
         # only GCC is supported for now
-        if os.getenv('SOFTROOTGCC'):
+        if self.toolkit().comp_family() == toolkit.GCC:
             hostcompile = os.getenv('F90')
 
             # optimizations
@@ -148,7 +149,7 @@ tasks=%(tasks)s
 
             # Depending on the version, we need extra options
             extra = ''
-            gccVersion = LooseVersion(os.getenv('SOFTVERSIONGCC'))
+            gccVersion = LooseVersion(get_software_version('GCC'))
             if gccVersion >= LooseVersion('4.6'):
                 extra = "-flto"
 
