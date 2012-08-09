@@ -182,9 +182,6 @@ class BLACS(Application):
     def make_install(self):
         """Install by copying files to install dir."""
 
-        # include files
-        src = os.path.join(self.getcfg('startfrom'), 'LIB')
-
         # include files and libraries
         for (srcdir, destdir, ext) in [
                                        (os.path.join("SRC", "MPI"), "include", ".h"),  # include files
