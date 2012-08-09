@@ -258,53 +258,29 @@ def build_packages_in_parallel(packages, output_dir, script_dir):
         prepare_package(pkg)
 
     # we submit all the jobs which can be trivially build.
-    jobs = [submit_job(pkg, output_dir, script_dir) for pkg in no_dependencies]
+    jobs = [create_job(pkg, output_dir, script_dir) for pkg in no_dependencies]
+    job_module_dict = {}
+
+    # submit in different loop (otherwise we'd have an array of None)
+    for job in jobs:
+        job.submit()
+        job_module_dict[job.module] = job.jobid
 
     log.info("Submitted %s jobs" % len(jobs))
     log.info("Still %s left to be submitted" % len(with_dependencies))
 
-    output_paths = []
+    # dependencies have already been resolved this means i can linearly walk over the list and use previous job id's
+    for pkg in with_dependencies:
+        # don't forgot to prepare each package
+        prepare_package(pkg)
 
-    while len(jobs) > 0:
-        # sleep 5 minutes
-        time.sleep(5 * 60)
-
-        done_jobs = [job for job in jobs if job.state() == 'finished']
-        # filter the done_jobs
-        jobs = [job for job in jobs if job not in done_jobs]
-
-        # remove from unresolvedDependencies in with_dependencies array
-        for job in done_jobs:
-            output_paths.append(job.env_vars['EASYBUILDTESTOUTPUT'])
-            name, version = job.module
-            for pkg in with_dependencies:
-                try:
-                    pkg['unresolvedDependencies'].remove((name, version))
-                except:
-                    pass
-
-        # find other jobs without dependencies and extend the jobs array!
-        no_dependencies = [pkg for pkg in with_dependencies if len(pkg['unresolvedDependencies']) == 0]
-        with_dependencies = [pkg for pkg in with_dependencies if pkg not in no_dependencies]
-
-        log.info("preparing packages: %s" % no_dependencies)
-        for pkg in no_dependencies:
-            prepare_package(pkg)
-
-        new_jobs = [submit_job(pkg, output_dir, script_dir) for pkg in no_dependencies]
-        jobs.extend(new_jobs)
-
-        # Add some logging
-        log.info("%s jobs finished completion: %s" % (len(done_jobs), [job.name for job in done_jobs]))
-        log.info("%s jobs have been submitted: %s" % (len(new_jobs), [job.name for job in new_jobs]))
-        log.info("%s jobs are being run: %s" % (len(jobs), [job.name for job in jobs]))
-        log.info("%s packages still need to be build" % len(with_dependencies))
-
-    if len(with_dependencies) > 0:
-        log.error("For some reason, you still have unresolved dependencies: %s" % with_dependencies)
-
-    output_file = os.path.join(output_dir, "easybuild-parallel-results.xml")
-    aggregate_xml_in_dirs(output_paths, output_file)
+        # the new job will only depend on already submitted jobs
+        new_job = create_job(pkg, output_dir, script_dir)
+        job_deps = [job_module_dict[dep] for dep in pkg['unresolvedDependencies']]
+        new_job.add_dependencies(job_deps)
+        new_job.submit()
+        # update dictionary
+        job_module_dict[new_job.module] = new_job.jobid
 
 def aggregate_xml_in_dirs(dirs, output_filename):
     """
@@ -347,9 +323,9 @@ def prepare_package(pkg):
     except EasyBuildError, err:
         log.warn("%s failed to prepare. Submitting anyway, for proper error resolution" % str(pkg['module']))
 
-def submit_job(package, output_dir, script_dir):
+def create_job(package, output_dir, script_dir):
     """
-    submits a job, to build a *single* package
+    creates a job, to build a *single* package
     returns the job
     """
     # command is pyton script/regtest.py file_name --single
@@ -374,7 +350,6 @@ def submit_job(package, output_dir, script_dir):
 
     job = PbsJob(command, name, easybuild_vars)
     job.module = package['module']
-    job.submit()
 
     return job
 
