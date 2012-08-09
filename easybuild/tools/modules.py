@@ -230,6 +230,8 @@ class Modules:
         else:
             log.debug("No environment variable found to determine loaded modules, assuming no modules are loaded.")
 
+        # filter devel modules, since they cannot be split like this
+        mods = [mod for mod in mods if not mod.endswith("easybuild-devel")]
         for mod in mods:
             (mod_name, mod_version) = mod.split('/')
             loaded_modules.append({

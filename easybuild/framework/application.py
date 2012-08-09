@@ -678,13 +678,6 @@ class Application:
             finally:
                 self.runstep('cleanup', [self.cleanup])
 
-            # write changes to the environment to logdir
-            logdir = os.path.join(self.installdir, config.logPath())
-            if not os.path.isdir(logdir):
-                os.makedirs(logdir)
-
-            env.write_changes(os.path.join(logdir, "easybuild-env-vars.sh"))
-
         except StopException:
             pass
 
@@ -1083,7 +1076,50 @@ class Application:
 
         self.log.info("Added modulefile: %s" % (self.moduleGenerator.filename))
 
+        if not fake:
+            self.make_devel_module()
+
         return modpath
+
+    def make_devel_module(self):
+        """
+        Create a develop module file which sets environment based on the build
+        Usage: module load name, which loads the module you want to use. $SOFTDEVELNAME should then be the full path
+        to the devel module file. So now you can module load $SOFTDEVELNAME.
+
+        WARNING: you cannot unload using $SOFTDEVELNAME (for now: use module unload `basename $SOFTDEVELNAME`)
+        """
+        self.log.debug("loaded modules: %s" % Modules().loaded_modules())
+        mod_gen = ModuleGenerator(self)
+
+        header = "#%Module\n"
+
+        env_txt = ""
+        for (key, val) in env.changes.items():
+            # check if non-empty string
+            # TODO: add unset for empty vars?
+            if val.strip():
+                env_txt += mod_gen.setEnvironment(key, val)
+
+        load_txt = ""
+        # capture all the SOFTDEVEL vars
+        # these should be all the dependencies and we should load them
+        for key in os.environ:
+            if key.startswith("SOFTDEVEL"):
+                path = os.environ[key]
+                if os.path.isfile(path):
+                    name, version =  path.rsplit('/', 1)
+                    load_txt += mod_gen.loadModule(name, version)
+
+        output_dir = os.path.join(self.installdir, config.logPath())
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
+
+        devel_module = open(os.path.join(output_dir, "%s-%s-easybuild-devel" % (self.name(), self.installversion())), "w")
+        devel_module.write(header)
+        devel_module.write(load_txt)
+        devel_module.write(env_txt)
+        devel_module.close()
 
     def make_module_description(self):
         """
@@ -1149,10 +1185,13 @@ class Application:
         """
         txt = "\n"
 
-        ## SOFTROOT + SOFTVERSION
-        environmentName = convertName(self.name(), upper=True)
-        txt += self.moduleGenerator.setEnvironment("SOFTROOT" + environmentName, "$root")
-        txt += self.moduleGenerator.setEnvironment("SOFTVERSION" + environmentName, self.version())
+        # SOFTROOT + SOFTVERSION + SOFTDEVEL
+        environment_name = convertName(self.name(), upper=True)
+        txt += self.moduleGenerator.setEnvironment("SOFTROOT" + environment_name, "$root")
+        txt += self.moduleGenerator.setEnvironment("SOFTVERSION" + environment_name, self.version())
+        devel_path = os.path.join("$root", config.logPath(), "%s-%s-easybuild-devel" % (self.name(),
+            self.installversion()))
+        txt += self.moduleGenerator.setEnvironment("SOFTDEVEL" + environment_name, devel_path)
 
         txt += "\n"
         for (key, value) in self.getcfg('modextravars').items():
