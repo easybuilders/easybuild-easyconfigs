@@ -91,8 +91,8 @@ class EasyBuildLog(logging.Logger):
 loggingFormat = EB_MSG_PREFIX + ' %(asctime)s %(name)s %(levelname)s %(message)s'
 formatter = logging.Formatter(loggingFormat)
 
-# redirect standard handler of root logger to /dev/null
-logging.basicConfig(level=logging.ERROR, format=loggingFormat, filename='/dev/null')
+# redirect standard handler of root logger to stderr
+logging.basicConfig(level=logging.ERROR, format=loggingFormat, stream=sys.stderr)
 
 logging.setLoggerClass(EasyBuildLog)
 
@@ -121,11 +121,14 @@ def initLogger(name=None, version=None, debug=False, filename=None, typ='UNKNOWN
     # obtain root logger
     log = logging.getLogger()
 
-    # set log level
+    # determine log level
     if debug:
         defaultLogLevel = logging.DEBUG
     else:
         defaultLogLevel = logging.INFO
+
+    # set log level for root logger
+    log.setLevel(defaultLogLevel)
 
     if (name and version) or filename:
         if not filename:
