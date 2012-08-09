@@ -34,12 +34,13 @@ class SCOTCH(Application):
     def configure(self):
         """Configure SCOTCH build: locate the correct makefile, and copy this to a general Makefile.inc"""
 
-        if self.toolkit().comp_family() == toolkit.INTEL:
+        comp_fam = self.toolkit().comp_family()
+        if comp_fam == toolkit.INTEL:
             makefilename = 'Makefile.inc.x86-64_pc_linux2.icc'
-        elif self.toolkit().comp_family() == toolkit.GCC:
+        elif comp_fam == toolkit.GCC:
             makefilename = 'Makefile.inc.x86-64_pc_linux2'
         else:
-            self.log.error("Don't know how to handle toolkit %s." % self.toolkit().name)
+            self.log.error("Unknown compiler family used: %s" % comp_fam)
 
         # create Makefile.inc
         try:
