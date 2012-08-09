@@ -213,6 +213,18 @@ class EasyBlock:
 
         return deps
 
+    def toolkit_name(self):
+        """
+        Returns toolkit name.
+        """
+        return self['toolkit']['name']
+
+    def toolkit_version(self):
+        """
+        Returns toolkit name.
+        """
+        return self['toolkit']['version']
+
     def toolkit(self):
         """
         returns the Toolkit used
@@ -220,10 +232,9 @@ class EasyBlock:
         if self._toolkit:
             return self._toolkit
 
-        tk = self['toolkit']
-        tk = Toolkit(tk['name'], tk['version'])
+        tk = Toolkit(self.toolkit_name(), self.toolkit_version())
         if self['toolkitopts']:
-            tk.setOptions(self['toolkitopts'])
+            tk.set_options(self['toolkitopts'])
 
         self._toolkit = tk
         return self._toolkit
@@ -234,10 +245,10 @@ class EasyBlock:
         """
         prefix, suffix = self['versionprefix'], self['versionsuffix']
 
-        if self.toolkit().name == 'dummy':
+        if self.toolkit_name() == 'dummy':
             name = "%s%s%s" % (prefix, self['version'], suffix)
         else:
-            extra = "%s-%s" % (self.toolkit().name, self.toolkit().version)
+            extra = "%s-%s" % (self.toolkit_name(), self.toolkit_version())
             name = "%s%s-%s%s" % (prefix, self['version'], extra, suffix)
 
         return name
@@ -312,7 +323,7 @@ class EasyBlock:
             self.log.error('Dependency without version.')
 
         if not 'tk' in dependency:
-            dependency['tk'] = self.toolkit().getDependencyVersion(dependency)
+            dependency['tk'] = self.toolkit().get_dependency_version(dependency)
 
         return dependency
 
