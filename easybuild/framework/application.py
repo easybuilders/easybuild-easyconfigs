@@ -1088,7 +1088,6 @@ class Application:
         to the devel module file. So now you can module load $SOFTDEVELNAME.
 
         WARNING: you cannot unload using $SOFTDEVELNAME (for now: use module unload `basename $SOFTDEVELNAME`)
-
         """
         self.log.debug("loaded modules: %s" % Modules().loaded_modules())
         mod_gen = ModuleGenerator(self)
@@ -1186,7 +1185,7 @@ class Application:
         """
         txt = "\n"
 
-        ## SOFTROOT + SOFTVERSION + SOFTDEVEL
+        # SOFTROOT + SOFTVERSION + SOFTDEVEL
         environmentName = convertName(self.name(), upper=True)
         txt += self.moduleGenerator.setEnvironment("SOFTROOT" + environmentName, "$root")
         txt += self.moduleGenerator.setEnvironment("SOFTVERSION" + environmentName, self.version())
