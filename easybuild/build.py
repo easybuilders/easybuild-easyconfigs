@@ -339,6 +339,12 @@ def processEasyconfig(path, log, onlyBlocks=None, regtest_online=False):
 
         del eb
 
+        # ensure the pathname is equal to the module
+        base_name, ext = os.path.splitext(os.path.basename(spec))
+        module_name = "-".join(package['module'])
+        if base_name.lower() != module_name.lower():
+            log.error("easyconfig file: %s does not contain module %s" % (spec, module_name))
+
         packages.append(package)
 
     return packages
