@@ -276,7 +276,7 @@ def build_packages_in_parallel(packages, output_dir, script_dir):
         # remove from unresolvedDependencies in with_dependencies array
         for job in done_jobs:
             output_paths.append(job.env_vars['EASYBUILDTESTOUTPUT'])
-            name, version = job.name.split('-', 1)
+            name, version = job.module
             for pkg in with_dependencies:
                 try:
                     pkg['unresolvedDependencies'].remove((name, version))
@@ -373,6 +373,7 @@ def submit_job(package, output_dir, script_dir):
     easybuild_vars['EASYBUILDTESTOUTPUT'] = os.path.join(os.path.abspath(output_dir), name)
 
     job = PbsJob(command, name, easybuild_vars)
+    job.module = package['module']
     job.submit()
 
     return job
