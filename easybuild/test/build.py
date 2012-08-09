@@ -322,7 +322,7 @@ def aggregate_xml_in_dirs(base_dir, output_filename):
             root.firstChild.appendChild(testcase)
 
     output_file = open(output_filename, "w")
-    root.writexml(output_file, addindent="\t", newl="\n")
+    root.writexml(output_file)
     output_file.close()
 
 
