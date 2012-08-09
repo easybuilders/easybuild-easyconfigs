@@ -91,8 +91,9 @@ class EasyBuildLog(logging.Logger):
 logging_format = EB_MSG_PREFIX + ' %(asctime)s %(name)s %(levelname)s %(message)s'
 formatter = logging.Formatter(logging_format)
 
-# redirect standard handler of root logger to stderr
-logging.basicConfig(level=logging.ERROR, format=logging_format, stream=sys.stderr)
+# redirect standard handler of root logger to /dev/null
+# without this, everything is logged twice (one by root logger, once by descendant logger)
+logging.basicConfig(level=logging.ERROR, format=logging_format, filename='/dev/null')
 
 logging.setLoggerClass(EasyBuildLog)
 
