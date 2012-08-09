@@ -85,9 +85,9 @@ class LAPACK(Application):
         """
 
         # copy make.inc file from examples
-        if self.toolkit().toolkit_comp_family() == toolkit.GCC:
+        if self.toolkit().comp_family() == toolkit.GCC:
             makeinc = 'gfortran'
-        elif self.toolkit().toolkit_comp_family() == toolkit.INTEL:
+        elif self.toolkit().comp_family() == toolkit.INTEL:
             makeinc = 'ifort'
         else:
             self.log.error("Don't know which make.inc file to pick, unknown compiler being used...")
@@ -218,7 +218,8 @@ class LAPACK(Application):
         if not self.getcfg('test_only'):
             if not self.getcfg('sanityCheckPaths'):
                 self.setcfg('sanityCheckPaths',{
-                                                'files': ["lib/%s" % x for x in ["liblapack.a", "libtmglib.a"]],
+                                                'files': ["lib/%s" % x for x in ["liblapack.a",
+                                                                                 "libtmglib.a"]],
                                                 'dirs': []
                                                })
 

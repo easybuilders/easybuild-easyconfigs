@@ -54,9 +54,9 @@ class Boost(Application):
 
         # generate config depending on compiler used
         toolset = None
-        if self.toolkit().toolkit_comp_family() == toolkit.INTEL:
+        if self.toolkit().comp_family() == toolkit.INTEL:
             toolset = 'intel-linux'
-        elif self.toolkit().toolkit_comp_family() == toolkit.GCC:
+        elif self.toolkit().comp_family() == toolkit.GCC:
             toolset = 'gcc'
         else:
             self.log.error("Unknown compiler used, aborting.")

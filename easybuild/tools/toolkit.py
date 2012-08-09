@@ -579,7 +579,7 @@ class Toolkit:
         scalapack_mt_libs = ["scalapack%s" % libsfxsl, "solver" % libsfx] + blas_mt_libs + ["blacs_intelmpi%s" % libsfx]
 
         # adjust lib subdir if GCC is used
-        if self.toolkit_comp_family() == GCC:
+        if self.comp_family() == GCC:
             for libs in [blas_libs, blas_mt_libs, scalapack_libs]:
                 libs.replace('mkl_intel_lp64', 'mkl_gf_lp64')
 

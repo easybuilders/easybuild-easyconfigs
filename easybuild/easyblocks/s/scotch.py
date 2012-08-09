@@ -34,9 +34,9 @@ class SCOTCH(Application):
     def configure(self):
         """Configure SCOTCH build: locate the correct makefile, and copy this to a general Makefile.inc"""
 
-        if self.toolkit().toolkit_comp_family() == toolkit.INTEL:
+        if self.toolkit().comp_family() == toolkit.INTEL:
             makefilename = 'Makefile.inc.x86-64_pc_linux2.icc'
-        elif self.toolkit().toolkit_comp_family() == toolkit.GCC:
+        elif self.toolkit().comp_family() == toolkit.GCC:
             makefilename = 'Makefile.inc.x86-64_pc_linux2'
         else:
             self.log.error("Don't know how to handle toolkit %s." % self.toolkit().name)
@@ -80,7 +80,7 @@ class SCOTCH(Application):
         ccd = os.environ['MPICC']
 
         cflags = "-fPIC -O3 -DCOMMON_FILE_COMPRESS_GZ -DCOMMON_PTHREAD -DCOMMON_RANDOM_FIXED_SEED -DSCOTCH_RENAME -DSCOTCH_PTHREAD"
-        if self.toolkit().toolkit_comp_family() == toolkit.GCC:
+        if self.toolkit().comp_family() == toolkit.GCC:
             cflags += " -Drestrict=__restrict"
         else:
             cflags = " -restrict -DIDXSIZE64"
