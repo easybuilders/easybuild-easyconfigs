@@ -327,7 +327,7 @@ class Application:
             self.log.warning("Loaded modules detected: %s" % loadedmods)
 
         # Do all dependencies have a toolkit version
-        self.toolkit().addDependencies(self.cfg.dependencies())
+        self.toolkit().add_dependencies(self.cfg.dependencies())
         if not len(self.cfg.dependencies()) == len(self.toolkit().dependencies):
             self.log.debug("dep %s (%s)" % (len(self.cfg.dependencies()), self.cfg.dependencies()))
             self.log.debug("tk.dep %s (%s)" % (len(self.toolkit().dependencies), self.toolkit().dependencies))
@@ -678,13 +678,6 @@ class Application:
             finally:
                 self.runstep('cleanup', [self.cleanup])
 
-            # write changes to the environment to logdir
-            logdir = os.path.join(self.installdir, config.logPath())
-            if not os.path.isdir(logdir):
-                os.makedirs(logdir)
-
-            env.write_changes(os.path.join(logdir, "easybuild-env-vars.sh"))
-
         except StopException:
             pass
 
@@ -948,9 +941,21 @@ class Application:
             run_cmd(cmd, log_all=True, simple=True)
     def toolkit(self):
         """
-        The toolkit used to build this Application
+        Toolkit used to build this Application
         """
         return self.cfg.toolkit()
+
+    def toolkit_name(self):
+        """
+        Name of toolkit used to build this Application
+        """
+        return self.cfg.toolkit_name()
+
+    def toolkit_version(self):
+        """
+        Version of toolkit used to build this Application
+        """
+        return self.cfg.toolkit_version()
 
     def make_install(self):
         """
@@ -967,11 +972,11 @@ class Application:
         if not self.build_in_installdir:
             # make a unique build dir
             ## if a tookitversion starts with a -, remove the - so prevent a -- in the path name
-            tkversion = self.toolkit().version
+            tkversion = self.toolkit_version()
             if tkversion.startswith('-'):
                 tkversion = tkversion[1:]
 
-            extra = "%s%s-%s%s" % (self.getcfg('versionprefix'), self.toolkit().name, tkversion, self.getcfg('versionsuffix'))
+            extra = "%s%s-%s%s" % (self.getcfg('versionprefix'), self.toolkit_name(), tkversion, self.getcfg('versionsuffix'))
             localdir = os.path.join(buildPath(), self.name(), self.version(), extra)
 
             ald = os.path.abspath(localdir)
@@ -1083,7 +1088,50 @@ class Application:
 
         self.log.info("Added modulefile: %s" % (self.moduleGenerator.filename))
 
+        if not fake:
+            self.make_devel_module()
+
         return modpath
+
+    def make_devel_module(self):
+        """
+        Create a develop module file which sets environment based on the build
+        Usage: module load name, which loads the module you want to use. $SOFTDEVELNAME should then be the full path
+        to the devel module file. So now you can module load $SOFTDEVELNAME.
+
+        WARNING: you cannot unload using $SOFTDEVELNAME (for now: use module unload `basename $SOFTDEVELNAME`)
+        """
+        self.log.debug("loaded modules: %s" % Modules().loaded_modules())
+        mod_gen = ModuleGenerator(self)
+
+        header = "#%Module\n"
+
+        env_txt = ""
+        for (key, val) in env.changes.items():
+            # check if non-empty string
+            # TODO: add unset for empty vars?
+            if val.strip():
+                env_txt += mod_gen.setEnvironment(key, val)
+
+        load_txt = ""
+        # capture all the SOFTDEVEL vars
+        # these should be all the dependencies and we should load them
+        for key in os.environ:
+            if key.startswith("SOFTDEVEL"):
+                path = os.environ[key]
+                if os.path.isfile(path):
+                    name, version =  path.rsplit('/', 1)
+                    load_txt += mod_gen.loadModule(name, version)
+
+        output_dir = os.path.join(self.installdir, config.logPath())
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
+
+        devel_module = open(os.path.join(output_dir, "%s-%s-easybuild-devel" % (self.name(), self.installversion())), "w")
+        devel_module.write(header)
+        devel_module.write(load_txt)
+        devel_module.write(env_txt)
+        devel_module.close()
 
     def make_module_description(self):
         """
@@ -1098,9 +1146,9 @@ class Application:
         load = unload = ''
 
         # Load toolkit
-        if self.toolkit().name != 'dummy':
-            load += self.moduleGenerator.loadModule(self.toolkit().name, self.toolkit().version)
-            unload += self.moduleGenerator.unloadModule(self.toolkit().name, self.toolkit().version)
+        if self.toolkit_name() != 'dummy':
+            load += self.moduleGenerator.loadModule(self.toolkit_name(), self.toolkit_version())
+            unload += self.moduleGenerator.unloadModule(self.toolkit_name(), self.toolkit_version())
 
         # Load dependencies
         builddeps = self.cfg.builddependencies()
@@ -1149,10 +1197,13 @@ class Application:
         """
         txt = "\n"
 
-        ## SOFTROOT + SOFTVERSION
-        environmentName = convertName(self.name(), upper=True)
-        txt += self.moduleGenerator.setEnvironment("SOFTROOT" + environmentName, "$root")
-        txt += self.moduleGenerator.setEnvironment("SOFTVERSION" + environmentName, self.version())
+        # SOFTROOT + SOFTVERSION + SOFTDEVEL
+        environment_name = convertName(self.name(), upper=True)
+        txt += self.moduleGenerator.setEnvironment("SOFTROOT" + environment_name, "$root")
+        txt += self.moduleGenerator.setEnvironment("SOFTVERSION" + environment_name, self.version())
+        devel_path = os.path.join("$root", config.logPath(), "%s-%s-easybuild-devel" % (self.name(),
+            self.installversion()))
+        txt += self.moduleGenerator.setEnvironment("SOFTDEVEL" + environment_name, devel_path)
 
         txt += "\n"
         for (key, value) in self.getcfg('modextravars').items():
@@ -1595,6 +1646,18 @@ class ApplicationPackage:
         Toolkit used to build this package
         """
         return self.master.toolkit()
+
+    def toolkit_name(self):
+        """
+        Name of toolkit used to build this package
+        """
+        return self.master.toolkit_name()
+
+    def toolkit_version(self):
+        """
+        Version of toolkit used to build this package
+        """
+        return self.master.toolkit_version()
 
     def sanitycheck(self):
         """
