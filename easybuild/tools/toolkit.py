@@ -91,7 +91,7 @@ class Toolkit:
 
         return Modules().exists(name, version)
 
-    def setOptions(self, options):
+    def set_options(self, options):
         """ Process toolkit options """
         for opt in options.keys():
             ## Only process supported opts
@@ -100,7 +100,7 @@ class Toolkit:
             else:
                 self.log.warning("Undefined toolkit option %s specified." % opt)
 
-    def getDependencyVersion(self, dependency):
+    def get_dependency_version(self, dependency):
         """ Generate a version string for a dependency on a module using this toolkit """
         # Add toolkit to version string
         toolkit = ''
@@ -126,13 +126,13 @@ class Toolkit:
                 self.log.error('No toolkit version for dependency name %s (suffix %s) found'
                            % (dependency['name'], "%s%s" % (toolkit, suffix)))
 
-    def addDependencies(self, dependencies):
+    def add_dependencies(self, dependencies):
         """ Verify if the given dependencies exist and add them """
         mod = Modules()
         self.log.debug("Adding toolkit dependencies")
         for dep in dependencies:
             if not 'tk' in dep:
-                dep['tk'] = self.getDependencyVersion(dep)
+                dep['tk'] = self.get_dependency_version(dep)
 
             if not mod.exists(dep['name'], dep['tk']):
                 self.log.error('No module found for dependency %s/%s' % (dep['name'], dep['tk']))
@@ -170,7 +170,7 @@ class Toolkit:
         modules.load()
 
         ## Determine direct toolkit dependencies, so we can prepare for them
-        self.toolkit_deps = modules.dependencies_for(self.name, self.version, depth=1)
+        self.toolkit_deps = modules.dependencies_for(self.name, self.version, depth=0)
         self.log.debug('List of direct toolkit dependencies: %s' % self.toolkit_deps)
 
         ## Generate the variables to be set

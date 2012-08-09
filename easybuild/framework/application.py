@@ -327,7 +327,7 @@ class Application:
             self.log.warning("Loaded modules detected: %s" % loadedmods)
 
         # Do all dependencies have a toolkit version
-        self.toolkit().addDependencies(self.cfg.dependencies())
+        self.toolkit().add_dependencies(self.cfg.dependencies())
         if not len(self.cfg.dependencies()) == len(self.toolkit().dependencies):
             self.log.debug("dep %s (%s)" % (len(self.cfg.dependencies()), self.cfg.dependencies()))
             self.log.debug("tk.dep %s (%s)" % (len(self.toolkit().dependencies), self.toolkit().dependencies))
@@ -941,9 +941,21 @@ class Application:
             run_cmd(cmd, log_all=True, simple=True)
     def toolkit(self):
         """
-        The toolkit used to build this Application
+        Toolkit used to build this Application
         """
         return self.cfg.toolkit()
+
+    def toolkit_name(self):
+        """
+        Name of toolkit used to build this Application
+        """
+        return self.cfg.toolkit_name()
+
+    def toolkit_version(self):
+        """
+        Version of toolkit used to build this Application
+        """
+        return self.cfg.toolkit_version()
 
     def make_install(self):
         """
@@ -960,11 +972,11 @@ class Application:
         if not self.build_in_installdir:
             # make a unique build dir
             ## if a tookitversion starts with a -, remove the - so prevent a -- in the path name
-            tkversion = self.toolkit().version
+            tkversion = self.toolkit_version()
             if tkversion.startswith('-'):
                 tkversion = tkversion[1:]
 
-            extra = "%s%s-%s%s" % (self.getcfg('versionprefix'), self.toolkit().name, tkversion, self.getcfg('versionsuffix'))
+            extra = "%s%s-%s%s" % (self.getcfg('versionprefix'), self.toolkit_name(), tkversion, self.getcfg('versionsuffix'))
             localdir = os.path.join(buildPath(), self.name(), self.version(), extra)
 
             ald = os.path.abspath(localdir)
@@ -1134,9 +1146,9 @@ class Application:
         load = unload = ''
 
         # Load toolkit
-        if self.toolkit().name != 'dummy':
-            load += self.moduleGenerator.loadModule(self.toolkit().name, self.toolkit().version)
-            unload += self.moduleGenerator.unloadModule(self.toolkit().name, self.toolkit().version)
+        if self.toolkit_name() != 'dummy':
+            load += self.moduleGenerator.loadModule(self.toolkit_name(), self.toolkit_version())
+            unload += self.moduleGenerator.unloadModule(self.toolkit_name(), self.toolkit_version())
 
         # Load dependencies
         builddeps = self.cfg.builddependencies()
@@ -1634,6 +1646,18 @@ class ApplicationPackage:
         Toolkit used to build this package
         """
         return self.master.toolkit()
+
+    def toolkit_name(self):
+        """
+        Name of toolkit used to build this package
+        """
+        return self.master.toolkit_name()
+
+    def toolkit_version(self):
+        """
+        Version of toolkit used to build this package
+        """
+        return self.master.toolkit_version()
 
     def sanitycheck(self):
         """
