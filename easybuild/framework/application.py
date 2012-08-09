@@ -1082,6 +1082,14 @@ class Application:
         return modpath
 
     def make_devel_module(self):
+        """
+        Create a develop module file which sets environment based on the build
+        Usage: module load name, which loads the module you want to use. $SOFTDEVELNAME should then be the full path
+        to the devel module file. So now you can module load $SOFTDEVELNAME.
+
+        WARNING: you cannot unload using $SOFTDEVELNAME (for now: use module unload `basename $SOFTDEVELNAME`)
+
+        """
         self.log.debug("loaded modules: %s" % Modules().loaded_modules())
         mod_gen = ModuleGenerator(self)
 
