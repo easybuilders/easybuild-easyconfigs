@@ -101,7 +101,7 @@ class CP2K(Application):
         # set compilers options according to toolkit config
         # full debug: -g -traceback -check all -fp-stack-check
         # -g links to mpi debug libs
-        if self.tk.opts['debug']:
+        if self.toolkit().opts['debug']:
             self.debug = '-g'
             self.log.info("Debug build")
         if self.toolkit().opts['pic']:
