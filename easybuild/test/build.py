@@ -46,6 +46,7 @@ this test will distinguish between the different phases in the build:
 
 """
 import copy
+import glob
 import logging
 import platform
 import os
@@ -170,7 +171,7 @@ def build_packages(packages, output_dir):
             instance = get_instance(pkg)
             apps.append(instance)
         except EasyBuildError, err:
-            test_results.append((spec, 'initialization', err))
+            test_results.append((pkg['spec'], 'initialization', err))
 
 
     base_dir = os.getcwd()
@@ -302,9 +303,14 @@ def build_packages_in_parallel(packages, output_dir, script_dir):
     if len(with_dependencies) > 0:
         log.error("For some reason, you still have unresolved dependencies: %s" % with_dependencies)
 
+    output_file = os.path.join(output_dir, "easybuild-parallel-results.xml")
+    aggregate_xml_in_dirs(output_paths, output_file)
 
-    # capture xml output and generate a single one
-    # TODO: move into proper function (used 2 times)
+def aggregate_xml_in_dirs(dirs, output_filename):
+    """
+    finds all the xml files in the dirs and takes the testcase attribute out of them.
+    These are then put in a single output file
+    """
     dom = xml.getDOMImplementation()
     root = dom.createDocument(None, "testsuite", None)
     properties = root.createElement("properties")
@@ -320,7 +326,7 @@ def build_packages_in_parallel(packages, output_dir, script_dir):
 
     root.firstChild.appendChild(properties)
 
-    for dir in output_paths:
+    for dir in dirs:
         # take the first one (should be only one present)
         xml_file = glob.glob(os.path.join(dir, "*.xml"))[0]
         dom = xml.parse(xml_file)
@@ -328,9 +334,10 @@ def build_packages_in_parallel(packages, output_dir, script_dir):
         testcase = dom.getElementsByTagName("testcase")[0]
         root.firstChild.appendChild(testcase)
 
-    output_file = open(os.path.join(output_dir, "easybuild-parallel-results.xml"), "w")
+    output_file = open(output_filename)
     root.writexml(output_file, addindent="\t", newl="\n")
     output_file.close()
+
 
 def prepare_package(pkg):
     """ prepare for building """
