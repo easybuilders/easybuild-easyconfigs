@@ -1186,12 +1186,12 @@ class Application:
         txt = "\n"
 
         # SOFTROOT + SOFTVERSION + SOFTDEVEL
-        environmentName = convertName(self.name(), upper=True)
-        txt += self.moduleGenerator.setEnvironment("SOFTROOT" + environmentName, "$root")
-        txt += self.moduleGenerator.setEnvironment("SOFTVERSION" + environmentName, self.version())
+        environment_name = convertName(self.name(), upper=True)
+        txt += self.moduleGenerator.setEnvironment("SOFTROOT" + environment_name, "$root")
+        txt += self.moduleGenerator.setEnvironment("SOFTVERSION" + environment_name, self.version())
         devel_path = os.path.join("$root", config.logPath(), "%s-%s-easybuild-devel" % (self.name(),
             self.installversion()))
-        txt += self.moduleGenerator.setEnvironment("SOFTDEVEL" + environmentName, devel_path)
+        txt += self.moduleGenerator.setEnvironment("SOFTDEVEL" + environment_name, devel_path)
 
         txt += "\n"
         for key, value in self.getcfg('modextravars').items():
