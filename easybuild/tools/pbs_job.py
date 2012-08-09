@@ -57,6 +57,12 @@ class PbsJob:
             self.log.error("Could not connect to the default pbs server, is this correctly configured?")
 
         self.jobid = None
+        self.deps = []
+
+    def add_dependencies(self, job_ids):
+        """ add dependencies to this job. """
+        self.deps.extend(job_ids)
+
 
     def submit(self):
         """Submit the jobscript txt, set self.jobid"""
@@ -80,6 +86,13 @@ class PbsJob:
             resourse_attributes[idx].value = v
             idx += 1
         pbs_attributes.extend(resourse_attributes)
+
+        # add job dependencies to attributes
+        if self.deps:
+            deps_attributes = pbs.new_attropl(1)
+            deps_attributes[0].name = pbs.ATTR_depend
+            deps_attributes[0].value = "depend=%s" % ",".join(["afterok:%s" % dep for dep in self.deps])
+            pbs_attributes.extend(deps_attributes)
 
         ## add a bunch of variables (added by qsub)
         ## also set PBS_O_WORKDIR to os.getcwd()
