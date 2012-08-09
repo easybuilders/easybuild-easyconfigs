@@ -88,11 +88,11 @@ class EasyBuildLog(logging.Logger):
 
 
 # set format for logger
-loggingFormat = EB_MSG_PREFIX + ' %(asctime)s %(name)s %(levelname)s %(message)s'
-formatter = logging.Formatter(loggingFormat)
+logging_format = EB_MSG_PREFIX + ' %(asctime)s %(name)s %(levelname)s %(message)s'
+formatter = logging.Formatter(logging_format)
 
 # redirect standard handler of root logger to stderr
-logging.basicConfig(level=logging.ERROR, format=loggingFormat, stream=sys.stderr)
+logging.basicConfig(level=logging.ERROR, format=logging_format, stream=sys.stderr)
 
 logging.setLoggerClass(EasyBuildLog)
 
