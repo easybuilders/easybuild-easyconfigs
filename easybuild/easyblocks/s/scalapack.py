@@ -112,9 +112,9 @@ class ScaLAPACK(Application):
                 noopt += " -O0"
             if self.toolkit().opts['pic']:
                 noopt += " -fPIC"
-            extra_makeopts += 'F77="%(f77)s"' %  mpif77
-            extra_makeopts += ' CC="%(cc)s"' % mpicc
-            extra_makeopts += ' NOOPT="%(noopt)s"' % noopt
+            extra_makeopts += 'F77="%s"' %  mpif77
+            extra_makeopts += ' CC="%s"' % mpicc
+            extra_makeopts += ' NOOPT="%s"' % noopt
             extra_makeopts += ' CCFLAGS="-O3" '
 
             # set interface
