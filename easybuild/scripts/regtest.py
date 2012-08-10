@@ -72,6 +72,7 @@ log = getLog("ParallelBuild")
 test_results = []
 build_stopped = {}
 
+
 def main():
     """ main entry point """
     # assume default config path
