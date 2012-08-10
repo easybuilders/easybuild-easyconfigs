@@ -45,7 +45,8 @@ def build_packages_in_parallel(build_command, packages, output_dir):
 
         # the new job will only depend on already submitted jobs
         new_job = create_job(build_command, pkg, output_dir)
-        job_deps = [job_module_dict[dep] for dep in pkg['unresolvedDependencies']]
+        # Sometimes unresolvedDependencies will contain things, not needed to be build.
+        job_deps = [job_module_dict[dep] for dep in pkg['unresolvedDependencies'] if dep in job_module_dict]
         new_job.add_dependencies(job_deps)
         new_job.submit()
         # update dictionary
