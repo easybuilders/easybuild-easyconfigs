@@ -60,7 +60,11 @@ class PbsJob:
         self.deps = []
 
     def add_dependencies(self, job_ids):
-        """ add dependencies to this job. """
+        """
+        Add dependencies to this job.
+        job_ids is an array of job ids (e.g.: 8453.master2.gengar....)
+        if only one job_id is provided this function will also work
+        """
         if isinstance(job_ids, str):
             job_ids = list(job_ids)
 

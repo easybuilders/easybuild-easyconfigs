@@ -19,7 +19,10 @@
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
 """
-module for doing parallel builds
+module for doing parallel builds. This uses a PBS like cluster. You should be able to submit jobs (which can have
+dependencies)
+
+Support for PBS is provided via the PbsJob class. If you want you could create other job classes and use them here.
 """
 import os
 import re
@@ -30,12 +33,12 @@ from easybuild.tools.pbs_job import PbsJob
 
 def build_packages_in_parallel(build_command, packages, output_dir, log):
     """
-    list is a list of packages which can be build! (e.g. they have no unresolved dependencies)
+    packages is a list of packages which can be build! (e.g. they have no unresolved dependencies)
     this function will build them in parallel by submitting jobs
     """
     log.info("going to build these packages in parallel: %s", packages)
     job_module_dict = {}
-    # dependencies have already been resolved this means i can linearly walk over the list and use previous job id's
+    # dependencies have already been resolved this means I can linearly walk over the list and use previous job id's
     for pkg in packages:
         # This is very important, otherwise we might have race conditions
         # e.g. GCC-4.5.3 finds cloog.tar.gz but it was incorrectly downloaded by GCC-4.6.3
@@ -54,9 +57,12 @@ def build_packages_in_parallel(build_command, packages, output_dir, log):
         job_module_dict[new_job.module] = new_job.jobid
 
 
-def create_job(build_command, package, output_dir):
+def create_job(build_command, package, output_dir=""):
     """
-    creates a job, to build a *single* package
+    Creates a job, to build a *single* package
+    build_command is a format string in which a full path to an eb file will be substituted
+    package should be in the format as processEasyConfig returns them
+    output_dir is an optional path. EASYBUILDTESTOUTPUT will be set inside the job with this variable
     returns the job
     """
     # create command based on build_command template
@@ -86,7 +92,13 @@ def create_job(build_command, package, output_dir):
 
 
 def get_instance(package, log):
-    """ get an instance for this package """
+    """
+    Get an instance for this package
+    package is in the format provided by processEasyConfig
+    log is a logger object
+
+    returns an instance of Application (or subclass thereof)
+    """
     spec = package['spec']
     name = package['module'][0]
 

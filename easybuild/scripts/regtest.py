@@ -98,7 +98,7 @@ def main():
 
     # Create base directory inside the current directory. This will be used to place
     # all log files and the test output as xml
-    basename = "easybuild-test-%s" % datetime.now().strftime("%d-%m-%Y-%H:%M:%S")
+    basename = "easybuild-test-%s" % datetime.now().strftime("%Y%m%d%H%M%S")
     if opts.directory:
         output_dir = opts.directory
     elif "EASYBUILDTESTOUTPUT" in os.environ:
@@ -232,8 +232,8 @@ def build_packages(packages, output_dir):
 
 def aggregate_xml_in_dirs(base_dir, output_filename):
     """
-    finds all the xml files in the dirs and takes the testcase attribute out of them.
-    These are then put in a single output file
+    Finds all the xml files in the dirs and takes the testcase attribute out of them.
+    These are then put in a single output file.
     """
     dom = xml.getDOMImplementation()
     root = dom.createDocument(None, "testsuite", None)
@@ -264,6 +264,7 @@ def aggregate_xml_in_dirs(base_dir, output_filename):
             # only one should be present, we are just discarding the rest
             testcase = dom.getElementsByTagName("testcase")[0]
             root.firstChild.appendChild(testcase)
+
             total += 1
             if not testcase.getElementsByTagName("failure"):
                 succes += 1
