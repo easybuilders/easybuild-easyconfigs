@@ -117,6 +117,14 @@ class SuiteSparse(Application):
                 except Exception, err:
                     self.log.error("Failed to make symbolic link from %s to %s: %s" % (src, dst, err))
 
+    def make_module_req_guess(self):
+        """Add UFconfig dir to CPATH so UFconfig include file is found."""
+
+        guesses = Application.make_module_req_guess(self)
+        guesses.update({'CPATH': ["UFconfig"]})
+
+        return guesses
+
     def sanitycheck(self):
 
         if not self.getcfg('sanityCheckPaths'):
@@ -124,7 +132,7 @@ class SuiteSparse(Application):
                                                                                                   "COLAMD", "CXSparse", "KLU", "LDL", "RBio",
                                                                                                   "SPQR", "UMFPACK"]] +
                                                     ["CSparse3/lib/libcsparse.a"],
-                                            'dirs':[ "MATLAB_Tools"]
+                                            'dirs':["MATLAB_Tools"]
                                            })
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))

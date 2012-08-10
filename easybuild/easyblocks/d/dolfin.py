@@ -34,7 +34,8 @@ class DOLFIN(CMakePythonPackage):
         """Configure Dolfin build."""
 
         # make sure that required dependencies are loaded
-        deps = ['Armadillo', 'Boost', 'CGAL', 'ParMETIS', 'Python', 'SCOTCH', 'SuiteSparse', 'UFC']
+        deps = ['Armadillo', 'Boost', 'CGAL', 'ParMETIS', 'PETSc', 'Python', 'SCOTCH',
+                'SLEPc', 'SuiteSparse', 'UFC']
         depsdict = {}
         for dep in deps:
             deproot = get_software_root(dep)
@@ -88,15 +89,24 @@ class DOLFIN(CMakePythonPackage):
         self.updatecfg('configopts', umfpack_params % {'sp':suitesparse})
 
         # ParMETIS and SCOTCH
-        self.updatecfg('configopts', ' -DPARMETIS_DIR="%s"' % depsdict['ParMETIS'])
-        self.updatecfg('configopts', ' -DSCOTCH_DIR="%s" -DSCOTCH_DEBUG:BOOL=ON' % depsdict['SCOTCH'])
+        self.updatecfg('configopts', '-DPARMETIS_DIR="%s"' % depsdict['ParMETIS'])
+        self.updatecfg('configopts', '-DSCOTCH_DIR="%s" -DSCOTCH_DEBUG:BOOL=ON' % depsdict['SCOTCH'])
 
         # BLACS and LAPACK 
-        self.updatecfg('configopts', ' -DBLAS_LIBRARIES:PATH="$LIBBLAS"')
-        self.updatecfg('configopts', ' -DLAPACK_LIBRARIES:PATH="$LIBLAPACK"')
+        self.updatecfg('configopts', '-DBLAS_LIBRARIES:PATH="%s"' % os.getenv('LIBBLAS'))
+        self.updatecfg('configopts', '-DLAPACK_LIBRARIES:PATH="%s"' % os.getenv('LIBLAPACK'))
 
         # CGAL
-        self.updatecfg('configopts', ' -DCGAL_DIR:PATH="%s"' % depsdict['CGAL'])
+        self.updatecfg('configopts', '-DCGAL_DIR:PATH="%s"' % depsdict['CGAL'])
+
+        # PETSc
+        # need to specify PETSC_ARCH explicitely (env var alone is not sufficient)
+        for env_var in ["PETSC_DIR", "PETSC_ARCH"]:
+            val = os.getenv(env_var)
+            if val:
+                self.updatecfg('configopts', '-D%s=%s' % (env_var, val))
+            else:
+                self.log.error("Environment variable %s not set?!?" % env_var)
 
         # set correct openmp options
         openmp = self.toolkit().get_openmp_flag()

@@ -374,7 +374,8 @@ class Toolkit:
         """
 
         blacs = get_software_root("BLACS")
-        blacs_libs = ["blacs", "blacsCinit", "blacsF77init"]
+        # order matters!
+        blacs_libs = ["blacsCinit", "blacsF77init", "blacs"]
 
         self.vars['BLACS_INC'] = os.path.join(blacs, "include")
         self.vars['BLACS_LIB_DIR'] = os.path.join(blacs, "lib")
@@ -400,12 +401,22 @@ class Toolkit:
         Prepare for FFTW library
         """
 
+        fftw = get_software_root('FFTW')
+
         suffix = ''
         if get_software_version('FFTW').startswith('3.'):
             suffix = '3'
-        self.vars['LIBFFT'] = " -lfftw%s " % suffix
+        # order matters!
+        fftw_libs = []
         if self.opts['usempi']:
-            self.vars['LIBFFT'] += " -lfftw%s_mpi " % suffix
+            fftw_libs.append("fftw%s_mpi" % suffix)
+        fftw_libs.append("fftw%s" % suffix)
+
+        self.vars['LIBFFT'] = ','.join(["-l%s" % x for x in fftw_libs])
+
+        self.vars['FFTW_INC'] = os.path.join(fftw, "include")
+        self.vars['FFTW_LIB_DIR'] = os.path.join(fftw, "lib")
+        self.vars['FFTW_STATIC_LIBS'] = ','.join(["lib%s.a" % x for x in fftw_libs])
 
         self._addDependencyVariables(['FFTW'])
 
@@ -594,18 +605,18 @@ class Toolkit:
         self.vars['LIBBLAS_MT'] =  ' '.join(prefix, ' '.join(["-lmkl_%s" % x for x in blas_mt_libs]), suffix)
         self.vars['LIBLAPACK_MT'] = self.vars['LIBBLAS_MT']
 
-        # determine BLAS/LAPACK library dir
-        bl_libdir = None
+        # determine BLACS/BLAS/LAPACK/FFTW library dir
+        libs_dir = None
         for ld in mklld:
             fld = os.path.join(mklroot, ld)
             if os.path.isdir(fld):
-                bl_libdir = fld
-        if not bl_libdir:
+                libs_dir = fld
+        if not libs_dir:
             self.log.error("")
         else:
-            self.vars['BLAS_LIB_DIR'] = bl_libdir
-            self.vars['LAPACK_LIB_DIR'] = bl_libdir
-            self.vars['BLAS_LAPACK_LIB_DIR'] = bl_libdir
+            self.vars['BLAS_LIB_DIR'] = libs_dir
+            self.vars['LAPACK_LIB_DIR'] = libs_dir
+            self.vars['BLAS_LAPACK_LIB_DIR'] = libs_dir
 
         # BLAS/LAPACK library
         self.vars['BLAS_STATIC_LIBS'] = ','.join(blas_libs)
@@ -619,13 +630,13 @@ class Toolkit:
 
         # BLACS library
         self.vars['BLACS_INC'] = os.path.join(mklroot, "mkl", "include")
-        self.vars['BLACS_LIB_DIR'] = bl_libdir
+        self.vars['BLACS_LIB_DIR'] = libs_dir
         self.vars['BLACS_STATIC_LIBS'] = ','.join(["libmkl_%s.a" % x for x in blacs_libs])
         self.vars['BLACS_MT_STATIC_LIBS'] = self.vars['BLACS_STATIC_LIBS']
 
         # sequential ScaLAPACK
         self.vars['SCALAPACK_INC'] = os.path.join(mklroot, "mkl", "include")
-        self.vars['SCALAPACK_LIB_DIR'] = bl_libdir
+        self.vars['SCALAPACK_LIB_DIR'] = libs_dir
 
         suffix = "-Wl,--end-group -Wl:-Bdynamic"
         self.vars['LIBSCALAPACK'] = ' '.join((prefix, ' '.join(["-lmkl_%s" % x for x in scalapack_libs]), suffix))
@@ -640,7 +651,13 @@ class Toolkit:
         fftwsuff = ""
         if self.opts['pic']:
             fftwsuff = "_pic"
-        self.vars['LIBFFT'] = "-Wl:-Bstatic -lfftw3xc_intel%s -Wl:-Bdynamic" % fftwsuff
+        fftw_libs = ["fftw3xc_intel%s" % fftwsuff]
+        self.vars['LIBFFT'] = ' '.join("-Wl:-Bstatic",
+                                       ' '.join(["-%s" % x for x in fftw_libs]),
+                                       "-Wl:-Bdynamic")
+        self.vars['FFTW_INC'] = os.path.join(mklroot, "mkl", "include", "fftw")
+        self.vars['FFTW_LIB_DIR'] = libs_dir
+        self.vars['FFTW_STATIC_LIBS'] = ','.join(["libmkl_%s.a" % x for x in fftw_libs])
 
         # some tools (like pkg-utils) don't handle groups well, so pack them if required
         if self.opts['packed-groups']:
@@ -814,7 +831,7 @@ class Toolkit:
                                                             self.vars.get('LIBSCALAPACK_MT', ''))
 
         self.vars['SCALAPACK_INC'] = os.path.join(scalapack, "include")
-        self.vars['SCALAPACK_LIB_DIR'] = os.path.join(scalapack, "include")
+        self.vars['SCALAPACK_LIB_DIR'] = os.path.join(scalapack, "lib")
         self.vars['SCALAPACK_STATIC_LIBS'] = "libscalapack.a"
         self.vars['SCALAPACK_MT_STATIC_LIBS'] = self.vars['SCALAPACK_STATIC_LIBS']
 
