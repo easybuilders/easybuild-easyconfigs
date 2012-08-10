@@ -42,6 +42,7 @@ from optparse import OptionParser
 import easybuild  # required for VERBOSE_VERSION
 import easybuild.tools.config as config
 import easybuild.tools.filetools as filetools
+import easybuild.tools.parallelbuild as parbuild
 from easybuild.framework.application import get_class
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.tools.build_log import EasyBuildError, initLogger, \
@@ -50,7 +51,6 @@ from easybuild.tools.class_dumper import dumpClasses
 from easybuild.tools.modules import Modules, searchModule
 from easybuild.tools.config import getRepository
 from easybuild.tools import systemtools
-from easybuild.tools.pbs_job import PbsJob
 
 
 # applications use their own logger, we need to tell them to debug or not
@@ -98,7 +98,6 @@ def add_build_options(parser):
     strictness_options = ['ignore', 'warn', 'error']
     parser.add_option("--strict", type="choice", choices=strictness_options, help="set strictness \
                         level (possible levels: %s" % ', '.join(strictness_options))
-    # only allow --job so we can filter it afterwards
     parser.add_option("--job", action="store_true", help="will submit the build as a job")
 
 
@@ -193,11 +192,6 @@ def main():
     if options.strict:
         filetools.strictness = options.strict
 
-    if options.job:
-        submit_build_job(log)
-        log.info("submitted job, exiting now")
-        sys.exit(0)
-
     ## Read easyconfig files
     packages = []
     if len(paths) == 0:
@@ -241,6 +235,13 @@ def main():
     else:
         print_msg("No packages left to be built.", log)
         orderedSpecs = []
+
+    if options.job:
+        curdir = os.getcwd()
+        command = "cd %s && python %s %%s -d"
+        parbuild.build_packages_in_parallel(command, packages, "easybuild-build")
+        log.info("Submitted parallel build jobs, exiting now")
+        sys.exit(0)
 
     ## Build software, will exit when errors occurs (except when regtesting)
     correct_built_cnt = 0
@@ -706,24 +707,6 @@ def build(module, options, log, origEnviron, exitOnFailure=True):
             return (False, applicationLog)
     else:
         return (True, applicationLog)
-
-
-def submit_build_job(log):
-    """
-    will submit the current command (sys.argv) without the --job paramater as a job
-    any environment variable that is been set that starts with EASYBUILD will be passed on the job
-    """
-    command = " ".join([arg for arg in sys.argv if arg != '--job'])
-
-    easybuild_vars = {}
-    for name in os.environ:
-        if name.startswith("EASYBUILD"):
-            easybuild_vars[name] = os.environ[name]
-
-    name = "easybuild-%s" % datetime.now().strftime("%m-%d-%Y-%H:%M:%S")
-    job = PbsJob(command, name, easybuild_vars)
-    job.submit()
-    log.info("job submitted. info: %s", job.info())
 
 
 if __name__ == "__main__":
