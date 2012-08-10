@@ -160,7 +160,7 @@ class FileRepository(Repository):
 
             # append a line to the eb file so we don't have git merge conflicts
             if not previous:
-                statstemplate = "\n#Build statistics\nbuildstats=[%s]t\n"
+                statstemplate = "\n#Build statistics\nbuildstats=[%s]\n"
             else:
                 statstemplate = "\nbuildstats.append(%s)\n"
 
