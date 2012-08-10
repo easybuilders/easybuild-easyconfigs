@@ -1104,6 +1104,7 @@ class Application:
             self.log.debug("Loading module failed: %s" % err)
             self.log.debug("loaded modules: %s" % Modules().loaded_modules())
 
+        mod_gen = ModuleGenerator(self)
         header = "#%Module\n"
 
         env_txt = ""
