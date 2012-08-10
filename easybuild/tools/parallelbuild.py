@@ -44,11 +44,13 @@ def build_packages_in_parallel(build_command, packages, output_dir):
         prepare_package(pkg)
 
         # the new job will only depend on already submitted jobs
+        log.info("creating job for pkg: %s" % str(pkg))
         new_job = create_job(build_command, pkg, output_dir)
         # Sometimes unresolvedDependencies will contain things, not needed to be build.
         job_deps = [job_module_dict[dep] for dep in pkg['unresolvedDependencies'] if dep in job_module_dict]
         new_job.add_dependencies(job_deps)
         new_job.submit()
+        log.info("job for module %s has been submitted (job id: %s)" % (job.module, job.jobid))
         # update dictionary
         job_module_dict[new_job.module] = new_job.jobid
 
