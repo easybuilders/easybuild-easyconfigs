@@ -129,8 +129,11 @@ class PETSc(Application):
                     self.log.error("One or more environment variables for BLAS/LAPACK not defined?")
 
             # additional dependencies
-            for dep in ["Boost", "FFC", "FIAT", "HDF5", "METIS", "netCDF", "ParMETIS",
-                        "ScientificPython", ("SCOTCH", "ptscotch")]:
+            # filter out deps handled seperately
+            depfilter = self.cfg.builddependencies() + ["BLACS", "BLAS", "FFTW", "LAPACK", "numpy",
+                                                        "mpi4py", "papi", "ScaLAPACK", "SuiteSparse"]
+            deps = [dep['name'] for dep in self.cfg.dependencies() if not dep['name'] in depfilter]
+            for dep in deps:
                 if type(dep) == str:
                     dep = (dep, dep)
                 deproot = get_software_root(dep[0])
@@ -143,10 +146,8 @@ class PETSc(Application):
             if suitesparse:
                 withdep = "--with-umfpack"
                 # specified order of libs matters!
-                umfpack_libs = [os.path.join(suitesparse, l, "Lib", "lib%s.a" % l.lower()) for l in ["UMFPACK",
-                                                                                                     "CHOLMOD",
-                                                                                                     "COLAMD",
-                                                                                                     "AMD"]]
+                umfpack_libs = [os.path.join(suitesparse, l, "Lib", "lib%s.a" % l.lower())
+                                for l in ["UMFPACK", "CHOLMOD", "COLAMD", "AMD"]]
 
                 self.updatecfg('configopts', ' '.join([(withdep+x) for x in ["=1",
                                                                              "-include=%s" % os.path.join(suitesparse, "UMFPACK", "Include"),
