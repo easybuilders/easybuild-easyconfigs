@@ -157,7 +157,7 @@ def build_packages(packages, output_dir):
     apps = []
     for pkg in packages:
         try:
-            instance = parbuild.get_instance(pkg)
+            instance = parbuild.get_instance(pkg, log)
             apps.append(instance)
         except EasyBuildError, err:
             test_results.append((pkg['spec'], 'initialization', err))
