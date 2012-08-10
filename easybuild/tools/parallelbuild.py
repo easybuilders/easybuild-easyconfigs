@@ -27,6 +27,7 @@ import re
 from easybuild.framework.application import get_class
 from easybuild.tools.pbs_job import PbsJob
 
+
 def build_packages_in_parallel(build_command, packages, output_dir, log):
     """
     list is a list of packages which can be build! (e.g. they have no unresolved dependencies)
