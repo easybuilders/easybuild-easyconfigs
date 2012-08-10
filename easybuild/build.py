@@ -406,12 +406,6 @@ def resolveDependencies(unprocessed, robot, log):
                     log.info("Robot: resolving dependency %s with %s" % (candidates[0], path))
 
                     processedSpecs = processEasyconfig(path, log)
-                    mods = [spec['module'] for spec in processedSpecs]
-                    if not candidates[0] in mods:
-                        msg = "Expected easyconfig %s to resolve dependency for %s, but it does not" % (path, candidates[0])
-                        msg += " (list of obtained modules after processing easyconfig: %s)" % mods
-                        log.error(msg)
-
                     unprocessed.extend(processedSpecs)
                     robotAddedDependency = True
                     break
