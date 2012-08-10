@@ -1089,8 +1089,20 @@ class Application:
 
         WARNING: you cannot unload using $SOFTDEVELNAME (for now: use module unload `basename $SOFTDEVELNAME`)
         """
-        self.log.debug("loaded modules: %s" % Modules().loaded_modules())
-        mod_gen = ModuleGenerator(self)
+        # first try loading the fake module (might have happened during sanity check, doesn't matter anyway
+        # make fake module
+        mod_path = [self.make_module(True)]
+
+        # load the module
+        mod_path.extend(Modules().modulePath)
+        m = Modules(mod_path)
+        self.log.debug("created module instance")
+        m.addModule([[self.name(), self.installversion()]])
+        try:
+            m.load()
+        except EasyBuildError, err:
+            self.log.debug("Loading module failed: %s" % err)
+            self.log.debug("loaded modules: %s" % Modules().loaded_modules())
 
         header = "#%Module\n"
 
