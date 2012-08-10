@@ -86,26 +86,26 @@ class ToolkitTest(TestCase):
         self.assertEqual(self.tk_64bit._toolkitExists(), False)
 
 
-        # Test getDependencyVersion
+        # Test get_dependency_version
         dep = {"name": "depname", "version":"1.0"}
         dep2 = {"name": "gzip", "dummy":"dummy"}
 
-        self.assertEqual("1.0-icc-4.0.3-32bit", self.tk_32bit.getDependencyVersion(dep))
-        self.assertEqual('1.4', self.dummy_tk.getDependencyVersion(dep2))
+        self.assertEqual("1.0-icc-4.0.3-32bit", self.tk_32bit.get_dependency_version(dep))
+        self.assertEqual('1.4', self.dummy_tk.get_dependency_version(dep2))
 
 
-        # test setOptions
-        self.dummy_tk.setOptions({'static':True, 'non-existing':False})
+        # test set_options
+        self.dummy_tk.set_options({'static':True, 'non-existing':False})
         self.assertEqual(self.dummy_tk.opts['static'], True)
         self.assertRaises(KeyError, lambda: self.dummy_tk.opts['non-existing'])
 
 
-        # test addDependencies
+        # test add_dependencies
         dep = {"name": 'gzip'}
-        self.tk_32bit.addDependencies([dep])
+        self.tk_32bit.add_dependencies([dep])
         self.assertEqual(len(self.tk_32bit.dependencies), 1)
 
-        self.assertRaises(EasyBuildError, self.tk_32bit.addDependencies, [{"name":"bzip"}])
+        self.assertRaises(EasyBuildError, self.tk_32bit.add_dependencies, [{"name":"bzip"}])
 
         # Test prepare
         self.assertRaises(EasyBuildError, self.tk_64bit.prepare)

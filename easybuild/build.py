@@ -332,8 +332,8 @@ def processEasyconfig(path, log, onlyBlocks=None, regtest_online=False):
             log.debug("Adding dependency %s for app %s." % (dep, name))
             package['dependencies'].append(dep)
 
-        if eb.toolkit().name != 'dummy':
-            dep = (eb.toolkit().name, eb.toolkit().version)
+        if eb.toolkit_name() != 'dummy':
+            dep = (eb.toolkit_name(), eb.toolkit_version())
             log.debug("Adding toolkit %s as dependency for app %s." % (dep, name))
             package['dependencies'].append(dep)
 

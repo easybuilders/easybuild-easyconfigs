@@ -22,11 +22,14 @@ import os
 import re
 
 from unittest import TestCase, TestSuite
-
+import easybuild.tools.config as config
 import easybuild.tools.filetools as ft
 
 class FileToolsTest(TestCase):
     """ Testcase for filetools module """
+
+    def setUp(self):
+        config.init('easybuild/easybuild_config.py')
 
     def runTest(self):
         """

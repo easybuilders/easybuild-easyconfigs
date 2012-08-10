@@ -63,7 +63,7 @@ class OpenFOAM(Application):
         env.set("WM_THIRD_PARTY_DIR", os.path.join(self.installdir, self.thrdpartydir))
 
         # compiler
-        comp_fam = self.tk.comp_family()
+        comp_fam = self.toolkit().comp_family()
 
         if comp_fam == toolkit.GCC:
             self.wm_compiler="Gcc"
@@ -80,7 +80,7 @@ class OpenFOAM(Application):
         env.set("WM_COMPILER",self.wm_compiler)
 
         # type of MPI
-        mpi_type = self.tk.mpi_type()
+        mpi_type = self.toolkit().mpi_type()
 
         if mpi_type == toolkit.INTEL:
             self.mpipath = os.path.join(get_software_root('IMPI'),'intel64')
