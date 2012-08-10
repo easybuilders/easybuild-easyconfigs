@@ -25,7 +25,6 @@ import os
 import re
 
 from easybuild.framework.application import get_class
-from easybuild.tools.build_log import getLog
 from easybuild.tools.pbs_job import PbsJob
 
 def build_packages_in_parallel(build_command, packages, output_dir, log):
@@ -33,6 +32,7 @@ def build_packages_in_parallel(build_command, packages, output_dir, log):
     list is a list of packages which can be build! (e.g. they have no unresolved dependencies)
     this function will build them in parallel by submitting jobs
     """
+    log.info("going to build these packages in parallel: %s", packages)
     job_module_dict = {}
     # dependencies have already been resolved this means i can linearly walk over the list and use previous job id's
     for pkg in packages:
