@@ -38,7 +38,6 @@ import time
 import easybuild.tools.environment as env
 from easybuild.tools.asyncprocess import Popen, PIPE, STDOUT, send_all, recv_some
 from easybuild.tools.build_log import getLog
-from easybuild.tools.config import logPath
 
 
 log = getLog('fileTools')
@@ -93,7 +92,7 @@ def findBaseDir():
     """
     def getLocalDirsPurged():
         ## e.g. always purge the log directory
-        ignoreDirs = [logPath()]
+        ignoreDirs = ["easybuild"]
 
         lst = os.listdir(os.getcwd())
         for ignDir in ignoreDirs:
