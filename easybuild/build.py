@@ -239,7 +239,7 @@ def main():
     if options.job:
         curdir = os.getcwd()
         command = "cd %s && python %s %%s -d" % (curdir, sys.argv[0])
-        parbuild.build_packages_in_parallel(command, packages, "easybuild-build", log)
+        parbuild.build_packages_in_parallel(command, orderedSpecs, "easybuild-build", log)
         log.info("Submitted parallel build jobs, exiting now")
         sys.exit(0)
 
