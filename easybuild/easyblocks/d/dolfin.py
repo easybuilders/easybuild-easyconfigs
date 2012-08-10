@@ -105,8 +105,6 @@ class DOLFIN(CMakePythonPackage):
             val = os.getenv(env_var)
             if val:
                 self.updatecfg('configopts', '-D%s=%s' % (env_var, val))
-            else:
-                self.log.error("Environment variable %s not set?!?" % env_var)
 
         # set correct openmp options
         openmp = self.toolkit().get_openmp_flag()
@@ -115,6 +113,10 @@ class DOLFIN(CMakePythonPackage):
 
         # configure
         CMakePythonPackage.configure(self)
+
+        #### FIXME #####
+        # implement check for optional packages that could not be found
+        # need to know exact output when all optional packages are found
 
     def make_module_extra(self):
         """Set extra environment variables for Dolfin."""

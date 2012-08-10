@@ -38,17 +38,23 @@ class SLEPc(Application):
         """Specify that SLEPc should be built in install dir."""
         Application.__init__(self, *args, **kwargs)
 
-        self.build_in_installdir = True
-
         self.slepc_arch_dir = None
 
     def extra_options(self):
         """Add extra config options specific to SLEPc."""
         extra_vars = {
-                      'source-install': [False, "Indicates whether a source installation should be performed (default: False)"],
+                      'sourceinstall': [False, "Indicates whether a source installation should be performed (default: False)"],
                       'runtest': ['test', "Make target to test build (default: test)"]
                      }
         return Application.extra_options(self, extra_vars)
+
+    def make_builddir(self):
+        """Decide whether or not to build in install dir before creating build dir."""
+
+        if self.getcfg('sourceinstall'):
+            self.build_in_installdir = True
+
+        Application.make_builddir(self)
 
     def configure(self):
         """Configure SLEPc by setting configure options and running configure script."""
@@ -68,18 +74,26 @@ class SLEPc(Application):
                 withdep = "--with-%s" % dep.lower()
                 self.updatecfg('configopts', '%s=1 %s-dir=%s' % (withdep, withdep, deproot))
 
-        # run configure without --prefix (required)
-        cmd = "%s ./configure %s" % (self.getcfg('preconfigopts'), self.getcfg('configopts'))
-        (out, _) = run_cmd(cmd, log_all=True, simple=False)
+        if self.getcfg('sourceinstall'):
+            # run configure without --prefix (required)
+            cmd = "%s ./configure %s" % (self.getcfg('preconfigopts'), self.getcfg('configopts'))
+            (out, _) = run_cmd(cmd, log_all=True, simple=False)
+        else:
+            out = Application.configure(self)
 
         # check for errors in configure
         error_regexp = re.compile("ERROR")
         if error_regexp.search(out):
             self.log.error("Error(s) detected in configure output!")
 
-        self.slepc_arch_dir = os.path.join('%s-%s' % (self.name().lower(),
-                                                      self.version()),
-                                           os.getenv('PETSC_ARCH'))
+        # set default PETSC_ARCH if required
+        if not os.getenv('PETSC_ARCH'):
+            env.set('PETSC_ARCH' , 'arch-installed-petsc')
+
+        self.slepc_subdir = ''
+        if self.getcfg('sourceinstall'):
+            self.slepc_subdir = os.path.join('%s-%s' % (self.name().lower(), self.version()),
+                                             os.getenv('PETSC_ARCH'))
 
     def make_module_req_guess(self):
         """Specify correct LD_LIBRARY_PATH and CPATH for SLEPc installation."""
@@ -87,8 +101,8 @@ class SLEPc(Application):
         guesses = Application.make_module_req_guess(self)
 
         guesses.update({
-                        'CPATH': [os.path.join(self.slepc_arch_dir, "include")],
-                        'LD_LIBRARY_PATH': [os.path.join(self.slepc_arch_dir, "lib")]
+                        'CPATH': [os.path.join(self.slepc_subdir, "include")],
+                        'LD_LIBRARY_PATH': [os.path.join(self.slepc_subdir, "lib")]
                         })
 
         return guesses
@@ -97,8 +111,12 @@ class SLEPc(Application):
         """Set SLEPc specific environment variables (SLEPC_DIR)."""
         txt = Application.make_module_extra(self)
 
-        txt += self.moduleGenerator.setEnvironment('SLEPC_DIR', '$root/%s-%s' % (self.name().lower(),
-                                                                                 self.version()))
+        if self.getcfg('sourceinstall'):
+            txt += self.moduleGenerator.setEnvironment('SLEPC_DIR', '$root/%s-%s' % (self.name().lower(),
+                                                                                     self.version()))
+
+        else:
+            txt += self.moduleGenerator.setEnvironment('SLEPC_DIR', '$root')
 
         return txt
 
@@ -107,9 +125,9 @@ class SLEPc(Application):
         if not self.getcfg('sanityCheckPaths'):
 
             self.setcfg('sanityCheckPaths', {'files': [],
-                                             'dirs': [os.path.join(self.slepc_arch_dir, x) for x in ["conf",
-                                                                                                    "include",
-                                                                                                    "lib"]]
+                                             'dirs': [os.path.join(self.slepc_subdir, x) for x in ["conf",
+                                                                                                   "include",
+                                                                                                   "lib"]]
                                            })
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))

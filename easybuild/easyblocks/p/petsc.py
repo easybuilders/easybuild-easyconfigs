@@ -38,18 +38,16 @@ class PETSc(Application):
     """Support for building and installing PETSc"""
 
     def __init__(self, *args, **kwargs):
-        """Initialize PETSc specific variables, specify build in install dir."""
+        """Initialize PETSc specific variables."""
         Application.__init__(self, *args, **kwargs)
 
-        self.build_in_installdir = True
-
-        self.petsc_arch = None
-        self.petsc_arch_dir = ""
+        self.petsc_arch = ""
+        self.petsc_subdir = ""
 
     def extra_options(self):
         """Add extra config options specific to PETSc."""
         extra_vars = {
-                      'source-install': [False, "Indicates whether a source installation should be performed (default: False)"],
+                      'sourceinstall': [False, "Indicates whether a source installation should be performed (default: False)"],
                       'shared_libs': [False, "Build shared libraries (default: False)"],
                       'with_papi': [False, "Enable PAPI support (default: False)"],
                       'papi_inc': ['/usr/include', "Path for PAPI include files (default: /usr/include)"],
@@ -57,6 +55,14 @@ class PETSc(Application):
                       'runtest': ['test', "Make target to test build (default: test)"]
                      }
         return Application.extra_options(self, extra_vars)
+
+    def make_builddir(self):
+        """Decide whether or not to build in install dir before creating build dir."""
+
+        if self.getcfg('sourceinstall'):
+            self.build_in_installdir = True
+
+        Application.make_builddir(self)
 
     def configure(self):
         """Configure PETSc by setting configure options and running configure script."""
@@ -158,27 +164,29 @@ class PETSc(Application):
             env.set('PETSC_DIR', self.getcfg('startfrom'))
             self.updatecfg('makeopts', 'PETSC_DIR=%s' % self.getcfg('startfrom'))
 
-            # run configure without --prefix (required)
-            cmd = "%s ./configure %s" % (self.getcfg('preconfigopts'), self.getcfg('configopts'))
-            (out, _) = run_cmd(cmd, log_all=True, simple=False)
+            if self.getcfg('sourceinstall'):
+                # run configure without --prefix (required)
+                cmd = "%s ./configure %s" % (self.getcfg('preconfigopts'), self.getcfg('configopts'))
+                (out, _) = run_cmd(cmd, log_all=True, simple=False)
+            else:
+                out = Application.configure(self)
 
             # check for errors in configure
             error_regexp = re.compile("ERROR")
             if error_regexp.search(out):
                 self.log.error("Error(s) detected in configure output!")
 
-            # configure should set PETSC_ARCH
-            petsc_arch_regex = re.compile("^\s*PETSC_ARCH:\s*(\S+)$", re.M)
-            res = petsc_arch_regex.search(out)
-            if res:
-                self.petsc_arch = res.group(1)
-                self.updatecfg('makeopts', 'PETSC_ARCH=%s' % self.petsc_arch)
-            else:
-                self.log.error("Failed to determine PETSC_ARCH setting.")
+            if self.getcfg('sourceinstall'):
+                # figure out PETSC_ARCH setting
+                petsc_arch_regex = re.compile("^\s*PETSC_ARCH:\s*(\S+)$", re.M)
+                res = petsc_arch_regex.search(out)
+                if res:
+                    self.petsc_arch = res.group(1)
+                    self.updatecfg('makeopts', 'PETSC_ARCH=%s' % self.petsc_arch)
+                else:
+                    self.log.error("Failed to determine PETSC_ARCH setting.")
 
-            self.petsc_arch_dir = os.path.join('%s-%s' % (self.name().lower(),
-                                                          self.version()),
-                                               self.petsc_arch)
+            self.petsc_subdir = '%s-%s' % (self.name().lower(), self.version())
 
         else:  # old versions (< 3.x)
 
@@ -200,7 +208,8 @@ class PETSc(Application):
     def make_install(self):
 
         if LooseVersion(self.version()) >= LooseVersion("3"):
-            pass
+            if not self.getcfg('sourceinstall'):
+                Application.make_install(self)
 
         else:  # old versions (< 3.x)
 
@@ -217,13 +226,17 @@ class PETSc(Application):
 
         guesses = Application.make_module_req_guess(self)
 
-        subdir = '%s-%s' % (self.name().lower(), self.version())
+        prefix1 = ""
+        prefix2 = ""
+        if self.getcfg('sourceinstall'):
+            prefix1 = self.petsc_subdir
+            prefix2 = os.path.join(self.petsc_subdir, self.petsc_arch)
 
         guesses.update({
-                        'PATH': [os.path.join(subdir, "bin")],
-                        'CPATH': [os.path.join(subdir, self.petsc_arch, "include"),
-                                  os.path.join(subdir, "include")],
-                        'LD_LIBRARY_PATH': [os.path.join(subdir, self.petsc_arch, "lib")]
+                        'PATH': [os.path.join(prefix1, "bin")],
+                        'CPATH': [os.path.join(prefix2, "include"),
+                                  os.path.join(prefix1, "include")],
+                        'LD_LIBRARY_PATH': [os.path.join(prefix2, "lib")]
                         })
 
         return guesses
@@ -232,9 +245,12 @@ class PETSc(Application):
         """Set PETSc specific environment variables (PETSC_DIR, PETSC_ARCH)."""
         txt = Application.make_module_extra(self)
 
-        txt += self.moduleGenerator.setEnvironment('PETSC_DIR', '$root/%s-%s' % (self.name().lower(),
-                                                                                 self.version()))
-        txt += self.moduleGenerator.setEnvironment('PETSC_ARCH', self.petsc_arch)
+        if self.getcfg('sourceinstall'):
+            txt += self.moduleGenerator.setEnvironment('PETSC_DIR', '$root/%s' % self.petsc_subdir)
+            txt += self.moduleGenerator.setEnvironment('PETSC_ARCH', self.petsc_arch)
+
+        else:
+            txt += self.moduleGenerator.setEnvironment('PETSC_DIR', '$root')
 
         return txt
 
@@ -243,19 +259,25 @@ class PETSc(Application):
 
         if not self.getcfg('sanityCheckPaths'):
 
+            prefix1 = ""
+            prefix2 = ""
+            if self.getcfg('sourceinstall'):
+                prefix1 = self.petsc_subdir
+                prefix2 = os.path.join(self.petsc_subdir, self.petsc_arch)
+
             if self.getcfg('shared_libs'):
                 libext = get_shared_lib_ext()
             else:
                 libext = "a"
 
-            self.setcfg('sanityCheckPaths', {'files': [os.path.join(self.petsc_arch_dir,
+            self.setcfg('sanityCheckPaths', {'files': [os.path.join(prefix2,
                                                                     "lib",
                                                                     "libpetsc.%s" % libext)
                                                        ],
-                                             'dirs': [os.path.join(self.petsc_arch_dir, x) for x in ["../bin",
-                                                                                                     "conf",
-                                                                                                     "include"
-                                                                                                     ]]
+                                             'dirs': [os.path.join(prefix1, "bin"),
+                                                      os.path.join(prefix2, "conf"),
+                                                      os.path.join(prefix1, "include"),
+                                                      os.path.join(prefix2, "include")]
                                            })
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
