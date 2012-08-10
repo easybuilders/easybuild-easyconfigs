@@ -28,9 +28,7 @@ from easybuild.framework.application import get_class
 from easybuild.tools.build_log import getLog
 from easybuild.tools.pbs_job import PbsJob
 
-log = getLog("ParallelBuild")
-
-def build_packages_in_parallel(build_command, packages, output_dir):
+def build_packages_in_parallel(build_command, packages, output_dir, log):
     """
     list is a list of packages which can be build! (e.g. they have no unresolved dependencies)
     this function will build them in parallel by submitting jobs
@@ -86,7 +84,7 @@ def create_job(build_command, package, output_dir):
     return job
 
 
-def get_instance(package):
+def get_instance(package, log):
     """ get an instance for this package """
     spec = package['spec']
     name = package['module'][0]

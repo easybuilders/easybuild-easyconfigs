@@ -131,7 +131,7 @@ def main():
         resolved = resolveDependencies(packages, opts.robot, log)
         # use %%s so i can later replace it
         command = "cd %s && python %s %%s --no-parallel" % (cur_dir, sys.argv[0])
-        parbuild.build_packages_in_parallel(command, resolved, output_dir)
+        parbuild.build_packages_in_parallel(command, resolved, output_dir, log)
     else:
         build_packages(packages, output_dir)
 
