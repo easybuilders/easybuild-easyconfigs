@@ -344,6 +344,12 @@ def processEasyconfig(path, log, onlyBlocks=None, regtest_online=False):
 
         del eb
 
+        # ensure the pathname is equal to the module
+        base_name, ext = os.path.splitext(os.path.basename(spec))
+        module_name = "-".join(package['module'])
+        if base_name.lower() != module_name.lower():
+            log.error("easyconfig file: %s does not contain module %s" % (spec, module_name))
+
         packages.append(package)
 
     return packages
@@ -405,12 +411,6 @@ def resolveDependencies(unprocessed, robot, log):
                     log.info("Robot: resolving dependency %s with %s" % (candidates[0], path))
 
                     processedSpecs = processEasyconfig(path, log)
-                    mods = [spec['module'] for spec in processedSpecs]
-                    if not candidates[0] in mods:
-                        msg = "Expected easyconfig %s to resolve dependency for %s, but it does not" % (path, candidates[0])
-                        msg += " (list of obtained modules after processing easyconfig: %s)" % mods
-                        log.error(msg)
-
                     unprocessed.extend(processedSpecs)
                     robotAddedDependency = True
                     break
