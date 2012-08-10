@@ -48,7 +48,7 @@ def build_packages_in_parallel(build_command, packages, output_dir, log):
         job_deps = [job_module_dict[dep] for dep in pkg['unresolvedDependencies'] if dep in job_module_dict]
         new_job.add_dependencies(job_deps)
         new_job.submit()
-        log.info("job for module %s has been submitted (job id: %s)" % (job.module, job.jobid))
+        log.info("job for module %s has been submitted (job id: %s)" % (new_job.module, new_job.jobid))
         # update dictionary
         job_module_dict[new_job.module] = new_job.jobid
 
