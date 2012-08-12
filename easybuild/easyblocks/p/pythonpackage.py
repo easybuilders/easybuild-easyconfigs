@@ -20,8 +20,9 @@
 ##
 import os
 
+import easybuild.tools.environment as env
 from easybuild.framework.application import Application
-from easybuild.tools.filetools import run_cmd
+from easybuild.tools.filetools import run_cmd, mkdir
 from easybuild.tools.modules import get_software_version
 
 
@@ -58,8 +59,17 @@ class PythonPackage(Application):
     def make_install(self):
         """Install Python package to a custom path using setup.py"""
 
+        abs_pylibdir = os.path.join(self.installdir, self.pylibdir)
+
+        mkdir(abs_pylibdir, parents=True)
+
+        pythonpath = os.getenv('PYTHONPATH')
+        env.set('PYTHONPATH', "%s:%s" % (abs_pylibdir, pythonpath))
+
         cmd = "python setup.py install --prefix=%s %s" % (self.installdir, self.getcfg('installopts'))
         run_cmd(cmd, log_all=True, simple=True)
+
+        env.set('PYTHONPATH', pythonpath)
 
     def make_module_extra(self):
         """Add install path to PYTHONPATH"""
