@@ -24,11 +24,13 @@ dependencies)
 
 Support for PBS is provided via the PbsJob class. If you want you could create other job classes and use them here.
 """
+import math
 import os
 import re
 
 from easybuild.framework.application import get_class
 from easybuild.tools.pbs_job import PbsJob
+from easybuild.tools.config import getRepository
 
 
 def build_packages_in_parallel(build_command, packages, output_dir, log):
@@ -46,7 +48,7 @@ def build_packages_in_parallel(build_command, packages, output_dir, log):
         # This is very important, otherwise we might have race conditions
         # e.g. GCC-4.5.3 finds cloog.tar.gz but it was incorrectly downloaded by GCC-4.6.3
         # running this step here, prevents this
-        prepare_package(pkg)
+        prepare_package(pkg, log)
 
         # the new job will only depend on already submitted jobs
         log.info("creating job for pkg: %s" % str(pkg))
@@ -91,7 +93,10 @@ def create_job(build_command, package, output_dir=""):
 
     easybuild_vars['EASYBUILDTESTOUTPUT'] = os.path.join(os.path.abspath(output_dir), name)
 
-    job = PbsJob(command, name, easybuild_vars)
+    previous_time = getRepository().get_buildstats(*package['module'])['build_time']
+    requested = int(math.ceil(previous_time * 2 / 60))
+
+    job = PbsJob(command, name, easybuild_vars, resources={'hours': requested})
     job.module = package['module']
 
     return job
@@ -121,10 +126,10 @@ def get_instance(package, log):
     return app_class(spec, debug=True)
 
 
-def prepare_package(pkg):
+def prepare_package(pkg, log):
     """ prepare for building """
     try:
-        instance = get_instance(pkg)
+        instance = get_instance(pkg, log)
         instance.prepare_build()
     except:
         pass
