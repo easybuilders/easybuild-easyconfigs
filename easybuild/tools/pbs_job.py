@@ -26,6 +26,7 @@ import os
 
 from easybuild.tools.build_log import getLog
 
+MAX_WALLTIME = 72
 
 class PbsJob:
     """Interaction with TORQUE"""
@@ -34,7 +35,8 @@ class PbsJob:
         """
         create a new Job to be submitted to PBS
         env_vars is a dictionary with key-value pairs of environment variables that should be passed on to the job
-        resources is a dictionary with optional keys: ['hours', 'procs']
+        resources is a dictionary with optional keys: ['hours', 'cores'] both of these should be integer values.
+        hours can be 1 - MAX_WALLTIME, cores depends on which cluster it is being run.
         """
         self.log = getLog("PBS")
         self.script = script
@@ -58,11 +60,26 @@ class PbsJob:
         except:
             self.log.error("Could not connect to the default pbs server, is this correctly configured?")
 
-        hours = resources.get('hours', 72)
+        # setup the resources requested
+
+        # validate requested resources!
+        hours = resources.get('hours', MAX_WALLTIME)
+        if hours > MAX_WALLTIME:
+            self.log.warn("Specified %s hours, but this is impossible. (resetting to %s hours)" % (hours, MAX_WALLTIME))
+            hours = MAX_WALLTIME
+
+        max_cores = self.get_ppn()
+        cores = resources.get('cores', max_cores)
+        if cores > max_cores:
+            self.log.warn("number of requested cores (%s) was greater than available (%s) " % (cores, max_cores))
+            cores = max_cores
+
+        # only allow cores and hours for now.
         self.resources = {
                           "walltime": "%s:00:00" % hours,
-                          "nodes": "1:ppn=%s" % resources.get('procs', self.get_ppn())
+                          "nodes": "1:ppn=%s" % cores
                          }
+        # set queue based on the hours requested
         if hours >= 12:
             self.queue = 'long'
         else:
