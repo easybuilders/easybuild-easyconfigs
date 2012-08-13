@@ -18,6 +18,9 @@
 # You should have received a copy of the GNU General Public License
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
+"""
+EasyBuild support for Python packages, implemented as an easyblock
+"""
 import os
 
 import easybuild.tools.environment as env
@@ -27,7 +30,7 @@ from easybuild.tools.modules import get_software_version
 
 
 class PythonPackage(Application):
-    """Builds and installs a Python package, and provides a dedicated module file"""
+    """Builds and installs a Python package, and provides a dedicated module file."""
 
     def __init__(self, *args, **kwargs):
         Application.__init__(self, *args, **kwargs)
