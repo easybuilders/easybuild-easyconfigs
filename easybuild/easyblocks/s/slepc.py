@@ -19,7 +19,7 @@
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
 """
-EasyBuild support for building and installing SLEPc, implemented as an easyblock
+EasyBuild support for SLEPc, implemented as an easyblock
 """
 
 import os
@@ -50,7 +50,6 @@ class SLEPc(Application):
 
     def make_builddir(self):
         """Decide whether or not to build in install dir before creating build dir."""
-
         if self.getcfg('sourceinstall'):
             self.build_in_installdir = True
 
@@ -68,7 +67,9 @@ class SLEPc(Application):
         self.log.debug('SLEPC_DIR: %s' % os.getenv('SLEPC_DIR'))
 
         # optional dependencies
-        for dep in ["ARPACK", "BLZPACK", "PRIMME", "TRLAN"]:
+        depfilter = self.cfg.builddependencies() + ["PETSc"]
+        deps = [dep['name'] for dep in self.cfg.dependencies() if not dep['name'] in depfilter]
+        for dep in deps:
             deproot = get_software_root(dep)
             if deproot:
                 withdep = "--with-%s" % dep.lower()
@@ -79,6 +80,7 @@ class SLEPc(Application):
             cmd = "%s ./configure %s" % (self.getcfg('preconfigopts'), self.getcfg('configopts'))
             (out, _) = run_cmd(cmd, log_all=True, simple=False)
         else:
+            # regular './configure --prefix=X' for non-source install
             out = Application.configure(self)
 
         # check for errors in configure
@@ -97,7 +99,6 @@ class SLEPc(Application):
 
     def make_module_req_guess(self):
         """Specify correct LD_LIBRARY_PATH and CPATH for SLEPc installation."""
-
         guesses = Application.make_module_req_guess(self)
 
         guesses.update({
@@ -124,11 +125,12 @@ class SLEPc(Application):
         """Custom sanity check for SLEPc"""
         if not self.getcfg('sanityCheckPaths'):
 
-            self.setcfg('sanityCheckPaths', {'files': [],
+            self.setcfg('sanityCheckPaths', {
+                                             'files': [],
                                              'dirs': [os.path.join(self.slepc_subdir, x) for x in ["conf",
                                                                                                    "include",
                                                                                                    "lib"]]
-                                           })
+                                            })
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
