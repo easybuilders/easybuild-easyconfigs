@@ -35,10 +35,13 @@ def build_packages_in_parallel(build_command, packages, output_dir, log):
     """
     packages is a list of packages which can be build! (e.g. they have no unresolved dependencies)
     this function will build them in parallel by submitting jobs
+
+    returns the jobs
     """
     log.info("going to build these packages in parallel: %s", packages)
     job_module_dict = {}
     # dependencies have already been resolved this means one can linearly walk over the list and use previous job id's
+    jobs = []
     for pkg in packages:
         # This is very important, otherwise we might have race conditions
         # e.g. GCC-4.5.3 finds cloog.tar.gz but it was incorrectly downloaded by GCC-4.6.3
@@ -55,6 +58,9 @@ def build_packages_in_parallel(build_command, packages, output_dir, log):
         log.info("job for module %s has been submitted (job id: %s)" % (new_job.module, new_job.jobid))
         # update dictionary
         job_module_dict[new_job.module] = new_job.jobid
+        jobs.append(new_job)
+
+    return jobs
 
 
 def create_job(build_command, package, output_dir=""):

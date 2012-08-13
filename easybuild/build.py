@@ -241,7 +241,10 @@ def main():
         easybuild_basedir = os.path.dirname(os.path.dirname(sys.argv[0]))
         eb_path = os.path.join(easybuild_basedir, "eb")
         command = "cd %s && %s %%s -d" % (curdir, eb_path)
-        parbuild.build_packages_in_parallel(command, orderedSpecs, "easybuild-build", log)
+        jobs = parbuild.build_packages_in_parallel(command, orderedSpecs, "easybuild-build", log)
+        for job in jobs:
+            print "%s: %s" % (job.name, job.jobid)
+
         log.info("Submitted parallel build jobs, exiting now")
         sys.exit(0)
 
