@@ -30,8 +30,9 @@ class Bzip2(Application):
 
     # no configure script
     def configure(self):
-        """Set extra configure options."""
+        """Set extra configure options (CC, CFLAGS)."""
 
+        self.updatecfg('makeopts', 'CC="%s"' % os.getenv('CC'))
         self.updatecfg('makeopts', "CFLAGS='-Wall -Winline %s -g $(BIGFILES)'" % os.getenv('CFLAGS'))
 
     def make_install(self):
