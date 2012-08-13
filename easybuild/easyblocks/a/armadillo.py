@@ -17,9 +17,14 @@
 # You should have received a copy of the GNU General Public License
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
+"""
+EasyBuild support for Armadillo, implemented as an easyblock
+"""
 import os
+
 from easybuild.easyblocks.c.cmake import CMake
 from easybuild.tools.modules import get_software_root
+
 
 class Armadillo(CMake):
     """Support for building Armadillo."""
@@ -45,7 +50,7 @@ class Armadillo(CMake):
 
         if not self.getcfg('sanityCheckPaths'):
 
-            self.setcfg('sanityCheckPaths', {'files':['lib/libarmadillo.so','include/armadillo'],
+            self.setcfg('sanityCheckPaths', {'files':['lib/libarmadillo.so', 'include/armadillo'],
                                              'dirs':['include/armadillo_bits']})
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
