@@ -18,6 +18,9 @@
 # You should have received a copy of the GNU General Public License
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
+"""
+EasyBuild support for SCOTCH, implemented as an easyblock
+"""
 import fileinput
 import os
 import re
@@ -28,12 +31,14 @@ import easybuild.tools.toolkit as toolkit
 from easybuild.framework.application import Application
 from easybuild.tools.filetools import run_cmd, copytree
 
+
 class SCOTCH(Application):
     """Support for building/installing SCOTCH."""
 
     def configure(self):
-        """Configure SCOTCH build: locate the correct makefile, and copy this to a general Makefile.inc"""
+        """Configure SCOTCH build: locate the template makefile, copy it to a general Makefile.inc and patch it."""
 
+        # pick template makefile
         comp_fam = self.toolkit().comp_family()
         if comp_fam == toolkit.INTEL:
             makefilename = 'Makefile.inc.x86-64_pc_linux2.icc'
@@ -53,9 +58,9 @@ class SCOTCH(Application):
             self.log.error("Copying Makefile.inc to src dir failed.")
 
         # the default behaviour of these makefiles is still wrong
-        # e.g., we need -lpthread
+        # e.g., compiler settings, and we need -lpthread
         try:
-            for line in fileinput.input(dst, inplace=1, backup='.orig.patchictce'):
+            for line in fileinput.input(dst, inplace=1, backup='.orig.easybuild'):
                 # use $CC and the likes since we're at it.
                 line = re.sub(r"^CCS\s*=.*$", "CCS\t= $(CC)", line)
                 line = re.sub(r"^CCP\s*=.*$", "CCP\t= $(MPICC)", line)
@@ -128,7 +133,8 @@ class SCOTCH(Application):
 
         if not self.getcfg('sanityCheckPaths'):
 
-            self.setcfg('sanityCheckPaths', {'files': ['bin/%s' % x for x in ["acpl","amk_fft2","amk_hy",
+            self.setcfg('sanityCheckPaths', {
+                                             'files': ['bin/%s' % x for x in ["acpl","amk_fft2","amk_hy",
                                                                               "amk_p2","dggath","dgord",
                                                                               "dgscat","gbase","gmap",
                                                                               "gmk_m2","gmk_msh","gmtst",
@@ -151,7 +157,8 @@ class SCOTCH(Application):
                                                                                    "ptscotcherr",
                                                                                    "scotch",
                                                                                    "scotcherrexit"]],
-                                             'dirs':[]})
+                                             'dirs':[]
+                                             })
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
