@@ -19,7 +19,7 @@
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
 """
-EasyBuild support for CMake, implemented as an easyblock
+EasyBuild support for software that is configured with CMake, implemented as an easyblock
 """
 import os
 

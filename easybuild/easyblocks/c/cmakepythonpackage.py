@@ -17,8 +17,12 @@
 # You should have received a copy of the GNU General Public License
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
+"""
+EasyBuild support for Python packages that are configured with CMake, implemented as an easyblock
+"""
 from easybuild.easyblocks.c.cmake import CMake
 from easybuild.easyblocks.p.pythonpackage import PythonPackage
+
 
 class CMakePythonPackage(CMake, PythonPackage):
     """Build a Python package and module with cmake.
@@ -27,12 +31,13 @@ class CMakePythonPackage(CMake, PythonPackage):
     and then put the Python package in lib/pythonX.Y/site-packages.
 
     We install this in a seperate location and generate a module file 
-    witch sets the PYTHONPATH.
+    which sets the PYTHONPATH.
 
     We use the default CMake implementation, and use make_module_extra from PythonPackage.
     """
 
     def __init__(self, *args, **kwargs):
+        """Initialize with PythonPackage."""
         PythonPackage.__init__(self, *args, **kwargs)
 
     def configure(self, *args, **kwargs):
