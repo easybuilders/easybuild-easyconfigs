@@ -587,7 +587,7 @@ class Toolkit:
         blas_libs = ["intel%s" % libsfx, "sequential", "core"]
         blas_mt_libs = ["intel%s" % libsfx, "intel_thread", "core"]
         scalapack_libs = ["scalapack%s" % libsfxsl, "solver%s_sequential" % libsfx] + blas_libs + ["blacs_intelmpi%s" % libsfx]
-        scalapack_mt_libs = ["scalapack%s" % libsfxsl, "solver" % libsfx] + blas_mt_libs + ["blacs_intelmpi%s" % libsfx]
+        scalapack_mt_libs = ["scalapack%s" % libsfxsl, "solver%s" % libsfx] + blas_mt_libs + ["blacs_intelmpi%s" % libsfx]
 
         # adjust lib subdir if GCC is used
         if self.comp_family() == GCC:
