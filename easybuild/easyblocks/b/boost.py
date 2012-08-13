@@ -18,6 +18,9 @@
 # You should have received a copy of the GNU General Public License
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
+"""
+EasyBuild support for Boost, implemented as an easyblock
+"""
 import os
 import shutil
 
@@ -74,7 +77,6 @@ class Boost(Application):
             f.write("using mpi : %s ;" % os.getenv("MPICXX"))
             f.close()
 
-
     def make(self):
         """Build Boost with bjam tool."""
 
@@ -86,15 +88,12 @@ class Boost(Application):
             bjamoptions += " -sBZIP2_INCLUDE=%s/include" % bzip2
             bjamoptions += " -sBZIP2_LIBPATH=%s/lib" % bzip2
 
-
         if self.getcfg('boost_mpi'):
-
             self.log.info("Building boost_mpi library")
 
             bjammpioptions = "%s --user-config=user-config.jam --with-mpi" % bjamoptions
 
             # build mpi lib first
-
             # let bjam know about the user-config.jam file we created in the configure step
             run_cmd("./bjam %s" % bjammpioptions, log_all=True, simple=True)
 
@@ -121,7 +120,9 @@ class Boost(Application):
                 else:
                     shutil.copy2(src, dst)
         except OSError, err:
-            self.log.error("Copying %s to installation dir %s failed: %s" % (self.objdir, self.installdir, err))
+            self.log.error("Copying %s to installation dir %s failed: %s" % (self.objdir,
+                                                                             self.installdir,
+                                                                             err))
 
     def sanitycheck(self):
         """Custom sanity check for Boost."""
