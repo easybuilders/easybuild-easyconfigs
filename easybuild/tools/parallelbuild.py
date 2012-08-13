@@ -19,7 +19,7 @@
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
 """
-module for doing parallel builds. This uses a PBS like cluster. You should be able to submit jobs (which can have
+module for doing parallel builds. This uses a PBS-like cluster. You should be able to submit jobs (which can have
 dependencies)
 
 Support for PBS is provided via the PbsJob class. If you want you could create other job classes and use them here.
@@ -38,7 +38,7 @@ def build_packages_in_parallel(build_command, packages, output_dir, log):
     """
     log.info("going to build these packages in parallel: %s", packages)
     job_module_dict = {}
-    # dependencies have already been resolved this means I can linearly walk over the list and use previous job id's
+    # dependencies have already been resolved this means one can linearly walk over the list and use previous job id's
     for pkg in packages:
         # This is very important, otherwise we might have race conditions
         # e.g. GCC-4.5.3 finds cloog.tar.gz but it was incorrectly downloaded by GCC-4.6.3
