@@ -651,7 +651,8 @@ class Toolkit:
         fftwsuff = ""
         if self.opts['pic']:
             fftwsuff = "_pic"
-        fftw_libs = ["fftw3xc_intel%s" % fftwsuff]
+        fftw_libs = ["fftw3xc_intel%s" % fftwsuff,
+                     "fftw3x_cdft%" % fftwsuff]
         self.vars['LIBFFT'] = ' '.join(["-Wl:-Bstatic",
                                         ' '.join(["-%s" % x for x in fftw_libs]),
                                         "-Wl:-Bdynamic"])
