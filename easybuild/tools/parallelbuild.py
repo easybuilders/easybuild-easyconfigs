@@ -94,10 +94,10 @@ def create_job(build_command, package, output_dir=""):
     easybuild_vars['EASYBUILDTESTOUTPUT'] = os.path.join(os.path.abspath(output_dir), name)
 
     # just use latest build stats
-    build_stats = getRepository().get_buildstats(*package['module'])
+    buildstats = getRepository().get_buildstats(*package['module'])
     resources = {}
     if buildstats:
-        previous_time = [-1]['build_time']
+        previous_time = buildstats[-1]['build_time']
         resources['hours'] = int(math.ceil(previous_time * 2 / 60))
 
     job = PbsJob(command, name, easybuild_vars, resources=resources)
