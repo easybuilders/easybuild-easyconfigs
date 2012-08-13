@@ -69,14 +69,14 @@ class PETSc(Application):
         if LooseVersion(self.version()) >= LooseVersion("3"):
 
             # compilers
-            self.updatecfg('configopts', '--with-cc=%s' % os.getenv('CC'))
-            self.updatecfg('configopts', '--with-cxx=%s --with-c++-support' % os.getenv('CXX'))
-            self.updatecfg('configopts', '--with-fc=%s' % os.getenv('F90'))
+            self.updatecfg('configopts', '--with-cc="%s"' % os.getenv('CC'))
+            self.updatecfg('configopts', '--with-cxx="%s" --with-c++-support' % os.getenv('CXX'))
+            self.updatecfg('configopts', '--with-fc="%s"' % os.getenv('F90'))
 
             # compiler flags
-            self.updatecfg('configopts', '--with-cflags=%s' % os.getenv('CFLAGS'))
-            self.updatecfg('configopts', '--with-cxxflags=%s' % os.getenv('CXXFLAGS'))
-            self.updatecfg('configopts', '--with-fcflags=%s' % os.getenv('F90FLAGS'))
+            self.updatecfg('configopts', '--with-cflags="%s"' % os.getenv('CFLAGS'))
+            self.updatecfg('configopts', '--with-cxxflags="%s"' % os.getenv('CXXFLAGS'))
+            self.updatecfg('configopts', '--with-fcflags="%s"' % os.getenv('F90FLAGS'))
 
             if not self.toolkit().comp_family() == toolkit.GCC:
                 self.updatecfg('configopts', '--with-gnu-compilers=0')
