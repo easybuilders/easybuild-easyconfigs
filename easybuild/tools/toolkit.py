@@ -652,9 +652,9 @@ class Toolkit:
         if self.opts['pic']:
             fftwsuff = "_pic"
         fftw_libs = ["fftw3xc_intel%s" % fftwsuff]
-        self.vars['LIBFFT'] = ' '.join("-Wl:-Bstatic",
-                                       ' '.join(["-%s" % x for x in fftw_libs]),
-                                       "-Wl:-Bdynamic")
+        self.vars['LIBFFT'] = ' '.join(["-Wl:-Bstatic",
+                                        ' '.join(["-%s" % x for x in fftw_libs]),
+                                        "-Wl:-Bdynamic"])
         self.vars['FFTW_INC'] = os.path.join(mklroot, "mkl", "include", "fftw")
         self.vars['FFTW_LIB_DIR'] = libs_dir
         self.vars['FFTW_STATIC_LIBS'] = ','.join(["libmkl_%s.a" % x for x in fftw_libs])
