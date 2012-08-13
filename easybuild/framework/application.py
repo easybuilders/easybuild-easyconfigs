@@ -654,7 +654,7 @@ class Application:
 
             ## MAKE
             print_msg("building...", self.log)
-            self.runstep('make', [self.make], skippable=True)
+            self.runstep('make', [self.make_devel_module, self.make], skippable=True)
 
             ## TEST
             print_msg("testing...", self.log)
@@ -1089,11 +1089,11 @@ class Application:
         self.log.info("Added modulefile: %s" % (self.moduleGenerator.filename))
 
         if not fake:
-            self.make_devel_module()
+            self.make_devel_module(debug=False)
 
         return modpath
 
-    def make_devel_module(self):
+    def make_devel_module(self, debug=True):
         """
         Create a develop module file which sets environment based on the build
         Usage: module load name, which loads the module you want to use. $SOFTDEVELNAME should then be the full path
@@ -1136,11 +1136,17 @@ class Application:
                     name, version =  path.rsplit('/', 1)
                     load_txt += mod_gen.loadModule(name, version)
 
-        output_dir = os.path.join(self.installdir, config.logPath())
-        if not os.path.exists(output_dir):
-            os.makedirs(output_dir)
+        if not debug:
+            output_dir = os.path.join(self.installdir, config.logPath())
+            if not os.path.exists(output_dir):
+                os.makedirs(output_dir)
+        else:
+            output_dir = self.builddir
 
-        devel_module = open(os.path.join(output_dir, "%s-%s-easybuild-devel" % (self.name(), self.installversion())), "w")
+        filename = os.path.join(output_dir, "%s-%s-easybuild-devel" % (self.name(), self.installversion()))
+        self.log.debug("Writing devel module to %s" % filename)
+
+        devel_module = open(filename, "w")
         devel_module.write(header)
         devel_module.write(load_txt)
         devel_module.write(env_txt)
