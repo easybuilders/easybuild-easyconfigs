@@ -184,8 +184,6 @@ def main():
                 tabs = "\t" * (3 - (len(key) + 1) / 8)
                 print "%s:%s%s" % (key, tabs, extra[key][1])
 
-
-
     ## Dump available classes
     if options.dump_classes:
         dumpClasses('easybuild.easyblocks')
