@@ -193,11 +193,6 @@ def main():
     if options.strict:
         filetools.strictness = options.strict
 
-    # Check if any modules are loaded which could influence the build process
-    bad_keys = ["$%s" % key for key in os.environ if key.startswith("SOFTROOT")]
-    if bad_keys:
-        log.error("You have some easybuild modules loaded: %s are set in your environment" % bad_keys)
-
     if options.job:
         submit_build_job(log)
         log.info("submitted job, exiting now")
