@@ -597,12 +597,12 @@ class Toolkit:
         # sequential BLAS and LAPACK
         prefix = "-Wl:-Bstatic -Wl,--start-group"
         suffix = "-Wl,--end-group -Wl:-Bdynamic"
-        self.vars['LIBBLAS'] =  ' '.join(prefix, ' '.join(["-lmkl_%s" % x for x in blas_libs]), suffix)
+        self.vars['LIBBLAS'] =  ' '.join([prefix, ' '.join(["-lmkl_%s" % x for x in blas_libs]), suffix])
         self.vars['LIBLAPACK'] = self.vars['LIBBLAS']
 
         # multi-threaded BLAS and LAPACK
         suffix += " -liomp5 -lpthread"
-        self.vars['LIBBLAS_MT'] =  ' '.join(prefix, ' '.join(["-lmkl_%s" % x for x in blas_mt_libs]), suffix)
+        self.vars['LIBBLAS_MT'] =  ' '.join([prefix, ' '.join(["-lmkl_%s" % x for x in blas_mt_libs]), suffix])
         self.vars['LIBLAPACK_MT'] = self.vars['LIBBLAS_MT']
 
         # determine BLACS/BLAS/LAPACK/FFTW library dir
@@ -639,12 +639,12 @@ class Toolkit:
         self.vars['SCALAPACK_LIB_DIR'] = libs_dir
 
         suffix = "-Wl,--end-group -Wl:-Bdynamic"
-        self.vars['LIBSCALAPACK'] = ' '.join((prefix, ' '.join(["-lmkl_%s" % x for x in scalapack_libs]), suffix))
+        self.vars['LIBSCALAPACK'] = ' '.join([prefix, ' '.join(["-lmkl_%s" % x for x in scalapack_libs]), suffix])
         self.vars['SCALAPACK_STATIC_LIBS'] = ','.join(["libmkl_%s.a" % x for x in scalapack_libs])
 
         # multi-threaded ScaLAPACK
         suffix += ' -liomp5 -lpthread'
-        self.vars['LIBSCALAPACK_MT'] = ' '.join((prefix, ' '.join(["-lmkl_%s" % x for x in scalapack_mt_libs]), suffix))
+        self.vars['LIBSCALAPACK_MT'] = ' '.join([prefix, ' '.join(["-lmkl_%s" % x for x in scalapack_mt_libs]), suffix])
         self.vars['SCALAPACK_MT_STATIC_LIBS'] = ','.join(["libmkl_%s.a" % x for x in scalapack_mt_libs])
 
         # FFT library
