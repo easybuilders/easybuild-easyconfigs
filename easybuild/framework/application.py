@@ -1088,7 +1088,7 @@ class Application:
         txt += self.make_module_extra()
         if self.getcfg('pkglist'):
             txt += self.make_module_extra_packages()
-        txt += '\n# built with EasyBuild version %s' % easybuild.VERBOSE_VERSION
+        txt += '\n# built with EasyBuild version %s\n' % easybuild.VERBOSE_VERSION
 
         try:
             f = open(self.moduleGenerator.filename, 'w')
@@ -1290,10 +1290,10 @@ class Application:
             modpath = self.make_module(fake=True)
         # adjust MODULEPATH tand load module
         if self.getcfg('pkgloadmodule'):
-            self.log.debug("Adding %s to MODULEPATH" % modpath)
             if self.skip:
                 m = Modules()
             else:
+                self.log.debug("Adding %s to MODULEPATH" % modpath)
                 m = Modules([modpath] + os.environ['MODULEPATH'].split(':'))
 
             if m.exists(self.name(), self.installversion()):
