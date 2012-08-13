@@ -88,11 +88,12 @@ class EasyBuildLog(logging.Logger):
 
 
 # set format for logger
-loggingFormat = EB_MSG_PREFIX + ' %(asctime)s %(name)s %(levelname)s %(message)s'
-formatter = logging.Formatter(loggingFormat)
+logging_format = EB_MSG_PREFIX + ' %(asctime)s %(name)s %(levelname)s %(message)s'
+formatter = logging.Formatter(logging_format)
 
 # redirect standard handler of root logger to /dev/null
-logging.basicConfig(level=logging.ERROR, format=loggingFormat, filename='/dev/null')
+# without this, everything is logged twice (one by root logger, once by descendant logger)
+logging.basicConfig(level=logging.ERROR, format=logging_format, filename='/dev/null')
 
 logging.setLoggerClass(EasyBuildLog)
 
@@ -117,13 +118,18 @@ def initLogger(name=None, version=None, debug=False, filename=None, typ='UNKNOWN
     - does not append
     - sets log handlers
     """
+
+    # obtain root logger
     log = logging.getLogger()
 
-    # set log level
+    # determine log level
     if debug:
         defaultLogLevel = logging.DEBUG
     else:
         defaultLogLevel = logging.INFO
+
+    # set log level for root logger
+    log.setLevel(defaultLogLevel)
 
     if (name and version) or filename:
         if not filename:
@@ -135,6 +141,7 @@ def initLogger(name=None, version=None, debug=False, filename=None, typ='UNKNOWN
     hand.setFormatter(formatter)
     log.addHandler(hand)
 
+    # initialize our logger
     log = logging.getLogger(typ)
     log.setLevel(defaultLogLevel)
 

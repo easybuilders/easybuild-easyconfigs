@@ -36,8 +36,8 @@ from distutils.version import LooseVersion
 import easybuild.tools.environment as env
 from easybuild.framework.application import Application
 from easybuild.tools.filetools import run_cmd
+from easybuild.tools.modules import get_software_root
 from easybuild.tools.systemtools import get_kernel_name, get_shared_lib_ext, get_platform_name
-
 
 
 class GCC(Application):
@@ -99,7 +99,7 @@ class GCC(Application):
         # see if modules are loaded
         # if module is available, just use the --with-X GCC configure option
         for extra in copy(extra_src_dirs):
-            envvar = os.getenv('SOFTROOT%s' % extra.upper())
+            envvar = get_software_root(extra)
             if envvar:
                 configopts += " --with-%s=%s" % (extra, envvar)
                 extra_src_dirs.remove(extra)

@@ -42,7 +42,7 @@ from optparse import OptionParser
 import easybuild  # required for VERBOSE_VERSION
 import easybuild.tools.config as config
 import easybuild.tools.filetools as filetools
-from easybuild.framework.application import Application, get_class
+from easybuild.framework.application import get_class
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.tools.build_log import EasyBuildError, initLogger, \
     removeLogHandler, print_msg
@@ -149,7 +149,7 @@ def main():
         blocks = None
 
     ## Initialize logger
-    logFile, log, hn = initLogger(filename=logFile, debug=options.debug, typ=None)
+    logFile, log, hn = initLogger(filename=logFile, debug=options.debug, typ="build")
 
     ## Show version
     if options.version:
@@ -192,6 +192,11 @@ def main():
     # set strictness of filetools module
     if options.strict:
         filetools.strictness = options.strict
+
+    # Check if any modules are loaded which could influence the build process
+    bad_keys = ["$%s" % key for key in os.environ if key.startswith("SOFTROOT")]
+    if bad_keys:
+        log.error("You have some easybuild modules loaded: %s are set in your environment" % bad_keys)
 
     if options.job:
         submit_build_job(log)
@@ -332,12 +337,18 @@ def processEasyconfig(path, log, onlyBlocks=None, regtest_online=False):
             log.debug("Adding dependency %s for app %s." % (dep, name))
             package['dependencies'].append(dep)
 
-        if eb.toolkit().name != 'dummy':
-            dep = (eb.toolkit().name, eb.toolkit().version)
+        if eb.toolkit_name() != 'dummy':
+            dep = (eb.toolkit_name(), eb.toolkit_version())
             log.debug("Adding toolkit %s as dependency for app %s." % (dep, name))
             package['dependencies'].append(dep)
 
         del eb
+
+        # ensure the pathname is equal to the module
+        base_name, ext = os.path.splitext(os.path.basename(spec))
+        module_name = "-".join(package['module'])
+        if base_name.lower() != module_name.lower():
+            log.error("easyconfig file: %s does not contain module %s" % (spec, module_name))
 
         packages.append(package)
 
@@ -400,12 +411,6 @@ def resolveDependencies(unprocessed, robot, log):
                     log.info("Robot: resolving dependency %s with %s" % (candidates[0], path))
 
                     processedSpecs = processEasyconfig(path, log)
-                    mods = [spec['module'] for spec in processedSpecs]
-                    if not candidates[0] in mods:
-                        msg = "Expected easyconfig %s to resolve dependency for %s, but it does not" % (path, candidates[0])
-                        msg += " (list of obtained modules after processing easyconfig: %s)" % mods
-                        log.error(msg)
-
                     unprocessed.extend(processedSpecs)
                     robotAddedDependency = True
                     break

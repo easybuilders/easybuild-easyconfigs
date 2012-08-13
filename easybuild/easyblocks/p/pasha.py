@@ -24,7 +24,9 @@ EasyBuild support for building and installing Pasha, implemented as an easyblock
 
 import shutil
 import os
+
 from easybuild.framework.application import Application
+from easybuild.tools.modules import get_software_root
 
 
 class Pasha(Application):
@@ -33,12 +35,12 @@ class Pasha(Application):
     def configure(self):
         """Configure Pasha by setting make options."""
 
-        tbb = os.getenv('SOFTROOTTBB')
+        tbb = get_software_root('TBB')
         if not tbb:
             self.log.error("TBB module not loaded.")
 
         self.updatecfg('makeopts', "TBB_DIR=%s/tbb MPI_DIR='' MPI_INC=''")
-        self.updatecfg('makeopts', "MPI_CXX=$MPICXX OPM_FLAG=%s" % (tbb, self.tk.get_openmp_flag()))
+        self.updatecfg('makeopts', "MPI_CXX=$MPICXX OPM_FLAG=%s" % (tbb, self.toolkit().get_openmp_flag()))
         self.updatecfg('makeopts', "MPI_LIB='' MY_CXX=$CXX MPICH_IGNORE_CXX_SEEK=1")
 
     def make_install(self):

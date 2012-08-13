@@ -8,16 +8,11 @@ homepage = '(none)'
 description = """GNU Compiler Collection (GCC) based compiler toolkit, including 
 OpenMPI for MPI support, ATLAS (BLAS support), LAPACK, FFTW and ScaLAPACK."""
 
-toolkit = {'name':'dummy', 'version':'dummy'}
+toolkit = {'name': 'dummy', 'version': 'dummy'}
 
-compname = 'GCC'
-compver = '4.6.3'
-comp = '%s-%s' % (compname, compver)
-
-mpilib = 'OpenMPI'
-mpiver = '1.4.5'
-mpisuff = '-no-OFED'
-mpi = '%s-%s%s' % (mpilib, mpiver, mpisuff)
+comp_name = 'GCC'
+comp_version = '4.6.3'
+comp = "%s-%s" % (comp_name, comp_version)
 
 blaslib = 'ATLAS'
 blasver = '3.8.4'
@@ -29,14 +24,22 @@ lapack = '%s-%s' % (lapacklib, lapackver)
 
 blacsver = '1.1'
 
-## compiler toolkit depencies
-dependencies = [(compname, compver),
-                (mpilib, mpiver, '-%s%s' % (comp, mpisuff)),
-                (blaslib, blasver, '-%s-%s' % (comp, lapack)),
-                (lapacklib, lapackver, '-%s' % comp),
-                ('FFTW', '3.3.1', '-%s-%s' % (comp, mpi)),
-                ('BLACS', blacsver, '-%s-%s' % (comp, mpi)),
-                ('ScaLAPACK','1.8.0', '-%s-%s-%s-%s-BLACS-%s' % (comp, mpi, blas, lapack, blacsver))
+# toolkit used to build goalf dependencies
+comp_mpi_tk_name = 'gompi'
+comp_mpi_tk_ver = "%s%s" % (version, versionsuffix)
+comp_mpi_tk = "%s-%s" % (comp_mpi_tk_name, comp_mpi_tk_ver)
+
+# compiler toolkit depencies
+# we need GCC and OpenMPI as explicit dependencies instead of gompi toolkit
+# because of toolkit preperation functions
+dependencies = [
+                ('GCC', '4.6.3'),  # part of gompi-1.1.0
+                ('OpenMPI', '1.4.5-%s%s' % (comp, versionsuffix)),  # part of gompi-1.1.0
+                (blaslib, blasver, '-%s-%s' % (comp_mpi_tk, lapack)),
+                (lapacklib, lapackver, "-%s" % comp_mpi_tk),
+                ('FFTW', '3.3.1', "-%s" % comp_mpi_tk),
+                ('BLACS', blacsver, "-%s" % comp_mpi_tk),
+                ('ScaLAPACK','1.8.0', '-%s-%s-%s-BLACS-%s' % (comp_mpi_tk, blas, lapack, blacsver))
                ]
 
 moduleclass = 'compiler'

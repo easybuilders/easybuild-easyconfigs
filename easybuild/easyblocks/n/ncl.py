@@ -34,7 +34,7 @@ from distutils.version import LooseVersion
 
 from easybuild.framework.application import Application
 from easybuild.tools.filetools import run_cmd
-from easybuild.tools.modules import get_software_root
+from easybuild.tools.modules import get_software_root, get_software_version
 
 
 class NCL(Application):
@@ -69,12 +69,13 @@ class NCL(Application):
 
         # adjust config file as needed
         ctof_libs = ''
-        if os.getenv('SOFTROOTIFORT'):
-            if LooseVersion(os.getenv('SOFTVERSIONIFORT')) < LooseVersion('2011.4'):
-                ctof_libs = '-lm -L${SOFTROOTIFORT}/lib/intel64 -lifcore -lifport'
+        ifort = get_software_root('ifort')
+        if ifort:
+            if LooseVersion(get_software_version('ifort')) < LooseVersion('2011.4'):
+                ctof_libs = '-lm -L%s/lib/intel64 -lifcore -lifport' % ifort
             else:
-                ctof_libs = '-lm -L${SOFTROOTIFORT}/compiler/lib/intel64 -lifcore -lifport'
-        elif os.getenv('SOFTROOTGCC'):
+                ctof_libs = '-lm -L%s/compiler/lib/intel64 -lifcore -lifport' % ifort
+        elif get_software_root('GCC'):
             ctof_libs = '-lgfortran -lm'
         macrodict = {
                      'CCompiler': os.getenv('CC'),
@@ -89,7 +90,7 @@ class NCL(Application):
 
         # replace config entries that are already there
         for line in fileinput.input(cfg_filename, inplace=1, backup='%s.orig' % cfg_filename):
-            for key,val in macrodict.items():
+            for (key, val) in macrodict.items():
                 regexp = re.compile("(#define %s\s*).*" % key)
                 match = regexp.search(line)
                 if match:
@@ -99,7 +100,7 @@ class NCL(Application):
 
         # add remaining config entries
         f = open(cfg_filename, "a")
-        for key,val in macrodict.items():
+        for (key, val) in macrodict.items():
             f.write("#define %s %s\n" % (key, val))
         f.close()
 
@@ -123,11 +124,11 @@ class NCL(Application):
         libs = ''
         includes = ''
         for dep in deps:
-            softroot = get_software_root(dep)
-            if not softroot:
+            root = get_software_root(dep)
+            if not root:
                 self.log.error('%s not available' % dep)
-            libs += ' -L%s/lib ' % softroot
-            includes += ' -I%s/include ' % softroot
+            libs += ' -L%s/lib ' % root
+            includes += ' -I%s/include ' % root
 
         cfgtxt="""#ifdef FirstSite
 #endif /* FirstSite */

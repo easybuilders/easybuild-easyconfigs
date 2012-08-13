@@ -91,8 +91,8 @@ def findBaseDir():
       expect only the first one to give the correct path
     """
     def getLocalDirsPurged():
-        ## e.g. always purge the easybuildlog directory
-        ignoreDirs = ['easybuildlog']
+        ## e.g. always purge the log directory
+        ignoreDirs = ["easybuild"]
 
         lst = os.listdir(os.getcwd())
         for ignDir in ignoreDirs:
