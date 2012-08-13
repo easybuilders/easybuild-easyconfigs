@@ -19,9 +19,8 @@
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
 """
-EasyBuild support for building and installing PETSc, implemented as an easyblock
+EasyBuild support for PETSc, implemented as an easyblock
 """
-
 import os
 import re
 from distutils.version import LooseVersion
@@ -155,10 +154,13 @@ class PETSc(Application):
                 umfpack_libs = [os.path.join(suitesparse, l, "Lib", "lib%s.a" % l.lower())
                                 for l in ["UMFPACK", "CHOLMOD", "COLAMD", "AMD"]]
 
-                self.updatecfg('configopts', ' '.join([(withdep+x) for x in ["=1",
+                self.updatecfg('configopts', ' '.join([(withdep+x) for x in [
+                                                                             "=1",
                                                                              "-include=%s" % os.path.join(suitesparse, "UMFPACK", "Include"),
                                                                              "-lib=[%s]" % ','.join(umfpack_libs)
-                                                                            ]]))
+                                                                            ]
+                                                       ])
+                               )
 
             # set PETSC_DIR for configure (env) and make
             env.set('PETSC_DIR', self.getcfg('startfrom'))
@@ -206,7 +208,7 @@ class PETSc(Application):
     # default make should be fine
 
     def make_install(self):
-
+        """Install using make install (for non-source installations), or by symlinking files (old versions)."""
         if LooseVersion(self.version()) >= LooseVersion("3"):
             if not self.getcfg('sourceinstall'):
                 Application.make_install(self)
@@ -270,7 +272,8 @@ class PETSc(Application):
             else:
                 libext = "a"
 
-            self.setcfg('sanityCheckPaths', {'files': [os.path.join(prefix2,
+            self.setcfg('sanityCheckPaths', {
+                                             'files': [os.path.join(prefix2,
                                                                     "lib",
                                                                     "libpetsc.%s" % libext)
                                                        ],
