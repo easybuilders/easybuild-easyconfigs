@@ -17,9 +17,14 @@
 # You should have received a copy of the GNU General Public License
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
+"""
+EasyBuild support for CGAL, implemented as an easyblock
+"""
 import os
+
 from easybuild.easyblocks.c.cmake import CMake
 from easybuild.tools.modules import get_software_root
+
 
 class CGAL(CMake):
     """Support for building CGAL."""
@@ -45,10 +50,12 @@ class CGAL(CMake):
 
         if not self.getcfg('sanityCheckPaths'):
 
-            self.setcfg('sanityCheckPaths', {'files': ['bin/cgal_%s' % x for x in ["create_cmake_script",
+            self.setcfg('sanityCheckPaths', {
+                                             'files': ['bin/cgal_%s' % x for x in ["create_cmake_script",
                                                                                    "make_macosx_app"]] +
                                                       ['lib/libCGAL%s.so' % x for x in ["", "_Core"]],
-                                             'dirs':['include/CGAL', 'lib/CGAL']})
+                                             'dirs':['include/CGAL', 'lib/CGAL']
+                                             })
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
