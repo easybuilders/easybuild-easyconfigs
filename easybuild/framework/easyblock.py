@@ -117,13 +117,13 @@ class EasyBlock:
 
         self.validations = {'moduleclass': self.validmoduleclasses, 'stop': self.validstops }
 
-        self.parse(path)
+        self.parse(path, validate)
 
         # perform validations
         if validate:
             self.validate()
 
-    def parse(self, path):
+    def parse(self, path, validate=True):
         """
         Parse the file and set options
         mandatory requirements are checked here
@@ -139,22 +139,26 @@ class EasyBlock:
             self.log.exception("SyntaxError in easyblock %s" % path)
 
         # validate mandatory keys
-        for key in self.mandatory:
-            if key not in local_vars:
-                self.log.error("mandatory variable %s not provided" % key)
+        if validate:
+            for key in self.mandatory:
+                if key not in local_vars:
+                    self.log.error("mandatory variable %s not provided" % key)
 
-        # provide suggestions for typos
-        for key in local_vars:
-            if key not in self.config:
-                guesses = difflib.get_close_matches(key, self.config.keys(), 1, 0.85)
-                if len(guesses) == 1:
-                    self.log.error("You set invalid variable %s, possible suggestions: %s" % (key, guesses[0]))
+            # provide suggestions for typos
+            for key in local_vars:
+                if key not in self.config:
+                    guesses = difflib.get_close_matches(key, self.config.keys(), 1, 0.85)
+                    if len(guesses) == 1:
+                        self.log.error("You set invalid variable %s, possible suggestions: %s" % (key, guesses[0]))
 
         for key in local_vars:
+            if not validate:
+                self[key] = local_vars[key]
             # do not store variables we don't need
-            if key in self.config:
+            elif key in self.config:
                 self[key] = local_vars[key]
                 self.log.info("setting config option %s: value %s" % (key, self[key]))
+
 
     def validate(self):
         """
