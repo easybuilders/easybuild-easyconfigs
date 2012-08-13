@@ -86,11 +86,12 @@ class Boost(Application):
 
         bjamoptions = " --prefix=%s" % self.objdir
 
-        # specify path for bzip2 if module is loaded
-        bzip2 = get_software_root('bzip2')
-        if bzip2:
-            bjamoptions += " -sBZIP2_INCLUDE=%s/include" % bzip2
-            bjamoptions += " -sBZIP2_LIBPATH=%s/lib" % bzip2
+        # specify path for bzip2/zlib if module is loaded
+        for lib in ["bzip2", "zlib"]:
+            libroot = get_software_root(lib)
+            if libroot:
+                bjamoptions += " -s%s_INCLUDE=%s/include" % (lib.upper(), libroot)
+                bjamoptions += " -s%s_LIBPATH=%s/lib" % (lib.upper(), libroot)
 
         if self.getcfg('boost_mpi'):
             self.log.info("Building boost_mpi library")
