@@ -34,11 +34,15 @@ class Boost(Application):
     """Support for building Boost."""
 
     def __init__(self, *args, **kwargs):
-        Application.__init__(self, args, kwargs)
+        Application.__init__(self, *args, **kwargs)
 
         self.objdir = None
 
-        self.cfg.update({'boost_mpi':[False, "Build mpi boost module (default: False)"]})
+    def extra_options(self):
+
+        extra_vars = {'boost_mpi':[False, "Build mpi boost module (default: False)"]}
+
+        return Application.extra_options(self, extra_vars)
 
     def configure(self):
         """Configure Boost build using custom tools"""
