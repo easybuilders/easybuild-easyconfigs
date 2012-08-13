@@ -18,6 +18,9 @@
 # You should have received a copy of the GNU General Public License
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
+"""
+EasyBuild support for DOLFIN, implemented as an easyblock
+"""
 import os
 
 from easybuild.easyblocks.c.cmakepythonpackage import CMakePythonPackage
@@ -25,17 +28,14 @@ from easybuild.tools.modules import get_software_root, get_software_version
 
 
 class DOLFIN(CMakePythonPackage):
-    """Extension of the CMakePythonPackage for Dolfin.
-    
-    Dolfin needs some environment variables to be set at run time.
-    """
+    """Support for building and installing DOLFIN."""
 
     def configure(self):
-        """Configure Dolfin build."""
+        """Configure DOLFIN build by setting configure options."""
 
         # make sure that required dependencies are loaded
-        deps = ['Armadillo', 'Boost', 'CGAL', 'ParMETIS', 'PETSc', 'Python', 'SCOTCH',
-                'SLEPc', 'SuiteSparse', 'UFC']
+        deps = ['Armadillo', 'Boost', 'CGAL', 'MTL4', 'ParMETIS', 'PETSc', 'Python',
+                'SCOTCH', 'Sphinx', 'SLEPc', 'SuiteSparse', 'UFC']
         depsdict = {}
         for dep in deps:
             deproot = get_software_root(dep)
@@ -106,6 +106,9 @@ class DOLFIN(CMakePythonPackage):
             if val:
                 self.updatecfg('configopts', '-D%s=%s' % (env_var, val))
 
+        # MTL4
+        self.updatecfg('configopts', '-DMTL4_DIR:PATH="%s"' % depsdict['MTL4'])
+
         # set correct openmp options
         openmp = self.toolkit().get_openmp_flag()
         self.updatecfg('configopts', ' -DOpenMP_CXX_FLAGS="%s"' % openmp)
@@ -119,7 +122,7 @@ class DOLFIN(CMakePythonPackage):
         # need to know exact output when all optional packages are found
 
     def make_module_extra(self):
-        """Set extra environment variables for Dolfin."""
+        """Set extra environment variables for DOLFIN."""
 
         txt = CMakePythonPackage.make_module_extra(self)
 
@@ -138,10 +141,11 @@ class DOLFIN(CMakePythonPackage):
         return txt
 
     def sanitycheck(self):
-        """Custom sanity check for Dolfin."""
+        """Custom sanity check for DOLFIN."""
 
         if not self.getcfg('sanityCheckPaths'):
-            self.setcfg('sanityCheckPaths', {'files': ['bin/dolfin-%s' % x for x in ['version', 'convert',
+            self.setcfg('sanityCheckPaths', {
+                                             'files': ['bin/dolfin-%s' % x for x in ['version', 'convert',
                                                                                      'order', 'plot']]
                                                     + ['include/dolfin.h'],
                                              'dirs':['%s/dolfin' % self.pylibdir]
