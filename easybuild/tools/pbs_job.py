@@ -30,9 +30,11 @@ from easybuild.tools.build_log import getLog
 class PbsJob:
     """Interaction with TORQUE"""
 
-    def __init__(self, script, name, env_vars=None):
+    def __init__(self, script, name, env_vars=None, resources={}):
         """
         create a new Job to be submitted to PBS
+        env_vars is a dictionary with key-value pairs of environment variables that should be passed on to the job
+        resources is a dictionary with optional keys: ['hours', 'procs']
         """
         self.log = getLog("PBS")
         self.script = script
@@ -56,6 +58,15 @@ class PbsJob:
         except:
             self.log.error("Could not connect to the default pbs server, is this correctly configured?")
 
+        hours = resources.get('hours', 72)
+        self.resources = {
+                          "walltime": "%s:00:00" % hours,
+                          "nodes": "1:ppn=%s" % resources.get('procs', self.get_ppn())
+                         }
+        if hours >= 12:
+            self.queue = 'long'
+        else:
+            self.queue = 'short'
         self.jobid = None
         self.deps = []
 
@@ -75,7 +86,6 @@ class PbsJob:
         txt = self.script
         self.log.debug("Going to submit script %s" % txt)
 
-        resources = {"walltime": "72:00:00", "nodes": "1:ppn=%s" % self.get_ppn() }
 
         # Build default pbs_attributes list
         pbs_attributes = pbs.new_attropl(1)
@@ -84,9 +94,9 @@ class PbsJob:
 
 
         # set resource requirements
-        resourse_attributes = pbs.new_attropl(len(resources))
+        resourse_attributes = pbs.new_attropl(len(self.resources))
         idx = 0
-        for k, v in resources.items():
+        for k, v in self.resources.items():
             resourse_attributes[idx].name = 'Resource_List'
             resourse_attributes[idx].resource = k
             resourse_attributes[idx].value = v
@@ -121,12 +131,11 @@ class PbsJob:
         f.write(txt)
         f.close()
 
-        queue = 'long'
-        self.log.debug("Going to submit to queue %s" % queue)
+        self.log.debug("Going to submit to queue %s" % self.queue)
 
         # extend paramater should be 'NULL' because this is required by the python api
         extend = 'NULL'
-        jobid = pbs.pbs_submit(self.pbsconn, pbs_attributes, scriptfn, queue, extend)
+        jobid = pbs.pbs_submit(self.pbsconn, pbs_attributes, scriptfn, self.queue, extend)
 
         is_error, errormsg = pbs.error()
         if is_error:
