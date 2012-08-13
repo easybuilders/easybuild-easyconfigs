@@ -18,6 +18,9 @@
 # You should have received a copy of the GNU General Public License
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
+"""
+EasyBuild support for SuiteSparse, implemented as an easyblock
+"""
 import fileinput
 import re
 import os
@@ -34,7 +37,6 @@ class SuiteSparse(Application):
 
     def configure(self):
         """Configure build by patching UFconfig.mk."""
-
         metis = get_software_root('METIS')
         parmetis = get_software_root('ParMETIS')
         if not metis and not parmetis:
@@ -43,19 +45,19 @@ class SuiteSparse(Application):
         fp = os.path.join("UFconfig","UFconfig.mk")
 
         cfgvars = {
-                   'CC':os.getenv('MPICC'),
-                   'CFLAGS':os.getenv('CFLAGS'),
-                   'CXX':os.getenv('MPICXX'),
-                   'F77':os.getenv('MPIF77'),
-                   'F77FLAGS':os.getenv('F77FLAGS'),
-                   'BLAS':os.getenv('LIBBLAS_MT'),
-                   'LAPACK':os.getenv('LIBLAPACK_MT'),
+                   'CC': os.getenv('MPICC'),
+                   'CFLAGS': os.getenv('CFLAGS'),
+                   'CXX': os.getenv('MPICXX'),
+                   'F77': os.getenv('MPIF77'),
+                   'F77FLAGS': os.getenv('F77FLAGS'),
+                   'BLAS': os.getenv('LIBBLAS_MT'),
+                   'LAPACK': os.getenv('LIBLAPACK_MT'),
                }
 
         if parmetis:
             cfgvars.update({
-                            'METIS_PATH':parmetis,
-                            'METIS':"%(p)s/lib/libparmetis.a %(p)s/lib/metis.a" % {'p':parmetis}
+                            'METIS_PATH': parmetis,
+                            'METIS': "%(p)s/lib/libparmetis.a %(p)s/lib/metis.a" % {'p':parmetis}
                             })
 
         # patch file
@@ -103,7 +105,7 @@ class SuiteSparse(Application):
             except:
                 self.log.exception("Copying src %s to dst %s failed" % (src, dst))
 
-        # Some extra symlinks are necessary for UMFPACK to work.
+        # some extra symlinks are necessary for UMFPACK to work.
         for p in ['AMD/include/amd.h', 'AMD/include/amd_internal.h',
                   'UFconfig/UFconfig.h', 'AMD/lib/libamd.a']:
             src = os.path.join(self.installdir, p)
@@ -119,21 +121,21 @@ class SuiteSparse(Application):
 
     def make_module_req_guess(self):
         """Add UFconfig dir to CPATH so UFconfig include file is found."""
-
         guesses = Application.make_module_req_guess(self)
         guesses.update({'CPATH': ["UFconfig"]})
 
         return guesses
 
     def sanitycheck(self):
-
+        """Custom sanity check for SuiteSparse."""
         if not self.getcfg('sanityCheckPaths'):
-            self.setcfg('sanityCheckPaths', {'files':["%s/lib/lib%s.a" % (x, x.lower()) for x in ["AMD", "BTF", "CAMD", "CCOLAMD", "CHOLMOD",
+            self.setcfg('sanityCheckPaths', {
+                                             'files':["%s/lib/lib%s.a" % (x, x.lower()) for x in ["AMD", "BTF", "CAMD", "CCOLAMD", "CHOLMOD",
                                                                                                   "COLAMD", "CXSparse", "KLU", "LDL", "RBio",
                                                                                                   "SPQR", "UMFPACK"]] +
                                                     ["CSparse3/lib/libcsparse.a"],
-                                            'dirs':["MATLAB_Tools"]
-                                           })
+                                             'dirs':["MATLAB_Tools"]
+                                            })
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
