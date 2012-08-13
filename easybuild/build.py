@@ -77,11 +77,9 @@ def add_build_options(parser):
                         help="does the build/installation in a test directory " \
                                "located in $HOME/easybuildinstall")
 
-    stop_options = ['cfg', 'source', 'patch', 'configure', 'make', 'install',
-                   'test', 'postproc', 'cleanup', 'packages']
-    parser.add_option("-s", "--stop", type="choice", choices=stop_options,
+    parser.add_option("-s", "--stop", type="choice", choices=EasyBlock.validstops,
                         help="stop the installation after certain step" \
-                               "(valid: %s)" % ', '.join(stop_options))
+                               "(valid: %s)" % ', '.join(EasyBlock.validstops))
     parser.add_option("-b", "--only-blocks", metavar="blocks", help="Only build blocks blk[,blk2]")
     parser.add_option("-k", "--skip", action="store_true",
                         help="skip existing software (useful for installing additional packages)")

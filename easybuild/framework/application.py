@@ -645,8 +645,8 @@ class Application:
             ## PATCH
             self.runstep('patch', [self.apply_patch], skippable=True)
 
-            self.toolkit().prepare(self.getcfg('onlytkmod'))
-            self.startfrom()
+            # PREPARE
+            self.runstep('prepare', [self.prepare], skippable=True)
 
             ## CONFIGURE
             print_msg("configuring...", self.log)
@@ -654,7 +654,7 @@ class Application:
 
             ## MAKE
             print_msg("building...", self.log)
-            self.runstep('make', [self.make_devel_module, self.make], skippable=True)
+            self.runstep('make', [self.make], skippable=True)
 
             ## TEST
             print_msg("testing...", self.log)
@@ -909,6 +909,15 @@ class Application:
         except OSError, err:
             self.log.exception("Can't change to real build directory %s: %s" % (self.getcfg('startfrom'), err))
 
+    def prepare(self):
+        """
+        Pre-configure step. Set's up the builddir just before starting configure
+        """
+        self.toolkit().prepare(self.getcfg('onlytkmod'))
+        self.startfrom()
+        self.make_devel_module()
+
+
     def configure(self, cmd_prefix=''):
         """
         Configure step
@@ -1089,11 +1098,11 @@ class Application:
         self.log.info("Added modulefile: %s" % (self.moduleGenerator.filename))
 
         if not fake:
-            self.make_devel_module(debug=False)
+            self.make_devel_module(create_in_builddir=False)
 
         return modpath
 
-    def make_devel_module(self, debug=True):
+    def make_devel_module(self, create_in_builddir=True):
         """
         Create a develop module file which sets environment based on the build
         Usage: module load name, which loads the module you want to use. $SOFTDEVELNAME should then be the full path
@@ -1130,18 +1139,19 @@ class Application:
         # capture all the SOFTDEVEL vars
         # these should be all the dependencies and we should load them
         for key in os.environ:
-            if key.startswith("SOFTDEVEL"):
+            # select all the softdevel variables without my own
+            if key.startswith("SOFTDEVEL") and key != "SOFTDEVEL%s" % convertName(self.name(), upper=True):
                 path = os.environ[key]
                 if os.path.isfile(path):
                     name, version =  path.rsplit('/', 1)
                     load_txt += mod_gen.loadModule(name, version)
 
-        if not debug:
+        if create_in_builddir:
+            output_dir = self.builddir
+        else:
             output_dir = os.path.join(self.installdir, config.logPath())
             if not os.path.exists(output_dir):
                 os.makedirs(output_dir)
-        else:
-            output_dir = self.builddir
 
         filename = os.path.join(output_dir, "%s-%s-easybuild-devel" % (self.name(), self.installversion()))
         self.log.debug("Writing devel module to %s" % filename)
