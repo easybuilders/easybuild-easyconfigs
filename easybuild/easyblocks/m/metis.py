@@ -18,15 +18,19 @@
 # You should have received a copy of the GNU General Public License
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
-
-from distutils.version import LooseVersion
+"""
+EasyBuild support for METIS, implemented as an easyblock
+"""
 import os
 import shutil
+from distutils.version import LooseVersion
+
 from easybuild.framework.application import Application
 from easybuild.tools.filetools import run_cmd, mkdir
 
+
 class METIS(Application):
-    """Support for building METIS."""
+    """Support for building and installing METIS."""
 
     def configure(self, *args, **kwargs):
         """Configure build using 'make config' (only for recent versions)."""
@@ -47,7 +51,7 @@ class METIS(Application):
         Application.make(self)
 
     def make_install(self):
-        """Install by manually copy files to install dir, for old versions,
+        """Install by manually copying files to install dir, for old versions,
         or by running 'make install' for new versions.
         
         Create symlinks where expected by other applications
@@ -57,10 +61,10 @@ class METIS(Application):
 
             libdir = os.path.join(self.installdir, 'lib')
             mkdir(libdir)
-    
+
             includedir = os.path.join(self.installdir, 'include')
             mkdir(includedir)
-    
+
             # copy libraries
             try:
                 src = os.path.join(self.getcfg('startfrom'), 'libmetis.a')
@@ -68,7 +72,7 @@ class METIS(Application):
                 shutil.copy2(src, dst)
             except OSError, err:
                 self.log.error("Copying file libmetis.a to lib dir failed: %s" % err)
-    
+
             # copy include files
             try:
                 for f in ['defs.h', 'macros.h', 'metis.h', 'proto.h', 'rename.h', 'struct.h']:
@@ -78,8 +82,8 @@ class METIS(Application):
                     os.chmod(dst, 0755)
             except OSError, err:
                 self.log.error("Copying file metis.h to include dir failed: %s" % err)
-    
-            # Other applications depending on ParMETIS (SuiteSparse for one) look for both ParMETIS libraries
+
+            # other applications depending on ParMETIS (SuiteSparse for one) look for both ParMETIS libraries
             # and header files in the Lib directory (capital L). The following symlinks are hence created.
             try:
                 Libdir = os.path.join(self.installdir, 'Lib')
@@ -99,20 +103,22 @@ class METIS(Application):
 
             binfiles = []
             if LooseVersion(self.version()) > LooseVersion("5"):
-                binfiles += ["cmpfillin","gpmetis","graphchk","m2gmetis","mpmetis","ndmetis"]
+                binfiles += ["cmpfillin", "gpmetis", "graphchk", "m2gmetis", "mpmetis", "ndmetis"]
 
             incfiles = ["metis.h"]
             if LooseVersion(self.version()) < LooseVersion("5"):
-                incfiles += ["defs.h","macros.h","metis.h","proto.h","rename.h","struct.h"]
+                incfiles += ["defs.h", "macros.h", "proto.h", "rename.h", "struct.h"]
 
             dirs = []
             if LooseVersion(self.version()) < LooseVersion("5"):
                 dirs += ["Lib"]
 
-            self.setcfg('sanityCheckPaths', {'files': ['bin/%s' % x for x in binfiles] +
+            self.setcfg('sanityCheckPaths', {
+                                             'files': ['bin/%s' % x for x in binfiles] +
                                                       ['include/%s' % x for x in incfiles] +
                                                       ['lib/libmetis.a'],
-                                             'dirs' : dirs})
+                                             'dirs' : dirs
+                                             })
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
