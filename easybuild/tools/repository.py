@@ -36,6 +36,7 @@ import tempfile
 import time
 
 import easybuild
+from easybuild.framework.easyblock import EasyBlock
 from easybuild.tools.build_log import getLog
 
 
@@ -103,7 +104,13 @@ class Repository:
         """
         Clean up working copy.
         """
-        return
+        pass
+
+    def get_buildstats(self, name, version):
+        """
+        Get the build statististics for module with name and version
+        """
+        pass
 
 
 class FileRepository(Repository):
@@ -153,7 +160,7 @@ class FileRepository(Repository):
 
             # append a line to the eb file so we don't have git merge conflicts
             if not previous:
-                statstemplate = "\n#Build statistics\nbuildstats=[%s]t\n"
+                statstemplate = "\n#Build statistics\nbuildstats=[%s]\n"
             else:
                 statstemplate = "\nbuildstats.append(%s)\n"
 
@@ -164,6 +171,23 @@ class FileRepository(Repository):
             log.exception("Copying file %s to %s (wc: %s) failed (%s)" % (cfg, dest, self.wc, err))
 
         return dest
+
+    def get_buildstats(self, name, version):
+        """
+        return the build statistics
+        """
+        full_path = os.path.join(self.wc, self.subdir, name)
+        if not os.path.isdir(full_path):
+            log.debug("module (%s) has not been found in the repo" % name)
+            return []
+
+        dest = os.path.join(full_path, "%s.eb" % version)
+        if not os.path.isfile(dest):
+            log.debug("version (%s) of module (%s) has not been found in the repo" % (version, name))
+            return []
+
+        eb = EasyBlock(dest)
+        return eb['buildstats']
 
 
 class GitRepository(FileRepository):
