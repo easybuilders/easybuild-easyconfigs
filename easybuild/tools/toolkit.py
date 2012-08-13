@@ -619,8 +619,8 @@ class Toolkit:
             self.vars['BLAS_LAPACK_LIB_DIR'] = libs_dir
 
         # BLAS/LAPACK library
-        self.vars['BLAS_STATIC_LIBS'] = ','.join(blas_libs)
-        self.vars['BLAS_MT_STATIC_LIBS'] = ','.join(blas_mt_libs)
+        self.vars['BLAS_STATIC_LIBS'] = ','.join(["lib%s.a" % x for x in blas_libs])
+        self.vars['BLAS_MT_STATIC_LIBS'] = ','.join(["lib%s.a" % x for x in blas_mt_libs])
 
         self.vars['LAPACK_STATIC_LIBS'] = self.vars['BLAS_STATIC_LIBS']
         self.vars['LAPACK_MT_STATIC_LIBS'] = self.vars['BLAS_MT_STATIC_LIBS']
