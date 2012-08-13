@@ -657,7 +657,8 @@ class Toolkit:
                                         "-Wl:-Bdynamic"])
         self.vars['FFTW_INC'] = os.path.join(mklroot, "mkl", "include", "fftw")
         self.vars['FFTW_LIB_DIR'] = libs_dir
-        self.vars['FFTW_STATIC_LIBS'] = ','.join(["lib%s.a" % x for x in fftw_libs+blas_libs])
+        fftw_static_libs = ["lib%s.a" % x for x in fftw_libs]
+        self.vars['FFTW_STATIC_LIBS'] = ','.join(fftw_static_libs + self.vars['BLAS_STATIC_LIBS'])
 
         # some tools (like pkg-utils) don't handle groups well, so pack them if required
         if self.opts['packed-groups']:
