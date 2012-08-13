@@ -18,11 +18,16 @@
 # You should have received a copy of the GNU General Public License
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
+"""
+EasyBuild support for ParMETIS, implemented as an easyblock
+"""
 import os
 import shutil
+
 from distutils.version import LooseVersion
 from easybuild.framework.application import Application
 from easybuild.tools.filetools import run_cmd, mkdir
+
 
 class ParMETIS(Application):
     """Support for building and installing ParMETIS."""
@@ -96,7 +101,7 @@ class ParMETIS(Application):
         libdir = os.path.join(self.installdir, 'lib')
 
         if LooseVersion(self.version()) >= LooseVersion("4"):
-            #i ncludedir etc changed in v4, use a normal makeinstall
+            # includedir etc changed in v4, use a normal make install
             cmd = "make install %s" % self.getcfg('installopts')
             try:
                 os.chdir(self.parmetis_builddir)
@@ -122,7 +127,6 @@ class ParMETIS(Application):
                 self.log.error("Copying files to installation dir failed: %s" % err)
 
         else:
-
             mkdir(libdir)
             mkdir(includedir)
 
@@ -140,13 +144,13 @@ class ParMETIS(Application):
                 src = os.path.join(self.getcfg('startfrom'), 'parmetis.h')
                 dst = os.path.join(includedir, 'parmetis.h')
                 shutil.copy2(src, dst)
-                # Some applications (SuiteSparse) can only use METIS (not ParMETIS), but header files are the same
+                # some applications (SuiteSparse) can only use METIS (not ParMETIS), but header files are the same
                 dst = os.path.join(includedir, 'metis.h')
                 shutil.copy2(src, dst)
             except OSError, err:
                 self.log.error("Copying files to installation dir failed: %s" % err)
 
-        # Other applications depending on ParMETIS (SuiteSparse for one) look for both ParMETIS libraries
+        # other applications depending on ParMETIS (SuiteSparse for one) look for both ParMETIS libraries
         # and header files in the Lib directory (capital L). The following symlink are hence created.
         try:
             llibdir = os.path.join(self.installdir, 'Lib')
@@ -161,9 +165,11 @@ class ParMETIS(Application):
 
         if not self.getcfg('sanityCheckPaths'):
 
-            self.setcfg('sanityCheckPaths', {'files': ['include/%smetis.h' % x for x in ["", "par"]] +
+            self.setcfg('sanityCheckPaths', {
+                                             'files': ['include/%smetis.h' % x for x in ["", "par"]] +
                                                       ['lib/lib%smetis.a' % x for x in ["", "par"]],
-                                             'dirs':['Lib']})
+                                             'dirs':['Lib']
+                                             })
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
