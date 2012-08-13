@@ -17,7 +17,9 @@
 # You should have received a copy of the GNU General Public License
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
-
+"""
+EasyBuild support for MTL4, implemented as an easyblock
+"""
 import os
 
 from easybuild.easyblocks.t.tarball import Tarball
@@ -40,7 +42,8 @@ class MTL4(Tarball):
 
             incpref = os.path.join('include','boost', 'numeric')
 
-            self.setcfg('sanityCheckPaths', {'files':[],
+            self.setcfg('sanityCheckPaths', {
+                                             'files':[],
                                              'dirs':[os.path.join(incpref, x) for x in ["itl",
                                                                                         "linear_algebra",
                                                                                         "meta_math",
