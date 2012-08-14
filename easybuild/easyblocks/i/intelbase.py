@@ -46,8 +46,9 @@ class IntelBase(Application):
         self.license = None
         Application.__init__(self, *args, **kwargs)
 
-    def extra_options(self, extra_vars=None):
-        vars = Application.extra_options(self, extra_vars)
+    @staticmethod
+    def extra_options(extra_vars=None):
+        vars = Application.extra_options(extra_vars)
         intel_vars = {
                       'license':[None, "License file path (default: None)"],
                       'license_activation': ['license_server', "Indicates license activation type (default: 'license_server')"],
@@ -70,7 +71,7 @@ class IntelBase(Application):
                 shutil.rmtree(intelhome)
                 self.log.info("Cleaning up intel dir %s" % intelhome)
             except OSError, err:
-                self.log.exception("Cleaning up intel dir %s failed: %s" % (intelhome, err))
+                self.log.warning("Cleaning up intel dir %s failed: %s" % (intelhome, err))
 
     def configure(self):
         """Configure: handle license file and clean home dir."""

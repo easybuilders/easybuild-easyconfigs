@@ -55,7 +55,8 @@ class WPS(Application):
         self.wrfdir = None
         self.compile_script = None
 
-    def extra_options(self):
+    @staticmethod
+    def extra_options():
         testdata_urls = [
                          "http://www.mmm.ucar.edu/wrf/src/data/avn_data.tar.gz",
                          "http://www.mmm.ucar.edu/wrf/src/wps_files/geog.tar.gz" # 697MB download, 16GB unpacked!
@@ -66,7 +67,7 @@ class WPS(Application):
                       'runtest': [True, "Build and run WPS tests (default: True)."],
                       'testdata': [testdata_urls, "URL to test data required to run WPS test (default: %s)." % testdata_urls]
                      }
-        return Application.extra_options(self, extra_vars)
+        return Application.extra_options(extra_vars)
 
     def configure(self):
         """Configure build:

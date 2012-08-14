@@ -70,12 +70,13 @@ class LAPACK(Application):
     def __init__(self, *args, **kwargs):
         Application.__init__(self, *args, **kwargs)
 
-    def extra_options(self):
+    @staticmethod
+    def extra_options():
         extra_vars = {
                       'supply_blas': [False, "Supply BLAS lib to LAPACK for building (default: False)"],
                       'test_only': [False, "Only make tests, don't try and build LAPACK lib."]
                      }
-        return Application.extra_options(self, extra_vars)
+        return Application.extra_options(extra_vars)
 
 
     def configure(self):
@@ -84,9 +85,9 @@ class LAPACK(Application):
         """
 
         # copy make.inc file from examples
-        if os.getenv('SOFTROOTGCC'):
+        if get_software_root('gcc'):
             makeinc = 'gfortran'
-        elif os.getenv('SOFTROOTIFORT'):
+        elif get_software_root('ifort'):
             makeinc = 'ifort'
         else:
             self.log.error("Don't know which make.inc file to pick, unknown compiler being used...")
@@ -185,7 +186,7 @@ class LAPACK(Application):
         """
         if self.getcfg('test_only'):
 
-            if not os.getenv('SOFTROOTLAPACK'):
+            if not get_software_root('lapack'):
                 self.log.error("You need to make sure that the LAPACK module is loaded to perform testing.")
 
             blaslib = get_blas_lib(self.log)
