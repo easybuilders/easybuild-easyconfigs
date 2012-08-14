@@ -69,29 +69,9 @@ def main():
     toolkit_ebs = [EasyBlock(tk_file) for tk_file in toolkit_files]
 
     # no version specified, we just take the most recent one
-    if not opts.version:
-        print toolkit_ebs[0]['name']
-        print toolkit_ebs[0]['version']
-        print toolkit_ebs[0].installversion()
-        sys.exit(0)
-
-
-    toolkit_ebs = filter(lambda eb: eb['name'] == opts.toolkit and LooseVersion(eb['version']) <
-            LooseVersion(opts.version), toolkit_ebs)
-    best_tk = toolkit_ebs[0]
-    for tk_eb in toolkit_ebs:
-        # exact match is always the best
-        if tk_eb['name'] == opts.toolkit and tk_eb['version'] == opts.version:
-            best_tk = tk_eb
-            break
-        # we have on which has a version closer than the current best
-        elif LooseVersion(best_tk['version']) > LooseVersion(tk_eb['version']) >= LooseVersion(opts.version):
-                best_tk = tk_eb
-
-    print best_tk
-
-
-
+    for toolkit in toolkit_ebs:
+        print toolkit['name'], '-',
+        print toolkit.installversion()
 
 
 if __name__ == '__main__':
