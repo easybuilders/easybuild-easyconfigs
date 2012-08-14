@@ -460,9 +460,7 @@ class Toolkit:
             self.vars['CFLAGS'] = '-' + ' -'.join(flags + copts)
         if len(flags) > 0:
             self.vars['CXXFLAGS'] = '-' + ' -'.join(flags)
-        if len(flags) > 0:
             self.vars['FFLAGS'] = '-' + ' -'.join(flags)
-        if len(flags) > 0:
             self.vars['F90FLAGS'] = '-' + ' -'.join(flags)
 
         ## to get rid of lots of problems with libgfortranbegin
