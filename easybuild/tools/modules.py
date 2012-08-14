@@ -303,13 +303,7 @@ def searchModule(path, query):
         except ValueError:
             pass
 
-def sofware_env_var_name(infix, name):
-    """
-    Return environment variable name for this software, with a given infix.
-    """
-    return "SOFT%s%s" % (infix.upper(), convertName(name, upper=True))
-
-def get_software_root(name):
+def get_software_root(name, with_env_var=False):
     """
     Return the software root set for a particular package.
     """
@@ -319,9 +313,16 @@ def get_software_root(name):
 
     # keep on supporting legacy installations
     if environment_key in os.environ:
-        return os.getenv(environment_key)
+        env_var = environment_key
     else:
-        return os.getenv(legacy_key)
+        env_var = legacy_key
+
+    root = os.getenv(env_var)
+
+    if with_env_var:
+        return (root, env_var)
+    else:
+        return root
 
 def get_software_version(name):
     """

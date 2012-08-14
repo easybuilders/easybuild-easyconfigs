@@ -46,7 +46,7 @@ from easybuild.tools.build_log import EasyBuildError, initLogger, removeLogHandl
 from easybuild.tools.config import source_path, buildPath, installPath
 from easybuild.tools.filetools import unpack, patch, run_cmd, convertName
 from easybuild.tools.module_generator import ModuleGenerator
-from easybuild.tools.modules import Modules, get_software_root, sofware_env_var_name
+from easybuild.tools.modules import Modules, get_software_root, software_env_var_name
 from easybuild.tools.systemtools import get_core_count
 
 
@@ -334,8 +334,9 @@ class Application:
             self.log.error('Not all dependencies have a matching toolkit version')
 
         # Check if the application is not loaded at the moment
-        if get_software_root(self.name()):
-            self.log.error("Module is already loaded (%s is set), installation cannot continue." % sofware_env_var_name('root', self.name()))
+        (root, env_var) = get_software_root(self.name(), with_env_var=True)
+        if root:
+            self.log.error("Module is already loaded (%s is set), installation cannot continue." % env_var)
 
         # Check if main install needs to be skipped
         # - if a current module can be found, skip is ok
