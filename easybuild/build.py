@@ -167,12 +167,22 @@ def main():
         config_file = os.path.join(appPath, "easybuild_config.py")
     config.init(config_file, **configOptions)
 
-    ## Dump possible options
+    # Dump possible options
     if options.avail_easyconfig_params:
-        # TODO: fix this with new easyblock class
         app = get_class(options.easyblock, log)
-        app = app()
-        app.dump_cfg_options()
+        extra = app.extra_options()
+        default = EasyBlock.default_config
+
+        print "DEFAULT OPTIONS:"
+        for key in sorted(default):
+            tabs = "\t" * (3 - (len(key) + 1) / 8)
+            print "%s:%s%s" % (key, tabs, default[key][1])
+
+        if extra:
+            print "EXTRA OPTIONS:"
+            for key in sorted(extra):
+                tabs = "\t" * (3 - (len(key) + 1) / 8)
+                print "%s:%s%s" % (key, tabs, extra[key][1])
 
     ## Dump available classes
     if options.dump_classes:

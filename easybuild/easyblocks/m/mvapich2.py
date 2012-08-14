@@ -41,7 +41,8 @@ class MVAPICH2(Application):
     def __init__(self, *args, **kwargs):
         Application.__init__(self, *args, **kwargs)
 
-    def extra_options(self):
+    @staticmethod
+    def extra_options():
         extra_vars = {
                       'withchkpt': [False, "Enable checkpointing support (required BLCR) (default: False)"],
                       'withlimic2': [False, "Enable LiMIC2 support for intra-node communication (default: False)"],
@@ -49,7 +50,7 @@ class MVAPICH2(Application):
                       'debug': [False, "Enable debug build (which is slower) (default: False)"],
                       'rdma_type': ["gen2", "Specify the RDMA type (gen2/udapl) (default: gen2)"]
                      }
-        return Application.extra_options(self, extra_vars)
+        return Application.extra_options(extra_vars)
 
     def configure(self):
 

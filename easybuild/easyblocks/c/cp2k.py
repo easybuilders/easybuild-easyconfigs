@@ -68,7 +68,8 @@ class CP2K(Application):
 
         self.make_instructions = ''
 
-    def extra_options(self):
+    @staticmethod
+    def extra_options():
         extra_vars = {
                       'type': ['popt', "Type of build ('popt' or 'psmp') (default: 'popt)"],
                       'typeopt': [True, "Enable optimization (default: True)"],
@@ -81,7 +82,7 @@ class CP2K(Application):
                       'ignore_regtest_fails': [False, "Ignore failures in regression test (should be used with care) (default: False)."],
                       'maxtasks': [3, "Maximum number of CP2K instances run at the same time during testing (default:3)"]
                      }
-        return Application.extra_options(self, extra_vars)
+        return Application.extra_options(extra_vars)
 
 
     def _generateMakefile(self, options):

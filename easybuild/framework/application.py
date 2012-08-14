@@ -254,7 +254,9 @@ class Application:
 
             self.log.info("Added sources: %s" % self.src)
 
-    def extra_options(self, extra=None):
+    # turn this into a class method. This makes it easy to access the information without needing an instance
+    @staticmethod
+    def extra_options(extra=None):
         """
         Extra options method which will be passed to the EasyBlock constructor.
         Subclasses should call this method with a dict

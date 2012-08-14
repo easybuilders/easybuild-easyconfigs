@@ -46,8 +46,9 @@ class IntelBase(Application):
         self.license = None
         Application.__init__(self, *args, **kwargs)
 
-    def extra_options(self, extra_vars=None):
-        vars = Application.extra_options(self, extra_vars)
+    @staticmethod
+    def extra_options(extra_vars=None):
+        vars = Application.extra_options(extra_vars)
         intel_vars = {
                       'license':[None, "License file path (default: None)"],
                       'license_activation': ['license_server', "Indicates license activation type (default: 'license_server')"],

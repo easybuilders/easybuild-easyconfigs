@@ -49,9 +49,10 @@ class Imkl(IntelBase):
         """Constructor, adds extra config options"""
         IntelBase.__init__(self, *args, **kwargs)
 
-    def extra_options(self):
+    @staticmethod
+    def extra_options():
         extra_vars = {'interfaces': [True, "Indicates whether interfaces should be built (default: True)"]}
-        return IntelBase.extra_options(self, extra_vars)
+        return IntelBase.extra_options(extra_vars)
 
 
     def configure(self):

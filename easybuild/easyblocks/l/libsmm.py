@@ -47,7 +47,8 @@ class Libsmm(Application):
     def __init__(self, *args, **kwargs):
         Application.__init__(self, *args, **kwargs)
 
-    def extra_options(self):
+    @staticmethod
+    def extra_options():
         # default dimensions
         dd = [1,4,5,6,9,13,16,17,22]
         extra_vars = {
@@ -55,7 +56,7 @@ class Libsmm(Application):
                       'max_tiny_dim': [12, "Maximum tiny dimension (default: 12)"],
                       'dims': [dd, "Generate routines for these matrix dims (default: %s)" % dd]
                      }
-        return Application.extra_options(self, extra_vars)
+        return Application.extra_options(extra_vars)
 
     def configure(self):
         """Configure build: change to tools/build_libsmm dir"""
