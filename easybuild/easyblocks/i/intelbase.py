@@ -71,7 +71,7 @@ class IntelBase(Application):
                 shutil.rmtree(intelhome)
                 self.log.info("Cleaning up intel dir %s" % intelhome)
             except OSError, err:
-                self.log.exception("Cleaning up intel dir %s failed: %s" % (intelhome, err))
+                self.log.warning("Cleaning up intel dir %s failed: %s" % (intelhome, err))
 
     def configure(self):
         """Configure: handle license file and clean home dir."""
