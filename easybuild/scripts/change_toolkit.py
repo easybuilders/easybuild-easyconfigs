@@ -30,11 +30,11 @@ from optparse import OptionParser
 from easybuild.framework.easyblock import EasyBlock
 
 
-def find_easyconfig(path, name, version=""):
+def find_easyconfig(path, name):
     # possible glob patterns
-    possibles = [os.path.join(path, '*%s*%s*.eb' % (name, version)),
-                 os.path.join(path, name[0].lower(), "*%s*%s*.eb" % (name, version)),
-                 os.path.join(path, name[0].lower(), name, "*%s*%s*.eb" % (name, version))
+    possibles = [os.path.join(path, '*%s*.eb' % name),
+                 os.path.join(path, name[0].lower(), "*%s*.eb" % name),
+                 os.path.join(path, name[0].lower(), name, "*%s*.eb" % name)
                 ]
 
     found = []
@@ -54,24 +54,66 @@ def main():
 
     (opts, args) = parser.parse_args()
 
-    toolkit_files = find_easyconfig(opts.robot, opts.toolkit, opts.version)
-
-    # if we don't find possible toolkits, we retry without specifying a version
-    if not toolkit_files:
-        toolkit_files = find_easyconfig(opts.robot, opts.toolkit)
+    toolkit_files = find_easyconfig(opts.robot, opts.toolkit)
 
     if not toolkit_files:
         print "Could not find a suitable toolkit for specified toolkit: %s" % opts.toolkit
         sys.exit(1)
 
-
     # figure out the best toolkit to use
     toolkit_ebs = [EasyBlock(tk_file) for tk_file in toolkit_files]
+    versions = [LooseVersion(tk['version']) for tk in toolkit_ebs]
 
-    # no version specified, we just take the most recent one
+    print "found the following versions for toolkit %s:" % toolkit_ebs[0]['name']
     for toolkit in toolkit_ebs:
-        print toolkit['name'], '-',
         print toolkit.installversion()
+    # if no version is specified we take the highest one, otherwise we take the closest one (which is still lower)
+    wanted = LooseVersion(opts.version)
+    if not opts.version:
+        best = max(versions)
+    else:
+        best = max(filter(lambda v: v <= wanted, versions))
+
+
+    toolkits = [toolkit for toolkit in toolkit_ebs if LooseVersion(toolkit['version']) == best]
+    if len(toolkits) > 1:
+        print "found more than one toolkit which matches the specified version, checking for exact match"
+        res = filter(lambda t: t.installversion() == opts.version, toolkits)
+        if len(res) == 1:
+            print "Found exact match, using %s" % res[0].installversion()
+        else:
+            print "Consider specifying the version better (possibles: %s)" % [tk.installversion() for tk in toolkits]
+            sys.exit(1)
+
+        toolkit = res[0]
+    else:
+        toolkit = toolkits[0]
+
+    # Toolkit has been found.
+    for eb_file in args:
+        eb = EasyBlock(eb_file, validate=False)
+        eb['toolkit'] = {'name': toolkit['name'], 'version': toolkit.installversion()}
+
+        filename = "%s-%s.eb" % (eb['name'], eb.installversion())
+        new_eb = open(filename, 'w')
+
+        # check which vars are set inside the eb file
+        vars = {}
+        execfile(eb_file, {}, vars)
+
+        # determine a pretty order
+        order = ['name', 'version', '', 'homepage', 'description', '',  'toolkit', '', 'dependencies', '',
+                 'sources', 'sourceURLs', '']
+        order.extend([var for var in vars if var not in order])
+
+        for var in order:
+            if var == '':
+                new_eb.write("\n")
+            # check if it was changed (otherwise do nothing)
+            elif var in vars:
+                new_eb.write("%s = %s\n" % (var, repr(eb[var])))
+
+        new_eb.close()
 
 
 if __name__ == '__main__':
