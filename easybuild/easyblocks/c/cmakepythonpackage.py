@@ -45,7 +45,7 @@ class CMakePythonPackage(CMake, PythonPackage):
 
         PythonPackage.configure(self, *args, **kwargs)
 
-        CMake.configure(self, *args, **kwargs)
+        return CMake.configure(self, *args, **kwargs)
 
     def make(self, *args, **kwargs):
         """Build Python package with cmake"""

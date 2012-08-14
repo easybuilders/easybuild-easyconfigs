@@ -50,4 +50,6 @@ class CMake(Application):
                                                                    builddir,
                                                                    self.getcfg('configopts')
                                                                    )
-        run_cmd(command, log_all=True, simple=True)
+        (out, _) = run_cmd(command, log_all=True, simple=False)
+
+        return out
