@@ -247,24 +247,20 @@ def main():
         ignore = map(parser.get_option, ['--robot', '--help', '--job'])
 
         # loop over all the different options.
-        string_options = []
-        for option in parser.option_list:
-            if option not in ignore:
-                if option.action == 'store_true' or option.action == 'store_false':
-                    if getattr(options, option.dest) != None:
-                        if option._long_opts:
-                            string_options.append(option._long_opts[0])
-                        else:
-                            string_options.append(option._short_opts[0])
-                elif option.action == 'store':
-                    value = getattr(options, option.dest)
-                    if value:
-                        if option._long_opts:
-                            string_options.append("%s %s" % (option._long_opts[0], value))
-                        else:
-                            string_options.append("%s %s" % (option._short_opts[0], value))
+        result_opts = []
+        relevant_opts = [o for o in parser.option_list if o not in ignore]
+        for opt in relevant_opts:
+            value = getattr(options, opt.dest)
+            # explicit check for None (some option are store_false)
+            if value != None:
+                # get_opt_string is not documented (but is a public method)
+                name = opt.get_opt_string()
+                if opt.action == 'store':
+                    result_opts.append("%s %s" % (name, value))
+                else:
+                    result_opts.append(name)
 
-        opts = ' '.join(string_options)
+        opts = ' '.join(result_opts)
 
         command = "cd %s && %s %%s %s" % (curdir, eb_path, opts)
         jobs = parbuild.build_packages_in_parallel(command, orderedSpecs, "easybuild-build", log)
