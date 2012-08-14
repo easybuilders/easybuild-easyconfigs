@@ -32,8 +32,7 @@ this test will distinguish between the different phases in the build:
    * make builddir
    * unpacking
    * patching
-   * prepare toolkit
-   * setup startfrom
+   * prepare
    * configure
    * make
    * test
@@ -186,8 +185,7 @@ def build_packages(packages, output_dir):
         perform_step("make builddir", app, lambda x: x.make_builddir())
         perform_step("unpacking", app, lambda x: x.unpack_src())
         perform_step("patching", app, lambda x: x.apply_patch())
-        perform_step("prepare toolkit", app, lambda x: x.toolkit().prepare(x.getcfg('onlytkmod')))
-        perform_step("setup startfrom", app, lambda x: x.startfrom())
+        perform_step("prepare", app, lambda x: x.prepare())
         perform_step('configure', app, lambda x: x.configure())
         perform_step('make', app, lambda x: x.make())
         perform_step('test', app, lambda x: x.test())
