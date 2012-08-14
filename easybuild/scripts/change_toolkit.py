@@ -63,6 +63,11 @@ def main():
 
     (opts, args) = parser.parse_args()
 
+    if not opts.robot or not opts.name or not opts.toolkit:
+        print "provide at least a name, toolkit and robot option"
+        sys.exit(1)
+
+
     toolkit_files = find_easyconfig(opts.robot, opts.toolkit)
 
     if not toolkit_files:
