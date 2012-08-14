@@ -29,7 +29,7 @@ import sys
 from distutils.version import LooseVersion
 from optparse import OptionParser
 
-from easybuild.build import create_Paths
+from easybuild.build import create_paths
 from easybuild.framework.easyblock import EasyBlock
 
 
@@ -74,8 +74,8 @@ def main():
     versions = [LooseVersion(tk['version']) for tk in toolkit_ebs]
 
     print "found the following versions for toolkit %s:" % toolkit_ebs[0]['name']
-    for toolkit in toolkit_ebs:
-        print toolkit.installversion()
+    print "\n".join([toolkit.installversion() for toolkit in toolkit_ebs])
+
     # if no version is specified we take the highest one, otherwise we take the closest one (which is still lower)
     wanted = LooseVersion(opts.toolkit_version)
     if not opts.toolkit_version:
@@ -103,45 +103,77 @@ def main():
 
     print "using toolkit version: %s" % toolkit.installversion()
 
-    # Toolkit has been found.
-    for eb_file in args:
-        eb = EasyBlock(eb_file, validate=False)
-        eb['toolkit'] = {'name': toolkit['name'], 'version': toolkit.installversion()}
+    easyconfigs = find_easyconfig(opts.robot, opts.name)
+    if not easyconfigs:
+        print "Did not find an easyconfig for package: %s" % opts.name
+        sys.exit(1)
 
-        # set version if specified
-        if opts.version:
-            eb['version'] = opts.version
+    print "Found the following easyconfigs:"
+    print '\n'.join(easyconfigs)
 
-        filename = "%s-%s.eb" % (eb['name'], eb.installversion())
-        new_eb = open(filename, 'w')
+    easyconfigs = [EasyBlock(eb_file, validate=False) for eb_file in easyconfigs]
 
-        new_eb.write("# File generated using change_toolkit.py\n")
+    # filter easyconfigs based on the version
+    if opts.version:
+        print "checking for easyconfigs with version %s" % opts.version
+        same_version = filter(lambda eb: eb['version'] == opts.version, easyconfigs)
+        if same_version:
+            easyconfigs = same_version
 
-        # check which vars are set inside the eb file
-        vars = {}
-        execfile(eb_file, {}, vars)
+    easyconfig_versions = set([eb['version'] for eb in easyconfigs])
+    if len(easyconfig_versions) > 1:
+        print "Found multiple versions for %s" % opts.name
+        print "Consider specifying a version with --version (possibilities: %s)" % ', '.join(easyconfig_versions)
+        sys.exit(1)
 
-        # set patches, so it will definitly be included in the output
-        if opts.patches:
-            eb['patches'] = opts.patches
-            vars['patches'] = True
+    if len(easyconfigs) > 1:
+        print "finding optimal easyconfig file"
+        same_toolkits = filter(lambda eb: eb.toolkit().name == opts.toolkit, easyconfigs)
+        if same_toolkits:
+            chosen = same_toolkits[0]
+            print "found easyconfigs with same toolkit, using: %s" % '-'.join((chosen.name(), chosen.installversion()))
+        else:
+            chosen = easyconfigs[0]
+            print "no easyconfig found with same toolkit, using %s" % '-'.join((chosen.name(), chosen.installversion()))
+    else:
+        chosen = easyconfigs[0]
 
-        # determine a pretty order
-        order = ['name', 'version', '', 'homepage', 'description', '',  'toolkit', '', 'dependencies', '',
-                 'sources', 'sourceURLs', '']
-        order.extend([var for var in vars if var not in order])
+    chosen['toolkit'] = {'name': toolkit['name'], 'version': toolkit.installversion()}
 
-        for var in order:
-            if var == '':
-                new_eb.write("\n")
-            else:
-                try:
-                    new_eb.write("%s = %s\n" % (var, repr(eb[var])))
-                except:
-                    pass
+    # set version if specified
+    if opts.version:
+        chosen['version'] = opts.version
 
-        new_eb.close()
-        print "%s has been successfully written" % filename
+    filename = "%s-%s.eb" % (chosen['name'], chosen.installversion())
+    new_eb = open(filename, 'w')
+
+    new_eb.write("# File generated using change_toolkit.py\n")
+
+    # check which vars are set inside the eb file
+    vars = {}
+    execfile(eb_file, {}, vars)
+
+    # set patches, so it will definitly be included in the output
+    if opts.patches:
+        chosen['patches'] = opts.patches
+        vars['patches'] = True
+
+    # determine a pretty order
+    order = ['name', 'version', '', 'homepage', 'description', '',  'toolkit', '', 'dependencies', '',
+             'sources', 'sourceURLs', '']
+    order.extend([var for var in vars if var not in order])
+
+    for var in order:
+        if var == '':
+            new_eb.write("\n")
+        else:
+            try:
+                new_eb.write("%s = %s\n" % (var, repr(chosen[var])))
+            except:
+                pass
+
+    new_eb.close()
+    print "%s has been successfully written" % filename
 
 
 if __name__ == '__main__':
