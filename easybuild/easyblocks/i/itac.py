@@ -42,9 +42,10 @@ class Itac(IntelBase):
         """Constructor, adds extra config options"""
         IntelBase.__init__(self, *args, **kwargs)
 
-    def extra_options(self):
+    @staticmethod
+    def extra_options():
         extra_vars = {'preferredmpi': ['impi3', "Preferred MPI type (default: 'impi3')"]}
-        return IntelBase.extra_options(self, extra_vars)
+        return IntelBase.extra_options(extra_vars)
 
     def make_install(self):
         """

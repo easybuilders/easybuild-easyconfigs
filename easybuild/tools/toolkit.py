@@ -224,10 +224,10 @@ class Toolkit:
             env.set(key, val)
 
             # also set unique named variables that can be used in Makefiles
-            # - so you can have 'CFLAGS = $(SOFTVARCFLAGS)'
+            # - so you can have 'CFLAGS = $(EBVARCFLAGS)'
             # -- 'CLFLAGS = $(CFLAGS)' gives  '*** Recursive variable `CFLAGS'
             # references itself (eventually).  Stop' error
-            env.set("SOFTVAR%s" % key, val)
+            env.set("EBVAR%s" % key, val)
 
 
     def _getOptimalArchitecture(self):
