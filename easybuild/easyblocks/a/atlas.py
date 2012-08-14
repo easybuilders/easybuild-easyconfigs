@@ -45,13 +45,14 @@ class ATLAS(Application):
     def __init__(self, *args, **kwargs):
         Application.__init__(self, *args, **kwargs)
 
-    def extra_options(self):
+    @staticmethod
+    def extra_options():
         extra_vars = {
                       'ignorethrottling': [False, "Ignore check done by ATLAS for CPU throttling (not recommended) (default: False)"],
                       'full_lapack': [False, "Build a full LAPACK library (requires netlib's LAPACK) (default: False)"],
                       'sharedlibs': [False, "Enable building of shared libs as well (default: False)"]
                      }
-        return Application.extra_options(self, extra_vars)
+        return Application.extra_options(extra_vars)
 
     def configure(self):
 

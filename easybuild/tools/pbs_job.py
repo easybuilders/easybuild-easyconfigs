@@ -26,13 +26,17 @@ import os
 
 from easybuild.tools.build_log import getLog
 
+MAX_WALLTIME = 72
 
 class PbsJob:
     """Interaction with TORQUE"""
 
-    def __init__(self, script, name, env_vars=None):
+    def __init__(self, script, name, env_vars=None, resources={}):
         """
         create a new Job to be submitted to PBS
+        env_vars is a dictionary with key-value pairs of environment variables that should be passed on to the job
+        resources is a dictionary with optional keys: ['hours', 'cores'] both of these should be integer values.
+        hours can be 1 - MAX_WALLTIME, cores depends on which cluster it is being run.
         """
         self.log = getLog("PBS")
         self.script = script
@@ -56,14 +60,49 @@ class PbsJob:
         except:
             self.log.error("Could not connect to the default pbs server, is this correctly configured?")
 
+        # setup the resources requested
+
+        # validate requested resources!
+        hours = resources.get('hours', MAX_WALLTIME)
+        if hours > MAX_WALLTIME:
+            self.log.warn("Specified %s hours, but this is impossible. (resetting to %s hours)" % (hours, MAX_WALLTIME))
+            hours = MAX_WALLTIME
+
+        max_cores = self.get_ppn()
+        cores = resources.get('cores', max_cores)
+        if cores > max_cores:
+            self.log.warn("number of requested cores (%s) was greater than available (%s) " % (cores, max_cores))
+            cores = max_cores
+
+        # only allow cores and hours for now.
+        self.resources = {
+                          "walltime": "%s:00:00" % hours,
+                          "nodes": "1:ppn=%s" % cores
+                         }
+        # set queue based on the hours requested
+        if hours >= 12:
+            self.queue = 'long'
+        else:
+            self.queue = 'short'
         self.jobid = None
+        self.deps = []
+
+    def add_dependencies(self, job_ids):
+        """
+        Add dependencies to this job.
+        job_ids is an array of job ids (e.g.: 8453.master2.gengar....)
+        if only one job_id is provided this function will also work
+        """
+        if isinstance(job_ids, str):
+            job_ids = list(job_ids)
+
+        self.deps.extend(job_ids)
 
     def submit(self):
         """Submit the jobscript txt, set self.jobid"""
         txt = self.script
         self.log.debug("Going to submit script %s" % txt)
 
-        resources = {"walltime": "72:00:00", "nodes": "1:ppn=%s" % self.get_ppn() }
 
         # Build default pbs_attributes list
         pbs_attributes = pbs.new_attropl(1)
@@ -72,14 +111,21 @@ class PbsJob:
 
 
         # set resource requirements
-        resourse_attributes = pbs.new_attropl(len(resources))
+        resourse_attributes = pbs.new_attropl(len(self.resources))
         idx = 0
-        for k, v in resources.items():
+        for k, v in self.resources.items():
             resourse_attributes[idx].name = 'Resource_List'
             resourse_attributes[idx].resource = k
             resourse_attributes[idx].value = v
             idx += 1
         pbs_attributes.extend(resourse_attributes)
+
+        # add job dependencies to attributes
+        if self.deps:
+            deps_attributes = pbs.new_attropl(1)
+            deps_attributes[0].name = pbs.ATTR_depend
+            deps_attributes[0].value = ",".join(["afterok:%s" % dep for dep in self.deps])
+            pbs_attributes.extend(deps_attributes)
 
         ## add a bunch of variables (added by qsub)
         ## also set PBS_O_WORKDIR to os.getcwd()
@@ -102,12 +148,11 @@ class PbsJob:
         f.write(txt)
         f.close()
 
-        queue = 'long'
-        self.log.debug("Going to submit to queue %s" % queue)
+        self.log.debug("Going to submit to queue %s" % self.queue)
 
         # extend paramater should be 'NULL' because this is required by the python api
         extend = 'NULL'
-        jobid = pbs.pbs_submit(self.pbsconn, pbs_attributes, scriptfn, queue, extend)
+        jobid = pbs.pbs_submit(self.pbsconn, pbs_attributes, scriptfn, self.queue, extend)
 
         is_error, errormsg = pbs.error()
         if is_error:
@@ -177,6 +222,10 @@ class PbsJob:
             for idx, attr in enumerate(types):
                 jobattr[idx].name = attr
 
+
+        # get a new connection (otherwise this seems to fail)
+        pbs.pbs_disconnect(self.pbsconn)
+        self.pbsconn = pbs.pbs_connect(self.pbs_server)
         jobs = pbs.pbs_statjob(self.pbsconn, self.jobid, jobattr, 'NULL')
         if len(jobs) == 0:
             # no job found, return None info
