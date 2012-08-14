@@ -240,7 +240,33 @@ def main():
         curdir = os.getcwd()
         easybuild_basedir = os.path.dirname(os.path.dirname(sys.argv[0]))
         eb_path = os.path.join(easybuild_basedir, "eb")
-        command = "cd %s && %s %%s -d" % (curdir, eb_path)
+
+        # Reverse option parser -> string
+
+        # the options to ignore
+        ignore = map(parser.get_option, ['--robot', '--help', '--job'])
+
+        # loop over all the different options.
+        string_options = []
+        for option in parser.option_list:
+            if option not in ignore:
+                if option.action == 'store_true' or option.action == 'store_false':
+                    if getattr(options, option.dest) != None:
+                        if option._long_opts:
+                            string_options.append(option._long_opts[0])
+                        else:
+                            string_options.append(option._short_opts[0])
+                elif option.action == 'store':
+                    value = getattr(options, option.dest)
+                    if value:
+                        if option._long_opts:
+                            string_options.append("%s %s" % (option._long_opts[0], value))
+                        else:
+                            string_options.append("%s %s" % (option._short_opts[0], value))
+
+        opts = ' '.join(string_options)
+
+        command = "cd %s && %s %%s %s" % (curdir, eb_path, opts)
         jobs = parbuild.build_packages_in_parallel(command, orderedSpecs, "easybuild-build", log)
         for job in jobs:
             print "%s: %s" % (job.name, job.jobid)
