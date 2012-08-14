@@ -81,15 +81,20 @@ def main():
     if not opts.version:
         best = max(versions)
     else:
-        best = max(filter(lambda v: v <= wanted, versions))
+        try:
+            best = max(filter(lambda v: v <= wanted, versions))
+        except:
+            print "No version found lower than %s" % wanted
+            sys.exit(1)
 
     # Select all the toolkits that match this version
     toolkits = [toolkit for toolkit in toolkit_ebs if LooseVersion(toolkit['version']) == best]
     if len(toolkits) > 1:
-        print "found more than one toolkit which matches the specified version, checking for exact match"
+        print "found more than one possible toolkit for version %s, checking for exact match" % best
         res = filter(lambda t: t.installversion() == opts.version, toolkits)
         if len(res) != 1:
-            print "Consider specifying the version better (possibles: %s)" % [tk.installversion() for tk in toolkits]
+            print "ERROR: no decisive toolkit version could be found"
+            print "Consider specifying the version better (suggestions: %s)" % [tk.installversion() for tk in toolkits]
             sys.exit(1)
 
         toolkit = res[0]
