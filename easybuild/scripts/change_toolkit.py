@@ -37,7 +37,7 @@ def find_easyconfig(path, name):
     looks for easyconfigs with a given name in path
     """
     # possible glob patterns
-    possibles = [os.path.join(path, '*%s*.eb' % name),
+    possibles = [os.path.join(path, "*%s*.eb" % name),
                  os.path.join(path, name[0].lower(), "*%s*.eb" % name),
                  os.path.join(path, name[0].lower(), name, "*%s*.eb" % name)
                 ]
@@ -55,11 +55,11 @@ def main():
     """
     parser = OptionParser()
 
-    parser.add_option('-t', '--toolkit', help="toolkit name to use")
-    parser.add_option('-v', '--version', default="", help="toolkit version to use")
-    parser.add_option('-r', '--robot', help="path where other toolkits are stored")
+    parser.add_option('-t', '--toolkit', help='toolkit name to use')
+    parser.add_option('-v', '--version', default='', help='toolkit version to use')
+    parser.add_option('-r', '--robot', help='path where other toolkits are stored')
 
-    parser.add_option('-p', '--patches', action="append", help="list of patch files to use")
+    parser.add_option('-p', '--patches', action='append', help='list of patch files to use')
 
     (opts, args) = parser.parse_args()
 
