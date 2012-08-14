@@ -152,8 +152,13 @@ class EasyBlock:
                         self.log.error("You set invalid variable %s, possible suggestions: %s" % (key, guesses[0]))
 
         for key in local_vars:
+            # validations are skipped, just set in the config
             if not validate:
-                self[key] = local_vars[key]
+                if key in self.config:
+                    self[key] = local_vars[key]
+                else:
+                    self.config[key] = [local_vars[key], ""]
+
             # do not store variables we don't need
             elif key in self.config:
                 self[key] = local_vars[key]

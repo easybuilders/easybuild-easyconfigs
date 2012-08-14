@@ -79,9 +79,7 @@ def main():
     if len(toolkits) > 1:
         print "found more than one toolkit which matches the specified version, checking for exact match"
         res = filter(lambda t: t.installversion() == opts.version, toolkits)
-        if len(res) == 1:
-            print "Found exact match, using %s" % res[0].installversion()
-        else:
+        if len(res) != 1:
             print "Consider specifying the version better (possibles: %s)" % [tk.installversion() for tk in toolkits]
             sys.exit(1)
 
@@ -89,21 +87,25 @@ def main():
     else:
         toolkit = toolkits[0]
 
+    print "using toolkit version: %s" % toolkit.installversion()
+
     # Toolkit has been found.
     for eb_file in args:
         eb = EasyBlock(eb_file, validate=False)
         eb['toolkit'] = {'name': toolkit['name'], 'version': toolkit.installversion()}
-        eb['patches'] = opts.patches
 
         filename = "%s-%s.eb" % (eb['name'], eb.installversion())
         new_eb = open(filename, 'w')
+
+        new_eb.write("# File generated using change_toolkit.py\n")
 
         # check which vars are set inside the eb file
         vars = {}
         execfile(eb_file, {}, vars)
 
-        # set patches, so it will definitly be set
+        # set patches, so it will definitly be included in the output
         if opts.patches:
+            eb['patches'] = opts.patches
             vars['patches'] = True
 
         # determine a pretty order
@@ -114,11 +116,14 @@ def main():
         for var in order:
             if var == '':
                 new_eb.write("\n")
-            # check if it was changed (otherwise do nothing)
-            elif var in vars:
-                new_eb.write("%s = %s\n" % (var, repr(eb[var])))
+            else:
+                try:
+                    new_eb.write("%s = %s\n" % (var, repr(eb[var])))
+                except:
+                    pass
 
         new_eb.close()
+        print "%s has been successfully written" % filename
 
 
 if __name__ == '__main__':
