@@ -35,7 +35,7 @@ class DOLFIN(CMakePythonPackage):
 
         # make sure that required dependencies are loaded
         deps = ['Armadillo', 'Boost', 'CGAL', 'MTL4', 'ParMETIS', 'PETSc', 'Python',
-                'SCOTCH', 'Sphinx', 'SLEPc', 'SuiteSparse', 'UFC']
+                'SCOTCH', 'Sphinx', 'SLEPc', 'SuiteSparse', 'Trilinos', 'UFC', 'zlib']
         depsdict = {}
         for dep in deps:
             deproot = get_software_root(dep)
@@ -108,6 +108,9 @@ class DOLFIN(CMakePythonPackage):
 
         # MTL4
         self.updatecfg('configopts', '-DMTL4_DIR:PATH="%s"' % depsdict['MTL4'])
+
+        # zlib
+        self.updatecfg('configopts', '-DZLIB_DIR=%s' % depsdict['zlib'])
 
         # set correct openmp options
         openmp = self.toolkit().get_openmp_flag()
