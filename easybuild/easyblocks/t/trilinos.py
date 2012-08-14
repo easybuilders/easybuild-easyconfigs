@@ -51,7 +51,7 @@ class Trilinos(CMake):
         # compiler flags
         self.updatecfg('configopts', '-DCMAKE_C_FLAGS="%s"' % os.getenv('CFLAGS'))
         self.updatecfg('configopts', '-DCMAKE_CXX_FLAGS="%s"' % os.getenv('CXXFLAGS'))
-        self.updatecfg('configopts', '-DCMAKE_Fortran_FLAGS="%s"' % os.getenv('F90FLAGS'))
+        self.updatecfg('configopts', '-DCMAKE_Fortran_FLAGS="%s"' % os.getenv('FFLAGS'))
 
         # OpenMP
         if self.getcfg('openmp'):
@@ -193,7 +193,7 @@ class Trilinos(CMake):
                     "pamgen", "rtop", "rythmos", "sacado", "shards", "stratimikos",
                     "teuchos", "thyracore", "tpetra", "tpi", "triutils", "zoltan"]
 
-            self.setcfg('sanityCheckPaths', {'files':["lib%s.a" % x for x in libs],
+            self.setcfg('sanityCheckPaths', {'files':[os.path.join("lib", "lib%s.a" % x) for x in libs],
                                              'dirs':['bin', 'include']})
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))

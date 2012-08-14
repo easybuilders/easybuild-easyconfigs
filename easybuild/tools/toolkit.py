@@ -457,13 +457,13 @@ class Toolkit:
             copts.append("std=%s" % self.opts['cstd'])
 
         if len(flags + copts) > 0:
-            self.vars['CFLAGS'] = "%s" % ('-' + ' -'.join(flags + copts))
+            self.vars['CFLAGS'] = '-' + ' -'.join(flags + copts)
         if len(flags) > 0:
-            self.vars['CXXFLAGS'] = "%s" % ('-' + ' -'.join(flags))
+            self.vars['CXXFLAGS'] = '-' + ' -'.join(flags)
         if len(flags) > 0:
-            self.vars['FFLAGS'] = "%s" % ('-' + ' -'.join(flags))
+            self.vars['FFLAGS'] = '-' + ' -'.join(flags)
         if len(flags) > 0:
-            self.vars['F90FLAGS'] = "%s" % ('-' + ' -'.join(flags))
+            self.vars['F90FLAGS'] = '-' + ' -'.join(flags)
 
         ## to get rid of lots of problems with libgfortranbegin
         ## or remove the system gcc-gfortran
@@ -547,6 +547,7 @@ class Toolkit:
 
         if len(flags) > 0:
             self.vars['FFLAGS'] = '-' + ' -'.join(flags)
+            self.vars['F90FLAGS'] = '-' + ' -'.join(flags)
 
         self.prepareIntelCompiler('ifort')
 
