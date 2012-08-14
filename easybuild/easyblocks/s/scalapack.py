@@ -121,7 +121,7 @@ class ScaLAPACK(Application):
                                'F77="%s"' % mpif77,
                                'CC="%s"' % mpicc,
                                'NOOPT="%s"' % noopt,
-                               'CCFLAGS="-O3"'
+                               'CCFLAGS="-O3 %s"' % os.getenv('CFLAGS')
                               ]
 
             # set interface
