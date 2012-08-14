@@ -38,6 +38,7 @@ class Trilinos(CMake):
                       'shared_libs': [False, "BUild shared libs; if False, build static libs. (default: False)."],
                       'openmp': [True, "Enable OpenMP support (default: True)"],
                       'all_pkgs': [True, "Enable all packages (default: True)"],
+                      'skip_pkgs': [[], "List of packages to skip (default: [])"]
                      }
         return CMake.extra_options(self, extra_vars)
 
@@ -52,10 +53,12 @@ class Trilinos(CMake):
         cflags = os.getenv('CFLAGS')
         cxxflags = os.getenv('CXXFLAGS')
         fflags = os.getenv('FFLAGS')
+
         if self.toolkit().mpi_type() in [toolkit.INTEL, toolkit.MPICH2]:
             cflags += " -DMPICH_IGNORE_CXX_SEEK"
             cxxflags += " -DMPICH_IGNORE_CXX_SEEK"
             fflags += " -DMPICH_IGNORE_CXX_SEEK"
+
         self.updatecfg('configopts', '-DCMAKE_C_FLAGS="%s"' % cflags)
         self.updatecfg('configopts', '-DCMAKE_CXX_FLAGS="%s"' % cxxflags)
         self.updatecfg('configopts', '-DCMAKE_Fortran_FLAGS="%s"' % fflags)
@@ -174,6 +177,12 @@ class Trilinos(CMake):
             for pkg in self.getcfg('pkglist'):
                 self.updatecfg('configopts', "-DTrilinos_ENABLE_%s=ON" % pkg)
 
+        # packages to skip
+        skip_pkgs = self.getcfg('skip_pkgs')
+        if skip_pkgs:
+            for pkg in skip_pkgs:
+                self.updatecfg('configopts', "-DTrilinos_ENABLE_%s:BOOL=OFF" % pkg)
+
         # building in source dir not supported
         try:
             build_dir = "BUILD"
@@ -195,14 +204,15 @@ class Trilinos(CMake):
         if not self.getcfg('sanityCheckPaths'):
 
             # selection of libraries
-            libs = ["amesos", "anasazi", "aztecoo", "belos", "dpliris", "epetra",
-                    "fei_base", "fei_trilinos", "galeri","globipack", "ifpack",
-                    "intrepid", "isorropia", "kokkos", "komplex", "loca", "mesquite",
-                    "ml", "ModeLaplace", "moertel", "moocho", "nox", "optipack",
-                    "pamgen", "rtop", "rythmos", "sacado", "shards", "stratimikos",
-                    "teuchos", "thyracore", "tpetra", "tpi", "triutils", "zoltan"]
+            libs = ["Amesos", "Anasazi", "AztecOO", "Belos", "Epetra", "Galeri",
+                    "GlobiPack", "Ifpack", "Intrepid", "Isorropia", "Kokkos",
+                    "Komplex", "LOCA", "Mesquite", "ML", "Moertel", "MOOCHO", "NOX",
+                    "Pamgen", "RTOp", "Rythmos", "Sacado", "Shards", "Stratimikos",
+                    "Teuchos", "Tpetra", "Triutils", "Zoltan"]
 
-            self.setcfg('sanityCheckPaths', {'files':[os.path.join("lib", "lib%s.a" % x) for x in libs],
+            libs = [l for l in libs if not l in self.getcfg('skip_pkgs')]
+
+            self.setcfg('sanityCheckPaths', {'files':[os.path.join("lib", "lib%s.a" % x.lower()) for x in libs],
                                              'dirs':['bin', 'include']})
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
