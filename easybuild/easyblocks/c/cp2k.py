@@ -270,8 +270,8 @@ class CP2K(Application):
                    'FCFLAGS': '$(FCFLAGS%s)' % optflags,
                    'FCFLAGS2': '$(FCFLAGS%s)' % regflags,
 
-                   'CFLAGS': ' %s %s $(FPIC) $(DEBUG) %s ' % (os.getenv('SOFTVARCPPFLAGS'),
-                                                              os.getenv('SOFTVARLDFLAGS'),
+                   'CFLAGS': ' %s %s $(FPIC) $(DEBUG) %s ' % (os.getenv('EBVARCPPFLAGS'),
+                                                              os.getenv('EBVARLDFLAGS'),
                                                               self.getcfg('extracflags')),
                    'DFLAGS': ' -D__parallel -D__BLACS -D__SCALAPACK -D__FFTSG %s' % self.getcfg('extradflags'),
 

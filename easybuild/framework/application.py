@@ -336,8 +336,8 @@ class Application:
             self.log.error('Not all dependencies have a matching toolkit version')
 
         # Check if the application is not loaded at the moment
-        envName = "SOFTROOT%s" % convertName(self.name(), upper=True)
-        if envName in os.environ:
+        envName = "EBROOT%s" % convertName(self.name(), upper=True)
+        if get_software_root(self.name()):
             self.log.error("Module is already loaded (%s is set), installation cannot continue." % envName)
 
         # Check if main install needs to be skipped
@@ -1098,10 +1098,10 @@ class Application:
     def make_devel_module(self):
         """
         Create a develop module file which sets environment based on the build
-        Usage: module load name, which loads the module you want to use. $SOFTDEVELNAME should then be the full path
-        to the devel module file. So now you can module load $SOFTDEVELNAME.
+        Usage: module load name, which loads the module you want to use. $EBDEVELNAME should then be the full path
+        to the devel module file. So now you can module load $EBDEVELNAME.
 
-        WARNING: you cannot unload using $SOFTDEVELNAME (for now: use module unload `basename $SOFTDEVELNAME`)
+        WARNING: you cannot unload using $EBDEVELNAME (for now: use module unload `basename $EBDEVELNAME`)
         """
         self.log.debug("loaded modules: %s" % Modules().loaded_modules())
         mod_gen = ModuleGenerator(self)
@@ -1116,10 +1116,11 @@ class Application:
                 env_txt += mod_gen.setEnvironment(key, val)
 
         load_txt = ""
-        # capture all the SOFTDEVEL vars
+        # capture all the EBDEVEL vars
         # these should be all the dependencies and we should load them
         for key in os.environ:
-            if key.startswith("SOFTDEVEL"):
+            # legacy support
+            if key.startswith("EBDEVEL") or key.startswith("SOFTDEVEL"):
                 path = os.environ[key]
                 if os.path.isfile(path):
                     name, version =  path.rsplit('/', 1)
@@ -1195,17 +1196,17 @@ class Application:
 
     def make_module_extra(self):
         """
-        Sets optional variables (SOFTROOT, MPI tuning variables).
+        Sets optional variables (EBROOT, MPI tuning variables).
         """
         txt = "\n"
 
-        # SOFTROOT + SOFTVERSION + SOFTDEVEL
+        # EBROOT + EBVERSION + EBDEVEL
         environment_name = convertName(self.name(), upper=True)
-        txt += self.moduleGenerator.setEnvironment("SOFTROOT" + environment_name, "$root")
-        txt += self.moduleGenerator.setEnvironment("SOFTVERSION" + environment_name, self.version())
+        txt += self.moduleGenerator.setEnvironment("EBROOT" + environment_name, "$root")
+        txt += self.moduleGenerator.setEnvironment("EBVERSION" + environment_name, self.version())
         devel_path = os.path.join("$root", config.logPath(), "%s-%s-easybuild-devel" % (self.name(),
             self.installversion()))
-        txt += self.moduleGenerator.setEnvironment("SOFTDEVEL" + environment_name, devel_path)
+        txt += self.moduleGenerator.setEnvironment("EBDEVEL" + environment_name, devel_path)
 
         txt += "\n"
         for (key, value) in self.getcfg('modextravars').items():

@@ -114,8 +114,8 @@ class ToolkitTest(TestCase):
         self.dummy_tk.prepare()
         self.assertEqual(MockModule.modules, [])
 
-        os.environ["SOFTVERSIONICC"] = "2011"
-        os.environ["SOFTROOTICC"] = "/tmp"
+        os.environ["EBVERSIONICC"] = "2011"
+        os.environ["EBROOTICC"] = "/tmp"
 
         self.tk_32bit.prepare()
 
