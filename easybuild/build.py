@@ -442,17 +442,27 @@ def findResolvedModules(unprocessed, processed, log):
 
     return orderedSpecs
 
+def create_paths(path, name, version):
+    """
+    returns all the paths where easyconfig could be located
+    path is the basepath
+    name should be a string
+    version can be a '*' if you use glob patterns or otherwise an installversion
+    """
+    return [os.path.join(path, name, version + ".eb"),
+            os.path.join(path, name, "%s-%s.eb" % (name, version)),
+            os.path.join(path, name.lower()[0], name, "%s-%s.eb" % (name, version)),
+            os.path.join(path, "%s-%s.eb" % (name, version)),
+           ]
+
+
 def robotFindEasyconfig(log, path, module):
     """
     Find an easyconfig for module in path
     """
     name, version = module
     # candidate easyconfig paths
-    easyconfigsPaths = [os.path.join(path, name, version + ".eb"),
-                         os.path.join(path, name, "%s-%s.eb" % (name, version)),
-                         os.path.join(path, name.lower()[0], name, "%s-%s.eb" % (name, version)),
-                         os.path.join(path, "%s-%s.eb" % (name, version)),
-                         ]
+    easyconfigsPaths = create_paths(path, name, version)
     for easyconfigPath in easyconfigsPaths:
         log.debug("Checking easyconfig path %s" % easyconfigPath)
         if os.path.isfile(easyconfigPath):

@@ -29,6 +29,7 @@ import sys
 from distutils.version import LooseVersion
 from optparse import OptionParser
 
+from easybuild.build import create_Paths
 from easybuild.framework.easyblock import EasyBlock
 
 
@@ -37,11 +38,7 @@ def find_easyconfig(path, name):
     looks for easyconfigs with a given name in path
     """
     # possible glob patterns
-    possibles = [os.path.join(path, "*%s*.eb" % name),
-                 os.path.join(path, name[0].lower(), "*%s*.eb" % name),
-                 os.path.join(path, name[0].lower(), name, "*%s*.eb" % name)
-                ]
-
+    possibles = create_paths(path, name, "*")
     found = []
     for pos in possibles:
         found.extend(glob.glob(pos))
@@ -56,7 +53,10 @@ def main():
     parser = OptionParser()
 
     parser.add_option('-t', '--toolkit', help='toolkit name to use')
-    parser.add_option('-v', '--version', default='', help='toolkit version to use')
+    parser.add_option('-n', '--name', help='package name')
+
+    parser.add_option('-v', '--version', help='change software version to this')
+    parser.add_option('--toolkit-version', default='', help='wanted toolkit version')
     parser.add_option('-r', '--robot', help='path where other toolkits are stored')
 
     parser.add_option('-p', '--patches', action='append', help='list of patch files to use')
@@ -77,8 +77,8 @@ def main():
     for toolkit in toolkit_ebs:
         print toolkit.installversion()
     # if no version is specified we take the highest one, otherwise we take the closest one (which is still lower)
-    wanted = LooseVersion(opts.version)
-    if not opts.version:
+    wanted = LooseVersion(opts.toolkit_version)
+    if not opts.toolkit_version:
         best = max(versions)
     else:
         try:
@@ -91,7 +91,7 @@ def main():
     toolkits = [toolkit for toolkit in toolkit_ebs if LooseVersion(toolkit['version']) == best]
     if len(toolkits) > 1:
         print "found more than one possible toolkit for version %s, checking for exact match" % best
-        res = filter(lambda t: t.installversion() == opts.version, toolkits)
+        res = filter(lambda t: t.installversion() == opts.toolkit_version, toolkits)
         if len(res) != 1:
             print "ERROR: no decisive toolkit version could be found"
             print "Consider specifying the version better (suggestions: %s)" % [tk.installversion() for tk in toolkits]
@@ -107,6 +107,10 @@ def main():
     for eb_file in args:
         eb = EasyBlock(eb_file, validate=False)
         eb['toolkit'] = {'name': toolkit['name'], 'version': toolkit.installversion()}
+
+        # set version if specified
+        if opts.version:
+            eb['version'] = opts.version
 
         filename = "%s-%s.eb" % (eb['name'], eb.installversion())
         new_eb = open(filename, 'w')
