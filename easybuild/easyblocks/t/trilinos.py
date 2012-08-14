@@ -49,9 +49,16 @@ class Trilinos(CMake):
         #    self.updatecfg('configopts', "-DTrilinos_VERBOSE_%s:BOOL=ON" % x)
 
         # compiler flags
-        self.updatecfg('configopts', '-DCMAKE_C_FLAGS="%s"' % os.getenv('CFLAGS'))
-        self.updatecfg('configopts', '-DCMAKE_CXX_FLAGS="%s"' % os.getenv('CXXFLAGS'))
-        self.updatecfg('configopts', '-DCMAKE_Fortran_FLAGS="%s"' % os.getenv('FFLAGS'))
+        cflags = os.getenv('CFLAGS')
+        cxxflags = os.getenv('CXXFLAGS')
+        fflags = os.getenv('FFLAGS')
+        if self.toolkit().mpi_type() in [toolkit.INTEL, toolkit.MPICH2]:
+            cflags += " -DMPICH_IGNORE_CXX_SEEK"
+            cxxflags += " -DMPICH_IGNORE_CXX_SEEK"
+            fflags += " -DMPICH_IGNORE_CXX_SEEK"
+        self.updatecfg('configopts', '-DCMAKE_C_FLAGS="%s"' % cflags)
+        self.updatecfg('configopts', '-DCMAKE_CXX_FLAGS="%s"' % cxxflags)
+        self.updatecfg('configopts', '-DCMAKE_Fortran_FLAGS="%s"' % fflags)
 
         # OpenMP
         if self.getcfg('openmp'):
