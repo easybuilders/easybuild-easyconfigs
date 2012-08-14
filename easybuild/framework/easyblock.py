@@ -37,7 +37,7 @@ class EasyBlock:
     # mandatory entries
     mandatory = ['name', 'version', 'homepage', 'description', 'toolkit']
     validmoduleclasses = ['base', 'compiler', 'lib']
-    validstops = ['cfg', 'source', 'patch', 'configure', 'make', 'install', 'test', 'postproc', 'cleanup', 'packages']
+    validstops = ['cfg', 'source', 'patch', 'prepare', 'configure', 'make', 'install', 'test', 'postproc', 'cleanup', 'packages']
 
     default_config = {
           'name': [None, "Name of software"],

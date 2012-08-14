@@ -68,9 +68,10 @@ class CP2K(Application):
 
         self.make_instructions = ''
 
-    def extra_options(self):
+    @staticmethod
+    def extra_options():
         extra_vars = {
-                      'type': ['popt', "Type of build ('popt' or 'psmp') (default: 'popt)"],
+                      'type': ['popt', "Type of build ('popt', 'psmp' or 'sopt') (default: 'popt')"],
                       'typeopt': [True, "Enable optimization (default: True)"],
                       'libint': [True, "Use LibInt (default: True)"],
                       'modincprefix': ['', "IMKL prefix for modinc include dir (default: '')"],
@@ -81,7 +82,7 @@ class CP2K(Application):
                       'ignore_regtest_fails': [False, "Ignore failures in regression test (should be used with care) (default: False)."],
                       'maxtasks': [3, "Maximum number of CP2K instances run at the same time during testing (default:3)"]
                      }
-        return Application.extra_options(self, extra_vars)
+        return Application.extra_options(extra_vars)
 
 
     def _generateMakefile(self, options):
@@ -269,8 +270,8 @@ class CP2K(Application):
                    'FCFLAGS': '$(FCFLAGS%s)' % optflags,
                    'FCFLAGS2': '$(FCFLAGS%s)' % regflags,
 
-                   'CFLAGS': ' %s %s $(FPIC) $(DEBUG) %s ' % (os.getenv('SOFTVARCPPFLAGS'),
-                                                              os.getenv('SOFTVARLDFLAGS'),
+                   'CFLAGS': ' %s %s $(FPIC) $(DEBUG) %s ' % (os.getenv('EBVARCPPFLAGS'),
+                                                              os.getenv('EBVARLDFLAGS'),
                                                               self.getcfg('extracflags')),
                    'DFLAGS': ' -D__parallel -D__BLACS -D__SCALAPACK -D__FFTSG %s' % self.getcfg('extradflags'),
 

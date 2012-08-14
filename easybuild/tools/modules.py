@@ -313,15 +313,29 @@ def get_software_root(name):
     """
     Return the software root set for a particular package.
     """
-    environmentKey = sofware_env_var_name("root", name)
-    return os.getenv(environmentKey)
+    name = convertName(name, upper=True)
+    environment_key = "EBROOT%s" % name
+    legacy_key = "SOFTROOT%s" % name
+
+    # keep on supporting legacy installations
+    if environment_key in os.environ:
+        return os.getenv(environment_key)
+    else:
+        return os.getenv(legacy_key)
 
 def get_software_version(name):
     """
     Return the software version set for a particular package.
     """
-    environmentKey = sofware_env_var_name("version", name)
-    return os.getenv(environmentKey)
+    name = convertName(name, upper=True)
+    environment_key = "EBVERSION%s" % name
+    legacy_key = "SOFTVERSION%s" % name
+
+    # keep on supporting legacy installations
+    if environment_key in os.environ:
+        return os.getenv(environment_key)
+    else:
+        return os.getenv(legacy_key)
 
 def curr_module_paths():
     """
