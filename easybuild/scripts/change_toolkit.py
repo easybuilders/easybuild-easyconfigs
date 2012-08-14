@@ -20,17 +20,22 @@
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 #
 ##
+"""
+Script for automatically changing the toolkit of easyconfig files
+"""
 import glob
 import os
 import sys
 from distutils.version import LooseVersion
-
 from optparse import OptionParser
 
 from easybuild.framework.easyblock import EasyBlock
 
 
 def find_easyconfig(path, name):
+    """
+    looks for easyconfigs with a given name in path
+    """
     # possible glob patterns
     possibles = [os.path.join(path, '*%s*.eb' % name),
                  os.path.join(path, name[0].lower(), "*%s*.eb" % name),
@@ -43,7 +48,11 @@ def find_easyconfig(path, name):
 
     return found
 
+
 def main():
+    """
+    main entry point for script
+    """
     parser = OptionParser()
 
     parser.add_option('-t', '--toolkit', help="toolkit name to use")
