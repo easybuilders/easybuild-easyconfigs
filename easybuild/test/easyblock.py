@@ -70,7 +70,7 @@ version = "3.14"
 
     def runTest(self):
         """ make sure all checking of mandatory variables works """
-        self.assertErrorRegex(EasyBuildError, "mandatory variable \w* not provided", EasyBlock, self.eb_file)
+        self.assertErrorRegex(EasyBuildError, "mandatory variables .* not provided", EasyBlock, self.eb_file)
 
         self.contents += "\n".join(['homepage = "http://google.com"', 'description = "test easyblock"',
                                     'toolkit = {"name": "dummy", "version": "dummy"}'])
@@ -243,13 +243,13 @@ homepage = "http://google.com"
 description = "test easyblock"
 toolkit = {"name":"GCC", "version": "4.6.3"}
 dependencis = [('first', '1.1'), {'name': 'second', 'version': '2.2'}]
+sourceULs = ['http://google.com']
 """
 
     def runTest(self):
         """ If a typo is present, suggestion should be provided (if possible) """
-        self.assertErrorRegex(EasyBuildError, "invalid variable dependencis", EasyBlock, self.eb_file)
-        self.assertErrorRegex(EasyBuildError, "suggestions: dependencies", EasyBlock, self.eb_file)
-
+        self.assertErrorRegex(EasyBuildError, "dependencis -> dependencies", EasyBlock, self.eb_file)
+        self.assertErrorRegex(EasyBuildError, "sourceULs -> sourceURLs", EasyBlock, self.eb_file)
 
 def suite():
     """ return all the tests in this file """

@@ -140,16 +140,18 @@ class EasyBlock:
 
         # validate mandatory keys
         if validate:
-            for key in self.mandatory:
-                if key not in local_vars:
-                    self.log.error("mandatory variable %s not provided" % key)
+            missing_keys = [key for key in self.mandatory if key not in local_vars]
+            if missing_keys:
+                self.log.error("mandatory variables %s not provided" % missing_keys)
 
             # provide suggestions for typos
-            for key in local_vars:
-                if key not in self.config:
-                    guesses = difflib.get_close_matches(key, self.config.keys(), 1, 0.85)
-                    if len(guesses) == 1:
-                        self.log.error("You set invalid variable %s, possible suggestions: %s" % (key, guesses[0]))
+            possible_typos = [(key, difflib.get_close_matches(key, self.config.keys(), 1, 0.85))
+                              for key in local_vars if key not in self.config]
+
+            typos = [(key, guesses[0]) for (key, guesses) in possible_typos if len(guesses) == 1]
+            if typos:
+                self.log.error("You may have some typos in your easyconfig file: %s" %
+                                ', '.join(["%s -> %s" % typo for typo in typos]))
 
         for key in local_vars:
             # validations are skipped, just set in the config
