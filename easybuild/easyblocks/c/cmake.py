@@ -41,6 +41,9 @@ class CMake(Application):
         compilers += "-DCMAKE_CXX_FLAGS='%s' -DCMAKE_CXX_COMPILER='%s' " % (os.getenv('CXXFLAGS'), 
                                                                             os.getenv('CXX'))
 
+        compilers += "-DCMAKE_Fortran_FLAGS='%s' -DCMAKE_Fortran_COMPILER='%s' " % (os.getenv('FFLAGS'), 
+                                                                                    os.getenv('F90'))
+
         command = "%s cmake -DCMAKE_INSTALL_PREFIX=%s %s %s %s" % (self.getcfg('preconfigopts'),
                                                                    self.installdir,
                                                                    compilers,
