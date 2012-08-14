@@ -187,11 +187,7 @@ class LAPACK(Application):
         """
         if self.getcfg('test_only'):
 
-<<<<<<< HEAD
             if not get_software_root('LAPACK'):
-=======
-            if not get_software_root('lapack'):
->>>>>>> develop
                 self.log.error("You need to make sure that the LAPACK module is loaded to perform testing.")
 
             blaslib = get_blas_lib(self.log)
