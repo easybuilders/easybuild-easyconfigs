@@ -50,7 +50,7 @@ def main():
     parser.add_option('-v', '--version', default="", help="toolkit version to use")
     parser.add_option('-r', '--robot', help="path where other toolkits are stored")
 
-    parser.add_option('-p', '--patches', action="store", help="list of patch files to use")
+    parser.add_option('-p', '--patches', action="append", help="list of patch files to use")
 
     (opts, args) = parser.parse_args()
 
@@ -74,7 +74,7 @@ def main():
     else:
         best = max(filter(lambda v: v <= wanted, versions))
 
-
+    # Select all the toolkits that match this version
     toolkits = [toolkit for toolkit in toolkit_ebs if LooseVersion(toolkit['version']) == best]
     if len(toolkits) > 1:
         print "found more than one toolkit which matches the specified version, checking for exact match"
@@ -93,6 +93,7 @@ def main():
     for eb_file in args:
         eb = EasyBlock(eb_file, validate=False)
         eb['toolkit'] = {'name': toolkit['name'], 'version': toolkit.installversion()}
+        eb['patches'] = opts.patches
 
         filename = "%s-%s.eb" % (eb['name'], eb.installversion())
         new_eb = open(filename, 'w')
@@ -100,6 +101,10 @@ def main():
         # check which vars are set inside the eb file
         vars = {}
         execfile(eb_file, {}, vars)
+
+        # set patches, so it will definitly be set
+        if opts.patches:
+            vars['patches'] = True
 
         # determine a pretty order
         order = ['name', 'version', '', 'homepage', 'description', '',  'toolkit', '', 'dependencies', '',
