@@ -377,7 +377,7 @@ class Toolkit:
         # order matters!
         blacs_libs = ["blacsCinit", "blacsF77init", "blacs"]
 
-        self.vars['BLACS_INC'] = os.path.join(blacs, "include")
+        self.vars['BLACS_INC_DIR'] = os.path.join(blacs, "include")
         self.vars['BLACS_LIB_DIR'] = os.path.join(blacs, "lib")
         self.vars['BLACS_STATIC_LIBS'] = ','.join(["lib%s.a" % x for x in blacs_libs])
 
@@ -414,7 +414,7 @@ class Toolkit:
 
         self.vars['LIBFFT'] = ','.join(["-l%s" % x for x in fftw_libs])
 
-        self.vars['FFTW_INC'] = os.path.join(fftw, "include")
+        self.vars['FFTW_INC_DIR'] = os.path.join(fftw, "include")
         self.vars['FFTW_LIB_DIR'] = os.path.join(fftw, "lib")
         self.vars['FFTW_STATIC_LIBS'] = ','.join(["lib%s.a" % x for x in fftw_libs])
 
@@ -629,13 +629,13 @@ class Toolkit:
         self.vars['BLAS_LAPACK_MT_STATIC_LIBS'] = self.vars['LAPACK_MT_STATIC_LIBS']
 
         # BLACS library
-        self.vars['BLACS_INC'] = os.path.join(mklroot, "mkl", "include")
+        self.vars['BLACS_INC_DIR'] = os.path.join(mklroot, "mkl", "include")
         self.vars['BLACS_LIB_DIR'] = libs_dir
         self.vars['BLACS_STATIC_LIBS'] = ','.join(["libmkl_%s.a" % x for x in blacs_libs])
         self.vars['BLACS_MT_STATIC_LIBS'] = self.vars['BLACS_STATIC_LIBS']
 
         # sequential ScaLAPACK
-        self.vars['SCALAPACK_INC'] = os.path.join(mklroot, "mkl", "include")
+        self.vars['SCALAPACK_INC_DIR'] = os.path.join(mklroot, "mkl", "include")
         self.vars['SCALAPACK_LIB_DIR'] = libs_dir
 
         suffix = "-Wl,--end-group -Wl:-Bdynamic"
@@ -657,7 +657,7 @@ class Toolkit:
         self.vars['LIBFFT'] = ' '.join(["-Wl:-Bstatic",
                                         ' '.join(["-%s" % x for x in fftw_libs]),
                                         "-Wl:-Bdynamic"])
-        self.vars['FFTW_INC'] = os.path.join(mklroot, "mkl", "include", "fftw")
+        self.vars['FFTW_INC_DIR'] = os.path.join(mklroot, "mkl", "include", "fftw")
         self.vars['FFTW_LIB_DIR'] = libs_dir
         fftw_static_libs = ["lib%s.a" % x for x in fftw_libs]
         self.vars['FFTW_STATIC_LIBS'] = ','.join(fftw_static_libs + [self.vars['BLAS_STATIC_LIBS'],
@@ -713,7 +713,7 @@ class Toolkit:
                 self.log.error("Don't know how to set IMPI paths for old versions.")
             else:
                 mpi_lib = os.path.join(impiroot, 'lib64', 'libmpi')
-                self.vars['MPI_INC'] = os.path.join(impiroot, 'include64')
+                self.vars['MPI_INC_DIR'] = os.path.join(impiroot, 'include64')
 
         self.vars['MPI_LIB_SHARED'] = "%s.so" % mpi_lib
         self.vars['MPI_LIB_STATIC'] = "%s.a" % mpi_lib
@@ -737,7 +737,7 @@ class Toolkit:
                 self.vars[i] = self.vars["MPI%s" % i]
 
         qlogic = get_software_root('QLogicMPI')
-        self.vars['MPI_INC'] = "%s/include" % qlogic
+        self.vars['MPI_INC_DIR'] = "%s/include" % qlogic
         self.vars['MPI_LIB_SHARED'] = "%s/lib64/libmpich.so" % qlogic
 
     def prepareLAPACK(self):
@@ -775,7 +775,7 @@ class Toolkit:
                     self.vars[i] = self.vars["MPI%s" % i]
 
             mpich2 = get_software_root('MPICH2')
-            self.vars['MPI_INC'] = "%s/include" % mpich2
+            self.vars['MPI_INC_DIR'] = "%s/include" % mpich2
             self.vars['MPI_LIB_SHARED'] = "%s/lib/libmpich.so" % mpich2
             self.vars['MPI_LIB_STATIC'] = "%s/lib/libmpich.a" % mpich2
         else:
@@ -819,7 +819,7 @@ class Toolkit:
 
         self.vars['MPI_LIB_STATIC'] = "%s/lib/libmpi.a" % openmpi
         self.vars['MPI_LIB_SHARED'] = "%s/lib/libmpi.so" % openmpi
-        self.vars['MPI_INC'] = "%s/include" % openmpi
+        self.vars['MPI_INC_DIR'] = "%s/include" % openmpi
         self.prepareSimpleMPI()
 
     def prepareScaLAPACK(self):
@@ -834,7 +834,7 @@ class Toolkit:
         self.vars['LIBSCALAPACK_MT'] = "%s %s -lpthread" % (self.vars['LIBSCALAPACK'],
                                                             self.vars.get('LIBSCALAPACK_MT', ''))
 
-        self.vars['SCALAPACK_INC'] = os.path.join(scalapack, "include")
+        self.vars['SCALAPACK_INC_DIR'] = os.path.join(scalapack, "include")
         self.vars['SCALAPACK_LIB_DIR'] = os.path.join(scalapack, "lib")
         self.vars['SCALAPACK_STATIC_LIBS'] = "libscalapack.a"
         self.vars['SCALAPACK_MT_STATIC_LIBS'] = self.vars['SCALAPACK_STATIC_LIBS']

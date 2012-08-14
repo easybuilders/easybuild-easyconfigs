@@ -62,11 +62,11 @@ class DOLFIN(CMakePythonPackage):
         # specify MPI library
         self.updatecfg('configopts', ' -DMPI_COMPILER="%s"' % os.getenv('MPICC'))
 
-        if  os.getenv('MPI_LIB_SHARED') and os.getenv('MPI_INC'):
+        if  os.getenv('MPI_LIB_SHARED') and os.getenv('MPI_INC_DIR'):
             self.updatecfg('configopts', ' -DMPI_LIBRARY="%s"' % os.getenv('MPI_LIB_SHARED'))
-            self.updatecfg('configopts', ' -DMPI_INCLUDE_PATH="%s"' % os.getenv('MPI_INC'))
+            self.updatecfg('configopts', ' -DMPI_INCLUDE_PATH="%s"' % os.getenv('MPI_INC_DIR'))
         else:
-            self.log.error('MPI_LIB_SHARED or MPI_INC not set, could not determine MPI-related paths.')
+            self.log.error('MPI_LIB_SHARED or MPI_INC_DIR not set, could not determine MPI-related paths.')
 
         # specify Python paths
         python_short_ver = ".".join(get_software_version('Python').split(".")[0:2])

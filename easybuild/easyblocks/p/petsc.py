@@ -114,7 +114,7 @@ class PETSc(Application):
 
             # BLACS, FFTW, ScaLAPACK
             for dep in ["BLACS", "FFTW", "ScaLAPACK"]:
-                inc = os.getenv('%s_INC' % dep.upper())
+                inc = os.getenv('%s_INC_DIR' % dep.upper())
                 libdir = os.getenv('%s_LIB_DIR' % dep.upper())
                 libs = os.getenv('%s_STATIC_LIBS' % dep.upper())
                 if inc and libdir and libs:

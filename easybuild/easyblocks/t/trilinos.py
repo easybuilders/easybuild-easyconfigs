@@ -107,20 +107,18 @@ class Trilinos(CMake):
             self.updatecfg('configopts', '-DUMFPACK_LIBRARY_NAMES:STRING="%s"' % ';'.join(libnames))
 
         # BLACS
-        blacs = get_software_root('BLACS')
         self.updatecfg('configopts', "-DTPL_ENABLE_BLACS:BOOL=ON")
-        self.updatecfg('configopts', '-DBLACS_INCLUDE_DIRS:PATH="%s"' % os.path.join(blacs, "include"))
-        self.updatecfg('configopts', '-DBLACS_LIBRARY_DIRS:PATH="%s"' % os.path.join(blacs, "lib"))
+        self.updatecfg('configopts', '-DBLACS_INCLUDE_DIRS:PATH="%s"' % os.getenv('BLACS_INC_DIR'))
+        self.updatecfg('configopts', '-DBLACS_LIBRARY_DIRS:PATH="%s"' % os.getenv('BLACS_LIB_DIR'))
         blacs_lib_names = os.getenv('BLACS_STATIC_LIBS').split(',')
         blacs_lib_names = [lib_re.search(x).group(1) for x in blacs_lib_names]
         self.updatecfg('configopts', '-DBLACS_LIBRARY_NAMES:STRING="%s"' % (';'.join(blacs_lib_names)))
 
         # ScaLAPACK
-        scalapack = get_software_root('ScaLAPACK')
         self.updatecfg('configopts', "-DTPL_ENABLE_SCALAPACK:BOOL=ON")
-        self.updatecfg('configopts', '-DSCALAPACK_INCLUDE_DIRS:PATH="%s"' %     os.path.join(scalapack, "include"))
-        self.updatecfg('configopts', '-DSCALAPACK_LIBRARY_DIRS:PATH="%s;%s"' % (os.path.join(scalapack, "lib"),
-                                                                                os.path.join(blacs, "lib")))
+        self.updatecfg('configopts', '-DSCALAPACK_INCLUDE_DIRS:PATH="%s"' % os.getenv('SCALAPACK_INC_DIR'))
+        self.updatecfg('configopts', '-DSCALAPACK_LIBRARY_DIRS:PATH="%s;%s"' % (os.getenv('SCALAPACK_LIB_DIR'),
+                                                                                os.getenv('BLACS_LIB_DIR')))
 
         # PETSc
         petsc = get_software_root('PETSc')
