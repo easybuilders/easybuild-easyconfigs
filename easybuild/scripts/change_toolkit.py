@@ -38,10 +38,10 @@ def find_easyconfig(path, name):
     looks for easyconfigs with a given name in path
     """
     # possible glob patterns
-    possibles = create_paths(path, name, "*")
+    patterns = create_paths(path, name, "*")
     found = []
-    for pos in possibles:
-        found.extend(glob.glob(pos))
+    for pat in patterns:
+        found.extend(glob.glob(pat))
 
     return found
 
