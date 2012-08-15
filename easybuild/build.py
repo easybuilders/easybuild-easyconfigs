@@ -774,15 +774,6 @@ def dep_graph(fn, specs, log):
     """
     Create a depenency graph for the given easyconfigs.
     """
-    # import graphviz
-    try:
-        import sys
-        sys.path.append('..')
-        sys.path.append('/usr/lib/graphviz/python/')
-        sys.path.append('/usr/lib64/graphviz/python/')
-        import gv
-    except ImportError, err:
-        error("Failed to import graphviz: %s" % err)    
 
     # import pygraph
     try:
@@ -827,6 +818,16 @@ def dep_graph(fn, specs, log):
         except IOError, err:
             log.error("Failed to create file %s: %s" % (fn, err))
     else:
+        # import graphviz
+        try:
+            import sys
+            sys.path.append('..')
+            sys.path.append('/usr/lib/graphviz/python/')
+            sys.path.append('/usr/lib64/graphviz/python/')
+            import gv
+        except ImportError, err:
+            error("Failed to import graphviz: %s" % err)
+
         # try and render graph in specified file format
         gvv = gv.readstring(dot)
         gv.layout(gvv, 'dot')
