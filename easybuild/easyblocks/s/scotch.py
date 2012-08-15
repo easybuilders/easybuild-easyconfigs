@@ -93,7 +93,7 @@ class SCOTCH(Application):
         if self.toolkit().comp_family() == toolkit.GCC:
             cflags += " -Drestrict=__restrict"
         else:
-            cflags = " -restrict -DIDXSIZE64"
+            cflags += " -restrict -DIDXSIZE64"
 
         # actually build
         for app in ["scotch", "ptscotch"]:
