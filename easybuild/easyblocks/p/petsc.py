@@ -43,7 +43,8 @@ class PETSc(Application):
         self.petsc_arch = ""
         self.petsc_subdir = ""
 
-    def extra_options(self):
+    @staticmethod
+    def extra_options():
         """Add extra config options specific to PETSc."""
         extra_vars = {
                       'sourceinstall': [False, "Indicates whether a source installation should be performed (default: False)"],
@@ -53,7 +54,7 @@ class PETSc(Application):
                       'papi_lib': ['/usr/lib64/libpapi.so', "Path for PAPI library (default: '/usr/lib64/libpapi.so')"],
                       'runtest': ['test', "Make target to test build (default: test)"]
                      }
-        return Application.extra_options(self, extra_vars)
+        return Application.extra_options(extra_vars)
 
     def make_builddir(self):
         """Decide whether or not to build in install dir before creating build dir."""

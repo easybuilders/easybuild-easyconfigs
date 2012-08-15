@@ -32,7 +32,8 @@ class Trilinos(CMake):
     """Support for building Trilinos."""
     # see http://trilinos.sandia.gov/Trilinos10CMakeQuickstart.txt
 
-    def extra_options(self):
+    @staticmethod
+    def extra_options():
         """Add extra config options specific to Trilinos."""
         extra_vars = {
                       'shared_libs': [False, "BUild shared libs; if False, build static libs. (default: False)."],
@@ -40,7 +41,7 @@ class Trilinos(CMake):
                       'all_pkgs': [True, "Enable all packages (default: True)"],
                       'skip_pkgs': [[], "List of packages to skip (default: [])"]
                      }
-        return CMake.extra_options(self, extra_vars)
+        return CMake.extra_options(extra_vars)
 
     def configure(self):
         """Set some extra environment variables before configuring."""

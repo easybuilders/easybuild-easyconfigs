@@ -43,11 +43,12 @@ class Boost(Application):
 
         self.objdir = None
 
-    def extra_options(self):
+    @staticmethod
+    def extra_options():
         """Add extra easyconfig parameters for Boost."""
         extra_vars = {'boost_mpi':[False, "Build mpi boost module (default: False)"]}
 
-        return Application.extra_options(self, extra_vars)
+        return Application.extra_options(extra_vars)
 
     def configure(self):
         """Configure Boost build using custom tools"""

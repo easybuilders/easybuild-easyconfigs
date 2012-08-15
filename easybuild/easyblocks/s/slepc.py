@@ -40,13 +40,14 @@ class SLEPc(Application):
 
         self.slepc_arch_dir = None
 
-    def extra_options(self):
+    @staticmethod
+    def extra_options():
         """Add extra config options specific to SLEPc."""
         extra_vars = {
                       'sourceinstall': [False, "Indicates whether a source installation should be performed (default: False)"],
                       'runtest': ['test', "Make target to test build (default: test)"]
                      }
-        return Application.extra_options(self, extra_vars)
+        return Application.extra_options(extra_vars)
 
     def make_builddir(self):
         """Decide whether or not to build in install dir before creating build dir."""
