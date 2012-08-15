@@ -95,13 +95,9 @@ class BLACS(Application):
         else:
             self.log.error("Unknown MPI lib %s used (known MPI libs: %s)" % (mpi_type, known_mpis.keys()))
 
-        # common settings (for now)
-        mpicc = 'mpicc'
-        mpif77 = 'mpif77'
-
         opts = {
-                'mpicc': mpicc,
-                'mpif77': mpif77,
+                'mpicc': "%s %s" % (os.getenv('MPICC'), os.getenv('CFLAGS')),
+                'mpif77': "%s %s" % (os.getenv('MPIF77'), os.getenv('FFLAGS')),
                 'f77': os.getenv('F77'),
                 'cc': os.getenv('CC'),
                 'builddir': os.getcwd(),
@@ -172,7 +168,7 @@ class BLACS(Application):
                      'base': base
                     })
 
-        add_makeopts = ' MPICC=%(mpicc)s MPIF77=%(mpif77)s %(comm)s ' % opts
+        add_makeopts = ' MPICC="%(mpicc)s" MPIF77="%(mpif77)s" %(comm)s ' % opts
         add_makeopts += ' INTERFACE=%(int)s MPIdir=%(base)s BTOPdir=%(builddir)s mpi ' % opts
 
         self.updatecfg('makeopts', add_makeopts)
