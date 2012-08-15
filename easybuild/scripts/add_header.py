@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 ##
-# Copyright 2012 Jens Timmerman, Kenneth Hoste
+# Copyright 2012 Jens Timmerman
+# Copyright 2012 Kenneth Hoste
 #
 # This file is part of EasyBuild,
 # originally created by the HPC-UGent team.

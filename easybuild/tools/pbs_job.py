@@ -1,5 +1,6 @@
 ##
-# Copyright 2012 Stijn De Weirdt, Toon Willems
+# Copyright 2012 Stijn De Weirdt
+# Copyright 2012 Toon Willems
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of the University of Ghent (http://ugent.be/hpc).
