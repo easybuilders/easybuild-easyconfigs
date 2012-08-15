@@ -89,11 +89,14 @@ class SCOTCH(Application):
         ccp = os.environ['MPICC']
         ccd = os.environ['MPICC']
 
-        cflags = "-fPIC -O3 -DCOMMON_FILE_COMPRESS_GZ -DCOMMON_PTHREAD -DCOMMON_RANDOM_FIXED_SEED -DSCOTCH_RENAME -DSCOTCH_PTHREAD"
+        cflags = "-fPIC -O3 -DCOMMON_FILE_COMPRESS_GZ -DCOMMON_PTHREAD -DCOMMON_RANDOM_FIXED_SEED -DSCOTCH_RENAME"
         if self.toolkit().comp_family() == toolkit.GCC:
             cflags += " -Drestrict=__restrict"
         else:
             cflags += " -restrict -DIDXSIZE64"
+
+        if not self.toolkit().mpi_type() == toolkit.INTEL:
+            cflags += " -DSCOTCH_PTHREAD"
 
         # actually build
         for app in ["scotch", "ptscotch"]:
