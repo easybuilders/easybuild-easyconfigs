@@ -24,6 +24,7 @@ EasyBuild support for DOLFIN, implemented as an easyblock
 import os
 import re
 
+import easybuild.tools.toolkit as toolkit
 from easybuild.easyblocks.c.cmakepythonpackage import CMakePythonPackage
 from easybuild.tools.modules import get_software_root, get_software_version
 
@@ -33,6 +34,21 @@ class DOLFIN(CMakePythonPackage):
 
     def configure(self):
         """Set DOLFIN-specific configure options and configure with CMake."""
+
+        # compiler flags
+        cflags = os.getenv('CFLAGS')
+        cxxflags = os.getenv('CXXFLAGS')
+        fflags = os.getenv('FFLAGS')
+
+        # fix for "SEEK_SET is #defined but must not be for the C++ binding of MPI. Include mpi.h before stdio.h"
+        if self.toolkit().mpi_type() in [toolkit.INTEL, toolkit.MPICH2]:
+            cflags += " -DMPICH_IGNORE_CXX_SEEK"
+            cxxflags += " -DMPICH_IGNORE_CXX_SEEK"
+            fflags += " -DMPICH_IGNORE_CXX_SEEK"
+
+        self.updatecfg('configopts', '-DCMAKE_C_FLAGS="%s"' % cflags)
+        self.updatecfg('configopts', '-DCMAKE_CXX_FLAGS="%s"' % cxxflags)
+        self.updatecfg('configopts', '-DCMAKE_Fortran_FLAGS="%s"' % fflags)
 
         # make sure that required dependencies are loaded
         deps = ['Armadillo', 'Boost', 'CGAL', 'MTL4', 'ParMETIS', 'PETSc', 'Python',
