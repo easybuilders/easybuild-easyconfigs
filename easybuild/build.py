@@ -200,6 +200,16 @@ def main():
     if options.strict:
         filetools.strictness = options.strict
 
+    # building a dependency graph implies force, so that all dependencies are retained
+    # and also skips validation of easyconfigs (e.g. checking os dependencies)
+    validate_easyconfigs = True
+    retain_all_deps = False
+    if options.dep_graph:
+        log.info("Enabling force to generate dependency graph.")
+        options.force = True
+        validate_easyconfigs = False
+        retain_all_deps = True
+
     ## Read easyconfig files
     packages = []
     if len(paths) == 0:
@@ -213,7 +223,7 @@ def main():
         try:
             files = findEasyconfigs(path, log)
             for eb_file in files:
-                packages.extend(processEasyconfig(eb_file, log, blocks, validate=(not options.dep_graph)))
+                packages.extend(processEasyconfig(eb_file, log, blocks, validate=validate_easyconfigs))
         except IOError, err:
             log.error("Processing easyconfigs in path %s failed: %s" % (path, err))
 
@@ -222,7 +232,7 @@ def main():
     os.chdir(os.environ['PWD'])
 
     ## Skip modules that are already installed unless forced
-    if not options.force and not options.dep_graph:
+    if not options.force:
         m = Modules()
         packages, checkPackages = [], packages
         for package in checkPackages:
@@ -239,7 +249,9 @@ def main():
     ## Determine an order that will allow all specs in the set to build
     if len(packages) > 0:
         print_msg("resolving dependencies ...", log)
-        orderedSpecs = resolveDependencies(packages, options.robot, log, force=options.dep_graph)
+        # force all dependencies to be retained and validation to be skipped for building dep graph
+        force = retain_all_deps and not validate_easyconfigs
+        orderedSpecs = resolveDependencies(packages, options.robot, log, force=force)
     else:
         print_msg("No packages left to be built.", log)
         orderedSpecs = []
@@ -398,6 +410,7 @@ def processEasyconfig(path, log, onlyBlocks=None, regtest_online=False, validate
 def resolveDependencies(unprocessed, robot, log, force=False):
     """
     Work through the list of packages to determine an optimal order
+    enabling force results in retaining all dependencies and skipping validation of easyconfigs
     """
 
     if force:
@@ -778,17 +791,32 @@ def dep_graph(fn, specs, log):
     except ImportError, err:
         error("Failed to import pygraph: %s" % err)
 
+    # check whether module names are unique
+    # if so, we can omit versions in the graph 
+    names = set()
+    for spec in specs:
+        names.add(spec['module'][0])
+    omit_versions = len(names) == len(specs)
+
+    def mk_node_name(mod):
+        if omit_versions:
+            return mod[0]
+        else:
+            return '-'.join(mod)
+
     # enhance list of specs
     for spec in specs:
-        spec['module'] = '-'.join(spec['module']) #spec['module'][0]
-        spec['unresolvedDependencies'] = ['-'.join(s) for s in spec['unresolvedDependencies']] #[s[0] for s in spec['unresolvedDependencies']]
+        spec['module'] = mk_node_name(spec['module'])
+        spec['unresolvedDependencies'] = [mk_node_name(s) for s in spec['unresolvedDependencies']] #[s[0] for s in spec['unresolvedDependencies']]
 
+    # build directed graph
     dgr = digraph()
     dgr.add_nodes([spec['module'] for spec in specs])
     for spec in specs:
         for dep in spec['unresolvedDependencies']:
             dgr.add_edge((dep, spec['module']))
 
+    # write to file
     dot = dot.write(dgr)
     if fn.endswith(".dot"):
         # create .dot file
