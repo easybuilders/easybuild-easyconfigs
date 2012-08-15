@@ -29,12 +29,6 @@ from easybuild.tools.modules import get_software_root
 class MTL4(Tarball):
     """Support for installing MTL4."""
 
-    def configure(self):
-        """Check for dependencies (Boost)."""
-
-        if not get_software_root("Boost"):
-            self.log.error("Boost module not loaded?")
-
     def sanitycheck(self):
         """Custom sanity check for MTL4."""
 
