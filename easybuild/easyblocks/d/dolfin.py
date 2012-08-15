@@ -22,6 +22,7 @@
 EasyBuild support for DOLFIN, implemented as an easyblock
 """
 import os
+import re
 
 from easybuild.easyblocks.c.cmakepythonpackage import CMakePythonPackage
 from easybuild.tools.modules import get_software_root, get_software_version
@@ -110,7 +111,8 @@ class DOLFIN(CMakePythonPackage):
         self.updatecfg('configopts', '-DMTL4_DIR:PATH="%s"' % depsdict['MTL4'])
 
         # zlib
-        self.updatecfg('configopts', '-DZLIB_DIR=%s' % depsdict['zlib'])
+        self.updatecfg('configopts', '-DZLIB_INCLUDE_DIR=%s' % os.path.join(depsdict['zlib'], "include"))
+        self.updatecfg('configopts', '-DZLIB_LIBRARY=%s' % os.path.join(depsdict['zlib'], "lib", "libz.a"))
 
         # set correct openmp options
         openmp = self.toolkit().get_openmp_flag()
@@ -118,11 +120,12 @@ class DOLFIN(CMakePythonPackage):
         self.updatecfg('configopts', ' -DOpenMP_C_FLAGS="%s"' % openmp)
 
         # configure
-        CMakePythonPackage.configure(self)
+        out = CMakePythonPackage.configure(self)
 
-        #### FIXME #####
-        # implement check for optional packages that could not be found
-        # need to know exact output when all optional packages are found
+        # make sure that all optional packages are found
+        not_found_re = re.compile("The following optional packages could not be found")
+        if not_found_re.search(out):
+            self.log.error("Optional packages could not be found, this should not happen...")
 
     def make_module_extra(self):
         """Set extra environment variables for DOLFIN."""
