@@ -83,7 +83,7 @@ class BLACS(Application):
                       toolkit.OPENMPI: "-L$(MPILIBdir) -lmpi_f77",
                       toolkit.MVAPICH2: "$(MPILIBdir)/libmpich.a $(MPILIBdir)/libfmpich.a " + \
                                         "$(MPILIBdir)/libmpl.a -lpthread"
-                          }
+                     }
 
         mpi_type = self.toolkit().mpi_type()
 

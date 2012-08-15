@@ -224,7 +224,7 @@ class PETSc(Application):
                 self.log.error("Something went wrong during symlink creation of file %s: %s" % (f, err))
 
     def make_module_req_guess(self):
-        """Specify correct LD_LIBRARY_PATH and CPATH for PETSc installation."""
+        """Specify PETSc custom values for PATH, CPATH and LD_LIBRARY_PATH."""
 
         guesses = Application.make_module_req_guess(self)
 

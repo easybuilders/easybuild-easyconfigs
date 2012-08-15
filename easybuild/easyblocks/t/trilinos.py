@@ -212,8 +212,10 @@ class Trilinos(CMake):
 
             libs = [l for l in libs if not l in self.getcfg('skip_pkgs')]
 
-            self.setcfg('sanityCheckPaths', {'files':[os.path.join("lib", "lib%s.a" % x.lower()) for x in libs],
-                                             'dirs':['bin', 'include']})
+            self.setcfg('sanityCheckPaths', {
+                                             'files':[os.path.join("lib", "lib%s.a" % x.lower()) for x in libs],
+                                             'dirs':['bin', 'include']
+                                             })
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 

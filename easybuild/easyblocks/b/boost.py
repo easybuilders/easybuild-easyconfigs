@@ -34,12 +34,13 @@ class Boost(Application):
     """Support for building Boost."""
 
     def __init__(self, *args, **kwargs):
+        """Initialize Boost-specific variables."""
         Application.__init__(self, *args, **kwargs)
 
         self.objdir = None
 
     def extra_options(self):
-
+        """Add extra easyconfig parameters for Boost."""
         extra_vars = {'boost_mpi':[False, "Build mpi boost module (default: False)"]}
 
         return Application.extra_options(self, extra_vars)
@@ -138,9 +139,11 @@ class Boost(Application):
             if self.getcfg('boost_mpi'):
                 mpifs = ['lib/libboost_mpi.so']
 
-            self.setcfg('sanityCheckPaths', {'files': mpifs + ['lib/libboost_%s.so' % x for x in ['python',
+            self.setcfg('sanityCheckPaths', {
+                                             'files': mpifs + ['lib/libboost_%s.so' % x for x in ['python',
                                                                                                   'system']],
-                                             'dirs':['include/boost']})
+                                             'dirs':['include/boost']
+                                             })
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 

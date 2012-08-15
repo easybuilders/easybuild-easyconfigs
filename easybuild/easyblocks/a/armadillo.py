@@ -50,8 +50,10 @@ class Armadillo(CMake):
 
         if not self.getcfg('sanityCheckPaths'):
 
-            self.setcfg('sanityCheckPaths', {'files':['lib/libarmadillo.so', 'include/armadillo'],
-                                             'dirs':['include/armadillo_bits']})
+            self.setcfg('sanityCheckPaths', {
+                                             'files':['lib/libarmadillo.so', 'include/armadillo'],
+                                             'dirs':['include/armadillo_bits']
+                                             })
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 

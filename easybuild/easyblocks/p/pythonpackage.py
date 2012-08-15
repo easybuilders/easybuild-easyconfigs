@@ -33,9 +33,10 @@ class PythonPackage(Application):
     """Builds and installs a Python package, and provides a dedicated module file."""
 
     def __init__(self, *args, **kwargs):
+        """Initialize custom variables."""
         Application.__init__(self, *args, **kwargs)
 
-        # Python packages lib dir
+        # template for Python packages lib dir
         self.pylibdir = os.path.join("lib", "python%s", "site-packages")
 
     def configure(self):

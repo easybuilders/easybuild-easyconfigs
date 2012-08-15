@@ -184,8 +184,8 @@ class Imkl(IntelBase):
                         extramakeopts += 'mpi=mpich2'
                     cmd = "make -f makefile libintel64 %s" % extramakeopts
 
-                ## Use INSTALL_DIR and CFLAGS and COPTS
-                cmd = "make -f makefile libintel64 %s %s" % (makeopts, extramakeopts)
+                # add other make options as well
+                cmd += makeopts
 
                 for opt in ['', '-fPIC']:
                     try:

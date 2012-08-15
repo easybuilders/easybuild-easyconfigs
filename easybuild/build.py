@@ -36,7 +36,6 @@ import shutil
 import sys
 import tempfile
 import time
-from datetime import datetime
 from optparse import OptionParser
 
 import easybuild  # required for VERBOSE_VERSION
@@ -48,7 +47,8 @@ from easybuild.framework.easyblock import EasyBlock
 from easybuild.tools.build_log import EasyBuildError, initLogger, \
     removeLogHandler, print_msg
 from easybuild.tools.class_dumper import dumpClasses
-from easybuild.tools.modules import Modules, searchModule, curr_module_paths, mk_module_path
+from easybuild.tools.modules import Modules, searchModule, \
+    curr_module_paths, mk_module_path
 from easybuild.tools.config import getRepository
 from easybuild.tools import systemtools
 
@@ -379,7 +379,7 @@ def processEasyconfig(path, log, onlyBlocks=None, regtest_online=False):
         package['unresolvedDependencies'] = copy.copy(package['dependencies'])
 
         # ensure the pathname is equal to the module
-        base_name, ext = os.path.splitext(os.path.basename(spec))
+        base_name, _ = os.path.splitext(os.path.basename(spec))
         module_name = "-".join(package['module'])
         if base_name.lower() != module_name.lower():
             log.error("easyconfig file: %s does not contain module %s" % (spec, module_name))

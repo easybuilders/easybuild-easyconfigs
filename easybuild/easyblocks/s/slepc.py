@@ -35,7 +35,7 @@ class SLEPc(Application):
     """Support for building and installing SLEPc"""
 
     def __init__(self, *args, **kwargs):
-        """Specify that SLEPc should be built in install dir."""
+        """Initialize SLEPc custom variables."""
         Application.__init__(self, *args, **kwargs)
 
         self.slepc_arch_dir = None

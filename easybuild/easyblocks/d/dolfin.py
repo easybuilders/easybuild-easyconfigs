@@ -32,7 +32,7 @@ class DOLFIN(CMakePythonPackage):
     """Support for building and installing DOLFIN."""
 
     def configure(self):
-        """Configure DOLFIN build by setting configure options."""
+        """Set DOLFIN-specific configure options and configure with CMake."""
 
         # make sure that required dependencies are loaded
         deps = ['Armadillo', 'Boost', 'CGAL', 'MTL4', 'ParMETIS', 'PETSc', 'Python',
