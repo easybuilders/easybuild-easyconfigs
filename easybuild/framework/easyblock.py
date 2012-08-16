@@ -108,6 +108,7 @@ class EasyBlock:
         self.config = copy.deepcopy(self.default_config)
         self.config.update(extra_options)
         self.log = getLog("EasyBlock")
+        self.path = path
 
         # store toolkit
         self._toolkit = None
