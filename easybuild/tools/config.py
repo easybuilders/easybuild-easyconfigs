@@ -28,6 +28,7 @@ EasyBuild configuration (paths, preferences, etc.)
 """
 
 import os
+import tempfile
 
 from easybuild.tools.build_log import getLog
 import easybuild.tools.repository as repo
@@ -179,5 +180,5 @@ def get_build_log_path():
     """
     return temporary log directory
     """
-    return variables['logDir']
+    return variables.get('logDir', tempfile.gettempdir())
 
