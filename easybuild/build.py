@@ -37,7 +37,7 @@ import sys
 import tempfile
 import time
 from datetime import datetime
-from optparse import OptionParser
+from optparse import OptionParser, OptionGroup
 
 import easybuild  # required for VERBOSE_VERSION
 import easybuild.framework.easyconfig as easyconfig
@@ -58,46 +58,68 @@ from easybuild.tools import systemtools
 # so this global variable is used.
 LOGDEBUG = False
 
-def add_build_options(parser):
+def add_cmdline_options(parser):
     """
     Add build options to options parser
     """
-    parser.add_option("-C", "--config",
-                        help = "path to EasyBuild config file [default: $EASYBUILDCONFIG or easybuild/easybuild_config.py]")
-    parser.add_option("-r", "--robot", metavar="path",
+    # runtime options
+    runtime_options = OptionGroup(parser, "Runtime options", "Steer EasyBuild behavior.")
+
+    runtime_options.add_option("-b", "--only-blocks", metavar="BLOCKS", help="Only build blocks blk[,blk2]")
+    runtime_options.add_option("-d", "--debug" , action="store_true", help="log debug messages")
+    runtime_options.add_option("-f", "--force", action="store_true", dest="force",
+                        help="force to rebuild software even if it's already installed (i.e. can be found as module)")
+    runtime_options.add_option("--job", action="store_true", help="will submit the build as a job")
+    runtime_options.add_option("-k", "--skip", action="store_true",
+                        help="skip existing software (useful for installing additional packages)")
+    runtime_options.add_option("-l", action="store_true", dest="stdoutLog", help="log to stdout")
+    runtime_options.add_option("-r", "--robot", metavar="PATH",
                         help="path to search for easyconfigs for missing dependencies")
+    runtime_options.add_option("--regtest", action="store_true", help="enable regression test mode")
+    runtime_options.add_option("--regtest-online", action="store_true", help="enable online regression test mode")
+    runtime_options.add_option("-s", "--stop", type="choice", choices=EasyConfig.validstops,
+                        help="stop the installation after certain step (valid: %s)" % ', '.join(EasyConfig.validstops))
+    strictness_options = ['ignore', 'warn', 'error']
+    runtime_options.add_option("--strict", type="choice", choices=strictness_options, help="set strictness " + \
+                               "level (possible levels: %s)" % ', '.join(strictness_options))
+    
+    parser.add_option_group(runtime_options)
 
-    parser.add_option("-a", "--avail-easyconfig-params", action="store_true", help="show available easyconfig parameters")
-    parser.add_option("--dump-classes", action="store_true", help="show classes available")
-    parser.add_option("--search", help="search for module-files in the robot-directory")
-
-    parser.add_option("-e", "--easyblock", metavar="easyblock.class",
+    # override options
+    override_options = OptionGroup(parser, "Override options", "Override default EasyBuild behavior.")
+    
+    override_options.add_option("-C", "--config",
+                        help = "path to EasyBuild config file [default: $EASYBUILDCONFIG or easybuild/easybuild_config.py]")
+    override_options.add_option("-e", "--easyblock", metavar="CLASS",
                         help="loads the class from module to process the spec file or dump " \
                                "the options for [default: Application class]")
-    parser.add_option("-p", "--pretend", action="store_true",
-                        help="does the build/installation in a test directory " \
-                               "located in $HOME/easybuildinstall")
+    override_options.add_option("-p", "--pretend", action="store_true", help="does the build/installation in " \
+                                "a test directory located in $HOME/easybuildinstall [default: $EASYBUILDINSTALLDIR " \
+                                "or installiPath in EasyBuild config file]")
+    override_options.add_option("-t", "--skip-tests", action="store_true", help="skip testing")
+    
+    parser.add_option_group(override_options)
 
-    parser.add_option("-s", "--stop", type="choice", choices=EasyConfig.validstops,
-                        help="stop the installation after certain step" \
-                               "(valid: %s)" % ', '.join(EasyConfig.validstops))
-    parser.add_option("-b", "--only-blocks", metavar="blocks", help="Only build blocks blk[,blk2]")
-    parser.add_option("-k", "--skip", action="store_true",
-                        help="skip existing software (useful for installing additional packages)")
-    parser.add_option("-t", "--skip-tests", action="store_true",
-                        help="skip testing")
-    parser.add_option("-f", "--force", action="store_true", dest="force",
-                        help="force to rebuild software even if it's already installed (i.e. can be found as module)")
+    # informative options
+    informative_options = OptionGroup(parser, "Informative options", "Obtain information about EasyBuild.")
 
-    parser.add_option("-l", action="store_true", dest="stdoutLog", help="log to stdout")
-    parser.add_option("-d", "--debug" , action="store_true", help="log debug messages")
-    parser.add_option("-v", "--version", action="store_true", help="show version")
-    parser.add_option("--regtest", action="store_true", help="enable regression test mode")
-    parser.add_option("--regtest-online", action="store_true", help="enable online regression test mode")
-    strictness_options = ['ignore', 'warn', 'error']
-    parser.add_option("--strict", type="choice", choices=strictness_options, help="set strictness \
-                        level (possible levels: %s" % ', '.join(strictness_options))
-    parser.add_option("--job", action="store_true", help="will submit the build as a job")
+    informative_options.add_option("-a", "--avail-easyconfig-params", action="store_true",
+                                   help="show available easyconfig parameters")
+    informative_options.add_option("--dump-classes", action="store_true", help="show list of available classes")
+    informative_options.add_option("--search", help="search for module-files in the robot-directory")
+    informative_options.add_option("-v", "--version", action="store_true", help="show version")
+
+    parser.add_option_group(informative_options)
+
+    # tweaking options
+    tweaking_options = OptionGroup(parser, "Tweaking options", "Tweak the parameters in the supplied easyconfig (.eb) file.")
+
+    tweaking_options.add_option("--tweak-version", action="store_true", help="tweak software version to given version")
+    tweaking_options.add_option("--tweak-toolkit", action="store_true", help="tweak toolkit (name and version)")
+    tweaking_options.add_option("--tweak-toolkit-version", action="store_true", help="tweak toolkit version")
+    tweaking_options.add_option("--add-patches", action="store_true", help="add additional patch files")
+    
+    parser.add_option_group(tweaking_options)
 
 
 def main():
@@ -119,10 +141,10 @@ def main():
     parser = OptionParser()
 
     parser.usage = "%prog [options] easyconfig [..]"
-    parser.description = "Builds software package based on easyconfig (or parse a directory)\n" \
+    parser.description = "Builds software package based on easyconfig (or parse a directory). " \
                          "Provide one or more easyconfigs or directories, use -h or --help more information."
 
-    add_build_options(parser)
+    add_cmdline_options(parser)
 
     (options, paths) = parser.parse_args()
 
@@ -482,7 +504,6 @@ def create_paths(path, name, version):
             os.path.join(path, name.lower()[0], name, "%s-%s.eb" % (name, version)),
             os.path.join(path, "%s-%s.eb" % (name, version)),
            ]
-
 
 def robotFindEasyconfig(log, path, module):
     """
