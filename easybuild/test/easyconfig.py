@@ -71,7 +71,7 @@ version = "3.14"
 
     def runTest(self):
         """ make sure all checking of mandatory variables works """
-        self.assertErrorRegex(EasyBuildError, "mandatory variables .* not provided", EasyBlock, self.eb_file)
+        self.assertErrorRegex(EasyBuildError, "mandatory variables .* not provided", EasyConfig, self.eb_file)
 
         self.contents += "\n".join(['homepage = "http://google.com"', 'description = "test easyblock"',
                                     'toolkit = {"name": "dummy", "version": "dummy"}'])
@@ -261,10 +261,63 @@ sourceULs = ['http://google.com']
 
     def runTest(self):
         """ If a typo is present, suggestion should be provided (if possible) """
-        self.assertErrorRegex(EasyBuildError, "dependencis -> dependencies", EasyBlock, self.eb_file)
-        self.assertErrorRegex(EasyBuildError, "sourceULs -> sourceURLs", EasyBlock, self.eb_file)
+        self.assertErrorRegex(EasyBuildError, "dependencis -> dependencies", EasyConfig, self.eb_file)
+        self.assertErrorRegex(EasyBuildError, "sourceULs -> sourceURLs", EasyConfig, self.eb_file)
 
 def suite():
     """ return all the tests in this file """
     return TestSuite([TestDependency(), TestEmpty(), TestExtraOptions(), TestMandatory(), TestSharedLibExt(),
-        TestSuggestions(), TestValidation()])
+        TestSuggestions(), TestValidation(), TestTweaking()])
+
+
+class TestTweaking(EasyConfigTest):
+    """test tweaking ability of easyconfigs"""
+
+    patches = ["t1.patch", ("t2.patch", 1), ("t3.patch", "test"), ("t4.h", "include")]
+    contents = """
+name = "pi"
+homepage = "http://www.google.com"
+description = "dummy description"
+version = "3.14"
+toolkit = {"name":"GCC", "version": "4.6.3"}
+patches = %s
+""" % str(patches)
+
+    def runTest(self):
+
+        ver = "1.2.3"
+        tkname = "mytk"
+        tkver = "4.1.2"
+        extra_patches = ['t5.patch', 't6.patch']
+
+        eb = EasyConfig(self.eb_file)
+        tweaks = [('set_version', ver), ('set_toolkit_version', tkver), ('add_patches', extra_patches)]
+        eb.tweak(tweaks)
+        self.assertEqual(eb['version'], ver)
+        self.assertEqual(eb['toolkit']['version'], tkver)
+        self.assertEqual(eb['patches'], self.patches + extra_patches)
+
+        eb = EasyConfig(self.eb_file)
+        eb['version'] = ver
+        eb['toolkit']['version'] = tkver
+        extra_patches = extra_patches[0:1]
+        tweaks = [('set_toolkit_name', tkname), ('add_patches', extra_patches)]
+        eb.tweak(tweaks)
+        self.assertEqual(eb['toolkit']['name'], tkname)
+        self.assertEqual(eb['toolkit']['version'], tkver)
+        self.assertEqual(eb['patches'], self.patches + extra_patches)
+        self.assertEqual(eb['version'], ver)
+
+        eb = EasyConfig(self.eb_file)
+        fn = 'no_such_function'
+        val = 1
+        tweaks = [(fn, val)]
+        pattern = "Failed to tweak easyconfig with %s\(%s\).*has no attribute.*" % (fn, val)
+        self.assertErrorRegex(EasyBuildError, pattern, eb.tweak, tweaks)
+
+        eb = EasyConfig(self.eb_file)
+        fn = 'add_patches'
+        val = 1
+        tweaks = [(fn, val)]
+        pattern = "Failed to tweak easyconfig with %s\(%s\).*is not iterable.*" % (fn, val)
+        self.assertErrorRegex(EasyBuildError, pattern, eb.tweak, tweaks)
