@@ -148,7 +148,7 @@ def main():
 
     (options, paths) = parser.parse_args()
 
-    ## mkstemp returns (fd,filename), fd is from os.open, not regular open!
+    # mkstemp returns (fd,filename), fd is from os.open, not regular open!
     fd, logFile = tempfile.mkstemp(suffix='.log', prefix='easybuild-')
     os.close(fd)
 
@@ -168,14 +168,14 @@ def main():
     else:
         blocks = None
 
-    ## Initialize logger
+    # initialize logger
     logFile, log, hn = initLogger(filename=logFile, debug=options.debug, typ="build")
 
-    ## Show version
+    # show version
     if options.version:
         print_msg("This is EasyBuild %s" % easybuild.VERBOSE_VERSION, log)
 
-    ## Initialize configuration
+    # initialize configuration
     # - check environment variable EASYBUILDCONFIG
     # - then, check command line option
     # - last, use default config file easybuild_config.py in build.py directory
@@ -188,15 +188,15 @@ def main():
         config_file = os.path.join(appPath, "easybuild_config.py")
     config.init(config_file, **configOptions)
 
-    # Dump possible options
+    # dump possible options
     if options.avail_easyconfig_params:
         print_avail_params(options.easyblock, log)
 
-    ## Dump available classes
+    # dump available classes
     if options.dump_classes:
         dumpClasses('easybuild.easyblocks')
 
-    ## Search for modules
+    # search for modules
     if options.search:
         if not options.robot:
             error("Please provide a search-path to --robot when using --search")
@@ -211,7 +211,7 @@ def main():
     if options.strict:
         filetools.strictness = options.strict
 
-    ## Read easyconfig files
+    # read easyconfig files
     packages = []
     if len(paths) == 0:
         error("Please provide one or more easyconfig files", optparser=parser)
@@ -228,11 +228,11 @@ def main():
         except IOError, err:
             log.error("Processing easyconfigs in path %s failed: %s" % (path, err))
 
-    ## Before building starts, take snapshot of environment (watch out -t option!)
+    # before building starts, take snapshot of environment (watch out -t option!)
     origEnviron = copy.deepcopy(os.environ)
     os.chdir(os.environ['PWD'])
 
-    ## Skip modules that are already installed unless forced
+    # skip modules that are already installed unless forced
     if not options.force:
         m = Modules()
         packages, checkPackages = [], packages
@@ -247,7 +247,7 @@ def main():
             else:
                 packages.append(package)
 
-    ## Determine an order that will allow all specs in the set to build
+    # determine an order that will allow all specs in the set to build
     if len(packages) > 0:
         print_msg("resolving dependencies ...", log)
         orderedSpecs = resolveDependencies(packages, options.robot, log)
@@ -289,7 +289,7 @@ def main():
         log.info("Submitted parallel build jobs, exiting now")
         sys.exit(0)
 
-    ## Build software, will exit when errors occurs (except when regtesting)
+    # build software, will exit when errors occurs (except when regtesting)
     correct_built_cnt = 0
     all_built_cnt = 0
     for spec in orderedSpecs:
@@ -301,7 +301,7 @@ def main():
     print_msg("Build succeeded for %s out of %s" % (correct_built_cnt, all_built_cnt), log)
 
     getRepository().cleanup()
-    ## Cleanup tmp log file (all is well, all modules have their own log file)
+    # cleanup tmp log file (all is well, all modules have their own log file)
     try:
         removeLogHandler(hn)
         hn.close()
@@ -331,7 +331,7 @@ def findEasyconfigs(path, log):
     if os.path.isfile(path):
         return [path]
 
-    ## Walk through the start directory, retain all files that end in .eb
+    # walk through the start directory, retain all files that end in .eb
     files = []
     path = os.path.abspath(path)
     for dirpath, _, filenames in os.walk(path):
@@ -353,8 +353,8 @@ def processEasyconfig(path, log, onlyBlocks=None, regtest_online=False):
 
     packages = []
     for spec in blocks:
-        ## Process for dependencies and real installversionname
-        ## - use mod? __init__ and importCfg are ignored.
+        # process for dependencies and real installversionname
+        # - use mod? __init__ and importCfg are ignored.
         log.debug("Processing easyconfig %s" % spec)
 
         try:
@@ -365,7 +365,7 @@ def processEasyconfig(path, log, onlyBlocks=None, regtest_online=False):
 
         name = eb['name']
 
-        ## this app will appear as following module in the list
+        # this app will appear as following module in the list
         package = {
             'spec': spec,
             'module': (eb.name(), eb.installversion()),
@@ -404,7 +404,7 @@ def resolveDependencies(unprocessed, robot, log):
     Work through the list of packages to determine an optimal order
     """
 
-    ## Get a list of all available modules (format: [(name, installversion), ...])
+    # get a list of all available modules (format: [(name, installversion), ...])
     availableModules = Modules().available()
     if len(availableModules) == 0:
         log.warning("No installed modules. Your MODULEPATH is probably incomplete.")
@@ -415,7 +415,7 @@ def resolveDependencies(unprocessed, robot, log):
     beingInstalled = [p['module'] for p in unprocessed]
     processed = [m for m in availableModules if not m in beingInstalled]
 
-    ## As long as there is progress in processing the modules, keep on trying
+    # as long as there is progress in processing the modules, keep on trying
     loopcnt = 0
     maxloopcnt = 10000
     robotAddedDependency = True
@@ -429,23 +429,23 @@ def resolveDependencies(unprocessed, robot, log):
             msg = "Maximum loop cnt %s reached, so quitting." % maxloopcnt
             log.error(msg)
 
-        ## First try resolving dependencies without using external dependencies
+        # first try resolving dependencies without using external dependencies
         lastProcessedCount = -1
         while len(processed) > lastProcessedCount:
             lastProcessedCount = len(processed)
             orderedSpecs.extend(findResolvedModules(unprocessed, processed, log))
 
-        ## Robot: look for an existing dependency, add one
+        # robot: look for an existing dependency, add one
         if robot and len(unprocessed) > 0:
 
             beingInstalled = [p['module'] for p in unprocessed]
 
             for module in unprocessed:
-                ## Do not choose a module that is being installed in the current run
-                ## if they depend, you probably want to rebuild them using the new dependency
+                # do not choose a module that is being installed in the current run
+                # if they depend, you probably want to rebuild them using the new dependency
                 candidates = [d for d in module['dependencies'] if not d in beingInstalled]
                 if len(candidates) > 0:
-                    ## find easyconfig, might not find any
+                    # find easyconfig, might not find any
                     path = robotFindEasyconfig(log, robot, candidates[0])
 
                 else:
@@ -460,7 +460,7 @@ def resolveDependencies(unprocessed, robot, log):
                     robotAddedDependency = True
                     break
 
-    ## There are dependencies that cannot be resolved
+    # there are dependencies that cannot be resolved
     if len(unprocessed) > 0:
         log.debug("List of unresolved dependencies: %s" % unprocessed)
         missingDependencies = {}
@@ -532,10 +532,10 @@ def retrieveBlocksInSpec(spec, log, onlyBlocks):
     cfgName = os.path.basename(spec)
     pieces = regBlock.split(open(spec).read())
 
-    ## The first block contains common statements
+    # the first block contains common statements
     common = pieces.pop(0)
     if pieces:
-        ## Make a map of blocks
+        # make a map of blocks
         blocks = []
         while pieces:
             blockName = pieces.pop(0)
@@ -547,7 +547,7 @@ def retrieveBlocksInSpec(spec, log, onlyBlocks):
 
             block = {'name': blockName, 'contents': blockContents}
 
-            ## Dependency block
+            # dependency block
             depBlock = regDepBlock.search(blockContents)
             if depBlock:
                 dependencies = eval(depBlock.group(1))
@@ -558,8 +558,8 @@ def retrieveBlocksInSpec(spec, log, onlyBlocks):
 
             blocks.append(block)
 
-        ## Make a new easyconfig for each block
-        ## They will be processed in the same order as they are all described in the original file
+        # make a new easyconfig for each block
+        # they will be processed in the same order as they are all described in the original file
         specs = []
         for block in blocks:
             name = block['name']
@@ -580,10 +580,10 @@ def retrieveBlocksInSpec(spec, log, onlyBlocks):
                             log.error(msg)
 
                         dep = [b for b in blocks if b['name'] == dep][0]
-                        f.write("\n## Dependency block %s" % (dep['name']))
+                        f.write("\n# Dependency block %s" % (dep['name']))
                         f.write(dep['contents'])
 
-                f.write("\n## Main block %s" % name)
+                f.write("\n# Main block %s" % name)
                 f.write(block['contents'])
                 f.close()
 
@@ -596,7 +596,7 @@ def retrieveBlocksInSpec(spec, log, onlyBlocks):
         log.debug("Found %s block(s) in %s" % (len(specs), spec))
         return specs
     else:
-        ## no blocks, one file
+        # no blocks, one file
         return [spec]
 
 def build(module, options, log, origEnviron, exitOnFailure=True):
@@ -607,7 +607,7 @@ def build(module, options, log, origEnviron, exitOnFailure=True):
 
     print_msg("processing EasyBuild easyconfig %s" % spec, log)
 
-    ## Restore original environment
+    # restore original environment
     log.info("Resetting environment")
     filetools.errorsFoundInLog = 0
     if not filetools.modifyEnv(os.environ, origEnviron):
@@ -615,10 +615,10 @@ def build(module, options, log, origEnviron, exitOnFailure=True):
 
     cwd = os.getcwd()
 
-    ## Load easyblock
+    # load easyblock
     easyblock = options.easyblock
     if not easyblock:
-        ## Try to look in .eb file
+        # try to look in .eb file
         reg = re.compile(r"^\s*easyblock\s*=(.*)$")
         for line in open(spec).readlines():
             match = reg.search(line)
@@ -634,7 +634,7 @@ def build(module, options, log, origEnviron, exitOnFailure=True):
     except EasyBuildError, err:
         error("Failed to get application instance for %s (easyblock: %s): %s" % (name, easyblock, err.msg))
 
-    ## Application settings
+    # application settings
     if options.stop:
         log.debug("Stop set to %s" % options.stop)
         app.setcfg('stop', options.stop)
@@ -643,7 +643,7 @@ def build(module, options, log, origEnviron, exitOnFailure=True):
         log.debug("Skip set to %s" % options.skip)
         app.setcfg('skip', options.skip)
 
-    ## Build easyconfig
+    # build easyconfig
     errormsg = '(no error)'
     # timing info
     starttime = time.time()
@@ -657,10 +657,10 @@ def build(module, options, log, origEnviron, exitOnFailure=True):
 
     ended = "ended"
 
-    ## Successful build
+    # successful build
     if result:
 
-        ## Collect build stats
+        # collect build stats
         log.info("Collecting build stats...")
         buildtime = round(time.time() - starttime, 2)
         installsize = 0
@@ -695,7 +695,7 @@ def build(module, options, log, origEnviron, exitOnFailure=True):
             newLogDir = os.path.join(app.installdir, config.logPath())
 
             try:
-                ## Upload spec to central repository
+                # upload spec to central repository
                 repo = getRepository()
                 if 'originalSpec' in module:
                     repo.addEasyconfig(module['originalSpec'], app.name(), app.installversion() + ".block", buildstats, currentbuildstats)
@@ -709,7 +709,7 @@ def build(module, options, log, origEnviron, exitOnFailure=True):
         succ = "successfully"
         summary = "COMPLETED"
 
-        ## Cleanup logs
+        # cleanup logs
         app.closelog()
         try:
             if not os.path.isdir(newLogDir):
@@ -724,7 +724,7 @@ def build(module, options, log, origEnviron, exitOnFailure=True):
         except IOError, err:
             error("Failed to move easyconfig %s to log dir %s: %s" % (spec, newLogDir, err))
 
-    ## Build failed
+    # build failed
     else:
         exitCode = 1
         summary = "FAILED"
@@ -734,13 +734,13 @@ def build(module, options, log, origEnviron, exitOnFailure=True):
             buildDir = " (build directory: %s)" % (app.builddir)
         succ = "unsuccessfully%s:\n%s" % (buildDir, errormsg)
 
-        ## Cleanup logs
+        # cleanup logs
         app.closelog()
         applicationLog = app.logfile
 
     print_msg("%s: Installation %s %s" % (summary, ended, succ), log)
 
-    ## Check for errors
+    # check for errors
     if exitCode > 0 or filetools.errorsFoundInLog > 0:
         print_msg("\nWARNING: Build exited with exit code %d. %d possible error(s) were detected in the " \
                   "build logs, please verify the build.\n" % (exitCode, filetools.errorsFoundInLog),
