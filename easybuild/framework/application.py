@@ -36,7 +36,6 @@ import re
 import shutil
 import time
 import urllib
-from difflib import get_close_matches
 from distutils.version import LooseVersion
 
 import easybuild
@@ -48,7 +47,6 @@ from easybuild.tools.config import source_path, buildPath, installPath
 from easybuild.tools.filetools import unpack, patch, run_cmd, convertName
 from easybuild.tools.module_generator import ModuleGenerator
 from easybuild.tools.modules import Modules, get_software_root
-from easybuild.tools.toolkit import Toolkit
 from easybuild.tools.systemtools import get_core_count
 
 
@@ -58,7 +56,7 @@ class Application:
     """
 
     ## INIT
-    def __init__(self, path, debug=False):
+    def __init__(self, path, debug=False, easyconfig_tweaks=None):
         """
         Initialize the Application instance.
         """
@@ -78,8 +76,11 @@ class Application:
         self.instance_pkgs = []
         self.skip = None
 
-        # Easyblock for this Application
+        # easyconfig for this application
         self.cfg = EasyConfig(path, self.extra_options())
+        # tweak easyconfig is desired
+        if easyconfig_tweaks:
+            self.cfg.tweak(easyconfig_tweaks)
 
         # module generator
         self.moduleGenerator = None
@@ -1267,7 +1268,7 @@ class Application:
                     if os.path.exists(fullpath):
                         installsize += os.path.getsize(fullpath)
         except OSError, err:
-            self.log.warn("could not determine installsize")
+            self.log.warn("could not determine installsize: %s" % err)
 
         return installsize
 

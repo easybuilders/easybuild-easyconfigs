@@ -24,7 +24,7 @@ import copy
 import difflib
 import os
 
-from easybuild.tools.build_log import getLog, EasyBuildError
+from easybuild.tools.build_log import getLog
 from easybuild.tools.toolkit import Toolkit
 from easybuild.tools.systemtools import get_shared_lib_ext
 from easybuild.tools.filetools import run_cmd
@@ -49,7 +49,8 @@ class EasyConfig:
     """
     # validations
     validmoduleclasses = ['base', 'compiler', 'lib']
-    validstops = ['cfg', 'source', 'patch', 'prepare', 'configure', 'make', 'install', 'test', 'postproc', 'cleanup', 'packages']
+    validstops = ['cfg', 'source', 'patch', 'prepare', 'configure', 'make',
+                  'install', 'test', 'postproc', 'cleanup', 'packages']
 
     # List of tuples. Each tuple has the following format (key, [default, help text, category])
     default_config = [
@@ -60,35 +61,54 @@ class EasyConfig:
           ('homepage', [None, 'The homepage of the software', MANDATORY]),
 
           ('toolkitopts', ['', 'Extra options for compilers', TOOLKIT]),
-          ('onlytkmod', [False, 'Boolean/string to indicate if the toolkit should only load the enviornment with module (True) or also set all other variables (False) like compiler CC etc (If string: comma separated list of variables that will be ignored). (Default: False)', TOOLKIT]),
+          ('onlytkmod', [False,"Boolean/string to indicate if the toolkit should only load " \
+                               "the enviornment with module (True) or also set all other " \
+                               "variables (False) like compiler CC etc (If string: comma separated" \
+                               "list of variables that will be ignored). (Default: False)", TOOLKIT]),
 
           ('easybuildVersion', [None, "EasyBuild-version this spec-file was written for", BUILD]),
-          ('versionsuffix', ['', 'Additional suffix for software version (placed after toolkit name)', BUILD]),
-          ('versionprefix', ['', 'Additional prefix for software version (placed before version and toolkit name)',BUILD]),
-          ('runtest', [None, 'Indicates if a test should be run after make; should specify argument after make (for e.g.,"test" for make test) (Default: None)', BUILD]),
+          ('versionsuffix', ['', 'Additional suffix for software version (placed after toolkit name)',
+                             BUILD]),
+          ('versionprefix', ['', "Additional prefix for software version (placed before version " \
+                                 "and toolkit name)", BUILD]),
+          ('runtest', [None, 'Indicates if a test should be run after make; should specify argument ' \
+                             'after make (for e.g.,"test" for make test) (Default: None)', BUILD]),
           ('preconfigopts', ['', 'Extra options pre-passed to configure.', BUILD]),
           ('configopts', ['', 'Extra options passed to configure (Default already has --prefix)', BUILD]),
           ('premakeopts', ['', 'Extra options pre-passed to make.', BUILD]),
           ('makeopts', ['', 'Extra options passed to make (Default already has -j X)', BUILD]),
           ('installopts', ['', 'Extra options for installation (Default: nothing)', BUILD]),
           ('unpackOptions', [None, "Extra options for unpacking source (default: None)", BUILD]),
-          ('stop', [None, 'Keyword to halt the buildprocess at certain points. Valid are %s' % validstops, BUILD]),
+          ('stop', [None, 'Keyword to halt the buildprocess at certain points. Valid are %s' % validstops,
+                    BUILD]),
           ('skip', [False, "Skip existing software (Default: False)", BUILD]),
-          ('parallel', [None, 'Degree of parallelism for e.g. make (default: based on the number of cores and restrictions in ulimit)', BUILD]),
+          ('parallel', [None, 'Degree of parallelism for e.g. make (default: based on the number of ' \
+                              'cores and restrictions in ulimit)', BUILD]),
           ('maxparallel', [None, 'Max degree of parallelism (default: None)', BUILD]),
           ('sources', [[], "List of source files", BUILD]),
           ('sourceURLs', [[], "List of URLs for source files", BUILD]),
           ('patches', [[], "List of patches to apply", BUILD]),
-          ('tests', [[], "List of test-scripts to run after install. A test script should return a non-zero exit status to fail", BUILD]),
-          ('sanityCheckPaths', [{}, "List of files and directories to check (format: {'files':<list>, 'dirs':<list>}, default: {})", BUILD]),
-          ('sanityCheckCommand', [None, "format: (name, options) e.g. ('gzip','-h') . If set to True it will use (name, '-h')", BUILD]),
+          ('tests', [[], "List of test-scripts to run after install. A test script should return a " \
+                         "non-zero exit status to fail", BUILD]),
+          ('sanityCheckPaths', [{}, "List of files and directories to check (format: {'files':<list>, " \
+                                    "'dirs':<list>}, default: {})", BUILD]),
+          ('sanityCheckCommand', [None, "format: (name, options) e.g. ('gzip','-h') . If set to True " \
+                                        "it will use (name, '-h')", BUILD]),
 
-          ('startfrom', [None, 'Path to start the make in. If the path is absolute, use that path. If not, this is added to the guessed path.', FILEMANAGEMENT]),
-          ('keeppreviousinstall', [False, 'Boolean to keep the previous installation with identical name. Default False, experts only!', FILEMANAGEMENT]),
-          ('cleanupoldbuild', [True, 'Boolean to remove (True) or backup (False) the previous build directory with identical name or not. Default True', FILEMANAGEMENT]),
-          ('cleanupoldinstall', [True, 'Boolean to remove (True) or backup (False) the previous install directory with identical name or not. Default True', FILEMANAGEMENT]),
-          ('dontcreateinstalldir', [False, 'Boolean to create (False) or not create (True) the install directory (Default False)', FILEMANAGEMENT]),
-          ('keepsymlinks', [False, 'Boolean to determine whether symlinks are to be kept during copying or if the content of the files pointed to should be copied', FILEMANAGEMENT]),
+          ('startfrom', [None, 'Path to start the make in. If the path is absolute, use that path. ' \
+                               'If not, this is added to the guessed path.', FILEMANAGEMENT]),
+          ('keeppreviousinstall', [False, 'Boolean to keep the previous installation with identical ' \
+                                          'name. Default False, experts only!', FILEMANAGEMENT]),
+          ('cleanupoldbuild', [True, 'Boolean to remove (True) or backup (False) the previous build ' \
+                                     'directory with identical name or not. Default True', FILEMANAGEMENT]),
+          ('cleanupoldinstall', [True, 'Boolean to remove (True) or backup (False) the previous install ' \
+                                       'directory with identical name or not. Default True',
+                                       FILEMANAGEMENT]),
+          ('dontcreateinstalldir', [False, 'Boolean to create (False) or not create (True) the install ' \
+                                           'directory (Default False)', FILEMANAGEMENT]),
+          ('keepsymlinks', [False, 'Boolean to determine whether symlinks are to be kept during copying ' \
+                                   'or if the content of the files pointed to should be copied',
+                                   FILEMANAGEMENT]),
 
           ('dependencies', [[], "List of dependencies (default: [])", DEPENDENCIES]),
           ('builddependencies', [[], "List of build dependencies (default: [])", DEPENDENCIES]),
@@ -144,7 +164,10 @@ class EasyConfig:
         if not os.path.isfile(path):
             self.log.error("EasyConfig __init__ expected a valid path")
 
-        self.validations = {'moduleclass': self.validmoduleclasses, 'stop': self.validstops }
+        self.validations = {
+                            'moduleclass': self.validmoduleclasses,
+                            'stop': self.validstops
+                           }
 
         self.parse(path, validate)
 
@@ -163,9 +186,9 @@ class EasyConfig:
         try:
             execfile(path, global_vars, local_vars)
         except IOError, err:
-            self.log.exception("Unexpected IOError during execfile()")
+            self.log.exception("Unexpected IOError during execfile(): %s" % err)
         except SyntaxError, err:
-            self.log.exception("SyntaxError in easyblock %s" % path)
+            self.log.exception("SyntaxError in easyblock %s: %s" % (path, err))
 
         # validate mandatory keys
         if validate:
@@ -194,7 +217,6 @@ class EasyConfig:
             elif key in self.config:
                 self[key] = local_vars[key]
                 self.log.info("setting config option %s: value %s" % (key, self[key]))
-
 
     def validate(self):
         """
@@ -238,7 +260,6 @@ class EasyConfig:
 
         for dep in self['dependencies']:
             deps.append(self._parse_dependency(dep))
-
 
         return deps + self.builddependencies()
 
@@ -298,6 +319,41 @@ class EasyConfig:
         return name of the package
         """
         return self['name']
+
+    def set_version(self, version):
+        """
+        Set version
+        """
+        self['version'] = version
+
+    def set_toolkit_name(self, name):
+        """
+        Set toolkit name
+        """
+        self['toolkit']['name'] = name
+
+    def set_toolkit_version(self, version):
+        """
+        Set toolkit name
+        """
+        self['toolkit']['version'] = version
+
+    def add_patches(self, patches):
+        """
+        Add additional patch files
+        """
+        self['patches'].extend(patches)
+
+    def tweak(self, tweaks):
+        """
+        Tweak this easyconfig
+        tweaks is a list of tweak specification in the format (function_name, string argument)
+        e.g. [('set_version', '1.2.3'), ('set_toolkit_name', 'goalf')]
+        """
+        # tweak easyconfig is desired
+        for (f, x) in tweaks:
+            self.log.info("Tweaking easyconfig with %s('%s')" % (f, x))
+            eval ("self.%s('%s')" % (f, x))
 
     # private method
     def _validate(self, attr, values):
@@ -385,7 +441,8 @@ def sorted_categories():
     """
     returns the categories in the correct order
     """
-    categories = [MANDATORY, CUSTOM , TOOLKIT, BUILD, FILEMANAGEMENT, DEPENDENCIES, LICENSE , PACKAGE, MODULES, OTHER]
+    categories = [MANDATORY, CUSTOM , TOOLKIT, BUILD, FILEMANAGEMENT,
+                  DEPENDENCIES, LICENSE , PACKAGE, MODULES, OTHER]
     categories.sort(key = lambda c: c[0])
     return categories
 

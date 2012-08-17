@@ -36,7 +36,6 @@ import shutil
 import sys
 import tempfile
 import time
-from datetime import datetime
 from optparse import OptionParser, OptionGroup
 
 import easybuild  # required for VERBOSE_VERSION
@@ -101,23 +100,30 @@ def add_cmdline_options(parser):
     parser.add_option_group(override_options)
 
     # informative options
-    informative_options = OptionGroup(parser, "Informative options", "Obtain information about EasyBuild.")
+    informative_options = OptionGroup(parser, "Informative options",
+                                      "Obtain information about EasyBuild.")
 
     informative_options.add_option("-a", "--avail-easyconfig-params", action="store_true",
                                    help="show available easyconfig parameters")
-    informative_options.add_option("--dump-classes", action="store_true", help="show list of available classes")
+    informative_options.add_option("--dump-classes", action="store_true",
+                                   help="show list of available classes")
     informative_options.add_option("--search", help="search for module-files in the robot-directory")
     informative_options.add_option("-v", "--version", action="store_true", help="show version")
 
     parser.add_option_group(informative_options)
 
     # tweaking options
-    tweaking_options = OptionGroup(parser, "Tweaking options", "Tweak the parameters in the supplied easyconfig (.eb) file.")
+    tweaking_options = OptionGroup(parser, "Tweaking options",
+                                   "Tweak the parameters in the supplied easyconfig (.eb) file.")
 
-    tweaking_options.add_option("--tweak-version", action="store_true", help="tweak software version to given version")
-    tweaking_options.add_option("--tweak-toolkit", action="store_true", help="tweak toolkit (name and version)")
-    tweaking_options.add_option("--tweak-toolkit-version", action="store_true", help="tweak toolkit version")
-    tweaking_options.add_option("--add-patches", action="store_true", help="add additional patch files")
+    tweaking_options.add_option("--tweak-version", metavar="VERSION",
+                                help="tweak software version to given version")
+    tweaking_options.add_option("--tweak-toolkit", metavar="NAME,VERSION",
+                                help="tweak toolkit (name and version)")
+    tweaking_options.add_option("--tweak-toolkit-version", metavar="VERSION",
+                                help="tweak toolkit version")
+    tweaking_options.add_option("--add-patches", metavar="PATCH_1[,PATCH_N]",
+                                help="add additional patch files")
     
     parser.add_option_group(tweaking_options)
 
@@ -211,6 +217,26 @@ def main():
     if options.strict:
         filetools.strictness = options.strict
 
+    # collect tweaks for easyconfig files
+    easyconfig_tweaks = []
+
+    if options.tweak_version:
+        easyconfig_tweaks.append(('set_version', options.tweak_version))
+
+    if options.tweak_toolkit:
+        tk = options.tweak_toolkit.split(',')
+        if not len(tk) == 2:
+            error("Please specify to toolkit to tweak with as 'name,version' (e.g., 'goalf,1.1.0').")
+        [toolkit_name, toolkit_version] = tk
+        easyconfig_tweaks.extend([('set_toolkit_name', toolkit_name),
+                                  ('set_toolkit_version', toolkit_version)])
+
+    if options.tweak_toolkit_version:
+        easyconfig_tweaks.append(('set_toolkit_version', options.tweak_toolkit_version))
+
+    if options.add_patches:
+        easyconfig_tweaks.append(('add_patches', options.add_patches.split(',')))
+
     # read easyconfig files
     packages = []
     if len(paths) == 0:
@@ -224,7 +250,7 @@ def main():
         try:
             files = findEasyconfigs(path, log)
             for eb_file in files:
-                packages.extend(processEasyconfig(eb_file, log, blocks))
+                packages.extend(processEasyconfig(eb_file, log, blocks, tweaks=easyconfig_tweaks))
         except IOError, err:
             log.error("Processing easyconfigs in path %s failed: %s" % (path, err))
 
@@ -245,12 +271,13 @@ def main():
                 print_msg(msg, log)
                 log.info(msg)
             else:
+                log.debug("%s is not installed yet, so retaining it" % mod)
                 packages.append(package)
 
     # determine an order that will allow all specs in the set to build
     if len(packages) > 0:
         print_msg("resolving dependencies ...", log)
-        orderedSpecs = resolveDependencies(packages, options.robot, log)
+        orderedSpecs = resolveDependencies(packages, options.robot, log, tweaks=easyconfig_tweaks)
     else:
         print_msg("No packages left to be built.", log)
         orderedSpecs = []
@@ -293,7 +320,8 @@ def main():
     correct_built_cnt = 0
     all_built_cnt = 0
     for spec in orderedSpecs:
-        (success, _) = build(spec, options, log, origEnviron, exitOnFailure=(not options.regtest))
+        (success, _) = build(spec, options, log, origEnviron, 
+                             exitOnFailure=(not options.regtest), tweaks=easyconfig_tweaks)
         if success:
             correct_built_cnt += 1
         all_built_cnt += 1
@@ -345,7 +373,7 @@ def findEasyconfigs(path, log):
 
     return files
 
-def processEasyconfig(path, log, onlyBlocks=None, regtest_online=False):
+def processEasyconfig(path, log, onlyBlocks=None, regtest_online=False, tweaks=None):
     """
     Process easyconfig, returning some information for each block
     """
@@ -357,8 +385,11 @@ def processEasyconfig(path, log, onlyBlocks=None, regtest_online=False):
         # - use mod? __init__ and importCfg are ignored.
         log.debug("Processing easyconfig %s" % spec)
 
+        # create easyconfig
         try:
             eb = EasyConfig(spec)
+            if tweaks:
+                eb.tweak(tweaks)
         except EasyBuildError, err:
             msg = "Failed to process easyconfig %s:\n%s" % (spec, err.msg)
             log.exception(msg)
@@ -389,17 +420,11 @@ def processEasyconfig(path, log, onlyBlocks=None, regtest_online=False):
         # this is used by the parallel builder
         package['unresolvedDependencies'] = copy.copy(package['dependencies'])
 
-        # ensure the pathname is equal to the module
-        base_name, ext = os.path.splitext(os.path.basename(spec))
-        module_name = "-".join(package['module'])
-        if base_name.lower() != module_name.lower():
-            log.error("easyconfig file: %s does not contain module %s" % (spec, module_name))
-
         packages.append(package)
 
     return packages
 
-def resolveDependencies(unprocessed, robot, log):
+def resolveDependencies(unprocessed, robot, log, tweaks=None):
     """
     Work through the list of packages to determine an optimal order
     """
@@ -455,7 +480,13 @@ def resolveDependencies(unprocessed, robot, log):
                 if path:
                     log.info("Robot: resolving dependency %s with %s" % (candidates[0], path))
 
-                    processedSpecs = processEasyconfig(path, log)
+                    processedSpecs = processEasyconfig(path, log, tweaks=tweaks)
+
+                    # ensure the pathname is equal to the module
+                    mods = [spec['module'] for spec in processedSpecs]
+                    if not candidates[0] in mods:
+                        log.error("easyconfig file %s does not contain module %s" % (path, candidates[0]))
+
                     unprocessed.extend(processedSpecs)
                     robotAddedDependency = True
                     break
@@ -599,7 +630,7 @@ def retrieveBlocksInSpec(spec, log, onlyBlocks):
         # no blocks, one file
         return [spec]
 
-def build(module, options, log, origEnviron, exitOnFailure=True):
+def build(module, options, log, origEnviron, exitOnFailure=True, tweaks=None):
     """
     Build the software
     """
@@ -629,7 +660,7 @@ def build(module, options, log, origEnviron, exitOnFailure=True):
     name = module['module'][0]
     try:
         app_class = get_class(easyblock, log, name=name)
-        app = app_class(spec, debug=options.debug)
+        app = app_class(spec, debug=options.debug, easyconfig_tweaks=tweaks)
         log.info("Obtained application instance of for %s (easyblock: %s)" % (name, easyblock))
     except EasyBuildError, err:
         error("Failed to get application instance for %s (easyblock: %s): %s" % (name, easyblock, err.msg))

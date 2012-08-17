@@ -330,9 +330,6 @@ class WRF(Application):
 
         if not self.getcfg('sanityCheckPaths'):
 
-            mainver = self.version().split('.')[0]
-            self.wrfsubdir = "WRFV%s"%mainver
-
             fs = ["libwrflib.a", "wrf.exe", "ideal.exe", "real.exe", "ndown.exe", "nup.exe", "tc.exe"]
             ds = ["main", "run"]
 
@@ -346,6 +343,9 @@ class WRF(Application):
         Application.sanitycheck(self)
 
     def make_module_req_guess(self):
+
+        mainver = self.version().split('.')[0]
+        self.wrfsubdir = "WRFV%s"%mainver
 
         maindir = os.path.join(self.wrfsubdir, "main")
 
