@@ -39,6 +39,20 @@ class EasyBlock:
     validmoduleclasses = ['base', 'compiler', 'lib']
     validstops = ['cfg', 'source', 'patch', 'prepare', 'configure', 'make', 'install', 'test', 'postproc', 'cleanup', 'packages']
 
+    categories = {
+                  'mandatory': mandatory,
+                  'toolkit': ['toolkit', 'toolkitopts', 'onlytkmod'],
+                  'build': ['sources', 'sourceURLs', 'unpackOptions', 'patches', 'preconfigopts', 'configopts',
+                            'premakeopts', 'makeopts', 'parallel', 'runtest', 'installopts', 'sanityCheckPaths',
+                            'sanityCheckCommand', 'modextravars', 'tests', 'versionprefix', 'versionsuffix'],
+                  'file-management': ['startfrom', 'cleanupoldbuild', 'cleanupoldinstall', 'dontcreateinstalldir',
+                                      'keeppreviousinstall', 'keepsymlinks'],
+                  'dependencies': ['dependencies', 'builddependencies', 'osdependencies'],
+                  'license': ['group', 'key', 'licenseServer', 'licenseServerPort'],
+                  'package': ['pkglist', 'pkgcfgs', 'pkgdefaultclass', 'pkgfilter', 'pkgfindsource', 'pkginstalldeps',
+                              'pkgloadmodule', 'pkgmodulenames', 'pkgpatches', 'pkgtemplate', 'requirements'],
+                 }
+
     default_config = {
           'name': [None, "Name of software"],
           'version': [None, "Version of software"],
