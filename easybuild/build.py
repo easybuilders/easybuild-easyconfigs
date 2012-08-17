@@ -38,6 +38,26 @@ import tempfile
 import time
 from optparse import OptionParser
 
+# optional Python packages, these might be missing
+# failing imports are just ignored
+# a NameError should be catched where these are used
+
+# PyGraph (used for generating dependency graphs)
+try:
+    import  pygraph.readwrite.dot as dot
+    from pygraph.classes.digraph import digraph
+except ImportError, err:
+    pass
+
+# graphviz (used for creating dependency graph images)
+try:
+    sys.path.append('..')
+    sys.path.append('/usr/lib/graphviz/python/')
+    sys.path.append('/usr/lib64/graphviz/python/')
+    import gv
+except ImportError, err:
+    pass
+
 import easybuild  # required for VERBOSE_VERSION
 import easybuild.tools.config as config
 import easybuild.tools.filetools as filetools
@@ -259,7 +279,11 @@ def main():
     # create dependency graph and exit
     if options.dep_graph:
         log.info("Creating dependency graph %s" % options.dep_graph)
-        dep_graph(options.dep_graph, orderedSpecs, log)
+        try:
+            dep_graph(options.dep_graph, orderedSpecs, log)
+        except NameError, err:
+            log.error("At least one optional Python packages (pygraph, dot, graphviz) required to " \
+                      "generate dependency graphs is missing: %s" % err)
         sys.exit(0)
 
     # submit build as job(s) and exit
@@ -772,15 +796,8 @@ def build(module, options, log, origEnviron, exitOnFailure=True):
 
 def dep_graph(fn, specs, log):
     """
-    Create a depenency graph for the given easyconfigs.
+    Create a dependency graph for the given easyconfigs.
     """
-
-    # import pygraph
-    try:
-        import  pygraph.readwrite.dot as dot
-        from pygraph.classes.digraph import digraph
-    except ImportError, err:
-        error("Failed to import pygraph: %s" % err)
 
     # check whether module names are unique
     # if so, we can omit versions in the graph 
@@ -808,28 +825,18 @@ def dep_graph(fn, specs, log):
             dgr.add_edge((dep, spec['module']))
 
     # write to file
-    dot = dot.write(dgr)
+    dottxt = dot.write(dgr)
     if fn.endswith(".dot"):
         # create .dot file
         try:
             f = open(fn, "w")
-            f.write(dot)
+            f.write(dottxt)
             f.close()
         except IOError, err:
             log.error("Failed to create file %s: %s" % (fn, err))
     else:
-        # import graphviz
-        try:
-            import sys
-            sys.path.append('..')
-            sys.path.append('/usr/lib/graphviz/python/')
-            sys.path.append('/usr/lib64/graphviz/python/')
-            import gv
-        except ImportError, err:
-            error("Failed to import graphviz: %s" % err)
-
         # try and render graph in specified file format
-        gvv = gv.readstring(dot)
+        gvv = gv.readstring(dottxt)
         gv.layout(gvv, 'dot')
         gv.render(gvv, fn.split('.')[-1], fn)
 

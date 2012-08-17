@@ -42,16 +42,23 @@ import os
 import shutil
 import sys
 
+# optional Python packages, these might be missing
+# failing imports are just ignored
+# a NameError should be catched where these are used
+
+# PyLint
+try:
+    import pylint.lint
+    from pylint.reporters.text import TextReporter
+except ImportError:
+    pass
+
+
 # error function (exits)
 def error(msg):
     """Error function: print message to stderr and exit with non-zero exit code."""
     sys.stderr.write("ERROR: %s\n" % msg)
     sys.exit(1)
-
-try:
-    import pylint.lint
-except ImportError:
-    error("Failed to import PyLint module, I need it.")
 
 # warning function
 def warning(msg):
@@ -201,8 +208,6 @@ class WritableObject(object):
 # check whether PyLint still reports warnings or error
 def run_pylint(fn):
 
-    from pylint.reporters.text import TextReporter
-
     print "checking for PyLint warnings or errors..."
 
     # run PyLint on file, catch output
@@ -290,7 +295,11 @@ except IOError, err:
     error("Failed to write refactored easyblock %s: %s" % (easyblock, err))
 
 # check for PyLint warnings/errors
-all_checks.append(run_pylint(easyblock))
+try:
+    all_checks.append(run_pylint(easyblock))
+except NameError, err:
+    error("It seems like PyLint is not available: %s" % err)
+
 
 if not all(all_checks):
     error("One or multiple checks have failed, easyblock %s is not fully cleaned up yet!" % easyblock)
