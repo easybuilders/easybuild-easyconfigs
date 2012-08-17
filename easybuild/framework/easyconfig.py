@@ -30,7 +30,7 @@ from easybuild.tools.systemtools import get_shared_lib_ext
 from easybuild.tools.filetools import run_cmd
 from easybuild.tools.ordereddict import OrderedDict
 
-
+# we use a tuple here so we can sort them based on the numbers
 MANDATORY = (0, 'mandatory')
 CUSTOM = (1, 'easyblock-specific')
 TOOLKIT = (2, 'toolkit')
@@ -51,6 +51,7 @@ class EasyConfig:
     validmoduleclasses = ['base', 'compiler', 'lib']
     validstops = ['cfg', 'source', 'patch', 'prepare', 'configure', 'make', 'install', 'test', 'postproc', 'cleanup', 'packages']
 
+    # List of tuples. Each tuple has the following format (key, [default, help text, category])
     default_config = [
           ('name', [None, "Name of software", MANDATORY]),
           ('version', [None, "Version of software", MANDATORY]),
@@ -387,8 +388,3 @@ def convert_to_help(option_list):
         mapping[category[1]] = [(arr[0], arr[1][1]) for arr in option_list if arr[1][2] == category]
 
     return mapping
-
-
-
-
-
