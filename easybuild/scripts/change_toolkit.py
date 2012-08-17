@@ -63,12 +63,12 @@ def main():
 
     (opts, args) = parser.parse_args()
 
-    if not opts.robot or not opts.name or not opts.toolkit:
+    if not opts.robot or not opts.name or not opts.toolkit_name:
         print "provide at least a name, toolkit and robot option"
         sys.exit(1)
 
 
-    toolkit = find_best_toolkit(opts.robot, opts.toolkit, opts.toolkit_version)
+    toolkit = find_best_toolkit(opts.robot, opts.toolkit_name, opts.toolkit_version)
 
     print "using toolkit version: %s" % toolkit.installversion()
 
