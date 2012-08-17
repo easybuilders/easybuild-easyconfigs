@@ -193,7 +193,7 @@ class FileRepository(Repository):
             log.debug("version (%s) of module (%s) has not been found in the repo" % (version, name))
             return []
 
-        eb = EasyBlock(dest)
+        eb = EasyConfig(dest)
         return eb['buildstats']
 
 

@@ -42,7 +42,7 @@ from distutils.version import LooseVersion
 import easybuild
 import easybuild.tools.config as config
 import easybuild.tools.environment as env
-from easybuild.framework.easyblock import EasyBlock
+from easybuild.framework.easyconfig import EasyConfig
 from easybuild.tools.build_log import EasyBuildError, initLogger, removeLogHandler,print_msg
 from easybuild.tools.config import source_path, buildPath, installPath
 from easybuild.tools.filetools import unpack, patch, run_cmd, convertName
@@ -79,7 +79,7 @@ class Application:
         self.skip = None
 
         # Easyblock for this Application
-        self.cfg = EasyBlock(path, self.extra_options())
+        self.cfg = EasyConfig(path, self.extra_options())
 
         # module generator
         self.moduleGenerator = None
@@ -258,7 +258,7 @@ class Application:
     @staticmethod
     def extra_options(extra=None):
         """
-        Extra options method which will be passed to the EasyBlock constructor.
+        Extra options method which will be passed to the EasyConfig constructor.
         Subclasses should call this method with a dict
         """
         if extra == None:

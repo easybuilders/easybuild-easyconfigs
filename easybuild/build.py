@@ -63,7 +63,7 @@ import easybuild.tools.config as config
 import easybuild.tools.filetools as filetools
 import easybuild.tools.parallelbuild as parbuild
 from easybuild.framework.application import get_class
-from easybuild.framework.easyblock import EasyBlock
+from easybuild.framework.easyconfig import EasyConfig
 from easybuild.tools.build_log import EasyBuildError, initLogger, \
     removeLogHandler, print_msg
 from easybuild.tools.class_dumper import dumpClasses
@@ -188,7 +188,7 @@ def main():
     if options.avail_easyconfig_params:
         app = get_class(options.easyblock, log)
         extra = app.extra_options()
-        default = EasyBlock.default_config
+        default = EasyConfig.default_config
 
         print "DEFAULT OPTIONS:"
         for key in sorted(default):
@@ -390,7 +390,7 @@ def processEasyconfig(path, log, onlyBlocks=None, regtest_online=False, validate
         log.debug("Processing easyconfig %s" % spec)
 
         try:
-            eb = EasyBlock(spec, validate=validate)
+            eb = EasyConfig(spec, validate=validate)
         except EasyBuildError, err:
             msg = "Failed to process easyconfig %s:\n%s" % (spec, err.msg)
             log.exception(msg)
