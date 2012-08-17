@@ -168,8 +168,8 @@ def main():
     # Dump possible options
     if options.avail_easyconfig_params:
         app = get_class(options.easyblock, log)
-        extra = []
-        mapping = easyconfig.convert_to_help(EasyConfig.default_config)
+        extra = app.extra_options()
+        mapping = easyconfig.convert_to_help(EasyConfig.default_config + extra)
 
         for key, values in mapping.items():
             print "%s:" % key.upper()
