@@ -71,7 +71,7 @@ class CP2K(Application):
     @staticmethod
     def extra_options():
         extra_vars = {
-                      'type': ['popt', "Type of build ('popt' or 'psmp') (default: 'popt)"],
+                      'type': ['popt', "Type of build ('popt', 'psmp' or 'sopt') (default: 'popt')"],
                       'typeopt': [True, "Enable optimization (default: True)"],
                       'libint': [True, "Use LibInt (default: True)"],
                       'modincprefix': ['', "IMKL prefix for modinc include dir (default: '')"],
