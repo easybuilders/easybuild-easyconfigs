@@ -42,7 +42,7 @@ MODULES = (8, 'modules')
 OTHER = (9, 'buildstats')
 
 
-class EasyBlock:
+class EasyConfig:
     """
     Class which handles loading, reading, validation of easyconfigs
     """
@@ -136,19 +136,19 @@ class EasyBlock:
         # perform a deepcopy of the default_config found in the easybuild.tools.easyblock module
         self.config = copy.deepcopy(self.default_config)
         self.config.update(extra_options)
-        self.log = getLog("EasyBlock")
         self.mandatory = ['name', 'version', 'homepage', 'description', 'toolkit']
 
         # extend mandatory keys
         for key in extra_options:
             if extra_options[key][2] == MANDATORY:
                 self.mandatory.append(key)
+        self.log = getLog("EasyConfig")
 
         # store toolkit
         self._toolkit = None
 
         if not os.path.isfile(path):
-            self.log.error("EasyBlock __init__ expected a valid path")
+            self.log.error("EasyConfig __init__ expected a valid path")
 
         self.validations = {'moduleclass': self.validmoduleclasses, 'stop': self.validstops }
 
@@ -193,7 +193,7 @@ class EasyBlock:
 
     def validate(self):
         """
-        Validate this EasyBlock
+        Validate this EasyConfig
         - check certain variables
         TODO: move more into here
         """
