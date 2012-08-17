@@ -74,5 +74,8 @@ repository = FileRepository(repositoryPath)  #@UndefinedVariable (this file gets
 # supported in template: name, version, data, time
 logFormat = ("easybuild", "easybuild-%(name)s-%(version)s-%(date)s.%(time)s.log")
 
+# set the path where log files will be stored
+logDir = '/tmp'
+
 # general cleanliness
 del os, getLog, config, log, prefix, buildDir, installDir, sourceDir
