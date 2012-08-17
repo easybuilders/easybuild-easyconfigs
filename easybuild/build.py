@@ -44,7 +44,7 @@ import easybuild.tools.config as config
 import easybuild.tools.filetools as filetools
 import easybuild.tools.parallelbuild as parbuild
 from easybuild.framework.application import get_class
-from easybuild.framework.easyblock import EasyBlock
+from easybuild.framework.easyconfig import EasyConfig
 from easybuild.tools.build_log import EasyBuildError, initLogger, \
     removeLogHandler, print_msg
 from easybuild.tools.class_dumper import dumpClasses
@@ -77,9 +77,9 @@ def add_build_options(parser):
                         help="does the build/installation in a test directory " \
                                "located in $HOME/easybuildinstall")
 
-    parser.add_option("-s", "--stop", type="choice", choices=EasyBlock.validstops,
+    parser.add_option("-s", "--stop", type="choice", choices=EasyConfig.validstops,
                         help="stop the installation after certain step" \
-                               "(valid: %s)" % ', '.join(EasyBlock.validstops))
+                               "(valid: %s)" % ', '.join(EasyConfig.validstops))
     parser.add_option("-b", "--only-blocks", metavar="blocks", help="Only build blocks blk[,blk2]")
     parser.add_option("-k", "--skip", action="store_true",
                         help="skip existing software (useful for installing additional packages)")
@@ -168,7 +168,7 @@ def main():
     if options.avail_easyconfig_params:
         app = get_class(options.easyblock, log)
         extra = app.extra_options()
-        default = EasyBlock.default_config
+        default = EasyConfig.default_config
 
         print "DEFAULT OPTIONS:"
         for key in sorted(default):
@@ -347,7 +347,7 @@ def processEasyconfig(path, log, onlyBlocks=None, regtest_online=False):
         log.debug("Processing easyconfig %s" % spec)
 
         try:
-            eb = EasyBlock(spec)
+            eb = EasyConfig(spec)
         except EasyBuildError, err:
             msg = "Failed to process easyconfig %s:\n%s" % (spec, err.msg)
             log.exception(msg)
