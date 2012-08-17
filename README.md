@@ -80,7 +80,7 @@ For command line options, see
 
 	easybuild/eb -h (or --help)
 
-See the EasyBuild wiki for documentation on writing your own easyconfig files [7] (.eb).
+See the EasyBuild wiki for documentation on writing your own [easyconfig files] [7] (.eb).
 
 To add support for a particular software package that requires a custom
 installation procedure, you will need to implement an easyblock that can be
@@ -111,7 +111,7 @@ There is an IRC bot present (easybuilder). Just type !help to get pointers to th
 
 ### Twitter
 
-The EasyBuild team also has a Twitter feed, see [@easy_build] [10].
+The EasyBuild team also has a Twitter feed: [@easy_build] [10].
 
 DISCLAIMER
 -----------
