@@ -179,5 +179,5 @@ def get_build_log_path():
     """
     return temporary log directory
     """
-    return variables.get('logDir', '/tmp')
+    return variables['logDir']
 
