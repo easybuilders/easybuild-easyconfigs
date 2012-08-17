@@ -40,6 +40,7 @@ from datetime import datetime
 from optparse import OptionParser
 
 import easybuild  # required for VERBOSE_VERSION
+import easybuild.framework.easyconfig as easyconfig
 import easybuild.tools.config as config
 import easybuild.tools.filetools as filetools
 import easybuild.tools.parallelbuild as parbuild
@@ -166,20 +167,7 @@ def main():
 
     # Dump possible options
     if options.avail_easyconfig_params:
-        app = get_class(options.easyblock, log)
-        extra = app.extra_options()
-        default = EasyConfig.default_config
-
-        print "DEFAULT OPTIONS:"
-        for key in sorted(default):
-            tabs = "\t" * (3 - (len(key) + 1) / 8)
-            print "%s:%s%s" % (key, tabs, default[key][1])
-
-        if extra:
-            print "EXTRA OPTIONS:"
-            for key in sorted(extra):
-                tabs = "\t" * (3 - (len(key) + 1) / 8)
-                print "%s:%s%s" % (key, tabs, extra[key][1])
+        print_avail_params(options.easyblock, log)
 
     ## Dump available classes
     if options.dump_classes:
@@ -742,6 +730,20 @@ def build(module, options, log, origEnviron, exitOnFailure=True):
             return (False, applicationLog)
     else:
         return (True, applicationLog)
+
+def print_avail_params(easyblock, log):
+    app = get_class(easyblock, log)
+    extra = app.extra_options()
+    mapping = easyconfig.convert_to_help(EasyConfig.default_config + extra)
+
+    for key, values in mapping.items():
+        print "%s" % key.upper()
+        print '-' * len(key)
+        for name, value in values:
+            tabs = "\t" * (3 - (len(name) + 1) / 8)
+            print "%s:%s%s" % (name, tabs, value)
+
+        print
 
 
 if __name__ == "__main__":

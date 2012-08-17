@@ -28,6 +28,7 @@ EasyBuild support for installing the Intel Trace Analyzer and Collector (ITAC), 
 
 import os
 
+from easybuild.framework.easyconfig import CUSTOM
 from easybuild.easyblocks.i.intelbase import IntelBase
 from easybuild.tools.filetools import run_cmd
 
@@ -44,7 +45,7 @@ class Itac(IntelBase):
 
     @staticmethod
     def extra_options():
-        extra_vars = {'preferredmpi': ['impi3', "Preferred MPI type (default: 'impi3')"]}
+        extra_vars = [('preferredmpi', ['impi3', "Preferred MPI type (default: 'impi3')", CUSTOM])]
         return IntelBase.extra_options(extra_vars)
 
     def make_install(self):

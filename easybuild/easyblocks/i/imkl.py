@@ -34,6 +34,7 @@ from distutils.version import LooseVersion
 import easybuild.tools.environment as env
 import easybuild.tools.toolkit as toolkit
 from easybuild.easyblocks.i.intelbase import IntelBase
+from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.filetools import run_cmd
 from easybuild.tools.modules import Modules
 
@@ -51,7 +52,7 @@ class Imkl(IntelBase):
 
     @staticmethod
     def extra_options():
-        extra_vars = {'interfaces': [True, "Indicates whether interfaces should be built (default: True)"]}
+        extra_vars = [('interfaces', [True, "Indicates whether interfaces should be built (default: True)", CUSTOM])]
         return IntelBase.extra_options(extra_vars)
 
 

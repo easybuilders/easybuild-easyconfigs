@@ -21,6 +21,7 @@
 import os
 import re
 
+import easybuild.framework.easyconfig as easyconfig
 from unittest import TestCase, TestSuite
 from easybuild.framework.easyconfig import EasyConfig
 from easybuild.tools.build_log import EasyBuildError
@@ -211,7 +212,7 @@ dependencies = [('first', '1.1'), {'name': 'second', 'version': '2.2'}]
         eb = EasyConfig(self.eb_file)
         self.assertRaises(KeyError, lambda: eb['custom_key'])
 
-        extra_vars = { 'custom_key': ['default', "This is a default key"]}
+        extra_vars = [('custom_key', ['default', "This is a default key", easyconfig.CUSTOM])]
 
         eb = EasyConfig(self.eb_file, extra_vars)
         self.assertEqual(eb['custom_key'], 'default')
@@ -231,6 +232,18 @@ dependencies = [('first', '1.1'), {'name': 'second', 'version': '2.2'}]
 
         # test if extra toolkit options are being passed
         self.assertEqual(eb.toolkit().opts['static'], True)
+
+        extra_vars.extend([('mandatory_key', ['default', 'another mandatory key', easyconfig.MANDATORY])])
+
+        # test extra mandatory vars
+        self.assertErrorRegex(EasyBuildError, "mandatory variable \S* not provided", EasyConfig, self.eb_file)
+
+        self.contents += '\nmandatory_key = "value"'
+        self.setUp()
+
+        eb = EasyConfig(self.eb_file, extra_vars)
+
+        self.assertEqual(eb['mandatory_key'], 'value')
 
 
 class TestSuggestions(EasyConfigTest):
