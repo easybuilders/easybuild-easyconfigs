@@ -52,11 +52,11 @@ def main():
     """
     parser = OptionParser()
 
-    parser.add_option('--toolkit-name', help='new toolkit name')
-    parser.add_option('--toolkit-version', default='', help='new toolkit version')
-
     parser.add_option('-n', '--name', help='new package name')
     parser.add_option('-v', '--version', help='new software version')
+
+    parser.add_option('--toolkit-name', help='new toolkit name')
+    parser.add_option('--toolkit-version', default='', help='new toolkit version')
 
     parser.add_option('-r', '--robot', help='path where easyconfigs are stored')
     parser.add_option('-p', '--patches', action='append', help='new list of patch files')
