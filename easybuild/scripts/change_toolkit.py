@@ -30,7 +30,7 @@ from distutils.version import LooseVersion
 from optparse import OptionParser
 
 from easybuild.build import create_paths
-from easybuild.framework.easyblock import EasyBlock
+from easybuild.framework.easyconfig import EasyConfig
 
 
 def find_easyconfig(path, name):
@@ -52,7 +52,7 @@ def main():
     """
     parser = OptionParser()
 
-    parser.add_option('--toolkit', help='new toolkit name')
+    parser.add_option('--toolkit-name', help='new toolkit name')
     parser.add_option('--toolkit-version', default='', help='new toolkit version')
 
     parser.add_option('-n', '--name', help='new package name')
@@ -129,7 +129,7 @@ def find_best_toolkit(path, name, version=None):
         sys.exit(1)
 
     # figure out the best toolkit to use
-    toolkit_ebs = [EasyBlock(tk_file) for tk_file in toolkit_files]
+    toolkit_ebs = [EasyConfig(tk_file) for tk_file in toolkit_files]
     versions = [LooseVersion(tk['version']) for tk in toolkit_ebs]
 
     print "found the following versions for toolkit %s:" % toolkit_ebs[0]['name']
@@ -175,7 +175,7 @@ def find_best_easyconfig(path, name, toolkit, version=None):
     print "Found the following easyconfigs:"
     print '\n'.join(easyconfigs)
 
-    easyconfigs = [EasyBlock(eb_file, validate=False) for eb_file in easyconfigs]
+    easyconfigs = [EasyConfig(eb_file, validate=False) for eb_file in easyconfigs]
 
     # filter easyconfigs based on the version
     if version:
