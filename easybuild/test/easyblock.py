@@ -212,7 +212,7 @@ dependencies = [('first', '1.1'), {'name': 'second', 'version': '2.2'}]
         eb = EasyConfig(self.eb_file)
         self.assertRaises(KeyError, lambda: eb['custom_key'])
 
-        extra_vars = {'custom_key': ['default', "This is a default key", easyconfig.CUSTOM]}
+        extra_vars = [('custom_key', ['default', "This is a default key", easyconfig.CUSTOM])]
 
         eb = EasyConfig(self.eb_file, extra_vars)
         self.assertEqual(eb['custom_key'], 'default')
@@ -233,7 +233,7 @@ dependencies = [('first', '1.1'), {'name': 'second', 'version': '2.2'}]
         # test if extra toolkit options are being passed
         self.assertEqual(eb.toolkit().opts['static'], True)
 
-        extra_vars.update({'mandatory_key': ['default', 'another mandatory key', easyconfig.MANDATORY]})
+        extra_vars.extend([('mandatory_key', ['default', 'another mandatory key', easyconfig.MANDATORY])])
 
         # test extra mandatory vars
         self.assertErrorRegex(EasyBuildError, "mandatory variable \S* not provided", EasyConfig, self.eb_file)

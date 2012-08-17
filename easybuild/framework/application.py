@@ -262,7 +262,7 @@ class Application:
         Subclasses should call this method with a dict
         """
         if extra == None:
-            return {}
+            return []
         else:
             return extra
 

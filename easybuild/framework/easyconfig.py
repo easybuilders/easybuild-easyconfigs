@@ -117,7 +117,7 @@ class EasyConfig:
           ('buildstats', [None, "A list of dicts with buildstats: build_time, platform, core_count, cpu_model, install_size, timestamp", OTHER]),
         ]
 
-    def __init__(self, path, extra_options={}, validate=True):
+    def __init__(self, path, extra_options=[], validate=True):
         """
         initialize an easyconfig.
         path should be a path to a file that can be parsed
@@ -130,9 +130,10 @@ class EasyConfig:
         self.mandatory = ['name', 'version', 'homepage', 'description', 'toolkit']
 
         # extend mandatory keys
-        for key in extra_options:
-            if extra_options[key][2] == MANDATORY:
+        for (key, value) in extra_options:
+            if value[2] == MANDATORY:
                 self.mandatory.append(key)
+
         self.log = getLog("EasyConfig")
 
         # store toolkit
