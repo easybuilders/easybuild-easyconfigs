@@ -47,7 +47,7 @@ from easybuild.tools.build_log import EasyBuildError, initLogger, removeLogHandl
 from easybuild.tools.config import source_path, buildPath, installPath
 from easybuild.tools.filetools import unpack, patch, run_cmd, convertName
 from easybuild.tools.module_generator import ModuleGenerator
-from easybuild.tools.modules import Modules
+from easybuild.tools.modules import Modules, get_software_root
 from easybuild.tools.toolkit import Toolkit
 from easybuild.tools.systemtools import get_core_count
 
