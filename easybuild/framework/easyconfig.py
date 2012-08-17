@@ -40,7 +40,7 @@ DEPENDENCIES = (5, 'dependencies')
 LICENSE = (6, 'license')
 PACKAGE = (7, 'package')
 MODULES = (8, 'modules')
-OTHER = (9, 'buildstats')
+OTHER = (9, 'other')
 
 
 class EasyConfig:
@@ -383,9 +383,10 @@ def convert_to_help(option_list):
     mapping = OrderedDict()
 
     for category in sorted_categories():
-        mapping[category[1]] = filter(lambda (k, v): v[2] == category, option_list)
+        mapping[category[1]] = [(arr[0], arr[1][1]) for arr in option_list if arr[1][2] == category]
 
-    print mapping
+    return mapping
+
 
 
 
