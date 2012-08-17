@@ -347,13 +347,19 @@ class EasyConfig:
     def tweak(self, tweaks):
         """
         Tweak this easyconfig
-        tweaks is a list of tweak specification in the format (function_name, string argument)
-        e.g. [('set_version', '1.2.3'), ('set_toolkit_name', 'goalf')]
+        tweaks is a list of tweak specification in the format (function_name, argument)
+        e.g. [('set_version', '1.2.3') ('add_patches', ['1.p', '2.p'])
         """
         # tweak easyconfig is desired
         for (f, x) in tweaks:
-            self.log.info("Tweaking easyconfig with %s('%s')" % (f, x))
-            eval ("self.%s('%s')" % (f, x))
+            if type(x) == str:
+                x = "'%s'" % x
+            self.log.info("Tweaking easyconfig with %s(%s)" % (f, x))
+            print 'Tweaking easyconfig with %s(%s)' % (f, x)
+            try:
+                eval('self.%s(%s)' % (f, x))
+            except (AttributeError, TypeError), err:
+                self.log.error("Failed to tweak easyconfig with %s(%s): %s" % (f, x, err))
 
     # private method
     def _validate(self, attr, values):
