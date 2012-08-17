@@ -91,7 +91,8 @@ def create_job(build_command, package, output_dir=""):
     # create unique name based on module name
     name = "%s-%s" % package['module']
 
-    easybuild_vars['EASYBUILDTESTOUTPUT'] = os.path.join(os.path.abspath(output_dir), name)
+    var = config.environmentVariables['testOutputPath']
+    easybuild_vars[var] = os.path.join(os.path.abspath(output_dir), name)
 
     # just use latest build stats
     buildstats = getRepository().get_buildstats(*package['module'])

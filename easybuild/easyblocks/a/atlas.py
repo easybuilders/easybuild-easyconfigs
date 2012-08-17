@@ -30,6 +30,7 @@ import re
 import os
 
 from easybuild.framework.application import Application
+from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.filetools import run_cmd
 from easybuild.tools.modules import get_software_root
 
@@ -47,11 +48,11 @@ class ATLAS(Application):
 
     @staticmethod
     def extra_options():
-        extra_vars = {
-                      'ignorethrottling': [False, "Ignore check done by ATLAS for CPU throttling (not recommended) (default: False)"],
-                      'full_lapack': [False, "Build a full LAPACK library (requires netlib's LAPACK) (default: False)"],
-                      'sharedlibs': [False, "Enable building of shared libs as well (default: False)"]
-                     }
+        extra_vars = [
+                      ('ignorethrottling', [False, "Ignore check done by ATLAS for CPU throttling (not recommended) (default: False)", CUSTOM]),
+                      ('full_lapack', [False, "Build a full LAPACK library (requires netlib's LAPACK) (default: False)", CUSTOM]),
+                      ('sharedlibs', [False, "Enable building of shared libs as well (default: False)", CUSTOM])
+                     ]
         return Application.extra_options(extra_vars)
 
     def configure(self):

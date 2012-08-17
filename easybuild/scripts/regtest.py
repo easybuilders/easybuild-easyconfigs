@@ -32,8 +32,7 @@ this test will distinguish between the different phases in the build:
    * make builddir
    * unpacking
    * patching
-   * prepare toolkit
-   * setup startfrom
+   * prepare
    * configure
    * make
    * test
@@ -99,10 +98,11 @@ def main():
     # Create base directory inside the current directory. This will be used to place
     # all log files and the test output as xml
     basename = "easybuild-test-%s" % datetime.now().strftime("%Y%m%d%H%M%S")
+    var = config.environmentVariables['testOutputPath']
     if opts.directory:
         output_dir = opts.directory
-    elif "EASYBUILDTESTOUTPUT" in os.environ:
-        output_dir = os.path.abspath(os.environ['EASYBUILDTESTOUTPUT'])
+    elif var in os.environ:
+        output_dir = os.path.abspath(os.environ[var])
     else:
         # Use default: Current dir + easybuil-test-timestamp
         output_dir = os.path.join(cur_dir, basename)
@@ -186,8 +186,7 @@ def build_packages(packages, output_dir):
         perform_step("make builddir", app, lambda x: x.make_builddir())
         perform_step("unpacking", app, lambda x: x.unpack_src())
         perform_step("patching", app, lambda x: x.apply_patch())
-        perform_step("prepare toolkit", app, lambda x: x.toolkit().prepare(x.getcfg('onlytkmod')))
-        perform_step("setup startfrom", app, lambda x: x.startfrom())
+        perform_step("prepare", app, lambda x: x.prepare())
         perform_step('configure', app, lambda x: x.configure())
         perform_step('make', app, lambda x: x.make())
         perform_step('test', app, lambda x: x.test())

@@ -42,12 +42,12 @@ from distutils.version import LooseVersion
 import easybuild
 import easybuild.tools.config as config
 import easybuild.tools.environment as env
-from easybuild.framework.easyblock import EasyBlock
+from easybuild.framework.easyconfig import EasyConfig
 from easybuild.tools.build_log import EasyBuildError, initLogger, removeLogHandler,print_msg
 from easybuild.tools.config import source_path, buildPath, installPath
 from easybuild.tools.filetools import unpack, patch, run_cmd, convertName
 from easybuild.tools.module_generator import ModuleGenerator
-from easybuild.tools.modules import Modules
+from easybuild.tools.modules import Modules, get_software_root
 from easybuild.tools.toolkit import Toolkit
 from easybuild.tools.systemtools import get_core_count
 
@@ -79,7 +79,7 @@ class Application:
         self.skip = None
 
         # Easyblock for this Application
-        self.cfg = EasyBlock(path, self.extra_options())
+        self.cfg = EasyConfig(path, self.extra_options())
 
         # module generator
         self.moduleGenerator = None
@@ -258,11 +258,11 @@ class Application:
     @staticmethod
     def extra_options(extra=None):
         """
-        Extra options method which will be passed to the EasyBlock constructor.
+        Extra options method which will be passed to the EasyConfig constructor.
         Subclasses should call this method with a dict
         """
         if extra == None:
-            return {}
+            return []
         else:
             return extra
 
@@ -647,8 +647,8 @@ class Application:
             ## PATCH
             self.runstep('patch', [self.apply_patch], skippable=True)
 
-            self.toolkit().prepare(self.getcfg('onlytkmod'))
-            self.startfrom()
+            # PREPARE
+            self.runstep('prepare', [self.prepare], skippable=True)
 
             ## CONFIGURE
             print_msg("configuring...", self.log)
@@ -911,6 +911,15 @@ class Application:
         except OSError, err:
             self.log.exception("Can't change to real build directory %s: %s" % (self.getcfg('startfrom'), err))
 
+    def prepare(self):
+        """
+        Pre-configure step. Set's up the builddir just before starting configure
+        """
+        self.toolkit().prepare(self.getcfg('onlytkmod'))
+        self.startfrom()
+        self.make_devel_module(create_in_builddir=True)
+
+
     def configure(self, cmd_prefix=''):
         """
         Configure step
@@ -1095,7 +1104,7 @@ class Application:
 
         return modpath
 
-    def make_devel_module(self):
+    def make_devel_module(self, create_in_builddir=False):
         """
         Create a develop module file which sets environment based on the build
         Usage: module load name, which loads the module you want to use. $EBDEVELNAME should then be the full path
@@ -1103,9 +1112,22 @@ class Application:
 
         WARNING: you cannot unload using $EBDEVELNAME (for now: use module unload `basename $EBDEVELNAME`)
         """
-        self.log.debug("loaded modules: %s" % Modules().loaded_modules())
-        mod_gen = ModuleGenerator(self)
+        # first try loading the fake module (might have happened during sanity check, doesn't matter anyway
+        # make fake module
+        mod_path = [self.make_module(True)]
 
+        # load the module
+        mod_path.extend(Modules().modulePath)
+        m = Modules(mod_path)
+        self.log.debug("created module instance")
+        m.addModule([[self.name(), self.installversion()]])
+        try:
+            m.load()
+        except EasyBuildError, err:
+            self.log.debug("Loading module failed: %s" % err)
+            self.log.debug("loaded modules: %s" % Modules().loaded_modules())
+
+        mod_gen = ModuleGenerator(self)
         header = "#%Module\n"
 
         env_txt = ""
@@ -1121,16 +1143,23 @@ class Application:
         for key in os.environ:
             # legacy support
             if key.startswith("EBDEVEL") or key.startswith("SOFTDEVEL"):
-                path = os.environ[key]
-                if os.path.isfile(path):
-                    name, version =  path.rsplit('/', 1)
-                    load_txt += mod_gen.loadModule(name, version)
+                if not key.endswith(convertName(self.name(), upper=True)):
+                    path = os.environ[key]
+                    if os.path.isfile(path):
+                        name, version =  path.rsplit('/', 1)
+                        load_txt += mod_gen.loadModule(name, version)
 
-        output_dir = os.path.join(self.installdir, config.logPath())
-        if not os.path.exists(output_dir):
-            os.makedirs(output_dir)
+        if create_in_builddir:
+            output_dir = self.builddir
+        else:
+            output_dir = os.path.join(self.installdir, config.logPath())
+            if not os.path.exists(output_dir):
+                os.makedirs(output_dir)
 
-        devel_module = open(os.path.join(output_dir, "%s-%s-easybuild-devel" % (self.name(), self.installversion())), "w")
+        filename = os.path.join(output_dir, "%s-%s-easybuild-devel" % (self.name(), self.installversion()))
+        self.log.debug("Writing devel module to %s" % filename)
+
+        devel_module = open(filename, "w")
         devel_module.write(header)
         devel_module.write(load_txt)
         devel_module.write(env_txt)
@@ -1464,15 +1493,6 @@ class Application:
         Shortcut the get the module version.
         """
         return self.getcfg('version')
-
-    def dump_cfg_options(self):
-        """
-        Print a list of available configuration options.
-        """
-        for key in sorted(self.cfg):
-            tabs = "\t" * (3 - (len(key) + 1) / 8)
-            print "%s:%s%s" % (key, tabs, self.cfg[key][1])
-
 
 
 class StopException(Exception):

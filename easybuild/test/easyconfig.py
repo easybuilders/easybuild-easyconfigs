@@ -21,13 +21,14 @@
 import os
 import re
 
+import easybuild.framework.easyconfig as easyconfig
 from unittest import TestCase, TestSuite
-from easybuild.framework.easyblock import EasyBlock
+from easybuild.framework.easyconfig import EasyConfig
 from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.systemtools import get_shared_lib_ext
 
 
-class EasyBlockTest(TestCase):
+class EasyConfigTest(TestCase):
     """ Baseclass for easyblock testcases """
 
     def setUp(self):
@@ -49,18 +50,18 @@ class EasyBlockTest(TestCase):
             self.assertTrue(re.search(regex, err.msg))
 
 
-class TestEmpty(EasyBlockTest):
+class TestEmpty(EasyConfigTest):
     """ Test empty easyblocks """
 
     contents = "# empty string"
 
     def runTest(self):
         """ empty files should not parse! """
-        self.assertRaises(EasyBuildError, EasyBlock, self.eb_file)
-        self.assertErrorRegex(EasyBuildError, "expected a valid path", EasyBlock, "")
+        self.assertRaises(EasyBuildError, EasyConfig, self.eb_file)
+        self.assertErrorRegex(EasyBuildError, "expected a valid path", EasyConfig, "")
 
 
-class TestMandatory(EasyBlockTest):
+class TestMandatory(EasyConfigTest):
     """ Test mandatory variable validation """
 
     contents = """
@@ -76,7 +77,7 @@ version = "3.14"
                                     'toolkit = {"name": "dummy", "version": "dummy"}'])
         self.setUp()
 
-        eb = EasyBlock(self.eb_file)
+        eb = EasyConfig(self.eb_file)
 
         self.assertEqual(eb['name'], "pi")
         self.assertEqual(eb['version'], "3.14")
@@ -85,7 +86,7 @@ version = "3.14"
         self.assertEqual(eb['description'], "test easyblock")
 
 
-class TestValidation(EasyBlockTest):
+class TestValidation(EasyConfigTest):
     """ test other validations """
 
     contents = """
@@ -99,7 +100,7 @@ stop = 'notvalid'
 
     def runTest(self):
         """ test other validations beside mandatory variables """
-        eb = EasyBlock(self.eb_file, validate=False)
+        eb = EasyConfig(self.eb_file, validate=False)
         self.assertErrorRegex(EasyBuildError, "\w* provided \w* is not valid", eb.validate)
 
         eb['stop'] = 'patch'
@@ -113,15 +114,15 @@ stop = 'notvalid'
         self.assertEqual(eb.installversion(), "3.14")
 
         os.chmod(self.eb_file, 0000)
-        self.assertErrorRegex(EasyBuildError, "Unexpected IOError", EasyBlock, self.eb_file)
+        self.assertErrorRegex(EasyBuildError, "Unexpected IOError", EasyConfig, self.eb_file)
         os.chmod(self.eb_file, 0755)
 
         self.contents += "\nsyntax_error'"
         self.setUp()
-        self.assertErrorRegex(EasyBuildError, "SyntaxError", EasyBlock, self.eb_file)
+        self.assertErrorRegex(EasyBuildError, "SyntaxError", EasyConfig, self.eb_file)
 
 
-class TestSharedLibExt(EasyBlockTest):
+class TestSharedLibExt(EasyConfigTest):
     """ test availability of shared_lib_ext in easyblock context """
 
     contents = """
@@ -135,11 +136,11 @@ sanityCheckPaths = { 'files': ["lib/lib.%s" % shared_lib_ext] }
 
     def runTest(self):
         """ inside easyconfigs shared_lib_ext should be set """
-        eb = EasyBlock(self.eb_file)
+        eb = EasyConfig(self.eb_file)
         self.assertEqual(eb['sanityCheckPaths']['files'][0], "lib/lib.%s" % get_shared_lib_ext())
 
 
-class TestDependency(EasyBlockTest):
+class TestDependency(EasyConfigTest):
     """ Test parsing of dependencies """
 
     contents = """
@@ -154,7 +155,7 @@ builddependencies = [('first', '1.1'), {'name': 'second', 'version': '2.2'}]
 
     def runTest(self):
         """ test all possible ways of specifying dependencies """
-        eb = EasyBlock(self.eb_file)
+        eb = EasyConfig(self.eb_file)
         # should include builddependencies
         self.assertEqual(len(eb.dependencies()), 4)
         self.assertEqual(len(eb.builddependencies()), 2)
@@ -193,7 +194,7 @@ builddependencies = [('first', '1.1'), {'name': 'second', 'version': '2.2'}]
         self.assertErrorRegex(EasyBuildError, "without version", eb.dependencies)
 
 
-class TestExtraOptions(EasyBlockTest):
+class TestExtraOptions(EasyConfigTest):
     """ test extra options constructor """
 
     contents = """
@@ -208,12 +209,12 @@ dependencies = [('first', '1.1'), {'name': 'second', 'version': '2.2'}]
 
     def runTest(self):
         """ extra_options should allow other variables to be stored """
-        eb = EasyBlock(self.eb_file)
+        eb = EasyConfig(self.eb_file)
         self.assertRaises(KeyError, lambda: eb['custom_key'])
 
-        extra_vars = { 'custom_key': ['default', "This is a default key"]}
+        extra_vars = [('custom_key', ['default', "This is a default key", easyconfig.CUSTOM])]
 
-        eb = EasyBlock(self.eb_file, extra_vars)
+        eb = EasyConfig(self.eb_file, extra_vars)
         self.assertEqual(eb['custom_key'], 'default')
 
         eb['custom_key'] = "not so default"
@@ -223,7 +224,7 @@ dependencies = [('first', '1.1'), {'name': 'second', 'version': '2.2'}]
 
         self.setUp()
 
-        eb = EasyBlock(self.eb_file, extra_vars)
+        eb = EasyConfig(self.eb_file, extra_vars)
         self.assertEqual(eb['custom_key'], 'test')
 
         eb['custom_key'] = "not so default"
@@ -232,8 +233,20 @@ dependencies = [('first', '1.1'), {'name': 'second', 'version': '2.2'}]
         # test if extra toolkit options are being passed
         self.assertEqual(eb.toolkit().opts['static'], True)
 
+        extra_vars.extend([('mandatory_key', ['default', 'another mandatory key', easyconfig.MANDATORY])])
 
-class TestSuggestions(EasyBlockTest):
+        # test extra mandatory vars
+        self.assertErrorRegex(EasyBuildError, "mandatory variable \S* not provided", EasyConfig, self.eb_file)
+
+        self.contents += '\nmandatory_key = "value"'
+        self.setUp()
+
+        eb = EasyConfig(self.eb_file, extra_vars)
+
+        self.assertEqual(eb['mandatory_key'], 'value')
+
+
+class TestSuggestions(EasyConfigTest):
     """ test suggestions on typos """
 
     contents = """

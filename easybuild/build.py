@@ -40,11 +40,12 @@ from datetime import datetime
 from optparse import OptionParser
 
 import easybuild  # required for VERBOSE_VERSION
+import easybuild.framework.easyconfig as easyconfig
 import easybuild.tools.config as config
 import easybuild.tools.filetools as filetools
 import easybuild.tools.parallelbuild as parbuild
 from easybuild.framework.application import get_class
-from easybuild.framework.easyblock import EasyBlock
+from easybuild.framework.easyconfig import EasyConfig
 from easybuild.tools.build_log import EasyBuildError, initLogger, \
     removeLogHandler, print_msg
 from easybuild.tools.class_dumper import dumpClasses
@@ -77,11 +78,9 @@ def add_build_options(parser):
                         help="does the build/installation in a test directory " \
                                "located in $HOME/easybuildinstall")
 
-    stop_options = ['cfg', 'source', 'patch', 'configure', 'make', 'install',
-                   'test', 'postproc', 'cleanup', 'packages']
-    parser.add_option("-s", "--stop", type="choice", choices=stop_options,
+    parser.add_option("-s", "--stop", type="choice", choices=EasyConfig.validstops,
                         help="stop the installation after certain step" \
-                               "(valid: %s)" % ', '.join(stop_options))
+                               "(valid: %s)" % ', '.join(EasyConfig.validstops))
     parser.add_option("-b", "--only-blocks", metavar="blocks", help="Only build blocks blk[,blk2]")
     parser.add_option("-k", "--skip", action="store_true",
                         help="skip existing software (useful for installing additional packages)")
@@ -159,8 +158,9 @@ def main():
     # - then, check command line option
     # - last, use default config file easybuild_config.py in build.py directory
     config_file = options.config
-    if not config_file and os.getenv('EASYBUILDCONFIG'):
-        config_file = os.getenv('EASYBUILDCONFIG')
+
+    if not config_file and os.getenv(config.environmentVariables['configFile']):
+        config_file = os.getenv(config.environmentVariables['configFile'])
     else:
         appPath = os.path.dirname(os.path.realpath(sys.argv[0]))
         config_file = os.path.join(appPath, "easybuild_config.py")
@@ -168,20 +168,7 @@ def main():
 
     # Dump possible options
     if options.avail_easyconfig_params:
-        app = get_class(options.easyblock, log)
-        extra = app.extra_options()
-        default = EasyBlock.default_config
-
-        print "DEFAULT OPTIONS:"
-        for key in sorted(default):
-            tabs = "\t" * (3 - (len(key) + 1) / 8)
-            print "%s:%s%s" % (key, tabs, default[key][1])
-
-        if extra:
-            print "EXTRA OPTIONS:"
-            for key in sorted(extra):
-                tabs = "\t" * (3 - (len(key) + 1) / 8)
-                print "%s:%s%s" % (key, tabs, extra[key][1])
+        print_avail_params(options.easyblock, log)
 
     ## Dump available classes
     if options.dump_classes:
@@ -349,7 +336,7 @@ def processEasyconfig(path, log, onlyBlocks=None, regtest_online=False):
         log.debug("Processing easyconfig %s" % spec)
 
         try:
-            eb = EasyBlock(spec)
+            eb = EasyConfig(spec)
         except EasyBuildError, err:
             msg = "Failed to process easyconfig %s:\n%s" % (spec, err.msg)
             log.exception(msg)
@@ -754,6 +741,20 @@ def build(module, options, log, origEnviron, exitOnFailure=True):
             return (False, applicationLog)
     else:
         return (True, applicationLog)
+
+def print_avail_params(easyblock, log):
+    app = get_class(easyblock, log)
+    extra = app.extra_options()
+    mapping = easyconfig.convert_to_help(EasyConfig.default_config + extra)
+
+    for key, values in mapping.items():
+        print "%s" % key.upper()
+        print '-' * len(key)
+        for name, value in values:
+            tabs = "\t" * (3 - (len(name) + 1) / 8)
+            print "%s:%s%s" % (name, tabs, value)
+
+        print
 
 
 if __name__ == "__main__":
