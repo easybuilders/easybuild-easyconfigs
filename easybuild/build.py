@@ -171,7 +171,7 @@ def main():
         default = EasyConfig.default_config
 
         print "DEFAULT OPTIONS:"
-        for key in sorted(default):
+        for key, value in sorted(default.items(), cmp=cmp_func):
             tabs = "\t" * (3 - (len(key) + 1) / 8)
             print "%s:%s%s" % (key, tabs, default[key][1])
 

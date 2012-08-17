@@ -1494,15 +1494,6 @@ class Application:
         """
         return self.getcfg('version')
 
-    def dump_cfg_options(self):
-        """
-        Print a list of available configuration options.
-        """
-        for key in sorted(self.cfg):
-            tabs = "\t" * (3 - (len(key) + 1) / 8)
-            print "%s:%s%s" % (key, tabs, self.cfg[key][1])
-
-
 
 class StopException(Exception):
     """
