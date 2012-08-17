@@ -28,6 +28,7 @@ EasyBuild configuration (paths, preferences, etc.)
 """
 
 import os
+import tempfile
 
 from easybuild.tools.build_log import getLog
 import easybuild.tools.repository as repo
@@ -38,8 +39,11 @@ log = getLog('config')
 variables = {}
 requiredVariables = ['buildPath', 'installPath', 'sourcePath', 'logFormat', 'repository', 'repositoryPath']
 environmentVariables = {
-    'buildPath': 'EASYBUILDBUILDPATH',
-    'installPath': 'EASYBUILDINSTALLPATH'
+    'buildPath': 'EASYBUILDBUILDPATH', # temporary build path
+    'installPath': 'EASYBUILDINSTALLPATH', # final install path
+    'logDir': 'EASYBUILDLOGDIR', # log directory where temporary log files are stored
+    'configFile': 'EASYBUILDCONFIG', # path to the config file
+    'testOutputPath': 'EASYBUILDTESTOUTPUT', # path to where jobs should place test output
 }
 
 def init(filename, **kwargs):
@@ -171,3 +175,10 @@ def logPath():
     Return the log path
     """
     return variables['logFormat'][0]
+
+def get_build_log_path():
+    """
+    return temporary log directory
+    """
+    return variables.get('logDir', tempfile.gettempdir())
+

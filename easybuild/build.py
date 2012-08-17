@@ -158,8 +158,9 @@ def main():
     # - then, check command line option
     # - last, use default config file easybuild_config.py in build.py directory
     config_file = options.config
-    if not config_file and os.getenv('EASYBUILDCONFIG'):
-        config_file = os.getenv('EASYBUILDCONFIG')
+
+    if not config_file and os.getenv(config.environmentVariables['configFile']):
+        config_file = os.getenv(config.environmentVariables['configFile'])
     else:
         appPath = os.path.dirname(os.path.realpath(sys.argv[0]))
         config_file = os.path.join(appPath, "easybuild_config.py")
