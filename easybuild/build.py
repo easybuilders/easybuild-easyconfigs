@@ -172,10 +172,13 @@ def main():
         mapping = easyconfig.convert_to_help(EasyConfig.default_config + extra)
 
         for key, values in mapping.items():
-            print "%s:" % key.upper()
+            print "%s" % key.upper()
+            print '-' * len(key)
             for name, value in values:
                 tabs = "\t" * (3 - (len(name) + 1) / 8)
                 print "%s:%s%s" % (name, tabs, value)
+
+            print
 
 
     ## Dump available classes
