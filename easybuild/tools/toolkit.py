@@ -665,7 +665,9 @@ class Toolkit:
         if self.opts['packed-groups']:
             for x in ['LIBBLAS', 'LIBLAPACK', 'LIBSCALAPACK']:
                 for var in [x, "%s_MT" % x]:
-                    self.vars[var] = self.vars[var].replace(" ", ",").replace("-Wl,--end-group", "--end-group")
+                    self.vars[var] = self.vars[var].replace(" ", ",")
+                    self.vars[var] = self.vars[var].replace(",-Wl,", ",")
+                    self.vars[var] = self.vars[var].replace(",-Wl:", ",")
 
         # linker flags
         self._flagsForSubdirs(mklroot, mklld, flag="-L%s", varskey="LDFLAGS")
