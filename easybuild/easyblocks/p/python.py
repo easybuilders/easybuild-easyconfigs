@@ -189,7 +189,7 @@ class eb_DefaultPythonPackage(ApplicationPackage):
         return self.mself.getcfg(*args, **kwargs)
 
 
-class eb_Nose(eb_DefaultPythonPackage):
+class eb_nose(eb_DefaultPythonPackage):
     """nose package"""
     def __init__(self, mself, pkg, pkginstalldeps):
         eb_DefaultPythonPackage.__init__(self, mself, pkg, pkginstalldeps)
@@ -227,7 +227,7 @@ class eb_FortranPythonPackage(eb_DefaultPythonPackage):
         run_cmd(cmd, log_all=True, simple=True)
 
 
-class eb_Numpy(eb_FortranPythonPackage):
+class eb_numpy(eb_FortranPythonPackage):
     """numpy package"""
 
     def __init__(self, mself, pkg, pkginstalldeps):
@@ -310,7 +310,7 @@ libraries = %s
             self.log.debug("build dir %s already clean" % builddir)
 
 
-class eb_Scipy(eb_FortranPythonPackage):
+class eb_scipy(eb_FortranPythonPackage):
     """scipy package"""
 
     def __init__(self, mself, pkg, pkginstalldeps):
