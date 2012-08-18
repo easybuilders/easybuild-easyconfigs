@@ -65,7 +65,11 @@ class PETSc(Application):
         Application.make_builddir(self)
 
     def configure(self):
-        """Configure PETSc by setting configure options and running configure script."""
+        """
+        Configure PETSc by setting configure options and running configure script.
+
+        Configure procedure is much more concise for older versions (< v3).
+        """
 
         if LooseVersion(self.version()) >= LooseVersion("3"):
 
