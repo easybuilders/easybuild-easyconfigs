@@ -37,7 +37,7 @@ class METIS(Application):
     """Support for building and installing METIS."""
 
     def configure(self, *args, **kwargs):
-        """Configure build using 'make config' (only for recent versions)."""
+        """Configure build using 'make config' (only for recent versions (>= v5))."""
 
         if LooseVersion(self.version()) >= LooseVersion("5"):
 
@@ -55,11 +55,13 @@ class METIS(Application):
         Application.make(self)
 
     def make_install(self):
-        """Install by manually copying files to install dir, for old versions,
+        """
+        Install by manually copying files to install dir, for old versions,
         or by running 'make install' for new versions.
         
         Create symlinks where expected by other applications
-        (in Lib instead of lib)"""
+        (in Lib instead of lib)
+        """
 
         if LooseVersion(self.version()) < LooseVersion("5"):
 
@@ -101,7 +103,7 @@ class METIS(Application):
             Application.make_install(self)
 
     def sanitycheck(self):
-        """Custom sanity check for METIS."""
+        """Custom sanity check for METIS (more extensive for recent version (>= v5))"""
 
         if not self.getcfg('sanityCheckPaths'):
 
