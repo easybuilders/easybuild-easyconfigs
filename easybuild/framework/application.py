@@ -842,7 +842,7 @@ class Application:
             self.log.debug("Loading module failed: %s" % err)
             self.sanityCheckOK = False
 
-        # chdir to installdir (beter environment for running tests)
+        # chdir to installdir (better environment for running tests)
         os.chdir(self.installdir)
 
         # run sanity check command
