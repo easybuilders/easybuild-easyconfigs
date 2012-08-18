@@ -38,7 +38,7 @@ from easybuild.tools.filetools import run_cmd
 from easybuild.tools.modules import get_software_root, get_software_version
 
 
-class Libsmm(Application):
+class eb_libsmm(Application):
     """
     Support for the CP2K small matrix library
     Notes: - build can take really really long, and no real rebuilding needed for each version

@@ -43,7 +43,7 @@ from easybuild.tools.filetools import patch_perl_script_autoflush, run_cmd, run_
 from easybuild.tools.modules import get_software_root, get_software_version
 
 
-class WPS(Application):
+class eb_WPS(Application):
     """Support for building/installing WPS."""
 
     def __init__(self, *args, **kwargs):

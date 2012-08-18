@@ -33,7 +33,7 @@ import stat
 from easybuild.framework.application import Application
 
 
-class Binary(Application):
+class eb_Binary(Application):
     """Support for installing a binary package.
     Just copy it's sources to the installdir"""
 

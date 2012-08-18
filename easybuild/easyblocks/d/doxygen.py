@@ -30,7 +30,7 @@ from easybuild.framework.application import Application
 from easybuild.tools.filetools import run_cmd
 
 
-class Doxygen(Application):
+class eb_Doxygen(Application):
     """Support for building/installing Doxygen"""
 
     def configure(self):

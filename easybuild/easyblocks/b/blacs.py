@@ -50,7 +50,7 @@ def det_interface(log, path):
         log.error("Failed to determine interface, output for xintface: %s" % out)
 
 
-class BLACS(Application):
+class eb_BLACS(Application):
     """
     Support for building/installing BLACS
     - configure: symlink BMAKES/Bmake.MPI-LINUX to Bmake.inc

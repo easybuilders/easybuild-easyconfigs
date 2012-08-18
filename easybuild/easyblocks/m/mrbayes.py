@@ -36,7 +36,7 @@ from easybuild.tools.filetools import run_cmd
 from easybuild.tools.modules import get_software_root
 
 
-class MrBayes(Application):
+class eb_MrBayes(Application):
     """Support for building/installing MrBayes."""
 
     def configure(self):

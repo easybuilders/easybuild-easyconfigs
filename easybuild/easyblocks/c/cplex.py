@@ -30,7 +30,7 @@ from easybuild.easyblocks.b.binary import Binary
 from easybuild.tools.filetools import run_cmd_qa
 
 
-class CPLEX(Binary):
+class eb_CPLEX(Binary):
     """
     Support for installing CPLEX.
     Version 12.2 has a self-extracting package with a Java installer

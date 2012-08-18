@@ -27,7 +27,7 @@ from easybuild.framework.application import Application
 from easybuild.easyblocks.b.binary import Binary
 
 
-class PackedBinary(Binary, Application):
+class eb_PackedBinary(Binary, Application):
     """Support for installing a packed binary package.
     Just unpack its source in the installdir
     """

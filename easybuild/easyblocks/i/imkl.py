@@ -39,7 +39,7 @@ from easybuild.tools.filetools import run_cmd
 from easybuild.tools.modules import Modules
 
 
-class Imkl(IntelBase):
+class eb_imkl(IntelBase):
     """
     Class that can be used to install mkl
     - tested with 10.2.1.017

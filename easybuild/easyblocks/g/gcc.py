@@ -41,7 +41,7 @@ from easybuild.tools.modules import get_software_root
 from easybuild.tools.systemtools import get_kernel_name, get_shared_lib_ext, get_platform_name
 
 
-class GCC(Application):
+class eb_GCC(Application):
     """
     Self-contained build of GCC.
     Uses system compiler for initial build, then bootstraps.

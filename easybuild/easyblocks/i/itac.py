@@ -33,7 +33,7 @@ from easybuild.easyblocks.i.intelbase import IntelBase
 from easybuild.tools.filetools import run_cmd
 
 
-class Itac(IntelBase):
+class eb_itac(IntelBase):
     """
     Class that can be used to install itac
     - tested with Intel Trace Analyzer and Collector 7.2.1.008

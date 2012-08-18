@@ -29,7 +29,7 @@ EasyBuild support for installing compiler toolkits, implemented as an easyblock
 from easybuild.framework.application import Application
 
 
-class Toolkit(Application):
+class eb_Toolkit(Application):
     """
     Compiler toolkit: generate module file only, nothing to make/install
     """

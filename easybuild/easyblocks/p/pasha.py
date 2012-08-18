@@ -29,7 +29,7 @@ from easybuild.framework.application import Application
 from easybuild.tools.modules import get_software_root
 
 
-class Pasha(Application):
+class eb_Pasha(Application):
     """Support for building and installing Pasha"""
 
     def configure(self):
