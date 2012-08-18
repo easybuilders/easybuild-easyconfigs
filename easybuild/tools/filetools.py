@@ -767,6 +767,6 @@ def encode_string(name):
                '~': "_tilde_"
               }
 
-    result = ''.join(map(lambda x: charmap(x, x), name)   # do the remapping and do return same char by default
+    result = ''.join(map(lambda x: charmap.get(x, x), name)) # do the remapping and do return same char by default
     return result
 
