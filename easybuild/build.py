@@ -825,7 +825,7 @@ def dep_graph(fn, specs, log):
     dgr.add_nodes([spec['module'] for spec in specs])
     for spec in specs:
         for dep in spec['unresolvedDependencies']:
-            dgr.add_edge((spec['module'], spec))
+            dgr.add_edge((spec['module'], dep))
 
     # write to file
     dottxt = dot.write(dgr)
