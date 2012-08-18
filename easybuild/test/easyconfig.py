@@ -264,11 +264,6 @@ sourceULs = ['http://google.com']
         self.assertErrorRegex(EasyBuildError, "dependencis -> dependencies", EasyConfig, self.eb_file)
         self.assertErrorRegex(EasyBuildError, "sourceULs -> sourceURLs", EasyConfig, self.eb_file)
 
-def suite():
-    """ return all the tests in this file """
-    return TestSuite([TestDependency(), TestEmpty(), TestExtraOptions(), TestMandatory(), TestSharedLibExt(),
-        TestSuggestions(), TestValidation(), TestTweaking()])
-
 
 class TestTweaking(EasyConfigTest):
     """test tweaking ability of easyconfigs"""
@@ -329,3 +324,31 @@ patches = %s
         tweaks = [(fn, val)]
         pattern = "Failed to tweak easyconfig with %s\(%s\).*is not iterable.*" % (fn, val)
         self.assertErrorRegex(EasyBuildError, pattern, eb.tweak, tweaks)
+
+class TestInstallVersion(EasyConfigTest):
+    """test generation of install version"""
+
+    contents = ""
+
+    def runTest(self):
+
+        ver = "3.14"
+        verpref = "myprefix|"
+        versuff = "|mysuffix"
+        tkname = "GCC"
+        tkver = "4.6.3"
+        dummy = "dummy"
+
+        installver = easyconfig.det_installversion(ver, tkname, tkver, verpref, versuff)
+
+        self.assertEqual(installver, "%s%s-%s-%s%s" % (verpref, ver, tkname, tkver, versuff))
+
+        installver = easyconfig.det_installversion(ver, dummy, tkver, verpref, versuff)
+
+        self.assertEqual(installver, "%s%s%s" % (verpref, ver, versuff))
+
+def suite():
+    """ return all the tests in this file """
+    return TestSuite([TestDependency(), TestEmpty(), TestExtraOptions(),
+                      TestMandatory(), TestSharedLibExt(), TestSuggestions(),
+                      TestValidation(), TestTweaking(), TestInstallVersion()])
