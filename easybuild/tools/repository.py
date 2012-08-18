@@ -54,7 +54,7 @@ except ImportError:
     pass
 
 import easybuild
-from easybuild.framework.easyblock import EasyBlock
+from easybuild.framework.easyconfig import EasyConfig
 from easybuild.tools.build_log import getLog
 
 
