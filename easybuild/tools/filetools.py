@@ -721,7 +721,6 @@ def patch_perl_script_autoflush(path):
 
 def encode_string(name):
     """
-
     This encoding function handles funky package names ad infinitum, like:
       example: '0_foo+0x0x#-$__'
       becomes: '0_underscore_foo_plus_0x0x_hash__minus__dollar__underscore__underscore_'
@@ -780,5 +779,6 @@ def encode_string(name):
     return result
 
 def encode_class_name(name):
+    """return encoded version of class name"""
     return "EB_" + encode_string(name)
 
