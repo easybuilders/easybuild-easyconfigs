@@ -35,6 +35,7 @@ import easybuild.tools.environment as env
 import easybuild.tools.toolkit as toolkit
 from easybuild.easyblocks.n.netcdf import set_netcdf_env_vars, get_netcdf_module_set_cmds
 from easybuild.framework.application import Application
+from easybuild.framework.easyconfig import CUSTOM, MANDATORY
 from easybuild.tools.filetools import patch_perl_script_autoflush, run_cmd, run_cmd_qa
 from easybuild.tools.modules import get_software_root
 
@@ -52,12 +53,12 @@ class WRF(Application):
 
     @staticmethod
     def extra_options():
-        extra_vars = {
-                      'buildtype': [None, "Specify the type of build (serial, smpar (OpenMP), " \
-                                          "dmpar (MPI), dm+sm (hybrid OpenMP/MPI))."],
-                      'rewriteopts': [True, "Replace -O3 with CFLAGS/FFLAGS (default: True)."],
-                      'runtest': [True, "Build and run WRF tests (default: True)."]
-                     }
+        extra_vars = [
+                      ('buildtype', [None, "Specify the type of build (serial, smpar (OpenMP), " \
+                                          "dmpar (MPI), dm+sm (hybrid OpenMP/MPI)).", MANDATORY]),
+                      ('rewriteopts', [True, "Replace -O3 with CFLAGS/FFLAGS (default: True).", CUSTOM]),
+                      ('runtest', [True, "Build and run WRF tests (default: True).", CUSTOM])
+                     ]
         return Application.extra_options(extra_vars)
 
     def configure(self):

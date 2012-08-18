@@ -33,6 +33,7 @@ from distutils.version import LooseVersion
 import easybuild  # required for VERBOSE_VERSION
 import easybuild.tools.toolkit as toolkit
 from easybuild.framework.application import Application
+from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.filetools import run_cmd
 from easybuild.tools.modules import get_software_root, get_software_version
 
@@ -51,11 +52,11 @@ class Libsmm(Application):
     def extra_options():
         # default dimensions
         dd = [1,4,5,6,9,13,16,17,22]
-        extra_vars = {
-                      'transpose_flavour': [1, "Transpose flavour of routines (default: 1)"],
-                      'max_tiny_dim': [12, "Maximum tiny dimension (default: 12)"],
-                      'dims': [dd, "Generate routines for these matrix dims (default: %s)" % dd]
-                     }
+        extra_vars = [
+                      ('transpose_flavour', [1, "Transpose flavour of routines (default: 1)", CUSTOM]),
+                      ('max_tiny_dim', [12, "Maximum tiny dimension (default: 12)", CUSTOM]),
+                      ('dims', [dd, "Generate routines for these matrix dims (default: %s)" % dd, CUSTOM])
+                     ]
         return Application.extra_options(extra_vars)
 
     def configure(self):

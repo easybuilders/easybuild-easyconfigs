@@ -29,6 +29,7 @@ EasyBuild logger and log utilities, including our own EasybuildError class.
 import logging
 import os
 import sys
+import tempfile
 import time
 from socket import gethostname
 from copy import copy
@@ -160,16 +161,16 @@ def logFilename(name, version):
     Generate a filename to be used
     """
     # this can't be imported at the top, otherwise we'd have a cyclic dependency
-    from easybuild.tools.config import logFormat
+    from easybuild.tools.config import logFormat, get_build_log_path
 
     date = time.strftime("%Y%m%d")
     timeStamp = time.strftime("%H%M%S")
 
-    filename = '/tmp/' + (logFormat() % {'name':name,
-                                         'version':version,
-                                         'date':date,
-                                         'time':timeStamp
-                                         })
+    filename = os.path.join(get_build_log_path(), logFormat() % {'name':name,
+                                                                 'version':version,
+                                                                 'date':date,
+                                                                 'time':timeStamp
+                                                                 })
 
     # Append numbers if the log file already exist
     counter = 1

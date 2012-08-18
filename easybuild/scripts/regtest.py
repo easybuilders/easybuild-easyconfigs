@@ -98,10 +98,11 @@ def main():
     # Create base directory inside the current directory. This will be used to place
     # all log files and the test output as xml
     basename = "easybuild-test-%s" % datetime.now().strftime("%Y%m%d%H%M%S")
+    var = config.environmentVariables['testOutputPath']
     if opts.directory:
         output_dir = opts.directory
-    elif "EASYBUILDTESTOUTPUT" in os.environ:
-        output_dir = os.path.abspath(os.environ['EASYBUILDTESTOUTPUT'])
+    elif var in os.environ:
+        output_dir = os.path.abspath(os.environ[var])
     else:
         # Use default: Current dir + easybuil-test-timestamp
         output_dir = os.path.join(cur_dir, basename)

@@ -35,6 +35,7 @@ from distutils.version import LooseVersion
 
 import easybuild.tools.environment as env
 from easybuild.framework.application import Application
+from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.filetools import run_cmd
 from easybuild.tools.modules import get_software_root
 from easybuild.tools.systemtools import get_kernel_name, get_shared_lib_ext, get_platform_name
@@ -53,14 +54,14 @@ class GCC(Application):
 
     @staticmethod
     def extra_options():
-        extra_vars = {
-                      'languages': [[], "List of languages to build GCC for (--enable-languages) (default: [])"],
-                      'withlto': [True, "Enable LTO support (default: True)"],
-                      'withcloog': [False, "Build GCC with CLooG support (default: False)."],
-                      'withppl': [False, "Build GCC with PPL support (default: False)."],
-                      'pplwatchdog': [False, "Enable PPL watchdog (default: False)"],
-                      'clooguseisl': [False, "Use ISL with CLooG or not (use PPL otherwise) (default: False)"]
-                     }
+        extra_vars = [
+                      ('languages', [[], "List of languages to build GCC for (--enable-languages) (default: [])", CUSTOM]),
+                      ('withlto', [True, "Enable LTO support (default: True)", CUSTOM]),
+                      ('withcloog', [False, "Build GCC with CLooG support (default: False).", CUSTOM]),
+                      ('withppl', [False, "Build GCC with PPL support (default: False).", CUSTOM]),
+                      ('pplwatchdog', [False, "Enable PPL watchdog (default: False)", CUSTOM]),
+                      ('clooguseisl', [False, "Use ISL with CLooG or not (use PPL otherwise) (default: False)", CUSTOM])
+                     ]
         return Application.extra_options(extra_vars)
 
     def create_dir(self, dirname):

@@ -36,7 +36,7 @@ import tempfile
 import time
 
 import easybuild
-from easybuild.framework.easyblock import EasyBlock
+from easybuild.framework.easyconfig import EasyConfig
 from easybuild.tools.build_log import getLog
 
 
@@ -186,7 +186,7 @@ class FileRepository(Repository):
             log.debug("version (%s) of module (%s) has not been found in the repo" % (version, name))
             return []
 
-        eb = EasyBlock(dest)
+        eb = EasyConfig(dest)
         return eb['buildstats']
 
 

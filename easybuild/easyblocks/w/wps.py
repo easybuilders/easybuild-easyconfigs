@@ -38,6 +38,7 @@ import easybuild.tools.environment as env
 import easybuild.tools.toolkit as toolkit
 from easybuild.easyblocks.n.netcdf import set_netcdf_env_vars, get_netcdf_module_set_cmds
 from easybuild.framework.application import Application
+from easybuild.framework.easyconfig import CUSTOM, MANDATORY
 from easybuild.tools.filetools import patch_perl_script_autoflush, run_cmd, run_cmd_qa, unpack
 from easybuild.tools.modules import get_software_root, get_software_version
 
@@ -62,11 +63,11 @@ class WPS(Application):
                          "http://www.mmm.ucar.edu/wrf/src/wps_files/geog.tar.gz" # 697MB download, 16GB unpacked!
                         ]
 
-        extra_vars = {
-                      'buildtype': [None, "Specify the type of build (smpar: OpenMP, dmpar: MPI)."],
-                      'runtest': [True, "Build and run WPS tests (default: True)."],
-                      'testdata': [testdata_urls, "URL to test data required to run WPS test (default: %s)." % testdata_urls]
-                     }
+        extra_vars = [
+                      ('buildtype', [None, "Specify the type of build (smpar: OpenMP, dmpar: MPI).", MANDATORY]),
+                      ('runtest', [True, "Build and run WPS tests (default: True).", CUSTOM]),
+                      ('testdata', [testdata_urls, "URL to test data required to run WPS test (default: %s)." % testdata_urls, CUSTOM])
+                     ]
         return Application.extra_options(extra_vars)
 
     def configure(self):
