@@ -213,7 +213,10 @@ class PETSc(Application):
     # default make should be fine
 
     def make_install(self):
-        """Install using make install (for non-source installations), or by symlinking files (old versions)."""
+        """
+        Install using make install (for non-source installations), 
+        or by symlinking files (old versions, < 3).
+        """
         if LooseVersion(self.version()) >= LooseVersion("3"):
             if not self.getcfg('sourceinstall'):
                 Application.make_install(self)
