@@ -85,21 +85,21 @@ def add_cmdline_options(parser):
     parser.add_option_group(basic_options)
 
     # software build options
-    easyconfig_options = OptionGroup(parser, "Software build options",
+    software_build_options = OptionGroup(parser, "Software build options",
                                      "Specify software build options (overrides settings in easyconfig.")
 
-    easyconfig_options.add_option("--software-name", metavar="VERSION",
+    software_build_options.add_option("--software-name", metavar="VERSION",
                                 help="build software package with given name")
-    easyconfig_options.add_option("--software-version", metavar="VERSION",
+    software_build_options.add_option("--software-version", metavar="VERSION",
                                 help="build software with this particular version")
-    easyconfig_options.add_option("--toolkit", metavar="NAME,VERSION",
+    software_build_options.add_option("--toolkit", metavar="NAME,VERSION",
                                 help="build with specified toolkit (name and version)")
-    easyconfig_options.add_option("--toolkit-version", metavar="VERSION",
+    software_build_options.add_option("--toolkit-version", metavar="VERSION",
                                 help="build with specified toolkit version")
-    easyconfig_options.add_option("--add-patches", metavar="PATCH_1[,PATCH_N]",
+    software_build_options.add_option("--add-patches", metavar="PATCH_1[,PATCH_N]",
                                 help="add additional patch files")
 
-    parser.add_option_group(easyconfig_options)
+    parser.add_option_group(software_build_options)
 
     # override options
     override_options = OptionGroup(parser, "Override options", "Override default EasyBuild behavior.")
