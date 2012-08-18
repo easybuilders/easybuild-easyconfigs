@@ -39,16 +39,18 @@ class Trilinos(CMake):
                       'shared_libs': [False, "BUild shared libs; if False, build static libs. (default: False)."],
                       'openmp': [True, "Enable OpenMP support (default: True)"],
                       'all_pkgs': [True, "Enable all packages (default: True)"],
-                      'skip_pkgs': [[], "List of packages to skip (default: [])"]
+                      'skip_pkgs': [[], "List of packages to skip (default: [])"],
+                      'verbose': [False, 'Configure for verbose output (default: False)']
                      }
         return CMake.extra_options(extra_vars)
 
     def configure(self):
         """Set some extra environment variables before configuring."""
 
-        # enable verbose output
-        #for x in ["CONFIGURE", "MAKEFILE"]:
-        #    self.updatecfg('configopts', "-DTrilinos_VERBOSE_%s:BOOL=ON" % x)
+        # enable verbose output if desired
+        if self.getcfg('verbose'):
+            for x in ["CONFIGURE", "MAKEFILE"]:
+                self.updatecfg('configopts', "-DTrilinos_VERBOSE_%s:BOOL=ON" % x)
 
         # compiler flags
         cflags = os.getenv('CFLAGS')
