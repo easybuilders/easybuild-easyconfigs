@@ -153,16 +153,17 @@ class DOLFIN(CMakePythonPackage):
         txt = CMakePythonPackage.make_module_extra(self)
 
         # Dolfin needs to find Boost and the UFC pkgconfig file
-        txt += "setenv\tBOOST_DIR\t%s\n" % get_software_root('Boost')
-        txt += "prepend-path\tPKG_CONFIG_PATH\t%s/lib/pkgconfig\n" % get_software_root('UFC')
-        txt += "prepend-path\tPKG_CONFIG_PATH\t%s/lib/pkgconfig\n" % self.installdir
+        txt += self.moduleGenerator.setEnvironment('BOOST_DIR', get_software_root('Boost'))
+        pkg_config_paths = [os.path.join(get_software_root('UFC'), "lib", "pkgconfig"),
+                            os.path.join(self.installdir, "lib", "pkgconfig")]
+        txt += self.moduleGenerator.prependPaths("PKG_CONFIG_PATH", pkg_config_paths)
 
         envvars = ['I_MPI_CXX', 'I_MPI_CC']
         for envvar in envvars:
             envar_val = os.getenv(envvar)
             # if environment variable is set, also set it in module
             if envar_val:
-                txt += "setenv\t%s\t%s\n" % (envvar, envar_val)
+                txt += self.moduleGenerator.setEnvironment(envvar, envar_val)
 
         return txt
 
