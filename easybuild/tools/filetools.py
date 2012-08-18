@@ -37,8 +37,8 @@ import tempfile
 import time
 
 import easybuild.tools.environment as env
-from easybuild.tools.asyncprocess import Popen, PIPE, STDOUT, send_all, \
-    recv_some
+from easybuild.tools.asyncprocess import Popen, PIPE, STDOUT
+from easybuild.tools.asyncprocess import send_all, recv_some
 from easybuild.tools.build_log import getLog
 
 
