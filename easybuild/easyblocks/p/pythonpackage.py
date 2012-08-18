@@ -84,10 +84,6 @@ class PythonPackage(Application):
 
         txt = Application.make_module_extra(self)
 
-        # geting installation directory with distutils doesn't work in Python 2.4
-        #installdir = distutils.sysconfig.get_python_lib(plat_specific=True,
-        #                                                prefix=self.installdir)
-
         txt += "prepend-path\tPYTHONPATH\t%s\n" % os.path.join(self.installdir , self.pylibdir)
 
         return txt
