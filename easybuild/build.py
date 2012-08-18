@@ -62,27 +62,44 @@ def add_cmdline_options(parser):
     Add build options to options parser
     """
     # runtime options
-    runtime_options = OptionGroup(parser, "Runtime options", "Steer EasyBuild behavior.")
+    basic_options = OptionGroup(parser, "Basic options", "Basic runtime options for EasyBuild.")
 
-    runtime_options.add_option("-b", "--only-blocks", metavar="BLOCKS", help="Only build blocks blk[,blk2]")
-    runtime_options.add_option("-d", "--debug" , action="store_true", help="log debug messages")
-    runtime_options.add_option("-f", "--force", action="store_true", dest="force",
+    basic_options.add_option("-b", "--only-blocks", metavar="BLOCKS", help="Only build blocks blk[,blk2]")
+    basic_options.add_option("-d", "--debug" , action="store_true", help="log debug messages")
+    basic_options.add_option("-f", "--force", action="store_true", dest="force",
                         help="force to rebuild software even if it's already installed (i.e. can be found as module)")
-    runtime_options.add_option("--job", action="store_true", help="will submit the build as a job")
-    runtime_options.add_option("-k", "--skip", action="store_true",
+    basic_options.add_option("--job", action="store_true", help="will submit the build as a job")
+    basic_options.add_option("-k", "--skip", action="store_true",
                         help="skip existing software (useful for installing additional packages)")
-    runtime_options.add_option("-l", action="store_true", dest="stdoutLog", help="log to stdout")
-    runtime_options.add_option("-r", "--robot", metavar="PATH",
+    basic_options.add_option("-l", action="store_true", dest="stdoutLog", help="log to stdout")
+    basic_options.add_option("-r", "--robot", metavar="PATH",
                         help="path to search for easyconfigs for missing dependencies")
-    runtime_options.add_option("--regtest", action="store_true", help="enable regression test mode")
-    runtime_options.add_option("--regtest-online", action="store_true", help="enable online regression test mode")
-    runtime_options.add_option("-s", "--stop", type="choice", choices=EasyConfig.validstops,
+    basic_options.add_option("--regtest", action="store_true", help="enable regression test mode")
+    basic_options.add_option("--regtest-online", action="store_true", help="enable online regression test mode")
+    basic_options.add_option("-s", "--stop", type="choice", choices=EasyConfig.validstops,
                         help="stop the installation after certain step (valid: %s)" % ', '.join(EasyConfig.validstops))
     strictness_options = ['ignore', 'warn', 'error']
-    runtime_options.add_option("--strict", type="choice", choices=strictness_options, help="set strictness " + \
+    basic_options.add_option("--strict", type="choice", choices=strictness_options, help="set strictness " + \
                                "level (possible levels: %s)" % ', '.join(strictness_options))
-    
-    parser.add_option_group(runtime_options)
+
+    parser.add_option_group(basic_options)
+
+    # software build options
+    easyconfig_options = OptionGroup(parser, "Software build options",
+                                     "Specify software build options (overrides settings in easyconfig.")
+
+    easyconfig_options.add_option("--software-name", metavar="VERSION",
+                                help="build software package with given name")
+    easyconfig_options.add_option("--software-version", metavar="VERSION",
+                                help="build software with this particular version")
+    easyconfig_options.add_option("--toolkit", metavar="NAME,VERSION",
+                                help="build with specified toolkit (name and version)")
+    easyconfig_options.add_option("--toolkit-version", metavar="VERSION",
+                                help="build with specified toolkit version")
+    easyconfig_options.add_option("--add-patches", metavar="PATCH_1[,PATCH_N]",
+                                help="add additional patch files")
+
+    parser.add_option_group(easyconfig_options)
 
     # override options
     override_options = OptionGroup(parser, "Override options", "Override default EasyBuild behavior.")
@@ -96,7 +113,7 @@ def add_cmdline_options(parser):
                                 "a test directory located in $HOME/easybuildinstall [default: $EASYBUILDINSTALLDIR " \
                                 "or installiPath in EasyBuild config file]")
     override_options.add_option("-t", "--skip-tests", action="store_true", help="skip testing")
-    
+
     parser.add_option_group(override_options)
 
     # informative options
@@ -111,21 +128,6 @@ def add_cmdline_options(parser):
     informative_options.add_option("-v", "--version", action="store_true", help="show version")
 
     parser.add_option_group(informative_options)
-
-    # tweaking options
-    tweaking_options = OptionGroup(parser, "Tweaking options",
-                                   "Tweak the parameters in the supplied easyconfig (.eb) file.")
-
-    tweaking_options.add_option("--tweak-version", metavar="VERSION",
-                                help="tweak software version to given version")
-    tweaking_options.add_option("--tweak-toolkit", metavar="NAME,VERSION",
-                                help="tweak toolkit (name and version)")
-    tweaking_options.add_option("--tweak-toolkit-version", metavar="VERSION",
-                                help="tweak toolkit version")
-    tweaking_options.add_option("--add-patches", metavar="PATCH_1[,PATCH_N]",
-                                help="add additional patch files")
-    
-    parser.add_option_group(tweaking_options)
 
 
 def main():
@@ -220,19 +222,19 @@ def main():
     # collect tweaks for easyconfig files
     easyconfig_tweaks = []
 
-    if options.tweak_version:
-        easyconfig_tweaks.append(('set_version', options.tweak_version))
+    if options.software_version:
+        easyconfig_tweaks.append(('set_version', options.software_version))
 
-    if options.tweak_toolkit:
-        tk = options.tweak_toolkit.split(',')
+    if options.toolkit:
+        tk = options.toolkit.split(',')
         if not len(tk) == 2:
-            error("Please specify to toolkit to tweak with as 'name,version' (e.g., 'goalf,1.1.0').")
+            error("Please specify to toolkit to use as 'name,version' (e.g., 'goalf,1.1.0').")
         [toolkit_name, toolkit_version] = tk
         easyconfig_tweaks.extend([('set_toolkit_name', toolkit_name),
                                   ('set_toolkit_version', toolkit_version)])
 
-    if options.tweak_toolkit_version:
-        easyconfig_tweaks.append(('set_toolkit_version', options.tweak_toolkit_version))
+    if options.toolkit_version:
+        easyconfig_tweaks.append(('set_toolkit_version', options.toolkit_version))
 
     if options.add_patches:
         easyconfig_tweaks.append(('add_patches', options.add_patches.split(',')))

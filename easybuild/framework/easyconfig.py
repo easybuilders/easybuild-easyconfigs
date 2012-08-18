@@ -355,7 +355,6 @@ class EasyConfig:
             if type(x) == str:
                 x = "'%s'" % x
             self.log.info("Tweaking easyconfig with %s(%s)" % (f, x))
-            print 'Tweaking easyconfig with %s(%s)' % (f, x)
             try:
                 eval('self.%s(%s)' % (f, x))
             except (AttributeError, TypeError), err:
