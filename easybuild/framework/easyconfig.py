@@ -304,15 +304,8 @@ class EasyConfig:
         """
         return the installation version name
         """
-        prefix, suffix = self['versionprefix'], self['versionsuffix']
-
-        if self.toolkit_name() == 'dummy':
-            name = "%s%s%s" % (prefix, self['version'], suffix)
-        else:
-            extra = "%s-%s" % (self.toolkit_name(), self.toolkit_version())
-            name = "%s%s-%s%s" % (prefix, self['version'], extra, suffix)
-
-        return name
+        return det_installversion(self['version'], self.toolkit_name(), self.toolkit_version(),
+                                  self['versionprefix'], self['versionsuffix'])
 
     def name(self):
         """
@@ -325,6 +318,18 @@ class EasyConfig:
         Set version
         """
         self['version'] = version
+
+    def set_versionprefix(self, prefix):
+        """
+        Set version prefix
+        """
+        self['versionprefix'] = prefix
+
+    def set_versionsuffix(self, suffix):
+        """
+        Set version suffix
+        """
+        self['versionsuffix'] = suffix
 
     def set_toolkit_name(self, name):
         """
@@ -441,6 +446,19 @@ class EasyConfig:
         """
         self.config[key][0] = value
 
+
+def det_installversion(version, toolkit_name, toolkit_version, prefix, suffix):
+    """
+    Determine exact install version, based on supplied parameters.
+    e.g. 1.2.3-goalf-1.1.0-no-OFED or 1.2.3 (for dummy toolkits)
+    """
+    installversion = None
+    if toolkit_name == 'dummy':
+        installversion = "%s%s%s" % (prefix, version, suffix)
+    else:
+        extra = "%s-%s" % (toolkit_name, toolkit_version)
+        installversion = "%s%s-%s%s" % (prefix, version, extra, suffix)
+    return installversion
 
 def sorted_categories():
     """

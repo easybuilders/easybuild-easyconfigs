@@ -286,14 +286,22 @@ patches = %s
     def runTest(self):
 
         ver = "1.2.3"
+        verpref = "myprefix"
+        versuff = "mysuffix"
         tkname = "mytk"
         tkver = "4.1.2"
         extra_patches = ['t5.patch', 't6.patch']
 
         eb = EasyConfig(self.eb_file)
-        tweaks = [('set_version', ver), ('set_toolkit_version', tkver), ('add_patches', extra_patches)]
+        tweaks = [('set_version', ver),
+                  ('set_versionprefix', verpref),
+                  ('set_versionsuffix', versuff),
+                  ('set_toolkit_version', tkver),
+                  ('add_patches', extra_patches)]
         eb.tweak(tweaks)
         self.assertEqual(eb['version'], ver)
+        self.assertEqual(eb['versionprefix'], verpref)
+        self.assertEqual(eb['versionsuffix'], versuff)
         self.assertEqual(eb['toolkit']['version'], tkver)
         self.assertEqual(eb['patches'], self.patches + extra_patches)
 
