@@ -721,14 +721,21 @@ def patch_perl_script_autoflush(path):
 
 def encode_string(name):
     """
-    Here is an encoding function to handle funky package names ad infinitum;
-    it has been inspired by the concept seen at:
-    * http://fossies.org/dox/netcdf-4.2.1.1/escapes_8c_source.html # in effect, current names are a lower case derivative of this one
+
+    This encoding function handles funky package names ad infinitum, like:
+    example: '0_foo+0x0x#-$__'
+    becomes: '0_underscore_foo_plus_0x0x_hash__minus__dollar__underscore__underscore_'
+
+    It has been inspired by the concepts seen at, but in lowercase style:
+    * http://fossies.org/dox/netcdf-4.2.1.1/escapes_8c_source.html
     * http://celldesigner.org/help/CDH_Species_01.html
     * http://research.cs.berkeley.edu/project/sbp/darcsrepo-no-longer-updated/src/edu/berkeley/sbp/misc/ReflectiveWalker.java
-    and can be extended freely as per ISO/IEC 10646:2012 / Unicode 6.1 names, as long as they are described in _CamelCase_ style iff more than 2 words, for readability: 
-    http://www.unicode.org/versions/Unicode6.1.0/ 
-    So, yes, '_GreekSmallLetterEtaWithPsiliAndOxia_' *can* indeed be a fully valid package name; package "electron" in the original spelling anyone? ;-)
+    and can be extended freely as per ISO/IEC 10646:2012 / Unicode 6.1 names:
+    * http://www.unicode.org/versions/Unicode6.1.0/ 
+    For readability of >2 words, it is suggested to use _CamelCase_ style.
+    So, yes, '_GreekSmallLetterEtaWithPsiliAndOxia_' *could* indeed be a fully
+    valid package name; package "electron" in the original spelling anyone? ;-)
+
     """
 
     charmap = {
@@ -767,6 +774,7 @@ def encode_string(name):
                '~': "_tilde_"
               }
 
-    result = ''.join(map(lambda x: charmap.get(x, x), name)) # do the remapping and do return same char by default
+    # do the remapping and do return same char by default
+    result = ''.join(map(lambda x: charmap.get(x, x), name))
     return result
 
