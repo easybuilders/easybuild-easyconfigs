@@ -593,8 +593,8 @@ class Toolkit:
                 libs.replace('mkl_intel_lp64', 'mkl_gf_lp64')
 
         # sequential BLAS and LAPACK
-        prefix = "-Wl:-Bstatic -Wl,--start-group"
-        suffix = "-Wl,--end-group -Wl:-Bdynamic"
+        prefix = "-Wl,-Bstatic -Wl,--start-group"
+        suffix = "-Wl,--end-group -Wl,-Bdynamic"
         self.vars['LIBBLAS'] =  ' '.join([prefix, ' '.join(["-lmkl_%s" % x for x in blas_libs]), suffix])
         self.vars['LIBLAPACK'] = self.vars['LIBBLAS']
 
@@ -636,7 +636,7 @@ class Toolkit:
         self.vars['SCALAPACK_INC_DIR'] = os.path.join(mklroot, "mkl", "include")
         self.vars['SCALAPACK_LIB_DIR'] = libs_dir
 
-        suffix = "-Wl,--end-group -Wl:-Bdynamic"
+        suffix = "-Wl,--end-group -Wl,-Bdynamic"
         self.vars['LIBSCALAPACK'] = ' '.join([prefix, ' '.join(["-lmkl_%s" % x for x in scalapack_libs]), suffix])
         self.vars['SCALAPACK_STATIC_LIBS'] = ','.join(["libmkl_%s.a" % x for x in scalapack_libs])
 
@@ -652,9 +652,9 @@ class Toolkit:
         fftw_libs = ["fftw3xc_intel%s" % fftwsuff,
                      "fftw3x_cdft%s" % fftwsuff,
                      "mkl_cdft_core"]
-        self.vars['LIBFFT'] = ' '.join(["-Wl:-Bstatic",
+        self.vars['LIBFFT'] = ' '.join(["-Wl,-Bstatic",
                                         ' '.join(["-%s" % x for x in fftw_libs]),
-                                        "-Wl:-Bdynamic"])
+                                        "-Wl,-Bdynamic"])
         self.vars['FFTW_INC_DIR'] = os.path.join(mklroot, "mkl", "include", "fftw")
         self.vars['FFTW_LIB_DIR'] = libs_dir
         fftw_static_libs = ["lib%s.a" % x for x in fftw_libs]
@@ -667,7 +667,6 @@ class Toolkit:
                 for var in [x, "%s_MT" % x]:
                     self.vars[var] = self.vars[var].replace(" ", ",")
                     self.vars[var] = self.vars[var].replace(",-Wl,", ",")
-                    self.vars[var] = self.vars[var].replace(",-Wl:", ",")
 
         # linker flags
         self._flagsForSubdirs(mklroot, mklld, flag="-L%s", varskey="LDFLAGS")
