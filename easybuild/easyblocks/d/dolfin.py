@@ -185,7 +185,8 @@ class DOLFIN(CMakePythonPackage):
             pref = os.path.join('share', 'dolfin', 'demo')
 
             # test command template
-            cmd_template = "cd %s && python demo_%s.py && cd -"
+            cmd_template = " && ".join(["echo", "echo '+++ RUNNING DEMO %(name)s'", "echo",
+                                        "cd %(dir)s", "python demo_%(name)s.py", "cd -"])
 
             # list based on demos available for DOLFIN v1.0.0
             pde_demos = ['biharmonic', 'cahn-hilliard', 'hyperelasticity', 'mixed-poisson',
@@ -194,7 +195,10 @@ class DOLFIN(CMakePythonPackage):
             demos = [os.path.join('la', 'eigenvalue')] + [os.path.join('pde', x) for x in pde_demos]
 
             # construct commands
-            cmds = [cmd_template % (os.path.join(pref, d, 'python'), os.path.basename(d))
+            cmds = [cmd_template % {
+                                    'dir': os.path.join(pref, d, 'python'),
+                                    'name': os.path.basename(d),
+                                    }
                     for d in demos]
 
             # join all commands into one large single sanity check command
