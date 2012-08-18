@@ -117,7 +117,7 @@ class ParMETIS(Application):
 
             # libraries
             try:
-                src = os.path.join(self.getcfg('startfrom'), 'build/libmetis/libmetis.a')
+                src = os.path.join(self.getcfg('startfrom'), 'build' ,'libmetis' ,'libmetis.a')
                 dst = os.path.join(libdir, 'libmetis.a')
                 shutil.copy2(src, dst)
             except OSError, err:
@@ -125,7 +125,7 @@ class ParMETIS(Application):
 
             # include files
             try:
-                src = os.path.join(self.getcfg('startfrom'), 'build/metis/include/metis.h')
+                src = os.path.join(self.getcfg('startfrom'), 'build', 'metis', 'include', 'metis.h')
                 dst = os.path.join(includedir, 'metis.h')
                 shutil.copy2(src, dst)
             except OSError, err:
