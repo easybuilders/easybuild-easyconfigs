@@ -29,6 +29,7 @@ Main entry point for EasyBuild: build software from .eb input file
 """
 
 import copy
+import glob
 import platform
 import os
 import re
@@ -88,12 +89,18 @@ def add_cmdline_options(parser):
     software_build_options = OptionGroup(parser, "Software build options",
                                      "Specify software build options (overrides settings in easyconfig.")
 
-    software_build_options.add_option("--software-name", metavar="VERSION",
+    software_build_options.add_option("--software-name", metavar="NAME",
                                 help="build software package with given name")
     software_build_options.add_option("--software-version", metavar="VERSION",
                                 help="build software with this particular version")
+    software_build_options.add_option("--software-versionprefix", metavar="PREFIX",
+                                help="build software with this particular version prefix")
+    software_build_options.add_option("--software-versionsuffix", metavar="SUFFIX",
+                                help="build software with this particular version suffix")
     software_build_options.add_option("--toolkit", metavar="NAME,VERSION",
                                 help="build with specified toolkit (name and version)")
+    software_build_options.add_option("--toolkit-name", metavar="NAME",
+                                help="build with specified toolkit name")
     software_build_options.add_option("--toolkit-version", metavar="VERSION",
                                 help="build with specified toolkit version")
     software_build_options.add_option("--add-patches", metavar="PATCH_1[,PATCH_N]",
@@ -219,30 +226,24 @@ def main():
     if options.strict:
         filetools.strictness = options.strict
 
+    # process software build options, i.e.
+    # software name/version, toolkit name/version, extra patches, ...
+    software_build_options = process_software_build_options(options)
+
     # collect tweaks for easyconfig files
-    easyconfig_tweaks = []
-
-    if options.software_version:
-        easyconfig_tweaks.append(('set_version', options.software_version))
-
-    if options.toolkit:
-        tk = options.toolkit.split(',')
-        if not len(tk) == 2:
-            error("Please specify to toolkit to use as 'name,version' (e.g., 'goalf,1.1.0').")
-        [toolkit_name, toolkit_version] = tk
-        easyconfig_tweaks.extend([('set_toolkit_name', toolkit_name),
-                                  ('set_toolkit_version', toolkit_version)])
-
-    if options.toolkit_version:
-        easyconfig_tweaks.append(('set_toolkit_version', options.toolkit_version))
-
-    if options.add_patches:
-        easyconfig_tweaks.append(('add_patches', options.add_patches.split(',')))
+    easyconfig_tweaks = setup_easyconfig_tweaks(software_build_options)
 
     # read easyconfig files
     packages = []
     if len(paths) == 0:
-        error("Please provide one or more easyconfig files", optparser=parser)
+        if software_build_options.has_key('name'):
+            # if no easyconfig files/paths were provided, but we did get a software name,
+            # we can try and find a suitable easyconfig ourselves
+            paths = find_best_matching_easyconfigs(log, software_build_options, options.robot)
+
+        else:
+            error("Please provide one or multiple easyconfig files, or use software build " \
+                  "options to make EasyBuild search for easyconfigs", optparser=parser)
 
     for path in paths:
         path = os.path.abspath(path)
@@ -349,9 +350,10 @@ def error(message, exitCode=1, optparser=None):
     """
     Print error message and exit EasyBuild
     """
-    print_msg("ERROR: %s\n" % message)
+    print_msg("\nERROR: %s\n" % message)
     if optparser:
         optparser.print_help()
+        print_msg("\nERROR: %s\n" % message)
     sys.exit(exitCode)
 
 def findEasyconfigs(path, log):
@@ -537,6 +539,108 @@ def create_paths(path, name, version):
             os.path.join(path, name.lower()[0], name, "%s-%s.eb" % (name, version)),
             os.path.join(path, "%s-%s.eb" % (name, version)),
            ]
+
+def process_software_build_options(options):
+    """
+    Create a dictionary with specified software build options.
+    The options arguments should be a parsed option list (as delivered by OptionParser.parse_args)
+    """
+
+    buildopts = {}
+
+    if options.software_name:
+        buildopts.update({'name': options.software_name})
+
+    if options.software_version:
+        buildopts.update({'version': options.software_version})
+
+    if options.software_versionprefix:
+        buildopts.update({'versionprefix': options.software_versionprefix})
+
+    if options.software_versionsuffix:
+        buildopts.update({'versionsuffix': options.software_versionsuffix})
+
+    if options.toolkit:
+        tk = options.toolkit.split(',')
+        if not len(tk) == 2:
+            error("Please specify to toolkit to use as 'name,version' (e.g., 'goalf,1.1.0').")
+        [toolkit_name, toolkit_version] = tk
+        buildopts.update({'toolkit_name': toolkit_name})
+        buildopts.update({'toolkit_version': toolkit_version})
+
+    if options.toolkit_name:
+        buildopts.update({'toolkit_name': options.toolkit_name})
+
+    if options.toolkit_version:
+        buildopts.update({'toolkit_version': options.toolkit_version})
+
+    if options.add_patches:
+        buildopts.update({'patches': options.add_patches.split(',')})
+
+    return buildopts
+
+def setup_easyconfig_tweaks(buildopts):
+    """
+    Create a list of tweaks for easyconfig files.
+
+    Each tweak has the format (<function_name>, <value>), in which function_name is the name of
+    EasyConfig class function that will be called with the given value
+    """
+
+    tweaks = []
+
+    if buildopts.has_key('version'):
+        tweaks.append(('set_version', buildopts['version']))
+
+    if buildopts.has_key('versionprefix'):
+        tweaks.append(('set_versionprefix', buildopts['versionprefix']))
+
+    if buildopts.has_key('versionsuffix'):
+        tweaks.append(('set_versionsuffix', buildopts['versionsuffix']))
+
+    if buildopts.has_key('toolkit_name'):
+        tweaks.append(('set_toolkit_name', buildopts['toolkit_name']))
+
+    if buildopts.has_key('toolkit_version'):
+        tweaks.append(('set_toolkit_version', buildopts['toolkit_version']))
+
+    if buildopts.has_key('patches'):
+        tweaks.append(('add_patches', buildopts['patches']))
+
+    return tweaks
+
+def find_best_matching_easyconfigs(log, buildopts, robot):
+
+    # collect paths to search in
+    paths = []
+    if robot:
+        paths.append(robot)
+
+    if not paths:
+        log.error("No paths to look for easyconfig files, specify a path with --robot.")
+
+    # create glob patterns based on supplied info
+
+    # figure out the install version
+    ver = buildopts.get('version', '*')
+    tkname = buildopts.get('toolkit_name', '*')
+    tkver = buildopts.get('toolkit_version', '*')
+    verpref = buildopts.get('versionprefix', '*')
+    versuff = buildopts.get('versionsuffix', '*')
+    installver = easyconfig.det_installversion(ver, tkname, tkver, verpref, versuff)
+
+    patterns = []
+    for path in paths:
+        patterns.extend(create_paths(path, buildopts['name'], installver))
+
+    # find easyconfigs that match
+    easyconfig_files = []
+    for pattern in patterns:
+        easyconfig_files.extend(glob.glob(pattern))
+
+    log.debug("List of obtained easyconfig files: %s" % easyconfig_files)
+
+    error("Not implemented yet")
 
 def robotFindEasyconfig(log, path, module):
     """
