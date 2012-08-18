@@ -35,7 +35,7 @@ from easybuild.framework.application import Application
 from easybuild.tools.modules import get_software_root, get_software_version
 
 
-class NetCDF(Application):
+class EB_netCDF(Application):
     """Support for building/installing netCDF"""
 
     def configure(self):

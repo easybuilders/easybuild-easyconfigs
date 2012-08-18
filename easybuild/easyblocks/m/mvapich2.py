@@ -33,7 +33,7 @@ from easybuild.framework.application import Application
 from easybuild.framework.easyconfig import CUSTOM
 
 
-class MVAPICH2(Application):
+class EB_MVAPICH2(Application):
     """
     Support for building the MVAPICH2 MPI library.
     - some compiler dependent configure options

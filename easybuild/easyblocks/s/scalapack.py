@@ -38,7 +38,7 @@ from easybuild.framework.application import Application
 from easybuild.tools.modules import get_software_root
 
 
-class ScaLAPACK(Application):
+class EB_ScaLAPACK(Application):
     """
     Support for building and installing ScaLAPACK, both versions 1.x and 2.x
     """

@@ -33,7 +33,7 @@ from easybuild.framework.application import Application
 from easybuild.tools.filetools import run_cmd
 
 
-class HPL(Application):
+class EB_HPL(Application):
     """
     Support for building HPL (High Performance Linpack)
     - create Make.UNKNOWN

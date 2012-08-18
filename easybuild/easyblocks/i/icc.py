@@ -32,7 +32,7 @@ from distutils.version import LooseVersion
 from easybuild.easyblocks.i.intelbase import IntelBase
 
 
-class Icc(IntelBase):
+class EB_icc(IntelBase):
     """Support for installing icc
 
     - tested with 11.1.046

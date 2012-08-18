@@ -40,7 +40,7 @@ from easybuild.tools.filetools import patch_perl_script_autoflush, run_cmd, run_
 from easybuild.tools.modules import get_software_root
 
 
-class WRF(Application):
+class EB_WRF(Application):
     """Support for building/installing WRF."""
 
     def __init__(self,*args,**kwargs):

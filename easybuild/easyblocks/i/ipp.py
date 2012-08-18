@@ -29,7 +29,7 @@ EasyBuild support for installing the Intel Performance Primitives (IPP) library,
 from easybuild.easyblocks.i.intelbase import IntelBase
 
 
-class Ipp(IntelBase):
+class EB_ipp(IntelBase):
 
     def sanitycheck(self):
 
