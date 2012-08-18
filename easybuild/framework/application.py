@@ -45,14 +45,11 @@ import easybuild.tools.environment as env
 from easybuild.framework.easyconfig import EasyConfig
 from easybuild.tools.build_log import EasyBuildError, initLogger, removeLogHandler,print_msg
 from easybuild.tools.config import source_path, buildPath, installPath
-from easybuild.tools.filetools import unpack, patch, run_cmd, convertName, encode_string
+from easybuild.tools.filetools import unpack, patch, run_cmd, convertName, encode_class_name
 from easybuild.tools.module_generator import ModuleGenerator
 from easybuild.tools.modules import Modules, get_software_root
 from easybuild.tools.toolkit import Toolkit
 from easybuild.tools.systemtools import get_core_count
-
-
-EBCLASSPREFIX = 'eb_'
 
 
 class Application:
@@ -1404,7 +1401,7 @@ class Application:
         allclassmodule = pkgdefaultclass[0]
         defaultClass = pkgdefaultclass[1]
         for pkg in self.pkgs:
-            name = EBCLASSPREFIX + encode_string(pkg['name']) # Use the same encoding as get_class
+            name = encode_class_name(pkg['name']) # Use the same encoding as get_class
             self.log.debug("Starting package %s" % name)
 
             try:
@@ -1570,7 +1567,7 @@ def get_class(easyblock, log, name=None):
 
             modulepath = module_path_for_easyblock(name)
             # The following is a generic way to calculate unique class names for any funny package title
-            class_name = EBCLASSPREFIX + encode_string(name)
+            class_name = encode_class_name(name)
 
             # try and find easyblock
             easyblock_found = False

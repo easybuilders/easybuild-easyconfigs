@@ -723,8 +723,9 @@ def encode_string(name):
     """
 
     This encoding function handles funky package names ad infinitum, like:
-    example: '0_foo+0x0x#-$__'
-    becomes: '0_underscore_foo_plus_0x0x_hash__minus__dollar__underscore__underscore_'
+      example: '0_foo+0x0x#-$__'
+      becomes: '0_underscore_foo_plus_0x0x_hash__minus__dollar__underscore__underscore_'
+    The intention is to have a robust escaping mechanism for names like c++, C# et al
 
     It has been inspired by the concepts seen at, but in lowercase style:
     * http://fossies.org/dox/netcdf-4.2.1.1/escapes_8c_source.html
@@ -774,7 +775,10 @@ def encode_string(name):
                '~': "_tilde_"
               }
 
-    # do the remapping and do return same char by default
+    # do the character remapping, return same char by default
     result = ''.join(map(lambda x: charmap.get(x, x), name))
     return result
+
+def encode_class_name(name):
+    return "EB_" + encode_string(name)
 
