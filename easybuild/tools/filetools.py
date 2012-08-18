@@ -717,3 +717,56 @@ def patch_perl_script_autoflush(path):
 
     except IOError, err:
         log.error("Failed to patch Perl configure script: %s" % err)
+
+
+def encode_string(name):
+    """
+    Here is an encoding function to handle funky package names ad infinitum;
+    it has been inspired by the concept seen at:
+    * http://fossies.org/dox/netcdf-4.2.1.1/escapes_8c_source.html # in effect, current names are a lower case derivative of this one
+    * http://celldesigner.org/help/CDH_Species_01.html
+    * http://research.cs.berkeley.edu/project/sbp/darcsrepo-no-longer-updated/src/edu/berkeley/sbp/misc/ReflectiveWalker.java
+    and can be extended freely as per ISO/IEC 10646:2012 / Unicode 6.1 names, as long as they are described in _CamelCase_ style iff more than 2 words, for readability: 
+    http://www.unicode.org/versions/Unicode6.1.0/ 
+    So, yes, '_GreekSmallLetterEtaWithPsiliAndOxia_' *can* indeed be a fully valid package name; package "electron" in the original spelling anyone? ;-)
+    """
+
+    charmap = {
+               ' ': "_space_",
+               '!': "_exclamation_",
+               '"': "_quotation_",
+               '#': "_hash_",
+               '$': "_dollar_",
+               '%': "_percent_",
+               '&': "_ampersand_",
+               '(': "_leftparen_",
+               ')': "_rightparen_",
+               '*': "_asterisk_",
+               '+': "_plus_",
+               ',': "_comma_",
+               '-': "_minus_",
+               '.': "_period_",
+               '/': "_slash_",
+               ':': "_colon_",
+               ';': "_semicolon_",
+               '<': "_lessthan_",
+               '=': "_equals_",
+               '>': "_greaterthan_",
+               '?': "_question_",
+               '@': "_atsign_",
+               '[': "_leftbracket_",
+               '\'': "_apostrophe_",
+               '\\': "_backslash_",
+               ']': "_rightbracket_",
+               '^': "_circumflex_",
+               '_': "_underscore_",
+               '`': "_backquote_",
+               '{': "_leftcurly_",
+               '|': "_verticalbar_",
+               '}': "_rightcurly_",
+               '~': "_tilde_"
+              }
+
+    result = ''.join(map(lambda x: charmap(x, x), name)   # do the remapping and do return same char by default
+    return result
+
