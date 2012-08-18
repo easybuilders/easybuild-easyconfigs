@@ -35,7 +35,7 @@ from easybuild.tools.filetools import run_cmd
 from easybuild.tools.modules import get_software_root
 
 
-class ATLAS(Application):
+class EB_ATLAS(Application):
     """
     Support for building ATLAS
     - configure (and check if it failed due to CPU throttling being enabled)

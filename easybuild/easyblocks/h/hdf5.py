@@ -32,7 +32,7 @@ from easybuild.framework.application import Application
 from easybuild.tools.modules import get_software_root
 
 
-class HDF5(Application):
+class EB_HDF5(Application):
     """Support for building/installing HDF5"""
 
     def configure(self):

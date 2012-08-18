@@ -33,7 +33,7 @@ import glob
 from easybuild.easyblocks.i.intelbase import IntelBase
 
 
-class Tbb(IntelBase):
+class EB_tbb(IntelBase):
     """EasyBlock for tbb, threading building blocks"""
 
     def make_install(self):

@@ -33,7 +33,7 @@ from easybuild.easyblocks.i.intelbase import IntelBase
 from easybuild.tools.filetools import run_cmd
 
 
-class Impi(IntelBase):
+class EB_impi(IntelBase):
     """
     Support for installing Intel MPI library
     """

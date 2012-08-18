@@ -717,3 +717,68 @@ def patch_perl_script_autoflush(path):
 
     except IOError, err:
         log.error("Failed to patch Perl configure script: %s" % err)
+
+
+def encode_string(name):
+    """
+    This encoding function handles funky package names ad infinitum, like:
+      example: '0_foo+0x0x#-$__'
+      becomes: '0_underscore_foo_plus_0x0x_hash__minus__dollar__underscore__underscore_'
+    The intention is to have a robust escaping mechanism for names like c++, C# et al
+
+    It has been inspired by the concepts seen at, but in lowercase style:
+    * http://fossies.org/dox/netcdf-4.2.1.1/escapes_8c_source.html
+    * http://celldesigner.org/help/CDH_Species_01.html
+    * http://research.cs.berkeley.edu/project/sbp/darcsrepo-no-longer-updated/src/edu/berkeley/sbp/misc/ReflectiveWalker.java
+    and can be extended freely as per ISO/IEC 10646:2012 / Unicode 6.1 names:
+    * http://www.unicode.org/versions/Unicode6.1.0/ 
+    For readability of >2 words, it is suggested to use _CamelCase_ style.
+    So, yes, '_GreekSmallLetterEtaWithPsiliAndOxia_' *could* indeed be a fully
+    valid package name; package "electron" in the original spelling anyone? ;-)
+
+    """
+
+    charmap = {
+               ' ': "_space_",
+               '!': "_exclamation_",
+               '"': "_quotation_",
+               '#': "_hash_",
+               '$': "_dollar_",
+               '%': "_percent_",
+               '&': "_ampersand_",
+               '(': "_leftparen_",
+               ')': "_rightparen_",
+               '*': "_asterisk_",
+               '+': "_plus_",
+               ',': "_comma_",
+               '-': "_minus_",
+               '.': "_period_",
+               '/': "_slash_",
+               ':': "_colon_",
+               ';': "_semicolon_",
+               '<': "_lessthan_",
+               '=': "_equals_",
+               '>': "_greaterthan_",
+               '?': "_question_",
+               '@': "_atsign_",
+               '[': "_leftbracket_",
+               '\'': "_apostrophe_",
+               '\\': "_backslash_",
+               ']': "_rightbracket_",
+               '^': "_circumflex_",
+               '_': "_underscore_",
+               '`': "_backquote_",
+               '{': "_leftcurly_",
+               '|': "_verticalbar_",
+               '}': "_rightcurly_",
+               '~': "_tilde_"
+              }
+
+    # do the character remapping, return same char by default
+    result = ''.join(map(lambda x: charmap.get(x, x), name))
+    return result
+
+def encode_class_name(name):
+    """return encoded version of class name"""
+    return "EB_" + encode_string(name)
+

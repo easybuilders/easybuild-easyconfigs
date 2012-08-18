@@ -32,7 +32,7 @@ import shutil
 from easybuild.framework.application import Application
 
 
-class Tarball(Application):
+class EB_Tarball(Application):
     """
     Precompiled software packaged as tarball:
     - will unpack binary and copy it to the install dir

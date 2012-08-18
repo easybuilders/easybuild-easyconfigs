@@ -36,7 +36,7 @@ from easybuild.tools.filetools import run_cmd, adjust_permissions
 from easybuild.tools.modules import get_software_root
 
 
-class OpenFOAM(Application):
+class EB_OpenFOAM(Application):
     """Support for building and installing OpenFOAM."""
 
     def __init__(self,*args,**kwargs):

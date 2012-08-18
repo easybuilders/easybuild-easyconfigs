@@ -61,7 +61,7 @@ def get_blas_lib(log):
     return blaslib
 
 
-class LAPACK(Application):
+class EB_LAPACK(Application):
     """
     Support for building LAPACK
     - read make.inc.example and replace BLAS line with configtops
