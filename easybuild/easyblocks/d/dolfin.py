@@ -27,22 +27,11 @@ import re
 
 import easybuild.tools.toolkit as toolkit
 from easybuild.easyblocks.c.cmakepythonpackage import CMakePythonPackage
-from easybuild.framework.easyconfig import BUILD
-from easybuild.tools.filetools import run_cmd
 from easybuild.tools.modules import get_software_root, get_software_version
 
 
 class DOLFIN(CMakePythonPackage):
     """Support for building and installing DOLFIN."""
-
-    def extra_options(self):
-        """Add DOLFIN-specific easyconfig options."""
-
-        extra_vars = [
-                      ('runtest', [True, "Test using the DOLFIN demos (default: True)", BUILD]),
-                     ]
-
-        return CMakePythonPackage.extra_options(extra_vars)
 
     def configure(self):
         """Set DOLFIN-specific configure options and configure with CMake."""
@@ -158,25 +147,6 @@ class DOLFIN(CMakePythonPackage):
         if not_found_re.search(out):
             self.log.error("Optional packages could not be found, this should not happen...")
 
-    def test(self):
-        """Run demos that come with DOLFIN to test the build."""
-
-        if self.getcfg('runtest'):
-
-            cmd_template = "cd %s && python demo_%s.py && cd -"
-
-            # list based on demos available for DOLFIN v1.0.0
-            pde_demos = ['biharmonic', 'cahn-hilliard', 'hyperelasticity', 'mixed-poisson',
-                         'navier-stokes', 'poisson', 'stokes-iterative', 'subdomains-poisson']
-            demos = [os.path.join('la', 'eigenvalue')] + [os.path.join('pde', x) for x in pde_demos]
-
-            cmds = [cmd_template % (os.path.join('demo', d, 'python'), os.path.basename(d))
-                    for d in demos]
-
-            for cmd in cmds:
-                self.log.info("Run DOLFIN demo as test: %s" % cmd)
-                run_cmd(cmd, log_all=True, simple=True)
-
     def make_module_extra(self):
         """Set extra environment variables for DOLFIN."""
 
@@ -209,5 +179,25 @@ class DOLFIN(CMakePythonPackage):
                                             })
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
+
+        if not self.getcfg('sanityCheckCommand'):
+
+            pref = os.path.join('share', 'dolfin', 'demo')
+
+            # test command template
+            cmd_template = "cd %s && python demo_%s.py && cd -"
+
+            # list based on demos available for DOLFIN v1.0.0
+            pde_demos = ['biharmonic', 'cahn-hilliard', 'hyperelasticity', 'mixed-poisson',
+                         'navier-stokes', 'poisson', 'stokes-iterative', 'subdomains-poisson']
+
+            demos = [os.path.join('la', 'eigenvalue')] + [os.path.join('pde', x) for x in pde_demos]
+
+            # construct commands
+            cmds = [cmd_template % (os.path.join(pref, d, 'python'), os.path.basename(d))
+                    for d in demos]
+
+            # join all commands into one large single sanity check command
+            self.setcfg('sanityCheckCommand', (" && ".join(cmds), ""))
 
         CMakePythonPackage.sanitycheck(self)
