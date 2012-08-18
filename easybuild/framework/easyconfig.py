@@ -28,76 +28,97 @@ from easybuild.tools.build_log import getLog, EasyBuildError
 from easybuild.tools.toolkit import Toolkit
 from easybuild.tools.systemtools import get_shared_lib_ext
 from easybuild.tools.filetools import run_cmd
+from easybuild.tools.ordereddict import OrderedDict
+
+# we use a tuple here so we can sort them based on the numbers
+MANDATORY = (0, 'mandatory')
+CUSTOM = (1, 'easyblock-specific')
+TOOLKIT = (2, 'toolkit')
+BUILD = (3, 'build')
+FILEMANAGEMENT = (4, 'file-management')
+DEPENDENCIES = (5, 'dependencies')
+LICENSE = (6, 'license')
+PACKAGE = (7, 'package')
+MODULES = (8, 'modules')
+OTHER = (9, 'other')
 
 
 class EasyConfig:
     """
     Class which handles loading, reading, validation of easyconfigs
     """
-    # mandatory entries
-    mandatory = ['name', 'version', 'homepage', 'description', 'toolkit']
+    # validations
     validmoduleclasses = ['base', 'compiler', 'lib']
     validstops = ['cfg', 'source', 'patch', 'prepare', 'configure', 'make', 'install', 'test', 'postproc', 'cleanup', 'packages']
 
-    default_config = {
-          'name': [None, "Name of software"],
-          'version': [None, "Version of software"],
-          'easybuildVersion': [None, "EasyBuild-version this spec-file was written for"],
-          'group': [None, "Name of the user group for which the software should be available"],
-          'versionsuffix': ['', 'Additional suffix for software version (placed after toolkit name)'],
-          'versionprefix': ['', 'Additional prefix for software version (placed before version and toolkit name)'],
-          'runtest': [None, 'Indicates if a test should be run after make; should specify argument after make (for e.g., "test" for make test) (Default: None)'],
-          'preconfigopts': ['', 'Extra options pre-passed to configure.'],
-          'configopts': ['', 'Extra options passed to configure (Default already has --prefix)'],
-          'premakeopts': ['', 'Extra options pre-passed to make.'],
-          'makeopts': ['', 'Extra options passed to make (Default already has -j X)'],
-          'installopts': ['', 'Extra options for installation (Default: nothing)'],
-          'moduleclass': ['base', 'Module class to be used for this software (Default: base) (Valid: %s)' % validmoduleclasses],
-          'moduleforceunload': [False, 'Force unload of all modules when loading the package (Default: False)'],
-          'moduleloadnoconflict': [False, "Don't check for conflicts, unload other versions instead (Default: False)"],
-          'startfrom': [None, 'Path to start the make in. If the path is absolute, use that path. If not, this is added to the guessed path.'],
-          'onlytkmod': [False, 'Boolean/string to indicate if the toolkit should only load the enviornment with module (True) or also set all other variables (False) like compiler CC etc (If string: comma separated list of variables that will be ignored). (Default: False)'],
-          'stop': [None, 'Keyword to halt the buildprocess at certain points. Valid are %s' % validstops],
-          'homepage': [None, 'The homepage of the software'],
-          'description': [None, 'A short description of the software'],
-          'parallel': [None, 'Degree of parallelism for e.g. make (default: based on the number of cores and restrictions in ulimit)'],
-          'maxparallel': [None, 'Max degree of parallelism (default: None)'],
-          'keeppreviousinstall': [False, 'Boolean to keep the previous installation with identical name. Default False, expert s only!'],
-          'cleanupoldbuild': [True, 'Boolean to remove (True) or backup (False) the previous build directory with identical name or not. Default True'],
-          'cleanupoldinstall': [True, 'Boolean to remove (True) or backup (False) the previous install directory with identical name or not. Default True'],
-          'dontcreateinstalldir': [False, 'Boolean to create (False) or not create (True) the install directory (Default False)'],
-          'toolkit': [None, 'Name and version of toolkit'],
-          'toolkitopts': ['', 'Extra options for compilers'],
-          'keepsymlinks': [False, 'Boolean to determine whether symlinks are to be kept during copying or if the content of the files pointed to should be copied'],
-          'licenseServer': [None, 'License server for software'],
-          'licenseServerPort': [None, 'Port for license server'],
-          'key': [None, 'Key for installing software'],
-          'pkglist': [[], 'List with packages added to the baseinstallation (Default: [])'],
-          'pkgmodulenames': [{}, 'Dictionary with real modules names for packages, if they are different from the package name (Default: {})'],
-          'pkgloadmodule': [True, 'Load the to-be installed software using temporary module (Default: True)'],
-          'pkgtemplate': ["%s-%s.tar.gz", "Template for package source file names (Default: %s-%s.tar.gz)"],
-          'pkgfindsource': [True, "Find sources for packages (Default: True)"],
-          'pkginstalldeps': [True, "Install dependencies for specified packages if necessary (Default: True)"],
-          'pkgdefaultclass': [None, "List of module for and name of the default package class (Default: None)"],
-          'skip': [False, "Skip existing software (Default: False)"],
-          'pkgfilter': [None, "Package filter details. List with template for cmd and input to cmd (templates for name, version and src). (Default: None)"],
-          'pkgpatches': [[], 'List with patches for packages (default: [])'],
-          'pkgcfgs': [{}, 'Dictionary with config parameters for packages (default: {})'],
-          'dependencies': [[], "List of dependencies (default: [])"],
-          'builddependencies': [[], "List of build dependencies (default: [])"],
-          'unpackOptions': [None, "Extra options for unpacking source (default: None)"],
-          'modextravars': [{}, "Extra environment variables to be added to module file (default: {})"],
-          'osdependencies': [[], "Packages that should be present on the system"],
-          'sources': [[], "List of source files"],
-          'sourceURLs': [[], "List of URLs for source files"],
-          'patches': [[], "List of patches to apply"],
-          'tests': [[], "List of test-scripts to run after install. A test script should return a non-zero exit status to fail"],
-          'sanityCheckPaths': [{}, "List of files and directories to check (format: {'files':<list>, 'dirs':<list>}, default: {})"],
-          'sanityCheckCommand': [None, "format: (name, options) e.g. ('gzip','-h') . If set to True it will use (name, '-h')"],
-          'buildstats': [None, "A list of dicts with buildstats: build_time, platform, core_count, cpu_model, install_size, timestamp"],
-        }
+    # List of tuples. Each tuple has the following format (key, [default, help text, category])
+    default_config = [
+          ('name', [None, "Name of software", MANDATORY]),
+          ('version', [None, "Version of software", MANDATORY]),
+          ('toolkit', [None, 'Name and version of toolkit', MANDATORY]),
+          ('description', [None, 'A short description of the software', MANDATORY]),
+          ('homepage', [None, 'The homepage of the software', MANDATORY]),
 
-    def __init__(self, path, extra_options={}, validate=True):
+          ('toolkitopts', ['', 'Extra options for compilers', TOOLKIT]),
+          ('onlytkmod', [False, 'Boolean/string to indicate if the toolkit should only load the enviornment with module (True) or also set all other variables (False) like compiler CC etc (If string: comma separated list of variables that will be ignored). (Default: False)', TOOLKIT]),
+
+          ('easybuildVersion', [None, "EasyBuild-version this spec-file was written for", BUILD]),
+          ('versionsuffix', ['', 'Additional suffix for software version (placed after toolkit name)', BUILD]),
+          ('versionprefix', ['', 'Additional prefix for software version (placed before version and toolkit name)',BUILD]),
+          ('runtest', [None, 'Indicates if a test should be run after make; should specify argument after make (for e.g.,"test" for make test) (Default: None)', BUILD]),
+          ('preconfigopts', ['', 'Extra options pre-passed to configure.', BUILD]),
+          ('configopts', ['', 'Extra options passed to configure (Default already has --prefix)', BUILD]),
+          ('premakeopts', ['', 'Extra options pre-passed to make.', BUILD]),
+          ('makeopts', ['', 'Extra options passed to make (Default already has -j X)', BUILD]),
+          ('installopts', ['', 'Extra options for installation (Default: nothing)', BUILD]),
+          ('unpackOptions', [None, "Extra options for unpacking source (default: None)", BUILD]),
+          ('stop', [None, 'Keyword to halt the buildprocess at certain points. Valid are %s' % validstops, BUILD]),
+          ('skip', [False, "Skip existing software (Default: False)", BUILD]),
+          ('parallel', [None, 'Degree of parallelism for e.g. make (default: based on the number of cores and restrictions in ulimit)', BUILD]),
+          ('maxparallel', [None, 'Max degree of parallelism (default: None)', BUILD]),
+          ('sources', [[], "List of source files", BUILD]),
+          ('sourceURLs', [[], "List of URLs for source files", BUILD]),
+          ('patches', [[], "List of patches to apply", BUILD]),
+          ('tests', [[], "List of test-scripts to run after install. A test script should return a non-zero exit status to fail", BUILD]),
+          ('sanityCheckPaths', [{}, "List of files and directories to check (format: {'files':<list>, 'dirs':<list>}, default: {})", BUILD]),
+          ('sanityCheckCommand', [None, "format: (name, options) e.g. ('gzip','-h') . If set to True it will use (name, '-h')", BUILD]),
+
+          ('startfrom', [None, 'Path to start the make in. If the path is absolute, use that path. If not, this is added to the guessed path.', FILEMANAGEMENT]),
+          ('keeppreviousinstall', [False, 'Boolean to keep the previous installation with identical name. Default False, experts only!', FILEMANAGEMENT]),
+          ('cleanupoldbuild', [True, 'Boolean to remove (True) or backup (False) the previous build directory with identical name or not. Default True', FILEMANAGEMENT]),
+          ('cleanupoldinstall', [True, 'Boolean to remove (True) or backup (False) the previous install directory with identical name or not. Default True', FILEMANAGEMENT]),
+          ('dontcreateinstalldir', [False, 'Boolean to create (False) or not create (True) the install directory (Default False)', FILEMANAGEMENT]),
+          ('keepsymlinks', [False, 'Boolean to determine whether symlinks are to be kept during copying or if the content of the files pointed to should be copied', FILEMANAGEMENT]),
+
+          ('dependencies', [[], "List of dependencies (default: [])", DEPENDENCIES]),
+          ('builddependencies', [[], "List of build dependencies (default: [])", DEPENDENCIES]),
+          ('osdependencies', [[], "Packages that should be present on the system", DEPENDENCIES]),
+
+          ('licenseServer', [None, 'License server for software', LICENSE]),
+          ('licenseServerPort', [None, 'Port for license server', LICENSE]),
+          ('key', [None, 'Key for installing software', LICENSE]),
+          ('group', [None, "Name of the user group for which the software should be available",  LICENSE]),
+
+          ('pkglist', [[], 'List with packages added to the baseinstallation (Default: [])', PACKAGE]),
+          ('pkgmodulenames', [{}, 'Dictionary with real modules names for packages, if they are different from the package name (Default: {})', PACKAGE]),
+          ('pkgloadmodule', [True, 'Load the to-be installed software using temporary module (Default: True)', PACKAGE]),
+          ('pkgtemplate', ["%s-%s.tar.gz", "Template for package source file names (Default: %s-%s.tar.gz)", PACKAGE]),
+          ('pkgfindsource', [True, "Find sources for packages (Default: True)", PACKAGE]),
+          ('pkginstalldeps', [True, "Install dependencies for specified packages if necessary (Default: True)", PACKAGE]),
+          ('pkgdefaultclass', [None, "List of module for and name of the default package class (Default: None)", PACKAGE]),
+          ('pkgfilter', [None, "Package filter details. List with template for cmd and input to cmd (templates for name, version and src). (Default: None)", PACKAGE]),
+          ('pkgpatches', [[], 'List with patches for packages (default: [])', PACKAGE]),
+          ('pkgcfgs', [{}, 'Dictionary with config parameters for packages (default: {})', PACKAGE]),
+
+          ('modextravars', [{}, "Extra environment variables to be added to module file (default: {})", MODULES]),
+          ('moduleclass', ['base', 'Module class to be used for this software (Default: base) (Valid: %s)' % validmoduleclasses, MODULES]),
+          ('moduleforceunload', [False, 'Force unload of all modules when loading the package (Default: False)', MODULES]),
+          ('moduleloadnoconflict', [False, "Don't check for conflicts, unload other versions instead (Default: False)", MODULES]),
+
+          ('buildstats', [None, "A list of dicts with buildstats: build_time, platform, core_count, cpu_model, install_size, timestamp", OTHER]),
+        ]
+
+    def __init__(self, path, extra_options=[], validate=True):
         """
         initialize an easyconfig.
         path should be a path to a file that can be parsed
@@ -105,8 +126,15 @@ class EasyConfig:
         validate specifies whether validations should happen
         """
         # perform a deepcopy of the default_config found in the easybuild.tools.easyblock module
-        self.config = copy.deepcopy(self.default_config)
+        self.config = dict(copy.deepcopy(self.default_config))
         self.config.update(extra_options)
+        self.mandatory = ['name', 'version', 'homepage', 'description', 'toolkit']
+
+        # extend mandatory keys
+        for (key, value) in extra_options:
+            if value[2] == MANDATORY:
+                self.mandatory.append(key)
+
         self.log = getLog("EasyConfig")
 
         # store toolkit
@@ -340,3 +368,23 @@ class EasyConfig:
         """
         self.config[key][0] = value
 
+
+def sorted_categories():
+    """
+    returns the categories in the correct order
+    """
+    categories = [MANDATORY, CUSTOM , TOOLKIT, BUILD, FILEMANAGEMENT, DEPENDENCIES, LICENSE , PACKAGE, MODULES, OTHER]
+    categories.sort(key = lambda c: c[0])
+    return categories
+
+
+def convert_to_help(option_list):
+    """
+    Converts the given list to a mapping of category -> [(name, help)] (OrderedDict)
+    """
+    mapping = OrderedDict()
+
+    for category in sorted_categories():
+        mapping[category[1]] = [(arr[0], arr[1][1]) for arr in option_list if arr[1][2] == category]
+
+    return mapping

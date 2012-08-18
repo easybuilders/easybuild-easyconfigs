@@ -161,16 +161,22 @@ def logFilename(name, version):
     Generate a filename to be used
     """
     # this can't be imported at the top, otherwise we'd have a cyclic dependency
-    from easybuild.tools.config import logFormat
+    from easybuild.tools.config import logFormat, get_build_log_path
 
     date = time.strftime("%Y%m%d")
     timeStamp = time.strftime("%H%M%S")
 
-    filename = os.path.join(tempfile.mkdtemp(), logFormat() % {'name': name,
-                                                               'version': version,
-                                                               'date': date,
-                                                               'time': timeStamp
-                                                              })
+    filename = os.path.join(get_build_log_path(), logFormat() % {'name':name,
+                                                                 'version':version,
+                                                                 'date':date,
+                                                                 'time':timeStamp
+                                                                 })
+
+    # Append numbers if the log file already exist
+    counter = 1
+    while os.path.isfile(filename):
+        counter += 1
+        filename = "%s.%d" % (filename, counter)
 
     return filename
 

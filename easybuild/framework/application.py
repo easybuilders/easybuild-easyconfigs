@@ -47,7 +47,7 @@ from easybuild.tools.build_log import EasyBuildError, initLogger, removeLogHandl
 from easybuild.tools.config import source_path, buildPath, installPath
 from easybuild.tools.filetools import unpack, patch, run_cmd, convertName
 from easybuild.tools.module_generator import ModuleGenerator
-from easybuild.tools.modules import Modules
+from easybuild.tools.modules import Modules, get_software_root
 from easybuild.tools.toolkit import Toolkit
 from easybuild.tools.systemtools import get_core_count
 
@@ -262,7 +262,7 @@ class Application:
         Subclasses should call this method with a dict
         """
         if extra == None:
-            return {}
+            return []
         else:
             return extra
 
@@ -1088,7 +1088,7 @@ class Application:
         txt += self.make_module_extra()
         if self.getcfg('pkglist'):
             txt += self.make_module_extra_packages()
-        txt += '\n# built with EasyBuild version %s' % easybuild.VERBOSE_VERSION
+        txt += '\n# built with EasyBuild version %s\n' % easybuild.VERBOSE_VERSION
 
         try:
             f = open(self.moduleGenerator.filename, 'w')
@@ -1290,10 +1290,10 @@ class Application:
             modpath = self.make_module(fake=True)
         # adjust MODULEPATH tand load module
         if self.getcfg('pkgloadmodule'):
-            self.log.debug("Adding %s to MODULEPATH" % modpath)
             if self.skip:
                 m = Modules()
             else:
+                self.log.debug("Adding %s to MODULEPATH" % modpath)
                 m = Modules([modpath] + os.environ['MODULEPATH'].split(':'))
 
             if m.exists(self.name(), self.installversion()):
@@ -1493,15 +1493,6 @@ class Application:
         Shortcut the get the module version.
         """
         return self.getcfg('version')
-
-    def dump_cfg_options(self):
-        """
-        Print a list of available configuration options.
-        """
-        for key in sorted(self.cfg):
-            tabs = "\t" * (3 - (len(key) + 1) / 8)
-            print "%s:%s%s" % (key, tabs, self.cfg[key][1])
-
 
 
 class StopException(Exception):

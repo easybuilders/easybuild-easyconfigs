@@ -31,6 +31,7 @@ import os
 import shutil
 
 from easybuild.framework.application import Application
+from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.filetools import run_cmd
 from easybuild.tools.modules import get_software_root
 
@@ -72,10 +73,10 @@ class LAPACK(Application):
 
     @staticmethod
     def extra_options():
-        extra_vars = {
-                      'supply_blas': [False, "Supply BLAS lib to LAPACK for building (default: False)"],
-                      'test_only': [False, "Only make tests, don't try and build LAPACK lib."]
-                     }
+        extra_vars = [
+                      ('supply_blas', [False, "Supply BLAS lib to LAPACK for building (default: False)", CUSTOM]),
+                      ('test_only', [False, "Only make tests, don't try and build LAPACK lib.", CUSTOM])
+                     ]
         return Application.extra_options(extra_vars)
 
 

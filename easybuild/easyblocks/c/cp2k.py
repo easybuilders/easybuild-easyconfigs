@@ -36,6 +36,7 @@ from distutils.version import LooseVersion
 
 import easybuild.tools.toolkit as toolkit
 from easybuild.framework.application import Application
+from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.filetools import run_cmd
 from easybuild.tools.modules import get_software_root, get_software_version
 
@@ -68,22 +69,23 @@ class CP2K(Application):
 
         self.make_instructions = ''
 
+        # always enable testing for CP2K
+        self.setcfg('runtest', True)
+
     @staticmethod
     def extra_options():
-        extra_vars = {
-                      'type': ['popt', "Type of build ('popt', 'psmp' or 'sopt') (default: 'popt')"],
-                      'typeopt': [True, "Enable optimization (default: True)"],
-                      'libint': [True, "Use LibInt (default: True)"],
-                      'modincprefix': ['', "IMKL prefix for modinc include dir (default: '')"],
-                      'modinc': [[], "List of modinc's to use (*.f90), or 'True' to use all found at given prefix (default: [])"],
-                      'extracflags': ['', "Extra CFLAGS to be added (default: '')"],
-                      'extradflags': ['', "Extra DFLAGS to be added (default: '')"],
-                      'runtest': [True, 'Indicates if a regression test should be run after make (default: True)'],
-                      'ignore_regtest_fails': [False, "Ignore failures in regression test (should be used with care) (default: False)."],
-                      'maxtasks': [3, "Maximum number of CP2K instances run at the same time during testing (default:3)"]
-                     }
+        extra_vars = [
+                      ('type', ['popt', "Type of build ('popt' or 'psmp') (default: 'popt)", CUSTOM]),
+                      ('typeopt', [True, "Enable optimization (default: True)", CUSTOM]),
+                      ('libint', [True, "Use LibInt (default: True)", CUSTOM]),
+                      ('modincprefix', ['', "IMKL prefix for modinc include dir (default: '')", CUSTOM]),
+                      ('modinc', [[], "List of modinc's to use (*.f90), or 'True' to use all found at given prefix (default: [])", CUSTOM]),
+                      ('extracflags', ['', "Extra CFLAGS to be added (default: '')", CUSTOM]),
+                      ('extradflags', ['', "Extra DFLAGS to be added (default: '')", CUSTOM]),
+                      ('ignore_regtest_fails', [False, "Ignore failures in regression test (should be used with care) (default: False).", CUSTOM]),
+                      ('maxtasks', [3, "Maximum number of CP2K instances run at the same time during testing (default:3)", CUSTOM])
+                     ]
         return Application.extra_options(extra_vars)
-
 
     def _generateMakefile(self, options):
         """Generate Makefile based on options dictionary and optional make instructions"""

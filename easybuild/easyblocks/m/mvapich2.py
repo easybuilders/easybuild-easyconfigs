@@ -30,6 +30,7 @@ import os
 
 import easybuild.tools.environment as env
 from easybuild.framework.application import Application
+from easybuild.framework.easyconfig import CUSTOM
 
 
 class MVAPICH2(Application):
@@ -43,13 +44,13 @@ class MVAPICH2(Application):
 
     @staticmethod
     def extra_options():
-        extra_vars = {
-                      'withchkpt': [False, "Enable checkpointing support (required BLCR) (default: False)"],
-                      'withlimic2': [False, "Enable LiMIC2 support for intra-node communication (default: False)"],
-                      'withmpe': [False, "Build MPE routines (default: False)"],
-                      'debug': [False, "Enable debug build (which is slower) (default: False)"],
-                      'rdma_type': ["gen2", "Specify the RDMA type (gen2/udapl) (default: gen2)"]
-                     }
+        extra_vars = [
+                      ('withchkpt', [False, "Enable checkpointing support (required BLCR) (default: False)", CUSTOM]),
+                      ('withlimic2', [False, "Enable LiMIC2 support for intra-node communication (default: False)", CUSTOM]),
+                      ('withmpe', [False, "Build MPE routines (default: False)", CUSTOM]),
+                      ('debug', [False, "Enable debug build (which is slower) (default: False)", CUSTOM]),
+                      ('rdma_type', ["gen2", "Specify the RDMA type (gen2/udapl) (default: gen2)", CUSTOM])
+                     ]
         return Application.extra_options(extra_vars)
 
     def configure(self):
