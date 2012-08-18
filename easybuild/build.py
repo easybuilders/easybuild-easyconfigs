@@ -97,9 +97,9 @@ def add_build_options(parser):
                         help="does the build/installation in a test directory " \
                                "located in $HOME/easybuildinstall")
 
-    parser.add_option("-s", "--stop", type="choice", choices=EasyBlock.validstops,
+    parser.add_option("-s", "--stop", type="choice", choices=EasyConfig.validstops,
                         help="stop the installation after certain step " \
-                               "(valid: %s)" % ', '.join(EasyBlock.validstops))
+                               "(valid: %s)" % ', '.join(EasyConfig.validstops))
     parser.add_option("-b", "--only-blocks", metavar="blocks", help="Only build blocks blk[,blk2]")
     parser.add_option("-k", "--skip", action="store_true",
                         help="skip existing software (useful for installing additional packages)")
@@ -825,7 +825,7 @@ def dep_graph(fn, specs, log):
     dgr.add_nodes([spec['module'] for spec in specs])
     for spec in specs:
         for dep in spec['unresolvedDependencies']:
-            dgr.add_edge((dep, spec['module']))
+            dgr.add_edge((spec['module'], spec))
 
     # write to file
     dottxt = dot.write(dgr)
