@@ -25,6 +25,7 @@ import re
 
 import easybuild.tools.toolkit as toolkit
 from easybuild.easyblocks.c.cmake import CMake
+from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.modules import get_software_root
 
 
@@ -35,13 +36,13 @@ class Trilinos(CMake):
     @staticmethod
     def extra_options():
         """Add extra config options specific to Trilinos."""
-        extra_vars = {
-                      'shared_libs': [False, "BUild shared libs; if False, build static libs. (default: False)."],
-                      'openmp': [True, "Enable OpenMP support (default: True)"],
-                      'all_pkgs': [True, "Enable all packages (default: True)"],
-                      'skip_pkgs': [[], "List of packages to skip (default: [])"],
-                      'verbose': [False, 'Configure for verbose output (default: False)']
-                     }
+        extra_vars = [
+                      ('shared_libs', [False, "BUild shared libs; if False, build static libs. (default: False).", CUSTOM]),
+                      ('openmp', [True, "Enable OpenMP support (default: True)"], CUSTOM),
+                      ('all_pkgs', [True, "Enable all packages (default: True)"], CUSTOM),
+                      ('skip_pkgs', [[], "List of packages to skip (default: [])"], CUSTOM),
+                      ('verbose', [False, 'Configure for verbose output (default: False)'], CUSTOM)
+                     ]
         return CMake.extra_options(extra_vars)
 
     def configure(self):

@@ -28,6 +28,7 @@ from distutils.version import LooseVersion
 import easybuild.tools.environment as env
 import easybuild.tools.toolkit as toolkit
 from easybuild.framework.application import Application
+from easybuild.framework.easyconfig import BUILD, CUSTOM
 from easybuild.tools.filetools import run_cmd
 from easybuild.tools.modules import get_software_root
 from easybuild.tools.systemtools import get_shared_lib_ext
@@ -46,14 +47,14 @@ class PETSc(Application):
     @staticmethod
     def extra_options():
         """Add extra config options specific to PETSc."""
-        extra_vars = {
-                      'sourceinstall': [False, "Indicates whether a source installation should be performed (default: False)"],
-                      'shared_libs': [False, "Build shared libraries (default: False)"],
-                      'with_papi': [False, "Enable PAPI support (default: False)"],
-                      'papi_inc': ['/usr/include', "Path for PAPI include files (default: /usr/include)"],
-                      'papi_lib': ['/usr/lib64/libpapi.so', "Path for PAPI library (default: '/usr/lib64/libpapi.so')"],
-                      'runtest': ['test', "Make target to test build (default: test)"]
-                     }
+        extra_vars = [
+                      ('sourceinstall', [False, "Indicates whether a source installation should be performed (default: False)", CUSTOM]),
+                      ('shared_libs', [False, "Build shared libraries (default: False)", CUSTOM]),
+                      ('with_papi', [False, "Enable PAPI support (default: False)", CUSTOM]),
+                      ('papi_inc', ['/usr/include', "Path for PAPI include files (default: /usr/include)", CUSTOM]),
+                      ('papi_lib', ['/usr/lib64/libpapi.so', "Path for PAPI library (default: '/usr/lib64/libpapi.so')", CUSTOM]),
+                      ('runtest', ['test', "Make target to test build (default: test)", BUILD])
+                     ]
         return Application.extra_options(extra_vars)
 
     def make_builddir(self):

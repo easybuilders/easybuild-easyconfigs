@@ -30,6 +30,7 @@ import shutil
 
 import easybuild.tools.toolkit as toolkit
 from easybuild.framework.application import Application
+from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.filetools import run_cmd
 from easybuild.tools.modules import get_software_root
 
@@ -46,7 +47,7 @@ class Boost(Application):
     @staticmethod
     def extra_options():
         """Add extra easyconfig parameters for Boost."""
-        extra_vars = {'boost_mpi':[False, "Build mpi boost module (default: False)"]}
+        extra_vars = [('boost_mpi', [False, "Build mpi boost module (default: False)", CUSTOM])]
 
         return Application.extra_options(extra_vars)
 

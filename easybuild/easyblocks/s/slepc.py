@@ -27,6 +27,7 @@ import re
 
 import easybuild.tools.environment as env
 from easybuild.framework.application import Application
+from easybuild.framework.easyconfig import BUILD, CUSTOM
 from easybuild.tools.filetools import run_cmd
 from easybuild.tools.modules import get_software_root
 
@@ -43,10 +44,10 @@ class SLEPc(Application):
     @staticmethod
     def extra_options():
         """Add extra config options specific to SLEPc."""
-        extra_vars = {
-                      'sourceinstall': [False, "Indicates whether a source installation should be performed (default: False)"],
-                      'runtest': ['test', "Make target to test build (default: test)"]
-                     }
+        extra_vars = [
+                      ('sourceinstall', [False, "Indicates whether a source installation should be performed (default: False)", CUSTOM]),
+                      ('runtest', ['test', "Make target to test build (default: test)", BUILD])
+                     ]
         return Application.extra_options(extra_vars)
 
     def make_builddir(self):

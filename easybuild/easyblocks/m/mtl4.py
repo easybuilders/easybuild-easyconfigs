@@ -23,7 +23,6 @@ EasyBuild support for MTL4, implemented as an easyblock
 import os
 
 from easybuild.easyblocks.t.tarball import Tarball
-from easybuild.tools.modules import get_software_root
 
 
 class MTL4(Tarball):
