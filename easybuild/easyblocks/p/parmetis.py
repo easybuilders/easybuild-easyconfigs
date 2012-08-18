@@ -27,8 +27,8 @@ EasyBuild support for ParMETIS, implemented as an easyblock
 """
 import os
 import shutil
-
 from distutils.version import LooseVersion
+
 from easybuild.framework.application import Application
 from easybuild.tools.filetools import run_cmd, mkdir
 
@@ -97,9 +97,10 @@ class ParMETIS(Application):
             run_cmd(cmd, log_all=True, simple=True, log_output=verbose)
 
     def make_install(self):
-        """Install by copying files over to the right places
+        """
+        Install by copying files over to the right places.
 
-        Also create symlinks where expected by other packages (Lib directory)
+        Also create symlinks where expected by other packages (Lib directory).
         """
         includedir = os.path.join(self.installdir, 'include')
         libdir = os.path.join(self.installdir, 'lib')
