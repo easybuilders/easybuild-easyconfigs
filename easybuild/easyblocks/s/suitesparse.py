@@ -110,11 +110,15 @@ class SuiteSparse(Application):
                 self.log.exception("Copying src %s to dst %s failed" % (src, dst))
 
         # some extra symlinks are necessary for UMFPACK to work.
-        for p in ['AMD/include/amd.h', 'AMD/include/amd_internal.h',
-                  'UFconfig/UFconfig.h', 'AMD/lib/libamd.a']:
+        for p in [
+                  os.path.join('AMD', 'include', 'amd.h'),
+                  os.path.join('AMD' ,'include' ,'amd_internal.h'),
+                  os.path.join('UFconfig', 'UFconfig.h'),
+                  os.path.join('AMD', 'lib', 'libamd.a')
+                  ]:
             src = os.path.join(self.installdir, p)
-            dn = p.split('/')[-2]
-            fn = p.split('/')[-1]
+            dn = p.split(os.path.sep)[-2]
+            fn = p.split(os.path.sep)[-1]
             dstdir = os.path.join(self.installdir, 'UMFPACK', dn)
             mkdir(dstdir)
             if os.path.exists(src):
