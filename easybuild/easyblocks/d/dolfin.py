@@ -56,17 +56,6 @@ class EB_DOLFIN(EB_CMakePythonPackage):
         self.updatecfg('configopts', '-DCMAKE_CXX_FLAGS="%s"' % cxxflags)
         self.updatecfg('configopts', '-DCMAKE_Fortran_FLAGS="%s"' % fflags)
 
-        # make sure that required dependencies are loaded
-        deps = ['Armadillo', 'Boost', 'CGAL', 'MTL4', 'ParMETIS', 'PETSc', 'Python',
-                'SCOTCH', 'Sphinx', 'SLEPc', 'SuiteSparse', 'Trilinos', 'UFC', 'zlib']
-        depsdict = {}
-        for dep in deps:
-            deproot = get_software_root(dep)
-            if not deproot:
-                self.log.error("Dependency %s not available." % dep)
-            else:
-                depsdict.update({dep:deproot})
-
         # run cmake in debug mode
         self.updatecfg('configopts', ' -DCMAKE_BUILD_TYPE=Debug')
 
@@ -83,6 +72,20 @@ class EB_DOLFIN(EB_CMakePythonPackage):
         else:
             self.log.error('MPI_LIB_SHARED or MPI_INC_DIR not set, could not determine MPI-related paths.')
 
+        # save config options to reuse them later (e.g. for sanity check commands)
+        self.saved_configopts = self.getcfg('configopts')
+
+        # make sure that required dependencies are loaded
+        deps = ['Armadillo', 'Boost', 'CGAL', 'MTL4', 'ParMETIS', 'PETSc', 'Python',
+                'SCOTCH', 'Sphinx', 'SLEPc', 'SuiteSparse', 'Trilinos', 'UFC', 'zlib']
+        depsdict = {}
+        for dep in deps:
+            deproot = get_software_root(dep)
+            if not deproot:
+                self.log.error("Dependency %s not available." % dep)
+            else:
+                depsdict.update({dep:deproot})
+
         # zlib
         self.updatecfg('configopts', '-DZLIB_INCLUDE_DIR=%s' % os.path.join(depsdict['zlib'], "include"))
         self.updatecfg('configopts', '-DZLIB_LIBRARY=%s' % os.path.join(depsdict['zlib'], "lib", "libz.a"))
@@ -91,8 +94,6 @@ class EB_DOLFIN(EB_CMakePythonPackage):
         openmp = self.toolkit().get_openmp_flag()
         self.updatecfg('configopts', ' -DOpenMP_CXX_FLAGS="%s"' % openmp)
         self.updatecfg('configopts', ' -DOpenMP_C_FLAGS="%s"' % openmp)
-
-        self.saved_configopts = self.getcfg('configopts')
 
         # Boost config parameters
         self.updatecfg('configopts', " -DBOOST_INCLUDEDIR=%s/include" % depsdict['Boost'])
