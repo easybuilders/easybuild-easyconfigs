@@ -38,10 +38,10 @@ class EB_Trilinos(EB_CMake):
         """Add extra config options specific to Trilinos."""
         extra_vars = [
                       ('shared_libs', [False, "BUild shared libs; if False, build static libs. (default: False).", CUSTOM]),
-                      ('openmp', [True, "Enable OpenMP support (default: True)"], CUSTOM),
-                      ('all_pkgs', [True, "Enable all packages (default: True)"], CUSTOM),
-                      ('skip_pkgs', [[], "List of packages to skip (default: [])"], CUSTOM),
-                      ('verbose', [False, 'Configure for verbose output (default: False)'], CUSTOM)
+                      ('openmp', [True, "Enable OpenMP support (default: True)", CUSTOM]),
+                      ('all_pkgs', [True, "Enable all packages (default: True)", CUSTOM]),
+                      ('skip_pkgs', [[], "List of packages to skip (default: [])", CUSTOM]),
+                      ('verbose', [False, 'Configure for verbose output (default: False)', CUSTOM])
                      ]
         return EB_CMake.extra_options(extra_vars)
 
