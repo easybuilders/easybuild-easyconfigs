@@ -22,11 +22,11 @@ EasyBuild support for UFC, implemented as an easyblock
 """
 from distutils.version import LooseVersion
 
-from easybuild.easyblocks.c.cmakepythonpackage import CMakePythonPackage
+from easybuild.easyblocks.c.cmakepythonpackage import EB_CMakePythonPackage
 from easybuild.tools.modules import get_software_root, get_software_version
 
 
-class UFC(CMakePythonPackage):
+class EB_UFC(EB_CMakePythonPackage):
     """Support for building UFC."""
 
     def configure(self):
@@ -62,7 +62,7 @@ class UFC(CMakePythonPackage):
         self.updatecfg('configopts', '-DPYTHON_INCLUDE_PATH=%s/include/python%s' % (depsdict['Python'],
                                                                                     self.pyver))
 
-        CMakePythonPackage.configure(self)
+        EB_CMakePythonPackage.configure(self)
 
     def sanitycheck(self):
         """Custom sanity check for UFC."""
@@ -76,4 +76,4 @@ class UFC(CMakePythonPackage):
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-        CMakePythonPackage.sanitycheck(self)
+        EB_CMakePythonPackage.sanitycheck(self)

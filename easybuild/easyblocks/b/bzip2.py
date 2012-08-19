@@ -1,5 +1,4 @@
-##
-# Copyright 2012 Kenneth Hoste
+### Copyright 2012 Kenneth Hoste
 # Copyright 2012 Jens Timmerman
 #
 # This file is part of EasyBuild
@@ -27,7 +26,7 @@ import os
 from easybuild.framework.application import Application
 
 
-class Bzip2(Application):
+class EB_bzip2(Application):
     """Support for building and installing bzip2."""
 
     # no configure script

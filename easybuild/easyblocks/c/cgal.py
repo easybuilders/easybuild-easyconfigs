@@ -24,11 +24,11 @@ EasyBuild support for CGAL, implemented as an easyblock
 """
 import os
 
-from easybuild.easyblocks.c.cmake import CMake
+from easybuild.easyblocks.c.cmake import EB_CMake
 from easybuild.tools.modules import get_software_root
 
 
-class CGAL(CMake):
+class EB_CGAL(EB_CMake):
     """Support for building CGAL."""
 
     def configure(self):
@@ -45,7 +45,7 @@ class CGAL(CMake):
 
         os.environ['BOOST_ROOT'] = get_software_root("Boost")
 
-        CMake.configure(self)
+        EB_CMake.configure(self)
 
     def sanitycheck(self):
         """Custom sanity check for CGAL."""
@@ -61,4 +61,4 @@ class CGAL(CMake):
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-        CMake.sanitycheck(self)
+        EB_CMake.sanitycheck(self)

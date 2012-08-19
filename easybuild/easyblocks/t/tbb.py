@@ -30,15 +30,15 @@ import os
 import shutil
 import glob
 
-from easybuild.easyblocks.i.intelbase import IntelBase
+from easybuild.easyblocks.i.intelbase import EB_IntelBase
 
 
-class EB_tbb(IntelBase):
+class EB_tbb(EB_IntelBase):
     """EasyBlock for tbb, threading building blocks"""
 
     def make_install(self):
         """overwrite make_install to add extra symlinks"""
-        IntelBase.make_install(self)
+        EB_IntelBase.make_install(self)
 
         # save libdir
         os.chdir(self.installdir)
@@ -68,12 +68,12 @@ class EB_tbb(IntelBase):
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-        IntelBase.sanitycheck(self)
+        EB_IntelBase.sanitycheck(self)
 
     def make_module_extra(self):
         """Add correct path to lib to LD_LIBRARY_PATH. and intel license file"""
 
-        txt = IntelBase.make_module_extra(self)
+        txt = EB_IntelBase.make_module_extra(self)
         txt += "prepend-path\t%s\t\t%s\n" % ('LD_LIBRARY_PATH', self.libpath)
 
         return txt

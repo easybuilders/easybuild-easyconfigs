@@ -25,11 +25,11 @@
 """
 EasyBuild support for Python packages that are configured with CMake, implemented as an easyblock
 """
-from easybuild.easyblocks.c.cmake import CMake
-from easybuild.easyblocks.p.pythonpackage import PythonPackage
+from easybuild.easyblocks.c.cmake import EB_CMake
+from easybuild.easyblocks.p.pythonpackage import EB_PythonPackage
 
 
-class CMakePythonPackage(CMake, PythonPackage):
+class EB_CMakePythonPackage(EB_CMake, EB_PythonPackage):
     """Build a Python package and module with cmake.
 
     Some packages use cmake to first build and install C Python packages
@@ -43,23 +43,23 @@ class CMakePythonPackage(CMake, PythonPackage):
 
     def __init__(self, *args, **kwargs):
         """Initialize with PythonPackage."""
-        PythonPackage.__init__(self, *args, **kwargs)
+        EB_PythonPackage.__init__(self, *args, **kwargs)
 
     def configure(self, *args, **kwargs):
         """Main configuration using cmake"""
 
-        PythonPackage.configure(self, *args, **kwargs)
+        EB_PythonPackage.configure(self, *args, **kwargs)
 
-        return CMake.configure(self, *args, **kwargs)
+        return EB_CMake.configure(self, *args, **kwargs)
 
     def make(self, *args, **kwargs):
         """Build Python package with cmake"""
-        return CMake.make(self, *args, **kwargs)
+        return EB_CMake.make(self, *args, **kwargs)
 
     def make_install(self):
         """Install with cmake install"""
-        return CMake.make_install(self)
+        return EB_CMake.make_install(self)
 
     def make_module_extra(self):
         """Add extra Python package module parameters"""
-        return PythonPackage.make_module_extra(self)
+        return EB_PythonPackage.make_module_extra(self)

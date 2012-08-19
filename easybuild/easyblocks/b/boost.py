@@ -35,7 +35,7 @@ from easybuild.tools.filetools import run_cmd
 from easybuild.tools.modules import get_software_root
 
 
-class Boost(Application):
+class EB_Boost(Application):
     """Support for building Boost."""
 
     def __init__(self, *args, **kwargs):

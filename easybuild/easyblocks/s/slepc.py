@@ -32,7 +32,7 @@ from easybuild.tools.filetools import run_cmd
 from easybuild.tools.modules import get_software_root
 
 
-class SLEPc(Application):
+class EB_SLEPc(Application):
     """Support for building and installing SLEPc"""
 
     def __init__(self, *args, **kwargs):

@@ -33,7 +33,7 @@ from easybuild.tools.filetools import run_cmd, mkdir
 from easybuild.tools.modules import get_software_version
 
 
-class PythonPackage(Application):
+class EB_PythonPackage(Application):
     """Builds and installs a Python package, and provides a dedicated module file."""
 
     def __init__(self, *args, **kwargs):

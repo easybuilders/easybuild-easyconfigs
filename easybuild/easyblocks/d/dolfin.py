@@ -26,11 +26,11 @@ import os
 import re
 
 import easybuild.tools.toolkit as toolkit
-from easybuild.easyblocks.c.cmakepythonpackage import CMakePythonPackage
+from easybuild.easyblocks.c.cmakepythonpackage import EB_CMakePythonPackage
 from easybuild.tools.modules import get_software_root, get_software_version
 
 
-class DOLFIN(CMakePythonPackage):
+class EB_DOLFIN(EB_CMakePythonPackage):
     """Support for building and installing DOLFIN."""
 
     def configure(self):
@@ -140,7 +140,7 @@ class DOLFIN(CMakePythonPackage):
         self.updatecfg('configopts', ' -DOpenMP_C_FLAGS="%s"' % openmp)
 
         # configure
-        out = CMakePythonPackage.configure(self)
+        out = EB_CMakePythonPackage.configure(self)
 
         # make sure that all optional packages are found
         not_found_re = re.compile("The following optional packages could not be found")
@@ -150,7 +150,7 @@ class DOLFIN(CMakePythonPackage):
     def make_module_extra(self):
         """Set extra environment variables for DOLFIN."""
 
-        txt = CMakePythonPackage.make_module_extra(self)
+        txt = EB_CMakePythonPackage.make_module_extra(self)
 
         # Dolfin needs to find Boost and the UFC pkgconfig file
         txt += self.moduleGenerator.setEnvironment('BOOST_DIR', get_software_root('Boost'))
@@ -204,4 +204,4 @@ class DOLFIN(CMakePythonPackage):
             # join all commands into one large single sanity check command
             self.setcfg('sanityCheckCommand', (" && ".join(cmds), ""))
 
-        CMakePythonPackage.sanitycheck(self)
+        EB_CMakePythonPackage.sanitycheck(self)

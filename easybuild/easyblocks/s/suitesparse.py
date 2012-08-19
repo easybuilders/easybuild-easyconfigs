@@ -36,7 +36,7 @@ from easybuild.tools.filetools import mkdir
 from easybuild.tools.modules import get_software_root
 
 
-class SuiteSparse(Application):
+class EB_SuiteSparse(Application):
     """Support for building SuiteSparse."""
 
     def configure(self):

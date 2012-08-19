@@ -22,11 +22,11 @@ EasyBuild support for Armadillo, implemented as an easyblock
 """
 import os
 
-from easybuild.easyblocks.c.cmake import CMake
+from easybuild.easyblocks.c.cmake import EB_CMake
 from easybuild.tools.modules import get_software_root
 
 
-class Armadillo(CMake):
+class EB_Armadillo(EB_CMake):
     """Support for building Armadillo."""
 
     def configure(self):
@@ -43,7 +43,7 @@ class Armadillo(CMake):
         self.updatecfg('configopts', '-DBLAS_LIBRARY:PATH="%s"' % os.getenv('LIBBLAS'))
         self.updatecfg('configopts', '-DLAPACK_LIBRARY:PATH="%s"' % os.getenv('LIBLAPACK'))
 
-        CMake.configure(self)
+        EB_CMake.configure(self)
 
     def sanitycheck(self):
         """Custom sanity check for Armadillo."""
@@ -57,4 +57,4 @@ class Armadillo(CMake):
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-        CMake.sanitycheck(self)
+        EB_CMake.sanitycheck(self)

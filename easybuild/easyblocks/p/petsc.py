@@ -34,7 +34,7 @@ from easybuild.tools.modules import get_software_root
 from easybuild.tools.systemtools import get_shared_lib_ext
 
 
-class PETSc(Application):
+class EB_PETSc(Application):
     """Support for building and installing PETSc"""
 
     def __init__(self, *args, **kwargs):

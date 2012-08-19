@@ -36,7 +36,7 @@ from easybuild.framework.application import Application
 from easybuild.tools.filetools import run_cmd, copytree
 
 
-class SCOTCH(Application):
+class EB_SCOTCH(Application):
     """Support for building/installing SCOTCH."""
 
     def configure(self):

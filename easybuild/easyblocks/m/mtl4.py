@@ -22,10 +22,10 @@ EasyBuild support for MTL4, implemented as an easyblock
 """
 import os
 
-from easybuild.easyblocks.t.tarball import Tarball
+from easybuild.easyblocks.t.tarball import EB_Tarball
 
 
-class MTL4(Tarball):
+class EB_MTL4(EB_Tarball):
     """Support for installing MTL4."""
 
     def sanitycheck(self):
@@ -45,12 +45,12 @@ class MTL4(Tarball):
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-        Tarball.sanitycheck(self)
+        EB_Tarball.sanitycheck(self)
 
     def make_module_req_guess(self):
         """Adjust CPATH for MTL4."""
 
-        guesses = Tarball.make_module_req_guess(self)
+        guesses = EB_Tarball.make_module_req_guess(self)
         guesses.update({'CPATH': 'include'})
 
         return guesses

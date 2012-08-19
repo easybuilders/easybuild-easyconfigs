@@ -24,12 +24,12 @@ import os
 import re
 
 import easybuild.tools.toolkit as toolkit
-from easybuild.easyblocks.c.cmake import CMake
+from easybuild.easyblocks.c.cmake import EB_CMake
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.modules import get_software_root
 
 
-class Trilinos(CMake):
+class EB_Trilinos(EB_CMake):
     """Support for building Trilinos."""
     # see http://trilinos.sandia.gov/Trilinos10CMakeQuickstart.txt
 
@@ -43,7 +43,7 @@ class Trilinos(CMake):
                       ('skip_pkgs', [[], "List of packages to skip (default: [])"], CUSTOM),
                       ('verbose', [False, 'Configure for verbose output (default: False)'], CUSTOM)
                      ]
-        return CMake.extra_options(extra_vars)
+        return EB_CMake.extra_options(extra_vars)
 
     def configure(self):
         """Set some extra environment variables before configuring."""
@@ -196,11 +196,11 @@ class Trilinos(CMake):
             self.log.error("Failed to create and move into build directory: %s" % err)
 
         # configure using cmake
-        CMake.configure(self, "..")
+        EB_CMake.configure(self, "..")
 
     def make(self):
         """Build with make (verbose logging enabled)."""
-        CMake.make(self, verbose=True)
+        EB_CMake.make(self, verbose=True)
 
     def sanitycheck(self):
         """Custom sanity check for Trilinos."""
@@ -223,4 +223,4 @@ class Trilinos(CMake):
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-        CMake.sanitycheck(self)
+        EB_CMake.sanitycheck(self)

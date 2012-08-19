@@ -29,10 +29,10 @@ EasyBuild support for install the Intel C/C++ compiler suite, implemented as an 
 import os
 from distutils.version import LooseVersion
 
-from easybuild.easyblocks.i.intelbase import IntelBase
+from easybuild.easyblocks.i.intelbase import EB_IntelBase
 
 
-class EB_icc(IntelBase):
+class EB_icc(EB_IntelBase):
     """Support for installing icc
 
     - tested with 11.1.046
@@ -57,7 +57,7 @@ class EB_icc(IntelBase):
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-        IntelBase.sanitycheck(self)
+        EB_IntelBase.sanitycheck(self)
 
     def make_module_req_guess(self):
         """Customize paths to check and add in environment.
@@ -114,7 +114,7 @@ class EB_icc(IntelBase):
     def make_module_extra(self):
         """Add extra environment variables for icc, for license file and NLS path."""
 
-        txt = IntelBase.make_module_extra(self)
+        txt = EB_IntelBase.make_module_extra(self)
 
         txt += "prepend-path\t%s\t\t%s\n" % ('INTEL_LICENSE_FILE', self.license)
         txt += "prepend-path\t%s\t\t$root/%s\n" % ('NLSPATH', 'idb/intel64/locale/%l_%t/%N')

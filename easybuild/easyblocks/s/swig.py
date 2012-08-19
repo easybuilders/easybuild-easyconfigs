@@ -24,7 +24,7 @@ from easybuild.framework.application import Application
 from easybuild.tools.modules import get_software_root
 
 
-class SWIG(Application):
+class EB_SWIG(Application):
     """Support for building SWIG."""
 
     def configure(self):

@@ -29,11 +29,11 @@ EasyBuild support for installing the Intel MPI library, implemented as an easybl
 import os
 from distutils.version import LooseVersion
 
-from easybuild.easyblocks.i.intelbase import IntelBase
+from easybuild.easyblocks.i.intelbase import EB_IntelBase
 from easybuild.tools.filetools import run_cmd
 
 
-class EB_impi(IntelBase):
+class EB_impi(EB_IntelBase):
     """
     Support for installing Intel MPI library
     """
@@ -46,7 +46,7 @@ class EB_impi(IntelBase):
         """
         if LooseVersion(self.version()) >= LooseVersion('4.0.1'):
             #impi starting from version 4.0.1.x uses standard installation procedure.
-            IntelBase.make_install(self)
+            EB_IntelBase.make_install(self)
             return None
         else:
             #impi up until version 4.0.0.x uses custom installation procedure.
@@ -108,7 +108,7 @@ EULA=accept
 
     def make_module_extra(self):
         """Overwritten from Application to add extra txt"""
-        txt = IntelBase.make_module_extra(self)
+        txt = EB_IntelBase.make_module_extra(self)
         txt += "prepend-path\t%s\t\t%s\n" % ('INTEL_LICENSE_FILE', self.license)
         txt += "setenv\t%s\t\t$root\n" % ('I_MPI_ROOT')
 

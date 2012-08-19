@@ -33,7 +33,7 @@ from easybuild.framework.application import Application
 from easybuild.tools.filetools import run_cmd, mkdir
 
 
-class METIS(Application):
+class EB_METIS(Application):
     """Support for building and installing METIS."""
 
     def configure(self, *args, **kwargs):
