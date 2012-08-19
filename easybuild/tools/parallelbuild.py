@@ -28,6 +28,7 @@ import math
 import os
 import re
 
+import easybuild.tools.config as config
 from easybuild.framework.application import get_class
 from easybuild.tools.pbs_job import PbsJob
 from easybuild.tools.config import getRepository
