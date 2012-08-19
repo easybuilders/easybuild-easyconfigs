@@ -41,6 +41,11 @@ class EB_SLEPc(Application):
 
         self.slepc_arch_dir = None
 
+        self.slepc_subdir = ''
+        if self.getcfg('sourceinstall'):
+            self.slepc_subdir = os.path.join('%s-%s' % (self.name().lower(), self.version()),
+                                             os.getenv('PETSC_ARCH'))
+
     @staticmethod
     def extra_options():
         """Add extra config options specific to SLEPc."""
@@ -93,11 +98,6 @@ class EB_SLEPc(Application):
         # set default PETSC_ARCH if required
         if not os.getenv('PETSC_ARCH'):
             env.set('PETSC_ARCH' , 'arch-installed-petsc')
-
-        self.slepc_subdir = ''
-        if self.getcfg('sourceinstall'):
-            self.slepc_subdir = os.path.join('%s-%s' % (self.name().lower(), self.version()),
-                                             os.getenv('PETSC_ARCH'))
 
     def make_module_req_guess(self):
         """Specify correct LD_LIBRARY_PATH and CPATH for SLEPc installation."""
