@@ -199,7 +199,7 @@ class EB_DOLFIN(EB_CMakePythonPackage):
 
             # list based on demos available for DOLFIN v1.0.0
             pde_demos = ['biharmonic', 'cahn-hilliard', 'hyperelasticity', 'mixed-poisson',
-                         'navier-stokes', 'poisson', 'stokes-iterative', 'subdomains-poisson']
+                         'navier-stokes', 'poisson', 'stokes-iterative']
 
             demos = [os.path.join('la', 'eigenvalue')] + [os.path.join('pde', x) for x in pde_demos]
 
@@ -210,6 +210,12 @@ class EB_DOLFIN(EB_CMakePythonPackage):
                                     }
                     for d in demos
                     for (tmpl, subdir) in [(cmd_template_python, 'python'), (cmd_template_cpp, 'cpp')]]
+
+            # subdomains-poisson has no C++ version, only Python
+            name = 'subdomains-poisson'
+            path = os.path.join(pref, 'pde', name, 'python')
+            cmds += [cmd_template_python % (path, name)]
+
             # supply empty argument to each command
             cmds = [(cmd, "") for cmd in cmds]
 
