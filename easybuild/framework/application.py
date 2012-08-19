@@ -1541,6 +1541,10 @@ def module_path_for_easyblock(easyblock):
     if not easyblock:
         return None
 
+    class_prefix = encode_class_name("")
+    if easyblock.startswith(class_prefix):
+        easyblock = easyblock[len(class_prefix):]
+
     modname = easyblock.replace('-','_')
 
     first_char = easyblock[0].lower()
