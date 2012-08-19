@@ -74,14 +74,6 @@ class EB_DOLFIN(EB_CMakePythonPackage):
         self.updatecfg('configopts', ' -DMPI_C_COMPILER="$MPICC"')
         self.updatecfg('configopts', ' -DMPI_CXX_COMPILER="$MPICXX"')
 
-        # Boost config parameters
-        self.updatecfg('configopts', " -DBOOST_INCLUDEDIR=%s/include" % depsdict['Boost'])
-        self.updatecfg('configopts', " -DBoost_DEBUG=ON -DBOOST_ROOT=%s" % depsdict['Boost'])
-
-        # UFC and Armadillo config params
-        self.updatecfg('configopts', " -DUFC_DIR=%s" % depsdict['UFC'])
-        self.updatecfg('configopts', "-DARMADILLO_DIR:PATH=%s " % depsdict['Armadillo'])
-
         # specify MPI library
         self.updatecfg('configopts', ' -DMPI_COMPILER="%s"' % os.getenv('MPICC'))
 
@@ -90,6 +82,25 @@ class EB_DOLFIN(EB_CMakePythonPackage):
             self.updatecfg('configopts', ' -DMPI_INCLUDE_PATH="%s"' % os.getenv('MPI_INC_DIR'))
         else:
             self.log.error('MPI_LIB_SHARED or MPI_INC_DIR not set, could not determine MPI-related paths.')
+
+        # zlib
+        self.updatecfg('configopts', '-DZLIB_INCLUDE_DIR=%s' % os.path.join(depsdict['zlib'], "include"))
+        self.updatecfg('configopts', '-DZLIB_LIBRARY=%s' % os.path.join(depsdict['zlib'], "lib", "libz.a"))
+
+        # set correct openmp options
+        openmp = self.toolkit().get_openmp_flag()
+        self.updatecfg('configopts', ' -DOpenMP_CXX_FLAGS="%s"' % openmp)
+        self.updatecfg('configopts', ' -DOpenMP_C_FLAGS="%s"' % openmp)
+
+        self.saved_configopts = self.getcfg('configopts')
+
+        # Boost config parameters
+        self.updatecfg('configopts', " -DBOOST_INCLUDEDIR=%s/include" % depsdict['Boost'])
+        self.updatecfg('configopts', " -DBoost_DEBUG=ON -DBOOST_ROOT=%s" % depsdict['Boost'])
+
+        # UFC and Armadillo config params
+        self.updatecfg('configopts', " -DUFC_DIR=%s" % depsdict['UFC'])
+        self.updatecfg('configopts', "-DARMADILLO_DIR:PATH=%s " % depsdict['Armadillo'])
 
         # specify Python paths
         python_short_ver = ".".join(get_software_version('Python').split(".")[0:2])
@@ -134,15 +145,6 @@ class EB_DOLFIN(EB_CMakePythonPackage):
 
         # MTL4
         self.updatecfg('configopts', '-DMTL4_DIR:PATH="%s"' % depsdict['MTL4'])
-
-        # zlib
-        self.updatecfg('configopts', '-DZLIB_INCLUDE_DIR=%s' % os.path.join(depsdict['zlib'], "include"))
-        self.updatecfg('configopts', '-DZLIB_LIBRARY=%s' % os.path.join(depsdict['zlib'], "lib", "libz.a"))
-
-        # set correct openmp options
-        openmp = self.toolkit().get_openmp_flag()
-        self.updatecfg('configopts', ' -DOpenMP_CXX_FLAGS="%s"' % openmp)
-        self.updatecfg('configopts', ' -DOpenMP_C_FLAGS="%s"' % openmp)
 
         # configure
         out = EB_CMakePythonPackage.configure(self)
@@ -190,11 +192,9 @@ class EB_DOLFIN(EB_CMakePythonPackage):
             pref = os.path.join('share', 'dolfin', 'demo')
 
             # test command templates
-            cmd_template_python = " && ".join(["echo", "echo '+++ Python DEMO %(name)s'", "echo",
-                                               "cd %(dir)s", "python demo_%(name)s.py", "cd -"])
+            cmd_template_python = " && ".join(["cd %(dir)s", "python demo_%(name)s.py", "cd -"])
 
-            cmd_template_cpp = " && ".join(["echo", "echo '+++ C++ DEMO %(name)s'", "echo",
-                                            "cd %(dir)s", "cmake . %s" % self.getcfg('configopts'),
+            cmd_template_cpp = " && ".join(["cd %(dir)s", "cmake . %s" % self.saved_configopts,
                                             "make", "./demo_%(name)s", "cd -"])
 
             # list based on demos available for DOLFIN v1.0.0
