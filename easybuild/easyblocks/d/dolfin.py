@@ -36,6 +36,11 @@ class EB_DOLFIN(EB_CMakePythonPackage):
     def configure(self):
         """Set DOLFIN-specific configure options and configure with CMake."""
 
+        # compilers
+        self.updatecfg('configopts', "-DCMAKE_C_COMPILER='%s' " % os.getenv('CC'))
+        self.updatecfg('configopts', "-DCMAKE_CXX_COMPILER='%s' " % os.getenv('CXX'))
+        self.updatecfg('configopts', "-DCMAKE_Fortran_COMPILER='%s' " % os.getenv('F90'))
+
         # compiler flags
         cflags = os.getenv('CFLAGS')
         cxxflags = os.getenv('CXXFLAGS')
@@ -180,13 +185,17 @@ class EB_DOLFIN(EB_CMakePythonPackage):
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-        if not self.getcfg('sanityCheckCommand'):
+        if not self.getcfg('sanityCheckCommands'):
 
             pref = os.path.join('share', 'dolfin', 'demo')
 
-            # test command template
-            cmd_template = " && ".join(["echo", "echo '+++ RUNNING DEMO %(name)s'", "echo",
-                                        "cd %(dir)s", "python demo_%(name)s.py", "cd -"])
+            # test command templates
+            cmd_template_python = " && ".join(["echo", "echo '+++ Python DEMO %(name)s'", "echo",
+                                               "cd %(dir)s", "python demo_%(name)s.py", "cd -"])
+
+            cmd_template_cpp = " && ".join(["echo", "echo '+++ C++ DEMO %(name)s'", "echo",
+                                            "cd %(dir)s", "cmake . %s" % self.getcfg('configopts'),
+                                            "make", "./demo_%(name)s", "cd -"])
 
             # list based on demos available for DOLFIN v1.0.0
             pde_demos = ['biharmonic', 'cahn-hilliard', 'hyperelasticity', 'mixed-poisson',
@@ -195,13 +204,16 @@ class EB_DOLFIN(EB_CMakePythonPackage):
             demos = [os.path.join('la', 'eigenvalue')] + [os.path.join('pde', x) for x in pde_demos]
 
             # construct commands
-            cmds = [cmd_template % {
-                                    'dir': os.path.join(pref, d, 'python'),
+            cmds = [tmpl % {
+                                    'dir': os.path.join(pref, d, subdir),
                                     'name': os.path.basename(d),
                                     }
-                    for d in demos]
+                    for d in demos
+                    for (tmpl, subdir) in [(cmd_template_python, 'python'), (cmd_template_cpp, 'cpp')]]
+            # supply empty argument to each command
+            cmds = [(cmd, "") for cmd in cmds]
 
             # join all commands into one large single sanity check command
-            self.setcfg('sanityCheckCommand', (" && ".join(cmds), ""))
+            self.setcfg('sanityCheckCommands', cmds)
 
         EB_CMakePythonPackage.sanitycheck(self)

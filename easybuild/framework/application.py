@@ -845,11 +845,11 @@ class Application:
         # chdir to installdir (better environment for running tests)
         os.chdir(self.installdir)
 
-        # run sanity check command
-        command = self.getcfg('sanityCheckCommand')
-        if command:
+        # run sanity check commands
+        commands = self.getcfg('sanityCheckCommands')
+        for command in commands:
             # set command to default. This allows for config files with
-            # sanityCheckCommand = True
+            # non-tuple commands
             if not isinstance(command, tuple):
                 self.log.debug("Setting sanity check command to default")
                 command = (None, None)
@@ -868,9 +868,9 @@ class Application:
             out, ec = run_cmd(cmd, simple=False)
             if ec != 0:
                 self.sanityCheckOK = False
-                self.log.debug("sanityCheckCommand %s exited with code %s (output: %s)" % (cmd, ec, out))
+                self.log.warning("sanityCheckCommand %s exited with code %s (output: %s)" % (cmd, ec, out))
             else:
-                self.log.debug("sanityCheckCommand %s ran successfully! (output: %s)" % (cmd, out))
+                self.log.info("sanityCheckCommand %s ran successfully! (output: %s)" % (cmd, out))
 
         failed_pkgs = [pkg.name for pkg in self.instance_pkgs if not pkg.sanitycheck()]
 
@@ -1541,6 +1541,8 @@ def module_path_for_easyblock(easyblock):
     if not easyblock:
         return None
 
+    # FIXME: we actually need a decoding function here,
+    # i.e. from encoded class name to module name
     class_prefix = encode_class_name("")
     if easyblock.startswith(class_prefix):
         easyblock = easyblock[len(class_prefix):]
