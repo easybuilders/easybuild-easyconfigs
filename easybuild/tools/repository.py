@@ -35,23 +35,30 @@ import socket
 import tempfile
 import time
 
-import easybuild
-from easybuild.framework.easyconfig import EasyConfig
-from easybuild.tools.build_log import getLog
+# optional Python packages, these might be missing
+# failing imports are just ignored
+# a NameError should be catched where these are used
 
-
-log = getLog('repo')
+# GitPython
 try:
     import git
     from git import GitCommandError
 except ImportError:
     pass
 
+# PySVN
 try:
     import pysvn  #@UnusedImport
     from pysvn import ClientError #IGNORE:E0611 pysvn fails to recognize ClientError is available
 except ImportError:
     pass
+
+import easybuild
+from easybuild.framework.easyconfig import EasyConfig
+from easybuild.tools.build_log import getLog
+
+
+log = getLog('repo')
 
 
 class Repository:
@@ -208,10 +215,9 @@ class GitRepository(FileRepository):
         Set up git repository.
         """
         try:
-            import git  #@UnusedImport
-            from git import GitCommandError  #@UnusedImport
-        except ImportError:
-            log.exception("GitPython failed to load")
+            raise git.GitCommandError
+        except NameError, err:
+            log.exception("It seems like GitPython is not available: %s" % err)
         self.wc = tempfile.mkdtemp(prefix='git-wc-')
 
     def createWorkingCopy(self):
@@ -301,10 +307,9 @@ class SvnRepository(FileRepository):
         """
         self.repo = os.path.join(self.repo, self.subdir)
         try:
-            import pysvn
-            from pysvn import ClientError #IGNORE:E0611 pysvn fails to recognize ClientError is available
-        except ImportError:
-            log.exception("Failed to load pysvn. Make sure it is installed "
+            raise pysvn.ClientError #IGNORE:E0611 pysvn fails to recognize ClientError is available
+        except NameError, err:
+            log.exception("pysvn not available (%s). Make sure it is installed " % err +
                           "properly. Run 'python -c \"import pysvn\"' to test.")
 
         ## try to connect to the repository
