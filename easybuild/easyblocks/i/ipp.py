@@ -26,10 +26,10 @@
 EasyBuild support for installing the Intel Performance Primitives (IPP) library, implemented as an easyblock
 """
 
-from easybuild.easyblocks.i.intelbase import IntelBase
+from easybuild.easyblocks.i.intelbase import EB_IntelBase
 
 
-class EB_ipp(IntelBase):
+class EB_ipp(EB_IntelBase):
 
     def sanitycheck(self):
 
@@ -45,4 +45,4 @@ class EB_ipp(IntelBase):
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-        IntelBase.sanitycheck(self)
+        EB_IntelBase.sanitycheck(self)

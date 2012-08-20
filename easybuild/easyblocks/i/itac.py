@@ -29,11 +29,11 @@ EasyBuild support for installing the Intel Trace Analyzer and Collector (ITAC), 
 import os
 
 from easybuild.framework.easyconfig import CUSTOM
-from easybuild.easyblocks.i.intelbase import IntelBase
+from easybuild.easyblocks.i.intelbase import EB_IntelBase
 from easybuild.tools.filetools import run_cmd
 
 
-class EB_itac(IntelBase):
+class EB_itac(EB_IntelBase):
     """
     Class that can be used to install itac
     - tested with Intel Trace Analyzer and Collector 7.2.1.008
@@ -41,12 +41,12 @@ class EB_itac(IntelBase):
 
     def __init__(self, *args, **kwargs):
         """Constructor, adds extra config options"""
-        IntelBase.__init__(self, *args, **kwargs)
+        EB_IntelBase.__init__(self, *args, **kwargs)
 
     @staticmethod
     def extra_options():
         extra_vars = [('preferredmpi', ['impi3', "Preferred MPI type (default: 'impi3')", CUSTOM])]
-        return IntelBase.extra_options(extra_vars)
+        return EB_IntelBase.extra_options(extra_vars)
 
     def make_install(self):
         """
@@ -109,8 +109,8 @@ EULA=accept
         return guesses
 
     def make_module_extra(self):
-        """Overwritten from IntelBase to add extra txt"""
-        txt = IntelBase.make_module_extra(self)
+        """Overwritten from EB_IntelBase to add extra txt"""
+        txt = EB_IntelBase.make_module_extra(self)
         txt += "prepend-path\t%s\t\t%s\n" % ('INTEL_LICENSE_FILE', self.license)
         txt += "setenv\t%s\t\t$root\n" % 'VT_ROOT'
         txt += "setenv\t%s\t\t%s\n" % ('VT_MPI', self.getcfg('preferredmpi'))

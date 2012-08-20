@@ -140,6 +140,7 @@ def refactor(txt):
                     'packagesFindSource': 'find_package_sources',
                     'postProc': 'postproc',
                     'sanityCheck': 'sanitycheck',
+                    'self.tk': 'self.toolkit()',
                     'setCfg': 'setcfg',
                     'setLogger': 'setlogger',
                     'setNameVersion': 'set_name_version',

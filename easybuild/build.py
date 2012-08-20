@@ -68,7 +68,8 @@ from easybuild.framework.easyconfig import EasyConfig
 from easybuild.tools.build_log import EasyBuildError, initLogger, \
     removeLogHandler, print_msg
 from easybuild.tools.class_dumper import dumpClasses
-from easybuild.tools.modules import Modules, searchModule
+from easybuild.tools.modules import Modules, searchModule, \
+    curr_module_paths, mk_module_path
 from easybuild.tools.config import getRepository
 from easybuild.tools import systemtools
 
@@ -179,11 +180,18 @@ def main():
     # - last, use default config file easybuild_config.py in build.py directory
     config_file = options.config
 
-    if not config_file and os.getenv(config.environmentVariables['configFile']):
-        config_file = os.getenv(config.environmentVariables['configFile'])
-    else:
-        appPath = os.path.dirname(os.path.realpath(sys.argv[0]))
-        config_file = os.path.join(appPath, "easybuild_config.py")
+    if not config_file:
+        log.debug("No config file specified on command line, trying other options.")
+
+        config_env_var = config.environmentVariables['configFile']
+        if os.getenv(config_env_var):
+            log.debug("Environment variable %s, so using that as config file." % config_env_var)
+            config_file = os.getenv(config_env_var)
+        else:
+            appPath = os.path.dirname(os.path.realpath(sys.argv[0]))
+            config_file = os.path.join(appPath, "easybuild_config.py")
+            log.debug("Falling back to default config: %s" % config_file)
+
     config.init(config_file, **configOptions)
 
     # Dump possible options
@@ -247,7 +255,7 @@ def main():
         for package in checkPackages:
             module = package['module']
             mod = "%s (version %s)" % (module[0], module[1])
-            modspath = os.path.join(config.installPath("mod"), 'all')
+            modspath = mk_module_path(curr_module_paths() + [os.path.join(config.installPath("mod"), 'all')])
             if m.exists(module[0], module[1], modspath):
                 msg = "%s is already installed (module found in %s), skipping " % (mod, modspath)
                 print_msg(msg, log)
@@ -305,8 +313,10 @@ def main():
 
         command = "cd %s && %s %%s %s" % (curdir, eb_path, opts)
         jobs = parbuild.build_packages_in_parallel(command, orderedSpecs, "easybuild-build", log)
+        print "List of submitted jobs:"
         for job in jobs:
             print "%s: %s" % (job.name, job.jobid)
+        print "(%d jobs submitted)" % len(jobs)
 
         log.info("Submitted parallel build jobs, exiting now")
         sys.exit(0)

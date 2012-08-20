@@ -33,13 +33,13 @@ from distutils.version import LooseVersion
 
 import easybuild.tools.environment as env
 import easybuild.tools.toolkit as toolkit
-from easybuild.easyblocks.i.intelbase import IntelBase
+from easybuild.easyblocks.i.intelbase import EB_IntelBase
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.filetools import run_cmd
 from easybuild.tools.modules import Modules
 
 
-class EB_imkl(IntelBase):
+class EB_imkl(EB_IntelBase):
     """
     Class that can be used to install mkl
     - tested with 10.2.1.017
@@ -48,16 +48,16 @@ class EB_imkl(IntelBase):
 
     def __init__(self, *args, **kwargs):
         """Constructor, adds extra config options"""
-        IntelBase.__init__(self, *args, **kwargs)
+        EB_IntelBase.__init__(self, *args, **kwargs)
 
     @staticmethod
     def extra_options():
         extra_vars = [('interfaces', [True, "Indicates whether interfaces should be built (default: True)", CUSTOM])]
-        return IntelBase.extra_options(extra_vars)
+        return EB_IntelBase.extra_options(extra_vars)
 
 
     def configure(self):
-        IntelBase.configure(self)
+        EB_IntelBase.configure(self)
 
         if os.getenv('MKLROOT'):
             self.log.error("Found MKLROOT in current environment, which may cause problems...")
@@ -100,7 +100,7 @@ class EB_imkl(IntelBase):
 
     def make_module_extra(self):
         """Overwritten from Application to add extra txt"""
-        txt = IntelBase.make_module_extra(self)
+        txt = EB_IntelBase.make_module_extra(self)
         txt += "prepend-path\t%s\t\t%s\n" % ('INTEL_LICENSE_FILE', self.license)
         if self.getcfg('m32'):
             txt += "prepend-path\t%s\t\t$root/%s\n" % ('NLSPATH', 'idb/32/locale/%l_%t/%N')
@@ -169,7 +169,7 @@ class EB_imkl(IntelBase):
             # compiler defaults to icc, but we could be using gcc to create gimkl.
             makeopts = ''
             if self.toolkit().comp_family() == toolkit.GCC:
-                makeopts += 'compiler=gnu '
+                makeopts = 'compiler=gnu '
 
             for i in lis1 + lis2 + lis3:
                 if i in lis1:
@@ -182,9 +182,11 @@ class EB_imkl(IntelBase):
                     # use INSTALL_DIR and SPEC_OPT
                     extramakeopts = ''
                     if self.toolkit().mpi_type() == toolkit.MPICH2:
-                        extramakeopts += 'mpi=mpich2'
+                        extramakeopts = 'mpi=mpich2'
                     cmd = "make -f makefile libintel64 %s" % extramakeopts
 
+                # add other make options as well
+                cmd = ' '.join(cmd, makeopts)
 
                 for opt in ['', '-fPIC']:
                     try:
@@ -379,4 +381,4 @@ class EB_imkl(IntelBase):
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-        IntelBase.sanitycheck(self)
+        EB_IntelBase.sanitycheck(self)

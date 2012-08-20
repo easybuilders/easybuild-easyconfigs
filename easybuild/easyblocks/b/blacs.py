@@ -31,6 +31,7 @@ import re
 import os
 import shutil
 
+import easybuild.tools.toolkit as toolkit
 from easybuild.framework.application import Application
 from easybuild.tools.filetools import run_cmd
 from easybuild.tools.modules import get_software_root
@@ -78,30 +79,25 @@ class EB_BLACS(Application):
         """Build BLACS using make, after figuring out the make options based on the heuristic tools available."""
 
         # determine MPI base dir and lib
-        known_mpi_libs = {
-                          'OpenMPI': "-L$(MPILIBdir) -lmpi_f77",
-                          'MVAPICH2': "$(MPILIBdir)/libmpich.a $(MPILIBdir)/libfmpich.a " + \
-                                      "$(MPILIBdir)/libmpl.a -lpthread"
-                          }
+        known_mpis = {
+                      toolkit.OPENMPI: "-L$(MPILIBdir) -lmpi_f77",
+                      toolkit.MVAPICH2: "$(MPILIBdir)/libmpich.a $(MPILIBdir)/libfmpich.a " + \
+                                        "$(MPILIBdir)/libmpl.a -lpthread"
+                     }
+
+        mpi_type = self.toolkit().mpi_type()
 
         base, mpilib = None, None
-        for key, val in known_mpi_libs.items():
-            root = get_software_root(key)
-            if root:
-                base = root
-                mpilib = val
-                break
+        if mpi_type in known_mpis.keys():
+            base = get_software_root(mpi_type)
+            mpilib = known_mpis[mpi_type]
 
-        if not base or not mpilib:
-            self.log.error("Unknown MPI library used (known MPI libs: %s)" % known_mpi_libs.keys())
-
-        # common settings (for now)
-        mpicc = 'mpicc'
-        mpif77 = 'mpif77'
+        else:
+            self.log.error("Unknown MPI lib %s used (known MPI libs: %s)" % (mpi_type, known_mpis.keys()))
 
         opts = {
-                'mpicc': mpicc,
-                'mpif77': mpif77,
+                'mpicc': "%s %s" % (os.getenv('MPICC'), os.getenv('CFLAGS')),
+                'mpif77': "%s %s" % (os.getenv('MPIF77'), os.getenv('FFLAGS')),
                 'f77': os.getenv('F77'),
                 'cc': os.getenv('CC'),
                 'builddir': os.getcwd(),
@@ -172,7 +168,7 @@ class EB_BLACS(Application):
                      'base': base
                     })
 
-        add_makeopts = ' MPICC=%(mpicc)s MPIF77=%(mpif77)s %(comm)s ' % opts
+        add_makeopts = ' MPICC="%(mpicc)s" MPIF77="%(mpif77)s" %(comm)s ' % opts
         add_makeopts += ' INTERFACE=%(int)s MPIdir=%(base)s BTOPdir=%(builddir)s mpi ' % opts
 
         self.updatecfg('makeopts', add_makeopts)
@@ -181,9 +177,6 @@ class EB_BLACS(Application):
 
     def make_install(self):
         """Install by copying files to install dir."""
-
-        # include files
-        src = os.path.join(self.getcfg('startfrom'), 'LIB')
 
         # include files and libraries
         for (srcdir, destdir, ext) in [

@@ -1,5 +1,5 @@
 ##
-# Copyright 2009-2012 Stijn De Weirdt, Dries Verdegem, Kenneth Hoste, Pieter De Baets, Jens Timmerman
+# Copyright 2012 Jens Timmerman
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of the University of Ghent (http://ugent.be/hpc).
@@ -24,10 +24,10 @@ e.g., binary applications shipped as a .tar.gz file
 """
 
 from easybuild.framework.application import Application
-from easybuild.easyblocks.b.binary import Binary
+from easybuild.easyblocks.b.binary import EB_Binary
 
 
-class EB_PackedBinary(Binary, Application):
+class EB_PackedBinary(EB_Binary, Application):
     """Support for installing a packed binary package.
     Just unpack its source in the installdir
     """

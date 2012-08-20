@@ -1,5 +1,9 @@
 ##
-# Copyright 2009-2012 Stijn De Weirdt, Dries Verdegem, Kenneth Hoste, Pieter De Baets, Jens Timmerman
+# Copyright 2009-2012 Stijn De Weirdt
+# Copyright 2010 Dries Verdegem
+# Copyright 2010-2012 Kenneth Hoste
+# Copyright 2011 Pieter De Baets
+# Copyright 2011-2012 Jens Timmerman
 # Copyright 2012 Toon Willems
 #
 # This file is part of EasyBuild,
@@ -24,7 +28,7 @@ import copy
 import difflib
 import os
 
-from easybuild.tools.build_log import getLog, EasyBuildError
+from easybuild.tools.build_log import getLog
 from easybuild.tools.toolkit import Toolkit
 from easybuild.tools.systemtools import get_shared_lib_ext
 from easybuild.tools.filetools import run_cmd
@@ -81,7 +85,7 @@ class EasyConfig:
           ('patches', [[], "List of patches to apply", BUILD]),
           ('tests', [[], "List of test-scripts to run after install. A test script should return a non-zero exit status to fail", BUILD]),
           ('sanityCheckPaths', [{}, "List of files and directories to check (format: {'files':<list>, 'dirs':<list>}, default: {})", BUILD]),
-          ('sanityCheckCommand', [None, "format: (name, options) e.g. ('gzip','-h') . If set to True it will use (name, '-h')", BUILD]),
+          ('sanityCheckCommands', [[], "format: [(name, options)] e.g. [('gzip','-h')] . Using a non-tuple is equivalent to (name, '-h')", BUILD]),
 
           ('startfrom', [None, 'Path to start the make in. If the path is absolute, use that path. If not, this is added to the guessed path.', FILEMANAGEMENT]),
           ('keeppreviousinstall', [False, 'Boolean to keep the previous installation with identical name. Default False, experts only!', FILEMANAGEMENT]),
@@ -162,9 +166,9 @@ class EasyConfig:
         try:
             execfile(path, global_vars, local_vars)
         except IOError, err:
-            self.log.exception("Unexpected IOError during execfile()")
+            self.log.exception("Unexpected IOError during execfile(): %s" % err)
         except SyntaxError, err:
-            self.log.exception("SyntaxError in easyblock %s" % path)
+            self.log.exception("SyntaxError in easyblock %s: %s" % (path, err))
 
         # validate mandatory keys
         for key in self.mandatory:

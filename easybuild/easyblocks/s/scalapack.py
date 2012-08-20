@@ -26,6 +26,7 @@
 EasyBuild support for building and installing ScaLAPACK, implemented as an easyblock
 """
 
+import glob
 import os
 import shutil
 from distutils.version import LooseVersion
@@ -120,7 +121,7 @@ class EB_ScaLAPACK(Application):
                                'F77="%s"' % mpif77,
                                'CC="%s"' % mpicc,
                                'NOOPT="%s"' % noopt,
-                               'CCFLAGS="-O3"'
+                               'CCFLAGS="-O3 %s"' % os.getenv('CFLAGS')
                               ]
 
             # set interface
@@ -151,14 +152,28 @@ class EB_ScaLAPACK(Application):
     def make_install(self):
         """Install by copying files to install dir."""
 
-        src = os.path.join(self.getcfg('startfrom'), 'libscalapack.a')
-        dest = os.path.join(self.installdir, 'lib')
+        # include files and libraries
+        for (srcdir, destdir, ext) in [
+                                       ("SRC", "include", ".h"),  # include files
+                                       ("", "lib", ".a"),  # libraries
+                                       ]:
 
-        try:
-            os.makedirs(dest)
-            shutil.copy2(src,dest)
-        except OSError, err:
-            self.log.error("Copying %s to installation dir %s failed: %s" % (src, dest, err))
+            src = os.path.join(self.getcfg('startfrom'), srcdir)
+            dest = os.path.join(self.installdir, destdir)
+
+            try:
+                os.makedirs(dest)
+                os.chdir(src)
+
+                for lib in glob.glob('*%s' % ext):
+
+                    # copy file
+                    shutil.copy2(os.path.join(src, lib), dest)
+
+                    self.log.debug("Copied %s to %s" % (lib, dest))
+
+            except OSError, err:
+                self.log.error("Copying %s/*.%s to installation dir %s failed: %s"%(src, ext, dest, err))
 
     def sanitycheck(self):
         """Custom sanity check for ScaLAPACK."""

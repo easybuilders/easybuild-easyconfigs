@@ -1,0 +1,59 @@
+diff -ru dolfin-1.0.0.orig/cmake/modules/FindPETSc.cmake dolfin-1.0.0/cmake/modules/FindPETSc.cmake
+--- dolfin-1.0.0.orig/cmake/modules/FindPETSc.cmake	2011-12-07 22:21:22.000000000 +0100
++++ dolfin-1.0.0/cmake/modules/FindPETSc.cmake	2012-08-10 13:02:21.032955197 +0200
+@@ -114,9 +114,10 @@
+   petsc_get_variable(PETSC_INCLUDE PETSC_INCLUDE)          # 3.1
+   petsc_get_variable(PETSC_CC_INCLUDES PETSC_CC_INCLUDES)  # dev
+   set(PETSC_INCLUDE ${PETSC_INCLUDE} ${PETSC_CC_INCLUDES})
+-  petsc_get_variable(PETSC_LIB_BASIC PETSC_LIB_BASIC)
++  petsc_get_variable(PETSC_WITH_EXTERNAL_LIB PETSC_WITH_EXTERNAL_LIB)
+   petsc_get_variable(PETSC_LIB_DIR PETSC_LIB_DIR)
+-  set(PETSC_LIB "-L${PETSC_LIB_DIR} ${PETSC_LIB_BASIC}")
++  set(PETSC_LIB "-L${PETSC_LIB_DIR} ${PETSC_WITH_EXTERNAL_LIB}")
++  message(STATUS "PETSC_LIB ${PETSC_LIB}")
+ 
+   # Remove temporary Makefile
+   file(REMOVE ${petsc_config_makefile})
+@@ -125,6 +126,7 @@
+   include(ResolveCompilerPaths)
+   resolve_includes(PETSC_INCLUDE_DIRS "${PETSC_INCLUDE}")
+   resolve_libraries(PETSC_LIBRARIES "${PETSC_LIB}")
++  message(STATUS "PETSC_LIBRARIES ${PETSC_LIBRARIES}")
+ 
+   # Add X11 includes and libraries on Mac
+   if (APPLE)
+--- dolfin-1.0.0.orig/cmake/modules/FindSLEPc.cmake	2011-12-07 22:21:22.000000000 +0100
++++ dolfin-1.0.0/cmake/modules/FindSLEPc.cmake	2012-08-10 13:16:30.115870158 +0200
+@@ -53,7 +53,7 @@
+ 
+   find_library(SLEPC_LIBRARY
+     NAMES slepc
+-    HINTS ${SLEPC_DIR}/lib $ENV{SLEPC_DIR}/lib
++    HINTS ${SLEPC_DIR}/lib ${SLEPC_DIR}/${PETSC_ARCH}/lib $ENV{SLEPC_DIR}/lib
+     DOC "The SLEPc library"
+     )
+   mark_as_advanced(SLEPC_LIBRARY)
+--- dolfin-1.0.0.orig/dolfin/la/PETScUserPreconditioner.cpp	2011-12-07 22:21:22.000000000 +0100
++++ dolfin-1.0.0/dolfin/la/PETScUserPreconditioner.cpp	2012-08-10 13:27:57.024055423 +0200
+@@ -24,7 +24,7 @@
+ #ifdef HAS_PETSC
+ 
+ #include <boost/shared_ptr.hpp>
+-#include <private/pcimpl.h>
++#include <petsc-private/pcimpl.h>
+ #include <dolfin/common/NoDeleter.h>
+ #include "PETScVector.h"
+ #include "PETScUserPreconditioner.h"
+--- dolfin-1.0.0.orig/dolfin/la/PETScMatrix.cpp	2011-12-07 22:21:22.000000000 +0100
++++ dolfin-1.0.0/dolfin/la/PETScMatrix.cpp	2012-08-10 13:38:47.188024814 +0200
+@@ -110,8 +110,8 @@
+     // and number of off-diagonal non-zeroes (50 in this case).
+     // Note that guessing too high leads to excessive memory usage.
+     // In order to not waste any memory one would need to specify d_nnz and o_nnz.
+-    MatCreateMPIAIJ(PETSC_COMM_WORLD, PETSC_DECIDE, PETSC_DECIDE, M, N,
+-                    50, PETSC_NULL, 50, PETSC_NULL, A.get());
++    MatCreateAIJ(PETSC_COMM_WORLD, PETSC_DECIDE, PETSC_DECIDE, M, N,
++                 50, PETSC_NULL, 50, PETSC_NULL, A.get());
+   }
+   else
+   {

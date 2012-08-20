@@ -23,7 +23,7 @@
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
 """
-EasyBuild support for building and installing Python, implemented as an easyblock
+EasyBuild support for Python, implemented as an easyblock
 """
 
 import os
@@ -56,6 +56,12 @@ class EB_Python(Application):
         # use __name__ here, since this is the module where EB_DefaultPythonPackage is defined
         self.setcfg('pkgdefaultclass', (__name__, "EB_DefaultPythonPackage"))
         self.setcfg('pkgfilter', ('python -c "import %(name)s"', ""))
+
+    def configure(self):
+        """Set extra configure options."""
+        self.updatecfg('configopts', "--with-threads --enable-shared")
+
+        Application.configure(self)
 
     def make_install(self):
         """Extend make install to make sure that the 'python' command is present."""

@@ -1,5 +1,6 @@
 ##
-# Copyright 2012 Stijn De Weirdt, Toon Willems
+# Copyright 2012 Stijn De Weirdt
+# Copyright 2012 Toon Willems
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of the University of Ghent (http://ugent.be/hpc).
@@ -24,6 +25,12 @@ Interface module to TORQUE (PBS).
 
 import os
 
+try:
+    from PBSQuery import PBSQuery
+    import pbs
+except ImportError:
+    pass
+
 from easybuild.tools.build_log import getLog
 
 MAX_WALLTIME = 72
@@ -46,19 +53,19 @@ class PbsJob:
             self.env_vars = {}
         self.name = name
 
-        global pbs
-        global PBSQuery
         try:
-            from PBSQuery import PBSQuery
-            import pbs
-        except ImportError:
-            self.log.error("Cannot import PBSQuery or pbs. Please make sure pbs_python is installed and usable.")
+            # try and use pbs and PBSQuery to see if they're there
+            pbs.pbs_default()
+            PBSQuery()
+        except NameError, err:
+            self.log.error("PBSQuery or pbs modules not available: %s\n" \
+                           "Please make sure pbs_python is installed and usable." % err)
 
         try:
             self.pbs_server = pbs.pbs_default()
             self.pbsconn = pbs.pbs_connect(self.pbs_server)
-        except:
-            self.log.error("Could not connect to the default pbs server, is this correctly configured?")
+        except Exception, err:
+            self.log.error("Failed to connect to the default pbs server: %s" % err)
 
         # setup the resources requested
 
@@ -140,6 +147,12 @@ class PbsJob:
         variable_attributes[0].value = ",".join(pbsvars)
 
         pbs_attributes.extend(variable_attributes)
+
+        # mail settings
+        mail_attributes = pbs.new_attropl(1)
+        mail_attributes[0].name = 'Mail_Points'
+        mail_attributes[0].value = 'n'  # disable all mail
+        pbs_attributes.extend(mail_attributes)
 
         import tempfile
         fh, scriptfn = tempfile.mkstemp()
@@ -258,15 +271,17 @@ class PbsJob:
         """Guess the ppn for full node"""
         pq = PBSQuery()
         node_vals = pq.getnodes().values() ## only the values, not the names
-        interesni_nodes = ('free', 'job-exclusive',)
+        interesting_nodes = ('free', 'job-exclusive',)
         res = {}
-        for np in [int(x['np'][0]) for x in node_vals if x['state'][0] in interesni_nodes]:
+        for np in [int(x['np'][0]) for x in node_vals if x['state'][0] in interesting_nodes]:
             res.setdefault(np, 0)
             res[np] += 1
 
         ## return most frequent
         freq_count, freq_np = max([(j, i) for i, j in res.items()])
-        self.log.debug("Found most frequent np %s (%s times) in interesni nodes %s" % (freq_np, freq_count, interesni_nodes))
+        self.log.debug("Found most frequent np %s (%s times) in interesni nodes %s" % (freq_np,
+                                                                                       freq_count,
+                                                                                       interesting_nodes))
 
         return freq_np
 

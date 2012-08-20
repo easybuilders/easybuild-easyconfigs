@@ -28,7 +28,7 @@ EasyBuild support for installing the Intel Fortran compiler suite, implemented a
 
 from distutils.version import LooseVersion
 
-from easybuild.easyblocks.i.icc import Icc, IntelBase
+from easybuild.easyblocks.i.icc import Icc, EB_IntelBase
 
 
 class EB_ifort(Icc):
@@ -57,4 +57,4 @@ class EB_ifort(Icc):
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-        IntelBase.sanitycheck(self)
+        EB_IntelBase.sanitycheck(self)

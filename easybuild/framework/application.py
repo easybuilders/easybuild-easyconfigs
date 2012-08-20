@@ -36,7 +36,6 @@ import re
 import shutil
 import time
 import urllib
-from difflib import get_close_matches
 from distutils.version import LooseVersion
 
 import easybuild
@@ -48,7 +47,6 @@ from easybuild.tools.config import source_path, buildPath, installPath
 from easybuild.tools.filetools import unpack, patch, run_cmd, convertName, encode_class_name
 from easybuild.tools.module_generator import ModuleGenerator
 from easybuild.tools.modules import Modules, get_software_root
-from easybuild.tools.toolkit import Toolkit
 from easybuild.tools.systemtools import get_core_count
 
 
@@ -336,9 +334,9 @@ class Application:
             self.log.error('Not all dependencies have a matching toolkit version')
 
         # Check if the application is not loaded at the moment
-        envName = "EBROOT%s" % convertName(self.name(), upper=True)
-        if get_software_root(self.name()):
-            self.log.error("Module is already loaded (%s is set), installation cannot continue." % envName)
+        (root, env_var) = get_software_root(self.name(), with_env_var=True)
+        if root:
+            self.log.error("Module is already loaded (%s is set), installation cannot continue." % env_var)
 
         # Check if main install needs to be skipped
         # - if a current module can be found, skip is ok
@@ -346,8 +344,8 @@ class Application:
         if self.getcfg('skip'):
             if Modules().exists(self.name(), self.installversion()):
                 self.skip = True
-                self.log.info("Current version (name: %s, version: %s) found. Going to skip actually main build and\
-                        potential existing packages. Expert only." % (self.name(), self.installversion()))
+                self.log.info("Current version (name: %s, version: %s) found." % (self.name(), self.installversion))
+                self.log.info("Going to skip actually main build and potential exitsing packages. Expert only.")
             else:
                 self.log.info("No current version (name: %s, version: %s) found. Not skipping anything." % (self.name(),
                     self.installversion()))
@@ -844,14 +842,14 @@ class Application:
             self.log.debug("Loading module failed: %s" % err)
             self.sanityCheckOK = False
 
-        # chdir to installdir (beter environment for running tests)
+        # chdir to installdir (better environment for running tests)
         os.chdir(self.installdir)
 
-        # run sanity check command
-        command = self.getcfg('sanityCheckCommand')
-        if command:
+        # run sanity check commands
+        commands = self.getcfg('sanityCheckCommands')
+        for command in commands:
             # set command to default. This allows for config files with
-            # sanityCheckCommand = True
+            # non-tuple commands
             if not isinstance(command, tuple):
                 self.log.debug("Setting sanity check command to default")
                 command = (None, None)
@@ -870,9 +868,9 @@ class Application:
             out, ec = run_cmd(cmd, simple=False)
             if ec != 0:
                 self.sanityCheckOK = False
-                self.log.debug("sanityCheckCommand %s exited with code %s (output: %s)" % (cmd, ec, out))
+                self.log.warning("sanityCheckCommand %s exited with code %s (output: %s)" % (cmd, ec, out))
             else:
-                self.log.debug("sanityCheckCommand %s ran successfully! (output: %s)" % (cmd, out))
+                self.log.info("sanityCheckCommand %s ran successfully! (output: %s)" % (cmd, out))
 
         failed_pkgs = [pkg.name for pkg in self.instance_pkgs if not pkg.sanitycheck()]
 
@@ -925,31 +923,42 @@ class Application:
         Configure step
         - typically ./configure --prefix=/install/path style
         """
+
         cmd = "%s %s./configure --prefix=%s %s" % (self.getcfg('preconfigopts'), cmd_prefix,
                                                     self.installdir, self.getcfg('configopts'))
-        run_cmd(cmd, log_all=True, simple=True)
+
+        (out, _) = run_cmd(cmd, log_all=True, simple=False)
+
+        return out
 
     def make(self, verbose=False):
         """
         Start the actual build
         - typical: make -j X
         """
+
         paracmd = ''
         if self.getcfg('parallel'):
             paracmd = "-j %s" % self.getcfg('parallel')
 
         cmd = "%s make %s %s" % (self.getcfg('premakeopts'), paracmd, self.getcfg('makeopts'))
 
-        run_cmd(cmd, log_all=True, simple=True, log_output=verbose)
+        (out, _) = run_cmd(cmd, log_all=True, simple=False, log_output=verbose)
+
+        return out
 
     def test(self):
         """
         Test the compilation
         - default: None
         """
+
         if self.getcfg('runtest'):
             cmd = "make %s" % (self.getcfg('runtest'))
-            run_cmd(cmd, log_all=True, simple=True)
+            (out, _) = run_cmd(cmd, log_all=True, simple=False)
+
+            return out
+
     def toolkit(self):
         """
         Toolkit used to build this Application
@@ -973,8 +982,12 @@ class Application:
         Create the installation in correct location
         - typical: make install
         """
+
         cmd = "make install %s" % (self.getcfg('installopts'))
-        run_cmd(cmd, log_all=True, simple=True)
+
+        (out, _) = run_cmd(cmd, log_all=True, simple=False)
+
+        return out
 
     def make_builddir(self):
         """
@@ -1267,7 +1280,7 @@ class Application:
                     if os.path.exists(fullpath):
                         installsize += os.path.getsize(fullpath)
         except OSError, err:
-            self.log.warn("could not determine installsize")
+            self.log.warn("Could not determine install size: %s" % err)
 
         return installsize
 
@@ -1528,6 +1541,12 @@ def module_path_for_easyblock(easyblock):
     if not easyblock:
         return None
 
+    # FIXME: we actually need a decoding function here,
+    # i.e. from encoded class name to module name
+    class_prefix = encode_class_name("")
+    if easyblock.startswith(class_prefix):
+        easyblock = easyblock[len(class_prefix):]
+
     modname = easyblock.replace('-','_')
 
     first_char = easyblock[0].lower()
@@ -1558,7 +1577,10 @@ def get_class(easyblock, log, name=None):
     """
     Get instance for a particular application class (or Application)
     """
-    #TODO: create proper factory for this, as explained here
+
+    app_mod_class = ("easybuild.framework.application", "Application")
+
+    #TODO: create proper factory for this, as explained here 
     #http://stackoverflow.com/questions/456672/class-factory-in-python
     try:
         if not easyblock:
@@ -1601,10 +1623,14 @@ def get_class(easyblock, log, name=None):
                     raise EasyBuildError(str(err))
 
             else:
-                modulepath = "easybuild.framework.application"
-                class_name = "Application"
+                (modulepath, class_name) = app_mod_class
                 log.debug("Easyblock path %s does not exist, so falling back to default %s class from %s" % (easyblock_path, class_name, modulepath))
 
+        elif easyblock == "Application":
+            (modulepath, class_name) = app_mod_class
+            log.debug("Easyblock %s specified, so using default class %s from %s" % (easyblock,
+                                                                                     class_name,
+                                                                                     modulepath))
         else:
             class_name = easyblock.split('.')[-1]
             # figure out if full path was specified or not

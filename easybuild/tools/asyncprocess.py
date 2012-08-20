@@ -5,7 +5,11 @@
 #
 # http://code.activestate.com/recipes/440554/
 #
-# Copyright 2009-2012 Stijn De Weirdt, Dries Verdegem, Kenneth Hoste, Pieter De Baets, Jens Timmerman
+# Copyright 2009-2012 Stijn De Weirdt
+# Copyright 2010 Dries Verdegem
+# Copyright 2010-2012 Kenneth Hoste
+# Copyright 2011 Pieter De Baets
+# Copyright 2011-2012 Jens Timmerman
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of the University of Ghent (http://ugent.be/hpc).
@@ -57,7 +61,6 @@ and the methods will return None.
 import errno
 import os
 import subprocess
-import sys
 import time
 
 PIPE = subprocess.PIPE
