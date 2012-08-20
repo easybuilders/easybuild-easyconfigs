@@ -19,7 +19,6 @@
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
 import os
-import re
 
 from unittest import TestCase, TestSuite
 import easybuild.tools.config as config

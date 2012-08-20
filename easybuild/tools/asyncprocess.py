@@ -57,7 +57,6 @@ and the methods will return None.
 import errno
 import os
 import subprocess
-import sys
 import time
 
 PIPE = subprocess.PIPE
