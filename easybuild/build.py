@@ -261,8 +261,10 @@ def main():
 
         command = "cd %s && %s %%s %s" % (curdir, eb_path, opts)
         jobs = parbuild.build_packages_in_parallel(command, orderedSpecs, "easybuild-build", log)
+        print "List of submitted jobs:"
         for job in jobs:
             print "%s: %s" % (job.name, job.jobid)
+        print "(%d jobs submitted)" % len(jobs)
 
         log.info("Submitted parallel build jobs, exiting now")
         sys.exit(0)
