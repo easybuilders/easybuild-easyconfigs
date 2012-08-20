@@ -37,6 +37,7 @@ import shutil
 import sys
 import tempfile
 import time
+from distutils.version import LooseVersion
 from optparse import OptionParser, OptionGroup
 
 import easybuild  # required for VERBOSE_VERSION
@@ -239,7 +240,7 @@ def main():
         if software_build_options.has_key('name'):
             # if no easyconfig files/paths were provided, but we did get a software name,
             # we can try and find a suitable easyconfig ourselves
-            paths = find_best_matching_easyconfigs(log, software_build_options, options.robot)
+            paths = [find_best_matching_easyconfig(log, software_build_options, options.robot)]
 
         else:
             error("Please provide one or multiple easyconfig files, or use software build " \
@@ -609,7 +610,9 @@ def setup_easyconfig_tweaks(buildopts):
 
     return tweaks
 
-def find_best_matching_easyconfigs(log, buildopts, robot):
+def find_best_matching_easyconfig(log, buildopts, robot):
+
+    name = buildopts['name']
 
     # collect paths to search in
     paths = []
@@ -621,26 +624,112 @@ def find_best_matching_easyconfigs(log, buildopts, robot):
 
     # create glob patterns based on supplied info
 
+    ver = buildopts.get('version')
+    tkname = buildopts.get('toolkit_name')
+    tkver = buildopts.get('toolkit_version')
+    verpref = buildopts.get('versionprefix')
+    versuff = buildopts.get('versionsuffix')
+
     # figure out the install version
-    ver = buildopts.get('version', '*')
-    tkname = buildopts.get('toolkit_name', '*')
-    tkver = buildopts.get('toolkit_version', '*')
-    verpref = buildopts.get('versionprefix', '*')
-    versuff = buildopts.get('versionsuffix', '*')
-    installver = easyconfig.det_installversion(ver, tkname, tkver, verpref, versuff)
+    installver = easyconfig.det_installversion(ver or '*', tkname or '*', tkver or '*',
+                                               verpref or '*', versuff or '*')
 
     patterns = []
     for path in paths:
-        patterns.extend(create_paths(path, buildopts['name'], installver))
+        patterns.extend(create_paths(path, name, installver))
 
-    # find easyconfigs that match
+    log.debug('Patterns to look for easyconfig files: %s' % patterns)
+
+    # find easyconfigs that match a pattern
     easyconfig_files = []
     for pattern in patterns:
         easyconfig_files.extend(glob.glob(pattern))
+    cnt = len(easyconfig_files)
 
     log.debug("List of obtained easyconfig files: %s" % easyconfig_files)
 
-    error("Not implemented yet")
+    # select best easyconfig, or try to generate one that fits the requirements
+
+    reqs = {
+            'name': name,
+            'version': ver,
+            'tkname': tkname,
+            'tkversion': tkver,
+            'versionprefix': verpref,
+            'versionsuffix': versuff,
+            }
+
+    if cnt > 0:
+        # one or multiple matches, so select one
+        if cnt == 1:
+            log.info("Found a single exact match (%s), so using it." % easyconfig_files[0])
+            return easyconfig_files[0]
+    
+        else:
+            (ok, res) = select_best_easyconfig(easyconfig_files, reqs, log)
+            if ok:
+                return res
+            else:
+                log.error("Failed to further select from the list of %s files: %s" % (len(res), res))
+
+    else:
+        # no matches found, so we'll try and generate an easyconfig file
+        (ok, res) = generate_easyconfig(reqs, log)
+        if ok:
+            return res
+        else:
+            log.error("No easyconfig found for requested software, and also failed to generate one.")
+
+def select_best_easyconfig(ec_files, reqs, log):
+    """Select the best easyconfig given the specifications."""
+
+    # if no software version was specified, only retain most recent software version
+    if not reqs['version']:
+        easyconfigs = [EasyConfig(f, validate=False) for f in ec_files]
+        versions = sorted([LooseVersion(ec['version']) for ec in easyconfigs])
+
+        if len(versions) > 1:
+            log.debug("sorted software versions: %s" % versions)
+            print "No software version specified, so only retaining last version %s" % versions[-1]
+
+            def retain(eb_file):
+                ec = EasyConfig(eb_file, validate=False)
+                return LooseVersion(ec['version']) == versions[-1]
+    
+            ec_files = [f for f in ec_files if retain(f)]
+
+    # if no toolkit was specified without version, only retain most recent toolkit versions
+    if reqs['tkname'] and not reqs['tkversion']:
+        easyconfigs = [EasyConfig(f, validate=False) for f in ec_files]
+        tkversions = sorted([LooseVersion(ec['toolkit']['version']) for ec in easyconfigs])
+
+        if len(tkversions) > 1:
+            log.debug("sorted toolkit versions: %s" % tkversions)
+            print "No toolkit version specified, so only retaining last version %s-%s" % (reqs['tkname'], tkversions[-1])
+    
+            def retain(eb_file):
+                ec = EasyConfig(eb_file, validate=False)
+                return LooseVersion(ec['toolkit']['version']) == tkversions[-1]
+
+            ec_files = [f for f in ec_files if retain(f)]
+
+    cnt = len(ec_files)
+    log.debug("Retained %s easyconfig files: %s" % (cnt, ec_files))
+
+    if len(ec_files) == 1:
+        res = ec_files[0]
+        print "Selected easyconfig file %s to build requested software" % res
+        log.info("Selected %s from list of %d files." % (res, cnt))
+        return (True, res)
+    else:
+        return (False, ec_files)
+
+def generate_easyconfig(reqs, log):
+
+    res = None
+    log.info("Generated easyconfig file %s, and using it to build the requested software." % res)
+
+    return (False, res)
 
 def robotFindEasyconfig(log, path, module):
     """
