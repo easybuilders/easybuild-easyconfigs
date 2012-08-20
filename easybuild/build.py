@@ -159,11 +159,18 @@ def main():
     # - last, use default config file easybuild_config.py in build.py directory
     config_file = options.config
 
-    if not config_file and os.getenv(config.environmentVariables['configFile']):
-        config_file = os.getenv(config.environmentVariables['configFile'])
-    else:
-        appPath = os.path.dirname(os.path.realpath(sys.argv[0]))
-        config_file = os.path.join(appPath, "easybuild_config.py")
+    if not config_file:
+        log.debug("No config file specified on command line, trying other options.")
+
+        config_env_var = config.environmentVariables['configFile']
+        if os.getenv(config_env_var):
+            log.debug("Environment variable %s, so using that as config file." % config_env_var)
+            config_file = os.getenv(config_env_var)
+        else:
+            appPath = os.path.dirname(os.path.realpath(sys.argv[0]))
+            config_file = os.path.join(appPath, "easybuild_config.py")
+            log.debug("Falling back to default config: %s" % config_file)
+
     config.init(config_file, **configOptions)
 
     # Dump possible options
