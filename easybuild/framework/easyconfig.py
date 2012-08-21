@@ -365,6 +365,20 @@ class EasyConfig:
             except (AttributeError, TypeError), err:
                 self.log.error("Failed to tweak easyconfig with %s(%s): %s" % (f, x, err))
 
+    def dump(self, fp):
+        """
+        Dump this easyconfig to file, with the given filename.
+        """
+        eb_file = file(fp, "w")
+
+        ebtxt = [
+                 "name = %s" % self['name'],
+                 "version = %s" % self['version']
+                 ]
+
+        eb_file.write('\n'.join(ebtxt))
+        eb_file.close()
+
     # private method
     def _validate(self, attr, values):
         """

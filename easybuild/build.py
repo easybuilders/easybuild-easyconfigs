@@ -239,8 +239,9 @@ def main():
     if len(paths) == 0:
         if software_build_options.has_key('name'):
             # if no easyconfig files/paths were provided, but we did get a software name,
-            # we can try and find a suitable easyconfig ourselves
-            paths = [find_best_matching_easyconfig(log, software_build_options, options.robot)]
+            # we can try and find a suitable easyconfig ourselves, or generate one if we can
+            paths = [find_best_matching_easyconfig(log, software_build_options,
+                                                   options.robot, None, easyconfig_tweaks)]
 
         else:
             error("Please provide one or multiple easyconfig files, or use software build " \
@@ -392,35 +393,35 @@ def processEasyconfig(path, log, onlyBlocks=None, regtest_online=False, tweaks=N
 
         # create easyconfig
         try:
-            eb = EasyConfig(spec)
+            ec = EasyConfig(spec)
             if tweaks:
-                eb.tweak(tweaks)
+                ec.tweak(tweaks)
         except EasyBuildError, err:
             msg = "Failed to process easyconfig %s:\n%s" % (spec, err.msg)
             log.exception(msg)
 
-        name = eb['name']
+        name = ec['name']
 
         # this app will appear as following module in the list
         package = {
             'spec': spec,
-            'module': (eb.name(), eb.installversion()),
+            'module': (ec.name(), ec.installversion()),
             'dependencies': []
         }
         if len(blocks) > 1:
             package['originalSpec'] = path
 
-        for d in eb.dependencies():
+        for d in ec.dependencies():
             dep = (d['name'], d['tk'])
             log.debug("Adding dependency %s for app %s." % (dep, name))
             package['dependencies'].append(dep)
 
-        if eb.toolkit_name() != 'dummy':
-            dep = (eb.toolkit_name(), eb.toolkit_version())
+        if ec.toolkit_name() != 'dummy':
+            dep = (ec.toolkit_name(), ec.toolkit_version())
             log.debug("Adding toolkit %s as dependency for app %s." % (dep, name))
             package['dependencies'].append(dep)
 
-        del eb
+        del ec
 
         # this is used by the parallel builder
         package['unresolvedDependencies'] = copy.copy(package['dependencies'])
@@ -610,9 +611,7 @@ def setup_easyconfig_tweaks(buildopts):
 
     return tweaks
 
-def find_best_matching_easyconfig(log, buildopts, robot):
-
-    name = buildopts['name']
+def find_best_matching_easyconfig(log, buildopts, robot, fp, easyconfig_tweaks):
 
     # collect paths to search in
     paths = []
@@ -624,40 +623,28 @@ def find_best_matching_easyconfig(log, buildopts, robot):
 
     # create glob patterns based on supplied info
 
-    ver = buildopts.get('version')
-    tkname = buildopts.get('toolkit_name')
-    tkver = buildopts.get('toolkit_version')
-    verpref = buildopts.get('versionprefix')
-    versuff = buildopts.get('versionsuffix')
+    reqs = {}
+    for key in ['name', 'version', 'toolkit_name', 'toolkit_version', 'versionprefix', 'versionsuffix']:
+        reqs.update({key: buildopts.get(key)})
 
     # figure out the install version
-    installver = easyconfig.det_installversion(ver or '*', tkname or '*', tkver or '*',
-                                               verpref or '*', versuff or '*')
-
-    patterns = []
-    for path in paths:
-        patterns.extend(create_paths(path, name, installver))
-
-    log.debug('Patterns to look for easyconfig files: %s' % patterns)
+    installver = easyconfig.det_installversion(reqs['version'] or '*', reqs['toolkit_name'] or '*',
+                                               reqs['toolkit_version'] or '*',
+                                               reqs['versionprefix'] or '*',
+                                               reqs['versionsuffix'] or '*')
 
     # find easyconfigs that match a pattern
     easyconfig_files = []
-    for pattern in patterns:
-        easyconfig_files.extend(glob.glob(pattern))
+    for path in paths:
+        patterns = create_paths(path, reqs['name'], installver)
+        for pattern in patterns:
+            easyconfig_files.extend(glob.glob(pattern))
+
     cnt = len(easyconfig_files)
 
-    log.debug("List of obtained easyconfig files: %s" % easyconfig_files)
+    log.debug("List of obtained easyconfig files (%d): %s" % (cnt, easyconfig_files))
 
     # select best easyconfig, or try to generate one that fits the requirements
-
-    reqs = {
-            'name': name,
-            'version': ver,
-            'tkname': tkname,
-            'tkversion': tkver,
-            'versionprefix': verpref,
-            'versionsuffix': versuff,
-            }
 
     if cnt > 0:
         # one or multiple matches, so select one
@@ -674,7 +661,7 @@ def find_best_matching_easyconfig(log, buildopts, robot):
 
     else:
         # no matches found, so we'll try and generate an easyconfig file
-        (ok, res) = generate_easyconfig(reqs, log)
+        (ok, res) = generate_easyconfig(fp, paths, reqs, easyconfig_tweaks, log)
         if ok:
             return res
         else:
@@ -699,13 +686,14 @@ def select_best_easyconfig(ec_files, reqs, log):
             ec_files = [f for f in ec_files if retain(f)]
 
     # if no toolkit was specified without version, only retain most recent toolkit versions
-    if reqs['tkname'] and not reqs['tkversion']:
+    if reqs['toolkit_name'] and not reqs['toolkit_version']:
         easyconfigs = [EasyConfig(f, validate=False) for f in ec_files]
         tkversions = sorted([LooseVersion(ec['toolkit']['version']) for ec in easyconfigs])
 
         if len(tkversions) > 1:
             log.debug("sorted toolkit versions: %s" % tkversions)
-            print "No toolkit version specified, so only retaining last version %s-%s" % (reqs['tkname'], tkversions[-1])
+            print "No toolkit version specified, so only retaining last version" \
+                  " %s-%s" % (reqs['toolkit_name'], tkversions[-1])
     
             def retain(eb_file):
                 ec = EasyConfig(eb_file, validate=False)
@@ -724,9 +712,122 @@ def select_best_easyconfig(ec_files, reqs, log):
     else:
         return (False, ec_files)
 
-def generate_easyconfig(reqs, log):
+def generate_easyconfig(fp, paths, reqs, easyconfig_tweaks, log):
+    """
+    Generate an easyconfig file with the given requirements, based on existing config files.
 
-    res = None
+    If easyconfig files are available for the specified software package,
+    then this function will first try to determine which toolkit to use.
+     * if a toolkit is given, it will use that (possible using a template easyconfig file as base);
+     * if not, and only a single toolkit is available, is will assume it can use that toolkit
+     * else, it fails -- EasyBuild doesn't select between multiple available toolkits
+
+    Next, it will trim down the selection of easyconfig files to a single one,
+    based on the following requirements (in order of preference):
+     * toolkit version: it will use an easyconfig file
+     * software version:
+     * versionprefix:
+     * versionsuffix:
+    """
+
+    # find ALL available easyconfigs for specified software
+    ec_files = []
+    installver = easyconfig.det_installversion('*', 'dummy', '*', '*', '*')
+    for path in paths:
+        patterns = create_paths(path, reqs['name'], installver)
+        for pattern in patterns:
+            ec_files.extend(glob.glob(pattern))
+
+    # we need at least one config file to start from
+    if len(ec_files) == 0:
+        log.error("No easyconfig files found for software %s, I'm all out of ideas." % reqs['name'])
+
+    easyconfigs = [EasyConfig(f, validate=False) for f in ec_files]
+
+    def unique(l):  # no such function available in Python?!?
+        """Retain unique elements in a sorted list."""
+        l2 = [l[0]]
+        for x in l:
+            if not x in l2:
+                l2.append(x)
+        return l2
+
+
+    # TOOLKIT NAME
+
+    tkname = None
+
+    # determine list of unique toolkit names
+    tknames = unique([ec['toolkit']['name'] for ec in easyconfigs])
+    log.debug("Found %d unique toolkit names: %s" % (len(tknames), tknames))
+
+    # if multiple toolkits are available, and none is specified, we quit
+    # we can't just pick one, how would we prefer one over the other?
+    if len(tknames) > 1 and not reqs['toolkit_name']:
+        log.error("No toolkit specified, and easyconfig files found for more than one toolkit.")
+
+    # if a toolkit was selected, and we have no easyconfig files for it, try and use a template
+    if reqs['toolkit_name'] and not reqs['toolkit_name'] in tknames:
+        if "TEMPLATE" in tknames:
+            log.info("No easyconfig file for specified toolkit, but template is available.")
+        else:
+            log.error("No easyconfig file for %s with toolkit %s, " \
+                      "and no template available." % (reqs['name'], reqs['toolkit_name']))
+
+    if not reqs['toolkit_name'] == "TEMPLATE":
+        tkname = reqs['toolkit_name']
+
+    # trim down list according to selected toolkit
+    if tkname in tknames:
+        # known toolkit, so only retain those
+        easyconfigs = [ec for ec in easyconfigs if ec['toolkit']['name'] == tkname]
+    else:
+        if len(tknames) == 1 and not tknames[0] == "TEMPLATE":
+            # only one (non-template) toolkit availble, so use that
+            tkname = tknames[0]
+            easyconfigs = [ec for ec in easyconfigs if ec['toolkit']['name'] == tkname]
+        else:
+            # fall-back: use template toolkit if a toolkit name was specified
+            if tkname:
+                easyconfigs = [ec for ec in easyconfigs if ec['toolkit']['name'] == "TEMPLATE"]
+            else:
+                log.error("No toolkit name specified, and more than one available (%s)." % tknames)
+
+    log.debug("Filtered easyconfigs: %s" % [(ec['name'], ec['version'], ec['toolkit']['name'], ec['toolkit']['version']) for ec in easyconfigs])
+
+
+    # TOOLKIT VERSION
+
+    tkver = "3.14"
+
+    tkvers = unique([ec['toolkit']['version'] for ec in easyconfigs])
+    log.debug("Found %d unique toolkit versions: %s" % (len(tkvers), tkvers))
+
+
+    # SOFTWARE VERSION
+
+    ver = "1.2.3"
+
+    vers = unique([ec['version'] for ec in easyconfigs])
+    log.debug("Found %d unique software versions: %s" % (len(vers), vers))
+
+
+    verpref = "-mypref"
+    versuff = "-mysuff"
+
+    # GENERATE
+
+    # if no file path was specified, generate a file name
+    if not fp:
+        installver = easyconfig.det_installversion(ver, tkname, tkver, verpref, versuff)
+        fp= "%s%s.eb" % (reqs['name'], installver)
+
+    # generate easyconfig and dump it to file
+    selected_easyconfig = easyconfigs[0]
+    selected_easyconfig.tweak(easyconfig_tweaks)
+    selected_easyconfig.dump(fp)
+
+    res = fp
     log.info("Generated easyconfig file %s, and using it to build the requested software." % res)
 
     return (False, res)
