@@ -34,9 +34,11 @@ from easybuild.tools.filetools import run_cmd_qa
 class EB_BiSearch(Application):
 
     def configure(self):
+        """(no configure)"""
         pass
 
     def make(self):
+        """(empty, building is performed in make_install step)"""
         pass
 
     def make_install(self):
@@ -50,6 +52,7 @@ class EB_BiSearch(Application):
         run_cmd_qa(cmd, qanda, log_all=True, simple=True)
 
     def sanitycheck(self):
+        """Custom sanity check for BiSearch."""
 
         if not self.getcfg('sanityCheckPaths'):
             self.setcfg('sanityCheckPaths', {'files':["bin/%s" % x for x in ["fpcr", "indexing_cdna",
