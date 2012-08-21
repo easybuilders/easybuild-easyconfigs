@@ -371,10 +371,46 @@ class EasyConfig:
         """
         eb_file = file(fp, "w")
 
-        ebtxt = [
-                 "name = %s" % self['name'],
-                 "version = %s" % self['version']
-                 ]
+        def to_str(x):
+            if type(x) == str:
+                if '\n' in x or ('"' in x and "'" in x):
+                    return '"""%s"""' % x
+                elif "'" in x:
+                    return '"%s"' % x
+                else:
+                    return "'%s'" % x
+            else:
+                return "%s" % x
+
+        # ordered groups of keys to obtain a nice looking easyconfig file
+        grouped_keys = [
+                        ["name", "version", "versionprefix", "versionsuffix"],
+                        ["homepage", "description"],
+                        ["toolkit", "toolkitopts"],
+                        ["sourceURLs", "sources"],
+                        ["patches"],
+                        ["dependencies"],
+                        ["parallel", "maxparallel"],
+                        ["osdependencies"]
+                        ]
+
+        # print easyconfig parameters ordered and in groups specified above
+        ebtxt = []
+        printed_keys = []
+        for group in grouped_keys:
+            for key1 in group:
+                val = self.config[key1][0]
+                for (key2, [def_val, _, _]) in self.default_config:
+                    # only print parameters that are different from the default value
+                    if key1 == key2 and val != def_val:
+                        ebtxt.append("%s = %s" % (key1, to_str(val)))
+                        printed_keys.append(key1)
+            ebtxt.append("")
+
+        # print other easyconfig parameters at the end
+        for (key, [val, _, _]) in self.default_config:
+            if not key in printed_keys and val != self.config[key][0]:
+                ebtxt.append("%s = %s" % (key, to_str(self.config[key][0])))
 
         eb_file.write('\n'.join(ebtxt))
         eb_file.close()
