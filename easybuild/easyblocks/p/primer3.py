@@ -31,6 +31,10 @@ from easybuild.framework.application import Application
 
 
 class EB_Primer3(Application):
+    """
+    Support for building Primer3.
+    Configure and build in installation dir.
+    """
 
     def __init__(self, *args, **kwargs):
         """Specify that Primer3 should be built in install directory, and set correct startfrom dir."""

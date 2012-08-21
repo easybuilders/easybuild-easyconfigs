@@ -32,6 +32,10 @@ from easybuild.tools.filetools import run_cmd_qa
 
 
 class EB_BiSearch(Application):
+    """
+    Support for building BiSearch.
+    Basically just run the interactive installation script install.sh.
+    """
 
     def configure(self):
         """(no configure)"""
