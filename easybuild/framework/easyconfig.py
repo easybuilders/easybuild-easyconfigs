@@ -23,6 +23,8 @@
 import copy
 import difflib
 import os
+import re
+import tempfile
 
 from easybuild.tools.build_log import getLog
 from easybuild.tools.toolkit import Toolkit
@@ -313,58 +315,6 @@ class EasyConfig:
         """
         return self['name']
 
-    def set_version(self, version):
-        """
-        Set version
-        """
-        self['version'] = version
-
-    def set_versionprefix(self, prefix):
-        """
-        Set version prefix
-        """
-        self['versionprefix'] = prefix
-
-    def set_versionsuffix(self, suffix):
-        """
-        Set version suffix
-        """
-        self['versionsuffix'] = suffix
-
-    def set_toolkit_name(self, name):
-        """
-        Set toolkit name
-        """
-        self['toolkit']['name'] = name
-
-    def set_toolkit_version(self, version):
-        """
-        Set toolkit name
-        """
-        self['toolkit']['version'] = version
-
-    def add_patches(self, patches):
-        """
-        Add additional patch files
-        """
-        self['patches'].extend(patches)
-
-    def tweak(self, tweaks):
-        """
-        Tweak this easyconfig
-        tweaks is a list of tweak specification in the format (function_name, argument)
-        e.g. [('set_version', '1.2.3') ('add_patches', ['1.p', '2.p'])
-        """
-        # tweak easyconfig is desired
-        for (f, x) in tweaks:
-            if type(x) == str:
-                x = "'%s'" % x
-            self.log.info("Tweaking easyconfig with %s(%s)" % (f, x))
-            try:
-                eval('self.%s(%s)' % (f, x))
-            except (AttributeError, TypeError), err:
-                self.log.error("Failed to tweak easyconfig with %s(%s): %s" % (f, x, err))
-
     def dump(self, fp):
         """
         Dump this easyconfig to file, with the given filename.
@@ -502,12 +452,21 @@ def det_installversion(version, toolkit_name, toolkit_version, prefix, suffix):
     Determine exact install version, based on supplied parameters.
     e.g. 1.2.3-goalf-1.1.0-no-OFED or 1.2.3 (for dummy toolkits)
     """
+
     installversion = None
+
+    # determine main install version based on toolkit
     if toolkit_name == 'dummy':
-        installversion = "%s%s%s" % (prefix, version, suffix)
+        installversion = version
     else:
-        extra = "%s-%s" % (toolkit_name, toolkit_version)
-        installversion = "%s%s-%s%s" % (prefix, version, extra, suffix)
+        installversion = "%s-%s-%s" % (version, toolkit_name, toolkit_version)
+
+    # prepend/append prefix/suffix
+    if prefix:
+        installversion = "%s%s" % (prefix, installversion)
+    if suffix:
+        installversion += suffix
+
     return installversion
 
 def sorted_categories():
@@ -519,7 +478,6 @@ def sorted_categories():
     categories.sort(key = lambda c: c[0])
     return categories
 
-
 def convert_to_help(option_list):
     """
     Converts the given list to a mapping of category -> [(name, help)] (OrderedDict)
@@ -530,3 +488,163 @@ def convert_to_help(option_list):
         mapping[category[1]] = [(arr[0], arr[1][1]) for arr in option_list if arr[1][2] == category]
 
     return mapping
+
+def ec_filename_for(path):
+    """
+    Return a suiting file name for the easyconfig file at <path>,
+    as determined by its contents.
+    """
+    ec = EasyConfig(path, validate=False)
+
+    fn = "%s-%s.eb" % (ec['name'], det_installversion(ec['version'], ec['toolkit']['name'],
+                                                      ec['toolkit']['version'], ec['versionprefix'],
+                                                      ec['versionsuffix']))
+
+    return fn
+
+def tweak(src_fn, target_fn, tweaks, log):
+    """
+    Tweak an easyconfig file with the given list of tweaks, using replacement via regular expressions.
+    Note: this will only work 'well-written' easyconfig files, i.e. ones that e.g. set the version
+    once and then use the 'version' variable to construct the list of sources, and possibly other
+    parameters that depend on the version (e.g. list of patch files, dependencies, version suffix, ...)
+
+    The tweaks should be specified in a dictionary, with parameters and keys that map to the values
+    to be set.
+
+    Reads easyconfig file at path <src_fn>, and writes the tweaked easyconfig file to <target_fn>.
+
+    If no target filename is provided, a target filepath is generated based on the contents of
+    the tweaked easyconfig file.
+    """
+
+    # read easyconfig file
+    ectxt = None
+    print src_fn
+    try:
+        f = open(src_fn, "r")
+        ectxt = f.read()
+        f.close()
+    except IOError, err:
+        log.error("Failed to read easyconfig file %s: %s" % (src_fn, err))
+
+    log.debug("Contents of original easyconfig file, prior to tweaking:\n%s" % ectxt)
+
+    # determine new toolkit if it's being changed
+    keys = tweaks.keys()
+    if 'toolkit_name' in keys or 'toolkit_version' in keys:
+
+        tk_regexp = re.compile("^\s*toolkit\s*=\s*(.*)$", re.M)
+
+        res = tk_regexp.search(ectxt)
+        if not res:
+            log.error("No toolkit found in easyconfig file %s?" % src_fn)
+
+        toolkit = eval(res.group(1))
+
+        for key in ['toolkit_name', 'toolkit_version']:
+            if key in keys:
+                toolkit.update({key: tweaks[key]})
+                tweaks.pop(key)
+
+        tweaks.update({'toolkit': {'name': toolkit['name'], 'version': toolkit['version']}})
+
+        log.debug("New toolkit constructed: %s" % tweaks['toolkit'])
+
+    additions = []
+
+    # we need to treat patches seperately, i.e. we append to the list
+    if tweaks.has_key('patches'):
+        patches_regexp = re.compile("^\s*patches\s*=\s*(.*)$", re.M)
+
+        res = patches_regexp.search(ectxt)
+        if res:
+            patches = "%s + %s" % (res.group(1), tweaks['patches'])
+            ectxt = patches_regexp.sub("patches = %s # tweaked by EasyBuild" % patches, ectxt)
+            log.info("Tweaked patch list to '%s'" % patches)
+        else:
+            additions.append("patches = %s" % tweaks['patches'])
+
+        tweaks.pop('patches')
+
+    def quoted(x):
+        """Obtain a new value to be used in string replacement context.
+
+        For non-string values, it just returns the exact same value.
+
+        For string values, it tries to escape the string in quotes, e.g.,
+        foo becomes 'foo', foo'bar becomes "foo'bar",
+        foo'bar"baz becomes \"\"\"foo'bar"baz\"\"\", etc.
+        """
+        if type(x) == str:
+            if "'" in x and '"' in x:
+                return '"""%s"""' % x
+            elif "'" in x:
+                return '"%s"' % x
+            else:
+                return "'%s'" % x
+        else:
+            return x
+
+    # add parameters or replace existing ones
+    for (key,val) in tweaks.items():
+
+        val = quoted(val)
+
+        regexp = re.compile("^\s*%s\s*=\s*(.*)$" % key, re.M)
+        log.debug("Regexp pattern for replacing '%s': %s" % (key, regexp.pattern))
+
+        res = regexp.search(ectxt)
+        if res:
+            # onyl tweak if the value is different
+            if not eval(res.group(1)) == val:
+                ectxt = regexp.sub("%s = %s # tweaked by EasyBuild" % (key,val), ectxt)
+        else:
+            additions.append("%s = %s" % (key, val))
+
+        log.info("Tweaked '%s' to '%s'" % (key, val))
+
+    if additions:
+        log.info("Adding additional parameters to tweaked easyconfig file: %s")
+        ectxt += "\n\n# added by EasyBuild as dictated by command line options\n"
+        ectxt += '\n'.join(additions) + '\n'
+
+    log.debug("Contents of tweaked easyconfig file:\n%s" % ectxt)
+
+    # come up with suiting file name for tweaked easyconfig file if none was specified
+    if not target_fn:
+
+        fn = None
+
+        try:
+            # obtain temporary filename
+            fd, tmpfn = tempfile.mkstemp()
+            os.close(fd)
+
+            # write easyconfig to temporary file
+            f = open(tmpfn, "w")
+            f.write(ectxt)
+            f.close()
+
+            # determine suiting filename
+            fn = ec_filename_for(tmpfn)
+
+            # get rid of temporary file
+            os.remove(tmpfn)
+
+        except (IOError, OSError), err:
+            log.error("Failed to determine suiting filename for tweaked easyconfig file: %s" % err)
+
+        target_fn = os.path.join(tempfile.gettempdir(), fn)
+        log.debug("Generated file name for tweaked easyconfig file: %s" % target_fn)
+
+    # write out tweaked easyconfig file
+    try:
+        f = open(target_fn, "w")
+        f.write(ectxt)
+        f.close()
+        log.info("Tweaked easyconfig file written to %s" % target_fn)
+    except IOError, err:
+        log.error("Failed to write tweaked easyconfig file to %s: %s" % (target_fn, err))
+
+    return target_fn

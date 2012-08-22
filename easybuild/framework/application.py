@@ -56,7 +56,7 @@ class Application:
     """
 
     ## INIT
-    def __init__(self, path, debug=False, easyconfig_tweaks=None):
+    def __init__(self, path, debug=False):
         """
         Initialize the Application instance.
         """
@@ -78,9 +78,6 @@ class Application:
 
         # easyconfig for this application
         self.cfg = EasyConfig(path, self.extra_options())
-        # tweak easyconfig is desired
-        if easyconfig_tweaks:
-            self.cfg.tweak(easyconfig_tweaks)
 
         # module generator
         self.moduleGenerator = None
