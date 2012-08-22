@@ -915,7 +915,6 @@ class Application:
         """
         self.toolkit().prepare(self.getcfg('onlytkmod'))
         self.startfrom()
-        self.make_devel_module(create_in_builddir=True)
 
 
     def configure(self, cmd_prefix=''):
@@ -1117,7 +1116,7 @@ class Application:
 
         return modpath
 
-    def make_devel_module(self, create_in_builddir=False):
+    def vim _module(self, create_in_builddir=False):
         """
         Create a develop module file which sets environment based on the build
         Usage: module load name, which loads the module you want to use. $EBDEVELNAME should then be the full path
