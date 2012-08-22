@@ -215,7 +215,7 @@ class GitRepository(FileRepository):
         Set up git repository.
         """
         try:
-            raise git.GitCommandError
+            git.GitCommandError
         except NameError, err:
             log.exception("It seems like GitPython is not available: %s" % err)
         self.wc = tempfile.mkdtemp(prefix='git-wc-')
