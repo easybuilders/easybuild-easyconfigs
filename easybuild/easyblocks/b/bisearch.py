@@ -51,7 +51,7 @@ class EB_BiSearch(Application):
         qanda = {
                  'Please enter the BiSearch root directory: ': self.installdir,
                  'Please enter the path of c++ compiler [/usr/bin/g++]: ': os.getenv('CXX')
-               }
+                }
 
         run_cmd_qa(cmd, qanda, log_all=True, simple=True)
 
@@ -61,7 +61,7 @@ class EB_BiSearch(Application):
         if not self.getcfg('sanityCheckPaths'):
             self.setcfg('sanityCheckPaths', {'files':["bin/%s" % x for x in ["fpcr", "indexing_cdna",
                                                                              "indexing_genome", "makecomp"]],
-                                            'dirs':[]
+                                             'dirs':[]
                                             }
                         )
 

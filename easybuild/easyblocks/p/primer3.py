@@ -37,7 +37,7 @@ class EB_Primer3(Application):
     """
 
     def __init__(self, *args, **kwargs):
-        """Specify that Primer3 should be built in install directory, and set correct startfrom dir."""
+        """Custom initialization for Primer3: build in install dir, set correct bin dir, specify to start from 'src'."""
 
         Application.__init__(self, *args, **kwargs)
 
@@ -68,7 +68,7 @@ class EB_Primer3(Application):
                                                                                       "ntdpal",
                                                                                       "oligotm",
                                                                                       "long_seq_tm_test"]],
-                                            'dirs':[]
+                                             'dirs':[]
                                             }
                         )
 
@@ -81,6 +81,6 @@ class EB_Primer3(Application):
 
         guesses = Application.make_module_req_guess(self)
 
-        guesses.update({'PATH':[self.bindir]})
+        guesses.update({'PATH': [self.bindir]})
 
         return guesses
