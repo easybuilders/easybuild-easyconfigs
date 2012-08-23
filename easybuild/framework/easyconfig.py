@@ -22,9 +22,11 @@
 
 import copy
 import difflib
+import glob
 import os
 import re
 import tempfile
+from distutils.version import LooseVersion
 
 from easybuild.tools.build_log import getLog
 from easybuild.tools.toolkit import Toolkit
@@ -501,6 +503,359 @@ def ec_filename_for(path):
                                                       ec['versionsuffix']))
 
     return fn
+
+def pick_version(req_ver, avail_vers, log):
+    """Pick version based on an optionally desired version and available versions.
+
+    If a desired version is specifed, the most recent version that is less recent
+    than the desired version will be picked; else, the most recent version will be picked.
+
+    This function returns both the version to be used, which is equal to the desired version
+    if it was specified, and the version picked that matches that closest.
+    """
+
+    if not avail_vers:
+        log.error("Empty list of available versions passed.")
+
+    if req_ver:
+        # if a desired version is specified,
+        # retain the most recent version that's less recent than the desired version
+
+        ver = req_ver
+
+        selected_ver = [v for v in avail_vers if v < LooseVersion(ver)][-1]
+
+    else:
+        # if no desired version is specified, just use last version
+        ver = avail_vers[-1]
+        selected_ver = ver
+
+    return (ver, selected_ver)
+
+def create_paths(path, name, version):
+    """
+    Returns all the paths where easyconfig could be located
+    <path> is the basepath
+    <name> should be a string
+    <version> can be a '*' if you use glob patterns, or an install version otherwise
+    """
+    return [os.path.join(path, name, version + ".eb"),
+            os.path.join(path, name, "%s-%s.eb" % (name, version)),
+            os.path.join(path, name.lower()[0], name, "%s-%s.eb" % (name, version)),
+            os.path.join(path, "%s-%s.eb" % (name, version)),
+           ]
+
+def select_best_easyconfig(ec_files, specs, log):
+    """Select the best easyconfig given the specifications."""
+
+    # if no software version was specified, only retain most recent software version
+    if not specs.get('version'):
+        easyconfigs = [EasyConfig(f, validate=False) for f in ec_files]
+        versions = sorted([LooseVersion(ec['version']) for ec in easyconfigs])
+
+        if len(versions) > 1:
+            log.debug("sorted software versions: %s" % versions)
+            print "No software version specified, so only retaining last version %s" % versions[-1]
+
+            def retain(eb_file):
+                ec = EasyConfig(eb_file, validate=False)
+                return LooseVersion(ec['version']) == versions[-1]
+
+            ec_files = [f for f in ec_files if retain(f)]
+
+    # if a toolkit was specified without version, only retain most recent toolkit versions
+    if specs.get('toolkit_name') and not specs.get('toolkit_version'):
+        easyconfigs = [EasyConfig(f, validate=False) for f in ec_files]
+        tkversions = sorted([LooseVersion(ec['toolkit']['version']) for ec in easyconfigs])
+
+        if len(tkversions) > 1:
+            log.debug("sorted toolkit versions: %s" % tkversions)
+            print "No toolkit version specified, so only retaining last version" \
+                  " %s-%s" % (specs['toolkit_name'], tkversions[-1])
+
+            def retain(eb_file):
+                ec = EasyConfig(eb_file, validate=False)
+                return LooseVersion(ec['toolkit']['version']) == tkversions[-1]
+
+            ec_files = [f for f in ec_files if retain(f)]
+
+    cnt = len(ec_files)
+    log.debug("Retained %s easyconfig files: %s" % (cnt, ec_files))
+
+    if len(ec_files) == 1:
+        res = ec_files[0]
+        print "Selected easyconfig file %s to build requested software" % res
+        log.info("Selected %s from list of %d files." % (res, cnt))
+        return (True, res)
+    else:
+        return (False, ec_files)
+
+def obtain_ec_for(specs, ecs_path, fp, log):
+    """
+    Obtain an easyconfig file to the given specifications.
+
+    Either select between available ones, or use the best suited available one
+    to generate a new easyconfig file.
+
+    <ecs_path> is a path where easyconfig files can be found
+    <fp> is the desired file name
+    <log> is an EasyBuildLog instance
+    """
+
+    # ensure that at least name is specified
+    if not specs.get('name'):
+        log.error("Supplied 'specs' dictionary doesn't even contain a name of a software package?")
+
+    # collect paths to search in
+    paths = []
+    if ecs_path:
+        paths.append(ecs_path)
+
+    if not paths:
+        log.error("No paths to look for easyconfig files, specify a path with --robot.")
+
+    # create glob patterns based on supplied info
+
+    # figure out the install version
+    installver = det_installversion(specs.get('version', '*'), specs.get('toolkit_name', '*'),
+                                    specs.get('toolkit_version', '*'), specs.get('versionprefix', '*'),
+                                    specs.get('versionsuffix', '*'))
+
+    # find easyconfigs that match a pattern
+    easyconfig_files = []
+    for path in paths:
+        patterns = create_paths(path, specs['name'], installver)
+        for pattern in patterns:
+            easyconfig_files.extend(glob.glob(pattern))
+
+    cnt = len(easyconfig_files)
+
+    log.debug("List of obtained easyconfig files (%d): %s" % (cnt, easyconfig_files))
+
+    # select best easyconfig, or try to generate one that fits the requirements
+
+    if cnt > 0:
+        # one or multiple matches, so select one
+        if cnt == 1:
+            log.info("Found a single exact match (%s), so using it." % easyconfig_files[0])
+            return easyconfig_files[0]
+
+        else:
+            (ok, res) = select_best_easyconfig(easyconfig_files, specs, log)
+            if ok:
+                return res
+            else:
+                log.error("Failed to further select from the list of %s files: %s" % (len(res), res))
+
+    else:
+        # no matches found, so we'll try and generate an easyconfig file
+        (ok, res) = generate_easyconfig(fp, paths, specs, log)
+        if ok:
+            return res
+        else:
+            log.error("No easyconfig found for requested software, and also failed to generate one.")
+
+def generate_easyconfig(fp, paths, specs, log):
+    """
+    Generate an easyconfig file with the given requirements, based on existing config files.
+
+    If easyconfig files are available for the specified software package,
+    then this function will first try to determine which toolkit to use.
+     * if a toolkit is given, it will use it (possible using a template easyconfig file as base);
+     * if not, and only a single toolkit is available, is will assume it can use that toolkit
+     * else, it fails -- EasyBuild doesn't select between multiple available toolkits
+
+    Next, it will trim down the selected easyconfig files to a single one,
+    based on the following requirements (in order of preference):
+     * toolkit version
+     * software version
+     * other parameters (e.g. versionprefix, versionsuffix, etc.)
+    """
+
+    # ensure that at least name is specified
+    if not specs.get('name'):
+        log.error("Supplied 'specs' dictionary doesn't even contain a name of a software package?")
+    name = specs['name']
+
+    # find ALL available easyconfig files for specified software
+    ec_files = []
+    installver = det_installversion('*', 'dummy', '*', '*', '*')
+    for path in paths:
+        patterns = create_paths(path, name, installver)
+        for pattern in patterns:
+            ec_files.extend(glob.glob(pattern))
+
+    # we need at least one config file to start from
+    if len(ec_files) == 0:
+        log.error("No easyconfig files found for software %s, I'm all out of ideas." % name)
+
+    def unique(l):  # FIXME: no such function available in Python?!?
+        """Retain unique elements in a sorted list."""
+        l = sorted(l)
+        if len(l) > 1:
+            l2 = [l[0]]
+            for x in l:
+                if not x in l2:
+                    l2.append(x)
+            return l2
+        else:
+            return l
+
+    cfgs_and_files = [(EasyConfig(f, validate=False), f) for f in ec_files]
+
+    # TOOLKIT NAME
+
+    # determine list of unique toolkit names
+    tknames = unique([x[0]['toolkit']['name'] for x in cfgs_and_files])
+    log.debug("Found %d unique toolkit names: %s" % (len(tknames), tknames))
+
+    # if multiple toolkits are available, and none is specified, we quit
+    # we can't just pick one, how would we prefer one over the other?
+    if len(tknames) > 1 and not specs.get('toolkit_name'):
+        log.error("No toolkit specified, and easyconfig files found for more than one toolkit.")
+
+    # if a toolkit was selected, and we have no easyconfig files for it, try and use a template
+    if specs.get('toolkit_name') and not specs['toolkit_name'] in tknames:
+        if "TEMPLATE" in tknames:
+            log.info("No easyconfig file for specified toolkit, but template is available.")
+        else:
+            log.error("No easyconfig file for %s with toolkit %s, " \
+                      "and no template available." % (name, specs['toolkit_name']))
+
+    tkname = specs.pop('toolkit_name', None)
+
+    # trim down list according to selected toolkit
+    if tkname in tknames:
+        # known toolkit, so only retain those
+        selected_tkname = tkname
+    else:
+        if len(tknames) == 1 and not tknames[0] == "TEMPLATE":
+            # only one (non-template) toolkit availble, so use that
+            tkname = tknames[0]
+            selected_tkname = tkname
+        else:
+            # fall-back: use template toolkit if a toolkit name was specified
+            if tkname:
+                selected_tkname = "TEMPLATE"
+            else:
+                log.error("No toolkit name specified, and more than one available: %s." % tknames)
+
+    cfgs_and_files = [x for x in cfgs_and_files if x[0]['toolkit']['name'] == selected_tkname]
+
+    log.debug("Filtered easyconfigs: %s" % [x[1] for x in cfgs_and_files])
+
+    # TOOLKIT VERSION
+
+    tkvers = unique([x[0]['toolkit']['version'] for x in cfgs_and_files])
+    log.debug("Found %d unique toolkit versions: %s" % (len(tkvers), tkvers))
+
+    tkver = specs.pop('toolkit_version', None)
+    (tkver, selected_tkver) = pick_version(tkver, tkvers, log)
+
+    log.debug("Filtering easyconfigs based on toolkit version '%s'..." % selected_tkver)
+    cfgs_and_files = [x for x in cfgs_and_files if x[0]['toolkit']['version'] == selected_tkver]
+    log.debug("Filtered easyconfigs: %s" % [x[1] for x in cfgs_and_files])
+
+    # add full toolkit specification to specs
+    if tkname and tkver:
+        specs.update({'toolkit': {'name': tkname, 'version': tkver}})
+    else:
+        if tkname:
+            specs.update({'toolkit_name': tkname})
+        if tkver:
+            specs.update({'toolkit_version': tkver})
+
+    # SOFTWARE VERSION
+
+    vers = unique([x[0]['version'] for x in cfgs_and_files])
+    log.debug("Found %d unique software versions: %s" % (len(vers), vers))
+
+    ver = specs.pop('version', None)
+    (ver, selected_ver)= pick_version(ver, vers, log)
+    if ver:
+        specs.update({'version': ver})
+
+    log.debug("Filtering easyconfigs based on software version '%s'..." % selected_ver)
+    cfgs_and_files = [x for x in cfgs_and_files if x[0]['version'] == selected_ver]
+    log.debug("Filtered easyconfigs: %s" % [x[1] for x in cfgs_and_files])
+
+    # FIXME: make this more general, versionprefix/suffix should be specified through --amend
+    # SOFTWARE VERSION PREFIX and SUFFIX
+
+    for fix in ['versionprefix', 'versionsuffix']:
+
+        verfixs = unique([x[0][fix] for x in cfgs_and_files])
+
+        verfix = None
+
+        if specs.get(fix):
+            verfix = specs[fix]
+
+        else:
+            if len(verfixs) == 1:
+                verfix = verfixs[0]
+            else:
+                log.error("No %s specified, and multiple ones available: %s" % (fix, verfixs))
+
+        log.debug("Going to use %s" % verfix)
+
+        # try and select a *fix from the available ones, or fail if we can't
+        if verfix in verfixs:
+            # if the fix is available, use it
+            selected_verfix = verfix
+            log.debug("Specified %s is available, so using it: %s" % (fix, selected_verfix))
+        elif len(verfixs) == 1:
+            # if only one fix is availabe, use that
+            selected_verfix = verfixs[0]
+            log.debug("Only one %s available ('%s'), so picking that" % (fix, selected_verfix))
+        else:
+            # otherwise, we fail, because we don't know how to pick between different fixes
+            log.error("Specified %s not available, and can't pick from available %ses %s" % (fix,
+                                                                                             fix,
+                                                                                             verfixs))
+
+        log.debug("Filtering easyconfigs based on %s '%s'..." % (fix, selected_verfix))
+        cfgs_and_files = [x for x in cfgs_and_files if x[0][fix] == selected_verfix]
+        log.debug("Filtered easyconfigs: %s" % [x[1] for x in cfgs_and_files])
+
+        if fix == "versionprefix":
+            verpref = fix
+        elif fix == "versionsuffix":
+            versuff = fix
+        else:
+            log.error("FAIL: neither prefix nor suffix?!?")
+
+    cnt = len(cfgs_and_files)
+    if not cnt == 1:
+        log.error("Failed to select a single easyconfig from available ones, %s left." % cnt)
+
+    else:
+
+        (selected_ec, selected_ec_file) = cfgs_and_files[0]
+
+        # check whether selected easyconfig matches requirements
+        match = True
+        for (key, val) in specs:
+            if selected_ec.has_key(key) and not selected_ec[key] == val:
+                match= False
+
+        # if it matches, no need to tweak
+        if match:
+            return (True, selected_ec_file)
+
+        # GENERATE
+
+        # if no file path was specified, generate a file name
+        if not fp:
+            installver = det_installversion(ver, tkname, tkver, verpref, versuff)
+            fp= "%s%s.eb" % (name, installver)
+
+        # generate tweaked easyconfig file
+        tweak(selected_ec_file, fp, specs, log)
+
+        log.info("Generated easyconfig file %s, and using it to build the requested software." % fp)
+
+        return (True, fp)
 
 def tweak(src_fn, target_fn, tweaks, log):
     """
