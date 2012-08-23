@@ -134,7 +134,7 @@ class EB_OpenFOAM(Application):
         adjust_permissions(fullpath, stat.S_IROTH|stat.S_IXOTH, add=True, recursive=False)
         for d in ["etc", "platforms"]:
             fullpath = os.path.join(self.installdir, self.thrdpartydir, d)
-            adjust_permissions(fullpath, stat.S_IROTH|stat.S_IXOTH, add=True)
+            adjust_permissions(fullpath, stat.S_IROTH|stat.S_IXOTH, add=True, ignore_errors=True)
 
     def sanitycheck(self):
         """Custom sanity check for OpenFOAM"""
