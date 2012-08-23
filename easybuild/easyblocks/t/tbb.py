@@ -42,16 +42,19 @@ class EB_tbb(EB_IntelBase):
 
         # save libdir
         os.chdir(self.installdir)
-        libglob = 'tbb/libs/intel64/cc*libc*_kernel*'
+        libglob = 'tbb/lib/intel64/cc*libc*_kernel*'
         libs = glob.glob(libglob)
         if len(libs):
             libdir = libs[-1]  # take the last one, should be ordered by cc version.
+            # we're only interested in the last bit
+            libdir = libdir.split('/')[-1]
         else:
             self.log.error("No libs found using %s in %s" % (libglob, self.installdir))
         self.libdir = libdir
 
 
         self.libpath = "%s/tbb/libs/intel64/%s/" % (self.installdir, libdir)
+        self.log.debug("self.libpath: %s" % self.libpath)
         # applications go looking into tbb/lib so we move what's in there to libs
         # and symlink the right lib from /tbb/libs/intel64/... to lib
         install_libpath = os.path.join(self.installdir, 'tbb', 'lib')

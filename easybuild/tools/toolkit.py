@@ -701,10 +701,10 @@ class Toolkit:
 
         else:
             # other compilers (e.g. GCC) with Intel MPI
-            self.vars['MPICC'] = 'mpicc -cc=%s %s ' % (self.vars['CC'], self.m32flag)
-            self.vars['MPICXX'] = 'mpicxx -cxx=%s %s ' % (self.vars['CXX'], self.m32flag)
-            self.vars['MPIF77'] = 'mpif77 -fc=%s %s ' % (self.vars['F77'], self.m32flag)
-            self.vars['MPIF90'] = 'mpif90 -fc=%s %s ' % (self.vars['F90'], self.m32flag)
+            self.vars['MPICC'] = "mpicc -cc='%s %s' " % (self.vars['CC'], self.m32flag)
+            self.vars['MPICXX'] = "mpicxx -cxx='%s %s' " % (self.vars['CXX'], self.m32flag)
+            self.vars['MPIF77'] = "mpif77 -fc='%s %s' " % (self.vars['F77'], self.m32flag)
+            self.vars['MPIF90'] = "mpif90 -fc='%s %s' " % (self.vars['F90'], self.m32flag)
 
         impiroot = get_software_root('IMPI')
         if self.opts['32bit']:
@@ -764,10 +764,10 @@ class Toolkit:
         """
         if "vSMP" in get_software_version('MPICH2'):
             # ScaleMP MPICH specific
-            self.vars['MPICC'] = 'mpicc -cc="%s %s"' % (self.vars['CC'], self.m32flag)
-            self.vars['MPICXX'] = 'mpicxx -CC="%s %s"' % (self.vars['CXX'], self.m32flag)
-            self.vars['MPIF77'] = 'mpif77 -fc="%s %s"' % (self.vars['F77'], self.m32flag)
-            self.vars['MPIF90'] = 'mpif90 -f90="%s %s"' % (self.vars['F90'], self.m32flag)
+            self.vars['MPICC'] = "mpicc -cc='%s %s'" % (self.vars['CC'], self.m32flag)
+            self.vars['MPICXX'] = "mpicxx -CC='%s %s'" % (self.vars['CXX'], self.m32flag)
+            self.vars['MPIF77'] = "mpif77 -fc='%s %s'" % (self.vars['F77'], self.m32flag)
+            self.vars['MPIF90'] = "mpif90 -f90='%s %s'" % (self.vars['F90'], self.m32flag)
 
             if self.opts['cciscxx']:
                 self.vars['MPICXX'] = self.vars['MPICC']
