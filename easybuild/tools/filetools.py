@@ -662,7 +662,7 @@ def parselogForError(txt, regExp=None, stdout=True, msg=None):
     return res
 
 
-def adjust_permissions(name, permissionBits, add=True, onlyFiles=False, recursive=True):
+def adjust_permissions(name, permissionBits, add=True, onlyfiles=False, onlydirs=False, recursive=True):
     """
     Add or remove (if add is False) permissionBits from all files
     and directories (if onlyFiles is False) in path
@@ -673,7 +673,9 @@ def adjust_permissions(name, permissionBits, add=True, onlyFiles=False, recursiv
     if recursive:
         log.info("Adjusting permissions recursively for %s" % name)
         for root, dirs, files in os.walk(name):
-            paths = files
+            paths = []
+            if not onlyDirs:
+                paths += files
             if not onlyFiles:
                 paths += dirs
 
