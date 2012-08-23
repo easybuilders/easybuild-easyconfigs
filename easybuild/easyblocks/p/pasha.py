@@ -39,9 +39,9 @@ class EB_Pasha(Application):
         if not tbb:
             self.log.error("TBB module not loaded.")
 
-        self.updatecfg('makeopts', "TBB_DIR=%s/tbb MPI_DIR='' MPI_INC=''")
-        self.updatecfg('makeopts', "MPI_CXX=$MPICXX OPM_FLAG=%s" % (tbb, self.toolkit().get_openmp_flag()))
-        self.updatecfg('makeopts', "MPI_LIB='' MY_CXX=$CXX MPICH_IGNORE_CXX_SEEK=1")
+        self.updatecfg('makeopts', "TBB_DIR=%s/tbb MPI_DIR='' MPI_INC='' " % tbb)
+        self.updatecfg('makeopts', 'MPI_CXX="%s" OPM_FLAG="%s"' % (os.getenv('MPICXX'), self.toolkit().get_openmp_flag()))
+        self.updatecfg('makeopts', 'MPI_LIB="" MY_CXX="%s" MPICH_IGNORE_CXX_SEEK=1' % os.getenv('CXX'))
 
     def make_install(self):
         """Install by copying everything from 'bin' subdir in build dir to install dir"""
