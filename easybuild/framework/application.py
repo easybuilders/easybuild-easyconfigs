@@ -151,7 +151,6 @@ class Application:
         removeLogHandler(self.loghandler)
         self.loghandler.close()
 
-    ## PARALLELISM
     def setparallelism(self, nr=None):
         """
         Determines how many processes should be used (default: nr of procs - 1).
@@ -233,7 +232,6 @@ class Application:
                     self.log.error('No file found for patch %s' % patchFile)
 
             self.log.info("Added patches: %s" % self.patches)
-
 
     def addsource(self, listOfSources=None):
         """
@@ -349,7 +347,6 @@ class Application:
             else:
                 self.log.info("No current version (name: %s, version: %s) found. Not skipping anything." % (self.name(),
                     self.installversion()))
-
 
     def file_locate(self, filename, pkg=False):
         """
@@ -539,7 +536,6 @@ class Application:
 
                 self.log.error("Couldn't find file %s anywhere, and downloading it didn't work either...\nPaths attempted (in order): %s " % (filename, ', '.join(failedpaths)))
 
-
     def verify_homepage(self):
         """
         Download homepage, verify if the name of the software is mentioned
@@ -565,9 +561,6 @@ class Application:
                 return True
 
         return False
-
-
-
 
     def apply_patch(self, beginpath=None):
         """
@@ -884,7 +877,6 @@ class Application:
         else:
             self.log.debug("Sanity check passed!")
 
-
     def startfrom(self):
         """
         Return the directory where to start the whole configure/make/make install cycle from
@@ -915,7 +907,6 @@ class Application:
         """
         self.toolkit().prepare(self.getcfg('onlytkmod'))
         self.startfrom()
-
 
     def configure(self, cmd_prefix=''):
         """
@@ -1282,8 +1273,6 @@ class Application:
             self.log.warn("Could not determine install size: %s" % err)
 
         return installsize
-
-
 
     def packages(self):
         """
