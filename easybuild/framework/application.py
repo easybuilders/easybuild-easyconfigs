@@ -42,7 +42,7 @@ import easybuild
 import easybuild.tools.config as config
 import easybuild.tools.environment as env
 from easybuild.framework.easyconfig import EasyConfig
-from easybuild.tools.build_log import EasyBuildError, initLogger, removeLogHandler,print_msg
+from easybuild.tools.build_log import EasyBuildError, initLogger, removeLogHandler, print_msg
 from easybuild.tools.config import source_path, buildPath, installPath
 from easybuild.tools.filetools import unpack, patch, run_cmd, convertName, encode_class_name
 from easybuild.tools.module_generator import ModuleGenerator
@@ -708,7 +708,7 @@ class Application:
 
         env = copy.deepcopy(os.environ)
 
-        changed = [(k,env[k]) for k in env if k not in self.orig_environ]
+        changed = [(k, env[k]) for k in env if k not in self.orig_environ]
         for k in env:
             if k in self.orig_environ and env[k] != self.orig_environ[k]:
                 changed.append((k, env[k]))
@@ -1158,7 +1158,7 @@ class Application:
                 if not key.endswith(convertName(self.name(), upper=True)):
                     path = os.environ[key]
                     if os.path.isfile(path):
-                        name, version =  path.rsplit('/', 1)
+                        name, version = path.rsplit('/', 1)
                         load_txt += mod_gen.loadModule(name, version)
 
         if create_in_builddir:
@@ -1546,14 +1546,8 @@ def module_path_for_easyblock(easyblock):
     if easyblock.startswith(class_prefix):
         easyblock = easyblock[len(class_prefix):]
 
-    modname = easyblock.replace('-','_')
-
-    first_char = easyblock[0].lower()
-
-    if first_char in letters:
-        return "easybuild.easyblocks.%s.%s" % (first_char, modname)
-    else:
-        return "easybuild.easyblocks.0.%s" % modname
+    modname = easyblock.replace('-', '_')
+    return "easybuild.easyblocks.%s" % (modname)
 
 def get_paths_for(log, subdir="easyblocks"):
     """
