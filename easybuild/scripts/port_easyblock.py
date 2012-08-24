@@ -67,7 +67,7 @@ def warning(msg):
 
 # ensure lowercase module name
 def rename_module(path):
-    """Rename module is it's not lowercase."""
+    """Rename module if it's not lowercase."""
     try:
         if os.path.isfile(path):
             d = os.path.dirname(path)
@@ -89,6 +89,7 @@ def rename_module(path):
 def refactor(txt):
     """Refactor given text, by refactoring function names, etc."""
     refactor_map = {
+                    # refactorings due to code/style cleanup
                     'addDependency': 'add_dependency',
                     'addPatch': 'addpatch',
                     'addSource': 'addsource',
@@ -149,6 +150,41 @@ def refactor(txt):
                     'startFrom': 'startfrom',
                     'stdqa=': 'std_qa=',
                     'unpackSrc': 'unpack_src',
+                    # refactorings due to function renaming and up Application (see issues #99, #136)
+                    'mdoule_path_for_easyblock': 'get_module_path',
+                    'autobuild': 'run_all_steps',
+                    'setlogger': 'init_log',
+                    'closelog': 'close_log',
+                    'setparallelism': 'set_parallelism',
+                    'addpatch': 'fetch_patches',
+                    'addsource': 'fetch_sources',
+                    'prepare_build': 'fetch_step',
+                    'ready2build': 'is_ready_to_build',
+                    'file_locate': 'obtain_file',
+                    'apply_patch': 'patch_step',
+                    'unpack_src': 'extract_step',
+                    'build(': 'build_and_install(',
+                    'runstep': 'run_step',
+                    'postproc': 'post_install_step',
+                    'sanitycheck': 'sanity_check',
+                    'startfrom(': 'guess_start_dir(',
+                    'prepare(': 'prepare_step(',
+                    'make(': 'build_step(',
+                    'make_install': 'install_step',
+                    'toolkit(': 'get_toolkit(',
+                    'toolkit_name(': 'get_toolkit_name(',
+                    'toolkit_version(': 'get_toolkit_version(',
+                    'installversion': 'get_installversion',
+                    'installsize(': 'det_installsize(',
+                    'packages(': 'extensions_step(',
+                    'find_package_patches': 'fetch_extension_patches',
+                    'find_package_sources': 'fetch_extension_sources',
+                    'extra_packages': 'extra_extensions',
+                    'extra_packages_pre': 'prepare_for_extensions',
+                    'filter_packages': 'skip_extensions',
+                    'runtests': 'run_test_cases',
+                    'name(': 'get_name(',
+                    'version(': 'get_version(',
                     }
 
     totn = 0
