@@ -1529,14 +1529,8 @@ def get_class_for(modulepath, class_name):
 def module_path_for_easyblock(easyblock):
     """
     Determine the module path for a given easyblock name,
-    based on first character:
-    - easybuild.easyblocks.a
-    - ...
-    - easybuild.easyblocks.z
-    - easybuild.easyblocks.0
+    based on the encoded class name.
     """
-    letters = [chr(ord('a') + x) for x in range(0, 26)] # a-z
-
     if not easyblock:
         return None
 
