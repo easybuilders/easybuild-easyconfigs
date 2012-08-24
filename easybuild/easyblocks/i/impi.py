@@ -29,7 +29,7 @@ EasyBuild support for installing the Intel MPI library, implemented as an easybl
 import os
 from distutils.version import LooseVersion
 
-from easybuild.easyblocks.i.intelbase import EB_IntelBase
+from easybuild.easyblocks.intelbase import EB_IntelBase
 from easybuild.tools.filetools import run_cmd
 
 

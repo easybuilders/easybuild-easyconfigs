@@ -33,7 +33,7 @@ import sys
 
 import easybuild.tools.environment as env
 import easybuild.tools.toolkit as toolkit
-from easybuild.easyblocks.n.netcdf import set_netcdf_env_vars, get_netcdf_module_set_cmds
+from easybuild.easyblocks.netcdf import set_netcdf_env_vars, get_netcdf_module_set_cmds
 from easybuild.framework.application import Application
 from easybuild.framework.easyconfig import CUSTOM, MANDATORY
 from easybuild.tools.filetools import patch_perl_script_autoflush, run_cmd, run_cmd_qa
@@ -43,7 +43,7 @@ from easybuild.tools.modules import get_software_root
 class EB_WRF(Application):
     """Support for building/installing WRF."""
 
-    def __init__(self,*args,**kwargs):
+    def __init__(self, *args, **kwargs):
         """Add extra config options specific to WRF."""
         Application.__init__(self, *args, **kwargs)
 
@@ -75,7 +75,7 @@ class EB_WRF(Application):
         hdf5 = get_software_root('HDF5')
         if hdf5:
             # check if this is parallel HDF5
-            phdf5_bins = ['h5pcc','ph5diff']
+            phdf5_bins = ['h5pcc', 'ph5diff']
             parallel_hdf5 = True
             for f in phdf5_bins:
                 if not os.path.exists(os.path.join(hdf5, 'bin', f)):
@@ -121,7 +121,7 @@ class EB_WRF(Application):
 
         # fetch selected build type (and make sure it makes sense)
         known_build_types = ['serial', 'smpar', 'dmpar', 'dm+sm']
-        self.parallel_build_types = ["dmpar","smpar","dm+sm"]
+        self.parallel_build_types = ["dmpar", "smpar", "dm+sm"]
         bt = self.getcfg('buildtype')
 
         if not bt in known_build_types:
@@ -145,7 +145,7 @@ class EB_WRF(Application):
 
         run_cmd_qa(cmd, qa, no_qa=no_qa, std_qa=std_qa, log_all=True, simple=True)
 
-        cfgfile= 'configure.wrf'
+        cfgfile = 'configure.wrf'
 
         # make sure correct compilers are being used
         comps = {
@@ -190,7 +190,7 @@ class EB_WRF(Application):
         p = self.getcfg('parallel')
         self.par = ""
         if p:
-            self.par="-j %s"%p
+            self.par = "-j %s" % p
 
         # build wrf
         cmd = "./compile %s wrf" % self.par
@@ -285,7 +285,7 @@ class EB_WRF(Application):
                 self.log.debug("Building and running test %s" % test)
 
                 # build
-                cmd = "./compile %s %s"%(self.par, test)
+                cmd = "./compile %s %s" % (self.par, test)
                 run_cmd(cmd, log_all=True, simple=True)
 
                 # run test
@@ -331,12 +331,12 @@ class EB_WRF(Application):
         if not self.getcfg('sanityCheckPaths'):
 
             mainver = self.version().split('.')[0]
-            self.wrfsubdir = "WRFV%s"%mainver
+            self.wrfsubdir = "WRFV%s" % mainver
 
             fs = ["libwrflib.a", "wrf.exe", "ideal.exe", "real.exe", "ndown.exe", "nup.exe", "tc.exe"]
             ds = ["main", "run"]
 
-            self.setcfg('sanityCheckPaths',{
+            self.setcfg('sanityCheckPaths', {
                                             'files': [os.path.join(self.wrfsubdir, "main", x) for x in fs],
                                             'dirs': [os.path.join(self.wrfsubdir, x) for x in ds]
                                            })

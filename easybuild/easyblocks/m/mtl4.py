@@ -22,7 +22,7 @@ EasyBuild support for MTL4, implemented as an easyblock
 """
 import os
 
-from easybuild.easyblocks.t.tarball import EB_Tarball
+from easybuild.easyblocks.tarball import EB_Tarball
 
 
 class EB_MTL4(EB_Tarball):
@@ -33,7 +33,7 @@ class EB_MTL4(EB_Tarball):
 
         if not self.getcfg('sanityCheckPaths'):
 
-            incpref = os.path.join('include','boost', 'numeric')
+            incpref = os.path.join('include', 'boost', 'numeric')
 
             self.setcfg('sanityCheckPaths', {
                                              'files':[],

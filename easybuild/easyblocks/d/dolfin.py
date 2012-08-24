@@ -26,7 +26,7 @@ import os
 import re
 
 import easybuild.tools.toolkit as toolkit
-from easybuild.easyblocks.c.cmakepythonpackage import EB_CMakePythonPackage
+from easybuild.easyblocks.cmakepythonpackage import EB_CMakePythonPackage
 from easybuild.tools.modules import get_software_root, get_software_version
 
 
@@ -123,7 +123,7 @@ class EB_DOLFIN(EB_CMakePythonPackage):
                           '-DCCOLAMD_LIBRARY:PATH="%(sp)s/CCOLAMD/lib/libccolamd.a"',
                           '-DCOLAMD_LIBRARY:PATH="%(sp)s/COLAMD/lib/libcolamd.a"'
                           ]
-        
+
         self.updatecfg('configopts', ' '.join(umfpack_params) % {'sp':suitesparse})
 
         # ParMETIS and SCOTCH

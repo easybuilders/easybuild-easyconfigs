@@ -32,8 +32,8 @@ import shutil
 from distutils.version import LooseVersion
 
 import easybuild.tools.toolkit as toolkit
-from easybuild.easyblocks.b.blacs import det_interface
-from easybuild.easyblocks.l.lapack import get_blas_lib
+from easybuild.easyblocks.blacs import det_interface
+from easybuild.easyblocks.lapack import get_blas_lib
 from easybuild.framework.application import Application
 from easybuild.tools.modules import get_software_root
 
@@ -58,7 +58,7 @@ class EB_ScaLAPACK(Application):
         try:
             shutil.copy(src, dest)
         except OSError, err:
-            self.log.error("Symlinking %s to % failed: %s"%(src, dest, err))
+            self.log.error("Symlinking %s to % failed: %s" % (src, dest, err))
 
         self.loosever = LooseVersion(self.version())
 
@@ -88,7 +88,7 @@ class EB_ScaLAPACK(Application):
 
         # set BLAS and LAPACK libs
         extra_makeopts = [
-                          'BLASLIB="%s -lpthread"' % get_blas_lib(self.log), 
+                          'BLASLIB="%s -lpthread"' % get_blas_lib(self.log),
                           'LAPACKLIB=%s/lib/liblapack.a' % get_software_root('LAPACK')
                          ]
 
@@ -137,7 +137,7 @@ class EB_ScaLAPACK(Application):
 
             # set compilers and options
             extra_makeopts += [
-                               'FC="%s"' % mpif90, 
+                               'FC="%s"' % mpif90,
                                'CC="%s"' % mpicc
                               ]
 
@@ -154,8 +154,8 @@ class EB_ScaLAPACK(Application):
 
         # include files and libraries
         for (srcdir, destdir, ext) in [
-                                       ("SRC", "include", ".h"),  # include files
-                                       ("", "lib", ".a"),  # libraries
+                                       ("SRC", "include", ".h"), # include files
+                                       ("", "lib", ".a"), # libraries
                                        ]:
 
             src = os.path.join(self.getcfg('startfrom'), srcdir)
@@ -173,13 +173,13 @@ class EB_ScaLAPACK(Application):
                     self.log.debug("Copied %s to %s" % (lib, dest))
 
             except OSError, err:
-                self.log.error("Copying %s/*.%s to installation dir %s failed: %s"%(src, ext, dest, err))
+                self.log.error("Copying %s/*.%s to installation dir %s failed: %s" % (src, ext, dest, err))
 
     def sanitycheck(self):
         """Custom sanity check for ScaLAPACK."""
 
         if not self.getcfg('sanityCheckPaths'):
-            self.setcfg('sanityCheckPaths',{
+            self.setcfg('sanityCheckPaths', {
                                             'files': ["lib/libscalapack.a"],
                                             'dirs': []
                                            })

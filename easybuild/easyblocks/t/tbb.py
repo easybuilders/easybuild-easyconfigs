@@ -30,7 +30,7 @@ import os
 import shutil
 import glob
 
-from easybuild.easyblocks.i.intelbase import EB_IntelBase
+from easybuild.easyblocks.intelbase import EB_IntelBase
 
 
 class EB_tbb(EB_IntelBase):

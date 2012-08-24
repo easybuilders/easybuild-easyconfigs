@@ -22,7 +22,7 @@ EasyBuild support for Armadillo, implemented as an easyblock
 """
 import os
 
-from easybuild.easyblocks.c.cmake import EB_CMake
+from easybuild.easyblocks.cmake import EB_CMake
 from easybuild.tools.modules import get_software_root
 
 

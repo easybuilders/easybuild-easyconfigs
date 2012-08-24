@@ -26,7 +26,7 @@
 EasyBuild support for installing the Intel Performance Primitives (IPP) library, implemented as an easyblock
 """
 
-from easybuild.easyblocks.i.intelbase import EB_IntelBase
+from easybuild.easyblocks.intelbase import EB_IntelBase
 
 
 class EB_ipp(EB_IntelBase):

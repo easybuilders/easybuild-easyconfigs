@@ -30,7 +30,7 @@ import os
 import stat
 
 import easybuild.tools.environment as env
-from easybuild.easyblocks.b.binary import EB_Binary
+from easybuild.easyblocks.binary import EB_Binary
 from easybuild.tools.filetools import run_cmd_qa
 
 
@@ -80,7 +80,7 @@ class EB_CPLEX(EB_Binary):
         run_cmd_qa(cmd, qanda, no_qa=noqanda, log_all=True, simple=True)
 
         try:
-            os.chmod(self.installdir, stat.S_IRWXU|stat.S_IXOTH|stat.S_IXGRP|stat.S_IROTH|stat.S_IRGRP)
+            os.chmod(self.installdir, stat.S_IRWXU | stat.S_IXOTH | stat.S_IXGRP | stat.S_IROTH | stat.S_IRGRP)
         except OSError, err:
             self.log.exception("Can't set permissions on %s: %s" % (self.installdir, err))
 

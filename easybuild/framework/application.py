@@ -42,7 +42,7 @@ import easybuild
 import easybuild.tools.config as config
 import easybuild.tools.environment as env
 from easybuild.framework.easyconfig import EasyConfig
-from easybuild.tools.build_log import EasyBuildError, initLogger, removeLogHandler,print_msg
+from easybuild.tools.build_log import EasyBuildError, initLogger, removeLogHandler, print_msg
 from easybuild.tools.config import source_path, buildPath, installPath
 from easybuild.tools.filetools import unpack, patch, run_cmd, convertName, encode_class_name
 from easybuild.tools.module_generator import ModuleGenerator
@@ -708,7 +708,7 @@ class Application:
 
         env = copy.deepcopy(os.environ)
 
-        changed = [(k,env[k]) for k in env if k not in self.orig_environ]
+        changed = [(k, env[k]) for k in env if k not in self.orig_environ]
         for k in env:
             if k in self.orig_environ and env[k] != self.orig_environ[k]:
                 changed.append((k, env[k]))
@@ -1158,7 +1158,7 @@ class Application:
                 if not key.endswith(convertName(self.name(), upper=True)):
                     path = os.environ[key]
                     if os.path.isfile(path):
-                        name, version =  path.rsplit('/', 1)
+                        name, version = path.rsplit('/', 1)
                         load_txt += mod_gen.loadModule(name, version)
 
         if create_in_builddir:
@@ -1523,20 +1523,17 @@ def get_class_for(modulepath, class_name):
     # >>> c = getattr(d,'Likwid')
     # >>> c()
     m = __import__(modulepath, globals(), locals(), [''])
-    c = getattr(m, class_name)
+    try:
+        c = getattr(m, class_name)
+    except AttributeError:
+        raise ImportError
     return c
 
 def module_path_for_easyblock(easyblock):
     """
     Determine the module path for a given easyblock name,
-    based on first character:
-    - easybuild.easyblocks.a
-    - ...
-    - easybuild.easyblocks.z
-    - easybuild.easyblocks.0
+    based on the encoded class name.
     """
-    letters = [chr(ord('a') + x) for x in range(0, 26)] # a-z
-
     if not easyblock:
         return None
 
@@ -1546,14 +1543,8 @@ def module_path_for_easyblock(easyblock):
     if easyblock.startswith(class_prefix):
         easyblock = easyblock[len(class_prefix):]
 
-    modname = easyblock.replace('-','_')
-
-    first_char = easyblock[0].lower()
-
-    if first_char in letters:
-        return "easybuild.easyblocks.%s.%s" % (first_char, modname)
-    else:
-        return "easybuild.easyblocks.0.%s" % modname
+    modname = easyblock.replace('-', '_')
+    return "easybuild.easyblocks.%s" % (modname.lower())
 
 def get_paths_for(log, subdir="easyblocks"):
     """
@@ -1579,57 +1570,34 @@ def get_class(easyblock, log, name=None):
 
     app_mod_class = ("easybuild.framework.application", "Application")
 
-    #TODO: create proper factory for this, as explained here 
-    #http://stackoverflow.com/questions/456672/class-factory-in-python
     try:
+        # if no easyblock specified, try to find if one exists
         if not easyblock:
             if not name:
                 name = "UNKNOWN"
-
+            # modulepath will be the namespace + encoded modulename (from the classname)
             modulepath = module_path_for_easyblock(name)
             # The following is a generic way to calculate unique class names for any funny package title
             class_name = encode_class_name(name)
 
             # try and find easyblock
-            easyblock_found = False
-            easyblock_path = ''
-            easyblock_paths = [modulepath.lower()]
-            for path in get_paths_for(log, "easyblocks"):
-                for possible_path in easyblock_paths:
-                    easyblock_path = os.path.join(path, "%s.py" % possible_path.replace('.', os.path.sep))
-                    log.debug("Checking easyblocks path %s..." % easyblock_path)
-                    if os.path.exists(easyblock_path):
-                        easyblock_found = True
-                        log.debug("Found easyblock for %s at %s" % (name, easyblock_path))
-                        modulepath = possible_path
-                        break
-                if easyblock_found:
-                    break
+            try:
+                log.debug("getting class for %s.%s" % (modulepath, class_name))
+                cls = get_class_for(modulepath, class_name)
+                log.info("Successfully obtained %s class instance from %s" % (class_name, modulepath))
+                return cls
+            except ImportError, err:
+                # No easyblock could be found, so fall back to default class.
 
-            # only try to import derived easyblock if it exists
-            if easyblock_found:
-
-                try:
-
-                    cls = get_class_for(modulepath, class_name)
-
-                    log.info("Successfully obtained %s class instance from %s" % (class_name, modulepath))
-
-                    return cls
-
-                except Exception, err:
-                    log.error("Failed to use easyblock at %s for class %s: %s" % (modulepath, class_name, err))
-                    raise EasyBuildError(str(err))
-
-            else:
+                log.error("Failed to import easyblock for %s, falling back to default %s class: erro: %s" % \
+                          (class_name, app_mod_class, err))
                 (modulepath, class_name) = app_mod_class
-                log.debug("Easyblock path %s does not exist, so falling back to default %s class from %s" % (easyblock_path, class_name, modulepath))
-
+        # If Application was specified, use the framework namespace
         elif easyblock == "Application":
             (modulepath, class_name) = app_mod_class
-            log.debug("Easyblock %s specified, so using default class %s from %s" % (easyblock,
-                                                                                     class_name,
-                                                                                     modulepath))
+            log.debug("Easyblock %s specified, so using default class %s from %s" % \
+                      (easyblock, class_name, modulepath))
+        # Something was specified, lets parse it
         else:
             class_name = easyblock.split('.')[-1]
             # figure out if full path was specified or not

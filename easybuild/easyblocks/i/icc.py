@@ -29,7 +29,7 @@ EasyBuild support for install the Intel C/C++ compiler suite, implemented as an 
 import os
 from distutils.version import LooseVersion
 
-from easybuild.easyblocks.i.intelbase import EB_IntelBase
+from easybuild.easyblocks.intelbase import EB_IntelBase
 
 
 class EB_icc(EB_IntelBase):

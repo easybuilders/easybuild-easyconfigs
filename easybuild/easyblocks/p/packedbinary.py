@@ -24,7 +24,7 @@ e.g., binary applications shipped as a .tar.gz file
 """
 
 from easybuild.framework.application import Application
-from easybuild.easyblocks.b.binary import EB_Binary
+from easybuild.easyblocks.binary import EB_Binary
 
 
 class EB_PackedBinary(EB_Binary, Application):
