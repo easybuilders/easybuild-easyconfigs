@@ -22,7 +22,7 @@ EasyBuild support for UFC, implemented as an easyblock
 """
 from distutils.version import LooseVersion
 
-from easybuild.easyblocks.c.cmakepythonpackage import EB_CMakePythonPackage
+from easybuild.easyblocks.cmakepythonpackage import EB_CMakePythonPackage
 from easybuild.tools.modules import get_software_root, get_software_version
 
 

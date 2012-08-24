@@ -24,7 +24,7 @@ import os
 import re
 
 import easybuild.tools.toolkit as toolkit
-from easybuild.easyblocks.c.cmake import EB_CMake
+from easybuild.easyblocks.cmake import EB_CMake
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.modules import get_software_root
 

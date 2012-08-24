@@ -36,7 +36,7 @@ from distutils.version import LooseVersion
 
 import easybuild.tools.environment as env
 import easybuild.tools.toolkit as toolkit
-from easybuild.easyblocks.n.netcdf import set_netcdf_env_vars, get_netcdf_module_set_cmds
+from easybuild.easyblocks.netcdf import set_netcdf_env_vars, get_netcdf_module_set_cmds
 from easybuild.framework.application import Application
 from easybuild.framework.easyconfig import CUSTOM, MANDATORY
 from easybuild.tools.filetools import patch_perl_script_autoflush, run_cmd, run_cmd_qa, unpack
@@ -115,7 +115,7 @@ class EB_WPS(Application):
             self.log.error("JasPer module not loaded?")
 
         # patch ungrib Makefile so that JasPer is found
-        fn = os.path.join("ungrib","src","Makefile")
+        fn = os.path.join("ungrib", "src", "Makefile")
         jasperlibs = "-L%s -ljasper -L%s -lpng" % (jasperlibdir, libpnglibdir)
         try:
             for line in fileinput.input(fn, inplace=1, backup='.orig.JasPer'):
@@ -196,8 +196,8 @@ class EB_WPS(Application):
                  'CC': os.getenv('MPICC'),
                 }
         fn = 'configure.wps'
-        for line in fileinput.input(fn, inplace=1,backup='.orig.comps'):
-            for (k,v) in comps.items():
+        for line in fileinput.input(fn, inplace=1, backup='.orig.comps'):
+            for (k, v) in comps.items():
                 line = re.sub(r"^(%s\s*=\s*).*$" % k, r"\1 %s" % v, line)
             sys.stdout.write(line)
 

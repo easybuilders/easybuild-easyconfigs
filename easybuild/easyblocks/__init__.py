@@ -22,3 +22,8 @@
 # You should have received a copy of the GNU General Public License
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
+import os
+from pkgutil import extend_path
+
+__path__.extend([os.path.join(__path__[0],chr(y)) for y in range(ord('a'),ord('z')+1) + [ord('0')]  ])
+__path__ = extend_path(__path__, __name__)
