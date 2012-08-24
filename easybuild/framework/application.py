@@ -124,16 +124,6 @@ class Application:
 
         return True
 
-    def set_name_version(self, name, version, newBuild=True):
-        """
-        Sets name and version
-        - also starts logger
-        """
-        self.setcfg('name', name)
-        self.setcfg('version', version)
-        if newBuild:
-            self.setlogger()
-
     def setlogger(self):
         """
         Set the logger.
