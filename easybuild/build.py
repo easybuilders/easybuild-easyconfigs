@@ -104,8 +104,8 @@ def add_cmdline_options(parser):
                                       help="build with specified toolkit version")
     software_build_options.add_option("--add-patches", metavar="PATCH_1[,PATCH_N]",
                                       help="add additional patch files")
-    software_build_options.add_option("--amend", metaver="VAR:VALUE[;VAR:VALUE]",
-                                      help="specify additional build parameters")
+    software_build_options.add_option("--amend", metavar="VAR:VALUE", action="append",
+                                      help="specify additional build parameters (can be used multiple times)")
 
     parser.add_option_group(software_build_options)
 
@@ -566,7 +566,7 @@ def process_software_build_specs(options):
         buildopts.update({'patches': options.add_patches.split(',')})
 
     if options.amend:
-        error("--amend is not implemented yet")
+        error("--amend is not implemented yet (value: %s)" % options.amend)
 
     return buildopts
 
