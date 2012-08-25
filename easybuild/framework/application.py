@@ -1589,7 +1589,7 @@ def get_class(easyblock, log, name=None):
             except ImportError, err:
                 # No easyblock could be found, so fall back to default class.
 
-                log.error("Failed to import easyblock for %s, falling back to default %s class: erro: %s" % \
+                log.debug("Failed to import easyblock for %s, falling back to default %s class: erro: %s" % \
                           (class_name, app_mod_class, err))
                 (modulepath, class_name) = app_mod_class
         # If Application was specified, use the framework namespace
