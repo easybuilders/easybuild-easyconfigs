@@ -38,15 +38,15 @@ class EB_impi(EB_IntelBase):
     Support for installing Intel MPI library
     """
 
-    def make_install(self):
+    def install_step(self):
         """
         Actual installation
         - create silent cfg file
         - execute command
         """
-        if LooseVersion(self.version()) >= LooseVersion('4.0.1'):
+        if LooseVersion(self.get_version()) >= LooseVersion('4.0.1'):
             #impi starting from version 4.0.1.x uses standard installation procedure.
-            EB_IntelBase.make_install(self)
+            EB_IntelBase.install_step(self)
             return None
         else:
             #impi up until version 4.0.0.x uses custom installation procedure.
@@ -82,7 +82,7 @@ EULA=accept
             except:
                 self.log.exception("Writing silent cfg file %s failed." % silent)
 
-            tmpdir = os.path.join(os.getcwd(), self.version(), 'mytmpdir')
+            tmpdir = os.path.join(os.getcwd(), self.get_version(), 'mytmpdir')
             try:
                 os.makedirs(tmpdir)
             except:

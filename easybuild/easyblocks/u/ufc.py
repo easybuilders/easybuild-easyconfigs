@@ -64,16 +64,16 @@ class EB_UFC(EB_CMakePythonPackage):
 
         EB_CMakePythonPackage.configure(self)
 
-    def sanitycheck(self):
+    def sanity_check(self):
         """Custom sanity check for UFC."""
 
         if not self.getcfg('sanityCheckPaths'):
 
             self.setcfg('sanityCheckPaths', {
                                              'files': ['include/ufc.h'],
-                                             'dirs':['lib/python%s/site-packages/ufc_utils/' % self.pyver]
+                                             'dirs':['lib/python%s/site-extensions_step/ufc_utils/' % self.pyver]
                                              })
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-        EB_CMakePythonPackage.sanitycheck(self)
+        EB_CMakePythonPackage.sanity_check(self)

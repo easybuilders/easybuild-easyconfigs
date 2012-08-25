@@ -38,12 +38,12 @@ class EB_ifort(Icc):
     -- will fail for all older versions (due to newer silent installer)
     """
 
-    def sanitycheck(self):
+    def sanity_check(self):
 
         if not self.getcfg('sanityCheckPaths'):
 
             libprefix = ""
-            if LooseVersion(self.version()) >= LooseVersion("2011"):
+            if LooseVersion(self.get_version()) >= LooseVersion("2011"):
                 libprefix = "compiler/lib/intel64/lib"
             else:
                 libprefix = "lib/intel64/lib"
@@ -57,4 +57,4 @@ class EB_ifort(Icc):
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-        EB_IntelBase.sanitycheck(self)
+        EB_IntelBase.sanity_check(self)

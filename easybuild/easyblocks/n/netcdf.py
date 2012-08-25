@@ -30,7 +30,7 @@ import os
 from distutils.version import LooseVersion
 
 import easybuild.tools.environment as env
-import easybuild.tools.toolkit as toolkit
+import easybuild.tools.toolkit as get_toolkit
 from easybuild.framework.application import Application
 from easybuild.tools.modules import get_software_root, get_software_version
 
@@ -43,7 +43,7 @@ class EB_netCDF(Application):
 
         self.updatecfg('configopts', "--enable-shared")
 
-        if self.toolkit().opts['pic']:
+        if self.get_toolkit().opts['pic']:
             self.updatecfg('configopts', '--with-pic')
 
         self.updatecfg('configopts', 'FCFLAGS="%s" CC="%s" FC="%s"' % (os.getenv('FFLAGS'),
@@ -52,12 +52,12 @@ class EB_netCDF(Application):
                                                                       ))
 
         # add -DgFortran to CPPFLAGS when building with GCC
-        if self.toolkit().comp_family() == toolkit.GCC:
+        if self.toolkit().comp_family() == get_toolkit.GCC:
             env.set('CPPFLAGS', "%s -DgFortran" % os.getenv('CPPFLAGS'))
 
         Application.configure(self)
 
-    def sanitycheck(self):
+    def sanity_check(self):
         """
         Custom sanity check for netCDF
         """
@@ -65,9 +65,9 @@ class EB_netCDF(Application):
 
             incs = ["netcdf.h"]
             libs = ["libnetcdf.so", "libnetcdf.a"]
-            # since v4.2, the non-C libraries have been split off in seperate packages
+            # since v4.2, the non-C libraries have been split off in seperate extensions_step
             # see netCDF-Fortran and netCDF-C++
-            if LooseVersion(self.version()) < LooseVersion("4.2"):
+            if LooseVersion(self.get_version()) < LooseVersion("4.2"):
                 incs += ["netcdf%s" % x for x in ["cpp.h", ".hh", ".inc", ".mod"]] + \
                         ["ncvalues.h", "typesizes.mod"]
                 libs += ["libnetcdf_c++.so", "libnetcdff.so",
@@ -83,7 +83,7 @@ class EB_netCDF(Application):
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-        Application.sanitycheck(self)
+        Application.sanity_check(self)
 
 def set_netcdf_env_vars(log):
     """Set netCDF environment variables used by other software."""

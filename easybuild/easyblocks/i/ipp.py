@@ -31,7 +31,7 @@ from easybuild.easyblocks.intelbase import EB_IntelBase
 
 class EB_ipp(EB_IntelBase):
 
-    def sanitycheck(self):
+    def sanity_check(self):
 
         if not self.getcfg('sanityCheckPaths'):
             self.setcfg('sanityCheckPaths', {
@@ -45,4 +45,4 @@ class EB_ipp(EB_IntelBase):
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-        EB_IntelBase.sanitycheck(self)
+        EB_IntelBase.sanity_check(self)

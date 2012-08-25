@@ -39,22 +39,22 @@ class EB_METIS(Application):
     def configure(self, *args, **kwargs):
         """Configure build using 'make config' (only for recent versions (>= v5))."""
 
-        if LooseVersion(self.version()) >= LooseVersion("5"):
+        if LooseVersion(self.get_version()) >= LooseVersion("5"):
 
             cmd = "make config prefix=%s" % self.installdir
             run_cmd(cmd, log_all=True, simple=True)
 
-    def make(self):
+    def build_step(self):
         """Add make options before building."""
 
         self.updatecfg('makeopts', 'LIBDIR=""')
 
-        if self.toolkit().opts['pic']:
+        if self.get_toolkit().opts['pic']:
             self.updatecfg('makeopts', 'CC="$CC -fPIC"')
 
-        Application.make(self)
+        Application.build_step(self)
 
-    def make_install(self):
+    def install_step(self):
         """
         Install by manually copying files to install dir, for old versions,
         or by running 'make install' for new versions.
@@ -63,7 +63,7 @@ class EB_METIS(Application):
         (in Lib instead of lib)
         """
 
-        if LooseVersion(self.version()) < LooseVersion("5"):
+        if LooseVersion(self.get_version()) < LooseVersion("5"):
 
             libdir = os.path.join(self.installdir, 'lib')
             mkdir(libdir)
@@ -100,23 +100,23 @@ class EB_METIS(Application):
                 self.log.error("Something went wrong during symlink creation: %s" % err)
 
         else:
-            Application.make_install(self)
+            Application.install_step(self)
 
-    def sanitycheck(self):
+    def sanity_check(self):
         """Custom sanity check for METIS (more extensive for recent version (>= v5))"""
 
         if not self.getcfg('sanityCheckPaths'):
 
             binfiles = []
-            if LooseVersion(self.version()) > LooseVersion("5"):
+            if LooseVersion(self.get_version()) > LooseVersion("5"):
                 binfiles += ["cmpfillin", "gpmetis", "graphchk", "m2gmetis", "mpmetis", "ndmetis"]
 
             incfiles = ["metis.h"]
-            if LooseVersion(self.version()) < LooseVersion("5"):
+            if LooseVersion(self.get_version()) < LooseVersion("5"):
                 incfiles += ["defs.h", "macros.h", "proto.h", "rename.h", "struct.h"]
 
             dirs = []
-            if LooseVersion(self.version()) < LooseVersion("5"):
+            if LooseVersion(self.get_version()) < LooseVersion("5"):
                 dirs += ["Lib"]
 
             self.setcfg('sanityCheckPaths', {
@@ -128,4 +128,4 @@ class EB_METIS(Application):
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-        Application.sanitycheck(self)
+        Application.sanity_check(self)

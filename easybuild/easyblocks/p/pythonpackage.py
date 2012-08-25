@@ -23,7 +23,7 @@
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
 """
-EasyBuild support for Python packages, implemented as an easyblock
+EasyBuild support for Python extensions_step, implemented as an easyblock
 """
 import os
 
@@ -58,13 +58,13 @@ class EB_PythonPackage(Application):
 
         self.log.debug("pylibdir: %s" % self.pylibdir)
 
-    def make(self):
+    def build_step(self):
         """Build Python package using setup.py"""
 
         cmd = "python setup.py build"
         run_cmd(cmd, log_all=True, simple=True)
 
-    def make_install(self):
+    def install_step(self):
         """Install Python package to a custom path using setup.py"""
 
         abs_pylibdir = os.path.join(self.installdir, self.pylibdir)

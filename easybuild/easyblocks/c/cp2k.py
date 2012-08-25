@@ -34,7 +34,7 @@ import shutil
 import sys
 from distutils.version import LooseVersion
 
-import easybuild.tools.toolkit as toolkit
+import easybuild.tools.toolkit as get_toolkit
 from easybuild.framework.application import Application
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.filetools import run_cmd
@@ -104,10 +104,10 @@ class EB_CP2K(Application):
         # set compilers options according to toolkit config
         # full debug: -g -traceback -check all -fp-stack-check
         # -g links to mpi debug libs
-        if self.toolkit().opts['debug']:
+        if self.get_toolkit().opts['debug']:
             self.debug = '-g'
             self.log.info("Debug build")
-        if self.toolkit().opts['pic']:
+        if self.get_toolkit().opts['pic']:
             self.fpic = "-fPIC"
             self.log.info("Using fPIC")
 
@@ -132,16 +132,16 @@ class EB_CP2K(Application):
             self.modincpath = self.prepmodinc()
 
         # set typearch
-        self.typearch = "Linux-x86-64-%s" % self.toolkit().name
+        self.typearch = "Linux-x86-64-%s" % self.get_toolkit().get_name
 
         # extra make instructions
         self.make_instructions = "graphcon.o: graphcon.F\n\t$(FC) -c $(FCFLAGS2) $<\n"
 
         # compiler toolkit specific configuration
-        comp_fam = self.toolkit().comp_family()
-        if comp_fam == toolkit.INTEL:
+        comp_fam = self.get_toolkit().comp_family()
+        if comp_fam == get_toolkit.INTEL:
             options = self.configureIntelBased()
-        elif comp_fam == toolkit.GCC:
+        elif comp_fam == get_toolkit.GCC:
             options = self.configureGCCBased()
         else:
             self.log.error("Don't know how to tweak configuration for compiler used.")
@@ -236,7 +236,7 @@ class EB_CP2K(Application):
         # -automatic is default: -noautomatic -auto-scalar
         # some mem-bandwidth optimisation
         if self.getcfg('type') == 'psmp':
-            self.openmp = self.toolkit().get_openmp_flag()
+            self.openmp = self.get_toolkit().get_openmp_flag()
 
         # determine which opt flags to use
         if self.getcfg('typeopt'):
@@ -466,11 +466,11 @@ class EB_CP2K(Application):
 
         return options
 
-    def make(self):
+    def build_step(self):
         """Start the actual build
         - go into makefiles dir
         - patch Makefile
-        - build
+        -build_and_install
         """
 
         makefiles = os.path.join(self.getcfg('startfrom'), 'makefiles')
@@ -501,7 +501,7 @@ class EB_CP2K(Application):
         # clean first
         run_cmd(cmd + " clean", log_all=True, simple=True, log_output=True)
 
-        # build
+        #build_and_install
         run_cmd(cmd, log_all=True, simple=True, log_output=True)
 
     def test(self):
@@ -630,7 +630,7 @@ maxtasks=%(maxtasks)s
             # number of correct tests: just report
             test_report("CORRECT")
 
-    def make_install(self):
+    def install_step(self):
         """Install built CP2K
         - copy from exe to bin
         - copy tests
@@ -673,7 +673,7 @@ maxtasks=%(maxtasks)s
             except (OSError, IOError), err:
                 self.log.error("Failed to copy regression test results dir: %s" % err)
 
-    def sanitycheck(self):
+    def sanity_check(self):
         """Custom sanity check for CP2K"""
 
         if not self.getcfg('sanityCheckPaths'):
@@ -687,4 +687,4 @@ maxtasks=%(maxtasks)s
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-        Application.sanitycheck(self)
+        Application.sanity_check(self)

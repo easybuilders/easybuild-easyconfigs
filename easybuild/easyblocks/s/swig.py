@@ -44,7 +44,7 @@ class EB_SWIG(Application):
 
         Application.configure(self)
 
-    def sanitycheck(self):
+    def sanity_check(self):
         """Custom sanity check for SWIG."""
 
         if not self.getcfg('sanityCheckPaths'):
@@ -56,4 +56,4 @@ class EB_SWIG(Application):
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-        Application.sanitycheck(self)
+        Application.sanity_check(self)

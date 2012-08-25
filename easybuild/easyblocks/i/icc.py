@@ -39,12 +39,12 @@ class EB_icc(EB_IntelBase):
         - will fail for all older versions (due to newer silent installer)
     """
 
-    def sanitycheck(self):
+    def sanity_check(self):
 
         if not self.getcfg('sanityCheckPaths'):
 
             libprefix = ""
-            if LooseVersion(self.version()) >= LooseVersion("2011"):
+            if LooseVersion(self.get_version()) >= LooseVersion("2011"):
                 libprefix = "compiler/lib/intel64/lib"
             else:
                 libprefix = "lib/intel64/lib"
@@ -57,13 +57,13 @@ class EB_icc(EB_IntelBase):
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-        EB_IntelBase.sanitycheck(self)
+        EB_IntelBase.sanity_check(self)
 
     def make_module_req_guess(self):
         """Customize paths to check and add in environment.
         """
         if self.getcfg('m32'):
-            # 32-bit toolkit
+            # 32-bit get_toolkit
             dirmap = {
                       'PATH': ['bin', 'bin/ia32', 'tbb/bin/ia32'],
                       'LD_LIBRARY_PATH': ['lib', 'lib/ia32'],
@@ -82,16 +82,16 @@ class EB_icc(EB_IntelBase):
         # in recent Intel compiler distributions, the actual binaries are
         # in deeper directories, and symlinked in top-level directories
         # however, not all binaries are symlinked (e.g. mcpcom is not)
-        if os.path.isdir("%s/composerxe-%s" % (self.installdir, self.version())):
-            prefix = "composerxe-%s" % self.version()
+        if os.path.isdir("%s/composerxe-%s" % (self.installdir, self.get_version())):
+            prefix = "composerxe-%s" % self.get_version()
             oldmap = dirmap
             dirmap = {}
             for k, vs in oldmap.items():
                 dirmap[k] = []
                 if k == "LD_LIBRARY_PATH":
-                    prefix = "composerxe-%s/compiler" % self.version()
+                    prefix = "composerxe-%s/compiler" % self.get_version()
                 else:
-                    prefix = "composerxe-%s" % self.version()
+                    prefix = "composerxe-%s" % self.get_version()
                 for v in vs:
                     v2 = "%s/%s" % (prefix, v)
                     dirmap[k].append(v2)

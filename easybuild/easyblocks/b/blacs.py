@@ -31,7 +31,7 @@ import re
 import os
 import shutil
 
-import easybuild.tools.toolkit as toolkit
+import easybuild.tools.toolkit as get_toolkit
 from easybuild.framework.application import Application
 from easybuild.tools.filetools import run_cmd
 from easybuild.tools.modules import get_software_root
@@ -75,17 +75,17 @@ class EB_BLACS(Application):
         except OSError, err:
             self.log.error("Copying %s to % failed: %s" % (src, dest, err))
 
-    def make(self):
-        """Build BLACS using make, after figuring out the make options based on the heuristic tools available."""
+    def build_step(self):
+        """Build BLACS using build_step, after figuring out the make options based on the heuristic tools available."""
 
         # determine MPI base dir and lib
         known_mpis = {
-                      toolkit.OPENMPI: "-L$(MPILIBdir) -lmpi_f77",
-                      toolkit.MVAPICH2: "$(MPILIBdir)/libmpich.a $(MPILIBdir)/libfmpich.a " + \
+                      get_toolkit.OPENMPI: "-L$(MPILIBdir) -lmpi_f77",
+                      get_toolkit.MVAPICH2: "$(MPILIBdir)/libmpich.a $(MPILIBdir)/libfmpich.a " + \
                                         "$(MPILIBdir)/libmpl.a -lpthread"
                      }
 
-        mpi_type = self.toolkit().mpi_type()
+        mpi_type = self.get_toolkit().mpi_type()
 
         base, mpilib = None, None
         if mpi_type in known_mpis.keys():
@@ -173,9 +173,9 @@ class EB_BLACS(Application):
 
         self.updatecfg('makeopts', add_makeopts)
 
-        Application.make(self)
+        Application.build_step(self)
 
-    def make_install(self):
+    def install_step(self):
         """Install by copying files to install dir."""
 
         # include files and libraries
@@ -221,7 +221,7 @@ class EB_BLACS(Application):
         except OSError, err:
             self.log.error("Copying %s to installation dir %s failed: %s" % (src, dest, err))
 
-    def sanitycheck(self):
+    def sanity_check(self):
         """Custom sanity check for BLACS."""
 
         if not self.getcfg('sanityCheckPaths'):
@@ -235,4 +235,4 @@ class EB_BLACS(Application):
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-        Application.sanitycheck(self)
+        Application.sanity_check(self)

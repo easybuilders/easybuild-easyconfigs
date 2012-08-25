@@ -53,7 +53,7 @@ class EB_HDF5(Application):
         self.updatecfg('configopts', "--enable-cxx --enable-fortran %s" % fcomp)
 
         # MPI and C++ support enabled requires --enable-unsupported, because this is untested by HDF5
-        if self.toolkit().opts['usempi']:
+        if self.get_toolkit().opts['usempi']:
             self.updatecfg('configopts', "--enable-unsupported")
 
         # make options
@@ -63,13 +63,13 @@ class EB_HDF5(Application):
 
     # default make and make install are ok
 
-    def sanitycheck(self):
+    def sanity_check(self):
         """
         Custom sanity check for HDF5
         """
         if not self.getcfg('sanityCheckPaths'):
 
-            if self.toolkit().opts['usempi']:
+            if self.get_toolkit().opts['usempi']:
                 extra_binaries = ["bin/%s" % x for x in ["h5perf", "h5pcc", "h5pfc", "ph5diff"]]
             else:
                 extra_binaries = ["bin/%s" % x for x in ["h5cc", "h5fc"]]
@@ -90,4 +90,4 @@ class EB_HDF5(Application):
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-        Application.sanitycheck(self)
+        Application.sanity_check(self)

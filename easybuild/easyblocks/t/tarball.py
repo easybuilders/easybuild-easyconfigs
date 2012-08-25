@@ -44,13 +44,13 @@ class EB_Tarball(Application):
         """
         pass
 
-    def make(self):
+    def build_step(self):
         """
-        Dummy make: nothing to build
+        Dummy build_step: nothing to build
         """
         pass
 
-    def make_install(self):
+    def install_step(self):
 
         src = self.getcfg('startfrom')
         # shutil.copytree cannot handle destination dirs that exist already.

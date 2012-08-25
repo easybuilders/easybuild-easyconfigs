@@ -73,14 +73,14 @@ class EB_FSL(Application):
         except OSError, err:
             self.log.error("Failed to copy closest matching config dir: %s" % err)
 
-    def make(self):
+    def build_step(self):
         """Build FSL using supplied script."""
 
         cmd = ". %s/etc/fslconf/fsl.sh && ./build" % self.fsldir
         run_cmd(cmd, log_all=True, simple=True)
 
         # check build.log file for success
-        buildlog = os.path.join(self.installdir, "fsl", "build.log")
+        buildlog = os.path.join(self.installdir, "fsl", build_and_install.log")
         f = open(buildlog, "r")
         txt = f.read()
         f.close()
@@ -89,7 +89,7 @@ class EB_FSL(Application):
         if error_regexp.search(txt):
             self.log.error("Error detected in build log %s." % buildlog)
 
-    def make_install(self):
+    def install_step(self):
         """Building was performed in install dir, no explicit install step required."""
         pass
 
@@ -114,7 +114,7 @@ class EB_FSL(Application):
 
         return txt
 
-    def sanitycheck(self):
+    def sanity_check(self):
         """Custom sanity check for FSL"""
 
         if not self.getcfg('sanityCheckPaths'):
@@ -125,4 +125,4 @@ class EB_FSL(Application):
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-        Application.sanitycheck(self)
+        Application.sanity_check(self)

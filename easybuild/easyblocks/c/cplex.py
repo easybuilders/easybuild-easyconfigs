@@ -46,7 +46,7 @@ class EB_CPLEX(EB_Binary):
         EB_Binary.__init__(self, *args, **kwargs)
         self.bindir = None
 
-    def make_install(self):
+    def install_step(self):
         """CPLEX has an interactive installer, so use Q&A"""
 
         tmpdir = os.path.join(self.builddir, 'tmp')
@@ -105,7 +105,7 @@ class EB_CPLEX(EB_Binary):
         self.log.debug("make_module_extra added %s" % txt)
         return txt
 
-    def sanitycheck(self):
+    def sanity_check(self):
         """Custom sanity check for CPLEX"""
 
         if not self.getcfg('sanityCheckPaths'):
@@ -116,4 +116,4 @@ class EB_CPLEX(EB_Binary):
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-        EB_Binary.sanitycheck(self)
+        EB_Binary.sanity_check(self)

@@ -48,7 +48,7 @@ class EB_itac(EB_IntelBase):
         extra_vars = [('preferredmpi', ['impi3', "Preferred MPI type (default: 'impi3')", CUSTOM])]
         return EB_IntelBase.extra_options(extra_vars)
 
-    def make_install(self):
+    def install_step(self):
         """
         Actual installation
         - create silent cfg file
@@ -74,7 +74,7 @@ EULA=accept
         f.write(silent)
         f.close()
 
-        tmpdir = os.path.join(os.getcwd(), self.version(), 'mytmpdir')
+        tmpdir = os.path.join(os.getcwd(), self.get_version(), 'mytmpdir')
         try:
             os.makedirs(tmpdir)
         except:

@@ -47,7 +47,7 @@ class EB_CGAL(EB_CMake):
 
         EB_CMake.configure(self)
 
-    def sanitycheck(self):
+    def sanity_check(self):
         """Custom sanity check for CGAL."""
 
         if not self.getcfg('sanityCheckPaths'):
@@ -61,4 +61,4 @@ class EB_CGAL(EB_CMake):
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-        EB_CMake.sanitycheck(self)
+        EB_CMake.sanity_check(self)

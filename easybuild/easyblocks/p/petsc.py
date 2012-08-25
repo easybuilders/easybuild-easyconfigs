@@ -26,7 +26,7 @@ import re
 from distutils.version import LooseVersion
 
 import easybuild.tools.environment as env
-import easybuild.tools.toolkit as toolkit
+import easybuild.tools.toolkit as get_toolkit
 from easybuild.framework.application import Application
 from easybuild.framework.easyconfig import BUILD, CUSTOM
 from easybuild.tools.filetools import run_cmd
@@ -72,7 +72,7 @@ class EB_PETSc(Application):
         Configure procedure is much more concise for older versions (< v3).
         """
 
-        if LooseVersion(self.version()) >= LooseVersion("3"):
+        if LooseVersion(self.get_version()) >= LooseVersion("3"):
 
             # compilers
             self.updatecfg('configopts', '--with-cc="%s"' % os.getenv('CC'))
@@ -84,18 +84,18 @@ class EB_PETSc(Application):
             self.updatecfg('configopts', '--with-cxxflags="%s"' % os.getenv('CXXFLAGS'))
             self.updatecfg('configopts', '--with-fcflags="%s"' % os.getenv('F90FLAGS'))
 
-            if not self.toolkit().comp_family() == toolkit.GCC:
+            if not self.toolkit().comp_family() == get_toolkit.GCC:
                 self.updatecfg('configopts', '--with-gnu-compilers=0')
 
             # MPI
-            if self.toolkit().opts['usempi']:
+            if self.get_toolkit().opts['usempi']:
                 self.updatecfg('configopts', '--with-mpi=1')
 
             # build options
-            self.updatecfg('configopts', '--with-make-np=%s' % self.getcfg('parallel'))
+            self.updatecfg('configopts', '--with-build_step-np=%s' % self.getcfg('parallel'))
             self.updatecfg('configopts', '--with-shared-libraries=%d' % self.getcfg('shared_libs'))
-            self.updatecfg('configopts', '--with-debugging=%d' % self.toolkit().opts['debug'])
-            self.updatecfg('configopts', '--with-pic=%d' % self.toolkit().opts['pic'])
+            self.updatecfg('configopts', '--with-debugging=%d' % self.get_toolkit().opts['debug'])
+            self.updatecfg('configopts', '--with-pic=%d' % self.get_toolkit().opts['pic'])
             self.updatecfg('configopts', '--with-x=0 --with-windows-graphics=0')
 
             # PAPI support
@@ -112,7 +112,7 @@ class EB_PETSc(Application):
                                                                                      papi_lib) + \
                                    "can not enable PAPI support?")
 
-            # Python packages
+            # Python extensions_step
             if get_software_root('Python'):
                 self.updatecfg('configopts', '--with-numpy=1')
                 if self.getcfg('shared_libs'):
@@ -168,7 +168,7 @@ class EB_PETSc(Application):
                                                        ])
                                )
 
-            # set PETSC_DIR for configure (env) and make
+            # set PETSC_DIR for configure (env) and build_step
             env.set('PETSC_DIR', self.getcfg('startfrom'))
             self.updatecfg('makeopts', 'PETSC_DIR=%s' % self.getcfg('startfrom'))
 
@@ -194,7 +194,7 @@ class EB_PETSc(Application):
                 else:
                     self.log.error("Failed to determine PETSC_ARCH setting.")
 
-            self.petsc_subdir = '%s-%s' % (self.name().lower(), self.version())
+            self.petsc_subdir = '%s-%s' % (self.get_name().lower(), self.get_version())
 
         else:  # old versions (< 3.x)
 
@@ -213,14 +213,14 @@ class EB_PETSc(Application):
 
     # default make should be fine
 
-    def make_install(self):
+    def install_step(self):
         """
         Install using make install (for non-source installations), 
         or by symlinking files (old versions, < 3).
         """
-        if LooseVersion(self.version()) >= LooseVersion("3"):
+        if LooseVersion(self.get_version()) >= LooseVersion("3"):
             if not self.getcfg('sourceinstall'):
-                Application.make_install(self)
+                Application.install_step(self)
 
         else:  # old versions (< 3.x)
 
@@ -265,7 +265,7 @@ class EB_PETSc(Application):
 
         return txt
 
-    def sanitycheck(self):
+    def sanity_check(self):
         """Custom sanity check for PETSc"""
 
         if not self.getcfg('sanityCheckPaths'):
@@ -294,4 +294,4 @@ class EB_PETSc(Application):
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-        Application.sanitycheck(self)
+        Application.sanity_check(self)

@@ -77,7 +77,7 @@ class EB_ATLAS(Application):
                                " required to build ATLAS with a full LAPACK library.")
 
         # enable building of shared libraries (requires -fPIC)
-        if self.getcfg('sharedlibs') or self.toolkit().opts['pic']:
+        if self.getcfg('sharedlibs') or self.get_toolkit().opts['pic']:
             self.log.debug("Enabling -fPIC because we're building shared ATLAS libs, or just because.")
             self.updatecfg('configopts', '-Fa alg -fPIC')
 
@@ -114,7 +114,7 @@ Configure failed, not sure why (see output above).""" % out
             self.log.error(errormsg)
 
 
-    def setparallelism(self, nr=None):
+    def set_parallelism(self, nr=None):
         """
         Parallel build of ATLAS doesn't make sense (and doesn't work),
         because it collects timing etc., so disable it.
@@ -122,13 +122,13 @@ Configure failed, not sure why (see output above).""" % out
         if not nr:
             self.log.warning("Ignoring requested parallelism, it breaks ATLAS, so setting to 1")
         self.log.info("Disabling parallel build, makes no sense for ATLAS.")
-        Application.setparallelism(self, 1)
+        Application.set_parallelism(self, 1)
 
 
-    def make(self, verbose=False):
+    def build_step(self, verbose=False):
 
         # default make is fine
-        Application.make(self, verbose=verbose)
+        Application.build_step(self, verbose=verbose)
 
         # optionally also build shared libs
         if self.getcfg('sharedlibs'):
@@ -146,13 +146,13 @@ Configure failed, not sure why (see output above).""" % out
             except OSError, err:
                 self.log.error("Failed to get back to previous dir after building shared libs: %s " % err)
 
-    def make_install(self):
+    def install_step(self):
         """Install step
 
         Default make install and optionally remove incomplete lapack libs.
         If the full_lapack option was set to false we don't
         """
-        Application.make_install(self)
+        Application.install_step(self)
         if not self.getcfg('full_lapack'):
             for i in ['liblapack.a', 'liblapack.so']:
                 lib = os.path.join(self.installdir, "lib", i[0])
@@ -184,7 +184,7 @@ Configure failed, not sure why (see output above).""" % out
 
     # default make install is fine
 
-    def sanitycheck(self):
+    def sanity_check(self):
         """
         Custom sanity check for ATLAS
         """
@@ -207,4 +207,4 @@ Configure failed, not sure why (see output above).""" % out
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-        Application.sanitycheck(self)
+        Application.sanity_check(self)

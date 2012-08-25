@@ -40,8 +40,8 @@ class EB_g2lib(Application):
         """No configuration needed"""
         pass
 
-    def make(self):
-        """Build by supplying required make options, and running make."""
+    def build_step(self):
+        """Build by supplying required make options, and running build_step."""
 
         jasper = get_software_root('JASPER')
         if not jasper:
@@ -50,9 +50,9 @@ class EB_g2lib(Application):
         makeopts = 'CC="%s" FC="%s" INCDIR="-I%s/include"' % (os.getenv('CC'), os.getenv('F90'), jasper)
         self.updatecfg('makeopts', makeopts)
 
-        Application.make(self)
+        Application.build_step(self)
 
-    def make_install(self):
+    def install_step(self):
         """Install by copying generated library to install directory."""
 
         try:
@@ -63,7 +63,7 @@ class EB_g2lib(Application):
         except OSError, err:
             self.log.error("Failed to copy files to install dir: %s" % err)
 
-    def sanitycheck(self):
+    def sanity_check(self):
         """Custom sanity check for g2lib."""
 
         if not self.getcfg('sanityCheckPaths'):
@@ -72,4 +72,4 @@ class EB_g2lib(Application):
                                              'dirs': []
                                             })
 
-        Application.sanitycheck(self)
+        Application.sanity_check(self)

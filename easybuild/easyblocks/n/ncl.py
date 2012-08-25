@@ -168,12 +168,12 @@ class EB_NCL(Application):
         cmd = "./config/ymkmf"
         run_cmd(cmd, log_all=True, simple=True)
 
-    def make(self):
-        """Building is done in make_install."""
+    def build_step(self):
+        """Building is done in install_step."""
         pass
 
-    def make_install(self):
-        """Build in install dir using make."""
+    def install_step(self):
+        """Build in install dir using build_step."""
 
         cmd = "make Everything"
         run_cmd(cmd, log_all=True, simple=True)

@@ -32,7 +32,7 @@ import re
 import sys
 
 import easybuild.tools.environment as env
-import easybuild.tools.toolkit as toolkit
+import easybuild.tools.toolkit as get_toolkit
 from easybuild.easyblocks.netcdf import set_netcdf_env_vars, get_netcdf_module_set_cmds
 from easybuild.framework.application import Application
 from easybuild.framework.easyconfig import CUSTOM, MANDATORY
@@ -109,11 +109,11 @@ class EB_WRF(Application):
 
         # determine build type option to look for
         build_type_option = None
-        self.comp_fam = self.toolkit().comp_family()
-        if self.comp_fam == toolkit.INTEL:
+        self.comp_fam = self.get_toolkit().comp_family()
+        if self.comp_fam == get_toolkit.INTEL:
             build_type_option = "Linux x86_64 i486 i586 i686, ifort compiler with icc"
 
-        elif self.comp_fam == toolkit.GCC:
+        elif self.comp_fam == get_toolkit.GCC:
             build_type_option = "x86_64 Linux, gfortran compiler with gcc"
 
         else:
@@ -168,7 +168,7 @@ class EB_WRF(Application):
 
             # set extra flags for Intel compilers
             # see http://software.intel.com/en-us/forums/showthread.php?t=72109&p=1#146748
-            if self.comp_fam == toolkit.INTEL:
+            if self.comp_fam == get_toolkit.INTEL:
 
                 # -O3 -heap-arrays is required to resolve compilation error
                 for envvar in ['CFLAGS', 'FFLAGS']:
@@ -183,7 +183,7 @@ class EB_WRF(Application):
                 line = re.sub(r"^(CFLAGS_LOCAL.*)(\s-O3)(\s.*)$", r"\1 %s \3" % os.getenv('CFLAGS'), line)
                 sys.stdout.write(line)
 
-    def make(self):
+    def build_step(self):
         """Build and install WRF and testcases using provided compile script."""
 
         # enable parallel build
@@ -228,7 +228,7 @@ class EB_WRF(Application):
                     self.testcases.remove(test)
 
             # some tests hang when WRF is built with Intel compilers
-            if self.comp_fam == toolkit.INTEL:
+            if self.comp_fam == get_toolkit.INTEL:
                 for test in ["em_heldsuarez"]:
                     if test in self.testcases:
                         self.testcases.remove(test)
@@ -240,8 +240,8 @@ class EB_WRF(Application):
 
             # stack limit needs to be set to unlimited for WRF to work well
             if self.getcfg('buildtype') in self.parallel_build_types:
-                test_cmd = "ulimit -s unlimited && %s && %s" % (self.toolkit().mpi_cmd_for("./ideal.exe", 1),
-                                                                self.toolkit().mpi_cmd_for("./wrf.exe", n))
+                test_cmd = "ulimit -s unlimited && %s && %s" % (self.get_toolkit().mpi_cmd_for("./ideal.exe", 1),
+                                                                self.get_toolkit().mpi_cmd_for("./wrf.exe", n))
             else:
                 test_cmd = "ulimit -s unlimited && ./ideal.exe && ./wrf.exe" % n
 
@@ -284,7 +284,7 @@ class EB_WRF(Application):
 
                 self.log.debug("Building and running test %s" % test)
 
-                # build
+                #build_and_install
                 cmd = "./compile %s %s" % (self.par, test)
                 run_cmd(cmd, log_all=True, simple=True)
 
@@ -320,17 +320,17 @@ class EB_WRF(Application):
                 except OSError, err:
                     self.log.error("An error occured when running test %s: %s" % (test, err))
 
-    # building/installing is done in make, so we can run tests
-    def make_install(self):
-        """Building was done in install dir, so nothing to do in make_install."""
+    # building/installing is done in build_step, so we can run tests
+    def install_step(self):
+        """Building was done in install dir, so nothing to do in install_step."""
         pass
 
-    def sanitycheck(self):
+    def sanity_check(self):
         """Custom sanity check for WRF."""
 
         if not self.getcfg('sanityCheckPaths'):
 
-            mainver = self.version().split('.')[0]
+            mainver = self.get_version().split('.')[0]
             self.wrfsubdir = "WRFV%s" % mainver
 
             fs = ["libwrflib.a", "wrf.exe", "ideal.exe", "real.exe", "ndown.exe", "nup.exe", "tc.exe"]
@@ -343,7 +343,7 @@ class EB_WRF(Application):
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-        Application.sanitycheck(self)
+        Application.sanity_check(self)
 
     def make_module_req_guess(self):
 

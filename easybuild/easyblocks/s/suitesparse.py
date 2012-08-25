@@ -86,7 +86,7 @@ class EB_SuiteSparse(Application):
             except IOError, err:
                 self.log.error("Failed to complete %s: %s" % (fp, err))
 
-    def make_install(self):
+    def install_step(self):
         """Install by copying the contents of the builddir to the installdir
         - keep permissions with copy2 !!
         """
@@ -134,7 +134,7 @@ class EB_SuiteSparse(Application):
 
         return guesses
 
-    def sanitycheck(self):
+    def sanity_check(self):
         """Custom sanity check for SuiteSparse."""
         if not self.getcfg('sanityCheckPaths'):
             self.setcfg('sanityCheckPaths', {
@@ -147,4 +147,4 @@ class EB_SuiteSparse(Application):
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-        Application.sanitycheck(self)
+        Application.sanity_check(self)

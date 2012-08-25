@@ -45,7 +45,7 @@ class EB_MrBayes(Application):
         # set generic make options
         self.updatecfg('makeopts', 'CC="%s" OPTFLAGS="%s"' % (os.getenv('MPICC'), os.getenv('CFLAGS')))
 
-        if LooseVersion(self.version()) >= LooseVersion("3.2"):
+        if LooseVersion(self.get_version()) >= LooseVersion("3.2"):
 
             # set correct startfrom dir, and change into it
             self.setcfg('startfrom', os.path.join(self.getcfg('startfrom'),'src'))
@@ -65,7 +65,7 @@ class EB_MrBayes(Application):
             else:
                 self.log.error("BEAGLE module not loaded?")
 
-            if self.toolkit().opts['usempi']:
+            if self.get_toolkit().opts['usempi']:
                 self.updatecfg('configopts', '--enable-mpi')
 
             # configure
@@ -75,7 +75,7 @@ class EB_MrBayes(Application):
             # no configure script prior to v3.2
             self.updatecfg('makeopts', 'MPI=yes')
 
-    def make_install(self):
+    def install_step(self):
         """Install by copying bniaries to install dir."""
 
         bindir = os.path.join(self.installdir, 'bin')
@@ -90,7 +90,7 @@ class EB_MrBayes(Application):
             except (IOError,OSError), err:
                 self.log.error("Failed to copy %s to %s (%s)" % (src, dst, err))
 
-    def sanitycheck(self):
+    def sanity_check(self):
         """Custom sanity check for MrBayes."""
 
         if not self.getcfg('sanityCheckPaths'):
@@ -101,5 +101,5 @@ class EB_MrBayes(Application):
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-        Application.sanitycheck(self)
+        Application.sanity_check(self)
 

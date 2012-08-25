@@ -31,7 +31,7 @@ import re
 import sys
 import shutil
 
-import easybuild.tools.toolkit as toolkit
+import easybuild.tools.toolkit as get_toolkit
 from easybuild.framework.application import Application
 from easybuild.tools.filetools import run_cmd, copytree
 
@@ -43,10 +43,10 @@ class EB_SCOTCH(Application):
         """Configure SCOTCH build: locate the template makefile, copy it to a general Makefile.inc and patch it."""
 
         # pick template makefile
-        comp_fam = self.toolkit().comp_family()
-        if comp_fam == toolkit.INTEL:
+        comp_fam = self.get_toolkit().comp_family()
+        if comp_fam == get_toolkit.INTEL:
             makefilename = 'Makefile.inc.x86-64_pc_linux2.icc'
-        elif comp_fam == toolkit.GCC:
+        elif comp_fam == get_toolkit.GCC:
             makefilename = 'Makefile.inc.x86-64_pc_linux2'
         else:
             self.log.error("Unknown compiler family used: %s" % comp_fam)
@@ -82,20 +82,20 @@ class EB_SCOTCH(Application):
         except OSError, err:
             self.log.error("Failed to change to src dir: %s" % err)
 
-    def make(self):
-        """Build by running make, but with some special options for SCOTCH depending on the compiler."""
+    def build_step(self):
+        """Build by running build_step, but with some special options for SCOTCH depending on the compiler."""
 
         ccs = os.environ['CC']
         ccp = os.environ['MPICC']
         ccd = os.environ['MPICC']
 
         cflags = "-fPIC -O3 -DCOMMON_FILE_COMPRESS_GZ -DCOMMON_PTHREAD -DCOMMON_RANDOM_FIXED_SEED -DSCOTCH_RENAME"
-        if self.toolkit().comp_family() == toolkit.GCC:
+        if self.toolkit().comp_family() == get_toolkit.GCC:
             cflags += " -Drestrict=__restrict"
         else:
             cflags += " -restrict -DIDXSIZE64"
 
-        if not self.toolkit().mpi_type() == toolkit.INTEL:
+        if not self.toolkit().mpi_type() == get_toolkit.INTEL:
             cflags += " -DSCOTCH_PTHREAD"
 
         # actually build
@@ -103,7 +103,7 @@ class EB_SCOTCH(Application):
             cmd = 'make CCS="%s" CCP="%s" CCD="%s" CFLAGS="%s" %s' % (ccs, ccp, ccd, cflags, app)
             run_cmd(cmd, log_all=True, simple=True)
 
-    def make_install(self):
+    def install_step(self):
         """Install by copying files and creating group library file."""
 
         self.log.debug("Installing SCOTCH")
@@ -135,7 +135,7 @@ class EB_SCOTCH(Application):
         except (IOError, OSError), err:
             self.log.error("Can't write to file %s: %s" % (scotchgrouplib, err))
 
-    def sanitycheck(self):
+    def sanity_check(self):
         """Custom sanity check for SCOTCH."""
 
         if not self.getcfg('sanityCheckPaths'):
@@ -169,4 +169,4 @@ class EB_SCOTCH(Application):
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-        Application.sanitycheck(self)
+        Application.sanity_check(self)

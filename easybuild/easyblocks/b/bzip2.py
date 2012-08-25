@@ -36,14 +36,14 @@ class EB_bzip2(Application):
         self.updatecfg('makeopts', 'CC="%s"' % os.getenv('CC'))
         self.updatecfg('makeopts', "CFLAGS='-Wall -Winline %s -g $(BIGFILES)'" % os.getenv('CFLAGS'))
 
-    def make_install(self):
+    def install_step(self):
         """Install in non-standard path by passing PREFIX variable to make install."""
 
         self.updatecfg('installopts', "PREFIX=%s" % self.installdir)
 
-        Application.make_install(self)
+        Application.install_step(self)
 
-    def sanitycheck(self):
+    def sanity_check(self):
         """Custom sanity check for bzip2."""
 
         if not self.getcfg('sanityCheckPaths'):
@@ -58,4 +58,4 @@ class EB_bzip2(Application):
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-        Application.sanitycheck(self)
+        Application.sanity_check(self)

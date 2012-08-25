@@ -44,18 +44,18 @@ class EB_ParMETIS(Application):
         Run 'cmake' in the build dir to get rid of a 'user friendly' 
         help message that is displayed without this step.
         """
-        if LooseVersion(self.version()) >= LooseVersion("4"):
+        if LooseVersion(self.get_version()) >= LooseVersion("4"):
             # tested with 4.0.2, now actually requires cmake to be run first
             # for both parmetis and metis
 
             self.updatecfg('configopts', '-DMETIS_PATH=../metis -DGKLIB_PATH=../metis/GKlib')
 
-            self.updatecfg('configopts', '-DOPENMP="%s"' % self.toolkit().get_openmp_flag())
+            self.updatecfg('configopts', '-DOPENMP="%s"' % self.get_toolkit().get_openmp_flag())
 
-            if self.toolkit().opts['usempi']:
+            if self.get_toolkit().opts['usempi']:
                 self.updatecfg('configopts', '-DCMAKE_C_COMPILER="$MPICC"')
 
-            if self.toolkit().opts['pic']:
+            if self.get_toolkit().opts['pic']:
                 self.updatecfg('configopts', '-DCMAKE_C_FLAGS="-fPIC"')
 
             self.parmetis_builddir = 'build'
@@ -68,8 +68,8 @@ class EB_ParMETIS(Application):
             except OSError, err:
                 self.log.error("Running cmake in %s failed: %s" % (self.parmetis_builddir, err))
 
-    def make(self, verbose=False):
-        """Build ParMETIS (and METIS) using make."""
+    def build_step(self, verbose=False):
+        """Build ParMETIS (and METIS) using build_step."""
 
         paracmd = ''
         if self.getcfg('parallel'):
@@ -77,15 +77,15 @@ class EB_ParMETIS(Application):
 
         self.updatecfg('makeopts', 'LIBDIR=""')
 
-        if self.toolkit().opts['usempi']:
-            if self.toolkit().opts['pic']:
+        if self.get_toolkit().opts['usempi']:
+            if self.get_toolkit().opts['pic']:
                 self.updatecfg('makeopts', 'CC="$MPICC -fPIC"')
             else:
                 self.updatecfg('makeopts', 'CC="$MPICC"')
 
         cmd = "%s make %s %s" % (self.getcfg('premakeopts'), paracmd, self.getcfg('makeopts'))
 
-        # run make in build dir as well for recent version
+        # run make in build dir as well for recent get_version
         if LooseVersion(self.version()) >= LooseVersion("4"):
             try:
                 os.chdir(self.parmetis_builddir)
@@ -96,7 +96,7 @@ class EB_ParMETIS(Application):
         else:
             run_cmd(cmd, log_all=True, simple=True, log_output=verbose)
 
-    def make_install(self):
+    def install_step(self):
         """
         Install by copying files over to the right places.
 
@@ -105,7 +105,7 @@ class EB_ParMETIS(Application):
         includedir = os.path.join(self.installdir, 'include')
         libdir = os.path.join(self.installdir, 'lib')
 
-        if LooseVersion(self.version()) >= LooseVersion("4"):
+        if LooseVersion(self.get_version()) >= LooseVersion("4"):
             # includedir etc changed in v4, use a normal make install
             cmd = "make install %s" % self.getcfg('installopts')
             try:
@@ -165,7 +165,7 @@ class EB_ParMETIS(Application):
         except OSError, err:
             self.log.error("Something went wrong during symlink creation: %s" % err)
 
-    def sanitycheck(self):
+    def sanity_check(self):
         """Custom sanity check for ParMETIS."""
 
         if not self.getcfg('sanityCheckPaths'):
@@ -178,4 +178,4 @@ class EB_ParMETIS(Application):
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-        Application.sanitycheck(self)
+        Application.sanity_check(self)

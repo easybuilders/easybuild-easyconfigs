@@ -32,7 +32,7 @@ class EB_PackedBinary(EB_Binary, Application):
     Just unpack its source in the installdir
     """
 
-    def unpack_src(self):
+    def extract_step(self):
         """Unpack the source"""
-        Application.unpack_src(self)
+        Application.extract_step(self)
 

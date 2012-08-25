@@ -40,7 +40,7 @@ class EB_Doxygen(Application):
                                                    self.getcfg('configopts'))
         run_cmd(cmd, log_all=True, simple=True)
 
-    def sanitycheck(self):
+    def sanity_check(self):
         """
         Custom sanity check for Doxygen
         """
@@ -53,4 +53,4 @@ class EB_Doxygen(Application):
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-        Application.sanitycheck(self)
+        Application.sanity_check(self)

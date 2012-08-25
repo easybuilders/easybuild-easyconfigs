@@ -35,11 +35,11 @@ import tempfile
 from distutils.version import LooseVersion
 
 import easybuild.tools.environment as env
-import easybuild.tools.toolkit as toolkit
+import easybuild.tools.toolkit as get_toolkit
 from easybuild.easyblocks.netcdf import set_netcdf_env_vars, get_netcdf_module_set_cmds
 from easybuild.framework.application import Application
 from easybuild.framework.easyconfig import CUSTOM, MANDATORY
-from easybuild.tools.filetools import patch_perl_script_autoflush, run_cmd, run_cmd_qa, unpack
+from easybuild.tools.filetools import patch_perl_script_autoflush, run_cmd, run_cmd_qa, extract_file
 from easybuild.tools.modules import get_software_root, get_software_version
 
 
@@ -131,20 +131,20 @@ class EB_WPS(Application):
         # configure
 
         # determine build type option to look for
-        self.comp_fam = self.toolkit().comp_family()
+        self.comp_fam = self.get_toolkit().comp_family()
         build_type_option = None
 
-        if LooseVersion(self.version()) >= LooseVersion("3.4"):
+        if LooseVersion(self.get_version()) >= LooseVersion("3.4"):
 
             knownbuildtypes = {
                                'smpar': 'serial',
                                'dmpar': 'dmpar'
                               }
 
-            if self.comp_fam == toolkit.INTEL:
+            if self.comp_fam == get_toolkit.INTEL:
                 build_type_option = " Linux x86_64, Intel compiler"
 
-            elif self.comp_fam == toolkit.GCC:
+            elif self.comp_fam == get_toolkit.GCC:
                 build_type_option = "Linux x86_64 g95 compiler"
 
             else:
@@ -157,10 +157,10 @@ class EB_WPS(Application):
                                'dmpar': 'DM parallel'
                               }
 
-            if self.comp_fam == toolkit.INTEL:
+            if self.comp_fam == get_toolkit.INTEL:
                 build_type_option = "PC Linux x86_64, Intel compiler"
 
-            elif self.comp_fam == toolkit.GCC:
+            elif self.comp_fam == get_toolkit.GCC:
                 build_type_option = "PC Linux x86_64, gfortran compiler,"
                 knownbuildtypes['dmpar'] = knownbuildtypes['dmpar'].upper()
 
@@ -201,7 +201,7 @@ class EB_WPS(Application):
                 line = re.sub(r"^(%s\s*=\s*).*$" % k, r"\1 %s" % v, line)
             sys.stdout.write(line)
 
-    def make(self):
+    def build_step(self):
         """Build in install dir using compile script."""
 
         cmd = "./%s" % self.compile_script
@@ -234,14 +234,14 @@ class EB_WPS(Application):
                 # download data
                 testdata_paths = []
                 for testdata in self.getcfg('testdata'):
-                    path = self.file_locate(testdata)
+                    path = self.obtain_file(testdata)
                     if not path:
                         self.log.error("Downloading file from %s failed?" % testdata)
                     testdata_paths .append(path)
 
                 # unpack data
                 for path in testdata_paths:
-                    unpack(path, tmpdir)
+                    extract_file(path, tmpdir)
 
                 # copy namelist.wps file
                 fn = "namelist.wps"
@@ -312,8 +312,8 @@ class EB_WPS(Application):
             except OSError, err:
                 self.log.error("Failed to run WPS test: %s" % err)
 
-    # installing is done in make, so we can run tests
-    def make_install(self):
+    # installing is done in build_step, so we can run tests
+    def install_step(self):
         """Building was done in install dir, so just do some cleanup here."""
 
         # make sure JASPER environment variables are unset
@@ -323,7 +323,7 @@ class EB_WPS(Application):
             if os.environ.has_key(env_var):
                 os.environ.pop(env_var)
 
-    def sanitycheck(self):
+    def sanity_check(self):
         """Custom sanity check for WPS."""
 
         if not self.getcfg('sanityCheckPaths'):
@@ -336,14 +336,14 @@ class EB_WPS(Application):
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-        Application.sanitycheck(self)
+        Application.sanity_check(self)
 
     def make_module_req_guess(self):
         """Make sure PATH and LD_LIBRARY_PATH are set correctly."""
 
         return {
-                'PATH': [self.name()],
-                'LD_LIBRARY_PATH': [self.name()],
+                'PATH': [self.get_name()],
+                'LD_LIBRARY_PATH': [self.get_name()],
                 'MANPATH': [],
                }
 

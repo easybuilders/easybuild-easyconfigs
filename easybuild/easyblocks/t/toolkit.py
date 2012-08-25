@@ -31,7 +31,7 @@ from easybuild.framework.application import Application
 
 class EB_Toolkit(Application):
     """
-    Compiler toolkit: generate module file only, nothing to make/install
+    Compiler get_toolkit: generate module file only, nothing to build_step/install
     """
     def build(self):
         """
@@ -45,18 +45,18 @@ class EB_Toolkit(Application):
         """ Do nothing """
         pass
 
-    def make(self):
+    def build_step(self):
         """ Do nothing """
         pass
 
-    def make_install(self):
+    def install_step(self):
         """ Do nothing """
         pass
 
     def make_module_req(self):
         return ''
 
-    def sanitycheck(self):
+    def sanity_check(self):
         """
         As a toolkit doens't install anything really, this is always true
         """

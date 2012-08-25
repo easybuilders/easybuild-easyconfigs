@@ -110,7 +110,7 @@ class EB_MVAPICH2(Application):
 
     # make and make install are default
 
-    def sanitycheck(self):
+    def sanity_check(self):
         """
         Custom sanity check for MVAPICH2
         """
@@ -127,4 +127,4 @@ class EB_MVAPICH2(Application):
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-        Application.sanitycheck(self)
+        Application.sanity_check(self)

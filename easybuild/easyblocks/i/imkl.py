@@ -32,7 +32,7 @@ import tempfile
 from distutils.version import LooseVersion
 
 import easybuild.tools.environment as env
-import easybuild.tools.toolkit as toolkit
+import easybuild.tools.toolkit as get_toolkit
 from easybuild.easyblocks.intelbase import EB_IntelBase
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.filetools import run_cmd
@@ -66,9 +66,9 @@ class EB_imkl(EB_IntelBase):
         """
         A dictionary of possible directories to look for
         """
-        if LooseVersion(self.version()) >= LooseVersion('10.3'):
+        if LooseVersion(self.get_version()) >= LooseVersion('10.3'):
             if self.getcfg('m32'):
-                self.log.error("32-bit not supported yet for IMKL v%s (>= 10.3)" % self.version())
+                self.log.error("32-bit not supported yet for IMKL v%s (>= 10.3)" % self.get_version())
             return {
                     'PATH': ['bin', 'mkl/bin', 'mkl/bin/intel64', 'composerxe-2011/bin'],
                     'LD_LIBRARY_PATH': ['lib/intel64', 'mkl/lib/intel64'],
@@ -110,17 +110,17 @@ class EB_imkl(EB_IntelBase):
 
         return txt
 
-    def postproc(self):
+    def post_install_step(self):
         """
         The mkl directory structure has thoroughly changed as from version 10.3.
         Hence post processing is quite different in both situations
         """
-        if LooseVersion(self.version()) >= LooseVersion('10.3'):
+        if LooseVersion(self.get_version()) >= LooseVersion('10.3'):
             #Add convenient wrapper libs
             #- form imkl 10.3
 
             if self.getcfg('m32'):
-                self.log.error("32-bit not supported yet for IMKL v%s (>=10.3)" % self.version())
+                self.log.error("32-bit not supported yet for IMKL v%s (>=10.3)" % self.get_version())
 
             extra = {
                      'libmkl.so': 'GROUP (-lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core)',
@@ -168,7 +168,7 @@ class EB_imkl(EB_IntelBase):
 
             # compiler defaults to icc, but we could be using gcc to create gimkl.
             makeopts = ''
-            if self.toolkit().comp_family() == toolkit.GCC:
+            if self.toolkit().comp_family() == get_toolkit.GCC:
                 makeopts = 'compiler=gnu '
 
             for i in lis1 + lis2 + lis3:
@@ -181,7 +181,7 @@ class EB_imkl(EB_IntelBase):
                 if i in lis3:
                     # use INSTALL_DIR and SPEC_OPT
                     extramakeopts = ''
-                    if self.toolkit().mpi_type() == toolkit.MPICH2:
+                    if self.toolkit().mpi_type() == get_toolkit.MPICH2:
                         extramakeopts = 'mpi=mpich2'
                     cmd = "make -f makefile libintel64 %s" % extramakeopts
 
@@ -353,15 +353,15 @@ class EB_imkl(EB_IntelBase):
                         self.log.exception("Removing temporary directory %s failed" % (tmpbuild))
 
 
-    def sanitycheck(self):
+    def sanity_check(self):
 
         if not self.getcfg('sanityCheckPaths'):
 
             mklfiles = None
             mkldirs = None
-            if LooseVersion(self.version()) >= LooseVersion('10.3'):
+            if LooseVersion(self.get_version()) >= LooseVersion('10.3'):
                 if self.getcfg('m32'):
-                    self.log.error("Sanity check for 32-bit not implemented yet for IMKL v%s (>= 10.3)" % self.version())
+                    self.log.error("Sanity check for 32-bit not implemented yet for IMKL v%s (>= 10.3)" % self.get_version())
                 else:
                     mklfiles = ["mkl/lib/intel64/libmkl.so", "mkl/include/mkl.h"]
                     mkldirs = ["bin", "mkl/bin", "mkl/bin/intel64", "compiler/lib/intel64",
@@ -381,4 +381,4 @@ class EB_imkl(EB_IntelBase):
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-        EB_IntelBase.sanitycheck(self)
+        EB_IntelBase.sanity_check(self)

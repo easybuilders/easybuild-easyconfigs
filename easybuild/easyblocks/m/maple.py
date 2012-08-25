@@ -36,7 +36,7 @@ from easybuild.tools.filetools import run_cmd_qa
 class EB_Maple(Application):
     """Support for installing Maple."""
 
-    def unpack_src(self):
+    def extract_step(self):
         """Unpacking of files is just copying Maple binary installer to build dir."""
 
         for f in self.src:
@@ -47,11 +47,11 @@ class EB_Maple(Application):
         """No configuration needed, binary installer"""
         pass
 
-    def make(self):
+    def build_step(self):
         """No compilation needed, binary installer"""
         pass
 
-    def make_install(self):
+    def install_step(self):
         """Interactive install of Maple."""
 
         cmd = "%s/Maple%sLinuxX86_64Installer.bin" % (self.builddir, self.getcfg('version'))

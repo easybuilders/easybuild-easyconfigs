@@ -40,16 +40,16 @@ class EB_Pasha(Application):
             self.log.error("TBB module not loaded.")
 
         self.updatecfg('makeopts', "TBB_DIR=%s/tbb MPI_DIR='' MPI_INC='' " % tbb)
-        self.updatecfg('makeopts', 'MPI_CXX="%s" OPM_FLAG="%s"' % (os.getenv('MPICXX'), self.toolkit().get_openmp_flag()))
+        self.updatecfg('makeopts', 'MPI_CXX="%s" OPM_FLAG="%s"' % (os.getenv('MPICXX'), self.get_toolkit().get_openmp_flag()))
         self.updatecfg('makeopts', 'MPI_LIB="" MY_CXX="%s" MPICH_IGNORE_CXX_SEEK=1' % os.getenv('CXX'))
 
-    def make_install(self):
+    def install_step(self):
         """Install by copying everything from 'bin' subdir in build dir to install dir"""
 
-        srcdir = os.path.join(self.builddir, "%s-%s" % (self.name(), self.version()), 'bin')
+        srcdir = os.path.join(self.builddir, "%s-%s" % (self.get_name(), self.get_version()), 'bin')
         shutil.copytree(srcdir, os.path.join(self.installdir, 'bin'))
 
-    def sanitycheck(self):
+    def sanity_check(self):
         """Custom sanity check for Pasha"""
         self.setcfg('sanityCheckPaths', {
                                          'files':["bin/pasha-%s" % x for x in ["kmergen",

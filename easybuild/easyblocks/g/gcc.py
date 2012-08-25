@@ -128,10 +128,10 @@ class EB_GCC(Application):
                                            'source_dir': d,
                                            'target_dir': sd
                                           })
-                    # expected format: name[-subname]-version
+                    # expected format: get_name[-subname]-get_version
                     ds = os.path.basename(d).split('-')
                     name = '-'.join(ds[0:-1])
-                    names.update({sd: name})
+                    names.update({sd: get_name})
                     ver = ds[-1]
                     versions.update({sd: ver})
 
@@ -235,7 +235,7 @@ class EB_GCC(Application):
             configopts += " --prefix=%(p)s --with-local-prefix=%(p)s" % {'p' : self.stage1installdir}
 
         else:
-            # unstaged build, so just run standard configure/make/make install
+            # unstaged build, so just run standard configure/build_step/make install
             # set prefixes
             self.log.info("Performing regular GCC build...")
             configopts += " --prefix=%(p)s --with-local-prefix=%(p)s" % {'p' : self.installdir}
@@ -264,7 +264,7 @@ class EB_GCC(Application):
 
         self.run_configure_cmd(cmd)
 
-    def make(self):
+    def build_step(self):
 
         if self.stagedbuild:
 
@@ -438,12 +438,12 @@ class EB_GCC(Application):
         # build with bootstrapping for self-containment
         self.updatecfg('makeopts', 'bootstrap')
 
-        # call standard make
+        # call standard build_step
         Application.make(self)
 
-    # make install is just standard makeInstall, nothing special there
+    # make install is just standard install_step, nothing special there
 
-    def sanitycheck(self):
+    def sanity_check(self):
         """
         Custom sanity check for GCC
         """
@@ -454,7 +454,7 @@ class EB_GCC(Application):
 
             sharedlib_ext = get_shared_lib_ext()
 
-            common_infix = 'gcc/%s/%s' % (self.platform_lib, self.version())
+            common_infix = 'gcc/%s/%s' % (self.platform_lib, self.get_version())
 
             bin_files = ["gcov"]
             lib64_files = ["libgomp.%s" % sharedlib_ext, "libgomp.a"]
@@ -476,7 +476,7 @@ class EB_GCC(Application):
 
             if 'c++' in self.getcfg('languages'):
                 bin_files.extend(['c++', 'g++'])
-                dirs.append('include/c++/%s' % self.version())
+                dirs.append('include/c++/%s' % self.get_version())
                 lib64_files.extend(["libstdc++.%s" % sharedlib_ext, "libstdc++.a"])
 
             if 'fortran' in self.getcfg('languages'):
@@ -502,9 +502,9 @@ class EB_GCC(Application):
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-        Application.sanitycheck(self)
+        Application.sanity_check(self)
 
-    def makeModuleReqGuess(self):
+    def make_module_req_guess(self):
         """
         Make sure all GCC libs are in LD_LIBRARY_PATH
         """

@@ -43,7 +43,7 @@ class EB_Primer3(Application):
 
         self.build_in_installdir = True
 
-        self.bindir = "%s-%s/src" % (self.name().lower(), self.version())
+        self.bindir = "%s-%s/src" % (self.get_name().lower(), self.get_version())
 
         self.setcfg('startfrom', 'src')
 
@@ -56,11 +56,11 @@ class EB_Primer3(Application):
 
     # default make should be fine
 
-    def make_install(self):
+    def install_step(self):
         """(no make install)"""
         pass
 
-    def sanitycheck(self):
+    def sanity_check(self):
         """Custom sanity check for Primer3."""
 
         if not self.getcfg('sanityCheckPaths'):
@@ -74,7 +74,7 @@ class EB_Primer3(Application):
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-        Application.sanitycheck(self)
+        Application.sanity_check(self)
 
     def make_module_req_guess(self):
         """Correct suggestion for PATH variable."""

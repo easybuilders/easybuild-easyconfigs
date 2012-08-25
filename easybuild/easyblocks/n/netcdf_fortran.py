@@ -29,7 +29,7 @@ EasyBuild support for building and installing netCDF-Fortran, implemented as an 
 import os
 
 import easybuild.tools.environment as env
-import easybuild.tools.toolkit as toolkit
+import easybuild.tools.toolkit as get_toolkit
 from easybuild.framework.application import Application
 
 
@@ -39,18 +39,18 @@ class EB_netCDF_Fortran(Application):
     def configure(self):
         """Configure build: set config options and configure"""
 
-        if self.toolkit().opts['pic']:
+        if self.get_toolkit().opts['pic']:
             self.updatecfg('configopts', "--with-pic")
 
         self.updatecfg('configopts', 'FCFLAGS="%s" FC="%s"' % (os.getenv('FFLAGS'), os.getenv('F90')))
 
         # add -DgFortran to CPPFLAGS when building with GCC
-        if self.toolkit().comp_family() == toolkit.GCC:
+        if self.toolkit().comp_family() == get_toolkit.GCC:
             env.set('CPPFLAGS', "%s -DgFortran" % os.getenv('CPPFLAGS'))
 
         Application.configure(self)
 
-    def sanitycheck(self):
+    def sanity_check(self):
         """
         Custom sanity check for netCDF-Fortran
         """
@@ -66,4 +66,4 @@ class EB_netCDF_Fortran(Application):
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-        Application.sanitycheck(self)
+        Application.sanity_check(self)

@@ -41,11 +41,11 @@ class EB_BiSearch(Application):
         """(no configure)"""
         pass
 
-    def make(self):
+    def build_step(self):
         """(empty, building is performed in make_install step)"""
         pass
 
-    def make_install(self):
+    def install_step(self):
         cmd = "./install.sh"
 
         qanda = {
@@ -55,7 +55,7 @@ class EB_BiSearch(Application):
 
         run_cmd_qa(cmd, qanda, log_all=True, simple=True)
 
-    def sanitycheck(self):
+    def sanity_check(self):
         """Custom sanity check for BiSearch."""
 
         if not self.getcfg('sanityCheckPaths'):
@@ -67,4 +67,4 @@ class EB_BiSearch(Application):
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-        Application.sanitycheck(self)
+        Application.sanity_check(self)

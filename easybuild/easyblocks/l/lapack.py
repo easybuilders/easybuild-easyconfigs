@@ -30,7 +30,7 @@ import glob
 import os
 import shutil
 
-import easybuild.tools.toolkit as toolkit
+import easybuild.tools.toolkit as get_toolkit
 from easybuild.framework.application import Application
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.filetools import run_cmd
@@ -65,7 +65,7 @@ def get_blas_lib(log):
 class EB_LAPACK(Application):
     """
     Support for building LAPACK
-    - read make.inc.example and replace BLAS line with configtops
+    - read build_step.inc.example and replace BLAS line with configtops
     -- should be replaced by patch and variables.
     """
 
@@ -83,16 +83,16 @@ class EB_LAPACK(Application):
 
     def configure(self):
         """
-        Configure LAPACK for build: copy make.inc and set make options
+        Configure LAPACK for build: copy build_step.inc and set make options
         """
 
-        # copy make.inc file from examples
-        if self.toolkit().comp_family() == toolkit.GCC:
+        # copy build_step.inc file from examples
+        if self.toolkit().comp_family() == get_toolkit.GCC:
             makeinc = 'gfortran'
-        elif self.toolkit().comp_family() == toolkit.INTEL:
+        elif self.toolkit().comp_family() == get_toolkit.INTEL:
             makeinc = 'ifort'
         else:
-            self.log.error("Don't know which make.inc file to pick, unknown compiler being used...")
+            self.log.error("Don't know which build_step.inc file to pick, unknown compiler being used...")
 
         src = os.path.join(self.getcfg('startfrom'), 'INSTALL', 'make.inc.%s' % makeinc)
         dest = os.path.join(self.getcfg('startfrom'), 'make.inc')
@@ -110,7 +110,7 @@ class EB_LAPACK(Application):
 
         # set optimization flags
         fpic = ''
-        if self.toolkit().opts['pic']:
+        if self.get_toolkit().opts['pic']:
             fpic = '-fPIC'
         self.updatecfg('makeopts', 'OPTS="$FFLAGS -m64" NOOPT="%s -m64 -O0"' % fpic)
 
@@ -137,7 +137,7 @@ class EB_LAPACK(Application):
             self.updatecfg('makeopts', 'lib')
 
     # don't create a module if we're only testing
-    def make(self):
+    def build_step(self):
         """
         Only build when we're not testing.
         """
@@ -146,9 +146,9 @@ class EB_LAPACK(Application):
 
         else:
             # default make suffices (for now)
-            Application.make(self)
+            Application.build_step(self)
 
-    def make_install(self):
+    def install_step(self):
         """
         Install LAPACK: copy all .a files to lib dir in install directory
         """
@@ -213,7 +213,7 @@ class EB_LAPACK(Application):
         else:
             return Application.make_module(self, fake)
 
-    def sanitycheck(self):
+    def sanity_check(self):
         """
         Custom sanity check for LAPACK (only run when not testing)
         """
@@ -227,4 +227,4 @@ class EB_LAPACK(Application):
 
                 self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-            Application.sanitycheck(self)
+            Application.sanity_check(self)

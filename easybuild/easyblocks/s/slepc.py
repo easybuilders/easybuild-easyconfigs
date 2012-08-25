@@ -43,7 +43,7 @@ class EB_SLEPc(Application):
 
         self.slepc_subdir = ''
         if self.getcfg('sourceinstall'):
-            self.slepc_subdir = os.path.join('%s-%s' % (self.name().lower(), self.version()),
+            self.slepc_subdir = os.path.join('%s-%s' % (self.get_name().lower(), self.get_version()),
                                              os.getenv('PETSC_ARCH'))
 
     @staticmethod
@@ -115,15 +115,15 @@ class EB_SLEPc(Application):
         txt = Application.make_module_extra(self)
 
         if self.getcfg('sourceinstall'):
-            txt += self.moduleGenerator.setEnvironment('SLEPC_DIR', '$root/%s-%s' % (self.name().lower(),
-                                                                                     self.version()))
+            txt += self.moduleGenerator.setEnvironment('SLEPC_DIR', '$root/%s-%s' % (self.get_name().lower(),
+                                                                                     self.get_version()))
 
         else:
             txt += self.moduleGenerator.setEnvironment('SLEPC_DIR', '$root')
 
         return txt
 
-    def sanitycheck(self):
+    def sanity_check(self):
         """Custom sanity check for SLEPc"""
         if not self.getcfg('sanityCheckPaths'):
 
@@ -136,4 +136,4 @@ class EB_SLEPc(Application):
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-        Application.sanitycheck(self)
+        Application.sanity_check(self)

@@ -36,16 +36,16 @@ from easybuild.easyblocks.intelbase import EB_IntelBase
 class EB_tbb(EB_IntelBase):
     """EasyBlock for tbb, threading building blocks"""
 
-    def make_install(self):
+    def install_step(self):
         """overwrite make_install to add extra symlinks"""
-        EB_IntelBase.make_install(self)
+        EB_IntelBase.install_step(self)
 
         # save libdir
         os.chdir(self.installdir)
         libglob = 'tbb/lib/intel64/cc*libc*_kernel*'
         libs = glob.glob(libglob)
         if len(libs):
-            libdir = libs[-1]  # take the last one, should be ordered by cc version.
+            libdir = libs[-1]  # take the last one, should be ordered by cc get_version.
             # we're only interested in the last bit
             libdir = libdir.split('/')[-1]
         else:
@@ -61,7 +61,7 @@ class EB_tbb(EB_IntelBase):
         shutil.move(install_libpath, os.path.join(self.installdir, 'tbb', 'libs'))
         os.symlink(self.libpath, install_libpath)
 
-    def sanitycheck(self):
+    def sanity_check(self):
 
         if not self.getcfg('sanityCheckPaths'):
             self.setcfg('sanityCheckPaths', {
@@ -71,7 +71,7 @@ class EB_tbb(EB_IntelBase):
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-        EB_IntelBase.sanitycheck(self)
+        EB_IntelBase.sanity_check(self)
 
     def make_module_extra(self):
         """Add correct path to lib to LD_LIBRARY_PATH. and intel license file"""

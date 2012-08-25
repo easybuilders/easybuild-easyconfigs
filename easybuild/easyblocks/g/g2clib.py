@@ -41,8 +41,8 @@ class EB_g2clib(Application):
         """No configuration needed"""
         pass
 
-    def make(self):
-        """Build by supplying required make options, and running make."""
+    def build_step(self):
+        """Build by supplying required make options, and running build_step."""
 
         jasper = get_software_root('JASPER')
         if not jasper:
@@ -52,9 +52,9 @@ class EB_g2clib(Application):
         makeopts = 'CC="%s" FC="%s" INC="-I%s/include"' % (os.getenv('CC'), os.getenv('F90'), jasper)
         self.updatecfg('makeopts', makeopts)
 
-        Application.make(self)
+        Application.build_step(self)
 
-    def make_install(self):
+    def install_step(self):
         """Install by copying library and header files to install directory."""
 
         try:
@@ -75,7 +75,7 @@ class EB_g2clib(Application):
         except OSError, err:
             self.log.error("Failed to copy files to install dir: %s" % err)
 
-    def sanitycheck(self):
+    def sanity_check(self):
         """Custom sanity check for g2clib."""
 
         if not self.getcfg('sanityCheckPaths'):
@@ -84,4 +84,4 @@ class EB_g2clib(Application):
                                              'dirs': ["include"]
                                             })
 
-        Application.sanitycheck(self)
+        Application.sanity_check(self)

@@ -29,15 +29,15 @@ EasyBuild support for Python, implemented as an easyblock
 import os
 import shutil
 
-import easybuild.tools.toolkit as toolkit
+import easybuild.tools.toolkit as get_toolkit
 from easybuild.framework.application import ApplicationPackage, Application
-from easybuild.tools.filetools import unpack, patch, run_cmd
+from easybuild.tools.filetools import extract_file, apply_patch, run_cmd
 from easybuild.tools.modules import get_software_root
 
 
 class EB_Python(Application):
     """Support for building/installing Python
-    - default configure/make/make install works fine
+    - default configure/build_step/make install works fine
 
     To extend Python by adding extra packages there are two ways:
     - list the packages in the pkglist, this will include the packages in this Python easyblock
@@ -47,7 +47,7 @@ class EB_Python(Application):
     but also provide newer updated numpy and scipy versions by creating a PythonPackageModule for it.
     """
 
-    def extra_packages_pre(self):
+    def prepare_for_extensions(self):
         """
         We set some default configs here for packages included in python
         """
@@ -55,7 +55,7 @@ class EB_Python(Application):
         self.log.debug("setting extra packages options")
         # use __name__ here, since this is the module where EB_DefaultPythonPackage is defined
         self.setcfg('pkgdefaultclass', (__name__, "EB_DefaultPythonPackage"))
-        self.setcfg('pkgfilter', ('python -c "import %(name)s"', ""))
+        self.setcfg('pkgfilter', ('python -c "import %(get_name)s"', ""))
 
     def configure(self):
         """Set extra configure options."""
@@ -63,13 +63,13 @@ class EB_Python(Application):
 
         Application.configure(self)
 
-    def make_install(self):
+    def install_step(self):
         """Extend make install to make sure that the 'python' command is present."""
-        Application.make_install(self)
+        Application.install_step(self)
 
         python_binary_path = os.path.join(self.installdir, 'bin', 'python')
         if not os.path.isfile(python_binary_path):
-            pythonver = '.'.join(self.version().split('.')[0:2])
+            pythonver = '.'.join(self.get_version().split('.')[0:2])
             srcbin = "%s%s" % (python_binary_path, pythonver)
             try:
                 os.symlink(srcbin, python_binary_path)
@@ -93,7 +93,7 @@ class EB_DefaultPythonPackage(ApplicationPackage):
         self.mself = mself
         self.installopts = ''
         self.runtest = None
-        self.pkgdir = "%s/%s" % (self.builddir, self.name)
+        self.pkgdir = "%s/%s" % (self.builddir, self.get_name)
         self.unpack_options = ''
 
         self.python = get_software_root('Python')
@@ -102,7 +102,7 @@ class EB_DefaultPythonPackage(ApplicationPackage):
         """Configure Python package build
         """
 
-        if self.sitecfg: # used by some packages, like numpy, to find certain libs
+        if self.sitecfg: # used by some extensions_step, like numpy, to find certain libs
             finaltxt = self.sitecfg
             if self.sitecfglibdir:
                 repl = self.sitecfglibdir
@@ -124,14 +124,14 @@ class EB_DefaultPythonPackage(ApplicationPackage):
             except IOError:
                 self.log.exception("Creating %s failed" % self.sitecfgfn)
 
-    def make(self):
+    def build_step(self):
         """Build Python package via setup.py"""
 
         cmd = "python setup.py build "
 
         run_cmd(cmd, log_all=True, simple=True)
 
-    def make_install(self):
+    def install_step(self):
         """Install built Python package"""
 
         cmd = "python setup.py install --prefix=%s %s" % (self.python, self.installopts)
@@ -173,23 +173,23 @@ class EB_DefaultPythonPackage(ApplicationPackage):
     def run(self):
         """Perform the actual package build/installation procedure"""
 
-        # unpack
+        # extract_file
         if not self.src:
             self.log.error("No source found for Python package %s, required for installation. (src: %s)" % \
-                           (self.name, self.src))
-        self.pkgdir = unpack("%s" % self.src, "%s/%s" % (self.builddir, self.name), extra_options=self.unpack_options)
+                           (self.get_name, self.src))
+        self.pkgdir = extract_file("%s" % self.src, "%s/%s" % (self.builddir, self.get_name), extra_options=self.unpack_options)
 
         # patch if needed
         if self.patches:
             for patchfile in self.patches:
-                if not patch(patchfile, self.pkgdir):
+                if not apply_patch(patchfile, self.pkgdir):
                     self.log.error("Applying patch %s failed" % patchfile)
 
-        # configure, make, test, make install
+        # configure, build_step, test, make install
         self.configure()
-        self.make()
+        self.build_step()
         self.test()
-        self.make_install()
+        self.install_step()
 
     def getcfg(self, *args, **kwargs):
         return self.mself.getcfg(*args, **kwargs)
@@ -209,13 +209,13 @@ class EB_nose(EB_DefaultPythonPackage):
 class EB_FortranPythonPackage(EB_DefaultPythonPackage):
     """Extends EB_DefaultPythonPackage to add a Fortran compiler to the make call"""
 
-    def make(self):
-        comp_fam = self.toolkit().comp_family()
+    def build_step(self):
+        comp_fam = self.get_toolkit().comp_family()
 
-        if comp_fam == toolkit.INTEL:
+        if comp_fam == get_toolkit.INTEL:
             cmd = "python setup.py build --compiler=intel --fcompiler=intelem"
 
-        elif comp_fam == toolkit.GCC:
+        elif comp_fam == get_toolkit.GCC:
             cmdprefix = ""
             ldflags = os.getenv('LDFLAGS')
             if ldflags:
@@ -304,11 +304,11 @@ libraries = %s
         self.testinstall = True
         self.runtest = "cd .. && python -c 'import numpy; numpy.test(verbose=2)'"
 
-    def make_install(self):
+    def install_step(self):
         """Install numpy package
         We remove the numpy build dir here, so scipy doesn't find it by accident
         """
-        EB_FortranPythonPackage.make_install(self)
+        EB_FortranPythonPackage.install_step(self)
         builddir = os.path.join(self.builddir, "numpy")
         if os.path.isdir(builddir):
             shutil.rmtree(builddir)

@@ -94,11 +94,11 @@ class EB_IntelBase(Application):
         # clean home directory
         self.clean_homedir()
 
-    def make(self):
+    def build_step(self):
         """Binary installation files, so no building."""
         pass
 
-    def make_install(self):
+    def install_step(self):
         """Actual installation
 
         - create silent cfg file

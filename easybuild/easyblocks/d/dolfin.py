@@ -25,7 +25,7 @@ EasyBuild support for DOLFIN, implemented as an easyblock
 import os
 import re
 
-import easybuild.tools.toolkit as toolkit
+import easybuild.tools.toolkit as get_toolkit
 from easybuild.easyblocks.cmakepythonpackage import EB_CMakePythonPackage
 from easybuild.tools.modules import get_software_root, get_software_version
 
@@ -47,7 +47,7 @@ class EB_DOLFIN(EB_CMakePythonPackage):
         fflags = os.getenv('FFLAGS')
 
         # fix for "SEEK_SET is #defined but must not be for the C++ binding of MPI. Include mpi.h before stdio.h"
-        if self.toolkit().mpi_type() in [toolkit.INTEL, toolkit.MPICH2]:
+        if self.toolkit().mpi_type() in [toolkit.INTEL, get_toolkit.MPICH2]:
             cflags += " -DMPICH_IGNORE_CXX_SEEK"
             cxxflags += " -DMPICH_IGNORE_CXX_SEEK"
             fflags += " -DMPICH_IGNORE_CXX_SEEK"
@@ -91,7 +91,7 @@ class EB_DOLFIN(EB_CMakePythonPackage):
         self.updatecfg('configopts', '-DZLIB_LIBRARY=%s' % os.path.join(depsdict['zlib'], "lib", "libz.a"))
 
         # set correct openmp options
-        openmp = self.toolkit().get_openmp_flag()
+        openmp = self.get_toolkit().get_openmp_flag()
         self.updatecfg('configopts', ' -DOpenMP_CXX_FLAGS="%s"' % openmp)
         self.updatecfg('configopts', ' -DOpenMP_C_FLAGS="%s"' % openmp)
 
@@ -175,7 +175,7 @@ class EB_DOLFIN(EB_CMakePythonPackage):
 
         return txt
 
-    def sanitycheck(self):
+    def sanity_check(self):
         """Custom sanity check for DOLFIN."""
 
         if not self.getcfg('sanityCheckPaths'):
@@ -193,10 +193,10 @@ class EB_DOLFIN(EB_CMakePythonPackage):
             pref = os.path.join('share', 'dolfin', 'demo')
 
             # test command templates
-            cmd_template_python = " && ".join(["cd %(dir)s", "python demo_%(name)s.py", "cd -"])
+            cmd_template_python = " && ".join(["cd %(dir)s", "python demo_%(get_name)s.py", "cd -"])
 
             cmd_template_cpp = " && ".join(["cd %(dir)s", "cmake . %s" % self.saved_configopts,
-                                            "make", "./demo_%(name)s", "cd -"])
+                                            "make", "./demo_%(get_name)s", "cd -"])
 
             # list based on demos available for DOLFIN v1.0.0
             pde_demos = ['biharmonic', 'cahn-hilliard', 'hyperelasticity', 'mixed-poisson',
@@ -212,10 +212,10 @@ class EB_DOLFIN(EB_CMakePythonPackage):
                     for d in demos
                     for (tmpl, subdir) in [(cmd_template_python, 'python'), (cmd_template_cpp, 'cpp')]]
 
-            # subdomains-poisson has no C++ version, only Python
+            # subdomains-poisson has no C++ get_version, only Python
             name = 'subdomains-poisson'
-            path = os.path.join(pref, 'pde', name, 'python')
-            cmds += [cmd_template_python % {'dir': path, 'name': name}]
+            path = os.path.join(pref, 'pde', get_name, 'python')
+            cmds += [cmd_template_python % {'dir': path, 'name': get_name}]
 
             # supply empty argument to each command
             cmds = [(cmd, "") for cmd in cmds]
@@ -223,4 +223,4 @@ class EB_DOLFIN(EB_CMakePythonPackage):
             # join all commands into one large single sanity check command
             self.setcfg('sanityCheckCommands', cmds)
 
-        EB_CMakePythonPackage.sanitycheck(self)
+        EB_CMakePythonPackage.sanity_check(self)

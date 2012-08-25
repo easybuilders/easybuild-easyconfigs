@@ -30,7 +30,7 @@ import stat
 from distutils.version import LooseVersion
 
 import easybuild.tools.environment as env
-import easybuild.tools.toolkit as toolkit
+import easybuild.tools.toolkit as get_toolkit
 from easybuild.framework.application import Application
 from easybuild.tools.filetools import run_cmd, adjust_permissions
 from easybuild.tools.modules import get_software_root
@@ -58,17 +58,17 @@ class EB_OpenFOAM(Application):
         env.set("FOAM_INST_DIR", self.installdir)
 
         # third party directory
-        self.thrdpartydir = "ThirdParty-%s" % self.version()
+        self.thrdpartydir = "ThirdParty-%s" % self.get_version()
         os.symlink(os.path.join("..", self.thrdpartydir), self.thrdpartydir)
         env.set("WM_THIRD_PARTY_DIR", os.path.join(self.installdir, self.thrdpartydir))
 
         # compiler
-        comp_fam = self.toolkit().comp_family()
+        comp_fam = self.get_toolkit().comp_family()
 
-        if comp_fam == toolkit.GCC:
+        if comp_fam == get_toolkit.GCC:
             self.wm_compiler="Gcc"
 
-        elif comp_fam == toolkit.INTEL:
+        elif comp_fam == get_toolkit.INTEL:
             self.wm_compiler="Icc"
 
             # make sure -no-prec-div is used with Intel compilers
@@ -80,17 +80,17 @@ class EB_OpenFOAM(Application):
         env.set("WM_COMPILER",self.wm_compiler)
 
         # type of MPI
-        mpi_type = self.toolkit().mpi_type()
+        mpi_type = self.get_toolkit().mpi_type()
 
-        if mpi_type == toolkit.INTEL:
+        if mpi_type == get_toolkit.INTEL:
             self.mpipath = os.path.join(get_software_root('IMPI'),'intel64')
             self.wm_mplib = "IMPI"
 
-        elif mpi_type == toolkit.QLOGIC:
+        elif mpi_type == get_toolkit.QLOGIC:
             self.mpipath = get_software_root('QLogicMPI')
             self.wm_mplib = "MPICH"
 
-        elif mpi_type == toolkit.OPENMPI:
+        elif mpi_type == get_toolkit.OPENMPI:
             self.mpipath = get_software_root('OpenMPI')
             self.wm_mplib = "MPI-MVAPICH2"
 
@@ -104,10 +104,10 @@ class EB_OpenFOAM(Application):
         # parallel build spec
         env.set("WM_NCOMPPROCS", str(self.getcfg('parallel')))
 
-    def make(self):
+    def build_step(self):
         """Build OpenFOAM using make after sourcing script to set environment."""
 
-        nameversion = "%s-%s"%(self.name(), self.version())
+        nameversion = "%s-%s"%(self.get_name(), self.get_version())
 
         precmd = "source %s" % os.path.join(self.builddir, nameversion, "etc", "bashrc")
 
@@ -117,12 +117,12 @@ class EB_OpenFOAM(Application):
                                                          'makecmd':os.path.join(self.builddir, nameversion, "Allwmake")}
         run_cmd(cmd,log_all=True,simple=True,log_output=True)
 
-    def make_install(self):
+    def install_step(self):
         """Building was performed in install dir, so just fix permissions."""
 
         # fix permissions of various OpenFOAM-x subdirectories (only known to be required for v1.x)
-        if LooseVersion(self.version()) <= LooseVersion('2'):
-            installPath = "%s/%s-%s"%(self.installdir, self.name(), self.version())
+        if LooseVersion(self.get_version()) <= LooseVersion('2'):
+            installPath = "%s/%s-%s"%(self.installdir, self.get_name(), self.get_version())
 
             for d in ["applications", "bin", "doc", "etc", "lib", "src", "tutorials"]:
                 # Make directories readable and executable for others
@@ -136,23 +136,23 @@ class EB_OpenFOAM(Application):
             fullpath = os.path.join(self.installdir, self.thrdpartydir, d)
             adjust_permissions(fullpath, stat.S_IROTH|stat.S_IXOTH, add=True)
 
-    def sanitycheck(self):
+    def sanity_check(self):
         """Custom sanity check for OpenFOAM"""
 
         if not self.getcfg('sanityCheckPaths'):
 
-            odir = "%s-%s" % (self.name(), self.version())
+            odir = "%s-%s" % (self.get_name(), self.get_version())
 
             psubdir = "linux64%sDPOpt" % self.wm_compiler
 
-            if LooseVersion(self.version()) < LooseVersion("2"):
+            if LooseVersion(self.get_version()) < LooseVersion("2"):
                 toolsdir = os.path.join(odir, "applications", "bin", psubdir)
 
             else:
                 toolsdir = os.path.join(odir, "platforms", psubdir, "bin")
 
             pdirs = []
-            if LooseVersion(self.version()) >= LooseVersion("2"):
+            if LooseVersion(self.get_version()) >= LooseVersion("2"):
                 pdirs = [toolsdir, os.path.join(odir, "platforms", psubdir, "lib")]
 
             # some randomly selected binaries
@@ -169,20 +169,20 @@ class EB_OpenFOAM(Application):
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-        Application.sanitycheck(self)
+        Application.sanity_check(self)
 
     def make_module_extra(self):
         """Define extra environment variables required by OpenFOAM"""
 
         txt = Application.make_module_extra(self)
 
-        env_vars = [("WM_PROJECT_VERSION", self.version()),
+        env_vars = [("WM_PROJECT_VERSION", self.get_version()),
                     ("FOAM_INST_DIR", "$root"),
                     ("WM_COMPILER", self.wm_compiler),
                     ("WM_MPLIB", self.wm_mplib),
                     ("MPI_ARCH_PATH", self.mpipath),
-                    ("FOAM_BASH", "$root/%s-%s/etc/bashrc" % (self.name(), self.version())),
-                    ("FOAM_CSH", "$root/%s-%s/etc/cshrc" % (self.name(), self.version())),
+                    ("FOAM_BASH", "$root/%s-%s/etc/bashrc" % (self.get_name(), self.get_version())),
+                    ("FOAM_CSH", "$root/%s-%s/etc/cshrc" % (self.get_name(), self.get_version())),
                     ]
 
         for env_var in env_vars:

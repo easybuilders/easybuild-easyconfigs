@@ -23,7 +23,7 @@ EasyBuild support for Trilinos, implemented as an easyblock
 import os
 import re
 
-import easybuild.tools.toolkit as toolkit
+import easybuild.tools.toolkit as get_toolkit
 from easybuild.easyblocks.cmake import EB_CMake
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.modules import get_software_root
@@ -58,7 +58,7 @@ class EB_Trilinos(EB_CMake):
         cxxflags = os.getenv('CXXFLAGS')
         fflags = os.getenv('FFLAGS')
 
-        if self.toolkit().mpi_type() in [toolkit.INTEL, toolkit.MPICH2]:
+        if self.toolkit().mpi_type() in [toolkit.INTEL, get_toolkit.MPICH2]:
             cflags += " -DMPICH_IGNORE_CXX_SEEK"
             cxxflags += " -DMPICH_IGNORE_CXX_SEEK"
             fflags += " -DMPICH_IGNORE_CXX_SEEK"
@@ -72,7 +72,7 @@ class EB_Trilinos(EB_CMake):
             self.updatecfg('configopts', "-DTrilinos_ENABLE_OpenMP:BOOL=ON")
 
         # MPI
-        if self.toolkit().opts['usempi']:
+        if self.get_toolkit().opts['usempi']:
             self.updatecfg('configopts', "-DTPL_ENABLE_MPI:BOOL=ON")
 
         # shared libraries
@@ -81,8 +81,8 @@ class EB_Trilinos(EB_CMake):
         else:
             self.updatecfg('configopts', "-DBUILD_SHARED_LIBS:BOOL=OFF")
 
-        # release or debug version
-        if self.toolkit().opts['debug']:
+        # release or debug get_version
+        if self.get_toolkit().opts['debug']:
             self.updatecfg('configopts', "-DCMAKE_BUILD_TYPE:STRING=DEBUG")
         else:
             self.updatecfg('configopts', "-DCMAKE_BUILD_TYPE:STRING=RELEASE")
@@ -97,12 +97,12 @@ class EB_Trilinos(EB_CMake):
         for dep in ["BLAS", "LAPACK"]:
             self.updatecfg('configopts', '-DTPL_ENABLE_%s:BOOL=ON' % dep)
             libdirs = os.getenv('%s_LIB_DIR' % dep)
-            if self.toolkit().comp_family() == toolkit.GCC:
+            if self.toolkit().comp_family() == get_toolkit.GCC:
                 libdirs += ";%s/lib64" % get_software_root('GCC')
             self.updatecfg('configopts', '-D%s_LIBRARY_DIRS="%s"' % (dep, libdirs))
             libs = os.getenv('%s_MT_STATIC_LIBS' % dep).split(',')
             lib_names = ';'.join([lib_re.search(l).group(1) for l in libs])
-            if self.toolkit().comp_family() == toolkit.GCC:
+            if self.toolkit().comp_family() == get_toolkit.GCC:
                 # explicitely specify static lib!
                 lib_names += ";libgfortran.a"
             self.updatecfg('configopts', '-D%s_LIBRARY_NAMES="%s"' % (dep, lib_names))
@@ -173,7 +173,7 @@ class EB_Trilinos(EB_CMake):
                 libdir = os.path.join(deproot, "lib")
                 self.updatecfg('configopts', '-D%s_LIBRARY_DIRS:PATH="%s"' % (dep, libdir))
 
-        # packages
+        # extensions_step
         if self.getcfg('all_pkgs'):
             self.updatecfg('configopts', "-DTrilinos_ENABLE_ALL_PACKAGES:BOOL=ON")
 
@@ -198,11 +198,11 @@ class EB_Trilinos(EB_CMake):
         # configure using cmake
         EB_CMake.configure(self, "..")
 
-    def make(self):
+    def build_step(self):
         """Build with make (verbose logging enabled)."""
-        EB_CMake.make(self, verbose=True)
+        EB_CMake.build_step(self, verbose=True)
 
-    def sanitycheck(self):
+    def sanity_check(self):
         """Custom sanity check for Trilinos."""
 
         if not self.getcfg('sanityCheckPaths'):
@@ -223,4 +223,4 @@ class EB_Trilinos(EB_CMake):
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-        EB_CMake.sanitycheck(self)
+        EB_CMake.sanity_check(self)

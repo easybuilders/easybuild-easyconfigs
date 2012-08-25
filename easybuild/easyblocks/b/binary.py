@@ -37,7 +37,7 @@ class EB_Binary(Application):
     """Support for installing a binary package.
     Just copy it's sources to the installdir"""
 
-    def unpack_src(self):
+    def extract_step(self):
         """Move all source files to the build directory"""
 
         self.src[0]['finalpath'] = self.builddir
@@ -56,7 +56,7 @@ class EB_Binary(Application):
         """No configuration, this is a binary package"""
         pass
 
-    def make(self):
+    def build_step(self):
         """No compilation, this is a binary package"""
         pass
 
@@ -66,7 +66,7 @@ class EB_Binary(Application):
         But in python < 2.5 the actual path leading up to the directory has to exist."""
         self.make_dir(self.installdir, clean=True, dontcreateinstalldir=True)
 
-    def make_install(self):
+    def install_step(self):
         """Copy the unpacked source to the install directory"""
         shutil.copytree(self.getcfg('startfrom'), self.installdir, symlinks=True)
 

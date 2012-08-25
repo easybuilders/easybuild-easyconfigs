@@ -71,7 +71,7 @@ class EB_HPL(Application):
         # go back
         os.chdir(self.getcfg('startfrom'))
 
-    def make(self):
+    def build_step(self):
         """
         Build with make and correct make options
         """
@@ -100,9 +100,9 @@ class EB_HPL(Application):
 
         # set options and build
         self.updatecfg('makeopts', extra_makeopts)
-        Application.make(self)
+        Application.build_step(self)
 
-    def make_install(self):
+    def install_step(self):
         """
         Install by copying files to install dir
         """
@@ -117,7 +117,7 @@ class EB_HPL(Application):
         except OSError, err:
             self.log.exception("Copying %s to installation dir %s failed: %s" % (srcfile, destdir, err))
 
-    def sanitycheck(self):
+    def sanity_check(self):
         """
         Custom sanity check for HPL
         """
@@ -130,4 +130,4 @@ class EB_HPL(Application):
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-        Application.sanitycheck(self)
+        Application.sanity_check(self)
