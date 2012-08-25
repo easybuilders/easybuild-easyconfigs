@@ -186,7 +186,7 @@ def read_only_installdir():
     """
     Return whether installation dir should be fully read-only after installation.
     """
-    # FIXME (see issue #): add a config option to set this, should be True by default (?)
+    # FIXME (see issue #123): add a config option to set this, should be True by default (?)
     # this also needs to be checked when --force is used;
     # install dir will have to (temporarily) be made writeable again for owner in that case
     return False
