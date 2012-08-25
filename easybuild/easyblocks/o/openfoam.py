@@ -118,23 +118,17 @@ class EB_OpenFOAM(Application):
         run_cmd(cmd,log_all=True,simple=True,log_output=True)
 
     def make_install(self):
-        """Building was performed in install dir, so just fix permissions."""
+        """Building was performed in install dir, so just fix broken permissions."""
 
-        # fix permissions of various OpenFOAM-x subdirectories (only known to be required for v1.x)
-        if LooseVersion(self.version()) <= LooseVersion('2'):
-            installPath = "%s/%s-%s"%(self.installdir, self.name(), self.version())
-
-            for d in ["applications", "bin", "doc", "etc", "lib", "src", "tutorials"]:
-                # Make directories readable and executable for others
-                fullpath = os.path.join(installPath, d)
-                adjust_permissions(fullpath, stat.S_IROTH|stat.S_IXOTH, add=True)
+        # fix permissions of OpenFOAM dir
+        fullpath = os.path.join(self.installdir, "%s-%s" % (self.name(), self.version()))
+        adjust_permissions(fullpath, stat.S_IROTH, add=True, recursive=True)
+        adjust_permissions(fullpath, stat.S_IXOTH, add=True, recursive=True, onlydirs=True)
 
         # fix permissions of ThirdParty dir and subdirs (also for 2.x)
         fullpath = os.path.join(self.installdir, self.thrdpartydir)
-        adjust_permissions(fullpath, stat.S_IROTH|stat.S_IXOTH, add=True, recursive=False)
-        for d in ["etc", "platforms"]:
-            fullpath = os.path.join(self.installdir, self.thrdpartydir, d)
-            adjust_permissions(fullpath, stat.S_IROTH|stat.S_IXOTH, add=True)
+        adjust_permissions(fullpath, stat.S_IROTH, add=True, recursive=True)
+        adjust_permissions(fullpath, stat.S_IXOTH, add=True, recursive=True, onlydirs=True)
 
     def sanitycheck(self):
         """Custom sanity check for OpenFOAM"""

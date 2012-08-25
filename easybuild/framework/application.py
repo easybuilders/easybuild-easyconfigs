@@ -34,6 +34,7 @@ import grp  #@UnresolvedImport
 import os
 import re
 import shutil
+import stat
 import time
 import urllib
 from distutils.version import LooseVersion
@@ -43,8 +44,9 @@ import easybuild.tools.config as config
 import easybuild.tools.environment as env
 from easybuild.framework.easyconfig import EasyConfig
 from easybuild.tools.build_log import EasyBuildError, initLogger, removeLogHandler, print_msg
-from easybuild.tools.config import source_path, buildPath, installPath
-from easybuild.tools.filetools import unpack, patch, run_cmd, convertName, encode_class_name
+from easybuild.tools.config import source_path, buildPath, installPath, read_only_installdir
+from easybuild.tools.filetools import adjust_permissions, convertName, encode_class_name
+from easybuild.tools.filetools import patch, run_cmd, unpack
 from easybuild.tools.module_generator import ModuleGenerator
 from easybuild.tools.modules import Modules, get_software_root
 from easybuild.tools.systemtools import get_core_count
@@ -626,6 +628,8 @@ class Application:
         - test
         - make install location
         - install
+        - install packages
+        - do post-processing
         """
         try:
             print_msg("preparing...", self.log)
@@ -734,31 +738,27 @@ class Application:
         Installing user must be member of the group that it is changed to
         """
         if self.getcfg('group'):
-            gid = grp.getgrnam(self.getcfg('group'))[2]
-            chngsuccess = []
-            chngfailure = []
-            for (root, _, files) in os.walk(self.installdir):
-                try:
-                    os.chown(root, -1, gid)
-                    os.chmod(root, 0750)
-                    chngsuccess.append(root)
-                except OSError, err:
-                    self.log.error("Failed to change group for %s: %s" % (root, err))
-                    chngfailure.append(root)
-                for f in files:
-                    absfile = os.path.join(root, f)
-                    try:
-                        os.chown(absfile, -1, gid)
-                        os.chmod(root, 0750)
-                        chngsuccess.append(absfile)
-                    except OSError, err:
-                        self.log.debug("Failed to chown/chmod %s (but ignoring it): %s" % (absfile, err))
-                        chngfailure.append(absfile)
 
-            if len(chngfailure) > 0:
-                self.log.error("Unable to change group permissions of file(s). Are you a member of this group?:\n --> %s" % "\n --> ".join(chngfailure))
-            else:
-                self.log.info("Successfully made software only available for group %s" % self.getcfg('group'))
+            gid = grp.getgrnam(self.getcfg('group'))[2]
+            # rwx for owner, r-x for group, --- for other
+            try:
+                adjust_permissions(self.installdir, 0750, recursive=True, group_id=gid, relative=False)
+            except EasyBuildError, err:
+                self.log.error("Unable to change group permissions of file(s). " \
+                               "Are you a member of this group?\n%s" % err)
+            self.log.info("Successfully made software only available for group %s" % self.getcfg('group'))
+
+        else:
+            # remove write permissions for group and other
+            perms = stat.S_IWGRP | stat.S_IWOTH
+            adjust_permissions(self.installdir, perms, add=False, recursive=True, relative=True)
+            self.log.info("Successfully removed write permissions recursively for group/other on install dir.")
+
+        if read_only_installdir():
+            # remove write permissions for everyone
+            perms = stat.S_IWUSR | stat.S_IWGRP | stat.S_IWOTH
+            adjust_permissions(self.installdir, perms, add=False, recursive=True, relative=True)
+            self.log.info("Successfully removed write permissions recursively for *EVERYONE* on install dir.")
 
     def cleanup(self):
         """

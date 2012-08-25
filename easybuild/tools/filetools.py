@@ -662,19 +662,23 @@ def parselogForError(txt, regExp=None, stdout=True, msg=None):
     return res
 
 
-def adjust_permissions(name, permissionBits, add=True, onlyFiles=False, recursive=True):
+def adjust_permissions(name, permissionBits, add=True, onlyfiles=False, onlydirs=False, recursive=True,
+                       group_id=None, relative=True, ignore_errors=False):
     """
-    Add or remove (if add is False) permissionBits from all files
-    and directories (if onlyFiles is False) in path
+    Add or remove (if add is False) permissionBits from all files (if onlydirs is False)
+    and directories (if onlyfiles is False) in path
     """
 
-    allpaths = []
+    name = os.path.abspath(name)
 
     if recursive:
         log.info("Adjusting permissions recursively for %s" % name)
+        allpaths = [name]
         for root, dirs, files in os.walk(name):
-            paths = files
-            if not onlyFiles:
+            paths = []
+            if not onlydirs:
+                paths += files
+            if not onlyfiles:
                 paths += dirs
 
             for path in paths:
@@ -684,19 +688,37 @@ def adjust_permissions(name, permissionBits, add=True, onlyFiles=False, recursiv
         log.info("Adjusting permissions for %s" % name)
         allpaths = [name]
 
+    failed_paths = []
     for path in allpaths:
         log.info("Adjusting permissions for %s" % path)
-        # ignore errors while adjusting permissions (for example caused by bad links)
+
         try:
-            perms = os.stat(path)[stat.ST_MODE]
+            if relative:
 
-            if add:
-                os.chmod(path, perms | permissionBits)
+                # relative permissions (add or remove)
+                perms = os.stat(path)[stat.ST_MODE]
+
+                if add:
+                    os.chmod(path, perms | permissionBits)
+                else:
+                    os.chmod(path, perms & ~permissionBits)
+
             else:
-                os.chmod(path, perms & ~permissionBits)
-        except OSError, err:
-            log.info("Failed to chmod %s (but ignoring it): %s" % (path, err))
+                # hard permissions bits (not relative)
+                os.chmod(path, permissionBits)
 
+            if group_id:
+                os.chown(path, -1, group_id)
+
+        except OSError, err:
+            if ignore_errors:
+                # ignore errors while adjusting permissions (for example caused by bad links)
+                log.info("Failed to chmod/chown %s (but ignoring it): %s" % (path, err))
+            else:
+                failed_paths.append(path)
+
+    if failed_paths:
+        log.exception("Failed to chmod/chown several paths: %s (last error: %s)" % (failed_paths, err))
 
 def patch_perl_script_autoflush(path):
     # patch Perl script to enable autoflush,
