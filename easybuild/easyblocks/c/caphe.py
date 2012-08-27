@@ -80,8 +80,8 @@ class EB_CAPHE(EB_CMakePythonPackage):
                       }
 
         cmakevars = {
-                     '\s+set\s*\(CMAKE_SHARED_LINKER_FLAGS\s+"\${CMAKE_SHARED_LINKER_FLAGS}\s+':'%s")' % lapack_libs,
-                     '\s+SET\(CMAKE_INSTALL_PREFIX\s+':'%s)' % self.installdir
+                     '\s+set\s*\(CMAKE_SHARED_LINKER_FLAGS\s+"\${CMAKE_SHARED_LINKER_FLAGS}\s+':' %s")' % lapack_libs,
+                     '\s+SET\(CMAKE_INSTALL_PREFIX\s+': '%s)' % self.installdir
                      }
 
         filestopatch = {
@@ -106,9 +106,12 @@ class EB_CAPHE(EB_CMakePythonPackage):
                             self.log.debug("search: %s" % res)
                             if res:
                                 self.log.debug("groups: %s" % str(res))
-                            self.log.error("Substition for (%s,%s) in %s failed: no or too many matches: %s" % (var, val, f))
+                            self.log.error("Substition for (%s,%s) in %s failed: no or too many matches: %s" % (var,
+                                                                                                                val,
+                                                                                                                f,
+                                                                                                                res.groups()))
 
-            except Exception, err:
+            except IOError, err:
                 self.log.error("Problem occured when trying to configure options for %s: %s" % (f, err))
 
         # update CMake configure options
