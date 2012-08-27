@@ -904,7 +904,8 @@ class Toolkit:
             if match:
                 return tk_type
 
-        self.log.error("Failed to determine %s based on toolkit dependencies." % name)
+        self.log.error("Failed to determine %s based on toolkit dependencies: %s" % (name,
+                                                                                     toolkit_dep_names))
 
     def comp_family(self):
         """Determine compiler family based on toolkit dependencies."""
