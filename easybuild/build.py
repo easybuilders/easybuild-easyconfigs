@@ -103,9 +103,9 @@ def add_build_options(parser):
                                "(valid: %s)" % ', '.join(EasyConfig.validstops))
     parser.add_option("-b", "--only-blocks", metavar="blocks", help="Only build blocks blk[,blk2]")
     parser.add_option("-k", "--skip", action="store_true",
-                        help="skip existing software (useful for installing additional packages)")
-    parser.add_option("-t", "--skip-tests", action="store_true",
-                        help="skip testing")
+                        help="skip existing software (useful for installing additional extensions)")
+    parser.add_option("-t", "--skip-test-cases", action="store_true",
+                        help="skip running of test cases")
     parser.add_option("-f", "--force", action="store_true", dest="force",
                         help="force to rebuild software even if it's already installed (i.e. can be found as module)")
 
@@ -315,7 +315,7 @@ def main():
         jobs = parbuild.build_packages_in_parallel(command, orderedSpecs, "easybuild-build", log)
         print "List of submitted jobs:"
         for job in jobs:
-            print "%s: %s" % (job.name, job.jobid)
+            print "%s: %s" % (job.get_, job.jobid)
         print "(%d jobs submitted)" % len(jobs)
 
         log.info("Submitted parallel build jobs, exiting now")
@@ -325,7 +325,7 @@ def main():
     correct_built_cnt = 0
     all_built_cnt = 0
     for spec in orderedSpecs:
-        (success, _) = build(spec, options, log, origEnviron, exitOnFailure=(not options.regtest))
+        (success, _) = build_and_install_software(spec, options, log, origEnviron, exitOnFailure=(not options.regtest))
         if success:
             correct_built_cnt += 1
         all_built_cnt += 1
@@ -391,33 +391,33 @@ def processEasyconfig(path, log, onlyBlocks=None, regtest_online=False, validate
 
         # create easyconfig
         try:
-            eb = EasyConfig(spec, validate=validate)
+            ec = EasyConfig(spec, validate=validate)
         except EasyBuildError, err:
             msg = "Failed to process easyconfig %s:\n%s" % (spec, err.msg)
             log.exception(msg)
 
-        name = eb['name']
+        name = ec['name']
 
         ## this app will appear as following module in the list
         package = {
             'spec': spec,
-            'module': (eb.name(), eb.installversion()),
+            'module': (ec.get_name(), ec.get_installversion()),
             'dependencies': []
         }
         if len(blocks) > 1:
             package['originalSpec'] = path
 
-        for d in eb.dependencies():
+        for d in ec.dependencies():
             dep = (d['name'], d['tk'])
             log.debug("Adding dependency %s for app %s." % (dep, name))
             package['dependencies'].append(dep)
 
-        if eb.toolkit_name() != 'dummy':
-            dep = (eb.toolkit_name(), eb.toolkit_version())
+        if ec.get_toolkit_name() != 'dummy':
+            dep = (ec.get_toolkit_name(), ec.get_toolkit_version())
             log.debug("Adding toolkit %s as dependency for app %s." % (dep, name))
             package['dependencies'].append(dep)
 
-        del eb
+        del ec
 
         # this is used by the parallel builder
         package['unresolvedDependencies'] = copy.copy(package['dependencies'])
@@ -630,7 +630,7 @@ def retrieveBlocksInSpec(spec, log, onlyBlocks):
         ## no blocks, one file
         return [spec]
 
-def build(module, options, log, origEnviron, exitOnFailure=True):
+def build_and_install_software(module, options, log, origEnviron, exitOnFailure=True):
     """
     Build the software
     """
@@ -679,7 +679,7 @@ def build(module, options, log, origEnviron, exitOnFailure=True):
     # timing info
     starttime = time.time()
     try:
-        result = app.autobuild(spec, runTests=not options.skip_tests, regtest_online=options.regtest_online)
+        result = app.run_all_steps(spec, run_test_cases=not options.skip_tests, regtest_online=options.regtest_online)
     except EasyBuildError, err:
         lastn = 300
         errormsg = "autoBuild Failed (last %d chars): %s" % (lastn, err.msg[-lastn:])
@@ -729,9 +729,9 @@ def build(module, options, log, origEnviron, exitOnFailure=True):
                 ## Upload spec to central repository
                 repo = getRepository()
                 if 'originalSpec' in module:
-                    repo.addEasyconfig(module['originalSpec'], app.name(), app.installversion() + ".block", buildstats, currentbuildstats)
-                repo.addEasyconfig(spec, app.name(), app.installversion(), buildstats, currentbuildstats)
-                repo.commit("Built %s/%s" % (app.name(), app.installversion()))
+                    repo.addEasyconfig(module['originalSpec'], app.get_name(), app.get_installversion() + ".block", buildstats, currentbuildstats)
+                repo.addEasyconfig(spec, app.get_name(), app.get_installversion(), buildstats, currentbuildstats)
+                repo.commit("Built %s/%s" % (app.get_name(), app.get_installversion()))
                 del repo
             except EasyBuildError, err:
                 log.warn("Unable to commit easyconfig to repository (%s)", err)
@@ -741,7 +741,7 @@ def build(module, options, log, origEnviron, exitOnFailure=True):
         summary = "COMPLETED"
 
         ## Cleanup logs
-        app.closelog()
+        app.close_log()
         try:
             if not os.path.isdir(newLogDir):
                 os.makedirs(newLogDir)
@@ -751,7 +751,7 @@ def build(module, options, log, origEnviron, exitOnFailure=True):
             error("Failed to move log file %s to new log file %s: %s" % (app.logfile, applicationLog, err))
 
         try:
-            shutil.copy(spec, os.path.join(newLogDir, "%s-%s.eb" % (app.name(), app.installversion())))
+            shutil.copy(spec, os.path.join(newLogDir, "%s-%s.eb" % (app.get_name(), app.get_installversion())))
         except IOError, err:
             error("Failed to move easyconfig %s to log dir %s: %s" % (spec, newLogDir, err))
 
@@ -766,7 +766,7 @@ def build(module, options, log, origEnviron, exitOnFailure=True):
         succ = "unsuccessfully%s:\n%s" % (buildDir, errormsg)
 
         ## Cleanup logs
-        app.closelog()
+        app.close_log()
         applicationLog = app.logfile
 
     print_msg("%s: Installation %s %s" % (summary, ended, succ), log)

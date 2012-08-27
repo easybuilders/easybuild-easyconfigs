@@ -23,7 +23,7 @@ EasyBuild support for Trilinos, implemented as an easyblock
 import os
 import re
 
-import easybuild.tools.toolkit as get_toolkit
+import easybuild.tools.toolkit as toolkit
 from easybuild.easyblocks.cmake import EB_CMake
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.modules import get_software_root
@@ -58,7 +58,7 @@ class EB_Trilinos(EB_CMake):
         cxxflags = os.getenv('CXXFLAGS')
         fflags = os.getenv('FFLAGS')
 
-        if self.toolkit().mpi_type() in [toolkit.INTEL, get_toolkit.MPICH2]:
+        if self.toolkit().mpi_type() in [toolkit.INTEL, toolkit.MPICH2]:
             cflags += " -DMPICH_IGNORE_CXX_SEEK"
             cxxflags += " -DMPICH_IGNORE_CXX_SEEK"
             fflags += " -DMPICH_IGNORE_CXX_SEEK"
@@ -97,12 +97,12 @@ class EB_Trilinos(EB_CMake):
         for dep in ["BLAS", "LAPACK"]:
             self.updatecfg('configopts', '-DTPL_ENABLE_%s:BOOL=ON' % dep)
             libdirs = os.getenv('%s_LIB_DIR' % dep)
-            if self.toolkit().comp_family() == get_toolkit.GCC:
+            if self.get_toolkit().comp_family() == toolkit.GCC:
                 libdirs += ";%s/lib64" % get_software_root('GCC')
             self.updatecfg('configopts', '-D%s_LIBRARY_DIRS="%s"' % (dep, libdirs))
             libs = os.getenv('%s_MT_STATIC_LIBS' % dep).split(',')
             lib_names = ';'.join([lib_re.search(l).group(1) for l in libs])
-            if self.toolkit().comp_family() == get_toolkit.GCC:
+            if self.get_toolkit().comp_family() == toolkit.GCC:
                 # explicitely specify static lib!
                 lib_names += ";libgfortran.a"
             self.updatecfg('configopts', '-D%s_LIBRARY_NAMES="%s"' % (dep, lib_names))

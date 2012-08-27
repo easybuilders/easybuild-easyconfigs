@@ -64,7 +64,7 @@ class EB_ParMETIS(Application):
                 cmd = 'cmake .. %s -DCMAKE_INSTALL_PREFIX="%s"' % (self.getcfg('configopts'),
                                                                    self.installdir)
                 run_cmd(cmd, log_all=True, simple=True)
-                os.chdir(self.getcfg('startfrom'))
+                os.chdir(self.getcfg('start_dir'))
             except OSError, err:
                 self.log.error("Running cmake in %s failed: %s" % (self.parmetis_builddir, err))
 
@@ -85,12 +85,12 @@ class EB_ParMETIS(Application):
 
         cmd = "%s make %s %s" % (self.getcfg('premakeopts'), paracmd, self.getcfg('makeopts'))
 
-        # run make in build dir as well for recent get_version
-        if LooseVersion(self.version()) >= LooseVersion("4"):
+        # run make in build dir as well for recent version
+        if LooseVersion(self.get_version()) >= LooseVersion("4"):
             try:
                 os.chdir(self.parmetis_builddir)
                 run_cmd(cmd, log_all=True, simple=True, log_output=verbose)
-                os.chdir(self.getcfg('startfrom'))
+                os.chdir(self.getcfg('start_dir'))
             except OSError, err:
                 self.log.error("Running cmd '%s' in %s failed: %s" % (cmd, self.parmetis_builddir, err))
         else:
@@ -111,13 +111,13 @@ class EB_ParMETIS(Application):
             try:
                 os.chdir(self.parmetis_builddir)
                 run_cmd(cmd, log_all=True, simple=True)
-                os.chdir(self.getcfg('startfrom'))
+                os.chdir(self.getcfg('start_dir'))
             except OSError, err:
                 self.log.error("Running '%s' in %s failed: %s" % (cmd, self.parmetis_builddir, err))
 
             # libraries
             try:
-                src = os.path.join(self.getcfg('startfrom'), 'build' ,'libmetis' ,'libmetis.a')
+                src = os.path.join(self.getcfg('start_dir'), 'build' ,'libmetis' ,'libmetis.a')
                 dst = os.path.join(libdir, 'libmetis.a')
                 shutil.copy2(src, dst)
             except OSError, err:
@@ -125,7 +125,7 @@ class EB_ParMETIS(Application):
 
             # include files
             try:
-                src = os.path.join(self.getcfg('startfrom'), 'build', 'metis', 'include', 'metis.h')
+                src = os.path.join(self.getcfg('start_dir'), 'build', 'metis', 'include', 'metis.h')
                 dst = os.path.join(includedir, 'metis.h')
                 shutil.copy2(src, dst)
             except OSError, err:
@@ -138,7 +138,7 @@ class EB_ParMETIS(Application):
             # libraries
             try:
                 for fil in ['libmetis.a', 'libparmetis.a']:
-                    src = os.path.join(self.getcfg('startfrom'), fil)
+                    src = os.path.join(self.getcfg('start_dir'), fil)
                     dst = os.path.join(libdir, fil)
                     shutil.copy2(src, dst)
             except OSError, err:
@@ -146,7 +146,7 @@ class EB_ParMETIS(Application):
 
             # include files
             try:
-                src = os.path.join(self.getcfg('startfrom'), 'parmetis.h')
+                src = os.path.join(self.getcfg('start_dir'), 'parmetis.h')
                 dst = os.path.join(includedir, 'parmetis.h')
                 shutil.copy2(src, dst)
                 # some applications (SuiteSparse) can only use METIS (not ParMETIS), but header files are the same

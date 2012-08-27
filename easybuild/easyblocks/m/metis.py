@@ -73,7 +73,7 @@ class EB_METIS(Application):
 
             # copy libraries
             try:
-                src = os.path.join(self.getcfg('startfrom'), 'libmetis.a')
+                src = os.path.join(self.getcfg('start_dir'), 'libmetis.a')
                 dst = os.path.join(libdir, 'libmetis.a')
                 shutil.copy2(src, dst)
             except OSError, err:
@@ -82,7 +82,7 @@ class EB_METIS(Application):
             # copy include files
             try:
                 for f in ['defs.h', 'macros.h', 'metis.h', 'proto.h', 'rename.h', 'struct.h']:
-                    src = os.path.join(self.getcfg('startfrom'), 'Lib', f)
+                    src = os.path.join(self.getcfg('start_dir'), 'Lib', f)
                     dst = os.path.join(includedir, f)
                     shutil.copy2(src, dst)
                     os.chmod(dst, 0755)

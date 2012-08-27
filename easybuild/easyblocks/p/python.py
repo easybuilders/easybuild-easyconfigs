@@ -29,7 +29,7 @@ EasyBuild support for Python, implemented as an easyblock
 import os
 import shutil
 
-import easybuild.tools.toolkit as get_toolkit
+import easybuild.tools.toolkit as toolkit
 from easybuild.framework.application import ApplicationPackage, Application
 from easybuild.tools.filetools import extract_file, apply_patch, run_cmd
 from easybuild.tools.modules import get_software_root
@@ -212,10 +212,10 @@ class EB_FortranPythonPackage(EB_DefaultPythonPackage):
     def build_step(self):
         comp_fam = self.get_toolkit().comp_family()
 
-        if comp_fam == get_toolkit.INTEL:
+        if comp_fam == toolkit.INTEL:
             cmd = "python setup.py build --compiler=intel --fcompiler=intelem"
 
-        elif comp_fam == get_toolkit.GCC:
+        elif comp_fam == toolkit.GCC:
             cmdprefix = ""
             ldflags = os.getenv('LDFLAGS')
             if ldflags:

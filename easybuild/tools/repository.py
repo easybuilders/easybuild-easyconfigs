@@ -155,7 +155,7 @@ class FileRepository(Repository):
             os.makedirs(full_path)
 
         ## destination
-        dest = os.path.join(full_path, "%s.eb" % (version))
+        dest = os.path.join(full_path, "%s.eb" % version)
 
         try:
             dest_file = open(dest, 'w')

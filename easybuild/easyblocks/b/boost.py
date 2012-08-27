@@ -28,7 +28,7 @@ EasyBuild support for Boost, implemented as an easyblock
 import os
 import shutil
 
-import easybuild.tools.toolkit as get_toolkit
+import easybuild.tools.toolkit as toolkit
 from easybuild.framework.application import Application
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.filetools import run_cmd
@@ -68,9 +68,9 @@ class EB_Boost(Application):
 
         # generate config depending on compiler used
         toolset = None
-        if self.toolkit().comp_family() == get_toolkit.INTEL:
+        if self.get_toolkit().comp_family() == toolkit.INTEL:
             toolset = 'intel-linux'
-        elif self.toolkit().comp_family() == get_toolkit.GCC:
+        elif self.get_toolkit().comp_family() == toolkit.GCC:
             toolset = 'gcc'
         else:
             self.log.error("Unknown compiler used, aborting.")

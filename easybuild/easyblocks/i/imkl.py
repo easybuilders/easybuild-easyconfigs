@@ -32,7 +32,7 @@ import tempfile
 from distutils.version import LooseVersion
 
 import easybuild.tools.environment as env
-import easybuild.tools.toolkit as get_toolkit
+import easybuild.tools.toolkit as toolkit
 from easybuild.easyblocks.intelbase import EB_IntelBase
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.filetools import run_cmd
@@ -168,7 +168,7 @@ class EB_imkl(EB_IntelBase):
 
             # compiler defaults to icc, but we could be using gcc to create gimkl.
             makeopts = ''
-            if self.toolkit().comp_family() == get_toolkit.GCC:
+            if self.get_toolkit().comp_family() == toolkit.GCC:
                 makeopts = 'compiler=gnu '
 
             for i in lis1 + lis2 + lis3:
@@ -181,7 +181,7 @@ class EB_imkl(EB_IntelBase):
                 if i in lis3:
                     # use INSTALL_DIR and SPEC_OPT
                     extramakeopts = ''
-                    if self.toolkit().mpi_type() == get_toolkit.MPICH2:
+                    if self.get_toolkit().mpi_type() == toolkit.MPICH2:
                         extramakeopts = 'mpi=mpich2'
                     cmd = "make -f makefile libintel64 %s" % extramakeopts
 

@@ -69,10 +69,10 @@ class EasyConfig:
           ('easybuildVersion', [None, "EasyBuild-version this spec-file was written for", BUILD]),
           ('versionsuffix', ['', 'Additional suffix for software version (placed after toolkit name)', BUILD]),
           ('versionprefix', ['', 'Additional prefix for software version (placed before version and toolkit name)',BUILD]),
-          ('runtest', [None, 'Indicates if a test should be run after make; should specify argument after make (for e.g.,"test" for make test) (Default: None)', BUILD]),
+          ('runtest', [None, 'Indicates if a test should be run after build step; should specify argument after make (for e.g.,"test" for make test) (Default: None)', BUILD]),
           ('preconfigopts', ['', 'Extra options pre-passed to configure.', BUILD]),
           ('configopts', ['', 'Extra options passed to configure (Default already has --prefix)', BUILD]),
-          ('premakeopts', ['', 'Extra options pre-passed to make.', BUILD]),
+          ('premakeopts', ['', 'Extra options pre-passed to build command.', BUILD]),
           ('makeopts', ['', 'Extra options passed to make (Default already has -j X)', BUILD]),
           ('installopts', ['', 'Extra options for installation (Default: nothing)', BUILD]),
           ('unpackOptions', [None, "Extra options for unpacking source (default: None)", BUILD]),
@@ -104,7 +104,7 @@ class EasyConfig:
           ('group', [None, "Name of the user group for which the software should be available",  LICENSE]),
 
           ('pkglist', [[], 'List with packages added to the baseinstallation (Default: [])', PACKAGE]),
-          ('pkgmodulenames', [{}, 'Dictionary with real modules names for packages, if they are different from the package name (Default: {})', PACKAGE]),
+          ('pkgmodulenames', [{}, 'Dictionary with real modules names for extensions, if they are different from the package name (Default: {})', PACKAGE]),
           ('pkgloadmodule', [True, 'Load the to-be installed software using temporary module (Default: True)', PACKAGE]),
           ('pkgtemplate', ["%s-%s.tar.gz", "Template for package source file names (Default: %s-%s.tar.gz)", PACKAGE]),
           ('pkgfindsource', [True, "Find sources for packages (Default: True)", PACKAGE]),
@@ -245,47 +245,47 @@ class EasyConfig:
 
         return deps
 
-    def toolkit_name(self):
+    def get_toolkit_name(self):
         """
         Returns toolkit name.
         """
         return self['toolkit']['name']
 
-    def toolkit_version(self):
+    def get_toolkit_version(self):
         """
-        Returns toolkit name.
+        Returns toolkit version.
         """
         return self['toolkit']['version']
 
-    def toolkit(self):
+    def get_toolkit(self):
         """
         returns the Toolkit used
         """
         if self._toolkit:
             return self._toolkit
 
-        tk = Toolkit(self.toolkit_name(), self.toolkit_version())
+        tk = Toolkit(self.get_toolkit_name(), self.get_toolkit_version())
         if self['toolkitopts']:
             tk.set_options(self['toolkitopts'])
 
         self._toolkit = tk
         return self._toolkit
 
-    def installversion(self):
+    def get_installversion(self):
         """
-        return the installation version name
+        return the installation version
         """
         prefix, suffix = self['versionprefix'], self['versionsuffix']
 
-        if self.toolkit_name() == 'dummy':
-            name = "%s%s%s" % (prefix, self['version'], suffix)
+        if self.get_toolkit_name() == 'dummy':
+            installver = "%s%s%s" % (prefix, self['version'], suffix)
         else:
-            extra = "%s-%s" % (self.toolkit_name(), self.toolkit_version())
-            name = "%s%s-%s%s" % (prefix, self['version'], extra, suffix)
+            extra = "%s-%s" % (self.get_toolkit_name(), self.get_toolkit_version())
+            installver = "%s%s-%s%s" % (prefix, self['version'], extra, suffix)
 
-        return name
+        return installver
 
-    def name(self):
+    def get_name(self):
         """
         return name of the package
         """
@@ -355,7 +355,7 @@ class EasyConfig:
             self.log.error('Dependency without version.')
 
         if not 'tk' in dependency:
-            dependency['tk'] = self.toolkit().get_dependency_version(dependency)
+            dependency['tk'] = self.get_toolkit().get_dependency_version(dependency)
 
         return dependency
 

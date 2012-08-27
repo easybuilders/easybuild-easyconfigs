@@ -31,7 +31,7 @@ import shutil
 from distutils.version import LooseVersion
 
 import easybuild  # required for VERBOSE_VERSION
-import easybuild.tools.toolkit as get_toolkit
+import easybuild.tools.toolkit as toolkit
 from easybuild.framework.application import Application
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.filetools import run_cmd
@@ -143,7 +143,7 @@ tasks=%(tasks)s
         """
 
         # only GCC is supported for now
-        if self.toolkit().comp_family() == get_toolkit.GCC:
+        if self.get_toolkit().comp_family() == toolkit.GCC:
             hostcompile = os.getenv('F90')
 
             # optimizations

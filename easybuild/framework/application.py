@@ -44,7 +44,7 @@ import easybuild.tools.environment as env
 from easybuild.framework.easyconfig import EasyConfig
 from easybuild.tools.build_log import EasyBuildError, initLogger, removeLogHandler, print_msg
 from easybuild.tools.config import source_path, buildPath, installPath
-from easybuild.tools.filetools import unpack, patch, run_cmd, convertName, encode_class_name
+from easybuild.tools.filetools import extract_file, apply_patch, run_cmd, convertName, encode_class_name
 from easybuild.tools.module_generator import ModuleGenerator
 from easybuild.tools.modules import Modules, get_software_root
 from easybuild.tools.systemtools import get_core_count
@@ -82,7 +82,7 @@ class Application:
         # module generator
         self.moduleGenerator = None
 
-        # extra stuff for module file required by packages
+        # extra stuff for module file required by extentions
         self.moduleExtraPackages = ''
 
         self.sanityCheckOK = False
@@ -92,13 +92,13 @@ class Application:
 
         # allow a post message to be set, which can be shown as last output
         self.postmsg = ''
-        self.setlogger()
+        self.init_log()
 
         # original environ will be set later
         self.orig_environ = {}
         self.loaded_modules = []
 
-    def autobuild(self, ebfile, runTests, regtest_online):
+    def run_all_steps(self, ebfile, run_test_cases, regtest_online):
         """
         Build the software package described by cfg.
         """
@@ -106,9 +106,9 @@ class Application:
             return True
         self.log.info('Read easyconfig %s' % ebfile)
 
-        self.prepare_build()
+        self.fetch_step()
 
-        self.ready2build()
+        self.check_readiness()
         self.build()
 
         # Last stop
@@ -117,31 +117,31 @@ class Application:
         self.make_module()
 
         # Run tests
-        if runTests and self.getcfg('tests'):
-            self.runtests()
+        if run_test_cases and self.getcfg('tests'):
+            self.run_test_cases()
         else:
             self.log.debug("Skipping tests")
 
         return True
 
-    def setlogger(self):
+    def init_log(self):
         """
-        Set the logger.
+        Initialize the logger.
         """
         if not self.log:
-            self.logfile, self.log, self.loghandler = initLogger(self.name(), self.version(),
+            self.logfile, self.log, self.loghandler = initLogger(self.get_name(), self.get_version(),
                                                                  self.logdebug, typ=self.__class__.__name__)
-            self.log.info("Init completed for application name %s version %s" % (self.name(), self.version()))
+            self.log.info("Init completed for application name %s version %s" % (self.get_name(), self.get_version()))
 
-    def closelog(self):
+    def close_log(self):
         """
         Shutdown the logger.
         """
-        self.log.info("Closing log for application name %s version %s" % (self.name(), self.version()))
+        self.log.info("Closing log for application name %s version %s" % (self.get_name(), self.get_version()))
         removeLogHandler(self.loghandler)
         self.loghandler.close()
 
-    def setparallelism(self, nr=None):
+    def set_parallelism(self, nr=None):
         """
         Determines how many processes should be used (default: nr of procs - 1).
         """
@@ -177,7 +177,7 @@ class Application:
         self.setcfg('parallel', nr)
         self.log.info("Setting parallelism: %s" % nr)
 
-    def addpatch(self, listOfPatches=None):
+    def fetch_patches(self, listOfPatches=None):
         """
         Add a list of patches.
         All patches will be checked if a file exists (or can be located)
@@ -206,7 +206,7 @@ class Application:
                 else:
                     pf = patchFile
 
-                path = self.file_locate(pf)
+                path = self.obtain_file(pf)
                 if path:
                     self.log.debug('File %s found for patch %s' % (path, patchFile))
                     tmppatch = {'name':pf, 'path':path}
@@ -223,7 +223,7 @@ class Application:
 
             self.log.info("Added patches: %s" % self.patches)
 
-    def addsource(self, listOfSources=None):
+    def fetch_sources(self, listOfSources=None):
         """
         Add a list of source files (can be tarballs, isos, urls).
         All source files will be checked if a file exists (or can be located)
@@ -231,7 +231,7 @@ class Application:
         if listOfSources:
             for source in listOfSources:
                 ## check if the sources can be located
-                path = self.file_locate(source)
+                path = self.obtain_file(source)
                 if path:
                     self.log.debug('File %s found for source %s' % (path, source))
                     self.src.append({'name':source, 'path':path})
@@ -252,7 +252,7 @@ class Application:
         else:
             return extra
 
-    def prepare_build(self):
+    def fetch_step(self):
         """
         prepare for building
         """
@@ -268,16 +268,16 @@ class Application:
                 self.log.error("EasyBuild-version %s is newer than the currently running one. Aborting!" % easybuildVersion)
 
         if self.getcfg('sources'):
-            self.addsource(self.getcfg('sources'))
+            self.fetch_sources(self.getcfg('sources'))
         else:
             self.log.info('no sources provided')
 
         if self.getcfg('patches'):
-            self.addpatch(self.getcfg('patches'))
+            self.fetch_patches(self.getcfg('patches'))
         else:
             self.log.info('no patches provided')
 
-        self.setparallelism()
+        self.set_parallelism()
 
     def getcfg(self, key):
         """
@@ -305,7 +305,7 @@ class Application:
 
     ## BUILD
 
-    def ready2build(self):
+    def check_readiness(self):
         """
         Verify if all is ok to start build.
         """
@@ -315,14 +315,14 @@ class Application:
             self.log.warning("Loaded modules detected: %s" % loadedmods)
 
         # Do all dependencies have a toolkit version
-        self.toolkit().add_dependencies(self.cfg.dependencies())
-        if not len(self.cfg.dependencies()) == len(self.toolkit().dependencies):
+        self.get_toolkit().add_dependencies(self.cfg.dependencies())
+        if not len(self.cfg.dependencies()) == len(self.get_toolkit().dependencies):
             self.log.debug("dep %s (%s)" % (len(self.cfg.dependencies()), self.cfg.dependencies()))
-            self.log.debug("tk.dep %s (%s)" % (len(self.toolkit().dependencies), self.toolkit().dependencies))
+            self.log.debug("tk.dep %s (%s)" % (len(self.toolkit().dependencies), self.get_toolkit().dependencies))
             self.log.error('Not all dependencies have a matching toolkit version')
 
         # Check if the application is not loaded at the moment
-        (root, env_var) = get_software_root(self.name(), with_env_var=True)
+        (root, env_var) = get_software_root(self.get_name(), with_env_var=True)
         if root:
             self.log.error("Module is already loaded (%s is set), installation cannot continue." % env_var)
 
@@ -330,15 +330,15 @@ class Application:
         # - if a current module can be found, skip is ok
         # -- this is potentially very dangerous
         if self.getcfg('skip'):
-            if Modules().exists(self.name(), self.installversion()):
+            if Modules().exists(self.get_name(), self.get_installversion()):
                 self.skip = True
-                self.log.info("Current version (name: %s, version: %s) found." % (self.name(), self.installversion))
-                self.log.info("Going to skip actually main build and potential exitsing packages. Expert only.")
+                self.log.info("Current version (name: %s, version: %s) found." % (self.get_name(), self.get_installversion))
+                self.log.info("Going to skip actually main build and potential existing extensions. Expert only.")
             else:
-                self.log.info("No current version (name: %s, version: %s) found. Not skipping anything." % (self.name(),
-                    self.installversion()))
+                self.log.info("No current version (name: %s, version: %s) found. Not skipping anything." % (self.get_name(),
+                    self.get_installversion()))
 
-    def file_locate(self, filename, pkg=False):
+    def obtain_file(self, filename, pkg=False):
         """
         Locate the file with the given name
         - searches in different subdirectories of source path
@@ -399,7 +399,7 @@ class Application:
 
             # figure out where to download the file to
             for srcpath in srcpaths:
-                filepath = os.path.join(srcpath, self.name()[0].lower(), self.name())
+                filepath = os.path.join(srcpath, self.name()[0].lower(), self.get_name())
                 if pkg:
                     filepath = os.path.join(filepath, "packages")
                 if os.path.isdir(filepath):
@@ -435,11 +435,11 @@ class Application:
             failedpaths = []
             for srcpath in srcpaths:
                 # create list of candidate filepaths
-                namepath = os.path.join(srcpath, self.name())
-                fst_letter_path_low = os.path.join(srcpath, self.name().lower()[0])
+                namepath = os.path.join(srcpath, self.get_name())
+                fst_letter_path_low = os.path.join(srcpath, self.get_name().lower()[0])
 
                 # most likely paths
-                candidate_filepaths = [os.path.join(fst_letter_path_low, self.name()), # easyblocks-style subdir
+                candidate_filepaths = [os.path.join(fst_letter_path_low, self.get_name()), # easyblocks-style subdir
                                        namepath, # subdir with software package name
                                        srcpath, # directly in sources directory
                                        ]
@@ -451,8 +451,8 @@ class Application:
                                                                 path,
                                                                 "easybuild",
                                                                 "easyconfigs",
-                                                                self.name().lower()[0],
-                                                                self.name()
+                                                                self.get_name().lower()[0],
+                                                                self.get_name()
                                                                 ))
 
                 # see if file can be found at that location
@@ -460,7 +460,7 @@ class Application:
 
                     fullpath = os.path.join(cfp, filename)
 
-                    # also check in packages subdir for packages
+                    # also check in packages subdir for extensions
                     if pkg:
                         fullpaths = [os.path.join(cfp, "packages", filename), fullpath]
                     else:
@@ -538,7 +538,7 @@ class Application:
             self.log.error("Homepage (%s) is unavailable." % homepage)
             return False
 
-        regex = re.compile(self.name(), re.I)
+        regex = re.compile(self.get_name(), re.I)
 
         # if url contains software name and is available we are satisfied
         if regex.search(homepage):
@@ -552,7 +552,7 @@ class Application:
 
         return False
 
-    def apply_patch(self, beginpath=None):
+    def patch_step(self, beginpath=None):
         """
         Apply the patches
         """
@@ -580,16 +580,16 @@ class Application:
             if 'level' in tmp:
                 level = tmp['level']
 
-            if not patch(tmp['path'], src, copy=copy, level=level):
+            if not apply_patch(tmp['path'], src, copy=copy, level=level):
                 self.log.error("Applying patch %s failed" % tmp['name'])
 
-    def unpack_src(self):
+    def extract_step(self):
         """
         Unpack the source files.
         """
         for tmp in self.src:
             self.log.info("Unpacking source %s" % tmp['name'])
-            srcdir = unpack(tmp['path'], self.builddir, extra_options=self.getcfg('unpackOptions'))
+            srcdir = extract_file(tmp['path'], self.builddir, extra_options=self.getcfg('unpackOptions'))
             if srcdir:
                 self.src[self.src.index(tmp)]['finalpath'] = srcdir
             else:
@@ -623,48 +623,48 @@ class Application:
 
             ## SOURCE
             print_msg("unpacking...", self.log)
-            self.runstep('source', [self.unpack_src], skippable=True)
+            self.run_step('source', [self.extract_step], skippable=True)
 
             ## PATCH
-            self.runstep('patch', [self.apply_patch], skippable=True)
+            self.run_step('patch', [self.patch_step], skippable=True)
 
             # PREPARE
-            self.runstep('prepare', [self.prepare], skippable=True)
+            self.run_step('prepare', [self.prepare_step], skippable=True)
 
             ## CONFIGURE
             print_msg("configuring...", self.log)
-            self.runstep('configure', [self.configure], skippable=True)
+            self.run_step('configure', [self.configure], skippable=True)
 
             ## MAKE
             print_msg("building...", self.log)
-            self.runstep('make', [self.make], skippable=True)
+            self.run_step('make', [self.build_step], skippable=True)
 
             ## TEST
             print_msg("testing...", self.log)
-            self.runstep('test', [self.test], skippable=True)
+            self.run_step('test', [self.test], skippable=True)
 
             ## INSTALL
             print_msg("installing...", self.log)
-            self.runstep('install', [self.make_installdir, self.make_install], skippable=True)
+            self.run_step('install', [self.make_installdir, self.install_step], skippable=True)
 
             ## Packages
-            self.runstep('packages', [self.packages])
+            self.run_step('packages', [self.extensions_step])
 
             print_msg("finishing up...", self.log)
 
             ## POSTPROC
-            self.runstep('postproc', [self.postproc], skippable=True)
+            self.run_step('postproc', [self.post_install_step], skippable=True)
 
             ## SANITY CHECK
             try:
-                self.runstep('sanity check', [self.sanitycheck], skippable=False)
+                self.run_step('sanity check', [self.sanity_check], skippable=False)
             finally:
-                self.runstep('cleanup', [self.cleanup])
+                self.run_step('cleanup', [self.cleanup])
 
         except StopException:
             pass
 
-    def runstep(self, step, methods, skippable=False):
+    def run_step(self, step, methods, skippable=False):
         """
         Run step, returns false when execution should be stopped
         """
@@ -710,7 +710,7 @@ class Application:
 
         self.orig_environ = env
 
-    def postproc(self):
+    def post_install_step(self):
         """
         Do some postprocessing
         - set file permissions ....
@@ -765,7 +765,7 @@ class Application:
             except OSError, err:
                 self.log.exception("Cleaning up builddir %s failed: %s" % (self.builddir, err))
 
-    def sanitycheck(self):
+    def sanity_check(self):
         """
         Do a sanity check on the installation
         - if *any* of the files/subdirectories in the installation directory listed
@@ -818,7 +818,7 @@ class Application:
         mod_path.extend(Modules().modulePath)
         m = Modules(mod_path)
         self.log.debug("created module instance")
-        m.addModule([[self.name(), self.installversion()]])
+        m.addModule([[self.get_name(), self.get_installversion()]])
         try:
             m.load()
         except EasyBuildError, err:
@@ -838,7 +838,7 @@ class Application:
                 command = (None, None)
 
             # Build substition dictionary
-            check_cmd = { 'name': self.name().lower(), 'options': '-h' }
+            check_cmd = { 'name': self.get_name().lower(), 'options': '-h' }
 
             if command[0] != None:
                 check_cmd['name'] = command[0]
@@ -855,7 +855,7 @@ class Application:
             else:
                 self.log.info("sanityCheckCommand %s ran successfully! (output: %s)" % (cmd, out))
 
-        failed_pkgs = [pkg.name for pkg in self.instance_pkgs if not pkg.sanitycheck()]
+        failed_pkgs = [pkg.name for pkg in self.instance_pkgs if not pkg.sanity_check()]
 
         if failed_pkgs:
             self.log.info("Sanity check for packages %s failed!" % failed_pkgs)
@@ -867,36 +867,36 @@ class Application:
         else:
             self.log.debug("Sanity check passed!")
 
-    def startfrom(self):
+    def guess_start_dir(self):
         """
         Return the directory where to start the whole configure/make/make install cycle from
         - typically self.src[0]['finalpath']
-        - startfrom option
+        - start_dir option
         -- if abspath: use that
         -- else, treat it as subdir for regular procedure
         """
         tmpdir = ''
-        if self.getcfg('startfrom'):
-            tmpdir = self.getcfg('startfrom')
+        if self.getcfg('start_dir'):
+            tmpdir = self.getcfg('start_dir')
 
         if not os.path.isabs(tmpdir):
             if len(self.src) > 0 and not self.skip:
-                self.setcfg('startfrom', os.path.join(self.src[0]['finalpath'], tmpdir))
+                self.setcfg('start_dir', os.path.join(self.src[0]['finalpath'], tmpdir))
             else:
-                self.setcfg('startfrom', os.path.join(self.builddir, tmpdir))
+                self.setcfg('start_dir', os.path.join(self.builddir, tmpdir))
 
         try:
-            os.chdir(self.getcfg('startfrom'))
-            self.log.debug("Changed to real build directory %s" % (self.getcfg('startfrom')))
+            os.chdir(self.getcfg('start_dir'))
+            self.log.debug("Changed to real build directory %s" % (self.getcfg('start_dir')))
         except OSError, err:
-            self.log.exception("Can't change to real build directory %s: %s" % (self.getcfg('startfrom'), err))
+            self.log.exception("Can't change to real build directory %s: %s" % (self.getcfg('start_dir'), err))
 
-    def prepare(self):
+    def prepare_step(self):
         """
         Pre-configure step. Set's up the builddir just before starting configure
         """
-        self.toolkit().prepare(self.getcfg('onlytkmod'))
-        self.startfrom()
+        self.get_toolkit().prepare(self.getcfg('onlytkmod'))
+        self.guess_start_dir()
 
     def configure(self, cmd_prefix=''):
         """
@@ -911,7 +911,7 @@ class Application:
 
         return out
 
-    def make(self, verbose=False):
+    def build_step(self, verbose=False):
         """
         Start the actual build
         - typical: make -j X
@@ -939,25 +939,25 @@ class Application:
 
             return out
 
-    def toolkit(self):
+    def get_toolkit(self):
         """
         Toolkit used to build this Application
         """
-        return self.cfg.toolkit()
+        return self.cfg.get_toolkit()
 
-    def toolkit_name(self):
+    def get_toolkit_name(self):
         """
         Name of toolkit used to build this Application
         """
-        return self.cfg.toolkit_name()
+        return self.cfg.get_toolkit_name()
 
-    def toolkit_version(self):
+    def get_toolkit_version(self):
         """
         Version of toolkit used to build this Application
         """
-        return self.cfg.toolkit_version()
+        return self.cfg.get_toolkit_version()
 
-    def make_install(self):
+    def install_step(self):
         """
         Create the installation in correct location
         - typical: make install
@@ -976,12 +976,12 @@ class Application:
         if not self.build_in_installdir:
             # make a unique build dir
             ## if a tookitversion starts with a -, remove the - so prevent a -- in the path name
-            tkversion = self.toolkit_version()
+            tkversion = self.get_toolkit_version()
             if tkversion.startswith('-'):
                 tkversion = tkversion[1:]
 
-            extra = "%s%s-%s%s" % (self.getcfg('versionprefix'), self.toolkit_name(), tkversion, self.getcfg('versionsuffix'))
-            localdir = os.path.join(buildPath(), self.name(), self.version(), extra)
+            extra = "%s%s-%s%s" % (self.getcfg('versionprefix'), self.get_toolkit_name(), tkversion, self.getcfg('versionsuffix'))
+            localdir = os.path.join(buildPath(), self.get_name(), self.get_version(), extra)
 
             ald = os.path.abspath(localdir)
             tmpald = ald
@@ -1016,7 +1016,7 @@ class Application:
         basepath = installPath()
 
         if basepath:
-            installdir = os.path.join(basepath, self.name(), self.installversion())
+            installdir = os.path.join(basepath, self.get_name(), self.get_installversion())
             self.installdir = os.path.abspath(installdir)
         else:
             self.log.error("Can't set installation directory")
@@ -1113,7 +1113,7 @@ class Application:
         mod_path.extend(Modules().modulePath)
         m = Modules(mod_path)
         self.log.debug("created module instance")
-        m.addModule([[self.name(), self.installversion()]])
+        m.addModule([[self.get_name(), self.get_installversion()]])
         try:
             m.load()
         except EasyBuildError, err:
@@ -1136,7 +1136,7 @@ class Application:
         for key in os.environ:
             # legacy support
             if key.startswith("EBDEVEL") or key.startswith("SOFTDEVEL"):
-                if not key.endswith(convertName(self.name(), upper=True)):
+                if not key.endswith(convertName(self.get_name(), upper=True)):
                     path = os.environ[key]
                     if os.path.isfile(path):
                         name, version = path.rsplit('/', 1)
@@ -1149,7 +1149,7 @@ class Application:
             if not os.path.exists(output_dir):
                 os.makedirs(output_dir)
 
-        filename = os.path.join(output_dir, "%s-%s-easybuild-devel" % (self.name(), self.installversion()))
+        filename = os.path.join(output_dir, "%s-%s-easybuild-devel" % (self.get_name(), self.get_installversion()))
         self.log.debug("Writing devel module to %s" % filename)
 
         devel_module = open(filename, "w")
@@ -1171,13 +1171,13 @@ class Application:
         load = unload = ''
 
         # Load toolkit
-        if self.toolkit_name() != 'dummy':
-            load += self.moduleGenerator.loadModule(self.toolkit_name(), self.toolkit_version())
-            unload += self.moduleGenerator.unloadModule(self.toolkit_name(), self.toolkit_version())
+        if self.get_toolkit_name() != 'dummy':
+            load += self.moduleGenerator.loadModule(self.get_toolkit_name(), self.get_toolkit_version())
+            unload += self.moduleGenerator.unloadModule(self.get_toolkit_name(), self.get_toolkit_version())
 
         # Load dependencies
         builddeps = self.cfg.builddependencies()
-        for dep in self.toolkit().dependencies:
+        for dep in self.get_toolkit().dependencies:
             if not dep in builddeps:
                 self.log.debug("Adding %s/%s as a module dependency" % (dep['name'], dep['tk']))
                 load += self.moduleGenerator.loadModule(dep['name'], dep['tk'])
@@ -1223,11 +1223,11 @@ class Application:
         txt = "\n"
 
         # EBROOT + EBVERSION + EBDEVEL
-        environment_name = convertName(self.name(), upper=True)
+        environment_name = convertName(self.get_name(), upper=True)
         txt += self.moduleGenerator.setEnvironment("EBROOT" + environment_name, "$root")
-        txt += self.moduleGenerator.setEnvironment("EBVERSION" + environment_name, self.version())
-        devel_path = os.path.join("$root", config.logPath(), "%s-%s-easybuild-devel" % (self.name(),
-            self.installversion()))
+        txt += self.moduleGenerator.setEnvironment("EBVERSION" + environment_name, self.get_version())
+        devel_path = os.path.join("$root", config.logPath(), "%s-%s-easybuild-devel" % (self.get_name(),
+            self.get_installversion()))
         txt += self.moduleGenerator.setEnvironment("EBDEVEL" + environment_name, devel_path)
 
         txt += "\n"
@@ -1240,14 +1240,14 @@ class Application:
 
     def make_module_extra_packages(self):
         """
-        Sets optional variables for packages.
+        Sets optional variables for extensions.
         """
         return self.moduleExtraPackages
 
-    def installversion(self):
-        return self.cfg.installversion()
+    def get_installversion(self):
+        return self.cfg.get_installversion()
 
-    def installsize(self):
+    def det_installsize(self):
         installsize = 0
         try:
             # change to home dir, to avoid that cwd no longer exists
@@ -1262,15 +1262,15 @@ class Application:
         except OSError, err:
             self.log.warn("Could not determine install size: %s" % err)
 
-        return installsize
+        return det_installsize
 
-    def packages(self):
+    def extensions_step(self):
         """
         After make install, run this.
         - only if variable len(pkglist) > 0
         - optionally: load module that was just created using temp module file
-        - find source for packages, in pkgs
-        - run extraPackages
+        - find source for extensions, in pkgs
+        - run extra_extensions
         """
 
         if len(self.getcfg('pkglist')) == 0:
@@ -1287,30 +1287,30 @@ class Application:
                 self.log.debug("Adding %s to MODULEPATH" % modpath)
                 m = Modules([modpath] + os.environ['MODULEPATH'].split(':'))
 
-            if m.exists(self.name(), self.installversion()):
-                m.addModule([[self.name(), self.installversion()]])
+            if m.exists(self.get_name(), self.get_installversion()):
+                m.addModule([[self.get_name(), self.get_installversion()]])
                 m.load()
             else:
-                self.log.error("module %s version %s doesn't exist" % (self.name(), self.installversion()))
+                self.log.error("module %s version %s doesn't exist" % (self.get_name(), self.get_installversion()))
 
-        self.extra_packages_pre()
+        self.prepare_for_extensions()
 
-        self.pkgs = self.find_package_sources()
+        self.pkgs = self.fetch_extension_sources()
 
         if self.skip:
-            self.filter_packages()
+            self.skip_extensions()
 
-        self.extra_packages()
+        self.extra_extensions()
 
-    def find_package_patches(self, pkgName):
+    def fetch_extension_patches(self, pkgName):
         """
-        Find patches for packages.
+        Find patches for extensions.
         """
         for (name, patches) in self.getcfg('pkgpatches'):
             if name == pkgName:
                 pkgpatches = []
                 for p in patches:
-                    pf = self.file_locate(p, pkg=True)
+                    pf = self.obtain_file(p, pkg=True)
                     if pf:
                         pkgpatches.append(pf)
                     else:
@@ -1318,9 +1318,9 @@ class Application:
                 return pkgpatches
         return []
 
-    def find_package_sources(self):
+    def fetch_extension_sources(self):
         """
-        Find source file for packages.
+        Find source file for extensions.
         """
         pkgSources = []
         for pkg in self.getcfg('pkglist'):
@@ -1344,13 +1344,13 @@ class Application:
                         pkgSources.append({'name':pkgName,
                                            'version':pkg[1]})
                     else:
-                        filename = self.file_locate(fn, True)
+                        filename = self.obtain_file(fn, True)
                         if filename:
                             pkgSrc = {'name':pkgName,
                                     'version':pkg[1],
                                     'src':filename}
 
-                            pkgPatches = self.find_package_patches(pkgName)
+                            pkgPatches = self.fetch_extension_patches(pkgName)
                             if pkgPatches:
                                 self.log.debug('Found patches for package %s: %s' % (pkgName, pkgPatches))
                                 pkgSrc.update({'patches':pkgPatches})
@@ -1369,13 +1369,13 @@ class Application:
 
         return pkgSources
 
-    def extra_packages_pre(self):
+    def prepare_for_extensions(self):
         """
         Also do this before (eg to set the template)
         """
         pass
 
-    def extra_packages(self):
+    def extra_extensions(self):
         """
         Also do this (ie the real work)
         - based on original R version
@@ -1387,7 +1387,7 @@ class Application:
         self.log.debug("Installing packages")
         pkgdefaultclass = self.getcfg('pkgdefaultclass')
         if not pkgdefaultclass:
-            self.log.error("ERROR: No default package class set for %s" % self.name())
+            self.log.error("ERROR: No default package class set for %s" % self.get_name())
 
         allclassmodule = pkgdefaultclass[0]
         defaultClass = pkgdefaultclass[1]
@@ -1398,19 +1398,19 @@ class Application:
             try:
                 exec("from %s import %s" % (allclassmodule, name))
                 p = eval("%s(self,pkg,pkginstalldeps)" % name)
-                self.log.debug("Installing package %s through class %s" % (name, name))
+                self.log.debug("Installing package %s through class %s" % (name, pkg['name']))
             except (ImportError, NameError), err:
-                self.log.debug("Couldn't load class %s for package %s with package deps %s:\n%s" % (name, name, pkginstalldeps, err))
+                self.log.debug("Couldn't load class %s for package %s with package deps %s:\n%s" % (name, pkg['name'], pkginstalldeps, err))
                 if defaultClass:
-                    self.log.info("No class found for %s, using default %s instead." % (name, defaultClass))
+                    self.log.info("No class found for %s, using default %s instead." % (pkg['name'], defaultClass))
                     try:
                         exec("from %s import %s" % (allclassmodule, defaultClass))
                         exec("p=%s(self,pkg,pkginstalldeps)" % defaultClass)
-                        self.log.debug("Installing package %s through default class %s" % (name, defaultClass))
+                        self.log.debug("Installing package %s through default class %s" % (pkg['name'], defaultClass))
                     except (ImportError, NameError), errbis:
-                        self.log.error("Failed to use both class %s and default %s for package %s, giving up:\n%s\n%s" % (name, defaultClass, name, err, errbis))
+                        self.log.error("Failed to use both class %s and default %s for package %s, giving up:\n%s\n%s" % (name, defaultClass, pkg['name'], err, errbis))
                 else:
-                    self.log.error("Failed to use both class %s and no default class for package %s, giving up:\n%s" % (name, name, err))
+                    self.log.error("Failed to use both class %s and no default class for package %s, giving up:\n%s" % (name, pkg['name'], err))
 
             ## real work
             p.prerun()
@@ -1421,7 +1421,7 @@ class Application:
             # Append so we can make us of it later (in sanity_check)
             self.instance_pkgs.append(p)
 
-    def filter_packages(self):
+    def skip_extensions(self):
         """
         Called when self.skip is True
         - use this to detect existing packages and to remove them from self.pkgs
@@ -1455,7 +1455,7 @@ class Application:
                 self.log.info("Skipping %s" % name)
         self.pkgs = res
 
-    def runtests(self):
+    def run_test_cases(self):
         """
         Run tests.
         """
@@ -1465,7 +1465,7 @@ class Application:
             if os.path.isabs(test):
                 path = test
             else:
-                path = os.path.join(source_path(), self.name(), test)
+                path = os.path.join(source_path(), self.get_name(), test)
 
             try:
                 self.log.debug("Running test %s" % path)
@@ -1473,13 +1473,13 @@ class Application:
             except EasyBuildError, err:
                 self.log.exception("Running test %s failed: %s" % (path, err))
 
-    def name(self):
+    def get_name(self):
         """
         Shortcut the get the module name.
         """
         return self.getcfg('name')
 
-    def version(self):
+    def get_version(self):
         """
         Shortcut the get the module version.
         """
@@ -1508,7 +1508,7 @@ def get_class_for(modulepath, class_name):
         raise ImportError
     return c
 
-def module_path_for_easyblock(easyblock):
+def get_module_path(easyblock):
     """
     Determine the module path for a given easyblock name,
     based on the encoded class name.
@@ -1555,7 +1555,7 @@ def get_class(easyblock, log, name=None):
             if not name:
                 name = "UNKNOWN"
             # modulepath will be the namespace + encoded modulename (from the classname)
-            modulepath = module_path_for_easyblock(name)
+            modulepath = get_module_path(name)
             # The following is a generic way to calculate unique class names for any funny package title
             class_name = encode_class_name(name)
 
@@ -1584,7 +1584,7 @@ def get_class(easyblock, log, name=None):
                 log.info("Assuming that full easyblock module path was specified.")
                 modulepath = easyblock
             else:
-                modulepath = module_path_for_easyblock(easyblock).lower()
+                modulepath = get_module_path(easyblock).lower()
                 log.info("Derived full easyblock module path for %s: %s" % (class_name, modulepath))
 
         cls = get_class_for(modulepath, class_name)
@@ -1598,7 +1598,7 @@ def get_class(easyblock, log, name=None):
 
 class ApplicationPackage:
     """
-    Support for installing packages.
+    Support for installing extensions.
     """
     def __init__(self, mself, pkg, pkginstalldeps):
         """
@@ -1636,25 +1636,25 @@ class ApplicationPackage:
         """
         pass
 
-    def toolkit(self):
+    def get_toolkit(self):
         """
         Toolkit used to build this package
         """
-        return self.master.toolkit()
+        return self.master.get_toolkit()
 
-    def toolkit_name(self):
+    def get_toolkit_name(self):
         """
         Name of toolkit used to build this package
         """
-        return self.master.toolkit_name()
+        return self.master.get_toolkit_name()
 
-    def toolkit_version(self):
+    def get_toolkit_version(self):
         """
         Version of toolkit used to build this package
         """
-        return self.master.toolkit_version()
+        return self.master.get_toolkit_version()
 
-    def sanitycheck(self):
+    def sanity_check(self):
         """
         sanity check to run after installing
         """

@@ -110,9 +110,9 @@ class EB_NCL(Application):
 
         # configure
         try:
-            os.chdir(self.getcfg('startfrom'))
+            os.chdir(self.getcfg('start_dir'))
         except OSError, err:
-            self.log.error("Failed to change to the build dir %s: %s" % (self.getcfg('startfrom'), err))
+            self.log.error("Failed to change to the build dir %s: %s" % (self.getcfg('start_dir'), err))
 
         # instead of running the Configure script that asks a zillion questions,
         # let's just generate the config/Site.local file ourselves...

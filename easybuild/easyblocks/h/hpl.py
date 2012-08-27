@@ -46,7 +46,7 @@ class EB_HPL(Application):
         - provide subdir argument so this can be reused in HPCC easyblock
         """
 
-        basedir = self.getcfg('startfrom')
+        basedir = self.getcfg('start_dir')
         if subdir:
             makeincfile = os.path.join(basedir, subdir, 'Make.UNKNOWN')
             setupdir = os.path.join(basedir, subdir, 'setup')
@@ -69,7 +69,7 @@ class EB_HPL(Application):
             self.log.exception("Failed to symlink Make.UNKNOWN from %s to %s: %s" % (setupdir, makeincfile, err))
 
         # go back
-        os.chdir(self.getcfg('startfrom'))
+        os.chdir(self.getcfg('start_dir'))
 
     def build_step(self):
         """
@@ -81,7 +81,7 @@ class EB_HPL(Application):
                 self.log.error("Required environment variable %s not found (no toolkit used?)." % envvar)
 
         # build dir
-        extra_makeopts = 'TOPdir="%s" ' % self.getcfg('startfrom')
+        extra_makeopts = 'TOPdir="%s" ' % self.getcfg('start_dir')
 
         # compilers
         extra_makeopts += 'CC="%(mpicc)s" MPICC="%(mpicc)s" LINKER="%(mpicc)s" ' % {'mpicc': os.getenv('MPICC')}
@@ -106,7 +106,7 @@ class EB_HPL(Application):
         """
         Install by copying files to install dir
         """
-        srcdir = os.path.join(self.getcfg('startfrom'), 'bin', 'UNKNOWN')
+        srcdir = os.path.join(self.getcfg('start_dir'), 'bin', 'UNKNOWN')
         destdir = os.path.join(self.installdir, 'bin')
         srcfile = None
         try:

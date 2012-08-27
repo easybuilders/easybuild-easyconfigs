@@ -68,7 +68,7 @@ class EB_GCC(Application):
         """
         Create a dir to build in.
         """
-        dirpath = os.path.join(self.getcfg('startfrom'), dirname)
+        dirpath = os.path.join(self.getcfg('start_dir'), dirname)
         try:
             os.mkdir(dirpath)
             os.chdir(dirpath)
@@ -145,7 +145,7 @@ class EB_GCC(Application):
             if target_prefix:
                 dst = os.path.join(target_prefix, d['target_dir'])
             else:
-                dst = os.path.join(self.getcfg('startfrom'), d['target_dir'])
+                dst = os.path.join(self.getcfg('start_dir'), d['target_dir'])
             if not os.path.exists(dst):
                 try:
                     shutil.copytree(src, dst)
@@ -235,7 +235,7 @@ class EB_GCC(Application):
             configopts += " --prefix=%(p)s --with-local-prefix=%(p)s" % {'p' : self.stage1installdir}
 
         else:
-            # unstaged build, so just run standard configure/build_step/make install
+            # unstaged build, so just run standard configure/make/make install
             # set prefixes
             self.log.info("Performing regular GCC build...")
             configopts += " --prefix=%(p)s --with-local-prefix=%(p)s" % {'p' : self.installdir}
@@ -439,7 +439,7 @@ class EB_GCC(Application):
         self.updatecfg('makeopts', 'bootstrap')
 
         # call standard build_step
-        Application.make(self)
+        Application.build_step(self)
 
     # make install is just standard install_step, nothing special there
 

@@ -48,11 +48,11 @@ class EB_MrBayes(Application):
         if LooseVersion(self.get_version()) >= LooseVersion("3.2"):
 
             # set correct startfrom dir, and change into it
-            self.setcfg('startfrom', os.path.join(self.getcfg('startfrom'),'src'))
+            self.setcfg('startfrom', os.path.join(self.getcfg('start_dir'),'src'))
             try:
-                os.chdir(self.getcfg('startfrom'))
+                os.chdir(self.getcfg('start_dir'))
             except OSError, err:
-                self.log.error("Failed to change to correct source dir %s: %s" % (self.getcfg('startfrom'), err))
+                self.log.error("Failed to change to correct source dir %s: %s" % (self.getcfg('start_dir'), err))
 
             # run autoconf to generate configure script
             cmd = "autoconf"
@@ -82,7 +82,7 @@ class EB_MrBayes(Application):
         os.makedirs(bindir)
 
         for exe in ['mb']:
-            src = os.path.join(self.getcfg('startfrom'), exe)
+            src = os.path.join(self.getcfg('start_dir'), exe)
             dst = os.path.join(bindir, exe)
             try:
                 shutil.copy2(src, dst)

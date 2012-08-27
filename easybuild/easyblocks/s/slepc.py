@@ -70,7 +70,7 @@ class EB_SLEPc(Application):
             self.log.error("PETSc module not loaded?")
 
         # set SLEPC_DIR environment variable
-        env.set('SLEPC_DIR', self.getcfg('startfrom'))
+        env.set('SLEPC_DIR', self.getcfg('start_dir'))
         self.log.debug('SLEPC_DIR: %s' % os.getenv('SLEPC_DIR'))
 
         # optional dependencies

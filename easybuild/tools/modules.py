@@ -100,7 +100,7 @@ class Modules:
 
         modules = self.runModule('available', txt, modulePath=modulePath)
 
-        ## sort the answers in [name,version] pairs
+        ## sort the answers in [name, version] pairs
         ## alphabetical order, default last
         modules.sort(key=lambda m: (m['name'] + (m['default'] or ''), m['version']))
         ans = [(mod['name'], mod['version']) for mod in modules]

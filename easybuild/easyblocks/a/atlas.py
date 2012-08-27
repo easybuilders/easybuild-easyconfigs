@@ -96,7 +96,7 @@ class EB_ATLAS(Application):
                                                                     })
 
         # call configure in parent dir
-        cmd = "%s %s/configure --prefix=%s %s" % (self.getcfg('preconfigopts'), self.getcfg('startfrom'),
+        cmd = "%s %s/configure --prefix=%s %s" % (self.getcfg('preconfigopts'), self.getcfg('start_dir'),
                                                  self.installdir, self.getcfg('configopts'))
         (out, exitcode) = run_cmd(cmd, log_all=False, log_ok=False, simple=False)
 

@@ -47,7 +47,7 @@ class EB_FSL(Application):
     def configure(self):
         """Configure FSL build: set FSLDIR env var."""
 
-        self.fsldir = self.getcfg('startfrom')
+        self.fsldir = self.getcfg('start_dir')
         env.set('FSLDIR', self.fsldir)
 
         # determine FSL machine type

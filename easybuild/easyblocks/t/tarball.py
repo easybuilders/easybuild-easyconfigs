@@ -52,7 +52,7 @@ class EB_Tarball(Application):
 
     def install_step(self):
 
-        src = self.getcfg('startfrom')
+        src = self.getcfg('start_dir')
         # shutil.copytree cannot handle destination dirs that exist already.
         # On the other hand, Python2.4 cannot create entire paths during copytree.
         # Therefore, only the final directory is deleted.

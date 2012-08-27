@@ -25,7 +25,7 @@ EasyBuild support for DOLFIN, implemented as an easyblock
 import os
 import re
 
-import easybuild.tools.toolkit as get_toolkit
+import easybuild.tools.toolkit as toolkit
 from easybuild.easyblocks.cmakepythonpackage import EB_CMakePythonPackage
 from easybuild.tools.modules import get_software_root, get_software_version
 
@@ -47,7 +47,7 @@ class EB_DOLFIN(EB_CMakePythonPackage):
         fflags = os.getenv('FFLAGS')
 
         # fix for "SEEK_SET is #defined but must not be for the C++ binding of MPI. Include mpi.h before stdio.h"
-        if self.toolkit().mpi_type() in [toolkit.INTEL, get_toolkit.MPICH2]:
+        if self.toolkit().mpi_type() in [toolkit.INTEL, toolkit.MPICH2]:
             cflags += " -DMPICH_IGNORE_CXX_SEEK"
             cxxflags += " -DMPICH_IGNORE_CXX_SEEK"
             fflags += " -DMPICH_IGNORE_CXX_SEEK"

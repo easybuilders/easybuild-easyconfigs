@@ -31,7 +31,7 @@ import re
 import sys
 import shutil
 
-import easybuild.tools.toolkit as get_toolkit
+import easybuild.tools.toolkit as toolkit
 from easybuild.framework.application import Application
 from easybuild.tools.filetools import run_cmd, copytree
 
@@ -44,16 +44,16 @@ class EB_SCOTCH(Application):
 
         # pick template makefile
         comp_fam = self.get_toolkit().comp_family()
-        if comp_fam == get_toolkit.INTEL:
+        if comp_fam == toolkit.INTEL:
             makefilename = 'Makefile.inc.x86-64_pc_linux2.icc'
-        elif comp_fam == get_toolkit.GCC:
+        elif comp_fam == toolkit.GCC:
             makefilename = 'Makefile.inc.x86-64_pc_linux2'
         else:
             self.log.error("Unknown compiler family used: %s" % comp_fam)
 
         # create Makefile.inc
         try:
-            srcdir = os.path.join(self.getcfg('startfrom'), 'src')
+            srcdir = os.path.join(self.getcfg('start_dir'), 'src')
             src = os.path.join(srcdir, 'Make.inc', makefilename)
             dst = os.path.join(srcdir, 'Makefile.inc')
             shutil.copy2(src, dst)
@@ -90,12 +90,12 @@ class EB_SCOTCH(Application):
         ccd = os.environ['MPICC']
 
         cflags = "-fPIC -O3 -DCOMMON_FILE_COMPRESS_GZ -DCOMMON_PTHREAD -DCOMMON_RANDOM_FIXED_SEED -DSCOTCH_RENAME"
-        if self.toolkit().comp_family() == get_toolkit.GCC:
+        if self.get_toolkit().comp_family() == toolkit.GCC:
             cflags += " -Drestrict=__restrict"
         else:
             cflags += " -restrict -DIDXSIZE64"
 
-        if not self.toolkit().mpi_type() == get_toolkit.INTEL:
+        if not self.get_toolkit().mpi_type() == toolkit.INTEL:
             cflags += " -DSCOTCH_PTHREAD"
 
         # actually build
@@ -112,7 +112,7 @@ class EB_SCOTCH(Application):
         regmetis = re.compile(r".*metis.*")
         try:
             for d in ["include", "lib", "bin", "man"]:
-                src = os.path.join(self.getcfg('startfrom'), d)
+                src = os.path.join(self.getcfg('start_dir'), d)
                 dst = os.path.join(self.installdir, d)
                 # we don't need any metis stuff from scotch!
                 copytree(src, dst, ignore=lambda path, files: [x for x in files if regmetis.match(x)])

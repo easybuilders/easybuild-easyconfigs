@@ -31,7 +31,7 @@ import os
 import shutil
 from distutils.version import LooseVersion
 
-import easybuild.tools.toolkit as get_toolkit
+import easybuild.tools.toolkit as toolkit
 from easybuild.easyblocks.blacs import det_interface
 from easybuild.easyblocks.lapack import get_blas_lib
 from easybuild.framework.application import Application
@@ -46,8 +46,8 @@ class EB_ScaLAPACK(Application):
     def configure(self):
         """Configure ScaLAPACK build by copying SLmake.inc.example to SLmake.inc and checking dependencies."""
 
-        src = os.path.join(self.getcfg('startfrom'), 'SLmake.inc.example')
-        dest = os.path.join(self.getcfg('startfrom'), 'SLmake.inc')
+        src = os.path.join(self.getcfg('start_dir'), 'SLmake.inc.example')
+        dest = os.path.join(self.getcfg('start_dir'), 'SLmake.inc')
 
         if not os.path.isfile(src):
             self.log.error("Can't fin source file %s" % src)
@@ -79,7 +79,7 @@ class EB_ScaLAPACK(Application):
             mpicc = os.getenv('MPICC')
             mpif77 = os.getenv('MPIF77')
             mpif90 = os.getenv('MPIF90')
-        elif self.toolkit().mpi_type() in [toolkit.OPENMPI, get_toolkit.MVAPICH2]:
+        elif self.toolkit().mpi_type() in [toolkit.OPENMPI, toolkit.MVAPICH2]:
             mpicc = 'mpicc'
             mpif77 = 'mpif77'
             mpif90 = 'mpif90'
@@ -101,7 +101,7 @@ class EB_ScaLAPACK(Application):
             interface = det_interface(self.log, os.path.join(blacs, 'bin'))
 
             # set build and BLACS dir correctly
-            extra_makeopts.append('home=%s BLACSdir=%s' % (self.getcfg('startfrom'), blacs))
+            extra_makeopts.append('home=%s BLACSdir=%s' % (self.getcfg('start_dir'), blacs))
 
             # set BLACS libs correctly
             for (var, lib) in [
@@ -130,7 +130,7 @@ class EB_ScaLAPACK(Application):
         else:
 
             # determine interface
-            if self.toolkit().mpi_type() in [toolkit.OPENMPI, get_toolkit.MVAPICH2]:
+            if self.toolkit().mpi_type() in [toolkit.OPENMPI, toolkit.MVAPICH2]:
                 interface = 'Add_'
             else:
                 self.log.error("Don't know which interface to pick for the MPI library being used.")
@@ -158,7 +158,7 @@ class EB_ScaLAPACK(Application):
                                        ("", "lib", ".a"), # libraries
                                        ]:
 
-            src = os.path.join(self.getcfg('startfrom'), srcdir)
+            src = os.path.join(self.getcfg('start_dir'), srcdir)
             dest = os.path.join(self.installdir, destdir)
 
             try:

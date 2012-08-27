@@ -139,6 +139,6 @@ def prepare_package(pkg, log):
     """ prepare for building """
     try:
         instance = get_instance(pkg, log)
-        instance.prepare_build()
+        instance.fetch_step()
     except:
         pass

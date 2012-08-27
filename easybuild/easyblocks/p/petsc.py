@@ -26,7 +26,7 @@ import re
 from distutils.version import LooseVersion
 
 import easybuild.tools.environment as env
-import easybuild.tools.toolkit as get_toolkit
+import easybuild.tools.toolkit as toolkit
 from easybuild.framework.application import Application
 from easybuild.framework.easyconfig import BUILD, CUSTOM
 from easybuild.tools.filetools import run_cmd
@@ -84,7 +84,7 @@ class EB_PETSc(Application):
             self.updatecfg('configopts', '--with-cxxflags="%s"' % os.getenv('CXXFLAGS'))
             self.updatecfg('configopts', '--with-fcflags="%s"' % os.getenv('F90FLAGS'))
 
-            if not self.toolkit().comp_family() == get_toolkit.GCC:
+            if not self.get_toolkit().comp_family() == toolkit.GCC:
                 self.updatecfg('configopts', '--with-gnu-compilers=0')
 
             # MPI
@@ -169,8 +169,8 @@ class EB_PETSc(Application):
                                )
 
             # set PETSC_DIR for configure (env) and build_step
-            env.set('PETSC_DIR', self.getcfg('startfrom'))
-            self.updatecfg('makeopts', 'PETSC_DIR=%s' % self.getcfg('startfrom'))
+            env.set('PETSC_DIR', self.getcfg('start_dir'))
+            self.updatecfg('makeopts', 'PETSC_DIR=%s' % self.getcfg('start_dir'))
 
             if self.getcfg('sourceinstall'):
                 # run configure without --prefix (required)

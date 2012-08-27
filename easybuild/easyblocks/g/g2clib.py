@@ -62,14 +62,14 @@ class EB_g2clib(Application):
             targetdir = os.path.join(self.installdir, "lib")
             os.mkdir(targetdir)
             fn = "libgrib2c.a"
-            shutil.copyfile(os.path.join(self.getcfg('startfrom'), fn),
+            shutil.copyfile(os.path.join(self.getcfg('start_dir'), fn),
                             os.path.join(targetdir, fn))
 
             # copy header files
             targetdir = os.path.join(self.installdir, "include")
             os.mkdir(targetdir)
             for fn in glob.glob('*.h'):
-                shutil.copyfile(os.path.join(self.getcfg('startfrom'), fn),
+                shutil.copyfile(os.path.join(self.getcfg('start_dir'), fn),
                                 os.path.join(targetdir, fn))
 
         except OSError, err:

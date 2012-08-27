@@ -26,20 +26,20 @@ There are several possibilities why some applications fail to build,
 this test will distinguish between the different phases in the build:
    * eb-file parsing
    * initialization
-   * preparation
+   * fetching files (patches, sources)
    * pre-build verification
-   * generate installdir name
+   * generate installdir
    * make builddir
-   * unpacking
+   * extracting
    * patching
    * prepare
-   * configure
-   * make
-   * test
+   * configuring
+   * building
+   * testing
    * create installdir
-   * make install
-   * packages
-   * postproc
+   * installing
+   * extensions
+   * post install
    * sanity check
    * cleanup
 
@@ -174,29 +174,29 @@ def build_packages(packages, output_dir):
         modifyEnv(os.environ, base_env)
 
         # create a handler per app so we can capture debug output per application
-        handler = logging.FileHandler(os.path.join(output_dir, "%s-%s.log" % (app.name(), app.installversion())))
+        handler = logging.FileHandler(os.path.join(output_dir, "%s-%s.log" % (app.get_name(), app.get_installversion())))
         handler.setFormatter(build_log.formatter)
 
         app.log.addHandler(handler)
 
         # take manual control over the building
-        perform_step("preparation", app, lambda x: x.prepare_build())
-        perform_step("pre-build verification", app, lambda x: x.ready2build())
+        perform_step("fetching files", app, lambda x: x.fetch_step())
+        perform_step("pre-build verification", app, lambda x: x.check_readiness())
         perform_step("generate installdir name", app, lambda x: x.gen_installdir())
         perform_step("make builddir", app, lambda x: x.make_builddir())
-        perform_step("unpacking", app, lambda x: x.unpack_src())
-        perform_step("patching", app, lambda x: x.apply_patch())
-        perform_step("prepare", app, lambda x: x.prepare())
-        perform_step('configure', app, lambda x: x.configure())
-        perform_step('make', app, lambda x: x.make())
-        perform_step('test', app, lambda x: x.test())
-        perform_step('create installdir', app, lambda x: x.make_installdir())
-        perform_step('make install', app, lambda x: x.make_install())
-        perform_step('packages', app, lambda x: x.packages())
-        perform_step('postproc', app, lambda x: x.postproc())
-        perform_step('sanity check', app, lambda x: x.sanitycheck())
+        perform_step("extracting", app, lambda x: x.extract_step())
+        perform_step("patching", app, lambda x: x.patch_step())
+        perform_step("preparing", app, lambda x: x.prepare_step())
+        perform_step('configuring', app, lambda x: x.configure())
+        perform_step('building', app, lambda x: x.build_step())
+        perform_step('testing', app, lambda x: x.test())
+        perform_step('creating installdir', app, lambda x: x.make_installdir())
+        perform_step('installing', app, lambda x: x.install_step())
+        perform_step('extensions', app, lambda x: x.extensions_step())
+        perform_step('post install', app, lambda x: x.post_install_step())
+        perform_step('sanity check', app, lambda x: x.sanity_check())
         perform_step('cleanup', app, lambda x: x.cleanup())
-        perform_step('make module', app, lambda x: x.make_module())
+        perform_step('making module', app, lambda x: x.make_module())
 
         # remove handler
         app.log.removeHandler(handler)
@@ -210,7 +210,7 @@ def build_packages(packages, output_dir):
                           'platform': platform.platform(),
                           'core_count': systemtools.get_core_count(),
                           'cpu_model': systemtools.get_cpu_model(),
-                          'install_size': app.installsize(),
+                          'install_size': app.det_installsize(),
                           'timestamp': int(time.time()),
                           'host': os.uname()[1],
                          }
@@ -325,14 +325,14 @@ def write_to_xml(succes, failed, filename):
     for (obj, fase, error) in failed:
         # try to pretty print
         try:
-            el = create_failure("%s/%s" % (obj.name(), obj.installversion()), fase, error)
+            el = create_failure("%s/%s" % (obj.get_name(), obj.get_installversion()), fase, error)
         except:
             el = create_failure(obj, fase, error)
 
         root.firstChild.appendChild(el)
 
     for (obj, stats) in succes:
-        el = create_succes("%s/%s" % (obj.name(), obj.installversion()), stats)
+        el = create_succes("%s/%s" % (obj.get_name(), obj.get_installversion()), stats)
         root.firstChild.appendChild(el)
 
     output_file = open(filename, "w")

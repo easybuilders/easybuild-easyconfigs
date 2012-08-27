@@ -32,7 +32,7 @@ from easybuild.easyblocks.pythonpackage import EB_PythonPackage
 class EB_CMakePythonPackage(EB_CMake, EB_PythonPackage):
     """Build a Python package and module with cmake.
 
-    Some packages use cmake to first build and install C Python extensions_step
+    Some packages use cmake to first build and install C Python packages
     and then put the Python package in lib/pythonX.Y/site-packages.
 
     We install this in a seperate location and generate a module file 

@@ -48,20 +48,20 @@ errorsFoundInLog = 0
 strictness = 'warn'
 
 
-def unpack(fn, dest, extra_options=None, overwrite=False):
+def extract_file(fn, dest, extra_options=None, overwrite=False):
     """
-    Given filename fn, try to unpack in directory dest
+    Given filename fn, try to extract in directory dest
     - returns the directory name in case of success
     """
     if not os.path.isfile(fn):
-        log.error("Can't unpack file %s: no such file" % fn)
+        log.error("Can't extract file %s: no such file" % fn)
 
     if not os.path.isdir(dest):
         ## try to create it
         try:
             os.makedirs(dest)
         except OSError, err:
-            log.exception("Can't unpack file %s: directory %s can't be created: %err " % (fn, dest, err))
+            log.exception("Can't extract file %s: directory %s can't be created: %err " % (fn, dest, err))
 
     ## use absolute pathnames from now on
     absDest = os.path.abspath(dest)
@@ -75,7 +75,7 @@ def unpack(fn, dest, extra_options=None, overwrite=False):
 
     cmd = extractCmd(fn, overwrite=overwrite)
     if not cmd:
-        log.error("Can't unpack file %s with unknown filetype" % fn)
+        log.error("Can't extract file %s with unknown filetype" % fn)
 
     if extra_options:
         cmd = "%s %s" % (cmd, extra_options)
@@ -89,7 +89,7 @@ def findBaseDir():
     """
     Try to locate a possible new base directory
     - this is typically a single subdir, e.g. from untarring a tarball
-    - when unpacking multiple tarballs in the same directory,
+    - when extracting multiple tarballs in the same directory,
       expect only the first one to give the correct path
     """
     def getLocalDirsPurged():
@@ -162,7 +162,7 @@ def extractCmd(fn, overwrite=False):
     return ftype % fn
 
 
-def patch(patchFile, dest, fn=None, copy=False, level=None):
+def apply_patch(patchFile, dest, fn=None, copy=False, level=None):
     """
     Apply a patch to source code in directory dest
     - assume unified diff created with "diff -ru old new"
@@ -380,14 +380,14 @@ def run_cmd_qa(cmd, qa, no_qa=None, log_ok=True, log_all=False, simple=False, re
     # - replace whitespace
     # - replace newline
 
-    def escapeSpecial(string):
+    def escape_special(string):
         return re.sub(r"([\+\?\(\)\[\]\*\.\\])" , r"\\\1", string)
 
     split = '[\s\n]+'
     regSplit = re.compile(r"" + split)
 
     def processQA(q, a):
-        splitq = [escapeSpecial(x) for x in regSplit.split(q)]
+        splitq = [escape_special(x) for x in regSplit.split(q)]
         regQtxt = split.join(splitq) + split.rstrip('+') + "*$"
         ## add optional split at the end
         if not a.endswith('\n'):
@@ -723,7 +723,7 @@ def patch_perl_script_autoflush(path):
 def mkdir(directory, parents=False):
     """
     Create a directory
-    Directory is the path to make
+    Directory is the path to create
     log is the logger to which to log debugging or error info.
     
     When parents is True then no error if directory already exists

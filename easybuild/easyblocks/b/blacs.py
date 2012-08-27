@@ -31,7 +31,7 @@ import re
 import os
 import shutil
 
-import easybuild.tools.toolkit as get_toolkit
+import easybuild.tools.toolkit as toolkit
 from easybuild.framework.application import Application
 from easybuild.tools.filetools import run_cmd
 from easybuild.tools.modules import get_software_root
@@ -61,8 +61,8 @@ class EB_BLACS(Application):
     def configure(self):
         """Configure BLACS build by copying Bmake.inc file."""
 
-        src = os.path.join(self.getcfg('startfrom'), 'BMAKES', 'Bmake.MPI-LINUX')
-        dest = os.path.join(self.getcfg('startfrom'), 'Bmake.inc')
+        src = os.path.join(self.getcfg('start_dir'), 'BMAKES', 'Bmake.MPI-LINUX')
+        dest = os.path.join(self.getcfg('start_dir'), 'Bmake.inc')
 
         if not os.path.isfile(src):
             self.log.error("Can't find source file %s" % src)
@@ -80,8 +80,8 @@ class EB_BLACS(Application):
 
         # determine MPI base dir and lib
         known_mpis = {
-                      get_toolkit.OPENMPI: "-L$(MPILIBdir) -lmpi_f77",
-                      get_toolkit.MVAPICH2: "$(MPILIBdir)/libmpich.a $(MPILIBdir)/libfmpich.a " + \
+                      toolkit.OPENMPI: "-L$(MPILIBdir) -lmpi_f77",
+                      toolkit.MVAPICH2: "$(MPILIBdir)/libmpich.a $(MPILIBdir)/libfmpich.a " + \
                                         "$(MPILIBdir)/libmpl.a -lpthread"
                      }
 
@@ -184,7 +184,7 @@ class EB_BLACS(Application):
                                        ("LIB", "lib", ".a"),  # libraries
                                        ]:
 
-            src = os.path.join(self.getcfg('startfrom'), srcdir)
+            src = os.path.join(self.getcfg('start_dir'), srcdir)
             dest = os.path.join(self.installdir, destdir)
 
             try:
@@ -208,7 +208,7 @@ class EB_BLACS(Application):
                 self.log.error("Copying %s/*.%s to installation dir %s failed: %s"%(src, ext, dest, err))
 
         # utilities
-        src = os.path.join(self.getcfg('startfrom'), 'INSTALL', 'EXE', 'xintface')
+        src = os.path.join(self.getcfg('start_dir'), 'INSTALL', 'EXE', 'xintface')
         dest = os.path.join(self.installdir, 'bin')
 
         try:

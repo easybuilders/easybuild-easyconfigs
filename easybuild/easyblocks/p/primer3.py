@@ -45,7 +45,7 @@ class EB_Primer3(Application):
 
         self.bindir = "%s-%s/src" % (self.get_name().lower(), self.get_version())
 
-        self.setcfg('startfrom', 'src')
+        self.setcfg('start_dir', 'src')
 
     def configure(self):
         """Configure Primer3 build by setting make options."""

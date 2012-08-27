@@ -191,5 +191,5 @@ def print_msg(msg, log=None):
 if __name__ == '__main__':
     initLogger('test', '1.0.0')
     fn, testlog, _ = initLogger(typ='build_log')
-    testlog.info('Testing buildLog...')
-    "Tested buildLog, see %s" % fn
+    testlog.info('Testing build_log...')
+    "Tested build_log, see %s" % fn

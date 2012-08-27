@@ -35,7 +35,7 @@ import tempfile
 from distutils.version import LooseVersion
 
 import easybuild.tools.environment as env
-import easybuild.tools.toolkit as get_toolkit
+import easybuild.tools.toolkit as toolkit
 from easybuild.easyblocks.netcdf import set_netcdf_env_vars, get_netcdf_module_set_cmds
 from easybuild.framework.application import Application
 from easybuild.framework.easyconfig import CUSTOM, MANDATORY
@@ -141,10 +141,10 @@ class EB_WPS(Application):
                                'dmpar': 'dmpar'
                               }
 
-            if self.comp_fam == get_toolkit.INTEL:
+            if self.comp_fam == toolkit.INTEL:
                 build_type_option = " Linux x86_64, Intel compiler"
 
-            elif self.comp_fam == get_toolkit.GCC:
+            elif self.comp_fam == toolkit.GCC:
                 build_type_option = "Linux x86_64 g95 compiler"
 
             else:
@@ -157,10 +157,10 @@ class EB_WPS(Application):
                                'dmpar': 'DM parallel'
                               }
 
-            if self.comp_fam == get_toolkit.INTEL:
+            if self.comp_fam == toolkit.INTEL:
                 build_type_option = "PC Linux x86_64, Intel compiler"
 
-            elif self.comp_fam == get_toolkit.GCC:
+            elif self.comp_fam == toolkit.GCC:
                 build_type_option = "PC Linux x86_64, gfortran compiler,"
                 knownbuildtypes['dmpar'] = knownbuildtypes['dmpar'].upper()
 

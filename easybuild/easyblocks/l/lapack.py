@@ -30,7 +30,7 @@ import glob
 import os
 import shutil
 
-import easybuild.tools.toolkit as get_toolkit
+import easybuild.tools.toolkit as toolkit
 from easybuild.framework.application import Application
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.filetools import run_cmd
@@ -87,15 +87,15 @@ class EB_LAPACK(Application):
         """
 
         # copy build_step.inc file from examples
-        if self.toolkit().comp_family() == get_toolkit.GCC:
+        if self.get_toolkit().comp_family() == toolkit.GCC:
             makeinc = 'gfortran'
-        elif self.toolkit().comp_family() == get_toolkit.INTEL:
+        elif self.get_toolkit().comp_family() == toolkit.INTEL:
             makeinc = 'ifort'
         else:
             self.log.error("Don't know which build_step.inc file to pick, unknown compiler being used...")
 
-        src = os.path.join(self.getcfg('startfrom'), 'INSTALL', 'make.inc.%s' % makeinc)
-        dest = os.path.join(self.getcfg('startfrom'), 'make.inc')
+        src = os.path.join(self.getcfg('start_dir'), 'INSTALL', 'make.inc.%s' % makeinc)
+        dest = os.path.join(self.getcfg('start_dir'), 'make.inc')
 
         if not os.path.isfile(src):
             self.log.error("Can't find source file %s" % src)
@@ -157,7 +157,7 @@ class EB_LAPACK(Application):
             self.log.info('Only testing, so skipping make install.')
             pass
 
-        srcdir = self.getcfg('startfrom')
+        srcdir = self.getcfg('start_dir')
         destdir = os.path.join(self.installdir, 'lib')
 
         try:

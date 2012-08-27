@@ -62,11 +62,11 @@ class ModuleGenerator:
             module_path = self.tmpdir
 
         # Real file goes in 'all' category
-        self.filename = os.path.join(module_path, general_class, self.app.name(), self.app.installversion())
+        self.filename = os.path.join(module_path, general_class, self.app.get_name(), self.app.get_installversion())
 
         # Make symlink in moduleclass category
-        classPath = os.path.join(module_path, self.app.getcfg('moduleclass'), self.app.name())
-        classPathFile = os.path.join(classPath, self.app.installversion())
+        classPath = os.path.join(module_path, self.app.getcfg('moduleclass'), self.app.get_name())
+        classPathFile = os.path.join(classPath, self.app.get_installversion())
 
         # Create directories and links
         for directory in [os.path.dirname(x) for x in [self.filename, classPathFile]]:
@@ -81,7 +81,7 @@ class ModuleGenerator:
             # remove symlink if its there (even if it's broken)
             if os.path.lexists(classPathFile):
                 os.remove(classPathFile)
-            # remove module file if it's there (it'll be recreated), see Application.makeModule
+            # remove module file if it's there (it'll be recreated), see Application.make_module
             if os.path.exists(self.filename):
                 os.remove(self.filename)
             os.symlink(self.filename, classPathFile)
@@ -117,7 +117,7 @@ if { ![is-loaded %(name)s/%(version)s] } {
     }
 }
 
-""" % {'name': self.app.name(), 'version': self.app.version()}
+""" % {'name': self.app.name(), 'version': self.app.get_version()}
 
         elif conflict:
             txt += "conflict    %s\n" % self.app.name()

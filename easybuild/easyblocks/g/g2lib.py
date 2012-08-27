@@ -59,7 +59,7 @@ class EB_g2lib(Application):
             targetdir = os.path.join(self.installdir, "lib")
             os.mkdir(targetdir)
             fn = "libg2.a"
-            shutil.copyfile(os.path.join(self.getcfg('startfrom'), fn), os.path.join(targetdir, fn))
+            shutil.copyfile(os.path.join(self.getcfg('start_dir'), fn), os.path.join(targetdir, fn))
         except OSError, err:
             self.log.error("Failed to copy files to install dir: %s" % err)
 

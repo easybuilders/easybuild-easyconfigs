@@ -124,7 +124,7 @@ CONTINUE_WITH_OPTIONAL_ERROR=yes
             self.log.exception("Writing silent cfg % failed" % silent)
 
         # workaround for mktmp: create tmp dir and use it
-        tmpdir = os.path.join(self.getcfg('startfrom'), 'mytmpdir')
+        tmpdir = os.path.join(self.getcfg('start_dir'), 'mytmpdir')
         try:
             os.makedirs(tmpdir)
         except:

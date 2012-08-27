@@ -34,7 +34,7 @@ import shutil
 import sys
 from distutils.version import LooseVersion
 
-import easybuild.tools.toolkit as get_toolkit
+import easybuild.tools.toolkit as toolkit
 from easybuild.framework.application import Application
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.filetools import run_cmd
@@ -139,9 +139,9 @@ class EB_CP2K(Application):
 
         # compiler toolkit specific configuration
         comp_fam = self.get_toolkit().comp_family()
-        if comp_fam == get_toolkit.INTEL:
+        if comp_fam == toolkit.INTEL:
             options = self.configureIntelBased()
-        elif comp_fam == get_toolkit.GCC:
+        elif comp_fam == toolkit.GCC:
             options = self.configureGCCBased()
         else:
             self.log.error("Don't know how to tweak configuration for compiler used.")
@@ -168,7 +168,7 @@ class EB_CP2K(Application):
         options['LIBS'] = "-Wl,--start-group %s -Wl,--end-group" % options['LIBS']
 
         # create arch file using options set
-        archfile = os.path.join(self.getcfg('startfrom'), 'arch',
+        archfile = os.path.join(self.getcfg('start_dir'), 'arch',
                                 '%s.%s' % (self.typearch, self.getcfg('type')))
         try:
             txt = self._generateMakefile(options)
@@ -305,7 +305,7 @@ class EB_CP2K(Application):
                 libinttools_paths = ['libint_tools', 'tools/hfx_tools/libint_tools']
                 libinttools_path = None
                 for path in libinttools_paths:
-                    path = os.path.join(self.getcfg('startfrom'), path)
+                    path = os.path.join(self.getcfg('start_dir'), path)
                     if os.path.isdir(path):
                         libinttools_path = path
                         os.chdir(libinttools_path)
@@ -473,7 +473,7 @@ class EB_CP2K(Application):
         -build_and_install
         """
 
-        makefiles = os.path.join(self.getcfg('startfrom'), 'makefiles')
+        makefiles = os.path.join(self.getcfg('start_dir'), 'makefiles')
         try:
             os.chdir(makefiles)
         except:
@@ -638,7 +638,7 @@ maxtasks=%(maxtasks)s
 
         # copy executables
         targetdir = os.path.join(self.installdir, 'bin')
-        exedir = os.path.join(self.getcfg('startfrom'), 'exe/%s' % self.typearch)
+        exedir = os.path.join(self.getcfg('start_dir'), 'exe/%s' % self.typearch)
         try:
             if not os.path.exists(targetdir):
                 os.makedirs(targetdir)
@@ -650,7 +650,7 @@ maxtasks=%(maxtasks)s
             self.log.error("Copying executables from %s to bin dir %s failed: %s" % (exedir, targetdir, err))
 
         # copy tests
-        srctests = os.path.join(self.getcfg('startfrom'), 'tests')
+        srctests = os.path.join(self.getcfg('start_dir'), 'tests')
         targetdir = os.path.join(self.installdir, 'tests')
         if os.path.exists(targetdir):
             self.log.info("Won't copy tests. Destination directory %s already exists" % targetdir)
