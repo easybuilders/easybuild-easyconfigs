@@ -1,0 +1,95 @@
+diff -ru caphe-1.0.0_ORIG/CMakeLists.txt caphe-1.0.0/CMakeLists.txt
+--- caphe-1.0.0_ORIG/CMakeLists.txt	2011-08-18 17:27:55.000000000 +0200
++++ caphe-1.0.0/CMakeLists.txt	2011-08-30 17:24:11.625956033 +0200
+@@ -93,8 +93,12 @@
+ 	message(FATAL_ERROR "Eigen not enabled. Build will fail!")
+ endif()
+ 
++set(CMAKE_CXX_FLAGS "-fPIC")
++SET (CMAKE_SHARED_LIBRARY_CXX_FLAGS "${CMAKE_SHARED_LIBRARY_CXX_FLAGS} -fPIC")
++
++
+ if(OPTIMIZE_OPTION)
+-	set(CMAKE_CXX_FLAGS "-g -O2 -ffast-math") #-std=gnu++0x -Ofast") #-fPIC: test for wsphotonicsa. REMOVE if it's still here!
++	set(CMAKE_CXX_FLAGS "-g -O2") #-std=gnu++0x -Ofast") #-fPIC: test for wsphotonicsa. REMOVE if it's still here!
+ 
+ 	# Eigen optimizations
+     #-msse2 (or 3 if you have it) brings a lot more benefit (people from Eigen tell me), and -DNDEBUG, (or just -DEIGEN_NO_DEBUG) disables a lot of tests (I suggest only to use that, once you're sure everything works). -msse2 does segfaults on my Virtualbox 32-bit winXP.
+diff -ru caphe-1.0.0_ORIG/contrib/make_klu.sh caphe-1.0.0/contrib/make_klu.sh
+--- caphe-1.0.0_ORIG/contrib/make_klu.sh	2011-08-18 17:24:59.000000000 +0200
++++ caphe-1.0.0/contrib/make_klu.sh	2011-08-30 22:28:25.695956033 +0200
+@@ -17,25 +17,25 @@
+ cd AMD
+ make
+ cd Lib
+-gcc --shared -fPIC -Wl,-soname,libamd.so -o libamd.so *.o
++$CC --shared -fPIC -Wl,-soname,libamd.so -o libamd.so *.o
+ cd ..
+ cd ..
+ cd BTF
+ make
+ cd Lib
+-gcc --shared -fPIC -Wl,-soname,libbtf.so -o libbtf.so *.o
++$CC --shared -fPIC -Wl,-soname,libbtf.so -o libbtf.so *.o
+ cd ..
+ cd ..
+ cd CAMD
+ make
+ cd Lib
+-gcc --shared -fPIC -Wl,-soname,libcamd.so -o libcamd.so *.o
++$CC --shared -fPIC -Wl,-soname,libcamd.so -o libcamd.so *.o
+ cd ..
+ cd ..
+ cd CCOLAMD
+ make
+ cd Lib
+-gcc --shared -fPIC -Wl,-soname,libccolamd.so -o libccolamd.so *.o
++$CC --shared -fPIC -Wl,-soname,libccolamd.so -o libccolamd.so *.o
+ cd ..
+ cd ..
+ cd metis-4.0.3
+@@ -44,24 +44,25 @@
+ cd CHOLMOD
+ make
+ cd Lib
+-gcc --shared -fPIC -Wl,-soname,libcholmod.so -o libcholmod.so *.o
++$CC --shared -fPIC -Wl,-soname,libcholmod.so -o libcholmod.so *.o
+ cd ..
+ cd ..
+ cd COLAMD
+ make
+ cd Lib
+-gcc --shared -fPIC -Wl,-soname,libcolamd.so -o libcolamd.so *.o
++$CC --shared -fPIC -Wl,-soname,libcolamd.so -o libcolamd.so *.o
+ cd ..
+ cd ..
+ cd KLU
+ make
+ cd Lib
+-gcc --shared -fPIC -Wl,-soname,libklu.so -o libklu.so *.o
++$CC --shared -fPIC -Wl,-soname,libklu.so -o libklu.so *.o
+ cd ..
+ cd ..
+ 
+ # Linux:
+-gcc --shared -fPIC -Wl,-soname,liballklu.so -o liballklu.so */Lib/*.o
++echo "$CC --shared -fPIC -Wl,-soname,liballklu.so -o liballklu.so */Lib/*.o -lmkl_em64t"
++$CC --shared -fPIC -Wl,-soname,liballklu.so -o liballklu.so */Lib/*.o -lmkl_em64t
+ 
+ # Windows:
+ #gcc --shared -fPIC -Wl,-soname,liballklu.so -o liballklu.so */Lib/*.o Win_extra/lapack.a Win_extra/blas.a  Win_extra/libgfortran.a Win_extra/rand/drand48.o Win_extra/rand/srand48.o Win_extra/rand/_rand48.o
+diff -ru caphe-1.0.0_ORIG/contrib/metis-4.0.3/Makefile.in caphe-1.0.0/contrib/metis-4.0.3/Makefile.in
+--- caphe-1.0.0_ORIG/contrib/metis-4.0.3/Makefile.in	2011-08-18 17:24:39.000000000 +0200
++++ caphe-1.0.0/contrib/metis-4.0.3/Makefile.in	2011-08-30 17:24:11.625956033 +0200
+@@ -1,9 +1,9 @@
+ 
+ # Which compiler to use
+-CC = cc
++CC = $(CC)
+ 
+ # What optimization level to use
+-OPTFLAGS = -O2 
++OPTFLAGS = $(CFLAGS)
+ 
+ # What options to be used by the compiler
+ COPTIONS = 
