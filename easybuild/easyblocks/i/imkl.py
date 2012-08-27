@@ -186,7 +186,7 @@ class EB_imkl(EB_IntelBase):
                     cmd = "make -f makefile libintel64 %s" % extramakeopts
 
                 # add other make options as well
-                cmd = ' '.join(cmd, makeopts)
+                cmd = ' '.join([cmd, makeopts])
 
                 for opt in ['', '-fPIC']:
                     try:
