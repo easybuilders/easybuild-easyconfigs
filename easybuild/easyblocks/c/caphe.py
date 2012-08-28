@@ -81,6 +81,7 @@ class EB_CAPHE(EB_CMakePythonPackage):
                      }
 
         pythonvars = {
+                      '\s+set\s*\(CMAKE_SHARED_LINKER_FLAGS\s+"\${CMAKE_SHARED_LINKER_FLAGS}\s+':' %s")' % ("-llapack", lapack_libs),
                       '\s+SET\(CMAKE_CXX_FLAGS\s+"\${CMAKE_CXX_FLAGS}\s+-I': '%s")' % numpyincludepath
                       }
 
@@ -100,7 +101,12 @@ class EB_CAPHE(EB_CMakePythonPackage):
             try:
                 for (var, val) in vardict.items():
                     replaced = False
-                    regexp = re.compile("^(%s).*$" % var, re.M)
+
+                    if type(val) == tuple:
+                        regexp = re.compile("^(%s)%s.*$" % (val[0], var), re.M)
+                        val = val[1]
+                    else:
+                        regexp = re.compile("^(%s).*$" % var, re.M)
 
                     for line in fileinput.input(f, inplace=1, backup='.pre.patch.by.easybuild'):
 
@@ -164,7 +170,7 @@ class EB_CAPHE(EB_CMakePythonPackage):
             except OSError, err:
                 self.log.error("Failed to change to distutils: %s" % err)
 
-            cmd = "python setup.py install"
+            cmd = "python setup.py install --prefix=%s" % self.installdir
 
             run_cmd(cmd, log_all=True, simple=True)
 
