@@ -108,10 +108,10 @@ class EB_python_minus_meep(Application):
         # copy contents of site-packages dir
         dest = os.path.join(self.installdir, 'site-packages')
         try:
-            shutil.copytree(src,dest)
-            os.remove(tmpdir)
+            shutil.copytree(src, dest)
+            shutil.rmtree(tmpdir)
         except OSError, err:
-            self.log.exception("Failed to copy directory %s to %s: %err" % (src, dest, err))
+            self.log.exception("Failed to copy directory %s to %s: %s" % (src, dest, err))
 
     def sanitycheck(self):
 
