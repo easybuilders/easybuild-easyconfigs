@@ -159,7 +159,14 @@ class EB_CAPHE(EB_CMakePythonPackage):
 
         if LooseVersion(self.version()) >= LooseVersion("1.4"):
 
-            EB_CMakePythonPackage.make_install(self)
+            try:
+                os.chdir('distutils')
+            except OSError, err:
+                self.log.error("Failed to change to distutils: %s" % err)
+
+            cmd = "python setup.py install"
+
+            run_cmd(cmd, log_all=True, simple=True)
 
         else:
             # old versions do not support the setup.py approach yet
@@ -220,10 +227,16 @@ class EB_CAPHE(EB_CMakePythonPackage):
 
         guesses = EB_CMakePythonPackage.make_module_req_guess(self)
 
-        guesses.update({'LD_LIBRARY_PATH': [self.installdir,
-                                            os.path.join(self.installdir, 'lib')]})
+        guesses.update({
+                        'LD_LIBRARY_PATH': [self.installdir,
+                                            os.path.join(self.installdir, 'lib')]
+                        })
 
         return guesses
+
+    def make_module_extra(self):
+        """Set PYTHONPATH to install dir, ignore what EB_CMakePythonPackage returns."""
+        return "\nprepend-path\tPYTHONPATH\t$root\n"
 
 #    def make_module_extra(self):
 ##        """Also set LD_LIBRARY_PATH."""
