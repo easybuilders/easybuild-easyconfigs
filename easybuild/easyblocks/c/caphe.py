@@ -59,7 +59,11 @@ class EB_CAPHE(EB_CMakePythonPackage):
         blas_libs = "-L%s %s" % (os.getenv('BLAS_LIB_DIR'), os.getenv('LIBBLAS_MT'))
         lapack_libs = "-L%s %s" % (os.getenv('LAPACK_LIB_DIR'), os.getenv('LIBLAPACK_MT'))
 
-        numpyincludepath = os.path.join(self.pylibdir, 'numpy', 'core', 'include')
+        numpyincludepath = os.path.join(depsdict['Python'],
+                                        self.pylibdir % depsdict['Python_version'],
+                                        'numpy',
+                                        'core',
+                                        'include')
 
         # several files need to be patches to correct hardcoded settings
         ufconfigvars = {
@@ -106,7 +110,9 @@ class EB_CAPHE(EB_CMakePythonPackage):
                         # ensure a single match, or else fail
                         if res and len(res.groups()) == 1:
                             m = res.groups()[0]
+                            msg = "Replaced '%s' with" % line
                             line = regexp.sub("%s%s" % (m, val), line)
+                            self.log.debug("%s %s in %s" % (msg, line, f))
                             replaced = True
 
                         sys.stdout.write(line)
@@ -129,8 +135,9 @@ class EB_CAPHE(EB_CMakePythonPackage):
         python_inc = os.path.join(depsdict['Python'], 'include', 'python%s' % pythonver)
         python_lib = os.path.join(depsdict['Python'], 'lib', 'libpython%s.so' % pythonver)
         self.updatecfg('configopts', '-DPYTHON_INCLUDE_DIR=%s -DPYTHON_LIBRARY=%s' % (python_inc, python_lib))
-        if get_software_root('imkl'):
-            self.updatecfg('configopts', '-DINTEL_MKL_ROOT_DIR=%s -DMKL_OPTION=ON' % depsdict['imkl'])
+        imkl = get_software_root('imkl')
+        if imkl:
+            self.updatecfg('configopts', '-DINTEL_MKL_ROOT_DIR=%s -DMKL_OPTION=ON' % get_software_root('imkl'))
 
         EB_CMakePythonPackage.configure(self)
 
