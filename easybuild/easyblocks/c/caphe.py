@@ -95,16 +95,26 @@ class EB_CAPHE(EB_CMakePythonPackage):
         for (f, vardict) in filestopatch.items():
             self.log.debug("Patching file %s: %s" % (f, vardict))
             try:
-                for line in fileinput.input(f, inplace=1, backup='.pre.patch.by.easybuild'):
-                    for (var, val) in vardict.items():
-                        regexp = re.compile("^(%s).*$" % var, re.M)
+                for (var, val) in vardict.items():
+                    replaced = False
+                    regexp = re.compile("^(%s).*$" % var, re.M)
+
+                    for line in fileinput.input(f, inplace=1, backup='.pre.patch.by.easybuild'):
+
                         res = regexp.search(line)
+
                         # ensure a single match, or else fail
                         if res and len(res.groups()) == 1:
                             m = res.groups()[0]
                             line = regexp.sub("%s%s" % (m, val), line)
-                            vardict.pop(var)  # remove if substitution was performed
-                    sys.stdout.write(line)
+                            replaced = True
+
+                        sys.stdout.write(line)
+
+                    # remove if substitution was performed
+                    if replaced:
+                        vardict.pop(var)
+
                 # check if all substitutions were performed
                 if vardict:
                     self.log.error("Substition in %s failed for: %s" % (f, vardict.keys()))
