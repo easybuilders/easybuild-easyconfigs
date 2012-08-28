@@ -358,8 +358,8 @@ class Toolkit:
         self.vars['BLAS_MT_STATIC_LIBS'] = ','.join(["lib%s.a" % x for x in blas_mt_libs])
 
         if not self.vars.has_key('LIBLAPACK') and not self.vars.has_key('LIBLAPACK_MT'):
-            self.vars['LIBLAPACK'] = ' '.join(["lapack", self.vars['LIBBLAS']])
-            self.vars['LIBLAPACK_MT'] = ' '.join(["lapack", self.vars['LIBBLAS_MT']])
+            self.vars['LIBLAPACK'] = ' '.join(["-llapack", self.vars['LIBBLAS']])
+            self.vars['LIBLAPACK_MT'] = ' '.join(["-llapack", self.vars['LIBBLAS_MT']])
         self.vars['LAPACK_LIB_DIR'] = self.vars['BLAS_LIB_DIR']
         self.vars['LAPACK_STATIC_LIBS'] = "liblapack.a," + self.vars['BLAS_STATIC_LIBS']
         self.vars['LAPACK_MT_STATIC_LIBS'] = "liblapack.a," + self.vars['BLAS_MT_STATIC_LIBS']
