@@ -47,12 +47,12 @@ class EB_CAPHE(EB_CMakePythonPackage):
         EB_CMakePythonPackage.__init__(self, *args, **kwargs)
 
         self.pythonver = None
-        self.pylibdir = None
+        self.pythonlibdir = None
 
     def configure(self):
 
         self.pythonver = '.'.join(get_software_version('Python').split('.')[0:2])
-        self.pylibdir = os.path.join("lib", "python%s" % self.pythonver, "site-packages")
+        self.pythonlibdir = os.path.join("lib", "python%s" % self.pythonver, "site-packages")
 
         # make sure that required dependencies are loaded
         deps = ['Boost', 'CMake', 'Python', 'SWIG']
@@ -70,7 +70,7 @@ class EB_CAPHE(EB_CMakePythonPackage):
         lapack_libs = "-L%s %s" % (os.getenv('LAPACK_LIB_DIR'), os.getenv('LIBLAPACK_MT'))
 
         numpyincludepath = os.path.join(depsdict['Python'],
-                                        self.pylibdir,
+                                        self.pythonlibdir,
                                         'numpy',
                                         'core',
                                         'include')
@@ -91,11 +91,11 @@ class EB_CAPHE(EB_CMakePythonPackage):
                      }
 
         pythonvars = {
-                      '\s+set\s*\(CMAKE_SHARED_LINKER_FLAGS\s+"\${CMAKE_SHARED_LINKER_FLAGS}\s+': ("-llapack", '%s")' % lapack_libs),
                       '\s+SET\(CMAKE_CXX_FLAGS\s+"\${CMAKE_CXX_FLAGS}\s+-I': '%s")' % numpyincludepath
                       }
 
         cmakevars = {
+                     '\s+set\s*\(CMAKE_SHARED_LINKER_FLAGS\s+"\${CMAKE_SHARED_LINKER_FLAGS}\s+': ("-llapack", '%s")' % lapack_libs),
                      '\s+SET\(CMAKE_INSTALL_PREFIX\s+': '%s)' % self.installdir
                      }
 
@@ -113,10 +113,12 @@ class EB_CAPHE(EB_CMakePythonPackage):
                     replaced = False
 
                     if type(val) == tuple:
-                        regexp = re.compile("^(%s)%s.*$" % (val[0], var), re.M)
+                        regexp = re.compile("^(%s)%s.*$" % (var, val[0]), re.M)
                         val = val[1]
                     else:
                         regexp = re.compile("^(%s).*$" % var, re.M)
+
+                    self.log.debug("regexp pattern to use in %s: %s" % (f, regexp.pattern))
 
                     for line in fileinput.input(f, inplace=1, backup='.pre.patch.by.easybuild'):
 
@@ -138,7 +140,7 @@ class EB_CAPHE(EB_CMakePythonPackage):
 
                 # check if all substitutions were performed
                 if vardict:
-                    self.log.error("Substition in %s failed for: %s" % (f, vardict.keys()))
+                    self.log.error("Substition in %s failed for: %s" % (f, vardict))
 
             except IOError, err:
                 self.log.error("Problem occured when trying to configure options for %s: %s" % (f, err))
@@ -214,11 +216,11 @@ class EB_CAPHE(EB_CMakePythonPackage):
             if LooseVersion(self.version()) >= LooseVersion("1.4"):
 
                 self.setcfg('sanityCheckPaths', {
-                                                 'files': [os.path.join(self.pylibdir, "lib%s.so" % x)
+                                                 'files': [os.path.join(self.pythonlibdir, "lib%s.so" % x)
                                                            for x in ["allklu", "caphebase",
                                                                      "capheextensions", "testsuite"]
                                                            ],
-                                                 'dirs':[os.path.join(self.pylibdir, x)
+                                                 'dirs':[os.path.join(self.pythonlibdir, x)
                                                          for x in ["caphe", "caphetools"]]
                                                  })
 
