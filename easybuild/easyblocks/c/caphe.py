@@ -218,7 +218,7 @@ class EB_CAPHE(EB_CMakePythonPackage):
                 self.setcfg('sanityCheckPaths', {
                                                  'files': [os.path.join(self.pythonlibdir, "lib%s.so" % x)
                                                            for x in ["allklu", "caphebase",
-                                                                     "capheextensions", "testsuite"]
+                                                                     "capheextensions", "testsuitelib"]
                                                            ],
                                                  'dirs':[os.path.join(self.pythonlibdir, x)
                                                          for x in ["caphe", "caphetools"]]
