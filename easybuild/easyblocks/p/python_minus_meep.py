@@ -35,7 +35,7 @@ from easybuild.tools.filetools import run_cmd, unpack
 from easybuild.tools.modules import get_software_root, get_software_version
 
 
-class EB_python_dash_meep(Application):
+class EB_python_minus_meep(Application):
 
     def __init__(self, *args, **kwargs):
         """Initialize custom variables."""
