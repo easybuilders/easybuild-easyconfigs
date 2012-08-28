@@ -29,10 +29,11 @@ import fileinput
 import os
 import shutil
 import re
+import sys
 from distutils.version import LooseVersion
 
 from easybuild.easyblocks.cmakepythonpackage import EB_CMakePythonPackage
-from easybuild.tools.filetools import run_cmd
+from easybuild.tools.filetools import mkdir, run_cmd
 from easybuild.tools.modules import get_software_root, get_software_version
 
 
@@ -44,7 +45,7 @@ class EB_CAPHE(EB_CMakePythonPackage):
     def configure(self):
 
         # make sure that required dependencies are loaded
-        deps = ['Boost', 'CMake', 'imkl', 'Python', 'SWIG']
+        deps = ['Boost', 'CMake', 'Python', 'SWIG']
         depsdict = {}
         for dep in deps:
             deproot = get_software_root(dep)
@@ -55,8 +56,8 @@ class EB_CAPHE(EB_CMakePythonPackage):
                 depsdict.update({"%s_version" % dep: get_software_version(dep)})
 
         # adjust config files where needed
-        blas_libs = os.getenv('LIBBLAS_MT')
-        lapack_libs = os.getenv('LIBLAPACK_MT')
+        blas_libs = "-L%s %s" % (os.getenv('BLAS_LIB_DIR'), os.getenv('LIBBLAS_MT'))
+        lapack_libs = "-L%s %s" % (os.getenv('LAPACK_LIB_DIR'), os.getenv('LIBLAPACK_MT'))
 
         numpyincludepath = os.path.join(self.pylibdir, 'numpy', 'core', 'include')
 
@@ -76,7 +77,7 @@ class EB_CAPHE(EB_CMakePythonPackage):
                      }
 
         pythonvars = {
-                      '\s+SET\(CMAKE_CXX_FLAGS "\${CMAKE_CXX_FLAGS} -I': '%s")' % numpyincludepath
+                      '\s+SET\(CMAKE_CXX_FLAGS\s+"\${CMAKE_CXX_FLAGS}\s+-I': '%s")' % numpyincludepath
                       }
 
         cmakevars = {
@@ -102,26 +103,24 @@ class EB_CAPHE(EB_CMakePythonPackage):
                         if res and len(res.groups()) == 1:
                             m = res.groups()[0]
                             line = regexp.sub("%s%s" % (m, val), line)
-                        else:
-                            self.log.debug("search: %s" % res)
-                            if res:
-                                self.log.debug("groups: %s" % str(res))
-                            self.log.error("Substition for (%s,%s) in %s failed: no or too many matches for '%s'" % (var,
-                                                                                                                     val,
-                                                                                                                     f,
-                                                                                                                     regexp.pattern))
+                            vardict.pop(var)  # remove if substitution was performed
+                    sys.stdout.write(line)
+                # check if all substitutions were performed
+                if vardict:
+                    self.log.error("Substition in %s failed for: %s" % (f, vardict.keys()))
 
             except IOError, err:
                 self.log.error("Problem occured when trying to configure options for %s: %s" % (f, err))
 
         # update CMake configure options
         self.updatecfg('configopts', '-DBOOST_INCLUDE_DIR=%s' % os.path.join(depsdict['Boost'], 'include'))
-        self.updatecfg('configopts', '-DINTEL_MKL_ROOT_DIR=%s -DMKL_OPTION=ON' % depsdict['imkl'])
         self.updatecfg('configopts', '-DSWIG_DIR=%s' % depsdict['SWIG'])
         pythonver = '.'.join(depsdict['Python_version'].split('.')[0:2])
         python_inc = os.path.join(depsdict['Python'], 'include', 'python%s' % pythonver)
         python_lib = os.path.join(depsdict['Python'], 'lib', 'libpython%s.so' % pythonver)
         self.updatecfg('configopts', '-DPYTHON_INCLUDE_DIR=%s -DPYTHON_LIBRARY=%s' % (python_inc, python_lib))
+        if get_software_root('imkl'):
+            self.updatecfg('configopts', '-DINTEL_MKL_ROOT_DIR=%s -DMKL_OPTION=ON' % depsdict['imkl'])
 
         EB_CMakePythonPackage.configure(self)
 
@@ -152,7 +151,7 @@ class EB_CAPHE(EB_CMakePythonPackage):
             caphedir = "%s-%s" % (self.name().lower(), self.version())
 
             pylibinstalldir = os.path.join(self.installdir, self.pylibdir)
-            os.mkdir(pylibinstalldir)
+            mkdir(pylibinstalldir, parents=True)
 
             for f in [os.path.join("python", "_caphe.so"),
                       os.path.join("python", "caphe.py"),
