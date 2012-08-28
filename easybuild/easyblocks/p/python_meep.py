@@ -61,8 +61,9 @@ class EB_python_minus_meep(Application):
         """Build python-meep using available scripts."""
 
         # determine make script arguments
-        meepinc = os.path.join(get_software_version('Meep'), 'include')
-        meeplib = os.path.join(get_software_version('Meep'), 'lib')
+        meep = get_software_root('Meep')
+        meepinc = os.path.join(meep, 'include')
+        meeplib = os.path.join(meep, 'lib')
         numpyinc = os.path.join(get_software_root('Python'), self.pylibdir, 'numpy', 'core', 'include')
 
         # determine suffix for make script
