@@ -102,7 +102,7 @@ class EB_python_minus_meep(Application):
         src = srcdir
         while len(os.listdir(src)) == 1:
             src = os.path.join(src, os.listdir(src)[0])
-        if not os.path.basename(src) == 'site-pacakges':
+        if not os.path.basename(src).endswith(os.path.sep+'site-packages'):
             self.log.error("Expected to find a site-packages path, but found something else: %s" % src)
 
         # copy contents of site-packages dir
