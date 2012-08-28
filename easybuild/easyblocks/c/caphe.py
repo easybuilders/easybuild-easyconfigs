@@ -33,7 +33,7 @@ import sys
 from distutils.version import LooseVersion
 
 from easybuild.easyblocks.cmakepythonpackage import EB_CMakePythonPackage
-from easybuild.tools.filetools import mkdir, run_cmd
+from easybuild.tools.filetools import run_cmd
 from easybuild.tools.modules import get_software_root, get_software_version
 
 
@@ -85,7 +85,6 @@ class EB_CAPHE(EB_CMakePythonPackage):
                       }
 
         cmakevars = {
-                     '\s+set\s*\(CMAKE_SHARED_LINKER_FLAGS\s+"\${CMAKE_SHARED_LINKER_FLAGS}\s+':' %s")' % lapack_libs,
                      '\s+SET\(CMAKE_INSTALL_PREFIX\s+': '%s)' % self.installdir
                      }
 
@@ -167,9 +166,6 @@ class EB_CAPHE(EB_CMakePythonPackage):
 
             caphedir = "%s-%s" % (self.name().lower(), self.version())
 
-            pylibinstalldir = os.path.join(self.installdir, self.pylibdir)
-            mkdir(pylibinstalldir, parents=True)
-
             for f in [os.path.join("python", "_caphe.so"),
                       os.path.join("python", "caphe.py"),
                       os.path.join("src", "libodeproblemnetwork.so"),
@@ -177,7 +173,7 @@ class EB_CAPHE(EB_CMakePythonPackage):
 
                 try:
                     shutil.copy2(os.path.join(self.builddir, caphedir, f),
-                                 pylibinstalldir)
+                                 self.installdir)
                 except OSError, err:
                     self.log.error("Failed to copy file %s to install directory: %s" % (f, err))
 
@@ -187,6 +183,47 @@ class EB_CAPHE(EB_CMakePythonPackage):
                                 os.path.join(self.installdir, ctdir))
             except OSError, err:
                 self.log.error("Failed to copy caphetools dir to install directory: %s" % err)
+
+    def sanitycheck(self):
+        """Custom sanity check for CAPHE."""
+
+        if not self.getcfg('sanityCheckPaths'):
+
+            if LooseVersion(self.version()) >= LooseVersion("1.4"):
+
+                self.setcfg('sanityCheckPaths', {
+                                                 'files': ["lib/lib%s.so" % x for x in ["allklu",
+                                                                                        "caphebase",
+                                                                                        "capheextensions"]
+                                                           ],
+                                                 'dirs':[]
+                                                 })
+
+            else:
+                # sanity check for old versions (based on v1.0.0)
+                self.setcfg('sanityCheckPaths', {
+                                                 'files': ['caphe.py',
+                                                           '_caphe.so',
+                                                           'liballklu.so',
+                                                           'libodeproblemnetwork.so',
+                                                           'caphetools/nwtools.py'],
+                                                 'dirs':[]
+                                                 })
+
+
+            self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
+
+        EB_CMakePythonPackage.sanitycheck(self)
+
+    def make_module_req_guess(self):
+        """Set correct LD_LIBRARY_PATH."""
+
+        guesses = EB_CMakePythonPackage.make_module_req_guess(self)
+
+        guesses.update({'LD_LIBRARY_PATH': [self.installdir,
+                                            os.path.join(self.installdir, 'lib')]})
+
+        return guesses
 
 #    def make_module_extra(self):
 ##        """Also set LD_LIBRARY_PATH."""
