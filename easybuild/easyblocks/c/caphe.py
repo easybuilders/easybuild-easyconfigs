@@ -42,7 +42,17 @@ class EB_CAPHE(EB_CMakePythonPackage):
     Support for building CAPHE
     """
 
+    def __init__(self, *args, **kwargs):
+        """Initialize CAPHE-specific variables."""
+        EB_CMakePythonPackage.__init__(self, *args, **kwargs)
+
+        self.pythonver = None
+        self.pylibdir = None
+
     def configure(self):
+
+        self.pythonver = '.'.join(get_software_version('Python').split('.')[0:2])
+        self.pylibdir = os.path.join("lib", "python%s" % self.pythonver, "site-packages")
 
         # make sure that required dependencies are loaded
         deps = ['Boost', 'CMake', 'Python', 'SWIG']
@@ -60,7 +70,7 @@ class EB_CAPHE(EB_CMakePythonPackage):
         lapack_libs = "-L%s %s" % (os.getenv('LAPACK_LIB_DIR'), os.getenv('LIBLAPACK_MT'))
 
         numpyincludepath = os.path.join(depsdict['Python'],
-                                        self.pylibdir % depsdict['Python_version'],
+                                        self.pylibdir,
                                         'numpy',
                                         'core',
                                         'include')
@@ -81,7 +91,7 @@ class EB_CAPHE(EB_CMakePythonPackage):
                      }
 
         pythonvars = {
-                      '\s+set\s*\(CMAKE_SHARED_LINKER_FLAGS\s+"\${CMAKE_SHARED_LINKER_FLAGS}\s+':' %s")' % ("-llapack", lapack_libs),
+                      '\s+set\s*\(CMAKE_SHARED_LINKER_FLAGS\s+"\${CMAKE_SHARED_LINKER_FLAGS}\s+': ("-llapack", '%s")' % lapack_libs),
                       '\s+SET\(CMAKE_CXX_FLAGS\s+"\${CMAKE_CXX_FLAGS}\s+-I': '%s")' % numpyincludepath
                       }
 
@@ -136,9 +146,8 @@ class EB_CAPHE(EB_CMakePythonPackage):
         # update CMake configure options
         self.updatecfg('configopts', '-DBOOST_INCLUDE_DIR=%s' % os.path.join(depsdict['Boost'], 'include'))
         self.updatecfg('configopts', '-DSWIG_DIR=%s' % depsdict['SWIG'])
-        pythonver = '.'.join(depsdict['Python_version'].split('.')[0:2])
-        python_inc = os.path.join(depsdict['Python'], 'include', 'python%s' % pythonver)
-        python_lib = os.path.join(depsdict['Python'], 'lib', 'libpython%s.so' % pythonver)
+        python_inc = os.path.join(depsdict['Python'], 'include', 'python%s' % self.pythonver)
+        python_lib = os.path.join(depsdict['Python'], 'lib', 'libpython%s.so' % self.pythonver)
         self.updatecfg('configopts', '-DPYTHON_INCLUDE_DIR=%s -DPYTHON_LIBRARY=%s' % (python_inc, python_lib))
         imkl = get_software_root('imkl')
         if imkl:
@@ -205,11 +214,12 @@ class EB_CAPHE(EB_CMakePythonPackage):
             if LooseVersion(self.version()) >= LooseVersion("1.4"):
 
                 self.setcfg('sanityCheckPaths', {
-                                                 'files': ["lib/lib%s.so" % x for x in ["allklu",
-                                                                                        "caphebase",
-                                                                                        "capheextensions"]
+                                                 'files': [os.path.join(self.pylibdir, "lib%s.so" % x)
+                                                           for x in ["allklu", "caphebase",
+                                                                     "capheextensions", "testsuite"]
                                                            ],
-                                                 'dirs':[]
+                                                 'dirs':[os.path.join(self.pylibdir, x)
+                                                         for x in ["caphe", "caphetools"]]
                                                  })
 
             else:
