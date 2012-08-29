@@ -158,6 +158,7 @@ class EB_CAPHE(EB_CMakePythonPackage):
         EB_CMakePythonPackage.configure(self)
 
     def make(self):
+        """Build CAPHE using make_klu.sh script and Makefile."""
 
         cwd = os.getcwd()
         os.chdir('contrib')
@@ -173,6 +174,7 @@ class EB_CAPHE(EB_CMakePythonPackage):
         run_cmd(cmd, log_all=True, simple=True)
 
     def make_install(self):
+        """Install CAPHE using setup.py script, or copying files for old version (< 1.4)."""
 
         if LooseVersion(self.version()) >= LooseVersion("1.4"):
 
@@ -255,12 +257,3 @@ class EB_CAPHE(EB_CMakePythonPackage):
     def make_module_extra(self):
         """Set PYTHONPATH to install dir, ignore what EB_CMakePythonPackage returns."""
         return "\nprepend-path\tPYTHONPATH\t$root\n"
-
-#    def make_module_extra(self):
-##        """Also set LD_LIBRARY_PATH."""
-#
-#        txt = EB_CMakePythonPackage.make_module_extra(self)
-
-#        txt += """prepend-path\tLD_LIBRARY_PATH\t\t$root\n"""
-#
-#return txt
