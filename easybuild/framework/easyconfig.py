@@ -633,7 +633,8 @@ def select_or_generate_ec(fp, paths, specs, log):
     if len(ec_files) == 0:
         log.error("No easyconfig files found for software %s, I'm all out of ideas." % name)
 
-    def unique(l):  # FIXME: no such function available in Python?!? ==> use set for this!!!
+    # we can't rely on set, because we also need to be able to obtain a list of unique lists
+    def unique(l):
         """Retain unique elements in a sorted list."""
         l = sorted(l)
         if len(l) > 1:
@@ -736,7 +737,10 @@ def select_or_generate_ec(fp, paths, specs, log):
     log.debug("Filtering based on other parameters (specified via --amend): %s" % other_params)
     for (param, val) in other_params.items():
 
-        vals = unique([x[0][param] for x in ecs_and_files])
+        if param in ecs_and_files[0][0].config:
+            vals = unique([x[0][param] for x in ecs_and_files])
+        else:
+            vals = []
 
         filter_ecs = False
         # try and select a value from the available ones, or fail if we can't
@@ -783,8 +787,8 @@ def select_or_generate_ec(fp, paths, specs, log):
         # check whether selected easyconfig matches requirements
         match = True
         for (key, val) in specs.items():
-            if selected_ec[key] and not selected_ec[key] == val:
-                match= False
+            if key in selected_ec.config and selected_ec[key] and not selected_ec[key] == val:
+                match = False
 
         # if it matches, no need to tweak
         if match:
@@ -796,7 +800,7 @@ def select_or_generate_ec(fp, paths, specs, log):
         # if no file path was specified, generate a file name
         if not fp:
             installver = det_installversion(ver, tkname, tkver, verpref, versuff)
-            fp= "%s%s.eb" % (name, installver)
+            fp= "%s-%s.eb" % (name, installver)
 
         # generate tweaked easyconfig file
         tweak(selected_ec_file, fp, specs, log)
