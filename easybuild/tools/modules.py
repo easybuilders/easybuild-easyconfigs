@@ -202,7 +202,7 @@ class Modules:
 
             # Process stderr
             result = []
-            for line in stderr.split('\n'): #IGNORE:E1103
+            for line in stderr.split('\n'):  #IGNORE:E1103
                 if outputMatchers['whitespace'].search(line):
                     continue
 
@@ -211,9 +211,9 @@ class Modules:
                     log.error(line)
                     raise EasyBuildError(line)
 
-                packages = outputMatchers['available'].finditer(line)
-                for package in packages:
-                    result.append(package.groupdict())
+                modules = outputMatchers['available'].finditer(line)
+                for module in modules:
+                    result.append(module.groupdict())
             return result
 
     def loaded_modules(self):
@@ -305,7 +305,7 @@ def searchModule(path, query):
 
 def get_software_root(name, with_env_var=False):
     """
-    Return the software root set for a particular package.
+    Return the software root set for a particular software name.
     """
     name = convertName(name, upper=True)
     environment_key = "EBROOT%s" % name
@@ -326,7 +326,7 @@ def get_software_root(name, with_env_var=False):
 
 def get_software_version(name):
     """
-    Return the software version set for a particular package.
+    Return the software version set for a particular software name.
     """
     name = convertName(name, upper=True)
     environment_key = "EBVERSION%s" % name

@@ -71,19 +71,19 @@ class Application:
         self.builddir = None
         self.installdir = None
 
-        self.pkgs = None
+        self.exts = None
         # keep the objects inside an array as well
-        self.instance_pkgs = []
+        self.instance_exts = []
         self.skip = None
 
-        # Easyblock for this Application
+        # easyconfig for this Application
         self.cfg = EasyConfig(path, self.extra_options())
 
         # module generator
         self.moduleGenerator = None
 
         # extra stuff for module file required by extentions
-        self.moduleExtraPackages = ''
+        self.module_extra_extensions = ''
 
         self.sanityCheckOK = False
 
@@ -98,13 +98,12 @@ class Application:
         self.orig_environ = {}
         self.loaded_modules = []
 
-    def run_all_steps(self, ebfile, run_test_cases, regtest_online):
+    def run_all_steps(self, run_test_cases, regtest_online):
         """
-        Build the software package described by cfg.
+        Build and install this software.
         """
         if self.getcfg('stop') and self.getcfg('stop') == 'cfg':
             return True
-        self.log.info('Read easyconfig %s' % ebfile)
 
         self.fetch_step()
 
@@ -338,7 +337,7 @@ class Application:
                 self.log.info("No current version (name: %s, version: %s) found. Not skipping anything." % (self.get_name(),
                     self.get_installversion()))
 
-    def obtain_file(self, filename, pkg=False):
+    def obtain_file(self, filename, ext=False):
         """
         Locate the file with the given name
         - searches in different subdirectories of source path
@@ -400,8 +399,8 @@ class Application:
             # figure out where to download the file to
             for srcpath in srcpaths:
                 filepath = os.path.join(srcpath, self.name()[0].lower(), self.get_name())
-                if pkg:
-                    filepath = os.path.join(filepath, "packages")
+                if ext:
+                    filepath = os.path.join(filepath, "extensions")
                 if os.path.isdir(filepath):
                     self.log.info("Going to try and download file to %s" % filepath)
                     break
@@ -440,7 +439,7 @@ class Application:
 
                 # most likely paths
                 candidate_filepaths = [os.path.join(fst_letter_path_low, self.get_name()), # easyblocks-style subdir
-                                       namepath, # subdir with software package name
+                                       namepath, # subdir with software name
                                        srcpath, # directly in sources directory
                                        ]
 
@@ -460,9 +459,13 @@ class Application:
 
                     fullpath = os.path.join(cfp, filename)
 
-                    # also check in packages subdir for extensions
-                    if pkg:
-                        fullpaths = [os.path.join(cfp, "packages", filename), fullpath]
+                    # also check in 'extensions' subdir for extensions
+                    if ext:
+                        fullpaths = [
+                                     os.path.join(cfp, "extensions", filename),
+                                     os.path.join(cfp, "packages", filename),  # legacy
+                                     fullpath 
+                                    ]
                     else:
                         fullpaths = [fullpath]
 
@@ -491,8 +494,8 @@ class Application:
 
                 for url in sourceURLs:
 
-                    if pkg:
-                        targetpath = os.path.join(targetdir, "packages", filename)
+                    if ext:
+                        targetpath = os.path.join(targetdir, "extensions", filename)
                     else:
                         targetpath = os.path.join(targetdir, filename)
 
@@ -647,8 +650,8 @@ class Application:
             print_msg("installing...", self.log)
             self.run_step('install', [self.make_installdir, self.install_step], skippable=True)
 
-            ## Packages
-            self.run_step('packages', [self.extensions_step])
+            ## EXTENSIONS
+            self.run_step('extensions', [self.extensions_step])
 
             print_msg("finishing up...", self.log)
 
@@ -855,10 +858,10 @@ class Application:
             else:
                 self.log.info("sanityCheckCommand %s ran successfully! (output: %s)" % (cmd, out))
 
-        failed_pkgs = [pkg.name for pkg in self.instance_pkgs if not pkg.sanity_check()]
+        failed_exts = [ext.name for ext in self.instance_exts if not ext.sanity_check()]
 
-        if failed_pkgs:
-            self.log.info("Sanity check for packages %s failed!" % failed_pkgs)
+        if failed_exts:
+            self.log.info("Sanity check for extensions %s failed!" % failed_exts)
             self.sanityCheckOK = False
 
         # pass or fail
@@ -1079,8 +1082,8 @@ class Application:
         txt += self.make_module_dep()
         txt += self.make_module_req()
         txt += self.make_module_extra()
-        if self.getcfg('pkglist'):
-            txt += self.make_module_extra_packages()
+        if self.getcfg('exts_list'):
+            txt += self.make_module_extra_extensions()
         txt += '\n# built with EasyBuild version %s\n' % easybuild.VERBOSE_VERSION
 
         try:
@@ -1238,11 +1241,11 @@ class Application:
 
         return txt
 
-    def make_module_extra_packages(self):
+    def make_module_extra_extensions(self):
         """
         Sets optional variables for extensions.
         """
-        return self.moduleExtraPackages
+        return self.module_extra_extensions
 
     def get_installversion(self):
         return self.cfg.get_installversion()
@@ -1267,20 +1270,20 @@ class Application:
     def extensions_step(self):
         """
         After make install, run this.
-        - only if variable len(pkglist) > 0
+        - only if variable len(exts_list) > 0
         - optionally: load module that was just created using temp module file
-        - find source for extensions, in pkgs
+        - find source for extensions, in 'extensions' (and 'packages' for legacy reasons)
         - run extra_extensions
         """
 
-        if len(self.getcfg('pkglist')) == 0:
-            self.log.debug("No packages in pkglist")
+        if len(self.getcfg('exts_list')) == 0:
+            self.log.debug("No extensions in exts_list")
             return
 
         if not self.skip:
             modpath = self.make_module(fake=True)
-        # adjust MODULEPATH tand load module
-        if self.getcfg('pkgloadmodule'):
+        # adjust MODULEPATH and load module
+        if self.getcfg('exts_loadmodule'):
             if self.skip:
                 m = Modules()
             else:
@@ -1295,79 +1298,83 @@ class Application:
 
         self.prepare_for_extensions()
 
-        self.pkgs = self.fetch_extension_sources()
+        self.exts = self.fetch_extension_sources()
 
         if self.skip:
             self.skip_extensions()
 
         self.extra_extensions()
 
-    def fetch_extension_patches(self, pkgName):
+    def fetch_extension_patches(self, ext_name):
         """
         Find patches for extensions.
         """
-        for (name, patches) in self.getcfg('pkgpatches'):
-            if name == pkgName:
-                pkgpatches = []
+        for (name, patches) in self.getcfg('exts_patches'):
+            if name == ext_name:
+                exts_patches = []
                 for p in patches:
-                    pf = self.obtain_file(p, pkg=True)
+                    pf = self.obtain_file(p, ext=True)
                     if pf:
-                        pkgpatches.append(pf)
+                        exts_patches.append(pf)
                     else:
                         self.log.error("Unable to locate file for patch %s." % p)
-                return pkgpatches
+                return exts_patches
         return []
 
     def fetch_extension_sources(self):
         """
         Find source file for extensions.
         """
-        pkgSources = []
-        for pkg in self.getcfg('pkglist'):
-            if type(pkg) in [list, tuple] and pkg:
-                pkgName = pkg[0]
+        exts_sources = []
+        for ext in self.getcfg('exts_list'):
+            if type(ext) in [list, tuple] and ext:
+                ext_name = ext[0]
                 forceunknownsource = False
-                if len(pkg) == 1:
-                    pkgSources.append({'name':pkgName})
+                if len(ext) == 1:
+                    exts_sources.append({'name':ext_name})
                 else:
-                    if len(pkg) == 2:
-                        fn = self.getcfg('pkgtemplate') % (pkgName, pkg[1])
-                    elif len(pkg) == 3:
-                        if type(pkg[2]) == bool:
-                            forceunknownsource = pkg[2]
+                    if len(ext) == 2:
+                        fn = self.getcfg('exts_template') % (ext_name, ext[1])
+                    elif len(ext) == 3:
+                        if type(ext[2]) == bool:
+                            forceunknownsource = ext[2]
                         else:
-                            fn = pkg[2]
+                            fn = ext[2]
                     else:
-                        self.log.error('Package specified in unknown format (list/tuple too long)')
+                        self.log.error('Extension specified in unknown format (list/tuple too long)')
 
                     if forceunknownsource:
-                        pkgSources.append({'name':pkgName,
-                                           'version':pkg[1]})
+                        exts_sources.append({
+                                             'name':ext_name,
+                                             'version':ext[1]
+                                            })
                     else:
                         filename = self.obtain_file(fn, True)
                         if filename:
-                            pkgSrc = {'name':pkgName,
-                                    'version':pkg[1],
-                                    'src':filename}
+                            ext_src = {
+                                       'name': ext_name,
+                                       'version': ext[1],
+                                       'src': filename
+                                      }
 
-                            pkgPatches = self.fetch_extension_patches(pkgName)
-                            if pkgPatches:
-                                self.log.debug('Found patches for package %s: %s' % (pkgName, pkgPatches))
-                                pkgSrc.update({'patches':pkgPatches})
+                            ext_patches = self.fetch_extension_patches(ext_name)
+                            if ext_patches:
+                                self.log.debug('Found patches for extension %s: %s' % (ext_name, ext_patches))
+                                ext_src.update({'patches':ext_patches})
                             else:
-                                self.log.debug('No patches found for package %s.' % pkgName)
+                                self.log.debug('No patches found for extension %s.' % ext_name)
 
-                            pkgSources.append(pkgSrc)
+                            exts_sources.append(ext_src)
 
                         else:
-                            self.log.warning("Source for package %s not found.")
+                            self.log.warning("Source for extension %s not found.")
 
-            elif type(pkg) == str:
-                pkgSources.append({'name':pkg})
+            elif type(ext) == str:
+                exts_sources.append({'name':ext})
             else:
-                self.log.error("Package specified in unknown format (not a string/list/tuple)")
+                self.log.error("Extension specified in unknown format (not a string/list/tuple)")
 
-        return pkgSources
+        return exts_sources
 
     def prepare_for_extensions(self):
         """
@@ -1383,63 +1390,63 @@ class Application:
         -- the class is instantiated and the at the end <instance>.run() is called
         -- has defaultclass
         """
-        pkginstalldeps = self.getcfg('pkginstalldeps')
-        self.log.debug("Installing packages")
-        pkgdefaultclass = self.getcfg('pkgdefaultclass')
-        if not pkgdefaultclass:
-            self.log.error("ERROR: No default package class set for %s" % self.get_name())
+        exts_installdeps = self.getcfg('exts_installdeps')
+        self.log.debug("Installing extensions")
+        exts_defaultclass = self.getcfg('exts_defaultclass')
+        if not exts_defaultclass:
+            self.log.error("ERROR: No default extension class set for %s" % self.get_name())
 
-        allclassmodule = pkgdefaultclass[0]
-        defaultClass = pkgdefaultclass[1]
-        for pkg in self.pkgs:
-            name = encode_class_name(pkg['name']) # Use the same encoding as get_class
-            self.log.debug("Starting package %s" % name)
+        allclassmodule = exts_defaultclass[0]
+        defaultClass = exts_defaultclass[1]
+        for ext in self.exts:
+            name = encode_class_name(ext['name']) # Use the same encoding as get_class
+            self.log.debug("Starting extension %s" % name)
 
             try:
                 exec("from %s import %s" % (allclassmodule, name))
-                p = eval("%s(self,pkg,pkginstalldeps)" % name)
-                self.log.debug("Installing package %s through class %s" % (name, pkg['name']))
+                p = eval("%s(self,ext,exts_installdeps)" % name)
+                self.log.debug("Installing extension %s through class %s" % (name, ext['name']))
             except (ImportError, NameError), err:
-                self.log.debug("Couldn't load class %s for package %s with package deps %s:\n%s" % (name, pkg['name'], pkginstalldeps, err))
+                self.log.debug("Couldn't load class %s for extension %s with extension deps %s:\n%s" % (name, ext['name'], exts_installdeps, err))
                 if defaultClass:
-                    self.log.info("No class found for %s, using default %s instead." % (pkg['name'], defaultClass))
+                    self.log.info("No class found for %s, using default %s instead." % (ext['name'], defaultClass))
                     try:
                         exec("from %s import %s" % (allclassmodule, defaultClass))
-                        exec("p=%s(self,pkg,pkginstalldeps)" % defaultClass)
-                        self.log.debug("Installing package %s through default class %s" % (pkg['name'], defaultClass))
+                        exec("p=%s(self,ext,exts_installdeps)" % defaultClass)
+                        self.log.debug("Installing extension %s through default class %s" % (ext['name'], defaultClass))
                     except (ImportError, NameError), errbis:
-                        self.log.error("Failed to use both class %s and default %s for package %s, giving up:\n%s\n%s" % (name, defaultClass, pkg['name'], err, errbis))
+                        self.log.error("Failed to use both class %s and default %s for extension %s, giving up:\n%s\n%s" % (name, defaultClass, ext['name'], err, errbis))
                 else:
-                    self.log.error("Failed to use both class %s and no default class for package %s, giving up:\n%s" % (name, pkg['name'], err))
+                    self.log.error("Failed to use both class %s and no default class for extension %s, giving up:\n%s" % (name, ext['name'], err))
 
             ## real work
             p.prerun()
             txt = p.run()
             if txt:
-                self.moduleExtraPackages += txt
+                self.module_extra_extensions += txt
             p.postrun()
             # Append so we can make us of it later (in sanity_check)
-            self.instance_pkgs.append(p)
+            self.instance_exts.append(p)
 
     def skip_extensions(self):
         """
         Called when self.skip is True
-        - use this to detect existing packages and to remove them from self.pkgs
+        - use this to detect existing extensions and to remove them from self.exts
         - based on initial R version
         """
-        cmdtmpl = self.getcfg('pkgfilter')[0]
-        cmdinputtmpl = self.getcfg('pkgfilter')[1]
+        cmdtmpl = self.getcfg('exts_filter')[0]
+        cmdinputtmpl = self.getcfg('exts_filter')[1]
 
         res = []
-        for pkg in self.pkgs:
-            name = pkg['name']
-            if name in self.getcfg('pkgmodulenames'):
-                modname = self.getcfg('pkgmodulenames')[name]
+        for ext in self.exts:
+            name = ext['name']
+            if name in self.getcfg('exts_modulenames'):
+                modname = self.getcfg('exts_modulenames')[name]
             else:
                 modname = name
             tmpldict = {'name':modname,
-                       'version':pkg.get('version'),
-                       'src':pkg.get('source')
+                       'version':ext.get('version'),
+                       'src':ext.get('source')
                        }
             cmd = cmdtmpl % tmpldict
             if cmdinputtmpl:
@@ -1450,10 +1457,10 @@ class Application:
             if ec:
                 self.log.info("Not skipping %s" % name)
                 self.log.debug("exit code: %s, stdout/err: %s" % (ec, cmdStdouterr))
-                res.append(pkg)
+                res.append(ext)
             else:
                 self.log.info("Skipping %s" % name)
-        self.pkgs = res
+        self.exts = res
 
     def run_test_cases(self):
         """
@@ -1556,7 +1563,7 @@ def get_class(easyblock, log, name=None):
                 name = "UNKNOWN"
             # modulepath will be the namespace + encoded modulename (from the classname)
             modulepath = get_module_path(name)
-            # The following is a generic way to calculate unique class names for any funny package title
+            # The following is a generic way to calculate unique class names for any funny software title
             class_name = encode_class_name(name)
 
             # try and find easyblock
@@ -1596,61 +1603,61 @@ def get_class(easyblock, log, name=None):
         raise EasyBuildError(str(err))
 
 
-class ApplicationPackage:
+class Extension:
     """
     Support for installing extensions.
     """
-    def __init__(self, mself, pkg, pkginstalldeps):
+    def __init__(self, mself, ext, exts_installdeps):
         """
         mself has the logger
         """
         self.master = mself
         self.log = self.master.log
         self.cfg = self.master.cfg
-        self.pkg = pkg
-        self.pkginstalldeps = pkginstalldeps
+        self.ext = ext
+        self.exts_installdeps = exts_installdeps
 
-        if not 'name' in self.pkg:
+        if not 'name' in self.ext:
             self.log.error("")
 
-        self.name = self.pkg.get('name', None)
-        self.version = self.pkg.get('version', None)
-        self.src = self.pkg.get('src', None)
-        self.patches = self.pkg.get('patches', None)
+        self.name = self.ext.get('name', None)
+        self.version = self.ext.get('version', None)
+        self.src = self.ext.get('src', None)
+        self.patches = self.ext.get('patches', None)
 
     def prerun(self):
         """
-        Stuff to do before installing a package.
+        Stuff to do before installing a extension.
         """
         pass
 
     def run(self):
         """
-        Actual installation of a package.
+        Actual installation of a extension.
         """
         pass
 
     def postrun(self):
         """
-        Stuff to do after installing a package.
+        Stuff to do after installing a extension.
         """
         pass
 
     def get_toolkit(self):
         """
-        Toolkit used to build this package
+        Toolkit used to build this extension.
         """
         return self.master.get_toolkit()
 
     def get_toolkit_name(self):
         """
-        Name of toolkit used to build this package
+        Name of toolkit used to build this extension.
         """
         return self.master.get_toolkit_name()
 
     def get_toolkit_version(self):
         """
-        Version of toolkit used to build this package
+        Version of toolkit used to build this extension.
         """
         return self.master.get_toolkit_version()
 
@@ -1659,13 +1666,13 @@ class ApplicationPackage:
         sanity check to run after installing
         """
         try:
-            cmd, inp = self.master.getcfg('pkgfilter')
+            cmd, inp = self.master.getcfg('exts_filter')
         except:
-            self.log.debug("no pkgfilter setting found, skipping sanitycheck")
+            self.log.debug("no exts_filter setting found, skipping sanitycheck")
             return
 
-        if self.name in self.master.getcfg('pkgmodulenames'):
-            modname = self.master.getcfg('pkgmodulenames')[self.name]
+        if self.name in self.master.getcfg('exts_modulenames'):
+            modname = self.master.getcfg('exts_modulenames')[self.name]
         else:
             modname = self.name
         template = {'name': modname,
@@ -1681,7 +1688,7 @@ class ApplicationPackage:
         else:
             (output, ec) = run_cmd(cmd, log_ok=False, simple=False, regexp=False)
         if ec:
-            self.log.warn("package: %s failed to install! (output: %s)" % (self.name, output))
+            self.log.warn("Extension: %s failed to install! (output: %s)" % (self.name, output))
             return False
         else:
             return True

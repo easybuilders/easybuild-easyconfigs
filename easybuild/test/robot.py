@@ -52,36 +52,36 @@ class RobotTest(TestCase):
 
     def runTest(self):
         """ Test with some basic testcases (also check if he can find dependencies inside the given directory """
-        package = {
+        easyconfig = {
             'spec': '_',
             'module': ("name", "version"),
             'dependencies': []
         }
-        res = build.resolveDependencies([deepcopy(package)], None, self.log)
-        self.assertEqual([package], res)
+        res = build.resolveDependencies([deepcopy(easyconfig)], None, self.log)
+        self.assertEqual([easyconfig], res)
 
-        package_dep = {
+        easyconfig_dep = {
             'spec': '_',
             'module': ("name", "version"),
             'dependencies': [('gzip', '1.4')]
         }
-        res = build.resolveDependencies([deepcopy(package_dep)], base_easyconfig_dir, self.log)
+        res = build.resolveDependencies([deepcopy(easyconfig_dep)], base_easyconfig_dir, self.log)
         # Dependency should be found
         self.assertEqual(len(res), 2)
 
-        # here we have include a Dependency in the package list
-        package['module'] = ("gzip", "1.4")
+        # here we have include a Dependency in the easyconfig list
+        easyconfig['module'] = ("gzip", "1.4")
 
-        res = build.resolveDependencies([deepcopy(package_dep), deepcopy(package)], None, self.log)
+        res = build.resolveDependencies([deepcopy(easyconfig_dep), deepcopy(easyconfig)], None, self.log)
         # all dependencies should be resolved
-        self.assertEqual(0, sum(len(pkg['dependencies']) for pkg in res))
+        self.assertEqual(0, sum(len(ec['dependencies']) for ec in res))
 
         # this should not resolve (cannot find gzip-1.4.eb)
-        self.assertRaises(EasyBuildError, build.resolveDependencies, [deepcopy(package_dep)], None, self.log)
+        self.assertRaises(EasyBuildError, build.resolveDependencies, [deepcopy(easyconfig_dep)], None, self.log)
 
         # test if dependencies of an automatically found file are also loaded
-        package_dep['dependencies'] = [('gzip', "1.4-GCC-4.6.3")]
-        res = build.resolveDependencies([deepcopy(package_dep)], base_easyconfig_dir, self.log)
+        easyconfig_dep['dependencies'] = [('gzip', "1.4-GCC-4.6.3")]
+        res = build.resolveDependencies([deepcopy(easyconfig_dep)], base_easyconfig_dir, self.log)
 
         # GCC should be first (required by gzip dependency)
         self.assertEqual(('GCC', '4.6.3'), res[0]['module'])

@@ -23,7 +23,7 @@
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
 """
-EasyBuild support for installing (precompiled) software packages which are packaged as a tarball,
+EasyBuild support for installing (precompiled) software which is supplied as a tarball,
 implemented as an easyblock
 """
 
@@ -34,7 +34,7 @@ from easybuild.framework.application import Application
 
 class EB_Tarball(Application):
     """
-    Precompiled software packaged as tarball:
+    Precompiled software supplied as a tarball:
     - will unpack binary and copy it to the install dir
     """
 

@@ -39,8 +39,8 @@ class EB_Trilinos(EB_CMake):
         extra_vars = [
                       ('shared_libs', [False, "BUild shared libs; if False, build static libs. (default: False).", CUSTOM]),
                       ('openmp', [True, "Enable OpenMP support (default: True)", CUSTOM]),
-                      ('all_pkgs', [True, "Enable all packages (default: True)", CUSTOM]),
-                      ('skip_pkgs', [[], "List of packages to skip (default: [])", CUSTOM]),
+                      ('all_exts', [True, "Enable all Trilinos packages (default: True)", CUSTOM]),
+                      ('skip_exts', [[], "List of Trilinos packages to skip (default: [])", CUSTOM]),
                       ('verbose', [False, 'Configure for verbose output (default: False)', CUSTOM])
                      ]
         return EB_CMake.extra_options(extra_vars)
@@ -174,18 +174,18 @@ class EB_Trilinos(EB_CMake):
                 self.updatecfg('configopts', '-D%s_LIBRARY_DIRS:PATH="%s"' % (dep, libdir))
 
         # extensions_step
-        if self.getcfg('all_pkgs'):
+        if self.getcfg('all_exts'):
             self.updatecfg('configopts', "-DTrilinos_ENABLE_ALL_PACKAGES:BOOL=ON")
 
         else:
-            for pkg in self.getcfg('pkglist'):
-                self.updatecfg('configopts', "-DTrilinos_ENABLE_%s=ON" % pkg)
+            for ext in self.getcfg('exts_list'):
+                self.updatecfg('configopts', "-DTrilinos_ENABLE_%s=ON" % ext)
 
         # packages to skip
-        skip_pkgs = self.getcfg('skip_pkgs')
-        if skip_pkgs:
-            for pkg in skip_pkgs:
-                self.updatecfg('configopts', "-DTrilinos_ENABLE_%s:BOOL=OFF" % pkg)
+        skip_exts = self.getcfg('skip_exts')
+        if skip_exts:
+            for ext in skip_exts:
+                self.updatecfg('configopts', "-DTrilinos_ENABLE_%s:BOOL=OFF" % ext)
 
         # building in source dir not supported
         try:
@@ -214,7 +214,7 @@ class EB_Trilinos(EB_CMake):
                     "Pamgen", "RTOp", "Rythmos", "Sacado", "Shards", "Stratimikos",
                     "Teuchos", "Tpetra", "Triutils", "Zoltan"]
 
-            libs = [l for l in libs if not l in self.getcfg('skip_pkgs')]
+            libs = [l for l in libs if not l in self.getcfg('skip_exts')]
 
             self.setcfg('sanityCheckPaths', {
                                              'files':[os.path.join("lib", "lib%s.a" % x.lower()) for x in libs],

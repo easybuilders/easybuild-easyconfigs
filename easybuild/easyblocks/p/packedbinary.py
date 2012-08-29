@@ -28,8 +28,8 @@ from easybuild.easyblocks.binary import EB_Binary
 
 
 class EB_PackedBinary(EB_Binary, Application):
-    """Support for installing a packed binary package.
-    Just unpack its source in the installdir
+    """Support for installing packed binary software.
+    Just unpack the sources in the install dir
     """
 
     def extract_step(self):

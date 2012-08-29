@@ -46,7 +46,7 @@ class EB_PythonPackage(Application):
     def configure(self):
         """Set Python packages lib dir."""
 
-        self.log.debug("PythonPackage: configuring")
+        self.log.debug("EB_PythonPackage: configuring")
 
         python_version = get_software_version('Python')
         if not python_version:

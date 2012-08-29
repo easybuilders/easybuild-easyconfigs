@@ -30,7 +30,7 @@ import os
 import shutil
 
 import easybuild.tools.toolkit as toolkit
-from easybuild.framework.application import ApplicationPackage, Application
+from easybuild.framework.application import Extension, Application
 from easybuild.tools.filetools import extract_file, apply_patch, run_cmd
 from easybuild.tools.modules import get_software_root
 
@@ -40,22 +40,22 @@ class EB_Python(Application):
     - default configure/build_step/make install works fine
 
     To extend Python by adding extra packages there are two ways:
-    - list the packages in the pkglist, this will include the packages in this Python easyblock
+    - list the packages in the exts_list, this will include the packages in this Python installation
     - create a seperate easyblock, so the packages can be loaded with module load
 
     e.g., you can include numpy and scipy in a default Python installation
-    but also provide newer updated numpy and scipy versions by creating a PythonPackageModule for it.
+    but also provide newer updated numpy and scipy versions by creating a PythonPackage-derived easyblock for it.
     """
 
     def prepare_for_extensions(self):
         """
-        We set some default configs here for packages included in python
+        We set some default configs here for packages included in Python
         """
         #insert new packages by building them with EB_DefaultPythonPackage
         self.log.debug("setting extra packages options")
         # use __name__ here, since this is the module where EB_DefaultPythonPackage is defined
-        self.setcfg('pkgdefaultclass', (__name__, "EB_DefaultPythonPackage"))
-        self.setcfg('pkgfilter', ('python -c "import %(get_name)s"', ""))
+        self.setcfg('exts_defaultclass', (__name__, "EB_DefaultPythonPackage"))
+        self.setcfg('exts_filter', ('python -c "import %(get_name)s"', ""))
 
     def configure(self):
         """Set extra configure options."""
@@ -77,13 +77,13 @@ class EB_Python(Application):
                 self.log.error("Failed to symlink %s to %s: %s" % err)
 
 
-class EB_DefaultPythonPackage(ApplicationPackage):
+class EB_DefaultPythonPackage(Extension):
     """
-    Easyblock for python packages to be included in the python installation.
+    Easyblock for Python packages to be included in the Python installation.
     """
 
-    def __init__(self, mself, pkg, pkginstalldeps):
-        ApplicationPackage.__init__(self, mself, pkg, pkginstalldeps)
+    def __init__(self, mself, ext, ext_installdeps):
+        Extension.__init__(self, mself, ext, ext_installdeps)
         self.sitecfg = None
         self.sitecfgfn = 'site.cfg'
         self.sitecfglibdir = None
@@ -93,7 +93,7 @@ class EB_DefaultPythonPackage(ApplicationPackage):
         self.mself = mself
         self.installopts = ''
         self.runtest = None
-        self.pkgdir = "%s/%s" % (self.builddir, self.get_name)
+        self.ext_dir = "%s/%s" % (self.builddir, self.get_name)
         self.unpack_options = ''
 
         self.python = get_software_root('Python')
@@ -171,18 +171,18 @@ class EB_DefaultPythonPackage(ApplicationPackage):
                 self.log.exception("Removing testinstalldir %s failed: %s" % (testinstalldir, err))
 
     def run(self):
-        """Perform the actual package build/installation procedure"""
+        """Perform the actual Python package build/installation procedure"""
 
         # extract_file
         if not self.src:
             self.log.error("No source found for Python package %s, required for installation. (src: %s)" % \
                            (self.get_name, self.src))
-        self.pkgdir = extract_file("%s" % self.src, "%s/%s" % (self.builddir, self.get_name), extra_options=self.unpack_options)
+        self.ext_dir = extract_file("%s" % self.src, "%s/%s" % (self.builddir, self.get_name), extra_options=self.unpack_options)
 
         # patch if needed
         if self.patches:
             for patchfile in self.patches:
-                if not apply_patch(patchfile, self.pkgdir):
+                if not apply_patch(patchfile, self.ext_dir):
                     self.log.error("Applying patch %s failed" % patchfile)
 
         # configure, build_step, test, make install
@@ -196,9 +196,9 @@ class EB_DefaultPythonPackage(ApplicationPackage):
 
 
 class EB_nose(EB_DefaultPythonPackage):
-    """nose package"""
-    def __init__(self, mself, pkg, pkginstalldeps):
-        EB_DefaultPythonPackage.__init__(self, mself, pkg, pkginstalldeps)
+    """Support for installing the nose Python package as part of a Python installation."""
+    def __init__(self, mself, ext, ext_installdeps):
+        EB_DefaultPythonPackage.__init__(self, mself, ext, ext_installdeps)
 
         # use extra unpack options to avoid problems like
         # 'tar: Ignoring unknown extended header keyword `SCHILY.nlink'
@@ -234,18 +234,18 @@ class EB_FortranPythonPackage(EB_DefaultPythonPackage):
 
 
 class EB_numpy(EB_FortranPythonPackage):
-    """numpy package"""
+    """Support for installing the numpy Python package as part of a Python installation."""
 
-    def __init__(self, mself, pkg, pkginstalldeps):
-        EB_FortranPythonPackage.__init__(self, mself, pkg, pkginstalldeps)
+    def __init__(self, mself, ext, ext_installdeps):
+        EB_FortranPythonPackage.__init__(self, mself, ext, ext_installdeps)
 
-        self.pkgcfgs = mself.getcfg('pkgcfgs')
-        if self.pkgcfgs.has_key('numpysitecfglibsubdirs'):
-            self.numpysitecfglibsubdirs = self.pkgcfgs['numpysitecfglibsubdirs']
+        self.ext_cfgs = mself.getcfg('ext_cfgs')
+        if self.ext_cfgs.has_key('numpysitecfglibsubdirs'):
+            self.numpysitecfglibsubdirs = self.ext_cfgs['numpysitecfglibsubdirs']
         else:
             self.numpysitecfglibsubdirs = []
-        if self.pkgcfgs.has_key('numpysitecfgincsubdirs'):
-            self.numpysitecfgincsubdirs = self.pkgcfgs['numpysitecfgincsubdirs']
+        if self.ext_cfgs.has_key('numpysitecfgincsubdirs'):
+            self.numpysitecfgincsubdirs = self.ext_cfgs['numpysitecfgincsubdirs']
         else:
             self.numpysitecfgincsubdirs = []
 
@@ -305,7 +305,7 @@ libraries = %s
         self.runtest = "cd .. && python -c 'import numpy; numpy.test(verbose=2)'"
 
     def install_step(self):
-        """Install numpy package
+        """Install numpy 
         We remove the numpy build dir here, so scipy doesn't find it by accident
         """
         EB_FortranPythonPackage.install_step(self)
@@ -317,10 +317,10 @@ libraries = %s
 
 
 class EB_scipy(EB_FortranPythonPackage):
-    """scipy package"""
+    """Support for installing the scipy Python package as part of a Python installation."""
 
-    def __init__(self, mself, pkg, pkginstalldeps):
-        EB_FortranPythonPackage.__init__(self, mself, pkg, pkginstalldeps)
+    def __init__(self, mself, ext, ext_installdeps):
+        EB_FortranPythonPackage.__init__(self, mself, ext, ext_installdeps)
 
         # disable testing
         test = False

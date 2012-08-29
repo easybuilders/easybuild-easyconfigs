@@ -42,7 +42,7 @@ BUILD = (3, 'build')
 FILEMANAGEMENT = (4, 'file-management')
 DEPENDENCIES = (5, 'dependencies')
 LICENSE = (6, 'license')
-PACKAGE = (7, 'package')
+EXTENSIONS = (7, 'extensions')
 MODULES = (8, 'modules')
 OTHER = (9, 'other')
 
@@ -53,7 +53,7 @@ class EasyConfig:
     """
     # validations
     validmoduleclasses = ['base', 'compiler', 'lib']
-    validstops = ['cfg', 'source', 'patch', 'prepare', 'configure', 'make', 'install', 'test', 'postproc', 'cleanup', 'packages']
+    validstops = ['cfg', 'source', 'patch', 'prepare', 'configure', 'make', 'install', 'test', 'postproc', 'cleanup', 'extensions']
 
     # List of tuples. Each tuple has the following format (key, [default, help text, category])
     default_config = [
@@ -96,27 +96,27 @@ class EasyConfig:
 
           ('dependencies', [[], "List of dependencies (default: [])", DEPENDENCIES]),
           ('builddependencies', [[], "List of build dependencies (default: [])", DEPENDENCIES]),
-          ('osdependencies', [[], "Packages that should be present on the system", DEPENDENCIES]),
+          ('osdependencies', [[], "OS dependencies that should be present on the system", DEPENDENCIES]),
 
           ('licenseServer', [None, 'License server for software', LICENSE]),
           ('licenseServerPort', [None, 'Port for license server', LICENSE]),
           ('key', [None, 'Key for installing software', LICENSE]),
           ('group', [None, "Name of the user group for which the software should be available",  LICENSE]),
 
-          ('pkglist', [[], 'List with packages added to the baseinstallation (Default: [])', PACKAGE]),
-          ('pkgmodulenames', [{}, 'Dictionary with real modules names for extensions, if they are different from the package name (Default: {})', PACKAGE]),
-          ('pkgloadmodule', [True, 'Load the to-be installed software using temporary module (Default: True)', PACKAGE]),
-          ('pkgtemplate', ["%s-%s.tar.gz", "Template for package source file names (Default: %s-%s.tar.gz)", PACKAGE]),
-          ('pkgfindsource', [True, "Find sources for packages (Default: True)", PACKAGE]),
-          ('pkginstalldeps', [True, "Install dependencies for specified packages if necessary (Default: True)", PACKAGE]),
-          ('pkgdefaultclass', [None, "List of module for and name of the default package class (Default: None)", PACKAGE]),
-          ('pkgfilter', [None, "Package filter details. List with template for cmd and input to cmd (templates for name, version and src). (Default: None)", PACKAGE]),
-          ('pkgpatches', [[], 'List with patches for packages (default: [])', PACKAGE]),
-          ('pkgcfgs', [{}, 'Dictionary with config parameters for packages (default: {})', PACKAGE]),
+          ('exts_list', [[], 'List with extensions added to the base installation (Default: [])', EXTENSIONS]),
+          ('exts_modulenames', [{}, 'Dictionary with real modules names for extensions, if they are different from the extension name (Default: {})', EXTENSIONS]),
+          ('exts_loadmodule', [True, 'Load the to-be installed software using temporary module (Default: True)', EXTENSIONS]),
+          ('exts_template', ["%s-%s.tar.gz", "Template for extension source file names (Default: %s-%s.tar.gz)", EXTENSIONS]),
+          ('exts_findsource', [True, "Find sources for extensions (Default: True)", EXTENSIONS]),
+          ('exts_installdeps', [True, "Install dependencies for specified extensions if necessary (Default: True)", EXTENSIONS]),
+          ('exts_defaultclass', [None, "List of module for and name of the default extension class (Default: None)", EXTENSIONS]),
+          ('exts_filter', [None, "Extension filter details. List with template for cmd and input to cmd (templates for name, version and src). (Default: None)", EXTENSIONS]),
+          ('exts_patches', [[], 'List with patches for extensions (default: [])', EXTENSIONS]),
+          ('exts_cfgs', [{}, 'Dictionary with config parameters for extensions (default: {})', EXTENSIONS]),
 
           ('modextravars', [{}, "Extra environment variables to be added to module file (default: {})", MODULES]),
           ('moduleclass', ['base', 'Module class to be used for this software (Default: base) (Valid: %s)' % validmoduleclasses, MODULES]),
-          ('moduleforceunload', [False, 'Force unload of all modules when loading the package (Default: False)', MODULES]),
+          ('moduleforceunload', [False, 'Force unload of all modules when loading the extension (Default: False)', MODULES]),
           ('moduleloadnoconflict', [False, "Don't check for conflicts, unload other versions instead (Default: False)", MODULES]),
 
           ('buildstats', [None, "A list of dicts with buildstats: build_time, platform, core_count, cpu_model, install_size, timestamp", OTHER]),
@@ -287,7 +287,7 @@ class EasyConfig:
 
     def get_name(self):
         """
-        return name of the package
+        return name of the software
         """
         return self['name']
 
@@ -303,7 +303,7 @@ class EasyConfig:
     # private method
     def _os_dependency_check(self, dep):
         """
-        Check if package is available from OS.
+        Check if dependency is available from OS.
         """
         # - uses rpm -q and dpkg -s --> can be run as non-root!!
         # - fallback on which
@@ -377,7 +377,7 @@ def sorted_categories():
     """
     returns the categories in the correct order
     """
-    categories = [MANDATORY, CUSTOM , TOOLKIT, BUILD, FILEMANAGEMENT, DEPENDENCIES, LICENSE , PACKAGE, MODULES, OTHER]
+    categories = [MANDATORY, CUSTOM , TOOLKIT, BUILD, FILEMANAGEMENT, DEPENDENCIES, LICENSE , EXTENSIONS, MODULES, OTHER]
     categories.sort(key = lambda c: c[0])
     return categories
 

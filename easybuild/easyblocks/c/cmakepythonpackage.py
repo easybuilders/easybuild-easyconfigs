@@ -42,7 +42,7 @@ class EB_CMakePythonPackage(EB_CMake, EB_PythonPackage):
     """
 
     def __init__(self, *args, **kwargs):
-        """Initialize with PythonPackage."""
+        """Initialize with EB_PythonPackage."""
         EB_PythonPackage.__init__(self, *args, **kwargs)
 
     def configure(self, *args, **kwargs):

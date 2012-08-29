@@ -100,7 +100,7 @@ class EB_ParMETIS(Application):
         """
         Install by copying files over to the right places.
 
-        Also create symlinks where expected by other packages (Lib directory).
+        Also create symlinks where expected by other software (Lib directory).
         """
         includedir = os.path.join(self.installdir, 'include')
         libdir = os.path.join(self.installdir, 'lib')

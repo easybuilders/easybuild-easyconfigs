@@ -144,7 +144,7 @@ class FileRepository(Repository):
 
     def addEasyconfig(self, cfg, name, version, stats, previous):
         """
-        Add the eb-file for for package name and version to the repository.
+        Add the eb-file for for software name and version to the repository.
         stats should be a dict containing stats.
         if previous is true -> append the stats to the file
         This will return the path to the created file (for use in subclasses)

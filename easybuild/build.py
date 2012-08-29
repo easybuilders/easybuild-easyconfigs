@@ -140,7 +140,7 @@ def main():
     parser = OptionParser()
 
     parser.usage = "%prog [options] easyconfig [..]"
-    parser.description = "Builds software package based on easyconfig (or parse a directory)\n" \
+    parser.description = "Builds software based on easyconfig (or parse a directory)\n" \
                          "Provide one or more easyconfigs or directories, use -h or --help more information."
 
     add_build_options(parser)
@@ -228,7 +228,7 @@ def main():
         retain_all_deps = True
 
     ## Read easyconfig files
-    packages = []
+    easyconfigs = []
     if len(paths) == 0:
         error("Please provide one or more easyconfig files", optparser=parser)
 
@@ -240,7 +240,7 @@ def main():
         try:
             files = findEasyconfigs(path, log)
             for eb_file in files:
-                packages.extend(processEasyconfig(eb_file, log, blocks, validate=validate_easyconfigs))
+                easyconfigs.extend(processEasyconfig(eb_file, log, blocks, validate=validate_easyconfigs))
         except IOError, err:
             log.error("Processing easyconfigs in path %s failed: %s" % (path, err))
 
@@ -251,9 +251,9 @@ def main():
     ## Skip modules that are already installed unless forced
     if not options.force:
         m = Modules()
-        packages, checkPackages = [], packages
-        for package in checkPackages:
-            module = package['module']
+        easyconfigs, check_easyconfigs = [], easyconfigs
+        for ec in check_easyconfigs:
+            module = ec['module']
             mod = "%s (version %s)" % (module[0], module[1])
             modspath = mk_module_path(curr_module_paths() + [os.path.join(config.installPath("mod"), 'all')])
             if m.exists(module[0], module[1], modspath):
@@ -262,16 +262,16 @@ def main():
                 log.info(msg)
             else:
                 log.debug("%s is not installed yet, so retaining it" % mod)
-                packages.append(package)
+                easyconfigs.append(ec)
 
     ## Determine an order that will allow all specs in the set to build
-    if len(packages) > 0:
+    if len(easyconfigs) > 0:
         print_msg("resolving dependencies ...", log)
         # force all dependencies to be retained and validation to be skipped for building dep graph
         force = retain_all_deps and not validate_easyconfigs
-        orderedSpecs = resolveDependencies(packages, options.robot, log, force=force)
+        orderedSpecs = resolveDependencies(easyconfigs, options.robot, log, force=force)
     else:
-        print_msg("No packages left to be built.", log)
+        print_msg("No easyconfigs left to be built.", log)
         orderedSpecs = []
 
     # create dependency graph and exit
@@ -312,7 +312,7 @@ def main():
         opts = ' '.join(result_opts)
 
         command = "cd %s && %s %%s %s" % (curdir, eb_path, opts)
-        jobs = parbuild.build_packages_in_parallel(command, orderedSpecs, "easybuild-build", log)
+        jobs = parbuild.build_easyconfigs_in_parallel(command, orderedSpecs, "easybuild-build", log)
         print "List of submitted jobs:"
         for job in jobs:
             print "%s: %s" % (job.get_, job.jobid)
@@ -340,9 +340,9 @@ def main():
         if logFile:
             os.remove(logFile)
 
-        for package in packages:
-            if 'originalSpec' in package:
-                os.remove(package['spec'])
+        for easyconfig in easyconfigs:
+            if 'originalSpec' in easyconfig:
+                os.remove(easyconfig['spec'])
 
     except IOError, err:
         error("Something went wrong closing and removing the log %s : %s" % (logFile, err))
@@ -383,7 +383,7 @@ def processEasyconfig(path, log, onlyBlocks=None, regtest_online=False, validate
     """
     blocks = retrieveBlocksInSpec(path, log, onlyBlocks)
 
-    packages = []
+    peasyconfig = []
     for spec in blocks:
         ## Process for dependencies and real installversionname
         ## - use mod? __init__ and importCfg are ignored.
@@ -399,36 +399,36 @@ def processEasyconfig(path, log, onlyBlocks=None, regtest_online=False, validate
         name = ec['name']
 
         ## this app will appear as following module in the list
-        package = {
-            'spec': spec,
-            'module': (ec.get_name(), ec.get_installversion()),
-            'dependencies': []
-        }
+        easyconfig = {
+                      'spec': spec,
+                      'module': (ec.get_name(), ec.get_installversion()),
+                      'dependencies': []
+                     }
         if len(blocks) > 1:
-            package['originalSpec'] = path
+            easyconfig['originalSpec'] = path
 
         for d in ec.dependencies():
             dep = (d['name'], d['tk'])
             log.debug("Adding dependency %s for app %s." % (dep, name))
-            package['dependencies'].append(dep)
+            easyconfig['dependencies'].append(dep)
 
         if ec.get_toolkit_name() != 'dummy':
             dep = (ec.get_toolkit_name(), ec.get_toolkit_version())
             log.debug("Adding toolkit %s as dependency for app %s." % (dep, name))
-            package['dependencies'].append(dep)
+            easyconfig['dependencies'].append(dep)
 
         del ec
 
         # this is used by the parallel builder
-        package['unresolvedDependencies'] = copy.copy(package['dependencies'])
+        easyconfig['unresolvedDependencies'] = copy.copy(easyconfig['dependencies'])
 
-        packages.append(package)
+        easyconfigs.append(easyconfig)
 
-    return packages
+    return easyconfigs
 
 def resolveDependencies(unprocessed, robot, log, force=False):
     """
-    Work through the list of packages to determine an optimal order
+    Work through the list of easyconfigs to determine an optimal order
     enabling force results in retaining all dependencies and skipping validation of easyconfigs
     """
 
@@ -516,7 +516,7 @@ def resolveDependencies(unprocessed, robot, log, force=False):
 
 def findResolvedModules(unprocessed, processed, log):
     """
-    Find modules in unprocessed which can be fully resolved using packages in processed
+    Find modules in unprocessed which can be fully resolved using easyconfigs in processed
     """
     orderedSpecs = []
 
@@ -679,7 +679,7 @@ def build_and_install_software(module, options, log, origEnviron, exitOnFailure=
     # timing info
     starttime = time.time()
     try:
-        result = app.run_all_steps(spec, run_test_cases=not options.skip_tests, regtest_online=options.regtest_online)
+        result = app.run_all_steps(run_test_cases=not options.skip_tests, regtest_online=options.regtest_online)
     except EasyBuildError, err:
         lastn = 300
         errormsg = "autoBuild Failed (last %d chars): %s" % (lastn, err.msg[-lastn:])

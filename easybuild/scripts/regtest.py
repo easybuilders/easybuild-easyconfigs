@@ -121,20 +121,20 @@ def main():
         files = findEasyconfigs(path, log)
 
     # process all the found easyconfig files
-    packages = []
+    easyconfigs = []
     for file in files:
         try:
-            packages.extend(processEasyconfig(file, log, None))
+            easyconfigs.extend(processEasyconfig(file, log, None))
         except EasyBuildError, err:
             test_results.append((file, 'eb-file error', err))
 
     if opts.parallel:
-        resolved = resolveDependencies(packages, opts.robot, log)
+        resolved = resolveDependencies(easyconfigs, opts.robot, log)
         # use %%s so i can later replace it
         command = "cd %s && python %s %%s --no-parallel" % (cur_dir, sys.argv[0])
-        parbuild.build_packages_in_parallel(command, resolved, output_dir, log)
+        parbuild.build_easyconfigs_in_parallel(command, resolved, output_dir, log)
     else:
-        build_packages(packages, output_dir)
+        build_easyconfigs(easyconfigs, output_dir)
 
 
 def perform_step(fase, obj, method):
@@ -150,17 +150,17 @@ def perform_step(fase, obj, method):
             # keep a dict of so we can check in O(1) if objects can still be build
             build_stopped[obj] = fase
 
-def build_packages(packages, output_dir):
+def build_easyconfigs(easyconfigs, output_dir):
     """
-    build the packages
+    build the easyconfigs
     """
     apps = []
-    for pkg in packages:
+    for ec in easyconfigs:
         try:
-            instance = parbuild.get_instance(pkg, log)
+            instance = parbuild.get_instance(ec, log)
             apps.append(instance)
         except EasyBuildError, err:
-            test_results.append((pkg['spec'], 'initialization', err))
+            test_results.append((ec['spec'], 'initialization', err))
 
 
     base_dir = os.getcwd()
@@ -222,7 +222,7 @@ def build_packages(packages, output_dir):
     failed = len(build_stopped)
     total = len(apps)
 
-    log.info("%s from %s packages failed to build!" % (failed, total))
+    log.info("%s from %s easyconfigs failed to build!" % (failed, total))
 
     output_file = os.path.join(output_dir, "easybuild-test.xml")
     log.debug("writing xml output to %s" % output_file)

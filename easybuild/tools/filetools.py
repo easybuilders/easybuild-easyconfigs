@@ -827,7 +827,7 @@ def copytree(src, dst, symlinks=False, ignore=None):
 
 def encode_string(name):
     """
-    This encoding function handles funky package names ad infinitum, like:
+    This encoding function handles funky software names ad infinitum, like:
       example: '0_foo+0x0x#-$__'
       becomes: '0_underscore_foo_plus_0x0x_hash__minus__dollar__underscore__underscore_'
     The intention is to have a robust escaping mechanism for names like c++, C# et al
@@ -840,7 +840,7 @@ def encode_string(name):
     * http://www.unicode.org/versions/Unicode6.1.0/ 
     For readability of >2 words, it is suggested to use _CamelCase_ style.
     So, yes, '_GreekSmallLetterEtaWithPsiliAndOxia_' *could* indeed be a fully
-    valid package name; package "electron" in the original spelling anyone? ;-)
+    valid software name; software "electron" in the original spelling anyone? ;-)
 
     """
 

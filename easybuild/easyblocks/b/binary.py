@@ -34,8 +34,8 @@ from easybuild.framework.application import Application
 
 
 class EB_Binary(Application):
-    """Support for installing a binary package.
-    Just copy it's sources to the installdir"""
+    """Support for installing software that comes in binary form.
+    Just copy the sources to the install dir"""
 
     def extract_step(self):
         """Move all source files to the build directory"""
@@ -53,11 +53,11 @@ class EB_Binary(Application):
                 self.log.exception("Couldn't copy %s to %s: %s" % (src, self.builddir, err))
 
     def configure(self):
-        """No configuration, this is a binary package"""
+        """No configuration, this is binary software"""
         pass
 
     def build_step(self):
-        """No compilation, this is a binary package"""
+        """No compilation, this is binary software"""
         pass
 
     def make_installdir(self):
