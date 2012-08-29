@@ -36,6 +36,9 @@ from easybuild.tools.modules import get_software_root, get_software_version
 
 
 class EB_python_minus_meep(Application):
+    """
+    Support for building and installing python-meep
+    """
 
     def __init__(self, *args, **kwargs):
         """Initialize custom variables."""
@@ -58,7 +61,7 @@ class EB_python_minus_meep(Application):
                 self.log.error("Module for %s not loaded." % dep)
 
     def make(self):
-        """Build python-meep using available scripts."""
+        """Build python-meep using available make/make-mpi script."""
 
         # determine make script arguments
         meep = get_software_root('Meep')
