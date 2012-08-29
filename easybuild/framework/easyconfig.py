@@ -523,7 +523,10 @@ def pick_version(req_ver, avail_vers, log):
 
         ver = req_ver
 
-        selected_ver = [v for v in avail_vers if v < LooseVersion(ver)][-1]
+        if len(avail_vers) == 1:
+            selected_ver = avail_vers[0]
+        else:
+            selected_ver = [v for v in avail_vers if v < LooseVersion(ver)][-1]
 
     else:
         # if no desired version is specified, just use last version
@@ -631,7 +634,20 @@ def select_or_generate_ec(fp, paths, specs, log):
 
     # we need at least one config file to start from
     if len(ec_files) == 0:
-        log.error("No easyconfig files found for software %s, I'm all out of ideas." % name)
+        # look for a template file if no easyconfig for specified software name is available
+        for path in paths:
+            templ_file = os.path.join(path, "TEMPLATE.eb")
+
+            if os.path.isfile(templ_file):
+                ec_files = [templ_file]
+                break
+            else:
+                log.debug("No template found at %s." % templ_file)
+
+        if len(ec_files) == 0:
+            log.error("No easyconfig files found for software %s, and no templates available. I'm all out of ideas." % name)
+
+    log.debug("ec_files: %s" % ec_files)
 
     # we can't rely on set, because we also need to be able to obtain a list of unique lists
     def unique(l):
