@@ -690,7 +690,6 @@ def adjust_permissions(name, permissionBits, add=True, onlyfiles=False, onlydirs
 
     failed_paths = []
     for path in allpaths:
-        log.info("Adjusting permissions for %s" % path)
 
         try:
             if relative:
