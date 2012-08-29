@@ -619,6 +619,7 @@ def select_or_generate_ec(fp, paths, specs, log):
     if not specs.get('name'):
         log.error("Supplied 'specs' dictionary doesn't even contain a name of a software package?")
     name = specs['name']
+    handled_params = ['name']
 
     # find ALL available easyconfig files for specified software
     ec_files = []
@@ -632,7 +633,7 @@ def select_or_generate_ec(fp, paths, specs, log):
     if len(ec_files) == 0:
         log.error("No easyconfig files found for software %s, I'm all out of ideas." % name)
 
-    def unique(l):  # FIXME: no such function available in Python?!?
+    def unique(l):  # FIXME: no such function available in Python?!? ==> use set for this!!!
         """Retain unique elements in a sorted list."""
         l = sorted(l)
         if len(l) > 1:
@@ -661,6 +662,7 @@ def select_or_generate_ec(fp, paths, specs, log):
                       "and no template available." % (name, specs['toolkit_name']))
 
     tkname = specs.pop('toolkit_name', None)
+    handled_params.append('toolkit_name')
 
     # trim down list according to selected toolkit
     if tkname in tknames:
@@ -690,6 +692,7 @@ def select_or_generate_ec(fp, paths, specs, log):
     log.debug("Found %d unique toolkit versions: %s" % (len(tkvers), tkvers))
 
     tkver = specs.pop('toolkit_version', None)
+    handled_params.append('toolkit_version')
     (tkver, selected_tkver) = pick_version(tkver, tkvers, log)
 
     log.debug("Filtering easyconfigs based on toolkit version '%s'..." % selected_tkver)
@@ -699,6 +702,7 @@ def select_or_generate_ec(fp, paths, specs, log):
     # add full toolkit specification to specs
     if tkname and tkver:
         specs.update({'toolkit': {'name': tkname, 'version': tkver}})
+        handled_params.append('toolkit')
     else:
         if tkname:
             specs.update({'toolkit_name': tkname})
@@ -711,7 +715,8 @@ def select_or_generate_ec(fp, paths, specs, log):
     log.debug("Found %d unique software versions: %s" % (len(vers), vers))
 
     ver = specs.pop('version', None)
-    (ver, selected_ver)= pick_version(ver, vers, log)
+    handled_params.append('version')
+    (ver, selected_ver) = pick_version(ver, vers, log)
     if ver:
         specs.update({'version': ver})
 
@@ -719,51 +724,52 @@ def select_or_generate_ec(fp, paths, specs, log):
     ecs_and_files = [x for x in ecs_and_files if x[0]['version'] == selected_ver]
     log.debug("Filtered easyconfigs: %s" % [x[1] for x in ecs_and_files])
 
-    # FIXME: make this more general, versionprefix/suffix should be specified through --amend
-    # SOFTWARE VERSION PREFIX and SUFFIX
+    # go through parameters specified via --amend
+    # always include versionprefix/suffix, because we might need it to generate a file name
+    verpref = None
+    versuff = None
+    other_params = {'versionprefix': None, 'versionsuffix': None}
+    for (param, val) in specs.items():
+        if not param in handled_params:
+            other_params.update({param: val})
 
-    for fix in ['versionprefix', 'versionsuffix']:
+    log.debug("Filtering based on other parameters (specified via --amend): %s" % other_params)
+    for (param, val) in other_params.items():
 
-        verfixs = unique([x[0][fix] for x in ecs_and_files])
+        vals = unique([x[0][param] for x in ecs_and_files])
 
-        verfix = None
-
-        if specs.get(fix):
-            verfix = specs[fix]
-
-        else:
-            if len(verfixs) == 1:
-                verfix = verfixs[0]
-            else:
-                log.error("No %s specified, and multiple ones available: %s" % (fix, verfixs))
-
-        log.debug("Going to use %s" % verfix)
-
-        # try and select a *fix from the available ones, or fail if we can't
-        if verfix in verfixs:
-            # if the fix is available, use it
-            selected_verfix = verfix
-            log.debug("Specified %s is available, so using it: %s" % (fix, selected_verfix))
-        elif len(verfixs) == 1:
-            # if only one fix is availabe, use that
-            selected_verfix = verfixs[0]
-            log.debug("Only one %s available ('%s'), so picking that" % (fix, selected_verfix))
+        filter_ecs = False
+        # try and select a value from the available ones, or fail if we can't
+        if val in vals:
+            # if the specified value is available, use it
+            selected_val = val
+            log.debug("Specified %s is available, so using it: %s" % (param, selected_val))
+            filter_ecs = True
+        elif val:
+            # if a value is specified, use that, even if it's not available yet
+            selected_val = val
+            log.debug("%s is specified, so using it (even though it's not available yet): %s" % (param, selected_val))
+        elif len(vals) == 1:
+            # if only one value is available, use that
+            selected_val = vals[0]
+            log.debug("Only one %s available ('%s'), so picking that" % (param, selected_val))
+            filter_ecs = True
         else:
             # otherwise, we fail, because we don't know how to pick between different fixes
-            log.error("Specified %s not available, and can't pick from available %ses %s" % (fix,
-                                                                                             fix,
-                                                                                             verfixs))
+            log.error("No %s specified, and can't pick from available %ses %s" % (param,
+                                                                                  param,
+                                                                                  vals))
 
-        log.debug("Filtering easyconfigs based on %s '%s'..." % (fix, selected_verfix))
-        ecs_and_files = [x for x in ecs_and_files if x[0][fix] == selected_verfix]
-        log.debug("Filtered easyconfigs: %s" % [x[1] for x in ecs_and_files])
+        if filter_ecs:
+            log.debug("Filtering easyconfigs based on %s '%s'..." % (param, selected_val))
+            ecs_and_files = [x for x in ecs_and_files if x[0][param] == selected_val]
+            log.debug("Filtered easyconfigs: %s" % [x[1] for x in ecs_and_files])
 
-        if fix == "versionprefix":
-            verpref = fix
-        elif fix == "versionsuffix":
-            versuff = fix
-        else:
-            log.error("FAIL: neither prefix nor suffix?!?")
+        # keep track of versionprefix/suffix
+        if param == "versionprefix":
+            verpref = selected_val
+        elif param == "versionsuffix":
+            versuff = selected_val
 
     cnt = len(ecs_and_files)
     if not cnt == 1:
@@ -850,19 +856,22 @@ def tweak(src_fn, target_fn, tweaks, log):
 
     additions = []
 
-    # we need to treat patches seperately, i.e. we append to the list
-    if tweaks.has_key('patches'):
-        patches_regexp = re.compile("^\s*patches\s*=\s*(.*)$", re.M)
+    # we need to treat list values seperately, i.e. we prepend to the current value (if any)
+    for (key, val) in tweaks.items():
 
-        res = patches_regexp.search(ectxt)
-        if res:
-            patches = "%s + %s" % (res.group(1), tweaks['patches'])
-            ectxt = patches_regexp.sub("patches = %s # tweaked by EasyBuild" % patches, ectxt)
-            log.info("Tweaked patch list to '%s'" % patches)
-        else:
-            additions.append("patches = %s" % tweaks['patches'])
+        if type(val) == list:
 
-        tweaks.pop('patches')
+            regexp = re.compile("^\s*%s\s*=\s*(.*)$" % key, re.M)
+
+            res = regexp.search(ectxt)
+            if res:
+                newval = "%s + %s" % (val, res.group(1))
+                ectxt = regexp.sub("%s = %s # tweaked by EasyBuild" % (key, newval), ectxt)
+                log.info("Tweaked %s list to '%s'" % (key, newval))
+            else:
+                additions.append("%s = %s # added by EasyBuild" % (key, val))
+
+            tweaks.pop(key)
 
     def quoted(x):
         """Obtain a new value to be used in string replacement context.
@@ -886,20 +895,27 @@ def tweak(src_fn, target_fn, tweaks, log):
     # add parameters or replace existing ones
     for (key,val) in tweaks.items():
 
-        val = quoted(val)
-
         regexp = re.compile("^\s*%s\s*=\s*(.*)$" % key, re.M)
         log.debug("Regexp pattern for replacing '%s': %s" % (key, regexp.pattern))
 
         res = regexp.search(ectxt)
         if res:
-            # onyl tweak if the value is different
-            if not eval(res.group(1)) == val:
-                ectxt = regexp.sub("%s = %s # tweaked by EasyBuild" % (key,val), ectxt)
-        else:
-            additions.append("%s = %s" % (key, val))
+            # only tweak if the value is different
+            diff = True
+            try:
+                log.debug("eval(%s): %s" % (res.group(1), eval(res.group(1))))
+                diff = not eval(res.group(1)) == val
+            except (NameError, SyntaxError):
+                # if eval fails, just fall back to string comparison
+                log.debug("eval failed for \"%s\", falling back to string comparison against \"%s\"..." % (res.group(1), val))
+                diff = not res.group(1) == val
 
-        log.info("Tweaked '%s' to '%s'" % (key, val))
+            if diff:
+                ectxt = regexp.sub("%s = %s # tweaked by EasyBuild" % (key, quoted(val)), ectxt)
+        else:
+            additions.append("%s = %s" % (key, quoted(val)))
+
+        log.info("Tweaked '%s' to '%s'" % (key, quoted(val)))
 
     if additions:
         log.info("Adding additional parameters to tweaked easyconfig file: %s")

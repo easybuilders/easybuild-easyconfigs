@@ -92,19 +92,13 @@ def add_cmdline_options(parser):
                                       help="build software package with given name")
     software_build_options.add_option("--software-version", metavar="VERSION",
                                       help="build software with this particular version")
-    software_build_options.add_option("--software-versionprefix", metavar="PREFIX",
-                                      help="build software with this particular version prefix")
-    software_build_options.add_option("--software-versionsuffix", metavar="SUFFIX",
-                                      help="build software with this particular version suffix")
     software_build_options.add_option("--toolkit", metavar="NAME,VERSION",
                                       help="build with specified toolkit (name and version)")
     software_build_options.add_option("--toolkit-name", metavar="NAME",
                                       help="build with specified toolkit name")
     software_build_options.add_option("--toolkit-version", metavar="VERSION",
                                       help="build with specified toolkit version")
-    software_build_options.add_option("--add-patches", metavar="PATCH_1[,PATCH_N]",
-                                      help="add additional patch files")
-    software_build_options.add_option("--amend", metavar="VAR:VALUE", action="append",
+    software_build_options.add_option("--amend", metavar="VAR=VALUE[,VALUE2]", action="append",
                                       help="specify additional build parameters (can be used multiple times)")
 
     parser.add_option_group(software_build_options)
@@ -540,14 +534,6 @@ def process_software_build_specs(options):
     if options.software_version:
         buildopts.update({'version': options.software_version})
 
-    if options.software_versionprefix:
-        error("FIXME: support specifying versionprefix through --amend")
-        buildopts.update({'versionprefix': options.software_versionprefix})
-
-    if options.software_versionsuffix:
-        error("FIXME: support specifying versionsuffix through --amend")
-        buildopts.update({'versionsuffix': options.software_versionsuffix})
-
     if options.toolkit:
         tk = options.toolkit.split(',')
         if not len(tk) == 2:
@@ -562,11 +548,16 @@ def process_software_build_specs(options):
     if options.toolkit_version:
         buildopts.update({'toolkit_version': options.toolkit_version})
 
-    if options.add_patches:
-        buildopts.update({'patches': options.add_patches.split(',')})
-
     if options.amend:
-        error("--amend is not implemented yet (value: %s)" % options.amend)
+        for amend_spec in options.amend:
+            # e.g., 'foo=bar=baz' => foo = 'bar=baz'
+            param = amend_spec.split('=')[0]
+            value = '='.join(amend_spec.split('=')[1:])
+            # support list values by splitting on ',' if its there
+            # e.g., 'foo=bar,baz' => foo = ['bar', 'baz']
+            if ',' in value:
+                value = value.split(',')
+            buildopts.update({param: value})
 
     return buildopts
 
