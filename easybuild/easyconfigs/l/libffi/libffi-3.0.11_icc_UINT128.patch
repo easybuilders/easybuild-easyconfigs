@@ -1,0 +1,45 @@
+Only in libffi-3.0.11: Makefile
+Only in libffi-3.0.11: makefile.sed~
+Only in libffi-3.0.11: makefiles.mk~
+Only in libffi-3.0.11: makefiles.out~
+Only in libffi-3.0.11: makefiles.sed~
+diff -ru libffi-3.0.11.orig/src/x86/ffi64.c libffi-3.0.11/src/x86/ffi64.c
+--- libffi-3.0.11.orig/src/x86/ffi64.c	2012-04-12 04:46:06.000000000 +0200
++++ libffi-3.0.11/src/x86/ffi64.c	2012-08-29 11:06:28.311735374 +0200
+@@ -38,11 +38,11 @@
+ #define MAX_SSE_REGS 8
+ 
+ #ifdef __INTEL_COMPILER
+-#define UINT128 __m128
+-#else
+-#define UINT128 __int128_t
++typedef struct { int64_t m[2]; } __int128_t;
+ #endif
+ 
++#define UINT128 __int128_t
++
+ struct register_args
+ {
+   /* Registers for argument passing.  */
+@@ -477,10 +477,20 @@
+ 		  break;
+ 		case X86_64_SSE_CLASS:
+ 		case X86_64_SSEDF_CLASS:
++#ifdef __INTEL_COMPILER
++		  reg_args->sse[ssecount].m[0] = *(UINT64 *) a;
++		  reg_args->sse[ssecount++].m[1] = 0;
++#else
+ 		  reg_args->sse[ssecount++] = *(UINT64 *) a;
++#endif
+ 		  break;
+ 		case X86_64_SSESF_CLASS:
++#ifdef __INTEL_COMPILER
++		  reg_args->sse[ssecount].m[0] = *(UINT32 *) a;
++		  reg_args->sse[ssecount++].m[1] = 0;
++#else
+ 		  reg_args->sse[ssecount++] = *(UINT32 *) a;
++#endif
+ 		  break;
+ 		default:
+ 		  abort();
+Only in libffi-3.0.11: x86_64-unknown-linux-gnu
