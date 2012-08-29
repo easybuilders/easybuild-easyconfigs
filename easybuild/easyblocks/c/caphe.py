@@ -248,12 +248,18 @@ class EB_CAPHE(EB_CMakePythonPackage):
         guesses = EB_CMakePythonPackage.make_module_req_guess(self)
 
         guesses.update({
-                        'LD_LIBRARY_PATH': [self.installdir,
-                                            os.path.join(self.installdir, 'lib')]
+                        'LD_LIBRARY_PATH': ['',
+                                            os.path.join(self.installdir, self.pythonlibdir)]
                         })
 
         return guesses
 
     def make_module_extra(self):
         """Set PYTHONPATH to install dir, ignore what EB_CMakePythonPackage returns."""
-        return "\nprepend-path\tPYTHONPATH\t$root\n"
+
+        if LooseVersion(self.version()) >= LooseVersion("1.4"):
+            txt = "\nprepend-path\tPYTHONPATH\t$root/%s\n" % self.pythonlibdir
+        else:
+            txt =  "\nprepend-path\tPYTHONPATH\t$root\n"
+
+        return txt
