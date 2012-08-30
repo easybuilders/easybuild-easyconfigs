@@ -86,7 +86,7 @@ def add_cmdline_options(parser):
 
     # software build options
     software_build_options = OptionGroup(parser, "Software build options",
-                                     "Specify software build options (overrides settings in easyconfig.")
+                                     "Specify software build options (overrides settings in easyconfig).")
 
     software_build_options.add_option("--software-name", metavar="NAME",
                                       help="build software package with given name")
@@ -99,7 +99,8 @@ def add_cmdline_options(parser):
     software_build_options.add_option("--toolkit-version", metavar="VERSION",
                                       help="build with specified toolkit version")
     software_build_options.add_option("--amend", metavar="VAR=VALUE[,VALUE2]", action="append",
-                                      help="specify additional build parameters (can be used multiple times)")
+                                      help="specify additional build parameters (can be used multiple times); " \
+                                            "for example: versionprefix=foo or patches=one.patch,two.patch")
 
     parser.add_option_group(software_build_options)
 
