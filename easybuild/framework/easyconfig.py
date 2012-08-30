@@ -517,6 +517,7 @@ def pick_version(req_ver, avail_vers, log):
     if not avail_vers:
         log.error("Empty list of available versions passed.")
 
+    selected_ver = None
     if req_ver:
         # if a desired version is specified,
         # retain the most recent version that's less recent than the desired version
@@ -526,7 +527,12 @@ def pick_version(req_ver, avail_vers, log):
         if len(avail_vers) == 1:
             selected_ver = avail_vers[0]
         else:
-            selected_ver = [v for v in avail_vers if v < LooseVersion(ver)][-1]
+            retained_vers = [v for v in avail_vers if v < LooseVersion(ver)]
+            if retained_vers:
+                selected_ver = retained_vers[-1]
+            else:
+                # if no versions are available that are less recent, take the least recent version
+                selected_ver = sorted([LooseVersion(v) for v in avail_vers])[0]
 
     else:
         # if no desired version is specified, just use last version
@@ -617,6 +623,8 @@ def select_or_generate_ec(fp, paths, specs, log):
     If a complete match is found, it will return that easyconfig. 
     Else, it will generate a new easyconfig file based on the selected 'best matching' easyconfig file.
     """
+
+    specs = copy.deepcopy(specs)
 
     # ensure that at least name is specified
     if not specs.get('name'):
@@ -803,7 +811,12 @@ def select_or_generate_ec(fp, paths, specs, log):
         # check whether selected easyconfig matches requirements
         match = True
         for (key, val) in specs.items():
-            if key in selected_ec.config and selected_ec[key] and not selected_ec[key] == val:
+            if key in selected_ec.config:
+                # values must be equal to hve a full match
+                if not selected_ec[key] == val:
+                    match = False
+            else:
+                # if we encounter a key that is not set in the selected easyconfig, we don't have a full match
                 match = False
 
         # if it matches, no need to tweak
@@ -843,7 +856,6 @@ def tweak(src_fn, target_fn, tweaks, log):
 
     # read easyconfig file
     ectxt = None
-    print src_fn
     try:
         f = open(src_fn, "r")
         ectxt = f.read()
@@ -865,10 +877,11 @@ def tweak(src_fn, target_fn, tweaks, log):
 
         toolkit = eval(res.group(1))
 
-        for key in ['toolkit_name', 'toolkit_version']:
-            if key in keys:
-                toolkit.update({key: tweaks[key]})
-                tweaks.pop(key)
+        for key in ['name', 'version']:
+            tk_key = "toolkit_%s" % key
+            if tk_key in keys:
+                toolkit.update({key: tweaks[tk_key]})
+                tweaks.pop(tk_key)
 
         tweaks.update({'toolkit': {'name': toolkit['name'], 'version': toolkit['version']}})
 
@@ -886,7 +899,7 @@ def tweak(src_fn, target_fn, tweaks, log):
             res = regexp.search(ectxt)
             if res:
                 newval = "%s + %s" % (val, res.group(1))
-                ectxt = regexp.sub("%s = %s # tweaked by EasyBuild" % (key, newval), ectxt)
+                ectxt = regexp.sub("%s = %s # tweaked by EasyBuild (was: %s)" % (key, newval, res.group(1)), ectxt)
                 log.info("Tweaked %s list to '%s'" % (key, newval))
             else:
                 additions.append("%s = %s # added by EasyBuild" % (key, val))
@@ -931,7 +944,7 @@ def tweak(src_fn, target_fn, tweaks, log):
                 diff = not res.group(1) == val
 
             if diff:
-                ectxt = regexp.sub("%s = %s # tweaked by EasyBuild" % (key, quoted(val)), ectxt)
+                ectxt = regexp.sub("%s = %s # tweaked by EasyBuild (was: %s)" % (key, quoted(val), res.group(1)), ectxt)
         else:
             additions.append("%s = %s" % (key, quoted(val)))
 
