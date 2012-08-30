@@ -30,8 +30,8 @@ from easybuild.framework.easyconfig import EasyConfig, tweak, obtain_ec_for
 from easybuild.tools.build_log import EasyBuildError, initLogger
 from easybuild.tools.systemtools import get_shared_lib_ext
 
-log_fn = "/tmp/easyconfig_test.log"
-_, log, logh = initLogger(filename=log_fn, debug=True, typ="easyconfig_test")
+log_fn = "/tmp/easybuild_easyconfig_tests.log"
+_, log, logh = initLogger(filename=log_fn, debug=True, typ="easybuild_easyconfig_test")
 
 class EasyConfigTest(TestCase):
     """ Baseclass for easyblock testcases """
@@ -46,8 +46,6 @@ class EasyConfigTest(TestCase):
     def tearDown(self):
         """ make sure to remove the temporary file """
         os.remove(self.eb_file)
-        logh.close()
-        #os.remove(log_fn)
 
     def assertErrorRegex(self, error, regex, call, *args):
         """ convenience method to match regex with the error message """
@@ -476,6 +474,7 @@ class TestObtainEasyconfig(EasyConfigTest):
         self.assertEqual(ec['version'], specs['version'])
         txt = open(res, "r").read()
         self.assertTrue(re.search("version = [\"']%s[\"'] .*was: [\"']3.13[\"']" % ver, txt))
+        os.remove(res)
 
         # should pick correct toolkit version as well, i.e. now newer than what's specified, if a choice needs to be made
         specs.update({
@@ -489,6 +488,7 @@ class TestObtainEasyconfig(EasyConfigTest):
         txt = open(res, "r").read()
         pattern = "toolkit = .*version.*[\"']%s[\"'].*was: .*version.*[\"']%s[\"']" % (specs['toolkit_version'], tkver)
         self.assertTrue(re.search(pattern, txt))
+        os.remove(res)
 
 
         # should be able to prepend to list of patches and handle list of dependencies
@@ -521,7 +521,7 @@ class TestObtainEasyconfig(EasyConfigTest):
     def tearDown(self):
         """Cleanup: remove temp dir with test easyconfig files."""
         EasyConfigTest.tearDown(self)
-        #shutil.rmtree(self.ec_dir)
+        shutil.rmtree(self.ec_dir)
 
 def suite():
     """ return all the tests in this file """
