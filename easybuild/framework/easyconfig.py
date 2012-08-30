@@ -100,8 +100,8 @@ class EasyConfig:
                          "non-zero exit status to fail", BUILD]),
           ('sanityCheckPaths', [{}, "List of files and directories to check (format: {'files':<list>, " \
                                     "'dirs':<list>}, default: {})", BUILD]),
-          ('sanityCheckCommand', [None, "format: (name, options) e.g. ('gzip','-h') . If set to True " \
-                                        "it will use (name, '-h')", BUILD]),
+          ('sanityCheckCommands', [[], "format: [(name, options)] e.g. [('gzip','-h')]. " \
+                                       "Using a non-tuple is equivalent to (name, '-h')", BUILD]),
 
           ('startfrom', [None, 'Path to start the make in. If the path is absolute, use that path. ' \
                                'If not, this is added to the guessed path.', FILEMANAGEMENT]),
