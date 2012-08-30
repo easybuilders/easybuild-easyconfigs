@@ -41,7 +41,7 @@ from easybuild.tools.filetools import run_cmd
 from easybuild.tools.modules import get_software_root, get_software_version
 
 
-class CP2K(Application):
+class EB_CP2K(Application):
     """
     Support for building CP2K
     - prepare module include files if required

@@ -26,18 +26,19 @@
 EasyBuild support for building and installing ScaLAPACK, implemented as an easyblock
 """
 
+import glob
 import os
 import shutil
 from distutils.version import LooseVersion
 
 import easybuild.tools.toolkit as toolkit
-from easybuild.easyblocks.b.blacs import det_interface
-from easybuild.easyblocks.l.lapack import get_blas_lib
+from easybuild.easyblocks.blacs import det_interface
+from easybuild.easyblocks.lapack import get_blas_lib
 from easybuild.framework.application import Application
 from easybuild.tools.modules import get_software_root
 
 
-class ScaLAPACK(Application):
+class EB_ScaLAPACK(Application):
     """
     Support for building and installing ScaLAPACK, both versions 1.x and 2.x
     """
@@ -57,7 +58,7 @@ class ScaLAPACK(Application):
         try:
             shutil.copy(src, dest)
         except OSError, err:
-            self.log.error("Symlinking %s to % failed: %s"%(src, dest, err))
+            self.log.error("Symlinking %s to % failed: %s" % (src, dest, err))
 
         self.loosever = LooseVersion(self.version())
 
@@ -87,7 +88,7 @@ class ScaLAPACK(Application):
 
         # set BLAS and LAPACK libs
         extra_makeopts = [
-                          'BLASLIB="%s -lpthread"' % get_blas_lib(self.log), 
+                          'BLASLIB="%s -lpthread"' % get_blas_lib(self.log),
                           'LAPACKLIB=%s/lib/liblapack.a' % get_software_root('LAPACK')
                          ]
 
@@ -120,7 +121,7 @@ class ScaLAPACK(Application):
                                'F77="%s"' % mpif77,
                                'CC="%s"' % mpicc,
                                'NOOPT="%s"' % noopt,
-                               'CCFLAGS="-O3"'
+                               'CCFLAGS="-O3 %s"' % os.getenv('CFLAGS')
                               ]
 
             # set interface
@@ -136,7 +137,7 @@ class ScaLAPACK(Application):
 
             # set compilers and options
             extra_makeopts += [
-                               'FC="%s"' % mpif90, 
+                               'FC="%s"' % mpif90,
                                'CC="%s"' % mpicc
                               ]
 
@@ -151,20 +152,34 @@ class ScaLAPACK(Application):
     def make_install(self):
         """Install by copying files to install dir."""
 
-        src = os.path.join(self.getcfg('startfrom'), 'libscalapack.a')
-        dest = os.path.join(self.installdir, 'lib')
+        # include files and libraries
+        for (srcdir, destdir, ext) in [
+                                       ("SRC", "include", ".h"), # include files
+                                       ("", "lib", ".a"), # libraries
+                                       ]:
 
-        try:
-            os.makedirs(dest)
-            shutil.copy2(src,dest)
-        except OSError, err:
-            self.log.error("Copying %s to installation dir %s failed: %s" % (src, dest, err))
+            src = os.path.join(self.getcfg('startfrom'), srcdir)
+            dest = os.path.join(self.installdir, destdir)
+
+            try:
+                os.makedirs(dest)
+                os.chdir(src)
+
+                for lib in glob.glob('*%s' % ext):
+
+                    # copy file
+                    shutil.copy2(os.path.join(src, lib), dest)
+
+                    self.log.debug("Copied %s to %s" % (lib, dest))
+
+            except OSError, err:
+                self.log.error("Copying %s/*.%s to installation dir %s failed: %s" % (src, ext, dest, err))
 
     def sanitycheck(self):
         """Custom sanity check for ScaLAPACK."""
 
         if not self.getcfg('sanityCheckPaths'):
-            self.setcfg('sanityCheckPaths',{
+            self.setcfg('sanityCheckPaths', {
                                             'files': ["lib/libscalapack.a"],
                                             'dirs': []
                                            })

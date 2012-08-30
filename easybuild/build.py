@@ -38,6 +38,26 @@ import tempfile
 import time
 from optparse import OptionParser, OptionGroup
 
+# optional Python packages, these might be missing
+# failing imports are just ignored
+# a NameError should be catched where these are used
+
+# PyGraph (used for generating dependency graphs)
+try:
+    import  pygraph.readwrite.dot as dot
+    from pygraph.classes.digraph import digraph
+except ImportError, err:
+    pass
+
+# graphviz (used for creating dependency graph images)
+try:
+    sys.path.append('..')
+    sys.path.append('/usr/lib/graphviz/python/')
+    sys.path.append('/usr/lib64/graphviz/python/')
+    import gv
+except ImportError, err:
+    pass
+
 import easybuild  # required for VERBOSE_VERSION
 import easybuild.framework.easyconfig as easyconfig
 import easybuild.tools.config as config
@@ -48,7 +68,8 @@ from easybuild.framework.easyconfig import EasyConfig
 from easybuild.tools.build_log import EasyBuildError, initLogger, \
     removeLogHandler, print_msg
 from easybuild.tools.class_dumper import dumpClasses
-from easybuild.tools.modules import Modules, searchModule
+from easybuild.tools.modules import Modules, searchModule, \
+    curr_module_paths, mk_module_path
 from easybuild.tools.config import getRepository
 from easybuild.tools import systemtools
 
@@ -114,7 +135,7 @@ def add_cmdline_options(parser):
                                "the options for [default: Application class]")
     override_options.add_option("-p", "--pretend", action="store_true", help="does the build/installation in " \
                                 "a test directory located in $HOME/easybuildinstall [default: $EASYBUILDINSTALLDIR " \
-                                "or installiPath in EasyBuild config file]")
+                                "or installPath in EasyBuild config file]")
     override_options.add_option("-t", "--skip-tests", action="store_true", help="skip testing")
 
     parser.add_option_group(override_options)
@@ -129,6 +150,7 @@ def add_cmdline_options(parser):
                                    help="show list of available classes")
     informative_options.add_option("--search", help="search for module-files in the robot-directory")
     informative_options.add_option("-v", "--version", action="store_true", help="show version")
+    informative_options.add_option("--dep-graph", metavar="depgraph.<ext>", help="create dependency graph")
 
     parser.add_option_group(informative_options)
 
@@ -192,11 +214,18 @@ def main():
     # - last, use default config file easybuild_config.py in build.py directory
     config_file = options.config
 
-    if not config_file and os.getenv(config.environmentVariables['configFile']):
-        config_file = os.getenv(config.environmentVariables['configFile'])
-    else:
-        appPath = os.path.dirname(os.path.realpath(sys.argv[0]))
-        config_file = os.path.join(appPath, "easybuild_config.py")
+    if not config_file:
+        log.debug("No config file specified on command line, trying other options.")
+
+        config_env_var = config.environmentVariables['configFile']
+        if os.getenv(config_env_var):
+            log.debug("Environment variable %s, so using that as config file." % config_env_var)
+            config_file = os.getenv(config_env_var)
+        else:
+            appPath = os.path.dirname(os.path.realpath(sys.argv[0]))
+            config_file = os.path.join(appPath, "easybuild_config.py")
+            log.debug("Falling back to default config: %s" % config_file)
+
     config.init(config_file, **configOptions)
 
     # dump possible options
@@ -222,6 +251,16 @@ def main():
     if options.strict:
         filetools.strictness = options.strict
 
+    # building a dependency graph implies force, so that all dependencies are retained
+    # and also skips validation of easyconfigs (e.g. checking os dependencies)
+    validate_easyconfigs = True
+    retain_all_deps = False
+    if options.dep_graph:
+        log.info("Enabling force to generate dependency graph.")
+        options.force = True
+        validate_easyconfigs = False
+        retain_all_deps = True
+    
     # process software build specifications (if any), i.e.
     # software name/version, toolkit name/version, extra patches, ...
     software_build_specs = process_software_build_specs(options)
@@ -250,7 +289,7 @@ def main():
                     ec_file = easyconfig.tweak(f, None, software_build_specs, log)
                 else:
                     ec_file = f
-                packages.extend(processEasyconfig(ec_file, log, blocks))
+                packages.extend(processEasyconfig(ec_file, log, blocks, validate=validate_easyconfigs))
         except IOError, err:
             log.error("Processing easyconfigs in path %s failed: %s" % (path, err))
 
@@ -265,7 +304,7 @@ def main():
         for package in checkPackages:
             module = package['module']
             mod = "%s (version %s)" % (module[0], module[1])
-            modspath = os.path.join(config.installPath("mod"), 'all')
+            modspath = mk_module_path(curr_module_paths() + [os.path.join(config.installPath("mod"), 'all')])
             if m.exists(module[0], module[1], modspath):
                 msg = "%s is already installed (module found in %s), skipping " % (mod, modspath)
                 print_msg(msg, log)
@@ -277,11 +316,24 @@ def main():
     # determine an order that will allow all specs in the set to build
     if len(packages) > 0:
         print_msg("resolving dependencies ...", log)
-        orderedSpecs = resolveDependencies(packages, options.robot, log)
+        # force all dependencies to be retained and validation to be skipped for building dep graph
+        force = retain_all_deps and not validate_easyconfigs
+        orderedSpecs = resolveDependencies(packages, options.robot, log, force=force)
     else:
         print_msg("No packages left to be built.", log)
         orderedSpecs = []
 
+    # create dependency graph and exit
+    if options.dep_graph:
+        log.info("Creating dependency graph %s" % options.dep_graph)
+        try:
+            dep_graph(options.dep_graph, orderedSpecs, log)
+        except NameError, err:
+            log.error("At least one optional Python packages (pygraph, dot, graphviz) required to " \
+                      "generate dependency graphs is missing: %s" % err)
+        sys.exit(0)
+
+    # submit build as job(s) and exit
     if options.job:
         curdir = os.getcwd()
         easybuild_basedir = os.path.dirname(os.path.dirname(sys.argv[0]))
@@ -310,8 +362,10 @@ def main():
 
         command = "cd %s && %s %%s %s" % (curdir, eb_path, opts)
         jobs = parbuild.build_packages_in_parallel(command, orderedSpecs, "easybuild-build", log)
+        print "List of submitted jobs:"
         for job in jobs:
             print "%s: %s" % (job.name, job.jobid)
+        print "(%d jobs submitted)" % len(jobs)
 
         log.info("Submitted parallel build jobs, exiting now")
         sys.exit(0)
@@ -373,7 +427,7 @@ def findEasyconfigs(path, log):
 
     return files
 
-def processEasyconfig(path, log, onlyBlocks=None, regtest_online=False):
+def processEasyconfig(path, log, onlyBlocks=None, regtest_online=False, validate=True):
     """
     Process easyconfig, returning some information for each block
     """
@@ -387,7 +441,7 @@ def processEasyconfig(path, log, onlyBlocks=None, regtest_online=False):
 
         # create easyconfig
         try:
-            ec = EasyConfig(spec)
+            ec = EasyConfig(spec, validate=validate)
         except EasyBuildError, err:
             msg = "Failed to process easyconfig %s:\n%s" % (spec, err.msg)
             log.exception(msg)
@@ -422,15 +476,22 @@ def processEasyconfig(path, log, onlyBlocks=None, regtest_online=False):
 
     return packages
 
-def resolveDependencies(unprocessed, robot, log):
+def resolveDependencies(unprocessed, robot, log, force=False):
     """
     Work through the list of packages to determine an optimal order
+    enabling force results in retaining all dependencies and skipping validation of easyconfigs
     """
 
-    # get a list of all available modules (format: [(name, installversion), ...])
-    availableModules = Modules().available()
-    if len(availableModules) == 0:
-        log.warning("No installed modules. Your MODULEPATH is probably incomplete.")
+    if force:
+        # assume that no modules are available when forced
+        availableModules = []
+        log.info("Forcing all dependencies to be retained.")
+    else:
+        # Get a list of all available modules (format: [(name, installversion), ...])
+        availableModules = Modules().available()
+
+        if len(availableModules) == 0:
+            log.warning("No installed modules. Your MODULEPATH is probably incomplete.")
 
     orderedSpecs = []
     # All available modules can be used for resolving dependencies except
@@ -478,7 +539,7 @@ def resolveDependencies(unprocessed, robot, log):
                 if path:
                     log.info("Robot: resolving dependency %s with %s" % (candidates[0], path))
 
-                    processedSpecs = processEasyconfig(path, log)
+                    processedSpecs = processEasyconfig(path, log, validate=(not force))
 
                     # ensure the pathname is equal to the module
                     mods = [spec['module'] for spec in processedSpecs]
@@ -853,6 +914,55 @@ def print_avail_params(easyblock, log):
             print "%s:%s%s" % (name, tabs, value)
 
         print
+
+
+def dep_graph(fn, specs, log):
+    """
+    Create a dependency graph for the given easyconfigs.
+    """
+
+    # check whether module names are unique
+    # if so, we can omit versions in the graph 
+    names = set()
+    for spec in specs:
+        names.add(spec['module'][0])
+    omit_versions = len(names) == len(specs)
+
+    def mk_node_name(mod):
+        if omit_versions:
+            return mod[0]
+        else:
+            return '-'.join(mod)
+
+    # enhance list of specs
+    for spec in specs:
+        spec['module'] = mk_node_name(spec['module'])
+        spec['unresolvedDependencies'] = [mk_node_name(s) for s in spec['unresolvedDependencies']] #[s[0] for s in spec['unresolvedDependencies']]
+
+    # build directed graph
+    dgr = digraph()
+    dgr.add_nodes([spec['module'] for spec in specs])
+    for spec in specs:
+        for dep in spec['unresolvedDependencies']:
+            dgr.add_edge((spec['module'], dep))
+
+    # write to file
+    dottxt = dot.write(dgr)
+    if fn.endswith(".dot"):
+        # create .dot file
+        try:
+            f = open(fn, "w")
+            f.write(dottxt)
+            f.close()
+        except IOError, err:
+            log.error("Failed to create file %s: %s" % (fn, err))
+    else:
+        # try and render graph in specified file format
+        gvv = gv.readstring(dottxt)
+        gv.layout(gvv, 'dot')
+        gv.render(gvv, fn.split('.')[-1], fn)
+
+    print "Wrote dependency graph to %s" % fn
 
 
 if __name__ == "__main__":

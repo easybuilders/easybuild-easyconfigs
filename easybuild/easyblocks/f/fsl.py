@@ -32,7 +32,7 @@ from easybuild.framework.application import Application
 from easybuild.tools.filetools import run_cmd
 
 
-class FSL(Application):
+class EB_FSL(Application):
     """Support for building and installing FSL."""
 
     def __init__(self,*args,**kwargs):

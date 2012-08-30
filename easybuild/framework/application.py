@@ -34,6 +34,7 @@ import grp  #@UnresolvedImport
 import os
 import re
 import shutil
+import stat
 import time
 import urllib
 from distutils.version import LooseVersion
@@ -42,9 +43,10 @@ import easybuild
 import easybuild.tools.config as config
 import easybuild.tools.environment as env
 from easybuild.framework.easyconfig import EasyConfig
-from easybuild.tools.build_log import EasyBuildError, initLogger, removeLogHandler,print_msg
-from easybuild.tools.config import source_path, buildPath, installPath
-from easybuild.tools.filetools import unpack, patch, run_cmd, convertName
+from easybuild.tools.build_log import EasyBuildError, initLogger, removeLogHandler, print_msg
+from easybuild.tools.config import source_path, buildPath, installPath, read_only_installdir
+from easybuild.tools.filetools import adjust_permissions, convertName, encode_class_name
+from easybuild.tools.filetools import patch, run_cmd, unpack
 from easybuild.tools.module_generator import ModuleGenerator
 from easybuild.tools.modules import Modules, get_software_root
 from easybuild.tools.systemtools import get_core_count
@@ -334,9 +336,9 @@ class Application:
             self.log.error('Not all dependencies have a matching toolkit version')
 
         # Check if the application is not loaded at the moment
-        envName = "EBROOT%s" % convertName(self.name(), upper=True)
-        if get_software_root(self.name()):
-            self.log.error("Module is already loaded (%s is set), installation cannot continue." % envName)
+        (root, env_var) = get_software_root(self.name(), with_env_var=True)
+        if root:
+            self.log.error("Module is already loaded (%s is set), installation cannot continue." % env_var)
 
         # Check if main install needs to be skipped
         # - if a current module can be found, skip is ok
@@ -344,8 +346,8 @@ class Application:
         if self.getcfg('skip'):
             if Modules().exists(self.name(), self.installversion()):
                 self.skip = True
-                self.log.info("Current version (name: %s, version: %s) found. Going to skip actually main build and\
-                        potential existing packages. Expert only." % (self.name(), self.installversion()))
+                self.log.info("Current version (name: %s, version: %s) found." % (self.name(), self.installversion))
+                self.log.info("Going to skip actually main build and potential exitsing packages. Expert only.")
             else:
                 self.log.info("No current version (name: %s, version: %s) found. Not skipping anything." % (self.name(),
                     self.installversion()))
@@ -626,6 +628,8 @@ class Application:
         - test
         - make install location
         - install
+        - install packages
+        - do post-processing
         """
         try:
             print_msg("preparing...", self.log)
@@ -708,7 +712,7 @@ class Application:
 
         env = copy.deepcopy(os.environ)
 
-        changed = [(k,env[k]) for k in env if k not in self.orig_environ]
+        changed = [(k, env[k]) for k in env if k not in self.orig_environ]
         for k in env:
             if k in self.orig_environ and env[k] != self.orig_environ[k]:
                 changed.append((k, env[k]))
@@ -734,31 +738,27 @@ class Application:
         Installing user must be member of the group that it is changed to
         """
         if self.getcfg('group'):
-            gid = grp.getgrnam(self.getcfg('group'))[2]
-            chngsuccess = []
-            chngfailure = []
-            for (root, _, files) in os.walk(self.installdir):
-                try:
-                    os.chown(root, -1, gid)
-                    os.chmod(root, 0750)
-                    chngsuccess.append(root)
-                except OSError, err:
-                    self.log.error("Failed to change group for %s: %s" % (root, err))
-                    chngfailure.append(root)
-                for f in files:
-                    absfile = os.path.join(root, f)
-                    try:
-                        os.chown(absfile, -1, gid)
-                        os.chmod(root, 0750)
-                        chngsuccess.append(absfile)
-                    except OSError, err:
-                        self.log.debug("Failed to chown/chmod %s (but ignoring it): %s" % (absfile, err))
-                        chngfailure.append(absfile)
 
-            if len(chngfailure) > 0:
-                self.log.error("Unable to change group permissions of file(s). Are you a member of this group?:\n --> %s" % "\n --> ".join(chngfailure))
-            else:
-                self.log.info("Successfully made software only available for group %s" % self.getcfg('group'))
+            gid = grp.getgrnam(self.getcfg('group'))[2]
+            # rwx for owner, r-x for group, --- for other
+            try:
+                adjust_permissions(self.installdir, 0750, recursive=True, group_id=gid, relative=False)
+            except EasyBuildError, err:
+                self.log.error("Unable to change group permissions of file(s). " \
+                               "Are you a member of this group?\n%s" % err)
+            self.log.info("Successfully made software only available for group %s" % self.getcfg('group'))
+
+        else:
+            # remove write permissions for group and other
+            perms = stat.S_IWGRP | stat.S_IWOTH
+            adjust_permissions(self.installdir, perms, add=False, recursive=True, relative=True)
+            self.log.info("Successfully removed write permissions recursively for group/other on install dir.")
+
+        if read_only_installdir():
+            # remove write permissions for everyone
+            perms = stat.S_IWUSR | stat.S_IWGRP | stat.S_IWOTH
+            adjust_permissions(self.installdir, perms, add=False, recursive=True, relative=True)
+            self.log.info("Successfully removed write permissions recursively for *EVERYONE* on install dir.")
 
     def cleanup(self):
         """
@@ -842,14 +842,14 @@ class Application:
             self.log.debug("Loading module failed: %s" % err)
             self.sanityCheckOK = False
 
-        # chdir to installdir (beter environment for running tests)
+        # chdir to installdir (better environment for running tests)
         os.chdir(self.installdir)
 
-        # run sanity check command
-        command = self.getcfg('sanityCheckCommand')
-        if command:
+        # run sanity check commands
+        commands = self.getcfg('sanityCheckCommands')
+        for command in commands:
             # set command to default. This allows for config files with
-            # sanityCheckCommand = True
+            # non-tuple commands
             if not isinstance(command, tuple):
                 self.log.debug("Setting sanity check command to default")
                 command = (None, None)
@@ -868,9 +868,9 @@ class Application:
             out, ec = run_cmd(cmd, simple=False)
             if ec != 0:
                 self.sanityCheckOK = False
-                self.log.debug("sanityCheckCommand %s exited with code %s (output: %s)" % (cmd, ec, out))
+                self.log.warning("sanityCheckCommand %s exited with code %s (output: %s)" % (cmd, ec, out))
             else:
-                self.log.debug("sanityCheckCommand %s ran successfully! (output: %s)" % (cmd, out))
+                self.log.info("sanityCheckCommand %s ran successfully! (output: %s)" % (cmd, out))
 
         failed_pkgs = [pkg.name for pkg in self.instance_pkgs if not pkg.sanitycheck()]
 
@@ -915,7 +915,6 @@ class Application:
         """
         self.toolkit().prepare(self.getcfg('onlytkmod'))
         self.startfrom()
-        self.make_devel_module(create_in_builddir=True)
 
 
     def configure(self, cmd_prefix=''):
@@ -923,31 +922,42 @@ class Application:
         Configure step
         - typically ./configure --prefix=/install/path style
         """
+
         cmd = "%s %s./configure --prefix=%s %s" % (self.getcfg('preconfigopts'), cmd_prefix,
                                                     self.installdir, self.getcfg('configopts'))
-        run_cmd(cmd, log_all=True, simple=True)
+
+        (out, _) = run_cmd(cmd, log_all=True, simple=False)
+
+        return out
 
     def make(self, verbose=False):
         """
         Start the actual build
         - typical: make -j X
         """
+
         paracmd = ''
         if self.getcfg('parallel'):
             paracmd = "-j %s" % self.getcfg('parallel')
 
         cmd = "%s make %s %s" % (self.getcfg('premakeopts'), paracmd, self.getcfg('makeopts'))
 
-        run_cmd(cmd, log_all=True, simple=True, log_output=verbose)
+        (out, _) = run_cmd(cmd, log_all=True, simple=False, log_output=verbose)
+
+        return out
 
     def test(self):
         """
         Test the compilation
         - default: None
         """
+
         if self.getcfg('runtest'):
             cmd = "make %s" % (self.getcfg('runtest'))
-            run_cmd(cmd, log_all=True, simple=True)
+            (out, _) = run_cmd(cmd, log_all=True, simple=False)
+
+            return out
+
     def toolkit(self):
         """
         Toolkit used to build this Application
@@ -971,8 +981,12 @@ class Application:
         Create the installation in correct location
         - typical: make install
         """
+
         cmd = "make install %s" % (self.getcfg('installopts'))
-        run_cmd(cmd, log_all=True, simple=True)
+
+        (out, _) = run_cmd(cmd, log_all=True, simple=False)
+
+        return out
 
     def make_builddir(self):
         """
@@ -1086,7 +1100,7 @@ class Application:
         txt += self.make_module_extra()
         if self.getcfg('pkglist'):
             txt += self.make_module_extra_packages()
-        txt += '\n# built with EasyBuild version %s' % easybuild.VERBOSE_VERSION
+        txt += '\n# built with EasyBuild version %s\n' % easybuild.VERBOSE_VERSION
 
         try:
             f = open(self.moduleGenerator.filename, 'w')
@@ -1144,7 +1158,7 @@ class Application:
                 if not key.endswith(convertName(self.name(), upper=True)):
                     path = os.environ[key]
                     if os.path.isfile(path):
-                        name, version =  path.rsplit('/', 1)
+                        name, version = path.rsplit('/', 1)
                         load_txt += mod_gen.loadModule(name, version)
 
         if create_in_builddir:
@@ -1265,7 +1279,7 @@ class Application:
                     if os.path.exists(fullpath):
                         installsize += os.path.getsize(fullpath)
         except OSError, err:
-            self.log.warn("could not determine installsize: %s" % err)
+            self.log.warn("Could not determine install size: %s" % err)
 
         return installsize
 
@@ -1288,10 +1302,10 @@ class Application:
             modpath = self.make_module(fake=True)
         # adjust MODULEPATH tand load module
         if self.getcfg('pkgloadmodule'):
-            self.log.debug("Adding %s to MODULEPATH" % modpath)
             if self.skip:
                 m = Modules()
             else:
+                self.log.debug("Adding %s to MODULEPATH" % modpath)
                 m = Modules([modpath] + os.environ['MODULEPATH'].split(':'))
 
             if m.exists(self.name(), self.installversion()):
@@ -1399,7 +1413,7 @@ class Application:
         allclassmodule = pkgdefaultclass[0]
         defaultClass = pkgdefaultclass[1]
         for pkg in self.pkgs:
-            name = pkg['name'][0].upper() + pkg['name'][1:] # classnames start with a capital
+            name = encode_class_name(pkg['name']) # Use the same encoding as get_class
             self.log.debug("Starting package %s" % name)
 
             try:
@@ -1509,31 +1523,28 @@ def get_class_for(modulepath, class_name):
     # >>> c = getattr(d,'Likwid')
     # >>> c()
     m = __import__(modulepath, globals(), locals(), [''])
-    c = getattr(m, class_name)
+    try:
+        c = getattr(m, class_name)
+    except AttributeError:
+        raise ImportError
     return c
 
 def module_path_for_easyblock(easyblock):
     """
     Determine the module path for a given easyblock name,
-    based on first character:
-    - easybuild.easyblocks.a
-    - ...
-    - easybuild.easyblocks.z
-    - easybuild.easyblocks.0
+    based on the encoded class name.
     """
-    letters = [chr(ord('a') + x) for x in range(0, 26)] # a-z
-
     if not easyblock:
         return None
 
-    modname = easyblock.replace('-','_')
+    # FIXME: we actually need a decoding function here,
+    # i.e. from encoded class name to module name
+    class_prefix = encode_class_name("")
+    if easyblock.startswith(class_prefix):
+        easyblock = easyblock[len(class_prefix):]
 
-    first_char = easyblock[0].lower()
-
-    if first_char in letters:
-        return "easybuild.easyblocks.%s.%s" % (first_char, modname)
-    else:
-        return "easybuild.easyblocks.0.%s" % modname
+    modname = easyblock.replace('-', '_')
+    return "easybuild.easyblocks.%s" % (modname.lower())
 
 def get_paths_for(log, subdir="easyblocks"):
     """
@@ -1556,53 +1567,37 @@ def get_class(easyblock, log, name=None):
     """
     Get instance for a particular application class (or Application)
     """
-    #TODO: create proper factory for this, as explained here
-    #http://stackoverflow.com/questions/456672/class-factory-in-python
+
+    app_mod_class = ("easybuild.framework.application", "Application")
+
     try:
+        # if no easyblock specified, try to find if one exists
         if not easyblock:
             if not name:
                 name = "UNKNOWN"
-
+            # modulepath will be the namespace + encoded modulename (from the classname)
             modulepath = module_path_for_easyblock(name)
-            # don't use capitalize, as it changes 'GCC' into 'Gcc', we want to keep the capitals that are there already
-            class_name = name[0].upper() + name[1:].replace('-','_')
+            # The following is a generic way to calculate unique class names for any funny package title
+            class_name = encode_class_name(name)
 
             # try and find easyblock
-            easyblock_found = False
-            easyblock_path = ''
-            easyblock_paths = [modulepath.lower()]
-            for path in get_paths_for(log, "easyblocks"):
-                for possible_path in easyblock_paths:
-                    easyblock_path = os.path.join(path, "%s.py" % possible_path.replace('.', os.path.sep))
-                    log.debug("Checking easyblocks path %s..." % easyblock_path)
-                    if os.path.exists(easyblock_path):
-                        easyblock_found = True
-                        log.debug("Found easyblock for %s at %s" % (name, easyblock_path))
-                        modulepath = possible_path
-                        break
-                if easyblock_found:
-                    break
+            try:
+                log.debug("getting class for %s.%s" % (modulepath, class_name))
+                cls = get_class_for(modulepath, class_name)
+                log.info("Successfully obtained %s class instance from %s" % (class_name, modulepath))
+                return cls
+            except ImportError, err:
+                # No easyblock could be found, so fall back to default class.
 
-            # only try to import derived easyblock if it exists
-            if easyblock_found:
-
-                try:
-
-                    cls = get_class_for(modulepath, class_name)
-
-                    log.info("Successfully obtained %s class instance from %s" % (class_name, modulepath))
-
-                    return cls
-
-                except Exception, err:
-                    log.error("Failed to use easyblock at %s for class %s: %s" % (modulepath, class_name, err))
-                    raise EasyBuildError(str(err))
-
-            else:
-                modulepath = "easybuild.framework.application"
-                class_name = "Application"
-                log.debug("Easyblock path %s does not exist, so falling back to default %s class from %s" % (easyblock_path, class_name, modulepath))
-
+                log.debug("Failed to import easyblock for %s, falling back to default %s class: erro: %s" % \
+                          (class_name, app_mod_class, err))
+                (modulepath, class_name) = app_mod_class
+        # If Application was specified, use the framework namespace
+        elif easyblock == "Application":
+            (modulepath, class_name) = app_mod_class
+            log.debug("Easyblock %s specified, so using default class %s from %s" % \
+                      (easyblock, class_name, modulepath))
+        # Something was specified, lets parse it
         else:
             class_name = easyblock.split('.')[-1]
             # figure out if full path was specified or not

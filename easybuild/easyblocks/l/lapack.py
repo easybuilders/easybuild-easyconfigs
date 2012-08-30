@@ -30,6 +30,7 @@ import glob
 import os
 import shutil
 
+import easybuild.tools.toolkit as toolkit
 from easybuild.framework.application import Application
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.filetools import run_cmd
@@ -61,7 +62,7 @@ def get_blas_lib(log):
     return blaslib
 
 
-class LAPACK(Application):
+class EB_LAPACK(Application):
     """
     Support for building LAPACK
     - read make.inc.example and replace BLAS line with configtops
@@ -86,9 +87,9 @@ class LAPACK(Application):
         """
 
         # copy make.inc file from examples
-        if get_software_root('gcc'):
+        if self.toolkit().comp_family() == toolkit.GCC:
             makeinc = 'gfortran'
-        elif get_software_root('ifort'):
+        elif self.toolkit().comp_family() == toolkit.INTEL:
             makeinc = 'ifort'
         else:
             self.log.error("Don't know which make.inc file to pick, unknown compiler being used...")
@@ -187,7 +188,7 @@ class LAPACK(Application):
         """
         if self.getcfg('test_only'):
 
-            if not get_software_root('lapack'):
+            if not get_software_root('LAPACK'):
                 self.log.error("You need to make sure that the LAPACK module is loaded to perform testing.")
 
             blaslib = get_blas_lib(self.log)
@@ -219,7 +220,8 @@ class LAPACK(Application):
         if not self.getcfg('test_only'):
             if not self.getcfg('sanityCheckPaths'):
                 self.setcfg('sanityCheckPaths',{
-                                                'files': ["lib/%s" % x for x in ["liblapack.a", "libtmglib.a"]],
+                                                'files': ["lib/%s" % x for x in ["liblapack.a",
+                                                                                 "libtmglib.a"]],
                                                 'dirs': []
                                                })
 

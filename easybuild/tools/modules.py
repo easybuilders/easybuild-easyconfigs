@@ -168,7 +168,7 @@ class Modules:
             modinfo = self.show(name, version)
 
             # second line of module show output contains full path of module file
-            return modinfo.split('\n')[1].replace(':','')
+            return modinfo.split('\n')[1].replace(':', '')
 
     def runModule(self, *args, **kwargs):
         """
@@ -191,7 +191,7 @@ class Modules:
         os.environ['MODULEPATH'] = originalModulePath
 
         if kwargs.get('return_output', False):
-            return (stdout+stderr)
+            return (stdout + stderr)
 
         else:
             # Change the environment
@@ -303,7 +303,7 @@ def searchModule(path, query):
         except ValueError:
             pass
 
-def get_software_root(name):
+def get_software_root(name, with_env_var=False):
     """
     Return the software root set for a particular package.
     """
@@ -313,9 +313,16 @@ def get_software_root(name):
 
     # keep on supporting legacy installations
     if environment_key in os.environ:
-        return os.getenv(environment_key)
+        env_var = environment_key
     else:
-        return os.getenv(legacy_key)
+        env_var = legacy_key
+
+    root = os.getenv(env_var)
+
+    if with_env_var:
+        return (root, env_var)
+    else:
+        return root
 
 def get_software_version(name):
     """
@@ -330,3 +337,15 @@ def get_software_version(name):
         return os.getenv(environment_key)
     else:
         return os.getenv(legacy_key)
+
+def curr_module_paths():
+    """
+    Return a list of current module paths.
+    """
+    return os.environ['MODULEPATH'].split(':')
+
+def mk_module_path(paths):
+    """
+    Create a string representing the list of module paths.
+    """
+    return ':'.join(paths)

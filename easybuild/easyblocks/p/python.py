@@ -23,7 +23,7 @@
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
 """
-EasyBuild support for building and installing Python, implemented as an easyblock
+EasyBuild support for Python, implemented as an easyblock
 """
 
 import os
@@ -35,7 +35,7 @@ from easybuild.tools.filetools import unpack, patch, run_cmd
 from easybuild.tools.modules import get_software_root
 
 
-class Python(Application):
+class EB_Python(Application):
     """Support for building/installing Python
     - default configure/make/make install works fine
 
@@ -51,11 +51,17 @@ class Python(Application):
         """
         We set some default configs here for packages included in python
         """
-        #insert new packages by building them with DefaultPythonPackage
+        #insert new packages by building them with EB_DefaultPythonPackage
         self.log.debug("setting extra packages options")
-        # use __name__ here, since this is the module where DefaultPythonPackage is defined
-        self.setcfg('pkgdefaultclass', (__name__, "DefaultPythonPackage"))
+        # use __name__ here, since this is the module where EB_DefaultPythonPackage is defined
+        self.setcfg('pkgdefaultclass', (__name__, "EB_DefaultPythonPackage"))
         self.setcfg('pkgfilter', ('python -c "import %(name)s"', ""))
+
+    def configure(self):
+        """Set extra configure options."""
+        self.updatecfg('configopts', "--with-threads --enable-shared")
+
+        Application.configure(self)
 
     def make_install(self):
         """Extend make install to make sure that the 'python' command is present."""
@@ -71,7 +77,7 @@ class Python(Application):
                 self.log.error("Failed to symlink %s to %s: %s" % err)
 
 
-class DefaultPythonPackage(ApplicationPackage):
+class EB_DefaultPythonPackage(ApplicationPackage):
     """
     Easyblock for python packages to be included in the python installation.
     """
@@ -189,10 +195,10 @@ class DefaultPythonPackage(ApplicationPackage):
         return self.mself.getcfg(*args, **kwargs)
 
 
-class Nose(DefaultPythonPackage):
+class EB_nose(EB_DefaultPythonPackage):
     """nose package"""
     def __init__(self, mself, pkg, pkginstalldeps):
-        DefaultPythonPackage.__init__(self, mself, pkg, pkginstalldeps)
+        EB_DefaultPythonPackage.__init__(self, mself, pkg, pkginstalldeps)
 
         # use extra unpack options to avoid problems like
         # 'tar: Ignoring unknown extended header keyword `SCHILY.nlink'
@@ -200,8 +206,8 @@ class Nose(DefaultPythonPackage):
         self.unpack_options = ' --pax-option="delete=SCHILY.*" --pax-option="delete=LIBARCHIVE.*" '
 
 
-class FortranPythonPackage(DefaultPythonPackage):
-    """Extends DefaultPythonPackage to add a Fortran compiler to the make call"""
+class EB_FortranPythonPackage(EB_DefaultPythonPackage):
+    """Extends EB_DefaultPythonPackage to add a Fortran compiler to the make call"""
 
     def make(self):
         comp_fam = self.toolkit().comp_family()
@@ -227,11 +233,11 @@ class FortranPythonPackage(DefaultPythonPackage):
         run_cmd(cmd, log_all=True, simple=True)
 
 
-class Numpy(FortranPythonPackage):
+class EB_numpy(EB_FortranPythonPackage):
     """numpy package"""
 
     def __init__(self, mself, pkg, pkginstalldeps):
-        FortranPythonPackage.__init__(self, mself, pkg, pkginstalldeps)
+        EB_FortranPythonPackage.__init__(self, mself, pkg, pkginstalldeps)
 
         self.pkgcfgs = mself.getcfg('pkgcfgs')
         if self.pkgcfgs.has_key('numpysitecfglibsubdirs'):
@@ -302,7 +308,7 @@ libraries = %s
         """Install numpy package
         We remove the numpy build dir here, so scipy doesn't find it by accident
         """
-        FortranPythonPackage.make_install(self)
+        EB_FortranPythonPackage.make_install(self)
         builddir = os.path.join(self.builddir, "numpy")
         if os.path.isdir(builddir):
             shutil.rmtree(builddir)
@@ -310,11 +316,11 @@ libraries = %s
             self.log.debug("build dir %s already clean" % builddir)
 
 
-class Scipy(FortranPythonPackage):
+class EB_scipy(EB_FortranPythonPackage):
     """scipy package"""
 
     def __init__(self, mself, pkg, pkginstalldeps):
-        FortranPythonPackage.__init__(self, mself, pkg, pkginstalldeps)
+        EB_FortranPythonPackage.__init__(self, mself, pkg, pkginstalldeps)
 
         # disable testing
         test = False

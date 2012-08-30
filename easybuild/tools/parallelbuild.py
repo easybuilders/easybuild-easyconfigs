@@ -28,6 +28,7 @@ import math
 import os
 import re
 
+import easybuild.tools.config as config
 from easybuild.framework.application import get_class
 from easybuild.tools.pbs_job import PbsJob
 from easybuild.tools.config import getRepository
@@ -42,7 +43,8 @@ def build_packages_in_parallel(build_command, packages, output_dir, log):
     """
     log.info("going to build these packages in parallel: %s", packages)
     job_module_dict = {}
-    # dependencies have already been resolved this means one can linearly walk over the list and use previous job id's
+    # dependencies have already been resolved,
+    # so one can linearly walk over the list and use previous job id's
     jobs = []
     for pkg in packages:
         # This is very important, otherwise we might have race conditions
@@ -52,7 +54,7 @@ def build_packages_in_parallel(build_command, packages, output_dir, log):
 
         # the new job will only depend on already submitted jobs
         log.info("creating job for pkg: %s" % str(pkg))
-        new_job = create_job(build_command, pkg, output_dir)
+        new_job = create_job(build_command, pkg, log, output_dir)
         # Sometimes unresolvedDependencies will contain things, not needed to be build.
         job_deps = [job_module_dict[dep] for dep in pkg['unresolvedDependencies'] if dep in job_module_dict]
         new_job.add_dependencies(job_deps)
@@ -65,7 +67,7 @@ def build_packages_in_parallel(build_command, packages, output_dir, log):
     return jobs
 
 
-def create_job(build_command, package, output_dir=""):
+def create_job(build_command, package, log, output_dir=""):
     """
     Creates a job, to build a *single* package
     build_command is a format string in which a full path to an eb file will be substituted
@@ -87,6 +89,8 @@ def create_job(build_command, package, output_dir=""):
     for env_var in others:
         if env_var in os.environ:
             easybuild_vars[env_var] = os.environ[env_var]
+
+    log.info("Dictionary of environment variables passed to job: %s" % easybuild_vars)
 
     # create unique name based on module name
     name = "%s-%s" % package['module']

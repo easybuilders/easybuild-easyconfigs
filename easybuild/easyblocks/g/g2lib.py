@@ -33,7 +33,7 @@ from easybuild.framework.application import Application
 from easybuild.tools.modules import get_software_root
 
 
-class G2lib(Application):
+class EB_g2lib(Application):
     """Support for building g2clib GRIB2 library."""
 
     def configure(self):

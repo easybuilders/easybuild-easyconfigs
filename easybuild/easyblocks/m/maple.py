@@ -33,7 +33,7 @@ from easybuild.framework.application import Application
 from easybuild.tools.filetools import run_cmd_qa
 
 
-class Maple(Application):
+class EB_Maple(Application):
     """Support for installing Maple."""
 
     def unpack_src(self):
