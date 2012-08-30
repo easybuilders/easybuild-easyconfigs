@@ -26,12 +26,12 @@ from easybuild.framework.application import Application
 
 class EB_guile(Application):
     """
-    Default application build and install, but add extra dir to CPATH
+    Support for building/installing guile: default build procedure, and set correct CPATH.
     """
 
     def make_module_req_guess(self):
 	"""Add guile/2.0 to cpath"""
         guess = Application.make_module_req_guess(self)
-	guess['CPATH'] = guess['CPATH'] + ["include/guile/2.0"]
+        guess['CPATH'] = guess['CPATH'] + ["include/guile/2.0"]
 
-	return guess	
+        return guess	
