@@ -51,7 +51,7 @@ class MockModule(modules.Modules):
         """ Modules can handle this """
         pass
 
-    def dependencies_for(self, args, **kwargs):
+    def dependencies_for(self, *args, **kwargs):
         """ customize dependencies_for to always return an empty list """
         return []
 
