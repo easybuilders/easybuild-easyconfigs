@@ -96,7 +96,6 @@ class EasyConfig:
           ('sources', [[], "List of source files", BUILD]),
           ('sourceURLs', [[], "List of URLs for source files", BUILD]),
           ('patches', [[], "List of patches to apply", BUILD]),
-<<<<<<< HEAD
           ('tests', [[], "List of test-scripts to run after install. A test script should return a " \
                          "non-zero exit status to fail", BUILD]),
           ('sanityCheckPaths', [{}, "List of files and directories to check (format: {'files':<list>, " \
