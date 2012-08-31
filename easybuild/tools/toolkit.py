@@ -346,20 +346,20 @@ class Toolkit:
         """
         Prepare for ATLAS BLAS/LAPACK library
         """
-        blas_libs = ["cblas", "f77blas", "atlas"]
-        blas_mt_libs = ["ptcblas", "ptf77blas", "atlas"]
+        blas_libs = ["cblas", "f77blas", "atlas", "gfortran"]
+        blas_mt_libs = ["ptcblas", "ptf77blas", "atlas", "gfortran"]
 
         atlas = get_software_root("ATLAS")
 
-        self.vars['LIBBLAS'] = ' '.join(["-l%s" % x for x in blas_libs] + ["-lgfortran"])
-        self.vars['LIBBLAS_MT'] = ' '.join(["-l%s" % x for x in blas_mt_libs] + ["-lgfortran", "-lpthread"])
+        self.vars['LIBBLAS'] = ' '.join(["-l%s" % x for x in blas_libs])
+        self.vars['LIBBLAS_MT'] = ' '.join(["-l%s" % x for x in blas_mt_libs] + ["-lpthread"])
         self.vars['BLAS_LIB_DIR'] = os.path.join(atlas, "lib")
         self.vars['BLAS_STATIC_LIBS'] = ','.join(["lib%s.a" % x for x in blas_libs])
         self.vars['BLAS_MT_STATIC_LIBS'] = ','.join(["lib%s.a" % x for x in blas_mt_libs])
 
         if not self.vars.has_key('LIBLAPACK') and not self.vars.has_key('LIBLAPACK_MT'):
-            self.vars['LIBLAPACK'] = ' '.join(["lapack", self.vars['LIBBLAS']])
-            self.vars['LIBLAPACK_MT'] = ' '.join(["lapack", self.vars['LIBBLAS_MT']])
+            self.vars['LIBLAPACK'] = ' '.join(["-llapack", self.vars['LIBBLAS']])
+            self.vars['LIBLAPACK_MT'] = ' '.join(["-llapack", self.vars['LIBBLAS_MT']])
         self.vars['LAPACK_LIB_DIR'] = self.vars['BLAS_LIB_DIR']
         self.vars['LAPACK_STATIC_LIBS'] = "liblapack.a," + self.vars['BLAS_STATIC_LIBS']
         self.vars['LAPACK_MT_STATIC_LIBS'] = "liblapack.a," + self.vars['BLAS_MT_STATIC_LIBS']
