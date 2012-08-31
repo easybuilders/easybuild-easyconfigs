@@ -1,4 +1,5 @@
-## Copyright 2012 Kenneth Hoste
+## 
+# Copyright 2012 Kenneth Hoste
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of the University of Ghent (http://ugent.be/hpc).
