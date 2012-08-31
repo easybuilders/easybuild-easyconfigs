@@ -623,23 +623,6 @@ def process_software_build_specs(options):
 
     return buildopts
 
-def setup_easyconfig_tweaks(buildopts):
-    """
-    Create a list of tweaks for easyconfig files.
-
-    Each tweak has the format (<function_name>, <value>), in which function_name is the name of
-    EasyConfig class function that will be called with the given value
-    """
-
-    tweaks = {}
-
-    for key in ['version', 'toolkit_name', 'toolkit_version',
-                'versionprefix', 'versionsuffix', 'patches']:
-        if buildopts.has_key(key):
-            tweaks.update({key: buildopts[key]})
-
-    return tweaks
-
 def robotFindEasyconfig(log, path, module):
     """
     Find an easyconfig for module in path
