@@ -431,7 +431,8 @@ class TestObtainEasyconfig(EasyConfigTest):
         # should find matching easyconfig file
         specs = {'name': 'foo', 'version': '1.2.3'}
         res = obtain_ec_for(specs, self.ec_dir, None, log)
-        self.assertEqual(res, os.path.join(self.ec_dir, fns[-1]))
+        self.assertEqual(res[0], False)
+        self.assertEqual(res[1], os.path.join(self.ec_dir, fns[-1]))
 
         # should not pick between multiple available toolkit names
         name = "pi"
@@ -454,27 +455,29 @@ class TestObtainEasyconfig(EasyConfigTest):
                       'foo': 'bar123'
                      })
         res = obtain_ec_for(specs, self.ec_dir, None, log)
-        self.assertEqual(res, "%s-%s-%s-%s%s.eb" % (name, ver, tkname, tkver, suff))
+        self.assertEqual(res[1], "%s-%s-%s-%s%s.eb" % (name, ver, tkname, tkver, suff))
 
-        ec = EasyConfig(res)
+        self.assertEqual(res[0], True)
+        ec = EasyConfig(res[1])
         self.assertEqual(ec['name'], specs['name'])
         self.assertEqual(ec['version'], specs['version'])
         self.assertEqual(ec['versionsuffix'], specs['versionsuffix'])
         self.assertEqual(ec['toolkit'], {'name': tkname, 'version': tkver})
         # can't check for key 'foo', because EasyConfig ignores parameter names it doesn't know about
-        txt = open(res, "r").read()
+        txt = open(res[1], "r").read()
         self.assertTrue(re.search("foo = '%s'" % specs['foo'], txt))
-        os.remove(res)
+        os.remove(res[1])
 
         # should pick correct version, i.e. not newer than what's specified, if a choice needs to be made
         ver = '3.14'
         specs.update({'version': ver})
         res = obtain_ec_for(specs, self.ec_dir, None, log)
-        ec = EasyConfig(res)
+        self.assertEqual(res[0], True)
+        ec = EasyConfig(res[1])
         self.assertEqual(ec['version'], specs['version'])
-        txt = open(res, "r").read()
+        txt = open(res[1], "r").read()
         self.assertTrue(re.search("version = [\"']%s[\"'] .*was: [\"']3.13[\"']" % ver, txt))
-        os.remove(res)
+        os.remove(res[1])
 
         # should pick correct toolkit version as well, i.e. now newer than what's specified, if a choice needs to be made
         specs.update({
@@ -482,13 +485,14 @@ class TestObtainEasyconfig(EasyConfigTest):
                       'toolkit_version': '4.4.5',
                      })
         res = obtain_ec_for(specs, self.ec_dir, None, log)
-        ec = EasyConfig(res)
+        self.assertEqual(res[0], True)
+        ec = EasyConfig(res[1])
         self.assertEqual(ec['version'], specs['version'])
         self.assertEqual(ec['toolkit']['version'], specs['toolkit_version'])
-        txt = open(res, "r").read()
+        txt = open(res[1], "r").read()
         pattern = "toolkit = .*version.*[\"']%s[\"'].*was: .*version.*[\"']%s[\"']" % (specs['toolkit_version'], tkver)
         self.assertTrue(re.search(pattern, txt))
-        os.remove(res)
+        os.remove(res[1])
 
 
         # should be able to prepend to list of patches and handle list of dependencies
@@ -499,24 +503,27 @@ class TestObtainEasyconfig(EasyConfigTest):
                       'dependencies': deps
                      })
         res = obtain_ec_for(specs, self.ec_dir, None, log)
-        ec = EasyConfig(res)
+        self.assertEqual(res[0], True)
+        ec = EasyConfig(res[1])
         self.assertEqual(ec['patches'], specs['patches'] + patches)
         self.assertEqual(ec['dependencies'], specs['dependencies'])
-        os.remove(res)
+        os.remove(res[1])
 
         # should use supplied filename
         fn = "my.eb"
         res = obtain_ec_for(specs, self.ec_dir, fn, log)
-        self.assertEqual(res, fn)
-        os.remove(res)
+        self.assertEqual(res[0], True)
+        self.assertEqual(res[1], fn)
+        os.remove(res[1])
 
         # should use a template if it's there
         shutil.copy2(os.path.join("easybuild", "easyconfigs", "TEMPLATE.eb"), self.ec_dir)
         specs.update({'name': 'nosuchsoftware'})
         res = obtain_ec_for(specs, self.ec_dir, None, log)
-        ec = EasyConfig(res)
+        self.assertEqual(res[0], True)
+        ec = EasyConfig(res[1])
         self.assertEqual(ec['name'], specs['name'])
-        os.remove(res)
+        os.remove(res[1])
 
     def tearDown(self):
         """Cleanup: remove temp dir with test easyconfig files."""

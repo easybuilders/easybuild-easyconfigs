@@ -107,21 +107,39 @@ def add_cmdline_options(parser):
 
     # software build options
     software_build_options = OptionGroup(parser, "Software build options",
-                                     "Specify software build options (overrides settings in easyconfig).")
+                                     "Specify software build options; the regular versions of these " \
+                                     "options will only search for matching easyconfigs, while the " \
+                                     "--try-X versions will cause EasyBuild to try and generate a " \
+                                     "matching easyconfig based on available ones if no matching " \
+                                     "easyconfig is found (NOTE: best effort, might produce wrong builds!)")
 
-    software_build_options.add_option("--software-name", metavar="NAME",
-                                      help="build software package with given name")
-    software_build_options.add_option("--software-version", metavar="VERSION",
-                                      help="build software with this particular version")
-    software_build_options.add_option("--toolkit", metavar="NAME,VERSION",
-                                      help="build with specified toolkit (name and version)")
-    software_build_options.add_option("--toolkit-name", metavar="NAME",
-                                      help="build with specified toolkit name")
-    software_build_options.add_option("--toolkit-version", metavar="VERSION",
-                                      help="build with specified toolkit version")
-    software_build_options.add_option("--amend", metavar="VAR=VALUE[,VALUE2]", action="append",
-                                      help="specify additional build parameters (can be used multiple times); " \
-                                            "for example: versionprefix=foo or patches=one.patch,two.patch")
+    list_of_software_build_options = [
+                                      ('software-name', 'NAME', 'store',
+                                       "build software with name"),
+                                      ('software-version', 'VERSION', 'store',
+                                       "build software with version"),
+                                      ('toolkit', 'NAME,VERSION', 'store',
+                                       "build with toolkit (name and version)"),
+                                      ('toolkit-name', 'NAME', 'store',
+                                       "build with toolkit name"),
+                                      ('toolkit-version', 'VERSION', 'store',
+                                       "build with toolkit version"),
+                                      ('amend', 'VAR=VALUE[,VALUE]', 'append',
+                                       "specify additional build parameters (can be used multiple times); " \
+                                       "for example: versionprefix=foo or patches=one.patch,two.patch)")
+                                      ]
+
+    for (opt_name, opt_metavar, opt_action, opt_help) in list_of_software_build_options:
+        software_build_options.add_option("--%s" % opt_name,
+                                          metavar=opt_metavar,
+                                          action=opt_action,
+                                          help=opt_help)
+
+    for (opt_name, opt_metavar, opt_action, opt_help) in list_of_software_build_options:
+        software_build_options.add_option("--try-%s" % opt_name,
+                                          metavar=opt_metavar,
+                                          action=opt_action,
+                                          help="try to %s (USE WITH CARE!)" % opt_help)
 
     parser.add_option_group(software_build_options)
 
@@ -263,7 +281,7 @@ def main():
     
     # process software build specifications (if any), i.e.
     # software name/version, toolkit name/version, extra patches, ...
-    software_build_specs = process_software_build_specs(options)
+    (try_to_generate, software_build_specs) = process_software_build_specs(options)
 
     # read easyconfig files
     packages = []
@@ -271,7 +289,22 @@ def main():
         if software_build_specs.has_key('name'):
             # if no easyconfig files/paths were provided, but we did get a software name,
             # we can try and find a suitable easyconfig ourselves, or generate one if we can
-            paths = [easyconfig.obtain_ec_for(software_build_specs, options.robot, None, log)]
+            (generated, fn) = easyconfig.obtain_ec_for(software_build_specs, options.robot, None, log)
+            if not generated:
+                paths = [fn]
+            else:
+                # if an easyconfig was generated, make sure we're allowed to use it
+                if try_to_generate:
+                    print_msg("Generated an easyconfig file %s, going to use it now..." % fn)
+                    paths = [fn]
+                else:
+                    try:
+                        os.remove(fn)
+                    except OSError, err:
+                        warning("Failed to remove generated easyconfig file %s." % fn)
+                    error("Unable to find an easyconfig for the given specifications: %s; " \
+                          "to make EasyBuild try to generate a matching easyconfig, " \
+                          "use the --try-X options "% software_build_specs)
 
         else:
             error("Please provide one or multiple easyconfig files, or use software build " \
@@ -286,7 +319,12 @@ def main():
             files = findEasyconfigs(path, log)
             for f in files:
                 if software_build_specs:
-                    ec_file = easyconfig.tweak(f, None, software_build_specs, log)
+                    if try_to_generate:
+                        print software_build_specs
+                        ec_file = easyconfig.tweak(f, None, software_build_specs, log)
+                    else:
+                        error("Use --try-X versions to tweak an existing easyconfig file.""")
+                        ec_file = f
                 else:
                     ec_file = f
                 packages.extend(processEasyconfig(ec_file, log, blocks, validate=validate_easyconfigs))
@@ -400,11 +438,17 @@ def error(message, exitCode=1, optparser=None):
     """
     Print error message and exit EasyBuild
     """
-    print_msg("\nERROR: %s\n" % message)
+    print_msg("ERROR: %s\n" % message)
     if optparser:
         optparser.print_help()
-        print_msg("\nERROR: %s\n" % message)
+        print_msg("ERROR: %s\n" % message)
     sys.exit(exitCode)
+
+def warning(message):
+    """
+    Print warning message.
+    """
+    print_msg("WARNING: %s\n" % message)
 
 def findEasyconfigs(path, log):
     """
@@ -588,30 +632,72 @@ def process_software_build_specs(options):
     The options arguments should be a parsed option list (as delivered by OptionParser.parse_args)
     """
 
+    try_to_generate = False
     buildopts = {}
 
-    if options.software_name:
-        buildopts.update({'name': options.software_name})
+    # regular options: don't try to generate easyconfig, and search
+    opts_map = {
+                'name': options.software_name,
+                'version': options.software_version,
+                'toolkit_name': options.toolkit_name,
+                'toolkit_version': options.toolkit_version,
+               }
 
-    if options.software_version:
-        buildopts.update({'version': options.software_version})
+    # try options: enable optional generation of easyconfig
+    try_opts_map = {
+                    'name': options.try_software_name,
+                    'version': options.try_software_version,
+                    'toolkit_name': options.try_toolkit_name,
+                    'toolkit_version': options.try_toolkit_version,
+                   }
 
-    if options.toolkit:
-        tk = options.toolkit.split(',')
+    # process easy options
+    for (key, opt) in opts_map.items():
+        if opt:
+            buildopts.update({key: opt})
+            # remove this key from the dict of try-options (overruled)
+            try_opts_map.pop(key)
+
+    for (key, opt) in try_opts_map.items():
+        if opt:
+            buildopts.update({key: opt})
+            # only when a try option is set do we enable generating easyconfigs
+            try_to_generate = True
+
+    # process --toolkit --try-toolkit
+    if options.toolkit or options.try_toolkit:
+
+        if options.toolkit:
+                tk = options.toolkit.split(',')
+                if options.try_toolkit:
+                    warning("Ignoring --try-toolkit, only using --toolkit specification.")
+        elif options.try_toollkit:
+                tk = options.try_toolkit.split(',')
+                try_to_generate = True
+        else:
+            # shouldn't happen
+            error("Huh, neither --toolkit or --try-toolkit used?")
+
         if not len(tk) == 2:
             error("Please specify to toolkit to use as 'name,version' (e.g., 'goalf,1.1.0').")
+
         [toolkit_name, toolkit_version] = tk
         buildopts.update({'toolkit_name': toolkit_name})
         buildopts.update({'toolkit_version': toolkit_version})
 
-    if options.toolkit_name:
-        buildopts.update({'toolkit_name': options.toolkit_name})
+    # process --amend and --try-amend
+    if options.amend or options.try_amend:
 
-    if options.toolkit_version:
-        buildopts.update({'toolkit_version': options.toolkit_version})
+        amends = []
+        if options.amend:
+            amends += options.amend
+            if options.try_amend:
+                warning("Ignoring options passed via --try-amend, only using those passed via --amend.")
+        if options.try_amend:
+            amends += options.try_amend
+            try_to_generate = True
 
-    if options.amend:
-        for amend_spec in options.amend:
+        for amend_spec in amends:
             # e.g., 'foo=bar=baz' => foo = 'bar=baz'
             param = amend_spec.split('=')[0]
             value = '='.join(amend_spec.split('=')[1:])
@@ -621,7 +707,7 @@ def process_software_build_specs(options):
                 value = value.split(',')
             buildopts.update({param: value})
 
-    return buildopts
+    return (try_to_generate, buildopts)
 
 def robotFindEasyconfig(log, path, module):
     """

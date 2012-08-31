@@ -601,9 +601,9 @@ def obtain_ec_for(specs, ecs_path, fp, log):
     log.debug("List of obtained easyconfig files (%d): %s" % (cnt, easyconfig_files))
 
     # select best easyconfig, or try to generate one that fits the requirements
-    (ok, res) = select_or_generate_ec(fp, paths, specs, log)
+    res = select_or_generate_ec(fp, paths, specs, log)
 
-    if ok:
+    if res:
         return res
     else:
         log.error("No easyconfig found for requested software, and also failed to generate one.")
@@ -826,7 +826,7 @@ def select_or_generate_ec(fp, paths, specs, log):
         # if it matches, no need to tweak
         if match:
             log.info("Perfect match found: %s" % selected_ec_file)
-            return (True, selected_ec_file)
+            return (False, selected_ec_file)
 
         # GENERATE
 
