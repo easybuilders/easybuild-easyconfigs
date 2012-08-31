@@ -668,7 +668,7 @@ def select_or_generate_ec(fp, paths, specs, log):
         if len(l) > 1:
             l2 = [l[0]]
             for x in l:
-                if x > l2[-1]:
+                if not x == l2[-1]:
                     l2.append(x)
             return l2
         else:
