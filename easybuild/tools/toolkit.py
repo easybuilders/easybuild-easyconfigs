@@ -346,13 +346,13 @@ class Toolkit:
         """
         Prepare for ATLAS BLAS/LAPACK library
         """
-        blas_libs = ["cblas", "f77blas", "atlas"]
-        blas_mt_libs = ["ptcblas", "ptf77blas", "atlas"]
+        blas_libs = ["cblas", "f77blas", "atlas", "gfortran"]
+        blas_mt_libs = ["ptcblas", "ptf77blas", "atlas", "gfortran"]
 
         atlas = get_software_root("ATLAS")
 
-        self.vars['LIBBLAS'] = ' '.join(["-l%s" % x for x in blas_libs] + ["-lgfortran"])
-        self.vars['LIBBLAS_MT'] = ' '.join(["-l%s" % x for x in blas_mt_libs] + ["-lgfortran", "-lpthread"])
+        self.vars['LIBBLAS'] = ' '.join(["-l%s" % x for x in blas_libs])
+        self.vars['LIBBLAS_MT'] = ' '.join(["-l%s" % x for x in blas_mt_libs] + ["-lpthread"])
         self.vars['BLAS_LIB_DIR'] = os.path.join(atlas, "lib")
         self.vars['BLAS_STATIC_LIBS'] = ','.join(["lib%s.a" % x for x in blas_libs])
         self.vars['BLAS_MT_STATIC_LIBS'] = ','.join(["lib%s.a" % x for x in blas_mt_libs])
