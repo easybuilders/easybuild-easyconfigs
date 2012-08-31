@@ -25,6 +25,7 @@
 """
 EasyBuild support for python-meep, implemented as an easyblock
 """
+import glob
 import os
 import shutil
 import tempfile
@@ -84,18 +85,25 @@ class EB_python_minus_meep(Application):
         """
 
         # locate tarball
+        tarball = None
         shortver = '.'.join(self.version().split('.')[0:2])
-        tarball = os.path.join(self.getcfg('startfrom'),
-                               'dist',
-                               "%s-%s.linux-x86_64.tar.gz" % (self.name(), shortver))
-        if not os.path.isfile(tarball):
-            self.log.error("No tarball found at %s" % tarball)
+        fn_pattern = os.path.join(self.getcfg('startfrom'),
+                                  'dist',
+                                  "%s-%s.*.tar.gz" % (self.name(), shortver))
+        matches = glob.glob(fn_pattern)
+        if not matches:
+            self.log.error("No tarball found at %s" % fn_pattern)
+        elif len(matches) > 1:
+            self.log.error("Multiple matches found for tarball: %s" % matches)
+        else:
+            tarball = matches[0]
+            self.log.info("Tarball found at %s" % tarball)
 
         # unpack tarball to temporary directory
         tmpdir = tempfile.mkdtemp()
         srcdir = unpack(tarball, tmpdir)
         if not srcdir:
-            self.log.error("Unpacking tabrall %s failed" % tarball)
+            self.log.error("Unpacking tarball %s failed?" % tarball)
 
         # locate site-packages dir to copy by diving into unpacked tarball
         src = srcdir
