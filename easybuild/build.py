@@ -320,7 +320,6 @@ def main():
             for f in files:
                 if software_build_specs:
                     if try_to_generate:
-                        print software_build_specs
                         ec_file = easyconfig.tweak(f, None, software_build_specs, log)
                     else:
                         error("Use --try-X versions to tweak an existing easyconfig file.""")
