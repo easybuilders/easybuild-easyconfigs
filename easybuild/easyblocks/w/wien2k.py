@@ -113,7 +113,12 @@ class EB_WIEN2k(Application):
         for line in fileinput.input(self.cfgscript, inplace=1, backup='.orig'):
             # set config parameters
             for (k,v) in d.items():
-                line = re.sub('^([a-z0-9]+):%s:.*' % k, '\\1:%s:%s' % (k, v), line)
+                regexp = re.compile('^([a-z0-9]+):%s:.*' % k)
+                res = regexp.search(line)
+                if res:
+                    # we need to exclude the lines with 'current', otherwise we break the script
+                    if not res.group(1) == "current":
+                        line = regexp('\\1:%s:%s' % (k, v), line)
             # avoid exit code > 0 at end of configuration
             line = re.sub('(\s+)exit 1', '\\1exit 0', line)
             sys.stdout.write(line)
