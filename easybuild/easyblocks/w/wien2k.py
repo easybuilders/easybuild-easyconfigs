@@ -79,13 +79,29 @@ class EB_WIEN2k(Application):
                 self.log.debug('empty fftwver')
         else:
             self.log.error("FFTW module not loaded?")
-        
+
+        # toolkit-dependent values
+        comp_answer = None
+        if self.toolkit().comp_family() == toolkit.INTEL:
+            static_flag = "-static-intel"
+            if LooseVersion(get_software_version("icc")) > LooseVersion(""):
+                comp_answer = 'I'  # Linux (Intel ifort 12.0 compiler + mkl )
+            else:
+                comp_answer = "K1"  # Linux (Intel ifort 11.1 compiler + mkl )
+
+        elif self.toolkit().comp_family() == toolkit.GCC:
+            static_flag = "-static"
+            comp_answer = 'V'  # Linux (gfortran compiler + gotolib)
+
+        else:
+            self.log.error("Failed to determine toolkit-dependent answers.")
+
         d = {
              'FC': '%s %s'%(os.getenv('F90'), os.getenv('FFLAGS')),
              'MPF': "%s %s"%(os.getenv('MPIF90'), os.getenv('FFLAGS')),
              'CC': os.getenv('CC'),
-             'LDFLAGS': '$(FOPT) %s -static-intel' % os.getenv('LDFLAGS'),
-             'R_LIBS': '$(LIBSCALAPACK) -openmp -lpthread',
+             'LDFLAGS': '$(FOPT) %s %s' % (os.getenv('LDFLAGS'), static_flag),
+             'R_LIBS': '$(LIBSCALAPACK) %s -lpthread' % self.toolkit().get_openmp_flag(),
              'RP_LIBS' :'-L%(fftwroot)s/lib/ -lfftw%(fftwver)s_mpi ' \
                         '-lfftw%(fftwver)s $(LIBSCALAPACK)' % {
                                                                'fftwroot': get_software_root('FFTW'),
@@ -97,10 +113,9 @@ class EB_WIEN2k(Application):
         for line in fileinput.input(self.cfgscript, inplace=1, backup='.orig'):
             # set config parameters
             for (k,v) in d.items():
-                p = 'linuxifc:%s:' % k
-                line = re.sub('^%s(.*)'%p, '%s%s'%(p,v), line)
+                line = re.sub('^([a-z0-9]+):%s:.*' % k, '\\1:%s:' % (k, v), line)
             # avoid exit code > 0 at end of configuration
-            line = re.sub('    exit 1', '    exit 0', line)
+            line = re.sub('(\s+)exit 1', '\\1exit 0', line)
             sys.stdout.write(line)
 
         # set correct compilers
@@ -120,19 +135,6 @@ class EB_WIEN2k(Application):
         # configure with patched configure script
         self.log.debug('%s part I (configure)' % self.cfgscript)
 
-        comp_answer = None
-        if self.toolkit().comp_family() == toolkit.INTEL:
-            if LooseVersion(get_software_version("icc")) > LooseVersion(""):
-                comp_answer = 'I'  # Linux (Intel ifort 12.0 compiler + mkl )
-            else:
-                comp_answer = "K1"  # Linux (Intel ifort 11.1 compiler + mkl )
-
-        elif self.toolkit().comp_family() == toolkit.GCC:
-            comp_answer = 'V'  # Linux (gfortran compiler + gotolib)
-
-        else:
-            self.log.error("Failed to determine toolkit-dependent answers.")
-
         cmd = "./%s" % self.cfgscript
         qanda = {
                  'Press RETURN to continue': '',
@@ -141,8 +143,8 @@ class EB_WIEN2k(Application):
                     'S Save and Quit To change an item select option. Selection:': 'S',
                  'R R_LIB (LAPACK+BLAS): -llapack_lapw -lgoto -llapack_lapw ' \
                     'S Save and Quit To change an item select option. Selection:': 'R',
-                 'R R_LIB (LAPACK+BLAS): %s S Save and Quit To change an item select ' \
-                    'option. Selection:' % os.getenv('LIBLAPACK'): 'S',
+                 'R R_LIB (LAPACK+BLAS): -L%s %s S Save and Quit To change an item select ' \
+                    'option. Selection:' % (os.getenv('LAPACK_LIB_DIR'), os.getenv('LIBLAPACK')): 'S',
                  'Your compiler:': '',
                  'Hit Enter to continue': '',
                  'Shared Memory Architecture? (y/n):': 'n',
