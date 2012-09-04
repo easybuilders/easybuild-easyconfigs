@@ -144,12 +144,8 @@ class EB_WIEN2k(Application):
         qanda = {
                  'Press RETURN to continue': '',
                  'compiler) Selection:': comp_answer,
-                 'R R_LIB (LAPACK+BLAS): $(LIBSCALAPACK) -openmp -lpthread ' \
-                    'S Save and Quit To change an item select option. Selection:': 'S',
                  'R R_LIB (LAPACK+BLAS): -llapack_lapw -lgoto -llapack_lapw ' \
                     'S Save and Quit To change an item select option. Selection:': 'R',
-                 'R R_LIB (LAPACK+BLAS): -L%s %s S Save and Quit To change an item select ' \
-                    'option. Selection:' % (os.getenv('LAPACK_LIB_DIR'), os.getenv('LIBLAPACK')): 'S',
                  'Your compiler:': '',
                  'Hit Enter to continue': '',
                  'Shared Memory Architecture? (y/n):': 'n',
@@ -168,8 +164,6 @@ class EB_WIEN2k(Application):
                     'finegrained parallel? (This is usefull only for BIG cases ' \
                     '(50 atoms and more / unit cell) and you need to know details ' \
                     'about your installed  mpi and fftw ) (y/n)': 'y',
-                  'MP MPIRUN commando : mpirun -np _NP_ -machinefile _HOSTS_ _EXEC_ ' \
-                    'S Save and Quit To change an item select option. Selection:': 'S'
                 }
 
         no_qa = [
@@ -180,7 +174,11 @@ class EB_WIEN2k(Application):
                  ".*SRC_.*"
                  ]
 
-        run_cmd_qa(cmd, qanda, no_qa=no_qa, log_all=True, simple=True)
+        std_qa = {
+                  'S Save and Quit To change an item select option. Selection:': 'S',
+                 }
+
+        run_cmd_qa(cmd, qanda, no_qa=no_qa, std_qa=std_qa, log_all=True, simple=True)
 
     def make(self):
         """Build WIEN2k by running siteconfig_lapw script again."""
