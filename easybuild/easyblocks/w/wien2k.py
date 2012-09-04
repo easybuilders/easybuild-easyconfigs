@@ -118,7 +118,7 @@ class EB_WIEN2k(Application):
                 if res:
                     # we need to exclude the lines with 'current', otherwise we break the script
                     if not res.group(1) == "current":
-                        line = regexp('\\1:%s:%s' % (k, v), line)
+                        line = regexp.sub('\\1:%s:%s' % (k, v), line)
             # avoid exit code > 0 at end of configuration
             line = re.sub('(\s+)exit 1', '\\1exit 0', line)
             sys.stdout.write(line)
