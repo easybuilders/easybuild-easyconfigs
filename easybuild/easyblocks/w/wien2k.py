@@ -84,7 +84,7 @@ class EB_WIEN2k(Application):
         comp_answer = None
         if self.toolkit().comp_family() == toolkit.INTEL:
             static_flag = "-static-intel"
-            if LooseVersion(get_software_version("icc")) > LooseVersion(""):
+            if LooseVersion(get_software_version("icc")) >= LooseVersion("2011"):
                 comp_answer = 'I'  # Linux (Intel ifort 12.0 compiler + mkl )
             else:
                 comp_answer = "K1"  # Linux (Intel ifort 11.1 compiler + mkl )
