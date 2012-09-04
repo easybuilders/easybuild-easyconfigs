@@ -110,8 +110,12 @@ class EB_WIEN2k(Application):
              'CC': os.getenv('CC'),
              'LDFLAGS': '$(FOPT) %s %s' % (os.getenv('LDFLAGS'), static_flag),
              'R_LIBS': r_libs,
-             'RP_LIBS' :'-L%s %s %s' % (os.getenv('FFTW_LIB_DIR'), os.getenv('LIBFFT'),
-                                        os.getenv('LIBSCALAPACK')),
+             'RP_LIBS' :'-L%(fftwroot)s/lib -lfftw%(fftwver)s_mpi ' \
+                        '-lfftw%(fftwver)s %(libscalapack)s' % {
+                                                                'fftwroot': get_software_root('FFTW'),
+                                                                'fftwver': fftwver,
+                                                                'libscalapack': os.getenv('LIBSCALAPACK')
+                                                                },
              'MPIRUN': ''
             }
 
