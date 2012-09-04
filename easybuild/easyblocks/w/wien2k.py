@@ -121,7 +121,6 @@ class EB_WIEN2k(Application):
         self.log.debug('%s part I (configure)' % self.cfgscript)
 
         comp_answer = None
-        change_answer = None
         if self.toolkit().comp_family() == toolkit.INTEL:
             if LooseVersion(get_software_version("icc")) > LooseVersion(""):
                 comp_answer = 'I'  # Linux (Intel ifort 12.0 compiler + mkl )
@@ -155,7 +154,7 @@ class EB_WIEN2k(Application):
                  'A Compile all programs (suggested) Q Quit Selection:': 'Q',
                  ' Please enter the full path of the perl program: ': '',
                  'continue or stop (c/s)': 'c',
-                 'Real libraries=': os.getenv('LIBLAPACK'),
+                 'Real libraries=': "-L%s %s" % (os.getenv('LAPACK_LIB_DIR'), os.getenv('LIBLAPACK')),
                  '(like taskset -c). Enter N / your_specific_command:': 'N',
                  'If you are using mpi2 set MPI_REMOTE to 0  Set MPI_REMOTE to 0 / 1:': '0',
                  'Do you have MPI and Scalapack installed and intend to run ' \
