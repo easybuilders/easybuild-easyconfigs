@@ -175,7 +175,7 @@ class EB_WIEN2k(Application):
                  ]
 
         std_qa = {
-                  'S Save and Quit To change an item select option. Selection:': 'S',
+                  r'S\s+Save and Quit[\s\n]+To change an item select option.[\s\n]+Selection:': 'S',
                  }
 
         run_cmd_qa(cmd, qanda, no_qa=no_qa, std_qa=std_qa, log_all=True, simple=True)
