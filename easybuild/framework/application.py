@@ -982,7 +982,7 @@ class Application:
         - typical: make install
         """
 
-        cmd = "make install %s" % (self.getcfg('installopts'))
+        cmd = "%s make install %s" % (self.getcfg('preinstallopts'), self.getcfg('installopts'))
 
         (out, _) = run_cmd(cmd, log_all=True, simple=False)
 
