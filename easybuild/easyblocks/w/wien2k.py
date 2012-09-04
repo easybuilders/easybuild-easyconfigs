@@ -113,7 +113,7 @@ class EB_WIEN2k(Application):
         for line in fileinput.input(self.cfgscript, inplace=1, backup='.orig'):
             # set config parameters
             for (k,v) in d.items():
-                line = re.sub('^([a-z0-9]+):%s:.*' % k, '\\1:%s:' % (k, v), line)
+                line = re.sub('^([a-z0-9]+):%s:.*' % k, '\\1:%s:%s' % (k, v), line)
             # avoid exit code > 0 at end of configuration
             line = re.sub('(\s+)exit 1', '\\1exit 0', line)
             sys.stdout.write(line)
