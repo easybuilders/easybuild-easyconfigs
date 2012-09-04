@@ -96,17 +96,22 @@ class EB_WIEN2k(Application):
         else:
             self.log.error("Failed to determine toolkit-dependent answers.")
 
+        r_libs = "-L%s %s -L%s %s %s" % (
+                                         os.getenv('LAPACK_LIB_DIR'),
+                                         os.getenv('LIBLAPACK_MT'),
+                                         os.getenv('SCALAPACK_LIB_DIR'),
+                                         os.getenv('LIBSCALAPACK_MT'),
+                                         self.toolkit().get_openmp_flag()
+                                         )
+
         d = {
              'FC': '%s %s'%(os.getenv('F90'), os.getenv('FFLAGS')),
              'MPF': "%s %s"%(os.getenv('MPIF90'), os.getenv('FFLAGS')),
              'CC': os.getenv('CC'),
              'LDFLAGS': '$(FOPT) %s %s' % (os.getenv('LDFLAGS'), static_flag),
-             'R_LIBS': '$(LIBSCALAPACK) %s -lpthread' % self.toolkit().get_openmp_flag(),
-             'RP_LIBS' :'-L%(fftwroot)s/lib/ -lfftw%(fftwver)s_mpi ' \
-                        '-lfftw%(fftwver)s $(LIBSCALAPACK)' % {
-                                                               'fftwroot': get_software_root('FFTW'),
-                                                               'fftwver': fftwver
-                                                               },
+             'R_LIBS': r_libs,
+             'RP_LIBS' :'-L%s %s %s' % (os.getenv('FFTW_LIB_DIR'), os.getenv('LIBFFT'),
+                                        os.getenv('LIBSCALAPACK')),
              'MPIRUN': ''
             }
 
@@ -144,8 +149,6 @@ class EB_WIEN2k(Application):
         qanda = {
                  'Press RETURN to continue': '',
                  'compiler) Selection:': comp_answer,
-                 'R R_LIB (LAPACK+BLAS): -llapack_lapw -lgoto -llapack_lapw ' \
-                    'S Save and Quit To change an item select option. Selection:': 'R',
                  'Your compiler:': '',
                  'Hit Enter to continue': '',
                  'Shared Memory Architecture? (y/n):': 'n',
@@ -157,7 +160,6 @@ class EB_WIEN2k(Application):
                  'A Compile all programs (suggested) Q Quit Selection:': 'Q',
                  ' Please enter the full path of the perl program: ': '',
                  'continue or stop (c/s)': 'c',
-                 'Real libraries=': "-L%s %s" % (os.getenv('LAPACK_LIB_DIR'), os.getenv('LIBLAPACK')),
                  '(like taskset -c). Enter N / your_specific_command:': 'N',
                  'If you are using mpi2 set MPI_REMOTE to 0  Set MPI_REMOTE to 0 / 1:': '0',
                  'Do you have MPI and Scalapack installed and intend to run ' \
