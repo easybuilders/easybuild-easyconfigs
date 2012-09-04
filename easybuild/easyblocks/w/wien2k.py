@@ -82,40 +82,45 @@ class EB_WIEN2k(Application):
 
         # toolkit-dependent values
         comp_answer = None
+        static_flag = None
+        libs = None
         if self.toolkit().comp_family() == toolkit.INTEL:
             static_flag = "-static-intel"
             if LooseVersion(get_software_version("icc")) >= LooseVersion("2011"):
                 comp_answer = 'I'  # Linux (Intel ifort 12.0 compiler + mkl )
             else:
                 comp_answer = "K1"  # Linux (Intel ifort 11.1 compiler + mkl )
+            libs = os.getenv('LIBSCALAPACK')
 
         elif self.toolkit().comp_family() == toolkit.GCC:
-            static_flag = "-static"
+            if self.toolkit().mpi_type() == toolkit.OPENMPI:
+                # static linking doesn't work with OpenMPI
+                static_flag = ""
+            else:
+                static_flag = "-static"
             comp_answer = 'V'  # Linux (gfortran compiler + gotolib)
+            libs = "-L%s %s -L%s %s" % (
+                                        os.getenv('LAPACK_LIB_DIR'),
+                                        os.getenv('LIBLAPACK_MT'),
+                                        os.getenv('SCALAPACK_LIB_DIR'),
+                                        os.getenv('LIBSCALAPACK_MT'),
+                                       )
 
         else:
             self.log.error("Failed to determine toolkit-dependent answers.")
-
-        r_libs = "-L%s %s -L%s %s %s" % (
-                                         os.getenv('LAPACK_LIB_DIR'),
-                                         os.getenv('LIBLAPACK_MT'),
-                                         os.getenv('SCALAPACK_LIB_DIR'),
-                                         os.getenv('LIBSCALAPACK_MT'),
-                                         self.toolkit().get_openmp_flag()
-                                         )
 
         d = {
              'FC': '%s %s'%(os.getenv('F90'), os.getenv('FFLAGS')),
              'MPF': "%s %s"%(os.getenv('MPIF90'), os.getenv('FFLAGS')),
              'CC': os.getenv('CC'),
              'LDFLAGS': '$(FOPT) %s %s' % (os.getenv('LDFLAGS'), static_flag),
-             'R_LIBS': r_libs,
+             'R_LIBS': "%s %s" % (libs, self.toolkit().get_openmp_flag()),
              'RP_LIBS' :'-L%(fftwroot)s/lib -lfftw%(fftwver)s_mpi ' \
-                        '-lfftw%(fftwver)s %(libscalapack)s' % {
-                                                                'fftwroot': get_software_root('FFTW'),
-                                                                'fftwver': fftwver,
-                                                                'libscalapack': os.getenv('LIBSCALAPACK')
-                                                                },
+                        '-lfftw%(fftwver)s %(libs)s' % {
+                                                        'fftwroot': get_software_root('FFTW'),
+                                                        'fftwver': fftwver,
+                                                        'libs': libs
+                                                       },
              'MPIRUN': ''
             }
 
