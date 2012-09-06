@@ -35,7 +35,7 @@ from distutils.version import LooseVersion
 import easybuild.tools.toolkit as toolkit
 from easybuild.framework.application import Application
 from easybuild.tools.filetools import run_cmd, run_cmd_qa
-from easybuild.tools.modules import get_software_root, get_software_version
+from easybuild.tools.modules import get_software_version
 
 
 class EB_WIEN2k(Application):
@@ -69,58 +69,40 @@ class EB_WIEN2k(Application):
         self.cfgscript = "siteconfig_lapw"
 
         # patch config file first
-        fftwver = ''
-        fftwfullversion = get_software_version('FFTW')
-        if fftwfullversion:
-            if LooseVersion(fftwfullversion) >= LooseVersion('3'):
-                fftwver = fftwfullversion.split('.')[0]
-                self.log.debug('fftwver: %s' % fftwver)
-            else:
-                self.log.debug('empty fftwver')
-        else:
-            self.log.error("FFTW module not loaded?")
 
         # toolkit-dependent values
         comp_answer = None
-        static_flag = None
-        libs = None
         if self.toolkit().comp_family() == toolkit.INTEL:
-            static_flag = "-static-intel"
             if LooseVersion(get_software_version("icc")) >= LooseVersion("2011"):
                 comp_answer = 'I'  # Linux (Intel ifort 12.0 compiler + mkl )
             else:
                 comp_answer = "K1"  # Linux (Intel ifort 11.1 compiler + mkl )
-            libs = os.getenv('LIBSCALAPACK')
 
         elif self.toolkit().comp_family() == toolkit.GCC:
-            if self.toolkit().mpi_type() == toolkit.OPENMPI:
-                # static linking doesn't work with OpenMPI
-                static_flag = ""
-            else:
-                static_flag = "-static"
             comp_answer = 'V'  # Linux (gfortran compiler + gotolib)
-            libs = "-L%s %s -L%s %s" % (
-                                        os.getenv('SCALAPACK_LIB_DIR'),
-                                        os.getenv('LIBSCALAPACK_MT'),
-                                        os.getenv('LAPACK_LIB_DIR'),
-                                        os.getenv('LIBLAPACK_MT'),
-                                       )
 
         else:
             self.log.error("Failed to determine toolkit-dependent answers.")
+
+        # libraries
+        rlibs = "%s %s" % (os.getenv('LIBLAPACK_MT'), self.toolkit().get_openmp_flag())
+        rplibs = "%s %s" % (os.getenv('LIBLAPACK_MT'), os.getenv('LIBSCALAPACK_MT'))
+
+        # add FFTW libs if needed
+        fftwfullver = get_software_version('FFTW')
+        if fftwfullver:
+            fftwver = ""
+            if LooseVersion(fftwfullver) >= LooseVersion('3'):
+                fftwver = fftwfullver.split('.')[0]
+            rplibs += " -lfftw%(fftwver)s_mpi -lfftw%(fftwver)s" % {'fftwver': fftwver}
 
         d = {
              'FC': '%s %s'%(os.getenv('F90'), os.getenv('FFLAGS')),
              'MPF': "%s %s"%(os.getenv('MPIF90'), os.getenv('FFLAGS')),
              'CC': os.getenv('CC'),
-             'LDFLAGS': '$(FOPT) %s %s' % (os.getenv('LDFLAGS'), static_flag),
-             'R_LIBS': "%s %s" % (libs, self.toolkit().get_openmp_flag()),
-             'RP_LIBS' :'-L%(fftwroot)s/lib -lfftw%(fftwver)s_mpi ' \
-                        '-lfftw%(fftwver)s %(libs)s' % {
-                                                        'fftwroot': get_software_root('FFTW'),
-                                                        'fftwver': fftwver,
-                                                        'libs': libs
-                                                       },
+             'LDFLAGS': '$(FOPT) %s ' % os.getenv('LDFLAGS'),
+             'R_LIBS': rlibs,  # libraries for 'real' (not 'complex') binary
+             'RP_LIBS' :rplibs,  # libraries for 'real' parallel binary
              'MPIRUN': ''
             }
 
