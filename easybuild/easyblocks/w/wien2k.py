@@ -100,10 +100,10 @@ class EB_WIEN2k(Application):
                 static_flag = "-static"
             comp_answer = 'V'  # Linux (gfortran compiler + gotolib)
             libs = "-L%s %s -L%s %s" % (
-                                        os.getenv('LAPACK_LIB_DIR'),
-                                        os.getenv('LIBLAPACK_MT'),
                                         os.getenv('SCALAPACK_LIB_DIR'),
                                         os.getenv('LIBSCALAPACK_MT'),
+                                        os.getenv('LAPACK_LIB_DIR'),
+                                        os.getenv('LIBLAPACK_MT'),
                                        )
 
         else:
