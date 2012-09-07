@@ -220,7 +220,7 @@ class EB_WIEN2k(Application):
             cmd = "x_lapw lapw1 %s" % cmd_arg
             (out, _) = run_cmd(cmd, log_all=True, simple=False)
 
-            re_success = re.compile("STOP\s+LAPW1\s+END")
+            re_success = re.compile("LAPW1\s+END")
             if not re_success.search(out):
                 self.log.error("Test '%s' in %s failed (pattern '%s' not found)?" % (cmd, os.getcwd(),
                                                                                      re_success.pattern))
