@@ -29,12 +29,16 @@ EasyBuild support for building and installing WIEN2k, implemented as an easybloc
 import fileinput
 import os
 import re
+import shutil
 import sys
+import tempfile
 from distutils.version import LooseVersion
 
+import easybuild.tools.environment as env
 import easybuild.tools.toolkit as toolkit
 from easybuild.framework.application import Application
-from easybuild.tools.filetools import run_cmd, run_cmd_qa
+from easybuild.framework.easyconfig import CUSTOM
+from easybuild.tools.filetools import run_cmd, run_cmd_qa, unpack
 from easybuild.tools.modules import get_software_version
 
 
@@ -46,6 +50,17 @@ class EB_WIEN2k(Application):
         Application.__init__(self, *args, **kwargs)
 
         self.build_in_installdir = True
+
+    @staticmethod
+    def extra_options():
+        testdata_urls = ["http://www.wien2k.at/reg_user/benchmark/test_case.tar.gz",
+                         "http://www.wien2k.at/reg_user/benchmark/mpi-benchmark.tar.gz"]
+
+        extra_vars = [
+                      ('runtest', [True, "Run WIEN2k tests (default: True).", CUSTOM]),
+                      ('testdata', [testdata_urls, "URL for test data required to run WIEN2k benchmark test (default: %s)." % testdata_urls, CUSTOM])
+                     ]
+        return Application.extra_options(extra_vars)
 
     def unpack_src(self):
         """Unpack WIEN2k sources using gunzip and provided expand_lapw script."""
@@ -86,7 +101,7 @@ class EB_WIEN2k(Application):
 
         # libraries
         rlibs = "%s %s" % (os.getenv('LIBLAPACK_MT'), self.toolkit().get_openmp_flag())
-        rplibs = "%s %s" % (os.getenv('LIBLAPACK_MT'), os.getenv('LIBSCALAPACK_MT'))
+        rplibs = "%s %s" % (os.getenv('LIBSCALAPACK_MT'), os.getenv('LIBLAPACK_MT'))
 
         # add FFTW libs if needed
         fftwfullver = get_software_version('FFTW')
@@ -195,6 +210,73 @@ class EB_WIEN2k(Application):
     
         self.log.debug("no_qa for %s: %s" % (cmd, no_qa))
         run_cmd_qa(cmd, qanda, no_qa=no_qa, log_all=True, simple=True)
+
+    def test(self):
+        """Run WPS test (requires large dataset to be downloaded). """
+
+        def run_wien2k_test(cmd_arg):
+            """Run a WPS command, and check for success."""
+
+            cmd = "x_lapw lapw1 %s" % cmd_arg
+            (out, _) = run_cmd(cmd, log_all=True, simple=False)
+
+            re_success = re.compile("STOP\s+LAPW1\s+END")
+            if not re_success.search(out):
+                self.log.error("Test '%s' in %s failed (pattern '%s' not found)?" % (cmd, os.getcwd(),
+                                                                                     re_success.pattern))
+            else:
+                self.log.info("Test '%s' seems to have run successfully: %s" % (cmd, out))
+
+        if self.getcfg('runtest'):
+            if not self.getcfg('testdata'):
+                self.log.error("List of URLs for testdata not provided.")
+
+            path = os.getenv('PATH')
+            env.set('PATH', "%s:%s" % (self.installdir, path))
+
+            try:
+                cwd = os.getcwd()
+
+                # create temporary directory
+                tmpdir = tempfile.mkdtemp()
+                os.chdir(tmpdir)
+
+                # download data
+                testdata_paths = {}
+                for testdata in self.getcfg('testdata'):
+                    path = self.file_locate(testdata)
+                    if not path:
+                        self.log.error("Downloading file from %s failed?" % testdata)
+                    testdata_paths.update({os.path.basename(testdata): path})
+
+                self.log.debug('testdata_paths: %s' % testdata_paths)
+
+                # unpack serial benchmark
+                serial_test_name = "test_case"
+                unpack(testdata_paths['%s.tar.gz' % serial_test_name], tmpdir)
+
+                # run serial benchmark
+                os.chdir(os.path.join(tmpdir, serial_test_name))
+                run_wien2k_test("-c")
+
+                # unpack parallel benchmark (in serial benchmark dir)
+                parallel_test_name = "mpi-benchmark"
+                unpack(testdata_paths['%s.tar.gz' % parallel_test_name], tmpdir)
+
+                # run parallel benchmark
+                os.chdir(os.path.join(tmpdir, serial_test_name))
+                run_wien2k_test("-p")
+
+                os.chdir(cwd)
+                shutil.rmtree(tmpdir)
+
+            except OSError, err:
+                self.log.error("Failed to run WIEN2k benchmark tests: %s" % err)
+
+            # reset original path
+            env.set('PATH', path)
+
+            self.log.debug("Current dir: %s" % os.getcwd())
 
     def make_install(self):
         """Fix broken symlinks after build/installation."""
