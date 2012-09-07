@@ -27,11 +27,8 @@ import os
 import re
 import shutil
 import sys
-from distutils.version import LooseVersion
 
-import easybuild.tools.toolkit as toolkit
 from easybuild.framework.application import Application
-from easybuild.tools.filetools import run_cmd, run_cmd_qa
 from easybuild.tools.modules import get_software_root, get_software_version
 
 
