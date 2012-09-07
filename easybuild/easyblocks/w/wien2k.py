@@ -244,10 +244,10 @@ class EB_WIEN2k(Application):
                 # download data
                 testdata_paths = {}
                 for testdata in self.getcfg('testdata'):
-                    path = self.file_locate(testdata)
-                    if not path:
+                    td_path = self.file_locate(testdata)
+                    if not td_path:
                         self.log.error("Downloading file from %s failed?" % testdata)
-                    testdata_paths.update({os.path.basename(testdata): path})
+                    testdata_paths.update({os.path.basename(testdata): td_path})
 
                 self.log.debug('testdata_paths: %s' % testdata_paths)
 
