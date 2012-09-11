@@ -101,15 +101,9 @@ class EB_WIEN2k(Application):
 
         # libraries
         rlibs = "%s %s" % (os.getenv('LIBLAPACK_MT'), self.toolkit().get_openmp_flag())
-        rplibs = "%s %s" % (os.getenv('LIBSCALAPACK_MT'), os.getenv('LIBLAPACK_MT'))
-
-        # add FFTW libs if needed
-        fftwfullver = get_software_version('FFTW')
-        if fftwfullver:
-            fftwver = ""
-            if LooseVersion(fftwfullver) >= LooseVersion('3'):
-                fftwver = fftwfullver.split('.')[0]
-            rplibs += " -lfftw%(fftwver)s_mpi -lfftw%(fftwver)s" % {'fftwver': fftwver}
+        rplibs = "%s %s %s" % (os.getenv('LIBSCALAPACK_MT'),
+                               os.getenv('LIBLAPACK_MT'),
+                               os.getenv('LIBFFT'))
 
         d = {
              'FC': '%s %s'%(os.getenv('F90'), os.getenv('FFLAGS')),
@@ -212,7 +206,7 @@ class EB_WIEN2k(Application):
         run_cmd_qa(cmd, qanda, no_qa=no_qa, log_all=True, simple=True)
 
     def test(self):
-        """Run WPS test (requires large dataset to be downloaded). """
+        """Run WIEN2k test benchmarks. """
 
         def run_wien2k_test(cmd_arg):
             """Run a WPS command, and check for success."""
@@ -277,6 +271,66 @@ class EB_WIEN2k(Application):
             env.set('PATH', path)
 
             self.log.debug("Current dir: %s" % os.getcwd())
+
+    def runtests(self):
+        """Run test cases, if specified."""
+        for test in self.getcfg('tests'):
+
+            # check expected format
+            if not len(test) == 4:
+                self.log.error("WIEN2k test case not specified in expected format: " \
+                               "(testcase_name, init_lapw_args, run_lapw_args, [scf_regexp_pattern])")
+            test_name = test[0]
+            init_args = test[1]
+            run_args = test[2]
+            scf_regexp_patterns = test[3]
+
+            try:
+                cwd = os.getcwd()
+                # WIEN2k enforces that working dir has same name as test case
+                tmpdir = os.path.join(tempfile.mkdtemp(), test_name)
+                os.mkdir(tmpdir)
+                os.chdir(tmpdir)
+            except OSError, err:
+                self.log.error("Failed to create temporary directory for test %s: %s" % (test_name, err))
+
+            # try and find struct file for test
+            test_fp = self.file_locate("%s.struct" % test_name)
+
+            try:
+                shutil.copy2(test_fp, tmpdir)
+            except OSError, err:
+                self.log.error("Failed to copy %s: %s" % (test_fp, err))
+
+            # run test
+            cmd = "init_lapw %s" % init_args
+            run_cmd(cmd, log_all=True, simple=True)
+
+            cmd = "run_lapw %s" % run_args
+            (out, _) = run_cmd(cmd, log_all=True, simple=False)
+
+            # check output
+            scf_fn = "%s.scf" % test_name
+            self.log.debug("Checking output of test %s in %s" % (str(test), scf_fn))
+            try:
+                f = open(scf_fn, "r")
+                scftxt = f.read()
+                f.close()
+            except IOError, err:
+                self.log.error("Failed to read file %s: %s" % (scf_fn, err))
+            for regexp_pat in scf_regexp_patterns:
+                regexp = re.compile(regexp_pat, re.M)
+                if not regexp.search(scftxt):
+                    self.log.error("Failed to find pattern %s in %s" % (regexp.pattern, scf_fn))
+                else:
+                    self.log.debug("Found pattern %s in %s" % (regexp.pattern, scf_fn))
+
+            # cleanup
+            try:
+                os.chdir(cwd)
+                shutil.rmtree(tmpdir)
+            except OSError, err:
+                self.log.error("Failed to clean up temporary test dir: %s" % err)
 
     def make_install(self):
         """Fix broken symlinks after build/installation."""
