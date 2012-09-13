@@ -101,9 +101,17 @@ class EB_WIEN2k(Application):
 
         # libraries
         rlibs = "%s %s" % (os.getenv('LIBLAPACK_MT'), self.toolkit().get_openmp_flag())
-        rplibs = "%s %s %s" % (os.getenv('LIBSCALAPACK_MT'),
-                               os.getenv('LIBLAPACK_MT'),
-                               os.getenv('LIBFFT'))
+        rplibs = [os.getenv('LIBSCALAPACK_MT'), os.getenv('LIBLAPACK_MT')]
+        fftwver = get_software_version('FFTW')
+        if fftwver:
+            suff = ''
+            if LooseVersion(fftwver) >= LooseVersion("3"):
+                suff = '3'
+            rplibs.insert(0, "-lfftw%(suff)s_mpi -lfftw%(suff)s" % {'suff': suff})
+        else:
+            rplibs.append(os.getenv('LIBFFT'))
+
+        rplibs = ' '.join(rplibs)
 
         d = {
              'FC': '%s %s'%(os.getenv('F90'), os.getenv('FFLAGS')),
@@ -307,7 +315,7 @@ class EB_WIEN2k(Application):
             run_cmd(cmd, log_all=True, simple=True)
 
             cmd = "run_lapw %s" % run_args
-            (out, _) = run_cmd(cmd, log_all=True, simple=False)
+            run_cmd(cmd, log_all=True, simple=True)
 
             # check output
             scf_fn = "%s.scf" % test_name
