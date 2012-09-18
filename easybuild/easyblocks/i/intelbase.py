@@ -101,7 +101,7 @@ class EB_IntelBase(Application):
         # patch install scripts with randomly suffixed intel hom subdir
         for fn in ["install.sh", "pset/install.sh", "pset/iat/iat_install.sh"]:
             try:
-                if os.isfile(fn):
+                if os.path.isfile(fn):
                     for line in fileinput.input(fn, inplace=1, backup='.orig'):
                         line = re.sub(r'(.*)(NONRPM_DB_PREFIX="\$HOME/)intel(.*)', r'\1\2%s\3' % self.home_subdir, line)
                         sys.stdout.write(line)
