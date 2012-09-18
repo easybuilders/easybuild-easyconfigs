@@ -592,8 +592,10 @@ class Toolkit:
 
         # adjust lib subdir if GCC is used
         if self.comp_family() == GCC:
-            for libs in [blas_libs, blas_mt_libs, scalapack_libs]:
-                libs.replace('mkl_intel_lp64', 'mkl_gf_lp64')
+            blas_libs =  [x.replace('mkl_intel_lp64', 'mkl_gf_lp64') for x in blas_libs]
+            blas_mt_libs = [x.replace('mkl_intel_lp64', 'mkl_gf_lp64') for x in blas_mt_libs]
+            scalapack_libs = [x.replace('mkl_intel_lp64', 'mkl_gf_lp64') for x in scalapack_libs]
+            scalapack_mt_libs = [x.replace('mkl_intel_lp64', 'mkl_gf_lp64') for x in scalapack_mt_libs]
 
         # sequential BLAS and LAPACK
         prefix = "-Wl,-Bstatic -Wl,--start-group"
