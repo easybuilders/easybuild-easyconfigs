@@ -52,7 +52,7 @@ class EB_IntelBase(Application):
         self.license = None
         # generate a randomly suffixed name for the 'intel' home subdirectory
         random_suffix = ''.join(random.choice(string.ascii_letters) for n in xrange(5))
-        self.home_subdir = 'intel_%s' random_suffix
+        self.home_subdir = 'intel_%s' % random_suffix
         Application.__init__(self, *args, **kwargs)
 
     @staticmethod
