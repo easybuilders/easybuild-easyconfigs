@@ -100,7 +100,7 @@ class EB_IntelBase(Application):
 
         # patch install scripts with randomly suffixed intel hom subdir
         for fn in ["install.sh", "pset/install.sh", "pset/iat/iat_install.sh", 
-                   "pset/install_cc.sh", "pset/install_fc.sh"]:
+                   "data/install_mpi.sh", "pset/install_cc.sh", "pset/install_fc.sh"]:
             try:
                 if os.path.isfile(fn):
                     self.log.info("Patching file %s with randomly suffixed intel home subdir %s" % (fn, self.home_subdir))
