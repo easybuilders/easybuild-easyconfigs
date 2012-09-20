@@ -99,11 +99,14 @@ class EB_IntelBase(Application):
         env.set("INTEL_LICENSE_FILE", self.license)
 
         # patch install scripts with randomly suffixed intel hom subdir
-        for fn in ["install.sh", "pset/install.sh", "pset/iat/iat_install.sh"]:
+        for fn in ["install.sh", "pset/install.sh", "pset/iat/iat_install.sh", 
+                   "pset/install_cc.sh", "pset/install_fc.sh"]:
             try:
                 if os.path.isfile(fn):
+                    self.log.info("Patching file %s with randomly suffixed intel home subdir %s" % (fn, self.home_subdir))
                     for line in fileinput.input(fn, inplace=1, backup='.orig'):
                         line = re.sub(r'(.*)(NONRPM_DB_PREFIX="\$HOME/)intel(.*)', r'\1\2%s\3' % self.home_subdir, line)
+                        line = re.sub(r'(.*)(DEFAULT_DB_PREFIX="\$\(echo ~\)/)intel(.*)', r'\1\2%s\3' % self.home_subdir, line)
                         sys.stdout.write(line)
             except (OSError, IOError), err:
                 self.log.error("Failed to modify install script %s with randomly suffixed home subdir: %s" % (fn, err))
