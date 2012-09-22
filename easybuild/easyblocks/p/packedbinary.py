@@ -39,6 +39,8 @@ class EB_PackedBinary(EB_Binary, Application):
     def make_install(self):
         """Copy all unpacked sources to install directory."""
         for src in self.src:
-            self.setcfg('startfrom', src['finalpath'])
+            # guess unpacked dirname, may fail
+            dirname = src['name'].split('.')[0]
+            self.setcfg('startfrom', dirname)
             EB_Binary.make_install(self)
 
