@@ -34,5 +34,7 @@ class EB_PackedBinary(EB_Binary, Application):
 
     def unpack_src(self):
         """Unpack the source"""
-        Application.unpack_src(self)
+        for src in self.src:
+            self.setcfg('startfrom', src['finalpath'])
+            Application.unpack_src(self)
 
