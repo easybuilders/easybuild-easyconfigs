@@ -68,7 +68,7 @@ class EB_Binary(Application):
 
     def make_install(self):
         """Copy the unpacked source to the install directory"""
-        shutil.copytree(self.getcfg('startfrom'), self.installdir, symlinks=True)
+        run_cmd("cp -a %s %s" % (self.getcfg('startfrom'), self.installdir))
 
     def make_module_extra(self):
         """Add the install directory to the PATH."""
