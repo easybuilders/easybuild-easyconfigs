@@ -27,14 +27,10 @@ from easybuild.framework.application import Application
 from easybuild.easyblocks.binary import EB_Binary
 
 
-class EB_PackedBinary(EB_Binary, Application):
+class EB_PackedBinary(EB_Binary):
     """Support for installing a packed binary package.
-    Just unpack its source in the installdir
+    Just copy unpacked sources in the installdir
     """
-
-    def unpack_src(self):
-        """Don't unpack prematurely."""
-        pass
 
     def make_install(self):
         """Unpack and copy all sources to install directory, one-by-one."""
