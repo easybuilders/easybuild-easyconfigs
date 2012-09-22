@@ -28,22 +28,20 @@ from easybuild.easyblocks.binary import EB_Binary
 from easybuild.tools.filetools import unpack
 
 
-class EB_PackedBinary(EB_Binary):
+class EB_PackedBinary(EB_Binary, Application):
     """Support for installing a packed binary package.
     Just copy unpacked sources in the installdir
     """
 
+    def unpack_src(self):
+        """Unpack packed sources."""
+        Application.unpack_src(self)
+
     def make_install(self):
-        """Unpack and copy all sources to install directory, one-by-one."""
-        for src in self.src:
-            # unpack, and try to determine resulting directory
-            srcdir = unpack(src['path'], self.builddir, extra_options=self.getcfg('unpackOptions'))
-            # copy files to install dir via EB_Binary
-            self.setcfg('startfrom', srcdir)
-            EB_Binary.make_install(self)
-            # remove unpacked directory
-            try:
-                shutil.rmtree(os.path.join(self.builddir, srcdir))
-            except OSError, err:
-                self.log.error("Failed to remove %s: %s" % (srcdir, err))
+        """Copy all unpacked source directories to install directory, one-by-one."""
+        for src in os.listdir(self.builddir):
+            if os.path.isdir(src):
+                # copy files to install dir via EB_Binary
+                self.setcfg('startfrom', src)
+                EB_Binary.make_install(self)
 
