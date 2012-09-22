@@ -414,7 +414,7 @@ class Toolkit:
             fftw_libs.append("fftw%s_mpi" % suffix)
         fftw_libs.append("fftw%s" % suffix)
 
-        self.vars['LIBFFT'] = ','.join(["-l%s" % x for x in fftw_libs])
+        self.vars['LIBFFT'] = ' '.join(["-l%s" % x for x in fftw_libs])
 
         self.vars['FFTW_INC_DIR'] = os.path.join(fftw, "include")
         self.vars['FFTW_LIB_DIR'] = os.path.join(fftw, "lib")
