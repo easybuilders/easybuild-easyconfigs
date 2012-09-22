@@ -25,6 +25,7 @@ e.g., binary applications shipped as a .tar.gz file
 
 from easybuild.framework.application import Application
 from easybuild.easyblocks.binary import EB_Binary
+from easybuild.tools.filetools import unpack
 
 
 class EB_PackedBinary(EB_Binary):
