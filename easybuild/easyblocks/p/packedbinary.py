@@ -39,10 +39,14 @@ class EB_PackedBinary(EB_Binary, Application):
 
     def make_install(self):
         """Copy all unpacked source directories to install directory, one-by-one."""
-        for src in os.listdir(self.builddir):
-            srcpath = os.path.join(self.builddir, src)
-            if os.path.isdir(srcpath):
-                # copy files to install dir via EB_Binary
-                self.setcfg('startfrom', src)
-                EB_Binary.make_install(self)
+        try:
+            os.chdir(self.builddir)
+            for src in os.listdir(self.builddir):
+                srcpath = os.path.join(self.builddir, src)
+                if os.path.isdir(srcpath):
+                    # copy files to install dir via EB_Binary
+                    self.setcfg('startfrom', src)
+                    EB_Binary.make_install(self)
+        except OSError, err:
+            self.log.error("Failed to copy unpacked sources to install directory: %s" % err)
 
