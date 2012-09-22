@@ -40,7 +40,7 @@ class EB_Pasha(Application):
             self.log.error("TBB module not loaded.")
 
         self.updatecfg('makeopts', "TBB_DIR=%s/tbb MPI_DIR='' MPI_INC='' " % tbb)
-        self.updatecfg('makeopts', 'MPI_CXX="%s" OPM_FLAG="%s"' % (os.getenv('MPICXX'), self.toolkit().get_openmp_flag()))
+        self.updatecfg('makeopts', 'MPI_CXX="%s" OMP_FLAG="%s"' % (os.getenv('MPICXX'), self.toolkit().get_openmp_flag()))
         self.updatecfg('makeopts', 'MPI_LIB="" MY_CXX="%s" MPICH_IGNORE_CXX_SEEK=1' % os.getenv('CXX'))
 
     def make_install(self):
