@@ -62,7 +62,7 @@ class EB_Binary(Application):
         pass
 
     def make_install(self):
-        """Copy the unpacked source to the install directory"""
+        """Copy all files in build directory to the install directory"""
         # can't use shutil.copytree because that doesn't allow the target directory to exist already
         run_cmd("cp -a %s %s" % (self.getcfg('startfrom'), self.installdir))
 

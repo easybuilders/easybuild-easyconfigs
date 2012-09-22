@@ -33,14 +33,20 @@ class EB_PackedBinary(EB_Binary, Application):
     """
 
     def unpack_src(self):
-        """Unpack the source"""
-        Application.unpack_src(self)
+        """Don't unpack prematurely."""
+        pass
 
     def make_install(self):
-        """Copy all unpacked sources to install directory."""
+        """Unpack and copy all sources to install directory, one-by-one."""
         for src in self.src:
-            # guess unpacked dirname, may fail
-            dirname = src['name'].split('.')[0]
-            self.setcfg('startfrom', dirname)
+            # unpack, and try to determine resulting directory
+            srcdir = unpack(src['path'], self.builddir, extra_options=self.getcfg('unpackOptions'))
+            # copy files to install dir via EB_Binary
+            self.setcfg('startfrom', srcdir)
             EB_Binary.make_install(self)
+            # remove unpacked directory
+            try:
+                shutil.rmtree(os.path.join(self.builddir, srcdir))
+            except OSError, err:
+                self.log.error("Failed to remove %s: %s" % (srcdir, err))
 
