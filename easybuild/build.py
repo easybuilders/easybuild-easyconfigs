@@ -29,6 +29,7 @@ Main entry point for EasyBuild: build software from .eb input file
 """
 
 import copy
+import glob
 import logging
 import platform
 import os
@@ -37,8 +38,9 @@ import shutil
 import sys
 import tempfile
 import time
-from optparse import OptionParser
+import xml.dom.minidom as xml
 from datetime import datetime
+from optparse import OptionParser
 
 # optional Python packages, these might be missing
 # failing imports are just ignored
