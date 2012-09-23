@@ -296,9 +296,9 @@ class Application:
         # create parent dirs in install and modules path already
         # this is required when building in parallel
         try:
-            for pardir in [os.path.join(installPath(), self.name(),
-                           os.path.join(installPath('mod'), ModuleGenerator.GENERAL_CLASS, self.name(),
-                           os.path.join(installPath('mod'), self.getcfg('moduleclass'), self.name()]:
+            for pardir in [os.path.join(installPath(), self.name()),
+                           os.path.join(installPath('mod'), ModuleGenerator.GENERAL_CLASS, self.name()),
+                           os.path.join(installPath('mod'), self.getcfg('moduleclass'), self.name())]:
                 if not os.path.exists(pardir):
                     os.makedirs(pardir)
                     self.log.debug("Created directory %s" % pardir)
