@@ -302,6 +302,8 @@ class Application:
                 if not os.path.exists(pardir):
                     os.makedirs(pardir)
                     self.log.debug("Created directory %s" % pardir)
+                else:
+                    self.log.debug("Not creating %s, it already exists." % pardir)
         except OSError, err:
             self.log.error("Failed to create parent dirs in install and modules path: %s" % err)
 
