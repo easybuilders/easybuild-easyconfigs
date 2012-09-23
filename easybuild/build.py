@@ -29,6 +29,7 @@ Main entry point for EasyBuild: build software from .eb input file
 """
 
 import copy
+import datetime
 import platform
 import os
 import re
