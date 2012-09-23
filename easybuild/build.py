@@ -931,7 +931,7 @@ def write_to_xml(succes, failed, filename):
     root.writexml(output_file)
     output_file.close()
 
-def build_easyconfigs(easyconfigs, output_dir):
+def build_easyconfigs(easyconfigs, output_dir, log):
     """Build the list of easyconfigs."""
 
     test_results = []
@@ -1114,7 +1114,7 @@ def regtest(options, log, easyconfigs_paths=None):
             test_results.append((ecfile, 'easyconfig file error', err))
 
     if options.sequential:
-        build_easyconfigs(easyconfigs, output_dir)
+        build_easyconfigs(easyconfigs, output_dir, log)
     else:
         resolved = resolveDependencies(easyconfigs, options.robot, log)
         # use %%s so we can replace it later
