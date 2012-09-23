@@ -1102,7 +1102,7 @@ def regtest(easyconfigs_paths):
             ecfiles += findEasyconfigs(path, log)
     else:
         # default path
-        path = "easybuild/easyconfigs/"
+        path = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), "easybuild", "easyconfigs")
         ecfiles = findEasyconfigs(path, log)
 
     # process all the found easyconfig files
