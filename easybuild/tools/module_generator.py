@@ -35,6 +35,9 @@ from easybuild.tools.config import installPath
 
 log = getLog('moduleGenerator')
 
+# general module class
+GENERAL_CLASS = 'all'
+
 
 class ModuleGenerator:
     """
@@ -52,9 +55,6 @@ class ModuleGenerator:
         """
         module_path = installPath('mod')
 
-        # general module class
-        general_class = 'all'
-
         # Fake mode: set installpath to temporary dir
         if self.fake:
             self.tmpdir = tempfile.mkdtemp()
@@ -62,7 +62,7 @@ class ModuleGenerator:
             module_path = self.tmpdir
 
         # Real file goes in 'all' category
-        self.filename = os.path.join(module_path, general_class, self.app.name(), self.app.installversion())
+        self.filename = os.path.join(module_path, GENERAL_CLASS, self.app.name(), self.app.installversion())
 
         # Make symlink in moduleclass category
         classPath = os.path.join(module_path, self.app.getcfg('moduleclass'), self.app.name())
@@ -88,7 +88,7 @@ class ModuleGenerator:
         except OSError, err:
             log.exception("Failed to create symlink from %s to %s: %s" % (classPathFile, self.filename, err))
 
-        return os.path.join(module_path, general_class)
+        return os.path.join(module_path, GENERAL_CLASS)
 
     def getDescription(self, conflict=True):
         """
