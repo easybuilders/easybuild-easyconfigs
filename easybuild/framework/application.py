@@ -47,7 +47,7 @@ from easybuild.tools.build_log import EasyBuildError, initLogger, removeLogHandl
 from easybuild.tools.config import source_path, buildPath, installPath, read_only_installdir
 from easybuild.tools.filetools import adjust_permissions, convertName, encode_class_name
 from easybuild.tools.filetools import patch, run_cmd, unpack
-from easybuild.tools.module_generator import ModuleGenerator
+from easybuild.tools.module_generator import GENERAL_CLASS, ModuleGenerator
 from easybuild.tools.modules import Modules, get_software_root
 from easybuild.tools.systemtools import get_core_count
 
@@ -297,7 +297,7 @@ class Application:
         # this is required when building in parallel
         
         pardirs = [os.path.join(installPath(), self.name()),
-                   os.path.join(installPath('mod'), ModuleGenerator.GENERAL_CLASS, self.name()),
+                   os.path.join(installPath('mod'), GENERAL_CLASS, self.name()),
                    os.path.join(installPath('mod'), self.getcfg('moduleclass'), self.name())]
         self.log.info("Checking dirs that need to be created: %s" % pardirs)
         try:
