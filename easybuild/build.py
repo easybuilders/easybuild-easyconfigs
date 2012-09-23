@@ -218,7 +218,7 @@ def main():
     # run regtest
     if options.regtest:
         log.info("Running regression test")
-        regtest(options, paths)
+        regtest(options, log, paths)
 
     if options.avail_easyconfig_params or options.dump_classes or options.search or options.version or options.regtest:
         if logFile:
@@ -1069,7 +1069,7 @@ def aggregate_xml_in_dirs(base_dir, output_filename):
     root.writexml(output_file, addindent="\t", newl="\n")
     output_file.close()
 
-def regtest(options, easyconfigs_paths=None):
+def regtest(options, log, easyconfigs_paths=None):
     """Run regression test, using easyconfigs available in given path."""
 
     cur_dir = os.getcwd()
