@@ -214,7 +214,12 @@ def main():
             error("Please provide a search-path to --robot when using --search")
         searchModule(options.robot, options.search)
 
-    if options.avail_easyconfig_params or options.dump_classes or options.search or options.version:
+    # run regtest
+    if options.regtest:
+        log.info("Running regression test")
+        regtest(paths)
+
+    if options.avail_easyconfig_params or options.dump_classes or options.search or options.version or options.regtest:
         if logFile:
             os.remove(logFile)
         sys.exit(0)
@@ -288,12 +293,6 @@ def main():
         except NameError, err:
             log.error("At least one optional Python packages (pygraph, dot, graphviz) required to " \
                       "generate dependency graphs is missing: %s" % err)
-        sys.exit(0)
-
-    # run regtest and exit
-    if options.regtest:
-        log.info("Running regression test")
-        regtest(options.robot)
         sys.exit(0)
 
     # submit build as job(s) and exit
@@ -1069,7 +1068,7 @@ def aggregate_xml_in_dirs(base_dir, output_filename):
     root.writexml(output_file, addindent="\t", newl="\n")
     output_file.close()
 
-def regtest(easyconfigs_paths):
+def regtest(easyconfigs_paths=None):
     """Run regression test, using easyconfigs available in given path."""
 
     cur_dir = os.getcwd()
