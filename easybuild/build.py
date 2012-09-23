@@ -1119,7 +1119,7 @@ def regtest(options, log, easyconfigs_paths=None):
         resolved = resolveDependencies(easyconfigs, options.robot, log)
         # use %%s so we can replace it later
         command = "cd %s && %s %%s --regtest --sequential" % (cur_dir, sys.argv[0])
-        parbuild.build_packages_in_parallel(command, resolved, output_dir, log)
+        jobs = parbuild.build_packages_in_parallel(command, resolved, output_dir, log)
         print "List of submitted jobs:"
         for job in jobs:
             print "%s: %s" % (job.name, job.jobid)
