@@ -934,22 +934,25 @@ def write_to_xml(succes, failed, filename):
     root.writexml(output_file)
     output_file.close()
 
-def build_easyconfigs(easyconfigs, output_dir, log):
+def build_easyconfigs(easyconfigs, output_dir, options, log):
     """Build the list of easyconfigs."""
 
     test_results = []
     build_stopped = {}
 
-    def perform_step(fase, obj, method):
+    apploginfo = lambda x,y: x.log.info(y)
+
+    def perform_step(step, obj, method):
         """Perform method on object if it can be built."""
         if obj not in build_stopped:
+            apploginfo(obj, "Running %s step" % step)
             try:
                 method(obj)
             except EasyBuildError, err:
                 # we cannot continue building it
-                test_results.append((obj, fase, err))
+                test_results.append((obj, step, err))
                 # keep a dict of so we can check in O(1) if objects can still be build
-                build_stopped[obj] = fase
+                build_stopped[obj] = step
 
     # initialize all instances
     apps = []
@@ -1119,7 +1122,7 @@ def regtest(options, log, easyconfigs_paths=None):
             test_results.append((ecfile, 'easyconfig file error', err))
 
     if options.sequential:
-        build_easyconfigs(easyconfigs, output_dir, log)
+        build_easyconfigs(easyconfigs, output_dir, options, log)
     else:
         resolved = resolveDependencies(easyconfigs, options.robot, log)
         # use %%s so we can replace it later
