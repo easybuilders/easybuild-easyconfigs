@@ -996,6 +996,8 @@ def build_easyconfigs(easyconfigs, output_dir, log):
         perform_step('sanity check', app, lambda x: x.sanitycheck())
         perform_step('cleanup', app, lambda x: x.cleanup())
         perform_step('make module', app, lambda x: x.make_module())
+        if not options.skip_tests and app.getcfg('tests'):
+            perform_step('test cases', app, lambda x: x.runtests())
 
         # remove handler
         app.log.removeHandler(handler)
