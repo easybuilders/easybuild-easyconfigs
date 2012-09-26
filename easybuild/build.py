@@ -975,12 +975,6 @@ def build_easyconfigs(easyconfigs, output_dir, options, log):
         os.chdir(base_dir)
         modifyEnv(os.environ, base_env)
 
-        # create a handler per app so we can capture debug output per application
-        handler = logging.FileHandler(os.path.join(output_dir, "%s-%s.log" % (app.name(), app.installversion())))
-        handler.setFormatter(build_log.formatter)
-
-        app.log.addHandler(handler)
-
         # take manual control over the build process
         perform_step("preparation", app, lambda x: x.prepare_build())
         perform_step("pre-build verification", app, lambda x: x.ready2build())
@@ -1002,8 +996,13 @@ def build_easyconfigs(easyconfigs, output_dir, options, log):
         if not options.skip_tests and app.getcfg('tests'):
             perform_step('test cases', app, lambda x: x.runtests())
 
-        # remove handler
-        app.log.removeHandler(handler)
+        # close log and move it
+        app.closelog()
+        try:
+            applog = os.path.join(output_dir, "%s-%s.log" % (app.name(), app.installversion()))
+            shutil.move(app.logfile, applog)
+        except IOError, err:
+            error("Failed to move log file %s to new log file %s: %s" % (app.logfile, applog, err))
 
         if app not in build_stopped:
             # gather build stats
