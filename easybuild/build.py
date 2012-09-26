@@ -917,7 +917,7 @@ def write_to_xml(succes, failed, filename):
 
     root.firstChild.appendChild(properties)
 
-    for (obj, fase, error) in failed:
+    for (obj, fase, error, _) in failed:
         # try to pretty print
         try:
             el = create_failure("%s/%s" % (obj.name(), obj.installversion()), fase, error)
