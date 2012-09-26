@@ -656,7 +656,7 @@ class Toolkit:
                      "fftw3x_cdft%s" % fftwsuff,
                      "mkl_cdft_core"]
         self.vars['LIBFFT'] = ' '.join(["-Wl,-Bstatic",
-                                        ' '.join(["-%s" % x for x in fftw_libs]),
+                                        ' '.join(["-l%s" % x for x in fftw_libs]),
                                         "-Wl,-Bdynamic"])
         self.vars['FFTW_INC_DIR'] = os.path.join(mklroot, "mkl", "include", "fftw")
         self.vars['FFTW_LIB_DIR'] = libs_dir
