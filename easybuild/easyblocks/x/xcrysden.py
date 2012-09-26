@@ -70,7 +70,7 @@ class EB_XCrySDen(Application):
                     'GLU_LIB': "-L%s/lib -lGLU" % get_software_root("Mesa"),
                     'GL_LIB': "-L%s/lib -lGL" % get_software_root("Mesa"),
                     'GL_INCDIR': "-I%s/include" % get_software_root("Mesa"),
-                    'FFTW3_LIB': "-L%s %s" % (os.getenv('FFTW_LIB_DIR'), os.getenv('LIBFFT')),
+                    'FFTW3_LIB': "-L%s %s %s" % (os.getenv('FFTW_LIB_DIR'), os.getenv('LIBFFT'), os.getenv('LIBLAPACK_MT')),
                     'FFTW3_INCDIR': "-I%s" % os.getenv('FFTW_INC_DIR'),
                     'COMPILE_TCLTK': 'no',
                     'COMPILE_MESA': 'no',
