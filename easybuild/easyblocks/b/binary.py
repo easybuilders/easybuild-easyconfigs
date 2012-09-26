@@ -31,6 +31,7 @@ import os
 import stat
 
 from easybuild.framework.application import Application
+from easybuild.tools.filetools import run_cmd
 
 
 class EB_Binary(Application):
@@ -60,15 +61,10 @@ class EB_Binary(Application):
         """No compilation, this is a binary package"""
         pass
 
-    def make_installdir(self):
-        """Do not actually create installdir, copytree in make_install doesn't
-        want the destination directory already exist
-        But in python < 2.5 the actual path leading up to the directory has to exist."""
-        self.make_dir(self.installdir, clean=True, dontcreateinstalldir=True)
-
     def make_install(self):
-        """Copy the unpacked source to the install directory"""
-        shutil.copytree(self.getcfg('startfrom'), self.installdir, symlinks=True)
+        """Copy all files in build directory to the install directory"""
+        # can't use shutil.copytree because that doesn't allow the target directory to exist already
+        run_cmd("cp -a %s/* %s" % (self.getcfg('startfrom'), self.installdir))
 
     def make_module_extra(self):
         """Add the install directory to the PATH."""
