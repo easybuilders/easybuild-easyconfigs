@@ -132,7 +132,7 @@ class EB_XCrySDen(Application):
 
         Application.sanitycheck(self)
 
-    def module_make_extra(self):
+    def make_module_extra(self):
         """Set extra environment variables in module file."""
         txt = Application.make_module_extra(self)
 
