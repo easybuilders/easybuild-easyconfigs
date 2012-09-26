@@ -131,3 +131,12 @@ class EB_XCrySDen(Application):
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
         Application.sanitycheck(self)
+
+    def module_make_extra(self):
+        """Set extra environment variables in module file."""
+        txt = Application.make_module_extra(self)
+
+        txt += self.moduleGenerator.setEnvironment('TCL_LIBRARY', os.path.join(get_software_root('Tcl'), 'lib'))
+        txt += self.moduleGenerator.setEnvironment('TK_LIBRARY', os.path.join(get_software_root('Tk'), 'lib'))
+
+        return txt
