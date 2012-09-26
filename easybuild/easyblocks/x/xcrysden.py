@@ -136,7 +136,9 @@ class EB_XCrySDen(Application):
         """Set extra environment variables in module file."""
         txt = Application.make_module_extra(self)
 
-        txt += self.moduleGenerator.setEnvironment('TCL_LIBRARY', os.path.join(get_software_root('Tcl'), 'lib'))
-        txt += self.moduleGenerator.setEnvironment('TK_LIBRARY', os.path.join(get_software_root('Tk'), 'lib'))
+        for lib in ['Tcl', 'Tk']:
+            ver = '.'.join(get_software_version(lib).split('.')[0:2])
+            libpath = os.path.join(get_software_root(lib), 'lib', "%s%s" % (lib.lower(), ver))
+            txt += self.moduleGenerator.setEnvironment('%s_LIBRARY' % lib.upper(), libpath)
 
         return txt
