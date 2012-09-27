@@ -29,6 +29,7 @@ Main entry point for EasyBuild: build software from .eb input file
 """
 
 import copy
+import cStringIO
 import glob
 import logging
 import platform
@@ -953,7 +954,10 @@ def build_easyconfigs(easyconfigs, output_dir, test_results, options, log):
                     fullerr = str(err)
                     if not isinstance(err, EasyBuildError):
                         _, _, tb = sys.exc_info()
-                        fullerr = '\n'.join([tb, str(err)])
+                        f = cStringIO.StringIO()
+                        traceback.print_tb(tb, None, f)
+                        fullerr = '\n'.join([f.getvalue(), str(err)])
+                        f.close()
                     # we cannot continue building it
                     test_results.append((obj, step, fullerr, logfile))
                     # keep a dict of so we can check in O(1) if objects can still be build
@@ -975,7 +979,10 @@ def build_easyconfigs(easyconfigs, output_dir, test_results, options, log):
                 fullerr = str(err)
                 if not isinstance(err, EasyBuildError):
                     _, _, tb = sys.exc_info()
-                    fullerr = '\n'.join([tb, str(err)])
+                    f = cStringIO.StringIO()
+                    traceback.print_tb(tb, None, f)
+                    fullerr = '\n'.join([f.getvalue(), str(err)])
+                    f.close()
                 test_results.append((ec['spec'], 'initialization', fullerr))
         finally:  # try-except-finally doesn't work yet in Python 2.4, so nest try-except into try-finally
             # get rid of local variable to avoid circular reference
