@@ -950,11 +950,16 @@ def build_easyconfigs(easyconfigs, output_dir, test_results, options, log):
             except Exception, err:  # catch all possible errors, also crashes in EasyBuild code itself
                 fullerr = str(err)
                 if not isinstance(err, EasyBuildError):
-                    fullerr = '\n'.join([log.callerInfo(), str(err)])
+                    _, _, tb = sys.exc_info()
+                    fullerr = '\n'.join([tb, str(err)])
                 # we cannot continue building it
                 test_results.append((obj, step, fullerr, logfile))
                 # keep a dict of so we can check in O(1) if objects can still be build
                 build_stopped[obj] = step
+            finally:
+                # get rid of local variable to avoid circular reference
+                # (see http://docs.python.org/library/sys.html#sys.exc_info)
+                del tb
 
     # initialize all instances
     apps = []
@@ -965,8 +970,13 @@ def build_easyconfigs(easyconfigs, output_dir, test_results, options, log):
         except Exception, err:  # catch all possible errors, also crashes in EasyBuild code itself
             fullerr = str(err)
             if not isinstance(err, EasyBuildError):
-                fullerr = '\n'.join([log.callerInfo(), str(err)])
+                _, _, tb = sys.exc_info()
+                fullerr = '\n'.join([tb, str(err)])
             test_results.append((ec['spec'], 'initialization', fullerr))
+        finally:
+            # get rid of local variable to avoid circular reference
+            # (see http://docs.python.org/library/sys.html#sys.exc_info)
+            del tb
 
 
     base_dir = os.getcwd()
