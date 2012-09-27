@@ -950,7 +950,7 @@ def build_easyconfigs(easyconfigs, output_dir, test_results, options, log):
             except Exception, err:  # catch all possible errors, also crashes in EasyBuild code itself
                 fullerr = err
                 if not isinstance(err, EasyBuildError):
-                    fullerr = '\n'.join(log.callerInfo(err), err.msg)
+                    fullerr = '\n'.join(log.callerInfo(), err.msg)
                 # we cannot continue building it
                 test_results.append((obj, step, fullerr, logfile))
                 # keep a dict of so we can check in O(1) if objects can still be build
@@ -965,7 +965,7 @@ def build_easyconfigs(easyconfigs, output_dir, test_results, options, log):
         except Exception, err:  # catch all possible errors, also crashes in EasyBuild code itself
             fullerr = err
             if not isinstance(err, EasyBuildError):
-                fullerr = '\n'.join(log.callerInfo(err), err.msg)
+                fullerr = '\n'.join(log.callerInfo(), err.msg)
             test_results.append((ec['spec'], 'initialization', fullerr))
 
 
