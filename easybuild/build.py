@@ -946,17 +946,18 @@ def build_easyconfigs(easyconfigs, output_dir, test_results, options, log):
         if obj not in build_stopped:
             apploginfo(obj, "Running %s step" % step)
             try:
-                method(obj)
-            except Exception, err:  # catch all possible errors, also crashes in EasyBuild code itself
-                fullerr = str(err)
-                if not isinstance(err, EasyBuildError):
-                    _, _, tb = sys.exc_info()
-                    fullerr = '\n'.join([tb, str(err)])
-                # we cannot continue building it
-                test_results.append((obj, step, fullerr, logfile))
-                # keep a dict of so we can check in O(1) if objects can still be build
-                build_stopped[obj] = step
-            finally:
+                try:
+                    method(obj)
+                except Exception, err:  # catch all possible errors, also crashes in EasyBuild code itself
+                    fullerr = str(err)
+                    if not isinstance(err, EasyBuildError):
+                        _, _, tb = sys.exc_info()
+                        fullerr = '\n'.join([tb, str(err)])
+                    # we cannot continue building it
+                    test_results.append((obj, step, fullerr, logfile))
+                    # keep a dict of so we can check in O(1) if objects can still be build
+                    build_stopped[obj] = step
+            finally:  # try-except-finally doesn't work yet in Python 2.4, so nest try-except into try-finally
                 # get rid of local variable to avoid circular reference
                 # (see http://docs.python.org/library/sys.html#sys.exc_info)
                 del tb
@@ -965,15 +966,16 @@ def build_easyconfigs(easyconfigs, output_dir, test_results, options, log):
     apps = []
     for ec in easyconfigs:
         try:
-            instance = parbuild.get_instance(ec, log)
-            apps.append(instance)
-        except Exception, err:  # catch all possible errors, also crashes in EasyBuild code itself
-            fullerr = str(err)
-            if not isinstance(err, EasyBuildError):
-                _, _, tb = sys.exc_info()
-                fullerr = '\n'.join([tb, str(err)])
-            test_results.append((ec['spec'], 'initialization', fullerr))
-        finally:
+            try:
+                instance = parbuild.get_instance(ec, log)
+                apps.append(instance)
+            except Exception, err:  # catch all possible errors, also crashes in EasyBuild code itself
+                fullerr = str(err)
+                if not isinstance(err, EasyBuildError):
+                    _, _, tb = sys.exc_info()
+                    fullerr = '\n'.join([tb, str(err)])
+                test_results.append((ec['spec'], 'initialization', fullerr))
+        finally:  # try-except-finally doesn't work yet in Python 2.4, so nest try-except into try-finally
             # get rid of local variable to avoid circular reference
             # (see http://docs.python.org/library/sys.html#sys.exc_info)
             del tb
