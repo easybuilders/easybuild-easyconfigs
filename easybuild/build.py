@@ -948,8 +948,11 @@ def build_easyconfigs(easyconfigs, output_dir, test_results, options, log):
             try:
                 method(obj)
             except Exception, err:  # catch all possible errors, also crashes in EasyBuild code itself
+                fullerr = err
+                if not isinstance(err, EasyBuildError):
+                    fullerr = '\n'.join(log.callerInfo(err), err.msg)
                 # we cannot continue building it
-                test_results.append((obj, step, err, logfile))
+                test_results.append((obj, step, fullerr, logfile))
                 # keep a dict of so we can check in O(1) if objects can still be build
                 build_stopped[obj] = step
 
@@ -960,7 +963,10 @@ def build_easyconfigs(easyconfigs, output_dir, test_results, options, log):
             instance = parbuild.get_instance(ec, log)
             apps.append(instance)
         except Exception, err:  # catch all possible errors, also crashes in EasyBuild code itself
-            test_results.append((ec['spec'], 'initialization', err))
+            fullerr = err
+            if not isinstance(err, EasyBuildError):
+                fullerr = '\n'.join(log.callerInfo(err), err.msg)
+            test_results.append((ec['spec'], 'initialization', fullerr))
 
 
     base_dir = os.getcwd()
@@ -1097,7 +1103,7 @@ def regtest(options, log, easyconfigs_paths=None):
     elif var in os.environ:
         output_dir = os.path.abspath(os.environ[var])
     else:
-        # default: current dir + easybuil-test-timestamp
+        # default: current dir + easybuild-test-[timestamp]
         output_dir = os.path.join(cur_dir, basename)
 
     if not os.path.isdir(output_dir):
