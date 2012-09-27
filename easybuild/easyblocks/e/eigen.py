@@ -6,6 +6,9 @@
 # File::      $File$ 
 # Date::      $Date$
 
+"""
+EasyBuild support for building and installing Eigen, implemented as an easyblock
+"""
 
 import os
 import shutil
@@ -18,13 +21,15 @@ class EB_Eigen(Application):
 
     def configure(self):
         """
-	EMPTY
+        EMPTY
         """
+        pass
 
     def make(self):
-	"""
-	EMPTY
-	"""
+        """
+        EMPTY
+        """
+        pass
 
     def make_install(self):
         """
@@ -34,15 +39,7 @@ class EB_Eigen(Application):
         srcdir = os.path.join(srcdir, 'Eigen')
         destdir = os.path.join(self.installdir, 'include/Eigen')
         srcfile = None
-	# Get executable files: for i in $(find . -maxdepth 1 -type f -perm +111 -print | sed -e 's/\.\///g' | awk '{print "\""$0"\""}' | grep -vE "\.sh|\.html"); do echo -ne "$i, "; done && echo
         try:
-#            os.makedirs(destdir)
-#            for filename in ["Array", "Cholesky", "CholmodSupport", "Core", "Dense", "Eigen", "Eigen2Support", "Eigenvalues", "Geometry", "Householder", "IterativeLinearSolvers", "Jacobi", "LU", "LeastSquares", "OrderingMethods", "PaStiXSupport", "PardisoSupport", "QR", "QtAlignedMalloc", "SVD", "Sparse", "SparseCholesky", "SparseCore", "StdDeque", "StdList", "StdVector", "SuperLUSupport", "UmfPackSupport"]:
-#                srcfile = os.path.join(srcdir, "Eigen", filename)
-#                shutil.copy2(srcfile, destdir)
-#                srcfile = os.path.join(srcdir, "Eigen/src")
-#		destdir = os.path.join(self.installdir, 'include/Eigen/src')
-#                shutil.copytree(srcfile, destdir)
                 shutil.copytree(srcdir, destdir)
         except OSError, err:
             self.log.exception("Copying %s to installation dir %s failed: %s" % (srcfile, destdir, err))
@@ -50,8 +47,8 @@ class EB_Eigen(Application):
     def make_module_req_guess(self):
         """  
         A dictionary of possible directories to look for.
-	Include CPLUS_INCLUDE_PATH as an addition to default ones
-	Removed unnecessary stuff
+        Include CPLUS_INCLUDE_PATH as an addition to default ones
+        Removed unnecessary stuff
         """
         return {
             'CPLUS_INCLUDE_PATH': ['include'],
