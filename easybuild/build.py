@@ -39,6 +39,7 @@ import shutil
 import sys
 import tempfile
 import time
+import traceback
 import xml.dom.minidom as xml
 from datetime import datetime
 from optparse import OptionParser
