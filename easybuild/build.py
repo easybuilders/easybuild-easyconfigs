@@ -945,6 +945,7 @@ def build_easyconfigs(easyconfigs, output_dir, test_results, options, log):
         """Perform method on object if it can be built."""
         if obj not in build_stopped:
             apploginfo(obj, "Running %s step" % step)
+            tb = None
             try:
                 try:
                     method(obj)
@@ -965,6 +966,7 @@ def build_easyconfigs(easyconfigs, output_dir, test_results, options, log):
     # initialize all instances
     apps = []
     for ec in easyconfigs:
+        tb = None
         try:
             try:
                 instance = parbuild.get_instance(ec, log)
