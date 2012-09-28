@@ -104,8 +104,6 @@ def add_cmdline_options(parser):
     basic_options.add_option("-l", action="store_true", dest="stdoutLog", help="log to stdout")
     basic_options.add_option("-r", "--robot", metavar="PATH",
                         help="path to search for easyconfigs for missing dependencies")
-    basic_options.add_option("--regtest", action="store_true", help="enable regression test mode")
-    basic_options.add_option("--regtest-online", action="store_true", help="enable online regression test mode")
     basic_options.add_option("-s", "--stop", type="choice", choices=EasyConfig.validstops,
                         help="stop the installation after certain step (valid: %s)" % ', '.join(EasyConfig.validstops))
     strictness_options = ['ignore', 'warn', 'error']
