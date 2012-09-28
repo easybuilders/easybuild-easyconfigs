@@ -290,9 +290,13 @@ def main():
             error("Please provide one or multiple easyconfig files, or use software build " \
                   "options to make EasyBuild search for easyconfigs", optparser=parser)
 
+    else:
+        # indicate that specified paths do not contain generated easyconfig files
+        paths = [(path, False) for path in paths]
+
     # read easyconfig files
     packages = []
-    for path in paths:
+    for (path, generated) in paths:
         path = os.path.abspath(path)
         if not (os.path.exists(path)):
             error("Can't find path %s" % path)
@@ -300,7 +304,7 @@ def main():
         try:
             files = findEasyconfigs(path, log)
             for f in files:
-                if try_to_generate and software_build_specs:
+                if not generated and try_to_generate and software_build_specs:
                     ec_file = easyconfig.tweak(f, None, software_build_specs, log)
                 else:
                     ec_file = f
@@ -693,12 +697,12 @@ def obtain_path(specs, robot, log, try_to_generate=False):
     # we can try and find a suitable easyconfig ourselves, or generate one if we can
     (generated, fn) = easyconfig.obtain_ec_for(specs, robot, None, log)
     if not generated:
-        return fn
+        return (fn, generated)
     else:
         # if an easyconfig was generated, make sure we're allowed to use it
         if try_to_generate:
             print_msg("Generated an easyconfig file %s, going to use it now..." % fn)
-            return fn
+            return (fn, generated)
         else:
             try:
                 os.remove(fn)
