@@ -469,7 +469,7 @@ def findEasyconfigs(path, log):
     path = os.path.abspath(path)
     for dirpath, _, filenames in os.walk(path):
         for f in filenames:
-            if not f.endswith('.eb'):
+            if not f.endswith('.eb') or f == 'TEMPLATE.eb':
                 continue
 
             spec = os.path.join(dirpath, f)
