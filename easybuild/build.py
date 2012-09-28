@@ -283,33 +283,15 @@ def main():
     # software name/version, toolkit name/version, extra patches, ...
     (try_to_generate, software_build_specs) = process_software_build_specs(options)
 
-    # read easyconfig files
-    packages = []
     if len(paths) == 0:
         if software_build_specs.has_key('name'):
-            # if no easyconfig files/paths were provided, but we did get a software name,
-            # we can try and find a suitable easyconfig ourselves, or generate one if we can
-            (generated, fn) = easyconfig.obtain_ec_for(software_build_specs, options.robot, None, log)
-            if not generated:
-                paths = [fn]
-            else:
-                # if an easyconfig was generated, make sure we're allowed to use it
-                if try_to_generate:
-                    print_msg("Generated an easyconfig file %s, going to use it now..." % fn)
-                    paths = [fn]
-                else:
-                    try:
-                        os.remove(fn)
-                    except OSError, err:
-                        warning("Failed to remove generated easyconfig file %s." % fn)
-                    error("Unable to find an easyconfig for the given specifications: %s; " \
-                          "to make EasyBuild try to generate a matching easyconfig, " \
-                          "use the --try-X options "% software_build_specs)
-
+            paths = [obtain_path(software_build_specs, options.robot, log, try_to_generate)]
         else:
             error("Please provide one or multiple easyconfig files, or use software build " \
                   "options to make EasyBuild search for easyconfigs", optparser=parser)
 
+    # read easyconfig files
+    packages = []
     for path in paths:
         path = os.path.abspath(path)
         if not (os.path.exists(path)):
@@ -707,6 +689,29 @@ def process_software_build_specs(options):
             buildopts.update({param: value})
 
     return (try_to_generate, buildopts)
+
+def obtain_path(specs, robot, log, try_to_generate=False):
+    """Obtain a path for an easyconfig that matches the given specifications."""
+
+    # if no easyconfig files/paths were provided, but we did get a software name,
+    # we can try and find a suitable easyconfig ourselves, or generate one if we can
+    (generated, fn) = easyconfig.obtain_ec_for(specs, robot, None, log)
+    if not generated:
+        return fn
+    else:
+        # if an easyconfig was generated, make sure we're allowed to use it
+        if try_to_generate:
+            print_msg("Generated an easyconfig file %s, going to use it now..." % fn)
+            return fn
+        else:
+            try:
+                os.remove(fn)
+            except OSError, err:
+                warning("Failed to remove generated easyconfig file %s." % fn)
+            error("Unable to find an easyconfig for the given specifications: %s; " \
+                  "to make EasyBuild try to generate a matching easyconfig, " \
+                  "use the --try-X options " % specs)
+
 
 def robotFindEasyconfig(log, path, module):
     """
