@@ -36,7 +36,7 @@ import shutil
 import sys
 import tempfile
 import time
-from optparse import OptionParser
+from optparse import OptionParser, OptionGroup
 
 # optional Python packages, these might be missing
 # failing imports are just ignored
@@ -78,47 +78,99 @@ from easybuild.tools import systemtools
 # so this global variable is used.
 LOGDEBUG = False
 
-def add_build_options(parser):
+def add_cmdline_options(parser):
     """
     Add build options to options parser
     """
-    parser.add_option("-C", "--config",
-                        help = "path to EasyBuild config file [default: $EASYBUILDCONFIG or easybuild/easybuild_config.py]")
-    parser.add_option("-r", "--robot", metavar="path",
+    # runtime options
+    basic_options = OptionGroup(parser, "Basic options", "Basic runtime options for EasyBuild.")
+
+    basic_options.add_option("-b", "--only-blocks", metavar="BLOCKS", help="Only build blocks blk[,blk2]")
+    basic_options.add_option("-d", "--debug" , action="store_true", help="log debug messages")
+    basic_options.add_option("-f", "--force", action="store_true", dest="force",
+                        help="force to rebuild software even if it's already installed (i.e. can be found as module)")
+    basic_options.add_option("--job", action="store_true", help="will submit the build as a job")
+    basic_options.add_option("-k", "--skip", action="store_true",
+                        help="skip existing software (useful for installing additional packages)")
+    basic_options.add_option("-l", action="store_true", dest="stdoutLog", help="log to stdout")
+    basic_options.add_option("-r", "--robot", metavar="PATH",
                         help="path to search for easyconfigs for missing dependencies")
+    basic_options.add_option("--regtest", action="store_true", help="enable regression test mode")
+    basic_options.add_option("--regtest-online", action="store_true", help="enable online regression test mode")
+    basic_options.add_option("-s", "--stop", type="choice", choices=EasyConfig.validstops,
+                        help="stop the installation after certain step (valid: %s)" % ', '.join(EasyConfig.validstops))
+    strictness_options = ['ignore', 'warn', 'error']
+    basic_options.add_option("--strict", type="choice", choices=strictness_options, help="set strictness " + \
+                               "level (possible levels: %s)" % ', '.join(strictness_options))
 
-    parser.add_option("-a", "--avail-easyconfig-params", action="store_true", help="show available easyconfig parameters")
-    parser.add_option("--dump-classes", action="store_true", help="show classes available")
-    parser.add_option("--search", help="search for module-files in the robot-directory")
+    parser.add_option_group(basic_options)
 
-    parser.add_option("-e", "--easyblock", metavar="easyblock.class",
+    # software build options
+    software_build_options = OptionGroup(parser, "Software build options",
+                                     "Specify software build options; the regular versions of these " \
+                                     "options will only search for matching easyconfigs, while the " \
+                                     "--try-X versions will cause EasyBuild to try and generate a " \
+                                     "matching easyconfig based on available ones if no matching " \
+                                     "easyconfig is found (NOTE: best effort, might produce wrong builds!)")
+
+    list_of_software_build_options = [
+                                      ('software-name', 'NAME', 'store',
+                                       "build software with name"),
+                                      ('software-version', 'VERSION', 'store',
+                                       "build software with version"),
+                                      ('toolkit', 'NAME,VERSION', 'store',
+                                       "build with toolkit (name and version)"),
+                                      ('toolkit-name', 'NAME', 'store',
+                                       "build with toolkit name"),
+                                      ('toolkit-version', 'VERSION', 'store',
+                                       "build with toolkit version"),
+                                      ('amend', 'VAR=VALUE[,VALUE]', 'append',
+                                       "specify additional build parameters (can be used multiple times); " \
+                                       "for example: versionprefix=foo or patches=one.patch,two.patch)")
+                                      ]
+
+    for (opt_name, opt_metavar, opt_action, opt_help) in list_of_software_build_options:
+        software_build_options.add_option("--%s" % opt_name,
+                                          metavar=opt_metavar,
+                                          action=opt_action,
+                                          help=opt_help)
+
+    for (opt_name, opt_metavar, opt_action, opt_help) in list_of_software_build_options:
+        software_build_options.add_option("--try-%s" % opt_name,
+                                          metavar=opt_metavar,
+                                          action=opt_action,
+                                          help="try to %s (USE WITH CARE!)" % opt_help)
+
+    parser.add_option_group(software_build_options)
+
+    # override options
+    override_options = OptionGroup(parser, "Override options", "Override default EasyBuild behavior.")
+    
+    override_options.add_option("-C", "--config",
+                        help = "path to EasyBuild config file [default: $EASYBUILDCONFIG or easybuild/easybuild_config.py]")
+    override_options.add_option("-e", "--easyblock", metavar="CLASS",
                         help="loads the class from module to process the spec file or dump " \
                                "the options for [default: Application class]")
-    parser.add_option("-p", "--pretend", action="store_true",
-                        help="does the build/installation in a test directory " \
-                               "located in $HOME/easybuildinstall")
+    override_options.add_option("-p", "--pretend", action="store_true", help="does the build/installation in " \
+                                "a test directory located in $HOME/easybuildinstall [default: $EASYBUILDINSTALLDIR " \
+                                "or installPath in EasyBuild config file]")
+    override_options.add_option("-t", "--skip-tests", action="store_true", help="skip testing")
 
-    parser.add_option("-s", "--stop", type="choice", choices=EasyConfig.validstops,
-                        help="stop the installation after certain step " \
-                               "(valid: %s)" % ', '.join(EasyConfig.validstops))
-    parser.add_option("-b", "--only-blocks", metavar="blocks", help="Only build blocks blk[,blk2]")
-    parser.add_option("-k", "--skip", action="store_true",
-                        help="skip existing software (useful for installing additional packages)")
-    parser.add_option("-t", "--skip-tests", action="store_true",
-                        help="skip testing")
-    parser.add_option("-f", "--force", action="store_true", dest="force",
-                        help="force to rebuild software even if it's already installed (i.e. can be found as module)")
+    parser.add_option_group(override_options)
 
-    parser.add_option("-l", action="store_true", dest="stdoutLog", help="log to stdout")
-    parser.add_option("-d", "--debug" , action="store_true", help="log debug messages")
-    parser.add_option("-v", "--version", action="store_true", help="show version")
-    parser.add_option("--regtest", action="store_true", help="enable regression test mode")
-    parser.add_option("--regtest-online", action="store_true", help="enable online regression test mode")
-    strictness_options = ['ignore', 'warn', 'error']
-    parser.add_option("--strict", type="choice", choices=strictness_options, help="set strictness \
-                        level (possible levels: %s" % ', '.join(strictness_options))
-    parser.add_option("--job", action="store_true", help="submit the build as job(s)")
-    parser.add_option("--dep-graph", metavar="depgraph.<ext>", help="create dependency graph")
+    # informative options
+    informative_options = OptionGroup(parser, "Informative options",
+                                      "Obtain information about EasyBuild.")
+
+    informative_options.add_option("-a", "--avail-easyconfig-params", action="store_true",
+                                   help="show available easyconfig parameters")
+    informative_options.add_option("--dump-classes", action="store_true",
+                                   help="show list of available classes")
+    informative_options.add_option("--search", help="search for module-files in the robot-directory")
+    informative_options.add_option("-v", "--version", action="store_true", help="show version")
+    informative_options.add_option("--dep-graph", metavar="depgraph.<ext>", help="create dependency graph")
+
+    parser.add_option_group(informative_options)
 
 
 def main():
@@ -140,14 +192,14 @@ def main():
     parser = OptionParser()
 
     parser.usage = "%prog [options] easyconfig [..]"
-    parser.description = "Builds software package based on easyconfig (or parse a directory)\n" \
+    parser.description = "Builds software package based on easyconfig (or parse a directory). " \
                          "Provide one or more easyconfigs or directories, use -h or --help more information."
 
-    add_build_options(parser)
+    add_cmdline_options(parser)
 
     (options, paths) = parser.parse_args()
 
-    ## mkstemp returns (fd,filename), fd is from os.open, not regular open!
+    # mkstemp returns (fd,filename), fd is from os.open, not regular open!
     fd, logFile = tempfile.mkstemp(suffix='.log', prefix='easybuild-')
     os.close(fd)
 
@@ -167,14 +219,14 @@ def main():
     else:
         blocks = None
 
-    ## Initialize logger
+    # initialize logger
     logFile, log, hn = initLogger(filename=logFile, debug=options.debug, typ="build")
 
-    ## Show version
+    # show version
     if options.version:
         print_msg("This is EasyBuild %s" % easybuild.VERBOSE_VERSION, log)
 
-    ## Initialize configuration
+    # initialize configuration
     # - check environment variable EASYBUILDCONFIG
     # - then, check command line option
     # - last, use default config file easybuild_config.py in build.py directory
@@ -194,15 +246,15 @@ def main():
 
     config.init(config_file, **configOptions)
 
-    # Dump possible options
+    # dump possible options
     if options.avail_easyconfig_params:
         print_avail_params(options.easyblock, log)
 
-    ## Dump available classes
+    # dump available classes
     if options.dump_classes:
         dumpClasses('easybuild.easyblocks')
 
-    ## Search for modules
+    # search for modules
     if options.search:
         if not options.robot:
             error("Please provide a search-path to --robot when using --search")
@@ -226,29 +278,45 @@ def main():
         options.force = True
         validate_easyconfigs = False
         retain_all_deps = True
+    
+    # process software build specifications (if any), i.e.
+    # software name/version, toolkit name/version, extra patches, ...
+    (try_to_generate, software_build_specs) = process_software_build_specs(options)
 
-    ## Read easyconfig files
-    packages = []
     if len(paths) == 0:
-        error("Please provide one or more easyconfig files", optparser=parser)
+        if software_build_specs.has_key('name'):
+            paths = [obtain_path(software_build_specs, options.robot, log, try_to_generate)]
+        else:
+            error("Please provide one or multiple easyconfig files, or use software build " \
+                  "options to make EasyBuild search for easyconfigs", optparser=parser)
 
-    for path in paths:
+    else:
+        # indicate that specified paths do not contain generated easyconfig files
+        paths = [(path, False) for path in paths]
+
+    # read easyconfig files
+    packages = []
+    for (path, generated) in paths:
         path = os.path.abspath(path)
         if not (os.path.exists(path)):
             error("Can't find path %s" % path)
 
         try:
             files = findEasyconfigs(path, log)
-            for eb_file in files:
-                packages.extend(processEasyconfig(eb_file, log, blocks, validate=validate_easyconfigs))
+            for f in files:
+                if not generated and try_to_generate and software_build_specs:
+                    ec_file = easyconfig.tweak(f, None, software_build_specs, log)
+                else:
+                    ec_file = f
+                packages.extend(processEasyconfig(ec_file, log, blocks, validate=validate_easyconfigs))
         except IOError, err:
             log.error("Processing easyconfigs in path %s failed: %s" % (path, err))
 
-    ## Before building starts, take snapshot of environment (watch out -t option!)
+    # before building starts, take snapshot of environment (watch out -t option!)
     origEnviron = copy.deepcopy(os.environ)
     os.chdir(os.environ['PWD'])
 
-    ## Skip modules that are already installed unless forced
+    # skip modules that are already installed unless forced
     if not options.force:
         m = Modules()
         packages, checkPackages = [], packages
@@ -264,7 +332,7 @@ def main():
                 log.debug("%s is not installed yet, so retaining it" % mod)
                 packages.append(package)
 
-    ## Determine an order that will allow all specs in the set to build
+    # determine an order that will allow all specs in the set to build
     if len(packages) > 0:
         print_msg("resolving dependencies ...", log)
         # force all dependencies to be retained and validation to be skipped for building dep graph
@@ -321,7 +389,7 @@ def main():
         log.info("Submitted parallel build jobs, exiting now")
         sys.exit(0)
 
-    ## Build software, will exit when errors occurs (except when regtesting)
+    # build software, will exit when errors occurs (except when regtesting)
     correct_built_cnt = 0
     all_built_cnt = 0
     for spec in orderedSpecs:
@@ -333,7 +401,7 @@ def main():
     print_msg("Build succeeded for %s out of %s" % (correct_built_cnt, all_built_cnt), log)
 
     getRepository().cleanup()
-    ## Cleanup tmp log file (all is well, all modules have their own log file)
+    # cleanup tmp log file (all is well, all modules have their own log file)
     try:
         removeLogHandler(hn)
         hn.close()
@@ -354,7 +422,14 @@ def error(message, exitCode=1, optparser=None):
     print_msg("ERROR: %s\n" % message)
     if optparser:
         optparser.print_help()
+        print_msg("ERROR: %s\n" % message)
     sys.exit(exitCode)
+
+def warning(message):
+    """
+    Print warning message.
+    """
+    print_msg("WARNING: %s\n" % message)
 
 def findEasyconfigs(path, log):
     """
@@ -363,7 +438,7 @@ def findEasyconfigs(path, log):
     if os.path.isfile(path):
         return [path]
 
-    ## Walk through the start directory, retain all files that end in .eb
+    # walk through the start directory, retain all files that end in .eb
     files = []
     path = os.path.abspath(path)
     for dirpath, _, filenames in os.walk(path):
@@ -385,39 +460,39 @@ def processEasyconfig(path, log, onlyBlocks=None, regtest_online=False, validate
 
     packages = []
     for spec in blocks:
-        ## Process for dependencies and real installversionname
-        ## - use mod? __init__ and importCfg are ignored.
+        # process for dependencies and real installversionname
+        # - use mod? __init__ and importCfg are ignored.
         log.debug("Processing easyconfig %s" % spec)
 
         # create easyconfig
         try:
-            eb = EasyConfig(spec, validate=validate)
+            ec = EasyConfig(spec, validate=validate)
         except EasyBuildError, err:
             msg = "Failed to process easyconfig %s:\n%s" % (spec, err.msg)
             log.exception(msg)
 
-        name = eb['name']
+        name = ec['name']
 
-        ## this app will appear as following module in the list
+        # this app will appear as following module in the list
         package = {
             'spec': spec,
-            'module': (eb.name(), eb.installversion()),
+            'module': (ec.name(), ec.installversion()),
             'dependencies': []
         }
         if len(blocks) > 1:
             package['originalSpec'] = path
 
-        for d in eb.dependencies():
+        for d in ec.dependencies():
             dep = (d['name'], d['tk'])
             log.debug("Adding dependency %s for app %s." % (dep, name))
             package['dependencies'].append(dep)
 
-        if eb.toolkit_name() != 'dummy':
-            dep = (eb.toolkit_name(), eb.toolkit_version())
+        if ec.toolkit_name() != 'dummy':
+            dep = (ec.toolkit_name(), ec.toolkit_version())
             log.debug("Adding toolkit %s as dependency for app %s." % (dep, name))
             package['dependencies'].append(dep)
 
-        del eb
+        del ec
 
         # this is used by the parallel builder
         package['unresolvedDependencies'] = copy.copy(package['dependencies'])
@@ -449,7 +524,7 @@ def resolveDependencies(unprocessed, robot, log, force=False):
     beingInstalled = [p['module'] for p in unprocessed]
     processed = [m for m in availableModules if not m in beingInstalled]
 
-    ## As long as there is progress in processing the modules, keep on trying
+    # as long as there is progress in processing the modules, keep on trying
     loopcnt = 0
     maxloopcnt = 10000
     robotAddedDependency = True
@@ -463,23 +538,23 @@ def resolveDependencies(unprocessed, robot, log, force=False):
             msg = "Maximum loop cnt %s reached, so quitting." % maxloopcnt
             log.error(msg)
 
-        ## First try resolving dependencies without using external dependencies
+        # first try resolving dependencies without using external dependencies
         lastProcessedCount = -1
         while len(processed) > lastProcessedCount:
             lastProcessedCount = len(processed)
             orderedSpecs.extend(findResolvedModules(unprocessed, processed, log))
 
-        ## Robot: look for an existing dependency, add one
+        # robot: look for an existing dependency, add one
         if robot and len(unprocessed) > 0:
 
             beingInstalled = [p['module'] for p in unprocessed]
 
             for module in unprocessed:
-                ## Do not choose a module that is being installed in the current run
-                ## if they depend, you probably want to rebuild them using the new dependency
+                # do not choose a module that is being installed in the current run
+                # if they depend, you probably want to rebuild them using the new dependency
                 candidates = [d for d in module['dependencies'] if not d in beingInstalled]
                 if len(candidates) > 0:
-                    ## find easyconfig, might not find any
+                    # find easyconfig, might not find any
                     path = robotFindEasyconfig(log, robot, candidates[0])
 
                 else:
@@ -500,7 +575,7 @@ def resolveDependencies(unprocessed, robot, log, force=False):
                     robotAddedDependency = True
                     break
 
-    ## There are dependencies that cannot be resolved
+    # there are dependencies that cannot be resolved
     if len(unprocessed) > 0:
         log.debug("List of unresolved dependencies: %s" % unprocessed)
         missingDependencies = {}
@@ -532,17 +607,119 @@ def findResolvedModules(unprocessed, processed, log):
 
     return orderedSpecs
 
+def process_software_build_specs(options):
+    """
+    Create a dictionary with specified software build options.
+    The options arguments should be a parsed option list (as delivered by OptionParser.parse_args)
+    """
+
+    try_to_generate = False
+    buildopts = {}
+
+    # regular options: don't try to generate easyconfig, and search
+    opts_map = {
+                'name': options.software_name,
+                'version': options.software_version,
+                'toolkit_name': options.toolkit_name,
+                'toolkit_version': options.toolkit_version,
+               }
+
+    # try options: enable optional generation of easyconfig
+    try_opts_map = {
+                    'name': options.try_software_name,
+                    'version': options.try_software_version,
+                    'toolkit_name': options.try_toolkit_name,
+                    'toolkit_version': options.try_toolkit_version,
+                   }
+
+    # process easy options
+    for (key, opt) in opts_map.items():
+        if opt:
+            buildopts.update({key: opt})
+            # remove this key from the dict of try-options (overruled)
+            try_opts_map.pop(key)
+
+    for (key, opt) in try_opts_map.items():
+        if opt:
+            buildopts.update({key: opt})
+            # only when a try option is set do we enable generating easyconfigs
+            try_to_generate = True
+
+    # process --toolkit --try-toolkit
+    if options.toolkit or options.try_toolkit:
+
+        if options.toolkit:
+                tk = options.toolkit.split(',')
+                if options.try_toolkit:
+                    warning("Ignoring --try-toolkit, only using --toolkit specification.")
+        elif options.try_toollkit:
+                tk = options.try_toolkit.split(',')
+                try_to_generate = True
+        else:
+            # shouldn't happen
+            error("Huh, neither --toolkit or --try-toolkit used?")
+
+        if not len(tk) == 2:
+            error("Please specify to toolkit to use as 'name,version' (e.g., 'goalf,1.1.0').")
+
+        [toolkit_name, toolkit_version] = tk
+        buildopts.update({'toolkit_name': toolkit_name})
+        buildopts.update({'toolkit_version': toolkit_version})
+
+    # process --amend and --try-amend
+    if options.amend or options.try_amend:
+
+        amends = []
+        if options.amend:
+            amends += options.amend
+            if options.try_amend:
+                warning("Ignoring options passed via --try-amend, only using those passed via --amend.")
+        if options.try_amend:
+            amends += options.try_amend
+            try_to_generate = True
+
+        for amend_spec in amends:
+            # e.g., 'foo=bar=baz' => foo = 'bar=baz'
+            param = amend_spec.split('=')[0]
+            value = '='.join(amend_spec.split('=')[1:])
+            # support list values by splitting on ',' if its there
+            # e.g., 'foo=bar,baz' => foo = ['bar', 'baz']
+            if ',' in value:
+                value = value.split(',')
+            buildopts.update({param: value})
+
+    return (try_to_generate, buildopts)
+
+def obtain_path(specs, robot, log, try_to_generate=False):
+    """Obtain a path for an easyconfig that matches the given specifications."""
+
+    # if no easyconfig files/paths were provided, but we did get a software name,
+    # we can try and find a suitable easyconfig ourselves, or generate one if we can
+    (generated, fn) = easyconfig.obtain_ec_for(specs, robot, None, log)
+    if not generated:
+        return (fn, generated)
+    else:
+        # if an easyconfig was generated, make sure we're allowed to use it
+        if try_to_generate:
+            print_msg("Generated an easyconfig file %s, going to use it now..." % fn)
+            return (fn, generated)
+        else:
+            try:
+                os.remove(fn)
+            except OSError, err:
+                warning("Failed to remove generated easyconfig file %s." % fn)
+            error("Unable to find an easyconfig for the given specifications: %s; " \
+                  "to make EasyBuild try to generate a matching easyconfig, " \
+                  "use the --try-X options " % specs)
+
+
 def robotFindEasyconfig(log, path, module):
     """
     Find an easyconfig for module in path
     """
     name, version = module
     # candidate easyconfig paths
-    easyconfigsPaths = [os.path.join(path, name, version + ".eb"),
-                         os.path.join(path, name, "%s-%s.eb" % (name, version)),
-                         os.path.join(path, name.lower()[0], name, "%s-%s.eb" % (name, version)),
-                         os.path.join(path, "%s-%s.eb" % (name, version)),
-                         ]
+    easyconfigsPaths = easyconfig.create_paths(path, name, version)
     for easyconfigPath in easyconfigsPaths:
         log.debug("Checking easyconfig path %s" % easyconfigPath)
         if os.path.isfile(easyconfigPath):
@@ -563,10 +740,10 @@ def retrieveBlocksInSpec(spec, log, onlyBlocks):
     cfgName = os.path.basename(spec)
     pieces = regBlock.split(open(spec).read())
 
-    ## The first block contains common statements
+    # the first block contains common statements
     common = pieces.pop(0)
     if pieces:
-        ## Make a map of blocks
+        # make a map of blocks
         blocks = []
         while pieces:
             blockName = pieces.pop(0)
@@ -578,7 +755,7 @@ def retrieveBlocksInSpec(spec, log, onlyBlocks):
 
             block = {'name': blockName, 'contents': blockContents}
 
-            ## Dependency block
+            # dependency block
             depBlock = regDepBlock.search(blockContents)
             if depBlock:
                 dependencies = eval(depBlock.group(1))
@@ -589,8 +766,8 @@ def retrieveBlocksInSpec(spec, log, onlyBlocks):
 
             blocks.append(block)
 
-        ## Make a new easyconfig for each block
-        ## They will be processed in the same order as they are all described in the original file
+        # make a new easyconfig for each block
+        # they will be processed in the same order as they are all described in the original file
         specs = []
         for block in blocks:
             name = block['name']
@@ -611,10 +788,10 @@ def retrieveBlocksInSpec(spec, log, onlyBlocks):
                             log.error(msg)
 
                         dep = [b for b in blocks if b['name'] == dep][0]
-                        f.write("\n## Dependency block %s" % (dep['name']))
+                        f.write("\n# Dependency block %s" % (dep['name']))
                         f.write(dep['contents'])
 
-                f.write("\n## Main block %s" % name)
+                f.write("\n# Main block %s" % name)
                 f.write(block['contents'])
                 f.close()
 
@@ -627,7 +804,7 @@ def retrieveBlocksInSpec(spec, log, onlyBlocks):
         log.debug("Found %s block(s) in %s" % (len(specs), spec))
         return specs
     else:
-        ## no blocks, one file
+        # no blocks, one file
         return [spec]
 
 def build(module, options, log, origEnviron, exitOnFailure=True):
@@ -638,7 +815,7 @@ def build(module, options, log, origEnviron, exitOnFailure=True):
 
     print_msg("processing EasyBuild easyconfig %s" % spec, log)
 
-    ## Restore original environment
+    # restore original environment
     log.info("Resetting environment")
     filetools.errorsFoundInLog = 0
     if not filetools.modifyEnv(os.environ, origEnviron):
@@ -646,10 +823,10 @@ def build(module, options, log, origEnviron, exitOnFailure=True):
 
     cwd = os.getcwd()
 
-    ## Load easyblock
+    # load easyblock
     easyblock = options.easyblock
     if not easyblock:
-        ## Try to look in .eb file
+        # try to look in .eb file
         reg = re.compile(r"^\s*easyblock\s*=(.*)$")
         for line in open(spec).readlines():
             match = reg.search(line)
@@ -665,7 +842,7 @@ def build(module, options, log, origEnviron, exitOnFailure=True):
     except EasyBuildError, err:
         error("Failed to get application instance for %s (easyblock: %s): %s" % (name, easyblock, err.msg))
 
-    ## Application settings
+    # application settings
     if options.stop:
         log.debug("Stop set to %s" % options.stop)
         app.setcfg('stop', options.stop)
@@ -674,7 +851,7 @@ def build(module, options, log, origEnviron, exitOnFailure=True):
         log.debug("Skip set to %s" % options.skip)
         app.setcfg('skip', options.skip)
 
-    ## Build easyconfig
+    # build easyconfig
     errormsg = '(no error)'
     # timing info
     starttime = time.time()
@@ -688,10 +865,10 @@ def build(module, options, log, origEnviron, exitOnFailure=True):
 
     ended = "ended"
 
-    ## Successful build
+    # successful build
     if result:
 
-        ## Collect build stats
+        # collect build stats
         log.info("Collecting build stats...")
         buildtime = round(time.time() - starttime, 2)
         installsize = 0
@@ -726,7 +903,7 @@ def build(module, options, log, origEnviron, exitOnFailure=True):
             newLogDir = os.path.join(app.installdir, config.logPath())
 
             try:
-                ## Upload spec to central repository
+                # upload spec to central repository
                 repo = getRepository()
                 if 'originalSpec' in module:
                     repo.addEasyconfig(module['originalSpec'], app.name(), app.installversion() + ".block", buildstats, currentbuildstats)
@@ -740,7 +917,7 @@ def build(module, options, log, origEnviron, exitOnFailure=True):
         succ = "successfully"
         summary = "COMPLETED"
 
-        ## Cleanup logs
+        # cleanup logs
         app.closelog()
         try:
             if not os.path.isdir(newLogDir):
@@ -755,7 +932,7 @@ def build(module, options, log, origEnviron, exitOnFailure=True):
         except IOError, err:
             error("Failed to move easyconfig %s to log dir %s: %s" % (spec, newLogDir, err))
 
-    ## Build failed
+    # build failed
     else:
         exitCode = 1
         summary = "FAILED"
@@ -765,13 +942,13 @@ def build(module, options, log, origEnviron, exitOnFailure=True):
             buildDir = " (build directory: %s)" % (app.builddir)
         succ = "unsuccessfully%s:\n%s" % (buildDir, errormsg)
 
-        ## Cleanup logs
+        # cleanup logs
         app.closelog()
         applicationLog = app.logfile
 
     print_msg("%s: Installation %s %s" % (summary, ended, succ), log)
 
-    ## Check for errors
+    # check for errors
     if exitCode > 0 or filetools.errorsFoundInLog > 0:
         print_msg("\nWARNING: Build exited with exit code %d. %d possible error(s) were detected in the " \
                   "build logs, please verify the build.\n" % (exitCode, filetools.errorsFoundInLog),
@@ -795,6 +972,9 @@ def build(module, options, log, origEnviron, exitOnFailure=True):
         return (True, applicationLog)
 
 def print_avail_params(easyblock, log):
+    """
+    Print the available easyconfig parameters, for the given easyblock.
+    """
     app = get_class(easyblock, log)
     extra = app.extra_options()
     mapping = easyconfig.convert_to_help(EasyConfig.default_config + extra)

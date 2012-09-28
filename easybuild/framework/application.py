@@ -78,7 +78,7 @@ class Application:
         self.instance_pkgs = []
         self.skip = None
 
-        # Easyblock for this Application
+        # easyconfig for this application
         self.cfg = EasyConfig(path, self.extra_options())
 
         # module generator
