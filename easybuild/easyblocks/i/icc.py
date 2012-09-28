@@ -44,13 +44,12 @@ class EB_icc(EB_IntelBase):
         if not self.getcfg('sanityCheckPaths'):
 
             binprefix = "bin/intel64"
-            libprefix = ""
+            libprefix = "lib/intel64/lib"
             if LooseVersion(self.version()) >= LooseVersion("2011"):
-                libprefix = "compiler/lib/intel64/lib"
                 if LooseVersion(self.version()) <= LooseVersion("2011.3.174"):
                     binprefix = "bin"
-            else:
-                libprefix = "lib/intel64/lib"
+                else:
+                    libprefix = "compiler/lib/intel64/lib"
 
             self.setcfg('sanityCheckPaths', {
                                              'files': ["%s/%s" % (binprefix, x) for x in ["icc", "icpc", "idb"]] +
