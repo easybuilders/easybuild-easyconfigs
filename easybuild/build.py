@@ -300,12 +300,8 @@ def main():
         try:
             files = findEasyconfigs(path, log)
             for f in files:
-                if software_build_specs:
-                    if try_to_generate:
-                        ec_file = easyconfig.tweak(f, None, software_build_specs, log)
-                    else:
-                        error("Use --try-X versions to tweak an existing easyconfig file.""")
-                        ec_file = f
+                if try_to_generate and software_build_specs:
+                    ec_file = easyconfig.tweak(f, None, software_build_specs, log)
                 else:
                     ec_file = f
                 packages.extend(processEasyconfig(ec_file, log, blocks, validate=validate_easyconfigs))
