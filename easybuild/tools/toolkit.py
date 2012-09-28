@@ -431,10 +431,10 @@ class Toolkit:
             self.log.error("ERROR: 32-bit not supported yet for GCC based toolkits.")
 
         # set basic GCC options
-        self.vars['CC'] = 'gcc %s' % self.m32flag
-        self.vars['CXX'] = 'g++ %s' % self.m32flag
-        self.vars['F77'] = 'gfortran %s ' % self.m32flag
-        self.vars['F90'] = 'gfortran %s' % self.m32flag
+        self.vars['CC'] = 'gcc%s' % self.m32flag
+        self.vars['CXX'] = 'g++%s' % self.m32flag
+        self.vars['F77'] = 'gfortran%s ' % self.m32flag
+        self.vars['F90'] = 'gfortran%s' % self.m32flag
 
         if self.opts['cciscxx']:
             self.vars['CXX'] = self.vars['CC']
@@ -683,10 +683,10 @@ class Toolkit:
         if self.comp_family() == INTEL:
             # Intel-based toolkit
 
-            self.vars['MPICC'] = 'mpiicc %s' % self.m32flag
-            self.vars['MPICXX'] = 'mpiicpc %s' % self.m32flag
-            self.vars['MPIF77'] = 'mpiifort %s' % self.m32flag
-            self.vars['MPIF90'] = 'mpiifort %s' % self.m32flag
+            self.vars['MPICC'] = 'mpiicc%s' % self.m32flag
+            self.vars['MPICXX'] = 'mpiicpc%s' % self.m32flag
+            self.vars['MPIF77'] = 'mpiifort%s' % self.m32flag
+            self.vars['MPIF90'] = 'mpiifort%s' % self.m32flag
 
             if self.opts['usempi']:
                 for i in ['CC', 'CXX', 'F77', 'F90']:
@@ -701,10 +701,10 @@ class Toolkit:
 
         else:
             # other compilers (e.g. GCC) with Intel MPI
-            self.vars['MPICC'] = "mpicc -cc='%s %s' " % (self.vars['CC'], self.m32flag)
-            self.vars['MPICXX'] = "mpicxx -cxx='%s %s' " % (self.vars['CXX'], self.m32flag)
-            self.vars['MPIF77'] = "mpif77 -fc='%s %s' " % (self.vars['F77'], self.m32flag)
-            self.vars['MPIF90'] = "mpif90 -fc='%s %s' " % (self.vars['F90'], self.m32flag)
+            self.vars['MPICC'] = "mpicc -cc='%s%s'" % (self.vars['CC'], self.m32flag)
+            self.vars['MPICXX'] = "mpicxx -cxx='%s%s'" % (self.vars['CXX'], self.m32flag)
+            self.vars['MPIF77'] = "mpif77 -fc='%s%s'" % (self.vars['F77'], self.m32flag)
+            self.vars['MPIF90'] = "mpif90 -fc='%s%s'" % (self.vars['F90'], self.m32flag)
 
         impiroot = get_software_root('IMPI')
         if self.opts['32bit']:
@@ -764,10 +764,10 @@ class Toolkit:
         """
         if "vSMP" in get_software_version('MPICH2'):
             # ScaleMP MPICH specific
-            self.vars['MPICC'] = "mpicc -cc='%s %s'" % (self.vars['CC'], self.m32flag)
-            self.vars['MPICXX'] = "mpicxx -CC='%s %s'" % (self.vars['CXX'], self.m32flag)
-            self.vars['MPIF77'] = "mpif77 -fc='%s %s'" % (self.vars['F77'], self.m32flag)
-            self.vars['MPIF90'] = "mpif90 -f90='%s %s'" % (self.vars['F90'], self.m32flag)
+            self.vars['MPICC'] = "mpicc -cc='%s%s'" % (self.vars['CC'], self.m32flag)
+            self.vars['MPICXX'] = "mpicxx -CC='%s%s'" % (self.vars['CXX'], self.m32flag)
+            self.vars['MPIF77'] = "mpif77 -fc='%s%s'" % (self.vars['F77'], self.m32flag)
+            self.vars['MPIF90'] = "mpif90 -f90='%s%s'" % (self.vars['F90'], self.m32flag)
 
             if self.opts['cciscxx']:
                 self.vars['MPICXX'] = self.vars['MPICC']
@@ -788,10 +788,10 @@ class Toolkit:
         Prepare for 'simple' MPI libraries (e.g. MVAPICH2, OpenMPI)
         """
 
-        self.vars['MPICC'] = 'mpicc %s' % self.m32flag
-        self.vars['MPICXX'] = 'mpicxx %s' % self.m32flag
-        self.vars['MPIF77'] = 'mpif77 %s' % self.m32flag
-        self.vars['MPIF90'] = 'mpif90 %s' % self.m32flag
+        self.vars['MPICC'] = 'mpicc%s' % self.m32flag
+        self.vars['MPICXX'] = 'mpicxx%s' % self.m32flag
+        self.vars['MPIF77'] = 'mpif77%s' % self.m32flag
+        self.vars['MPIF90'] = 'mpif90%s' % self.m32flag
 
         if self.opts['cciscxx']:
             self.vars['MPICXX'] = self.vars['MPICC']
