@@ -29,7 +29,6 @@ EasyBuild logger and log utilities, including our own EasybuildError class.
 import logging
 import os
 import sys
-import tempfile
 import time
 from socket import gethostname
 from copy import copy
