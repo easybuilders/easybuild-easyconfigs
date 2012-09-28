@@ -949,10 +949,10 @@ def tweak(src_fn, target_fn, tweaks, log):
 
             if diff:
                 ectxt = regexp.sub("%s = %s # tweaked by EasyBuild (was: %s)" % (key, quoted(val), res.group(1)), ectxt)
+                log.info("Tweaked '%s' to '%s'" % (key, quoted(val)))
         else:
             additions.append("%s = %s" % (key, quoted(val)))
 
-        log.info("Tweaked '%s' to '%s'" % (key, quoted(val)))
 
     if additions:
         log.info("Adding additional parameters to tweaked easyconfig file: %s")
