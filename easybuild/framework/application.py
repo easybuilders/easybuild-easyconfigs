@@ -742,7 +742,8 @@ class Application:
             gid = grp.getgrnam(self.getcfg('group'))[2]
             # rwx for owner, r-x for group, --- for other
             try:
-                adjust_permissions(self.installdir, 0750, recursive=True, group_id=gid, relative=False)
+                adjust_permissions(self.installdir, 0750, recursive=True, group_id=gid, relative=False, 
+                                   ignore_errors=True)
             except EasyBuildError, err:
                 self.log.error("Unable to change group permissions of file(s). " \
                                "Are you a member of this group?\n%s" % err)
@@ -751,13 +752,13 @@ class Application:
         else:
             # remove write permissions for group and other
             perms = stat.S_IWGRP | stat.S_IWOTH
-            adjust_permissions(self.installdir, perms, add=False, recursive=True, relative=True)
+            adjust_permissions(self.installdir, perms, add=False, recursive=True, relative=True, ignore_errors=True)
             self.log.info("Successfully removed write permissions recursively for group/other on install dir.")
 
         if read_only_installdir():
             # remove write permissions for everyone
             perms = stat.S_IWUSR | stat.S_IWGRP | stat.S_IWOTH
-            adjust_permissions(self.installdir, perms, add=False, recursive=True, relative=True)
+            adjust_permissions(self.installdir, perms, add=False, recursive=True, relative=True, ignore_errors=True)
             self.log.info("Successfully removed write permissions recursively for *EVERYONE* on install dir.")
 
     def cleanup(self):
