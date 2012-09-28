@@ -468,10 +468,7 @@ def det_installversion(version, toolkit_name, toolkit_version, prefix, suffix):
         installversion = "%s-%s-%s" % (version, toolkit_name, toolkit_version)
 
     # prepend/append prefix/suffix
-    if prefix:
-        installversion = "%s%s" % (prefix, installversion)
-    if suffix:
-        installversion += suffix
+    installversion = ''.join([x for x in [prefix, installversion, suffix] if x])
 
     return installversion
 
