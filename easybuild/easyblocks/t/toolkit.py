@@ -31,33 +31,23 @@ from easybuild.framework.application import Application
 
 class EB_Toolkit(Application):
     """
-    Compiler get_toolkit: generate module file only, nothing to build_step/install
+    Compiler get_toolkit: generate module file only, nothing to build/install
     """
-    def build(self):
-        """
-        Do almost nothing
-        - just create an install directory?
-        """
-        self.gen_installdir()
-        self.make_installdir()
 
     def configure_step(self):
-        """ Do nothing """
+        """Do nothing."""
         pass
 
     def build_step(self):
-        """ Do nothing """
+        """Do nothing."""
         pass
 
     def install_step(self):
-        """ Do nothing """
+        """Do nothing."""
         pass
-
-    def make_module_req(self):
-        return ''
 
     def sanity_check_step(self):
         """
-        As a toolkit doens't install anything really, this is always true
+        As a toolkit doesn't install anything really, this is always true
         """
         self.sanityCheckOK = True

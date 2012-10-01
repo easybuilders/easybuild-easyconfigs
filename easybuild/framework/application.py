@@ -105,10 +105,68 @@ class Application:
         if self.getcfg('stop') and self.getcfg('stop') == 'cfg':
             return True
 
+        print_msg("fetching files...", self.log)
         self.fetch_step()
 
+        print_msg("making sure we're ready...", self.log)
         self.check_readiness_step()
-        self.build()
+
+        try:
+            print_msg("creating directories...", self.log)
+
+            self.gen_installdir()
+            self.make_builddir()
+
+            self.print_environ()
+
+            # reset tracked changes
+            env.reset_changes()
+
+            ## SOURCE
+            print_msg("unpacking...", self.log)
+            self.run_step('source', [self.extract_step], skippable=True)
+
+            ## PATCH
+            print_msg("patching...", self.log)
+            self.run_step('patch', [self.patch_step], skippable=True)
+
+            # PREPARE
+            print_msg("preparing...", self.log)
+            self.run_step('prepare', [self.prepare_step], skippable=True)
+
+            ## CONFIGURE
+            print_msg("configuring...", self.log)
+            self.run_step('configure', [self.configure_step], skippable=True)
+
+            ## MAKE
+            print_msg("building...", self.log)
+            self.run_step('make', [self.build_step], skippable=True)
+
+            ## TEST
+            print_msg("testing...", self.log)
+            self.run_step('test', [self.test], skippable=True)
+
+            ## INSTALL
+            print_msg("installing...", self.log)
+            self.run_step('install', [self.make_installdir, self.install_step], skippable=True)
+
+            ## EXTENSIONS
+            print_msg("taking care of extensions...", self.log)
+            self.run_step('extensions', [self.extensions_step])
+
+            ## POSTPROC
+            self.run_step('postproc', [self.post_install_step], skippable=True)
+
+            ## SANITY CHECK
+            try:
+                print_msg("running sanity check...", self.log)
+                self.run_step('sanity check', [self.sanity_check], skippable=False)
+            finally:
+                print_msg("cleaning up...", self.log)
+                self.run_step('cleanup', [self.cleanup])
+
+        except StopException:
+            pass
 
         # Last stop
         if self.getcfg('stop'):
@@ -117,6 +175,7 @@ class Application:
 
         # Run tests
         if run_test_cases and self.getcfg('tests'):
+            print_msg("running test cases...", self.log)
             self.run_test_cases()
         else:
             self.log.debug("Skipping tests")
@@ -597,75 +656,6 @@ class Application:
                 self.src[self.src.index(tmp)]['finalpath'] = srcdir
             else:
                 self.log.error("Unpacking source %s failed" % tmp['name'])
-
-    def build(self):
-        """
-        Build software
-        - make builddir
-        - generate install location name
-        - unpack sources
-        - patch sources
-        - prepare dependencies
-        - prepare toolkit
-        - configure
-        - make (use parallelism?)
-        - test
-        - make install location
-        - install
-        """
-        try:
-            print_msg("preparing...", self.log)
-
-            self.gen_installdir()
-            self.make_builddir()
-
-            self.print_environ()
-
-            # reset tracked changes
-            env.reset_changes()
-
-            ## SOURCE
-            print_msg("unpacking...", self.log)
-            self.run_step('source', [self.extract_step], skippable=True)
-
-            ## PATCH
-            self.run_step('patch', [self.patch_step], skippable=True)
-
-            # PREPARE
-            self.run_step('prepare', [self.prepare_step], skippable=True)
-
-            ## CONFIGURE
-            print_msg("configuring...", self.log)
-            self.run_step('configure', [self.configure_step], skippable=True)
-
-            ## MAKE
-            print_msg("building...", self.log)
-            self.run_step('make', [self.build_step], skippable=True)
-
-            ## TEST
-            print_msg("testing...", self.log)
-            self.run_step('test', [self.test], skippable=True)
-
-            ## INSTALL
-            print_msg("installing...", self.log)
-            self.run_step('install', [self.make_installdir, self.install_step], skippable=True)
-
-            ## EXTENSIONS
-            self.run_step('extensions', [self.extensions_step])
-
-            print_msg("finishing up...", self.log)
-
-            ## POSTPROC
-            self.run_step('postproc', [self.post_install_step], skippable=True)
-
-            ## SANITY CHECK
-            try:
-                self.run_step('sanity check', [self.sanity_check], skippable=False)
-            finally:
-                self.run_step('cleanup', [self.cleanup])
-
-        except StopException:
-            pass
 
     def run_step(self, step, methods, skippable=False):
         """
