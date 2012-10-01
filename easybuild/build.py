@@ -1136,13 +1136,18 @@ def build_easyconfigs(easyconfigs, output_dir, test_results, options, log):
         if obj not in build_stopped:
             apploginfo(obj, "Running %s step" % step)
             try:
-                method(obj)
+                if step == 'initialization':
+                    return parbuild.get_instance(obj, log)
+                else:
+                    method(obj)
             except Exception, err:  # catch all possible errors, also crashes in EasyBuild code itself
                 fullerr = str(err)
                 if not isinstance(err, EasyBuildError):
                     tb = traceback.format_exc()
                     fullerr = '\n'.join([tb, str(err)])
                 # we cannot continue building it
+                if step == 'initialization':
+                    obj = obj['spec']
                 test_results.append((obj, step, fullerr, logfile))
                 # keep a dict of so we can check in O(1) if objects can still be build
                 build_stopped[obj] = step
@@ -1150,25 +1155,8 @@ def build_easyconfigs(easyconfigs, output_dir, test_results, options, log):
     # initialize all instances
     apps = []
     for ec in easyconfigs:
-        tb = None
-        try:
-            try:
-                instance = parbuild.get_instance(ec, log)
-                apps.append(instance)
-            except Exception, err:  # catch all possible errors, also crashes in EasyBuild code itself
-                fullerr = str(err)
-                if not isinstance(err, EasyBuildError):
-                    _, _, tb = sys.exc_info()
-                    f = cStringIO.StringIO()
-                    traceback.print_tb(tb, None, f)
-                    fullerr = '\n'.join([f.getvalue(), str(err)])
-                    f.close()
-                test_results.append((ec['spec'], 'initialization', fullerr))
-        finally:  # try-except-finally doesn't work yet in Python 2.4, so nest try-except into try-finally
-            # get rid of local variable to avoid circular reference
-            # (see http://docs.python.org/library/sys.html#sys.exc_info)
-            del tb
-
+        instance = perform_step('initialization', ec, None, log)
+        apps.append(instance)
 
     base_dir = os.getcwd()
     base_env = copy.deepcopy(os.environ)
