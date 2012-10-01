@@ -160,7 +160,7 @@ def add_cmdline_options(parser):
     override_options.add_option("-p", "--pretend", action="store_true", help="does the build/installation in " \
                                 "a test directory located in $HOME/easybuildinstall [default: $EASYBUILDINSTALLDIR " \
                                 "or installPath in EasyBuild config file]")
-    override_options.add_option("-t", "--skip-tests", action="store_true", help="skip testing")
+    override_options.add_option("-t", "--skip-test-cases", action="store_true", help="skip running test cases")
 
     parser.add_option_group(override_options)
 

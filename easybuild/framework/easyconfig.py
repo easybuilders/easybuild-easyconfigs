@@ -312,7 +312,7 @@ class EasyConfig:
         """
         return the installation version
         """
-        return det_installversion(self['version'], self.toolkit_name(), self.toolkit_version(),
+        return det_installversion(self['version'], self.get_toolkit_name(), self.get_toolkit_version(),
                                   self['versionprefix'], self['versionsuffix'])
 
     def get_name(self):
