@@ -47,8 +47,8 @@ class EB_MrBayes(Application):
 
         if LooseVersion(self.get_version()) >= LooseVersion("3.2"):
 
-            # set correct startfrom dir, and change into it
-            self.setcfg('startfrom', os.path.join(self.getcfg('start_dir'),'src'))
+            # set correct start_dir dir, and change into it
+            self.setcfg('start_dir', os.path.join(self.getcfg('start_dir'),'src'))
             try:
                 os.chdir(self.getcfg('start_dir'))
             except OSError, err:
