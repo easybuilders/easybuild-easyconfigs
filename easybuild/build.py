@@ -1164,57 +1164,61 @@ def build_easyconfigs(easyconfigs, output_dir, test_results, options, log):
     succes = []
 
     for app in apps:
-        applog = os.path.join(output_dir, "%s-%s.log" % (app.name(), app.installversion()))
 
-        start_time = time.time()
+        # if initialisation step failed, app will be None
+        if app: 
 
-        # start with a clean slate
-        os.chdir(base_dir)
-        modifyEnv(os.environ, base_env)
+            applog = os.path.join(output_dir, "%s-%s.log" % (app.name(), app.installversion()))
 
-        # take manual control over the build process
-        perform_step("preparation", app, lambda x: x.prepare_build(), applog)
-        perform_step("pre-build verification", app, lambda x: x.ready2build(), applog)
-        perform_step("generate installdir name", app, lambda x: x.gen_installdir(), applog)
-        perform_step("make builddir", app, lambda x: x.make_builddir(), applog)
-        perform_step("unpacking", app, lambda x: x.unpack_src(), applog)
-        perform_step("patching", app, lambda x: x.apply_patch(), applog)
-        perform_step("prepare", app, lambda x: x.prepare(), applog)
-        perform_step('configure', app, lambda x: x.configure(), applog)
-        perform_step('make', app, lambda x: x.make(), applog)
-        perform_step('test', app, lambda x: x.test(), applog)
-        perform_step('create installdir', app, lambda x: x.make_installdir(), applog)
-        perform_step('make install', app, lambda x: x.make_install(), applog)
-        perform_step('packages', app, lambda x: x.packages(), applog)
-        perform_step('postproc', app, lambda x: x.postproc(), applog)
-        perform_step('sanity check', app, lambda x: x.sanitycheck(), applog)
-        perform_step('cleanup', app, lambda x: x.cleanup(), applog)
-        perform_step('make module', app, lambda x: x.make_module(), applog)
-        if not options.skip_tests and app.getcfg('tests'):
-            perform_step('test cases', app, lambda x: x.runtests(), applog)
+            start_time = time.time()
 
-        # close log and move it
-        app.closelog()
-        try:
-            shutil.move(app.logfile, applog)
-            log.info("Log file moved to %s" % applog)
-        except IOError, err:
-            error("Failed to move log file %s to new log file %s: %s" % (app.logfile, applog, err))
+            # start with a clean slate
+            os.chdir(base_dir)
+            modifyEnv(os.environ, base_env)
 
-        if app not in build_stopped:
-            # gather build stats
-            build_time = round(time.time() - start_time, 2)
+            # take manual control over the build process
+            perform_step("preparation", app, lambda x: x.prepare_build(), applog)
+            perform_step("pre-build verification", app, lambda x: x.ready2build(), applog)
+            perform_step("generate installdir name", app, lambda x: x.gen_installdir(), applog)
+            perform_step("make builddir", app, lambda x: x.make_builddir(), applog)
+            perform_step("unpacking", app, lambda x: x.unpack_src(), applog)
+            perform_step("patching", app, lambda x: x.apply_patch(), applog)
+            perform_step("prepare", app, lambda x: x.prepare(), applog)
+            perform_step('configure', app, lambda x: x.configure(), applog)
+            perform_step('make', app, lambda x: x.make(), applog)
+            perform_step('test', app, lambda x: x.test(), applog)
+            perform_step('create installdir', app, lambda x: x.make_installdir(), applog)
+            perform_step('make install', app, lambda x: x.make_install(), applog)
+            perform_step('packages', app, lambda x: x.packages(), applog)
+            perform_step('postproc', app, lambda x: x.postproc(), applog)
+            perform_step('sanity check', app, lambda x: x.sanitycheck(), applog)
+            perform_step('cleanup', app, lambda x: x.cleanup(), applog)
+            perform_step('make module', app, lambda x: x.make_module(), applog)
+            if not options.skip_tests and app.getcfg('tests'):
+                perform_step('test cases', app, lambda x: x.runtests(), applog)
 
-            buildstats = {
-                          'build_time': build_time,
-                          'platform': platform.platform(),
-                          'core_count': systemtools.get_core_count(),
-                          'cpu_model': systemtools.get_cpu_model(),
-                          'install_size': app.installsize(),
-                          'timestamp': int(time.time()),
-                          'host': os.uname()[1],
-                         }
-            succes.append((app, buildstats))
+            # close log and move it
+            app.closelog()
+            try:
+                shutil.move(app.logfile, applog)
+                log.info("Log file moved to %s" % applog)
+            except IOError, err:
+                error("Failed to move log file %s to new log file %s: %s" % (app.logfile, applog, err))
+
+            if app not in build_stopped:
+                # gather build stats
+                build_time = round(time.time() - start_time, 2)
+
+                buildstats = {
+                              'build_time': build_time,
+                              'platform': platform.platform(),
+                              'core_count': systemtools.get_core_count(),
+                              'cpu_model': systemtools.get_cpu_model(),
+                              'install_size': app.installsize(),
+                              'timestamp': int(time.time()),
+                              'host': os.uname()[1],
+                             }
+                succes.append((app, buildstats))
 
     for result in test_results:
         log.info("%s crashed with an error during fase: %s, error: %s, log file: %s" % result)
