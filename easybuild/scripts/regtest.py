@@ -181,7 +181,7 @@ def build_easyconfigs(easyconfigs, output_dir):
 
         # take manual control over the building
         perform_step("fetching files", app, lambda x: x.fetch_step())
-        perform_step("pre-build verification", app, lambda x: x.check_readiness())
+        perform_step("pre-build verification", app, lambda x: x.check_readiness_step())
         perform_step("generate installdir name", app, lambda x: x.gen_installdir())
         perform_step("make builddir", app, lambda x: x.make_builddir())
         perform_step("extracting", app, lambda x: x.extract_step())
@@ -189,14 +189,14 @@ def build_easyconfigs(easyconfigs, output_dir):
         perform_step("preparing", app, lambda x: x.prepare_step())
         perform_step('configuring', app, lambda x: x.configure_step())
         perform_step('building', app, lambda x: x.build_step())
-        perform_step('testing', app, lambda x: x.test())
+        perform_step('testing', app, lambda x: x.test_step())
         perform_step('creating installdir', app, lambda x: x.make_installdir())
         perform_step('installing', app, lambda x: x.install_step())
         perform_step('extensions', app, lambda x: x.extensions_step())
         perform_step('post install', app, lambda x: x.post_install_step())
         perform_step('sanity check', app, lambda x: x.sanity_check())
-        perform_step('cleanup', app, lambda x: x.cleanup())
-        perform_step('making module', app, lambda x: x.make_module())
+        perform_step('cleanup', app, lambda x: x.cleanup_step())
+        perform_step('making module', app, lambda x: x.make_module_step())
 
         # remove handler
         app.log.removeHandler(handler)

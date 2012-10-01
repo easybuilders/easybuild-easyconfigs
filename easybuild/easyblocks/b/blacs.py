@@ -221,7 +221,7 @@ class EB_BLACS(Application):
         except OSError, err:
             self.log.error("Copying %s to installation dir %s failed: %s" % (src, dest, err))
 
-    def sanity_check(self):
+    def sanity_check_step(self):
         """Custom sanity check for BLACS."""
 
         if not self.getcfg('sanityCheckPaths'):
@@ -235,4 +235,4 @@ class EB_BLACS(Application):
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-        Application.sanity_check(self)
+        Application.sanity_check_step(self)

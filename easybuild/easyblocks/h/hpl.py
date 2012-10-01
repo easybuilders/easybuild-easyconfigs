@@ -117,7 +117,7 @@ class EB_HPL(Application):
         except OSError, err:
             self.log.exception("Copying %s to installation dir %s failed: %s" % (srcfile, destdir, err))
 
-    def sanity_check(self):
+    def sanity_check_step(self):
         """
         Custom sanity check for HPL
         """
@@ -130,4 +130,4 @@ class EB_HPL(Application):
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-        Application.sanity_check(self)
+        Application.sanity_check_step(self)

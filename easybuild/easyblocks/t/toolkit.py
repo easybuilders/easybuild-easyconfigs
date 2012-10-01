@@ -56,7 +56,7 @@ class EB_Toolkit(Application):
     def make_module_req(self):
         return ''
 
-    def sanity_check(self):
+    def sanity_check_step(self):
         """
         As a toolkit doens't install anything really, this is always true
         """

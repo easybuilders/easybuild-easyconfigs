@@ -504,7 +504,7 @@ class EB_CP2K(Application):
         #build_and_install
         run_cmd(cmd, log_all=True, simple=True, log_output=True)
 
-    def test(self):
+    def test_step(self):
         """Run regression test."""
 
         if self.getcfg('runtest'):
@@ -673,7 +673,7 @@ maxtasks=%(maxtasks)s
             except (OSError, IOError), err:
                 self.log.error("Failed to copy regression test results dir: %s" % err)
 
-    def sanity_check(self):
+    def sanity_check_step(self):
         """Custom sanity check for CP2K"""
 
         if not self.getcfg('sanityCheckPaths'):
@@ -687,4 +687,4 @@ maxtasks=%(maxtasks)s
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-        Application.sanity_check(self)
+        Application.sanity_check_step(self)

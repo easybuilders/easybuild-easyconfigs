@@ -63,7 +63,7 @@ class EB_g2lib(Application):
         except OSError, err:
             self.log.error("Failed to copy files to install dir: %s" % err)
 
-    def sanity_check(self):
+    def sanity_check_step(self):
         """Custom sanity check for g2lib."""
 
         if not self.getcfg('sanityCheckPaths'):
@@ -72,4 +72,4 @@ class EB_g2lib(Application):
                                              'dirs': []
                                             })
 
-        Application.sanity_check(self)
+        Application.sanity_check_step(self)

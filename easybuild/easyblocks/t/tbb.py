@@ -61,7 +61,7 @@ class EB_tbb(EB_IntelBase):
         shutil.move(install_libpath, os.path.join(self.installdir, 'tbb', 'libs'))
         os.symlink(self.libpath, install_libpath)
 
-    def sanity_check(self):
+    def sanity_check_step(self):
 
         if not self.getcfg('sanityCheckPaths'):
             self.setcfg('sanityCheckPaths', {
@@ -71,7 +71,7 @@ class EB_tbb(EB_IntelBase):
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-        EB_IntelBase.sanity_check(self)
+        EB_IntelBase.sanity_check_step(self)
 
     def make_module_extra(self):
         """Add correct path to lib to LD_LIBRARY_PATH. and intel license file"""

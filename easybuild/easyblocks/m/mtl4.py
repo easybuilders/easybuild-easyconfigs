@@ -28,7 +28,7 @@ from easybuild.easyblocks.tarball import EB_Tarball
 class EB_MTL4(EB_Tarball):
     """Support for installing MTL4."""
 
-    def sanity_check(self):
+    def sanity_check_step(self):
         """Custom sanity check for MTL4."""
 
         if not self.getcfg('sanityCheckPaths'):
@@ -45,7 +45,7 @@ class EB_MTL4(EB_Tarball):
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-        EB_Tarball.sanity_check(self)
+        EB_Tarball.sanity_check_step(self)
 
     def make_module_req_guess(self):
         """Adjust CPATH for MTL4."""

@@ -144,7 +144,7 @@ CONTINUE_WITH_OPTIONAL_ERROR=yes
         cmd = "./install.sh %s -s %s" % (tmppathopt, silentcfg)
         return run_cmd(cmd, log_all=True, simple=True)
 
-    def cleanup(self):
+    def cleanup_step(self):
         """Cleanup leftover mess
 
         - clean home dir
@@ -152,6 +152,6 @@ CONTINUE_WITH_OPTIONAL_ERROR=yes
         """
         self.clean_homedir()
 
-        Application.cleanup(self)
+        Application.cleanup_step(self)
 
     # no default sanity check, needs to be implemented by derived class

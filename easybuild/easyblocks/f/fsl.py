@@ -80,7 +80,7 @@ class EB_FSL(Application):
         run_cmd(cmd, log_all=True, simple=True)
 
         # check build.log file for success
-        buildlog = os.path.join(self.installdir, "fsl", build_and_install.log")
+        buildlog = os.path.join(self.installdir, "fsl", "build_and_install.log")
         f = open(buildlog, "r")
         txt = f.read()
         f.close()
@@ -114,7 +114,7 @@ class EB_FSL(Application):
 
         return txt
 
-    def sanity_check(self):
+    def sanity_check_step(self):
         """Custom sanity check for FSL"""
 
         if not self.getcfg('sanityCheckPaths'):
@@ -125,4 +125,4 @@ class EB_FSL(Application):
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-        Application.sanity_check(self)
+        Application.sanity_check_step(self)

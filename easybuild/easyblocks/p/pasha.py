@@ -49,12 +49,15 @@ class EB_Pasha(Application):
         srcdir = os.path.join(self.builddir, "%s-%s" % (self.get_name(), self.get_version()), 'bin')
         shutil.copytree(srcdir, os.path.join(self.installdir, 'bin'))
 
-    def sanity_check(self):
+    def sanity_check_step(self):
         """Custom sanity check for Pasha"""
-        self.setcfg('sanityCheckPaths', {
-                                         'files':["bin/pasha-%s" % x for x in ["kmergen",
-                                                                               "pregraph",
-                                                                               "graph"]],
-                                        'dirs':[""],
-                                        })
 
+        if not self.getcfg('sanityCheckPaths'):
+            self.setcfg('sanityCheckPaths', {
+                                             'files':["bin/pasha-%s" % x for x in ["kmergen",
+                                                                                   "pregraph",
+                                                                                   "graph"]],
+                                             'dirs':[],
+                                            })
+
+        Application.sanity_check_step(self)

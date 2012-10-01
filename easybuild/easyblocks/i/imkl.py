@@ -353,7 +353,7 @@ class EB_imkl(EB_IntelBase):
                         self.log.exception("Removing temporary directory %s failed" % (tmpbuild))
 
 
-    def sanity_check(self):
+    def sanity_check_step(self):
 
         if not self.getcfg('sanityCheckPaths'):
 
@@ -381,4 +381,4 @@ class EB_imkl(EB_IntelBase):
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-        EB_IntelBase.sanity_check(self)
+        EB_IntelBase.sanity_check_step(self)

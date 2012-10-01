@@ -45,7 +45,7 @@ class EB_Armadillo(EB_CMake):
 
         EB_CMake.configure_step(self)
 
-    def sanity_check(self):
+    def sanity_check_step(self):
         """Custom sanity check for Armadillo."""
 
         if not self.getcfg('sanityCheckPaths'):

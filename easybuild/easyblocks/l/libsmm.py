@@ -210,7 +210,7 @@ tasks=%(tasks)s
         except Exception, err:
             self.log.error("Something went wrong during dir lib copying to installdir: %s" % err)
 
-    def sanity_check(self):
+    def sanity_check_step(self):
         """Custom sanity check for libsmm"""
 
         if not self.getcfg('sanityCheckPaths'):
@@ -221,4 +221,4 @@ tasks=%(tasks)s
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-        Application.sanity_check(self)
+        Application.sanity_check_step(self)

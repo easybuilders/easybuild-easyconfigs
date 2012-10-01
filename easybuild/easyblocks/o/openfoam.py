@@ -136,7 +136,7 @@ class EB_OpenFOAM(Application):
             fullpath = os.path.join(self.installdir, self.thrdpartydir, d)
             adjust_permissions(fullpath, stat.S_IROTH|stat.S_IXOTH, add=True)
 
-    def sanity_check(self):
+    def sanity_check_step(self):
         """Custom sanity check for OpenFOAM"""
 
         if not self.getcfg('sanityCheckPaths'):
@@ -169,7 +169,7 @@ class EB_OpenFOAM(Application):
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-        Application.sanity_check(self)
+        Application.sanity_check_step(self)
 
     def make_module_extra(self):
         """Define extra environment variables required by OpenFOAM"""

@@ -105,7 +105,7 @@ class EB_CPLEX(EB_Binary):
         self.log.debug("make_module_extra added %s" % txt)
         return txt
 
-    def sanity_check(self):
+    def sanity_check_step(self):
         """Custom sanity check for CPLEX"""
 
         if not self.getcfg('sanityCheckPaths'):
@@ -116,4 +116,4 @@ class EB_CPLEX(EB_Binary):
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-        EB_Binary.sanity_check(self)
+        EB_Binary.sanity_check_step(self)

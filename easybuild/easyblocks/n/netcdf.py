@@ -57,7 +57,7 @@ class EB_netCDF(Application):
 
         Application.configure_step(self)
 
-    def sanity_check(self):
+    def sanity_check_step(self):
         """
         Custom sanity check for netCDF
         """
@@ -83,7 +83,7 @@ class EB_netCDF(Application):
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-        Application.sanity_check(self)
+        Application.sanity_check_step(self)
 
 def set_netcdf_env_vars(log):
     """Set netCDF environment variables used by other software."""

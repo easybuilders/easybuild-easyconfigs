@@ -202,7 +202,7 @@ class EB_Trilinos(EB_CMake):
         """Build with make (verbose logging enabled)."""
         EB_CMake.build_step(self, verbose=True)
 
-    def sanity_check(self):
+    def sanity_check_step(self):
         """Custom sanity check for Trilinos."""
 
         if not self.getcfg('sanityCheckPaths'):
@@ -223,4 +223,4 @@ class EB_Trilinos(EB_CMake):
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-        EB_CMake.sanity_check(self)
+        EB_CMake.sanity_check_step(self)

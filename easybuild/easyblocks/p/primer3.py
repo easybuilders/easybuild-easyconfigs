@@ -60,7 +60,7 @@ class EB_Primer3(Application):
         """(no make install)"""
         pass
 
-    def sanity_check(self):
+    def sanity_check_step(self):
         """Custom sanity check for Primer3."""
 
         if not self.getcfg('sanityCheckPaths'):
@@ -74,7 +74,7 @@ class EB_Primer3(Application):
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-        Application.sanity_check(self)
+        Application.sanity_check_step(self)
 
     def make_module_req_guess(self):
         """Correct suggestion for PATH variable."""

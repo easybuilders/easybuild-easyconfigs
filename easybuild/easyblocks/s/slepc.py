@@ -123,7 +123,7 @@ class EB_SLEPc(Application):
 
         return txt
 
-    def sanity_check(self):
+    def sanity_check_step(self):
         """Custom sanity check for SLEPc"""
         if not self.getcfg('sanityCheckPaths'):
 
@@ -136,4 +136,4 @@ class EB_SLEPc(Application):
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-        Application.sanity_check(self)
+        Application.sanity_check_step(self)

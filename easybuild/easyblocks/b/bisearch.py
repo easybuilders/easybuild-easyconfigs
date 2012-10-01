@@ -55,7 +55,7 @@ class EB_BiSearch(Application):
 
         run_cmd_qa(cmd, qanda, log_all=True, simple=True)
 
-    def sanity_check(self):
+    def sanity_check_step(self):
         """Custom sanity check for BiSearch."""
 
         if not self.getcfg('sanityCheckPaths'):
@@ -67,4 +67,4 @@ class EB_BiSearch(Application):
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-        Application.sanity_check(self)
+        Application.sanity_check_step(self)

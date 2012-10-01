@@ -64,7 +64,7 @@ class EB_UFC(EB_CMakePythonPackage):
 
         EB_CMakePythonPackage.configure_step(self)
 
-    def sanity_check(self):
+    def sanity_check_step(self):
         """Custom sanity check for UFC."""
 
         if not self.getcfg('sanityCheckPaths'):
@@ -76,4 +76,4 @@ class EB_UFC(EB_CMakePythonPackage):
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-        EB_CMakePythonPackage.sanity_check(self)
+        EB_CMakePythonPackage.sanity_check_step(self)

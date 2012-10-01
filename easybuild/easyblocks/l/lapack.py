@@ -182,7 +182,7 @@ class EB_LAPACK(Application):
         except OSError, err:
             self.log.error("Copying %s to installation dir %s failed: %s" % (srcdir, destdir, err))
 
-    def test(self):
+    def test_step(self):
         """
         Run BLAS and LAPACK tests that come with netlib's LAPACK.
         """
@@ -201,19 +201,19 @@ class EB_LAPACK(Application):
                 cmd = "make BLASLIB='%s' %s_testing" % (blaslib, lib)
                 run_cmd(cmd, log_all=True, simple=True)
         else:
-            Application.test(self)
+            Application.test_step(self)
 
     # don't create a module if we're only testing
-    def make_module(self, fake=False):
+    def make_module_step(self, fake=False):
         """
         Only make LAPACK module when we're not testing.
         """
         if self.getcfg('test_only'):
             pass
         else:
-            return Application.make_module(self, fake)
+            return Application.make_module_step(self, fake)
 
-    def sanity_check(self):
+    def sanity_check_step(self):
         """
         Custom sanity check for LAPACK (only run when not testing)
         """
@@ -227,4 +227,4 @@ class EB_LAPACK(Application):
 
                 self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-            Application.sanity_check(self)
+            Application.sanity_check_step(self)

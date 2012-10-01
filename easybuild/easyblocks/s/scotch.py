@@ -135,7 +135,7 @@ class EB_SCOTCH(Application):
         except (IOError, OSError), err:
             self.log.error("Can't write to file %s: %s" % (scotchgrouplib, err))
 
-    def sanity_check(self):
+    def sanity_check_step(self):
         """Custom sanity check for SCOTCH."""
 
         if not self.getcfg('sanityCheckPaths'):
@@ -169,4 +169,4 @@ class EB_SCOTCH(Application):
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-        Application.sanity_check(self)
+        Application.sanity_check_step(self)

@@ -201,7 +201,7 @@ class EB_WRF(Application):
             cmd = "./compile %s %s" % (self.par, test)
             run_cmd(cmd, log_all=True, simple=True, log_output=True)
 
-    def test(self):
+    def test_step(self):
         """Build and run tests included in the WRF distribution."""
         if self.getcfg('runtest'):
 
@@ -325,7 +325,7 @@ class EB_WRF(Application):
         """Building was done in install dir, so nothing to do in install_step."""
         pass
 
-    def sanity_check(self):
+    def sanity_check_step(self):
         """Custom sanity check for WRF."""
 
         if not self.getcfg('sanityCheckPaths'):
@@ -343,7 +343,7 @@ class EB_WRF(Application):
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-        Application.sanity_check(self)
+        Application.sanity_check_step(self)
 
     def make_module_req_guess(self):
 

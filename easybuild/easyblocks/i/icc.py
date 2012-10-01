@@ -39,7 +39,7 @@ class EB_icc(EB_IntelBase):
         - will fail for all older versions (due to newer silent installer)
     """
 
-    def sanity_check(self):
+    def sanity_check_step(self):
 
         if not self.getcfg('sanityCheckPaths'):
 
@@ -57,7 +57,7 @@ class EB_icc(EB_IntelBase):
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-        EB_IntelBase.sanity_check(self)
+        EB_IntelBase.sanity_check_step(self)
 
     def make_module_req_guess(self):
         """Customize paths to check and add in environment.

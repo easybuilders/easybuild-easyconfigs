@@ -207,7 +207,7 @@ class EB_WPS(Application):
         cmd = "./%s" % self.compile_script
         run_cmd(cmd, log_all=True, simple=True)
 
-    def test(self):
+    def test_step(self):
         """Run WPS test (requires large dataset to be downloaded). """
 
         def run_wps_cmd(cmdname):
@@ -323,7 +323,7 @@ class EB_WPS(Application):
             if os.environ.has_key(env_var):
                 os.environ.pop(env_var)
 
-    def sanity_check(self):
+    def sanity_check_step(self):
         """Custom sanity check for WPS."""
 
         if not self.getcfg('sanityCheckPaths'):
@@ -336,7 +336,7 @@ class EB_WPS(Application):
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-        Application.sanity_check(self)
+        Application.sanity_check_step(self)
 
     def make_module_req_guess(self):
         """Make sure PATH and LD_LIBRARY_PATH are set correctly."""

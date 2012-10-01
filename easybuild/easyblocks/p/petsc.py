@@ -265,7 +265,7 @@ class EB_PETSc(Application):
 
         return txt
 
-    def sanity_check(self):
+    def sanity_check_step(self):
         """Custom sanity check for PETSc"""
 
         if not self.getcfg('sanityCheckPaths'):
@@ -294,4 +294,4 @@ class EB_PETSc(Application):
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-        Application.sanity_check(self)
+        Application.sanity_check_step(self)

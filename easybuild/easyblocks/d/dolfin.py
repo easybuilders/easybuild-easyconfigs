@@ -175,7 +175,7 @@ class EB_DOLFIN(EB_CMakePythonPackage):
 
         return txt
 
-    def sanity_check(self):
+    def sanity_check_step(self):
         """Custom sanity check for DOLFIN."""
 
         if not self.getcfg('sanityCheckPaths'):
@@ -223,4 +223,4 @@ class EB_DOLFIN(EB_CMakePythonPackage):
             # join all commands into one large single sanity check command
             self.setcfg('sanityCheckCommands', cmds)
 
-        EB_CMakePythonPackage.sanity_check(self)
+        EB_CMakePythonPackage.sanity_check_step(self)

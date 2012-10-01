@@ -163,7 +163,7 @@ Configure failed, not sure why (see output above).""" % out
                     self.log.warning("Tried to remove %s, but file didn't exist")
 
 
-    def test(self):
+    def test_step(self):
 
         # always run tests
         if self.getcfg('runtest'):
@@ -172,19 +172,19 @@ Configure failed, not sure why (see output above).""" % out
 
         # sanity tests
         self.setcfg('runtest', 'check')
-        Application.test(self)
+        Application.test_step(self)
 
         # checks of threaded code
         self.setcfg('runtest', 'ptcheck')
-        Application.test(self)
+        Application.test_step(self)
 
         # performance summary
         self.setcfg('runtest', 'time')
-        Application.test(self)
+        Application.test_step(self)
 
     # default make install is fine
 
-    def sanity_check(self):
+    def sanity_check_step(self):
         """
         Custom sanity check for ATLAS
         """

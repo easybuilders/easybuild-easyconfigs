@@ -107,13 +107,13 @@ class Application:
 
         self.fetch_step()
 
-        self.check_readiness()
+        self.check_readiness_step()
         self.build()
 
         # Last stop
         if self.getcfg('stop'):
             return True
-        self.make_module()
+        self.make_module_step()
 
         # Run tests
         if run_test_cases and self.getcfg('tests'):
@@ -304,7 +304,7 @@ class Application:
 
     ## BUILD
 
-    def check_readiness(self):
+    def check_readiness_step(self):
         """
         Verify if all is ok to start build.
         """
@@ -746,7 +746,7 @@ class Application:
             else:
                 self.log.info("Successfully made software only available for group %s" % self.getcfg('group'))
 
-    def cleanup(self):
+    def cleanup_step(self):
         """
         Cleanup leftover mess: remove/clean build directory
 
@@ -768,7 +768,7 @@ class Application:
             except OSError, err:
                 self.log.exception("Cleaning up builddir %s failed: %s" % (self.builddir, err))
 
-    def sanity_check(self):
+    def sanity_check_step(self):
         """
         Do a sanity check on the installation
         - if *any* of the files/subdirectories in the installation directory listed
@@ -815,7 +815,7 @@ class Application:
                     self.log.debug("Sanity check: found non-empty directory %s in %s" % (d, self.installdir))
 
         # make fake module
-        mod_path = [self.make_module(True)]
+        mod_path = [self.make_module_step(True)]
 
         # load the module
         mod_path.extend(Modules().modulePath)
@@ -858,7 +858,7 @@ class Application:
             else:
                 self.log.info("sanityCheckCommand %s ran successfully! (output: %s)" % (cmd, out))
 
-        failed_exts = [ext.name for ext in self.instance_exts if not ext.sanity_check()]
+        failed_exts = [ext.name for ext in self.instance_exts if not ext.sanity_check_step()]
 
         if failed_exts:
             self.log.info("Sanity check for extensions %s failed!" % failed_exts)
@@ -930,7 +930,7 @@ class Application:
 
         return out
 
-    def test(self):
+    def test_step(self):
         """
         Test the compilation
         - default: None
@@ -1070,7 +1070,7 @@ class Application:
         except OSError, err:
             self.log.exception("Can't create directory %s: %s" % (dirName, err))
 
-    def make_module(self, fake=False):
+    def make_module_step(self, fake=False):
         """
         Generate a module file.
         """
@@ -1110,7 +1110,7 @@ class Application:
         """
         # first try loading the fake module (might have happened during sanity check, doesn't matter anyway
         # make fake module
-        mod_path = [self.make_module(True)]
+        mod_path = [self.make_module_step(True)]
 
         # load the module
         mod_path.extend(Modules().modulePath)
@@ -1281,7 +1281,7 @@ class Application:
             return
 
         if not self.skip:
-            modpath = self.make_module(fake=True)
+            modpath = self.make_module_step(fake=True)
         # adjust MODULEPATH and load module
         if self.getcfg('exts_loadmodule'):
             if self.skip:
@@ -1661,7 +1661,7 @@ class Extension:
         """
         return self.master.get_toolkit_version()
 
-    def sanity_check(self):
+    def sanity_check_step(self):
         """
         sanity check to run after installing
         """

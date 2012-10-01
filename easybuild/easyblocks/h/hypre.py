@@ -41,7 +41,7 @@ class EB_Hypre(Application):
 
         Application.configure_step(self)
 
-    def sanity_check(self):
+    def sanity_check_step(self):
         """Custom sanity check for Hypre."""
 
         if not self.getcfg('sanityCheckPaths'):
@@ -53,4 +53,4 @@ class EB_Hypre(Application):
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-        Application.sanity_check(self)
+        Application.sanity_check_step(self)

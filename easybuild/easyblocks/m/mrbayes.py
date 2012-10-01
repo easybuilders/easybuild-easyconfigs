@@ -90,7 +90,7 @@ class EB_MrBayes(Application):
             except (IOError,OSError), err:
                 self.log.error("Failed to copy %s to %s (%s)" % (src, dst, err))
 
-    def sanity_check(self):
+    def sanity_check_step(self):
         """Custom sanity check for MrBayes."""
 
         if not self.getcfg('sanityCheckPaths'):
@@ -101,5 +101,5 @@ class EB_MrBayes(Application):
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-        Application.sanity_check(self)
+        Application.sanity_check_step(self)
 

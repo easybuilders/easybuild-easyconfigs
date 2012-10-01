@@ -137,7 +137,7 @@ class EB_DefaultPythonPackage(Extension):
         cmd = "python setup.py install --prefix=%s %s" % (self.python, self.installopts)
         run_cmd(cmd, log_all=True, simple=True)
 
-    def test(self):
+    def test_step(self):
         """Test the compilation
         - default: None
         """
@@ -188,7 +188,7 @@ class EB_DefaultPythonPackage(Extension):
         # configure, build_step, test, make install
         self.configure_step()
         self.build_step()
-        self.test()
+        self.test_step()
         self.install_step()
 
     def getcfg(self, *args, **kwargs):

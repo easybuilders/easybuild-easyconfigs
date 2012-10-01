@@ -75,7 +75,7 @@ class EB_g2clib(Application):
         except OSError, err:
             self.log.error("Failed to copy files to install dir: %s" % err)
 
-    def sanity_check(self):
+    def sanity_check_step(self):
         """Custom sanity check for g2clib."""
 
         if not self.getcfg('sanityCheckPaths'):
@@ -84,4 +84,4 @@ class EB_g2clib(Application):
                                              'dirs': ["include"]
                                             })
 
-        Application.sanity_check(self)
+        Application.sanity_check_step(self)
