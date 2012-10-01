@@ -22,7 +22,6 @@ import os
 
 import easybuild.tools.modules as modules
 from unittest import TestCase, TestSuite
-from easybuild.tools.build_log import EasyBuildError, initLogger
 
 
 class ModulesTest(TestCase):

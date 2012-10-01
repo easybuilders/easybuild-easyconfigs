@@ -1,0 +1,60 @@
+diff -ru libunistring-0.9.3.orig/gnulib-m4/signbit.m4 libunistring-0.9.3/gnulib-m4/signbit.m4
+--- libunistring-0.9.3.orig/gnulib-m4/signbit.m4	2010-01-01 11:02:01.000000000 +0100
++++ libunistring-0.9.3/gnulib-m4/signbit.m4	2012-08-28 17:19:56.577869644 +0200
+@@ -151,8 +151,8 @@
+   if (signbit (vf))
+     vf++;
+   {
+-    float plus_inf = 1.0f / p0f;
+-    float minus_inf = -1.0f / p0f;
++    float plus_inf = __builtin_inff();
++    float minus_inf = - __builtin_inff();
+     if (!(!signbit (255.0f)
+           && signbit (-255.0f)
+           && !signbit (p0f)
+@@ -164,8 +164,8 @@
+   if (signbit (vd))
+     vd++;
+   {
+-    double plus_inf = 1.0 / p0d;
+-    double minus_inf = -1.0 / p0d;
++    double plus_inf = __builtin_inf();
++    double minus_inf = - __builtin_inf();
+     if (!(!signbit (255.0)
+           && signbit (-255.0)
+           && !signbit (p0d)
+@@ -177,8 +177,8 @@
+   if (signbit (vl))
+     vl++;
+   {
+-    long double plus_inf = 1.0L / p0l;
+-    long double minus_inf = -1.0L / p0l;
++    long double plus_inf = __builtin_infl();
++    long double minus_inf = - __builtin_infl();
+     if (!(!signbit (255.0L)
+           && signbit (-255.0L)
+           && !signbit (p0l)
+diff -ru libunistring-0.9.3.orig/lib/isnan.c libunistring-0.9.3/lib/isnan.c
+--- libunistring-0.9.3.orig/lib/isnan.c	2010-01-01 11:02:02.000000000 +0100
++++ libunistring-0.9.3/lib/isnan.c	2012-08-28 17:20:14.597153047 +0200
+@@ -124,14 +124,14 @@
+      not required.  The SGI MIPSpro C compiler complains about "floating-point
+      operation result is out of range".  */
+   static DOUBLE zero = L_(0.0);
+-  memory_double nan;
+-  DOUBLE plus_inf = L_(1.0) / L_(0.0);
+-  DOUBLE minus_inf = -L_(1.0) / L_(0.0);
++  memory_double nan = {  __builtin_nan("") };
++  DOUBLE plus_inf = __builtin_inf();
++  DOUBLE minus_inf = - __builtin_inf();
+   nan.value = zero / zero;
+ #  else
+-  static memory_double nan = { L_(0.0) / L_(0.0) };
+-  static DOUBLE plus_inf = L_(1.0) / L_(0.0);
+-  static DOUBLE minus_inf = -L_(1.0) / L_(0.0);
++  memory_double nan = { __builtin_nan("") };
++  DOUBLE plus_inf = __builtin_inf();
++  DOUBLE minus_inf = - __builtin_inf();
+ #  endif
+   {
+     memory_double m;
