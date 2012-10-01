@@ -1134,11 +1134,12 @@ def build_easyconfigs(easyconfigs, output_dir, test_results, options, log):
     def perform_step(step, obj, method, logfile):
         """Perform method on object if it can be built."""
         if (type(obj) == dict and obj['spec'] not in build_stopped) or obj not in build_stopped:
-            apploginfo(obj, "Running %s step" % step)
             try:
                 if step == 'initialization':
+                    log.info("Running %s step" % step)
                     return parbuild.get_instance(obj, log)
                 else:
+                    apploginfo(obj, "Running %s step" % step)
                     method(obj)
             except Exception, err:  # catch all possible errors, also crashes in EasyBuild code itself
                 fullerr = str(err)
