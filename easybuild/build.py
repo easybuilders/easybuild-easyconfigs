@@ -29,7 +29,6 @@ Main entry point for EasyBuild: build software from .eb input file
 """
 
 import copy
-import cStringIO
 import glob
 import logging
 import platform
@@ -1086,7 +1085,7 @@ def write_to_xml(succes, failed, filename):
         el.lastChild.appendChild(error_text)
         return el
 
-    def create_succes(name, stats):
+    def create_success(name, stats):
         el = create_testcase(name)
         text = "\n".join(["%s=%s" % (key, value) for (key, value) in stats.items()])
         build_stats = root.createCDATASection("\n%s\n" % text)
@@ -1112,13 +1111,13 @@ def write_to_xml(succes, failed, filename):
         # try to pretty print
         try:
             el = create_failure("%s/%s" % (obj.name(), obj.installversion()), fase, error)
-        except:
+        except AttributeError:
             el = create_failure(obj, fase, error)
 
         root.firstChild.appendChild(el)
 
     for (obj, stats) in succes:
-        el = create_succes("%s/%s" % (obj.name(), obj.installversion()), stats)
+        el = create_success("%s/%s" % (obj.name(), obj.installversion()), stats)
         root.firstChild.appendChild(el)
 
     output_file = open(filename, "w")
@@ -1136,26 +1135,17 @@ def build_easyconfigs(easyconfigs, output_dir, test_results, options, log):
         """Perform method on object if it can be built."""
         if obj not in build_stopped:
             apploginfo(obj, "Running %s step" % step)
-            tb = None
             try:
-                try:
-                    method(obj)
-                except Exception, err:  # catch all possible errors, also crashes in EasyBuild code itself
-                    fullerr = str(err)
-                    if not isinstance(err, EasyBuildError):
-                        _, _, tb = sys.exc_info()
-                        f = cStringIO.StringIO()
-                        traceback.print_tb(tb, None, f)
-                        fullerr = '\n'.join([f.getvalue(), str(err)])
-                        f.close()
-                    # we cannot continue building it
-                    test_results.append((obj, step, fullerr, logfile))
-                    # keep a dict of so we can check in O(1) if objects can still be build
-                    build_stopped[obj] = step
-            finally:  # try-except-finally doesn't work yet in Python 2.4, so nest try-except into try-finally
-                # get rid of local variable to avoid circular reference
-                # (see http://docs.python.org/library/sys.html#sys.exc_info)
-                del tb
+                method(obj)
+            except Exception, err:  # catch all possible errors, also crashes in EasyBuild code itself
+                fullerr = str(err)
+                if not isinstance(err, EasyBuildError):
+                    tb = traceback.format_exc()
+                    fullerr = '\n'.join([tb, str(err)])
+                # we cannot continue building it
+                test_results.append((obj, step, fullerr, logfile))
+                # keep a dict of so we can check in O(1) if objects can still be build
+                build_stopped[obj] = step
 
     # initialize all instances
     apps = []
