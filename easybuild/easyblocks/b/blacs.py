@@ -58,7 +58,7 @@ class EB_BLACS(Application):
     - make install: copy files
     """
 
-    def configure(self):
+    def configure_step(self):
         """Configure BLACS build by copying Bmake.inc file."""
 
         src = os.path.join(self.getcfg('start_dir'), 'BMAKES', 'Bmake.MPI-LINUX')

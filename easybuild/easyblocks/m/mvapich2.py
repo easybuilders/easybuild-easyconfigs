@@ -53,7 +53,7 @@ class EB_MVAPICH2(Application):
                      ]
         return Application.extra_options(extra_vars)
 
-    def configure(self):
+    def configure_step(self):
 
         # things might go wrong if a previous install dir is present, so let's get rid of it
         if not self.getcfg('keeppreviousinstall'):
@@ -106,7 +106,7 @@ class EB_MVAPICH2(Application):
 
         self.updatecfg('configopts', add_configopts)
 
-        Application.configure(self)
+        Application.configure_step(self)
 
     # make and make install are default
 

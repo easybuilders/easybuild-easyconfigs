@@ -61,7 +61,7 @@ class EB_WRF(Application):
                      ]
         return Application.extra_options(extra_vars)
 
-    def configure(self):
+    def configure_step(self):
         """Configure build:
             - set some magic environment variables
             - run configure script

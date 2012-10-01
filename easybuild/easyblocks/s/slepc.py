@@ -62,7 +62,7 @@ class EB_SLEPc(Application):
 
         Application.make_builddir(self)
 
-    def configure(self):
+    def configure_step(self):
         """Configure SLEPc by setting configure options and running configure script."""
 
         # check PETSc dependency
@@ -88,7 +88,7 @@ class EB_SLEPc(Application):
             (out, _) = run_cmd(cmd, log_all=True, simple=False)
         else:
             # regular './configure --prefix=X' for non-source install
-            out = Application.configure(self)
+            out = Application.configure_step(self)
 
         # check for errors in configure
         error_regexp = re.compile("ERROR")

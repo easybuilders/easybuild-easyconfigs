@@ -70,7 +70,7 @@ class EB_WPS(Application):
                      ]
         return Application.extra_options(extra_vars)
 
-    def configure(self):
+    def configure_step(self):
         """Configure build:
         - set required environment variables (for netCDF, JasPer)
         - patch compile script and ungrib Makefile for non-default install paths of WRF and JasPer

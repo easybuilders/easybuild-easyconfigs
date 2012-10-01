@@ -34,7 +34,7 @@ from easybuild.tools.filetools import run_cmd
 class EB_CMake(Application):
     """Support for configuring build with CMake instead of traditional configure script"""
 
-    def configure(self, builddir=None):
+    def configure_step(self, builddir=None):
         """Configure build using cmake"""
 
         if not builddir:

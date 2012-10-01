@@ -43,7 +43,7 @@ class EB_Maple(Application):
             shutil.copy(f['path'], os.path.join(self.builddir, f['name']))
             f['finalpath'] = self.builddir
 
-    def configure(self):
+    def configure_step(self):
         """No configuration needed, binary installer"""
         pass
 

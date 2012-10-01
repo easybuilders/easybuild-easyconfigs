@@ -38,7 +38,7 @@ from easybuild.tools.modules import get_software_root, get_software_version
 class EB_netCDF(Application):
     """Support for building/installing netCDF"""
 
-    def configure(self):
+    def configure_step(self):
         """Configure build: set config options and configure"""
 
         self.updatecfg('configopts', "--enable-shared")
@@ -55,7 +55,7 @@ class EB_netCDF(Application):
         if self.get_toolkit().comp_family() == toolkit.GCC:
             env.set('CPPFLAGS', "%s -DgFortran" % os.getenv('CPPFLAGS'))
 
-        Application.configure(self)
+        Application.configure_step(self)
 
     def sanity_check(self):
         """

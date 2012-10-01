@@ -43,7 +43,7 @@ class EB_ScaLAPACK(Application):
     Support for building and installing ScaLAPACK, both versions 1.x and 2.x
     """
 
-    def configure(self):
+    def configure_step(self):
         """Configure ScaLAPACK build by copying SLmake.inc.example to SLmake.inc and checking dependencies."""
 
         src = os.path.join(self.getcfg('start_dir'), 'SLmake.inc.example')

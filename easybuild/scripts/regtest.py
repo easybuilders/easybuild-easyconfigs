@@ -187,7 +187,7 @@ def build_easyconfigs(easyconfigs, output_dir):
         perform_step("extracting", app, lambda x: x.extract_step())
         perform_step("patching", app, lambda x: x.patch_step())
         perform_step("preparing", app, lambda x: x.prepare_step())
-        perform_step('configuring', app, lambda x: x.configure())
+        perform_step('configuring', app, lambda x: x.configure_step())
         perform_step('building', app, lambda x: x.build_step())
         perform_step('testing', app, lambda x: x.test())
         perform_step('creating installdir', app, lambda x: x.make_installdir())

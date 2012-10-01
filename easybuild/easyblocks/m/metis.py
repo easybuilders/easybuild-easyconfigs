@@ -36,7 +36,7 @@ from easybuild.tools.filetools import run_cmd, mkdir
 class EB_METIS(Application):
     """Support for building and installing METIS."""
 
-    def configure(self, *args, **kwargs):
+    def configure_step(self, *args, **kwargs):
         """Configure build using 'make config' (only for recent versions (>= v5))."""
 
         if LooseVersion(self.get_version()) >= LooseVersion("5"):

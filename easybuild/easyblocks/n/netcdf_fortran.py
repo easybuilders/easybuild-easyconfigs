@@ -36,7 +36,7 @@ from easybuild.framework.application import Application
 class EB_netCDF_Fortran(Application):
     """Support for building/installing the netCDF-Fortran library"""
 
-    def configure(self):
+    def configure_step(self):
         """Configure build: set config options and configure"""
 
         if self.get_toolkit().opts['pic']:
@@ -48,7 +48,7 @@ class EB_netCDF_Fortran(Application):
         if self.get_toolkit().comp_family() == toolkit.GCC:
             env.set('CPPFLAGS', "%s -DgFortran" % os.getenv('CPPFLAGS'))
 
-        Application.configure(self)
+        Application.configure_step(self)
 
     def sanity_check(self):
         """

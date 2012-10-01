@@ -27,7 +27,7 @@ from easybuild.tools.modules import get_software_root
 class EB_SWIG(Application):
     """Support for building SWIG."""
 
-    def configure(self):
+    def configure_step(self):
         """Set some extra environment variables before configuring."""
 
         # disable everything by default
@@ -42,7 +42,7 @@ class EB_SWIG(Application):
         else:
             self.log.error("Python module not loaded?")
 
-        Application.configure(self)
+        Application.configure_step(self)
 
     def sanity_check(self):
         """Custom sanity check for SWIG."""

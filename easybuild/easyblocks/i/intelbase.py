@@ -74,7 +74,7 @@ class EB_IntelBase(Application):
             except OSError, err:
                 self.log.warning("Cleaning up intel dir %s failed: %s" % (intelhome, err))
 
-    def configure(self):
+    def configure_step(self):
         """Configure: handle license file and clean home dir."""
 
         # obtain license path

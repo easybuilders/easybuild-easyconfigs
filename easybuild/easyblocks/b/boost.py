@@ -51,7 +51,7 @@ class EB_Boost(Application):
 
         return Application.extra_options(extra_vars)
 
-    def configure(self):
+    def configure_step(self):
         """Configure Boost build using custom tools"""
 
         # mpi sanity check

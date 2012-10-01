@@ -51,7 +51,7 @@ class EB_OpenFOAM(Application):
         self.mpipath = None
         self.thrdpartydir = None
 
-    def configure(self):
+    def configure_step(self):
         """Configure OpenFOAM build by setting appropriate environment variables."""
 
         # installation directory

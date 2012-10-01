@@ -47,7 +47,7 @@ class EB_Primer3(Application):
 
         self.setcfg('start_dir', 'src')
 
-    def configure(self):
+    def configure_step(self):
         """Configure Primer3 build by setting make options."""
 
         self.updatecfg('makeopts', 'CC="%s" CPP="%s" O_OPTS="%s" all' % (os.getenv('CC'),

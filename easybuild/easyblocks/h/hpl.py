@@ -40,7 +40,7 @@ class EB_HPL(Application):
     - build with make and install
     """
 
-    def configure(self, subdir=None):
+    def configure_step(self, subdir=None):
         """
         Create Make.UNKNOWN file to build from
         - provide subdir argument so this can be reused in HPCC easyblock

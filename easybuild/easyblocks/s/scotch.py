@@ -39,7 +39,7 @@ from easybuild.tools.filetools import run_cmd, copytree
 class EB_SCOTCH(Application):
     """Support for building/installing SCOTCH."""
 
-    def configure(self):
+    def configure_step(self):
         """Configure SCOTCH build: locate the template makefile, copy it to a general Makefile.inc and patch it."""
 
         # pick template makefile

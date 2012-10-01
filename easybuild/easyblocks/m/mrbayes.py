@@ -39,7 +39,7 @@ from easybuild.tools.modules import get_software_root
 class EB_MrBayes(Application):
     """Support for building/installing MrBayes."""
 
-    def configure(self):
+    def configure_step(self):
         """Configure build: <single-line description how this deviates from standard configure>"""
 
         # set generic make options
@@ -69,7 +69,7 @@ class EB_MrBayes(Application):
                 self.updatecfg('configopts', '--enable-mpi')
 
             # configure
-            Application.configure(self)
+            Application.configure_step(self)
         else:
 
             # no configure script prior to v3.2

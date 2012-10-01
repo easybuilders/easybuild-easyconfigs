@@ -30,7 +30,7 @@ class EB_bzip2(Application):
     """Support for building and installing bzip2."""
 
     # no configure script
-    def configure(self):
+    def configure_step(self):
         """Set extra configure options (CC, CFLAGS)."""
 
         self.updatecfg('makeopts', 'CC="%s"' % os.getenv('CC'))

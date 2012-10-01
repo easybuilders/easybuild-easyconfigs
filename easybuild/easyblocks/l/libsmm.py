@@ -59,7 +59,7 @@ class EB_libsmm(Application):
                      ]
         return Application.extra_options(extra_vars)
 
-    def configure(self):
+    def configure_step(self):
         """Configure build: change to tools/build_libsmm dir"""
         try:
             dst = 'tools/build_libsmm'

@@ -95,7 +95,7 @@ class EB_CP2K(Application):
             text += "%s = %s\n" % (key, value)
         return text + self.make_instructions
 
-    def configure(self):
+    def configure_step(self):
         """Configure build
         - build Libint wrapper
         - generate Makefile

@@ -29,7 +29,7 @@ from easybuild.tools.modules import get_software_root, get_software_version
 class EB_UFC(EB_CMakePythonPackage):
     """Support for building UFC."""
 
-    def configure(self):
+    def configure_step(self):
         """Set some extra environment variables before configuring."""
 
         # make sure that required dependencies are loaded
@@ -62,7 +62,7 @@ class EB_UFC(EB_CMakePythonPackage):
         self.updatecfg('configopts', '-DPYTHON_INCLUDE_PATH=%s/include/python%s' % (depsdict['Python'],
                                                                                     self.pyver))
 
-        EB_CMakePythonPackage.configure(self)
+        EB_CMakePythonPackage.configure_step(self)
 
     def sanity_check(self):
         """Custom sanity check for UFC."""

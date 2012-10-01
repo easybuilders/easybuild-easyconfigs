@@ -38,7 +38,7 @@ class EB_Tarball(Application):
     - will unpack binary and copy it to the install dir
     """
 
-    def configure(self):
+    def configure_step(self):
         """
         Dummy configure
         """

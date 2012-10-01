@@ -28,7 +28,7 @@ from easybuild.framework.application import Application
 class EB_Hypre(Application):
     """Support for building Hypre."""
 
-    def configure(self):
+    def configure_step(self):
         """Configure Hypre build after setting extra configure options."""
 
         self.updatecfg('configopts', '--with-MPI-include=%s' % os.getenv('MPI_INC_DIR'))
@@ -39,7 +39,7 @@ class EB_Hypre(Application):
             self.updatecfg('configopts', '--with-%s-lib-dirs="%s"' % (dep.lower(),
                                                                       os.getenv('%s_LIB_DIR' % dep)))
 
-        Application.configure(self)
+        Application.configure_step(self)
 
     def sanity_check(self):
         """Custom sanity check for Hypre."""

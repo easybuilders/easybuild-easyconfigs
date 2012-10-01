@@ -57,11 +57,11 @@ class EB_Python(Application):
         self.setcfg('exts_defaultclass', (__name__, "EB_DefaultPythonPackage"))
         self.setcfg('exts_filter', ('python -c "import %(get_name)s"', ""))
 
-    def configure(self):
+    def configure_step(self):
         """Set extra configure options."""
         self.updatecfg('configopts', "--with-threads --enable-shared")
 
-        Application.configure(self)
+        Application.configure_step(self)
 
     def install_step(self):
         """Extend make install to make sure that the 'python' command is present."""
@@ -98,7 +98,7 @@ class EB_DefaultPythonPackage(Extension):
 
         self.python = get_software_root('Python')
 
-    def configure(self):
+    def configure_step(self):
         """Configure Python package build
         """
 
@@ -186,7 +186,7 @@ class EB_DefaultPythonPackage(Extension):
                     self.log.error("Applying patch %s failed" % patchfile)
 
         # configure, build_step, test, make install
-        self.configure()
+        self.configure_step()
         self.build_step()
         self.test()
         self.install_step()

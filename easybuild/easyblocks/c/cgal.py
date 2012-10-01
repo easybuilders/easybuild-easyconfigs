@@ -31,7 +31,7 @@ from easybuild.tools.modules import get_software_root
 class EB_CGAL(EB_CMake):
     """Support for building CGAL."""
 
-    def configure(self):
+    def configure_step(self):
         """Set some extra environment variables before configuring."""
 
         deps = ["Boost", "GMP", "MPFR"]
@@ -45,7 +45,7 @@ class EB_CGAL(EB_CMake):
 
         os.environ['BOOST_ROOT'] = get_software_root("Boost")
 
-        EB_CMake.configure(self)
+        EB_CMake.configure_step(self)
 
     def sanity_check(self):
         """Custom sanity check for CGAL."""

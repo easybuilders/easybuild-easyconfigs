@@ -187,7 +187,8 @@ def refactor(txt):
                     ('name', 'get_name'),
                     ('version', 'get_version'),
                     ('patch', 'apply_patch'), # filetools.patch -> filetools.apply_patch
-                    ('[\'"]startfrom[\'"]', "'start_dir'")
+                    ('[\'"]startfrom[\'"]', "'start_dir'"),
+                    ('configure\(', 'configure_step\(')
                     ]
 
     totn = 0

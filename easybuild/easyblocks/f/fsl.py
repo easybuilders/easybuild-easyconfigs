@@ -44,7 +44,7 @@ class EB_FSL(Application):
 
         self.fsldir = None
 
-    def configure(self):
+    def configure_step(self):
         """Configure FSL build: set FSLDIR env var."""
 
         self.fsldir = self.getcfg('start_dir')

@@ -40,7 +40,7 @@ from easybuild.tools.modules import get_software_root, get_software_version
 class EB_NCL(Application):
     """Support for building/installing NCL."""
 
-    def configure(self):
+    def configure_step(self):
         """Configure build:
         - create Makefile.ini using make and run ymake script to create config file
         - patch config file with correct settings, and add missing config entries

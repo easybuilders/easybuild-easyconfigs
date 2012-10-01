@@ -45,12 +45,12 @@ class EB_CMakePythonPackage(EB_CMake, EB_PythonPackage):
         """Initialize with EB_PythonPackage."""
         EB_PythonPackage.__init__(self, *args, **kwargs)
 
-    def configure(self, *args, **kwargs):
+    def configure_step(self, *args, **kwargs):
         """Main configuration using cmake"""
 
-        EB_PythonPackage.configure(self, *args, **kwargs)
+        EB_PythonPackage.configure_step(self, *args, **kwargs)
 
-        return EB_CMake.configure(self, *args, **kwargs)
+        return EB_CMake.configure_step(self, *args, **kwargs)
 
     def build_step(self, *args, **kwargs):
         """Build Python package with cmake"""

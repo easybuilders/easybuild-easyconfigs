@@ -29,7 +29,7 @@ from easybuild.tools.modules import get_software_root
 class EB_Armadillo(EB_CMake):
     """Support for building Armadillo."""
 
-    def configure(self):
+    def configure_step(self):
         """Set some extra environment variables before configuring."""
 
         boost = get_software_root('Boost')
@@ -43,7 +43,7 @@ class EB_Armadillo(EB_CMake):
         self.updatecfg('configopts', '-DBLAS_LIBRARY:PATH="%s"' % os.getenv('LIBBLAS'))
         self.updatecfg('configopts', '-DLAPACK_LIBRARY:PATH="%s"' % os.getenv('LIBLAPACK'))
 
-        EB_CMake.configure(self)
+        EB_CMake.configure_step(self)
 
     def sanity_check(self):
         """Custom sanity check for Armadillo."""

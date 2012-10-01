@@ -45,7 +45,7 @@ class EB_Trilinos(EB_CMake):
                      ]
         return EB_CMake.extra_options(extra_vars)
 
-    def configure(self):
+    def configure_step(self):
         """Set some extra environment variables before configuring."""
 
         # enable verbose output if desired
@@ -196,7 +196,7 @@ class EB_Trilinos(EB_CMake):
             self.log.error("Failed to create and move into build directory: %s" % err)
 
         # configure using cmake
-        EB_CMake.configure(self, "..")
+        EB_CMake.configure_step(self, "..")
 
     def build_step(self):
         """Build with make (verbose logging enabled)."""

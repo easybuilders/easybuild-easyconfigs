@@ -36,7 +36,7 @@ from easybuild.tools.filetools import run_cmd, mkdir
 class EB_ParMETIS(Application):
     """Support for building and installing ParMETIS."""
 
-    def configure(self):
+    def configure_step(self):
         """Configure ParMETIS build.
         For versions of ParMETIS < 4 , METIS is a seperate build
         New versions of ParMETIS include METIS

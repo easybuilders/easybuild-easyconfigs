@@ -33,7 +33,7 @@ from easybuild.tools.filetools import run_cmd
 class EB_Doxygen(Application):
     """Support for building/installing Doxygen"""
 
-    def configure(self):
+    def configure_step(self):
         """Configure build using non-standard configure script (see prefix option)"""
 
         cmd = "%s ./configure --prefix %s %s" % (self.getcfg('preconfigopts'), self.installdir,

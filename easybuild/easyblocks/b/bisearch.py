@@ -37,7 +37,7 @@ class EB_BiSearch(Application):
     Basically just run the interactive installation script install.sh.
     """
 
-    def configure(self):
+    def configure_step(self):
         """(no configure)"""
         pass
 

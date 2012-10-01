@@ -43,7 +43,7 @@ class EB_PythonPackage(Application):
         # template for Python packages lib dir
         self.pylibdir = os.path.join("lib", "python%s", "site-packages")
 
-    def configure(self):
+    def configure_step(self):
         """Set Python packages lib dir."""
 
         self.log.debug("EB_PythonPackage: configuring")

@@ -81,7 +81,7 @@ class EB_LAPACK(Application):
         return Application.extra_options(extra_vars)
 
 
-    def configure(self):
+    def configure_step(self):
         """
         Configure LAPACK for build: copy build_step.inc and set make options
         """

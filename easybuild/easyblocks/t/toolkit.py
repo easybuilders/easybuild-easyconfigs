@@ -41,7 +41,7 @@ class EB_Toolkit(Application):
         self.gen_installdir()
         self.make_installdir()
 
-    def configure(self):
+    def configure_step(self):
         """ Do nothing """
         pass
 

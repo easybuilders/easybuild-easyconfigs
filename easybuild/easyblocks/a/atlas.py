@@ -55,7 +55,7 @@ class EB_ATLAS(Application):
                      ]
         return Application.extra_options(extra_vars)
 
-    def configure(self):
+    def configure_step(self):
 
         # configure for 64-bit build
         self.updatecfg('configopts', "-b 64")

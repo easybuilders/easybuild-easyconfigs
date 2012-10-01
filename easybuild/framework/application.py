@@ -636,7 +636,7 @@ class Application:
 
             ## CONFIGURE
             print_msg("configuring...", self.log)
-            self.run_step('configure', [self.configure], skippable=True)
+            self.run_step('configure', [self.configure_step], skippable=True)
 
             ## MAKE
             print_msg("building...", self.log)
@@ -901,7 +901,7 @@ class Application:
         self.get_toolkit().prepare(self.getcfg('onlytkmod'))
         self.guess_start_dir()
 
-    def configure(self, cmd_prefix=''):
+    def configure_step(self, cmd_prefix=''):
         """
         Configure step
         - typically ./configure --prefix=/install/path style

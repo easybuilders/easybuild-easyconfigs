@@ -32,7 +32,7 @@ from easybuild.tools.modules import get_software_root
 class EB_Pasha(Application):
     """Support for building and installing Pasha"""
 
-    def configure(self):
+    def configure_step(self):
         """Configure Pasha by setting make options."""
 
         tbb = get_software_root('TBB')

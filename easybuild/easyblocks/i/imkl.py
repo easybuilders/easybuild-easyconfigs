@@ -56,8 +56,8 @@ class EB_imkl(EB_IntelBase):
         return EB_IntelBase.extra_options(extra_vars)
 
 
-    def configure(self):
-        EB_IntelBase.configure(self)
+    def configure_step(self):
+        EB_IntelBase.configure_step(self)
 
         if os.getenv('MKLROOT'):
             self.log.error("Found MKLROOT in current environment, which may cause problems...")

@@ -35,7 +35,7 @@ from easybuild.tools.modules import get_software_root
 class EB_HDF5(Application):
     """Support for building/installing HDF5"""
 
-    def configure(self):
+    def configure_step(self):
         """Configure build: set require config and make options, and run configure script."""
 
         # configure options
@@ -59,7 +59,7 @@ class EB_HDF5(Application):
         # make options
         self.updatecfg('makeopts', fcomp)
 
-        Application.configure(self)
+        Application.configure_step(self)
 
     # default make and make install are ok
 

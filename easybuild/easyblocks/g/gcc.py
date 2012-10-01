@@ -180,7 +180,7 @@ class EB_GCC(Application):
         if unknown_options:
             self.log.error("Unrecognized options found during configure: %s" % unknown_options)
 
-    def configure(self):
+    def configure_step(self):
         """
         Configure for GCC build:
         - prepare extra source dirs (GMP, MPFR, MPC, ...)

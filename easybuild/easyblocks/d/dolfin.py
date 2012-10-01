@@ -33,7 +33,7 @@ from easybuild.tools.modules import get_software_root, get_software_version
 class EB_DOLFIN(EB_CMakePythonPackage):
     """Support for building and installing DOLFIN."""
 
-    def configure(self):
+    def configure_step(self):
         """Set DOLFIN-specific configure options and configure with CMake."""
 
         # compilers
@@ -148,7 +148,7 @@ class EB_DOLFIN(EB_CMakePythonPackage):
         self.updatecfg('configopts', '-DMTL4_DIR:PATH="%s"' % depsdict['MTL4'])
 
         # configure
-        out = EB_CMakePythonPackage.configure(self)
+        out = EB_CMakePythonPackage.configure_step(self)
 
         # make sure that all optional packages are found
         not_found_re = re.compile("The following optional packages could not be found")

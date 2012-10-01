@@ -52,7 +52,7 @@ class EB_Binary(Application):
             except (OSError, IOError), err:
                 self.log.exception("Couldn't copy %s to %s: %s" % (src, self.builddir, err))
 
-    def configure(self):
+    def configure_step(self):
         """No configuration, this is binary software"""
         pass
 

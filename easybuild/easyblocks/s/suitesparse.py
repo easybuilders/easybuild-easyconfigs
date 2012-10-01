@@ -39,7 +39,7 @@ from easybuild.tools.modules import get_software_root
 class EB_SuiteSparse(Application):
     """Support for building SuiteSparse."""
 
-    def configure(self):
+    def configure_step(self):
         """Configure build by patching UFconfig.mk."""
         metis = get_software_root('METIS')
         parmetis = get_software_root('ParMETIS')

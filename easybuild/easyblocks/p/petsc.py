@@ -65,7 +65,7 @@ class EB_PETSc(Application):
 
         Application.make_builddir(self)
 
-    def configure(self):
+    def configure_step(self):
         """
         Configure PETSc by setting configure options and running configure script.
 
@@ -177,7 +177,7 @@ class EB_PETSc(Application):
                 cmd = "%s ./configure %s" % (self.getcfg('preconfigopts'), self.getcfg('configopts'))
                 (out, _) = run_cmd(cmd, log_all=True, simple=False)
             else:
-                out = Application.configure(self)
+                out = Application.configure_step(self)
 
             # check for errors in configure
             error_regexp = re.compile("ERROR")
