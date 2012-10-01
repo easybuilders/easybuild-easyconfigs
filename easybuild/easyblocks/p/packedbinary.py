@@ -22,6 +22,7 @@
 EasyBlock for binary applications that need unpacking,
 e.g., binary applications shipped as a .tar.gz file
 """
+import os
 
 from easybuild.framework.application import Application
 from easybuild.easyblocks.binary import EB_Binary
@@ -35,4 +36,17 @@ class EB_PackedBinary(EB_Binary, Application):
     def extract_step(self):
         """Unpack the source"""
         Application.extract_step(self)
+
+    def make_install(self):
+        """Copy all unpacked source directories to install directory, one-by-one."""
+        try:
+            os.chdir(self.builddir)
+            for src in os.listdir(self.builddir):
+                srcpath = os.path.join(self.builddir, src)
+                if os.path.isdir(srcpath):
+                    # copy files to install dir via EB_Binary
+                    self.setcfg('startfrom', src)
+                    EB_Binary.make_install(self)
+        except OSError, err:
+            self.log.error("Failed to copy unpacked sources to install directory: %s" % err)
 

@@ -137,7 +137,9 @@ class EB_WRF(Application):
               "Compile for nesting? (1=basic, 2=preset moves, 3=vortex following) [default 1]:": "1",
               "Compile for nesting? (0=no nesting, 1=basic, 2=preset moves, 3=vortex following) [default 0]:": "0"
              }
-        no_qa = []
+        no_qa = [
+                 'testing for fseeko and fseeko64'
+                ]
         std_qa = {
                   # named group in match will be used to construct answer
                   r"%s.*\n(.*\n)*Enter selection\s*\[[0-9]+-[0-9]+\]\s*:" % build_type_question: "%(nr)s",

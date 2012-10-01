@@ -53,7 +53,7 @@ class EB_netCDF(Application):
 
         # add -DgFortran to CPPFLAGS when building with GCC
         if self.get_toolkit().comp_family() == toolkit.GCC:
-            env.set('CPPFLAGS', "%s -DgFortran" % os.getenv('CPPFLAGS'))
+            self.updatecfg('configopts', 'CPPFLAGS="%s -DgFortran"' % os.getenv('CPPFLAGS'))
 
         Application.configure_step(self)
 
