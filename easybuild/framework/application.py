@@ -144,7 +144,7 @@ class Application:
 
             ## TEST
             print_msg("testing...", self.log)
-            self.run_step('test', [self.test], skippable=True)
+            self.run_step('test', [self.test_step], skippable=True)
 
             ## INSTALL
             print_msg("installing...", self.log)
@@ -160,10 +160,10 @@ class Application:
             ## SANITY CHECK
             try:
                 print_msg("running sanity check...", self.log)
-                self.run_step('sanity check', [self.sanity_check], skippable=False)
+                self.run_step('sanity check', [self.sanity_check_step], skippable=False)
             finally:
                 print_msg("cleaning up...", self.log)
-                self.run_step('cleanup', [self.cleanup])
+                self.run_step('cleanup', [self.cleanup_step])
 
         except StopException:
             pass
@@ -457,7 +457,7 @@ class Application:
 
             # figure out where to download the file to
             for srcpath in srcpaths:
-                filepath = os.path.join(srcpath, self.name()[0].lower(), self.get_name())
+                filepath = os.path.join(srcpath, self.get_name()[0].lower(), self.get_name())
                 if ext:
                     filepath = os.path.join(filepath, "extensions")
                 if os.path.isdir(filepath):

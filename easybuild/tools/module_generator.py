@@ -117,10 +117,10 @@ if { ![is-loaded %(name)s/%(version)s] } {
     }
 }
 
-""" % {'name': self.app.name(), 'version': self.app.get_version()}
+""" % {'name': self.app.get_name(), 'version': self.app.get_version()}
 
         elif conflict:
-            txt += "conflict    %s\n" % self.app.name()
+            txt += "conflict    %s\n" % self.app.get_name()
 
         return txt
 

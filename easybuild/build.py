@@ -383,7 +383,7 @@ def processEasyconfig(path, log, onlyBlocks=None, regtest_online=False, validate
     """
     blocks = retrieveBlocksInSpec(path, log, onlyBlocks)
 
-    peasyconfig = []
+    easyconfigs = []
     for spec in blocks:
         ## Process for dependencies and real installversionname
         ## - use mod? __init__ and importCfg are ignored.
@@ -679,7 +679,7 @@ def build_and_install_software(module, options, log, origEnviron, exitOnFailure=
     # timing info
     starttime = time.time()
     try:
-        result = app.run_all_steps(run_test_cases=not options.skip_tests, regtest_online=options.regtest_online)
+        result = app.run_all_steps(run_test_cases=not options.skip_test_cases, regtest_online=options.regtest_online)
     except EasyBuildError, err:
         lastn = 300
         errormsg = "autoBuild Failed (last %d chars): %s" % (lastn, err.msg[-lastn:])
