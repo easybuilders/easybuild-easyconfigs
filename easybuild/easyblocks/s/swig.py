@@ -20,11 +20,11 @@
 """
 EasyBuild support for SWIG, implemented as an easyblock
 """
-from easybuild.framework.application import Application
+from easybuild.easyblocks.configuremake import EB_ConfigureMake  #@UnresolvedImport
 from easybuild.tools.modules import get_software_root
 
 
-class EB_SWIG(Application):
+class EB_SWIG(EB_ConfigureMake):
     """Support for building SWIG."""
 
     def configure_step(self):
@@ -42,7 +42,7 @@ class EB_SWIG(Application):
         else:
             self.log.error("Python module not loaded?")
 
-        Application.configure_step(self)
+        EB_ConfigureMake.configure_step(self)
 
     def sanity_check_step(self):
         """Custom sanity check for SWIG."""
@@ -56,4 +56,4 @@ class EB_SWIG(Application):
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-        Application.sanity_check_step(self)
+        EB_ConfigureMake.sanity_check_step(self)

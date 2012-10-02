@@ -25,11 +25,11 @@ EasyBuild support for building and installing Pasha, implemented as an easyblock
 import shutil
 import os
 
-from easybuild.framework.application import Application
+from easybuild.easyblocks.configuremake import EB_ConfigureMake  #@UnresolvedImport
 from easybuild.tools.modules import get_software_root
 
 
-class EB_Pasha(Application):
+class EB_Pasha(EB_ConfigureMake):
     """Support for building and installing Pasha"""
 
     def configure_step(self):
@@ -60,4 +60,4 @@ class EB_Pasha(Application):
                                              'dirs':[],
                                             })
 
-        Application.sanity_check_step(self)
+        EB_ConfigureMake.sanity_check_step(self)

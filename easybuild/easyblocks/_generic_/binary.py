@@ -30,11 +30,11 @@ import shutil
 import os
 import stat
 
-from easybuild.framework.application import Application
+from easybuild.framework.easyblock import EasyBlock
 from easybuild.tools.filetools import run_cmd
 
 
-class EB_Binary(Application):
+class EB_Binary(EasyBlock):
     """Support for installing software that comes in binary form.
     Just copy the sources to the install dir"""
 
@@ -69,7 +69,7 @@ class EB_Binary(Application):
     def make_module_extra(self):
         """Add the install directory to the PATH."""
 
-        txt = Application.make_module_extra(self)
+        txt = EasyBlock.make_module_extra(self)
         txt += self.moduleGenerator.prependPaths("PATH", [""])
         self.log.debug("make_module_extra added this: %s" % txt)
         return txt

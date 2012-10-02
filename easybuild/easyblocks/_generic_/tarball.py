@@ -29,10 +29,10 @@ implemented as an easyblock
 
 import shutil
 
-from easybuild.framework.application import Application
+from easybuild.framework.easyblock import EasyBlock
 
 
-class EB_Tarball(Application):
+class EB_Tarball(EasyBlock):
     """
     Precompiled software supplied as a tarball:
     - will unpack binary and copy it to the install dir
@@ -40,13 +40,13 @@ class EB_Tarball(Application):
 
     def configure_step(self):
         """
-        Dummy configure
+        Dummy configure method
         """
         pass
 
     def build_step(self):
         """
-        Dummy build_step: nothing to build
+        Dummy build method: nothing to build
         """
         pass
 

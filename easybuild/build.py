@@ -66,19 +66,18 @@ except ImportError, err:
 
 import easybuild  # required for VERBOSE_VERSION
 import easybuild.framework.easyconfig as easyconfig
-import easybuild.tools.build_log as build_log
 import easybuild.tools.config as config
 import easybuild.tools.filetools as filetools
 import easybuild.tools.parallelbuild as parbuild
-from easybuild.framework.application import get_class
+from easybuild.framework.easyblock import get_class
 from easybuild.framework.easyconfig import EasyConfig
-from easybuild.tools.build_log import EasyBuildError, initLogger, \
-    removeLogHandler, print_msg
+from easybuild.tools.build_log import EasyBuildError, initLogger
+from easybuild.tools.build_log import removeLogHandler, print_msg
 from easybuild.tools.class_dumper import dumpClasses
 from easybuild.tools.config import getRepository
 from easybuild.tools.filetools import modifyEnv
-from easybuild.tools.modules import Modules, searchModule, \
-    curr_module_paths, mk_module_path
+from easybuild.tools.modules import Modules, searchModule
+from easybuild.tools.modules import curr_module_paths, mk_module_path
 from easybuild.tools import systemtools
 
 
@@ -348,7 +347,7 @@ def main():
         for ec in check_easyconfigs:
             module = ec['module']
             mod = "%s (version %s)" % (module[0], module[1])
-            modspath = mk_module_path(curr_module_paths() + [os.path.join(config.installPath("mod"), 'all')])
+            modspath = mk_module_path(curr_module_paths() + [os.path.join(config.install_path("mod"), 'all')])
             if m.exists(module[0], module[1], modspath):
                 msg = "%s is already installed (module found in %s), skipping " % (mod, modspath)
                 print_msg(msg, log)
@@ -923,9 +922,9 @@ def build_and_install_software(module, options, log, origEnviron, exitOnFailure=
 
         if app.getcfg('stop'):
             ended = "STOPPED"
-            newLogDir = os.path.join(app.builddir, config.logPath())
+            newLogDir = os.path.join(app.builddir, config.log_path())
         else:
-            newLogDir = os.path.join(app.installdir, config.logPath())
+            newLogDir = os.path.join(app.installdir, config.log_path())
 
             try:
                 # upload spec to central repository
@@ -1329,7 +1328,7 @@ def regtest(options, log, easyconfigs_paths=None):
         resolved = resolveDependencies(easyconfigs, options.robot, log)
         # use %%s so we can replace it later
         command = "cd %s && %s %%s --regtest --sequential" % (cur_dir, sys.argv[0])
-        jobs = parbuild.build_packages_in_parallel(command, resolved, output_dir, log)
+        jobs = parbuild.build_easyconfigs_in_parallel(command, resolved, output_dir, log)
         print "List of submitted jobs:"
         for job in jobs:
             print "%s: %s" % (job.name, job.jobid)

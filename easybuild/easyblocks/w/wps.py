@@ -36,20 +36,20 @@ from distutils.version import LooseVersion
 
 import easybuild.tools.environment as env
 import easybuild.tools.toolkit as toolkit
-from easybuild.easyblocks.netcdf import set_netcdf_env_vars, get_netcdf_module_set_cmds
-from easybuild.framework.application import Application
+from easybuild.easyblocks.netcdf import set_netcdf_env_vars, get_netcdf_module_set_cmds  #@UnresolvedImport
+from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import CUSTOM, MANDATORY
 from easybuild.tools.filetools import patch_perl_script_autoflush, run_cmd, run_cmd_qa, extract_file
 from easybuild.tools.modules import get_software_root, get_software_version
 
 
-class EB_WPS(Application):
+class EB_WPS(EasyBlock):
     """Support for building/installing WPS."""
 
     def __init__(self, *args, **kwargs):
         """Add extra config options specific to WPS."""
 
-        Application.__init__(self, *args, **kwargs)
+        EasyBlock.__init__(self, *args, **kwargs)
 
         self.build_in_installdir = True
         self.comp_fam = None
@@ -68,7 +68,7 @@ class EB_WPS(Application):
                       ('runtest', [True, "Build and run WPS tests (default: True).", CUSTOM]),
                       ('testdata', [testdata_urls, "URL to test data required to run WPS test (default: %s)." % testdata_urls, CUSTOM])
                      ]
-        return Application.extra_options(extra_vars)
+        return EasyBlock.extra_options(extra_vars)
 
     def configure_step(self):
         """Configure build:
@@ -336,7 +336,7 @@ class EB_WPS(Application):
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-        Application.sanity_check_step(self)
+        EasyBlock.sanity_check_step(self)
 
     def make_module_req_guess(self):
         """Make sure PATH and LD_LIBRARY_PATH are set correctly."""
@@ -350,7 +350,7 @@ class EB_WPS(Application):
     def make_module_extra(self):
         """Add netCDF environment variables to module file."""
 
-        txt = Application.make_module_extra(self)
+        txt = EasyBlock.make_module_extra(self)
 
         txt += get_netcdf_module_set_cmds(self.log)
 

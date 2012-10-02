@@ -26,10 +26,10 @@
 EasyBuild support for installing compiler toolkits, implemented as an easyblock
 """
 
-from easybuild.framework.application import Application
+from easybuild.framework.easyblock import EasyBlock
 
 
-class EB_Toolkit(Application):
+class EB_Toolkit(EasyBlock):
     """
     Compiler get_toolkit: generate module file only, nothing to build/install
     """

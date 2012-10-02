@@ -32,13 +32,13 @@ import shutil
 from distutils.version import LooseVersion
 
 import easybuild.tools.toolkit as toolkit
-from easybuild.easyblocks.blacs import det_interface
-from easybuild.easyblocks.lapack import get_blas_lib
-from easybuild.framework.application import Application
+from easybuild.easyblocks.blacs import det_interface  #@UnresolvedImport
+from easybuild.easyblocks.configuremake import EB_ConfigureMake  #@UnresolvedImport
+from easybuild.easyblocks.lapack import get_blas_lib  #@UnresolvedImport
 from easybuild.tools.modules import get_software_root
 
 
-class EB_ScaLAPACK(Application):
+class EB_ScaLAPACK(EB_ConfigureMake):
     """
     Support for building and installing ScaLAPACK, both versions 1.x and 2.x
     """
@@ -147,7 +147,7 @@ class EB_ScaLAPACK(Application):
         # update make opts, and build_step
         self.updatecfg('makeopts', ' '.join(extra_makeopts))
 
-        Application.build_step(self)
+        EB_ConfigureMake.build_step(self)
 
     def install_step(self):
         """Install by copying files to install dir."""
@@ -186,4 +186,4 @@ class EB_ScaLAPACK(Application):
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-        Application.sanity_check_step(self)
+        EB_ConfigureMake.sanity_check_step(self)

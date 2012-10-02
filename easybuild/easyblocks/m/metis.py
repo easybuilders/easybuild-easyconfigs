@@ -29,11 +29,11 @@ import os
 import shutil
 from distutils.version import LooseVersion
 
-from easybuild.framework.application import Application
+from easybuild.easyblocks.configuremake import EB_ConfigureMake  #@UnresolvedImport
 from easybuild.tools.filetools import run_cmd, mkdir
 
 
-class EB_METIS(Application):
+class EB_METIS(EB_ConfigureMake):
     """Support for building and installing METIS."""
 
     def configure_step(self, *args, **kwargs):
@@ -52,7 +52,7 @@ class EB_METIS(Application):
         if self.get_toolkit().opts['pic']:
             self.updatecfg('makeopts', 'CC="$CC -fPIC"')
 
-        Application.build_step(self)
+        EB_ConfigureMake.build_step(self)
 
     def install_step(self):
         """
@@ -100,7 +100,7 @@ class EB_METIS(Application):
                 self.log.error("Something went wrong during symlink creation: %s" % err)
 
         else:
-            Application.install_step(self)
+            EB_ConfigureMake.install_step(self)
 
     def sanity_check_step(self):
         """Custom sanity check for METIS (more extensive for recent version (>= v5))"""
@@ -128,4 +128,4 @@ class EB_METIS(Application):
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-        Application.sanity_check_step(self)
+        EB_ConfigureMake.sanity_check_step(self)

@@ -30,12 +30,13 @@ import os
 import shutil
 
 import easybuild.tools.toolkit as toolkit
-from easybuild.framework.application import Extension, Application
+from easybuild.easyblocks.configuremake import EB_ConfigureMake  #@UnresolvedImport
+from easybuild.framework.extension import Extension
 from easybuild.tools.filetools import extract_file, apply_patch, run_cmd
 from easybuild.tools.modules import get_software_root
 
 
-class EB_Python(Application):
+class EB_Python(EB_ConfigureMake):
     """Support for building/installing Python
     - default configure/build_step/make install works fine
 
@@ -61,11 +62,11 @@ class EB_Python(Application):
         """Set extra configure options."""
         self.updatecfg('configopts', "--with-threads --enable-shared")
 
-        Application.configure_step(self)
+        EB_ConfigureMake.configure_step(self)
 
     def install_step(self):
         """Extend make install to make sure that the 'python' command is present."""
-        Application.install_step(self)
+        EB_ConfigureMake.install_step(self)
 
         python_binary_path = os.path.join(self.installdir, 'bin', 'python')
         if not os.path.isfile(python_binary_path):

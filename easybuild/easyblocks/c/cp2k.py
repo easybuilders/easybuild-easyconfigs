@@ -35,13 +35,13 @@ import sys
 from distutils.version import LooseVersion
 
 import easybuild.tools.toolkit as toolkit
-from easybuild.framework.application import Application
+from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.filetools import run_cmd
 from easybuild.tools.modules import get_software_root, get_software_version
 
 
-class EB_CP2K(Application):
+class EB_CP2K(EasyBlock):
     """
     Support for building CP2K
     - prepare module include files if required
@@ -52,7 +52,7 @@ class EB_CP2K(Application):
     """
 
     def __init__(self, *args, **kwargs):
-        Application.__init__(self, *args, **kwargs)
+        EasyBlock.__init__(self, *args, **kwargs)
 
         self.typearch = None
 
@@ -85,7 +85,7 @@ class EB_CP2K(Application):
                       ('ignore_regtest_fails', [False, "Ignore failures in regression test (should be used with care) (default: False).", CUSTOM]),
                       ('maxtasks', [3, "Maximum number of CP2K instances run at the same time during testing (default:3)", CUSTOM])
                      ]
-        return Application.extra_options(extra_vars)
+        return EasyBlock.extra_options(extra_vars)
 
     def _generateMakefile(self, options):
         """Generate Makefile based on options dictionary and optional make instructions"""
@@ -687,4 +687,4 @@ maxtasks=%(maxtasks)s
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-        Application.sanity_check_step(self)
+        EasyBlock.sanity_check_step(self)

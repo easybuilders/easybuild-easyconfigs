@@ -31,12 +31,12 @@ import os
 import shutil
 import sys
 
-from easybuild.framework.application import Application
+from easybuild.easyblocks.configuremake import EB_ConfigureMake  #@UnresolvedImport
 from easybuild.tools.filetools import mkdir
 from easybuild.tools.modules import get_software_root
 
 
-class EB_SuiteSparse(Application):
+class EB_SuiteSparse(EB_ConfigureMake):
     """Support for building SuiteSparse."""
 
     def configure_step(self):
@@ -129,7 +129,7 @@ class EB_SuiteSparse(Application):
 
     def make_module_req_guess(self):
         """Add UFconfig dir to CPATH so UFconfig include file is found."""
-        guesses = Application.make_module_req_guess(self)
+        guesses = EB_ConfigureMake.make_module_req_guess(self)
         guesses.update({'CPATH': ["UFconfig"]})
 
         return guesses
@@ -147,4 +147,4 @@ class EB_SuiteSparse(Application):
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-        Application.sanity_check_step(self)
+        EB_ConfigureMake.sanity_check_step(self)

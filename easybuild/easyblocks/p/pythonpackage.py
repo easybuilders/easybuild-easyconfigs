@@ -23,22 +23,22 @@
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
 """
-EasyBuild support for Python extensions_step, implemented as an easyblock
+EasyBuild support for Python packages, implemented as an easyblock
 """
 import os
 
 import easybuild.tools.environment as env
-from easybuild.framework.application import Application
+from easybuild.framework.easyblock import EasyBlock
 from easybuild.tools.filetools import run_cmd, mkdir
 from easybuild.tools.modules import get_software_version
 
 
-class EB_PythonPackage(Application):
+class EB_PythonPackage(EasyBlock):
     """Builds and installs a Python package, and provides a dedicated module file."""
 
     def __init__(self, *args, **kwargs):
         """Initialize custom variables."""
-        Application.__init__(self, *args, **kwargs)
+        EasyBlock.__init__(self, *args, **kwargs)
 
         # template for Python packages lib dir
         self.pylibdir = os.path.join("lib", "python%s", "site-packages")
@@ -82,7 +82,7 @@ class EB_PythonPackage(Application):
     def make_module_extra(self):
         """Add install path to PYTHONPATH"""
 
-        txt = Application.make_module_extra(self)
+        txt = EasyBlock.make_module_extra(self)
 
         txt += "prepend-path\tPYTHONPATH\t%s\n" % os.path.join(self.installdir , self.pylibdir)
 

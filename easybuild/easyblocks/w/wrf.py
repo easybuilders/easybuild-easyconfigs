@@ -33,19 +33,19 @@ import sys
 
 import easybuild.tools.environment as env
 import easybuild.tools.toolkit as toolkit
-from easybuild.easyblocks.netcdf import set_netcdf_env_vars, get_netcdf_module_set_cmds
-from easybuild.framework.application import Application
+from easybuild.easyblocks.netcdf import set_netcdf_env_vars, get_netcdf_module_set_cmds  #@UnresolvedImport
+from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import CUSTOM, MANDATORY
 from easybuild.tools.filetools import patch_perl_script_autoflush, run_cmd, run_cmd_qa
 from easybuild.tools.modules import get_software_root
 
 
-class EB_WRF(Application):
+class EB_WRF(EasyBlock):
     """Support for building/installing WRF."""
 
     def __init__(self, *args, **kwargs):
         """Add extra config options specific to WRF."""
-        Application.__init__(self, *args, **kwargs)
+        EasyBlock.__init__(self, *args, **kwargs)
 
         self.build_in_installdir = True
         self.wrfsubdir = None
@@ -59,7 +59,7 @@ class EB_WRF(Application):
                       ('rewriteopts', [True, "Replace -O3 with CFLAGS/FFLAGS (default: True).", CUSTOM]),
                       ('runtest', [True, "Build and run WRF tests (default: True).", CUSTOM])
                      ]
-        return Application.extra_options(extra_vars)
+        return EasyBlock.extra_options(extra_vars)
 
     def configure_step(self):
         """Configure build:
@@ -345,7 +345,7 @@ class EB_WRF(Application):
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-        Application.sanity_check_step(self)
+        EasyBlock.sanity_check_step(self)
 
     def make_module_req_guess(self):
 
@@ -362,7 +362,7 @@ class EB_WRF(Application):
 
     def make_module_extra(self):
 
-        txt = Application.make_module_extra(self)
+        txt = EasyBlock.make_module_extra(self)
         txt += get_netcdf_module_set_cmds(self.log)
 
         return txt

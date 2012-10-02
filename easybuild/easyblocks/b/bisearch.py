@@ -27,11 +27,11 @@ EasyBuild support for BiSearch, implemented as an easyblock
 """
 import os
 
-from easybuild.framework.application import Application
+from easybuild.framework.easyblock import EasyBlock
 from easybuild.tools.filetools import run_cmd_qa
 
 
-class EB_BiSearch(Application):
+class EB_BiSearch(EasyBlock):
     """
     Support for building BiSearch.
     Basically just run the interactive installation script install.sh.
@@ -69,4 +69,4 @@ class EB_BiSearch(Application):
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-        Application.sanity_check_step(self)
+        EasyBlock.sanity_check_step(self)

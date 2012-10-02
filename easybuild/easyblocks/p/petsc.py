@@ -27,19 +27,19 @@ from distutils.version import LooseVersion
 
 import easybuild.tools.environment as env
 import easybuild.tools.toolkit as toolkit
-from easybuild.framework.application import Application
+from easybuild.easyblocks.configuremake import EB_ConfigureMake  #@UnresolvedImport
 from easybuild.framework.easyconfig import BUILD, CUSTOM
 from easybuild.tools.filetools import run_cmd
 from easybuild.tools.modules import get_software_root
 from easybuild.tools.systemtools import get_shared_lib_ext
 
 
-class EB_PETSc(Application):
+class EB_PETSc(EB_ConfigureMake):
     """Support for building and installing PETSc"""
 
     def __init__(self, *args, **kwargs):
         """Initialize PETSc specific variables."""
-        Application.__init__(self, *args, **kwargs)
+        EB_ConfigureMake.__init__(self, *args, **kwargs)
 
         self.petsc_arch = ""
         self.petsc_subdir = ""
@@ -55,7 +55,7 @@ class EB_PETSc(Application):
                       ('papi_lib', ['/usr/lib64/libpapi.so', "Path for PAPI library (default: '/usr/lib64/libpapi.so')", CUSTOM]),
                       ('runtest', ['test', "Make target to test build (default: test)", BUILD])
                      ]
-        return Application.extra_options(extra_vars)
+        return EB_ConfigureMake.extra_options(extra_vars)
 
     def make_builddir(self):
         """Decide whether or not to build in install dir before creating build dir."""
@@ -63,7 +63,7 @@ class EB_PETSc(Application):
         if self.getcfg('sourceinstall'):
             self.build_in_installdir = True
 
-        Application.make_builddir(self)
+        EB_ConfigureMake.make_builddir(self)
 
     def configure_step(self):
         """
@@ -177,7 +177,7 @@ class EB_PETSc(Application):
                 cmd = "%s ./configure %s" % (self.getcfg('preconfigopts'), self.getcfg('configopts'))
                 (out, _) = run_cmd(cmd, log_all=True, simple=False)
             else:
-                out = Application.configure_step(self)
+                out = EB_ConfigureMake.configure_step(self)
 
             # check for errors in configure
             error_regexp = re.compile("ERROR")
@@ -220,7 +220,7 @@ class EB_PETSc(Application):
         """
         if LooseVersion(self.get_version()) >= LooseVersion("3"):
             if not self.getcfg('sourceinstall'):
-                Application.install_step(self)
+                EB_ConfigureMake.install_step(self)
 
         else:  # old versions (< 3.x)
 
@@ -235,7 +235,7 @@ class EB_PETSc(Application):
     def make_module_req_guess(self):
         """Specify PETSc custom values for PATH, CPATH and LD_LIBRARY_PATH."""
 
-        guesses = Application.make_module_req_guess(self)
+        guesses = EB_ConfigureMake.make_module_req_guess(self)
 
         prefix1 = ""
         prefix2 = ""
@@ -254,7 +254,7 @@ class EB_PETSc(Application):
 
     def make_module_extra(self):
         """Set PETSc specific environment variables (PETSC_DIR, PETSC_ARCH)."""
-        txt = Application.make_module_extra(self)
+        txt = EB_ConfigureMake.make_module_extra(self)
 
         if self.getcfg('sourceinstall'):
             txt += self.moduleGenerator.setEnvironment('PETSC_DIR', '$root/%s' % self.petsc_subdir)
@@ -294,4 +294,4 @@ class EB_PETSc(Application):
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-        Application.sanity_check_step(self)
+        EB_ConfigureMake.sanity_check_step(self)

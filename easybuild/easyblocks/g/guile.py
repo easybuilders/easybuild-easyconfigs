@@ -22,16 +22,17 @@
 EasyBuild support for building and installing guile, implemented as an easyblock
 """
 
-from easybuild.framework.application import Application
+from easybuild.easyblocks.configuremake import EB_ConfigureMake  #@UnresolvedImport
 
-class EB_guile(Application):
+class EB_guile(EB_ConfigureMake):
     """
     Support for building/installing guile: default build procedure, and set correct CPATH.
     """
 
     def make_module_req_guess(self):
-	"""Add guile/2.0 to cpath"""
-        guess = Application.make_module_req_guess(self)
+        """Add guile/2.0 to cpath"""
+
+        guess = EB_ConfigureMake.make_module_req_guess(self)
         guess['CPATH'] = guess['CPATH'] + ["include/guile/2.0"]
 
-        return guess	
+        return guess

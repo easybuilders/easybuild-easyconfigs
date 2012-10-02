@@ -29,11 +29,11 @@ EasyBuild support for building and installing HPL, implemented as an easyblock
 import os
 import shutil
 
-from easybuild.framework.application import Application
+from easybuild.easyblocks.configuremake import EB_ConfigureMake  #@UnresolvedImport
 from easybuild.tools.filetools import run_cmd
 
 
-class EB_HPL(Application):
+class EB_HPL(EB_ConfigureMake):
     """
     Support for building HPL (High Performance Linpack)
     - create Make.UNKNOWN
@@ -100,7 +100,7 @@ class EB_HPL(Application):
 
         # set options and build
         self.updatecfg('makeopts', extra_makeopts)
-        Application.build_step(self)
+        EB_ConfigureMake.build_step(self)
 
     def install_step(self):
         """
@@ -130,4 +130,4 @@ class EB_HPL(Application):
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-        Application.sanity_check_step(self)
+        EB_ConfigureMake.sanity_check_step(self)

@@ -23,10 +23,10 @@ EasyBuild support for bzip2, implemented as an easyblock
 """
 import os
 
-from easybuild.framework.application import Application
+from easybuild.framework.configuremake import EB_ConfigureMake  #@UnresolvedImport
 
 
-class EB_bzip2(Application):
+class EB_bzip2(EB_ConfigureMake):
     """Support for building and installing bzip2."""
 
     # no configure script
@@ -41,7 +41,7 @@ class EB_bzip2(Application):
 
         self.updatecfg('installopts', "PREFIX=%s" % self.installdir)
 
-        Application.install_step(self)
+        EB_ConfigureMake.install_step(self)
 
     def sanity_check_step(self):
         """Custom sanity check for bzip2."""
@@ -58,4 +58,4 @@ class EB_bzip2(Application):
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-        Application.sanity_check_step(self)
+        EB_ConfigureMake.sanity_check_step(self)

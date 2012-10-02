@@ -29,11 +29,11 @@ import os
 import shutil
 from distutils.version import LooseVersion
 
-from easybuild.framework.application import Application
+from easybuild.framework.easyblock import EasyBlock
 from easybuild.tools.filetools import run_cmd, mkdir
 
 
-class EB_ParMETIS(Application):
+class EB_ParMETIS(EasyBlock):
     """Support for building and installing ParMETIS."""
 
     def configure_step(self):
@@ -178,4 +178,4 @@ class EB_ParMETIS(Application):
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-        Application.sanity_check_step(self)
+        EasyBlock.sanity_check_step(self)

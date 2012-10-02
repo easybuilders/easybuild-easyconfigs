@@ -28,7 +28,7 @@ import tempfile
 
 import easybuild.tools.environment as env
 import easybuild.tools.toolkit as toolkit
-from easybuild.easyblocks.cmakepythonpackage import EB_CMakePythonPackage
+from easybuild.easyblocks.cmakepythonpackage import EB_CMakePythonPackage  #@UnresolvedImport
 from easybuild.tools.modules import get_software_root, get_software_version
 
 
@@ -227,8 +227,8 @@ class EB_DOLFIN(EB_CMakePythonPackage):
 
             # subdomains-poisson has no C++ get_version, only Python
             name = 'subdomains-poisson'
-            path = os.path.join(pref, 'pde', get_name, 'python')
-            cmds += [cmd_template_python % {'dir': path, 'name': get_name}]
+            path = os.path.join(pref, 'pde', name, 'python')
+            cmds += [cmd_template_python % {'dir': path, 'name': name}]
 
             # supply empty argument to each command
             cmds = [(cmd, "") for cmd in cmds]

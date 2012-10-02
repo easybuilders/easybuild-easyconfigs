@@ -31,12 +31,12 @@ import os
 import shutil
 from distutils.version import LooseVersion
 
-from easybuild.framework.application import Application
+from easybuild.easyblocks.configuremake import EB_ConfigureMake  #@UnresolvedImport
 from easybuild.tools.filetools import run_cmd
 from easybuild.tools.modules import get_software_root
 
 
-class EB_MrBayes(Application):
+class EB_MrBayes(EB_ConfigureMake):
     """Support for building/installing MrBayes."""
 
     def configure_step(self):
@@ -69,7 +69,7 @@ class EB_MrBayes(Application):
                 self.updatecfg('configopts', '--enable-mpi')
 
             # configure
-            Application.configure_step(self)
+            EB_ConfigureMake.configure_step(self)
         else:
 
             # no configure script prior to v3.2
@@ -101,5 +101,5 @@ class EB_MrBayes(Application):
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-        Application.sanity_check_step(self)
+        EB_ConfigureMake.sanity_check_step(self)
 

@@ -28,11 +28,11 @@ EasyBuild support for building and installing HDF5, implemented as an easyblock
 
 import os
 
-from easybuild.framework.application import Application
+from easybuild.framework.easyblocks import EB_ConfigureMake  #@UnresolvedImport
 from easybuild.tools.modules import get_software_root
 
 
-class EB_HDF5(Application):
+class EB_HDF5(EB_ConfigureMake):
     """Support for building/installing HDF5"""
 
     def configure_step(self):
@@ -59,7 +59,7 @@ class EB_HDF5(Application):
         # make options
         self.updatecfg('makeopts', fcomp)
 
-        Application.configure_step(self)
+        EB_ConfigureMake.configure_step(self)
 
     # default make and make install are ok
 
@@ -90,4 +90,4 @@ class EB_HDF5(Application):
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-        Application.sanity_check_step(self)
+        EB_ConfigureMake.sanity_check_step(self)

@@ -35,6 +35,7 @@ import stat
 import subprocess
 import tempfile
 import time
+import urllib
 
 import easybuild.tools.environment as env
 from easybuild.tools.asyncprocess import Popen, PIPE, STDOUT
@@ -84,6 +85,40 @@ def extract_file(fn, dest, extra_options=None, overwrite=False):
 
     return findBaseDir()
 
+def download_file(filename, url, path):
+
+    log.debug("Downloading %s from %s to %s" % (filename, url, path))
+
+    # make sure directory exists
+    basedir = os.path.dirname(path)
+    if not os.path.exists(basedir):
+        os.makedirs(basedir)
+
+    downloaded = False
+    attempt_cnt = 0
+
+    # try downloading three times max.
+    while not downloaded and attempt_cnt < 3:
+
+        (_, httpmsg) = urllib.urlretrieve(url, path)
+
+        if httpmsg.type == "text/html" and not filename.endswith('.html'):
+            log.warning("HTML file downloaded but not expecting it, so assuming invalid download.")
+            log.debug("removing downloaded file %s from %s" % (filename, path))
+            try:
+                os.remove(path)
+            except OSError, err:
+                log.error("Failed to remove downloaded file:" % err)
+        else:
+            log.info("Downloading file %s from url %s: done" % (filename, url))
+            downloaded = True
+            return path
+
+        attempt_cnt += 1
+        log.warning("Downloading failed at attempt %s, retrying..." % attempt_cnt)
+
+    # failed to download after multiple attempts
+    return None
 
 def findBaseDir():
     """
@@ -608,7 +643,7 @@ def modifyEnv(old, new):
     return 'ok'
 
 
-def convertName(name, upper=False):
+def convert_name(name, upper=False):
     """
     Converts name so it can be used as variable name
     """

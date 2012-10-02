@@ -27,10 +27,10 @@ EasyBuild support for Primer3, implemented as an easyblock
 """
 import os
 
-from easybuild.framework.application import Application
+from easybuild.easyblocks.configuremake import EB_ConfigureMake  #@UnresolvedImport
 
 
-class EB_Primer3(Application):
+class EB_Primer3(EB_ConfigureMake):
     """
     Support for building Primer3.
     Configure and build in installation dir.
@@ -39,7 +39,7 @@ class EB_Primer3(Application):
     def __init__(self, *args, **kwargs):
         """Custom initialization for Primer3: build in install dir, set correct bin dir, specify to start from 'src'."""
 
-        Application.__init__(self, *args, **kwargs)
+        EB_ConfigureMake.__init__(self, *args, **kwargs)
 
         self.build_in_installdir = True
 
@@ -74,12 +74,12 @@ class EB_Primer3(Application):
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-        Application.sanity_check_step(self)
+        EB_ConfigureMake.sanity_check_step(self)
 
     def make_module_req_guess(self):
         """Correct suggestion for PATH variable."""
 
-        guesses = Application.make_module_req_guess(self)
+        guesses = EB_ConfigureMake.make_module_req_guess(self)
 
         guesses.update({'PATH': [self.bindir]})
 

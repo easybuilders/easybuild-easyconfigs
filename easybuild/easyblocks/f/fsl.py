@@ -28,17 +28,17 @@ import re
 import shutil
 
 import easybuild.tools.environment as env
-from easybuild.framework.application import Application
+from easybuild.framework.easyblock import EasyBlock
 from easybuild.tools.filetools import run_cmd
 
 
-class EB_FSL(Application):
+class EB_FSL(EasyBlock):
     """Support for building and installing FSL."""
 
     def __init__(self,*args,**kwargs):
         """Specify building in install dir, initialize custom variables."""
 
-        Application.__init__(self, *args, **kwargs)
+        EasyBlock.__init__(self, *args, **kwargs)
 
         self.build_in_installdir = True
 
@@ -96,7 +96,7 @@ class EB_FSL(Application):
     def make_module_req_guess(self):
         """Set correct PATH and LD_LIBRARY_PATH variables."""
 
-        guesses = Application.make_module_req_guess(self)
+        guesses = EasyBlock.make_module_req_guess(self)
 
         guesses.update({
             'PATH': ["fsl/bin"],
@@ -108,7 +108,7 @@ class EB_FSL(Application):
     def make_module_extra(self):
         """Add setting of FSLDIR in module."""
 
-        txt = Application.make_module_extra(self)
+        txt = EasyBlock.make_module_extra(self)
 
         txt += self.moduleGenerator.setEnvironment("FSLDIR", "$root/fsl")
 
@@ -125,4 +125,4 @@ class EB_FSL(Application):
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-        Application.sanity_check_step(self)
+        EasyBlock.sanity_check_step(self)

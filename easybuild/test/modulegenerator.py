@@ -18,12 +18,10 @@
 # You should have received a copy of the GNU General Public License
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
-import os
-import re
 
 from unittest import TestCase, TestSuite
 from easybuild.tools.module_generator import ModuleGenerator
-from easybuild.framework.application import Application
+from easybuild.framework.easyblock import EasyBlock
 
 
 class ModuleGeneratorTest(TestCase):
@@ -31,7 +29,7 @@ class ModuleGeneratorTest(TestCase):
 
     def setUp(self):
         """ initialize ModuleGenerator with test Application """
-        self.modgen = ModuleGenerator(Application('easybuild/test/easyconfigs/gzip-1.4.eb'))
+        self.modgen = ModuleGenerator(EasyBlock('easybuild/test/easyconfigs/gzip-1.4.eb'))
         self.modgen.app.installdir = "/tmp"
 
     def runTest(self):

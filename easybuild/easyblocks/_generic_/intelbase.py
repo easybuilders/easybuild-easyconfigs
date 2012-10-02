@@ -35,12 +35,12 @@ import string
 import sys
 
 import easybuild.tools.environment as env
-from easybuild.framework.application import Application
+from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import CUSTOM, MANDATORY
 from easybuild.tools.filetools import run_cmd
 
 
-class EB_IntelBase(Application):
+class EB_IntelBase(EasyBlock):
     """
     Base class for Intel software
     - no configure/make : binary release
@@ -51,13 +51,13 @@ class EB_IntelBase(Application):
         """Constructor, adds extra config options"""
         self.license = None
         # generate a randomly suffixed name for the 'intel' home subdirectory
-        random_suffix = ''.join(random.choice(string.ascii_letters) for n in xrange(5))
+        random_suffix = ''.join(random.choice(string.ascii_letters) for _ in xrange(5))
         self.home_subdir = 'intel_%s' % random_suffix
-        Application.__init__(self, *args, **kwargs)
+        EasyBlock.__init__(self, *args, **kwargs)
 
     @staticmethod
     def extra_options(extra_vars=None):
-        vars = Application.extra_options(extra_vars)
+        origvars = EasyBlock.extra_options(extra_vars)
         intel_vars = [
                       ('license', [None, "License file path (default: None)", MANDATORY]),
                       ('license_activation', ['license_server', "Indicates license activation type (default: 'license_server')", CUSTOM]),
@@ -68,7 +68,7 @@ class EB_IntelBase(Application):
                       ('usetmppath', [False, "Use temporary path for installation (default: False)", CUSTOM]),
                       ('m32', [False, "Enable 32-bit toolkit (default: False)", CUSTOM]),
                      ]
-        intel_vars.extend(vars)
+        intel_vars.extend(origvars)
         return intel_vars
 
     def clean_homedir(self):
@@ -174,6 +174,6 @@ CONTINUE_WITH_OPTIONAL_ERROR=yes
         """
         self.clean_homedir()
 
-        Application.cleanup_step(self)
+        EasyBlock.cleanup_step(self)
 
     # no default sanity check, needs to be implemented by derived class

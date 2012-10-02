@@ -31,7 +31,7 @@ import subprocess
 import sys
 
 from easybuild.tools.build_log import getLog, EasyBuildError
-from easybuild.tools.filetools import convertName, run_cmd
+from easybuild.tools.filetools import convert_name, run_cmd
 
 
 log = getLog('Modules')
@@ -307,7 +307,7 @@ def get_software_root(name, with_env_var=False):
     """
     Return the software root set for a particular software name.
     """
-    name = convertName(name, upper=True)
+    name = convert_name(name, upper=True)
     environment_key = "EBROOT%s" % name
     legacy_key = "SOFTROOT%s" % name
 
@@ -328,7 +328,7 @@ def get_software_version(name):
     """
     Return the software version set for a particular software name.
     """
-    name = convertName(name, upper=True)
+    name = convert_name(name, upper=True)
     environment_key = "EBVERSION%s" % name
     legacy_key = "SOFTVERSION%s" % name
 

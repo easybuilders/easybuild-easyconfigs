@@ -29,18 +29,18 @@ import os
 import shutil
 
 import easybuild.tools.toolkit as toolkit
-from easybuild.framework.application import Application
+from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.filetools import run_cmd
 from easybuild.tools.modules import get_software_root
 
 
-class EB_Boost(Application):
+class EB_Boost(EasyBlock):
     """Support for building Boost."""
 
     def __init__(self, *args, **kwargs):
         """Initialize Boost-specific variables."""
-        Application.__init__(self, *args, **kwargs)
+        EasyBlock.__init__(self, *args, **kwargs)
 
         self.objdir = None
 
@@ -49,7 +49,7 @@ class EB_Boost(Application):
         """Add extra easyconfig parameters for Boost."""
         extra_vars = [('boost_mpi', [False, "Build mpi boost module (default: False)", CUSTOM])]
 
-        return Application.extra_options(extra_vars)
+        return EasyBlock.extra_options(extra_vars)
 
     def configure_step(self):
         """Configure Boost build using custom tools"""
@@ -153,4 +153,4 @@ class EB_Boost(Application):
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-        Application.sanity_check_step(self)
+        EasyBlock.sanity_check_step(self)

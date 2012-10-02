@@ -31,7 +31,7 @@ import os
 import shutil
 
 import easybuild.tools.toolkit as toolkit
-from easybuild.framework.application import Application
+from easybuild.easyblocks.configuremake import EB_ConfigureMake  #@UnresolvedImport
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.filetools import run_cmd
 from easybuild.tools.modules import get_software_root
@@ -62,7 +62,7 @@ def get_blas_lib(log):
     return blaslib
 
 
-class EB_LAPACK(Application):
+class EB_LAPACK(EB_ConfigureMake):
     """
     Support for building LAPACK
     - read build_step.inc.example and replace BLAS line with configtops
@@ -70,7 +70,7 @@ class EB_LAPACK(Application):
     """
 
     def __init__(self, *args, **kwargs):
-        Application.__init__(self, *args, **kwargs)
+        EB_ConfigureMake.__init__(self, *args, **kwargs)
 
     @staticmethod
     def extra_options():
@@ -78,7 +78,7 @@ class EB_LAPACK(Application):
                       ('supply_blas', [False, "Supply BLAS lib to LAPACK for building (default: False)", CUSTOM]),
                       ('test_only', [False, "Only make tests, don't try and build LAPACK lib.", CUSTOM])
                      ]
-        return Application.extra_options(extra_vars)
+        return EB_ConfigureMake.extra_options(extra_vars)
 
 
     def configure_step(self):
@@ -146,7 +146,7 @@ class EB_LAPACK(Application):
 
         else:
             # default make suffices (for now)
-            Application.build_step(self)
+            EB_ConfigureMake.build_step(self)
 
     def install_step(self):
         """
@@ -201,7 +201,7 @@ class EB_LAPACK(Application):
                 cmd = "make BLASLIB='%s' %s_testing" % (blaslib, lib)
                 run_cmd(cmd, log_all=True, simple=True)
         else:
-            Application.test_step(self)
+            EB_ConfigureMake.test_step(self)
 
     # don't create a module if we're only testing
     def make_module_step(self, fake=False):
@@ -211,7 +211,7 @@ class EB_LAPACK(Application):
         if self.getcfg('test_only'):
             pass
         else:
-            return Application.make_module_step(self, fake)
+            return EB_ConfigureMake.make_module_step(self, fake)
 
     def sanity_check_step(self):
         """
@@ -227,4 +227,4 @@ class EB_LAPACK(Application):
 
                 self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-            Application.sanity_check_step(self)
+            EB_ConfigureMake.sanity_check_step(self)

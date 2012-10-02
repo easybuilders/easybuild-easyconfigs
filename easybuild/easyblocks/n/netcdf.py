@@ -31,11 +31,11 @@ from distutils.version import LooseVersion
 
 import easybuild.tools.environment as env
 import easybuild.tools.toolkit as toolkit
-from easybuild.framework.application import Application
+from easybuild.easyblocks.configuremake import EB_ConfigureMake  #@UnresolvedImport
 from easybuild.tools.modules import get_software_root, get_software_version
 
 
-class EB_netCDF(Application):
+class EB_netCDF(EB_ConfigureMake):
     """Support for building/installing netCDF"""
 
     def configure_step(self):
@@ -55,7 +55,7 @@ class EB_netCDF(Application):
         if self.get_toolkit().comp_family() == toolkit.GCC:
             self.updatecfg('configopts', 'CPPFLAGS="%s -DgFortran"' % os.getenv('CPPFLAGS'))
 
-        Application.configure_step(self)
+        EB_ConfigureMake.configure_step(self)
 
     def sanity_check_step(self):
         """
@@ -83,7 +83,7 @@ class EB_netCDF(Application):
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-        Application.sanity_check_step(self)
+        EB_ConfigureMake.sanity_check_step(self)
 
 def set_netcdf_env_vars(log):
     """Set netCDF environment variables used by other software."""

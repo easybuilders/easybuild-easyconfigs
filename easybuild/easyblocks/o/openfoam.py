@@ -31,18 +31,18 @@ from distutils.version import LooseVersion
 
 import easybuild.tools.environment as env
 import easybuild.tools.toolkit as toolkit
-from easybuild.framework.application import Application
+from easybuild.framework.easyblock import EasyBlock
 from easybuild.tools.filetools import run_cmd, adjust_permissions
 from easybuild.tools.modules import get_software_root
 
 
-class EB_OpenFOAM(Application):
+class EB_OpenFOAM(EasyBlock):
     """Support for building and installing OpenFOAM."""
 
     def __init__(self,*args,**kwargs):
         """Specify that OpenFOAM should be built in install dir."""
 
-        Application.__init__(self, *args, **kwargs)
+        EasyBlock.__init__(self, *args, **kwargs)
 
         self.build_in_installdir = True
 
@@ -163,12 +163,12 @@ class EB_OpenFOAM(Application):
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-        Application.sanity_check_step(self)
+        EasyBlock.sanity_check_step(self)
 
     def make_module_extra(self):
         """Define extra environment variables required by OpenFOAM"""
 
-        txt = Application.make_module_extra(self)
+        txt = EasyBlock.make_module_extra(self)
 
         env_vars = [("WM_PROJECT_VERSION", self.get_version()),
                     ("FOAM_INST_DIR", "$root"),

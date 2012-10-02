@@ -26,11 +26,11 @@
 EasyBuild support for building and installing Doxygen, implemented as an easyblock
 """
 
-from easybuild.framework.application import Application
+from easybuild.framework.configuremake import EB_ConfigureMake  #@UnresolvedImport
 from easybuild.tools.filetools import run_cmd
 
 
-class EB_Doxygen(Application):
+class EB_Doxygen(EB_ConfigureMake):
     """Support for building/installing Doxygen"""
 
     def configure_step(self):
@@ -53,4 +53,4 @@ class EB_Doxygen(Application):
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-        Application.sanity_check_step(self)
+        EB_ConfigureMake.sanity_check_step(self)

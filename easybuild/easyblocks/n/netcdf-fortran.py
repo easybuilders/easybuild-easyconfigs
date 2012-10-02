@@ -30,10 +30,10 @@ import os
 
 import easybuild.tools.environment as env
 import easybuild.tools.toolkit as toolkit
-from easybuild.framework.application import Application
+from easybuild.easyblocks.configuremake import EB_ConfigureMake  #@UnresolvedImport
 
 
-class EB_netCDF_minus_Fortran(Application):
+class EB_netCDF_minus_Fortran(EB_ConfigureMake):
     """Support for building/installing the netCDF-Fortran library"""
 
     def configure_step(self):
@@ -48,7 +48,7 @@ class EB_netCDF_minus_Fortran(Application):
         if self.get_toolkit().comp_family() == toolkit.GCC:
             env.set('CPPFLAGS', "%s -DgFortran" % os.getenv('CPPFLAGS'))
 
-        Application.configure_step(self)
+        EB_ConfigureMake.configure_step(self)
 
     def sanity_check_step(self):
         """
@@ -66,4 +66,4 @@ class EB_netCDF_minus_Fortran(Application):
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-        Application.sanity_check_step(self)
+        EB_ConfigureMake.sanity_check_step(self)

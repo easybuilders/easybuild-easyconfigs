@@ -32,13 +32,13 @@ from distutils.version import LooseVersion
 
 import easybuild  # required for VERBOSE_VERSION
 import easybuild.tools.toolkit as toolkit
-from easybuild.framework.application import Application
+from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.filetools import run_cmd
 from easybuild.tools.modules import get_software_root, get_software_version
 
 
-class EB_libsmm(Application):
+class EB_libsmm(EasyBlock):
     """
     Support for the CP2K small matrix library
     Notes: - build can take really really long, and no real rebuilding needed for each get_version
@@ -46,7 +46,7 @@ class EB_libsmm(Application):
     """
 
     def __init__(self, *args, **kwargs):
-        Application.__init__(self, *args, **kwargs)
+        EasyBlock.__init__(self, *args, **kwargs)
 
     @staticmethod
     def extra_options():
@@ -57,7 +57,7 @@ class EB_libsmm(Application):
                       ('max_tiny_dim', [12, "Maximum tiny dimension (default: 12)", CUSTOM]),
                       ('dims', [dd, "Generate routines for these matrix dims (default: %s)" % dd, CUSTOM])
                      ]
-        return Application.extra_options(extra_vars)
+        return EasyBlock.extra_options(extra_vars)
 
     def configure_step(self):
         """Configure build: change to tools/build_libsmm dir"""
@@ -221,4 +221,4 @@ tasks=%(tasks)s
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-        Application.sanity_check_step(self)
+        EasyBlock.sanity_check_step(self)

@@ -32,7 +32,7 @@ import re
 import tempfile
 from distutils.version import LooseVersion
 
-from easybuild.tools.build_log import getLog
+from easybuild.tools.build_log import EasyBuildError, getLog
 from easybuild.tools.toolkit import Toolkit
 from easybuild.tools.systemtools import get_shared_lib_ext
 from easybuild.tools.filetools import run_cmd
@@ -371,8 +371,7 @@ class EasyConfig:
         eb_file.write('\n'.join(ebtxt))
         eb_file.close()
 
-    # private method
-    def _validate(self, attr, values):
+    def _validate(self, attr, values):     # private method
         """
         validation helper method. attr is the attribute it will check, values are the possible values.
         if the value of the attribute is not in the is array, it will report an error
@@ -995,3 +994,20 @@ def tweak(src_fn, target_fn, tweaks, log):
         log.error("Failed to write tweaked easyconfig file to %s: %s" % (target_fn, err))
 
     return target_fn
+
+def get_paths_for(log, subdir="easyconfigs"):
+    """
+    Return a list of absolute paths where the specified subdir can be found, determined by the PYTHONPATH
+    """
+    # browse through PYTHONPATH, all easyblocks repo paths should be there
+    paths = []
+    for pythonpath in os.getenv('PYTHONPATH').split(':'):
+        path = os.path.join(pythonpath, "easybuild", subdir)
+        log.debug("Looking for easybuild/%s in path %s" % (subdir, pythonpath))
+        try:
+            if os.path.isdir(path):
+                paths.append(os.path.abspath(pythonpath))
+        except OSError, err:
+            raise EasyBuildError(str(err))
+
+    return paths

@@ -30,7 +30,7 @@ import shutil
 import tempfile
 
 from easybuild.tools.build_log import getLog
-from easybuild.tools.config import installPath
+from easybuild.tools.config import install_path
 
 
 log = getLog('moduleGenerator')
@@ -53,7 +53,7 @@ class ModuleGenerator:
         """
         Creates the absolute filename for the module.
         """
-        module_path = installPath('mod')
+        module_path = install_path('mod')
 
         # Fake mode: set installpath to temporary dir
         if self.fake:

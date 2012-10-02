@@ -34,21 +34,21 @@ from copy import copy
 from distutils.version import LooseVersion
 
 import easybuild.tools.environment as env
-from easybuild.framework.application import Application
+from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.filetools import run_cmd
 from easybuild.tools.modules import get_software_root
 from easybuild.tools.systemtools import get_kernel_name, get_shared_lib_ext, get_platform_name
 
 
-class EB_GCC(Application):
+class EB_GCC(EasyBlock):
     """
     Self-contained build of GCC.
     Uses system compiler for initial build, then bootstraps.
     """
 
     def __init__(self, *args, **kwargs):
-        Application.__init__(self, *args, **kwargs)
+        EasyBlock.__init__(self, *args, **kwargs)
 
         self.stagedbuild = False
 
@@ -62,7 +62,7 @@ class EB_GCC(Application):
                       ('pplwatchdog', [False, "Enable PPL watchdog (default: False)", CUSTOM]),
                       ('clooguseisl', [False, "Use ISL with CLooG or not (use PPL otherwise) (default: False)", CUSTOM])
                      ]
-        return Application.extra_options(extra_vars)
+        return EasyBlock.extra_options(extra_vars)
 
     def create_dir(self, dirname):
         """
@@ -131,7 +131,7 @@ class EB_GCC(Application):
                     # expected format: get_name[-subname]-get_version
                     ds = os.path.basename(d).split('-')
                     name = '-'.join(ds[0:-1])
-                    names.update({sd: get_name})
+                    names.update({sd: name})
                     ver = ds[-1]
                     versions.update({sd: ver})
 
@@ -439,7 +439,7 @@ class EB_GCC(Application):
         self.updatecfg('makeopts', 'bootstrap')
 
         # call standard build_step
-        Application.build_step(self)
+        EasyBlock.build_step(self)
 
     # make install is just standard install_step, nothing special there
 
@@ -502,7 +502,7 @@ class EB_GCC(Application):
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-        Application.sanity_check_step(self)
+        EasyBlock.sanity_check_step(self)
 
     def make_module_req_guess(self):
         """

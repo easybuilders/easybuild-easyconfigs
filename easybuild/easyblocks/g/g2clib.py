@@ -30,11 +30,11 @@ import glob
 import os
 import shutil
 
-from easybuild.framework.application import Application
+from easybuild.framework.easyblock import EasyBlock
 from easybuild.tools.modules import get_software_root
 
 
-class EB_g2clib(Application):
+class EB_g2clib(EasyBlock):
     """Support for building g2clib GRIB2 C library."""
 
     def configure_step(self):
@@ -52,7 +52,7 @@ class EB_g2clib(Application):
         makeopts = 'CC="%s" FC="%s" INC="-I%s/include"' % (os.getenv('CC'), os.getenv('F90'), jasper)
         self.updatecfg('makeopts', makeopts)
 
-        Application.build_step(self)
+        EasyBlock.build_step(self)
 
     def install_step(self):
         """Install by copying library and header files to install directory."""
@@ -84,4 +84,4 @@ class EB_g2clib(Application):
                                              'dirs': ["include"]
                                             })
 
-        Application.sanity_check_step(self)
+        EasyBlock.sanity_check_step(self)

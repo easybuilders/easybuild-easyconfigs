@@ -25,8 +25,8 @@
 """
 EasyBuild support for Python packages that are configured with CMake, implemented as an easyblock
 """
-from easybuild.easyblocks.cmake import EB_CMake
-from easybuild.easyblocks.pythonpackage import EB_PythonPackage
+from easybuild.easyblocks.cmake import EB_CMake  #@UnresolvedImport
+from easybuild.easyblocks.pythonpackage import EB_PythonPackage  #@UnresolvedImport
 
 
 class EB_CMakePythonPackage(EB_CMake, EB_PythonPackage):

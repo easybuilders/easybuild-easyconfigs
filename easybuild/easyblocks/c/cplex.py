@@ -30,7 +30,7 @@ import os
 import stat
 
 import easybuild.tools.environment as env
-from easybuild.easyblocks.binary import EB_Binary
+from easybuild.easyblocks.binary import EB_Binary  #@UnresolvedImport
 from easybuild.tools.filetools import run_cmd_qa
 
 

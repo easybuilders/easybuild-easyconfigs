@@ -24,18 +24,18 @@ e.g., binary applications shipped as a .tar.gz file
 """
 import os
 
-from easybuild.framework.application import Application
-from easybuild.easyblocks.binary import EB_Binary
+from easybuild.framework.easyblock import EasyBlock
+from easybuild.easyblocks.binary import EB_Binary  #@UnresolvedImport
 
 
-class EB_PackedBinary(EB_Binary, Application):
+class EB_PackedBinary(EB_Binary, EasyBlock):
     """Support for installing packed binary software.
     Just unpack the sources in the install dir
     """
 
     def extract_step(self):
         """Unpack the source"""
-        Application.extract_step(self)
+        EasyBlock.extract_step(self)
 
     def make_install(self):
         """Copy all unpacked source directories to install directory, one-by-one."""

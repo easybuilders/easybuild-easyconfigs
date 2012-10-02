@@ -22,7 +22,7 @@ EasyBuild support for MTL4, implemented as an easyblock
 """
 import os
 
-from easybuild.easyblocks.tarball import EB_Tarball
+from easybuild.easyblocks.tarball import EB_Tarball  #@UnresolvedImport
 
 
 class EB_MTL4(EB_Tarball):

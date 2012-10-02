@@ -42,13 +42,14 @@ def create_dir(prefix, dirname, withinit=False, init_txt=''):
         fh.write(init_txt)
         fh.close()
 
-def create_subdirs(prefix, withinit=False, init_txt=''):
+def create_subdirs(prefix):
     # create subdirectories a, b, ..., z, 0 (catchall)
     alphabet = [chr(x) for x in xrange(ord('a'), ord('z') + 1)]
     for letter in alphabet:
-        create_dir(prefix, letter, withinit=withinit, init_txt=init_txt)
+        create_dir(prefix, letter)
 
-    create_dir(prefix, "0", withinit=withinit, init_txt=init_txt)
+    create_dir(prefix, "0")
+    create_dir(prefix, "_generic_")
 
 #
 # MAIN
@@ -66,11 +67,18 @@ try:
     dirname = "easyblocks"
     os.mkdir(dirname)
 
-    init_txt="""from pkgutil import extend_path
+    init_txt="""import os
+from pkgutil import extend_path
+
+# Extend path so python finds our easyblocks in the subdirectories where they are located
+subdirs = [chr(l) for l in range(ord('a'),ord('z')+1)] + ['0', '_generic_']
+__path__.extend([os.path.join(__path__[0], subdir) for subdir in subdirs])
+# And let python know this is not the only place to look for them,
+# so we can have 2 easybuild/easyblock paths in your pythonpath, one for public, one for private easyblocks.
 __path__ = extend_path(__path__, __name__)
 """
 
-    create_subdirs(dirname, withinit=True, init_txt=init_txt)
+    create_subdirs(dirname)
 
     # create easyconfigs dir and subdirs
     dirname = "easyconfigs"

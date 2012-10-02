@@ -85,7 +85,7 @@ def init(filename, **kwargs):
                     continue
 
     # update MODULEPATH if required
-    ebmodpath = os.path.join(installPath(typ='mod'), 'all')
+    ebmodpath = os.path.join(install_path(typ='mod'), 'all')
     modulepath = os.getenv('MODULEPATH')
     if not modulepath or not ebmodpath in modulepath:
         if modulepath:
@@ -124,7 +124,7 @@ def readEnvironment(envVars, strict=False):
 
     return result
 
-def buildPath():
+def build_path():
     """
     Return the build path
     """
@@ -136,7 +136,7 @@ def source_path():
     """
     return variables['sourcePath']
 
-def installPath(typ=None):
+def install_path(typ=None):
     """
     Returns the install path
     - subdir 'software' for actual installation (default)
@@ -170,7 +170,7 @@ def logFormat():
     else:
         return "easybuild-%(name)s-%(version)s-%(date)s.%(time)s.log"
 
-def logPath():
+def log_path():
     """
     Return the log path
     """

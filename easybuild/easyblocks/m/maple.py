@@ -29,11 +29,11 @@ EasyBuild support for installing Maple, implemented as an easyblock
 import os
 import shutil
 
-from easybuild.framework.application import Application
+from easybuild.framework.easyblock import EasyBlock
 from easybuild.tools.filetools import run_cmd_qa
 
 
-class EB_Maple(Application):
+class EB_Maple(EasyBlock):
     """Support for installing Maple."""
 
     def extract_step(self):
@@ -77,3 +77,17 @@ class EB_Maple(Application):
                  '\[[-|]*']
 
         run_cmd_qa(cmd, qa, no_qa=no_qa, log_all=True, simple=True)
+
+    def sanity_check_step(self):
+        """Custom sanity check for Maple."""
+
+        if not self.getcfg('sanityCheckPaths'):
+
+            self.setcfg('sanityCheckPaths', {
+                                             'files': ['bin/maple', 'lib/maple.mla'] ,
+                                             'dirs':[]
+                                             })
+
+            self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
+
+        EasyBlock.sanity_check_step(self)

@@ -32,12 +32,12 @@ import re
 import sys
 from distutils.version import LooseVersion
 
-from easybuild.framework.application import Application
+from easybuild.framework.easyblock import EasyBlock
 from easybuild.tools.filetools import run_cmd
 from easybuild.tools.modules import get_software_root, get_software_version
 
 
-class EB_NCL(Application):
+class EB_NCL(EasyBlock):
     """Support for building/installing NCL."""
 
     def configure_step(self):
@@ -181,7 +181,7 @@ class EB_NCL(Application):
     def make_module_extra(self):
         """Set NCARG_ROOT environment variable in module."""
 
-        txt = Application.make_module_extra(self)
+        txt = EasyBlock.make_module_extra(self)
         txt += "setenv\tNCARG_ROOT\t$root\n"
 
         return txt

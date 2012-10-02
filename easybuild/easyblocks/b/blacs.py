@@ -32,7 +32,7 @@ import os
 import shutil
 
 import easybuild.tools.toolkit as toolkit
-from easybuild.framework.application import Application
+from easybuild.framework.easyblock import EasyBlock
 from easybuild.tools.filetools import run_cmd
 from easybuild.tools.modules import get_software_root
 
@@ -51,7 +51,7 @@ def det_interface(log, path):
         log.error("Failed to determine interface, output for xintface: %s" % out)
 
 
-class EB_BLACS(Application):
+class EB_BLACS(EasyBlock):
     """
     Support for building/installing BLACS
     - configure: symlink BMAKES/Bmake.MPI-LINUX to Bmake.inc
@@ -173,7 +173,7 @@ class EB_BLACS(Application):
 
         self.updatecfg('makeopts', add_makeopts)
 
-        Application.build_step(self)
+        EasyBlock.build_step(self)
 
     def install_step(self):
         """Install by copying files to install dir."""
@@ -235,4 +235,4 @@ class EB_BLACS(Application):
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-        Application.sanity_check_step(self)
+        EasyBlock.sanity_check_step(self)

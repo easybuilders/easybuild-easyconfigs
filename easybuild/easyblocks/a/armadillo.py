@@ -22,7 +22,7 @@ EasyBuild support for Armadillo, implemented as an easyblock
 """
 import os
 
-from easybuild.easyblocks.cmake import EB_CMake
+from easybuild.easyblocks.cmake import EB_CMake  #@UnresolvedImport
 from easybuild.tools.modules import get_software_root
 
 
@@ -57,4 +57,4 @@ class EB_Armadillo(EB_CMake):
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-        EB_CMake.sanity_check(self)
+        EB_CMake.sanity_check_step(self)

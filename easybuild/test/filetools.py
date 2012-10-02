@@ -69,9 +69,9 @@ class FileToolsTest(TestCase):
         self.assertEqual(True, ft.run_cmd("echo hello", simple=True))
         self.assertEqual(False, ft.run_cmd("exit 1", simple=True, log_all=False,log_ok=False))
 
-        name = ft.convertName("test+test-test")
+        name = ft.convert_name("test+test-test")
         self.assertEqual(name, "testplustestmintest")
-        name = ft.convertName("test+test-test", True)
+        name = ft.convert_name("test+test-test", True)
         self.assertEqual(name, "TESTPLUSTESTMINTEST")
 
 

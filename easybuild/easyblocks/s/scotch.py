@@ -32,11 +32,11 @@ import sys
 import shutil
 
 import easybuild.tools.toolkit as toolkit
-from easybuild.framework.application import Application
+from easybuild.framework.easyblock import EasyBlock
 from easybuild.tools.filetools import run_cmd, copytree
 
 
-class EB_SCOTCH(Application):
+class EB_SCOTCH(EasyBlock):
     """Support for building/installing SCOTCH."""
 
     def configure_step(self):
@@ -169,4 +169,4 @@ class EB_SCOTCH(Application):
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-        Application.sanity_check_step(self)
+        EasyBlock.sanity_check_step(self)

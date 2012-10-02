@@ -26,18 +26,18 @@ import os
 import re
 
 import easybuild.tools.environment as env
-from easybuild.framework.application import Application
+from easybuild.easyblocks.configuremake import EB_ConfigureMake  #@UnresolvedImport
 from easybuild.framework.easyconfig import BUILD, CUSTOM
 from easybuild.tools.filetools import run_cmd
 from easybuild.tools.modules import get_software_root
 
 
-class EB_SLEPc(Application):
+class EB_SLEPc(EB_ConfigureMake):
     """Support for building and installing SLEPc"""
 
     def __init__(self, *args, **kwargs):
         """Initialize SLEPc custom variables."""
-        Application.__init__(self, *args, **kwargs)
+        EB_ConfigureMake.__init__(self, *args, **kwargs)
 
         self.slepc_arch_dir = None
 
@@ -53,14 +53,14 @@ class EB_SLEPc(Application):
                       ('sourceinstall', [False, "Indicates whether a source installation should be performed (default: False)", CUSTOM]),
                       ('runtest', ['test', "Make target to test build (default: test)", BUILD])
                      ]
-        return Application.extra_options(extra_vars)
+        return EB_ConfigureMake.extra_options(extra_vars)
 
     def make_builddir(self):
         """Decide whether or not to build in install dir before creating build dir."""
         if self.getcfg('sourceinstall'):
             self.build_in_installdir = True
 
-        Application.make_builddir(self)
+        EB_ConfigureMake.make_builddir(self)
 
     def configure_step(self):
         """Configure SLEPc by setting configure options and running configure script."""
@@ -88,7 +88,7 @@ class EB_SLEPc(Application):
             (out, _) = run_cmd(cmd, log_all=True, simple=False)
         else:
             # regular './configure --prefix=X' for non-source install
-            out = Application.configure_step(self)
+            out = EB_ConfigureMake.configure_step(self)
 
         # check for errors in configure
         error_regexp = re.compile("ERROR")
@@ -101,7 +101,7 @@ class EB_SLEPc(Application):
 
     def make_module_req_guess(self):
         """Specify correct LD_LIBRARY_PATH and CPATH for SLEPc installation."""
-        guesses = Application.make_module_req_guess(self)
+        guesses = EB_ConfigureMake.make_module_req_guess(self)
 
         guesses.update({
                         'CPATH': [os.path.join(self.slepc_subdir, "include")],
@@ -112,7 +112,7 @@ class EB_SLEPc(Application):
 
     def make_module_extra(self):
         """Set SLEPc specific environment variables (SLEPC_DIR)."""
-        txt = Application.make_module_extra(self)
+        txt = EB_ConfigureMake.make_module_extra(self)
 
         if self.getcfg('sourceinstall'):
             txt += self.moduleGenerator.setEnvironment('SLEPC_DIR', '$root/%s-%s' % (self.get_name().lower(),
@@ -136,4 +136,4 @@ class EB_SLEPc(Application):
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-        Application.sanity_check_step(self)
+        EB_ConfigureMake.sanity_check_step(self)

@@ -29,18 +29,18 @@ EasyBuild support for building and installing the MVAPICH2 MPI library, implemen
 import os
 
 import easybuild.tools.environment as env
-from easybuild.framework.application import Application
+from easybuild.easyblocks.configuremake import EB_ConfigureMake  #@UnresolvedImport
 from easybuild.framework.easyconfig import CUSTOM
 
 
-class EB_MVAPICH2(Application):
+class EB_MVAPICH2(EB_ConfigureMake):
     """
     Support for building the MVAPICH2 MPI library.
     - some compiler dependent configure options
     """
 
     def __init__(self, *args, **kwargs):
-        Application.__init__(self, *args, **kwargs)
+        EB_ConfigureMake.__init__(self, *args, **kwargs)
 
     @staticmethod
     def extra_options():
@@ -51,14 +51,14 @@ class EB_MVAPICH2(Application):
                       ('debug', [False, "Enable debug build (which is slower) (default: False)", CUSTOM]),
                       ('rdma_type', ["gen2", "Specify the RDMA type (gen2/udapl) (default: gen2)", CUSTOM])
                      ]
-        return Application.extra_options(extra_vars)
+        return EB_ConfigureMake.extra_options(extra_vars)
 
     def configure_step(self):
 
         # things might go wrong if a previous install dir is present, so let's get rid of it
         if not self.getcfg('keeppreviousinstall'):
             self.log.info("Making sure any old installation is removed before we start the build...")
-            Application.make_dir(self, self.installdir, True, dontcreateinstalldir=True)
+            EB_ConfigureMake.make_dir(self, self.installdir, True, dontcreateinstalldir=True)
 
         # additional configuration options
         add_configopts = '--with-rdma=%s ' % self.getcfg('rdma_type')
@@ -106,7 +106,7 @@ class EB_MVAPICH2(Application):
 
         self.updatecfg('configopts', add_configopts)
 
-        Application.configure_step(self)
+        EB_ConfigureMake.configure_step(self)
 
     # make and make install are default
 
@@ -127,4 +127,4 @@ class EB_MVAPICH2(Application):
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-        Application.sanity_check_step(self)
+        EB_ConfigureMake.sanity_check_step(self)

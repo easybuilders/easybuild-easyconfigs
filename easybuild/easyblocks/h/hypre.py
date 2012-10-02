@@ -22,10 +22,10 @@ EasyBuild support for Hypre, implemented as an easyblock
 """
 import os
 
-from easybuild.framework.application import Application
+from easybuild.easyblocks.configuremake import EB_ConfigureMake  #@UnresolvedImport
 
 
-class EB_Hypre(Application):
+class EB_Hypre(EB_ConfigureMake):
     """Support for building Hypre."""
 
     def configure_step(self):
@@ -39,7 +39,7 @@ class EB_Hypre(Application):
             self.updatecfg('configopts', '--with-%s-lib-dirs="%s"' % (dep.lower(),
                                                                       os.getenv('%s_LIB_DIR' % dep)))
 
-        Application.configure_step(self)
+        EB_ConfigureMake.configure_step(self)
 
     def sanity_check_step(self):
         """Custom sanity check for Hypre."""
@@ -53,4 +53,4 @@ class EB_Hypre(Application):
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-        Application.sanity_check_step(self)
+        EB_ConfigureMake.sanity_check_step(self)

@@ -29,13 +29,13 @@ EasyBuild support for building and installing ATLAS, implemented as an easyblock
 import re
 import os
 
-from easybuild.framework.application import Application
+from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.filetools import run_cmd
 from easybuild.tools.modules import get_software_root
 
 
-class EB_ATLAS(Application):
+class EB_ATLAS(EasyBlock):
     """
     Support for building ATLAS
     - configure (and check if it failed due to CPU throttling being enabled)
@@ -44,7 +44,7 @@ class EB_ATLAS(Application):
     """
 
     def __init__(self, *args, **kwargs):
-        Application.__init__(self, *args, **kwargs)
+        EasyBlock.__init__(self, *args, **kwargs)
 
     @staticmethod
     def extra_options():
@@ -53,7 +53,7 @@ class EB_ATLAS(Application):
                       ('full_lapack', [False, "Build a full LAPACK library (requires netlib's LAPACK) (default: False)", CUSTOM]),
                       ('sharedlibs', [False, "Enable building of shared libs as well (default: False)", CUSTOM])
                      ]
-        return Application.extra_options(extra_vars)
+        return EasyBlock.extra_options(extra_vars)
 
     def configure_step(self):
 
@@ -122,13 +122,13 @@ Configure failed, not sure why (see output above).""" % out
         if not nr:
             self.log.warning("Ignoring requested parallelism, it breaks ATLAS, so setting to 1")
         self.log.info("Disabling parallel build, makes no sense for ATLAS.")
-        Application.set_parallelism(self, 1)
+        EasyBlock.set_parallelism(self, 1)
 
 
     def build_step(self, verbose=False):
 
         # default make is fine
-        Application.build_step(self, verbose=verbose)
+        EasyBlock.build_step(self, verbose=verbose)
 
         # optionally also build shared libs
         if self.getcfg('sharedlibs'):
@@ -152,7 +152,7 @@ Configure failed, not sure why (see output above).""" % out
         Default make install and optionally remove incomplete lapack libs.
         If the full_lapack option was set to false we don't
         """
-        Application.install_step(self)
+        EasyBlock.install_step(self)
         if not self.getcfg('full_lapack'):
             for i in ['liblapack.a', 'liblapack.so']:
                 lib = os.path.join(self.installdir, "lib", i[0])
@@ -172,15 +172,15 @@ Configure failed, not sure why (see output above).""" % out
 
         # sanity tests
         self.setcfg('runtest', 'check')
-        Application.test_step(self)
+        EasyBlock.test_step(self)
 
         # checks of threaded code
         self.setcfg('runtest', 'ptcheck')
-        Application.test_step(self)
+        EasyBlock.test_step(self)
 
         # performance summary
         self.setcfg('runtest', 'time')
-        Application.test_step(self)
+        EasyBlock.test_step(self)
 
     # default make install is fine
 
@@ -207,4 +207,4 @@ Configure failed, not sure why (see output above).""" % out
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-        Application.sanity_check(self)
+        EasyBlock.sanity_check_step(self)

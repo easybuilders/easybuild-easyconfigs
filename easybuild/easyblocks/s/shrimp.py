@@ -26,10 +26,10 @@ import os
 import shutil
 
 import easybuild.tools.environment as env
-from easybuild.framework.application import Application
+from easybuild.easyblocks.configuremake import EB_ConfigureMake  #@UnresolvedImport
 
 
-class EB_SHRiMP(Application):
+class EB_SHRiMP(EB_ConfigureMake):
     """Support for building SHRiMP."""
 
     def configure(self):
@@ -79,12 +79,12 @@ class EB_SHRiMP(Application):
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-        Application.sanitycheck(self)
+        EB_ConfigureMake.sanitycheck(self)
 
     def make_module_req_guess(self):
         """Add both 'bin' and 'utils' directories to PATH."""
 
-        guesses = Application.make_module_req_guess(self)
+        guesses = EB_ConfigureMake.make_module_req_guess(self)
 
         guesses.update({'PATH': ['bin', 'utils']})
 
@@ -93,7 +93,7 @@ class EB_SHRiMP(Application):
     def make_module_extra(self):
         """Set SHRIMP_FOLDER environment variable in module."""
 
-        txt = Application.make_module_extra(self)
+        txt = EB_ConfigureMake.make_module_extra(self)
 
         txt += self.moduleGenerator.setEnvironment('SHRIMP_FOLDER', "$root")
 
