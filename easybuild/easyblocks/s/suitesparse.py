@@ -129,7 +129,7 @@ class EB_SuiteSparse(EB_ConfigureMake):
 
     def make_module_req_guess(self):
         """Add UFconfig dir to CPATH so UFconfig include file is found."""
-        guesses = super(self.__class__, self).make_module_req_guess()
+        guesses = super(EB_SuiteSparse_, self).make_module_req_guess()
         guesses.update({'CPATH': ["UFconfig"]})
 
         return guesses
@@ -145,4 +145,4 @@ class EB_SuiteSparse(EB_ConfigureMake):
                         'dirs':["MATLAB_Tools"]
                        }
 
-        super(self.__class__, self).sanity_check_step(custom_paths=custom_paths)
+        super(EB_SuiteSparse_, self).sanity_check_step(custom_paths=custom_paths)

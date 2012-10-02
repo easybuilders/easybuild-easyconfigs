@@ -49,7 +49,7 @@ class EB_WPS(EasyBlock):
     def __init__(self, *args, **kwargs):
         """Add extra config options specific to WPS."""
 
-        super(self.__class__, self).__init__(*args, **kwargs)
+        super(EB_WPS_, self).__init__(*args, **kwargs)
 
         self.build_in_installdir = True
         self.comp_fam = None
@@ -332,7 +332,7 @@ class EB_WPS(EasyBlock):
                         'dirs': []
                        }
 
-        super(self.__class__, self).sanity_check_step(custom_paths=custom_paths)
+        super(EB_WPS_, self).sanity_check_step(custom_paths=custom_paths)
 
     def make_module_req_guess(self):
         """Make sure PATH and LD_LIBRARY_PATH are set correctly."""
@@ -346,7 +346,7 @@ class EB_WPS(EasyBlock):
     def make_module_extra(self):
         """Add netCDF environment variables to module file."""
 
-        txt = super(self.__class__, self).make_module_extra()
+        txt = super(EB_WPS_, self).make_module_extra()
 
         txt += get_netcdf_module_set_cmds(self.log)
 

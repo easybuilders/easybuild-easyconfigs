@@ -88,7 +88,7 @@ EULA=accept
                         'dirs': ["bin", "itac", "lib", "slib"]
                        }
 
-        super(self.__class__, self).sanity_check_step(custom_paths=custom_paths)
+        super(EB_itac_, self).sanity_check_step(custom_paths=custom_paths)
 
     def make_module_req_guess(self):
         """
@@ -116,7 +116,7 @@ EULA=accept
 
     def make_module_extra(self):
         """Overwritten from EB_IntelBase to add extra txt"""
-        txt = super(self.__class__, self).make_module_extra()
+        txt = super(EB_itac_, self).make_module_extra()
         txt += "prepend-path\t%s\t\t%s\n" % ('INTEL_LICENSE_FILE', self.license)
         txt += "setenv\t%s\t\t$root\n" % 'VT_ROOT'
         txt += "setenv\t%s\t\t%s\n" % ('VT_MPI', self.cfg['preferredmpi'])

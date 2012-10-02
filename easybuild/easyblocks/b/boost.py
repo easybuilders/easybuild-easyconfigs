@@ -40,7 +40,7 @@ class EB_Boost(EasyBlock):
 
     def __init__(self, *args, **kwargs):
         """Initialize Boost-specific variables."""
-        super(self.__class__, self).__init__(*args, **kwargs)
+        super(EB_Boost_, self).__init__(*args, **kwargs)
 
         self.objdir = None
 
@@ -148,4 +148,4 @@ class EB_Boost(EasyBlock):
                        'dirs':['include/boost']
                        }
 
-        super(self.__class__, self).sanity_check_step(custom_paths=custom_paths)
+        super(EB_Boost_, self).sanity_check_step(custom_paths=custom_paths)

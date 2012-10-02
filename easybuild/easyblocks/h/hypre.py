@@ -39,7 +39,7 @@ class EB_Hypre(EB_ConfigureMake):
             self.cfg.update('configopts', '--with-%s-lib-dirs="%s"' % (dep.lower(),
                                                                       os.getenv('%s_LIB_DIR' % dep)))
 
-        super(self.__class__, self).configure_step()
+        super(EB_Hypre_, self).configure_step()
 
     def sanity_check_step(self):
         """Custom sanity check for Hypre."""
@@ -49,4 +49,4 @@ class EB_Hypre(EB_ConfigureMake):
                         'dirs':['include']
                        }
 
-        super(self.__class__, self).sanity_check_step(custom_paths=custom_paths)
+        super(EB_Hypre_, self).sanity_check_step(custom_paths=custom_paths)

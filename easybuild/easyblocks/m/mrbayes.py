@@ -69,7 +69,7 @@ class EB_MrBayes(EB_ConfigureMake):
                 self.cfg.update('configopts', '--enable-mpi')
 
             # configure
-            super(self.__class__, self).configure_step()
+            super(EB_MrBayes_, self).configure_step()
         else:
 
             # no configure script prior to v3.2
@@ -98,5 +98,5 @@ class EB_MrBayes(EB_ConfigureMake):
                         'dirs': []
                        }
 
-        super(self.__class__, self).sanity_check_step(custom_paths=custom_paths)
+        super(EB_MrBayes_, self).sanity_check_step(custom_paths=custom_paths)
 

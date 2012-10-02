@@ -42,7 +42,7 @@ class EB_SWIG(EB_ConfigureMake):
         else:
             self.log.error("Python module not loaded?")
 
-        super(self.__class__, self).configure_step()
+        super(EB_SWIG_, self).configure_step()
 
     def sanity_check_step(self):
         """Custom sanity check for SWIG."""
@@ -52,4 +52,4 @@ class EB_SWIG(EB_ConfigureMake):
                         'dirs':[]
                        }
 
-        super(self.__class__, self).sanity_check_step(custom_paths=custom_paths)
+        super(EB_SWIG_, self).sanity_check_step(custom_paths=custom_paths)

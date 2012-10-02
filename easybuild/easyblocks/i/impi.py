@@ -46,7 +46,7 @@ class EB_impi(EB_IntelBase):
         """
         if LooseVersion(self.version) >= LooseVersion('4.0.1'):
             #impi starting from version 4.0.1.x uses standard installation procedure.
-            super(self.__class__, self).install_step()
+            super(EB_impi_, self).install_step()
             return None
         else:
             #impi up until version 4.0.0.x uses custom installation procedure.
@@ -108,7 +108,7 @@ EULA=accept
                         'dirs': []
                        }
 
-        super(self.__class__, self).sanity_check_step(custom_paths=custom_paths)
+        super(EB_impi_, self).sanity_check_step(custom_paths=custom_paths)
 
     def make_module_req_guess(self):
         """
@@ -127,7 +127,7 @@ EULA=accept
 
     def make_module_extra(self):
         """Overwritten from Application to add extra txt"""
-        txt = super(self.__class__, self).make_module_extra()
+        txt = super(EB_impi_, self).make_module_extra()
         txt += "prepend-path\t%s\t\t%s\n" % ('INTEL_LICENSE_FILE', self.license)
         txt += "setenv\t%s\t\t$root\n" % ('I_MPI_ROOT')
 

@@ -43,7 +43,7 @@ class EB_Armadillo(EB_CMake):
         self.cfg.update('configopts', '-DBLAS_LIBRARY:PATH="%s"' % os.getenv('LIBBLAS'))
         self.cfg.update('configopts', '-DLAPACK_LIBRARY:PATH="%s"' % os.getenv('LIBLAPACK'))
 
-        super(self.__class__, self).configure_step()
+        super(EB_Armadillo_, self).configure_step()
 
     def sanity_check_step(self):
         """Custom sanity check for Armadillo."""
@@ -53,4 +53,4 @@ class EB_Armadillo(EB_CMake):
                         'dirs':['include/armadillo_bits']
                        }
 
-        super(self.__class__, self).sanity_check_step(custom_paths=custom_paths)
+        super(EB_Armadillo_, self).sanity_check_step(custom_paths=custom_paths)

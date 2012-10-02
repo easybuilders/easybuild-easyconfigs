@@ -69,7 +69,7 @@ class EB_Binary(EasyBlock):
     def make_module_extra(self):
         """Add the install directory to the PATH."""
 
-        txt = super(self.__class__, self).make_module_extra(self)
+        txt = super(EB_Binary_, self).make_module_extra(self)
         txt += self.moduleGenerator.prependPaths("PATH", [""])
         self.log.debug("make_module_extra added this: %s" % txt)
         return txt

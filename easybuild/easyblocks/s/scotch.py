@@ -154,4 +154,4 @@ class EB_SCOTCH(EasyBlock):
                         'dirs':[]
                         }
 
-        super(self.__class__, self).sanity_check_step(custom_paths=custom_paths)
+        super(EB_SCOTCH_, self).sanity_check_step(custom_paths=custom_paths)

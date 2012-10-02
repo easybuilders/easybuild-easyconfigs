@@ -196,11 +196,11 @@ class EB_Trilinos(EB_CMake):
             self.log.error("Failed to create and move into build directory: %s" % err)
 
         # configure using cmake
-        super(self.__class__, self).configure_step("..")
+        super(EB_Trilinos_, self).configure_step("..")
 
     def build_step(self):
         """Build with make (verbose logging enabled)."""
-        super(self.__class__, self).build_step(verbose=True)
+        super(EB_Trilinos_, self).build_step(verbose=True)
 
     def sanity_check_step(self):
         """Custom sanity check for Trilinos."""
@@ -219,4 +219,4 @@ class EB_Trilinos(EB_CMake):
                         'dirs':['bin', 'include']
                        }
 
-        super(self.__class__, self).sanity_check_step(custom_paths=custom_paths)
+        super(EB_Trilinos_, self).sanity_check_step(custom_paths=custom_paths)

@@ -50,4 +50,4 @@ class EB_Doxygen(EB_ConfigureMake):
                         'dirs': []
                        }
 
-        super(self.__class__, self).sanity_check_step(custom_paths=custom_paths)
+        super(EB_Doxygen_, self).sanity_check_step(custom_paths=custom_paths)

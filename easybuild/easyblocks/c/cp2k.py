@@ -52,7 +52,7 @@ class EB_CP2K(EasyBlock):
     """
 
     def __init__(self, *args, **kwargs):
-        super(self.__class__, self).__init__(*args, **kwargs)
+        super(EB_CP2k_, self).__init__(*args, **kwargs)
 
         self.typearch = None
 
@@ -682,4 +682,4 @@ maxtasks=%(maxtasks)s
                         'dirs': ["tests"]
                        }
 
-        super(self.__class__, self).sanity_check_step(custom_paths=custom_paths)
+        super(EB_CP2k_, self).sanity_check_step(custom_paths=custom_paths)

@@ -37,7 +37,7 @@ class EB_SLEPc(EB_ConfigureMake):
 
     def __init__(self, *args, **kwargs):
         """Initialize SLEPc custom variables."""
-        super(self.__class__, self).__init__(*args, **kwargs)
+        super(EB_SLEPc_, self).__init__(*args, **kwargs)
 
         self.slepc_arch_dir = None
 
@@ -60,7 +60,7 @@ class EB_SLEPc(EB_ConfigureMake):
         if self.cfg['sourceinstall']:
             self.build_in_installdir = True
 
-        super(self.__class__, self).make_builddir()
+        super(EB_SLEPc_, self).make_builddir()
 
     def configure_step(self):
         """Configure SLEPc by setting configure options and running configure script."""
@@ -88,7 +88,7 @@ class EB_SLEPc(EB_ConfigureMake):
             (out, _) = run_cmd(cmd, log_all=True, simple=False)
         else:
             # regular './configure --prefix=X' for non-source install
-            out = super(self.__class__, self).configure_step()
+            out = super(EB_SLEPc_, self).configure_step()
 
         # check for errors in configure
         error_regexp = re.compile("ERROR")
@@ -101,7 +101,7 @@ class EB_SLEPc(EB_ConfigureMake):
 
     def make_module_req_guess(self):
         """Specify correct LD_LIBRARY_PATH and CPATH for SLEPc installation."""
-        guesses = super(self.__class__, self).make_module_req_guess()
+        guesses = super(EB_SLEPc_, self).make_module_req_guess()
 
         guesses.update({
                         'CPATH': [os.path.join(self.slepc_subdir, "include")],
@@ -112,7 +112,7 @@ class EB_SLEPc(EB_ConfigureMake):
 
     def make_module_extra(self):
         """Set SLEPc specific environment variables (SLEPC_DIR)."""
-        txt = super(self.__class__, self).make_module_extra()
+        txt = super(EB_SLEPc_, self).make_module_extra()
 
         if self.cfg['sourceinstall']:
             txt += self.moduleGenerator.setEnvironment('SLEPC_DIR', '$root/%s-%s' % (self.name.lower(),
@@ -131,4 +131,4 @@ class EB_SLEPc(EB_ConfigureMake):
                         'dirs': [os.path.join(self.slepc_subdir, x) for x in ["conf", "include", "lib"]]
                        }
 
-        super(self.__class__, self).sanity_check_step(custom_paths=custom_paths)
+        super(EB_SLEPc_, self).sanity_check_step(custom_paths=custom_paths)

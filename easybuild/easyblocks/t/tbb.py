@@ -38,7 +38,7 @@ class EB_tbb(EB_IntelBase):
 
     def install_step(self):
         """overwrite make_install to add extra symlinks"""
-        super(self.__class__, self).install_step()
+        super(EB_tbb_, self).install_step()
 
         # save libdir
         os.chdir(self.installdir)
@@ -68,12 +68,12 @@ class EB_tbb(EB_IntelBase):
                         'dirs':["tbb/bin", "tbb/lib/", "tbb/libs/"]
                        }
 
-        super(self.__class__, self).sanity_check_step(custom_paths=custom_paths)
+        super(EB_tbb_, self).sanity_check_step(custom_paths=custom_paths)
 
     def make_module_extra(self):
         """Add correct path to lib to LD_LIBRARY_PATH. and intel license file"""
 
-        txt = super(self.__class__, self).make_module_extra()
+        txt = super(EB_tbb_, self).make_module_extra()
         txt += "prepend-path\t%s\t\t%s\n" % ('LD_LIBRARY_PATH', self.libpath)
 
         return txt

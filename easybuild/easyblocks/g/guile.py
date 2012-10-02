@@ -32,7 +32,7 @@ class EB_guile(EB_ConfigureMake):
     def make_module_req_guess(self):
         """Add guile/2.0 to cpath"""
 
-        guess = super(self.__class__, self).make_module_req_guess()
+        guess = super(EB_guile_, self).make_module_req_guess()
         guess['CPATH'] = guess['CPATH'] + ["include/guile/2.0"]
 
         return guess

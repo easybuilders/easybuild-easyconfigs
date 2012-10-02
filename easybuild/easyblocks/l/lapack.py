@@ -143,7 +143,7 @@ class EB_LAPACK(EB_ConfigureMake):
 
         else:
             # default make suffices (for now)
-            super(self.__class__, self).build_step()
+            super(EB_LAPACK_, self).build_step()
 
     def install_step(self):
         """
@@ -198,7 +198,7 @@ class EB_LAPACK(EB_ConfigureMake):
                 cmd = "make BLASLIB='%s' %s_testing" % (blaslib, lib)
                 run_cmd(cmd, log_all=True, simple=True)
         else:
-            super(self.__class__, self).test_step()
+            super(EB_LAPACK_, self).test_step()
 
     # don't create a module if we're only testing
     def make_module_step(self, fake=False):
@@ -208,7 +208,7 @@ class EB_LAPACK(EB_ConfigureMake):
         if self.cfg['test_only']:
             pass
         else:
-            return super(self.__class__, self).make_module_step(fake)
+            return super(EB_LAPACK_, self).make_module_step(fake)
 
     def sanity_check_step(self):
         """
@@ -220,4 +220,4 @@ class EB_LAPACK(EB_ConfigureMake):
                             'dirs': []
                            }
 
-            super(self.__class__, self).sanity_check_step(custom_paths=custom_paths)
+            super(EB_LAPACK_, self).sanity_check_step(custom_paths=custom_paths)

@@ -187,12 +187,12 @@ class EB_NCL(EasyBlock):
                         'dirs': ["include/ncarg"]
                        }
 
-        super(self.__class__, self).sanity_check_step(custom_paths=custom_paths)
+        super(EB_NCL_, self).sanity_check_step(custom_paths=custom_paths)
 
     def make_module_extra(self):
         """Set NCARG_ROOT environment variable in module."""
 
-        txt = super(self.__class__, self).make_module_extra()
+        txt = super(EB_NCL_, self).make_module_extra()
         txt += "setenv\tNCARG_ROOT\t$root\n"
 
         return txt

@@ -147,7 +147,7 @@ class EB_ScaLAPACK(EB_ConfigureMake):
         # update make opts, and build_step
         self.cfg.update('makeopts', ' '.join(extra_makeopts))
 
-        super(self.__class__, self).build_step()
+        super(EB_ScaLAPACK_, self).build_step()
 
     def install_step(self):
         """Install by copying files to install dir."""
@@ -183,4 +183,4 @@ class EB_ScaLAPACK(EB_ConfigureMake):
                         'dirs': []
                        }
 
-        super(self.__class__, self).sanity_check_step(custom_paths=custom_paths)
+        super(EB_ScaLAPACK_, self).sanity_check_step(custom_paths=custom_paths)
