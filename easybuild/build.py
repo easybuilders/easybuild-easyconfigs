@@ -29,6 +29,8 @@ Main entry point for EasyBuild: build software from .eb input file
 """
 
 import copy
+import glob
+import logging
 import platform
 import os
 import re
@@ -36,6 +38,10 @@ import shutil
 import sys
 import tempfile
 import time
+import traceback
+import xml.dom.minidom as xml
+from datetime import datetime
+from optparse import OptionParser
 from optparse import OptionParser, OptionGroup
 
 # optional Python packages, these might be missing
@@ -60,6 +66,7 @@ except ImportError, err:
 
 import easybuild  # required for VERBOSE_VERSION
 import easybuild.framework.easyconfig as easyconfig
+import easybuild.tools.build_log as build_log
 import easybuild.tools.config as config
 import easybuild.tools.filetools as filetools
 import easybuild.tools.parallelbuild as parbuild
@@ -68,9 +75,10 @@ from easybuild.framework.easyconfig import EasyConfig
 from easybuild.tools.build_log import EasyBuildError, initLogger, \
     removeLogHandler, print_msg
 from easybuild.tools.class_dumper import dumpClasses
+from easybuild.tools.config import getRepository
+from easybuild.tools.filetools import modifyEnv
 from easybuild.tools.modules import Modules, searchModule, \
     curr_module_paths, mk_module_path
-from easybuild.tools.config import getRepository
 from easybuild.tools import systemtools
 
 
@@ -95,8 +103,6 @@ def add_cmdline_options(parser):
     basic_options.add_option("-l", action="store_true", dest="stdoutLog", help="log to stdout")
     basic_options.add_option("-r", "--robot", metavar="PATH",
                         help="path to search for easyconfigs for missing dependencies")
-    basic_options.add_option("--regtest", action="store_true", help="enable regression test mode")
-    basic_options.add_option("--regtest-online", action="store_true", help="enable online regression test mode")
     basic_options.add_option("-s", "--stop", type="choice", choices=EasyConfig.validstops,
                         help="stop the installation after certain step (valid: %s)" % ', '.join(EasyConfig.validstops))
     strictness_options = ['ignore', 'warn', 'error']
@@ -172,6 +178,20 @@ def add_cmdline_options(parser):
 
     parser.add_option_group(informative_options)
 
+    # regression test options
+    regtest_options = OptionGroup(parser, "Regression test options",
+                                  "Run and control an EasyBuild regression test.")\
+
+    regtest_options.add_option("--regtest", action="store_true", help="enable regression test mode")
+    regtest_options.add_option("--regtest-online", action="store_true",
+                               help="enable online regression test mode")
+    regtest_options.add_option("--sequential", action="store_true", default=False,
+                               help="specify this option if you want to prevent parallel build")
+    regtest_options.add_option("--regtest-output-dir", help="set output directory for test-run")
+    regtest_options.add_option("--aggregate-regtest", help="collect all the xmls inside the given directory " \
+                                                           "and generate a single file")
+
+    parser.add_option_group(regtest_options)
 
 def main():
     """
@@ -260,7 +280,12 @@ def main():
             error("Please provide a search-path to --robot when using --search")
         searchModule(options.robot, options.search)
 
-    if options.avail_easyconfig_params or options.dump_classes or options.search or options.version:
+    # run regtest
+    if options.regtest:
+        log.info("Running regression test")
+        regtest(options, log, paths)
+
+    if options.avail_easyconfig_params or options.dump_classes or options.search or options.version or options.regtest:
         if logFile:
             os.remove(logFile)
         sys.exit(0)
@@ -393,7 +418,7 @@ def main():
     correct_built_cnt = 0
     all_built_cnt = 0
     for spec in orderedSpecs:
-        (success, _) = build(spec, options, log, origEnviron, exitOnFailure=(not options.regtest))
+        (success, _) = build(spec, options, log, origEnviron)
         if success:
             correct_built_cnt += 1
         all_built_cnt += 1
@@ -443,7 +468,7 @@ def findEasyconfigs(path, log):
     path = os.path.abspath(path)
     for dirpath, _, filenames in os.walk(path):
         for f in filenames:
-            if not f.endswith('.eb'):
+            if not f.endswith('.eb') or f == 'TEMPLATE.eb':
                 continue
 
             spec = os.path.join(dirpath, f)
@@ -988,7 +1013,6 @@ def print_avail_params(easyblock, log):
 
         print
 
-
 def dep_graph(fn, specs, log):
     """
     Create a dependency graph for the given easyconfigs.
@@ -1037,6 +1061,281 @@ def dep_graph(fn, specs, log):
 
     print "Wrote dependency graph to %s" % fn
 
+def write_to_xml(succes, failed, filename):
+    """
+    Create xml output, using minimal output required according to
+    http://stackoverflow.com/questions/4922867/junit-xml-format-specification-that-hudson-supports
+    """
+    dom = xml.getDOMImplementation()
+    root = dom.createDocument(None, "testsuite", None)
+
+    def create_testcase(name):
+        el = root.createElement("testcase")
+        el.setAttribute("name", name)
+        return el
+
+    def create_failure(name, error_type, error):
+        el = create_testcase(name)
+
+        # encapsulate in CDATA section
+        error_text = root.createCDATASection("\n%s\n" % error)
+        failure_el = root.createElement("failure")
+        failure_el.setAttribute("type", error_type)
+        el.appendChild(failure_el)
+        el.lastChild.appendChild(error_text)
+        return el
+
+    def create_success(name, stats):
+        el = create_testcase(name)
+        text = "\n".join(["%s=%s" % (key, value) for (key, value) in stats.items()])
+        build_stats = root.createCDATASection("\n%s\n" % text)
+        system_out = root.createElement("system-out")
+        el.appendChild(system_out)
+        el.lastChild.appendChild(build_stats)
+        return el
+
+    properties = root.createElement("properties")
+    version = root.createElement("property")
+    version.setAttribute("name", "easybuild-version")
+    version.setAttribute("value", str(easybuild.VERBOSE_VERSION))
+    properties.appendChild(version)
+
+    time = root.createElement("property")
+    time.setAttribute("name", "timestamp")
+    time.setAttribute("value", str(datetime.now()))
+    properties.appendChild(time)
+
+    root.firstChild.appendChild(properties)
+
+    for (obj, fase, error, _) in failed:
+        # try to pretty print
+        try:
+            el = create_failure("%s/%s" % (obj.name(), obj.installversion()), fase, error)
+        except AttributeError:
+            el = create_failure(obj, fase, error)
+
+        root.firstChild.appendChild(el)
+
+    for (obj, stats) in succes:
+        el = create_success("%s/%s" % (obj.name(), obj.installversion()), stats)
+        root.firstChild.appendChild(el)
+
+    output_file = open(filename, "w")
+    root.writexml(output_file)
+    output_file.close()
+
+def build_easyconfigs(easyconfigs, output_dir, test_results, options, log):
+    """Build the list of easyconfigs."""
+
+    build_stopped = {}
+
+    apploginfo = lambda x,y: x.log.info(y)
+
+    def perform_step(step, obj, method, logfile):
+        """Perform method on object if it can be built."""
+        if (type(obj) == dict and obj['spec'] not in build_stopped) or obj not in build_stopped:
+            try:
+                if step == 'initialization':
+                    log.info("Running %s step" % step)
+                    return parbuild.get_instance(obj, log)
+                else:
+                    apploginfo(obj, "Running %s step" % step)
+                    method(obj)
+            except Exception, err:  # catch all possible errors, also crashes in EasyBuild code itself
+                fullerr = str(err)
+                if not isinstance(err, EasyBuildError):
+                    tb = traceback.format_exc()
+                    fullerr = '\n'.join([tb, str(err)])
+                # we cannot continue building it
+                if step == 'initialization':
+                    obj = obj['spec']
+                test_results.append((obj, step, fullerr, logfile))
+                # keep a dict of so we can check in O(1) if objects can still be build
+                build_stopped[obj] = step
+
+    # initialize all instances
+    apps = []
+    for ec in easyconfigs:
+        instance = perform_step('initialization', ec, None, log)
+        apps.append(instance)
+
+    base_dir = os.getcwd()
+    base_env = copy.deepcopy(os.environ)
+    succes = []
+
+    for app in apps:
+
+        # if initialisation step failed, app will be None
+        if app: 
+
+            applog = os.path.join(output_dir, "%s-%s.log" % (app.name(), app.installversion()))
+
+            start_time = time.time()
+
+            # start with a clean slate
+            os.chdir(base_dir)
+            modifyEnv(os.environ, base_env)
+
+            # take manual control over the build process
+            perform_step("preparation", app, lambda x: x.prepare_build(), applog)
+            perform_step("pre-build verification", app, lambda x: x.ready2build(), applog)
+            perform_step("generate installdir name", app, lambda x: x.gen_installdir(), applog)
+            perform_step("make builddir", app, lambda x: x.make_builddir(), applog)
+            perform_step("unpacking", app, lambda x: x.unpack_src(), applog)
+            perform_step("patching", app, lambda x: x.apply_patch(), applog)
+            perform_step("prepare", app, lambda x: x.prepare(), applog)
+            perform_step('configure', app, lambda x: x.configure(), applog)
+            perform_step('make', app, lambda x: x.make(), applog)
+            perform_step('test', app, lambda x: x.test(), applog)
+            perform_step('create installdir', app, lambda x: x.make_installdir(), applog)
+            perform_step('make install', app, lambda x: x.make_install(), applog)
+            perform_step('packages', app, lambda x: x.packages(), applog)
+            perform_step('postproc', app, lambda x: x.postproc(), applog)
+            perform_step('sanity check', app, lambda x: x.sanitycheck(), applog)
+            perform_step('cleanup', app, lambda x: x.cleanup(), applog)
+            perform_step('make module', app, lambda x: x.make_module(), applog)
+            if not options.skip_tests and app.getcfg('tests'):
+                perform_step('test cases', app, lambda x: x.runtests(), applog)
+
+            # close log and move it
+            app.closelog()
+            try:
+                shutil.move(app.logfile, applog)
+                log.info("Log file moved to %s" % applog)
+            except IOError, err:
+                error("Failed to move log file %s to new log file %s: %s" % (app.logfile, applog, err))
+
+            if app not in build_stopped:
+                # gather build stats
+                build_time = round(time.time() - start_time, 2)
+
+                buildstats = {
+                              'build_time': build_time,
+                              'platform': platform.platform(),
+                              'core_count': systemtools.get_core_count(),
+                              'cpu_model': systemtools.get_cpu_model(),
+                              'install_size': app.installsize(),
+                              'timestamp': int(time.time()),
+                              'host': os.uname()[1],
+                             }
+                succes.append((app, buildstats))
+
+    for result in test_results:
+        log.info("%s crashed with an error during fase: %s, error: %s, log file: %s" % result)
+
+    failed = len(build_stopped)
+    total = len(apps)
+
+    log.info("%s from %s packages failed to build!" % (failed, total))
+
+    output_file = os.path.join(output_dir, "easybuild-test.xml")
+    log.debug("writing xml output to %s" % output_file)
+    write_to_xml(succes, test_results, output_file)
+
+def aggregate_xml_in_dirs(base_dir, output_filename):
+    """
+    Finds all the xml files in the dirs and takes the testcase attribute out of them.
+    These are then put in a single output file.
+    """
+    dom = xml.getDOMImplementation()
+    root = dom.createDocument(None, "testsuite", None)
+    properties = root.createElement("properties")
+    version = root.createElement("property")
+    version.setAttribute("name", "easybuild-version")
+    version.setAttribute("value", str(easybuild.VERBOSE_VERSION))
+    properties.appendChild(version)
+
+    time_el = root.createElement("property")
+    time_el.setAttribute("name", "timestamp")
+    time_el.setAttribute("value", str(datetime.now()))
+    properties.appendChild(time_el)
+
+    root.firstChild.appendChild(properties)
+
+    dirs = filter(os.path.isdir, [os.path.join(base_dir, dir) for dir in os.listdir(base_dir)])
+
+    succes = 0
+    total = 0
+
+    for dir in dirs:
+        xml_file = glob.glob(os.path.join(dir, "*.xml"))
+        if xml_file:
+            # take the first one (should be only one present)
+            xml_file = xml_file[0]
+            dom = xml.parse(xml_file)
+            # only one should be present, we are just discarding the rest
+            testcase = dom.getElementsByTagName("testcase")[0]
+            root.firstChild.appendChild(testcase)
+
+            total += 1
+            if not testcase.getElementsByTagName("failure"):
+                succes += 1
+
+    comment = root.createComment("%s out of %s builds succeeded" % (succes, total))
+    root.firstChild.insertBefore(comment, properties)
+    output_file = open(output_filename, "w")
+    root.writexml(output_file, addindent="\t", newl="\n")
+    output_file.close()
+
+def regtest(options, log, easyconfigs_paths=None):
+    """Run regression test, using easyconfigs available in given path."""
+
+    cur_dir = os.getcwd()
+
+    if options.aggregate_regtest:
+        output_file = os.path.join(options.aggregate_regtest, "easybuild-aggregate.xml")
+        aggregate_xml_in_dirs(options.aggregate_regtest, output_file)
+        log.info("aggregated xml files inside %s, output written to: %s" % (options.aggregate_regtest, output_file))
+        sys.exit(0)
+
+    # create base directory, which is used to place
+    # all log files and the test output as xml
+    basename = "easybuild-test-%s" % datetime.now().strftime("%Y%m%d%H%M%S")
+    var = config.environmentVariables['testOutputPath']
+    if options.regtest_output_dir:
+        output_dir = options.regtest_output_dir
+    elif var in os.environ:
+        output_dir = os.path.abspath(os.environ[var])
+    else:
+        # default: current dir + easybuild-test-[timestamp]
+        output_dir = os.path.join(cur_dir, basename)
+
+    if not os.path.isdir(output_dir):
+        os.makedirs(output_dir)
+
+    # find all easyconfigs
+    ecfiles = []
+    if easyconfigs_paths:
+        for path in easyconfigs_paths:
+            ecfiles += findEasyconfigs(path, log)
+    else:
+        # default path
+        path = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), "easyconfigs")
+        ecfiles = findEasyconfigs(path, log)
+
+    test_results = []
+
+    # process all the found easyconfig files
+    easyconfigs = []
+    for ecfile in ecfiles:
+        try:
+            easyconfigs.extend(processEasyconfig(ecfile, log, None))
+        except EasyBuildError, err:
+            test_results.append((ecfile, 'easyconfig file error', err))
+
+    if options.sequential:
+        build_easyconfigs(easyconfigs, output_dir, test_results, options, log)
+    else:
+        resolved = resolveDependencies(easyconfigs, options.robot, log)
+        # use %%s so we can replace it later
+        command = "cd %s && %s %%s --regtest --sequential" % (cur_dir, sys.argv[0])
+        jobs = parbuild.build_packages_in_parallel(command, resolved, output_dir, log)
+        print "List of submitted jobs:"
+        for job in jobs:
+            print "%s: %s" % (job.name, job.jobid)
+        print "(%d jobs submitted)" % len(jobs)
+
+        log.info("Submitted regression test as jobs, results in %s" % output_dir)
 
 if __name__ == "__main__":
     try:

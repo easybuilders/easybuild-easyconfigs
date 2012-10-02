@@ -414,7 +414,7 @@ class Toolkit:
             fftw_libs.append("fftw%s_mpi" % suffix)
         fftw_libs.append("fftw%s" % suffix)
 
-        self.vars['LIBFFT'] = ','.join(["-l%s" % x for x in fftw_libs])
+        self.vars['LIBFFT'] = ' '.join(["-l%s" % x for x in fftw_libs])
 
         self.vars['FFTW_INC_DIR'] = os.path.join(fftw, "include")
         self.vars['FFTW_LIB_DIR'] = os.path.join(fftw, "lib")
@@ -656,7 +656,7 @@ class Toolkit:
                      "fftw3x_cdft%s" % fftwsuff,
                      "mkl_cdft_core"]
         self.vars['LIBFFT'] = ' '.join(["-Wl,-Bstatic",
-                                        ' '.join(["-%s" % x for x in fftw_libs]),
+                                        ' '.join(["-l%s" % x for x in fftw_libs]),
                                         "-Wl,-Bdynamic"])
         self.vars['FFTW_INC_DIR'] = os.path.join(mklroot, "mkl", "include", "fftw")
         self.vars['FFTW_LIB_DIR'] = libs_dir
@@ -904,7 +904,8 @@ class Toolkit:
             if match:
                 return tk_type
 
-        self.log.error("Failed to determine %s based on toolkit dependencies." % name)
+        self.log.error("Failed to determine %s based on toolkit dependencies: %s" % (name,
+                                                                                     toolkit_dep_names))
 
     def comp_family(self):
         """Determine compiler family based on toolkit dependencies."""

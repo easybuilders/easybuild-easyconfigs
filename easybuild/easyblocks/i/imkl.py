@@ -36,7 +36,7 @@ import easybuild.tools.toolkit as toolkit
 from easybuild.easyblocks.intelbase import EB_IntelBase
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.filetools import run_cmd
-from easybuild.tools.modules import Modules
+from easybuild.tools.modules import Modules, get_software_root
 
 
 class EB_imkl(EB_IntelBase):
@@ -168,7 +168,7 @@ class EB_imkl(EB_IntelBase):
 
             # compiler defaults to icc, but we could be using gcc to create gimkl.
             makeopts = ''
-            if self.toolkit().comp_family() == toolkit.GCC:
+            if get_software_root('GCC'):  # can't use toolkit.comp_family, because of dummy toolkit
                 makeopts = 'compiler=gnu '
 
             for i in lis1 + lis2 + lis3:
@@ -181,12 +181,12 @@ class EB_imkl(EB_IntelBase):
                 if i in lis3:
                     # use INSTALL_DIR and SPEC_OPT
                     extramakeopts = ''
-                    if self.toolkit().mpi_type() == toolkit.MPICH2:
+                    if get_software_root('MPICH2'):  # can't use toolkit.mpi_type, because of dummy toolkit
                         extramakeopts = 'mpi=mpich2'
                     cmd = "make -f makefile libintel64 %s" % extramakeopts
 
                 # add other make options as well
-                cmd = ' '.join(cmd, makeopts)
+                cmd = ' '.join([cmd, makeopts])
 
                 for opt in ['', '-fPIC']:
                     try:
@@ -364,8 +364,12 @@ class EB_imkl(EB_IntelBase):
                     self.log.error("Sanity check for 32-bit not implemented yet for IMKL v%s (>= 10.3)" % self.version())
                 else:
                     mklfiles = ["mkl/lib/intel64/libmkl.so", "mkl/include/mkl.h"]
-                    mkldirs = ["bin", "mkl/bin", "mkl/bin/intel64", "compiler/lib/intel64",
+                    mkldirs = ["bin", "mkl/bin", "mkl/bin/intel64",
                              "mkl/lib/intel64", "mkl/include"]
+                    if LooseVersion(self.version()) >= LooseVersion('10.3.4'):
+                        mkldirs += ["compiler/lib/intel64"]
+                    else:
+                        mkldirs += ["lib/intel64"]
             else:
                 if self.getcfg('m32'):
                     mklfiles = ["lib/32/libmkl.so", "include/mkl.h"]

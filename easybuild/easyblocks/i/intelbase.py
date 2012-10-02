@@ -26,8 +26,13 @@
 Generic EasyBuild support for installing Intel tools, implemented as an easyblock
 """
 
+import fileinput
 import os
+import random
+import re
 import shutil
+import string
+import sys
 
 import easybuild.tools.environment as env
 from easybuild.framework.application import Application
@@ -45,6 +50,9 @@ class EB_IntelBase(Application):
     def __init__(self, *args, **kwargs):
         """Constructor, adds extra config options"""
         self.license = None
+        # generate a randomly suffixed name for the 'intel' home subdirectory
+        random_suffix = ''.join(random.choice(string.ascii_letters) for n in xrange(5))
+        self.home_subdir = 'intel_%s' % random_suffix
         Application.__init__(self, *args, **kwargs)
 
     @staticmethod
@@ -63,10 +71,9 @@ class EB_IntelBase(Application):
         intel_vars.extend(vars)
         return intel_vars
 
-
     def clean_homedir(self):
         """Remove 'intel' directory from home directory, where stuff is cached."""
-        intelhome = os.path.join(os.getenv('HOME'), 'intel')
+        intelhome = os.path.join(os.getenv('HOME'), self.home_subdir)
         if os.path.exists(intelhome):
             try:
                 shutil.rmtree(intelhome)
@@ -90,6 +97,21 @@ class EB_IntelBase(Application):
 
         # set INTEL_LICENSE_FILE
         env.set("INTEL_LICENSE_FILE", self.license)
+
+        # patch install scripts with randomly suffixed intel hom subdir
+        for fn in ["install.sh", "pset/install.sh", "pset/iat/iat_install.sh", 
+                   "data/install_mpi.sh", "pset/install_cc.sh", "pset/install_fc.sh"]:
+            try:
+                if os.path.isfile(fn):
+                    self.log.info("Patching %s with intel home subdir %s" % (fn, self.home_subdir))
+                    for line in fileinput.input(fn, inplace=1, backup='.orig'):
+                        line = re.sub(r'(.*)(NONRPM_DB_PREFIX="\$HOME/)intel(.*)', 
+                                      r'\1\2%s\3' % self.home_subdir, line)
+                        line = re.sub(r'(.*)(DEFAULT_DB_PREFIX="\$\(echo ~\)/)intel(.*)',
+                                      r'\1\2%s\3' % self.home_subdir, line)
+                        sys.stdout.write(line)
+            except (OSError, IOError), err:
+                self.log.error("Failed to modify install script %s with randomly suffixed home subdir: %s" % (fn, err))
 
         # clean home directory
         self.clean_homedir()

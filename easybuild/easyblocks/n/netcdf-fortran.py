@@ -33,7 +33,7 @@ import easybuild.tools.toolkit as toolkit
 from easybuild.framework.application import Application
 
 
-class EB_netCDF_Fortran(Application):
+class EB_netCDF_minus_Fortran(Application):
     """Support for building/installing the netCDF-Fortran library"""
 
     def configure(self):
