@@ -240,7 +240,7 @@ dependencies = [('first', '1.1'), {'name': 'second', 'version': '2.2'}]
         self.assertEqual(eb['custom_key'], 'not so default')
 
         # test if extra toolkit options are being passed
-        self.assertEqual(eb.toolkit().opts['static'], True)
+        self.assertEqual(eb.toolkit.opts['static'], True)
 
         extra_vars.extend([('mandatory_key', ['default', 'another mandatory key', easyconfig.MANDATORY])])
 

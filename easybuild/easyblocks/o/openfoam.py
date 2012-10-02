@@ -121,7 +121,7 @@ class EB_OpenFOAM(EasyBlock):
         """Building was performed in install dir, so just fix permissions."""
 
         # fix permissions of OpenFOAM dir
-        fullpath = os.path.join(self.installdir, "%s-%s" % (self.name(), self.version()))
+        fullpath = os.path.join(self.installdir, "%s-%s" % (self.name, self.version))
         adjust_permissions(fullpath, stat.S_IROTH, add=True, recursive=True)
         adjust_permissions(fullpath, stat.S_IXOTH, add=True, recursive=True, onlydirs=True)
 

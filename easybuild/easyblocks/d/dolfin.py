@@ -49,7 +49,7 @@ class EB_DOLFIN(EB_CMakePythonPackage):
         fflags = os.getenv('FFLAGS')
 
         # fix for "SEEK_SET is #defined but must not be for the C++ binding of MPI. Include mpi.h before stdio.h"
-        if self.toolkit().mpi_type() in [toolkit.INTEL, toolkit.MPICH2]:
+        if self.toolkit.mpi_type() in [toolkit.INTEL, toolkit.MPICH2]:
             cflags += " -DMPICH_IGNORE_CXX_SEEK"
             cxxflags += " -DMPICH_IGNORE_CXX_SEEK"
             fflags += " -DMPICH_IGNORE_CXX_SEEK"

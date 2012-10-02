@@ -44,8 +44,8 @@ class EB_icc(EB_IntelBase):
 
         binprefix = "bin/intel64"
         libprefix = "lib/intel64/lib"
-        if LooseVersion(self.version()) >= LooseVersion("2011"):
-            if LooseVersion(self.version()) <= LooseVersion("2011.3.174"):
+        if LooseVersion(self.version) >= LooseVersion("2011"):
+            if LooseVersion(self.version) <= LooseVersion("2011.3.174"):
                 binprefix = "bin"
             else:
                 libprefix = "compiler/lib/intel64/lib"

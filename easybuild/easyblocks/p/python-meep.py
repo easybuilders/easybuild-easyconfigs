@@ -71,7 +71,7 @@ class EB_python_minus_meep(EasyBlock):
 
         # determine suffix for make script
         suff = ''
-        if self.toolkit().opts['usempi']:
+        if self.toolkit.opts['usempi']:
             suff = '-mpi'
 
         # run make script
@@ -86,10 +86,10 @@ class EB_python_minus_meep(EasyBlock):
 
         # locate tarball
         tarball = None
-        shortver = '.'.join(self.version().split('.')[0:2])
+        shortver = '.'.join(self.version.split('.')[0:2])
         fn_pattern = os.path.join(self.cfg['startfrom'],
                                   'dist',
-                                  "%s-%s.*.tar.gz" % (self.name(), shortver))
+                                  "%s-%s.*.tar.gz" % (self.name, shortver))
         matches = glob.glob(fn_pattern)
         if not matches:
             self.log.error("No tarball found at %s" % fn_pattern)
