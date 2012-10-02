@@ -38,7 +38,7 @@ class EB_PythonPackage(EasyBlock):
 
     def __init__(self, *args, **kwargs):
         """Initialize custom variables."""
-        EasyBlock.__init__(self, *args, **kwargs)
+        super(self.__class__, self).__init__(*args, **kwargs)
 
         # template for Python packages lib dir
         self.pylibdir = os.path.join("lib", "python%s", "site-packages")
@@ -82,7 +82,7 @@ class EB_PythonPackage(EasyBlock):
     def make_module_extra(self):
         """Add install path to PYTHONPATH"""
 
-        txt = EasyBlock.make_module_extra(self)
+        txt = super(self.__class__, self).make_module_extra()
 
         txt += "prepend-path\tPYTHONPATH\t%s\n" % os.path.join(self.installdir , self.pylibdir)
 

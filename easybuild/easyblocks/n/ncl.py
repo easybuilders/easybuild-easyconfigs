@@ -181,7 +181,7 @@ class EB_NCL(EasyBlock):
     def make_module_extra(self):
         """Set NCARG_ROOT environment variable in module."""
 
-        txt = EasyBlock.make_module_extra(self)
+        txt = super(self.__class__, self).make_module_extra()
         txt += "setenv\tNCARG_ROOT\t$root\n"
 
         return txt

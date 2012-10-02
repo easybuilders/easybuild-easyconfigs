@@ -39,10 +39,6 @@ class EB_itac(EB_IntelBase):
     - tested with Intel Trace Analyzer and Collector 7.2.1.008
     """
 
-    def __init__(self, *args, **kwargs):
-        """Constructor, adds extra config options"""
-        EB_IntelBase.__init__(self, *args, **kwargs)
-
     @staticmethod
     def extra_options():
         extra_vars = [('preferredmpi', ['impi3', "Preferred MPI type (default: 'impi3')", CUSTOM])]
@@ -110,7 +106,7 @@ EULA=accept
 
     def make_module_extra(self):
         """Overwritten from EB_IntelBase to add extra txt"""
-        txt = EB_IntelBase.make_module_extra(self)
+        txt = super(self.__class__, self).make_module_extra()
         txt += "prepend-path\t%s\t\t%s\n" % ('INTEL_LICENSE_FILE', self.license)
         txt += "setenv\t%s\t\t$root\n" % 'VT_ROOT'
         txt += "setenv\t%s\t\t%s\n" % ('VT_MPI', self.getcfg('preferredmpi'))

@@ -45,4 +45,4 @@ class EB_ipp(EB_IntelBase):
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-        EB_IntelBase.sanity_check_step(self)
+        super(self.__class__, self).sanity_check_step()

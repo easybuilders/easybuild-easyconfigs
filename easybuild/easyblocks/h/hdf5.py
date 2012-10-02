@@ -59,7 +59,7 @@ class EB_HDF5(EB_ConfigureMake):
         # make options
         self.updatecfg('makeopts', fcomp)
 
-        EB_ConfigureMake.configure_step(self)
+        super(self.__class__, self).configure_step()
 
     # default make and make install are ok
 
@@ -90,4 +90,4 @@ class EB_HDF5(EB_ConfigureMake):
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-        EB_ConfigureMake.sanity_check_step(self)
+        super(self.__class__, self).sanity_check_step()

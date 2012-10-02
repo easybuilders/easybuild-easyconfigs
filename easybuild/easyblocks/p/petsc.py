@@ -39,7 +39,7 @@ class EB_PETSc(EB_ConfigureMake):
 
     def __init__(self, *args, **kwargs):
         """Initialize PETSc specific variables."""
-        EB_ConfigureMake.__init__(self, *args, **kwargs)
+        super(self.__class__, self).__init__(*args, **kwargs)
 
         self.petsc_arch = ""
         self.petsc_subdir = ""
@@ -63,7 +63,7 @@ class EB_PETSc(EB_ConfigureMake):
         if self.getcfg('sourceinstall'):
             self.build_in_installdir = True
 
-        EB_ConfigureMake.make_builddir(self)
+        super(self.__class__, self).make_builddir()
 
     def configure_step(self):
         """
@@ -177,7 +177,7 @@ class EB_PETSc(EB_ConfigureMake):
                 cmd = "%s ./configure %s" % (self.getcfg('preconfigopts'), self.getcfg('configopts'))
                 (out, _) = run_cmd(cmd, log_all=True, simple=False)
             else:
-                out = EB_ConfigureMake.configure_step(self)
+                out = super(self.__class__, self).configure_step()
 
             # check for errors in configure
             error_regexp = re.compile("ERROR")
@@ -220,7 +220,7 @@ class EB_PETSc(EB_ConfigureMake):
         """
         if LooseVersion(self.get_version()) >= LooseVersion("3"):
             if not self.getcfg('sourceinstall'):
-                EB_ConfigureMake.install_step(self)
+                super(self.__class__, self).install_step()
 
         else:  # old versions (< 3.x)
 
@@ -235,7 +235,7 @@ class EB_PETSc(EB_ConfigureMake):
     def make_module_req_guess(self):
         """Specify PETSc custom values for PATH, CPATH and LD_LIBRARY_PATH."""
 
-        guesses = EB_ConfigureMake.make_module_req_guess(self)
+        guesses = super(self.__class__, self).make_module_req_guess()
 
         prefix1 = ""
         prefix2 = ""
@@ -254,7 +254,7 @@ class EB_PETSc(EB_ConfigureMake):
 
     def make_module_extra(self):
         """Set PETSc specific environment variables (PETSC_DIR, PETSC_ARCH)."""
-        txt = EB_ConfigureMake.make_module_extra(self)
+        txt = super(self.__class__, self).make_module_extra()
 
         if self.getcfg('sourceinstall'):
             txt += self.moduleGenerator.setEnvironment('PETSC_DIR', '$root/%s' % self.petsc_subdir)
@@ -294,4 +294,4 @@ class EB_PETSc(EB_ConfigureMake):
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-        EB_ConfigureMake.sanity_check_step(self)
+        super(self.__class__, self).sanity_check_step()

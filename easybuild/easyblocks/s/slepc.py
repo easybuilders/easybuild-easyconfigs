@@ -37,7 +37,7 @@ class EB_SLEPc(EB_ConfigureMake):
 
     def __init__(self, *args, **kwargs):
         """Initialize SLEPc custom variables."""
-        EB_ConfigureMake.__init__(self, *args, **kwargs)
+        super(self.__class__, self).__init__(*args, **kwargs)
 
         self.slepc_arch_dir = None
 
@@ -60,7 +60,7 @@ class EB_SLEPc(EB_ConfigureMake):
         if self.getcfg('sourceinstall'):
             self.build_in_installdir = True
 
-        EB_ConfigureMake.make_builddir(self)
+        super(self.__class__, self).make_builddir()
 
     def configure_step(self):
         """Configure SLEPc by setting configure options and running configure script."""
@@ -88,7 +88,7 @@ class EB_SLEPc(EB_ConfigureMake):
             (out, _) = run_cmd(cmd, log_all=True, simple=False)
         else:
             # regular './configure --prefix=X' for non-source install
-            out = EB_ConfigureMake.configure_step(self)
+            out = super(self.__class__, self).configure_step()
 
         # check for errors in configure
         error_regexp = re.compile("ERROR")
@@ -101,7 +101,7 @@ class EB_SLEPc(EB_ConfigureMake):
 
     def make_module_req_guess(self):
         """Specify correct LD_LIBRARY_PATH and CPATH for SLEPc installation."""
-        guesses = EB_ConfigureMake.make_module_req_guess(self)
+        guesses = super(self.__class__, self).make_module_req_guess()
 
         guesses.update({
                         'CPATH': [os.path.join(self.slepc_subdir, "include")],
@@ -112,7 +112,7 @@ class EB_SLEPc(EB_ConfigureMake):
 
     def make_module_extra(self):
         """Set SLEPc specific environment variables (SLEPC_DIR)."""
-        txt = EB_ConfigureMake.make_module_extra(self)
+        txt = super(self.__class__, self).make_module_extra()
 
         if self.getcfg('sourceinstall'):
             txt += self.moduleGenerator.setEnvironment('SLEPC_DIR', '$root/%s-%s' % (self.get_name().lower(),
@@ -136,4 +136,4 @@ class EB_SLEPc(EB_ConfigureMake):
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-        EB_ConfigureMake.sanity_check_step(self)
+        super(self.__class__, self).sanity_check_step()

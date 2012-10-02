@@ -45,12 +45,12 @@ class EB_MTL4(EB_Tarball):
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-        EB_Tarball.sanity_check_step(self)
+        super(self.__class__, self).sanity_check_step()
 
     def make_module_req_guess(self):
         """Adjust CPATH for MTL4."""
 
-        guesses = EB_Tarball.make_module_req_guess(self)
+        guesses = super(self.__class__, self).make_module_req_guess()
         guesses.update({'CPATH': 'include'})
 
         return guesses

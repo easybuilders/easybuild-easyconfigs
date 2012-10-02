@@ -43,7 +43,7 @@ class EB_CPLEX(EB_Binary):
     def __init__(self, *args, **kwargs):
         """Initialize CPLEX-specific variables."""
 
-        EB_Binary.__init__(self, *args, **kwargs)
+        super(self.__class__, self).__init__(*args, **kwargs)
         self.bindir = None
 
     def install_step(self):
@@ -99,7 +99,7 @@ class EB_CPLEX(EB_Binary):
     def make_module_extra(self):
         """Add installdir to path and set CPLEX_HOME"""
 
-        txt = EB_Binary.make_module_extra(self)
+        txt = super(self.__class__, self).make_module_extra()
         txt += self.moduleGenerator.prependPaths("PATH", [self.bindir])
         txt += self.moduleGenerator.setEnvironment("CPLEX_HOME", "$root/cplex")
         self.log.debug("make_module_extra added %s" % txt)
@@ -116,4 +116,4 @@ class EB_CPLEX(EB_Binary):
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-        EB_Binary.sanity_check_step(self)
+        super(self.__class__, self).sanity_check_step()

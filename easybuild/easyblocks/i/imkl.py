@@ -45,10 +45,6 @@ class EB_imkl(EB_IntelBase):
     -- will fail for all older versions (due to newer silent installer)
     """
 
-    def __init__(self, *args, **kwargs):
-        """Constructor, adds extra config options"""
-        EB_IntelBase.__init__(self, *args, **kwargs)
-
     @staticmethod
     def extra_options():
         extra_vars = [('interfaces', [True, "Indicates whether interfaces should be built (default: True)", CUSTOM])]
@@ -56,7 +52,7 @@ class EB_imkl(EB_IntelBase):
 
 
     def configure_step(self):
-        EB_IntelBase.configure_step(self)
+        super(self.__class__, self).configure_step()
 
         if os.getenv('MKLROOT'):
             self.log.error("Found MKLROOT in current environment, which may cause problems...")
@@ -99,7 +95,7 @@ class EB_imkl(EB_IntelBase):
 
     def make_module_extra(self):
         """Overwritten from Application to add extra txt"""
-        txt = EB_IntelBase.make_module_extra(self)
+        txt = super(self.__class__, self).make_module_extra()
         txt += "prepend-path\t%s\t\t%s\n" % ('INTEL_LICENSE_FILE', self.license)
         if self.getcfg('m32'):
             txt += "prepend-path\t%s\t\t$root/%s\n" % ('NLSPATH', 'idb/32/locale/%l_%t/%N')
@@ -384,4 +380,4 @@ class EB_imkl(EB_IntelBase):
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-        EB_IntelBase.sanity_check_step(self)
+        super(self.__class__, self).sanity_check_step()

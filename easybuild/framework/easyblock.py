@@ -51,7 +51,7 @@ from easybuild.tools.modules import Modules, get_software_root
 from easybuild.tools.systemtools import get_core_count
 
 
-class EasyBlock:
+class EasyBlock(object):
     """Generic support for building and installing software, base class for actual easyblocks."""
 
     # static class method for extra easyconfig parameter definitions

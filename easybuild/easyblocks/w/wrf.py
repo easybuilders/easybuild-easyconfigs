@@ -45,7 +45,7 @@ class EB_WRF(EasyBlock):
 
     def __init__(self, *args, **kwargs):
         """Add extra config options specific to WRF."""
-        EasyBlock.__init__(self, *args, **kwargs)
+        super(self.__class__, self).__init__(*args, **kwargs)
 
         self.build_in_installdir = True
         self.wrfsubdir = None
@@ -345,7 +345,7 @@ class EB_WRF(EasyBlock):
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-        EasyBlock.sanity_check_step(self)
+        super(self.__class__, self).sanity_check_step()
 
     def make_module_req_guess(self):
 
@@ -362,7 +362,7 @@ class EB_WRF(EasyBlock):
 
     def make_module_extra(self):
 
-        txt = EasyBlock.make_module_extra(self)
+        txt = super(self.__class__, self).make_module_extra()
         txt += get_netcdf_module_set_cmds(self.log)
 
         return txt

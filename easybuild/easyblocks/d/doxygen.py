@@ -53,4 +53,4 @@ class EB_Doxygen(EB_ConfigureMake):
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-        EB_ConfigureMake.sanity_check_step(self)
+        super(self.__class__, self).sanity_check_step()

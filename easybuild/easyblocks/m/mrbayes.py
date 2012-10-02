@@ -69,7 +69,7 @@ class EB_MrBayes(EB_ConfigureMake):
                 self.updatecfg('configopts', '--enable-mpi')
 
             # configure
-            EB_ConfigureMake.configure_step(self)
+            super(self.__class__, self).configure_step()
         else:
 
             # no configure script prior to v3.2
@@ -101,5 +101,5 @@ class EB_MrBayes(EB_ConfigureMake):
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-        EB_ConfigureMake.sanity_check_step(self)
+        super(self.__class__, self).sanity_check_step()
 

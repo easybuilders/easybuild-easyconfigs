@@ -147,7 +147,7 @@ class EB_ScaLAPACK(EB_ConfigureMake):
         # update make opts, and build_step
         self.updatecfg('makeopts', ' '.join(extra_makeopts))
 
-        EB_ConfigureMake.build_step(self)
+        super(self.__class__, self).build_step()
 
     def install_step(self):
         """Install by copying files to install dir."""
@@ -186,4 +186,4 @@ class EB_ScaLAPACK(EB_ConfigureMake):
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-        EB_ConfigureMake.sanity_check_step(self)
+        super(self.__class__, self).sanity_check_step()

@@ -39,7 +39,7 @@ class EB_Primer3(EB_ConfigureMake):
     def __init__(self, *args, **kwargs):
         """Custom initialization for Primer3: build in install dir, set correct bin dir, specify to start from 'src'."""
 
-        EB_ConfigureMake.__init__(self, *args, **kwargs)
+        super(self.__class__, self).__init__(*args, **kwargs)
 
         self.build_in_installdir = True
 
@@ -74,12 +74,12 @@ class EB_Primer3(EB_ConfigureMake):
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-        EB_ConfigureMake.sanity_check_step(self)
+        super(self.__class__, self).sanity_check_step()
 
     def make_module_req_guess(self):
         """Correct suggestion for PATH variable."""
 
-        guesses = EB_ConfigureMake.make_module_req_guess(self)
+        guesses = super(self.__class__, self).make_module_req_guess()
 
         guesses.update({'PATH': [self.bindir]})
 

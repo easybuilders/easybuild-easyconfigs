@@ -52,7 +52,7 @@ class EB_METIS(EB_ConfigureMake):
         if self.get_toolkit().opts['pic']:
             self.updatecfg('makeopts', 'CC="$CC -fPIC"')
 
-        EB_ConfigureMake.build_step(self)
+        super(self.__class__, self).build_step()
 
     def install_step(self):
         """
@@ -100,7 +100,7 @@ class EB_METIS(EB_ConfigureMake):
                 self.log.error("Something went wrong during symlink creation: %s" % err)
 
         else:
-            EB_ConfigureMake.install_step(self)
+            super(self.__class__, self).install_step()
 
     def sanity_check_step(self):
         """Custom sanity check for METIS (more extensive for recent version (>= v5))"""
@@ -128,4 +128,4 @@ class EB_METIS(EB_ConfigureMake):
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-        EB_ConfigureMake.sanity_check_step(self)
+        super(self.__class__, self).sanity_check_step()

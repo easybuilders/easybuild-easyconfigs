@@ -61,7 +61,7 @@ from easybuild.tools.build_log import getLog
 log = getLog('repo')
 
 
-class Repository:
+class Repository(object):
     """
     Interface for repositories
     """

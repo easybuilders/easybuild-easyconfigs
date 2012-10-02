@@ -52,7 +52,7 @@ class EB_CP2K(EasyBlock):
     """
 
     def __init__(self, *args, **kwargs):
-        EasyBlock.__init__(self, *args, **kwargs)
+        super(self.__class__, self).__init__(*args, **kwargs)
 
         self.typearch = None
 
@@ -687,4 +687,4 @@ maxtasks=%(maxtasks)s
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-        EasyBlock.sanity_check_step(self)
+        super(self.__class__, self).sanity_check_step()

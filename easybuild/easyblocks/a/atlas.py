@@ -44,7 +44,7 @@ class EB_ATLAS(EasyBlock):
     """
 
     def __init__(self, *args, **kwargs):
-        EasyBlock.__init__(self, *args, **kwargs)
+        super(self.__class__, self).__init__(*args, **kwargs)
 
     @staticmethod
     def extra_options():
@@ -122,13 +122,13 @@ Configure failed, not sure why (see output above).""" % out
         if not nr:
             self.log.warning("Ignoring requested parallelism, it breaks ATLAS, so setting to 1")
         self.log.info("Disabling parallel build, makes no sense for ATLAS.")
-        EasyBlock.set_parallelism(self, 1)
+        super(self.__class__, self).set_parallelism(1)
 
 
     def build_step(self, verbose=False):
 
         # default make is fine
-        EasyBlock.build_step(self, verbose=verbose)
+        super(self.__class__, self).build_step(verbose=verbose)
 
         # optionally also build shared libs
         if self.getcfg('sharedlibs'):
@@ -152,7 +152,7 @@ Configure failed, not sure why (see output above).""" % out
         Default make install and optionally remove incomplete lapack libs.
         If the full_lapack option was set to false we don't
         """
-        EasyBlock.install_step(self)
+        super(self.__class__, self).install_step()
         if not self.getcfg('full_lapack'):
             for i in ['liblapack.a', 'liblapack.so']:
                 lib = os.path.join(self.installdir, "lib", i[0])
@@ -172,15 +172,15 @@ Configure failed, not sure why (see output above).""" % out
 
         # sanity tests
         self.setcfg('runtest', 'check')
-        EasyBlock.test_step(self)
+        super(self.__class__, self).test_step()
 
         # checks of threaded code
         self.setcfg('runtest', 'ptcheck')
-        EasyBlock.test_step(self)
+        super(self.__class__, self).test_step()
 
         # performance summary
         self.setcfg('runtest', 'time')
-        EasyBlock.test_step(self)
+        super(self.__class__, self).test_step()
 
     # default make install is fine
 
@@ -207,4 +207,4 @@ Configure failed, not sure why (see output above).""" % out
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-        EasyBlock.sanity_check_step(self)
+        super(self.__class__, self).sanity_check_step()

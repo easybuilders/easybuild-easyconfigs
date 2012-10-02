@@ -69,9 +69,6 @@ class EB_LAPACK(EB_ConfigureMake):
     -- should be replaced by patch and variables.
     """
 
-    def __init__(self, *args, **kwargs):
-        EB_ConfigureMake.__init__(self, *args, **kwargs)
-
     @staticmethod
     def extra_options():
         extra_vars = [
@@ -146,7 +143,7 @@ class EB_LAPACK(EB_ConfigureMake):
 
         else:
             # default make suffices (for now)
-            EB_ConfigureMake.build_step(self)
+            super(self.__class__, self).build_step()
 
     def install_step(self):
         """
@@ -201,7 +198,7 @@ class EB_LAPACK(EB_ConfigureMake):
                 cmd = "make BLASLIB='%s' %s_testing" % (blaslib, lib)
                 run_cmd(cmd, log_all=True, simple=True)
         else:
-            EB_ConfigureMake.test_step(self)
+            super(self.__class__, self).test_step()
 
     # don't create a module if we're only testing
     def make_module_step(self, fake=False):
@@ -211,7 +208,7 @@ class EB_LAPACK(EB_ConfigureMake):
         if self.getcfg('test_only'):
             pass
         else:
-            return EB_ConfigureMake.make_module_step(self, fake)
+            return super(self.__class__, self).make_module_step(fake)
 
     def sanity_check_step(self):
         """
@@ -227,4 +224,4 @@ class EB_LAPACK(EB_ConfigureMake):
 
                 self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-            EB_ConfigureMake.sanity_check_step(self)
+            super(self.__class__, self).sanity_check_step()

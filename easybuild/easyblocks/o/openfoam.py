@@ -42,7 +42,7 @@ class EB_OpenFOAM(EasyBlock):
     def __init__(self,*args,**kwargs):
         """Specify that OpenFOAM should be built in install dir."""
 
-        EasyBlock.__init__(self, *args, **kwargs)
+        super(self.__class__, self).__init__(*args, **kwargs)
 
         self.build_in_installdir = True
 
@@ -163,12 +163,12 @@ class EB_OpenFOAM(EasyBlock):
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-        EasyBlock.sanity_check_step(self)
+        super(self.__class__, self).sanity_check_step()
 
     def make_module_extra(self):
         """Define extra environment variables required by OpenFOAM"""
 
-        txt = EasyBlock.make_module_extra(self)
+        txt = super(self.__class__, self).make_module_extra()
 
         env_vars = [("WM_PROJECT_VERSION", self.get_version()),
                     ("FOAM_INST_DIR", "$root"),

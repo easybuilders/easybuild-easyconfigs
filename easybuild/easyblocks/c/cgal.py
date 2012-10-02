@@ -45,7 +45,7 @@ class EB_CGAL(EB_CMake):
 
         os.environ['BOOST_ROOT'] = get_software_root("Boost")
 
-        EB_CMake.configure_step(self)
+        super(self.__class__, self).configure_step()
 
     def sanity_check_step(self):
         """Custom sanity check for CGAL."""
@@ -61,4 +61,4 @@ class EB_CGAL(EB_CMake):
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-        EB_CMake.sanity_check_step(self)
+        super(self.__class__, self).sanity_check_step()

@@ -51,7 +51,7 @@ MODULES = (8, 'modules')
 OTHER = (9, 'other')
 
 
-class EasyConfig:
+class EasyConfig(object):
     """
     Class which handles loading, reading, validation of easyconfigs
     """

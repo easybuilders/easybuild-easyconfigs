@@ -42,7 +42,7 @@ OPENMPI = "OpenMPI"
 QLOGIC = "QLogic"
 
 
-class Toolkit:
+class Toolkit(object):
     """
     Class for compiler toolkits, consisting out of a compiler and dependencies (libraries).
     """

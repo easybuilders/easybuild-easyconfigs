@@ -35,7 +35,7 @@ from easybuild.tools.build_log import getLog
 
 MAX_WALLTIME = 72
 
-class PbsJob:
+class PbsJob(object):
     """Interaction with TORQUE"""
 
     def __init__(self, script, name, env_vars=None, resources={}):

@@ -62,11 +62,11 @@ class EB_Python(EB_ConfigureMake):
         """Set extra configure options."""
         self.updatecfg('configopts', "--with-threads --enable-shared")
 
-        EB_ConfigureMake.configure_step(self)
+        super(self.__class__, self).configure_step()
 
     def install_step(self):
         """Extend make install to make sure that the 'python' command is present."""
-        EB_ConfigureMake.install_step(self)
+        super(self.__class__, self).install_step()
 
         python_binary_path = os.path.join(self.installdir, 'bin', 'python')
         if not os.path.isfile(python_binary_path):
@@ -199,7 +199,6 @@ class EB_DefaultPythonPackage(Extension):
 class EB_nose(EB_DefaultPythonPackage):
     """Support for installing the nose Python package as part of a Python installation."""
     def __init__(self, mself, ext, ext_installdeps):
-        EB_DefaultPythonPackage.__init__(self, mself, ext, ext_installdeps)
 
         # use extra unpack options to avoid problems like
         # 'tar: Ignoring unknown extended header keyword `SCHILY.nlink'
@@ -238,7 +237,7 @@ class EB_numpy(EB_FortranPythonPackage):
     """Support for installing the numpy Python package as part of a Python installation."""
 
     def __init__(self, mself, ext, ext_installdeps):
-        EB_FortranPythonPackage.__init__(self, mself, ext, ext_installdeps)
+        super(self.__class__, self).__init__(mself, ext, ext_installdeps)
 
         self.ext_cfgs = mself.getcfg('ext_cfgs')
         if self.ext_cfgs.has_key('numpysitecfglibsubdirs'):
@@ -309,7 +308,7 @@ libraries = %s
         """Install numpy 
         We remove the numpy build dir here, so scipy doesn't find it by accident
         """
-        EB_FortranPythonPackage.install_step(self)
+        super(self.__class__, self).install_step()
         builddir = os.path.join(self.builddir, "numpy")
         if os.path.isdir(builddir):
             shutil.rmtree(builddir)
@@ -321,7 +320,7 @@ class EB_scipy(EB_FortranPythonPackage):
     """Support for installing the scipy Python package as part of a Python installation."""
 
     def __init__(self, mself, ext, ext_installdeps):
-        EB_FortranPythonPackage.__init__(self, mself, ext, ext_installdeps)
+        super(self.__class__, self).__init__(mself, ext, ext_installdeps)
 
         # disable testing
         test = False

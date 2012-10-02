@@ -48,7 +48,7 @@ class EB_GCC(EasyBlock):
     """
 
     def __init__(self, *args, **kwargs):
-        EasyBlock.__init__(self, *args, **kwargs)
+        super(self.__class__, self).__init__(*args, **kwargs)
 
         self.stagedbuild = False
 
@@ -439,7 +439,7 @@ class EB_GCC(EasyBlock):
         self.updatecfg('makeopts', 'bootstrap')
 
         # call standard build_step
-        EasyBlock.build_step(self)
+        super(self.__class__, self).build_step()
 
     # make install is just standard install_step, nothing special there
 
@@ -502,7 +502,7 @@ class EB_GCC(EasyBlock):
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-        EasyBlock.sanity_check_step(self)
+        super(self.__class__, self).sanity_check_step()
 
     def make_module_req_guess(self):
         """

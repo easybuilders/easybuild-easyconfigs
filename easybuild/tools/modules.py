@@ -44,7 +44,7 @@ outputMatchers = {
     'available': re.compile(r"\b(?P<name>\S+?)/(?P<version>[^\(\s]+)(?P<default>\(default\))?(?:\s|$)")
 }
 
-class Modules:
+class Modules(object):
     """
     Interact with modules.
     """

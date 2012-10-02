@@ -39,9 +39,6 @@ class EB_MVAPICH2(EB_ConfigureMake):
     - some compiler dependent configure options
     """
 
-    def __init__(self, *args, **kwargs):
-        EB_ConfigureMake.__init__(self, *args, **kwargs)
-
     @staticmethod
     def extra_options():
         extra_vars = [
@@ -58,7 +55,7 @@ class EB_MVAPICH2(EB_ConfigureMake):
         # things might go wrong if a previous install dir is present, so let's get rid of it
         if not self.getcfg('keeppreviousinstall'):
             self.log.info("Making sure any old installation is removed before we start the build...")
-            EB_ConfigureMake.make_dir(self, self.installdir, True, dontcreateinstalldir=True)
+            super(self.__class__, self).make_dir(self.installdir, True, dontcreateinstalldir=True)
 
         # additional configuration options
         add_configopts = '--with-rdma=%s ' % self.getcfg('rdma_type')
@@ -106,7 +103,7 @@ class EB_MVAPICH2(EB_ConfigureMake):
 
         self.updatecfg('configopts', add_configopts)
 
-        EB_ConfigureMake.configure_step(self)
+        super(self.__class__, self).configure_step()
 
     # make and make install are default
 
@@ -127,4 +124,4 @@ class EB_MVAPICH2(EB_ConfigureMake):
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-        EB_ConfigureMake.sanity_check_step(self)
+        super(self.__class__, self).sanity_check_step()

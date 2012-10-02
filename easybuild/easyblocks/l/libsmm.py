@@ -45,9 +45,6 @@ class EB_libsmm(EasyBlock):
            - CP2K can be built without this
     """
 
-    def __init__(self, *args, **kwargs):
-        EasyBlock.__init__(self, *args, **kwargs)
-
     @staticmethod
     def extra_options():
         # default dimensions
@@ -221,4 +218,4 @@ tasks=%(tasks)s
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-        EasyBlock.sanity_check_step(self)
+        super(self.__class__, self).sanity_check_step()

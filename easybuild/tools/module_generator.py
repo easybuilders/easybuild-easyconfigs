@@ -39,7 +39,7 @@ log = getLog('moduleGenerator')
 GENERAL_CLASS = 'all'
 
 
-class ModuleGenerator:
+class ModuleGenerator(object):
     """
     Class for generating module files.
     """

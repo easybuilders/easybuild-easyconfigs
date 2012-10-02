@@ -59,7 +59,7 @@ class EB_icc(EB_IntelBase):
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-        EB_IntelBase.sanity_check_step(self)
+        super(self.__class__, self).sanity_check_step()
 
     def make_module_req_guess(self):
         """Customize paths to check and add in environment.
@@ -116,7 +116,7 @@ class EB_icc(EB_IntelBase):
     def make_module_extra(self):
         """Add extra environment variables for icc, for license file and NLS path."""
 
-        txt = EB_IntelBase.make_module_extra(self)
+        txt = super(self.__class__, self).make_module_extra()
 
         txt += "prepend-path\t%s\t\t%s\n" % ('INTEL_LICENSE_FILE', self.license)
         txt += "prepend-path\t%s\t\t$root/%s\n" % ('NLSPATH', 'idb/intel64/locale/%l_%t/%N')

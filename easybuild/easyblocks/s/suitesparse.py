@@ -129,7 +129,7 @@ class EB_SuiteSparse(EB_ConfigureMake):
 
     def make_module_req_guess(self):
         """Add UFconfig dir to CPATH so UFconfig include file is found."""
-        guesses = EB_ConfigureMake.make_module_req_guess(self)
+        guesses = super(self.__class__, self).make_module_req_guess()
         guesses.update({'CPATH': ["UFconfig"]})
 
         return guesses
@@ -147,4 +147,4 @@ class EB_SuiteSparse(EB_ConfigureMake):
 
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
-        EB_ConfigureMake.sanity_check_step(self)
+        super(self.__class__, self).sanity_check_step()

@@ -30,7 +30,7 @@ The Extension class should serve as a base class for all extensions.
 
 from easybuild.tools.filetools import run_cmd
 
-class Extension:
+class Extension(object):
     """
     Support for installing extensions.
     """
