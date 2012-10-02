@@ -93,13 +93,10 @@ class EB_MrBayes(EB_ConfigureMake):
     def sanity_check_step(self):
         """Custom sanity check for MrBayes."""
 
-        if not self.getcfg('sanityCheckPaths'):
-            self.setcfg('sanityCheckPaths', {
-                                             'files': ["bin/mb"],
-                                             'dirs': []
-                                            })
+        custom_paths = {
+                        'files': ["bin/mb"],
+                        'dirs': []
+                       }
 
-            self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
-
-        super(self.__class__, self).sanity_check_step()
+        super(self.__class__, self).sanity_check_step(custom_paths=custom_paths)
 

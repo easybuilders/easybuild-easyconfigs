@@ -215,13 +215,9 @@ class EB_LAPACK(EB_ConfigureMake):
         Custom sanity check for LAPACK (only run when not testing)
         """
         if not self.getcfg('test_only'):
-            if not self.getcfg('sanityCheckPaths'):
-                self.setcfg('sanityCheckPaths',{
-                                                'files': ["lib/%s" % x for x in ["liblapack.a",
-                                                                                 "libtmglib.a"]],
-                                                'dirs': []
-                                               })
+            custom_paths = {
+                            'files': ["lib/%s" % x for x in ["liblapack.a", "libtmglib.a"]],
+                            'dirs': []
+                           }
 
-                self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
-
-            super(self.__class__, self).sanity_check_step()
+            super(self.__class__, self).sanity_check_step(custom_paths=custom_paths)

@@ -138,35 +138,20 @@ class EB_SCOTCH(EasyBlock):
     def sanity_check_step(self):
         """Custom sanity check for SCOTCH."""
 
-        if not self.getcfg('sanityCheckPaths'):
+        custom_paths = {
+                        'files': ['bin/%s' % x for x in ["acpl", "amk_fft2", "amk_hy", "amk_p2", "dggath",
+                                                         "dgord", "dgscat", "gbase", "gmap", "gmk_m2",
+                                                         "gmk_msh", "gmtst", "gotst", "gpart", "gtst",
+                                                         "mmk_m2", "mord", "amk_ccc", "amk_grf", "amk_m2",
+                                                         "atst", "dgmap", "dgpart", "dgtst", "gcv", "gmk_hy",
+                                                         "gmk_m3", "gmk_ub2", "gord", "gout", "gscat", "mcv",
+                                                         "mmk_m3", "mtst"]] +
+                                 ['include/%s.h' % x for x in ["esmumps","ptscotchf", "ptscotch","scotchf",
+                                                               "scotch"]] +
+                                 ['lib/lib%s.a' % x for x in ["esmumps","ptscotch", "ptscotcherrexit",
+                                                              "scotcherr", "scotch_group", "ptesmumps",
+                                                              "ptscotcherr", "scotch", "scotcherrexit"]],
+                        'dirs':[]
+                        }
 
-            self.setcfg('sanityCheckPaths', {
-                                             'files': ['bin/%s' % x for x in ["acpl","amk_fft2","amk_hy",
-                                                                              "amk_p2","dggath","dgord",
-                                                                              "dgscat","gbase","gmap",
-                                                                              "gmk_m2","gmk_msh","gmtst",
-                                                                              "gotst","gpart","gtst",
-                                                                              "mmk_m2","mord","amk_ccc",
-                                                                              "amk_grf","amk_m2","atst",
-                                                                              "dgmap","dgpart","dgtst",
-                                                                              "gcv","gmk_hy","gmk_m3",
-                                                                              "gmk_ub2","gord","gout",
-                                                                              "gscat","mcv","mmk_m3",
-                                                                              "mtst"]] +
-                                                      ['include/%s.h' % x for x in ["esmumps","ptscotchf",
-                                                                                    "ptscotch","scotchf",
-                                                                                    "scotch"]] +
-                                                      ['lib/lib%s.a' % x for x in ["esmumps","ptscotch",
-                                                                                   "ptscotcherrexit",
-                                                                                   "scotcherr",
-                                                                                   "scotch_group",
-                                                                                   "ptesmumps",
-                                                                                   "ptscotcherr",
-                                                                                   "scotch",
-                                                                                   "scotcherrexit"]],
-                                             'dirs':[]
-                                             })
-
-            self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
-
-        super(self.__class__, self).sanity_check_step()
+        super(self.__class__, self).sanity_check_step(custom_paths=custom_paths)

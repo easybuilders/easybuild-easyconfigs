@@ -349,35 +349,32 @@ class EB_imkl(EB_IntelBase):
 
 
     def sanity_check_step(self):
+        """Custom sanity check paths for Intel MKL."""
 
-        if not self.getcfg('sanityCheckPaths'):
-
-            mklfiles = None
-            mkldirs = None
-            if LooseVersion(self.get_version()) >= LooseVersion('10.3'):
-                if self.getcfg('m32'):
-                    self.log.error("Sanity check for 32-bit not implemented yet for IMKL v%s (>= 10.3)" % self.get_version())
-                else:
-                    mklfiles = ["mkl/lib/intel64/libmkl.so", "mkl/include/mkl.h"]
-                    mkldirs = ["bin", "mkl/bin", "mkl/bin/intel64",
-                             "mkl/lib/intel64", "mkl/include"]
-                    if LooseVersion(self.version()) >= LooseVersion('10.3.4'):
-                        mkldirs += ["compiler/lib/intel64"]
-                    else:
-                        mkldirs += ["lib/intel64"]
+        mklfiles = None
+        mkldirs = None
+        if LooseVersion(self.get_version()) >= LooseVersion('10.3'):
+            if self.getcfg('m32'):
+                self.log.error("Sanity check for 32-bit not implemented yet for IMKL v%s (>= 10.3)" % self.get_version())
             else:
-                if self.getcfg('m32'):
-                    mklfiles = ["lib/32/libmkl.so", "include/mkl.h"]
-                    mkldirs = ["lib/32", "include/32", "interfaces"]
+                mklfiles = ["mkl/lib/intel64/libmkl.so", "mkl/include/mkl.h"]
+                mkldirs = ["bin", "mkl/bin", "mkl/bin/intel64",
+                         "mkl/lib/intel64", "mkl/include"]
+                if LooseVersion(self.version()) >= LooseVersion('10.3.4'):
+                    mkldirs += ["compiler/lib/intel64"]
                 else:
-                    mklfiles = ["lib/em64t/libmkl.so", "include/mkl.h"]
-                    mkldirs = ["lib/em64t", "include/em64t", "interfaces"]
+                    mkldirs += ["lib/intel64"]
+        else:
+            if self.getcfg('m32'):
+                mklfiles = ["lib/32/libmkl.so", "include/mkl.h"]
+                mkldirs = ["lib/32", "include/32", "interfaces"]
+            else:
+                mklfiles = ["lib/em64t/libmkl.so", "include/mkl.h"]
+                mkldirs = ["lib/em64t", "include/em64t", "interfaces"]
 
-            self.setcfg('sanityCheckPaths', {
-                                             'files': mklfiles,
-                                             'dirs': mkldirs
-                                            })
+        custom_paths = {
+                        'files': mklfiles,
+                        'dirs': mkldirs
+                       }
 
-            self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
-
-        super(self.__class__, self).sanity_check_step()
+        super(self.__class__, self).sanity_check_step(custom_paths=custom_paths)

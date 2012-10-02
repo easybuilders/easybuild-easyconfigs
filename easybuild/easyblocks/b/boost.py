@@ -139,18 +139,13 @@ class EB_Boost(EasyBlock):
     def sanity_check_step(self):
         """Custom sanity check for Boost."""
 
-        if not self.getcfg('sanityCheckPaths'):
+        mpifs = []
+        if self.getcfg('boost_mpi'):
+            mpifs = ['lib/libboost_mpi.so']
 
-            mpifs = []
-            if self.getcfg('boost_mpi'):
-                mpifs = ['lib/libboost_mpi.so']
+        custom_paths = {
+                        'files': mpifs + ['lib/libboost_%s.so' % x for x in ['python', 'system']],
+                       'dirs':['include/boost']
+                       }
 
-            self.setcfg('sanityCheckPaths', {
-                                             'files': mpifs + ['lib/libboost_%s.so' % x for x in ['python',
-                                                                                                  'system']],
-                                             'dirs':['include/boost']
-                                             })
-
-            self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
-
-        super(self.__class__, self).sanity_check_step()
+        super(self.__class__, self).sanity_check_step(custom_paths=custom_paths)

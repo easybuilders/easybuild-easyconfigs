@@ -119,13 +119,10 @@ class EB_METIS(EB_ConfigureMake):
             if LooseVersion(self.get_version()) < LooseVersion("5"):
                 dirs += ["Lib"]
 
-            self.setcfg('sanityCheckPaths', {
-                                             'files': ['bin/%s' % x for x in binfiles] +
-                                                      ['include/%s' % x for x in incfiles] +
-                                                      ['lib/libmetis.a'],
-                                             'dirs' : dirs
-                                             })
+        custom_paths = {
+                        'files': ['bin/%s' % x for x in binfiles] + ['include/%s' % x for x in incfiles] +
+                                 ['lib/libmetis.a'],
+                        'dirs' : dirs
+                       }
 
-            self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
-
-        super(self.__class__, self).sanity_check_step()
+        super(self.__class__, self).sanity_check_step(custom_paths=custom_paths)

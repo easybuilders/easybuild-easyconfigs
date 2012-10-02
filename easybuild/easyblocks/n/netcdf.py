@@ -61,29 +61,26 @@ class EB_netCDF(EB_ConfigureMake):
         """
         Custom sanity check for netCDF
         """
-        if not self.getcfg('sanityCheckPaths'):
 
-            incs = ["netcdf.h"]
-            libs = ["libnetcdf.so", "libnetcdf.a"]
-            # since v4.2, the non-C libraries have been split off in seperate extensions_step
-            # see netCDF-Fortran and netCDF-C++
-            if LooseVersion(self.get_version()) < LooseVersion("4.2"):
-                incs += ["netcdf%s" % x for x in ["cpp.h", ".hh", ".inc", ".mod"]] + \
-                        ["ncvalues.h", "typesizes.mod"]
-                libs += ["libnetcdf_c++.so", "libnetcdff.so",
-                         "libnetcdf_c++.a", "libnetcdff.a"]
+        incs = ["netcdf.h"]
+        libs = ["libnetcdf.so", "libnetcdf.a"]
+        # since v4.2, the non-C libraries have been split off in seperate extensions_step
+        # see netCDF-Fortran and netCDF-C++
+        if LooseVersion(self.get_version()) < LooseVersion("4.2"):
+            incs += ["netcdf%s" % x for x in ["cpp.h", ".hh", ".inc", ".mod"]] + \
+                    ["ncvalues.h", "typesizes.mod"]
+            libs += ["libnetcdf_c++.so", "libnetcdff.so",
+                     "libnetcdf_c++.a", "libnetcdff.a"]
 
-            self.setcfg('sanityCheckPaths',{
-                                            'files': ["bin/nc%s" % x for x in ["-config", "copy", "dump",
-                                                                              "gen", "gen3"]] +
-                                                     ["lib/%s" % x for x in libs] +
-                                                     ["include/%s" % x for x in incs],
-                                            'dirs': []
-                                           })
+        custom_paths = {
+                        'files': ["bin/nc%s" % x for x in ["-config", "copy", "dump",
+                                                          "gen", "gen3"]] +
+                                 ["lib/%s" % x for x in libs] +
+                                 ["include/%s" % x for x in incs],
+                        'dirs': []
+                       }
 
-            self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
-
-        super(self.__class__, self).sanity_check_step()
+        super(self.__class__, self).sanity_check_step(custom_paths=custom_paths)
 
 def set_netcdf_env_vars(log):
     """Set netCDF environment variables used by other software."""

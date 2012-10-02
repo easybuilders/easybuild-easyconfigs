@@ -67,27 +67,21 @@ class EB_HDF5(EB_ConfigureMake):
         """
         Custom sanity check for HDF5
         """
-        if not self.getcfg('sanityCheckPaths'):
 
-            if self.get_toolkit().opts['usempi']:
-                extra_binaries = ["bin/%s" % x for x in ["h5perf", "h5pcc", "h5pfc", "ph5diff"]]
-            else:
-                extra_binaries = ["bin/%s" % x for x in ["h5cc", "h5fc"]]
+        if self.get_toolkit().opts['usempi']:
+            extra_binaries = ["bin/%s" % x for x in ["h5perf", "h5pcc", "h5pfc", "ph5diff"]]
+        else:
+            extra_binaries = ["bin/%s" % x for x in ["h5cc", "h5fc"]]
 
-            self.setcfg('sanityCheckPaths',{
-                                            'files': ["bin/h5%s" % x for x in ["2gif", "c++", "copy",
-                                                                               "debug", "diff", "dump",
-                                                                               "import", "jam","ls",
-                                                                               "mkgrp", "perf_serial",
-                                                                               "redeploy", "repack",
-                                                                               "repart", "stat", "unjam"]] +
-                                                     ["bin/gif2h5"] + extra_binaries +
-                                                     ["lib/libhdf5%s.so" % x for x in ["_cpp", "_fortran",
-                                                                                       "_hl_cpp", "_hl",
-                                                                                       "hl_fortran", ""]],
-                                            'dirs': ['include']
-                                           })
+        custom_paths = {
+                        'files': ["bin/h5%s" % x for x in ["2gif", "c++", "copy", "debug", "diff",
+                                                           "dump", "import", "jam","ls", "mkgrp",
+                                                           "perf_serial", "redeploy", "repack",
+                                                           "repart", "stat", "unjam"]] +
+                                 ["bin/gif2h5"] + extra_binaries +
+                                 ["lib/libhdf5%s.so" % x for x in ["_cpp", "_fortran", "_hl_cpp",
+                                                                   "_hl", "hl_fortran", ""]],
+                        'dirs': ['include']
+                       }
 
-            self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
-
-        super(self.__class__, self).sanity_check_step()
+        super(self.__class__, self).sanity_check_step(custom_paths=custom_paths)

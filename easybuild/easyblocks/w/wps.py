@@ -326,17 +326,13 @@ class EB_WPS(EasyBlock):
     def sanity_check_step(self):
         """Custom sanity check for WPS."""
 
-        if not self.getcfg('sanityCheckPaths'):
+        custom_paths = {
+                        'files': ["WPS/%s" % x for x in ["geogrid.exe", "metgrid.exe",
+                                                         "ungrib.exe"]],
+                        'dirs': []
+                       }
 
-            self.setcfg('sanityCheckPaths', {
-                                             'files': ["WPS/%s" % x for x in ["geogrid.exe", "metgrid.exe",
-                                                                             "ungrib.exe"]],
-                                             'dirs': []
-                                            })
-
-            self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
-
-        super(self.__class__, self).sanity_check_step()
+        super(self.__class__, self).sanity_check_step(custom_paths=custom_paths)
 
     def make_module_req_guess(self):
         """Make sure PATH and LD_LIBRARY_PATH are set correctly."""

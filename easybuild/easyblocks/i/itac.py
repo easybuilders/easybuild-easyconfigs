@@ -80,6 +80,16 @@ EULA=accept
 
         run_cmd(cmd, log_all=True, simple=True)
 
+    def sanity_check_step(self):
+        """Custom sanity check paths for ITAC."""
+
+        custom_paths = {
+                        'files': ["include/%s" % x for x in ["i_malloc.h", "VT_dynamic.h", "VT.h", "VT.inc"]],
+                        'dirs': ["bin", "itac", "lib", "slib"]
+                       }
+
+        super(self.__class__, self).sanity_check_step(custom_paths=custom_paths)
+
     def make_module_req_guess(self):
         """
         A dictionary of possible directories to look for

@@ -31,21 +31,15 @@ class EB_MTL4(EB_Tarball):
     def sanity_check_step(self):
         """Custom sanity check for MTL4."""
 
-        if not self.getcfg('sanityCheckPaths'):
+        incpref = os.path.join('include', 'boost', 'numeric')
 
-            incpref = os.path.join('include', 'boost', 'numeric')
+        custom_paths = {
+                        'files':[],
+                        'dirs':[os.path.join(incpref, x) for x in ["itl", "linear_algebra",
+                                                                   "meta_math", "mtl"]]
+                     }
 
-            self.setcfg('sanityCheckPaths', {
-                                             'files':[],
-                                             'dirs':[os.path.join(incpref, x) for x in ["itl",
-                                                                                        "linear_algebra",
-                                                                                        "meta_math",
-                                                                                        "mtl"]]
-                                             })
-
-            self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
-
-        super(self.__class__, self).sanity_check_step()
+        super(self.__class__, self).sanity_check_step(custom_paths=custom_paths)
 
     def make_module_req_guess(self):
         """Adjust CPATH for MTL4."""

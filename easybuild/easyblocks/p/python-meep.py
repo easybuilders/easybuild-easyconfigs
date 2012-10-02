@@ -122,14 +122,12 @@ class EB_python_minus_meep(EasyBlock):
 
     def sanity_check_step(self):
 
-        if not self.getcfg('sanityCheckPaths'):
-            self.setcfg('sanityCheckPaths',{'files':["site-packages/meep_mpi.py"],
-                                            'dirs':[]
-                                           })
+        custom_paths = {
+                        'files':["site-packages/meep_mpi.py"],
+                        'dirs':[]
+                       }
 
-            self.log.info("Customized sanity check paths: %s"%self.getcfg('sanityCheckPaths'))
-
-        super(self.__class__, self).sanity_check_step()
+        super(self.__class__, self).sanity_check_step(custom_paths=custom_paths)
 
     def make_module_extra(self):
         """Set python-meep specific environment variables in module."""

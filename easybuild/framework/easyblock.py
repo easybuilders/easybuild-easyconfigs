@@ -1195,33 +1195,39 @@ class EasyBlock(object):
             adjust_permissions(self.installdir, perms, add=False, recursive=True, relative=True, ignore_errors=True)
             self.log.info("Successfully removed write permissions recursively for *EVERYONE* on install dir.")
 
-    def sanity_check_step(self):
+    def sanity_check_step(self, custom_paths=None, custom_commands=None):
         """
         Do a sanity check on the installation
         - if *any* of the files/subdirectories in the installation directory listed
           in sanityCheckPaths are non-existent (or empty), the sanity check fails
         """
         # prepare sanity check paths
-        self.sanityCheckPaths = self.getcfg('sanityCheckPaths')
-        if not self.sanityCheckPaths:
-            self.sanityCheckPaths = {'files':[],
-                                   'dirs':["bin", "lib"]
-                                   }
-            self.log.info("Using default sanity check paths: %s" % self.sanityCheckPaths)
-        else:
-            ks = self.sanityCheckPaths.keys()
-            ks.sort()
-            valnottypes = [type(x) != list for x in self.sanityCheckPaths.values()]
-            lenvals = [len(x) for x in self.sanityCheckPaths.values()]
-            if not ks == ["dirs", "files"] or sum(valnottypes) > 0 or sum(lenvals) == 0:
-                self.log.error("Incorrect format for sanityCheckPaths (should only have 'files' and 'dirs' keys, values should be lists (at least one non-empty)).")
+        paths = self.getcfg('sanityCheckPaths')
+        self.log.info("Using specified sanity check paths: %s" % paths)
+        if not paths:
+            if custom_paths:
+                paths = custom_paths
+                self.log.info("Using customized sanity check paths: %s" % paths)
+            else:
+                paths = {
+                         'files':[],
+                         'dirs':["bin", "lib"]
+                        }
+                self.log.info("Using default sanity check paths: %s" % paths)
 
-            self.log.info("Using customized sanity check paths: %s" % self.sanityCheckPaths)
+        # check sanity check paths
+        ks = paths.keys()
+        ks.sort()
+        valnottypes = [type(x) != list for x in paths.values()]
+        lenvals = [len(x) for x in paths.values()]
+        if not ks == ["dirs", "files"] or sum(valnottypes) > 0 or sum(lenvals) == 0:
+            self.log.error("Incorrect format for sanityCheckPaths (should only have 'files' and 'dirs' keys, " \
+                           "values should be lists (at least one non-empty)).")
 
         self.sanityCheckOK = True
 
-        # check is files exist
-        for f in self.sanityCheckPaths['files']:
+        # check if files exist
+        for f in paths['files']:
             p = os.path.join(self.installdir, f)
             if not os.path.exists(p):
                 self.log.debug("Sanity check: did not find file %s in %s" % (f, self.installdir))
@@ -1232,7 +1238,7 @@ class EasyBlock(object):
 
         if self.sanityCheckOK:
             # check if directories exist, and whether they are non-empty
-            for d in self.sanityCheckPaths['dirs']:
+            for d in paths['dirs']:
                 p = os.path.join(self.installdir, d)
                 if not os.path.isdir(p) or not os.listdir(p):
                     self.log.debug("Sanity check: did not find non-empty directory %s in %s" % (d, self.installdir))
@@ -1260,6 +1266,13 @@ class EasyBlock(object):
 
         # run sanity check commands
         commands = self.getcfg('sanityCheckCommands')
+        self.log.info("Using specified sanity check paths: %s" % commands)
+        if not commands:
+            if custom_commands:
+                commands = custom_commands
+                self.log.info("Using customised sanity check commands: %s" % commands)
+            else:
+                commands = []
         for command in commands:
             # set command to default. This allows for config files with
             # non-tuple commands

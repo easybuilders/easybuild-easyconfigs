@@ -40,24 +40,21 @@ class EB_ifort(EB_icc, EB_IntelBase):
     """
 
     def sanity_check_step(self):
+        """Custom sanity check paths for ifort."""
 
-        if not self.getcfg('sanityCheckPaths'):
+        binprefix = "bin/intel64"
+        libprefix = "lib/intel64/lib"
+        if LooseVersion(self.version()) >= LooseVersion("2011"):
+            if LooseVersion(self.version()) <= LooseVersion("2011.3.174"):
+                binprefix = "bin"
+            else:
+                libprefix = "compiler/lib/intel64/lib"
 
-            binprefix = "bin/intel64"
-            libprefix = "lib/intel64/lib"
-            if LooseVersion(self.version()) >= LooseVersion("2011"):
-                if LooseVersion(self.version()) <= LooseVersion("2011.3.174"):
-                    binprefix = "bin"
-                else:
-                    libprefix = "compiler/lib/intel64/lib"
+        custom_paths = {
+                        'files': ["%s/%s" % (binprefix, x) for x in ["ifort", "idb"]] +
+                                 ["%s%s" % (libprefix, x) for x in ["ifcore.a", "ifcore.so",
+                                                                    "iomp5.a", "iomp5.so"]],
+                        'dirs': []
+                       }
 
-            self.setcfg('sanityCheckPaths', {
-                                             'files': ["%s/%s" % (binprefix, x) for x in ["ifort", "idb"]] +
-                                                      ["%s%s" % (libprefix, x) for x in ["ifcore.a", "ifcore.so",
-                                                                                         "iomp5.a", "iomp5.so"]],
-                                             'dirs': []
-                                            })
-
-            self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
-
-        EB_IntelBase.sanity_check_step(self)
+        EB_IntelBase.sanity_check_step(self, custom_paths=custom_paths)

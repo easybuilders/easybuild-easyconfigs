@@ -60,13 +60,10 @@ class EB_BiSearch(EasyBlock):
     def sanity_check_step(self):
         """Custom sanity check for BiSearch."""
 
-        if not self.getcfg('sanityCheckPaths'):
-            self.setcfg('sanityCheckPaths', {'files':["bin/%s" % x for x in ["fpcr", "indexing_cdna",
-                                                                             "indexing_genome", "makecomp"]],
-                                             'dirs':[]
-                                            }
-                        )
+        custom_paths = {
+                        'files':["bin/%s" % x for x in ["fpcr", "indexing_cdna",
+                                                        "indexing_genome", "makecomp"]],
+                        'dirs':[]
+                       }
 
-            self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
-
-        super(self.__class__, self).sanity_check_step()
+        super(self.__class__, self).sanity_check_step(custom_paths=custom_paths)

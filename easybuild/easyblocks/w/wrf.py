@@ -330,22 +330,18 @@ class EB_WRF(EasyBlock):
     def sanity_check_step(self):
         """Custom sanity check for WRF."""
 
-        if not self.getcfg('sanityCheckPaths'):
+        mainver = self.get_version().split('.')[0]
+        self.wrfsubdir = "WRFV%s" % mainver
 
-            mainver = self.get_version().split('.')[0]
-            self.wrfsubdir = "WRFV%s" % mainver
+        fs = ["libwrflib.a", "wrf.exe", "ideal.exe", "real.exe", "ndown.exe", "nup.exe", "tc.exe"]
+        ds = ["main", "run"]
 
-            fs = ["libwrflib.a", "wrf.exe", "ideal.exe", "real.exe", "ndown.exe", "nup.exe", "tc.exe"]
-            ds = ["main", "run"]
+        custom_paths = {
+                        'files': [os.path.join(self.wrfsubdir, "main", x) for x in fs],
+                        'dirs': [os.path.join(self.wrfsubdir, x) for x in ds]
+                       }
 
-            self.setcfg('sanityCheckPaths', {
-                                            'files': [os.path.join(self.wrfsubdir, "main", x) for x in fs],
-                                            'dirs': [os.path.join(self.wrfsubdir, x) for x in ds]
-                                           })
-
-            self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
-
-        super(self.__class__, self).sanity_check_step()
+        super(self.__class__, self).sanity_check_step(custom_paths=custom_paths)
 
     def make_module_req_guess(self):
 

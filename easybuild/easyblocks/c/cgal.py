@@ -50,15 +50,10 @@ class EB_CGAL(EB_CMake):
     def sanity_check_step(self):
         """Custom sanity check for CGAL."""
 
-        if not self.getcfg('sanityCheckPaths'):
+        custom_paths = {
+                        'files': ['bin/cgal_%s' % x for x in ["create_cmake_script", "make_macosx_app"]] +
+                                 ['lib/libCGAL%s.so' % x for x in ["", "_Core"]],
+                        'dirs':['include/CGAL', 'lib/CGAL']
+                       }
 
-            self.setcfg('sanityCheckPaths', {
-                                             'files': ['bin/cgal_%s' % x for x in ["create_cmake_script",
-                                                                                   "make_macosx_app"]] +
-                                                      ['lib/libCGAL%s.so' % x for x in ["", "_Core"]],
-                                             'dirs':['include/CGAL', 'lib/CGAL']
-                                             })
-
-            self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
-
-        super(self.__class__, self).sanity_check_step()
+        super(self.__class__, self).sanity_check_step(custom_paths=custom_paths)

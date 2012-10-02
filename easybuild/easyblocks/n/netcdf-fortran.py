@@ -54,16 +54,11 @@ class EB_netCDF_minus_Fortran(EB_ConfigureMake):
         """
         Custom sanity check for netCDF-Fortran
         """
-        if not self.getcfg('sanityCheckPaths'):
 
-            self.setcfg('sanityCheckPaths',{
-                                            'files': ["bin/nf-config"] +
-                                                     ["lib/%s" % x for x in ["libnetcdff.so", "libnetcdff.a"]] +
-                                                     ["include/%s" % x for x in ["netcdf.inc", "netcdf.mod",
-                                                                                 "typesizes.mod"]],
-                                            'dirs': []
-                                           })
+        custom_paths = {
+                        'files': ["bin/nf-config"] + ["lib/%s" % x for x in ["libnetcdff.so", "libnetcdff.a"]] +
+                                 ["include/%s" % x for x in ["netcdf.inc", "netcdf.mod", "typesizes.mod"]],
+                        'dirs': []
+                       }
 
-            self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
-
-        super(self.__class__, self).sanity_check_step()
+        super(self.__class__, self).sanity_check_step(custom_paths=custom_paths)

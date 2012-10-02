@@ -63,18 +63,13 @@ class EB_Primer3(EB_ConfigureMake):
     def sanity_check_step(self):
         """Custom sanity check for Primer3."""
 
-        if not self.getcfg('sanityCheckPaths'):
-            self.setcfg('sanityCheckPaths', {'files':["%s/%s" % (self.bindir, x) for x in ["primer3_core",
-                                                                                      "ntdpal",
-                                                                                      "oligotm",
-                                                                                      "long_seq_tm_test"]],
-                                             'dirs':[]
-                                            }
-                        )
+        custom_paths = {
+                        'files':["%s/%s" % (self.bindir, x) for x in ["primer3_core", "ntdpal",
+                                                                      "oligotm", "long_seq_tm_test"]],
+                        'dirs':[]
+                       }
 
-            self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
-
-        super(self.__class__, self).sanity_check_step()
+        super(self.__class__, self).sanity_check_step(custom_paths=custom_paths)
 
     def make_module_req_guess(self):
         """Correct suggestion for PATH variable."""

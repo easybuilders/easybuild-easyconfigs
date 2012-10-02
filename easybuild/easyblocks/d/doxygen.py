@@ -44,13 +44,10 @@ class EB_Doxygen(EB_ConfigureMake):
         """
         Custom sanity check for Doxygen
         """
-        if not self.getcfg('sanityCheckPaths'):
 
-            self.setcfg('sanityCheckPaths',{
-                                            'files': ["bin/doxygen"],
-                                            'dirs': []
-                                           })
+        custom_paths = {
+                        'files': ["bin/doxygen"],
+                        'dirs': []
+                       }
 
-            self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
-
-        super(self.__class__, self).sanity_check_step()
+        super(self.__class__, self).sanity_check_step(custom_paths=custom_paths)

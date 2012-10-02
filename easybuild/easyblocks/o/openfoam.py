@@ -133,37 +133,35 @@ class EB_OpenFOAM(EasyBlock):
     def sanity_check_step(self):
         """Custom sanity check for OpenFOAM"""
 
-        if not self.getcfg('sanityCheckPaths'):
+        odir = "%s-%s" % (self.get_name(), self.get_version())
 
-            odir = "%s-%s" % (self.get_name(), self.get_version())
+        psubdir = "linux64%sDPOpt" % self.wm_compiler
 
-            psubdir = "linux64%sDPOpt" % self.wm_compiler
+        if LooseVersion(self.get_version()) < LooseVersion("2"):
+            toolsdir = os.path.join(odir, "applications", "bin", psubdir)
 
-            if LooseVersion(self.get_version()) < LooseVersion("2"):
-                toolsdir = os.path.join(odir, "applications", "bin", psubdir)
+        else:
+            toolsdir = os.path.join(odir, "platforms", psubdir, "bin")
 
-            else:
-                toolsdir = os.path.join(odir, "platforms", psubdir, "bin")
+        pdirs = []
+        if LooseVersion(self.get_version()) >= LooseVersion("2"):
+            pdirs = [toolsdir, os.path.join(odir, "platforms", psubdir, "lib")]
 
-            pdirs = []
-            if LooseVersion(self.get_version()) >= LooseVersion("2"):
-                pdirs = [toolsdir, os.path.join(odir, "platforms", psubdir, "lib")]
+        # some randomly selected binaries
+        # if one of these is missing, it's very likely something went wrong
+        bins = [os.path.join(odir, "bin", x) for x in []] + \
+               [os.path.join(toolsdir, "buoyant%sSimpleFoam" % x) for x in ["", "Boussinesq"]] + \
+               [os.path.join(toolsdir, "%sFoam" % x) for x in ["bubble", "engine", "sonic"]] + \
+               [os.path.join(toolsdir, "surface%s" % x) for x in ["Add", "Find", "Smooth"]] + \
+               [os.path.join(toolsdir, x) for x in ["deformedGeom", "engineSwirl", "modifyMesh",
+                                                    "refineMesh", "vorticity"]]
 
-            # some randomly selected binaries
-            # if one of these is missing, it's very likely something went wrong
-            bins = [os.path.join(odir, "bin", x) for x in []] + \
-                   [os.path.join(toolsdir, "buoyant%sSimpleFoam" % x) for x in ["", "Boussinesq"]] + \
-                   [os.path.join(toolsdir, "%sFoam" % x) for x in ["bubble", "engine", "sonic"]] + \
-                   [os.path.join(toolsdir, "surface%s" % x) for x in ["Add", "Find", "Smooth"]] + \
-                   [os.path.join(toolsdir, x) for x in ["deformedGeom", "engineSwirl", "modifyMesh", "refineMesh", "vorticity"]]
+        custom_paths = {
+                        'files':["%s/etc/%s" % (odir, x) for x in ["bashrc", "cshrc"]] + bins,
+                        'dirs':pdirs
+                       }
 
-            self.setcfg('sanityCheckPaths',{'files':["%s/etc/%s" % (odir, x) for x in ["bashrc", "cshrc"]] + bins,
-                                            'dirs':pdirs
-                                           })
-
-            self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
-
-        super(self.__class__, self).sanity_check_step()
+        super(self.__class__, self).sanity_check_step(custom_paths=custom_paths)
 
     def make_module_extra(self):
         """Define extra environment variables required by OpenFOAM"""

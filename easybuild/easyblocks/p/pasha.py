@@ -52,12 +52,9 @@ class EB_Pasha(EB_ConfigureMake):
     def sanity_check_step(self):
         """Custom sanity check for Pasha"""
 
-        if not self.getcfg('sanityCheckPaths'):
-            self.setcfg('sanityCheckPaths', {
-                                             'files':["bin/pasha-%s" % x for x in ["kmergen",
-                                                                                   "pregraph",
-                                                                                   "graph"]],
-                                             'dirs':[],
-                                            })
+        custom_paths = {
+                        'files':["bin/pasha-%s" % x for x in ["kmergen", "pregraph", "graph"]],
+                        'dirs':[],
+                       }
 
-        super(self.__class__, self).sanity_check_step()
+        super(self.__class__, self).sanity_check_step(custom_paths=custom_paths)

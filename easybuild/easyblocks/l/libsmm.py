@@ -210,12 +210,9 @@ tasks=%(tasks)s
     def sanity_check_step(self):
         """Custom sanity check for libsmm"""
 
-        if not self.getcfg('sanityCheckPaths'):
-            self.setcfg('sanityCheckPaths', {
-                                             'files': ["lib/libsmm_%s.a" % x for x in ["dnn", "znn"]],
-                                             'dirs': []
-                                            })
+        custom_paths = {
+                        'files': ["lib/libsmm_%s.a" % x for x in ["dnn", "znn"]],
+                        'dirs': []
+                       }
 
-            self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
-
-        super(self.__class__, self).sanity_check_step()
+        super(self.__class__, self).sanity_check_step(custom_paths=custom_paths)

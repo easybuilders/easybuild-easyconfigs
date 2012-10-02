@@ -205,22 +205,18 @@ class EB_Trilinos(EB_CMake):
     def sanity_check_step(self):
         """Custom sanity check for Trilinos."""
 
-        if not self.getcfg('sanityCheckPaths'):
+        # selection of libraries
+        libs = ["Amesos", "Anasazi", "AztecOO", "Belos", "Epetra", "Galeri",
+                "GlobiPack", "Ifpack", "Intrepid", "Isorropia", "Kokkos",
+                "Komplex", "LOCA", "Mesquite", "ML", "Moertel", "MOOCHO", "NOX",
+                "Pamgen", "RTOp", "Rythmos", "Sacado", "Shards", "Stratimikos",
+                "Teuchos", "Tpetra", "Triutils", "Zoltan"]
 
-            # selection of libraries
-            libs = ["Amesos", "Anasazi", "AztecOO", "Belos", "Epetra", "Galeri",
-                    "GlobiPack", "Ifpack", "Intrepid", "Isorropia", "Kokkos",
-                    "Komplex", "LOCA", "Mesquite", "ML", "Moertel", "MOOCHO", "NOX",
-                    "Pamgen", "RTOp", "Rythmos", "Sacado", "Shards", "Stratimikos",
-                    "Teuchos", "Tpetra", "Triutils", "Zoltan"]
+        libs = [l for l in libs if not l in self.getcfg('skip_exts')]
 
-            libs = [l for l in libs if not l in self.getcfg('skip_exts')]
+        custom_paths = {
+                        'files':[os.path.join("lib", "lib%s.a" % x.lower()) for x in libs],
+                        'dirs':['bin', 'include']
+                       }
 
-            self.setcfg('sanityCheckPaths', {
-                                             'files':[os.path.join("lib", "lib%s.a" % x.lower()) for x in libs],
-                                             'dirs':['bin', 'include']
-                                             })
-
-            self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
-
-        super(self.__class__, self).sanity_check_step()
+        super(self.__class__, self).sanity_check_step(custom_paths=custom_paths)

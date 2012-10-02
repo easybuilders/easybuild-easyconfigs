@@ -125,15 +125,10 @@ class EB_SLEPc(EB_ConfigureMake):
 
     def sanity_check_step(self):
         """Custom sanity check for SLEPc"""
-        if not self.getcfg('sanityCheckPaths'):
 
-            self.setcfg('sanityCheckPaths', {
-                                             'files': [],
-                                             'dirs': [os.path.join(self.slepc_subdir, x) for x in ["conf",
-                                                                                                   "include",
-                                                                                                   "lib"]]
-                                            })
+        custom_paths = {
+                        'files': [],
+                        'dirs': [os.path.join(self.slepc_subdir, x) for x in ["conf", "include", "lib"]]
+                       }
 
-            self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
-
-        super(self.__class__, self).sanity_check_step()
+        super(self.__class__, self).sanity_check_step(custom_paths=custom_paths)

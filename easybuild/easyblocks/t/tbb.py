@@ -63,15 +63,12 @@ class EB_tbb(EB_IntelBase):
 
     def sanity_check_step(self):
 
-        if not self.getcfg('sanityCheckPaths'):
-            self.setcfg('sanityCheckPaths', {
-                                             'files':[],
-                                             'dirs':["tbb/bin", "tbb/lib/", "tbb/libs/"]
-                                            })
+        custom_paths = {
+                        'files':[],
+                        'dirs':["tbb/bin", "tbb/lib/", "tbb/libs/"]
+                       }
 
-            self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
-
-        super(self.__class__, self).sanity_check_step()
+        super(self.__class__, self).sanity_check_step(custom_paths=custom_paths)
 
     def make_module_extra(self):
         """Add correct path to lib to LD_LIBRARY_PATH. and intel license file"""

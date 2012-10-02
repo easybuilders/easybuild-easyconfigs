@@ -268,30 +268,21 @@ class EB_PETSc(EB_ConfigureMake):
     def sanity_check_step(self):
         """Custom sanity check for PETSc"""
 
-        if not self.getcfg('sanityCheckPaths'):
+        prefix1 = ""
+        prefix2 = ""
+        if self.getcfg('sourceinstall'):
+            prefix1 = self.petsc_subdir
+            prefix2 = os.path.join(self.petsc_subdir, self.petsc_arch)
 
-            prefix1 = ""
-            prefix2 = ""
-            if self.getcfg('sourceinstall'):
-                prefix1 = self.petsc_subdir
-                prefix2 = os.path.join(self.petsc_subdir, self.petsc_arch)
+        if self.getcfg('shared_libs'):
+            libext = get_shared_lib_ext()
+        else:
+            libext = "a"
 
-            if self.getcfg('shared_libs'):
-                libext = get_shared_lib_ext()
-            else:
-                libext = "a"
+        custom_paths = {
+                        'files': [os.path.join(prefix2, "lib", "libpetsc.%s" % libext)],
+                        'dirs': [os.path.join(prefix1, "bin"), os.path.join(prefix2, "conf"),
+                                 os.path.join(prefix1, "include"), os.path.join(prefix2, "include")]
+                       }
 
-            self.setcfg('sanityCheckPaths', {
-                                             'files': [os.path.join(prefix2,
-                                                                    "lib",
-                                                                    "libpetsc.%s" % libext)
-                                                       ],
-                                             'dirs': [os.path.join(prefix1, "bin"),
-                                                      os.path.join(prefix2, "conf"),
-                                                      os.path.join(prefix1, "include"),
-                                                      os.path.join(prefix2, "include")]
-                                           })
-
-            self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
-
-        super(self.__class__, self).sanity_check_step()
+        super(self.__class__, self).sanity_check_step(custom_paths=custom_paths)

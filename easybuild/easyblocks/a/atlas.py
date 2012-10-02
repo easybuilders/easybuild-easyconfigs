@@ -29,13 +29,13 @@ EasyBuild support for building and installing ATLAS, implemented as an easyblock
 import re
 import os
 
-from easybuild.framework.easyblock import EasyBlock
+from easybuild.easyblocks.configuremake import EB_ConfigureMake  #@UnresolvedImport
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.filetools import run_cmd
 from easybuild.tools.modules import get_software_root
 
 
-class EB_ATLAS(EasyBlock):
+class EB_ATLAS(EB_ConfigureMake):
     """
     Support for building ATLAS
     - configure (and check if it failed due to CPU throttling being enabled)
@@ -53,7 +53,7 @@ class EB_ATLAS(EasyBlock):
                       ('full_lapack', [False, "Build a full LAPACK library (requires netlib's LAPACK) (default: False)", CUSTOM]),
                       ('sharedlibs', [False, "Enable building of shared libs as well (default: False)", CUSTOM])
                      ]
-        return EasyBlock.extra_options(extra_vars)
+        return EB_ConfigureMake.extra_options(extra_vars)
 
     def configure_step(self):
 
@@ -188,23 +188,20 @@ Configure failed, not sure why (see output above).""" % out
         """
         Custom sanity check for ATLAS
         """
-        if not self.getcfg('sanityCheckPaths'):
 
-            libs = ["atlas", "cblas", "f77blas", "lapack", "ptcblas", "ptf77blas"]
+        libs = ["atlas", "cblas", "f77blas", "lapack", "ptcblas", "ptf77blas"]
 
-            static_libs = ["lib/lib%s.a" % x for x in libs]
+        static_libs = ["lib/lib%s.a" % x for x in libs]
 
-            if self.getcfg('sharedlibs'):
-                shared_libs = ["lib/lib%s.so" % x for x in libs]
-            else:
-                shared_libs = []
+        if self.getcfg('sharedlibs'):
+            shared_libs = ["lib/lib%s.so" % x for x in libs]
+        else:
+            shared_libs = []
 
-            self.setcfg('sanityCheckPaths', {
-                                             'files': ["include/%s" % x for x in ["cblas.h", "clapack.h"]] +
-                                                    static_libs + shared_libs,
-                                             'dirs': ["include/atlas"]
-                                            })
+        custom_paths = {
+                        'files': ["include/%s" % x for x in ["cblas.h", "clapack.h"]] + 
+                                 static_libs + shared_libs,
+                        'dirs': ["include/atlas"]
+                       }
 
-            self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
-
-        super(self.__class__, self).sanity_check_step()
+        super(self.__class__, self).sanity_check_step(custom_paths=custom_paths)

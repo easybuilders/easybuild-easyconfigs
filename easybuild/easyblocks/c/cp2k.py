@@ -676,15 +676,10 @@ maxtasks=%(maxtasks)s
     def sanity_check_step(self):
         """Custom sanity check for CP2K"""
 
-        if not self.getcfg('sanityCheckPaths'):
-            cp2k_type = self.getcfg('type')
-            self.setcfg('sanityCheckPaths',{
-                                            'files': ["bin/%s.%s" % (x, cp2k_type) for x in ["cp2k",
-                                                                                             "cp2k_shell",
-                                                                                             "fes"]],
-                                            'dirs': ["tests"]
-                                           })
+        cp2k_type = self.getcfg('type')
+        custom_paths = {
+                        'files': ["bin/%s.%s" % (x, cp2k_type) for x in ["cp2k", "cp2k_shell", "fes"]],
+                        'dirs': ["tests"]
+                       }
 
-            self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
-
-        super(self.__class__, self).sanity_check_step()
+        super(self.__class__, self).sanity_check_step(custom_paths=custom_paths)

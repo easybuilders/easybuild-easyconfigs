@@ -448,61 +448,57 @@ class EB_GCC(EasyBlock):
         Custom sanity check for GCC
         """
 
-        if not self.getcfg('sanityCheckPaths'):
+        kernel_name = get_kernel_name()
 
-            kernel_name = get_kernel_name()
+        sharedlib_ext = get_shared_lib_ext()
 
-            sharedlib_ext = get_shared_lib_ext()
+        common_infix = 'gcc/%s/%s' % (self.platform_lib, self.get_version())
 
-            common_infix = 'gcc/%s/%s' % (self.platform_lib, self.get_version())
+        bin_files = ["gcov"]
+        lib64_files = ["libgomp.%s" % sharedlib_ext, "libgomp.a"]
+        if kernel_name == 'Linux':
+            lib64_files.extend(["libgcc_s.%s" % sharedlib_ext, "libmudflap.%s" % sharedlib_ext, "libmudflap.a"])
+        libexec_files = []
+        dirs = ['lib/%s' % common_infix]
+        if kernel_name == 'Linux':
+            dirs.append('lib64')
 
-            bin_files = ["gcov"]
-            lib64_files = ["libgomp.%s" % sharedlib_ext, "libgomp.a"]
-            if kernel_name == 'Linux':
-                lib64_files.extend(["libgcc_s.%s" % sharedlib_ext, "libmudflap.%s" % sharedlib_ext, "libmudflap.a"])
-            libexec_files = []
-            dirs = ['lib/%s' % common_infix]
-            if kernel_name == 'Linux':
-                dirs.append('lib64')
+        if not self.getcfg('languages'):
+            # default languages are c, c++, fortran
+            bin_files = ["c++", "cpp", "g++", "gcc", "gcov", "gfortran"]
+            lib64_files.extend(["libstdc++.%s" % sharedlib_ext, "libstdc++.a"])
+            libexec_files = ['cc1', 'cc1plus', 'collect2', 'f951']
 
-            if not self.getcfg('languages'):
-                # default languages are c, c++, fortran
-                bin_files = ["c++", "cpp", "g++", "gcc", "gcov", "gfortran"]
-                lib64_files.extend(["libstdc++.%s" % sharedlib_ext, "libstdc++.a"])
-                libexec_files = ['cc1', 'cc1plus', 'collect2', 'f951']
+        if 'c' in self.getcfg('languages'):
+            bin_files.extend(['cpp', 'gcc'])
 
-            if 'c' in self.getcfg('languages'):
-                bin_files.extend(['cpp', 'gcc'])
+        if 'c++' in self.getcfg('languages'):
+            bin_files.extend(['c++', 'g++'])
+            dirs.append('include/c++/%s' % self.get_version())
+            lib64_files.extend(["libstdc++.%s" % sharedlib_ext, "libstdc++.a"])
 
-            if 'c++' in self.getcfg('languages'):
-                bin_files.extend(['c++', 'g++'])
-                dirs.append('include/c++/%s' % self.get_version())
-                lib64_files.extend(["libstdc++.%s" % sharedlib_ext, "libstdc++.a"])
+        if 'fortran' in self.getcfg('languages'):
+            bin_files.append('gfortran')
+            lib64_files.extend(['libgfortran.%s' % sharedlib_ext, 'libgfortran.a'])
 
-            if 'fortran' in self.getcfg('languages'):
-                bin_files.append('gfortran')
-                lib64_files.extend(['libgfortran.%s' % sharedlib_ext, 'libgfortran.a'])
+        if 'lto' in self.getcfg('languages'):
+            libexec_files.extend(['lto1', 'lto-wrapper'])
+            if kernel_name in ['Linux']:
+                libexec_files.append('liblto_plugin.%s' % sharedlib_ext)
 
-            if 'lto' in self.getcfg('languages'):
-                libexec_files.extend(['lto1', 'lto-wrapper'])
-                if kernel_name in ['Linux']:
-                    libexec_files.append('liblto_plugin.%s' % sharedlib_ext)
+        bin_files = ["bin/%s" % x for x in bin_files]
+        if kernel_name in ['Darwin']:
+            lib64_files = ["lib/%s" % x for x in lib64_files]
+        else:
+            lib64_files = ["lib64/%s" % x for x in lib64_files]
+        libexec_files = ["libexec/%s/%s" % (common_infix, x) for x in libexec_files]
 
-            bin_files = ["bin/%s" % x for x in bin_files]
-            if kernel_name in ['Darwin']:
-                lib64_files = ["lib/%s" % x for x in lib64_files]
-            else:
-                lib64_files = ["lib64/%s" % x for x in lib64_files]
-            libexec_files = ["libexec/%s/%s" % (common_infix, x) for x in libexec_files]
+        custom_paths = {
+                        'files': bin_files + lib64_files + libexec_files,
+                        'dirs': dirs
+                       }
 
-            self.setcfg('sanityCheckPaths', {
-                                             'files': bin_files + lib64_files + libexec_files,
-                                             'dirs': dirs
-                                            })
-
-            self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
-
-        super(self.__class__, self).sanity_check_step()
+        super(self.__class__, self).sanity_check_step(custom_paths=custom_paths)
 
     def make_module_req_guess(self):
         """

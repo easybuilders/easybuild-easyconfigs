@@ -180,60 +180,54 @@ class EB_DOLFIN(EB_CMakePythonPackage):
     def sanity_check_step(self):
         """Custom sanity check for DOLFIN."""
 
-        if not self.getcfg('sanityCheckPaths'):
-            self.setcfg('sanityCheckPaths', {
-                                             'files': ['bin/dolfin-%s' % x for x in ['version', 'convert',
-                                                                                     'order', 'plot']]
-                                                    + ['include/dolfin.h'],
-                                             'dirs':['%s/dolfin' % self.pylibdir]
-                                            })
+        # custom sanity check paths
+        custom_paths = {
+                         'files': ['bin/dolfin-%s' % x for x in ['version', 'convert', 'order', 'plot']] +
+                                  ['include/dolfin.h'],
+                         'dirs':['%s/dolfin' % self.pylibdir]
+                        }
 
-            self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
+        # custom sanity check commands
 
-        if not self.getcfg('sanityCheckCommands'):
+        # set cache/error dirs for Instant
+        instant_cache_dir = os.path.join(tempfile.gettempdir(), '.instant', 'cache')
+        instant_error_dir = os.path.join(tempfile.gettempdir(), '.instant', 'error')
+        env.set("INSTANT_CACHE_DIR",  instant_cache_dir)
+        env.set("INSTANT_ERROR_DIR",  instant_error_dir)
+        try:
+            os.makedirs(instant_cache_dir)
+            os.makedirs(instant_error_dir)
+        except OSError, err:
+            self.log.error("Failed to create Instant cache/error dirs: %s" % err)
 
-            # set cache/error dirs for Instant
-            instant_cache_dir = os.path.join(tempfile.gettempdir(), '.instant', 'cache')
-            instant_error_dir = os.path.join(tempfile.gettempdir(), '.instant', 'error')
-            env.set("INSTANT_CACHE_DIR",  instant_cache_dir)
-            env.set("INSTANT_ERROR_DIR",  instant_error_dir)
-            try:
-                os.makedirs(instant_cache_dir)
-                os.makedirs(instant_error_dir)
-            except OSError, err:
-                self.log.error("Failed to create Instant cache/error dirs: %s" % err)
+        pref = os.path.join('share', 'dolfin', 'demo')
 
-            pref = os.path.join('share', 'dolfin', 'demo')
+        # test command templates
+        cmd_template_python = " && ".join(["cd %(dir)s", "python demo_%(get_name)s.py", "cd -"])
 
-            # test command templates
-            cmd_template_python = " && ".join(["cd %(dir)s", "python demo_%(get_name)s.py", "cd -"])
+        cmd_template_cpp = " && ".join(["cd %(dir)s", "cmake . %s" % self.saved_configopts,
+                                        "make", "./demo_%(get_name)s", "cd -"])
 
-            cmd_template_cpp = " && ".join(["cd %(dir)s", "cmake . %s" % self.saved_configopts,
-                                            "make", "./demo_%(get_name)s", "cd -"])
+        # list based on demos available for DOLFIN v1.0.0
+        pde_demos = ['biharmonic', 'cahn-hilliard', 'hyperelasticity', 'mixed-poisson',
+                     'navier-stokes', 'poisson', 'stokes-iterative']
 
-            # list based on demos available for DOLFIN v1.0.0
-            pde_demos = ['biharmonic', 'cahn-hilliard', 'hyperelasticity', 'mixed-poisson',
-                         'navier-stokes', 'poisson', 'stokes-iterative']
+        demos = [os.path.join('la', 'eigenvalue')] + [os.path.join('pde', x) for x in pde_demos]
 
-            demos = [os.path.join('la', 'eigenvalue')] + [os.path.join('pde', x) for x in pde_demos]
+        # construct commands
+        cmds = [tmpl % {
+                        'dir': os.path.join(pref, d, subdir),
+                        'name': os.path.basename(d),
+                       }
+                for d in demos
+                for (tmpl, subdir) in [(cmd_template_python, 'python'), (cmd_template_cpp, 'cpp')]]
 
-            # construct commands
-            cmds = [tmpl % {
-                            'dir': os.path.join(pref, d, subdir),
-                            'name': os.path.basename(d),
-                           }
-                    for d in demos
-                    for (tmpl, subdir) in [(cmd_template_python, 'python'), (cmd_template_cpp, 'cpp')]]
+        # subdomains-poisson has no C++ get_version, only Python
+        name = 'subdomains-poisson'
+        path = os.path.join(pref, 'pde', name, 'python')
+        cmds += [cmd_template_python % {'dir': path, 'name': name}]
 
-            # subdomains-poisson has no C++ get_version, only Python
-            name = 'subdomains-poisson'
-            path = os.path.join(pref, 'pde', name, 'python')
-            cmds += [cmd_template_python % {'dir': path, 'name': name}]
+        # supply empty argument to each command
+        custom_commands = [(cmd, "") for cmd in cmds]
 
-            # supply empty argument to each command
-            cmds = [(cmd, "") for cmd in cmds]
-
-            # join all commands into one large single sanity check command
-            self.setcfg('sanityCheckCommands', cmds)
-
-        super(self.__class__, self).sanity_check_step()
+        super(self.__class__, self).sanity_check_step(custom_paths=custom_paths, custom_commands=custom_commands)

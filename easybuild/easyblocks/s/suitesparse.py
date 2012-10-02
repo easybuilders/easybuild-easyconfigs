@@ -136,15 +136,13 @@ class EB_SuiteSparse(EB_ConfigureMake):
 
     def sanity_check_step(self):
         """Custom sanity check for SuiteSparse."""
-        if not self.getcfg('sanityCheckPaths'):
-            self.setcfg('sanityCheckPaths', {
-                                             'files':["%s/lib/lib%s.a" % (x, x.lower()) for x in ["AMD", "BTF", "CAMD", "CCOLAMD", "CHOLMOD",
-                                                                                                  "COLAMD", "CXSparse", "KLU", "LDL", "RBio",
-                                                                                                  "SPQR", "UMFPACK"]] +
-                                                    ["CSparse3/lib/libcsparse.a"],
-                                             'dirs':["MATLAB_Tools"]
-                                            })
 
-            self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
+        custom_paths = {
+                        'files':["%s/lib/lib%s.a" % (x, x.lower()) for x in ["AMD", "BTF", "CAMD", "CCOLAMD", "CHOLMOD",
+                                                                             "COLAMD", "CXSparse", "KLU", "LDL", "RBio",
+                                                                             "SPQR", "UMFPACK"]] +
+                                ["CSparse3/lib/libcsparse.a"],
+                        'dirs':["MATLAB_Tools"]
+                       }
 
-        super(self.__class__, self).sanity_check_step()
+        super(self.__class__, self).sanity_check_step(custom_paths=custom_paths)

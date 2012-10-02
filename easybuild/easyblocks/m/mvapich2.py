@@ -111,17 +111,13 @@ class EB_MVAPICH2(EB_ConfigureMake):
         """
         Custom sanity check for MVAPICH2
         """
-        if not self.getcfg('sanityCheckPaths'):
+        custom_paths = {
+                        'files': ["bin/%s" % x for x in ["mpicc", "mpicxx", "mpif77",
+                                                         "mpif90", "mpiexec.hydra"]] +
+                                 ["lib/lib%s" % y for x in ["fmpich", "mpichcxx", "mpichf90",
+                                                            "mpich", "mpl", "opa"]
+                                                 for y in ["%s.so"%x, "%s.a"%x]],
+                        'dirs': ["include"]
+                       }
 
-            self.setcfg('sanityCheckPaths',{
-                                            'files': ["bin/%s" % x for x in ["mpicc", "mpicxx", "mpif77",
-                                                                            "mpif90", "mpiexec.hydra"]] +
-                                                     ["lib/lib%s" % y for x in ["fmpich", "mpichcxx", "mpichf90",
-                                                                               "mpich", "mpl", "opa"]
-                                                                     for y in ["%s.so"%x, "%s.a"%x]],
-                                            'dirs': ["include"]
-                                           })
-
-            self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
-
-        super(self.__class__, self).sanity_check_step()
+        super(self.__class__, self).sanity_check_step(custom_paths=custom_paths)

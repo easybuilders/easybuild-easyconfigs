@@ -78,10 +78,9 @@ class EB_g2clib(EasyBlock):
     def sanity_check_step(self):
         """Custom sanity check for g2clib."""
 
-        if not self.getcfg('sanityCheckPaths'):
-            self.setcfg('sanityCheckPaths', {
-                                             'files': ["lib/libgrib2c.a"],
-                                             'dirs': ["include"]
-                                            })
+        custom_paths = {
+                        'files': ["lib/libgrib2c.a"],
+                        'dirs': ["include"]
+                       }
 
-        super(self.__class__, self).sanity_check_step()
+        super(self.__class__, self).sanity_check_step(custom_paths=custom_paths)

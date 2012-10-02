@@ -77,6 +77,17 @@ class EB_Python(EB_ConfigureMake):
             except OSError, err:
                 self.log.error("Failed to symlink %s to %s: %s" % err)
 
+    def sanity_check_step(self):
+        """Custom sanity check for Primer3."""
+
+        pyver = "python%s" % '.'.join(self.get_version().split('.')[0:2])
+
+        custom_paths = {
+                        'files':["bin/%s" % pyver, "lib/lib%s.so" % pyver],
+                        'dirs':["include/%s" % pyver, "lib/%s" % pyver]
+                       }
+
+        super(self.__class__, self).sanity_check_step(custom_paths=custom_paths)
 
 class EB_DefaultPythonPackage(Extension):
     """

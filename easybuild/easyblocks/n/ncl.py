@@ -178,6 +178,17 @@ class EB_NCL(EasyBlock):
         cmd = "make Everything"
         run_cmd(cmd, log_all=True, simple=True)
 
+    def sanity_check_step(self):
+        """
+        Custom sanity check for NCL
+        """
+        custom_paths = {
+                        'files': ["bin/ncl", "lib/libncl.a", "lib/libncarg.a"],
+                        'dirs': ["include/ncarg"]
+                       }
+
+        super(self.__class__, self).sanity_check_step(custom_paths=custom_paths)
+
     def make_module_extra(self):
         """Set NCARG_ROOT environment variable in module."""
 

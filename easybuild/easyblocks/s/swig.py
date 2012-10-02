@@ -47,13 +47,9 @@ class EB_SWIG(EB_ConfigureMake):
     def sanity_check_step(self):
         """Custom sanity check for SWIG."""
 
-        if not self.getcfg('sanityCheckPaths'):
+        custom_paths = {
+                        'files':["bin/ccache-swig","bin/swig"],
+                        'dirs':[]
+                       }
 
-            self.setcfg('sanityCheckPaths', {
-                                             'files':["bin/ccache-swig","bin/swig"],
-                                             'dirs':[]
-                                             })
-
-            self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
-
-        super(self.__class__, self).sanity_check_step()
+        super(self.__class__, self).sanity_check_step(custom_paths=custom_paths)

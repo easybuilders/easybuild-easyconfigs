@@ -91,6 +91,25 @@ EULA=accept
             cmd = "./install.sh --tmp-dir=%s --silent=%s" % (tmpdir, silentcfg)
             run_cmd(cmd, log_all=True, simple=True)
 
+    def sanity_check_step(self):
+        """Custom sanity check paths for IMPI."""
+
+        suff = "64"
+        if self.getcfg('m32'):
+            suff = ""
+
+        custom_paths = {
+                        'files': ["bin/mpi%s" % x for x in ["icc", "icpc", "ifort"]] +
+                                 ["include%s/mpi%s.h" % (suff, x) for x in ["cxx", "f", "", "o", "of"]] +
+                                 ["include%s/%s" % (suff, x) for x in ["i_malloc.h", "mpi_base.mod",
+                                                                       "mpi_constants.mod", "mpi.mod",
+                                                                       "mpi_sizeofs.mod"]] +
+                                 ["lib%s/libmpi.so" % suff, "lib%s/libmpi.a" % suff],
+                        'dirs': []
+                       }
+
+        super(self.__class__, self).sanity_check_step(custom_paths=custom_paths)
+
     def make_module_req_guess(self):
         """
         A dictionary of possible directories to look for

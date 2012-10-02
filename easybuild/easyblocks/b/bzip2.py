@@ -46,16 +46,11 @@ class EB_bzip2(EB_ConfigureMake):
     def sanity_check_step(self):
         """Custom sanity check for bzip2."""
 
-        if not self.getcfg('sanityCheckPaths'):
+        custom_paths = {
+                        'files': ["bin/%s" % x for x in ["bunzip2", "bzcat", "bzdiff", "bzgrep",
+                                                         "bzip2", "bzip2recover", "bzmore"]] +
+                                 ['lib/libbz2.a', 'include/bzlib.h'],
+                         'dirs': []
+                        }
 
-            self.setcfg('sanityCheckPaths', {
-                                             'files': ["bin/%s" % x for x in ["bunzip2", "bzcat", "bzdiff",
-                                                                              "bzgrep", "bzip2",
-                                                                              "bzip2recover", "bzmore"]] +
-                                                      ['lib/libbz2.a', 'include/bzlib.h'],
-                                             'dirs': []
-                                             })
-
-            self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
-
-        super(self.__class__, self).sanity_check_step()
+        super(self.__class__, self).sanity_check_step(custom_paths=custom_paths)

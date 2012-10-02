@@ -62,24 +62,14 @@ class EB_SHRiMP(EB_ConfigureMake):
     def sanitycheck(self):
         """Custom sanity check for SHRiMP."""
 
-        if not self.getcfg('sanityCheckPaths'):
+        custom_paths = {
+                        'files':['bin/%s' % x for x in ["fasta2fastq", "gmapper", "mergesam",
+                                                        "prettyprint", "probcalc", "probcalc_mp",
+                                                        "shrimp2sam", "shrimp_var"]],
+                        'dirs':['utils']
+                       }
 
-            self.setcfg('sanityCheckPaths', {
-                                             'files':['bin/%s' % x for x in ["fasta2fastq",
-                                                                             "gmapper",
-                                                                             "mergesam",
-                                                                             "prettyprint",
-                                                                             "probcalc",
-                                                                             "probcalc_mp",
-                                                                             "shrimp2sam",
-                                                                             "shrimp_var"]
-                                                      ],
-                                             'dirs':['utils']
-                                             })
-
-            self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
-
-        super(self.__class__, self).sanitycheck()
+        super(self.__class__, self).sanitycheck(custom_paths=custom_paths)
 
     def make_module_req_guess(self):
         """Add both 'bin' and 'utils' directories to PATH."""

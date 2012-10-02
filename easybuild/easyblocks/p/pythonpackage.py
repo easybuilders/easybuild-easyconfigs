@@ -79,6 +79,17 @@ class EB_PythonPackage(EasyBlock):
 
         env.set('PYTHONPATH', pythonpath)
 
+    def sanity_check_step(self):
+        """
+        Custom sanity check for Python packages
+        """
+        custom_paths = {
+                        'files': [],
+                        'dirs': ["%s/%s" % (self.pylibdir, self.get_name().lower())]
+                       }
+
+        super(self.__class__, self).sanity_check_step(custom_paths=custom_paths)
+
     def make_module_extra(self):
         """Add install path to PYTHONPATH"""
 

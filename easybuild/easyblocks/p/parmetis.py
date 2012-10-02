@@ -168,14 +168,10 @@ class EB_ParMETIS(EasyBlock):
     def sanity_check_step(self):
         """Custom sanity check for ParMETIS."""
 
-        if not self.getcfg('sanityCheckPaths'):
+        custom_paths = {
+                        'files': ['include/%smetis.h' % x for x in ["", "par"]] +
+                                 ['lib/lib%smetis.a' % x for x in ["", "par"]],
+                        'dirs':['Lib']
+                       }
 
-            self.setcfg('sanityCheckPaths', {
-                                             'files': ['include/%smetis.h' % x for x in ["", "par"]] +
-                                                      ['lib/lib%smetis.a' % x for x in ["", "par"]],
-                                             'dirs':['Lib']
-                                             })
-
-            self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
-
-        super(self.__class__, self).sanity_check_step()
+        super(self.__class__, self).sanity_check_step(custom_paths=custom_paths)

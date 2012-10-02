@@ -81,13 +81,9 @@ class EB_Maple(EasyBlock):
     def sanity_check_step(self):
         """Custom sanity check for Maple."""
 
-        if not self.getcfg('sanityCheckPaths'):
+        custom_paths =  {
+                         'files': ['bin/maple', 'lib/maple.mla'] ,
+                         'dirs':[]
+                        }
 
-            self.setcfg('sanityCheckPaths', {
-                                             'files': ['bin/maple', 'lib/maple.mla'] ,
-                                             'dirs':[]
-                                             })
-
-            self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
-
-        super(self.__class__, self).sanity_check_step()
+        super(self.__class__, self).sanity_check_step(custom_paths=custom_paths)

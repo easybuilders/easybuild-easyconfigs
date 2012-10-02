@@ -48,13 +48,9 @@ class EB_Armadillo(EB_CMake):
     def sanity_check_step(self):
         """Custom sanity check for Armadillo."""
 
-        if not self.getcfg('sanityCheckPaths'):
+        custom_paths = {
+                        'files':['lib/libarmadillo.so', 'include/armadillo'],
+                        'dirs':['include/armadillo_bits']
+                       }
 
-            self.setcfg('sanityCheckPaths', {
-                                             'files':['lib/libarmadillo.so', 'include/armadillo'],
-                                             'dirs':['include/armadillo_bits']
-                                             })
-
-            self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
-
-        super(self.__class__, self).sanity_check_step()
+        super(self.__class__, self).sanity_check_step(custom_paths=custom_paths)

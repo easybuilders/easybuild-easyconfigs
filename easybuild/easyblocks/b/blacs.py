@@ -224,15 +224,12 @@ class EB_BLACS(EasyBlock):
     def sanity_check_step(self):
         """Custom sanity check for BLACS."""
 
-        if not self.getcfg('sanityCheckPaths'):
-            self.setcfg('sanityCheckPaths',{
-                                            'files': [fil for filptrn in ["blacs", "blacsCinit", "blacsF77init"]
-                                                          for fil in ["lib/lib%s.a" % filptrn,
-                                                                      "lib/%s_MPI-LINUX-0.a" % filptrn]] +
-                                                     ["bin/xintface"],
-                                            'dirs': []
-                                           })
+        custom_paths = {
+                        'files': [fil for filptrn in ["blacs", "blacsCinit", "blacsF77init"]
+                                      for fil in ["lib/lib%s.a" % filptrn,
+                                                  "lib/%s_MPI-LINUX-0.a" % filptrn]] +
+                                 ["bin/xintface"],
+                        'dirs': []
+                       }
 
-            self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
-
-        super(self.__class__, self).sanity_check_step()
+        super(self.__class__, self).sanity_check_step(custom_paths=custom_paths)
