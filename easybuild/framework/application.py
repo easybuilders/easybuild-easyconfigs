@@ -127,7 +127,7 @@ class Application:
 
             ## SOURCE
             print_msg("unpacking...", self.log)
-            self.run_step('source', [self.extract_step], skippable=True)
+            self.run_step('source', [self.checksum_step, self.extract_step], skippable=True)
 
             ## PATCH
             print_msg("patching...", self.log)
@@ -151,11 +151,15 @@ class Application:
 
             ## INSTALL
             print_msg("installing...", self.log)
-            self.run_step('install', [self.make_installdir, self.install_step], skippable=True)
+            self.run_step('install', [self.stage_install_step, self.make_installdir, self.install_step], skippable=True)
 
             ## EXTENSIONS
             print_msg("taking care of extensions...", self.log)
             self.run_step('extensions', [self.extensions_step])
+
+            ## PACKAGE
+            print_msg("packaging...", self.log)
+            self.run_step('package', [self.package_step])
 
             ## POSTPROC
             self.run_step('postproc', [self.post_install_step], skippable=True)
@@ -665,6 +669,10 @@ class Application:
             if not apply_patch(tmp['path'], src, copy=copy, level=level):
                 self.log.error("Applying patch %s failed" % tmp['name'])
 
+    def checksum_step(self):
+        """Verify checksum of sources, if available."""
+        pass
+
     def extract_step(self):
         """
         Unpack the source files.
@@ -966,6 +974,12 @@ class Application:
         Version of toolkit used to build this Application
         """
         return self.cfg.get_toolkit_version()
+
+    def stage_install_step(self):
+        """
+        Install in a stage directory before actual installation.
+        """
+        pass
 
     def install_step(self):
         """
@@ -1273,6 +1287,10 @@ class Application:
             self.log.warn("Could not determine install size: %s" % err)
 
         return det_installsize
+
+    def package_step(self):
+        """Package software (e.g. into an RPM)."""
+        pass
 
     def extensions_step(self):
         """
