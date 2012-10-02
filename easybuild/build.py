@@ -1109,14 +1109,14 @@ def write_to_xml(succes, failed, filename):
     for (obj, fase, error, _) in failed:
         # try to pretty print
         try:
-            el = create_failure("%s/%s" % (obj.name, obj.installversion()), fase, error)
+            el = create_failure("%s/%s" % (obj.name, obj.get_installversion()), fase, error)
         except AttributeError:
             el = create_failure(obj, fase, error)
 
         root.firstChild.appendChild(el)
 
     for (obj, stats) in succes:
-        el = create_success("%s/%s" % (obj.name, obj.installversion()), stats)
+        el = create_success("%s/%s" % (obj.name, obj.get_installversion()), stats)
         root.firstChild.appendChild(el)
 
     output_file = open(filename, "w")
@@ -1167,7 +1167,7 @@ def build_easyconfigs(easyconfigs, output_dir, test_results, options, log):
         # if initialisation step failed, app will be None
         if app: 
 
-            applog = os.path.join(output_dir, "%s-%s.log" % (app.name, app.installversion()))
+            applog = os.path.join(output_dir, "%s-%s.log" % (app.name, app.get_installversion()))
 
             start_time = time.time()
 

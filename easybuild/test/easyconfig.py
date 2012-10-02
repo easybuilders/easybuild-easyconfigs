@@ -120,7 +120,7 @@ stop = 'notvalid'
         self.assertErrorRegex(EasyBuildError, "OS dependencies were not found", eb.validate)
 
         # dummy toolkit, installversion == version
-        self.assertEqual(eb.installversion(), "3.14")
+        self.assertEqual(eb.get_installversion(), "3.14")
 
         os.chmod(self.eb_file, 0000)
         self.assertErrorRegex(EasyBuildError, "Unexpected IOError", EasyConfig, self.eb_file)
