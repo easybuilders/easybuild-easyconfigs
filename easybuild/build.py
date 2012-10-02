@@ -1193,7 +1193,7 @@ def build_easyconfigs(easyconfigs, output_dir, test_results, options, log):
             perform_step('sanity check', app, lambda x: x.sanitycheck(), applog)
             perform_step('cleanup', app, lambda x: x.cleanup(), applog)
             perform_step('make module', app, lambda x: x.make_module(), applog)
-            if not options.skip_tests and app.cfg['tests']:
+            if not options.skip_test_cases and app.cfg['tests']:
                 perform_step('test cases', app, lambda x: x.runtests(), applog)
 
             # close log and move it
