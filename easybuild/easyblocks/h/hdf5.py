@@ -43,21 +43,21 @@ class EB_HDF5(EB_ConfigureMake):
         for dep in deps:
             root = get_software_root(dep)
             if root:
-                self.updatecfg('configopts', '--with-%s=%s' % (dep.lower(), root))
+                self.cfg.update('configopts', '--with-%s=%s' % (dep.lower(), root))
             else:
                 self.log.error("Dependency module %s not loaded." % dep)
 
         fcomp = 'FC="%s"' % os.getenv('F77')
 
-        self.updatecfg('configopts', "--with-pic --with-pthread --enable-shared")
-        self.updatecfg('configopts', "--enable-cxx --enable-fortran %s" % fcomp)
+        self.cfg.update('configopts', "--with-pic --with-pthread --enable-shared")
+        self.cfg.update('configopts', "--enable-cxx --enable-fortran %s" % fcomp)
 
         # MPI and C++ support enabled requires --enable-unsupported, because this is untested by HDF5
-        if self.get_toolkit().opts['usempi']:
-            self.updatecfg('configopts', "--enable-unsupported")
+        if self.toolkit.opts['usempi']:
+            self.cfg.update('configopts', "--enable-unsupported")
 
         # make options
-        self.updatecfg('makeopts', fcomp)
+        self.cfg.update('makeopts', fcomp)
 
         super(self.__class__, self).configure_step()
 
@@ -68,7 +68,7 @@ class EB_HDF5(EB_ConfigureMake):
         Custom sanity check for HDF5
         """
 
-        if self.get_toolkit().opts['usempi']:
+        if self.toolkit.opts['usempi']:
             extra_binaries = ["bin/%s" % x for x in ["h5perf", "h5pcc", "h5pfc", "ph5diff"]]
         else:
             extra_binaries = ["bin/%s" % x for x in ["h5cc", "h5fc"]]

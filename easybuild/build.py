@@ -500,7 +500,7 @@ def processEasyconfig(path, log, onlyBlocks=None, regtest_online=False, validate
         # this app will appear as following module in the list
         easyconfig = {
                       'spec': spec,
-                      'module': (ec.get_name(), ec.get_installversion()),
+                      'module': (ec.name, ec.get_installversion()),
                       'dependencies': []
                      }
         if len(blocks) > 1:
@@ -511,8 +511,8 @@ def processEasyconfig(path, log, onlyBlocks=None, regtest_online=False, validate
             log.debug("Adding dependency %s for app %s." % (dep, name))
             easyconfig['dependencies'].append(dep)
 
-        if ec.get_toolkit_name() != 'dummy':
-            dep = (ec.get_toolkit_name(), ec.get_toolkit_version())
+        if ec.toolkit.name != 'dummy':
+            dep = (ec.toolkit.name, ec.toolkit.version)
             log.debug("Adding toolkit %s as dependency for app %s." % (dep, name))
             easyconfig['dependencies'].append(dep)
 
@@ -869,11 +869,11 @@ def build_and_install_software(module, options, log, origEnviron, exitOnFailure=
     # application settings
     if options.stop:
         log.debug("Stop set to %s" % options.stop)
-        app.setcfg('stop', options.stop)
+        app.cfg['stop'] = options.stop
 
     if options.skip:
         log.debug("Skip set to %s" % options.skip)
-        app.setcfg('skip', options.skip)
+        app.cfg['skip'] = options.skip
 
     # build easyconfig
     errormsg = '(no error)'
@@ -909,7 +909,7 @@ def build_and_install_software(module, options, log, origEnviron, exitOnFailure=
         except OSError, err:
             log.error("Failed to determine install size: %s" % err)
 
-        currentbuildstats = app.getcfg('buildstats')
+        currentbuildstats = app.cfg['buildstats']
         buildstats = {'build_time' : buildtime,
                  'platform' : platform.platform(),
                  'core_count' : systemtools.get_core_count(),
@@ -920,7 +920,7 @@ def build_and_install_software(module, options, log, origEnviron, exitOnFailure=
                  }
         log.debug("Build stats: %s" % buildstats)
 
-        if app.getcfg('stop'):
+        if app.cfg['stop']:
             ended = "STOPPED"
             newLogDir = os.path.join(app.builddir, config.log_path())
         else:
@@ -930,9 +930,9 @@ def build_and_install_software(module, options, log, origEnviron, exitOnFailure=
                 # upload spec to central repository
                 repo = getRepository()
                 if 'originalSpec' in module:
-                    repo.addEasyconfig(module['originalSpec'], app.get_name(), app.get_installversion() + ".block", buildstats, currentbuildstats)
-                repo.addEasyconfig(spec, app.get_name(), app.get_installversion(), buildstats, currentbuildstats)
-                repo.commit("Built %s/%s" % (app.get_name(), app.get_installversion()))
+                    repo.addEasyconfig(module['originalSpec'], app.name, app.get_installversion() + ".block", buildstats, currentbuildstats)
+                repo.addEasyconfig(spec, app.name, app.get_installversion(), buildstats, currentbuildstats)
+                repo.commit("Built %s/%s" % (app.name, app.get_installversion()))
                 del repo
             except EasyBuildError, err:
                 log.warn("Unable to commit easyconfig to repository (%s)", err)
@@ -952,7 +952,7 @@ def build_and_install_software(module, options, log, origEnviron, exitOnFailure=
             error("Failed to move log file %s to new log file %s: %s" % (app.logfile, applicationLog, err))
 
         try:
-            shutil.copy(spec, os.path.join(newLogDir, "%s-%s.eb" % (app.get_name(), app.get_installversion())))
+            shutil.copy(spec, os.path.join(newLogDir, "%s-%s.eb" % (app.name, app.get_installversion())))
         except IOError, err:
             error("Failed to move easyconfig %s to log dir %s: %s" % (spec, newLogDir, err))
 
@@ -1193,7 +1193,7 @@ def build_easyconfigs(easyconfigs, output_dir, test_results, options, log):
             perform_step('sanity check', app, lambda x: x.sanitycheck(), applog)
             perform_step('cleanup', app, lambda x: x.cleanup(), applog)
             perform_step('make module', app, lambda x: x.make_module(), applog)
-            if not options.skip_tests and app.getcfg('tests'):
+            if not options.skip_tests and app.cfg['tests']:
                 perform_step('test cases', app, lambda x: x.runtests(), applog)
 
             # close log and move it

@@ -53,17 +53,17 @@ class EB_MVAPICH2(EB_ConfigureMake):
     def configure_step(self):
 
         # things might go wrong if a previous install dir is present, so let's get rid of it
-        if not self.getcfg('keeppreviousinstall'):
+        if not self.cfg['keeppreviousinstall']:
             self.log.info("Making sure any old installation is removed before we start the build...")
             super(self.__class__, self).make_dir(self.installdir, True, dontcreateinstalldir=True)
 
         # additional configuration options
-        add_configopts = '--with-rdma=%s ' % self.getcfg('rdma_type')
+        add_configopts = '--with-rdma=%s ' % self.cfg['rdma_type']
 
         # use POSIX threads
         add_configopts += '--with-thread-package=pthreads '
 
-        if self.getcfg('debug'):
+        if self.cfg['debug']:
             # debug build, with error checking, timing and debug info
             # note: this will affact performance
             add_configopts += '--enable-fast=none '
@@ -94,14 +94,14 @@ class EB_MVAPICH2(EB_ConfigureMake):
                                      })
 
         # enable specific support options (if desired)
-        if self.getcfg('withmpe'):
+        if self.cfg['withmpe']:
             add_configopts += '--enable-mpe '
-        if self.getcfg('withlimic2'):
+        if self.cfg['withlimic2']:
             add_configopts += '--enable-limic2 '
-        if self.getcfg('withchkpt'):
+        if self.cfg['withchkpt']:
             add_configopts += '--enable-checkpointing --with-hydra-ckpointlib=blcr '
 
-        self.updatecfg('configopts', add_configopts)
+        self.cfg.update('configopts', add_configopts)
 
         super(self.__class__, self).configure_step()
 

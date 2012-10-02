@@ -58,12 +58,12 @@ class EB_OpenFOAM(EasyBlock):
         env.set("FOAM_INST_DIR", self.installdir)
 
         # third party directory
-        self.thrdpartydir = "ThirdParty-%s" % self.get_version()
+        self.thrdpartydir = "ThirdParty-%s" % self.version
         os.symlink(os.path.join("..", self.thrdpartydir), self.thrdpartydir)
         env.set("WM_THIRD_PARTY_DIR", os.path.join(self.installdir, self.thrdpartydir))
 
         # compiler
-        comp_fam = self.get_toolkit().comp_family()
+        comp_fam = self.toolkit.comp_family()
 
         if comp_fam == toolkit.GCC:
             self.wm_compiler="Gcc"
@@ -72,7 +72,7 @@ class EB_OpenFOAM(EasyBlock):
             self.wm_compiler="Icc"
 
             # make sure -no-prec-div is used with Intel compilers
-            self.updatecfg('premakeopts', 'CFLAGS="$CFLAGS -no-prec-div" CXXFLAGS="$CXXFLAGS -no-prec-div"')
+            self.cfg.update('premakeopts', 'CFLAGS="$CFLAGS -no-prec-div" CXXFLAGS="$CXXFLAGS -no-prec-div"')
 
         else:
             self.log.error("Unknown compiler family, don't know how to set WM_COMPILER")
@@ -80,7 +80,7 @@ class EB_OpenFOAM(EasyBlock):
         env.set("WM_COMPILER",self.wm_compiler)
 
         # type of MPI
-        mpi_type = self.get_toolkit().mpi_type()
+        mpi_type = self.toolkit.mpi_type()
 
         if mpi_type == toolkit.INTEL:
             self.mpipath = os.path.join(get_software_root('IMPI'),'intel64')
@@ -102,18 +102,18 @@ class EB_OpenFOAM(EasyBlock):
         env.set("FOAM_MPI_LIBBIN", self.mpipath)
 
         # parallel build spec
-        env.set("WM_NCOMPPROCS", str(self.getcfg('parallel')))
+        env.set("WM_NCOMPPROCS", str(self.cfg['parallel']))
 
     def build_step(self):
         """Build OpenFOAM using make after sourcing script to set environment."""
 
-        nameversion = "%s-%s"%(self.get_name(), self.get_version())
+        nameversion = "%s-%s"%(self.name, self.version)
 
         precmd = "source %s" % os.path.join(self.builddir, nameversion, "etc", "bashrc")
 
         # make directly in install directory
         cmd="%(precmd)s && %(premakeopts)s %(makecmd)s"%{'precmd':precmd,
-                                                         'premakeopts':self.getcfg('premakeopts'),
+                                                         'premakeopts':self.cfg['premakeopts'],
                                                          'makecmd':os.path.join(self.builddir, nameversion, "Allwmake")}
         run_cmd(cmd,log_all=True,simple=True,log_output=True)
     
@@ -133,18 +133,18 @@ class EB_OpenFOAM(EasyBlock):
     def sanity_check_step(self):
         """Custom sanity check for OpenFOAM"""
 
-        odir = "%s-%s" % (self.get_name(), self.get_version())
+        odir = "%s-%s" % (self.name, self.version)
 
         psubdir = "linux64%sDPOpt" % self.wm_compiler
 
-        if LooseVersion(self.get_version()) < LooseVersion("2"):
+        if LooseVersion(self.version) < LooseVersion("2"):
             toolsdir = os.path.join(odir, "applications", "bin", psubdir)
 
         else:
             toolsdir = os.path.join(odir, "platforms", psubdir, "bin")
 
         pdirs = []
-        if LooseVersion(self.get_version()) >= LooseVersion("2"):
+        if LooseVersion(self.version) >= LooseVersion("2"):
             pdirs = [toolsdir, os.path.join(odir, "platforms", psubdir, "lib")]
 
         # some randomly selected binaries
@@ -168,13 +168,13 @@ class EB_OpenFOAM(EasyBlock):
 
         txt = super(self.__class__, self).make_module_extra()
 
-        env_vars = [("WM_PROJECT_VERSION", self.get_version()),
+        env_vars = [("WM_PROJECT_VERSION", self.version),
                     ("FOAM_INST_DIR", "$root"),
                     ("WM_COMPILER", self.wm_compiler),
                     ("WM_MPLIB", self.wm_mplib),
                     ("MPI_ARCH_PATH", self.mpipath),
-                    ("FOAM_BASH", "$root/%s-%s/etc/bashrc" % (self.get_name(), self.get_version())),
-                    ("FOAM_CSH", "$root/%s-%s/etc/cshrc" % (self.get_name(), self.get_version())),
+                    ("FOAM_BASH", "$root/%s-%s/etc/bashrc" % (self.name, self.version)),
+                    ("FOAM_CSH", "$root/%s-%s/etc/cshrc" % (self.name, self.version)),
                     ]
 
         for env_var in env_vars:

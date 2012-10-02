@@ -55,7 +55,7 @@ class EB_Boost(EasyBlock):
         """Configure Boost build using custom tools"""
 
         # mpi sanity check
-        if self.getcfg('boost_mpi') and not self.get_toolkit().opts['usempi']:
+        if self.cfg['boost_mpi'] and not self.toolkit.opts['usempi']:
             self.log.error("When enabling building boost_mpi, also enable the 'usempi' toolkit option.")
 
         # create build directory (Boost doesn't like being built in source dir)
@@ -68,9 +68,9 @@ class EB_Boost(EasyBlock):
 
         # generate config depending on compiler used
         toolset = None
-        if self.get_toolkit().comp_family() == toolkit.INTEL:
+        if self.toolkit.comp_family() == toolkit.INTEL:
             toolset = 'intel-linux'
-        elif self.get_toolkit().comp_family() == toolkit.GCC:
+        elif self.toolkit.comp_family() == toolkit.GCC:
             toolset = 'gcc'
         else:
             self.log.error("Unknown compiler used, aborting.")
@@ -78,9 +78,9 @@ class EB_Boost(EasyBlock):
         cmd = "./bootstrap.sh --with-toolset=%s --prefix=%s" % (toolset, self.objdir)
         run_cmd(cmd, log_all=True, simple=True)
 
-        if self.getcfg('boost_mpi'):
+        if self.cfg['boost_mpi']:
 
-            self.get_toolkit().opts['usempi'] = True
+            self.toolkit.opts['usempi'] = True
             # configure the boost mpi module
             # http://www.boost.org/doc/libs/1_47_0/doc/html/mpi/getting_started.html
             # let Boost.Build know to look here for the config file
@@ -100,7 +100,7 @@ class EB_Boost(EasyBlock):
                 bjamoptions += " -s%s_INCLUDE=%s/include" % (lib.upper(), libroot)
                 bjamoptions += " -s%s_LIBPATH=%s/lib" % (lib.upper(), libroot)
 
-        if self.getcfg('boost_mpi'):
+        if self.cfg['boost_mpi']:
             self.log.info("Building boost_mpi library")
 
             bjammpioptions = "%s --user-config=user-config.jam --with-mpi" % bjamoptions
@@ -140,7 +140,7 @@ class EB_Boost(EasyBlock):
         """Custom sanity check for Boost."""
 
         mpifs = []
-        if self.getcfg('boost_mpi'):
+        if self.cfg['boost_mpi']:
             mpifs = ['lib/libboost_mpi.so']
 
         custom_paths = {

@@ -109,7 +109,7 @@ class EB_WRF(EasyBlock):
 
         # determine build type option to look for
         build_type_option = None
-        self.comp_fam = self.get_toolkit().comp_family()
+        self.comp_fam = self.toolkit.comp_family()
         if self.comp_fam == toolkit.INTEL:
             build_type_option = "Linux x86_64 i486 i586 i686, ifort compiler with icc"
 
@@ -122,7 +122,7 @@ class EB_WRF(EasyBlock):
         # fetch selected build type (and make sure it makes sense)
         known_build_types = ['serial', 'smpar', 'dmpar', 'dm+sm']
         self.parallel_build_types = ["dmpar", "smpar", "dm+sm"]
-        bt = self.getcfg('buildtype')
+        bt = self.cfg['buildtype']
 
         if not bt in known_build_types:
             self.log.error("Unknown build type: '%s'. Supported build types: %s" % (bt, known_build_types))
@@ -163,7 +163,7 @@ class EB_WRF(EasyBlock):
             sys.stdout.write(line)
 
         # rewrite optimization options if desired
-        if self.getcfg('rewriteopts'):
+        if self.cfg['rewriteopts']:
 
             # replace default -O3 option in configure.wrf with CFLAGS/FFLAGS from environment
             self.log.info("Rewriting optimization options in %s" % cfgfile)
@@ -189,7 +189,7 @@ class EB_WRF(EasyBlock):
         """Build and install WRF and testcases using provided compile script."""
 
         # enable parallel build
-        p = self.getcfg('parallel')
+        p = self.cfg['parallel']
         self.par = ""
         if p:
             self.par = "-j %s" % p
@@ -205,7 +205,7 @@ class EB_WRF(EasyBlock):
 
     def test_step(self):
         """Build and run tests included in the WRF distribution."""
-        if self.getcfg('runtest'):
+        if self.cfg['runtest']:
 
             # get list of WRF test cases
             self.testcases = []
@@ -216,7 +216,7 @@ class EB_WRF(EasyBlock):
                 self.log.error("Failed to determine list of test cases: %s" % err)
 
             # exclude 2d testcases in non-parallel WRF builds
-            if self.getcfg('buildtype') in self.parallel_build_types:
+            if self.cfg['buildtype'] in self.parallel_build_types:
                 self.testcases = [test for test in self.testcases if not "2d_" in test]
 
             # exclude real testcases
@@ -236,14 +236,14 @@ class EB_WRF(EasyBlock):
                         self.testcases.remove(test)
 
             # determine parallel setting (1/2 of available processors + 1)
-            n = self.getcfg('parallel') / 2 + 1
+            n = self.cfg['parallel'] / 2 + 1
 
             # prepare run command
 
             # stack limit needs to be set to unlimited for WRF to work well
-            if self.getcfg('buildtype') in self.parallel_build_types:
-                test_cmd = "ulimit -s unlimited && %s && %s" % (self.get_toolkit().mpi_cmd_for("./ideal.exe", 1),
-                                                                self.get_toolkit().mpi_cmd_for("./wrf.exe", n))
+            if self.cfg['buildtype'] in self.parallel_build_types:
+                test_cmd = "ulimit -s unlimited && %s && %s" % (self.toolkit.mpi_cmd_for("./ideal.exe", 1),
+                                                                self.toolkit.mpi_cmd_for("./wrf.exe", n))
             else:
                 test_cmd = "ulimit -s unlimited && ./ideal.exe && ./wrf.exe" % n
 
@@ -330,7 +330,7 @@ class EB_WRF(EasyBlock):
     def sanity_check_step(self):
         """Custom sanity check for WRF."""
 
-        mainver = self.get_version().split('.')[0]
+        mainver = self.version.split('.')[0]
         self.wrfsubdir = "WRFV%s" % mainver
 
         fs = ["libwrflib.a", "wrf.exe", "ideal.exe", "real.exe", "ndown.exe", "nup.exe", "tc.exe"]

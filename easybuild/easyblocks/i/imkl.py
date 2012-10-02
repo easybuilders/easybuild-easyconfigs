@@ -61,9 +61,9 @@ class EB_imkl(EB_IntelBase):
         """
         A dictionary of possible directories to look for
         """
-        if LooseVersion(self.get_version()) >= LooseVersion('10.3'):
-            if self.getcfg('m32'):
-                self.log.error("32-bit not supported yet for IMKL v%s (>= 10.3)" % self.get_version())
+        if LooseVersion(self.version) >= LooseVersion('10.3'):
+            if self.cfg['m32']:
+                self.log.error("32-bit not supported yet for IMKL v%s (>= 10.3)" % self.version)
             return {
                     'PATH': ['bin', 'mkl/bin', 'mkl/bin/intel64', 'composerxe-2011/bin'],
                     'LD_LIBRARY_PATH': ['lib/intel64', 'mkl/lib/intel64'],
@@ -73,7 +73,7 @@ class EB_imkl(EB_IntelBase):
                     'FPATH': ['mkl/include', 'mkl/include/fftw']
                    }
         else:
-            if self.getcfg('m32'):
+            if self.cfg['m32']:
                 return {
                         'PATH': ['bin', 'bin/ia32', 'tbb/bin/ia32'],
                         'LD_LIBRARY_PATH': ['lib', 'lib/32'],
@@ -97,7 +97,7 @@ class EB_imkl(EB_IntelBase):
         """Overwritten from Application to add extra txt"""
         txt = super(self.__class__, self).make_module_extra()
         txt += "prepend-path\t%s\t\t%s\n" % ('INTEL_LICENSE_FILE', self.license)
-        if self.getcfg('m32'):
+        if self.cfg['m32']:
             txt += "prepend-path\t%s\t\t$root/%s\n" % ('NLSPATH', 'idb/32/locale/%l_%t/%N')
         else:
             txt += "prepend-path\t%s\t\t$root/%s\n" % ('NLSPATH', 'idb/intel64/locale/%l_%t/%N')
@@ -110,12 +110,12 @@ class EB_imkl(EB_IntelBase):
         The mkl directory structure has thoroughly changed as from version 10.3.
         Hence post processing is quite different in both situations
         """
-        if LooseVersion(self.get_version()) >= LooseVersion('10.3'):
+        if LooseVersion(self.version) >= LooseVersion('10.3'):
             #Add convenient wrapper libs
             #- form imkl 10.3
 
-            if self.getcfg('m32'):
-                self.log.error("32-bit not supported yet for IMKL v%s (>=10.3)" % self.get_version())
+            if self.cfg['m32']:
+                self.log.error("32-bit not supported yet for IMKL v%s (>=10.3)" % self.version)
 
             extra = {
                      'libmkl.so': 'GROUP (-lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core)',
@@ -142,7 +142,7 @@ class EB_imkl(EB_IntelBase):
             m.addModule(self.cfg.dependencies())
             m.load()
 
-            if not self.getcfg('interfaces'):
+            if not self.cfg['interfaces']:
                 return
 
             # build the interfaces
@@ -236,7 +236,7 @@ class EB_imkl(EB_IntelBase):
             #- add wrapper libs
             #            Add convenient libs
             #- form imkl 10.1
-            if self.getcfg('m32'):
+            if self.cfg['m32']:
                 extra = {
                          'libmkl.so': 'GROUP (-lmkl_intel -lmkl_intel_thread -lmkl_core)',
                          'libmkl_em64t.a': 'GROUP (libmkl_intel.a libmkl_intel_thread.a libmkl_core.a)',
@@ -255,7 +255,7 @@ class EB_imkl(EB_IntelBase):
                          'libmkl_cdft.a': 'GROUP (libmkl_cdft_core.a)'
                         }
             for fil, txt in extra.items():
-                if self.getcfg('m32'):
+                if self.cfg['m32']:
                     dest = os.path.join(self.installdir, 'lib/32', fil)
                 else:
                     dest = os.path.join(self.installdir, 'lib/em64t', fil)
@@ -273,7 +273,7 @@ class EB_imkl(EB_IntelBase):
             m.addModule(self.cfg.dependencies())
             m.load()
 
-            if not self.getcfg('interfaces'):
+            if not self.cfg['interfaces']:
                 return
 
             # build the interfaces
@@ -290,7 +290,7 @@ class EB_imkl(EB_IntelBase):
                 self.log.exception("Can't change to interfaces directory %s" % interfacedir)
 
             interfacestarget = "libem64t"
-            if self.getcfg('m32'):
+            if self.cfg['m32']:
                 interfacestarget = "lib32"
 
             for i in lis1 + lis2:
@@ -330,7 +330,7 @@ class EB_imkl(EB_IntelBase):
                             newfil = '.'.join(ff[:-1]) + '_pic.' + ff[-1]
                         else:
                             newfil = fil
-                        if self.getcfg('m32'):
+                        if self.cfg['m32']:
                             dest = os.path.join(self.installdir, 'lib/32', newfil)
                         else:
                             dest = os.path.join(self.installdir, 'lib/em64t', newfil)
@@ -353,9 +353,9 @@ class EB_imkl(EB_IntelBase):
 
         mklfiles = None
         mkldirs = None
-        if LooseVersion(self.get_version()) >= LooseVersion('10.3'):
-            if self.getcfg('m32'):
-                self.log.error("Sanity check for 32-bit not implemented yet for IMKL v%s (>= 10.3)" % self.get_version())
+        if LooseVersion(self.version) >= LooseVersion('10.3'):
+            if self.cfg['m32']:
+                self.log.error("Sanity check for 32-bit not implemented yet for IMKL v%s (>= 10.3)" % self.version)
             else:
                 mklfiles = ["mkl/lib/intel64/libmkl.so", "mkl/include/mkl.h"]
                 mkldirs = ["bin", "mkl/bin", "mkl/bin/intel64",
@@ -365,7 +365,7 @@ class EB_imkl(EB_IntelBase):
                 else:
                     mkldirs += ["lib/intel64"]
         else:
-            if self.getcfg('m32'):
+            if self.cfg['m32']:
                 mklfiles = ["lib/32/libmkl.so", "include/mkl.h"]
                 mkldirs = ["lib/32", "include/32", "interfaces"]
             else:

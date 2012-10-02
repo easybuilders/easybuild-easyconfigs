@@ -41,19 +41,19 @@ class EB_netCDF(EB_ConfigureMake):
     def configure_step(self):
         """Configure build: set config options and configure"""
 
-        self.updatecfg('configopts', "--enable-shared")
+        self.cfg.update('configopts', "--enable-shared")
 
-        if self.get_toolkit().opts['pic']:
-            self.updatecfg('configopts', '--with-pic')
+        if self.toolkit.opts['pic']:
+            self.cfg.update('configopts', '--with-pic')
 
-        self.updatecfg('configopts', 'FCFLAGS="%s" CC="%s" FC="%s"' % (os.getenv('FFLAGS'),
+        self.cfg.update('configopts', 'FCFLAGS="%s" CC="%s" FC="%s"' % (os.getenv('FFLAGS'),
                                                                        os.getenv('MPICC'),
                                                                        os.getenv('F90')
                                                                       ))
 
         # add -DgFortran to CPPFLAGS when building with GCC
-        if self.get_toolkit().comp_family() == toolkit.GCC:
-            self.updatecfg('configopts', 'CPPFLAGS="%s -DgFortran"' % os.getenv('CPPFLAGS'))
+        if self.toolkit.comp_family() == toolkit.GCC:
+            self.cfg.update('configopts', 'CPPFLAGS="%s -DgFortran"' % os.getenv('CPPFLAGS'))
 
         super(self.__class__, self).configure_step()
 
@@ -66,7 +66,7 @@ class EB_netCDF(EB_ConfigureMake):
         libs = ["libnetcdf.so", "libnetcdf.a"]
         # since v4.2, the non-C libraries have been split off in seperate extensions_step
         # see netCDF-Fortran and netCDF-C++
-        if LooseVersion(self.get_version()) < LooseVersion("4.2"):
+        if LooseVersion(self.version) < LooseVersion("4.2"):
             incs += ["netcdf%s" % x for x in ["cpp.h", ".hh", ".inc", ".mod"]] + \
                     ["ncvalues.h", "typesizes.mod"]
             libs += ["libnetcdf_c++.so", "libnetcdff.so",

@@ -183,6 +183,16 @@ class EasyConfig(object):
         if validate:
             self.validate()
 
+    def update(self, key, value):
+        """
+        Update a string configuration value with a value (i.e. append to it).
+        """
+        prev_value = self[key]
+        if not type(prev_value) == str:
+            self.log.error("Can't update configuration value for %s, because it's not a string." % key)
+
+        self[key] = '%s %s ' % (prev_value, value)
+
     def parse(self, path, validate=True):
         """
         Parse the file and set options
@@ -282,26 +292,29 @@ class EasyConfig(object):
 
         return deps
 
-    def get_toolkit_name(self):
+    @property
+    def name(self):
         """
-        Returns toolkit name.
+        returns name
         """
-        return self['toolkit']['name']
+        return self['name']
 
-    def get_toolkit_version(self):
+    @property
+    def version(self):
         """
-        Returns toolkit version.
+        returns version
         """
-        return self['toolkit']['version']
+        return self['version']
 
-    def get_toolkit(self):
+    @property
+    def toolkit(self):
         """
         returns the Toolkit used
         """
         if self._toolkit:
             return self._toolkit
 
-        tk = Toolkit(self.get_toolkit_name(), self.get_toolkit_version())
+        tk = Toolkit(self['toolkit']['name'], self['toolkit']['version'])
         if self['toolkitopts']:
             tk.set_options(self['toolkitopts'])
 
@@ -312,14 +325,8 @@ class EasyConfig(object):
         """
         return the installation version
         """
-        return det_installversion(self['version'], self.get_toolkit_name(), self.get_toolkit_version(),
+        return det_installversion(self['version'], self.toolkit.name, self.toolkit.version,
                                   self['versionprefix'], self['versionsuffix'])
-
-    def get_name(self):
-        """
-        return name of the software
-        """
-        return self['name']
 
     def dump(self, fp):
         """
@@ -434,7 +441,7 @@ class EasyConfig(object):
             self.log.error('Dependency without version.')
 
         if not 'tk' in dependency:
-            dependency['tk'] = self.get_toolkit().get_dependency_version(dependency)
+            dependency['tk'] = self.toolkit.get_dependency_version(dependency)
 
         return dependency
 

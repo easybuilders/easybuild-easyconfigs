@@ -90,8 +90,8 @@ class EB_SuiteSparse(EB_ConfigureMake):
         """Install by copying the contents of the builddir to the installdir
         - keep permissions with copy2 !!
         """
-        for x in os.listdir(self.getcfg('start_dir')):
-            src = os.path.join(self.getcfg('start_dir'), x)
+        for x in os.listdir(self.cfg['start_dir']):
+            src = os.path.join(self.cfg['start_dir'], x)
             dst = os.path.join(self.installdir, x)
             try:
                 if os.path.isdir(src):

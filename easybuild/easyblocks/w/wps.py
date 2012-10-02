@@ -131,10 +131,10 @@ class EB_WPS(EasyBlock):
         # configure
 
         # determine build type option to look for
-        self.comp_fam = self.get_toolkit().comp_family()
+        self.comp_fam = self.toolkit.comp_family()
         build_type_option = None
 
-        if LooseVersion(self.get_version()) >= LooseVersion("3.4"):
+        if LooseVersion(self.version) >= LooseVersion("3.4"):
 
             knownbuildtypes = {
                                'smpar': 'serial',
@@ -168,7 +168,7 @@ class EB_WPS(EasyBlock):
                 self.log.error("Don't know how to figure out build type to select.")
 
         # check and fetch selected build type
-        bt = self.getcfg('buildtype')
+        bt = self.cfg['buildtype']
 
         if not bt in knownbuildtypes.keys():
             self.log.error("Unknown build type: '%s'. Supported build types: %s" % (bt, knownbuildtypes.keys()))
@@ -220,8 +220,8 @@ class EB_WPS(EasyBlock):
             if not re_success.search(out):
                 self.log.error("%s.exe failed (pattern '%s' not found)?" % (cmdname, re_success.pattern))
 
-        if self.getcfg('runtest'):
-            if not self.getcfg('testdata'):
+        if self.cfg['runtest']:
+            if not self.cfg['testdata']:
                 self.log.error("List of URLs for testdata not provided.")
 
             wpsdir = os.path.join(self.builddir, "WPS")
@@ -233,7 +233,7 @@ class EB_WPS(EasyBlock):
 
                 # download data
                 testdata_paths = []
-                for testdata in self.getcfg('testdata'):
+                for testdata in self.cfg['testdata']:
                     path = self.obtain_file(testdata)
                     if not path:
                         self.log.error("Downloading file from %s failed?" % testdata)
@@ -338,8 +338,8 @@ class EB_WPS(EasyBlock):
         """Make sure PATH and LD_LIBRARY_PATH are set correctly."""
 
         return {
-                'PATH': [self.get_name()],
-                'LD_LIBRARY_PATH': [self.get_name()],
+                'PATH': [self.name],
+                'LD_LIBRARY_PATH': [self.name],
                 'MANPATH': [],
                }
 

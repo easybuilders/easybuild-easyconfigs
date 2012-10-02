@@ -58,28 +58,28 @@ class EB_ATLAS(EB_ConfigureMake):
     def configure_step(self):
 
         # configure for 64-bit build
-        self.updatecfg('configopts', "-b 64")
+        self.cfg.update('configopts', "-b 64")
 
-        if self.getcfg('ignorethrottling'):
+        if self.cfg['ignorethrottling']:
             # ignore CPU throttling check
             # this is not recommended, it will disturb the measurements done by ATLAS
             # used for the EasyBuild demo, to avoid requiring root privileges
-            self.updatecfg('configopts', '-Si cputhrchk 0')
+            self.cfg.update('configopts', '-Si cputhrchk 0')
 
         # if LAPACK is found, instruct ATLAS to provide a full LAPACK library
         # ATLAS only provides a few LAPACK routines natively
-        if self.getcfg('full_lapack'):
+        if self.cfg['full_lapack']:
             lapack = get_software_root('LAPACK')
             if lapack:
-                self.updatecfg('configopts', ' --with-netlib-lapack=%s/lib/liblapack.a' % lapack)
+                self.cfg.update('configopts', ' --with-netlib-lapack=%s/lib/liblapack.a' % lapack)
             else:
                 self.log.error("netlib's LAPACK library not available,"\
                                " required to build ATLAS with a full LAPACK library.")
 
         # enable building of shared libraries (requires -fPIC)
-        if self.getcfg('sharedlibs') or self.get_toolkit().opts['pic']:
+        if self.cfg['sharedlibs'] or self.toolkit.opts['pic']:
             self.log.debug("Enabling -fPIC because we're building shared ATLAS libs, or just because.")
-            self.updatecfg('configopts', '-Fa alg -fPIC')
+            self.cfg.update('configopts', '-Fa alg -fPIC')
 
         # ATLAS only wants to be configured/built in a separate dir'
         try:
@@ -90,14 +90,14 @@ class EB_ATLAS(EB_ConfigureMake):
             self.log.error("Failed to create obj directory to build in: %s" % err)
 
         # specify compilers
-        self.updatecfg('configopts', '-C ic %(cc)s -C if %(f77)s' % {
+        self.cfg.update('configopts', '-C ic %(cc)s -C if %(f77)s' % {
                                                                      'cc':os.getenv('CC'),
                                                                      'f77':os.getenv('F77')
                                                                     })
 
         # call configure in parent dir
-        cmd = "%s %s/configure --prefix=%s %s" % (self.getcfg('preconfigopts'), self.getcfg('start_dir'),
-                                                 self.installdir, self.getcfg('configopts'))
+        cmd = "%s %s/configure --prefix=%s %s" % (self.cfg['preconfigopts'], self.cfg['start_dir'],
+                                                 self.installdir, self.cfg['configopts'])
         (out, exitcode) = run_cmd(cmd, log_all=False, log_ok=False, simple=False)
 
         if exitcode != 0:
@@ -131,7 +131,7 @@ Configure failed, not sure why (see output above).""" % out
         super(self.__class__, self).build_step(verbose=verbose)
 
         # optionally also build shared libs
-        if self.getcfg('sharedlibs'):
+        if self.cfg['sharedlibs']:
             try:
                 os.chdir('lib')
             except OSError, err:
@@ -153,7 +153,7 @@ Configure failed, not sure why (see output above).""" % out
         If the full_lapack option was set to false we don't
         """
         super(self.__class__, self).install_step()
-        if not self.getcfg('full_lapack'):
+        if not self.cfg['full_lapack']:
             for i in ['liblapack.a', 'liblapack.so']:
                 lib = os.path.join(self.installdir, "lib", i[0])
                 if os.path.exists(lib):
@@ -166,20 +166,20 @@ Configure failed, not sure why (see output above).""" % out
     def test_step(self):
 
         # always run tests
-        if self.getcfg('runtest'):
+        if self.cfg['runtest']:
             self.log.warning("ATLAS testing is done using 'make check' and 'make ptcheck',"\
                              " so no need to set 'runtest' in the .eb spec file.")
 
         # sanity tests
-        self.setcfg('runtest', 'check')
+        self.cfg['runtest'] = 'check'
         super(self.__class__, self).test_step()
 
         # checks of threaded code
-        self.setcfg('runtest', 'ptcheck')
+        self.cfg['runtest'] = 'ptcheck'
         super(self.__class__, self).test_step()
 
         # performance summary
-        self.setcfg('runtest', 'time')
+        self.cfg['runtest'] = 'time'
         super(self.__class__, self).test_step()
 
     # default make install is fine
@@ -193,7 +193,7 @@ Configure failed, not sure why (see output above).""" % out
 
         static_libs = ["lib/lib%s.a" % x for x in libs]
 
-        if self.getcfg('sharedlibs'):
+        if self.cfg['sharedlibs']:
             shared_libs = ["lib/lib%s.so" % x for x in libs]
         else:
             shared_libs = []

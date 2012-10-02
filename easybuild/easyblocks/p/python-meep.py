@@ -87,7 +87,7 @@ class EB_python_minus_meep(EasyBlock):
         # locate tarball
         tarball = None
         shortver = '.'.join(self.version().split('.')[0:2])
-        fn_pattern = os.path.join(self.getcfg('startfrom'),
+        fn_pattern = os.path.join(self.cfg['startfrom'],
                                   'dist',
                                   "%s-%s.*.tar.gz" % (self.name(), shortver))
         matches = glob.glob(fn_pattern)

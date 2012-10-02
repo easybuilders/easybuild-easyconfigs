@@ -62,7 +62,7 @@ INSTALL_ITA=YES
 INSTALL_ITC=YES
 DEFAULT_MPI=%(mpi)s
 EULA=accept
-""" % {'lic': self.license, 'ins': self.installdir, 'mpi': self.getcfg('preferredmpi')}
+""" % {'lic': self.license, 'ins': self.installdir, 'mpi': self.cfg['preferredmpi']}
 
         # already in correct directory
         silentcfg = os.path.join(os.getcwd(), "silent.cfg")
@@ -70,7 +70,7 @@ EULA=accept
         f.write(silent)
         f.close()
 
-        tmpdir = os.path.join(os.getcwd(), self.get_version(), 'mytmpdir')
+        tmpdir = os.path.join(os.getcwd(), self.version, 'mytmpdir')
         try:
             os.makedirs(tmpdir)
         except:
@@ -94,7 +94,7 @@ EULA=accept
         """
         A dictionary of possible directories to look for
         """
-        preferredmpi = self.getcfg("preferredmpi")
+        preferredmpi = self.cfg["preferredmpi"]
         guesses = {
                    'MANPATH': ['man'],
                    'CLASSPATH': ['itac/lib_%s' % preferredmpi],
@@ -102,7 +102,7 @@ EULA=accept
                    'VT_SLIB_DIR': ['itac/lib_s%s' % preferredmpi]
                   }
 
-        if self.getcfg('m32'):
+        if self.cfg['m32']:
             guesses.update({
                             'PATH': ['bin', 'bin/ia32', 'ia32/bin'],
                             'LD_LIBRARY_PATH': ['lib', 'lib/ia32', 'ia32/lib'],
@@ -119,7 +119,7 @@ EULA=accept
         txt = super(self.__class__, self).make_module_extra()
         txt += "prepend-path\t%s\t\t%s\n" % ('INTEL_LICENSE_FILE', self.license)
         txt += "setenv\t%s\t\t$root\n" % 'VT_ROOT'
-        txt += "setenv\t%s\t\t%s\n" % ('VT_MPI', self.getcfg('preferredmpi'))
+        txt += "setenv\t%s\t\t%s\n" % ('VT_MPI', self.cfg['preferredmpi'])
         txt += "setenv\t%s\t\t%s\n" % ('VT_ADD_LIBS', '"-ldwarf -lelf -lvtunwind -lnsl -lm -ldl -lpthread"')
 
         return txt

@@ -43,7 +43,7 @@ class EB_SCOTCH(EasyBlock):
         """Configure SCOTCH build: locate the template makefile, copy it to a general Makefile.inc and patch it."""
 
         # pick template makefile
-        comp_fam = self.get_toolkit().comp_family()
+        comp_fam = self.toolkit.comp_family()
         if comp_fam == toolkit.INTEL:
             makefilename = 'Makefile.inc.x86-64_pc_linux2.icc'
         elif comp_fam == toolkit.GCC:
@@ -53,7 +53,7 @@ class EB_SCOTCH(EasyBlock):
 
         # create Makefile.inc
         try:
-            srcdir = os.path.join(self.getcfg('start_dir'), 'src')
+            srcdir = os.path.join(self.cfg['start_dir'], 'src')
             src = os.path.join(srcdir, 'Make.inc', makefilename)
             dst = os.path.join(srcdir, 'Makefile.inc')
             shutil.copy2(src, dst)
@@ -90,12 +90,12 @@ class EB_SCOTCH(EasyBlock):
         ccd = os.environ['MPICC']
 
         cflags = "-fPIC -O3 -DCOMMON_FILE_COMPRESS_GZ -DCOMMON_PTHREAD -DCOMMON_RANDOM_FIXED_SEED -DSCOTCH_RENAME"
-        if self.get_toolkit().comp_family() == toolkit.GCC:
+        if self.toolkit.comp_family() == toolkit.GCC:
             cflags += " -Drestrict=__restrict"
         else:
             cflags += " -restrict -DIDXSIZE64"
 
-        if not self.get_toolkit().mpi_type() == toolkit.INTEL:
+        if not self.toolkit.mpi_type() == toolkit.INTEL:
             cflags += " -DSCOTCH_PTHREAD"
 
         # actually build
@@ -112,7 +112,7 @@ class EB_SCOTCH(EasyBlock):
         regmetis = re.compile(r".*metis.*")
         try:
             for d in ["include", "lib", "bin", "man"]:
-                src = os.path.join(self.getcfg('start_dir'), d)
+                src = os.path.join(self.cfg['start_dir'], d)
                 dst = os.path.join(self.installdir, d)
                 # we don't need any metis stuff from scotch!
                 copytree(src, dst, ignore=lambda path, files: [x for x in files if regmetis.match(x)])

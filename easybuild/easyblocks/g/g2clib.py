@@ -50,7 +50,7 @@ class EB_g2clib(EasyBlock):
 
         # beware: g2clib uses INC, while g2lib uses INCDIR !
         makeopts = 'CC="%s" FC="%s" INC="-I%s/include"' % (os.getenv('CC'), os.getenv('F90'), jasper)
-        self.updatecfg('makeopts', makeopts)
+        self.cfg.update('makeopts', makeopts)
 
         super(self.__class__, self).build_step()
 
@@ -62,14 +62,14 @@ class EB_g2clib(EasyBlock):
             targetdir = os.path.join(self.installdir, "lib")
             os.mkdir(targetdir)
             fn = "libgrib2c.a"
-            shutil.copyfile(os.path.join(self.getcfg('start_dir'), fn),
+            shutil.copyfile(os.path.join(self.cfg['start_dir'], fn),
                             os.path.join(targetdir, fn))
 
             # copy header files
             targetdir = os.path.join(self.installdir, "include")
             os.mkdir(targetdir)
             for fn in glob.glob('*.h'):
-                shutil.copyfile(os.path.join(self.getcfg('start_dir'), fn),
+                shutil.copyfile(os.path.join(self.cfg['start_dir'], fn),
                                 os.path.join(targetdir, fn))
 
         except OSError, err:

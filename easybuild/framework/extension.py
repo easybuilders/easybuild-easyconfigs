@@ -70,36 +70,25 @@ class Extension(object):
         """
         pass
 
-    def get_toolkit(self):
+    @property
+    def toolkit(self):
         """
         Toolkit used to build this extension.
         """
-        return self.master.get_toolkit()
-
-    def get_toolkit_name(self):
-        """
-        Name of toolkit used to build this extension.
-        """
-        return self.master.get_toolkit_name()
-
-    def get_toolkit_version(self):
-        """
-        Version of toolkit used to build this extension.
-        """
-        return self.master.get_toolkit_version()
+        return self.master.toolkit
 
     def sanity_check_step(self):
         """
         sanity check to run after installing
         """
         try:
-            cmd, inp = self.master.getcfg('exts_filter')
+            cmd, inp = self.master.cfg['exts_filter']
         except:
             self.log.debug("no exts_filter setting found, skipping sanitycheck")
             return
 
-        if self.name in self.master.getcfg('exts_modulenames'):
-            modname = self.master.getcfg('exts_modulenames')[self.name]
+        if self.name in self.master.cfg['exts_modulenames']:
+            modname = self.master.cfg['exts_modulenames'][self.name]
         else:
             modname = self.name
         template = {'name': modname,

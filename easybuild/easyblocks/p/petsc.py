@@ -60,7 +60,7 @@ class EB_PETSc(EB_ConfigureMake):
     def make_builddir(self):
         """Decide whether or not to build in install dir before creating build dir."""
 
-        if self.getcfg('sourceinstall'):
+        if self.cfg['sourceinstall']:
             self.build_in_installdir = True
 
         super(self.__class__, self).make_builddir()
@@ -72,41 +72,41 @@ class EB_PETSc(EB_ConfigureMake):
         Configure procedure is much more concise for older versions (< v3).
         """
 
-        if LooseVersion(self.get_version()) >= LooseVersion("3"):
+        if LooseVersion(self.version) >= LooseVersion("3"):
 
             # compilers
-            self.updatecfg('configopts', '--with-cc="%s"' % os.getenv('CC'))
-            self.updatecfg('configopts', '--with-cxx="%s" --with-c++-support' % os.getenv('CXX'))
-            self.updatecfg('configopts', '--with-fc="%s"' % os.getenv('F90'))
+            self.cfg.update('configopts', '--with-cc="%s"' % os.getenv('CC'))
+            self.cfg.update('configopts', '--with-cxx="%s" --with-c++-support' % os.getenv('CXX'))
+            self.cfg.update('configopts', '--with-fc="%s"' % os.getenv('F90'))
 
             # compiler flags
-            self.updatecfg('configopts', '--with-cflags="%s"' % os.getenv('CFLAGS'))
-            self.updatecfg('configopts', '--with-cxxflags="%s"' % os.getenv('CXXFLAGS'))
-            self.updatecfg('configopts', '--with-fcflags="%s"' % os.getenv('F90FLAGS'))
+            self.cfg.update('configopts', '--with-cflags="%s"' % os.getenv('CFLAGS'))
+            self.cfg.update('configopts', '--with-cxxflags="%s"' % os.getenv('CXXFLAGS'))
+            self.cfg.update('configopts', '--with-fcflags="%s"' % os.getenv('F90FLAGS'))
 
-            if not self.get_toolkit().comp_family() == toolkit.GCC:
-                self.updatecfg('configopts', '--with-gnu-compilers=0')
+            if not self.toolkit.comp_family() == toolkit.GCC:
+                self.cfg.update('configopts', '--with-gnu-compilers=0')
 
             # MPI
-            if self.get_toolkit().opts['usempi']:
-                self.updatecfg('configopts', '--with-mpi=1')
+            if self.toolkit.opts['usempi']:
+                self.cfg.update('configopts', '--with-mpi=1')
 
             # build options
-            self.updatecfg('configopts', '--with-build_step-np=%s' % self.getcfg('parallel'))
-            self.updatecfg('configopts', '--with-shared-libraries=%d' % self.getcfg('shared_libs'))
-            self.updatecfg('configopts', '--with-debugging=%d' % self.get_toolkit().opts['debug'])
-            self.updatecfg('configopts', '--with-pic=%d' % self.get_toolkit().opts['pic'])
-            self.updatecfg('configopts', '--with-x=0 --with-windows-graphics=0')
+            self.cfg.update('configopts', '--with-build_step-np=%s' % self.cfg['parallel'])
+            self.cfg.update('configopts', '--with-shared-libraries=%d' % self.cfg['shared_libs'])
+            self.cfg.update('configopts', '--with-debugging=%d' % self.toolkit.opts['debug'])
+            self.cfg.update('configopts', '--with-pic=%d' % self.toolkit.opts['pic'])
+            self.cfg.update('configopts', '--with-x=0 --with-windows-graphics=0')
 
             # PAPI support
-            if self.getcfg('with_papi'):
-                papi_inc = self.getcfg('papi_inc')
+            if self.cfg['with_papi']:
+                papi_inc = self.cfg['papi_inc']
                 papi_inc_file = os.path.join(papi_inc, "papi.h")
-                papi_lib = self.getcfg('papi_lib')
+                papi_lib = self.cfg['papi_lib']
                 if os.path.isfile(papi_inc_file) and os.path.isfile(papi_lib):
-                    self.updatecfg('configopts', '--with-papi=1')
-                    self.updatecfg('configopts', '--with-papi-include=%s' % papi_inc)
-                    self.updatecfg('configopts', '--with-papi-lib=%s' % papi_lib)
+                    self.cfg.update('configopts', '--with-papi=1')
+                    self.cfg.update('configopts', '--with-papi-include=%s' % papi_inc)
+                    self.cfg.update('configopts', '--with-papi-lib=%s' % papi_lib)
                 else:
                     self.log.error("PAPI header (%s) and/or lib (%s) not found, " % (papi_inc_file,
                                                                                      papi_lib) + \
@@ -114,9 +114,9 @@ class EB_PETSc(EB_ConfigureMake):
 
             # Python extensions_step
             if get_software_root('Python'):
-                self.updatecfg('configopts', '--with-numpy=1')
-                if self.getcfg('shared_libs'):
-                    self.updatecfg('configopts', '--with-mpi4py=1')
+                self.cfg.update('configopts', '--with-numpy=1')
+                if self.cfg['shared_libs']:
+                    self.cfg.update('configopts', '--with-mpi4py=1')
 
             # BLACS, FFTW, ScaLAPACK
             for dep in ["BLACS", "FFTW", "ScaLAPACK"]:
@@ -125,9 +125,9 @@ class EB_PETSc(EB_ConfigureMake):
                 libs = os.getenv('%s_STATIC_LIBS' % dep.upper())
                 if inc and libdir and libs:
                     with_arg = "--with-%s" % dep.lower()
-                    self.updatecfg('configopts', '%s=1' % with_arg)
-                    self.updatecfg('configopts', '%s-include=%s' % (with_arg, inc))
-                    self.updatecfg('configopts', '%s-lib=[%s/%s]' % (with_arg, libdir, libs))
+                    self.cfg.update('configopts', '%s=1' % with_arg)
+                    self.cfg.update('configopts', '%s-include=%s' % (with_arg, inc))
+                    self.cfg.update('configopts', '%s-lib=[%s/%s]' % (with_arg, libdir, libs))
                 else:
                     self.log.info("Missing inc/lib info, so not enabling %s support." % dep)
 
@@ -135,7 +135,7 @@ class EB_PETSc(EB_ConfigureMake):
             bl_libdir = os.getenv('BLAS_LAPACK_LIB_DIR')
             bl_libs = os.getenv('BLAS_LAPACK_STATIC_LIBS')
             if bl_libdir and bl_libs:
-                self.updatecfg('configopts', '--with-blas-lapack-lib=[%s/%s]' % (bl_libdir, bl_libs))
+                self.cfg.update('configopts', '--with-blas-lapack-lib=[%s/%s]' % (bl_libdir, bl_libs))
             else:
                     self.log.error("One or more environment variables for BLAS/LAPACK not defined?")
 
@@ -150,7 +150,7 @@ class EB_PETSc(EB_ConfigureMake):
                 deproot = get_software_root(dep[0])
                 if deproot:
                     withdep = "--with-%s" % dep[1].lower()
-                    self.updatecfg('configopts', '%s=1 %s-dir=%s' % (withdep, withdep, deproot))
+                    self.cfg.update('configopts', '%s=1 %s-dir=%s' % (withdep, withdep, deproot))
 
             # CHOLMOD and UMFPACK are part of SuiteSparse
             suitesparse = get_software_root('SuiteSparse')
@@ -160,7 +160,7 @@ class EB_PETSc(EB_ConfigureMake):
                 umfpack_libs = [os.path.join(suitesparse, l, "Lib", "lib%s.a" % l.lower())
                                 for l in ["UMFPACK", "CHOLMOD", "COLAMD", "AMD"]]
 
-                self.updatecfg('configopts', ' '.join([(withdep+x) for x in [
+                self.cfg.update('configopts', ' '.join([(withdep+x) for x in [
                                                                              "=1",
                                                                              "-include=%s" % os.path.join(suitesparse, "UMFPACK", "Include"),
                                                                              "-lib=[%s]" % ','.join(umfpack_libs)
@@ -169,12 +169,12 @@ class EB_PETSc(EB_ConfigureMake):
                                )
 
             # set PETSC_DIR for configure (env) and build_step
-            env.set('PETSC_DIR', self.getcfg('start_dir'))
-            self.updatecfg('makeopts', 'PETSC_DIR=%s' % self.getcfg('start_dir'))
+            env.set('PETSC_DIR', self.cfg['start_dir'])
+            self.cfg.update('makeopts', 'PETSC_DIR=%s' % self.cfg['start_dir'])
 
-            if self.getcfg('sourceinstall'):
+            if self.cfg['sourceinstall']:
                 # run configure without --prefix (required)
-                cmd = "%s ./configure %s" % (self.getcfg('preconfigopts'), self.getcfg('configopts'))
+                cmd = "%s ./configure %s" % (self.cfg['preconfigopts'], self.cfg['configopts'])
                 (out, _) = run_cmd(cmd, log_all=True, simple=False)
             else:
                 out = super(self.__class__, self).configure_step()
@@ -184,29 +184,29 @@ class EB_PETSc(EB_ConfigureMake):
             if error_regexp.search(out):
                 self.log.error("Error(s) detected in configure output!")
 
-            if self.getcfg('sourceinstall'):
+            if self.cfg['sourceinstall']:
                 # figure out PETSC_ARCH setting
                 petsc_arch_regex = re.compile("^\s*PETSC_ARCH:\s*(\S+)$", re.M)
                 res = petsc_arch_regex.search(out)
                 if res:
                     self.petsc_arch = res.group(1)
-                    self.updatecfg('makeopts', 'PETSC_ARCH=%s' % self.petsc_arch)
+                    self.cfg.update('makeopts', 'PETSC_ARCH=%s' % self.petsc_arch)
                 else:
                     self.log.error("Failed to determine PETSC_ARCH setting.")
 
-            self.petsc_subdir = '%s-%s' % (self.get_name().lower(), self.get_version())
+            self.petsc_subdir = '%s-%s' % (self.name.lower(), self.version)
 
         else:  # old versions (< 3.x)
 
-            self.updatecfg('configopts', '--prefix=%s' % self.installdir)
-            self.updatecfg('configopts', '--with-shared=1')
+            self.cfg.update('configopts', '--prefix=%s' % self.installdir)
+            self.cfg.update('configopts', '--with-shared=1')
 
             # additional dependencies
             for dep in ["SCOTCH"]:
                 deproot = get_software_root(dep)
                 if deproot:
                     withdep = "--with-%s" % dep.lower()
-                    self.updatecfg('configopts', '%s=1 %s-dir=%s' % (withdep, withdep, deproot))
+                    self.cfg.update('configopts', '%s=1 %s-dir=%s' % (withdep, withdep, deproot))
 
             cmd = "./config/configure.py %s" % self.get_cfg('configopts')
             run_cmd(cmd, log_all=True, simple=True)
@@ -218,8 +218,8 @@ class EB_PETSc(EB_ConfigureMake):
         Install using make install (for non-source installations), 
         or by symlinking files (old versions, < 3).
         """
-        if LooseVersion(self.get_version()) >= LooseVersion("3"):
-            if not self.getcfg('sourceinstall'):
+        if LooseVersion(self.version) >= LooseVersion("3"):
+            if not self.cfg['sourceinstall']:
                 super(self.__class__, self).install_step()
 
         else:  # old versions (< 3.x)
@@ -239,7 +239,7 @@ class EB_PETSc(EB_ConfigureMake):
 
         prefix1 = ""
         prefix2 = ""
-        if self.getcfg('sourceinstall'):
+        if self.cfg['sourceinstall']:
             prefix1 = self.petsc_subdir
             prefix2 = os.path.join(self.petsc_subdir, self.petsc_arch)
 
@@ -256,7 +256,7 @@ class EB_PETSc(EB_ConfigureMake):
         """Set PETSc specific environment variables (PETSC_DIR, PETSC_ARCH)."""
         txt = super(self.__class__, self).make_module_extra()
 
-        if self.getcfg('sourceinstall'):
+        if self.cfg['sourceinstall']:
             txt += self.moduleGenerator.setEnvironment('PETSC_DIR', '$root/%s' % self.petsc_subdir)
             txt += self.moduleGenerator.setEnvironment('PETSC_ARCH', self.petsc_arch)
 
@@ -270,11 +270,11 @@ class EB_PETSc(EB_ConfigureMake):
 
         prefix1 = ""
         prefix2 = ""
-        if self.getcfg('sourceinstall'):
+        if self.cfg['sourceinstall']:
             prefix1 = self.petsc_subdir
             prefix2 = os.path.join(self.petsc_subdir, self.petsc_arch)
 
-        if self.getcfg('shared_libs'):
+        if self.cfg['shared_libs']:
             libext = get_shared_lib_ext()
         else:
             libext = "a"

@@ -36,12 +36,12 @@ class EB_Armadillo(EB_CMake):
         if not boost:
             self.log.error("Dependency module Boost not loaded?")
 
-        self.updatecfg('configopts', "-DBoost_DIR=%s" % boost)
-        self.updatecfg('configopts', "-DBOOST_INCLUDEDIR=%s/include" % boost)
-        self.updatecfg('configopts', "-DBoost_DEBUG=ON -DBOOST_ROOT=%s" % boost)
+        self.cfg.update('configopts', "-DBoost_DIR=%s" % boost)
+        self.cfg.update('configopts', "-DBOOST_INCLUDEDIR=%s/include" % boost)
+        self.cfg.update('configopts', "-DBoost_DEBUG=ON -DBOOST_ROOT=%s" % boost)
 
-        self.updatecfg('configopts', '-DBLAS_LIBRARY:PATH="%s"' % os.getenv('LIBBLAS'))
-        self.updatecfg('configopts', '-DLAPACK_LIBRARY:PATH="%s"' % os.getenv('LIBLAPACK'))
+        self.cfg.update('configopts', '-DBLAS_LIBRARY:PATH="%s"' % os.getenv('LIBBLAS'))
+        self.cfg.update('configopts', '-DLAPACK_LIBRARY:PATH="%s"' % os.getenv('LIBLAPACK'))
 
         super(self.__class__, self).configure_step()
 

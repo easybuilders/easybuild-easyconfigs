@@ -70,7 +70,7 @@ class EB_CP2K(EasyBlock):
         self.make_instructions = ''
 
         # always enable testing for CP2K
-        self.setcfg('runtest', True)
+        self.cfg['runtest'] = True
 
     @staticmethod
     def extra_options():
@@ -104,18 +104,18 @@ class EB_CP2K(EasyBlock):
         # set compilers options according to toolkit config
         # full debug: -g -traceback -check all -fp-stack-check
         # -g links to mpi debug libs
-        if self.get_toolkit().opts['debug']:
+        if self.toolkit.opts['debug']:
             self.debug = '-g'
             self.log.info("Debug build")
-        if self.get_toolkit().opts['pic']:
+        if self.toolkit.opts['pic']:
             self.fpic = "-fPIC"
             self.log.info("Using fPIC")
 
         # report on extra flags being used
-        if self.getcfg('extracflags'):
-            self.log.info("Using extra CFLAGS: %s" % self.getcfg('extracflags'))
-        if self.getcfg('extradflags'):
-            self.log.info("Using extra CFLAGS: %s" % self.getcfg('extradflags'))
+        if self.cfg['extracflags']:
+            self.log.info("Using extra CFLAGS: %s" % self.cfg['extracflags'])
+        if self.cfg['extradflags']:
+            self.log.info("Using extra CFLAGS: %s" % self.cfg['extradflags'])
 
         # libsmm support
         libsmm = get_software_root('libsmm')
@@ -123,22 +123,22 @@ class EB_CP2K(EasyBlock):
             libsmms = glob.glob(os.path.join(libsmm, 'lib', 'libsmm_*nn.a'))
             dfs = [os.path.basename(os.path.splitext(x)[0]).replace('lib', '-D__HAS_') for x in libsmms]
             moredflags = ' ' + ' '.join(dfs)
-            self.updatecfg('extradflags', moredflags)
+            self.cfg.update('extradflags', moredflags)
             self.libsmm = ' '.join(libsmms)
             self.log.debug('Using libsmm %s (extradflags %s)' % (self.libsmm, moredflags))
 
         # obtain list of modinc's to use
-        if self.getcfg("modinc"):
+        if self.cfg["modinc"]:
             self.modincpath = self.prepmodinc()
 
         # set typearch
-        self.typearch = "Linux-x86-64-%s" % self.get_toolkit().get_name
+        self.typearch = "Linux-x86-64-%s" % self.toolkit.name
 
         # extra make instructions
         self.make_instructions = "graphcon.o: graphcon.F\n\t$(FC) -c $(FCFLAGS2) $<\n"
 
         # compiler toolkit specific configuration
-        comp_fam = self.get_toolkit().comp_family()
+        comp_fam = self.toolkit.comp_family()
         if comp_fam == toolkit.INTEL:
             options = self.configureIntelBased()
         elif comp_fam == toolkit.GCC:
@@ -168,8 +168,8 @@ class EB_CP2K(EasyBlock):
         options['LIBS'] = "-Wl,--start-group %s -Wl,--end-group" % options['LIBS']
 
         # create arch file using options set
-        archfile = os.path.join(self.getcfg('start_dir'), 'arch',
-                                '%s.%s' % (self.typearch, self.getcfg('type')))
+        archfile = os.path.join(self.cfg['start_dir'], 'arch',
+                                '%s.%s' % (self.typearch, self.cfg['type']))
         try:
             txt = self._generateMakefile(options)
             f = open(archfile, 'w')
@@ -198,17 +198,17 @@ class EB_CP2K(EasyBlock):
                 self.log.error("Failed to create directory for module include files: %s" % err)
 
             # get list of modinc source files
-            modincdir = os.path.join(imkl, self.getcfg("modincprefix"), 'include')
+            modincdir = os.path.join(imkl, self.cfg["modincprefix"], 'include')
 
-            if type(self.getcfg("modinc")) == list:
-                modfiles = [os.path.join(modincdir, x) for x in self.getcfg("modinc")]
+            if type(self.cfg["modinc"]) == list:
+                modfiles = [os.path.join(modincdir, x) for x in self.cfg["modinc"]]
 
-            elif type(self.getcfg("modinc")) == bool and type(self.getcfg("modinc")):
+            elif type(self.cfg["modinc"]) == bool and type(self.cfg["modinc"]):
                 modfiles = glob.glob(os.path.join(modincdir, '*.f90'))
 
             else:
                 self.log.error("prepmodinc: Please specify either a boolean value " \
-                               "or a list of files in modinc (found: %s)." % self.getcfg("modinc"))
+                               "or a list of files in modinc (found: %s)." % self.cfg["modinc"])
 
             f77 = os.getenv('F77')
             if not f77:
@@ -235,11 +235,11 @@ class EB_CP2K(EasyBlock):
         # openmp introduces 2 major differences
         # -automatic is default: -noautomatic -auto-scalar
         # some mem-bandwidth optimisation
-        if self.getcfg('type') == 'psmp':
-            self.openmp = self.get_toolkit().get_openmp_flag()
+        if self.cfg['type'] == 'psmp':
+            self.openmp = self.toolkit.get_openmp_flag()
 
         # determine which opt flags to use
-        if self.getcfg('typeopt'):
+        if self.cfg['typeopt']:
             optflags = 'OPT'
             regflags = 'OPT2'
         else:
@@ -274,8 +274,8 @@ class EB_CP2K(EasyBlock):
 
                    'CFLAGS': ' %s %s $(FPIC) $(DEBUG) %s ' % (os.getenv('EBVARCPPFLAGS'),
                                                               os.getenv('EBVARLDFLAGS'),
-                                                              self.getcfg('extracflags')),
-                   'DFLAGS': ' -D__parallel -D__BLACS -D__SCALAPACK -D__FFTSG %s' % self.getcfg('extradflags'),
+                                                              self.cfg['extracflags']),
+                   'DFLAGS': ' -D__parallel -D__BLACS -D__SCALAPACK -D__FFTSG %s' % self.cfg['extradflags'],
 
                    'LIBS': os.getenv('LIBS'),
 
@@ -284,7 +284,7 @@ class EB_CP2K(EasyBlock):
                    'FCFLAGSOPT2': '-O1 $(FREE) $(SAFE) $(FPIC) $(DEBUG)'
                   }
 
-        if self.getcfg('libint'):
+        if self.cfg['libint']:
 
             libint = get_software_root('LibInt')
             if not libint:
@@ -305,7 +305,7 @@ class EB_CP2K(EasyBlock):
                 libinttools_paths = ['libint_tools', 'tools/hfx_tools/libint_tools']
                 libinttools_path = None
                 for path in libinttools_paths:
-                    path = os.path.join(self.getcfg('start_dir'), path)
+                    path = os.path.join(self.cfg['start_dir'], path)
                     if os.path.isdir(path):
                         libinttools_path = path
                         os.chdir(libinttools_path)
@@ -473,14 +473,14 @@ class EB_CP2K(EasyBlock):
         -build_and_install
         """
 
-        makefiles = os.path.join(self.getcfg('start_dir'), 'makefiles')
+        makefiles = os.path.join(self.cfg['start_dir'], 'makefiles')
         try:
             os.chdir(makefiles)
         except:
             self.log.error("Can't change to makefiles dir %s: %s" % (makefiles))
 
         # modify makefile for parallel build
-        parallel = self.getcfg('parallel')
+        parallel = self.cfg['parallel']
         if parallel:
 
             try:
@@ -491,12 +491,12 @@ class EB_CP2K(EasyBlock):
                 self.log.error("Can't modify/write Makefile in %s: %s" % (makefiles, err))
 
         # update make options with MAKE
-        self.updatecfg('makeopts', 'MAKE="make -j %s" all' % self.getcfg('parallel'))
+        self.cfg.update('makeopts', 'MAKE="make -j %s" all' % self.cfg['parallel'])
 
         # update make options with ARCH and VERSION
-        self.updatecfg('makeopts', 'ARCH=%s VERSION=%s' % (self.typearch, self.getcfg('type')))
+        self.cfg.update('makeopts', 'ARCH=%s VERSION=%s' % (self.typearch, self.cfg['type']))
 
-        cmd = "make %s" % self.getcfg('makeopts')
+        cmd = "make %s" % self.cfg['makeopts']
 
         # clean first
         run_cmd(cmd + " clean", log_all=True, simple=True, log_output=True)
@@ -507,7 +507,7 @@ class EB_CP2K(EasyBlock):
     def test_step(self):
         """Run regression test."""
 
-        if self.getcfg('runtest'):
+        if self.cfg['runtest']:
 
             # change to root of build dir
             try:
@@ -549,9 +549,9 @@ maxtasks=%(maxtasks)s
             """ % {
                    'f90': os.getenv('F90'),
                    'base': self.builddir,
-                   'cp2k_version': self.getcfg('type'),
+                   'cp2k_version': self.cfg['type'],
                    'triplet': self.typearch,
-                   'maxtasks': self.getcfg('maxtasks')
+                   'maxtasks': self.cfg['maxtasks']
                   }
 
             cfg_fn = "cp2k_regtest.cfg"
@@ -607,7 +607,7 @@ maxtasks=%(maxtasks)s
                 # failed tests indicate problem with installation
                 # wrong tests are only an issue when there are excessively many
                 if (test_result == "FAILED" and cnt > 0) or (test_result == "WRONG" and (cnt / tot_cnt) > 0.1):
-                    if self.getcfg('ignore_regtest_fails'):
+                    if self.cfg['ignore_regtest_fails']:
                         self.log.warning(logmsg)
                         self.log.info("Ignoring failures in regression test, as requested.")
                     else:
@@ -638,7 +638,7 @@ maxtasks=%(maxtasks)s
 
         # copy executables
         targetdir = os.path.join(self.installdir, 'bin')
-        exedir = os.path.join(self.getcfg('start_dir'), 'exe/%s' % self.typearch)
+        exedir = os.path.join(self.cfg['start_dir'], 'exe/%s' % self.typearch)
         try:
             if not os.path.exists(targetdir):
                 os.makedirs(targetdir)
@@ -650,7 +650,7 @@ maxtasks=%(maxtasks)s
             self.log.error("Copying executables from %s to bin dir %s failed: %s" % (exedir, targetdir, err))
 
         # copy tests
-        srctests = os.path.join(self.getcfg('start_dir'), 'tests')
+        srctests = os.path.join(self.cfg['start_dir'], 'tests')
         targetdir = os.path.join(self.installdir, 'tests')
         if os.path.exists(targetdir):
             self.log.info("Won't copy tests. Destination directory %s already exists" % targetdir)
@@ -661,10 +661,10 @@ maxtasks=%(maxtasks)s
                 self.log.error("Copying tests from %s to %s failed" % (srctests, targetdir))
 
         # copy regression test results
-        if self.getcfg('runtest'):
+        if self.cfg['runtest']:
             try:
                 for d in os.listdir(self.builddir):
-                    if d.startswith('TEST-%s-%s' % (self.typearch, self.getcfg('type'))):
+                    if d.startswith('TEST-%s-%s' % (self.typearch, self.cfg['type'])):
                         path = os.path.join(self.builddir, d)
                         target = os.path.join(self.installdir, d)
                         shutil.copytree(path, target)
@@ -676,7 +676,7 @@ maxtasks=%(maxtasks)s
     def sanity_check_step(self):
         """Custom sanity check for CP2K"""
 
-        cp2k_type = self.getcfg('type')
+        cp2k_type = self.cfg['type']
         custom_paths = {
                         'files': ["bin/%s.%s" % (x, cp2k_type) for x in ["cp2k", "cp2k_shell", "fes"]],
                         'dirs': ["tests"]

@@ -44,7 +44,7 @@ class EB_impi(EB_IntelBase):
         - create silent cfg file
         - execute command
         """
-        if LooseVersion(self.get_version()) >= LooseVersion('4.0.1'):
+        if LooseVersion(self.version) >= LooseVersion('4.0.1'):
             #impi starting from version 4.0.1.x uses standard installation procedure.
             super(self.__class__, self).install_step()
             return None
@@ -82,7 +82,7 @@ EULA=accept
             except:
                 self.log.exception("Writing silent cfg file %s failed." % silent)
 
-            tmpdir = os.path.join(os.getcwd(), self.get_version(), 'mytmpdir')
+            tmpdir = os.path.join(os.getcwd(), self.version, 'mytmpdir')
             try:
                 os.makedirs(tmpdir)
             except:
@@ -95,7 +95,7 @@ EULA=accept
         """Custom sanity check paths for IMPI."""
 
         suff = "64"
-        if self.getcfg('m32'):
+        if self.cfg['m32']:
             suff = ""
 
         custom_paths = {
@@ -114,7 +114,7 @@ EULA=accept
         """
         A dictionary of possible directories to look for
         """
-        if self.getcfg('m32'):
+        if self.cfg['m32']:
             return {
                     'PATH':['bin', 'bin/ia32', 'ia32/bin'],
                     'LD_LIBRARY_PATH':['lib', 'lib/ia32', 'ia32/lib'],

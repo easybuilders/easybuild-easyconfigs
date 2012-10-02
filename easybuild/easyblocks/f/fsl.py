@@ -47,7 +47,7 @@ class EB_FSL(EasyBlock):
     def configure_step(self):
         """Configure FSL build: set FSLDIR env var."""
 
-        self.fsldir = self.getcfg('start_dir')
+        self.fsldir = self.cfg['start_dir']
         env.set('FSLDIR', self.fsldir)
 
         # determine FSL machine type

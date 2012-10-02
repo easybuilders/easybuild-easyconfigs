@@ -48,11 +48,11 @@ class EB_CMake(ConfigureMake):
         compilers += "-DCMAKE_Fortran_FLAGS='%s' -DCMAKE_Fortran_COMPILER='%s' " % (os.getenv('FFLAGS'), 
                                                                                     os.getenv('F90'))
 
-        command = "%s cmake -DCMAKE_INSTALL_PREFIX=%s %s %s %s" % (self.getcfg('preconfigopts'),
+        command = "%s cmake -DCMAKE_INSTALL_PREFIX=%s %s %s %s" % (self.cfg['preconfigopts'],
                                                                    self.installdir,
                                                                    compilers,
                                                                    builddir,
-                                                                   self.getcfg('configopts')
+                                                                   self.cfg['configopts']
                                                                    )
         (out, _) = run_cmd(command, log_all=True, simple=False)
 

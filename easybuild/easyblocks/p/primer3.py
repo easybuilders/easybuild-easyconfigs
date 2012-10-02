@@ -43,14 +43,14 @@ class EB_Primer3(EB_ConfigureMake):
 
         self.build_in_installdir = True
 
-        self.bindir = "%s-%s/src" % (self.get_name().lower(), self.get_version())
+        self.bindir = "%s-%s/src" % (self.name.lower(), self.version)
 
-        self.setcfg('start_dir', 'src')
+        self.cfg['start_dir'] = 'src'
 
     def configure_step(self):
         """Configure Primer3 build by setting make options."""
 
-        self.updatecfg('makeopts', 'CC="%s" CPP="%s" O_OPTS="%s" all' % (os.getenv('CC'),
+        self.cfg.update('makeopts', 'CC="%s" CPP="%s" O_OPTS="%s" all' % (os.getenv('CC'),
                                                                          os.getenv('CXX'),
                                                                          os.getenv('CFLAGS')))
 

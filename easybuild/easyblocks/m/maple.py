@@ -54,7 +54,7 @@ class EB_Maple(EasyBlock):
     def install_step(self):
         """Interactive install of Maple."""
 
-        cmd = "%s/Maple%sLinuxX86_64Installer.bin" % (self.builddir, self.getcfg('version'))
+        cmd = "%s/Maple%sLinuxX86_64Installer.bin" % (self.builddir, self.cfg['version'])
 
         qa = {
               'PRESS <ENTER> TO CONTINUE:': '',
@@ -64,7 +64,7 @@ class EB_Maple(EasyBlock):
               'Do you wish to have a shortcut installed on your desktop? ->1- Yes 2- No ENTER THE NUMBER FOR YOUR CHOICE, OR PRESS <ENTER> TO ACCEPT THE DEFAULT::': '2',
               '->1- Single User License 2- Network License ENTER THE NUMBER FOR YOUR CHOICE, OR PRESS <ENTER> TO ACCEPT THE DEFAULT::': '2',
               'PRESS <ENTER> TO EXIT THE INSTALLER:': '',
-              'License server (DEFAULT: ):': self.getcfg('licenseServer'),
+              'License server (DEFAULT: ):': self.cfg['licenseServer'],
               'Port number (optional) (DEFAULT: ):': '',
               '->1- Configure toolbox for Matlab 2- Do not configure at this time ENTER THE NUMBER FOR YOUR CHOICE, OR PRESS <ENTER> TO ACCEPT THE DEFAULT::': '2'
              }

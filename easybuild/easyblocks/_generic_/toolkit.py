@@ -31,7 +31,7 @@ from easybuild.framework.easyblock import EasyBlock
 
 class EB_Toolkit(EasyBlock):
     """
-    Compiler get_toolkit: generate module file only, nothing to build/install
+    Compiler toolkit: generate module file only, nothing to build/install
     """
 
     def configure_step(self):

@@ -36,8 +36,8 @@ class EB_Doxygen(EB_ConfigureMake):
     def configure_step(self):
         """Configure build using non-standard configure script (see prefix option)"""
 
-        cmd = "%s ./configure --prefix %s %s" % (self.getcfg('preconfigopts'), self.installdir,
-                                                   self.getcfg('configopts'))
+        cmd = "%s ./configure --prefix %s %s" % (self.cfg['preconfigopts'], self.installdir,
+                                                   self.cfg['configopts'])
         run_cmd(cmd, log_all=True, simple=True)
 
     def sanity_check_step(self):

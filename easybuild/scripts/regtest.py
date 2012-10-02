@@ -175,7 +175,7 @@ def build_easyconfigs(easyconfigs, output_dir):
         modifyEnv(os.environ, base_env)
 
         # create a handler per app so we can capture debug output per application
-        handler = logging.FileHandler(os.path.join(output_dir, "%s-%s.log" % (app.get_name(), app.get_installversion())))
+        handler = logging.FileHandler(os.path.join(output_dir, "%s-%s.log" % (app.name, app.get_installversion())))
         handler.setFormatter(build_log.formatter)
 
         app.log.addHandler(handler)
@@ -326,14 +326,14 @@ def write_to_xml(succes, failed, filename):
     for (obj, fase, error) in failed:
         # try to pretty print
         try:
-            el = create_failure("%s/%s" % (obj.get_name(), obj.get_installversion()), fase, error)
+            el = create_failure("%s/%s" % (obj.name, obj.get_installversion()), fase, error)
         except:
             el = create_failure(obj, fase, error)
 
         root.firstChild.appendChild(el)
 
     for (obj, stats) in succes:
-        el = create_succes("%s/%s" % (obj.get_name(), obj.get_installversion()), stats)
+        el = create_succes("%s/%s" % (obj.name, obj.get_installversion()), stats)
         root.firstChild.appendChild(el)
 
     output_file = open(filename, "w")

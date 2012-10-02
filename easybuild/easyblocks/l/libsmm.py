@@ -140,7 +140,7 @@ tasks=%(tasks)s
         """
 
         # only GCC is supported for now
-        if self.get_toolkit().comp_family() == toolkit.GCC:
+        if self.toolkit.comp_family() == toolkit.GCC:
             hostcompile = os.getenv('F90')
 
             # optimizations
@@ -171,12 +171,12 @@ tasks=%(tasks)s
         cfgdict = {
                    'eb_version': easybuild.VERBOSE_VERSION,
                    'datatype': None,
-                   'transposeflavour': self.getcfg('transpose_flavour'),
+                   'transposeflavour': self.cfg['transpose_flavour'],
                    'targetcompile': targetcompile,
                    'hostcompile': hostcompile,
-                   'dims': ' '.join([str(d) for d in self.getcfg('dims')]),
-                   'tiny_dims': ' '.join([str(d) for d in range(1, self.getcfg('max_tiny_dim')+1)]),
-                   'tasks': self.getcfg('parallel'),
+                   'dims': ' '.join([str(d) for d in self.cfg['dims']]),
+                   'tiny_dims': ' '.join([str(d) for d in range(1, self.cfg['max_tiny_dim']+1)]),
+                   'tasks': self.cfg['parallel'],
                    'LIBBLAS': "%s %s" % (os.getenv('LDFLAGS'), os.getenv('LIBBLAS'))
                   }
 

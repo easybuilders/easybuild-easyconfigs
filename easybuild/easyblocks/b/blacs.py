@@ -32,7 +32,7 @@ import os
 import shutil
 
 import easybuild.tools.toolkit as toolkit
-from easybuild.framework.easyblock import EasyBlock
+from easybuild.easyblocks.configuremake import EB_ConfigureMake  #@UnresolvedImport
 from easybuild.tools.filetools import run_cmd
 from easybuild.tools.modules import get_software_root
 
@@ -51,7 +51,7 @@ def det_interface(log, path):
         log.error("Failed to determine interface, output for xintface: %s" % out)
 
 
-class EB_BLACS(EasyBlock):
+class EB_BLACS(EB_ConfigureMake):
     """
     Support for building/installing BLACS
     - configure: symlink BMAKES/Bmake.MPI-LINUX to Bmake.inc
@@ -61,8 +61,8 @@ class EB_BLACS(EasyBlock):
     def configure_step(self):
         """Configure BLACS build by copying Bmake.inc file."""
 
-        src = os.path.join(self.getcfg('start_dir'), 'BMAKES', 'Bmake.MPI-LINUX')
-        dest = os.path.join(self.getcfg('start_dir'), 'Bmake.inc')
+        src = os.path.join(self.cfg['start_dir'], 'BMAKES', 'Bmake.MPI-LINUX')
+        dest = os.path.join(self.cfg['start_dir'], 'Bmake.inc')
 
         if not os.path.isfile(src):
             self.log.error("Can't find source file %s" % src)
@@ -85,7 +85,7 @@ class EB_BLACS(EasyBlock):
                                         "$(MPILIBdir)/libmpl.a -lpthread"
                      }
 
-        mpi_type = self.get_toolkit().mpi_type()
+        mpi_type = self.toolkit.mpi_type()
 
         base, mpilib = None, None
         if mpi_type in known_mpis.keys():
@@ -171,7 +171,7 @@ class EB_BLACS(EasyBlock):
         add_makeopts = ' MPICC="%(mpicc)s" MPIF77="%(mpif77)s" %(comm)s ' % opts
         add_makeopts += ' INTERFACE=%(int)s MPIdir=%(base)s BTOPdir=%(builddir)s mpi ' % opts
 
-        self.updatecfg('makeopts', add_makeopts)
+        self.cfg.update('makeopts', add_makeopts)
 
         super(self.__class__, self).build_step()
 
@@ -184,7 +184,7 @@ class EB_BLACS(EasyBlock):
                                        ("LIB", "lib", ".a"),  # libraries
                                        ]:
 
-            src = os.path.join(self.getcfg('start_dir'), srcdir)
+            src = os.path.join(self.cfg['start_dir'], srcdir)
             dest = os.path.join(self.installdir, destdir)
 
             try:
@@ -208,7 +208,7 @@ class EB_BLACS(EasyBlock):
                 self.log.error("Copying %s/*.%s to installation dir %s failed: %s"%(src, ext, dest, err))
 
         # utilities
-        src = os.path.join(self.getcfg('start_dir'), 'INSTALL', 'EXE', 'xintface')
+        src = os.path.join(self.cfg['start_dir'], 'INSTALL', 'EXE', 'xintface')
         dest = os.path.join(self.installdir, 'bin')
 
         try:

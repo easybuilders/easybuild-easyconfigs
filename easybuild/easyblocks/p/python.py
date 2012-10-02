@@ -55,12 +55,12 @@ class EB_Python(EB_ConfigureMake):
         #insert new packages by building them with EB_DefaultPythonPackage
         self.log.debug("setting extra packages options")
         # use __name__ here, since this is the module where EB_DefaultPythonPackage is defined
-        self.setcfg('exts_defaultclass', (__name__, "EB_DefaultPythonPackage"))
-        self.setcfg('exts_filter', ('python -c "import %(get_name)s"', ""))
+        self.cfg['exts_defaultclass'] = (__name__, "EB_DefaultPythonPackage")
+        self.cfg['exts_filter'] = ('python -c "import %(name)s"', "")
 
     def configure_step(self):
         """Set extra configure options."""
-        self.updatecfg('configopts', "--with-threads --enable-shared")
+        self.cfg.update('configopts', "--with-threads --enable-shared")
 
         super(self.__class__, self).configure_step()
 
@@ -70,7 +70,7 @@ class EB_Python(EB_ConfigureMake):
 
         python_binary_path = os.path.join(self.installdir, 'bin', 'python')
         if not os.path.isfile(python_binary_path):
-            pythonver = '.'.join(self.get_version().split('.')[0:2])
+            pythonver = '.'.join(self.version.split('.')[0:2])
             srcbin = "%s%s" % (python_binary_path, pythonver)
             try:
                 os.symlink(srcbin, python_binary_path)
@@ -80,7 +80,7 @@ class EB_Python(EB_ConfigureMake):
     def sanity_check_step(self):
         """Custom sanity check for Primer3."""
 
-        pyver = "python%s" % '.'.join(self.get_version().split('.')[0:2])
+        pyver = "python%s" % '.'.join(self.version.split('.')[0:2])
 
         custom_paths = {
                         'files':["bin/%s" % pyver, "lib/lib%s.so" % pyver],
@@ -105,7 +105,7 @@ class EB_DefaultPythonPackage(Extension):
         self.mself = mself
         self.installopts = ''
         self.runtest = None
-        self.ext_dir = "%s/%s" % (self.builddir, self.get_name)
+        self.ext_dir = "%s/%s" % (self.builddir, self.name)
         self.unpack_options = ''
 
         self.python = get_software_root('Python')
@@ -188,8 +188,8 @@ class EB_DefaultPythonPackage(Extension):
         # extract_file
         if not self.src:
             self.log.error("No source found for Python package %s, required for installation. (src: %s)" % \
-                           (self.get_name, self.src))
-        self.ext_dir = extract_file("%s" % self.src, "%s/%s" % (self.builddir, self.get_name), extra_options=self.unpack_options)
+                           (self.name, self.src))
+        self.ext_dir = extract_file("%s" % self.src, "%s/%s" % (self.builddir, self.name), extra_options=self.unpack_options)
 
         # patch if needed
         if self.patches:
@@ -202,9 +202,6 @@ class EB_DefaultPythonPackage(Extension):
         self.build_step()
         self.test_step()
         self.install_step()
-
-    def getcfg(self, *args, **kwargs):
-        return self.mself.getcfg(*args, **kwargs)
 
 
 class EB_nose(EB_DefaultPythonPackage):
@@ -221,7 +218,7 @@ class EB_FortranPythonPackage(EB_DefaultPythonPackage):
     """Extends EB_DefaultPythonPackage to add a Fortran compiler to the make call"""
 
     def build_step(self):
-        comp_fam = self.get_toolkit().comp_family()
+        comp_fam = self.toolkit.comp_family()
 
         if comp_fam == toolkit.INTEL:
             cmd = "python setup.py build --compiler=intel --fcompiler=intelem"
@@ -250,7 +247,7 @@ class EB_numpy(EB_FortranPythonPackage):
     def __init__(self, mself, ext, ext_installdeps):
         super(self.__class__, self).__init__(mself, ext, ext_installdeps)
 
-        self.ext_cfgs = mself.getcfg('ext_cfgs')
+        self.ext_cfgs = mself.cfg['ext_cfgs']
         if self.ext_cfgs.has_key('numpysitecfglibsubdirs'):
             self.numpysitecfglibsubdirs = self.ext_cfgs['numpysitecfglibsubdirs']
         else:

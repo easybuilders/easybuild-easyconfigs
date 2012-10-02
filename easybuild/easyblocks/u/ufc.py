@@ -51,15 +51,15 @@ class EB_UFC(EB_CMakePythonPackage):
 
         self.pyver = ".".join(get_software_version('Python').split(".")[:-1])
 
-        self.updatecfg('configopts', "-DBoost_DIR=%s" % depsdict['Boost'])
-        self.updatecfg('configopts', "-DBOOST_INCLUDEDIR=%s/include" % depsdict['Boost'])
-        self.updatecfg('configopts', "-DBoost_DEBUG=ON -DBOOST_ROOT=%s" % depsdict['Boost'])
+        self.cfg.update('configopts', "-DBoost_DIR=%s" % depsdict['Boost'])
+        self.cfg.update('configopts', "-DBOOST_INCLUDEDIR=%s/include" % depsdict['Boost'])
+        self.cfg.update('configopts', "-DBoost_DEBUG=ON -DBOOST_ROOT=%s" % depsdict['Boost'])
 
-        self.updatecfg('configopts', '-DUFC_ENABLE_PYTHON:BOOL=ON')
-        self.updatecfg('configopts', '-DSWIG_FOUND:BOOL=ON')
-        self.updatecfg('configopts', '-DPYTHON_LIBRARY=%s/lib/libpython%s.so' % (depsdict['Python'],
+        self.cfg.update('configopts', '-DUFC_ENABLE_PYTHON:BOOL=ON')
+        self.cfg.update('configopts', '-DSWIG_FOUND:BOOL=ON')
+        self.cfg.update('configopts', '-DPYTHON_LIBRARY=%s/lib/libpython%s.so' % (depsdict['Python'],
                                                                                  self.pyver))
-        self.updatecfg('configopts', '-DPYTHON_INCLUDE_PATH=%s/include/python%s' % (depsdict['Python'],
+        self.cfg.update('configopts', '-DPYTHON_INCLUDE_PATH=%s/include/python%s' % (depsdict['Python'],
                                                                                     self.pyver))
 
         super(self.__class__, self).configure_step()

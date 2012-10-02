@@ -46,8 +46,8 @@ class EB_ScaLAPACK(EB_ConfigureMake):
     def configure_step(self):
         """Configure ScaLAPACK build by copying SLmake.inc.example to SLmake.inc and checking dependencies."""
 
-        src = os.path.join(self.getcfg('start_dir'), 'SLmake.inc.example')
-        dest = os.path.join(self.getcfg('start_dir'), 'SLmake.inc')
+        src = os.path.join(self.cfg['start_dir'], 'SLmake.inc.example')
+        dest = os.path.join(self.cfg['start_dir'], 'SLmake.inc')
 
         if not os.path.isfile(src):
             self.log.error("Can't fin source file %s" % src)
@@ -60,7 +60,7 @@ class EB_ScaLAPACK(EB_ConfigureMake):
         except OSError, err:
             self.log.error("Symlinking %s to % failed: %s" % (src, dest, err))
 
-        self.loosever = LooseVersion(self.get_version())
+        self.loosever = LooseVersion(self.version)
 
         # make sure required dependencies are available
         deps = ["LAPACK"]
@@ -101,7 +101,7 @@ class EB_ScaLAPACK(EB_ConfigureMake):
             interface = det_interface(self.log, os.path.join(blacs, 'bin'))
 
             # set build and BLACS dir correctly
-            extra_makeopts.append('home=%s BLACSdir=%s' % (self.getcfg('start_dir'), blacs))
+            extra_makeopts.append('home=%s BLACSdir=%s' % (self.cfg['start_dir'], blacs))
 
             # set BLACS libs correctly
             for (var, lib) in [
@@ -113,9 +113,9 @@ class EB_ScaLAPACK(EB_ConfigureMake):
 
             # set compilers and options
             noopt = ''
-            if self.get_toolkit().opts['noopt']:
+            if self.toolkit.opts['noopt']:
                 noopt += " -O0"
-            if self.get_toolkit().opts['pic']:
+            if self.toolkit.opts['pic']:
                 noopt += " -fPIC"
             extra_makeopts += [
                                'F77="%s"' % mpif77,
@@ -145,7 +145,7 @@ class EB_ScaLAPACK(EB_ConfigureMake):
             extra_makeopts.append('CDEFS="-D%s"' % interface)
 
         # update make opts, and build_step
-        self.updatecfg('makeopts', ' '.join(extra_makeopts))
+        self.cfg.update('makeopts', ' '.join(extra_makeopts))
 
         super(self.__class__, self).build_step()
 
@@ -158,7 +158,7 @@ class EB_ScaLAPACK(EB_ConfigureMake):
                                        ("", "lib", ".a"), # libraries
                                        ]:
 
-            src = os.path.join(self.getcfg('start_dir'), srcdir)
+            src = os.path.join(self.cfg['start_dir'], srcdir)
             dest = os.path.join(self.installdir, destdir)
 
             try:

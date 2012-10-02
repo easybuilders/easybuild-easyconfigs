@@ -33,13 +33,13 @@ class EB_bzip2(EB_ConfigureMake):
     def configure_step(self):
         """Set extra configure options (CC, CFLAGS)."""
 
-        self.updatecfg('makeopts', 'CC="%s"' % os.getenv('CC'))
-        self.updatecfg('makeopts', "CFLAGS='-Wall -Winline %s -g $(BIGFILES)'" % os.getenv('CFLAGS'))
+        self.cfg.update('makeopts', 'CC="%s"' % os.getenv('CC'))
+        self.cfg.update('makeopts', "CFLAGS='-Wall -Winline %s -g $(BIGFILES)'" % os.getenv('CFLAGS'))
 
     def install_step(self):
         """Install in non-standard path by passing PREFIX variable to make install."""
 
-        self.updatecfg('installopts', "PREFIX=%s" % self.installdir)
+        self.cfg.update('installopts', "PREFIX=%s" % self.installdir)
 
         super(self.__class__, self).install_step()
 

@@ -44,27 +44,27 @@ class EB_ParMETIS(EasyBlock):
         Run 'cmake' in the build dir to get rid of a 'user friendly' 
         help message that is displayed without this step.
         """
-        if LooseVersion(self.get_version()) >= LooseVersion("4"):
+        if LooseVersion(self.version) >= LooseVersion("4"):
             # tested with 4.0.2, now actually requires cmake to be run first
             # for both parmetis and metis
 
-            self.updatecfg('configopts', '-DMETIS_PATH=../metis -DGKLIB_PATH=../metis/GKlib')
+            self.cfg.update('configopts', '-DMETIS_PATH=../metis -DGKLIB_PATH=../metis/GKlib')
 
-            self.updatecfg('configopts', '-DOPENMP="%s"' % self.get_toolkit().get_openmp_flag())
+            self.cfg.update('configopts', '-DOPENMP="%s"' % self.toolkit.get_openmp_flag())
 
-            if self.get_toolkit().opts['usempi']:
-                self.updatecfg('configopts', '-DCMAKE_C_COMPILER="$MPICC"')
+            if self.toolkit.opts['usempi']:
+                self.cfg.update('configopts', '-DCMAKE_C_COMPILER="$MPICC"')
 
-            if self.get_toolkit().opts['pic']:
-                self.updatecfg('configopts', '-DCMAKE_C_FLAGS="-fPIC"')
+            if self.toolkit.opts['pic']:
+                self.cfg.update('configopts', '-DCMAKE_C_FLAGS="-fPIC"')
 
             self.parmetis_builddir = 'build'
             try:
                 os.chdir(self.parmetis_builddir)
-                cmd = 'cmake .. %s -DCMAKE_INSTALL_PREFIX="%s"' % (self.getcfg('configopts'),
+                cmd = 'cmake .. %s -DCMAKE_INSTALL_PREFIX="%s"' % (self.cfg['configopts'],
                                                                    self.installdir)
                 run_cmd(cmd, log_all=True, simple=True)
-                os.chdir(self.getcfg('start_dir'))
+                os.chdir(self.cfg['start_dir'])
             except OSError, err:
                 self.log.error("Running cmake in %s failed: %s" % (self.parmetis_builddir, err))
 
@@ -72,25 +72,25 @@ class EB_ParMETIS(EasyBlock):
         """Build ParMETIS (and METIS) using build_step."""
 
         paracmd = ''
-        if self.getcfg('parallel'):
-            paracmd = "-j %s" % self.getcfg('parallel')
+        if self.cfg['parallel']:
+            paracmd = "-j %s" % self.cfg['parallel']
 
-        self.updatecfg('makeopts', 'LIBDIR=""')
+        self.cfg.update('makeopts', 'LIBDIR=""')
 
-        if self.get_toolkit().opts['usempi']:
-            if self.get_toolkit().opts['pic']:
-                self.updatecfg('makeopts', 'CC="$MPICC -fPIC"')
+        if self.toolkit.opts['usempi']:
+            if self.toolkit.opts['pic']:
+                self.cfg.update('makeopts', 'CC="$MPICC -fPIC"')
             else:
-                self.updatecfg('makeopts', 'CC="$MPICC"')
+                self.cfg.update('makeopts', 'CC="$MPICC"')
 
-        cmd = "%s make %s %s" % (self.getcfg('premakeopts'), paracmd, self.getcfg('makeopts'))
+        cmd = "%s make %s %s" % (self.cfg['premakeopts'], paracmd, self.cfg['makeopts'])
 
         # run make in build dir as well for recent version
-        if LooseVersion(self.get_version()) >= LooseVersion("4"):
+        if LooseVersion(self.version) >= LooseVersion("4"):
             try:
                 os.chdir(self.parmetis_builddir)
                 run_cmd(cmd, log_all=True, simple=True, log_output=verbose)
-                os.chdir(self.getcfg('start_dir'))
+                os.chdir(self.cfg['start_dir'])
             except OSError, err:
                 self.log.error("Running cmd '%s' in %s failed: %s" % (cmd, self.parmetis_builddir, err))
         else:
@@ -105,19 +105,19 @@ class EB_ParMETIS(EasyBlock):
         includedir = os.path.join(self.installdir, 'include')
         libdir = os.path.join(self.installdir, 'lib')
 
-        if LooseVersion(self.get_version()) >= LooseVersion("4"):
+        if LooseVersion(self.version) >= LooseVersion("4"):
             # includedir etc changed in v4, use a normal make install
-            cmd = "make install %s" % self.getcfg('installopts')
+            cmd = "make install %s" % self.cfg['installopts']
             try:
                 os.chdir(self.parmetis_builddir)
                 run_cmd(cmd, log_all=True, simple=True)
-                os.chdir(self.getcfg('start_dir'))
+                os.chdir(self.cfg['start_dir'])
             except OSError, err:
                 self.log.error("Running '%s' in %s failed: %s" % (cmd, self.parmetis_builddir, err))
 
             # libraries
             try:
-                src = os.path.join(self.getcfg('start_dir'), 'build' ,'libmetis' ,'libmetis.a')
+                src = os.path.join(self.cfg['start_dir'], 'build' ,'libmetis' ,'libmetis.a')
                 dst = os.path.join(libdir, 'libmetis.a')
                 shutil.copy2(src, dst)
             except OSError, err:
@@ -125,7 +125,7 @@ class EB_ParMETIS(EasyBlock):
 
             # include files
             try:
-                src = os.path.join(self.getcfg('start_dir'), 'build', 'metis', 'include', 'metis.h')
+                src = os.path.join(self.cfg['start_dir'], 'build', 'metis', 'include', 'metis.h')
                 dst = os.path.join(includedir, 'metis.h')
                 shutil.copy2(src, dst)
             except OSError, err:
@@ -138,7 +138,7 @@ class EB_ParMETIS(EasyBlock):
             # libraries
             try:
                 for fil in ['libmetis.a', 'libparmetis.a']:
-                    src = os.path.join(self.getcfg('start_dir'), fil)
+                    src = os.path.join(self.cfg['start_dir'], fil)
                     dst = os.path.join(libdir, fil)
                     shutil.copy2(src, dst)
             except OSError, err:
@@ -146,7 +146,7 @@ class EB_ParMETIS(EasyBlock):
 
             # include files
             try:
-                src = os.path.join(self.getcfg('start_dir'), 'parmetis.h')
+                src = os.path.join(self.cfg['start_dir'], 'parmetis.h')
                 dst = os.path.join(includedir, 'parmetis.h')
                 shutil.copy2(src, dst)
                 # some applications (SuiteSparse) can only use METIS (not ParMETIS), but header files are the same

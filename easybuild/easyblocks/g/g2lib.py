@@ -48,7 +48,7 @@ class EB_g2lib(EasyBlock):
             self.log.error("JasPer module not loaded?")
 
         makeopts = 'CC="%s" FC="%s" INCDIR="-I%s/include"' % (os.getenv('CC'), os.getenv('F90'), jasper)
-        self.updatecfg('makeopts', makeopts)
+        self.cfg.update('makeopts', makeopts)
 
         super(self.__class__, self).build_step()
 
@@ -59,7 +59,7 @@ class EB_g2lib(EasyBlock):
             targetdir = os.path.join(self.installdir, "lib")
             os.mkdir(targetdir)
             fn = "libg2.a"
-            shutil.copyfile(os.path.join(self.getcfg('start_dir'), fn), os.path.join(targetdir, fn))
+            shutil.copyfile(os.path.join(self.cfg['start_dir'], fn), os.path.join(targetdir, fn))
         except OSError, err:
             self.log.error("Failed to copy files to install dir: %s" % err)
 

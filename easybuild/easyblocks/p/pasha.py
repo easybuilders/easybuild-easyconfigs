@@ -39,14 +39,14 @@ class EB_Pasha(EB_ConfigureMake):
         if not tbb:
             self.log.error("TBB module not loaded.")
 
-        self.updatecfg('makeopts', "TBB_DIR=%s/tbb MPI_DIR='' MPI_INC='' " % tbb)
-        self.updatecfg('makeopts', 'MPI_CXX="%s" OPM_FLAG="%s"' % (os.getenv('MPICXX'), self.get_toolkit().get_openmp_flag()))
-        self.updatecfg('makeopts', 'MPI_LIB="" MY_CXX="%s" MPICH_IGNORE_CXX_SEEK=1' % os.getenv('CXX'))
+        self.cfg.update('makeopts', "TBB_DIR=%s/tbb MPI_DIR='' MPI_INC='' " % tbb)
+        self.cfg.update('makeopts', 'MPI_CXX="%s" OPM_FLAG="%s"' % (os.getenv('MPICXX'), self.toolkit.get_openmp_flag()))
+        self.cfg.update('makeopts', 'MPI_LIB="" MY_CXX="%s" MPICH_IGNORE_CXX_SEEK=1' % os.getenv('CXX'))
 
     def install_step(self):
         """Install by copying everything from 'bin' subdir in build dir to install dir"""
 
-        srcdir = os.path.join(self.builddir, "%s-%s" % (self.get_name(), self.get_version()), 'bin')
+        srcdir = os.path.join(self.builddir, "%s-%s" % (self.name, self.version), 'bin')
         shutil.copytree(srcdir, os.path.join(self.installdir, 'bin'))
 
     def sanity_check_step(self):

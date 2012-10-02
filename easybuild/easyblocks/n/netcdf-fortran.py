@@ -39,13 +39,13 @@ class EB_netCDF_minus_Fortran(EB_ConfigureMake):
     def configure_step(self):
         """Configure build: set config options and configure"""
 
-        if self.get_toolkit().opts['pic']:
-            self.updatecfg('configopts', "--with-pic")
+        if self.toolkit.opts['pic']:
+            self.cfg.update('configopts', "--with-pic")
 
-        self.updatecfg('configopts', 'FCFLAGS="%s" FC="%s"' % (os.getenv('FFLAGS'), os.getenv('F90')))
+        self.cfg.update('configopts', 'FCFLAGS="%s" FC="%s"' % (os.getenv('FFLAGS'), os.getenv('F90')))
 
         # add -DgFortran to CPPFLAGS when building with GCC
-        if self.get_toolkit().comp_family() == toolkit.GCC:
+        if self.toolkit.comp_family() == toolkit.GCC:
             env.set('CPPFLAGS', "%s -DgFortran" % os.getenv('CPPFLAGS'))
 
         super(self.__class__, self).configure_step()

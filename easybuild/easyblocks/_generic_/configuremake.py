@@ -42,8 +42,8 @@ class EB_ConfigureMake(EasyBlock):
         - typically ./configure --prefix=/install/path style
         """
 
-        cmd = "%s %s./configure --prefix=%s %s" % (self.getcfg('preconfigopts'), cmd_prefix,
-                                                    self.installdir, self.getcfg('configopts'))
+        cmd = "%s %s./configure --prefix=%s %s" % (self.cfg['preconfigopts'], cmd_prefix,
+                                                    self.installdir, self.cfg['configopts'])
 
         (out, _) = run_cmd(cmd, log_all=True, simple=False)
 
@@ -56,10 +56,10 @@ class EB_ConfigureMake(EasyBlock):
         """
 
         paracmd = ''
-        if self.getcfg('parallel'):
-            paracmd = "-j %s" % self.getcfg('parallel')
+        if self.cfg['parallel']:
+            paracmd = "-j %s" % self.cfg['parallel']
 
-        cmd = "%s make %s %s" % (self.getcfg('premakeopts'), paracmd, self.getcfg('makeopts'))
+        cmd = "%s make %s %s" % (self.cfg['premakeopts'], paracmd, self.cfg['makeopts'])
 
         (out, _) = run_cmd(cmd, log_all=True, simple=False, log_output=verbose)
 
@@ -71,8 +71,8 @@ class EB_ConfigureMake(EasyBlock):
         - default: None
         """
 
-        if self.getcfg('runtest'):
-            cmd = "make %s" % (self.getcfg('runtest'))
+        if self.cfg['runtest']:
+            cmd = "make %s" % (self.cfg['runtest'])
             (out, _) = run_cmd(cmd, log_all=True, simple=False)
 
             return out
@@ -83,7 +83,7 @@ class EB_ConfigureMake(EasyBlock):
         - typical: make install
         """
 
-        cmd = "make install %s" % (self.getcfg('installopts'))
+        cmd = "make install %s" % (self.cfg['installopts'])
 
         (out, _) = run_cmd(cmd, log_all=True, simple=False)
 

@@ -42,8 +42,8 @@ class EB_SLEPc(EB_ConfigureMake):
         self.slepc_arch_dir = None
 
         self.slepc_subdir = ''
-        if self.getcfg('sourceinstall'):
-            self.slepc_subdir = os.path.join('%s-%s' % (self.get_name().lower(), self.get_version()),
+        if self.cfg['sourceinstall']:
+            self.slepc_subdir = os.path.join('%s-%s' % (self.name.lower(), self.version),
                                              os.getenv('PETSC_ARCH'))
 
     @staticmethod
@@ -57,7 +57,7 @@ class EB_SLEPc(EB_ConfigureMake):
 
     def make_builddir(self):
         """Decide whether or not to build in install dir before creating build dir."""
-        if self.getcfg('sourceinstall'):
+        if self.cfg['sourceinstall']:
             self.build_in_installdir = True
 
         super(self.__class__, self).make_builddir()
@@ -70,7 +70,7 @@ class EB_SLEPc(EB_ConfigureMake):
             self.log.error("PETSc module not loaded?")
 
         # set SLEPC_DIR environment variable
-        env.set('SLEPC_DIR', self.getcfg('start_dir'))
+        env.set('SLEPC_DIR', self.cfg['start_dir'])
         self.log.debug('SLEPC_DIR: %s' % os.getenv('SLEPC_DIR'))
 
         # optional dependencies
@@ -80,11 +80,11 @@ class EB_SLEPc(EB_ConfigureMake):
             deproot = get_software_root(dep)
             if deproot:
                 withdep = "--with-%s" % dep.lower()
-                self.updatecfg('configopts', '%s=1 %s-dir=%s' % (withdep, withdep, deproot))
+                self.cfg.update('configopts', '%s=1 %s-dir=%s' % (withdep, withdep, deproot))
 
-        if self.getcfg('sourceinstall'):
+        if self.cfg['sourceinstall']:
             # run configure without --prefix (required)
-            cmd = "%s ./configure %s" % (self.getcfg('preconfigopts'), self.getcfg('configopts'))
+            cmd = "%s ./configure %s" % (self.cfg['preconfigopts'], self.cfg['configopts'])
             (out, _) = run_cmd(cmd, log_all=True, simple=False)
         else:
             # regular './configure --prefix=X' for non-source install
@@ -114,9 +114,9 @@ class EB_SLEPc(EB_ConfigureMake):
         """Set SLEPc specific environment variables (SLEPC_DIR)."""
         txt = super(self.__class__, self).make_module_extra()
 
-        if self.getcfg('sourceinstall'):
-            txt += self.moduleGenerator.setEnvironment('SLEPC_DIR', '$root/%s-%s' % (self.get_name().lower(),
-                                                                                     self.get_version()))
+        if self.cfg['sourceinstall']:
+            txt += self.moduleGenerator.setEnvironment('SLEPC_DIR', '$root/%s-%s' % (self.name.lower(),
+                                                                                     self.version))
 
         else:
             txt += self.moduleGenerator.setEnvironment('SLEPC_DIR', '$root')

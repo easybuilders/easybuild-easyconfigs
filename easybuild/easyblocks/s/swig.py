@@ -34,11 +34,11 @@ class EB_SWIG(EB_ConfigureMake):
         for x in ["r", "clisp", "allegrocl", "lua", "csharp", "chicken", "pike ",
                   "ocaml","php", "ruby", "mzscheme", "guile", "gcj", "java",
                   "octave", "perl5", "python3", "tcl"]:
-            self.updatecfg('configopts', "--without-%s" % x)
+            self.cfg.update('configopts', "--without-%s" % x)
 
         python = get_software_root('Python')
         if python:
-            self.updatecfg('configopts', "--with-python=%s/bin/python" % python)
+            self.cfg.update('configopts', "--with-python=%s/bin/python" % python)
         else:
             self.log.error("Python module not loaded?")
 

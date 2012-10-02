@@ -85,7 +85,7 @@ class EB_IntelBase(EasyBlock):
         """Configure: handle license file and clean home dir."""
 
         # obtain license path
-        self.license = self.getcfg('license')
+        self.license = self.cfg['license']
         if self.license:
             self.log.info("Using license %s" % self.license)
         else:
@@ -134,7 +134,7 @@ PSET_INSTALL_DIR=%s
 ACCEPT_EULA=accept
 INSTALL_MODE=NONRPM
 CONTINUE_WITH_OPTIONAL_ERROR=yes
-""" % (self.getcfg('license_activation'), self.license, self.installdir)
+""" % (self.cfg['license_activation'], self.license, self.installdir)
 
         # we should be already in the correct directory
         silentcfg = os.path.join(os.getcwd(), "silent.cfg")
@@ -146,13 +146,13 @@ CONTINUE_WITH_OPTIONAL_ERROR=yes
             self.log.exception("Writing silent cfg % failed" % silent)
 
         # workaround for mktmp: create tmp dir and use it
-        tmpdir = os.path.join(self.getcfg('start_dir'), 'mytmpdir')
+        tmpdir = os.path.join(self.cfg['start_dir'], 'mytmpdir')
         try:
             os.makedirs(tmpdir)
         except:
             self.log.exception("Directory %s can't be created" % (tmpdir))
         tmppathopt = ''
-        if self.getcfg('usetmppath'):
+        if self.cfg['usetmppath']:
             env.set('TMP_PATH', tmpdir)
             tmppathopt = "-t %s" % tmpdir
 

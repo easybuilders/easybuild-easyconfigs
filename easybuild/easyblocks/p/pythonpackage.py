@@ -74,7 +74,7 @@ class EB_PythonPackage(EasyBlock):
         pythonpath = os.getenv('PYTHONPATH')
         env.set('PYTHONPATH', "%s:%s" % (abs_pylibdir, pythonpath))
 
-        cmd = "python setup.py install --prefix=%s %s" % (self.installdir, self.getcfg('installopts'))
+        cmd = "python setup.py install --prefix=%s %s" % (self.installdir, self.cfg['installopts'])
         run_cmd(cmd, log_all=True, simple=True)
 
         env.set('PYTHONPATH', pythonpath)
@@ -85,7 +85,7 @@ class EB_PythonPackage(EasyBlock):
         """
         custom_paths = {
                         'files': [],
-                        'dirs': ["%s/%s" % (self.pylibdir, self.get_name().lower())]
+                        'dirs': ["%s/%s" % (self.pylibdir, self.name.lower())]
                        }
 
         super(self.__class__, self).sanity_check_step(custom_paths=custom_paths)

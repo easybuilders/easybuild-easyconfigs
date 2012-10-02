@@ -68,7 +68,7 @@ class EB_GCC(EasyBlock):
         """
         Create a dir to build in.
         """
-        dirpath = os.path.join(self.getcfg('start_dir'), dirname)
+        dirpath = os.path.join(self.cfg['start_dir'], dirname)
         try:
             os.mkdir(dirpath)
             os.chdir(dirpath)
@@ -95,7 +95,7 @@ class EB_GCC(EasyBlock):
 
         # add optional ones that were selected (e.g. CLooG, PPL, ...)
         for x in ["cloog", "ppl"]:
-            if self.getcfg('with%s' % x):
+            if self.cfg['with%s' % x]:
                 extra_src_dirs.append(x)
 
         # see if modules are loaded
@@ -145,7 +145,7 @@ class EB_GCC(EasyBlock):
             if target_prefix:
                 dst = os.path.join(target_prefix, d['target_dir'])
             else:
-                dst = os.path.join(self.getcfg('start_dir'), d['target_dir'])
+                dst = os.path.join(self.cfg['start_dir'], d['target_dir'])
             if not os.path.exists(dst):
                 try:
                     shutil.copytree(src, dst)
@@ -192,7 +192,7 @@ class EB_GCC(EasyBlock):
 
         # self.configopts will be reused in a 3-staged build,
         # configopts is only used in first configure
-        self.configopts = self.getcfg('configopts')
+        self.configopts = self.cfg['configopts']
 
         # I) prepare extra source dirs, e.g. for GMP, MPFR, MPC (if required), so GCC can build them
         stage1_info = self.prep_extra_src_dirs("stage1")
@@ -201,11 +201,11 @@ class EB_GCC(EasyBlock):
         # II) update config options
 
         # enable specified language support
-        if self.getcfg('languages'):
-            self.configopts += " --enable-languages=%s" % ','.join(self.getcfg('languages'))
+        if self.cfg['languages']:
+            self.configopts += " --enable-languages=%s" % ','.join(self.cfg['languages'])
 
         # enable link-time-optimization (LTO) support, if desired
-        if self.getcfg('withlto'):
+        if self.cfg['withlto']:
             self.configopts += " --enable-lto"
 
         # configure for a release build
@@ -249,7 +249,7 @@ class EB_GCC(EasyBlock):
 
         # IV) actual configure, but not on default path
         cmd = "%s ../configure  %s %s" % (
-                                          self.getcfg('preconfigopts'),
+                                          self.cfg['preconfigopts'],
                                           self.configopts,
                                           configopts
                                          )
@@ -270,13 +270,13 @@ class EB_GCC(EasyBlock):
 
             # make and install stage 1 build of GCC
             paracmd = ''
-            if self.getcfg('parallel'):
-                paracmd = "-j %s" % self.getcfg('parallel')
+            if self.cfg['parallel']:
+                paracmd = "-j %s" % self.cfg['parallel']
 
-            cmd = "%s make %s %s" % (self.getcfg('premakeopts'), paracmd, self.getcfg('makeopts'))
+            cmd = "%s make %s %s" % (self.cfg['premakeopts'], paracmd, self.cfg['makeopts'])
             run_cmd(cmd, log_all=True, simple=True)
 
-            cmd = "make install %s" % (self.getcfg('installopts'))
+            cmd = "make install %s" % (self.cfg['installopts'])
             run_cmd(cmd, log_all=True, simple=True)
 
             # register built GCC as compiler to use for stage 2/3
@@ -307,7 +307,7 @@ class EB_GCC(EasyBlock):
 
                 self.log.debug("Building %s in stage 2" % lib)
 
-                if lib == "gmp" or self.getcfg('with%s' % lib):
+                if lib == "gmp" or self.cfg['with%s' % lib]:
 
                     libdir = os.path.join(stage2prefix, lib)
                     try:
@@ -331,11 +331,11 @@ class EB_GCC(EasyBlock):
 
                         # enable watchdog (or not)
                         if self.pplver <= LooseVersion("0.11"):
-                            if self.getcfg('pplwatchdog'):
+                            if self.cfg['pplwatchdog']:
                                 cmd += "--enable-watchdog "
                             else:
                                 cmd += "--disable-watchdog "
-                        elif self.getcfg('pplwatchdog'):
+                        elif self.cfg['pplwatchdog']:
                             self.log.error("Enabling PPL watchdog only supported in PPL <= v0.11 .")
 
                         # make sure GMP we just built is found
@@ -350,7 +350,7 @@ class EB_GCC(EasyBlock):
 
                         cmd = "./configure --prefix=%s --with-pic --disable-shared " % stage2prefix
                         # use isl or PPL
-                        if self.getcfg('clooguseisl'):
+                        if self.cfg['clooguseisl']:
                             if self.cloogver >= v0_16:
                                 cmd += "--with-isl=bundled "
                             else:
@@ -407,7 +407,7 @@ class EB_GCC(EasyBlock):
             configopts += " --enable-bootstrap "
 
             # PPL config options
-            if self.getcfg('withppl'):
+            if self.cfg['withppl']:
                 # for PPL build and CLooG-PPL linking
                 libstdcxxpath = "%s/lib64/libstdc++.a" % self.stage1installdir
                 configopts += "--with-host-libstdcxx='-static-libgcc %s -lm' " % libstdcxxpath
@@ -415,28 +415,28 @@ class EB_GCC(EasyBlock):
                 configopts += "--with-ppl=%s " % stage2prefix
 
                 if self.pplver <= LooseVersion("0.11"):
-                    if self.getcfg('pplwatchdog'):
+                    if self.cfg['pplwatchdog']:
                         configopts += "--enable-watchdog "
                     else:
                         configopts += "--disable-watchdog "
 
             # CLooG config options
-            if self.getcfg('withcloog'):
+            if self.cfg['withcloog']:
                 configopts += "--with-cloog=%s " % stage2prefix
 
-                if self.getcfg('clooguseisl') and self.cloogver >= LooseVersion("0.16"):
+                if self.cfg['clooguseisl'] and self.cloogver >= LooseVersion("0.16"):
                     configopts += "--enable-cloog-backend=isl "
 
             # configure
             cmd = "%s ../configure %s %s" % (
-                                             self.getcfg('preconfigopts'),
+                                             self.cfg['preconfigopts'],
                                              self.configopts,
                                              configopts
                                             )
             self.run_configure_cmd(cmd)
 
         # build with bootstrapping for self-containment
-        self.updatecfg('makeopts', 'bootstrap')
+        self.cfg.update('makeopts', 'bootstrap')
 
         # call standard build_step
         super(self.__class__, self).build_step()
@@ -452,7 +452,7 @@ class EB_GCC(EasyBlock):
 
         sharedlib_ext = get_shared_lib_ext()
 
-        common_infix = 'gcc/%s/%s' % (self.platform_lib, self.get_version())
+        common_infix = 'gcc/%s/%s' % (self.platform_lib, self.version)
 
         bin_files = ["gcov"]
         lib64_files = ["libgomp.%s" % sharedlib_ext, "libgomp.a"]
@@ -463,25 +463,25 @@ class EB_GCC(EasyBlock):
         if kernel_name == 'Linux':
             dirs.append('lib64')
 
-        if not self.getcfg('languages'):
+        if not self.cfg['languages']:
             # default languages are c, c++, fortran
             bin_files = ["c++", "cpp", "g++", "gcc", "gcov", "gfortran"]
             lib64_files.extend(["libstdc++.%s" % sharedlib_ext, "libstdc++.a"])
             libexec_files = ['cc1', 'cc1plus', 'collect2', 'f951']
 
-        if 'c' in self.getcfg('languages'):
+        if 'c' in self.cfg['languages']:
             bin_files.extend(['cpp', 'gcc'])
 
-        if 'c++' in self.getcfg('languages'):
+        if 'c++' in self.cfg['languages']:
             bin_files.extend(['c++', 'g++'])
-            dirs.append('include/c++/%s' % self.get_version())
+            dirs.append('include/c++/%s' % self.version)
             lib64_files.extend(["libstdc++.%s" % sharedlib_ext, "libstdc++.a"])
 
-        if 'fortran' in self.getcfg('languages'):
+        if 'fortran' in self.cfg['languages']:
             bin_files.append('gfortran')
             lib64_files.extend(['libgfortran.%s' % sharedlib_ext, 'libgfortran.a'])
 
-        if 'lto' in self.getcfg('languages'):
+        if 'lto' in self.cfg['languages']:
             libexec_files.extend(['lto1', 'lto-wrapper'])
             if kernel_name in ['Linux']:
                 libexec_files.append('liblto_plugin.%s' % sharedlib_ext)
@@ -507,6 +507,6 @@ class EB_GCC(EasyBlock):
         return {
                 'PATH': ['bin'],
                 'LD_LIBRARY_PATH': ['lib', 'lib64',
-                                    'lib/gcc/%s' % (self.platform_lib, self.getcfg('version'))],
+                                    'lib/gcc/%s' % (self.platform_lib, self.cfg['version'])],
                 'MANPATH': ['man', 'share/man']
                }

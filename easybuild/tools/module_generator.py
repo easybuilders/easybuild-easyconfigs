@@ -62,10 +62,10 @@ class ModuleGenerator(object):
             module_path = self.tmpdir
 
         # Real file goes in 'all' category
-        self.filename = os.path.join(module_path, GENERAL_CLASS, self.app.get_name(), self.app.get_installversion())
+        self.filename = os.path.join(module_path, GENERAL_CLASS, self.app.name, self.app.get_installversion())
 
         # Make symlink in moduleclass category
-        classPath = os.path.join(module_path, self.app.getcfg('moduleclass'), self.app.get_name())
+        classPath = os.path.join(module_path, self.app.cfg['moduleclass'], self.app.name)
         classPathFile = os.path.join(classPath, self.app.get_installversion())
 
         # Create directories and links
@@ -94,7 +94,7 @@ class ModuleGenerator(object):
         """
         Generate a description.
         """
-        description = "%s - Homepage: %s" % (self.app.getcfg('description'), self.app.getcfg('homepage'))
+        description = "%s - Homepage: %s" % (self.app.cfg['description'], self.app.cfg['homepage'])
 
         txt = "#%Module\n"
         txt += """
@@ -109,7 +109,7 @@ set root    %(installdir)s
 
 """ % {'description': description, 'installdir': self.app.installdir}
 
-        if self.app.getcfg('moduleloadnoconflict'):
+        if self.app.cfg['moduleloadnoconflict']:
             txt += """
 if { ![is-loaded %(name)s/%(version)s] } {
     if { [is-loaded %(name)s] } {
@@ -117,10 +117,10 @@ if { ![is-loaded %(name)s/%(version)s] } {
     }
 }
 
-""" % {'name': self.app.get_name(), 'version': self.app.get_version()}
+""" % {'name': self.app.name, 'version': self.app.version}
 
         elif conflict:
-            txt += "conflict    %s\n" % self.app.get_name()
+            txt += "conflict    %s\n" % self.app.name
 
         return txt
 

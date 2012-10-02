@@ -31,12 +31,12 @@ class EB_Hypre(EB_ConfigureMake):
     def configure_step(self):
         """Configure Hypre build after setting extra configure options."""
 
-        self.updatecfg('configopts', '--with-MPI-include=%s' % os.getenv('MPI_INC_DIR'))
+        self.cfg.update('configopts', '--with-MPI-include=%s' % os.getenv('MPI_INC_DIR'))
 
         for dep in ["BLAS", "LAPACK"]:
             libs = ' '.join(os.getenv('%s_STATIC_LIBS' % dep).split(','))
-            self.updatecfg('configopts', '--with-%s-libs="%s"' % (dep.lower(), libs))
-            self.updatecfg('configopts', '--with-%s-lib-dirs="%s"' % (dep.lower(),
+            self.cfg.update('configopts', '--with-%s-libs="%s"' % (dep.lower(), libs))
+            self.cfg.update('configopts', '--with-%s-lib-dirs="%s"' % (dep.lower(),
                                                                       os.getenv('%s_LIB_DIR' % dep)))
 
         super(self.__class__, self).configure_step()

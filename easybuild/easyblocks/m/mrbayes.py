@@ -43,16 +43,16 @@ class EB_MrBayes(EB_ConfigureMake):
         """Configure build: <single-line description how this deviates from standard configure>"""
 
         # set generic make options
-        self.updatecfg('makeopts', 'CC="%s" OPTFLAGS="%s"' % (os.getenv('MPICC'), os.getenv('CFLAGS')))
+        self.cfg.update('makeopts', 'CC="%s" OPTFLAGS="%s"' % (os.getenv('MPICC'), os.getenv('CFLAGS')))
 
-        if LooseVersion(self.get_version()) >= LooseVersion("3.2"):
+        if LooseVersion(self.version) >= LooseVersion("3.2"):
 
             # set correct start_dir dir, and change into it
-            self.setcfg('start_dir', os.path.join(self.getcfg('start_dir'),'src'))
+            self.cfg['start_dir'] = os.path.join(self.cfg['start_dir'],'src')
             try:
-                os.chdir(self.getcfg('start_dir'))
+                os.chdir(self.cfg['start_dir'])
             except OSError, err:
-                self.log.error("Failed to change to correct source dir %s: %s" % (self.getcfg('start_dir'), err))
+                self.log.error("Failed to change to correct source dir %s: %s" % (self.cfg['start_dir'], err))
 
             # run autoconf to generate configure script
             cmd = "autoconf"
@@ -61,19 +61,19 @@ class EB_MrBayes(EB_ConfigureMake):
             # set config opts
             beagle = get_software_root('BEAGLE')
             if beagle:
-                self.updatecfg('configopts', '--with-beagle=%s' % beagle)
+                self.cfg.update('configopts', '--with-beagle=%s' % beagle)
             else:
                 self.log.error("BEAGLE module not loaded?")
 
-            if self.get_toolkit().opts['usempi']:
-                self.updatecfg('configopts', '--enable-mpi')
+            if self.toolkit.opts['usempi']:
+                self.cfg.update('configopts', '--enable-mpi')
 
             # configure
             super(self.__class__, self).configure_step()
         else:
 
             # no configure script prior to v3.2
-            self.updatecfg('makeopts', 'MPI=yes')
+            self.cfg.update('makeopts', 'MPI=yes')
 
     def install_step(self):
         """Install by copying bniaries to install dir."""
@@ -82,7 +82,7 @@ class EB_MrBayes(EB_ConfigureMake):
         os.makedirs(bindir)
 
         for exe in ['mb']:
-            src = os.path.join(self.getcfg('start_dir'), exe)
+            src = os.path.join(self.cfg['start_dir'], exe)
             dst = os.path.join(bindir, exe)
             try:
                 shutil.copy2(src, dst)

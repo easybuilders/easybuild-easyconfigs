@@ -84,15 +84,15 @@ class EB_LAPACK(EB_ConfigureMake):
         """
 
         # copy build_step.inc file from examples
-        if self.get_toolkit().comp_family() == toolkit.GCC:
+        if self.toolkit.comp_family() == toolkit.GCC:
             makeinc = 'gfortran'
-        elif self.get_toolkit().comp_family() == toolkit.INTEL:
+        elif self.toolkit.comp_family() == toolkit.INTEL:
             makeinc = 'ifort'
         else:
             self.log.error("Don't know which build_step.inc file to pick, unknown compiler being used...")
 
-        src = os.path.join(self.getcfg('start_dir'), 'INSTALL', 'make.inc.%s' % makeinc)
-        dest = os.path.join(self.getcfg('start_dir'), 'make.inc')
+        src = os.path.join(self.cfg['start_dir'], 'INSTALL', 'make.inc.%s' % makeinc)
+        dest = os.path.join(self.cfg['start_dir'], 'make.inc')
 
         if not os.path.isfile(src):
             self.log.error("Can't find source file %s" % src)
@@ -107,38 +107,38 @@ class EB_LAPACK(EB_ConfigureMake):
 
         # set optimization flags
         fpic = ''
-        if self.get_toolkit().opts['pic']:
+        if self.toolkit.opts['pic']:
             fpic = '-fPIC'
-        self.updatecfg('makeopts', 'OPTS="$FFLAGS -m64" NOOPT="%s -m64 -O0"' % fpic)
+        self.cfg.update('makeopts', 'OPTS="$FFLAGS -m64" NOOPT="%s -m64 -O0"' % fpic)
 
         # prematurely exit configure when we're only testing
-        if self.getcfg('test_only'):
+        if self.cfg['test_only']:
             self.log.info('Only testing, so skipping rest of configure.')
             return
 
         # supply blas lib (or not)
-        if self.getcfg('supply_blas'):
+        if self.cfg['supply_blas']:
 
             blaslib = get_blas_lib(self.log)
 
             self.log.debug("Providing '%s' as BLAS lib" % blaslib)
-            self.updatecfg('makeopts', 'BLASLIB="%s"' % blaslib)
+            self.cfg.update('makeopts', 'BLASLIB="%s"' % blaslib)
 
         else:
             self.log.debug("Not providing a BLAS lib to LAPACK.")
-            self.updatecfg('makeopts', 'BLASLIB=""')
+            self.cfg.update('makeopts', 'BLASLIB=""')
 
         # only build library if we're not supplying a BLAS library (otherwise testing fails)
-        if not self.getcfg('supply_blas'):
+        if not self.cfg['supply_blas']:
             self.log.info('No BLAS library provided, so only building LAPACK library (no testing).')
-            self.updatecfg('makeopts', 'lib')
+            self.cfg.update('makeopts', 'lib')
 
     # don't create a module if we're only testing
     def build_step(self):
         """
         Only build when we're not testing.
         """
-        if self.getcfg('test_only'):
+        if self.cfg['test_only']:
             return
 
         else:
@@ -150,11 +150,11 @@ class EB_LAPACK(EB_ConfigureMake):
         Install LAPACK: copy all .a files to lib dir in install directory
         """
 
-        if self.getcfg('test_only'):
+        if self.cfg['test_only']:
             self.log.info('Only testing, so skipping make install.')
             pass
 
-        srcdir = self.getcfg('start_dir')
+        srcdir = self.cfg['start_dir']
         destdir = os.path.join(self.installdir, 'lib')
 
         try:
@@ -183,7 +183,7 @@ class EB_LAPACK(EB_ConfigureMake):
         """
         Run BLAS and LAPACK tests that come with netlib's LAPACK.
         """
-        if self.getcfg('test_only'):
+        if self.cfg['test_only']:
 
             if not get_software_root('LAPACK'):
                 self.log.error("You need to make sure that the LAPACK module is loaded to perform testing.")
@@ -205,7 +205,7 @@ class EB_LAPACK(EB_ConfigureMake):
         """
         Only make LAPACK module when we're not testing.
         """
-        if self.getcfg('test_only'):
+        if self.cfg['test_only']:
             pass
         else:
             return super(self.__class__, self).make_module_step(fake)
@@ -214,7 +214,7 @@ class EB_LAPACK(EB_ConfigureMake):
         """
         Custom sanity check for LAPACK (only run when not testing)
         """
-        if not self.getcfg('test_only'):
+        if not self.cfg['test_only']:
             custom_paths = {
                             'files': ["lib/%s" % x for x in ["liblapack.a", "libtmglib.a"]],
                             'dirs': []

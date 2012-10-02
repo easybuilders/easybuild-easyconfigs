@@ -39,7 +39,7 @@ class EB_METIS(EB_ConfigureMake):
     def configure_step(self, *args, **kwargs):
         """Configure build using 'make config' (only for recent versions (>= v5))."""
 
-        if LooseVersion(self.get_version()) >= LooseVersion("5"):
+        if LooseVersion(self.version) >= LooseVersion("5"):
 
             cmd = "make config prefix=%s" % self.installdir
             run_cmd(cmd, log_all=True, simple=True)
@@ -47,10 +47,10 @@ class EB_METIS(EB_ConfigureMake):
     def build_step(self):
         """Add make options before building."""
 
-        self.updatecfg('makeopts', 'LIBDIR=""')
+        self.cfg.update('makeopts', 'LIBDIR=""')
 
-        if self.get_toolkit().opts['pic']:
-            self.updatecfg('makeopts', 'CC="$CC -fPIC"')
+        if self.toolkit.opts['pic']:
+            self.cfg.update('makeopts', 'CC="$CC -fPIC"')
 
         super(self.__class__, self).build_step()
 
@@ -63,7 +63,7 @@ class EB_METIS(EB_ConfigureMake):
         (in Lib instead of lib)
         """
 
-        if LooseVersion(self.get_version()) < LooseVersion("5"):
+        if LooseVersion(self.version) < LooseVersion("5"):
 
             libdir = os.path.join(self.installdir, 'lib')
             mkdir(libdir)
@@ -73,7 +73,7 @@ class EB_METIS(EB_ConfigureMake):
 
             # copy libraries
             try:
-                src = os.path.join(self.getcfg('start_dir'), 'libmetis.a')
+                src = os.path.join(self.cfg['start_dir'], 'libmetis.a')
                 dst = os.path.join(libdir, 'libmetis.a')
                 shutil.copy2(src, dst)
             except OSError, err:
@@ -82,7 +82,7 @@ class EB_METIS(EB_ConfigureMake):
             # copy include files
             try:
                 for f in ['defs.h', 'macros.h', 'metis.h', 'proto.h', 'rename.h', 'struct.h']:
-                    src = os.path.join(self.getcfg('start_dir'), 'Lib', f)
+                    src = os.path.join(self.cfg['start_dir'], 'Lib', f)
                     dst = os.path.join(includedir, f)
                     shutil.copy2(src, dst)
                     os.chmod(dst, 0755)
@@ -105,18 +105,18 @@ class EB_METIS(EB_ConfigureMake):
     def sanity_check_step(self):
         """Custom sanity check for METIS (more extensive for recent version (>= v5))"""
 
-        if not self.getcfg('sanityCheckPaths'):
+        if not self.cfg['sanityCheckPaths']:
 
             binfiles = []
-            if LooseVersion(self.get_version()) > LooseVersion("5"):
+            if LooseVersion(self.version) > LooseVersion("5"):
                 binfiles += ["cmpfillin", "gpmetis", "graphchk", "m2gmetis", "mpmetis", "ndmetis"]
 
             incfiles = ["metis.h"]
-            if LooseVersion(self.get_version()) < LooseVersion("5"):
+            if LooseVersion(self.version) < LooseVersion("5"):
                 incfiles += ["defs.h", "macros.h", "proto.h", "rename.h", "struct.h"]
 
             dirs = []
-            if LooseVersion(self.get_version()) < LooseVersion("5"):
+            if LooseVersion(self.version) < LooseVersion("5"):
                 dirs += ["Lib"]
 
         custom_paths = {

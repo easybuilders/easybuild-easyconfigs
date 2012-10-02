@@ -52,13 +52,13 @@ class EB_Tarball(EasyBlock):
 
     def install_step(self):
 
-        src = self.getcfg('start_dir')
+        src = self.cfg['start_dir']
         # shutil.copytree cannot handle destination dirs that exist already.
         # On the other hand, Python2.4 cannot create entire paths during copytree.
         # Therefore, only the final directory is deleted.
         shutil.rmtree(self.installdir)
         try:
-            # self.getcfg('keepsymlinks') is False by default except when explicitly put to True in .eb file
-            shutil.copytree(src,self.installdir, symlinks=self.getcfg('keepsymlinks'))
+            # self.cfg['keepsymlinks'] is False by default except when explicitly put to True in .eb file
+            shutil.copytree(src,self.installdir, symlinks=self.cfg['keepsymlinks'])
         except:
             self.log.exception("Copying %s to installation dir %s failed" % (src,self.installdir))

@@ -39,9 +39,9 @@ class EB_DOLFIN(EB_CMakePythonPackage):
         """Set DOLFIN-specific configure options and configure with CMake."""
 
         # compilers
-        self.updatecfg('configopts', "-DCMAKE_C_COMPILER='%s' " % os.getenv('CC'))
-        self.updatecfg('configopts', "-DCMAKE_CXX_COMPILER='%s' " % os.getenv('CXX'))
-        self.updatecfg('configopts', "-DCMAKE_Fortran_COMPILER='%s' " % os.getenv('F90'))
+        self.cfg.update('configopts', "-DCMAKE_C_COMPILER='%s' " % os.getenv('CC'))
+        self.cfg.update('configopts', "-DCMAKE_CXX_COMPILER='%s' " % os.getenv('CXX'))
+        self.cfg.update('configopts', "-DCMAKE_Fortran_COMPILER='%s' " % os.getenv('F90'))
 
         # compiler flags
         cflags = os.getenv('CFLAGS')
@@ -54,28 +54,28 @@ class EB_DOLFIN(EB_CMakePythonPackage):
             cxxflags += " -DMPICH_IGNORE_CXX_SEEK"
             fflags += " -DMPICH_IGNORE_CXX_SEEK"
 
-        self.updatecfg('configopts', '-DCMAKE_C_FLAGS="%s"' % cflags)
-        self.updatecfg('configopts', '-DCMAKE_CXX_FLAGS="%s"' % cxxflags)
-        self.updatecfg('configopts', '-DCMAKE_Fortran_FLAGS="%s"' % fflags)
+        self.cfg.update('configopts', '-DCMAKE_C_FLAGS="%s"' % cflags)
+        self.cfg.update('configopts', '-DCMAKE_CXX_FLAGS="%s"' % cxxflags)
+        self.cfg.update('configopts', '-DCMAKE_Fortran_FLAGS="%s"' % fflags)
 
         # run cmake in debug mode
-        self.updatecfg('configopts', ' -DCMAKE_BUILD_TYPE=Debug')
+        self.cfg.update('configopts', ' -DCMAKE_BUILD_TYPE=Debug')
 
         # set correct compilers to be used at runtime
-        self.updatecfg('configopts', ' -DMPI_C_COMPILER="$MPICC"')
-        self.updatecfg('configopts', ' -DMPI_CXX_COMPILER="$MPICXX"')
+        self.cfg.update('configopts', ' -DMPI_C_COMPILER="$MPICC"')
+        self.cfg.update('configopts', ' -DMPI_CXX_COMPILER="$MPICXX"')
 
         # specify MPI library
-        self.updatecfg('configopts', ' -DMPI_COMPILER="%s"' % os.getenv('MPICC'))
+        self.cfg.update('configopts', ' -DMPI_COMPILER="%s"' % os.getenv('MPICC'))
 
         if  os.getenv('MPI_LIB_SHARED') and os.getenv('MPI_INC_DIR'):
-            self.updatecfg('configopts', ' -DMPI_LIBRARY="%s"' % os.getenv('MPI_LIB_SHARED'))
-            self.updatecfg('configopts', ' -DMPI_INCLUDE_PATH="%s"' % os.getenv('MPI_INC_DIR'))
+            self.cfg.update('configopts', ' -DMPI_LIBRARY="%s"' % os.getenv('MPI_LIB_SHARED'))
+            self.cfg.update('configopts', ' -DMPI_INCLUDE_PATH="%s"' % os.getenv('MPI_INC_DIR'))
         else:
             self.log.error('MPI_LIB_SHARED or MPI_INC_DIR not set, could not determine MPI-related paths.')
 
         # save config options to reuse them later (e.g. for sanity check commands)
-        self.saved_configopts = self.getcfg('configopts')
+        self.saved_configopts = self.cfg['configopts']
 
         # make sure that required dependencies are loaded
         deps = ['Armadillo', 'Boost', 'CGAL', 'MTL4', 'ParMETIS', 'PETSc', 'Python',
@@ -89,27 +89,27 @@ class EB_DOLFIN(EB_CMakePythonPackage):
                 depsdict.update({dep:deproot})
 
         # zlib
-        self.updatecfg('configopts', '-DZLIB_INCLUDE_DIR=%s' % os.path.join(depsdict['zlib'], "include"))
-        self.updatecfg('configopts', '-DZLIB_LIBRARY=%s' % os.path.join(depsdict['zlib'], "lib", "libz.a"))
+        self.cfg.update('configopts', '-DZLIB_INCLUDE_DIR=%s' % os.path.join(depsdict['zlib'], "include"))
+        self.cfg.update('configopts', '-DZLIB_LIBRARY=%s' % os.path.join(depsdict['zlib'], "lib", "libz.a"))
 
         # set correct openmp options
-        openmp = self.get_toolkit().get_openmp_flag()
-        self.updatecfg('configopts', ' -DOpenMP_CXX_FLAGS="%s"' % openmp)
-        self.updatecfg('configopts', ' -DOpenMP_C_FLAGS="%s"' % openmp)
+        openmp = self.toolkit.get_openmp_flag()
+        self.cfg.update('configopts', ' -DOpenMP_CXX_FLAGS="%s"' % openmp)
+        self.cfg.update('configopts', ' -DOpenMP_C_FLAGS="%s"' % openmp)
 
         # Boost config parameters
-        self.updatecfg('configopts', " -DBOOST_INCLUDEDIR=%s/include" % depsdict['Boost'])
-        self.updatecfg('configopts', " -DBoost_DEBUG=ON -DBOOST_ROOT=%s" % depsdict['Boost'])
+        self.cfg.update('configopts', " -DBOOST_INCLUDEDIR=%s/include" % depsdict['Boost'])
+        self.cfg.update('configopts', " -DBoost_DEBUG=ON -DBOOST_ROOT=%s" % depsdict['Boost'])
 
         # UFC and Armadillo config params
-        self.updatecfg('configopts', " -DUFC_DIR=%s" % depsdict['UFC'])
-        self.updatecfg('configopts', "-DARMADILLO_DIR:PATH=%s " % depsdict['Armadillo'])
+        self.cfg.update('configopts', " -DUFC_DIR=%s" % depsdict['UFC'])
+        self.cfg.update('configopts', "-DARMADILLO_DIR:PATH=%s " % depsdict['Armadillo'])
 
         # specify Python paths
         python_short_ver = ".".join(get_software_version('Python').split(".")[0:2])
-        self.updatecfg('configopts', " -DPYTHON_INCLUDE_PATH=%s/include/python%s" % (depsdict['Python'],
+        self.cfg.update('configopts', " -DPYTHON_INCLUDE_PATH=%s/include/python%s" % (depsdict['Python'],
                                                                                      python_short_ver))
-        self.updatecfg('configopts', " -DPYTHON_LIBRARY=%s/lib/libpython%s.so" % (depsdict['Python'],
+        self.cfg.update('configopts', " -DPYTHON_LIBRARY=%s/lib/libpython%s.so" % (depsdict['Python'],
                                                                                   python_short_ver))
 
         # SuiteSparse config params
@@ -126,28 +126,28 @@ class EB_DOLFIN(EB_CMakePythonPackage):
                           '-DCOLAMD_LIBRARY:PATH="%(sp)s/COLAMD/lib/libcolamd.a"'
                           ]
 
-        self.updatecfg('configopts', ' '.join(umfpack_params) % {'sp':suitesparse})
+        self.cfg.update('configopts', ' '.join(umfpack_params) % {'sp':suitesparse})
 
         # ParMETIS and SCOTCH
-        self.updatecfg('configopts', '-DPARMETIS_DIR="%s"' % depsdict['ParMETIS'])
-        self.updatecfg('configopts', '-DSCOTCH_DIR="%s" -DSCOTCH_DEBUG:BOOL=ON' % depsdict['SCOTCH'])
+        self.cfg.update('configopts', '-DPARMETIS_DIR="%s"' % depsdict['ParMETIS'])
+        self.cfg.update('configopts', '-DSCOTCH_DIR="%s" -DSCOTCH_DEBUG:BOOL=ON' % depsdict['SCOTCH'])
 
         # BLACS and LAPACK 
-        self.updatecfg('configopts', '-DBLAS_LIBRARIES:PATH="%s"' % os.getenv('LIBBLAS'))
-        self.updatecfg('configopts', '-DLAPACK_LIBRARIES:PATH="%s"' % os.getenv('LIBLAPACK'))
+        self.cfg.update('configopts', '-DBLAS_LIBRARIES:PATH="%s"' % os.getenv('LIBBLAS'))
+        self.cfg.update('configopts', '-DLAPACK_LIBRARIES:PATH="%s"' % os.getenv('LIBLAPACK'))
 
         # CGAL
-        self.updatecfg('configopts', '-DCGAL_DIR:PATH="%s"' % depsdict['CGAL'])
+        self.cfg.update('configopts', '-DCGAL_DIR:PATH="%s"' % depsdict['CGAL'])
 
         # PETSc
         # need to specify PETSC_ARCH explicitely (env var alone is not sufficient)
         for env_var in ["PETSC_DIR", "PETSC_ARCH"]:
             val = os.getenv(env_var)
             if val:
-                self.updatecfg('configopts', '-D%s=%s' % (env_var, val))
+                self.cfg.update('configopts', '-D%s=%s' % (env_var, val))
 
         # MTL4
-        self.updatecfg('configopts', '-DMTL4_DIR:PATH="%s"' % depsdict['MTL4'])
+        self.cfg.update('configopts', '-DMTL4_DIR:PATH="%s"' % depsdict['MTL4'])
 
         # configure
         out = super(self.__class__, self).configure_step()
