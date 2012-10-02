@@ -276,7 +276,7 @@ libraries = %(lapack)s
             extrasiteconfig += """
 [fftw]
 libraries = %s
-        """ % os.getenv("LIBFFT")
+        """ % os.getenv("LIBFFT").replace(' ', ',')
 
         self.sitecfg = self.sitecfg + extrasiteconfig
 

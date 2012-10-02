@@ -24,7 +24,9 @@ EasyBuild support for DOLFIN, implemented as an easyblock
 """
 import os
 import re
+import tempfile
 
+import easybuild.tools.environment as env
 import easybuild.tools.toolkit as toolkit
 from easybuild.easyblocks.cmakepythonpackage import EB_CMakePythonPackage
 from easybuild.tools.modules import get_software_root, get_software_version
@@ -189,6 +191,17 @@ class EB_DOLFIN(EB_CMakePythonPackage):
             self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
 
         if not self.getcfg('sanityCheckCommands'):
+
+            # set cache/error dirs for Instant
+            instant_cache_dir = os.path.join(tempfile.gettempdir(), '.instant', 'cache')
+            instant_error_dir = os.path.join(tempfile.gettempdir(), '.instant', 'error')
+            env.set("INSTANT_CACHE_DIR",  instant_cache_dir)
+            env.set("INSTANT_ERROR_DIR",  instant_error_dir)
+            try:
+                os.makedirs(instant_cache_dir)
+                os.makedirs(instant_error_dir)
+            except OSError, err:
+                self.log.error("Failed to create Instant cache/error dirs: %s" % err)
 
             pref = os.path.join('share', 'dolfin', 'demo')
 

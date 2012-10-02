@@ -53,7 +53,9 @@ class EB_BiSearch(Application):
                  'Please enter the path of c++ compiler [/usr/bin/g++]: ': os.getenv('CXX')
                 }
 
-        run_cmd_qa(cmd, qanda, log_all=True, simple=True)
+        no_qa = [r'Compiling components\s*\.*']
+
+        run_cmd_qa(cmd, qanda, no_qa=no_qa, log_all=True, simple=True)
 
     def sanitycheck(self):
         """Custom sanity check for BiSearch."""

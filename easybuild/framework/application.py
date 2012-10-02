@@ -47,7 +47,7 @@ from easybuild.tools.build_log import EasyBuildError, initLogger, removeLogHandl
 from easybuild.tools.config import source_path, buildPath, installPath, read_only_installdir
 from easybuild.tools.filetools import adjust_permissions, convertName, encode_class_name
 from easybuild.tools.filetools import patch, run_cmd, unpack
-from easybuild.tools.module_generator import ModuleGenerator
+from easybuild.tools.module_generator import GENERAL_CLASS, ModuleGenerator
 from easybuild.tools.modules import Modules, get_software_root
 from easybuild.tools.systemtools import get_core_count
 
@@ -78,7 +78,7 @@ class Application:
         self.instance_pkgs = []
         self.skip = None
 
-        # Easyblock for this Application
+        # easyconfig for this application
         self.cfg = EasyConfig(path, self.extra_options())
 
         # module generator
@@ -292,6 +292,23 @@ class Application:
             self.log.info('no patches provided')
 
         self.setparallelism()
+
+        # create parent dirs in install and modules path already
+        # this is required when building in parallel
+        
+        pardirs = [os.path.join(installPath(), self.name()),
+                   os.path.join(installPath('mod'), GENERAL_CLASS, self.name()),
+                   os.path.join(installPath('mod'), self.getcfg('moduleclass'), self.name())]
+        self.log.info("Checking dirs that need to be created: %s" % pardirs)
+        try:
+            for pardir in pardirs:
+                if not os.path.exists(pardir):
+                    os.makedirs(pardir)
+                    self.log.debug("Created directory %s" % pardir)
+                else:
+                    self.log.debug("Not creating %s, it already exists." % pardir)
+        except OSError, err:
+            self.log.error("Failed to create parent dirs in install and modules path: %s" % err)
 
     def getcfg(self, key):
         """
@@ -742,7 +759,8 @@ class Application:
             gid = grp.getgrnam(self.getcfg('group'))[2]
             # rwx for owner, r-x for group, --- for other
             try:
-                adjust_permissions(self.installdir, 0750, recursive=True, group_id=gid, relative=False)
+                adjust_permissions(self.installdir, 0750, recursive=True, group_id=gid, relative=False, 
+                                   ignore_errors=True)
             except EasyBuildError, err:
                 self.log.error("Unable to change group permissions of file(s). " \
                                "Are you a member of this group?\n%s" % err)
@@ -751,13 +769,13 @@ class Application:
         else:
             # remove write permissions for group and other
             perms = stat.S_IWGRP | stat.S_IWOTH
-            adjust_permissions(self.installdir, perms, add=False, recursive=True, relative=True)
+            adjust_permissions(self.installdir, perms, add=False, recursive=True, relative=True, ignore_errors=True)
             self.log.info("Successfully removed write permissions recursively for group/other on install dir.")
 
         if read_only_installdir():
             # remove write permissions for everyone
             perms = stat.S_IWUSR | stat.S_IWGRP | stat.S_IWOTH
-            adjust_permissions(self.installdir, perms, add=False, recursive=True, relative=True)
+            adjust_permissions(self.installdir, perms, add=False, recursive=True, relative=True, ignore_errors=True)
             self.log.info("Successfully removed write permissions recursively for *EVERYONE* on install dir.")
 
     def cleanup(self):
@@ -1543,8 +1561,7 @@ def module_path_for_easyblock(easyblock):
     if easyblock.startswith(class_prefix):
         easyblock = easyblock[len(class_prefix):]
 
-    modname = easyblock.replace('-', '_')
-    return "easybuild.easyblocks.%s" % (modname.lower())
+    return "easybuild.easyblocks.%s" % easyblock.lower()
 
 def get_paths_for(log, subdir="easyblocks"):
     """
@@ -1589,8 +1606,8 @@ def get_class(easyblock, log, name=None):
             except ImportError, err:
                 # No easyblock could be found, so fall back to default class.
 
-                log.debug("Failed to import easyblock for %s, falling back to default %s class: erro: %s" % \
-                          (class_name, app_mod_class, err))
+                log.warning("Failed to import easyblock for %s, falling back to default %s class: erro: %s" % \
+                            (class_name, app_mod_class, err))
                 (modulepath, class_name) = app_mod_class
         # If Application was specified, use the framework namespace
         elif easyblock == "Application":
@@ -1605,7 +1622,7 @@ def get_class(easyblock, log, name=None):
                 log.info("Assuming that full easyblock module path was specified.")
                 modulepath = easyblock
             else:
-                modulepath = module_path_for_easyblock(easyblock).lower()
+                modulepath = module_path_for_easyblock(easyblock)
                 log.info("Derived full easyblock module path for %s: %s" % (class_name, modulepath))
 
         cls = get_class_for(modulepath, class_name)
