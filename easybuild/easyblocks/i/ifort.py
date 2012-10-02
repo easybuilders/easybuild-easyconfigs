@@ -42,14 +42,16 @@ class EB_ifort(EB_icc):
 
         if not self.getcfg('sanityCheckPaths'):
 
-            libprefix = ""
+            binprefix = "bin/intel64"
+            libprefix = "lib/intel64/lib"
             if LooseVersion(self.version()) >= LooseVersion("2011"):
-                libprefix = "compiler/lib/intel64/lib"
-            else:
-                libprefix = "lib/intel64/lib"
+                if LooseVersion(self.version()) <= LooseVersion("2011.3.174"):
+                    binprefix = "bin"
+                else:
+                    libprefix = "compiler/lib/intel64/lib"
 
             self.setcfg('sanityCheckPaths', {
-                                             'files': ["bin/intel64/%s" % x for x in ["ifort", "idb"]] +
+                                             'files': ["%s/%s" % (binprefix, x) for x in ["ifort", "idb"]] +
                                                       ["%s%s" % (libprefix, x) for x in ["ifcore.a", "ifcore.so",
                                                                                          "iomp5.a", "iomp5.so"]],
                                              'dirs': []

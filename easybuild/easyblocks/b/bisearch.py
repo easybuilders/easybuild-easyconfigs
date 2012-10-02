@@ -55,7 +55,7 @@ class EB_BiSearch(Application):
 
         no_qa = [r'Compiling components\s*\.*']
 
-        run_cmd_qa(cmd, qanda, no=no_qa, log_all=True, simple=True)
+        run_cmd_qa(cmd, qanda, no_qa=no_qa, log_all=True, simple=True)
 
     def sanitycheck(self):
         """Custom sanity check for BiSearch."""

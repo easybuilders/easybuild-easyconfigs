@@ -78,7 +78,7 @@ class Application:
         self.instance_pkgs = []
         self.skip = None
 
-        # Easyblock for this Application
+        # easyconfig for this application
         self.cfg = EasyConfig(path, self.extra_options())
 
         # module generator
@@ -758,7 +758,8 @@ class Application:
             gid = grp.getgrnam(self.getcfg('group'))[2]
             # rwx for owner, r-x for group, --- for other
             try:
-                adjust_permissions(self.installdir, 0750, recursive=True, group_id=gid, relative=False, ignore_errors=True)
+                adjust_permissions(self.installdir, 0750, recursive=True, group_id=gid, relative=False, 
+                                   ignore_errors=True)
             except EasyBuildError, err:
                 self.log.error("Unable to change group permissions of file(s). " \
                                "Are you a member of this group?\n%s" % err)
@@ -1559,8 +1560,7 @@ def module_path_for_easyblock(easyblock):
     if easyblock.startswith(class_prefix):
         easyblock = easyblock[len(class_prefix):]
 
-    modname = easyblock.replace('-', '_')
-    return "easybuild.easyblocks.%s" % (modname.lower())
+    return "easybuild.easyblocks.%s" % easyblock.lower()
 
 def get_paths_for(log, subdir="easyblocks"):
     """
@@ -1621,7 +1621,7 @@ def get_class(easyblock, log, name=None):
                 log.info("Assuming that full easyblock module path was specified.")
                 modulepath = easyblock
             else:
-                modulepath = module_path_for_easyblock(easyblock).lower()
+                modulepath = module_path_for_easyblock(easyblock)
                 log.info("Derived full easyblock module path for %s: %s" % (class_name, modulepath))
 
         cls = get_class_for(modulepath, class_name)

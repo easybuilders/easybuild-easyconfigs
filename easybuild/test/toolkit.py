@@ -47,15 +47,15 @@ class MockModule(modules.Modules):
         """ convenience method, just appends to a list we can access """
         MockModule.modules.extend(*args)
 
-    def load(*args, **kwargs):
+    def load(self, *args, **kwargs):
         """ Modules can handle this """
         pass
 
-    def dependencies_for(*args, **kwargs):
+    def dependencies_for(self, *args, **kwargs):
         """ customize dependencies_for to always return an empty list """
         return []
 
-    def get_software_root(*args, **kwargs):
+    def get_software_root(self, *args, **kwargs):
         """ this function is here so I can later replace the original """
         return "tmp"
 

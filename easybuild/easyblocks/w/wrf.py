@@ -349,6 +349,9 @@ class EB_WRF(Application):
 
     def make_module_req_guess(self):
 
+        mainver = self.version().split('.')[0]
+        self.wrfsubdir = "WRFV%s"%mainver
+
         maindir = os.path.join(self.wrfsubdir, "main")
 
         return {
