@@ -48,7 +48,7 @@ class EB_GCC(EB_ConfigureMake):
     """
 
     def __init__(self, *args, **kwargs):
-        super(EB_GCC_, self).__init__(*args, **kwargs)
+        super(EB_GCC, self).__init__(*args, **kwargs)
 
         self.stagedbuild = False
 
@@ -439,7 +439,7 @@ class EB_GCC(EB_ConfigureMake):
         self.cfg.update('makeopts', 'bootstrap')
 
         # call standard build_step
-        super(EB_GCC_, self).build_step()
+        super(EB_GCC, self).build_step()
 
     # make install is just standard install_step, nothing special there
 
@@ -498,7 +498,7 @@ class EB_GCC(EB_ConfigureMake):
                         'dirs': dirs
                        }
 
-        super(EB_GCC_, self).sanity_check_step(custom_paths=custom_paths)
+        super(EB_GCC, self).sanity_check_step(custom_paths=custom_paths)
 
     def make_module_req_guess(self):
         """
