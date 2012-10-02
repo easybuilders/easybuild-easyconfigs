@@ -750,52 +750,6 @@ class EasyBlock:
         """
         pass
 
-    def extra_extensions(self):
-        """
-        Also do this (ie the real work)
-        - based on original R version
-        - it assumes a class that has a run function
-        -- the class is instantiated and the at the end <instance>.run() is called
-        -- has defaultclass
-        """
-        exts_installdeps = self.getcfg('exts_installdeps')
-        self.log.debug("Installing extensions")
-        exts_defaultclass = self.getcfg('exts_defaultclass')
-        if not exts_defaultclass:
-            self.log.error("ERROR: No default extension class set for %s" % self.get_name())
-
-        allclassmodule = exts_defaultclass[0]
-        defaultClass = exts_defaultclass[1]
-        for ext in self.exts:
-            name = encode_class_name(ext['name']) # Use the same encoding as get_class
-            self.log.debug("Starting extension %s" % name)
-
-            try:
-                exec("from %s import %s" % (allclassmodule, name))
-                p = eval("%s(self,ext,exts_installdeps)" % name)
-                self.log.debug("Installing extension %s through class %s" % (name, ext['name']))
-            except (ImportError, NameError), err:
-                self.log.debug("Couldn't load class %s for extension %s with extension deps %s:\n%s" % (name, ext['name'], exts_installdeps, err))
-                if defaultClass:
-                    self.log.info("No class found for %s, using default %s instead." % (ext['name'], defaultClass))
-                    try:
-                        exec("from %s import %s" % (allclassmodule, defaultClass))
-                        exec("p=%s(self,ext,exts_installdeps)" % defaultClass)
-                        self.log.debug("Installing extension %s through default class %s" % (ext['name'], defaultClass))
-                    except (ImportError, NameError), errbis:
-                        self.log.error("Failed to use both class %s and default %s for extension %s, giving up:\n%s\n%s" % (name, defaultClass, ext['name'], err, errbis))
-                else:
-                    self.log.error("Failed to use both class %s and no default class for extension %s, giving up:\n%s" % (name, ext['name'], err))
-
-            ## real work
-            p.prerun()
-            txt = p.run()
-            if txt:
-                self.module_extra_extensions += txt
-            p.postrun()
-            # Append so we can make us of it later (in sanity_check)
-            self.ext_instances.append(p)
-
     def skip_extensions(self):
         """
         Called when self.skip is True
@@ -1167,7 +1121,45 @@ class EasyBlock:
         if self.skip:
             self.skip_extensions()
 
-        self.extra_extensions()
+        # actually install extensions
+        exts_installdeps = self.getcfg('exts_installdeps')
+        self.log.debug("Installing extensions")
+        exts_defaultclass = self.getcfg('exts_defaultclass')
+        if not exts_defaultclass:
+            self.log.error("ERROR: No default extension class set for %s" % self.get_name())
+
+        allclassmodule = exts_defaultclass[0]
+        defaultClass = exts_defaultclass[1]
+        for ext in self.exts:
+            name = encode_class_name(ext['name']) # Use the same encoding as get_class
+            self.log.debug("Starting extension %s" % name)
+
+            try:
+                exec("from %s import %s" % (allclassmodule, name))
+                p = eval("%s(self,ext,exts_installdeps)" % name)
+                self.log.debug("Installing extension %s through class %s" % (name, ext['name']))
+            except (ImportError, NameError), err:
+                self.log.debug("Couldn't load class %s for extension %s with extension deps %s:\n%s" % (name, ext['name'], exts_installdeps, err))
+                if defaultClass:
+                    self.log.info("No class found for %s, using default %s instead." % (ext['name'], defaultClass))
+                    try:
+                        exec("from %s import %s" % (allclassmodule, defaultClass))
+                        exec("p=%s(self,ext,exts_installdeps)" % defaultClass)
+                        self.log.debug("Installing extension %s through default class %s" % (ext['name'], defaultClass))
+                    except (ImportError, NameError), errbis:
+                        self.log.error("Failed to use both class %s and default %s for extension %s, giving up:\n%s\n%s" % (name, defaultClass, ext['name'], err, errbis))
+                else:
+                    self.log.error("Failed to use both class %s and no default class for extension %s, giving up:\n%s" % (name, ext['name'], err))
+
+            ## real work
+            p.prerun()
+            txt = p.run()
+            if txt:
+                self.module_extra_extensions += txt
+            p.postrun()
+            # Append so we can make us of it later (in sanity_check)
+            self.ext_instances.append(p)
+
 
     def package_step(self):
         """Package software (e.g. into an RPM)."""
