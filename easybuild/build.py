@@ -1197,7 +1197,7 @@ def build_easyconfigs(easyconfigs, output_dir, test_results, options, log):
                 perform_step('test cases', app, lambda x: x.runtests(), applog)
 
             # close log and move it
-            app.closelog()
+            app.close_log()
             try:
                 shutil.move(app.logfile, applog)
                 log.info("Log file moved to %s" % applog)
