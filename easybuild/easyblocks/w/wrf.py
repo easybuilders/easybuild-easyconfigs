@@ -45,7 +45,7 @@ class EB_WRF(EasyBlock):
 
     def __init__(self, *args, **kwargs):
         """Add extra config options specific to WRF."""
-        super(EB_WRF_, self).__init__(*args, **kwargs)
+        super(EB_WRF, self).__init__(*args, **kwargs)
 
         self.build_in_installdir = True
         self.wrfsubdir = None
@@ -341,7 +341,7 @@ class EB_WRF(EasyBlock):
                         'dirs': [os.path.join(self.wrfsubdir, x) for x in ds]
                        }
 
-        super(EB_WRF_, self).sanity_check_step(custom_paths=custom_paths)
+        super(EB_WRF, self).sanity_check_step(custom_paths=custom_paths)
 
     def make_module_req_guess(self):
 
@@ -358,7 +358,7 @@ class EB_WRF(EasyBlock):
 
     def make_module_extra(self):
 
-        txt = super(EB_WRF_, self).make_module_extra()
+        txt = super(EB_WRF, self).make_module_extra()
         txt += get_netcdf_module_set_cmds(self.log)
 
         return txt

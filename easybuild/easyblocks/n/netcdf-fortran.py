@@ -48,7 +48,7 @@ class EB_netCDF_minus_Fortran(EB_ConfigureMake):
         if self.toolkit.comp_family() == toolkit.GCC:
             env.set('CPPFLAGS', "%s -DgFortran" % os.getenv('CPPFLAGS'))
 
-        super(EB_netCDF_minus_Fortran_, self).configure_step()
+        super(EB_netCDF_minus_Fortran, self).configure_step()
 
     def sanity_check_step(self):
         """
@@ -61,4 +61,4 @@ class EB_netCDF_minus_Fortran(EB_ConfigureMake):
                         'dirs': []
                        }
 
-        super(EB_netCDF_minus_Fortran_, self).sanity_check_step(custom_paths=custom_paths)
+        super(EB_netCDF_minus_Fortran, self).sanity_check_step(custom_paths=custom_paths)

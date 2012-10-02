@@ -39,7 +39,7 @@ class EB_Primer3(EB_ConfigureMake):
     def __init__(self, *args, **kwargs):
         """Custom initialization for Primer3: build in install dir, set correct bin dir, specify to start from 'src'."""
 
-        super(EB_Primer3_, self).__init__(*args, **kwargs)
+        super(EB_Primer3, self).__init__(*args, **kwargs)
 
         self.build_in_installdir = True
 
@@ -69,12 +69,12 @@ class EB_Primer3(EB_ConfigureMake):
                         'dirs':[]
                        }
 
-        super(EB_Primer3_, self).sanity_check_step(custom_paths=custom_paths)
+        super(EB_Primer3, self).sanity_check_step(custom_paths=custom_paths)
 
     def make_module_req_guess(self):
         """Correct suggestion for PATH variable."""
 
-        guesses = super(EB_Primer3_, self).make_module_req_guess()
+        guesses = super(EB_Primer3, self).make_module_req_guess()
 
         guesses.update({'PATH': [self.bindir]})
 

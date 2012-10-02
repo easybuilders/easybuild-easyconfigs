@@ -38,7 +38,7 @@ class EB_FSL(EasyBlock):
     def __init__(self,*args,**kwargs):
         """Specify building in install dir, initialize custom variables."""
 
-        super(EB_FSL_, self).__init__(*args, **kwargs)
+        super(EB_FSL, self).__init__(*args, **kwargs)
 
         self.build_in_installdir = True
 
@@ -96,7 +96,7 @@ class EB_FSL(EasyBlock):
     def make_module_req_guess(self):
         """Set correct PATH and LD_LIBRARY_PATH variables."""
 
-        guesses = super(EB_FSL_, self).make_module_req_guess()
+        guesses = super(EB_FSL, self).make_module_req_guess()
 
         guesses.update({
             'PATH': ["fsl/bin"],
@@ -108,7 +108,7 @@ class EB_FSL(EasyBlock):
     def make_module_extra(self):
         """Add setting of FSLDIR in module."""
 
-        txt = super(EB_FSL_, self).make_module_extra()
+        txt = super(EB_FSL, self).make_module_extra()
 
         txt += self.moduleGenerator.setEnvironment("FSLDIR", "$root/fsl")
 
@@ -121,4 +121,4 @@ class EB_FSL(EasyBlock):
                          'dirs':["fsl/%s" % x for x in ["bin", "data", "etc", "extras", "include", "lib"]]
                         }
 
-        super(EB_FSL_, self).sanity_check_step(custom_paths=custom_paths)
+        super(EB_FSL, self).sanity_check_step(custom_paths=custom_paths)

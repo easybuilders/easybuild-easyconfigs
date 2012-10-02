@@ -215,4 +215,4 @@ tasks=%(tasks)s
                         'dirs': []
                        }
 
-        super(EB_libsmm_, self).sanity_check_step(custom_paths=custom_paths)
+        super(EB_libsmm, self).sanity_check_step(custom_paths=custom_paths)

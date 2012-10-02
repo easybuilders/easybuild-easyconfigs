@@ -62,7 +62,7 @@ class EB_UFC(EB_CMakePythonPackage):
         self.cfg.update('configopts', '-DPYTHON_INCLUDE_PATH=%s/include/python%s' % (depsdict['Python'],
                                                                                     self.pyver))
 
-        super(EB_UFC_, self).configure_step()
+        super(EB_UFC, self).configure_step()
 
     def sanity_check_step(self):
         """Custom sanity check for UFC."""
@@ -72,4 +72,4 @@ class EB_UFC(EB_CMakePythonPackage):
                         'dirs':['lib/python%s/site-extensions_step/ufc_utils/' % self.pyver]
                        }
 
-        super(EB_UFC_, self).sanity_check_step(custom_paths=custom_paths)
+        super(EB_UFC, self).sanity_check_step(custom_paths=custom_paths)

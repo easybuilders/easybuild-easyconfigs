@@ -55,7 +55,7 @@ class EB_netCDF(EB_ConfigureMake):
         if self.toolkit.comp_family() == toolkit.GCC:
             self.cfg.update('configopts', 'CPPFLAGS="%s -DgFortran"' % os.getenv('CPPFLAGS'))
 
-        super(EB_netCDF_, self).configure_step()
+        super(EB_netCDF, self).configure_step()
 
     def sanity_check_step(self):
         """
@@ -80,7 +80,7 @@ class EB_netCDF(EB_ConfigureMake):
                         'dirs': []
                        }
 
-        super(EB_netCDF_, self).sanity_check_step(custom_paths=custom_paths)
+        super(EB_netCDF, self).sanity_check_step(custom_paths=custom_paths)
 
 def set_netcdf_env_vars(log):
     """Set netCDF environment variables used by other software."""

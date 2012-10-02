@@ -173,7 +173,7 @@ class EB_BLACS(EB_ConfigureMake):
 
         self.cfg.update('makeopts', add_makeopts)
 
-        super(EB_BLACS_, self).build_step()
+        super(EB_BLACS, self).build_step()
 
     def install_step(self):
         """Install by copying files to install dir."""
@@ -232,4 +232,4 @@ class EB_BLACS(EB_ConfigureMake):
                         'dirs': []
                        }
 
-        super(EB_BLACS_, self).sanity_check_step(custom_paths=custom_paths)
+        super(EB_BLACS, self).sanity_check_step(custom_paths=custom_paths)

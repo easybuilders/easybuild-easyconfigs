@@ -69,12 +69,12 @@ class EB_SHRiMP(EB_ConfigureMake):
                         'dirs':['utils']
                        }
 
-        super(EB_SHRiMP_, self).sanitycheck(custom_paths=custom_paths)
+        super(EB_SHRiMP, self).sanitycheck(custom_paths=custom_paths)
 
     def make_module_req_guess(self):
         """Add both 'bin' and 'utils' directories to PATH."""
 
-        guesses = super(EB_SHRiMP_, self).make_module_req_guess()
+        guesses = super(EB_SHRiMP, self).make_module_req_guess()
 
         guesses.update({'PATH': ['bin', 'utils']})
 
@@ -83,7 +83,7 @@ class EB_SHRiMP(EB_ConfigureMake):
     def make_module_extra(self):
         """Set SHRIMP_FOLDER environment variable in module."""
 
-        txt = super(EB_SHRiMP_, self).make_module_extra()
+        txt = super(EB_SHRiMP, self).make_module_extra()
 
         txt += self.moduleGenerator.setEnvironment('SHRIMP_FOLDER', "$root")
 

@@ -55,7 +55,7 @@ class EB_MVAPICH2(EB_ConfigureMake):
         # things might go wrong if a previous install dir is present, so let's get rid of it
         if not self.cfg['keeppreviousinstall']:
             self.log.info("Making sure any old installation is removed before we start the build...")
-            super(EB_MVAPICH2_, self).make_dir(self.installdir, True, dontcreateinstalldir=True)
+            super(EB_MVAPICH2, self).make_dir(self.installdir, True, dontcreateinstalldir=True)
 
         # additional configuration options
         add_configopts = '--with-rdma=%s ' % self.cfg['rdma_type']
@@ -103,7 +103,7 @@ class EB_MVAPICH2(EB_ConfigureMake):
 
         self.cfg.update('configopts', add_configopts)
 
-        super(EB_MVAPICH2_, self).configure_step()
+        super(EB_MVAPICH2, self).configure_step()
 
     # make and make install are default
 
@@ -120,4 +120,4 @@ class EB_MVAPICH2(EB_ConfigureMake):
                         'dirs': ["include"]
                        }
 
-        super(EB_MVAPICH2_, self).sanity_check_step(custom_paths=custom_paths)
+        super(EB_MVAPICH2, self).sanity_check_step(custom_paths=custom_paths)

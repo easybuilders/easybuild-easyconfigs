@@ -42,7 +42,7 @@ class EB_python_minus_meep(EasyBlock):
 
     def __init__(self, *args, **kwargs):
         """Initialize custom variables."""
-        super(EB_python_minus_meep_, self).__init__(*args, **kwargs)
+        super(EB_python_minus_meep, self).__init__(*args, **kwargs)
 
         # template for Python packages lib dir
         self.pylibdir = os.path.join("lib", "python%s", "site-packages")
@@ -127,12 +127,12 @@ class EB_python_minus_meep(EasyBlock):
                         'dirs':[]
                        }
 
-        super(EB_python_minus_meep_, self).sanity_check_step(custom_paths=custom_paths)
+        super(EB_python_minus_meep, self).sanity_check_step(custom_paths=custom_paths)
 
     def make_module_extra(self):
         """Set python-meep specific environment variables in module."""
 
-        txt = super(EB_python_minus_meep_, self).make_module_extra()
+        txt = super(EB_python_minus_meep, self).make_module_extra()
 
         meep = os.getenv("SOFTROOTMEEP")
 

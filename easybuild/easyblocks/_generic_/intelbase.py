@@ -53,7 +53,7 @@ class EB_IntelBase(EasyBlock):
         # generate a randomly suffixed name for the 'intel' home subdirectory
         random_suffix = ''.join(random.choice(string.ascii_letters) for _ in xrange(5))
         self.home_subdir = 'intel_%s' % random_suffix
-        super(EB_IntelBase_, self).__init__(*args, **kwargs)
+        super(EB_IntelBase, self).__init__(*args, **kwargs)
 
     @staticmethod
     def extra_options(extra_vars=None):
@@ -174,6 +174,6 @@ CONTINUE_WITH_OPTIONAL_ERROR=yes
         """
         self.clean_homedir()
 
-        super(EB_IntelBase_, self).cleanup_step()
+        super(EB_IntelBase, self).cleanup_step()
 
     # no default sanity check, needs to be implemented by derived class

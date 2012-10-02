@@ -62,11 +62,11 @@ class EB_Python(EB_ConfigureMake):
         """Set extra configure options."""
         self.cfg.update('configopts', "--with-threads --enable-shared")
 
-        super(EB_Python_, self).configure_step()
+        super(EB_Python, self).configure_step()
 
     def install_step(self):
         """Extend make install to make sure that the 'python' command is present."""
-        super(EB_Python_, self).install_step()
+        super(EB_Python, self).install_step()
 
         python_binary_path = os.path.join(self.installdir, 'bin', 'python')
         if not os.path.isfile(python_binary_path):
@@ -87,7 +87,7 @@ class EB_Python(EB_ConfigureMake):
                         'dirs':["include/%s" % pyver, "lib/%s" % pyver]
                        }
 
-        super(EB_Python_, self).sanity_check_step(custom_paths=custom_paths)
+        super(EB_Python, self).sanity_check_step(custom_paths=custom_paths)
 
 class EB_DefaultPythonPackage(Extension):
     """
@@ -245,7 +245,7 @@ class EB_numpy(EB_FortranPythonPackage):
     """Support for installing the numpy Python package as part of a Python installation."""
 
     def __init__(self, mself, ext, ext_installdeps):
-        super(EB_Python_, self).__init__(mself, ext, ext_installdeps)
+        super(EB_Python, self).__init__(mself, ext, ext_installdeps)
 
         self.ext_cfgs = mself.cfg['ext_cfgs']
         if self.ext_cfgs.has_key('numpysitecfglibsubdirs'):
@@ -316,7 +316,7 @@ libraries = %s
         """Install numpy 
         We remove the numpy build dir here, so scipy doesn't find it by accident
         """
-        super(EB_Python_, self).install_step()
+        super(EB_Python, self).install_step()
         builddir = os.path.join(self.builddir, "numpy")
         if os.path.isdir(builddir):
             shutil.rmtree(builddir)
@@ -328,7 +328,7 @@ class EB_scipy(EB_FortranPythonPackage):
     """Support for installing the scipy Python package as part of a Python installation."""
 
     def __init__(self, mself, ext, ext_installdeps):
-        super(EB_Python_, self).__init__(mself, ext, ext_installdeps)
+        super(EB_Python, self).__init__(mself, ext, ext_installdeps)
 
         # disable testing
         test = False

@@ -56,7 +56,7 @@ class EB_icc(EB_IntelBase):
                         'dirs': []
                        }
 
-        super(EB_icc_, self).sanity_check_step(custom_paths=custom_paths)
+        super(EB_icc, self).sanity_check_step(custom_paths=custom_paths)
 
     def make_module_req_guess(self):
         """Customize paths to check and add in environment.
@@ -113,7 +113,7 @@ class EB_icc(EB_IntelBase):
     def make_module_extra(self):
         """Add extra environment variables for icc, for license file and NLS path."""
 
-        txt = super(EB_icc_, self).make_module_extra()
+        txt = super(EB_icc, self).make_module_extra()
 
         txt += "prepend-path\t%s\t\t%s\n" % ('INTEL_LICENSE_FILE', self.license)
         txt += "prepend-path\t%s\t\t$root/%s\n" % ('NLSPATH', 'idb/intel64/locale/%l_%t/%N')

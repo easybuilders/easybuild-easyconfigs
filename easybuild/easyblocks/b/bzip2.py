@@ -41,7 +41,7 @@ class EB_bzip2(EB_ConfigureMake):
 
         self.cfg.update('installopts', "PREFIX=%s" % self.installdir)
 
-        super(EB_bzip2_, self).install_step()
+        super(EB_bzip2, self).install_step()
 
     def sanity_check_step(self):
         """Custom sanity check for bzip2."""
@@ -53,4 +53,4 @@ class EB_bzip2(EB_ConfigureMake):
                          'dirs': []
                         }
 
-        super(EB_bzip2_, self).sanity_check_step(custom_paths=custom_paths)
+        super(EB_bzip2, self).sanity_check_step(custom_paths=custom_paths)

@@ -59,7 +59,7 @@ class EB_HDF5(EB_ConfigureMake):
         # make options
         self.cfg.update('makeopts', fcomp)
 
-        super(EB_HDF5_, self).configure_step()
+        super(EB_HDF5, self).configure_step()
 
     # default make and make install are ok
 
@@ -84,4 +84,4 @@ class EB_HDF5(EB_ConfigureMake):
                         'dirs': ['include']
                        }
 
-        super(EB_HDF5_, self).sanity_check_step(custom_paths=custom_paths)
+        super(EB_HDF5, self).sanity_check_step(custom_paths=custom_paths)

@@ -52,7 +52,7 @@ class EB_imkl(EB_IntelBase):
 
 
     def configure_step(self):
-        super(EB_imkl_, self).configure_step()
+        super(EB_imkl, self).configure_step()
 
         if os.getenv('MKLROOT'):
             self.log.error("Found MKLROOT in current environment, which may cause problems...")
@@ -95,7 +95,7 @@ class EB_imkl(EB_IntelBase):
 
     def make_module_extra(self):
         """Overwritten from Application to add extra txt"""
-        txt = super(EB_imkl_, self).make_module_extra()
+        txt = super(EB_imkl, self).make_module_extra()
         txt += "prepend-path\t%s\t\t%s\n" % ('INTEL_LICENSE_FILE', self.license)
         if self.cfg['m32']:
             txt += "prepend-path\t%s\t\t$root/%s\n" % ('NLSPATH', 'idb/32/locale/%l_%t/%N')
@@ -377,4 +377,4 @@ class EB_imkl(EB_IntelBase):
                         'dirs': mkldirs
                        }
 
-        super(EB_imkl_, self).sanity_check_step(custom_paths=custom_paths)
+        super(EB_imkl, self).sanity_check_step(custom_paths=custom_paths)

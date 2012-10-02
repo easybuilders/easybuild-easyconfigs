@@ -43,4 +43,4 @@ class EB_ipp(EB_IntelBase):
                                  "ipp/interfaces/data-compression", "ipp/tools/intel64"]
                        }
 
-        super(EB_ipp_, self).sanity_check_step(custom_paths=custom_paths)
+        super(EB_ipp, self).sanity_check_step(custom_paths=custom_paths)

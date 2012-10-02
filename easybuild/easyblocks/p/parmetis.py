@@ -174,4 +174,4 @@ class EB_ParMETIS(EasyBlock):
                         'dirs':['Lib']
                        }
 
-        super(EB_ParMETIS_, self).sanity_check_step(custom_paths=custom_paths)
+        super(EB_ParMETIS, self).sanity_check_step(custom_paths=custom_paths)

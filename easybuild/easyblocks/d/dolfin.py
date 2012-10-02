@@ -150,7 +150,7 @@ class EB_DOLFIN(EB_CMakePythonPackage):
         self.cfg.update('configopts', '-DMTL4_DIR:PATH="%s"' % depsdict['MTL4'])
 
         # configure
-        out = super(EB_DOLFIN_, self).configure_step()
+        out = super(EB_DOLFIN, self).configure_step()
 
         # make sure that all optional packages are found
         not_found_re = re.compile("The following optional packages could not be found")
@@ -160,7 +160,7 @@ class EB_DOLFIN(EB_CMakePythonPackage):
     def make_module_extra(self):
         """Set extra environment variables for DOLFIN."""
 
-        txt = super(EB_DOLFIN_, self).make_module_extra()
+        txt = super(EB_DOLFIN, self).make_module_extra()
 
         # Dolfin needs to find Boost and the UFC pkgconfig file
         txt += self.moduleGenerator.setEnvironment('BOOST_DIR', get_software_root('Boost'))
@@ -230,4 +230,4 @@ class EB_DOLFIN(EB_CMakePythonPackage):
         # supply empty argument to each command
         custom_commands = [(cmd, "") for cmd in cmds]
 
-        super(EB_DOLFIN_, self).sanity_check_step(custom_paths=custom_paths, custom_commands=custom_commands)
+        super(EB_DOLFIN, self).sanity_check_step(custom_paths=custom_paths, custom_commands=custom_commands)

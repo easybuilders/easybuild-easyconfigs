@@ -52,7 +52,7 @@ class EB_g2clib(EasyBlock):
         makeopts = 'CC="%s" FC="%s" INC="-I%s/include"' % (os.getenv('CC'), os.getenv('F90'), jasper)
         self.cfg.update('makeopts', makeopts)
 
-        super(EB_g2clib_, self).build_step()
+        super(EB_g2clib, self).build_step()
 
     def install_step(self):
         """Install by copying library and header files to install directory."""
@@ -83,4 +83,4 @@ class EB_g2clib(EasyBlock):
                         'dirs': ["include"]
                        }
 
-        super(EB_g2clib_, self).sanity_check_step(custom_paths=custom_paths)
+        super(EB_g2clib, self).sanity_check_step(custom_paths=custom_paths)
