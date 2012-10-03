@@ -30,11 +30,11 @@ from easybuild.easyblocks.pythonpackage import EB_PythonPackage
 class EB_libxml2(Application, EB_PythonPackage):
     """Support for building and installing libxml2 with python bindings"""
     def __init__(self, *args, **kwargs):
-	"""
-	Constructor
-	init as a pythonpackage, since that is also an application
-	"""
-	EB_PythonPackage.__init__(self, *args, **kwargs)
+        """
+        Constructor
+        init as a pythonpackage, since that is also an application
+        """
+        EB_PythonPackage.__init__(self, *args, **kwargs)
 
     def configure(self):
         """
@@ -43,43 +43,58 @@ class EB_libxml2(Application, EB_PythonPackage):
         """
         if not os.getenv("EBROOTPYTHON"):
             self.log.error("Python module not loaded")
+       
         Application.configure(self)
-	os.chdir('python')
-        EB_PythonPackage.configure(self)
-	os.chdir('..')
+
+        try:
+            os.chdir('python')
+            EB_PythonPackage.configure(self)
+            os.chdir('..')
+        except OSError, err:
+            self.log.error("Failed to configure libxml2 Python bindings: %s" % err)
 
     def make(self):
         """
         Make libxml2 first, then make python bindings
         """
         Application.make(self)
-        os.chdir('python')
-        # set cflags to point to include folder 
-        os.putenv('CFLAGS', "-I../include")
-        EB_PythonPackage.make(self)
-	os.chdir('..')
+
+        try:
+            os.chdir('python')
+            # set cflags to point to include folder 
+            os.putenv('CFLAGS', "-I../include")
+            EB_PythonPackage.make(self)
+            os.chdir('..')
+        except OSError, err:
+            self.log.error("Failed to build libxml2 Python bindings: %s" % err)
 
     def make_install(self):
         """
         Install libxml2 and install python bindings
         """
         Application.make_install(self)
-	os.chdir('python')
-        EB_PythonPackage.make_install(self)
-	os.chdir('..')
+
+        try:
+            os.chdir('python')
+            EB_PythonPackage.make_install(self)
+            os.chdir('..')
+        except OSError, err:
+            self.log.error("Failed to install libxml2 Python bindings: %s" % err)
 
     def make_module_extra(self):
-	"""
-	Add python bindings to the pythonpath
-	"""
-	return EB_PythonPackage.make_module_extra(self)
+        """
+        Add python bindings to the pythonpath
+        """
+        return EB_PythonPackage.make_module_extra(self)
 
-#    def sanitycheck(self):
-#        """Custom sanity check for Pasha"""
-#        self.setcfg('sanityCheckPaths', {
-#                                         'files':["bin/pasha-%s" % x for x in ["kmergen",
-#                                                                               "pregraph",
-#                                                                               "graph"]],
-#                                        'dirs':[""],
-#                                        })
+    def sanitycheck(self):
+        """Custom sanity check for libxml2"""
 
+        if not self.getcfg('sanityCheckPaths'):
+
+            self.setcfg('sanityCheckPaths', {
+                                             'files':["lib/libxml2.a", "lib/libxml2.so"],
+                                             'dirs':["bin", self.pylibdir, "include/libxml2/libxml"],
+                                            })
+
+        Application.sanitycheck(self)
