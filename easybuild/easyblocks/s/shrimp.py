@@ -32,14 +32,14 @@ from easybuild.easyblocks.configuremake import EB_ConfigureMake  #@UnresolvedImp
 class EB_SHRiMP(EB_ConfigureMake):
     """Support for building SHRiMP."""
 
-    def configure(self):
+    def configure_step(self):
         """Add openmp compilation flag to CXX_FLAGS."""
 
         cxxflags = os.getenv('CXXFLAGS')
 
         env.set('CXXFLAGS', "%s %s" % (cxxflags, self.toolkit.get_openmp_flag()))
 
-    def make_install(self):
+    def install_step(self):
         """Install SHRiMP by copying files to install dir, and fix permissions."""
 
         try:
@@ -59,7 +59,7 @@ class EB_SHRiMP(EB_ConfigureMake):
             self.log.error("Failed to copy files to install dir: %s" % err)
 
 
-    def sanitycheck(self):
+    def sanity_check_step(self):
         """Custom sanity check for SHRiMP."""
 
         custom_paths = {
