@@ -1451,7 +1451,15 @@ def get_module_path(easyblock):
     if easyblock.startswith(class_prefix):
         easyblock = easyblock[len(class_prefix):]
 
-    return "easybuild.easyblocks.%s" % easyblock.lower()
+    # construct character translation table for module name
+    # only 0-9, a-z, A-Z are retained, everything else is mapped to _
+    charmap = 48*'_' + ''.join([chr(x) for x in range(48,58)]) # 0-9
+    charmap += 7*'_' + ''.join([chr(x) for x in range(65,91)]) # A-Z
+    charmap += 6*'_' + ''.join([chr(x) for x in range(97,123)]) + 133*'_' # a-z
+
+    module_name = easyblock.translate(charmap)
+
+    return "easybuild.easyblocks.%s" % module_name.lower()
 
 def get_class(easyblock, log, name=None):
     """
