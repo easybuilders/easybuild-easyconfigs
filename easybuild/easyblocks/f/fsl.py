@@ -80,7 +80,7 @@ class EB_FSL(EasyBlock):
         run_cmd(cmd, log_all=True, simple=True)
 
         # check build.log file for success
-        buildlog = os.path.join(self.installdir, "fsl", "build_and_install.log")
+        buildlog = os.path.join(self.installdir, "fsl", "build.log")
         f = open(buildlog, "r")
         txt = f.read()
         f.close()
