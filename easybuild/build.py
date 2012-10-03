@@ -1190,7 +1190,7 @@ def build_easyconfigs(easyconfigs, output_dir, test_results, options, log):
             perform_step('stage install', app, lambda x: x.stage_install_step(), applog)
             perform_step('create installdir', app, lambda x: x.make_installdir(), applog)
             perform_step('make install', app, lambda x: x.install_step(), applog)
-            perform_step('extensions', app, lambda x: x.extentions_step(), applog)
+            perform_step('extensions', app, lambda x: x.extensions_step(), applog)
             perform_step('package', app, lambda x: x.package_step(), applog)
             perform_step('postproc', app, lambda x: x.post_install_step(), applog)
             perform_step('sanity check', app, lambda x: x.sanity_check_step(), applog)
