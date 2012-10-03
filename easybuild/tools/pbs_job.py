@@ -126,7 +126,6 @@ class PbsJob(object):
             resourse_attributes[idx].value = v
             idx += 1
         pbs_attributes.extend(resourse_attributes)
-        self.log.debug("Job resource attributes: %s" % resourse_attributes)
 
         # add job dependencies to attributes
         if self.deps:
@@ -134,7 +133,7 @@ class PbsJob(object):
             deps_attributes[0].name = pbs.ATTR_depend
             deps_attributes[0].value = ",".join(["afterok:%s" % dep for dep in self.deps])
             pbs_attributes.extend(deps_attributes)
-            self.log.debug("Job deps attributes: %s" % deps_attributes)
+            self.log.debug("Job deps attributes: %s" % deps_attributes[0].value)
 
         ## add a bunch of variables (added by qsub)
         ## also set PBS_O_WORKDIR to os.getcwd()
@@ -149,14 +148,14 @@ class PbsJob(object):
         variable_attributes[0].value = ",".join(pbsvars)
 
         pbs_attributes.extend(variable_attributes)
-        self.log.debug("Job variable attributes: %s" % variable_attributes)
+        self.log.debug("Job variable attributes: %s" % variable_attributes[0].value)
 
         # mail settings
         mail_attributes = pbs.new_attropl(1)
         mail_attributes[0].name = 'Mail_Points'
         mail_attributes[0].value = 'n'  # disable all mail
         pbs_attributes.extend(mail_attributes)
-        self.log.debug("Job mail attributes: %s" % mail_attributes)
+        self.log.debug("Job mail attributes: %s" % mail_attributes[0].value)
 
         import tempfile
         fh, scriptfn = tempfile.mkstemp()
