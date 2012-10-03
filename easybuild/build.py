@@ -30,7 +30,6 @@ Main entry point for EasyBuild: build software from .eb input file
 
 import copy
 import glob
-import logging
 import platform
 import os
 import re
@@ -41,7 +40,6 @@ import time
 import traceback
 import xml.dom.minidom as xml
 from datetime import datetime
-from optparse import OptionParser
 from optparse import OptionParser, OptionGroup
 
 # optional Python packages, these might be missing
@@ -1162,29 +1160,11 @@ def build_easyconfigs(easyconfigs, output_dir, test_results, options, log):
             os.chdir(base_dir)
             modifyEnv(os.environ, base_env)
 
-            # take manual control over the build process
-            perform_step("fetching files", app, lambda x: x.fetch_step(), applog)
-            perform_step("check readiness", app, lambda x: x.check_readiness_step(), applog)
-            perform_step("generate installdir name", app, lambda x: x.gen_installdir(), applog)
-            perform_step("make builddir", app, lambda x: x.make_builddir(), applog)
-            perform_step("unpacking", app, lambda x: x.checksum_step(), applog)
-            perform_step("unpacking", app, lambda x: x.extract_step(), applog)
-            perform_step("patching", app, lambda x: x.patch_step(), applog)
-            perform_step("prepare", app, lambda x: x.prepare_step(), applog)
-            perform_step('configure', app, lambda x: x.configure_step(), applog)
-            perform_step('make', app, lambda x: x.build_step(), applog)
-            perform_step('test', app, lambda x: x.test_step(), applog)
-            perform_step('stage install', app, lambda x: x.stage_install_step(), applog)
-            perform_step('create installdir', app, lambda x: x.make_installdir(), applog)
-            perform_step('make install', app, lambda x: x.install_step(), applog)
-            perform_step('extensions', app, lambda x: x.extensions_step(), applog)
-            perform_step('package', app, lambda x: x.package_step(), applog)
-            perform_step('postproc', app, lambda x: x.post_install_step(), applog)
-            perform_step('sanity check', app, lambda x: x.sanity_check_step(), applog)
-            perform_step('cleanup', app, lambda x: x.cleanup_step(), applog)
-            perform_step('make module', app, lambda x: x.make_module_step(), applog)
-            if not options.skip_test_cases and app.cfg['tests']:
-                perform_step('test cases', app, lambda x: x.test_cases_step(), applog)
+            steps = app.get_steps()
+
+            for (_, descr, step_methods, _) in steps:
+                for step_method in step_methods:
+                    perform_step("%s (%s)" % (descr, step_method.func_name), app, step_method, applog)
 
             # close log and move it
             app.close_log()
@@ -1241,13 +1221,13 @@ def aggregate_xml_in_dirs(base_dir, output_filename):
 
     root.firstChild.appendChild(properties)
 
-    dirs = filter(os.path.isdir, [os.path.join(base_dir, dir) for dir in os.listdir(base_dir)])
+    dirs = filter(os.path.isdir, [os.path.join(base_dir, d) for d in os.listdir(base_dir)])
 
     succes = 0
     total = 0
 
-    for dir in dirs:
-        xml_file = glob.glob(os.path.join(dir, "*.xml"))
+    for d in dirs:
+        xml_file = glob.glob(os.path.join(d, "*.xml"))
         if xml_file:
             # take the first one (should be only one present)
             xml_file = xml_file[0]

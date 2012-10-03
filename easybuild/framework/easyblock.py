@@ -1352,16 +1352,53 @@ class EasyBlock(object):
         Run step, returns false when execution should be stopped
         """
         if skippable and self.skip:
-            self.log.info("Skipping %s" % step)
+            self.log.info("Skipping %s step" % step)
         else:
-            self.log.info("Starting %s" % step)
+            self.log.info("Starting %s step" % step)
             for m in methods:
-                self.print_environ()
-                m()
+                m(self)
 
         if self.cfg['stop'] == step:
             self.log.info("Stopping after %s step." % step)
             raise StopException(step)
+
+    def get_steps(self, run_test_cases=True):
+        """Return a list of all steps to be performed."""
+
+        steps = [
+                  # stop name: (description, list of functions, skippable)
+                  ('fetch', 'fetching files', [lambda x: x.fetch_step()], False),
+                  ('ready', "getting ready, creating build dir, resetting environment",
+                   [lambda x: x.check_readiness_step(), lambda x: x.gen_installdir(),
+                    lambda x: x.make_builddir(), lambda x: env.reset_changes()],
+                   False),
+                  ('source', 'unpacking', [lambda x: x.checksum_step(),
+                                           lambda x: x.extract_step()], True),
+                  ('patch', 'patching', [lambda x: x.patch_step()], True),
+                  ('prepare', 'preparing', [lambda x: x.prepare_step()], True),
+                  ('configure', 'configuring', [lambda x: x.configure_step()], True),
+                  ('build', 'building', [lambda x: x.build_step()], True),
+                  ('test', 'testing', [lambda x: x.test_step()], True),
+                  ('install', 'installing', [
+                                             lambda x: x.stage_install_step(),
+                                             lambda x: x.make_installdir(),
+                                             lambda x: x.install_step(),
+                                             ],
+                   False),
+                  ('extensions', 'taking care of extensions', [lambda x: x.extensions_step()], False),
+                  ('package', 'packaging', [lambda x: x.package_step()], True),
+                  ('postproc', 'postprocessing', [lambda x: x.post_install_step()], True),
+                  ('sanitycheck', 'sanity checking', [lambda x: x.sanity_check_step()], False),
+                  ('cleanup', 'cleaning up', [lambda x: x.cleanup_step()], False),
+                  ('module', 'creating module', [lambda x: x.make_module_step()], False),
+                  ]
+
+        if run_test_cases and self.cfg['tests']:
+            steps.append(('testcases', 'running test cases', [lambda x: x.test_cases_step()], False))
+        else:
+            self.log.debug('Skipping test cases')
+
+        return steps
 
     def run_all_steps(self, run_test_cases, regtest_online):
         """
@@ -1370,86 +1407,17 @@ class EasyBlock(object):
         if self.cfg['stop'] and self.cfg['stop'] == 'cfg':
             return True
 
-        print_msg("fetching files...", self.log)
-        self.fetch_step()
-
-        print_msg("making sure we're ready...", self.log)
-        self.check_readiness_step()
+        steps = self.get_steps(run_test_cases)
 
         try:
-            print_msg("creating directories...", self.log)
-
-            self.gen_installdir()
-            self.make_builddir()
-
-            self.print_environ()
-
-            # reset tracked changes
-            env.reset_changes()
-
-            ## SOURCE
-            print_msg("unpacking...", self.log)
-            self.run_step('source', [self.checksum_step, self.extract_step], skippable=True)
-
-            ## PATCH
-            print_msg("patching...", self.log)
-            self.run_step('patch', [self.patch_step], skippable=True)
-
-            # PREPARE
-            print_msg("preparing...", self.log)
-            self.run_step('prepare', [self.prepare_step], skippable=True)
-
-            ## CONFIGURE
-            print_msg("configuring...", self.log)
-            self.run_step('configure', [self.configure_step], skippable=True)
-
-            ## MAKE
-            print_msg("building...", self.log)
-            self.run_step('make', [self.build_step], skippable=True)
-
-            ## TEST
-            print_msg("testing...", self.log)
-            self.run_step('test', [self.test_step], skippable=True)
-
-            ## INSTALL
-            print_msg("installing...", self.log)
-            self.run_step('install', [self.stage_install_step, self.make_installdir, self.install_step], skippable=True)
-
-            ## EXTENSIONS
-            print_msg("taking care of extensions...", self.log)
-            self.run_step('extensions', [self.extensions_step])
-
-            ## PACKAGE
-            print_msg("packaging...", self.log)
-            self.run_step('package', [self.package_step])
-
-            ## POSTPROC
-            self.run_step('postproc', [self.post_install_step], skippable=True)
-
-            ## SANITY CHECK
-            try:
-                print_msg("running sanity check...", self.log)
-                self.run_step('sanity check', [self.sanity_check_step], skippable=False)
-            finally:
-                print_msg("cleaning up...", self.log)
-                self.run_step('cleanup', [self.cleanup_step])
+            for (stop_name, descr, step_methods, skippable) in steps:
+                print_msg("%s..." % descr, self.log)
+                self.run_step(stop_name, step_methods, skippable=skippable)
 
         except StopException:
             pass
 
-        # Last stop
-        if self.cfg['stop']:
-            return True
-
-        self.make_module_step()
-
-        # Run tests
-        if run_test_cases and self.cfg['tests']:
-            print_msg("running test cases...", self.log)
-            self.run_step('testcases', [self.test_cases_step])
-        else:
-            self.log.debug("Skipping tests")
-
+        # return True for successfull build (or stopped build)
         return True
 
 
