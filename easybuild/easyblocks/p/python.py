@@ -78,7 +78,7 @@ class EB_Python(EB_ConfigureMake):
                 self.log.error("Failed to symlink %s to %s: %s" % err)
 
     def sanity_check_step(self):
-        """Custom sanity check for Primer3."""
+        """Custom sanity check for Python."""
 
         pyver = "python%s" % '.'.join(self.version.split('.')[0:2])
 
@@ -95,7 +95,7 @@ class EB_DefaultPythonPackage(Extension):
     """
 
     def __init__(self, mself, ext, ext_installdeps):
-        Extension.__init__(self, mself, ext, ext_installdeps)
+        super(EB_DefaultPythonPackage, self).__init__(mself, ext, ext_installdeps)
         self.sitecfg = None
         self.sitecfgfn = 'site.cfg'
         self.sitecfglibdir = None
@@ -206,7 +206,10 @@ class EB_DefaultPythonPackage(Extension):
 
 class EB_nose(EB_DefaultPythonPackage):
     """Support for installing the nose Python package as part of a Python installation."""
+
     def __init__(self, mself, ext, ext_installdeps):
+
+        super(EB_nose, self).__init__(mself, ext, ext_installdeps)
 
         # use extra unpack options to avoid problems like
         # 'tar: Ignoring unknown extended header keyword `SCHILY.nlink'
@@ -245,15 +248,15 @@ class EB_numpy(EB_FortranPythonPackage):
     """Support for installing the numpy Python package as part of a Python installation."""
 
     def __init__(self, mself, ext, ext_installdeps):
-        super(EB_Python, self).__init__(mself, ext, ext_installdeps)
+        super(EB_numpy, self).__init__(mself, ext, ext_installdeps)
 
-        self.ext_cfgs = mself.cfg['ext_cfgs']
-        if self.ext_cfgs.has_key('numpysitecfglibsubdirs'):
-            self.numpysitecfglibsubdirs = self.ext_cfgs['numpysitecfglibsubdirs']
+        self.exts_cfgs = mself.cfg['exts_cfgs']
+        if self.exts_cfgs.has_key('numpysitecfglibsubdirs'):
+            self.numpysitecfglibsubdirs = self.exts_cfgs['numpysitecfglibsubdirs']
         else:
             self.numpysitecfglibsubdirs = []
-        if self.ext_cfgs.has_key('numpysitecfgincsubdirs'):
-            self.numpysitecfgincsubdirs = self.ext_cfgs['numpysitecfgincsubdirs']
+        if self.exts_cfgs.has_key('numpysitecfgincsubdirs'):
+            self.numpysitecfgincsubdirs = self.exts_cfgs['numpysitecfgincsubdirs']
         else:
             self.numpysitecfgincsubdirs = []
 
@@ -316,7 +319,7 @@ libraries = %s
         """Install numpy 
         We remove the numpy build dir here, so scipy doesn't find it by accident
         """
-        super(EB_Python, self).install_step()
+        super(EB_numpy, self).install_step()
         builddir = os.path.join(self.builddir, "numpy")
         if os.path.isdir(builddir):
             shutil.rmtree(builddir)
@@ -328,7 +331,7 @@ class EB_scipy(EB_FortranPythonPackage):
     """Support for installing the scipy Python package as part of a Python installation."""
 
     def __init__(self, mself, ext, ext_installdeps):
-        super(EB_Python, self).__init__(mself, ext, ext_installdeps)
+        super(EB_scipy, self).__init__(mself, ext, ext_installdeps)
 
         # disable testing
         test = False
