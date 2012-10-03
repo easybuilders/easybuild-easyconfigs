@@ -895,26 +895,13 @@ def build_and_install_software(module, options, log, origEnviron, exitOnFailure=
         # collect build stats
         log.info("Collecting build stats...")
         buildtime = round(time.time() - starttime, 2)
-        installsize = 0
-        try:
-            # change to home dir, to avoid that cwd no longer exists
-            os.chdir(os.getenv('HOME'))
-
-            # walk install dir to determine total size
-            for dirpath, _, filenames in os.walk(app.installdir):
-                for filename in filenames:
-                    fullpath = os.path.join(dirpath, filename)
-                    if os.path.exists(fullpath):
-                        installsize += os.path.getsize(fullpath)
-        except OSError, err:
-            log.error("Failed to determine install size: %s" % err)
 
         currentbuildstats = app.cfg['buildstats']
         buildstats = {'build_time' : buildtime,
                  'platform' : platform.platform(),
                  'core_count' : systemtools.get_core_count(),
                  'cpu_model': systemtools.get_cpu_model(),
-                 'install_size' : installsize,
+                 'install_size' : app.det_installsize(),
                  'timestamp' : int(time.time()),
                  'host' : os.uname()[1],
                  }
@@ -1216,7 +1203,7 @@ def build_easyconfigs(easyconfigs, output_dir, test_results, options, log):
                               'platform': platform.platform(),
                               'core_count': systemtools.get_core_count(),
                               'cpu_model': systemtools.get_cpu_model(),
-                              'install_size': app.installsize(),
+                              'install_size': app.det_installsize(),
                               'timestamp': int(time.time()),
                               'host': os.uname()[1],
                              }
