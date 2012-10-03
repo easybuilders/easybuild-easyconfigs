@@ -26,7 +26,7 @@
 EasyBuild support for building and installing Doxygen, implemented as an easyblock
 """
 
-from easybuild.framework.configuremake import EB_ConfigureMake  #@UnresolvedImport
+from easybuild.easyblocks.configuremake import EB_ConfigureMake  #@UnresolvedImport
 from easybuild.tools.filetools import run_cmd
 
 
