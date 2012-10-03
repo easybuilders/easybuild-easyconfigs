@@ -236,6 +236,9 @@ class EasyConfig(object):
                 self[key] = local_vars[key]
                 self.log.info("setting config option %s: value %s" % (key, self[key]))
 
+            else:
+                self.log.debug("Ignoring unknown config option %s (value: %s)" % (key, local_vars[key]))
+
     def validate(self):
         """
         Validate this EasyConfig
