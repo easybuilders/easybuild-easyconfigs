@@ -64,7 +64,7 @@ class EB_Binary(EasyBlock):
     def install_step(self):
         """Copy all files in build directory to the install directory"""
         # can't use shutil.copytree because that doesn't allow the target directory to exist already
-        run_cmd("cp -a %s/* %s" % (self.cfg['startfrom'], self.installdir))
+        run_cmd("cp -a %s/* %s" % (self.cfg['start_dir'], self.installdir))
 
     def make_module_extra(self):
         """Add the install directory to the PATH."""

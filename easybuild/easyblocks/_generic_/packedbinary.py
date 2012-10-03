@@ -45,7 +45,7 @@ class EB_PackedBinary(EB_Binary, EasyBlock):
                 srcpath = os.path.join(self.builddir, src)
                 if os.path.isdir(srcpath):
                     # copy files to install dir via EB_Binary
-                    self.cfg['startfrom'] = src
+                    self.cfg['start_dir'] = src
                     EB_Binary.make_install(self)
         except OSError, err:
             self.log.error("Failed to copy unpacked sources to install directory: %s" % err)
