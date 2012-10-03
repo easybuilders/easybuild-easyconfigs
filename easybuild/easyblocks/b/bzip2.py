@@ -23,7 +23,7 @@ EasyBuild support for bzip2, implemented as an easyblock
 """
 import os
 
-from easybuild.framework.configuremake import EB_ConfigureMake  #@UnresolvedImport
+from easybuild.easyblocks.configuremake import EB_ConfigureMake  #@UnresolvedImport
 
 
 class EB_bzip2(EB_ConfigureMake):
