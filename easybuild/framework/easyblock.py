@@ -1104,7 +1104,7 @@ class EasyBlock(object):
             try:
                 exec("from %s import %s" % (allclassmodule, name))
                 p = eval("%s(self,ext,exts_installdeps)" % name)
-                self.log.debug("Installing extension %s through class %s" % (name, ext['name']))
+                self.log.debug("Installing extension %s through class %s" % (ext['name'], name))
             except (ImportError, NameError), err:
                 self.log.debug("Couldn't load class %s for extension %s with extension deps %s:\n%s" % (name, ext['name'], exts_installdeps, err))
                 if defaultClass:
@@ -1375,7 +1375,7 @@ class EasyBlock(object):
                   ('source', 'unpacking', [lambda x: x.checksum_step(),
                                            lambda x: x.extract_step()], True),
                   ('patch', 'patching', [lambda x: x.patch_step()], True),
-                  ('prepare', 'preparing', [lambda x: x.prepare_step()], True),
+                  ('prepare', 'preparing', [lambda x: x.prepare_step()], False),
                   ('configure', 'configuring', [lambda x: x.configure_step()], True),
                   ('build', 'building', [lambda x: x.build_step()], True),
                   ('test', 'testing', [lambda x: x.test_step()], True),
@@ -1384,7 +1384,7 @@ class EasyBlock(object):
                                              lambda x: x.make_installdir(),
                                              lambda x: x.install_step(),
                                              ],
-                   False),
+                   True),
                   ('extensions', 'taking care of extensions', [lambda x: x.extensions_step()], False),
                   ('package', 'packaging', [lambda x: x.package_step()], True),
                   ('postproc', 'postprocessing', [lambda x: x.post_install_step()], True),
