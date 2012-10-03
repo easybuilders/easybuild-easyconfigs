@@ -114,12 +114,12 @@ class EB_WIEN2k(Application):
         rplibs = ' '.join(rplibs)
 
         d = {
-             'FC': '%s %s'%(os.getenv('F90'), os.getenv('FFLAGS')),
-             'MPF': "%s %s"%(os.getenv('MPIF90'), os.getenv('FFLAGS')),
+             'FC': '%s %s' % (os.getenv('F90'), os.getenv('FFLAGS')),
+             'MPF': "%s %s" % (os.getenv('MPIF90'), os.getenv('FFLAGS')),
              'CC': os.getenv('CC'),
              'LDFLAGS': '$(FOPT) %s ' % os.getenv('LDFLAGS'),
              'R_LIBS': rlibs,  # libraries for 'real' (not 'complex') binary
-             'RP_LIBS' :rplibs,  # libraries for 'real' parallel binary
+             'RP_LIBS' : rplibs,  # libraries for 'real' parallel binary
              'MPIRUN': ''
             }
 
