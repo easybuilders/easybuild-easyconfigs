@@ -504,9 +504,11 @@ class EB_GCC(EB_ConfigureMake):
         """
         Make sure all GCC libs are in LD_LIBRARY_PATH
         """
-        return {
-                'PATH': ['bin'],
-                'LD_LIBRARY_PATH': ['lib', 'lib64',
-                                    'lib/gcc/%s' % (self.platform_lib, self.cfg['version'])],
-                'MANPATH': ['man', 'share/man']
-               }
+        guesses = super(EB_GCC, self).make_module_req_guess()
+        guesses.update({
+                        'PATH': ['bin'],
+                        'LD_LIBRARY_PATH': ['lib', 'lib64',
+                                            'lib/gcc/%s/%s' % (self.platform_lib, self.cfg['version'])],
+                        'MANPATH': ['man', 'share/man']
+                       })
+        return guesses
