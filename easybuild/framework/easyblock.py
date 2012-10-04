@@ -1057,7 +1057,7 @@ class EasyBlock(object):
         if self.cfg['runtest']:
           
             self.log.debug("Trying to execute %s as a command for running unit tests...") 
-            (out, _) = run_cmd(cmd, log_all=True, simple=False)
+            (out, _) = run_cmd(self.cfg['runtest'], log_all=True, simple=False)
 
             return out
 
