@@ -69,7 +69,7 @@ class EB_SHRiMP(EB_ConfigureMake):
                         'dirs':['utils']
                        }
 
-        super(EB_SHRiMP, self).sanitycheck(custom_paths=custom_paths)
+        super(EB_SHRiMP, self).sanity_check_step(custom_paths=custom_paths)
 
     def make_module_req_guess(self):
         """Add both 'bin' and 'utils' directories to PATH."""
