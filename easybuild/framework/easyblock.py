@@ -1038,9 +1038,13 @@ class EasyBlock(object):
         raise NotImplementedError
 
     def test_step(self):
-        """Run unit tests provided by software (if any)  (abstract method)."""
+        """Run unit tests provided by software (if any)."""
         if self.cfg['runtest']:
-            raise NotImplementedError
+          
+            self.log.debug("Trying to execute %s as a command for running unit tests...") 
+            (out, _) = run_cmd(cmd, log_all=True, simple=False)
+
+            return out
 
     def stage_install_step(self):
         """
