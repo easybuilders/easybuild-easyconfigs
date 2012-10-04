@@ -69,7 +69,7 @@ class EB_UFC(EB_CMakePythonPackage):
 
         custom_paths = {
                         'files': ['include/ufc.h'],
-                        'dirs':['lib/python%s/site-extensions_step/ufc_utils/' % self.pyver]
+                        'dirs': ['lib/python%s/site-packages/ufc_utils/' % self.pyver]
                        }
 
         super(EB_UFC, self).sanity_check_step(custom_paths=custom_paths)
