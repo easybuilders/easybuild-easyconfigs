@@ -707,6 +707,21 @@ class EasyBlock(object):
             'PKG_CONFIG_PATH' : ['lib/pkgconfig'],
         }
 
+    def load_fake_module(self):
+        """
+        Create and load fake module.
+        """
+
+        # make fake module
+        mod_path = [self.make_module_step(True)]
+
+        # load the module
+        mod_path.extend(Modules().modulePath)
+        m = Modules(mod_path)
+        self.log.debug("created module instance")
+        m.addModule([[self.name, self.get_installversion()]])
+        m.load()
+
     #
     # EXTENSIONS UTILITY FUNCTIONS
     #
@@ -1219,18 +1234,10 @@ class EasyBlock(object):
                 else:
                     self.log.debug("Sanity check: found non-empty directory %s in %s" % (d, self.installdir))
 
-        # make fake module
-        mod_path = [self.make_module_step(True)]
-
-        # load the module
-        mod_path.extend(Modules().modulePath)
-        m = Modules(mod_path)
-        self.log.debug("created module instance")
-        m.addModule([[self.name, self.get_installversion()]])
         try:
-            m.load()
+            self.load_fake_module()
         except EasyBuildError, err:
-            self.log.debug("Loading module failed: %s" % err)
+            self.log.debug("Loading fake module failed: %s" % err)
             self.sanityCheckOK = False
 
         # chdir to installdir (better environment for running tests)

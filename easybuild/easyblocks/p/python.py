@@ -28,6 +28,7 @@ EasyBuild support for Python, implemented as an easyblock
 
 import os
 import shutil
+from distutils.version import LooseVersion
 
 import easybuild.tools.toolkit as toolkit
 from easybuild.easyblocks.configuremake import EB_ConfigureMake  #@UnresolvedImport
@@ -82,9 +83,24 @@ class EB_Python(EB_ConfigureMake):
 
         pyver = "python%s" % '.'.join(self.version.split('.')[0:2])
 
+        try:
+            self.load_fake_module()
+        except EasyBuildError, err:
+            self.log.debug("Loading fake module failed: %s" % err)
+
+        abiflags = ''
+        if LooseVersion(self.version) >= LooseVersion("3"):
+            run_cmd("which python", log_all=True, simple=False)
+            cmd = 'python -c "import sysconfig; print(sysconfig.get_config_var(\'abiflags\'));"'
+            (abiflags, _) = run_cmd(cmd, log_all=True, simple=False)
+            if not abiflags:
+                self.log.error("Failed to determine abiflags: %s" % abiflags)
+            else:
+                abiflags = abiflags.strip()
+
         custom_paths = {
-                        'files':["bin/%s" % pyver, "lib/lib%s.so" % pyver],
-                        'dirs':["include/%s" % pyver, "lib/%s" % pyver]
+                        'files':["bin/%s" % pyver, "lib/lib%s%s.so" % (pyver, abiflags)],
+                        'dirs':["include/%s%s" % (pyver, abiflags), "lib/%s" % pyver]
                        }
 
         super(EB_Python, self).sanity_check_step(custom_paths=custom_paths)
