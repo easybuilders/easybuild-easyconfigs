@@ -47,7 +47,7 @@ class EB_flex(EB_ConfigureMake):
         """Custom sanity check for flex"""
 
         custom_paths =  {
-                         'files':["bin/%s" % x for x in ["flex", "lex", "lex++"]] + ["include/flexlexer.h"] +
+                         'files':["bin/%s" % x for x in ["flex", "lex", "lex++"]] + ["include/FlexLexer.h"] +
                                  ["lib/lib%s.a" % x for x in ["fl", "fl_pic"]],
                          'dirs':[]
                         }
