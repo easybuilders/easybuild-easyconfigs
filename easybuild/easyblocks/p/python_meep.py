@@ -134,7 +134,7 @@ class EB_python_minus_meep(EasyBlock):
 
         txt = super(EB_python_minus_meep, self).make_module_extra()
 
-        meep = os.getenv("SOFTROOTMEEP")
+        meep = get_software_root('Meep')
 
         txt += "setenv\tMEEP_INCLUDE\t\t%s/include\n" % meep
         txt += "setenv\tMEEP_LIB\t\t%s/lib\n" % meep
