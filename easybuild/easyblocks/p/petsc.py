@@ -92,7 +92,7 @@ class EB_PETSc(EB_ConfigureMake):
                 self.cfg.update('configopts', '--with-mpi=1')
 
             # build options
-            self.cfg.update('configopts', '--with-build_step-np=%s' % self.cfg['parallel'])
+            self.cfg.update('configopts', '--with-build-step-np=%s' % self.cfg['parallel'])
             self.cfg.update('configopts', '--with-shared-libraries=%d' % self.cfg['shared_libs'])
             self.cfg.update('configopts', '--with-debugging=%d' % self.toolkit.opts['debug'])
             self.cfg.update('configopts', '--with-pic=%d' % self.toolkit.opts['pic'])
