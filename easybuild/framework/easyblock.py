@@ -1170,7 +1170,6 @@ class EasyBlock(object):
         """
         # prepare sanity check paths
         paths = self.cfg['sanityCheckPaths']
-        self.log.info("Using specified sanity check paths: %s" % paths)
         if not paths:
             if custom_paths:
                 paths = custom_paths
@@ -1181,6 +1180,8 @@ class EasyBlock(object):
                          'dirs':["bin", "lib"]
                         }
                 self.log.info("Using default sanity check paths: %s" % paths)
+        else:
+            self.log.info("Using specified sanity check paths: %s" % paths)
 
         # check sanity check paths
         ks = paths.keys()
