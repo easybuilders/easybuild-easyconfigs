@@ -76,6 +76,7 @@ from easybuild.tools.config import getRepository
 from easybuild.tools.filetools import modifyEnv
 from easybuild.tools.modules import Modules, searchModule
 from easybuild.tools.modules import curr_module_paths, mk_module_path
+from easybuild.tools.ordereddict import OrderedDict
 from easybuild.tools import systemtools
 
 
@@ -829,6 +830,25 @@ def retrieveBlocksInSpec(spec, log, onlyBlocks):
         # no blocks, one file
         return [spec]
 
+def get_build_stats(app, starttime):
+    """
+    Return build statistics for this build
+    """
+
+    buildtime = round(time.time() - starttime, 2)
+    buildstats = OrderedDict([
+                              ('easybuild_version', str(easybuild.VERBOSE_VERSION)),
+                              ('host', os.uname()[1]),
+                              ('platform' , platform.platform()),
+                              ('cpu_model', systemtools.get_cpu_model()),
+                              ('core_count', systemtools.get_core_count()),
+                              ('timestamp', int(time.time())),
+                              ('build_time', buildtime),
+                              ('install_size', app.det_installsize()),
+                             ])
+
+    return buildstats
+
 def build_and_install_software(module, options, log, origEnviron, exitOnFailure=True):
     """
     Build the software
@@ -892,17 +912,9 @@ def build_and_install_software(module, options, log, origEnviron, exitOnFailure=
 
         # collect build stats
         log.info("Collecting build stats...")
-        buildtime = round(time.time() - starttime, 2)
 
         currentbuildstats = app.cfg['buildstats']
-        buildstats = {'build_time' : buildtime,
-                 'platform' : platform.platform(),
-                 'core_count' : systemtools.get_core_count(),
-                 'cpu_model': systemtools.get_cpu_model(),
-                 'install_size' : app.det_installsize(),
-                 'timestamp' : int(time.time()),
-                 'host' : os.uname()[1],
-                 }
+        buildstats = get_build_stats(app, starttime)
         log.debug("Build stats: %s" % buildstats)
 
         if app.cfg['stop']:
@@ -1177,16 +1189,7 @@ def build_easyconfigs(easyconfigs, output_dir, test_results, options, log):
             if app not in build_stopped:
                 # gather build stats
                 build_time = round(time.time() - start_time, 2)
-
-                buildstats = {
-                              'build_time': build_time,
-                              'platform': platform.platform(),
-                              'core_count': systemtools.get_core_count(),
-                              'cpu_model': systemtools.get_cpu_model(),
-                              'install_size': app.det_installsize(),
-                              'timestamp': int(time.time()),
-                              'host': os.uname()[1],
-                             }
+                buildstats = get_build_stats(app, start_time)
                 succes.append((app, buildstats))
 
     for result in test_results:
