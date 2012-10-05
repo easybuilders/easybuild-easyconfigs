@@ -68,8 +68,8 @@ def build_easyconfigs_in_parallel(build_command, easyconfigs, output_dir, log):
         job_module_dict[new_job.module] = new_job.jobid
         jobs.append(new_job)
         cnt += 1
-        if cnt == BULK_SIZE:
-            time.sleep(SLEEP_SECS) 
+        if cnt % BULK_SIZE == 0:
+            time.sleep(SLEEP_SECS)
 
     return jobs
 
