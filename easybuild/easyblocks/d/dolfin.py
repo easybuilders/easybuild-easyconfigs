@@ -203,10 +203,10 @@ class EB_DOLFIN(EB_CMakePythonPackage):
         pref = os.path.join('share', 'dolfin', 'demo')
 
         # test command templates
-        cmd_template_python = " && ".join(["cd %(dir)s", "python demo_%(get_name)s.py", "cd -"])
+        cmd_template_python = " && ".join(["cd %(dir)s", "python demo_%(name)s.py", "cd -"])
 
         cmd_template_cpp = " && ".join(["cd %(dir)s", "cmake . %s" % self.saved_configopts,
-                                        "make", "./demo_%(get_name)s", "cd -"])
+                                        "make", "./demo_%(name)s", "cd -"])
 
         # list based on demos available for DOLFIN v1.0.0
         pde_demos = ['biharmonic', 'cahn-hilliard', 'hyperelasticity', 'mixed-poisson',
