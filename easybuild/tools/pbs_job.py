@@ -288,3 +288,7 @@ class PbsJob(object):
 
         return freq_np
 
+    def __del__(self):
+        """Destructor: disconnect from server."""
+        
+        pbs.pbs_disconnect(self.pbsconn)

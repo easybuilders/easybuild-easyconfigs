@@ -27,15 +27,11 @@ Support for PBS is provided via the PbsJob class. If you want you could create o
 import math
 import os
 import re
-import time
 
 import easybuild.tools.config as config
 from easybuild.framework.easyblock import get_class
 from easybuild.tools.pbs_job import PbsJob
 from easybuild.tools.config import getRepository
-
-BULK_SIZE = 20
-SLEEP_SECS = 5
 
 def build_easyconfigs_in_parallel(build_command, easyconfigs, output_dir, log):
     """
@@ -67,9 +63,6 @@ def build_easyconfigs_in_parallel(build_command, easyconfigs, output_dir, log):
         # update dictionary
         job_module_dict[new_job.module] = new_job.jobid
         jobs.append(new_job)
-        cnt += 1
-        if cnt % BULK_SIZE == 0:
-            time.sleep(SLEEP_SECS)
 
     return jobs
 
