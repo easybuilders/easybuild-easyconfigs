@@ -27,12 +27,15 @@ Support for PBS is provided via the PbsJob class. If you want you could create o
 import math
 import os
 import re
+import time
 
 import easybuild.tools.config as config
 from easybuild.framework.easyblock import get_class
 from easybuild.tools.pbs_job import PbsJob
 from easybuild.tools.config import getRepository
 
+BULK_SIZE = 20
+SLEEP_SECS = 5
 
 def build_easyconfigs_in_parallel(build_command, easyconfigs, output_dir, log):
     """
@@ -46,6 +49,7 @@ def build_easyconfigs_in_parallel(build_command, easyconfigs, output_dir, log):
     # dependencies have already been resolved,
     # so one can linearly walk over the list and use previous job id's
     jobs = []
+    cnt = 0
     for ec in easyconfigs:
         # This is very important, otherwise we might have race conditions
         # e.g. GCC-4.5.3 finds cloog.tar.gz but it was incorrectly downloaded by GCC-4.6.3
@@ -63,6 +67,9 @@ def build_easyconfigs_in_parallel(build_command, easyconfigs, output_dir, log):
         # update dictionary
         job_module_dict[new_job.module] = new_job.jobid
         jobs.append(new_job)
+        cnt += 1
+        if cnt == BULK_SIZE:
+            time.sleep(SLEEP_SECS) 
 
     return jobs
 
