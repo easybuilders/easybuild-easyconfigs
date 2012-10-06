@@ -62,6 +62,7 @@ def build_easyconfigs_in_parallel(build_command, easyconfigs, output_dir, log):
         log.info("job for module %s has been submitted (job id: %s)" % (new_job.module, new_job.jobid))
         # update dictionary
         job_module_dict[new_job.module] = new_job.jobid
+        new_job.cleanup()
         jobs.append(new_job)
 
     return jobs
