@@ -1,0 +1,231 @@
+diff -ru WIEN2k_12.orig/SRC_hf/calc_exhfvv.F WIEN2k_12/SRC_hf/calc_exhfvv.F
+--- WIEN2k_12.orig/SRC_hf/calc_exhfvv.F	2012-06-13 10:53:03.000000000 +0200
++++ WIEN2k_12/SRC_hf/calc_exhfvv.F	2012-09-04 17:49:31.270344689 +0200
+@@ -266,10 +266,10 @@
+           enddo
+           if (igs .eq. 0) then
+             allocate(igv(ng))
+-            igv = (/ 1:ng /)
++            igv = (/ (I, I = 1, ng) /)
+           else
+             allocate(igv(ng-1))
+-            igv = (/ 1:(igs-1),(igs+1):ng /)
++            igv = (/ (I, I = 1, (igs-1)), (I, I = (igs+1), ng) /)
+           endif
+ 
+           ftmp3a = (0d0,0d0)
+diff -ru WIEN2k_12.orig/SRC_hf/calc_h.F WIEN2k_12/SRC_hf/calc_h.F
+--- WIEN2k_12.orig/SRC_hf/calc_h.F	2012-07-15 14:45:02.000000000 +0200
++++ WIEN2k_12/SRC_hf/calc_h.F	2012-09-04 19:41:31.593048492 +0200
+@@ -287,7 +287,7 @@
+         elseif (diaghf .eqv. .true.) then
+ 
+           nindexb2(1:nbf) = 1
+-          indexb(1:nbf,1) = (/1:nbf/)
++          indexb(1:nbf,1) = (/ (I, I = 1, nbf) /)
+ 
+         endif
+ 
+@@ -418,10 +418,10 @@
+           enddo
+           if (igs .eq. 0) then
+             allocate(igv(ng))
+-            igv = (/ 1:ng /)
++            igv = (/ (I, I = 1, ng) /)
+           else
+             allocate(igv(ng-1))
+-            igv = (/ 1:(igs-1),(igs+1):ng /)
++            igv = (/ (I, I = 1, (igs-1)),(I, I=(igs+1), ng) /)
+           endif
+ 
+           nkvhf = nkvt(ik3) - nlototold
+diff -ru WIEN2k_12.orig/SRC_hf/calc_rhovalvxsl.F WIEN2k_12/SRC_hf/calc_rhovalvxsl.F
+--- WIEN2k_12.orig/SRC_hf/calc_rhovalvxsl.F	2012-06-11 15:28:52.000000000 +0200
++++ WIEN2k_12/SRC_hf/calc_rhovalvxsl.F	2012-09-04 20:53:37.130743750 +0200
+@@ -7,7 +7,7 @@
+         vxsllm, vxslthetag
+       use parallel, only : myid
+       use struct, only : dx, iatnr, jri, mult, nat, nrad, r0, vcell
+-      implicit none
++      implicit integer(I)
+ 
+       integer :: iat, ilm, nr
+ 
+@@ -22,7 +22,7 @@
+       do iat=1, nat
+ 
+         nr = jri(iat)
+-        r(1:nr) = r0(iat)*exp(dx(iat)*(dble((/1:nr/))-1d0))
++        r(1:nr) = r0(iat)*exp(dx(iat)*(dble((/ (I, I = 1, nr) /))-1d0))
+ 
+         do ilm=1, nlmvsl(iat)
+ 
+diff -ru WIEN2k_12.orig/SRC_hf/calc_ucuchucuc.f WIEN2k_12/SRC_hf/calc_ucuchucuc.f
+--- WIEN2k_12.orig/SRC_hf/calc_ucuchucuc.f	2012-06-05 17:21:25.000000000 +0200
++++ WIEN2k_12/SRC_hf/calc_ucuchucuc.f	2012-09-04 20:03:26.202829610 +0200
+@@ -30,7 +30,7 @@
+       do iat=1, nat
+ 
+         nr = jri(iat)
+-        r(1:nr) = r0(iat)*exp(dx(iat)*(dble((/1:nr/))-1d0))
++        r(1:nr) = r0(iat)*exp(dx(iat)*(dble((/ (I, I = 1, nr) /))-1d0))
+ 
+         if (screened .eqv. .true.) then
+           sbi = 0d0
+diff -ru WIEN2k_12.orig/SRC_hf/calc_uuchucu.f WIEN2k_12/SRC_hf/calc_uuchucu.f
+--- WIEN2k_12.orig/SRC_hf/calc_uuchucu.f	2012-06-05 17:23:37.000000000 +0200
++++ WIEN2k_12/SRC_hf/calc_uuchucu.f	2012-09-04 20:02:15.104349119 +0200
+@@ -30,7 +30,7 @@
+       do iat=1, nat
+ 
+         nr = jri(iat)
+-        r(1:nr) = r0(iat)*exp(dx(iat)*(dble((/1:nr/))-1d0))
++        r(1:nr) = r0(iat)*exp(dx(iat)*(dble((/ (I, I = 1, nr) /))-1d0))
+ 
+         if (screened .eqv. .true.) then
+           sbi = 0d0
+diff -ru WIEN2k_12.orig/SRC_hf/calc_uuchucuh.f WIEN2k_12/SRC_hf/calc_uuchucuh.f
+--- WIEN2k_12.orig/SRC_hf/calc_uuchucuh.f	2012-06-05 17:26:15.000000000 +0200
++++ WIEN2k_12/SRC_hf/calc_uuchucuh.f	2012-09-04 20:01:54.830373824 +0200
+@@ -32,7 +32,7 @@
+       do iat=1, nat
+ 
+         nr = jri(iat)
+-        r(1:nr) = r0(iat)*exp(dx(iat)*(dble((/1:nr/))-1d0))
++        r(1:nr) = r0(iat)*exp(dx(iat)*(dble((/ (I, I = 1, nr) /))-1d0))
+ 
+         if (screened .eqv. .true.) then
+           sbi = 0d0
+diff -ru WIEN2k_12.orig/SRC_hf/calc_uu.f WIEN2k_12/SRC_hf/calc_uu.f
+--- WIEN2k_12.orig/SRC_hf/calc_uu.f	2012-06-05 18:03:01.000000000 +0200
++++ WIEN2k_12/SRC_hf/calc_uu.f	2012-09-04 21:05:39.222974090 +0200
+@@ -5,7 +5,7 @@
+       use atpmod, only : nradfi
+       use data, only : ru, uu
+       use struct, only : cin, dx, jri, nat, nrad, r0
+-      implicit none
++      implicit integer(I)
+       include 'param.inc'
+ 
+       integer :: iat, if1, if2, l, nr
+@@ -20,7 +20,7 @@
+       do iat=1, nat
+ 
+         nr = jri(iat)
+-        r(1:nr) = r0(iat)*exp(dx(iat)*(dble((/1:nr/))-1d0))
++        r(1:nr) = r0(iat)*exp(dx(iat)*(dble((/ (I, I = 1, nr) /))-1d0))
+ 
+         do l=0, lmax2
+ 
+diff -ru WIEN2k_12.orig/SRC_hf/calc_uuguu.f WIEN2k_12/SRC_hf/calc_uuguu.f
+--- WIEN2k_12.orig/SRC_hf/calc_uuguu.f	2012-07-15 14:45:58.000000000 +0200
++++ WIEN2k_12/SRC_hf/calc_uuguu.f	2012-09-04 20:03:08.255391654 +0200
+@@ -30,7 +30,7 @@
+       do iat=1, nat
+ 
+         nr = jri(iat)
+-        r(1:nr) = r0(iat)*exp(dx(iat)*(dble((/1:nr/))-1d0))
++        r(1:nr) = r0(iat)*exp(dx(iat)*(dble((/ (I, I = 1, nr) /))-1d0))
+ 
+         if (screened .eqv. .true.) then
+           sbi = 0d0
+diff -ru WIEN2k_12.orig/SRC_hf/calc_uuguuh.f WIEN2k_12/SRC_hf/calc_uuguuh.f
+--- WIEN2k_12.orig/SRC_hf/calc_uuguuh.f	2012-07-15 14:46:13.000000000 +0200
++++ WIEN2k_12/SRC_hf/calc_uuguuh.f	2012-09-04 20:03:17.971628753 +0200
+@@ -32,7 +32,7 @@
+       do iat=1, nat
+ 
+         nr = jri(iat)
+-        r(1:nr) = r0(iat)*exp(dx(iat)*(dble((/1:nr/))-1d0))
++        r(1:nr) = r0(iat)*exp(dx(iat)*(dble((/ (I, I = 1, nr) /))-1d0))
+ 
+         if (screened .eqv. .true.) then
+           sbi = 0d0
+diff -ru WIEN2k_12.orig/SRC_hf/calc_uui.f WIEN2k_12/SRC_hf/calc_uui.f
+--- WIEN2k_12.orig/SRC_hf/calc_uui.f	2012-07-15 14:45:32.000000000 +0200
++++ WIEN2k_12/SRC_hf/calc_uui.f	2012-09-04 20:01:00.542019632 +0200
+@@ -30,7 +30,7 @@
+       do iat=1, nat
+ 
+         nr = jri(iat)
+-        r(1:nr) = r0(iat)*exp(dx(iat)*(dble((/1:nr/))-1d0))
++        r(1:nr) = r0(iat)*exp(dx(iat)*(dble((/ (I, I = 1, nr) /))-1d0))
+ 
+         if (screened .eqv. .true.) then
+           sbi = 0d0
+diff -ru WIEN2k_12.orig/SRC_hf/calc_uuih.f WIEN2k_12/SRC_hf/calc_uuih.f
+--- WIEN2k_12.orig/SRC_hf/calc_uuih.f	2012-07-15 14:45:42.000000000 +0200
++++ WIEN2k_12/SRC_hf/calc_uuih.f	2012-09-04 20:01:34.441865245 +0200
+@@ -32,7 +32,7 @@
+       do iat=1, nat
+ 
+         nr = jri(iat)
+-        r(1:nr) = r0(iat)*exp(dx(iat)*(dble((/1:nr/))-1d0))
++        r(1:nr) = r0(iat)*exp(dx(iat)*(dble((/ (I, I = 1, nr) /))-1d0))
+ 
+         if (screened .eqv. .true.) then
+           sbi = 0d0
+diff -ru WIEN2k_12.orig/SRC_hf/calc_uvxslug.f WIEN2k_12/SRC_hf/calc_uvxslug.f
+--- WIEN2k_12.orig/SRC_hf/calc_uvxslug.f	2012-06-05 18:07:38.000000000 +0200
++++ WIEN2k_12/SRC_hf/calc_uvxslug.f	2012-09-04 21:22:12.399175081 +0200
+@@ -7,7 +7,7 @@
+       use data, only : gfac, ilmvsl, l1vsl, l2vsl, nindvsl, &
+         nindvslmax, ru, uvxslug, vxsllm
+       use struct, only : cin, dx, jri, mult, nat, nrad, r0
+-      implicit none
++      implicit integer(I)
+ 
+       integer :: iat, if1, if2, ilm, ivsl, l1, l2, nr
+ 
+@@ -23,7 +23,7 @@
+       do iat=1, nat
+ 
+         nr = jri(iat)
+-        r(1:nr) = r0(iat)*exp(dx(iat)*(dble((/1:nr/))-1d0))
++        r(1:nr) = r0(iat)*exp(dx(iat)*(dble((/ (I, I = 1, nr) /))-1d0))
+ 
+         do ivsl=1, nindvsl(iat)
+ 
+diff -ru WIEN2k_12.orig/SRC_kgen/arbmsh.f WIEN2k_12/SRC_kgen/arbmsh.f
+--- WIEN2k_12.orig/SRC_kgen/arbmsh.f	2012-04-10 15:11:13.000000000 +0200
++++ WIEN2k_12/SRC_kgen/arbmsh.f	2012-09-05 20:41:53.692906940 +0200
+@@ -90,7 +90,7 @@
+ !     ------------------------------------------------------------------
+ !     -- CREATE FILE FOR HF                                           --
+ !     ------------------------------------------------------------------
+-      IF (CREATEHF .EQ. .TRUE.) &
++      IF (CREATEHF .EQV. .TRUE.) &
+         CALL CREATE_FILEHF(N,W(OISHIF),NSYM,IIO,GBAS,AAA,ORTHO)
+ !     ------------------------------------------------------------------
+ !     -- PRINTOUT OF SYMMETRY OPERATIONS                              --
+diff -ru WIEN2k_12.orig/SRC_lapw0/lapw0.F WIEN2k_12/SRC_lapw0/lapw0.F
+--- WIEN2k_12.orig/SRC_lapw0/lapw0.F	2012-07-20 08:43:04.000000000 +0200
++++ WIEN2k_12/SRC_lapw0/lapw0.F	2012-09-05 20:55:03.463107872 +0200
+@@ -256,12 +256,12 @@
+         if ((alphax .lt. 0d0) .or. (alphax .gt. 1d0)) stop 'error in case.inhf: &
+           the fraction of HF exchange should be between 0 and 1'
+         read(60,*) screening
+-        if ((screening .ne. .true.) .and. (screening .ne. .false.)) &
++        if ((screening .neqv. .true.) .and. (screening .neqv. .false.)) &
+           stop 'error in case.inhf: screening should be true or false'
+-        if (screening .eq. .true.) then
++        if (screening .eqv. .true.) then
+           read(60,*) slamb
+           if (slamb .lt. 0d0) stop 'error in case.inhf: lambda should be positive'
+-        elseif (screening .eq. .false.) then
++        elseif (screening .eqv. .false.) then
+           slamb = 0d0
+         endif
+       endif
+diff -ru WIEN2k_12.orig/SRC_lapw0/vx_screened.f WIEN2k_12/SRC_lapw0/vx_screened.f
+--- WIEN2k_12.orig/SRC_lapw0/vx_screened.f	2011-12-09 15:05:55.000000000 +0100
++++ WIEN2k_12/SRC_lapw0/vx_screened.f	2012-09-05 21:03:54.638110359 +0200
+@@ -44,7 +44,7 @@
+       s3 = s**3
+       s4 = s**4
+ 
+-      if ((screening .eq. .true.) .and. (slamb .gt. 1d-10)) then
++      if ((screening .eqv. .true.) .and. (slamb .gt. 1d-10)) then
+ 
+         j = 1d0 - 2d0/3d0*a2 - 8d0/3d0*a*datan(1d0/a) + &
+           2d0/3d0*a2*(a2 + 3d0)*dlog(1d0 + 1d0/a2)

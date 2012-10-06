@@ -210,6 +210,8 @@ class EB_WPS(EasyBlock):
     def test_step(self):
         """Run WPS test (requires large dataset to be downloaded). """
 
+        wpsdir = None
+
         def run_wps_cmd(cmdname):
             """Run a WPS command, and check for success."""
 
@@ -237,7 +239,7 @@ class EB_WPS(EasyBlock):
                     path = self.obtain_file(testdata)
                     if not path:
                         self.log.error("Downloading file from %s failed?" % testdata)
-                    testdata_paths .append(path)
+                    testdata_paths.append(path)
 
                 # unpack data
                 for path in testdata_paths:
