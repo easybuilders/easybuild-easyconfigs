@@ -476,16 +476,15 @@ class Application:
                                        srcpath, # directly in sources directory
                                        ]
 
-                # also consider easyconfigs path for patch files
-                if filename.endswith(".patch"):
-                    for path in get_paths_for(self.log, "easyconfigs"):
-                        candidate_filepaths.append(os.path.join(
-                                                                path,
-                                                                "easybuild",
-                                                                "easyconfigs",
-                                                                self.name().lower()[0],
-                                                                self.name()
-                                                                ))
+                # also consider easyconfigs paths as a fall back (e.g. for patch files, test cases, ...)
+                for path in get_paths_for(self.log, "easyconfigs"):
+                    candidate_filepaths.append(os.path.join(
+                                                            path,
+                                                            "easybuild",
+                                                            "easyconfigs",
+                                                            self.name().lower()[0],
+                                                            self.name()
+                                                            ))
 
                 # see if file can be found at that location
                 for cfp in candidate_filepaths:
@@ -1000,7 +999,7 @@ class Application:
         - typical: make install
         """
 
-        cmd = "make install %s" % (self.getcfg('installopts'))
+        cmd = "%s make install %s" % (self.getcfg('preinstallopts'), self.getcfg('installopts'))
 
         (out, _) = run_cmd(cmd, log_all=True, simple=False)
 

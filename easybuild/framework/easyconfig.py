@@ -85,6 +85,7 @@ class EasyConfig:
           ('configopts', ['', 'Extra options passed to configure (Default already has --prefix)', BUILD]),
           ('premakeopts', ['', 'Extra options pre-passed to make.', BUILD]),
           ('makeopts', ['', 'Extra options passed to make (Default already has -j X)', BUILD]),
+          ('preinstallopts', ['', 'Extra prefix options for installation (Default: nothing)', BUILD]),
           ('installopts', ['', 'Extra options for installation (Default: nothing)', BUILD]),
           ('unpackOptions', [None, "Extra options for unpacking source (default: None)", BUILD]),
           ('stop', [None, 'Keyword to halt the buildprocess at certain points. Valid are %s' % validstops,
