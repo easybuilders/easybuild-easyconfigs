@@ -47,8 +47,8 @@ class EB_Tornado(EB_PackedBinary):
         """Add correct path to lib to LD_LIBRARY_PATH."""
 
         txt = EB_PackedBinary.make_module_extra(self)
-        txt += self.moduleGenerator.prependPaths('LD_LIBRARY_PATH', ["$root/Tornado/bin/linux/",
-                                                                     "$root/ThirdParty/bin/linux/"] )
+        txt += self.moduleGenerator.prependPaths('LD_LIBRARY_PATH', ["$root/Tornado/bin/linux/"])
+        txt += self.moduleGenerator.prependPaths('LD_LIBRARY_PATH', ["$root/ThirdPart/bin/linux/"])
         txt += self.moduleGenerator.prependPaths('PATH', ["$root/Tornado/bin/linux/"] )
         txt += self.moduleGenerator.setEnvironment('TORNADO_ROOT_PATH', "$root" )
         txt += self.moduleGenerator.setEnvironment('TORNADO_DATA_PATH', "$root/Data/WEST" )
