@@ -348,8 +348,8 @@ class EasyBlock(object):
                                                             path,
                                                             "easybuild",
                                                             "easyconfigs",
-                                                            self.name().lower()[0],
-                                                            self.name()
+                                                            self.name.lower()[0],
+                                                            self.name
                                                             ))
 
                 # see if file can be found at that location
