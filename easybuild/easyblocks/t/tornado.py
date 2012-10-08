@@ -1,9 +1,5 @@
 ##
-# Copyright 2009-2012 Stijn De Weirdt
-# Copyright 2010 Dries Verdegem
-# Copyright 2010-2012 Kenneth Hoste
-# Copyright 2011 Pieter De Baets
-# Copyright 2011-2012 Jens Timmerman
+# Copyright 2012 Jens Timmerman
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of the University of Ghent (http://ugent.be/hpc).
@@ -23,7 +19,7 @@
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
 """
-EasyBuild support for installing the Intel Threading Building Blocks (TBB) library, implemented as an easyblock
+EasyBuild support for installing Tornado, implemented as an easyblock
 """
 
 import os
@@ -31,7 +27,6 @@ import shutil
 import glob
 
 from easybuild.easyblocks.packedbinary import EB_PackedBinary
-
 
 class EB_Tornado(EB_PackedBinary):
     """EasyBlock for Tornado"""
@@ -52,10 +47,10 @@ class EB_Tornado(EB_PackedBinary):
         """Add correct path to lib to LD_LIBRARY_PATH."""
 
         txt = EB_PackedBinary.make_module_extra(self)
-        txt += "prepend-path\t%s\t\t%s\n" % ('LD_LIBRARY_PATH', "$root/Tornado/bin/linux/" )
-        txt += "prepend-path\t%s\t\t%s\n" % ('LD_LIBRARY_PATH', "$root/ThirdParty/bin/linux/" )
-        txt += "prepend-path\t%s\t\t%s\n" % ('PATH', "$root/Tornado/bin/linux/" )
-        txt += "setenv\t%s\t\t%s\n" % ('TORNADO_ROOT_PATH', "$root" )
-        txt += "setenv\t%s\t\t%s\n" % ('TORNADO_DATA_PATH', "$root/Data/WEST" )
+        txt += self.moduleGenerator.prependPaths('LD_LIBRARY_PATH', "$root/Tornado/bin/linux/" )
+        txt += self.moduleGenerator.prependPaths('LD_LIBRARY_PATH', "$root/ThirdParty/bin/linux/" )
+        txt += self.moduleGenerator.prependPaths('PATH', "$root/Tornado/bin/linux/" )
+        txt += self.moduleGenerator.setEnvironment('TORNADO_ROOT_PATH', "$root" )
+        txt += self.moduleGenerator.setEnvironment('TORNADO_DATA_PATH', "$root/Data/WEST" )
 
         return txt

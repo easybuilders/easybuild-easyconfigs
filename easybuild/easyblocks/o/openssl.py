@@ -26,6 +26,7 @@ EasyBuild support for OpenSSL, implemented as an easyblock
 from easybuild.framework.application import Application
 from easybuild.tools.filetools import run_cmd
 
+
 class EB_OpenSSL(Application):
     """Support for building OpenSSL"""
 
@@ -35,7 +36,7 @@ class EB_OpenSSL(Application):
          """
  
          cmd = "%s %s./config --prefix=%s threads shared %s" % (self.getcfg('preconfigopts'), cmd_prefix,
-                                                     self.installdir, self.getcfg('configopts'))
+                                                                self.installdir, self.getcfg('configopts'))
  
          (out, _) = run_cmd(cmd, log_all=True, simple=False)
  
@@ -45,8 +46,8 @@ class EB_OpenSSL(Application):
         """Custom sanity check"""
 
         self.setcfg('sanityCheckPaths',{'files':["lib64/%s" % x for x in ['engines', 'libcrypto.a', 'libcrypto.so',
-                                                                           'libcrypto.so.1.0.0', 'libssl.a',
-                                                                           'libssl.so', 'libssl.so.1.0.0']] + \
+                                                                          'libcrypto.so.1.0.0', 'libssl.a',
+                                                                          'libssl.so', 'libssl.so.1.0.0']] + \
                                                  ['bin/openssl'],
                                         'dirs': []
                                        })
