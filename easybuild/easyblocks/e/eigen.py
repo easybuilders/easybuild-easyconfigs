@@ -38,11 +38,11 @@ class EB_Eigen(EasyBlock):
         """
         srcdir = os.path.join(self.cfg['start_dir'], 'Eigen')
         destdir = os.path.join(self.installdir, 'include/Eigen')
-        srcfile = None
         try:
+                os.makedirs(os.path.dirname(destdir))
                 shutil.copytree(srcdir, destdir)
         except OSError, err:
-            self.log.error("Copying %s to installation dir %s failed: %s" % (srcfile, destdir, err))
+            self.log.error("Copying %s to installation dir %s failed: %s" % (srcdir, destdir, err))
 
     def sanity_check_step(self):
         """Custom sanity check for Eigen."""
