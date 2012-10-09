@@ -69,7 +69,7 @@ class EasyConfig(object):
           ('homepage', [None, 'The homepage of the software', MANDATORY]),
 
           ('toolchainopts', ['', 'Extra options for compilers', TOOLKIT]),
-          ('onlytkmod', [False,"Boolean/string to indicate if the toolchain should only load " \
+          ('onlytcmod', [False,"Boolean/string to indicate if the toolchain should only load " \
                                "the enviornment with module (True) or also set all other " \
                                "variables (False) like compiler CC etc (If string: comma separated" \
                                "list of variables that will be ignored). (Default: False)", TOOLKIT]),
@@ -686,64 +686,64 @@ def select_or_generate_ec(fp, paths, specs, log):
     # TOOLKIT NAME
 
     # determine list of unique toolchain names
-    tknames = unique([x[0]['toolchain']['name'] for x in ecs_and_files])
-    log.debug("Found %d unique toolchain names: %s" % (len(tknames), tknames))
+    tcnames = unique([x[0]['toolchain']['name'] for x in ecs_and_files])
+    log.debug("Found %d unique toolchain names: %s" % (len(tcnames), tcnames))
 
     # if a toolchain was selected, and we have no easyconfig files for it, try and use a template
-    if specs.get('toolchain_name') and not specs['toolchain_name'] in tknames:
-        if "TEMPLATE" in tknames:
+    if specs.get('toolchain_name') and not specs['toolchain_name'] in tcnames:
+        if "TEMPLATE" in tcnames:
             log.info("No easyconfig file for specified toolchain, but template is available.")
         else:
             log.error("No easyconfig file for %s with toolchain %s, " \
                       "and no template available." % (name, specs['toolchain_name']))
 
-    tkname = specs.pop('toolchain_name', None)
+    tcname = specs.pop('toolchain_name', None)
     handled_params.append('toolchain_name')
 
     # trim down list according to selected toolchain
-    if tkname in tknames:
+    if tcname in tcnames:
         # known toolchain, so only retain those
-        selected_tkname = tkname
+        selected_tcname = tcname
     else:
-        if len(tknames) == 1 and not tknames[0] == "TEMPLATE":
+        if len(tcnames) == 1 and not tcnames[0] == "TEMPLATE":
             # only one (non-template) toolchain availble, so use that
-            tkname = tknames[0]
-            selected_tkname = tkname
+            tcname = tcnames[0]
+            selected_tcname = tcname
         else:
             # fall-back: use template toolchain if a toolchain name was specified
-            if tkname:
-                selected_tkname = "TEMPLATE"
+            if tcname:
+                selected_tcname = "TEMPLATE"
             else:
                 # if multiple toolchains are available, and none is specified, we quit
                 # we can't just pick one, how would we prefer one over the other?
-                log.error("No toolchain name specified, and more than one available: %s." % tknames)
+                log.error("No toolchain name specified, and more than one available: %s." % tcnames)
 
-    ecs_and_files = [x for x in ecs_and_files if x[0]['toolchain']['name'] == selected_tkname]
+    ecs_and_files = [x for x in ecs_and_files if x[0]['toolchain']['name'] == selected_tcname]
 
     log.debug("Filtered easyconfigs: %s" % [x[1] for x in ecs_and_files])
 
     # TOOLKIT VERSION
 
-    tkvers = unique([x[0]['toolchain']['version'] for x in ecs_and_files])
-    log.debug("Found %d unique toolchain versions: %s" % (len(tkvers), tkvers))
+    tcvers = unique([x[0]['toolchain']['version'] for x in ecs_and_files])
+    log.debug("Found %d unique toolchain versions: %s" % (len(tcvers), tcvers))
 
-    tkver = specs.pop('toolchain_version', None)
+    tcver = specs.pop('toolchain_version', None)
     handled_params.append('toolchain_version')
-    (tkver, selected_tkver) = pick_version(tkver, tkvers, log)
+    (tcver, selected_tcver) = pick_version(tcver, tcvers, log)
 
-    log.debug("Filtering easyconfigs based on toolchain version '%s'..." % selected_tkver)
-    ecs_and_files = [x for x in ecs_and_files if x[0]['toolchain']['version'] == selected_tkver]
+    log.debug("Filtering easyconfigs based on toolchain version '%s'..." % selected_tcver)
+    ecs_and_files = [x for x in ecs_and_files if x[0]['toolchain']['version'] == selected_tcver]
     log.debug("Filtered easyconfigs: %s" % [x[1] for x in ecs_and_files])
 
     # add full toolchain specification to specs
-    if tkname and tkver:
-        specs.update({'toolchain': {'name': tkname, 'version': tkver}})
+    if tcname and tcver:
+        specs.update({'toolchain': {'name': tcname, 'version': tcver}})
         handled_params.append('toolchain')
     else:
-        if tkname:
-            specs.update({'toolchain_name': tkname})
-        if tkver:
-            specs.update({'toolchain_version': tkver})
+        if tcname:
+            specs.update({'toolchain_name': tcname})
+        if tcver:
+            specs.update({'toolchain_version': tcver})
 
     # SOFTWARE VERSION
 
@@ -839,7 +839,7 @@ def select_or_generate_ec(fp, paths, specs, log):
 
         # if no file path was specified, generate a file name
         if not fp:
-            installver = det_installversion(ver, tkname, tkver, verpref, versuff)
+            installver = det_installversion(ver, tcname, tcver, verpref, versuff)
             fp= "%s-%s.eb" % (name, installver)
 
         # generate tweaked easyconfig file
@@ -880,19 +880,19 @@ def tweak(src_fn, target_fn, tweaks, log):
     keys = tweaks.keys()
     if 'toolchain_name' in keys or 'toolchain_version' in keys:
 
-        tk_regexp = re.compile("^\s*toolchain\s*=\s*(.*)$", re.M)
+        tc_regexp = re.compile("^\s*toolchain\s*=\s*(.*)$", re.M)
 
-        res = tk_regexp.search(ectxt)
+        res = tc_regexp.search(ectxt)
         if not res:
             log.error("No toolchain found in easyconfig file %s?" % src_fn)
 
         toolchain = eval(res.group(1))
 
         for key in ['name', 'version']:
-            tk_key = "toolchain_%s" % key
-            if tk_key in keys:
-                toolchain.update({key: tweaks[tk_key]})
-                tweaks.pop(tk_key)
+            tc_key = "toolchain_%s" % key
+            if tc_key in keys:
+                toolchain.update({key: tweaks[tc_key]})
+                tweaks.pop(tc_key)
 
         tweaks.update({'toolchain': {'name': toolchain['name'], 'version': toolchain['version']}})
 

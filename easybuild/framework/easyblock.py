@@ -464,11 +464,11 @@ class EasyBlock(object):
         if not self.build_in_installdir:
             # make a unique build dir
             ## if a tookitversion starts with a -, remove the - so prevent a -- in the path name
-            tkversion = self.toolchain.version
-            if tkversion.startswith('-'):
-                tkversion = tkversion[1:]
+            tcversion = self.toolchain.version
+            if tcversion.startswith('-'):
+                tcversion = tcversion[1:]
 
-            extra = "%s%s-%s%s" % (self.cfg['versionprefix'], self.toolchain.name, tkversion, self.cfg['versionsuffix'])
+            extra = "%s%s-%s%s" % (self.cfg['versionprefix'], self.toolchain.name, tcversion, self.cfg['versionsuffix'])
             localdir = os.path.join(build_path(), self.name, self.version, extra)
 
             ald = os.path.abspath(localdir)
@@ -1040,7 +1040,7 @@ class EasyBlock(object):
         """
         Pre-configure step. Set's up the builddir just before starting configure
         """
-        self.toolchain.prepare(self.cfg['onlytkmod'])
+        self.toolchain.prepare(self.cfg['onlytcmod'])
         self.guess_start_dir()
 
     def configure_step(self):
