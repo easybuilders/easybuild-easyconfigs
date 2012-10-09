@@ -31,22 +31,20 @@ from easybuild.easyblocks.packedbinary import EB_PackedBinary
 class EB_Tornado(EB_PackedBinary):
     """EasyBlock for Tornado"""
 
-    def sanitycheck(self):
+    def sanity_check_step(self):
 
-        if not self.getcfg('sanityCheckPaths'):
-            self.setcfg('sanityCheckPaths', {
-                                             'files':[],
-                                             'dirs':["Tornado/bin/linux/", "ThirdParty/bin/linux/"]
-                                            })
+        custom_paths = {
+                        'files':[],
+                        'dirs':["Tornado/bin/linux/", "ThirdParty/bin/linux/"]
+                       }
 
-            self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
-
-        return EB_PackedBinary.sanitycheck(self)
+        super(EB_Tornado, self).sanity_check_step(custom_paths=custom_paths)
 
     def make_module_extra(self):
         """Add correct path to lib to LD_LIBRARY_PATH."""
 
-        txt = EB_PackedBinary.make_module_extra(self)
+        txt = super(EB_Tornado, self).make_module_extra()
+
         txt += self.moduleGenerator.prependPaths('LD_LIBRARY_PATH', ["Tornado/bin/linux/", "ThirdParty/bin/linux/"])
         txt += self.moduleGenerator.prependPaths('PATH', ["Tornado/bin/linux/"] )
         txt += self.moduleGenerator.setEnvironment('TORNADO_ROOT_PATH', "$root" )

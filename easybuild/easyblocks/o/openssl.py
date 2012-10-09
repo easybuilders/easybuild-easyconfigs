@@ -23,35 +23,34 @@
 EasyBuild support for OpenSSL, implemented as an easyblock
 """
 
-from easybuild.framework.application import Application
+from easybuild.easyblocks.configuremake import EB_ConfigureMake  #@UnresolvedImport
 from easybuild.tools.filetools import run_cmd
 
 
-class EB_OpenSSL(Application):
+class EB_OpenSSL(EB_ConfigureMake):
     """Support for building OpenSSL"""
 
-    def configure(self, cmd_prefix=''):
+    def configure_step(self, cmd_prefix=''):
          """
          Configure step
          """
  
-         cmd = "%s %s./config --prefix=%s threads shared %s" % (self.getcfg('preconfigopts'), cmd_prefix,
-                                                                self.installdir, self.getcfg('configopts'))
+         cmd = "%s %s./config --prefix=%s threads shared %s" % (self.cfg['preconfigopts'], cmd_prefix,
+                                                                self.installdir, self.cfg['configopts'])
  
          (out, _) = run_cmd(cmd, log_all=True, simple=False)
  
          return out
 
-    def sanitycheck(self):
+    def sanity_check_step(self):
         """Custom sanity check"""
 
-        self.setcfg('sanityCheckPaths',{'files':["lib64/%s" % x for x in ['engines', 'libcrypto.a', 'libcrypto.so',
-                                                                          'libcrypto.so.1.0.0', 'libssl.a',
-                                                                          'libssl.so', 'libssl.so.1.0.0']] + \
-                                                 ['bin/openssl'],
-                                        'dirs': []
-                                       })
-        self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
+        custom_paths = {'files':["lib64/%s" % x for x in ['engines', 'libcrypto.a', 'libcrypto.so',
+                                                          'libcrypto.so.1.0.0', 'libssl.a',
+                                                          'libssl.so', 'libssl.so.1.0.0']] + 
+                                ['bin/openssl'],
+                        'dirs': []
+                       }
 
-        return Application.sanitycheck(self)
+        super(EB_OpenSSL, self).sanity_check_step(custom_paths=custom_paths)
     
