@@ -403,8 +403,8 @@ class EasyConfig(object):
         elif run_cmd('which dpkg', simple=True, log_ok=False):
             cmd = "dpkg -s %s" % dep
         else:
-            # fallback for when os-dependency is a binary
-            cmd = "which %s" % dep
+            # fallback for when os-dependency is a binary/library
+            cmd = "which %(dep)s || locate %(dep)s" % {'dep': dep}
 
         try:
             return run_cmd(cmd, simple=True, log_all=False, log_ok=False)
