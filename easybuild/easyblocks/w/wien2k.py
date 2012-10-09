@@ -35,7 +35,7 @@ import tempfile
 from distutils.version import LooseVersion
 
 import easybuild.tools.environment as env
-import easybuild.tools.toolkit as toolkit
+import easybuild.tools.toolchain as toolchain
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.filetools import run_cmd, run_cmd_qa, extract_file
@@ -85,22 +85,22 @@ class EB_WIEN2k(EasyBlock):
 
         # patch config file first
 
-        # toolkit-dependent values
+        # toolchain-dependent values
         comp_answer = None
-        if self.toolkit.comp_family() == toolkit.INTEL:
+        if self.toolchain.comp_family() == toolchain.INTEL:
             if LooseVersion(get_software_version("icc")) >= LooseVersion("2011"):
                 comp_answer = 'I'  # Linux (Intel ifort 12.0 compiler + mkl )
             else:
                 comp_answer = "K1"  # Linux (Intel ifort 11.1 compiler + mkl )
 
-        elif self.toolkit.comp_family() == toolkit.GCC:
+        elif self.toolchain.comp_family() == toolchain.GCC:
             comp_answer = 'V'  # Linux (gfortran compiler + gotolib)
 
         else:
-            self.log.error("Failed to determine toolkit-dependent answers.")
+            self.log.error("Failed to determine toolchain-dependent answers.")
 
         # libraries
-        rlibs = "%s %s" % (os.getenv('LIBLAPACK_MT'), self.toolkit.get_openmp_flag())
+        rlibs = "%s %s" % (os.getenv('LIBLAPACK_MT'), self.toolchain.get_openmp_flag())
         rplibs = [os.getenv('LIBSCALAPACK_MT'), os.getenv('LIBLAPACK_MT')]
         fftwver = get_software_version('FFTW')
         if fftwver:

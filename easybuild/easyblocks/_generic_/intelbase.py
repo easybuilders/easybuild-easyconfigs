@@ -66,7 +66,7 @@ class EB_IntelBase(EasyBlock):
                        # used to be True, but False since SL5.6/SL6
                        # disables TMP_PATH env and command line option
                       ('usetmppath', [False, "Use temporary path for installation (default: False)", CUSTOM]),
-                      ('m32', [False, "Enable 32-bit toolkit (default: False)", CUSTOM]),
+                      ('m32', [False, "Enable 32-bit toolchain (default: False)", CUSTOM]),
                      ]
         intel_vars.extend(origvars)
         return intel_vars

@@ -30,7 +30,7 @@ import glob
 import os
 import shutil
 
-import easybuild.tools.toolkit as toolkit
+import easybuild.tools.toolchain as toolchain
 from easybuild.easyblocks.configuremake import EB_ConfigureMake  #@UnresolvedImport
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.filetools import run_cmd
@@ -84,9 +84,9 @@ class EB_LAPACK(EB_ConfigureMake):
         """
 
         # copy build_step.inc file from examples
-        if self.toolkit.comp_family() == toolkit.GCC:
+        if self.toolchain.comp_family() == toolchain.GCC:
             makeinc = 'gfortran'
-        elif self.toolkit.comp_family() == toolkit.INTEL:
+        elif self.toolchain.comp_family() == toolchain.INTEL:
             makeinc = 'ifort'
         else:
             self.log.error("Don't know which build_step.inc file to pick, unknown compiler being used...")
@@ -107,7 +107,7 @@ class EB_LAPACK(EB_ConfigureMake):
 
         # set optimization flags
         fpic = ''
-        if self.toolkit.opts['pic']:
+        if self.toolchain.opts['pic']:
             fpic = '-fPIC'
         self.cfg.update('makeopts', 'OPTS="$FFLAGS -m64" NOOPT="%s -m64 -O0"' % fpic)
 

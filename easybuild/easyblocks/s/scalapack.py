@@ -31,7 +31,7 @@ import os
 import shutil
 from distutils.version import LooseVersion
 
-import easybuild.tools.toolkit as toolkit
+import easybuild.tools.toolchain as toolchain
 from easybuild.easyblocks.blacs import det_interface  #@UnresolvedImport
 from easybuild.easyblocks.configuremake import EB_ConfigureMake  #@UnresolvedImport
 from easybuild.easyblocks.lapack import get_blas_lib  #@UnresolvedImport
@@ -79,7 +79,7 @@ class EB_ScaLAPACK(EB_ConfigureMake):
             mpicc = os.getenv('MPICC')
             mpif77 = os.getenv('MPIF77')
             mpif90 = os.getenv('MPIF90')
-        elif self.toolkit.mpi_type() in [toolkit.OPENMPI, toolkit.MVAPICH2]:
+        elif self.toolchain.mpi_type() in [toolchain.OPENMPI, toolchain.MVAPICH2]:
             mpicc = 'mpicc'
             mpif77 = 'mpif77'
             mpif90 = 'mpif90'
@@ -113,9 +113,9 @@ class EB_ScaLAPACK(EB_ConfigureMake):
 
             # set compilers and options
             noopt = ''
-            if self.toolkit.opts['noopt']:
+            if self.toolchain.opts['noopt']:
                 noopt += " -O0"
-            if self.toolkit.opts['pic']:
+            if self.toolchain.opts['pic']:
                 noopt += " -fPIC"
             extra_makeopts += [
                                'F77="%s"' % mpif77,
@@ -130,7 +130,7 @@ class EB_ScaLAPACK(EB_ConfigureMake):
         else:
 
             # determine interface
-            if self.toolkit.mpi_type() in [toolkit.OPENMPI, toolkit.MVAPICH2]:
+            if self.toolchain.mpi_type() in [toolchain.OPENMPI, toolchain.MVAPICH2]:
                 interface = 'Add_'
             else:
                 self.log.error("Don't know which interface to pick for the MPI library being used.")

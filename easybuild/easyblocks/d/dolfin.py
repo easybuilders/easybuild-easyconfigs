@@ -27,7 +27,7 @@ import re
 import tempfile
 
 import easybuild.tools.environment as env
-import easybuild.tools.toolkit as toolkit
+import easybuild.tools.toolchain as toolchain
 from easybuild.easyblocks.cmakepythonpackage import EB_CMakePythonPackage  #@UnresolvedImport
 from easybuild.tools.modules import get_software_root, get_software_version
 
@@ -49,7 +49,7 @@ class EB_DOLFIN(EB_CMakePythonPackage):
         fflags = os.getenv('FFLAGS')
 
         # fix for "SEEK_SET is #defined but must not be for the C++ binding of MPI. Include mpi.h before stdio.h"
-        if self.toolkit.mpi_type() in [toolkit.INTEL, toolkit.MPICH2]:
+        if self.toolchain.mpi_type() in [toolchain.INTEL, toolchain.MPICH2]:
             cflags += " -DMPICH_IGNORE_CXX_SEEK"
             cxxflags += " -DMPICH_IGNORE_CXX_SEEK"
             fflags += " -DMPICH_IGNORE_CXX_SEEK"
@@ -93,7 +93,7 @@ class EB_DOLFIN(EB_CMakePythonPackage):
         self.cfg.update('configopts', '-DZLIB_LIBRARY=%s' % os.path.join(depsdict['zlib'], "lib", "libz.a"))
 
         # set correct openmp options
-        openmp = self.toolkit.get_openmp_flag()
+        openmp = self.toolchain.get_openmp_flag()
         self.cfg.update('configopts', ' -DOpenMP_CXX_FLAGS="%s"' % openmp)
         self.cfg.update('configopts', ' -DOpenMP_C_FLAGS="%s"' % openmp)
 

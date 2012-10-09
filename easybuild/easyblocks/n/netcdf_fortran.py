@@ -29,7 +29,7 @@ EasyBuild support for building and installing netCDF-Fortran, implemented as an 
 import os
 
 import easybuild.tools.environment as env
-import easybuild.tools.toolkit as toolkit
+import easybuild.tools.toolchain as toolchain
 from easybuild.easyblocks.configuremake import EB_ConfigureMake  #@UnresolvedImport
 
 
@@ -39,13 +39,13 @@ class EB_netCDF_minus_Fortran(EB_ConfigureMake):
     def configure_step(self):
         """Configure build: set config options and configure"""
 
-        if self.toolkit.opts['pic']:
+        if self.toolchain.opts['pic']:
             self.cfg.update('configopts', "--with-pic")
 
         self.cfg.update('configopts', 'FCFLAGS="%s" FC="%s"' % (os.getenv('FFLAGS'), os.getenv('F90')))
 
         # add -DgFortran to CPPFLAGS when building with GCC
-        if self.toolkit.comp_family() == toolkit.GCC:
+        if self.toolchain.comp_family() == toolchain.GCC:
             env.set('CPPFLAGS', "%s -DgFortran" % os.getenv('CPPFLAGS'))
 
         super(EB_netCDF_minus_Fortran, self).configure_step()

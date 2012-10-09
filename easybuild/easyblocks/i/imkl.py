@@ -163,7 +163,7 @@ class EB_imkl(EB_IntelBase):
 
             # compiler defaults to icc, but we could be using gcc to create gimkl.
             makeopts = ''
-            if get_software_root('GCC'):  # can't use toolkit.comp_family, because of dummy toolkit
+            if get_software_root('GCC'):  # can't use toolchain.comp_family, because of dummy toolchain
                 makeopts = 'compiler=gnu '
 
             for i in lis1 + lis2 + lis3:
@@ -176,7 +176,7 @@ class EB_imkl(EB_IntelBase):
                 if i in lis3:
                     # use INSTALL_DIR and SPEC_OPT
                     extramakeopts = ''
-                    if get_software_root('MPICH2'):  # can't use toolkit.mpi_type, because of dummy toolkit
+                    if get_software_root('MPICH2'):  # can't use toolchain.mpi_type, because of dummy toolchain
                         extramakeopts = 'mpi=mpich2'
                     cmd = "make -f makefile libintel64 %s" % extramakeopts
 

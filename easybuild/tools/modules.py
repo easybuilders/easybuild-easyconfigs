@@ -126,9 +126,9 @@ class Modules(object):
                 (name, version) = mod.split('/')
             elif type(mod) == dict:
                 name = mod['name']
-                ## deal with toolkit dependency calls
-                if 'tk' in mod:
-                    version = mod['tk']
+                ## deal with toolchain dependency calls
+                if 'tc' in mod:
+                    version = mod['tc']
                 else:
                     version = mod['version']
             else:
@@ -254,7 +254,7 @@ class Modules(object):
             modtxt = f.read()
             f.close()
         except IOError, err:
-            log.error("Failed to read module file %s to determine toolkit dependencies: %s" % (modfilepath, err))
+            log.error("Failed to read module file %s to determine toolchain dependencies: %s" % (modfilepath, err))
 
         loadregex = re.compile("^\s+module load\s+(.*)$", re.M)
         mods = [mod.split('/') for mod in loadregex.findall(modtxt)]

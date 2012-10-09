@@ -122,12 +122,12 @@ def add_cmdline_options(parser):
                                        "build software with name"),
                                       ('software-version', 'VERSION', 'store',
                                        "build software with version"),
-                                      ('toolkit', 'NAME,VERSION', 'store',
-                                       "build with toolkit (name and version)"),
-                                      ('toolkit-name', 'NAME', 'store',
-                                       "build with toolkit name"),
-                                      ('toolkit-version', 'VERSION', 'store',
-                                       "build with toolkit version"),
+                                      ('toolchain', 'NAME,VERSION', 'store',
+                                       "build with toolchain (name and version)"),
+                                      ('toolchain-name', 'NAME', 'store',
+                                       "build with toolchain name"),
+                                      ('toolchain-version', 'VERSION', 'store',
+                                       "build with toolchain version"),
                                       ('amend', 'VAR=VALUE[,VALUE]', 'append',
                                        "specify additional build parameters (can be used multiple times); " \
                                        "for example: versionprefix=foo or patches=one.patch,two.patch)")
@@ -303,7 +303,7 @@ def main():
         retain_all_deps = True
     
     # process software build specifications (if any), i.e.
-    # software name/version, toolkit name/version, extra patches, ...
+    # software name/version, toolchain name/version, extra patches, ...
     (try_to_generate, software_build_specs) = process_software_build_specs(options)
 
     if len(paths) == 0:
@@ -506,13 +506,13 @@ def processEasyconfig(path, log, onlyBlocks=None, regtest_online=False, validate
             easyconfig['originalSpec'] = path
 
         for d in ec.dependencies():
-            dep = (d['name'], d['tk'])
+            dep = (d['name'], d['tc'])
             log.debug("Adding dependency %s for app %s." % (dep, name))
             easyconfig['dependencies'].append(dep)
 
-        if ec.toolkit.name != 'dummy':
-            dep = (ec.toolkit.name, ec.toolkit.version)
-            log.debug("Adding toolkit %s as dependency for app %s." % (dep, name))
+        if ec.toolchain.name != 'dummy':
+            dep = (ec.toolchain.name, ec.toolchain.version)
+            log.debug("Adding toolchain %s as dependency for app %s." % (dep, name))
             easyconfig['dependencies'].append(dep)
 
         del ec
@@ -643,16 +643,16 @@ def process_software_build_specs(options):
     opts_map = {
                 'name': options.software_name,
                 'version': options.software_version,
-                'toolkit_name': options.toolkit_name,
-                'toolkit_version': options.toolkit_version,
+                'toolchain_name': options.toolchain_name,
+                'toolchain_version': options.toolchain_version,
                }
 
     # try options: enable optional generation of easyconfig
     try_opts_map = {
                     'name': options.try_software_name,
                     'version': options.try_software_version,
-                    'toolkit_name': options.try_toolkit_name,
-                    'toolkit_version': options.try_toolkit_version,
+                    'toolchain_name': options.try_toolchain_name,
+                    'toolchain_version': options.try_toolchain_version,
                    }
 
     # process easy options
@@ -668,26 +668,26 @@ def process_software_build_specs(options):
             # only when a try option is set do we enable generating easyconfigs
             try_to_generate = True
 
-    # process --toolkit --try-toolkit
-    if options.toolkit or options.try_toolkit:
+    # process --toolchain --try-toolchain
+    if options.toolchain or options.try_toolchain:
 
-        if options.toolkit:
-                tk = options.toolkit.split(',')
-                if options.try_toolkit:
-                    warning("Ignoring --try-toolkit, only using --toolkit specification.")
+        if options.toolchain:
+                tc = options.toolchain.split(',')
+                if options.try_toolchain:
+                    warning("Ignoring --try-toolchain, only using --toolchain specification.")
         elif options.try_toollkit:
-                tk = options.try_toolkit.split(',')
+                tc = options.try_toolchain.split(',')
                 try_to_generate = True
         else:
             # shouldn't happen
-            error("Huh, neither --toolkit or --try-toolkit used?")
+            error("Huh, neither --toolchain or --try-toolchain used?")
 
-        if not len(tk) == 2:
-            error("Please specify to toolkit to use as 'name,version' (e.g., 'goalf,1.1.0').")
+        if not len(tc) == 2:
+            error("Please specify to toolchain to use as 'name,version' (e.g., 'goalf,1.1.0').")
 
-        [toolkit_name, toolkit_version] = tk
-        buildopts.update({'toolkit_name': toolkit_name})
-        buildopts.update({'toolkit_version': toolkit_version})
+        [toolchain_name, toolchain_version] = tc
+        buildopts.update({'toolchain_name': toolchain_name})
+        buildopts.update({'toolchain_version': toolchain_version})
 
     # process --amend and --try-amend
     if options.amend or options.try_amend:

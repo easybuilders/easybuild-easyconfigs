@@ -77,7 +77,7 @@ class EB_ATLAS(EB_ConfigureMake):
                                " required to build ATLAS with a full LAPACK library.")
 
         # enable building of shared libraries (requires -fPIC)
-        if self.cfg['sharedlibs'] or self.toolkit.opts['pic']:
+        if self.cfg['sharedlibs'] or self.toolchain.opts['pic']:
             self.log.debug("Enabling -fPIC because we're building shared ATLAS libs, or just because.")
             self.cfg.update('configopts', '-Fa alg -fPIC')
 

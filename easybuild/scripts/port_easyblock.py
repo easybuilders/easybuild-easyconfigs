@@ -172,9 +172,8 @@ def refactor(txt):
                     ('prepare', 'prepare_step'),
                     ('make', 'build_step'),
                     ('make_install', 'install_step'),
-                    ('toolkit', 'get_toolkit'),
-                    ('toolkit_name', 'get_toolkit_name'),
-                    ('toolkit_version', 'get_toolkit_version'),
+                    ('toolkit_name', "toolkit['name']"),
+                    ('toolkit_version', "toolkit['version']"),
                     ('installversion', 'get_installversion'),
                     ('installsize', 'det_installsize'),
                     ('packages', 'extensions_step'),
@@ -190,6 +189,7 @@ def refactor(txt):
                     ('[\'"]startfrom[\'"]', "'start_dir'"),
                     ('def configure', 'def configure_step'),
                     ('sanity_check', 'sanity_check_step'),
+                    ('toolkit', 'toolchain'),
                     ]
 
     totn = 0

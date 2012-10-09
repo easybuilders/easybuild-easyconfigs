@@ -54,7 +54,7 @@ running the following (bash/sh syntax):
     ${EBHOME}/eb --robot ${CFGS} ${CFGS}/h/HPL/HPL-2.0-goalf-1.1.0.eb
 
 This will build and install HPL, after building and installing a GCC-based
-compiler toolkit and all of its dependencies using the default EasyBuild
+compiler toolchain and all of its dependencies using the default EasyBuild
 configuration, which will install to $HOME/.local/easybuild/software.
 
 The entire process should take about an hour on a recent system.

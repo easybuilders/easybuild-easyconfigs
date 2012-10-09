@@ -71,11 +71,11 @@ class Extension(object):
         pass
 
     @property
-    def toolkit(self):
+    def toolchain(self):
         """
-        Toolkit used to build this extension.
+        Toolchain used to build this extension.
         """
-        return self.master.toolkit
+        return self.master.toolchain
 
     def sanity_check_step(self):
         """

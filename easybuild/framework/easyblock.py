@@ -447,11 +447,11 @@ class EasyBlock(object):
         return self.cfg['version']
 
     @property
-    def toolkit(self):
+    def toolchain(self):
         """
-        Toolkit used to build this easyblock
+        Toolchain used to build this easyblock
         """
-        return self.cfg.toolkit
+        return self.cfg.toolchain
 
     #
     # DIRECTORY UTILITY FUNCTIONS
@@ -464,11 +464,11 @@ class EasyBlock(object):
         if not self.build_in_installdir:
             # make a unique build dir
             ## if a tookitversion starts with a -, remove the - so prevent a -- in the path name
-            tkversion = self.toolkit.version
+            tkversion = self.toolchain.version
             if tkversion.startswith('-'):
                 tkversion = tkversion[1:]
 
-            extra = "%s%s-%s%s" % (self.cfg['versionprefix'], self.toolkit.name, tkversion, self.cfg['versionsuffix'])
+            extra = "%s%s-%s%s" % (self.cfg['versionprefix'], self.toolchain.name, tkversion, self.cfg['versionsuffix'])
             localdir = os.path.join(build_path(), self.name, self.version, extra)
 
             ald = os.path.abspath(localdir)
@@ -626,20 +626,20 @@ class EasyBlock(object):
         """
         load = unload = ''
 
-        # Load toolkit
-        if self.toolkit.name != 'dummy':
-            load += self.moduleGenerator.loadModule(self.toolkit.name, self.toolkit.version)
-            unload += self.moduleGenerator.unloadModule(self.toolkit.name, self.toolkit.version)
+        # Load toolchain
+        if self.toolchain.name != 'dummy':
+            load += self.moduleGenerator.loadModule(self.toolchain.name, self.toolchain.version)
+            unload += self.moduleGenerator.unloadModule(self.toolchain.name, self.toolchain.version)
 
         # Load dependencies
         builddeps = self.cfg.builddependencies()
-        for dep in self.toolkit.dependencies:
+        for dep in self.toolchain.dependencies:
             if not dep in builddeps:
-                self.log.debug("Adding %s/%s as a module dependency" % (dep['name'], dep['tk']))
-                load += self.moduleGenerator.loadModule(dep['name'], dep['tk'])
-                unload += self.moduleGenerator.unloadModule(dep['name'], dep['tk'])
+                self.log.debug("Adding %s/%s as a module dependency" % (dep['name'], dep['tc']))
+                load += self.moduleGenerator.loadModule(dep['name'], dep['tc'])
+                unload += self.moduleGenerator.unloadModule(dep['name'], dep['tc'])
             else:
-                self.log.debug("Skipping builddependency %s/%s" % (dep['name'], dep['tk']))
+                self.log.debug("Skipping builddependency %s/%s" % (dep['name'], dep['tc']))
 
         # Force unloading any other modules
         if self.cfg['moduleforceunload']:
@@ -919,12 +919,12 @@ class EasyBlock(object):
         if len(loadedmods) > 0:
             self.log.warning("Loaded modules detected: %s" % loadedmods)
 
-        # Do all dependencies have a toolkit version
-        self.toolkit.add_dependencies(self.cfg.dependencies())
-        if not len(self.cfg.dependencies()) == len(self.toolkit.dependencies):
+        # Do all dependencies have a toolchain version
+        self.toolchain.add_dependencies(self.cfg.dependencies())
+        if not len(self.cfg.dependencies()) == len(self.toolchain.dependencies):
             self.log.debug("dep %s (%s)" % (len(self.cfg.dependencies()), self.cfg.dependencies()))
-            self.log.debug("tk.dep %s (%s)" % (len(self.toolkit.dependencies), self.toolkit.dependencies))
-            self.log.error('Not all dependencies have a matching toolkit version')
+            self.log.debug("tc.dep %s (%s)" % (len(self.toolchain.dependencies), self.toolchain.dependencies))
+            self.log.error('Not all dependencies have a matching toolchain version')
 
         # Check if the application is not loaded at the moment
         (root, env_var) = get_software_root(self.name, with_env_var=True)
@@ -1040,7 +1040,7 @@ class EasyBlock(object):
         """
         Pre-configure step. Set's up the builddir just before starting configure
         """
-        self.toolkit.prepare(self.cfg['onlytkmod'])
+        self.toolchain.prepare(self.cfg['onlytkmod'])
         self.guess_start_dir()
 
     def configure_step(self):

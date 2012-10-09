@@ -41,7 +41,7 @@ from easybuild.tools.ordereddict import OrderedDict
 # we use a tuple here so we can sort them based on the numbers
 MANDATORY = (0, 'mandatory')
 CUSTOM = (1, 'easyblock-specific')
-TOOLKIT = (2, 'toolkit')
+TOOLKIT = (2, 'toolchain')
 BUILD = (3, 'build')
 FILEMANAGEMENT = (4, 'file-management')
 DEPENDENCIES = (5, 'dependencies')
@@ -64,21 +64,21 @@ class EasyConfig(object):
     default_config = [
           ('name', [None, "Name of software", MANDATORY]),
           ('version', [None, "Version of software", MANDATORY]),
-          ('toolkit', [None, 'Name and version of toolkit', MANDATORY]),
+          ('toolchain', [None, 'Name and version of toolchain', MANDATORY]),
           ('description', [None, 'A short description of the software', MANDATORY]),
           ('homepage', [None, 'The homepage of the software', MANDATORY]),
 
-          ('toolkitopts', ['', 'Extra options for compilers', TOOLKIT]),
-          ('onlytkmod', [False,"Boolean/string to indicate if the toolkit should only load " \
+          ('toolchainopts', ['', 'Extra options for compilers', TOOLKIT]),
+          ('onlytkmod', [False,"Boolean/string to indicate if the toolchain should only load " \
                                "the enviornment with module (True) or also set all other " \
                                "variables (False) like compiler CC etc (If string: comma separated" \
                                "list of variables that will be ignored). (Default: False)", TOOLKIT]),
 
           ('easybuildVersion', [None, "EasyBuild-version this spec-file was written for", BUILD]),
-          ('versionsuffix', ['', 'Additional suffix for software version (placed after toolkit name)',
+          ('versionsuffix', ['', 'Additional suffix for software version (placed after toolchain name)',
                              BUILD]),
           ('versionprefix', ['', "Additional prefix for software version (placed before version " \
-                                 "and toolkit name)", BUILD]),
+                                 "and toolchain name)", BUILD]),
           ('runtest', [None, 'Indicates if a test should be run after make; should specify argument ' \
                              'after make (for e.g.,"test" for make test) (Default: None)', BUILD]),
           ('preconfigopts', ['', 'Extra options pre-passed to configure.', BUILD]),
@@ -158,7 +158,7 @@ class EasyConfig(object):
         self.config = dict(copy.deepcopy(self.default_config))
         self.config.update(extra_options)
         self.path = path
-        self.mandatory = ['name', 'version', 'homepage', 'description', 'toolkit']
+        self.mandatory = ['name', 'version', 'homepage', 'description', 'toolchain']
 
         # extend mandatory keys
         for (key, value) in extra_options:
@@ -167,8 +167,8 @@ class EasyConfig(object):
 
         self.log = getLog("EasyConfig")
 
-        # store toolkit
-        self._toolkit = None
+        # store toolchain
+        self._toolchain = None
 
         if not os.path.isfile(path):
             self.log.error("EasyConfig __init__ expected a valid path")
@@ -311,25 +311,25 @@ class EasyConfig(object):
         return self['version']
 
     @property
-    def toolkit(self):
+    def toolchain(self):
         """
-        returns the Toolkit used
+        returns the Toolchain used
         """
-        if self._toolkit:
-            return self._toolkit
+        if self._toolchain:
+            return self._toolchain
 
-        tk = Toolkit(self['toolkit']['name'], self['toolkit']['version'])
-        if self['toolkitopts']:
-            tk.set_options(self['toolkitopts'])
+        tc = Toolkit(self['toolchain']['name'], self['toolchain']['version'])
+        if self['toolchainopts']:
+            tc.set_options(self['toolchainopts'])
 
-        self._toolkit = tk
-        return self._toolkit
+        self._toolchain = tc
+        return self._toolchain
 
     def get_installversion(self):
         """
         return the installation version
         """
-        return det_installversion(self['version'], self.toolkit.name, self.toolkit.version,
+        return det_installversion(self['version'], self.toolchain.name, self.toolchain.version,
                                   self['versionprefix'], self['versionsuffix'])
 
     def dump(self, fp):
@@ -353,7 +353,7 @@ class EasyConfig(object):
         grouped_keys = [
                         ["name", "version", "versionprefix", "versionsuffix"],
                         ["homepage", "description"],
-                        ["toolkit", "toolkitopts"],
+                        ["toolchain", "toolchainopts"],
                         ["sourceURLs", "sources"],
                         ["patches"],
                         ["dependencies"],
@@ -421,7 +421,7 @@ class EasyConfig(object):
         of these attributes, 'name' and 'version' are mandatory
 
         output dict contains these attributes:
-        ['name', 'version', 'suffix', 'dummy', 'tk']
+        ['name', 'version', 'suffix', 'dummy', 'tc']
         """
         # convert tuple to string otherwise python might complain about the formatting
         self.log.debug("Parsing %s as a dependency" % str(dep))
@@ -444,8 +444,8 @@ class EasyConfig(object):
         if not dependency['version']:
             self.log.error('Dependency without version.')
 
-        if not 'tk' in dependency:
-            dependency['tk'] = self.toolkit.get_dependency_version(dependency)
+        if not 'tc' in dependency:
+            dependency['tc'] = self.toolchain.get_dependency_version(dependency)
 
         return dependency
 
@@ -463,19 +463,19 @@ class EasyConfig(object):
         self.config[key][0] = value
 
 
-def det_installversion(version, toolkit_name, toolkit_version, prefix, suffix):
+def det_installversion(version, toolchain_name, toolchain_version, prefix, suffix):
     """
     Determine exact install version, based on supplied parameters.
-    e.g. 1.2.3-goalf-1.1.0-no-OFED or 1.2.3 (for dummy toolkits)
+    e.g. 1.2.3-goalf-1.1.0-no-OFED or 1.2.3 (for dummy toolchains)
     """
 
     installversion = None
 
-    # determine main install version based on toolkit
-    if toolkit_name == 'dummy':
+    # determine main install version based on toolchain
+    if toolchain_name == 'dummy':
         installversion = version
     else:
-        installversion = "%s-%s-%s" % (version, toolkit_name, toolkit_version)
+        installversion = "%s-%s-%s" % (version, toolchain_name, toolchain_version)
 
     # prepend/append prefix/suffix
     installversion = ''.join([x for x in [prefix, installversion, suffix] if x])
@@ -509,8 +509,8 @@ def ec_filename_for(path):
     """
     ec = EasyConfig(path, validate=False)
 
-    fn = "%s-%s.eb" % (ec['name'], det_installversion(ec['version'], ec['toolkit']['name'],
-                                                      ec['toolkit']['version'], ec['versionprefix'],
+    fn = "%s-%s.eb" % (ec['name'], det_installversion(ec['version'], ec['toolchain']['name'],
+                                                      ec['toolchain']['version'], ec['versionprefix'],
                                                       ec['versionsuffix']))
 
     return fn
@@ -592,8 +592,8 @@ def obtain_ec_for(specs, ecs_path, fp, log):
     # create glob patterns based on supplied info
 
     # figure out the install version
-    installver = det_installversion(specs.get('version', '*'), specs.get('toolkit_name', '*'),
-                                    specs.get('toolkit_version', '*'), specs.get('versionprefix', '*'),
+    installver = det_installversion(specs.get('version', '*'), specs.get('toolchain_name', '*'),
+                                    specs.get('toolchain_version', '*'), specs.get('versionprefix', '*'),
                                     specs.get('versionsuffix', '*'))
 
     # find easyconfigs that match a pattern
@@ -620,14 +620,14 @@ def select_or_generate_ec(fp, paths, specs, log):
     Select or generate an easyconfig file with the given requirements, from existing easyconfig files.
 
     If easyconfig files are available for the specified software package,
-    then this function will first try to determine which toolkit to use.
-     * if a toolkit is given, it will use it (possible using a template easyconfig file as base);
-     * if not, and only a single toolkit is available, is will assume it can use that toolkit
-     * else, it fails -- EasyBuild doesn't select between multiple available toolkits
+    then this function will first try to determine which toolchain to use.
+     * if a toolchain is given, it will use it (possible using a template easyconfig file as base);
+     * if not, and only a single toolchain is available, is will assume it can use that toolchain
+     * else, it fails -- EasyBuild doesn't select between multiple available toolchains
 
     Next, it will trim down the selected easyconfig files to a single one,
     based on the following requirements (in order of preference):
-     * toolkit version
+     * toolchain version
      * software version
      * other parameters (e.g. versionprefix, versionsuffix, etc.)
 
@@ -685,65 +685,65 @@ def select_or_generate_ec(fp, paths, specs, log):
 
     # TOOLKIT NAME
 
-    # determine list of unique toolkit names
-    tknames = unique([x[0]['toolkit']['name'] for x in ecs_and_files])
-    log.debug("Found %d unique toolkit names: %s" % (len(tknames), tknames))
+    # determine list of unique toolchain names
+    tknames = unique([x[0]['toolchain']['name'] for x in ecs_and_files])
+    log.debug("Found %d unique toolchain names: %s" % (len(tknames), tknames))
 
-    # if a toolkit was selected, and we have no easyconfig files for it, try and use a template
-    if specs.get('toolkit_name') and not specs['toolkit_name'] in tknames:
+    # if a toolchain was selected, and we have no easyconfig files for it, try and use a template
+    if specs.get('toolchain_name') and not specs['toolchain_name'] in tknames:
         if "TEMPLATE" in tknames:
-            log.info("No easyconfig file for specified toolkit, but template is available.")
+            log.info("No easyconfig file for specified toolchain, but template is available.")
         else:
-            log.error("No easyconfig file for %s with toolkit %s, " \
-                      "and no template available." % (name, specs['toolkit_name']))
+            log.error("No easyconfig file for %s with toolchain %s, " \
+                      "and no template available." % (name, specs['toolchain_name']))
 
-    tkname = specs.pop('toolkit_name', None)
-    handled_params.append('toolkit_name')
+    tkname = specs.pop('toolchain_name', None)
+    handled_params.append('toolchain_name')
 
-    # trim down list according to selected toolkit
+    # trim down list according to selected toolchain
     if tkname in tknames:
-        # known toolkit, so only retain those
+        # known toolchain, so only retain those
         selected_tkname = tkname
     else:
         if len(tknames) == 1 and not tknames[0] == "TEMPLATE":
-            # only one (non-template) toolkit availble, so use that
+            # only one (non-template) toolchain availble, so use that
             tkname = tknames[0]
             selected_tkname = tkname
         else:
-            # fall-back: use template toolkit if a toolkit name was specified
+            # fall-back: use template toolchain if a toolchain name was specified
             if tkname:
                 selected_tkname = "TEMPLATE"
             else:
-                # if multiple toolkits are available, and none is specified, we quit
+                # if multiple toolchains are available, and none is specified, we quit
                 # we can't just pick one, how would we prefer one over the other?
-                log.error("No toolkit name specified, and more than one available: %s." % tknames)
+                log.error("No toolchain name specified, and more than one available: %s." % tknames)
 
-    ecs_and_files = [x for x in ecs_and_files if x[0]['toolkit']['name'] == selected_tkname]
+    ecs_and_files = [x for x in ecs_and_files if x[0]['toolchain']['name'] == selected_tkname]
 
     log.debug("Filtered easyconfigs: %s" % [x[1] for x in ecs_and_files])
 
     # TOOLKIT VERSION
 
-    tkvers = unique([x[0]['toolkit']['version'] for x in ecs_and_files])
-    log.debug("Found %d unique toolkit versions: %s" % (len(tkvers), tkvers))
+    tkvers = unique([x[0]['toolchain']['version'] for x in ecs_and_files])
+    log.debug("Found %d unique toolchain versions: %s" % (len(tkvers), tkvers))
 
-    tkver = specs.pop('toolkit_version', None)
-    handled_params.append('toolkit_version')
+    tkver = specs.pop('toolchain_version', None)
+    handled_params.append('toolchain_version')
     (tkver, selected_tkver) = pick_version(tkver, tkvers, log)
 
-    log.debug("Filtering easyconfigs based on toolkit version '%s'..." % selected_tkver)
-    ecs_and_files = [x for x in ecs_and_files if x[0]['toolkit']['version'] == selected_tkver]
+    log.debug("Filtering easyconfigs based on toolchain version '%s'..." % selected_tkver)
+    ecs_and_files = [x for x in ecs_and_files if x[0]['toolchain']['version'] == selected_tkver]
     log.debug("Filtered easyconfigs: %s" % [x[1] for x in ecs_and_files])
 
-    # add full toolkit specification to specs
+    # add full toolchain specification to specs
     if tkname and tkver:
-        specs.update({'toolkit': {'name': tkname, 'version': tkver}})
-        handled_params.append('toolkit')
+        specs.update({'toolchain': {'name': tkname, 'version': tkver}})
+        handled_params.append('toolchain')
     else:
         if tkname:
-            specs.update({'toolkit_name': tkname})
+            specs.update({'toolchain_name': tkname})
         if tkver:
-            specs.update({'toolkit_version': tkver})
+            specs.update({'toolchain_version': tkver})
 
     # SOFTWARE VERSION
 
@@ -876,27 +876,27 @@ def tweak(src_fn, target_fn, tweaks, log):
 
     log.debug("Contents of original easyconfig file, prior to tweaking:\n%s" % ectxt)
 
-    # determine new toolkit if it's being changed
+    # determine new toolchain if it's being changed
     keys = tweaks.keys()
-    if 'toolkit_name' in keys or 'toolkit_version' in keys:
+    if 'toolchain_name' in keys or 'toolchain_version' in keys:
 
-        tk_regexp = re.compile("^\s*toolkit\s*=\s*(.*)$", re.M)
+        tk_regexp = re.compile("^\s*toolchain\s*=\s*(.*)$", re.M)
 
         res = tk_regexp.search(ectxt)
         if not res:
-            log.error("No toolkit found in easyconfig file %s?" % src_fn)
+            log.error("No toolchain found in easyconfig file %s?" % src_fn)
 
-        toolkit = eval(res.group(1))
+        toolchain = eval(res.group(1))
 
         for key in ['name', 'version']:
-            tk_key = "toolkit_%s" % key
+            tk_key = "toolchain_%s" % key
             if tk_key in keys:
-                toolkit.update({key: tweaks[tk_key]})
+                toolchain.update({key: tweaks[tk_key]})
                 tweaks.pop(tk_key)
 
-        tweaks.update({'toolkit': {'name': toolkit['name'], 'version': toolkit['version']}})
+        tweaks.update({'toolchain': {'name': toolchain['name'], 'version': toolchain['version']}})
 
-        log.debug("New toolkit constructed: %s" % tweaks['toolkit'])
+        log.debug("New toolchain constructed: %s" % tweaks['toolchain'])
 
     additions = []
 

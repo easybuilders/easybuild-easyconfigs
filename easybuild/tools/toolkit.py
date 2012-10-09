@@ -131,11 +131,11 @@ class Toolkit(object):
         mod = Modules()
         self.log.debug("Adding toolkit dependencies")
         for dep in dependencies:
-            if not 'tk' in dep:
-                dep['tk'] = self.get_dependency_version(dep)
+            if not 'tc' in dep:
+                dep['tc'] = self.get_dependency_version(dep)
 
-            if not mod.exists(dep['name'], dep['tk']):
-                self.log.error('No module found for dependency %s/%s' % (dep['name'], dep['tk']))
+            if not mod.exists(dep['name'], dep['tc']):
+                self.log.error('No module found for dependency %s/%s' % (dep['name'], dep['tc']))
             else:
                 self.dependencies.append(dep)
                 self.log.debug('Added toolkit dependency %s' % dep)

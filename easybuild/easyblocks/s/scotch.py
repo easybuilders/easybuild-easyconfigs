@@ -31,7 +31,7 @@ import re
 import sys
 import shutil
 
-import easybuild.tools.toolkit as toolkit
+import easybuild.tools.toolchain as toolchain
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.tools.filetools import run_cmd, copytree
 
@@ -43,10 +43,10 @@ class EB_SCOTCH(EasyBlock):
         """Configure SCOTCH build: locate the template makefile, copy it to a general Makefile.inc and patch it."""
 
         # pick template makefile
-        comp_fam = self.toolkit.comp_family()
-        if comp_fam == toolkit.INTEL:
+        comp_fam = self.toolchain.comp_family()
+        if comp_fam == toolchain.INTEL:
             makefilename = 'Makefile.inc.x86-64_pc_linux2.icc'
-        elif comp_fam == toolkit.GCC:
+        elif comp_fam == toolchain.GCC:
             makefilename = 'Makefile.inc.x86-64_pc_linux2'
         else:
             self.log.error("Unknown compiler family used: %s" % comp_fam)
@@ -90,12 +90,12 @@ class EB_SCOTCH(EasyBlock):
         ccd = os.environ['MPICC']
 
         cflags = "-fPIC -O3 -DCOMMON_FILE_COMPRESS_GZ -DCOMMON_PTHREAD -DCOMMON_RANDOM_FIXED_SEED -DSCOTCH_RENAME"
-        if self.toolkit.comp_family() == toolkit.GCC:
+        if self.toolchain.comp_family() == toolchain.GCC:
             cflags += " -Drestrict=__restrict"
         else:
             cflags += " -restrict -DIDXSIZE64"
 
-        if not self.toolkit.mpi_type() == toolkit.INTEL:
+        if not self.toolchain.mpi_type() == toolchain.INTEL:
             cflags += " -DSCOTCH_PTHREAD"
 
         # actually build

@@ -78,7 +78,7 @@ class EB_HPL(EB_ConfigureMake):
 
         for envvar in ['MPICC', 'LIBLAPACK_MT', 'CPPFLAGS', 'LDFLAGS', 'CFLAGS']:
             if not os.getenv(envvar):
-                self.log.error("Required environment variable %s not found (no toolkit used?)." % envvar)
+                self.log.error("Required environment variable %s not found (no toolchain used?)." % envvar)
 
         # build dir
         extra_makeopts = 'TOPdir="%s" ' % self.cfg['start_dir']

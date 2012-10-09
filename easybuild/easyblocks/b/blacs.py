@@ -31,7 +31,7 @@ import re
 import os
 import shutil
 
-import easybuild.tools.toolkit as toolkit
+import easybuild.tools.toolchain as toolchain
 from easybuild.easyblocks.configuremake import EB_ConfigureMake  #@UnresolvedImport
 from easybuild.tools.filetools import run_cmd
 from easybuild.tools.modules import get_software_root
@@ -80,12 +80,12 @@ class EB_BLACS(EB_ConfigureMake):
 
         # determine MPI base dir and lib
         known_mpis = {
-                      toolkit.OPENMPI: "-L$(MPILIBdir) -lmpi_f77",
-                      toolkit.MVAPICH2: "$(MPILIBdir)/libmpich.a $(MPILIBdir)/libfmpich.a " + \
+                      toolchain.OPENMPI: "-L$(MPILIBdir) -lmpi_f77",
+                      toolchain.MVAPICH2: "$(MPILIBdir)/libmpich.a $(MPILIBdir)/libfmpich.a " + \
                                         "$(MPILIBdir)/libmpl.a -lpthread"
                      }
 
-        mpi_type = self.toolkit.mpi_type()
+        mpi_type = self.toolchain.mpi_type()
 
         base, mpilib = None, None
         if mpi_type in known_mpis.keys():

@@ -50,12 +50,12 @@ class EB_ParMETIS(EasyBlock):
 
             self.cfg.update('configopts', '-DMETIS_PATH=../metis -DGKLIB_PATH=../metis/GKlib')
 
-            self.cfg.update('configopts', '-DOPENMP="%s"' % self.toolkit.get_openmp_flag())
+            self.cfg.update('configopts', '-DOPENMP="%s"' % self.toolchain.get_openmp_flag())
 
-            if self.toolkit.opts['usempi']:
+            if self.toolchain.opts['usempi']:
                 self.cfg.update('configopts', '-DCMAKE_C_COMPILER="$MPICC"')
 
-            if self.toolkit.opts['pic']:
+            if self.toolchain.opts['pic']:
                 self.cfg.update('configopts', '-DCMAKE_C_FLAGS="-fPIC"')
 
             self.parmetis_builddir = 'build'
@@ -77,8 +77,8 @@ class EB_ParMETIS(EasyBlock):
 
         self.cfg.update('makeopts', 'LIBDIR=""')
 
-        if self.toolkit.opts['usempi']:
-            if self.toolkit.opts['pic']:
+        if self.toolchain.opts['usempi']:
+            if self.toolchain.opts['pic']:
                 self.cfg.update('makeopts', 'CC="$MPICC -fPIC"')
             else:
                 self.cfg.update('makeopts', 'CC="$MPICC"')

@@ -23,7 +23,7 @@ EasyBuild support for Trilinos, implemented as an easyblock
 import os
 import re
 
-import easybuild.tools.toolkit as toolkit
+import easybuild.tools.toolchain as toolchain
 from easybuild.easyblocks.cmake import EB_CMake  #@UnresolvedImport
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.modules import get_software_root
@@ -58,7 +58,7 @@ class EB_Trilinos(EB_CMake):
         cxxflags = os.getenv('CXXFLAGS')
         fflags = os.getenv('FFLAGS')
 
-        if self.toolkit.mpi_type() in [toolkit.INTEL, toolkit.MPICH2]:
+        if self.toolchain.mpi_type() in [toolchain.INTEL, toolchain.MPICH2]:
             cflags += " -DMPICH_IGNORE_CXX_SEEK"
             cxxflags += " -DMPICH_IGNORE_CXX_SEEK"
             fflags += " -DMPICH_IGNORE_CXX_SEEK"
@@ -72,7 +72,7 @@ class EB_Trilinos(EB_CMake):
             self.cfg.update('configopts', "-DTrilinos_ENABLE_OpenMP:BOOL=ON")
 
         # MPI
-        if self.toolkit.opts['usempi']:
+        if self.toolchain.opts['usempi']:
             self.cfg.update('configopts', "-DTPL_ENABLE_MPI:BOOL=ON")
 
         # shared libraries
@@ -82,7 +82,7 @@ class EB_Trilinos(EB_CMake):
             self.cfg.update('configopts', "-DBUILD_SHARED_LIBS:BOOL=OFF")
 
         # release or debug get_version
-        if self.toolkit.opts['debug']:
+        if self.toolchain.opts['debug']:
             self.cfg.update('configopts', "-DCMAKE_BUILD_TYPE:STRING=DEBUG")
         else:
             self.cfg.update('configopts', "-DCMAKE_BUILD_TYPE:STRING=RELEASE")
@@ -97,12 +97,12 @@ class EB_Trilinos(EB_CMake):
         for dep in ["BLAS", "LAPACK"]:
             self.cfg.update('configopts', '-DTPL_ENABLE_%s:BOOL=ON' % dep)
             libdirs = os.getenv('%s_LIB_DIR' % dep)
-            if self.toolkit.comp_family() == toolkit.GCC:
+            if self.toolchain.comp_family() == toolchain.GCC:
                 libdirs += ";%s/lib64" % get_software_root('GCC')
             self.cfg.update('configopts', '-D%s_LIBRARY_DIRS="%s"' % (dep, libdirs))
             libs = os.getenv('%s_MT_STATIC_LIBS' % dep).split(',')
             lib_names = ';'.join([lib_re.search(l).group(1) for l in libs])
-            if self.toolkit.comp_family() == toolkit.GCC:
+            if self.toolchain.comp_family() == toolchain.GCC:
                 # explicitely specify static lib!
                 lib_names += ";libgfortran.a"
             self.cfg.update('configopts', '-D%s_LIBRARY_NAMES="%s"' % (dep, lib_names))

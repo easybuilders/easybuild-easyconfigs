@@ -62,7 +62,7 @@ class EB_icc(EB_IntelBase):
         """Customize paths to check and add in environment.
         """
         if self.cfg['m32']:
-            # 32-bit toolkit
+            # 32-bit toolchain
             dirmap = {
                       'PATH': ['bin', 'bin/ia32', 'tbb/bin/ia32'],
                       'LD_LIBRARY_PATH': ['lib', 'lib/ia32'],

@@ -30,7 +30,7 @@ import os
 import shutil
 from distutils.version import LooseVersion
 
-import easybuild.tools.toolkit as toolkit
+import easybuild.tools.toolchain as toolchain
 from easybuild.easyblocks.configuremake import EB_ConfigureMake  #@UnresolvedImport
 from easybuild.framework.extension import Extension
 from easybuild.tools.filetools import extract_file, apply_patch, run_cmd
@@ -237,12 +237,12 @@ class EB_FortranPythonPackage(EB_DefaultPythonPackage):
     """Extends EB_DefaultPythonPackage to add a Fortran compiler to the make call"""
 
     def build_step(self):
-        comp_fam = self.toolkit.comp_family()
+        comp_fam = self.toolchain.comp_family()
 
-        if comp_fam == toolkit.INTEL:
+        if comp_fam == toolchain.INTEL:
             cmd = "python setup.py build --compiler=intel --fcompiler=intelem"
 
-        elif comp_fam == toolkit.GCC:
+        elif comp_fam == toolchain.GCC:
             cmdprefix = ""
             ldflags = os.getenv('LDFLAGS')
             if ldflags:

@@ -23,15 +23,15 @@
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
 """
-EasyBuild support for installing compiler toolkits, implemented as an easyblock
+EasyBuild support for installing compiler toolchains, implemented as an easyblock
 """
 
 from easybuild.framework.easyblock import EasyBlock
 
 
-class EB_Toolkit(EasyBlock):
+class EB_Toolchain(EasyBlock):
     """
-    Compiler toolkit: generate module file only, nothing to build/install
+    Compiler toolchain: generate module file only, nothing to build/install
     """
 
     def configure_step(self):
@@ -48,6 +48,6 @@ class EB_Toolkit(EasyBlock):
 
     def sanity_check_step(self):
         """
-        As a toolkit doesn't install anything really, this is always true
+        As a toolchain doesn't install anything really, this is always true
         """
         self.sanityCheckOK = True

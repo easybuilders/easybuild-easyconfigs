@@ -26,7 +26,7 @@ import re
 from distutils.version import LooseVersion
 
 import easybuild.tools.environment as env
-import easybuild.tools.toolkit as toolkit
+import easybuild.tools.toolchain as toolchain
 from easybuild.easyblocks.configuremake import EB_ConfigureMake  #@UnresolvedImport
 from easybuild.framework.easyconfig import BUILD, CUSTOM
 from easybuild.tools.filetools import run_cmd
@@ -84,18 +84,18 @@ class EB_PETSc(EB_ConfigureMake):
             self.cfg.update('configopts', '--with-cxxflags="%s"' % os.getenv('CXXFLAGS'))
             self.cfg.update('configopts', '--with-fcflags="%s"' % os.getenv('F90FLAGS'))
 
-            if not self.toolkit.comp_family() == toolkit.GCC:
+            if not self.toolchain.comp_family() == toolchain.GCC:
                 self.cfg.update('configopts', '--with-gnu-compilers=0')
 
             # MPI
-            if self.toolkit.opts['usempi']:
+            if self.toolchain.opts['usempi']:
                 self.cfg.update('configopts', '--with-mpi=1')
 
             # build options
             self.cfg.update('configopts', '--with-build-step-np=%s' % self.cfg['parallel'])
             self.cfg.update('configopts', '--with-shared-libraries=%d' % self.cfg['shared_libs'])
-            self.cfg.update('configopts', '--with-debugging=%d' % self.toolkit.opts['debug'])
-            self.cfg.update('configopts', '--with-pic=%d' % self.toolkit.opts['pic'])
+            self.cfg.update('configopts', '--with-debugging=%d' % self.toolchain.opts['debug'])
+            self.cfg.update('configopts', '--with-pic=%d' % self.toolchain.opts['pic'])
             self.cfg.update('configopts', '--with-x=0 --with-windows-graphics=0')
 
             # PAPI support
