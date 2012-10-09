@@ -415,7 +415,7 @@ def run_cmd_qa(cmd, qa, no_qa=None, log_ok=True, log_all=False, simple=False, re
     # - replace whitespace
     # - replace newline
 
-    def escapeSpecial(string):
+    def escape_special(string):
         return re.sub(r"([\+\?\(\)\[\]\*\.\\\$])" , r"\\\1", string)
 
     split = '[\s\n]+'
