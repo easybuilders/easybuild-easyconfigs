@@ -629,10 +629,10 @@ def modifyEnv(old, new):
             ## hmm, smart checking with debug logging
             if not new[key] == old[key]:
                 log.debug("Key in new environment found that is different from old one: %s (%s)" % (key, new[key]))
-                env.set(key, new[key])
+                env.setvar(key, new[key])
         else:
             log.debug("Key in new environment found that is not in old one: %s (%s)" % (key, new[key]))
-            env.set(key, new[key])
+            env.setvar(key, new[key])
 
     for key in oldKeys:
         if not key in newKeys:

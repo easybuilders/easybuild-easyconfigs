@@ -31,7 +31,7 @@ class EB_Velvet(EB_ConfigureMake):
         srcdir = self.cfg['start_dir']
         destdir = os.path.join(self.installdir, 'bin')
         srcfile = None
-	# Get executable files: for i in $(find . -maxdepth 1 -type f -perm +111 -print | sed -e 's/\.\///g' | awk '{print "\""$0"\""}' | grep -vE "\.sh|\.html"); do echo -ne "$i, "; done && echo
+        # Get executable files: for i in $(find . -maxdepth 1 -type f -perm +111 -print | sed -e 's/\.\///g' | awk '{print "\""$0"\""}' | grep -vE "\.sh|\.html"); do echo -ne "$i, "; done && echo
         try:
             os.makedirs(destdir)
             for filename in ["velveth", "velvetg"]:

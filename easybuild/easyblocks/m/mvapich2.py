@@ -83,8 +83,8 @@ class EB_MVAPICH2(EB_ConfigureMake):
             envvar_val = os.getenv(envvar)
             if envvar_val:
                 if not os.getenv(new_envvar):
-                    env.set(new_envvar, envvar_val)
-                    env.set(envvar, '')
+                    env.setvar(new_envvar, envvar_val)
+                    env.setvar(envvar, '')
                 else:
                     self.log.error("Both %(ev)s and %(nev)s set, can I overwrite %(nev)s with %(ev)s (%(evv)s) ?" %
                                      {

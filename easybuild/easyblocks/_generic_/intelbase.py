@@ -96,7 +96,7 @@ class EB_IntelBase(EasyBlock):
             self.log.error("Can't find license at %s" % self.license)
 
         # set INTEL_LICENSE_FILE
-        env.set("INTEL_LICENSE_FILE", self.license)
+        env.setvar("INTEL_LICENSE_FILE", self.license)
 
         # patch install scripts with randomly suffixed intel hom subdir
         for fn in ["install.sh", "pset/install.sh", "pset/iat/iat_install.sh", 
@@ -153,14 +153,14 @@ CONTINUE_WITH_OPTIONAL_ERROR=yes
             self.log.exception("Directory %s can't be created" % (tmpdir))
         tmppathopt = ''
         if self.cfg['usetmppath']:
-            env.set('TMP_PATH', tmpdir)
+            env.setvar('TMP_PATH', tmpdir)
             tmppathopt = "-t %s" % tmpdir
 
         # set some extra env variables
-        env.set('LOCAL_INSTALL_VERBOSE','1')
-        env.set('VERBOSE_MODE', '1')
+        env.setvar('LOCAL_INSTALL_VERBOSE','1')
+        env.setvar('VERBOSE_MODE', '1')
 
-        env.set('INSTALL_PATH', self.installdir)
+        env.setvar('INSTALL_PATH', self.installdir)
 
         # perform installation
         cmd = "./install.sh %s -s %s" % (tmppathopt, silentcfg)

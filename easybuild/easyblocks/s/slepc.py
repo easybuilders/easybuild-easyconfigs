@@ -70,7 +70,7 @@ class EB_SLEPc(EB_ConfigureMake):
             self.log.error("PETSc module not loaded?")
 
         # set SLEPC_DIR environment variable
-        env.set('SLEPC_DIR', self.cfg['start_dir'])
+        env.setvar('SLEPC_DIR', self.cfg['start_dir'])
         self.log.debug('SLEPC_DIR: %s' % os.getenv('SLEPC_DIR'))
 
         # optional dependencies
@@ -97,7 +97,7 @@ class EB_SLEPc(EB_ConfigureMake):
 
         # set default PETSC_ARCH if required
         if not os.getenv('PETSC_ARCH'):
-            env.set('PETSC_ARCH' , 'arch-installed-petsc')
+            env.setvar('PETSC_ARCH' , 'arch-installed-petsc')
 
     def make_module_req_guess(self):
         """Specify correct LD_LIBRARY_PATH and CPATH for SLEPc installation."""

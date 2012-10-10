@@ -84,7 +84,7 @@ class EB_WRF(EasyBlock):
             if not (hdf5 or parallel_hdf5):
                 self.log.error("Parallel HDF5 module not loaded?")
             else:
-                env.set('PHDF5', hdf5)
+                env.setvar('PHDF5', hdf5)
         else:
             self.log.info("HDF5 module not loaded, assuming that's OK...")
 
@@ -92,8 +92,8 @@ class EB_WRF(EasyBlock):
         jasper = get_software_root('JasPer')
         jasperlibdir = os.path.join(jasper, "lib")
         if jasper:
-            env.set('JASPERINC', os.path.join(jasper, "include"))
-            env.set('JASPERLIB', jasperlibdir)
+            env.setvar('JASPERINC', os.path.join(jasper, "include"))
+            env.setvar('JASPERLIB', jasperlibdir)
 
         else:
             if os.getenv('JASPERINC') or os.getenv('JASPERLIB'):
@@ -102,7 +102,7 @@ class EB_WRF(EasyBlock):
                 self.log.info("JasPer module not loaded, assuming that's OK...")
 
         # enable support for large file support in netCDF
-        env.set('WRFIO_NCD_LARGE_FILE_SUPPORT', '1')
+        env.setvar('WRFIO_NCD_LARGE_FILE_SUPPORT', '1')
 
         # patch arch/Config_new.pl script, so that run_cmd_qa receives all output to answer questions
         patch_perl_script_autoflush(os.path.join("arch", "Config_new.pl"))
@@ -176,7 +176,7 @@ class EB_WRF(EasyBlock):
                 for envvar in ['CFLAGS', 'FFLAGS']:
                     val = os.getenv(envvar)
                     if '-O3' in val:
-                        env.set(envvar, '%s -heap-arrays' % val)
+                        env.setvar(envvar, '%s -heap-arrays' % val)
                         self.log.info("Updated %s to '%s'" % (envvar, os.getenv(envvar)))
 
             # replace -O3 with desired optimization options

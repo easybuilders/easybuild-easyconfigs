@@ -109,8 +109,8 @@ class EB_WPS(EasyBlock):
         jasper = get_software_root('JasPer')
         jasperlibdir = os.path.join(jasper, "lib")
         if jasper:
-            env.set('JASPERINC', os.path.join(jasper, "include"))
-            env.set('JASPERLIB', jasperlibdir)
+            env.setvar('JASPERINC', os.path.join(jasper, "include"))
+            env.setvar('JASPERLIB', jasperlibdir)
         else:
             self.log.error("JasPer module not loaded?")
 

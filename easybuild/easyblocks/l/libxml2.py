@@ -25,7 +25,7 @@ implemented as an easyblock.
 import os
 
 from easybuild.easyblocks.configuremake import EB_ConfigureMake  #@UnresolvedImport
-from easybuild.easyblocks.pythonpackage import EB_PythonPackage
+from easybuild.easyblocks.pythonpackage import EB_PythonPackage  #@UnresolvedImport
 
 
 class EB_libxml2(EB_ConfigureMake, EB_PythonPackage):

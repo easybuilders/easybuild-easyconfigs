@@ -72,12 +72,12 @@ class EB_PythonPackage(EasyBlock):
         mkdir(abs_pylibdir, parents=True)
 
         pythonpath = os.getenv('PYTHONPATH')
-        env.set('PYTHONPATH', "%s:%s" % (abs_pylibdir, pythonpath))
+        env.setvar('PYTHONPATH', "%s:%s" % (abs_pylibdir, pythonpath))
 
         cmd = "python setup.py install --prefix=%s %s" % (self.installdir, self.cfg['installopts'])
         run_cmd(cmd, log_all=True, simple=True)
 
-        env.set('PYTHONPATH', pythonpath)
+        env.setvar('PYTHONPATH', pythonpath)
 
     def sanity_check_step(self, custom_paths=None, custom_commands=None):
         """

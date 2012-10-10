@@ -31,16 +31,16 @@ class EB_OpenSSL(EB_ConfigureMake):
     """Support for building OpenSSL"""
 
     def configure_step(self, cmd_prefix=''):
-         """
-         Configure step
-         """
+        """
+        Configure step
+        """
  
-         cmd = "%s %s./config --prefix=%s threads shared %s" % (self.cfg['preconfigopts'], cmd_prefix,
-                                                                self.installdir, self.cfg['configopts'])
- 
-         (out, _) = run_cmd(cmd, log_all=True, simple=False)
- 
-         return out
+        cmd = "%s %s./config --prefix=%s threads shared %s" % (self.cfg['preconfigopts'], cmd_prefix,
+                                                               self.installdir, self.cfg['configopts'])
+
+        (out, _) = run_cmd(cmd, log_all=True, simple=False)
+
+        return out
 
     def sanity_check_step(self):
         """Custom sanity check"""

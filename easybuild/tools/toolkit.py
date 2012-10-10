@@ -221,13 +221,13 @@ class Toolkit(object):
                 continue
 
             self.log.debug("Setting environment variable %s to %s" % (key, val))
-            env.set(key, val)
+            env.setvar(key, val)
 
             # also set unique named variables that can be used in Makefiles
             # - so you can have 'CFLAGS = $(EBVARCFLAGS)'
             # -- 'CLFLAGS = $(CFLAGS)' gives  '*** Recursive variable `CFLAGS'
             # references itself (eventually).  Stop' error
-            env.set("EBVAR%s" % key, val)
+            env.setvar("EBVAR%s" % key, val)
 
 
     def _getOptimalArchitecture(self):
@@ -960,10 +960,10 @@ class Toolkit(object):
         if mpi_type == INTEL:
 
             # set temporary dir for mdp
-            env.set('I_MPI_MPD_TMPDIR', "/tmp")
+            env.setvar('I_MPI_MPD_TMPDIR', "/tmp")
 
             # set PBS_ENVIRONMENT, so that --file option for mpdboot isn't stripped away
-            env.set('PBS_ENVIRONMENT', "PBS_BATCH_MPI")
+            env.setvar('PBS_ENVIRONMENT', "PBS_BATCH_MPI")
 
             # create mpdboot file
             fn = "/tmp/mpdboot"

@@ -46,7 +46,7 @@ def reset_changes():
     changes = {}
 
 
-def set(key, value):
+def setvar(key, value):
     """
     put key in the environment with value
     tracks added keys until write_changes has been called

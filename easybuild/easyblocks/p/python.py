@@ -33,6 +33,7 @@ from distutils.version import LooseVersion
 import easybuild.tools.toolkit as toolchain
 from easybuild.easyblocks.configuremake import EB_ConfigureMake  #@UnresolvedImport
 from easybuild.framework.extension import Extension
+from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.filetools import extract_file, apply_patch, run_cmd
 from easybuild.tools.modules import get_software_root
 

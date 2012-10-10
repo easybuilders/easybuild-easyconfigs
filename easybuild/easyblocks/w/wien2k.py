@@ -234,7 +234,7 @@ class EB_WIEN2k(EasyBlock):
                 self.log.error("List of URLs for testdata not provided.")
 
             path = os.getenv('PATH')
-            env.set('PATH', "%s:%s" % (self.installdir, path))
+            env.setvar('PATH', "%s:%s" % (self.installdir, path))
 
             try:
                 cwd = os.getcwd()
@@ -276,7 +276,7 @@ class EB_WIEN2k(EasyBlock):
                 self.log.error("Failed to run WIEN2k benchmark tests: %s" % err)
 
             # reset original path
-            env.set('PATH', path)
+            env.setvar('PATH', path)
 
             self.log.debug("Current dir: %s" % os.getcwd())
 

@@ -55,12 +55,12 @@ class EB_OpenFOAM(EasyBlock):
         """Configure OpenFOAM build by setting appropriate environment variables."""
 
         # installation directory
-        env.set("FOAM_INST_DIR", self.installdir)
+        env.setvar("FOAM_INST_DIR", self.installdir)
 
         # third party directory
         self.thrdpartydir = "ThirdParty-%s" % self.version
         os.symlink(os.path.join("..", self.thrdpartydir), self.thrdpartydir)
-        env.set("WM_THIRD_PARTY_DIR", os.path.join(self.installdir, self.thrdpartydir))
+        env.setvar("WM_THIRD_PARTY_DIR", os.path.join(self.installdir, self.thrdpartydir))
 
         # compiler
         comp_fam = self.toolchain.comp_family()
@@ -77,7 +77,7 @@ class EB_OpenFOAM(EasyBlock):
         else:
             self.log.error("Unknown compiler family, don't know how to set WM_COMPILER")
 
-        env.set("WM_COMPILER",self.wm_compiler)
+        env.setvar("WM_COMPILER",self.wm_compiler)
 
         # type of MPI
         mpi_type = self.toolchain.mpi_type()
@@ -97,12 +97,12 @@ class EB_OpenFOAM(EasyBlock):
         else:
             self.log.error("Unknown MPI, don't know how to set MPI_ARCH_PATH, WM_MPLIB or FOAM_MPI_LIBBIN")
 
-        env.set("WM_MPLIB", self.wm_mplib)
-        env.set("MPI_ARCH_PATH", self.mpipath)
-        env.set("FOAM_MPI_LIBBIN", self.mpipath)
+        env.setvar("WM_MPLIB", self.wm_mplib)
+        env.setvar("MPI_ARCH_PATH", self.mpipath)
+        env.setvar("FOAM_MPI_LIBBIN", self.mpipath)
 
         # parallel build spec
-        env.set("WM_NCOMPPROCS", str(self.cfg['parallel']))
+        env.setvar("WM_NCOMPPROCS", str(self.cfg['parallel']))
 
     def build_step(self):
         """Build OpenFOAM using make after sourcing script to set environment."""

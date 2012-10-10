@@ -191,10 +191,10 @@ class EB_imkl(EB_IntelBase):
                         self.log.exception("Creating temporary directory failed")
 
                     # always set INSTALL_DIR, SPEC_OPT, COPTS and CFLAGS
-                    env.set('INSTALL_DIR', tmpbuild)
-                    env.set('SPEC_OPT', opt)
-                    env.set('COPTS', opt)
-                    env.set('CFLAGS', opt)
+                    env.setvar('INSTALL_DIR', tmpbuild)
+                    env.setvar('SPEC_OPT', opt)
+                    env.setvar('COPTS', opt)
+                    env.setvar('CFLAGS', opt)
 
                     try:
                         intdir = os.path.join(interfacedir, i)
@@ -310,9 +310,9 @@ class EB_imkl(EB_IntelBase):
                         self.log.exception("Creating temporary directory failed")
 
                     # always set INSTALL_DIR, SPEC_OPT and CFLAGS
-                    env.set('INSTALL_DIR', tmpbuild)
-                    env.set('SPEC_OPT', opt)
-                    env.set('CFLAGS', opt)
+                    env.setvar('INSTALL_DIR', tmpbuild)
+                    env.setvar('SPEC_OPT', opt)
+                    env.setvar('CFLAGS', opt)
 
                     try:
                         intdir = os.path.join(interfacedir, i)

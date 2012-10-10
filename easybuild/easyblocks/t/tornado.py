@@ -22,11 +22,7 @@
 EasyBuild support for installing Tornado, implemented as an easyblock
 """
 
-import os
-import shutil
-import glob
-
-from easybuild.easyblocks.packedbinary import EB_PackedBinary
+from easybuild.easyblocks.packedbinary import EB_PackedBinary  #@UnresolvedImport
 
 class EB_Tornado(EB_PackedBinary):
     """EasyBlock for Tornado"""

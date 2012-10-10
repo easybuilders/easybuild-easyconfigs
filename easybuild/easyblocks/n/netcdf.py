@@ -89,7 +89,7 @@ def set_netcdf_env_vars(log):
     if not netcdf:
         log.error("netCDF module not loaded?")
     else:
-        env.set('NETCDF', netcdf)
+        env.setvar('NETCDF', netcdf)
         log.debug("Set NETCDF to %s" % netcdf)
         netcdff = get_software_root('netCDF-Fortran')
         netcdf_ver = get_software_version('netCDF')
@@ -97,7 +97,7 @@ def set_netcdf_env_vars(log):
             if LooseVersion(netcdf_ver) >= LooseVersion("4.2"):
                 log.error("netCDF v4.2 no longer supplies Fortran library, also need netCDF-Fortran")
         else:
-            env.set('NETCDFF', netcdff)
+            env.setvar('NETCDFF', netcdff)
             log.debug("Set NETCDFF to %s" % netcdff)
 
 def get_netcdf_module_set_cmds(log):

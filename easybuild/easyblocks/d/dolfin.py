@@ -192,8 +192,8 @@ class EB_DOLFIN(EB_CMakePythonPackage):
         # set cache/error dirs for Instant
         instant_cache_dir = os.path.join(tempfile.gettempdir(), '.instant', 'cache')
         instant_error_dir = os.path.join(tempfile.gettempdir(), '.instant', 'error')
-        env.set("INSTANT_CACHE_DIR",  instant_cache_dir)
-        env.set("INSTANT_ERROR_DIR",  instant_error_dir)
+        env.setvar("INSTANT_CACHE_DIR",  instant_cache_dir)
+        env.setvar("INSTANT_ERROR_DIR",  instant_error_dir)
         try:
             os.makedirs(instant_cache_dir)
             os.makedirs(instant_error_dir)

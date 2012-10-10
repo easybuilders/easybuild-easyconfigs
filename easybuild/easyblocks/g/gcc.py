@@ -281,13 +281,13 @@ class EB_GCC(EB_ConfigureMake):
 
             # register built GCC as compiler to use for stage 2/3
             path = "%s/bin:%s" % (self.stage1installdir, os.getenv('PATH'))
-            env.set('PATH', path)
+            env.setvar('PATH', path)
 
             ld_lib_path = "%(dir)s/lib64:%(dir)s/lib:%(val)s" % {
                                                                  'dir': self.stage1installdir,
                                                                  'val': os.getenv('LD_LIBRARY_PATH')
                                                                 }
-            env.set('LD_LIBRARY_PATH', ld_lib_path)
+            env.setvar('LD_LIBRARY_PATH', ld_lib_path)
 
             #
             # STAGE 2: build GMP/PPL/CLooG for stage 3
@@ -387,7 +387,7 @@ class EB_GCC(EB_ConfigureMake):
                         incpath = os.path.join(stage2prefix, 'include')
 
                         cppflags = os.getenv('CPPFLAGS', '')
-                        env.set('CPPFLAGS', "%s -L%s -I%s " % (cppflags, libpath, incpath))
+                        env.setvar('CPPFLAGS', "%s -L%s -I%s " % (cppflags, libpath, incpath))
 
             #
             # STAGE 3: bootstrap build of final GCC (with PPL/CLooG support)

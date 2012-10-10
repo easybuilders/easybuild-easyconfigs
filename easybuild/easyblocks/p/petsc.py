@@ -169,7 +169,7 @@ class EB_PETSc(EB_ConfigureMake):
                                )
 
             # set PETSC_DIR for configure (env) and build_step
-            env.set('PETSC_DIR', self.cfg['start_dir'])
+            env.setvar('PETSC_DIR', self.cfg['start_dir'])
             self.cfg.update('makeopts', 'PETSC_DIR=%s' % self.cfg['start_dir'])
 
             if self.cfg['sourceinstall']:

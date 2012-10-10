@@ -18,14 +18,12 @@
 # You should have received a copy of the GNU General Public License
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
-import os
 from copy import deepcopy
 from unittest import TestCase, TestSuite
 
 import easybuild.tools.modules as modules
 import easybuild.build as build
 from easybuild.tools.build_log import EasyBuildError, getLog
-from easybuild.tools.modules import Modules
 
 orig_modules = modules.Modules
 base_easyconfig_dir = "easybuild/test/easyconfigs/"

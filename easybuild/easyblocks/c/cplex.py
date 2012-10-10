@@ -57,7 +57,7 @@ class EB_CPLEX(EB_Binary):
         except OSError, err:
             self.log.exception("Failed to prepare for installation: %s" % err)
 
-        env.set('IATEMPDIR', tmpdir)
+        env.setvar('IATEMPDIR', tmpdir)
         dst = os.path.join(self.builddir, self.src[0]['name'])
 
         # Run the source

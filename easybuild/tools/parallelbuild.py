@@ -45,7 +45,6 @@ def build_easyconfigs_in_parallel(build_command, easyconfigs, output_dir, log):
     # dependencies have already been resolved,
     # so one can linearly walk over the list and use previous job id's
     jobs = []
-    cnt = 0
     for ec in easyconfigs:
         # This is very important, otherwise we might have race conditions
         # e.g. GCC-4.5.3 finds cloog.tar.gz but it was incorrectly downloaded by GCC-4.6.3
