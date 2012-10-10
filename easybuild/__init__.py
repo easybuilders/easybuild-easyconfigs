@@ -31,7 +31,7 @@ from distutils.version import LooseVersion
 import os
 import sys
 
-VERSION = LooseVersion("0.8")
+VERSION = LooseVersion("0.9")
 
 
 def get_git_revision():
