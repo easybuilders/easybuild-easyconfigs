@@ -30,7 +30,7 @@ import os
 import shutil
 from distutils.version import LooseVersion
 
-import easybuild.tools.toolchain as toolchain
+import easybuild.tools.toolkit as toolchain
 from easybuild.easyblocks.configuremake import EB_ConfigureMake  #@UnresolvedImport
 from easybuild.framework.extension import Extension
 from easybuild.tools.filetools import extract_file, apply_patch, run_cmd

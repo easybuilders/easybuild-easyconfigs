@@ -35,7 +35,7 @@ import tempfile
 from distutils.version import LooseVersion
 
 import easybuild.tools.environment as env
-import easybuild.tools.toolchain as toolchain
+import easybuild.tools.toolkit as toolchain
 from easybuild.easyblocks.netcdf import set_netcdf_env_vars, get_netcdf_module_set_cmds  #@UnresolvedImport
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import CUSTOM, MANDATORY

@@ -31,7 +31,7 @@ import os
 import shutil
 from distutils.version import LooseVersion
 
-import easybuild.tools.toolchain as toolchain
+import easybuild.tools.toolkit as toolchain
 from easybuild.easyblocks.blacs import det_interface  #@UnresolvedImport
 from easybuild.easyblocks.configuremake import EB_ConfigureMake  #@UnresolvedImport
 from easybuild.easyblocks.lapack import get_blas_lib  #@UnresolvedImport

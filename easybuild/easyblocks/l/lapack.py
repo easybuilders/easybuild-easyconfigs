@@ -30,7 +30,7 @@ import glob
 import os
 import shutil
 
-import easybuild.tools.toolchain as toolchain
+import easybuild.tools.toolkit as toolchain
 from easybuild.easyblocks.configuremake import EB_ConfigureMake  #@UnresolvedImport
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.filetools import run_cmd

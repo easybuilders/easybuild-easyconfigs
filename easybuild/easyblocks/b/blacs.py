@@ -31,7 +31,7 @@ import re
 import os
 import shutil
 
-import easybuild.tools.toolchain as toolchain
+import easybuild.tools.toolkit as toolchain
 from easybuild.easyblocks.configuremake import EB_ConfigureMake  #@UnresolvedImport
 from easybuild.tools.filetools import run_cmd
 from easybuild.tools.modules import get_software_root
