@@ -1474,7 +1474,7 @@ def get_module_path(easyblock):
 
 def get_class(easyblock, log, name=None):
     """
-    Get instance for a particular application class (or Application)
+    Get class for a particular easyblock (or EB_ConfigureMake by default)
     """
 
     app_mod_class = ("easybuild.easyblocks.configuremake", "EB_ConfigureMake")
@@ -1518,7 +1518,7 @@ def get_class(easyblock, log, name=None):
         return cls
 
     except Exception, err:
-        log.error("Can't process provided module and class pair %s: %s" % (easyblock, err))
+        log.error("Failed to obtain class for %s easyblock (not available?): %s" % (easyblock, err))
         raise EasyBuildError(str(err))
 
 class StopException(Exception):
