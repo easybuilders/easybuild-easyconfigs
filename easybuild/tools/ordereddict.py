@@ -156,16 +156,13 @@ class OrderedDict(dict):
         In either case, this is followed by:     for k, v in F.items(): od[k] = v
 
         '''
-        if len(args) > 2:
+        if len(args) > 1:
             raise TypeError('update() takes at most 2 positional '
-                            'arguments (%d given)' % (len(args),))
-        elif not args:
-            raise TypeError('update() takes at least 1 argument (0 given)')
-        self = args[0]
+                            'arguments (%d given)' % (1+len(args),))
         # Make progressively weaker assumptions about "other"
         other = ()
-        if len(args) == 2:
-            other = args[1]
+        if len(args) == 1:
+            other = args[0]
         if isinstance(other, dict):
             for key in other:
                 self[key] = other[key]

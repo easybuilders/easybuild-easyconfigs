@@ -69,10 +69,10 @@ class EasyConfig(object):
           ('homepage', [None, 'The homepage of the software', MANDATORY]),
 
           ('toolchainopts', ['', 'Extra options for compilers', TOOLKIT]),
-          ('onlytcmod', [False,"Boolean/string to indicate if the toolchain should only load " \
+          ('onlytcmod', [False,"Boolean/list to indicate if the toolchain should only load " \
                                "the enviornment with module (True) or also set all other " \
-                               "variables (False) like compiler CC etc (If string: comma separated" \
-                               "list of variables that will be ignored). (Default: False)", TOOLKIT]),
+                               "variables (False) like compiler CC etc (If list: list of variables" \
+                               "that will be ignored). (Default: False)", TOOLKIT]),
 
           ('easybuildVersion', [None, "EasyBuild-version this spec-file was written for", BUILD]),
           ('versionsuffix', ['', 'Additional suffix for software version (placed after toolchain name)',
