@@ -402,14 +402,16 @@ class EasyConfig(object):
             cmd = "rpm -q %s" % dep
         elif run_cmd('which dpkg', simple=True, log_ok=False):
             cmd = "dpkg -s %s" % dep
-        else:
+        
+        found = run_cmd(cmd, simple=True, log_all=False, log_ok=False)
+
+        if not found:
             # fallback for when os-dependency is a binary/library
             cmd = "which %(dep)s || locate %(dep)s" % {'dep': dep}
 
-        try:
-            return run_cmd(cmd, simple=True, log_all=False, log_ok=False)
-        except:
-            return False
+            found = run_cmd(cmd, simple=True, log_all=False, log_ok=False)
+            
+        return found
 
     # private method
     def _parse_dependency(self, dep):
