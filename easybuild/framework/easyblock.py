@@ -703,7 +703,7 @@ class EasyBlock(object):
             'LD_LIBRARY_PATH': ['lib', 'lib64'],
             'CPATH':['include'],
             'MANPATH': ['man', 'share/man'],
-            'PKG_CONFIG_PATH' : ['lib/pkgconfig'],
+            'PKG_CONFIG_PATH' : ['lib/pkgconfig', 'share/pkgconfig'],
         }
 
     def load_fake_module(self):
