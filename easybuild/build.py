@@ -150,8 +150,8 @@ def add_cmdline_options(parser):
     # override options
     override_options = OptionGroup(parser, "Override options", "Override default EasyBuild behavior.")
     
-    override_options.add_option("-C", "--config",
-                        help = "path to EasyBuild config file [default: $EASYBUILDCONFIG or easybuild/easybuild_config.py]")
+    override_options.add_option("-C", "--config", help = "path to EasyBuild config file " \
+                                                         "[default: $EASYBUILDCONFIG or easybuild/easybuild_config.py]")
     override_options.add_option("-e", "--easyblock", metavar="CLASS",
                         help="loads the class from module to process the spec file or dump " \
                                "the options for [default: Application class]")
@@ -168,7 +168,7 @@ def add_cmdline_options(parser):
 
     informative_options.add_option("-a", "--avail-easyconfig-params", action="store_true",
                                    help="show available easyconfig parameters")
-    informative_options.add_option("--list-easyblocks", action="store_true",
+    informative_options.add_option("--list-easyblocks", type="choice", choices=["simple", "detailed"],
                                    help="show list of available easyblocks")
     informative_options.add_option("--search", help="search for module-files in the robot-directory")
     informative_options.add_option("-v", "--version", action="store_true", help="show version")
@@ -270,7 +270,7 @@ def main():
 
     # dump available classes
     if options.list_easyblocks:
-        dump_classes('easybuild.easyblocks')
+        dump_classes('easybuild.easyblocks', detailed=options.list_easyblocks=="detailed")
 
     # search for modules
     if options.search:

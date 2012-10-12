@@ -30,29 +30,32 @@ import os
 import sys
 
 
-def dump_classes(root):
+def dump_classes(root, detailed=False):
     """Get a class tree, starting at root, by iterating of the PYTHONPATH."""
 
-    moduleRoots = []
+    rootpaths = []
     for path in sys.path:
-        rootpath = os.path.join(path, root.replace('.', '/'))
-        if os.path.isdir(rootpath):
-            moduleRoots.append(rootpath)
+        if path:  # skip ''
+            rootpath = os.path.join(path, root.replace('.', '/'))
+            if os.path.isdir(rootpath):
+                rootpaths.append(path)
 
-    print "moduleRoots: %s" % moduleRoots
+    print "rootpaths: %s" % rootpaths
  
-    for moduleRoot in moduleRoots:
+    for rootpath in rootpaths:
 
-        print "moduleRoot: %s" % moduleRoot
+        print "rootpath: %s" % rootpath
 
         # Read all modules
         modules = {}
         pyre = re.compile("^[^_].*\.py$")
-        for (parent, _, files) in os.walk(moduleRoot): #glob.glob(os.path.join(moduleRoot, '*.py')):
+        root = root.replace('.', '/')
+        print os.path.join(rootpath, root)
+        for (parent, _, files) in os.walk(os.path.join(rootpath, root)): #glob.glob(os.path.join(rootpath, root, '*.py')):
             print parent, files
             for moduleFile in files:
                 if pyre.search(moduleFile):
-                    module = '.'.join([moduleRoot, parent, moduleFile]).replace(moduleRoot, '').replace('/', '')
+                    module = '/'.join([parent, moduleFile])
                     print "module: %s" % module
                     module = '.'.join(module.split('.')[:-1])  # get rid of extension (.py)
                     print "readmodule(%s)" % module
@@ -91,17 +94,23 @@ def dump_classes(root):
 
         # Print the tree, start with the roots
         for root in roots:
-            print "%s (%s)" % (root, classes[root]['class'].module)
+            if detailed:
+                print "%s (%s)" % (root, classes[root]['class'].module)
+            else:
+                print "%s" % root
             if 'children' in classes[root]:
-                print_tree(classes, classes[root]['children'])
+                print_tree(classes, classes[root]['children'], detailed)
                 print ""
 
-def print_tree(classes, classNames, depth=0):
+def print_tree(classes, classNames, detailed, depth=0):
     for className in classNames:
         classInfo = classes[className]
-        print "%s|-- %s (%s)" % ("|   " * depth, className, classInfo['class'].module)
+        if detailed:
+            print "%s|-- %s (%s)" % ("|   " * depth, className, classInfo['class'].module)
+        else:
+            print "%s|-- %s" % ("|   " * depth, className)
         if 'children' in classInfo:
-            print_tree(classes, classInfo['children'], depth + 1)
+            print_tree(classes, classInfo['children'], detailed, depth + 1)
 
 
 if __name__ == "__main__":
