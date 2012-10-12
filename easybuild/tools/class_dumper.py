@@ -58,11 +58,9 @@ def dump_classes(root, detailed=False):
                     module = '/'.join([parent, moduleFile])
                     print "module: %s" % module
                     module = '.'.join(module.split('.')[:-1])  # get rid of extension (.py)
-                    print "readmodule(%s)" % module
+                    print "readmodule(%s): %s" % (module, pyclbr.readmodule(module))
                     modules.update(pyclbr.readmodule(module))
 
-        modules.update(pyclbr.readmodule('easybuild.framework.easyblock'))
-        modules.update(pyclbr.readmodule('easybuild.framework.extension'))
         print modules
 
         # Store parent-children relations
