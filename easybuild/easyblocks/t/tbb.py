@@ -30,10 +30,10 @@ import os
 import shutil
 import glob
 
-from easybuild.easyblocks.intelbase import EB_IntelBase  #@UnresolvedImport
+from easybuild.easyblocks.generic.intelbase import IntelBase
 
 
-class EB_tbb(EB_IntelBase):
+class EB_tbb(IntelBase):
     """EasyBlock for tbb, threading building blocks"""
 
     def install_step(self):

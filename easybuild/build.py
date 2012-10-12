@@ -69,12 +69,12 @@ import easybuild.tools.filetools as filetools
 import easybuild.tools.parallelbuild as parbuild
 from easybuild.framework.easyblock import get_class
 from easybuild.framework.easyconfig import EasyConfig
-from easybuild.tools.build_log import EasyBuildError, initLogger
-from easybuild.tools.build_log import removeLogHandler, print_msg
+from easybuild.tools.build_log import EasyBuildError, init_logger
+from easybuild.tools.build_log import remove_log_handler, print_msg
 from easybuild.tools.class_dumper import dump_classes
-from easybuild.tools.config import getRepository
-from easybuild.tools.filetools import modifyEnv
-from easybuild.tools.modules import Modules, searchModule
+from easybuild.tools.config import get_repository
+from easybuild.tools.filetools import modify_env
+from easybuild.tools.modules import Modules, search_module
 from easybuild.tools.modules import curr_module_paths, mk_module_path
 from easybuild.tools.ordereddict import OrderedDict
 from easybuild.tools import systemtools
@@ -170,7 +170,7 @@ def add_cmdline_options(parser):
                                    help="show available easyconfig parameters")
     informative_options.add_option("--list-easyblocks", type="choice", choices=["simple", "detailed"],
                                    help="show list of available easyblocks")
-    informative_options.add_option("--search", help="search for module-files in the robot-directory")
+    informative_options.add_option("--search", metavar="STR", help="search for module-files in the robot-directory")
     informative_options.add_option("-v", "--version", action="store_true", help="show version")
     informative_options.add_option("--dep-graph", metavar="depgraph.<ext>", help="create dependency graph")
 
@@ -185,9 +185,9 @@ def add_cmdline_options(parser):
                                help="enable online regression test mode")
     regtest_options.add_option("--sequential", action="store_true", default=False,
                                help="specify this option if you want to prevent parallel build")
-    regtest_options.add_option("--regtest-output-dir", help="set output directory for test-run")
-    regtest_options.add_option("--aggregate-regtest", help="collect all the xmls inside the given directory " \
-                                                           "and generate a single file")
+    regtest_options.add_option("--regtest-output-dir", metavar="DIR", help="set output directory for test-run")
+    regtest_options.add_option("--aggregate-regtest", metavar="DIR",
+                               help="collect all the xmls inside the given directory and generate a single file")
 
     parser.add_option_group(regtest_options)
 
@@ -238,7 +238,7 @@ def main():
         blocks = None
 
     # initialize logger
-    logFile, log, hn = initLogger(filename=logFile, debug=options.debug, typ="build")
+    logFile, log, hn = init_logger(filename=logFile, debug=options.debug, typ="build")
 
     # show version
     if options.version:
@@ -276,10 +276,10 @@ def main():
     if options.search:
         if not options.robot:
             error("Please provide a search-path to --robot when using --search")
-        searchModule(options.robot, options.search)
+        search_module(options.robot, options.search)
 
     # run regtest
-    if options.regtest:
+    if options.regtest or options.aggregate_regtest:
         log.info("Running regression test")
         regtest(options, log, paths)
 
@@ -325,13 +325,13 @@ def main():
             error("Can't find path %s" % path)
 
         try:
-            files = findEasyconfigs(path, log)
+            files = find_easyconfigs(path, log)
             for f in files:
                 if not generated and try_to_generate and software_build_specs:
                     ec_file = easyconfig.tweak(f, None, software_build_specs, log)
                 else:
                     ec_file = f
-                easyconfigs.extend(processEasyconfig(ec_file, log, blocks, validate=validate_easyconfigs))
+                easyconfigs.extend(process_easyconfig(ec_file, log, blocks, validate=validate_easyconfigs))
         except IOError, err:
             log.error("Processing easyconfigs in path %s failed: %s" % (path, err))
 
@@ -360,7 +360,7 @@ def main():
         print_msg("resolving dependencies ...", log)
         # force all dependencies to be retained and validation to be skipped for building dep graph
         force = retain_all_deps and not validate_easyconfigs
-        orderedSpecs = resolveDependencies(easyconfigs, options.robot, log, force=force)
+        orderedSpecs = resolve_dependencies(easyconfigs, options.robot, log, force=force)
     else:
         print_msg("No easyconfigs left to be built.", log)
         orderedSpecs = []
@@ -423,10 +423,10 @@ def main():
 
     print_msg("Build succeeded for %s out of %s" % (correct_built_cnt, all_built_cnt), log)
 
-    getRepository().cleanup()
+    get_repository().cleanup()
     # cleanup tmp log file (all is well, all modules have their own log file)
     try:
-        removeLogHandler(hn)
+        remove_log_handler(hn)
         hn.close()
         if logFile:
             os.remove(logFile)
@@ -454,7 +454,7 @@ def warning(message):
     """
     print_msg("WARNING: %s\n" % message)
 
-def findEasyconfigs(path, log):
+def find_easyconfigs(path, log):
     """
     Find .eb easyconfig files in path
     """
@@ -475,11 +475,11 @@ def findEasyconfigs(path, log):
 
     return files
 
-def processEasyconfig(path, log, onlyBlocks=None, regtest_online=False, validate=True):
+def process_easyconfig(path, log, onlyBlocks=None, regtest_online=False, validate=True):
     """
     Process easyconfig, returning some information for each block
     """
-    blocks = retrieveBlocksInSpec(path, log, onlyBlocks)
+    blocks = retrieve_blocks_in_spec(path, log, onlyBlocks)
 
     easyconfigs = []
     for spec in blocks:
@@ -524,7 +524,7 @@ def processEasyconfig(path, log, onlyBlocks=None, regtest_online=False, validate
 
     return easyconfigs
 
-def resolveDependencies(unprocessed, robot, log, force=False):
+def resolve_dependencies(unprocessed, robot, log, force=False):
     """
     Work through the list of easyconfigs to determine an optimal order
     enabling force results in retaining all dependencies and skipping validation of easyconfigs
@@ -565,7 +565,7 @@ def resolveDependencies(unprocessed, robot, log, force=False):
         lastProcessedCount = -1
         while len(processed) > lastProcessedCount:
             lastProcessedCount = len(processed)
-            orderedSpecs.extend(findResolvedModules(unprocessed, processed, log))
+            orderedSpecs.extend(find_resolved_modules(unprocessed, processed, log))
 
         # robot: look for an existing dependency, add one
         if robot and len(unprocessed) > 0:
@@ -578,7 +578,7 @@ def resolveDependencies(unprocessed, robot, log, force=False):
                 candidates = [d for d in module['dependencies'] if not d in beingInstalled]
                 if len(candidates) > 0:
                     # find easyconfig, might not find any
-                    path = robotFindEasyconfig(log, robot, candidates[0])
+                    path = robot_find_easyconfig(log, robot, candidates[0])
 
                 else:
                     path = None
@@ -587,7 +587,7 @@ def resolveDependencies(unprocessed, robot, log, force=False):
                 if path:
                     log.info("Robot: resolving dependency %s with %s" % (candidates[0], path))
 
-                    processedSpecs = processEasyconfig(path, log, validate=(not force))
+                    processedSpecs = process_easyconfig(path, log, validate=(not force))
 
                     # ensure the pathname is equal to the module
                     mods = [spec['module'] for spec in processedSpecs]
@@ -612,7 +612,7 @@ def resolveDependencies(unprocessed, robot, log, force=False):
     log.info("Dependency resolution complete, building as follows:\n%s" % orderedSpecs)
     return orderedSpecs
 
-def findResolvedModules(unprocessed, processed, log):
+def find_resolved_modules(unprocessed, processed, log):
     """
     Find modules in unprocessed which can be fully resolved using easyconfigs in processed
     """
@@ -736,7 +736,7 @@ def obtain_path(specs, robot, log, try_to_generate=False):
                   "use the --try-X options " % specs)
 
 
-def robotFindEasyconfig(log, path, module):
+def robot_find_easyconfig(log, path, module):
     """
     Find an easyconfig for module in path
     """
@@ -751,7 +751,7 @@ def robotFindEasyconfig(log, path, module):
 
     return None
 
-def retrieveBlocksInSpec(spec, log, onlyBlocks):
+def retrieve_blocks_in_spec(spec, log, onlyBlocks):
     """
     Easyconfigs can contain blocks (headed by a [Title]-line)
     which contain commands specific to that block. Commands in the beginning of the file
@@ -860,8 +860,7 @@ def build_and_install_software(module, options, log, origEnviron, exitOnFailure=
     # restore original environment
     log.info("Resetting environment")
     filetools.errorsFoundInLog = 0
-    if not filetools.modifyEnv(os.environ, origEnviron):
-        error("Failed changing the environment back to original")
+    modify_env(os.environ, origEnviron)
 
     cwd = os.getcwd()
 
@@ -925,10 +924,10 @@ def build_and_install_software(module, options, log, origEnviron, exitOnFailure=
 
             try:
                 # upload spec to central repository
-                repo = getRepository()
+                repo = get_repository()
                 if 'originalSpec' in module:
-                    repo.addEasyconfig(module['originalSpec'], app.name, app.get_installversion() + ".block", buildstats, currentbuildstats)
-                repo.addEasyconfig(spec, app.name, app.get_installversion(), buildstats, currentbuildstats)
+                    repo.add_easyconfig(module['originalSpec'], app.name, app.get_installversion() + ".block", buildstats, currentbuildstats)
+                repo.add_easyconfig(spec, app.name, app.get_installversion(), buildstats, currentbuildstats)
                 repo.commit("Built %s/%s" % (app.name, app.get_installversion()))
                 del repo
             except EasyBuildError, err:
@@ -1170,7 +1169,7 @@ def build_easyconfigs(easyconfigs, output_dir, test_results, options, log):
 
             # start with a clean slate
             os.chdir(base_dir)
-            modifyEnv(os.environ, base_env)
+            modify_env(os.environ, base_env)
 
             steps = app.get_steps()
 
@@ -1249,13 +1248,16 @@ def aggregate_xml_in_dirs(base_dir, output_filename):
     root.writexml(output_file, addindent="\t", newl="\n")
     output_file.close()
 
+    print "Aggregate regtest results written to %s" % output_filename
+
 def regtest(options, log, easyconfigs_paths=None):
     """Run regression test, using easyconfigs available in given path."""
 
     cur_dir = os.getcwd()
 
     if options.aggregate_regtest:
-        output_file = os.path.join(options.aggregate_regtest, "easybuild-aggregate.xml")
+        output_file = os.path.join(options.aggregate_regtest, "%s-aggregate.xml" % os.path.basename(options.aggregate_regtest))
+        print output_file
         aggregate_xml_in_dirs(options.aggregate_regtest, output_file)
         log.info("aggregated xml files inside %s, output written to: %s" % (options.aggregate_regtest, output_file))
         sys.exit(0)
@@ -1279,11 +1281,11 @@ def regtest(options, log, easyconfigs_paths=None):
     ecfiles = []
     if easyconfigs_paths:
         for path in easyconfigs_paths:
-            ecfiles += findEasyconfigs(path, log)
+            ecfiles += find_easyconfigs(path, log)
     else:
         # default path
         path = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), "easyconfigs")
-        ecfiles = findEasyconfigs(path, log)
+        ecfiles = find_easyconfigs(path, log)
 
     test_results = []
 
@@ -1291,14 +1293,14 @@ def regtest(options, log, easyconfigs_paths=None):
     easyconfigs = []
     for ecfile in ecfiles:
         try:
-            easyconfigs.extend(processEasyconfig(ecfile, log, None))
+            easyconfigs.extend(process_easyconfig(ecfile, log, None))
         except EasyBuildError, err:
             test_results.append((ecfile, 'easyconfig file error', err))
 
     if options.sequential:
         build_easyconfigs(easyconfigs, output_dir, test_results, options, log)
     else:
-        resolved = resolveDependencies(easyconfigs, options.robot, log)
+        resolved = resolve_dependencies(easyconfigs, options.robot, log)
         # use %%s so we can replace it later
         command = "cd %s && %s %%s --regtest --sequential -ld" % (cur_dir, sys.argv[0])
         jobs = parbuild.build_easyconfigs_in_parallel(command, resolved, output_dir, log)

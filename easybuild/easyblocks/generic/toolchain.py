@@ -23,42 +23,31 @@
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
 """
-EasyBuild support for installing (precompiled) software which is supplied as a tarball,
-implemented as an easyblock
+EasyBuild support for installing compiler toolchains, implemented as an easyblock
 """
-
-import shutil
 
 from easybuild.framework.easyblock import EasyBlock
 
 
-class EB_Tarball(EasyBlock):
+class Toolchain(EasyBlock):
     """
-    Precompiled software supplied as a tarball:
-    - will unpack binary and copy it to the install dir
+    Compiler toolchain: generate module file only, nothing to build/install
     """
 
     def configure_step(self):
-        """
-        Dummy configure method
-        """
+        """Do nothing."""
         pass
 
     def build_step(self):
-        """
-        Dummy build method: nothing to build
-        """
+        """Do nothing."""
         pass
 
     def install_step(self):
+        """Do nothing."""
+        pass
 
-        src = self.cfg['start_dir']
-        # shutil.copytree cannot handle destination dirs that exist already.
-        # On the other hand, Python2.4 cannot create entire paths during copytree.
-        # Therefore, only the final directory is deleted.
-        shutil.rmtree(self.installdir)
-        try:
-            # self.cfg['keepsymlinks'] is False by default except when explicitly put to True in .eb file
-            shutil.copytree(src,self.installdir, symlinks=self.cfg['keepsymlinks'])
-        except:
-            self.log.exception("Copying %s to installation dir %s failed" % (src,self.installdir))
+    def sanity_check_step(self):
+        """
+        As a toolchain doesn't install anything really, this is always true
+        """
+        self.sanityCheckOK = True

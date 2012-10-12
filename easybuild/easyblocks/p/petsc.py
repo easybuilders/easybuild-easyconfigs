@@ -27,14 +27,14 @@ from distutils.version import LooseVersion
 
 import easybuild.tools.environment as env
 import easybuild.tools.toolkit as toolchain
-from easybuild.easyblocks.configuremake import EB_ConfigureMake  #@UnresolvedImport
+from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.framework.easyconfig import BUILD, CUSTOM
 from easybuild.tools.filetools import run_cmd
 from easybuild.tools.modules import get_software_root
 from easybuild.tools.systemtools import get_shared_lib_ext
 
 
-class EB_PETSc(EB_ConfigureMake):
+class EB_PETSc(ConfigureMake):
     """Support for building and installing PETSc"""
 
     def __init__(self, *args, **kwargs):
@@ -55,7 +55,7 @@ class EB_PETSc(EB_ConfigureMake):
                       ('papi_lib', ['/usr/lib64/libpapi.so', "Path for PAPI library (default: '/usr/lib64/libpapi.so')", CUSTOM]),
                       ('runtest', ['test', "Make target to test build (default: test)", BUILD])
                      ]
-        return EB_ConfigureMake.extra_options(extra_vars)
+        return ConfigureMake.extra_options(extra_vars)
 
     def make_builddir(self):
         """Decide whether or not to build in install dir before creating build dir."""
@@ -257,11 +257,11 @@ class EB_PETSc(EB_ConfigureMake):
         txt = super(EB_PETSc, self).make_module_extra()
 
         if self.cfg['sourceinstall']:
-            txt += self.moduleGenerator.setEnvironment('PETSC_DIR', '$root/%s' % self.petsc_subdir)
-            txt += self.moduleGenerator.setEnvironment('PETSC_ARCH', self.petsc_arch)
+            txt += self.moduleGenerator.set_environment('PETSC_DIR', '$root/%s' % self.petsc_subdir)
+            txt += self.moduleGenerator.set_environment('PETSC_ARCH', self.petsc_arch)
 
         else:
-            txt += self.moduleGenerator.setEnvironment('PETSC_DIR', '$root')
+            txt += self.moduleGenerator.set_environment('PETSC_DIR', '$root')
 
         return txt
 

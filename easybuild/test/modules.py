@@ -33,7 +33,7 @@ class ModulesTest(TestCase):
         if len(ms) != 0:
             import random
             m = random.choice(ms)
-            testmods.addModule([m])
+            testmods.add_module([m])
             testmods.load()
 
             tmp = {"name": m[0], "version": m[1]}

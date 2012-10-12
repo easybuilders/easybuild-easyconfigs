@@ -12,10 +12,10 @@ Easybuild support for building SOAPdenovo
 import os
 import shutil
 
-from easybuild.easyblocks.configuremake import EB_ConfigureMake  #@UnresolvedImport
+from easybuild.easyblocks.generic.configuremake import ConfigureMake
 
 
-class EB_SOAPdenovo(EB_ConfigureMake):
+class EB_SOAPdenovo(ConfigureMake):
     """
     Support for building SOAPdenovo.
     """

@@ -31,7 +31,7 @@ import re
 import easybuild.tools.config as config
 from easybuild.framework.easyblock import get_class
 from easybuild.tools.pbs_job import PbsJob
-from easybuild.tools.config import getRepository
+from easybuild.tools.config import get_repository
 
 def build_easyconfigs_in_parallel(build_command, easyconfigs, output_dir, log):
     """
@@ -99,7 +99,7 @@ def create_job(build_command, easyconfig, log, output_dir=""):
     easybuild_vars[var] = os.path.join(os.path.abspath(output_dir), name)
 
     # just use latest build stats
-    buildstats = getRepository().get_buildstats(*easyconfig['module'])
+    buildstats = get_repository().get_buildstats(*easyconfig['module'])
     resources = {}
     if buildstats:
         previous_time = buildstats[-1]['build_time']

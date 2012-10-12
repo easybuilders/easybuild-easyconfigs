@@ -42,7 +42,7 @@ from distutils.version import LooseVersion
 import easybuild
 import easybuild.tools.environment as env
 from easybuild.framework.easyconfig import EasyConfig, get_paths_for
-from easybuild.tools.build_log import EasyBuildError, initLogger, print_msg, removeLogHandler
+from easybuild.tools.build_log import EasyBuildError, init_logger, print_msg, remove_log_handler
 from easybuild.tools.config import build_path, install_path, log_path, read_only_installdir, source_path
 from easybuild.tools.filetools import adjust_permissions, apply_patch, convert_name, download_file
 from easybuild.tools.filetools import encode_class_name, extract_file, run_cmd
@@ -120,7 +120,7 @@ class EasyBlock(object):
         Initialize the logger.
         """
         if not self.log:
-            self.logfile, self.log, self.loghandler = initLogger(self.name, self.version,
+            self.logfile, self.log, self.loghandler = init_logger(self.name, self.version,
                                                                  self.logdebug, typ=self.__class__.__name__)
             self.log.info("Init completed for application name %s version %s" % (self.name, self.version))
 
@@ -129,7 +129,7 @@ class EasyBlock(object):
         Shutdown the logger.
         """
         self.log.info("Closing log for application name %s version %s" % (self.name, self.version))
-        removeLogHandler(self.loghandler)
+        remove_log_handler(self.loghandler)
         self.loghandler.close()
 
 
@@ -575,7 +575,7 @@ class EasyBlock(object):
         mod_path.extend(Modules().modulePath)
         m = Modules(mod_path)
         self.log.debug("created module instance")
-        m.addModule([[self.name, self.get_installversion()]])
+        m.add_module([[self.name, self.get_installversion()]])
         try:
             m.load()
         except EasyBuildError, err:
@@ -590,7 +590,7 @@ class EasyBlock(object):
             # check if non-empty string
             # TODO: add unset for empty vars?
             if val.strip():
-                env_txt += mod_gen.setEnvironment(key, val)
+                env_txt += mod_gen.set_environment(key, val)
 
         load_txt = ""
         # capture all the EBDEVEL vars
@@ -602,7 +602,7 @@ class EasyBlock(object):
                     path = os.environ[key]
                     if os.path.isfile(path):
                         name, version = path.rsplit('/', 1)
-                        load_txt += mod_gen.loadModule(name, version)
+                        load_txt += mod_gen.load_module(name, version)
 
         if create_in_builddir:
             output_dir = self.builddir
@@ -628,16 +628,16 @@ class EasyBlock(object):
 
         # Load toolchain
         if self.toolchain.name != 'dummy':
-            load += self.moduleGenerator.loadModule(self.toolchain.name, self.toolchain.version)
-            unload += self.moduleGenerator.unloadModule(self.toolchain.name, self.toolchain.version)
+            load += self.moduleGenerator.load_module(self.toolchain.name, self.toolchain.version)
+            unload += self.moduleGenerator.unload_module(self.toolchain.name, self.toolchain.version)
 
         # Load dependencies
         builddeps = self.cfg.builddependencies()
         for dep in self.toolchain.dependencies:
             if not dep in builddeps:
                 self.log.debug("Adding %s/%s as a module dependency" % (dep['name'], dep['tc']))
-                load += self.moduleGenerator.loadModule(dep['name'], dep['tc'])
-                unload += self.moduleGenerator.unloadModule(dep['name'], dep['tc'])
+                load += self.moduleGenerator.load_module(dep['name'], dep['tc'])
+                unload += self.moduleGenerator.unload_module(dep['name'], dep['tc'])
             else:
                 self.log.debug("Skipping builddependency %s/%s" % (dep['name'], dep['tc']))
 
@@ -651,7 +651,7 @@ class EasyBlock(object):
         """
         Create the module description.
         """
-        return self.moduleGenerator.getDescription()
+        return self.moduleGenerator.get_description()
 
     def make_module_extra(self):
         """
@@ -661,15 +661,15 @@ class EasyBlock(object):
 
         # EBROOT + EBVERSION + EBDEVEL
         environment_name = convert_name(self.name, upper=True)
-        txt += self.moduleGenerator.setEnvironment("EBROOT" + environment_name, "$root")
-        txt += self.moduleGenerator.setEnvironment("EBVERSION" + environment_name, self.version)
+        txt += self.moduleGenerator.set_environment("EBROOT" + environment_name, "$root")
+        txt += self.moduleGenerator.set_environment("EBVERSION" + environment_name, self.version)
         devel_path = os.path.join("$root", log_path(), "%s-%s-easybuild-devel" % (self.name,
             self.get_installversion()))
-        txt += self.moduleGenerator.setEnvironment("EBDEVEL" + environment_name, devel_path)
+        txt += self.moduleGenerator.set_environment("EBDEVEL" + environment_name, devel_path)
 
         txt += "\n"
         for (key, value) in self.cfg['modextravars'].items():
-            txt += self.moduleGenerator.setEnvironment(key, value)
+            txt += self.moduleGenerator.set_environment(key, value)
 
         self.log.debug("make_module_extra added this: %s" % txt)
 
@@ -691,7 +691,7 @@ class EasyBlock(object):
         for key in sorted(requirements):
             for path in requirements[key]:
                 globbedPaths = glob.glob(os.path.join(self.installdir, path))
-                txt += self.moduleGenerator.prependPaths(key, globbedPaths)
+                txt += self.moduleGenerator.prepend_paths(key, globbedPaths)
         return txt
 
     def make_module_req_guess(self):
@@ -718,7 +718,7 @@ class EasyBlock(object):
         mod_path.extend(Modules().modulePath)
         m = Modules(mod_path)
         self.log.debug("created module instance")
-        m.addModule([[self.name, self.get_installversion()]])
+        m.add_module([[self.name, self.get_installversion()]])
         m.load()
 
     #
@@ -1094,7 +1094,7 @@ class EasyBlock(object):
                 m = Modules([modpath] + os.environ['MODULEPATH'].split(':'))
 
             if m.exists(self.name, self.get_installversion()):
-                m.addModule([[self.name, self.get_installversion()]])
+                m.add_module([[self.name, self.get_installversion()]])
                 m.load()
             else:
                 self.log.error("module %s version %s doesn't exist" % (self.name, self.get_installversion()))
@@ -1315,7 +1315,7 @@ class EasyBlock(object):
         Generate a module file.
         """
         self.moduleGenerator = ModuleGenerator(self, fake)
-        modpath = self.moduleGenerator.createFiles()
+        modpath = self.moduleGenerator.create_files()
 
         txt = ''
         txt += self.make_module_description()
@@ -1448,7 +1448,7 @@ def get_class_for(modulepath, class_name):
         raise ImportError
     return c
 
-def get_module_path(easyblock):
+def get_module_path(easyblock, generic=False):
     """
     Determine the module path for a given easyblock name,
     based on the encoded class name.
@@ -1470,14 +1470,19 @@ def get_module_path(easyblock):
 
     module_name = easyblock.translate(charmap)
 
-    return "easybuild.easyblocks.%s" % module_name.lower()
+    if generic:
+        modpath = '.'.join(["easybuild", "easyblocks", "generic"])
+    else:
+        modpath = '.'.join(["easybuild", "easyblocks"])
+    
+    return '.'.join([modpath, module_name.lower()])
 
 def get_class(easyblock, log, name=None):
     """
-    Get class for a particular easyblock (or EB_ConfigureMake by default)
+    Get class for a particular easyblock (or ConfigureMake by default)
     """
 
-    app_mod_class = ("easybuild.easyblocks.configuremake", "EB_ConfigureMake")
+    app_mod_class = ("easybuild.easyblocks.generic.configuremake", "ConfigureMake")
 
     try:
         # if no easyblock specified, try to find if one exists
@@ -1510,7 +1515,7 @@ def get_class(easyblock, log, name=None):
                 log.info("Assuming that full easyblock module path was specified.")
                 modulepath = easyblock
             else:
-                modulepath = get_module_path(easyblock)
+                modulepath = get_module_path(easyblock, generic=True)
                 log.info("Derived full easyblock module path for %s: %s" % (class_name, modulepath))
 
         cls = get_class_for(modulepath, class_name)

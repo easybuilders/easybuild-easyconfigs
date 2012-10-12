@@ -33,12 +33,12 @@ from easybuild.tools.filetools import run_cmd, mkdir
 from easybuild.tools.modules import get_software_version
 
 
-class EB_PythonPackage(EasyBlock):
+class PythonPackage(EasyBlock):
     """Builds and installs a Python package, and provides a dedicated module file."""
 
     def __init__(self, *args, **kwargs):
         """Initialize custom variables."""
-        super(EB_PythonPackage, self).__init__(*args, **kwargs)
+        super(PythonPackage, self).__init__(*args, **kwargs)
 
         # template for Python packages lib dir
         self.pylibdir = os.path.join("lib", "python%s", "site-packages")
@@ -46,7 +46,7 @@ class EB_PythonPackage(EasyBlock):
     def configure_step(self):
         """Set Python packages lib dir."""
 
-        self.log.debug("EB_PythonPackage: configuring")
+        self.log.debug("PythonPackage: configuring")
 
         python_version = get_software_version('Python')
         if not python_version:
@@ -89,12 +89,12 @@ class EB_PythonPackage(EasyBlock):
                             'dirs': ["%s/%s" % (self.pylibdir, self.name.lower())]
                            }
 
-        super(EB_PythonPackage, self).sanity_check_step(custom_paths=custom_paths, custom_commands=custom_commands)
+        super(PythonPackage, self).sanity_check_step(custom_paths=custom_paths, custom_commands=custom_commands)
 
     def make_module_extra(self):
         """Add install path to PYTHONPATH"""
 
-        txt = super(EB_PythonPackage, self).make_module_extra()
+        txt = super(PythonPackage, self).make_module_extra()
 
         txt += "prepend-path\tPYTHONPATH\t%s\n" % os.path.join(self.installdir , self.pylibdir)
 

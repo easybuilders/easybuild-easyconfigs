@@ -26,13 +26,13 @@ import os
 import re
 
 import easybuild.tools.environment as env
-from easybuild.easyblocks.configuremake import EB_ConfigureMake  #@UnresolvedImport
+from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.framework.easyconfig import BUILD, CUSTOM
 from easybuild.tools.filetools import run_cmd
 from easybuild.tools.modules import get_software_root
 
 
-class EB_SLEPc(EB_ConfigureMake):
+class EB_SLEPc(ConfigureMake):
     """Support for building and installing SLEPc"""
 
     def __init__(self, *args, **kwargs):
@@ -53,7 +53,7 @@ class EB_SLEPc(EB_ConfigureMake):
                       ('sourceinstall', [False, "Indicates whether a source installation should be performed (default: False)", CUSTOM]),
                       ('runtest', ['test', "Make target to test build (default: test)", BUILD])
                      ]
-        return EB_ConfigureMake.extra_options(extra_vars)
+        return ConfigureMake.extra_options(extra_vars)
 
     def make_builddir(self):
         """Decide whether or not to build in install dir before creating build dir."""
@@ -115,11 +115,11 @@ class EB_SLEPc(EB_ConfigureMake):
         txt = super(EB_SLEPc, self).make_module_extra()
 
         if self.cfg['sourceinstall']:
-            txt += self.moduleGenerator.setEnvironment('SLEPC_DIR', '$root/%s-%s' % (self.name.lower(),
+            txt += self.moduleGenerator.set_environment('SLEPC_DIR', '$root/%s-%s' % (self.name.lower(),
                                                                                      self.version))
 
         else:
-            txt += self.moduleGenerator.setEnvironment('SLEPC_DIR', '$root')
+            txt += self.moduleGenerator.set_environment('SLEPC_DIR', '$root')
 
         return txt
 

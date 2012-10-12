@@ -12,10 +12,10 @@ EasyBuild support for building and installing MUMmer, implemented as an easybloc
 import os
 import shutil
 
-from easybuild.easyblocks.configuremake import EB_ConfigureMake  #@UnresolvedImport
+from easybuild.easyblocks.generic.configuremake import ConfigureMake
 
 
-class EB_MUMmer(EB_ConfigureMake):
+class EB_MUMmer(ConfigureMake):
     """
     Support for building MUMmer (rapidly aligning entire genomes)
     - build with make install 

@@ -29,11 +29,11 @@ EasyBuild support for installing the Intel Trace Analyzer and Collector (ITAC), 
 import os
 
 from easybuild.framework.easyconfig import CUSTOM
-from easybuild.easyblocks.intelbase import EB_IntelBase  #@UnresolvedImport
+from easybuild.easyblocks.generic.intelbase import IntelBase
 from easybuild.tools.filetools import run_cmd
 
 
-class EB_itac(EB_IntelBase):
+class EB_itac(IntelBase):
     """
     Class that can be used to install itac
     - tested with Intel Trace Analyzer and Collector 7.2.1.008
@@ -42,7 +42,7 @@ class EB_itac(EB_IntelBase):
     @staticmethod
     def extra_options():
         extra_vars = [('preferredmpi', ['impi3', "Preferred MPI type (default: 'impi3')", CUSTOM])]
-        return EB_IntelBase.extra_options(extra_vars)
+        return IntelBase.extra_options(extra_vars)
 
     def install_step(self):
         """
@@ -115,7 +115,7 @@ EULA=accept
         return guesses
 
     def make_module_extra(self):
-        """Overwritten from EB_IntelBase to add extra txt"""
+        """Overwritten from IntelBase to add extra txt"""
         txt = super(EB_itac, self).make_module_extra()
         txt += "prepend-path\t%s\t\t%s\n" % ('INTEL_LICENSE_FILE', self.license)
         txt += "setenv\t%s\t\t$root\n" % 'VT_ROOT'

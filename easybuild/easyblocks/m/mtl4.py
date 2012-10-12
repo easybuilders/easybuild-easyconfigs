@@ -22,10 +22,10 @@ EasyBuild support for MTL4, implemented as an easyblock
 """
 import os
 
-from easybuild.easyblocks.tarball import EB_Tarball  #@UnresolvedImport
+from easybuild.easyblocks.generic.tarball import Tarball
 
 
-class EB_MTL4(EB_Tarball):
+class EB_MTL4(Tarball):
     """Support for installing MTL4."""
 
     def sanity_check_step(self):

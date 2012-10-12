@@ -29,13 +29,13 @@ EasyBuild support for building and installing ATLAS, implemented as an easyblock
 import re
 import os
 
-from easybuild.easyblocks.configuremake import EB_ConfigureMake  #@UnresolvedImport
+from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.filetools import run_cmd
 from easybuild.tools.modules import get_software_root
 
 
-class EB_ATLAS(EB_ConfigureMake):
+class EB_ATLAS(ConfigureMake):
     """
     Support for building ATLAS
     - configure (and check if it failed due to CPU throttling being enabled)
@@ -53,7 +53,7 @@ class EB_ATLAS(EB_ConfigureMake):
                       ('full_lapack', [False, "Build a full LAPACK library (requires netlib's LAPACK) (default: False)", CUSTOM]),
                       ('sharedlibs', [False, "Enable building of shared libs as well (default: False)", CUSTOM])
                      ]
-        return EB_ConfigureMake.extra_options(extra_vars)
+        return ConfigureMake.extra_options(extra_vars)
 
     def configure_step(self):
 

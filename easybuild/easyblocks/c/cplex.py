@@ -30,11 +30,11 @@ import os
 import stat
 
 import easybuild.tools.environment as env
-from easybuild.easyblocks.binary import EB_Binary  #@UnresolvedImport
+from easybuild.easyblocks.generic.binary import Binary
 from easybuild.tools.filetools import run_cmd_qa
 
 
-class EB_CPLEX(EB_Binary):
+class EB_CPLEX(Binary):
     """
     Support for installing CPLEX.
     Version 12.2 has a self-extracting binary with a Java installer
@@ -100,8 +100,8 @@ class EB_CPLEX(EB_Binary):
         """Add installdir to path and set CPLEX_HOME"""
 
         txt = super(EB_CPLEX, self).make_module_extra()
-        txt += self.moduleGenerator.prependPaths("PATH", [self.bindir])
-        txt += self.moduleGenerator.setEnvironment("CPLEX_HOME", "$root/cplex")
+        txt += self.moduleGenerator.prepend_paths("PATH", [self.bindir])
+        txt += self.moduleGenerator.set_environment("CPLEX_HOME", "$root/cplex")
         self.log.debug("make_module_extra added %s" % txt)
         return txt
 

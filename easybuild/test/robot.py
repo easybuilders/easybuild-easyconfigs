@@ -23,7 +23,7 @@ from unittest import TestCase, TestSuite
 
 import easybuild.tools.modules as modules
 import easybuild.build as build
-from easybuild.tools.build_log import EasyBuildError, getLog
+from easybuild.tools.build_log import EasyBuildError, get_log
 
 orig_modules = modules.Modules
 base_easyconfig_dir = "easybuild/test/easyconfigs/"
@@ -46,7 +46,7 @@ class RobotTest(TestCase):
         modules.Modules = MockModule
         build.Modules = MockModule
 
-        self.log = getLog("RobotTest")
+        self.log = get_log("RobotTest")
 
     def runTest(self):
         """ Test with some basic testcases (also check if he can find dependencies inside the given directory """
@@ -55,7 +55,7 @@ class RobotTest(TestCase):
             'module': ("name", "version"),
             'dependencies': []
         }
-        res = build.resolveDependencies([deepcopy(easyconfig)], None, self.log)
+        res = build.resolve_dependencies([deepcopy(easyconfig)], None, self.log)
         self.assertEqual([easyconfig], res)
 
         easyconfig_dep = {
@@ -63,14 +63,14 @@ class RobotTest(TestCase):
             'module': ("name", "version"),
             'dependencies': [('gzip', '1.4')]
         }
-        res = build.resolveDependencies([deepcopy(easyconfig_dep)], base_easyconfig_dir, self.log)
+        res = build.resolve_dependencies([deepcopy(easyconfig_dep)], base_easyconfig_dir, self.log)
         # Dependency should be found
         self.assertEqual(len(res), 2)
 
         # here we have include a Dependency in the easyconfig list
         easyconfig['module'] = ("gzip", "1.4")
 
-        res = build.resolveDependencies([deepcopy(easyconfig_dep), deepcopy(easyconfig)], None, self.log)
+        res = build.resolve_dependencies([deepcopy(easyconfig_dep), deepcopy(easyconfig)], None, self.log)
         # all dependencies should be resolved
         self.assertEqual(0, sum(len(ec['dependencies']) for ec in res))
 
@@ -79,7 +79,7 @@ class RobotTest(TestCase):
 
         # test if dependencies of an automatically found file are also loaded
         easyconfig_dep['dependencies'] = [('gzip', "1.4-GCC-4.6.3")]
-        res = build.resolveDependencies([deepcopy(easyconfig_dep)], base_easyconfig_dir, self.log)
+        res = build.resolve_dependencies([deepcopy(easyconfig_dep)], base_easyconfig_dir, self.log)
 
         # GCC should be first (required by gzip dependency)
         self.assertEqual(('GCC', '4.6.3'), res[0]['module'])

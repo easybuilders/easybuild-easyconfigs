@@ -9,10 +9,10 @@
 Easybuild support for building ncurses (SAM - Sequence Alignment/Map)
 """
 
-from easybuild.easyblocks.configuremake import EB_ConfigureMake  #@UnresolvedImport
+from easybuild.easyblocks.generic.configuremake import ConfigureMake
 
 
-class EB_ncurses(EB_ConfigureMake):
+class EB_ncurses(ConfigureMake):
     """
     Support for building ncurses; SAM (Sequence Alignment/Map) format
     is a generic format for storing large nucleotide sequence alignments.

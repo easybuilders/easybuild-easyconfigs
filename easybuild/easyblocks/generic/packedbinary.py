@@ -25,10 +25,10 @@ e.g., binary applications shipped as a .tar.gz file
 import os
 
 from easybuild.framework.easyblock import EasyBlock
-from easybuild.easyblocks.binary import EB_Binary  #@UnresolvedImport
+from easybuild.easyblocks.generic.binary import Binary
 
 
-class EB_PackedBinary(EB_Binary, EasyBlock):
+class PackedBinary(Binary, EasyBlock):
     """Support for installing packed binary software.
     Just unpack the sources in the install dir
     """
@@ -44,9 +44,9 @@ class EB_PackedBinary(EB_Binary, EasyBlock):
             for src in os.listdir(self.builddir):
                 srcpath = os.path.join(self.builddir, src)
                 if os.path.isdir(srcpath):
-                    # copy files to install dir via EB_Binary
+                    # copy files to install dir via Binary
                     self.cfg['start_dir'] = src
-                    EB_Binary.make_install(self)
+                    Binary.make_install(self)
         except OSError, err:
             self.log.error("Failed to copy unpacked sources to install directory: %s" % err)
 

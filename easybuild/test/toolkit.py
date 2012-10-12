@@ -43,7 +43,7 @@ class MockModule(modules.Modules):
         else:
             return []
 
-    def addModule(self, *args, **kwargs):
+    def add_module(self, *args, **kwargs):
         """ convenience method, just appends to a list we can access """
         MockModule.modules.extend(*args)
 

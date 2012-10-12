@@ -28,11 +28,11 @@ import re
 import shutil
 import sys
 
-from easybuild.easyblocks.configuremake import EB_ConfigureMake  #@UnresolvedImport
+from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.tools.modules import get_software_root, get_software_version
 
 
-class EB_XCrySDen(EB_ConfigureMake):
+class EB_XCrySDen(ConfigureMake):
     """Support for building/installing XCrySDen."""
 
     def configure_step(self):
@@ -127,6 +127,6 @@ class EB_XCrySDen(EB_ConfigureMake):
         for lib in ['Tcl', 'Tk']:
             ver = '.'.join(get_software_version(lib).split('.')[0:2])
             libpath = os.path.join(get_software_root(lib), 'lib', "%s%s" % (lib.lower(), ver))
-            txt += self.moduleGenerator.setEnvironment('%s_LIBRARY' % lib.upper(), libpath)
+            txt += self.moduleGenerator.set_environment('%s_LIBRARY' % lib.upper(), libpath)
 
         return txt

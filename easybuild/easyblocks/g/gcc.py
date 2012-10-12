@@ -34,14 +34,14 @@ from copy import copy
 from distutils.version import LooseVersion
 
 import easybuild.tools.environment as env
-from easybuild.easyblocks.configuremake import EB_ConfigureMake  #@UnresolvedImport
+from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.filetools import run_cmd
 from easybuild.tools.modules import get_software_root
 from easybuild.tools.systemtools import get_kernel_name, get_shared_lib_ext, get_platform_name
 
 
-class EB_GCC(EB_ConfigureMake):
+class EB_GCC(ConfigureMake):
     """
     Self-contained build of GCC.
     Uses system compiler for initial build, then bootstraps.
@@ -62,7 +62,7 @@ class EB_GCC(EB_ConfigureMake):
                       ('pplwatchdog', [False, "Enable PPL watchdog (default: False)", CUSTOM]),
                       ('clooguseisl', [False, "Use ISL with CLooG or not (use PPL otherwise) (default: False)", CUSTOM])
                      ]
-        return EB_ConfigureMake.extra_options(extra_vars)
+        return ConfigureMake.extra_options(extra_vars)
 
     def create_dir(self, dirname):
         """

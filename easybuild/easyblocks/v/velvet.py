@@ -12,10 +12,10 @@ EasyBuild support for building and installing Velvet, implemented as an easybloc
 import os
 import shutil
 
-from easybuild.easyblocks.configuremake import EB_ConfigureMake  #@UnresolvedImport
+from easybuild.easyblocks.generic.configuremake import ConfigureMake
 
 
-class EB_Velvet(EB_ConfigureMake):
+class EB_Velvet(ConfigureMake):
     """
     Support for building Velvet
     """

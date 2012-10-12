@@ -27,11 +27,11 @@ import tempfile
 import easybuild.framework.easyconfig as easyconfig
 from unittest import TestCase, TestSuite
 from easybuild.framework.easyconfig import EasyConfig, tweak, obtain_ec_for
-from easybuild.tools.build_log import EasyBuildError, initLogger
+from easybuild.tools.build_log import EasyBuildError, init_logger
 from easybuild.tools.systemtools import get_shared_lib_ext
 
 log_fn = "/tmp/easybuild_easyconfig_tests.log"
-_, log, logh = initLogger(filename=log_fn, debug=True, typ="easybuild_easyconfig_test")
+_, log, logh = init_logger(filename=log_fn, debug=True, typ="easybuild_easyconfig_test")
 
 class EasyConfigTest(TestCase):
     """ Baseclass for easyblock testcases """

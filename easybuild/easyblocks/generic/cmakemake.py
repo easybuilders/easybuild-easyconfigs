@@ -27,11 +27,11 @@ EasyBuild support for software that is configured with CMake, implemented as an 
 """
 import os
 
-from easybuild.easyblocks.configuremake import EB_ConfigureMake  #@UnresolvedImport
+from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.tools.filetools import run_cmd
 
 
-class EB_CMake(EB_ConfigureMake):
+class CMakeMake(ConfigureMake):
     """Support for configuring build with CMake instead of traditional configure script"""
 
     def configure_step(self, builddir=None):

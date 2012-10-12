@@ -20,11 +20,11 @@
 """
 EasyBuild support for SWIG, implemented as an easyblock
 """
-from easybuild.easyblocks.configuremake import EB_ConfigureMake  #@UnresolvedImport
+from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.tools.modules import get_software_root
 
 
-class EB_SWIG(EB_ConfigureMake):
+class EB_SWIG(ConfigureMake):
     """Support for building SWIG."""
 
     def configure_step(self):

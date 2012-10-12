@@ -29,11 +29,11 @@ EasyBuild support for building and installing the MVAPICH2 MPI library, implemen
 import os
 
 import easybuild.tools.environment as env
-from easybuild.easyblocks.configuremake import EB_ConfigureMake  #@UnresolvedImport
+from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.framework.easyconfig import CUSTOM
 
 
-class EB_MVAPICH2(EB_ConfigureMake):
+class EB_MVAPICH2(ConfigureMake):
     """
     Support for building the MVAPICH2 MPI library.
     - some compiler dependent configure options
@@ -48,7 +48,7 @@ class EB_MVAPICH2(EB_ConfigureMake):
                       ('debug', [False, "Enable debug build (which is slower) (default: False)", CUSTOM]),
                       ('rdma_type', ["gen2", "Specify the RDMA type (gen2/udapl) (default: gen2)", CUSTOM])
                      ]
-        return EB_ConfigureMake.extra_options(extra_vars)
+        return ConfigureMake.extra_options(extra_vars)
 
     def configure_step(self):
 

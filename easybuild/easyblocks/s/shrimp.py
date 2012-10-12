@@ -26,10 +26,10 @@ import os
 import shutil
 
 import easybuild.tools.environment as env
-from easybuild.easyblocks.configuremake import EB_ConfigureMake  #@UnresolvedImport
+from easybuild.easyblocks.generic.configuremake import ConfigureMake
 
 
-class EB_SHRiMP(EB_ConfigureMake):
+class EB_SHRiMP(ConfigureMake):
     """Support for building SHRiMP."""
 
     def configure_step(self):
@@ -85,6 +85,6 @@ class EB_SHRiMP(EB_ConfigureMake):
 
         txt = super(EB_SHRiMP, self).make_module_extra()
 
-        txt += self.moduleGenerator.setEnvironment('SHRIMP_FOLDER', "$root")
+        txt += self.moduleGenerator.set_environment('SHRIMP_FOLDER', "$root")
 
         return txt

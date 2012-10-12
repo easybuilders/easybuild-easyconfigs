@@ -24,12 +24,12 @@ import os
 import re
 
 import easybuild.tools.toolkit as toolchain
-from easybuild.easyblocks.cmake import EB_CMake  #@UnresolvedImport
+from easybuild.easyblocks.generic.cmakemake import CMakeMake
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.modules import get_software_root
 
 
-class EB_Trilinos(EB_CMake):
+class EB_Trilinos(CMakeMake):
     """Support for building Trilinos."""
     # see http://trilinos.sandia.gov/Trilinos10CMakeQuickstart.txt
 
@@ -43,7 +43,7 @@ class EB_Trilinos(EB_CMake):
                       ('skip_exts', [[], "List of Trilinos packages to skip (default: [])", CUSTOM]),
                       ('verbose', [False, 'Configure for verbose output (default: False)', CUSTOM])
                      ]
-        return EB_CMake.extra_options(extra_vars)
+        return CMakeMake.extra_options(extra_vars)
 
     def configure_step(self):
         """Set some extra environment variables before configuring."""

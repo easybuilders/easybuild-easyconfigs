@@ -29,11 +29,11 @@ EasyBuild support for building and installing g2lib, implemented as an easyblock
 import os
 import shutil
 
-from easybuild.easyblocks.configuremake import EB_ConfigureMake  #@UnresolvedImport
+from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.tools.modules import get_software_root
 
 
-class EB_g2lib(EB_ConfigureMake):
+class EB_g2lib(ConfigureMake):
     """Support for building g2clib GRIB2 library."""
 
     def configure_step(self):

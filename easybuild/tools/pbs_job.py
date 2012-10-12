@@ -31,7 +31,7 @@ try:
 except ImportError:
     pass
 
-from easybuild.tools.build_log import getLog
+from easybuild.tools.build_log import get_log
 
 MAX_WALLTIME = 72
 
@@ -45,7 +45,7 @@ class PbsJob(object):
         resources is a dictionary with optional keys: ['hours', 'cores'] both of these should be integer values.
         hours can be 1 - MAX_WALLTIME, cores depends on which cluster it is being run.
         """
-        self.log = getLog("PBS")
+        self.log = get_log("PBS")
         self.script = script
         if env_vars:
             self.env_vars = env_vars.copy()

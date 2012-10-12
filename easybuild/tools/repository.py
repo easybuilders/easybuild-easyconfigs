@@ -54,35 +54,12 @@ except ImportError:
     pass
 
 import easybuild
-from easybuild.framework.easyconfig import EasyConfig
-from easybuild.tools.build_log import getLog
+from easybuild.framework.easyconfig import EasyConfig, stats_to_str
+from easybuild.tools.build_log import get_log
 from easybuild.tools.ordereddict import OrderedDict
 
 
-log = getLog('repo')
-
-def stats_to_str(stats):
-    """
-    Pretty print build statistics to string.
-    """
-    if not (type(stats) == OrderedDict or type(stats) == dict):
-        log.error("Can only pretty print build stats in dictionary form, not of type %s" % type(stats))
-
-    txt = "{\n"
-
-    pref = "    "
-
-    def tostr(x):
-        if type(x) == str:
-            return "'%s'" % x
-        else:
-            return str(x)
-
-    for (k,v) in stats.items():
-        txt += "%s%s: %s,\n" % (pref, tostr(k), tostr(v))
-
-    txt += "}"
-    return txt
+log = get_log('repo')
 
 class Repository(object):
     """
@@ -97,22 +74,22 @@ class Repository(object):
         self.subdir = subdir
         self.repo = repo_path
         self.wc = None
-        self.setupRepo()
-        self.createWorkingCopy()
+        self.setup_repo()
+        self.create_working_copy()
 
-    def setupRepo(self):
+    def setup_repo(self):
         """
         Set up repository.
         """
         pass
 
-    def createWorkingCopy(self):
+    def create_working_copy(self):
         """
         Create working copy.
         """
         pass
 
-    def addEasyconfig(self, cfg, name, version, stats, previous):
+    def add_easyconfig(self, cfg, name, version, stats, previous):
         """
         Add easyconfig to repository.
         cfg is the filename of the eb file
@@ -146,7 +123,7 @@ class Repository(object):
 class FileRepository(Repository):
     """Class for file repositories."""
 
-    def setupRepo(self):
+    def setup_repo(self):
         """
         for file based repos this will create the repo directory
         if it doesn't exist.
@@ -160,12 +137,12 @@ class FileRepository(Repository):
         if not os.path.isdir(full_path):
             os.makedirs(full_path)
 
-    def createWorkingCopy(self):
+    def create_working_copy(self):
         """ set the working directory to the repo directory """
         # for sake of convenience
         self.wc = self.repo
 
-    def addEasyconfig(self, cfg, name, version, stats, previous):
+    def add_easyconfig(self, cfg, name, version, stats, previous):
         """
         Add the eb-file for for software name and version to the repository.
         stats should be a dict containing stats.
@@ -197,7 +174,7 @@ class FileRepository(Repository):
                 statsprefix = "\nbuildstats.append("
                 statssuffix = ")\n"
 
-            dest_file.write(statsprefix + stats_to_str(stats) + statssuffix)
+            dest_file.write(statsprefix + stats_to_str(stats, log) + statssuffix)
             dest_file.close()
 
         except IOError, err:
@@ -236,7 +213,7 @@ class GitRepository(FileRepository):
         self.client = None
         FileRepository.__init__(self, *args)
 
-    def setupRepo(self):
+    def setup_repo(self):
         """
         Set up git repository.
         """
@@ -246,7 +223,7 @@ class GitRepository(FileRepository):
             log.exception("It seems like GitPython is not available: %s" % err)
         self.wc = tempfile.mkdtemp(prefix='git-wc-')
 
-    def createWorkingCopy(self):
+    def create_working_copy(self):
         """
         Create git working copy.
         """
@@ -275,11 +252,11 @@ class GitRepository(FileRepository):
         except git.GitCommandError, err:
             log.exception("pull in working copy %s went wrong: %s" % (self.wc, err))
 
-    def addEasyconfig(self, cfg, name, version, stats, append):
+    def add_easyconfig(self, cfg, name, version, stats, append):
         """
         Add easyconfig to git repository.
         """
-        dest = FileRepository.addEasyconfig(self, cfg, name, version, stats, append)
+        dest = FileRepository.add_easyconfig(self, cfg, name, version, stats, append)
         ## add it to version control
         if dest:
             try:
@@ -327,7 +304,7 @@ class SvnRepository(FileRepository):
         self.client = None
         FileRepository.__init__(self, *args)
 
-    def setupRepo(self):
+    def setup_repo(self):
         """
         Set up SVN repository.
         """
@@ -352,7 +329,7 @@ class SvnRepository(FileRepository):
         except ClientError:
             log.exception("Can't connect to svn repository %s" % self.repo)
 
-    def createWorkingCopy(self):
+    def create_working_copy(self):
         """
         Create SVN working copy.
         """
@@ -383,11 +360,11 @@ class SvnRepository(FileRepository):
             except ClientError, err:
                 log.exception("Checkout of path / in working copy %s went wrong: %s" % (self.wc, err))
 
-    def addEasyconfig(self, cfg, name, version, stats, append):
+    def add_easyconfig(self, cfg, name, version, stats, append):
         """
         Add easyconfig to SVN repository.
         """
-        dest = FileRepository.addEasyconfig(self, cfg, name, version, stats, append)
+        dest = FileRepository.add_easyconfig(self, cfg, name, version, stats, append)
         log.debug("destination = %s" % dest)
         if dest:
             log.debug("destination status: %s" % self.client.status(dest))

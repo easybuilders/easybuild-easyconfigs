@@ -31,11 +31,11 @@ from distutils.version import LooseVersion
 
 import easybuild.tools.environment as env
 import easybuild.tools.toolkit as toolchain
-from easybuild.easyblocks.configuremake import EB_ConfigureMake  #@UnresolvedImport
+from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.tools.modules import get_software_root, get_software_version
 
 
-class EB_netCDF(EB_ConfigureMake):
+class EB_netCDF(ConfigureMake):
     """Support for building/installing netCDF"""
 
     def configure_step(self):

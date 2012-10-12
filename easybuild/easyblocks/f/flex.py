@@ -24,9 +24,9 @@ EasyBuild support for building and installing flex, implemented as an easyblock
 
 import os
 
-from easybuild.easyblocks.configuremake import EB_ConfigureMake  #@UnresolvedImport
+from easybuild.easyblocks.generic.configuremake import ConfigureMake
 
-class EB_flex(EB_ConfigureMake):
+class EB_flex(ConfigureMake):
     """Support for building and installing flex."""
 
     def install_step(self):
