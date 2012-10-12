@@ -247,7 +247,7 @@ def main():
     # initialize configuration
     # - check environment variable EASYBUILDCONFIG
     # - then, check command line option
-    # - last, use default config file easybuild_config.py in build.py directory
+    # - last, use default config file easybuild_config.py in main.py directory
     config_file = options.config
 
     if not config_file:
