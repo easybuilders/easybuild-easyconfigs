@@ -1257,7 +1257,8 @@ def regtest(options, log, easyconfigs_paths=None):
     cur_dir = os.getcwd()
 
     if options.aggregate_regtest:
-        output_file = os.path.join(options.aggregate_regtest, "easybuild-aggregate.xml")
+        output_file = os.path.join(options.aggregate_regtest, "%s-aggregate.xml" % os.path.basename(options.aggregate_regtest))
+        print output_file
         aggregate_xml_in_dirs(options.aggregate_regtest, output_file)
         log.info("aggregated xml files inside %s, output written to: %s" % (options.aggregate_regtest, output_file))
         sys.exit(0)
