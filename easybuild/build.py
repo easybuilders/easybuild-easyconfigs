@@ -860,7 +860,7 @@ def build_and_install_software(module, options, log, origEnviron, exitOnFailure=
     # restore original environment
     log.info("Resetting environment")
     filetools.errorsFoundInLog = 0
-    modify_env(os.environ, origEnviron):
+    modify_env(os.environ, origEnviron)
 
     cwd = os.getcwd()
 
