@@ -170,7 +170,7 @@ def add_cmdline_options(parser):
                                    help="show available easyconfig parameters")
     informative_options.add_option("--dump-classes", action="store_true",
                                    help="show list of available classes")
-    informative_options.add_option("--search", help="search for module-files in the robot-directory")
+    informative_options.add_option("--search", metavar="STR", help="search for module-files in the robot-directory")
     informative_options.add_option("-v", "--version", action="store_true", help="show version")
     informative_options.add_option("--dep-graph", metavar="depgraph.<ext>", help="create dependency graph")
 
@@ -185,9 +185,9 @@ def add_cmdline_options(parser):
                                help="enable online regression test mode")
     regtest_options.add_option("--sequential", action="store_true", default=False,
                                help="specify this option if you want to prevent parallel build")
-    regtest_options.add_option("--regtest-output-dir", help="set output directory for test-run")
-    regtest_options.add_option("--aggregate-regtest", help="collect all the xmls inside the given directory " \
-                                                           "and generate a single file")
+    regtest_options.add_option("--regtest-output-dir", metavar="DIR", help="set output directory for test-run")
+    regtest_options.add_option("--aggregate-regtest", metavar="DIR",
+                               help="collect all the xmls inside the given directory and generate a single file")
 
     parser.add_option_group(regtest_options)
 
@@ -279,7 +279,7 @@ def main():
         searchModule(options.robot, options.search)
 
     # run regtest
-    if options.regtest:
+    if options.regtest or options.aggregate_regtest:
         log.info("Running regression test")
         regtest(options, log, paths)
 
@@ -1248,6 +1248,8 @@ def aggregate_xml_in_dirs(base_dir, output_filename):
     output_file = open(output_filename, "w")
     root.writexml(output_file, addindent="\t", newl="\n")
     output_file.close()
+
+    print "Aggregate regtest results written to %s" % output_filename
 
 def regtest(options, log, easyconfigs_paths=None):
     """Run regression test, using easyconfigs available in given path."""
