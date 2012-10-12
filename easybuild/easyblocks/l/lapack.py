@@ -31,7 +31,7 @@ import os
 import shutil
 
 import easybuild.tools.toolkit as toolchain
-from easybuild.easyblocks.configuremake import EB_ConfigureMake  #@UnresolvedImport
+from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.filetools import run_cmd
 from easybuild.tools.modules import get_software_root
@@ -62,7 +62,7 @@ def get_blas_lib(log):
     return blaslib
 
 
-class EB_LAPACK(EB_ConfigureMake):
+class EB_LAPACK(ConfigureMake):
     """
     Support for building LAPACK
     - read build_step.inc.example and replace BLAS line with configtops
@@ -75,7 +75,7 @@ class EB_LAPACK(EB_ConfigureMake):
                       ('supply_blas', [False, "Supply BLAS lib to LAPACK for building (default: False)", CUSTOM]),
                       ('test_only', [False, "Only make tests, don't try and build LAPACK lib.", CUSTOM])
                      ]
-        return EB_ConfigureMake.extra_options(extra_vars)
+        return ConfigureMake.extra_options(extra_vars)
 
 
     def configure_step(self):

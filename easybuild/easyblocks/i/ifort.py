@@ -28,11 +28,11 @@ EasyBuild support for installing the Intel Fortran compiler suite, implemented a
 
 from distutils.version import LooseVersion
 
-from easybuild.easyblocks.intelbase import EB_IntelBase  #@UnresolvedImport
+from easybuild.easyblocks.generic.intelbase import IntelBase
 from easybuild.easyblocks.icc import EB_icc  #@UnresolvedImport
 
 
-class EB_ifort(EB_icc, EB_IntelBase):
+class EB_ifort(EB_icc, IntelBase):
     """
     Class that can be used to install ifort
     - tested with 11.1.046
@@ -57,4 +57,4 @@ class EB_ifort(EB_icc, EB_IntelBase):
                         'dirs': []
                        }
 
-        EB_IntelBase.sanity_check_step(self, custom_paths=custom_paths)
+        IntelBase.sanity_check_step(self, custom_paths=custom_paths)

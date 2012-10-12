@@ -12,10 +12,10 @@ EasyBuild support for building and installing MetaVelvet, implemented as an easy
 import os
 import shutil
 
-from easybuild.easyblocks.configuremake import EB_ConfigureMake  #@UnresolvedImport
+from easybuild.easyblocks.generic.configuremake import ConfigureMake
 
 
-class EB_MetaVelvet(EB_ConfigureMake):
+class EB_MetaVelvet(ConfigureMake):
     """
     Support for building MetaVelvet
     """

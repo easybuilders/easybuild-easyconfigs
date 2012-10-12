@@ -30,11 +30,11 @@ import glob
 import os
 import shutil
 
-from easybuild.easyblocks.configuremake import EB_ConfigureMake  #@UnresolvedImport
+from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.tools.modules import get_software_root
 
 
-class EB_g2clib(EB_ConfigureMake):
+class EB_g2clib(ConfigureMake):
     """Support for building g2clib GRIB2 C library."""
 
     def configure_step(self):

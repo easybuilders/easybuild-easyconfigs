@@ -12,10 +12,10 @@ Easybuild support for building SAMtools (SAM - Sequence Alignment/Map)
 import os
 import shutil
 
-from easybuild.easyblocks.configuremake import EB_ConfigureMake  #@UnresolvedImport
+from easybuild.easyblocks.generic.configuremake import ConfigureMake
 
 
-class EB_SAMtools(EB_ConfigureMake):
+class EB_SAMtools(ConfigureMake):
     """
     Support for building SAMtools; SAM (Sequence Alignment/Map) format
     is a generic format for storing large nucleotide sequence alignments.

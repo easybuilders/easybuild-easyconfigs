@@ -31,7 +31,7 @@ from easybuild.framework.easyblock import EasyBlock
 from easybuild.tools.filetools import run_cmd
 
 
-class EB_ConfigureMake(EasyBlock):
+class ConfigureMake(EasyBlock):
     """
     Support for building and installing applications with configure/make/make install
     """

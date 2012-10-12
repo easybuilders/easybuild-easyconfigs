@@ -26,10 +26,10 @@ import os
 import shutil
 
 import easybuild.tools.environment as env
-from easybuild.easyblocks.configuremake import EB_ConfigureMake  #@UnresolvedImport
+from easybuild.easyblocks.generic.configuremake import ConfigureMake
 
 
-class EB_SHRiMP(EB_ConfigureMake):
+class EB_SHRiMP(ConfigureMake):
     """Support for building SHRiMP."""
 
     def configure_step(self):

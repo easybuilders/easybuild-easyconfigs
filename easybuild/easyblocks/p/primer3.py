@@ -27,10 +27,10 @@ EasyBuild support for Primer3, implemented as an easyblock
 """
 import os
 
-from easybuild.easyblocks.configuremake import EB_ConfigureMake  #@UnresolvedImport
+from easybuild.easyblocks.generic.configuremake import ConfigureMake
 
 
-class EB_Primer3(EB_ConfigureMake):
+class EB_Primer3(ConfigureMake):
     """
     Support for building Primer3.
     Configure and build in installation dir.

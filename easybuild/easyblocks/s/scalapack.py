@@ -33,12 +33,12 @@ from distutils.version import LooseVersion
 
 import easybuild.tools.toolkit as toolchain
 from easybuild.easyblocks.blacs import det_interface  #@UnresolvedImport
-from easybuild.easyblocks.configuremake import EB_ConfigureMake  #@UnresolvedImport
+from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.easyblocks.lapack import get_blas_lib  #@UnresolvedImport
 from easybuild.tools.modules import get_software_root
 
 
-class EB_ScaLAPACK(EB_ConfigureMake):
+class EB_ScaLAPACK(ConfigureMake):
     """
     Support for building and installing ScaLAPACK, both versions 1.x and 2.x
     """

@@ -32,13 +32,13 @@ import tempfile
 from distutils.version import LooseVersion
 
 import easybuild.tools.environment as env
-from easybuild.easyblocks.intelbase import EB_IntelBase  #@UnresolvedImport
+from easybuild.easyblocks.generic.intelbase import IntelBase
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.filetools import run_cmd
 from easybuild.tools.modules import Modules, get_software_root
 
 
-class EB_imkl(EB_IntelBase):
+class EB_imkl(IntelBase):
     """
     Class that can be used to install mkl
     - tested with 10.2.1.017
@@ -48,7 +48,7 @@ class EB_imkl(EB_IntelBase):
     @staticmethod
     def extra_options():
         extra_vars = [('interfaces', [True, "Indicates whether interfaces should be built (default: True)", CUSTOM])]
-        return EB_IntelBase.extra_options(extra_vars)
+        return IntelBase.extra_options(extra_vars)
 
 
     def configure_step(self):

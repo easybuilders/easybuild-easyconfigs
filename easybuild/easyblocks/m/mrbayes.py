@@ -31,12 +31,12 @@ import os
 import shutil
 from distutils.version import LooseVersion
 
-from easybuild.easyblocks.configuremake import EB_ConfigureMake  #@UnresolvedImport
+from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.tools.filetools import run_cmd
 from easybuild.tools.modules import get_software_root
 
 
-class EB_MrBayes(EB_ConfigureMake):
+class EB_MrBayes(ConfigureMake):
     """Support for building/installing MrBayes."""
 
     def configure_step(self):

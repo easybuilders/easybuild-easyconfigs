@@ -1448,7 +1448,7 @@ def get_class_for(modulepath, class_name):
         raise ImportError
     return c
 
-def get_module_path(easyblock):
+def get_module_path(easyblock, generic=False):
     """
     Determine the module path for a given easyblock name,
     based on the encoded class name.
@@ -1470,14 +1470,19 @@ def get_module_path(easyblock):
 
     module_name = easyblock.translate(charmap)
 
-    return "easybuild.easyblocks.%s" % module_name.lower()
+    if generic:
+        modpath = '.'.join(["easybuild", "easyblocks", "generic"])
+    else:
+        modpath = '.'.join(["easybuild", "easyblocks"])
+    
+    return '.'.join([modpath, module_name.lower()])
 
 def get_class(easyblock, log, name=None):
     """
-    Get class for a particular easyblock (or EB_ConfigureMake by default)
+    Get class for a particular easyblock (or ConfigureMake by default)
     """
 
-    app_mod_class = ("easybuild.easyblocks.configuremake", "EB_ConfigureMake")
+    app_mod_class = ("easybuild.easyblocks.generic.configuremake", "ConfigureMake")
 
     try:
         # if no easyblock specified, try to find if one exists
@@ -1510,7 +1515,7 @@ def get_class(easyblock, log, name=None):
                 log.info("Assuming that full easyblock module path was specified.")
                 modulepath = easyblock
             else:
-                modulepath = get_module_path(easyblock)
+                modulepath = get_module_path(easyblock, generic=True)
                 log.info("Derived full easyblock module path for %s: %s" % (class_name, modulepath))
 
         cls = get_class_for(modulepath, class_name)

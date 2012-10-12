@@ -22,9 +22,9 @@
 EasyBuild support for building and installing guile, implemented as an easyblock
 """
 
-from easybuild.easyblocks.configuremake import EB_ConfigureMake  #@UnresolvedImport
+from easybuild.easyblocks.generic.configuremake import ConfigureMake
 
-class EB_guile(EB_ConfigureMake):
+class EB_guile(ConfigureMake):
     """
     Support for building/installing guile: default build procedure, and set correct CPATH.
     """

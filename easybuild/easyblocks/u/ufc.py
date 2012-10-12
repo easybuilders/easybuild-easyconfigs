@@ -22,11 +22,11 @@ EasyBuild support for UFC, implemented as an easyblock
 """
 from distutils.version import LooseVersion
 
-from easybuild.easyblocks.cmakepythonpackage import EB_CMakePythonPackage  #@UnresolvedImport
+from easybuild.easyblocks.generic.cmakepythonpackage import CMakePythonPackage
 from easybuild.tools.modules import get_software_root, get_software_version
 
 
-class EB_UFC(EB_CMakePythonPackage):
+class EB_UFC(CMakePythonPackage):
     """Support for building UFC."""
 
     def configure_step(self):

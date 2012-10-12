@@ -22,11 +22,11 @@ EasyBuild support for Armadillo, implemented as an easyblock
 """
 import os
 
-from easybuild.easyblocks.cmake import EB_CMake  #@UnresolvedImport
+from easybuild.easyblocks.generic.cmakemake import CMakeMake
 from easybuild.tools.modules import get_software_root
 
 
-class EB_Armadillo(EB_CMake):
+class EB_Armadillo(CMakeMake):
     """Support for building Armadillo."""
 
     def configure_step(self):

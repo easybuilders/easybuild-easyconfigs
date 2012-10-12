@@ -29,11 +29,11 @@ EasyBuild support for building and installing HPL, implemented as an easyblock
 import os
 import shutil
 
-from easybuild.easyblocks.configuremake import EB_ConfigureMake  #@UnresolvedImport
+from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.tools.filetools import run_cmd
 
 
-class EB_HPL(EB_ConfigureMake):
+class EB_HPL(ConfigureMake):
     """
     Support for building HPL (High Performance Linpack)
     - create Make.UNKNOWN

@@ -30,10 +30,10 @@ import os
 
 import easybuild.tools.environment as env
 import easybuild.tools.toolkit as toolchain
-from easybuild.easyblocks.configuremake import EB_ConfigureMake  #@UnresolvedImport
+from easybuild.easyblocks.generic.configuremake import ConfigureMake
 
 
-class EB_netCDF_minus_Fortran(EB_ConfigureMake):
+class EB_netCDF_minus_Fortran(ConfigureMake):
     """Support for building/installing the netCDF-Fortran library"""
 
     def configure_step(self):

@@ -22,10 +22,10 @@ EasyBuild support for Hypre, implemented as an easyblock
 """
 import os
 
-from easybuild.easyblocks.configuremake import EB_ConfigureMake  #@UnresolvedImport
+from easybuild.easyblocks.generic.configuremake import ConfigureMake
 
 
-class EB_Hypre(EB_ConfigureMake):
+class EB_Hypre(ConfigureMake):
     """Support for building Hypre."""
 
     def configure_step(self):

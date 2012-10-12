@@ -12,10 +12,10 @@ EasyBuild support for building and installing Bowtie2, implemented as an easyblo
 import os
 import shutil
 
-from easybuild.easyblocks.configuremake import EB_ConfigureMake  #@UnresolvedImport
+from easybuild.easyblocks.generic.configuremake import ConfigureMake
 
 
-class EB_Bowtie2(EB_ConfigureMake):
+class EB_Bowtie2(ConfigureMake):
     """
     Support for building bowtie2 (ifast and sensitive read alignment)
     - create Make.UNKNOWN

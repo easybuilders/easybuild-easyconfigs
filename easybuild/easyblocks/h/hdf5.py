@@ -28,11 +28,11 @@ EasyBuild support for building and installing HDF5, implemented as an easyblock
 
 import os
 
-from easybuild.framework.easyblocks import EB_ConfigureMake  #@UnresolvedImport
+from easybuild.framework.generic.easyblocks import ConfigureMake
 from easybuild.tools.modules import get_software_root
 
 
-class EB_HDF5(EB_ConfigureMake):
+class EB_HDF5(ConfigureMake):
     """Support for building/installing HDF5"""
 
     def configure_step(self):

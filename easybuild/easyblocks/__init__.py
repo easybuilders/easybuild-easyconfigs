@@ -26,7 +26,7 @@ import os
 from pkgutil import extend_path
 
 # Extend path so python finds our easyblocks in the subdirectories where they are located
-subdirs = [chr(l) for l in range(ord('a'),ord('z')+1)] + ['0', '_generic_']
+subdirs = [chr(l) for l in range(ord('a'),ord('z')+1)] + ['0']
 __path__.extend([os.path.join(__path__[0], subdir) for subdir in subdirs])
 # And let python know this is not the only place to look for them,
 # so we can have 2 easybuild/easyblock paths in your pythonpath, one for public, one for private easyblocks.

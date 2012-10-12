@@ -23,11 +23,11 @@
 EasyBuild support for OpenSSL, implemented as an easyblock
 """
 
-from easybuild.easyblocks.configuremake import EB_ConfigureMake  #@UnresolvedImport
+from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.tools.filetools import run_cmd
 
 
-class EB_OpenSSL(EB_ConfigureMake):
+class EB_OpenSSL(ConfigureMake):
     """Support for building OpenSSL"""
 
     def configure_step(self, cmd_prefix=''):

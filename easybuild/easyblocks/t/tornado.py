@@ -22,9 +22,9 @@
 EasyBuild support for installing Tornado, implemented as an easyblock
 """
 
-from easybuild.easyblocks.packedbinary import EB_PackedBinary  #@UnresolvedImport
+from easybuild.easyblocks.generic.packedbinary import PackedBinary
 
-class EB_Tornado(EB_PackedBinary):
+class EB_Tornado(PackedBinary):
     """EasyBlock for Tornado"""
 
     def sanity_check_step(self):

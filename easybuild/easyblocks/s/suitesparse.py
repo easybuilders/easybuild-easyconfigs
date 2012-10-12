@@ -31,12 +31,12 @@ import os
 import shutil
 import sys
 
-from easybuild.easyblocks.configuremake import EB_ConfigureMake  #@UnresolvedImport
+from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.tools.filetools import mkdir
 from easybuild.tools.modules import get_software_root
 
 
-class EB_SuiteSparse(EB_ConfigureMake):
+class EB_SuiteSparse(ConfigureMake):
     """Support for building SuiteSparse."""
 
     def configure_step(self):

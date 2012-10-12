@@ -28,11 +28,11 @@ import tempfile
 
 import easybuild.tools.environment as env
 import easybuild.tools.toolkit as toolchain
-from easybuild.easyblocks.cmakepythonpackage import EB_CMakePythonPackage  #@UnresolvedImport
+from easybuild.easyblocks.generic.cmakepythonpackage import CMakePythonPackage
 from easybuild.tools.modules import get_software_root, get_software_version
 
 
-class EB_DOLFIN(EB_CMakePythonPackage):
+class EB_DOLFIN(CMakePythonPackage):
     """Support for building and installing DOLFIN."""
 
     def configure_step(self):

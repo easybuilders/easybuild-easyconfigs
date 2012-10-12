@@ -26,11 +26,11 @@
 EasyBuild support for building and installing Doxygen, implemented as an easyblock
 """
 
-from easybuild.easyblocks.configuremake import EB_ConfigureMake  #@UnresolvedImport
+from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.tools.filetools import run_cmd
 
 
-class EB_Doxygen(EB_ConfigureMake):
+class EB_Doxygen(ConfigureMake):
     """Support for building/installing Doxygen"""
 
     def configure_step(self):

@@ -12,10 +12,10 @@ EasyBuild support for building and installing BWA, implemented as an easyblock
 import os
 import shutil
 
-from easybuild.easyblocks.configuremake import EB_ConfigureMake  #@UnresolvedImport
+from easybuild.easyblocks.generic.configuremake import ConfigureMake
 
 
-class EB_BWA(EB_ConfigureMake):
+class EB_BWA(ConfigureMake):
     """
     Support for building BWA
     """

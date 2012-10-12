@@ -29,11 +29,11 @@ import os
 import shutil
 from distutils.version import LooseVersion
 
-from easybuild.easyblocks.configuremake import EB_ConfigureMake  #@UnresolvedImport
+from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.tools.filetools import run_cmd, mkdir
 
 
-class EB_METIS(EB_ConfigureMake):
+class EB_METIS(ConfigureMake):
     """Support for building and installing METIS."""
 
     def configure_step(self, *args, **kwargs):

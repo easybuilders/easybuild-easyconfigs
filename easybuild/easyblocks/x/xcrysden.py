@@ -28,11 +28,11 @@ import re
 import shutil
 import sys
 
-from easybuild.easyblocks.configuremake import EB_ConfigureMake  #@UnresolvedImport
+from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.tools.modules import get_software_root, get_software_version
 
 
-class EB_XCrySDen(EB_ConfigureMake):
+class EB_XCrySDen(ConfigureMake):
     """Support for building/installing XCrySDen."""
 
     def configure_step(self):
