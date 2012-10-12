@@ -74,11 +74,3 @@ class EB_SAMtools(ConfigureMake):
                        }
 
         super(EB_SAMtools, self).sanity_check_step(custom_paths=custom_paths)
-
-    def make_module_req_guess(self):
-        """  
-        Include CPLUS_INCLUDE_PATH as addition to list of possible directories.
-        """
-        guesses = super(EB_SAMtools, self).make_module_req_guess()
-        guesses.update({'CPLUS_INCLUDE_PATH': ['include']})
-        return guesses
