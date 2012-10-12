@@ -79,4 +79,4 @@ logFormat = ("easybuild", "easybuild-%(name)s-%(version)s-%(date)s.%(time)s.log"
 logDir = tempfile.gettempdir()
 
 # general cleanliness
-del os, getLog, config, log, prefix, buildDir, installDir, sourceDir
+del os, get_log, config, log, prefix, buildDir, installDir, sourceDir
