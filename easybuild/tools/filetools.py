@@ -640,8 +640,6 @@ def modify_env(old, new):
             os.unsetenv(key)
             del os.environ[key]
 
-    return 'ok'
-
 
 def convert_name(name, upper=False):
     """
