@@ -29,11 +29,11 @@ import os
 import shutil
 import tempfile
 
-from easybuild.tools.build_log import getLog
+from easybuild.tools.build_log import get_log
 from easybuild.tools.config import install_path
 
 
-log = getLog('moduleGenerator')
+log = get_log('moduleGenerator')
 
 # general module class
 GENERAL_CLASS = 'all'
@@ -49,7 +49,7 @@ class ModuleGenerator(object):
         self.filename = None
         self.tmpdir = None
 
-    def createFiles(self):
+    def create_files(self):
         """
         Creates the absolute filename for the module.
         """
@@ -90,7 +90,7 @@ class ModuleGenerator(object):
 
         return os.path.join(module_path, GENERAL_CLASS)
 
-    def getDescription(self, conflict=True):
+    def get_description(self, conflict=True):
         """
         Generate a description.
         """
@@ -124,7 +124,7 @@ if { ![is-loaded %(name)s/%(version)s] } {
 
         return txt
 
-    def loadModule(self, name, version):
+    def load_module(self, name, version):
         """
         Generate load statements for module with name and version.
         """
@@ -134,7 +134,7 @@ if { ![is-loaded %(name)s/%(version)s] } {
 }
 """ % {'name': name, 'version': version}
 
-    def unloadModule(self, name, version):
+    def unload_module(self, name, version):
         """
         Generate unload statements for module with name and version.
         """
@@ -146,7 +146,7 @@ if { ![is-loaded %(name)s/%(version)s] } {
 }
 """ % {'name': name, 'version': version}
 
-    def prependPaths(self, key, paths):
+    def prepend_paths(self, key, paths):
         """
         Generate prepend-path statements for the given list of paths.
         """
@@ -156,7 +156,7 @@ if { ![is-loaded %(name)s/%(version)s] } {
         statements = [template % (key, p.replace(fullInstallPath, '')) for p in paths]
         return ''.join(statements)
 
-    def setEnvironment(self, key, value):
+    def set_environment(self, key, value):
         """
         Generate setenv statement for the given key/value pair.
         """

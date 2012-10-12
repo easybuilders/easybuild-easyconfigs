@@ -368,7 +368,7 @@ class EB_WIEN2k(EasyBlock):
 
         txt = super(EB_WIEN2k, self).make_module_extra()
 
-        txt += self.moduleGenerator.setEnvironment("WIENROOT", "$root")
-        txt += self.moduleGenerator.prependPaths("PATH", "$root")
+        txt += self.moduleGenerator.set_environment("WIENROOT", "$root")
+        txt += self.moduleGenerator.prepend_paths("PATH", "$root")
 
         return txt

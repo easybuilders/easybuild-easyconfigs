@@ -40,10 +40,10 @@ import urllib
 import easybuild.tools.environment as env
 from easybuild.tools.asyncprocess import Popen, PIPE, STDOUT
 from easybuild.tools.asyncprocess import send_all, recv_some
-from easybuild.tools.build_log import getLog
+from easybuild.tools.build_log import get_log
 
 
-log = getLog('fileTools')
+log = get_log('fileTools')
 errorsFoundInLog = 0
 
 strictness = 'warn'
@@ -74,7 +74,7 @@ def extract_file(fn, dest, extra_options=None, overwrite=False):
     except OSError, err:
         log.error("Can't change to directory %s: %s" % (absDest, err))
 
-    cmd = extractCmd(fn, overwrite=overwrite)
+    cmd = extract_cmd(fn, overwrite=overwrite)
     if not cmd:
         log.error("Can't extract file %s with unknown filetype" % fn)
 
@@ -83,7 +83,7 @@ def extract_file(fn, dest, extra_options=None, overwrite=False):
 
     run_cmd(cmd, simple=True)
 
-    return findBaseDir()
+    return find_base_dir()
 
 def download_file(filename, url, path):
 
@@ -120,14 +120,14 @@ def download_file(filename, url, path):
     # failed to download after multiple attempts
     return None
 
-def findBaseDir():
+def find_base_dir():
     """
     Try to locate a possible new base directory
     - this is typically a single subdir, e.g. from untarring a tarball
     - when extracting multiple tarballs in the same directory,
       expect only the first one to give the correct path
     """
-    def getLocalDirsPurged():
+    def get_local_dirs_purged():
         ## e.g. always purge the log directory
         ignoreDirs = ["easybuild"]
 
@@ -137,7 +137,7 @@ def findBaseDir():
                 lst.remove(ignDir)
         return lst
 
-    lst = getLocalDirsPurged()
+    lst = get_local_dirs_purged()
     newDir = os.getcwd()
     while len(lst) == 1:
         newDir = os.path.join(os.getcwd(), lst[0])
@@ -148,14 +148,14 @@ def findBaseDir():
             os.chdir(newDir)
         except OSError, err:
             log.exception("Changing to dir %s from current dir %s failed: %s" % (newDir, os.getcwd(), err))
-        lst = getLocalDirsPurged()
+        lst = get_local_dirs_purged()
 
     log.debug("Last dir list %s" % lst)
     log.debug("Possible new dir %s found" % newDir)
     return newDir
 
 
-def extractCmd(fn, overwrite=False):
+def extract_cmd(fn, overwrite=False):
     """
     Determines the file type of file fn, returns extract cmd
     - based on file suffix
@@ -421,7 +421,7 @@ def run_cmd_qa(cmd, qa, no_qa=None, log_ok=True, log_all=False, simple=False, re
     split = '[\s\n]+'
     regSplit = re.compile(r"" + split)
 
-    def processQA(q, a):
+    def process_QA(q, a):
         splitq = [escape_special(x) for x in regSplit.split(q)]
         regQtxt = split.join(splitq) + split.rstrip('+') + "*$"
         ## add optional split at the end
@@ -436,7 +436,7 @@ def run_cmd_qa(cmd, qa, no_qa=None, log_ok=True, log_all=False, simple=False, re
     newQA = {}
     log.debug("newQA: ")
     for question, answer in qa.items():
-        (a, regQ) = processQA(question, answer)
+        (a, regQ) = process_QA(question, answer)
         newQA[regQ] = a
         log.debug("newqa[%s]: %s" % (regQ.pattern, a))
 
@@ -598,7 +598,7 @@ def parse_cmd_output(cmd, stdouterr, ec, simple, log_all, log_ok, regexp):
 
     # parse the stdout/stderr for errors when strictness dictates this or when regexp is passed in
     if use_regexp or regexp:
-        res = parselogForError(stdouterr, regexp, msg="Command used: %s" % cmd)
+        res = parse_log_for_error(stdouterr, regexp, msg="Command used: %s" % cmd)
         if len(res) > 0:
             message = "Found %s errors in command output (output: %s)" % (len(res), ", ".join([r[0] for r in res]))
             if use_regexp:
@@ -617,7 +617,7 @@ def parse_cmd_output(cmd, stdouterr, ec, simple, log_all, log_ok, regexp):
         return (stdouterr, ec)
 
 
-def modifyEnv(old, new):
+def modify_env(old, new):
     """
     Compares 2 os.environ dumps. Adapts final environment.
     """
@@ -661,7 +661,7 @@ def convert_name(name, upper=False):
         return name
 
 
-def parselogForError(txt, regExp=None, stdout=True, msg=None):
+def parse_log_for_error(txt, regExp=None, stdout=True, msg=None):
     """
     txt is multiline string.
     - in memory

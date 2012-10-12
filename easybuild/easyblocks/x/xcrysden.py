@@ -127,6 +127,6 @@ class EB_XCrySDen(ConfigureMake):
         for lib in ['Tcl', 'Tk']:
             ver = '.'.join(get_software_version(lib).split('.')[0:2])
             libpath = os.path.join(get_software_root(lib), 'lib', "%s%s" % (lib.lower(), ver))
-            txt += self.moduleGenerator.setEnvironment('%s_LIBRARY' % lib.upper(), libpath)
+            txt += self.moduleGenerator.set_environment('%s_LIBRARY' % lib.upper(), libpath)
 
         return txt

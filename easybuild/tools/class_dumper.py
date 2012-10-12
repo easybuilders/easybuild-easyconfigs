@@ -28,7 +28,7 @@ import pyclbr
 import os
 
 
-def dumpClasses(root):
+def dump_classes(root):
     """Get a class tree, starting at root"""
     moduleRoot = None
     exec("from %s import __file__ as moduleRoot" % root)
@@ -66,16 +66,16 @@ def dumpClasses(root):
     for root in roots:
         print "%s (%s)" % (root, classes[root]['class'].module)
         if 'children' in classes[root]:
-            printTree(classes, classes[root]['children'])
+            print_tree(classes, classes[root]['children'])
             print ""
 
-def printTree(classes, classNames, depth=0):
+def print_tree(classes, classNames, depth=0):
     for className in classNames:
         classInfo = classes[className]
         print "%s|-- %s (%s)" % ("|   " * depth, className, classInfo['class'].module)
         if 'children' in classInfo:
-            printTree(classes, classInfo['children'], depth + 1)
+            print_tree(classes, classInfo['children'], depth + 1)
 
 
 if __name__ == "__main__":
-    dumpClasses('easybuild.easyblocks')
+    dump_classes('easybuild.easyblocks')

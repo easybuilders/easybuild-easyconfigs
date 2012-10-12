@@ -32,7 +32,7 @@ import re
 import tempfile
 from distutils.version import LooseVersion
 
-from easybuild.tools.build_log import EasyBuildError, getLog
+from easybuild.tools.build_log import EasyBuildError, get_log
 from easybuild.tools.toolkit import Toolkit
 from easybuild.tools.systemtools import get_shared_lib_ext
 from easybuild.tools.filetools import run_cmd
@@ -165,7 +165,7 @@ class EasyConfig(object):
             if value[2] == MANDATORY:
                 self.mandatory.append(key)
 
-        self.log = getLog("EasyConfig")
+        self.log = get_log("EasyConfig")
 
         # store toolchain
         self._toolchain = None

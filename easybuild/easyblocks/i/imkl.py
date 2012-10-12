@@ -139,7 +139,7 @@ class EB_imkl(IntelBase):
             # build the mkl interfaces (pic and no-pic)
             # load the dependencies
             m = Modules()
-            m.addModule(self.cfg.dependencies())
+            m.add_module(self.cfg.dependencies())
             m.load()
 
             if not self.cfg['interfaces']:
@@ -270,7 +270,7 @@ class EB_imkl(IntelBase):
 
             # load the dependencies
             m = Modules()
-            m.addModule(self.cfg.dependencies())
+            m.add_module(self.cfg.dependencies())
             m.load()
 
             if not self.cfg['interfaces']:

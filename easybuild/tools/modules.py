@@ -30,11 +30,11 @@ import re
 import subprocess
 import sys
 
-from easybuild.tools.build_log import getLog, EasyBuildError
+from easybuild.tools.build_log import get_log, EasyBuildError
 from easybuild.tools.filetools import convert_name, run_cmd
 
 
-log = getLog('Modules')
+log = get_log('Modules')
 outputMatchers = {
     # matches whitespace and module-listing headers
     'whitespace': re.compile(r"^\s*$|^(-+).*(-+)$"),
@@ -52,7 +52,7 @@ class Modules(object):
         self.modulePath = modulePath
         self.modules = []
 
-        self.checkModulePath()
+        self.check_module_path()
 
         # make sure environment-modules is installed
         ec = subprocess.call(["which", "modulecmd"], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
@@ -62,7 +62,7 @@ class Modules(object):
             log.error(msg)
             raise EasyBuildError(msg)
 
-    def checkModulePath(self):
+    def check_module_path(self):
         """
         Check if MODULEPATH is set and change it if necessary.
         """
@@ -98,7 +98,7 @@ class Modules(object):
         if version:
             txt = "%s/%s" % (name, version)
 
-        modules = self.runModule('available', txt, modulePath=modulePath)
+        modules = self.run_module('available', txt, modulePath=modulePath)
 
         ## sort the answers in [name, version] pairs
         ## alphabetical order, default last
@@ -115,7 +115,7 @@ class Modules(object):
         """
         return (name, version) in self.available(name, version, modulePath)
 
-    def addModule(self, modules):
+    def add_module(self, modules):
         """
         Check if module exist, if so add to list.
         """
@@ -150,13 +150,13 @@ class Modules(object):
         Load all requested modules.
         """
         for mod in self.modules:
-            self.runModule('load', "/".join(mod))
+            self.run_module('load', "/".join(mod))
 
     def show(self, name, version):
         """
         Run 'module show' for the specified module.
         """
-        return self.runModule('show', "%s/%s" % (name, version), return_output=True)
+        return self.run_module('show', "%s/%s" % (name, version), return_output=True)
 
     def modulefile_path(self, name, version):
         """
@@ -170,7 +170,7 @@ class Modules(object):
             # second line of module show output contains full path of module file
             return modinfo.split('\n')[1].replace(':', '')
 
-    def runModule(self, *args, **kwargs):
+    def run_module(self, *args, **kwargs):
         """
         Run module command.
         """
@@ -277,7 +277,7 @@ class Modules(object):
         return deps
 
 
-def searchModule(path, query):
+def search_module(path, query):
     """
     Search for a particular module (only prints)
     """
