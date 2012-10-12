@@ -54,35 +54,12 @@ except ImportError:
     pass
 
 import easybuild
-from easybuild.framework.easyconfig import EasyConfig
+from easybuild.framework.easyconfig import EasyConfig, stats_to_str
 from easybuild.tools.build_log import getLog
 from easybuild.tools.ordereddict import OrderedDict
 
 
 log = getLog('repo')
-
-def stats_to_str(stats):
-    """
-    Pretty print build statistics to string.
-    """
-    if not (type(stats) == OrderedDict or type(stats) == dict):
-        log.error("Can only pretty print build stats in dictionary form, not of type %s" % type(stats))
-
-    txt = "{\n"
-
-    pref = "    "
-
-    def tostr(x):
-        if type(x) == str:
-            return "'%s'" % x
-        else:
-            return str(x)
-
-    for (k,v) in stats.items():
-        txt += "%s%s: %s,\n" % (pref, tostr(k), tostr(v))
-
-    txt += "}"
-    return txt
 
 class Repository(object):
     """
@@ -197,7 +174,7 @@ class FileRepository(Repository):
                 statsprefix = "\nbuildstats.append("
                 statssuffix = ")\n"
 
-            dest_file.write(statsprefix + stats_to_str(stats) + statssuffix)
+            dest_file.write(statsprefix + stats_to_str(stats, log) + statssuffix)
             dest_file.close()
 
         except IOError, err:

@@ -1024,3 +1024,26 @@ def get_paths_for(log, subdir="easyconfigs"):
             raise EasyBuildError(str(err))
 
     return paths
+
+def stats_to_str(stats, log):
+    """
+    Pretty print build statistics to string.
+    """
+    if not (type(stats) == OrderedDict or type(stats) == dict):
+        log.error("Can only pretty print build stats in dictionary form, not of type %s" % type(stats))
+
+    txt = "{\n"
+
+    pref = "    "
+
+    def tostr(x):
+        if type(x) == str:
+            return "'%s'" % x
+        else:
+            return str(x)
+
+    for (k,v) in stats.items():
+        txt += "%s%s: %s,\n" % (pref, tostr(k), tostr(v))
+
+    txt += "}"
+    return txt
