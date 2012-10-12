@@ -71,7 +71,7 @@ from easybuild.framework.easyblock import get_class
 from easybuild.framework.easyconfig import EasyConfig
 from easybuild.tools.build_log import EasyBuildError, initLogger
 from easybuild.tools.build_log import removeLogHandler, print_msg
-from easybuild.tools.class_dumper import dumpClasses
+from easybuild.tools.class_dumper import dump_classes
 from easybuild.tools.config import getRepository
 from easybuild.tools.filetools import modifyEnv
 from easybuild.tools.modules import Modules, searchModule
@@ -168,8 +168,8 @@ def add_cmdline_options(parser):
 
     informative_options.add_option("-a", "--avail-easyconfig-params", action="store_true",
                                    help="show available easyconfig parameters")
-    informative_options.add_option("--dump-classes", action="store_true",
-                                   help="show list of available classes")
+    informative_options.add_option("--list-easyblocks", action="store_true",
+                                   help="show list of available easyblocks")
     informative_options.add_option("--search", help="search for module-files in the robot-directory")
     informative_options.add_option("-v", "--version", action="store_true", help="show version")
     informative_options.add_option("--dep-graph", metavar="depgraph.<ext>", help="create dependency graph")
@@ -269,8 +269,8 @@ def main():
         print_avail_params(options.easyblock, log)
 
     # dump available classes
-    if options.dump_classes:
-        dumpClasses('easybuild.easyblocks')
+    if options.list_easyblocks:
+        dump_classes('easybuild.easyblocks')
 
     # search for modules
     if options.search:
@@ -283,7 +283,7 @@ def main():
         log.info("Running regression test")
         regtest(options, log, paths)
 
-    if options.avail_easyconfig_params or options.dump_classes or options.search or options.version or options.regtest:
+    if options.avail_easyconfig_params or options.list_easyblocks or options.search or options.version or options.regtest:
         if logFile:
             os.remove(logFile)
         sys.exit(0)

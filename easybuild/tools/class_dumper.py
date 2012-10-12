@@ -25,57 +25,84 @@
 ##
 import glob
 import pyclbr
+import re
 import os
+import sys
 
 
-def dumpClasses(root):
-    """Get a class tree, starting at root"""
-    moduleRoot = None
-    exec("from %s import __file__ as moduleRoot" % root)
-    moduleRoot = os.path.dirname(moduleRoot) + '/'
+def dump_classes(root):
+    """Get a class tree, starting at root, by iterating of the PYTHONPATH."""
 
-    # Read all modules
-    modules = {}
-    for moduleFile in glob.glob(os.path.join(moduleRoot, '*.py')):
-        module = "%s.%s" % (root, moduleFile.replace(moduleRoot, '').replace('.py', ''))
-        modules.update(pyclbr.readmodule(module))
+    moduleRoots = []
+    for path in sys.path:
+        rootpath = os.path.join(path, root.replace('.', '/'))
+        if os.path.isdir(rootpath):
+            moduleRoots.append(rootpath)
 
-    # Store parent-children relations
-    classes = {}
-    roots = []
-    for className in sorted(modules):
-        if not className in classes:
-            classes[className] = {'children': []}
+    print "moduleRoots: %s" % moduleRoots
+ 
+    for moduleRoot in moduleRoots:
 
-        classes[className]['class'] = modules[className]
+        print "moduleRoot: %s" % moduleRoot
 
-        parents = modules[className].super
-        if len(parents) > 0:
-            if type(parents[0]) != str:
-                parent = parents[0].name
+        # Read all modules
+        modules = {}
+        pyre = re.compile("^[^_].*\.py$")
+        for (parent, _, files) in os.walk(moduleRoot): #glob.glob(os.path.join(moduleRoot, '*.py')):
+            print parent, files
+            for moduleFile in files:
+                if pyre.search(moduleFile):
+                    module = '.'.join([moduleRoot, parent, moduleFile]).replace(moduleRoot, '').replace('/', '')
+                    print "module: %s" % module
+                    module = '.'.join(module.split('.')[:-1])  # get rid of extension (.py)
+                    print "readmodule(%s)" % module
+                    modules.update(pyclbr.readmodule(module))
+
+        modules.update(pyclbr.readmodule('easybuild.framework.easyblock'))
+        modules.update(pyclbr.readmodule('easybuild.framework.extension'))
+        print modules
+
+        # Store parent-children relations
+        classes = {}
+        roots = []
+        for className in sorted(modules):
+            if not className in classes:
+                classes[className] = {'children': []}
+
+            classes[className]['class'] = modules[className]
+
+            parents = modules[className].super
+            if 'object' in parents:
+                parents.remove('object')
+            print "parents of %s: %s" % (className, parents)
+            if len(parents) > 0:
+                if type(parents[0]) != str:
+                    parent = parents[0].name
+                else:
+                    parent = parents[0]
+
+                if not parent in classes:
+                    classes[parent] = {'children': []}
+                classes[parent]['children'].append(className)
             else:
-                parent = parents[0]
+                roots.append(className)
 
-            if not parent in classes:
-                classes[parent] = {'children': []}
-            classes[parent]['children'].append(className)
-        else:
-            roots.append(className)
+        print classes
 
-    # Print the tree, start with the roots
-    for root in roots:
-        print "%s (%s)" % (root, classes[root]['class'].module)
-        if 'children' in classes[root]:
-            printTree(classes, classes[root]['children'])
-            print ""
+        # Print the tree, start with the roots
+        for root in roots:
+            print "%s (%s)" % (root, classes[root]['class'].module)
+            if 'children' in classes[root]:
+                print_tree(classes, classes[root]['children'])
+                print ""
 
-def printTree(classes, classNames, depth=0):
+def print_tree(classes, classNames, depth=0):
     for className in classNames:
         classInfo = classes[className]
         print "%s|-- %s (%s)" % ("|   " * depth, className, classInfo['class'].module)
         if 'children' in classInfo:
-            printTree(classes, classInfo['children'], depth + 1)
+            print_tree(classes, classInfo['children'], depth + 1)
 
 
 if __name__ == "__main__":
-    dumpClasses('easybuild.easyblocks')
+    dump_classes('easybuild.easyblocks')
