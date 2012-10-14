@@ -24,14 +24,14 @@ EasyBuild support for CGAL, implemented as an easyblock
 """
 import os
 
-from easybuild.easyblocks.cmake import EB_CMake
+from easybuild.easyblocks.generic.cmakemake import CMakeMake
 from easybuild.tools.modules import get_software_root
 
 
-class EB_CGAL(EB_CMake):
+class EB_CGAL(CMakeMake):
     """Support for building CGAL."""
 
-    def configure(self):
+    def configure_step(self):
         """Set some extra environment variables before configuring."""
 
         deps = ["Boost", "GMP", "MPFR"]
@@ -45,20 +45,15 @@ class EB_CGAL(EB_CMake):
 
         os.environ['BOOST_ROOT'] = get_software_root("Boost")
 
-        EB_CMake.configure(self)
+        super(EB_CGAL, self).configure_step()
 
-    def sanitycheck(self):
+    def sanity_check_step(self):
         """Custom sanity check for CGAL."""
 
-        if not self.getcfg('sanityCheckPaths'):
+        custom_paths = {
+                        'files': ['bin/cgal_%s' % x for x in ["create_cmake_script", "make_macosx_app"]] +
+                                 ['lib/libCGAL%s.so' % x for x in ["", "_Core"]],
+                        'dirs':['include/CGAL', 'lib/CGAL']
+                       }
 
-            self.setcfg('sanityCheckPaths', {
-                                             'files': ['bin/cgal_%s' % x for x in ["create_cmake_script",
-                                                                                   "make_macosx_app"]] +
-                                                      ['lib/libCGAL%s.so' % x for x in ["", "_Core"]],
-                                             'dirs':['include/CGAL', 'lib/CGAL']
-                                             })
-
-            self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
-
-        EB_CMake.sanitycheck(self)
+        super(EB_CGAL, self).sanity_check_step(custom_paths=custom_paths)

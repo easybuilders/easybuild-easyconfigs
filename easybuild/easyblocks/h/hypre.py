@@ -22,35 +22,31 @@ EasyBuild support for Hypre, implemented as an easyblock
 """
 import os
 
-from easybuild.framework.application import Application
+from easybuild.easyblocks.generic.configuremake import ConfigureMake
 
 
-class EB_Hypre(Application):
+class EB_Hypre(ConfigureMake):
     """Support for building Hypre."""
 
-    def configure(self):
+    def configure_step(self):
         """Configure Hypre build after setting extra configure options."""
 
-        self.updatecfg('configopts', '--with-MPI-include=%s' % os.getenv('MPI_INC_DIR'))
+        self.cfg.update('configopts', '--with-MPI-include=%s' % os.getenv('MPI_INC_DIR'))
 
         for dep in ["BLAS", "LAPACK"]:
             libs = ' '.join(os.getenv('%s_STATIC_LIBS' % dep).split(','))
-            self.updatecfg('configopts', '--with-%s-libs="%s"' % (dep.lower(), libs))
-            self.updatecfg('configopts', '--with-%s-lib-dirs="%s"' % (dep.lower(),
+            self.cfg.update('configopts', '--with-%s-libs="%s"' % (dep.lower(), libs))
+            self.cfg.update('configopts', '--with-%s-lib-dirs="%s"' % (dep.lower(),
                                                                       os.getenv('%s_LIB_DIR' % dep)))
 
-        Application.configure(self)
+        super(EB_Hypre, self).configure_step()
 
-    def sanitycheck(self):
+    def sanity_check_step(self):
         """Custom sanity check for Hypre."""
 
-        if not self.getcfg('sanityCheckPaths'):
+        custom_paths = {
+                        'files':['lib/libHYPRE.a'],
+                        'dirs':['include']
+                       }
 
-            self.setcfg('sanityCheckPaths', {
-                                             'files':['lib/libHYPRE.a'],
-                                             'dirs':['include']
-                                             })
-
-            self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
-
-        Application.sanitycheck(self)
+        super(EB_Hypre, self).sanity_check_step(custom_paths=custom_paths)

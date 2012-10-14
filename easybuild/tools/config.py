@@ -30,11 +30,11 @@ EasyBuild configuration (paths, preferences, etc.)
 import os
 import tempfile
 
-from easybuild.tools.build_log import getLog
+from easybuild.tools.build_log import get_log
 import easybuild.tools.repository as repo
 
 
-log = getLog('config')
+log = get_log('config')
 
 variables = {}
 requiredVariables = ['buildPath', 'installPath', 'sourcePath', 'logFormat', 'repository', 'repositoryPath']
@@ -52,8 +52,8 @@ def init(filename, **kwargs):
     Variables are read in this order of preference: CLI option > environment > config file
     """
 
-    variables.update(readConfiguration(filename)) # config file
-    variables.update(readEnvironment(environmentVariables)) # environment
+    variables.update(read_configuration(filename)) # config file
+    variables.update(read_environment(environmentVariables)) # environment
     variables.update(kwargs) # CLI options
 
     def create_dir(dirtype, dirname):
@@ -85,7 +85,7 @@ def init(filename, **kwargs):
                     continue
 
     # update MODULEPATH if required
-    ebmodpath = os.path.join(installPath(typ='mod'), 'all')
+    ebmodpath = os.path.join(install_path(typ='mod'), 'all')
     modulepath = os.getenv('MODULEPATH')
     if not modulepath or not ebmodpath in modulepath:
         if modulepath:
@@ -94,7 +94,7 @@ def init(filename, **kwargs):
             os.environ['MODULEPATH'] = ebmodpath
         log.info("Extended MODULEPATH with module install path used by EasyBuild: %s" % os.getenv('MODULEPATH'))
 
-def readConfiguration(filename):
+def read_configuration(filename):
     """
     Read variables from the config file
     """
@@ -109,7 +109,7 @@ def readConfiguration(filename):
 
     return fileVariables
 
-def readEnvironment(envVars, strict=False):
+def read_environment(envVars, strict=False):
     """
     Read variables from the environment
         - strict=True enforces that all possible environment variables are found
@@ -124,7 +124,7 @@ def readEnvironment(envVars, strict=False):
 
     return result
 
-def buildPath():
+def build_path():
     """
     Return the build path
     """
@@ -136,7 +136,7 @@ def source_path():
     """
     return variables['sourcePath']
 
-def installPath(typ=None):
+def install_path(typ=None):
     """
     Returns the install path
     - subdir 'software' for actual installation (default)
@@ -149,19 +149,19 @@ def installPath(typ=None):
 
     return os.path.join(variables['installPath'], suffix)
 
-def getRepository():
+def get_repository():
     """
     Return the repository (git, svn or file)
     """
     return variables['repository']
 
-def repositoryPath():
+def repository_path():
     """
     Return the repository path
     """
     return variables['repositoryPath']
 
-def logFormat():
+def log_format():
     """
     Return the log format
     """
@@ -170,7 +170,7 @@ def logFormat():
     else:
         return "easybuild-%(name)s-%(version)s-%(date)s.%(time)s.log"
 
-def logPath():
+def log_path():
     """
     Return the log path
     """

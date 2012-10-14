@@ -28,14 +28,14 @@ import re
 import shutil
 import sys
 
-from easybuild.framework.application import Application
+from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.tools.modules import get_software_root, get_software_version
 
 
-class EB_XCrySDen(Application):
+class EB_XCrySDen(ConfigureMake):
     """Support for building/installing XCrySDen."""
 
-    def configure(self):
+    def configure_step(self):
         """
         Check required dependencies, configure XCrySDen build by patching Make.sys file
         and set make target and installation prefix.
@@ -47,7 +47,7 @@ class EB_XCrySDen(Application):
             if not get_software_root(dep):
                 self.log.error("Module for dependency %s not loaded." % dep)
 
-        # copy template Make.sys to patch
+        # copy template Make.sys to apply_patch
         makesys_tpl_file = os.path.join("system", "Make.sys-shared")
         makesys_file = "Make.sys"
         try:
@@ -98,47 +98,35 @@ class EB_XCrySDen(Application):
         self.log.debug("Patched Make.sys: %s" % open(makesys_file, "r").read())
 
         # set make target to 'xcrysden', such that dependencies are not downloaded/built
-        self.updatecfg('makeopts', 'xcrysden')
+        self.cfg.update('makeopts', 'xcrysden')
 
         # set installation prefix
-        self.updatecfg('preinstallopts', 'prefix=%s' % self.installdir)
+        self.cfg.update('preinstallopts', 'prefix=%s' % self.installdir)
 
     # default 'make' and 'make install' should be fine
 
-    def sanitycheck(self):
+    def sanity_check_step(self):
         """Custom sanity check for XCrySDen."""
 
-        if not self.getcfg('sanityCheckPaths'):
+        custom_paths = {'files': ["bin/%s" % x for x in ["ptable", "pwi2xsf", "pwo2xsf", "unitconv", "xcrysden"]] +
+                                 ["lib/%s-%s/%s" % (self.name.lower(), self.version, x)
+                                  for x in ["atomlab", "calplane", "cube2xsf", "fhi_coord2xcr", "fhi_inpini2ftn34",
+                                            "fracCoor", "fsReadBXSF", "ftnunit", "gengeom", "kPath", "multislab",
+                                            "nn", "pwi2xsf", "pwi2xsf_old", "pwKPath", "recvec", "savestruct",
+                                            "str2xcr", "wn_readbakgen", "wn_readbands", "xcrys", "xctclsh",
+                                            "xsf2xsf"]],
+                        'dirs':[]
+                       }
 
-            self.setcfg('sanityCheckPaths',{'files': ["bin/%s" % x for x in ["ptable", "pwi2xsf",
-                                                                             "pwo2xsf", "unitconv",
-                                                                             "xcrysden"]] +
-                                                     ["lib/%s-%s/%s" % (self.name().lower(), self.version(), x)
-                                                                        for x in ["atomlab", "calplane",
-                                                                                  "cube2xsf", "fhi_coord2xcr",
-                                                                                  "fhi_inpini2ftn34", "fracCoor",
-                                                                                  "fsReadBXSF", "ftnunit",
-                                                                                  "gengeom", "kPath", 
-                                                                                  "multislab", "nn", "pwi2xsf",
-                                                                                  "pwi2xsf_old", "pwKPath",
-                                                                                  "recvec", "savestruct",
-                                                                                  "str2xcr", "wn_readbakgen",
-                                                                                  "wn_readbands", "xcrys",
-                                                                                  "xctclsh", "xsf2xsf"]],
-                                            'dirs':[]
-                                           })
-
-            self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
-
-        Application.sanitycheck(self)
+        super(EB_XCrySDen, self).sanity_check_step(custom_paths=custom_paths)
 
     def make_module_extra(self):
         """Set extra environment variables in module file."""
-        txt = Application.make_module_extra(self)
+        txt = super(EB_XCrySDen, self).make_module_extra()
 
         for lib in ['Tcl', 'Tk']:
             ver = '.'.join(get_software_version(lib).split('.')[0:2])
             libpath = os.path.join(get_software_root(lib), 'lib', "%s%s" % (lib.lower(), ver))
-            txt += self.moduleGenerator.setEnvironment('%s_LIBRARY' % lib.upper(), libpath)
+            txt += self.moduleGenerator.set_environment('%s_LIBRARY' % lib.upper(), libpath)
 
         return txt

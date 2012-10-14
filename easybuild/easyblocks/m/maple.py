@@ -29,32 +29,32 @@ EasyBuild support for installing Maple, implemented as an easyblock
 import os
 import shutil
 
-from easybuild.framework.application import Application
+from easybuild.framework.easyblock import EasyBlock
 from easybuild.tools.filetools import run_cmd_qa
 
 
-class EB_Maple(Application):
+class EB_Maple(EasyBlock):
     """Support for installing Maple."""
 
-    def unpack_src(self):
+    def extract_step(self):
         """Unpacking of files is just copying Maple binary installer to build dir."""
 
         for f in self.src:
             shutil.copy(f['path'], os.path.join(self.builddir, f['name']))
             f['finalpath'] = self.builddir
 
-    def configure(self):
+    def configure_step(self):
         """No configuration needed, binary installer"""
         pass
 
-    def make(self):
+    def build_step(self):
         """No compilation needed, binary installer"""
         pass
 
-    def make_install(self):
+    def install_step(self):
         """Interactive install of Maple."""
 
-        cmd = "%s/Maple%sLinuxX86_64Installer.bin" % (self.builddir, self.getcfg('version'))
+        cmd = "%s/Maple%sLinuxX86_64Installer.bin" % (self.builddir, self.cfg['version'])
 
         qa = {
               'PRESS <ENTER> TO CONTINUE:': '',
@@ -64,7 +64,7 @@ class EB_Maple(Application):
               'Do you wish to have a shortcut installed on your desktop? ->1- Yes 2- No ENTER THE NUMBER FOR YOUR CHOICE, OR PRESS <ENTER> TO ACCEPT THE DEFAULT::': '2',
               '->1- Single User License 2- Network License ENTER THE NUMBER FOR YOUR CHOICE, OR PRESS <ENTER> TO ACCEPT THE DEFAULT::': '2',
               'PRESS <ENTER> TO EXIT THE INSTALLER:': '',
-              'License server (DEFAULT: ):': self.getcfg('licenseServer'),
+              'License server (DEFAULT: ):': self.cfg['licenseServer'],
               'Port number (optional) (DEFAULT: ):': '',
               '->1- Configure toolbox for Matlab 2- Do not configure at this time ENTER THE NUMBER FOR YOUR CHOICE, OR PRESS <ENTER> TO ACCEPT THE DEFAULT::': '2'
              }
@@ -77,3 +77,13 @@ class EB_Maple(Application):
                  '\[[-|]*']
 
         run_cmd_qa(cmd, qa, no_qa=no_qa, log_all=True, simple=True)
+
+    def sanity_check_step(self):
+        """Custom sanity check for Maple."""
+
+        custom_paths =  {
+                         'files': ['bin/maple', 'lib/maple.mla'] ,
+                         'dirs':[]
+                        }
+
+        super(EB_Maple, self).sanity_check_step(custom_paths=custom_paths)

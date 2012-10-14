@@ -34,21 +34,21 @@ from copy import copy
 from distutils.version import LooseVersion
 
 import easybuild.tools.environment as env
-from easybuild.framework.application import Application
+from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.filetools import run_cmd
 from easybuild.tools.modules import get_software_root
 from easybuild.tools.systemtools import get_kernel_name, get_shared_lib_ext, get_platform_name
 
 
-class EB_GCC(Application):
+class EB_GCC(ConfigureMake):
     """
     Self-contained build of GCC.
     Uses system compiler for initial build, then bootstraps.
     """
 
     def __init__(self, *args, **kwargs):
-        Application.__init__(self, *args, **kwargs)
+        super(EB_GCC, self).__init__(*args, **kwargs)
 
         self.stagedbuild = False
 
@@ -62,13 +62,13 @@ class EB_GCC(Application):
                       ('pplwatchdog', [False, "Enable PPL watchdog (default: False)", CUSTOM]),
                       ('clooguseisl', [False, "Use ISL with CLooG or not (use PPL otherwise) (default: False)", CUSTOM])
                      ]
-        return Application.extra_options(extra_vars)
+        return ConfigureMake.extra_options(extra_vars)
 
     def create_dir(self, dirname):
         """
         Create a dir to build in.
         """
-        dirpath = os.path.join(self.getcfg('startfrom'), dirname)
+        dirpath = os.path.join(self.cfg['start_dir'], dirname)
         try:
             os.mkdir(dirpath)
             os.chdir(dirpath)
@@ -95,7 +95,7 @@ class EB_GCC(Application):
 
         # add optional ones that were selected (e.g. CLooG, PPL, ...)
         for x in ["cloog", "ppl"]:
-            if self.getcfg('with%s' % x):
+            if self.cfg['with%s' % x]:
                 extra_src_dirs.append(x)
 
         # see if modules are loaded
@@ -128,7 +128,7 @@ class EB_GCC(Application):
                                            'source_dir': d,
                                            'target_dir': sd
                                           })
-                    # expected format: name[-subname]-version
+                    # expected format: get_name[-subname]-get_version
                     ds = os.path.basename(d).split('-')
                     name = '-'.join(ds[0:-1])
                     names.update({sd: name})
@@ -145,7 +145,7 @@ class EB_GCC(Application):
             if target_prefix:
                 dst = os.path.join(target_prefix, d['target_dir'])
             else:
-                dst = os.path.join(self.getcfg('startfrom'), d['target_dir'])
+                dst = os.path.join(self.cfg['start_dir'], d['target_dir'])
             if not os.path.exists(dst):
                 try:
                     shutil.copytree(src, dst)
@@ -180,7 +180,7 @@ class EB_GCC(Application):
         if unknown_options:
             self.log.error("Unrecognized options found during configure: %s" % unknown_options)
 
-    def configure(self):
+    def configure_step(self):
         """
         Configure for GCC build:
         - prepare extra source dirs (GMP, MPFR, MPC, ...)
@@ -192,7 +192,7 @@ class EB_GCC(Application):
 
         # self.configopts will be reused in a 3-staged build,
         # configopts is only used in first configure
-        self.configopts = self.getcfg('configopts')
+        self.configopts = self.cfg['configopts']
 
         # I) prepare extra source dirs, e.g. for GMP, MPFR, MPC (if required), so GCC can build them
         stage1_info = self.prep_extra_src_dirs("stage1")
@@ -201,11 +201,11 @@ class EB_GCC(Application):
         # II) update config options
 
         # enable specified language support
-        if self.getcfg('languages'):
-            self.configopts += " --enable-languages=%s" % ','.join(self.getcfg('languages'))
+        if self.cfg['languages']:
+            self.configopts += " --enable-languages=%s" % ','.join(self.cfg['languages'])
 
         # enable link-time-optimization (LTO) support, if desired
-        if self.getcfg('withlto'):
+        if self.cfg['withlto']:
             self.configopts += " --enable-lto"
 
         # configure for a release build
@@ -249,7 +249,7 @@ class EB_GCC(Application):
 
         # IV) actual configure, but not on default path
         cmd = "%s ../configure  %s %s" % (
-                                          self.getcfg('preconfigopts'),
+                                          self.cfg['preconfigopts'],
                                           self.configopts,
                                           configopts
                                          )
@@ -264,30 +264,30 @@ class EB_GCC(Application):
 
         self.run_configure_cmd(cmd)
 
-    def make(self):
+    def build_step(self):
 
         if self.stagedbuild:
 
             # make and install stage 1 build of GCC
             paracmd = ''
-            if self.getcfg('parallel'):
-                paracmd = "-j %s" % self.getcfg('parallel')
+            if self.cfg['parallel']:
+                paracmd = "-j %s" % self.cfg['parallel']
 
-            cmd = "%s make %s %s" % (self.getcfg('premakeopts'), paracmd, self.getcfg('makeopts'))
+            cmd = "%s make %s %s" % (self.cfg['premakeopts'], paracmd, self.cfg['makeopts'])
             run_cmd(cmd, log_all=True, simple=True)
 
-            cmd = "make install %s" % (self.getcfg('installopts'))
+            cmd = "make install %s" % (self.cfg['installopts'])
             run_cmd(cmd, log_all=True, simple=True)
 
             # register built GCC as compiler to use for stage 2/3
             path = "%s/bin:%s" % (self.stage1installdir, os.getenv('PATH'))
-            env.set('PATH', path)
+            env.setvar('PATH', path)
 
             ld_lib_path = "%(dir)s/lib64:%(dir)s/lib:%(val)s" % {
                                                                  'dir': self.stage1installdir,
                                                                  'val': os.getenv('LD_LIBRARY_PATH')
                                                                 }
-            env.set('LD_LIBRARY_PATH', ld_lib_path)
+            env.setvar('LD_LIBRARY_PATH', ld_lib_path)
 
             #
             # STAGE 2: build GMP/PPL/CLooG for stage 3
@@ -307,7 +307,7 @@ class EB_GCC(Application):
 
                 self.log.debug("Building %s in stage 2" % lib)
 
-                if lib == "gmp" or self.getcfg('with%s' % lib):
+                if lib == "gmp" or self.cfg['with%s' % lib]:
 
                     libdir = os.path.join(stage2prefix, lib)
                     try:
@@ -331,11 +331,11 @@ class EB_GCC(Application):
 
                         # enable watchdog (or not)
                         if self.pplver <= LooseVersion("0.11"):
-                            if self.getcfg('pplwatchdog'):
+                            if self.cfg['pplwatchdog']:
                                 cmd += "--enable-watchdog "
                             else:
                                 cmd += "--disable-watchdog "
-                        elif self.getcfg('pplwatchdog'):
+                        elif self.cfg['pplwatchdog']:
                             self.log.error("Enabling PPL watchdog only supported in PPL <= v0.11 .")
 
                         # make sure GMP we just built is found
@@ -350,7 +350,7 @@ class EB_GCC(Application):
 
                         cmd = "./configure --prefix=%s --with-pic --disable-shared " % stage2prefix
                         # use isl or PPL
-                        if self.getcfg('clooguseisl'):
+                        if self.cfg['clooguseisl']:
                             if self.cloogver >= v0_16:
                                 cmd += "--with-isl=bundled "
                             else:
@@ -387,7 +387,7 @@ class EB_GCC(Application):
                         incpath = os.path.join(stage2prefix, 'include')
 
                         cppflags = os.getenv('CPPFLAGS', '')
-                        env.set('CPPFLAGS', "%s -L%s -I%s " % (cppflags, libpath, incpath))
+                        env.setvar('CPPFLAGS', "%s -L%s -I%s " % (cppflags, libpath, incpath))
 
             #
             # STAGE 3: bootstrap build of final GCC (with PPL/CLooG support)
@@ -407,7 +407,7 @@ class EB_GCC(Application):
             configopts += " --enable-bootstrap "
 
             # PPL config options
-            if self.getcfg('withppl'):
+            if self.cfg['withppl']:
                 # for PPL build and CLooG-PPL linking
                 libstdcxxpath = "%s/lib64/libstdc++.a" % self.stage1installdir
                 configopts += "--with-host-libstdcxx='-static-libgcc %s -lm' " % libstdcxxpath
@@ -415,102 +415,100 @@ class EB_GCC(Application):
                 configopts += "--with-ppl=%s " % stage2prefix
 
                 if self.pplver <= LooseVersion("0.11"):
-                    if self.getcfg('pplwatchdog'):
+                    if self.cfg['pplwatchdog']:
                         configopts += "--enable-watchdog "
                     else:
                         configopts += "--disable-watchdog "
 
             # CLooG config options
-            if self.getcfg('withcloog'):
+            if self.cfg['withcloog']:
                 configopts += "--with-cloog=%s " % stage2prefix
 
-                if self.getcfg('clooguseisl') and self.cloogver >= LooseVersion("0.16"):
+                if self.cfg['clooguseisl'] and self.cloogver >= LooseVersion("0.16"):
                     configopts += "--enable-cloog-backend=isl "
 
             # configure
             cmd = "%s ../configure %s %s" % (
-                                             self.getcfg('preconfigopts'),
+                                             self.cfg['preconfigopts'],
                                              self.configopts,
                                              configopts
                                             )
             self.run_configure_cmd(cmd)
 
         # build with bootstrapping for self-containment
-        self.updatecfg('makeopts', 'bootstrap')
+        self.cfg.update('makeopts', 'bootstrap')
 
-        # call standard make
-        Application.make(self)
+        # call standard build_step
+        super(EB_GCC, self).build_step()
 
-    # make install is just standard makeInstall, nothing special there
+    # make install is just standard install_step, nothing special there
 
-    def sanitycheck(self):
+    def sanity_check_step(self):
         """
         Custom sanity check for GCC
         """
 
-        if not self.getcfg('sanityCheckPaths'):
+        kernel_name = get_kernel_name()
 
-            kernel_name = get_kernel_name()
+        sharedlib_ext = get_shared_lib_ext()
 
-            sharedlib_ext = get_shared_lib_ext()
+        common_infix = 'gcc/%s/%s' % (self.platform_lib, self.version)
 
-            common_infix = 'gcc/%s/%s' % (self.platform_lib, self.version())
+        bin_files = ["gcov"]
+        lib64_files = ["libgomp.%s" % sharedlib_ext, "libgomp.a"]
+        if kernel_name == 'Linux':
+            lib64_files.extend(["libgcc_s.%s" % sharedlib_ext, "libmudflap.%s" % sharedlib_ext, "libmudflap.a"])
+        libexec_files = []
+        dirs = ['lib/%s' % common_infix]
+        if kernel_name == 'Linux':
+            dirs.append('lib64')
 
-            bin_files = ["gcov"]
-            lib64_files = ["libgomp.%s" % sharedlib_ext, "libgomp.a"]
-            if kernel_name == 'Linux':
-                lib64_files.extend(["libgcc_s.%s" % sharedlib_ext, "libmudflap.%s" % sharedlib_ext, "libmudflap.a"])
-            libexec_files = []
-            dirs = ['lib/%s' % common_infix]
-            if kernel_name == 'Linux':
-                dirs.append('lib64')
+        if not self.cfg['languages']:
+            # default languages are c, c++, fortran
+            bin_files = ["c++", "cpp", "g++", "gcc", "gcov", "gfortran"]
+            lib64_files.extend(["libstdc++.%s" % sharedlib_ext, "libstdc++.a"])
+            libexec_files = ['cc1', 'cc1plus', 'collect2', 'f951']
 
-            if not self.getcfg('languages'):
-                # default languages are c, c++, fortran
-                bin_files = ["c++", "cpp", "g++", "gcc", "gcov", "gfortran"]
-                lib64_files.extend(["libstdc++.%s" % sharedlib_ext, "libstdc++.a"])
-                libexec_files = ['cc1', 'cc1plus', 'collect2', 'f951']
+        if 'c' in self.cfg['languages']:
+            bin_files.extend(['cpp', 'gcc'])
 
-            if 'c' in self.getcfg('languages'):
-                bin_files.extend(['cpp', 'gcc'])
+        if 'c++' in self.cfg['languages']:
+            bin_files.extend(['c++', 'g++'])
+            dirs.append('include/c++/%s' % self.version)
+            lib64_files.extend(["libstdc++.%s" % sharedlib_ext, "libstdc++.a"])
 
-            if 'c++' in self.getcfg('languages'):
-                bin_files.extend(['c++', 'g++'])
-                dirs.append('include/c++/%s' % self.version())
-                lib64_files.extend(["libstdc++.%s" % sharedlib_ext, "libstdc++.a"])
+        if 'fortran' in self.cfg['languages']:
+            bin_files.append('gfortran')
+            lib64_files.extend(['libgfortran.%s' % sharedlib_ext, 'libgfortran.a'])
 
-            if 'fortran' in self.getcfg('languages'):
-                bin_files.append('gfortran')
-                lib64_files.extend(['libgfortran.%s' % sharedlib_ext, 'libgfortran.a'])
+        if 'lto' in self.cfg['languages']:
+            libexec_files.extend(['lto1', 'lto-wrapper'])
+            if kernel_name in ['Linux']:
+                libexec_files.append('liblto_plugin.%s' % sharedlib_ext)
 
-            if 'lto' in self.getcfg('languages'):
-                libexec_files.extend(['lto1', 'lto-wrapper'])
-                if kernel_name in ['Linux']:
-                    libexec_files.append('liblto_plugin.%s' % sharedlib_ext)
+        bin_files = ["bin/%s" % x for x in bin_files]
+        if kernel_name in ['Darwin']:
+            lib64_files = ["lib/%s" % x for x in lib64_files]
+        else:
+            lib64_files = ["lib64/%s" % x for x in lib64_files]
+        libexec_files = ["libexec/%s/%s" % (common_infix, x) for x in libexec_files]
 
-            bin_files = ["bin/%s" % x for x in bin_files]
-            if kernel_name in ['Darwin']:
-                lib64_files = ["lib/%s" % x for x in lib64_files]
-            else:
-                lib64_files = ["lib64/%s" % x for x in lib64_files]
-            libexec_files = ["libexec/%s/%s" % (common_infix, x) for x in libexec_files]
+        custom_paths = {
+                        'files': bin_files + lib64_files + libexec_files,
+                        'dirs': dirs
+                       }
 
-            self.setcfg('sanityCheckPaths', {
-                                             'files': bin_files + lib64_files + libexec_files,
-                                             'dirs': dirs
-                                            })
+        super(EB_GCC, self).sanity_check_step(custom_paths=custom_paths)
 
-            self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
-
-        Application.sanitycheck(self)
-
-    def makeModuleReqGuess(self):
+    def make_module_req_guess(self):
         """
         Make sure all GCC libs are in LD_LIBRARY_PATH
         """
-        return {
-                'PATH': ['bin'],
-                'LD_LIBRARY_PATH': ['lib', 'lib64',
-                                    'lib/gcc/%s' % (self.platform_lib, self.getcfg('version'))],
-                'MANPATH': ['man', 'share/man']
-               }
+        guesses = super(EB_GCC, self).make_module_req_guess()
+        guesses.update({
+                        'PATH': ['bin'],
+                        'LD_LIBRARY_PATH': ['lib', 'lib64',
+                                            'lib/gcc/%s/%s' % (self.platform_lib, self.cfg['version'])],
+                        'MANPATH': ['man', 'share/man']
+                       })
+        return guesses

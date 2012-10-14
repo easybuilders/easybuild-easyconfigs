@@ -27,25 +27,25 @@ EasyBuild support for BiSearch, implemented as an easyblock
 """
 import os
 
-from easybuild.framework.application import Application
+from easybuild.framework.easyblock import EasyBlock
 from easybuild.tools.filetools import run_cmd_qa
 
 
-class EB_BiSearch(Application):
+class EB_BiSearch(EasyBlock):
     """
     Support for building BiSearch.
     Basically just run the interactive installation script install.sh.
     """
 
-    def configure(self):
+    def configure_step(self):
         """(no configure)"""
         pass
 
-    def make(self):
+    def build_step(self):
         """(empty, building is performed in make_install step)"""
         pass
 
-    def make_install(self):
+    def install_step(self):
         cmd = "./install.sh"
 
         qanda = {
@@ -57,16 +57,13 @@ class EB_BiSearch(Application):
 
         run_cmd_qa(cmd, qanda, no_qa=no_qa, log_all=True, simple=True)
 
-    def sanitycheck(self):
+    def sanity_check_step(self):
         """Custom sanity check for BiSearch."""
 
-        if not self.getcfg('sanityCheckPaths'):
-            self.setcfg('sanityCheckPaths', {'files':["bin/%s" % x for x in ["fpcr", "indexing_cdna",
-                                                                             "indexing_genome", "makecomp"]],
-                                             'dirs':[]
-                                            }
-                        )
+        custom_paths = {
+                        'files':["bin/%s" % x for x in ["fpcr", "indexing_cdna",
+                                                        "indexing_genome", "makecomp"]],
+                        'dirs':[]
+                       }
 
-            self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
-
-        Application.sanitycheck(self)
+        super(EB_BiSearch, self).sanity_check_step(custom_paths=custom_paths)

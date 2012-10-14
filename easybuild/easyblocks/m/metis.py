@@ -29,32 +29,32 @@ import os
 import shutil
 from distutils.version import LooseVersion
 
-from easybuild.framework.application import Application
+from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.tools.filetools import run_cmd, mkdir
 
 
-class EB_METIS(Application):
+class EB_METIS(ConfigureMake):
     """Support for building and installing METIS."""
 
-    def configure(self, *args, **kwargs):
+    def configure_step(self, *args, **kwargs):
         """Configure build using 'make config' (only for recent versions (>= v5))."""
 
-        if LooseVersion(self.version()) >= LooseVersion("5"):
+        if LooseVersion(self.version) >= LooseVersion("5"):
 
             cmd = "make config prefix=%s" % self.installdir
             run_cmd(cmd, log_all=True, simple=True)
 
-    def make(self):
+    def build_step(self):
         """Add make options before building."""
 
-        self.updatecfg('makeopts', 'LIBDIR=""')
+        self.cfg.update('makeopts', 'LIBDIR=""')
 
-        if self.toolkit().opts['pic']:
-            self.updatecfg('makeopts', 'CC="$CC -fPIC"')
+        if self.toolchain.opts['pic']:
+            self.cfg.update('makeopts', 'CC="$CC -fPIC"')
 
-        Application.make(self)
+        super(EB_METIS, self).build_step()
 
-    def make_install(self):
+    def install_step(self):
         """
         Install by manually copying files to install dir, for old versions,
         or by running 'make install' for new versions.
@@ -63,7 +63,7 @@ class EB_METIS(Application):
         (in Lib instead of lib)
         """
 
-        if LooseVersion(self.version()) < LooseVersion("5"):
+        if LooseVersion(self.version) < LooseVersion("5"):
 
             libdir = os.path.join(self.installdir, 'lib')
             mkdir(libdir)
@@ -73,7 +73,7 @@ class EB_METIS(Application):
 
             # copy libraries
             try:
-                src = os.path.join(self.getcfg('startfrom'), 'libmetis.a')
+                src = os.path.join(self.cfg['start_dir'], 'libmetis.a')
                 dst = os.path.join(libdir, 'libmetis.a')
                 shutil.copy2(src, dst)
             except OSError, err:
@@ -82,7 +82,7 @@ class EB_METIS(Application):
             # copy include files
             try:
                 for f in ['defs.h', 'macros.h', 'metis.h', 'proto.h', 'rename.h', 'struct.h']:
-                    src = os.path.join(self.getcfg('startfrom'), 'Lib', f)
+                    src = os.path.join(self.cfg['start_dir'], 'Lib', f)
                     dst = os.path.join(includedir, f)
                     shutil.copy2(src, dst)
                     os.chmod(dst, 0755)
@@ -100,32 +100,29 @@ class EB_METIS(Application):
                 self.log.error("Something went wrong during symlink creation: %s" % err)
 
         else:
-            Application.make_install(self)
+            super(EB_METIS, self).install_step()
 
-    def sanitycheck(self):
+    def sanity_check_step(self):
         """Custom sanity check for METIS (more extensive for recent version (>= v5))"""
 
-        if not self.getcfg('sanityCheckPaths'):
+        if not self.cfg['sanityCheckPaths']:
 
             binfiles = []
-            if LooseVersion(self.version()) > LooseVersion("5"):
+            if LooseVersion(self.version) > LooseVersion("5"):
                 binfiles += ["cmpfillin", "gpmetis", "graphchk", "m2gmetis", "mpmetis", "ndmetis"]
 
             incfiles = ["metis.h"]
-            if LooseVersion(self.version()) < LooseVersion("5"):
+            if LooseVersion(self.version) < LooseVersion("5"):
                 incfiles += ["defs.h", "macros.h", "proto.h", "rename.h", "struct.h"]
 
             dirs = []
-            if LooseVersion(self.version()) < LooseVersion("5"):
+            if LooseVersion(self.version) < LooseVersion("5"):
                 dirs += ["Lib"]
 
-            self.setcfg('sanityCheckPaths', {
-                                             'files': ['bin/%s' % x for x in binfiles] +
-                                                      ['include/%s' % x for x in incfiles] +
-                                                      ['lib/libmetis.a'],
-                                             'dirs' : dirs
-                                             })
+        custom_paths = {
+                        'files': ['bin/%s' % x for x in binfiles] + ['include/%s' % x for x in incfiles] +
+                                 ['lib/libmetis.a'],
+                        'dirs' : dirs
+                       }
 
-            self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
-
-        Application.sanitycheck(self)
+        super(EB_METIS, self).sanity_check_step(custom_paths=custom_paths)

@@ -25,36 +25,36 @@ EasyBuild support for building and installing Pasha, implemented as an easyblock
 import shutil
 import os
 
-from easybuild.framework.application import Application
+from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.tools.modules import get_software_root
 
 
-class EB_Pasha(Application):
+class EB_Pasha(ConfigureMake):
     """Support for building and installing Pasha"""
 
-    def configure(self):
+    def configure_step(self):
         """Configure Pasha by setting make options."""
 
         tbb = get_software_root('TBB')
         if not tbb:
             self.log.error("TBB module not loaded.")
 
-        self.updatecfg('makeopts', "TBB_DIR=%s/tbb MPI_DIR='' MPI_INC='' " % tbb)
-        self.updatecfg('makeopts', 'MPI_CXX="%s" OMP_FLAG="%s"' % (os.getenv('MPICXX'), self.toolkit().get_openmp_flag()))
-        self.updatecfg('makeopts', 'MPI_LIB="" MY_CXX="%s" MPICH_IGNORE_CXX_SEEK=1' % os.getenv('CXX'))
+        self.cfg.update('makeopts', "TBB_DIR=%s/tbb MPI_DIR='' MPI_INC='' " % tbb)
+        self.cfg.update('makeopts', 'MPI_CXX="%s" OPM_FLAG="%s"' % (os.getenv('MPICXX'), self.toolchain.get_openmp_flag()))
+        self.cfg.update('makeopts', 'MPI_LIB="" MY_CXX="%s" MPICH_IGNORE_CXX_SEEK=1' % os.getenv('CXX'))
 
-    def make_install(self):
+    def install_step(self):
         """Install by copying everything from 'bin' subdir in build dir to install dir"""
 
-        srcdir = os.path.join(self.builddir, "%s-%s" % (self.name(), self.version()), 'bin')
+        srcdir = os.path.join(self.builddir, "%s-%s" % (self.name, self.version), 'bin')
         shutil.copytree(srcdir, os.path.join(self.installdir, 'bin'))
 
-    def sanitycheck(self):
+    def sanity_check_step(self):
         """Custom sanity check for Pasha"""
-        self.setcfg('sanityCheckPaths', {
-                                         'files':["bin/pasha-%s" % x for x in ["kmergen",
-                                                                               "pregraph",
-                                                                               "graph"]],
-                                        'dirs':[""],
-                                        })
 
+        custom_paths = {
+                        'files':["bin/pasha-%s" % x for x in ["kmergen", "pregraph", "graph"]],
+                        'dirs':[],
+                       }
+
+        super(EB_Pasha, self).sanity_check_step(custom_paths=custom_paths)

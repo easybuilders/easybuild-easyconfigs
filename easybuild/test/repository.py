@@ -18,12 +18,9 @@
 # You should have received a copy of the GNU General Public License
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
-import os
-import re
 import shutil
 from unittest import TestCase, TestSuite
 
-import easybuild.tools.config as config
 from easybuild.tools.repository import FileRepository
 
 

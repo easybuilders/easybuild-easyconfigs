@@ -29,24 +29,24 @@ EasyBuild support for installing the Intel MPI library, implemented as an easybl
 import os
 from distutils.version import LooseVersion
 
-from easybuild.easyblocks.intelbase import EB_IntelBase
+from easybuild.easyblocks.generic.intelbase import IntelBase
 from easybuild.tools.filetools import run_cmd
 
 
-class EB_impi(EB_IntelBase):
+class EB_impi(IntelBase):
     """
     Support for installing Intel MPI library
     """
 
-    def make_install(self):
+    def install_step(self):
         """
         Actual installation
         - create silent cfg file
         - execute command
         """
-        if LooseVersion(self.version()) >= LooseVersion('4.0.1'):
+        if LooseVersion(self.version) >= LooseVersion('4.0.1'):
             #impi starting from version 4.0.1.x uses standard installation procedure.
-            EB_IntelBase.make_install(self)
+            super(EB_impi, self).install_step()
             return None
         else:
             #impi up until version 4.0.0.x uses custom installation procedure.
@@ -82,7 +82,7 @@ EULA=accept
             except:
                 self.log.exception("Writing silent cfg file %s failed." % silent)
 
-            tmpdir = os.path.join(os.getcwd(), self.version(), 'mytmpdir')
+            tmpdir = os.path.join(os.getcwd(), self.version, 'mytmpdir')
             try:
                 os.makedirs(tmpdir)
             except:
@@ -91,11 +91,30 @@ EULA=accept
             cmd = "./install.sh --tmp-dir=%s --silent=%s" % (tmpdir, silentcfg)
             run_cmd(cmd, log_all=True, simple=True)
 
+    def sanity_check_step(self):
+        """Custom sanity check paths for IMPI."""
+
+        suff = "64"
+        if self.cfg['m32']:
+            suff = ""
+
+        custom_paths = {
+                        'files': ["bin/mpi%s" % x for x in ["icc", "icpc", "ifort"]] +
+                                 ["include%s/mpi%s.h" % (suff, x) for x in ["cxx", "f", "", "o", "of"]] +
+                                 ["include%s/%s" % (suff, x) for x in ["i_malloc.h", "mpi_base.mod",
+                                                                       "mpi_constants.mod", "mpi.mod",
+                                                                       "mpi_sizeofs.mod"]] +
+                                 ["lib%s/libmpi.so" % suff, "lib%s/libmpi.a" % suff],
+                        'dirs': []
+                       }
+
+        super(EB_impi, self).sanity_check_step(custom_paths=custom_paths)
+
     def make_module_req_guess(self):
         """
         A dictionary of possible directories to look for
         """
-        if self.getcfg('m32'):
+        if self.cfg['m32']:
             return {
                     'PATH':['bin', 'bin/ia32', 'ia32/bin'],
                     'LD_LIBRARY_PATH':['lib', 'lib/ia32', 'ia32/lib'],
@@ -108,7 +127,7 @@ EULA=accept
 
     def make_module_extra(self):
         """Overwritten from Application to add extra txt"""
-        txt = EB_IntelBase.make_module_extra(self)
+        txt = super(EB_impi, self).make_module_extra()
         txt += "prepend-path\t%s\t\t%s\n" % ('INTEL_LICENSE_FILE', self.license)
         txt += "setenv\t%s\t\t$root\n" % ('I_MPI_ROOT')
 

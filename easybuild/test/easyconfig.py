@@ -27,11 +27,11 @@ import tempfile
 import easybuild.framework.easyconfig as easyconfig
 from unittest import TestCase, TestSuite
 from easybuild.framework.easyconfig import EasyConfig, tweak, obtain_ec_for
-from easybuild.tools.build_log import EasyBuildError, initLogger
+from easybuild.tools.build_log import EasyBuildError, init_logger
 from easybuild.tools.systemtools import get_shared_lib_ext
 
 log_fn = "/tmp/easybuild_easyconfig_tests.log"
-_, log, logh = initLogger(filename=log_fn, debug=True, typ="easybuild_easyconfig_test")
+_, log, logh = init_logger(filename=log_fn, debug=True, typ="easybuild_easyconfig_test")
 
 class EasyConfigTest(TestCase):
     """ Baseclass for easyblock testcases """
@@ -83,7 +83,7 @@ version = "3.14"
         self.assertErrorRegex(EasyBuildError, "mandatory variables .* not provided", EasyConfig, self.eb_file)
 
         self.contents += "\n".join(['homepage = "http://google.com"', 'description = "test easyconfig"',
-                                    'toolkit = {"name": "dummy", "version": "dummy"}'])
+                                    'toolchain = {"name": "dummy", "version": "dummy"}'])
         self.setUp()
 
         eb = EasyConfig(self.eb_file)
@@ -91,7 +91,7 @@ version = "3.14"
         self.assertEqual(eb['name'], "pi")
         self.assertEqual(eb['version'], "3.14")
         self.assertEqual(eb['homepage'], "http://google.com")
-        self.assertEqual(eb['toolkit'], {"name":"dummy", "version": "dummy"})
+        self.assertEqual(eb['toolchain'], {"name":"dummy", "version": "dummy"})
         self.assertEqual(eb['description'], "test easyconfig")
 
 
@@ -103,7 +103,7 @@ name = "pi"
 version = "3.14"
 homepage = "http://google.com"
 description = "test easyconfig"
-toolkit = {"name":"dummy", "version": "dummy"}
+toolchain = {"name":"dummy", "version": "dummy"}
 stop = 'notvalid'
 """
 
@@ -119,8 +119,8 @@ stop = 'notvalid'
         eb['osdependencies'] = ['non-existent-dep']
         self.assertErrorRegex(EasyBuildError, "OS dependencies were not found", eb.validate)
 
-        # dummy toolkit, installversion == version
-        self.assertEqual(eb.installversion(), "3.14")
+        # dummy toolchain, installversion == version
+        self.assertEqual(eb.get_installversion(), "3.14")
 
         os.chmod(self.eb_file, 0000)
         self.assertErrorRegex(EasyBuildError, "Unexpected IOError", EasyConfig, self.eb_file)
@@ -139,7 +139,7 @@ name = "pi"
 version = "3.14"
 homepage = "http://google.com"
 description = "test easyconfig"
-toolkit = {"name":"dummy", "version": "dummy"}
+toolchain = {"name":"dummy", "version": "dummy"}
 sanityCheckPaths = { 'files': ["lib/lib.%s" % shared_lib_ext] }
 """
 
@@ -157,7 +157,7 @@ name = "pi"
 version = "3.14"
 homepage = "http://google.com"
 description = "test easyconfig"
-toolkit = {"name":"GCC", "version": "4.6.3"}
+toolchain = {"name":"GCC", "version": "4.6.3"}
 dependencies = [('first', '1.1'), {'name': 'second', 'version': '2.2'}]
 builddependencies = [('first', '1.1'), {'name': 'second', 'version': '2.2'}]
 """
@@ -178,8 +178,8 @@ builddependencies = [('first', '1.1'), {'name': 'second', 'version': '2.2'}]
         self.assertEqual(first['version'], "1.1")
         self.assertEqual(second['version'], "2.2")
 
-        self.assertEqual(first['tk'], '1.1-GCC-4.6.3')
-        self.assertEqual(second['tk'], '2.2-GCC-4.6.3')
+        self.assertEqual(first['tc'], '1.1-GCC-4.6.3')
+        self.assertEqual(second['tc'], '2.2-GCC-4.6.3')
 
         # same tests for builddependencies
         first = eb.builddependencies()[0]
@@ -191,8 +191,8 @@ builddependencies = [('first', '1.1'), {'name': 'second', 'version': '2.2'}]
         self.assertEqual(first['version'], "1.1")
         self.assertEqual(second['version'], "2.2")
 
-        self.assertEqual(first['tk'], '1.1-GCC-4.6.3')
-        self.assertEqual(second['tk'], '2.2-GCC-4.6.3')
+        self.assertEqual(first['tc'], '1.1-GCC-4.6.3')
+        self.assertEqual(second['tc'], '2.2-GCC-4.6.3')
 
         eb['dependencies'] = ["wrong type"]
         self.assertErrorRegex(EasyBuildError, "wrong type from unsupported type", eb.dependencies)
@@ -211,8 +211,8 @@ name = "pi"
 version = "3.14"
 homepage = "http://google.com"
 description = "test easyconfig"
-toolkit = {"name":"GCC", "version": "4.6.3"}
-toolkitopts = { "static": True}
+toolchain = {"name":"GCC", "version": "4.6.3"}
+toolchainopts = { "static": True}
 dependencies = [('first', '1.1'), {'name': 'second', 'version': '2.2'}]
 """
 
@@ -239,8 +239,8 @@ dependencies = [('first', '1.1'), {'name': 'second', 'version': '2.2'}]
         eb['custom_key'] = "not so default"
         self.assertEqual(eb['custom_key'], 'not so default')
 
-        # test if extra toolkit options are being passed
-        self.assertEqual(eb.toolkit().opts['static'], True)
+        # test if extra toolchain options are being passed
+        self.assertEqual(eb.toolchain.opts['static'], True)
 
         extra_vars.extend([('mandatory_key', ['default', 'another mandatory key', easyconfig.MANDATORY])])
 
@@ -263,7 +263,7 @@ name = "pi"
 version = "3.14"
 homepage = "http://google.com"
 description = "test easyconfig"
-toolkit = {"name":"GCC", "version": "4.6.3"}
+toolchain = {"name":"GCC", "version": "4.6.3"}
 dependencis = [('first', '1.1'), {'name': 'second', 'version': '2.2'}]
 sourceULs = ['http://google.com']
 """
@@ -285,7 +285,7 @@ name = "pi"
 homepage = "http://www.google.com"
 description = "dummy description"
 version = "3.14"
-toolkit = {"name":"GCC", "version": "4.6.3"}
+toolchain = {"name":"GCC", "version": "4.6.3"}
 patches = %s
 """ % str(patches)
 
@@ -294,8 +294,8 @@ patches = %s
         ver = "1.2.3"
         verpref = "myprefix"
         versuff = "mysuffix"
-        tkname = "mytk"
-        tkver = "4.1.2"
+        tcname = "mytc"
+        tcver = "4.1.2"
         extra_patches = ['t5.patch', 't6.patch']
         homepage = "http://www.justatest.com"
 
@@ -303,7 +303,7 @@ patches = %s
                   'version': ver,
                   'versionprefix': verpref,
                   'versionsuffix': versuff,
-                  'toolkit_version': tkver,
+                  'toolchain_version': tcver,
                   'patches': extra_patches
                  }
         tweak(self.eb_file, self.tweaked_fn, tweaks, log)
@@ -312,16 +312,16 @@ patches = %s
         self.assertEqual(eb['version'], ver)
         self.assertEqual(eb['versionprefix'], verpref)
         self.assertEqual(eb['versionsuffix'], versuff)
-        self.assertEqual(eb['toolkit']['version'], tkver)
+        self.assertEqual(eb['toolchain']['version'], tcver)
         self.assertEqual(eb['patches'], extra_patches + self.patches)
 
         eb = EasyConfig(self.eb_file)
         eb['version'] = ver
-        eb['toolkit']['version'] = tkver
+        eb['toolchain']['version'] = tcver
         eb.dump(self.eb_file)
 
         tweaks = {
-                  'toolkit_name': tkname,
+                  'toolchain_name': tcname,
                   'patches': extra_patches[0:1],
                   'homepage': homepage,
                   'foo': "bar"
@@ -330,8 +330,8 @@ patches = %s
         tweak(self.eb_file, self.tweaked_fn, tweaks, log)
 
         eb = EasyConfig(self.tweaked_fn)
-        self.assertEqual(eb['toolkit']['name'], tkname)
-        self.assertEqual(eb['toolkit']['version'], tkver)
+        self.assertEqual(eb['toolchain']['name'], tcname)
+        self.assertEqual(eb['toolchain']['version'], tcver)
         self.assertEqual(eb['patches'], extra_patches[0:1] + self.patches)
         self.assertEqual(eb['version'], ver)
         self.assertEqual(eb['homepage'], homepage)
@@ -350,15 +350,15 @@ class TestInstallVersion(EasyConfigTest):
         ver = "3.14"
         verpref = "myprefix|"
         versuff = "|mysuffix"
-        tkname = "GCC"
-        tkver = "4.6.3"
+        tcname = "GCC"
+        tcver = "4.6.3"
         dummy = "dummy"
 
-        installver = easyconfig.det_installversion(ver, tkname, tkver, verpref, versuff)
+        installver = easyconfig.det_installversion(ver, tcname, tcver, verpref, versuff)
 
-        self.assertEqual(installver, "%s%s-%s-%s%s" % (verpref, ver, tkname, tkver, versuff))
+        self.assertEqual(installver, "%s%s-%s-%s%s" % (verpref, ver, tcname, tcver, versuff))
 
-        installver = easyconfig.det_installversion(ver, dummy, tkver, verpref, versuff)
+        installver = easyconfig.det_installversion(ver, dummy, tcver, verpref, versuff)
 
         self.assertEqual(installver, "%s%s%s" % (verpref, ver, versuff))
 
@@ -369,8 +369,8 @@ class TestObtainEasyconfig(EasyConfigTest):
 
     def runTest(self):
 
-        tkname = 'GCC'
-        tkver = '4.3.2'
+        tcname = 'GCC'
+        tcver = '4.3.2'
         patches = ["one.patch"]
 
         # prepare a couple of eb files to test again
@@ -383,35 +383,35 @@ class TestObtainEasyconfig(EasyConfigTest):
                                         'version = "3.12"',
                                         'homepage = "http://example.com"',
                                         'description = "test easyconfig"',
-                                        'toolkit = {"name": "dummy", "version": "dummy"}',
+                                        'toolchain = {"name": "dummy", "version": "dummy"}',
                                         'patches = %s' % patches
                                         ])),
                     (fns[1], "\n".join(['name = "pi"',
                                         'version = "3.13"',
                                         'homepage = "http://google.com"',
                                         'description = "test easyconfig"',
-                                        'toolkit = {"name": "%s", "version": "%s"}' % (tkname, tkver),
+                                        'toolchain = {"name": "%s", "version": "%s"}' % (tcname, tcver),
                                         'patches = %s' % patches
                                        ])),
                     (fns[2], "\n".join(['name = "pi"',
                                         'version = "3.15"',
                                         'homepage = "http://google.com"',
                                         'description = "test easyconfig"',
-                                        'toolkit = {"name": "%s", "version": "%s"}' % (tkname, tkver),
+                                        'toolchain = {"name": "%s", "version": "%s"}' % (tcname, tcver),
                                         'patches = %s' % patches
                                        ])),
                     (fns[3], "\n".join(['name = "pi"',
                                         'version = "3.15"',
                                         'homepage = "http://google.com"',
                                         'description = "test easyconfig"',
-                                        'toolkit = {"name": "%s", "version": "4.5.1"}' % tkname,
+                                        'toolchain = {"name": "%s", "version": "4.5.1"}' % tcname,
                                         'patches = %s' % patches
                                        ])),
                     (fns[4], "\n".join(['name = "foo"',
                                         'version = "1.2.3"',
                                         'homepage = "http://example.com"',
                                         'description = "test easyconfig"',
-                                        'toolkit = {"name": "%s", "version": "%s"}' % (tkname, tkver)
+                                        'toolchain = {"name": "%s", "version": "%s"}' % (tcname, tcver)
                                        ]))
                    ]
 
@@ -434,7 +434,7 @@ class TestObtainEasyconfig(EasyConfigTest):
         self.assertEqual(res[0], False)
         self.assertEqual(res[1], os.path.join(self.ec_dir, fns[-1]))
 
-        # should not pick between multiple available toolkit names
+        # should not pick between multiple available toolchain names
         name = "pi"
         ver = "3.12"
         suff = "mysuff"
@@ -443,26 +443,26 @@ class TestObtainEasyconfig(EasyConfigTest):
                       'version': ver,
                       'versionsuffix': suff
                      })
-        error_regexp = ".*No toolkit name specified, and more than one available: .*"
+        error_regexp = ".*No toolchain name specified, and more than one available: .*"
         self.assertErrorRegex(EasyBuildError, error_regexp, obtain_ec_for, specs, self.ec_dir, None, log)
 
         # should be able to generate an easyconfig file that slightly differs
         ver = '3.16'
         specs.update({
-                      'toolkit_name': tkname,
-                      'toolkit_version': tkver,
+                      'toolchain_name': tcname,
+                      'toolchain_version': tcver,
                       'version': ver,
                       'foo': 'bar123'
                      })
         res = obtain_ec_for(specs, self.ec_dir, None, log)
-        self.assertEqual(res[1], "%s-%s-%s-%s%s.eb" % (name, ver, tkname, tkver, suff))
+        self.assertEqual(res[1], "%s-%s-%s-%s%s.eb" % (name, ver, tcname, tcver, suff))
 
         self.assertEqual(res[0], True)
         ec = EasyConfig(res[1])
         self.assertEqual(ec['name'], specs['name'])
         self.assertEqual(ec['version'], specs['version'])
         self.assertEqual(ec['versionsuffix'], specs['versionsuffix'])
-        self.assertEqual(ec['toolkit'], {'name': tkname, 'version': tkver})
+        self.assertEqual(ec['toolchain'], {'name': tcname, 'version': tcver})
         # can't check for key 'foo', because EasyConfig ignores parameter names it doesn't know about
         txt = open(res[1], "r").read()
         self.assertTrue(re.search("foo = '%s'" % specs['foo'], txt))
@@ -479,18 +479,18 @@ class TestObtainEasyconfig(EasyConfigTest):
         self.assertTrue(re.search("version = [\"']%s[\"'] .*was: [\"']3.13[\"']" % ver, txt))
         os.remove(res[1])
 
-        # should pick correct toolkit version as well, i.e. now newer than what's specified, if a choice needs to be made
+        # should pick correct toolchain version as well, i.e. now newer than what's specified, if a choice needs to be made
         specs.update({
                       'version': '3.15',
-                      'toolkit_version': '4.4.5',
+                      'toolchain_version': '4.4.5',
                      })
         res = obtain_ec_for(specs, self.ec_dir, None, log)
         self.assertEqual(res[0], True)
         ec = EasyConfig(res[1])
         self.assertEqual(ec['version'], specs['version'])
-        self.assertEqual(ec['toolkit']['version'], specs['toolkit_version'])
+        self.assertEqual(ec['toolchain']['version'], specs['toolchain_version'])
         txt = open(res[1], "r").read()
-        pattern = "toolkit = .*version.*[\"']%s[\"'].*was: .*version.*[\"']%s[\"']" % (specs['toolkit_version'], tkver)
+        pattern = "toolchain = .*version.*[\"']%s[\"'].*was: .*version.*[\"']%s[\"']" % (specs['toolchain_version'], tcver)
         self.assertTrue(re.search(pattern, txt))
         os.remove(res[1])
 

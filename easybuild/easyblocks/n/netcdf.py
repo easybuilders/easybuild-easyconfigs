@@ -30,60 +30,57 @@ import os
 from distutils.version import LooseVersion
 
 import easybuild.tools.environment as env
-import easybuild.tools.toolkit as toolkit
-from easybuild.framework.application import Application
+import easybuild.tools.toolkit as toolchain
+from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.tools.modules import get_software_root, get_software_version
 
 
-class EB_netCDF(Application):
+class EB_netCDF(ConfigureMake):
     """Support for building/installing netCDF"""
 
-    def configure(self):
+    def configure_step(self):
         """Configure build: set config options and configure"""
 
-        self.updatecfg('configopts', "--enable-shared")
+        self.cfg.update('configopts', "--enable-shared")
 
-        if self.toolkit().opts['pic']:
-            self.updatecfg('configopts', '--with-pic')
+        if self.toolchain.opts['pic']:
+            self.cfg.update('configopts', '--with-pic')
 
-        self.updatecfg('configopts', 'FCFLAGS="%s" CC="%s" FC="%s"' % (os.getenv('FFLAGS'),
+        self.cfg.update('configopts', 'FCFLAGS="%s" CC="%s" FC="%s"' % (os.getenv('FFLAGS'),
                                                                        os.getenv('MPICC'),
                                                                        os.getenv('F90')
                                                                       ))
 
         # add -DgFortran to CPPFLAGS when building with GCC
-        if self.toolkit().comp_family() == toolkit.GCC:
-            self.updatecfg('configopts', 'CPPFLAGS="%s -DgFortran"' % os.getenv('CPPFLAGS'))
+        if self.toolchain.comp_family() == toolchain.GCC:
+            self.cfg.update('configopts', 'CPPFLAGS="%s -DgFortran"' % os.getenv('CPPFLAGS'))
 
-        Application.configure(self)
+        super(EB_netCDF, self).configure_step()
 
-    def sanitycheck(self):
+    def sanity_check_step(self):
         """
         Custom sanity check for netCDF
         """
-        if not self.getcfg('sanityCheckPaths'):
 
-            incs = ["netcdf.h"]
-            libs = ["libnetcdf.so", "libnetcdf.a"]
-            # since v4.2, the non-C libraries have been split off in seperate packages
-            # see netCDF-Fortran and netCDF-C++
-            if LooseVersion(self.version()) < LooseVersion("4.2"):
-                incs += ["netcdf%s" % x for x in ["cpp.h", ".hh", ".inc", ".mod"]] + \
-                        ["ncvalues.h", "typesizes.mod"]
-                libs += ["libnetcdf_c++.so", "libnetcdff.so",
-                         "libnetcdf_c++.a", "libnetcdff.a"]
+        incs = ["netcdf.h"]
+        libs = ["libnetcdf.so", "libnetcdf.a"]
+        # since v4.2, the non-C libraries have been split off in seperate extensions_step
+        # see netCDF-Fortran and netCDF-C++
+        if LooseVersion(self.version) < LooseVersion("4.2"):
+            incs += ["netcdf%s" % x for x in ["cpp.h", ".hh", ".inc", ".mod"]] + \
+                    ["ncvalues.h", "typesizes.mod"]
+            libs += ["libnetcdf_c++.so", "libnetcdff.so",
+                     "libnetcdf_c++.a", "libnetcdff.a"]
 
-            self.setcfg('sanityCheckPaths',{
-                                            'files': ["bin/nc%s" % x for x in ["-config", "copy", "dump",
-                                                                              "gen", "gen3"]] +
-                                                     ["lib/%s" % x for x in libs] +
-                                                     ["include/%s" % x for x in incs],
-                                            'dirs': []
-                                           })
+        custom_paths = {
+                        'files': ["bin/nc%s" % x for x in ["-config", "copy", "dump",
+                                                          "gen", "gen3"]] +
+                                 ["lib/%s" % x for x in libs] +
+                                 ["include/%s" % x for x in incs],
+                        'dirs': []
+                       }
 
-            self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
-
-        Application.sanitycheck(self)
+        super(EB_netCDF, self).sanity_check_step(custom_paths=custom_paths)
 
 def set_netcdf_env_vars(log):
     """Set netCDF environment variables used by other software."""
@@ -92,7 +89,7 @@ def set_netcdf_env_vars(log):
     if not netcdf:
         log.error("netCDF module not loaded?")
     else:
-        env.set('NETCDF', netcdf)
+        env.setvar('NETCDF', netcdf)
         log.debug("Set NETCDF to %s" % netcdf)
         netcdff = get_software_root('netCDF-Fortran')
         netcdf_ver = get_software_version('netCDF')
@@ -100,7 +97,7 @@ def set_netcdf_env_vars(log):
             if LooseVersion(netcdf_ver) >= LooseVersion("4.2"):
                 log.error("netCDF v4.2 no longer supplies Fortran library, also need netCDF-Fortran")
         else:
-            env.set('NETCDFF', netcdff)
+            env.setvar('NETCDFF', netcdff)
             log.debug("Set NETCDFF to %s" % netcdff)
 
 def get_netcdf_module_set_cmds(log):

@@ -26,23 +26,21 @@
 EasyBuild support for installing the Intel Performance Primitives (IPP) library, implemented as an easyblock
 """
 
-from easybuild.easyblocks.intelbase import EB_IntelBase
+from easybuild.easyblocks.generic.intelbase import IntelBase
 
 
-class EB_ipp(EB_IntelBase):
+class EB_ipp(IntelBase):
 
-    def sanitycheck(self):
+    def sanity_check_step(self):
+        """Custom sanity check paths for IPP."""
 
-        if not self.getcfg('sanityCheckPaths'):
-            self.setcfg('sanityCheckPaths', {
-                                             'files': ["ipp/lib/intel64/libipp%s" % y
-                                                        for x in ["ac", "cc", "ch", "core", "cv", "dc", "di",
-                                                                  "i", "j", "m", "r", "s", "sc", "vc", "vm"]
-                                                        for y in ["%s.a" % x, "%s.so" % x]],
-                                             'dirs': ["compiler/lib/intel64", "ipp/bin", "ipp/include",
-                                                      "ipp/interfaces/data-compression", "ipp/tools/intel64"]
-                                           })
+        custom_paths = {
+                        'files': ["ipp/lib/intel64/libipp%s" % y
+                                   for x in ["ac", "cc", "ch", "core", "cv", "dc", "di",
+                                             "i", "j", "m", "r", "s", "sc", "vc", "vm"]
+                                   for y in ["%s.a" % x, "%s.so" % x]],
+                        'dirs': ["compiler/lib/intel64", "ipp/bin", "ipp/include",
+                                 "ipp/interfaces/data-compression", "ipp/tools/intel64"]
+                       }
 
-            self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
-
-        EB_IntelBase.sanitycheck(self)
+        super(EB_ipp, self).sanity_check_step(custom_paths=custom_paths)

@@ -26,20 +26,20 @@ import os
 import shutil
 
 import easybuild.tools.environment as env
-from easybuild.framework.application import Application
+from easybuild.easyblocks.generic.configuremake import ConfigureMake
 
 
-class EB_SHRiMP(Application):
+class EB_SHRiMP(ConfigureMake):
     """Support for building SHRiMP."""
 
-    def configure(self):
+    def configure_step(self):
         """Add openmp compilation flag to CXX_FLAGS."""
 
         cxxflags = os.getenv('CXXFLAGS')
 
-        env.set('CXXFLAGS', "%s %s" % (cxxflags, self.toolkit().get_openmp_flag()))
+        env.setvar('CXXFLAGS', "%s %s" % (cxxflags, self.toolchain.get_openmp_flag()))
 
-    def make_install(self):
+    def install_step(self):
         """Install SHRiMP by copying files to install dir, and fix permissions."""
 
         try:
@@ -59,32 +59,22 @@ class EB_SHRiMP(Application):
             self.log.error("Failed to copy files to install dir: %s" % err)
 
 
-    def sanitycheck(self):
+    def sanity_check_step(self):
         """Custom sanity check for SHRiMP."""
 
-        if not self.getcfg('sanityCheckPaths'):
+        custom_paths = {
+                        'files':['bin/%s' % x for x in ["fasta2fastq", "gmapper", "mergesam",
+                                                        "prettyprint", "probcalc", "probcalc_mp",
+                                                        "shrimp2sam", "shrimp_var"]],
+                        'dirs':['utils']
+                       }
 
-            self.setcfg('sanityCheckPaths', {
-                                             'files':['bin/%s' % x for x in ["fasta2fastq",
-                                                                             "gmapper",
-                                                                             "mergesam",
-                                                                             "prettyprint",
-                                                                             "probcalc",
-                                                                             "probcalc_mp",
-                                                                             "shrimp2sam",
-                                                                             "shrimp_var"]
-                                                      ],
-                                             'dirs':['utils']
-                                             })
-
-            self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
-
-        Application.sanitycheck(self)
+        super(EB_SHRiMP, self).sanity_check_step(custom_paths=custom_paths)
 
     def make_module_req_guess(self):
         """Add both 'bin' and 'utils' directories to PATH."""
 
-        guesses = Application.make_module_req_guess(self)
+        guesses = super(EB_SHRiMP, self).make_module_req_guess()
 
         guesses.update({'PATH': ['bin', 'utils']})
 
@@ -93,8 +83,8 @@ class EB_SHRiMP(Application):
     def make_module_extra(self):
         """Set SHRIMP_FOLDER environment variable in module."""
 
-        txt = Application.make_module_extra(self)
+        txt = super(EB_SHRiMP, self).make_module_extra()
 
-        txt += self.moduleGenerator.setEnvironment('SHRIMP_FOLDER', "$root")
+        txt += self.moduleGenerator.set_environment('SHRIMP_FOLDER', "$root")
 
         return txt

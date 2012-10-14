@@ -28,62 +28,91 @@ EasyBuild support for Python, implemented as an easyblock
 
 import os
 import shutil
+from distutils.version import LooseVersion
 
-import easybuild.tools.toolkit as toolkit
-from easybuild.framework.application import ApplicationPackage, Application
-from easybuild.tools.filetools import unpack, patch, run_cmd
+import easybuild.tools.toolkit as toolchain
+from easybuild.easyblocks.generic.configuremake import ConfigureMake
+from easybuild.framework.extension import Extension
+from easybuild.tools.build_log import EasyBuildError
+from easybuild.tools.filetools import extract_file, apply_patch, run_cmd
 from easybuild.tools.modules import get_software_root
 
 
-class EB_Python(Application):
+class EB_Python(ConfigureMake):
     """Support for building/installing Python
-    - default configure/make/make install works fine
+    - default configure/build_step/make install works fine
 
     To extend Python by adding extra packages there are two ways:
-    - list the packages in the pkglist, this will include the packages in this Python easyblock
+    - list the packages in the exts_list, this will include the packages in this Python installation
     - create a seperate easyblock, so the packages can be loaded with module load
 
     e.g., you can include numpy and scipy in a default Python installation
-    but also provide newer updated numpy and scipy versions by creating a PythonPackageModule for it.
+    but also provide newer updated numpy and scipy versions by creating a PythonPackage-derived easyblock for it.
     """
 
-    def extra_packages_pre(self):
+    def prepare_for_extensions(self):
         """
-        We set some default configs here for packages included in python
+        We set some default configs here for packages included in Python
         """
         #insert new packages by building them with EB_DefaultPythonPackage
         self.log.debug("setting extra packages options")
         # use __name__ here, since this is the module where EB_DefaultPythonPackage is defined
-        self.setcfg('pkgdefaultclass', (__name__, "EB_DefaultPythonPackage"))
-        self.setcfg('pkgfilter', ('python -c "import %(name)s"', ""))
+        self.cfg['exts_defaultclass'] = (__name__, "EB_DefaultPythonPackage")
+        self.cfg['exts_filter'] = ('python -c "import %(name)s"', "")
 
-    def configure(self):
+    def configure_step(self):
         """Set extra configure options."""
-        self.updatecfg('configopts', "--with-threads --enable-shared")
+        self.cfg.update('configopts', "--with-threads --enable-shared")
 
-        Application.configure(self)
+        super(EB_Python, self).configure_step()
 
-    def make_install(self):
+    def install_step(self):
         """Extend make install to make sure that the 'python' command is present."""
-        Application.make_install(self)
+        super(EB_Python, self).install_step()
 
         python_binary_path = os.path.join(self.installdir, 'bin', 'python')
         if not os.path.isfile(python_binary_path):
-            pythonver = '.'.join(self.version().split('.')[0:2])
+            pythonver = '.'.join(self.version.split('.')[0:2])
             srcbin = "%s%s" % (python_binary_path, pythonver)
             try:
                 os.symlink(srcbin, python_binary_path)
             except OSError, err:
                 self.log.error("Failed to symlink %s to %s: %s" % err)
 
+    def sanity_check_step(self):
+        """Custom sanity check for Python."""
 
-class EB_DefaultPythonPackage(ApplicationPackage):
+        pyver = "python%s" % '.'.join(self.version.split('.')[0:2])
+
+        try:
+            self.load_fake_module()
+        except EasyBuildError, err:
+            self.log.debug("Loading fake module failed: %s" % err)
+
+        abiflags = ''
+        if LooseVersion(self.version) >= LooseVersion("3"):
+            run_cmd("which python", log_all=True, simple=False)
+            cmd = 'python -c "import sysconfig; print(sysconfig.get_config_var(\'abiflags\'));"'
+            (abiflags, _) = run_cmd(cmd, log_all=True, simple=False)
+            if not abiflags:
+                self.log.error("Failed to determine abiflags: %s" % abiflags)
+            else:
+                abiflags = abiflags.strip()
+
+        custom_paths = {
+                        'files':["bin/%s" % pyver, "lib/lib%s%s.so" % (pyver, abiflags)],
+                        'dirs':["include/%s%s" % (pyver, abiflags), "lib/%s" % pyver]
+                       }
+
+        super(EB_Python, self).sanity_check_step(custom_paths=custom_paths)
+
+class EB_DefaultPythonPackage(Extension):
     """
-    Easyblock for python packages to be included in the python installation.
+    Easyblock for Python packages to be included in the Python installation.
     """
 
-    def __init__(self, mself, pkg, pkginstalldeps):
-        ApplicationPackage.__init__(self, mself, pkg, pkginstalldeps)
+    def __init__(self, mself, ext, ext_installdeps):
+        super(EB_DefaultPythonPackage, self).__init__(mself, ext, ext_installdeps)
         self.sitecfg = None
         self.sitecfgfn = 'site.cfg'
         self.sitecfglibdir = None
@@ -93,16 +122,16 @@ class EB_DefaultPythonPackage(ApplicationPackage):
         self.mself = mself
         self.installopts = ''
         self.runtest = None
-        self.pkgdir = "%s/%s" % (self.builddir, self.name)
+        self.ext_dir = "%s/%s" % (self.builddir, self.name)
         self.unpack_options = ''
 
         self.python = get_software_root('Python')
 
-    def configure(self):
+    def configure_step(self):
         """Configure Python package build
         """
 
-        if self.sitecfg: # used by some packages, like numpy, to find certain libs
+        if self.sitecfg: # used by some extensions_step, like numpy, to find certain libs
             finaltxt = self.sitecfg
             if self.sitecfglibdir:
                 repl = self.sitecfglibdir
@@ -124,20 +153,20 @@ class EB_DefaultPythonPackage(ApplicationPackage):
             except IOError:
                 self.log.exception("Creating %s failed" % self.sitecfgfn)
 
-    def make(self):
+    def build_step(self):
         """Build Python package via setup.py"""
 
         cmd = "python setup.py build "
 
         run_cmd(cmd, log_all=True, simple=True)
 
-    def make_install(self):
+    def install_step(self):
         """Install built Python package"""
 
         cmd = "python setup.py install --prefix=%s %s" % (self.python, self.installopts)
         run_cmd(cmd, log_all=True, simple=True)
 
-    def test(self):
+    def test_step(self):
         """Test the compilation
         - default: None
         """
@@ -171,34 +200,33 @@ class EB_DefaultPythonPackage(ApplicationPackage):
                 self.log.exception("Removing testinstalldir %s failed: %s" % (testinstalldir, err))
 
     def run(self):
-        """Perform the actual package build/installation procedure"""
+        """Perform the actual Python package build/installation procedure"""
 
-        # unpack
+        # extract_file
         if not self.src:
             self.log.error("No source found for Python package %s, required for installation. (src: %s)" % \
                            (self.name, self.src))
-        self.pkgdir = unpack("%s" % self.src, "%s/%s" % (self.builddir, self.name), extra_options=self.unpack_options)
+        self.ext_dir = extract_file("%s" % self.src, "%s/%s" % (self.builddir, self.name), extra_options=self.unpack_options)
 
         # patch if needed
         if self.patches:
             for patchfile in self.patches:
-                if not patch(patchfile, self.pkgdir):
+                if not apply_patch(patchfile, self.ext_dir):
                     self.log.error("Applying patch %s failed" % patchfile)
 
-        # configure, make, test, make install
-        self.configure()
-        self.make()
-        self.test()
-        self.make_install()
-
-    def getcfg(self, *args, **kwargs):
-        return self.mself.getcfg(*args, **kwargs)
+        # configure, build_step, test, make install
+        self.configure_step()
+        self.build_step()
+        self.test_step()
+        self.install_step()
 
 
 class EB_nose(EB_DefaultPythonPackage):
-    """nose package"""
-    def __init__(self, mself, pkg, pkginstalldeps):
-        EB_DefaultPythonPackage.__init__(self, mself, pkg, pkginstalldeps)
+    """Support for installing the nose Python package as part of a Python installation."""
+
+    def __init__(self, mself, ext, ext_installdeps):
+
+        super(EB_nose, self).__init__(mself, ext, ext_installdeps)
 
         # use extra unpack options to avoid problems like
         # 'tar: Ignoring unknown extended header keyword `SCHILY.nlink'
@@ -209,13 +237,13 @@ class EB_nose(EB_DefaultPythonPackage):
 class EB_FortranPythonPackage(EB_DefaultPythonPackage):
     """Extends EB_DefaultPythonPackage to add a Fortran compiler to the make call"""
 
-    def make(self):
-        comp_fam = self.toolkit().comp_family()
+    def build_step(self):
+        comp_fam = self.toolchain.comp_family()
 
-        if comp_fam == toolkit.INTEL:
+        if comp_fam == toolchain.INTEL:
             cmd = "python setup.py build --compiler=intel --fcompiler=intelem"
 
-        elif comp_fam == toolkit.GCC:
+        elif comp_fam == toolchain.GCC:
             cmdprefix = ""
             ldflags = os.getenv('LDFLAGS')
             if ldflags:
@@ -234,18 +262,18 @@ class EB_FortranPythonPackage(EB_DefaultPythonPackage):
 
 
 class EB_numpy(EB_FortranPythonPackage):
-    """numpy package"""
+    """Support for installing the numpy Python package as part of a Python installation."""
 
-    def __init__(self, mself, pkg, pkginstalldeps):
-        EB_FortranPythonPackage.__init__(self, mself, pkg, pkginstalldeps)
+    def __init__(self, mself, ext, ext_installdeps):
+        super(EB_numpy, self).__init__(mself, ext, ext_installdeps)
 
-        self.pkgcfgs = mself.getcfg('pkgcfgs')
-        if self.pkgcfgs.has_key('numpysitecfglibsubdirs'):
-            self.numpysitecfglibsubdirs = self.pkgcfgs['numpysitecfglibsubdirs']
+        self.exts_cfgs = mself.cfg['exts_cfgs']
+        if self.exts_cfgs.has_key('numpysitecfglibsubdirs'):
+            self.numpysitecfglibsubdirs = self.exts_cfgs['numpysitecfglibsubdirs']
         else:
             self.numpysitecfglibsubdirs = []
-        if self.pkgcfgs.has_key('numpysitecfgincsubdirs'):
-            self.numpysitecfgincsubdirs = self.pkgcfgs['numpysitecfgincsubdirs']
+        if self.exts_cfgs.has_key('numpysitecfgincsubdirs'):
+            self.numpysitecfgincsubdirs = self.exts_cfgs['numpysitecfgincsubdirs']
         else:
             self.numpysitecfgincsubdirs = []
 
@@ -304,11 +332,11 @@ libraries = %s
         self.testinstall = True
         self.runtest = "cd .. && python -c 'import numpy; numpy.test(verbose=2)'"
 
-    def make_install(self):
-        """Install numpy package
+    def install_step(self):
+        """Install numpy 
         We remove the numpy build dir here, so scipy doesn't find it by accident
         """
-        EB_FortranPythonPackage.make_install(self)
+        super(EB_numpy, self).install_step()
         builddir = os.path.join(self.builddir, "numpy")
         if os.path.isdir(builddir):
             shutil.rmtree(builddir)
@@ -317,10 +345,10 @@ libraries = %s
 
 
 class EB_scipy(EB_FortranPythonPackage):
-    """scipy package"""
+    """Support for installing the scipy Python package as part of a Python installation."""
 
-    def __init__(self, mself, pkg, pkginstalldeps):
-        EB_FortranPythonPackage.__init__(self, mself, pkg, pkginstalldeps)
+    def __init__(self, mself, ext, ext_installdeps):
+        super(EB_scipy, self).__init__(mself, ext, ext_installdeps)
 
         # disable testing
         test = False

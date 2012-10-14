@@ -31,23 +31,23 @@ import os
 import shutil
 from distutils.version import LooseVersion
 
-import easybuild.tools.toolkit as toolkit
-from easybuild.easyblocks.blacs import det_interface
-from easybuild.easyblocks.lapack import get_blas_lib
-from easybuild.framework.application import Application
+import easybuild.tools.toolkit as toolchain
+from easybuild.easyblocks.blacs import det_interface  #@UnresolvedImport
+from easybuild.easyblocks.generic.configuremake import ConfigureMake
+from easybuild.easyblocks.lapack import get_blas_lib  #@UnresolvedImport
 from easybuild.tools.modules import get_software_root
 
 
-class EB_ScaLAPACK(Application):
+class EB_ScaLAPACK(ConfigureMake):
     """
     Support for building and installing ScaLAPACK, both versions 1.x and 2.x
     """
 
-    def configure(self):
+    def configure_step(self):
         """Configure ScaLAPACK build by copying SLmake.inc.example to SLmake.inc and checking dependencies."""
 
-        src = os.path.join(self.getcfg('startfrom'), 'SLmake.inc.example')
-        dest = os.path.join(self.getcfg('startfrom'), 'SLmake.inc')
+        src = os.path.join(self.cfg['start_dir'], 'SLmake.inc.example')
+        dest = os.path.join(self.cfg['start_dir'], 'SLmake.inc')
 
         if not os.path.isfile(src):
             self.log.error("Can't fin source file %s" % src)
@@ -60,7 +60,7 @@ class EB_ScaLAPACK(Application):
         except OSError, err:
             self.log.error("Symlinking %s to % failed: %s" % (src, dest, err))
 
-        self.loosever = LooseVersion(self.version())
+        self.loosever = LooseVersion(self.version)
 
         # make sure required dependencies are available
         deps = ["LAPACK"]
@@ -71,7 +71,7 @@ class EB_ScaLAPACK(Application):
             if not get_software_root(dep):
                 self.log.error("Dependency %s not available/loaded." % dep)
 
-    def make(self):
+    def build_step(self):
         """Build ScaLAPACK using make after setting make options."""
 
         # MPI compiler commands
@@ -79,7 +79,7 @@ class EB_ScaLAPACK(Application):
             mpicc = os.getenv('MPICC')
             mpif77 = os.getenv('MPIF77')
             mpif90 = os.getenv('MPIF90')
-        elif self.toolkit().mpi_type() in [toolkit.OPENMPI, toolkit.MVAPICH2]:
+        elif self.toolchain.mpi_type() in [toolchain.OPENMPI, toolchain.MVAPICH2]:
             mpicc = 'mpicc'
             mpif77 = 'mpif77'
             mpif90 = 'mpif90'
@@ -101,7 +101,7 @@ class EB_ScaLAPACK(Application):
             interface = det_interface(self.log, os.path.join(blacs, 'bin'))
 
             # set build and BLACS dir correctly
-            extra_makeopts.append('home=%s BLACSdir=%s' % (self.getcfg('startfrom'), blacs))
+            extra_makeopts.append('home=%s BLACSdir=%s' % (self.cfg['start_dir'], blacs))
 
             # set BLACS libs correctly
             for (var, lib) in [
@@ -113,9 +113,9 @@ class EB_ScaLAPACK(Application):
 
             # set compilers and options
             noopt = ''
-            if self.toolkit().opts['noopt']:
+            if self.toolchain.opts['noopt']:
                 noopt += " -O0"
-            if self.toolkit().opts['pic']:
+            if self.toolchain.opts['pic']:
                 noopt += " -fPIC"
             extra_makeopts += [
                                'F77="%s"' % mpif77,
@@ -130,7 +130,7 @@ class EB_ScaLAPACK(Application):
         else:
 
             # determine interface
-            if self.toolkit().mpi_type() in [toolkit.OPENMPI, toolkit.MVAPICH2]:
+            if self.toolchain.mpi_type() in [toolchain.OPENMPI, toolchain.MVAPICH2]:
                 interface = 'Add_'
             else:
                 self.log.error("Don't know which interface to pick for the MPI library being used.")
@@ -144,12 +144,12 @@ class EB_ScaLAPACK(Application):
             # set interface
             extra_makeopts.append('CDEFS="-D%s"' % interface)
 
-        # update make opts, and make
-        self.updatecfg('makeopts', ' '.join(extra_makeopts))
+        # update make opts, and build_step
+        self.cfg.update('makeopts', ' '.join(extra_makeopts))
 
-        Application.make(self)
+        super(EB_ScaLAPACK, self).build_step()
 
-    def make_install(self):
+    def install_step(self):
         """Install by copying files to install dir."""
 
         # include files and libraries
@@ -158,7 +158,7 @@ class EB_ScaLAPACK(Application):
                                        ("", "lib", ".a"), # libraries
                                        ]:
 
-            src = os.path.join(self.getcfg('startfrom'), srcdir)
+            src = os.path.join(self.cfg['start_dir'], srcdir)
             dest = os.path.join(self.installdir, destdir)
 
             try:
@@ -175,15 +175,12 @@ class EB_ScaLAPACK(Application):
             except OSError, err:
                 self.log.error("Copying %s/*.%s to installation dir %s failed: %s" % (src, ext, dest, err))
 
-    def sanitycheck(self):
+    def sanity_check_step(self):
         """Custom sanity check for ScaLAPACK."""
 
-        if not self.getcfg('sanityCheckPaths'):
-            self.setcfg('sanityCheckPaths', {
-                                            'files': ["lib/libscalapack.a"],
-                                            'dirs': []
-                                           })
+        custom_paths = {
+                        'files': ["lib/libscalapack.a"],
+                        'dirs': []
+                       }
 
-            self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
-
-        Application.sanitycheck(self)
+        super(EB_ScaLAPACK, self).sanity_check_step(custom_paths=custom_paths)

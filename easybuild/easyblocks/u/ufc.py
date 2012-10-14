@@ -22,14 +22,14 @@ EasyBuild support for UFC, implemented as an easyblock
 """
 from distutils.version import LooseVersion
 
-from easybuild.easyblocks.cmakepythonpackage import EB_CMakePythonPackage
+from easybuild.easyblocks.generic.cmakepythonpackage import CMakePythonPackage
 from easybuild.tools.modules import get_software_root, get_software_version
 
 
-class EB_UFC(EB_CMakePythonPackage):
+class EB_UFC(CMakePythonPackage):
     """Support for building UFC."""
 
-    def configure(self):
+    def configure_step(self):
         """Set some extra environment variables before configuring."""
 
         # make sure that required dependencies are loaded
@@ -51,29 +51,25 @@ class EB_UFC(EB_CMakePythonPackage):
 
         self.pyver = ".".join(get_software_version('Python').split(".")[:-1])
 
-        self.updatecfg('configopts', "-DBoost_DIR=%s" % depsdict['Boost'])
-        self.updatecfg('configopts', "-DBOOST_INCLUDEDIR=%s/include" % depsdict['Boost'])
-        self.updatecfg('configopts', "-DBoost_DEBUG=ON -DBOOST_ROOT=%s" % depsdict['Boost'])
+        self.cfg.update('configopts', "-DBoost_DIR=%s" % depsdict['Boost'])
+        self.cfg.update('configopts', "-DBOOST_INCLUDEDIR=%s/include" % depsdict['Boost'])
+        self.cfg.update('configopts', "-DBoost_DEBUG=ON -DBOOST_ROOT=%s" % depsdict['Boost'])
 
-        self.updatecfg('configopts', '-DUFC_ENABLE_PYTHON:BOOL=ON')
-        self.updatecfg('configopts', '-DSWIG_FOUND:BOOL=ON')
-        self.updatecfg('configopts', '-DPYTHON_LIBRARY=%s/lib/libpython%s.so' % (depsdict['Python'],
+        self.cfg.update('configopts', '-DUFC_ENABLE_PYTHON:BOOL=ON')
+        self.cfg.update('configopts', '-DSWIG_FOUND:BOOL=ON')
+        self.cfg.update('configopts', '-DPYTHON_LIBRARY=%s/lib/libpython%s.so' % (depsdict['Python'],
                                                                                  self.pyver))
-        self.updatecfg('configopts', '-DPYTHON_INCLUDE_PATH=%s/include/python%s' % (depsdict['Python'],
+        self.cfg.update('configopts', '-DPYTHON_INCLUDE_PATH=%s/include/python%s' % (depsdict['Python'],
                                                                                     self.pyver))
 
-        EB_CMakePythonPackage.configure(self)
+        super(EB_UFC, self).configure_step()
 
-    def sanitycheck(self):
+    def sanity_check_step(self):
         """Custom sanity check for UFC."""
 
-        if not self.getcfg('sanityCheckPaths'):
+        custom_paths = {
+                        'files': ['include/ufc.h'],
+                        'dirs': ['lib/python%s/site-packages/ufc_utils/' % self.pyver]
+                       }
 
-            self.setcfg('sanityCheckPaths', {
-                                             'files': ['include/ufc.h'],
-                                             'dirs':['lib/python%s/site-packages/ufc_utils/' % self.pyver]
-                                             })
-
-            self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
-
-        EB_CMakePythonPackage.sanitycheck(self)
+        super(EB_UFC, self).sanity_check_step(custom_paths=custom_paths)

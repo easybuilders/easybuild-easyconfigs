@@ -29,17 +29,17 @@ import os
 import shutil
 import tempfile
 
-from easybuild.tools.build_log import getLog
-from easybuild.tools.config import installPath
+from easybuild.tools.build_log import get_log
+from easybuild.tools.config import install_path
 
 
-log = getLog('moduleGenerator')
+log = get_log('moduleGenerator')
 
 # general module class
 GENERAL_CLASS = 'all'
 
 
-class ModuleGenerator:
+class ModuleGenerator(object):
     """
     Class for generating module files.
     """
@@ -49,11 +49,11 @@ class ModuleGenerator:
         self.filename = None
         self.tmpdir = None
 
-    def createFiles(self):
+    def create_files(self):
         """
         Creates the absolute filename for the module.
         """
-        module_path = installPath('mod')
+        module_path = install_path('mod')
 
         # Fake mode: set installpath to temporary dir
         if self.fake:
@@ -62,11 +62,11 @@ class ModuleGenerator:
             module_path = self.tmpdir
 
         # Real file goes in 'all' category
-        self.filename = os.path.join(module_path, GENERAL_CLASS, self.app.name(), self.app.installversion())
+        self.filename = os.path.join(module_path, GENERAL_CLASS, self.app.name, self.app.get_installversion())
 
         # Make symlink in moduleclass category
-        classPath = os.path.join(module_path, self.app.getcfg('moduleclass'), self.app.name())
-        classPathFile = os.path.join(classPath, self.app.installversion())
+        classPath = os.path.join(module_path, self.app.cfg['moduleclass'], self.app.name)
+        classPathFile = os.path.join(classPath, self.app.get_installversion())
 
         # Create directories and links
         for directory in [os.path.dirname(x) for x in [self.filename, classPathFile]]:
@@ -81,7 +81,7 @@ class ModuleGenerator:
             # remove symlink if its there (even if it's broken)
             if os.path.lexists(classPathFile):
                 os.remove(classPathFile)
-            # remove module file if it's there (it'll be recreated), see Application.makeModule
+            # remove module file if it's there (it'll be recreated), see Application.make_module
             if os.path.exists(self.filename):
                 os.remove(self.filename)
             os.symlink(self.filename, classPathFile)
@@ -90,11 +90,11 @@ class ModuleGenerator:
 
         return os.path.join(module_path, GENERAL_CLASS)
 
-    def getDescription(self, conflict=True):
+    def get_description(self, conflict=True):
         """
         Generate a description.
         """
-        description = "%s - Homepage: %s" % (self.app.getcfg('description'), self.app.getcfg('homepage'))
+        description = "%s - Homepage: %s" % (self.app.cfg['description'], self.app.cfg['homepage'])
 
         txt = "#%Module\n"
         txt += """
@@ -109,7 +109,7 @@ set root    %(installdir)s
 
 """ % {'description': description, 'installdir': self.app.installdir}
 
-        if self.app.getcfg('moduleloadnoconflict'):
+        if self.app.cfg['moduleloadnoconflict']:
             txt += """
 if { ![is-loaded %(name)s/%(version)s] } {
     if { [is-loaded %(name)s] } {
@@ -117,14 +117,14 @@ if { ![is-loaded %(name)s/%(version)s] } {
     }
 }
 
-""" % {'name': self.app.name(), 'version': self.app.version()}
+""" % {'name': self.app.name, 'version': self.app.version}
 
         elif conflict:
-            txt += "conflict    %s\n" % self.app.name()
+            txt += "conflict    %s\n" % self.app.name
 
         return txt
 
-    def loadModule(self, name, version):
+    def load_module(self, name, version):
         """
         Generate load statements for module with name and version.
         """
@@ -134,7 +134,7 @@ if { ![is-loaded %(name)s/%(version)s] } {
 }
 """ % {'name': name, 'version': version}
 
-    def unloadModule(self, name, version):
+    def unload_module(self, name, version):
         """
         Generate unload statements for module with name and version.
         """
@@ -146,7 +146,7 @@ if { ![is-loaded %(name)s/%(version)s] } {
 }
 """ % {'name': name, 'version': version}
 
-    def prependPaths(self, key, paths):
+    def prepend_paths(self, key, paths):
         """
         Generate prepend-path statements for the given list of paths.
         """
@@ -156,7 +156,7 @@ if { ![is-loaded %(name)s/%(version)s] } {
         statements = [template % (key, p.replace(fullInstallPath, '')) for p in paths]
         return ''.join(statements)
 
-    def setEnvironment(self, key, value):
+    def set_environment(self, key, value):
         """
         Generate setenv statement for the given key/value pair.
         """

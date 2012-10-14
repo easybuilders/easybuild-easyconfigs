@@ -29,54 +29,54 @@ import os
 import re
 
 import easybuild.tools.config as config
-from easybuild.framework.application import get_class
+from easybuild.framework.easyblock import get_class
 from easybuild.tools.pbs_job import PbsJob
-from easybuild.tools.config import getRepository
+from easybuild.tools.config import get_repository
 
-
-def build_packages_in_parallel(build_command, packages, output_dir, log):
+def build_easyconfigs_in_parallel(build_command, easyconfigs, output_dir, log):
     """
-    packages is a list of packages which can be build! (e.g. they have no unresolved dependencies)
+    easyconfigs is a list of easyconfigs which can be built (e.g. they have no unresolved dependencies)
     this function will build them in parallel by submitting jobs
 
     returns the jobs
     """
-    log.info("going to build these packages in parallel: %s", packages)
+    log.info("going to build these easyconfigs in parallel: %s", easyconfigs)
     job_module_dict = {}
     # dependencies have already been resolved,
     # so one can linearly walk over the list and use previous job id's
     jobs = []
-    for pkg in packages:
+    for ec in easyconfigs:
         # This is very important, otherwise we might have race conditions
         # e.g. GCC-4.5.3 finds cloog.tar.gz but it was incorrectly downloaded by GCC-4.6.3
         # running this step here, prevents this
-        prepare_package(pkg, log)
+        prepare_easyconfig(ec, log)
 
         # the new job will only depend on already submitted jobs
-        log.info("creating job for pkg: %s" % str(pkg))
-        new_job = create_job(build_command, pkg, log, output_dir)
+        log.info("creating job for ec: %s" % str(ec))
+        new_job = create_job(build_command, ec, log, output_dir)
         # Sometimes unresolvedDependencies will contain things, not needed to be build.
-        job_deps = [job_module_dict[dep] for dep in pkg['unresolvedDependencies'] if dep in job_module_dict]
+        job_deps = [job_module_dict[dep] for dep in ec['unresolvedDependencies'] if dep in job_module_dict]
         new_job.add_dependencies(job_deps)
         new_job.submit()
         log.info("job for module %s has been submitted (job id: %s)" % (new_job.module, new_job.jobid))
         # update dictionary
         job_module_dict[new_job.module] = new_job.jobid
+        new_job.cleanup()
         jobs.append(new_job)
 
     return jobs
 
 
-def create_job(build_command, package, log, output_dir=""):
+def create_job(build_command, easyconfig, log, output_dir=""):
     """
-    Creates a job, to build a *single* package
+    Creates a job, to build a *single* easyconfig
     build_command is a format string in which a full path to an eb file will be substituted
-    package should be in the format as processEasyConfig returns them
+    easyconfig should be in the format as processEasyConfig returns them
     output_dir is an optional path. EASYBUILDTESTOUTPUT will be set inside the job with this variable
     returns the job
     """
     # create command based on build_command template
-    command = build_command % package['spec']
+    command = build_command % easyconfig['spec']
 
     # capture PYTHONPATH, MODULEPATH and all variables starting with EASYBUILD
     easybuild_vars = {}
@@ -93,34 +93,34 @@ def create_job(build_command, package, log, output_dir=""):
     log.info("Dictionary of environment variables passed to job: %s" % easybuild_vars)
 
     # create unique name based on module name
-    name = "%s-%s" % package['module']
+    name = "%s-%s" % easyconfig['module']
 
     var = config.environmentVariables['testOutputPath']
     easybuild_vars[var] = os.path.join(os.path.abspath(output_dir), name)
 
     # just use latest build stats
-    buildstats = getRepository().get_buildstats(*package['module'])
+    buildstats = get_repository().get_buildstats(*easyconfig['module'])
     resources = {}
     if buildstats:
         previous_time = buildstats[-1]['build_time']
         resources['hours'] = int(math.ceil(previous_time * 2 / 60))
 
     job = PbsJob(command, name, easybuild_vars, resources=resources)
-    job.module = package['module']
+    job.module = easyconfig['module']
 
     return job
 
 
-def get_instance(package, log):
+def get_instance(easyconfig, log):
     """
-    Get an instance for this package
-    package is in the format provided by processEasyConfig
+    Get an instance for this easyconfig
+    easyconfig is in the format provided by processEasyConfig
     log is a logger object
 
     returns an instance of Application (or subclass thereof)
     """
-    spec = package['spec']
-    name = package['module'][0]
+    spec = easyconfig['spec']
+    name = easyconfig['module'][0]
 
     # handle easyconfigs with custom easyblocks
     easyblock = None
@@ -135,10 +135,10 @@ def get_instance(package, log):
     return app_class(spec, debug=True)
 
 
-def prepare_package(pkg, log):
+def prepare_easyconfig(ec, log):
     """ prepare for building """
     try:
-        instance = get_instance(pkg, log)
-        instance.prepare_build()
+        instance = get_instance(ec, log)
+        instance.fetch_step()
     except:
         pass

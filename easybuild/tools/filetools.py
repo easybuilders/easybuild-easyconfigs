@@ -35,33 +35,34 @@ import stat
 import subprocess
 import tempfile
 import time
+import urllib
 
 import easybuild.tools.environment as env
 from easybuild.tools.asyncprocess import Popen, PIPE, STDOUT
 from easybuild.tools.asyncprocess import send_all, recv_some
-from easybuild.tools.build_log import getLog
+from easybuild.tools.build_log import get_log
 
 
-log = getLog('fileTools')
+log = get_log('fileTools')
 errorsFoundInLog = 0
 
 strictness = 'warn'
 
 
-def unpack(fn, dest, extra_options=None, overwrite=False):
+def extract_file(fn, dest, extra_options=None, overwrite=False):
     """
-    Given filename fn, try to unpack in directory dest
+    Given filename fn, try to extract in directory dest
     - returns the directory name in case of success
     """
     if not os.path.isfile(fn):
-        log.error("Can't unpack file %s: no such file" % fn)
+        log.error("Can't extract file %s: no such file" % fn)
 
     if not os.path.isdir(dest):
         ## try to create it
         try:
             os.makedirs(dest)
         except OSError, err:
-            log.exception("Can't unpack file %s: directory %s can't be created: %err " % (fn, dest, err))
+            log.exception("Can't extract file %s: directory %s can't be created: %err " % (fn, dest, err))
 
     ## use absolute pathnames from now on
     absDest = os.path.abspath(dest)
@@ -73,26 +74,60 @@ def unpack(fn, dest, extra_options=None, overwrite=False):
     except OSError, err:
         log.error("Can't change to directory %s: %s" % (absDest, err))
 
-    cmd = extractCmd(fn, overwrite=overwrite)
+    cmd = extract_cmd(fn, overwrite=overwrite)
     if not cmd:
-        log.error("Can't unpack file %s with unknown filetype" % fn)
+        log.error("Can't extract file %s with unknown filetype" % fn)
 
     if extra_options:
         cmd = "%s %s" % (cmd, extra_options)
 
     run_cmd(cmd, simple=True)
 
-    return findBaseDir()
+    return find_base_dir()
 
+def download_file(filename, url, path):
 
-def findBaseDir():
+    log.debug("Downloading %s from %s to %s" % (filename, url, path))
+
+    # make sure directory exists
+    basedir = os.path.dirname(path)
+    if not os.path.exists(basedir):
+        os.makedirs(basedir)
+
+    downloaded = False
+    attempt_cnt = 0
+
+    # try downloading three times max.
+    while not downloaded and attempt_cnt < 3:
+
+        (_, httpmsg) = urllib.urlretrieve(url, path)
+
+        if httpmsg.type == "text/html" and not filename.endswith('.html'):
+            log.warning("HTML file downloaded but not expecting it, so assuming invalid download.")
+            log.debug("removing downloaded file %s from %s" % (filename, path))
+            try:
+                os.remove(path)
+            except OSError, err:
+                log.error("Failed to remove downloaded file:" % err)
+        else:
+            log.info("Downloading file %s from url %s: done" % (filename, url))
+            downloaded = True
+            return path
+
+        attempt_cnt += 1
+        log.warning("Downloading failed at attempt %s, retrying..." % attempt_cnt)
+
+    # failed to download after multiple attempts
+    return None
+
+def find_base_dir():
     """
     Try to locate a possible new base directory
     - this is typically a single subdir, e.g. from untarring a tarball
-    - when unpacking multiple tarballs in the same directory,
+    - when extracting multiple tarballs in the same directory,
       expect only the first one to give the correct path
     """
-    def getLocalDirsPurged():
+    def get_local_dirs_purged():
         ## e.g. always purge the log directory
         ignoreDirs = ["easybuild"]
 
@@ -102,7 +137,7 @@ def findBaseDir():
                 lst.remove(ignDir)
         return lst
 
-    lst = getLocalDirsPurged()
+    lst = get_local_dirs_purged()
     newDir = os.getcwd()
     while len(lst) == 1:
         newDir = os.path.join(os.getcwd(), lst[0])
@@ -113,14 +148,14 @@ def findBaseDir():
             os.chdir(newDir)
         except OSError, err:
             log.exception("Changing to dir %s from current dir %s failed: %s" % (newDir, os.getcwd(), err))
-        lst = getLocalDirsPurged()
+        lst = get_local_dirs_purged()
 
     log.debug("Last dir list %s" % lst)
     log.debug("Possible new dir %s found" % newDir)
     return newDir
 
 
-def extractCmd(fn, overwrite=False):
+def extract_cmd(fn, overwrite=False):
     """
     Determines the file type of file fn, returns extract cmd
     - based on file suffix
@@ -162,7 +197,7 @@ def extractCmd(fn, overwrite=False):
     return ftype % fn
 
 
-def patch(patchFile, dest, fn=None, copy=False, level=None):
+def apply_patch(patchFile, dest, fn=None, copy=False, level=None):
     """
     Apply a patch to source code in directory dest
     - assume unified diff created with "diff -ru old new"
@@ -380,14 +415,14 @@ def run_cmd_qa(cmd, qa, no_qa=None, log_ok=True, log_all=False, simple=False, re
     # - replace whitespace
     # - replace newline
 
-    def escapeSpecial(string):
+    def escape_special(string):
         return re.sub(r"([\+\?\(\)\[\]\*\.\\\$])" , r"\\\1", string)
 
     split = '[\s\n]+'
     regSplit = re.compile(r"" + split)
 
-    def processQA(q, a):
-        splitq = [escapeSpecial(x) for x in regSplit.split(q)]
+    def process_QA(q, a):
+        splitq = [escape_special(x) for x in regSplit.split(q)]
         regQtxt = split.join(splitq) + split.rstrip('+') + "*$"
         ## add optional split at the end
         if not a.endswith('\n'):
@@ -401,7 +436,7 @@ def run_cmd_qa(cmd, qa, no_qa=None, log_ok=True, log_all=False, simple=False, re
     newQA = {}
     log.debug("newQA: ")
     for question, answer in qa.items():
-        (a, regQ) = processQA(question, answer)
+        (a, regQ) = process_QA(question, answer)
         newQA[regQ] = a
         log.debug("newqa[%s]: %s" % (regQ.pattern, a))
 
@@ -563,7 +598,7 @@ def parse_cmd_output(cmd, stdouterr, ec, simple, log_all, log_ok, regexp):
 
     # parse the stdout/stderr for errors when strictness dictates this or when regexp is passed in
     if use_regexp or regexp:
-        res = parselogForError(stdouterr, regexp, msg="Command used: %s" % cmd)
+        res = parse_log_for_error(stdouterr, regexp, msg="Command used: %s" % cmd)
         if len(res) > 0:
             message = "Found %s errors in command output (output: %s)" % (len(res), ", ".join([r[0] for r in res]))
             if use_regexp:
@@ -582,7 +617,7 @@ def parse_cmd_output(cmd, stdouterr, ec, simple, log_all, log_ok, regexp):
         return (stdouterr, ec)
 
 
-def modifyEnv(old, new):
+def modify_env(old, new):
     """
     Compares 2 os.environ dumps. Adapts final environment.
     """
@@ -594,10 +629,10 @@ def modifyEnv(old, new):
             ## hmm, smart checking with debug logging
             if not new[key] == old[key]:
                 log.debug("Key in new environment found that is different from old one: %s (%s)" % (key, new[key]))
-                env.set(key, new[key])
+                env.setvar(key, new[key])
         else:
             log.debug("Key in new environment found that is not in old one: %s (%s)" % (key, new[key]))
-            env.set(key, new[key])
+            env.setvar(key, new[key])
 
     for key in oldKeys:
         if not key in newKeys:
@@ -605,10 +640,8 @@ def modifyEnv(old, new):
             os.unsetenv(key)
             del os.environ[key]
 
-    return 'ok'
 
-
-def convertName(name, upper=False):
+def convert_name(name, upper=False):
     """
     Converts name so it can be used as variable name
     """
@@ -626,7 +659,7 @@ def convertName(name, upper=False):
         return name
 
 
-def parselogForError(txt, regExp=None, stdout=True, msg=None):
+def parse_log_for_error(txt, regExp=None, stdout=True, msg=None):
     """
     txt is multiline string.
     - in memory
@@ -744,7 +777,7 @@ def patch_perl_script_autoflush(path):
 def mkdir(directory, parents=False):
     """
     Create a directory
-    Directory is the path to make
+    Directory is the path to create
     log is the logger to which to log debugging or error info.
     
     When parents is True then no error if directory already exists
@@ -848,7 +881,7 @@ def copytree(src, dst, symlinks=False, ignore=None):
 
 def encode_string(name):
     """
-    This encoding function handles funky package names ad infinitum, like:
+    This encoding function handles funky software names ad infinitum, like:
       example: '0_foo+0x0x#-$__'
       becomes: '0_underscore_foo_plus_0x0x_hash__minus__dollar__underscore__underscore_'
     The intention is to have a robust escaping mechanism for names like c++, C# et al
@@ -861,7 +894,7 @@ def encode_string(name):
     * http://www.unicode.org/versions/Unicode6.1.0/ 
     For readability of >2 words, it is suggested to use _CamelCase_ style.
     So, yes, '_GreekSmallLetterEtaWithPsiliAndOxia_' *could* indeed be a fully
-    valid package name; package "electron" in the original spelling anyone? ;-)
+    valid software name; software "electron" in the original spelling anyone? ;-)
 
     """
 

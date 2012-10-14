@@ -59,7 +59,7 @@ class EasyBuildLog(logging.Logger):
     # necessary because logging.Logger.exception calls self.error
     raiseError = True
 
-    def callerInfo(self):
+    def caller_info(self):
         (filepath, line, function_name) = self.findCaller()
         filepath_dirs = filepath.split(os.path.sep)
 
@@ -71,14 +71,14 @@ class EasyBuildLog(logging.Logger):
         return "(at %s:%s in %s)" % (os.path.sep.join(filepath_dirs), line, function_name)
 
     def error(self, msg, *args, **kwargs):
-        newMsg = "EasyBuild crashed with an error %s: %s" % (self.callerInfo(), msg)
+        newMsg = "EasyBuild crashed with an error %s: %s" % (self.caller_info(), msg)
         logging.Logger.error(self, newMsg, *args, **kwargs)
         if self.raiseError:
             raise EasyBuildError(newMsg)
 
     def exception(self, msg, *args):
         ## don't raise the exception from within error
-        newMsg = "EasyBuild encountered an exception %s: %s" % (self.callerInfo(), msg)
+        newMsg = "EasyBuild encountered an exception %s: %s" % (self.caller_info(), msg)
 
         self.raiseError = False
         logging.Logger.exception(self, newMsg, *args)
@@ -97,7 +97,7 @@ logging.basicConfig(level=logging.ERROR, format=logging_format, filename='/dev/n
 
 logging.setLoggerClass(EasyBuildLog)
 
-def getLog(name=None):
+def get_log(name=None):
     """
     Generate logger object
     """
@@ -105,14 +105,14 @@ def getLog(name=None):
     log.info("Logger started for %s." % name)
     return log
 
-def removeLogHandler(hnd):
+def remove_log_handler(hnd):
     """
     Remove handler from root log
     """
     log = logging.getLogger()
     log.removeHandler(hnd)
 
-def initLogger(name=None, version=None, debug=False, filename=None, typ='UNKNOWN'):
+def init_logger(name=None, version=None, debug=False, filename=None, typ='UNKNOWN'):
     """
     Return filename of the log file being written
     - does not append
@@ -133,7 +133,7 @@ def initLogger(name=None, version=None, debug=False, filename=None, typ='UNKNOWN
 
     if (name and version) or filename:
         if not filename:
-            filename = logFilename(name, version)
+            filename = log_filename(name, version)
         hand = logging.FileHandler(filename)
     else:
         hand = logging.StreamHandler(sys.stdout)
@@ -155,17 +155,17 @@ def initLogger(name=None, version=None, debug=False, filename=None, typ='UNKNOWN
 
     return filename, log, hand
 
-def logFilename(name, version):
+def log_filename(name, version):
     """
     Generate a filename to be used
     """
     # this can't be imported at the top, otherwise we'd have a cyclic dependency
-    from easybuild.tools.config import logFormat, get_build_log_path
+    from easybuild.tools.config import log_format, get_build_log_path
 
     date = time.strftime("%Y%m%d")
     timeStamp = time.strftime("%H%M%S")
 
-    filename = os.path.join(get_build_log_path(), logFormat() % {'name':name,
+    filename = os.path.join(get_build_log_path(), log_format() % {'name':name,
                                                                  'version':version,
                                                                  'date':date,
                                                                  'time':timeStamp
@@ -188,7 +188,7 @@ def print_msg(msg, log=None):
     print "%s %s" % (EB_MSG_PREFIX, msg)
 
 if __name__ == '__main__':
-    initLogger('test', '1.0.0')
-    fn, testlog, _ = initLogger(typ='build_log')
-    testlog.info('Testing buildLog...')
-    "Tested buildLog, see %s" % fn
+    init_logger('test', '1.0.0')
+    fn, testlog, _ = init_logger(typ='build_log')
+    testlog.info('Testing build_log...')
+    "Tested build_log, see %s" % fn

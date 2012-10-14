@@ -5,35 +5,54 @@
 # License::   MIT/GPL
 # File::      $File$ 
 # Date::      $Date$
-
+"""
+Easybuild support for building SOAPdenovo
+"""
 
 import os
 import shutil
-from easybuild.framework.application import Application
 
-class EB_SOAPdenovo(Application):
+from easybuild.easyblocks.generic.configuremake import ConfigureMake
+
+
+class EB_SOAPdenovo(ConfigureMake):
     """
-    Support for building SOAPdenovo (novel short-read assembly method that can build a de novo draft assembly for the human-sized genomes)
+    Support for building SOAPdenovo.
     """
 
-    def configure(self):
-        """
-	Skip the configure as not part of this build process
-        """
+    def __init__(self, *args, **kwargs):
+        """Define lists of files to install."""
+        super(EB_SOAPdenovo, self).__init__(*args, **kwargs)
 
-    def make_install(self):
+        self.bin_suffixes = ["31mer", "63mer", "127mer"]
+
+    def configure_step(self):
+        """
+	    Skip the configure as not part of this build process
+        """
+        pass
+
+    def install_step(self):
         """
         Install by copying files to install dir
         """
-        srcdir = self.getcfg('startfrom')
+        srcdir = self.cfg['start_dir']
         destdir = os.path.join(self.installdir, 'bin')
         srcfile = None
-	# Get executable files: for i in $(find . -maxdepth 1 -type f -perm +111 -print | sed -e 's/\.\///g' | awk '{print "\""$0"\""}' | grep -vE "\.sh|\.html"); do echo -ne "$i, "; done && echo
         try:
             os.makedirs(destdir)
-            for filename in ["SOAPdenovo-127mer", "SOAPdenovo-31mer", "SOAPdenovo-63mer"]:
-                srcfile = os.path.join(srcdir, "bin", filename)
+            for suff in self.bin_suffixes:
+                srcfile = os.path.join(srcdir, "bin", "SOAPdenovo-%s" % suff)
                 shutil.copy2(srcfile, destdir)
         except OSError, err:
-            self.log.exception("Copying %s to installation dir %s failed: %s" % (srcfile, destdir, err))
-	
+            self.log.error("Copying %s to installation dir %s failed: %s" % (srcfile, destdir, err))
+
+    def sanity_check_step(self):
+        """Custom sanity check for SOAPdenovo."""
+
+        custom_paths = {
+                        'files': ['bin/SOAPdenovo-%s' % x for x in self.bin_suffixes],
+                        'dirs': []
+                       }
+
+        super(EB_SOAPdenovo, self).sanity_check_step(custom_paths=custom_paths)

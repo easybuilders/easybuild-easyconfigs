@@ -30,8 +30,8 @@ import glob
 import os
 import shutil
 
-import easybuild.tools.toolkit as toolkit
-from easybuild.framework.application import Application
+import easybuild.tools.toolkit as toolchain
+from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.filetools import run_cmd
 from easybuild.tools.modules import get_software_root
@@ -62,15 +62,12 @@ def get_blas_lib(log):
     return blaslib
 
 
-class EB_LAPACK(Application):
+class EB_LAPACK(ConfigureMake):
     """
     Support for building LAPACK
-    - read make.inc.example and replace BLAS line with configtops
+    - read build_step.inc.example and replace BLAS line with configtops
     -- should be replaced by patch and variables.
     """
-
-    def __init__(self, *args, **kwargs):
-        Application.__init__(self, *args, **kwargs)
 
     @staticmethod
     def extra_options():
@@ -78,24 +75,24 @@ class EB_LAPACK(Application):
                       ('supply_blas', [False, "Supply BLAS lib to LAPACK for building (default: False)", CUSTOM]),
                       ('test_only', [False, "Only make tests, don't try and build LAPACK lib.", CUSTOM])
                      ]
-        return Application.extra_options(extra_vars)
+        return ConfigureMake.extra_options(extra_vars)
 
 
-    def configure(self):
+    def configure_step(self):
         """
-        Configure LAPACK for build: copy make.inc and set make options
+        Configure LAPACK for build: copy build_step.inc and set make options
         """
 
-        # copy make.inc file from examples
-        if self.toolkit().comp_family() == toolkit.GCC:
+        # copy build_step.inc file from examples
+        if self.toolchain.comp_family() == toolchain.GCC:
             makeinc = 'gfortran'
-        elif self.toolkit().comp_family() == toolkit.INTEL:
+        elif self.toolchain.comp_family() == toolchain.INTEL:
             makeinc = 'ifort'
         else:
-            self.log.error("Don't know which make.inc file to pick, unknown compiler being used...")
+            self.log.error("Don't know which build_step.inc file to pick, unknown compiler being used...")
 
-        src = os.path.join(self.getcfg('startfrom'), 'INSTALL', 'make.inc.%s' % makeinc)
-        dest = os.path.join(self.getcfg('startfrom'), 'make.inc')
+        src = os.path.join(self.cfg['start_dir'], 'INSTALL', 'make.inc.%s' % makeinc)
+        dest = os.path.join(self.cfg['start_dir'], 'make.inc')
 
         if not os.path.isfile(src):
             self.log.error("Can't find source file %s" % src)
@@ -110,54 +107,54 @@ class EB_LAPACK(Application):
 
         # set optimization flags
         fpic = ''
-        if self.toolkit().opts['pic']:
+        if self.toolchain.opts['pic']:
             fpic = '-fPIC'
-        self.updatecfg('makeopts', 'OPTS="$FFLAGS -m64" NOOPT="%s -m64 -O0"' % fpic)
+        self.cfg.update('makeopts', 'OPTS="$FFLAGS -m64" NOOPT="%s -m64 -O0"' % fpic)
 
         # prematurely exit configure when we're only testing
-        if self.getcfg('test_only'):
+        if self.cfg['test_only']:
             self.log.info('Only testing, so skipping rest of configure.')
             return
 
         # supply blas lib (or not)
-        if self.getcfg('supply_blas'):
+        if self.cfg['supply_blas']:
 
             blaslib = get_blas_lib(self.log)
 
             self.log.debug("Providing '%s' as BLAS lib" % blaslib)
-            self.updatecfg('makeopts', 'BLASLIB="%s"' % blaslib)
+            self.cfg.update('makeopts', 'BLASLIB="%s"' % blaslib)
 
         else:
             self.log.debug("Not providing a BLAS lib to LAPACK.")
-            self.updatecfg('makeopts', 'BLASLIB=""')
+            self.cfg.update('makeopts', 'BLASLIB=""')
 
         # only build library if we're not supplying a BLAS library (otherwise testing fails)
-        if not self.getcfg('supply_blas'):
+        if not self.cfg['supply_blas']:
             self.log.info('No BLAS library provided, so only building LAPACK library (no testing).')
-            self.updatecfg('makeopts', 'lib')
+            self.cfg.update('makeopts', 'lib')
 
     # don't create a module if we're only testing
-    def make(self):
+    def build_step(self):
         """
         Only build when we're not testing.
         """
-        if self.getcfg('test_only'):
+        if self.cfg['test_only']:
             return
 
         else:
             # default make suffices (for now)
-            Application.make(self)
+            super(EB_LAPACK, self).build_step()
 
-    def make_install(self):
+    def install_step(self):
         """
         Install LAPACK: copy all .a files to lib dir in install directory
         """
 
-        if self.getcfg('test_only'):
+        if self.cfg['test_only']:
             self.log.info('Only testing, so skipping make install.')
             pass
 
-        srcdir = self.getcfg('startfrom')
+        srcdir = self.cfg['start_dir']
         destdir = os.path.join(self.installdir, 'lib')
 
         try:
@@ -182,11 +179,11 @@ class EB_LAPACK(Application):
         except OSError, err:
             self.log.error("Copying %s to installation dir %s failed: %s" % (srcdir, destdir, err))
 
-    def test(self):
+    def test_step(self):
         """
         Run BLAS and LAPACK tests that come with netlib's LAPACK.
         """
-        if self.getcfg('test_only'):
+        if self.cfg['test_only']:
 
             if not get_software_root('LAPACK'):
                 self.log.error("You need to make sure that the LAPACK module is loaded to perform testing.")
@@ -201,30 +198,26 @@ class EB_LAPACK(Application):
                 cmd = "make BLASLIB='%s' %s_testing" % (blaslib, lib)
                 run_cmd(cmd, log_all=True, simple=True)
         else:
-            Application.test(self)
+            super(EB_LAPACK, self).test_step()
 
     # don't create a module if we're only testing
-    def make_module(self, fake=False):
+    def make_module_step(self, fake=False):
         """
         Only make LAPACK module when we're not testing.
         """
-        if self.getcfg('test_only'):
+        if self.cfg['test_only']:
             pass
         else:
-            return Application.make_module(self, fake)
+            return super(EB_LAPACK, self).make_module_step(fake)
 
-    def sanitycheck(self):
+    def sanity_check_step(self):
         """
         Custom sanity check for LAPACK (only run when not testing)
         """
-        if not self.getcfg('test_only'):
-            if not self.getcfg('sanityCheckPaths'):
-                self.setcfg('sanityCheckPaths',{
-                                                'files': ["lib/%s" % x for x in ["liblapack.a",
-                                                                                 "libtmglib.a"]],
-                                                'dirs': []
-                                               })
+        if not self.cfg['test_only']:
+            custom_paths = {
+                            'files': ["lib/%s" % x for x in ["liblapack.a", "libtmglib.a"]],
+                            'dirs': []
+                           }
 
-                self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
-
-            Application.sanitycheck(self)
+            super(EB_LAPACK, self).sanity_check_step(custom_paths=custom_paths)

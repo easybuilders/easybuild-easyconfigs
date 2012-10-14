@@ -30,23 +30,23 @@ import os
 import stat
 
 import easybuild.tools.environment as env
-from easybuild.easyblocks.binary import EB_Binary
+from easybuild.easyblocks.generic.binary import Binary
 from easybuild.tools.filetools import run_cmd_qa
 
 
-class EB_CPLEX(EB_Binary):
+class EB_CPLEX(Binary):
     """
     Support for installing CPLEX.
-    Version 12.2 has a self-extracting package with a Java installer
+    Version 12.2 has a self-extracting binary with a Java installer
     """
 
     def __init__(self, *args, **kwargs):
         """Initialize CPLEX-specific variables."""
 
-        EB_Binary.__init__(self, *args, **kwargs)
+        super(EB_CPLEX, self).__init__(*args, **kwargs)
         self.bindir = None
 
-    def make_install(self):
+    def install_step(self):
         """CPLEX has an interactive installer, so use Q&A"""
 
         tmpdir = os.path.join(self.builddir, 'tmp')
@@ -57,7 +57,7 @@ class EB_CPLEX(EB_Binary):
         except OSError, err:
             self.log.exception("Failed to prepare for installation: %s" % err)
 
-        env.set('IATEMPDIR', tmpdir)
+        env.setvar('IATEMPDIR', tmpdir)
         dst = os.path.join(self.builddir, self.src[0]['name'])
 
         # Run the source
@@ -99,21 +99,17 @@ class EB_CPLEX(EB_Binary):
     def make_module_extra(self):
         """Add installdir to path and set CPLEX_HOME"""
 
-        txt = EB_Binary.make_module_extra(self)
-        txt += self.moduleGenerator.prependPaths("PATH", [self.bindir])
-        txt += self.moduleGenerator.setEnvironment("CPLEX_HOME", "$root/cplex")
+        txt = super(EB_CPLEX, self).make_module_extra()
+        txt += self.moduleGenerator.prepend_paths("PATH", [self.bindir])
+        txt += self.moduleGenerator.set_environment("CPLEX_HOME", "$root/cplex")
         self.log.debug("make_module_extra added %s" % txt)
         return txt
 
-    def sanitycheck(self):
+    def sanity_check_step(self):
         """Custom sanity check for CPLEX"""
 
-        if not self.getcfg('sanityCheckPaths'):
-            self.setcfg('sanityCheckPaths', {'files':["%s/%s" % (self.bindir, x) for x in
-                                                       ["convert", "cplex", "cplexamp"]],
-                                            'dirs':[]
-                                           })
+        custom_paths = {'files':["%s/%s" % (self.bindir, x) for x in ["convert", "cplex", "cplexamp"]],
+                        'dirs':[]
+                       }
 
-            self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
-
-        EB_Binary.sanitycheck(self)
+        super(EB_CPLEX, self).sanity_check_step(custom_paths=custom_paths)

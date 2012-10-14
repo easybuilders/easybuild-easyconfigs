@@ -22,34 +22,28 @@
 EasyBuild support for installing Tornado, implemented as an easyblock
 """
 
-import os
-import shutil
-import glob
+from easybuild.easyblocks.generic.packedbinary import PackedBinary
 
-from easybuild.easyblocks.packedbinary import EB_PackedBinary
-
-class EB_Tornado(EB_PackedBinary):
+class EB_Tornado(PackedBinary):
     """EasyBlock for Tornado"""
 
-    def sanitycheck(self):
+    def sanity_check_step(self):
 
-        if not self.getcfg('sanityCheckPaths'):
-            self.setcfg('sanityCheckPaths', {
-                                             'files':[],
-                                             'dirs':["Tornado/bin/linux/", "ThirdParty/bin/linux/"]
-                                            })
+        custom_paths = {
+                        'files':[],
+                        'dirs':["Tornado/bin/linux/", "ThirdParty/bin/linux/"]
+                       }
 
-            self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
-
-        return EB_PackedBinary.sanitycheck(self)
+        super(EB_Tornado, self).sanity_check_step(custom_paths=custom_paths)
 
     def make_module_extra(self):
         """Add correct path to lib to LD_LIBRARY_PATH."""
 
-        txt = EB_PackedBinary.make_module_extra(self)
-        txt += self.moduleGenerator.prependPaths('LD_LIBRARY_PATH', ["Tornado/bin/linux/", "ThirdParty/bin/linux/"])
-        txt += self.moduleGenerator.prependPaths('PATH', ["Tornado/bin/linux/"] )
-        txt += self.moduleGenerator.setEnvironment('TORNADO_ROOT_PATH', "$root" )
-        txt += self.moduleGenerator.setEnvironment('TORNADO_DATA_PATH', "$root/Data/WEST" )
+        txt = super(EB_Tornado, self).make_module_extra()
+
+        txt += self.moduleGenerator.prepend_paths('LD_LIBRARY_PATH', ["Tornado/bin/linux/", "ThirdParty/bin/linux/"])
+        txt += self.moduleGenerator.prepend_paths('PATH', ["Tornado/bin/linux/"] )
+        txt += self.moduleGenerator.set_environment('TORNADO_ROOT_PATH', "$root" )
+        txt += self.moduleGenerator.set_environment('TORNADO_DATA_PATH', "$root/Data/WEST" )
 
         return txt

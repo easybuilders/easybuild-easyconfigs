@@ -29,47 +29,46 @@ EasyBuild support for building and installing g2lib, implemented as an easyblock
 import os
 import shutil
 
-from easybuild.framework.application import Application
+from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.tools.modules import get_software_root
 
 
-class EB_g2lib(Application):
+class EB_g2lib(ConfigureMake):
     """Support for building g2clib GRIB2 library."""
 
-    def configure(self):
+    def configure_step(self):
         """No configuration needed"""
         pass
 
-    def make(self):
-        """Build by supplying required make options, and running make."""
+    def build_step(self):
+        """Build by supplying required make options, and running build_step."""
 
         jasper = get_software_root('JASPER')
         if not jasper:
             self.log.error("JasPer module not loaded?")
 
         makeopts = 'CC="%s" FC="%s" INCDIR="-I%s/include"' % (os.getenv('CC'), os.getenv('F90'), jasper)
-        self.updatecfg('makeopts', makeopts)
+        self.cfg.update('makeopts', makeopts)
 
-        Application.make(self)
+        super(EB_g2lib, self).build_step()
 
-    def make_install(self):
+    def install_step(self):
         """Install by copying generated library to install directory."""
 
         try:
             targetdir = os.path.join(self.installdir, "lib")
             os.mkdir(targetdir)
             fn = "libg2.a"
-            shutil.copyfile(os.path.join(self.getcfg('startfrom'), fn), os.path.join(targetdir, fn))
+            shutil.copyfile(os.path.join(self.cfg['start_dir'], fn), os.path.join(targetdir, fn))
         except OSError, err:
             self.log.error("Failed to copy files to install dir: %s" % err)
 
-    def sanitycheck(self):
+    def sanity_check_step(self):
         """Custom sanity check for g2lib."""
 
-        if not self.getcfg('sanityCheckPaths'):
-            self.setcfg('sanityCheckPaths', {
-                                             'files': ["lib/libg2.a"],
-                                             'dirs': []
-                                            })
+        custom_paths = {
+                        'files': ["lib/libg2.a"],
+                        'dirs': []
+                       }
 
-        Application.sanitycheck(self)
+        super(EB_g2lib, self).sanity_check_step(custom_paths=custom_paths)

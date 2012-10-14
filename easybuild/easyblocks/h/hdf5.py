@@ -28,14 +28,14 @@ EasyBuild support for building and installing HDF5, implemented as an easyblock
 
 import os
 
-from easybuild.framework.application import Application
+from easybuild.framework.generic.easyblocks import ConfigureMake
 from easybuild.tools.modules import get_software_root
 
 
-class EB_HDF5(Application):
+class EB_HDF5(ConfigureMake):
     """Support for building/installing HDF5"""
 
-    def configure(self):
+    def configure_step(self):
         """Configure build: set require config and make options, and run configure script."""
 
         # configure options
@@ -43,51 +43,45 @@ class EB_HDF5(Application):
         for dep in deps:
             root = get_software_root(dep)
             if root:
-                self.updatecfg('configopts', '--with-%s=%s' % (dep.lower(), root))
+                self.cfg.update('configopts', '--with-%s=%s' % (dep.lower(), root))
             else:
                 self.log.error("Dependency module %s not loaded." % dep)
 
         fcomp = 'FC="%s"' % os.getenv('F77')
 
-        self.updatecfg('configopts', "--with-pic --with-pthread --enable-shared")
-        self.updatecfg('configopts', "--enable-cxx --enable-fortran %s" % fcomp)
+        self.cfg.update('configopts', "--with-pic --with-pthread --enable-shared")
+        self.cfg.update('configopts', "--enable-cxx --enable-fortran %s" % fcomp)
 
         # MPI and C++ support enabled requires --enable-unsupported, because this is untested by HDF5
-        if self.toolkit().opts['usempi']:
-            self.updatecfg('configopts', "--enable-unsupported")
+        if self.toolchain.opts['usempi']:
+            self.cfg.update('configopts', "--enable-unsupported")
 
         # make options
-        self.updatecfg('makeopts', fcomp)
+        self.cfg.update('makeopts', fcomp)
 
-        Application.configure(self)
+        super(EB_HDF5, self).configure_step()
 
     # default make and make install are ok
 
-    def sanitycheck(self):
+    def sanity_check_step(self):
         """
         Custom sanity check for HDF5
         """
-        if not self.getcfg('sanityCheckPaths'):
 
-            if self.toolkit().opts['usempi']:
-                extra_binaries = ["bin/%s" % x for x in ["h5perf", "h5pcc", "h5pfc", "ph5diff"]]
-            else:
-                extra_binaries = ["bin/%s" % x for x in ["h5cc", "h5fc"]]
+        if self.toolchain.opts['usempi']:
+            extra_binaries = ["bin/%s" % x for x in ["h5perf", "h5pcc", "h5pfc", "ph5diff"]]
+        else:
+            extra_binaries = ["bin/%s" % x for x in ["h5cc", "h5fc"]]
 
-            self.setcfg('sanityCheckPaths',{
-                                            'files': ["bin/h5%s" % x for x in ["2gif", "c++", "copy",
-                                                                               "debug", "diff", "dump",
-                                                                               "import", "jam","ls",
-                                                                               "mkgrp", "perf_serial",
-                                                                               "redeploy", "repack",
-                                                                               "repart", "stat", "unjam"]] +
-                                                     ["bin/gif2h5"] + extra_binaries +
-                                                     ["lib/libhdf5%s.so" % x for x in ["_cpp", "_fortran",
-                                                                                       "_hl_cpp", "_hl",
-                                                                                       "hl_fortran", ""]],
-                                            'dirs': ['include']
-                                           })
+        custom_paths = {
+                        'files': ["bin/h5%s" % x for x in ["2gif", "c++", "copy", "debug", "diff",
+                                                           "dump", "import", "jam","ls", "mkgrp",
+                                                           "perf_serial", "redeploy", "repack",
+                                                           "repart", "stat", "unjam"]] +
+                                 ["bin/gif2h5"] + extra_binaries +
+                                 ["lib/libhdf5%s.so" % x for x in ["_cpp", "_fortran", "_hl_cpp",
+                                                                   "_hl", "hl_fortran", ""]],
+                        'dirs': ['include']
+                       }
 
-            self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
-
-        Application.sanitycheck(self)
+        super(EB_HDF5, self).sanity_check_step(custom_paths=custom_paths)

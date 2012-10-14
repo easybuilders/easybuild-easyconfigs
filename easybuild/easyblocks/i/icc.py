@@ -29,43 +29,40 @@ EasyBuild support for install the Intel C/C++ compiler suite, implemented as an 
 import os
 from distutils.version import LooseVersion
 
-from easybuild.easyblocks.intelbase import EB_IntelBase
+from easybuild.easyblocks.generic.intelbase import IntelBase
 
 
-class EB_icc(EB_IntelBase):
+class EB_icc(IntelBase):
     """Support for installing icc
 
     - tested with 11.1.046
         - will fail for all older versions (due to newer silent installer)
     """
 
-    def sanitycheck(self):
+    def sanity_check_step(self):
+        """Custom sanity check paths for icc."""
 
-        if not self.getcfg('sanityCheckPaths'):
+        binprefix = "bin/intel64"
+        libprefix = "lib/intel64/lib"
+        if LooseVersion(self.version) >= LooseVersion("2011"):
+            if LooseVersion(self.version) <= LooseVersion("2011.3.174"):
+                binprefix = "bin"
+            else:
+                libprefix = "compiler/lib/intel64/lib"
 
-            binprefix = "bin/intel64"
-            libprefix = "lib/intel64/lib"
-            if LooseVersion(self.version()) >= LooseVersion("2011"):
-                if LooseVersion(self.version()) <= LooseVersion("2011.3.174"):
-                    binprefix = "bin"
-                else:
-                    libprefix = "compiler/lib/intel64/lib"
+        custom_paths = {
+                        'files': ["%s/%s" % (binprefix, x) for x in ["icc", "icpc", "idb"]] +
+                                 ["%s%s" % (libprefix, x) for x in ["iomp5.a", "iomp5.so"]],
+                        'dirs': []
+                       }
 
-            self.setcfg('sanityCheckPaths', {
-                                             'files': ["%s/%s" % (binprefix, x) for x in ["icc", "icpc", "idb"]] +
-                                                      ["%s%s" % (libprefix, x) for x in ["iomp5.a", "iomp5.so"]],
-                                             'dirs': []
-                                            })
-
-            self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
-
-        EB_IntelBase.sanitycheck(self)
+        super(EB_icc, self).sanity_check_step(custom_paths=custom_paths)
 
     def make_module_req_guess(self):
         """Customize paths to check and add in environment.
         """
-        if self.getcfg('m32'):
-            # 32-bit toolkit
+        if self.cfg['m32']:
+            # 32-bit toolchain
             dirmap = {
                       'PATH': ['bin', 'bin/ia32', 'tbb/bin/ia32'],
                       'LD_LIBRARY_PATH': ['lib', 'lib/ia32'],
@@ -84,16 +81,16 @@ class EB_icc(EB_IntelBase):
         # in recent Intel compiler distributions, the actual binaries are
         # in deeper directories, and symlinked in top-level directories
         # however, not all binaries are symlinked (e.g. mcpcom is not)
-        if os.path.isdir("%s/composerxe-%s" % (self.installdir, self.version())):
-            prefix = "composerxe-%s" % self.version()
+        if os.path.isdir("%s/composerxe-%s" % (self.installdir, self.version)):
+            prefix = "composerxe-%s" % self.version
             oldmap = dirmap
             dirmap = {}
             for k, vs in oldmap.items():
                 dirmap[k] = []
                 if k == "LD_LIBRARY_PATH":
-                    prefix = "composerxe-%s/compiler" % self.version()
+                    prefix = "composerxe-%s/compiler" % self.version
                 else:
-                    prefix = "composerxe-%s" % self.version()
+                    prefix = "composerxe-%s" % self.version
                 for v in vs:
                     v2 = "%s/%s" % (prefix, v)
                     dirmap[k].append(v2)
@@ -116,7 +113,7 @@ class EB_icc(EB_IntelBase):
     def make_module_extra(self):
         """Add extra environment variables for icc, for license file and NLS path."""
 
-        txt = EB_IntelBase.make_module_extra(self)
+        txt = super(EB_icc, self).make_module_extra()
 
         txt += "prepend-path\t%s\t\t%s\n" % ('INTEL_LICENSE_FILE', self.license)
         txt += "prepend-path\t%s\t\t$root/%s\n" % ('NLSPATH', 'idb/intel64/locale/%l_%t/%N')

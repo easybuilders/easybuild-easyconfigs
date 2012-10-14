@@ -29,7 +29,7 @@ from distutils.version import LooseVersion
 
 import easybuild.tools.environment as env
 from easybuild.tools import systemtools
-from easybuild.tools.build_log import getLog
+from easybuild.tools.build_log import get_log
 from easybuild.tools.modules import Modules, get_software_root, get_software_version
 
 
@@ -42,7 +42,7 @@ OPENMPI = "OpenMPI"
 QLOGIC = "QLogic"
 
 
-class Toolkit:
+class Toolkit(object):
     """
     Class for compiler toolkits, consisting out of a compiler and dependencies (libraries).
     """
@@ -57,7 +57,7 @@ class Toolkit:
         self.m32flag = ''
 
         # logger
-        self.log = getLog('Toolkit')
+        self.log = get_log('Toolkit')
 
         # option flags
         self.opts = {
@@ -131,11 +131,11 @@ class Toolkit:
         mod = Modules()
         self.log.debug("Adding toolkit dependencies")
         for dep in dependencies:
-            if not 'tk' in dep:
-                dep['tk'] = self.get_dependency_version(dep)
+            if not 'tc' in dep:
+                dep['tc'] = self.get_dependency_version(dep)
 
-            if not mod.exists(dep['name'], dep['tk']):
-                self.log.error('No module found for dependency %s/%s' % (dep['name'], dep['tk']))
+            if not mod.exists(dep['name'], dep['tc']):
+                self.log.error('No module found for dependency %s/%s' % (dep['name'], dep['tc']))
             else:
                 self.dependencies.append(dep)
                 self.log.debug('Added toolkit dependency %s' % dep)
@@ -159,14 +159,14 @@ class Toolkit:
             else:
                 self.log.info('Toolkit: dummy mode, but loading dependencies')
                 modules = Modules()
-                modules.addModule(self.dependencies)
+                modules.add_module(self.dependencies)
                 modules.load()
             return
 
         ## Load the toolkit and dependencies modules
         modules = Modules()
-        modules.addModule([(self.name, self.version)])
-        modules.addModule(self.dependencies)
+        modules.add_module([(self.name, self.version)])
+        modules.add_module(self.dependencies)
         modules.load()
 
         ## Determine direct toolkit dependencies, so we can prepare for them
@@ -221,13 +221,13 @@ class Toolkit:
                 continue
 
             self.log.debug("Setting environment variable %s to %s" % (key, val))
-            env.set(key, val)
+            env.setvar(key, val)
 
             # also set unique named variables that can be used in Makefiles
             # - so you can have 'CFLAGS = $(EBVARCFLAGS)'
             # -- 'CLFLAGS = $(CFLAGS)' gives  '*** Recursive variable `CFLAGS'
             # references itself (eventually).  Stop' error
-            env.set("EBVAR%s" % key, val)
+            env.setvar("EBVAR%s" % key, val)
 
 
     def _getOptimalArchitecture(self):
@@ -960,10 +960,10 @@ class Toolkit:
         if mpi_type == INTEL:
 
             # set temporary dir for mdp
-            env.set('I_MPI_MPD_TMPDIR', "/tmp")
+            env.setvar('I_MPI_MPD_TMPDIR', "/tmp")
 
             # set PBS_ENVIRONMENT, so that --file option for mpdboot isn't stripped away
-            env.set('PBS_ENVIRONMENT', "PBS_BATCH_MPI")
+            env.setvar('PBS_ENVIRONMENT', "PBS_BATCH_MPI")
 
             # create mpdboot file
             fn = "/tmp/mpdboot"

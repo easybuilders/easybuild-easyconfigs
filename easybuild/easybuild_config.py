@@ -30,10 +30,10 @@ EasyBuild configuration file.
 import os
 import tempfile
 
-from easybuild.tools.build_log import getLog
+from easybuild.tools.build_log import get_log
 import easybuild.tools.config as config
 
-log = getLog('easybuild_config')
+log = get_log('easybuild_config')
 
 # buildPath possibly overridden by EASYBUILDBUILDPATH
 # installPath possibly overridden by EASYBUILDINSTALLPATH
@@ -79,4 +79,4 @@ logFormat = ("easybuild", "easybuild-%(name)s-%(version)s-%(date)s.%(time)s.log"
 logDir = tempfile.gettempdir()
 
 # general cleanliness
-del os, getLog, config, log, prefix, buildDir, installDir, sourceDir
+del os, get_log, config, log, prefix, buildDir, installDir, sourceDir

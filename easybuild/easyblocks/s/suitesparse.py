@@ -31,15 +31,15 @@ import os
 import shutil
 import sys
 
-from easybuild.framework.application import Application
+from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.tools.filetools import mkdir
 from easybuild.tools.modules import get_software_root
 
 
-class EB_SuiteSparse(Application):
+class EB_SuiteSparse(ConfigureMake):
     """Support for building SuiteSparse."""
 
-    def configure(self):
+    def configure_step(self):
         """Configure build by patching UFconfig.mk."""
         metis = get_software_root('METIS')
         parmetis = get_software_root('ParMETIS')
@@ -86,12 +86,12 @@ class EB_SuiteSparse(Application):
             except IOError, err:
                 self.log.error("Failed to complete %s: %s" % (fp, err))
 
-    def make_install(self):
+    def install_step(self):
         """Install by copying the contents of the builddir to the installdir
         - keep permissions with copy2 !!
         """
-        for x in os.listdir(self.getcfg('startfrom')):
-            src = os.path.join(self.getcfg('startfrom'), x)
+        for x in os.listdir(self.cfg['start_dir']):
+            src = os.path.join(self.cfg['start_dir'], x)
             dst = os.path.join(self.installdir, x)
             try:
                 if os.path.isdir(src):
@@ -129,22 +129,20 @@ class EB_SuiteSparse(Application):
 
     def make_module_req_guess(self):
         """Add UFconfig dir to CPATH so UFconfig include file is found."""
-        guesses = Application.make_module_req_guess(self)
+        guesses = super(EB_SuiteSparse, self).make_module_req_guess()
         guesses.update({'CPATH': ["UFconfig"]})
 
         return guesses
 
-    def sanitycheck(self):
+    def sanity_check_step(self):
         """Custom sanity check for SuiteSparse."""
-        if not self.getcfg('sanityCheckPaths'):
-            self.setcfg('sanityCheckPaths', {
-                                             'files':["%s/lib/lib%s.a" % (x, x.lower()) for x in ["AMD", "BTF", "CAMD", "CCOLAMD", "CHOLMOD",
-                                                                                                  "COLAMD", "CXSparse", "KLU", "LDL", "RBio",
-                                                                                                  "SPQR", "UMFPACK"]] +
-                                                    ["CSparse3/lib/libcsparse.a"],
-                                             'dirs':["MATLAB_Tools"]
-                                            })
 
-            self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
+        custom_paths = {
+                        'files':["%s/lib/lib%s.a" % (x, x.lower()) for x in ["AMD", "BTF", "CAMD", "CCOLAMD", "CHOLMOD",
+                                                                             "COLAMD", "CXSparse", "KLU", "LDL", "RBio",
+                                                                             "SPQR", "UMFPACK"]] +
+                                ["CSparse3/lib/libcsparse.a"],
+                        'dirs':["MATLAB_Tools"]
+                       }
 
-        Application.sanitycheck(self)
+        super(EB_SuiteSparse, self).sanity_check_step(custom_paths=custom_paths)

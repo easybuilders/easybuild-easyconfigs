@@ -28,19 +28,19 @@ EasyBuild support for Boost, implemented as an easyblock
 import os
 import shutil
 
-import easybuild.tools.toolkit as toolkit
-from easybuild.framework.application import Application
+import easybuild.tools.toolkit as toolchain
+from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.filetools import run_cmd
 from easybuild.tools.modules import get_software_root
 
 
-class EB_Boost(Application):
+class EB_Boost(EasyBlock):
     """Support for building Boost."""
 
     def __init__(self, *args, **kwargs):
         """Initialize Boost-specific variables."""
-        Application.__init__(self, *args, **kwargs)
+        super(EB_Boost, self).__init__(*args, **kwargs)
 
         self.objdir = None
 
@@ -49,14 +49,14 @@ class EB_Boost(Application):
         """Add extra easyconfig parameters for Boost."""
         extra_vars = [('boost_mpi', [False, "Build mpi boost module (default: False)", CUSTOM])]
 
-        return Application.extra_options(extra_vars)
+        return EasyBlock.extra_options(extra_vars)
 
-    def configure(self):
+    def configure_step(self):
         """Configure Boost build using custom tools"""
 
         # mpi sanity check
-        if self.getcfg('boost_mpi') and not self.toolkit().opts['usempi']:
-            self.log.error("When enabling building boost_mpi, also enable the 'usempi' toolkit option.")
+        if self.cfg['boost_mpi'] and not self.toolchain.opts['usempi']:
+            self.log.error("When enabling building boost_mpi, also enable the 'usempi' toolchain option.")
 
         # create build directory (Boost doesn't like being built in source dir)
         try:
@@ -68,9 +68,9 @@ class EB_Boost(Application):
 
         # generate config depending on compiler used
         toolset = None
-        if self.toolkit().comp_family() == toolkit.INTEL:
+        if self.toolchain.comp_family() == toolchain.INTEL:
             toolset = 'intel-linux'
-        elif self.toolkit().comp_family() == toolkit.GCC:
+        elif self.toolchain.comp_family() == toolchain.GCC:
             toolset = 'gcc'
         else:
             self.log.error("Unknown compiler used, aborting.")
@@ -78,9 +78,9 @@ class EB_Boost(Application):
         cmd = "./bootstrap.sh --with-toolset=%s --prefix=%s" % (toolset, self.objdir)
         run_cmd(cmd, log_all=True, simple=True)
 
-        if self.getcfg('boost_mpi'):
+        if self.cfg['boost_mpi']:
 
-            self.toolkit().opts['usempi'] = True
+            self.toolchain.opts['usempi'] = True
             # configure the boost mpi module
             # http://www.boost.org/doc/libs/1_47_0/doc/html/mpi/getting_started.html
             # let Boost.Build know to look here for the config file
@@ -88,7 +88,7 @@ class EB_Boost(Application):
             f.write("using mpi : %s ;" % os.getenv("MPICXX"))
             f.close()
 
-    def make(self):
+    def build_step(self):
         """Build Boost with bjam tool."""
 
         bjamoptions = " --prefix=%s" % self.objdir
@@ -100,7 +100,7 @@ class EB_Boost(Application):
                 bjamoptions += " -s%s_INCLUDE=%s/include" % (lib.upper(), libroot)
                 bjamoptions += " -s%s_LIBPATH=%s/lib" % (lib.upper(), libroot)
 
-        if self.getcfg('boost_mpi'):
+        if self.cfg['boost_mpi']:
             self.log.info("Building boost_mpi library")
 
             bjammpioptions = "%s --user-config=user-config.jam --with-mpi" % bjamoptions
@@ -118,7 +118,7 @@ class EB_Boost(Application):
         cmd = "./bjam %s install" % bjamoptions
         run_cmd(cmd, log_all=True, simple=True)
 
-    def make_install(self):
+    def install_step(self):
         """Install Boost by copying file to install dir."""
 
         self.log.info("Copying %s to installation dir %s" % (self.objdir, self.installdir))
@@ -136,21 +136,16 @@ class EB_Boost(Application):
                                                                              self.installdir,
                                                                              err))
 
-    def sanitycheck(self):
+    def sanity_check_step(self):
         """Custom sanity check for Boost."""
 
-        if not self.getcfg('sanityCheckPaths'):
+        mpifs = []
+        if self.cfg['boost_mpi']:
+            mpifs = ['lib/libboost_mpi.so']
 
-            mpifs = []
-            if self.getcfg('boost_mpi'):
-                mpifs = ['lib/libboost_mpi.so']
+        custom_paths = {
+                        'files': mpifs + ['lib/libboost_%s.so' % x for x in ['python', 'system']],
+                       'dirs':['include/boost']
+                       }
 
-            self.setcfg('sanityCheckPaths', {
-                                             'files': mpifs + ['lib/libboost_%s.so' % x for x in ['python',
-                                                                                                  'system']],
-                                             'dirs':['include/boost']
-                                             })
-
-            self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
-
-        Application.sanitycheck(self)
+        super(EB_Boost, self).sanity_check_step(custom_paths=custom_paths)

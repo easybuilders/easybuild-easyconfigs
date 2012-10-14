@@ -23,39 +23,34 @@ EasyBuild support for bzip2, implemented as an easyblock
 """
 import os
 
-from easybuild.framework.application import Application
+from easybuild.easyblocks.generic.configuremake import ConfigureMake
 
 
-class EB_bzip2(Application):
+class EB_bzip2(ConfigureMake):
     """Support for building and installing bzip2."""
 
     # no configure script
-    def configure(self):
+    def configure_step(self):
         """Set extra configure options (CC, CFLAGS)."""
 
-        self.updatecfg('makeopts', 'CC="%s"' % os.getenv('CC'))
-        self.updatecfg('makeopts', "CFLAGS='-Wall -Winline %s -g $(BIGFILES)'" % os.getenv('CFLAGS'))
+        self.cfg.update('makeopts', 'CC="%s"' % os.getenv('CC'))
+        self.cfg.update('makeopts', "CFLAGS='-Wall -Winline %s -g $(BIGFILES)'" % os.getenv('CFLAGS'))
 
-    def make_install(self):
+    def install_step(self):
         """Install in non-standard path by passing PREFIX variable to make install."""
 
-        self.updatecfg('installopts', "PREFIX=%s" % self.installdir)
+        self.cfg.update('installopts', "PREFIX=%s" % self.installdir)
 
-        Application.make_install(self)
+        super(EB_bzip2, self).install_step()
 
-    def sanitycheck(self):
+    def sanity_check_step(self):
         """Custom sanity check for bzip2."""
 
-        if not self.getcfg('sanityCheckPaths'):
+        custom_paths = {
+                        'files': ["bin/%s" % x for x in ["bunzip2", "bzcat", "bzdiff", "bzgrep",
+                                                         "bzip2", "bzip2recover", "bzmore"]] +
+                                 ['lib/libbz2.a', 'include/bzlib.h'],
+                         'dirs': []
+                        }
 
-            self.setcfg('sanityCheckPaths', {
-                                             'files': ["bin/%s" % x for x in ["bunzip2", "bzcat", "bzdiff",
-                                                                              "bzgrep", "bzip2",
-                                                                              "bzip2recover", "bzmore"]] +
-                                                      ['lib/libbz2.a', 'include/bzlib.h'],
-                                             'dirs': []
-                                             })
-
-            self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
-
-        Application.sanitycheck(self)
+        super(EB_bzip2, self).sanity_check_step(custom_paths=custom_paths)

@@ -35,24 +35,24 @@ class FileToolsTest(TestCase):
         verify all the possible extract commands
         also run_cmd should work with some basic echo/exit combos
         """
-        cmd = ft.extractCmd("test.zip")
+        cmd = ft.extract_cmd("test.zip")
         self.assertEqual("unzip -qq test.zip", cmd)
 
-        cmd = ft.extractCmd("/tmp/test.tar")
+        cmd = ft.extract_cmd("/tmp/test.tar")
         self.assertEqual("tar xf /tmp/test.tar", cmd)
 
-        cmd = ft.extractCmd("/tmp/test.tar.gz")
+        cmd = ft.extract_cmd("/tmp/test.tar.gz")
         self.assertEqual("tar xzf /tmp/test.tar.gz", cmd)
 
-        cmd = ft.extractCmd("/tmp/test.tgz")
+        cmd = ft.extract_cmd("/tmp/test.tgz")
         self.assertEqual("tar xzf /tmp/test.tgz", cmd)
 
-        cmd = ft.extractCmd("/tmp/test.bz2")
+        cmd = ft.extract_cmd("/tmp/test.bz2")
         self.assertEqual("bunzip2 /tmp/test.bz2", cmd)
 
-        cmd = ft.extractCmd("/tmp/test.tbz")
+        cmd = ft.extract_cmd("/tmp/test.tbz")
         self.assertEqual("tar xjf /tmp/test.tbz", cmd)
-        cmd = ft.extractCmd("/tmp/test.tar.bz2")
+        cmd = ft.extract_cmd("/tmp/test.tar.bz2")
         self.assertEqual("tar xjf /tmp/test.tar.bz2", cmd)
 
 
@@ -69,17 +69,17 @@ class FileToolsTest(TestCase):
         self.assertEqual(True, ft.run_cmd("echo hello", simple=True))
         self.assertEqual(False, ft.run_cmd("exit 1", simple=True, log_all=False,log_ok=False))
 
-        name = ft.convertName("test+test-test")
+        name = ft.convert_name("test+test-test")
         self.assertEqual(name, "testplustestmintest")
-        name = ft.convertName("test+test-test", True)
+        name = ft.convert_name("test+test-test", True)
         self.assertEqual(name, "TESTPLUSTESTMINTEST")
 
 
-        errors = ft.parselogForError("error failed", True)
+        errors = ft.parse_log_for_error("error failed", True)
         self.assertEqual(len(errors), 1)
 
         # I expect tests to be run from the base easybuild directory
-        self.assertEqual(os.getcwd(), ft.findBaseDir())
+        self.assertEqual(os.getcwd(), ft.find_base_dir())
 
 def suite():
     """ returns all the testcases in this module """

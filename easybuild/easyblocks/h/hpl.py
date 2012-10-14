@@ -29,24 +29,24 @@ EasyBuild support for building and installing HPL, implemented as an easyblock
 import os
 import shutil
 
-from easybuild.framework.application import Application
+from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.tools.filetools import run_cmd
 
 
-class EB_HPL(Application):
+class EB_HPL(ConfigureMake):
     """
     Support for building HPL (High Performance Linpack)
     - create Make.UNKNOWN
     - build with make and install
     """
 
-    def configure(self, subdir=None):
+    def configure_step(self, subdir=None):
         """
         Create Make.UNKNOWN file to build from
         - provide subdir argument so this can be reused in HPCC easyblock
         """
 
-        basedir = self.getcfg('startfrom')
+        basedir = self.cfg['start_dir']
         if subdir:
             makeincfile = os.path.join(basedir, subdir, 'Make.UNKNOWN')
             setupdir = os.path.join(basedir, subdir, 'setup')
@@ -69,19 +69,19 @@ class EB_HPL(Application):
             self.log.exception("Failed to symlink Make.UNKNOWN from %s to %s: %s" % (setupdir, makeincfile, err))
 
         # go back
-        os.chdir(self.getcfg('startfrom'))
+        os.chdir(self.cfg['start_dir'])
 
-    def make(self):
+    def build_step(self):
         """
         Build with make and correct make options
         """
 
         for envvar in ['MPICC', 'LIBLAPACK_MT', 'CPPFLAGS', 'LDFLAGS', 'CFLAGS']:
             if not os.getenv(envvar):
-                self.log.error("Required environment variable %s not found (no toolkit used?)." % envvar)
+                self.log.error("Required environment variable %s not found (no toolchain used?)." % envvar)
 
         # build dir
-        extra_makeopts = 'TOPdir="%s" ' % self.getcfg('startfrom')
+        extra_makeopts = 'TOPdir="%s" ' % self.cfg['start_dir']
 
         # compilers
         extra_makeopts += 'CC="%(mpicc)s" MPICC="%(mpicc)s" LINKER="%(mpicc)s" ' % {'mpicc': os.getenv('MPICC')}
@@ -99,14 +99,14 @@ class EB_HPL(Application):
         extra_makeopts += "CCFLAGS='$(HPL_DEFS) %s' " % os.getenv('CFLAGS')
 
         # set options and build
-        self.updatecfg('makeopts', extra_makeopts)
-        Application.make(self)
+        self.cfg.update('makeopts', extra_makeopts)
+        super(EB_HPL, self).build_step()
 
-    def make_install(self):
+    def install_step(self):
         """
         Install by copying files to install dir
         """
-        srcdir = os.path.join(self.getcfg('startfrom'), 'bin', 'UNKNOWN')
+        srcdir = os.path.join(self.cfg['start_dir'], 'bin', 'UNKNOWN')
         destdir = os.path.join(self.installdir, 'bin')
         srcfile = None
         try:
@@ -117,17 +117,14 @@ class EB_HPL(Application):
         except OSError, err:
             self.log.exception("Copying %s to installation dir %s failed: %s" % (srcfile, destdir, err))
 
-    def sanitycheck(self):
+    def sanity_check_step(self):
         """
         Custom sanity check for HPL
         """
-        if not self.getcfg('sanityCheckPaths'):
 
-            self.setcfg('sanityCheckPaths',{
-                                            'files': ["bin/xhpl"],
-                                            'dirs': []
-                                           })
+        custom_paths = {
+                        'files': ["bin/xhpl"],
+                        'dirs': []
+                       }
 
-            self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
-
-        Application.sanitycheck(self)
+        super(EB_HPL, self).sanity_check_step(custom_paths)

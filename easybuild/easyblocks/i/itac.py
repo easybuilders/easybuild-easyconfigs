@@ -29,26 +29,22 @@ EasyBuild support for installing the Intel Trace Analyzer and Collector (ITAC), 
 import os
 
 from easybuild.framework.easyconfig import CUSTOM
-from easybuild.easyblocks.intelbase import EB_IntelBase
+from easybuild.easyblocks.generic.intelbase import IntelBase
 from easybuild.tools.filetools import run_cmd
 
 
-class EB_itac(EB_IntelBase):
+class EB_itac(IntelBase):
     """
     Class that can be used to install itac
     - tested with Intel Trace Analyzer and Collector 7.2.1.008
     """
 
-    def __init__(self, *args, **kwargs):
-        """Constructor, adds extra config options"""
-        EB_IntelBase.__init__(self, *args, **kwargs)
-
     @staticmethod
     def extra_options():
         extra_vars = [('preferredmpi', ['impi3', "Preferred MPI type (default: 'impi3')", CUSTOM])]
-        return EB_IntelBase.extra_options(extra_vars)
+        return IntelBase.extra_options(extra_vars)
 
-    def make_install(self):
+    def install_step(self):
         """
         Actual installation
         - create silent cfg file
@@ -66,7 +62,7 @@ INSTALL_ITA=YES
 INSTALL_ITC=YES
 DEFAULT_MPI=%(mpi)s
 EULA=accept
-""" % {'lic': self.license, 'ins': self.installdir, 'mpi': self.getcfg('preferredmpi')}
+""" % {'lic': self.license, 'ins': self.installdir, 'mpi': self.cfg['preferredmpi']}
 
         # already in correct directory
         silentcfg = os.path.join(os.getcwd(), "silent.cfg")
@@ -74,7 +70,7 @@ EULA=accept
         f.write(silent)
         f.close()
 
-        tmpdir = os.path.join(os.getcwd(), self.version(), 'mytmpdir')
+        tmpdir = os.path.join(os.getcwd(), self.version, 'mytmpdir')
         try:
             os.makedirs(tmpdir)
         except:
@@ -84,11 +80,21 @@ EULA=accept
 
         run_cmd(cmd, log_all=True, simple=True)
 
+    def sanity_check_step(self):
+        """Custom sanity check paths for ITAC."""
+
+        custom_paths = {
+                        'files': ["include/%s" % x for x in ["i_malloc.h", "VT_dynamic.h", "VT.h", "VT.inc"]],
+                        'dirs': ["bin", "itac", "lib", "slib"]
+                       }
+
+        super(EB_itac, self).sanity_check_step(custom_paths=custom_paths)
+
     def make_module_req_guess(self):
         """
         A dictionary of possible directories to look for
         """
-        preferredmpi = self.getcfg("preferredmpi")
+        preferredmpi = self.cfg["preferredmpi"]
         guesses = {
                    'MANPATH': ['man'],
                    'CLASSPATH': ['itac/lib_%s' % preferredmpi],
@@ -96,7 +102,7 @@ EULA=accept
                    'VT_SLIB_DIR': ['itac/lib_s%s' % preferredmpi]
                   }
 
-        if self.getcfg('m32'):
+        if self.cfg['m32']:
             guesses.update({
                             'PATH': ['bin', 'bin/ia32', 'ia32/bin'],
                             'LD_LIBRARY_PATH': ['lib', 'lib/ia32', 'ia32/lib'],
@@ -109,11 +115,11 @@ EULA=accept
         return guesses
 
     def make_module_extra(self):
-        """Overwritten from EB_IntelBase to add extra txt"""
-        txt = EB_IntelBase.make_module_extra(self)
+        """Overwritten from IntelBase to add extra txt"""
+        txt = super(EB_itac, self).make_module_extra()
         txt += "prepend-path\t%s\t\t%s\n" % ('INTEL_LICENSE_FILE', self.license)
         txt += "setenv\t%s\t\t$root\n" % 'VT_ROOT'
-        txt += "setenv\t%s\t\t%s\n" % ('VT_MPI', self.getcfg('preferredmpi'))
+        txt += "setenv\t%s\t\t%s\n" % ('VT_MPI', self.cfg['preferredmpi'])
         txt += "setenv\t%s\t\t%s\n" % ('VT_ADD_LIBS', '"-ldwarf -lelf -lvtunwind -lnsl -lm -ldl -lpthread"')
 
         return txt

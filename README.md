@@ -6,12 +6,12 @@ that allows you to install software in a structured, repeatable and robust way.
 
 It is motivated by the need for a tool that allows to:
 
- * independently install multiple versions of a software package side-by-side
- * support multiple compilers and libraries for building a software package
+ * independently install multiple versions of software side-by-side
+ * support multiple compilers and libraries for building software
    and its dependencies
- * keep the package configuration simple
+ * keep the software build configuration simple
  * divert from the standard configure / make / make install with custom
-   procedures (which is often necessary for scientific packages)
+   procedures (which is often necessary for scientific software)
  * use environment modules for dependency resolution and making the software
    available to users in a transparent way
  * keep record of the installation logs
@@ -35,7 +35,7 @@ REQUIREMENTS
 -------------
 
 EasyBuild requires Python 2.4 (or a more recent 2.x version) to be available,
-as well as the [environment modules] [3] software package.
+as well as the [environment modules] [3] tool.
 
 The [GitPython] [4] Python module is recommended, especially when EasyBuild is
 being used from a git repository.
@@ -54,7 +54,7 @@ running the following (bash/sh syntax):
     ${EBHOME}/eb --robot ${CFGS} ${CFGS}/h/HPL/HPL-2.0-goalf-1.1.0.eb
 
 This will build and install HPL, after building and installing a GCC-based
-compiler toolkit and all of its dependencies using the default EasyBuild
+compiler toolchain and all of its dependencies using the default EasyBuild
 configuration, which will install to $HOME/.local/easybuild/software.
 
 The entire process should take about an hour on a recent system.
@@ -82,7 +82,7 @@ For command line options, see
 
 See the EasyBuild wiki for documentation on writing your own [easyconfig files] [7] (.eb).
 
-To add support for a particular software package that requires a custom
+To add support for particular software that requires a custom
 installation procedure, you will need to implement an easyblock that can be
 plugged into the EasyBuild framework (see [Development guide] [8]).
 

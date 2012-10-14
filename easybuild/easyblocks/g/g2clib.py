@@ -30,19 +30,19 @@ import glob
 import os
 import shutil
 
-from easybuild.framework.application import Application
+from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.tools.modules import get_software_root
 
 
-class EB_g2clib(Application):
+class EB_g2clib(ConfigureMake):
     """Support for building g2clib GRIB2 C library."""
 
-    def configure(self):
+    def configure_step(self):
         """No configuration needed"""
         pass
 
-    def make(self):
-        """Build by supplying required make options, and running make."""
+    def build_step(self):
+        """Build by supplying required make options, and running build_step."""
 
         jasper = get_software_root('JASPER')
         if not jasper:
@@ -50,11 +50,11 @@ class EB_g2clib(Application):
 
         # beware: g2clib uses INC, while g2lib uses INCDIR !
         makeopts = 'CC="%s" FC="%s" INC="-I%s/include"' % (os.getenv('CC'), os.getenv('F90'), jasper)
-        self.updatecfg('makeopts', makeopts)
+        self.cfg.update('makeopts', makeopts)
 
-        Application.make(self)
+        super(EB_g2clib, self).build_step()
 
-    def make_install(self):
+    def install_step(self):
         """Install by copying library and header files to install directory."""
 
         try:
@@ -62,26 +62,25 @@ class EB_g2clib(Application):
             targetdir = os.path.join(self.installdir, "lib")
             os.mkdir(targetdir)
             fn = "libgrib2c.a"
-            shutil.copyfile(os.path.join(self.getcfg('startfrom'), fn),
+            shutil.copyfile(os.path.join(self.cfg['start_dir'], fn),
                             os.path.join(targetdir, fn))
 
             # copy header files
             targetdir = os.path.join(self.installdir, "include")
             os.mkdir(targetdir)
             for fn in glob.glob('*.h'):
-                shutil.copyfile(os.path.join(self.getcfg('startfrom'), fn),
+                shutil.copyfile(os.path.join(self.cfg['start_dir'], fn),
                                 os.path.join(targetdir, fn))
 
         except OSError, err:
             self.log.error("Failed to copy files to install dir: %s" % err)
 
-    def sanitycheck(self):
+    def sanity_check_step(self):
         """Custom sanity check for g2clib."""
 
-        if not self.getcfg('sanityCheckPaths'):
-            self.setcfg('sanityCheckPaths', {
-                                             'files': ["lib/libgrib2c.a"],
-                                             'dirs': ["include"]
-                                            })
+        custom_paths = {
+                        'files': ["lib/libgrib2c.a"],
+                        'dirs': ["include"]
+                       }
 
-        Application.sanitycheck(self)
+        super(EB_g2clib, self).sanity_check_step(custom_paths=custom_paths)

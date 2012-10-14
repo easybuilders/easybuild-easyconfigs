@@ -29,13 +29,13 @@ EasyBuild support for building and installing ATLAS, implemented as an easyblock
 import re
 import os
 
-from easybuild.framework.application import Application
+from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.filetools import run_cmd
 from easybuild.tools.modules import get_software_root
 
 
-class EB_ATLAS(Application):
+class EB_ATLAS(ConfigureMake):
     """
     Support for building ATLAS
     - configure (and check if it failed due to CPU throttling being enabled)
@@ -44,7 +44,7 @@ class EB_ATLAS(Application):
     """
 
     def __init__(self, *args, **kwargs):
-        Application.__init__(self, *args, **kwargs)
+        super(EB_ATLAS, self).__init__(*args, **kwargs)
 
     @staticmethod
     def extra_options():
@@ -53,33 +53,33 @@ class EB_ATLAS(Application):
                       ('full_lapack', [False, "Build a full LAPACK library (requires netlib's LAPACK) (default: False)", CUSTOM]),
                       ('sharedlibs', [False, "Enable building of shared libs as well (default: False)", CUSTOM])
                      ]
-        return Application.extra_options(extra_vars)
+        return ConfigureMake.extra_options(extra_vars)
 
-    def configure(self):
+    def configure_step(self):
 
         # configure for 64-bit build
-        self.updatecfg('configopts', "-b 64")
+        self.cfg.update('configopts', "-b 64")
 
-        if self.getcfg('ignorethrottling'):
+        if self.cfg['ignorethrottling']:
             # ignore CPU throttling check
             # this is not recommended, it will disturb the measurements done by ATLAS
             # used for the EasyBuild demo, to avoid requiring root privileges
-            self.updatecfg('configopts', '-Si cputhrchk 0')
+            self.cfg.update('configopts', '-Si cputhrchk 0')
 
         # if LAPACK is found, instruct ATLAS to provide a full LAPACK library
         # ATLAS only provides a few LAPACK routines natively
-        if self.getcfg('full_lapack'):
+        if self.cfg['full_lapack']:
             lapack = get_software_root('LAPACK')
             if lapack:
-                self.updatecfg('configopts', ' --with-netlib-lapack=%s/lib/liblapack.a' % lapack)
+                self.cfg.update('configopts', ' --with-netlib-lapack=%s/lib/liblapack.a' % lapack)
             else:
                 self.log.error("netlib's LAPACK library not available,"\
                                " required to build ATLAS with a full LAPACK library.")
 
         # enable building of shared libraries (requires -fPIC)
-        if self.getcfg('sharedlibs') or self.toolkit().opts['pic']:
+        if self.cfg['sharedlibs'] or self.toolchain.opts['pic']:
             self.log.debug("Enabling -fPIC because we're building shared ATLAS libs, or just because.")
-            self.updatecfg('configopts', '-Fa alg -fPIC')
+            self.cfg.update('configopts', '-Fa alg -fPIC')
 
         # ATLAS only wants to be configured/built in a separate dir'
         try:
@@ -90,14 +90,14 @@ class EB_ATLAS(Application):
             self.log.error("Failed to create obj directory to build in: %s" % err)
 
         # specify compilers
-        self.updatecfg('configopts', '-C ic %(cc)s -C if %(f77)s' % {
+        self.cfg.update('configopts', '-C ic %(cc)s -C if %(f77)s' % {
                                                                      'cc':os.getenv('CC'),
                                                                      'f77':os.getenv('F77')
                                                                     })
 
         # call configure in parent dir
-        cmd = "%s %s/configure --prefix=%s %s" % (self.getcfg('preconfigopts'), self.getcfg('startfrom'),
-                                                 self.installdir, self.getcfg('configopts'))
+        cmd = "%s %s/configure --prefix=%s %s" % (self.cfg['preconfigopts'], self.cfg['start_dir'],
+                                                 self.installdir, self.cfg['configopts'])
         (out, exitcode) = run_cmd(cmd, log_all=False, log_ok=False, simple=False)
 
         if exitcode != 0:
@@ -114,7 +114,7 @@ Configure failed, not sure why (see output above).""" % out
             self.log.error(errormsg)
 
 
-    def setparallelism(self, nr=None):
+    def set_parallelism(self, nr=None):
         """
         Parallel build of ATLAS doesn't make sense (and doesn't work),
         because it collects timing etc., so disable it.
@@ -122,16 +122,16 @@ Configure failed, not sure why (see output above).""" % out
         if not nr:
             self.log.warning("Ignoring requested parallelism, it breaks ATLAS, so setting to 1")
         self.log.info("Disabling parallel build, makes no sense for ATLAS.")
-        Application.setparallelism(self, 1)
+        super(EB_ATLAS, self).set_parallelism(1)
 
 
-    def make(self, verbose=False):
+    def build_step(self, verbose=False):
 
         # default make is fine
-        Application.make(self, verbose=verbose)
+        super(EB_ATLAS, self).build_step(verbose=verbose)
 
         # optionally also build shared libs
-        if self.getcfg('sharedlibs'):
+        if self.cfg['sharedlibs']:
             try:
                 os.chdir('lib')
             except OSError, err:
@@ -146,14 +146,14 @@ Configure failed, not sure why (see output above).""" % out
             except OSError, err:
                 self.log.error("Failed to get back to previous dir after building shared libs: %s " % err)
 
-    def make_install(self):
+    def install_step(self):
         """Install step
 
         Default make install and optionally remove incomplete lapack libs.
         If the full_lapack option was set to false we don't
         """
-        Application.make_install(self)
-        if not self.getcfg('full_lapack'):
+        super(EB_ATLAS, self).install_step()
+        if not self.cfg['full_lapack']:
             for i in ['liblapack.a', 'liblapack.so']:
                 lib = os.path.join(self.installdir, "lib", i[0])
                 if os.path.exists(lib):
@@ -163,48 +163,45 @@ Configure failed, not sure why (see output above).""" % out
                     self.log.warning("Tried to remove %s, but file didn't exist")
 
 
-    def test(self):
+    def test_step(self):
 
         # always run tests
-        if self.getcfg('runtest'):
+        if self.cfg['runtest']:
             self.log.warning("ATLAS testing is done using 'make check' and 'make ptcheck',"\
                              " so no need to set 'runtest' in the .eb spec file.")
 
         # sanity tests
-        self.setcfg('runtest', 'check')
-        Application.test(self)
+        self.cfg['runtest'] = 'check'
+        super(EB_ATLAS, self).test_step()
 
         # checks of threaded code
-        self.setcfg('runtest', 'ptcheck')
-        Application.test(self)
+        self.cfg['runtest'] = 'ptcheck'
+        super(EB_ATLAS, self).test_step()
 
         # performance summary
-        self.setcfg('runtest', 'time')
-        Application.test(self)
+        self.cfg['runtest'] = 'time'
+        super(EB_ATLAS, self).test_step()
 
     # default make install is fine
 
-    def sanitycheck(self):
+    def sanity_check_step(self):
         """
         Custom sanity check for ATLAS
         """
-        if not self.getcfg('sanityCheckPaths'):
 
-            libs = ["atlas", "cblas", "f77blas", "lapack", "ptcblas", "ptf77blas"]
+        libs = ["atlas", "cblas", "f77blas", "lapack", "ptcblas", "ptf77blas"]
 
-            static_libs = ["lib/lib%s.a" % x for x in libs]
+        static_libs = ["lib/lib%s.a" % x for x in libs]
 
-            if self.getcfg('sharedlibs'):
-                shared_libs = ["lib/lib%s.so" % x for x in libs]
-            else:
-                shared_libs = []
+        if self.cfg['sharedlibs']:
+            shared_libs = ["lib/lib%s.so" % x for x in libs]
+        else:
+            shared_libs = []
 
-            self.setcfg('sanityCheckPaths', {
-                                             'files': ["include/%s" % x for x in ["cblas.h", "clapack.h"]] +
-                                                    static_libs + shared_libs,
-                                             'dirs': ["include/atlas"]
-                                            })
+        custom_paths = {
+                        'files': ["include/%s" % x for x in ["cblas.h", "clapack.h"]] + 
+                                 static_libs + shared_libs,
+                        'dirs': ["include/atlas"]
+                       }
 
-            self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
-
-        Application.sanitycheck(self)
+        super(EB_ATLAS, self).sanity_check_step(custom_paths=custom_paths)

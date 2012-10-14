@@ -20,40 +20,36 @@
 """
 EasyBuild support for SWIG, implemented as an easyblock
 """
-from easybuild.framework.application import Application
+from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.tools.modules import get_software_root
 
 
-class EB_SWIG(Application):
+class EB_SWIG(ConfigureMake):
     """Support for building SWIG."""
 
-    def configure(self):
+    def configure_step(self):
         """Set some extra environment variables before configuring."""
 
         # disable everything by default
         for x in ["r", "clisp", "allegrocl", "lua", "csharp", "chicken", "pike ",
                   "ocaml","php", "ruby", "mzscheme", "guile", "gcj", "java",
                   "octave", "perl5", "python3", "tcl"]:
-            self.updatecfg('configopts', "--without-%s" % x)
+            self.cfg.update('configopts', "--without-%s" % x)
 
         python = get_software_root('Python')
         if python:
-            self.updatecfg('configopts', "--with-python=%s/bin/python" % python)
+            self.cfg.update('configopts', "--with-python=%s/bin/python" % python)
         else:
             self.log.error("Python module not loaded?")
 
-        Application.configure(self)
+        super(EB_SWIG, self).configure_step()
 
-    def sanitycheck(self):
+    def sanity_check_step(self):
         """Custom sanity check for SWIG."""
 
-        if not self.getcfg('sanityCheckPaths'):
+        custom_paths = {
+                        'files':["bin/ccache-swig","bin/swig"],
+                        'dirs':[]
+                       }
 
-            self.setcfg('sanityCheckPaths', {
-                                             'files':["bin/ccache-swig","bin/swig"],
-                                             'dirs':[]
-                                             })
-
-            self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
-
-        Application.sanitycheck(self)
+        super(EB_SWIG, self).sanity_check_step(custom_paths=custom_paths)

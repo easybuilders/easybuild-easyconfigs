@@ -35,21 +35,21 @@ import tempfile
 from distutils.version import LooseVersion
 
 import easybuild.tools.environment as env
-import easybuild.tools.toolkit as toolkit
-from easybuild.easyblocks.netcdf import set_netcdf_env_vars, get_netcdf_module_set_cmds
-from easybuild.framework.application import Application
+import easybuild.tools.toolkit as toolchain
+from easybuild.easyblocks.netcdf import set_netcdf_env_vars, get_netcdf_module_set_cmds  #@UnresolvedImport
+from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import CUSTOM, MANDATORY
-from easybuild.tools.filetools import patch_perl_script_autoflush, run_cmd, run_cmd_qa, unpack
+from easybuild.tools.filetools import patch_perl_script_autoflush, run_cmd, run_cmd_qa, extract_file
 from easybuild.tools.modules import get_software_root, get_software_version
 
 
-class EB_WPS(Application):
+class EB_WPS(EasyBlock):
     """Support for building/installing WPS."""
 
     def __init__(self, *args, **kwargs):
         """Add extra config options specific to WPS."""
 
-        Application.__init__(self, *args, **kwargs)
+        super(EB_WPS, self).__init__(*args, **kwargs)
 
         self.build_in_installdir = True
         self.comp_fam = None
@@ -68,9 +68,9 @@ class EB_WPS(Application):
                       ('runtest', [True, "Build and run WPS tests (default: True).", CUSTOM]),
                       ('testdata', [testdata_urls, "URL to test data required to run WPS test (default: %s)." % testdata_urls, CUSTOM])
                      ]
-        return Application.extra_options(extra_vars)
+        return EasyBlock.extra_options(extra_vars)
 
-    def configure(self):
+    def configure_step(self):
         """Configure build:
         - set required environment variables (for netCDF, JasPer)
         - patch compile script and ungrib Makefile for non-default install paths of WRF and JasPer
@@ -109,8 +109,8 @@ class EB_WPS(Application):
         jasper = get_software_root('JasPer')
         jasperlibdir = os.path.join(jasper, "lib")
         if jasper:
-            env.set('JASPERINC', os.path.join(jasper, "include"))
-            env.set('JASPERLIB', jasperlibdir)
+            env.setvar('JASPERINC', os.path.join(jasper, "include"))
+            env.setvar('JASPERLIB', jasperlibdir)
         else:
             self.log.error("JasPer module not loaded?")
 
@@ -131,20 +131,20 @@ class EB_WPS(Application):
         # configure
 
         # determine build type option to look for
-        self.comp_fam = self.toolkit().comp_family()
+        self.comp_fam = self.toolchain.comp_family()
         build_type_option = None
 
-        if LooseVersion(self.version()) >= LooseVersion("3.4"):
+        if LooseVersion(self.version) >= LooseVersion("3.4"):
 
             knownbuildtypes = {
                                'smpar': 'serial',
                                'dmpar': 'dmpar'
                               }
 
-            if self.comp_fam == toolkit.INTEL:
+            if self.comp_fam == toolchain.INTEL:
                 build_type_option = " Linux x86_64, Intel compiler"
 
-            elif self.comp_fam == toolkit.GCC:
+            elif self.comp_fam == toolchain.GCC:
                 build_type_option = "Linux x86_64 g95 compiler"
 
             else:
@@ -157,10 +157,10 @@ class EB_WPS(Application):
                                'dmpar': 'DM parallel'
                               }
 
-            if self.comp_fam == toolkit.INTEL:
+            if self.comp_fam == toolchain.INTEL:
                 build_type_option = "PC Linux x86_64, Intel compiler"
 
-            elif self.comp_fam == toolkit.GCC:
+            elif self.comp_fam == toolchain.GCC:
                 build_type_option = "PC Linux x86_64, gfortran compiler,"
                 knownbuildtypes['dmpar'] = knownbuildtypes['dmpar'].upper()
 
@@ -168,7 +168,7 @@ class EB_WPS(Application):
                 self.log.error("Don't know how to figure out build type to select.")
 
         # check and fetch selected build type
-        bt = self.getcfg('buildtype')
+        bt = self.cfg['buildtype']
 
         if not bt in knownbuildtypes.keys():
             self.log.error("Unknown build type: '%s'. Supported build types: %s" % (bt, knownbuildtypes.keys()))
@@ -201,13 +201,13 @@ class EB_WPS(Application):
                 line = re.sub(r"^(%s\s*=\s*).*$" % k, r"\1 %s" % v, line)
             sys.stdout.write(line)
 
-    def make(self):
+    def build_step(self):
         """Build in install dir using compile script."""
 
         cmd = "./%s" % self.compile_script
         run_cmd(cmd, log_all=True, simple=True)
 
-    def test(self):
+    def test_step(self):
         """Run WPS test (requires large dataset to be downloaded). """
 
         wpsdir = None
@@ -222,8 +222,8 @@ class EB_WPS(Application):
             if not re_success.search(out):
                 self.log.error("%s.exe failed (pattern '%s' not found)?" % (cmdname, re_success.pattern))
 
-        if self.getcfg('runtest'):
-            if not self.getcfg('testdata'):
+        if self.cfg['runtest']:
+            if not self.cfg['testdata']:
                 self.log.error("List of URLs for testdata not provided.")
 
             wpsdir = os.path.join(self.builddir, "WPS")
@@ -235,15 +235,15 @@ class EB_WPS(Application):
 
                 # download data
                 testdata_paths = []
-                for testdata in self.getcfg('testdata'):
-                    path = self.file_locate(testdata)
+                for testdata in self.cfg['testdata']:
+                    path = self.obtain_file(testdata)
                     if not path:
                         self.log.error("Downloading file from %s failed?" % testdata)
                     testdata_paths.append(path)
 
                 # unpack data
                 for path in testdata_paths:
-                    unpack(path, tmpdir)
+                    extract_file(path, tmpdir)
 
                 # copy namelist.wps file
                 fn = "namelist.wps"
@@ -314,8 +314,8 @@ class EB_WPS(Application):
             except OSError, err:
                 self.log.error("Failed to run WPS test: %s" % err)
 
-    # installing is done in make, so we can run tests
-    def make_install(self):
+    # installing is done in build_step, so we can run tests
+    def install_step(self):
         """Building was done in install dir, so just do some cleanup here."""
 
         # make sure JASPER environment variables are unset
@@ -325,34 +325,30 @@ class EB_WPS(Application):
             if os.environ.has_key(env_var):
                 os.environ.pop(env_var)
 
-    def sanitycheck(self):
+    def sanity_check_step(self):
         """Custom sanity check for WPS."""
 
-        if not self.getcfg('sanityCheckPaths'):
+        custom_paths = {
+                        'files': ["WPS/%s" % x for x in ["geogrid.exe", "metgrid.exe",
+                                                         "ungrib.exe"]],
+                        'dirs': []
+                       }
 
-            self.setcfg('sanityCheckPaths', {
-                                             'files': ["WPS/%s" % x for x in ["geogrid.exe", "metgrid.exe",
-                                                                             "ungrib.exe"]],
-                                             'dirs': []
-                                            })
-
-            self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
-
-        Application.sanitycheck(self)
+        super(EB_WPS, self).sanity_check_step(custom_paths=custom_paths)
 
     def make_module_req_guess(self):
         """Make sure PATH and LD_LIBRARY_PATH are set correctly."""
 
         return {
-                'PATH': [self.name()],
-                'LD_LIBRARY_PATH': [self.name()],
+                'PATH': [self.name],
+                'LD_LIBRARY_PATH': [self.name],
                 'MANPATH': [],
                }
 
     def make_module_extra(self):
         """Add netCDF environment variables to module file."""
 
-        txt = Application.make_module_extra(self)
+        txt = super(EB_WPS, self).make_module_extra()
 
         txt += get_netcdf_module_set_cmds(self.log)
 

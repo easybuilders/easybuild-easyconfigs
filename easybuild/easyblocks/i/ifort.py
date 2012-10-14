@@ -28,35 +28,33 @@ EasyBuild support for installing the Intel Fortran compiler suite, implemented a
 
 from distutils.version import LooseVersion
 
-from easybuild.easyblocks.icc import EB_icc, EB_IntelBase
+from easybuild.easyblocks.generic.intelbase import IntelBase
+from easybuild.easyblocks.icc import EB_icc  #@UnresolvedImport
 
 
-class EB_ifort(EB_icc):
+class EB_ifort(EB_icc, IntelBase):
     """
     Class that can be used to install ifort
     - tested with 11.1.046
     -- will fail for all older versions (due to newer silent installer)
     """
 
-    def sanitycheck(self):
+    def sanity_check_step(self):
+        """Custom sanity check paths for ifort."""
 
-        if not self.getcfg('sanityCheckPaths'):
+        binprefix = "bin/intel64"
+        libprefix = "lib/intel64/lib"
+        if LooseVersion(self.version) >= LooseVersion("2011"):
+            if LooseVersion(self.version) <= LooseVersion("2011.3.174"):
+                binprefix = "bin"
+            else:
+                libprefix = "compiler/lib/intel64/lib"
 
-            binprefix = "bin/intel64"
-            libprefix = "lib/intel64/lib"
-            if LooseVersion(self.version()) >= LooseVersion("2011"):
-                if LooseVersion(self.version()) <= LooseVersion("2011.3.174"):
-                    binprefix = "bin"
-                else:
-                    libprefix = "compiler/lib/intel64/lib"
+        custom_paths = {
+                        'files': ["%s/%s" % (binprefix, x) for x in ["ifort", "idb"]] +
+                                 ["%s%s" % (libprefix, x) for x in ["ifcore.a", "ifcore.so",
+                                                                    "iomp5.a", "iomp5.so"]],
+                        'dirs': []
+                       }
 
-            self.setcfg('sanityCheckPaths', {
-                                             'files': ["%s/%s" % (binprefix, x) for x in ["ifort", "idb"]] +
-                                                      ["%s%s" % (libprefix, x) for x in ["ifcore.a", "ifcore.so",
-                                                                                         "iomp5.a", "iomp5.so"]],
-                                             'dirs': []
-                                            })
-
-            self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
-
-        EB_IntelBase.sanitycheck(self)
+        IntelBase.sanity_check_step(self, custom_paths=custom_paths)

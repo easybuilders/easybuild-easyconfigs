@@ -22,39 +22,35 @@ EasyBuild support for Armadillo, implemented as an easyblock
 """
 import os
 
-from easybuild.easyblocks.cmake import EB_CMake
+from easybuild.easyblocks.generic.cmakemake import CMakeMake
 from easybuild.tools.modules import get_software_root
 
 
-class EB_Armadillo(EB_CMake):
+class EB_Armadillo(CMakeMake):
     """Support for building Armadillo."""
 
-    def configure(self):
+    def configure_step(self):
         """Set some extra environment variables before configuring."""
 
         boost = get_software_root('Boost')
         if not boost:
             self.log.error("Dependency module Boost not loaded?")
 
-        self.updatecfg('configopts', "-DBoost_DIR=%s" % boost)
-        self.updatecfg('configopts', "-DBOOST_INCLUDEDIR=%s/include" % boost)
-        self.updatecfg('configopts', "-DBoost_DEBUG=ON -DBOOST_ROOT=%s" % boost)
+        self.cfg.update('configopts', "-DBoost_DIR=%s" % boost)
+        self.cfg.update('configopts', "-DBOOST_INCLUDEDIR=%s/include" % boost)
+        self.cfg.update('configopts', "-DBoost_DEBUG=ON -DBOOST_ROOT=%s" % boost)
 
-        self.updatecfg('configopts', '-DBLAS_LIBRARY:PATH="%s"' % os.getenv('LIBBLAS'))
-        self.updatecfg('configopts', '-DLAPACK_LIBRARY:PATH="%s"' % os.getenv('LIBLAPACK'))
+        self.cfg.update('configopts', '-DBLAS_LIBRARY:PATH="%s"' % os.getenv('LIBBLAS'))
+        self.cfg.update('configopts', '-DLAPACK_LIBRARY:PATH="%s"' % os.getenv('LIBLAPACK'))
 
-        EB_CMake.configure(self)
+        super(EB_Armadillo, self).configure_step()
 
-    def sanitycheck(self):
+    def sanity_check_step(self):
         """Custom sanity check for Armadillo."""
 
-        if not self.getcfg('sanityCheckPaths'):
+        custom_paths = {
+                        'files':['lib/libarmadillo.so', 'include/armadillo'],
+                        'dirs':['include/armadillo_bits']
+                       }
 
-            self.setcfg('sanityCheckPaths', {
-                                             'files':['lib/libarmadillo.so', 'include/armadillo'],
-                                             'dirs':['include/armadillo_bits']
-                                             })
-
-            self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
-
-        EB_CMake.sanitycheck(self)
+        super(EB_Armadillo, self).sanity_check_step(custom_paths=custom_paths)

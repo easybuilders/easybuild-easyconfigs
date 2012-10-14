@@ -27,10 +27,10 @@ EasyBuild support for Primer3, implemented as an easyblock
 """
 import os
 
-from easybuild.framework.application import Application
+from easybuild.easyblocks.generic.configuremake import ConfigureMake
 
 
-class EB_Primer3(Application):
+class EB_Primer3(ConfigureMake):
     """
     Support for building Primer3.
     Configure and build in installation dir.
@@ -39,47 +39,42 @@ class EB_Primer3(Application):
     def __init__(self, *args, **kwargs):
         """Custom initialization for Primer3: build in install dir, set correct bin dir, specify to start from 'src'."""
 
-        Application.__init__(self, *args, **kwargs)
+        super(EB_Primer3, self).__init__(*args, **kwargs)
 
         self.build_in_installdir = True
 
-        self.bindir = "%s-%s/src" % (self.name().lower(), self.version())
+        self.bindir = "%s-%s/src" % (self.name.lower(), self.version)
 
-        self.setcfg('startfrom', 'src')
+        self.cfg['start_dir'] = 'src'
 
-    def configure(self):
+    def configure_step(self):
         """Configure Primer3 build by setting make options."""
 
-        self.updatecfg('makeopts', 'CC="%s" CPP="%s" O_OPTS="%s" all' % (os.getenv('CC'),
+        self.cfg.update('makeopts', 'CC="%s" CPP="%s" O_OPTS="%s" all' % (os.getenv('CC'),
                                                                          os.getenv('CXX'),
                                                                          os.getenv('CFLAGS')))
 
     # default make should be fine
 
-    def make_install(self):
+    def install_step(self):
         """(no make install)"""
         pass
 
-    def sanitycheck(self):
+    def sanity_check_step(self):
         """Custom sanity check for Primer3."""
 
-        if not self.getcfg('sanityCheckPaths'):
-            self.setcfg('sanityCheckPaths', {'files':["%s/%s" % (self.bindir, x) for x in ["primer3_core",
-                                                                                      "ntdpal",
-                                                                                      "oligotm",
-                                                                                      "long_seq_tm_test"]],
-                                             'dirs':[]
-                                            }
-                        )
+        custom_paths = {
+                        'files':["%s/%s" % (self.bindir, x) for x in ["primer3_core", "ntdpal",
+                                                                      "oligotm", "long_seq_tm_test"]],
+                        'dirs':[]
+                       }
 
-            self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
-
-        Application.sanitycheck(self)
+        super(EB_Primer3, self).sanity_check_step(custom_paths=custom_paths)
 
     def make_module_req_guess(self):
         """Correct suggestion for PATH variable."""
 
-        guesses = Application.make_module_req_guess(self)
+        guesses = super(EB_Primer3, self).make_module_req_guess()
 
         guesses.update({'PATH': [self.bindir]})
 

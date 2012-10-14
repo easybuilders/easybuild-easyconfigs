@@ -29,18 +29,15 @@ EasyBuild support for building and installing the MVAPICH2 MPI library, implemen
 import os
 
 import easybuild.tools.environment as env
-from easybuild.framework.application import Application
+from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.framework.easyconfig import CUSTOM
 
 
-class EB_MVAPICH2(Application):
+class EB_MVAPICH2(ConfigureMake):
     """
     Support for building the MVAPICH2 MPI library.
     - some compiler dependent configure options
     """
-
-    def __init__(self, *args, **kwargs):
-        Application.__init__(self, *args, **kwargs)
 
     @staticmethod
     def extra_options():
@@ -51,22 +48,22 @@ class EB_MVAPICH2(Application):
                       ('debug', [False, "Enable debug build (which is slower) (default: False)", CUSTOM]),
                       ('rdma_type', ["gen2", "Specify the RDMA type (gen2/udapl) (default: gen2)", CUSTOM])
                      ]
-        return Application.extra_options(extra_vars)
+        return ConfigureMake.extra_options(extra_vars)
 
-    def configure(self):
+    def configure_step(self):
 
         # things might go wrong if a previous install dir is present, so let's get rid of it
-        if not self.getcfg('keeppreviousinstall'):
+        if not self.cfg['keeppreviousinstall']:
             self.log.info("Making sure any old installation is removed before we start the build...")
-            Application.make_dir(self, self.installdir, True, dontcreateinstalldir=True)
+            super(EB_MVAPICH2, self).make_dir(self.installdir, True, dontcreateinstalldir=True)
 
         # additional configuration options
-        add_configopts = '--with-rdma=%s ' % self.getcfg('rdma_type')
+        add_configopts = '--with-rdma=%s ' % self.cfg['rdma_type']
 
         # use POSIX threads
         add_configopts += '--with-thread-package=pthreads '
 
-        if self.getcfg('debug'):
+        if self.cfg['debug']:
             # debug build, with error checking, timing and debug info
             # note: this will affact performance
             add_configopts += '--enable-fast=none '
@@ -86,8 +83,8 @@ class EB_MVAPICH2(Application):
             envvar_val = os.getenv(envvar)
             if envvar_val:
                 if not os.getenv(new_envvar):
-                    env.set(new_envvar, envvar_val)
-                    env.set(envvar, '')
+                    env.setvar(new_envvar, envvar_val)
+                    env.setvar(envvar, '')
                 else:
                     self.log.error("Both %(ev)s and %(nev)s set, can I overwrite %(nev)s with %(ev)s (%(evv)s) ?" %
                                      {
@@ -97,34 +94,30 @@ class EB_MVAPICH2(Application):
                                      })
 
         # enable specific support options (if desired)
-        if self.getcfg('withmpe'):
+        if self.cfg['withmpe']:
             add_configopts += '--enable-mpe '
-        if self.getcfg('withlimic2'):
+        if self.cfg['withlimic2']:
             add_configopts += '--enable-limic2 '
-        if self.getcfg('withchkpt'):
+        if self.cfg['withchkpt']:
             add_configopts += '--enable-checkpointing --with-hydra-ckpointlib=blcr '
 
-        self.updatecfg('configopts', add_configopts)
+        self.cfg.update('configopts', add_configopts)
 
-        Application.configure(self)
+        super(EB_MVAPICH2, self).configure_step()
 
     # make and make install are default
 
-    def sanitycheck(self):
+    def sanity_check_step(self):
         """
         Custom sanity check for MVAPICH2
         """
-        if not self.getcfg('sanityCheckPaths'):
+        custom_paths = {
+                        'files': ["bin/%s" % x for x in ["mpicc", "mpicxx", "mpif77",
+                                                         "mpif90", "mpiexec.hydra"]] +
+                                 ["lib/lib%s" % y for x in ["fmpich", "mpichcxx", "mpichf90",
+                                                            "mpich", "mpl", "opa"]
+                                                 for y in ["%s.so"%x, "%s.a"%x]],
+                        'dirs': ["include"]
+                       }
 
-            self.setcfg('sanityCheckPaths',{
-                                            'files': ["bin/%s" % x for x in ["mpicc", "mpicxx", "mpif77",
-                                                                            "mpif90", "mpiexec.hydra"]] +
-                                                     ["lib/lib%s" % y for x in ["fmpich", "mpichcxx", "mpichf90",
-                                                                               "mpich", "mpl", "opa"]
-                                                                     for y in ["%s.so"%x, "%s.a"%x]],
-                                            'dirs': ["include"]
-                                           })
-
-            self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
-
-        Application.sanitycheck(self)
+        super(EB_MVAPICH2, self).sanity_check_step(custom_paths=custom_paths)

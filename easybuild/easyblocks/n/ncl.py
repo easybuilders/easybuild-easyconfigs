@@ -32,15 +32,15 @@ import re
 import sys
 from distutils.version import LooseVersion
 
-from easybuild.framework.application import Application
+from easybuild.framework.easyblock import EasyBlock
 from easybuild.tools.filetools import run_cmd
 from easybuild.tools.modules import get_software_root, get_software_version
 
 
-class EB_NCL(Application):
+class EB_NCL(EasyBlock):
     """Support for building/installing NCL."""
 
-    def configure(self):
+    def configure_step(self):
         """Configure build:
         - create Makefile.ini using make and run ymake script to create config file
         - patch config file with correct settings, and add missing config entries
@@ -110,9 +110,9 @@ class EB_NCL(Application):
 
         # configure
         try:
-            os.chdir(self.getcfg('startfrom'))
+            os.chdir(self.cfg['start_dir'])
         except OSError, err:
-            self.log.error("Failed to change to the build dir %s: %s" % (self.getcfg('startfrom'), err))
+            self.log.error("Failed to change to the build dir %s: %s" % (self.cfg['start_dir'], err))
 
         # instead of running the Configure script that asks a zillion questions,
         # let's just generate the config/Site.local file ourselves...
@@ -168,20 +168,31 @@ class EB_NCL(Application):
         cmd = "./config/ymkmf"
         run_cmd(cmd, log_all=True, simple=True)
 
-    def make(self):
-        """Building is done in make_install."""
+    def build_step(self):
+        """Building is done in install_step."""
         pass
 
-    def make_install(self):
-        """Build in install dir using make."""
+    def install_step(self):
+        """Build in install dir using build_step."""
 
         cmd = "make Everything"
         run_cmd(cmd, log_all=True, simple=True)
 
+    def sanity_check_step(self):
+        """
+        Custom sanity check for NCL
+        """
+        custom_paths = {
+                        'files': ["bin/ncl", "lib/libncl.a", "lib/libncarg.a"],
+                        'dirs': ["include/ncarg"]
+                       }
+
+        super(EB_NCL, self).sanity_check_step(custom_paths=custom_paths)
+
     def make_module_extra(self):
         """Set NCARG_ROOT environment variable in module."""
 
-        txt = Application.make_module_extra(self)
+        txt = super(EB_NCL, self).make_module_extra()
         txt += "setenv\tNCARG_ROOT\t$root\n"
 
         return txt

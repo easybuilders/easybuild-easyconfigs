@@ -5,52 +5,68 @@
 # License::   MIT/GPL
 # File::      $File$ 
 # Date::      $Date$
-
 """
 EasyBuild support for building and installing Eigen, implemented as an easyblock
 """
 
 import os
 import shutil
-from easybuild.framework.application import Application
 
-class EB_Eigen(Application):
+from easybuild.framework.easyblock import EasyBlock
+
+
+class EB_Eigen(EasyBlock):
     """
-    Support for building Eigen (Eigen is a C++ template library for linear algebra: matrices, vectors, numerical solvers, and related algorithms.)
+    Support for building Eigen.
     """
 
-    def configure(self):
+    def configure_step(self):
         """
-        EMPTY
+        No configure for Eigen.
         """
         pass
 
-    def make(self):
+    def build_step(self):
         """
-        EMPTY
+        No build for Eigen.
         """
         pass
 
-    def make_install(self):
+    def install_step(self):
         """
         Install by copying files to install dir
         """
-        srcdir = self.getcfg('startfrom')
-        srcdir = os.path.join(srcdir, 'Eigen')
+        srcdir = os.path.join(self.cfg['start_dir'], 'Eigen')
         destdir = os.path.join(self.installdir, 'include/Eigen')
-        srcfile = None
         try:
+                os.makedirs(os.path.dirname(destdir))
                 shutil.copytree(srcdir, destdir)
         except OSError, err:
-            self.log.exception("Copying %s to installation dir %s failed: %s" % (srcfile, destdir, err))
+            self.log.error("Copying %s to installation dir %s failed: %s" % (srcdir, destdir, err))
+
+    def sanity_check_step(self):
+        """Custom sanity check for Eigen."""
+
+        custom_paths = {
+                        'files': ['include/Eigen/%s' % x for x in ['Array', 'Cholesky', 'CholmodSupport',
+                                                                   'Core', 'Dense', 'Eigen', 'Eigen2Support',
+                                                                   'Eigenvalues', 'Geometry', 'Householder',
+                                                                   'IterativeLinearSolvers', 'Jacobi', 'LU',
+                                                                   'LeastSquares', 'OrderingMethods',
+                                                                   'PaStiXSupport', 'PardisoSupport', 'QR',
+                                                                   'QtAlignedMalloc', 'SVD', 'Sparse',
+                                                                   'SparseCholesky', 'SparseCore', 'StdDeque',
+                                                                   'StdList', 'StdVector', 'SuperLUSupport',
+                                                                   'UmfPackSupport']],
+                        'dirs': []
+                       }
+        super(EB_Eigen, self).sanity_check_step(custom_paths=custom_paths)
 
     def make_module_req_guess(self):
         """  
         A dictionary of possible directories to look for.
         Include CPLUS_INCLUDE_PATH as an addition to default ones
-        Removed unnecessary stuff
         """
-        return {
-            'CPLUS_INCLUDE_PATH': ['include'],
-            'LD_LIBRARY_PATH': ['lib', 'lib64'],
-        }
+        guesses = super(EB_Eigen, self).make_module_req_guess()
+        guesses.update({'CPLUS_INCLUDE_PATH': ['include']})
+        return guesses

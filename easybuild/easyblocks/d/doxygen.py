@@ -26,31 +26,28 @@
 EasyBuild support for building and installing Doxygen, implemented as an easyblock
 """
 
-from easybuild.framework.application import Application
+from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.tools.filetools import run_cmd
 
 
-class EB_Doxygen(Application):
+class EB_Doxygen(ConfigureMake):
     """Support for building/installing Doxygen"""
 
-    def configure(self):
+    def configure_step(self):
         """Configure build using non-standard configure script (see prefix option)"""
 
-        cmd = "%s ./configure --prefix %s %s" % (self.getcfg('preconfigopts'), self.installdir,
-                                                   self.getcfg('configopts'))
+        cmd = "%s ./configure --prefix %s %s" % (self.cfg['preconfigopts'], self.installdir,
+                                                   self.cfg['configopts'])
         run_cmd(cmd, log_all=True, simple=True)
 
-    def sanitycheck(self):
+    def sanity_check_step(self):
         """
         Custom sanity check for Doxygen
         """
-        if not self.getcfg('sanityCheckPaths'):
 
-            self.setcfg('sanityCheckPaths',{
-                                            'files': ["bin/doxygen"],
-                                            'dirs': []
-                                           })
+        custom_paths = {
+                        'files': ["bin/doxygen"],
+                        'dirs': []
+                       }
 
-            self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
-
-        Application.sanitycheck(self)
+        super(EB_Doxygen, self).sanity_check_step(custom_paths=custom_paths)

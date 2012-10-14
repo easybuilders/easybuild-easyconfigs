@@ -31,29 +31,29 @@ import re
 import sys
 import shutil
 
-import easybuild.tools.toolkit as toolkit
-from easybuild.framework.application import Application
+import easybuild.tools.toolkit as toolchain
+from easybuild.framework.easyblock import EasyBlock
 from easybuild.tools.filetools import run_cmd, copytree
 
 
-class EB_SCOTCH(Application):
+class EB_SCOTCH(EasyBlock):
     """Support for building/installing SCOTCH."""
 
-    def configure(self):
+    def configure_step(self):
         """Configure SCOTCH build: locate the template makefile, copy it to a general Makefile.inc and patch it."""
 
         # pick template makefile
-        comp_fam = self.toolkit().comp_family()
-        if comp_fam == toolkit.INTEL:
+        comp_fam = self.toolchain.comp_family()
+        if comp_fam == toolchain.INTEL:
             makefilename = 'Makefile.inc.x86-64_pc_linux2.icc'
-        elif comp_fam == toolkit.GCC:
+        elif comp_fam == toolchain.GCC:
             makefilename = 'Makefile.inc.x86-64_pc_linux2'
         else:
             self.log.error("Unknown compiler family used: %s" % comp_fam)
 
         # create Makefile.inc
         try:
-            srcdir = os.path.join(self.getcfg('startfrom'), 'src')
+            srcdir = os.path.join(self.cfg['start_dir'], 'src')
             src = os.path.join(srcdir, 'Make.inc', makefilename)
             dst = os.path.join(srcdir, 'Makefile.inc')
             shutil.copy2(src, dst)
@@ -82,20 +82,20 @@ class EB_SCOTCH(Application):
         except OSError, err:
             self.log.error("Failed to change to src dir: %s" % err)
 
-    def make(self):
-        """Build by running make, but with some special options for SCOTCH depending on the compiler."""
+    def build_step(self):
+        """Build by running build_step, but with some special options for SCOTCH depending on the compiler."""
 
         ccs = os.environ['CC']
         ccp = os.environ['MPICC']
         ccd = os.environ['MPICC']
 
         cflags = "-fPIC -O3 -DCOMMON_FILE_COMPRESS_GZ -DCOMMON_PTHREAD -DCOMMON_RANDOM_FIXED_SEED -DSCOTCH_RENAME"
-        if self.toolkit().comp_family() == toolkit.GCC:
+        if self.toolchain.comp_family() == toolchain.GCC:
             cflags += " -Drestrict=__restrict"
         else:
             cflags += " -restrict -DIDXSIZE64"
 
-        if not self.toolkit().mpi_type() == toolkit.INTEL:
+        if not self.toolchain.mpi_type() == toolchain.INTEL:
             cflags += " -DSCOTCH_PTHREAD"
 
         # actually build
@@ -103,7 +103,7 @@ class EB_SCOTCH(Application):
             cmd = 'make CCS="%s" CCP="%s" CCD="%s" CFLAGS="%s" %s' % (ccs, ccp, ccd, cflags, app)
             run_cmd(cmd, log_all=True, simple=True)
 
-    def make_install(self):
+    def install_step(self):
         """Install by copying files and creating group library file."""
 
         self.log.debug("Installing SCOTCH")
@@ -112,7 +112,7 @@ class EB_SCOTCH(Application):
         regmetis = re.compile(r".*metis.*")
         try:
             for d in ["include", "lib", "bin", "man"]:
-                src = os.path.join(self.getcfg('startfrom'), d)
+                src = os.path.join(self.cfg['start_dir'], d)
                 dst = os.path.join(self.installdir, d)
                 # we don't need any metis stuff from scotch!
                 copytree(src, dst, ignore=lambda path, files: [x for x in files if regmetis.match(x)])
@@ -135,38 +135,23 @@ class EB_SCOTCH(Application):
         except (IOError, OSError), err:
             self.log.error("Can't write to file %s: %s" % (scotchgrouplib, err))
 
-    def sanitycheck(self):
+    def sanity_check_step(self):
         """Custom sanity check for SCOTCH."""
 
-        if not self.getcfg('sanityCheckPaths'):
+        custom_paths = {
+                        'files': ['bin/%s' % x for x in ["acpl", "amk_fft2", "amk_hy", "amk_p2", "dggath",
+                                                         "dgord", "dgscat", "gbase", "gmap", "gmk_m2",
+                                                         "gmk_msh", "gmtst", "gotst", "gpart", "gtst",
+                                                         "mmk_m2", "mord", "amk_ccc", "amk_grf", "amk_m2",
+                                                         "atst", "dgmap", "dgpart", "dgtst", "gcv", "gmk_hy",
+                                                         "gmk_m3", "gmk_ub2", "gord", "gout", "gscat", "mcv",
+                                                         "mmk_m3", "mtst"]] +
+                                 ['include/%s.h' % x for x in ["esmumps","ptscotchf", "ptscotch","scotchf",
+                                                               "scotch"]] +
+                                 ['lib/lib%s.a' % x for x in ["esmumps","ptscotch", "ptscotcherrexit",
+                                                              "scotcherr", "scotch_group", "ptesmumps",
+                                                              "ptscotcherr", "scotch", "scotcherrexit"]],
+                        'dirs':[]
+                        }
 
-            self.setcfg('sanityCheckPaths', {
-                                             'files': ['bin/%s' % x for x in ["acpl","amk_fft2","amk_hy",
-                                                                              "amk_p2","dggath","dgord",
-                                                                              "dgscat","gbase","gmap",
-                                                                              "gmk_m2","gmk_msh","gmtst",
-                                                                              "gotst","gpart","gtst",
-                                                                              "mmk_m2","mord","amk_ccc",
-                                                                              "amk_grf","amk_m2","atst",
-                                                                              "dgmap","dgpart","dgtst",
-                                                                              "gcv","gmk_hy","gmk_m3",
-                                                                              "gmk_ub2","gord","gout",
-                                                                              "gscat","mcv","mmk_m3",
-                                                                              "mtst"]] +
-                                                      ['include/%s.h' % x for x in ["esmumps","ptscotchf",
-                                                                                    "ptscotch","scotchf",
-                                                                                    "scotch"]] +
-                                                      ['lib/lib%s.a' % x for x in ["esmumps","ptscotch",
-                                                                                   "ptscotcherrexit",
-                                                                                   "scotcherr",
-                                                                                   "scotch_group",
-                                                                                   "ptesmumps",
-                                                                                   "ptscotcherr",
-                                                                                   "scotch",
-                                                                                   "scotcherrexit"]],
-                                             'dirs':[]
-                                             })
-
-            self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
-
-        Application.sanitycheck(self)
+        super(EB_SCOTCH, self).sanity_check_step(custom_paths=custom_paths)

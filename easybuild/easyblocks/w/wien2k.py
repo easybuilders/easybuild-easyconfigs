@@ -35,19 +35,19 @@ import tempfile
 from distutils.version import LooseVersion
 
 import easybuild.tools.environment as env
-import easybuild.tools.toolkit as toolkit
-from easybuild.framework.application import Application
+import easybuild.tools.toolkit as toolchain
+from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import CUSTOM
-from easybuild.tools.filetools import run_cmd, run_cmd_qa, unpack
+from easybuild.tools.filetools import run_cmd, run_cmd_qa, extract_file
 from easybuild.tools.modules import get_software_version
 
 
-class EB_WIEN2k(Application):
+class EB_WIEN2k(EasyBlock):
     """Support for building/installing WIEN2k."""
 
     def __init__(self,*args,**kwargs):
         """Enable building in install dir."""
-        Application.__init__(self, *args, **kwargs)
+        super(EB_WIEN2k, self).__init__(*args, **kwargs)
 
         self.build_in_installdir = True
 
@@ -60,11 +60,11 @@ class EB_WIEN2k(Application):
                       ('runtest', [True, "Run WIEN2k tests (default: True).", CUSTOM]),
                       ('testdata', [testdata_urls, "URL for test data required to run WIEN2k benchmark test (default: %s)." % testdata_urls, CUSTOM])
                      ]
-        return Application.extra_options(extra_vars)
+        return EasyBlock.extra_options(extra_vars)
 
-    def unpack_src(self):
+    def extract_step(self):
         """Unpack WIEN2k sources using gunzip and provided expand_lapw script."""
-        Application.unpack_src(self)
+        super(EB_WIEN2k, self).extract_step()
 
         cmd = "gunzip *gz"
         run_cmd(cmd, log_all=True, simple=True)
@@ -78,29 +78,29 @@ class EB_WIEN2k(Application):
 
         run_cmd_qa(cmd, qanda, no_qa=no_qa, log_all=True, simple=True)
     
-    def configure(self):
+    def configure_step(self):
         """Configure WIEN2k build by patching siteconfig_lapw script and running it."""
 
         self.cfgscript = "siteconfig_lapw"
 
         # patch config file first
 
-        # toolkit-dependent values
+        # toolchain-dependent values
         comp_answer = None
-        if self.toolkit().comp_family() == toolkit.INTEL:
+        if self.toolchain.comp_family() == toolchain.INTEL:
             if LooseVersion(get_software_version("icc")) >= LooseVersion("2011"):
                 comp_answer = 'I'  # Linux (Intel ifort 12.0 compiler + mkl )
             else:
                 comp_answer = "K1"  # Linux (Intel ifort 11.1 compiler + mkl )
 
-        elif self.toolkit().comp_family() == toolkit.GCC:
+        elif self.toolchain.comp_family() == toolchain.GCC:
             comp_answer = 'V'  # Linux (gfortran compiler + gotolib)
 
         else:
-            self.log.error("Failed to determine toolkit-dependent answers.")
+            self.log.error("Failed to determine toolchain-dependent answers.")
 
         # libraries
-        rlibs = "%s %s" % (os.getenv('LIBLAPACK_MT'), self.toolkit().get_openmp_flag())
+        rlibs = "%s %s" % (os.getenv('LIBLAPACK_MT'), self.toolchain.get_openmp_flag())
         rplibs = [os.getenv('LIBSCALAPACK_MT'), os.getenv('LIBLAPACK_MT')]
         fftwver = get_software_version('FFTW')
         if fftwver:
@@ -190,10 +190,10 @@ class EB_WIEN2k(Application):
 
         run_cmd_qa(cmd, qanda, no_qa=no_qa, std_qa=std_qa, log_all=True, simple=True)
 
-    def make(self):
+    def build_step(self):
         """Build WIEN2k by running siteconfig_lapw script again."""
 
-        self.log.debug('%s part II (make)' % self.cfgscript)
+        self.log.debug('%s part II (build_step)' % self.cfgscript)
 
         cmd = "./%s" % self.cfgscript
 
@@ -213,7 +213,7 @@ class EB_WIEN2k(Application):
         self.log.debug("no_qa for %s: %s" % (cmd, no_qa))
         run_cmd_qa(cmd, qanda, no_qa=no_qa, log_all=True, simple=True)
 
-    def test(self):
+    def test_step(self):
         """Run WIEN2k test benchmarks. """
 
         def run_wien2k_test(cmd_arg):
@@ -229,12 +229,12 @@ class EB_WIEN2k(Application):
             else:
                 self.log.info("Test '%s' seems to have run successfully: %s" % (cmd, out))
 
-        if self.getcfg('runtest'):
-            if not self.getcfg('testdata'):
+        if self.cfg['runtest']:
+            if not self.cfg['testdata']:
                 self.log.error("List of URLs for testdata not provided.")
 
             path = os.getenv('PATH')
-            env.set('PATH', "%s:%s" % (self.installdir, path))
+            env.setvar('PATH', "%s:%s" % (self.installdir, path))
 
             try:
                 cwd = os.getcwd()
@@ -245,8 +245,8 @@ class EB_WIEN2k(Application):
 
                 # download data
                 testdata_paths = {}
-                for testdata in self.getcfg('testdata'):
-                    td_path = self.file_locate(testdata)
+                for testdata in self.cfg['testdata']:
+                    td_path = self.obtain_file(testdata)
                     if not td_path:
                         self.log.error("Downloading file from %s failed?" % testdata)
                     testdata_paths.update({os.path.basename(testdata): td_path})
@@ -255,7 +255,7 @@ class EB_WIEN2k(Application):
 
                 # unpack serial benchmark
                 serial_test_name = "test_case"
-                unpack(testdata_paths['%s.tar.gz' % serial_test_name], tmpdir)
+                extract_file(testdata_paths['%s.tar.gz' % serial_test_name], tmpdir)
 
                 # run serial benchmark
                 os.chdir(os.path.join(tmpdir, serial_test_name))
@@ -263,7 +263,7 @@ class EB_WIEN2k(Application):
 
                 # unpack parallel benchmark (in serial benchmark dir)
                 parallel_test_name = "mpi-benchmark"
-                unpack(testdata_paths['%s.tar.gz' % parallel_test_name], tmpdir)
+                extract_file(testdata_paths['%s.tar.gz' % parallel_test_name], tmpdir)
 
                 # run parallel benchmark
                 os.chdir(os.path.join(tmpdir, serial_test_name))
@@ -276,13 +276,13 @@ class EB_WIEN2k(Application):
                 self.log.error("Failed to run WIEN2k benchmark tests: %s" % err)
 
             # reset original path
-            env.set('PATH', path)
+            env.setvar('PATH', path)
 
             self.log.debug("Current dir: %s" % os.getcwd())
 
-    def runtests(self):
+    def test_cases_step(self):
         """Run test cases, if specified."""
-        for test in self.getcfg('tests'):
+        for test in self.cfg['tests']:
 
             # check expected format
             if not len(test) == 4:
@@ -303,7 +303,7 @@ class EB_WIEN2k(Application):
                 self.log.error("Failed to create temporary directory for test %s: %s" % (test_name, err))
 
             # try and find struct file for test
-            test_fp = self.file_locate("%s.struct" % test_name)
+            test_fp = self.obtain_file("%s.struct" % test_name)
 
             try:
                 shutil.copy2(test_fp, tmpdir)
@@ -340,37 +340,35 @@ class EB_WIEN2k(Application):
             except OSError, err:
                 self.log.error("Failed to clean up temporary test dir: %s" % err)
 
-    def make_install(self):
+    def install_step(self):
         """Fix broken symlinks after build/installation."""
         # fix broken symlink
         os.remove(os.path.join(self.installdir, "SRC_w2web", "htdocs", "usersguide"))
         os.symlink(os.path.join(self.installdir, "SRC_usersguide_html"),
                    os.path.join(self.installdir, "SRC_w2web","htdocs", "usersguide"))
 
-    def sanitycheck(self):
+    def sanity_check_step(self):
         """Custom sanity check for WIEN2k."""
 
-        if not self.getcfg('sanityCheckPaths'):
-            lapwfiles = []
-            for suffix in ["0","0_mpi","1","1_mpi","1c","1c_mpi","2","2_mpi","2c","2c_mpi",
-                           "3","3c","5","5c","7","7c","dm","dmc","so"]:
-                p = os.path.join(self.installdir, "lapw%s" % suffix)
-                lapwfiles.append(p)
+        lapwfiles = []
+        for suffix in ["0","0_mpi","1","1_mpi","1c","1c_mpi","2","2_mpi","2c","2c_mpi",
+                       "3","3c","5","5c","7","7c","dm","dmc","so"]:
+            p = os.path.join(self.installdir, "lapw%s" % suffix)
+            lapwfiles.append(p)
 
-            self.setcfg('sanityCheckPaths',{'files': lapwfiles,
-                                            'dirs':[]
-                                           })
+        custom_paths = {
+                        'files': lapwfiles,
+                        'dirs': []
+                       }
 
-            self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
-
-        Application.sanitycheck(self)
+        super(EB_WIEN2k, self).sanity_check_step(custom_paths=custom_paths)
 
     def make_module_extra(self):
         """Set WIENROOT environment variable, and correctly prepend PATH."""
 
-        txt = Application.make_module_extra(self)
+        txt = super(EB_WIEN2k, self).make_module_extra()
 
-        txt += self.moduleGenerator.setEnvironment("WIENROOT", "$root")
-        txt += self.moduleGenerator.prependPaths("PATH", "$root")
+        txt += self.moduleGenerator.set_environment("WIENROOT", "$root")
+        txt += self.moduleGenerator.prepend_paths("PATH", "$root")
 
         return txt

@@ -31,28 +31,28 @@ import os
 import shutil
 from distutils.version import LooseVersion
 
-from easybuild.framework.application import Application
+from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.tools.filetools import run_cmd
 from easybuild.tools.modules import get_software_root
 
 
-class EB_MrBayes(Application):
+class EB_MrBayes(ConfigureMake):
     """Support for building/installing MrBayes."""
 
-    def configure(self):
+    def configure_step(self):
         """Configure build: <single-line description how this deviates from standard configure>"""
 
         # set generic make options
-        self.updatecfg('makeopts', 'CC="%s" OPTFLAGS="%s"' % (os.getenv('MPICC'), os.getenv('CFLAGS')))
+        self.cfg.update('makeopts', 'CC="%s" OPTFLAGS="%s"' % (os.getenv('MPICC'), os.getenv('CFLAGS')))
 
-        if LooseVersion(self.version()) >= LooseVersion("3.2"):
+        if LooseVersion(self.version) >= LooseVersion("3.2"):
 
-            # set correct startfrom dir, and change into it
-            self.setcfg('startfrom', os.path.join(self.getcfg('startfrom'),'src'))
+            # set correct start_dir dir, and change into it
+            self.cfg['start_dir'] = os.path.join(self.cfg['start_dir'],'src')
             try:
-                os.chdir(self.getcfg('startfrom'))
+                os.chdir(self.cfg['start_dir'])
             except OSError, err:
-                self.log.error("Failed to change to correct source dir %s: %s" % (self.getcfg('startfrom'), err))
+                self.log.error("Failed to change to correct source dir %s: %s" % (self.cfg['start_dir'], err))
 
             # run autoconf to generate configure script
             cmd = "autoconf"
@@ -61,28 +61,28 @@ class EB_MrBayes(Application):
             # set config opts
             beagle = get_software_root('BEAGLE')
             if beagle:
-                self.updatecfg('configopts', '--with-beagle=%s' % beagle)
+                self.cfg.update('configopts', '--with-beagle=%s' % beagle)
             else:
                 self.log.error("BEAGLE module not loaded?")
 
-            if self.toolkit().opts['usempi']:
-                self.updatecfg('configopts', '--enable-mpi')
+            if self.toolchain.opts['usempi']:
+                self.cfg.update('configopts', '--enable-mpi')
 
             # configure
-            Application.configure(self)
+            super(EB_MrBayes, self).configure_step()
         else:
 
             # no configure script prior to v3.2
-            self.updatecfg('makeopts', 'MPI=yes')
+            self.cfg.update('makeopts', 'MPI=yes')
 
-    def make_install(self):
+    def install_step(self):
         """Install by copying bniaries to install dir."""
 
         bindir = os.path.join(self.installdir, 'bin')
         os.makedirs(bindir)
 
         for exe in ['mb']:
-            src = os.path.join(self.getcfg('startfrom'), exe)
+            src = os.path.join(self.cfg['start_dir'], exe)
             dst = os.path.join(bindir, exe)
             try:
                 shutil.copy2(src, dst)
@@ -90,16 +90,13 @@ class EB_MrBayes(Application):
             except (IOError,OSError), err:
                 self.log.error("Failed to copy %s to %s (%s)" % (src, dst, err))
 
-    def sanitycheck(self):
+    def sanity_check_step(self):
         """Custom sanity check for MrBayes."""
 
-        if not self.getcfg('sanityCheckPaths'):
-            self.setcfg('sanityCheckPaths', {
-                                             'files': ["bin/mb"],
-                                             'dirs': []
-                                            })
+        custom_paths = {
+                        'files': ["bin/mb"],
+                        'dirs': []
+                       }
 
-            self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
-
-        Application.sanitycheck(self)
+        super(EB_MrBayes, self).sanity_check_step(custom_paths=custom_paths)
 

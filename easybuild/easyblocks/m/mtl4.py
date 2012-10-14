@@ -22,35 +22,29 @@ EasyBuild support for MTL4, implemented as an easyblock
 """
 import os
 
-from easybuild.easyblocks.tarball import EB_Tarball
+from easybuild.easyblocks.generic.tarball import Tarball
 
 
-class EB_MTL4(EB_Tarball):
+class EB_MTL4(Tarball):
     """Support for installing MTL4."""
 
-    def sanitycheck(self):
+    def sanity_check_step(self):
         """Custom sanity check for MTL4."""
 
-        if not self.getcfg('sanityCheckPaths'):
+        incpref = os.path.join('include', 'boost', 'numeric')
 
-            incpref = os.path.join('include', 'boost', 'numeric')
+        custom_paths = {
+                        'files':[],
+                        'dirs':[os.path.join(incpref, x) for x in ["itl", "linear_algebra",
+                                                                   "meta_math", "mtl"]]
+                     }
 
-            self.setcfg('sanityCheckPaths', {
-                                             'files':[],
-                                             'dirs':[os.path.join(incpref, x) for x in ["itl",
-                                                                                        "linear_algebra",
-                                                                                        "meta_math",
-                                                                                        "mtl"]]
-                                             })
-
-            self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
-
-        EB_Tarball.sanitycheck(self)
+        super(EB_MTL4, self).sanity_check_step(custom_paths=custom_paths)
 
     def make_module_req_guess(self):
         """Adjust CPATH for MTL4."""
 
-        guesses = EB_Tarball.make_module_req_guess(self)
+        guesses = super(EB_MTL4, self).make_module_req_guess()
         guesses.update({'CPATH': 'include'})
 
         return guesses

@@ -31,22 +31,19 @@ import shutil
 from distutils.version import LooseVersion
 
 import easybuild  # required for VERBOSE_VERSION
-import easybuild.tools.toolkit as toolkit
-from easybuild.framework.application import Application
+import easybuild.tools.toolkit as toolchain
+from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.filetools import run_cmd
 from easybuild.tools.modules import get_software_root, get_software_version
 
 
-class EB_libsmm(Application):
+class EB_libsmm(EasyBlock):
     """
     Support for the CP2K small matrix library
-    Notes: - build can take really really long, and no real rebuilding needed for each version
+    Notes: - build can take really really long, and no real rebuilding needed for each get_version
            - CP2K can be built without this
     """
-
-    def __init__(self, *args, **kwargs):
-        Application.__init__(self, *args, **kwargs)
 
     @staticmethod
     def extra_options():
@@ -57,9 +54,9 @@ class EB_libsmm(Application):
                       ('max_tiny_dim', [12, "Maximum tiny dimension (default: 12)", CUSTOM]),
                       ('dims', [dd, "Generate routines for these matrix dims (default: %s)" % dd, CUSTOM])
                      ]
-        return Application.extra_options(extra_vars)
+        return EasyBlock.extra_options(extra_vars)
 
-    def configure(self):
+    def configure_step(self):
         """Configure build: change to tools/build_libsmm dir"""
         try:
             dst = 'tools/build_libsmm'
@@ -68,7 +65,7 @@ class EB_libsmm(Application):
         except OSError, err:
             self.log.exception('Failed to change to directory %s: %s' % (dst, err))
 
-    def make(self):
+    def build_step(self):
         """Build libsmm
         Possible iterations over precision (single/double) and type (real/complex)
         - also type of transpose matrix
@@ -143,13 +140,13 @@ tasks=%(tasks)s
         """
 
         # only GCC is supported for now
-        if self.toolkit().comp_family() == toolkit.GCC:
+        if self.toolchain.comp_family() == toolchain.GCC:
             hostcompile = os.getenv('F90')
 
             # optimizations
             opts = "-O2 -funroll-loops -ffast-math -ftree-vectorize -march=native -fno-inline-functions"
 
-            # Depending on the version, we need extra options
+            # Depending on the get_version, we need extra options
             extra = ''
             gccVersion = LooseVersion(get_software_version('GCC'))
             if gccVersion >= LooseVersion('4.6'):
@@ -174,12 +171,12 @@ tasks=%(tasks)s
         cfgdict = {
                    'eb_version': easybuild.VERBOSE_VERSION,
                    'datatype': None,
-                   'transposeflavour': self.getcfg('transpose_flavour'),
+                   'transposeflavour': self.cfg['transpose_flavour'],
                    'targetcompile': targetcompile,
                    'hostcompile': hostcompile,
-                   'dims': ' '.join([str(d) for d in self.getcfg('dims')]),
-                   'tiny_dims': ' '.join([str(d) for d in range(1, self.getcfg('max_tiny_dim')+1)]),
-                   'tasks': self.getcfg('parallel'),
+                   'dims': ' '.join([str(d) for d in self.cfg['dims']]),
+                   'tiny_dims': ' '.join([str(d) for d in range(1, self.cfg['max_tiny_dim']+1)]),
+                   'tasks': self.cfg['parallel'],
                    'LIBBLAS': "%s %s" % (os.getenv('LDFLAGS'), os.getenv('LIBBLAS'))
                   }
 
@@ -201,7 +198,7 @@ tasks=%(tasks)s
             run_cmd("./do_clean")
             run_cmd("./do_all")
 
-    def make_install(self):
+    def install_step(self):
         """Install CP2K: clean, and copy lib directory to install dir"""
 
         run_cmd("./do_clean")
@@ -210,15 +207,12 @@ tasks=%(tasks)s
         except Exception, err:
             self.log.error("Something went wrong during dir lib copying to installdir: %s" % err)
 
-    def sanitycheck(self):
+    def sanity_check_step(self):
         """Custom sanity check for libsmm"""
 
-        if not self.getcfg('sanityCheckPaths'):
-            self.setcfg('sanityCheckPaths', {
-                                             'files': ["lib/libsmm_%s.a" % x for x in ["dnn", "znn"]],
-                                             'dirs': []
-                                            })
+        custom_paths = {
+                        'files': ["lib/libsmm_%s.a" % x for x in ["dnn", "znn"]],
+                        'dirs': []
+                       }
 
-            self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
-
-        Application.sanitycheck(self)
+        super(EB_libsmm, self).sanity_check_step(custom_paths=custom_paths)

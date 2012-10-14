@@ -31,8 +31,8 @@ import re
 import os
 import shutil
 
-import easybuild.tools.toolkit as toolkit
-from easybuild.framework.application import Application
+import easybuild.tools.toolkit as toolchain
+from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.tools.filetools import run_cmd
 from easybuild.tools.modules import get_software_root
 
@@ -51,18 +51,18 @@ def det_interface(log, path):
         log.error("Failed to determine interface, output for xintface: %s" % out)
 
 
-class EB_BLACS(Application):
+class EB_BLACS(ConfigureMake):
     """
     Support for building/installing BLACS
     - configure: symlink BMAKES/Bmake.MPI-LINUX to Bmake.inc
     - make install: copy files
     """
 
-    def configure(self):
+    def configure_step(self):
         """Configure BLACS build by copying Bmake.inc file."""
 
-        src = os.path.join(self.getcfg('startfrom'), 'BMAKES', 'Bmake.MPI-LINUX')
-        dest = os.path.join(self.getcfg('startfrom'), 'Bmake.inc')
+        src = os.path.join(self.cfg['start_dir'], 'BMAKES', 'Bmake.MPI-LINUX')
+        dest = os.path.join(self.cfg['start_dir'], 'Bmake.inc')
 
         if not os.path.isfile(src):
             self.log.error("Can't find source file %s" % src)
@@ -75,17 +75,17 @@ class EB_BLACS(Application):
         except OSError, err:
             self.log.error("Copying %s to % failed: %s" % (src, dest, err))
 
-    def make(self):
-        """Build BLACS using make, after figuring out the make options based on the heuristic tools available."""
+    def build_step(self):
+        """Build BLACS using build_step, after figuring out the make options based on the heuristic tools available."""
 
         # determine MPI base dir and lib
         known_mpis = {
-                      toolkit.OPENMPI: "-L$(MPILIBdir) -lmpi_f77",
-                      toolkit.MVAPICH2: "$(MPILIBdir)/libmpich.a $(MPILIBdir)/libfmpich.a " + \
+                      toolchain.OPENMPI: "-L$(MPILIBdir) -lmpi_f77",
+                      toolchain.MVAPICH2: "$(MPILIBdir)/libmpich.a $(MPILIBdir)/libfmpich.a " + \
                                         "$(MPILIBdir)/libmpl.a -lpthread"
                      }
 
-        mpi_type = self.toolkit().mpi_type()
+        mpi_type = self.toolchain.mpi_type()
 
         base, mpilib = None, None
         if mpi_type in known_mpis.keys():
@@ -171,11 +171,11 @@ class EB_BLACS(Application):
         add_makeopts = ' MPICC="%(mpicc)s" MPIF77="%(mpif77)s" %(comm)s ' % opts
         add_makeopts += ' INTERFACE=%(int)s MPIdir=%(base)s BTOPdir=%(builddir)s mpi ' % opts
 
-        self.updatecfg('makeopts', add_makeopts)
+        self.cfg.update('makeopts', add_makeopts)
 
-        Application.make(self)
+        super(EB_BLACS, self).build_step()
 
-    def make_install(self):
+    def install_step(self):
         """Install by copying files to install dir."""
 
         # include files and libraries
@@ -184,7 +184,7 @@ class EB_BLACS(Application):
                                        ("LIB", "lib", ".a"),  # libraries
                                        ]:
 
-            src = os.path.join(self.getcfg('startfrom'), srcdir)
+            src = os.path.join(self.cfg['start_dir'], srcdir)
             dest = os.path.join(self.installdir, destdir)
 
             try:
@@ -208,7 +208,7 @@ class EB_BLACS(Application):
                 self.log.error("Copying %s/*.%s to installation dir %s failed: %s"%(src, ext, dest, err))
 
         # utilities
-        src = os.path.join(self.getcfg('startfrom'), 'INSTALL', 'EXE', 'xintface')
+        src = os.path.join(self.cfg['start_dir'], 'INSTALL', 'EXE', 'xintface')
         dest = os.path.join(self.installdir, 'bin')
 
         try:
@@ -221,18 +221,15 @@ class EB_BLACS(Application):
         except OSError, err:
             self.log.error("Copying %s to installation dir %s failed: %s" % (src, dest, err))
 
-    def sanitycheck(self):
+    def sanity_check_step(self):
         """Custom sanity check for BLACS."""
 
-        if not self.getcfg('sanityCheckPaths'):
-            self.setcfg('sanityCheckPaths',{
-                                            'files': [fil for filptrn in ["blacs", "blacsCinit", "blacsF77init"]
-                                                          for fil in ["lib/lib%s.a" % filptrn,
-                                                                      "lib/%s_MPI-LINUX-0.a" % filptrn]] +
-                                                     ["bin/xintface"],
-                                            'dirs': []
-                                           })
+        custom_paths = {
+                        'files': [fil for filptrn in ["blacs", "blacsCinit", "blacsF77init"]
+                                      for fil in ["lib/lib%s.a" % filptrn,
+                                                  "lib/%s_MPI-LINUX-0.a" % filptrn]] +
+                                 ["bin/xintface"],
+                        'dirs': []
+                       }
 
-            self.log.info("Customized sanity check paths: %s" % self.getcfg('sanityCheckPaths'))
-
-        Application.sanitycheck(self)
+        super(EB_BLACS, self).sanity_check_step(custom_paths=custom_paths)
