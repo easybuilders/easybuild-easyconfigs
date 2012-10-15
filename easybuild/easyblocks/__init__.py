@@ -31,3 +31,5 @@ __path__.extend([os.path.join(__path__[0], subdir) for subdir in subdirs])
 # And let python know this is not the only place to look for them,
 # so we can have 2 easybuild/easyblock paths in your pythonpath, one for public, one for private easyblocks.
 __path__ = extend_path(__path__, __name__)
+
+del subdir, subdirs, l
