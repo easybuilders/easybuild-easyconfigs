@@ -28,7 +28,7 @@ EasyBuild support for building and installing HDF5, implemented as an easyblock
 
 import os
 
-from easybuild.framework.generic.easyblocks import ConfigureMake
+from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.tools.modules import get_software_root
 
 
