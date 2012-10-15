@@ -71,7 +71,6 @@ from easybuild.framework.easyblock import get_class
 from easybuild.framework.easyconfig import EasyConfig
 from easybuild.tools.build_log import EasyBuildError, init_logger
 from easybuild.tools.build_log import remove_log_handler, print_msg
-from easybuild.tools.class_dumper import dump_classes
 from easybuild.tools.config import get_repository
 from easybuild.tools.filetools import modify_env
 from easybuild.tools.modules import Modules, search_module
@@ -150,8 +149,8 @@ def add_cmdline_options(parser):
     # override options
     override_options = OptionGroup(parser, "Override options", "Override default EasyBuild behavior.")
     
-    override_options.add_option("-C", "--config",
-                        help = "path to EasyBuild config file [default: $EASYBUILDCONFIG or easybuild/easybuild_config.py]")
+    override_options.add_option("-C", "--config", help = "path to EasyBuild config file " \
+                                                         "[default: $EASYBUILDCONFIG or easybuild/easybuild_config.py]")
     override_options.add_option("-e", "--easyblock", metavar="CLASS",
                         help="loads the class from module to process the spec file or dump " \
                                "the options for [default: Application class]")
@@ -168,8 +167,11 @@ def add_cmdline_options(parser):
 
     informative_options.add_option("-a", "--avail-easyconfig-params", action="store_true",
                                    help="show available easyconfig parameters")
-    informative_options.add_option("--dump-classes", action="store_true",
-                                   help="show list of available classes")
+    # TODO: figure out a way to set a default choice for --list-easyblocks
+    # adding default="simple" doesn't work, it always enables --list-easyblocks
+    # see https://github.com/hpcugent/VSC-tools/issues/8
+    informative_options.add_option("--list-easyblocks", type="choice", choices=["simple", "detailed"], default=None,
+                                   help="show list of available easyblocks")
     informative_options.add_option("--search", metavar="STR", help="search for module-files in the robot-directory")
     informative_options.add_option("-v", "--version", action="store_true", help="show version")
     informative_options.add_option("--dep-graph", metavar="depgraph.<ext>", help="create dependency graph")
@@ -269,8 +271,8 @@ def main():
         print_avail_params(options.easyblock, log)
 
     # dump available classes
-    if options.dump_classes:
-        dump_classes('easybuild.easyblocks')
+    if options.list_easyblocks:
+        list_easyblocks(detailed=options.list_easyblocks=="detailed")
 
     # search for modules
     if options.search:
@@ -283,7 +285,7 @@ def main():
         log.info("Running regression test")
         regtest(options, log, paths)
 
-    if options.avail_easyconfig_params or options.dump_classes or options.search or options.version or options.regtest:
+    if options.avail_easyconfig_params or options.list_easyblocks or options.search or options.version or options.regtest:
         if logFile:
             os.remove(logFile)
         sys.exit(0)
@@ -1310,6 +1312,69 @@ def regtest(options, log, easyconfigs_paths=None):
         print "(%d jobs submitted)" % len(jobs)
 
         log.info("Submitted regression test as jobs, results in %s" % output_dir)
+
+def list_easyblocks(detailed=False):
+    """Get a class tree for easyblocks."""
+
+    classes = {}
+
+    module_regexp = re.compile("^([^_].*)\.py$")
+
+    for package in ["easybuild.easyblocks", "easybuild.easyblocks.generic"]:
+
+        __import__(package)
+
+        # determine paths for this package
+        paths = sys.modules[package].__path__
+
+        # import all modules in these paths
+        for path in paths:
+            if os.path.exists(path):
+                for f in os.listdir(path):
+                    res = module_regexp.match(f)
+                    if res:
+                        __import__("%s.%s" % (package, res.group(1)))
+
+    from easybuild.framework.easyblock import EasyBlock
+    from easybuild.framework.extension import Extension
+
+    def add_class(classes, cls):
+        """Add a new class, and all of its subclasses."""
+        children = cls.__subclasses__()
+        classes.update({cls.__name__: {
+                                         'module': cls.__module__,
+                                         'children': [x.__name__ for x in children]
+                                        }
+                       })
+        for child in children:
+            add_class(classes, child)
+
+    roots = [EasyBlock, Extension]
+
+    classes = {}
+    for root in roots:
+        add_class(classes, root)
+
+    # Print the tree, start with the roots
+    for root in roots:
+        root = root.__name__
+        if detailed:
+            print "%s (%s)" % (root, classes[root]['module'])
+        else:
+            print "%s" % root
+        if 'children' in classes[root]:
+            print_tree(classes, classes[root]['children'], detailed)
+            print ""
+
+def print_tree(classes, classNames, detailed, depth=0):
+    for className in classNames:
+        classInfo = classes[className]
+        if detailed:
+            print "%s|-- %s (%s)" % ("|   " * depth, className, classInfo['module'])
+        else:
+            print "%s|-- %s" % ("|   " * depth, className)
+        if 'children' in classInfo:
+            print_tree(classes, classInfo['children'], detailed, depth + 1)
 
 if __name__ == "__main__":
     try:

@@ -1501,11 +1501,19 @@ def get_class(easyblock, log, name=None):
                 log.info("Successfully obtained %s class instance from %s" % (class_name, modulepath))
                 return cls
             except ImportError, err:
-                # No easyblock could be found, so fall back to default class.
 
-                log.warning("Failed to import easyblock for %s, falling back to default %s class: erro: %s" % \
-                            (class_name, app_mod_class, err))
-                (modulepath, class_name) = app_mod_class
+                # when an ImportError occurs, make sure that it's caused by not finding the easyblock module,
+                # and not because of a broken import statement in the easyblock module
+                error_re = re.compile("No module named %s" % modulepath.replace("easybuild.easyblocks.", ''))
+                log.debug("error regexp: %s" % error_re.pattern)
+                if not error_re.match(str(err)):
+                    log.error("Failed to import easyblock for %s because of module issue: %s" % (class_name, err))
+
+                else:
+                    # no easyblock could be found, so fall back to default class.
+                    log.warning("Failed to import easyblock for %s, falling back to default class %s: error: %s" % \
+                                (class_name, app_mod_class, err))
+                    (modulepath, class_name) = app_mod_class
 
         # something was specified, lets parse it
         else:
