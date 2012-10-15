@@ -168,7 +168,9 @@ def add_cmdline_options(parser):
     informative_options.add_option("-a", "--avail-easyconfig-params", action="store_true",
                                    help="show available easyconfig parameters")
     # TODO: figure out a way to set a default choice for --list-easyblocks
-    informative_options.add_option("--list-easyblocks", type="choice", choices=["simple", "detailed"],
+    # adding default="simple" doesn't work, it always enables --list-easyblocks
+    # see https://github.com/hpcugent/VSC-tools/issues/8
+    informative_options.add_option("--list-easyblocks", type="choice", choices=["simple", "detailed"], default=None,
                                    help="show list of available easyblocks")
     informative_options.add_option("--search", metavar="STR", help="search for module-files in the robot-directory")
     informative_options.add_option("-v", "--version", action="store_true", help="show version")
