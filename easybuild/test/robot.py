@@ -22,7 +22,7 @@ from copy import deepcopy
 from unittest import TestCase, TestSuite
 
 import easybuild.tools.modules as modules
-import easybuild.build as build
+import easybuild.main as main
 from easybuild.tools.build_log import EasyBuildError, get_log
 
 orig_modules = modules.Modules
@@ -44,7 +44,7 @@ class RobotTest(TestCase):
         """ dynamically replace Modules class with MockModule """
         # replace Modules class with something we have control over
         modules.Modules = MockModule
-        build.Modules = MockModule
+        main.Modules = MockModule
 
         self.log = get_log("RobotTest")
 
@@ -55,7 +55,7 @@ class RobotTest(TestCase):
             'module': ("name", "version"),
             'dependencies': []
         }
-        res = build.resolve_dependencies([deepcopy(easyconfig)], None, self.log)
+        res = main.resolve_dependencies([deepcopy(easyconfig)], None, self.log)
         self.assertEqual([easyconfig], res)
 
         easyconfig_dep = {
@@ -63,23 +63,23 @@ class RobotTest(TestCase):
             'module': ("name", "version"),
             'dependencies': [('gzip', '1.4')]
         }
-        res = build.resolve_dependencies([deepcopy(easyconfig_dep)], base_easyconfig_dir, self.log)
+        res = main.resolve_dependencies([deepcopy(easyconfig_dep)], base_easyconfig_dir, self.log)
         # Dependency should be found
         self.assertEqual(len(res), 2)
 
         # here we have include a Dependency in the easyconfig list
         easyconfig['module'] = ("gzip", "1.4")
 
-        res = build.resolve_dependencies([deepcopy(easyconfig_dep), deepcopy(easyconfig)], None, self.log)
+        res = main.resolve_dependencies([deepcopy(easyconfig_dep), deepcopy(easyconfig)], None, self.log)
         # all dependencies should be resolved
         self.assertEqual(0, sum(len(ec['dependencies']) for ec in res))
 
         # this should not resolve (cannot find gzip-1.4.eb)
-        self.assertRaises(EasyBuildError, build.resolveDependencies, [deepcopy(easyconfig_dep)], None, self.log)
+        self.assertRaises(EasyBuildError, main.resolve_dependencies, [deepcopy(easyconfig_dep)], None, self.log)
 
         # test if dependencies of an automatically found file are also loaded
         easyconfig_dep['dependencies'] = [('gzip', "1.4-GCC-4.6.3")]
-        res = build.resolve_dependencies([deepcopy(easyconfig_dep)], base_easyconfig_dir, self.log)
+        res = main.resolve_dependencies([deepcopy(easyconfig_dep)], base_easyconfig_dir, self.log)
 
         # GCC should be first (required by gzip dependency)
         self.assertEqual(('GCC', '4.6.3'), res[0]['module'])
