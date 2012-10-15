@@ -1338,21 +1338,22 @@ def list_easyblocks(detailed=False):
     from easybuild.framework.easyblock import EasyBlock
     from easybuild.framework.extension import Extension
 
-    def add_class(klass):
-        children = klass.__subclasses__()
-        classes.update({klass.__name__: {
-                                         'module': klass.__module__,
+    def add_class(classes, cls):
+        """Add a new class, and all of its subclasses."""
+        children = cls.__subclasses__()
+        classes.update({cls.__name__: {
+                                         'module': cls.__module__,
                                          'children': [x.__name__ for x in children]
                                         }
                        })
         for child in children:
-            add_class(child)
+            add_class(classes, child)
 
     roots = [EasyBlock, Extension]
 
     classes = {}
     for root in roots:
-        add_class(root)
+        add_class(classes, root)
 
     # Print the tree, start with the roots
     for root in roots:
