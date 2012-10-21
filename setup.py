@@ -61,7 +61,6 @@ versions, etc.)""",
     classifiers = [
                    "Development Status :: 5 - Production/Stable",
                    "Environment :: Console",
-                   "Framework :: EasyBuild",
                    "Intended Audience :: System Administrators",
                    "License :: OSI Approved :: GNU General Public License v2 (GPLv2)",
                    "Operating System :: POSIX :: Linux",
