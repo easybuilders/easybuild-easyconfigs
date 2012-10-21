@@ -4,9 +4,11 @@ import shutil
 import sys
 from distutils import log
 
-VERSION = "0.9.0"
+VERSION = "0.9.0dev"
 API_VERSION = VERSION.split('.')[0]
 EB_VERSION = '.'.join(VERSION.split('.')[0:2])
+if VERSION.endswith('dev'):
+    EB_VERSION += 'dev'
 
 # log levels: 0 = WARN (default), 1 = INFO, 2 = DEBUG
 log.set_verbosity(1)
