@@ -1,5 +1,6 @@
 import glob
 import os
+import shutil
 import sys
 from distutils import log
 
@@ -13,30 +14,13 @@ log.set_verbosity(1)
 # try setuptools, fall back to distutils if needed
 try:
     from setuptools import setup
-    from setuptools.command.install import install as _install
     log.info("Installing with setuptools.setup...")
     install_package = 'setuptools'
 
 except ImportError, err:
     log.info("Failed to import setuptools.setup (%s), so falling back to distutils.setup" % err)
     from distutils.core import setup
-    from distutils.command.install import install as _install
     install_package = 'distutils'
-    
-# redefine setuptools.command.install to force 'old and unmanageable' install mode
-# so we can install easyconfig files in $PREFIX/share/easybuild/easyconfigs
-class my_install(_install):
-
-    def run(self):
-
-        log.info("enabling 'old and unmanageable' install mode, to avoid data_files being installed in .egg")
-        self.old_and_unmanageable = True        
-
-        _install.run(self)
-
-        self.old_and_unmanageable = False
-
-sys.modules['%s.command.install' % install_package].install = my_install
 
 # utility function to read README file
 def read(fname):
@@ -52,7 +36,7 @@ def get_data_files():
     data_files = []
     for dirname,dirs,files in os.walk(os.path.join('easybuild', 'easyconfigs')):
         if files:
-            data_files.append((os.path.join('share', dirname), [os.path.join(dirname, f) for f in files]))
+            data_files.append((dirname, [os.path.join(dirname, f) for f in files]))
     return data_files
 
 log.info("Installing version %s (required versions: API >= %s, easyblocks >= %s)" % (VERSION, API_VERSION, EB_VERSION))
@@ -88,6 +72,7 @@ versions, etc.)""",
     install_requires = [
                         "easybuild-framework >= %s.0" % API_VERSION,
                         "easybuild-easyblocks >= %s" % EB_VERSION
-                       ]
+                       ],
+    zip_safe = False
 )
 
