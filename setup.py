@@ -57,7 +57,7 @@ versions, etc.)""",
     keywords = "software build building installation installing compilation HPC scientific",
     url = "http://hpcugent.github.com/easybuild",
     data_files = get_data_files(),
-    long_description = read("README.md"),
+    long_description = read("README.rst"),
     classifiers = [
                    "Development Status :: 5 - Production/Stable",
                    "Environment :: Console",
