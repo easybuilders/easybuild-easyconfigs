@@ -38,7 +38,7 @@ particular (groups of) software packages with EasyBuild.""",
     packages = ["easybuild", "easybuild.easyblocks", "easybuild.easyblocks.generic"],
     package_dir = {"easybuild.easyblocks": "easybuild/easyblocks"},
     package_data = {'easybuild.easyblocks': ["[a-z0-9]/*.py"]},
-    long_description = read("README.md"),
+    long_description = read("README.rst"),
     classifiers = [
                    "Development Status :: 5 - Production/Stable",
                    "Environment :: Console",
