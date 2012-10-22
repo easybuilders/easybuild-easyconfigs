@@ -1,5 +1,5 @@
 EasyBuild: building software with ease
-======================================
+--------------------------------------
 
 The easybuild-easyblocks package provides a collection of easyblocks for
 EasyBuild (http://hpcugent.github.com/easybuild), a software build and
