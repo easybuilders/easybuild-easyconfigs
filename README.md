@@ -2,17 +2,17 @@ EasyBuild: building software with ease
 =======================================
 
 The easybuild-easyconfigs package provides a collection of well-tested example easyconfig files
-for EasyBuild (https://hpcugent.github.com/easybuild), a software build and installation framework
+for EasyBuild (http://hpcugent.github.com/easybuild), a software build and installation framework
 written in Python that allows you to install software in a structured, repeatable and robust way.
 
 Easyconfig files are used to specify which software to build, which version of the software (and its
 dependencies), which build parameters to use (e.g., which compiler toolchain to use), etc.
 
 The code of the easybuild-easyconfigs package is hosted on GitHub, along with an issue tracker for
-bug reports and feature requests, see https://github.com/hpcugent/easybuild-easyocnfigs.
+bug reports and feature requests, see http://github.com/hpcugent/easybuild-easyocnfigs.
 
 The EasyBuild documentation is available on the GitHub wiki of the easybuild meta-package,
-see https://github.com/hpcugent/easybuild/wiki/Home.
+see http://github.com/hpcugent/easybuild/wiki/Home.
 
 Related packages:
  * easybuild-framework (http://pypi.python.org/pypi/easybuild-framework):
