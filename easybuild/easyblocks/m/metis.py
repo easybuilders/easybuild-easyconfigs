@@ -53,7 +53,7 @@ class EB_METIS(ConfigureMake):
 
         self.cfg.update('makeopts', 'LIBDIR=""')
 
-        if self.toolchain.opts['pic']:
+        if self.toolchain.options['pic']:
             self.cfg.update('makeopts', 'CC="$CC -fPIC"')
 
         super(EB_METIS, self).build_step()

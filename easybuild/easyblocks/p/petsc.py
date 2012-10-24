@@ -92,14 +92,14 @@ class EB_PETSc(ConfigureMake):
                 self.cfg.update('configopts', '--with-gnu-compilers=0')
 
             # MPI
-            if self.toolchain.opts['usempi']:
+            if self.toolchain.options['usempi']:
                 self.cfg.update('configopts', '--with-mpi=1')
 
             # build options
             self.cfg.update('configopts', '--with-build-step-np=%s' % self.cfg['parallel'])
             self.cfg.update('configopts', '--with-shared-libraries=%d' % self.cfg['shared_libs'])
-            self.cfg.update('configopts', '--with-debugging=%d' % self.toolchain.opts['debug'])
-            self.cfg.update('configopts', '--with-pic=%d' % self.toolchain.opts['pic'])
+            self.cfg.update('configopts', '--with-debugging=%d' % self.toolchain.options['debug'])
+            self.cfg.update('configopts', '--with-pic=%d' % self.toolchain.options['pic'])
             self.cfg.update('configopts', '--with-x=0 --with-windows-graphics=0')
 
             # PAPI support

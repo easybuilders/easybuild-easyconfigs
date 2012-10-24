@@ -76,7 +76,7 @@ class EB_Trilinos(CMakeMake):
             self.cfg.update('configopts', "-DTrilinos_ENABLE_OpenMP:BOOL=ON")
 
         # MPI
-        if self.toolchain.opts['usempi']:
+        if self.toolchain.options['usempi']:
             self.cfg.update('configopts', "-DTPL_ENABLE_MPI:BOOL=ON")
 
         # shared libraries
@@ -86,7 +86,7 @@ class EB_Trilinos(CMakeMake):
             self.cfg.update('configopts', "-DBUILD_SHARED_LIBS:BOOL=OFF")
 
         # release or debug get_version
-        if self.toolchain.opts['debug']:
+        if self.toolchain.options['debug']:
             self.cfg.update('configopts', "-DCMAKE_BUILD_TYPE:STRING=DEBUG")
         else:
             self.cfg.update('configopts', "-DCMAKE_BUILD_TYPE:STRING=RELEASE")

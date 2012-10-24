@@ -43,7 +43,7 @@ class EB_netCDF_minus_Fortran(ConfigureMake):
     def configure_step(self):
         """Configure build: set config options and configure"""
 
-        if self.toolchain.opts['pic']:
+        if self.toolchain.options['pic']:
             self.cfg.update('configopts', "--with-pic")
 
         self.cfg.update('configopts', 'FCFLAGS="%s" FC="%s"' % (os.getenv('FFLAGS'), os.getenv('F90')))

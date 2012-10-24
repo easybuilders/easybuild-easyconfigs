@@ -111,7 +111,7 @@ class EB_LAPACK(ConfigureMake):
 
         # set optimization flags
         fpic = ''
-        if self.toolchain.opts['pic']:
+        if self.toolchain.options['pic']:
             fpic = '-fPIC'
         self.cfg.update('makeopts', 'OPTS="$FFLAGS -m64" NOOPT="%s -m64 -O0"' % fpic)
 

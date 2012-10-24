@@ -117,9 +117,9 @@ class EB_ScaLAPACK(ConfigureMake):
 
             # set compilers and options
             noopt = ''
-            if self.toolchain.opts['noopt']:
+            if self.toolchain.options['noopt']:
                 noopt += " -O0"
-            if self.toolchain.opts['pic']:
+            if self.toolchain.options['pic']:
                 noopt += " -fPIC"
             extra_makeopts += [
                                'F77="%s"' % mpif77,

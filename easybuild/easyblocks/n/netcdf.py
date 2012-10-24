@@ -47,7 +47,7 @@ class EB_netCDF(ConfigureMake):
 
         self.cfg.update('configopts', "--enable-shared")
 
-        if self.toolchain.opts['pic']:
+        if self.toolchain.options['pic']:
             self.cfg.update('configopts', '--with-pic')
 
         self.cfg.update('configopts', 'FCFLAGS="%s" CC="%s" FC="%s"' % (os.getenv('FFLAGS'),

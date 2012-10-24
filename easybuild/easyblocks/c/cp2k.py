@@ -108,10 +108,10 @@ class EB_CP2K(EasyBlock):
         # set compilers options according to toolchain config
         # full debug: -g -traceback -check all -fp-stack-check
         # -g links to mpi debug libs
-        if self.toolchain.opts['debug']:
+        if self.toolchain.options['debug']:
             self.debug = '-g'
             self.log.info("Debug build")
-        if self.toolchain.opts['pic']:
+        if self.toolchain.options['pic']:
             self.fpic = "-fPIC"
             self.log.info("Using fPIC")
 
