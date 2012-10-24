@@ -33,7 +33,7 @@ EasyBuild support for building and installing netCDF-Fortran, implemented as an 
 import os
 
 import easybuild.tools.environment as env
-import easybuild.tools.toolkit as toolchain
+import easybuild.tools.toolchain as toolchain
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 
 

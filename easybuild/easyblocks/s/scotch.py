@@ -35,7 +35,7 @@ import re
 import sys
 import shutil
 
-import easybuild.tools.toolkit as toolchain
+import easybuild.tools.toolchain as toolchain
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.tools.filetools import run_cmd, copytree
 

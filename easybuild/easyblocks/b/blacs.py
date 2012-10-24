@@ -35,7 +35,7 @@ import re
 import os
 import shutil
 
-import easybuild.tools.toolkit as toolchain
+import easybuild.tools.toolchain as toolchain
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.tools.filetools import run_cmd
 from easybuild.tools.modules import get_software_root
@@ -89,15 +89,15 @@ class EB_BLACS(ConfigureMake):
                                         "$(MPILIBdir)/libmpl.a -lpthread"
                      }
 
-        mpi_type = self.toolchain.mpi_type()
+        mpi_family = self.toolchain.mpi_family()
 
         base, mpilib = None, None
-        if mpi_type in known_mpis.keys():
-            base = get_software_root(mpi_type)
-            mpilib = known_mpis[mpi_type]
+        if mpi_family in known_mpis.keys():
+            base = get_software_root(mpi_family)
+            mpilib = known_mpis[mpi_family]
 
         else:
-            self.log.error("Unknown MPI lib %s used (known MPI libs: %s)" % (mpi_type, known_mpis.keys()))
+            self.log.error("Unknown MPI lib %s used (known MPI libs: %s)" % (mpi_family, known_mpis.keys()))
 
         opts = {
                 'mpicc': "%s %s" % (os.getenv('MPICC'), os.getenv('CFLAGS')),
@@ -106,7 +106,7 @@ class EB_BLACS(ConfigureMake):
                 'cc': os.getenv('CC'),
                 'builddir': os.getcwd(),
                 'base': base,
-                'mpilib': mpilib
+                'mpilib': '' #mpilib
                }
 
         # determine interface and transcomm settings

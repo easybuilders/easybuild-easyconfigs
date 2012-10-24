@@ -34,7 +34,7 @@ import stat
 from distutils.version import LooseVersion
 
 import easybuild.tools.environment as env
-import easybuild.tools.toolkit as toolchain
+import easybuild.tools.toolchain as toolchain
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.tools.filetools import run_cmd, adjust_permissions
 from easybuild.tools.modules import get_software_root

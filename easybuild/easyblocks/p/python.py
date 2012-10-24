@@ -34,7 +34,7 @@ import os
 import shutil
 from distutils.version import LooseVersion
 
-import easybuild.tools.toolkit as toolchain
+import easybuild.tools.toolchain as toolchain
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.framework.extension import Extension
 from easybuild.tools.build_log import EasyBuildError
