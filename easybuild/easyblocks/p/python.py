@@ -329,8 +329,8 @@ libraries = %s
             {
              'lapack': lapack,
              'blas': blas,
-             'libs': ":".join([lib for lib in os.getenv('LDFLAGS').split(" -L")]),
-             'includes': ":".join([lib for lib in os.getenv('CPPFLAGS').split(" -I")]),
+             'libs': ':'.join([lib.replace('-L', '') for lib in os.getenv('LDFLAGS').split(' ')]),
+             'includes': ':'.join([lib.replace('-I', '') for lib in os.getenv('CPPFLAGS').split(' ')]),
             }
 
         self.sitecfgfn = 'site.cfg'
