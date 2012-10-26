@@ -255,7 +255,9 @@ class EB_FortranPythonPackage(EB_DefaultPythonPackage):
                 # see http://projects.scipy.org/numpy/ticket/182
                 # don't unset it with os.environ.pop('LDFLAGS'), doesn't work in Python 2.4 (see http://bugs.python.org/issue1287)
                 cmdprefix = "unset LDFLAGS && "
-                self.log.debug("LDFLAGS was %s, will be cleared before numpy build with '%s'" % (ldflags, cmdprefix))
+                self.log.debug("LDFLAGS was %s, will be cleared before %s build with '%s'" % (self.name,
+                                                                                              ldflags,
+                                                                                              cmdprefix))
 
             cmd = "%s python setup.py build --fcompiler=gnu95" % cmdprefix
 
