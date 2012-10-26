@@ -41,7 +41,7 @@ class EB_SHRiMP(ConfigureMake):
 
         cxxflags = os.getenv('CXXFLAGS')
 
-        env.setvar('CXXFLAGS', "%s %s" % (cxxflags, self.toolchain.get_openmp_flag()))
+        env.setvar('CXXFLAGS', "%s %s" % (cxxflags, self.toolchain.get_flag('openmp')))
 
     def install_step(self):
         """Install SHRiMP by copying files to install dir, and fix permissions."""

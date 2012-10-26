@@ -240,7 +240,7 @@ class EB_CP2K(EasyBlock):
         # -automatic is default: -noautomatic -auto-scalar
         # some mem-bandwidth optimisation
         if self.cfg['type'] == 'psmp':
-            self.openmp = self.toolchain.get_openmp_flag()
+            self.openmp = self.toolchain.get_flag('openmp')
 
         # determine which opt flags to use
         if self.cfg['typeopt']:

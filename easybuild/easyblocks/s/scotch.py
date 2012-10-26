@@ -99,7 +99,7 @@ class EB_SCOTCH(EasyBlock):
         else:
             cflags += " -restrict -DIDXSIZE64"
 
-        if not self.toolchain.mpi_type() == toolchain.INTEL:
+        if not self.toolchain.mpi_family() == toolchain.INTEL:
             cflags += " -DSCOTCH_PTHREAD"
 
         # actually build

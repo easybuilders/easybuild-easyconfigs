@@ -104,7 +104,7 @@ class EB_WIEN2k(EasyBlock):
             self.log.error("Failed to determine toolchain-dependent answers.")
 
         # libraries
-        rlibs = "%s %s" % (os.getenv('LIBLAPACK_MT'), self.toolchain.get_openmp_flag())
+        rlibs = "%s %s" % (os.getenv('LIBLAPACK_MT'), self.toolchain.get_flag('openmp'))
         rplibs = [os.getenv('LIBSCALAPACK_MT'), os.getenv('LIBLAPACK_MT')]
         fftwver = get_software_version('FFTW')
         if fftwver:

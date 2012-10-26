@@ -53,7 +53,7 @@ class EB_DOLFIN(CMakePythonPackage):
         fflags = os.getenv('FFLAGS')
 
         # fix for "SEEK_SET is #defined but must not be for the C++ binding of MPI. Include mpi.h before stdio.h"
-        if self.toolchain.mpi_type() in [toolchain.INTEL, toolchain.MPICH2]:
+        if self.toolchain.mpi_family() in [toolchain.INTEL, toolchain.MPICH2]:
             cflags += " -DMPICH_IGNORE_CXX_SEEK"
             cxxflags += " -DMPICH_IGNORE_CXX_SEEK"
             fflags += " -DMPICH_IGNORE_CXX_SEEK"
@@ -97,7 +97,7 @@ class EB_DOLFIN(CMakePythonPackage):
         self.cfg.update('configopts', '-DZLIB_LIBRARY=%s' % os.path.join(depsdict['zlib'], "lib", "libz.a"))
 
         # set correct openmp options
-        openmp = self.toolchain.get_openmp_flag()
+        openmp = self.toolchain.get_flag('openmp')
         self.cfg.update('configopts', ' -DOpenMP_CXX_FLAGS="%s"' % openmp)
         self.cfg.update('configopts', ' -DOpenMP_C_FLAGS="%s"' % openmp)
 

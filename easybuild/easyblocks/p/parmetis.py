@@ -54,7 +54,7 @@ class EB_ParMETIS(EasyBlock):
 
             self.cfg.update('configopts', '-DMETIS_PATH=../metis -DGKLIB_PATH=../metis/GKlib')
 
-            self.cfg.update('configopts', '-DOPENMP="%s"' % self.toolchain.get_openmp_flag())
+            self.cfg.update('configopts', '-DOPENMP="%s"' % self.toolchain.get_flag('openmp'))
 
             if self.toolchain.options['usempi']:
                 self.cfg.update('configopts', '-DCMAKE_C_COMPILER="$MPICC"')
