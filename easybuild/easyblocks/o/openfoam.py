@@ -90,7 +90,7 @@ class EB_OpenFOAM(EasyBlock):
             self.mpipath = os.path.join(get_software_root('IMPI'),'intel64')
             self.wm_mplib = "IMPI"
 
-        elif mpi_type == toolchain.QLOGIC:
+        elif mpi_type == toolchain.QLOGICMPI:
             self.mpipath = get_software_root('QLogicMPI')
             self.wm_mplib = "MPICH"
 
