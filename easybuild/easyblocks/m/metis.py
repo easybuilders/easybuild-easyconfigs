@@ -109,19 +109,17 @@ class EB_METIS(ConfigureMake):
     def sanity_check_step(self):
         """Custom sanity check for METIS (more extensive for recent version (>= v5))"""
 
-        if not self.cfg['sanityCheckPaths']:
+        binfiles = []
+        if LooseVersion(self.version) > LooseVersion("5"):
+            binfiles += ["cmpfillin", "gpmetis", "graphchk", "m2gmetis", "mpmetis", "ndmetis"]
 
-            binfiles = []
-            if LooseVersion(self.version) > LooseVersion("5"):
-                binfiles += ["cmpfillin", "gpmetis", "graphchk", "m2gmetis", "mpmetis", "ndmetis"]
+        incfiles = ["metis.h"]
+        if LooseVersion(self.version) < LooseVersion("5"):
+            incfiles += ["defs.h", "macros.h", "proto.h", "rename.h", "struct.h"]
 
-            incfiles = ["metis.h"]
-            if LooseVersion(self.version) < LooseVersion("5"):
-                incfiles += ["defs.h", "macros.h", "proto.h", "rename.h", "struct.h"]
-
-            dirs = []
-            if LooseVersion(self.version) < LooseVersion("5"):
-                dirs += ["Lib"]
+        dirs = []
+        if LooseVersion(self.version) < LooseVersion("5"):
+            dirs += ["Lib"]
 
         custom_paths = {
                         'files': ['bin/%s' % x for x in binfiles] + ['include/%s' % x for x in incfiles] +
