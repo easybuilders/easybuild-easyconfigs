@@ -86,7 +86,7 @@ class EB_OpenFOAM(EasyBlock):
         # type of MPI
         mpi_type = self.toolchain.mpi_family()
 
-        if mpi_type == toolchain.INTEL:
+        if mpi_type == toolchain.INTELMPI:
             self.mpipath = os.path.join(get_software_root('IMPI'),'intel64')
             self.wm_mplib = "IMPI"
 
