@@ -91,7 +91,7 @@ class EB_WIEN2k(EasyBlock):
 
         # toolchain-dependent values
         comp_answer = None
-        if self.toolchain.comp_family() == toolchain.INTEL:
+        if self.toolchain.comp_family() == toolchain.INTELCOMP:
             if LooseVersion(get_software_version("icc")) >= LooseVersion("2011"):
                 comp_answer = 'I'  # Linux (Intel ifort 12.0 compiler + mkl )
             else:

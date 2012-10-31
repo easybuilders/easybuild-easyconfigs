@@ -72,7 +72,7 @@ class EB_Boost(EasyBlock):
 
         # generate config depending on compiler used
         toolset = None
-        if self.toolchain.comp_family() == toolchain.INTEL:
+        if self.toolchain.comp_family() == toolchain.INTELCOMP:
             toolset = 'intel-linux'
         elif self.toolchain.comp_family() == toolchain.GCC:
             toolset = 'gcc'

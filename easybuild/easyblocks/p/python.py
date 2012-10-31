@@ -245,7 +245,7 @@ class EB_FortranPythonPackage(EB_DefaultPythonPackage):
     def build_step(self):
         comp_fam = self.toolchain.comp_family()
 
-        if comp_fam == toolchain.INTEL:
+        if comp_fam == toolchain.INTELCOMP:
             cmd = "python setup.py build --compiler=intel --fcompiler=intelem"
 
         elif comp_fam == toolchain.GCC:

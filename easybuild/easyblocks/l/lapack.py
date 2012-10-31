@@ -90,7 +90,7 @@ class EB_LAPACK(ConfigureMake):
         # copy build_step.inc file from examples
         if self.toolchain.comp_family() == toolchain.GCC:
             makeinc = 'gfortran'
-        elif self.toolchain.comp_family() == toolchain.INTEL:
+        elif self.toolchain.comp_family() == toolchain.INTELCOMP:
             makeinc = 'ifort'
         else:
             self.log.error("Don't know which build_step.inc file to pick, unknown compiler being used...")

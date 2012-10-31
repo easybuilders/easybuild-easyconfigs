@@ -114,7 +114,7 @@ class EB_WRF(EasyBlock):
         # determine build type option to look for
         build_type_option = None
         self.comp_fam = self.toolchain.comp_family()
-        if self.comp_fam == toolchain.INTEL:
+        if self.comp_fam == toolchain.INTELCOMP:
             build_type_option = "Linux x86_64 i486 i586 i686, ifort compiler with icc"
 
         elif self.comp_fam == toolchain.GCC:
@@ -174,7 +174,7 @@ class EB_WRF(EasyBlock):
 
             # set extra flags for Intel compilers
             # see http://software.intel.com/en-us/forums/showthread.php?t=72109&p=1#146748
-            if self.comp_fam == toolchain.INTEL:
+            if self.comp_fam == toolchain.INTELCOMP:
 
                 # -O3 -heap-arrays is required to resolve compilation error
                 for envvar in ['CFLAGS', 'FFLAGS']:
@@ -234,7 +234,7 @@ class EB_WRF(EasyBlock):
                     self.testcases.remove(test)
 
             # some tests hang when WRF is built with Intel compilers
-            if self.comp_fam == toolchain.INTEL:
+            if self.comp_fam == toolchain.INTELCOMP:
                 for test in ["em_heldsuarez"]:
                     if test in self.testcases:
                         self.testcases.remove(test)

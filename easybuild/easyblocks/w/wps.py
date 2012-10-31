@@ -145,7 +145,7 @@ class EB_WPS(EasyBlock):
                                'dmpar': 'dmpar'
                               }
 
-            if self.comp_fam == toolchain.INTEL:
+            if self.comp_fam == toolchain.INTELCOMP:
                 build_type_option = " Linux x86_64, Intel compiler"
 
             elif self.comp_fam == toolchain.GCC:
@@ -161,7 +161,7 @@ class EB_WPS(EasyBlock):
                                'dmpar': 'DM parallel'
                               }
 
-            if self.comp_fam == toolchain.INTEL:
+            if self.comp_fam == toolchain.INTELCOMP:
                 build_type_option = "PC Linux x86_64, Intel compiler"
 
             elif self.comp_fam == toolchain.GCC:

@@ -48,7 +48,7 @@ class EB_SCOTCH(EasyBlock):
 
         # pick template makefile
         comp_fam = self.toolchain.comp_family()
-        if comp_fam == toolchain.INTEL:
+        if comp_fam == toolchain.INTELCOMP:
             makefilename = 'Makefile.inc.x86-64_pc_linux2.icc'
         elif comp_fam == toolchain.GCC:
             makefilename = 'Makefile.inc.x86-64_pc_linux2'
@@ -99,7 +99,7 @@ class EB_SCOTCH(EasyBlock):
         else:
             cflags += " -restrict -DIDXSIZE64"
 
-        if not self.toolchain.mpi_family() == toolchain.INTEL:
+        if not self.toolchain.mpi_family() == toolchain.INTELMPI:
             cflags += " -DSCOTCH_PTHREAD"
 
         # actually build

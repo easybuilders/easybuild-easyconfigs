@@ -62,7 +62,7 @@ class EB_Trilinos(CMakeMake):
         cxxflags = os.getenv('CXXFLAGS')
         fflags = os.getenv('FFLAGS')
 
-        if self.toolchain.mpi_family() in [toolchain.INTEL, toolchain.MPICH2]:
+        if self.toolchain.mpi_family() in [toolchain.INTELMPI, toolchain.MPICH2, toolchain.MVAPICH2]:
             cflags += " -DMPICH_IGNORE_CXX_SEEK"
             cxxflags += " -DMPICH_IGNORE_CXX_SEEK"
             fflags += " -DMPICH_IGNORE_CXX_SEEK"

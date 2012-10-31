@@ -72,7 +72,7 @@ class EB_OpenFOAM(EasyBlock):
         if comp_fam == toolchain.GCC:
             self.wm_compiler="Gcc"
 
-        elif comp_fam == toolchain.INTEL:
+        elif comp_fam == toolchain.INTELCOMP:
             self.wm_compiler="Icc"
 
             # make sure -no-prec-div is used with Intel compilers
