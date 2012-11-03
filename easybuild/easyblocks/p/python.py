@@ -245,10 +245,10 @@ class EB_FortranPythonPackage(EB_DefaultPythonPackage):
     def build_step(self):
         comp_fam = self.toolchain.comp_family()
 
-        if comp_fam == toolchain.INTELCOMP:
+        if comp_fam == toolchain.INTELCOMP:  #@UndefinedVariable
             cmd = "python setup.py build --compiler=intel --fcompiler=intelem"
 
-        elif comp_fam == toolchain.GCC:
+        elif comp_fam == toolchain.GCC:  #@UndefinedVariable
             cmdprefix = ""
             ldflags = os.getenv('LDFLAGS')
             if ldflags:

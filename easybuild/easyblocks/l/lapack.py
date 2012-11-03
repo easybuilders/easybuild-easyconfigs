@@ -88,9 +88,9 @@ class EB_LAPACK(ConfigureMake):
         """
 
         # copy build_step.inc file from examples
-        if self.toolchain.comp_family() == toolchain.GCC:
+        if self.toolchain.comp_family() == toolchain.GCC:  #@UndefinedVariable
             makeinc = 'gfortran'
-        elif self.toolchain.comp_family() == toolchain.INTELCOMP:
+        elif self.toolchain.comp_family() == toolchain.INTELCOMP:  #@UndefinedVariable
             makeinc = 'ifort'
         else:
             self.log.error("Don't know which build_step.inc file to pick, unknown compiler being used...")

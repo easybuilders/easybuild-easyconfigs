@@ -145,10 +145,10 @@ class EB_WPS(EasyBlock):
                                'dmpar': 'dmpar'
                               }
 
-            if self.comp_fam == toolchain.INTELCOMP:
+            if self.comp_fam == toolchain.INTELCOMP:  #@UndefinedVariable
                 build_type_option = " Linux x86_64, Intel compiler"
 
-            elif self.comp_fam == toolchain.GCC:
+            elif self.comp_fam == toolchain.GCC:  #@UndefinedVariable
                 build_type_option = "Linux x86_64 g95 compiler"
 
             else:
@@ -161,10 +161,10 @@ class EB_WPS(EasyBlock):
                                'dmpar': 'DM parallel'
                               }
 
-            if self.comp_fam == toolchain.INTELCOMP:
+            if self.comp_fam == toolchain.INTELCOMP:  #@UndefinedVariable
                 build_type_option = "PC Linux x86_64, Intel compiler"
 
-            elif self.comp_fam == toolchain.GCC:
+            elif self.comp_fam == toolchain.GCC:  #@UndefinedVariable
                 build_type_option = "PC Linux x86_64, gfortran compiler,"
                 knownbuildtypes['dmpar'] = knownbuildtypes['dmpar'].upper()
 
