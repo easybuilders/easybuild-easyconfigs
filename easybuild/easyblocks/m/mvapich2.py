@@ -47,10 +47,14 @@ class EB_MVAPICH2(ConfigureMake):
     def extra_options():
         extra_vars = [
                       ('withchkpt', [False, "Enable checkpointing support (required BLCR) (default: False)", CUSTOM]),
-                      ('withlimic2', [False, "Enable LiMIC2 support for intra-node communication (default: False)", CUSTOM]),
                       ('withmpe', [False, "Build MPE routines (default: False)", CUSTOM]),
+                      ('withhwloc', [False, "Enable support for using hwloc support for process binding (default: False)", CUSTOM]),
+                      ('withlimic2', [False, "Enable LiMIC2 support for intra-node communication (default: False)", CUSTOM]),
                       ('debug', [False, "Enable debug build (which is slower) (default: False)", CUSTOM]),
-                      ('rdma_type', ["gen2", "Specify the RDMA type (gen2/udapl) (default: gen2)", CUSTOM])
+                      ('rdma_type', ["gen2", "Specify the RDMA type (gen2/udapl) (default: gen2)", CUSTOM]),
+                      ('blcr_path', [None, "Path to BLCR package (default: None)", CUSTOM]),
+                      ('blcr_inc_path', [None, "Path to BLCR header files (default: None)", CUSTOM]),
+                      ('blcr_lib_path', [None, "Path to BLCR library (default: None)", CUSTOM]),
                      ]
         return ConfigureMake.extra_options(extra_vars)
 
@@ -62,24 +66,25 @@ class EB_MVAPICH2(ConfigureMake):
             super(EB_MVAPICH2, self).make_dir(self.installdir, True, dontcreateinstalldir=True)
 
         # additional configuration options
-        add_configopts = '--with-rdma=%s ' % self.cfg['rdma_type']
+        add_configopts = []
+        add_configopts.append('--with-rdma=%s' % self.cfg['rdma_type'])
 
         # use POSIX threads
-        add_configopts += '--with-thread-package=pthreads '
+        add_configopts.append('--with-thread-package=pthreads')
 
         if self.cfg['debug']:
             # debug build, with error checking, timing and debug info
             # note: this will affact performance
-            add_configopts += '--enable-fast=none '
+            add_configopts.append('--enable-fast=none')
         else:
             # optimized build, no error checking, timing or debug info
-            add_configopts += '--enable-fast '
+            add_configopts.append('--enable-fast')
 
         # enable shared libraries, using GCC and GNU ld options
-        add_configopts += '--enable-shared --enable-sharedlibs=gcc '
+        add_configopts.extend(['--enable-shared', '--enable-sharedlibs=gcc'])
 
         # enable Fortran 77/90 and C++ bindings
-        add_configopts += '--enable-f77 --enable-fc --enable-cxx '
+        add_configopts.extend(['--enable-f77', '--enable-fc', '--enable-cxx'])
 
         # MVAPICH configure script complains when F90 or F90FLAGS are set,
         # they should be replaced with FC/FCFLAGS instead
@@ -99,13 +104,23 @@ class EB_MVAPICH2(ConfigureMake):
 
         # enable specific support options (if desired)
         if self.cfg['withmpe']:
-            add_configopts += '--enable-mpe '
+            add_configopts.append('--enable-mpe')
         if self.cfg['withlimic2']:
-            add_configopts += '--enable-limic2 '
+            add_configopts.append('--enable-limic2')
         if self.cfg['withchkpt']:
-            add_configopts += '--enable-checkpointing --with-hydra-ckpointlib=blcr '
+            add_configopts.extend(['--enable-checkpointing', '--with-hydra-ckpointlib=blcr'])
+        if self.cfg['withhwloc']:
+            add_configopts.append('--with-hwloc')
 
-        self.cfg.update('configopts', add_configopts)
+        # pass BLCR paths if specified
+        if self.cfg['blcr_path']:
+            add_configopts.append('--with-blcr=%s' % self.cfg['blcr_path'])
+        if self.cfg['blcr_inc_path']:
+            add_configopts.append('--with-blcr-include=%s' % self.cfg['blcr_inc_path'])
+        if self.cfg['blcr_lib_path']:
+            add_configopts.append('--with-blcr-libpath=%s' % self.cfg['blcr_lib_path'])
+
+        self.cfg.update('configopts', ' '.join(add_configopts))
 
         super(EB_MVAPICH2, self).configure_step()
 
