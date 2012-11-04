@@ -143,7 +143,7 @@ tasks=%(tasks)s
         """
 
         # only GCC is supported for now
-        if self.toolchain.comp_family() == toolchain.GCC:
+        if self.toolchain.comp_family() == toolchain.GCC:  #@UndefinedVariable
             hostcompile = os.getenv('F90')
 
             # optimizations

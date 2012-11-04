@@ -91,13 +91,13 @@ class EB_WIEN2k(EasyBlock):
 
         # toolchain-dependent values
         comp_answer = None
-        if self.toolchain.comp_family() == toolchain.INTEL:
+        if self.toolchain.comp_family() == toolchain.INTELCOMP:  #@UndefinedVariable
             if LooseVersion(get_software_version("icc")) >= LooseVersion("2011"):
                 comp_answer = 'I'  # Linux (Intel ifort 12.0 compiler + mkl )
             else:
                 comp_answer = "K1"  # Linux (Intel ifort 11.1 compiler + mkl )
 
-        elif self.toolchain.comp_family() == toolchain.GCC:
+        elif self.toolchain.comp_family() == toolchain.GCC:  #@UndefinedVariable
             comp_answer = 'V'  # Linux (gfortran compiler + gotolib)
 
         else:

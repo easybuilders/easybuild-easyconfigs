@@ -88,7 +88,7 @@ class EB_PETSc(ConfigureMake):
             self.cfg.update('configopts', '--with-cxxflags="%s"' % os.getenv('CXXFLAGS'))
             self.cfg.update('configopts', '--with-fcflags="%s"' % os.getenv('F90FLAGS'))
 
-            if not self.toolchain.comp_family() == toolchain.GCC:
+            if not self.toolchain.comp_family() == toolchain.GCC:  #@UndefinedVariable
                 self.cfg.update('configopts', '--with-gnu-compilers=0')
 
             # MPI

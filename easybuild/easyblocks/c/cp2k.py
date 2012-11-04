@@ -143,7 +143,7 @@ class EB_CP2K(EasyBlock):
 
         # compiler toolchain specific configuration
         comp_fam = self.toolchain.comp_family()
-        if comp_fam == toolchain.INTEL:
+        if comp_fam == toolchain.INTELCOMP:
             options = self.configure_intel_based()
         elif comp_fam == toolchain.GCC:
             options = self.configure_GCC_based()

@@ -41,7 +41,7 @@ class EB_Trilinos(CMakeMake):
     def extra_options():
         """Add extra config options specific to Trilinos."""
         extra_vars = [
-                      ('shared_libs', [False, "BUild shared libs; if False, build static libs. (default: False).", CUSTOM]),
+                      ('shared_libs', [False, "Build shared libs; if False, build static libs. (default: False).", CUSTOM]),
                       ('openmp', [True, "Enable OpenMP support (default: True)", CUSTOM]),
                       ('all_exts', [True, "Enable all Trilinos packages (default: True)", CUSTOM]),
                       ('skip_exts', [[], "List of Trilinos packages to skip (default: [])", CUSTOM]),
@@ -62,7 +62,8 @@ class EB_Trilinos(CMakeMake):
         cxxflags = os.getenv('CXXFLAGS')
         fflags = os.getenv('FFLAGS')
 
-        if self.toolchain.mpi_family() in [toolchain.INTEL, toolchain.MPICH2]:
+        ignore_cxx_seek_mpis = [toolchain.INTELMPI, toolchain.MPICH2, toolchain.MVAPICH2]  #@UndefinedVariable
+        if self.toolchain.mpi_family() in ignore_cxx_seek_mpis:
             cflags += " -DMPICH_IGNORE_CXX_SEEK"
             cxxflags += " -DMPICH_IGNORE_CXX_SEEK"
             fflags += " -DMPICH_IGNORE_CXX_SEEK"
@@ -101,12 +102,12 @@ class EB_Trilinos(CMakeMake):
         for dep in ["BLAS", "LAPACK"]:
             self.cfg.update('configopts', '-DTPL_ENABLE_%s:BOOL=ON' % dep)
             libdirs = os.getenv('%s_LIB_DIR' % dep)
-            if self.toolchain.comp_family() == toolchain.GCC:
+            if self.toolchain.comp_family() == toolchain.GCC:  #@UndefinedVariable
                 libdirs += ";%s/lib64" % get_software_root('GCC')
             self.cfg.update('configopts', '-D%s_LIBRARY_DIRS="%s"' % (dep, libdirs))
             libs = os.getenv('%s_MT_STATIC_LIBS' % dep).split(',')
             lib_names = ';'.join([lib_re.search(l).group(1) for l in libs])
-            if self.toolchain.comp_family() == toolchain.GCC:
+            if self.toolchain.comp_family() == toolchain.GCC:  #@UndefinedVariable
                 # explicitely specify static lib!
                 lib_names += ";libgfortran.a"
             self.cfg.update('configopts', '-D%s_LIBRARY_NAMES="%s"' % (dep, lib_names))
