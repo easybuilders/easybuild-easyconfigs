@@ -58,19 +58,20 @@ class EB_Trilinos(CMakeMake):
                 self.cfg.update('configopts', "-DTrilinos_VERBOSE_%s:BOOL=ON" % x)
 
         # compiler flags
-        cflags = os.getenv('CFLAGS')
-        cxxflags = os.getenv('CXXFLAGS')
-        fflags = os.getenv('FFLAGS')
+        cflags = [os.getenv('CFLAGS')]
+        cxxflags = [os.getenv('CXXFLAGS')]
+        fflags = [os.getenv('FFLAGS')]
 
         ignore_cxx_seek_mpis = [toolchain.INTELMPI, toolchain.MPICH2, toolchain.MVAPICH2]  #@UndefinedVariable
+        ignore_cxx_seek_flag = "-DMPICH_IGNORE_CXX_SEEK"
         if self.toolchain.mpi_family() in ignore_cxx_seek_mpis:
-            cflags += " -DMPICH_IGNORE_CXX_SEEK"
-            cxxflags += " -DMPICH_IGNORE_CXX_SEEK"
-            fflags += " -DMPICH_IGNORE_CXX_SEEK"
+            cflags.append(ignore_cxx_seek_flag)
+            cxxflags.append(ignore_cxx_seek_flag)
+            fflags.append(ignore_cxx_seek_flag)
 
-        self.cfg.update('configopts', '-DCMAKE_C_FLAGS="%s"' % cflags)
-        self.cfg.update('configopts', '-DCMAKE_CXX_FLAGS="%s"' % cxxflags)
-        self.cfg.update('configopts', '-DCMAKE_Fortran_FLAGS="%s"' % fflags)
+        self.cfg.update('configopts', '-DCMAKE_C_FLAGS="%s"' % ' '.join(cflags))
+        self.cfg.update('configopts', '-DCMAKE_CXX_FLAGS="%s"' % ' '.join(cxxflags))
+        self.cfg.update('configopts', '-DCMAKE_Fortran_FLAGS="%s"' % ' '.join(fflags))
 
         # OpenMP
         if self.cfg['openmp']:
