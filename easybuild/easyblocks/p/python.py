@@ -274,16 +274,6 @@ class EB_numpy(EB_FortranPythonPackage):
     def __init__(self, mself, ext):
         super(EB_numpy, self).__init__(mself, ext)
 
-        self.exts_cfgs = mself.cfg['exts_cfgs']
-        if self.exts_cfgs.has_key('numpysitecfglibsubdirs'):
-            self.numpysitecfglibsubdirs = self.exts_cfgs['numpysitecfglibsubdirs']
-        else:
-            self.numpysitecfglibsubdirs = []
-        if self.exts_cfgs.has_key('numpysitecfgincsubdirs'):
-            self.numpysitecfgincsubdirs = self.exts_cfgs['numpysitecfgincsubdirs']
-        else:
-            self.numpysitecfgincsubdirs = []
-
         self.sitecfg = """[DEFAULT]
 library_dirs = %(libs)s
 include_dirs = %(includes)s
