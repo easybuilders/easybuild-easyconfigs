@@ -34,7 +34,7 @@ import stat
 from distutils.version import LooseVersion
 
 import easybuild.tools.environment as env
-import easybuild.tools.toolkit as toolchain
+import easybuild.tools.toolchain as toolchain
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.tools.filetools import run_cmd, adjust_permissions
 from easybuild.tools.modules import get_software_root
@@ -69,10 +69,10 @@ class EB_OpenFOAM(EasyBlock):
         # compiler
         comp_fam = self.toolchain.comp_family()
 
-        if comp_fam == toolchain.GCC:
+        if comp_fam == toolchain.GCC:  #@UndefinedVariable
             self.wm_compiler="Gcc"
 
-        elif comp_fam == toolchain.INTEL:
+        elif comp_fam == toolchain.INTELCOMP:  #@UndefinedVariable
             self.wm_compiler="Icc"
 
             # make sure -no-prec-div is used with Intel compilers
@@ -84,17 +84,17 @@ class EB_OpenFOAM(EasyBlock):
         env.setvar("WM_COMPILER",self.wm_compiler)
 
         # type of MPI
-        mpi_type = self.toolchain.mpi_type()
+        mpi_type = self.toolchain.mpi_family()
 
-        if mpi_type == toolchain.INTEL:
+        if mpi_type == toolchain.INTELMPI:  #@UndefinedVariable
             self.mpipath = os.path.join(get_software_root('IMPI'),'intel64')
             self.wm_mplib = "IMPI"
 
-        elif mpi_type == toolchain.QLOGIC:
+        elif mpi_type == toolchain.QLOGICMPI:  #@UndefinedVariable
             self.mpipath = get_software_root('QLogicMPI')
             self.wm_mplib = "MPICH"
 
-        elif mpi_type == toolchain.OPENMPI:
+        elif mpi_type == toolchain.OPENMPI:  #@UndefinedVariable
             self.mpipath = get_software_root('OpenMPI')
             self.wm_mplib = "MPI-MVAPICH2"
 

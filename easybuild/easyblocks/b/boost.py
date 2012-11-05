@@ -32,7 +32,7 @@ EasyBuild support for Boost, implemented as an easyblock
 import os
 import shutil
 
-import easybuild.tools.toolkit as toolchain
+import easybuild.tools.toolchain as toolchain
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.filetools import run_cmd
@@ -59,7 +59,7 @@ class EB_Boost(EasyBlock):
         """Configure Boost build using custom tools"""
 
         # mpi sanity check
-        if self.cfg['boost_mpi'] and not self.toolchain.opts['usempi']:
+        if self.cfg['boost_mpi'] and not self.toolchain.options['usempi']:
             self.log.error("When enabling building boost_mpi, also enable the 'usempi' toolchain option.")
 
         # create build directory (Boost doesn't like being built in source dir)
@@ -72,7 +72,7 @@ class EB_Boost(EasyBlock):
 
         # generate config depending on compiler used
         toolset = None
-        if self.toolchain.comp_family() == toolchain.INTEL:
+        if self.toolchain.comp_family() == toolchain.INTELCOMP:
             toolset = 'intel-linux'
         elif self.toolchain.comp_family() == toolchain.GCC:
             toolset = 'gcc'
@@ -84,7 +84,7 @@ class EB_Boost(EasyBlock):
 
         if self.cfg['boost_mpi']:
 
-            self.toolchain.opts['usempi'] = True
+            self.toolchain.options['usempi'] = True
             # configure the boost mpi module
             # http://www.boost.org/doc/libs/1_47_0/doc/html/mpi/getting_started.html
             # let Boost.Build know to look here for the config file

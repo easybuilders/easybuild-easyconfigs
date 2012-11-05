@@ -31,10 +31,11 @@ EasyBuild support for Python, implemented as an easyblock
 """
 
 import os
+import re
 import shutil
 from distutils.version import LooseVersion
 
-import easybuild.tools.toolkit as toolchain
+import easybuild.tools.toolchain as toolchain
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.framework.extension import Extension
 from easybuild.tools.build_log import EasyBuildError
@@ -244,10 +245,10 @@ class EB_FortranPythonPackage(EB_DefaultPythonPackage):
     def build_step(self):
         comp_fam = self.toolchain.comp_family()
 
-        if comp_fam == toolchain.INTEL:
+        if comp_fam == toolchain.INTELCOMP:  #@UndefinedVariable
             cmd = "python setup.py build --compiler=intel --fcompiler=intelem"
 
-        elif comp_fam == toolchain.GCC:
+        elif comp_fam == toolchain.GCC:  #@UndefinedVariable
             cmdprefix = ""
             ldflags = os.getenv('LDFLAGS')
             if ldflags:
@@ -255,7 +256,9 @@ class EB_FortranPythonPackage(EB_DefaultPythonPackage):
                 # see http://projects.scipy.org/numpy/ticket/182
                 # don't unset it with os.environ.pop('LDFLAGS'), doesn't work in Python 2.4 (see http://bugs.python.org/issue1287)
                 cmdprefix = "unset LDFLAGS && "
-                self.log.debug("LDFLAGS was %s, will be cleared before numpy build with '%s'" % (ldflags, cmdprefix))
+                self.log.debug("LDFLAGS was %s, will be cleared before %s build with '%s'" % (self.name,
+                                                                                              ldflags,
+                                                                                              cmdprefix))
 
             cmd = "%s python setup.py build --fcompiler=gnu95" % cmdprefix
 
@@ -327,8 +330,8 @@ libraries = %s
             {
              'lapack': lapack,
              'blas': blas,
-             'libs': ":".join([lib for lib in os.getenv('LDFLAGS').split(" -L")]),
-             'includes': ":".join([lib for lib in os.getenv('CPPFLAGS').split(" -I")]),
+             'libs': ':'.join(self.toolchain.get_variable('LDFLAGS', typ=list)),
+             'includes': ':'.join(self.toolchain.get_variable('CPPFLAGS', typ=list))
             }
 
         self.sitecfgfn = 'site.cfg'

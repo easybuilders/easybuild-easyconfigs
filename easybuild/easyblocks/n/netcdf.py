@@ -34,7 +34,7 @@ import os
 from distutils.version import LooseVersion
 
 import easybuild.tools.environment as env
-import easybuild.tools.toolkit as toolchain
+import easybuild.tools.toolchain as toolchain
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.tools.modules import get_software_root, get_software_version
 
@@ -47,7 +47,7 @@ class EB_netCDF(ConfigureMake):
 
         self.cfg.update('configopts', "--enable-shared")
 
-        if self.toolchain.opts['pic']:
+        if self.toolchain.options['pic']:
             self.cfg.update('configopts', '--with-pic')
 
         self.cfg.update('configopts', 'FCFLAGS="%s" CC="%s" FC="%s"' % (os.getenv('FFLAGS'),
@@ -56,7 +56,7 @@ class EB_netCDF(ConfigureMake):
                                                                       ))
 
         # add -DgFortran to CPPFLAGS when building with GCC
-        if self.toolchain.comp_family() == toolchain.GCC:
+        if self.toolchain.comp_family() == toolchain.GCC:  #@UndefinedVariable
             self.cfg.update('configopts', 'CPPFLAGS="%s -DgFortran"' % os.getenv('CPPFLAGS'))
 
         super(EB_netCDF, self).configure_step()

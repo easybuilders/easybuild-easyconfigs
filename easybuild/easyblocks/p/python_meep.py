@@ -75,7 +75,7 @@ class EB_python_minus_meep(EasyBlock):
 
         # determine suffix for make script
         suff = ''
-        if self.toolchain.opts['usempi']:
+        if self.toolchain.options['usempi']:
             suff = '-mpi'
 
         # run make script

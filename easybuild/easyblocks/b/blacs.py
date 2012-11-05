@@ -35,10 +35,8 @@ import re
 import os
 import shutil
 
-import easybuild.tools.toolkit as toolchain
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.tools.filetools import run_cmd
-from easybuild.tools.modules import get_software_root
 
 
 # also used by ScaLAPACK
@@ -82,31 +80,13 @@ class EB_BLACS(ConfigureMake):
     def build_step(self):
         """Build BLACS using build_step, after figuring out the make options based on the heuristic tools available."""
 
-        # determine MPI base dir and lib
-        known_mpis = {
-                      toolchain.OPENMPI: "-L$(MPILIBdir) -lmpi_f77",
-                      toolchain.MVAPICH2: "$(MPILIBdir)/libmpich.a $(MPILIBdir)/libfmpich.a " + \
-                                        "$(MPILIBdir)/libmpl.a -lpthread"
-                     }
-
-        mpi_type = self.toolchain.mpi_type()
-
-        base, mpilib = None, None
-        if mpi_type in known_mpis.keys():
-            base = get_software_root(mpi_type)
-            mpilib = known_mpis[mpi_type]
-
-        else:
-            self.log.error("Unknown MPI lib %s used (known MPI libs: %s)" % (mpi_type, known_mpis.keys()))
-
         opts = {
                 'mpicc': "%s %s" % (os.getenv('MPICC'), os.getenv('CFLAGS')),
                 'mpif77': "%s %s" % (os.getenv('MPIF77'), os.getenv('FFLAGS')),
                 'f77': os.getenv('F77'),
                 'cc': os.getenv('CC'),
                 'builddir': os.getcwd(),
-                'base': base,
-                'mpilib': mpilib
+                'mpidir': os.path.dirname(os.getenv('MPI_LIB_DIR')),
                }
 
         # determine interface and transcomm settings
@@ -118,8 +98,8 @@ class EB_BLACS(ConfigureMake):
 
             # need to build
             cmd = "make"
-            cmd += " CC='%(mpicc)s' F77='%(mpif77)s -I$(MPIINCdir)'  MPIdir=%(base)s" \
-                   " MPILIB='%(mpilib)s' BTOPdir=%(builddir)s INTERFACE=NONE" % opts
+            cmd += " CC='%(mpicc)s' F77='%(mpif77)s' MPIdir=%(mpidir)s" \
+                   " MPILIB='' BTOPdir=%(builddir)s INTERFACE=NONE" % opts
 
             # determine interface using xintface
             run_cmd("%s xintface" % cmd, log_all=True, simple=True)
@@ -169,11 +149,10 @@ class EB_BLACS(ConfigureMake):
         opts.update({
                      'comm': comm,
                      'int': interface,
-                     'base': base
                     })
 
         add_makeopts = ' MPICC="%(mpicc)s" MPIF77="%(mpif77)s" %(comm)s ' % opts
-        add_makeopts += ' INTERFACE=%(int)s MPIdir=%(base)s BTOPdir=%(builddir)s mpi ' % opts
+        add_makeopts += ' INTERFACE=%(int)s MPIdir=%(mpidir)s BTOPdir=%(builddir)s mpi ' % opts
 
         self.cfg.update('makeopts', add_makeopts)
 

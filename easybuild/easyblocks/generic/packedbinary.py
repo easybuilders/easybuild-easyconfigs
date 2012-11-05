@@ -41,7 +41,7 @@ class PackedBinary(Binary, EasyBlock):
         """Unpack the source"""
         EasyBlock.extract_step(self)
 
-    def make_install(self):
+    def install_step(self):
         """Copy all unpacked source directories to install directory, one-by-one."""
         try:
             os.chdir(self.builddir)
@@ -50,7 +50,7 @@ class PackedBinary(Binary, EasyBlock):
                 if os.path.isdir(srcpath):
                     # copy files to install dir via Binary
                     self.cfg['start_dir'] = src
-                    Binary.make_install(self)
+                    Binary.install_step(self)
         except OSError, err:
             self.log.error("Failed to copy unpacked sources to install directory: %s" % err)
 

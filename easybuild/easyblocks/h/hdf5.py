@@ -57,7 +57,7 @@ class EB_HDF5(ConfigureMake):
         self.cfg.update('configopts', "--enable-cxx --enable-fortran %s" % fcomp)
 
         # MPI and C++ support enabled requires --enable-unsupported, because this is untested by HDF5
-        if self.toolchain.opts['usempi']:
+        if self.toolchain.options['usempi']:
             self.cfg.update('configopts', "--enable-unsupported")
 
         # make options
@@ -72,7 +72,7 @@ class EB_HDF5(ConfigureMake):
         Custom sanity check for HDF5
         """
 
-        if self.toolchain.opts['usempi']:
+        if self.toolchain.options['usempi']:
             extra_binaries = ["bin/%s" % x for x in ["h5perf", "h5pcc", "h5pfc", "ph5diff"]]
         else:
             extra_binaries = ["bin/%s" % x for x in ["h5cc", "h5fc"]]

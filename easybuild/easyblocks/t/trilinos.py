@@ -27,7 +27,7 @@ EasyBuild support for Trilinos, implemented as an easyblock
 import os
 import re
 
-import easybuild.tools.toolkit as toolchain
+import easybuild.tools.toolchain as toolchain
 from easybuild.easyblocks.generic.cmakemake import CMakeMake
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.modules import get_software_root
@@ -41,7 +41,7 @@ class EB_Trilinos(CMakeMake):
     def extra_options():
         """Add extra config options specific to Trilinos."""
         extra_vars = [
-                      ('shared_libs', [False, "BUild shared libs; if False, build static libs. (default: False).", CUSTOM]),
+                      ('shared_libs', [False, "Build shared libs; if False, build static libs. (default: False).", CUSTOM]),
                       ('openmp', [True, "Enable OpenMP support (default: True)", CUSTOM]),
                       ('all_exts', [True, "Enable all Trilinos packages (default: True)", CUSTOM]),
                       ('skip_exts', [[], "List of Trilinos packages to skip (default: [])", CUSTOM]),
@@ -58,25 +58,27 @@ class EB_Trilinos(CMakeMake):
                 self.cfg.update('configopts', "-DTrilinos_VERBOSE_%s:BOOL=ON" % x)
 
         # compiler flags
-        cflags = os.getenv('CFLAGS')
-        cxxflags = os.getenv('CXXFLAGS')
-        fflags = os.getenv('FFLAGS')
+        cflags = [os.getenv('CFLAGS')]
+        cxxflags = [os.getenv('CXXFLAGS')]
+        fflags = [os.getenv('FFLAGS')]
 
-        if self.toolchain.mpi_type() in [toolchain.INTEL, toolchain.MPICH2]:
-            cflags += " -DMPICH_IGNORE_CXX_SEEK"
-            cxxflags += " -DMPICH_IGNORE_CXX_SEEK"
-            fflags += " -DMPICH_IGNORE_CXX_SEEK"
+        ignore_cxx_seek_mpis = [toolchain.INTELMPI, toolchain.MPICH2, toolchain.MVAPICH2]  #@UndefinedVariable
+        ignore_cxx_seek_flag = "-DMPICH_IGNORE_CXX_SEEK"
+        if self.toolchain.mpi_family() in ignore_cxx_seek_mpis:
+            cflags.append(ignore_cxx_seek_flag)
+            cxxflags.append(ignore_cxx_seek_flag)
+            fflags.append(ignore_cxx_seek_flag)
 
-        self.cfg.update('configopts', '-DCMAKE_C_FLAGS="%s"' % cflags)
-        self.cfg.update('configopts', '-DCMAKE_CXX_FLAGS="%s"' % cxxflags)
-        self.cfg.update('configopts', '-DCMAKE_Fortran_FLAGS="%s"' % fflags)
+        self.cfg.update('configopts', '-DCMAKE_C_FLAGS="%s"' % ' '.join(cflags))
+        self.cfg.update('configopts', '-DCMAKE_CXX_FLAGS="%s"' % ' '.join(cxxflags))
+        self.cfg.update('configopts', '-DCMAKE_Fortran_FLAGS="%s"' % ' '.join(fflags))
 
         # OpenMP
         if self.cfg['openmp']:
             self.cfg.update('configopts', "-DTrilinos_ENABLE_OpenMP:BOOL=ON")
 
         # MPI
-        if self.toolchain.opts['usempi']:
+        if self.toolchain.options['usempi']:
             self.cfg.update('configopts', "-DTPL_ENABLE_MPI:BOOL=ON")
 
         # shared libraries
@@ -86,7 +88,7 @@ class EB_Trilinos(CMakeMake):
             self.cfg.update('configopts', "-DBUILD_SHARED_LIBS:BOOL=OFF")
 
         # release or debug get_version
-        if self.toolchain.opts['debug']:
+        if self.toolchain.options['debug']:
             self.cfg.update('configopts', "-DCMAKE_BUILD_TYPE:STRING=DEBUG")
         else:
             self.cfg.update('configopts', "-DCMAKE_BUILD_TYPE:STRING=RELEASE")
@@ -101,12 +103,12 @@ class EB_Trilinos(CMakeMake):
         for dep in ["BLAS", "LAPACK"]:
             self.cfg.update('configopts', '-DTPL_ENABLE_%s:BOOL=ON' % dep)
             libdirs = os.getenv('%s_LIB_DIR' % dep)
-            if self.toolchain.comp_family() == toolchain.GCC:
+            if self.toolchain.comp_family() == toolchain.GCC:  #@UndefinedVariable
                 libdirs += ";%s/lib64" % get_software_root('GCC')
             self.cfg.update('configopts', '-D%s_LIBRARY_DIRS="%s"' % (dep, libdirs))
             libs = os.getenv('%s_MT_STATIC_LIBS' % dep).split(',')
             lib_names = ';'.join([lib_re.search(l).group(1) for l in libs])
-            if self.toolchain.comp_family() == toolchain.GCC:
+            if self.toolchain.comp_family() == toolchain.GCC:  #@UndefinedVariable
                 # explicitely specify static lib!
                 lib_names += ";libgfortran.a"
             self.cfg.update('configopts', '-D%s_LIBRARY_NAMES="%s"' % (dep, lib_names))

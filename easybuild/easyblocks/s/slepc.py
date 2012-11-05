@@ -92,6 +92,10 @@ class EB_SLEPc(ConfigureMake):
             (out, _) = run_cmd(cmd, log_all=True, simple=False)
         else:
             # regular './configure --prefix=X' for non-source install
+            
+            # make sure old install dir is removed first
+            self.make_installdir(dontcreate=True)
+
             out = super(EB_SLEPc, self).configure_step()
 
         # check for errors in configure
