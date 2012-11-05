@@ -326,16 +326,12 @@ libraries = %s
             lapack = ", ".join(lapack_libs)
             blas = ", ".join(blas_libs)
 
-        # regexps for LDFLAGS and CPPFLAGS, so we can easily strip off -L/-I prefix
-        ldflag_re = re.compile("^[ ]*-L[ ]*(.*)$")
-        cppflag_re = re.compile("^[ ]*-I[ ]*(.*)$")
-
         self.sitecfg = self.sitecfg % \
             {
              'lapack': lapack,
              'blas': blas,
-             'libs': ':'.join([ldflag_re.match(lib).group(1) for lib in os.getenv('LDFLAGS').split(' ')]),
-             'includes': ':'.join([cppflag_re.match(inc).group(1) for inc in os.getenv('CPPFLAGS').split(' ')]),
+             'libs': ':'.join(self.toolchain.get_variable('LDFLAGS', typ=list)),
+             'includes': ':'.join(self.toolchain.get_variable('CPPFLAGS', typ=list))
             }
 
         self.sitecfgfn = 'site.cfg'
