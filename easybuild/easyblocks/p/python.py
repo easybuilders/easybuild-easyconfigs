@@ -116,8 +116,8 @@ class EB_DefaultPythonPackage(Extension):
     Easyblock for Python packages to be included in the Python installation.
     """
 
-    def __init__(self, mself, ext, ext_installdeps):
-        super(EB_DefaultPythonPackage, self).__init__(mself, ext, ext_installdeps)
+    def __init__(self, mself, ext):
+        super(EB_DefaultPythonPackage, self).__init__(mself, ext)
         self.sitecfg = None
         self.sitecfgfn = 'site.cfg'
         self.sitecfglibdir = None
@@ -229,9 +229,9 @@ class EB_DefaultPythonPackage(Extension):
 class EB_nose(EB_DefaultPythonPackage):
     """Support for installing the nose Python package as part of a Python installation."""
 
-    def __init__(self, mself, ext, ext_installdeps):
+    def __init__(self, mself, ext):
 
-        super(EB_nose, self).__init__(mself, ext, ext_installdeps)
+        super(EB_nose, self).__init__(mself, ext)
 
         # use extra unpack options to avoid problems like
         # 'tar: Ignoring unknown extended header keyword `SCHILY.nlink'
@@ -271,18 +271,8 @@ class EB_FortranPythonPackage(EB_DefaultPythonPackage):
 class EB_numpy(EB_FortranPythonPackage):
     """Support for installing the numpy Python package as part of a Python installation."""
 
-    def __init__(self, mself, ext, ext_installdeps):
-        super(EB_numpy, self).__init__(mself, ext, ext_installdeps)
-
-        self.exts_cfgs = mself.cfg['exts_cfgs']
-        if self.exts_cfgs.has_key('numpysitecfglibsubdirs'):
-            self.numpysitecfglibsubdirs = self.exts_cfgs['numpysitecfglibsubdirs']
-        else:
-            self.numpysitecfglibsubdirs = []
-        if self.exts_cfgs.has_key('numpysitecfgincsubdirs'):
-            self.numpysitecfgincsubdirs = self.exts_cfgs['numpysitecfgincsubdirs']
-        else:
-            self.numpysitecfgincsubdirs = []
+    def __init__(self, mself, ext):
+        super(EB_numpy, self).__init__(mself, ext)
 
         self.sitecfg = """[DEFAULT]
 library_dirs = %(libs)s
@@ -326,16 +316,12 @@ libraries = %s
             lapack = ", ".join(lapack_libs)
             blas = ", ".join(blas_libs)
 
-        # regexps for LDFLAGS and CPPFLAGS, so we can easily strip off -L/-I prefix
-        ldflag_re = re.compile("^[ ]*-L[ ]*(.*)$")
-        cppflag_re = re.compile("^[ ]*-I[ ]*(.*)$")
-
         self.sitecfg = self.sitecfg % \
             {
              'lapack': lapack,
              'blas': blas,
-             'libs': ':'.join([ldflag_re.match(lib).group(1) for lib in os.getenv('LDFLAGS').split(' ')]),
-             'includes': ':'.join([cppflag_re.match(inc).group(1) for inc in os.getenv('CPPFLAGS').split(' ')]),
+             'libs': ':'.join(self.toolchain.get_variable('LDFLAGS', typ=list)),
+             'includes': ':'.join(self.toolchain.get_variable('CPPFLAGS', typ=list))
             }
 
         self.sitecfgfn = 'site.cfg'
@@ -358,8 +344,8 @@ libraries = %s
 class EB_scipy(EB_FortranPythonPackage):
     """Support for installing the scipy Python package as part of a Python installation."""
 
-    def __init__(self, mself, ext, ext_installdeps):
-        super(EB_scipy, self).__init__(mself, ext, ext_installdeps)
+    def __init__(self, mself, ext):
+        super(EB_scipy, self).__init__(mself, ext)
 
         # disable testing
         test = False
