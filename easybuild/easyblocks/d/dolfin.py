@@ -168,8 +168,8 @@ class EB_DOLFIN(CMakePythonPackage):
 
         # Dolfin needs to find Boost and the UFC pkgconfig file
         txt += self.moduleGenerator.set_environment('BOOST_DIR', get_software_root('Boost'))
-        pkg_config_paths = [os.path.join(get_software_root('UFC'), "lib", "pkgconfig"),
-                            os.path.join(self.installdir, "lib", "pkgconfig")]
+        pkg_config_paths = [os.path.join("$EBROOTUFC", "lib", "pkgconfig"),
+                            os.path.join("lib", "pkgconfig")]
         txt += self.moduleGenerator.prepend_paths("PKG_CONFIG_PATH", pkg_config_paths)
 
         envvars = ['I_MPI_CXX', 'I_MPI_CC']
