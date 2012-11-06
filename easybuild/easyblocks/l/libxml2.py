@@ -28,6 +28,7 @@ implemented as an easyblock.
 """
 import os
 
+import easybuild.tools.environment as env
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.easyblocks.generic.pythonpackage import PythonPackage
 
@@ -67,7 +68,7 @@ class EB_libxml2(ConfigureMake, PythonPackage):
         try:
             os.chdir('python')
             # set cflags to point to include folder 
-            os.putenv('CFLAGS', "-I../include")
+            env.setvar('CFLAGS', "-I../include")
             PythonPackage.build_step(self)
             os.chdir('..')
         except OSError, err:
