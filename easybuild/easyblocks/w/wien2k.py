@@ -141,7 +141,7 @@ class EB_WIEN2k(EasyBlock):
             sys.stdout.write(line)
 
         # set correct compilers
-        os.putenv('bin', os.getcwd())
+        env.setvar('bin', os.getcwd())
 
         dc = {
               'COMPILERC': os.getenv('CC'),

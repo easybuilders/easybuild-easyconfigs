@@ -30,7 +30,7 @@ import os
 from distutils.version import LooseVersion
 from pkgutil import extend_path
 
-VERSION = LooseVersion("0.9dev")
+VERSION = LooseVersion("1.0-rc1")
 UNKNOWN = "UNKNOWN"
 
 def get_git_revision():
