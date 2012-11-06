@@ -13,7 +13,7 @@ to use (e.g., which compiler toolchain to use), etc.
 
 The code of the easybuild-easyconfigs package is hosted on GitHub, along
 with an issue tracker for bug reports and feature requests, see
-http://github.com/hpcugent/easybuild-easyocnfigs.
+http://github.com/hpcugent/easybuild-easyconfigs.
 
 The EasyBuild documentation is available on the GitHub wiki of the
 easybuild meta-package, see
