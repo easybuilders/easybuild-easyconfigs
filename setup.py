@@ -34,7 +34,7 @@ import shutil
 import sys
 from distutils import log
 
-VERSION = "0.9.0dev"
+VERSION = "1.0.0-rc1"
 API_VERSION = VERSION.split('.')[0]
 EB_VERSION = '.'.join(VERSION.split('.')[0:2])
 if VERSION.endswith('dev'):
