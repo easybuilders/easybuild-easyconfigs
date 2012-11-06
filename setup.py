@@ -23,10 +23,12 @@
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
 
-# This script can be used to install easybuild-easyconfigs, e.g. using:
-#   easy_install --user .
-# or
-#   python setup.py --prefix=$HOME/easybuild
+"""
+This script can be used to install easybuild-easyconfigs, e.g. using:
+   easy_install --user .
+ or
+   python setup.py --prefix=$HOME/easybuild
+"""
 
 import glob
 import os
