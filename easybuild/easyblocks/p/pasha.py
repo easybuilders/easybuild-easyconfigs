@@ -1,4 +1,5 @@
 ##
+# Copyright 2012 Ghent University
 # Copyright 2012 Jens Timmerman
 #
 # This file is part of EasyBuild,
