@@ -94,7 +94,7 @@ class EB_SLEPc(ConfigureMake):
             # regular './configure --prefix=X' for non-source install
             
             # make sure old install dir is removed first
-            self.make_installdir(dontcreate=True)
+            self.make_installdir(dontcreate_=True)
 
             out = super(EB_SLEPc, self).configure_step()
 
