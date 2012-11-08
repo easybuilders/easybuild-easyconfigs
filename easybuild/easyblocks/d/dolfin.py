@@ -239,4 +239,4 @@ class EB_DOLFIN(CMakePythonPackage):
         try:
             shutil.rmtree(tmpdir)
         except OSError, err:
-            self.log.error("Failed to remove Instant cache/error dirs: %s" % err))
+            self.log.error("Failed to remove Instant cache/error dirs: %s" % err)
