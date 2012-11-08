@@ -29,6 +29,7 @@ EasyBuild support for DOLFIN, implemented as an easyblock
 """
 import os
 import re
+import shutil
 import tempfile
 
 import easybuild.tools.environment as env
