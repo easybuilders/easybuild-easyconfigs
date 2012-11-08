@@ -29,14 +29,14 @@ Geant4 support, implemented as an easyblock.
 import os, shutil, re
 from distutils.version import LooseVersion
 
-from easybuild.easyblocks.generic import ConfigureMake
+from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.framework.easyconfig import CUSTOM
-from easybuild.easyblocks.cmake import EB_CMake
+from easybuild.easyblocks.generic.cmakemake import CMakeMake
 from easybuild.tools.filetools import run_cmd, run_cmd_qa
 from easybuild.tools.modules import get_software_root
 from easybuild.tools.filetools import mkdir
 
-class EB_Geant4(ConfigureMake, EB_CMake):
+class EB_Geant4(ConfigureMake, CMakeMake):
     """
     Support for building Geant4.
     Note: Geant4 moved to a CMAKE like build system as of version 9.5.
@@ -67,7 +67,7 @@ class EB_Geant4(ConfigureMake, EB_CMake):
             #elif not os.path.isdir(builddir):
             mkdir('configdir')
             os.chdir('configdir')
-            EB_CMake.configure(self, builddir="..")
+            CMakeMake.configure(self, builddir="..")
 
         else:
 
@@ -191,7 +191,7 @@ class EB_Geant4(ConfigureMake, EB_CMake):
         """Build Geant4."""
 
         if LooseVersion(self.get_installversion()) >= LooseVersion("9.5"):
-            EB_CMake.build_step(self)
+            CMakeMake.build_step(self)
 
         else:
             pwd = self.getcfg('start_dir')
@@ -202,7 +202,7 @@ class EB_Geant4(ConfigureMake, EB_CMake):
         """Install Geant4."""
 
         if LooseVersion(self.get_installversion()) >= LooseVersion("9.5"):
-            EB_CMake.install_step(self)
+            CMakeMake.install_step(self)
             self.datadst = os.path.join(self.installdir,
                                         'share',
                                         '%s-%s' % (self.get_name(), self.get_version().replace("p0", "")),
@@ -306,6 +306,7 @@ class EB_Geant4(ConfigureMake, EB_CMake):
             txt += "setenv\tG4INCLUDE\t\t$root/include/geant4\n"
             txt += "setenv\tG4LIB\t\t$root/lib/geant4\n"
             txt += "setenv\tG4SYSTEM\t\t%s\n" % self.g4system
+            txt += "setenv\tG4ABLADATA\t%s/G4ABLA%s\n" % (self.datadst, self.getcfg('G4ABLAVersion'))
 
         txt += "setenv\tG4LEVELGAMMADATA\t%s/PhotonEvaporation%s\n" % \
             (self.datadst, self.getcfg('PhotonEvaporationVersion'))
@@ -313,7 +314,6 @@ class EB_Geant4(ConfigureMake, EB_CMake):
             (self.datadst, self.getcfg('G4RadioactiveDecayVersion'))
         txt += "setenv\tG4LEDATA\t%s/G4EMLOW%s\n" % (self.datadst, self.getcfg('G4EMLOWVersion'))
         txt += "setenv\tG4NEUTRONHPDATA\t%s/G4NDL%s\n" % (self.datadst, self.getcfg('G4NDLVersion'))
-        txt += "setenv\tG4ABLADATA\t%s/G4ABLA%s\n" % (self.datadst, self.getcfg('G4ABLAVersion'))
 
         return txt
 
@@ -322,28 +322,23 @@ class EB_Geant4(ConfigureMake, EB_CMake):
         Custom sanity check for Geant4 >= 9.5
         Not tested with previous versions
         """
+        custom_paths = {
+                        'files': ["bin/geant4.sh",
+                                  "bin/geant4.csh",
+                                  "bin/geant4-config",
+                                  ] + ["lib64/%s" % x for x in [
+                                                                'libG4analysis.so',
+                                                                'libG4event.so',
+                                                                'libG4GMocren.so',
+                                                                'libG4materials.so',
+                                                                'libG4persistency.so',
+                                                                'libG4readout.so',
+                                                                'libG4Tree.so',
+                                                                'libG4VRML.so',
+                                                               ]
+                                       ],
+                        'dirs': ['include/Geant4']
+                       }
 
-        if not self.getcfg('sanityCheckPaths'):
-
-            self.setcfg('sanityCheckPaths',
-                         {
-                         'files': ["bin/geant4.sh",
-                                   "bin/geant4.csh",
-                                   "bin/geant4-config",
-                                   ] + ["lib64/%s" % x for x in [
-                                                                 'libG4analysis.so',
-                                                                 'libG4event.so',
-                                                                 'libG4GMocren.so',
-                                                                 'libG4materials.so',
-                                                                 'libG4persistency.so',
-                                                                 'libG4readout.so',
-                                                                 'libG4Tree.so',
-                                                                 'libG4VRML.so',
-                                                                ]
-                                        ],
-                         'dirs': ['include/Geant4',
-                                  ]
-                          })
-
-        ConfigureMake.sanity_check_step(self)
+        ConfigureMake.sanity_check_step(custom_paths)
 
