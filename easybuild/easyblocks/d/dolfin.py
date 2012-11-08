@@ -192,8 +192,9 @@ class EB_DOLFIN(CMakePythonPackage):
         # custom sanity check commands
 
         # set cache/error dirs for Instant
-        instant_cache_dir = os.path.join(tempfile.gettempdir(), '.instant', 'cache')
-        instant_error_dir = os.path.join(tempfile.gettempdir(), '.instant', 'error')
+        tmpdir = tempfile.mkdtemp()
+        instant_cache_dir = os.path.join(tmpdir, '.instant', 'cache')
+        instant_error_dir = os.path.join(tmpdir, '.instant', 'error')
         env.setvar("INSTANT_CACHE_DIR",  instant_cache_dir)
         env.setvar("INSTANT_ERROR_DIR",  instant_error_dir)
         try:
@@ -233,3 +234,9 @@ class EB_DOLFIN(CMakePythonPackage):
         custom_commands = [(cmd, "") for cmd in cmds]
 
         super(EB_DOLFIN, self).sanity_check_step(custom_paths=custom_paths, custom_commands=custom_commands)
+
+        # clean up temporary dir
+        try:
+            shutil.rmtree(tmpdir)
+        except OSError, err:
+            self.log.error("Failed to remove Instant cache/error dirs: %s" % err))
