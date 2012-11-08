@@ -183,7 +183,7 @@ class EB_WPS(EasyBlock):
 
         cmd = "./configure"
         qa = {}
-        no_qa = []
+        no_qa = [".*compiler is.*"]
         std_qa = {
                   # named group in match will be used to construct answer
                   r"%s(.*\n)*Enter selection\s*\[[0-9]+-[0-9]+\]\s*:" % build_type_question: "%(nr)s",
