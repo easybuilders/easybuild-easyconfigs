@@ -205,14 +205,15 @@ class EB_WIEN2k(EasyBlock):
         qanda = {
                  'L Perl path (if not in /usr/bin/perl) Q Quit Selection:': 'R',
                  'A Compile all programs S Select program Q Quit Selection:': 'A',
-                 'Press RETURN to continue': '\nQ', # also answer on first qanda pattern with 'Q' to quit
+                 'Press RETURN to continue': '\nQ',  # also answer on first qanda pattern with 'Q' to quit
                  ' Please enter the full path of the perl program: ':''}
         no_qa = [
                  "%s[ \t]*.*" % os.getenv('MPIF90'),
                  "%s[ \t]*.*" % os.getenv('F90'),
                  "%s[ \t]*.*" % os.getenv('CC'),
                  ".*SRC_.*",
-                 ".*: warning .*"
+                 ".*: warning .*",
+                 ".*Stop."
                  ]
     
         self.log.debug("no_qa for %s: %s" % (cmd, no_qa))

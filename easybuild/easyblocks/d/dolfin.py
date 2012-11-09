@@ -29,6 +29,7 @@ EasyBuild support for DOLFIN, implemented as an easyblock
 """
 import os
 import re
+import shutil
 import tempfile
 
 import easybuild.tools.environment as env
@@ -167,13 +168,8 @@ class EB_DOLFIN(CMakePythonPackage):
 
         txt = super(EB_DOLFIN, self).make_module_extra()
 
-        # Dolfin needs to find Boost and the UFC pkgconfig file
+        # Dolfin needs to find Boost
         txt += self.moduleGenerator.set_environment('BOOST_DIR', get_software_root('Boost'))
-        pkg_config_paths = [os.path.join("lib", "pkgconfig"),
-                            # can't use get_software_root because prepend_paths checks for non-absolute paths
-                            os.path.join("$EBROOTUFC", "lib", "pkgconfig")]
-
-        txt += self.moduleGenerator.prepend_paths("PKG_CONFIG_PATH", pkg_config_paths)
 
         envvars = ['I_MPI_CXX', 'I_MPI_CC']
         for envvar in envvars:
@@ -197,8 +193,9 @@ class EB_DOLFIN(CMakePythonPackage):
         # custom sanity check commands
 
         # set cache/error dirs for Instant
-        instant_cache_dir = os.path.join(tempfile.gettempdir(), '.instant', 'cache')
-        instant_error_dir = os.path.join(tempfile.gettempdir(), '.instant', 'error')
+        tmpdir = tempfile.mkdtemp()
+        instant_cache_dir = os.path.join(tmpdir, '.instant', 'cache')
+        instant_error_dir = os.path.join(tmpdir, '.instant', 'error')
         env.setvar("INSTANT_CACHE_DIR",  instant_cache_dir)
         env.setvar("INSTANT_ERROR_DIR",  instant_error_dir)
         try:
@@ -238,3 +235,9 @@ class EB_DOLFIN(CMakePythonPackage):
         custom_commands = [(cmd, "") for cmd in cmds]
 
         super(EB_DOLFIN, self).sanity_check_step(custom_paths=custom_paths, custom_commands=custom_commands)
+
+        # clean up temporary dir
+        try:
+            shutil.rmtree(tmpdir)
+        except OSError, err:
+            self.log.error("Failed to remove Instant cache/error dirs: %s" % err)
