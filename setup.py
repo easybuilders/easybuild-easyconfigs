@@ -41,7 +41,7 @@ from easyblocks import VERSION
 
 API_VERSION = str(VERSION).split('.')[0]
 rc_regexp = re.compile("^.*rc[0-9]*$")
-if rc_regexp.match(VERSION):
+if rc_regexp.match(str(VERSION)):
     suff = '-%s' % VERSION.split('-')[-1]
     API_VERSION += suff
 
