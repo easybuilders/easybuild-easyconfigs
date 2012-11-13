@@ -33,15 +33,21 @@ This script can be used to install easybuild-easyconfigs, e.g. using:
 
 import glob
 import os
+import re
 import shutil
 import sys
 from distutils import log
 
-VERSION = "1.0.0-rc2"
+# note: release candidates should be versioned as a pre-release, e.g. "1.1rc1"
+# 1.1-rc1 would indicate a post-release, i.e., and update of 1.1, so beware!
+VERSION = "1.0.0"
 API_VERSION = VERSION.split('.')[0]
 EB_VERSION = '.'.join(VERSION.split('.')[0:2])
-if VERSION.endswith('dev'):
-    EB_VERSION += 'dev'
+rc_regexp = re.compile("^.*rc[0-9]*$")
+if rc_regexp.match(VERSION):
+    suff = '-%s' % VERSION.split('-')[-1]
+    API_VERSION += suff
+    EB_VERSION += suff
 
 # log levels: 0 = WARN (default), 1 = INFO, 2 = DEBUG
 log.set_verbosity(1)
@@ -104,7 +110,7 @@ versions, etc.)""",
     # install_requires list is not enforced, because of 'old-and-unmanageable' setup?
     # do we even want the dependency, since it's artificial?
     install_requires = [
-                        "easybuild-framework >= %s.0" % API_VERSION,
+                        "easybuild-framework >= %s" % API_VERSION,
                         "easybuild-easyblocks >= %s" % EB_VERSION
                        ],
     zip_safe = False
