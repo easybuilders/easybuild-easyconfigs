@@ -383,7 +383,10 @@ class EB_GCC(ConfigureMake):
                     self.run_configure_cmd(cmd)
 
                     # build and 'install'
-                    cmd = "make %s install" % paracmd
+                    cmd = "make %s" % paracmd
+                    run_cmd(cmd, log_all=True, simple=True)
+
+                    cmd = "make install"
                     run_cmd(cmd, log_all=True, simple=True)
 
                     if lib == "gmp":
