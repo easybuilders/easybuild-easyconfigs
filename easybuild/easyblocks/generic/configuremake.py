@@ -47,6 +47,16 @@ class ConfigureMake(EasyBlock):
         - typically ./configure --prefix=/install/path style
         """
 
+        # setting am_cv_prog_tar_ustar avoids that configure tries to figure out which command should be used for tarring/untarring
+        # but, am__tar and am__untar should be set to something decent; tar should work
+        tar_vars = {
+                    'am__tar': 'tar chf - "$$tardir"',
+                    'am__untar': 'tar xf -',
+                    'am_cv_prog_tar_ustar': 'fake_ustar_cmd_set_by_easybuild'
+                   }
+        for (key, val) in tar_vars.items():
+            self.cfg.update('preconfigopts', "%s='%s'" % (key, val))
+
         cmd = "%s %s./configure --prefix=%s %s" % (self.cfg['preconfigopts'], cmd_prefix,
                                                     self.installdir, self.cfg['configopts'])
 
