@@ -42,11 +42,11 @@ class ConfigureMake(EasyBlock):
     """
 
     @staticmethod
-    def extra_options():
+    def extra_options(extra_vars):
         """Extra easyconfig parameters specific to ConfigureMake."""
-        extra_vars = [
-                      ('tar_config_opts', [False, "Override default tar settings as determined by configure.", CUSTOM])
-                     ]
+        extra_vars.extend([
+                           ('tar_config_opts', [False, "Override tar settings as determined by configure.", CUSTOM]),
+                          ])
         return EasyBlock.extra_options(extra_vars)
 
     def configure_step(self, cmd_prefix=''):
