@@ -94,8 +94,8 @@ class EB_ACML(EasyBlock):
         basepaths = ["%s%s" % (self.basedir, self.suffix),
                      "%s_mp%s" % (self.basedir, self.suffix)]
 
-        self.moduleGenerator.set_environment('ACML_BASEDIR', basepaths[0])
-        self.moduleGenerator.set_environment('ACML_BASEDIR_MT', basepaths[1])
+        txt += self.moduleGenerator.set_environment('ACML_BASEDIR', basepaths[0])
+        txt += self.moduleGenerator.set_environment('ACML_BASEDIR_MT', basepaths[1])
 
         for key in ['CPATH', 'FPATH']:
             for path in basepaths:
