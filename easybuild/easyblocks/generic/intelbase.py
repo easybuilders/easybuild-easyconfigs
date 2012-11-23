@@ -108,10 +108,10 @@ class IntelBase(EasyBlock):
                     shutil.move(self.home_subdir, home_intel_bk)
 
                     # set symlink in place
-                    os.symlink(self.home_subdir, self.home_subdir_local)
+                    os.symlink(self.home_subdir_local, self.home_subdir)
 
             else:
-                os.symlink(self.home_subdir, self.home_subdir_local)
+                os.symlink(self.home_subdir_local, self.home_subdir)
 
         except OSError, err:
             self.log.error("Failed to symlink %s to %s: %s" % (self.home_subdir_local, self.home_subdir, err))
