@@ -105,7 +105,7 @@ class EB_ScaLAPACK(ConfigureMake):
                              ]
         elif get_software_root('ACML'):
             root = get_software_root('ACML')
-            acml_static_lib = os.path.join(root), os.getenv('ACML_BASEDIR', 'NO_ACML_BASEDIR'), 'lib', 'libacml.a')
+            acml_static_lib = os.path.join(root, os.getenv('ACML_BASEDIR', 'NO_ACML_BASEDIR'), 'lib', 'libacml.a')
             extra_makeopts = [
                               'BLASLIB="%s -lpthread"' % acml_static_lib,
                               'LAPACKLIB=%s' % acml_static_lib
