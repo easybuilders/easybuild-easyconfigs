@@ -35,7 +35,7 @@ implemented as an easyblock
 import shutil
 
 from easybuild.framework.easyblock import EasyBlock
-
+from easybuild.tools.filetools import rmtree2
 
 class Tarball(EasyBlock):
     """
@@ -61,7 +61,7 @@ class Tarball(EasyBlock):
         # shutil.copytree cannot handle destination dirs that exist already.
         # On the other hand, Python2.4 cannot create entire paths during copytree.
         # Therefore, only the final directory is deleted.
-        shutil.rmtree(self.installdir)
+        rmtree2(self.installdir)
         try:
             # self.cfg['keepsymlinks'] is False by default except when explicitly put to True in .eb file
             shutil.copytree(src,self.installdir, symlinks=self.cfg['keepsymlinks'])

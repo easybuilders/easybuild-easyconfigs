@@ -29,12 +29,12 @@ EasyBuild support for DOLFIN, implemented as an easyblock
 """
 import os
 import re
-import shutil
 import tempfile
 
 import easybuild.tools.environment as env
 import easybuild.tools.toolchain as toolchain
 from easybuild.easyblocks.generic.cmakepythonpackage import CMakePythonPackage
+from easybuild.tools.filetools import rmtree2
 from easybuild.tools.modules import get_software_root, get_software_version
 
 
@@ -238,6 +238,6 @@ class EB_DOLFIN(CMakePythonPackage):
 
         # clean up temporary dir
         try:
-            shutil.rmtree(tmpdir)
+            rmtree2(tmpdir)
         except OSError, err:
             self.log.error("Failed to remove Instant cache/error dirs: %s" % err)

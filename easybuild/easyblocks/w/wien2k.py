@@ -43,7 +43,7 @@ import easybuild.tools.environment as env
 import easybuild.tools.toolchain as toolchain
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import CUSTOM
-from easybuild.tools.filetools import run_cmd, run_cmd_qa, extract_file
+from easybuild.tools.filetools import extract_file, rmtree2, run_cmd, run_cmd_qa
 from easybuild.tools.modules import get_software_version
 
 
@@ -281,7 +281,7 @@ class EB_WIEN2k(EasyBlock):
                 run_wien2k_test("-p")
 
                 os.chdir(cwd)
-                shutil.rmtree(tmpdir)
+                rmtree2(tmpdir)
 
             except OSError, err:
                 self.log.error("Failed to run WIEN2k benchmark tests: %s" % err)
@@ -347,7 +347,7 @@ class EB_WIEN2k(EasyBlock):
             # cleanup
             try:
                 os.chdir(cwd)
-                shutil.rmtree(tmpdir)
+                rmtree2(tmpdir)
             except OSError, err:
                 self.log.error("Failed to clean up temporary test dir: %s" % err)
 
