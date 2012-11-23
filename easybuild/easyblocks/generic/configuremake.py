@@ -62,8 +62,9 @@ class ConfigureMake(EasyBlock):
         """
 
         if self.cfg['tar_config_opts']:
-            # setting am_cv_prog_tar_ustar avoids that configure tries to figure out which command should be used for tarring/untarring
-            # but, am__tar and am__untar should be set to something decent; 'tar' should work
+            # setting am_cv_prog_tar_ustar avoids that configure tries to figure out
+            # which command should be used for tarring/untarring
+            # am__tar and am__untar should be set to something decent (tar should work)
             tar_vars = {
                         'am__tar': 'tar chf - "$$tardir"',
                         'am__untar': 'tar xf -',

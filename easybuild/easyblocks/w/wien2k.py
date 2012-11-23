@@ -213,7 +213,8 @@ class EB_WIEN2k(EasyBlock):
                  "%s[ \t]*.*" % os.getenv('CC'),
                  ".*SRC_.*",
                  ".*: warning .*",
-                 ".*Stop."
+                 ".*Stop.",
+                 "Compile time errors (if any) were:"
                  ]
     
         self.log.debug("no_qa for %s: %s" % (cmd, no_qa))
