@@ -80,8 +80,10 @@ class IntelBase(EasyBlock):
     def clean_home_subdir(self):
         """Remove contents of (local) 'intel' directory home subdir, where stuff is cached."""
 
+        self.log.debug("Cleaning up %s..." % self.home_subdir_local)
         try:
             for tree in os.listdir(self.home_subdir_local):
+                self.log.debug("... removing %s subtree" % tree)
                 shutil.rmtree(os.path.join(self.home_subdir_local, tree))
         except OSError, err:
             self.log.warning("Cleaning up intel dir %s failed: %s" % (self.home_subdir_local, err))
