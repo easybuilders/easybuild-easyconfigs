@@ -84,9 +84,13 @@ class IntelBase(EasyBlock):
         try:
             for tree in os.listdir(self.home_subdir_local):
                 self.log.debug("... removing %s subtree" % tree)
-                shutil.rmtree(os.path.join(self.home_subdir_local, tree))
+                path = os.path.join(self.home_subdir_local, tree)
+                if os.path.isfile(path):
+                    os.remove(path)
+                else:
+                    shutil.rmtree(path)
         except OSError, err:
-            self.log.warning("Cleaning up intel dir %s failed: %s" % (self.home_subdir_local, err))
+            self.log.error("Cleaning up intel dir %s failed: %s" % (self.home_subdir_local, err))
 
     def setup_local_home_subdir(self):
         """
