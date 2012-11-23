@@ -213,6 +213,7 @@ class EB_WIEN2k(EasyBlock):
                  "%s[ \t]*.*" % os.getenv('MPIF90'),
                  "%s[ \t]*.*" % os.getenv('F90'),
                  "%s[ \t]*.*" % os.getenv('CC'),
+                 "mv[ \t]*.*",
                  ".*SRC_.*",
                  ".*: warning .*",
                  ".*Stop.",
