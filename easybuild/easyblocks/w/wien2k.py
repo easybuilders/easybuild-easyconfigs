@@ -186,8 +186,9 @@ class EB_WIEN2k(EasyBlock):
                  "%s[ \t]*.*"%os.getenv('MPIF90'),
                  "%s[ \t]*.*"%os.getenv('F90'),
                  "%s[ \t]*.*"%os.getenv('CC'),
-                 ".*SRC_.*"
-                 ]
+                 ".*SRC_.*",
+                 "Please enter the full path of the perl program:"
+                ]
 
         std_qa = {
                   r'S\s+Save and Quit[\s\n]+To change an item select option.[\s\n]+Selection:': 'S',
@@ -206,16 +207,19 @@ class EB_WIEN2k(EasyBlock):
                  'L Perl path (if not in /usr/bin/perl) Q Quit Selection:': 'R',
                  'A Compile all programs S Select program Q Quit Selection:': 'A',
                  'Press RETURN to continue': '\nQ',  # also answer on first qanda pattern with 'Q' to quit
-                 ' Please enter the full path of the perl program: ':''}
+                 ' Please enter the full path of the perl program: ':''
+                }
         no_qa = [
                  "%s[ \t]*.*" % os.getenv('MPIF90'),
                  "%s[ \t]*.*" % os.getenv('F90'),
                  "%s[ \t]*.*" % os.getenv('CC'),
+                 "mv[ \t]*.*",
                  ".*SRC_.*",
                  ".*: warning .*",
                  ".*Stop.",
                  "Compile time errors (if any) were:"
-                 ]
+                 "Please enter the full path of the perl program:"
+                ]
     
         self.log.debug("no_qa for %s: %s" % (cmd, no_qa))
         run_cmd_qa(cmd, qanda, no_qa=no_qa, log_all=True, simple=True)
