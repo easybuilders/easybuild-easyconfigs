@@ -55,11 +55,11 @@ class IntelBase(EasyBlock):
         self.home_subdir = os.path.join(os.getenv('HOME'), 'intel')
         self.home_subdir_local = os.path.join(tempfile.gettempdir(), os.getenv('USER'), 'easybuild_intel')
 
+        super(IntelBase, self).__init__(*args, **kwargs)
+
         # prepare (local) 'intel' home subdir
         self.setup_local_home_subdir()
         self.clean_home_subdir()
-
-        super(IntelBase, self).__init__(*args, **kwargs)
 
     @staticmethod
     def extra_options(extra_vars=None):
