@@ -35,14 +35,13 @@ import fileinput
 import os
 import random
 import re
-import shutil
 import string
 import sys
 
 import easybuild.tools.environment as env
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import CUSTOM, MANDATORY
-from easybuild.tools.filetools import run_cmd
+from easybuild.tools.filetools import rmtree2, run_cmd
 
 
 class IntelBase(EasyBlock):
@@ -81,7 +80,7 @@ class IntelBase(EasyBlock):
         intelhome = os.path.join(os.getenv('HOME'), self.home_subdir)
         if os.path.exists(intelhome):
             try:
-                shutil.rmtree(intelhome)
+                rmtree2(intelhome)
                 self.log.info("Cleaning up intel dir %s" % intelhome)
             except OSError, err:
                 self.log.warning("Cleaning up intel dir %s failed: %s" % (intelhome, err))
