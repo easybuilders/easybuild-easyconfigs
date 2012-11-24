@@ -33,6 +33,7 @@ i.e. configure/make/make install, implemented as an easyblock.
 """
 
 from easybuild.framework.easyblock import EasyBlock
+from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.filetools import run_cmd
 
 
@@ -41,11 +42,36 @@ class ConfigureMake(EasyBlock):
     Support for building and installing applications with configure/make/make install
     """
 
+    @staticmethod
+    def extra_options(extra_vars=None):
+        """Extra easyconfig parameters specific to ConfigureMake."""
+
+        # using [] as default value is a bad idea, so we handle it this way
+        if extra_vars == None:
+            extra_vars = []
+
+        extra_vars.extend([
+                           ('tar_config_opts', [False, "Override tar settings as determined by configure.", CUSTOM]),
+                          ])
+        return EasyBlock.extra_options(extra_vars)
+
     def configure_step(self, cmd_prefix=''):
         """
         Configure step
         - typically ./configure --prefix=/install/path style
         """
+
+        if self.cfg['tar_config_opts']:
+            # setting am_cv_prog_tar_ustar avoids that configure tries to figure out
+            # which command should be used for tarring/untarring
+            # am__tar and am__untar should be set to something decent (tar should work)
+            tar_vars = {
+                        'am__tar': 'tar chf - "$$tardir"',
+                        'am__untar': 'tar xf -',
+                        'am_cv_prog_tar_ustar': 'easybuild_avoid_ustar_testing'
+                       }
+            for (key, val) in tar_vars.items():
+                self.cfg.update('preconfigopts', "%s='%s'" % (key, val))
 
         cmd = "%s %s./configure --prefix=%s %s" % (self.cfg['preconfigopts'], cmd_prefix,
                                                     self.installdir, self.cfg['configopts'])

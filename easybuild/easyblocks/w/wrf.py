@@ -143,7 +143,8 @@ class EB_WRF(EasyBlock):
               "Compile for nesting? (0=no nesting, 1=basic, 2=preset moves, 3=vortex following) [default 0]:": "0"
              }
         no_qa = [
-                 'testing for fseeko and fseeko64'
+                 "testing for fseeko and fseeko64",
+                 r"If you wish to change the default options, edit the file:[\s\n]*arch/configure_new.defaults"
                 ]
         std_qa = {
                   # named group in match will be used to construct answer
