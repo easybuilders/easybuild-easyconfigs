@@ -60,7 +60,7 @@ class EB_ACML(EasyBlock):
         bits = vsuff_list[2]  # 32bit or 64bit
         self.basedir = comp + bits[0:2]
 
-        # specialized suffix, e.g. _fma4 for fused multiply-add
+        # specialized suffix, e.g., _fma4 for fused multiply-add
         if LooseVersion(self.version) >= LooseVersion("5") and self.cfg['use_fma4']:
             self.basedir += '_fma4'
 
