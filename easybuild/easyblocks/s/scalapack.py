@@ -39,7 +39,7 @@ from distutils.version import LooseVersion
 import easybuild.tools.toolchain as toolchain
 from easybuild.easyblocks.blacs import det_interface  #@UnresolvedImport
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
-from easybuild.easyblocks.lapack import get_blas_lib  #@UnresolvedImport
+from easybuild.easyblocks.lapack import get_blas_lib as lapack_get_blas_lib  #@UnresolvedImport
 from easybuild.tools.modules import get_software_root
 
 
@@ -68,13 +68,18 @@ class EB_ScaLAPACK(ConfigureMake):
         self.loosever = LooseVersion(self.version)
 
         # make sure required dependencies are available
-        deps = ["LAPACK"]
+        deps = [("LAPACK", "ACML")]
         # BLACS is only a dependency for ScaLAPACK versions prior to v2.0.0
         if self.loosever < LooseVersion("2.0.0"):
-            deps.append("BLACS")
-        for dep in deps:
-            if not get_software_root(dep):
-                self.log.error("Dependency %s not available/loaded." % dep)
+            deps.append(("BLACS",))
+        for depgrp in deps:
+            ok = False
+            for dep in depgrp:
+                if get_software_root(dep):
+                    ok = True
+                    break
+            if not ok:
+                self.log.error("None of the following dependencies %s are available/loaded." % depgrp)
 
     def build_step(self):
         """Build ScaLAPACK using make after setting make options."""
@@ -92,10 +97,21 @@ class EB_ScaLAPACK(ConfigureMake):
             self.log.error("Don't know which compiler commands to use.")
 
         # set BLAS and LAPACK libs
-        extra_makeopts = [
-                          'BLASLIB="%s -lpthread"' % get_blas_lib(self.log),
-                          'LAPACKLIB=%s/lib/liblapack.a' % get_software_root('LAPACK')
-                         ]
+        extra_makeopts = None
+        if get_software_root('LAPACK'):
+            extra_makeopts = [
+                              'BLASLIB="%s -lpthread"' % lapack_get_blas_lib(self.log),
+                              'LAPACKLIB=%s/lib/liblapack.a' % get_software_root('LAPACK')
+                             ]
+        elif get_software_root('ACML'):
+            root = get_software_root('ACML')
+            acml_static_lib = os.path.join(root, os.getenv('ACML_BASEDIR', 'NO_ACML_BASEDIR'), 'lib', 'libacml.a')
+            extra_makeopts = [
+                              'BLASLIB="%s -lpthread"' % acml_static_lib,
+                              'LAPACKLIB=%s' % acml_static_lib
+                             ]
+        else:
+            self.log.error("LAPACK or ACML are not available, no idea how to set BLASLIB/LAPACKLIB make options.")
 
         # build procedure changed in v2.0.0
         if self.loosever < LooseVersion("2.0.0"):
