@@ -38,7 +38,7 @@ import tempfile
 import easybuild.tools.environment as env
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import CUSTOM, MANDATORY
-from easybuild.tools.filetools import run_cmd
+from easybuild.tools.filetools import rmtree2, run_cmd
 
 
 class IntelBase(EasyBlock):
