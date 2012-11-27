@@ -189,10 +189,7 @@ class EB_DefaultPythonPackage(Extension):
                 (testinstalldir, ppath, self.installopts)
             run_cmd(cmd, log_all=True, simple=True)
 
-            if os.environ.has_key('PYTHONPATH'):
-                extrapath = "export PYTHONPATH=%s:%s && " % (ppath, os.environ['PYTHONPATH'])
-            else:
-                extrapath = "export PYTHONPATH=%s && " % ppath
+            extrapath = "export PYTHONPATH=%s:$PYTHONPATH && " % ppath
 
         if self.runtest:
             cmd = "%s%s" % (extrapath, self.runtest)
