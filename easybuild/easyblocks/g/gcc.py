@@ -172,7 +172,7 @@ class EB_GCC(ConfigureMake):
         """
         Run a configure command, with some extra checking (e.g. for unrecognized options).
         """
-        (out, ec) = run_cmd(cmd, log_all=True, simple=False)
+        (out, ec) = run_cmd("%s %s" % (self.cfg['preconfigopts'], cmd), log_all=True, simple=False)
 
         if ec != 0:
             self.log.error("Command '%s' exited with exit code != 0 (%s)" % (cmd, ec))
@@ -253,11 +253,7 @@ class EB_GCC(ConfigureMake):
             self.create_dir("obj")
 
         # IV) actual configure, but not on default path
-        cmd = "%s ../configure  %s %s" % (
-                                          self.cfg['preconfigopts'],
-                                          self.configopts,
-                                          configopts
-                                         )
+        cmd = "../configure  %s %s" % (self.configopts, configopts)
 
         # instead of relying on uname, we run the same command GCC uses to
         # determine the platform
@@ -354,6 +350,7 @@ class EB_GCC(ConfigureMake):
                         v0_16 = LooseVersion("0.16")
 
                         cmd = "./configure --prefix=%s --with-pic --disable-shared " % stage2prefix
+
                         # use isl or PPL
                         if self.cfg['clooguseisl']:
                             if self.cloogver >= v0_16:
@@ -440,11 +437,7 @@ class EB_GCC(ConfigureMake):
                     configopts += "--enable-cloog-backend=isl "
 
             # configure
-            cmd = "%s ../configure %s %s" % (
-                                             self.cfg['preconfigopts'],
-                                             self.configopts,
-                                             configopts
-                                            )
+            cmd = "../configure %s %s" % (self.configopts, configopts)
             self.run_configure_cmd(cmd)
 
         # build with bootstrapping for self-containment
