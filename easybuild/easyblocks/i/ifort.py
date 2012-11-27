@@ -55,8 +55,13 @@ class EB_ifort(EB_icc, IntelBase):
             else:
                 libprefix = "compiler/lib/intel64/lib"
 
+        bins = ["ifort"]
+        if LooseVersion(self.version) < LooseVersion('2013'):
+            # idb is not shipped with ifort anymore in 2013.x versions (it is with icc though)
+            bins.append("idb")
+
         custom_paths = {
-                        'files': ["%s/%s" % (binprefix, x) for x in ["ifort", "idb"]] +
+                        'files': ["%s/%s" % (binprefix, x) for x in bins] +
                                  ["%s%s" % (libprefix, x) for x in ["ifcore.a", "ifcore.so",
                                                                     "iomp5.a", "iomp5.so"]],
                         'dirs': []

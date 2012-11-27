@@ -31,12 +31,9 @@
 Generic EasyBuild support for installing Intel tools, implemented as an easyblock
 """
 
-import fileinput
 import os
-import random
-import re
-import string
-import sys
+import shutil
+import tempfile
 
 import easybuild.tools.environment as env
 from easybuild.framework.easyblock import EasyBlock
@@ -54,10 +51,15 @@ class IntelBase(EasyBlock):
     def __init__(self, *args, **kwargs):
         """Constructor, adds extra config options"""
         self.license = None
-        # generate a randomly suffixed name for the 'intel' home subdirectory
-        random_suffix = ''.join(random.choice(string.ascii_letters) for _ in xrange(5))
-        self.home_subdir = 'intel_%s' % random_suffix
+
+        self.home_subdir = os.path.join(os.getenv('HOME'), 'intel')
+        self.home_subdir_local = os.path.join(tempfile.gettempdir(), os.getenv('USER'), 'easybuild_intel')
+
         super(IntelBase, self).__init__(*args, **kwargs)
+
+        # prepare (local) 'intel' home subdir
+        self.setup_local_home_subdir()
+        self.clean_home_subdir()
 
     @staticmethod
     def extra_options(extra_vars=None):
@@ -75,15 +77,50 @@ class IntelBase(EasyBlock):
         intel_vars.extend(origvars)
         return intel_vars
 
-    def clean_homedir(self):
-        """Remove 'intel' directory from home directory, where stuff is cached."""
-        intelhome = os.path.join(os.getenv('HOME'), self.home_subdir)
-        if os.path.exists(intelhome):
-            try:
-                rmtree2(intelhome)
-                self.log.info("Cleaning up intel dir %s" % intelhome)
-            except OSError, err:
-                self.log.warning("Cleaning up intel dir %s failed: %s" % (intelhome, err))
+    def clean_home_subdir(self):
+        """Remove contents of (local) 'intel' directory home subdir, where stuff is cached."""
+
+        self.log.debug("Cleaning up %s..." % self.home_subdir_local)
+        try:
+            for tree in os.listdir(self.home_subdir_local):
+                self.log.debug("... removing %s subtree" % tree)
+                path = os.path.join(self.home_subdir_local, tree)
+                if os.path.isfile(path):
+                    os.remove(path)
+                else:
+                    shutil.rmtree(path)
+        except OSError, err:
+            self.log.error("Cleaning up intel dir %s failed: %s" % (self.home_subdir_local, err))
+
+    def setup_local_home_subdir(self):
+        """
+        Intel script use $HOME/intel to cache stuff.
+        To enable parallel builds, we symlink $HOME/intel to a temporary dir on the local disk."""
+
+        try:
+            # make sure local directory exists
+            if not os.path.exists(self.home_subdir_local):
+                os.makedirs(self.home_subdir_local)
+
+            if os.path.exists(self.home_subdir):
+                # if 'intel' dir in $HOME already exists, make sure it's the right symlink
+                symlink_ok = os.path.islink(self.home_subdir) and os.path.samefile(self.home_subdir,
+                                                                                   self.home_subdir_local)
+                if not symlink_ok:
+                    # rename current 'intel' dir
+                    home_intel_bk = '.'.join([self.home_subdir, "bk_easybuild"])
+                    self.log.info("Moving %(ih)s to %(ihl)s, I need %(ih)s myself..." % {'ih': self.home_subdir,
+                                                                                         'ihl': home_intel_bk})
+                    shutil.move(self.home_subdir, home_intel_bk)
+
+                    # set symlink in place
+                    os.symlink(self.home_subdir_local, self.home_subdir)
+
+            else:
+                os.symlink(self.home_subdir_local, self.home_subdir)
+
+        except OSError, err:
+            self.log.error("Failed to symlink %s to %s: %s" % (self.home_subdir_local, self.home_subdir, err))
 
     def configure_step(self):
         """Configure: handle license file and clean home dir."""
@@ -102,23 +139,8 @@ class IntelBase(EasyBlock):
         # set INTEL_LICENSE_FILE
         env.setvar("INTEL_LICENSE_FILE", self.license)
 
-        # patch install scripts with randomly suffixed intel hom subdir
-        for fn in ["install.sh", "pset/install.sh", "pset/iat/iat_install.sh", 
-                   "data/install_mpi.sh", "pset/install_cc.sh", "pset/install_fc.sh"]:
-            try:
-                if os.path.isfile(fn):
-                    self.log.info("Patching %s with intel home subdir %s" % (fn, self.home_subdir))
-                    for line in fileinput.input(fn, inplace=1, backup='.orig'):
-                        line = re.sub(r'(.*)(NONRPM_DB_PREFIX="\$HOME/)intel(.*)', 
-                                      r'\1\2%s\3' % self.home_subdir, line)
-                        line = re.sub(r'(.*)(DEFAULT_DB_PREFIX="\$\(echo ~\)/)intel(.*)',
-                                      r'\1\2%s\3' % self.home_subdir, line)
-                        sys.stdout.write(line)
-            except (OSError, IOError), err:
-                self.log.error("Failed to modify install script %s with randomly suffixed home subdir: %s" % (fn, err))
-
         # clean home directory
-        self.clean_homedir()
+        self.clean_home_subdir()
 
     def build_step(self):
         """Binary installation files, so no building."""
@@ -176,7 +198,7 @@ CONTINUE_WITH_OPTIONAL_ERROR=yes
         - clean home dir
         - generic cleanup (get rid of build dir)
         """
-        self.clean_homedir()
+        self.clean_home_subdir()
 
         super(IntelBase, self).cleanup_step()
 
