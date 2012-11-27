@@ -63,7 +63,7 @@ class EB_WIEN2k(EasyBlock):
 
         extra_vars = [
                       ('runtest', [True, "Run WIEN2k tests (default: True).", CUSTOM]),
-                      ('testdata', [testdata_urls, "URL for test data required to run WIEN2k benchmark test (default: %s)." % testdata_urls, CUSTOM])
+                      ('testdata', [testdata_urls, "URL for test data required to run WIEN2k benchmark test (default: %s)." % testdata_urls, CUSTOM]),
                      ]
         return EasyBlock.extra_options(extra_vars)
 
@@ -78,7 +78,7 @@ class EB_WIEN2k(EasyBlock):
         qanda = {'continue (y/n)': 'y'}
         no_qa = [
                  'tar -xf.*',
-                 '.*copied and linked.*'
+                 '.*copied and linked.*',
                  ]
 
         run_cmd_qa(cmd, qanda, no_qa=no_qa, log_all=True, simple=True)
@@ -125,7 +125,7 @@ class EB_WIEN2k(EasyBlock):
              'LDFLAGS': '$(FOPT) %s ' % os.getenv('LDFLAGS'),
              'R_LIBS': rlibs,  # libraries for 'real' (not 'complex') binary
              'RP_LIBS' : rplibs,  # libraries for 'real' parallel binary
-             'MPIRUN': ''
+             'MPIRUN': '',
             }
 
         for line in fileinput.input(self.cfgscript, inplace=1, backup='.orig'):
@@ -187,7 +187,7 @@ class EB_WIEN2k(EasyBlock):
                  "%s[ \t]*.*"%os.getenv('F90'),
                  "%s[ \t]*.*"%os.getenv('CC'),
                  ".*SRC_.*",
-                 "Please enter the full path of the perl program:"
+                 "Please enter the full path of the perl program:",
                 ]
 
         std_qa = {
@@ -207,7 +207,7 @@ class EB_WIEN2k(EasyBlock):
                  'L Perl path (if not in /usr/bin/perl) Q Quit Selection:': 'R',
                  'A Compile all programs S Select program Q Quit Selection:': 'A',
                  'Press RETURN to continue': '\nQ',  # also answer on first qanda pattern with 'Q' to quit
-                 ' Please enter the full path of the perl program: ':''
+                 ' Please enter the full path of the perl program: ':'',
                 }
         no_qa = [
                  "%s[ \t]*.*" % os.getenv('MPIF90'),
@@ -217,8 +217,8 @@ class EB_WIEN2k(EasyBlock):
                  ".*SRC_.*",
                  ".*: warning .*",
                  ".*Stop.",
-                 "Compile time errors (if any) were:"
-                 "Please enter the full path of the perl program:"
+                 "Compile time errors (if any) were:",
+                 "Please enter the full path of the perl program:",
                 ]
     
         self.log.debug("no_qa for %s: %s" % (cmd, no_qa))
