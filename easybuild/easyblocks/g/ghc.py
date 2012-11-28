@@ -36,6 +36,12 @@ class EB_GHC(ConfigureMake):
 
     def build_step(self, verbose=False):
         """
-        Nothing to do here if version <= 7.0
+        Support for a binary 6.12.x installation. Starting there,
+        later GHC versions are build from source and thus require
+        the build step.
         """
-        pass
+        if LooseVersion(self.version) < LooseVersion("7.0"):
+            pass
+        else:
+            super(EB_GHC, self).build_step(verbose=verbose)
+
