@@ -41,13 +41,20 @@ from distutils import log
 # note: release candidates should be versioned as a pre-release, e.g. "1.1rc1"
 # 1.1-rc1 would indicate a post-release, i.e., and update of 1.1, so beware!
 VERSION = "1.1.0.0dev"
+
 API_VERSION = VERSION.split('.')[0]
 EB_VERSION = '.'.join(VERSION.split('.')[0:2])
+suff = ''
+
 rc_regexp = re.compile("^.*rc[0-9]*$")
 if rc_regexp.match(VERSION):
     suff = '-%s' % VERSION.split('-')[-1]
-    API_VERSION += suff
-    EB_VERSION += suff
+dev_regexp = re.compile("^.*[0-9]dev$")
+if dev_regexp.match(VERSION):
+    suff = 'dev'
+
+API_VERSION += suff
+EB_VERSION += suff
 
 # log levels: 0 = WARN (default), 1 = INFO, 2 = DEBUG
 log.set_verbosity(1)
