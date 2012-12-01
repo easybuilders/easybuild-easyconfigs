@@ -156,7 +156,9 @@ class EB_QuantumESPRESSO(ConfigureMake):
         except OSError, err:
             self.log.error("Failed to move non-espresso directories: %s" % err)
 
-        self.cfg.update('makeopts', 'all gipaw vdw w90 want gww xspectra yambo')
+        # make sure we build most stuff
+        if not 'all' in self.cfg['makeopts']:
+            self.cfg.update('makeopts', 'all')
 
     def install_step(self):
         """Custom install procedure for Quantum ESPRESSO: just copy the binaries."""
