@@ -115,8 +115,10 @@ class EB_QuantumESPRESSO(ConfigureMake):
 
         # obtain library settings
         repls.append(('BLAS_LIBS', os.getenv('LIBBLAS'), False))
+        repls.append(('BLAS_LIBS_SWITCH', 'external', False))
         repls.append(('FFT_LIBS', os.getenv('LIBFFT'), False))
         repls.append(('LAPACK_LIBS', os.getenv('LIBLAPACK'), False))
+        repls.append(('LAPACK_LIBS_SWITCH', 'external', False))
         repls.append(('SCALAPACK_LIBS', os.getenv('LIBSCALAPACK'), False))
         repls.append(('LD_LIBS', os.getenv('LIBS'), False))
 
