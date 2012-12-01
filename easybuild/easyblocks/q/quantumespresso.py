@@ -154,30 +154,7 @@ class EB_QuantumESPRESSO(ConfigureMake):
         except OSError, err:
             self.log.error("Failed to move non-espresso directories: %s" % err)
 
-    def build_step(self):
-        """Custom build procedure for Quantum ESPRESSO: call make with the right targets."""
-
-        # make sure we build everything
         self.cfg.update('makeopts', 'all gipaw vdw w90 want gww xspectra yambo')
-
-        paracmd = ''
-        if self.cfg['parallel']:
-            paracmd = "-j %s" % self.cfg['parallel']
-
-        cmd = "%s make %s %s" % (self.cfg['premakeopts'], paracmd, self.cfg['makeopts'])
-
-        # running make may result in interaction, so we need to take that into account
-        qa = {
-              "Username:": 'anonymous',
-              "Store password unencrypted (yes/no)?": 'no',
-             }
-
-        std_qa = {
-                  r"Password for '\w+':": '',
-                 }
-
-        run_cmd_qa(cmd, qa, std_qa=std_qa, log_all=True, simple=True)
-
 
     def install_step(self):
         """Custom install procedure for Quantum ESPRESSO: just copy the binaries."""
