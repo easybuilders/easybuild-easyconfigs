@@ -119,6 +119,8 @@ class EB_QuantumESPRESSO(ConfigureMake):
         repls.append(('SCALAPACK_LIBS', os.getenv('LIBSCALAPACK'), False))
         repls.append(('LD_LIBS', os.getenv('LIBS'), False))
 
+        self.log.debug("List of replacements to perform: %s" % repls)
+
         # patch make.sys file
         fn = os.path.join(self.cfg['start_dir'], 'make.sys')
         try:
