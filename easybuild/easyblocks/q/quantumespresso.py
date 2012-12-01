@@ -34,6 +34,7 @@ import sys
 import easybuild.tools.toolchain as toolchain
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.framework.easyconfig import CUSTOM
+from easybuild.tools.filetools import run_cmd_qa
 from easybuild.tools.modules import get_software_root
 
 
@@ -147,14 +148,36 @@ class EB_QuantumESPRESSO(ConfigureMake):
             dirnames = [d for d in os.listdir(self.builddir) if not d.startswith('espresso')]
             targetdir = os.path.join(self.builddir, "espresso-%s" % self.version)
             for dirname in dirnames:
-                shutil.move(os.path.join(self.builddir, dirname), targetdir)
+                shutil.move(os.path.join(self.builddir, dirname), os.path.join(targetdir, dirname))
                 self.log.info("Moved %s into %s" % (dirname, targetdir))
 
         except OSError, err:
             self.log.error("Failed to move non-espresso directories: %s" % err)
 
+    def build_step(self):
+        """Custom build procedure for Quantum ESPRESSO: call make with the right targets."""
+
         # make sure we build everything
         self.cfg.update('makeopts', 'all gipaw vdw w90 want gww xspectra yambo')
+
+        paracmd = ''
+        if self.cfg['parallel']:
+            paracmd = "-j %s" % self.cfg['parallel']
+
+        cmd = "%s make %s %s" % (self.cfg['premakeopts'], paracmd, self.cfg['makeopts'])
+
+        # running make may result in interaction, so we need to take that into account
+        qa = {
+              "Username:": 'anonymous',
+              "Store password unencrypted (yes/no)?": 'no',
+             }
+
+        std_qa = {
+                  r"Password for '\w+':": '',
+                 }
+
+        run_cmd_qa(cmd, qa, std_qa=std_qa, log_all=True, simple=True)
+
 
     def install_step(self):
         """Custom install procedure for Quantum ESPRESSO: just copy the binaries."""
