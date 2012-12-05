@@ -34,7 +34,6 @@ import sys
 import easybuild.tools.toolchain as toolchain
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.framework.easyconfig import CUSTOM
-from easybuild.tools.filetools import run_cmd_qa
 from easybuild.tools.modules import get_software_root
 
 
@@ -49,6 +48,10 @@ class EB_QuantumESPRESSO(ConfigureMake):
                       ('with_scalapack', [True, "Enable ScaLAPACK support", CUSTOM]),
                      ]
         return ConfigureMake.extra_options(extra_vars)
+
+    def patch_step(self):
+        """Patch files from build dir (not start dir)."""
+        super(EB_QuantumESPRESSO, self).patch_step(beginpath=self.builddir)
 
     def configure_step(self):
         """Custom configuration procedure for Quantum ESPRESSO."""
@@ -114,12 +117,15 @@ class EB_QuantumESPRESSO(ConfigureMake):
             repls.append(('(?:C|F90|F)FLAGS', self.toolchain.get_flag('openmp'), True))
 
         # obtain library settings
-        repls.append(('BLAS_LIBS', os.getenv('LIBBLAS'), False))
+        libs = []
+        for lib in ['BLAS', 'LAPACK', 'FFT', 'SCALAPACK']:
+            val = os.getenv('LIB%s' % lib)
+            repls.append(('%s_LIBS' % lib, val, False))
+            libs.append(val)
+        libs = ' '.join(libs)
+
         repls.append(('BLAS_LIBS_SWITCH', 'external', False))
-        repls.append(('FFT_LIBS', os.getenv('LIBFFT'), False))
-        repls.append(('LAPACK_LIBS', os.getenv('LIBLAPACK'), False))
         repls.append(('LAPACK_LIBS_SWITCH', 'external', False))
-        repls.append(('SCALAPACK_LIBS', os.getenv('LIBSCALAPACK'), False))
         repls.append(('LD_LIBS', os.getenv('LIBS'), False))
 
         self.log.debug("List of replacements to perform: %s" % repls)
@@ -129,6 +135,8 @@ class EB_QuantumESPRESSO(ConfigureMake):
         try:
             for line in fileinput.input(fn, inplace=1, backup='.orig.eb'):
                 for (k, v, keep) in repls:
+                    # need to use [ \t]* instead of \s*, because vars may be undefined as empty,
+                    # and we don't want to include newlines
                     if keep:
                         line = re.sub(r"^(%s\s*=[ \t]*)(.*)$" % k, r"\1\2 %s" % v, line)
                     else:
@@ -144,6 +152,43 @@ class EB_QuantumESPRESSO(ConfigureMake):
                 sys.stdout.write(line)
         except OSError, err:
             self.log.error("Failed to patch %s: %s" % (fn, err))
+
+        self.log.debug("Contents of patched %s: %s" % (fn, open(fn, "r").read()))
+
+        # patch default make.sys for wannier
+        fn = os.path.join(self.cfg['start_dir'], 'plugins', 'install', 'make_wannier90.sys')
+        try:
+            for line in fileinput.input(fn, inplace=1, backup='.orig.eb'):
+                line = re.sub(r"^(LIBS\s*=\s*).*", r"\1%s" % libs, line)
+
+                sys.stdout.write(line)
+
+        except OSError, err:
+            self.log.error("Failed to patch %s: %s" % (fn, err))
+
+        self.log.debug("Contents of patched %s: %s" % (fn, open(fn, "r").read()))
+
+        # patch Makefile of want plugin
+        wantprefix = 'want-'
+        wantdirs = [d for d in os.listdir(self.builddir) if d.startswith(wantprefix)]
+
+        if len(wantdirs) > 1:
+            self.log.error("Found more than one directory with %s prefix, help!" % wantprefix)
+
+        if len(wantdirs) != 0:
+            fn = os.path.join(self.builddir, wantdirs[0], 'conf', 'make.sys.in')
+            try:
+                for line in fileinput.input(fn, inplace=1, backup='.orig.eb'):
+                    # fix preprocessing directives for .f90 files in make.sys if required
+                    if self.toolchain.comp_family() in [toolchain.GCC]:
+                        line = re.sub("@f90rule@",
+                                      "$(CPP) -C $(CPPFLAGS) $< -o $*.F90\n" +
+                                      "\t$(MPIF90) $(F90FLAGS) -c $*.F90 -o $*.o",
+                                      line)
+
+                    sys.stdout.write(line)
+            except OSError, err:
+                self.log.error("Failed to patch %s: %s" % (fn, err))
 
         # move non-espresso directories to where they're expected
         try:
@@ -174,22 +219,24 @@ class EB_QuantumESPRESSO(ConfigureMake):
     def sanity_check_step(self):
         """Custom sanity check for Quantum ESPRESSO."""
 
+        bins = ["average", "band_plot", "bands_FS", "bands", "cppp", "cp", "d3", "dist", "dos",
+                "dynmat", "epsilon", "ev", "gww_fit", "gww", "head", "initial_state",
+                "iotk_print_kinds", "iotk", "kpoints", "kvecs_FS", "lambda", "ld1", "matdyn",
+                "path_int", "phcg", "ph", "plan_avg", "plotband", "plotproj", "plotrho", "pmw",
+                "pp", "projwfc", "pw2casino", "pw2gw", "pw2wannier90", "pw4gww", "pwcond",
+                "pw_export", "pwi2xsf", "pw", "q2r", "sumpdos", "vdw", "wfdd", "iotk"]
+
+        if 'gipaw' in self.cfg['makeopts'] or 'all' in self.cfg['makeopts']:
+            bins.extend(["gipaw"])
+
+        if 'w90' in self.cfg['makeopts']:
+            bins.extend(["wannier90", "wannier_ham", "wannier_plot"])
+
+        if 'xspectra' in self.cfg['makeopts']:
+            bins.extend(["xspectra"])
+
         custom_paths = {
-                        'files': ["bin/%s.x" % x for x in ["average", "band_plot", "bands_FS",
-                                                           "bands", "cppp", "cp", "d3", "dist",
-                                                           "dos", "dynmat", "epsilon", "ev",
-                                                           "gipaw", "gww_fit", "gww", "head",
-                                                           "initial_state", "iotk_print_kinds",
-                                                           "iotk", "kpoints", "kvecs_FS", "lambda",
-                                                           "ld1", "matdyn", "path_int", "phcg",
-                                                           "ph", "plan_avg", "plotband", "plotproj",
-                                                           "plotrho", "pmw", "pp", "projwfc",
-                                                           "pw2casino", "pw2gw", "pw2wannier90",
-                                                           "pw4gww", "pwcond", "pw_export",
-                                                           "pwi2xsf", "pw", "q2r", "sumpdos", "vdw",
-                                                           "wannier90", "wannier_ham",
-                                                           "wannier_plot", "wfdd", "xspectra"]] +
-                                 ["bin/iotk"],
+                        'files': ["bin/%s" % x for x in bins],
                         'dirs': []
                        }
 
