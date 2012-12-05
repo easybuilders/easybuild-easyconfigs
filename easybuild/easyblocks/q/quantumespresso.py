@@ -219,21 +219,25 @@ class EB_QuantumESPRESSO(ConfigureMake):
     def sanity_check_step(self):
         """Custom sanity check for Quantum ESPRESSO."""
 
-        bins = ["average", "band_plot", "bands_FS", "bands", "cppp", "cp", "d3", "dist", "dos",
-                "dynmat", "epsilon", "ev", "gww_fit", "gww", "head", "initial_state",
-                "iotk_print_kinds", "iotk", "kpoints", "kvecs_FS", "lambda", "ld1", "matdyn",
-                "path_int", "phcg", "ph", "plan_avg", "plotband", "plotproj", "plotrho", "pmw",
-                "pp", "projwfc", "pw2casino", "pw2gw", "pw2wannier90", "pw4gww", "pwcond",
-                "pw_export", "pwi2xsf", "pw", "q2r", "sumpdos", "vdw", "wfdd", "iotk"]
+        bins = ["average.x", "band_plot.x", "bands_FS.x", "bands.x", "cppp.x", "cp.x", "d3.x",
+                "dist.x", "dos.x", "dynmat.x", "epsilon.x", "ev.x", "gww_fit.x", "gww.x", "head.x",
+                "initial_state.x", "iotk_print_kinds.x", "iotk", "iotk.x", "kpoints.x", "kvecs_FS.x",
+                "lambda.x", "ld1.x", "matdyn.x", "path_int.x", "phcg.x", "ph.x", "plan_avg.x",
+                "plotband.x", "plotproj.x", "plotrho.x", "pmw.x", "pp.x", "projwfc.x", "pw2casino.x",
+                "pw2gw.x", "pw2wannier90.x", "pw4gww.x", "pwcond.x", "pw_export.x", "pwi2xsf.x",
+                "pw.x", "q2r.x", "sumpdos.x", "vdw.x", "wannier_ham.x", "wannier_plot.x", "wfdd.x"]
 
         if 'gipaw' in self.cfg['makeopts'] or 'all' in self.cfg['makeopts']:
-            bins.extend(["gipaw"])
+            bins.extend(["gipaw.x"])
 
         if 'w90' in self.cfg['makeopts']:
-            bins.extend(["wannier90", "wannier_ham", "wannier_plot"])
+            bins.extend(["wannier90.x"])
 
         if 'xspectra' in self.cfg['makeopts']:
-            bins.extend(["xspectra"])
+            bins.extend(["xspectra.x"])
+
+        if 'yambo' in self.cfg['makeopts']:
+            bins.extend(["yambo"])
 
         custom_paths = {
                         'files': ["bin/%s" % x for x in bins],
