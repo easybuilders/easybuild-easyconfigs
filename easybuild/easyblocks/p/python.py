@@ -40,7 +40,7 @@ from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.framework.extension import Extension
 from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.filetools import apply_patch, extract_file, rmtree2, run_cmd
-from easybuild.tools.modules import get_software_root
+from easybuild.tools.modules import get_software_root, get_software_version
 
 
 class EB_Python(ConfigureMake):
