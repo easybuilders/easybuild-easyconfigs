@@ -132,6 +132,9 @@ class EB_DefaultPythonPackage(Extension):
 
         self.python = get_software_root('Python')
 
+        ver = '.'.join(get_software_version('Python').split('.')[0:2])
+        self.python_libdir = os.path.join('lib', 'python%s' % ver, 'site-packages')
+
     def configure_step(self):
         """Configure Python package build
         """
@@ -187,7 +190,7 @@ class EB_DefaultPythonPackage(Extension):
             cmd = "python setup.py install --prefix=%s %s" % (testinstalldir, self.installopts)
             run_cmd(cmd, log_all=True, simple=True)
 
-            extrapath = "export PYTHONPATH=%s:$PYTHONPATH && " % testinstalldir
+            extrapath = "export PYTHONPATH=%s/%s:$PYTHONPATH && " % (testinstalldir, self.python_libdir)
 
         if self.runtest:
             cmd = "%s%s" % (extrapath, self.runtest)
