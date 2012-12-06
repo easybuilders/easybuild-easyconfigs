@@ -117,7 +117,9 @@ class EB_DefaultPythonPackage(Extension):
     """
 
     def __init__(self, mself, ext):
+        """Custom constructor for EB_DefaultPythonPackage: initialize class variables."""
         super(EB_DefaultPythonPackage, self).__init__(mself, ext)
+
         self.sitecfg = None
         self.sitecfgfn = 'site.cfg'
         self.sitecfglibdir = None
@@ -134,6 +136,11 @@ class EB_DefaultPythonPackage(Extension):
 
         ver = '.'.join(get_software_version('Python').split('.')[0:2])
         self.python_libdir = os.path.join('lib', 'python%s' % ver, 'site-packages')
+
+        # sanity checks for python being used
+        run_cmd("python -V")
+        run_cmd("which python")
+        run_cmd("python -c 'import sys; print sys.executable'")
 
     def configure_step(self):
         """Configure Python package build
@@ -328,7 +335,7 @@ libraries = %s
         self.runtest = "cd .. && python -c 'import numpy; numpy.test(verbose=2)'"
 
     def install_step(self):
-        """Install numpy 
+        """Install numpy
         We remove the numpy build dir here, so scipy doesn't find it by accident
         """
         super(EB_numpy, self).install_step()
