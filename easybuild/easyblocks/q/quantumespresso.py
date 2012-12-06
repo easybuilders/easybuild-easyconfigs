@@ -283,27 +283,32 @@ class EB_QuantumESPRESSO(ConfigureMake):
             if LooseVersion(self.version) > LooseVersion("5"):
                 bins.extend(["turbo_lanczos.x", "turbo_spectrum.x"])
 
+        upftools = []
+        if 'upf' in self.cfg['makeopts'] or 'all' in self.cfg['makeopts']:
+            upftools = ["casino2upf.x", "cpmd2upf.x", "fhi2upf.x", "fpmd2upf.x", "interpolate.x",
+                        "ncpp2upf.x", "oldcp2upf.x", "read_upf_tofile.x", "rrkj2upf.x", "upf2casino.x",
+                        "uspp2upf.x", "vdb2upf.x", "virtual.x"]
+
         if 'vdw' in self.cfg['makeopts']:  # only for v4.x, not in v5.0 anymore
             bins.extend(["vdw.x"])
 
         if 'w90' in self.cfg['makeopts']:
             bins.extend(["wannier90.x"])
 
+        want_bins = []
+        if 'want' in self.cfg['makeopts']:
+            want_bins = ["bands.x", "blc2wan.x", "cmplx_bands.x", "conductor.x", "current.x", "decay.x",
+                         "disentangle.x", "dos.x", "gcube2plt.x", "kgrid.x", "midpoint.x", "plot.x",
+                         "sax2qexml.x", "sum_sgm.x", "wannier.x", "wfk2etsf.x"]
+
         if 'xspectra' in self.cfg['makeopts']:
             bins.extend(["xspectra.x"])
 
+
+        yambo_bins = []
         if 'yambo' in self.cfg['makeopts']:
-            bins.extend(["yambo"])
+            yambo_bins = ["a2y", "p2y", "yambo", "ypp"]
 
-        upftools = ["casino2upf.x", "cpmd2upf.x", "fhi2upf.x", "fpmd2upf.x", "interpolate.x",
-                    "ncpp2upf.x", "oldcp2upf.x", "read_upf_tofile.x", "rrkj2upf.x", "upf2casino.x",
-                    "uspp2upf.x", "vdb2upf.x", "virtual.x"]
-
-        want_bins = ["bands.x", "blc2wan.x", "cmplx_bands.x", "conductor.x", "current.x", "decay.x",
-                     "disentangle.x", "dos.x", "gcube2plt.x", "kgrid.x", "midpoint.x", "plot.x",
-                     "sax2qexml.x", "sum_sgm.x", "wannier.x", "wfk2etsf.x"]
-
-        yambo_bins = ["a2y", "p2y", "yambo", "ypp"]
 
         pref = self.install_subdir
 
