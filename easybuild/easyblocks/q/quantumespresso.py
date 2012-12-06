@@ -50,6 +50,12 @@ class EB_QuantumESPRESSO(ConfigureMake):
                      ]
         return ConfigureMake.extra_options(extra_vars)
 
+    def __init__(self, *args, **kwargs):
+        """Add extra config options specific to Quantum ESPRESSO."""
+        super(EB_QuantumESPRESSO, self).__init__(*args, **kwargs)
+
+        self.build_in_installdir = True
+
     def patch_step(self):
         """Patch files from build dir (not start dir)."""
         super(EB_QuantumESPRESSO, self).patch_step(beginpath=self.builddir)
@@ -217,28 +223,26 @@ class EB_QuantumESPRESSO(ConfigureMake):
             self.log.error("Failed to move non-espresso directories: %s" % err)
 
     def install_step(self):
-        """Custom install procedure for Quantum ESPRESSO: just copy the binaries."""
-        # TODO: apperently the binaries are symlinked in the 'bin' directory to the build dir
-        # do we need to make extra measures to make sure the actual binaries are copied, not the symlinks?
-        try:
-            shutil.copytree(os.path.join(self.cfg['start_dir'], 'bin'),
-                            os.path.join(self.installdir, 'bin'))
-
-        except OSError, err:
-            self.log.error("Failed to copy binaries to install dir: %s" % err)
+        """Skip install step, since we're building in the install directory."""
+        pass
 
     def sanity_check_step(self):
         """Custom sanity check for Quantum ESPRESSO."""
 
         # build list of expected binaries based on make targets
-        bins = ["gipaw.x", "gww_fit.x", "gww.x", "head.x", "iotk", "iotk.x", "iotk_print_kinds.x",
-                "path_int.x", "pw2casino.x", "pw4gww.x", "vdw.x"]
+        bins = ["iotk", "iotk.x", "iotk_print_kinds.x"]
 
         if 'cp' in self.cfg['makeopts'] or 'all' in self.cfg['makeopts']:
             bins.extend(["cp.x", "cppp.x", "wfdd.x"])
 
+        if 'gww' in self.cfg['makeopts']:  # only for v4.x, not in v5.0 anymore
+            bins.extend(["gww_fit.x", "gww.x", "head.x", "pw4gww.x"])
+
         if 'ld1' in self.cfg['makeopts'] or 'all' in self.cfg['makeopts']:
             bins.extend(["ld1.x"])
+
+        if 'gipaw' in self.cfg['makeopts']:
+            bins.extend(["gipaw.x"])
 
         if 'neb' in self.cfg['makeopts'] or 'pwall' in self.cfg['makeopts'] or \
            'all' in self.cfg['makeopts']:
@@ -257,12 +261,16 @@ class EB_QuantumESPRESSO(ConfigureMake):
                          "wannier_ham.x", "wannier_plot.x"])
             if LooseVersion(self.version) > LooseVersion("5"):
                 bins.extend(["pw2bgw.x", "bgw2pw.x"])
+            else:
+                bins.extend(["pw2casino.x"])
 
         if 'pw' in self.cfg['makeopts'] or 'all' in self.cfg['makeopts']:
             bins.extend(["band_plot.x", "dist.x", "ev.x", "kpoints.x", "pw.x", "pwi2xsf.x",
                          "bands_FS.x", "kvecs_FS.x"])
             if LooseVersion(self.version) > LooseVersion("5"):
                 bins.extend(["generate_vdW_kernel_table.x"])
+            else:
+                bins.extend(["path_int.x"])
 
         if 'pwcond' in self.cfg['makeopts'] or 'pwall' in self.cfg['makeopts'] or \
            'all' in self.cfg['makeopts']:
@@ -271,6 +279,9 @@ class EB_QuantumESPRESSO(ConfigureMake):
         if 'tddfpt' in self.cfg['makeopts'] or 'all' in self.cfg['makeopts']:
             if LooseVersion(self.version) > LooseVersion("5"):
                 bins.extend(["turbo_lanczos.x", "turbo_spectrum.x"])
+
+        if 'vdw' in self.cfg['makeopts']:  # only for v4.x, not in v5.0 anymore
+            bins.extend(["vdw.x"])
 
         if 'w90' in self.cfg['makeopts']:
             bins.extend(["wannier90.x"])
@@ -281,12 +292,33 @@ class EB_QuantumESPRESSO(ConfigureMake):
         if 'yambo' in self.cfg['makeopts']:
             bins.extend(["yambo"])
 
-        if 'plumed' in self.cfg['makeopts']:  # only since v5.0
-            bins.extend([])
+        upftools = ["casino2upf.x", "cpmd2upf.x", "fhi2upf.x", "fpmd2upf.x", "interpolate.x",
+                    "ncpp2upf.x", "oldcp2upf.x", "read_upf_tofile.x", "rrkj2upf.x", "upf2casino.x",
+                    "uspp2upf.x", "vdb2upf.x", "virtual.x"]
+
+        want_bins = ["bands.x", "blc2wan.x", "cmplx_bands.x", "conductor.x", "current.x", "decay.x",
+                     "disentangle.x", "dos.x", "gcube2plt.x", "kgrid.x", "midpoint.x", "plot.x",
+                     "sax2qexml.x", "sum_sgm.x", "wannier.x", "wfk2etsf.x"]
+
+        yambo_bins = ["a2y", "p2y", "yambo", "ypp"]
 
         custom_paths = {
-                        'files': ["bin/%s" % x for x in bins],
+                        'files': ["bin/%s" % x for x in bins] +
+                                 ["WANT/bin/%s" % x for x in want_bins] +
+                                 ["upftools/%s" % x for x in upftools] +
+                                 ["YAMBO/bin/%s" % x for x in yambo_bins],
                         'dirs': []
                        }
 
-        ConfigureMake.sanity_check_step(self, custom_paths=custom_paths)
+        super(EB_QuantumESPRESSO, self).sanity_check_step(self, custom_paths=custom_paths)
+
+    def make_module_req_guess(self):
+        """Custom path suggestions for Quantum ESPRESSO."""
+
+        guesses = super(EB_QuantumESPRESSO, self).make_module_req_guess()
+
+        guesses.update({
+                        'PATH': ['bin', 'upftools', 'WANT/bin', 'YAMBO/bin'],
+                       })
+
+        return guesses
