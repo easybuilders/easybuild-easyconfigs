@@ -194,13 +194,21 @@ class EB_QuantumESPRESSO(ConfigureMake):
             except OSError, err:
                 self.log.error("Failed to patch %s: %s" % (fn, err))
 
-        # move non-espresso directories to where they're expected
+        # move non-espresso directories to where they're expected and create symlinks
         try:
             dirnames = [d for d in os.listdir(self.builddir) if not d.startswith('espresso')]
             targetdir = os.path.join(self.builddir, "espresso-%s" % self.version)
             for dirname in dirnames:
                 shutil.move(os.path.join(self.builddir, dirname), os.path.join(targetdir, dirname))
                 self.log.info("Moved %s into %s" % (dirname, targetdir))
+                dirname_head = dirname.split('-')[0]
+                if dirname_head == 'sax':
+                    linkname = 'SaX'
+                if dirname_head == 'wannier90':
+                    linkname = 'W90'
+                elif dirname_head in ['gipaw', 'plumed', 'want', 'yambo']:
+                    linkname = dirname_head.upper()
+                    os.symlink(os.path.join(targetdir, dirname), os.path.join(targetdir, linkname))
 
         except OSError, err:
             self.log.error("Failed to move non-espresso directories: %s" % err)
