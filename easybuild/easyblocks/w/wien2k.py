@@ -205,7 +205,7 @@ class EB_WIEN2k(EasyBlock):
             for line in fileinput.input(fn, inplace=1, backup='.orig.eb'):
 
                 if self.cfg['wien_mpirun']:
-                    re.sub(r"^(setenv WIEN_MPIRUN\s*).*", r"\1 %s" % self.cfg['wien_mpirun'], line)
+                    re.sub("(setenv WIEN_MPIRUN\s*).*", r'\1 "%s"' % self.cfg['wien_mpirun'], line)
 
                 sys.stdout.write(line)
 
