@@ -176,7 +176,7 @@ class EB_DefaultPythonPackage(Extension):
         - default: None
         """
         extrapath = ""
-        testinstalldir = os.path.join(self.builddir, "mytemporarytestinstalldir")
+        testinstalldir = os.path.join(self.builddir, "eb_test_install_dir_%s" % self.name)
         if self.testinstall:
             # Install in test directory and export PYTHONPATH
             try:
@@ -184,12 +184,10 @@ class EB_DefaultPythonPackage(Extension):
             except OSError:
                 self.log.exception("Creating testinstalldir %s failed" % testinstalldir)
 
-            ppath = "%s/reallib" % testinstalldir
-            cmd = "python setup.py install --install-scripts=%s --install-purelib=%s %s" % \
-                (testinstalldir, ppath, self.installopts)
+            cmd = "python setup.py install --prefix=%s %s" % (testinstalldir, self.installopts)
             run_cmd(cmd, log_all=True, simple=True)
 
-            extrapath = "export PYTHONPATH=%s:$PYTHONPATH && " % ppath
+            extrapath = "export PYTHONPATH=%s:$PYTHONPATH && " % testinstalldir
 
         if self.runtest:
             cmd = "%s%s" % (extrapath, self.runtest)
