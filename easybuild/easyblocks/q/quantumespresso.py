@@ -56,6 +56,8 @@ class EB_QuantumESPRESSO(ConfigureMake):
 
         self.build_in_installdir = True
 
+        self.install_subdir = "espresso-%s" % self.version
+
     def patch_step(self):
         """Patch files from build dir (not start dir)."""
         super(EB_QuantumESPRESSO, self).patch_step(beginpath=self.builddir)
@@ -302,11 +304,13 @@ class EB_QuantumESPRESSO(ConfigureMake):
 
         yambo_bins = ["a2y", "p2y", "yambo", "ypp"]
 
+        pref = self.install_subdir
+
         custom_paths = {
-                        'files': ["bin/%s" % x for x in bins] +
-                                 ["WANT/bin/%s" % x for x in want_bins] +
-                                 ["upftools/%s" % x for x in upftools] +
-                                 ["YAMBO/bin/%s" % x for x in yambo_bins],
+                        'files': [os.path.join(pref, 'bin', x) for x in bins] +
+                                 [os.path.join(pref, 'upftools', x) for x in upftools] +
+                                 [os.path.join(pref, 'WANT', 'bin', x) for x in want_bins] +
+                                 [os.path.join(pref, 'YAMBO', 'bin', x) for x in yambo_bins],
                         'dirs': []
                        }
 
@@ -318,7 +322,10 @@ class EB_QuantumESPRESSO(ConfigureMake):
         guesses = super(EB_QuantumESPRESSO, self).make_module_req_guess()
 
         guesses.update({
-                        'PATH': ['bin', 'upftools', 'WANT/bin', 'YAMBO/bin'],
+                        'PATH': [os.path.join(self.install_subdir, x) for x in ['bin', 'upftools',
+                                                                                'WANT/bin',
+                                                                                'YAMBO/bin']],
+                        'CPATH': [os.path.join(self.install_subdir, 'include')],
                        })
 
         return guesses
