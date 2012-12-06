@@ -310,7 +310,7 @@ class EB_QuantumESPRESSO(ConfigureMake):
                         'dirs': []
                        }
 
-        super(EB_QuantumESPRESSO, self).sanity_check_step(self, custom_paths=custom_paths)
+        super(EB_QuantumESPRESSO, self).sanity_check_step(custom_paths=custom_paths)
 
     def make_module_req_guess(self):
         """Custom path suggestions for Quantum ESPRESSO."""
