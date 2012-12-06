@@ -203,20 +203,16 @@ class EB_WIEN2k(EasyBlock):
         remote = self.cfg['remote']
         try:
             for line in fileinput.input(fn, inplace=1, backup='.orig.eb'):
-
                 if self.cfg['wien_mpirun']:
                     line = re.sub("(setenv WIEN_MPIRUN\s*).*", r'\1 "%s"' % self.cfg['wien_mpirun'], line)
-
                 sys.stdout.write(line)
 
             if remote:
-
                 f = open(fn, "a")
 
                 if remote == 'pbsssh':
                     extra = "set remote = pbsssh\n"
                     extra += "setenv PBSSSHENV 'LD_LIBRARY_PATH PATH'\n"
-
                 else:
                     self.log.error("Don't know how to patch %s for remote %s" % (fn, remote))
 
