@@ -151,7 +151,7 @@ class EB_QuantumESPRESSO(ConfigureMake):
                                   line)
 
                 sys.stdout.write(line)
-        except OSError, err:
+        except IOError, err:
             self.log.error("Failed to patch %s: %s" % (fn, err))
 
         self.log.debug("Contents of patched %s: %s" % (fn, open(fn, "r").read()))
@@ -167,7 +167,7 @@ class EB_QuantumESPRESSO(ConfigureMake):
 
                 sys.stdout.write(line)
 
-        except OSError, err:
+        except IOError, err:
             self.log.error("Failed to patch %s: %s" % (fn, err))
 
         self.log.debug("Contents of patched %s: %s" % (fn, open(fn, "r").read()))
@@ -191,7 +191,7 @@ class EB_QuantumESPRESSO(ConfigureMake):
                                       line)
 
                     sys.stdout.write(line)
-            except OSError, err:
+            except IOError, err:
                 self.log.error("Failed to patch %s: %s" % (fn, err))
 
         # move non-espresso directories to where they're expected and create symlinks
