@@ -211,7 +211,7 @@ class EB_WIEN2k(EasyBlock):
 
             if remote:
 
-                f = open(fn, "w")
+                f = open(fn, "a")
 
                 if remote == 'pbsssh':
                     extra = "set remote = pbsssh\n"
@@ -222,6 +222,8 @@ class EB_WIEN2k(EasyBlock):
 
                 f.write(extra)
                 f.close()
+
+            self.log.debug("Patched file %s: %s" % (fn, open(fn, 'r').read()))
 
         except IOError, err:
             self.log.error("Failed to patch %s: %s" % (fn, err))
