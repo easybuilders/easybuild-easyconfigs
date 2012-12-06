@@ -30,6 +30,7 @@ import os
 import re
 import shutil
 import sys
+from distutils.version import LooseVersion
 
 import easybuild.tools.toolchain as toolchain
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
@@ -156,7 +157,10 @@ class EB_QuantumESPRESSO(ConfigureMake):
         self.log.debug("Contents of patched %s: %s" % (fn, open(fn, "r").read()))
 
         # patch default make.sys for wannier
-        fn = os.path.join(self.cfg['start_dir'], 'plugins', 'install', 'make_wannier90.sys')
+        if LooseVersion(self.version) >= LooseVersion("5"):
+            fn = os.path.join(self.cfg['start_dir'], 'install', 'make_wannier90.sys')
+        else:
+            fn = os.path.join(self.cfg['start_dir'], 'plugins', 'install', 'make_wannier90.sys')
         try:
             for line in fileinput.input(fn, inplace=1, backup='.orig.eb'):
                 line = re.sub(r"^(LIBS\s*=\s*).*", r"\1%s" % libs, line)
