@@ -285,9 +285,11 @@ class EB_QuantumESPRESSO(ConfigureMake):
 
         upftools = []
         if 'upf' in self.cfg['makeopts'] or 'all' in self.cfg['makeopts']:
-            upftools = ["casino2upf.x", "cpmd2upf.x", "fhi2upf.x", "fpmd2upf.x", "interpolate.x",
-                        "ncpp2upf.x", "oldcp2upf.x", "read_upf_tofile.x", "rrkj2upf.x", "upf2casino.x",
-                        "uspp2upf.x", "vdb2upf.x", "virtual.x"]
+            upftools = ["casino2upf.x", "cpmd2upf.x", "fhi2upf.x", "fpmd2upf.x", "ncpp2upf.x",
+                        "oldcp2upf.x", "read_upf_tofile.x", "rrkj2upf.x", "uspp2upf.x", "vdb2upf.x",
+                        "virtual.x"]
+            if LooseVersion(self.version) > LooseVersion("5"):
+                upftools.extend(["interpolate.x", "upf2casino.x"])
 
         if 'vdw' in self.cfg['makeopts']:  # only for v4.x, not in v5.0 anymore
             bins.extend(["vdw.x"])
