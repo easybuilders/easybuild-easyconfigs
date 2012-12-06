@@ -248,7 +248,8 @@ class EB_QuantumESPRESSO(ConfigureMake):
 
         if 'neb' in self.cfg['makeopts'] or 'pwall' in self.cfg['makeopts'] or \
            'all' in self.cfg['makeopts']:
-            bins.extend(["neb.x", "path_interpolation.x"])
+            if LooseVersion(self.version) > LooseVersion("5"):
+                bins.extend(["neb.x", "path_interpolation.x"])
 
         if 'ph' in self.cfg['makeopts'] or 'all' in self.cfg['makeopts']:
             bins.extend(["d3.x", "dynmat.x", "lambda.x", "matdyn.x", "ph.x", "phcg.x", "q2r.x"])
