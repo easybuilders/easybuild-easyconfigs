@@ -299,9 +299,11 @@ class EB_QuantumESPRESSO(ConfigureMake):
 
         want_bins = []
         if 'want' in self.cfg['makeopts']:
-            want_bins = ["bands.x", "blc2wan.x", "cmplx_bands.x", "conductor.x", "current.x", "decay.x",
-                         "disentangle.x", "dos.x", "gcube2plt.x", "kgrid.x", "midpoint.x", "plot.x",
-                         "sax2qexml.x", "sum_sgm.x", "wannier.x", "wfk2etsf.x"]
+            want_bins = ["bands.x", "blc2wan.x", "conductor.x", "current.x", "disentangle.x",
+                         "dos.x", "gcube2plt.x", "kgrid.x", "midpoint.x", "plot.x", "sumpdos",
+                         "wannier.x", "wfk2etsf.x"]
+            if LooseVersion(self.version) > LooseVersion("5"):
+                want_bins.extend(["cmplx_bands.x", "decay.x", "sax2qexml.x", "sum_sgm.x"])
 
         if 'xspectra' in self.cfg['makeopts']:
             bins.extend(["xspectra.x"])
