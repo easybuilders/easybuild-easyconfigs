@@ -201,21 +201,20 @@ class EB_QuantumESPRESSO(ConfigureMake):
             for dirname in dirnames:
                 shutil.move(os.path.join(self.builddir, dirname), os.path.join(targetdir, dirname))
                 self.log.info("Moved %s into %s" % (dirname, targetdir))
+
                 dirname_head = dirname.split('-')[0]
+                linkname = None
                 if dirname_head == 'sax':
                     linkname = 'SaX'
                 if dirname_head == 'wannier90':
                     linkname = 'W90'
                 elif dirname_head in ['gipaw', 'plumed', 'want', 'yambo']:
                     linkname = dirname_head.upper()
+                if linkname:
                     os.symlink(os.path.join(targetdir, dirname), os.path.join(targetdir, linkname))
 
         except OSError, err:
             self.log.error("Failed to move non-espresso directories: %s" % err)
-
-        # make sure we build most stuff
-        if not 'all' in self.cfg['makeopts']:
-            self.cfg.update('makeopts', 'all')
 
     def install_step(self):
         """Custom install procedure for Quantum ESPRESSO: just copy the binaries."""
@@ -231,16 +230,47 @@ class EB_QuantumESPRESSO(ConfigureMake):
     def sanity_check_step(self):
         """Custom sanity check for Quantum ESPRESSO."""
 
-        bins = ["average.x", "band_plot.x", "bands_FS.x", "bands.x", "cppp.x", "cp.x", "d3.x",
-                "dist.x", "dos.x", "dynmat.x", "epsilon.x", "ev.x", "gww_fit.x", "gww.x", "head.x",
-                "initial_state.x", "iotk_print_kinds.x", "iotk", "iotk.x", "kpoints.x", "kvecs_FS.x",
-                "lambda.x", "ld1.x", "matdyn.x", "path_int.x", "phcg.x", "ph.x", "plan_avg.x",
-                "plotband.x", "plotproj.x", "plotrho.x", "pmw.x", "pp.x", "projwfc.x", "pw2casino.x",
-                "pw2gw.x", "pw2wannier90.x", "pw4gww.x", "pwcond.x", "pw_export.x", "pwi2xsf.x",
-                "pw.x", "q2r.x", "sumpdos.x", "vdw.x", "wannier_ham.x", "wannier_plot.x", "wfdd.x"]
+        # build list of expected binaries based on make targets
+        bins = ["gipaw.x", "gww_fit.x", "gww.x", "head.x", "iotk", "iotk.x", "iotk_print_kinds.x",
+                "path_int.x", "pw2casino.x", "pw4gww.x", "vdw.x"]
 
-        if 'gipaw' in self.cfg['makeopts'] or 'all' in self.cfg['makeopts']:
-            bins.extend(["gipaw.x"])
+        if 'cp' in self.cfg['makeopts'] or 'all' in self.cfg['makeopts']:
+            bins.extend(["cp.x", "cppp.x", "wfdd.x"])
+
+        if 'ld1' in self.cfg['makeopts'] or 'all' in self.cfg['makeopts']:
+            bins.extend(["ld1.x"])
+
+        if 'neb' in self.cfg['makeopts'] or 'pwall' in self.cfg['makeopts'] or \
+           'all' in self.cfg['makeopts']:
+            bins.extend(["neb.x", "path_interpolation.x"])
+
+        if 'ph' in self.cfg['makeopts'] or 'all' in self.cfg['makeopts']:
+            bins.extend(["d3.x", "dynmat.x", "lambda.x", "matdyn.x", "ph.x", "phcg.x", "q2r.x"])
+            if LooseVersion(self.version) > LooseVersion("5"):
+                bins.extend(["fqha.x", "q2qstar.x"])
+
+        if 'pp' in self.cfg['makeopts'] or 'pwall' in self.cfg['makeopts'] or \
+           'all' in self.cfg['makeopts']:
+            bins.extend(["average.x", "bands.x", "dos.x", "epsilon.x", "initial_state.x",
+                         "plan_avg.x", "plotband.x", "plotproj.x", "plotrho.x", "pmw.x", "pp.x",
+                         "projwfc.x", "sumpdos.x", "pw2wannier90.x", "pw_export.x", "pw2gw.x",
+                         "wannier_ham.x", "wannier_plot.x"])
+            if LooseVersion(self.version) > LooseVersion("5"):
+                bins.extend(["pw2bgw.x", "bgw2pw.x"])
+
+        if 'pw' in self.cfg['makeopts'] or 'all' in self.cfg['makeopts']:
+            bins.extend(["band_plot.x", "dist.x", "ev.x", "kpoints.x", "pw.x", "pwi2xsf.x",
+                         "bands_FS.x", "kvecs_FS.x"])
+            if LooseVersion(self.version) > LooseVersion("5"):
+                bins.extend(["generate_vdW_kernel_table.x"])
+
+        if 'pwcond' in self.cfg['makeopts'] or 'pwall' in self.cfg['makeopts'] or \
+           'all' in self.cfg['makeopts']:
+            bins.extend(["pwcond.x"])
+
+        if 'tddfpt' in self.cfg['makeopts'] or 'all' in self.cfg['makeopts']:
+            if LooseVersion(self.version) > LooseVersion("5"):
+                bins.extend(["turbo_lanczos.x", "turbo_spectrum.x"])
 
         if 'w90' in self.cfg['makeopts']:
             bins.extend(["wannier90.x"])
@@ -250,6 +280,9 @@ class EB_QuantumESPRESSO(ConfigureMake):
 
         if 'yambo' in self.cfg['makeopts']:
             bins.extend(["yambo"])
+
+        if 'plumed' in self.cfg['makeopts']:  # only since v5.0
+            bins.extend([])
 
         custom_paths = {
                         'files': ["bin/%s" % x for x in bins],
