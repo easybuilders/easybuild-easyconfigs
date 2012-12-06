@@ -321,7 +321,7 @@ class EB_QuantumESPRESSO(ConfigureMake):
                                  [os.path.join(pref, 'upftools', x) for x in upftools] +
                                  [os.path.join(pref, 'WANT', 'bin', x) for x in want_bins] +
                                  [os.path.join(pref, 'YAMBO', 'bin', x) for x in yambo_bins],
-                        'dirs': []
+                        'dirs': [os.path.join(pref, 'include')]
                        }
 
         super(EB_QuantumESPRESSO, self).sanity_check_step(custom_paths=custom_paths)
