@@ -39,10 +39,10 @@ class EB_Oases(ConfigureMake):
         srcdir = self.builddir
 
         print builddep
-        velvet = builddep[0][0] 
+        velvet = builddep[0][0]
         velvetver = builddep[0][1]
 
-        cmd = 'make VELVET_DIR="' + os.path.join(srcdir, velvet.lower() + "_" + velvetver) + '"' 
+        cmd = 'make VELVET_DIR="' + os.path.join(srcdir, velvet.lower() + "_" + velvetver) + '"'
         run_cmd(cmd, log_all = True, simple = True)
 
     def install_step(self):
