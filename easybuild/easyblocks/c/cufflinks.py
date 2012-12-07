@@ -23,19 +23,19 @@ class EB_Cufflinks(ConfigureMake):
     """
     First we need to rename a few things, s.a. http://wiki.ci.uchicago.edu/Beagle/BuildingSoftware -> "Cufflinks"
     """
-    build_dir = os.getcwd()
-    source_files = build_dir + '/src/*.cpp'
-    header_files = build_dir + '/src/*.h'
-    files = glob.glob(source_files)
-    files = files + (glob.glob(header_files))
-    for fname in files:
-        for line in fileinput.input(fname, inplace = 1, backup = '.orig'):
-            line = re.sub(r'foreach', 'for_each', line, count = 0)
+        build_dir = os.getcwd()
+        source_files = build_dir + '/src/*.cpp'
+        header_files = build_dir + '/src/*.h'
+        files = glob.glob(source_files)
+        files = files + (glob.glob(header_files))
+        for fname in files:
+            for line in fileinput.input(fname, inplace = 1, backup = '.orig'):
+                line = re.sub(r'foreach', 'for_each', line, count = 0)
+                sys.stdout.write(line)
+
+        for line in fileinput.input(build_dir +'/src/common.h', inplace = 1, backup = '.orig'):
+            line = re.sub(r'#include \<boost\/for\_each.hpp\>', '#include <boost/foreach.hpp>', line, count = 0)
             sys.stdout.write(line)
 
-    for line in fileinput.input(build_dir +'/src/common.h', inplace = 1, backup = '.orig'):
-        line = re.sub(r'#include \<boost\/for\_each.hpp\>', '#include <boost/foreach.hpp>', line, count = 0)
-        sys.stdout.write(line)
-
-    super(EB_Cufflinks, self).patch_step()
+        super(EB_Cufflinks, self).patch_step()
 
