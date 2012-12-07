@@ -20,9 +20,9 @@ class EB_Cufflinks(ConfigureMake):
     Support for building cufflinks (Transcript assembly, differential expression, and differential regulation for RNA-Seq)
     """
     def patch_step(self):
-    """
-    First we need to rename a few things, s.a. http://wiki.ci.uchicago.edu/Beagle/BuildingSoftware -> "Cufflinks"
-    """
+        """
+        First we need to rename a few things, s.a. http://wiki.ci.uchicago.edu/Beagle/BuildingSoftware -> "Cufflinks"
+        """
         build_dir = os.getcwd()
         source_files = build_dir + '/src/*.cpp'
         header_files = build_dir + '/src/*.h'
