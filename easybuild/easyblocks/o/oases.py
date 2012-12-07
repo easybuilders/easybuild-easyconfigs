@@ -25,25 +25,25 @@ class EB_Oases(ConfigureMake):
         """
         Check if system is suitable apparently via "make check"
         """
-	pass
+        pass
 
     def build_step(self):
-	"""
-	Needs to get the path of the build-dir of velvet -> requires headers
-	"""
+        """
+        Needs to get the path of the build-dir of velvet -> requires headers
+        """
         builddep = self.cfg['builddependencies']
-	# assert that it only has ONE builddep specified
-	assert len(builddep) == 1
+        # assert that it only has ONE builddep specified
+        assert len(builddep) == 1
 
         #srcdir = self.cfg['startfrom']
         srcdir = self.builddir
 
-	print builddep
-	velvet = builddep[0][0] 
-	velvetver = builddep[0][1]
+        print builddep
+        velvet = builddep[0][0] 
+        velvetver = builddep[0][1]
 
-	cmd = 'make VELVET_DIR="' + os.path.join(srcdir, velvet.lower() + "_" + velvetver) + '"' 
-	run_cmd(cmd, log_all = True, simple = True)
+        cmd = 'make VELVET_DIR="' + os.path.join(srcdir, velvet.lower() + "_" + velvetver) + '"' 
+        run_cmd(cmd, log_all = True, simple = True)
 
     def install_step(self):
         """
@@ -52,8 +52,8 @@ class EB_Oases(ConfigureMake):
         srcdir = self.cfg['start_dir']
         destdir = os.path.join(self.installdir, 'bin')
         srcfile = None
-	# Get executable files, something like: for i in $(find . -maxdepth 1 -type f -perm +111 -print | \
-	#    sed -e 's/\.\///g' | awk '{print "\""$0"\""}' | grep -vE "\.sh|\.html"); do echo -ne "$i, "; done && echo
+        # Get executable files, something like: for i in $(find . -maxdepth 1 -type f -perm +111 -print | \
+        #    sed -e 's/\.\///g' | awk '{print "\""$0"\""}' | grep -vE "\.sh|\.html"); do echo -ne "$i, "; done && echo
         try:
             os.makedirs(destdir)
             for filename in ["oases"]:
