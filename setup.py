@@ -40,7 +40,7 @@ from distutils import log
 
 # note: release candidates should be versioned as a pre-release, e.g. "1.1rc1"
 # 1.1-rc1 would indicate a post-release, i.e., and update of 1.1, so beware!
-VERSION = "1.0.0.2dev"
+VERSION = "1.0.0.2"
 API_VERSION = VERSION.split('.')[0]
 EB_VERSION = '.'.join(VERSION.split('.')[0:2])
 rc_regexp = re.compile("^.*rc[0-9]*$")
