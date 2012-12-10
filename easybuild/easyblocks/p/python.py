@@ -40,7 +40,7 @@ from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.framework.extension import Extension
 from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.filetools import apply_patch, extract_file, rmtree2, run_cmd
-from easybuild.tools.modules import get_software_root
+from easybuild.tools.modules import get_software_root, get_software_version
 
 
 class EB_Python(ConfigureMake):
@@ -117,7 +117,9 @@ class EB_DefaultPythonPackage(Extension):
     """
 
     def __init__(self, mself, ext):
+        """Custom constructor for EB_DefaultPythonPackage: initialize class variables."""
         super(EB_DefaultPythonPackage, self).__init__(mself, ext)
+
         self.sitecfg = None
         self.sitecfgfn = 'site.cfg'
         self.sitecfglibdir = None
@@ -131,6 +133,9 @@ class EB_DefaultPythonPackage(Extension):
         self.unpack_options = ''
 
         self.python = get_software_root('Python')
+
+        ver = '.'.join(get_software_version('Python').split('.')[0:2])
+        self.python_libdir = os.path.join('lib', 'python%s' % ver, 'site-packages')
 
     def configure_step(self):
         """Configure Python package build
@@ -158,6 +163,11 @@ class EB_DefaultPythonPackage(Extension):
             except IOError:
                 self.log.exception("Creating %s failed" % self.sitecfgfn)
 
+        # sanity checks for python being used
+        run_cmd("python -V")
+        run_cmd("which python")
+        run_cmd("python -c 'import sys; print sys.executable'")
+
     def build_step(self):
         """Build Python package via setup.py"""
 
@@ -176,7 +186,7 @@ class EB_DefaultPythonPackage(Extension):
         - default: None
         """
         extrapath = ""
-        testinstalldir = os.path.join(self.builddir, "mytemporarytestinstalldir")
+        testinstalldir = os.path.join(self.builddir, "eb_test_install_dir_%s" % self.name)
         if self.testinstall:
             # Install in test directory and export PYTHONPATH
             try:
@@ -184,15 +194,11 @@ class EB_DefaultPythonPackage(Extension):
             except OSError:
                 self.log.exception("Creating testinstalldir %s failed" % testinstalldir)
 
-            ppath = "%s/reallib" % testinstalldir
-            cmd = "python setup.py install --install-scripts=%s --install-purelib=%s %s" % \
-                (testinstalldir, ppath, self.installopts)
+            cmd = "python setup.py install --prefix=%s %s" % (testinstalldir, self.installopts)
             run_cmd(cmd, log_all=True, simple=True)
 
-            if os.environ.has_key('PYTHONPATH'):
-                extrapath = "export PYTHONPATH=%s:%s && " % (ppath, os.environ['PYTHONPATH'])
-            else:
-                extrapath = "export PYTHONPATH=%s && " % ppath
+            run_cmd("python -c 'import sys; print sys.path'")  # print Python search path (debug)
+            extrapath = "export PYTHONPATH=%s/%s:$PYTHONPATH && " % (testinstalldir, self.python_libdir)
 
         if self.runtest:
             cmd = "%s%s" % (extrapath, self.runtest)
@@ -330,7 +336,7 @@ libraries = %s
         self.runtest = "cd .. && python -c 'import numpy; numpy.test(verbose=2)'"
 
     def install_step(self):
-        """Install numpy 
+        """Install numpy
         We remove the numpy build dir here, so scipy doesn't find it by accident
         """
         super(EB_numpy, self).install_step()
