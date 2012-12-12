@@ -85,27 +85,28 @@ class EB_NWChem(ConfigureMake):
         nwchem_modules = self.cfg['modules']
 
         # set required NWChem environment variables
-        env.setvar('NWCHEM_TOP', self.cfg['start_dir'])
-        env.setvar('NWCHEM_TARGET', self.cfg['target'])
-        env.setvar('ARMCI_NETWORK', self.cfg['armci_network'])
-        env.setvar('MSG_COMMS', self.cfg['msg_comms'])
+        env.setvar('NWCHEM_TOP', self.cfg['start_dir'], log=self.log)
+        env.setvar('NWCHEM_TARGET', self.cfg['target'], log=self.log)
+        env.setvar('ARMCI_NETWORK', self.cfg['armci_network'], log=self.log)
+        env.setvar('MSG_COMMS', self.cfg['msg_comms'], log=self.log)
 
         if 'python' in self.cfg['modules']:
             python_root = get_software_root('Python')
             if not python_root:
                 self.log.error("Python module not loaded, you should add Python as a dependency.")
-            env.setvar('PYTHONHOME', python_root)
-            env.setvar('PYTHONVERSION', '.'.join(get_software_version('Python').split('.')[0:2]))
+            env.setvar('PYTHONHOME', python_root, log=self.log)
+            pyver = '.'.join(get_software_version('Python').split('.')[0:2])
+            env.setvar('PYTHONVERSION', pyver, log=self.log)
 
-        env.setvar('LARGE_FILES', 'TRUE')
-        env.setvar('USE_NOFSCHECK', 'TRUE')
-        env.setvar('LIB_DEFINES', self.cfg['lib_defines'])
+        env.setvar('LARGE_FILES', 'TRUE', log=self.log)
+        env.setvar('USE_NOFSCHECK', 'TRUE', log=self.log)
+        env.setvar('LIB_DEFINES', self.cfg['lib_defines'], log=self.log)
 
         for var in ['USE_MPI', 'USE_MPIF', 'USE_MPIF4']:
-            env.setvar(var, 'y')
-        env.setvar('MPI_LOC', os.path.dirname(os.getenv('MPI_INC_DIR')))
-        env.setvar('MPI_LIB', os.getenv('MPI_LIB_DIR'))
-        env.setvar('MPI_INCLUDE', os.getenv('MPI_INC_DIR'))
+            env.setvar(var, 'y', log=self.log)
+        env.setvar('MPI_LOC', os.path.dirname(os.getenv('MPI_INC_DIR')), log=self.log)
+        env.setvar('MPI_LIB', os.getenv('MPI_LIB_DIR'), log=self.log)
+        env.setvar('MPI_INCLUDE', os.getenv('MPI_INC_DIR'), log=self.log)
         libmpi = None
         mpi_family = self.toolchain.mpi_family()
         if mpi_family in toolchain.OPENMPI:
@@ -116,14 +117,14 @@ class EB_NWChem(ConfigureMake):
             libmpi = "-lmpich -lopa -lmpl -lrt -lpthread"
         else:
             self.log.error("Don't know how to set LIBMPI for %s" % mpi_family)
-        env.setvar('LIBMPI', libmpi)
+        env.setvar('LIBMPI', libmpi, log=self.log)
 
         # BLAS and ScaLAPACK
-        env.setvar('HAS_BLAS', 'yes')
-        env.setvar('BLASOPT', '-L%s %s' % (os.getenv('BLAS_LIB_DIR'), os.getenv('LIBBLAS')))
+        env.setvar('HAS_BLAS', 'yes', log=self.log)
+        env.setvar('BLASOPT', '-L%s %s' % (os.getenv('BLAS_LIB_DIR'), os.getenv('LIBBLAS')), log=self.log)
 
-        env.setvar('USE_SCALAPACK', 'y')
-        env.setvar('SCALAPACK', '%s %s' % (os.getenv('LDFLAGS'), os.getenv('LIBSCALAPACK')))
+        env.setvar('USE_SCALAPACK', 'y', log=self.log)
+        env.setvar('SCALAPACK', '%s %s' % (os.getenv('LDFLAGS'), os.getenv('LIBSCALAPACK')), log=self.log)
 
         # enable NBO support if desired
         if self.cfg['with_nbo_support']:
@@ -132,8 +133,7 @@ class EB_NWChem(ConfigureMake):
             shutil.copyfile(nwnbo_file, target)
             nwchem_modules += ' nbo'
 
-        env.setvar('NWCHEM_MODULES', nwchem_modules)
-        self.log.info('NWCHEM_MODULES set to %s' % os.getenv('NWCHEM_MODULES'))
+        env.setvar('NWCHEM_MODULES', nwchem_modules, log=self.log)
 
         # clean first (why not)
         run_cmd("make clean", simple=True, log_all=True, log_ok=True)
@@ -145,8 +145,7 @@ class EB_NWChem(ConfigureMake):
         """Custom built-in test procedure for NWChem."""
 
         # set FC
-        env.setvar('FC', os.getenv('F77'))
-        self.log.info('FC set to %s' % os.getenv('FC'))
+        env.setvar('FC', os.getenv('F77'), log=self.log)
 
         # check whether 64-bit integers should be used, and act on it
         if not self.toolchain.options['i8']:
@@ -155,7 +154,7 @@ class EB_NWChem(ConfigureMake):
                 par = '-j %s' % self.cfg['parallel']
             run_cmd("make %s 64_to_32" % par, simple=True, log_all=True, log_ok=True)
 
-            env.setvar('USE_64TO32', "y")
+            env.setvar('USE_64TO32', "y", log=self.log)
 
         libs = os.getenv('LIBS')
         if libs:
