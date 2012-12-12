@@ -184,19 +184,11 @@ class EB_NWChem(ConfigureMake):
                         bindir)
 
             # data
-            datadir = os.path.join(self.installdir, 'data')
-            mkdir(datadir)
-
-            src_datadir = os.path.join(self.cfg['start_dir'], 'data')
-            for path in os.listdir(src_datadir):
-                fullpath = os.path.join(src_datadir, path)
-                if os.path.isfile(fullpath):
-                    shutil.copy2(fullpath, datadir)
-                else:
-                    shutil.copytree(fullpath, datadir)
-
-            shutil.copytree(os.path.join(self.cfg['start_dir'], 'src', 'basis', 'libraries'), datadir)
-            shutil.copytree(os.path.join(self.cfg['start_dir'], 'src', 'nwpw', 'libraryps'), datadir)
+            shutil.copytree(os.path.join(self.cfg['start_dir'], 'src', 'data'), self.installdir)
+            shutil.copytree(os.path.join(self.cfg['start_dir'], 'src', 'basis', 'libraries'),
+                            os.path.join(self.installdir, 'data')
+            shutil.copytree(os.path.join(self.cfg['start_dir'], 'src', 'nwpw', 'libraryps'),
+                            os.path.join(self.installdir, 'data')
 
         except OSError, err:
             self.log.error("Failed to install NWChem: %s" % err)
