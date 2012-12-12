@@ -27,6 +27,7 @@ EasyBuild support for building and installing NWChem, implemented as an easybloc
 """
 import os
 import shutil
+import tempfile
 
 import easybuild.tools.environment as env
 import easybuild.tools.toolchain as toolchain
@@ -62,6 +63,17 @@ class EB_NWChem(ConfigureMake):
 
     def configure_step(self):
         """Custom configuration procedure for NWChem."""
+
+        # building NWChem in a long path name is an issue, so let's make sure we have a short one
+        try:
+            # NWChem insists that version is in name of build dir
+            tmpdir = tempfile.mkdtemp(suffix=self.version)
+            os.rmdir(tmpdir)
+            os.symlink(self.cfg['start_dir'], tmpdir)
+            os.chdir(tmpdir)
+            self.cfg['start_dir'] = tmpdir
+        except OSError, err:
+            self.log.error("Failed to symlink build dir to a shorter path name: %s" % err)
 
         # change to actual build dir
         try:
