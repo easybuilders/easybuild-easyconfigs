@@ -185,12 +185,36 @@ class EB_NWChem(ConfigureMake):
                         bindir)
 
             # data
-            for datadir in ['', 'libraries', 'librayps']:
-                shutil.copytree(os.path.join(self.cfg['start_dir'], 'src', 'data', datadir),
-                                os.path.join(self.installdir, 'data', datadir))
+            shutil.copytree(os.path.join(self.cfg['start_dir'], 'src', 'data'),
+                            os.path.join(self.installdir, 'data'))
+            shutil.copytree(os.path.join(self.cfg['start_dir'], 'src', 'basis', 'libraries'),
+                            os.path.join(self.installdir, 'data', 'libraries'))
+            shutil.copytree(os.path.join(self.cfg['start_dir'], 'src', 'nwpw', 'libraryps'),
+                            os.path.join(self.installdir, 'data', 'libraryps'))
 
         except OSError, err:
             self.log.error("Failed to install NWChem: %s" % err)
+
+        # create NWChem settings file
+        fn = os.path.join(self.installdir, 'data', 'default.nwchemrc')
+        txt = """nwchem_basis_library %(path)s/data/libraries/
+nwchem_nwpw_library %(path)s/data/libraryps/
+ffield amber
+amber_1 %(path)s/data/amber_s/
+amber_2 %(path)s/data/amber_q/
+amber_3 %(path)s/data/amber_x/
+amber_4 %(path)s/data/amber_u/
+spce %(path)s/data/solvents/spce.rst
+charmm_s %(path)s/data/charmm_s/
+charmm_x %(path)s/data/charmm_x/
+""" % {'path': self.installdir}
+
+        try:
+            f = open(fn, 'w')
+            f.write(txt)
+            f.close()
+        except IOError, err:
+            self.log.error("Failed to create %s: %s" % (fn, err))
 
     def sanity_check_step(self):
         """Custom sanity check for NWChem."""
