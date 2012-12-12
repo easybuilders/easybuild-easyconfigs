@@ -186,9 +186,9 @@ class EB_NWChem(ConfigureMake):
             # data
             shutil.copytree(os.path.join(self.cfg['start_dir'], 'src', 'data'), self.installdir)
             shutil.copytree(os.path.join(self.cfg['start_dir'], 'src', 'basis', 'libraries'),
-                            os.path.join(self.installdir, 'data')
+                            os.path.join(self.installdir, 'data'))
             shutil.copytree(os.path.join(self.cfg['start_dir'], 'src', 'nwpw', 'libraryps'),
-                            os.path.join(self.installdir, 'data')
+                            os.path.join(self.installdir, 'data'))
 
         except OSError, err:
             self.log.error("Failed to install NWChem: %s" % err)
