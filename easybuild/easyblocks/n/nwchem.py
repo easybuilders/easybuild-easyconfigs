@@ -55,6 +55,7 @@ class EB_NWChem(ConfigureMake):
                       # possible options for ARMCI_NETWORK on LINUX64 with Infiniband:
                       # OPENIB, MPI-MT, MPI-SPAWN, MELLANOX
                       ('armci_network', ['OPENIB', "Network protocol to use", CUSTOM]),
+                      ('msg_comms', ['MPI', "Type of message communication", CUSTOM]),
                       ('modules', ["all", "NWChem modules to build", CUSTOM]),
                       ('lib_defines', ['', "Additional defines for C preprocessor", CUSTOM]),
                       ('with_nbo_support', [False, "Enable NBO support", CUSTOM]),
@@ -87,6 +88,7 @@ class EB_NWChem(ConfigureMake):
         env.setvar('NWCHEM_TOP', self.cfg['start_dir'])
         env.setvar('NWCHEM_TARGET', self.cfg['target'])
         env.setvar('ARMCI_NETWORK', self.cfg['armci_network'])
+        env.setvar('MSG_COMMS', self.cfg['msg_comms'])
 
         if 'python' in self.cfg['modules']:
             python_root = get_software_root('Python')
