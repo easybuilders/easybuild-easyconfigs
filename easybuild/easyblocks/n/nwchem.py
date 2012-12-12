@@ -87,23 +87,22 @@ class EB_NWChem(ConfigureMake):
         env.setvar('USE_NOFSCHECK', 'TRUE')
         env.setvar('LIB_DEFINES', self.cfg['lib_defines'])
 
-        if self.toolchain.options['usempi']:
-            for var in ['USE_MPI', 'USE_MPIF', 'USE_MPIF4']:
-                env.setvar(var, 'y')
-            env.setvar('MPI_LOC', os.path.dirname(os.getenv('MPI_INC_DIR')))
-            env.setvar('MPI_LIB', os.getenv('MPI_LIB_DIR'))
-            env.setvar('MPI_INCLUDE', os.getenv('MPI_INC_DIR'))
-            libmpi = None
-            mpi_family = self.toolchain.mpi_family()
-            if mpi_family in toolchain.OPENMPI:
-                libmpi = "-lmpi_f90 -lmpi_f77 -lmpi -ldl -Wl,--export-dynamic -lnsl -lutil"
-            elif mpi_family in [toolchain.INTELMPI]:
-                libmpi = "-lmpi -lmpiif"
-            elif mpi_family in [toolchain.MPICH2]:
-                libmpi = "-lmpich -lopa -lmpl -lrt -lpthread"
-            else:
-                self.log.error("Don't know how to set LIBMPI for %s" % mpi_family)
-            env.setvar('LIBMPI', libmpi)
+        for var in ['USE_MPI', 'USE_MPIF', 'USE_MPIF4']:
+            env.setvar(var, 'y')
+        env.setvar('MPI_LOC', os.path.dirname(os.getenv('MPI_INC_DIR')))
+        env.setvar('MPI_LIB', os.getenv('MPI_LIB_DIR'))
+        env.setvar('MPI_INCLUDE', os.getenv('MPI_INC_DIR'))
+        libmpi = None
+        mpi_family = self.toolchain.mpi_family()
+        if mpi_family in toolchain.OPENMPI:
+            libmpi = "-lmpi_f90 -lmpi_f77 -lmpi -ldl -Wl,--export-dynamic -lnsl -lutil"
+        elif mpi_family in [toolchain.INTELMPI]:
+            libmpi = "-lmpi -lmpiif"
+        elif mpi_family in [toolchain.MPICH2]:
+            libmpi = "-lmpich -lopa -lmpl -lrt -lpthread"
+        else:
+            self.log.error("Don't know how to set LIBMPI for %s" % mpi_family)
+        env.setvar('LIBMPI', libmpi)
 
         # BLAS and ScaLAPACK
         env.setvar('HAS_BLAS', 'yes')
