@@ -29,6 +29,7 @@ import os
 import shutil
 
 import easybuild.tools.environment as env
+import easybuild.tools.toolchain as toolchain
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.filetools import mkdir, run_cmd
@@ -68,11 +69,12 @@ class EB_NWChem(ConfigureMake):
         except OSError, err:
             self.log.error("Failed to change to build dir: %s" % err)
 
+        nwchem_modules = self.cfg['modules']
+
         # set required NWChem environment variables
         env.setvar('NWCHEM_TOP', self.cfg['start_dir'])
         env.setvar('NWCHEM_TARGET', self.cfg['target'])
         env.setvar('ARMCI_NETWORK', self.cfg['armci_network'])
-        nwchem_modules = self.cfg['modules']
 
         if 'python' in self.cfg['modules']:
             python_root = get_software_root('Python')
@@ -88,9 +90,20 @@ class EB_NWChem(ConfigureMake):
         if self.toolchain.options['usempi']:
             for var in ['USE_MPI', 'USE_MPIF', 'USE_MPIF4']:
                 env.setvar(var, 'y')
-            env.setvar('LIBMPI', '')  # not needed, using MPI wrapper commands (mpicc, ...)
+            env.setvar('MPI_LOC', os.path.dirname(os.getenv('MPI_INC_DIR')))
             env.setvar('MPI_LIB', os.getenv('MPI_LIB_DIR'))
             env.setvar('MPI_INCLUDE', os.getenv('MPI_INC_DIR'))
+            libmpi = None
+            mpi_family = self.toolchain.mpi_family()
+            if mpi_family in toolchain.OPENMPI:
+                libmpi = "-lmpi_f90 -lmpi_f77 -lmpi -ldl -Wl,--export-dynamic -lnsl -lutil"
+            elif mpi_family in [toolchain.INTELMPI]:
+                libmpi = "-lmpi -lmpiif"
+            elif mpi_family in [toolchain.MPICH2]:
+                libmpi = "-lmpich -lopa -lmpl -lrt -lpthread"
+            else:
+                self.log.error("Don't know how to set LIBMPI for %s" % mpi_family)
+            env.setvar('LIBMPI', libmpi)
 
         # BLAS and ScaLAPACK
         env.setvar('HAS_BLAS', 'yes')
@@ -109,14 +122,14 @@ class EB_NWChem(ConfigureMake):
         env.setvar('NWCHEM_MODULES', nwchem_modules)
         self.log.info('NWCHEM_MODULES set to %s' % os.getenv('NWCHEM_MODULES'))
 
+        # clean first (why not)
+        run_cmd("make clean", simple=True, log_all=True, log_ok=True)
+
         # configure build
         run_cmd("make nwchem_config", simple=True, log_all=True, log_ok=True)
 
     def build_step(self):
         """Custom built-in test procedure for NWChem."""
-
-        # clean first (why not)
-        run_cmd("make clean", simple=True, log_all=True, log_ok=True)
 
         # set FC
         env.setvar('FC', os.getenv('F77'))
@@ -129,10 +142,13 @@ class EB_NWChem(ConfigureMake):
                 par = '-j %s' % self.cfg['parallel']
             run_cmd("make %s 64_to_32" % par, simple=True, log_all=True, log_ok=True)
 
-            # clean again to prepare for build
-            run_cmd("make realclean", simple=True, log_all=True, log_ok=True)
+            env.setvar('USE_64TO32', "y")
 
-            env.setvar('makeopts', "USE_64TO32=y")
+        libs = os.getenv('LIBS')
+        if libs:
+            self.log.info("LIBS was defined as '%s', need to unset it to avoid problems..." % libs)
+        os.unsetenv('LIBS')
+        os.environ.pop('LIBS')
 
         super(EB_NWChem, self).build_step()
 
@@ -192,9 +208,7 @@ class EB_NWChem(ConfigureMake):
 
         txt = super(EB_NWChem, self).make_module_extra()
 
-        txt += self.moduleGenerator().set_environment('PYTHONHOME', get_software_root('Python'))
-        pyver = '.'.join(get_software_version('Python').split('.')[0:2])
-        txt += self.moduleGenerator().set_environment('PYTHONVERSION', pyver)
-        txt += self.moduleGenerator().prepend_paths('PYTHONPATH', ['path1', 'path2'])
+        txt += self.moduleGenerator().set_environment("PYTHONHOME", get_software_root('Python'))
+        txt += self.moduleGenerator().prepend_paths("PYTHONPATH", ['path1', 'path2'])
 
         return txt
