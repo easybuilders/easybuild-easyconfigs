@@ -79,7 +79,7 @@ class EB_VSC_minus_tools(PythonPackage):
                                                          'mympirun', 'mympisanity', 'myscoop', 'ompirun',
                                                          'pbsssh', 'qmpirun', 'sshsleep', 'startlogdaemon',
                                                          'fake/mpirun']],
-                        'dirs': ['lib/vsc/mympirun', 'lib/vsc/utils'],
+                        'dirs': ['lib'],
                        }
 
         super(EB_VSC_minus_tools, self).sanity_check_step(custom_paths=custom_paths)
