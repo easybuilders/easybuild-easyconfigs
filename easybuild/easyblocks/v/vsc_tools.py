@@ -28,9 +28,7 @@ EasyBuild support for building and installing VSC-tools, implemented as an easyb
 import os
 
 import easybuild.tools.environment as env
-import easybuild.tools.toolchain as toolchain
 from easybuild.easyblocks.generic.pythonpackage import PythonPackage
-from easybuild.framework.easyconfig import CUSTOM, MANDATORY
 from easybuild.tools.filetools import run_cmd
 
 
@@ -47,8 +45,11 @@ class EB_VSC_minus_tools(PythonPackage):
 
         args = "install --prefix=%(path)s --install-lib=%(path)s/lib" % {'path': self.installdir}
 
+        pylibdir = os.path.join(self.installdir, 'lib')
+        env.setvar('PYTHONPATH', '%s:%s' % (pylibdir, os.getenv('PYTHONPATH')))
+
         try:
-            os.mkdir(os.path.join(self.installdir, 'lib'))
+            os.mkdir(pylibdir)
 
             pwd = os.getcwd()
 
@@ -83,3 +84,11 @@ class EB_VSC_minus_tools(PythonPackage):
 
         super(EB_VSC_minus_tools, self).sanity_check_step(custom_paths=custom_paths)
 
+    def make_module_extra(self):
+        """Add install path to PYTHONPATH"""
+
+        txt = super(PythonPackage, self).make_module_extra()
+
+        txt += "prepend-path\tPYTHONPATH\t%s\n" % os.path.join(self.installdir , 'lib')
+
+        return txt
