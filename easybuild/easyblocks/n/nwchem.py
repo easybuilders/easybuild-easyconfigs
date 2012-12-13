@@ -119,6 +119,10 @@ class EB_NWChem(ConfigureMake):
             self.log.error("Don't know how to set LIBMPI for %s" % mpi_family)
         env.setvar('LIBMPI', libmpi, log=self.log)
 
+        # compiler optimization flags
+        env.setvar('COPTIMIZE', os.getenv('CFLAGS'))
+        env.setvar('FOPTIMIZE', os.getenv('FFLAGS'))
+
         # BLAS and ScaLAPACK
         env.setvar('HAS_BLAS', 'yes', log=self.log)
         env.setvar('BLASOPT', '-L%s %s' % (os.getenv('BLAS_LIB_DIR'), os.getenv('LIBBLAS')), log=self.log)
