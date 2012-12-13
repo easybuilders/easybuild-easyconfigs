@@ -235,6 +235,7 @@ charmm_x %(path)s/data/charmm_x/
         txt = super(EB_NWChem, self).make_module_extra()
 
         txt += self.moduleGenerator.set_environment("PYTHONHOME", get_software_root('Python'))
-        txt += self.moduleGenerator.prepend_paths("PYTHONPATH", ['path1', 'path2'])
+        # '/' at the end is critical for NWCHEM_BASIS_LIBRARY!
+        txt += self.moduleGenerator.set_environment('NWCHEM_BASIS_LIBRARY', "$root/data/libraries/")
 
         return txt
