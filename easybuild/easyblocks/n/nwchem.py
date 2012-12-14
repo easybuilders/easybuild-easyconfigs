@@ -30,6 +30,7 @@ import os
 import shutil
 import tempfile
 
+import easybuild.tools.config as config
 import easybuild.tools.environment as env
 import easybuild.tools.toolchain as toolchain
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
@@ -280,7 +281,7 @@ charmm_x %(path)s/data/charmm_x/
             fail = 0.0
             tot = 0.0
 
-            test_cases_logfn = os.path.join(self.installdir, 'easybuild', 'test_cases.log')
+            test_cases_logfn = os.path.join(self.installdir, config.log_path(), 'test_cases.log')
             test_cases_log = open(test_cases_logfn, "w")
 
             for test in self.cfg['tests']:
