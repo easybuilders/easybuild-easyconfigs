@@ -32,6 +32,7 @@ import shutil
 import sys
 from distutils.version import LooseVersion
 
+import easybuild.tools.toolchain as toolchain
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.filetools import run_cmd
@@ -205,7 +206,15 @@ class EB_Trinity(EasyBlock):
 
                 sys.stdout.write(line)
 
-            cmd = "make"
+            trinity_compiler = None
+            if self.toolchain.comp_family in [toolchain.INTEL_COMP]:
+                trinity_compiler = "intel"
+            elif self.toolchain.comp_family == [toolchain.GCC]:
+                trinity_compiler = "intel"
+            else:
+                self.log.error("Don't know how to set TRINITY_COMPILER for %s compiler" % trinity_compiler)
+
+            cmd = "make TRINITY_COMPILER=%s" % trinity_compiler
             run_cmd(cmd)
 
             # butterfly is not included in standard build
