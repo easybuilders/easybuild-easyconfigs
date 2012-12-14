@@ -207,12 +207,13 @@ class EB_Trinity(EasyBlock):
                 sys.stdout.write(line)
 
             trinity_compiler = None
-            if self.toolchain.comp_family in [toolchain.INTELCOMP]:
+            comp_fam = self.toolchain.comp_family()
+            if comp_fam in [toolchain.INTELCOMP]:
                 trinity_compiler = "intel"
-            elif self.toolchain.comp_family == [toolchain.GCC]:
+            elif comp_fam in [toolchain.GCC]:
                 trinity_compiler = "gcc"
             else:
-                self.log.error("Don't know how to set TRINITY_COMPILER for %s compiler" % trinity_compiler)
+                self.log.error("Don't know how to set TRINITY_COMPILER for %s compiler" % comp_fam)
 
             cmd = "make TRINITY_COMPILER=%s" % trinity_compiler
             run_cmd(cmd)
