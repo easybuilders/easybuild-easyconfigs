@@ -1,8 +1,13 @@
 ##
+# Copyright 2012 Ghent University
 # Copyright 2012 Kenneth Hoste
 #
 # This file is part of EasyBuild,
-# originally created by the HPC team of the University of Ghent (http://ugent.be/hpc).
+# originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
+# with support of Ghent University (http://ugent.be/hpc),
+# the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
+# the Hercules foundation (http://www.herculesstichting.be/in_English)
+# and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
 # http://github.com/hpcugent/easybuild
 #
@@ -88,6 +93,10 @@ class EB_SLEPc(ConfigureMake):
             (out, _) = run_cmd(cmd, log_all=True, simple=False)
         else:
             # regular './configure --prefix=X' for non-source install
+            
+            # make sure old install dir is removed first
+            self.make_installdir(dontcreate=True)
+
             out = super(EB_SLEPc, self).configure_step()
 
         # check for errors in configure

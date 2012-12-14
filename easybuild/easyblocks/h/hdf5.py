@@ -1,4 +1,5 @@
 ##
+# Copyright 2009-2012 Ghent University
 # Copyright 2009-2012 Stijn De Weirdt
 # Copyright 2010 Dries Verdegem
 # Copyright 2010-2012 Kenneth Hoste
@@ -6,7 +7,11 @@
 # Copyright 2011-2012 Jens Timmerman
 #
 # This file is part of EasyBuild,
-# originally created by the HPC team of the University of Ghent (http://ugent.be/hpc).
+# originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
+# with support of Ghent University (http://ugent.be/hpc),
+# the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
+# the Hercules foundation (http://www.herculesstichting.be/in_English)
+# and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
 # http://github.com/hpcugent/easybuild
 #
@@ -53,7 +58,7 @@ class EB_HDF5(ConfigureMake):
         self.cfg.update('configopts', "--enable-cxx --enable-fortran %s" % fcomp)
 
         # MPI and C++ support enabled requires --enable-unsupported, because this is untested by HDF5
-        if self.toolchain.opts['usempi']:
+        if self.toolchain.options['usempi']:
             self.cfg.update('configopts', "--enable-unsupported")
 
         # make options
@@ -68,7 +73,7 @@ class EB_HDF5(ConfigureMake):
         Custom sanity check for HDF5
         """
 
-        if self.toolchain.opts['usempi']:
+        if self.toolchain.options['usempi']:
             extra_binaries = ["bin/%s" % x for x in ["h5perf", "h5pcc", "h5pfc", "ph5diff"]]
         else:
             extra_binaries = ["bin/%s" % x for x in ["h5cc", "h5fc"]]

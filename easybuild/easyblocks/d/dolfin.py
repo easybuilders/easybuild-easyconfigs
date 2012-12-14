@@ -1,9 +1,14 @@
 ##
+# Copyright 2012 Ghent University
 # Copyright 2012 Kenneth Hoste
 # Copyright 2012 Jens Timmerman
 #
 # This file is part of EasyBuild,
-# originally created by the HPC team of the University of Ghent (http://ugent.be/hpc).
+# originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
+# with support of Ghent University (http://ugent.be/hpc),
+# the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
+# the Hercules foundation (http://www.herculesstichting.be/in_English)
+# and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
 # http://github.com/hpcugent/easybuild
 #
@@ -27,7 +32,7 @@ import re
 import tempfile
 
 import easybuild.tools.environment as env
-import easybuild.tools.toolkit as toolchain
+import easybuild.tools.toolchain as toolchain
 from easybuild.easyblocks.generic.cmakepythonpackage import CMakePythonPackage
 from easybuild.tools.modules import get_software_root, get_software_version
 
@@ -49,7 +54,7 @@ class EB_DOLFIN(CMakePythonPackage):
         fflags = os.getenv('FFLAGS')
 
         # fix for "SEEK_SET is #defined but must not be for the C++ binding of MPI. Include mpi.h before stdio.h"
-        if self.toolchain.mpi_type() in [toolchain.INTEL, toolchain.MPICH2]:
+        if self.toolchain.mpi_family() in [toolchain.INTELMPI, toolchain.MPICH2, toolchain.MVAPICH2]:
             cflags += " -DMPICH_IGNORE_CXX_SEEK"
             cxxflags += " -DMPICH_IGNORE_CXX_SEEK"
             fflags += " -DMPICH_IGNORE_CXX_SEEK"
@@ -93,7 +98,7 @@ class EB_DOLFIN(CMakePythonPackage):
         self.cfg.update('configopts', '-DZLIB_LIBRARY=%s' % os.path.join(depsdict['zlib'], "lib", "libz.a"))
 
         # set correct openmp options
-        openmp = self.toolchain.get_openmp_flag()
+        openmp = self.toolchain.get_flag('openmp')
         self.cfg.update('configopts', ' -DOpenMP_CXX_FLAGS="%s"' % openmp)
         self.cfg.update('configopts', ' -DOpenMP_C_FLAGS="%s"' % openmp)
 
@@ -164,8 +169,10 @@ class EB_DOLFIN(CMakePythonPackage):
 
         # Dolfin needs to find Boost and the UFC pkgconfig file
         txt += self.moduleGenerator.set_environment('BOOST_DIR', get_software_root('Boost'))
-        pkg_config_paths = [os.path.join(get_software_root('UFC'), "lib", "pkgconfig"),
-                            os.path.join(self.installdir, "lib", "pkgconfig")]
+        pkg_config_paths = [os.path.join("lib", "pkgconfig"),
+                            # can't use get_software_root because prepend_paths checks for non-absolute paths
+                            os.path.join("$EBROOTUFC", "lib", "pkgconfig")]
+
         txt += self.moduleGenerator.prepend_paths("PKG_CONFIG_PATH", pkg_config_paths)
 
         envvars = ['I_MPI_CXX', 'I_MPI_CC']

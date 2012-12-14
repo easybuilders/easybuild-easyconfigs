@@ -1,4 +1,5 @@
 ##
+# Copyright 2009-2012 Ghent University
 # Copyright 2009-2012 Stijn De Weirdt
 # Copyright 2010 Dries Verdegem
 # Copyright 2010-2012 Kenneth Hoste
@@ -6,7 +7,11 @@
 # Copyright 2011-2012 Jens Timmerman
 #
 # This file is part of EasyBuild,
-# originally created by the HPC team of the University of Ghent (http://ugent.be/hpc).
+# originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
+# with support of Ghent University (http://ugent.be/hpc),
+# the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
+# the Hercules foundation (http://www.herculesstichting.be/in_English)
+# and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
 # http://github.com/hpcugent/easybuild
 #
@@ -32,7 +37,7 @@ import re
 import sys
 
 import easybuild.tools.environment as env
-import easybuild.tools.toolkit as toolchain
+import easybuild.tools.toolchain as toolchain
 from easybuild.easyblocks.netcdf import set_netcdf_env_vars, get_netcdf_module_set_cmds  #@UnresolvedImport
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import CUSTOM, MANDATORY
@@ -110,10 +115,10 @@ class EB_WRF(EasyBlock):
         # determine build type option to look for
         build_type_option = None
         self.comp_fam = self.toolchain.comp_family()
-        if self.comp_fam == toolchain.INTEL:
+        if self.comp_fam == toolchain.INTELCOMP:  #@UndefinedVariable
             build_type_option = "Linux x86_64 i486 i586 i686, ifort compiler with icc"
 
-        elif self.comp_fam == toolchain.GCC:
+        elif self.comp_fam == toolchain.GCC:  #@UndefinedVariable
             build_type_option = "x86_64 Linux, gfortran compiler with gcc"
 
         else:
@@ -170,7 +175,7 @@ class EB_WRF(EasyBlock):
 
             # set extra flags for Intel compilers
             # see http://software.intel.com/en-us/forums/showthread.php?t=72109&p=1#146748
-            if self.comp_fam == toolchain.INTEL:
+            if self.comp_fam == toolchain.INTELCOMP:  #@UndefinedVariable
 
                 # -O3 -heap-arrays is required to resolve compilation error
                 for envvar in ['CFLAGS', 'FFLAGS']:
@@ -230,7 +235,7 @@ class EB_WRF(EasyBlock):
                     self.testcases.remove(test)
 
             # some tests hang when WRF is built with Intel compilers
-            if self.comp_fam == toolchain.INTEL:
+            if self.comp_fam == toolchain.INTELCOMP:  #@UndefinedVariable
                 for test in ["em_heldsuarez"]:
                     if test in self.testcases:
                         self.testcases.remove(test)

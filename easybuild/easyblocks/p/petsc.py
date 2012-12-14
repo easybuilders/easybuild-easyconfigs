@@ -1,8 +1,13 @@
 ##
+# Copyright 2012 Ghent University
 # Copyright 2012 Kenneth Hoste
 #
 # This file is part of EasyBuild,
-# originally created by the HPC team of the University of Ghent (http://ugent.be/hpc).
+# originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
+# with support of Ghent University (http://ugent.be/hpc),
+# the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
+# the Hercules foundation (http://www.herculesstichting.be/in_English)
+# and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
 # http://github.com/hpcugent/easybuild
 #
@@ -26,7 +31,7 @@ import re
 from distutils.version import LooseVersion
 
 import easybuild.tools.environment as env
-import easybuild.tools.toolkit as toolchain
+import easybuild.tools.toolchain as toolchain
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.framework.easyconfig import BUILD, CUSTOM
 from easybuild.tools.filetools import run_cmd
@@ -84,18 +89,18 @@ class EB_PETSc(ConfigureMake):
             self.cfg.update('configopts', '--with-cxxflags="%s"' % os.getenv('CXXFLAGS'))
             self.cfg.update('configopts', '--with-fcflags="%s"' % os.getenv('F90FLAGS'))
 
-            if not self.toolchain.comp_family() == toolchain.GCC:
+            if not self.toolchain.comp_family() == toolchain.GCC:  #@UndefinedVariable
                 self.cfg.update('configopts', '--with-gnu-compilers=0')
 
             # MPI
-            if self.toolchain.opts['usempi']:
+            if self.toolchain.options['usempi']:
                 self.cfg.update('configopts', '--with-mpi=1')
 
             # build options
             self.cfg.update('configopts', '--with-build-step-np=%s' % self.cfg['parallel'])
             self.cfg.update('configopts', '--with-shared-libraries=%d' % self.cfg['shared_libs'])
-            self.cfg.update('configopts', '--with-debugging=%d' % self.toolchain.opts['debug'])
-            self.cfg.update('configopts', '--with-pic=%d' % self.toolchain.opts['pic'])
+            self.cfg.update('configopts', '--with-debugging=%d' % self.toolchain.options['debug'])
+            self.cfg.update('configopts', '--with-pic=%d' % self.toolchain.options['pic'])
             self.cfg.update('configopts', '--with-x=0 --with-windows-graphics=0')
 
             # PAPI support

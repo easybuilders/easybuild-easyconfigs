@@ -2,7 +2,11 @@
 # Copyright 2012 Kenneth Hoste
 #
 # This file is part of EasyBuild,
-# originally created by the HPC team of the University of Ghent (http://ugent.be/hpc).
+# originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
+# with support of Ghent University (http://ugent.be/hpc),
+# the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
+# the Hercules foundation (http://www.herculesstichting.be/in_English)
+# and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
 # http://github.com/hpcugent/easybuild
 #
@@ -37,7 +41,7 @@ class EB_SHRiMP(ConfigureMake):
 
         cxxflags = os.getenv('CXXFLAGS')
 
-        env.setvar('CXXFLAGS', "%s %s" % (cxxflags, self.toolchain.get_openmp_flag()))
+        env.setvar('CXXFLAGS', "%s %s" % (cxxflags, self.toolchain.get_flag('openmp')))
 
     def install_step(self):
         """Install SHRiMP by copying files to install dir, and fix permissions."""

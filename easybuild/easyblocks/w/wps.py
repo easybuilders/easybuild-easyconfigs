@@ -1,4 +1,5 @@
 ##
+# Copyright 2009-2012 Ghent University
 # Copyright 2009-2012 Stijn De Weirdt
 # Copyright 2010 Dries Verdegem
 # Copyright 2010-2012 Kenneth Hoste
@@ -6,7 +7,11 @@
 # Copyright 2011-2012 Jens Timmerman
 #
 # This file is part of EasyBuild,
-# originally created by the HPC team of the University of Ghent (http://ugent.be/hpc).
+# originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
+# with support of Ghent University (http://ugent.be/hpc),
+# the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
+# the Hercules foundation (http://www.herculesstichting.be/in_English)
+# and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
 # http://github.com/hpcugent/easybuild
 #
@@ -35,7 +40,7 @@ import tempfile
 from distutils.version import LooseVersion
 
 import easybuild.tools.environment as env
-import easybuild.tools.toolkit as toolchain
+import easybuild.tools.toolchain as toolchain
 from easybuild.easyblocks.netcdf import set_netcdf_env_vars, get_netcdf_module_set_cmds  #@UnresolvedImport
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import CUSTOM, MANDATORY
@@ -141,10 +146,10 @@ class EB_WPS(EasyBlock):
                                'dmpar': 'dmpar'
                               }
 
-            if self.comp_fam == toolchain.INTEL:
+            if self.comp_fam == toolchain.INTELCOMP:  #@UndefinedVariable
                 build_type_option = " Linux x86_64, Intel compiler"
 
-            elif self.comp_fam == toolchain.GCC:
+            elif self.comp_fam == toolchain.GCC:  #@UndefinedVariable
                 build_type_option = "Linux x86_64 g95 compiler"
 
             else:
@@ -157,10 +162,10 @@ class EB_WPS(EasyBlock):
                                'dmpar': 'DM parallel'
                               }
 
-            if self.comp_fam == toolchain.INTEL:
+            if self.comp_fam == toolchain.INTELCOMP:  #@UndefinedVariable
                 build_type_option = "PC Linux x86_64, Intel compiler"
 
-            elif self.comp_fam == toolchain.GCC:
+            elif self.comp_fam == toolchain.GCC:  #@UndefinedVariable
                 build_type_option = "PC Linux x86_64, gfortran compiler,"
                 knownbuildtypes['dmpar'] = knownbuildtypes['dmpar'].upper()
 

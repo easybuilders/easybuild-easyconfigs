@@ -1,4 +1,5 @@
 ##
+# Copyright 2009-2012 Ghent University
 # Copyright 2009-2012 Stijn De Weirdt
 # Copyright 2010 Dries Verdegem
 # Copyright 2010-2012 Kenneth Hoste
@@ -6,7 +7,11 @@
 # Copyright 2011-2012 Jens Timmerman
 #
 # This file is part of EasyBuild,
-# originally created by the HPC team of the University of Ghent (http://ugent.be/hpc).
+# originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
+# with support of Ghent University (http://ugent.be/hpc),
+# the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
+# the Hercules foundation (http://www.herculesstichting.be/in_English)
+# and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
 # http://github.com/hpcugent/easybuild
 #
@@ -31,7 +36,7 @@ import os
 import shutil
 from distutils.version import LooseVersion
 
-import easybuild.tools.toolkit as toolchain
+import easybuild.tools.toolchain as toolchain
 from easybuild.easyblocks.blacs import det_interface  #@UnresolvedImport
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.easyblocks.lapack import get_blas_lib  #@UnresolvedImport
@@ -79,7 +84,7 @@ class EB_ScaLAPACK(ConfigureMake):
             mpicc = os.getenv('MPICC')
             mpif77 = os.getenv('MPIF77')
             mpif90 = os.getenv('MPIF90')
-        elif self.toolchain.mpi_type() in [toolchain.OPENMPI, toolchain.MVAPICH2]:
+        elif self.toolchain.mpi_family() in [toolchain.OPENMPI, toolchain.MVAPICH2]:  #@UndefinedVariable
             mpicc = 'mpicc'
             mpif77 = 'mpif77'
             mpif90 = 'mpif90'
@@ -113,9 +118,9 @@ class EB_ScaLAPACK(ConfigureMake):
 
             # set compilers and options
             noopt = ''
-            if self.toolchain.opts['noopt']:
+            if self.toolchain.options['noopt']:
                 noopt += " -O0"
-            if self.toolchain.opts['pic']:
+            if self.toolchain.options['pic']:
                 noopt += " -fPIC"
             extra_makeopts += [
                                'F77="%s"' % mpif77,
@@ -130,7 +135,7 @@ class EB_ScaLAPACK(ConfigureMake):
         else:
 
             # determine interface
-            if self.toolchain.mpi_type() in [toolchain.OPENMPI, toolchain.MVAPICH2]:
+            if self.toolchain.mpi_family() in [toolchain.OPENMPI, toolchain.MVAPICH2]:  #@UndefinedVariable
                 interface = 'Add_'
             else:
                 self.log.error("Don't know which interface to pick for the MPI library being used.")

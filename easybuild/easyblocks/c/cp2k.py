@@ -1,4 +1,5 @@
 ##
+# Copyright 2009-2012 Ghent University
 # Copyright 2009-2012 Stijn De Weirdt
 # Copyright 2010 Dries Verdegem
 # Copyright 2010-2012 Kenneth Hoste
@@ -6,7 +7,11 @@
 # Copyright 2011-2012 Jens Timmerman
 #
 # This file is part of EasyBuild,
-# originally created by the HPC team of the University of Ghent (http://ugent.be/hpc).
+# originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
+# with support of Ghent University (http://ugent.be/hpc),
+# the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
+# the Hercules foundation (http://www.herculesstichting.be/in_English)
+# and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
 # http://github.com/hpcugent/easybuild
 #
@@ -34,7 +39,7 @@ import shutil
 import sys
 from distutils.version import LooseVersion
 
-import easybuild.tools.toolkit as toolchain
+import easybuild.tools.toolchain as toolchain
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.filetools import run_cmd
@@ -104,10 +109,10 @@ class EB_CP2K(EasyBlock):
         # set compilers options according to toolchain config
         # full debug: -g -traceback -check all -fp-stack-check
         # -g links to mpi debug libs
-        if self.toolchain.opts['debug']:
+        if self.toolchain.options['debug']:
             self.debug = '-g'
             self.log.info("Debug build")
-        if self.toolchain.opts['pic']:
+        if self.toolchain.options['pic']:
             self.fpic = "-fPIC"
             self.log.info("Using fPIC")
 
@@ -139,7 +144,7 @@ class EB_CP2K(EasyBlock):
 
         # compiler toolchain specific configuration
         comp_fam = self.toolchain.comp_family()
-        if comp_fam == toolchain.INTEL:
+        if comp_fam == toolchain.INTELCOMP:
             options = self.configure_intel_based()
         elif comp_fam == toolchain.GCC:
             options = self.configure_GCC_based()
@@ -236,7 +241,7 @@ class EB_CP2K(EasyBlock):
         # -automatic is default: -noautomatic -auto-scalar
         # some mem-bandwidth optimisation
         if self.cfg['type'] == 'psmp':
-            self.openmp = self.toolchain.get_openmp_flag()
+            self.openmp = self.toolchain.get_flag('openmp')
 
         # determine which opt flags to use
         if self.cfg['typeopt']:
