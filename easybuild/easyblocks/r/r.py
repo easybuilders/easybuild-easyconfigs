@@ -19,10 +19,10 @@
 # along with EasyBuild. If not, see <http://www.gnu.org/licenses/>.
 ##
 import os
-from easybuild.framework.application import Application
-from easybuild.tools.filetools import run_cmd, parselogForError
+from easybuild.easyblocks.generic.configuremake import ConfigureMake 
+from easybuild.tools.filetools import run_cmd, parse_log_for_error
 
-class EB_R(Application):
+class EB_R(ConfigureMake):
     """
     Install R, including list of packages specified
     Install specified version of packages, install hard-coded package version 
@@ -32,8 +32,7 @@ class EB_R(Application):
         """
         We set some default configs here for extentions for R.
         """
-        self.setcfg('pkgtemplate', "%s_%s.tar.gz")
-        self.setcfg('pkgdefaultclass', ['easybuild.easyblocks.rpackage', "EB_RPackage"])
+        self.setcfg('pkgdefaultclass', ['easybuild.easyblocks.rextension', "EB_RExtension"])
         self.setcfg('pkgfilter', ["R -q --no-save", "library(%(name)s)"])
         self.setcfg('pkgtemplate', '%(name)s/%(name)s_%(version)s.tar.gz')
         self.setcfg('pkginstalldeps', True)

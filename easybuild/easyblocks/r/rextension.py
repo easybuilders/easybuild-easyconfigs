@@ -25,10 +25,10 @@
 """
 EasyBuild support for R packages, implemented as an easyblock
 """
-from easybuild.framework.application import ApplicationPackage
-from easybuild.tools.filetools import run_cmd, parselogForError
+from easybuild.framework.extension import Extension
+from easybuild.tools.filetools import run_cmd, parse_log_for_error
 
-def mkInstallOptionR(opt, xs):
+def make_install_option(opt, xs):
     """
     Make option list for install.packages, to specify in R environment. 
     """
@@ -40,7 +40,7 @@ def mkInstallOptionR(opt, xs):
         s += "\")"
     return s
 
-def mkInstallOptionCmdLine(opt, xs):
+def make_install_option_cmdline(opt, xs):
     """
     Make option list for "R CMD INSTALL", to specify on command line.
     """
@@ -52,9 +52,12 @@ def mkInstallOptionCmdLine(opt, xs):
         s += "\""
     return s
 
-class EB_RPackage(ApplicationPackage):
-    def __init__(self, mself, pkg, pkginstalldeps):
-        ApplicationPackage.__init__(self, mself, pkg, pkginstalldeps)
+class EB_RExtension(Extension):
+    """
+    Install a R extension with this EasyBlock Extension
+    """
+    def __init__(self, mself, pkg):
+        Extension.__init__(self, mself, pkg)
         self.log.debug("using EB_RPackage")
         self.configurevars = []
         self.configureargs = []
@@ -65,38 +68,32 @@ class EB_RPackage(ApplicationPackage):
     def setconfigurevars(self, a):
         self.configurevars = a
 
-    def makeRCmd(self):
+    def make_r_cmd(self):
         confvars = "confvars"
         confargs = "confargs"
-        confvarsList = mkInstallOptionR(confvars, self.configurevars)
-        confargsList = mkInstallOptionR(confargs, self.configureargs)
-        confvarsStr = ""
-        if confvarsList:
-            confvarsList = confvarsList + "; names(%s)=\"%s\"" % (confvars, self.name)
-            confvarsStr = ", configure.vars=%s" % confvars
-        confargsStr = ""
-        if confargsList:
-            confargsList = confargsList + "; names(%s)=\"%s\"" % (confargs, self.name)
-            confargsStr = ", configure.args=%s" % confargs
+        confvarslist = make_install_option(confvars, self.configurevars)
+        confargslist = make_install_option(confargs, self.configureargs)
+        confvarsstr = ""
+        if confvarslist:
+            confvarslist = confvarslist + "; names(%s)=\"%s\"" % (confvars, self.name)
+            confvarsstr = ", configure.vars=%s" % confvars
+        confargsstr = ""
+        if confargslist:
+            confargslist = confargslist + "; names(%s)=\"%s\"" % (confargs, self.name)
+            confargsstr = ", configure.args=%s" % confargs
 
-        if self.pkginstalldeps:
-            installdeps = "TRUE"
-        else:
-            installdeps = "FALSE"
-
-        Rcmd = """
+        r_cmd = """
         options(repos=c(CRAN="http://www.freestatistics.org/cran"))
         %s
-        %s
-        install.packages("%s",dependencies = %s%s%s)
-        """ % (confvarsList, confargsList, self.name, installdeps, confvarsStr, confargsStr)
+        install.packages("%s",dependencies = FALSE)
+        """ % (confvarslist, self.name)
         cmd = "R -q --no-save"
 
-        self.log.debug("makeRCmd returns %s with input %s" % (cmd, Rcmd))
+        self.log.debug("make_r_cmd returns %s with input %s" % (cmd, r_cmd))
 
-        return (cmd, Rcmd)
+        return (cmd, r_cmd)
 
-    def makeCmdLineCmd(self):
+    def make_cmdline_cmd(self):
 
         confvars = ""
         if self.configurevars:
@@ -106,21 +103,21 @@ class EB_RPackage(ApplicationPackage):
             confargs = "--configure-args='%s'" % ' '.join(self.configureargs)
 
         cmd = "R CMD INSTALL %s %s %s" % (self.src, confargs, confvars)
-        self.log.debug("makeCmdLineCmd returns %s" % cmd)
+        self.log.debug("make_cmdline_cmd returns %s" % cmd)
 
         return cmd, None
 
     def run(self):
         if self.src:
             self.log.debug("Installing package %s version %s." % (self.name, self.version))
-            cmd, stdin = self.makeCmdLineCmd()
+            cmd, stdin = self.make_cmdline_cmd()
         else:
             self.log.debug("Installing most recent version of package %s (source not found)." % self.name)
-            cmd, stdin = self.makeRCmd()
+            cmd, stdin = self.make_r_cmd()
 
         cmdttdouterr, _ = run_cmd(cmd, log_all=True, simple=False, inp=stdin, regexp=False)
 
-        cmderrors = parselogForError(cmdttdouterr, regExp="^ERROR:", stdout=True)
+        cmderrors = parse_log_for_error(cmdttdouterr, regExp="^ERROR:")
         if cmderrors:
             cmd = "R -q --no-save"
             stdin = """
@@ -134,26 +131,26 @@ class EB_RPackage(ApplicationPackage):
             self.log.debug("Package %s installed succesfully" % self.name)
 
 
-class EB_bioconductor(EB_RPackage):
+class EB_bioconductor(EB_RExtension):
     """
     The Bioconductor package extends DefaultRPackage to use a different source
     And using the biocLite package to do the installation.
     """
-    def makeCmdLineCmd(self):
+    def make_cmdline_cmd(self):
         self.log.error("bioconductor.run: Don't know how to install a specific version of a bioconductor package.")
 
-    def makeRCmd(self):
+    def make_r_cmd(self):
         name = self.pkg['name']
         self.log.debug("Installing bioconductor package %s." % name)
-        blName = "\"%s\"" % name
+        bl_name = "\"%s\"" % name
 
-        Rcmd = """
+        r_cmd = """
         source("http://bioconductor.org/biocLite.R")
         biocLite(%s)
-        """ % (blName)
+        """ % (bl_name)
         cmd = "R -q --no-save"
 
-        return cmd, Rcmd
+        return cmd, r_cmd
 
 ## special cases of bioconductor packages
 # handled by class aliases
@@ -162,10 +159,10 @@ EB_Biobase = EB_IRanges = EB_AnnotationDbi = EB_bioconductor
 # exonmap doesn't seem to be available trought biocLite anymore...
 EB_exonmap = EB_bioconductor
 
-class EB_Rserve(EB_RPackage):
+class EB_Rserve(EB_RExtension):
     def run(self):
         self.setconfigurevars(['LIBS="$LIBS -lpthread"'])
-        EB_RPackage.run(self)
+        EB_RExtension.run(self)
 
 #class EB_rsprng(EB_RPackage):
 #    def run(self):
