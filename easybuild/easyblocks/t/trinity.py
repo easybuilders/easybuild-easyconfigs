@@ -38,7 +38,7 @@ class EB_Trinity(EasyBlock):
 
     def __init__(self, *args, **kwargs):
         """Initialisation of custom class variables for Trinity."""
-        EasyBlock.__init__(self, args, kwargs)
+        EasyBlock.__init__(self, *args, **kwargs)
 
         self.build_in_installdir = True
 
