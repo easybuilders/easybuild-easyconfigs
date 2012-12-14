@@ -253,11 +253,11 @@ charmm_x %(path)s/data/charmm_x/
         try:
             exs_dir = os.path.join(self.cfg['start_dir'], 'examples')
 
-            self.test_cases_dir = tempfile.mkdtemp()
+            self.examples_dir = os.path.join(tempfile.mkdtemp(), 'examples')
 
-            shutil.copytree(exs_dir, self.test_cases_dir)
+            shutil.copytree(exs_dir, self.examples_dir)
 
-            self.log.info("Copied %s to %s." % (exs_dir, self.test_cases_dir))
+            self.log.info("Copied %s to %s." % (exs_dir, self.examples_dir))
 
         except OSError, err:
             self.log.error("Failed to copy examples: %s" % err)
@@ -269,8 +269,8 @@ charmm_x %(path)s/data/charmm_x/
 
         # run all provided examples if no test cases were specified
         if type(self.cfg['tests']) == bool:
-            exs = os.path.join(self.test_cases_dir, 'examples')
-            self.cfg['tests'] = glob.glob('%s/*/*.nw' % exs) + glob.glob('%s/*/*/*.nw' % exs)
+            self.cfg['tests'] = glob.glob('%s/*/*.nw' % self.examples_dir)
+            self.cfg['tests'].extend(glob.glob('%s/*/*/*.nw' % self.examples_dir))
             self.log.info("List of examples to be run as test cases: %s" % self.cfg['tests'])
 
         try:
