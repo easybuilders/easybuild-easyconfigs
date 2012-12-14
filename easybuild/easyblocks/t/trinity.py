@@ -231,9 +231,12 @@ class EB_Trinity(EasyBlock):
     def sanity_check_step(self):
         """Custom sanity check for Trinity."""
 
+        path = 'trinityrnaseq_nosampledata_r%s' % self.version
+
+        # these lists are definitely non-exhaustive, but better than nothing
         custom_paths = {
-                        'files': [],
-                        'dirs': ["trinityrnaseq_nosampledata_r%s" % self.version]
+                        'files': [os.path.join(path, x) for x in ['Inchworm/bin/inchworm', 'Chrysalis/Chrysalis']],
+                        'dirs': [os.path.join(path, x) for x in ['Butterfly/src/bin', 'util']]
                        }
 
         super(EB_Trinity, self).sanity_check_step(custom_paths=custom_paths)
@@ -244,7 +247,7 @@ class EB_Trinity(EasyBlock):
         guesses = super(EB_Trinity, self).make_module_req_guess()
 
         guesses.update({
-                        'PATH': [os.path.basename(self.getcfg('start_dir').strip('/'))],
+                        'PATH': [os.path.basename(self.cfg['start_dir'].strip('/'))],
                        })
 
         return guesses
