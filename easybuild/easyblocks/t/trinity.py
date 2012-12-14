@@ -1,0 +1,202 @@
+##
+# Copyright 2009-2012 Ghent University
+#
+# This file is part of EasyBuild,
+# originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
+# with support of Ghent University (http://ugent.be/hpc),
+# the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
+# the Hercules foundation (http://www.herculesstichting.be/in_English)
+# and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
+#
+# http://github.com/hpcugent/easybuild
+#
+# EasyBuild is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation v2.
+#
+# EasyBuild is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
+##
+"""
+EasyBuild support for building and installing Trinity, implemented as an easyblock
+"""
+import os
+
+from easybuild.framework.easyblock import EasyBlock
+from easybuild.framework.easyconfig import CUSTOM
+from easybuild.tools.filetools import run_cmd
+
+
+class EB_Trinity(EasyBlock):
+    """Support for building/installing Trinity."""
+
+    def __init__(self, *args, **kwargs):
+        """Initialisation of custom class variables for Trinity."""
+        EasyBlock.__init__(self, args, kwargs)
+
+        self.build_in_installdir = True
+
+    @staticmethod
+    def extra_options():
+        """Custom easyconfig parameters for Trinity."""
+
+        extra_vars = [
+                      ('bwapluginver', [None, "BWA pugin version", CUSTOM]),
+                      ('RSEMmod', [False, "Enable RSEMmod", CUSTOM]),
+                     ]
+
+        return EasyBlock.extra_options(extra_vars)
+
+    def butterfly(self):
+        """Install procedure for Butterfly."""
+
+        self.log.info("Begin Butterfly")
+
+        dst = os.path.join(self.cfg['start_dir'], 'Butterfly', 'src')
+        try:
+            os.chdir(dst)
+        except OSError, err:
+            self.log.error("Butterfly: failed to change to dst dir %s" % (dst, err))
+
+        cmd = "ant"
+        run_cmd(cmd)
+
+        self.log.info("End Butterfly")
+
+    def chrysalis(self):
+        """Install procedure for Chrysalis."""
+
+        self.log.info("Begin Chrysalis")
+
+        dst = os.path.join(self.cfg['start_dir'], 'Chrysalis')
+        try:
+            os.chdir(dst)
+        except OSError, err:
+            self.log.error("Chrysalis: failed to change to dst dir %s: %s" % (dst, err))
+
+        run_cmd("make clean")
+
+        cmd = "make COMPILER='%s' CPLUSPLUS='%s' CC='%s' " % (os.getenv('CXX'),
+                                                             os.getenv('CXX'),
+                                                             os.getenv('CC'))
+        cmd += "OMP_FLAGS='%s' OMP_LINK='%s' " % (self.toolchain.get_flag('openmp'),
+                                                 os.getenv('LIBS'))
+        cmd += "OPTIM='-O1' SYS_OPT='-O2 %s' " % self.toolchain.get_flag('optarch')
+        cmd += "OPEN_MP=yes UNSUPPORTED=yes DEBUG=no QUIET=yes"
+
+        run_cmd(cmd)
+
+        self.log.info("End Chrysalis")
+
+    def inchworm(self):
+        """Install procedure for Inchworm."""
+
+        self.log.info("Begin Inchworm")
+
+        dst = os.path.join(self.cfg['start_dir'], 'Inchworm')
+        try:
+            os.chdir(dst)
+        except OSError, err:
+            self.log.error("Inchworm: failed to change to dst dir %s: %s" % (dst, err))
+
+        cmd = './configure --prefix=%s' % dst
+        run_cmd(cmd)
+
+        cmd = 'make install CXXFLAGS="%s %s"' % (os.getenv('CXXFLAGS'),
+                                                 self.toolchain.get_flag('openmp'))
+        run_cmd(cmd)
+
+        self.log.info("End Inchworm")
+
+    def meryl(self):
+        """Install procedure for Meryl."""
+
+        self.log.info("Begin meryl")
+
+        dst = os.path.join(self.cfg['start_dir'], 'trinity-plugins', 'kmer')
+        try:
+            os.chdir(dst)
+        except OSError, err:
+            self.log.error("Meryl: failed to change to dst dir %s: %s" % (dst, err))
+
+        cmd = "./configure.sh"
+        run_cmd(cmd)
+
+        cmd = 'make -j 1 CCDEP="%s -MM -MG" CXXDEP="%s -MM -MG"' % (os.getenv('CC'),
+                                                                     os.getenv('CXX'))
+        run_cmd(cmd)
+
+        cmd = 'make install'
+        run_cmd(cmd)
+
+        self.log.info("End Meryl")
+
+    def trinityplugin(self, plugindir, cc=None):
+        """Install procedure for Trinity plugins."""
+
+        self.log.info("Begin %s plugin" % plugindir)
+
+        dst = os.path.join(self.cfg['start_dir'], 'trinity-plugins', plugindir)
+        try:
+            os.chdir(dst)
+        except OSError, err:
+            self.log.error("%s plugin: failed to change to dst dir %s: %s" % (plugindir, dst, err))
+
+        if not cc:
+            cc = os.getenv('CC')
+
+        cmd = "make CC='%s' CXX='%s' CFLAGS='%s'" % (cc, os.getenv('CXX'), os.getenv('CFLAGS'))
+        run_cmd(cmd)
+
+        self.log.info("End %s plugin" % plugindir)
+
+    def configure_step(self):
+        """No configuration for Trinity."""
+
+        pass
+
+    def build_step(self):
+        """No building for Trinity."""
+
+        pass
+
+    def install_step(self):
+        """Custom install procedure for Trinity."""
+
+        self.inchworm()
+        self.chrysalis()
+        self.meryl()
+        self.butterfly()
+
+        bwapluginver = self.cfg['bwapluginver']
+        if bwapluginver:
+            self.trinityplugin('bwa-%s-patched_multi_map' % bwapluginver)
+
+        if self.cfg['RSEMmod']:
+            self.trinityplugin('RSEM-mod', cc=os.getenv('CXX'))
+
+    def sanity_check_step(self):
+        """Custom sanity check for Trinity."""
+
+        custom_paths = {
+                        'files': [],
+                        'dirs': ["trinityrnaseq_nosampledata_r%s" % self.version]
+                       }
+
+        super(EB_Trinity, self).sanity_check_step(custom_paths=custom_paths)
+
+    def make_module_req_guess(self):
+        """Custom tweaks for PATH variable for Trinity."""
+
+        guesses = super(EB_Trinity, self).make_module_req_guess()
+
+        guesses.update({
+                        'PATH': [os.path.basename(self.getcfg('start_dir').strip('/'))],
+                       })
+
+        return guesses
