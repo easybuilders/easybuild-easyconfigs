@@ -254,9 +254,14 @@ charmm_x %(path)s/data/charmm_x/
         if type(self.cfg['tests']) == bool:
             exs = os.path.join(self.cfg['start_dir'], 'examples')
             self.cfg['tests'] = glob.glob('%s/*/*.nw' % exs) + glob.glob('%s/*/*/*.nw' % exs)
+            self.log.info("List of examples to be run as test cases: %s" % self.cfg['tests'])
 
         try:
             cwd = os.getcwd()
+
+            fail = 0
+            tot = 0
+
             for test in self.cfg['tests']:
 
                 # run test in a temporary dir
@@ -273,11 +278,19 @@ charmm_x %(path)s/data/charmm_x/
                 # check exit code
                 if ec:
                     self.log.warning("Test %s failed (exit code: %s)!" % (test, ec))
+                    fail += 1
                 else:
                     self.log.warning("Test %s successful!" % test)
 
+                tot += 1
+
                 # go back
                 os.chdir(cwd)
+
+            self.log.info("%d of %d tests failed!" % fail)
+
+            if fail > tot / 4.0:
+                self.log.error("Over 1/4 of test cases failed, that can't be good. Assuming broken build.")
 
         except OSError, err:
             self.log.error("Failed to run test cases: %s" % err)
