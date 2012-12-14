@@ -60,7 +60,8 @@ class EB_NWChem(ConfigureMake):
                       ('modules', ["all", "NWChem modules to build", CUSTOM]),
                       ('lib_defines', ['', "Additional defines for C preprocessor", CUSTOM]),
                       ('with_nbo_support', [False, "Enable NBO support", CUSTOM]),
-                      ('tests', [True, "Run example test cases.", CUSTOM])
+                      ('tests', [True, "Run example test cases", CUSTOM]),
+                      ('max_fail_ratio', [0.25, "Maximum test case fail ratio", CUSTOM])
                      ]
         return ConfigureMake.extra_options(extra_vars)
 
@@ -276,8 +277,11 @@ charmm_x %(path)s/data/charmm_x/
         try:
             cwd = os.getcwd()
 
-            fail = 0
-            tot = 0
+            fail = 0.0
+            tot = 0.0
+
+            test_cases_logfn = os.path.join(self.installdir, 'easybuild', 'test_cases.log')
+            test_cases_log = open(test_cases_logfn, "w")
 
             for test in self.cfg['tests']:
 
@@ -286,18 +290,28 @@ charmm_x %(path)s/data/charmm_x/
                 os.chdir(tmpdir)
 
                 # copy test case
-                shutil.copystat(test, tmpdir)
+                shutil.copy2(test, tmpdir)
 
                 # run test
                 cmd = "nwchem %s" % os.path.basename(test)
+                dirname = os.path.dirname(test)
+                msg = "Running test '%s' (from %s) in %s..." % (cmd, dirname, tmpdir)
+                self.log.info(msg)
+                test_cases_log.write("\n%s\n" % msg)
                 (out, ec) = run_cmd(cmd, simple=False, log_all=False, log_ok=False)
 
                 # check exit code
                 if ec:
-                    self.log.warning("Test %s failed (exit code: %s)!" % (test, ec))
+                    msg = "Test %s failed (exit code: %s)!" % (test, ec)
+                    self.log.warning(msg)
+                    test_cases_log.write('FAIL: %s' % msg)
                     fail += 1
                 else:
-                    self.log.warning("Test %s successful!" % test)
+                    msg = "Test %s successful!" % test
+                    self.log.info(msg)
+                    test_cases_log.write('SUCCESS: %s' % msg)
+
+                test_cases_log.write("\nOUTPUT:\n\n%s\n\n" % out)
 
                 tot += 1
 
@@ -305,12 +319,20 @@ charmm_x %(path)s/data/charmm_x/
                 os.chdir(cwd)
                 shutil.rmtree(tmpdir)
 
-            self.log.info("%d of %d tests failed!" % fail)
+            fail_ratio = fail / tot
+            fail_pcnt = fail_ratio * 100
 
-            if fail > tot / 4.0:
-                self.log.error("Over 1/4 of test cases failed, that can't be good. Assuming broken build.")
+            msg = "%d of %d tests failed (%s%%)!" % (fail, tot, fail_pcnt)
+            self.log.info(msg)
+            test_cases_log.write('\n\nSUMMARY: %s' % msg)
 
-            shutil.rmtree(self.test_cases_dir)
+            test_cases_log.close()
+            self.log.info("Log for test cases saved at %s" % test_cases_logfn)
+
+            if fail_ratio > self.cfg['max_fail_ratio']:
+                self.log.error("Over %s%% of test cases failed, assuming broken build." % fail_pcnt)
+
+            shutil.rmtree(self.examples_dir)
 
         except OSError, err:
             self.log.error("Failed to run test cases: %s" % err)
