@@ -25,6 +25,7 @@
 """
 EasyBuild support for building and installing NWChem, implemented as an easyblock
 """
+import glob
 import os
 import shutil
 import tempfile
@@ -146,7 +147,7 @@ class EB_NWChem(ConfigureMake):
         run_cmd("make nwchem_config", simple=True, log_all=True, log_ok=True)
 
     def build_step(self):
-        """Custom built-in test procedure for NWChem."""
+        """Custom build procedure for NWChem."""
 
         # set FC
         env.setvar('FC', os.getenv('F77'))
@@ -168,15 +169,16 @@ class EB_NWChem(ConfigureMake):
 
         super(EB_NWChem, self).build_step()
 
-        # TODO: run getmem.nwchem script to assess memory availability and make an educated guess,
-        # recompile the appropriate files and relink
-
-    def test_step(self):
-        """Custom built-in test procedure for NWChem."""
-
-        if self.cfg['runtest']:
-            cmd = "test command"
-            run_cmd(cmd,  simple=True, log_all=True, log_ok=True)
+        # run getmem.nwchem script to assess memory availability and make an educated guess
+        # this is an alternative to specifying -DDFLT_TOT_MEM via LIB_DEFINES
+        # this recompiles the appropriate files and relinks
+        if not 'DDFLT_TOT_MEM' in self.cfg['lib_defines']:
+            try:
+                os.chdir(os.path.join(self.builddir, 'contrib'))
+                run_cmd("./getmem.nwchem", simple=True, log_all=True, log_ok=True)
+                os.chdir(self.cfg['start_dir'])
+            except OSError, err:
+                self.log.error("Failed to run getmem.nwchem script: %s" % err)
 
     def install_step(self):
         """Custom install procedure for NWChem."""
@@ -243,3 +245,38 @@ charmm_x %(path)s/data/charmm_x/
         txt += self.moduleGenerator.set_environment('NWCHEM_BASIS_LIBRARY', "$root/data/libraries/")
 
         return txt
+
+    def test_cases_step(self):
+        """Run provided list of test cases, or provided examples is no test cases were specified."""
+
+        # run all provided examples if no test cases were specified
+        if not self.cfg['tests']:
+            exs = os.path.join(self.cfg['start_dir'], 'examples')
+            self.cfg['tests'] = glob.glob('%s/*/*.nw' % exs) + glob.glob('%s/*/*/*.nw' % exs)
+
+        try:
+            cwd = os.getcwd()
+            for test in self.cfg['tests']:
+
+                # run test in a temporary dir
+                tmpdir = tempfile.mkdtemp(prefix='nwchem_test_')
+                os.chdir(tmpdir)
+
+                # copy test case
+                shutil.copystat(test, tmpdir)
+
+                # run test
+                cmd = "nwchem %s" % os.path.basename(test)
+                (out, ec) = run_cmd(cmd, simple=False, log_all=False, log_ok=False)
+
+                # check exit code
+                if ec:
+                    self.log.warning("Test %s failed (exit code: %s)!" % (test, ec))
+                else:
+                    self.log.warning("Test %s successful!" % test)
+
+                # go back
+                os.chdir(cwd)
+
+        except OSError, err:
+            self.log.error("Failed to run test cases: %s" % err)
