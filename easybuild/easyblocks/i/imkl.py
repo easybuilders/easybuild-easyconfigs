@@ -183,6 +183,8 @@ class EB_imkl(IntelBase):
                     extramakeopts = ''
                     if get_software_root('MPICH2'):  # can't use toolchain.mpi_family, because of dummy toolchain
                         extramakeopts = 'mpi=mpich2'
+                    elif get_software_root('OpenMPI'):
+                        extramakeopts = 'mpi=openmpi'
                     cmd = "make -f makefile libintel64 %s" % extramakeopts
 
                 # add other make options as well
