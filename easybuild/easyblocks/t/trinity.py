@@ -25,8 +25,12 @@
 """
 EasyBuild support for building and installing Trinity, implemented as an easyblock
 """
+import fileinput
 import os
+import re
 import shutil
+import sys
+from distutils.version import LooseVersion
 
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import CUSTOM
@@ -50,6 +54,7 @@ class EB_Trinity(EasyBlock):
                       ('withsampledata', [False, "Include sample data", CUSTOM]),
                       ('bwapluginver', [None, "BWA pugin version", CUSTOM]),
                       ('RSEMmod', [False, "Enable RSEMmod", CUSTOM]),
+                      ('')
                      ]
 
         return EasyBlock.extra_options(extra_vars)
@@ -70,55 +75,60 @@ class EB_Trinity(EasyBlock):
 
         self.log.info("End Butterfly")
 
-    def chrysalis(self):
+    def chrysalis(self, run=True):
         """Install procedure for Chrysalis."""
 
-        self.log.info("Begin Chrysalis")
+        make_flags = "COMPILER='%s' CPLUSPLUS='%s' CC='%s' " % (os.getenv('CXX'),
+                                                                os.getenv('CXX'),
+                                                                os.getenv('CC'))
+        make_flags += "OMP_FLAGS='%s' OMP_LINK='%s' " % (self.toolchain.get_flag('openmp'),
+                                                         os.getenv('LIBS'))
+        make_flags += "OPTIM='-O1' SYS_OPT='-O2 %s' " % self.toolchain.get_flag('optarch')
+        make_flags += "OPEN_MP=yes UNSUPPORTED=yes DEBUG=no QUIET=yes"
 
-        dst = os.path.join(self.cfg['start_dir'], 'Chrysalis')
-        try:
-            os.chdir(dst)
-        except OSError, err:
-            self.log.error("Chrysalis: failed to change to dst dir %s: %s" % (dst, err))
+        if run:
+            self.log.info("Begin Chrysalis")
 
-        run_cmd("make clean")
+            dst = os.path.join(self.cfg['start_dir'], 'Chrysalis')
+            try:
+                os.chdir(dst)
+            except OSError, err:
+                self.log.error("Chrysalis: failed to change to dst dir %s: %s" % (dst, err))
 
-        cmd = "make COMPILER='%s' CPLUSPLUS='%s' CC='%s' " % (os.getenv('CXX'),
-                                                             os.getenv('CXX'),
-                                                             os.getenv('CC'))
-        cmd += "OMP_FLAGS='%s' OMP_LINK='%s' " % (self.toolchain.get_flag('openmp'),
-                                                 os.getenv('LIBS'))
-        cmd += "OPTIM='-O1' SYS_OPT='-O2 %s' " % self.toolchain.get_flag('optarch')
-        cmd += "OPEN_MP=yes UNSUPPORTED=yes DEBUG=no QUIET=yes"
+            run_cmd("make clean")
+            run_cmd("make %s" % make_flags)
 
-        run_cmd(cmd)
+            self.log.info("End Chrysalis")
 
-        self.log.info("End Chrysalis")
+        else:
+            return make_flags
 
-    def inchworm(self):
+    def inchworm(self, run=True):
         """Install procedure for Inchworm."""
 
-        self.log.info("Begin Inchworm")
+        make_flags = 'CXXFLAGS="%s %s"' % (os.getenv('CXXFLAGS'), self.toolchain.get_flag('openmp'))
 
-        dst = os.path.join(self.cfg['start_dir'], 'Inchworm')
-        try:
-            os.chdir(dst)
-        except OSError, err:
-            self.log.error("Inchworm: failed to change to dst dir %s: %s" % (dst, err))
+        if run:
+            self.log.info("Begin Inchworm")
 
-        cmd = './configure --prefix=%s' % dst
-        run_cmd(cmd)
+            dst = os.path.join(self.cfg['start_dir'], 'Inchworm')
+            try:
+                os.chdir(dst)
+            except OSError, err:
+                self.log.error("Inchworm: failed to change to dst dir %s: %s" % (dst, err))
 
-        cmd = 'make install CXXFLAGS="%s %s"' % (os.getenv('CXXFLAGS'),
-                                                 self.toolchain.get_flag('openmp'))
-        run_cmd(cmd)
+            run_cmd('./configure --prefix=%s' % dst)
+            run_cmd("make install %s" % make_flags)
 
-        self.log.info("End Inchworm")
+            self.log.info("End Inchworm")
 
-    def meryl(self):
-        """Install procedure for Meryl."""
+        else:
+            return make_flags
 
-        self.log.info("Begin meryl")
+    def kmer(self):
+        """Install procedure for kmer (Meryl)."""
+
+        self.log.info("Begin Meryl")
 
         dst = os.path.join(self.cfg['start_dir'], 'trinity-plugins', 'kmer')
         try:
@@ -170,17 +180,37 @@ class EB_Trinity(EasyBlock):
     def install_step(self):
         """Custom install procedure for Trinity."""
 
-        self.inchworm()
-        self.chrysalis()
-        self.meryl()
-        self.butterfly()
+        if LooseVersion(self.version) < LooseVersion('2012-10-05'):
+            self.inchworm()
+            self.chrysalis()
+            self.kmer()
+            self.butterfly()
 
-        bwapluginver = self.cfg['bwapluginver']
-        if bwapluginver:
-            self.trinityplugin('bwa-%s-patched_multi_map' % bwapluginver)
+            bwapluginver = self.cfg['bwapluginver']
+            if bwapluginver:
+                self.trinityplugin('bwa-%s-patched_multi_map' % bwapluginver)
 
-        if self.cfg['RSEMmod']:
-            self.trinityplugin('RSEM-mod', cc=os.getenv('CXX'))
+            if self.cfg['RSEMmod']:
+                self.trinityplugin('RSEM-mod', cc=os.getenv('CXX'))
+
+        else:
+
+            inchworm_flags = self.inchworm(run=False)
+            chrysalis_flags = self.chrysalis(run=False)
+
+            fn = "Makefile"
+            for line in fileinput.input(fn, inplace=1, backup='.orig.eb'):
+
+                line = re.sub(r'^(INCHWORM_CONFIGURE_FLAGS\s*=\s*).*$', r'\1%s' % inchworm_flags, line)
+                line = re.sub(r'^(CHRYSALIS_MAKE_FLAGS\s*=\s*).*$', r'\1%s' % chrysalis_flags, line)
+
+                sys.stdout.write(line)
+
+            cmd = "make"
+            run_cmd(cmd)
+
+            # butterfly is not included in standard build
+            self.butterfly()
 
         # remove sample data if desired
         if not self.cfg['withsampledata']:
