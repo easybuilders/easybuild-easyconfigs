@@ -26,6 +26,7 @@
 EasyBuild support for building and installing Trinity, implemented as an easyblock
 """
 import os
+import shutil
 
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import CUSTOM
@@ -46,6 +47,7 @@ class EB_Trinity(EasyBlock):
         """Custom easyconfig parameters for Trinity."""
 
         extra_vars = [
+                      ('withsampledata', [False, "Include sample data", CUSTOM]),
                       ('bwapluginver', [None, "BWA pugin version", CUSTOM]),
                       ('RSEMmod', [False, "Enable RSEMmod", CUSTOM]),
                      ]
@@ -179,6 +181,13 @@ class EB_Trinity(EasyBlock):
 
         if self.cfg['RSEMmod']:
             self.trinityplugin('RSEM-mod', cc=os.getenv('CXX'))
+
+        # remove sample data if desired
+        if not self.cfg['withsampledata']:
+            try:
+                shutil.rmtree(os.path.join(self.cfg['start_dir'], 'sample_data'))
+            except OSError, err:
+                self.log.error("Failed to remove sample data: %s" % err)
 
     def sanity_check_step(self):
         """Custom sanity check for Trinity."""
