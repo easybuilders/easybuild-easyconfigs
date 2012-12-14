@@ -27,6 +27,7 @@ EasyBuild support for R packages, implemented as an easyblock
 """
 from easybuild.framework.extension import Extension
 from easybuild.tools.filetools import run_cmd, parse_log_for_error
+from easybuild.tools.modules import get_software_root
 
 def make_install_option(opt, xs):
     """
@@ -85,8 +86,9 @@ class EB_RExtension(Extension):
         r_cmd = """
         options(repos=c(CRAN="http://www.freestatistics.org/cran"))
         %s
-        install.packages("%s",dependencies = FALSE)
-        """ % (confvarslist, self.name)
+        %s
+        install.packages("%s",dependencies = FALSE %s%s)
+        """ % (confvarslist, confargslist, self.name, confvarsstr, confargsstr)
         cmd = "R -q --no-save"
 
         self.log.debug("make_r_cmd returns %s with input %s" % (cmd, r_cmd))
@@ -160,68 +162,41 @@ EB_Biobase = EB_IRanges = EB_AnnotationDbi = EB_bioconductor
 EB_exonmap = EB_bioconductor
 
 class EB_Rserve(EB_RExtension):
+    """Install Rserve as an R extension"""
     def run(self):
         self.setconfigurevars(['LIBS="$LIBS -lpthread"'])
         EB_RExtension.run(self)
 
-#class EB_rsprng(EB_RPackage):
-#    def run(self):
-#        self.log.debug("Setting configure args for %s" % self.name)
-#        self.setconfigurevars(['LIBS=\\"%s %s\\"' % (os.environ["LIBS"], os.environ["LDFLAGS"])])
-#        self.setconfigureargs(["--with-sprng=%s" % os.environ["EBROOTSPRNG"]])
-#        EB_RPackage.run(self)
-#
-#
-#class rgdal(EB_RPackage):
-#    def run(self):
-#        self.log.debug("Setting configure args for %s" % self.name)
-#        softrootproj = os.environ["SOFTROOTPROJ"]
-#        self.setconfigureargs(["--with-proj-include=%s/include --with-proj-lib=%s/lib" % (softrootproj, softrootproj)])
-#        EB_RPackage.run(self)
+# TODO: should be in it's own module, since it has a non rpackage dependency
+class EB_rsprng(EB_RExtension):
+    """Install rsprng as an R extension"""
+    def run(self):
+        tc = self.toolchain
+        self.log.debug("Setting configure args for %s" % self.name)
+        self.setconfigurevars(['LIBS=\\"%s %s\\"' % (tc.get_variable("LIBS"), tc.get_variable("LDFLAGS"))])
+        self.setconfigureargs(["--with-sprng=%s" % get_software_root("SPRNG")])
+        EB_RExtension.run(self)
 
-#class EB_Rmpi(EB_Rpackage):
-#    def run(self):
-#        if os.environ.has_key('SOFTROOTICTCE'):
-#            self.log.debug("Setting configure args for Rmpi")
-#            self.setconfigureargs(["--with-Rmpi-include=%s/intel64/include" % os.environ["SOFTROOTIMPI"],
-#                                   "--with-Rmpi-libpath=%s/intel64/lib" % os.environ["SOFTROOTIMPI"],
-#                                   "--with-Rmpi-type=MPICH"])
-#            DefaultRpackage.run(self)
-#        elif os.environ.has_key('SOFTROOTIQACML'):
-#            self.log.debug("Installing most recent version of package %s (iqacml toolkit)." % self.name)
-#            self.setconfigureargs(["--with-Rmpi-include=%s/include" % os.environ["SOFTROOTQLOGICMPI"],
-#                                   "--with-Rmpi-libpath=%s/lib64" % os.environ["SOFTROOTQLOGICMPI"],
-#                                   "--with-mpi=%s" % os.environ["SOFTROOTQLOGICMPI"],
-#                                   "--with-Rmpi-type=MPICH"])
-#            cmd, inp = self.makeRCmd()
-#
-#            fn = os.path.join("/tmp", "inputRmpi_install.R")
-#            f = open(fn, "w")
-#            f.write(inp)
-#            f.close()
-#            cmd = "mpirun -np 1 -H localhost %s -f %s" % (cmd, fn)
-#            run_cmd(cmd, log_all=True, simple=False)
-#            os.remove(fn)
-#        else:
-#            self.log.error("Unknown toolkit, don't know how to install Rmpi with this toolkit! Giving up...")
+class EB_rgdal(EB_RExtension):
+    """Install rgdal as an R extension"""
+    def run(self):
+        self.log.debug("Setting configure args for %s" % self.name)
+        softrootproj = get_software_root("PROJ")
+        self.setconfigureargs(["--with-proj-include=%s/include --with-proj-lib=%s/lib" % (softrootproj, softrootproj)])
+        EB_RExtension.run(self)
 
-### Just add VIM's dependencies to the list of dependencies, we don't really wanna 
-## build with dependencies enabled
-##class EB_VIM(EB_Rpackage):
-##    def makeCmdLineCmd(self):
-##         fancy trick to install VIM dependencies first, without installing VIM
-##         then install source of VIM with specified version 
-##        Rcmd = """
-##        options(repos=c(CRAN="http://www.freestatistics.org/cran"))
-##        install.packages("%s", dependencies="Depends", INSTALL_opts="--fake")
-##        install.packages("%s")
-##        """ % (self.name, self.src)
-##        cmd = "R -q --no-save"
-##
-##        self.log.debug("makeRCmd returns %s with input %s" % (cmd, Rcmd))
-##
-##        return (cmd, Rcmd)
-#
+class EB_Rmpi(EB_RExtension):
+    """Install Rmpi as an R extension"""
+    def run(self):
+        self.log.debug("Setting configure args for Rmpi")
+        self.setconfigureargs(["--with-Rmpi-include=%s" % self.toolchain.get_variable('MPI_INC_DIR'),
+                               "--with-Rmpi-libpath=%s" % self.toolchain.get_variable('MPI_LIB_DIR'),
+                               "--with-mpi=%s" % self.toolchain.get_software_root(self.toolchain.MPI_MODULE_NAME)[0],
+                               "--with-Rmpi-type=%s" % self.toolchain.mpi_family().upper()])
+        EB_RExtension.run(self) # it might be needed to get the r cmd and run it with mympirun...
+
+        
+
 #class EB_rJava(EB_Rpackage):
 #
 #    def run(self):
