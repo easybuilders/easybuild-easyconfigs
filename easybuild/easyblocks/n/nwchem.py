@@ -255,7 +255,7 @@ charmm_x %(path)s/data/charmm_x/
 
             self.test_cases_dir = tempfile.mkdtemp()
 
-            shutil.copy2(exs_dir, self.test_cases_dir)
+            shutil.copytree(exs_dir, self.test_cases_dir)
 
             self.log.info("Copied %s to %s." % (exs_dir, self.test_cases_dir))
 
