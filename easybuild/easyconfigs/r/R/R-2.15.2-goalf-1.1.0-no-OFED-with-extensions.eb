@@ -1,0 +1,72 @@
+name = 'R'
+version = '2.15.2'
+
+homepage = 'http://www.r-project.org/'
+description = """R is a free software environment for statistical computing and graphics."""
+
+toolchain = {'name': 'goalf', 'version': '1.1.0-no-OFED'}
+
+sources = ['%s-%s.tar.gz' % (name,version)]
+source_urls = [
+                'http://cran.us.r-project.org/src/base/R-2/', # R itself
+                'http://cran.r-project.org/src/contrib/Archive/', # package archives
+             ]
+versionsuffix = "-with-extensions"
+
+preconfigopts = ' BLAS_LIBS="$LIBBLAS" LAPACK_LIBS="$LIBLAPACK" '
+configopts = " --with-lapack --with-blas --with-pic --enable-threads --with-x=no --enable-R-shlib"
+
+dependencies= [
+		('libreadline', '6.2'),
+		('ncurses', '5.9'),
+		('libpng', '1.5.10'),
+		]
+
+sanity_check_paths = {
+                    'files': ['bin/%s' % x for x in ['R', 'Rscript']] + \
+                             ['lib64/R/include/%s' % x for x in ['Rconfig.h', 'Rdefines.h', 'Rembedded.h',
+                                 'R.h', 'Rinterface.h', 'Rinternals.h', 'Rmath.h', 'Rversion.h', 'S.h']] + \
+                             ['lib64/R/modules/%s' % x for x in ['internet.so', 'lapack.so', 'vfonts.so']] + \
+                             ['lib64/R/lib/libR.so'],
+                    'dirs': []
+                }
+
+
+exts_defaultclass = ("easybuild.easyblocks.rextension", "EB_RExtension")
+exts_template = '%(name)s/%(name)s_%(version)s.tar.gz'
+
+# !! order of packages is important !!
+ext_options = {'source_tmpl' : '%(name)s/%(name)s_%(version)s.tar.gz'}
+exts_filter =  ["R -q --no-save", "library(%(name)s)"]
+exts_list= [
+    'Matrix', 'png', 'Rcpp', 'quadprog', 'BB', 'rlecuyer', 
+    'e1071', 'car', 'colorspace', 'robustbase', ('sp', '0.9-91', ext_options), 'vcd', # dependencies of VIM
+    ('Rserve', '0.6-1', ext_options), 'Biobase', 'IRanges', 'AnnotationDbi', 'BSgenome', 'ShortRead',
+    'akima', 'base', 'Biostrings', 'bitops', 'boot',
+    'class', 'cluster', 'coda', 'codetools', 'datasets', 'DBI', 'foreign', 'gam', 
+    'gamlss.data', 'gamlss.dist', 'gamlss', 'gamlss.tr', 'graphics', 'grDevices', 'grid', 'hwriter', 'IRanges',
+    'KernSmooth', 'lattice', 'zoo', 'lmtest', 'MASS', 'methods', 'mgcv', 'mnormt', 'mvtnorm', 'nlme', 'nnet',
+    'numDeriv', 'pscl', 'RColorBrewer', 'rpart', 'RSQLite', 'sandwich', 'sfsmisc', 'spatial', 'splines', 'stats',
+    'stats4', 'survival', 'tools', 'utils', 'VGAM', 'waveslim', 'XML', 'xtable',  
+    'profileModel', 'brglm', 'deSolve', 'nnet', 'odesolve', 'tseriesChaos', 'tseries', 
+    'Rmpi', 'irace', 
+
+    ## no sources t obe found online for these
+    #('rgenoud', '5.7-3-ug1'), ('exon.pmcdf', '1.1'), ('rparallel', '0.6-21-src'), ('tsDyn', '0.7-62.ug.4'),
+    ## not available online 
+    # 'rpvm', 'annotate', 'biomaRt', 'geneplotter', 'tcltk', 'ZIGP'
+    # 'exonmap' (not available trought biocLite either)
+    ## need extra dependencies:
+    # 'doSNOW' -> (rpackage) 'snow'  -> (Rpackage) 'rsprng'- > SPRNG
+    # 'RODBC' -> unixODBC-devel (mysql devel??)
+    # 'sna' -> 'rgl' -> Mesa
+    # ('VIM', '2.0.4') -> (rpackage) tkrplot -> Tk
+    # 'rgdal' -> GDAL 
+    # 'GenomeGraphs','RCurl' -> 'curl-devel'
+    # 'snowfall', -> (rpackage) snow
+    # 'rJava' -> Java
+    ]
+
+#dependencies=[['GMP', '4.3.1'],['SPRNG', '2.0b'],['PVM', '3.4.6'],['Tcl', '8.5.9'],['Tk', '8.5.9'],['GDAL', '1.8.1'],('Java', '1.6.0_26', '',True)]
+#osdependencies=['mysql-devel', 'libxml2-devel', 'curl-devel', 'unixODBC-devel', 'mesa-libGLU-devel', 'tetex-latex']
+
