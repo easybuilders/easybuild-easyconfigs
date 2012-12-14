@@ -251,14 +251,12 @@ charmm_x %(path)s/data/charmm_x/
         """Run provided list of test cases, or provided examples is no test cases were specified."""
 
         # run all provided examples if no test cases were specified
-        if not self.cfg['tests']:
+        if type(self.cfg['tests']) == bool:
             exs = os.path.join(self.cfg['start_dir'], 'examples')
             self.cfg['tests'] = glob.glob('%s/*/*.nw' % exs) + glob.glob('%s/*/*/*.nw' % exs)
 
         try:
             cwd = os.getcwd()
-            tot = 0
-            fail = 0
             for test in self.cfg['tests']:
 
                 # run test in a temporary dir
@@ -275,18 +273,11 @@ charmm_x %(path)s/data/charmm_x/
                 # check exit code
                 if ec:
                     self.log.warning("Test %s failed (exit code: %s)!" % (test, ec))
-                    fail += 1
                 else:
-                    self.log.info("Test %s successful!" % test)
-                tot += 1
+                    self.log.warning("Test %s successful!" % test)
 
                 # go back
                 os.chdir(cwd)
-
-            self.log.info("%d out of %d test cases failed." % (fail, tot))
-
-            if fail > tot/4.0:
-                self.log.error("Over half of the test cases failed, that can't be good. Assuming build is broken.")
 
         except OSError, err:
             self.log.error("Failed to run test cases: %s" % err)
