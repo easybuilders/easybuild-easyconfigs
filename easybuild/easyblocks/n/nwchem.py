@@ -174,7 +174,7 @@ class EB_NWChem(ConfigureMake):
         # this recompiles the appropriate files and relinks
         if not 'DDFLT_TOT_MEM' in self.cfg['lib_defines']:
             try:
-                os.chdir(os.path.join(self.builddir, 'contrib'))
+                os.chdir(os.path.join(self.cfg['start_dir'], 'contrib'))
                 run_cmd("./getmem.nwchem", simple=True, log_all=True, log_ok=True)
                 os.chdir(self.cfg['start_dir'])
             except OSError, err:
