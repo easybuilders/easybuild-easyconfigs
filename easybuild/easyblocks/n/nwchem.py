@@ -45,7 +45,7 @@ class EB_NWChem(ConfigureMake):
         """Initialisation of custom class variables for NWChem."""
         super(EB_NWChem, self).__init__(*args, **kwargs)
 
-        self.example = None
+        self.test_cases_dir = None
 
     @staticmethod
     def extra_options():
@@ -247,12 +247,29 @@ charmm_x %(path)s/data/charmm_x/
 
         return txt
 
+    def cleanup_step(self):
+        """Copy stuff from build directory we still need, if any."""
+
+        try:
+            exs_dir = os.path.join(self.cfg['start_dir'], 'examples')
+
+            self.test_cases_dir = tempfile.mkdtemp()
+
+            shutil.copy2(exs_dir, self.test_cases_dir)
+
+            self.log.info("Copied %s to %s." % (exs_dir, self.test_cases_dir))
+
+        except OSError, err:
+            self.log.error("Failed to copy examples: %s" % err)
+
+        super(EB_NWChem, self).cleanup_step()
+
     def test_cases_step(self):
         """Run provided list of test cases, or provided examples is no test cases were specified."""
 
         # run all provided examples if no test cases were specified
         if type(self.cfg['tests']) == bool:
-            exs = os.path.join(self.cfg['start_dir'], 'examples')
+            exs = os.path.join(self.test_cases_dir, 'examples')
             self.cfg['tests'] = glob.glob('%s/*/*.nw' % exs) + glob.glob('%s/*/*/*.nw' % exs)
             self.log.info("List of examples to be run as test cases: %s" % self.cfg['tests'])
 
@@ -286,11 +303,14 @@ charmm_x %(path)s/data/charmm_x/
 
                 # go back
                 os.chdir(cwd)
+                shutil.rmtree(tmpdir)
 
             self.log.info("%d of %d tests failed!" % fail)
 
             if fail > tot / 4.0:
                 self.log.error("Over 1/4 of test cases failed, that can't be good. Assuming broken build.")
+
+            shutil.rmtree(self.test_cases_dir)
 
         except OSError, err:
             self.log.error("Failed to run test cases: %s" % err)
