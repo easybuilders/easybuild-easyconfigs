@@ -231,7 +231,7 @@ class EB_Trinity(EasyBlock):
     def sanity_check_step(self):
         """Custom sanity check for Trinity."""
 
-        path = 'trinityrnaseq_nosampledata_r%s' % self.version
+        path = 'trinityrnaseq_r%s' % self.version
 
         # these lists are definitely non-exhaustive, but better than nothing
         custom_paths = {
