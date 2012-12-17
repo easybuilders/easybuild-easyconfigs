@@ -54,7 +54,7 @@ class EB_FLUENT(EasyBlock):
     def sanity_check_step(self):
         """Custom sanity check for FLUENT."""
 
-        ver = 'v%s' % ''.join(self.get_version().split('.'))
+        ver = 'v%s' % ''.join(self.version.split('.'))
 
         custom_paths = {
                         'files': ["%s/fluent/bin/fluent%s" % (ver, x) for x in ['', '_arch', '_sysinfo']],
