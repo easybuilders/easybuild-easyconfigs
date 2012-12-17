@@ -129,7 +129,7 @@ class EB_NWChem(ConfigureMake):
         env.setvar('LIBMPI', libmpi)
 
         # compiler optimization flags: set environment variables _and_ add them to list of make options
-        for var in ['FLAGS', 'OPTIMIZE', 'OPTIONS']:
+        for var in ['FLAGS', 'OPTIMIZE']:
             self.setvar_env_makeopt('C%s' % var, os.getenv('CFLAGS'))
             self.setvar_env_makeopt('F%s' % var, os.getenv('FFLAGS'))
 
