@@ -128,9 +128,10 @@ class EB_NWChem(ConfigureMake):
             self.log.error("Don't know how to set LIBMPI for %s" % mpi_family)
         env.setvar('LIBMPI', libmpi)
 
-        # compiler optimization flags
-        self.setvar_env_makeopt('COPTIMIZE', os.getenv('CFLAGS'))
-        self.setvar_env_makeopt('FOPTIMIZE', os.getenv('FFLAGS'))
+        # compiler optimization flags: set environment variables _and_ add them to list of make options
+        for var in ['FLAGS', 'OPTIMIZE', 'OPTIONS']:
+            self.setvar_env_makeopt('C%s' % var, os.getenv('CFLAGS'))
+            self.setvar_env_makeopt('F%s' % var, os.getenv('FFLAGS'))
 
         # BLAS and ScaLAPACK
         self.setvar_env_makeopt('HAS_BLAS', 'yes')
@@ -152,7 +153,7 @@ class EB_NWChem(ConfigureMake):
         run_cmd("make clean", simple=True, log_all=True, log_ok=True)
 
         # configure build
-        run_cmd("make nwchem_config", simple=True, log_all=True, log_ok=True)
+        run_cmd("make %s nwchem_config" % self.cfg['makeopts'], simple=True, log_all=True, log_ok=True, log_output=True)
 
     def build_step(self):
         """Custom build procedure for NWChem."""
@@ -165,7 +166,7 @@ class EB_NWChem(ConfigureMake):
             par = ''
             if self.cfg['parallel']:
                 par = '-j %s' % self.cfg['parallel']
-            run_cmd("make %s 64_to_32" % par, simple=True, log_all=True, log_ok=True)
+            run_cmd("make %s %s 64_to_32" % (par, self.cfg['makeopts']), simple=True, log_all=True, log_ok=True, log_output=True)
 
             self.setvar_env_makeopt('USE_64TO32', "y")
 
@@ -183,7 +184,7 @@ class EB_NWChem(ConfigureMake):
         if not 'DDFLT_TOT_MEM' in self.cfg['lib_defines']:
             try:
                 os.chdir(os.path.join(self.cfg['start_dir'], 'contrib'))
-                run_cmd("./getmem.nwchem", simple=True, log_all=True, log_ok=True)
+                run_cmd("./getmem.nwchem", simple=True, log_all=True, log_ok=True, log_output=True)
                 os.chdir(self.cfg['start_dir'])
             except OSError, err:
                 self.log.error("Failed to run getmem.nwchem script: %s" % err)
@@ -304,7 +305,7 @@ charmm_x %(path)s/data/charmm_x/
                 msg = "Running test '%s' (from %s) in %s..." % (cmd, dirname, tmpdir)
                 self.log.info(msg)
                 test_cases_log.write("\n%s\n" % msg)
-                (out, ec) = run_cmd(cmd, simple=False, log_all=False, log_ok=False)
+                (out, ec) = run_cmd(cmd, simple=False, log_all=False, log_ok=False, log_output=True)
 
                 # check exit code
                 if ec:
