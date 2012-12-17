@@ -27,6 +27,7 @@ EasyBuild support for building and installing NWChem, implemented as an easybloc
 """
 import glob
 import os
+import re
 import shutil
 import tempfile
 
@@ -129,9 +130,8 @@ class EB_NWChem(ConfigureMake):
         env.setvar('LIBMPI', libmpi)
 
         # compiler optimization flags: set environment variables _and_ add them to list of make options
-        for var in ['FLAGS', 'OPTIMIZE']:
-            self.setvar_env_makeopt('C%s' % var, os.getenv('CFLAGS'))
-            self.setvar_env_makeopt('F%s' % var, os.getenv('FFLAGS'))
+        self.setvar_env_makeopt('COPTIMIZE', os.getenv('CFLAGS'))
+        self.setvar_env_makeopt('FOPTIMIZE', os.getenv('FFLAGS'))
 
         # BLAS and ScaLAPACK
         self.setvar_env_makeopt('HAS_BLAS', 'yes')
@@ -170,11 +170,13 @@ class EB_NWChem(ConfigureMake):
 
             self.setvar_env_makeopt('USE_64TO32', "y")
 
-        libs = os.getenv('LIBS')
-        if libs:
-            self.log.info("LIBS was defined as '%s', need to unset it to avoid problems..." % libs)
-        os.unsetenv('LIBS')
-        os.environ.pop('LIBS')
+        # unset env vars that cause trouble during NWChem build or cause build to generate incorrect stuff
+        for var in ['CFLAGS', 'FFLAGS', 'LIBS']:
+            val = os.getenv(var)
+            if val:
+                self.log.info("%s was defined as '%s', need to unset it to avoid problems..." % (var, val))
+            os.unsetenv(var)
+            os.environ.pop(var)
 
         super(EB_NWChem, self).build_step(verbose=True)
 
@@ -287,6 +289,8 @@ charmm_x %(path)s/data/charmm_x/
             fail = 0.0
             tot = 0.0
 
+            success_regexp = re.compile("Total times\s*cpu:.*wall:.*")
+
             test_cases_logfn = os.path.join(self.installdir, config.log_path(), 'test_cases.log')
             test_cases_log = open(test_cases_logfn, "w")
 
@@ -307,16 +311,22 @@ charmm_x %(path)s/data/charmm_x/
                 test_cases_log.write("\n%s\n" % msg)
                 (out, ec) = run_cmd(cmd, simple=False, log_all=False, log_ok=False, log_output=True)
 
-                # check exit code
+                # check exit code and output
                 if ec:
                     msg = "Test %s failed (exit code: %s)!" % (test, ec)
                     self.log.warning(msg)
                     test_cases_log.write('FAIL: %s' % msg)
                     fail += 1
                 else:
-                    msg = "Test %s successful!" % test
-                    self.log.info(msg)
-                    test_cases_log.write('SUCCESS: %s' % msg)
+                    if success_regexp.search(out):
+                        msg = "Test %s successful!" % test
+                        self.log.info(msg)
+                        test_cases_log.write('SUCCESS: %s' % msg)
+                    else:
+                        msg = "No 'Total times' found for test %s (but exit code is %s)!" % (test, ec)
+                        self.log.warning(msg)
+                        test_cases_log.write('FAIL: %s' % msg)
+                        fail += 1
 
                 test_cases_log.write("\nOUTPUT:\n\n%s\n\n" % out)
 
