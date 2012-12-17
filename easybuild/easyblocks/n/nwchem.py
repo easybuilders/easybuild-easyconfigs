@@ -176,7 +176,7 @@ class EB_NWChem(ConfigureMake):
         os.unsetenv('LIBS')
         os.environ.pop('LIBS')
 
-        super(EB_NWChem, self).build_step()
+        super(EB_NWChem, self).build_step(verbose=True)
 
         # run getmem.nwchem script to assess memory availability and make an educated guess
         # this is an alternative to specifying -DDFLT_TOT_MEM via LIB_DEFINES
