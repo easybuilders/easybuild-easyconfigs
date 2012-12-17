@@ -66,7 +66,7 @@ class EB_NWChem(ConfigureMake):
                      ]
         return ConfigureMake.extra_options(extra_vars)
 
-    def setvar_env_makeopt(name, value):
+    def setvar_env_makeopt(self, name, value):
         """Set a variable both in the environment and a an option to make."""
         env.setvar(name, value)
         self.cfg.update('makeopts', '%s=%s' % (name, value))
