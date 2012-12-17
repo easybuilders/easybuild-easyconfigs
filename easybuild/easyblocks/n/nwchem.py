@@ -129,15 +129,15 @@ class EB_NWChem(ConfigureMake):
         env.setvar('LIBMPI', libmpi)
 
         # compiler optimization flags
-        setvar_env_makeopt('COPTIMIZE', os.getenv('CFLAGS'))
-        setvar_env_makeopt('FOPTIMIZE', os.getenv('FFLAGS'))
+        self.setvar_env_makeopt('COPTIMIZE', os.getenv('CFLAGS'))
+        self.setvar_env_makeopt('FOPTIMIZE', os.getenv('FFLAGS'))
 
         # BLAS and ScaLAPACK
-        setvar_env_makeopt('HAS_BLAS', 'yes')
-        setvar_env_makeopt('BLASOPT', '-L%s %s' % (os.getenv('BLAS_LIB_DIR'), os.getenv('LIBBLAS')))
+        self.setvar_env_makeopt('HAS_BLAS', 'yes')
+        self.setvar_env_makeopt('BLASOPT', '-L%s %s' % (os.getenv('BLAS_LIB_DIR'), os.getenv('LIBBLAS')))
 
-        setvar_env_makeopt('USE_SCALAPACK', 'y')
-        setvar_env_makeopt('SCALAPACK', '%s %s' % (os.getenv('LDFLAGS'), os.getenv('LIBSCALAPACK')))
+        self.setvar_env_makeopt('USE_SCALAPACK', 'y')
+        self.setvar_env_makeopt('SCALAPACK', '%s %s' % (os.getenv('LDFLAGS'), os.getenv('LIBSCALAPACK')))
 
         # enable NBO support if desired
         if self.cfg['with_nbo_support']:
@@ -158,7 +158,7 @@ class EB_NWChem(ConfigureMake):
         """Custom build procedure for NWChem."""
 
         # set FC
-        setvar_env_makeopt('FC', os.getenv('F77'))
+        self.setvar_env_makeopt('FC', os.getenv('F77'))
 
         # check whether 64-bit integers should be used, and act on it
         if not self.toolchain.options['i8']:
@@ -167,7 +167,7 @@ class EB_NWChem(ConfigureMake):
                 par = '-j %s' % self.cfg['parallel']
             run_cmd("make %s 64_to_32" % par, simple=True, log_all=True, log_ok=True)
 
-            setvar_env_makeopt('USE_64TO32', "y")
+            self.setvar_env_makeopt('USE_64TO32', "y")
 
         libs = os.getenv('LIBS')
         if libs:
