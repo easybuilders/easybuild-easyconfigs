@@ -133,7 +133,7 @@ class EB_RExtension(Extension):
             self.log.debug("Package %s installed succesfully" % self.name)
 
 
-class EB_bioconductor(EB_RExtension):
+class EB_Bioconductor(EB_RExtension):
     """
     The Bioconductor package extends DefaultRPackage to use a different source
     And using the biocLite package to do the installation.
@@ -142,7 +142,7 @@ class EB_bioconductor(EB_RExtension):
         self.log.error("bioconductor.run: Don't know how to install a specific version of a bioconductor package.")
 
     def make_r_cmd(self):
-        name = self.pkg['name']
+        name = self.ext['name']
         self.log.debug("Installing bioconductor package %s." % name)
         bl_name = "\"%s\"" % name
 
@@ -156,10 +156,10 @@ class EB_bioconductor(EB_RExtension):
 
 ## special cases of bioconductor packages
 # handled by class aliases
-EB_BSgenome = EB_GenomeGraphs = EB_ShortRead = EB_bioconductor
-EB_Biobase = EB_IRanges = EB_AnnotationDbi = EB_bioconductor
+EB_BSgenome = EB_GenomeGraphs = EB_ShortRead = EB_Bioconductor
+EB_Biobase = EB_IRanges = EB_AnnotationDbi = EB_Bioconductor
 # exonmap doesn't seem to be available trought biocLite anymore...
-EB_exonmap = EB_bioconductor
+EB_exonmap = EB_Bioconductor
 
 class EB_Rserve(EB_RExtension):
     """Install Rserve as an R extension"""
