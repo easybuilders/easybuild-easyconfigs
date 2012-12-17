@@ -66,6 +66,11 @@ class EB_NWChem(ConfigureMake):
                      ]
         return ConfigureMake.extra_options(extra_vars)
 
+    def setvar_env_makeopt(name, value):
+        """Set a variable both in the environment and a an option to make."""
+        env.setvar(name, value)
+        self.cfg.update('makeopts', '%s=%s' % (name, value))
+
     def configure_step(self):
         """Custom configuration procedure for NWChem."""
 
@@ -124,15 +129,15 @@ class EB_NWChem(ConfigureMake):
         env.setvar('LIBMPI', libmpi)
 
         # compiler optimization flags
-        env.setvar('COPTIMIZE', os.getenv('CFLAGS'))
-        env.setvar('FOPTIMIZE', os.getenv('FFLAGS'))
+        setvar_env_makeopt('COPTIMIZE', os.getenv('CFLAGS'))
+        setvar_env_makeopt('FOPTIMIZE', os.getenv('FFLAGS'))
 
         # BLAS and ScaLAPACK
-        env.setvar('HAS_BLAS', 'yes')
-        env.setvar('BLASOPT', '-L%s %s' % (os.getenv('BLAS_LIB_DIR'), os.getenv('LIBBLAS')))
+        setvar_env_makeopt('HAS_BLAS', 'yes')
+        setvar_env_makeopt('BLASOPT', '-L%s %s' % (os.getenv('BLAS_LIB_DIR'), os.getenv('LIBBLAS')))
 
-        env.setvar('USE_SCALAPACK', 'y')
-        env.setvar('SCALAPACK', '%s %s' % (os.getenv('LDFLAGS'), os.getenv('LIBSCALAPACK')))
+        setvar_env_makeopt('USE_SCALAPACK', 'y')
+        setvar_env_makeopt('SCALAPACK', '%s %s' % (os.getenv('LDFLAGS'), os.getenv('LIBSCALAPACK')))
 
         # enable NBO support if desired
         if self.cfg['with_nbo_support']:
@@ -153,7 +158,7 @@ class EB_NWChem(ConfigureMake):
         """Custom build procedure for NWChem."""
 
         # set FC
-        env.setvar('FC', os.getenv('F77'))
+        setvar_env_makeopt('FC', os.getenv('F77'))
 
         # check whether 64-bit integers should be used, and act on it
         if not self.toolchain.options['i8']:
@@ -162,7 +167,7 @@ class EB_NWChem(ConfigureMake):
                 par = '-j %s' % self.cfg['parallel']
             run_cmd("make %s 64_to_32" % par, simple=True, log_all=True, log_ok=True)
 
-            env.setvar('USE_64TO32', "y")
+            setvar_env_makeopt('USE_64TO32', "y")
 
         libs = os.getenv('LIBS')
         if libs:
