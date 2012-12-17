@@ -69,7 +69,7 @@ class EB_NWChem(ConfigureMake):
     def setvar_env_makeopt(self, name, value):
         """Set a variable both in the environment and a an option to make."""
         env.setvar(name, value)
-        self.cfg.update('makeopts', '%s=%s' % (name, value))
+        self.cfg.update('makeopts', "%s='%s'" % (name, value))
 
     def configure_step(self):
         """Custom configuration procedure for NWChem."""
