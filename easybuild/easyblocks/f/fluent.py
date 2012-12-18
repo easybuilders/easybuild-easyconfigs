@@ -73,7 +73,7 @@ class EB_FLUENT(EasyBlock):
 
         guesses.update({
                         "PATH": [os.path.join(ver, "fluent", "bin")],
-                        "LD_LIBRARY_PATH", [os.path.join(ver, "fluent", "lib")],
+                        "LD_LIBRARY_PATH": [os.path.join(ver, "fluent", "lib")],
                        })
 
         return guesses
