@@ -195,7 +195,7 @@ class EB_NWChem(ConfigureMake):
 
         # build version info
         try:
-            os.log.info("Building version info...")
+            self.log.info("Building version info...")
 
             cwd = os.getcwd()
             os.chdir(os.path.join(self.cfg['start_dir'], 'src', 'util'))
