@@ -288,7 +288,7 @@ charmm_x %(path)s/data/charmm_x/
             nwchemrc = os.path.join(os.getenv('HOME'), '.nwchemrc')
             default_nwchemrc = os.path.join(self.installdir, 'data', 'default.nwchemrc')
             if os.path.exists(nwchemrc):
-                symlink_ok = os.path.islink(self.home_subdir) and os.path.samefile(nwchemrc, default_nwchemrc)
+                symlink_ok = os.path.islink(nwchemrc) and os.path.samefile(nwchemrc, default_nwchemrc)
                 if not symlink_ok:
                     self.log.error("Found %s, but it pointing to the wrong file (not %s)." % (nwchem, default_nwchemrc))
             else:
