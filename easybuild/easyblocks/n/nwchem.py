@@ -284,12 +284,21 @@ charmm_x %(path)s/data/charmm_x/
             self.log.info("List of examples to be run as test cases: %s" % self.cfg['tests'])
 
         try:
-            nwchemrc_dir = tempfile.mkdtemp(prefix='nwchemrc_')
-            src = os.path.join(self.installdir, 'data', 'default.nwchemrc')
-            dst = os.path.join(nwchemrc_dir, '.nwchemrc')
-            self.log.info("Copying %s to %s" % (src, dst))
-            shutil.copy2(src, dst)
-            env.setvar('HOME_NWCHEMRC', dst)
+            # symlink $HOME/.nwchemrc to local copy of default nwchemrc
+            default_nwchemrc = os.path.join(self.installdir, 'data', 'default.nwchemrc')
+            home_nwchemrc = os.path.join(os.getenv('HOME'), '.nwchemrc')
+            local_nwchemrc = os.path.join(tempfile.gettempdir(), os.getenv('USER'), 'easybuild_nwchem', '.nwchemrc')
+
+            shutil.copy2(default_nwchemrc, local_nwchemrc)
+            symlink_ok = False
+            if os.path.exists(home_nwchemrc):
+                if not os.path.islink(home_nwchemrc) or not os.path.samefile(home_nwchemrc, local_nwchemrc):
+                    self.log.error("File %s is present, but is not a symlink to %s" % (home_nwchemrc, local_nwchemrc))
+                else:
+                    symlink_ok = True
+
+            if not symlink_ok:
+                os.symlink(local_nwchemrc, home_nwchemrc)
 
             # run tests, keep track of fail ratio
             cwd = os.getcwd()
