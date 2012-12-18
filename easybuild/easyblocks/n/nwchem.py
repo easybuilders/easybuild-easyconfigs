@@ -358,7 +358,7 @@ charmm_x %(path)s/data/charmm_x/
             self.log.info("Log for test cases saved at %s" % test_cases_logfn)
 
             if fail_ratio > self.cfg['max_fail_ratio']:
-                self.log.error("Over %s%% of test cases failed, assuming broken build." % self.cfg['max_fail_ratio']*100)
+                self.log.error("Over %s%% of test cases failed, assuming broken build." % (self.cfg['max_fail_ratio']*100))
 
             shutil.rmtree(self.examples_dir)
 
