@@ -110,7 +110,6 @@ class EB_NWChem(ConfigureMake):
 
         env.setvar('LARGE_FILES', 'TRUE')
         env.setvar('USE_NOFSCHECK', 'TRUE')
-        env.setvar('LIB_DEFINES', self.cfg['lib_defines'])
 
         for var in ['USE_MPI', 'USE_MPIF', 'USE_MPIF4']:
             env.setvar(var, 'y')
@@ -135,11 +134,13 @@ class EB_NWChem(ConfigureMake):
 
         # BLAS and ScaLAPACK
         self.setvar_env_makeopt('HAS_BLAS', 'yes')
-        self.setvar_env_makeopt('BLASOPT', '-L%s %s' % (os.getenv('BLAS_LIB_DIR'), os.getenv('LIBBLAS')))
+        self.setvar_env_makeopt('BLASOPT', '-L%s %s' % (os.getenv('BLAS_LIB_DIR'), os.getenv('LIBBLAS_MT')))
 
-        self.setvar_env_makeopt('SCALAPACK', '%s %s' % (os.getenv('LDFLAGS'), os.getenv('LIBSCALAPACK')))
+        self.setvar_env_makeopt('SCALAPACK', '%s %s' % (os.getenv('LDFLAGS'), os.getenv('LIBSCALAPACK_MT')))
         if self.toolchain.options['i8']:
+            self.setvar_env_makeopt('BLAS_I8', 'yes')
             self.setvar_env_makeopt('USE_SCALAPACK_I8', 'y')
+            self.cfg.update('lib_defines', '-DSCALAPACK_I8')
         else:
             self.setvar_env_makeopt('USE_SCALAPACK', 'y')
 
@@ -151,6 +152,8 @@ class EB_NWChem(ConfigureMake):
             nwchem_modules += ' nbo'
 
         env.setvar('NWCHEM_MODULES', nwchem_modules)
+
+        env.setvar('LIB_DEFINES', self.cfg['lib_defines'])
 
         # clean first (why not)
         run_cmd("make clean", simple=True, log_all=True, log_ok=True)
