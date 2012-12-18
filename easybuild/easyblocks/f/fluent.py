@@ -26,6 +26,7 @@
 EasyBuild support for installing FLUENT, implemented as an easyblock
 """
 
+import os
 import stat
 
 from easybuild.framework.easyblock import EasyBlock
