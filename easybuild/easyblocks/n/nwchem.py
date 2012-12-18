@@ -183,6 +183,24 @@ class EB_NWChem(ConfigureMake):
 
         super(EB_NWChem, self).build_step(verbose=True)
 
+        # build version info
+        try:
+            os.log.info("Building version info...")
+
+            cwd = os.getcwd()
+            os.chdir(os.path.join(self.cfg['start_dir'], 'src', 'util'))
+
+            run_cmd("make version", simple=True, log_all=True, log_ok=True, log_output=True)
+            run_cmd("make", simple=True, log_all=True, log_ok=True, log_output=True)
+
+            os.chdir(os.path.join(self.cfg['start_dir'], 'src'))
+            run_cmd("make link", simple=True, log_all=True, log_ok=True, log_output=True)
+
+            os.chdir(cwd)
+
+        except OSError, err:
+            self.log.error("Failed to build version info: %s" % err)
+
         # run getmem.nwchem script to assess memory availability and make an educated guess
         # this is an alternative to specifying -DDFLT_TOT_MEM via LIB_DEFINES
         # this recompiles the appropriate files and relinks
