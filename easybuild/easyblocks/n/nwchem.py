@@ -285,9 +285,11 @@ charmm_x %(path)s/data/charmm_x/
 
         try:
             nwchemrc_dir = tempfile.mkdtemp(prefix='nwchemrc_')
-            shutil.copy2(os.path.join(self.installdir, 'data', 'default.nwchemrc'),
-                         os.path.join(nwchemrc_dir, '.nwchemrc'))
-            env.setvar('HOME_NWCHEMRC', os.path.join(nwchemrc_dir, '.nwchemrc'))
+            src = os.path.join(self.installdir, 'data', 'default.nwchemrc')
+            dst = os.path.join(nwchemrc_dir, '.nwchemrc')
+            self.log.info("Copying %s to %s" % (src, dst))
+            shutil.copy2(src, dst)
+            env.setvar('HOME_NWCHEMRC', dst)
 
             # run tests, keep track of fail ratio
             cwd = os.getcwd()
@@ -311,6 +313,7 @@ charmm_x %(path)s/data/charmm_x/
                 for item in os.listdir(test_srcdir):
                     test_srcfile = os.path.join(test_srcdir, item)
                     if os.path.isfile(test_srcfile):
+                        self.log.debug("[test %s] Copying %s to %s" % (test, test_srcfile, tmpdir))
                         shutil.copy2(test_srcfile, tmpdir)
 
                 # run test
