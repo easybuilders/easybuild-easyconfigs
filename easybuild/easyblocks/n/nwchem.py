@@ -289,6 +289,10 @@ charmm_x %(path)s/data/charmm_x/
             home_nwchemrc = os.path.join(os.getenv('HOME'), '.nwchemrc')
             local_nwchemrc = os.path.join(tempfile.gettempdir(), os.getenv('USER'), 'easybuild_nwchem', '.nwchemrc')
 
+            local_nwchemrc_dir = os.path.dirname(local_nwchemrc)
+            if not os.path.exists(local_nwchemrc_dir):
+                os.makedirs(local_nwchemrc_dir)
+
             shutil.copy2(default_nwchemrc, local_nwchemrc)
             symlink_ok = False
             if os.path.exists(home_nwchemrc):
