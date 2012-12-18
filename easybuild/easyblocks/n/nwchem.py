@@ -284,15 +284,10 @@ charmm_x %(path)s/data/charmm_x/
             self.log.info("List of examples to be run as test cases: %s" % self.cfg['tests'])
 
         try:
-            # make sure $HOME/.nwchemrc is there (and correct)
-            nwchemrc = os.path.join(os.getenv('HOME'), '.nwchemrc')
-            default_nwchemrc = os.path.join(self.installdir, 'data', 'default.nwchemrc')
-            if os.path.exists(nwchemrc):
-                symlink_ok = os.path.islink(nwchemrc) and os.path.samefile(nwchemrc, default_nwchemrc)
-                if not symlink_ok:
-                    self.log.error("Found %s, but it pointing to the wrong file (not %s)." % (nwchem, default_nwchemrc))
-            else:
-                os.symlink(default_nwchemrc, nwchemrc)
+            nwchemrc_dir = tempfile.mkdtemp(prefix='nwchemrc_')
+            shutil.copy2(os.path.join(self.installdir, 'data', 'default.nwchemrc'),
+                         os.path.join(nwchemrc_dir, '.nwchemrc'))
+            env.setvar('HOME_NWCHEMRC', os.path.join(nwchemrc_dir, '.nwchemrc'))
 
             # run tests, keep track of fail ratio
             cwd = os.getcwd()
@@ -365,6 +360,7 @@ charmm_x %(path)s/data/charmm_x/
                 self.log.error("Over %s%% of test cases failed, assuming broken build." % (self.cfg['max_fail_ratio']*100))
 
             shutil.rmtree(self.examples_dir)
+            shutil.rmtree(nwchemrc_dir)
 
         except OSError, err:
             self.log.error("Failed to run test cases: %s" % err)
