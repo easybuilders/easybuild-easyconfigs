@@ -135,8 +135,7 @@ class EB_NWChem(ConfigureMake):
         self.setvar_env_makeopt('FOPTIMIZE', os.getenv('FFLAGS'))
 
         # BLAS and ScaLAPACK
-        self.setvar_env_makeopt('HAS_BLAS', 'yes')
-        self.setvar_env_makeopt('BLASOPT', '-L%s %s' % (os.getenv('BLAS_LIB_DIR'), os.getenv('LIBBLAS_MT')))
+        self.setvar_env_makeopt('BLASOPT', '-L%s %s' % (os.getenv('LDFLAGS'), os.getenv('LIBSCALAPACK_MT')))
 
         self.setvar_env_makeopt('SCALAPACK', '%s %s' % (os.getenv('LDFLAGS'), os.getenv('LIBSCALAPACK_MT')))
         if self.toolchain.options['i8']:
@@ -144,6 +143,7 @@ class EB_NWChem(ConfigureMake):
             self.setvar_env_makeopt('USE_SCALAPACK_I8', 'y')
             self.cfg.update('lib_defines', '-DSCALAPACK_I8')
         else:
+            self.setvar_env_makeopt('HAS_BLAS', 'yes')
             self.setvar_env_makeopt('USE_SCALAPACK', 'y')
             size = 4
 
