@@ -137,8 +137,11 @@ class EB_NWChem(ConfigureMake):
         self.setvar_env_makeopt('HAS_BLAS', 'yes')
         self.setvar_env_makeopt('BLASOPT', '-L%s %s' % (os.getenv('BLAS_LIB_DIR'), os.getenv('LIBBLAS')))
 
-        self.setvar_env_makeopt('USE_SCALAPACK', 'y')
         self.setvar_env_makeopt('SCALAPACK', '%s %s' % (os.getenv('LDFLAGS'), os.getenv('LIBSCALAPACK')))
+        if self.toolchain.options['i8']:
+            self.setvar_env_makeopt('USE_SCALAPACK_I8', 'y')
+        else:
+            self.setvar_env_makeopt('USE_SCALAPACK', 'y')
 
         # enable NBO support if desired
         if self.cfg['with_nbo_support']:
