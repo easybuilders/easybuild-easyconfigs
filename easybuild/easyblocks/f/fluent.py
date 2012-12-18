@@ -64,14 +64,16 @@ class EB_FLUENT(EasyBlock):
 
         super(EB_FLUENT, self).sanity_check_step(custom_paths=custom_paths)
 
-    def make_module_extra(self):
+    def make_module_req_guess(self):
         """Custom extra module file entries for FLUENT."""
 
-        txt = super(EB_FLUENT, self).make_module_extra()
+        guesses = super(EB_FLUENT, self).make_module_req_guess()
 
         ver = "v%s" % ''.join(self.version.split('.'))
 
-        txt += self.moduleGenerator.prepend_paths("PATH", [os.path.join(ver, "fluent", "bin")])
-        txt += self.moduleGenerator.prepend_paths("LD_LIBRARY_PATH", [os.path.join(ver, "fluent", "lib")])
+        guesses.update({
+                        "PATH": [os.path.join(ver, "fluent", "bin")],
+                        "LD_LIBRARY_PATH", [os.path.join(ver, "fluent", "lib")],
+                       })
 
-        return txt
+        return guesses
