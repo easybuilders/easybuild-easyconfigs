@@ -18,11 +18,15 @@ The EasyBuild documentation is available on the GitHub wiki of the
 easybuild meta-package, see
 http://github.com/hpcugent/easybuild/wiki/Home.
 
-Related packages: \* easybuild-framework
+Related packages:
+
+- easybuild-framework
 (http://pypi.python.org/pypi/easybuild-framework): the EasyBuild
 framework, which includes the easybuild.framework and easybuild.tools
 Python packages that provide general support for building and installing
-software \* easybuild-easyconfigs
+software
+
+- easybuild-easyconfigs
 (http://pypi.python.org/pypi/easybuild-easyconfigs): a collection of
 example easyconfig files that specify which software to build, and using
 which build options; these easyconfigs will be well tested with the

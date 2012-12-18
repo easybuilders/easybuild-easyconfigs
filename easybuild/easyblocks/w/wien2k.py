@@ -62,8 +62,10 @@ class EB_WIEN2k(EasyBlock):
                          "http://www.wien2k.at/reg_user/benchmark/mpi-benchmark.tar.gz"]
 
         extra_vars = [
-                      ('runtest', [True, "Run WIEN2k tests (default: True).", CUSTOM]),
-                      ('testdata', [testdata_urls, "URL for test data required to run WIEN2k benchmark test (default: %s)." % testdata_urls, CUSTOM]),
+                      ('runtest', [True, "Run WIEN2k tests", CUSTOM]),
+                      ('testdata', [testdata_urls, "test data URL for WIEN2k benchmark test", CUSTOM]),
+                      ('wien_mpirun', [None, "MPI wrapper comand to use", CUSTOM]),
+                      ('remote', [None, "Remote command to use (e.g. pbsssh, ...)", CUSTOM]),
                      ]
         return EasyBlock.extra_options(extra_vars)
 
@@ -82,7 +84,7 @@ class EB_WIEN2k(EasyBlock):
                  ]
 
         run_cmd_qa(cmd, qanda, no_qa=no_qa, log_all=True, simple=True)
-    
+
     def configure_step(self):
         """Configure WIEN2k build by patching siteconfig_lapw script and running it."""
 
@@ -196,6 +198,33 @@ class EB_WIEN2k(EasyBlock):
 
         run_cmd_qa(cmd, qanda, no_qa=no_qa, std_qa=std_qa, log_all=True, simple=True)
 
+        # post-configure patches
+        fn = os.path.join(self.cfg['start_dir'], 'parallel_options')
+        remote = self.cfg['remote']
+        try:
+            for line in fileinput.input(fn, inplace=1, backup='.orig.eb'):
+                if self.cfg['wien_mpirun']:
+                    line = re.sub("(setenv WIEN_MPIRUN\s*).*", r'\1 "%s"' % self.cfg['wien_mpirun'], line)
+                sys.stdout.write(line)
+
+            if remote:
+                f = open(fn, "a")
+
+                if remote == 'pbsssh':
+                    extra = "set remote = pbsssh\n"
+                    extra += "setenv PBSSSHENV 'LD_LIBRARY_PATH PATH'\n"
+                else:
+                    self.log.error("Don't know how to patch %s for remote %s" % (fn, remote))
+
+                f.write(extra)
+                f.close()
+
+            self.log.debug("Patched file %s: %s" % (fn, open(fn, 'r').read()))
+
+        except IOError, err:
+            self.log.error("Failed to patch %s: %s" % (fn, err))
+
+
     def build_step(self):
         """Build WIEN2k by running siteconfig_lapw script again."""
 
@@ -220,7 +249,7 @@ class EB_WIEN2k(EasyBlock):
                  "Compile time errors (if any) were:",
                  "Please enter the full path of the perl program:",
                 ]
-    
+
         self.log.debug("no_qa for %s: %s" % (cmd, no_qa))
         run_cmd_qa(cmd, qanda, no_qa=no_qa, log_all=True, simple=True)
 
