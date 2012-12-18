@@ -153,7 +153,7 @@ class EB_NWChem(ConfigureMake):
 
         env.setvar('NWCHEM_MODULES', nwchem_modules)
 
-        self.setvar_env_makeopt('LIB_DEFINES', self.cfg['lib_defines'])
+        env.setvar('LIB_DEFINES', self.cfg['lib_defines'])
 
         # clean first (why not)
         run_cmd("make clean", simple=True, log_all=True, log_ok=True)
