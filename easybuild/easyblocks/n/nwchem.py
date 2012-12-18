@@ -408,7 +408,7 @@ charmm_x %(path)s/data/charmm_x/
                 self.log.error("Over %s%% of test cases failed, assuming broken build." % (self.cfg['max_fail_ratio']*100))
 
             shutil.rmtree(self.examples_dir)
-            shutil.rmtree(nwchemrc_dir)
+            shutil.rmtree(local_nwchemrc_dir)
 
         except OSError, err:
             self.log.error("Failed to run test cases: %s" % err)
