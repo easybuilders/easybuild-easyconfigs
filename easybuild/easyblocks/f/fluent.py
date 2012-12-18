@@ -68,7 +68,7 @@ class EB_FLUENT(EasyBlock):
 
         txt = super(EB_FLUENT, self).make_module_extra()
 
-        txt += self.moduleGenerator.prepend_paths("PATH", ["v%s" % self.version, "fluent", "bin"])
-        txt += self.moduleGenerator.prepend_paths("LD_LIBRARY_PATH", ["v%s" % self.version, "fluent", "lib"])
+        txt += self.moduleGenerator.prepend_paths("PATH", [os.path.join("v%s" % ''.join(self.version.split('.')), "fluent", "bin")])
+        txt += self.moduleGenerator.prepend_paths("LD_LIBRARY_PATH", ["v%s" % ''.join(self.version.split('.')), "fluent", "lib"])
 
         return txt
