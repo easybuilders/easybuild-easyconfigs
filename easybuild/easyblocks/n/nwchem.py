@@ -113,6 +113,8 @@ class EB_NWChem(ConfigureMake):
 
         for var in ['USE_MPI', 'USE_MPIF', 'USE_MPIF4']:
             env.setvar(var, 'y')
+        for var in ['CC', 'CXX', 'F90']:
+            env.setvar('MPI_%s' % var, os.getenv('MPI%s' % var))
         env.setvar('MPI_LOC', os.path.dirname(os.getenv('MPI_INC_DIR')))
         env.setvar('MPI_LIB', os.getenv('MPI_LIB_DIR'))
         env.setvar('MPI_INCLUDE', os.getenv('MPI_INC_DIR'))
@@ -138,11 +140,16 @@ class EB_NWChem(ConfigureMake):
 
         self.setvar_env_makeopt('SCALAPACK', '%s %s' % (os.getenv('LDFLAGS'), os.getenv('LIBSCALAPACK_MT')))
         if self.toolchain.options['i8']:
-            self.setvar_env_makeopt('BLAS_I8', 'yes')
+            size = 8
             self.setvar_env_makeopt('USE_SCALAPACK_I8', 'y')
             self.cfg.update('lib_defines', '-DSCALAPACK_I8')
         else:
             self.setvar_env_makeopt('USE_SCALAPACK', 'y')
+            size = 4
+
+        # set sizes
+        for lib in ['BLAS', 'LAPACK', 'SCALAPACK']:
+            self.setvar_env_makeopt('%s_SIZE' % lib, str(size))
 
         # enable NBO support if desired
         if self.cfg['with_nbo_support']:
