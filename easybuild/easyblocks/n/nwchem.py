@@ -311,8 +311,12 @@ charmm_x %(path)s/data/charmm_x/
                 tmpdir = tempfile.mkdtemp(prefix='nwchem_test_')
                 os.chdir(tmpdir)
 
-                # copy test case
-                shutil.copy2(test, tmpdir)
+                # copy all files in test case dir
+                test_srcdir = os.path.dirname(test)
+                for item in os.listdir(test_srcdir):
+                    test_srcfile = os.path.join(test_srcdir, item)
+                    if os.path.isfile(test_srcfile):
+                        shutil.copy2(test_srcfile, tmpdir)
 
                 # run test
                 cmd = "nwchem %s" % os.path.basename(test)
