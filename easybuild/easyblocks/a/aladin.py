@@ -235,6 +235,16 @@ class EB_ALADIN(EasyBlock):
     def install_step(self):
         """Custom install procedure for ALADIN."""
 
+        try:
+            os.mkdir(os.getenv('ROOTPACK'))
+            os.mkdir(os.getenv('HOMEPACK'))
+        except OSError, err:
+            self.log.error("Failed to create rootpack dir in %s: %s" % err)
+
+        # create rootpack
+        [v1, v2] = self.version.split('_')
+        run_cmd("source $GMKROOT/util/berootpack && gmkpack -p master -a -r %s -b %s" % (v1, v2))
+
         # copy ALADIN sources to right directory
         try:
             for srcdir in ["aeo", "ald", "arp"]:
@@ -242,10 +252,6 @@ class EB_ALADIN(EasyBlock):
                                 os.path.join(self.rootpack_dir, 'src', 'local', srcdir))
         except OSError, err:
             self.log.error("Failed to copy ALADIN sources: %s" % err)
-
-        # create rootpack
-        [v1, v2] = self.version.split('_')
-        run_cmd("source $GMKROOT/util/berootpack && gmkpack -p master -a -r %s -b %s" % (v1, v2))
 
         # build rootpack
         run_cmd(os.path.join(self.rootpack_dir, 'ics_master'))
