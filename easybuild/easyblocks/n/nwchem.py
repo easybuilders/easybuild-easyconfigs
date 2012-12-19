@@ -97,8 +97,12 @@ class EB_NWChem(ConfigureMake):
         # set required NWChem environment variables
         env.setvar('NWCHEM_TOP', self.cfg['start_dir'])
         env.setvar('NWCHEM_TARGET', self.cfg['target'])
-        env.setvar('ARMCI_NETWORK', self.cfg['armci_network'])
         env.setvar('MSG_COMMS', self.cfg['msg_comms'])
+        env.setvar('ARMCI_NETWORK', self.cfg['armci_network'])
+        if self.cfg['armci_network'] in ["OPENIB"]:
+            env.setvar('IB_INCLUDE', "/usr/include")
+            env.setvar('IB_LIB', "/usr/lib64")
+            env.setvar('IB_LIB_NAME', "-libumad -libverbs -lpthread")
 
         if 'python' in self.cfg['modules']:
             python_root = get_software_root('Python')
