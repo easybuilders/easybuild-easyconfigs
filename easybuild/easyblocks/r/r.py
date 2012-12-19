@@ -18,16 +18,26 @@
 # You should have received a copy of the GNU General Public License
 # along with EasyBuild. If not, see <http://www.gnu.org/licenses/>.
 ##
-import os
-from easybuild.easyblocks.generic.configuremake import ConfigureMake 
-from easybuild.tools.filetools import run_cmd, parse_log_for_error
+"""
+Support for install R as an EasyBlock
+"""
+from easybuild.easyblocks.generic.configuremake import ConfigureMake
+from easybuild.tools import environment
+
 
 class EB_R(ConfigureMake):
     """
     Install R, including list of packages specified
-    Install specified version of packages, install hard-coded package version 
-    or latest package version (in that order of preference) 
+    Install specified version of packages, install hard-coded package version
+    or latest package version (in that order of preference)
     """
+
+    def configure_step(self):
+        """Configuration step, we set FC, F77 is already set by EasyBuild to the right compiler,
+        FC is used for F90"""
+        environment.setvar("FC", self.toolchain.get_variable('F90'))
+        ConfigureMake.configure_step(self)
+
     def extra_packages_pre(self):
         """
         We set some default configs here for extentions for R.
