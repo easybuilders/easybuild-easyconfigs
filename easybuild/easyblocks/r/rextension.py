@@ -29,29 +29,32 @@ from easybuild.framework.extension import Extension
 from easybuild.tools.filetools import run_cmd, parse_log_for_error
 from easybuild.tools.modules import get_software_root
 
-def make_install_option(opt, xs):
-    """
-    Make option list for install.packages, to specify in R environment. 
-    """
-    s = ""
-    if xs:
-        s = "%s=c(\"%s" % (opt, xs[0])
-        for x in xs[1:]:
-            s += " %s" % x
-        s += "\")"
-    return s
 
-def make_install_option_cmdline(opt, xs):
+def make_install_option(opt, values):
+    """
+    Make option list for install.packages, to specify in R environment.
+    """
+    out = ""
+    if values:
+        out = "%s=c(\"%s" % (opt, values[0])
+        for i in values[1:]:
+            out += " %s" % i
+        out += "\")"
+    return out
+
+
+def make_install_option_cmdline(opt, values):
     """
     Make option list for "R CMD INSTALL", to specify on command line.
     """
-    s = ""
-    if xs:
-        s = " --%s=\"%s" % (opt, xs[0])
-        for x in xs[1:]:
-            s += " %s" % x
-        s += "\""
-    return s
+    out = ""
+    if values:
+        out = " --%s=\"%s" % (opt, values[0])
+        for i in values[1:]:
+            out += " %s" % i
+        out += "\""
+    return out
+
 
 class EB_RExtension(Extension):
     """
@@ -63,13 +66,8 @@ class EB_RExtension(Extension):
         self.configurevars = []
         self.configureargs = []
 
-    def setconfigureargs(self, a):
-        self.configureargs = a
-
-    def setconfigurevars(self, a):
-        self.configurevars = a
-
     def make_r_cmd(self):
+        """Create a command to run in R to install this extension"""
         confvars = "confvars"
         confargs = "confargs"
         confvarslist = make_install_option(confvars, self.configurevars)
@@ -161,11 +159,13 @@ EB_Biobase = EB_IRanges = EB_AnnotationDbi = EB_Bioconductor
 # exonmap doesn't seem to be available trought biocLite anymore...
 EB_exonmap = EB_Bioconductor
 
+
 class EB_Rserve(EB_RExtension):
     """Install Rserve as an R extension"""
     def run(self):
-        self.setconfigurevars(['LIBS="$LIBS -lpthread"'])
+        self.configurevars = ['LIBS="$LIBS -lpthread"']
         EB_RExtension.run(self)
+
 
 # TODO: should be in it's own module, since it has a non rpackage dependency
 class EB_rsprng(EB_RExtension):
@@ -173,29 +173,41 @@ class EB_rsprng(EB_RExtension):
     def run(self):
         tc = self.toolchain
         self.log.debug("Setting configure args for %s" % self.name)
-        self.setconfigurevars(['LIBS=\\"%s %s\\"' % (tc.get_variable("LIBS"), tc.get_variable("LDFLAGS"))])
-        self.setconfigureargs(["--with-sprng=%s" % get_software_root("SPRNG")])
+        self.configurevars = ['LIBS=\\"%s %s\\"' % (tc.get_variable("LIBS"), tc.get_variable("LDFLAGS"))]
+        self.configureargs = ["--with-sprng=%s" % get_software_root("SPRNG")]
         EB_RExtension.run(self)
+
 
 class EB_rgdal(EB_RExtension):
     """Install rgdal as an R extension"""
     def run(self):
         self.log.debug("Setting configure args for %s" % self.name)
         softrootproj = get_software_root("PROJ")
-        self.setconfigureargs(["--with-proj-include=%s/include --with-proj-lib=%s/lib" % (softrootproj, softrootproj)])
+        self.configureargs = ["--with-proj-include=%s/include --with-proj-lib=%s/lib" % (softrootproj, softrootproj)]
         EB_RExtension.run(self)
 
-class EB_Rmpi(EB_RExtension):
-    """Install Rmpi as an R extension"""
-    def run(self):
-        self.log.debug("Setting configure args for Rmpi")
-        self.setconfigureargs(["--with-Rmpi-include=%s" % self.toolchain.get_variable('MPI_INC_DIR'),
-                               "--with-Rmpi-libpath=%s" % self.toolchain.get_variable('MPI_LIB_DIR'),
-                               "--with-mpi=%s" % self.toolchain.get_software_root(self.toolchain.MPI_MODULE_NAME)[0],
-                               "--with-Rmpi-type=%s" % self.toolchain.mpi_family().upper()])
-        EB_RExtension.run(self) # it might be needed to get the r cmd and run it with mympirun...
 
-        
+class EB_Rmpi(EB_RExtension):
+    from easybuild.tools import toolchain
+    """Install Rmpi as an R extension"""
+    MPI_TYPES = {
+        toolchain.MPI_TYPE_OPENMPI: "OPENMPI",
+        toolchain.MPI_TYPE_MPICH: "MPICH",
+        # No support for LAM yet toolchain.MPI_TYPE_LAM: "LAM",
+    }
+
+    def run(self):
+        """Do the installation"""
+        self.log.debug("Setting configure args for Rmpi")
+        self.configureargs = [
+            "--with-Rmpi-include=%s" % self.toolchain.get_variable('MPI_INC_DIR'),
+            "--with-Rmpi-libpath=%s" % self.toolchain.get_variable('MPI_LIB_DIR'),
+            "--with-mpi=%s" % self.toolchain.get_software_root(self.toolchain.MPI_MODULE_NAME)[0],
+            "--with-Rmpi-type=%s" % EB_Rmpi.MPI_TYPES[self.toolchain.MPI_TYPE],
+        ]
+        EB_RExtension.run(self)  # it might be needed to get the r cmd and run it with mympirun...
+
+
 
 #class EB_rJava(EB_Rpackage):
 #
