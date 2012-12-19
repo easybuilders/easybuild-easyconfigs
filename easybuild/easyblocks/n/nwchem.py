@@ -25,7 +25,6 @@
 """
 EasyBuild support for building and installing NWChem, implemented as an easyblock
 """
-import glob
 import os
 import re
 import shutil
@@ -167,7 +166,8 @@ class EB_NWChem(ConfigureMake):
         run_cmd("make clean", simple=True, log_all=True, log_ok=True)
 
         # configure build
-        run_cmd("make %s nwchem_config" % self.cfg['makeopts'], simple=True, log_all=True, log_ok=True, log_output=True)
+        cmd = "make %s nwchem_config" % self.cfg['makeopts']
+        run_cmd(cmd, simple=True, log_all=True, log_ok=True, log_output=True)
 
     def build_step(self):
         """Custom build procedure for NWChem."""
@@ -177,10 +177,9 @@ class EB_NWChem(ConfigureMake):
 
         # check whether 64-bit integers should be used, and act on it
         if not self.toolchain.options['i8']:
-            par = ''
             if self.cfg['parallel']:
-                par = '-j %s' % self.cfg['parallel']
-            run_cmd("make %s %s 64_to_32" % (par, self.cfg['makeopts']), simple=True, log_all=True, log_ok=True, log_output=True)
+                self.cfg.update('makeopts', '-j %s' % self.cfg['parallel'])
+            run_cmd("make %s 64_to_32" % self.cfg['makeopts'], simple=True, log_all=True, log_ok=True, log_output=True)
 
             self.setvar_env_makeopt('USE_64TO32', "y")
 
@@ -309,10 +308,22 @@ charmm_x %(path)s/data/charmm_x/
     def test_cases_step(self):
         """Run provided list of test cases, or provided examples is no test cases were specified."""
 
-        # run all provided examples if no test cases were specified
+        # run all examples if no test cases were specified
+        # order and grouping is important for some of these tests (e.g., [o]h3tr*
         if type(self.cfg['tests']) == bool:
-            self.cfg['tests'] = glob.glob('%s/*/*.nw' % self.examples_dir)
-            self.cfg['tests'].extend(glob.glob('%s/*/*/*.nw' % self.examples_dir))
+            examples = [('qmd', ['3carbo_dft.nw', '3carbo.nw', 'h2o_scf.nw']),
+                        ('pspw', ['C2.nw', 'C6.nw', 'CG.nw', 'Carbene.nw', 'Na16.nw', 'NaCl.nw']),
+                        ('tcepolar', ['ccsdt_polar_small.nw', 'ccsd_polar_big.nw', 'ccsd_polar_small.nw']),
+                        ('dirdyvtst/h3', ['h3tr4.nw', 'h3tr1.nw', 'h3tr2.nw', 'h3tr5.nw', 'h3tr3.nw']),
+                        ('dirdyvtst/oh3', ['oh3tr2.nw', 'oh3tr4.nw', 'oh3tr5.nw', 'oh3tr1.nw', 'oh3tr3.nw']),
+                        ('pspw/session1', ['band.nw', 'si4.linear.nw', 'si4.rhombus.nw', 'S2-drift.nw', 'diamond.nw',
+                                           'silicon.nw', 'S2.nw', 'si4.rectangle.nw']),
+                        ('pspw/MgO+Cu', ['pspw_MgO.nw']), ('pspw/C2H6', ['C2H6.nw']), ('pspw/Carbene', ['triplet.nw']),
+                        ('md/dna', ['dna.nw']), ('md/ache', ['mache.nw']), ('md/myo', ['myo.nw']),
+                        ('md/nak', ['NaK.nw']), ('md/nak', ['18c6NaK.nw']), ('md/membrane', ['membrane.nw']),
+                        ('md/sdm', ['sdm.nw']), ('md/crown', ['crown.nw']), ('md/hrc', ['hrc.nw']),
+                        ('md/benzene', ['benzene.nw'])]
+            self.cfg['tests'] = [(os.path.join(self.examples_dir, d), l) for (d, l) in examples]
             self.log.info("List of examples to be run as test cases: %s" % self.cfg['tests'])
 
         try:
@@ -347,48 +358,47 @@ charmm_x %(path)s/data/charmm_x/
             test_cases_logfn = os.path.join(self.installdir, config.log_path(), 'test_cases.log')
             test_cases_log = open(test_cases_logfn, "w")
 
-            for test in self.cfg['tests']:
+            for (testdir, tests) in self.cfg['tests']:
 
                 # run test in a temporary dir
                 tmpdir = tempfile.mkdtemp(prefix='nwchem_test_')
                 os.chdir(tmpdir)
 
                 # copy all files in test case dir
-                test_srcdir = os.path.dirname(test)
-                for item in os.listdir(test_srcdir):
-                    test_srcfile = os.path.join(test_srcdir, item)
-                    if os.path.isfile(test_srcfile):
-                        self.log.debug("[test %s] Copying %s to %s" % (test, test_srcfile, tmpdir))
-                        shutil.copy2(test_srcfile, tmpdir)
+                for item in os.listdir(testdir):
+                    test_file = os.path.join(testdir, item)
+                    if os.path.isfile(test_file):
+                        self.log.debug("Copying %s to %s" % (test_file, tmpdir))
+                        shutil.copy2(test_file, tmpdir)
 
-                # run test
-                cmd = "nwchem %s" % os.path.basename(test)
-                dirname = os.path.dirname(test)
-                msg = "Running test '%s' (from %s) in %s..." % (cmd, dirname, tmpdir)
-                self.log.info(msg)
-                test_cases_log.write("\n%s\n" % msg)
-                (out, ec) = run_cmd(cmd, simple=False, log_all=False, log_ok=False, log_output=True)
+                # run tests
+                for testx in tests:
+                    cmd = "nwchem %s" % testx
+                    msg = "Running test '%s' (from %s) in %s..." % (cmd, testdir, tmpdir)
+                    self.log.info(msg)
+                    test_cases_log.write("\n%s\n" % msg)
+                    (out, ec) = run_cmd(cmd, simple=False, log_all=False, log_ok=False, log_output=True)
 
-                # check exit code and output
-                if ec:
-                    msg = "Test %s failed (exit code: %s)!" % (test, ec)
-                    self.log.warning(msg)
-                    test_cases_log.write('FAIL: %s' % msg)
-                    fail += 1
-                else:
-                    if success_regexp.search(out):
-                        msg = "Test %s successful!" % test
-                        self.log.info(msg)
-                        test_cases_log.write('SUCCESS: %s' % msg)
-                    else:
-                        msg = "No 'Total times' found for test %s (but exit code is %s)!" % (test, ec)
+                    # check exit code and output
+                    if ec:
+                        msg = "Test %s failed (exit code: %s)!" % (testx, ec)
                         self.log.warning(msg)
                         test_cases_log.write('FAIL: %s' % msg)
                         fail += 1
+                    else:
+                        if success_regexp.search(out):
+                            msg = "Test %s successful!" % testx
+                            self.log.info(msg)
+                            test_cases_log.write('SUCCESS: %s' % msg)
+                        else:
+                            msg = "No 'Total times' found for test %s (but exit code is %s)!" % (testx, ec)
+                            self.log.warning(msg)
+                            test_cases_log.write('FAIL: %s' % msg)
+                            fail += 1
 
-                test_cases_log.write("\nOUTPUT:\n\n%s\n\n" % out)
+                    test_cases_log.write("\nOUTPUT:\n\n%s\n\n" % out)
 
-                tot += 1
+                    tot += 1
 
                 # go back
                 os.chdir(cwd)
@@ -405,7 +415,8 @@ charmm_x %(path)s/data/charmm_x/
             self.log.info("Log for test cases saved at %s" % test_cases_logfn)
 
             if fail_ratio > self.cfg['max_fail_ratio']:
-                self.log.error("Over %s%% of test cases failed, assuming broken build." % (self.cfg['max_fail_ratio']*100))
+                max_fail_pcnt = self.cfg['max_fail_ratio'] * 100
+                self.log.error("Over %s%% of test cases failed, assuming broken build." % max_fail_pcnt)
 
             shutil.rmtree(self.examples_dir)
             shutil.rmtree(local_nwchemrc_dir)
