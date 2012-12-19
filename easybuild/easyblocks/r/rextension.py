@@ -188,12 +188,12 @@ class EB_rgdal(EB_RExtension):
 
 
 class EB_Rmpi(EB_RExtension):
-    from easybuild.tools import toolchain
+    from easybuild.tools import toolchain as tchain
     """Install Rmpi as an R extension"""
     MPI_TYPES = {
-        toolchain.MPI_TYPE_OPENMPI: "OPENMPI",
-        toolchain.MPI_TYPE_MPICH: "MPICH",
-        # No support for LAM yet toolchain.MPI_TYPE_LAM: "LAM",
+        tchain.MPI_TYPE_OPENMPI: "OPENMPI",
+        tchain.MPI_TYPE_MPICH: "MPICH",
+        # No support for LAM yet tchain.MPI_TYPE_LAM: "LAM",
     }
 
     def run(self):
