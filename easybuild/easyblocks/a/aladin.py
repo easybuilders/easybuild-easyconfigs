@@ -247,9 +247,12 @@ class EB_ALADIN(EasyBlock):
 
         # copy ALADIN sources to right directory
         try:
-            for srcdir in ["aeo", "ald", "arp"]:
-                shutil.copytree(os.path.join(self.builddir, srcdir),
-                                os.path.join(self.rootpack_dir, 'src', 'local', srcdir))
+            src_dirs = [d for d in os.listdir(self.builddir) if not (d.startswith('auxlib') or d.startswith('gmk'))]
+            target = os.path.join(self.rootpack_dir, 'src', 'local')
+            self.log.info("Copying sources from %s to %s" % (self.builddir, target))
+            for srcdir in src_dirs:
+                shutil.copytree(os.path.join(self.builddir, srcdir), os.path.join(target, srcdir))
+                self.log.info("Copied %s" % srcdir)
         except OSError, err:
             self.log.error("Failed to copy ALADIN sources: %s" % err)
 
