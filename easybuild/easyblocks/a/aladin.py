@@ -188,6 +188,7 @@ class EB_ALADIN(EasyBlock):
         stdqa = OrderedDict([
                              (r'Confirm library .* is .*', 'y'),  # this one needs to be tried first!
                              (r'Please type the fortran 90 compiler name .*\s*:\n\(suggestions\s*: .*\)', os.getenv('F90')),
+                             (r'Please type the fortran 90 compiler interfaced with .*\s*:\n\(suggestions\s*: .*\)', os.getenv('F90_SEQ')),
                              (r'Please type the ABSOLUTE name of .*library.*, or ignore\s*[:]*\s*[\n]*.*', ''),  
                              (r'Please .* to save this draft configuration file :\n.*', '%s.x' % self.conf_file),
                             ])
@@ -207,7 +208,10 @@ class EB_ALADIN(EasyBlock):
             self.log.error("Failed to determine compiler stamp.")
 
         # set rootpack dir
-        verstr = '%s.01.%s.x' % (self.version, self.comp_stamp)
+        if self.toolchain.options['usempi']:
+            verstr = '%s.01.MPI%s.x' % (self.version, self.comp_stamp)
+        else:
+            verstr = '%s.01.%s.x' % (self.version, self.comp_stamp)
         self.rootpack_dir = os.path.join(self.installdir, 'rootpack', verstr)
 
         # set environment variables for installation dirs
@@ -231,10 +235,6 @@ class EB_ALADIN(EasyBlock):
     def install_step(self):
         """Custom install procedure for ALADIN."""
 
-        # create rootpack
-        [v1, v2] = self.version.split('_')
-        run_cmd("source $GMKROOT/util/berootpack && gmkpack -p master -a -r %s -b %s" % (v1, v2))
-
         # copy ALADIN sources to right directory
         try:
             for srcdir in ["aeo", "ald", "arp"]:
@@ -242,6 +242,10 @@ class EB_ALADIN(EasyBlock):
                                 os.path.join(self.rootpack_dir, 'src', 'local', srcdir))
         except OSError, err:
             self.log.error("Failed to copy ALADIN sources: %s" % err)
+
+        # create rootpack
+        [v1, v2] = self.version.split('_')
+        run_cmd("source $GMKROOT/util/berootpack && gmkpack -p master -a -r %s -b %s" % (v1, v2))
 
         # build rootpack
         run_cmd(os.path.join(self.rootpack_dir, 'ics_master'))
