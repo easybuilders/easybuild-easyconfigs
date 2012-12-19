@@ -111,7 +111,7 @@ class EB_NWChem(ConfigureMake):
         env.setvar('LARGE_FILES', 'TRUE')
         env.setvar('USE_NOFSCHECK', 'TRUE')
 
-        for var in ['USE_MPI', 'USE_MPIF']:
+        for var in ['USE_MPI', 'USE_MPIF', 'USE_MPIF4']:
             env.setvar(var, 'y')
         for var in ['CC', 'CXX', 'F90']:
             env.setvar('MPI_%s' % var, os.getenv('MPI%s' % var))
