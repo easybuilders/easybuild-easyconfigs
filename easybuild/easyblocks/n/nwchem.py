@@ -139,11 +139,10 @@ class EB_NWChem(ConfigureMake):
         self.setvar_env_makeopt('FOPTIMIZE', os.getenv('FFLAGS'))
 
         # BLAS and ScaLAPACK
-        libscalapack = os.getenv('LIBSCALAPACK_MT').replace('blacs_intelmpi', 'blacs_openmpi')
         self.setvar_env_makeopt('BLASOPT', '%s -L%s %s %s' % (os.getenv('LDFLAGS'), os.getenv('MPI_LIB_DIR'),
-                                                             libscalapack, libmpi))
+                                                              os.getenv('LIBSCALAPACK_MT'), libmpi))
 
-        self.setvar_env_makeopt('SCALAPACK', '%s %s' % (os.getenv('LDFLAGS'), libscalapack))
+        self.setvar_env_makeopt('SCALAPACK', '%s %s' % (os.getenv('LDFLAGS'), os.getenv('LIBSCALAPACK_MT')))
         if self.toolchain.options['i8']:
             size = 8
             self.setvar_env_makeopt('USE_SCALAPACK_I8', 'y')
