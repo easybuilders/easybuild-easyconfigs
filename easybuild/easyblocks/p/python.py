@@ -362,3 +362,6 @@ class EB_scipy(EB_FortranPythonPackage):
             self.testinstall = False
             self.runtest = None
 
+        # make sure there's no site.cfg in $HOME, because scipy will find it and use it
+        if os.path.exists(os.path.join(os.getenv('HOME'), 'site.cfg')):
+            self.log.error('Found site.cfg in your home directory (%s), please remove it.' % os.getenv('HOME'))
