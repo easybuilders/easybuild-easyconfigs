@@ -185,10 +185,15 @@ class EB_ALADIN(EasyBlock):
 
              }
 
+        f90_seq = os.getenv('F90_SEQ')
+        if not f90_seq:
+            # F90_SEQ is only defined when usempi is enabled
+            f90_seq = os.getenv('F90')
+
         stdqa = OrderedDict([
                              (r'Confirm library .* is .*', 'y'),  # this one needs to be tried first!
-                             (r'Please type the fortran 90 compiler name .*\s*:\n\(suggestions\s*: .*\)', os.getenv('F90')),
-                             (r'Please type the fortran 90 compiler interfaced with .*\s*:\n\(suggestions\s*: .*\)', os.getenv('F90_SEQ')),
+                             (r'.*fortran 90 compiler name .*\s*:\n\(suggestions\s*: .*\)', os.getenv('F90')),
+                             (r'.*fortran 90 compiler interfaced with .*\s*:\n\(suggestions\s*: .*\)', f90_seq),
                              (r'Please type the ABSOLUTE name of .*library.*, or ignore\s*[:]*\s*[\n]*.*', ''),  
                              (r'Please .* to save this draft configuration file :\n.*', '%s.x' % self.conf_file),
                             ])
