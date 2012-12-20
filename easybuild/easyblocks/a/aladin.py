@@ -153,7 +153,15 @@ class EB_ALADIN(EasyBlock):
         qsuff = ', or ignore (environment variables allowed) :'
         qsuff2 = ', or ignore : (environment variables allowed) :'
 
-        aux_lib_gribex = os.path.join(tmp_installroot, 'GNU', 'lib', 'libgribex.a')
+        comp_fam = self.toolchain.comp_family()
+        if comp_fam == toolchain.GCC:
+            gribdir = 'GNU'
+        elif comp_fam == toolchain.INTELCOMP:
+            gribdir = 'INTEL'
+        else:
+            self.log.error("Don't know which grib lib dir to use for compiler %s" % comp_fam)
+
+        aux_lib_gribex = os.path.join(tmp_installroot, gribdir, 'lib', 'libgribex.a')
         grib_api_lib = os.path.join(get_software_root('grib_api'), 'lib', 'libgrib_api_f90.a')
         grib_api_inc = os.path.join(get_software_root('grib_api'), 'include')
         jasperlib = os.path.join(get_software_root('JasPer'), 'lib', 'libjasper.a')
