@@ -119,9 +119,15 @@ class EB_NWChem(ConfigureMake):
             env.setvar(var, 'y')
         for var in ['CC', 'CXX', 'F90']:
             env.setvar('MPI_%s' % var, os.getenv('MPI%s' % var))
+        mpi_lib_dir = os.getenv('MPI_LIB_DIR')
+        if mpi_lib_dir.endswith('lib64'):
+            mpi_lib_dir = mpi_lib_dir[:-2]
+        mpi_inc_dir = os.getenv('MPI_INC_DIR')
+        if mpi_inc_dir.endswith('include64'):
+            mpi_inc_dir = mpi_inc_dir[:-2]
         env.setvar('MPI_LOC', os.path.dirname(os.getenv('MPI_INC_DIR')))
-        env.setvar('MPI_LIB', os.getenv('MPI_LIB_DIR'))
-        env.setvar('MPI_INCLUDE', os.getenv('MPI_INC_DIR'))
+        env.setvar('MPI_LIB', mpi_lib_dir)
+        env.setvar('MPI_INCLUDE', mpi_inc_dir)
         libmpi = None
         mpi_family = self.toolchain.mpi_family()
         if mpi_family in toolchain.OPENMPI:
@@ -139,7 +145,7 @@ class EB_NWChem(ConfigureMake):
         self.setvar_env_makeopt('FOPTIMIZE', os.getenv('FFLAGS'))
 
         # BLAS and ScaLAPACK
-        self.setvar_env_makeopt('BLASOPT', '%s -L%s %s %s' % (os.getenv('LDFLAGS'), os.getenv('MPI_LIB_DIR'),
+        self.setvar_env_makeopt('BLASOPT', '%s -L%s %s %s' % (os.getenv('LDFLAGS'), mpi_lib_dir,
                                                               os.getenv('LIBSCALAPACK_MT'), libmpi))
 
         self.setvar_env_makeopt('SCALAPACK', '%s %s' % (os.getenv('LDFLAGS'), os.getenv('LIBSCALAPACK_MT')))
