@@ -27,7 +27,6 @@ EasyBuild support for R packages, implemented as an easyblock
 """
 from easybuild.framework.extension import Extension
 from easybuild.tools.filetools import run_cmd, parse_log_for_error
-from easybuild.tools.modules import get_software_root
 
 
 def make_install_option(opt, values):
@@ -167,26 +166,6 @@ class EB_Rserve(EB_RExtension):
         EB_RExtension.run(self)
 
 
-# TODO: should be in it's own module, since it has a non rpackage dependency
-class EB_rsprng(EB_RExtension):
-    """Install rsprng as an R extension"""
-    def run(self):
-        tc = self.toolchain
-        self.log.debug("Setting configure args for %s" % self.name)
-        self.configurevars = ['LIBS=\\"%s %s\\"' % (tc.get_variable("LIBS"), tc.get_variable("LDFLAGS"))]
-        self.configureargs = ["--with-sprng=%s" % get_software_root("SPRNG")]
-        EB_RExtension.run(self)
-
-
-class EB_rgdal(EB_RExtension):
-    """Install rgdal as an R extension"""
-    def run(self):
-        self.log.debug("Setting configure args for %s" % self.name)
-        softrootproj = get_software_root("PROJ")
-        self.configureargs = ["--with-proj-include=%s/include --with-proj-lib=%s/lib" % (softrootproj, softrootproj)]
-        EB_RExtension.run(self)
-
-
 class EB_Rmpi(EB_RExtension):
     from easybuild.tools import toolchain as tchain
     """Install Rmpi as an R extension"""
@@ -206,33 +185,3 @@ class EB_Rmpi(EB_RExtension):
             "--with-Rmpi-type=%s" % EB_Rmpi.MPI_TYPES[self.toolchain.MPI_TYPE],
         ]
         EB_RExtension.run(self)  # it might be needed to get the r cmd and run it with mympirun...
-
-
-
-#class EB_rJava(EB_Rpackage):
-#
-#    def run(self):
-#
-#        if not os.getenv('EBROOTJAVA'):
-#            self.log.error("Java module not loaded, required as dependency for %s." % self.name())
-#
-#        java_home = os.getenv('JAVA_HOME')
-#        if not java_home.endswith("jre"):
-#            new_java_home = os.path.join(java_home, "jre")
-#            os.putenv("JAVA_HOME", new_java_home)
-#        else:
-#            new_java_home = java_home
-#
-#        path = os.getenv('PATH')
-#        os.putenv("PATH", "%s:%s/bin" % (path, new_java_home))
-#
-#        os.putenv("_JAVA_OPTIONS", "-Xmx512M")
-#
-#        txt = '# stuff required by rJava R package\n'
-#        txt += 'setenv JAVA_HOME %s\n' % new_java_home
-#        txt += 'setenv _JAVA_OPTIONS -Xmx512M\n'
-#        txt += 'prepend-path PATH %s/bin\n' % new_java_home
-#
-#        DefaultRpackage.run(self)
-#
-#        return txt
