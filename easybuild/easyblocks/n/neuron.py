@@ -29,7 +29,7 @@ import os
 
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.framework.easyconfig import CUSTOM
-from easybuild.tools.filetools import run_cmd
+from easybuild.tools.filetools import run_cmd, adjust_permissions
 from easybuild.tools.modules import get_software_root, get_software_version
 
 
@@ -48,7 +48,6 @@ class EB_NEURON(ConfigureMake):
         """Custom easyconfig parameters for NEURON."""
 
         extra_vars = [
-                      ('runtest', [True, "Run 'neurondemo' test case after building.", CUSTOM]),
                       ('paranrn', [True, "Enable support for distributed simulations.", CUSTOM]),
                      ]
         return ConfigureMake.extra_options(extra_vars)
@@ -82,13 +81,6 @@ class EB_NEURON(ConfigureMake):
 
         # complete configuration with configure_method of parent
         super(EB_NEURON, self).configure_step()
-
-    def test_step(self):
-        """Custom built-in test procedure for NEURON."""
-
-        if self.cfg['runtest']:
-            cmd = "test-command"
-            run_cmd(cmd, log_all=True, simple=True, log_output=True)
 
     def install_step(self):
         """Custom install procedure for NEURON."""
@@ -139,6 +131,18 @@ class EB_NEURON(ConfigureMake):
                        }
 
         super(EB_NEURON, self).sanity_check_step(custom_paths=custom_paths)
+
+        inp = """demo(3) // load the pyramidal cell model.
+init()  // initialise the model
+t // should be zero
+soma.v // will print -65
+run() // run the simulation
+t  // should be 5, indicating that 5ms were simulated
+soma.v // this will print a different value than -65, indicating that the simulation was executed.
+quit()
+"""
+        run_cmd("neurondemo", log_all=True, simple=True, log_output=True, inp=inp)
+
 
     def make_module_req_guess(self):
         """Custom guesses for environment variables (PATH, ...) for NEURON."""
