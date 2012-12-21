@@ -73,7 +73,7 @@ class EB_ALADIN(EasyBlock):
             my_gnu = 'y'  # gfortran
             for var in ['CFLAGS', 'CXXFLAGS', 'F90FLAGS', 'FFLAGS']:
                 flags = os.getenv(var)
-                env.setvar(var, "%s -fdefault-double-8" % flags)
+                env.setvar(var, "%s -fdefault-real-8 -fdefault-double-8" % flags)
                 self.log.info("Updated %s to '%s'" % (var, os.getenv(var)))
         elif self.toolchain.comp_family() == toolchain.INTELCOMP:
             my_gnu = 'i'  # icc/ifort
