@@ -167,8 +167,8 @@ class EB_ALADIN(EasyBlock):
         jasperlib = os.path.join(get_software_root('JasPer'), 'lib', 'libjasper.a')
         netcdflib = os.path.join(get_software_root('netCDF'), 'lib', 'libnetcdf.a')
         netcdfinc = os.path.join(get_software_root('netCDF'), 'include')
-        lapacklib = ' '.join([os.path.join(os.getenv('LAPACK_LIB_DIR'), x) for x in os.getenv('LAPACK_STATIC_LIBS').split(','))])
-        blaslib = ' '.join([os.path.join(os.getenv('BLAS_LIB_DIR'), x) for x in os.getenv('BLAS_STATIC_LIBS').split(','))])
+        lapacklib = ' '.join([os.path.join(os.getenv('LAPACK_LIB_DIR'), x) for x in os.getenv('LAPACK_STATIC_LIBS').split(',')])
+        blaslib = ' '.join([os.path.join(os.getenv('BLAS_LIB_DIR'), x) for x in os.getenv('BLAS_STATIC_LIBS').split(',')])
         mpilib = os.path.join(os.getenv('MPI_LIB_DIR'), os.getenv('MPI_LIB_SHARED'))
 
         qa = {
