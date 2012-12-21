@@ -9,7 +9,7 @@ toolchain = {'name': 'goalf', 'version': '1.1.0-no-OFED'}
 sources = ['%s-%s.tar.gz' % (name, version)]
 source_urls = [
     'http://cran.us.r-project.org/src/base/R-2/',  # R itself
-    'http://cran.r-project.org/src/contrib/Archive/',  # package archives
+    'http://cran.r-project.org/src/contrib/Archive/',  # package archive
 ]
 
 preconfigopts = 'BLAS_LIBS="$LIBBLAS" LAPACK_LIBS="$LIBLAPACK"'
@@ -24,9 +24,34 @@ dependencies = [
 
 sanity_check_paths = {
     'files': ['bin/%s' % x for x in ['R', 'Rscript']] +
-    ['lib64/R/include/%s' % x for x in ['Rconfig.h', 'Rdefines.h', 'Rembedded.h',
-                                        'R.h', 'Rinterface.h', 'Rinternals.h', 'Rmath.h', 'Rversion.h', 'S.h']] +
-    ['lib64/R/modules/%s' % x for x in ['internet.so', 'lapack.so', 'vfonts.so']] +
-    ['lib64/R/lib/libR.so'],
+             [
+                 'lib64/R/include/%s' % x for x in [
+                 'Rconfig.h', 'Rdefines.h', 'Rembedded.h',
+                 'R.h', 'Rinterface.h', 'Rinternals.h', 'Rmath.h', 'Rversion.h', 'S.h']
+             ] +
+             ['lib64/R/modules/%s' % x for x in ['internet.so', 'lapack.so', 'vfonts.so']] +
+             ['lib64/R/lib/libR.so'],
     'dirs': []
 }
+
+
+exts_defaultclass = ("easybuild.easyblocks.rextension", "EB_RExtension")
+exts_template = '%(name)s/%(name)s_%(version)s.tar.gz'
+
+# !! order of packages is important !!
+ext_options = {'source_tmpl': '%(name)s/%(name)s_%(version)s.tar.gz'}
+exts_filter = ["R -q --no-save", "library(%(name)s)"]
+exts_list = [
+    'Rmpi', 'irace', 'rJava', 'Matrix', 'png', 'Rcpp', 'quadprog', 'BB', 'rlecuyer',
+    'e1071', 'car', 'colorspace', 'robustbase', (
+        'sp', '0.9-91', ext_options), 'vcd',  # dependencies of VIM
+    ('Rserve', '0.6-1', ext_options), 'Biobase', 'IRanges', 'AnnotationDbi', 'BSgenome', 'ShortRead',
+    'akima', 'base', 'Biostrings', 'bitops', 'boot',
+    'class', 'cluster', 'coda', 'codetools', 'datasets', 'DBI', 'foreign', 'gam',
+    'gamlss.data', 'gamlss.dist', 'gamlss', 'gamlss.tr', 'graphics', 'grDevices', 'grid', 'hwriter', 'IRanges',
+    'KernSmooth', 'lattice', 'zoo', 'lmtest', 'MASS', 'methods', 'mgcv', 'mnormt', 'mvtnorm', 'nlme', 'nnet',
+    'numDeriv', 'pscl', 'RColorBrewer', 'rpart', 'RSQLite', 'sandwich', 'sfsmisc', 'spatial', 'splines', 'stats',
+    'stats4', 'survival', 'tools', 'utils', 'VGAM', 'waveslim', 'XML', 'xtable',
+    'profileModel', 'brglm', 'deSolve', 'nnet', 'odesolve', 'tseriesChaos', 'tseries',
+    'neuRosim', 'fastICA', 'R.methodsS3', 'R.oo', 'R.matlab', 'Rniftilib',
+]
