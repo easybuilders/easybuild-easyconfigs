@@ -269,6 +269,9 @@ class EB_ALADIN(EasyBlock):
         except OSError, err:
             self.log.error("Failed to copy ALADIN sources: %s" % err)
 
+        if self.cfg['parallel']:
+            env.setvar('GMK_THREADS', self.cfg['parallel'])
+
         # build rootpack
         run_cmd(os.path.join(self.rootpack_dir, 'ics_master'))
 
