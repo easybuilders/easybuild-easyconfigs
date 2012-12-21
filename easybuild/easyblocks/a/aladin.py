@@ -170,9 +170,20 @@ class EB_ALADIN(EasyBlock):
         jasperlib = os.path.join(get_software_root('JasPer'), 'lib', 'libjasper.a')
         netcdflib = os.path.join(get_software_root('netCDF'), 'lib', 'libnetcdf.a')
         netcdfinc = os.path.join(get_software_root('netCDF'), 'include')
-        lapacklib = ' '.join([os.path.join(os.getenv('LAPACK_LIB_DIR'), x) for x in os.getenv('LAPACK_STATIC_LIBS').split(',')])
-        blaslib = ' '.join([os.path.join(os.getenv('BLAS_LIB_DIR'), x) for x in os.getenv('BLAS_STATIC_LIBS').split(',')])
         mpilib = os.path.join(os.getenv('MPI_LIB_DIR'), os.getenv('MPI_LIB_SHARED'))
+
+        ldpaths = [ldflag[2:] for ldflag in os.getenv('LDFLAGS').split(' ')]  # LDFLAGS have form '-L/path/to'
+
+        lapacklibs = []
+        for lib in os.getenv('LAPACK_STATIC_LIBS').split(','):
+            libpaths = [os.path.join(ldpath, lib) for ldpath in ldpaths]
+            lapacklibs.append([libpath for libpath in libpaths if os.path.exists(libpath)][0])
+        lapacklib = ' '.join(lapacklibs)
+        blaslibs = []
+        for lib in os.getenv('BLAS_STATIC_LIBS').split(','):
+            libpaths = [os.path.join(ldpath, lib) for ldpath in ldpaths]
+            blaslibs.append([libpath for libpath in libpaths if os.path.exists(libpath)][0])
+        blaslib = ' '.join(blaslibs)
 
         qa = {
               'Do you want to run the configuration file maker assistant now (y) or later [n] ?': 'y',
@@ -273,7 +284,7 @@ class EB_ALADIN(EasyBlock):
             self.log.error("Failed to copy ALADIN sources: %s" % err)
 
         if self.cfg['parallel']:
-            env.setvar('GMK_THREADS', self.cfg['parallel'])
+            env.setvar('GMK_THREADS', str(self.cfg['parallel']))
 
         # build rootpack
         run_cmd(os.path.join(self.rootpack_dir, 'ics_master'))
