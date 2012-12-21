@@ -127,7 +127,10 @@ class EB_NWChem(ConfigureMake):
         if mpi_family in toolchain.OPENMPI:
             libmpi = "-lmpi_f90 -lmpi_f77 -lmpi -ldl -Wl,--export-dynamic -lnsl -lutil"
         elif mpi_family in [toolchain.INTELMPI]:
-            libmpi = "-lmpigf -lmpigi -lmpi_ilp64 -lmpi"
+            if self.cfg['armci_network'] in ["MPI-MT"]:
+                libmpi = "-lmpigf -lmpigi -lmpi_ilp64 -lmpi_mt"
+            else:
+                libmpi = "-lmpigf -lmpigi -lmpi_ilp64 -lmpi"
         elif mpi_family in [toolchain.MPICH2]:
             libmpi = "-lmpich -lopa -lmpl -lrt -lpthread"
         else:
