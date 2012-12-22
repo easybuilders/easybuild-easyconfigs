@@ -26,6 +26,7 @@
 EasyBuild support for building and installing NEURON, implemented as an easyblock
 """
 import os
+import re
 
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.framework.easyconfig import CUSTOM
@@ -42,6 +43,7 @@ class EB_NEURON(ConfigureMake):
 
         self.hostcpu = None
         self.with_python = False
+        self.pyver = None
 
     @staticmethod
     def extra_options():
@@ -71,6 +73,7 @@ class EB_NEURON(ConfigureMake):
         if python_root:
             self.with_python = True
             self.cfg.update('configopts', "--with-nrnpython=%s/bin/python" % python_root)
+            self.pyver = '.'.join(get_software_version('Python').split('.')[0:2])
 
         # determine host CPU type
         cmd = "./config.guess"
@@ -132,6 +135,7 @@ class EB_NEURON(ConfigureMake):
 
         super(EB_NEURON, self).sanity_check_step(custom_paths=custom_paths)
 
+        # test NEURON demo
         inp = """demo(3) // load the pyramidal cell model.
 init()  // initialise the model
 t // should be zero
@@ -141,8 +145,30 @@ t  // should be 5, indicating that 5ms were simulated
 soma.v // this will print a different value than -65, indicating that the simulation was executed.
 quit()
 """
-        run_cmd("neurondemo", log_all=True, simple=True, log_output=True, inp=inp)
+        (out, ec) = run_cmd("neurondemo", simple=False, log_all=True, log_output=True, inp=inp)
 
+        validate_regexp = re.compile("^\s+-65\s*\n\s+5\s*\n\s+-68.134337", re.M)
+        if ec or not validate_regexp.search(out):
+            self.log.error("Validation of NEURON demo run failed.")
+
+        try:
+            cwd = os.getcwd()
+            os.chdir(os.path.join(self.cfg['start_dir'], 'src', 'parallel'))
+
+            (out, ec) = run_cmd("mpirun -n 10 nrniv -mpi test0.hoc", simple=False, log_all=True, log_output=True)
+
+            os.chdir(cwd)
+        except OSError, err:
+            self.log.error("Failed to run parallel hello world: %s" % err)
+
+        valid = True
+        for i in range(0, 10):
+            validate_regexp = re.compile("I am %d of 10" % i)
+            if not validate_regexp.search(out):
+                valid = False
+                break
+        if ec or not valid:
+            self.log.error("Validation of parallel hello world run failed.")
 
     def make_module_req_guess(self):
         """Custom guesses for environment variables (PATH, ...) for NEURON."""
@@ -154,8 +180,7 @@ quit()
                        })
 
         if self.with_python:
-            pyver = '.'.join(get_software_version('Python').split('.')[0:2])
-            pylibdir = os.path.join('lib', 'python%s' % pyver, 'site-packages')
+            pylibdir = os.path.join('lib', 'python%s' % self.pyver, 'site-packages')
             guesses.update({
                             'PYTHONPATH': [pylibdir],
                            })
