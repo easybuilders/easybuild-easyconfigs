@@ -34,6 +34,7 @@ EasyBuild support for Python, implemented as an easyblock
 import os
 import re
 from distutils.version import LooseVersion
+from os.path import expanduser
 
 import easybuild.tools.toolchain as toolchain
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
@@ -136,6 +137,10 @@ class EB_DefaultPythonPackage(Extension):
 
         ver = '.'.join(get_software_version('Python').split('.')[0:2])
         self.python_libdir = os.path.join('lib', 'python%s' % ver, 'site-packages')
+
+        # make sure there's no site.cfg in $HOME, because setup.py will find it and use it
+        if os.path.exists(os.path.join(expanduser('~'), 'site.cfg')):
+            self.log.error('Found site.cfg in your home directory (%s), please remove it.' % expanduser('~'))
 
     def configure_step(self):
         """Configure Python package build
@@ -361,4 +366,3 @@ class EB_scipy(EB_FortranPythonPackage):
         else:
             self.testinstall = False
             self.runtest = None
-
