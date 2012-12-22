@@ -166,10 +166,11 @@ class EB_ALADIN(EasyBlock):
             self.log.error("Don't know which grib lib dir to use for compiler %s" % comp_fam)
 
         aux_lib_gribex = os.path.join(tmp_installroot, gribdir, 'lib', 'libgribex.a')
+        aux_lib_ibm = os.path.join(tmp_installroot, gribdir, 'lib', 'libibmdummy.a')
         grib_api_lib = os.path.join(get_software_root('grib_api'), 'lib', 'libgrib_api_f90.a')
         grib_api_inc = os.path.join(get_software_root('grib_api'), 'include')
         jasperlib = os.path.join(get_software_root('JasPer'), 'lib', 'libjasper.a')
-        netcdflib = os.path.join(get_software_root('netCDF'), 'lib', 'libnetcdf.a')
+        netcdflib = os.path.join(get_software_root('netCDF'), 'lib', 'libnetcdff.a')
         netcdfinc = os.path.join(get_software_root('netCDF'), 'include')
         mpilib = os.path.join(os.getenv('MPI_LIB_DIR'), os.getenv('MPI_LIB_SHARED'))
 
@@ -191,6 +192,7 @@ class EB_ALADIN(EasyBlock):
               'Do you want to setup your configuration file for MPICH (y/n) [n] ?': mpich,
               'Please type the directory name where to find a dummy file mpif.h or ignore :': os.getenv('MPI_INC_DIR'),
               '%sthe library gribex or emos%s' % (qpref, qsuff2): aux_lib_gribex,
+              '%sthe library ibm%s' % (qpref, qsuff): aux_lib_ibm,
               '%sthe library grib_api_f90%s' % (qpref, qsuff): grib_api_lib,
               '%sthe JPEG auxilary library if enabled by Grib_api%s' % (qpref, qsuff2): jasperlib,
               '%sthe library netcdf%s' % (qpref, qsuff): netcdflib,
