@@ -50,7 +50,6 @@ class EB_ALADIN(EasyBlock):
 
         self.conf_file = None
         self.conf_filepath = None
-        self.comp_stamp = None
         self.rootpack_dir = None
 
     @staticmethod
@@ -226,23 +225,7 @@ class EB_ALADIN(EasyBlock):
         env.setvar('GMKTMP', self.builddir)
         env.setvar('GMKFILE', self.conf_file)
 
-        (out, _) = run_cmd_qa("gmkfilemaker", qa, std_qa=stdqa, simple=False)
-
-        # figure out compiler stamp
-        stamp_regexp = re.compile('The compiler will be stamped "(.*)"')
-        res = stamp_regexp.search(out)
-        if res:
-            self.comp_stamp = res.group(1)
-            self.log.info("Compiler stamp: %s" % self.comp_stamp)
-        else:
-            self.log.error("Failed to determine compiler stamp.")
-
-        # set rootpack dir
-        if self.toolchain.options['usempi']:
-            verstr = '%s.01.MPI%s.x' % (self.version, self.comp_stamp)
-        else:
-            verstr = '%s.01.%s.x' % (self.version, self.comp_stamp)
-        self.rootpack_dir = os.path.join(self.installdir, 'rootpack', verstr)
+        run_cmd_qa("gmkfilemaker", qa, std_qa=stdqa)
 
         # set environment variables for installation dirs
         env.setvar('ROOTPACK', os.path.join(self.installdir, 'rootpack'))
@@ -273,7 +256,14 @@ class EB_ALADIN(EasyBlock):
 
         # create rootpack
         [v1, v2] = self.version.split('_')
-        run_cmd("source $GMKROOT/util/berootpack && gmkpack -p master -a -r %s -b %s" % (v1, v2))
+        (out, _) = run_cmd("source $GMKROOT/util/berootpack && gmkpack -p master -a -r %s -b %s" % (v1, v2), simple=False)
+
+        packdir_regexp = re.compile("Creating main pack (.*) \.\.\.")
+        res = packdir_regexp.search(out)
+        if res:
+            self.rootpack_dir = os.path.join(self.installdir, 'rootpack', res.group(1))
+        else:
+            self.log.error("Failed to determine rootpack dir.")
 
         # copy ALADIN sources to right directory
         try:
