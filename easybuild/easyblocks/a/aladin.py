@@ -295,10 +295,16 @@ class EB_ALADIN(EasyBlock):
     def sanity_check_step(self):
         """Custom sanity check for ALADIN."""
 
+        bindir = os.path.join(self.rootpack_dir, 'bin')
+        libdir = os.path.join(self.rootpack_dir, 'lib')
         custom_paths = {
-                        'files': [os.path.join(self.rootpack_dir, 'bin', x) for x in ['MASTER']] +
-                                 [os.path.join(self.rootpack_dir, 'lib', 'lib%s.a' % x) for x in ['arp.local']],
-                        'dirs': ['dir1', 'dir2'],
+                        'files': [os.path.join(bindir, x) for x in ['MASTER']] +
+                                 [os.path.join(libdir, 'lib%s.local.a' % x) for x in ['aeo', 'ald', 'arp', 'bip',
+                                                                                      'bla', 'mpa', 'mse', 'obt',
+                                                                                      'odb', 'sat', 'scr', 'sct',
+                                                                                      'sur', 'surfex', 'tal', 'tfl',
+                                                                                      'uti', 'xla', 'xrd']],
+                        'dirs': [],
                        }
 
         super(EB_ALADIN, self).sanity_check_step(custom_paths=custom_paths)
