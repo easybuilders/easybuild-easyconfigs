@@ -32,14 +32,13 @@ import shutil
 import re
 from distutils.version import LooseVersion
 
-from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.easyblocks.generic.cmakemake import CMakeMake
 from easybuild.tools.filetools import run_cmd, run_cmd_qa
 from easybuild.tools.modules import get_software_root
 from easybuild.tools.filetools import mkdir
 
-class EB_Geant4(ConfigureMake, CMakeMake):
+class EB_Geant4(CMakeMake):
     """
     Support for building Geant4.
     Note: Geant4 moved to a CMAKE like build system as of version 9.5.
@@ -57,7 +56,7 @@ class EB_Geant4(ConfigureMake, CMakeMake):
                       ('PhotonEvaporationVersion', [None, "PhotonEvaporation version", CUSTOM]),
                       ('G4RadioactiveDecayVersion', [None, "G4RadioactiveDecay version", CUSTOM]),
                      ]
-        return ConfigureMake.extra_options(extra_vars)
+        return CMakeMake.extra_options(extra_vars)
 
     def configure_step(self):
         """
@@ -69,7 +68,7 @@ class EB_Geant4(ConfigureMake, CMakeMake):
         if LooseVersion(self.get_installversion()) >= LooseVersion("9.5"):
             mkdir('configdir')
             os.chdir('configdir')
-            CMakeMake.configure(self, builddir="..")
+            super(EB_Geant4, self).configure_step(builddir="..")
 
         else:
             pwd = self.cfg['start_dir']
@@ -223,7 +222,7 @@ class EB_Geant4(ConfigureMake, CMakeMake):
     
             if len(filelist) != 1:
                 self.log.error("Exactly one directory is expected in %s; found back: %s" % (scriptdirbase, filelist))
-             else:
+            else:
                 self.g4system = filelist[0]
     
             self.scriptdir = os.path.join(scriptdirbase, self.g4system)
@@ -246,7 +245,7 @@ class EB_Geant4(ConfigureMake, CMakeMake):
         """Build Geant4."""
 
         if LooseVersion(self.get_installversion()) >= LooseVersion("9.5"):
-            CMakeMake.build_step(self)
+            super(EB_Geant4, self).build_step()
 
         else:
             pwd = self.cfg['start_dir']
@@ -257,7 +256,7 @@ class EB_Geant4(ConfigureMake, CMakeMake):
         """Install Geant4."""
 
         if LooseVersion(self.get_installversion()) >= LooseVersion("9.5"):
-            CMakeMake.install_step(self)
+            super(EB_Geant4, self).install_step()
             self.datadst = os.path.join(self.installdir,
                                         'share',
                                         '%s-%s' % (self.name, self.version.replace("p0", "")),
@@ -349,7 +348,7 @@ class EB_Geant4(ConfigureMake, CMakeMake):
         """Define Geant4-specific environment variables in module file."""
         g4version = '.'.join(self.version.split('.')[:2])
 
-        txt = ConfigureMake.make_module_extra(self)
+        txt = super(EB_Geant4, self).make_module_extra()
         txt += self.moduleGenerator.set_environment('G4INSTALL', "$root")
         #no longer needed in > 9.5, but leave it there for now.
         txt += self.moduleGenerator.set_environment('G4VERSION', g4version)
@@ -383,7 +382,7 @@ class EB_Geant4(ConfigureMake, CMakeMake):
         Not tested with previous versions
         """
         custom_paths = {
-                        'files': ["bin/geant4%s" % x for x in [".sh", ".csh", "-config"] +
+                        'files': ["bin/geant4%s" % x for x in [".sh", ".csh", "-config"]] +
                                  ["lib64/libG4%s.so" % x for x in ['analysis', 'event', 'GMocren', 'materials',
                                                                    'persistency', 'readout', 'Tree', 'VRML']],
                         'dirs': ['include/Geant4'],
