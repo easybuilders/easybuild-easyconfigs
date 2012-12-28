@@ -149,7 +149,7 @@ class EB_ALADIN(EasyBlock):
             self.log.error("Failed to remove existing file %s: %s" % (self.conf_filepath, err))
 
         mpich = 'n'
-        if self.toolchain.mpi_family() in [toolchain.MPICH2, toolchain.INTELMPI]:
+        if self.toolchain.options['usempi'] and self.toolchain.mpi_family() in [toolchain.MPICH2, toolchain.INTELMPI]:
             mpich = 'y'
 
         qpref = 'Please type the ABSOLUTE name of '
