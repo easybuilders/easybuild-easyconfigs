@@ -261,14 +261,14 @@ class EB_ALADIN(EasyBlock):
         packdir_regexp = re.compile("Creating main pack (.*) \.\.\.")
         res = packdir_regexp.search(out)
         if res:
-            self.rootpack_dir = os.path.join(self.installdir, 'rootpack', res.group(1))
+            self.rootpack_dir = os.path.join('rootpack', res.group(1))
         else:
             self.log.error("Failed to determine rootpack dir.")
 
         # copy ALADIN sources to right directory
         try:
             src_dirs = [d for d in os.listdir(self.builddir) if not (d.startswith('auxlib') or d.startswith('gmk'))]
-            target = os.path.join(self.rootpack_dir, 'src', 'local')
+            target = os.path.join(self.installdir, self.rootpack_dir, 'src', 'local')
             self.log.info("Copying sources from %s to %s" % (self.builddir, target))
             for srcdir in src_dirs:
                 shutil.copytree(os.path.join(self.builddir, srcdir), os.path.join(target, srcdir))
@@ -280,7 +280,7 @@ class EB_ALADIN(EasyBlock):
             env.setvar('GMK_THREADS', str(self.cfg['parallel']))
 
         # build rootpack
-        run_cmd(os.path.join(self.rootpack_dir, 'ics_master'))
+        run_cmd(os.path.join(self.installdir, self.rootpack_dir, 'ics_master'))
 
     def sanity_check_step(self):
         """Custom sanity check for ALADIN."""
