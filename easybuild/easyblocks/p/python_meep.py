@@ -1,4 +1,5 @@
 ##
+# Copyright 2009-2012 Ghent University
 # Copyright 2009-2012 Stijn De Weirdt
 # Copyright 2010 Dries Verdegem
 # Copyright 2010-2012 Kenneth Hoste
@@ -6,7 +7,11 @@
 # Copyright 2011-2012 Jens Timmerman
 #
 # This file is part of EasyBuild,
-# originally created by the HPC team of the University of Ghent (http://ugent.be/hpc).
+# originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
+# with support of Ghent University (http://ugent.be/hpc),
+# the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
+# the Hercules foundation (http://www.herculesstichting.be/in_English)
+# and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
 # http://github.com/hpcugent/easybuild
 #
@@ -31,7 +36,7 @@ import shutil
 import tempfile
 
 from easybuild.framework.easyblock import EasyBlock
-from easybuild.tools.filetools import run_cmd, extract_file
+from easybuild.tools.filetools import extract_file, rmtree2, run_cmd
 from easybuild.tools.modules import get_software_root, get_software_version
 
 
@@ -71,7 +76,7 @@ class EB_python_minus_meep(EasyBlock):
 
         # determine suffix for make script
         suff = ''
-        if self.toolchain.opts['usempi']:
+        if self.toolchain.options['usempi']:
             suff = '-mpi'
 
         # run make script
@@ -116,7 +121,7 @@ class EB_python_minus_meep(EasyBlock):
         dest = os.path.join(self.installdir, 'site-packages')
         try:
             shutil.copytree(src, dest)
-            shutil.rmtree(tmpdir)
+            rmtree2(tmpdir)
         except OSError, err:
             self.log.exception("Failed to copy directory %s to %s: %s" % (src, dest, err))
 

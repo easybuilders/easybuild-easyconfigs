@@ -1,4 +1,5 @@
 ##
+# Copyright 2009-2012 Ghent University
 # Copyright 2009-2012 Stijn De Weirdt
 # Copyright 2010 Dries Verdegem
 # Copyright 2010-2012 Kenneth Hoste
@@ -7,7 +8,11 @@
 # Copyright 2012 Toon Willems
 #
 # This file is part of EasyBuild,
-# originally created by the HPC team of the University of Ghent (http://ugent.be/hpc).
+# originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
+# with support of Ghent University (http://ugent.be/hpc),
+# the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
+# the Hercules foundation (http://www.herculesstichting.be/in_English)
+# and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
 # http://github.com/hpcugent/easybuild
 #
@@ -28,6 +33,7 @@ i.e. configure/make/make install, implemented as an easyblock.
 """
 
 from easybuild.framework.easyblock import EasyBlock
+from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.filetools import run_cmd
 
 
@@ -36,11 +42,36 @@ class ConfigureMake(EasyBlock):
     Support for building and installing applications with configure/make/make install
     """
 
+    @staticmethod
+    def extra_options(extra_vars=None):
+        """Extra easyconfig parameters specific to ConfigureMake."""
+
+        # using [] as default value is a bad idea, so we handle it this way
+        if extra_vars == None:
+            extra_vars = []
+
+        extra_vars.extend([
+                           ('tar_config_opts', [False, "Override tar settings as determined by configure.", CUSTOM]),
+                          ])
+        return EasyBlock.extra_options(extra_vars)
+
     def configure_step(self, cmd_prefix=''):
         """
         Configure step
         - typically ./configure --prefix=/install/path style
         """
+
+        if self.cfg['tar_config_opts']:
+            # setting am_cv_prog_tar_ustar avoids that configure tries to figure out
+            # which command should be used for tarring/untarring
+            # am__tar and am__untar should be set to something decent (tar should work)
+            tar_vars = {
+                        'am__tar': 'tar chf - "$$tardir"',
+                        'am__untar': 'tar xf -',
+                        'am_cv_prog_tar_ustar': 'easybuild_avoid_ustar_testing'
+                       }
+            for (key, val) in tar_vars.items():
+                self.cfg.update('preconfigopts', "%s='%s'" % (key, val))
 
         cmd = "%s %s./configure --prefix=%s %s" % (self.cfg['preconfigopts'], cmd_prefix,
                                                     self.installdir, self.cfg['configopts'])

@@ -1,4 +1,5 @@
 ##
+# Copyright 2009-2012 Ghent University
 # Copyright 2009-2012 Stijn De Weirdt
 # Copyright 2010 Dries Verdegem
 # Copyright 2010-2012 Kenneth Hoste
@@ -6,7 +7,11 @@
 # Copyright 2011-2012 Jens Timmerman
 #
 # This file is part of EasyBuild,
-# originally created by the HPC team of the University of Ghent (http://ugent.be/hpc).
+# originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
+# with support of Ghent University (http://ugent.be/hpc),
+# the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
+# the Hercules foundation (http://www.herculesstichting.be/in_English)
+# and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
 # http://github.com/hpcugent/easybuild
 #
@@ -34,7 +39,7 @@ from distutils.version import LooseVersion
 import easybuild.tools.environment as env
 from easybuild.easyblocks.generic.intelbase import IntelBase
 from easybuild.framework.easyconfig import CUSTOM
-from easybuild.tools.filetools import run_cmd
+from easybuild.tools.filetools import rmtree2, run_cmd
 from easybuild.tools.modules import Modules, get_software_root
 
 
@@ -176,7 +181,7 @@ class EB_imkl(IntelBase):
                 if i in lis3:
                     # use INSTALL_DIR and SPEC_OPT
                     extramakeopts = ''
-                    if get_software_root('MPICH2'):  # can't use toolchain.mpi_type, because of dummy toolchain
+                    if get_software_root('MPICH2'):  # can't use toolchain.mpi_family, because of dummy toolchain
                         extramakeopts = 'mpi=mpich2'
                     cmd = "make -f makefile libintel64 %s" % extramakeopts
 
@@ -223,7 +228,7 @@ class EB_imkl(IntelBase):
                             self.log.exception("Failed to move %s to %s" % (src, dest))
 
                     try:
-                        shutil.rmtree(tmpbuild)
+                        rmtree2(tmpbuild)
                         self.log.debug('Removed temporary directory %s' % tmpbuild)
                     except:
                         self.log.exception("Removing temporary directory %s failed" % tmpbuild)
@@ -342,7 +347,7 @@ class EB_imkl(IntelBase):
                             self.log.exception("Failed to move %s to %s" % (src, dest))
 
                     try:
-                        shutil.rmtree(tmpbuild)
+                        rmtree2(tmpbuild)
                         self.log.debug('Removed temporary directory %s' % tmpbuild)
                     except:
                         self.log.exception("Removing temporary directory %s failed" % (tmpbuild))

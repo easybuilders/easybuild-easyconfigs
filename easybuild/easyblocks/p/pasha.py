@@ -1,8 +1,13 @@
 ##
+# Copyright 2012 Ghent University
 # Copyright 2012 Jens Timmerman
 #
 # This file is part of EasyBuild,
-# originally created by the HPC team of the University of Ghent (http://ugent.be/hpc).
+# originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
+# with support of Ghent University (http://ugent.be/hpc),
+# the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
+# the Hercules foundation (http://www.herculesstichting.be/in_English)
+# and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
 # http://github.com/hpcugent/easybuild
 #
@@ -40,7 +45,7 @@ class EB_Pasha(ConfigureMake):
             self.log.error("TBB module not loaded.")
 
         self.cfg.update('makeopts', "TBB_DIR=%s/tbb MPI_DIR='' MPI_INC='' " % tbb)
-        self.cfg.update('makeopts', 'MPI_CXX="%s" OPM_FLAG="%s"' % (os.getenv('MPICXX'), self.toolchain.get_openmp_flag()))
+        self.cfg.update('makeopts', 'MPI_CXX="%s" OPM_FLAG="%s"' % (os.getenv('MPICXX'), self.toolchain.get_flag('openmp')))
         self.cfg.update('makeopts', 'MPI_LIB="" MY_CXX="%s" MPICH_IGNORE_CXX_SEEK=1' % os.getenv('CXX'))
 
     def install_step(self):

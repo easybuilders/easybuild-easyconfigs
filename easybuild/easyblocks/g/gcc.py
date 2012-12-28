@@ -1,4 +1,5 @@
 ##
+# Copyright 2009-2012 Ghent University
 # Copyright 2009-2012 Stijn De Weirdt
 # Copyright 2010 Dries Verdegem
 # Copyright 2010-2012 Kenneth Hoste
@@ -7,7 +8,11 @@
 # Copyright 2012 Toon Willems
 #
 # This file is part of EasyBuild,
-# originally created by the HPC team of the University of Ghent (http://ugent.be/hpc).
+# originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
+# with support of Ghent University (http://ugent.be/hpc),
+# the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
+# the Hercules foundation (http://www.herculesstichting.be/in_English)
+# and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
 # http://github.com/hpcugent/easybuild
 #
@@ -167,7 +172,7 @@ class EB_GCC(ConfigureMake):
         """
         Run a configure command, with some extra checking (e.g. for unrecognized options).
         """
-        (out, ec) = run_cmd(cmd, log_all=True, simple=False)
+        (out, ec) = run_cmd("%s %s" % (self.cfg['preconfigopts'], cmd), log_all=True, simple=False)
 
         if ec != 0:
             self.log.error("Command '%s' exited with exit code != 0 (%s)" % (cmd, ec))
@@ -248,11 +253,7 @@ class EB_GCC(ConfigureMake):
             self.create_dir("obj")
 
         # IV) actual configure, but not on default path
-        cmd = "%s ../configure  %s %s" % (
-                                          self.cfg['preconfigopts'],
-                                          self.configopts,
-                                          configopts
-                                         )
+        cmd = "../configure  %s %s" % (self.configopts, configopts)
 
         # instead of relying on uname, we run the same command GCC uses to
         # determine the platform
@@ -349,6 +350,7 @@ class EB_GCC(ConfigureMake):
                         v0_16 = LooseVersion("0.16")
 
                         cmd = "./configure --prefix=%s --with-pic --disable-shared " % stage2prefix
+
                         # use isl or PPL
                         if self.cfg['clooguseisl']:
                             if self.cloogver >= v0_16:
@@ -378,7 +380,10 @@ class EB_GCC(ConfigureMake):
                     self.run_configure_cmd(cmd)
 
                     # build and 'install'
-                    cmd = "make %s install" % paracmd
+                    cmd = "make %s" % paracmd
+                    run_cmd(cmd, log_all=True, simple=True)
+
+                    cmd = "make install"
                     run_cmd(cmd, log_all=True, simple=True)
 
                     if lib == "gmp":
@@ -409,7 +414,11 @@ class EB_GCC(ConfigureMake):
             # PPL config options
             if self.cfg['withppl']:
                 # for PPL build and CLooG-PPL linking
-                libstdcxxpath = "%s/lib64/libstdc++.a" % self.stage1installdir
+                for lib in ["lib64", "lib"]:
+                    path = os.path.join(self.stage1installdir, lib, "libstdc++.a")
+                    if os.path.exists(path):
+                        libstdcxxpath = path
+                        break
                 configopts += "--with-host-libstdcxx='-static-libgcc %s -lm' " % libstdcxxpath
 
                 configopts += "--with-ppl=%s " % stage2prefix
@@ -428,11 +437,7 @@ class EB_GCC(ConfigureMake):
                     configopts += "--enable-cloog-backend=isl "
 
             # configure
-            cmd = "%s ../configure %s %s" % (
-                                             self.cfg['preconfigopts'],
-                                             self.configopts,
-                                             configopts
-                                            )
+            cmd = "../configure %s %s" % (self.configopts, configopts)
             self.run_configure_cmd(cmd)
 
         # build with bootstrapping for self-containment
@@ -455,9 +460,9 @@ class EB_GCC(ConfigureMake):
         common_infix = 'gcc/%s/%s' % (self.platform_lib, self.version)
 
         bin_files = ["gcov"]
-        lib64_files = ["libgomp.%s" % sharedlib_ext, "libgomp.a"]
+        lib_files = ["libgomp.%s" % sharedlib_ext, "libgomp.a"]
         if kernel_name == 'Linux':
-            lib64_files.extend(["libgcc_s.%s" % sharedlib_ext, "libmudflap.%s" % sharedlib_ext, "libmudflap.a"])
+            lib_files.extend(["libgcc_s.%s" % sharedlib_ext, "libmudflap.%s" % sharedlib_ext, "libmudflap.a"])
         libexec_files = []
         dirs = ['lib/%s' % common_infix]
         if kernel_name == 'Linux':
@@ -466,7 +471,7 @@ class EB_GCC(ConfigureMake):
         if not self.cfg['languages']:
             # default languages are c, c++, fortran
             bin_files = ["c++", "cpp", "g++", "gcc", "gcov", "gfortran"]
-            lib64_files.extend(["libstdc++.%s" % sharedlib_ext, "libstdc++.a"])
+            lib_files.extend(["libstdc++.%s" % sharedlib_ext, "libstdc++.a"])
             libexec_files = ['cc1', 'cc1plus', 'collect2', 'f951']
 
         if 'c' in self.cfg['languages']:
@@ -475,11 +480,11 @@ class EB_GCC(ConfigureMake):
         if 'c++' in self.cfg['languages']:
             bin_files.extend(['c++', 'g++'])
             dirs.append('include/c++/%s' % self.version)
-            lib64_files.extend(["libstdc++.%s" % sharedlib_ext, "libstdc++.a"])
+            lib_files.extend(["libstdc++.%s" % sharedlib_ext, "libstdc++.a"])
 
         if 'fortran' in self.cfg['languages']:
             bin_files.append('gfortran')
-            lib64_files.extend(['libgfortran.%s' % sharedlib_ext, 'libgfortran.a'])
+            lib_files.extend(['libgfortran.%s' % sharedlib_ext, 'libgfortran.a'])
 
         if 'lto' in self.cfg['languages']:
             libexec_files.extend(['lto1', 'lto-wrapper'])
@@ -488,13 +493,13 @@ class EB_GCC(ConfigureMake):
 
         bin_files = ["bin/%s" % x for x in bin_files]
         if kernel_name in ['Darwin']:
-            lib64_files = ["lib/%s" % x for x in lib64_files]
+            lib_files = ["lib/%s" % x for x in lib_files]
         else:
-            lib64_files = ["lib64/%s" % x for x in lib64_files]
+            lib_files = ["lib64/%s" % x for x in lib_files]
         libexec_files = ["libexec/%s/%s" % (common_infix, x) for x in libexec_files]
 
         custom_paths = {
-                        'files': bin_files + lib64_files + libexec_files,
+                        'files': bin_files + lib_files + libexec_files,
                         'dirs': dirs
                        }
 

@@ -1,4 +1,5 @@
 ##
+# Copyright 2009-2012 Ghent University
 # Copyright 2009-2012 Stijn De Weirdt
 # Copyright 2010 Dries Verdegem
 # Copyright 2010-2012 Kenneth Hoste
@@ -6,7 +7,11 @@
 # Copyright 2011-2012 Jens Timmerman
 #
 # This file is part of EasyBuild,
-# originally created by the HPC team of the University of Ghent (http://ugent.be/hpc).
+# originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
+# with support of Ghent University (http://ugent.be/hpc),
+# the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
+# the Hercules foundation (http://www.herculesstichting.be/in_English)
+# and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
 # http://github.com/hpcugent/easybuild
 #
@@ -27,14 +32,14 @@ EasyBuild support for Python, implemented as an easyblock
 """
 
 import os
-import shutil
+import re
 from distutils.version import LooseVersion
 
-import easybuild.tools.toolkit as toolchain
+import easybuild.tools.toolchain as toolchain
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.framework.extension import Extension
 from easybuild.tools.build_log import EasyBuildError
-from easybuild.tools.filetools import extract_file, apply_patch, run_cmd
+from easybuild.tools.filetools import apply_patch, extract_file, rmtree2, run_cmd
 from easybuild.tools.modules import get_software_root
 
 
@@ -111,8 +116,8 @@ class EB_DefaultPythonPackage(Extension):
     Easyblock for Python packages to be included in the Python installation.
     """
 
-    def __init__(self, mself, ext, ext_installdeps):
-        super(EB_DefaultPythonPackage, self).__init__(mself, ext, ext_installdeps)
+    def __init__(self, mself, ext):
+        super(EB_DefaultPythonPackage, self).__init__(mself, ext)
         self.sitecfg = None
         self.sitecfgfn = 'site.cfg'
         self.sitecfglibdir = None
@@ -195,7 +200,7 @@ class EB_DefaultPythonPackage(Extension):
 
         if self.testinstall:
             try:
-                shutil.rmtree(testinstalldir)
+                rmtree2(testinstalldir)
             except OSError, err:
                 self.log.exception("Removing testinstalldir %s failed: %s" % (testinstalldir, err))
 
@@ -224,9 +229,9 @@ class EB_DefaultPythonPackage(Extension):
 class EB_nose(EB_DefaultPythonPackage):
     """Support for installing the nose Python package as part of a Python installation."""
 
-    def __init__(self, mself, ext, ext_installdeps):
+    def __init__(self, mself, ext):
 
-        super(EB_nose, self).__init__(mself, ext, ext_installdeps)
+        super(EB_nose, self).__init__(mself, ext)
 
         # use extra unpack options to avoid problems like
         # 'tar: Ignoring unknown extended header keyword `SCHILY.nlink'
@@ -240,10 +245,10 @@ class EB_FortranPythonPackage(EB_DefaultPythonPackage):
     def build_step(self):
         comp_fam = self.toolchain.comp_family()
 
-        if comp_fam == toolchain.INTEL:
+        if comp_fam == toolchain.INTELCOMP:  #@UndefinedVariable
             cmd = "python setup.py build --compiler=intel --fcompiler=intelem"
 
-        elif comp_fam == toolchain.GCC:
+        elif comp_fam == toolchain.GCC:  #@UndefinedVariable
             cmdprefix = ""
             ldflags = os.getenv('LDFLAGS')
             if ldflags:
@@ -251,7 +256,9 @@ class EB_FortranPythonPackage(EB_DefaultPythonPackage):
                 # see http://projects.scipy.org/numpy/ticket/182
                 # don't unset it with os.environ.pop('LDFLAGS'), doesn't work in Python 2.4 (see http://bugs.python.org/issue1287)
                 cmdprefix = "unset LDFLAGS && "
-                self.log.debug("LDFLAGS was %s, will be cleared before numpy build with '%s'" % (ldflags, cmdprefix))
+                self.log.debug("LDFLAGS was %s, will be cleared before %s build with '%s'" % (self.name,
+                                                                                              ldflags,
+                                                                                              cmdprefix))
 
             cmd = "%s python setup.py build --fcompiler=gnu95" % cmdprefix
 
@@ -264,18 +271,8 @@ class EB_FortranPythonPackage(EB_DefaultPythonPackage):
 class EB_numpy(EB_FortranPythonPackage):
     """Support for installing the numpy Python package as part of a Python installation."""
 
-    def __init__(self, mself, ext, ext_installdeps):
-        super(EB_numpy, self).__init__(mself, ext, ext_installdeps)
-
-        self.exts_cfgs = mself.cfg['exts_cfgs']
-        if self.exts_cfgs.has_key('numpysitecfglibsubdirs'):
-            self.numpysitecfglibsubdirs = self.exts_cfgs['numpysitecfglibsubdirs']
-        else:
-            self.numpysitecfglibsubdirs = []
-        if self.exts_cfgs.has_key('numpysitecfgincsubdirs'):
-            self.numpysitecfgincsubdirs = self.exts_cfgs['numpysitecfgincsubdirs']
-        else:
-            self.numpysitecfgincsubdirs = []
+    def __init__(self, mself, ext):
+        super(EB_numpy, self).__init__(mself, ext)
 
         self.sitecfg = """[DEFAULT]
 library_dirs = %(libs)s
@@ -323,8 +320,8 @@ libraries = %s
             {
              'lapack': lapack,
              'blas': blas,
-             'libs': ":".join([lib for lib in os.getenv('LDFLAGS').split(" -L")]),
-             'includes': ":".join([lib for lib in os.getenv('CPPFLAGS').split(" -I")]),
+             'libs': ':'.join(self.toolchain.get_variable('LDFLAGS', typ=list)),
+             'includes': ':'.join(self.toolchain.get_variable('CPPFLAGS', typ=list))
             }
 
         self.sitecfgfn = 'site.cfg'
@@ -339,7 +336,7 @@ libraries = %s
         super(EB_numpy, self).install_step()
         builddir = os.path.join(self.builddir, "numpy")
         if os.path.isdir(builddir):
-            shutil.rmtree(builddir)
+            rmtree2(builddir)
         else:
             self.log.debug("build dir %s already clean" % builddir)
 
@@ -347,8 +344,8 @@ libraries = %s
 class EB_scipy(EB_FortranPythonPackage):
     """Support for installing the scipy Python package as part of a Python installation."""
 
-    def __init__(self, mself, ext, ext_installdeps):
-        super(EB_scipy, self).__init__(mself, ext, ext_installdeps)
+    def __init__(self, mself, ext):
+        super(EB_scipy, self).__init__(mself, ext)
 
         # disable testing
         test = False

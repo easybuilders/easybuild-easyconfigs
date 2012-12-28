@@ -1,4 +1,5 @@
 ##
+# Copyright 2009-2012 Ghent University
 # Copyright 2009-2012 Stijn De Weirdt
 # Copyright 2010 Dries Verdegem
 # Copyright 2010-2012 Kenneth Hoste
@@ -6,7 +7,11 @@
 # Copyright 2011-2012 Jens Timmerman
 #
 # This file is part of EasyBuild,
-# originally created by the HPC team of the University of Ghent (http://ugent.be/hpc).
+# originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
+# with support of Ghent University (http://ugent.be/hpc),
+# the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
+# the Hercules foundation (http://www.herculesstichting.be/in_English)
+# and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
 # http://github.com/hpcugent/easybuild
 #
@@ -28,7 +33,7 @@ EasyBuild support for Boost, implemented as an easyblock
 import os
 import shutil
 
-import easybuild.tools.toolkit as toolchain
+import easybuild.tools.toolchain as toolchain
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.filetools import run_cmd
@@ -55,7 +60,7 @@ class EB_Boost(EasyBlock):
         """Configure Boost build using custom tools"""
 
         # mpi sanity check
-        if self.cfg['boost_mpi'] and not self.toolchain.opts['usempi']:
+        if self.cfg['boost_mpi'] and not self.toolchain.options['usempi']:
             self.log.error("When enabling building boost_mpi, also enable the 'usempi' toolchain option.")
 
         # create build directory (Boost doesn't like being built in source dir)
@@ -68,7 +73,7 @@ class EB_Boost(EasyBlock):
 
         # generate config depending on compiler used
         toolset = None
-        if self.toolchain.comp_family() == toolchain.INTEL:
+        if self.toolchain.comp_family() == toolchain.INTELCOMP:
             toolset = 'intel-linux'
         elif self.toolchain.comp_family() == toolchain.GCC:
             toolset = 'gcc'
@@ -80,7 +85,7 @@ class EB_Boost(EasyBlock):
 
         if self.cfg['boost_mpi']:
 
-            self.toolchain.opts['usempi'] = True
+            self.toolchain.options['usempi'] = True
             # configure the boost mpi module
             # http://www.boost.org/doc/libs/1_47_0/doc/html/mpi/getting_started.html
             # let Boost.Build know to look here for the config file

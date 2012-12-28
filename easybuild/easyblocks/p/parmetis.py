@@ -1,4 +1,5 @@
 ##
+# Copyright 2009-2012 Ghent University
 # Copyright 2009-2012 Stijn De Weirdt
 # Copyright 2010 Dries Verdegem
 # Copyright 2010-2012 Kenneth Hoste
@@ -6,7 +7,11 @@
 # Copyright 2011-2012 Jens Timmerman
 #
 # This file is part of EasyBuild,
-# originally created by the HPC team of the University of Ghent (http://ugent.be/hpc).
+# originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
+# with support of Ghent University (http://ugent.be/hpc),
+# the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
+# the Hercules foundation (http://www.herculesstichting.be/in_English)
+# and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
 # http://github.com/hpcugent/easybuild
 #
@@ -50,12 +55,12 @@ class EB_ParMETIS(EasyBlock):
 
             self.cfg.update('configopts', '-DMETIS_PATH=../metis -DGKLIB_PATH=../metis/GKlib')
 
-            self.cfg.update('configopts', '-DOPENMP="%s"' % self.toolchain.get_openmp_flag())
+            self.cfg.update('configopts', '-DOPENMP="%s"' % self.toolchain.get_flag('openmp'))
 
-            if self.toolchain.opts['usempi']:
+            if self.toolchain.options['usempi']:
                 self.cfg.update('configopts', '-DCMAKE_C_COMPILER="$MPICC"')
 
-            if self.toolchain.opts['pic']:
+            if self.toolchain.options['pic']:
                 self.cfg.update('configopts', '-DCMAKE_C_FLAGS="-fPIC"')
 
             self.parmetis_builddir = 'build'
@@ -77,8 +82,8 @@ class EB_ParMETIS(EasyBlock):
 
         self.cfg.update('makeopts', 'LIBDIR=""')
 
-        if self.toolchain.opts['usempi']:
-            if self.toolchain.opts['pic']:
+        if self.toolchain.options['usempi']:
+            if self.toolchain.options['pic']:
                 self.cfg.update('makeopts', 'CC="$MPICC -fPIC"')
             else:
                 self.cfg.update('makeopts', 'CC="$MPICC"')

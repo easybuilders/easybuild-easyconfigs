@@ -1,6 +1,10 @@
 ##
-# Copyright 2012 Ghent University
-# Copyright 2012 Kenneth Hoste
+# Copyright 2009-2012 Ghent University
+# Copyright 2009-2012 Stijn De Weirdt
+# Copyright 2010 Dries Verdegem
+# Copyright 2010-2012 Kenneth Hoste
+# Copyright 2011 Pieter De Baets
+# Copyright 2011-2012 Jens Timmerman
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -23,34 +27,7 @@
 # You should have received a copy of the GNU General Public License
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
-"""
-EasyBuild support for MTL4, implemented as an easyblock
-"""
-import os
+from pkgutil import extend_path
 
-from easybuild.easyblocks.generic.tarball import Tarball
-
-
-class EB_MTL4(Tarball):
-    """Support for installing MTL4."""
-
-    def sanity_check_step(self):
-        """Custom sanity check for MTL4."""
-
-        incpref = os.path.join('include', 'boost', 'numeric')
-
-        custom_paths = {
-                        'files':[],
-                        'dirs':[os.path.join(incpref, x) for x in ["itl", "linear_algebra",
-                                                                   "meta_math", "mtl"]]
-                     }
-
-        super(EB_MTL4, self).sanity_check_step(custom_paths=custom_paths)
-
-    def make_module_req_guess(self):
-        """Adjust CPATH for MTL4."""
-
-        guesses = super(EB_MTL4, self).make_module_req_guess()
-        guesses.update({'CPATH': 'include'})
-
-        return guesses
+# we're not the only ones in this namespace
+__path__ = extend_path(__path__, __name__)  #@ReservedAssignment

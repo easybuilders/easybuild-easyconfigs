@@ -2,29 +2,29 @@ We'd love you to contribute back to EasyBuild, and here's how you can do it: the
 
 ## Preperation
 
-### Fork EasyBuild
+### Fork easybuild-easyblocks
 
-First, you'll need to fork [EasyBuild on GitHub](http://github.com/hpcugent/easybuild).
+First, you'll need to fork [easybuild-easyblocks on GitHub](http://github.com/hpcugent/easybuild-easyblocks).
 
 If you do not have a (free) GitHub account yet, you'll need to get one.
 
 You should also register an SSH public key, so you can easily clone, push to and pull from your repository.
 
-### Clone your EasyBuild repository
+### Clone your easybuild-easyblocks repository
 
-Clone your fork of the EasyBuild repository to your favorite workstation. 
+Clone your fork of the easybuild-easyblocks repository to your favorite workstation. 
 
 ```bash
-git clone git@github.com:hpcugent/easybuild.git
+git clone git@github.com:YOUR\_GITHUB\_LOGIN/easybuild-easyblocks.git
 ```
 
 ### Pull in the develop branch
 
-Pull the _develop_ branch from the main EasyBuild repository:
+Pull the _develop_ branch from the main easybuild-easyblocks repository:
 
 ```bash
 cd easybuild
-git remote add github_hpcugent git@github.com:hpcugent/easybuild.git
+git remote add github_hpcugent git@github.com:hpcugent/easybuild-easyblocks.git
 git branch develop
 git checkout develop
 git pull github_hpcugent develop
@@ -32,7 +32,7 @@ git pull github_hpcugent develop
 
 ### Keep develop up-to-date
 
-The _develop_ branch hosts the latest bleeding-edge version of EasyBuild, and is merged into _master_ regularly (after thorough testing). 
+The _develop_ branch hosts the latest bleeding-edge version of easybuild-easyblocks, and is merged into _master_ regularly (after thorough testing). 
 
 Make sure you update it every time you create a feature branch (see below):
 
@@ -48,7 +48,7 @@ git pull github_hpcugent develop
 ### Pick a branch name
 
 Please try and follow these guidelines when picking a branch name:
- * use the number of the issue as a prefix for your branch name, e.g. `86_` for issue [#86](https://github.com/hpcugent/easybuild/issues/86)
+ * use the number of the issue as a prefix for your branch name, e.g. `86_` for issue [#86](https://github.com/hpcugent/easybuild-framework/issues/86)
  * append a short but descriptive branch name, in which words are joined by underscores, e.g. `86_encoding_scheme`
 
 ### Create branch
@@ -84,11 +84,11 @@ If you are working on several things at the same time, try and keep things isola
 
 ## Pull request
 
-When you've finished the implementation of a particular contribution, here's how to get it into the main EasyBuild repository (also see https://help.github.com/articles/using-pull-requests/)
+When you've finished the implementation of a particular contribution, here's how to get it into the main easybuild-easyblocks repository (also see https://help.github.com/articles/using-pull-requests/)
 
 ### Push your branch
 
-Push your branch to your EasyBuild repository on GitHub:
+Push your branch to your easybuild-easyblocks repository on GitHub:
  
 ```bash
 git push origin <BRANCH_NAME>
@@ -97,11 +97,11 @@ git push origin <BRANCH_NAME>
 
 ### Issue a pull request
 
-Issue a pull request for your branch into the main EasyBuild repository, as follows:
+Issue a pull request for your branch into the main easybuild-easyblocks repository, as follows:
 
- * go to github.com/YOUR\_GITHUB\_LOGIN/easybuild, and make sure the branch you just pushed is selected (not _master_, but _<BRANCH_NAME>_)
+ * go to github.com/YOUR\_GITHUB\_LOGIN/easybuild-easyblocks, and make sure the branch you just pushed is selected (not _master_, but _<BRANCH_NAME>_)
 
- * issue a pull request (see button at the top of the page) for your branch to the **_develop_** branch of the main EasyBuild repository; **note**: don't issue a pull request to the _master_ branch, as it will be simply closed by the EasyBuild team
+ * issue a pull request (see button at the top of the page) for your branch to the **_develop_** branch of the main easybuild-easyblocks repository; **note**: don't issue a pull request to the _master_ branch, as it will be simply closed by the EasyBuild team
 
  * make sure to reference the corresponding issue number in the pull request, using the notation # followed by a number, e.g. `#83`
 
@@ -112,7 +112,7 @@ If you're contributing code to an existing issue you can also convert the issue 
 GITHUBUSER=your_username && PASSWD=your_password && BRANCH=branch_name && ISSUE=issue_number && \
 curl --user "$GITHUBUSER:$PASSWD" --request POST \
 --data "{\"issue\": \"$ISSUE\", \"head\": \"$GITHUBUSER:$BRANCH\", \"base\": \"develop\"}" \
-https://api.github.com/repos/hpcugent/easybuild/pulls
+https://api.github.com/repos/hpcugent/easybuild-easyblocks/pulls
 ```
 This is currently only supported by github from the command line and not via the web interface.
 You might also want to look into [hub](https://github.com/defunkt/hub) for more command line features.
@@ -128,6 +128,6 @@ Try and act on the remarks made, either by commiting additional changes to your 
 
 ### Aftermath
 
-Once your pull request has been reviewed and remarks have been processed, your contribution will be merged into the _develop_ branch of the main EasyBuild repository.
+Once your pull request has been reviewed and remarks have been processed, your contribution will be merged into the _develop_ branch of the main easybuild-easyblocks repository.
 
 On frequent occasions, the _develop_ branch is merged into the _master_ branch and a new version is tagged, and your contribution truly becomes part of EasyBuild.

@@ -1,4 +1,5 @@
 ##
+# Copyright 2009-2012 Ghent University
 # Copyright 2009-2012 Stijn De Weirdt
 # Copyright 2010 Dries Verdegem
 # Copyright 2010-2012 Kenneth Hoste
@@ -6,7 +7,11 @@
 # Copyright 2011-2012 Jens Timmerman
 #
 # This file is part of EasyBuild,
-# originally created by the HPC team of the University of Ghent (http://ugent.be/hpc).
+# originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
+# with support of Ghent University (http://ugent.be/hpc),
+# the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
+# the Hercules foundation (http://www.herculesstichting.be/in_English)
+# and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
 # http://github.com/hpcugent/easybuild
 #
@@ -30,7 +35,7 @@ implemented as an easyblock
 import shutil
 
 from easybuild.framework.easyblock import EasyBlock
-
+from easybuild.tools.filetools import rmtree2
 
 class Tarball(EasyBlock):
     """
@@ -56,7 +61,7 @@ class Tarball(EasyBlock):
         # shutil.copytree cannot handle destination dirs that exist already.
         # On the other hand, Python2.4 cannot create entire paths during copytree.
         # Therefore, only the final directory is deleted.
-        shutil.rmtree(self.installdir)
+        rmtree2(self.installdir)
         try:
             # self.cfg['keepsymlinks'] is False by default except when explicitly put to True in .eb file
             shutil.copytree(src,self.installdir, symlinks=self.cfg['keepsymlinks'])

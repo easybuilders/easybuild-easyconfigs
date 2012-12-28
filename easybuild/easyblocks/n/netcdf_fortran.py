@@ -1,4 +1,5 @@
 ##
+# Copyright 2009-2012 Ghent University
 # Copyright 2009-2012 Stijn De Weirdt
 # Copyright 2010 Dries Verdegem
 # Copyright 2010-2012 Kenneth Hoste
@@ -6,7 +7,11 @@
 # Copyright 2011-2012 Jens Timmerman
 #
 # This file is part of EasyBuild,
-# originally created by the HPC team of the University of Ghent (http://ugent.be/hpc).
+# originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
+# with support of Ghent University (http://ugent.be/hpc),
+# the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
+# the Hercules foundation (http://www.herculesstichting.be/in_English)
+# and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
 # http://github.com/hpcugent/easybuild
 #
@@ -29,7 +34,7 @@ EasyBuild support for building and installing netCDF-Fortran, implemented as an 
 import os
 
 import easybuild.tools.environment as env
-import easybuild.tools.toolkit as toolchain
+import easybuild.tools.toolchain as toolchain
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 
 
@@ -39,13 +44,13 @@ class EB_netCDF_minus_Fortran(ConfigureMake):
     def configure_step(self):
         """Configure build: set config options and configure"""
 
-        if self.toolchain.opts['pic']:
+        if self.toolchain.options['pic']:
             self.cfg.update('configopts', "--with-pic")
 
         self.cfg.update('configopts', 'FCFLAGS="%s" FC="%s"' % (os.getenv('FFLAGS'), os.getenv('F90')))
 
         # add -DgFortran to CPPFLAGS when building with GCC
-        if self.toolchain.comp_family() == toolchain.GCC:
+        if self.toolchain.comp_family() == toolchain.GCC:  #@UndefinedVariable
             env.setvar('CPPFLAGS', "%s -DgFortran" % os.getenv('CPPFLAGS'))
 
         super(EB_netCDF_minus_Fortran, self).configure_step()

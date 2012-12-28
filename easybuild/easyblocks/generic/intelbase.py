@@ -1,4 +1,5 @@
 ##
+# Copyright 2009-2012 Ghent University
 # Copyright 2009-2012 Stijn De Weirdt
 # Copyright 2010 Dries Verdegem
 # Copyright 2010-2012 Kenneth Hoste
@@ -6,7 +7,11 @@
 # Copyright 2011-2012 Jens Timmerman
 #
 # This file is part of EasyBuild,
-# originally created by the HPC team of the University of Ghent (http://ugent.be/hpc).
+# originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
+# with support of Ghent University (http://ugent.be/hpc),
+# the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
+# the Hercules foundation (http://www.herculesstichting.be/in_English)
+# and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
 # http://github.com/hpcugent/easybuild
 #
@@ -30,14 +35,13 @@ import fileinput
 import os
 import random
 import re
-import shutil
 import string
 import sys
 
 import easybuild.tools.environment as env
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import CUSTOM, MANDATORY
-from easybuild.tools.filetools import run_cmd
+from easybuild.tools.filetools import rmtree2, run_cmd
 
 
 class IntelBase(EasyBlock):
@@ -76,7 +80,7 @@ class IntelBase(EasyBlock):
         intelhome = os.path.join(os.getenv('HOME'), self.home_subdir)
         if os.path.exists(intelhome):
             try:
-                shutil.rmtree(intelhome)
+                rmtree2(intelhome)
                 self.log.info("Cleaning up intel dir %s" % intelhome)
             except OSError, err:
                 self.log.warning("Cleaning up intel dir %s failed: %s" % (intelhome, err))

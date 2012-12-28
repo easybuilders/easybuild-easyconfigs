@@ -1,9 +1,14 @@
 ##
+# Copyright 2012 Ghent University
 # Copyright 2012 Kenneth Hoste
 # Copyright 2012 Jens Timmerman
 #
 # This file is part of EasyBuild,
-# originally created by the HPC team of the University of Ghent (http://ugent.be/hpc).
+# originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
+# with support of Ghent University (http://ugent.be/hpc),
+# the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
+# the Hercules foundation (http://www.herculesstichting.be/in_English)
+# and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
 # http://github.com/hpcugent/easybuild
 #
@@ -27,8 +32,9 @@ import re
 import tempfile
 
 import easybuild.tools.environment as env
-import easybuild.tools.toolkit as toolchain
+import easybuild.tools.toolchain as toolchain
 from easybuild.easyblocks.generic.cmakepythonpackage import CMakePythonPackage
+from easybuild.tools.filetools import rmtree2
 from easybuild.tools.modules import get_software_root, get_software_version
 
 
@@ -49,7 +55,7 @@ class EB_DOLFIN(CMakePythonPackage):
         fflags = os.getenv('FFLAGS')
 
         # fix for "SEEK_SET is #defined but must not be for the C++ binding of MPI. Include mpi.h before stdio.h"
-        if self.toolchain.mpi_type() in [toolchain.INTEL, toolchain.MPICH2]:
+        if self.toolchain.mpi_family() in [toolchain.INTELMPI, toolchain.MPICH2, toolchain.MVAPICH2]:
             cflags += " -DMPICH_IGNORE_CXX_SEEK"
             cxxflags += " -DMPICH_IGNORE_CXX_SEEK"
             fflags += " -DMPICH_IGNORE_CXX_SEEK"
@@ -93,7 +99,7 @@ class EB_DOLFIN(CMakePythonPackage):
         self.cfg.update('configopts', '-DZLIB_LIBRARY=%s' % os.path.join(depsdict['zlib'], "lib", "libz.a"))
 
         # set correct openmp options
-        openmp = self.toolchain.get_openmp_flag()
+        openmp = self.toolchain.get_flag('openmp')
         self.cfg.update('configopts', ' -DOpenMP_CXX_FLAGS="%s"' % openmp)
         self.cfg.update('configopts', ' -DOpenMP_C_FLAGS="%s"' % openmp)
 
@@ -162,11 +168,8 @@ class EB_DOLFIN(CMakePythonPackage):
 
         txt = super(EB_DOLFIN, self).make_module_extra()
 
-        # Dolfin needs to find Boost and the UFC pkgconfig file
+        # Dolfin needs to find Boost
         txt += self.moduleGenerator.set_environment('BOOST_DIR', get_software_root('Boost'))
-        pkg_config_paths = [os.path.join(get_software_root('UFC'), "lib", "pkgconfig"),
-                            os.path.join(self.installdir, "lib", "pkgconfig")]
-        txt += self.moduleGenerator.prepend_paths("PKG_CONFIG_PATH", pkg_config_paths)
 
         envvars = ['I_MPI_CXX', 'I_MPI_CC']
         for envvar in envvars:
@@ -190,8 +193,9 @@ class EB_DOLFIN(CMakePythonPackage):
         # custom sanity check commands
 
         # set cache/error dirs for Instant
-        instant_cache_dir = os.path.join(tempfile.gettempdir(), '.instant', 'cache')
-        instant_error_dir = os.path.join(tempfile.gettempdir(), '.instant', 'error')
+        tmpdir = tempfile.mkdtemp()
+        instant_cache_dir = os.path.join(tmpdir, '.instant', 'cache')
+        instant_error_dir = os.path.join(tmpdir, '.instant', 'error')
         env.setvar("INSTANT_CACHE_DIR",  instant_cache_dir)
         env.setvar("INSTANT_ERROR_DIR",  instant_error_dir)
         try:
@@ -231,3 +235,9 @@ class EB_DOLFIN(CMakePythonPackage):
         custom_commands = [(cmd, "") for cmd in cmds]
 
         super(EB_DOLFIN, self).sanity_check_step(custom_paths=custom_paths, custom_commands=custom_commands)
+
+        # clean up temporary dir
+        try:
+            rmtree2(tmpdir)
+        except OSError, err:
+            self.log.error("Failed to remove Instant cache/error dirs: %s" % err)

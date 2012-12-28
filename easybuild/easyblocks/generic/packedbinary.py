@@ -1,8 +1,13 @@
 ##
+# Copyright 2012 Ghent University
 # Copyright 2012 Jens Timmerman
 #
 # This file is part of EasyBuild,
-# originally created by the HPC team of the University of Ghent (http://ugent.be/hpc).
+# originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
+# with support of Ghent University (http://ugent.be/hpc),
+# the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
+# the Hercules foundation (http://www.herculesstichting.be/in_English)
+# and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
 # http://github.com/hpcugent/easybuild
 #
@@ -37,7 +42,7 @@ class PackedBinary(Binary, EasyBlock):
         """Unpack the source"""
         EasyBlock.extract_step(self)
 
-    def make_install(self):
+    def install_step(self):
         """Copy all unpacked source directories to install directory, one-by-one."""
         try:
             os.chdir(self.builddir)
@@ -46,7 +51,7 @@ class PackedBinary(Binary, EasyBlock):
                 if os.path.isdir(srcpath):
                     # copy files to install dir via Binary
                     self.cfg['start_dir'] = src
-                    Binary.make_install(self)
+                    Binary.install_step(self)
         except OSError, err:
             self.log.error("Failed to copy unpacked sources to install directory: %s" % err)
 
