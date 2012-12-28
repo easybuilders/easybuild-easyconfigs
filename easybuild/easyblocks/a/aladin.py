@@ -305,17 +305,7 @@ class EB_ALADIN(EasyBlock):
         guesses = super(EB_ALADIN, self).make_module_req_guess()
 
         guesses.update({
-                        'VARIABLE': ['value1', 'value2'],
+                        'PATH': [os.path.join(self.rootpack_dir, 'bin')],
                        })
 
         return guesses
-
-    def make_module_extra(self):
-        """Custom extra module file entries for ALADIN."""
-
-        txt = super(EB_ALADIN, self).make_module_extra()
-
-        txt += self.moduleGenerator.set_environment("VARIABLE", 'value')
-        txt += self.moduleGenerator.prepend_paths("PATH_VAR", ['path1', 'path2'])
-
-        return txt
