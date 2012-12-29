@@ -1,0 +1,33 @@
+--- gmkpack.6.5.0/util/gmkfilemaker.orig	2012-12-21 08:51:44.488703817 +0100
++++ gmkpack.6.5.0/util/gmkfilemaker	2012-12-21 14:26:41.575856849 +0100
+@@ -539,7 +539,7 @@
+     else
+ #     Search a possible library in the last specified directory:
+       if [ "$EXPANDED_ABSOLUTE_LIB" ] ; then
+-        EXPANDED_ABSOLUTE_DIR=$(dirname $EXPANDED_ABSOLUTE_LIB)
++        EXPANDED_ABSOLUTE_DIR=$(dirname `echo $EXPANDED_ABSOLUTE_LIB | cut -f1 -d' '`)
+ #       First, find a file which matches the exact name, following the links :
+         N_LIBS=$(find $EXPANDED_ABSOLUTE_DIR -follow -name "lib${LIB}.a" -type f -print 2>/dev/null | wc -l)
+         if [ $N_LIBS -eq 1 ] ; then
+@@ -629,7 +629,7 @@
+ #         A trick to resolve the exported variables :
+           EXPANDED_ABSOLUTE_LIB=$(eval "echo $ABSOLUTE_LIB")
+           iecho=$(\ls -1 $EXPANDED_ABSOLUTE_LIB 2>/dev/null | wc -l)
+-          if [ $iecho -eq 1 ] ; then
++          if [ $iecho -ne 0 ] ; then
+             if [ "$LIBTEST" != "BROKEN" ] ; then
+               $COMPILER $LDOPT libtest.o $EXPANDED_ABSOLUTE_LIB 2>/dev/null
+               ierr=$?
+--- gmkpack.6.5.0/util/gmkpack.orig	2012-12-21 14:41:36.485183004 +0100
++++ gmkpack.6.5.0/util/gmkpack	2012-12-21 14:43:13.364276503 +0100
+@@ -1291,8 +1291,8 @@
+       if [ "$VAR" ] ; then
+         extension=$(echo $VAR | $AWK -F "." '{print $NF}')
+         if [ "$extension" = "a" ] || [ "$extension" = "so" ] ; then
+-          MyLibPath=$(dirname $VAR)
+-          MyLibName=$(echo $(basename $VAR) | sed "s/^lib//" | sed "s/\.$extension$//")
++          MyLibPath=$(dirname `echo $VAR | cut -f1 -d' '`)
++          MyLibName=$(echo $(basename `echo $VAR | cut -f1 -d' '`) | sed "s/^lib//" | sed "s/\.$extension$//")
+           if [ "$MyLibPath" = "$MyLastLibPath" ] ; then
+ #           Increment libraries sequence
+             MyLibSeq="$MyLibSeq -l${MyLibName}"
