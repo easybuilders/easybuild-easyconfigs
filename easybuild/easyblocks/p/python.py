@@ -91,9 +91,9 @@ class EB_Python(ConfigureMake):
         pyver = "python%s" % '.'.join(self.version.split('.')[0:2])
 
         try:
-            self.load_fake_module()
+            fake_mod_path = self.load_fake_module()
         except EasyBuildError, err:
-            self.log.debug("Loading fake module failed: %s" % err)
+            self.log.error("Loading fake module failed: %s" % err)
 
         abiflags = ''
         if LooseVersion(self.version) >= LooseVersion("3"):
@@ -104,6 +104,8 @@ class EB_Python(ConfigureMake):
                 self.log.error("Failed to determine abiflags: %s" % abiflags)
             else:
                 abiflags = abiflags.strip()
+
+        self.clean_up_fake_module(fake_mod_path)
 
         custom_paths = {
                         'files':["bin/%s" % pyver, "lib/lib%s%s.so" % (pyver, abiflags)],
