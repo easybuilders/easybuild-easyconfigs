@@ -61,6 +61,8 @@ class EB_WPS(EasyBlock):
         self.wrfdir = None
         self.compile_script = None
 
+        self.netcdf_mod_cmds = get_netcdf_module_set_cmds(self.log)
+
     @staticmethod
     def extra_options():
         testdata_urls = [
@@ -355,6 +357,6 @@ class EB_WPS(EasyBlock):
 
         txt = super(EB_WPS, self).make_module_extra()
 
-        txt += get_netcdf_module_set_cmds(self.log)
+        txt += self.netcdf_mod_cmds
 
         return txt
