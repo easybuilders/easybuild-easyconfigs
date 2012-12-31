@@ -56,6 +56,8 @@ class EB_WRF(EasyBlock):
         self.wrfsubdir = None
         self.comp_fam = None
 
+        self.netcdf_mod_cmds = get_netcdf_module_set_cmds(self.log)
+
     @staticmethod
     def extra_options():
         extra_vars = [
@@ -365,6 +367,7 @@ class EB_WRF(EasyBlock):
     def make_module_extra(self):
 
         txt = super(EB_WRF, self).make_module_extra()
-        txt += get_netcdf_module_set_cmds(self.log)
+
+        txt += self.netcdf_mod_cmds
 
         return txt
