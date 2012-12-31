@@ -173,7 +173,7 @@ class EB_DefaultPythonPackage(Extension):
         # sanity checks for python being used
         run_cmd("python -V")
         run_cmd("which python")
-        run_cmd("python -c 'import sys; print sys.executable'")
+        run_cmd("python -c 'import sys; print(sys.executable)'")
 
     def build_step(self):
         """Build Python package via setup.py"""
@@ -204,7 +204,7 @@ class EB_DefaultPythonPackage(Extension):
             cmd = "python setup.py install --prefix=%s %s" % (testinstalldir, self.installopts)
             run_cmd(cmd, log_all=True, simple=True)
 
-            run_cmd("python -c 'import sys; print sys.path'")  # print Python search path (debug)
+            run_cmd("python -c 'import sys; print(sys.path)'")  # print Python search path (debug)
             extrapath = "export PYTHONPATH=%s/%s:$PYTHONPATH && " % (testinstalldir, self.python_libdir)
 
         if self.runtest:
