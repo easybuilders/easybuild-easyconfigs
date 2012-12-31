@@ -56,7 +56,7 @@ class EB_WRF(EasyBlock):
         self.wrfsubdir = None
         self.comp_fam = None
 
-        self.netcdf_mod_cmds = get_netcdf_module_set_cmds(self.log)
+        self.netcdf_mod_cmds = None
 
     @staticmethod
     def extra_options():
@@ -77,6 +77,7 @@ class EB_WRF(EasyBlock):
 
         # netCDF dependency
         set_netcdf_env_vars(self.log)
+        self.netcdf_mod_cmds = get_netcdf_module_set_cmds(self.log)
 
         # HDF5 (optional) dependency
         hdf5 = get_software_root('HDF5')
