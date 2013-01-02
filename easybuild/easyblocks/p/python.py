@@ -33,14 +33,13 @@ EasyBuild support for Python, implemented as an easyblock
 
 import os
 import re
-import shutil
 from distutils.version import LooseVersion
 
 import easybuild.tools.toolchain as toolchain
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.framework.extension import Extension
 from easybuild.tools.build_log import EasyBuildError
-from easybuild.tools.filetools import extract_file, apply_patch, run_cmd
+from easybuild.tools.filetools import apply_patch, extract_file, rmtree2, run_cmd
 from easybuild.tools.modules import get_software_root
 
 
@@ -201,7 +200,7 @@ class EB_DefaultPythonPackage(Extension):
 
         if self.testinstall:
             try:
-                shutil.rmtree(testinstalldir)
+                rmtree2(testinstalldir)
             except OSError, err:
                 self.log.exception("Removing testinstalldir %s failed: %s" % (testinstalldir, err))
 
@@ -337,7 +336,7 @@ libraries = %s
         super(EB_numpy, self).install_step()
         builddir = os.path.join(self.builddir, "numpy")
         if os.path.isdir(builddir):
-            shutil.rmtree(builddir)
+            rmtree2(builddir)
         else:
             self.log.debug("build dir %s already clean" % builddir)
 

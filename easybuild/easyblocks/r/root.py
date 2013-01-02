@@ -1,5 +1,7 @@
 ##
+# Copyright 2012 Ghent University
 # Copyright 2012 Kenneth Hoste
+# Copyright 2012 Jens Timmerman
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of the University of Ghent (http://ugent.be/hpc).
@@ -22,22 +24,40 @@
 EasyBuild support for ROOT, implemented as an easyblock
 """
 
+from easybuild.framework.easyconfig import MANDATORY
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.tools.filetools import run_cmd
 
 class EB_ROOT(ConfigureMake):
+
+    @staticmethod
+    def extra_options():
+        """
+        Define extra options needed by Geant4
+        """
+        extra_vars = [
+                      ('arch', [None, "Target architecture", MANDATORY]),
+                     ]
+        return ConfigureMake.extra_options(extra_vars)
+
     def configure_step(self):
-        self.cfg['configopts'] = self.cfg['configopts'] + " --etcdir=%s/etc/root " % self.installdir
-        super(ConfigureMake, self).configure_step()
+        """Custom configuration for ROOT, add configure options."""
+
+        self.cfg.update('configopts', "--etcdir=%s/etc/root " % self.installdir)
+
+        cmd = "./configure %s --prefix=%s %s" % (self.cfg['arch'],
+                                                 self.installdir,
+                                                 self.cfg['configopts'])
+
+        run_cmd(cmd, log_all=True, log_ok=True, simple=True)
 
     def make_module_extra(self):
-        """
-        Application specific extras
-        """
-        txt = ConfigureMake.make_module_extra(self)
-        txt += self.moduleGenerator.setEnvironment("ROOTSYS", [""])
-        txt += self.moduleGenerator.prependPaths("LD_LIBRARY_PATH",["/lib/root"])
-        txt += self.moduleGenerator.prependPaths("PYTHONPATH",["/lib/root", "lib/root/python"])
+        """Custom extra module file entries for ROOT."""
+        txt = super(EB_ROOT, self).make_module_extra()
+
+        txt += self.moduleGenerator.set_environment("ROOTSYS", "$root")
+        txt += self.moduleGenerator.prepend_paths("LD_LIBRARY_PATH",["lib/root"])
+        txt += self.moduleGenerator.prepend_paths("PYTHONPATH",["lib/root", "lib/root/python"])
 
         return txt
 

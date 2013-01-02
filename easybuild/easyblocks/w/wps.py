@@ -44,7 +44,7 @@ import easybuild.tools.toolchain as toolchain
 from easybuild.easyblocks.netcdf import set_netcdf_env_vars, get_netcdf_module_set_cmds  #@UnresolvedImport
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import CUSTOM, MANDATORY
-from easybuild.tools.filetools import patch_perl_script_autoflush, run_cmd, run_cmd_qa, extract_file
+from easybuild.tools.filetools import extract_file, patch_perl_script_autoflush, rmtree2, run_cmd, run_cmd_qa
 from easybuild.tools.modules import get_software_root, get_software_version
 
 
@@ -183,7 +183,7 @@ class EB_WPS(EasyBlock):
 
         cmd = "./configure"
         qa = {}
-        no_qa = []
+        no_qa = [".*compiler is.*"]
         std_qa = {
                   # named group in match will be used to construct answer
                   r"%s(.*\n)*Enter selection\s*\[[0-9]+-[0-9]+\]\s*:" % build_type_question: "%(nr)s",
@@ -314,7 +314,7 @@ class EB_WPS(EasyBlock):
                 run_wps_cmd('metgrid')
 
                 # clean up
-                shutil.rmtree(tmpdir)
+                rmtree2(tmpdir)
 
             except OSError, err:
                 self.log.error("Failed to run WPS test: %s" % err)

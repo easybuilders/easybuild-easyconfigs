@@ -36,7 +36,7 @@ import shutil
 import tempfile
 
 from easybuild.framework.easyblock import EasyBlock
-from easybuild.tools.filetools import run_cmd, extract_file
+from easybuild.tools.filetools import extract_file, rmtree2, run_cmd
 from easybuild.tools.modules import get_software_root, get_software_version
 
 
@@ -121,7 +121,7 @@ class EB_python_minus_meep(EasyBlock):
         dest = os.path.join(self.installdir, 'site-packages')
         try:
             shutil.copytree(src, dest)
-            shutil.rmtree(tmpdir)
+            rmtree2(tmpdir)
         except OSError, err:
             self.log.exception("Failed to copy directory %s to %s: %s" % (src, dest, err))
 

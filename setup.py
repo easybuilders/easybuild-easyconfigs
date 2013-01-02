@@ -32,6 +32,7 @@ or
 """
 
 import os
+import re
 import sys
 from distutils import log
 
@@ -39,6 +40,10 @@ sys.path.append('easybuild')
 from easyblocks import VERSION
 
 API_VERSION = str(VERSION).split('.')[0]
+rc_regexp = re.compile("^.*rc[0-9]*$")
+if rc_regexp.match(str(VERSION)):
+    suff = '-%s' % VERSION.split('-')[-1]
+    API_VERSION += suff
 
 # log levels: 0 = WARN (default), 1 = INFO, 2 = DEBUG
 log.set_verbosity(1)
@@ -48,7 +53,7 @@ try:
     log.info("Installing with setuptools.setup...")
 except ImportError, err:
     log.info("Failed to import setuptools.setup, so falling back to distutils.setup")
-    from distutils import setup
+    from distutils.core import setup
 
 # Utility function to read README file
 def read(fname):
@@ -83,5 +88,5 @@ particular (groups of) software packages with EasyBuild.""",
                   ],
     platforms = "Linux",
     provides = ["easybuild", "easybuild.easyblocks", "easybuild.easyblocks.generic"],
-    install_requires = ["easybuild-framework >= %s.0" % API_VERSION]
+    install_requires = ["easybuild-framework >= %s" % API_VERSION]
 )
