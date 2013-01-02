@@ -53,13 +53,13 @@ class EB_NWChem(ConfigureMake):
         """Custom easyconfig parameters for NWChem."""
 
         extra_vars = [
-                      ('target', ['LINUX64', "Target platform", CUSTOM]),
+                      ('target', ["LINUX64", "Target platform", CUSTOM]),
                       # possible options for ARMCI_NETWORK on LINUX64 with Infiniband:
                       # OPENIB, MPI-MT, MPI-SPAWN, MELLANOX
-                      ('armci_network', ['OPENIB', "Network protocol to use", CUSTOM]),
-                      ('msg_comms', ['MPI', "Type of message communication", CUSTOM]),
+                      ('armci_network', ["OPENIB", "Network protocol to use", CUSTOM]),
+                      ('msg_comms', ["MPI", "Type of message communication", CUSTOM]),
                       ('modules', ["all", "NWChem modules to build", CUSTOM]),
-                      ('lib_defines', ['', "Additional defines for C preprocessor", CUSTOM]),
+                      ('lib_defines', ["", "Additional defines for C preprocessor", CUSTOM]),
                       ('with_nbo_support', [False, "Enable NBO support", CUSTOM]),
                       ('tests', [True, "Run example test cases", CUSTOM]),
                       # lots of tests fail, so allow a certain fail ratio
