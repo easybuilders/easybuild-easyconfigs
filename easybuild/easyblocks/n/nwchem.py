@@ -60,7 +60,6 @@ class EB_NWChem(ConfigureMake):
                       ('msg_comms', ["MPI", "Type of message communication", CUSTOM]),
                       ('modules', ["all", "NWChem modules to build", CUSTOM]),
                       ('lib_defines', ["", "Additional defines for C preprocessor", CUSTOM]),
-                      ('with_nbo_support', [False, "Enable NBO support", CUSTOM]),
                       ('tests', [True, "Run example test cases", CUSTOM]),
                       # lots of tests fail, so allow a certain fail ratio
                       ('max_fail_ratio', [0.5, "Maximum test case fail ratio", CUSTOM])
@@ -158,13 +157,6 @@ class EB_NWChem(ConfigureMake):
         # set sizes
         for lib in ['BLAS', 'LAPACK', 'SCALAPACK']:
             self.setvar_env_makeopt('%s_SIZE' % lib, str(size))
-
-        # enable NBO support if desired
-        if self.cfg['with_nbo_support']:
-            nwnbo_file = 'nwnbo.f'  # where should this come from?
-            target = os.path.join(self.cfg['start_dir'], 'src', 'nbo')
-            shutil.copyfile(nwnbo_file, target)
-            nwchem_modules += ' nbo'
 
         env.setvar('NWCHEM_MODULES', nwchem_modules)
 
