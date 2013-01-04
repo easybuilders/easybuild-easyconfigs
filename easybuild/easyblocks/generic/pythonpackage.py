@@ -48,6 +48,12 @@ class PythonPackage(EasyBlock):
         # template for Python packages lib dir
         self.pylibdir = os.path.join("lib", "python%s", "site-packages")
 
+        self.sitecfg = None
+        self.sitecfgfn = 'site.cfg'
+        self.sitecfglibdir = None
+        self.sitecfgincdir = None
+
+
     def configure_step(self):
         """Set Python packages lib dir."""
 
@@ -63,6 +69,29 @@ class PythonPackage(EasyBlock):
 
         self.log.debug("pylibdir: %s" % self.pylibdir)
 
+        if self.sitecfg is not None:
+            # code from python EB_DefaultPythonPackage
+            finaltxt = self.sitecfg
+            if self.sitecfglibdir:
+                repl = self.sitecfglibdir
+                finaltxt = finaltxt.replace('SITECFGLIBDIR', repl)
+
+            if self.sitecfgincdir:
+                repl = self.sitecfgincdir
+                finaltxt = finaltxt.replace('SITECFGINCDIR', repl)
+
+            self.log.debug("Using %s: %s" % (self.sitecfgfn, finaltxt))
+            try:
+                if os.path.exists(self.sitecfgfn):
+                    txt = open(self.sitecfgfn).read()
+                    self.log.debug("Found %s: %s" % (self.sitecfgfn, txt))
+                config = open(self.sitecfgfn, 'w')
+                config.write(finaltxt)
+                config.close()
+            except IOError:
+                self.log.exception("Creating %s failed" % self.sitecfgfn)
+
+
     def build_step(self):
         """Build Python package using setup.py"""
 
@@ -77,12 +106,13 @@ class PythonPackage(EasyBlock):
         mkdir(abs_pylibdir, parents=True)
 
         pythonpath = os.getenv('PYTHONPATH')
-        env.setvar('PYTHONPATH', "%s:%s" % (abs_pylibdir, pythonpath))
+        env.setvar('PYTHONPATH', ":".join([x for x in [abs_pylibdir, pythonpath] if x is not None]))
 
         cmd = "python setup.py install --prefix=%s %s" % (self.installdir, self.cfg['installopts'])
         run_cmd(cmd, log_all=True, simple=True)
 
-        env.setvar('PYTHONPATH', pythonpath)
+        if pythonpath is not None:
+            env.setvar('PYTHONPATH', pythonpath)
 
     def sanity_check_step(self, custom_paths=None, custom_commands=None):
         """
