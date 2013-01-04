@@ -1,6 +1,6 @@
-##
-# Copyright 2009-2012 Ghent University
-# Copyright 2009-2012 Stijn De Weirdt
+# #
+# Copyright 2009-2013 Ghent University
+# Copyright 2009-2013 Stijn De Weirdt
 # Copyright 2010 Dries Verdegem
 # Copyright 2010-2012 Kenneth Hoste
 # Copyright 2011 Pieter De Baets
@@ -26,7 +26,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
-##
+# #
 """
 EasyBuild support for Python packages, implemented as an easyblock
 """
@@ -52,7 +52,6 @@ class PythonPackage(EasyBlock):
         self.sitecfgfn = 'site.cfg'
         self.sitecfglibdir = None
         self.sitecfgincdir = None
-
 
     def configure_step(self):
         """Set Python packages lib dir."""
@@ -90,7 +89,6 @@ class PythonPackage(EasyBlock):
                 config.close()
             except IOError:
                 self.log.exception("Creating %s failed" % self.sitecfgfn)
-
 
     def build_step(self):
         """Build Python package using setup.py"""
