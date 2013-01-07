@@ -138,6 +138,11 @@ class EB_NEURON(ConfigureMake):
 
         super(EB_NEURON, self).sanity_check_step(custom_paths=custom_paths)
 
+        try:
+            fake_mod_path = self.load_fake_module()
+        except EasyBuildError, err:
+            self.log.debug("Loading fake module failed: %s" % err)
+
         # test NEURON demo
         inp = '\n'.join([
                          "demo(3) // load the pyramidal cell model.",
@@ -154,6 +159,8 @@ class EB_NEURON(ConfigureMake):
         validate_regexp = re.compile("^\s+-65\s*\n\s+5\s*\n\s+-68.134337", re.M)
         if ec or not validate_regexp.search(out):
             self.log.error("Validation of NEURON demo run failed.")
+        else:
+            self.log.info("Validation of NEURON demo OK!")
 
         try:
             cwd = os.getcwd()
@@ -173,6 +180,11 @@ class EB_NEURON(ConfigureMake):
                 break
         if ec or not valid:
             self.log.error("Validation of parallel hello world run failed.")
+        else:
+            self.log.info("Parallel hello world OK!")
+
+        # cleanup
+        self.clean_up_fake_module(fake_mod_path)
 
     def make_module_req_guess(self):
         """Custom guesses for environment variables (PATH, ...) for NEURON."""
