@@ -310,7 +310,7 @@ charmm_x %(path)s/data/charmm_x/
 
         # run all examples if no test cases were specified
         # order and grouping is important for some of these tests (e.g., [o]h3tr*
-        if type(self.cfg['tests']) == bool:
+        if type(self.cfg['tests']) is bool:
             examples = [('qmd', ['3carbo_dft.nw', '3carbo.nw', 'h2o_scf.nw']),
                         ('pspw', ['C2.nw', 'C6.nw', 'CG.nw', 'Carbene.nw', 'Na16.nw', 'NaCl.nw']),
                         ('tcepolar', ['ccsdt_polar_small.nw', 'ccsd_polar_big.nw', 'ccsd_polar_small.nw']),
