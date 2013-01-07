@@ -1,10 +1,5 @@
 ##
-# Copyright 2009-2012 Ghent University
-# Copyright 2009-2012 Stijn De Weirdt
-# Copyright 2010 Dries Verdegem
-# Copyright 2010-2012 Kenneth Hoste
-# Copyright 2011 Pieter De Baets
-# Copyright 2011-2012 Jens Timmerman
+# Copyright 2009-2013 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -29,6 +24,8 @@
 ##
 """
 EasyBuild support for Python, implemented as an easyblock
+
+@authors: Stijn De Weirdt, Dries Verdegem, Kenneth Hoste, Pieter De Baets, Jens Timmerman (UGent)
 """
 
 import os
@@ -111,6 +108,9 @@ class EB_Python(ConfigureMake):
                         'files':["bin/%s" % pyver, "lib/lib%s%s.so" % (pyver, abiflags)],
                         'dirs':["include/%s%s" % (pyver, abiflags), "lib/%s" % pyver]
                        }
+
+        # cleanup
+        self.clean_up_fake_module(fake_mod_path)
 
         super(EB_Python, self).sanity_check_step(custom_paths=custom_paths)
 
