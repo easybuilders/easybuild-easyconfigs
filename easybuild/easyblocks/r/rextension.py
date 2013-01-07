@@ -1,9 +1,5 @@
 ##
-# Copyright 2009-2012 Stijn De Weirdt
-# Copyright 2010 Dries Verdegem
-# Copyright 2010-2012 Kenneth Hoste
-# Copyright 2011-2012 Jens Timmerman
-# Copyright 2012 Toon Willems
+# Copyright 2009-2013 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of the University of Ghent (http://ugent.be/hpc).
@@ -24,6 +20,8 @@
 ##
 """
 EasyBuild support for R packages, implemented as an easyblock
+
+@authors: Stijn De Weirdt, Dries Verdegem, Kenneth Hoste, Jens Timmerman, Toon Willems (Ghent University)
 """
 from easybuild.framework.extension import Extension
 from easybuild.tools.filetools import run_cmd, parse_log_for_error
