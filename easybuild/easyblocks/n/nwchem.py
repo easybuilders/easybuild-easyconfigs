@@ -24,6 +24,8 @@
 ##
 """
 EasyBuild support for building and installing NWChem, implemented as an easyblock
+
+@author: Kenneth Hoste (Ghent University)
 """
 import os
 import re

@@ -24,6 +24,8 @@
 ##
 """
 EasyBuild support for building and installing VSC-tools, implemented as an easyblock
+
+@author: Kenneth Hoste (Ghent University)
 """
 import os
 
