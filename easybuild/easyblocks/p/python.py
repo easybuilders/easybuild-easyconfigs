@@ -90,7 +90,7 @@ class EB_Python(ConfigureMake):
         pyver = "python%s" % '.'.join(self.version.split('.')[0:2])
 
         try:
-            self.load_fake_module()
+            fake_mod_path = self.load_fake_module()
         except EasyBuildError, err:
             self.log.debug("Loading fake module failed: %s" % err)
 
@@ -108,6 +108,9 @@ class EB_Python(ConfigureMake):
                         'files':["bin/%s" % pyver, "lib/lib%s%s.so" % (pyver, abiflags)],
                         'dirs':["include/%s%s" % (pyver, abiflags), "lib/%s" % pyver]
                        }
+
+        # cleanup
+        self.clean_up_fake_module(fake_mod_path)
 
         super(EB_Python, self).sanity_check_step(custom_paths=custom_paths)
 
