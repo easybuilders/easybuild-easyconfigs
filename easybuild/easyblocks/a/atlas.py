@@ -179,9 +179,10 @@ Configure failed, not sure why (see output above).""" % out
         self.cfg['runtest'] = 'check'
         super(EB_ATLAS, self).test_step()
 
-        # checks of threaded code
-        self.cfg['runtest'] = 'ptcheck'
-        super(EB_ATLAS, self).test_step()
+        # checks of threaded code (only if required)
+        if os.path.exists(os.path.join(self.cfg['start_dir'], 'obj', 'include', 'atlas_pthreads.h')):
+            self.cfg['runtest'] = 'ptcheck'
+            super(EB_ATLAS, self).test_step()
 
         # performance summary
         self.cfg['runtest'] = 'time'

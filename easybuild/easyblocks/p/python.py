@@ -1,10 +1,5 @@
 ##
-# Copyright 2009-2012 Ghent University
-# Copyright 2009-2012 Stijn De Weirdt
-# Copyright 2010 Dries Verdegem
-# Copyright 2010-2012 Kenneth Hoste
-# Copyright 2011 Pieter De Baets
-# Copyright 2011-2012 Jens Timmerman
+# Copyright 2009-2013 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -29,11 +24,14 @@
 ##
 """
 EasyBuild support for Python, implemented as an easyblock
+
+@authors: Stijn De Weirdt, Dries Verdegem, Kenneth Hoste, Pieter De Baets, Jens Timmerman (UGent)
 """
 
 import os
 import re
 from distutils.version import LooseVersion
+from os.path import expanduser
 
 import easybuild.tools.toolchain as toolchain
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
@@ -90,9 +88,9 @@ class EB_Python(ConfigureMake):
         pyver = "python%s" % '.'.join(self.version.split('.')[0:2])
 
         try:
-            self.load_fake_module()
+            fake_mod_path = self.load_fake_module()
         except EasyBuildError, err:
-            self.log.debug("Loading fake module failed: %s" % err)
+            self.log.error("Loading fake module failed: %s" % err)
 
         abiflags = ''
         if LooseVersion(self.version) >= LooseVersion("3"):
@@ -104,10 +102,15 @@ class EB_Python(ConfigureMake):
             else:
                 abiflags = abiflags.strip()
 
+        self.clean_up_fake_module(fake_mod_path)
+
         custom_paths = {
                         'files':["bin/%s" % pyver, "lib/lib%s%s.so" % (pyver, abiflags)],
                         'dirs':["include/%s%s" % (pyver, abiflags), "lib/%s" % pyver]
                        }
+
+        # cleanup
+        self.clean_up_fake_module(fake_mod_path)
 
         super(EB_Python, self).sanity_check_step(custom_paths=custom_paths)
 
@@ -136,6 +139,10 @@ class EB_DefaultPythonPackage(Extension):
 
         ver = '.'.join(get_software_version('Python').split('.')[0:2])
         self.python_libdir = os.path.join('lib', 'python%s' % ver, 'site-packages')
+
+        # make sure there's no site.cfg in $HOME, because setup.py will find it and use it
+        if os.path.exists(os.path.join(expanduser('~'), 'site.cfg')):
+            self.log.error('Found site.cfg in your home directory (%s), please remove it.' % expanduser('~'))
 
     def configure_step(self):
         """Configure Python package build
@@ -166,7 +173,7 @@ class EB_DefaultPythonPackage(Extension):
         # sanity checks for python being used
         run_cmd("python -V")
         run_cmd("which python")
-        run_cmd("python -c 'import sys; print sys.executable'")
+        run_cmd("python -c 'import sys; print(sys.executable)'")
 
     def build_step(self):
         """Build Python package via setup.py"""
@@ -197,7 +204,7 @@ class EB_DefaultPythonPackage(Extension):
             cmd = "python setup.py install --prefix=%s %s" % (testinstalldir, self.installopts)
             run_cmd(cmd, log_all=True, simple=True)
 
-            run_cmd("python -c 'import sys; print sys.path'")  # print Python search path (debug)
+            run_cmd("python -c 'import sys; print(sys.path)'")  # print Python search path (debug)
             extrapath = "export PYTHONPATH=%s/%s:$PYTHONPATH && " % (testinstalldir, self.python_libdir)
 
         if self.runtest:
@@ -361,4 +368,3 @@ class EB_scipy(EB_FortranPythonPackage):
         else:
             self.testinstall = False
             self.runtest = None
-
