@@ -139,15 +139,16 @@ class EB_NEURON(ConfigureMake):
         super(EB_NEURON, self).sanity_check_step(custom_paths=custom_paths)
 
         # test NEURON demo
-        inp = """demo(3) // load the pyramidal cell model.
-init()  // initialise the model
-t // should be zero
-soma.v // will print -65
-run() // run the simulation
-t  // should be 5, indicating that 5ms were simulated
-soma.v // this will print a different value than -65, indicating that the simulation was executed.
-quit()
-"""
+        inp = '\n'.join([
+                         "demo(3) // load the pyramidal cell model.",
+                         "init()  // initialise the model",
+                         "t       // should be zero",
+                         "soma.v  // will print -65",
+                         "run()   // run the simulation",
+                         "t       // should be 5, indicating that 5ms were simulated",
+                         "soma.v  // will print a value other than -65, indicating that the simulation was executed",
+                         "quit()",
+                        ])
         (out, ec) = run_cmd("neurondemo", simple=False, log_all=True, log_output=True, inp=inp)
 
         validate_regexp = re.compile("^\s+-65\s*\n\s+5\s*\n\s+-68.134337", re.M)

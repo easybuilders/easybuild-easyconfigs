@@ -247,17 +247,18 @@ class EB_NWChem(ConfigureMake):
 
         # create NWChem settings file
         fn = os.path.join(self.installdir, 'data', 'default.nwchemrc')
-        txt = """nwchem_basis_library %(path)s/data/libraries/
-nwchem_nwpw_library %(path)s/data/libraryps/
-ffield amber
-amber_1 %(path)s/data/amber_s/
-amber_2 %(path)s/data/amber_q/
-amber_3 %(path)s/data/amber_x/
-amber_4 %(path)s/data/amber_u/
-spce %(path)s/data/solvents/spce.rst
-charmm_s %(path)s/data/charmm_s/
-charmm_x %(path)s/data/charmm_x/
-""" % {'path': self.installdir}
+        txt = '\n'.join([
+                         "nwchem_basis_library %(path)s/data/libraries/",
+                         "nwchem_nwpw_library %(path)s/data/libraryps/",
+                         "ffield amber",
+                         "amber_1 %(path)s/data/amber_s/",
+                         "amber_2 %(path)s/data/amber_q/",
+                         "amber_3 %(path)s/data/amber_x/",
+                         "amber_4 %(path)s/data/amber_u/",
+                         "spce %(path)s/data/solvents/spce.rst",
+                         "charmm_s %(path)s/data/charmm_s/",
+                         "charmm_x %(path)s/data/charmm_x/",
+                        ]) % {'path': self.installdir}
 
         try:
             f = open(fn, 'w')
