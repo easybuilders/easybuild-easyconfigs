@@ -87,10 +87,10 @@ class RLibrary(Extension):
         """Create a command line to install an R library."""
         confvars = ""
         if self.configurevars:
-            confvars = self.make_R_install_option("--configure-vars", self.configurevars, cmdline=True)
+            confvars = make_R_install_option("--configure-vars", self.configurevars, cmdline=True)
         confargs = ""
         if self.configureargs:
-            confargs = self.make_R_install_option("--configure-args", self.configureargs, cmdline=True)
+            confargs = make_R_install_option("--configure-args", self.configureargs, cmdline=True)
 
         cmd = "R CMD INSTALL %s %s %s" % (self.src, confargs, confvars)
         self.log.debug("make_cmdline_cmd returns %s" % cmd)
