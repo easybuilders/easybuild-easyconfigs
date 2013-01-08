@@ -151,8 +151,8 @@ class EB_QuantumESPRESSO(ConfigureMake):
                     else:
                         line = re.sub(r"^(%s\s*=[ \t]*).*$" % k, r"\1%s" % v, line)
 
-                    # fix preprocessing directives for .f90 files in make.sys if required
-                if self.toolchain.comp_family() in [toolchain.GCC]:
+                # fix preprocessing directives for .f90 files in make.sys if required
+                if self.toolchain.comp_family() in [toolchain.GCC, toolchain.INTELCOMP]:
                     line = re.sub("\$\(MPIF90\) \$\(F90FLAGS\) -c \$<",
                                   "$(CPP) -C $(CPPFLAGS) $< -o $*.F90\n" +
                                   "\t$(MPIF90) $(F90FLAGS) -c $*.F90 -o $*.o",
