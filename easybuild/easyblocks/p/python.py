@@ -102,8 +102,6 @@ class EB_Python(ConfigureMake):
             else:
                 abiflags = abiflags.strip()
 
-        self.clean_up_fake_module(fake_mod_path)
-
         custom_paths = {
                         'files':["bin/%s" % pyver, "lib/lib%s%s.so" % (pyver, abiflags)],
                         'dirs':["include/%s%s" % (pyver, abiflags), "lib/%s" % pyver]
