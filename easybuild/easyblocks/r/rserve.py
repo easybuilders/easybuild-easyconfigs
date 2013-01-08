@@ -23,10 +23,10 @@ EasyBuild support for building and installing the Bioconductor R library, implem
 
 @authors: Stijn De Weirdt, Dries Verdegem, Kenneth Hoste, Jens Timmerman, Toon Willems (Ghent University)
 """
-from easybuild.easyblocks.generic.rlibrary import RLibrary
+from easybuild.easyblocks.generic.rpackage import RPackage
 
 
-class EB_Rserve(RLibrary):
+class EB_Rserve(RPackage):
     """Build and install Rserve R library."""
 
     def run(self):

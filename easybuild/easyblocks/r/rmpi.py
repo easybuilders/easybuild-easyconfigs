@@ -24,10 +24,10 @@ EasyBuild support for building and installing the Rmpi R library, implemented as
 @authors: Stijn De Weirdt, Dries Verdegem, Kenneth Hoste, Jens Timmerman, Toon Willems (Ghent University)
 """
 import easybuild.tools.toolchain as toolchain
-from easybuild.easyblocks.generic.rlibrary import RLibrary
+from easybuild.easyblocks.generic.rpackage import RPackage
 
 
-class EB_Rmpi(RLibrary):
+class EB_Rmpi(RPackage):
     """Build and install Rmpi R library."""
 
     MPI_TYPES = {

@@ -23,12 +23,12 @@ EasyBuild support for building and installing the Bioconductor R library, implem
 
 @authors: Stijn De Weirdt, Dries Verdegem, Kenneth Hoste, Jens Timmerman, Toon Willems (Ghent University)
 """
-from easybuild.easyblocks.generic.rlibrary import RLibrary
+from easybuild.easyblocks.generic.rpackage import RPackage
 
 
-class EB_Bioconductor(RLibrary):
+class EB_Bioconductor(RPackage):
     """
-    The Bioconductor package extends RLibrary to use a different source
+    The Bioconductor package extends RPackage to use a different source
     And using the biocLite package to do the installation.
     """
     def make_cmdline_cmd(self):

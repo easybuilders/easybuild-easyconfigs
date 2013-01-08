@@ -19,10 +19,11 @@
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
 """
-EasyBuild support for building and installing R libraries, implemented as an easyblock
+EasyBuild support for building and installing R packages, implemented as an easyblock
 
 @authors: Stijn De Weirdt, Dries Verdegem, Kenneth Hoste, Jens Timmerman, Toon Willems (Ghent University)
 """
+from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.extension import Extension
 from easybuild.tools.filetools import run_cmd, parse_log_for_error
 
@@ -46,18 +47,22 @@ def make_R_install_option(opt, values, cmdline=False):
     return txt
 
 
-class RLibrary(Extension):
+class RPackage(EasyBlock, Extension):
     """
-    Install an R extension with this EasyBlock Extension
+    Install an R package as a separate module, or as an extension.
     """
-    def __init__(self, mself, pkg):
-        """Initliaze RLibrary-specific class variables."""
-        super(RLibrary, self).__init__(mself, pkg)
+    def __init__(self, arg1, *args, **kwargs):
+        """Initliaze RPackage-specific class variables."""
+
+        if isinstance(arg1, EasyBlock):
+            Extension.__init__(self, arg1, *args, **kwargs)
+        else:
+            EasyBlock.__init__(self, arg1, *args, **kwargs)
         self.configurevars = []
         self.configureargs = []
 
     def make_r_cmd(self):
-        """Create a command to run in R to install an R library."""
+        """Create a command to run in R to install an R package."""
         confvars = "confvars"
         confargs = "confargs"
         confvarslist = make_R_install_option(confvars, self.configurevars)
@@ -83,8 +88,8 @@ class RLibrary(Extension):
 
         return (cmd, r_cmd)
 
-    def make_cmdline_cmd(self):
-        """Create a command line to install an R library."""
+    def make_cmdline_cmd(self, prefix=None):
+        """Create a command line to install an R package."""
         confvars = ""
         if self.configurevars:
             confvars = make_R_install_option("--configure-vars", self.configurevars, cmdline=True)
@@ -92,21 +97,28 @@ class RLibrary(Extension):
         if self.configureargs:
             confargs = make_R_install_option("--configure-args", self.configureargs, cmdline=True)
 
-        cmd = "R CMD INSTALL %s %s %s" % (self.src, confargs, confvars)
+        if prefix:
+            prefix = '--library=%s' % prefix
+        else:
+            prefix = ''
+
+        cmd = "R CMD INSTALL %s %s %s %s" % (self.src, confargs, confvars, prefix)
         self.log.debug("make_cmdline_cmd returns %s" % cmd)
 
         return cmd, None
 
-    def run(self):
-        """Install R library."""
-        if self.src:
-            self.log.debug("Installing R library %s version %s." % (self.name, self.version))
-            cmd, stdin = self.make_cmdline_cmd()
-        else:
-            self.log.debug("Installing most recent version of R library %s (source not found)." % self.name)
-            cmd, stdin = self.make_r_cmd()
+    def configure_step(self):
+        """No configuration for installing R packages."""
+        pass
 
-        cmdttdouterr, _ = run_cmd(cmd, log_all=True, simple=False, inp=stdin, regexp=False)
+    def build_step(self):
+        """No separate build step for R packages."""
+        pass
+
+    def install_R_package(self, cmd, inp=None):
+        """Install R package as specified, and check for errors."""
+
+        cmdttdouterr, _ = run_cmd(cmd, log_all=True, simple=False, inp=inp, regexp=False)
 
         cmderrors = parse_log_for_error(cmdttdouterr, regExp="^ERROR:")
         if cmderrors:
@@ -114,9 +126,47 @@ class RLibrary(Extension):
             stdin = """
             remove.library(%s)
             """ % self.name
-            # remove library if errors were detected
-            # it's possible that some of the dependencies failed, but the library itself was installed
+            # remove package if errors were detected
+            # it's possible that some of the dependencies failed, but the package itself was installed
             run_cmd(cmd, log_all=False, log_ok=False, simple=False, inp=stdin, regexp=False)
-            self.log.error("Errors detected during installation of R library %s!" % self.name)
+            self.log.error("Errors detected during installation of R package %s!" % self.name)
         else:
-            self.log.debug("R library %s installed succesfully" % self.name)
+            self.log.debug("R package %s installed succesfully" % self.name)
+
+    def install_step(self):
+        """Install procedure for R packages."""
+
+        cmd = self.make_cmdline_cmd(prefix=self.installdir)
+        self.install_R_package(cmd)
+
+    def run(self):
+        """Install R package as an extension."""
+        if self.src:
+            self.log.debug("Installing R package %s version %s." % (self.name, self.version))
+            cmd, stdin = self.make_cmdline_cmd()
+        else:
+            self.log.debug("Installing most recent version of R package %s (source not found)." % self.name)
+            cmd, stdin = self.make_r_cmd()
+
+        self.install_R_package(cmd, inp=stdin)
+
+    def sanity_check_step(self, custom_paths=None, custom_commands=None):
+        """
+        Custom sanity check for Python packages
+        """
+        if not custom_paths:
+            custom_paths = {
+                            'files': [],
+                            'dirs': ["%s/%s" % ("foo", self.name.lower())]
+                           }
+
+        EasyBlock.sanity_check_step(self, custom_paths=custom_paths, custom_commands=custom_commands)
+
+    def make_module_extra(self):
+        """Add install path to R_LIBS"""
+
+        txt = EasyBlock.make_module_extra(self)
+
+        txt += self.moduleGenerator.prepend_path("R_LIBS", self.installdir)
+
+        return txt
