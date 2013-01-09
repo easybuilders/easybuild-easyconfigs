@@ -25,7 +25,7 @@ EasyBuild support for building and installing R packages, implemented as an easy
 """
 import shutil
 
-from easybuild.easyblocks.r import exts_filter_for_R_packages
+from easybuild.easyblocks.r import EXTS_FILTER_R_PACKAGES
 from easybuild.easyblocks.generic.extensioneasyblock import ExtensionEasyBlock
 from easybuild.tools.filetools import run_cmd, parse_log_for_error
 
@@ -172,7 +172,7 @@ class RPackage(ExtensionEasyBlock):
         """
         Custom sanity check for R packages
         """
-        return super(RPackage, self).sanity_check_step(exts_filter_for_R_packages())
+        return super(RPackage, self).sanity_check_step(EXTS_FILTER_R_PACKAGES)
 
     def make_module_extra(self):
         """Add install path to R_LIBS"""
