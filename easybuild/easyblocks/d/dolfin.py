@@ -34,11 +34,18 @@ import tempfile
 import easybuild.tools.environment as env
 import easybuild.tools.toolchain as toolchain
 from easybuild.easyblocks.generic.cmakepythonpackage import CMakePythonPackage
+from easybuild.tools.filetools import rmtree2
 from easybuild.tools.modules import get_software_root, get_software_version
 
 
 class EB_DOLFIN(CMakePythonPackage):
     """Support for building and installing DOLFIN."""
+
+    def __init__(self, *args, **kwargs):
+        """Initialize class variables."""
+        super(EB_DOLFIN, self).__init__(*args, **kwargs)
+
+        self.boost_dir = None
 
     def configure_step(self):
         """Set DOLFIN-specific configure options and configure with CMake."""
@@ -105,6 +112,7 @@ class EB_DOLFIN(CMakePythonPackage):
         # Boost config parameters
         self.cfg.update('configopts', " -DBOOST_INCLUDEDIR=%s/include" % depsdict['Boost'])
         self.cfg.update('configopts', " -DBoost_DEBUG=ON -DBOOST_ROOT=%s" % depsdict['Boost'])
+        self.boost_dir = depsdict['Boost']
 
         # UFC and Armadillo config params
         self.cfg.update('configopts', " -DUFC_DIR=%s" % depsdict['UFC'])
@@ -167,13 +175,8 @@ class EB_DOLFIN(CMakePythonPackage):
 
         txt = super(EB_DOLFIN, self).make_module_extra()
 
-        # Dolfin needs to find Boost and the UFC pkgconfig file
-        txt += self.moduleGenerator.set_environment('BOOST_DIR', get_software_root('Boost'))
-        pkg_config_paths = [os.path.join("lib", "pkgconfig"),
-                            # can't use get_software_root because prepend_paths checks for non-absolute paths
-                            os.path.join("$EBROOTUFC", "lib", "pkgconfig")]
-
-        txt += self.moduleGenerator.prepend_paths("PKG_CONFIG_PATH", pkg_config_paths)
+        # Dolfin needs to find Boost
+        txt += self.moduleGenerator.set_environment('BOOST_DIR', self.boost_dir)
 
         envvars = ['I_MPI_CXX', 'I_MPI_CC']
         for envvar in envvars:
@@ -197,8 +200,9 @@ class EB_DOLFIN(CMakePythonPackage):
         # custom sanity check commands
 
         # set cache/error dirs for Instant
-        instant_cache_dir = os.path.join(tempfile.gettempdir(), '.instant', 'cache')
-        instant_error_dir = os.path.join(tempfile.gettempdir(), '.instant', 'error')
+        tmpdir = tempfile.mkdtemp()
+        instant_cache_dir = os.path.join(tmpdir, '.instant', 'cache')
+        instant_error_dir = os.path.join(tmpdir, '.instant', 'error')
         env.setvar("INSTANT_CACHE_DIR",  instant_cache_dir)
         env.setvar("INSTANT_ERROR_DIR",  instant_error_dir)
         try:
@@ -238,3 +242,9 @@ class EB_DOLFIN(CMakePythonPackage):
         custom_commands = [(cmd, "") for cmd in cmds]
 
         super(EB_DOLFIN, self).sanity_check_step(custom_paths=custom_paths, custom_commands=custom_commands)
+
+        # clean up temporary dir
+        try:
+            rmtree2(tmpdir)
+        except OSError, err:
+            self.log.error("Failed to remove Instant cache/error dirs: %s" % err)

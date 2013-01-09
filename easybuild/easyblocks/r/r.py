@@ -1,5 +1,5 @@
 ##
-# Copyright 2012 Jens Timmerman
+# Copyright 2012-2013 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of the University of Ghent (http://ugent.be/hpc).
@@ -19,22 +19,35 @@
 # along with EasyBuild. If not, see <http://www.gnu.org/licenses/>.
 ##
 """
-Support for install R as an EasyBlock
+EasyBuild support for building and installing R, implemented as an easyblock
+
+@author: Jens Timmerman (Ghent University)
 """
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.tools import environment
 
+def exts_filter_for_R_packages():
+    """Return extension filter details for R packages."""
+    return ["R -q --no-save", "library(%(name)s)"]
 
 class EB_R(ConfigureMake):
     """
-    Install R, including list of packages specified
-    Install specified version of packages, install hard-coded package version
-    or latest package version (in that order of preference)
+    Build and install R, including list of libraries specified as extensions.
+    Install specified version of libraries, install hard-coded library version
+    or latest library version (in that order of preference)
     """
+
+    def prepare_for_extensions(self):
+        """
+        We set some default configs here for R packages
+        """
+        # insert new packages by building them with RPackage
+        self.cfg['exts_defaultclass'] = "RPackage"
+        self.cfg['exts_filter'] = exts_filter_for_R_packages()
 
     def configure_step(self):
         """Configuration step, we set FC, F77 is already set by EasyBuild to the right compiler,
-        FC is used for F90"""
+        FC is used for Fortan90"""
         environment.setvar("FC", self.toolchain.get_variable('F90'))
         ConfigureMake.configure_step(self)
 

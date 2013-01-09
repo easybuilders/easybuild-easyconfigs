@@ -1,3 +1,5 @@
+##
+# Copyright 2009-2012 Ghent University
 # Copyright 2012 Kenneth Hoste
 #
 # This file is part of EasyBuild,

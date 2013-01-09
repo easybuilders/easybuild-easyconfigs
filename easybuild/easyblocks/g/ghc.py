@@ -1,6 +1,6 @@
 ##
-# Copyright 2012 Ghent University
-# Copyright 2012 Kenneth Hoste
+# Copyright 2009-2012 Ghent University
+# Copyright 2012 Andy Georges
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -13,7 +13,6 @@
 #
 # EasyBuild is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
-# the Free Software Foundation v2.
 #
 # EasyBuild is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -24,33 +23,26 @@
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
 """
-EasyBuild support for MTL4, implemented as an easyblock
+EasyBuild support for binary GHC packages, see http://haskell.org/ghc
 """
-import os
+from distutils.version import LooseVersion
 
-from easybuild.easyblocks.generic.tarball import Tarball
+from easybuild.easyblocks.generic.configuremake import ConfigureMake
 
 
-class EB_MTL4(Tarball):
-    """Support for installing MTL4."""
+class EB_GHC(ConfigureMake):
+    """
+    Support for building and installing applications with configure/make/make install
+    """
 
-    def sanity_check_step(self):
-        """Custom sanity check for MTL4."""
+    def build_step(self, verbose=False):
+        """
+        Support for a binary 6.12.x installation. Starting there,
+        later GHC versions are build from source and thus require
+        the build step.
+        """
+        if LooseVersion(self.version) < LooseVersion("7.0"):
+            pass
+        else:
+            super(EB_GHC, self).build_step(verbose=verbose)
 
-        incpref = os.path.join('include', 'boost', 'numeric')
-
-        custom_paths = {
-                        'files':[],
-                        'dirs':[os.path.join(incpref, x) for x in ["itl", "linear_algebra",
-                                                                   "meta_math", "mtl"]]
-                     }
-
-        super(EB_MTL4, self).sanity_check_step(custom_paths=custom_paths)
-
-    def make_module_req_guess(self):
-        """Adjust CPATH for MTL4."""
-
-        guesses = super(EB_MTL4, self).make_module_req_guess()
-        guesses.update({'CPATH': 'include'})
-
-        return guesses

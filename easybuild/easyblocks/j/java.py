@@ -1,6 +1,5 @@
 ##
-# Copyright 2012 Ghent University
-# Copyright 2012 Jens Timmerman
+# Copyright 2012-2013 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -24,15 +23,16 @@
 # along with EasyBuild. If not, see <http://www.gnu.org/licenses/>.
 ##
 """
-EasyBlock for binary applications that need unpacking,
-e.g., binary applications shipped as a .tar.gz file
+EasyBlock for installing Java, implemented as an easyblock
+
+@author: Jens Timmerman (Ghent University)
 """
 from easybuild.easyblocks.generic.packedbinary import PackedBinary
 
 
 class EB_Java(PackedBinary):
-    """Support for installing java as a packed binary file (.tar.gz)
-    Use the PackedBinary and set some extra paths.
+    """Support for installing Java as a packed binary file (.tar.gz)
+    Use the PackedBinary easyblock and set some extra paths.
     """
     def make_module_extra(self):
         """

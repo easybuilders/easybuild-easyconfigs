@@ -43,7 +43,7 @@ import easybuild.tools.environment as env
 import easybuild.tools.toolchain as toolchain
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import CUSTOM
-from easybuild.tools.filetools import run_cmd, run_cmd_qa, extract_file
+from easybuild.tools.filetools import extract_file, rmtree2, run_cmd, run_cmd_qa
 from easybuild.tools.modules import get_software_version
 
 
@@ -62,8 +62,10 @@ class EB_WIEN2k(EasyBlock):
                          "http://www.wien2k.at/reg_user/benchmark/mpi-benchmark.tar.gz"]
 
         extra_vars = [
-                      ('runtest', [True, "Run WIEN2k tests (default: True).", CUSTOM]),
-                      ('testdata', [testdata_urls, "URL for test data required to run WIEN2k benchmark test (default: %s)." % testdata_urls, CUSTOM])
+                      ('runtest', [True, "Run WIEN2k tests", CUSTOM]),
+                      ('testdata', [testdata_urls, "test data URL for WIEN2k benchmark test", CUSTOM]),
+                      ('wien_mpirun', [None, "MPI wrapper comand to use", CUSTOM]),
+                      ('remote', [None, "Remote command to use (e.g. pbsssh, ...)", CUSTOM]),
                      ]
         return EasyBlock.extra_options(extra_vars)
 
@@ -78,11 +80,11 @@ class EB_WIEN2k(EasyBlock):
         qanda = {'continue (y/n)': 'y'}
         no_qa = [
                  'tar -xf.*',
-                 '.*copied and linked.*'
+                 '.*copied and linked.*',
                  ]
 
         run_cmd_qa(cmd, qanda, no_qa=no_qa, log_all=True, simple=True)
-    
+
     def configure_step(self):
         """Configure WIEN2k build by patching siteconfig_lapw script and running it."""
 
@@ -125,7 +127,7 @@ class EB_WIEN2k(EasyBlock):
              'LDFLAGS': '$(FOPT) %s ' % os.getenv('LDFLAGS'),
              'R_LIBS': rlibs,  # libraries for 'real' (not 'complex') binary
              'RP_LIBS' : rplibs,  # libraries for 'real' parallel binary
-             'MPIRUN': ''
+             'MPIRUN': '',
             }
 
         for line in fileinput.input(self.cfgscript, inplace=1, backup='.orig'):
@@ -186,14 +188,42 @@ class EB_WIEN2k(EasyBlock):
                  "%s[ \t]*.*"%os.getenv('MPIF90'),
                  "%s[ \t]*.*"%os.getenv('F90'),
                  "%s[ \t]*.*"%os.getenv('CC'),
-                 ".*SRC_.*"
-                 ]
+                 ".*SRC_.*",
+                 "Please enter the full path of the perl program:",
+                ]
 
         std_qa = {
                   r'S\s+Save and Quit[\s\n]+To change an item select option.[\s\n]+Selection:': 'S',
                  }
 
         run_cmd_qa(cmd, qanda, no_qa=no_qa, std_qa=std_qa, log_all=True, simple=True)
+
+        # post-configure patches
+        fn = os.path.join(self.cfg['start_dir'], 'parallel_options')
+        remote = self.cfg['remote']
+        try:
+            for line in fileinput.input(fn, inplace=1, backup='.orig.eb'):
+                if self.cfg['wien_mpirun']:
+                    line = re.sub("(setenv WIEN_MPIRUN\s*).*", r'\1 "%s"' % self.cfg['wien_mpirun'], line)
+                sys.stdout.write(line)
+
+            if remote:
+                f = open(fn, "a")
+
+                if remote == 'pbsssh':
+                    extra = "set remote = pbsssh\n"
+                    extra += "setenv PBSSSHENV 'LD_LIBRARY_PATH PATH'\n"
+                else:
+                    self.log.error("Don't know how to patch %s for remote %s" % (fn, remote))
+
+                f.write(extra)
+                f.close()
+
+            self.log.debug("Patched file %s: %s" % (fn, open(fn, 'r').read()))
+
+        except IOError, err:
+            self.log.error("Failed to patch %s: %s" % (fn, err))
+
 
     def build_step(self):
         """Build WIEN2k by running siteconfig_lapw script again."""
@@ -205,16 +235,21 @@ class EB_WIEN2k(EasyBlock):
         qanda = {
                  'L Perl path (if not in /usr/bin/perl) Q Quit Selection:': 'R',
                  'A Compile all programs S Select program Q Quit Selection:': 'A',
-                 'Press RETURN to continue': '\nQ', # also answer on first qanda pattern with 'Q' to quit
-                 ' Please enter the full path of the perl program: ':''}
+                 'Press RETURN to continue': '\nQ',  # also answer on first qanda pattern with 'Q' to quit
+                 ' Please enter the full path of the perl program: ':'',
+                }
         no_qa = [
                  "%s[ \t]*.*" % os.getenv('MPIF90'),
                  "%s[ \t]*.*" % os.getenv('F90'),
                  "%s[ \t]*.*" % os.getenv('CC'),
+                 "mv[ \t]*.*",
                  ".*SRC_.*",
-                 ".*: warning .*"
-                 ]
-    
+                 ".*: warning .*",
+                 ".*Stop.",
+                 "Compile time errors (if any) were:",
+                 "Please enter the full path of the perl program:",
+                ]
+
         self.log.debug("no_qa for %s: %s" % (cmd, no_qa))
         run_cmd_qa(cmd, qanda, no_qa=no_qa, log_all=True, simple=True)
 
@@ -275,7 +310,7 @@ class EB_WIEN2k(EasyBlock):
                 run_wien2k_test("-p")
 
                 os.chdir(cwd)
-                shutil.rmtree(tmpdir)
+                rmtree2(tmpdir)
 
             except OSError, err:
                 self.log.error("Failed to run WIEN2k benchmark tests: %s" % err)
@@ -341,7 +376,7 @@ class EB_WIEN2k(EasyBlock):
             # cleanup
             try:
                 os.chdir(cwd)
-                shutil.rmtree(tmpdir)
+                rmtree2(tmpdir)
             except OSError, err:
                 self.log.error("Failed to clean up temporary test dir: %s" % err)
 

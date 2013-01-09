@@ -1,6 +1,6 @@
-##
-# Copyright 2012 Ghent University
-# Copyright 2012 Kenneth Hoste
+# #
+# Copyright 2013-2013 Ghent University
+# Copyright 2013-2013 Stijn De Weirdt
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -22,35 +22,30 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
-##
+# #
 """
-EasyBuild support for MTL4, implemented as an easyblock
+EasyBuild support for PyZMQ, implemented as an easyblock
 """
-import os
 
-from easybuild.easyblocks.generic.tarball import Tarball
+from easybuild.easyblocks.generic.pythonpackage import PythonPackage
+from easybuild.tools.modules import get_software_root
 
 
-class EB_MTL4(Tarball):
-    """Support for installing MTL4."""
+class EB_PyZMQ(PythonPackage):
+    """Support for installing the PyZMQ Python package."""
 
-    def sanity_check_step(self):
-        """Custom sanity check for MTL4."""
+    def configure_step(self):
+        """Generate the setup.cfg file for the ZeroMQ libs/includes"""
+        self.sitecfgfn = 'setup.cfg'
+        root_zmq = get_software_root("ZeroMQ")
+        if root_zmq:
+            self.log.info("External ZeroMQ found with root %s" % root_zmq)
+            self.sitecfg = """[build_ext]
+library_dirs = %(zmq)s/lib
+include_dirs = %(zmq)s/include
+""" % { 'zmq': root_zmq }
+        else:
+            self.log.info("External ZeroMQ not found, PyZMQ will (try to) use shipped ZeroMQ.")
 
-        incpref = os.path.join('include', 'boost', 'numeric')
+        super(EB_PyZMQ, self).configure_step()
 
-        custom_paths = {
-                        'files':[],
-                        'dirs':[os.path.join(incpref, x) for x in ["itl", "linear_algebra",
-                                                                   "meta_math", "mtl"]]
-                     }
-
-        super(EB_MTL4, self).sanity_check_step(custom_paths=custom_paths)
-
-    def make_module_req_guess(self):
-        """Adjust CPATH for MTL4."""
-
-        guesses = super(EB_MTL4, self).make_module_req_guess()
-        guesses.update({'CPATH': 'include'})
-
-        return guesses

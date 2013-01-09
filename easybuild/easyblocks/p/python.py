@@ -1,10 +1,5 @@
 ##
-# Copyright 2009-2012 Ghent University
-# Copyright 2009-2012 Stijn De Weirdt
-# Copyright 2010 Dries Verdegem
-# Copyright 2010-2012 Kenneth Hoste
-# Copyright 2011 Pieter De Baets
-# Copyright 2011-2012 Jens Timmerman
+# Copyright 2009-2013 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -29,19 +24,21 @@
 ##
 """
 EasyBuild support for Python, implemented as an easyblock
+
+@authors: Stijn De Weirdt, Dries Verdegem, Kenneth Hoste, Pieter De Baets, Jens Timmerman (Ghent University)
 """
 
 import os
 import re
-import shutil
 from distutils.version import LooseVersion
+from os.path import expanduser
 
 import easybuild.tools.toolchain as toolchain
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.framework.extension import Extension
 from easybuild.tools.build_log import EasyBuildError
-from easybuild.tools.filetools import extract_file, apply_patch, run_cmd
-from easybuild.tools.modules import get_software_root
+from easybuild.tools.filetools import apply_patch, extract_file, rmtree2, run_cmd
+from easybuild.tools.modules import get_software_root, get_software_version
 
 
 class EB_Python(ConfigureMake):
@@ -91,9 +88,9 @@ class EB_Python(ConfigureMake):
         pyver = "python%s" % '.'.join(self.version.split('.')[0:2])
 
         try:
-            self.load_fake_module()
+            fake_mod_path = self.load_fake_module()
         except EasyBuildError, err:
-            self.log.debug("Loading fake module failed: %s" % err)
+            self.log.error("Loading fake module failed: %s" % err)
 
         abiflags = ''
         if LooseVersion(self.version) >= LooseVersion("3"):
@@ -105,10 +102,15 @@ class EB_Python(ConfigureMake):
             else:
                 abiflags = abiflags.strip()
 
+        self.clean_up_fake_module(fake_mod_path)
+
         custom_paths = {
                         'files':["bin/%s" % pyver, "lib/lib%s%s.so" % (pyver, abiflags)],
                         'dirs':["include/%s%s" % (pyver, abiflags), "lib/%s" % pyver]
                        }
+
+        # cleanup
+        self.clean_up_fake_module(fake_mod_path)
 
         super(EB_Python, self).sanity_check_step(custom_paths=custom_paths)
 
@@ -118,7 +120,9 @@ class EB_DefaultPythonPackage(Extension):
     """
 
     def __init__(self, mself, ext):
+        """Custom constructor for EB_DefaultPythonPackage: initialize class variables."""
         super(EB_DefaultPythonPackage, self).__init__(mself, ext)
+
         self.sitecfg = None
         self.sitecfgfn = 'site.cfg'
         self.sitecfglibdir = None
@@ -132,6 +136,13 @@ class EB_DefaultPythonPackage(Extension):
         self.unpack_options = ''
 
         self.python = get_software_root('Python')
+
+        ver = '.'.join(get_software_version('Python').split('.')[0:2])
+        self.python_libdir = os.path.join('lib', 'python%s' % ver, 'site-packages')
+
+        # make sure there's no site.cfg in $HOME, because setup.py will find it and use it
+        if os.path.exists(os.path.join(expanduser('~'), 'site.cfg')):
+            self.log.error('Found site.cfg in your home directory (%s), please remove it.' % expanduser('~'))
 
     def configure_step(self):
         """Configure Python package build
@@ -159,6 +170,11 @@ class EB_DefaultPythonPackage(Extension):
             except IOError:
                 self.log.exception("Creating %s failed" % self.sitecfgfn)
 
+        # sanity checks for python being used
+        run_cmd("python -V")
+        run_cmd("which python")
+        run_cmd("python -c 'import sys; print(sys.executable)'")
+
     def build_step(self):
         """Build Python package via setup.py"""
 
@@ -177,7 +193,7 @@ class EB_DefaultPythonPackage(Extension):
         - default: None
         """
         extrapath = ""
-        testinstalldir = os.path.join(self.builddir, "mytemporarytestinstalldir")
+        testinstalldir = os.path.join(self.builddir, "eb_test_install_dir_%s" % self.name)
         if self.testinstall:
             # Install in test directory and export PYTHONPATH
             try:
@@ -185,15 +201,11 @@ class EB_DefaultPythonPackage(Extension):
             except OSError:
                 self.log.exception("Creating testinstalldir %s failed" % testinstalldir)
 
-            ppath = "%s/reallib" % testinstalldir
-            cmd = "python setup.py install --install-scripts=%s --install-purelib=%s %s" % \
-                (testinstalldir, ppath, self.installopts)
+            cmd = "python setup.py install --prefix=%s %s" % (testinstalldir, self.installopts)
             run_cmd(cmd, log_all=True, simple=True)
 
-            if os.environ.has_key('PYTHONPATH'):
-                extrapath = "export PYTHONPATH=%s:%s && " % (ppath, os.environ['PYTHONPATH'])
-            else:
-                extrapath = "export PYTHONPATH=%s && " % ppath
+            run_cmd("python -c 'import sys; print(sys.path)'")  # print Python search path (debug)
+            extrapath = "export PYTHONPATH=%s/%s:$PYTHONPATH && " % (testinstalldir, self.python_libdir)
 
         if self.runtest:
             cmd = "%s%s" % (extrapath, self.runtest)
@@ -201,7 +213,7 @@ class EB_DefaultPythonPackage(Extension):
 
         if self.testinstall:
             try:
-                shutil.rmtree(testinstalldir)
+                rmtree2(testinstalldir)
             except OSError, err:
                 self.log.exception("Removing testinstalldir %s failed: %s" % (testinstalldir, err))
 
@@ -331,13 +343,13 @@ libraries = %s
         self.runtest = "cd .. && python -c 'import numpy; numpy.test(verbose=2)'"
 
     def install_step(self):
-        """Install numpy 
+        """Install numpy
         We remove the numpy build dir here, so scipy doesn't find it by accident
         """
         super(EB_numpy, self).install_step()
         builddir = os.path.join(self.builddir, "numpy")
         if os.path.isdir(builddir):
-            shutil.rmtree(builddir)
+            rmtree2(builddir)
         else:
             self.log.debug("build dir %s already clean" % builddir)
 
@@ -356,4 +368,3 @@ class EB_scipy(EB_FortranPythonPackage):
         else:
             self.testinstall = False
             self.runtest = None
-

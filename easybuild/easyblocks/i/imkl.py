@@ -39,7 +39,7 @@ from distutils.version import LooseVersion
 import easybuild.tools.environment as env
 from easybuild.easyblocks.generic.intelbase import IntelBase
 from easybuild.framework.easyconfig import CUSTOM
-from easybuild.tools.filetools import run_cmd
+from easybuild.tools.filetools import rmtree2, run_cmd
 from easybuild.tools.modules import Modules, get_software_root
 
 
@@ -183,6 +183,8 @@ class EB_imkl(IntelBase):
                     extramakeopts = ''
                     if get_software_root('MPICH2'):  # can't use toolchain.mpi_family, because of dummy toolchain
                         extramakeopts = 'mpi=mpich2'
+                    elif get_software_root('OpenMPI'):
+                        extramakeopts = 'mpi=openmpi'
                     cmd = "make -f makefile libintel64 %s" % extramakeopts
 
                 # add other make options as well
@@ -228,7 +230,7 @@ class EB_imkl(IntelBase):
                             self.log.exception("Failed to move %s to %s" % (src, dest))
 
                     try:
-                        shutil.rmtree(tmpbuild)
+                        rmtree2(tmpbuild)
                         self.log.debug('Removed temporary directory %s' % tmpbuild)
                     except:
                         self.log.exception("Removing temporary directory %s failed" % tmpbuild)
@@ -347,7 +349,7 @@ class EB_imkl(IntelBase):
                             self.log.exception("Failed to move %s to %s" % (src, dest))
 
                     try:
-                        shutil.rmtree(tmpbuild)
+                        rmtree2(tmpbuild)
                         self.log.debug('Removed temporary directory %s' % tmpbuild)
                     except:
                         self.log.exception("Removing temporary directory %s failed" % (tmpbuild))
