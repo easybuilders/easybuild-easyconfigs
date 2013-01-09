@@ -30,13 +30,13 @@ EasyBuild support for building and installing Python, implemented as an easybloc
 
 import os
 from distutils.version import LooseVersion
-from os.path import expanduser
 
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
-from easybuild.framework.extension import Extension
 from easybuild.tools.build_log import EasyBuildError
-from easybuild.tools.filetools import apply_patch, extract_file, rmtree2, run_cmd
-from easybuild.tools.modules import get_software_root, get_software_version
+from easybuild.tools.filetools import run_cmd
+
+
+EXTS_FILTER_PYTHON_PACKAGES = ('python -c "import %(name)s"', "")
 
 
 class EB_Python(ConfigureMake):
@@ -53,13 +53,11 @@ class EB_Python(ConfigureMake):
 
     def prepare_for_extensions(self):
         """
-        We set some default configs here for packages included in Python
+        Set default class and filter for Python packages
         """
-        #insert new packages by building them with EB_DefaultPythonPackage
-        self.log.debug("setting extra packages options")
-        # use __name__ here, since this is the module where EB_DefaultPythonPackage is defined
-        self.cfg['exts_defaultclass'] = (__name__, "EB_DefaultPythonPackage")
-        self.cfg['exts_filter'] = ('python -c "import %(name)s"', "")
+        # build and install additional packages with PythonPackage easyblock
+        self.cfg['exts_defaultclass'] = "PythonPackage"
+        self.cfg['exts_filter'] = EXTS_FILTER_PYTHON_PACKAGES
 
     def configure_step(self):
         """Set extra configure options."""
