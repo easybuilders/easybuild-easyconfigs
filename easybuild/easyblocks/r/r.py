@@ -26,6 +26,9 @@ EasyBuild support for building and installing R, implemented as an easyblock
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.tools import environment
 
+def exts_filter_for_R_packages():
+    """Return extension filter details for R packages."""
+    return ["R -q --no-save", "library(%(name)s)"]
 
 class EB_R(ConfigureMake):
     """
@@ -33,6 +36,14 @@ class EB_R(ConfigureMake):
     Install specified version of libraries, install hard-coded library version
     or latest library version (in that order of preference)
     """
+
+    def prepare_for_extensions(self):
+        """
+        We set some default configs here for R packages
+        """
+        # insert new packages by building them with RPackage
+        self.cfg['exts_defaultclass'] = "RPackage"
+        self.cfg['exts_filter'] = exts_filter_for_R_packages()
 
     def configure_step(self):
         """Configuration step, we set FC, F77 is already set by EasyBuild to the right compiler,
