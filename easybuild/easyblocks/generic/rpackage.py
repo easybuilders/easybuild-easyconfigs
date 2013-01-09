@@ -23,8 +23,10 @@ EasyBuild support for building and installing R packages, implemented as an easy
 
 @authors: Stijn De Weirdt, Dries Verdegem, Kenneth Hoste, Jens Timmerman, Toon Willems (Ghent University)
 """
-from easybuild.framework.easyblock import EasyBlock
-from easybuild.framework.extension import Extension
+import shutil
+
+from easybuild.easyblocks.r import exts_filter_for_R_packages
+from easybuild.easyblocks.generic.extensioneasyblock import ExtensionEasyBlock
 from easybuild.tools.filetools import run_cmd, parse_log_for_error
 
 
@@ -47,19 +49,19 @@ def make_R_install_option(opt, values, cmdline=False):
     return txt
 
 
-class RPackage(EasyBlock, Extension):
+class RPackage(ExtensionEasyBlock):
     """
     Install an R package as a separate module, or as an extension.
     """
-    def __init__(self, arg1, *args, **kwargs):
+
+    def __init__(self, *args, **kwargs):
         """Initliaze RPackage-specific class variables."""
 
-        if isinstance(arg1, EasyBlock):
-            Extension.__init__(self, arg1, *args, **kwargs)
-        else:
-            EasyBlock.__init__(self, arg1, *args, **kwargs)
+        super(RPackage, self).__init__(*args, **kwargs)
+
         self.configurevars = []
         self.configureargs = []
+        self.ext_src = None
 
     def make_r_cmd(self):
         """Create a command to run in R to install an R package."""
@@ -102,10 +104,25 @@ class RPackage(EasyBlock, Extension):
         else:
             prefix = ''
 
-        cmd = "R CMD INSTALL %s %s %s %s" % (self.src, confargs, confvars, prefix)
+        cmd = "R CMD INSTALL %s %s %s %s" % (self.ext_src, confargs, confvars, prefix)
         self.log.debug("make_cmdline_cmd returns %s" % cmd)
 
         return cmd, None
+
+    def extract_step(self):
+        """Source should not be extracted."""
+        pass
+        if len(self.src) > 1:
+            self.log.error("Don't know how to handle R packages with multiple sources.'")
+        else:
+            try:
+                shutil.copy2(self.src[0]['path'], self.builddir)
+            except OSError, err:
+                self.log.error("Failed to copy source to build dir: %s" % err)
+            self.ext_src = self.src[0]['name']
+
+            # set final path since it can't be determined from unpacked sources (used for guessing start_dir)
+            self.src[0]['finalpath'] = self.builddir
 
     def configure_step(self):
         """No configuration for installing R packages."""
@@ -136,12 +153,13 @@ class RPackage(EasyBlock, Extension):
     def install_step(self):
         """Install procedure for R packages."""
 
-        cmd = self.make_cmdline_cmd(prefix=self.installdir)
-        self.install_R_package(cmd)
+        cmd, stdin = self.make_cmdline_cmd(prefix=self.installdir)
+        self.install_R_package(cmd, inp=stdin)
 
     def run(self):
         """Install R package as an extension."""
         if self.src:
+            self.ext_src = self.src
             self.log.debug("Installing R package %s version %s." % (self.name, self.version))
             cmd, stdin = self.make_cmdline_cmd()
         else:
@@ -150,23 +168,13 @@ class RPackage(EasyBlock, Extension):
 
         self.install_R_package(cmd, inp=stdin)
 
-    def sanity_check_step(self, custom_paths=None, custom_commands=None):
+    def sanity_check_step(self):
         """
-        Custom sanity check for Python packages
+        Custom sanity check for R packages
         """
-        if not custom_paths:
-            custom_paths = {
-                            'files': [],
-                            'dirs': ["%s/%s" % ("foo", self.name.lower())]
-                           }
-
-        EasyBlock.sanity_check_step(self, custom_paths=custom_paths, custom_commands=custom_commands)
+        return super(RPackage, self).sanity_check_step(exts_filter_for_R_packages())
 
     def make_module_extra(self):
         """Add install path to R_LIBS"""
-
-        txt = EasyBlock.make_module_extra(self)
-
-        txt += self.moduleGenerator.prepend_path("R_LIBS", self.installdir)
-
-        return txt
+        extra = self.moduleGenerator.prepend_paths("R_LIBS", [''])  # prepend R_LIBs with install path
+        return super(RPackage, self).make_module_extra(extra)
