@@ -158,6 +158,9 @@ class RPackage(ExtensionEasyBlock):
 
     def run(self):
         """Install R package as an extension."""
+
+        super(RPackage, self).run()
+
         if self.src:
             self.ext_src = self.src
             self.log.debug("Installing R package %s version %s." % (self.name, self.version))
@@ -176,5 +179,5 @@ class RPackage(ExtensionEasyBlock):
 
     def make_module_extra(self):
         """Add install path to R_LIBS"""
-        extra = self.moduleGenerator.prepend_paths("R_LIBS", [''])  # prepend R_LIBs with install path
+        extra = self.moduleGenerator.prepend_paths("R_LIBS", [''])  # prepend R_LIBS with install path
         return super(RPackage, self).make_module_extra(extra)
