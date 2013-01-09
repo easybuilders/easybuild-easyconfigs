@@ -23,24 +23,29 @@
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
 """
-EasyBuild support for building and installing Python packages, implemented as an easyblock
+EasyBuild support for building and installing Python packages using Fortran, implemented as an easyblock
 
 @authors: Stijn De Weirdt, Dries Verdegem, Kenneth Hoste, Pieter De Baets, Jens Timmerman (Ghent University)
 """
+import os
 
 import easybuild.tools.toolchain as toolchain
+from easybuild.easyblocks.generic.pythonpackage import PythonPackage
+from easybuild.tools.filetools import run_cmd
 
 
-class EB_FortranPythonPackage(EB_DefaultPythonPackage):
-    """Extends EB_DefaultPythonPackage to add a Fortran compiler to the make call"""
+class FortranPythonPackage(PythonPackage):
+    """Extends PythonPackage to add a Fortran compiler to the make call"""
 
     def build_step(self):
+        """Customize the build step by adding compiler-specific flags to the build command."""
+
         comp_fam = self.toolchain.comp_family()
 
-        if comp_fam == toolchain.INTELCOMP:  #@UndefinedVariable
+        if comp_fam == toolchain.INTELCOMP:  # @UndefinedVariable
             cmd = "python setup.py build --compiler=intel --fcompiler=intelem"
 
-        elif comp_fam == toolchain.GCC:  #@UndefinedVariable
+        elif comp_fam == toolchain.GCC:  # @UndefinedVariable
             cmdprefix = ""
             ldflags = os.getenv('LDFLAGS')
             if ldflags:
@@ -55,6 +60,6 @@ class EB_FortranPythonPackage(EB_DefaultPythonPackage):
             cmd = "%s python setup.py build --fcompiler=gnu95" % cmdprefix
 
         else:
-            self.log.error("Unknown family of compilers being used?")
+            self.log.error("Unknown family of compilers being used: %s" % comp_fam)
 
         run_cmd(cmd, log_all=True, simple=True)

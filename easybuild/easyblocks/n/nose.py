@@ -27,13 +27,15 @@ EasyBuild support for building and installing nose, implemented as an easyblock
 
 @authors: Stijn De Weirdt, Dries Verdegem, Kenneth Hoste, Pieter De Baets, Jens Timmerman (Ghent University)
 """
+from easybuild.easyblocks.generic.pythonpackage import PythonPackage
 
-class EB_nose(EB_DefaultPythonPackage):
+
+class EB_nose(PythonPackage):
     """Support for installing the nose Python package as part of a Python installation."""
 
-    def __init__(self, mself, ext):
-
-        super(EB_nose, self).__init__(mself, ext)
+    def __init__(self, *args, **kwargs):
+        """Set custom class variables (unpack options)."""
+        super(EB_nose, self).__init__(*args, **kwargs)
 
         # use extra unpack options to avoid problems like
         # 'tar: Ignoring unknown extended header keyword `SCHILY.nlink'
