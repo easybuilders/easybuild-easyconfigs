@@ -24,9 +24,12 @@ implemented as an easyblock
 
 @authors: Kenneth Hoste (Ghent University)
 """
+import os
+
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.framework.extension import Extension
+from easybuild.tools.filetools import apply_patch, extract_file
 
 
 class ExtensionEasyBlock(EasyBlock, Extension):
@@ -69,6 +72,20 @@ class ExtensionEasyBlock(EasyBlock, Extension):
     # * install_step
     # required Extension functions
     # * run
+
+    def run(self, unpack_src=False):
+        """Common operations for extensions: unpacking sources, patching, ..."""
+
+        # unpack file if desired
+        if unpack_src:
+            targetdir = os.path.join(self.builddir, self.name)
+            self.ext_dir = extract_file("%s" % self.src, targetdir, extra_options=self.unpack_options)
+
+        # patch if needed
+        if self.patches:
+            for patchfile in self.patches:
+                if not apply_patch(patchfile, self.ext_dir):
+                    self.log.error("Applying patch %s failed" % patchfile)
 
     def sanity_check_step(self, exts_filter):
         """
