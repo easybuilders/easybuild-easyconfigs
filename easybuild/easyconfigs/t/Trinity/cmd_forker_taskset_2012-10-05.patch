@@ -1,0 +1,18 @@
+--- util/cmd_process_forker.pl.orig	2012-12-14 10:03:47.302463000 +0100
++++ util/cmd_process_forker.pl	2012-12-14 10:04:32.236461000 +0100
+@@ -100,7 +100,14 @@
+         }
+         else {
+             # child:
+-            my $ret = &run_cmd($cmd_counter, $cmd);
++            my $ret;
++            if ($ENV{'CORESPERTASK'}) {
++                my $cpuss = $ENV{'CORESPERTASK'};
++                my $cpuid= $cpuss*($cmd_counter % $CPU +1 );
++                $ret = &run_cmd($cmd_counter, "taskset -c ".$cpuid."-".($cpuid+$cpuss-1)." $cmd");
++            } else {
++                $ret = &run_cmd($cmd_counter, $cmd);
++            }
+             exit($ret);
+         }
+         
