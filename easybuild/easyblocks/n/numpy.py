@@ -49,7 +49,6 @@ class EB_numpy(FortranPythonPackage):
 
     def configure_step(self):
         """Configure numpy build by composing site.cfg contents."""
-        super(EB_numpy, self).configure_step()
 
         self.sitecfg = '\n'.join([
                                   "[DEFAULT]",
@@ -104,6 +103,8 @@ class EB_numpy(FortranPythonPackage):
                                        'libs': ':'.join(self.toolchain.get_variable('LDFLAGS', typ=list)),
                                        'includes': ':'.join(self.toolchain.get_variable('CPPFLAGS', typ=list))
                                       }
+
+        super(EB_numpy, self).configure_step()
 
     def install_step(self):
         """Install numpy and remove numpy build dir, so scipy doesn't find it by accident."""
