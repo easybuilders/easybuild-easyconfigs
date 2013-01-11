@@ -27,18 +27,15 @@ EasyBuild support for building and installing scipy, implemented as an easyblock
 
 @authors: Stijn De Weirdt, Dries Verdegem, Kenneth Hoste, Pieter De Baets, Jens Timmerman (Ghent University)
 """
+from easybuild.easyblocks.generic.fortranpythonpackage import FortranPythonPackage
 
-class EB_scipy(EB_FortranPythonPackage):
+
+class EB_scipy(FortranPythonPackage):
     """Support for installing the scipy Python package as part of a Python installation."""
 
-    def __init__(self, mself, ext):
-        super(EB_scipy, self).__init__(mself, ext)
+    def __init__(self, *args, **kwargs):
+        """Set scipy-specific test command."""
+        super(EB_scipy, self).__init__(*args, **kwargs)
 
-        # disable testing
-        test = False
-        if test:
-            self.testinstall = True
-            self.runtest = "cd .. && python -c 'import numpy; import scipy; scipy.test(verbose=2)'"
-        else:
-            self.testinstall = False
-            self.runtest = None
+        self.testinstall = True
+        self.testcmd = "cd .. && python -c 'import numpy; import scipy; scipy.test(verbose=2)'"

@@ -27,73 +27,88 @@ EasyBuild support for building and installing numpy, implemented as an easyblock
 
 @authors: Stijn De Weirdt, Dries Verdegem, Kenneth Hoste, Pieter De Baets, Jens Timmerman (Ghent University)
 """
+import os
 
-class EB_numpy(EB_FortranPythonPackage):
+from easybuild.easyblocks.generic.fortranpythonpackage import FortranPythonPackage
+from easybuild.tools.filetools import rmtree2
+from easybuild.tools.modules import get_software_root
+
+
+class EB_numpy(FortranPythonPackage):
     """Support for installing the numpy Python package as part of a Python installation."""
 
-    def __init__(self, mself, ext):
-        super(EB_numpy, self).__init__(mself, ext)
+    def __init__(self, *args, **kwargs):
+        """Initialize numpy-specific class variables."""
+        super(EB_numpy, self).__init__(*args, **kwargs)
 
-        self.sitecfg = """[DEFAULT]
-library_dirs = %(libs)s
-include_dirs = %(includes)s
-search_static_first=True
+        self.sitecfg = None
+        self.sitecfgfn = 'site.cfg'
+        self.installopts = ''
+        self.testinstall = True
+        self.testcmd = "cd .. && python -c 'import numpy; numpy.test(verbose=2)'"
 
-"""
+    def configure_step(self):
+        """Configure numpy build by composing site.cfg contents."""
+        super(EB_numpy, self).configure_step()
+
+        self.sitecfg = '\n'.join([
+                                  "[DEFAULT]",
+                                  "library_dirs = %(libs)s",
+                                  "include_dirs= %(includes)s",
+                                  "search_static_first=True",
+                                 ])
 
         if get_software_root("IMKL"):
-            #use mkl
-            extrasiteconfig = """[mkl]
-lapack_libs = %(lapack)s
-mkl_libs = %(blas)s
-        """
-        elif get_software_root("ATLAS") and get_software_root("LAPACK"):
-            extrasiteconfig = """
-[blas_opt]
-libraries = %(blas)s
-[lapack_opt]
-libraries = %(lapack)s
-        """
-        else:
-            self.log.error("Could not detect math kernel (mkl, atlas)")
 
-        if get_software_root("IMKL") or get_software_root("FFTW"):
-            extrasiteconfig += """
-[fftw]
-libraries = %s
-        """ % os.getenv("LIBFFT").replace(' ', ',')
+            extrasiteconfig = '\n'.join([
+                                         "[mkl]",
+                                         "lapack_libs = %(lapack)s",
+                                         "mkl_libs = %(blas)s",
+                                        ])
+
+        elif get_software_root("ATLAS") and get_software_root("LAPACK"):
+
+            extrasiteconfig = '\n'.join(["[blas_opt]",
+                                         "libraries = %(blas)s",
+                                         "[lapack_opt]",
+                                         "libraries = %(lapack)s",
+                                        ])
+
+        else:
+            self.log.error("Could not detect BLAS/LAPACK library.")
+
+        libfft = os.getenv('LIBFFT')
+        if libfft:
+            extrasiteconfig += '\n'.join([
+                                          "[fftw]",
+                                          "libraries = %s" % libfft.replace(' ', ','),
+                                         ])
 
         self.sitecfg = self.sitecfg + extrasiteconfig
 
         lapack_libs = os.getenv("LIBLAPACK_MT").split(" -l")
         blas_libs = os.getenv("LIBBLAS_MT").split(" -l")
+
         if get_software_root("IMKL"):
             # with IMKL, get rid of all spaces and use '-Wl:'
             lapack_libs.remove("pthread")
-            lapack = ','.join(lapack_libs).replace(' ', ',').replace('Wl,','Wl:')
+            lapack = ','.join(lapack_libs).replace(' ', ',').replace('Wl,', 'Wl:')
             blas = lapack
         else:
             lapack = ", ".join(lapack_libs)
             blas = ", ".join(blas_libs)
 
-        self.sitecfg = self.sitecfg % \
-            {
-             'lapack': lapack,
-             'blas': blas,
-             'libs': ':'.join(self.toolchain.get_variable('LDFLAGS', typ=list)),
-             'includes': ':'.join(self.toolchain.get_variable('CPPFLAGS', typ=list))
-            }
-
-        self.sitecfgfn = 'site.cfg'
-        self.installopts = ''
-        self.testinstall = True
-        self.runtest = "cd .. && python -c 'import numpy; numpy.test(verbose=2)'"
+        self.sitecfg = self.sitecfg % {
+                                       'lapack': lapack,
+                                       'blas': blas,
+                                       'libs': ':'.join(self.toolchain.get_variable('LDFLAGS', typ=list)),
+                                       'includes': ':'.join(self.toolchain.get_variable('CPPFLAGS', typ=list))
+                                      }
 
     def install_step(self):
-        """Install numpy
-        We remove the numpy build dir here, so scipy doesn't find it by accident
-        """
+        """Install numpy and remove numpy build dir, so scipy doesn't find it by accident."""
         super(EB_numpy, self).install_step()
+
         builddir = os.path.join(self.builddir, "numpy")
         if os.path.isdir(builddir):
             rmtree2(builddir)

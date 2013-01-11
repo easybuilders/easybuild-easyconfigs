@@ -37,12 +37,21 @@ from os.path import expanduser
 import easybuild.tools.environment as env
 from easybuild.easyblocks.generic.extensioneasyblock import ExtensionEasyBlock
 from easybuild.easyblocks.p.python import EXTS_FILTER_PYTHON_PACKAGES
+from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.filetools import mkdir, rmtree2, run_cmd
 from easybuild.tools.modules import get_software_root, get_software_version
 
 
 class PythonPackage(ExtensionEasyBlock):
     """Builds and installs a Python package, and provides a dedicated module file."""
+
+    @staticmethod
+    def extra_options():
+        """Easyconfig parameters specific to Python packages."""
+        extra_vars = [
+                      ('runtest', [True, "Run unit tests.", CUSTOM]),  # overrides default
+                     ]
+        return ExtensionEasyBlock.extra_options(extra_vars)
 
     def __init__(self, *args, **kwargs):
         """Initialize custom class variables."""
@@ -58,7 +67,7 @@ class PythonPackage(ExtensionEasyBlock):
         self.testinstall = False
         #self.builddir = mself.builddir
         self.installopts = ''
-        self.runtest = None
+        self.testcmd = None
         self.ext_dir = "%s/%s" % (self.builddir, self.name)
         self.unpack_options = ''
 
@@ -120,33 +129,37 @@ class PythonPackage(ExtensionEasyBlock):
     def test_step(self):
         """Test the built Python package."""
 
-        extrapath = ""
-        testinstalldir = None
+        if isinstance(self.cfg['runtest'], basestring):
+            self.testcmd = self.cfg['runtest']
 
-        if self.testinstall:
-            # install in test directory and export PYTHONPATH
+        if self.cfg['runtest'] and not self.testcmd is None:
+            extrapath = ""
+            testinstalldir = None
 
-            try:
-                testinstalldir = tempfile.mkdtemp()
-                mkdir(os.path.join(testinstalldir, self.pylibdir), parents=True)
-            except OSError, err:
-                self.log.error("Failed to create test install dir: %s" % err)
+            if self.testinstall:
+                # install in test directory and export PYTHONPATH
 
-            cmd = "python setup.py install --prefix=%s %s" % (testinstalldir, self.installopts)
-            run_cmd(cmd, log_all=True, simple=True)
+                try:
+                    testinstalldir = tempfile.mkdtemp()
+                    mkdir(os.path.join(testinstalldir, self.pylibdir), parents=True)
+                except OSError, err:
+                    self.log.error("Failed to create test install dir: %s" % err)
 
-            run_cmd("python -c 'import sys; print(sys.path)'")  # print Python search path (debug)
-            extrapath = "export PYTHONPATH=%s:$PYTHONPATH && " % os.path.join(testinstalldir, self.pylibdir)
+                cmd = "python setup.py install --prefix=%s %s" % (testinstalldir, self.installopts)
+                run_cmd(cmd, log_all=True, simple=True)
 
-        if self.runtest:
-            cmd = "%s%s" % (extrapath, self.runtest)
-            run_cmd(cmd, log_all=True, simple=True)
+                run_cmd("python -c 'import sys; print(sys.path)'")  # print Python search path (debug)
+                extrapath = "export PYTHONPATH=%s:$PYTHONPATH && " % os.path.join(testinstalldir, self.pylibdir)
 
-        if testinstalldir:
-            try:
-                rmtree2(testinstalldir)
-            except OSError, err:
-                self.log.exception("Removing testinstalldir %s failed: %s" % (testinstalldir, err))
+            if self.testcmd:
+                cmd = "%s%s" % (extrapath, self.testcmd)
+                run_cmd(cmd, log_all=True, simple=True)
+
+            if testinstalldir:
+                try:
+                    rmtree2(testinstalldir)
+                except OSError, err:
+                    self.log.exception("Removing testinstalldir %s failed: %s" % (testinstalldir, err))
 
     def install_step(self):
         """Install Python package to a custom path using setup.py"""
