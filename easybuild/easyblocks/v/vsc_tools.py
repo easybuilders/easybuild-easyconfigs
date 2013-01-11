@@ -64,7 +64,7 @@ class EB_VSC_minus_tools(PythonPackage):
                     self.log.error("Found none or more than one %s dir: %s" % (pkg, sel_dirs))
 
                 os.chdir(os.path.join(self.builddir, sel_dirs[0]))
-                cmd = "python setup.py %s %s" % (pkg, args)
+                cmd = "python setup.py %s" % args
                 run_cmd(cmd, log_all=True, simple=True, log_output=True)
 
             os.chdir(pwd)
