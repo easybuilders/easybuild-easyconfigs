@@ -66,10 +66,8 @@ class PythonPackage(ExtensionEasyBlock):
         self.testcmd = None
         self.unpack_options = ''
 
-        self.python = get_software_root('Python')
-        ver = '.'.join(get_software_version('Python').split('.')[0:2])
-        self.pylibdir = os.path.join('lib', 'python%s' % ver, 'site-packages')
-        self.log.debug("Python library dir: %s" % self.pylibdir)
+        self.python = None
+        self.pylibdir = os.path.join('lib', 'python%s', 'site-packages')
 
         # make sure there's no site.cfg in $HOME, because setup.py will find it and use it
         if os.path.exists(os.path.join(expanduser('~'), 'site.cfg')):
@@ -78,7 +76,10 @@ class PythonPackage(ExtensionEasyBlock):
     def configure_step(self):
         """Configure Python package build."""
 
-        self.log.debug("PythonPackage: configuring")
+        self.python = get_software_root('Python')
+        pyver = '.'.join(get_software_version('Python').split('.')[0:2])
+        self.pylibdir = self.pylibdir % pyver
+        self.log.debug("Python library dir: %s" % self.pylibdir)
 
         python_version = get_software_version('Python')
         if not python_version:
