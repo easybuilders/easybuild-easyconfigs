@@ -57,9 +57,6 @@ class PythonPackage(ExtensionEasyBlock):
         """Initialize custom class variables."""
         super(PythonPackage, self).__init__(*args, **kwargs)
 
-        # template for Python packages lib dir
-        self.pylibdir = os.path.join("lib", "python%s", "site-packages")
-
         self.sitecfg = None
         self.sitecfgfn = 'site.cfg'
         self.sitecfglibdir = None
@@ -72,6 +69,7 @@ class PythonPackage(ExtensionEasyBlock):
         self.python = get_software_root('Python')
         ver = '.'.join(get_software_version('Python').split('.')[0:2])
         self.pylibdir = os.path.join('lib', 'python%s' % ver, 'site-packages')
+        self.log.debug("Python library dir: %s" % self.pylibdir)
 
         # make sure there's no site.cfg in $HOME, because setup.py will find it and use it
         if os.path.exists(os.path.join(expanduser('~'), 'site.cfg')):
@@ -85,10 +83,6 @@ class PythonPackage(ExtensionEasyBlock):
         python_version = get_software_version('Python')
         if not python_version:
             self.log.error('Python module not loaded.')
-
-        python_short_ver = ".".join(python_version.split(".")[0:2])
-        self.pylibdir = self.pylibdir % python_short_ver
-        self.log.debug("pylibdir: %s" % self.pylibdir)
 
         if self.sitecfg is not None:
             # used by some extensions, like numpy, to find certain libs
