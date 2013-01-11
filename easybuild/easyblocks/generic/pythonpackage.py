@@ -35,9 +35,9 @@ import tempfile
 from os.path import expanduser
 
 import easybuild.tools.environment as env
-from easybuild.easyblocks.generic.extensioneasyblock import ExtensionEasyBlock
 from easybuild.easyblocks.python import EXTS_FILTER_PYTHON_PACKAGES
 from easybuild.framework.easyconfig import CUSTOM
+from easybuild.framework.extensioneasyblock import ExtensionEasyBlock
 from easybuild.tools.filetools import mkdir, rmtree2, run_cmd
 from easybuild.tools.modules import get_software_root, get_software_version
 
@@ -65,10 +65,8 @@ class PythonPackage(ExtensionEasyBlock):
         self.sitecfglibdir = None
         self.sitecfgincdir = None
         self.testinstall = False
-        #self.builddir = mself.builddir
         self.installopts = ''
         self.testcmd = None
-        self.ext_dir = "%s/%s" % (self.builddir, self.name)
         self.unpack_options = ''
 
         self.python = get_software_root('Python')

@@ -26,7 +26,7 @@ EasyBuild support for building and installing R packages, implemented as an easy
 import shutil
 
 from easybuild.easyblocks.r import EXTS_FILTER_R_PACKAGES
-from easybuild.easyblocks.generic.extensioneasyblock import ExtensionEasyBlock
+from easybuild.framework.extensioneasyblock import ExtensionEasyBlock
 from easybuild.tools.filetools import run_cmd, parse_log_for_error
 
 
