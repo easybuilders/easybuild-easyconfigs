@@ -83,7 +83,7 @@ class EB_numpy(FortranPythonPackage):
                                           "libraries = %s" % libfft.replace(' ', ','),
                                          ])
 
-        self.sitecfg = self.sitecfg + extrasiteconfig
+        self.sitecfg = '\n'.join([self.sitecfg, extrasiteconfig])
 
         lapack_libs = os.getenv("LIBLAPACK_MT").split(" -l")
         blas_libs = os.getenv("LIBBLAS_MT").split(" -l")
