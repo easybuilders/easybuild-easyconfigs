@@ -78,10 +78,7 @@ class EB_numpy(FortranPythonPackage):
 
         libfft = os.getenv('LIBFFT')
         if libfft:
-            extrasiteconfig += '\n'.join([
-                                          "[fftw]",
-                                          "libraries = %s" % libfft.replace(' ', ','),
-                                         ])
+            extrasiteconfig += "\n[fftw]\nlibraries = %s" % libfft.replace(' ', ',')
 
         self.sitecfg = '\n'.join([self.sitecfg, extrasiteconfig])
 
