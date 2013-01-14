@@ -94,10 +94,10 @@ class RPackage(ExtensionEasyBlock):
         """Create a command line to install an R package."""
         confvars = ""
         if self.configurevars:
-            confvars = make_R_install_option("--configure-vars", self.configurevars, cmdline=True)
+            confvars = make_R_install_option("configure-vars", self.configurevars, cmdline=True)
         confargs = ""
         if self.configureargs:
-            confargs = make_R_install_option("--configure-args", self.configureargs, cmdline=True)
+            confargs = make_R_install_option("configure-args", self.configureargs, cmdline=True)
 
         if prefix:
             prefix = '--library=%s' % prefix
