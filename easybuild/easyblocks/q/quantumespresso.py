@@ -79,8 +79,8 @@ class EB_QuantumESPRESSO(ConfigureMake):
 
         repls = []
 
-        # update CPPFLAGS to include -C (i.e., preserve comments)
-        env.setvar('CPPFLAGS', "-C %s" % os.getenv('CPPFLAGS', ''))
+        # update CPP to include -C (i.e., preserve comments)
+        env.setvar('CPP', "%s -C" % os.getenv('CPP'))
 
         # compose list of DFLAGS (flag, value, keep_stuff)
         # for guidelines, see include/defs.h.README in sources
