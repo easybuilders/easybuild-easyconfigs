@@ -27,6 +27,7 @@ EasyBuild support for building and installing VSC-tools, implemented as an easyb
 
 @author: Kenneth Hoste (Ghent University)
 """
+import glob
 import os
 
 import easybuild.tools.environment as env
@@ -55,14 +56,12 @@ class EB_VSC_minus_tools(PythonPackage):
 
             pwd = os.getcwd()
 
-            dirs = os.listdir(self.builddir)
-
             pkg_list = ['-'.join(src['name'].split('-')[0:-1]) for src in self.src if src['name'].startswith('vsc')]
             for pkg in pkg_list:
-
-                sel_dirs = [d for d in dirs if d.startswith(pkg)]
+                os.chdir(self.builddir)
+                sel_dirs = [d for d in glob.glob("%s-[0-9][0-9.]*" % pkg)]
                 if not len(sel_dirs) == 1:
-                    self.log.error("Found none or more than one %s dir: %s" % (pkg, sel_dirs))
+                    self.log.error("Found none or more than one %s dir in %s: %s" % (pkg, self.builddir, sel_dirs))
 
                 os.chdir(os.path.join(self.builddir, sel_dirs[0]))
                 cmd = "python setup.py %s" % args
