@@ -57,7 +57,8 @@ class EB_VSC_minus_tools(PythonPackage):
 
             dirs = os.listdir(self.builddir)
 
-            for pkg in ['vsc-base', 'vsc-mympirun']:
+            pkg_list = ['-'.join(src['name'].split('-')[0:-1]) for src in self.src if src['name'].startswith('vsc')]
+            for pkg in pkg_list:
 
                 sel_dirs = [d for d in dirs if d.startswith(pkg)]
                 if not len(sel_dirs) == 1:
