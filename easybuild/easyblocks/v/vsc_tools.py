@@ -57,14 +57,15 @@ class EB_VSC_minus_tools(PythonPackage):
 
             dirs = os.listdir(self.builddir)
 
-            for pkg in ['vsc-base', 'vsc-mympirun']:
+            pkg_list = ['-'.join(src['name'].split('-')[0:-1]) for src in self.src if src['name'].startswith('vsc')]
+            for pkg in pkg_list:
 
                 sel_dirs = [d for d in dirs if d.startswith(pkg)]
                 if not len(sel_dirs) == 1:
                     self.log.error("Found none or more than one %s dir: %s" % (pkg, sel_dirs))
 
                 os.chdir(os.path.join(self.builddir, sel_dirs[0]))
-                cmd = "python setup.py %s %s" % (pkg, args)
+                cmd = "python setup.py %s" % args
                 run_cmd(cmd, log_all=True, simple=True, log_output=True)
 
             os.chdir(pwd)
