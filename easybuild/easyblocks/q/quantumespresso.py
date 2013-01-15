@@ -32,6 +32,7 @@ import shutil
 import sys
 from distutils.version import LooseVersion
 
+import easybuild.tools.environment as env
 import easybuild.tools.toolchain as toolchain
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.framework.easyconfig import CUSTOM
@@ -65,19 +66,6 @@ class EB_QuantumESPRESSO(ConfigureMake):
     def configure_step(self):
         """Custom configuration procedure for Quantum ESPRESSO."""
 
-        # copy stuff in 'install' directory to 'install' directory for Quantum ESPRESSO
-        # this comes from the IntelMKL*tar.gz tarball, that is custom for HPC-UGent
-        # TODO: create patch files instead, and get rid of this crap below?
-        #if self.toolchain().name == 'ictce':
-        #oldextralibpath = os.path.join(self.builddir, 'install')
-        #newextralibpath = os.path.join(self.cfg['start_dir'], 'install')
-        #extralibs = os.listdir(oldextralibpath)
-        #try:
-            #for lib in extralibs:
-                #shutil.copy2(os.path.join(oldextralibpath, lib), newextralibpath)
-        #except Exception, err:
-            #self.log.error("Failed to copy %s to %s, %s" % (lib, newextralibpath, err))
-
         if self.cfg['hybrid']:
             self.cfg.update('configopts', '--enable-openmp')
 
@@ -90,6 +78,9 @@ class EB_QuantumESPRESSO(ConfigureMake):
         super(EB_QuantumESPRESSO, self).configure_step()
 
         repls = []
+
+        # update CPPFLAGS to include -C (i.e., preserve comments)
+        env.setvar('CPPFLAGS', "-C %s" % os.getenv('CPPFLAGS', ''))
 
         # compose list of DFLAGS (flag, value, keep_stuff)
         # for guidelines, see include/defs.h.README in sources
