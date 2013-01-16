@@ -75,14 +75,14 @@ class EB_QuantumESPRESSO(ConfigureMake):
         if not self.cfg['with_scalapack']:
             self.cfg.update('configopts', '--without-scalapack')
 
-        super(EB_QuantumESPRESSO, self).configure_step()
-
         repls = []
 
         # set processor command (-E to stop after preprocessing, -C to preserve comments)
         cpp = "%s -E -C" % os.getenv('CC')
         repls.append(('CPP', cpp, False))
         env.setvar('CPP', cpp)
+
+        super(EB_QuantumESPRESSO, self).configure_step()
 
         # compose list of DFLAGS (flag, value, keep_stuff)
         # for guidelines, see include/defs.h.README in sources
