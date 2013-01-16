@@ -26,7 +26,7 @@ EasyBuild support for building and installing R packages, implemented as an easy
 import shutil
 
 from easybuild.easyblocks.r import EXTS_FILTER_R_PACKAGES
-from easybuild.easyblocks.generic.extensioneasyblock import ExtensionEasyBlock
+from easybuild.framework.extensioneasyblock import ExtensionEasyBlock
 from easybuild.tools.filetools import run_cmd, parse_log_for_error
 
 
@@ -94,10 +94,10 @@ class RPackage(ExtensionEasyBlock):
         """Create a command line to install an R package."""
         confvars = ""
         if self.configurevars:
-            confvars = make_R_install_option("--configure-vars", self.configurevars, cmdline=True)
+            confvars = make_R_install_option("configure-vars", self.configurevars, cmdline=True)
         confargs = ""
         if self.configureargs:
-            confargs = make_R_install_option("--configure-args", self.configureargs, cmdline=True)
+            confargs = make_R_install_option("configure-args", self.configureargs, cmdline=True)
 
         if prefix:
             prefix = '--library=%s' % prefix
@@ -158,6 +158,9 @@ class RPackage(ExtensionEasyBlock):
 
     def run(self):
         """Install R package as an extension."""
+
+        super(RPackage, self).run()
+
         if self.src:
             self.ext_src = self.src
             self.log.debug("Installing R package %s version %s." % (self.name, self.version))
@@ -176,5 +179,5 @@ class RPackage(ExtensionEasyBlock):
 
     def make_module_extra(self):
         """Add install path to R_LIBS"""
-        extra = self.moduleGenerator.prepend_paths("R_LIBS", [''])  # prepend R_LIBs with install path
+        extra = self.moduleGenerator.prepend_paths("R_LIBS", [''])  # prepend R_LIBS with install path
         return super(RPackage, self).make_module_extra(extra)

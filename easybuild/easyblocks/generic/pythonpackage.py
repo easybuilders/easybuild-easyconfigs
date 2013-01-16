@@ -31,45 +31,63 @@
 EasyBuild support for Python packages, implemented as an easyblock
 """
 import os
+import tempfile
+from os.path import expanduser
 
 import easybuild.tools.environment as env
-from easybuild.framework.easyblock import EasyBlock
-from easybuild.tools.filetools import run_cmd, mkdir
-from easybuild.tools.modules import get_software_version
+from easybuild.easyblocks.python import EXTS_FILTER_PYTHON_PACKAGES
+from easybuild.framework.easyconfig import CUSTOM
+from easybuild.framework.extensioneasyblock import ExtensionEasyBlock
+from easybuild.tools.filetools import mkdir, rmtree2, run_cmd
+from easybuild.tools.modules import get_software_root, get_software_version
 
 
-class PythonPackage(EasyBlock):
+class PythonPackage(ExtensionEasyBlock):
     """Builds and installs a Python package, and provides a dedicated module file."""
 
-    def __init__(self, *args, **kwargs):
-        """Initialize custom variables."""
-        super(PythonPackage, self).__init__(*args, **kwargs)
+    @staticmethod
+    def extra_options():
+        """Easyconfig parameters specific to Python packages."""
+        extra_vars = [
+                      ('runtest', [True, "Run unit tests.", CUSTOM]),  # overrides default
+                     ]
+        return ExtensionEasyBlock.extra_options(extra_vars)
 
-        # template for Python packages lib dir
-        self.pylibdir = os.path.join("lib", "python%s", "site-packages")
+    def __init__(self, *args, **kwargs):
+        """Initialize custom class variables."""
+        super(PythonPackage, self).__init__(*args, **kwargs)
 
         self.sitecfg = None
         self.sitecfgfn = 'site.cfg'
         self.sitecfglibdir = None
         self.sitecfgincdir = None
+        self.testinstall = False
+        self.installopts = ''
+        self.testcmd = None
+        self.unpack_options = ''
+
+        self.python = None
+        self.pylibdir = os.path.join('lib', 'python%s', 'site-packages')
+
+        # make sure there's no site.cfg in $HOME, because setup.py will find it and use it
+        if os.path.exists(os.path.join(expanduser('~'), 'site.cfg')):
+            self.log.error('Found site.cfg in your home directory (%s), please remove it.' % expanduser('~'))
 
     def configure_step(self):
-        """Set Python packages lib dir."""
+        """Configure Python package build."""
 
-        self.log.debug("PythonPackage: configuring")
+        self.python = get_software_root('Python')
+        pyver = '.'.join(get_software_version('Python').split('.')[0:2])
+        self.pylibdir = self.pylibdir % pyver
+        self.log.debug("Python library dir: %s" % self.pylibdir)
 
         python_version = get_software_version('Python')
         if not python_version:
             self.log.error('Python module not loaded.')
 
-        python_short_ver = ".".join(python_version.split(".")[0:2])
-
-        self.pylibdir = self.pylibdir % python_short_ver
-
-        self.log.debug("pylibdir: %s" % self.pylibdir)
-
         if self.sitecfg is not None:
-            # code from python EB_DefaultPythonPackage
+            # used by some extensions, like numpy, to find certain libs
+
             finaltxt = self.sitecfg
             if self.sitecfglibdir:
                 repl = self.sitecfglibdir
@@ -90,45 +108,93 @@ class PythonPackage(EasyBlock):
             except IOError:
                 self.log.exception("Creating %s failed" % self.sitecfgfn)
 
+        # creates log entries for python being used, for debugging
+        run_cmd("python -V")
+        run_cmd("which python")
+        run_cmd("python -c 'import sys; print(sys.executable)'")
+
     def build_step(self):
         """Build Python package using setup.py"""
 
         cmd = "python setup.py build"
         run_cmd(cmd, log_all=True, simple=True)
 
+    def test_step(self):
+        """Test the built Python package."""
+
+        if isinstance(self.cfg['runtest'], basestring):
+            self.testcmd = self.cfg['runtest']
+
+        if self.cfg['runtest'] and not self.testcmd is None:
+            extrapath = ""
+            testinstalldir = None
+
+            if self.testinstall:
+                # install in test directory and export PYTHONPATH
+
+                try:
+                    testinstalldir = tempfile.mkdtemp()
+                    mkdir(os.path.join(testinstalldir, self.pylibdir), parents=True)
+                except OSError, err:
+                    self.log.error("Failed to create test install dir: %s" % err)
+
+                cmd = "python setup.py install --prefix=%s %s" % (testinstalldir, self.installopts)
+                run_cmd(cmd, log_all=True, simple=True)
+
+                run_cmd("python -c 'import sys; print(sys.path)'")  # print Python search path (debug)
+                extrapath = "export PYTHONPATH=%s:$PYTHONPATH && " % os.path.join(testinstalldir, self.pylibdir)
+
+            if self.testcmd:
+                cmd = "%s%s" % (extrapath, self.testcmd)
+                run_cmd(cmd, log_all=True, simple=True)
+
+            if testinstalldir:
+                try:
+                    rmtree2(testinstalldir)
+                except OSError, err:
+                    self.log.exception("Removing testinstalldir %s failed: %s" % (testinstalldir, err))
+
     def install_step(self):
         """Install Python package to a custom path using setup.py"""
 
+        # create expected directories
         abs_pylibdir = os.path.join(self.installdir, self.pylibdir)
-
         mkdir(abs_pylibdir, parents=True)
 
+        # set PYTHONPATH as expected
         pythonpath = os.getenv('PYTHONPATH')
         env.setvar('PYTHONPATH', ":".join([x for x in [abs_pylibdir, pythonpath] if x is not None]))
 
+        # actually install Python package
         cmd = "python setup.py install --prefix=%s %s" % (self.installdir, self.cfg['installopts'])
         run_cmd(cmd, log_all=True, simple=True)
 
+        # restore PYTHONPATH if it was set
         if pythonpath is not None:
             env.setvar('PYTHONPATH', pythonpath)
 
-    def sanity_check_step(self, custom_paths=None, custom_commands=None):
+    def run(self):
+        """Perform the actual Python package build/installation procedure"""
+
+        if not self.src:
+            self.log.error("No source found for Python package %s, required for installation. (src: %s)" % (self.name,
+                                                                                                            self.src))
+        super(PythonPackage, self).run(unpack_src=True)
+
+        # configure, build, test, install
+        self.configure_step()
+        self.build_step()
+        self.test_step()
+        self.install_step()
+
+    def sanity_check_step(self):
         """
         Custom sanity check for Python packages
         """
-        if not custom_paths:
-            custom_paths = {
-                            'files': [],
-                            'dirs': ["%s/%s" % (self.pylibdir, self.name.lower())]
-                           }
-
-        super(PythonPackage, self).sanity_check_step(custom_paths=custom_paths, custom_commands=custom_commands)
+        return super(PythonPackage, self).sanity_check_step(EXTS_FILTER_PYTHON_PACKAGES)
 
     def make_module_extra(self):
         """Add install path to PYTHONPATH"""
 
-        txt = super(PythonPackage, self).make_module_extra()
-
-        txt += "prepend-path\tPYTHONPATH\t%s\n" % os.path.join(self.installdir , self.pylibdir)
-
-        return txt
+        txt = self.moduleGenerator.prepend_paths("PYTHONPATH", [self.pylibdir])
+        return super(PythonPackage, self).make_module_extra(txt)
