@@ -95,10 +95,13 @@ class EB_QuantumESPRESSO(ConfigureMake):
                           }
         dflags.append(comp_fam_dflags[self.toolchain.comp_family()])
 
-        if "fftw3" in os.getenv('LIBFFT'):
-            dflags.append('-D__FFTW3')
-        elif os.getenv('LIBFFT'):
-            dflags.append('-D__FFTW')
+        libfft = os.getenv('LIBFFT')
+        if libfft:
+            if "fftw3" in libfft:
+                dflags.append('-D__FFTW3')
+            else:
+                dflags.append('-D__FFTW')
+            env.setvar('FFTW_LIBS', libfft)
 
         if get_software_root('ACML'):
             dflags.append('-D__ACML')
