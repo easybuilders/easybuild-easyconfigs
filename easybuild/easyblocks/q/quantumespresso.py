@@ -80,7 +80,7 @@ class EB_QuantumESPRESSO(ConfigureMake):
         repls = []
 
         # set processor command (-E to stop after preprocessing, -C to preserve comments)
-        repls.append(('CPP', "%s -E -C" % os.getenv('CC'))
+        repls.append(('CPP', "%s -E -C" % os.getenv('CC')))
 
         # compose list of DFLAGS (flag, value, keep_stuff)
         # for guidelines, see include/defs.h.README in sources
