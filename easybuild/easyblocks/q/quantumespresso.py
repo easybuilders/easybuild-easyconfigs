@@ -78,9 +78,10 @@ class EB_QuantumESPRESSO(ConfigureMake):
         repls = []
 
         # set processor command (-E to stop after preprocessing, -C to preserve comments)
-        cpp = "%s -E -C" % os.getenv('CC')
-        repls.append(('CPP', cpp, False))
-        env.setvar('CPP', cpp)
+        if self.toolchain.comp_family() in [toolchain.INTELCOMP]:
+            cpp = "%s -E -C" % os.getenv('CC')
+            repls.append(('CPP', cpp, False))
+            env.setvar('CPP', cpp)
 
         super(EB_QuantumESPRESSO, self).configure_step()
 
