@@ -77,11 +77,16 @@ class EB_QuantumESPRESSO(ConfigureMake):
 
         repls = []
 
-        # set processor command (-E to stop after preprocessing, -C to preserve comments)
         if self.toolchain.comp_family() in [toolchain.INTELCOMP]:
+            # set preprocessor command (-E to stop after preprocessing, -C to preserve comments)
             cpp = "%s -E -C" % os.getenv('CC')
             repls.append(('CPP', cpp, False))
             env.setvar('CPP', cpp)
+
+            # adjust sequential Fortran compiler
+            mpich_f90 = os.getenv('MPICH_F90')
+            if mpich_f90:
+                env.setvar('MPICH_F90', '%s -nofor-main' % mpich_f90)
 
         super(EB_QuantumESPRESSO, self).configure_step()
 
