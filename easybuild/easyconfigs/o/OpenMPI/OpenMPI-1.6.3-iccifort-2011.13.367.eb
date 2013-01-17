@@ -1,0 +1,55 @@
+name = 'OpenMPI'
+version = '1.6.3'
+
+homepage = 'http://www.open-mpi.org/'
+description = "The Open MPI Project is an open source MPI-2 implementation."
+
+toolchain = {'name': 'iccifort', 'version': '2011.13.367'}
+
+sources = ['%s-%s.tar.gz' % (name.lower(), version)]
+source_urls = ['http://www.open-mpi.org/software/ompi/v%s/downloads' % '.'.join(version.split('.')[0:2])]
+
+osdependencies = [
+                  'libibverbs-devel',  # required for OFED support
+                  'dapl-devel',  # required for uDAPL support
+                  'libibumad-devel',  # required for OFED support
+                 ]
+
+configopts = '--with-threads=posix --enable-shared --enable-mpi-threads --with-openib --with-udapl '
+
+# MXM support
+osdependencies += ['mxm']  # version should be recent enough as well, i.e. v1.1. for OpenMPI 1.6.x
+configopts += '--with-mxm=/opt/mellanox/mxm '
+
+# hwloc support
+configopts += '--with-hwloc '
+dependencies = [('hwloc', '1.6')]
+
+# knem support
+configopts += '--with-knem=/opt/knem-0.9.7mlnx1 '
+osdependencies += ['knem']
+
+# checkpointing support
+configopts += '--with-ft=cr --with-blcr=/usr --with-blcr-libdir=/usr/lib64 '
+osdependencies += ['blcr-libs', 'blcr-devel']
+
+# Torque/PBS support
+configopts += '--with-tm'
+osdependencies += ['torque-devel']
+
+sanity_check_paths  =  {
+                        'files':["bin/%s" % binfile for binfile in ["ompi_info", "opal_wrapper", "orterun"]] +
+                                ["lib/lib%s.%s" % (libfile, shared_lib_ext) for libfile in ["mca_common_sm", "mpi_cxx",
+                                                                                            "mpi_f77" ,"mpi_f90", "mpi",
+                                                                                            "ompitrace", "open-pal",
+                                                                                            "open-rte", "otfaux", "otf",
+                                                                                            "vt", "vt-hyb", "vt-mpi",
+                                                                                            "vt-mpi-unify"]] +
+                                ["include/%s.h" % x for x in ["mpi-ext", "mpif-common", "mpif-config", "mpif",
+                                                              "mpif-mpi-io", "mpi", "mpi_portable_platform"]],
+                        'dirs':["include/openmpi/ompi/mpi/cxx"]
+                       }
+
+tar_config_opts  =  True
+
+moduleclass = 'lib'
