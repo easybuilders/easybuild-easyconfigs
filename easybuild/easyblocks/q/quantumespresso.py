@@ -84,9 +84,10 @@ class EB_QuantumESPRESSO(ConfigureMake):
             env.setvar('CPP', cpp)
 
             # adjust sequential Fortran compiler
-            mpich_f90 = os.getenv('MPICH_F90')
-            if mpich_f90:
-                env.setvar('MPICH_F90', '%s -nofor-main' % mpich_f90)
+            for var in ['MPICH_F90', 'F90']:
+                val = os.getenv(var)
+                if val:
+                    env.setvar(var, '%s -nofor-main' % val)
 
         super(EB_QuantumESPRESSO, self).configure_step()
 
