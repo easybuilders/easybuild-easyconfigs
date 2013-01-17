@@ -41,6 +41,12 @@ from easybuild.tools.modules import get_software_root, get_software_version
 class EB_DOLFIN(CMakePythonPackage):
     """Support for building and installing DOLFIN."""
 
+    def __init__(self, *args, **kwargs):
+        """Initialize class variables."""
+        super(EB_DOLFIN, self).__init__(*args, **kwargs)
+
+        self.boost_dir = None
+
     def configure_step(self):
         """Set DOLFIN-specific configure options and configure with CMake."""
 
@@ -106,6 +112,7 @@ class EB_DOLFIN(CMakePythonPackage):
         # Boost config parameters
         self.cfg.update('configopts', " -DBOOST_INCLUDEDIR=%s/include" % depsdict['Boost'])
         self.cfg.update('configopts', " -DBoost_DEBUG=ON -DBOOST_ROOT=%s" % depsdict['Boost'])
+        self.boost_dir = depsdict['Boost']
 
         # UFC and Armadillo config params
         self.cfg.update('configopts', " -DUFC_DIR=%s" % depsdict['UFC'])
@@ -169,7 +176,7 @@ class EB_DOLFIN(CMakePythonPackage):
         txt = super(EB_DOLFIN, self).make_module_extra()
 
         # Dolfin needs to find Boost
-        txt += self.moduleGenerator.set_environment('BOOST_DIR', get_software_root('Boost'))
+        txt += self.moduleGenerator.set_environment('BOOST_DIR', self.boost_dir)
 
         envvars = ['I_MPI_CXX', 'I_MPI_CC']
         for envvar in envvars:

@@ -60,6 +60,7 @@ class EB_WPS(EasyBlock):
         self.comp_fam = None
         self.wrfdir = None
         self.compile_script = None
+        self.netcdf_mod_cmds = None
 
     @staticmethod
     def extra_options():
@@ -85,6 +86,7 @@ class EB_WPS(EasyBlock):
 
         # netCDF dependency check + setting env vars (NETCDF, NETCDFF)
         set_netcdf_env_vars(self.log)
+        self.netcdf_mod_cmds = get_netcdf_module_set_cmds(self.log)
 
         # WRF dependency check
         wrf = get_software_root('WRF')
@@ -355,6 +357,6 @@ class EB_WPS(EasyBlock):
 
         txt = super(EB_WPS, self).make_module_extra()
 
-        txt += get_netcdf_module_set_cmds(self.log)
+        txt += self.netcdf_mod_cmds
 
         return txt

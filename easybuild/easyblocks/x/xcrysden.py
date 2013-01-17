@@ -60,18 +60,21 @@ class EB_XCrySDen(ConfigureMake):
         except OSError, err:
             self.log.error("Failed to copy %s: %s" % (makesys_tpl_file, err))
 
+        self.tclroot = get_software_root("Tcl")
+        self.tclver = '.'.join(get_software_version("Tcl").split('.')[0:2])
+        self.tkroot = get_software_root("Tk")
+        self.tkver = '.'.join(get_software_version("Tk").split('.')[0:2])
+
         # patch Make.sys
         settings = {
                     'CFLAGS': os.getenv('CFLAGS'),
                     'CC': os.getenv('CC'),
                     'FFLAGS': os.getenv('F90FLAGS'),
                     'FC': os.getenv('F90'),
-                    'TCL_LIB': "-L%s/lib -ltcl%s" % (get_software_root("Tcl"),
-                                                     '.'.join(get_software_version("Tcl").split('.')[0:2])),
-                    'TCL_INCDIR': "-I%s/include" % get_software_root("Tcl"),
-                    'TK_LIB': "-L%s/lib -ltk%s" % (get_software_root("Tk"),
-                                                   '.'.join(get_software_version("Tcl").split('.')[0:2])),
-                    'TK_INCDIR': "-I%s/include" % get_software_root("Tk"),
+                    'TCL_LIB': "-L%s/lib -ltcl%s" % (self.tclroot, self.tclver),
+                    'TCL_INCDIR': "-I%s/include" % self.tclroot,
+                    'TK_LIB': "-L%s/lib -ltk%s" % (self.tkroot, self.tkver),
+                    'TK_INCDIR': "-I%s/include" % self.tkroot,
                     'GLU_LIB': "-L%s/lib -lGLU" % get_software_root("Mesa"),
                     'GL_LIB': "-L%s/lib -lGL" % get_software_root("Mesa"),
                     'GL_INCDIR': "-I%s/include" % get_software_root("Mesa"),
@@ -129,9 +132,9 @@ class EB_XCrySDen(ConfigureMake):
         """Set extra environment variables in module file."""
         txt = super(EB_XCrySDen, self).make_module_extra()
 
-        for lib in ['Tcl', 'Tk']:
-            ver = '.'.join(get_software_version(lib).split('.')[0:2])
-            libpath = os.path.join(get_software_root(lib), 'lib', "%s%s" % (lib.lower(), ver))
-            txt += self.moduleGenerator.set_environment('%s_LIBRARY' % lib.upper(), libpath)
+        tclpath = os.path.join(self.tclroot, 'lib', "tcl%s" % self.tclver)
+        txt += self.moduleGenerator.set_environment('TCL_LIBRARY', tclpath)
+        tkpath = os.path.join(self.tkroot, 'lib', "tk%s" % self.tkver)
+        txt += self.moduleGenerator.set_environment('TK_LIBRARY', tkpath)
 
         return txt
