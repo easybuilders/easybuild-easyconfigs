@@ -2,7 +2,7 @@
 # This file is an EasyBuild recipy as per https://github.com/hpcugent/easybuild
 #
 # Copyright:: Copyright (c) 2012 University of Luxembourg / LCSB
-# Author::    Josh Berryman <the.real.josh.berryman@gmail.com>, Fotis Georgatos <fotis.georgatos@uni.lu>
+# Author::    Josh Berryman <the.real.josh.berryman@gmail.com>, Fotis Georgatos <fotis.georgatos@uni.lu>, Kenneth Hoste (UGent)
 # License::   MIT/GPL
 # File::      $File$ 
 # Date::      $Date$
