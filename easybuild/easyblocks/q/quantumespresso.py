@@ -83,12 +83,6 @@ class EB_QuantumESPRESSO(ConfigureMake):
             repls.append(('CPP', cpp, False))
             env.setvar('CPP', cpp)
 
-            # adjust sequential Fortran compiler
-            for var in ['MPICH_F90', 'F90']:
-                val = os.getenv(var)
-                if val:
-                    env.setvar(var, '%s -nofor-main' % val)
-
         super(EB_QuantumESPRESSO, self).configure_step()
 
         # compose list of DFLAGS (flag, value, keep_stuff)
