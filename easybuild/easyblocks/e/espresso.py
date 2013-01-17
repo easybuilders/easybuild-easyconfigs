@@ -27,6 +27,7 @@ class EB_ESPResSo(ConfigureMake):
         super(EB_ESPResSo, self).__init__(*args, **kwargs)
 
         self.build_in_installdir = True
+        self.install_subdir = '%s-%s' % (self.name.lower(), self.version)
 
     @staticmethod
     def extra_options():
@@ -57,8 +58,8 @@ class EB_ESPResSo(ConfigureMake):
         """Custom sanity check for ESPResSo."""
 
         custom_paths = {
-                        'files' : ['Espresso'],
-                        'dirs'  : ['samples', 'scripts', 'tools'],
+                        'files' : [os.path.join(self.install_subdir, 'Espresso')],
+                        'dirs'  : [os.path.join(self.install_subdir, x) for x in ['samples', 'scripts', 'tools']],
                        }
 
         super(EB_ESPResSo, self).sanity_check_step(custom_paths=custom_paths)
@@ -68,6 +69,6 @@ class EB_ESPResSo(ConfigureMake):
 
         guesses = super(EB_ESPResSo, self).make_module_req_guess()
 
-        guesses.update({'PATH': ['']})
+        guesses.update({'PATH': [self.install_subdir]})
 
         return guesses
