@@ -68,6 +68,6 @@ class EB_ESPResSo(ConfigureMake):
 
         guesses = super(EB_ESPResSo, self).make_module_req_guess()
 
-        guesses.update({'PATH', ['']})
+        guesses.update({'PATH': ['']})
 
         return guesses
