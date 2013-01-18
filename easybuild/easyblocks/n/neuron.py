@@ -139,7 +139,7 @@ class EB_NEURON(ConfigureMake):
         super(EB_NEURON, self).sanity_check_step(custom_paths=custom_paths)
 
         try:
-            fake_mod_path = self.load_fake_module()
+            fake_mod_path, orig_env = self.load_fake_module()
         except EasyBuildError, err:
             self.log.debug("Loading fake module failed: %s" % err)
 
@@ -184,7 +184,7 @@ class EB_NEURON(ConfigureMake):
             self.log.info("Parallel hello world OK!")
 
         # cleanup
-        self.clean_up_fake_module(fake_mod_path)
+        self.clean_up_fake_module(fake_mod_path, orig_env)
 
     def make_module_req_guess(self):
         """Custom guesses for environment variables (PATH, ...) for NEURON."""
