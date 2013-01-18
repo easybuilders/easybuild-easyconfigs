@@ -30,6 +30,7 @@ EasyBuild support for building and installing NWChem, implemented as an easybloc
 import os
 import re
 import shutil
+import stat
 import tempfile
 
 import easybuild.tools.config as config
@@ -37,7 +38,7 @@ import easybuild.tools.environment as env
 import easybuild.tools.toolchain as toolchain
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.framework.easyconfig import CUSTOM
-from easybuild.tools.filetools import mkdir, run_cmd
+from easybuild.tools.filetools import mkdir, run_cmd, adjust_permissions
 from easybuild.tools.modules import get_software_root, get_software_version
 
 
@@ -266,6 +267,11 @@ class EB_NWChem(ConfigureMake):
             f.close()
         except IOError, err:
             self.log.error("Failed to create %s: %s" % (fn, err))
+
+        # fix permissions in data directory
+        datadir = os.path.join(self.installdir, 'data')
+        adjust_permissions(datadir, stat.S_IROTH, add=True, recursive=True)
+        adjust_permissions(datadir, stat.S_IXOTH, add=True, recursive=True, onlydirs=True)
 
     def sanity_check_step(self):
         """Custom sanity check for NWChem."""
