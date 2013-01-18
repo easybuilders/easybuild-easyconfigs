@@ -40,10 +40,16 @@ sys.path.append('easybuild')
 from easyblocks import VERSION
 
 API_VERSION = str(VERSION).split('.')[0]
+suff = ''
+
 rc_regexp = re.compile("^.*rc[0-9]*$")
 if rc_regexp.match(str(VERSION)):
     suff = '-%s' % VERSION.split('-')[-1]
-    API_VERSION += suff
+dev_regexp = re.compile("^.*[0-9]dev$")
+if dev_regexp.match(str(VERSION)):
+    suff = 'dev'
+
+API_VERSION += suff
 
 # log levels: 0 = WARN (default), 1 = INFO, 2 = DEBUG
 log.set_verbosity(1)
