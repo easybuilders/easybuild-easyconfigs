@@ -211,6 +211,6 @@ class EB_NEURON(ConfigureMake):
         for var in ['MPICH_CC']:
             val = os.getenv(var)
             if val:
-                self.moduleGenerator.set_environment(var, val)
+                txt += self.moduleGenerator.set_environment(var, val)
 
         return txt
