@@ -214,5 +214,8 @@ class EB_NEURON(ConfigureMake):
             val = os.getenv(var)
             if val:
                 txt += self.moduleGenerator.set_environment(var, val)
+                self.log.debug("%s set to %s, adding it to module" % (var, val))
+            else:
+                self.log.debug("%s not set: %s" % (var, os.environ.get(var, None)))
 
         return txt
