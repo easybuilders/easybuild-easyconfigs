@@ -208,7 +208,9 @@ class EB_NEURON(ConfigureMake):
 
         txt = super(EB_NEURON, self).make_module_extra()
 
-        for var in ['MPICH_CC']:
+        # we need to make sure the correct compiler is set in the environment, 
+        # since NEURON features compilation at runtime
+        for var in ['CC', 'MPICH_CC']:
             val = os.getenv(var)
             if val:
                 txt += self.moduleGenerator.set_environment(var, val)
