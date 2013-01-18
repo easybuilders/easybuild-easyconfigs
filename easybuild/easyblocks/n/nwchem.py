@@ -30,6 +30,7 @@ EasyBuild support for building and installing NWChem, implemented as an easybloc
 import os
 import re
 import shutil
+import stat
 import tempfile
 
 import easybuild.tools.config as config
