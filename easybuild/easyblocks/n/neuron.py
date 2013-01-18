@@ -202,3 +202,15 @@ class EB_NEURON(ConfigureMake):
                            })
 
         return guesses
+
+    def make_module_extra(self):
+        """Define extra module entries required."""
+
+        txt = super(EB_NEURON, self).make_module_extra()
+
+        for var in ['MPICH_CC']:
+            val = os.getenv(var)
+            if val:
+                self.moduleGenerator.set_environment(var, val)
+
+        return txt
