@@ -29,6 +29,12 @@
 ##
 """
 EasyBuild support for AMD Core Math Library (ACML), implemented as an easyblock
+
+@author: Stijn De Weirdt (Ghent University)
+@author: Dries Verdegem (Ghent University)
+@author: Kenneth Hoste (Ghent University)
+@author: Pieter De Baets (Ghent University)
+@author: Jens Timmerman (Ghent University)
 """
 
 import os
