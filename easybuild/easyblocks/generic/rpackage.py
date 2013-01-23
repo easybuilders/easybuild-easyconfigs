@@ -82,7 +82,7 @@ class RPackage(ExtensionEasyBlock):
         options(repos=c(CRAN="http://www.freestatistics.org/cran"))
         %s
         %s
-        install.packages("%s",dependencies = FALSE %s%s)
+        install.packages("%s", dependencies = FALSE %s%s, c('--no-clean-on-error'))
         """ % (confvarslist, confargslist, self.name, confvarsstr, confargsstr)
         cmd = "R -q --no-save"
 
@@ -104,7 +104,7 @@ class RPackage(ExtensionEasyBlock):
         else:
             prefix = ''
 
-        cmd = "R CMD INSTALL %s %s %s %s" % (self.ext_src, confargs, confvars, prefix)
+        cmd = "R CMD INSTALL %s %s %s %s --no-clean-on-error" % (self.ext_src, confargs, confvars, prefix)
         self.log.debug("make_cmdline_cmd returns %s" % cmd)
 
         return cmd, None
