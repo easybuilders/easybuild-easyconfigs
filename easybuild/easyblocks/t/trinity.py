@@ -38,6 +38,7 @@ import easybuild.tools.toolchain as toolchain
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.filetools import run_cmd
+from easybuild.tools.modules import get_software_root
 
 
 class EB_Trinity(EasyBlock):
@@ -200,11 +201,24 @@ class EB_Trinity(EasyBlock):
             inchworm_flags = self.inchworm(run=False)
             chrysalis_flags = self.chrysalis(run=False)
 
+            cc = os.getenv('CC')
+            cxx = os.getenv('CXX')
+
+            lib_flags = ""
+            for lib in ['ncurses', 'zlib']:
+                libroot = get_software_root(lib)
+                if libroot:
+                    lib_flags += " -L%s/lib" % libroot
+
             fn = "Makefile"
             for line in fileinput.input(fn, inplace=1, backup='.orig.eb'):
 
                 line = re.sub(r'^(INCHWORM_CONFIGURE_FLAGS\s*=\s*).*$', r'\1%s' % inchworm_flags, line)
                 line = re.sub(r'^(CHRYSALIS_MAKE_FLAGS\s*=\s*).*$', r'\1%s' % chrysalis_flags, line)
+                line = re.sub(r'(/rsem && \$\(MAKE\))\s*$',
+                              r'\1 CC=%s CXX=%s CFLAGS_EXTRA="%s"\n' % (cc, cxx, lib_flags), line)
+                line = re.sub(r'(/fastool && \$\(MAKE\))\s*$',
+                              r'\1 CC="%s -std=c99" CFLAGS="%s ${CFLAGS}"\n' % (cc, lib_flags), line)
 
                 sys.stdout.write(line)
 
