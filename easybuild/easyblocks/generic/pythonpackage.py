@@ -191,7 +191,7 @@ class PythonPackage(ExtensionEasyBlock):
         """
         Custom sanity check for Python packages
         """
-        return super(PythonPackage, self).sanity_check_step(EXTS_FILTER_PYTHON_PACKAGES)
+        super(PythonPackage, self).sanity_check_step(EXTS_FILTER_PYTHON_PACKAGES)
 
     def make_module_extra(self):
         """Add install path to PYTHONPATH"""
