@@ -175,7 +175,7 @@ class RPackage(ExtensionEasyBlock):
         """
         Custom sanity check for R packages
         """
-        super(RPackage, self).sanity_check_step(EXTS_FILTER_R_PACKAGES)
+        return super(RPackage, self).sanity_check_step(EXTS_FILTER_R_PACKAGES)
 
     def make_module_extra(self):
         """Add install path to R_LIBS"""
