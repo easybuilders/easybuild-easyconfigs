@@ -216,7 +216,7 @@ class EB_Trinity(EasyBlock):
                 line = re.sub(r'^(INCHWORM_CONFIGURE_FLAGS\s*=\s*).*$', r'\1%s' % inchworm_flags, line)
                 line = re.sub(r'^(CHRYSALIS_MAKE_FLAGS\s*=\s*).*$', r'\1%s' % chrysalis_flags, line)
                 line = re.sub(r'(/rsem && \$\(MAKE\))\s*$',
-                              r'\1 CC=%s CXX=%s CFLAGS_EXTRA="%s"\n' % (cc, cxx, lib_flags), line)
+                              r'\1 CC=%s CXX="%s %s" CFLAGS_EXTRA="%s"\n' % (cc, cxx, lib_flags, lib_flags), line)
                 line = re.sub(r'(/fastool && \$\(MAKE\))\s*$',
                               r'\1 CC="%s -std=c99" CFLAGS="%s ${CFLAGS}"\n' % (cc, lib_flags), line)
 

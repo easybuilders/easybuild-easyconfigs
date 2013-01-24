@@ -122,6 +122,7 @@ class EB_python_minus_meep(EasyBlock):
         try:
             shutil.copytree(src, dest)
             rmtree2(tmpdir)
+            os.chdir(self.installdir)
         except OSError, err:
             self.log.exception("Failed to copy directory %s to %s: %s" % (src, dest, err))
 
