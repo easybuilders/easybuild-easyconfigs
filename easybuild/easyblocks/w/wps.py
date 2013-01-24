@@ -318,6 +318,8 @@ class EB_WPS(EasyBlock):
                 # clean up
                 rmtree2(tmpdir)
 
+                os.chdir(self.builddir)
+
             except OSError, err:
                 self.log.error("Failed to run WPS test: %s" % err)
 
