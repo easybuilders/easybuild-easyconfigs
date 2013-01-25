@@ -73,6 +73,9 @@ class PythonPackage(ExtensionEasyBlock):
         if os.path.exists(os.path.join(expanduser('~'), 'site.cfg')):
             self.log.error('Found site.cfg in your home directory (%s), please remove it.' % expanduser('~'))
 
+        if not 'modulename' in self.options:
+            self.options['modulename'] = self.name.lower()
+
     def configure_step(self):
         """Configure Python package build."""
 
