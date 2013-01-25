@@ -89,7 +89,7 @@ class EB_VSC_minus_tools(PythonPackage):
     def make_module_extra(self):
         """Add install path to PYTHONPATH"""
 
-        txt = super(PythonPackage, self).make_module_extra()
+        txt = super(EB_VSC_minus_tools, self).make_module_extra()
 
         txt += "prepend-path\tPYTHONPATH\t%s\n" % os.path.join(self.installdir , 'lib')
 
