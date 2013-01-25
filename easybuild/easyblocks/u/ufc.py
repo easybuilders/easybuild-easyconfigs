@@ -37,7 +37,7 @@ class EB_UFC(CMakePythonPackage):
 
     def __init__(self, *args, **kwargs):
         """Custom initialization for UFC: set correct module name."""
-        super(EB_UFC, self).__init__(self, *args, **kwargs)
+        super(EB_UFC, self).__init__(*args, **kwargs)
 
         self.options.update({'modulename': 'ufc_utils'})
 
