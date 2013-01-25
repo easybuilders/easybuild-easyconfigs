@@ -32,6 +32,7 @@ EasyBuild support for Python packages that are configured with CMake, implemente
 """
 from easybuild.easyblocks.generic.cmakemake import CMakeMake
 from easybuild.easyblocks.generic.pythonpackage import PythonPackage
+from easybuild.easyblocks.python import EXTS_FILTER_PYTHON_PACKAGES
 
 
 class CMakePythonPackage(CMakeMake, PythonPackage):
