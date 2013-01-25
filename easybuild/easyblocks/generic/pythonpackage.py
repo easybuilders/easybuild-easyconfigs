@@ -187,11 +187,11 @@ class PythonPackage(ExtensionEasyBlock):
         self.test_step()
         self.install_step()
 
-    def sanity_check_step(self):
+    def sanity_check_step(self, *args, **kwargs):
         """
         Custom sanity check for Python packages
         """
-        return super(PythonPackage, self).sanity_check_step(EXTS_FILTER_PYTHON_PACKAGES)
+        return super(PythonPackage, self).sanity_check_step(EXTS_FILTER_PYTHON_PACKAGES, *args, **kwargs)
 
     def make_module_extra(self):
         """Add install path to PYTHONPATH"""
