@@ -55,7 +55,7 @@ class PythonPackage(ExtensionEasyBlock):
 
     def __init__(self, *args, **kwargs):
         """Initialize custom class variables."""
-        super(PythonPackage, self).__init__(self, *args, **kwargs)
+        super(PythonPackage, self).__init__(*args, **kwargs)
 
         self.sitecfg = None
         self.sitecfgfn = 'site.cfg'
