@@ -166,7 +166,7 @@ class EB_NEURON(ConfigureMake):
             cwd = os.getcwd()
             os.chdir(os.path.join(self.cfg['start_dir'], 'src', 'parallel'))
 
-            (out, ec) = run_cmd("mpirun -n 10 nrniv -mpi test0.hoc", simple=False, log_all=True, log_output=True)
+            (out, ec) = run_cmd("mpirun -n 10 -H localhost nrniv -mpi test0.hoc", simple=False, log_all=True, log_output=True)
 
             os.chdir(cwd)
         except OSError, err:
