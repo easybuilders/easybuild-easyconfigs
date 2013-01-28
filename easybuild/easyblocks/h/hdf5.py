@@ -52,7 +52,7 @@ class EB_HDF5(ConfigureMake):
             else:
                 self.log.error("Dependency module %s not loaded." % dep)
 
-        fcomp = 'FC="%s"' % os.getenv('F77')
+        fcomp = 'FC="%s"' % os.getenv('F90')
 
         self.cfg.update('configopts', "--with-pic --with-pthread --enable-shared")
         self.cfg.update('configopts', "--enable-cxx --enable-fortran %s" % fcomp)
