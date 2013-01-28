@@ -219,10 +219,14 @@ class EB_WPS(EasyBlock):
 
         wpsdir = None
 
-        def run_wps_cmd(cmdname):
+        def run_wps_cmd(cmdname, mpi_cmd=True):
             """Run a WPS command, and check for success."""
 
-            cmd = self.toolchain.mpi_cmd_for(os.path.join(wpsdir, "%s.exe" % cmdname), 1)
+            cmd = os.path.join(wpsdir, "%s.exe" % cmdname)
+            
+            if mpi:
+                cmd = self.toolchain.mpi_cmd_for(cmd, 1)
+            
             (out, _) = run_cmd(cmd, log_all=True, simple=False)
 
             re_success = re.compile("Successful completion of %s" % cmdname)
@@ -303,7 +307,7 @@ class EB_WPS(EasyBlock):
                 run_cmd(cmd, log_all=True, simple=True)
 
                 # run ungrib.exe
-                run_wps_cmd("ungrib")
+                run_wps_cmd("ungrib", mpi_cmd=False)
 
                 # METGRID.TBL
 
@@ -313,7 +317,7 @@ class EB_WPS(EasyBlock):
                            os.path.join(metgrid_dir, "METGRID.TBL"))
 
                 # run metgrid.exe
-                run_wps_cmd('metgrid')
+                run_wps_cmd('metgrid', mpi_cmd=False)
 
                 # clean up
                 rmtree2(tmpdir)
