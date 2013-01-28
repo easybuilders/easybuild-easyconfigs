@@ -317,7 +317,7 @@ class EB_WPS(EasyBlock):
                            os.path.join(metgrid_dir, "METGRID.TBL"))
 
                 # run metgrid.exe
-                run_wps_cmd('metgrid', mpi_cmd=False)
+                run_wps_cmd('metgrid')
 
                 # clean up
                 rmtree2(tmpdir)
