@@ -222,7 +222,7 @@ class EB_WPS(EasyBlock):
         def run_wps_cmd(cmdname):
             """Run a WPS command, and check for success."""
 
-            cmd = os.path.join(wpsdir, "%s.exe" % cmdname)
+            cmd = self.toolchain.mpi_cmd_for(os.path.join(wpsdir, "%s.exe" % cmdname), 1)
             (out, _) = run_cmd(cmd, log_all=True, simple=False)
 
             re_success = re.compile("Successful completion of %s" % cmdname)
