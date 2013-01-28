@@ -224,7 +224,7 @@ class EB_WPS(EasyBlock):
 
             cmd = os.path.join(wpsdir, "%s.exe" % cmdname)
             
-            if mpi:
+            if mpi_cmd:
                 cmd = self.toolchain.mpi_cmd_for(cmd, 1)
             
             (out, _) = run_cmd(cmd, log_all=True, simple=False)
