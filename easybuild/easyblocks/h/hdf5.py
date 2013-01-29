@@ -33,6 +33,7 @@ EasyBuild support for building and installing HDF5, implemented as an easyblock
 
 import os
 
+import easybuild.tools.environment as env
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.tools.modules import get_software_root
 
@@ -52,7 +53,7 @@ class EB_HDF5(ConfigureMake):
             else:
                 self.log.error("Dependency module %s not loaded." % dep)
 
-        fcomp = 'FC="%s"' % os.getenv('F77')
+        fcomp = 'FC="%s"' % os.getenv('F90')
 
         self.cfg.update('configopts', "--with-pic --with-pthread --enable-shared")
         self.cfg.update('configopts', "--enable-cxx --enable-fortran %s" % fcomp)
@@ -63,6 +64,9 @@ class EB_HDF5(ConfigureMake):
 
         # make options
         self.cfg.update('makeopts', fcomp)
+
+        # set RUNPARALLEL
+        env.setvar('RUNPARALLEL', 'mpirun -np \$\${NPROCS:=2}')
 
         super(EB_HDF5, self).configure_step()
 

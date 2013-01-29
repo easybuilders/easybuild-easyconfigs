@@ -111,7 +111,8 @@ class EB_BLACS(ConfigureMake):
             if not comm:
 
                 run_cmd("%s xtc_CsameF77" % cmd, log_all=True, simple=True)
-                (out, _) = run_cmd("mpirun -np 2 ./EXE/xtc_CsameF77", log_all=True, simple=False)
+
+                (out, _) = run_cmd(self.toolchain.mpi_cmd_for("./EXE/xtc_CsameF77", 2), log_all=True, simple=False)
 
                 # get rid of first two lines, that inform about how to use this tool
                 out = '\n'.join(out.split('\n')[2:])
@@ -126,7 +127,7 @@ class EB_BLACS(ConfigureMake):
                     (_, ec) = run_cmd("%s xtc_UseMpich" % cmd, log_all=False, log_ok=False, simple=False)
                     if ec == 0:
 
-                        (out, _) = run_cmd("mpirun -np 2 ./EXE/xtc_UseMpich", log_all=True, simple=False)
+                        (out, _) = run_cmd(self.toolchain.mpi_cmd_for("./EXE/xtc_UseMpich", 2), log_all=True, simple=False)
 
                         if not notregexp.search(out):
 
