@@ -375,7 +375,7 @@ class EB_CP2K(EasyBlock):
         options['FCFLAGSOPT2'] += ' $(INCFLAGS) %s -heap-arrays 64' % optarch
 
         ifortver = LooseVersion(get_software_version('ifort'))
-        failmsg = "CP2K won't build correctly with the Intel %s compilers prior to %s, see %s" % intelurl
+        failmsg = "CP2K won't build correctly with the Intel %%s compilers prior to %%s, see %s" % intelurl
 
         if ifortver >= LooseVersion("2011") and ifortver < LooseVersion("2012"):
 
