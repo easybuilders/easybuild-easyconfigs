@@ -53,6 +53,6 @@ class Toolchain(EasyBlock):
 
     def sanity_check_step(self):
         """
-        As a toolchain doesn't install anything really, this is always true
+        As a toolchain doesn't install anything really, this is always OK
         """
-        self.sanityCheckOK = True
+        pass
