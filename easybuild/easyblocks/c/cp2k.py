@@ -88,7 +88,7 @@ class EB_CP2K(EasyBlock):
                       ('extracflags', ['', "Extra CFLAGS to be added (default: '')", CUSTOM]),
                       ('extradflags', ['', "Extra DFLAGS to be added (default: '')", CUSTOM]),
                       ('ignore_regtest_fails', [False, "Ignore failures in regression test (should be used with care) (default: False).", CUSTOM]),
-                      ('maxtasks', [3, "Maximum number of CP2K instances run at the same time during testing (default:3)", CUSTOM])
+                      ('maxtasks', [3, "Maximum number of CP2K instances run at the same time during testing (default:3)", CUSTOM]),
                      ]
         return EasyBlock.extra_options(extra_vars)
 
@@ -140,7 +140,7 @@ class EB_CP2K(EasyBlock):
         self.typearch = "Linux-x86-64-%s" % self.toolchain.name
 
         # extra make instructions
-        self.make_instructions = "graphcon.o: graphcon.F\n\t$(FC) -c $(FCFLAGS2) $<\n"
+        self.make_instructions = ''  # "graphcon.o: graphcon.F\n\t$(FC) -c $(FCFLAGS2) $<\n"
 
         # compiler toolchain specific configuration
         comp_fam = self.toolchain.comp_family()
@@ -168,7 +168,7 @@ class EB_CP2K(EasyBlock):
             options = self.configure_ScaLAPACK(options)
 
         # avoid group nesting
-        options['LIBS'] = options['LIBS'].replace('-Wl,--start-group','').replace('-Wl,--end-group','')
+        options['LIBS'] = options['LIBS'].replace('-Wl,--start-group', '').replace('-Wl,--end-group', '')
 
         options['LIBS'] = "-Wl,--start-group %s -Wl,--end-group" % options['LIBS']
 
@@ -266,8 +266,8 @@ class EB_CP2K(EasyBlock):
         options = {
                    'CC': os.getenv('MPICC'),
                    'CPP': '',
-                   'FC': '%s %s' % (os.getenv('MPIF77'), self.openmp),
-                   'LD': '%s %s' % (os.getenv('MPIF77'), self.openmp),
+                   'FC': '%s %s' % (os.getenv('MPIF90'), self.openmp),
+                   'LD': '%s %s' % (os.getenv('MPIF90'), self.openmp),
                    'AR': 'ar -r',
                    'CPPFLAGS': '',
 
@@ -334,12 +334,17 @@ class EB_CP2K(EasyBlock):
             self.log.info("Using LibInt version %s" % (libint_maj_ver))
 
             options['LIBINTLIB'] = '%s/lib' % libint
-            options['LIBS'] += ' -lstdc++ %s %s' % (libint_libs, libint_wrapper)
+            options['LIBS'] += ' %s -lstdc++ %s' % (libint_libs, libint_wrapper)
 
         return options
 
     def configure_intel_based(self):
         """Configure for Intel based toolchains"""
+
+        # based on guidelines available at
+        # http://software.intel.com/en-us/articles/build-cp2k-using-intel-fortran-compiler-professional-edition/
+        intelurl = ''.join(["http://software.intel.com/en-us/articles/",
+                            "build-cp2k-using-intel-fortran-compiler-professional-edition/"])
 
         options = self.configure_common()
 
@@ -362,18 +367,36 @@ class EB_CP2K(EasyBlock):
 
         options['DFLAGS'] += ' -D__INTEL'
 
-        options['FCFLAGSOPT'] += ' $(INCFLAGS) -xHOST -heap-arrays 64 -funroll-loops'
-        options['FCFLAGSOPT2'] += ' $(INCFLAGS) -xHOST -heap-arrays 64'
+        optarch = ''
+        if self.toolchain.options['optarch']:
+            optarch = '-xHOST'
 
-        # see http://software.intel.com/en-us/articles/build-cp2k-using-intel-fortran-compiler-professional-edition/
-        self.make_instructions += "qs_vxc_atom.o: qs_vxc_atom.F\n\t$(FC) -c $(FCFLAGS2) $<\n"
+        options['FCFLAGSOPT'] += ' $(INCFLAGS) %s -heap-arrays 64' % optarch
+        options['FCFLAGSOPT2'] += ' $(INCFLAGS) %s -heap-arrays 64' % optarch
 
-        if LooseVersion(get_software_version('ifort')) >= LooseVersion("2011.8"):
-            self.make_instructions += "et_coupling.o: et_coupling.F\n\t$(FC) -c $(FCFLAGS2) $<\n"
-            self.make_instructions += "qs_vxc_atom.o: qs_vxc_atom.F\n\t$(FC) -c $(FCFLAGS2) $<\n"
+        ifortver = LooseVersion(get_software_version('ifort'))
+        failmsg = "CP2K won't build correctly with the Intel %s compilers prior to %s, see %s" % intelurl
 
-        elif LooseVersion(get_software_version('ifort')) >= LooseVersion("2011"):
-            self.log.error("CP2K won't build correctly with the Intel v12 compilers before version 2011.8.")
+        if ifortver >= LooseVersion("2011") and ifortver < LooseVersion("2012"):
+
+            # don't allow using Intel compiler 2011 prior to release 8, because of known issue (see Intel URL)
+            if ifortver >= LooseVersion("2011.8"):
+                # add additional make instructions to Makefile
+                self.make_instructions += "et_coupling.o: et_coupling.F\n\t$(FC) -c $(FCFLAGS2) $<\n"
+                self.make_instructions += "qs_vxc_atom.o: qs_vxc_atom.F\n\t$(FC) -c $(FCFLAGS2) $<\n"
+
+            else:
+                self.log.error(failmsg % ("v12", "v2011.8"))
+
+        elif ifortver >= LooseVersion("11"):
+            if LooseVersion(get_software_version('ifort')) >= LooseVersion("11.1.072"):
+                self.make_instructions += "qs_vxc_atom.o: qs_vxc_atom.F\n\t$(FC) -c $(FCFLAGS2) $<\n"
+
+            else:
+                self.log.error(failmsg % ("v11", "v11.1.072"))
+
+        else:
+            self.log.error("Intel compilers version %s not supported yet." % ifortver)
 
         return options
 
@@ -391,9 +414,13 @@ class EB_CP2K(EasyBlock):
 
         options['DFLAGS'] += ' -D__GFORTRAN'
 
-        options['FCFLAGSOPT'] += ' $(DFLAGS) $(CFLAGS) -march=native -ffast-math ' \
-                                 '-funroll-loops -ftree-vectorize -fmax-stack-var-size=32768'
-        options['FCFLAGSOPT2'] += ' $(DFLAGS) $(CFLAGS) -march=native'
+        optarch = ''
+        if self.toolchain.options['optarch']:
+            optarch = '-march=native'
+
+        options['FCFLAGSOPT'] += ' $(DFLAGS) $(CFLAGS) %s -ffast-math ' \
+                                 '-funroll-loops -ftree-vectorize -fmax-stack-var-size=32768' % optarch
+        options['FCFLAGSOPT2'] += ' $(DFLAGS) $(CFLAGS) %s' % optarch
 
         return options
 
@@ -436,7 +463,7 @@ class EB_CP2K(EasyBlock):
             extra = '-I%s' % self.modincpath
         options['CFLAGS'] += ' -I$(INTEL_INC) -I$(INTEL_INCF) %s $(FPIC) $(DEBUG)' % extra
 
-        options['LIBS'] += ' %s %s' % (self.libsmm, os.getenv('LIBSCALAPACK'))
+        options['LIBS'] += ' %s %s' % (self.libsmm, os.getenv('LIBFFT'), os.getenv('LIBSCALAPACK'))
 
         return options
 
