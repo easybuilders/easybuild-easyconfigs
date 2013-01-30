@@ -463,7 +463,7 @@ class EB_CP2K(EasyBlock):
             extra = '-I%s' % self.modincpath
         options['CFLAGS'] += ' -I$(INTEL_INC) -I$(INTEL_INCF) %s $(FPIC) $(DEBUG)' % extra
 
-        options['LIBS'] += ' %s %s' % (self.libsmm, os.getenv('LIBFFT'), os.getenv('LIBSCALAPACK'))
+        options['LIBS'] += ' %s %s %s' % (self.libsmm, os.getenv('LIBFFT'), os.getenv('LIBSCALAPACK'))
 
         return options
 
