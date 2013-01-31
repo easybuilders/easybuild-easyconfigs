@@ -418,8 +418,7 @@ class EB_CP2K(EasyBlock):
         if self.toolchain.options['optarch']:
             optarch = '-march=native'
 
-        options['FCFLAGSOPT'] += ' $(DFLAGS) $(CFLAGS) %s -ffast-math ' \
-                                 '-funroll-loops -ftree-vectorize -fmax-stack-var-size=32768' % optarch
+        options['FCFLAGSOPT'] += ' $(DFLAGS) $(CFLAGS) %s -fmax-stack-var-size=32768' % optarch
         options['FCFLAGSOPT2'] += ' $(DFLAGS) $(CFLAGS) %s' % optarch
 
         return options
