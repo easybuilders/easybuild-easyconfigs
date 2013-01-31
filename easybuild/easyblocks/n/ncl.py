@@ -135,6 +135,17 @@ class EB_NCL(EasyBlock):
             libs += ' -L%s/lib ' % root
             includes += ' -I%s/include ' % root
 
+        opt_deps = ["netCDF-Fortran", "GDAL"]
+        libs_map = {
+                    'netCDF-Fortran': '-lnetcdff',
+                    'GDAL': '-lgdal',
+                   }
+        for dep in opt_deps:
+            root = get_software_root(dep)
+            if root:
+                libs += ' -L%s/lib %s ' % (root, libsmap[dep])
+                includes += ' -I%s/include ' % root
+
         cfgtxt="""#ifdef FirstSite
 #endif /* FirstSite */
 
