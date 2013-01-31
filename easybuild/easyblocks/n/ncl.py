@@ -84,7 +84,7 @@ class EB_NCL(EasyBlock):
             ctof_libs = '-lgfortran -lm'
         macrodict = {
                      'CCompiler': os.getenv('CC'),
-                     'FCompiler': os.getenv('F77'),
+                     'FCompiler': os.getenv('F90'),
                      'CcOptions': '-ansi %s' % os.getenv('CFLAGS'),
                      'FcOptions': os.getenv('FFLAGS'),
                      'COptimizeFlag': os.getenv('CFLAGS'),
