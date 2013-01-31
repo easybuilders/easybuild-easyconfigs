@@ -452,17 +452,30 @@ class EB_CP2K(EasyBlock):
 
         options.update({
                         'INTEL_INC': '$(MKLROOT)/include',
-                        'INTEL_INCF': '$(INTEL_INC)/fftw',
                        })
 
-        options['DFLAGS'] += ' -D__FFTW3 -D__FFTMKL'
+        options['DFLAGS'] += ' -D__FFTW3'
 
         extra = ''
         if self.modincpath:
             extra = '-I%s' % self.modincpath
-        options['CFLAGS'] += ' -I$(INTEL_INC) -I$(INTEL_INCF) %s $(FPIC) $(DEBUG)' % extra
+        options['CFLAGS'] += ' -I$(INTEL_INC) %s $(FPIC) $(DEBUG)' % extra
 
-        options['LIBS'] += ' %s %s %s' % (self.libsmm, os.getenv('LIBFFT'), os.getenv('LIBSCALAPACK'))
+        options['LIBS'] += ' %s %s' % (self.libsmm, os.getenv('LIBSCALAPACK'))
+
+        # only use Intel FFTW wrappers if FFTW is not loaded
+        if not get_software_root('FFTW'):
+
+            options.update({
+                            'INTEL_INCF': '$(INTEL_INC)/fftw',
+                           })
+
+            options['DFLAGS'] += ' -D__FFTMKL'
+
+            options['CFLAGS'] += ' -I$(INTEL_INCF)'
+
+            options['LIBS'] = '%s %s' % (os.getenv('LIBFFT'), options['LIBS'])
+
 
         return options
 
