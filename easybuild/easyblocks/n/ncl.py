@@ -143,7 +143,7 @@ class EB_NCL(EasyBlock):
         for dep in opt_deps:
             root = get_software_root(dep)
             if root:
-                libs += ' -L%s/lib %s ' % (root, libsmap[dep])
+                libs += ' -L%s/lib %s ' % (root, libs_map[dep])
                 includes += ' -I%s/include ' % root
 
         cfgtxt="""#ifdef FirstSite
