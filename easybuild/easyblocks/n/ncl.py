@@ -137,7 +137,7 @@ class EB_NCL(EasyBlock):
 
         opt_deps = ["netCDF-Fortran", "GDAL"]
         libs_map = {
-                    'netCDF-Fortran': '-lnetcdff',
+                    'netCDF-Fortran': '-lnetcdff -lnetcdf',
                     'GDAL': '-lgdal',
                    }
         for dep in opt_deps:
