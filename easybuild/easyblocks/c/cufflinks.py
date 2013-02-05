@@ -1,14 +1,18 @@
+## 
 # This file is an EasyBuild recipy as per https://github.com/hpcugent/easybuild
 #
-# Copyright:: Copyright (c) 2012-2013 University of Luxembourg / LCSB
-# Author::    Cedric Laczny <cedric.laczny@uni.lu>, Fotis Georgatos <fotis.georgatos@uni.lu>
+# Copyright:: Copyright 2012-2013 University of Luxembourg/Luxembourg Centre for Systems Biomedicine
+# Authors::   Cedric Laczny <cedric.laczny@uni.lu>, Fotis Georgatos <fotis.georgatos@uni.lu>, Kenneth Hoste
 # License::   MIT/GPL
-# File::      $File$
-# Date::      $Date$
+# $Id$
+#
+# This work implements a part of the HPCBIOS project and is a component of the policy:
+# http://hpcbios.readthedocs.org/en/latest/HPCBIOS_2012-94.html
+##
 """
 EasyBuild support for building and installing Cufflinks, implemented as an easyblock
 
-@author: Cedric Laczny (University of Luxembourg)
+@authors: Cedric Laczny (Uni.Lu), Fotis Georgatos (Uni.Lu), Kenneth Hoste (UGent)
 """
 import fileinput
 import glob
