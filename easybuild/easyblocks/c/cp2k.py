@@ -578,7 +578,7 @@ class EB_CP2K(EasyBlock):
                     break
 
             # location of do_regtest script
-            regtest_script = "%s/cp2k/tools/do_regtest" % self.builddir
+            regtest_script = os.path.join(self.cfg['start_dir', 'tools', 'do_regtest')
 
             # patch do_regtest so that reference output is used
             if regtest_refdir:
