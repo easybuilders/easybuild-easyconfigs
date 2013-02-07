@@ -106,6 +106,13 @@ class EB_CP2K(EasyBlock):
         - generate Makefile
         """
 
+        # correct start dir, if needed
+        # recent CP2K versions have a 'cp2k' dir in the unpacked 'cp2k' dir
+        try:
+            cp2k_path = os.path.join(self.cfg['start_dir'], 'cp2k')
+            if os.path.exists(cp2k_path):
+                self.cfg['start_dir'] = cp2k_path
+
         # set compilers options according to toolchain config
         # full debug: -g -traceback -check all -fp-stack-check
         # -g links to mpi debug libs
