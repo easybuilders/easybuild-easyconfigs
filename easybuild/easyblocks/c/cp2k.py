@@ -113,6 +113,9 @@ class EB_CP2K(EasyBlock):
             if os.path.exists(cp2k_path):
                 self.cfg['start_dir'] = cp2k_path
 
+        except OSError, err:
+            self.log.error("Failed to correct start dir: %s" % err)
+
         # set compilers options according to toolchain config
         # full debug: -g -traceback -check all -fp-stack-check
         # -g links to mpi debug libs
