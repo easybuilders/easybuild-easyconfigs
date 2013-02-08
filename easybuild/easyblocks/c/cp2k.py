@@ -204,7 +204,7 @@ class EB_CP2K(EasyBlock):
         if imkl:
 
             # prepare modinc target path
-            modincpath = os.path.join(self.builddir, 'modinc')
+            modincpath = os.path.join(os.path.dirname(self.cfg['start_dir']), 'modinc')
             self.log.debug("Preparing module files in %s" % modincpath)
 
             try:
@@ -602,7 +602,7 @@ leakcheck="YES"
 maxtasks=%(maxtasks)s
             """ % {
                    'f90': os.getenv('F90'),
-                   'base': self.cfg['start_dir'],
+                   'base': os.path.dirname(self.cfg['start_dir']),
                    'cp2k_version': self.cfg['type'],
                    'triplet': self.typearch,
                    'maxtasks': self.cfg['maxtasks']
@@ -717,9 +717,10 @@ maxtasks=%(maxtasks)s
         # copy regression test results
         if self.cfg['runtest']:
             try:
-                for d in os.listdir(self.builddir):
+                testdir = os.path.dirname(self.cfg['start_dir'])
+                for d in os.listdir(testdir):
                     if d.startswith('TEST-%s-%s' % (self.typearch, self.cfg['type'])):
-                        path = os.path.join(self.builddir, d)
+                        path = os.path.join(testdir, d)
                         target = os.path.join(self.installdir, d)
                         shutil.copytree(path, target)
                         self.log.info("Regression test results dir %s copied to %s" % (d, self.installdir))
