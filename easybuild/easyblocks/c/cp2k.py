@@ -600,7 +600,7 @@ cp2k_version=%(cp2k_version)s
 dir_triplet=%(triplet)s
 leakcheck="YES"
 maxtasks=%(maxtasks)s
-cp2k_run_prefix="%(mpicmd_prefix)"
+cp2k_run_prefix="%(mpicmd_prefix)s"
             """ % {
                    'f90': os.getenv('F90'),
                    'base': os.path.dirname(self.cfg['start_dir']),
