@@ -600,12 +600,14 @@ cp2k_version=%(cp2k_version)s
 dir_triplet=%(triplet)s
 leakcheck="YES"
 maxtasks=%(maxtasks)s
+cp2k_run_prefix="%(mpicmd_prefix)"
             """ % {
                    'f90': os.getenv('F90'),
                    'base': os.path.dirname(self.cfg['start_dir']),
                    'cp2k_version': self.cfg['type'],
                    'triplet': self.typearch,
-                   'maxtasks': self.cfg['maxtasks']
+                   'maxtasks': self.cfg['maxtasks'],
+                   'mpicmd_prefix': self.toolchain.mpi_cmd_for('', 2),
                   }
 
             cfg_fn = "cp2k_regtest.cfg"
