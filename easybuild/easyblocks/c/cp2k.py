@@ -602,7 +602,7 @@ leakcheck="YES"
 maxtasks=%(maxtasks)s
             """ % {
                    'f90': os.getenv('F90'),
-                   'base': self.builddir,
+                   'base': self.cfg['start_dir'],
                    'cp2k_version': self.cfg['type'],
                    'triplet': self.typearch,
                    'maxtasks': self.cfg['maxtasks']
