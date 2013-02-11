@@ -57,7 +57,7 @@ class Easy_install(PythonPackage):
         env.setvar('PYTHONPATH', ":".join([x for x in [abs_pylibdir, pythonpath] if x is not None]))
 
         # actually install Python package
-        cmd = "easy_install --upgrade --prefix=%s %s ." % (self.installdir, self.cfg['installopts'])
+        cmd = "easy_install --always-copy --prefix=%s %s ." % (self.installdir, self.cfg['installopts'])
         run_cmd(cmd, log_all=True, simple=True)
 
         # restore PYTHONPATH if it was set
