@@ -41,10 +41,6 @@ class EB_EasyBuildMeta(Easy_install):
     def install_step(self):
         """Install Python package to a custom path using easy_install."""
 
-        # clear Python search path, to make sure own Python modules are not found
-        # this is required to enforce that easy_install installs all EasyBuild packages
-        #sys.path = []
-
         super(EB_EasyBuildMeta, self).install_step()
 
     def sanity_check_step(self):
