@@ -619,6 +619,8 @@ cp2k_run_prefix="%(mpicmd_prefix)s"
             except IOError, err:
                 self.log.error("Failed to create config file %s: %s" % (cfg_fn, err))
 
+            self.log.debug("Contents of %s: %s" % (cfg_fn, cfg_txt))
+
             # run regression test
             cmd = "%s -nocvs -quick -nocompile -config %s" % (regtest_script, cfg_fn)
 
