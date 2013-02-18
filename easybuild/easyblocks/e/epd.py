@@ -23,9 +23,9 @@
 # along with EasyBuild. If not, see <http://www.gnu.org/licenses/>.
 ##
 """
-General EasyBuild support for installing the Entought Python Distribution
-@author Jens Timmerman
-@date Fri Feb 15, 2013
+General EasyBuild support for installing the Enthought Python Distribution
+@author: Jens Timmerman
+@date: Fri Feb 15, 2013
 """
 import os
 
