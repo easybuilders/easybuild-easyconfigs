@@ -1,0 +1,58 @@
+##
+# This file is an EasyBuild recipy as per https://github.com/hpcugent/easybuild
+#
+# Copyright:: Copyright 2012-2013 University of Luxembourg/Luxembourg Centre for Systems Biomedicine
+# Authors::   Fotis Georgatos <fotis.georgatos@uni.lu>
+# License::   MIT/GPL
+# $Id$
+#
+# This work implements a part of the HPCBIOS project and is a component of the policy:
+# http://hpcbios.readthedocs.org/en/latest/HPCBIOS_06-05.html
+##
+
+name = 'TotalView'
+version = '8.11.0-0'
+platform = 'linux-x86-64'
+versionsuffix = platform
+
+homepage = 'http://www.roguewave.com/products/totalview.aspx'
+description = """TotalView is a GUI-based source code defect analysis tool that gives you unprecedented
+  control over processes and thread execution and visibility into program state and variables. It allows
+  you to debug one or many processes and/or threads in a single window with complete control over program
+  execution. This allows you to set breakpoints, stepping line by line through the code on a single thread,
+  or with coordinated groups of processes or threads, and run or halt arbitrary sets of processes or threads.
+  You can reproduce and troubleshoot difficult problems that can occur in concurrent programs that take
+  advantage of threads, OpenMP, MPI, GPUs or coprocessors."""
+
+
+tv_name = name.lower()
+ms_name = 'memscape'
+ms_version = '3.3.0-0'
+
+sources = ['%s.%s-%s.tar' % (tv_name, version, platform), '%s.%s-doc.tar' % (tv_name, version)]
+
+#preconfigopts = './Install -agree -platform linux-x86-64 -nosymlink -install totalview -directory $INSTALLDIR && /bin/true '
+#preconfigopts = './Install -agree -platform linux-x86-64 -nosymlink -install totalview -directory /tmp && /bin/true '
+preconfigopts = './Install -agree -platform linux-x86-64 -nosymlink -install totalview -directory $HOME/.local/easybuild/software/TotalView/8.11.0-0linux-x86-64/ && /bin/true '
+#preconfigopts = './Install -agree -platform linux-x86-64 -nosymlink -install totalview -directory /dev/shm && /bin/true '
+premakeopts = 'echo '
+
+toolchain = {'name': 'dummy', 'version': 'dummy'}
+
+binpath_t = 'toolworks/%s.%s/bin/' % (tv_name, version) + 'tv%s'
+binpath_m = 'toolworks/%s.%s/bin/' % (ms_name, ms_version) + 'mem%s'
+
+sanity_check_paths = {
+                      'files': [binpath_t % i for i in ['8', '8cli', 'dbootstrap', 'dsvr', 'script']] +
+                               [binpath_m % i for i in ['scape', 'script']],
+                      'dirs': []
+                     }
+
+#prepend LM_LICENSE_FILE	    license.client
+#
+#license.client file is: 
+#SERVER host-name host-id port-number
+#USE_SERVER
+
+moduleclass = 'base'
+
