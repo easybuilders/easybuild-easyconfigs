@@ -84,7 +84,7 @@ class EB_NCL(EasyBlock):
             ctof_libs = '-lgfortran -lm'
         macrodict = {
                      'CCompiler': os.getenv('CC'),
-                     'FCompiler': os.getenv('F77'),
+                     'FCompiler': os.getenv('F90'),
                      'CcOptions': '-ansi %s' % os.getenv('CFLAGS'),
                      'FcOptions': os.getenv('FFLAGS'),
                      'COptimizeFlag': os.getenv('CFLAGS'),
@@ -134,6 +134,17 @@ class EB_NCL(EasyBlock):
                 self.log.error('%s not available' % dep)
             libs += ' -L%s/lib ' % root
             includes += ' -I%s/include ' % root
+
+        opt_deps = ["netCDF-Fortran", "GDAL"]
+        libs_map = {
+                    'netCDF-Fortran': '-lnetcdff -lnetcdf',
+                    'GDAL': '-lgdal',
+                   }
+        for dep in opt_deps:
+            root = get_software_root(dep)
+            if root:
+                libs += ' -L%s/lib %s ' % (root, libs_map[dep])
+                includes += ' -I%s/include ' % root
 
         cfgtxt="""#ifdef FirstSite
 #endif /* FirstSite */

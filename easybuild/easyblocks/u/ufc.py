@@ -35,6 +35,12 @@ from easybuild.tools.modules import get_software_root, get_software_version
 class EB_UFC(CMakePythonPackage):
     """Support for building UFC."""
 
+    def __init__(self, *args, **kwargs):
+        """Custom initialization for UFC: set correct module name."""
+        super(EB_UFC, self).__init__(*args, **kwargs)
+
+        self.options.update({'modulename': 'ufc_utils'})
+
     def configure_step(self):
         """Set some extra environment variables before configuring."""
 
@@ -75,7 +81,7 @@ class EB_UFC(CMakePythonPackage):
 
         custom_paths = {
                         'files': ['include/ufc.h'],
-                        'dirs': ['lib/python%s/site-packages/ufc_utils/' % self.pyver]
+                        'dirs': ['lib/python%s/site-packages/%s/' % (self.pyver, x) for x in ['ufc', 'ufc_utils']],
                        }
 
         super(EB_UFC, self).sanity_check_step(custom_paths=custom_paths)

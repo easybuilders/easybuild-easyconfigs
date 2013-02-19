@@ -1,10 +1,5 @@
 ##
-# Copyright 2009-2012 Ghent University
-# Copyright 2009-2012 Stijn De Weirdt
-# Copyright 2010 Dries Verdegem
-# Copyright 2010-2012 Kenneth Hoste
-# Copyright 2011 Pieter De Baets
-# Copyright 2011-2012 Jens Timmerman
+# Copyright 2013 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -21,38 +16,31 @@
 #
 # EasyBuild is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
+# along with EasyBuild. If not, see <http://www.gnu.org/licenses/>.
 ##
 """
-EasyBuild support for installing compiler toolchains, implemented as an easyblock
+General EasyBuild support for installing the Enthought Python Distribution
+@author: Jens Timmerman
+@date: Fri Feb 15, 2013
 """
+import os
 
-from easybuild.framework.easyblock import EasyBlock
+from easybuild.tools.filetools import run_cmd
+from easybuild.easyblocks.generic.binary import Binary
 
 
-class Toolchain(EasyBlock):
+class EB_EPD(Binary):
+    """Easyblock implementing the build step for EPD,
+    this is just running the installer script, with an argument to the installdir
     """
-    Compiler toolchain: generate module file only, nothing to build/install
-    """
-
-    def configure_step(self):
-        """Do nothing."""
-        pass
-
-    def build_step(self):
-        """Do nothing."""
-        pass
 
     def install_step(self):
-        """Do nothing."""
-        pass
+        """Overwrite install_step from Binary"""
+        os.chdir(self.builddir)
+        cmd = "./epd_free-%s-x86_64.sh -b -p %s" % (self.version, self.installdir)
+        run_cmd(cmd, log_all=True, simple=True)
 
-    def sanity_check_step(self):
-        """
-        As a toolchain doesn't install anything really, this is always OK
-        """
-        pass

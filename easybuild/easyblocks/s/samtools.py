@@ -2,17 +2,17 @@
 # This file is an EasyBuild recipy as per https://github.com/hpcugent/easybuild
 #
 # Copyright:: Copyright 2012-2013 University of Luxembourg/Luxembourg Centre for Systems Biomedicine
-# Authors::   Cedric Laczny <cedric.laczny@uni.lu>, Fotis Georgatos <fotis.georgatos@uni.lu>
+# Authors::   Cedric Laczny <cedric.laczny@uni.lu>, Fotis Georgatos <fotis.georgatos@uni.lu>, Kenneth Hoste
 # License::   MIT/GPL
 # $Id$
 #
-# This work implements a part of HPCBIOS project and is component of policy:
+# This work implements a part of the HPCBIOS project and is a component of the policy:
 # http://hpcbios.readthedocs.org/en/latest/HPCBIOS_2012-94.html
 ##
 """
 EasyBuild support for building SAMtools (SAM - Sequence Alignment/Map), implemented as an easyblock
 
-@authors: Cedric Laczny (Uni.Lu), Fotis Georgatos (Uni.Lu)
+@authors: Cedric Laczny (Uni.Lu), Fotis Georgatos (Uni.Lu), Kenneth Hoste (UGent)
 """
 
 import os

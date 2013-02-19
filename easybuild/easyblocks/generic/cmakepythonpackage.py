@@ -32,6 +32,7 @@ EasyBuild support for Python packages that are configured with CMake, implemente
 """
 from easybuild.easyblocks.generic.cmakemake import CMakeMake
 from easybuild.easyblocks.generic.pythonpackage import PythonPackage
+from easybuild.easyblocks.python import EXTS_FILTER_PYTHON_PACKAGES
 
 
 class CMakePythonPackage(CMakeMake, PythonPackage):
@@ -64,6 +65,12 @@ class CMakePythonPackage(CMakeMake, PythonPackage):
     def install_step(self):
         """Install with cmake install"""
         return CMakeMake.install_step(self)
+
+    def sanity_check_step(self, *args, **kwargs):
+        """
+        Custom sanity check for Python packages
+        """
+        return super(PythonPackage, self).sanity_check_step(EXTS_FILTER_PYTHON_PACKAGES, *args, **kwargs)
 
     def make_module_extra(self):
         """Add extra Python package module parameters"""

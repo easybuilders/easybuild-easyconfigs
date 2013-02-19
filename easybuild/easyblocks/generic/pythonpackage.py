@@ -73,6 +73,9 @@ class PythonPackage(ExtensionEasyBlock):
         if os.path.exists(os.path.join(expanduser('~'), 'site.cfg')):
             self.log.error('Found site.cfg in your home directory (%s), please remove it.' % expanduser('~'))
 
+        if not 'modulename' in self.options:
+            self.options['modulename'] = self.name.lower()
+
     def configure_step(self):
         """Configure Python package build."""
 
@@ -187,11 +190,11 @@ class PythonPackage(ExtensionEasyBlock):
         self.test_step()
         self.install_step()
 
-    def sanity_check_step(self):
+    def sanity_check_step(self, *args, **kwargs):
         """
         Custom sanity check for Python packages
         """
-        return super(PythonPackage, self).sanity_check_step(EXTS_FILTER_PYTHON_PACKAGES)
+        return super(PythonPackage, self).sanity_check_step(EXTS_FILTER_PYTHON_PACKAGES, *args, **kwargs)
 
     def make_module_extra(self):
         """Add install path to PYTHONPATH"""

@@ -98,8 +98,8 @@ class EB_WRF(EasyBlock):
 
         # JasPer dependency check + setting env vars
         jasper = get_software_root('JasPer')
-        jasperlibdir = os.path.join(jasper, "lib")
         if jasper:
+            jasperlibdir = os.path.join(jasper, "lib")
             env.setvar('JASPERINC', os.path.join(jasper, "include"))
             env.setvar('JASPERLIB', jasperlibdir)
 
