@@ -43,14 +43,10 @@ class EB_TotalView(EasyBlock):
     def sanity_check_step(self):
         """Custom sanity check for TotalView."""
 
-        ms_version = '3.3.0-0' # this is a tricky one because it's not clear where this "comes from"
-
         binpath_t = 'toolworks/%s.%s/bin/' % ('totalview', self.version) + 'tv%s'
-        binpath_m = 'toolworks/%s.%s/bin/' % ('memscape', ms_version) + 'mem%s'
 
         custom_paths = {
-                              'files': [binpath_t % i for i in ['8', '8cli', 'dbootstrap', 'dsvr', 'script']] +
-                                       [binpath_m % i for i in ['scape', 'script']],
+                              'files': [binpath_t % i for i in ['8', '8cli', 'dbootstrap', 'dsvr', 'script']],
                               'dirs': []
                              }
 
