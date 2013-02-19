@@ -11,6 +11,8 @@
 ##
 """
 EasyBuild support for installing Totalview, implemented as an easyblock
+
+@author: Fotis Georgatos (Uni.Lu)
 """
 
 import os
