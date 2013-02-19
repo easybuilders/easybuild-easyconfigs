@@ -40,14 +40,12 @@ class EB_TotalView(EasyBlock):
         cmd = "./Install -agree -platform linux-x86-64 -nosymlink -install totalview -directory %s" % self.installdir
         run_cmd(cmd)
 
-
     def sanity_check_step(self):
         """Custom sanity check for TotalView."""
 
-        version = '8.11.0-0'
-        ms_version = '3.3.0-0'
+        ms_version = '3.3.0-0' # this is a tricky one because it's not clear where this "comes from"
 
-        binpath_t = 'toolworks/%s.%s/bin/' % ('totalview', version) + 'tv%s'
+        binpath_t = 'toolworks/%s.%s/bin/' % ('totalview', self.version) + 'tv%s'
         binpath_m = 'toolworks/%s.%s/bin/' % ('memscape', ms_version) + 'mem%s'
 
         custom_paths = {
