@@ -55,15 +55,3 @@ class EB_TotalView(EasyBlock):
                              }
 
         super(EB_TotalView, self).sanity_check_step(custom_paths=custom_paths)
-
-#    def make_module_extra(self):
-#        """Add correct path to lib to LD_LIBRARY_PATH."""
-#
-#        txt = super(EB_Tornado, self).make_module_extra()
-
-#        txt += self.moduleGenerator.prepend_paths('LD_LIBRARY_PATH', ["Tornado/bin/linux/", "ThirdParty/bin/linux/"])
-#        txt += self.moduleGenerator.prepend_paths('PATH', ["Tornado/bin/linux/"] )
-#        txt += self.moduleGenerator.set_environment('TORNADO_ROOT_PATH', "$root" )
-#        txt += self.moduleGenerator.set_environment('TORNADO_DATA_PATH', "$root/Data/WEST" )
-
-#        return txt
