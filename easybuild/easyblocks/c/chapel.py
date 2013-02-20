@@ -2,12 +2,12 @@
 # This file is an EasyBuild reciPY as per https://github.com/hpcugent/easybuild
 #
 # Copyright:: Copyright 2012-2013 University of Luxembourg/Luxembourg Centre for Systems Biomedicine
-# Authors::   Cedric Laczny <cedric.laczny@uni.lu>, Fotis Georgatos <fotis.georgatos@uni.lu>, Kenneth Hoste
+# Authors::   Fotis Georgatos <fotis.georgatos@uni.lu>, Kenneth Hoste
 # License::   MIT/GPL
 # $Id$
 #
 # This work implements a part of the HPCBIOS project and is a component of the policy:
-# http://hpcbios.readthedocs.org/en/latest/HPCBIOS_2012-94.html
+# http://hpcbios.readthedocs.org/en/latest/
 ##
 """
 EasyBuild support for Chapel, implemented as an easyblock
