@@ -1,21 +1,27 @@
-# This file is an EasyBuild recipy as per https://github.com/hpcugent/easybuild
+##
+# This file is an EasyBuild reciPY as per https://github.com/hpcugent/easybuild
 #
-# Copyright:: Copyright (c) 2012 University of Luxembourg / LCSB
-# Author::    Cedric Laczny <cedric.laczny@uni.lu>, Fotis Georgatos <fotis.georgatos@uni.lu>
+# Copyright:: Copyright 2012-2013 University of Luxembourg/Luxembourg Centre for Systems Biomedicine
+# Authors::   Cedric Laczny <cedric.laczny@uni.lu>, Fotis Georgatos <fotis.georgatos@uni.lu>, Kenneth Hoste
 # License::   MIT/GPL
-# File::      $File$ 
-# Date::      $Date$
+# $Id$
+#
+# This work implements a part of the HPCBIOS project and is a component of the policy:
+# http://hpcbios.readthedocs.org/en/latest/HPCBIOS_2012-90.html
+##
 """
-Easybuild support for building ncurses (SAM - Sequence Alignment/Map)
+Easybuild support for building ncurses, implemented as an easyblock
+
+@author: Cedric Laczny (Uni.Lu)
+@author: Fotis Georgatos (Uni.Lu)
+@author: Kenneth Hoste (Ghent University)
 """
 
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 
-
 class EB_ncurses(ConfigureMake):
     """
-    Support for building ncurses; SAM (Sequence Alignment/Map) format
-    is a generic format for storing large nucleotide sequence alignments.
+    Support for building ncurses
     """
 
     def configure_step(self):
