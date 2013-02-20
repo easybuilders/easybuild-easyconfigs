@@ -10,10 +10,18 @@ repeatable and robust way."""
 
 toolchain = {'name': 'dummy', 'version': 'dummy'}
 
-source_urls = ['http://pypi.python.org/packages/source/e/easybuild/']
-sources = ['%s-%s.tar.gz' % (name.lower(), version)]
+source_urls = [
+               'http://pypi.python.org/packages/source/e/easybuild-framework/',
+               'http://pypi.python.org/packages/source/e/easybuild-easyblocks/',
+               'http://pypi.python.org/packages/source/e/easybuild-easyconfigs/',
+              ]
+# order matters a lot, to avoid having dependencies auto-resolved (--no-deps easy_install option doesn't work?)
+sources = [
+           'easybuild-framework-%s.tar.gz' % version,
+           'easybuild-easyblocks-%s.tar.gz' % version,
+           'easybuild-easyconfigs-%s.0.tar.gz' % version,
+          ]
 
-# hack because PythonPackage currently enforces Python module to be loaded
-import os
-os.environ['EBROOTPYTHON'] = 'Python'
-os.environ['EBVERSIONPYTHON'] = '2.7.1'
+# EasyBuild is a (set of) Python packages, so it depends on Python
+# usually, we want to use the system Python, so no actual Python dependency is listed
+allow_system_deps = [('Python', SYS_PYTHON_VERSION)]
