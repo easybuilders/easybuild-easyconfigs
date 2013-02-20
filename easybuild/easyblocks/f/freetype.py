@@ -25,7 +25,7 @@
 """
 EasyBuild support for building and installing freetype, implemented as an easyblock
 
-@authors: Kenneth Hoste (UGent)
+@author: Kenneth Hoste (Ghent University)
 """
 import os
 
