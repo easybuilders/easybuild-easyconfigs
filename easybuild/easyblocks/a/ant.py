@@ -52,7 +52,7 @@ class EB_ant(EasyBlock):
 
         junit_root = get_software_root('JUnit')
         if not junit_root:
-            self.log.error("JUnit module not loaded? (%s)" % os.getenv('EBROOTJUNIT'))
+            self.log.error("JUnit module not loaded!")
 
         junit_ver = get_software_version('JUnit')
 
