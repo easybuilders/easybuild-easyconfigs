@@ -2,7 +2,11 @@
 # Copyright 2009-2013 Ghent University
 #
 # This file is part of EasyBuild,
-# originally created by the HPC team of the University of Ghent (http://ugent.be/hpc).
+# originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
+# with support of Ghent University (http://ugent.be/hpc),
+# the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
+# the Hercules foundation (http://www.herculesstichting.be/in_English)
+# and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
 # http://github.com/hpcugent/easybuild
 #
@@ -21,7 +25,11 @@
 """
 EasyBuild support for building and installing the Bioconductor R library, implemented as an easyblock
 
-@authors: Stijn De Weirdt, Dries Verdegem, Kenneth Hoste, Jens Timmerman, Toon Willems (Ghent University)
+@author: Stijn De Weirdt (Ghent University)
+@author: Dries Verdegem (Ghent University)
+@author: Kenneth Hoste (Ghent University)
+@author: Jens Timmerman (Ghent University)
+@author: Toon Willems (Ghent University)
 """
 from easybuild.easyblocks.generic.rpackage import RPackage
 
