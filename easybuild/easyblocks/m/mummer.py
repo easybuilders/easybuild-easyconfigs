@@ -1,5 +1,5 @@
-## 
-# This file is an EasyBuild recipy as per https://github.com/hpcugent/easybuild
+##
+# This file is an EasyBuild reciPY as per https://github.com/hpcugent/easybuild
 #
 # Copyright:: Copyright 2012-2013 University of Luxembourg/Luxembourg Centre for Systems Biomedicine
 # Authors::   Cedric Laczny <cedric.laczny@uni.lu>, Fotis Georgatos <fotis.georgatos@uni.lu>, Kenneth Hoste
@@ -12,7 +12,9 @@
 """
 EasyBuild support for building and installing MUMmer, implemented as an easyblock
 
-@authors: Cedric Laczny (Uni.Lu), Fotis Georgatos (Uni.Lu), Kenneth Hoste (UGent)
+@author: Cedric Laczny (Uni.Lu)
+@author: Fotis Georgatos (Uni.Lu)
+@author: Kenneth Hoste (Ghent University)
 """
 
 import os

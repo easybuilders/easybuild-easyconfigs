@@ -25,8 +25,11 @@
 """
 EasyBuild support for installing MATLAB, implemented as an easyblock
 
-@authors: Stijn De Weirdt (UGent), Dries Verdegem (UGent), Kenneth Hoste (UGent), Pieter De Baets (UGent),
-          Jens Timmerman (UGent)
+@author: Stijn De Weirdt (Ghent University)
+@author: Dries Verdegem (Ghent University)
+@author: Kenneth Hoste (Ghent University)
+@author: Pieter De Baets (Ghent University)
+@author: Jens Timmerman (Ghent University)
 """
 
 import re
