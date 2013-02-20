@@ -25,7 +25,11 @@
 """
 EasyBuild support for building and installing Trinity, implemented as an easyblock
 
-@authors: Stijn De Weirdt, Dries Verdegem, Pieter De Baets, Kenneth Hoste (UGent)
+@author: Stijn De Weirdt (Ghent University)
+@author: Dries Verdegem (Ghent University)
+@author: Kenneth Hoste (Ghent University)
+@author: Pieter De Baets (Ghent University)
+@author: Jens Timmerman (Ghent University)
 """
 import fileinput
 import os
