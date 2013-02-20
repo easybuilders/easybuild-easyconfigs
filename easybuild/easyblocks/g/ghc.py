@@ -1,6 +1,5 @@
 ##
-# Copyright 2009-2012 Ghent University
-# Copyright 2012 Andy Georges
+# Copyright 2009-2013 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -13,6 +12,7 @@
 #
 # EasyBuild is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
+# the Free Software Foundation v2.
 #
 # EasyBuild is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -24,6 +24,8 @@
 ##
 """
 EasyBuild support for binary GHC packages, see http://haskell.org/ghc
+
+@author: Andy Georges (Ghent University)
 """
 from distutils.version import LooseVersion
 
