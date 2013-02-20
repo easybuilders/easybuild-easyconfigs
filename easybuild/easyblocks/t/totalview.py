@@ -1,5 +1,5 @@
 ##
-# This file is an EasyBuild recipy as per https://github.com/hpcugent/easybuild
+# This file is an EasyBuild reciPY as per https://github.com/hpcugent/easybuild
 #
 # Copyright:: Copyright 2012-2013 University of Luxembourg/Luxembourg Centre for Systems Biomedicine
 # Authors::   Fotis Georgatos <fotis.georgatos@uni.lu>
@@ -14,7 +14,6 @@ EasyBuild support for installing Totalview, implemented as an easyblock
 
 @author: Fotis Georgatos (Uni.Lu)
 """
-
 import os
 
 from easybuild.framework.easyblock import EasyBlock

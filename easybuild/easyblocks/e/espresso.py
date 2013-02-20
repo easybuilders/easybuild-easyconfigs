@@ -1,14 +1,20 @@
 ##
-# This file is an EasyBuild recipy as per https://github.com/hpcugent/easybuild
+# This file is an EasyBuild reciPY as per https://github.com/hpcugent/easybuild
 #
-# Copyright:: Copyright (c) 2012 University of Luxembourg / LCSB
-# Author::    Josh Berryman <the.real.josh.berryman@gmail.com>, Fotis Georgatos <fotis.georgatos@uni.lu>, Kenneth Hoste (UGent)
+# Copyright:: Copyright 2012-2013 University of Luxembourg/Luxembourg Centre for Systems Biomedicine
+# Authors::   Josh Berryman <the.real.josh.berryman@gmail.com>, Fotis Georgatos <fotis.georgatos@uni.lu>, Kenneth Hoste
 # License::   MIT/GPL
-# File::      $File$ 
-# Date::      $Date$
-
+# $Id$
+#
+# This work implements a part of the HPCBIOS project and is a component of the policy:
+# http://hpcbios.readthedocs.org/en/latest/HPCBIOS_2012-80.html
+##
 """
 EasyBuild support for building and installing ESPResSo, implemented as an easyblock
+
+@author: Josh Berryman <the.real.josh.berryman@gmail.com>
+@author: Fotis Georgatos (Uni.Lu)
+@author: Kenneth Hoste (Ghent University)
 """
 import os
 
