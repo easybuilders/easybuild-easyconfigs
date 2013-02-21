@@ -36,6 +36,8 @@ EasyBuild support for installing RPMs, implemented as an easyblock.
 import glob
 import os
 import re
+from distutils.version import LooseVersion
+from os.path import expanduser
 
 import easybuild.tools.environment as env
 from easybuild.easyblocks.generic.binary import Binary
@@ -80,15 +82,14 @@ class Rpm(Binary):
         cmd = "rpm --version"
         (out, _) = run_cmd(cmd, log_all=True, simple=False)
         
-        rpmver_re = re.compile("^RPM\s+version\s+(?P<major>[0-9]+).(?P<minor>[0-9]+).*")
+        rpmver_re = re.compile("^RPM\s+version\s+(?P<version>[0-9.]+).*")
         res = rpmver_re.match(out)
         self.log.debug("RPM version matches: %s" % res.group())
 
         if res:
-            major = int(res.groupdict()['major'])
-            minor = int(res.groupdict()['minor'])
+            ver = res.groupdict()['version']
 
-            if major >= 4 and minor >= 8:
+            if LooseVersion(ver) > LooseVersion('4.8'):
                 self.rebuildRPM = True
                 self.log.debug("Enabling rebuild of RPMs to make relocation work...")
         else:
@@ -97,14 +98,14 @@ class Rpm(Binary):
         if self.rebuildRPM:
             self.rebuildRPMs()
     
-    # installing RPMs under a non-default path for e.g. SL6
+    # when installing RPMs under a non-default path for e.g. SL6,
     # --relocate doesn't seem to work (error: Unable to change root directory: Operation not permitted)
     def rebuildRPMs(self):
         """Rebuild RPMs to make relocation work."""
 
-        rpmmacros = os.path.join(os.environ['HOME'], '.rpmmacros')
+        rpmmacros = os.path.join(expanduser('~'), '.rpmmacros')
         if os.path.exists(rpmmacros):
-            self.log.error("rpmmacros file %s found. This will override any other settings." % rpmmacros)
+            self.log.error("rpmmacros file %s found which will override any other settings, so exiting." % rpmmacros)
 
         rpmrebuild_tmpdir = os.path.join(self.builddir, "rpmrebuild")
         env.setvar("RPMREBUILD_TMPDIR", rpmrebuild_tmpdir)
