@@ -47,5 +47,12 @@ class EB_DL_underscore_POLY_underscore_Classic(ConfigureMake):
         self.log.debug("copying %s/execute to %s, (from %s)", self.cfg['start_dir'], self.installdir, os.getcwd())
         # create a /bin, this way we also get the PATH to be set correctly automatically
         bin_path = os.path.join(self.installdir, "bin")
+        install_path = os.path.join(self.cfg['start_dir'], 'execute')
         os.mkdir(bin_path)
-        shutil.copy(os.path.join(self.cfg['start_dir'], "execute", "DLPOLY.X"), bin_path)
+        for item in os.listdir(install_path):
+            source = os.path.join(install_path, item)
+            dest = os.path.join(bin_path, item)
+            if os.path.isdir(source):
+                shutil.copytree(source, dest)
+            else:
+                shutil.copy2(source, dest)
