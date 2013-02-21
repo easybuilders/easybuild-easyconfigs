@@ -33,6 +33,8 @@ EasyBuild support for installing QLogic MPI (RPM).
 @author: Toon Willems (Ghent University)
 """
 
+import os
+
 from easybuild.easyblocks.generic.rpm import Rpm
 
 
