@@ -76,7 +76,12 @@ class Rpm(Binary):
         return EasyBlock.extra_options(extra_vars)
 
     def configure_step(self):
-        """Custom configuration procedure for RPMs: """
+        """Custom configuration procedure for RPMs: rebuild RPMs for relocation if required."""
+
+        # make sure that rpm and rpmrebuild is available
+        if not 'rpmrebuild' in self.cfg['osdependencies']:
+            self.cfg['osdependencies'].extend(['rpm', 'rpmrebuild'])
+            self.cfg.validate_os_deps()
 
         # determine whether RPMs need to be rebuilt to make relocation work
         cmd = "rpm --version"
