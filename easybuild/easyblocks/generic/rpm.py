@@ -141,7 +141,10 @@ class Rpm(Binary):
         self.oldsrc = self.src
         self.src = []
         for rpm in os.listdir(os.path.join(rpms_path, 'x86_64')):
-            self.src.append({'name': rpm, 'path': os.path.join(rpms_path, 'x86_64', rpm)})
+            self.src.append({
+                             'name': rpm,
+                             'path': os.path.join(rpms_path, 'x86_64', rpm)
+                            })
         self.log.debug("self.oldsrc: %s" % str(self.oldsrc))
         self.log.debug("self.src: %s" % str(self.src))
 
@@ -169,9 +172,11 @@ class Rpm(Binary):
             preinstall = ''
 
         if self.rebuildRPM:
-            cmd_tpl = "rpm -i --dbpath %(inst)s/rpm %(force)s --relocate /=%(inst)s %(pre)s %(post)s --nodeps %(rpm)s"
+            cmd_tpl = "rpm -i --dbpath %(inst)s/rpm %(force)s --relocate /=%(inst)s " \
+                      "%(pre)s %(post)s --nodeps %(rpm)s"
         else:
-            cmd_tpl = "rpm -i --dbpath /rpm %(force)s --root %(inst)s --relocate /=%(inst)s %(pre)s %(post)s --nodeps %(rpm)s"
+            cmd_tpl = "rpm -i --dbpath /rpm %(force)s --root %(inst)s --relocate /=%(inst)s " \
+                      "%(pre)s %(post)s --nodeps %(rpm)s"
 
         # exception for user root:
         # --relocate is not necesarry -> --root will relocate more than enough
@@ -188,16 +193,13 @@ class Rpm(Binary):
             run_cmd(cmd, log_all=True, simple=True)
 
         for path in self.cfg['makesymlinks']:
-            """
-            Allow globs, always use first hit.
-            - also verify links existince
-            """
+            # allow globs, always use first hit.
+            # also verify links existince
             realdirs = glob.glob(path)
             if realdirs:
                 if len(realdirs) > 1:
                     self.log.debug("More then one match found for symlink glob %s, using first (all: %s)" % (path, realdirs))
                 os.symlink(realdirs[0], os.path.join(self.installdir, os.path.basename(path)))
-
             else:
                 self.log.debug("No match found for symlink glob %s." % path)
 
