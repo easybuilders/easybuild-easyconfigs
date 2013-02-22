@@ -78,9 +78,9 @@ class Rpm(Binary):
     def configure_step(self):
         """Custom configuration procedure for RPMs: rebuild RPMs for relocation if required."""
 
-        # make sure that rpm and rpmrebuild is available
+        # make sure that rpm is available
         if not 'rpmrebuild' in self.cfg['osdependencies']:
-            self.cfg['osdependencies'].extend(['rpm', 'rpmrebuild'])
+            self.cfg['osdependencies'].append('rpm')
             self.cfg.validate_os_deps()
 
         # determine whether RPMs need to be rebuilt to make relocation work
@@ -107,6 +107,11 @@ class Rpm(Binary):
     # --relocate doesn't seem to work (error: Unable to change root directory: Operation not permitted)
     def rebuildRPMs(self):
         """Rebuild RPMs to make relocation work."""
+
+        # make sure that rpm is available
+        if not 'rpmrebuild' in self.cfg['osdependencies']:
+            self.cfg['osdependencies'].append('rpmrebuild')
+            self.cfg.validate_os_deps()
 
         rpmmacros = os.path.join(expanduser('~'), '.rpmmacros')
         if os.path.exists(rpmmacros):
