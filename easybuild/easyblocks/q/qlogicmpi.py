@@ -54,8 +54,7 @@ class EB_QLogicMPI(Rpm):
 
         custom_paths = {
                         'files': [os.path.join('bin', x) for x in ['mpirun', 'mpicc', 'mpicxx', 'mpif77', 'mpif90']] +
-                                 [os.path.join('include', 'mpi.h'), os.path.join('lib', 'libmpich.so'),
-                                  os.path.join('lib64', 'libmpich.so')],
+                                 [os.path.join('include', 'mpi.h')],
                         'dirs': [],
                        }
 
