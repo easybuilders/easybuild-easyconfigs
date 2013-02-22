@@ -79,7 +79,7 @@ class Rpm(Binary):
         """Custom configuration procedure for RPMs: rebuild RPMs for relocation if required."""
 
         # make sure that rpm is available
-        if not 'rpmrebuild' in self.cfg['osdependencies']:
+        if not 'rpm' in self.cfg['osdependencies']:
             self.cfg['osdependencies'].append('rpm')
             self.cfg.validate_os_deps()
 
@@ -89,16 +89,16 @@ class Rpm(Binary):
         
         rpmver_re = re.compile("^RPM\s+version\s+(?P<version>[0-9.]+).*")
         res = rpmver_re.match(out)
-        self.log.debug("RPM version matches: %s" % res.group())
+        self.log.debug("RPM version found: %s" % res.group())
 
         if res:
             ver = res.groupdict()['version']
 
-            if LooseVersion(ver) > LooseVersion('4.8'):
+            if LooseVersion(ver) >= LooseVersion('4.8.0'):
                 self.rebuildRPM = True
                 self.log.debug("Enabling rebuild of RPMs to make relocation work...")
         else:
-            self.log.debug("WARNING: Checking RPM version failed, so just carrying on with the default behavior...")
+            self.log.error("Checking RPM version failed, so just carrying on with the default behavior...")
 
         if self.rebuildRPM:
             self.rebuildRPMs()
@@ -145,8 +145,7 @@ class Rpm(Binary):
                              'name': rpm,
                              'path': os.path.join(rpms_path, 'x86_64', rpm)
                             })
-        self.log.debug("self.oldsrc: %s" % str(self.oldsrc))
-        self.log.debug("self.src: %s" % str(self.src))
+        self.log.debug("oldsrc: %s, src: %s" % (self.oldsrc, self.src))
 
     def install_step(self):
         """Custom installation procedure for RPMs into a custom prefix."""
