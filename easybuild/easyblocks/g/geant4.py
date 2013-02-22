@@ -37,6 +37,7 @@ import shutil
 import re
 from distutils.version import LooseVersion
 
+import easybuild.tools.environment as env
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.easyblocks.generic.cmakemake import CMakeMake
 from easybuild.tools.filetools import run_cmd, run_cmd_qa
@@ -341,10 +342,10 @@ class EB_Geant4(CMakeMake):
             f.close()
 
             # make sure the required environment variables are there
-            os.putenv("G4INSTALL", self.installdir)
-            os.putenv("G4SYSTEM", self.g4system)
-            os.putenv("G4LIB", "%s/lib/geant4/" % self.installdir)
-            os.putenv("G4INCLUDE", "%s/include/geant4/" % self.installdir)
+            env.setvar("G4INSTALL", self.installdir)
+            env.setvar("G4SYSTEM", self.g4system)
+            env.setvar("G4LIB", "%s/lib/geant4/" % self.installdir)
+            env.setvar("G4INCLUDE", "%s/include/geant4/" % self.installdir)
 
             run_cmd("make", log_all=True, simple=True)
             run_cmd("make includes", log_all=True, simple=True)
