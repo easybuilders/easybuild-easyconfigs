@@ -58,6 +58,6 @@ class EB_R(ConfigureMake):
         We set some default configs here for extentions for R.
         """
         self.setcfg('pkgdefaultclass', ['easybuild.easyblocks.rextension', "EB_RExtension"])
-        self.setcfg('pkgfilter', ["R -q --no-save", "library(%(name)s)"])
+        self.setcfg('pkgfilter', EXTS_FILTER_R_PACKAGES)
         self.setcfg('pkgtemplate', '%(name)s/%(name)s_%(version)s.tar.gz')
         self.setcfg('pkginstalldeps', True)
