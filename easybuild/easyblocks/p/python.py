@@ -40,7 +40,7 @@ from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.filetools import run_cmd
 
 
-EXTS_FILTER_PYTHON_PACKAGES = ('python -c "import %(name)s"', "")
+EXTS_FILTER_PYTHON_PACKAGES = ('python -c "import %(ext_name)s"', "")
 
 
 class EB_Python(ConfigureMake):
