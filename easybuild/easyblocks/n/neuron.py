@@ -176,7 +176,7 @@ class EB_NEURON(ConfigureMake):
 
         valid = True
         for i in range(0, nproc):
-            validate_regexp = re.compile("I am %d of nproc" % (i, nproc))
+            validate_regexp = re.compile("I am %d of %d" % (i, nproc))
             if not validate_regexp.search(out):
                 valid = False
                 break
