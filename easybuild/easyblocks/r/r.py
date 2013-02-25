@@ -30,7 +30,7 @@ EasyBuild support for building and installing R, implemented as an easyblock
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.tools import environment
 
-EXTS_FILTER_R_PACKAGES = ("R -q --no-save", "library(%(name)s)")
+EXTS_FILTER_R_PACKAGES = ("R -q --no-save", "library(%(ext_name)s)")
 
 class EB_R(ConfigureMake):
     """
