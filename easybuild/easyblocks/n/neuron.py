@@ -161,11 +161,13 @@ class EB_NEURON(ConfigureMake):
         else:
             self.log.info("Validation of NEURON demo OK!")
 
+        nproc = self.cfg['parallel']
+
         try:
             cwd = os.getcwd()
             os.chdir(os.path.join(self.cfg['start_dir'], 'src', 'parallel'))
 
-            cmd = self.toolchain.mpi_cmd_for("nrniv -mpi test0.hoc", 10)
+            cmd = self.toolchain.mpi_cmd_for("nrniv -mpi test0.hoc", nproc)
             (out, ec) = run_cmd(cmd, simple=False, log_all=True, log_output=True)
 
             os.chdir(cwd)
@@ -173,8 +175,8 @@ class EB_NEURON(ConfigureMake):
             self.log.error("Failed to run parallel hello world: %s" % err)
 
         valid = True
-        for i in range(0, 10):
-            validate_regexp = re.compile("I am %d of 10" % i)
+        for i in range(0, nproc):
+            validate_regexp = re.compile("I am %d of %d" % (i, nproc))
             if not validate_regexp.search(out):
                 valid = False
                 break
