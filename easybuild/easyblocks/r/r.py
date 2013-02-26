@@ -2,7 +2,11 @@
 # Copyright 2012-2013 Ghent University
 #
 # This file is part of EasyBuild,
-# originally created by the HPC team of the University of Ghent (http://ugent.be/hpc).
+# originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
+# with support of Ghent University (http://ugent.be/hpc),
+# the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
+# the Hercules foundation (http://www.herculesstichting.be/in_English)
+# and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
 # http://github.com/hpcugent/easybuild
 #
@@ -12,11 +16,11 @@
 #
 # EasyBuild is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with EasyBuild. If not, see <http://www.gnu.org/licenses/>.
+# along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
 """
 EasyBuild support for building and installing R, implemented as an easyblock
@@ -26,7 +30,7 @@ EasyBuild support for building and installing R, implemented as an easyblock
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.tools import environment
 
-EXTS_FILTER_R_PACKAGES = ("R -q --no-save", "library(%(name)s)")
+EXTS_FILTER_R_PACKAGES = ("R -q --no-save", "library(%(ext_name)s)")
 
 class EB_R(ConfigureMake):
     """
@@ -54,6 +58,6 @@ class EB_R(ConfigureMake):
         We set some default configs here for extentions for R.
         """
         self.setcfg('pkgdefaultclass', ['easybuild.easyblocks.rextension', "EB_RExtension"])
-        self.setcfg('pkgfilter', ["R -q --no-save", "library(%(name)s)"])
+        self.setcfg('pkgfilter', EXTS_FILTER_R_PACKAGES)
         self.setcfg('pkgtemplate', '%(name)s/%(name)s_%(version)s.tar.gz')
         self.setcfg('pkginstalldeps', True)

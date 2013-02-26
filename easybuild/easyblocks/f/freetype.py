@@ -23,40 +23,46 @@
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
 """
-EasyBuild support for OpenSSL, implemented as an easyblock
+EasyBuild support for building and installing freetype, implemented as an easyblock
 
 @author: Kenneth Hoste (Ghent University)
-@author: Jens Timmerman (Ghent University)
 """
+import os
 
+import easybuild.tools.environment as env
+import easybuild.tools.toolchain as toolchain
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
+from easybuild.framework.easyconfig import CUSTOM, MANDATORY
 from easybuild.tools.filetools import run_cmd
 
 
-class EB_OpenSSL(ConfigureMake):
-    """Support for building OpenSSL"""
+class EB_freetype(ConfigureMake):
+    """Support for building/installing freetype."""
 
-    def configure_step(self, cmd_prefix=''):
-        """
-        Configure step
-        """
- 
-        cmd = "%s %s./config --prefix=%s threads shared %s" % (self.cfg['preconfigopts'], cmd_prefix,
-                                                               self.installdir, self.cfg['configopts'])
+    def __init__(self, *args, **kwargs):
+        """Initialisation of custom class variables for freetype."""
+        super(EB_freetype, self).__init__(*args, **kwargs)
 
-        (out, _) = run_cmd(cmd, log_all=True, simple=False)
-
-        return out
+        self.maj_ver = self.version.split('.')[0]
 
     def sanity_check_step(self):
-        """Custom sanity check"""
+        """Custom sanity check for freetype."""
 
-        custom_paths = {'files':["lib64/%s" % x for x in ['engines', 'libcrypto.a', 'libcrypto.so',
-                                                          'libcrypto.so.1.0.0', 'libssl.a',
-                                                          'libssl.so', 'libssl.so.1.0.0']] + 
-                                ['bin/openssl'],
-                        'dirs': []
+        custom_paths = {
+                        'files': ['bin/freetype-config', 'lib/libfreetype.a', 'lib/libfreetype.so',
+                                  'lib/pkgconfig/freetype%s.pc' % self.maj_ver],
+                        'dirs': ['include/freetype%s' % self.maj_ver],
                        }
 
-        super(EB_OpenSSL, self).sanity_check_step(custom_paths=custom_paths)
-    
+        super(EB_freetype, self).sanity_check_step(custom_paths=custom_paths)
+
+    def make_module_req_guess(self):
+        """Custom guess for CPATH for freetype."""
+
+        guesses = super(EB_freetype, self).make_module_req_guess()
+
+        guesses.update({
+                        'CPATH': ['include/freetype%s' % self.maj_ver],
+                       })
+
+        return guesses

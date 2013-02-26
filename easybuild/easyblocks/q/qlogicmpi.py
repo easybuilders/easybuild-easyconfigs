@@ -23,53 +23,39 @@
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
 """
-EasyBuild support for BiSearch, implemented as an easyblock
+EasyBuild support for installing QLogic MPI (RPM).
 
 @author: Stijn De Weirdt (Ghent University)
 @author: Dries Verdegem (Ghent University)
 @author: Kenneth Hoste (Ghent University)
 @author: Pieter De Baets (Ghent University)
 @author: Jens Timmerman (Ghent University)
+@author: Toon Willems (Ghent University)
 """
+
 import os
 
-from easybuild.framework.easyblock import EasyBlock
-from easybuild.tools.filetools import run_cmd_qa
+from easybuild.easyblocks.generic.rpm import Rpm
 
 
-class EB_BiSearch(EasyBlock):
-    """
-    Support for building BiSearch.
-    Basically just run the interactive installation script install.sh.
-    """
+class EB_QLogicMPI(Rpm):
 
-    def configure_step(self):
-        """(no configure)"""
-        pass
+    def make_module_extra(self):
+        """Add MPICH_ROOT to module file."""
+        
+        txt = super(EB_QLogicMPI, self).make_module_extra()
 
-    def build_step(self):
-        """(empty, building is performed in make_install step)"""
-        pass
+        txt += self.moduleGenerator.set_environment('MPICH_ROOT', self.installdir)
 
-    def install_step(self):
-        cmd = "./install.sh"
-
-        qanda = {
-                 'Please enter the BiSearch root directory: ': self.installdir,
-                 'Please enter the path of c++ compiler [/usr/bin/g++]: ': os.getenv('CXX')
-                }
-
-        no_qa = [r'Compiling components\s*\.*']
-
-        run_cmd_qa(cmd, qanda, no_qa=no_qa, log_all=True, simple=True)
+        return txt
 
     def sanity_check_step(self):
-        """Custom sanity check for BiSearch."""
+        """Custom sanity check for QLogicMPI."""
 
         custom_paths = {
-                        'files':["bin/%s" % x for x in ["fpcr", "indexing_cdna",
-                                                        "indexing_genome", "makecomp"]],
-                        'dirs':[]
+                        'files': [os.path.join('bin', x) for x in ['mpirun', 'mpicc', 'mpicxx', 'mpif77', 'mpif90']] +
+                                 [os.path.join('include', 'mpi.h')],
+                        'dirs': [],
                        }
 
-        super(EB_BiSearch, self).sanity_check_step(custom_paths=custom_paths)
+        super(EB_QLogicMPI, self).sanity_check_step(custom_paths=custom_paths)

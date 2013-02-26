@@ -1,9 +1,7 @@
 ##
-# Copyright 2012 Ghent University
-# Copyright 2012 Kenneth Hoste
-# Copyright 2012 Jens Timmerman
+# Copyright 2009-2013 Ghent University
 #
-# This file is part of EasyBuild
+# This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
 # with support of Ghent University (http://ugent.be/hpc),
 # the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
@@ -26,6 +24,9 @@
 ##
 """
 EasyBuild support for bzip2, implemented as an easyblock
+
+@author: Kenneth Hoste (Ghent University)
+@author: Jens Timmerman (Ghent University)
 """
 import os
 

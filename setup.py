@@ -1,6 +1,5 @@
 ##
-# Copyright 2012 Ghent University
-# Copyright 2012 Kenneth Hoste
+# Copyright 2012-2013 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -29,6 +28,8 @@ This script can be used to install easybuild-easyblocks, e.g. using:
   easy_install --user .
 or
   python setup.py --prefix=$HOME/easybuild
+
+@author: Kenneth Hoste (Ghent University)
 """
 
 import os
@@ -42,9 +43,10 @@ from easyblocks import VERSION
 API_VERSION = str(VERSION).split('.')[0]
 suff = ''
 
-rc_regexp = re.compile("^.*rc[0-9]*$")
-if rc_regexp.match(str(VERSION)):
-    suff = '-%s' % VERSION.split('-')[-1]
+rc_regexp = re.compile("^.*(rc[0-9]*)$")
+res = rc_regexp.search(str(VERSION))
+if res:
+    suff = res.group(1)
 dev_regexp = re.compile("^.*[0-9]dev$")
 if dev_regexp.match(str(VERSION)):
     suff = 'dev'

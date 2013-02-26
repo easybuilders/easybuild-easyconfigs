@@ -1,11 +1,5 @@
 ##
-# Copyright 2009-2012 Ghent University
-# Copyright 2009-2012 Stijn De Weirdt
-# Copyright 2010 Dries Verdegem
-# Copyright 2010-2012 Kenneth Hoste
-# Copyright 2011 Pieter De Baets
-# Copyright 2011-2012 Jens Timmerman
-# Copyright 2012 Toon Willems
+# Copyright 2009-2013 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -18,6 +12,7 @@
 #
 # EasyBuild is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
+# the Free Software Foundation v2.
 #
 # EasyBuild is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -30,6 +25,13 @@
 """
 EasyBuild support for software that uses the GNU installation procedure,
 i.e. configure/make/make install, implemented as an easyblock.
+
+@author: Stijn De Weirdt (Ghent University)
+@author: Dries Verdegem (Ghent University)
+@author: Kenneth Hoste (Ghent University)
+@author: Pieter De Baets (Ghent University)
+@author: Jens Timmerman (Ghent University)
+@author: Toon Willems (Ghent University)
 """
 
 from easybuild.framework.easyblock import EasyBlock

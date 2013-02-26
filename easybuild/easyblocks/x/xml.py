@@ -23,9 +23,9 @@
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
 """
-EasyBuild support for building and installing numpy, implemented as an easyblock
+EasyBuild support for building and installing xml R, implemented as an easyblock
 
-@authors: Kenneth Hoste (Ghent University)
+@author: Kenneth Hoste (Ghent University)
 """
 import os
 

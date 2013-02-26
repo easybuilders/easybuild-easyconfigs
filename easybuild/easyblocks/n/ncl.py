@@ -1,10 +1,5 @@
 ##
-# Copyright 2009-2012 Ghent University
-# Copyright 2009-2012 Stijn De Weirdt
-# Copyright 2010 Dries Verdegem
-# Copyright 2010-2012 Kenneth Hoste
-# Copyright 2011 Pieter De Baets
-# Copyright 2011-2012 Jens Timmerman
+# Copyright 2009-2013 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -29,6 +24,12 @@
 ##
 """
 EasyBuild support for building and installing NCL, implemented as an easyblock
+
+@author: Stijn De Weirdt (Ghent University)
+@author: Dries Verdegem (Ghent University)
+@author: Kenneth Hoste (Ghent University)
+@author: Pieter De Baets (Ghent University)
+@author: Jens Timmerman (Ghent University)
 """
 
 import fileinput
@@ -84,7 +85,7 @@ class EB_NCL(EasyBlock):
             ctof_libs = '-lgfortran -lm'
         macrodict = {
                      'CCompiler': os.getenv('CC'),
-                     'FCompiler': os.getenv('F77'),
+                     'FCompiler': os.getenv('F90'),
                      'CcOptions': '-ansi %s' % os.getenv('CFLAGS'),
                      'FcOptions': os.getenv('FFLAGS'),
                      'COptimizeFlag': os.getenv('CFLAGS'),
@@ -134,6 +135,17 @@ class EB_NCL(EasyBlock):
                 self.log.error('%s not available' % dep)
             libs += ' -L%s/lib ' % root
             includes += ' -I%s/include ' % root
+
+        opt_deps = ["netCDF-Fortran", "GDAL"]
+        libs_map = {
+                    'netCDF-Fortran': '-lnetcdff -lnetcdf',
+                    'GDAL': '-lgdal',
+                   }
+        for dep in opt_deps:
+            root = get_software_root(dep)
+            if root:
+                libs += ' -L%s/lib %s ' % (root, libs_map[dep])
+                includes += ' -I%s/include ' % root
 
         cfgtxt="""#ifdef FirstSite
 #endif /* FirstSite */

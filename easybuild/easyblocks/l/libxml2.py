@@ -1,6 +1,5 @@
 ##
-# Copyright 2012 Ghent University
-# Copyright 2012 Jens Timmerman
+# Copyright 2009-2013 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -26,12 +25,15 @@
 """
 EasyBuild support for building and installing libxml2 with python bindings,
 implemented as an easyblock.
+
+@author: Jens Timmerman (Ghent University)
 """
 import os
 
 import easybuild.tools.environment as env
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.easyblocks.generic.pythonpackage import PythonPackage
+from easybuild.tools.modules import get_software_root
 
 
 class EB_libxml2(ConfigureMake, PythonPackage):
@@ -48,7 +50,7 @@ class EB_libxml2(ConfigureMake, PythonPackage):
         Configure and 
         Test if python module is loaded
         """
-        if not os.getenv("EBROOTPYTHON"):
+        if not get_software_root('Python'):
             self.log.error("Python module not loaded")
        
         ConfigureMake.configure_step(self)

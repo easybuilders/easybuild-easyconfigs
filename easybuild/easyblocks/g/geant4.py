@@ -1,13 +1,12 @@
 ##
-# Copyright 2009-2012 Ghent University
-# Copyright 2009-2012 Stijn De Weirdt
-# Copyright 2010 Dries Verdegem
-# Copyright 2010-2012 Kenneth Hoste
-# Copyright 2011 Pieter De Baets
-# Copyright 2011-2012 Jens Timmerman
+# Copyright 2009-2013 Ghent University
 #
 # This file is part of EasyBuild,
-# originally created by the HPC team of the University of Ghent (http://ugent.be/hpc).
+# originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
+# with support of Ghent University (http://ugent.be/hpc),
+# the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
+# the Hercules foundation (http://www.herculesstichting.be/in_English)
+# and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
 # http://github.com/hpcugent/easybuild
 #
@@ -25,6 +24,12 @@
 ##
 """
 Geant4 support, implemented as an easyblock.
+
+@author: Stijn De Weirdt (Ghent University)
+@author: Dries Verdegem (Ghent University)
+@author: Kenneth Hoste (Ghent University)
+@author: Pieter De Baets (Ghent University)
+@author: Jens Timmerman (Ghent University)
 """
 
 import os
@@ -32,6 +37,7 @@ import shutil
 import re
 from distutils.version import LooseVersion
 
+import easybuild.tools.environment as env
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.easyblocks.generic.cmakemake import CMakeMake
 from easybuild.tools.filetools import run_cmd, run_cmd_qa
@@ -336,10 +342,10 @@ class EB_Geant4(CMakeMake):
             f.close()
 
             # make sure the required environment variables are there
-            os.putenv("G4INSTALL", self.installdir)
-            os.putenv("G4SYSTEM", self.g4system)
-            os.putenv("G4LIB", "%s/lib/geant4/" % self.installdir)
-            os.putenv("G4INCLUDE", "%s/include/geant4/" % self.installdir)
+            env.setvar("G4INSTALL", self.installdir)
+            env.setvar("G4SYSTEM", self.g4system)
+            env.setvar("G4LIB", "%s/lib/geant4/" % self.installdir)
+            env.setvar("G4INCLUDE", "%s/include/geant4/" % self.installdir)
 
             run_cmd("make", log_all=True, simple=True)
             run_cmd("make includes", log_all=True, simple=True)
