@@ -47,9 +47,10 @@ API_VERSION = VERSION.split('.')[0]
 EB_VERSION = '.'.join(VERSION.split('.')[0:2])
 suff = ''
 
-rc_regexp = re.compile("^.*rc[0-9]*$")
-if rc_regexp.match(VERSION):
-    suff = '-%s' % VERSION.split('-')[-1]
+rc_regexp = re.compile("^.*(rc[0-9]*)$")
+res = rc_regexp.search(str(VERSION))
+if res:
+    suff = res.group(1)
 dev_regexp = re.compile("^.*[0-9]dev$")
 if dev_regexp.match(VERSION):
     suff = 'dev'
