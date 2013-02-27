@@ -107,6 +107,16 @@ class EB_CP2K(EasyBlock):
         - generate Makefile
         """
 
+        # correct start dir, if needed
+        # recent CP2K versions have a 'cp2k' dir in the unpacked 'cp2k' dir
+        try:
+            cp2k_path = os.path.join(self.cfg['start_dir'], 'cp2k')
+            if os.path.exists(cp2k_path):
+                self.cfg['start_dir'] = cp2k_path
+
+        except OSError, err:
+            self.log.error("Failed to correct start dir: %s" % err)
+
         # set compilers options according to toolchain config
         # full debug: -g -traceback -check all -fp-stack-check
         # -g links to mpi debug libs
@@ -195,7 +205,7 @@ class EB_CP2K(EasyBlock):
         if imkl:
 
             # prepare modinc target path
-            modincpath = os.path.join(self.builddir, 'modinc')
+            modincpath = os.path.join(os.path.dirname(self.cfg['start_dir']), 'modinc')
             self.log.debug("Preparing module files in %s" % modincpath)
 
             try:
@@ -419,8 +429,7 @@ class EB_CP2K(EasyBlock):
         if self.toolchain.options['optarch']:
             optarch = '-march=native'
 
-        options['FCFLAGSOPT'] += ' $(DFLAGS) $(CFLAGS) %s -ffast-math ' \
-                                 '-funroll-loops -ftree-vectorize -fmax-stack-var-size=32768' % optarch
+        options['FCFLAGSOPT'] += ' $(DFLAGS) $(CFLAGS) %s -fmax-stack-var-size=32768' % optarch
         options['FCFLAGSOPT2'] += ' $(DFLAGS) $(CFLAGS) %s' % optarch
 
         return options
@@ -454,17 +463,30 @@ class EB_CP2K(EasyBlock):
 
         options.update({
                         'INTEL_INC': '$(MKLROOT)/include',
-                        'INTEL_INCF': '$(INTEL_INC)/fftw',
                        })
 
-        options['DFLAGS'] += ' -D__FFTW3 -D__FFTMKL'
+        options['DFLAGS'] += ' -D__FFTW3'
 
         extra = ''
         if self.modincpath:
             extra = '-I%s' % self.modincpath
-        options['CFLAGS'] += ' -I$(INTEL_INC) -I$(INTEL_INCF) %s $(FPIC) $(DEBUG)' % extra
+        options['CFLAGS'] += ' -I$(INTEL_INC) %s $(FPIC) $(DEBUG)' % extra
 
-        options['LIBS'] += ' %s %s %s' % (self.libsmm, os.getenv('LIBFFT'), os.getenv('LIBSCALAPACK'))
+        options['LIBS'] += ' %s %s' % (self.libsmm, os.getenv('LIBSCALAPACK'))
+
+        # only use Intel FFTW wrappers if FFTW is not loaded
+        if not get_software_root('FFTW'):
+
+            options.update({
+                            'INTEL_INCF': '$(INTEL_INC)/fftw',
+                           })
+
+            options['DFLAGS'] += ' -D__FFTMKL'
+
+            options['CFLAGS'] += ' -I$(INTEL_INCF)'
+
+            options['LIBS'] = '%s %s' % (os.getenv('LIBFFT'), options['LIBS'])
+
 
         return options
 
@@ -557,7 +579,7 @@ class EB_CP2K(EasyBlock):
                     break
 
             # location of do_regtest script
-            regtest_script = "%s/cp2k/tools/do_regtest" % self.builddir
+            regtest_script = os.path.join(self.cfg['start_dir'], 'tools', 'do_regtest')
 
             # patch do_regtest so that reference output is used
             if regtest_refdir:
@@ -579,12 +601,14 @@ cp2k_version=%(cp2k_version)s
 dir_triplet=%(triplet)s
 leakcheck="YES"
 maxtasks=%(maxtasks)s
+cp2k_run_prefix="%(mpicmd_prefix)s"
             """ % {
                    'f90': os.getenv('F90'),
-                   'base': self.builddir,
+                   'base': os.path.dirname(self.cfg['start_dir']),
                    'cp2k_version': self.cfg['type'],
                    'triplet': self.typearch,
-                   'maxtasks': self.cfg['maxtasks']
+                   'maxtasks': self.cfg['maxtasks'],
+                   'mpicmd_prefix': self.toolchain.mpi_cmd_for('', 2),
                   }
 
             cfg_fn = "cp2k_regtest.cfg"
@@ -595,6 +619,8 @@ maxtasks=%(maxtasks)s
                 f.close()
             except IOError, err:
                 self.log.error("Failed to create config file %s: %s" % (cfg_fn, err))
+
+            self.log.debug("Contents of %s: %s" % (cfg_fn, cfg_txt))
 
             # run regression test
             cmd = "%s -nocvs -quick -nocompile -config %s" % (regtest_script, cfg_fn)
@@ -696,9 +722,10 @@ maxtasks=%(maxtasks)s
         # copy regression test results
         if self.cfg['runtest']:
             try:
-                for d in os.listdir(self.builddir):
+                testdir = os.path.dirname(self.cfg['start_dir'])
+                for d in os.listdir(testdir):
                     if d.startswith('TEST-%s-%s' % (self.typearch, self.cfg['type'])):
-                        path = os.path.join(self.builddir, d)
+                        path = os.path.join(testdir, d)
                         target = os.path.join(self.installdir, d)
                         shutil.copytree(path, target)
                         self.log.info("Regression test results dir %s copied to %s" % (d, self.installdir))
