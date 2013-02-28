@@ -206,7 +206,7 @@ class EB_CP2K(EasyBlock):
         if imkl:
 
             # prepare modinc target path
-            modincpath = os.path.join(os.path.dirname(self.cfg['start_dir']), 'modinc')
+            modincpath = os.path.join(os.path.dirname(os.path.normpath(self.cfg['start_dir'])), 'modinc')
             self.log.debug("Preparing module files in %s" % modincpath)
 
             try:
@@ -597,7 +597,7 @@ class EB_CP2K(EasyBlock):
 
             # configure regression test
             cfg_txt="""FORT_C_NAME="%(f90)s"
-dir_base=%(base)s  # %(base2)s
+dir_base=%(base)s
 cp2k_version=%(cp2k_version)s
 dir_triplet=%(triplet)s
 leakcheck="YES"
@@ -605,8 +605,7 @@ maxtasks=%(maxtasks)s
 cp2k_run_prefix="%(mpicmd_prefix)s"
             """ % {
                    'f90': os.getenv('F90'),
-                   'base': os.path.dirname(self.cfg['start_dir']),
-                   'base2': self.cfg['start_dir'],
+                   'base': os.path.dirname(os.path.normpath(self.cfg['start_dir'])),
                    'cp2k_version': self.cfg['type'],
                    'triplet': self.typearch,
                    'maxtasks': self.cfg['maxtasks'],
@@ -724,7 +723,7 @@ cp2k_run_prefix="%(mpicmd_prefix)s"
         # copy regression test results
         if self.cfg['runtest']:
             try:
-                testdir = os.path.dirname(self.cfg['start_dir'])
+                testdir = os.path.dirname(os.path.normpath(self.cfg['start_dir']))
                 for d in os.listdir(testdir):
                     if d.startswith('TEST-%s-%s' % (self.typearch, self.cfg['type'])):
                         path = os.path.join(testdir, d)
