@@ -113,6 +113,7 @@ class EB_CP2K(EasyBlock):
             cp2k_path = os.path.join(self.cfg['start_dir'], 'cp2k')
             if os.path.exists(cp2k_path):
                 self.cfg['start_dir'] = cp2k_path
+                self.log.info("Corrected start_dir to %s" % self.cfg['start_dir'])
 
         except OSError, err:
             self.log.error("Failed to correct start dir: %s" % err)
@@ -594,9 +595,12 @@ class EB_CP2K(EasyBlock):
             else:
                 self.log.info("No reference output found for regression test, just continuing without it...")
 
+            basedir = self.builddir
+            if
+
             # configure regression test
             cfg_txt="""FORT_C_NAME="%(f90)s"
-dir_base=%(base)s
+dir_base=%(base)s  # %(base2)s
 cp2k_version=%(cp2k_version)s
 dir_triplet=%(triplet)s
 leakcheck="YES"
@@ -605,6 +609,7 @@ cp2k_run_prefix="%(mpicmd_prefix)s"
             """ % {
                    'f90': os.getenv('F90'),
                    'base': os.path.dirname(self.cfg['start_dir']),
+                   'base2': self.cfg['start_dir'],
                    'cp2k_version': self.cfg['type'],
                    'triplet': self.typearch,
                    'maxtasks': self.cfg['maxtasks'],
