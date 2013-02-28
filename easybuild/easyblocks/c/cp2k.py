@@ -595,9 +595,6 @@ class EB_CP2K(EasyBlock):
             else:
                 self.log.info("No reference output found for regression test, just continuing without it...")
 
-            basedir = self.builddir
-            if
-
             # configure regression test
             cfg_txt="""FORT_C_NAME="%(f90)s"
 dir_base=%(base)s  # %(base2)s
