@@ -74,10 +74,7 @@ setup(
     version = str(VERSION),
     author = "EasyBuild community",
     author_email = "easybuild@lists.ugent.be",
-    description = """EasyBuild is a software installation framework in Python that allows you to install software \
-in a structured and robust way. 
-This package contains a collection of easyblocks, i.e. Python modules which implement support for installing \
-particular (groups of) software packages with EasyBuild.""",
+    description = """Python modules which implement support for installing particular (groups of) software packages with EasyBuild.""",
     license = "GPLv2",
     keywords = "software build building installation installing compilation HPC scientific",
     url = "http://hpcugent.github.com/easybuild",
