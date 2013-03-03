@@ -504,7 +504,7 @@ class EB_CP2K(EasyBlock):
 
         options['DFLAGS'] += ' -D__FFTW3'
 
-        options['LIBS'] += ' -lfftw3'
+        options['LIBS'] += ' -L%s -lfftw3' % os.path.join(os.getenv('EBROOTFFTW'), 'lib')
 
         return options
 
