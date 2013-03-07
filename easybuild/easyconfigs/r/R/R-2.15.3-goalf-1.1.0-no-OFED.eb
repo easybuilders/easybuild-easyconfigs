@@ -1,0 +1,68 @@
+name = 'R'
+version = '2.15.3'
+
+homepage = 'http://www.r-project.org/'
+description = """R is a free software environment for statistical computing and graphics."""
+
+toolchain = {'name': 'goalf', 'version': '1.1.0-no-OFED'}
+
+sources = ['%s-%s.tar.gz' % (name, version)]
+source_urls = [
+    'http://cran.us.r-project.org/src/base/R-2/',  # R itself
+    'http://cran.r-project.org/src/contrib/Archive/',  # package archive
+    'http://cran.freestatistics.org/src/contrib',  # alternative for packages
+]
+
+preconfigopts = 'BLAS_LIBS="$LIBBLAS" LAPACK_LIBS="$LIBLAPACK"'
+configopts = "--with-lapack --with-blas --with-pic --enable-threads --with-x=no --enable-R-shlib"
+
+dependencies = [
+    ('libreadline', '6.2'),
+    ('ncurses', '5.9'),
+    ('libpng', '1.5.13'),  # for plotting in R
+    ('Java', '1.7.0_15', '', True),  # Java bindings are built if Java is found, might as well provide it
+]
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in ['R', 'Rscript']] +
+             ['lib64/R/include/%s' % x for x in ['Rconfig.h', 'Rdefines.h', 'Rembedded.h',
+                                                 'R.h', 'Rinterface.h', 'Rinternals.h',
+                                                 'Rmath.h', 'Rversion.h', 'S.h']] +
+             ['lib64/R/modules/%s' % x for x in ['internet.so', 'lapack.so', 'vfonts.so']] +
+             ['lib64/R/lib/libR.so'],
+    'dirs': []
+}
+
+# !! order of packages is important !!
+name_tmpl = '%(name)s_%(version)s.tar.gz'
+ext_options = {'source_tmpl': '%%(name)s/%s' % name_tmpl}
+ext_options2 = {'source_tmpl': name_tmpl}
+# bioconductor packages have a different download url
+bioconductor_options = {'source_urls': ['http://bioconductor.fhcrc.org/packages/bioc/2.6/src/contrib/'],
+                        'source_tmpl': name_tmpl,
+                        }
+# install these extensions with bioconductor (warning, this will also automatically install dependencies)
+bioconductor_exts = [
+    'AnnotationDbi', 'Biobase', 'BSgenome', 'IRanges', 'graph', 'igraph0',
+    ('RBGL', '1.24.0', bioconductor_options), 'BioNet', 'xcms',
+]
+# let Extension know to use a different class for the bioconductor extensions
+# warning, usage of classmap should be replaced by a ext_option soon.
+exts_classmap = {}
+for ext in bioconductor_exts:
+    if isinstance(ext, basestring):  # check for (name, options) tuples, in case of a tuple, install normally
+        exts_classmap.update({ext: 'EB_Bioconductor'})
+
+# normall R extensions
+exts_list = [
+    ('Rmpi', '0.5-9', ext_options), 'irace', 'rJava', 'Matrix', 'Rcpp', 'quadprog', 'BB', 'rlecuyer', 'snow',
+    'e1071', 'car', 'colorspace', 'robustbase', ('sp', '0.9-91', ext_options), 'vcd', 'snowfall', 'logistf',
+    ('Rserve', '0.6-1', ext_options),
+    ('akima', '0.5-9', ext_options2), 'base', 'Biostrings', 'bitops', 'boot', 'class', 'cluster', 'coda',
+    'codetools', 'datasets', 'DBI', 'foreign', 'gam', 'gamlss.data', 'gamlss.dist', 'gamlss', 'gamlss.tr',
+    'graphics', 'grDevices', 'grid', 'hwriter', 'KernSmooth', 'lattice', 'zoo', 'lmtest', 'MASS',
+    'methods', 'mgcv', 'mnormt', 'mvtnorm', 'nlme', 'nnet', 'numDeriv', 'pscl', 'RColorBrewer', 'rpart',
+    'RSQLite', 'sandwich', 'sfsmisc', 'spatial', 'splines', 'stats', 'stats4', 'survival', 'tools', 'utils',
+    'VGAM', 'waveslim', ('xtable', '1.7-0', ext_options), 'profileModel', 'brglm', 'deSolve', 'nnet', 'odesolve', 'tseriesChaos',
+    'tseries', 'neuRosim', 'fastICA', 'R.methodsS3', 'R.oo', 'R.matlab',
+] + bioconductor_exts
