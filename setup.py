@@ -96,5 +96,6 @@ particular (groups of) software packages with EasyBuild.""",
                   ],
     platforms = "Linux",
     provides = ["easybuild", "easybuild.easyblocks", "easybuild.easyblocks.generic"],
-    install_requires = ["easybuild-framework >= %s" % API_VERSION]
+    install_requires = ["easybuild-framework >= %s" % API_VERSION],
+    zip_safe = False,
 )
