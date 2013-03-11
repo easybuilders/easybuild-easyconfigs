@@ -82,13 +82,10 @@ class PythonPackage(ExtensionEasyBlock):
         """Configure Python package build."""
 
         self.python = get_software_root('Python')
-        pyver = '.'.join(get_software_version('Python').split('.')[0:2])
-        self.pylibdir = self.pylibdir % pyver
-        self.log.debug("Python library dir: %s" % self.pylibdir)
-
-        python_version = get_software_version('Python')
-        if not python_version:
+        if not self.python:
             self.log.error('Python module not loaded.')
+
+        self.log.debug("Python library dir: %s" % self.pylibdir)
 
         if self.sitecfg is not None:
             # used by some extensions, like numpy, to find certain libs
