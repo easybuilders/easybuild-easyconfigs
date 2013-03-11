@@ -31,6 +31,7 @@ EasyBuild support for Python packages, implemented as an easyblock
 @author: Pieter De Baets (Ghent University)
 @author: Jens Timmerman (Ghent University)
 """
+import distutils.sysconfig
 import os
 import tempfile
 from os.path import expanduser
@@ -68,7 +69,7 @@ class PythonPackage(ExtensionEasyBlock):
         self.unpack_options = ''
 
         self.python = None
-        self.pylibdir = os.path.join('lib', 'python%s', 'site-packages')
+        self.pylibdir = distutils.sysconfig.get_python_lib(prefix='')
 
         # make sure there's no site.cfg in $HOME, because setup.py will find it and use it
         if os.path.exists(os.path.join(expanduser('~'), 'site.cfg')):
