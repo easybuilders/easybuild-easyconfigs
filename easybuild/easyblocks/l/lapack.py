@@ -39,7 +39,7 @@ import shutil
 import easybuild.tools.toolchain as toolchain
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.framework.easyconfig import CUSTOM
-from easybuild.toolchains.linalg.atlas import ATLAS
+from easybuild.toolchains.linalg.atlas import Atlas
 from easybuild.toolchains.linalg.gotoblas import GotoBLAS
 from easybuild.toolchains.linalg.openblas import OpenBLAS
 from easybuild.tools.filetools import run_cmd
@@ -53,7 +53,7 @@ def get_blas_lib(log):
     blaslib = None
     known_blas_libs = {
                        'GotoBLAS': GotoBLAS.BLAS_LIB,
-                       'ATLAS': ATLAS.BLAS_LIB,
+                       'ATLAS': Atlas.BLAS_LIB,
                        'OpenBLAS': OpenBLAS.BLAS_LIB,
                       }
     for (key, libs) in known_blas_libs.items():
