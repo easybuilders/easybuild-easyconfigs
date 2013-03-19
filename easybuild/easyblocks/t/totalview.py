@@ -64,3 +64,12 @@ class EB_TotalView(EasyBlock):
                        })
 
         return guesses
+
+    def make_module_extra(self):
+        """Add extra environment variables for license file and anything else."""
+
+        txt = super(EB_TotalView, self).make_module_extra()
+
+        txt += "prepend-path\t%s\t\t%s\n" % ('LM_LICENSE_FILE', self.license)
+
+        return txt
