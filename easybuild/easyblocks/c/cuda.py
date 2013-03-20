@@ -41,28 +41,36 @@ class EB_CUDA(Binary):
         run_cmd("mkdir -p " + self.installdir)
 
         # define how to run the installer
+        # script has /usr/bin/perl hardcoded, but we want to have control over which perl is being used
         if LooseVersion(self.version) <= LooseVersion("5"):
-            install_script = os.path.join(self.builddir, "install-linux.pl")
-            cmd = install_script + " --prefix=" + self.installdir
+            install_script = "install-linux.pl"
+            install_script_path = os.path.join(self.builddir, install_script)
+            cmd = "perl ./%s --prefix=%s" % (install_script, self.installdir)
         else:
-          # the following would require to include "osdependencies = 'libglut'" because of -samples
-          # installparams = "-samplespath=%s/samples/ -toolkitpath=%s -samples -toolkit" % (self.installdir, self.installdir))
-          installparams = "-toolkitpath=%s -toolkit" % self.installdir
-          install_script = os.path.join(self.builddir, "cuda-installer.pl")
-          cmd = install_script + " -verbose -silent " + installparams
+            # the following would require to include "osdependencies = 'libglut'" because of samples
+            # installparams = "-samplespath=%(x)s/samples/ -toolkitpath=%(x)s -samples -toolkit" % {'x': self.installdir}
+            install_script = "cuda-installer.pl"
+            installparams = "-toolkitpath=%s -toolkit" % self.installdir
+            cmd = "perl ./%s -verbose -silent %s" % (install_script, installparams)
 
+        # prepare for running install script autonomously
         qanda = {}
         stdqa = {
-                 "Would you like to remove all CUDA files under .*? (yes/no/abort): ": "no",
-                 }
+                 # this question is only asked if CUDA tools are already available system-wide
+                 r"Would you like to remove all CUDA files under .*? (yes/no/abort): ": "no",
+                }
         noqanda = [r"Installation Complete"]
 
         # patch install script to handle Q&A autonomously
-        patch_perl_script_autoflush(install_script)
+        patch_perl_script_autoflush(os.path.join(self.builddir, install_script))
+
+        # make sure $DISPLAY is not defined, which may lead to (weird) problems
+        # this is workaround for not being able to specify --nox11 to the Perl install scripts
+        os.environ.pop('DISPLAY')
 
         run_cmd_qa(cmd, qanda, std_qa=stdqa, no_qa=noqanda, log_all=True, simple=True)
 
-	# FIXME (kehoste): what is this about? why chmod the installdir?!? FG: probably obsolete, need to check
+        # FIXME (kehoste): what is this about? why chmod the installdir?!? FG: probably obsolete, need to check
         try:
             os.chmod(self.installdir, stat.S_IRWXU | stat.S_IXOTH | stat.S_IXGRP | stat.S_IROTH | stat.S_IRGRP)
         except OSError, err:
