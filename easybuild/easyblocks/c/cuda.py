@@ -31,13 +31,13 @@ class EB_CUDA(Binary):
     """
 
     def extract_step(self):
+        """Extract installer to have more control, e.g. options, patching Perl scripts, etc."""
         execpath = self.src[0]['path']
         run_cmd("/bin/sh " + execpath + " --noexec --nox11 --target " + self.builddir)
         self.src[0]['finalpath'] = self.builddir
 
     def install_step(self):
-
-        run_cmd("mkdir -p " + self.installdir)
+        """Install CUDA using Perl install script."""
 
         # define how to run the installer
         # script has /usr/bin/perl hardcoded, but we want to have control over which perl is being used
