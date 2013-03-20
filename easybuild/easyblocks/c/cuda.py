@@ -19,7 +19,6 @@ Ref: https://speakerdeck.com/ajdecon/introduction-to-the-cuda-toolkit-for-buildi
 @author: Kenneth Hoste (Ghent University)
 """
 import os
-import stat
 
 from easybuild.easyblocks.generic.binary import Binary
 from easybuild.tools.filetools import patch_perl_script_autoflush, run_cmd, run_cmd_qa
@@ -66,15 +65,10 @@ class EB_CUDA(Binary):
 
         # make sure $DISPLAY is not defined, which may lead to (weird) problems
         # this is workaround for not being able to specify --nox11 to the Perl install scripts
-        os.environ.pop('DISPLAY')
+        if 'DISPLAY' in os.environ:
+            os.environ.pop('DISPLAY')
 
         run_cmd_qa(cmd, qanda, std_qa=stdqa, no_qa=noqanda, log_all=True, simple=True)
-
-        # FIXME (kehoste): what is this about? why chmod the installdir?!? FG: probably obsolete, need to check
-        try:
-            os.chmod(self.installdir, stat.S_IRWXU | stat.S_IXOTH | stat.S_IXGRP | stat.S_IROTH | stat.S_IRGRP)
-        except OSError, err:
-            self.log.exception("Can't set permissions on %s: %s" % (self.installdir, err))
 
     def sanity_check_step(self):
         """Custom sanity check for CUDA."""
