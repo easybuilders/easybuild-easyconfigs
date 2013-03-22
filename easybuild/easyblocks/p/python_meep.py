@@ -31,6 +31,7 @@ EasyBuild support for python-meep, implemented as an easyblock
 @author: Pieter De Baets (Ghent University)
 @author: Jens Timmerman (Ghent University)
 """
+import distutils.sysconfig
 import glob
 import os
 import shutil
@@ -38,7 +39,7 @@ import tempfile
 
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.tools.filetools import extract_file, rmtree2, run_cmd
-from easybuild.tools.modules import get_software_root, get_software_version
+from easybuild.tools.modules import get_software_root
 
 
 class EB_python_minus_meep(EasyBlock):
@@ -51,14 +52,10 @@ class EB_python_minus_meep(EasyBlock):
         super(EB_python_minus_meep, self).__init__(*args, **kwargs)
 
         # template for Python packages lib dir
-        self.pylibdir = os.path.join("lib", "python%s", "site-packages")
+        self.pylibdir = distutils.sysconfig.get_python_lib(prefix='')
 
     def configure_step(self):
         """Just check whether dependencies (Meep, Python) are available."""
-
-        # complete Python packages lib dir
-        pythonver = ".".join(get_software_version('Python').split(".")[0:2])
-        self.pylibdir = self.pylibdir % pythonver
 
         # make sure that required dependencies are loaded
         deps = ["Meep", "Python"]
