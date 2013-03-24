@@ -69,7 +69,7 @@ class EB_ScaLAPACK(ConfigureMake):
         self.loosever = LooseVersion(self.version)
 
         # make sure required dependencies are available
-        deps = [("LAPACK", "ACML")]
+        deps = [("LAPACK", "ACML", "OpenBLAS")]
         # BLACS is only a dependency for ScaLAPACK versions prior to v2.0.0
         if self.loosever < LooseVersion("2.0.0"):
             deps.append(("BLACS",))
