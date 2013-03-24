@@ -80,7 +80,7 @@ class EB_ScaLAPACK(ConfigureMake):
                     ok = True
                     break
             if not ok:
-                self.log.error("None of the following dependencies %s are available/loaded." % depgrp)
+                self.log.error("None of the following dependencies %s are available/loaded." % (depgrp, ))
 
     def build_step(self):
         """Build ScaLAPACK using make after setting make options."""
