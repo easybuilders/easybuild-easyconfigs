@@ -111,8 +111,14 @@ class EB_ScaLAPACK(ConfigureMake):
                               'BLASLIB="%s -lpthread"' % acml_static_lib,
                               'LAPACKLIB=%s' % acml_static_lib
                              ]
+        elif
+            root = get_software_root('OpenBLAS'):
+            extra_makeopts = [
+                              'BLASLIB="%s -lpthread"' % lapack_get_blas_lib(self.log),
+                              'LAPACKLIB=%s' % lapack_get_blas_lib(self.log),
+                             ]    
         else:
-            self.log.error("LAPACK or ACML are not available, no idea how to set BLASLIB/LAPACKLIB make options.")
+            self.log.error("LAPACK, ACML or OpenBLAS are not available, no idea how to set BLASLIB/LAPACKLIB make options.")
 
         # build procedure changed in v2.0.0
         if self.loosever < LooseVersion("2.0.0"):
