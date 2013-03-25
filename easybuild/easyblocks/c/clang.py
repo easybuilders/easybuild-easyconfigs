@@ -30,15 +30,9 @@ Support for building and installing Clang, implemented as an easyblock.
 
 import os
 import shutil
-import re
-import shutil
-from distutils.version import LooseVersion
 
-import easybuild.tools.environment as env
 from easybuild.easyblocks.generic.cmakemake import CMakeMake
-from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.filetools import run_cmd, mkdir
-from easybuild.tools.modules import get_software_root
 
 class EB_Clang(CMakeMake):
     """
@@ -46,6 +40,8 @@ class EB_Clang(CMakeMake):
     """
 
     def __init__(self, *args, **kwargs):
+        """Initialize custom class variables for Clang."""
+
         super(EB_Clang, self).__init__(*args, **kwargs)
         self.llvm_src_dir = None
         self.llvm_obj_dir_stage1 = None
