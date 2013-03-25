@@ -59,6 +59,7 @@ class EB_Clang(CMakeMake):
         self.llvm_obj_dir_stage1 = None
         self.llvm_obj_dir_stage2 = None
         self.llvm_obj_dir_stage3 = None
+        self.make_parallel_opts = ""
 
     def extract_step(self):
         """
@@ -103,11 +104,18 @@ class EB_Clang(CMakeMake):
         self.llvm_obj_dir_stage1 = os.path.join(self.builddir, 'llvm.obj.1')
         self.llvm_obj_dir_stage2 = os.path.join(self.builddir, 'llvm.obj.2')
         self.llvm_obj_dir_stage3 = os.path.join(self.builddir, 'llvm.obj.3')
+
+        # Create and enter build directory.
         mkdir(self.llvm_obj_dir_stage1)
         os.chdir(self.llvm_obj_dir_stage1)
+
         self.cfg['configopts'] += "-DCMAKE_BUILD_TYPE=Release "
         if self.cfg['assertions']: 
             self.cfg['configopts'] += "-DLLVM_ENABLE_ASSERTIONS=ON "
+
+        if self.cfg['parallel']:
+            self.make_parallel_opts = "-j %s" % self.cfg['parallel']
+
         super(EB_Clang, self).configure_step(self.llvm_src_dir)
 
     def build_with_prev_stage(self, prev_obj, next_obj):
@@ -129,15 +137,11 @@ class EB_Clang(CMakeMake):
         self.log.info("Configuring")
         run_cmd("cmake %s %s" % (options, self.llvm_src_dir), log_all=True)
 
-        paracmd = ""
-        if self.cfg['parallel']:
-            paracmd = "-j %s" % self.cfg['parallel']
-
         self.log.info("Building")
-        run_cmd("make %s" % paracmd, log_all=True)
+        run_cmd("make %s" % self.make_parallel_opts, log_all=True)
 
         self.log.info("Running tests")
-        run_cmd("make %s check-all" % paracmd, log_all=True)
+        run_cmd("make %s check-all" % self.make_parallel_opts, log_all=True)
 
     def build_step(self):
         """Build Clang stage 1, 2, 3"""
@@ -147,11 +151,7 @@ class EB_Clang(CMakeMake):
         super(EB_Clang, self).build_step()
 
         # Stage 1: run tests.
-        paracmd = ""
-        if self.cfg['parallel']:
-            paracmd = "-j %s" % self.cfg['parallel']
-
-        run_cmd("make %s check-all" % paracmd, log_all=True)
+        run_cmd("make %s check-all" % self.make_parallel_opts, log_all=True)
 
         self.log.info("Building stage 2")
         self.build_with_prev_stage(self.llvm_obj_dir_stage1, self.llvm_obj_dir_stage2)
