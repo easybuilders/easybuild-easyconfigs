@@ -133,6 +133,7 @@ class EB_Clang(CMakeMake):
         self.build_with_prev_stage(self.llvm_obj_dir_stage2, self.llvm_obj_dir_stage3)
 
     def test_step(self):
+        """Tests were run during the bootstrap, nothing to do here."""
         pass
 
     def install_step(self):
