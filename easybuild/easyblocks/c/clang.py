@@ -111,6 +111,8 @@ class EB_Clang(CMakeMake):
         super(EB_Clang, self).configure_step(self.llvm_src_dir)
 
     def build_with_prev_stage(self, prev_obj, next_obj):
+        """Build Clang stage N using Clang stage N-1"""
+
         # Create and enter build directory.
         mkdir(next_obj)
         os.chdir(next_obj)
@@ -138,6 +140,8 @@ class EB_Clang(CMakeMake):
         run_cmd("make %s check-all" % paracmd, log_all=True)
 
     def build_step(self):
+        """Build Clang stage 1, 2, 3"""
+
         # Stage 1: build using system compiler.
         os.chdir(self.llvm_obj_dir_stage1)
         super(EB_Clang, self).build_step()
@@ -160,7 +164,8 @@ class EB_Clang(CMakeMake):
         pass
 
     def install_step(self):
-        # Install stage 3 binaries.
+        """Install stage 3 binaries."""
+
         os.chdir(self.llvm_obj_dir_stage3)
         super(EB_Clang, self).install_step()
 
