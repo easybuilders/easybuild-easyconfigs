@@ -52,7 +52,19 @@ class EB_Clang(CMakeMake):
         self.llvm_obj_dir_stage3 = None
 
     def extract_step(self):
+        """
+        Prepare a combined LLVM source tree.  The layout is:
+        llvm/             Unpack llvm-*.tar.gz here
+          projects/
+            compiler-rt/  Unpack compiler-rt-*.tar.gz here
+          tools/
+            clang/        Unpack clang-*.tar.gz here
+        """
+
+        # Extract everything into separate directories.
         super(EB_Clang, self).extract_step()
+
+        # Find the full path to the directory that was unpacked from llvm-*.tar.gz.
         for tmp in self.src:
             if tmp['name'].startswith("llvm-"):
                 self.llvm_src_dir = tmp['finalpath']
@@ -62,19 +74,19 @@ class EB_Clang(CMakeMake):
             self.log.error("Could not determine LLVM source root (LLVM source was not unpacked?)")
 
         # Move other directories into the LLVM tree.
+        src_dirs = {
+            'clang-%s.src' % self.version: os.path.join(self.llvm_src_dir, 'tools', 'clang'),
+            'compiler-rt-%s.src' % self.version: os.path.join(self.llvm_src_dir, 'projects', 'compiler-rt')
+        }
         for tmp in self.src:
-            if tmp['name'].startswith("clang-"):
-                old_path = os.path.join(tmp['finalpath'], 'clang-%s.src' % self.version)
-                new_path = os.path.join(self.llvm_src_dir, 'tools', 'clang')
-                shutil.move(old_path, new_path)
-                tmp['finalpath'] = new_path
-                continue
-            if tmp['name'].startswith("compiler-rt-"):
-                old_path = os.path.join(tmp['finalpath'], 'compiler-rt-%s.src' % self.version)
-                new_path = os.path.join(self.llvm_src_dir, 'projects', 'compiler-rt')
-                shutil.move(old_path, new_path)
-                tmp['finalpath'] = new_path
-                continue
+            for (dir, new_path) in src_dirs.items():
+                if tmp['name'].startswith(dir):
+                    old_path = os.path.join(tmp['finalpath'], dir)
+                    try:
+                        shutil.move(old_path, new_path)
+                    except IOError, err:
+                        self.log.error("Failed to move %s to %s: %s" % (old_path, new_path, err))
+                    tmp['finalpath'] = new_path
 
     def configure_step(self):
         # Stage 1: configure.
