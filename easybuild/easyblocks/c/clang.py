@@ -35,12 +35,21 @@ import os
 import shutil
 
 from easybuild.easyblocks.generic.cmakemake import CMakeMake
+from easybuild.framework.easyblock import EasyBlock
+from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.filetools import run_cmd, mkdir
 
 class EB_Clang(CMakeMake):
     """
     Support for bootstrapping Clang.
     """
+
+    @staticmethod
+    def extra_options():
+        extra_vars = [
+                      ('assertions', [True, "Enable assertions.  Helps to catch bugs in Clang.  (default: True)", CUSTOM]),
+                     ]
+        return EasyBlock.extra_options(extra_vars)
 
     def __init__(self, *args, **kwargs):
         """Initialize custom class variables for Clang."""
@@ -96,7 +105,9 @@ class EB_Clang(CMakeMake):
         self.llvm_obj_dir_stage3 = os.path.join(self.builddir, 'llvm.obj.3')
         mkdir(self.llvm_obj_dir_stage1)
         os.chdir(self.llvm_obj_dir_stage1)
-        self.cfg['configopts'] += "-DCMAKE_BUILD_TYPE=Release -DLLVM_ENABLE_ASSERTIONS=ON "
+        self.cfg['configopts'] += "-DCMAKE_BUILD_TYPE=Release "
+        if self.cfg['assertions']: 
+            self.cfg['configopts'] += "-DLLVM_ENABLE_ASSERTIONS=ON "
         self.cfg['configopts'] += "-DLLVM_TARGETS_TO_BUILD=X86"
         super(EB_Clang, self).configure_step(self.llvm_src_dir)
 
