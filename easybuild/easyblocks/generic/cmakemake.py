@@ -70,11 +70,7 @@ class CMakeMake(ConfigureMake):
         if F90 is not None:
             options += "-DCMAKE_Fortran_COMPILER='%s' " % F90
 
-        command = "%s cmake %s %s %s" % (self.cfg['preconfigopts'],
-                                         srcdir,
-                                         options,
-                                         self.cfg['configopts']
-                                        )
+        command = "%s cmake %s %s %s" % (self.cfg['preconfigopts'], srcdir, options, self.cfg['configopts'])
         (out, _) = run_cmd(command, log_all=True, simple=False)
 
         return out
