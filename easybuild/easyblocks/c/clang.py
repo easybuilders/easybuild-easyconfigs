@@ -108,7 +108,6 @@ class EB_Clang(CMakeMake):
         self.cfg['configopts'] += "-DCMAKE_BUILD_TYPE=Release "
         if self.cfg['assertions']: 
             self.cfg['configopts'] += "-DLLVM_ENABLE_ASSERTIONS=ON "
-        self.cfg['configopts'] += "-DLLVM_TARGETS_TO_BUILD=X86"
         super(EB_Clang, self).configure_step(self.llvm_src_dir)
 
     def build_with_prev_stage(self, prev_obj, next_obj):
