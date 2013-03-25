@@ -125,17 +125,17 @@ class EB_Clang(CMakeMake):
         options += self.cfg['configopts']
 
         self.log.info("Configuring")
-        run_cmd("cmake %s %s" % (options, self.llvm_src_dir), log_all=True, simple=False)
+        run_cmd("cmake %s %s" % (options, self.llvm_src_dir), log_all=True)
 
         paracmd = ""
         if self.cfg['parallel']:
             paracmd = "-j %s" % self.cfg['parallel']
 
         self.log.info("Building")
-        run_cmd("make %s" % paracmd, log_all=True, simple=False)
+        run_cmd("make %s" % paracmd, log_all=True)
 
         self.log.info("Running tests")
-        run_cmd("make %s check-all" % paracmd, log_all=True, simple=False)
+        run_cmd("make %s check-all" % paracmd, log_all=True)
 
     def build_step(self):
         # Stage 1: build using system compiler.
@@ -147,7 +147,7 @@ class EB_Clang(CMakeMake):
         if self.cfg['parallel']:
             paracmd = "-j %s" % self.cfg['parallel']
 
-        run_cmd("make %s check-all" % paracmd, log_all=True, simple=False)
+        run_cmd("make %s check-all" % paracmd, log_all=True)
 
         self.log.info("Building stage 2")
         self.build_with_prev_stage(self.llvm_obj_dir_stage1, self.llvm_obj_dir_stage2)
