@@ -1,6 +1,9 @@
 ##
 # Copyright 2013 Dmitri Gribenko
 #
+# This file is triple-licensed under GPLv2 (see below), MIT, and
+# BSD three-clause licenses.
+#
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
 # with support of Ghent University (http://ugent.be/hpc),
