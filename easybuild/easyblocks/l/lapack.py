@@ -39,24 +39,28 @@ import shutil
 import easybuild.tools.toolchain as toolchain
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.framework.easyconfig import CUSTOM
+from easybuild.toolchains.linalg.atlas import Atlas
+from easybuild.toolchains.linalg.gotoblas import GotoBLAS
+from easybuild.toolchains.linalg.openblas import OpenBLAS
 from easybuild.tools.filetools import run_cmd
 from easybuild.tools.modules import get_software_root
-
 
 # also used for e.g. ScaLAPACK
 def get_blas_lib(log):
     """
     Determine BLAS lib to provide to e.g. LAPACK for building/testing
     """
+    log.deprecated("get_blas_lib uses hardcoded list of known BLAS libs, should rely on toolchain support", "2.0")
     blaslib = None
     known_blas_libs = {
-                       'GotoBLAS': '-L%s -lgoto',
-                       'ATLAS': '-L%s -lf77blas -latlas'
+                       'GotoBLAS': GotoBLAS.BLAS_LIB,
+                       'ATLAS': Atlas.BLAS_LIB,
+                       'OpenBLAS': OpenBLAS.BLAS_LIB,
                       }
-    for (key,val) in known_blas_libs.items():
+    for (key, libs) in known_blas_libs.items():
         root = get_software_root(key)
         if root:
-            blaslib = val % os.path.join(root, 'lib')
+            blaslib = "-L%s %s" % (os.path.join(root, 'lib'), ' '.join(['-l%s' % lib for lib in libs]))
             log.debug("Using %s as BLAS lib" % root)
             break
         else:
