@@ -50,6 +50,7 @@ def get_blas_lib(log):
     """
     Determine BLAS lib to provide to e.g. LAPACK for building/testing
     """
+    log.deprecated("get_blas_lib uses hardcoded list of known BLAS libs, should rely on toolchain support", "2.0")
     blaslib = None
     known_blas_libs = {
                        'GotoBLAS': GotoBLAS.BLAS_LIB,
