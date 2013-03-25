@@ -40,26 +40,41 @@ from easybuild.tools.filetools import run_cmd
 class CMakeMake(ConfigureMake):
     """Support for configuring build with CMake instead of traditional configure script"""
 
-    def configure_step(self, builddir=None):
+    def configure_step(self, srcdir=None):
         """Configure build using cmake"""
 
-        if not builddir:
-            builddir = '.'
+        if not srcdir:
+            srcdir = '.'
 
-        compilers = "-DCMAKE_C_FLAGS='%s' -DCMAKE_C_COMPILER='%s' " % (os.getenv('CFLAGS'), 
-                                                                       os.getenv('CC'))
-        compilers += "-DCMAKE_CXX_FLAGS='%s' -DCMAKE_CXX_COMPILER='%s' " % (os.getenv('CXXFLAGS'), 
-                                                                            os.getenv('CXX'))
+        options = "-DCMAKE_INSTALL_PREFIX=%s " % self.installdir
 
-        compilers += "-DCMAKE_Fortran_FLAGS='%s' -DCMAKE_Fortran_COMPILER='%s' " % (os.getenv('FFLAGS'), 
-                                                                                    os.getenv('F90'))
+        CFLAGS = os.getenv('CFLAGS')
+        CC = os.getenv('CC')
+        CXXFLAGS = os.getenv('CXXFLAGS')
+        CXX = os.getenv('CXX')
+        FFLAGS = os.getenv('FFLAGS')
+        F90 = os.getenv('F90')
 
-        command = "%s cmake -DCMAKE_INSTALL_PREFIX=%s %s %s %s" % (self.cfg['preconfigopts'],
-                                                                   self.installdir,
-                                                                   compilers,
-                                                                   builddir,
-                                                                   self.cfg['configopts']
-                                                                   )
+        if CFLAGS is not None:
+            options += "-DCMAKE_C_FLAGS='%s' " % CFLAGS
+        if CC is not None:
+            options += "-DCMAKE_C_COMPILER='%s' " % CC
+
+        if CXXFLAGS is not None:
+            options += "-DCMAKE_CXX_FLAGS='%s' " % CXXFLAGS
+        if CXX is not None:
+            options += "-DCMAKE_CXX_COMPILER='%s' " % CXX
+
+        if FFLAGS is not None:
+            options += "-DCMAKE_Fortran_FLAGS='%s' " % FFLAGS
+        if F90 is not None:
+            options += "-DCMAKE_Fortran_COMPILER='%s' " % F90
+
+        command = "%s cmake %s %s %s" % (self.cfg['preconfigopts'],
+                                         srcdir,
+                                         options,
+                                         self.cfg['configopts']
+                                        )
         (out, _) = run_cmd(command, log_all=True, simple=False)
 
         return out
