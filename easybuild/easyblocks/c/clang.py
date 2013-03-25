@@ -89,7 +89,8 @@ class EB_Clang(CMakeMake):
                     tmp['finalpath'] = new_path
 
     def configure_step(self):
-        # Stage 1: configure.
+        """Run CMake for stage 1 Clang."""
+
         self.llvm_obj_dir_stage1 = os.path.join(self.builddir, 'llvm.obj.1')
         self.llvm_obj_dir_stage2 = os.path.join(self.builddir, 'llvm.obj.2')
         self.llvm_obj_dir_stage3 = os.path.join(self.builddir, 'llvm.obj.3')
