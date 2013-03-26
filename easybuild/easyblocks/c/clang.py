@@ -112,6 +112,8 @@ class EB_Clang(CMakeMake):
         self.cfg['configopts'] += "-DCMAKE_BUILD_TYPE=Release "
         if self.cfg['assertions']: 
             self.cfg['configopts'] += "-DLLVM_ENABLE_ASSERTIONS=ON "
+        else:
+            self.cfg['configopts'] += "-DLLVM_ENABLE_ASSERTIONS=OFF "
 
         if self.cfg['parallel']:
             self.make_parallel_opts = "-j %s" % self.cfg['parallel']
