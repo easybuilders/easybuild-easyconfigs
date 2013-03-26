@@ -74,7 +74,7 @@ class EB_Geant4(CMakeMake):
         if LooseVersion(self.get_installversion()) >= LooseVersion("9.5"):
             mkdir('configdir')
             os.chdir('configdir')
-            super(EB_Geant4, self).configure_step(builddir="..")
+            super(EB_Geant4, self).configure_step(srcdir="..")
 
         else:
             pwd = self.cfg['start_dir']
