@@ -40,11 +40,15 @@ from easybuild.tools.filetools import run_cmd
 class CMakeMake(ConfigureMake):
     """Support for configuring build with CMake instead of traditional configure script"""
 
-    def configure_step(self, srcdir=None):
+    def configure_step(self, builddir=None, srcdir=None):
         """Configure build using cmake"""
 
-        if not srcdir:
-            srcdir = '.'
+        if srcdir is None:
+            if builddir is not None:
+                self.log.deprecated("CMakeMake.configure_step: named argument 'builddir' (should be 'srcdir')", "2.0")
+                srcdir = builddir
+            else:
+                srcdir = '.'
 
         options = "-DCMAKE_INSTALL_PREFIX=%s " % self.installdir
 
