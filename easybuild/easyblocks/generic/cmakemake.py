@@ -46,31 +46,23 @@ class CMakeMake(ConfigureMake):
         if not srcdir:
             srcdir = '.'
 
-        options = "-DCMAKE_INSTALL_PREFIX=%s " % self.installdir
+        options = ['-DCMAKE_INSTALL_PREFIX=%s' % self.installdir]
+        env_to_options = {
+            'CC': 'CMAKE_C_COMPILER',
+            'CFLAGS': 'CMAKE_C_FLAGS',
+            'CXX': 'CMAKE_CXX_COMPILER',
+            'CXXFLAGS': 'CMAKE_CXX_FLAGS',
+            'F90': 'CMAKE_Fortran_COMPILER',
+            'FFLAGS': 'CMAKE_Fortran_FLAGS',
+        }
+        for env_name, option in env_to_options.items():
+            value = os.getenv(env_name)
+            if value is not None:
+                options.append("-D%s='%s'" % (option, value))
 
-        CFLAGS = os.getenv('CFLAGS')
-        CC = os.getenv('CC')
-        CXXFLAGS = os.getenv('CXXFLAGS')
-        CXX = os.getenv('CXX')
-        FFLAGS = os.getenv('FFLAGS')
-        F90 = os.getenv('F90')
+        options_string = " ".join(options)
 
-        if CFLAGS is not None:
-            options += "-DCMAKE_C_FLAGS='%s' " % CFLAGS
-        if CC is not None:
-            options += "-DCMAKE_C_COMPILER='%s' " % CC
-
-        if CXXFLAGS is not None:
-            options += "-DCMAKE_CXX_FLAGS='%s' " % CXXFLAGS
-        if CXX is not None:
-            options += "-DCMAKE_CXX_COMPILER='%s' " % CXX
-
-        if FFLAGS is not None:
-            options += "-DCMAKE_Fortran_FLAGS='%s' " % FFLAGS
-        if F90 is not None:
-            options += "-DCMAKE_Fortran_COMPILER='%s' " % F90
-
-        command = "%s cmake %s %s %s" % (self.cfg['preconfigopts'], srcdir, options, self.cfg['configopts'])
+        command = "%s cmake %s %s %s" % (self.cfg['preconfigopts'], srcdir, options_string, self.cfg['configopts'])
         (out, _) = run_cmd(command, log_all=True, simple=False)
 
         return out
