@@ -121,7 +121,7 @@ class EB_icc(IntelBase):
 
         txt = super(EB_icc, self).make_module_extra()
 
-        txt += "prepend-path\t%s\t\t%s\n" % ('INTEL_LICENSE_FILE', self.license_path)
+        txt += "prepend-path\t%s\t\t%s\n" % ('INTEL_LICENSE_FILE', self.license_file)
         txt += "prepend-path\t%s\t\t$root/%s\n" % ('NLSPATH', 'idb/intel64/locale/%l_%t/%N')
 
         return txt

@@ -1,4 +1,4 @@
-##
+# #
 # Copyright 2009-2013 Ghent University
 #
 # This file is part of EasyBuild,
@@ -21,7 +21,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
-##
+# #
 """
 Generic EasyBuild support for installing Intel tools, implemented as an easyblock
 
@@ -41,17 +41,22 @@ from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import CUSTOM, MANDATORY
 from easybuild.tools.filetools import rmtree2, run_cmd
 
+# required for deprecated log in static function (ie no self)
+from easybuild.framework.easyconfig.licenses import License
+from vsc import fancylogger
+_log = fancylogger.getLogger('generic.intelbase')
+
 
 class IntelBase(EasyBlock):
     """
     Base class for Intel software
     - no configure/make : binary release
-    - add license variable
+    - add license_file variable
     """
 
     def __init__(self, *args, **kwargs):
         """Constructor, adds extra config options"""
-        self.license = None
+        self.license_file = None
 
         self.home_subdir = os.path.join(os.getenv('HOME'), 'intel')
         self.home_subdir_local = os.path.join(tempfile.gettempdir(), os.getenv('USER'), 'easybuild_intel')
@@ -66,7 +71,6 @@ class IntelBase(EasyBlock):
     def extra_options(extra_vars=None):
         origvars = EasyBlock.extra_options(extra_vars)
         intel_vars = [
-                      ('license', [None, "License file path (default: None)", MANDATORY]),
                       ('license_activation', ['license_server', "Indicates license activation type (default: 'license_server')", CUSTOM]),
                        # 'usetmppath':
                        # workaround for older SL5 version (5.5 and earlier)
@@ -75,6 +79,11 @@ class IntelBase(EasyBlock):
                       ('usetmppath', [False, "Use temporary path for installation (default: False)", CUSTOM]),
                       ('m32', [False, "Enable 32-bit toolchain (default: False)", CUSTOM]),
                      ]
+
+        # Support for old easyconfigs with license parameter
+        _log.deprecated('No old style license parameter, use license_path', '2.0')
+        intel_vars.append(('license', [None, "License file path (default: None)", MANDATORY]))
+
         intel_vars.extend(origvars)
         return intel_vars
 
@@ -127,18 +136,25 @@ class IntelBase(EasyBlock):
         """Configure: handle license file and clean home dir."""
 
         # obtain license path
-        self.license = self.cfg['license']
-        if self.license:
-            self.log.info("Using license %s" % self.license)
+        try:
+            self.license_file = self.cfg['license_file']
+        except:
+            _log.deprecated('No old style license parameter, license_path is now mandatory', '2.0')
+            if not isinstance(self.cfg['license'], License):
+                _log.deprecated('No old style license parameter, license has to be License subclass', '2.0')
+                self.license_file = self.cfg['license']
+
+        if self.license_file:
+            self.log.info("Using license file %s" % self.license_file)
         else:
-            self.log.error("No license defined")
+            self.log.error("No license file defined")
 
         # verify license path
-        if not os.path.exists(self.license):
-            self.log.error("Can't find license at %s" % self.license)
+        if not os.path.exists(self.license_file):
+            self.log.error("Can't find license at %s" % self.license_file)
 
         # set INTEL_LICENSE_FILE
-        env.setvar("INTEL_LICENSE_FILE", self.license)
+        env.setvar("INTEL_LICENSE_FILE", self.license_file)
 
         # clean home directory
         self.clean_home_subdir()
@@ -161,7 +177,7 @@ PSET_INSTALL_DIR=%s
 ACCEPT_EULA=accept
 INSTALL_MODE=NONRPM
 CONTINUE_WITH_OPTIONAL_ERROR=yes
-""" % (self.cfg['license_activation'], self.license, self.installdir)
+""" % (self.cfg['license_activation'], self.license_file, self.installdir)
 
         # we should be already in the correct directory
         silentcfg = os.path.join(os.getcwd(), "silent.cfg")
@@ -184,7 +200,7 @@ CONTINUE_WITH_OPTIONAL_ERROR=yes
             tmppathopt = "-t %s" % tmpdir
 
         # set some extra env variables
-        env.setvar('LOCAL_INSTALL_VERBOSE','1')
+        env.setvar('LOCAL_INSTALL_VERBOSE', '1')
         env.setvar('VERBOSE_MODE', '1')
 
         env.setvar('INSTALL_PATH', self.installdir)

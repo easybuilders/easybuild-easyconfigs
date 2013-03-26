@@ -77,7 +77,7 @@ PROCEED_WITHOUT_PYTHON=yes
 AUTOMOUNTED_CLUSTER=yes
 EULA=accept
 
-""" % {'lic':self.license_path, 'ins':self.installdir}
+""" % {'lic':self.license_file, 'ins':self.installdir}
 
             # already in correct directory
             silentcfg = os.path.join(os.getcwd(), "silent.cfg")
@@ -134,7 +134,7 @@ EULA=accept
     def make_module_extra(self):
         """Overwritten from Application to add extra txt"""
         txt = super(EB_impi, self).make_module_extra()
-        txt += "prepend-path\t%s\t\t%s\n" % ('INTEL_LICENSE_FILE', self.license_path)
+        txt += "prepend-path\t%s\t\t%s\n" % ('INTEL_LICENSE_FILE', self.license_file)
         txt += "setenv\t%s\t\t$root\n" % ('I_MPI_ROOT')
 
         return txt
