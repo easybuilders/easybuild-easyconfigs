@@ -116,6 +116,7 @@ class EB_Clang(CMakeMake):
         if self.cfg['parallel']:
             self.make_parallel_opts = "-j %s" % self.cfg['parallel']
 
+        self.log.info("Configuring")
         super(EB_Clang, self).configure_step(self.llvm_src_dir)
 
     def build_with_prev_stage(self, prev_obj, next_obj):
@@ -140,6 +141,9 @@ class EB_Clang(CMakeMake):
         self.log.info("Building")
         run_cmd("make %s" % self.make_parallel_opts, log_all=True)
 
+    def run_clang_tests(self, obj_dir):
+        os.chdir(obj_dir)
+
         self.log.info("Running tests")
         run_cmd("make %s check-all" % self.make_parallel_opts, log_all=True)
 
@@ -151,17 +155,18 @@ class EB_Clang(CMakeMake):
         super(EB_Clang, self).build_step()
 
         # Stage 1: run tests.
-        run_cmd("make %s check-all" % self.make_parallel_opts, log_all=True)
+        self.run_clang_tests(self.llvm_obj_dir_stage1)
 
         self.log.info("Building stage 2")
         self.build_with_prev_stage(self.llvm_obj_dir_stage1, self.llvm_obj_dir_stage2)
+        self.run_clang_tests(self.llvm_obj_dir_stage2)
 
         self.log.info("Building stage 3")
         self.build_with_prev_stage(self.llvm_obj_dir_stage2, self.llvm_obj_dir_stage3)
+        # Don't run stage 3 tests here, do it in the test step.
 
     def test_step(self):
-        """Tests were run during the bootstrap, nothing to do here."""
-        pass
+        self.run_clang_tests(self.llvm_obj_dir_stage3)
 
     def install_step(self):
         """Install stage 3 binaries."""
