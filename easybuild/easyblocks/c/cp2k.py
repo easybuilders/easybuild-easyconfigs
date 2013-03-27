@@ -163,12 +163,13 @@ class EB_CP2K(EasyBlock):
         else:
             self.log.error("Don't know how to tweak configuration for compiler used.")
 
+        # BLAS related
         if get_software_root('IMKL'):
             options = self.configure_MKL(options)
         elif get_software_root('ACML'):
             options = self.configure_ACML(options)
-        elif get_software_root('ATLAS'):
-            options = self.configure_ATLAS(options)
+        else:
+            options = self.configure_BLAS_lib(options)
 
         if get_software_root('FFTW'):
             options = self.configure_FFTW(options)
@@ -452,8 +453,8 @@ class EB_CP2K(EasyBlock):
 
         return options
 
-    def configure_ATLAS(self, options):
-        """Configure for ATLAS"""
+    def configure_BLAS_lib(self, options):
+        """Configure for BLAS library."""
 
         options['LIBS'] += ' %s %s' % (self.libsmm, os.getenv('LIBBLAS'))
 
