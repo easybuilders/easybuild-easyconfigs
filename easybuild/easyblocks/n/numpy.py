@@ -113,8 +113,8 @@ class EB_numpy(FortranPythonPackage):
             # not fool-proof, but better than enforcing a particular patch filename
             patch_found = False
             patch_wl_regex = re.compile(r"replace\(':',\s*','\)")
-            for patch in self.cfg['patches']:
-                if patch_wl_regex.search(open(patch, 'r').read()):
+            for patch in self.patches:
+                if patch_wl_regex.search(open(patch['path'], 'r').read()):
                     patch_found = True
                     break
             if not patch_found:
