@@ -55,6 +55,7 @@ class EB_numpy(FortranPythonPackage):
     def configure_step(self):
         """Configure numpy build by composing site.cfg contents."""
 
+        # see e.g. https://github.com/numpy/numpy/pull/2809/files
         self.sitecfg = '\n'.join([
                                   "[DEFAULT]",
                                   "library_dirs = %(libs)s",
@@ -70,11 +71,15 @@ class EB_numpy(FortranPythonPackage):
                                          "mkl_libs = %(blas)s",
                                         ])
 
+        elif get_software_root("ATLAS"):
+            extrasiteconfig = '\n'.join(["[atlas]",
+                                         "atlas_libs = %(lapack)s,%(blas)s",
+                                        ])
         else:
-            extrasiteconfig = '\n'.join(["[blas_opt]",
-                                         "libraries = %(blas)s",
-                                         "[lapack_opt]",
-                                         "libraries = %(lapack)s",
+            extrasiteconfig = '\n'.join(["[blas]",
+                                         "blas_libs = %(blas)s",
+                                         "[lapack]",
+                                         "lapack_libs = %(lapack)s",
                                         ])
 
         libfft = ','.join(self.toolchain.get_variable('LIBFFT', typ=list))
@@ -88,10 +93,14 @@ class EB_numpy(FortranPythonPackage):
 
         if get_software_root("imkl"):
             # with IMKL, no spaces and use '-Wl:'
-            lapack_libs.remove("pthread")
             # redefine 'Wl,' to 'Wl:' so that the patch file can do its job
-            # FIXME: we can't rely on toolchain.get_variable here, since that doesn't include the -Wl, flags
-            lapack = ','.join(os.getenv('LIBLAPACK_MT').split(' -l')).replace(' ', ',').replace('Wl,', 'Wl:')
+            lapack_libs = self.toolchain.get_variable('LIBLAPACK_MT').copy()
+            lapack_libs.remove("pthread")
+            lapack_libs.try_function_by_elem('change', prefix='', prefix_begin_end='-Wl:',
+                                                       separator=',', separator_begin_end=',')
+            lapack_libs.SEPARATOR = ','
+            lapack = str(lapack_libs)
+
             blas = lapack
 
             # make sure the patch file is there
@@ -108,8 +117,8 @@ class EB_numpy(FortranPythonPackage):
                                "handle -Wl linker flags correctly, which doesn't seem to be there.")
 
         else:
-            lapack = ", ".join(lapack_libs)
-            blas = ", ".join(blas_libs)
+            lapack = ','.join(lapack_libs)
+            blas = ','.join(blas_libs)
 
         self.sitecfg = self.sitecfg % {
                                        'lapack': lapack,
