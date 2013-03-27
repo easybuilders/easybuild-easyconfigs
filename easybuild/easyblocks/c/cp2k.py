@@ -85,11 +85,14 @@ class EB_CP2K(EasyBlock):
                       ('typeopt', [True, "Enable optimization (default: True)", CUSTOM]),
                       ('libint', [True, "Use LibInt (default: True)", CUSTOM]),
                       ('modincprefix', ['', "IMKL prefix for modinc include dir (default: '')", CUSTOM]),
-                      ('modinc', [[], "List of modinc's to use (*.f90), or 'True' to use all found at given prefix (default: [])", CUSTOM]),
+                      ('modinc', [[], ("List of modinc's to use (*.f90), or 'True' to use "
+                                       "all found at given prefix (default: [])"), CUSTOM]),
                       ('extracflags', ['', "Extra CFLAGS to be added (default: '')", CUSTOM]),
                       ('extradflags', ['', "Extra DFLAGS to be added (default: '')", CUSTOM]),
-                      ('ignore_regtest_fails', [False, "Ignore failures in regression test (should be used with care) (default: False).", CUSTOM]),
-                      ('maxtasks', [3, "Maximum number of CP2K instances run at the same time during testing (default:3)", CUSTOM]),
+                      ('ignore_regtest_fails', [False, ("Ignore failures in regression test "
+                                                        "(should be used with care) (default: False)."), CUSTOM]),
+                      ('maxtasks', [3, ("Maximum number of CP2K instances run at "
+                                        "the same time during testing (default:3)"), CUSTOM]),
                      ]
         return EasyBlock.extra_options(extra_vars)
 
@@ -109,14 +112,10 @@ class EB_CP2K(EasyBlock):
 
         # correct start dir, if needed
         # recent CP2K versions have a 'cp2k' dir in the unpacked 'cp2k' dir
-        try:
-            cp2k_path = os.path.join(self.cfg['start_dir'], 'cp2k')
-            if os.path.exists(cp2k_path):
-                self.cfg['start_dir'] = cp2k_path
-                self.log.info("Corrected start_dir to %s" % self.cfg['start_dir'])
-
-        except OSError, err:
-            self.log.error("Failed to correct start dir: %s" % err)
+        cp2k_path = os.path.join(self.cfg['start_dir'], 'cp2k')
+        if os.path.exists(cp2k_path):
+            self.cfg['start_dir'] = cp2k_path
+            self.log.info("Corrected start_dir to %s" % self.cfg['start_dir'])
 
         # set compilers options according to toolchain config
         # full debug: -g -traceback -check all -fp-stack-check
