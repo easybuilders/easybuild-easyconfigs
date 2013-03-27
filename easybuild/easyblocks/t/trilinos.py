@@ -205,7 +205,7 @@ class EB_Trilinos(CMakeMake):
             self.log.error("Failed to create and move into build directory: %s" % err)
 
         # configure using cmake
-        super(EB_Trilinos, self).configure_step("..")
+        super(EB_Trilinos, self).configure_step(srcdir="..")
 
     def build_step(self):
         """Build with make (verbose logging enabled)."""
