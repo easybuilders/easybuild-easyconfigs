@@ -40,7 +40,7 @@ from easybuild.tools.filetools import run_cmd
 class CMakeMake(ConfigureMake):
     """Support for configuring build with CMake instead of traditional configure script"""
 
-    def configure_step(self, builddir=None, srcdir=None):
+    def configure_step(self, srcdir=None, builddir=None):
         """Configure build using cmake"""
 
         if srcdir is None:

@@ -117,7 +117,7 @@ class EB_Clang(CMakeMake):
             self.make_parallel_opts = "-j %s" % self.cfg['parallel']
 
         self.log.info("Configuring")
-        super(EB_Clang, self).configure_step(self.llvm_src_dir)
+        super(EB_Clang, self).configure_step(srcdir=self.llvm_src_dir)
 
     def build_with_prev_stage(self, prev_obj, next_obj):
         """Build Clang stage N using Clang stage N-1"""
