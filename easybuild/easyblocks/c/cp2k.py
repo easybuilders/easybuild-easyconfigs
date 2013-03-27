@@ -85,11 +85,14 @@ class EB_CP2K(EasyBlock):
                       ('typeopt', [True, "Enable optimization (default: True)", CUSTOM]),
                       ('libint', [True, "Use LibInt (default: True)", CUSTOM]),
                       ('modincprefix', ['', "IMKL prefix for modinc include dir (default: '')", CUSTOM]),
-                      ('modinc', [[], "List of modinc's to use (*.f90), or 'True' to use all found at given prefix (default: [])", CUSTOM]),
+                      ('modinc', [[], ("List of modinc's to use (*.f90), or 'True' to use "
+                                       "all found at given prefix (default: [])"), CUSTOM]),
                       ('extracflags', ['', "Extra CFLAGS to be added (default: '')", CUSTOM]),
                       ('extradflags', ['', "Extra DFLAGS to be added (default: '')", CUSTOM]),
-                      ('ignore_regtest_fails', [False, "Ignore failures in regression test (should be used with care) (default: False).", CUSTOM]),
-                      ('maxtasks', [3, "Maximum number of CP2K instances run at the same time during testing (default:3)", CUSTOM])
+                      ('ignore_regtest_fails', [False, ("Ignore failures in regression test "
+                                                        "(should be used with care) (default: False)."), CUSTOM]),
+                      ('maxtasks', [3, ("Maximum number of CP2K instances run at "
+                                        "the same time during testing (default:3)"), CUSTOM]),
                      ]
         return EasyBlock.extra_options(extra_vars)
 
@@ -106,6 +109,13 @@ class EB_CP2K(EasyBlock):
         - build Libint wrapper
         - generate Makefile
         """
+
+        # correct start dir, if needed
+        # recent CP2K versions have a 'cp2k' dir in the unpacked 'cp2k' dir
+        cp2k_path = os.path.join(self.cfg['start_dir'], 'cp2k')
+        if os.path.exists(cp2k_path):
+            self.cfg['start_dir'] = cp2k_path
+            self.log.info("Corrected start_dir to %s" % self.cfg['start_dir'])
 
         # set compilers options according to toolchain config
         # full debug: -g -traceback -check all -fp-stack-check
@@ -141,7 +151,7 @@ class EB_CP2K(EasyBlock):
         self.typearch = "Linux-x86-64-%s" % self.toolchain.name
 
         # extra make instructions
-        self.make_instructions = "graphcon.o: graphcon.F\n\t$(FC) -c $(FCFLAGS2) $<\n"
+        self.make_instructions = ''  # "graphcon.o: graphcon.F\n\t$(FC) -c $(FCFLAGS2) $<\n"
 
         # compiler toolchain specific configuration
         comp_fam = self.toolchain.comp_family()
@@ -152,12 +162,13 @@ class EB_CP2K(EasyBlock):
         else:
             self.log.error("Don't know how to tweak configuration for compiler used.")
 
+        # BLAS related
         if get_software_root('IMKL'):
             options = self.configure_MKL(options)
         elif get_software_root('ACML'):
             options = self.configure_ACML(options)
-        elif get_software_root('ATLAS'):
-            options = self.configure_ATLAS(options)
+        else:
+            options = self.configure_BLAS_lib(options)
 
         if get_software_root('FFTW'):
             options = self.configure_FFTW(options)
@@ -169,7 +180,7 @@ class EB_CP2K(EasyBlock):
             options = self.configure_ScaLAPACK(options)
 
         # avoid group nesting
-        options['LIBS'] = options['LIBS'].replace('-Wl,--start-group','').replace('-Wl,--end-group','')
+        options['LIBS'] = options['LIBS'].replace('-Wl,--start-group', '').replace('-Wl,--end-group', '')
 
         options['LIBS'] = "-Wl,--start-group %s -Wl,--end-group" % options['LIBS']
 
@@ -195,7 +206,7 @@ class EB_CP2K(EasyBlock):
         if imkl:
 
             # prepare modinc target path
-            modincpath = os.path.join(self.builddir, 'modinc')
+            modincpath = os.path.join(os.path.dirname(os.path.normpath(self.cfg['start_dir'])), 'modinc')
             self.log.debug("Preparing module files in %s" % modincpath)
 
             try:
@@ -267,8 +278,8 @@ class EB_CP2K(EasyBlock):
         options = {
                    'CC': os.getenv('MPICC'),
                    'CPP': '',
-                   'FC': '%s %s' % (os.getenv('MPIF77'), self.openmp),
-                   'LD': '%s %s' % (os.getenv('MPIF77'), self.openmp),
+                   'FC': '%s %s' % (os.getenv('MPIF90'), self.openmp),
+                   'LD': '%s %s' % (os.getenv('MPIF90'), self.openmp),
                    'AR': 'ar -r',
                    'CPPFLAGS': '',
 
@@ -335,12 +346,17 @@ class EB_CP2K(EasyBlock):
             self.log.info("Using LibInt version %s" % (libint_maj_ver))
 
             options['LIBINTLIB'] = '%s/lib' % libint
-            options['LIBS'] += ' -lstdc++ %s %s' % (libint_libs, libint_wrapper)
+            options['LIBS'] += ' %s -lstdc++ %s' % (libint_libs, libint_wrapper)
 
         return options
 
     def configure_intel_based(self):
         """Configure for Intel based toolchains"""
+
+        # based on guidelines available at
+        # http://software.intel.com/en-us/articles/build-cp2k-using-intel-fortran-compiler-professional-edition/
+        intelurl = ''.join(["http://software.intel.com/en-us/articles/",
+                            "build-cp2k-using-intel-fortran-compiler-professional-edition/"])
 
         options = self.configure_common()
 
@@ -363,18 +379,36 @@ class EB_CP2K(EasyBlock):
 
         options['DFLAGS'] += ' -D__INTEL'
 
-        options['FCFLAGSOPT'] += ' $(INCFLAGS) -xHOST -heap-arrays 64 -funroll-loops'
-        options['FCFLAGSOPT2'] += ' $(INCFLAGS) -xHOST -heap-arrays 64'
+        optarch = ''
+        if self.toolchain.options['optarch']:
+            optarch = '-xHOST'
 
-        # see http://software.intel.com/en-us/articles/build-cp2k-using-intel-fortran-compiler-professional-edition/
-        self.make_instructions += "qs_vxc_atom.o: qs_vxc_atom.F\n\t$(FC) -c $(FCFLAGS2) $<\n"
+        options['FCFLAGSOPT'] += ' $(INCFLAGS) %s -heap-arrays 64' % optarch
+        options['FCFLAGSOPT2'] += ' $(INCFLAGS) %s -heap-arrays 64' % optarch
 
-        if LooseVersion(get_software_version('ifort')) >= LooseVersion("2011.8"):
-            self.make_instructions += "et_coupling.o: et_coupling.F\n\t$(FC) -c $(FCFLAGS2) $<\n"
-            self.make_instructions += "qs_vxc_atom.o: qs_vxc_atom.F\n\t$(FC) -c $(FCFLAGS2) $<\n"
+        ifortver = LooseVersion(get_software_version('ifort'))
+        failmsg = "CP2K won't build correctly with the Intel %%s compilers prior to %%s, see %s" % intelurl
 
-        elif LooseVersion(get_software_version('ifort')) >= LooseVersion("2011"):
-            self.log.error("CP2K won't build correctly with the Intel v12 compilers before version 2011.8.")
+        if ifortver >= LooseVersion("2011") and ifortver < LooseVersion("2012"):
+
+            # don't allow using Intel compiler 2011 prior to release 8, because of known issue (see Intel URL)
+            if ifortver >= LooseVersion("2011.8"):
+                # add additional make instructions to Makefile
+                self.make_instructions += "et_coupling.o: et_coupling.F\n\t$(FC) -c $(FCFLAGS2) $<\n"
+                self.make_instructions += "qs_vxc_atom.o: qs_vxc_atom.F\n\t$(FC) -c $(FCFLAGS2) $<\n"
+
+            else:
+                self.log.error(failmsg % ("v12", "v2011.8"))
+
+        elif ifortver >= LooseVersion("11"):
+            if LooseVersion(get_software_version('ifort')) >= LooseVersion("11.1.072"):
+                self.make_instructions += "qs_vxc_atom.o: qs_vxc_atom.F\n\t$(FC) -c $(FCFLAGS2) $<\n"
+
+            else:
+                self.log.error(failmsg % ("v11", "v11.1.072"))
+
+        else:
+            self.log.error("Intel compilers version %s not supported yet." % ifortver)
 
         return options
 
@@ -392,9 +426,12 @@ class EB_CP2K(EasyBlock):
 
         options['DFLAGS'] += ' -D__GFORTRAN'
 
-        options['FCFLAGSOPT'] += ' $(DFLAGS) $(CFLAGS) -march=native -ffast-math ' \
-                                 '-funroll-loops -ftree-vectorize -fmax-stack-var-size=32768'
-        options['FCFLAGSOPT2'] += ' $(DFLAGS) $(CFLAGS) -march=native'
+        optarch = ''
+        if self.toolchain.options['optarch']:
+            optarch = '-march=native'
+
+        options['FCFLAGSOPT'] += ' $(DFLAGS) $(CFLAGS) %s -fmax-stack-var-size=32768' % optarch
+        options['FCFLAGSOPT2'] += ' $(DFLAGS) $(CFLAGS) %s' % optarch
 
         return options
 
@@ -415,8 +452,8 @@ class EB_CP2K(EasyBlock):
 
         return options
 
-    def configure_ATLAS(self, options):
-        """Configure for ATLAS"""
+    def configure_BLAS_lib(self, options):
+        """Configure for BLAS library."""
 
         options['LIBS'] += ' %s %s' % (self.libsmm, os.getenv('LIBBLAS'))
 
@@ -427,17 +464,30 @@ class EB_CP2K(EasyBlock):
 
         options.update({
                         'INTEL_INC': '$(MKLROOT)/include',
-                        'INTEL_INCF': '$(INTEL_INC)/fftw',
                        })
 
-        options['DFLAGS'] += ' -D__FFTW3 -D__FFTMKL'
+        options['DFLAGS'] += ' -D__FFTW3'
 
         extra = ''
         if self.modincpath:
             extra = '-I%s' % self.modincpath
-        options['CFLAGS'] += ' -I$(INTEL_INC) -I$(INTEL_INCF) %s $(FPIC) $(DEBUG)' % extra
+        options['CFLAGS'] += ' -I$(INTEL_INC) %s $(FPIC) $(DEBUG)' % extra
 
         options['LIBS'] += ' %s %s' % (self.libsmm, os.getenv('LIBSCALAPACK'))
+
+        # only use Intel FFTW wrappers if FFTW is not loaded
+        if not get_software_root('FFTW'):
+
+            options.update({
+                            'INTEL_INCF': '$(INTEL_INC)/fftw',
+                           })
+
+            options['DFLAGS'] += ' -D__FFTMKL'
+
+            options['CFLAGS'] += ' -I$(INTEL_INCF)'
+
+            options['LIBS'] = '%s %s' % (os.getenv('LIBFFT'), options['LIBS'])
+
 
         return options
 
@@ -454,7 +504,7 @@ class EB_CP2K(EasyBlock):
 
         options['DFLAGS'] += ' -D__FFTW3'
 
-        options['LIBS'] += ' -lfftw3'
+        options['LIBS'] += ' -L%s -lfftw3' % os.path.join(os.getenv('EBROOTFFTW'), 'lib')
 
         return options
 
@@ -530,7 +580,7 @@ class EB_CP2K(EasyBlock):
                     break
 
             # location of do_regtest script
-            regtest_script = "%s/cp2k/tools/do_regtest" % self.builddir
+            regtest_script = os.path.join(self.cfg['start_dir'], 'tools', 'do_regtest')
 
             # patch do_regtest so that reference output is used
             if regtest_refdir:
@@ -552,12 +602,14 @@ cp2k_version=%(cp2k_version)s
 dir_triplet=%(triplet)s
 leakcheck="YES"
 maxtasks=%(maxtasks)s
+cp2k_run_prefix="%(mpicmd_prefix)s"
             """ % {
                    'f90': os.getenv('F90'),
-                   'base': self.builddir,
+                   'base': os.path.dirname(os.path.normpath(self.cfg['start_dir'])),
                    'cp2k_version': self.cfg['type'],
                    'triplet': self.typearch,
-                   'maxtasks': self.cfg['maxtasks']
+                   'maxtasks': self.cfg['maxtasks'],
+                   'mpicmd_prefix': self.toolchain.mpi_cmd_for('', 2),
                   }
 
             cfg_fn = "cp2k_regtest.cfg"
@@ -568,6 +620,8 @@ maxtasks=%(maxtasks)s
                 f.close()
             except IOError, err:
                 self.log.error("Failed to create config file %s: %s" % (cfg_fn, err))
+
+            self.log.debug("Contents of %s: %s" % (cfg_fn, cfg_txt))
 
             # run regression test
             cmd = "%s -nocvs -quick -nocompile -config %s" % (regtest_script, cfg_fn)
@@ -669,9 +723,10 @@ maxtasks=%(maxtasks)s
         # copy regression test results
         if self.cfg['runtest']:
             try:
-                for d in os.listdir(self.builddir):
+                testdir = os.path.dirname(os.path.normpath(self.cfg['start_dir']))
+                for d in os.listdir(testdir):
                     if d.startswith('TEST-%s-%s' % (self.typearch, self.cfg['type'])):
-                        path = os.path.join(self.builddir, d)
+                        path = os.path.join(testdir, d)
                         target = os.path.join(self.installdir, d)
                         shutil.copytree(path, target)
                         self.log.info("Regression test results dir %s copied to %s" % (d, self.installdir))
