@@ -1,4 +1,4 @@
-##
+# #
 # Copyright 2009-2013 Ghent University
 #
 # This file is part of EasyBuild,
@@ -21,7 +21,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
-##
+# #
 """
 EasyBuild support for installing the Intel Math Kernel Library (MKL), implemented as an easyblock
 
@@ -102,7 +102,7 @@ class EB_imkl(IntelBase):
     def make_module_extra(self):
         """Overwritten from Application to add extra txt"""
         txt = super(EB_imkl, self).make_module_extra()
-        txt += "prepend-path\t%s\t\t%s\n" % ('INTEL_LICENSE_FILE', self.license)
+        txt += "prepend-path\t%s\t\t%s\n" % ('INTEL_LICENSE_FILE', self.license_file)
         if self.cfg['m32']:
             txt += "prepend-path\t%s\t\t$root/%s\n" % ('NLSPATH', 'idb/32/locale/%l_%t/%N')
         else:
@@ -117,8 +117,8 @@ class EB_imkl(IntelBase):
         Hence post processing is quite different in both situations
         """
         if LooseVersion(self.version) >= LooseVersion('10.3'):
-            #Add convenient wrapper libs
-            #- form imkl 10.3
+            # Add convenient wrapper libs
+            # - form imkl 10.3
 
             if self.cfg['m32']:
                 self.log.error("32-bit not supported yet for IMKL v%s (>=10.3)" % self.version)
@@ -152,9 +152,9 @@ class EB_imkl(IntelBase):
                 return
 
             # build the interfaces
-            #- blas95 and lapack95 need more work, ignore for now
+            # - blas95 and lapack95 need more work, ignore for now
 
-            #lis1=['blas95','fftw2xc','fftw2xf','lapack95']
+            # lis1=['blas95','fftw2xc','fftw2xf','lapack95']
             # blas95 and lapack also need include/.mod to be processed
             lis1 = ['fftw2xc', 'fftw2xf']
             lis2 = ['fftw3xc', 'fftw3xf']
@@ -238,12 +238,12 @@ class EB_imkl(IntelBase):
 
 
         else:
-            #Follow this procedure for mkl version lower than 10.3
-            #Extra
-            #- build the mkl interfaces (pic and no-pic)
-            #- add wrapper libs
+            # Follow this procedure for mkl version lower than 10.3
+            # Extra
+            # - build the mkl interfaces (pic and no-pic)
+            # - add wrapper libs
             #            Add convenient libs
-            #- form imkl 10.1
+            # - form imkl 10.1
             if self.cfg['m32']:
                 extra = {
                          'libmkl.so': 'GROUP (-lmkl_intel -lmkl_intel_thread -lmkl_core)',
@@ -286,7 +286,7 @@ class EB_imkl(IntelBase):
 
             # build the interfaces
             # - blas95 and lapack95 need more work, ignore for now
-            #lis1=['blas95','fftw2xc','fftw2x_cdft','fftw2xf','lapack95']
+            # lis1=['blas95','fftw2xc','fftw2x_cdft','fftw2xf','lapack95']
             # blas95 and lapack also need include/.mod to be processed
             lis1 = ['fftw2xc', 'fftw2x_cdft', 'fftw2xf']
             lis2 = ['fftw3xc', 'fftw3xf']
