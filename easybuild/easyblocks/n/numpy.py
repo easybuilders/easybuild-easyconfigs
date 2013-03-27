@@ -95,10 +95,10 @@ class EB_numpy(FortranPythonPackage):
                 if "pthread" in libs:
                     libs.remove("pthread")
                 tweaks = {
-                    prefix='',
-                    prefix_begin_end='-Wl:',
-                    separator=',',
-                    separator_begin_end=',',
+                    'prefix': '',
+                    'prefix_begin_end': '-Wl:',
+                    'separator': ',',
+                    'separator_begin_end': ',',
                 }
                 libs.try_function_on_element('change', kwargs=tweaks)
                 libs.SEPARATOR = ','
