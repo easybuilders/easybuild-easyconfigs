@@ -69,7 +69,8 @@ class EB_ScaLAPACK(ConfigureMake):
         self.loosever = LooseVersion(self.version)
 
         # make sure required dependencies are available
-        deps = [("LAPACK", "ACML")]
+        deps = [("LAPACK", "ACML", "OpenBLAS")]
+        self.log.deprecated("EB_ScaLAPACK.configure_step uses hardcoded list of LAPACK libs", "2.0")
         # BLACS is only a dependency for ScaLAPACK versions prior to v2.0.0
         if self.loosever < LooseVersion("2.0.0"):
             deps.append(("BLACS",))
@@ -80,7 +81,7 @@ class EB_ScaLAPACK(ConfigureMake):
                     ok = True
                     break
             if not ok:
-                self.log.error("None of the following dependencies %s are available/loaded." % depgrp)
+                self.log.error("None of the following dependencies %s are available/loaded." % (depgrp, ))
 
     def build_step(self):
         """Build ScaLAPACK using make after setting make options."""
@@ -99,6 +100,7 @@ class EB_ScaLAPACK(ConfigureMake):
 
         # set BLAS and LAPACK libs
         extra_makeopts = None
+        self.log.deprecated("EB_ScaLAPACK.build_step doesn't use toolchain support for BLAS/LAPACK libs", "2.0")
         if get_software_root('LAPACK'):
             extra_makeopts = [
                               'BLASLIB="%s -lpthread"' % lapack_get_blas_lib(self.log),
@@ -111,8 +113,14 @@ class EB_ScaLAPACK(ConfigureMake):
                               'BLASLIB="%s -lpthread"' % acml_static_lib,
                               'LAPACKLIB=%s' % acml_static_lib
                              ]
+        elif get_software_root('OpenBLAS'):
+            root = get_software_root('OpenBLAS')
+            extra_makeopts = [
+                              'BLASLIB="%s -lpthread"' % lapack_get_blas_lib(self.log),
+                              'LAPACKLIB="%s"' % lapack_get_blas_lib(self.log),
+                             ]    
         else:
-            self.log.error("LAPACK or ACML are not available, no idea how to set BLASLIB/LAPACKLIB make options.")
+            self.log.error("LAPACK, ACML or OpenBLAS are not available, no idea how to set BLASLIB/LAPACKLIB make options.")
 
         # build procedure changed in v2.0.0
         if self.loosever < LooseVersion("2.0.0"):
