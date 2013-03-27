@@ -69,30 +69,26 @@ class EB_numpy(FortranPythonPackage):
                                          "mkl_libs = %(blas)s",
                                         ])
 
-        elif get_software_root("ATLAS") and get_software_root("LAPACK"):
-
+        else:
             extrasiteconfig = '\n'.join(["[blas_opt]",
                                          "libraries = %(blas)s",
                                          "[lapack_opt]",
                                          "libraries = %(lapack)s",
                                         ])
 
-        else:
-            self.log.error("Could not detect BLAS/LAPACK library.")
-
-        libfft = os.getenv('LIBFFT')
+        libfft = ','.join(self.toolchain.get_variable('LIBFFT', typ=list))
         if libfft:
-            extrasiteconfig += "\n[fftw]\nlibraries = %s" % libfft.replace(' ', ',')
+            extrasiteconfig += "\n[fftw]\nlibraries = %s" % libfft
 
         self.sitecfg = '\n'.join([self.sitecfg, extrasiteconfig])
 
-        lapack_libs = os.getenv("LIBLAPACK_MT").split(" -l")
-        blas_libs = os.getenv("LIBBLAS_MT").split(" -l")
+        lapack_libs = self.toolchain.get_variable('LIBLAPACK_MT', typ=list)
+        blas_libs = self.toolchain.get_variable('LIBBLAS_MT', typ=list)
 
         if get_software_root("IMKL"):
-            # with IMKL, get rid of all spaces and use '-Wl:'
+            # with IMKL, no spaces and use '-Wl:'
             lapack_libs.remove("pthread")
-            lapack = ','.join(lapack_libs).replace(' ', ',').replace('Wl,', 'Wl:')
+            lapack = ','.join(lapack_libs).replace('Wl,', 'Wl:')
             blas = lapack
         else:
             lapack = ", ".join(lapack_libs)
