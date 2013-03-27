@@ -81,8 +81,8 @@ class IntelBase(EasyBlock):
                      ]
 
         # Support for old easyconfigs with license parameter
-        _log.deprecated('No old style license parameter, use license_path', '2.0')
-        intel_vars.append(('license', [None, "License file path (default: None)", MANDATORY]))
+        _log.deprecated('No old style license parameter, use license_file', '2.0')
+        intel_vars.append(('license', [None, "License file (default: None)", MANDATORY]))
 
         intel_vars.extend(origvars)
         return intel_vars
@@ -139,9 +139,9 @@ class IntelBase(EasyBlock):
         try:
             self.license_file = self.cfg['license_file']
         except:
-            _log.deprecated('No old style license parameter, license_path is now mandatory', '2.0')
+            self.log.deprecated('No old style license parameter, license_file is now mandatory', '2.0')
             if not isinstance(self.cfg['license'], License):
-                _log.deprecated('No old style license parameter, license has to be License subclass', '2.0')
+                self.log.deprecated('No old style license parameter, license has to be License subclass', '2.0')
                 self.license_file = self.cfg['license']
 
         if self.license_file:
