@@ -32,6 +32,7 @@ EasyBuild support for building and installing numpy, implemented as an easyblock
 @author: Jens Timmerman (Ghent University)
 """
 import os
+import re
 
 from easybuild.easyblocks.generic.fortranpythonpackage import FortranPythonPackage
 from easybuild.tools.filetools import rmtree2
@@ -85,11 +86,27 @@ class EB_numpy(FortranPythonPackage):
         lapack_libs = self.toolchain.get_variable('LIBLAPACK_MT', typ=list)
         blas_libs = self.toolchain.get_variable('LIBBLAS_MT', typ=list)
 
-        if get_software_root("IMKL"):
+        if get_software_root("imkl"):
             # with IMKL, no spaces and use '-Wl:'
             lapack_libs.remove("pthread")
-            lapack = ','.join(lapack_libs).replace('Wl,', 'Wl:')
+            # redefine 'Wl,' to 'Wl:' so that the patch file can do its job
+            # FIXME: we can't rely on toolchain.get_variable here, since that doesn't include the -Wl, flags
+            lapack = ','.join(os.getenv('LIBLAPACK_MT').split(' -l')).replace(' ', ',').replace('Wl,', 'Wl:')
             blas = lapack
+
+            # make sure the patch file is there
+            # we check for a typical characteristic of a patch file that cooperates with the above
+            # not fool-proof, but better than enforcing a particular patch filename
+            patch_found = False
+            patch_wl_regex = re.compile(r"replace\(':',\s*','\)")
+            for patch in self.cfg['patches']:
+                if patch_wl_regex.search(open(patch, 'r').read()):
+                    patch_found = True
+                    break
+            if not patch_found:
+                self.log.error("Building numpy on top of Intel MKL requires a patch to "
+                               "handle -Wl linker flags correctly, which doesn't seem to be there.")
+
         else:
             lapack = ", ".join(lapack_libs)
             blas = ", ".join(blas_libs)
