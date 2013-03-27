@@ -114,7 +114,7 @@ class EB_numpy(FortranPythonPackage):
             patch_found = False
             patch_wl_regex = re.compile(r"replace\(':',\s*','\)")
             for patch in self.patches:
-                if patch_wl_regex.search(open(patch['path'], 'r').read()):
+                if patch_wl_regex.search(open(patch, 'r').read()):
                     patch_found = True
                     break
             if not patch_found:
