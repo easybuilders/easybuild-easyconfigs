@@ -82,26 +82,26 @@ class EB_numpy(FortranPythonPackage):
                                          "lapack_libs = %(lapack)s",
                                         ])
 
-        libfft = ','.join(self.toolchain.get_variable('LIBFFT', typ=list))
-        if libfft:
-            extrasiteconfig += "\n[fftw]\nlibraries = %s" % libfft
-
-        self.sitecfg = '\n'.join([self.sitecfg, extrasiteconfig])
-
-        lapack_libs = self.toolchain.get_variable('LIBLAPACK_MT', typ=list)
-        blas_libs = self.toolchain.get_variable('LIBBLAS_MT', typ=list)
+        blas = None
+        lapack = None
+        fft = None
 
         if get_software_root("imkl"):
             # with IMKL, no spaces and use '-Wl:'
             # redefine 'Wl,' to 'Wl:' so that the patch file can do its job
-            lapack_libs = self.toolchain.get_variable('LIBLAPACK_MT').copy()
-            lapack_libs.remove("pthread")
-            lapack_libs.try_function_by_elem('change', prefix='', prefix_begin_end='-Wl:',
-                                                       separator=',', separator_begin_end=',')
-            lapack_libs.SEPARATOR = ','
-            lapack = str(lapack_libs)
+            def get_libs_for_mkl(varname):
+                """Get list of libraries as required for MKL patch file."""
+                libs = self.toolchain.get_variable('LIB%s' % varname).copy()
+                if "pthread" in libs:
+                    libs.remove("pthread")
+                libs.try_function_by_elem('change', prefix='', prefix_begin_end='-Wl:',
+                                                    separator=',', separator_begin_end=',')
+                libs.SEPARATOR = ','
+                return str(libs)  # str causes list concatenation and adding prefixes & separators
 
-            blas = lapack
+            blas = get_libs_for_mkl('BLAS_MT')
+            lapack = get_libs_for_mkl('LAPACK_MT')
+            fft = get_libs_for_mkl('FFT')
 
             # make sure the patch file is there
             # we check for a typical characteristic of a patch file that cooperates with the above
@@ -117,8 +117,15 @@ class EB_numpy(FortranPythonPackage):
                                "handle -Wl linker flags correctly, which doesn't seem to be there.")
 
         else:
-            lapack = ','.join(lapack_libs)
-            blas = ','.join(blas_libs)
+
+            blas = ','.join(self.toolchain.get_variable('LIBBLAS_MT', typ=list))
+            lapack = ','.join(self.toolchain.get_variable('LIBLAPACK_MT', typ=list))
+            fft = ','.join(self.toolchain.get_variable('LIBFFT', typ=list))
+
+        if fft:
+            extrasiteconfig += "\n[fftw]\nlibraries = %s" % fft
+
+        self.sitecfg = '\n'.join([self.sitecfg, extrasiteconfig])
 
         self.sitecfg = self.sitecfg % {
                                        'lapack': lapack,
