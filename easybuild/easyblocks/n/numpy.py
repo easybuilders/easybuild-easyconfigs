@@ -94,8 +94,8 @@ class EB_numpy(FortranPythonPackage):
                 libs = self.toolchain.variables['LIB%s' % varname].copy()
                 if "pthread" in libs:
                     libs.remove("pthread")
-                libs.try_function_by_elem('change', prefix='', prefix_begin_end='-Wl:',
-                                                    separator=',', separator_begin_end=',')
+                libs.try_function_on_element('change', prefix='', prefix_begin_end='-Wl:',
+                                                       separator=',', separator_begin_end=',')
                 libs.SEPARATOR = ','
                 return str(libs)  # str causes list concatenation and adding prefixes & separators
 
