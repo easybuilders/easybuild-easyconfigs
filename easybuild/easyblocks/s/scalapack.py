@@ -168,7 +168,9 @@ class EB_ScaLAPACK(ConfigureMake):
             # set compilers and options
             extra_makeopts += [
                                'FC="%s"' % mpif90,
-                               'CC="%s"' % mpicc
+                               'CC="%s"' % mpicc,
+                               'CCFLAGS="%s"' % os.getenv('CFLAGS'),
+                               'FCFLAGS="%s"' % os.getenv('FFLAGS'),
                               ]
 
             # set interface
