@@ -161,17 +161,8 @@ tasks=%(tasks)s
         else:
             self.log.error('No supported compiler found (tried GCC)')
 
-        # try and find BLAS lib
-        blas_found = False
-        blas_libs = ["ACML", "ATLAS", "IMKL"]
-        for blas_lib in blas_libs:
-            if get_software_root(blas_lib):
-                blas_found = True
-            else:
-                self.log.info("BLAS library %s not found" % blas_lib)
-
-        if not blas_found:
-            self.log.error('No known BLAS library found!')
+        if not os.getenv('LIBBLAS'):
+            self.log.error('No BLAS library specifications found (LIBBLAS not set)!')
 
         cfgdict = {
                    'datatype': None,
