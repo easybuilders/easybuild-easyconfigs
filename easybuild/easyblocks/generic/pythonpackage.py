@@ -80,6 +80,8 @@ class PythonPackage(ExtensionEasyBlock):
     def prepare_step(self):
         """Prepare by determining Python site lib dir."""
 
+        super(PythonPackage, self).prepare_step()
+
         # we can't simply import distutils.sysconfig, because then we would be talking to the system Python
         cmd = ''.join([
                        'python -c "',
