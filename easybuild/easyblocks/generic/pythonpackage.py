@@ -81,7 +81,8 @@ class PythonPackage(ExtensionEasyBlock):
         """Prepare by determining Python site lib dir."""
 
         # we can't simply import distutils.sysconfig, because then we would be talking to the system Python
-        cmd = ' '.join(['python -c "',
+        cmd = ' '.join([
+                        'python -c "',
                         'import os;',
                         'import distutils.sysconfig;',
                         'print os.path.join(*distutils.sysconfig.get_python_lib().split(os.sep)[-3:]);',
