@@ -112,4 +112,5 @@ class EB_Ferret(ConfigureMake):
                     line = re.sub(r"^(\s*LD\s*)=.*", r"\1 = %s -nofor-main" % os.getenv("F77"), line)
                     for x in ["CFLAGS", "FFLAGS"]:
                         line = re.sub(r"^(\s*%s\s*=\s*\$\(CPP_FLAGS\)).*\\" % x, r"\1 %s \\" % os.getenv(x), line)
-                    sys.stdout.write(line)
+
+                sys.stdout.write(line)
