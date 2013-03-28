@@ -31,7 +31,6 @@ EasyBuild support for Python packages, implemented as an easyblock
 @author: Pieter De Baets (Ghent University)
 @author: Jens Timmerman (Ghent University)
 """
-import distutils.sysconfig
 import os
 import tempfile
 from os.path import expanduser
@@ -69,7 +68,7 @@ class PythonPackage(ExtensionEasyBlock):
         self.unpack_options = ''
 
         self.python = None
-        self.pylibdir = distutils.sysconfig.get_python_lib(prefix='')
+        self.pylibdir = None
 
         # make sure there's no site.cfg in $HOME, because setup.py will find it and use it
         if os.path.exists(os.path.join(expanduser('~'), 'site.cfg')):
@@ -78,13 +77,28 @@ class PythonPackage(ExtensionEasyBlock):
         if not 'modulename' in self.options:
             self.options['modulename'] = self.name.lower()
 
+    def prepare_step(self):
+        """Prepare by determining Python site lib dir."""
+
+        super(PythonPackage, self).prepare_step()
+
+        # we can't simply import distutils.sysconfig, because then we would be talking to the system Python
+        cmd = ''.join([
+                       'python -c "',
+                       'import os;',
+                       'import distutils.sysconfig;',
+                       'print os.path.join(*distutils.sysconfig.get_python_lib().split(os.sep)[-3:]);',
+                       '"',
+                      ])
+        (out, _) = run_cmd(cmd, simple=False)
+        self.pylibdir = out.strip()
+
     def configure_step(self):
         """Configure Python package build."""
 
         self.python = get_software_root('Python')
         if not self.python:
             self.log.error('Python module not loaded.')
-
         self.log.debug("Python library dir: %s" % self.pylibdir)
 
         if self.sitecfg is not None:

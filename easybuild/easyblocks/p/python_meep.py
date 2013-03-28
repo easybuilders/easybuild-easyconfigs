@@ -31,7 +31,6 @@ EasyBuild support for python-meep, implemented as an easyblock
 @author: Pieter De Baets (Ghent University)
 @author: Jens Timmerman (Ghent University)
 """
-import distutils.sysconfig
 import glob
 import os
 import shutil
@@ -46,13 +45,6 @@ class EB_python_minus_meep(EasyBlock):
     """
     Support for building and installing python-meep
     """
-
-    def __init__(self, *args, **kwargs):
-        """Initialize custom variables."""
-        super(EB_python_minus_meep, self).__init__(*args, **kwargs)
-
-        # template for Python packages lib dir
-        self.pylibdir = distutils.sysconfig.get_python_lib(prefix='')
 
     def configure_step(self):
         """Just check whether dependencies (Meep, Python) are available."""

@@ -27,7 +27,6 @@ EasyBuild support for building and installing NEURON, implemented as an easybloc
 
 @author: Kenneth Hoste (Ghent University)
 """
-import distutils.sysconfig
 import os
 import re
 
@@ -197,9 +196,8 @@ class EB_NEURON(ConfigureMake):
                        })
 
         if self.with_python:
-            pylibdir = distutils.sysconfig.get_python_lib(prefix='')
             guesses.update({
-                            'PYTHONPATH': [pylibdir],
+                            'PYTHONPATH': [self.pylibdir],
                            })
 
         return guesses
