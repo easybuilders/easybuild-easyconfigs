@@ -139,10 +139,19 @@ class IntelBase(EasyBlock):
         try:
             self.license_file = self.cfg['license_file']
         except:
-            self.log.deprecated('No old style license parameter, license_file is now mandatory', '2.0')
-            if not isinstance(self.cfg['license'], License):
-                self.log.deprecated('No old style license parameter, license has to be License subclass', '2.0')
-                self.license_file = self.cfg['license']
+            # the default should exist
+            self.log.deprecated('No new style license_file parameter, license_file is now mandatory', '2.0')
+            self.license_file = None
+
+        if self.license_file is None:
+            self.log.deprecated('Checking for old style license', '2.0')
+            self.cfg.enable_templating = False
+            lic = self.cfg['license']
+            # old style license is a path (type string)
+            if isinstance(lic, License) and isinstance(lic, str):
+                self.log.deprecated('No old style license parameter, license has to be pure License subclass', '2.0')
+                self.license_file = lic
+            self.cfg.enable_templating = True
 
         if self.license_file:
             self.log.info("Using license file %s" % self.license_file)
