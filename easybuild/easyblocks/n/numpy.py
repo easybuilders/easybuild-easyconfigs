@@ -73,7 +73,7 @@ class EB_numpy(FortranPythonPackage):
 
         elif get_software_root("ATLAS"):
             extrasiteconfig = '\n'.join(["[atlas]",
-                                         "atlas_libs = %(lapack)s,%(blas)s",
+                                         "atlas_libs = %(lapack)s",
                                         ])
         else:
             extrasiteconfig = '\n'.join(["[blas]",
@@ -122,9 +122,9 @@ class EB_numpy(FortranPythonPackage):
 
         else:
 
-            blas = ','.join(self.toolchain.get_variable('LIBBLAS_MT', typ=list))
-            lapack = ','.join(self.toolchain.get_variable('LIBLAPACK_MT', typ=list))
-            fft = ','.join(self.toolchain.get_variable('LIBFFT', typ=list))
+            blas = ', '.join([x for x in self.toolchain.get_variable('LIBBLAS_MT', typ=list) if x != "pthread"])
+            lapack = ', '.join([x for x in self.toolchain.get_variable('LIBLAPACK_MT', typ=list) if x != "pthread"])
+            fft = ', '.join(self.toolchain.get_variable('LIBFFT', typ=list))
 
         if fft:
             extrasiteconfig += "\n[fftw]\nlibraries = %s" % fft
