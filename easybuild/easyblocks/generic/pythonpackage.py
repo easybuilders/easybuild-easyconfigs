@@ -91,7 +91,7 @@ class PythonPackage(ExtensionEasyBlock):
                        '"',
                       ])
         (out, _) = run_cmd(cmd, simple=False)
-        self.pylibdir.strip()
+        self.pylibdir = out.strip()
 
     def configure_step(self):
         """Configure Python package build."""
