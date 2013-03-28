@@ -82,7 +82,7 @@ class IntelBase(EasyBlock):
 
         # Support for old easyconfigs with license parameter
         _log.deprecated('No old style license parameter, use license_file', '2.0')
-        intel_vars.append(('license', [None, "License file (default: None)", MANDATORY]))
+        intel_vars.append(('license', [None, "License file (default: None)", CUSTOM]))
 
         intel_vars.extend(origvars)
         return intel_vars
