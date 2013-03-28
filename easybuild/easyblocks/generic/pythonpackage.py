@@ -90,7 +90,8 @@ class PythonPackage(ExtensionEasyBlock):
                        'print os.path.join(*distutils.sysconfig.get_python_lib().split(os.sep)[-3:]);',
                        '"',
                       ])
-        (self.pylibdir, _) = run_cmd(cmd, simple=False)
+        (out, _) = run_cmd(cmd, simple=False)
+        self.pylibdir.strip()
 
     def configure_step(self):
         """Configure Python package build."""
