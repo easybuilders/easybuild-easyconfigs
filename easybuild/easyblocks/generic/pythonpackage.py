@@ -77,21 +77,29 @@ class PythonPackage(ExtensionEasyBlock):
         if not 'modulename' in self.options:
             self.options['modulename'] = self.name.lower()
 
-    def prepare_step(self):
-        """Prepare by determining Python site lib dir."""
-
-        super(PythonPackage, self).prepare_step()
+    def set_pylibdir(self):
+        """Determine Python library directory."""
 
         # we can't simply import distutils.sysconfig, because then we would be talking to the system Python
         cmd = ''.join([
                        'python -c "',
                        'import os;',
                        'import distutils.sysconfig;',
-                       'print os.path.join(*distutils.sysconfig.get_python_lib().split(os.sep)[-3:]);',
+                       'print (os.path.join(*distutils.sysconfig.get_python_lib().split(os.sep)[-3:]));',
                        '"',
                       ])
         (out, _) = run_cmd(cmd, simple=False)
         self.pylibdir = out.strip()
+
+    def prepare_step(self):
+        """Prepare easyblock by determining Python site lib dir."""
+        super(PythonPackage, self).prepare_step()
+        self.set_pylibdir()
+
+    def prerun(self):
+        """Prepare extension by determining Python site lib dir."""
+        super(PythonPackage, self).prerun()
+        self.set_pylibdir()
 
     def configure_step(self):
         """Configure Python package build."""

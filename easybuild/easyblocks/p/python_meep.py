@@ -36,12 +36,12 @@ import os
 import shutil
 import tempfile
 
-from easybuild.framework.easyblock import EasyBlock
+from easybuild.easyblocks.generic.pythonpackage import PythonPackage
 from easybuild.tools.filetools import extract_file, rmtree2, run_cmd
 from easybuild.tools.modules import get_software_root
 
 
-class EB_python_minus_meep(EasyBlock):
+class EB_python_minus_meep(PythonPackage):
     """
     Support for building and installing python-meep
     """
@@ -123,7 +123,9 @@ class EB_python_minus_meep(EasyBlock):
                         'dirs':[]
                        }
 
-        super(EB_python_minus_meep, self).sanity_check_step(custom_paths=custom_paths)
+        self.options['modulename'] = 'meep_mpi'
+
+        return super(EB_python_minus_meep, self).sanity_check_step(custom_paths=custom_paths)
 
     def make_module_extra(self):
         """Set python-meep specific environment variables in module."""
