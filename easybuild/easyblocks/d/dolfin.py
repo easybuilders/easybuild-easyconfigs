@@ -241,9 +241,10 @@ class EB_DOLFIN(CMakePythonPackage):
                 #for (tmpl, subdir) in [(cmd_template_python, 'python'), (cmd_template_cpp, 'cpp')]]
 
         # subdomains-poisson has no C++ get_version, only Python
-        name = 'subdomains-poisson'
-        path = os.path.join(pref, 'pde', name, 'python')
-        cmds += [cmd_template_python % {'dir': path, 'name': name}]
+        # Python tests excluded, see above
+        #name = 'subdomains-poisson'
+        #path = os.path.join(pref, 'pde', name, 'python')
+        #cmds += [cmd_template_python % {'dir': path, 'name': name}]
 
         # supply empty argument to each command
         custom_commands = [(cmd, "") for cmd in cmds]
