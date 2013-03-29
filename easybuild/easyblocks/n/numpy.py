@@ -113,6 +113,9 @@ class EB_numpy(FortranPythonPackage):
             patch_found = False
             patch_wl_regex = re.compile(r"replace\(':',\s*','\)")
             for patch in self.patches:
+                # patches are either strings (extension) or dicts (easyblock)
+                if isinstance(patch, dict):
+                    patch = patch['path']
                 if patch_wl_regex.search(open(patch, 'r').read()):
                     patch_found = True
                     break
