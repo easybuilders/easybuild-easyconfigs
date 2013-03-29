@@ -103,22 +103,22 @@ class EB_ScaLAPACK(ConfigureMake):
         self.log.deprecated("EB_ScaLAPACK.build_step doesn't use toolchain support for BLAS/LAPACK libs", "2.0")
         if get_software_root('LAPACK'):
             extra_makeopts = [
-                              'BLASLIB="%s -lpthread"' % lapack_get_blas_lib(self.log),
-                              'LAPACKLIB=%s/lib/liblapack.a' % get_software_root('LAPACK')
-                             ]
+                'BLASLIB="%s -lpthread"' % lapack_get_blas_lib(self.log),
+                'LAPACKLIB=%s/lib/liblapack.a' % get_software_root('LAPACK')
+            ]
         elif get_software_root('ACML'):
             root = get_software_root('ACML')
             acml_static_lib = os.path.join(root, os.getenv('ACML_BASEDIR', 'NO_ACML_BASEDIR'), 'lib', 'libacml.a')
             extra_makeopts = [
-                              'BLASLIB="%s -lpthread"' % acml_static_lib,
-                              'LAPACKLIB=%s' % acml_static_lib
-                             ]
+                'BLASLIB="%s -lpthread"' % acml_static_lib,
+                'LAPACKLIB=%s' % acml_static_lib
+            ]
         elif get_software_root('OpenBLAS'):
             root = get_software_root('OpenBLAS')
             extra_makeopts = [
-                              'BLASLIB="%s -lpthread"' % lapack_get_blas_lib(self.log),
-                              'LAPACKLIB="%s"' % lapack_get_blas_lib(self.log),
-                             ]    
+                'BLASLIB="%s -lpthread"' % lapack_get_blas_lib(self.log),
+                'LAPACKLIB="%s"' % lapack_get_blas_lib(self.log),
+            ]
         else:
             self.log.error("LAPACK, ACML or OpenBLAS are not available, no idea how to set BLASLIB/LAPACKLIB make options.")
 
@@ -134,11 +134,12 @@ class EB_ScaLAPACK(ConfigureMake):
             extra_makeopts.append('home=%s BLACSdir=%s' % (self.cfg['start_dir'], blacs))
 
             # set BLACS libs correctly
-            for (var, lib) in [
-                               ('BLACSFINIT', "F77init"),
-                               ('BLACSCINIT', "Cinit"),
-                               ('BLACSLIB', "")
-                              ]:
+            blacs_libs = [
+                ('BLACSFINIT', "F77init"),
+                ('BLACSCINIT', "Cinit"),
+                ('BLACSLIB', "")
+            ]
+            for (var, lib) in blacs_libs:
                 extra_makeopts.append('%s=%s/lib/libblacs%s.a' % (var, blacs, lib))
 
             # set compilers and options
@@ -148,11 +149,11 @@ class EB_ScaLAPACK(ConfigureMake):
             if self.toolchain.options['pic']:
                 noopt += " -fPIC"
             extra_makeopts += [
-                               'F77="%s"' % mpif77,
-                               'CC="%s"' % mpicc,
-                               'NOOPT="%s"' % noopt,
-                               'CCFLAGS="-O3 %s"' % os.getenv('CFLAGS')
-                              ]
+                'F77="%s"' % mpif77,
+                'CC="%s"' % mpicc,
+                'NOOPT="%s"' % noopt,
+                'CCFLAGS="-O3 %s"' % os.getenv('CFLAGS')
+            ]
 
             # set interface
             extra_makeopts.append("CDEFS='-D%s -DNO_IEEE $(USEMPI)'" % interface)
@@ -167,9 +168,11 @@ class EB_ScaLAPACK(ConfigureMake):
 
             # set compilers and options
             extra_makeopts += [
-                               'FC="%s"' % mpif90,
-                               'CC="%s"' % mpicc
-                              ]
+                'FC="%s"' % mpif90,
+                'CC="%s"' % mpicc,
+                'CCFLAGS="%s"' % os.getenv('CFLAGS'),
+                'FCFLAGS="%s"' % os.getenv('FFLAGS'),
+            ]
 
             # set interface
             extra_makeopts.append('CDEFS="-D%s"' % interface)
@@ -183,10 +186,11 @@ class EB_ScaLAPACK(ConfigureMake):
         """Install by copying files to install dir."""
 
         # include files and libraries
-        for (srcdir, destdir, ext) in [
-                                       ("SRC", "include", ".h"), # include files
-                                       ("", "lib", ".a"), # libraries
-                                       ]:
+        path_info = [
+            ("SRC", "include", ".h"), # include files
+            ("", "lib", ".a"), # libraries
+        ]
+        for (srcdir, destdir, ext) in path_info:
 
             src = os.path.join(self.cfg['start_dir'], srcdir)
             dest = os.path.join(self.installdir, destdir)
@@ -209,8 +213,8 @@ class EB_ScaLAPACK(ConfigureMake):
         """Custom sanity check for ScaLAPACK."""
 
         custom_paths = {
-                        'files': ["lib/libscalapack.a"],
-                        'dirs': []
-                       }
+            'files': ["lib/libscalapack.a"],
+            'dirs': []
+        }
 
         super(EB_ScaLAPACK, self).sanity_check_step(custom_paths=custom_paths)
