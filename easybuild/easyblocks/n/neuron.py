@@ -31,6 +31,7 @@ import os
 import re
 
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
+from easybuild.easyblocks.generic.pythonpackage import det_pylibdir
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.filetools import run_cmd, adjust_permissions
 from easybuild.tools.modules import get_software_root
@@ -45,6 +46,7 @@ class EB_NEURON(ConfigureMake):
 
         self.hostcpu = None
         self.with_python = False
+        self.pylibdir = None
 
     @staticmethod
     def extra_options():
@@ -81,6 +83,9 @@ class EB_NEURON(ConfigureMake):
 
         self.hostcpu = out.split('\n')[0].split('-')[0]
         self.log.debug("Determined host CPU type as %s" % self.hostcpu)
+
+        # determine Python lib dir
+        self.pylibdir = det_pylibdir()
 
         # complete configuration with configure_method of parent
         super(EB_NEURON, self).configure_step()
