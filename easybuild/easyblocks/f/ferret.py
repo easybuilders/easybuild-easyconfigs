@@ -114,3 +114,13 @@ class EB_Ferret(ConfigureMake):
                         line = re.sub(r"^(\s*%s\s*=\s*\$\(CPP_FLAGS\)).*\\" % x, r"\1 %s \\" % os.getenv(x), line)
 
                 sys.stdout.write(line)
+
+    def sanity_check_step(self):
+        """Custom sanity check for Ferret."""
+
+        custom_paths = {
+                        'files': ["bin/ferret_v%s" % self.version],
+                        'dirs': [],
+                       }
+
+        super(EB_Ferret, self).sanity_check_step(custom_paths=custom_paths)
