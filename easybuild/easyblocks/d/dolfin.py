@@ -215,7 +215,7 @@ class EB_DOLFIN(CMakePythonPackage):
         pref = os.path.join('share', 'dolfin', 'demo')
 
         # test command templates
-        cmd_template_python = " && ".join(["cd %(dir)s", "python demo_%(name)s.py", "cd -"])
+        cmd_template_python = " && ".join(["cd %(dir)s", "ulimit -t 60", "python demo_%(name)s.py", "cd -"])
 
         cmd_template_cpp = " && ".join(["cd %(dir)s", "cmake . %s" % self.saved_configopts,
                                         "make", "./demo_%(name)s", "cd -"])
