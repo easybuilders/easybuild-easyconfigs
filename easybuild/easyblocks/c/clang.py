@@ -40,9 +40,7 @@ from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.filetools import run_cmd, mkdir
 
 class EB_Clang(CMakeMake):
-    """
-    Support for bootstrapping Clang.
-    """
+    """Support for bootstrapping Clang."""
 
     @staticmethod
     def extra_options():
