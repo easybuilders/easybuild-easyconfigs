@@ -95,6 +95,7 @@ class EB_Clang(CMakeMake):
                     except IOError, err:
                         self.log.error("Failed to move %s to %s: %s" % (old_path, new_path, err))
                     tmp['finalpath'] = new_path
+                    break
 
     def configure_step(self):
         """Run CMake for stage 1 Clang."""
