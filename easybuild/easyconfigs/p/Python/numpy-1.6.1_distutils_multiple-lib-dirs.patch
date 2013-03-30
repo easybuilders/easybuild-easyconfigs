@@ -1,6 +1,6 @@
 diff -ru numpy-1.6.2.orig/numpy/distutils/fcompiler/__init__.py numpy-1.6.2/numpy/distutils/fcompiler/__init__.py
 --- numpy-1.6.2.orig/numpy/distutils/fcompiler/__init__.py	2012-05-19 15:51:54.000000000 +0200
-+++ numpy-1.6.2/numpy/distutils/fcompiler/__init__.py	2013-03-27 17:38:06.292837000 +0100
++++ numpy-1.6.2/numpy/distutils/fcompiler/__init__.py	2013-03-27 17:20:10.394267000 +0100
 @@ -626,7 +626,11 @@
          return options
  
@@ -16,7 +16,7 @@ diff -ru numpy-1.6.2.orig/numpy/distutils/fcompiler/__init__.py numpy-1.6.2/nump
  
 diff -ru numpy-1.6.2.orig/numpy/distutils/system_info.py numpy-1.6.2/numpy/distutils/system_info.py
 --- numpy-1.6.2.orig/numpy/distutils/system_info.py	2012-05-19 15:51:55.000000000 +0200
-+++ numpy-1.6.2/numpy/distutils/system_info.py	2013-03-27 17:38:06.294982000 +0100
++++ numpy-1.6.2/numpy/distutils/system_info.py	2013-03-28 11:42:31.363524000 +0100
 @@ -562,7 +562,7 @@
              if is_string(default):
                  return [default]
@@ -134,7 +134,48 @@ diff -ru numpy-1.6.2.orig/numpy/distutils/system_info.py numpy-1.6.2/numpy/distu
          if mkl is None:
              return
          info = {}
-@@ -1082,11 +1140,9 @@
+@@ -945,21 +1003,13 @@
+         atlas = None
+         lapack = None
+         atlas_1 = None
+-        for d in lib_dirs:
+-            atlas = self.check_libs2(d,atlas_libs,[])
+-            lapack_atlas = self.check_libs2(d,['lapack_atlas'],[])
+-            if atlas is not None:
+-                lib_dirs2 = [d] + self.combine_paths(d,['atlas*','ATLAS*'])
+-                for d2 in lib_dirs2:
+-                    lapack = self.check_libs2(d2,lapack_libs,[])
+-                    if lapack is not None:
+-                        break
+-                else:
+-                    lapack = None
+-                if lapack is not None:
+-                    break
+-            if atlas:
+-                atlas_1 = atlas
++        atlas = self.check_libs2_all(lib_dirs, atlas_libs)
++        lapack_atlas = self.check_libs2_all(lib_dirs, ['lapack_atlas'])
++        if atlas is not None:
++            lib_dirs2 = lib_dirs + self.combine_paths(lib_dirs,['atlas*','ATLAS*'])
++            lapack = self.check_libs2_all(lib_dirs2, lapack_libs)
++        if atlas:
++            atlas_1 = atlas
+         log.info(self.__class__)
+         if atlas is None:
+             atlas = atlas_1
+@@ -1036,10 +1086,7 @@
+         atlas_libs = self.get_libs('atlas_libs',
+                                    self._lib_names + self._lib_atlas)
+         atlas = None
+-        for d in lib_dirs:
+-            atlas = self.check_libs2(d,atlas_libs,[])
+-            if atlas is not None:
+-                break
++        atlas = self.check_libs2_all(lib_dirs, atlas_libs)
+         if atlas is None:
+             return
+         include_dirs = self.get_include_dirs()
+@@ -1082,11 +1129,9 @@
          lib_dirs = self.get_lib_dirs()
  
          lapack_libs = self.get_libs('lapack_libs', self._lib_names)
@@ -149,7 +190,7 @@ diff -ru numpy-1.6.2.orig/numpy/distutils/system_info.py numpy-1.6.2/numpy/distu
          else:
              return
          info['language'] = 'f77'
-@@ -1452,11 +1508,9 @@
+@@ -1452,11 +1497,9 @@
          lib_dirs = self.get_lib_dirs()
  
          blas_libs = self.get_libs('blas_libs', self._lib_names)
@@ -166,7 +207,7 @@ diff -ru numpy-1.6.2.orig/numpy/distutils/system_info.py numpy-1.6.2/numpy/distu
          info['language'] = 'f77'  # XXX: is it generally true?
 diff -ru numpy-1.6.2.orig/numpy/distutils/unixccompiler.py numpy-1.6.2/numpy/distutils/unixccompiler.py
 --- numpy-1.6.2.orig/numpy/distutils/unixccompiler.py	2012-05-04 21:46:10.000000000 +0200
-+++ numpy-1.6.2/numpy/distutils/unixccompiler.py	2013-03-27 17:38:06.306158000 +0100
++++ numpy-1.6.2/numpy/distutils/unixccompiler.py	2013-03-27 17:20:10.405391000 +0100
 @@ -109,3 +109,12 @@
  
  replace_method(UnixCCompiler, 'create_static_lib',
