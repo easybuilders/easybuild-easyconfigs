@@ -168,8 +168,8 @@ class EB_ALADIN(EasyBlock):
 
         aux_lib_gribex = os.path.join(tmp_installroot, gribdir, 'lib', 'libgribex.a')
         aux_lib_ibm = os.path.join(tmp_installroot, gribdir, 'lib', 'libibmdummy.a')
-        grib_api_f90_lib = os.path.join(get_software_root('grib_api'), 'lib', 'libgrib_api.a')
-        grib_api_lib = os.path.join(get_software_root('grib_api'), 'lib', 'libgrib_api_f90.a')
+        grib_api_lib = os.path.join(get_software_root('grib_api'), 'lib', 'libgrib_api.a')
+        grib_api_f90_lib = os.path.join(get_software_root('grib_api'), 'lib', 'libgrib_api_f90.a')
         grib_api_inc = os.path.join(get_software_root('grib_api'), 'include')
         jasperlib = os.path.join(get_software_root('JasPer'), 'lib', 'libjasper.a')
         netcdflib = os.path.join(get_software_root('netCDF'), 'lib', 'libnetcdff.a')
