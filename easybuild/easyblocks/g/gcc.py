@@ -216,8 +216,8 @@ class EB_GCC(ConfigureMake):
 
         # configure for a release build
         self.configopts += " --enable-checking=release "
-        # enable C++ support (required for GMP build), disable multilib (???)
-        self.configopts += " --enable-cxx --disable-multilib"
+        # disable multilib (???)
+        self.configopts += " --disable-multilib"
         # build both static and dynamic libraries (???)
         self.configopts += " --enable-shared=yes --enable-static=yes "
         # use POSIX threads

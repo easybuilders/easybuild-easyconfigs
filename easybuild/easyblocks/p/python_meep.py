@@ -36,29 +36,18 @@ import os
 import shutil
 import tempfile
 
-from easybuild.framework.easyblock import EasyBlock
+from easybuild.easyblocks.generic.pythonpackage import PythonPackage
 from easybuild.tools.filetools import extract_file, rmtree2, run_cmd
-from easybuild.tools.modules import get_software_root, get_software_version
+from easybuild.tools.modules import get_software_root
 
 
-class EB_python_minus_meep(EasyBlock):
+class EB_python_minus_meep(PythonPackage):
     """
     Support for building and installing python-meep
     """
 
-    def __init__(self, *args, **kwargs):
-        """Initialize custom variables."""
-        super(EB_python_minus_meep, self).__init__(*args, **kwargs)
-
-        # template for Python packages lib dir
-        self.pylibdir = os.path.join("lib", "python%s", "site-packages")
-
     def configure_step(self):
         """Just check whether dependencies (Meep, Python) are available."""
-
-        # complete Python packages lib dir
-        pythonver = ".".join(get_software_version('Python').split(".")[0:2])
-        self.pylibdir = self.pylibdir % pythonver
 
         # make sure that required dependencies are loaded
         deps = ["Meep", "Python"]
@@ -134,7 +123,9 @@ class EB_python_minus_meep(EasyBlock):
                         'dirs':[]
                        }
 
-        super(EB_python_minus_meep, self).sanity_check_step(custom_paths=custom_paths)
+        self.options['modulename'] = 'meep_mpi'
+
+        return super(EB_python_minus_meep, self).sanity_check_step(custom_paths=custom_paths)
 
     def make_module_extra(self):
         """Set python-meep specific environment variables in module."""

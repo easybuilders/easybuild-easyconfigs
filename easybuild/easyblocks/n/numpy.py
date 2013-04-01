@@ -32,6 +32,7 @@ EasyBuild support for building and installing numpy, implemented as an easyblock
 @author: Jens Timmerman (Ghent University)
 """
 import os
+import re
 
 from easybuild.easyblocks.generic.fortranpythonpackage import FortranPythonPackage
 from easybuild.tools.filetools import rmtree2
@@ -54,6 +55,7 @@ class EB_numpy(FortranPythonPackage):
     def configure_step(self):
         """Configure numpy build by composing site.cfg contents."""
 
+        # see e.g. https://github.com/numpy/numpy/pull/2809/files
         self.sitecfg = '\n'.join([
                                   "[DEFAULT]",
                                   "library_dirs = %(libs)s",
@@ -69,34 +71,68 @@ class EB_numpy(FortranPythonPackage):
                                          "mkl_libs = %(blas)s",
                                         ])
 
-        elif get_software_root("ATLAS") and get_software_root("LAPACK"):
-
-            extrasiteconfig = '\n'.join(["[blas_opt]",
-                                         "libraries = %(blas)s",
-                                         "[lapack_opt]",
-                                         "libraries = %(lapack)s",
+        elif get_software_root("ATLAS"):
+            extrasiteconfig = '\n'.join(["[atlas]",
+                                         "atlas_libs = %(lapack)s",
+                                        ])
+        else:
+            extrasiteconfig = '\n'.join(["[blas]",
+                                         "blas_libs = %(blas)s",
+                                         "[lapack]",
+                                         "lapack_libs = %(lapack)s",
                                         ])
 
-        else:
-            self.log.error("Could not detect BLAS/LAPACK library.")
+        blas = None
+        lapack = None
+        fft = None
 
-        libfft = os.getenv('LIBFFT')
-        if libfft:
-            extrasiteconfig += "\n[fftw]\nlibraries = %s" % libfft.replace(' ', ',')
+        if get_software_root("imkl"):
+            # with IMKL, no spaces and use '-Wl:'
+            # redefine 'Wl,' to 'Wl:' so that the patch file can do its job
+            def get_libs_for_mkl(varname):
+                """Get list of libraries as required for MKL patch file."""
+                libs = self.toolchain.variables['LIB%s' % varname].copy()
+                libs.try_remove(['pthread'])
+                tweaks = {
+                    'prefix': '',
+                    'prefix_begin_end': '-Wl:',
+                    'separator': ',',
+                    'separator_begin_end': ',',
+                }
+                libs.try_function_on_element('change', kwargs=tweaks)
+                libs.SEPARATOR = ','
+                return str(libs)  # str causes list concatenation and adding prefixes & separators
+
+            blas = get_libs_for_mkl('BLAS_MT')
+            lapack = get_libs_for_mkl('LAPACK_MT')
+            fft = get_libs_for_mkl('FFT')
+
+            # make sure the patch file is there
+            # we check for a typical characteristic of a patch file that cooperates with the above
+            # not fool-proof, but better than enforcing a particular patch filename
+            patch_found = False
+            patch_wl_regex = re.compile(r"replace\(':',\s*','\)")
+            for patch in self.patches:
+                # patches are either strings (extension) or dicts (easyblock)
+                if isinstance(patch, dict):
+                    patch = patch['path']
+                if patch_wl_regex.search(open(patch, 'r').read()):
+                    patch_found = True
+                    break
+            if not patch_found:
+                self.log.error("Building numpy on top of Intel MKL requires a patch to "
+                               "handle -Wl linker flags correctly, which doesn't seem to be there.")
+
+        else:
+
+            blas = ', '.join([x for x in self.toolchain.get_variable('LIBBLAS_MT', typ=list) if x != "pthread"])
+            lapack = ', '.join([x for x in self.toolchain.get_variable('LIBLAPACK_MT', typ=list) if x != "pthread"])
+            fft = ', '.join(self.toolchain.get_variable('LIBFFT', typ=list))
+
+        if fft:
+            extrasiteconfig += "\n[fftw]\nlibraries = %s" % fft
 
         self.sitecfg = '\n'.join([self.sitecfg, extrasiteconfig])
-
-        lapack_libs = os.getenv("LIBLAPACK_MT").split(" -l")
-        blas_libs = os.getenv("LIBBLAS_MT").split(" -l")
-
-        if get_software_root("IMKL"):
-            # with IMKL, get rid of all spaces and use '-Wl:'
-            lapack_libs.remove("pthread")
-            lapack = ','.join(lapack_libs).replace(' ', ',').replace('Wl,', 'Wl:')
-            blas = lapack
-        else:
-            lapack = ", ".join(lapack_libs)
-            blas = ", ".join(blas_libs)
 
         self.sitecfg = self.sitecfg % {
                                        'lapack': lapack,
