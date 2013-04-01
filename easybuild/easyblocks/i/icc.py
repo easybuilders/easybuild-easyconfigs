@@ -1,4 +1,4 @@
-##
+# #
 # Copyright 2009-2013 Ghent University
 #
 # This file is part of EasyBuild,
@@ -21,7 +21,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
-##
+# #
 """
 EasyBuild support for install the Intel C/C++ compiler suite, implemented as an easyblock
 
@@ -121,7 +121,7 @@ class EB_icc(IntelBase):
 
         txt = super(EB_icc, self).make_module_extra()
 
-        txt += "prepend-path\t%s\t\t%s\n" % ('INTEL_LICENSE_FILE', self.license)
+        txt += "prepend-path\t%s\t\t%s\n" % ('INTEL_LICENSE_FILE', self.license_file)
         txt += "prepend-path\t%s\t\t$root/%s\n" % ('NLSPATH', 'idb/intel64/locale/%l_%t/%N')
 
         return txt

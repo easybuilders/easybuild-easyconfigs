@@ -1,4 +1,4 @@
-##
+# #
 # Copyright 2009-2012 Ghent University
 # Copyright 2009-2012 Stijn De Weirdt
 # Copyright 2010 Dries Verdegem
@@ -26,15 +26,16 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
-##
+# #
 import os
 from distutils.version import LooseVersion
 from pkgutil import extend_path
 
 # note: release candidates should be versioned as a pre-release, e.g. "1.1rc1"
 # 1.1-rc1 would indicate a post-release, i.e., and update of 1.1, so beware
-VERSION = LooseVersion("1.2.0")
+VERSION = LooseVersion("1.3.0")
 UNKNOWN = "UNKNOWN"
+
 
 def get_git_revision():
     """
@@ -46,13 +47,14 @@ def get_git_revision():
     try:
         import git
     except ImportError:
-        return "UNKNOWN"
+        return UNKNOWN
     try:
         path = os.path.dirname(__file__)
         gitrepo = git.Git(path)
         return gitrepo.rev_list("HEAD").splitlines()[0]
     except git.GitCommandError:
-        return "UNKNOWN"
+        return UNKNOWN
+
 
 git_rev = get_git_revision()
 if git_rev == UNKNOWN:
@@ -61,10 +63,10 @@ else:
     VERBOSE_VERSION = LooseVersion("%s-r%s" % (VERSION, get_git_revision()))
 
 # Extend path so python finds our easyblocks in the subdirectories where they are located
-subdirs = [chr(l) for l in range(ord('a'),ord('z')+1)] + ['0']
+subdirs = [chr(l) for l in range(ord('a'), ord('z') + 1)] + ['0']
 __path__.extend([os.path.join(__path__[0], subdir) for subdir in subdirs])
 # And let python know this is not the only place to look for them, so we can have multiple
 # easybuild/easyblock paths in your python search path, next to the official easyblocks distribution
-__path__ = extend_path(__path__, __name__)  #@ReservedAssignment
+__path__ = extend_path(__path__, __name__)  # @ReservedAssignment
 
 del subdir, subdirs, l, git_rev

@@ -48,7 +48,7 @@ class EB_EasyBuildMeta(PythonPackage):
 
         try:
             subdirs = os.listdir(self.builddir)
-            for pkg in ['framework', 'easyblocks', 'easyconfigs']:
+            for pkg in ['easyconfigs', 'easyblocks', 'framework']:
                 seldirs = [x for x in subdirs if x.startswith('easybuild-%s-' % pkg)]
                 if not len(seldirs) == 1:
                     self.log.error("Failed to find EasyBuild %s package (subdirs: %s, seldirs: %s)" % (pkg, subdirs, seldirs))

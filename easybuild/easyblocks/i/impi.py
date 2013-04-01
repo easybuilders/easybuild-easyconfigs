@@ -1,4 +1,4 @@
-##
+# #
 # Copyright 2009-2013 Ghent University
 #
 # This file is part of EasyBuild,
@@ -21,7 +21,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
-##
+# #
 """
 EasyBuild support for installing the Intel MPI library, implemented as an easyblock
 
@@ -51,11 +51,11 @@ class EB_impi(IntelBase):
         - execute command
         """
         if LooseVersion(self.version) >= LooseVersion('4.0.1'):
-            #impi starting from version 4.0.1.x uses standard installation procedure.
+            # impi starting from version 4.0.1.x uses standard installation procedure.
             super(EB_impi, self).install_step()
             return None
         else:
-            #impi up until version 4.0.0.x uses custom installation procedure.
+            # impi up until version 4.0.0.x uses custom installation procedure.
             silent = \
 """
 [mpi]
@@ -77,7 +77,7 @@ PROCEED_WITHOUT_PYTHON=yes
 AUTOMOUNTED_CLUSTER=yes
 EULA=accept
 
-""" % {'lic':self.license, 'ins':self.installdir}
+""" % {'lic':self.license_file, 'ins':self.installdir}
 
             # already in correct directory
             silentcfg = os.path.join(os.getcwd(), "silent.cfg")
@@ -134,7 +134,7 @@ EULA=accept
     def make_module_extra(self):
         """Overwritten from Application to add extra txt"""
         txt = super(EB_impi, self).make_module_extra()
-        txt += "prepend-path\t%s\t\t%s\n" % ('INTEL_LICENSE_FILE', self.license)
+        txt += "prepend-path\t%s\t\t%s\n" % ('INTEL_LICENSE_FILE', self.license_file)
         txt += "setenv\t%s\t\t$root\n" % ('I_MPI_ROOT')
 
         return txt

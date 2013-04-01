@@ -31,9 +31,10 @@ import os
 import re
 
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
+from easybuild.easyblocks.generic.pythonpackage import det_pylibdir
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.filetools import run_cmd, adjust_permissions
-from easybuild.tools.modules import get_software_root, get_software_version
+from easybuild.tools.modules import get_software_root
 
 
 class EB_NEURON(ConfigureMake):
@@ -45,7 +46,7 @@ class EB_NEURON(ConfigureMake):
 
         self.hostcpu = None
         self.with_python = False
-        self.pyver = None
+        self.pylibdir = None
 
     @staticmethod
     def extra_options():
@@ -75,7 +76,6 @@ class EB_NEURON(ConfigureMake):
         if python_root:
             self.with_python = True
             self.cfg.update('configopts', "--with-nrnpython=%s/bin/python" % python_root)
-            self.pyver = '.'.join(get_software_version('Python').split('.')[0:2])
 
         # determine host CPU type
         cmd = "./config.guess"
@@ -83,6 +83,9 @@ class EB_NEURON(ConfigureMake):
 
         self.hostcpu = out.split('\n')[0].split('-')[0]
         self.log.debug("Determined host CPU type as %s" % self.hostcpu)
+
+        # determine Python lib dir
+        self.pylibdir = det_pylibdir()
 
         # complete configuration with configure_method of parent
         super(EB_NEURON, self).configure_step()
@@ -198,9 +201,8 @@ class EB_NEURON(ConfigureMake):
                        })
 
         if self.with_python:
-            pylibdir = os.path.join('lib', 'python%s' % self.pyver, 'site-packages')
             guesses.update({
-                            'PYTHONPATH': [pylibdir],
+                            'PYTHONPATH': [self.pylibdir],
                            })
 
         return guesses

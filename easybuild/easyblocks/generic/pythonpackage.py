@@ -43,6 +43,21 @@ from easybuild.tools.filetools import mkdir, rmtree2, run_cmd
 from easybuild.tools.modules import get_software_root, get_software_version
 
 
+def det_pylibdir():
+    """Determine Python library directory."""
+
+    # we can't simply import distutils.sysconfig, because then we would be talking to the system Python
+    cmd = ''.join([
+        'python -c "',
+        'import os;',
+        'import distutils.sysconfig;',
+        'print (os.path.join(*distutils.sysconfig.get_python_lib().split(os.sep)[-3:]));',
+        '"',
+    ])
+    (out, _) = run_cmd(cmd, simple=False)
+    return out.strip()
+
+
 class PythonPackage(ExtensionEasyBlock):
     """Builds and installs a Python package, and provides a dedicated module file."""
 
@@ -68,7 +83,7 @@ class PythonPackage(ExtensionEasyBlock):
         self.unpack_options = ''
 
         self.python = None
-        self.pylibdir = os.path.join('lib', 'python%s', 'site-packages')
+        self.pylibdir = None
 
         # make sure there's no site.cfg in $HOME, because setup.py will find it and use it
         if os.path.exists(os.path.join(expanduser('~'), 'site.cfg')):
@@ -77,17 +92,23 @@ class PythonPackage(ExtensionEasyBlock):
         if not 'modulename' in self.options:
             self.options['modulename'] = self.name.lower()
 
+    def prepare_step(self):
+        """Prepare easyblock by determining Python site lib dir."""
+        super(PythonPackage, self).prepare_step()
+        self.pylibdir = det_pylibdir()
+
+    def prerun(self):
+        """Prepare extension by determining Python site lib dir."""
+        super(PythonPackage, self).prerun()
+        self.pylibdir = det_pylibdir()
+
     def configure_step(self):
         """Configure Python package build."""
 
         self.python = get_software_root('Python')
-        pyver = '.'.join(get_software_version('Python').split('.')[0:2])
-        self.pylibdir = self.pylibdir % pyver
-        self.log.debug("Python library dir: %s" % self.pylibdir)
-
-        python_version = get_software_version('Python')
-        if not python_version:
+        if not self.python:
             self.log.error('Python module not loaded.')
+        self.log.debug("Python library dir: %s" % self.pylibdir)
 
         if self.sitecfg is not None:
             # used by some extensions, like numpy, to find certain libs
