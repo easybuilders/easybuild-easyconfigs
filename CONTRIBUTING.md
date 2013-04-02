@@ -1,5 +1,18 @@
 We'd love you to contribute back to EasyBuild, and here's how you can do it: the branch - hack - pull request cycle.
 
+# Contribution License
+Contributor understands and agrees that Ghent University shall have the irrevocable and perpetual right to make and 
+distribute copies of any Contribution, as well as to create and distribute collective works and derivative works of
+any Contribution,under the Initial License or under any other open source license. 
+(as defined by The Open Source Initiative (OSI) http://opensource.org/)
+Contributor shall identify each Contribution by placing the following notice in its source code adjacent to 
+Contributor's valid copyright notice: "Licensed to Ghent University under a Contributor Agreement." 
+The currently acceptable license is GPL v2.
+
+Ghent University understands and agrees that Contributor retains copyright in its Contributions. 
+Nothing in this Contributor Agreement shall be interpreted to prohibit Contributor from licensing its Contributions
+under different terms from the Initial License or this Contributor Agreement.
+
 ## Preperation
 
 ### Fork easybuild-easyconfings
