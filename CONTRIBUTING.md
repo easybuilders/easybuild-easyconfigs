@@ -1,6 +1,6 @@
 We'd love you to contribute back to EasyBuild, and here's how you can do it: the branch - hack - pull request cycle.
 
-# Contribution License
+# Contributor Agreement.
 Contributor understands and agrees that Ghent University shall have the irrevocable and perpetual right to make and 
 distribute copies of any Contribution, as well as to create and distribute collective works and derivative works of
 any Contribution,under the Initial License or under any other open source license. 
