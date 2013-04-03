@@ -161,6 +161,7 @@ class EB_NCL(EasyBlock):
 #define HDFlib
 #define HDFEOSlib
 #define BuildGRIB2 1
+#define BuildESMF 1
 
 #define UdUnitslib -ludunits2
 
