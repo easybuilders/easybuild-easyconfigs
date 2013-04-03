@@ -65,6 +65,22 @@ class EB_ESMF(ConfigureMake):
             comm = mpi_family.lower()
         env.setvar('ESMF_COMM', comm)
 
+        # specify decent LAPACK lib
+        env.setvar('ESMF_LAPACK', 'user')
+        env.setvar('ESMF_LAPACK_LIBS', '%s %s' % (os.getenv('LDFLAGS'), os.getenv('LIBLAPACK')))
+
+        # specify netCDF
+        netcdf = get_software_root('netCDF'):
+        if netcdf:
+            env.setvar('ESMF_NETCDF', 'user')
+            netcdf_libs = ['-L%s/lib' % netcdf, '-lnetcdf']
+            netcdff = get_software_root('netCDF-Fortran'):
+            if netcdff:
+                netcdf_libs = ["-L%/lib" % netcdff] + netcdf_libs + ["-lnetcdff"]
+            else:
+                netcdf_libs.append('-lnetcdff')
+            env.setvar('ESMF_NETCDF_LIBS', ' '.join(netcdf_libs))
+
         # 'make info' provides useful debug info
         cmd = "make info"
         run_cmd(cmd, log_all=True, simple=True, log_ok=True)
