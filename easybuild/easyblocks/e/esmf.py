@@ -80,8 +80,8 @@ class EB_ESMF(ConfigureMake):
 
         custom_paths = {
             'files':
-                [os.path.join('bin', 'bin0', self.subdir, x) for x in ['ESMF_Info', 'ESMF_InfoC', 'ESMF_RegridWeightGen', 'ESMF_WebServController']] +
-                [os.path.join('lib', 'lib0', self.subdir, x) for x in ['libesmf.a', 'libesmf.so', 'libesmf_fullylinked.so']],
+                [os.path.join('bin', 'binO', self.subdir, x) for x in ['ESMF_Info', 'ESMF_InfoC', 'ESMF_RegridWeightGen', 'ESMF_WebServController']] +
+                [os.path.join('lib', 'libO', self.subdir, x) for x in ['libesmf.a', 'libesmf.so', 'libesmf_fullylinked.so']],
             'dirs': ['include', os.path.join('mod', 'mod0', self.subdir)],
         }
 
@@ -93,8 +93,8 @@ class EB_ESMF(ConfigureMake):
         guesses = super(EB_ESMF, self).make_module_req_guess()
 
         guesses.update({
-                        'PATH': [os.path.join('bin', 'bin0', self.subdir)],
-                        'LD_LIBRARY_PATH': [os.path.join('lib', 'lib0', self.subdir)],
+                        'PATH': [os.path.join('bin', 'binO', self.subdir)],
+                        'LD_LIBRARY_PATH': [os.path.join('lib', 'libO', self.subdir)],
                        })
 
         return guesses
