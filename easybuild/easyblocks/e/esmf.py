@@ -40,17 +40,13 @@ from easybuild.tools.filetools import run_cmd
 class EB_ESMF(ConfigureMake):
     """Support for building/installing ESMF."""
 
-    def __init__(self, *args, **kwargs):
-        """Add extra config options specific to ESMF."""
-        super(EB_ESMF, self).__init__(*args, **kwargs)
-
-        self.subdir = None
-
     def configure_step(self):
         """Custom configuration procedure for ESMF through environment variables."""
 
         env.setvar('ESMF_DIR', self.cfg['start_dir'])
-        env.setvar('ESMF_INSTALL_PREFIX', self.installdir)
+        env.setvar('ESMF_INSTALL_BINDIR', 'bin')
+        env.setvar('ESMF_INSTALL_LIBDDIR', 'lib')
+        env.setvar('ESMF_INSTALL_MODDIR', 'mod')
 
         # specify compiler
         comp_family = self.toolchain.comp_family()
@@ -69,8 +65,6 @@ class EB_ESMF(ConfigureMake):
             comm = mpi_family.lower()
         env.setvar('ESMF_COMM', comm)
 
-        self.subdir = '.'.join(['Linux', compiler, '64', comm, 'default'])
-
         # 'make info' provides useful debug info
         cmd = "make info"
         run_cmd(cmd, log_all=True, simple=True, log_ok=True)
@@ -80,21 +74,9 @@ class EB_ESMF(ConfigureMake):
 
         custom_paths = {
             'files':
-                [os.path.join('bin', 'binO', self.subdir, x) for x in ['ESMF_Info', 'ESMF_InfoC', 'ESMF_RegridWeightGen', 'ESMF_WebServController']] +
-                [os.path.join('lib', 'libO', self.subdir, x) for x in ['libesmf.a', 'libesmf.so', 'libesmf_fullylinked.so']],
-            'dirs': ['include', os.path.join('mod', 'mod0', self.subdir)],
+                [os.path.join('bin', x) for x in ['ESMF_Info', 'ESMF_InfoC', 'ESMF_RegridWeightGen', 'ESMF_WebServController']] +
+                [os.path.join('lib', x) for x in ['libesmf.a', 'libesmf.so', 'libesmf_fullylinked.so']],
+            'dirs': ['include', 'mod'],
         }
 
         super(EB_ESMF, self).sanity_check_step(custom_paths=custom_paths)
-
-    def make_module_req_guess(self):
-        """Custom guesses for environment variables (PATH, ...) for ESMF."""
-
-        guesses = super(EB_ESMF, self).make_module_req_guess()
-
-        guesses.update({
-                        'PATH': [os.path.join('bin', 'binO', self.subdir)],
-                        'LD_LIBRARY_PATH': [os.path.join('lib', 'libO', self.subdir)],
-                       })
-
-        return guesses
