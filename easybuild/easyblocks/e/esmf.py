@@ -75,11 +75,21 @@ class EB_ESMF(ConfigureMake):
         if netcdf:
             env.setvar('ESMF_NETCDF', 'user')
             netcdf_libs = ['-L%s/lib' % netcdf, '-lnetcdf']
+
+            # Fortran
             netcdff = get_software_root('netCDF-Fortran')
             if netcdff:
                 netcdf_libs = ["-L%s/lib" % netcdff] + netcdf_libs + ["-lnetcdff"]
             else:
                 netcdf_libs.append('-lnetcdff')
+
+            # C++
+            netcdfcxx = get_software_root('netCDF-C++')
+            if netcdfcxx:
+                netcdf_libs = ["-L%s/lib" % netcdfcxx] + netcdf_libs + ["-lnetcdf_c++"]
+            else:
+                netcdf_libs.append('-lnetcdf_c++')
+
             env.setvar('ESMF_NETCDF_LIBS', ' '.join(netcdf_libs))
 
         # 'make info' provides useful debug info
