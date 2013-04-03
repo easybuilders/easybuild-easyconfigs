@@ -46,7 +46,7 @@ class EB_ESMF(ConfigureMake):
 
         env.setvar('ESMF_DIR', self.cfg['start_dir'])
         env.setvar('ESMF_INSTALL_BINDIR', 'bin')
-        env.setvar('ESMF_INSTALL_LIBDDIR', 'lib')
+        env.setvar('ESMF_INSTALL_LIBDIR', 'lib')
         env.setvar('ESMF_INSTALL_MODDIR', 'mod')
 
         # specify compiler
