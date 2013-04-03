@@ -77,7 +77,7 @@ class EB_ESMF(ConfigureMake):
             netcdf_libs = ['-L%s/lib' % netcdf, '-lnetcdf']
             netcdff = get_software_root('netCDF-Fortran')
             if netcdff:
-                netcdf_libs = ["-L%/lib" % netcdff] + netcdf_libs + ["-lnetcdff"]
+                netcdf_libs = ["-L%s/lib" % netcdff] + netcdf_libs + ["-lnetcdff"]
             else:
                 netcdf_libs.append('-lnetcdff')
             env.setvar('ESMF_NETCDF_LIBS', ' '.join(netcdf_libs))
