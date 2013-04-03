@@ -70,7 +70,7 @@ class EB_ESMF(ConfigureMake):
         env.setvar('ESMF_LAPACK_LIBS', '%s %s' % (os.getenv('LDFLAGS'), os.getenv('LIBLAPACK')))
 
         # specify netCDF
-        netcdf = get_software_root('netCDF'):
+        netcdf = get_software_root('netCDF')
         if netcdf:
             env.setvar('ESMF_NETCDF', 'user')
             netcdf_libs = ['-L%s/lib' % netcdf, '-lnetcdf']
