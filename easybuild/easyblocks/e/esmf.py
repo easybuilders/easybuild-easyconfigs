@@ -62,7 +62,7 @@ class EB_ESMF(ConfigureMake):
         comm = None
         mpi_family = self.toolchain.mpi_family()
         if mpi_family in [toolchain.QLOGICMPI]:
-            comm = 'mpich'
+            comm = 'mpich2'
         else:
             comm = mpi_family.lower()
         env.setvar('ESMF_COMM', comm)
