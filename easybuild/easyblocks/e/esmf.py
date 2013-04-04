@@ -103,7 +103,7 @@ class EB_ESMF(ConfigureMake):
         custom_paths = {
             'files':
                 [os.path.join('bin', x) for x in ['ESMF_Info', 'ESMF_InfoC', 'ESMF_RegridWeightGen', 'ESMF_WebServController']] +
-                [os.path.join('lib', x) for x in ['libesmf.a', 'libesmf.so', 'libesmf_fullylinked.so']],
+                [os.path.join('lib', x) for x in ['libesmf.a', 'libesmf.so']],
             'dirs': ['include', 'mod'],
         }
 
