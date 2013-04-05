@@ -38,6 +38,7 @@ from easybuild.easyblocks.generic.cmakemake import CMakeMake
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.filetools import run_cmd, mkdir
+from easybuild.tools.systemtools import get_os_name, get_os_version
 
 class EB_Clang(CMakeMake):
     """Support for bootstrapping Clang."""
@@ -58,6 +59,11 @@ class EB_Clang(CMakeMake):
         self.llvm_obj_dir_stage2 = None
         self.llvm_obj_dir_stage3 = None
         self.make_parallel_opts = ""
+
+        # RHEL 5.x have a buggy libc.  Building stage 2 will fail.
+        if get_os_name() in ['redhat', 'RHEL', 'centos', 'SL'] and get_os_version().startswith('5.'):
+            self.log.error(("Can not build clang on %s v5.x: libc is buggy, building stage 2 will fail.  " +
+                            "See http://stackoverflow.com/questions/7276828/") % get_os_name()) 
 
     def extract_step(self):
         """
