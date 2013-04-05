@@ -175,14 +175,3 @@ class EB_Clang(CMakeMake):
         os.chdir(self.llvm_obj_dir_stage3)
         super(EB_Clang, self).install_step()
 
-    def make_module_extra(self):
-        """Define environment variables in module file that would switch OpenMPI, MVAPICH2 and MPICH to use Clang."""
-
-        txt = super(EB_Clang, self).make_module_extra()
-        txt += self.moduleGenerator.set_environment('OMPI_CC', 'clang')
-        txt += self.moduleGenerator.set_environment('OMPI_CXX', 'clang++')
-        txt += self.moduleGenerator.set_environment('MPICH_CC', 'clang')
-        txt += self.moduleGenerator.set_environment('MPICH_CXX', 'clang++')
-
-        return txt
-
