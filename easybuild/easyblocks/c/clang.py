@@ -46,8 +46,8 @@ class EB_Clang(CMakeMake):
     @staticmethod
     def extra_options():
         extra_vars = [
-                      ('assertions', [True, "Enable assertions.  Helps to catch bugs in Clang.  (default: True)", CUSTOM]),
-                     ]
+            ('assertions', [True, "Enable assertions.  Helps to catch bugs in Clang.  (default: True)", CUSTOM]),
+        ]
         return EasyBlock.extra_options(extra_vars)
 
     def __init__(self, *args, **kwargs):
