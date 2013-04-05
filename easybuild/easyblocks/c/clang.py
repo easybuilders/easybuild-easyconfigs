@@ -38,6 +38,7 @@ from easybuild.easyblocks.generic.cmakemake import CMakeMake
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.filetools import run_cmd, mkdir
+from easybuild.tools.modules import get_software_root
 from easybuild.tools.systemtools import get_os_name, get_os_version
 
 class EB_Clang(CMakeMake):
@@ -113,6 +114,10 @@ class EB_Clang(CMakeMake):
         # Create and enter build directory.
         mkdir(self.llvm_obj_dir_stage1)
         os.chdir(self.llvm_obj_dir_stage1)
+
+	# GCC and Clang are installed in different prefixes and Clang will not
+	# find the GCC installation on its own.
+	self.cfg['configopts'] += "-DGCC_INSTALL_PREFIX='%s' " % get_software_root('GCC')
 
         self.cfg['configopts'] += "-DCMAKE_BUILD_TYPE=Release "
         if self.cfg['assertions']: 
