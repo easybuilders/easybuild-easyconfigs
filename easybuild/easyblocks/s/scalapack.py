@@ -91,7 +91,7 @@ class EB_ScaLAPACK(ConfigureMake):
             mpicc = os.getenv('MPICC')
             mpif77 = os.getenv('MPIF77')
             mpif90 = os.getenv('MPIF90')
-        elif self.toolchain.mpi_family() in [toolchain.OPENMPI, toolchain.MVAPICH2]:  #@UndefinedVariable
+        elif self.toolchain.mpi_family() in [toolchain.OPENMPI, toolchain.MVAPICH2, toolchain.MPICH]:  #@UndefinedVariable
             mpicc = 'mpicc'
             mpif77 = 'mpif77'
             mpif90 = 'mpif90'
@@ -161,7 +161,7 @@ class EB_ScaLAPACK(ConfigureMake):
         else:
 
             # determine interface
-            if self.toolchain.mpi_family() in [toolchain.OPENMPI, toolchain.MVAPICH2]:  #@UndefinedVariable
+            if self.toolchain.mpi_family() in [toolchain.OPENMPI, toolchain.MVAPICH2, toolchain.MPICH]:  #@UndefinedVariable
                 interface = 'Add_'
             else:
                 self.log.error("Don't know which interface to pick for the MPI library being used.")
