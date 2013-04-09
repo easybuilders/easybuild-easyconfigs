@@ -1,6 +1,6 @@
 diff -ru numpy-1.6.2.orig/numpy/distutils/fcompiler/__init__.py numpy-1.6.2/numpy/distutils/fcompiler/__init__.py
 --- numpy-1.6.2.orig/numpy/distutils/fcompiler/__init__.py	2012-05-19 15:51:54.000000000 +0200
-+++ numpy-1.6.2/numpy/distutils/fcompiler/__init__.py	2013-01-14 17:07:50.121110586 +0100
++++ numpy-1.6.2/numpy/distutils/fcompiler/__init__.py	2013-03-27 17:20:10.394267000 +0100
 @@ -626,7 +626,11 @@
          return options
  
@@ -14,10 +14,9 @@ diff -ru numpy-1.6.2.orig/numpy/distutils/fcompiler/__init__.py numpy-1.6.2/nump
      def library_dir_option(self, dir):
          return "-L" + dir
  
-Only in numpy-1.6.2/numpy/distutils/fcompiler: __init__.py.orig
 diff -ru numpy-1.6.2.orig/numpy/distutils/system_info.py numpy-1.6.2/numpy/distutils/system_info.py
 --- numpy-1.6.2.orig/numpy/distutils/system_info.py	2012-05-19 15:51:55.000000000 +0200
-+++ numpy-1.6.2/numpy/distutils/system_info.py	2013-01-14 17:07:50.122110599 +0100
++++ numpy-1.6.2/numpy/distutils/system_info.py	2013-03-28 11:42:31.363524000 +0100
 @@ -562,7 +562,7 @@
              if is_string(default):
                  return [default]
@@ -27,7 +26,31 @@ diff -ru numpy-1.6.2.orig/numpy/distutils/system_info.py numpy-1.6.2/numpy/distu
  
      def get_libraries(self, key='libraries'):
          return self.get_libs(key,'')
-@@ -615,6 +615,18 @@
+@@ -603,6 +603,23 @@
+             log.info('  libraries %s not found in %s', ','.join(libs), lib_dir)
+         return info
+ 
++    def check_libs_all(self,lib_dir,libs,opt_libs =[]):
++        """If static or shared libraries are available then return
++        their info dictionary.
++
++        Checks for all libraries as shared libraries first, then
++        static (or vice versa if self.search_static_first is True).
++        """
++        exts = self.library_extensions()
++        info = None
++        for ext in exts:
++            info = self._check_libs_all(lib_dir,libs,opt_libs,[ext])
++            if info is not None:
++                break
++        if not info:
++            log.info('  libraries %s not found in %s', ','.join(libs), lib_dir)
++        return info
++
+     def check_libs2(self, lib_dir, libs, opt_libs =[]):
+         """If static or shared libraries are available then return
+         their info dictionary.
+@@ -615,6 +632,18 @@
              log.info('  libraries %s not found in %s', ','.join(libs), lib_dir)
          return info
  
@@ -46,7 +69,7 @@ diff -ru numpy-1.6.2.orig/numpy/distutils/system_info.py numpy-1.6.2/numpy/distu
      def _lib_list(self, lib_dir, libs, exts):
          assert is_string(lib_dir)
          liblist = []
-@@ -625,6 +637,9 @@
+@@ -625,6 +654,9 @@
              lib_prefixes = ['lib']
          # for each library name, see if we can find a file for it.
          for l in libs:
@@ -56,7 +79,7 @@ diff -ru numpy-1.6.2.orig/numpy/distutils/system_info.py numpy-1.6.2/numpy/distu
              for ext in exts:
                  for prefix in lib_prefixes:
                      p = self.combine_paths(lib_dir, prefix+l+ext)
-@@ -640,6 +655,19 @@
+@@ -640,6 +672,19 @@
                      break
          return liblist
  
@@ -76,7 +99,7 @@ diff -ru numpy-1.6.2.orig/numpy/distutils/system_info.py numpy-1.6.2/numpy/distu
      def _check_libs(self, lib_dir, libs, opt_libs, exts):
          found_libs = self._lib_list(lib_dir, libs, exts)
          if len(found_libs) == len(libs):
-@@ -651,6 +679,22 @@
+@@ -651,6 +696,22 @@
          else:
              return None
  
@@ -99,7 +122,7 @@ diff -ru numpy-1.6.2.orig/numpy/distutils/system_info.py numpy-1.6.2/numpy/distu
      def combine_paths(self,*args):
          """Return a list of existing paths composed by all combinations
          of items from the arguments.
-@@ -880,10 +924,7 @@
+@@ -880,10 +941,7 @@
          incl_dirs = self.get_include_dirs()
          mkl_libs = self.get_libs('mkl_libs',self._lib_mkl)
          mkl = None
@@ -111,10 +134,80 @@ diff -ru numpy-1.6.2.orig/numpy/distutils/system_info.py numpy-1.6.2/numpy/distu
          if mkl is None:
              return
          info = {}
-Only in numpy-1.6.2/numpy/distutils: system_info.py.orig
+@@ -945,21 +1003,13 @@
+         atlas = None
+         lapack = None
+         atlas_1 = None
+-        for d in lib_dirs:
+-            atlas = self.check_libs2(d,atlas_libs,[])
+-            lapack_atlas = self.check_libs2(d,['lapack_atlas'],[])
+-            if atlas is not None:
+-                lib_dirs2 = [d] + self.combine_paths(d,['atlas*','ATLAS*'])
+-                for d2 in lib_dirs2:
+-                    lapack = self.check_libs2(d2,lapack_libs,[])
+-                    if lapack is not None:
+-                        break
+-                else:
+-                    lapack = None
+-                if lapack is not None:
+-                    break
+-            if atlas:
+-                atlas_1 = atlas
++        atlas = self.check_libs2_all(lib_dirs, atlas_libs)
++        lapack_atlas = self.check_libs2_all(lib_dirs, ['lapack_atlas'])
++        if atlas is not None:
++            lib_dirs2 = lib_dirs + self.combine_paths(lib_dirs,['atlas*','ATLAS*'])
++            lapack = self.check_libs2_all(lib_dirs2, lapack_libs)
++        if atlas:
++            atlas_1 = atlas
+         log.info(self.__class__)
+         if atlas is None:
+             atlas = atlas_1
+@@ -1036,10 +1086,7 @@
+         atlas_libs = self.get_libs('atlas_libs',
+                                    self._lib_names + self._lib_atlas)
+         atlas = None
+-        for d in lib_dirs:
+-            atlas = self.check_libs2(d,atlas_libs,[])
+-            if atlas is not None:
+-                break
++        atlas = self.check_libs2_all(lib_dirs, atlas_libs)
+         if atlas is None:
+             return
+         include_dirs = self.get_include_dirs()
+@@ -1082,11 +1129,9 @@
+         lib_dirs = self.get_lib_dirs()
+ 
+         lapack_libs = self.get_libs('lapack_libs', self._lib_names)
+-        for d in lib_dirs:
+-            lapack = self.check_libs(d,lapack_libs,[])
+-            if lapack is not None:
+-                info = lapack
+-                break
++        lapack = self.check_libs_all(lib_dirs, lapack_libs, [])
++        if lapack is not None:
++            info = lapack
+         else:
+             return
+         info['language'] = 'f77'
+@@ -1452,11 +1497,9 @@
+         lib_dirs = self.get_lib_dirs()
+ 
+         blas_libs = self.get_libs('blas_libs', self._lib_names)
+-        for d in lib_dirs:
+-            blas = self.check_libs(d,blas_libs,[])
+-            if blas is not None:
+-                info = blas
+-                break
++        blas = self.check_libs_all(lib_dirs, blas_libs, [])
++        if blas is not None:
++           info = blas
+         else:
+             return
+         info['language'] = 'f77'  # XXX: is it generally true?
 diff -ru numpy-1.6.2.orig/numpy/distutils/unixccompiler.py numpy-1.6.2/numpy/distutils/unixccompiler.py
 --- numpy-1.6.2.orig/numpy/distutils/unixccompiler.py	2012-05-04 21:46:10.000000000 +0200
-+++ numpy-1.6.2/numpy/distutils/unixccompiler.py	2013-01-14 17:07:50.129110688 +0100
++++ numpy-1.6.2/numpy/distutils/unixccompiler.py	2013-03-27 17:20:10.405391000 +0100
 @@ -109,3 +109,12 @@
  
  replace_method(UnixCCompiler, 'create_static_lib',
@@ -128,4 +221,3 @@ diff -ru numpy-1.6.2.orig/numpy/distutils/unixccompiler.py numpy-1.6.2/numpy/dis
 +
 +replace_method(UnixCCompiler, 'library_option',
 +               UnixCCompiler_library_option)
-Only in numpy-1.6.2/numpy/distutils: unixccompiler.py.orig
