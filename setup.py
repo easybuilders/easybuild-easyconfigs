@@ -1,6 +1,5 @@
 ##
-# Copyright 2012 Ghent University
-# Copyright 2012 Kenneth Hoste
+# Copyright 2012-2013 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -29,6 +28,8 @@ This script can be used to install easybuild-easyconfigs, e.g. using:
    easy_install --user .
  or
    python setup.py --prefix=$HOME/easybuild
+
+@author: Kenneth Hoste (Ghent University)
 """
 
 import glob
@@ -40,15 +41,16 @@ from distutils import log
 
 # note: release candidates should be versioned as a pre-release, e.g. "1.1rc1"
 # 1.1-rc1 would indicate a post-release, i.e., and update of 1.1, so beware!
-VERSION = "1.2.0.0dev"
+VERSION = "1.3.0.0"
 
 API_VERSION = VERSION.split('.')[0]
 EB_VERSION = '.'.join(VERSION.split('.')[0:2])
 suff = ''
 
-rc_regexp = re.compile("^.*rc[0-9]*$")
-if rc_regexp.match(VERSION):
-    suff = '-%s' % VERSION.split('-')[-1]
+rc_regexp = re.compile("^.*(rc[0-9]*)$")
+res = rc_regexp.search(str(VERSION))
+if res:
+    suff = res.group(1)
 dev_regexp = re.compile("^.*[0-9]dev$")
 if dev_regexp.match(VERSION):
     suff = 'dev'

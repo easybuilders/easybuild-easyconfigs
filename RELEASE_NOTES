@@ -1,5 +1,72 @@
-This file contains a description of the major changes to EasyBuild.
+This file contains a description of the major changes to the easybuild-easyconfigs EasyBuild package.
 For more detailed information, please see the git log.
+
+The latest version of easybuild-easyconfig provides 869 easyconfig files, for 245 different software packages
+and 9 different compiler toolchains.
+
+v1.3.0.0 (April 1st 2013)
+-------------------------
+
+feature + bugfix release
+- added example easyconfig files for 13 new software packages:
+    -Bash, CUDA, ccache, Ferret, gzip, libxc, ns, numactl, OpenBLAS, otcl, Tar, tclcl, tcsh
+        - several of these easyconfig files were contributed by attendees of the EasyBuild hackathon in Cyprus!
+- added example easyconfigs for goolf toolchain (#158)
+- added example easyconfigs for builds with goolf toolchain, i.e. for all goalf easyconfigs (#189)
+    - for several software packages, a patch file was needed to get them to build with GCC 4.7:
+        AMOS, BEAGLE, Cufflinks, DOLFIN, GATE, ns, Pasha, Trilinos, Trinity
+    - for PETSc, a patch file was required to make it build with a toolchain that doesn't include BLACS
+- added additional example easyconfig files for:
+    gompi, hwloc, LAPACK, MVAPICH2, OpenMPI, ScaLAPACK
+- various enhancements, including:
+    - define a proper module class in *all* easyconfigs, cfr. default module classes defined in framework (#150, #159, #161, #162, #179, #181)
+    - extend FFTW easyconfig to 'fat' builds that include single, double, long double and quad precision libraries in the same module
+        - quad precision is disabled for Intel compiler based builds (it requires GCC v4.6+)
+    - the imkl easyconfigs used for the ictce 3.2.2.u3 toolchain now also enable FFTW interfaces
+- various 'bug' fixes, including:
+    - fix filename for Mercurial and ROOT easyconfig files
+    - fix homepage/description for Hypre
+    - fix enabling OpenMP support in OpenMPI: use '--enable-openmp', not 'with-openmp'
+    - use correct configure flag for enabling OpenMPI threading support in v1.6 (#186)
+        - '--enable-mpi-thread-multiple' instead of '--enable-mpi-threads'
+    - explicitely add '--without-openib --without-udapl' configure options in OpenMPI easyconfig using versionsuffix -no-OFED (#168)
+        - this avoids that OpenMPI auto-detects that it can enable Infiniband (OpenIB) support, which doesn't fit the -no-OFED versionsuffix
+        - Note: this makes goalf-1.1.0-no-OFED effectively not suitable to produce software builds that are IB-capable!
+    - remove explicit '--with-udapl' from OpenMPI easyconfigs, does more harm than good (#178)
+    - remove libibvers, libibmad, libibumad as explicit dependencies for OpenMPI/MVAPICH2 (#173, #182)
+        leave it up to the OS to provide these, since the required version is too much tied to the version of IB drivers
+    - use 'license_file' in Intel tools easyconfigs, as opposed to the new generic 'license' parameter with a different meaning (#180)
+    - modify patch for impi to avoid installation problems due to hardcoded path in /tmp (#185)
+        - now uses '$USER-$RANDOM' subdir to avoid clashes between different users on the same system
+    - the patch file for numpy was extended to also supporting ATLAS and other BLAS libraries spread across multiple directories
+        - the extension for ATLAS is required because we now no longer rely on the automatic numpy mechanism to find the ATLAS libs
+    - fixed dependencies:
+        - libibumad as dependency for libibmad
+        - ncurses as dependency for libreadline
+        - ncurses and zlib as dependency for SAMtools (+ enhanced patch)
+        - remove explicit FFTW dependency for Meep, ... since toolchain already provided FFTW
+
+
+v1.2.0.0 (February 28th 2013)
+---------------------------
+
+feature + bugfix release
+- added example easyconfig files for 41 new software packages:
+    -  a2ps, AnalyzeFMRI, aria, bbcp, bbFTP, bbftpPRO, binutils, Bonnie++, ccache, cflow, cgdb, Corkscrew, EasyBuild,
+       Elinks, EPD, FLUENT, fmri, GDB, GDAL, gnuplot, gnutls, gperf, Iperf, lftp, libyaml, lzo, MATLAB, mc, nano, NASM,
+       nettle, numexpr, parallel, pyTables, QLogic MPI, Stow, TotalView, Valgrind, VTK, Yasm, zsync
+- added example easyconfigs for iqacml and iiqmpi toolchains
+- added additional example easyconfig files for:
+    - ABINIT, ABySS, ACML, BFAST, Bison, BLACS, Cython, cURL, Doxygen, FFTW, flex, g2clib, g2lib, GHC, h5py, HDF, HDF5,
+      HMMER, JasPer, icc, ictce, ifort, imkl, impi, libpng, libreadline, M4, matplotlib, MCL, MEME, mpiBLAST, NCL,
+      ncurses, netCDF, netCDF-Fortran, NWChem, R, ScaLAPACK, Tcl, Tk, WPS, WRF, zlib
+- various enhancements, including:
+    - fix version of xtable R library in list of extensions for R, to avoid installation failures
+- various 'bug' fixes, including:
+    - fix toolchain and file names for ABINIT easyconfigs
+    - fix sanity check paths for cURL
+    - don't disable 'optarch' for WRF, it's not needed (only disable heavy optimizations is required)
+    - fix homepage/description for ALADIN
 
 v1.1.0.0 (January 27th 2013)
 --------------------------
