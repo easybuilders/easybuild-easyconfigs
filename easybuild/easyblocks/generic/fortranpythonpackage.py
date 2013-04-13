@@ -49,7 +49,7 @@ class FortranPythonPackage(PythonPackage):
         if comp_fam == toolchain.INTELCOMP:  # @UndefinedVariable
             cmd = "python setup.py build --compiler=intel --fcompiler=intelem"
 
-        elif comp_fam == toolchain.GCC:  # @UndefinedVariable
+        elif comp_fam in [toolchain.GCC, toolchain.CLANGGCC]:  # @UndefinedVariable
             cmdprefix = ""
             ldflags = os.getenv('LDFLAGS')
             if ldflags:
