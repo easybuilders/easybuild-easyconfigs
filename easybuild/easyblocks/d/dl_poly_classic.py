@@ -23,13 +23,14 @@
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
 """
-EasyBuild support for dlpoly, implemented as an easyblock
+EasyBuild support for DL_POLY Classic, implemented as an easyblock
 
 @author: Jens Timmerman (Ghent University)
 """
 import os
 import shutil
 
+from easybuild.tools.filetools import copytree
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 
 
@@ -37,10 +38,10 @@ class EB_DL_underscore_POLY_underscore_Classic(ConfigureMake):
     """Support for building and installing DL_POLY Classic."""
 
     def configure_step(self):
-        """copy the makefile to the source directory and use MPIF90 to do a parrallel build"""
+        """Copy the makefile to the source directory and use MPIF90 to do a parrallel build"""
         shutil.copy("build/MakePAR", "source/Makefile")
         os.chdir("source")
-        self.cfg['makeopts'] = 'LD="$MPIF90 -o" FC="$MPIF90 -c" par'
+        self.cfg.update('makeopts', 'LD="$MPIF90 -o" FC="$MPIF90 -c" par')
 
     def install_step(self):
         """Copy the executables to the installation directory"""
@@ -48,11 +49,4 @@ class EB_DL_underscore_POLY_underscore_Classic(ConfigureMake):
         # create a /bin, this way we also get the PATH to be set correctly automatically
         bin_path = os.path.join(self.installdir, "bin")
         install_path = os.path.join(self.cfg['start_dir'], 'execute')
-        os.mkdir(bin_path)
-        for item in os.listdir(install_path):
-            source = os.path.join(install_path, item)
-            dest = os.path.join(bin_path, item)
-            if os.path.isdir(source):
-                shutil.copytree(source, dest)
-            else:
-                shutil.copy2(source, dest)
+        copytree(install_path, bin_path)
