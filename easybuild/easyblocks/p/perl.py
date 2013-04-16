@@ -31,6 +31,7 @@ EasyBuild support for Perl, implemented as an easyblock
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.tools.filetools import run_cmd
 
+# perldoc -lm seems to be the safest way to test if a module is available, based on exitcode
 EXTS_FILTER_PERL_PACKAGES = ("perldoc -lm %(ext_name)s ", "")
 
 
@@ -41,7 +42,6 @@ class EB_Perl(ConfigureMake):
         """Configure Perl build.
         run ./Configure instead of ./configure with some different options
         """
-
         configopts = " ".join([self.cfg['configopts'], "-Dusethreads", '-Dcc="$CC $CFLAGS"', '-Dinc_version_list=none',
                                '-Dccflags="$CFLAGS"',
                                ])
