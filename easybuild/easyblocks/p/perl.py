@@ -41,8 +41,11 @@ class EB_Perl(ConfigureMake):
         """Configure Perl build.
         run ./Configure instead of ./configure with some different options
         """
-        configopts = " ".join([self.cfg['configopts'], "-Dusethreads"])
-        cmd = './Configure %s -de -Dcc=$CC -Dprefix="%s"' % (configopts, self.installdir)
+
+        configopts = " ".join([self.cfg['configopts'], "-Dusethreads", '-Dcc="$CC $CFLAGS"', '-Dinc_version_list=none',
+                               '-Dccflags="$CFLAGS"',
+                               ])
+        cmd = './Configure -de %s -Dprefix="%s" ' % (configopts, self.installdir)
         run_cmd(cmd, log_all=True, simple=True)
 
     def prepare_for_extensions(self):
