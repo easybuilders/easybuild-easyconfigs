@@ -46,6 +46,7 @@ class EB_Bowtie(ConfigureMake):
         """
         Empty function as bowtie comes with _no_ configure script
         """
+        self.cfg['makeopts'] = self.cfg['makeopts'] + 'CPP="$CPP" CC="$CC"'
         pass
 
     def install_step(self):
