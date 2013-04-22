@@ -51,8 +51,12 @@ class EB_ACML(EasyBlock):
 
     def __init__(self, *args, **kwargs):
         """Constructor, adds extra class variables."""
-
         super(EB_ACML, self).__init__(*args, **kwargs)
+        self.basedir = None
+        self.suffix = None
+
+    def configure_step(self):
+        """Determine base directory and suffix for ACML installation."""
 
         vsuff_list = self.cfg['versionsuffix'].split('-')
 
@@ -67,10 +71,6 @@ class EB_ACML(EasyBlock):
         self.suffix = ''
         if self.cfg['versionsuffix'].split('-')[-1] == "int64":
             self.suffix = '_int64'
-
-    def configure_step(self):
-        """No configure."""
-        pass
 
     def build_step(self):
         """No build."""
