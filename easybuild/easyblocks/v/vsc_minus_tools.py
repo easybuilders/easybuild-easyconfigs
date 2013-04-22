@@ -91,6 +91,7 @@ class EB_VSC_minus_tools(PythonPackage):
 
         txt = super(EB_VSC_minus_tools, self).make_module_extra()
 
-        txt += "prepend-path\tPYTHONPATH\t%s\n" % os.path.join(self.installdir , 'lib')
+        txt += self.moduleGenerator.prepend_paths('PATH', ["bin/fake"])
+        txt += self.moduleGenerator.prepend_paths('PYTHONPATH', ["lib"])
 
         return txt
