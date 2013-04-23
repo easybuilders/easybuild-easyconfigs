@@ -37,6 +37,8 @@ from unittest import TestCase, TestLoader, main
 
 from easybuild.framework.easyblock import get_class
 from easybuild.framework.easyconfig import MANDATORY
+from easybuild.framework.easyconfig.tools import get_paths_for
+
 
 class InitTest(TestCase):
     """ Baseclass for easyblock testcases """
@@ -60,7 +62,7 @@ class InitTest(TestCase):
 
     def setUp(self):
         """ setup """
-        self.log = fancylogger.getLogger("EasyConfigTest", fname=False)
+        self.log = fancylogger.getLogger("EasyblocksInitTest", fname=False)
         fd, self.eb_file = tempfile.mkstemp(prefix='easyblocks_init_test_', suffix='.eb')
         os.close(fd)
 
@@ -102,7 +104,8 @@ def suite():
     """Return all easyblock initialisation tests."""
 
     # dynamically generate a separate test for each of the available easyblocks
-    all_pys = glob.glob('%s/*/*.py' % os.path.dirname(os.path.dirname(__file__)))
+    easyblocks_path = get_paths_for("easyblocks")[0]
+    all_pys = glob.glob('%s/*/*.py' % easyblocks_path)
     easyblocks = [eb for eb in all_pys if not eb.endswith('__init__.py') and not '/test/' in eb]
 
     for easyblock in easyblocks:
