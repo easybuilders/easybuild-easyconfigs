@@ -37,6 +37,8 @@ from unittest import TestCase, TestLoader, main
 
 from easybuild.framework.easyblock import get_class
 from easybuild.framework.easyconfig import MANDATORY
+from easybuild.framework.easyconfig.tools import get_paths_for
+
 
 class InitTest(TestCase):
     """ Baseclass for easyblock testcases """
@@ -60,50 +62,59 @@ class InitTest(TestCase):
 
     def setUp(self):
         """ setup """
-        self.log = fancylogger.getLogger("EasyConfigTest", fname=False)
+        self.log = fancylogger.getLogger("EasyblocksInitTest", fname=False)
         fd, self.eb_file = tempfile.mkstemp(prefix='easyblocks_init_test_', suffix='.eb')
         os.close(fd)
 
-    def test_init_all(self):
-        """Test whether all easyconfigs can be initialized."""
+def template_init_test(self, easyblock):
+    """Test whether all easyconfigs can be initialized."""
 
-        class_regex = re.compile("^class (.*)\(.*", re.M)
+    class_regex = re.compile("^class (.*)\(.*", re.M)
 
-        all_pys = glob.glob('%s/*/*.py' % os.path.dirname(os.path.dirname(__file__)))
-        easyblocks = [eb for eb in all_pys if not eb.endswith('__init__.py') and not '/test/' in eb]
-        for easyblock in easyblocks:
-            self.log.debug("easyblock: %s" % easyblock)
+    self.log.debug("easyblock: %s" % easyblock)
 
-            # obtain easyblock class name using regex
-            f = open(easyblock, "r")
-            txt = f.read()
-            f.close()
+    # obtain easyblock class name using regex
+    f = open(easyblock, "r")
+    txt = f.read()
+    f.close()
 
-            res = class_regex.search(txt)
-            if res:
-                ebname = res.group(1)
-                self.log.debug("Found class name for easyblock %s: %s" % (easyblock, ebname))
-                print ("Testing initialisation for easyblock %s (in %s)" % (ebname, easyblock))
+    res = class_regex.search(txt)
+    if res:
+        ebname = res.group(1)
+        self.log.debug("Found class name for easyblock %s: %s" % (easyblock, ebname))
 
-                # figure out list of mandatory variables, and define with dummy values as necessary
-                app_class = get_class(ebname)
-                ec_opts = app_class.extra_options()
-                extra_txt = ''
-                for ec_opt in ec_opts:
-                    if ec_opt[1][2] == MANDATORY:
-                        extra_txt += '%s = "foo"\n' % ec_opt[0]
+        # figure out list of mandatory variables, and define with dummy values as necessary
+        app_class = get_class(ebname)
+        ec_opts = app_class.extra_options()
+        extra_txt = ''
+        for ec_opt in ec_opts:
+            if ec_opt[1][2] == MANDATORY:
+                extra_txt += '%s = "foo"\n' % ec_opt[0]
 
-                # write easyconfig file
-                self.writeEC(ebname, extra_txt)
+        # write easyconfig file
+        self.writeEC(ebname, extra_txt)
 
-                # initialize easyblock
-                # if this doesn't fail, the test succeeds
-                app = app_class(self.eb_file)
-            else:
-                self.assertTrue(False, "Class found in easyblock %s" % easyblock)
+        # initialize easyblock
+        # if this doesn't fail, the test succeeds
+        app = app_class(self.eb_file)
+    else:
+        self.assertTrue(False, "Class found in easyblock %s" % easyblock)
 
 def suite():
-    """ return all the tests in this file """
+    """Return all easyblock initialisation tests."""
+
+    # dynamically generate a separate test for each of the available easyblocks
+    easyblocks_path = get_paths_for("easyblocks")[0]
+    all_pys = glob.glob('%s/*/*.py' % easyblocks_path)
+    easyblocks = [eb for eb in all_pys if not eb.endswith('__init__.py') and not '/test/' in eb]
+
+    for easyblock in easyblocks:
+        # dynamically define new inner functions that can be added as class methods to InitTest
+        exec("def innertest(self): template_init_test(self, '%s')" % easyblock)
+        innertest.__doc__ = "Test for initialisation of easyblock %s" % easyblock
+        innertest.__name__ = "test_easyblock_%s" % '_'.join(easyblock.replace('.py', '').split('/'))
+        setattr(InitTest, innertest.__name__, innertest)
+
     return TestLoader().loadTestsFromTestCase(InitTest)
 
 if __name__ == '__main__':
