@@ -37,7 +37,7 @@ import unittest
 from vsc import fancylogger
 
 # toolkit should be first to allow hacks to work
-import easybuild.easyblocks.test.init_easyblocks as i
+import test.easyblocks.init_easyblocks as i
 
 # initialize logger for all the unit tests
 fd, log_fn = tempfile.mkstemp(prefix='easybuild-easyblocks-tests-', suffix='.log')
