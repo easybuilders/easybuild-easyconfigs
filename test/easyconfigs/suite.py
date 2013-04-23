@@ -37,7 +37,7 @@ import unittest
 from vsc import fancylogger
 
 # toolkit should be first to allow hacks to work
-import easyconfigs_test.easyconfigs as e
+import test.easyconfigs.easyconfigs as e
 
 # initialize logger for all the unit tests
 fd, log_fn = tempfile.mkstemp(prefix='easybuild-easyconfigs-tests-', suffix='.log')
