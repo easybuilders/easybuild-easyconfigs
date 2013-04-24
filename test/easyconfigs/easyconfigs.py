@@ -53,7 +53,7 @@ class EasyConfigTest(TestCase):
     easyblock_regex = re.compile(r"^\s*easyblock\s*=['\"](.*)['\"]$", re.M)
 
     # pygraph dependencies required for constructing dependency graph are not available prior to Python 2.6
-    if LooseVersion(sys.version) >= LooseVersion('2.8'):
+    if LooseVersion(sys.version) >= LooseVersion('2.6'):
         def test_dep_graph(self):
             """Unit test that builds a full dependency graph."""
             # make sure a logger is present for main
