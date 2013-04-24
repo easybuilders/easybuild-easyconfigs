@@ -117,7 +117,7 @@ class EB_MATLAB(EasyBlock):
             os.environ.pop('DISPLAY')
 
         configfile = "%s/%s" % (self.builddir, self.configfilename)
-	cmd = "%s ./install -v -inputFile %s %s" % (self.cfg['preinstallopts'], configfile, self.cfg['installopts'])
+        cmd = "%s ./install -v -inputFile %s %s" % (self.cfg['preinstallopts'], configfile, self.cfg['installopts'])
         run_cmd(cmd, log_all=True, simple=True)
 
-# sanity_check_step & make_module_extra are rather defined via easyconfig, for generality
+# sanity_check_step & make_module_extra are rather defined via easyconfig, for reasons of generality
