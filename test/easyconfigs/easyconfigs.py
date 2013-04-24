@@ -31,7 +31,9 @@ Unit tests for easyconfig files.
 import glob
 import os
 import re
+import sys
 import tempfile
+from distutils.version import LooseVersion
 from vsc import fancylogger
 from unittest import TestCase, TestLoader, main
 
@@ -50,27 +52,30 @@ class EasyConfigTest(TestCase):
     name_regex = re.compile("^name\s*=\s*['\"](.*)['\"]$", re.M)
     easyblock_regex = re.compile(r"^\s*easyblock\s*=['\"](.*)['\"]$", re.M)
 
-    def test_dep_graph(self):
-        """Unit test that builds a full dependency graph."""
+    # pygraph dependencies required for constructing dependency graph are not available prior to Python 2.6
+    if LooseVersion(sys.version) >= LooseVersion('2.8'):
+        def test_dep_graph(self):
+            """Unit test that builds a full dependency graph."""
+            # make sure a logger is present for main
+            easybuild.main.log = self.log
 
-        # make sure a logger is present for main
-        easybuild.main.log = self.log
+            # temporary file for dep graph
+            (hn, fn) = tempfile.mkstemp(suffix='.dot')
+            os.close(hn)
 
-        # temporary file for dep graph
-        (hn, fn) = tempfile.mkstemp(suffix='.dot')
-        os.close(hn)
+            # all available easyconfig files
+            easyconfigs_path = get_paths_for("easyconfigs")[0]
+            specs = glob.glob('%s/*/*/*.eb' % easyconfigs_path)
 
-        # all available easyconfig files
-        easyconfigs_path = get_paths_for("easyconfigs")[0]
-        specs = glob.glob('%s/*/*/*.eb' % easyconfigs_path)
+            # parse all easyconfigs
+            easyconfigs = []
+            for spec in specs:
+                easyconfigs.extend(process_easyconfig(spec, validate=False))
 
-        # parse all easyconfigs
-        easyconfigs = []
-        for spec in specs:
-            easyconfigs.extend(process_easyconfig(spec, validate=False))
-
-        ordered_specs = resolve_dependencies(easyconfigs, easyconfigs_path)
-        dep_graph(fn, ordered_specs, silent=True)
+            ordered_specs = resolve_dependencies(easyconfigs, easyconfigs_path)
+            dep_graph(fn, ordered_specs, silent=True)
+    else:
+        print "(skipped dep graph test)"
 
 def template_easyconfig_test(self, spec):
     """Test whether all easyconfigs can be initialized."""
