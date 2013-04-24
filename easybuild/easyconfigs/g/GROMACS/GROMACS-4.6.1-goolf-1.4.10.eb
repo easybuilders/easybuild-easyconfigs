@@ -14,8 +14,7 @@
 easyblock = 'CMakeMake'
 
 name = 'GROMACS'
-version = '4.6'
-versionsuffix ='-CUDA-5.0.35-1'
+version = '4.6.1'
 
 homepage = 'http://www.gromacs.org'
 description = """GROMACS is a versatile package to perform molecular dynamics,
@@ -24,9 +23,22 @@ description = """GROMACS is a versatile package to perform molecular dynamics,
 toolchain = {'name': 'goolf', 'version': '1.4.10'}
 
 # eg. ftp://ftp.gromacs.org/pub/gromacs/gromacs-4.6.tar.gz
-sources = [SOURCELOWER_TAR_GZ]
-source_urls = ['ftp://ftp.gromacs.org/pub/gromacs/']
+sources = [
+    SOURCELOWER_TAR_GZ,
+    'regressiontests-%(version)s.tar.gz',
+]
+source_urls = [
+    'ftp://ftp.gromacs.org/pub/gromacs/',  # GROMACS sources
+    'http://gerrit.gromacs.org/download/',  # regression tests sources
+]
 
-dependencies = [('CUDA', '5.0.35-1', '', True)]
+builddependencies = [('CMake', '2.8.4')]
+
+configopts = "-DREGRESSIONTEST_PATH='%(builddir)s/regressiontests-%(version)s'"
+runtest = 'check'
+
+# explicitely disable CUDA support, i.e. avoid that GROMACS find and uses a system-wide CUDA compiler
+# CUDA and GCC v4.7 don't play well together
+configopts += ' -DGMX_GPU=OFF'
 
 moduleclass = 'bio'
