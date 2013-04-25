@@ -31,27 +31,42 @@ EasyBuild support for Perl, implemented as an easyblock
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.tools.filetools import run_cmd
 
-# perldoc -lm seems to be the safest way to test if a module is available, based on exitcode
-EXTS_FILTER_PERL_PACKAGES = ("perldoc -lm %(ext_name)s ", "")
+# perldoc -lm seems to be the safest way to test if a module is available, based on exit code
+EXTS_FILTER_PERL_MODULES = ("perldoc -lm %(ext_name)s ", "")
 
 
 class EB_Perl(ConfigureMake):
-    """Support for building and installing ParMETIS."""
+    """Support for building and installing Perl."""
 
     def configure_step(self):
-        """Configure Perl build.
-        run ./Configure instead of ./configure with some different options
         """
-        configopts = " ".join([self.cfg['configopts'], "-Dusethreads", '-Dcc="$CC $CFLAGS"', '-Dinc_version_list=none',
-                               '-Dccflags="$CFLAGS"',
-                               ])
+        Configure Perl build: run ./Configure instead of ./configure with some different options
+        """
+        configopts = ' '.join([
+            self.cfg['configopts'],
+            "-Dusethreads",
+            '-Dcc="$CC $CFLAGS"',
+            '-Dccflags="$CFLAGS"',
+            '-Dinc_version_list=none',
+        ])
         cmd = './Configure -de %s -Dprefix="%s" ' % (configopts, self.installdir)
         run_cmd(cmd, log_all=True, simple=True)
 
     def prepare_for_extensions(self):
         """
-        Set default class and filter for Perl packages
+        Set default class and filter for Perl modules
         """
-        # build and install additional packages with PerlPackage easyblock
-        self.cfg['exts_defaultclass'] = "PerlPackage"
-        self.cfg['exts_filter'] = EXTS_FILTER_PERL_PACKAGES
+        # build and install additional modules with PerlModule easyblock
+        self.cfg['exts_defaultclass'] = "PerlModule"
+        self.cfg['exts_filter'] = EXTS_FILTER_PERL_MODULES
+
+    def sanity_check_step(self):
+        """Custom sanity check for Perl."""
+
+        majver = self.version.split('.')[0]
+        custom_paths = {
+                        'files': [os.path.join('bin', x) for x in ['perl', 'perldoc']],
+                        'dirs': ['lib/perl%s/%s' % (majver, self.version), 'man']
+                       }
+
+        super(EB_Perl, self).sanity_check_step(custom_paths=custom_paths)

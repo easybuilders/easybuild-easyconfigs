@@ -23,25 +23,25 @@
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
 """
-EasyBuild support for Perl packages, implemented as an easyblock
+EasyBuild support for Perl module, implemented as an easyblock
 
 @author: Jens Timmerman (Ghent University)
 """
 import os
 
-from easybuild.easyblocks.perl import EXTS_FILTER_PERL_PACKAGES
+from easybuild.easyblocks.perl import EXTS_FILTER_PERL_MODULES
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.framework.extensioneasyblock import ExtensionEasyBlock
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.tools.filetools import run_cmd
 
 
-class PerlPackage(ExtensionEasyBlock, ConfigureMake):
-    """Builds and installs a Perl package, and provides a dedicated module file."""
+class PerlModule(ExtensionEasyBlock, ConfigureMake):
+    """Builds and installs a Perl module, and can provide a dedicated module file."""
 
     @staticmethod
     def extra_options():
-        """Easyconfig parameters specific to Python packages."""
+        """Easyconfig parameters specific to Perl modules."""
         extra_vars = [
             ('runtest', [True, "Run unit tests.", CUSTOM]),  # overrides default
         ]
@@ -49,22 +49,22 @@ class PerlPackage(ExtensionEasyBlock, ConfigureMake):
 
     def __init__(self, *args, **kwargs):
         """Initialize custom class variables."""
-        super(PerlPackage, self).__init__(*args, **kwargs)
+        super(PerlModule, self).__init__(*args, **kwargs)
         self.testcmd = None
 
     def configure_step(self):
-        """Configure Python package build."""
-
+        """Configure Perl module build."""
+        pass
 
     def run(self):
-        """Perform the actual Python package build/installation procedure"""
+        """Perform the actual Perl module build/installation procedure"""
 
         if not self.src:
-            self.log.error("No source found for Perl package %s, required for installation. (src: %s)" %
+            self.log.error("No source found for Perl module %s, required for installation. (src: %s)" %
                            (self.name, self.src))
         ExtensionEasyBlock.run(self, unpack_src=True)
 
-        # Perl packages have to possible installations, Makefile.PL and Build.PL
+        # Perl modules have two possible installation procedures: using Makefile.PL and Build.PL
 
         # configure, build, test, install
         if os.path.exists('Makefile.PL'):
@@ -81,9 +81,9 @@ class PerlPackage(ExtensionEasyBlock, ConfigureMake):
 
     def sanity_check_step(self, *args, **kwargs):
         """
-        Custom sanity check for Perl packages
+        Custom sanity check for Perl modules
         """
-        ExtensionEasyBlock.sanity_check_step(self, EXTS_FILTER_PERL_PACKAGES, *args, **kwargs)
+        ExtensionEasyBlock.sanity_check_step(self, EXTS_FILTER_PERL_MODULES, *args, **kwargs)
 
     def make_module_extra(self):
         """Add install path to PYTHONPATH"""
