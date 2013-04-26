@@ -21,7 +21,7 @@ import os
 import easybuild.tools.environment as env
 import easybuild.tools.toolchain   as toolchain
 from   easybuild.easyblocks.generic.configuremake import ConfigureMake
-from   easybuild.framework.easyconfig             import CUSTOM, MANDATORY
+from   easybuild.framework.easyconfig             import CUSTOM
 from   easybuild.tools.filetools                  import run_cmd
 
 
