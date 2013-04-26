@@ -120,4 +120,23 @@ class EB_MATLAB(EasyBlock):
         cmd = "%s ./install -v -inputFile %s %s" % (self.cfg['preinstallopts'], configfile, self.cfg['installopts'])
         run_cmd(cmd, log_all=True, simple=True)
 
-# sanity_check_step & make_module_extra are rather defined via easyconfig, for reasons of generality
+    def sanity_check_step(self):
+        """Custom sanity check for MATLAB."""
+
+        custom_paths = {
+                        'files': ["bin/matlab", "bin/mcc", "bin/glnxa64/MATLAB", "bin/glnxa64/mcc",
+                                  "runtime/glnxa64/libmwmclmcrrt.so", "toolbox/local/classpath.txt"],
+                        'dirs': ["java/jar", "toolbox/compiler"],
+                       }
+
+        super(EB_MATLAB, self).sanity_check_step(custom_paths=custom_paths)
+
+    def make_module_extra(self):
+        """Extend PATH and set proper _JAVA_OPTIONS (-Xmx)."""
+
+        txt = super(EB_MATLAB, self).make_module_extra()
+
+        txt += self.moduleGenerator.set_environment('_JAVA_OPTIONS', "-Xmx512m")
+
+        return txt
+
