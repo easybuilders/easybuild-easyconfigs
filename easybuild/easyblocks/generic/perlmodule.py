@@ -100,6 +100,7 @@ class PerlModule(ExtensionEasyBlock, ConfigureMake):
         return ExtensionEasyBlock.sanity_check_step(self, EXTS_FILTER_PERL_MODULES, *args, **kwargs)
 
     def make_module_extra(self):
-        """Add install path to PYTHONPATH"""
-        txt = self.moduleGenerator.prepend_paths("PERL5LIB", [self.installdir])
+        """Add install path to PERL*LIB"""
+        majver = self.version.split('.')[0]
+        txt = self.moduleGenerator.prepend_paths("PERL%sLIB" % majver, [''])
         return ExtensionEasyBlock.make_module_extra(self, txt)
