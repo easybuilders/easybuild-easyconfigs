@@ -85,6 +85,10 @@ class PerlModule(ExtensionEasyBlock, ConfigureMake):
         """No separate build procedure for Perl modules."""
         pass
 
+    def test_step(self):
+        """No separate (standard) test procedure for Perl modules."""
+        pass
+
     def install_step(self):
         """Run install procedure for Perl modules."""
         self.install_perl_module()
