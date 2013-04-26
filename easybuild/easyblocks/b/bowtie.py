@@ -44,10 +44,9 @@ class EB_Bowtie(ConfigureMake):
 
     def configure_step(self):
         """
-        Empty function as bowtie comes with _no_ configure script
+        Set compilers in makeopts, there is no configure script.
         """
         self.cfg['makeopts'] = self.cfg['makeopts'] + 'CPP="$CPP" CC="$CC"'
-        pass
 
     def install_step(self):
         """
@@ -58,7 +57,7 @@ class EB_Bowtie(ConfigureMake):
         srcfile = None
         try:
             os.makedirs(destdir)
-            for filename in ['bowtie-build','bowtie','bowtie-inspect']:
+            for filename in ['bowtie-build', 'bowtie', 'bowtie-inspect']:
                 srcfile = os.path.join(srcdir, filename)
                 shutil.copy2(srcfile, destdir)
         except OSError, err:
@@ -67,7 +66,7 @@ class EB_Bowtie(ConfigureMake):
     def sanity_check_step(self):
         """Custom sanity check for Bowtie."""
         custom_paths = {
-            'files': ['bin/bowtie', 'bin/bowtie-build', 'bin/bowtie-inspect' ],
+            'files': ['bin/bowtie', 'bin/bowtie-build', 'bin/bowtie-inspect'],
             'dirs': []
         }
         super(EB_Bowtie, self).sanity_check_step(custom_paths=custom_paths)
