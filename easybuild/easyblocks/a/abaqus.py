@@ -43,7 +43,6 @@ class EB_ABAQUS(Binary):
     def __init__(self, *args, **kwargs):
         """Initialisation of custom class variables for ABAQUS."""
         super(EB_ABAQUS, self).__init__(*args, **kwargs)
-
         self.replayfile = None
 
     def extract_step(self):
@@ -83,21 +82,17 @@ class EB_ABAQUS(Binary):
         """Custom sanity check for ABAQUS."""
             
         verparts = self.version.split('-')[0].split('.')
-
         custom_paths = {
             'files': [os.path.join("Commands", "abaqus")],
             'dirs': ["%s-%s" % ('.'.join(verparts[0:2]), verparts[2])]
         }
-
         super(EB_ABAQUS, self).sanity_check_step(custom_paths=custom_paths)
 
     def make_module_req_guess(self):
         """Update PATH guesses for ABAQUS."""
 
         guesses = super(EB_ABAQUS, self).make_module_req_guess()
-
         guesses.update({
             'PATH': ['Commands'],
         })
-
         return guesses
