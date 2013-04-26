@@ -44,7 +44,7 @@ class PerlModule(ExtensionEasyBlock, ConfigureMake):
     def extra_options():
         """Easyconfig parameters specific to Perl modules."""
         extra_vars = [
-            ('runtest', [True, "Run unit tests.", CUSTOM]),  # overrides default
+            ('runtest', ['test', "Run unit tests.", CUSTOM]),  # overrides default
         ]
         return ExtensionEasyBlock.extra_options(extra_vars)
 
