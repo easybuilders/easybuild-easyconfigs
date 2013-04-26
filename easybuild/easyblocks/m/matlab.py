@@ -38,13 +38,25 @@ import os
 import shutil
 
 from easybuild.framework.easyblock import EasyBlock
+from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.filetools import run_cmd
 
 
 class EB_MATLAB(EasyBlock):
     """Support for installing MATLAB."""
 
-    configfilename = "my_installer_input.txt"
+    def __init__(self, *args, **kwargs):
+        """Add extra config options specific to MATLAB."""
+        super(EB_MATLAB, self).__init__(*args, **kwargs)
+        self.comp_fam = None
+        self.configfilename = "my_installer_input.txt"
+
+    @staticmethod
+    def extra_options():
+        extra_vars = [
+                      ('java_options', ['-Xmx128M', "$_JAVA_OPTIONS value set for install and in module file.", CUSTOM]),
+                     ]
+        return EasyBlock.extra_options(extra_vars)
 
     def configure_step(self):
         """Configure MATLAB installation: create license file."""
@@ -105,7 +117,7 @@ class EB_MATLAB(EasyBlock):
         try:
             if os.path.isfile(src):
                 self.log.info("Doing chmod on source file %s" % src)
-                os.chmod("install", 0755)
+                os.chmod(src, 0755)
             else:
                 self.log.info("Did not find source file %s" % src)
         except OSError, err:
@@ -116,6 +128,8 @@ class EB_MATLAB(EasyBlock):
         if 'DISPLAY' in os.environ:
             os.environ.pop('DISPLAY')
 
+        if not '_JAVA_OPTIONS' in self.cfg['preinstallopts']:
+            self.cfg['preinstallopts'] = ('export _JAVA_OPTIONS="%s" && ' % self.cfg['java_options']) + self.cfg['preinstallopts']
         configfile = "%s/%s" % (self.builddir, self.configfilename)
         cmd = "%s ./install -v -inputFile %s %s" % (self.cfg['preinstallopts'], configfile, self.cfg['installopts'])
         run_cmd(cmd, log_all=True, simple=True)
@@ -132,11 +146,11 @@ class EB_MATLAB(EasyBlock):
         super(EB_MATLAB, self).sanity_check_step(custom_paths=custom_paths)
 
     def make_module_extra(self):
-        """Extend PATH and set proper _JAVA_OPTIONS (-Xmx)."""
+        """Extend PATH and set proper _JAVA_OPTIONS (e.g., -Xmx)."""
 
         txt = super(EB_MATLAB, self).make_module_extra()
 
-        txt += self.moduleGenerator.set_environment('_JAVA_OPTIONS', "-Xmx512m")
+        txt += self.moduleGenerator.set_environment('_JAVA_OPTIONS', self.cfg['java_options'])
 
         return txt
 
