@@ -53,20 +53,9 @@ class PerlModule(ExtensionEasyBlock, ConfigureMake):
         super(PerlModule, self).__init__(*args, **kwargs)
         self.testcmd = None
 
-    def configure_step(self):
-        """Configure Perl module build."""
-        pass
-
-    def run(self):
-        """Perform the actual Perl module build/installation procedure"""
-
-        if not self.src:
-            self.log.error("No source found for Perl module %s, required for installation. (src: %s)" %
-                           (self.name, self.src))
-        ExtensionEasyBlock.run(self, unpack_src=True)
-
+    def install_perl_module(self):
+        """Install procedure for Perl modules: using either Makefile.Pl or Build.PL."""
         # Perl modules have two possible installation procedures: using Makefile.PL and Build.PL
-
         # configure, build, test, install
         if os.path.exists('Makefile.PL'):
             run_cmd('perl Makefile.PL PREFIX=%s' % self.installdir)
@@ -78,7 +67,27 @@ class PerlModule(ExtensionEasyBlock, ConfigureMake):
             out, ec  = run_cmd('perl Build test')
             out, ec  = run_cmd('perl Build install')
 
+    def run(self):
+        """Perform the actual Perl module build/installation procedure"""
 
+        if not self.src:
+            self.log.error("No source found for Perl module %s, required for installation. (src: %s)" %
+                           (self.name, self.src))
+        ExtensionEasyBlock.run(self, unpack_src=True)
+
+        self.install_perl_module()
+
+    def configure_step(self):
+        """No separate configuration for Perl modules."""
+        pass
+
+    def build_step(self):
+        """No separate build procedure for Perl modules."""
+        pass
+
+    def install_step(self):
+        """Run install procedure for Perl modules."""
+        self.install_perl_module()
 
     def sanity_check_step(self, *args, **kwargs):
         """
