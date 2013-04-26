@@ -26,6 +26,7 @@
 EasyBuild support for Perl, implemented as an easyblock
 
 @author: Jens Timmerman (Ghent University)
+@author: Kenneth Hoste (Ghent University)
 """
 
 import os
