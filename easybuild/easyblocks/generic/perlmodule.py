@@ -93,7 +93,7 @@ class PerlModule(ExtensionEasyBlock, ConfigureMake):
         """
         Custom sanity check for Perl modules
         """
-        ExtensionEasyBlock.sanity_check_step(self, EXTS_FILTER_PERL_MODULES, *args, **kwargs)
+        return ExtensionEasyBlock.sanity_check_step(self, EXTS_FILTER_PERL_MODULES, *args, **kwargs)
 
     def make_module_extra(self):
         """Add install path to PYTHONPATH"""
