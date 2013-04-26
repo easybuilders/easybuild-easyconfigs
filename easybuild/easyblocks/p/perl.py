@@ -45,7 +45,7 @@ class EB_Perl(ConfigureMake):
         configopts = ' '.join([
             self.cfg['configopts'],
             "-Dusethreads",
-            '-Dcc="$CC $CFLAGS"',
+            '-Dcc="$CC"',
             '-Dccflags="$CFLAGS"',
             '-Dinc_version_list=none',
         ])
