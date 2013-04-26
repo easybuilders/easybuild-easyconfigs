@@ -40,26 +40,33 @@ from easybuild.tools.filetools import run_cmd
 class CMakeMake(ConfigureMake):
     """Support for configuring build with CMake instead of traditional configure script"""
 
-    def configure_step(self, builddir=None):
+    def configure_step(self, srcdir=None, builddir=None):
         """Configure build using cmake"""
 
-        if not builddir:
-            builddir = '.'
+        if srcdir is None:
+            if builddir is not None:
+                self.log.deprecated("CMakeMake.configure_step: named argument 'builddir' (should be 'srcdir')", "2.0")
+                srcdir = builddir
+            else:
+                srcdir = '.'
 
-        compilers = "-DCMAKE_C_FLAGS='%s' -DCMAKE_C_COMPILER='%s' " % (os.getenv('CFLAGS'), 
-                                                                       os.getenv('CC'))
-        compilers += "-DCMAKE_CXX_FLAGS='%s' -DCMAKE_CXX_COMPILER='%s' " % (os.getenv('CXXFLAGS'), 
-                                                                            os.getenv('CXX'))
+        options = ['-DCMAKE_INSTALL_PREFIX=%s' % self.installdir]
+        env_to_options = {
+            'CC': 'CMAKE_C_COMPILER',
+            'CFLAGS': 'CMAKE_C_FLAGS',
+            'CXX': 'CMAKE_CXX_COMPILER',
+            'CXXFLAGS': 'CMAKE_CXX_FLAGS',
+            'F90': 'CMAKE_Fortran_COMPILER',
+            'FFLAGS': 'CMAKE_Fortran_FLAGS',
+        }
+        for env_name, option in env_to_options.items():
+            value = os.getenv(env_name)
+            if value is not None:
+                options.append("-D%s='%s'" % (option, value))
 
-        compilers += "-DCMAKE_Fortran_FLAGS='%s' -DCMAKE_Fortran_COMPILER='%s' " % (os.getenv('FFLAGS'), 
-                                                                                    os.getenv('F90'))
+        options_string = " ".join(options)
 
-        command = "%s cmake -DCMAKE_INSTALL_PREFIX=%s %s %s %s" % (self.cfg['preconfigopts'],
-                                                                   self.installdir,
-                                                                   compilers,
-                                                                   builddir,
-                                                                   self.cfg['configopts']
-                                                                   )
+        command = "%s cmake %s %s %s" % (self.cfg['preconfigopts'], srcdir, options_string, self.cfg['configopts'])
         (out, _) = run_cmd(command, log_all=True, simple=False)
 
         return out

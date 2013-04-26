@@ -125,7 +125,7 @@ class EB_NCL(EasyBlock):
 
         # order of deps is important
         # HDF needs to go after netCDF, because both have a netcdf.h include file
-        deps = ["HDF5", "JasPer", "netCDF", "HDF", "g2lib", "g2clib", "Szip"]
+        deps = ["HDF5", "JasPer", "netCDF", "HDF", "g2lib", "g2clib", "Szip", "UDUNITS"]
 
         libs = ''
         includes = ''
@@ -160,13 +160,14 @@ class EB_NCL(EasyBlock):
 #define BuildNCL 1
 #define HDFlib
 #define HDFEOSlib
-#define UdUnitslib
 #define BuildGRIB2 1
+#define BuildESMF 1
+
+#define UdUnitslib -ludunits2
 
 #define BuildRasterHDF 0
 #define BuildHDF4 0
 #define BuildTRIANGLE 0
-#define BuildUdunits 0
 #define BuildHDFEOS 0
 #define BuildHDFEOS5 0
 
