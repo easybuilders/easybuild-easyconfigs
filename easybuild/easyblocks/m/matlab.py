@@ -54,7 +54,7 @@ class EB_MATLAB(EasyBlock):
     @staticmethod
     def extra_options():
         extra_vars = [
-                      ('java_options', ['-Xmx128M', "$_JAVA_OPTIONS value set for install and in module file.", CUSTOM]),
+                      ('java_options', ['-Xmx256m', "$_JAVA_OPTIONS value set for install and in module file.", CUSTOM]),
                      ]
         return EasyBlock.extra_options(extra_vars)
 
