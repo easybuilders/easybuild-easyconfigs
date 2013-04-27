@@ -30,6 +30,7 @@ EasyBuild support for installing MATLAB, implemented as an easyblock
 @author: Kenneth Hoste (Ghent University)
 @author: Pieter De Baets (Ghent University)
 @author: Jens Timmerman (Ghent University)
+@author: Fotis Georgatos (University of Luxembourg)
 """
 
 import re
@@ -37,13 +38,25 @@ import os
 import shutil
 
 from easybuild.framework.easyblock import EasyBlock
+from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.filetools import run_cmd
 
 
 class EB_MATLAB(EasyBlock):
     """Support for installing MATLAB."""
 
-    configfilename = "my_installer_input.txt"
+    def __init__(self, *args, **kwargs):
+        """Add extra config options specific to MATLAB."""
+        super(EB_MATLAB, self).__init__(*args, **kwargs)
+        self.comp_fam = None
+        self.configfilename = "my_installer_input.txt"
+
+    @staticmethod
+    def extra_options():
+        extra_vars = [
+                      ('java_options', ['-Xmx256m', "$_JAVA_OPTIONS value set for install and in module file.", CUSTOM]),
+                     ]
+        return EasyBlock.extra_options(extra_vars)
 
     def configure_step(self):
         """Configure MATLAB installation: create license file."""
@@ -56,7 +69,7 @@ class EB_MATLAB(EasyBlock):
                             "USE_SERVER",
                            ])
 
-        licfile = "%s/ResearchLicense.dat" % self.builddir
+        licfile = "%s/matlab.lic" % self.builddir
         try:
             f = file(licfile, "w")
             f.write(lictxt)
@@ -98,14 +111,27 @@ class EB_MATLAB(EasyBlock):
     def install_step(self):
         """MATLAB install procedure using 'install' command."""
 
+        src = os.path.join(self.cfg['start_dir'], 'install')
+
         # make sure install script is executable
         try:
-            os.chmod("install", 0755)
+            if os.path.isfile(src):
+                self.log.info("Doing chmod on source file %s" % src)
+                os.chmod(src, 0755)
+            else:
+                self.log.info("Did not find source file %s" % src)
         except OSError, err:
             self.log.error("Failed to chmod install script: %s" % err)
 
+        # make sure $DISPLAY is not defined, which may lead to (hard to trace) problems
+        # this is a workaround for not being able to specify --nodisplay to the install scripts
+        if 'DISPLAY' in os.environ:
+            os.environ.pop('DISPLAY')
+
+        if not '_JAVA_OPTIONS' in self.cfg['preinstallopts']:
+            self.cfg['preinstallopts'] = ('export _JAVA_OPTIONS="%s" && ' % self.cfg['java_options']) + self.cfg['preinstallopts']
         configfile = "%s/%s" % (self.builddir, self.configfilename)
-        cmd = 'export _JAVA_OPTIONS="-Xmx128M"; ./install -v -inputFile %s' % configfile
+        cmd = "%s ./install -v -inputFile %s %s" % (self.cfg['preinstallopts'], configfile, self.cfg['installopts'])
         run_cmd(cmd, log_all=True, simple=True)
 
     def sanity_check_step(self):
@@ -113,18 +139,18 @@ class EB_MATLAB(EasyBlock):
 
         custom_paths = {
                         'files': ["bin/matlab", "bin/mcc", "bin/glnxa64/MATLAB", "bin/glnxa64/mcc",
-                                  "runtime/glnxa64/libmwmclmcrrt.so"],
+                                  "runtime/glnxa64/libmwmclmcrrt.so", "toolbox/local/classpath.txt"],
                         'dirs': ["java/jar", "toolbox/compiler"],
                        }
 
         super(EB_MATLAB, self).sanity_check_step(custom_paths=custom_paths)
 
     def make_module_extra(self):
-        """Extend PATH and set proper _JAVA_OPTIONS (-Xmx)."""
+        """Extend PATH and set proper _JAVA_OPTIONS (e.g., -Xmx)."""
 
         txt = super(EB_MATLAB, self).make_module_extra()
 
-        txt += self.moduleGenerator.prepend_paths('PATH', ['/sbin'], allow_abs=True)
-        txt += self.moduleGenerator.set_environment('_JAVA_OPTIONS', "-Xmx128M")
+        txt += self.moduleGenerator.set_environment('_JAVA_OPTIONS', self.cfg['java_options'])
 
         return txt
+
