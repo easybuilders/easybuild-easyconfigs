@@ -48,8 +48,8 @@ class EB_Perl(ConfigureMake):
         configopts = ' '.join([
             self.cfg['configopts'],
             "-Dusethreads",
-            '-Dcc="$CC"',
-            '-Dccflags="$CFLAGS"',
+            '-Dcc="%s"' % os.getenv('CC'),
+            '-Dccflags="%s"' % os.getenv('CFLAGS'),
             '-Dinc_version_list=none',
         ])
         cmd = './Configure -de %s -Dprefix="%s" ' % (configopts, self.installdir)
