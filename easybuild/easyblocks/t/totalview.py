@@ -45,9 +45,9 @@ class EB_TotalView(EasyBlock):
         binpath_t = 'toolworks/%s.%s/bin/' % (self.name.lower(), self.version) + 'tv%s'
 
         custom_paths = {
-                              'files': [binpath_t % i for i in ['8', '8cli', 'dbootstrap', 'dsvr', 'script']],
-                              'dirs': []
-                             }
+                        'files': [binpath_t % i for i in ['8', '8cli', 'dbootstrap', 'dsvr', 'script']],
+                        'dirs': []
+                       }
 
         super(EB_TotalView, self).sanity_check_step(custom_paths=custom_paths)
 
@@ -60,7 +60,15 @@ class EB_TotalView(EasyBlock):
         guesses.update({
                         'PATH': [os.path.join(prefix, 'bin')],
                         'MANPATH': [os.path.join(prefix, 'man')],
-                        
                        })
 
         return guesses
+
+    def make_module_extra(self):
+        """Add extra environment variables for license file and anything else."""
+
+        txt = super(EB_TotalView, self).make_module_extra()
+
+        txt += self.moduleGenerator.prepend_paths('LM_LICENSE_FILE', self.cfg['license_file'], allow_abs=True)
+
+        return txt
