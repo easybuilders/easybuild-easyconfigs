@@ -1,0 +1,39 @@
+--- linux64/makefile.orig	2012-12-12 13:31:54.000000000 +0100
++++ linux64/makefile	2013-04-28 16:29:40.547843966 +0200
+@@ -8,7 +8,7 @@ CPP = g++
+ CPPFLAGS = -I.. -I../gwnum -DX86_64 -O2
+ 
+ LFLAGS = -Wl,-M
+-LIBS = ../gwnum/gwnum.a ../gwnum/gwnum.ld -lm -lpthread -Wl,-Bstatic $(shell pkg-config --static --libs libcurl) -lstdc++ -Wl,-Bdynamic -ldl
++LIBS = ../gwnum/gwnum.a ../gwnum/gwnum.ld -lm -lpthread $(shell pkg-config --libs libcurl) -lstdc++ 
+ 
+ FACTOROBJ = factor64.o
+ LINUXOBJS = prime.o menu.o
+@@ -16,19 +16,25 @@ EXE      = mprime
+ 
+ #########################################################################
+ 
+-$(EXE): security $(LINUXOBJS) $(FACTOROBJ)
++$(EXE): build_gwnum64 security $(LINUXOBJS) $(FACTOROBJ)
+ 	$(CC) $(LFLAGS) -o $(EXE) $(LINUXOBJS) $(FACTOROBJ) $(LIBS)
+ 
++build_gwnum64:
++	make -C ../gwnum -f make64
++
+ security:
+ 	[ ! -e ../security.h ] && touch ../security.h || true
+ 	[ ! -e ../security.c ] && touch ../security.c || true
+ 	[ ! -e ../secure5.c ] && touch ../secure5.c || true
+ 
+ clean:
+-	rm -f $(EXE) $(EXE2) $(LINUXOBJS) $(FACTOROBJ)
++	rm -f $(EXE) $(EXE2) $(LINUXOBJS)
+ 
+ .c.o:
+ 	$(CC) $(CFLAGS) -c $<
+ 
+ .cpp.o:
+ 	$(CPP) $(CPPFLAGS) -c $<
++
++install:
++	install -Dm755 mprime ${PREFIX}/bin/mprime
