@@ -37,7 +37,7 @@ from distutils.version import LooseVersion
 from vsc import fancylogger
 from unittest import TestCase, TestLoader, main
 
-import easybuild.main
+import easybuild.main as main
 from easybuild.framework.easyblock import EasyBlock, get_class
 from easybuild.framework.easyconfig.easyconfig import EasyConfig
 from easybuild.framework.easyconfig.tools import get_paths_for
@@ -57,7 +57,7 @@ class EasyConfigTest(TestCase):
         def test_dep_graph(self):
             """Unit test that builds a full dependency graph."""
             # make sure a logger is present for main
-            easybuild.main.log = self.log
+            main._log = self.log
 
             # temporary file for dep graph
             (hn, fn) = tempfile.mkstemp(suffix='.dot')
