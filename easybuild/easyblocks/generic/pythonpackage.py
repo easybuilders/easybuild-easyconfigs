@@ -34,6 +34,7 @@ EasyBuild support for Python packages, implemented as an easyblock
 import os
 import tempfile
 from os.path import expanduser
+from vsc import fancylogger
 
 import easybuild.tools.environment as env
 from easybuild.easyblocks.python import EXTS_FILTER_PYTHON_PACKAGES
@@ -46,16 +47,15 @@ from easybuild.tools.modules import get_software_root, get_software_version
 def det_pylibdir():
     """Determine Python library directory."""
 
-    # we can't simply import distutils.sysconfig, because then we would be talking to the system Python
-    cmd = ''.join([
-        'python -c "',
-        'import os;',
-        'import distutils.sysconfig;',
-        'print (os.path.join(*distutils.sysconfig.get_python_lib().split(os.sep)[-3:]));',
-        '"',
-    ])
-    (out, _) = run_cmd(cmd, simple=False)
-    return out.strip()
+    # note: we can't rely on distutils.sysconfig.get_python_lib(),
+    # since setuptools and distribute hardcode 'lib/python2.X/site-packages'
+    pyver = get_software_version('Python')
+    if not pyver:
+        log = fancylogger.getLogger('det_pylibdir', fname=False)
+        log.error("Python module not loaded.")
+    else:
+        short_pyver = '.'.join(pyver.split('.')[:2])
+        return "lib/python%s/site-packages" % short_pyver
 
 
 class PythonPackage(ExtensionEasyBlock):
