@@ -52,7 +52,7 @@ def det_pylibdir():
     pyver = get_software_version('Python')
     if not pyver:
         log = fancylogger.getLogger('det_pylibdir', fname=False)
-        log.error("Python module not loaded?")
+        log.error("Python module not loaded.")
     else:
         short_pyver = '.'.join(pyver.split('.')[:2])
         return "lib/python%s/site-packages" % short_pyver
