@@ -46,7 +46,7 @@ class EB_Bowtie(ConfigureMake):
         """
         Set compilers in makeopts, there is no configure script.
         """
-        self.cfg.update('makeopts', 'CPP="%(CC)s" CC="%(CC)s"' % {'CC': os.getenv('CC')})
+        self.cfg.update('makeopts', 'CC="%s" CPP="%s"' % (os.getenv('CC'), os.getenv('CXX')))
 
     def install_step(self):
         """
