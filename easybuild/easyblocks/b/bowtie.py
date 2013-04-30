@@ -46,7 +46,7 @@ class EB_Bowtie(ConfigureMake):
         """
         Set compilers in makeopts, there is no configure script.
         """
-        self.cfg['makeopts'] = self.cfg['makeopts'] + 'CPP="$CPP" CC="$CC"'
+        self.cfg.update('makeopts', 'CPP="%(CC)s" CC="%(CC)s"' % {'CC': os.getenv('CC')})
 
     def install_step(self):
         """
@@ -60,7 +60,7 @@ class EB_Bowtie(ConfigureMake):
             for filename in ['bowtie-build', 'bowtie', 'bowtie-inspect']:
                 srcfile = os.path.join(srcdir, filename)
                 shutil.copy2(srcfile, destdir)
-        except OSError, err:
+        except (IOError, OSError), err:
             self.log.error("Copying %s to installation dir %s failed: %s" % (srcfile, destdir, err))
 
     def sanity_check_step(self):
