@@ -28,6 +28,7 @@ Unit tests for easyconfig files.
 @author: Kenneth Hoste (Ghent University)
 """
 
+import copy
 import glob
 import os
 import re
@@ -35,6 +36,7 @@ import sys
 import tempfile
 from distutils.version import LooseVersion
 from vsc import fancylogger
+from vsc.utils.missing import nub
 from unittest import TestCase, TestLoader, main
 
 import easybuild.main as main
@@ -43,7 +45,6 @@ from easybuild.framework.easyconfig.easyconfig import EasyConfig
 from easybuild.framework.easyconfig.tools import get_paths_for
 from easybuild.main import dep_graph, resolve_dependencies, process_easyconfig
 
-easyconfigs = []
 
 class EasyConfigTest(TestCase):
     """Baseclass for easyconfig testcases."""
@@ -51,31 +52,72 @@ class EasyConfigTest(TestCase):
     log = fancylogger.getLogger("EasyConfigTest", fname=False)
     name_regex = re.compile("^name\s*=\s*['\"](.*)['\"]$", re.M)
     easyblock_regex = re.compile(r"^\s*easyblock\s*=['\"](.*)['\"]$", re.M)
+    # make sure a logger is present for main
+    main._log = log
+    ordered_specs = None
+
+    def process_all_easyconfigs(self):
+        """Process all easyconfigs and resolve inter-easyconfig dependencies."""
+        # all available easyconfig files
+        easyconfigs_path = get_paths_for("easyconfigs")[0]
+        specs = glob.glob('%s/*/*/*.eb' % easyconfigs_path)
+
+        # parse all easyconfigs
+        easyconfigs = []
+        for spec in specs:
+            easyconfigs.extend(process_easyconfig(spec, validate=False))
+
+        self.ordered_specs = resolve_dependencies(easyconfigs, easyconfigs_path)
 
     # pygraph dependencies required for constructing dependency graph are not available prior to Python 2.6
     if LooseVersion(sys.version) >= LooseVersion('2.6'):
         def test_dep_graph(self):
             """Unit test that builds a full dependency graph."""
-            # make sure a logger is present for main
-            main._log = self.log
-
             # temporary file for dep graph
             (hn, fn) = tempfile.mkstemp(suffix='.dot')
             os.close(hn)
 
-            # all available easyconfig files
-            easyconfigs_path = get_paths_for("easyconfigs")[0]
-            specs = glob.glob('%s/*/*/*.eb' % easyconfigs_path)
+            if self.ordered_specs is None:
+                self.process_all_easyconfigs()
 
-            # parse all easyconfigs
-            easyconfigs = []
-            for spec in specs:
-                easyconfigs.extend(process_easyconfig(spec, validate=False))
-
-            ordered_specs = resolve_dependencies(easyconfigs, easyconfigs_path)
-            dep_graph(fn, ordered_specs, silent=True)
+            dep_graph(fn, self.ordered_specs, silent=True)
     else:
         print "(skipped dep graph test)"
+
+    def test_conflicts(self):
+        """Check whether any conflicts occur in software dependency graphs."""
+        if self.ordered_specs is None:
+            self.process_all_easyconfigs()
+
+        # construct a dictionary: (name, installver) tuple to dependencies
+        depmap = {}
+        for spec in self.ordered_specs:
+            depmap.update({spec['module']: spec['unresolvedDependencies']})
+
+        # iteratively expand list of dependencies until we reach the end (toolchain)
+        depmap_last = None
+        while depmap != depmap_last:
+            depmap_last = copy.deepcopy(depmap)
+            for (spec, dependencies) in depmap_last.items():
+                for dep in dependencies:
+                    depmap[spec].extend(depmap[dep])
+                depmap[spec] = sorted(nub(depmap[spec]))
+
+        # for each of the easyconfigs, check whether the dependencies contain any conflicts
+        conflicts = False
+        for ((name, installver), dependencies) in depmap.items():
+            for (name_dep1, installver_dep1) in dependencies:
+                for (name_dep2, installver_dep2) in dependencies:
+                    # dependencies with the same name should have the exact same install version
+                    # if not => CONFLICT!
+                    # GHC is an exception, since it has a BUILD dependency on its own
+                    if name_dep1 == name_dep2 and name_dep1 != 'GHC' and installver_dep1 != installver_dep2:
+                        specname = '%s-%s' % (name, installver)
+                        vs_msg = "%s-%s vs %s-%s" % (name_dep1, installver_dep1, name_dep2, installver_dep2)
+                        print "Conflict found for dependencies of %s: %s" % (specname, vs_msg)
+                        conflicts = True
+        self.assertTrue(not conflicts, "No conflicts detected")
+
 
 def template_easyconfig_test(self, spec):
     """Test whether all easyconfigs can be initialized."""
@@ -93,7 +135,6 @@ def template_easyconfig_test(self, spec):
 
     # parse easyconfig 
     ec = EasyConfig(spec, validate=False)
-    easyconfigs.append(ec)
 
     # sanity check for software name
     self.assertTrue(ec['name'], name) 
