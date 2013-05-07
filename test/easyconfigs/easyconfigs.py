@@ -92,29 +92,33 @@ class EasyConfigTest(TestCase):
         # construct a dictionary: (name, installver) tuple to dependencies
         depmap = {}
         for spec in self.ordered_specs:
-            depmap.update({spec['module']: spec['unresolvedDependencies']})
+            depmap.update({spec['module']: [spec['builddependencies'], spec['unresolvedDependencies']]})
 
-        # iteratively expand list of dependencies until we reach the end (toolchain)
+        # iteratively expand list of (non-build) dependencies until we reach the end (toolchain)
         depmap_last = None
         while depmap != depmap_last:
             depmap_last = copy.deepcopy(depmap)
-            for (spec, dependencies) in depmap_last.items():
+            for (spec, (builddependencies, dependencies)) in depmap_last.items():
+                # extend dependencies with non-build dependencies of own dependencies
                 for dep in dependencies:
-                    depmap[spec].extend(depmap[dep])
-                depmap[spec] = sorted(nub(depmap[spec]))
+                    if dep not in builddependencies:
+                        depmap[spec][1].extend(depmap[dep][1])
+                depmap[spec][1] = sorted(nub(depmap[spec][1]))
 
         # for each of the easyconfigs, check whether the dependencies contain any conflicts
         conflicts = False
-        for ((name, installver), dependencies) in depmap.items():
-            for (name_dep1, installver_dep1) in dependencies:
-                for (name_dep2, installver_dep2) in dependencies:
+        for ((name, installver), (builddependencies, dependencies)) in depmap.items():
+            # only consider non-build dependencies
+            non_build_deps = [d for d in dependencies if d not in builddependencies]
+            for (name_dep1, installver_dep1) in non_build_deps:
+                # also make sure that module for easyconfig doesn't conflict with any of its dependencies
+                for (name_dep2, installver_dep2) in [(name, installver)] + non_build_deps:
                     # dependencies with the same name should have the exact same install version
                     # if not => CONFLICT!
-                    # GHC is an exception, since it has a BUILD dependency on its own
-                    if name_dep1 == name_dep2 and name_dep1 != 'GHC' and installver_dep1 != installver_dep2:
+                    if name_dep1 == name_dep2 and installver_dep1 != installver_dep2:
                         specname = '%s-%s' % (name, installver)
                         vs_msg = "%s-%s vs %s-%s" % (name_dep1, installver_dep1, name_dep2, installver_dep2)
-                        print "Conflict found for dependencies of %s: %s" % (specname, vs_msg)
+                        print "Conflict found for (non-build) dependencies of %s: %s" % (specname, vs_msg)
                         conflicts = True
         self.assertTrue(not conflicts, "No conflicts detected")
 
