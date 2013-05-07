@@ -110,9 +110,10 @@ class EasyConfigTest(TestCase):
         for ((name, installver), (builddependencies, dependencies)) in depmap.items():
             # only consider non-build dependencies
             non_build_deps = [d for d in dependencies if d not in builddependencies]
-            for (name_dep1, installver_dep1) in non_build_deps:
+            for i in xrange(len(non_build_deps)):
+                (name_dep1, installver_dep1) = non_build_deps[i]
                 # also make sure that module for easyconfig doesn't conflict with any of its dependencies
-                for (name_dep2, installver_dep2) in [(name, installver)] + non_build_deps:
+                for (name_dep2, installver_dep2) in [(name, installver)] + non_build_deps[i+1:]:
                     # dependencies with the same name should have the exact same install version
                     # if not => CONFLICT!
                     if name_dep1 == name_dep2 and installver_dep1 != installver_dep2:
