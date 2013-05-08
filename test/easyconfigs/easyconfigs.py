@@ -121,7 +121,7 @@ class EasyConfigTest(TestCase):
                         vs_msg = "%s-%s vs %s-%s" % (name_dep1, installver_dep1, name_dep2, installver_dep2)
                         print "Conflict found for (non-build) dependencies of %s: %s" % (specname, vs_msg)
                         conflicts = True
-        self.assertTrue(not conflicts, "No conflicts detected")
+        self.assertFalse(conflicts, "No conflicts detected")
 
 
 def template_easyconfig_test(self, spec):
