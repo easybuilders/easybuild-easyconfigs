@@ -35,6 +35,7 @@ import os
 import re
 import tempfile
 
+import easybuild.tools.environment as env
 from easybuild.easyblocks.generic.fortranpythonpackage import FortranPythonPackage
 from easybuild.tools.filetools import rmtree2, run_cmd
 from easybuild.tools.modules import get_software_root
@@ -64,7 +65,7 @@ class EB_numpy(FortranPythonPackage):
                                   "search_static_first=True",
                                  ])
 
-        if get_software_root("IMKL"):
+        if get_software_root("imkl"):
 
             extrasiteconfig = '\n'.join([
                                          "[mkl]",
@@ -73,8 +74,6 @@ class EB_numpy(FortranPythonPackage):
                                         ])
 
         elif get_software_root("ATLAS"):
-            # using the [atlas] section is required to trigger the build of _dotblas.so,
-            # which is critical for decent performance of the numpy.dot (matrix dot product) function!
             extrasiteconfig = '\n'.join(["[atlas]",
                                          "atlas_libs = %(lapack)s",
                                         ])
@@ -127,6 +126,10 @@ class EB_numpy(FortranPythonPackage):
                                "handle -Wl linker flags correctly, which doesn't seem to be there.")
 
         else:
+            # unless Intel MKL is used, $ATLAS should be set to take full control,
+            # and to make sure a fully optimized version is built, including _dotblas.so
+            # which is critical for decent performance of the numpy.dot (matrix dot product) function!
+            env.setvar('ATLAS', '1')
 
             blas = ', '.join([x for x in self.toolchain.get_variable('LIBBLAS_MT', typ=list) if x != "pthread"])
             lapack = ', '.join([x for x in self.toolchain.get_variable('LIBLAPACK_MT', typ=list) if x != "pthread"])
@@ -177,6 +180,7 @@ class EB_numpy(FortranPythonPackage):
         (out, ec) = run_cmd(cmd, simple=False)
         self.log.debug("Test output: %s" % out)
 
+        # fetch result
         time_msec = None
         msec_re = re.compile("\d+ loops, best of \d+: (?P<time>[0-9.]+) msec per loop")
         res = msec_re.search(out)
@@ -190,6 +194,7 @@ class EB_numpy(FortranPythonPackage):
             else:
                 self.log.error("Failed to determine time for numpy.dot test run.")
 
+        # make sure we observe decent performance
         if time_msec < max_time_msec:
             self.log.info("Time for %(size)dx%(size)d matrix dot product: %(time)d msec < %(maxtime)d msec => OK" %
                 {'size': size, 'time': time_msec, 'maxtime': max_time_msec})
