@@ -33,9 +33,10 @@ EasyBuild support for building and installing numpy, implemented as an easyblock
 """
 import os
 import re
+import tempfile
 
 from easybuild.easyblocks.generic.fortranpythonpackage import FortranPythonPackage
-from easybuild.tools.filetools import rmtree2
+from easybuild.tools.filetools import rmtree2, run_cmd
 from easybuild.tools.modules import get_software_root
 
 
@@ -72,6 +73,8 @@ class EB_numpy(FortranPythonPackage):
                                         ])
 
         elif get_software_root("ATLAS"):
+            # using the [atlas] section is required to trigger the build of _dotblas.so,
+            # which is critical for decent performance of the numpy.dot (matrix dot product) function!
             extrasiteconfig = '\n'.join(["[atlas]",
                                          "atlas_libs = %(lapack)s",
                                         ])
@@ -142,6 +145,71 @@ class EB_numpy(FortranPythonPackage):
                                       }
 
         super(EB_numpy, self).configure_step()
+
+    def test_step(self):
+        """Run available numpy unit tests, and more."""
+        super(EB_numpy, self).test_step()
+
+        # temporarily install numpy, it doesn't alow to be used straight from the source dir
+        tmpdir = tempfile.mkdtemp()
+        cmd = "python setup.py install --prefix=%s %s" % (tmpdir, self.installopts)
+        run_cmd(cmd, log_all=True, simple=True)
+
+        try:
+            pwd = os.getcwd()
+            os.chdir(tmpdir)
+        except OSError, err:
+            self.log.error("Faild to change to %s: %s" % (tmpdir, err))
+
+        # evaluate performance of numpy.dot (3 runs, 3 loops each)
+        size = 1000
+        max_time_msec = 1000  # 1 second should really do it for a 1000x1000 matrix dot product
+        cmd = ' '.join([
+            'export PYTHONPATH=%s:$PYTHONPATH &&' % os.path.join(tmpdir, self.pylibdir),
+            'python -m timeit -n 3 -r 3',
+            '-s "import numpy; x = numpy.random.random((%(size)d, %(size)d))"' % {'size': size},
+            '"numpy.dot(x, x.T)"',
+        ])
+        (out, ec) = run_cmd(cmd, simple=False)
+        self.log.debug("Test output: %s" % out)
+
+        time_msec = None
+        msec_re = re.compile("\d+ loops, best of \d+: (?P<time>[0-9.]+) msec per loop")
+        res = msec_re.search(out)
+        if res:
+            time_msec = float(res.group('time'))
+        else:
+            sec_re = re.compile("\d+ loops, best of \d+: (?P<time>[0-9.]+) sec per loop")
+            res = sec_re.search(out)
+            if res:
+                time_msec = 1000 * float(res.group('time'))
+            else:
+                self.log.error("Failed to determine time for numpy.dot test run.")
+
+        self.log.info("Time for %(size)dx%(size)d matrix dot product: %(time)d msec." %
+            {'size': size, 'time': time_msec})
+        if time_msec < max_time_msec:
+            self.log.info("%d msec < %d msec, so assumed to be OK." % (time_msec, max_time_msec))
+        else:
+            self.log.error("%d msec >= %d msec, which is clearly a problem." % (time_msec, max_time_msec))
+
+        try:
+            os.chdir(pwd)
+            rmtree2(tmpdir)
+        except OSError, err:
+            self.log.error("Failed to change back to %s: %s" % (pwd, err))
+
+    def sanity_check_step(self, *args, **kwargs):
+        """Custom sanity check for numpy."""
+
+        custom_paths = {
+            'files': [os.path.join(self.pylibdir, 'numpy', 'core', '_dotblas.so')],
+            'dirs': [],
+        }
+        custom_commands = [
+            'python -c "import numpy"',
+            'python -c "import numpy.core._dotblas"',  # this is required for decent performance of numpy.dot()
+        ]
 
     def install_step(self):
         """Install numpy and remove numpy build dir, so scipy doesn't find it by accident."""
