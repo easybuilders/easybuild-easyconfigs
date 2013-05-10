@@ -73,7 +73,7 @@ class EB_numpy(FortranPythonPackage):
                                          "mkl_libs = %(blas)s",
                                         ])
 
-        elif get_software_root("ATLAS"):
+        elif get_software_root("ATLAS") or get_software_root("OpenBLAS"):
             extrasiteconfig = '\n'.join(["[atlas]",
                                          "atlas_libs = %(lapack)s",
                                         ])
