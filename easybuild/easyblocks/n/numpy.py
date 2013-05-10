@@ -146,6 +146,10 @@ class EB_numpy(FortranPythonPackage):
 
         super(EB_numpy, self).configure_step()
 
+        # check configuration (for debugging purposes)
+        cmd = "python setup.py config"
+        run_cmd(cmd, log_all=True, simple=True)
+
     def test_step(self):
         """Run available numpy unit tests, and more."""
         super(EB_numpy, self).test_step()
@@ -186,12 +190,12 @@ class EB_numpy(FortranPythonPackage):
             else:
                 self.log.error("Failed to determine time for numpy.dot test run.")
 
-        self.log.info("Time for %(size)dx%(size)d matrix dot product: %(time)d msec." %
-            {'size': size, 'time': time_msec})
         if time_msec < max_time_msec:
-            self.log.info("%d msec < %d msec, so assumed to be OK." % (time_msec, max_time_msec))
+            self.log.info("Time for %(size)dx%(size)d matrix dot product: %(time)d msec < %(maxtime)d msec => OK" %
+                {'size': size, 'time': time_msec, 'maxtime': max_time_msec})
         else:
-            self.log.error("%d msec >= %d msec, which is clearly a problem." % (time_msec, max_time_msec))
+            self.log.error("Time for %(size)dx%(size)d matrix dot product: %(time)d msec >= %(maxtime)d msec => ERROR" %
+                {'size': size, 'time': time_msec, 'maxtime': max_time_msec})
 
         try:
             os.chdir(pwd)
