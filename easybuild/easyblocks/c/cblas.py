@@ -67,7 +67,7 @@ class EB_CBLAS(ConfigureMake):
         Install CBLAS: copy libraries to install path.
         """
         try:
-            srcdir = os.path.join(self.builddir, 'lib')
+            srcdir = os.path.join(self.cfg['start_dir'], 'lib')
             targetdir = os.path.join(self.installdir, 'lib')
             os.makedirs(targetdir)
             
