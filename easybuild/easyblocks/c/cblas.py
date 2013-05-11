@@ -75,7 +75,7 @@ class EB_CBLAS(ConfigureMake):
             shutil.copy2(os.path.join(srcdir, 'cblas_LINUX.a'), os.path.join(targetdir, 'libcblas.a'))
             srclib = os.path.join(srcdir, 'libcblas.so')
             if os.path.exists(srclib):
-                for solib in glob.glob(os.path.join(srcdir, 'libcblas.so*'):
+                for solib in glob.glob(os.path.join(srcdir, 'libcblas.so*')):
                     shutil.copy2(solib, targetdir)
         except OSError, err:
             self.log.error("Failed to install CBLAS: %s" % err)
