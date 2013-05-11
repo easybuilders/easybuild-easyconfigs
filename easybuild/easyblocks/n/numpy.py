@@ -73,18 +73,15 @@ class EB_numpy(FortranPythonPackage):
                                          "mkl_libs = %(blas)s",
                                         ])
 
-        elif get_software_root("ATLAS") or get_software_root("OpenBLAS"):
+        else:
+            # this is the only real alternative, even for non-ATLAS BLAS libs (e.g., OpenBLAS, ACML, ...)
+            # using the [blas] and [lapack] sections results in sub-optimal builds that don't provide _dotblas.so
+            # it does require a CBLAS interface to be available for the BLAS library being used
+            # e.g. for ACML, an additional module providing a CBLAS interface needs to be used
             extrasiteconfig = '\n'.join(["[atlas]",
                                          "atlas_libs = %(lapack)s",
                                         ])
-        else:
-            extrasiteconfig = '\n'.join(["[blas]",
-                                         "blas_libs = %(blas)s",
-                                         "[lapack]",
-                                         "lapack_libs = %(lapack)s",
-                                        ])
 
-        blas = None
         lapack = None
         fft = None
 
@@ -105,7 +102,6 @@ class EB_numpy(FortranPythonPackage):
                 libs.SEPARATOR = ','
                 return str(libs)  # str causes list concatenation and adding prefixes & separators
 
-            blas = get_libs_for_mkl('BLAS_MT')
             lapack = get_libs_for_mkl('LAPACK_MT')
             fft = get_libs_for_mkl('FFT')
 
@@ -131,9 +127,14 @@ class EB_numpy(FortranPythonPackage):
             # which is critical for decent performance of the numpy.dot (matrix dot product) function!
             env.setvar('ATLAS', '1')
 
-            blas = ', '.join([x for x in self.toolchain.get_variable('LIBBLAS_MT', typ=list) if x != "pthread"])
             lapack = ', '.join([x for x in self.toolchain.get_variable('LIBLAPACK_MT', typ=list) if x != "pthread"])
             fft = ', '.join(self.toolchain.get_variable('LIBFFT', typ=list))
+
+        if get_software_root('ACML'):
+            if get_software_root('CBLAS'):
+                lapack += ", cblas"
+            else:
+                self.log.error("CBLAS is required next to ACML to provide a C interface to BLAS, but it's not loaded.")
 
         if fft:
             extrasiteconfig += "\n[fftw]\nlibraries = %s" % fft
@@ -142,7 +143,6 @@ class EB_numpy(FortranPythonPackage):
 
         self.sitecfg = self.sitecfg % {
                                        'lapack': lapack,
-                                       'blas': blas,
                                        'libs': ':'.join(self.toolchain.get_variable('LDFLAGS', typ=list)),
                                        'includes': ':'.join(self.toolchain.get_variable('CPPFLAGS', typ=list))
                                       }
