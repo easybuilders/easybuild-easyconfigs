@@ -57,7 +57,7 @@ class EB_CBLAS(ConfigureMake):
         self.cfg.update('makeopts', 'CFLAGS="%s -DADD_"' % os.getenv('CFLAGS'))
         self.cfg.update('makeopts', 'FFLAGS="%s -DADD_"' % os.getenv('FFLAGS'))
         blas_lib_dir = os.getenv('BLAS_LIB_DIR')
-        blas_libs = [os.path.join(blas_lib_dir, lib) for lib in os.getenv('BLAS_STATIC_LIBS')]
+        blas_libs = [os.path.join(blas_lib_dir, lib) for lib in os.getenv('BLAS_STATIC_LIBS').split(',')]
         self.cfg.update('makeopts', 'BLLIB="%s"' % ' '.join(blas_libs))
 
     # default build procedure should do
