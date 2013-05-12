@@ -59,28 +59,31 @@ class EB_numpy(FortranPythonPackage):
 
         # see e.g. https://github.com/numpy/numpy/pull/2809/files
         self.sitecfg = '\n'.join([
-                                  "[DEFAULT]",
-                                  "library_dirs = %(libs)s",
-                                  "include_dirs= %(includes)s",
-                                  "search_static_first=True",
-                                 ])
+                "[DEFAULT]",
+                "library_dirs = %(libs)s",
+                "include_dirs= %(includes)s",
+                "search_static_first=True",
+            ])
 
         if get_software_root("imkl"):
 
             extrasiteconfig = '\n'.join([
-                                         "[mkl]",
-                                         "lapack_libs = %(lapack)s",
-                                         "mkl_libs = %(blas)s",
-                                        ])
+                "[mkl]",
+                "lapack_libs = %(lapack)s",
+                "mkl_libs = %(blas)s",
+            ])
 
         else:
-            # this is the only real alternative, even for non-ATLAS BLAS libs (e.g., OpenBLAS, ACML, ...)
-            # using the [blas] and [lapack] sections results in sub-optimal builds that don't provide _dotblas.so
+            # [atlas] the only real alternative, even for non-ATLAS BLAS libs (e.g., OpenBLAS, ACML, ...)
+            # using only the [blas] and [lapack] sections results in sub-optimal builds that don't provide _dotblas.so;
             # it does require a CBLAS interface to be available for the BLAS library being used
-            # e.g. for ACML, an additional module providing a CBLAS interface needs to be used
-            extrasiteconfig = '\n'.join(["[atlas]",
-                                         "atlas_libs = %(lapack)s",
-                                        ])
+            # e.g. for ACML, the CBLAS module providing a C interface needs to be used
+            extrasiteconfig = '\n'.join([
+                "[atlas]",
+                "atlas_libs = %(lapack)s",
+                "[lapack]",
+                "lapack_libs = %(lapack)s",  # required by scipy, that uses numpy's site.cfg
+            ])
 
         lapack = None
         fft = None
