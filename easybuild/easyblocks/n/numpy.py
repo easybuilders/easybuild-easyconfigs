@@ -130,9 +130,17 @@ class EB_numpy(FortranPythonPackage):
             lapack = ', '.join([x for x in self.toolchain.get_variable('LIBLAPACK_MT', typ=list) if x != "pthread"])
             fft = ', '.join(self.toolchain.get_variable('LIBFFT', typ=list))
 
+        libs = ':'.join(self.toolchain.get_variable('LDFLAGS', typ=list))
+        includes = ':'.join(self.toolchain.get_variable('CPPFLAGS', typ=list))
+
         if get_software_root('ACML'):
-            if get_software_root('CBLAS'):
-                lapack += ", cblas"
+            cblasroot = get_software_root('CBLAS')
+            if cblasroot:
+                lapack = ', '.join([lapack, "cblas"])
+                cblaslib = os.path.join(cblasroot, 'lib')
+                # with numpy as extension, CBLAS might not be included in LDFLAGS because it's not part of a toolchain
+                if not cblaslib in libs:
+                    libs = ':'.join([libs, cblaslib])
             else:
                 self.log.error("CBLAS is required next to ACML to provide a C interface to BLAS, but it's not loaded.")
 
@@ -142,10 +150,10 @@ class EB_numpy(FortranPythonPackage):
         self.sitecfg = '\n'.join([self.sitecfg, extrasiteconfig])
 
         self.sitecfg = self.sitecfg % {
-                                       'lapack': lapack,
-                                       'libs': ':'.join(self.toolchain.get_variable('LDFLAGS', typ=list)),
-                                       'includes': ':'.join(self.toolchain.get_variable('CPPFLAGS', typ=list))
-                                      }
+            'lapack': lapack,
+            'libs': libs,
+            'includes': includes,
+        }
 
         super(EB_numpy, self).configure_step()
 
