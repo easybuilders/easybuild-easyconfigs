@@ -230,6 +230,11 @@ class EB_numpy(FortranPythonPackage):
             ('python', '-c "import numpy"'),
             ('python', '-c "import numpy.core._dotblas"'),  # _dotblas is required for decent performance of numpy.dot()
         ]
+
+        # make sure the installation path is in $PYTHONPATH so the sanity check commands can work
+        pythonpath = os.environ.get('PYTHONPATH', '')
+        os.environ['PYTHONPATH'] = ':'.join([self.pylibdir, pythonpath])
+
         return super(EB_numpy, self).sanity_check_step(custom_paths=custom_paths, custom_commands=custom_commands)
 
     def install_step(self):
