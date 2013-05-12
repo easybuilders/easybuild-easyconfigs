@@ -85,6 +85,7 @@ class EB_numpy(FortranPythonPackage):
                 "lapack_libs = %(lapack)s",  # required by scipy, that uses numpy's site.cfg
             ])
 
+        blas = None
         lapack = None
         fft = None
 
@@ -105,6 +106,7 @@ class EB_numpy(FortranPythonPackage):
                 libs.SEPARATOR = ','
                 return str(libs)  # str causes list concatenation and adding prefixes & separators
 
+            blas = get_libs_for_mkl('BLAS_MT')
             lapack = get_libs_for_mkl('LAPACK_MT')
             fft = get_libs_for_mkl('FFT')
 
@@ -154,6 +156,7 @@ class EB_numpy(FortranPythonPackage):
         self.sitecfg = '\n'.join([self.sitecfg, extrasiteconfig])
 
         self.sitecfg = self.sitecfg % {
+            'blas': blas,
             'lapack': lapack,
             'libs': libs,
             'includes': includes,
