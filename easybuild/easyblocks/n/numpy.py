@@ -227,8 +227,8 @@ class EB_numpy(FortranPythonPackage):
             'dirs': [],
         }
         custom_commands = [
-            ('python', '-c "import numpy"',
-            ('python', '-c "import numpy.core._dotblas"',  # _dotblas is required for decent performance of numpy.dot()
+            ('python', '-c "import numpy"'),
+            ('python', '-c "import numpy.core._dotblas"'),  # _dotblas is required for decent performance of numpy.dot()
         ]
         return super(EB_numpy, self).sanity_check_step(custom_paths=custom_paths, custom_commands=custom_commands)
 
