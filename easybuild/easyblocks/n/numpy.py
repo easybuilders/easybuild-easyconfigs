@@ -136,6 +136,7 @@ class EB_numpy(FortranPythonPackage):
         libs = ':'.join(self.toolchain.get_variable('LDFLAGS', typ=list))
         includes = ':'.join(self.toolchain.get_variable('CPPFLAGS', typ=list))
 
+        # CBLAS is required for ACML, because it doesn't offer a C interface to BLAS
         if get_software_root('ACML'):
             cblasroot = get_software_root('CBLAS')
             if cblasroot:

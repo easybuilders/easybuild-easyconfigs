@@ -71,7 +71,7 @@ class EB_CBLAS(ConfigureMake):
             srcdir = os.path.join(self.cfg['start_dir'], 'lib')
             targetdir = os.path.join(self.installdir, 'lib')
             os.makedirs(targetdir)
-            
+
             shutil.copy2(os.path.join(srcdir, 'cblas_LINUX.a'), os.path.join(targetdir, 'libcblas.a'))
             srclib = os.path.join(srcdir, 'libcblas.so')
             if os.path.exists(srclib):
