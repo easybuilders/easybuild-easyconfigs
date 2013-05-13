@@ -101,7 +101,21 @@ class EB_PSI(ConfigureMake):
             self.log.error("Boost module not loaded.")
         self.cfg.update('configopts', "--with-boost=%s" % boostroot)
 
+        # enable support for plugins
+        self.cfg.update('configopts', "--with-plugins")
+
         super(EB_PSI, self).configure_step(cmd_prefix=self.cfg['start_dir'])
+
+    def install_step(self):
+        """Custom install procedure for PSI."""
+        super(EB_PSI, self).install_step()
+
+        # the obj and unpacked sources must remain available for working with plugins
+        try:
+            for subdir in ['obj', 'psi%s' % self.version]:
+                shutil.copytree(os.path.join(self.builddir, subdir), os.path.join(self.installdir, subdir))
+        except OSError, err:
+            self.log.error("Failed to copy obj and unpacked sources to install dir: %s" % err)
 
     def sanity_check_step(self):
         """Custom sanity check for PSI."""
