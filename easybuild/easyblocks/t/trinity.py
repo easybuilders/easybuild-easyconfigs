@@ -32,6 +32,7 @@ EasyBuild support for building and installing Trinity, implemented as an easyblo
 @author: Jens Timmerman (Ghent University)
 """
 import fileinput
+import glob
 import os
 import re
 import shutil
@@ -59,10 +60,10 @@ class EB_Trinity(EasyBlock):
         """Custom easyconfig parameters for Trinity."""
 
         extra_vars = [
-                      ('withsampledata', [False, "Include sample data", CUSTOM]),
-                      ('bwapluginver', [None, "BWA pugin version", CUSTOM]),
-                      ('RSEMmod', [False, "Enable RSEMmod", CUSTOM]),
-                     ]
+            ('withsampledata', [False, "Include sample data", CUSTOM]),
+            ('bwapluginver', [None, "BWA pugin version", CUSTOM]),
+            ('RSEMmod', [False, "Enable RSEMmod", CUSTOM]),
+        ]
 
         return EasyBlock.extra_options(extra_vars)
 
@@ -132,6 +133,36 @@ class EB_Trinity(EasyBlock):
         else:
             return make_flags
 
+    def jellyfish(self):
+        """use a seperate jellyfish source if it exists, otherwise, just install the bundled jellyfish"""
+        self.log.info("begin jellyfish")
+        self.log.info("startdir: %s", self.cfg['start_dir'])
+        jellyfishdir = glob.glob("%s../jellyfish-*" % self.cfg['start_dir'])
+        if jellyfishdir:
+            jellyfishdir = jellyfishdir[0]
+            # if there is a jellyfish directory
+            self.log.info("detected jellyfish directory %s, so using this source", jellyfishdir)
+            orig_jellyfishdir = os.path.join(self.cfg['start_dir'], 'trinity-plugins', 'jellyfish')
+            # remove original symlink
+            os.unlink(orig_jellyfishdir)
+            # create new one
+            os.symlink(jellyfishdir, orig_jellyfishdir)
+            try:
+                os.chdir(orig_jellyfishdir)
+            except OSError, err:
+                self.log.error("jellyfish plugin: failed to change to dst dir %s: %s" % (orig_jellyfishdir, err))
+
+            run_cmd('./configure --prefix=%s' % orig_jellyfishdir)
+            cc = os.getenv('CC')
+            cmd = "make CC='%s' CXX='%s' CFLAGS='%s'" % (cc, os.getenv('CXX'), os.getenv('CFLAGS'))
+            run_cmd(cmd)
+            os.chdir(self.cfg['start_dir'])
+        else:
+            self.log.info("no seperate source found for jellyfish, using shipped version")
+
+            self.trinityplugin('jellyfish')
+        self.log.info("end jellyfish")
+
     def kmer(self):
         """Install procedure for kmer (Meryl)."""
 
@@ -147,7 +178,7 @@ class EB_Trinity(EasyBlock):
         run_cmd(cmd)
 
         cmd = 'make -j 1 CCDEP="%s -MM -MG" CXXDEP="%s -MM -MG"' % (os.getenv('CC'),
-                                                                     os.getenv('CXX'))
+                                                                    os.getenv('CXX'))
         run_cmd(cmd)
 
         cmd = 'make install'
@@ -201,6 +232,7 @@ class EB_Trinity(EasyBlock):
                 self.trinityplugin('RSEM-mod', cc=os.getenv('CXX'))
 
         else:
+            self.jellyfish()
 
             inchworm_flags = self.inchworm(run=False)
             chrysalis_flags = self.chrysalis(run=False)
@@ -255,9 +287,9 @@ class EB_Trinity(EasyBlock):
 
         # these lists are definitely non-exhaustive, but better than nothing
         custom_paths = {
-                        'files': [os.path.join(path, x) for x in ['Inchworm/bin/inchworm', 'Chrysalis/Chrysalis']],
-                        'dirs': [os.path.join(path, x) for x in ['Butterfly/src/bin', 'util']]
-                       }
+            'files': [os.path.join(path, x) for x in ['Inchworm/bin/inchworm', 'Chrysalis/Chrysalis']],
+            'dirs': [os.path.join(path, x) for x in ['Butterfly/src/bin', 'util']]
+        }
 
         super(EB_Trinity, self).sanity_check_step(custom_paths=custom_paths)
 
@@ -267,7 +299,7 @@ class EB_Trinity(EasyBlock):
         guesses = super(EB_Trinity, self).make_module_req_guess()
 
         guesses.update({
-                        'PATH': [os.path.basename(self.cfg['start_dir'].strip('/'))],
-                       })
+            'PATH': [os.path.basename(self.cfg['start_dir'].strip('/'))],
+        })
 
         return guesses
