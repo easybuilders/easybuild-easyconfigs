@@ -161,7 +161,8 @@ class EB_ScaLAPACK(ConfigureMake):
         else:
 
             # determine interface
-            if self.toolchain.mpi_family() in [toolchain.OPENMPI, toolchain.MVAPICH2, toolchain.MPICH]:  #@UndefinedVariable
+            if self.toolchain.mpi_family() in [toolchain.OPENMPI, toolchain.MVAPICH2, toolchain.MPICH,  #@UndefinedVariable
+                                               toolchain.QLOGICMPI]:  #@UndefinedVariable
                 interface = 'Add_'
             else:
                 self.log.error("Don't know which interface to pick for the MPI library being used.")
