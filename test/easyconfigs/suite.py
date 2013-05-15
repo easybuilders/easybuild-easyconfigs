@@ -43,7 +43,7 @@ import test.easyconfigs.easyconfigs as e
 fd, log_fn = tempfile.mkstemp(prefix='easybuild-easyconfigs-tests-', suffix='.log')
 os.close(fd)
 fancylogger.logToFile(log_fn)
-log = fancylogger.getLogger()
+log = fancylogger.getLogger(fname=False)
 log.setLevelName('DEBUG')
 
 # call suite() for each module and then run them all
