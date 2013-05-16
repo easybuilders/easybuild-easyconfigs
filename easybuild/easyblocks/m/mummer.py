@@ -1,24 +1,27 @@
 ##
-# This file is an EasyBuild reciPY as per https://github.com/hpcugent/easybuild
-#
-# Copyright:: Copyright 2012-2013 University of Luxembourg/Luxembourg Centre for Systems Biomedicine
-# Authors::   Cedric Laczny <cedric.laczny@uni.lu>, Fotis Georgatos <fotis.georgatos@uni.lu>, Kenneth Hoste
-# License::   MIT/GPL
-# $Id$
 #
 # This work implements a part of the HPCBIOS project and is a component of the policy:
 # http://hpcbios.readthedocs.org/en/latest/HPCBIOS_2012-94.html
 ##
+# This file is an EasyBuild recipe as per https://github.com/hpcugent/easybuild
+#
+# Copyright:: Copyright 2012-2013 University of Luxembourg/Luxembourg Centre for Systems Biomedicine
+# Authors::   Cedric Laczny <cedric.laczny@uni.lu>, Fotis Georgatos <fotis.georgatos@uni.lu>, Kenneth Hoste, Matt Lesko <leskomw@mail.nih.gov>
+# License::   MIT/GPL
+# $Id$
 """
 EasyBuild support for building and installing MUMmer, implemented as an easyblock
 
 @author: Cedric Laczny (Uni.Lu)
 @author: Fotis Georgatos (Uni.Lu)
 @author: Kenneth Hoste (Ghent University)
+@author: Matt Lesko (NIH/NHGRI)
 """
 
 import os
 import shutil
+import fileinput
+import re
 
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 
@@ -38,8 +41,12 @@ class EB_MUMmer(ConfigureMake):
         self.bin_files = ["mummer", "annotate", "combineMUMs", "delta-filter", "gaps", "mgaps",
                           "repeat-match", "show-aligns", "show-coords", "show-tiling", "show-snps",
                           "show-diff", "exact-tandems", "mapview", "mummerplot", "nucmer", "promer",
-                          "run-mummer1", "run-mummer3", "nucmer2xfig", "dnadiff"]
+                          "run-mummer1", "run-mummer3", "nucmer2xfig", "dnadiff",]
+        self.scripts_files = [ "Foundation.pm", ]
         self.aux_bin_files = ["postnuc", "postpro", "prenuc", "prepro"]
+
+
+        self.fix_path_files = [ "dnadiff", "exact-tandems", "mapview", "mummerplot", "nucmer", "promer", "run-mummer1", "run-mummer3", ]
 
     def configure_step(self):
         """No configure"""
@@ -59,7 +66,9 @@ class EB_MUMmer(ConfigureMake):
         for srcdir, dest, files in [
                                     (self.cfg['start_dir'], 'bin', self.bin_files),
                                     (os.path.join(self.cfg['start_dir'], 'aux_bin'), os.path.join('bin', 'aux_bin'),
-                                     self.aux_bin_files)
+                                     self.aux_bin_files),
+                                    (os.path.join(self.cfg['start_dir'], 'scripts'), os.path.join('bin', 'scripts'),
+                                     self.scripts_files),
                                    ]:
 
             destdir = os.path.join(self.installdir, dest)        
@@ -69,6 +78,25 @@ class EB_MUMmer(ConfigureMake):
                 for filename in files:
                     srcfile = os.path.join(srcdir, filename)
                     shutil.copy2(srcfile, destdir)
+                    # Now, open the necessary files and do a search replace
+                    for fixfile in self.fix_path_files:
+                        # perhaps only do the first few lines?
+                        for line in fileinput.input(fixfile, inplace=1):
+                            if re.match('^.*use lib', line):
+                                print ''.join(['use lib "', destdir, '/scripts";', ])
+                            elif re.match('^.*my \$BIN_DIR =', line):
+                                print ''.join(['my $BIN_DIR = "', destdir, '";'])
+                            elif re.match('^.*my \$SCRIPT_DIR =', line):
+                                print ''.join(['my $SCRIPT_DIR = "', destdir, '/scripts";',])
+                            elif re.match('^.*my \$AUX_BIN_DIR =', line):
+                                print ''.join(['my $AUX_BIN_DIR = "', destdir, '/aux_bin";',])
+                            elif re.match('^.*set bindir = ', line):
+                                print ''.join(['set bindir = ', destdir, ]) 
+                            elif re.match('^.*set scriptdir = ', line):
+                                print ''.join(['set scriptdir = ', destdir, '/scripts']) 
+                            else:
+                                print line,
+
             except OSError, err:
                 self.log.error("Copying %s to installation dir %s failed: %s" % (srcfile, destdir, err))
 
