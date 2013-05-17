@@ -67,7 +67,7 @@ class EasyConfigTest(TestCase):
         for spec in specs:
             easyconfigs.extend(process_easyconfig(spec, validate=False))
 
-        self.ordered_specs = resolve_dependencies(easyconfigs, easyconfigs_path)
+        self.ordered_specs = resolve_dependencies(easyconfigs, easyconfigs_path, force=True)
 
     # pygraph dependencies required for constructing dependency graph are not available prior to Python 2.6
     if LooseVersion(sys.version) >= LooseVersion('2.6'):
@@ -156,6 +156,30 @@ def template_easyconfig_test(self, spec):
     # more sanity checks
     self.assertTrue(name, app.name)
     self.assertTrue(ec['version'], app.version)
+
+    # make sure all patch files are available
+    specdir = os.path.dirname(spec)
+    specfn = os.path.basename(spec)
+    for patch in ec['patches']:
+        if isinstance(patch, (tuple, list)):
+            patch = patch[0]
+        # only check actual patch files, not other files being copied via the patch functionality
+        if patch.endswith('.patch'):
+            patch_full = os.path.join(specdir, patch)
+            msg = "Patch file %s is available for %s" % (patch_full, specfn)
+            self.assertTrue(os.path.isfile(patch_full), msg)
+    ext_patches = []
+    for ext in ec['exts_list']:
+        if isinstance(ext, (tuple, list)) and len(ext) == 3:
+            self.assertTrue(isinstance(ext[2], dict), "3rd element of extension spec is a dictionary")
+            for ext_patch in ext[2].get('patches', []):
+                if isinstance(ext_patch, (tuple, list)):
+                    ext_patch = ext_patch[0]
+                # only check actual patch files, not other files being copied via the patch functionality
+                if ext_patch.endswith('.patch'):
+                    ext_patch_full = os.path.join(specdir, ext_patch)
+                    msg = "Patch file %s is available for %s" % (ext_patch_full, specfn)
+                    self.assertTrue(os.path.isfile(ext_patch_full), msg)
 
     app.close_log()
 
