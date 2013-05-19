@@ -61,6 +61,7 @@ class EB_ABAQUS(Binary):
                 "DOC_ROOT_TYPE=false",
                 "DOC_ROOT_ESCAPED=UNDEFINED",
                 "ABAQUSLM_LICENSE_FILE=@abaqusfea",
+                "LICENSE_SERVER_TYPE=FLEXNET",
                 "PRODUCT_NAME=Abaqus %s" % self.version,
                 "TMPDIR=%s" % self.builddir,
                 "INSTALL_MPI=1",
