@@ -74,10 +74,10 @@ class EasyConfigTest(TestCase):
 
         self.ordered_specs = resolve_dependencies(easyconfigs, easyconfigs_path, force=True)
 
-    # pygraph dependencies required for constructing dependency graph are not available prior to Python 2.6
-    if LooseVersion(sys.version) >= LooseVersion('2.6') and single_tests_ok:
-        def test_dep_graph(self):
-            """Unit test that builds a full dependency graph."""
+    def test_dep_graph(self):
+        """Unit test that builds a full dependency graph."""
+        # pygraph dependencies required for constructing dependency graph are not available prior to Python 2.6
+        if LooseVersion(sys.version) >= LooseVersion('2.6') and single_tests_ok:
             # temporary file for dep graph
             (hn, fn) = tempfile.mkstemp(suffix='.dot')
             os.close(hn)
@@ -86,13 +86,14 @@ class EasyConfigTest(TestCase):
                 self.process_all_easyconfigs()
 
             dep_graph(fn, self.ordered_specs, silent=True)
-    else:
-        print "(skipped dep graph test)"
+        else:
+            print "(skipped dep graph test)"
 
     def test_conflicts(self):
         """Check whether any conflicts occur in software dependency graphs."""
 
         if not single_tests_ok:
+            print "(skipped conflicts test)"
             return
 
         if self.ordered_specs is None:
