@@ -137,8 +137,8 @@ def template_easyconfig_test(self, spec):
     """Test whether all easyconfigs can be initialized."""
 
     # set to False, so it's False in case of this test failing
-    prev_single_tests_ok = single_tests_ok
     global single_tests_ok
+    prev_single_tests_ok = single_tests_ok
     single_tests_ok = False
 
     f = open(spec, 'r')
