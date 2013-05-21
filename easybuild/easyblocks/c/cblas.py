@@ -67,9 +67,9 @@ class EB_CBLAS(ConfigureMake):
         """
         Install CBLAS: copy libraries to install path.
         """
+        srcdir = os.path.join(self.cfg['start_dir'], 'lib')
+        targetdir = os.path.join(self.installdir, 'lib')
         try:
-            srcdir = os.path.join(self.cfg['start_dir'], 'lib')
-            targetdir = os.path.join(self.installdir, 'lib')
             os.makedirs(targetdir)
 
             shutil.copy2(os.path.join(srcdir, 'cblas_LINUX.a'), os.path.join(targetdir, 'libcblas.a'))
@@ -78,7 +78,7 @@ class EB_CBLAS(ConfigureMake):
                 for solib in glob.glob(os.path.join(srcdir, 'libcblas.so*')):
                     shutil.copy2(solib, targetdir)
         except OSError, err:
-            self.log.error("Failed to install CBLAS: %s" % err)
+            self.log.error("Failed to install CBLAS (srcdir: %s, targetdir: %s): %s" % (srcdir, targetdir, err))
 
     def sanity_check_step(self):
         """
