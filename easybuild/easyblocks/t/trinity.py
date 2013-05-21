@@ -156,6 +156,8 @@ class EB_Trinity(EasyBlock):
             cc = os.getenv('CC')
             cmd = "make CC='%s' CXX='%s' CFLAGS='%s'" % (cc, os.getenv('CXX'), os.getenv('CFLAGS'))
             run_cmd(cmd)
+            # the installstep is running the jellyfish script, this is a wrapper that will compile .lib/jellyfish
+            run_cmd("bin/jellyfish")
             os.chdir(self.cfg['start_dir'])
         else:
             self.log.info("no seperate source found for jellyfish, using shipped version")
