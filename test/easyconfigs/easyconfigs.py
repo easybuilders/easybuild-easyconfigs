@@ -46,6 +46,11 @@ from easybuild.framework.easyconfig.tools import get_paths_for
 from easybuild.main import dep_graph, resolve_dependencies, process_easyconfig
 
 
+# indicates whether all the single tests are OK,
+# and that bigger tests (building dep graph, testing for conflicts, ...) can be run as well
+# other than optimizing for time, this also helps to get around problems like http://bugs.python.org/issue10949
+single_tests_ok = True
+
 class EasyConfigTest(TestCase):
     """Baseclass for easyconfig testcases."""
         
@@ -67,10 +72,10 @@ class EasyConfigTest(TestCase):
         for spec in specs:
             easyconfigs.extend(process_easyconfig(spec, validate=False))
 
-        self.ordered_specs = resolve_dependencies(easyconfigs, easyconfigs_path)
+        self.ordered_specs = resolve_dependencies(easyconfigs, easyconfigs_path, force=True)
 
     # pygraph dependencies required for constructing dependency graph are not available prior to Python 2.6
-    if LooseVersion(sys.version) >= LooseVersion('2.6'):
+    if LooseVersion(sys.version) >= LooseVersion('2.6') and single_tests_ok:
         def test_dep_graph(self):
             """Unit test that builds a full dependency graph."""
             # temporary file for dep graph
@@ -86,6 +91,10 @@ class EasyConfigTest(TestCase):
 
     def test_conflicts(self):
         """Check whether any conflicts occur in software dependency graphs."""
+
+        if not single_tests_ok:
+            return
+
         if self.ordered_specs is None:
             self.process_all_easyconfigs()
 
@@ -127,6 +136,11 @@ class EasyConfigTest(TestCase):
 def template_easyconfig_test(self, spec):
     """Test whether all easyconfigs can be initialized."""
 
+    # set to False, so it's False in case of this test failing
+    global single_tests_ok
+    prev_single_tests_ok = single_tests_ok
+    single_tests_ok = False
+
     f = open(spec, 'r')
     spectxt = f.read()
     f.close()
@@ -157,7 +171,34 @@ def template_easyconfig_test(self, spec):
     self.assertTrue(name, app.name)
     self.assertTrue(ec['version'], app.version)
 
+    # make sure all patch files are available
+    specdir = os.path.dirname(spec)
+    specfn = os.path.basename(spec)
+    for patch in ec['patches']:
+        if isinstance(patch, (tuple, list)):
+            patch = patch[0]
+        # only check actual patch files, not other files being copied via the patch functionality
+        if patch.endswith('.patch'):
+            patch_full = os.path.join(specdir, patch)
+            msg = "Patch file %s is available for %s" % (patch_full, specfn)
+            self.assertTrue(os.path.isfile(patch_full), msg)
+    ext_patches = []
+    for ext in ec['exts_list']:
+        if isinstance(ext, (tuple, list)) and len(ext) == 3:
+            self.assertTrue(isinstance(ext[2], dict), "3rd element of extension spec is a dictionary")
+            for ext_patch in ext[2].get('patches', []):
+                if isinstance(ext_patch, (tuple, list)):
+                    ext_patch = ext_patch[0]
+                # only check actual patch files, not other files being copied via the patch functionality
+                if ext_patch.endswith('.patch'):
+                    ext_patch_full = os.path.join(specdir, ext_patch)
+                    msg = "Patch file %s is available for %s" % (ext_patch_full, specfn)
+                    self.assertTrue(os.path.isfile(ext_patch_full), msg)
+
     app.close_log()
+
+    # test passed, so set back to True
+    single_tests_ok = True and prev_single_tests_ok
 
 def suite():
     """Return all easyblock initialisation tests."""
