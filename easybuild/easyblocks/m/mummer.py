@@ -18,20 +18,17 @@ EasyBuild support for building and installing MUMmer, implemented as an easybloc
 @author: Matt Lesko (NIH/NHGRI)
 """
 
-import os
-import shutil
 import fileinput
 import re
+import os
+import shutil
+import sys
 
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 
 
 class EB_MUMmer(ConfigureMake):
-    """
-    Support for building MUMmer (rapidly aligning entire genomes)
-    - build with make install 
-    """
-
+    """Support for building MUMmer (rapidly aligning entire genomes)."""
 
     def __init__(self, *args, **kwargs):
         """Define list of bin/aux_bin files."""
@@ -42,11 +39,8 @@ class EB_MUMmer(ConfigureMake):
                           "repeat-match", "show-aligns", "show-coords", "show-tiling", "show-snps",
                           "show-diff", "exact-tandems", "mapview", "mummerplot", "nucmer", "promer",
                           "run-mummer1", "run-mummer3", "nucmer2xfig", "dnadiff",]
-        self.scripts_files = [ "Foundation.pm", ]
+        self.script_files = [ "Foundation.pm", ]
         self.aux_bin_files = ["postnuc", "postpro", "prenuc", "prepro"]
-
-
-        self.fix_path_files = [ "dnadiff", "exact-tandems", "mapview", "mummerplot", "nucmer", "promer", "run-mummer1", "run-mummer3", ]
 
     def configure_step(self):
         """No configure"""
@@ -59,18 +53,23 @@ class EB_MUMmer(ConfigureMake):
         super(EB_MUMmer, self).build_step()
 
     def install_step(self):
-        """
-        Install by copying files to install dir
-        """
-        # Get executable files: for i in $(find . -maxdepth 1 -type f -perm +111 -print | sed -e 's/\.\///g' | awk '{print "\""$0"\""}' | grep -vE "\.sh|\.html"); do echo -ne "$i, "; done && echo
-        for srcdir, dest, files in [
-                                    (self.cfg['start_dir'], 'bin', self.bin_files),
-                                    (os.path.join(self.cfg['start_dir'], 'aux_bin'), os.path.join('bin', 'aux_bin'),
-                                     self.aux_bin_files),
-                                    (os.path.join(self.cfg['start_dir'], 'scripts'), os.path.join('bin', 'scripts'),
-                                     self.scripts_files),
-                                   ]:
-
+        """Patch files to avoid use of build dir, install by copying files to install dir."""
+        # patch build dir out of files, replace by install dir
+        for fil in [f for f in os.listdir(self.cfg['start_dir']) if os.path.isfile(f)]:
+            self.log.debug("Patching build dir out of %s, replacing by install bin dir)" % fil)
+            pat = r'%s' % self.cfg['start_dir']
+            if pat[-1] == os.path.sep:
+                pat = pat[:-1]
+            for line in fileinput.input(fil, inplace=1, backup='.orig.eb'):
+                line = re.sub(pat, os.path.join(self.installdir, 'bin'), line)
+                sys.stdout.write(line)
+        # copy files to install dir
+        file_tuples = [
+            (self.cfg['start_dir'], 'bin', self.bin_files),
+            (os.path.join(self.cfg['start_dir'], 'aux_bin'), os.path.join('bin', 'aux_bin'), self.aux_bin_files),
+            (os.path.join(self.cfg['start_dir'], 'scripts'), os.path.join('bin', 'scripts'), self.script_files),
+        ]
+        for srcdir, dest, files in file_tuples:
             destdir = os.path.join(self.installdir, dest)        
             srcfile = None
             try:
@@ -78,24 +77,6 @@ class EB_MUMmer(ConfigureMake):
                 for filename in files:
                     srcfile = os.path.join(srcdir, filename)
                     shutil.copy2(srcfile, destdir)
-                    # Now, open the necessary files and do a search replace
-                    for fixfile in self.fix_path_files:
-                        # perhaps only do the first few lines?
-                        for line in fileinput.input(fixfile, inplace=1):
-                            if re.match('^.*use lib', line):
-                                print ''.join(['use lib "', destdir, '/scripts";', ])
-                            elif re.match('^.*my \$BIN_DIR =', line):
-                                print ''.join(['my $BIN_DIR = "', destdir, '";'])
-                            elif re.match('^.*my \$SCRIPT_DIR =', line):
-                                print ''.join(['my $SCRIPT_DIR = "', destdir, '/scripts";',])
-                            elif re.match('^.*my \$AUX_BIN_DIR =', line):
-                                print ''.join(['my $AUX_BIN_DIR = "', destdir, '/aux_bin";',])
-                            elif re.match('^.*set bindir = ', line):
-                                print ''.join(['set bindir = ', destdir, ]) 
-                            elif re.match('^.*set scriptdir = ', line):
-                                print ''.join(['set scriptdir = ', destdir, '/scripts']) 
-                            else:
-                                print line,
 
             except OSError, err:
                 self.log.error("Copying %s to installation dir %s failed: %s" % (srcfile, destdir, err))
@@ -105,7 +86,8 @@ class EB_MUMmer(ConfigureMake):
 
         custom_paths = {
                         'files': ['bin/%s' % x for x in self.bin_files] +
-                                 ['bin/aux_bin/%s' % x for x in self.aux_bin_files],
+                                 ['bin/aux_bin/%s' % x for x in self.aux_bin_files] +
+                                 ['bin/scripts/%s' % x for x in self.script_files],
                         'dirs': []
                        }
         super(EB_MUMmer, self).sanity_check_step(custom_paths=custom_paths)
