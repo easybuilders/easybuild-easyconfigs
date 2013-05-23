@@ -36,6 +36,7 @@ import os
 import re
 import sys
 import shutil
+from distutils.version import LooseVersion
 
 import easybuild.tools.toolchain as toolchain
 from easybuild.framework.easyblock import EasyBlock
@@ -105,7 +106,11 @@ class EB_SCOTCH(EasyBlock):
             cflags += " -DSCOTCH_PTHREAD"
 
         # actually build
-        for app in ["scotch", "ptscotch"]:
+        apps = ['scotch', 'ptscotch']
+        if LooseVersion(self.version) >= LooseVersion('6.0'):
+            # separate target for esmumps in recent versions
+            apps.extend(['esmumps', 'ptesmumps'])
+        for app in apps:
             cmd = 'make CCS="%s" CCP="%s" CCD="%s" CFLAGS="%s" %s' % (ccs, ccp, ccd, cflags, app)
             run_cmd(cmd, log_all=True, simple=True)
 
