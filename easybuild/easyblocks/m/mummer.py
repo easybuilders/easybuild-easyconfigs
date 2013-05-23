@@ -17,6 +17,9 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
+#
+# This work implements a part of the HPCBIOS project and is a component of the policy:
+# http://hpcbios.readthedocs.org/en/latest/HPCBIOS_2012-94.html
 ##
 """
 EasyBuild support for building and installing MUMmer, implemented as an easyblock
@@ -25,24 +28,36 @@ EasyBuild support for building and installing MUMmer, implemented as an easybloc
 @author: Fotis Georgatos (Uni.Lu)
 @author: Kenneth Hoste (Ghent University)
 @author: Jens Timmerman (Ghent University)
+@author: Matt Lesko (NIH/NHGRI)
 """
 
+import fileinput
+import re
+import os
 import shutil
+import sys
 
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.tools.filetools import run_cmd
-from easybuild.tools.modules import get_software_root, get_software_version
 
 
 class EB_MUMmer(ConfigureMake):
-    """Support for building and installing MUMmer."""
+    """Support for building and installing MUMmer (rapidly aligning entire genomes)."""
+
+    def __init__(self, *args, **kwargs):
+        """Define list of bin/aux_bin files."""
+
+        super(EB_MUMmer, self).__init__(*args, **kwargs)
+
+        self.bin_files = ["mummer", "annotate", "combineMUMs", "delta-filter", "gaps", "mgaps",
+                          "repeat-match", "show-aligns", "show-coords", "show-tiling", "show-snps",
+                          "show-diff", "exact-tandems", "mapview", "mummerplot", "nucmer", "promer",
+                          "run-mummer1", "run-mummer3", "nucmer2xfig", "dnadiff",]
+        self.script_files = [ "Foundation.pm", ]
+        self.aux_bin_files = ["postnuc", "postpro", "prenuc", "prepro"]
 
     def configure_step(self):
         """Configure MUMmer build by running make check and setting make options."""
-
-        # make sure Perl is available
-        if not get_software_root('Perl'):
-            self.log.error("Perl module not loaded?")
 
         cmd = "%s make check %s" % (self.cfg['preconfigopts'], self.cfg['configopts'])
         run_cmd(cmd, log_all=True, simple=True, log_output=True)
@@ -50,32 +65,54 @@ class EB_MUMmer(ConfigureMake):
         self.cfg.update('makeopts', 'all')
 
     def install_step(self):
-        """Install MUMmer by copying everything."""
-        try:
-            # remove actual installdir, shutil doesn't like it to be there
-            shutil.rmtree(self.installdir)
-            shutil.copytree(self.cfg['start_dir'], self.installdir, symlinks=True)
-        except OSError, err:
-            self.log.error("Failed to install MUMmer: %s" % err)
+        """Patch files to avoid use of build dir, install by copying files to install dir."""
+        # patch build dir out of files, replace by install dir
+        for fil in [f for f in os.listdir(self.cfg['start_dir']) if os.path.isfile(f)]:
+            self.log.debug("Patching build dir out of %s, replacing by install bin dir)" % fil)
+            pat = r'%s' % self.cfg['start_dir']
+            if pat[-1] == os.path.sep:
+                pat = pat[:-1]
+            for line in fileinput.input(fil, inplace=1, backup='.orig.eb'):
+                line = re.sub(pat, os.path.join(self.installdir, 'bin'), line)
+                sys.stdout.write(line)
+        # copy files to install dir
+        file_tuples = [
+            (self.cfg['start_dir'], 'bin', self.bin_files),
+            (os.path.join(self.cfg['start_dir'], 'aux_bin'), os.path.join('bin', 'aux_bin'), self.aux_bin_files),
+            (os.path.join(self.cfg['start_dir'], 'scripts'), os.path.join('bin', 'scripts'), self.script_files),
+        ]
+        for srcdir, dest, files in file_tuples:
+            destdir = os.path.join(self.installdir, dest)        
+            srcfile = None
+            try:
+                os.makedirs(destdir)
+                for filename in files:
+                    srcfile = os.path.join(srcdir, filename)
+                    shutil.copy2(srcfile, destdir)
+
+            except OSError, err:
+                self.log.error("Copying %s to installation dir %s failed: %s" % (srcfile, destdir, err))
 
     def make_module_extra(self):
         """Correctly prepend $PATH and $PERLXLIB for MUMmer."""
+        # determine major version for Perl (e.g. '5'), required for e.g. $PERL5LIB
+        cmd = "perl -MConfig -e 'print $Config::Config{PERL_API_REVISION}'"
+        (perlmajver, _) = run_cmd(cmd, log_all=True, log_output=True, simple=False)
+        
+        # set $PATH and $PERLXLIB correctly
         txt = super(EB_MUMmer, self).make_module_extra()
-        txt += self.moduleGenerator.prepend_paths("PATH", [""])
-        perlmajver = get_software_version('Perl').split('.')[0]
-        txt += self.moduleGenerator.prepend_paths("PERL%sLIB" % perlmajver, ["scripts"])
+        txt += self.moduleGenerator.prepend_paths("PATH", ['bin'])
+        txt += self.moduleGenerator.prepend_paths("PATH", ['bin/aux_bin'])
+        txt += self.moduleGenerator.prepend_paths("PERL%sLIB" % perlmajver, ['bin/scripts'])
         return txt
 
     def sanity_check_step(self):
         """Custom sanity check for MUMmer."""
 
-        custom_paths =   {
-            'files': ['mapview', 'combineMUMs', 'mgaps', 'run-mummer3', 'show-coords',
-                      'show-snps', 'show-aligns', 'dnadiff', 'mummerplot',
-                      'nucmer2xfig', 'annotate', 'promer', 'show-diff', 'nucmer',
-                      'delta-filter', 'src', 'run-mummer1', 'gaps', 'mummer',
-                      'repeat-match', 'show-tiling', 'exact-tandems'],
-            'dirs': ['scripts', 'docs', 'aux_bin'],
-        }
-
+        custom_paths = {
+                        'files': ['bin/%s' % x for x in self.bin_files] +
+                                 ['bin/aux_bin/%s' % x for x in self.aux_bin_files] +
+                                 ['bin/scripts/%s' % x for x in self.script_files],
+                        'dirs': []
+                       }
         super(EB_MUMmer, self).sanity_check_step(custom_paths=custom_paths)
