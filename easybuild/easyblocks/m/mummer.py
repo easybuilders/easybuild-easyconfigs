@@ -1,34 +1,34 @@
 ##
-# This file is an EasyBuild reciPY as per https://github.com/hpcugent/easybuild
-#
-# Copyright:: Copyright 2012-2013 University of Luxembourg/Luxembourg Centre for Systems Biomedicine
-# Authors::   Cedric Laczny <cedric.laczny@uni.lu>, Fotis Georgatos <fotis.georgatos@uni.lu>, Kenneth Hoste
-# License::   MIT/GPL
-# $Id$
 #
 # This work implements a part of the HPCBIOS project and is a component of the policy:
 # http://hpcbios.readthedocs.org/en/latest/HPCBIOS_2012-94.html
 ##
+# This file is an EasyBuild recipe as per https://github.com/hpcugent/easybuild
+#
+# Copyright:: Copyright 2012-2013 University of Luxembourg/Luxembourg Centre for Systems Biomedicine
+# Authors::   Cedric Laczny <cedric.laczny@uni.lu>, Fotis Georgatos <fotis.georgatos@uni.lu>, Kenneth Hoste, Matt Lesko <leskomw@mail.nih.gov>
+# License::   MIT/GPL
+# $Id$
 """
 EasyBuild support for building and installing MUMmer, implemented as an easyblock
 
 @author: Cedric Laczny (Uni.Lu)
 @author: Fotis Georgatos (Uni.Lu)
 @author: Kenneth Hoste (Ghent University)
+@author: Matt Lesko (NIH/NHGRI)
 """
 
+import fileinput
+import re
 import os
 import shutil
+import sys
 
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 
 
 class EB_MUMmer(ConfigureMake):
-    """
-    Support for building MUMmer (rapidly aligning entire genomes)
-    - build with make install 
-    """
-
+    """Support for building MUMmer (rapidly aligning entire genomes)."""
 
     def __init__(self, *args, **kwargs):
         """Define list of bin/aux_bin files."""
@@ -38,7 +38,8 @@ class EB_MUMmer(ConfigureMake):
         self.bin_files = ["mummer", "annotate", "combineMUMs", "delta-filter", "gaps", "mgaps",
                           "repeat-match", "show-aligns", "show-coords", "show-tiling", "show-snps",
                           "show-diff", "exact-tandems", "mapview", "mummerplot", "nucmer", "promer",
-                          "run-mummer1", "run-mummer3", "nucmer2xfig", "dnadiff"]
+                          "run-mummer1", "run-mummer3", "nucmer2xfig", "dnadiff",]
+        self.script_files = [ "Foundation.pm", ]
         self.aux_bin_files = ["postnuc", "postpro", "prenuc", "prepro"]
 
     def configure_step(self):
@@ -52,16 +53,23 @@ class EB_MUMmer(ConfigureMake):
         super(EB_MUMmer, self).build_step()
 
     def install_step(self):
-        """
-        Install by copying files to install dir
-        """
-        # Get executable files: for i in $(find . -maxdepth 1 -type f -perm +111 -print | sed -e 's/\.\///g' | awk '{print "\""$0"\""}' | grep -vE "\.sh|\.html"); do echo -ne "$i, "; done && echo
-        for srcdir, dest, files in [
-                                    (self.cfg['start_dir'], 'bin', self.bin_files),
-                                    (os.path.join(self.cfg['start_dir'], 'aux_bin'), os.path.join('bin', 'aux_bin'),
-                                     self.aux_bin_files)
-                                   ]:
-
+        """Patch files to avoid use of build dir, install by copying files to install dir."""
+        # patch build dir out of files, replace by install dir
+        for fil in [f for f in os.listdir(self.cfg['start_dir']) if os.path.isfile(f)]:
+            self.log.debug("Patching build dir out of %s, replacing by install bin dir)" % fil)
+            pat = r'%s' % self.cfg['start_dir']
+            if pat[-1] == os.path.sep:
+                pat = pat[:-1]
+            for line in fileinput.input(fil, inplace=1, backup='.orig.eb'):
+                line = re.sub(pat, os.path.join(self.installdir, 'bin'), line)
+                sys.stdout.write(line)
+        # copy files to install dir
+        file_tuples = [
+            (self.cfg['start_dir'], 'bin', self.bin_files),
+            (os.path.join(self.cfg['start_dir'], 'aux_bin'), os.path.join('bin', 'aux_bin'), self.aux_bin_files),
+            (os.path.join(self.cfg['start_dir'], 'scripts'), os.path.join('bin', 'scripts'), self.script_files),
+        ]
+        for srcdir, dest, files in file_tuples:
             destdir = os.path.join(self.installdir, dest)        
             srcfile = None
             try:
@@ -69,6 +77,7 @@ class EB_MUMmer(ConfigureMake):
                 for filename in files:
                     srcfile = os.path.join(srcdir, filename)
                     shutil.copy2(srcfile, destdir)
+
             except OSError, err:
                 self.log.error("Copying %s to installation dir %s failed: %s" % (srcfile, destdir, err))
 
@@ -77,7 +86,8 @@ class EB_MUMmer(ConfigureMake):
 
         custom_paths = {
                         'files': ['bin/%s' % x for x in self.bin_files] +
-                                 ['bin/aux_bin/%s' % x for x in self.aux_bin_files],
+                                 ['bin/aux_bin/%s' % x for x in self.aux_bin_files] +
+                                 ['bin/scripts/%s' % x for x in self.script_files],
                         'dirs': []
                        }
         super(EB_MUMmer, self).sanity_check_step(custom_paths=custom_paths)
