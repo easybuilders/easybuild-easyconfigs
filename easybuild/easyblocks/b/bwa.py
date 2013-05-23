@@ -31,11 +31,20 @@ class EB_BWA(ConfigureMake):
     Support for building BWA
     """
 
+    def __init__(self, *args, **kwargs):
+        """Add extra config options specific to BWA."""
+        super(EB_BWA, self).__init__(*args, **kwargs)
+        self.files = []
+
     def configure_step(self):
         """
         Empty function as bwa comes with _no_ configure script
         """
-        pass
+        self.files = ["bwa", "qualfa2fq.pl", "xa2multi.pl"]
+        if LooseVersion(self.version) < LooseVersion("0.7.0"):
+            # solid2fastq was dropped in recent versions because the same functionality is covered by other tools already
+            # cfr. http://osdir.com/ml/general/2010-10/msg26205.html
+            self.files.append("solid2fastq.pl")
 
     def install_step(self):
         """
@@ -46,12 +55,7 @@ class EB_BWA(ConfigureMake):
         srcfile = None
         try:
             os.makedirs(destdir)
-            if LooseVersion(self.version) >= LooseVersion("0.7.4"):
-                flist = ["bwa", "qualfa2fq.pl", "xa2multi.pl"]
-            else:
-                flist = ["bwa", "qualfa2fq.pl", "solid2fastq.pl", "xa2multi.pl"]
-
-            for filename in flist:
+            for filename in self.files:
                 srcfile = os.path.join(srcdir, filename)
                 shutil.copy2(srcfile, destdir)
         except OSError, err:
@@ -59,13 +63,8 @@ class EB_BWA(ConfigureMake):
 
     def sanity_check_step(self):
         """Custom sanity check for BWA."""
-        if LooseVersion(self.version) >= LooseVersion("0.7.4"):
-            flist = ["bwa", "qualfa2fq.pl", "xa2multi.pl"]
-        else:
-            flist = ["bwa", "qualfa2fq.pl", "solid2fastq.pl", "xa2multi.pl"]
-
         custom_paths = {
-            'files': ["bin/%s" % x for x in flist],
+            'files': ["bin/%s" % x for x in self.files],
             'dirs': []
         }
 
