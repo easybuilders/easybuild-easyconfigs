@@ -102,7 +102,7 @@ class EB_SCOTCH(EasyBlock):
         else:
             cflags += " -restrict -DIDXSIZE64"
 
-        if not self.toolchain.mpi_family() == toolchain.INTELMPI:  #@UndefinedVariable
+        if not self.toolchain.mpi_family() in [toolchain.INTELMPI, toolchain.QLOGICMPI]:  #@UndefinedVariable
             cflags += " -DSCOTCH_PTHREAD"
 
         # actually build
