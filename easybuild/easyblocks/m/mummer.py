@@ -1,20 +1,33 @@
 ##
+# Copyright 2009-2013 Ghent University
+#
+# This file is part of EasyBuild,
+# originally created by the HPC team of the University of Ghent (http://ugent.be/hpc).
+#
+# http://github.com/hpcugent/easybuild
+#
+# EasyBuild is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation v2.
+#
+# EasyBuild is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 #
 # This work implements a part of the HPCBIOS project and is a component of the policy:
 # http://hpcbios.readthedocs.org/en/latest/HPCBIOS_2012-94.html
 ##
-# This file is an EasyBuild recipe as per https://github.com/hpcugent/easybuild
-#
-# Copyright:: Copyright 2012-2013 University of Luxembourg/Luxembourg Centre for Systems Biomedicine
-# Authors::   Cedric Laczny <cedric.laczny@uni.lu>, Fotis Georgatos <fotis.georgatos@uni.lu>, Kenneth Hoste, Matt Lesko <leskomw@mail.nih.gov>
-# License::   MIT/GPL
-# $Id$
 """
 EasyBuild support for building and installing MUMmer, implemented as an easyblock
 
 @author: Cedric Laczny (Uni.Lu)
 @author: Fotis Georgatos (Uni.Lu)
 @author: Kenneth Hoste (Ghent University)
+@author: Jens Timmerman (Ghent University)
 @author: Matt Lesko (NIH/NHGRI)
 """
 
@@ -25,10 +38,11 @@ import shutil
 import sys
 
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
+from easybuild.tools.filetools import run_cmd
 
 
 class EB_MUMmer(ConfigureMake):
-    """Support for building MUMmer (rapidly aligning entire genomes)."""
+    """Support for building and installing MUMmer (rapidly aligning entire genomes)."""
 
     def __init__(self, *args, **kwargs):
         """Define list of bin/aux_bin files."""
@@ -43,14 +57,12 @@ class EB_MUMmer(ConfigureMake):
         self.aux_bin_files = ["postnuc", "postpro", "prenuc", "prepro"]
 
     def configure_step(self):
-        """No configure"""
-        pass
+        """Configure MUMmer build by running make check and setting make options."""
 
-    def build_step(self):
-        """Build via 'make install."""
-        self.cfg.update('makeopts', 'install')
+        cmd = "%s make check %s" % (self.cfg['preconfigopts'], self.cfg['configopts'])
+        run_cmd(cmd, log_all=True, simple=True, log_output=True)
 
-        super(EB_MUMmer, self).build_step()
+        self.cfg.update('makeopts', 'all')
 
     def install_step(self):
         """Patch files to avoid use of build dir, install by copying files to install dir."""
@@ -80,6 +92,19 @@ class EB_MUMmer(ConfigureMake):
 
             except OSError, err:
                 self.log.error("Copying %s to installation dir %s failed: %s" % (srcfile, destdir, err))
+
+    def make_module_extra(self):
+        """Correctly prepend $PATH and $PERLXLIB for MUMmer."""
+        # determine major version for Perl (e.g. '5'), required for e.g. $PERL5LIB
+        cmd = "perl -MConfig -e 'print $Config::Config{PERL_API_REVISION}'"
+        (perlmajver, _) = run_cmd(cmd, log_all=True, log_output=True, simple=False)
+        
+        # set $PATH and $PERLXLIB correctly
+        txt = super(EB_MUMmer, self).make_module_extra()
+        txt += self.moduleGenerator.prepend_paths("PATH", ['bin'])
+        txt += self.moduleGenerator.prepend_paths("PATH", ['bin/aux_bin'])
+        txt += self.moduleGenerator.prepend_paths("PERL%sLIB" % perlmajver, ['bin/scripts'])
+        return txt
 
     def sanity_check_step(self):
         """Custom sanity check for MUMmer."""
