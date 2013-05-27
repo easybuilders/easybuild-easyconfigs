@@ -30,6 +30,7 @@ Usage: "python -m easybuild.easyconfigs.test.suite.py" or "./easybuild/easyconfi
 @author: Toon Willems (Ghent University)
 @author: Kenneth Hoste (Ghent University)
 """
+import glob
 import os
 import shutil
 import sys
@@ -71,4 +72,5 @@ if not res.wasSuccessful():
     print "Log available at %s" % log_fn, xml_msg
     sys.exit(2)
 else:
-    os.remove(log_fn)
+    for f in glob.glob('%s*' % log_fn):
+        os.remove(f)
