@@ -71,7 +71,7 @@ class InitTest(TestCase):
         try:
             os.remove(self.eb_file)
         except OSError, err:
-            self.log.error("Failed to remove %s: %s" % (self.eb_file, err))
+            self.log.error("Failed to remove %s/%s: %s" % (self.eb_file, err))
 
 def template_init_test(self, easyblock):
     """Test whether all easyconfigs can be initialized."""
