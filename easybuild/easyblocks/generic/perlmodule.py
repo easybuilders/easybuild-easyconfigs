@@ -30,7 +30,7 @@ EasyBuild support for Perl module, implemented as an easyblock
 """
 import os
 
-from easybuild.easyblocks.perl import EXTS_FILTER_PERL_MODULES
+from easybuild.easyblocks.perl import EXTS_FILTER_PERL_MODULES, get_major_perl_version
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.framework.extensioneasyblock import ExtensionEasyBlock
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
@@ -101,6 +101,6 @@ class PerlModule(ExtensionEasyBlock, ConfigureMake):
 
     def make_module_extra(self):
         """Add install path to PERL*LIB"""
-        majver = self.version.split('.')[0]
+        majver = get_major_perl_version()
         txt = self.moduleGenerator.prepend_paths("PERL%sLIB" % majver, [''])
         return ExtensionEasyBlock.make_module_extra(self, txt)
