@@ -1,5 +1,5 @@
 ##
-# Copyright 2009-2013 Ghent University
+# Copyright 2013 The Cyprus Institute
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -26,6 +26,7 @@
 EasyBuild support for GenomeAnalysisTK, implemented as an easyblock
 
 @authors: George Tsouloupas (The Cyprus Institute)
+@author: Fotis Georgatos (University of Luxembourg)
 """
 import os
 import shutil
@@ -48,6 +49,5 @@ class EB_GATK(EasyBlock):
         """Custom install procedure for GenomeAnalysisTK.jar."""
         src = self.cfg['start_dir']
         shutil.copy2(os.path.join(src, 'GenomeAnalysisTK.jar'),self.installdir)
-#       shutil.rmtree(os.path.join(self.installdir,'resources'))
         shutil.copytree(os.path.join(src, 'resources'),os.path.join(self.installdir, 'resources'))
 

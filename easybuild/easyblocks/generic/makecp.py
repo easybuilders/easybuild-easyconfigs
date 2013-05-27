@@ -1,5 +1,5 @@
 ##
-# Copyright 2009-2013 Ghent University
+# Copyright 2013 the Cyprus Institute
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -23,14 +23,13 @@
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
 """
-
 @author: George Tsouloupas (The Cyprus Institute)
+@author: Fotis Georgatos (University of Luxembourg)
 """
 import shutil
 
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.framework.easyconfig import CUSTOM, MANDATORY
-#from easybuild.tools.filetools import copy2
 
 class MakeCp(ConfigureMake):
     """

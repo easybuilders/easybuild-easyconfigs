@@ -1,5 +1,5 @@
 ##
-# Copyright 2009-2013 Ghent University
+# Copyright 2013 The Cyprus Institute
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -25,6 +25,7 @@
 """
 
 @author: George Tsouloupas (The Cyprus Institute)
+@author: Fotis Georgatos (University of Luxembourg)
 """
 import shutil
 import os
