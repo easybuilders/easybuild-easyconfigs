@@ -42,7 +42,6 @@ class EB_OpenIFS(EasyBlock):
 
     def configure_step(self):
         """Custom configuration procedure for OpenIFS."""
-
         # make sure use of MPI is enabled
         if not self.toolchain.options['usempi']:
             self.log.error("Use of MPI should be enabled, set 'usempi' toolchain option to 'True'.")
@@ -74,7 +73,6 @@ class EB_OpenIFS(EasyBlock):
 
     def build_step(self):
         """Custom build procedure for OpenIFS."""
-
         try:
             os.chdir('make')
         except OSError, err:
@@ -87,7 +85,6 @@ class EB_OpenIFS(EasyBlock):
 
     def install_step(self):
         """Custom install procedure for OpenIFS: copy bin and include files."""
-
         try:
             srcdir = os.path.join(self.cfg['start_dir'], 'make', os.getenv('OIFS_BUILD'), 'oifs')
             bindir = os.path.join(self.installdir, 'bin')
@@ -99,7 +96,6 @@ class EB_OpenIFS(EasyBlock):
 
     def sanity_check_step(self):
         """Custom sanity check for OpenIFS."""
-
         custom_paths = {
             'files': ['bin/master.exe'],
             'dirs': ['include'],
