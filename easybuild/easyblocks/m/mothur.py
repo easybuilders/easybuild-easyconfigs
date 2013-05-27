@@ -47,10 +47,8 @@ class EB_Mothur(ConfigureMake):
 
     def configure_step(self, cmd_prefix=''):
         """Configure Mothur build by setting make options."""
-
         # Fortran compiler and options
         self.cfg.update('makeopts', 'FORTAN_COMPILER="%s" FORTRAN_FLAGS="%s"' % (os.getenv('F77'), os.getenv('FFLAGS')))
-
         # enable 64-bit build
         if not self.toolchain.options['32bit']:
             self.cfg.update('makeopts', '64BIT_VERSION=yes')
@@ -60,9 +58,9 @@ class EB_Mothur(ConfigureMake):
         # enable MPI support
         if self.toolchain.options['usempi']:
             self.cfg.update('makeopts', 'USEMPI=yes CXX="%s"' % os.getenv('MPICXX'))
-        # enable compression 
+        # enable compression
         if get_software_root('bzip2') or get_software_root('gzip'):
-            self.cfg.update('makeopts', 'USE_COMPRESSION=yes') 
+            self.cfg.update('makeopts', 'USE_COMPRESSION=yes')
 
     def install_step(self):
         """
@@ -81,11 +79,10 @@ class EB_Mothur(ConfigureMake):
 
     def sanity_check_step(self):
         """Custom sanity check for Mothur."""
-
         custom_paths = {
             'files': ["bin/mothur"],
             'dirs': [],
         }
 
         super(EB_Mothur, self).sanity_check_step(custom_paths=custom_paths)
-    
+
