@@ -40,6 +40,7 @@ from vsc.utils.missing import nub
 from unittest import TestCase, TestLoader, main
 
 import easybuild.main as main
+import easybuild.tools.config as config
 from easybuild.framework.easyblock import EasyBlock, get_class
 from easybuild.framework.easyconfig.easyconfig import EasyConfig
 from easybuild.framework.easyconfig.tools import get_paths_for
@@ -60,6 +61,17 @@ class EasyConfigTest(TestCase):
     # make sure a logger is present for main
     main._log = log
     ordered_specs = None
+
+    def setUp(self):
+        """Setup."""
+        config.variables['tmp_logdir'] = mkdtemp(prefix='easyconfigs_test_')
+
+    def tearDown(self):
+        """Cleanup."""
+        try:
+            shutil.rmtree(config.variables['tmp_logdir'])
+        except OSError, err:
+            self.log.error("Failed to remove %s: %s" % (config.variables['tmp_logdir'], err))
 
     def process_all_easyconfigs(self):
         """Process all easyconfigs and resolve inter-easyconfig dependencies."""
@@ -201,7 +213,8 @@ def template_easyconfig_test(self, spec):
                     self.assertTrue(os.path.isfile(ext_patch_full), msg)
 
     app.close_log()
-    os.remove(app.logfile)
+    if os.path.exists(app.logfile):
+        os.remove(app.logfile)
 
     # test passed, so set back to True
     single_tests_ok = True and prev_single_tests_ok
