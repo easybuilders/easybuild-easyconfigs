@@ -38,6 +38,7 @@ import shutil
 import sys
 
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
+from easybuild.easyblocks.perl import get_major_perl_version
 from easybuild.tools.filetools import run_cmd
 
 
@@ -49,11 +50,13 @@ class EB_MUMmer(ConfigureMake):
 
         super(EB_MUMmer, self).__init__(*args, **kwargs)
 
-        self.bin_files = ["mummer", "annotate", "combineMUMs", "delta-filter", "gaps", "mgaps",
-                          "repeat-match", "show-aligns", "show-coords", "show-tiling", "show-snps",
-                          "show-diff", "exact-tandems", "mapview", "mummerplot", "nucmer", "promer",
-                          "run-mummer1", "run-mummer3", "nucmer2xfig", "dnadiff",]
-        self.script_files = [ "Foundation.pm", ]
+        self.bin_files = [
+            "mummer", "annotate", "combineMUMs", "delta-filter", "gaps", "mgaps",
+            "repeat-match", "show-aligns", "show-coords", "show-tiling", "show-snps",
+            "show-diff", "exact-tandems", "mapview", "mummerplot", "nucmer", "promer",
+            "run-mummer1", "run-mummer3", "nucmer2xfig", "dnadiff",
+        ]
+        self.script_files = ["Foundation.pm"]
         self.aux_bin_files = ["postnuc", "postpro", "prenuc", "prepro"]
 
     def configure_step(self):
@@ -82,7 +85,7 @@ class EB_MUMmer(ConfigureMake):
             (os.path.join(self.cfg['start_dir'], 'scripts'), os.path.join('bin', 'scripts'), self.script_files),
         ]
         for srcdir, dest, files in file_tuples:
-            destdir = os.path.join(self.installdir, dest)        
+            destdir = os.path.join(self.installdir, dest)
             srcfile = None
             try:
                 os.makedirs(destdir)
@@ -96,9 +99,8 @@ class EB_MUMmer(ConfigureMake):
     def make_module_extra(self):
         """Correctly prepend $PATH and $PERLXLIB for MUMmer."""
         # determine major version for Perl (e.g. '5'), required for e.g. $PERL5LIB
-        cmd = "perl -MConfig -e 'print $Config::Config{PERL_API_REVISION}'"
-        (perlmajver, _) = run_cmd(cmd, log_all=True, log_output=True, simple=False)
-        
+        perlmajver = get_major_perl_version()
+
         # set $PATH and $PERLXLIB correctly
         txt = super(EB_MUMmer, self).make_module_extra()
         txt += self.moduleGenerator.prepend_paths("PATH", ['bin'])
@@ -110,9 +112,10 @@ class EB_MUMmer(ConfigureMake):
         """Custom sanity check for MUMmer."""
 
         custom_paths = {
-                        'files': ['bin/%s' % x for x in self.bin_files] +
-                                 ['bin/aux_bin/%s' % x for x in self.aux_bin_files] +
-                                 ['bin/scripts/%s' % x for x in self.script_files],
-                        'dirs': []
-                       }
+            'files':
+                ['bin/%s' % x for x in self.bin_files] +
+                ['bin/aux_bin/%s' % x for x in self.aux_bin_files] +
+                ['bin/scripts/%s' % x for x in self.script_files],
+            'dirs': []
+        }
         super(EB_MUMmer, self).sanity_check_step(custom_paths=custom_paths)
