@@ -42,6 +42,7 @@ import test.easyblocks.init_easyblocks as i
 # initialize logger for all the unit tests
 fd, log_fn = tempfile.mkstemp(prefix='easybuild-easyblocks-tests-', suffix='.log')
 os.close(fd)
+os.remove(log_fn)
 fancylogger.logToFile(log_fn)
 log = fancylogger.getLogger()
 log.setLevelName('DEBUG')
