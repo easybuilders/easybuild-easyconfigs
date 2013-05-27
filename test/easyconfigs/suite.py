@@ -67,10 +67,9 @@ except ImportError, err:
 fancylogger.logToFile(log_fn, enable=False)
 shutil.rmtree(config.variables['tmp_logdir'])
 
+for f in glob.glob('%s*' % log_fn):
+    os.remove(f)
+
 if not res.wasSuccessful():
     sys.stderr.write("ERROR: Not all tests were successful.\n")
-    print "Log available at %s" % log_fn, xml_msg
     sys.exit(2)
-else:
-    for f in glob.glob('%s*' % log_fn):
-        os.remove(f)
