@@ -30,6 +30,7 @@ Usage: "python -m easybuild.easyconfigs.test.suite.py" or "./easybuild/easyconfi
 @author: Toon Willems (Ghent University)
 @author: Kenneth Hoste (Ghent University)
 """
+import glob
 import os
 import shutil
 import sys
@@ -42,6 +43,7 @@ import test.easyconfigs.easyconfigs as e
 
 # initialize logger for all the unit tests
 fd, log_fn = tempfile.mkstemp(prefix='easybuild-easyconfigs-tests-', suffix='.log')
+print log_fn
 os.close(fd)
 os.remove(log_fn)
 fancylogger.logToFile(log_fn)
@@ -71,4 +73,5 @@ if not res.wasSuccessful():
     print "Log available at %s" % log_fn, xml_msg
     sys.exit(2)
 else:
-    os.remove(log_fn)
+    for f in glob.glob('%s*' % log_fn):
+        os.remove(f)
