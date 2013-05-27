@@ -33,9 +33,11 @@ EasyBuild support for building and installing numpy, implemented as an easyblock
 """
 import os
 import re
+import tempfile
 
+import easybuild.tools.environment as env
 from easybuild.easyblocks.generic.fortranpythonpackage import FortranPythonPackage
-from easybuild.tools.filetools import rmtree2
+from easybuild.tools.filetools import rmtree2, run_cmd
 from easybuild.tools.modules import get_software_root
 
 
@@ -57,30 +59,31 @@ class EB_numpy(FortranPythonPackage):
 
         # see e.g. https://github.com/numpy/numpy/pull/2809/files
         self.sitecfg = '\n'.join([
-                                  "[DEFAULT]",
-                                  "library_dirs = %(libs)s",
-                                  "include_dirs= %(includes)s",
-                                  "search_static_first=True",
-                                 ])
+                "[DEFAULT]",
+                "library_dirs = %(libs)s",
+                "include_dirs= %(includes)s",
+                "search_static_first=True",
+            ])
 
-        if get_software_root("IMKL"):
+        if get_software_root("imkl"):
 
             extrasiteconfig = '\n'.join([
-                                         "[mkl]",
-                                         "lapack_libs = %(lapack)s",
-                                         "mkl_libs = %(blas)s",
-                                        ])
+                "[mkl]",
+                "lapack_libs = %(lapack)s",
+                "mkl_libs = %(blas)s",
+            ])
 
-        elif get_software_root("ATLAS"):
-            extrasiteconfig = '\n'.join(["[atlas]",
-                                         "atlas_libs = %(lapack)s",
-                                        ])
         else:
-            extrasiteconfig = '\n'.join(["[blas]",
-                                         "blas_libs = %(blas)s",
-                                         "[lapack]",
-                                         "lapack_libs = %(lapack)s",
-                                        ])
+            # [atlas] the only real alternative, even for non-ATLAS BLAS libs (e.g., OpenBLAS, ACML, ...)
+            # using only the [blas] and [lapack] sections results in sub-optimal builds that don't provide _dotblas.so;
+            # it does require a CBLAS interface to be available for the BLAS library being used
+            # e.g. for ACML, the CBLAS module providing a C interface needs to be used
+            extrasiteconfig = '\n'.join([
+                "[atlas]",
+                "atlas_libs = %(lapack)s",
+                "[lapack]",
+                "lapack_libs = %(lapack)s",  # required by scipy, that uses numpy's site.cfg
+            ])
 
         blas = None
         lapack = None
@@ -124,10 +127,28 @@ class EB_numpy(FortranPythonPackage):
                                "handle -Wl linker flags correctly, which doesn't seem to be there.")
 
         else:
+            # unless Intel MKL is used, $ATLAS should be set to take full control,
+            # and to make sure a fully optimized version is built, including _dotblas.so
+            # which is critical for decent performance of the numpy.dot (matrix dot product) function!
+            env.setvar('ATLAS', '1')
 
-            blas = ', '.join([x for x in self.toolchain.get_variable('LIBBLAS_MT', typ=list) if x != "pthread"])
             lapack = ', '.join([x for x in self.toolchain.get_variable('LIBLAPACK_MT', typ=list) if x != "pthread"])
             fft = ', '.join(self.toolchain.get_variable('LIBFFT', typ=list))
+
+        libs = ':'.join(self.toolchain.get_variable('LDFLAGS', typ=list))
+        includes = ':'.join(self.toolchain.get_variable('CPPFLAGS', typ=list))
+
+        # CBLAS is required for ACML, because it doesn't offer a C interface to BLAS
+        if get_software_root('ACML'):
+            cblasroot = get_software_root('CBLAS')
+            if cblasroot:
+                lapack = ', '.join([lapack, "cblas"])
+                cblaslib = os.path.join(cblasroot, 'lib')
+                # with numpy as extension, CBLAS might not be included in LDFLAGS because it's not part of a toolchain
+                if not cblaslib in libs:
+                    libs = ':'.join([libs, cblaslib])
+            else:
+                self.log.error("CBLAS is required next to ACML to provide a C interface to BLAS, but it's not loaded.")
 
         if fft:
             extrasiteconfig += "\n[fftw]\nlibraries = %s" % fft
@@ -135,13 +156,90 @@ class EB_numpy(FortranPythonPackage):
         self.sitecfg = '\n'.join([self.sitecfg, extrasiteconfig])
 
         self.sitecfg = self.sitecfg % {
-                                       'lapack': lapack,
-                                       'blas': blas,
-                                       'libs': ':'.join(self.toolchain.get_variable('LDFLAGS', typ=list)),
-                                       'includes': ':'.join(self.toolchain.get_variable('CPPFLAGS', typ=list))
-                                      }
+            'blas': blas,
+            'lapack': lapack,
+            'libs': libs,
+            'includes': includes,
+        }
 
         super(EB_numpy, self).configure_step()
+
+        # check configuration (for debugging purposes)
+        cmd = "python setup.py config"
+        run_cmd(cmd, log_all=True, simple=True)
+
+    def test_step(self):
+        """Run available numpy unit tests, and more."""
+        super(EB_numpy, self).test_step()
+
+        # temporarily install numpy, it doesn't alow to be used straight from the source dir
+        tmpdir = tempfile.mkdtemp()
+        cmd = "python setup.py install --prefix=%s %s" % (tmpdir, self.installopts)
+        run_cmd(cmd, log_all=True, simple=True)
+
+        try:
+            pwd = os.getcwd()
+            os.chdir(tmpdir)
+        except OSError, err:
+            self.log.error("Faild to change to %s: %s" % (tmpdir, err))
+
+        # evaluate performance of numpy.dot (3 runs, 3 loops each)
+        size = 1000
+        max_time_msec = 1000  # 1 second should really do it for a 1000x1000 matrix dot product
+        cmd = ' '.join([
+            'export PYTHONPATH=%s:$PYTHONPATH &&' % os.path.join(tmpdir, self.pylibdir),
+            'python -m timeit -n 3 -r 3',
+            '-s "import numpy; x = numpy.random.random((%(size)d, %(size)d))"' % {'size': size},
+            '"numpy.dot(x, x.T)"',
+        ])
+        (out, ec) = run_cmd(cmd, simple=False)
+        self.log.debug("Test output: %s" % out)
+
+        # fetch result
+        time_msec = None
+        msec_re = re.compile("\d+ loops, best of \d+: (?P<time>[0-9.]+) msec per loop")
+        res = msec_re.search(out)
+        if res:
+            time_msec = float(res.group('time'))
+        else:
+            sec_re = re.compile("\d+ loops, best of \d+: (?P<time>[0-9.]+) sec per loop")
+            res = sec_re.search(out)
+            if res:
+                time_msec = 1000 * float(res.group('time'))
+            else:
+                self.log.error("Failed to determine time for numpy.dot test run.")
+
+        # make sure we observe decent performance
+        if time_msec < max_time_msec:
+            self.log.info("Time for %(size)dx%(size)d matrix dot product: %(time)d msec < %(maxtime)d msec => OK" %
+                {'size': size, 'time': time_msec, 'maxtime': max_time_msec})
+        else:
+            self.log.error("Time for %(size)dx%(size)d matrix dot product: %(time)d msec >= %(maxtime)d msec => ERROR" %
+                {'size': size, 'time': time_msec, 'maxtime': max_time_msec})
+
+        try:
+            os.chdir(pwd)
+            rmtree2(tmpdir)
+        except OSError, err:
+            self.log.error("Failed to change back to %s: %s" % (pwd, err))
+
+    def sanity_check_step(self, *args, **kwargs):
+        """Custom sanity check for numpy."""
+
+        custom_paths = {
+            'files': [os.path.join(self.pylibdir, 'numpy', '__init__.py')],
+            'dirs': [],
+        }
+        custom_commands = [
+            ('python', '-c "import numpy"'),
+            ('python', '-c "import numpy.core._dotblas"'),  # _dotblas is required for decent performance of numpy.dot()
+        ]
+
+        # make sure the installation path is in $PYTHONPATH so the sanity check commands can work
+        pythonpath = os.environ.get('PYTHONPATH', '')
+        os.environ['PYTHONPATH'] = ':'.join([self.pylibdir, pythonpath])
+
+        return super(EB_numpy, self).sanity_check_step(custom_paths=custom_paths, custom_commands=custom_commands)
 
     def install_step(self):
         """Install numpy and remove numpy build dir, so scipy doesn't find it by accident."""

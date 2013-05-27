@@ -30,21 +30,26 @@ Usage: "python -m easybuild.easyblocks.test.suite.py" or "./easybuild/easyblocks
 @author: Toon Willems (Ghent University)
 @author: Kenneth Hoste (Ghent University)
 """
+import glob
 import os
+import shutil
 import sys
 import tempfile
 import unittest
 from vsc import fancylogger
 
-# toolkit should be first to allow hacks to work
+import easybuild.tools.config as config
 import test.easyblocks.init_easyblocks as i
 
 # initialize logger for all the unit tests
 fd, log_fn = tempfile.mkstemp(prefix='easybuild-easyblocks-tests-', suffix='.log')
 os.close(fd)
+os.remove(log_fn)
 fancylogger.logToFile(log_fn)
 log = fancylogger.getLogger()
 log.setLevelName('DEBUG')
+
+config.variables['tmp_logdir'] = tempfile.mkdtemp(prefix='easyblocks_init_test_')
 
 # call suite() for each module and then run them all
 SUITE = unittest.TestSuite([x.suite() for x in [i]])
@@ -61,10 +66,12 @@ except ImportError, err:
     res = unittest.TextTestRunner().run(SUITE)
 
 fancylogger.logToFile(log_fn, enable=False)
+shutil.rmtree(config.variables['tmp_logdir'])
 
 if not res.wasSuccessful():
     sys.stderr.write("ERROR: Not all tests were successful.\n")
     print "Log available at %s" % log_fn, xml_msg
     sys.exit(2)
 else:
-    os.remove(log_fn)
+    for f in glob.glob('%s*' % log_fn):
+        os.remove(f)

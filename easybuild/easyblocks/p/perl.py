@@ -65,11 +65,18 @@ class EB_Perl(ConfigureMake):
 
     def sanity_check_step(self):
         """Custom sanity check for Perl."""
-
         majver = self.version.split('.')[0]
         custom_paths = {
-                        'files': [os.path.join('bin', x) for x in ['perl', 'perldoc']],
-                        'dirs': ['lib/perl%s/%s' % (majver, self.version), 'man']
-                       }
-
+            'files': [os.path.join('bin', x) for x in ['perl', 'perldoc']],
+            'dirs': ['lib/perl%s/%s' % (majver, self.version), 'man']
+        }
         super(EB_Perl, self).sanity_check_step(custom_paths=custom_paths)
+
+
+def get_major_perl_version():
+    """"
+    Returns the major verson of the perl binary in the current path
+    """
+    cmd = "perl -MConfig -e 'print $Config::Config{PERL_API_REVISION}'"
+    (perlmajver, _) = run_cmd(cmd, log_all=True, log_output=True, simple=False)
+    return perlmajver
