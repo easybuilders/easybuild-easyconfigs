@@ -86,6 +86,11 @@ class EasyConfigTest(TestCase):
                 self.process_all_easyconfigs()
 
             dep_graph(fn, self.ordered_specs, silent=True)
+
+            try:
+                os.remove(fn)
+            except OSError, err:
+                log.error("Failed to remove %s: %s" % (fn, err))
     else:
         print "(skipped dep graph test)"
 
@@ -196,6 +201,7 @@ def template_easyconfig_test(self, spec):
                     self.assertTrue(os.path.isfile(ext_patch_full), msg)
 
     app.close_log()
+    os.remove(app.logfile)
 
     # test passed, so set back to True
     single_tests_ok = True and prev_single_tests_ok
