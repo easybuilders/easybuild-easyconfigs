@@ -31,12 +31,10 @@ Unit tests for initializing easyblocks.
 import glob
 import os
 import re
-import shutil
 import tempfile
 from vsc import fancylogger
 from unittest import TestCase, TestLoader, main
 
-import easybuild.tools.config as config
 from easybuild.framework.easyblock import get_class
 from easybuild.framework.easyconfig import MANDATORY
 from easybuild.framework.easyconfig.tools import get_paths_for
@@ -67,15 +65,13 @@ class InitTest(TestCase):
         self.log = fancylogger.getLogger("EasyblocksInitTest", fname=False)
         fd, self.eb_file = tempfile.mkstemp(prefix='easyblocks_init_test_', suffix='.eb')
         os.close(fd)
-        config.variables['tmp_logdir'] = tempfile.mkdtemp(prefix='easyblocks_init_test_')
 
     def tearDown(self):
         """Cleanup."""
         try:
             os.remove(self.eb_file)
-            shutil.rmtree(config.variables['tmp_logdir'])
         except OSError, err:
-            self.log.error("Failed to remove %s/%s: %s" % (self.eb_file, config.variables['tmp_logdir'], err))
+            self.log.error("Failed to remove %s/%s: %s" % (self.eb_file, err))
 
 def template_init_test(self, easyblock):
     """Test whether all easyconfigs can be initialized."""
