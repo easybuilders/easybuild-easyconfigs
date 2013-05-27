@@ -43,7 +43,6 @@ import test.easyconfigs.easyconfigs as e
 
 # initialize logger for all the unit tests
 fd, log_fn = tempfile.mkstemp(prefix='easybuild-easyconfigs-tests-', suffix='.log')
-print log_fn
 os.close(fd)
 os.remove(log_fn)
 fancylogger.logToFile(log_fn)
