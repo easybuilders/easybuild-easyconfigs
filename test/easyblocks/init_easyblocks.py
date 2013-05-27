@@ -61,10 +61,17 @@ class InitTest(TestCase):
         f.close()
 
     def setUp(self):
-        """ setup """
+        """Setup test."""
         self.log = fancylogger.getLogger("EasyblocksInitTest", fname=False)
         fd, self.eb_file = tempfile.mkstemp(prefix='easyblocks_init_test_', suffix='.eb')
         os.close(fd)
+
+    def tearDown(self):
+        """Cleanup."""
+        try:
+            os.remove(self.eb_file)
+        except OSError, err:
+            self.log.error("Failed to remove %s: %s" % (self.eb_file, err))
 
 def template_init_test(self, easyblock):
     """Test whether all easyconfigs can be initialized."""
@@ -97,6 +104,10 @@ def template_init_test(self, easyblock):
         # initialize easyblock
         # if this doesn't fail, the test succeeds
         app = app_class(self.eb_file)
+
+        # cleanup
+        app.close_log()
+        os.remove(app.logfile)
     else:
         self.assertTrue(False, "Class found in easyblock %s" % easyblock)
 
