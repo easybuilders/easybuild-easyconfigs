@@ -50,11 +50,13 @@ class EB_MUMmer(ConfigureMake):
 
         super(EB_MUMmer, self).__init__(*args, **kwargs)
 
-        self.bin_files = ["mummer", "annotate", "combineMUMs", "delta-filter", "gaps", "mgaps",
-                          "repeat-match", "show-aligns", "show-coords", "show-tiling", "show-snps",
-                          "show-diff", "exact-tandems", "mapview", "mummerplot", "nucmer", "promer",
-                          "run-mummer1", "run-mummer3", "nucmer2xfig", "dnadiff",]
-        self.script_files = [ "Foundation.pm", ]
+        self.bin_files = [
+            "mummer", "annotate", "combineMUMs", "delta-filter", "gaps", "mgaps",
+            "repeat-match", "show-aligns", "show-coords", "show-tiling", "show-snps",
+            "show-diff", "exact-tandems", "mapview", "mummerplot", "nucmer", "promer",
+            "run-mummer1", "run-mummer3", "nucmer2xfig", "dnadiff",
+        ]
+        self.script_files = ["Foundation.pm"]
         self.aux_bin_files = ["postnuc", "postpro", "prenuc", "prepro"]
 
     def configure_step(self):
@@ -97,7 +99,7 @@ class EB_MUMmer(ConfigureMake):
     def make_module_extra(self):
         """Correctly prepend $PATH and $PERLXLIB for MUMmer."""
         # determine major version for Perl (e.g. '5'), required for e.g. $PERL5LIB
-        perlmajver get_major_perl_version()
+        perlmajver = get_major_perl_version()
 
         # set $PATH and $PERLXLIB correctly
         txt = super(EB_MUMmer, self).make_module_extra()
@@ -110,9 +112,10 @@ class EB_MUMmer(ConfigureMake):
         """Custom sanity check for MUMmer."""
 
         custom_paths = {
-                        'files': ['bin/%s' % x for x in self.bin_files] +
-                                 ['bin/aux_bin/%s' % x for x in self.aux_bin_files] +
-                                 ['bin/scripts/%s' % x for x in self.script_files],
-                        'dirs': []
-                       }
+            'files':
+                ['bin/%s' % x for x in self.bin_files] +
+                ['bin/aux_bin/%s' % x for x in self.aux_bin_files] +
+                ['bin/scripts/%s' % x for x in self.script_files],
+            'dirs': []
+        }
         super(EB_MUMmer, self).sanity_check_step(custom_paths=custom_paths)
