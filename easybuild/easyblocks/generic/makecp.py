@@ -25,11 +25,13 @@
 """
 @author: George Tsouloupas (The Cyprus Institute)
 @author: Fotis Georgatos (University of Luxembourg)
+@author: Kenneth Hoste (Ghent University)
 """
+import os
 import shutil
 
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
-from easybuild.framework.easyconfig import CUSTOM, MANDATORY
+from easybuild.framework.easyconfig import MANDATORY
 
 class MakeCp(ConfigureMake):
     """
@@ -41,8 +43,8 @@ class MakeCp(ConfigureMake):
         Define list of files or directories to be copied after make
         """
         extra_vars = [
-                      ('files_to_copy', [{}, "List of files or dirs to copy", MANDATORY]),
-                     ]
+            ('files_to_copy', [{}, "List of files or dirs to copy", MANDATORY]),
+        ]
         return ConfigureMake.extra_options(extra_vars)
 
     def configure_step(self):
@@ -52,10 +54,37 @@ class MakeCp(ConfigureMake):
         pass
 
     def install_step(self):
-
-        src = self.cfg['start_dir']
+        """Install by copying specified files and directories."""
         try:
-            for f in self.cfg["files_to_copy"]:
-                shutil.copy2(src,self.installdir)
-        except:
-            self.log.exception("Copying %s to installation dir %s failed" % (src,self.installdir))
+            for fil in self.cfg["files_to_copy"]:
+                if isinstance(fil, tuple):
+                    # ([src1, src2], targetdir)
+                    if len(fil) == 2 and isinstance(fil[0], list) and isinstance(fil[1], basestring):
+                        srcs = fil[0]
+                        target = os.path.join(self.installdir, fil[1])
+                    else:
+                        self.log.error("Only tuples of format '([<source files>], <target dir>)' supported.")
+                # 'src_file' or 'src_dir'
+                elif isinstance(fil, basestring):
+                    srcs = [fil]
+                    target = self.installdir
+                else:
+                    self.log.error("Found neither string nor tuple as file to copy: '%s' (type %s)" % (fil, type(fil)))
+
+                if not os.path.exists(target):
+                    os.makedirs(target)
+                for src in srcs:
+                    src = os.path.join(self.cfg['start_dir'], src)
+                    # copy individual file
+                    if os.path.isfile(src):
+                        self.log.debug("Copying file %s to %s" % (src, target))
+                        shutil.copy2(src, target)
+                    # copy directory
+                    elif os.path.isdir(src):
+                        self.log.debug("Copying directory %s to %s" % (src, target))
+                        shutil.copytree(src, os.path.join(target, os.path.basename(src)))
+                    else:
+                        self.log.error("Can't copy non-existing path %s to %s" % (src, target))
+
+        except OSError, err:
+            self.log.error("Copying %s to installation dir failed: %s" % (fil, err))
