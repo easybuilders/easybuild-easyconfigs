@@ -64,7 +64,7 @@ class EasyConfigTest(TestCase):
 
     def setUp(self):
         """Setup."""
-        config.variables['tmp_logdir'] = mkdtemp(prefix='easyconfigs_test_')
+        config.variables['tmp_logdir'] = tempfile.mkdtemp(prefix='easyconfigs_test_')
 
     def tearDown(self):
         """Cleanup."""
