@@ -135,35 +135,42 @@ class EB_Trinity(EasyBlock):
 
     def jellyfish(self):
         """use a seperate jellyfish source if it exists, otherwise, just install the bundled jellyfish"""
-        self.log.info("begin jellyfish")
-        self.log.info("startdir: %s", self.cfg['start_dir'])
+        self.log.debug("begin jellyfish")
+        self.log.debug("startdir: %s", self.cfg['start_dir'])
         jellyfishdir = glob.glob("%s../jellyfish-*" % self.cfg['start_dir'])
+        cwd = os.getcwd()
         if jellyfishdir:
             jellyfishdir = jellyfishdir[0]
             # if there is a jellyfish directory
             self.log.info("detected jellyfish directory %s, so using this source", jellyfishdir)
             orig_jellyfishdir = os.path.join(self.cfg['start_dir'], 'trinity-plugins', 'jellyfish')
-            # remove original symlink
-            os.unlink(orig_jellyfishdir)
-            # create new one
-            os.symlink(jellyfishdir, orig_jellyfishdir)
             try:
+                # remove original symlink
+                os.unlink(orig_jellyfishdir)
+                # create new one
+                os.symlink(jellyfishdir, orig_jellyfishdir)
                 os.chdir(orig_jellyfishdir)
             except OSError, err:
-                self.log.error("jellyfish plugin: failed to change to dst dir %s: %s" % (orig_jellyfishdir, err))
+                self.log.error("jellyfish plugin: failed to change dir %s: %s" % (orig_jellyfishdir, err))
 
             run_cmd('./configure --prefix=%s' % orig_jellyfishdir)
-            cc = os.getenv('CC')
-            cmd = "make CC='%s' CXX='%s' CFLAGS='%s'" % (cc, os.getenv('CXX'), os.getenv('CFLAGS'))
+            cmd = "make CC='%s' CXX='%s' CFLAGS='%s'" % (os.getenv('CC'), os.getenv('CXX'), os.getenv('CFLAGS'))
             run_cmd(cmd)
             # the installstep is running the jellyfish script, this is a wrapper that will compile .lib/jellyfish
             run_cmd("bin/jellyfish")
-            os.chdir(self.cfg['start_dir'])
+            try:
+                os.chdir(cwd)
+            except OSError:
+                try:
+                    start_dir = self.cfg['start_dir']
+                    os.chdir(start_dir)
+                except OSError:
+                    self.log.error("jellyfish: Could not return to original dir %s or startdir %s", cwd, start_dir)
         else:
             self.log.info("no seperate source found for jellyfish, using shipped version")
 
             self.trinityplugin('jellyfish')
-        self.log.info("end jellyfish")
+        self.log.debug("end jellyfish")
 
     def kmer(self):
         """Install procedure for kmer (Meryl)."""
