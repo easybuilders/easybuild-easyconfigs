@@ -1,5 +1,5 @@
 ##
-# Copyright 2009-2013 Ghent University
+# Copyright 2009-2013 the Cyprus Institute
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -27,6 +27,7 @@ EasyBuild support for BLAT
 
 @author: Andreas Panteli (The Cyprus Institute)
 @author: Thekla Loizou (The Cyprus Institute)
+@author: George Tsouloupas (The Cyprus Institute)
 """
 import os
 
@@ -39,10 +40,6 @@ class EB_BLAT(MakeCp):
 		mkdir("bin")
 
 	def build_step(self, verbose=False):
-		"""
-		Start the actual build
-		- typical: make -j X
-		"""
 
 		paracmd = ''
 		if self.cfg['parallel']:
