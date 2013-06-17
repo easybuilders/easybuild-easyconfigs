@@ -2,7 +2,7 @@
 # This file is an EasyBuild reciPY as per https://github.com/hpcugent/easybuild
 #
 # Copyright:: Copyright 2012-2013 The Cyprus Institute
-# Authors::   Andreas Panteli <a.panteli@cyi.ac.cy>
+# Authors::   Andreas Panteli <a.panteli@cyi.ac.cy>, George Tsouloupas <g.tsouloupas@cyi.ac.cy>
 # License::   MIT/GPL
 # $Id$
 #
@@ -10,7 +10,7 @@
 """
 EasyBuild support for building and installing MUSCLE, implemented as an easyblock
 
-@author: Andreas Panteli (CyI)
+@author: Andreas Panteli (CyI), George Tsouloupas (CyI)
 """
 
 import os
@@ -28,7 +28,7 @@ class EB_MUSCLE(PackedBinary):
 		"""
 		Unpack the source files.
 		"""
-		print "HERE 1"
+
 		newdir = '%s-%s' % (self.name.lower(), self.version)
 		self.cfg['start_dir'] = os.path.join(self.builddir, newdir)
 		try:
