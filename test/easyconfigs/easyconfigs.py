@@ -74,10 +74,10 @@ class EasyConfigTest(TestCase):
 
         self.ordered_specs = resolve_dependencies(easyconfigs, easyconfigs_path, force=True)
 
-    # pygraph dependencies required for constructing dependency graph are not available prior to Python 2.6
-    if LooseVersion(sys.version) >= LooseVersion('2.6') and single_tests_ok:
-        def test_dep_graph(self):
-            """Unit test that builds a full dependency graph."""
+    def test_dep_graph(self):
+        """Unit test that builds a full dependency graph."""
+        # pygraph dependencies required for constructing dependency graph are not available prior to Python 2.6
+        if LooseVersion(sys.version) >= LooseVersion('2.6') and single_tests_ok:
             # temporary file for dep graph
             (hn, fn) = tempfile.mkstemp(suffix='.dot')
             os.close(hn)
@@ -86,13 +86,19 @@ class EasyConfigTest(TestCase):
                 self.process_all_easyconfigs()
 
             dep_graph(fn, self.ordered_specs, silent=True)
-    else:
-        print "(skipped dep graph test)"
+
+            try:
+                os.remove(fn)
+            except OSError, err:
+                log.error("Failed to remove %s: %s" % (fn, err))
+        else:
+            print "(skipped dep graph test)"
 
     def test_conflicts(self):
         """Check whether any conflicts occur in software dependency graphs."""
 
         if not single_tests_ok:
+            print "(skipped conflicts test)"
             return
 
         if self.ordered_specs is None:
@@ -108,10 +114,10 @@ class EasyConfigTest(TestCase):
         while depmap != depmap_last:
             depmap_last = copy.deepcopy(depmap)
             for (spec, (builddependencies, dependencies)) in depmap_last.items():
-                # extend dependencies with non-build dependencies of own dependencies
+                # extend dependencies with non-build dependencies of own (non-build) dependencies
                 for dep in dependencies:
                     if dep not in builddependencies:
-                        depmap[spec][1].extend(depmap[dep][1])
+                        depmap[spec][1].extend([d for d in depmap[dep][1] if d not in depmap[dep][0]])
                 depmap[spec][1] = sorted(nub(depmap[spec][1]))
 
         # for each of the easyconfigs, check whether the dependencies contain any conflicts
@@ -196,6 +202,7 @@ def template_easyconfig_test(self, spec):
                     self.assertTrue(os.path.isfile(ext_patch_full), msg)
 
     app.close_log()
+    os.remove(app.logfile)
 
     # test passed, so set back to True
     single_tests_ok = True and prev_single_tests_ok
