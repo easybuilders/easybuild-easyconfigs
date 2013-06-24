@@ -64,7 +64,7 @@ class EB_Rosetta(EasyBlock):
                 if os.path.isfile(src_tarball):
                     self.srcdir = extract_file(src_tarball, prefix)
                 else:
-                    self.log.error("Neither source directory '%s', nor source tarball '%s' found." % self.srcdir, src_tarball)
+                    self.log.error("Neither source directory '%s', nor source tarball '%s' found." % (self.srcdir, src_tarball))
         except OSError, err:
             self.log.error("Getting Rosetta sources dir ready failed: %s" % err)
 
@@ -157,12 +157,13 @@ class EB_Rosetta(EasyBlock):
         """
         bindir = os.path.join(self.installdir, 'bin')
 
-        # walk the build dir to leaf
-        builddir = 'build'
+        # walk the build/src dir to leaf
+        builddir = os.path.join('build', 'src')
         while len(os.listdir(builddir)) == 1:
             builddir = os.path.join(builddir, os.listdir(builddir)[0])
 
         try:
+            self.log.debug("Copying %s to %s" % (builddir, bindir))
             shutil.copytree(builddir, bindir)
         except OSError, err:
             self.log.error("Copying executables from %s to bin dir %s failed: %s" % (builddir, bindir, err))
