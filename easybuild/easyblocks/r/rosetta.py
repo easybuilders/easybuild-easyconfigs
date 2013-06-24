@@ -57,7 +57,7 @@ class EB_Rosetta(EasyBlock):
         # locate sources, and unpack if necessary
         # old 'bundles' tarballs contain a gzipped tarball for source, recent ones contain unpacked source
         try:
-            prefix = os.path.join(self.builddir, '%s-%s' % (self.name, self.version))
+            prefix = os.path.join(self.builddir, '%s-%s' % (self.name.lower(), self.version))
             self.srcdir = os.path.join(prefix, 'rosetta_source')
             if not os.path.exists(self.srcdir): 
                 src_tarball = os.path.join(prefix, 'rosetta%s_source.tgz' % self.version)
