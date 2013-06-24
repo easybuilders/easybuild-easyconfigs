@@ -33,9 +33,22 @@ EasyBuild support for install the Intel C/C++ compiler suite, implemented as an 
 """
 
 import os
+import re
 from distutils.version import LooseVersion
 
 from easybuild.easyblocks.generic.intelbase import IntelBase
+from easybuild.tools.filetools import run_cmd
+
+
+def get_icc_version():
+    """Obtain icc version string via 'icc --version'."""
+    cmd = "icc --version"
+    (out, _) = run_cmd(cmd, log_all=True, simple=False)
+
+    ver_re = re.compile("^icc \(ICC\) (?P<version>[0-9.]+) [0-9]+$", re.M)
+    version = ver_re.search(out).group('version')
+
+    return version
 
 
 class EB_icc(IntelBase):
