@@ -31,9 +31,11 @@ EasyBuild support for building and installing Rosetta, implemented as an easyblo
 @author: Pieter De Baets (Ghent University)
 @author: Jens Timmerman (Ghent University)
 """
+import fileinput
 import os
 import re
 import shutil
+import sys
 import easybuild.tools.toolchain as toolchain
 from easybuild.easyblocks.icc import get_icc_version
 from easybuild.framework.easyblock import EasyBlock
@@ -135,6 +137,13 @@ class EB_Rosetta(EasyBlock):
             f.close()
         except IOError, err:
             self.log.error("Failed to write settings file %s: %s" % (us_fp, err))
+
+        # make sure specified compiler version is accepted by patching it in
+        os_fp = os.path.join(self.srcdir, "tools/build/options.settings")
+        cxxver_re = re.compile('(.*"%s".*)(,\s*"\*"\s*],.*)' % cxx, re.M)
+        for line in fileinput.input(os_fp, inplace=1, backup='.orig.eb'):
+            line = cxxver_re.sub(r'\1, "%s"\2' % cxx_ver, line)
+            sys.stdout.write(line)
 
     def build_step(self):
         """
