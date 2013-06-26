@@ -191,11 +191,11 @@ class IntelBase(EasyBlock):
             "CONTINUE_WITH_OPTIONAL_ERROR=yes",
         ]) % {
             'activation_name': silent_cfg_names_map.get('activation_name', 'ACTIVATION'),
-            'activation': self.cfg['license_activation'],
             'license_file_name': silent_cfg_names_map.get('license_file_name', 'PSET_LICENSE_FILE'),
-            'license_file': self.license_file,
             'install_dir_name': silent_cfg_names_map.get('install_dir_name', 'PSET_INSTALL_DIR'),
-            'install_dir': self.installdir,
+            'activation': self.cfg['license_activation'],
+            'license_file': self.license_file,
+            'install_dir': silent_cfg_names_map.get('install_dir', self.installdir),
         }
 
         # we should be already in the correct directory

@@ -37,7 +37,7 @@ from distutils.version import LooseVersion
 
 from easybuild.easyblocks.generic.intelbase import IntelBase
 from easybuild.tools.filetools import run_cmd
-
+from easybuild.tools.config import install_path
 
 class EB_impi(IntelBase):
     """
@@ -61,6 +61,7 @@ class EB_impi(IntelBase):
                 silent_cfg_names_map = {
                     'activation_name': 'ACTIVATION_TYPE',
                     'license_file_name': 'ACTIVATION_LICENSE_FILE',
+                    'install_dir': install_path(),  # impi installer creates impi/<version> subdir itself!
                 }
 
             super(EB_impi, self).install_step(silent_cfg_names_map=silent_cfg_names_map)
