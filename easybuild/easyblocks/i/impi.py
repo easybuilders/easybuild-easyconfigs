@@ -52,8 +52,18 @@ class EB_impi(IntelBase):
         """
         if LooseVersion(self.version) >= LooseVersion('4.0.1'):
             # impi starting from version 4.0.1.x uses standard installation procedure.
-            super(EB_impi, self).install_step()
-            return None
+
+            silent_cfg_names_map = None
+
+            if LooseVersion(self.version) >= LooseVersion('4.1.1'):
+                # since impi 4.1.1, the silent.cfg have been slightly changed
+
+                silent_cfg_names_map = {
+                    'activation_name': 'ACTIVATION_TYPE',
+                    'license_file_name': 'ACTIVATION_LICENSE_FILE',
+                }
+
+            super(EB_impi, self).install_step(silent_cfg_names_map=silent_cfg_names_map)
         else:
             # impi up until version 4.0.0.x uses custom installation procedure.
             silent = \
@@ -87,6 +97,7 @@ EULA=accept
                 f.close()
             except:
                 self.log.exception("Writing silent cfg file %s failed." % silent)
+            self.log.debug("Contents of %s: %s" % (silentcfg, silent))
 
             tmpdir = os.path.join(os.getcwd(), self.version, 'mytmpdir')
             try:
