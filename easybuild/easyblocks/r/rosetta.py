@@ -94,6 +94,13 @@ class EB_Rosetta(EasyBlock):
             self.cfg.update('makeopts', 'extras=mpi')
             defines.extend(['USEMPI', 'MPICH_IGNORE_CXX_SEEK'])
 
+        # make sure important environment variables are passed down
+        # e.g., compiler env vars for MPI wrappers
+        env_vars = {}
+        for (key, val) in os.environ.items():
+            if key.startswith('I_MPI_') or key.startswith('MPICH_') or key.startswith('OMPI_'):
+                env_vars.update({key: val})
+
         # create user.settings file
         paths = os.getenv('PATH').split(':')
         ld_library_paths = os.getenv('LD_LIBRARY_PATH').split(':')
@@ -122,6 +129,10 @@ class EB_Rosetta(EasyBlock):
             "               'INTEL_LICENSE_FILE': '%s'," % os.getenv('INTEL_LICENSE_FILE'),  # Intel license file
             "               'PATH': %s," % str(paths),
             "               'LD_LIBRARY_PATH': %s," % str(ld_library_paths),
+        ])
+        for (key, val) in env_vars.items():
+            txt += "               '%s': '%s'," % (key, val),
+        txt += '\n'.join([
             "           },",
             "       },",
             "       'removes': {",
