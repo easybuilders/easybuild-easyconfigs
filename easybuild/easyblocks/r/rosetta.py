@@ -100,34 +100,34 @@ class EB_Rosetta(EasyBlock):
         cpaths = os.getenv('CPATH').split(':')
         flags = [str(f).strip('-') for f in self.toolchain.variables['CXXFLAGS'].copy()]
 
-        txt = ''.join([
-            'settings = {',
-            '   "user" : {',
-            '       "prepends" : {',
-            '           "library_path"  : %s,' % str(ld_library_paths),
-            '           "include_path"  : %s,' % str(cpaths),
-            '       },',
-            '       "appends" : {',
-            '           "program_path"  : %s,' % str(paths),
-            '           "flags" : {',
-            '               "compile"   : %s,' % str(flags),
-            #'               "mode"      : %s,' % str(o_flags),
-            '           },',
-            '           "defines"       : %s,' % str(defines),
-            '       },',
-            '       "overrides" : {',
-            '           "cc"            : "%s",' % os.getenv('CC'),
-            '           "cxx"           : "%s",' % os.getenv('CXX'),
-            '           "ENV" : {',
-            '               "INTEL_LICENSE_FILE": %s,' % os.getenv('INTEL_LICENSE_FILE'),  # Intel license file
-            '               "PATH" : %s,' % str(paths),
-            '               "LD_LIBRARY_PATH" : %s,' % str(ld_library_paths),
-            '           }',
-            '       },',
-            '       "removes" : {',
-            '       },',
-            '   }',
-            '}',
+        txt = '\n'.join([
+            "settings = {",
+            "   'user': {",
+            "       'prepends': {",
+            "           'library_path': %s," % str(ld_library_paths),
+            "           'include_path': %s," % str(cpaths),
+            "       },",
+            "       'appends': {",
+            "           'program_path': %s," % str(paths),
+            "           'flags': {",
+            "               'compile': %s," % str(flags),
+            #"              'mode': %s," % str(o_flags),
+            "           },",
+            "           'defines': %s," % str(defines),
+            "       },",
+            "       'overrides': {",
+            "           'cc': '%s'," % os.getenv('CC'),
+            "           'cxx': '%s'," % os.getenv('CXX'),
+            "           'ENV': {",
+            "               'INTEL_LICENSE_FILE': %s," % os.getenv('INTEL_LICENSE_FILE'),  # Intel license file
+            "               'PATH': %s," % str(paths),
+            "               'LD_LIBRARY_PATH': %s," % str(ld_library_paths),
+            "           },",
+            "       },",
+            "       'removes': {",
+            "       },",
+            "   },",
+            "}",
         ])
         us_fp = os.path.join(self.srcdir, "tools/build/user.settings")
         try:
@@ -167,9 +167,12 @@ class EB_Rosetta(EasyBlock):
         bindir = os.path.join(self.installdir, 'bin')
 
         # walk the build/src dir to leaf
-        builddir = os.path.join('build', 'src')
-        while len(os.listdir(builddir)) == 1:
-            builddir = os.path.join(builddir, os.listdir(builddir)[0])
+        try:
+            builddir = os.path.join('build', 'src')
+            while len(os.listdir(builddir)) == 1:
+                builddir = os.path.join(builddir, os.listdir(builddir)[0])
+        except OSError, err:
+            self.log.error("Failed to walk build/src dir: %s" % err)
 
         try:
             self.log.debug("Copying %s to %s" % (builddir, bindir))
