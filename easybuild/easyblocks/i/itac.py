@@ -75,6 +75,7 @@ EULA=accept
         f = open(silentcfg, 'w')
         f.write(silent)
         f.close()
+        self.log.debug("Contents of %s: %s" % (silentcfg, silent))
 
         tmpdir = os.path.join(os.getcwd(), self.version, 'mytmpdir')
         try:
