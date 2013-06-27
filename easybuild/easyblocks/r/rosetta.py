@@ -225,7 +225,7 @@ class EB_Rosetta(EasyBlock):
             infix = 'mpi.'
 
         binaries = ["AbinitioRelax", "backrub", "cluster", "combine_silent", "extract_pdbs",
-                    "idealize", "packstat", "relax", "score_jd2", "score"]
+                    "idealize_jd2", "packstat", "relax", "score_jd2", "score"]
         custom_paths = {
             'files':["bin/%s.%slinux%srelease" % (x, infix, self.cxx) for x in binaries],
             'dirs':[],
