@@ -100,6 +100,7 @@ class EB_Rosetta(EasyBlock):
         for (key, val) in os.environ.items():
             if key.startswith('I_MPI_') or key.startswith('MPICH_') or key.startswith('OMPI_'):
                 env_vars.update({key: val})
+        self.log.debug("List of extra environment variables to pass down: %s" % str(env_vars))
 
         # create user.settings file
         paths = os.getenv('PATH').split(':')
@@ -130,8 +131,9 @@ class EB_Rosetta(EasyBlock):
             "               'PATH': %s," % str(paths),
             "               'LD_LIBRARY_PATH': %s," % str(ld_library_paths),
         ])
+        txt += '\n'
         for (key, val) in env_vars.items():
-            txt += "               '%s': '%s'," % (key, val),
+            txt += "               '%s': '%s',\n" % (key, val),
         txt += '\n'.join([
             "           },",
             "       },",
