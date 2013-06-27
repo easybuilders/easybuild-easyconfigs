@@ -98,7 +98,7 @@ class EB_Rosetta(EasyBlock):
         # e.g., compiler env vars for MPI wrappers
         env_vars = {}
         for (key, val) in os.environ.items():
-            if key.startswith('I_MPI_') or key.startswith('MPICH_') or key.startswith('OMPI_'):
+            if key in ['I_MPI_CC', 'I_MPI_CXX', 'MPICH_CC', 'MPICH_CXX', 'OMPI_CC', 'OMPI_CXX']:
                 env_vars.update({key: val})
         self.log.debug("List of extra environment variables to pass down: %s" % str(env_vars))
 
@@ -133,7 +133,7 @@ class EB_Rosetta(EasyBlock):
         ])
         txt += '\n'
         for (key, val) in env_vars.items():
-            txt += "               '%s': '%s',\n" % (key, val),
+            txt += "               '%s': '%s',\n" % (key, val)
         txt += '\n'.join([
             "           },",
             "       },",
