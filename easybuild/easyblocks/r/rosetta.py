@@ -52,6 +52,7 @@ class EB_Rosetta(EasyBlock):
         super(EB_Rosetta, self).__init__(*args, **kwargs)
 
         self.srcdir = None
+        self.cxx = None
 
     def extract_step(self):
         """Extract sources, if they haven't been already."""
@@ -78,9 +79,9 @@ class EB_Rosetta(EasyBlock):
         defines = ['NDEBUG']
         self.cfg.update('makeopts', "mode=release")
 
-        cxx = os.getenv('CC_SEQ')
-        if cxx is None:
-            cxx = os.getenv('CC')
+        self.cxx = os.getenv('CC_SEQ')
+        if self.cxx is None:
+            self.cxx = os.getenv('CC')
         cxx_ver = None
         if self.toolchain.comp_family() in [toolchain.GCC]:  #@UndefinedVariable
             cxx_ver = '.'.join(get_software_version('GCC').split('.')[:2])
@@ -88,7 +89,7 @@ class EB_Rosetta(EasyBlock):
             cxx_ver = '.'.join(get_icc_version().split('.')[:2])
         else:
             self.log.error("Don't know how to determine C++ compiler version.")
-        self.cfg.update('makeopts', "cxx=%s cxx_ver=%s" % (cxx, cxx_ver))
+        self.cfg.update('makeopts', "cxx=%s cxx_ver=%s" % (self.cxx, cxx_ver))
 
         if self.toolchain.options['usempi']:
             self.cfg.update('makeopts', 'extras=mpi')
@@ -153,7 +154,7 @@ class EB_Rosetta(EasyBlock):
 
         # make sure specified compiler version is accepted by patching it in
         os_fp = os.path.join(self.srcdir, "tools/build/options.settings")
-        cxxver_re = re.compile('(.*"%s".*)(,\s*"\*"\s*],.*)' % cxx, re.M)
+        cxxver_re = re.compile('(.*"%s".*)(,\s*"\*"\s*],.*)' % self.cxx, re.M)
         for line in fileinput.input(os_fp, inplace=1, backup='.orig.eb'):
             line = cxxver_re.sub(r'\1, "%s"\2' % cxx_ver, line)
             sys.stdout.write(line)
@@ -217,11 +218,16 @@ class EB_Rosetta(EasyBlock):
         extract_and_copy('BioTools%s', optional=True)
 
     def sanity_check_step(self):
+        """Custom sanity check for Rosetta."""
+
+        infix = ''
+        if self.toolchain.options['usempi']:
+            infix = 'mpi.'
 
         binaries = ["AbinitioRelax", "backrub", "cluster", "combine_silent", "extract_pdbs",
                     "idealize", "packstat", "relax", "score_jd2", "score"]
         custom_paths = {
-            'files':["bin/%s.linux%srelease" % (x, os.getenv('CC')) for x in binaries],
+            'files':["bin/%s.%slinux%srelease" % (x, infix, self.cxx) for x in binaries],
             'dirs':[],
         }
         super(EB_Rosetta, self).sanity_check_step(custom_paths=custom_paths)
