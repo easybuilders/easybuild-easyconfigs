@@ -199,15 +199,18 @@ class EB_Rosetta(EasyBlock):
             """Copy specified directory, after extracting it (if required)."""
             try:
                 srcdir = os.path.join(self.cfg['start_dir'], dirname_tmpl % '')
-                if not os.path.exists(srcdir): 
+                if not os.path.exists(srcdir):
+                    # try to extract if directory is not there yet
                     src_tarball = os.path.join(self.cfg['start_dir'], (dirname_tmpl % self.version) + '.tgz')
                     if os.path.isfile(src_tarball):
                         srcdir = extract_file(src_tarball, self.cfg['start_dir'])
-                    elif not optional:
-                        self.log.error("Neither source directory '%s', nor source tarball '%s' found." % srcdir, src_tarball)
-                shutil.copytree(srcdir, os.path.join(self.installdir, os.path.basename(srcdir)))
+
+                if os.path.exists(srcdir):
+                    shutil.copytree(srcdir, os.path.join(self.installdir, os.path.basename(srcdir)))
+                elif not optional:
+                    self.log.error("Neither source directory '%s', nor source tarball '%s' found." % srcdir, src_tarball)
             except OSError, err:
-                self.log.error("Getting Rosetta sources dir ready failed: %s" % err)
+                self.log.error("Getting Rosetta %s dir ready failed: %s" % (dirname_tmpl, err))
 
         # (extract and) copy database and biotools (if it's there)
         extract_and_copy('rosetta_database%s')
