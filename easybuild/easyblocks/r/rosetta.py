@@ -119,7 +119,7 @@ class EB_Rosetta(EasyBlock):
             "           'cc': '%s'," % os.getenv('CC'),
             "           'cxx': '%s'," % os.getenv('CXX'),
             "           'ENV': {",
-            "               'INTEL_LICENSE_FILE': %s," % os.getenv('INTEL_LICENSE_FILE'),  # Intel license file
+            "               'INTEL_LICENSE_FILE': '%s'," % os.getenv('INTEL_LICENSE_FILE'),  # Intel license file
             "               'PATH': %s," % str(paths),
             "               'LD_LIBRARY_PATH': %s," % str(ld_library_paths),
             "           },",
