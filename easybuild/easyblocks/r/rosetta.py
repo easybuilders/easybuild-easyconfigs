@@ -181,29 +181,32 @@ class EB_Rosetta(EasyBlock):
         bindir = os.path.join(self.installdir, 'bin')
         libdir = os.path.join(self.installdir, 'lib')
 
-        # walk the build/src dir to leaf
-        try:
-            builddir = os.path.join('build', 'src')
-            while len(os.listdir(builddir)) == 1:
-                builddir = os.path.join(builddir, os.listdir(builddir)[0])
-        except OSError, err:
-            self.log.error("Failed to walk build/src dir: %s" % err)
-
-        lib_re = re.compile("^lib.*\.so$")
-        try:
-            os.makedirs(bindir)
-            os.makedirs(libdir)
-            for fil in os.listdir(builddir):
-                srcfile = os.path.join(builddir, fil)
-                if os.path.isfile(srcfile):
-                    if lib_re.match(fil):
-                        self.log.debug("Copying %s to %s" % (srcfile, libdir))
-                        shutil.copy2(srcfile, libdir)
-                    else:
-                        self.log.debug("Copying %s to %s" % (srcfile, bindir))
-                        shutil.copy2(srcfile, bindir)
-        except OSError, err:
-            self.log.error("Copying executables from %s to bin/lib install dirs failed: %s" % (builddir, err))
+        for build_subdir in ['src', 'external']:
+            builddir = os.path.join('build', build_subdir)
+            if not os.path.exists(builddir):
+                continue
+            # walk the build/src dir to leaf
+            try:
+                while len(os.listdir(builddir)) == 1:
+                    builddir = os.path.join(builddir, os.listdir(builddir)[0])
+            except OSError, err:
+                self.log.error("Failed to walk build/src dir: %s" % err)
+            # copy binaries/libraries to install dir
+            lib_re = re.compile("^lib.*\.so$")
+            try:
+                os.makedirs(bindir)
+                os.makedirs(libdir)
+                for fil in os.listdir(builddir):
+                    srcfile = os.path.join(builddir, fil)
+                    if os.path.isfile(srcfile):
+                        if lib_re.match(fil):
+                            self.log.debug("Copying %s to %s" % (srcfile, libdir))
+                            shutil.copy2(srcfile, libdir)
+                        else:
+                            self.log.debug("Copying %s to %s" % (srcfile, bindir))
+                            shutil.copy2(srcfile, bindir)
+            except OSError, err:
+                self.log.error("Copying executables from %s to bin/lib install dirs failed: %s" % (builddir, err))
 
         os.chdir(self.cfg['start_dir'])
 
