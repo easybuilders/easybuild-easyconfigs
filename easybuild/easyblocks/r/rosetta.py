@@ -179,6 +179,7 @@ class EB_Rosetta(EasyBlock):
         and copy (or untar) database and bioTools to install directory
         """
         bindir = os.path.join(self.installdir, 'bin')
+        libdir = os.path.join(self.installdir, 'lib')
 
         # walk the build/src dir to leaf
         try:
@@ -188,11 +189,21 @@ class EB_Rosetta(EasyBlock):
         except OSError, err:
             self.log.error("Failed to walk build/src dir: %s" % err)
 
+        lib_re = re.compile("^lib.*\.so$")
         try:
-            self.log.debug("Copying %s to %s" % (builddir, bindir))
-            shutil.copytree(builddir, bindir)
+            os.makedirs(bindir)
+            os.makedirs(libdir)
+            for fil in os.listdir(builddir):
+                srcfile = os.path.join(builddir, fil)
+                if os.path.isfile(srcfile):
+                    if lib_re.match(fil):
+                        self.log.debug("Copying %s to %s" % (srcfile, libdir))
+                        shutil.copy2(srcfile, libdir)
+                    else:
+                        self.log.debug("Copying %s to %s" % (srcfile, bindir))
+                        shutil.copy2(srcfile, bindir)
         except OSError, err:
-            self.log.error("Copying executables from %s to bin dir %s failed: %s" % (builddir, bindir, err))
+            self.log.error("Copying executables from %s to bin/lib install dirs failed: %s" % (builddir, err))
 
         os.chdir(self.cfg['start_dir'])
 
