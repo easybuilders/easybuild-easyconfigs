@@ -201,10 +201,10 @@ class EB_Rosetta(EasyBlock):
                     if os.path.isfile(srcfile):
                         if lib_re.match(fil):
                             self.log.debug("Copying %s to %s" % (srcfile, libdir))
-                            shutil.copy2(srcfile, libdir)
+                            shutil.copy2(srcfile, os.path.join(libdir, fil))
                         else:
                             self.log.debug("Copying %s to %s" % (srcfile, bindir))
-                            shutil.copy2(srcfile, bindir)
+                            shutil.copy2(srcfile, os.path.join(bindir, fil))
             except OSError, err:
                 self.log.error("Copying executables from %s to bin/lib install dirs failed: %s" % (builddir, err))
 
