@@ -180,6 +180,11 @@ class EB_Rosetta(EasyBlock):
         """
         bindir = os.path.join(self.installdir, 'bin')
         libdir = os.path.join(self.installdir, 'lib')
+        try:
+            os.makedirs(bindir)
+            os.makedirs(libdir)
+        except OSError, err:
+            self.log.error("Failed to created bin/lib dirs: %s, %s" % (bindir, libdir))
 
         for build_subdir in ['src', 'external']:
             builddir = os.path.join('build', build_subdir)
@@ -194,8 +199,6 @@ class EB_Rosetta(EasyBlock):
             # copy binaries/libraries to install dir
             lib_re = re.compile("^lib.*\.so$")
             try:
-                os.makedirs(bindir)
-                os.makedirs(libdir)
                 for fil in os.listdir(builddir):
                     srcfile = os.path.join(builddir, fil)
                     if os.path.isfile(srcfile):
