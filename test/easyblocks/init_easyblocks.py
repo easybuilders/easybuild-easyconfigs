@@ -35,13 +35,20 @@ import tempfile
 from vsc import fancylogger
 from unittest import TestCase, TestLoader, main
 
+import easybuild.tools.options as eboptions
 from easybuild.framework.easyblock import get_class
 from easybuild.framework.easyconfig import MANDATORY
 from easybuild.framework.easyconfig.tools import get_paths_for
+from easybuild.tools import config
 
 
 class InitTest(TestCase):
     """ Baseclass for easyblock testcases """
+
+    # initialize configuration (required for e.g. default modules_tool setting)
+    eb_go = eboptions.parse_options()
+    config.init(eb_go.options, eb_go.get_options_by_section('config'))
+    del eb_go
 
     def writeEC(self, easyblock, extratxt=''):
         """ create temporary easyconfig file """
