@@ -140,7 +140,7 @@ class EB_Trinity(EasyBlock):
         cwd = os.getcwd()
         glob_pat = os.path.join(os.path.dirname(self.cfg['start_dir']), "jellyfish-*")
         jellyfishdirs = glob.glob(glob_pat)
-        self.log.debug("glob pattern '%s' yields %s" % (pat, jellyfishdirs))
+        self.log.debug("glob pattern '%s' yields %s" % (glob_pat, jellyfishdirs))
         if len(jellyfishdirs) == 1 and os.path.isdir(jellyfishdirs[0]):
             jellyfishdir = jellyfishdirs[0]
             # if there is a jellyfish directory
