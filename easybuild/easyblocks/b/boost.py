@@ -145,12 +145,14 @@ class EB_Boost(EasyBlock):
     def sanity_check_step(self):
         """Custom sanity check for Boost."""
 
-        mpifs = []
+        fs = []
         if self.cfg['boost_mpi']:
-            mpifs = ['lib/libboost_mpi.so']
+            fs.append('lib/libboost_mpi.so')
+        if get_software_root('Python'):
+            fs.append('lib/libboost_python.so')
 
         custom_paths = {
-                        'files': mpifs + ['lib/libboost_%s.so' % x for x in ['python', 'system']],
+                        'files': ['lib/libboost_system.so'] + fs,
                        'dirs':['include/boost']
                        }
 
