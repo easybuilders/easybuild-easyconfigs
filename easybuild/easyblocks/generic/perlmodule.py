@@ -103,6 +103,6 @@ class PerlModule(ExtensionEasyBlock, ConfigureMake):
         """Add install path to PERL*LIB"""
         majver = get_major_perl_version()
         sitearchsuffix = get_sitearch_suffix()
-        # we also want the sitearch in the path, but modulegenerator does not want absolute paths, so remove this is present
-        txt = self.moduleGenerator.prepend_paths("PERL%sLIB" % majver, ['', sitearchsuffix.lstrip(os.path.sep)])
+        # also add sitearch dir to Perl search path
+        txt = self.moduleGenerator.prepend_paths("PERL%sLIB" % majver, ['', sitearchsuffix])
         return ExtensionEasyBlock.make_module_extra(self, txt)

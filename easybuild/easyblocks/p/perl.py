@@ -89,4 +89,5 @@ def get_sitearch_suffix():
     """
     cmd = """perl -MConfig -e 'my $a = $Config::Config{"sitearch"}; $a =~ s/($Config::Config{"siteprefix"})//; print $a'"""
     (sitearchsuffix, _) = run_cmd(cmd, log_all=True, log_output=True, simple=False)
-    return sitearchsuffix
+    # obtained value usually contains leading '/', so strip it off
+    return sitearchsuffix.lstrip(os.path.sep)
