@@ -160,7 +160,7 @@ class EB_Trinity(EasyBlock):
             run_cmd(cmd)
 
             # the installstep is running the jellyfish script, this is a wrapper that will compile .lib/jellyfish
-            run_cmd("bin/jellyfish")
+            run_cmd("bin/jellyfish cite")
 
             # return to original dir
             try:
