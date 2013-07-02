@@ -1,0 +1,234 @@
+see http://openssl.6102.n7.nabble.com/Compiling-OpenSSL-with-icc-td42304.html
+patch obtained via http://cvs.openssl.org/chngview?cn=23036
+Index: openssl/Configure
+RCS File: /v/openssl/cvs/openssl/Configure,v
+rcsdiff -q -kk '-r1.763' '-r1.764' -u '/v/openssl/cvs/openssl/Configure,v' 2>/dev/null
+--- Configure	2012/11/17 10:34:10	1.763
++++ Configure	2012/11/28 13:05:11	1.764
+@@ -356,16 +356,16 @@
+ "linux-mips64",   "gcc:-mabi=n32 -DTERMIO -O3 -Wall::-D_REENTRANT::-ldl:SIXTY_FOUR_BIT RC4_CHAR RC4_CHUNK DES_INT DES_UNROLL BF_PTR:${mips64_asm}:n32:dlfcn:linux-shared:-fPIC:-mabi=n32:.so.\$(SHLIB_MAJOR).\$(SHLIB_MINOR):::32",
+ "linux64-mips64",   "gcc:-mabi=64 -DTERMIO -O3 -Wall::-D_REENTRANT::-ldl:SIXTY_FOUR_BIT_LONG RC4_CHAR RC4_CHUNK DES_INT DES_UNROLL BF_PTR:${mips64_asm}:64:dlfcn:linux-shared:-fPIC:-mabi=64:.so.\$(SHLIB_MAJOR).\$(SHLIB_MINOR):::64",
+ #### IA-32 targets...
+-"linux-ia32-icc",	"icc:-DL_ENDIAN -DTERMIO -O2 -no_cpprt::-D_REENTRANT::-ldl:BN_LLONG ${x86_gcc_des} ${x86_gcc_opts}:${x86_elf_asm}:dlfcn:linux-shared:-KPIC::.so.\$(SHLIB_MAJOR).\$(SHLIB_MINOR)",
++"linux-ia32-icc",	"icc:-DL_ENDIAN -DTERMIO -O2::-D_REENTRANT::-ldl -no_cpprt:BN_LLONG ${x86_gcc_des} ${x86_gcc_opts}:${x86_elf_asm}:dlfcn:linux-shared:-KPIC::.so.\$(SHLIB_MAJOR).\$(SHLIB_MINOR)",
+ "linux-elf",	"gcc:-DL_ENDIAN -DTERMIO -O3 -fomit-frame-pointer -Wall::-D_REENTRANT::-ldl:BN_LLONG ${x86_gcc_des} ${x86_gcc_opts}:${x86_elf_asm}:dlfcn:linux-shared:-fPIC::.so.\$(SHLIB_MAJOR).\$(SHLIB_MINOR)",
+ "linux-aout",	"gcc:-DL_ENDIAN -DTERMIO -O3 -fomit-frame-pointer -march=i486 -Wall::(unknown):::BN_LLONG ${x86_gcc_des} ${x86_gcc_opts}:${x86_asm}:a.out",
+ ####
+ "linux-generic64","gcc:-DTERMIO -O3 -Wall::-D_REENTRANT::-ldl:SIXTY_FOUR_BIT_LONG RC4_CHAR RC4_CHUNK DES_INT DES_UNROLL BF_PTR:${no_asm}:dlfcn:linux-shared:-fPIC::.so.\$(SHLIB_MAJOR).\$(SHLIB_MINOR)",
+ "linux-ppc64",	"gcc:-m64 -DB_ENDIAN -DTERMIO -O3 -Wall::-D_REENTRANT::-ldl:SIXTY_FOUR_BIT_LONG RC4_CHAR RC4_CHUNK DES_RISC1 DES_UNROLL:${ppc64_asm}:linux64:dlfcn:linux-shared:-fPIC:-m64:.so.\$(SHLIB_MAJOR).\$(SHLIB_MINOR):::64",
+ "linux-ia64",	"gcc:-DL_ENDIAN -DTERMIO -O3 -Wall::-D_REENTRANT::-ldl:SIXTY_FOUR_BIT_LONG RC4_CHUNK DES_UNROLL DES_INT:${ia64_asm}:dlfcn:linux-shared:-fPIC::.so.\$(SHLIB_MAJOR).\$(SHLIB_MINOR)",
+-"linux-ia64-ecc","ecc:-DL_ENDIAN -DTERMIO -O2 -Wall -no_cpprt::-D_REENTRANT::-ldl:SIXTY_FOUR_BIT_LONG RC4_CHUNK DES_INT:${ia64_asm}:dlfcn:linux-shared:-fPIC::.so.\$(SHLIB_MAJOR).\$(SHLIB_MINOR)",
+-"linux-ia64-icc","icc:-DL_ENDIAN -DTERMIO -O2 -Wall -no_cpprt::-D_REENTRANT::-ldl:SIXTY_FOUR_BIT_LONG RC4_CHUNK DES_RISC1 DES_INT:${ia64_asm}:dlfcn:linux-shared:-fPIC::.so.\$(SHLIB_MAJOR).\$(SHLIB_MINOR)",
++"linux-ia64-icc","icc:-DL_ENDIAN -DTERMIO -O2 -Wall::-D_REENTRANT::-ldl -no_cpprt:SIXTY_FOUR_BIT_LONG RC4_CHUNK DES_RISC1 DES_INT:${ia64_asm}:dlfcn:linux-shared:-fPIC::.so.\$(SHLIB_MAJOR).\$(SHLIB_MINOR)",
+ "linux-x86_64",	"gcc:-m64 -DL_ENDIAN -DTERMIO -O3 -Wall::-D_REENTRANT::-ldl:SIXTY_FOUR_BIT_LONG RC4_CHUNK DES_INT DES_UNROLL:${x86_64_asm}:elf:dlfcn:linux-shared:-fPIC:-m64:.so.\$(SHLIB_MAJOR).\$(SHLIB_MINOR):::64",
++"linux-x86_64-icc", "icc:-DL_ENDIAN -DTERMIO -O2::-D_REENTRANT::-ldl -no_cpprt:SIXTY_FOUR_BIT_LONG RC4_CHUNK DES_INT DES_UNROLL:${x86_64_asm}:elf:dlfcn:linux-shared:-fPIC::.so.\$(SHLIB_MAJOR).\$(SHLIB_MINOR):::64",
+ "linux-x32",	"gcc:-mx32 -DL_ENDIAN -DTERMIO -O3 -Wall::-D_REENTRANT::-ldl:SIXTY_FOUR_BIT RC4_CHUNK_LL DES_INT DES_UNROLL:${x86_64_asm}:elf:dlfcn:linux-shared:-fPIC:-mx32:.so.\$(SHLIB_MAJOR).\$(SHLIB_MINOR):::x32:",
+ "linux64-s390x",	"gcc:-m64 -DB_ENDIAN -DTERMIO -O3 -Wall::-D_REENTRANT::-ldl:SIXTY_FOUR_BIT_LONG RC4_CHAR RC4_CHUNK DES_INT DES_UNROLL:${s390x_asm}:64:dlfcn:linux-shared:-fPIC:-m64:.so.\$(SHLIB_MAJOR).\$(SHLIB_MINOR):::64",
+ #### So called "highgprs" target for z/Architecture CPUs
+@@ -1481,6 +1481,7 @@
+ 		}
+ 	if ($iccver>=8)
+ 		{
++		$cflags=~s/\-KPIC/-fPIC/;
+ 		# Eliminate unnecessary dependency from libirc.a. This is
+ 		# essential for shared library support, as otherwise
+ 		# apps/openssl can end up in endless loop upon startup...
+@@ -1488,12 +1489,17 @@
+ 		}
+ 	if ($iccver>=9)
+ 		{
+-		$cflags.=" -i-static";
+-		$cflags=~s/\-no_cpprt/-no-cpprt/;
++		$lflags.=" -i-static";
++		$lflags=~s/\-no_cpprt/-no-cpprt/;
+ 		}
+ 	if ($iccver>=10)
+ 		{
+-		$cflags=~s/\-i\-static/-static-intel/;
++		$lflags=~s/\-i\-static/-static-intel/;
++		}
++	if ($iccver>=11)
++		{
++		$cflags.=" -no-intel-extensions";	# disable Cilk
++		$lflags=~s/\-no\-cpprt/-no-cxxlib/;
+ 		}
+ 	}
+ 
+Index: openssl/TABLE
+RCS File: /v/openssl/cvs/openssl/TABLE,v
+rcsdiff -q -kk '-r1.316' '-r1.317' -u '/v/openssl/cvs/openssl/TABLE,v' 2>/dev/null
+--- TABLE	2012/11/17 10:34:10	1.316
++++ TABLE	2012/11/28 13:05:11	1.317
+@@ -4127,11 +4127,11 @@
+ 
+ *** linux-ia32-icc
+ $cc           = icc
+-$cflags       = -DL_ENDIAN -DTERMIO -O2 -no_cpprt
++$cflags       = -DL_ENDIAN -DTERMIO -O2
+ $unistd       = 
+ $thread_cflag = -D_REENTRANT
+ $sys_id       = 
+-$lflags       = -ldl
++$lflags       = -ldl -no_cpprt
+ $bn_ops       = BN_LLONG DES_PTR DES_RISC1 DES_UNROLL RC4_INDEX MD2_INT
+ $cpuid_obj    = x86cpuid.o
+ $bn_obj       = bn-586.o co-586.o x86-mont.o x86-gf2m.o
+@@ -4191,46 +4191,13 @@
+ $arflags      = 
+ $multilib     = 
+ 
+-*** linux-ia64-ecc
+-$cc           = ecc
+-$cflags       = -DL_ENDIAN -DTERMIO -O2 -Wall -no_cpprt
+-$unistd       = 
+-$thread_cflag = -D_REENTRANT
+-$sys_id       = 
+-$lflags       = -ldl
+-$bn_ops       = SIXTY_FOUR_BIT_LONG RC4_CHUNK DES_INT
+-$cpuid_obj    = ia64cpuid.o
+-$bn_obj       = bn-ia64.o ia64-mont.o
+-$des_obj      = 
+-$aes_obj      = aes_core.o aes_cbc.o aes-ia64.o
+-$bf_obj       = 
+-$md5_obj      = md5-ia64.o
+-$sha1_obj     = sha1-ia64.o sha256-ia64.o sha512-ia64.o
+-$cast_obj     = 
+-$rc4_obj      = rc4-ia64.o rc4_skey.o
+-$rmd160_obj   = 
+-$rc5_obj      = 
+-$wp_obj       = 
+-$cmll_obj     = 
+-$modes_obj    = ghash-ia64.o
+-$engines_obj  = 
+-$perlasm_scheme = void
+-$dso_scheme   = dlfcn
+-$shared_target= linux-shared
+-$shared_cflag = -fPIC
+-$shared_ldflag = 
+-$shared_extension = .so.$(SHLIB_MAJOR).$(SHLIB_MINOR)
+-$ranlib       = 
+-$arflags      = 
+-$multilib     = 
+-
+ *** linux-ia64-icc
+ $cc           = icc
+-$cflags       = -DL_ENDIAN -DTERMIO -O2 -Wall -no_cpprt
++$cflags       = -DL_ENDIAN -DTERMIO -O2 -Wall
+ $unistd       = 
+ $thread_cflag = -D_REENTRANT
+ $sys_id       = 
+-$lflags       = -ldl
++$lflags       = -ldl -no_cpprt
+ $bn_ops       = SIXTY_FOUR_BIT_LONG RC4_CHUNK DES_RISC1 DES_INT
+ $cpuid_obj    = ia64cpuid.o
+ $bn_obj       = bn-ia64.o ia64-mont.o
+@@ -4519,6 +4486,39 @@
+ $shared_extension = .so.$(SHLIB_MAJOR).$(SHLIB_MINOR)
+ $ranlib       = 
+ $arflags      = 
++$multilib     = 64
++
++*** linux-x86_64-icc
++$cc           = icc
++$cflags       = -DL_ENDIAN -DTERMIO -O2
++$unistd       = 
++$thread_cflag = -D_REENTRANT
++$sys_id       = 
++$lflags       = -ldl -no_cpprt
++$bn_ops       = SIXTY_FOUR_BIT_LONG RC4_CHUNK DES_INT DES_UNROLL
++$cpuid_obj    = x86_64cpuid.o
++$bn_obj       = x86_64-gcc.o x86_64-mont.o x86_64-mont5.o x86_64-gf2m.o modexp512-x86_64.o
++$des_obj      = 
++$aes_obj      = aes-x86_64.o vpaes-x86_64.o bsaes-x86_64.o aesni-x86_64.o aesni-sha1-x86_64.o
++$bf_obj       = 
++$md5_obj      = md5-x86_64.o
++$sha1_obj     = sha1-x86_64.o sha256-x86_64.o sha512-x86_64.o
++$cast_obj     = 
++$rc4_obj      = rc4-x86_64.o rc4-md5-x86_64.o
++$rmd160_obj   = 
++$rc5_obj      = 
++$wp_obj       = wp-x86_64.o
++$cmll_obj     = cmll-x86_64.o cmll_misc.o
++$modes_obj    = ghash-x86_64.o
++$engines_obj  = e_padlock-x86_64.o
++$perlasm_scheme = elf
++$dso_scheme   = dlfcn
++$shared_target= linux-shared
++$shared_cflag = -fPIC
++$shared_ldflag = 
++$shared_extension = .so.$(SHLIB_MAJOR).$(SHLIB_MINOR)
++$ranlib       = 
++$arflags      = 
+ $multilib     = 64
+ 
+ *** linux32-s390x
+Index: openssl/crypto/aes/aes_x86core.c
+RCS File: /v/openssl/cvs/openssl/crypto/aes/aes_x86core.c,v
+rcsdiff -q -kk '-r1.6' '-r1.7' -u '/v/openssl/cvs/openssl/crypto/aes/aes_x86core.c,v' 2>/dev/null
+--- aes_x86core.c	2012/06/03 21:59:50	1.6
++++ aes_x86core.c	2012/11/28 13:05:12	1.7
+@@ -89,8 +89,10 @@
+ #endif
+ 
+ #undef ROTATE
+-#if defined(_MSC_VER) || defined(__ICC)
++#if defined(_MSC_VER)
+ # define ROTATE(a,n)	_lrotl(a,n)
++#elif defined(__ICC)
++# define ROTATE(a,n)	_rotl(a,n)
+ #elif defined(__GNUC__) && __GNUC__>=2
+ # if defined(__i386) || defined(__i386__) || defined(__x86_64) || defined(__x86_64__)
+ #   define ROTATE(a,n)	({ register unsigned int ret;	\
+Index: openssl/crypto/des/des_locl.h
+RCS File: /v/openssl/cvs/openssl/crypto/des/des_locl.h,v
+rcsdiff -q -kk '-r1.29' '-r1.30' -u '/v/openssl/cvs/openssl/crypto/des/des_locl.h,v' 2>/dev/null
+--- des_locl.h	2005/12/18 19:11:34	1.29
++++ des_locl.h	2012/11/28 13:05:12	1.30
+@@ -160,8 +160,10 @@
+ 				} \
+ 			}
+ 
+-#if (defined(OPENSSL_SYS_WIN32) && defined(_MSC_VER)) || defined(__ICC)
++#if (defined(OPENSSL_SYS_WIN32) && defined(_MSC_VER))
+ #define	ROTATE(a,n)	(_lrotr(a,n))
++#elif defined(__ICC)
++#define ROTATE(a,n)	(_rotr(a,n))
+ #elif defined(__GNUC__) && __GNUC__>=2 && !defined(__STRICT_ANSI__) && !defined(OPENSSL_NO_ASM) && !defined(OPENSSL_NO_INLINE_ASM) && !defined(PEDANTIC)
+ # if defined(__i386) || defined(__i386__) || defined(__x86_64) || defined(__x86_64__)
+ #  define ROTATE(a,n)	({ register unsigned int ret;	\
+Index: openssl/crypto/md32_common.h
+RCS File: /v/openssl/cvs/openssl/crypto/md32_common.h,v
+rcsdiff -q -kk '-r1.47' '-r1.48' -u '/v/openssl/cvs/openssl/crypto/md32_common.h,v' 2>/dev/null
+--- md32_common.h	2010/08/02 09:32:26	1.47
++++ md32_common.h	2012/11/28 13:05:12	1.48
+@@ -142,8 +142,10 @@
+  */
+ #undef ROTATE
+ #ifndef PEDANTIC
+-# if defined(_MSC_VER) || defined(__ICC)
++# if defined(_MSC_VER)
+ #  define ROTATE(a,n)	_lrotl(a,n)
++# elif defined(__ICC)
++#  define ROTATE(a,n)	_rotl(a,n)
+ # elif defined(__MWERKS__)
+ #  if defined(__POWERPC__)
+ #   define ROTATE(a,n)	__rlwinm(a,n,0,31)
+Index: openssl/crypto/rc5/rc5_locl.h
+RCS File: /v/openssl/cvs/openssl/crypto/rc5/rc5_locl.h,v
+rcsdiff -q -kk '-r1.9' '-r1.10' -u '/v/openssl/cvs/openssl/crypto/rc5/rc5_locl.h,v' 2>/dev/null
+--- rc5_locl.h	2010/08/02 21:51:07	1.9
++++ rc5_locl.h	2012/11/28 13:05:13	1.10
+@@ -146,9 +146,12 @@
+                          *((c)++)=(unsigned char)(((l)>> 8L)&0xff), \
+                          *((c)++)=(unsigned char)(((l)     )&0xff))
+ 
+-#if (defined(OPENSSL_SYS_WIN32) && defined(_MSC_VER)) || defined(__ICC)
++#if (defined(OPENSSL_SYS_WIN32) && defined(_MSC_VER))
+ #define ROTATE_l32(a,n)     _lrotl(a,n)
+ #define ROTATE_r32(a,n)     _lrotr(a,n)
++#elif defined(__ICC)
++#define ROTATE_l32(a,n)     _rotl(a,n)
++#define ROTATE_r32(a,n)     _rotr(a,n)
+ #elif defined(__GNUC__) && __GNUC__>=2 && !defined(__STRICT_ANSI__) && !defined(OPENSSL_NO_ASM) && !defined(OPENSSL_NO_INLINE_ASM) && !defined(PEDANTIC)
+ # if defined(__i386) || defined(__i386__) || defined(__x86_64) || defined(__x86_64__)
+ #  define ROTATE_l32(a,n)	({ register unsigned int ret;	\
