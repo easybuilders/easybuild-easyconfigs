@@ -138,7 +138,7 @@ class EB_Trinity(EasyBlock):
         self.log.debug("begin jellyfish")
         self.log.debug("startdir: %s", self.cfg['start_dir'])
         cwd = os.getcwd()
-        glob_pat = os.path.join(os.path.dirname(self.cfg['start_dir']), "jellyfish-*")
+        glob_pat = os.path.join(self.cfg['start_dir'], "..", "jellyfish-*")
         jellyfishdirs = glob.glob(glob_pat)
         self.log.debug("glob pattern '%s' yields %s" % (glob_pat, jellyfishdirs))
         if len(jellyfishdirs) == 1 and os.path.isdir(jellyfishdirs[0]):
