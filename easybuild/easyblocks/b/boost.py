@@ -81,7 +81,7 @@ class EB_Boost(EasyBlock):
         else:
             self.log.error("Unknown compiler used, aborting.")
 
-        cmd = "./bootstrap.sh --with-toolset=%s --prefix=%s" % (toolset, self.objdir)
+        cmd = "./bootstrap.sh --with-toolset=%s --prefix=%s %s" % (toolset, self.objdir, self.cfg['configopts'])
         run_cmd(cmd, log_all=True, simple=True)
 
         if self.cfg['boost_mpi']:
