@@ -137,10 +137,10 @@ class EB_Trinity(EasyBlock):
         """use a seperate jellyfish source if it exists, otherwise, just install the bundled jellyfish"""
         self.log.debug("begin jellyfish")
         self.log.debug("startdir: %s", self.cfg['start_dir'])
-        jellyfishdir = glob.glob("%s../jellyfish-*" % self.cfg['start_dir'])
         cwd = os.getcwd()
-        if jellyfishdir:
-            jellyfishdir = jellyfishdir[0]
+        jellyfishdirs = glob.glob(os.path.join(os.path.dirname(self.cfg['start_dir']), "jellyfish-*"))
+        if len(jellyfishdirs) == 1 and os.path.isdir(jellyfishdirs[0]):
+            jellyfishdir = jellyfishdirs[0]
             # if there is a jellyfish directory
             self.log.info("detected jellyfish directory %s, so using this source", jellyfishdir)
             orig_jellyfishdir = os.path.join(self.cfg['start_dir'], 'trinity-plugins', 'jellyfish')
@@ -156,16 +156,17 @@ class EB_Trinity(EasyBlock):
             run_cmd('./configure --prefix=%s' % orig_jellyfishdir)
             cmd = "make CC='%s' CXX='%s' CFLAGS='%s'" % (os.getenv('CC'), os.getenv('CXX'), os.getenv('CFLAGS'))
             run_cmd(cmd)
+
             # the installstep is running the jellyfish script, this is a wrapper that will compile .lib/jellyfish
             run_cmd("bin/jellyfish")
+
+            # return to original dir
             try:
                 os.chdir(cwd)
             except OSError:
-                try:
-                    start_dir = self.cfg['start_dir']
-                    os.chdir(start_dir)
-                except OSError:
-                    self.log.error("jellyfish: Could not return to original dir %s or startdir %s", cwd, start_dir)
+                self.log.error("jellyfish: Could not return to original dir %s", cwd)
+        elif jellyfishdirs:
+            self.log.error("Found multiple 'jellyfish-*' directories: %s", jellyfishdirs)
         else:
             self.log.info("no seperate source found for jellyfish, using shipped version")
 
@@ -186,8 +187,7 @@ class EB_Trinity(EasyBlock):
         cmd = "./configure.sh"
         run_cmd(cmd)
 
-        cmd = 'make -j 1 CCDEP="%s -MM -MG" CXXDEP="%s -MM -MG"' % (os.getenv('CC'),
-                                                                    os.getenv('CXX'))
+        cmd = 'make -j 1 CCDEP="%s -MM -MG" CXXDEP="%s -MM -MG"' % (os.getenv('CC'), os.getenv('CXX'))
         run_cmd(cmd)
 
         cmd = 'make install'
