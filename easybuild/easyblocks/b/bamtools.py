@@ -23,48 +23,29 @@
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
 """
-EasyBuild support for software that is configured with CMake, implemented as an easyblock
+EasyBuild support for BamTools, implemented as an easyblock
 
 @author: Andreas Panteli (The Cyprus Institute)
+@author: Kenneth Hoste (Ghent University)
 """
 import os
 
+from easybuild.easyblocks.generic.cmakemake import CMakeMake
 from easybuild.easyblocks.generic.makecp import MakeCp
-from easybuild.tools.filetools import run_cmd, mkdir
+from easybuild.tools.filetools import mkdir
 
-class EB_BamTools(MakeCp):
-	"""Support for configuring build with CMake instead of traditional configure script"""
 
-	def configure_step(self, srcdir=None, builddir=".."): #adopted from generic block cmakemake.py
-		"""Configure build using cmake"""
-	
-		if srcdir is None:
-			if builddir is not None:
-				self.log.deprecated("CMakeMake.configure_step: named argument 'builddir' (should be 'srcdir')", "2.0")
-				srcdir = builddir
-			else:
-				srcdir = '.'
+class EB_BamTools(MakeCp, CMakeMake):
+    """Support for building and installing BamTools."""
 
-		options = ['-DCMAKE_INSTALL_PREFIX=%s' % self.installdir]
-		env_to_options = {
-			'CC': 'CMAKE_C_COMPILER',
-			'CFLAGS': 'CMAKE_C_FLAGS',
-			'CXX': 'CMAKE_CXX_COMPILER',
-			'CXXFLAGS': 'CMAKE_CXX_FLAGS',
-			'F90': 'CMAKE_Fortran_COMPILER',
-			'FFLAGS': 'CMAKE_Fortran_FLAGS',
-		}
-		for env_name, option in env_to_options.items():
-			value = os.getenv(env_name)
-			if value is not None:
-				options.append("-D%s='%s'" % (option, value))
+    def configure_step(self):
+        """Configure BamTools build."""
+        # BamTools requires an out of source build.
+        try:
+            builddir = os.path.join(self.cfg['start_dir'], 'build')
+            mkdir(builddir)
+            os.chdir(builddir)
+        except OSError, err:
+            self.log.error("")
 
-		options_string = " ".join(options)
-
-		mkdir("build")
-		os.chdir(os.path.join(os.getcwd(), "build"))
-
-		command = "%s cmake %s %s %s" % (self.cfg['preconfigopts'], srcdir, options_string, self.cfg['configopts'])
-		(out, _) = run_cmd(command, log_all=True, simple=False)
-
-		return out
+        CMakeMake.configure_step(self, srcdir='..')
