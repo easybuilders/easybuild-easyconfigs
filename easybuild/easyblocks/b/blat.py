@@ -35,20 +35,21 @@ from easybuild.easyblocks.generic.makecp import MakeCp
 from easybuild.tools.filetools import run_cmd, mkdir
 
 class EB_BLAT(MakeCp):
+    """Support for building and installing BLAT."""
 
-	def configure_step(self):
-		mkdir("bin")
+    def configure_step(self):
+        """Configure build: just create a 'bin' directory."""
+        mkdir("bin")
 
-	def build_step(self, verbose=False):
+    def build_step(self, verbose=False):
+        """Build BLAT using make and the appropriate options (e.g. BINDIR=)."""
+        paracmd = ''
+        if self.cfg['parallel']:
+            paracmd = "-j %s" % self.cfg['parallel']
 
-		paracmd = ''
-		if self.cfg['parallel']:
-			paracmd = "-j %s" % self.cfg['parallel']
+        bindir = os.path.join(os.getcwd(), "bin")
 
-                bindir=os.path.join(os.getcwd(), "bin")
-		
-		cmd = "%s make %s BINDIR=%s" % (self.cfg['premakeopts'], paracmd, bindir)
+        cmd = "%s make %s BINDIR=%s" % (self.cfg['premakeopts'], paracmd, bindir)
+        (out, _) = run_cmd(cmd, log_all=True, simple=False, log_output=verbose)
 
-		(out, _) = run_cmd(cmd, log_all=True, simple=False, log_output=verbose)
-
-		return out
+        return out
