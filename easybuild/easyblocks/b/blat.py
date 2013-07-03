@@ -49,7 +49,7 @@ class EB_BLAT(MakeCp):
 
         bindir = os.path.join(os.getcwd(), "bin")
 
-        cmd = "%s make %s BINDIR=%s" % (self.cfg['premakeopts'], paracmd, bindir)
+        cmd = "MACHTYPE=x86_64 %s make %s BINDIR=%s" % (self.cfg['premakeopts'], paracmd, bindir)
         (out, _) = run_cmd(cmd, log_all=True, simple=False, log_output=verbose)
 
         return out
