@@ -80,3 +80,14 @@ def get_major_perl_version():
     cmd = "perl -MConfig -e 'print $Config::Config{PERL_API_REVISION}'"
     (perlmajver, _) = run_cmd(cmd, log_all=True, log_output=True, simple=False)
     return perlmajver
+
+def get_sitearch_suffix():
+    """
+    Returns the suffix for sitearch
+    this will look something like /lib/perl5/site_perl/5.16.3/x86_64-linux-thread-multi
+    so, sitearch withouth site prefix
+    """
+    cmd = """perl -MConfig -e 'my $a = $Config::Config{"sitearch"}; $a =~ s/($Config::Config{"siteprefix"})//; print $a'"""
+    (sitearchsuffix, _) = run_cmd(cmd, log_all=True, log_output=True, simple=False)
+    # obtained value usually contains leading '/', so strip it off
+    return sitearchsuffix.lstrip(os.path.sep)
