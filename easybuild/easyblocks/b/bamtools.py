@@ -33,6 +33,7 @@ import os
 from easybuild.easyblocks.generic.cmakemake import CMakeMake
 from easybuild.easyblocks.generic.makecp import MakeCp
 from easybuild.tools.filetools import mkdir
+from easybuild.tools.systemtools import get_shared_lib_ext
 
 
 class EB_BamTools(MakeCp, CMakeMake):
@@ -49,3 +50,17 @@ class EB_BamTools(MakeCp, CMakeMake):
             self.log.error("")
 
         CMakeMake.configure_step(self, srcdir='..')
+
+    def sanity_check_step(self):
+        """Custom sanity check for BamTools."""
+
+        sharedlib_ext = get_shared_lib_ext()
+
+        custom_paths = {
+            'files': ["bin/bamtools", "include/shared/bamtools_global.h", "lib/libbamtools.a",
+                      "lib/libbamtools.%s" % sharedlib_ext, "lib/libbamtools-utils.%s" % sharedlib_ext,
+                      "lib/libjsoncpp.%s" % sharedlib_ext],
+            'dirs': ["include/api", "docs"]
+        }
+
+        super(EB_BamTools, self).sanity_check_step(custom_paths=custom_paths)
