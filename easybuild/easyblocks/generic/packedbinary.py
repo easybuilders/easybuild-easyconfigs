@@ -28,6 +28,7 @@ EasyBlock for binary applications that need unpacking, e.g., binary applications
 @author: Jens Timmerman (Ghent University)
 """
 import os
+import shutil
 
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.easyblocks.generic.binary import Binary
@@ -52,6 +53,10 @@ class PackedBinary(Binary, EasyBlock):
                     # copy files to install dir via Binary
                     self.cfg['start_dir'] = src
                     Binary.install_step(self)
+                elif os.path.isfile(srcpath):
+                    shutil.copy2(srcpath, self.installdir)
+                else:
+                    self.log.error("Path %s is not a file nor a directory?" % srcpath)
         except OSError, err:
             self.log.error("Failed to copy unpacked sources to install directory: %s" % err)
 
