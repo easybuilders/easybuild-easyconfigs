@@ -170,9 +170,8 @@ class EB_Trinity(EasyBlock):
         elif jellyfishdirs:
             self.log.error("Found multiple 'jellyfish-*' directories: %s", jellyfishdirs)
         else:
-            self.log.info("no seperate source found for jellyfish, using shipped version")
+            self.log.info("no seperate source found for jellyfish, letting Makefile build shipped version")
 
-            self.trinityplugin('jellyfish')
         self.log.debug("end jellyfish")
 
     def kmer(self):
