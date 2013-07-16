@@ -65,8 +65,10 @@ class EB_OpenFOAM(EasyBlock):
 
         # third party directory
         self.thrdpartydir = "ThirdParty-%s" % self.version
-        os.symlink(os.path.join("..", self.thrdpartydir), self.thrdpartydir)
-        env.setvar("WM_THIRD_PARTY_DIR", os.path.join(self.installdir, self.thrdpartydir))
+        # only if third party stuff is actually installed
+        if os.path.exists(self.thrdpartydir):
+            os.symlink(os.path.join("..", self.thrdpartydir), self.thrdpartydir)
+            env.setvar("WM_THIRD_PARTY_DIR", os.path.join(self.installdir, self.thrdpartydir))
 
         # compiler
         comp_fam = self.toolchain.comp_family()
@@ -122,7 +124,7 @@ class EB_OpenFOAM(EasyBlock):
                                                          'premakeopts':self.cfg['premakeopts'],
                                                          'makecmd':os.path.join(self.builddir, nameversion, "Allwmake")}
         run_cmd(cmd,log_all=True,simple=True,log_output=True)
-    
+
     def install_step(self):
         """Building was performed in install dir, so just fix permissions."""
 
@@ -132,9 +134,11 @@ class EB_OpenFOAM(EasyBlock):
         adjust_permissions(fullpath, stat.S_IXOTH, add=True, recursive=True, onlydirs=True)
 
         # fix permissions of ThirdParty dir and subdirs (also for 2.x)
+        # if the thirdparty tarball is installed
         fullpath = os.path.join(self.installdir, self.thrdpartydir)
-        adjust_permissions(fullpath, stat.S_IROTH, add=True, recursive=True)
-        adjust_permissions(fullpath, stat.S_IXOTH, add=True, recursive=True, onlydirs=True)
+        if os.path.exists(fullpath):
+            adjust_permissions(fullpath, stat.S_IROTH, add=True, recursive=True)
+            adjust_permissions(fullpath, stat.S_IXOTH, add=True, recursive=True, onlydirs=True)
 
     def sanity_check_step(self):
         """Custom sanity check for OpenFOAM"""
