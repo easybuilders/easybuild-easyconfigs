@@ -204,12 +204,12 @@ class EB_WRF(EasyBlock):
             self.par = "-j %s" % p
 
         # build wrf (compile script uses /bin/csh )
-        cmd = "csh ./compile %s wrf" % self.par
+        cmd = "tcsh ./compile %s wrf" % self.par
         run_cmd(cmd, log_all=True, simple=True, log_output=True)
 
         # build two testcases to produce ideal.exe and real.exe
         for test in ["em_real", "em_b_wave"]:
-            cmd = "csh ./compile %s %s" % (self.par, test)
+            cmd = "tcsh ./compile %s %s" % (self.par, test)
             run_cmd(cmd, log_all=True, simple=True, log_output=True)
 
     def test_step(self):
