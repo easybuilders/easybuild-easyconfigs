@@ -296,7 +296,7 @@ class EB_WRF(EasyBlock):
                 self.log.debug("Building and running test %s" % test)
 
                 #build_and_install
-                cmd = "./compile %s %s" % (self.par, test)
+                cmd = "tcsh ./compile %s %s" % (self.par, test)
                 run_cmd(cmd, log_all=True, simple=True)
 
                 # run test
