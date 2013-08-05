@@ -186,6 +186,8 @@ class EB_imkl(IntelBase):
                         extramakeopts = 'mpi=mpich2'
                     elif get_software_root('OpenMPI'):
                         extramakeopts = 'mpi=openmpi'
+                    elif get_software_root('MVAPICH2'):
+                        extramakeopts = 'mpi=mpich2'
                     cmd = "make -f makefile libintel64 %s" % extramakeopts
 
                 # add other make options as well
