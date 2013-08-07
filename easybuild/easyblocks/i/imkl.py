@@ -182,7 +182,8 @@ class EB_imkl(IntelBase):
                 if i in lis3:
                     # use INSTALL_DIR and SPEC_OPT
                     extramakeopts = ''
-                    if get_software_root('MPICH2'):  # can't use toolchain.mpi_family, because of dummy toolchain
+                    # can't use toolchain.mpi_family, because of dummy toolchain
+                    if get_software_root('MPICH2') or get_software_root('MVAPICH2'):
                         extramakeopts = 'mpi=mpich2'
                     elif get_software_root('OpenMPI'):
                         extramakeopts = 'mpi=openmpi'
