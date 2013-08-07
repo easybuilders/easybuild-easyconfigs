@@ -31,6 +31,7 @@ EasyBuild support for building and installing GCC, implemented as an easyblock
 @author: Pieter De Baets (Ghent University)
 @author: Jens Timmerman (Ghent University)
 @author: Toon Willems (Ghent University)
+@author: Ward Poelmans (Ghent University)
 """
 
 import re
@@ -57,6 +58,10 @@ class EB_GCC(ConfigureMake):
         super(EB_GCC, self).__init__(*args, **kwargs)
 
         self.stagedbuild = False
+
+        # unset some environment variables as they can cause nasty build errors
+        # when bootstrapping
+        self.unwanted_env_vars = ['CPATH', 'C_INCLUDE_PATH', 'CPLUS_INCLUDE_PATH', 'OBJC_INCLUDE_PATH', 'LIBRARY_PATH']
 
     @staticmethod
     def extra_options():
