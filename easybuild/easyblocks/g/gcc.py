@@ -59,9 +59,8 @@ class EB_GCC(ConfigureMake):
 
         self.stagedbuild = False
 
-        # unset some environment variables as they can cause nasty build errors
-        # when bootstrapping
-        self.unwanted_env_vars = ['CPATH', 'C_INCLUDE_PATH', 'CPLUS_INCLUDE_PATH', 'OBJC_INCLUDE_PATH', 'LIBRARY_PATH']
+        # unset some environment variables that are known to may cause nasty build errors when bootstrapping
+        self.cfg['unwanted_env_vars'].extend(['CPATH', 'C_INCLUDE_PATH', 'CPLUS_INCLUDE_PATH', 'OBJC_INCLUDE_PATH', 'LIBRARY_PATH'])
 
     @staticmethod
     def extra_options():
