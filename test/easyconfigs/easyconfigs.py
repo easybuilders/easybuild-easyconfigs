@@ -40,10 +40,12 @@ from vsc.utils.missing import nub
 from unittest import TestCase, TestLoader, main
 
 import easybuild.main as main
+import easybuild.tools.options as eboptions
 from easybuild.framework.easyblock import EasyBlock, get_class
 from easybuild.framework.easyconfig.easyconfig import EasyConfig
 from easybuild.framework.easyconfig.tools import get_paths_for
 from easybuild.main import dep_graph, resolve_dependencies, process_easyconfig
+from easybuild.tools import config
 
 
 # indicates whether all the single tests are OK,
@@ -53,6 +55,11 @@ single_tests_ok = True
 
 class EasyConfigTest(TestCase):
     """Baseclass for easyconfig testcases."""
+
+    # initialize configuration (required for e.g. default modules_tool setting)
+    eb_go = eboptions.parse_options()
+    config.init(eb_go.options, eb_go.get_options_by_section('config'))
+    del eb_go
         
     log = fancylogger.getLogger("EasyConfigTest", fname=False)
     name_regex = re.compile("^name\s*=\s*['\"](.*)['\"]$", re.M)
