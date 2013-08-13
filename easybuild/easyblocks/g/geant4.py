@@ -71,7 +71,7 @@ class EB_Geant4(CMakeMake):
         """
 
         # Geant4 switched to a cmake build system in 9.5
-        if LooseVersion(self.get_installversion()) >= LooseVersion("9.5"):
+        if LooseVersion(self.version) >= LooseVersion("9.5"):
             mkdir('configdir')
             os.chdir('configdir')
             super(EB_Geant4, self).configure_step(srcdir="..")
@@ -250,7 +250,7 @@ class EB_Geant4(CMakeMake):
     def build_step(self):
         """Build Geant4."""
 
-        if LooseVersion(self.get_installversion()) >= LooseVersion("9.5"):
+        if LooseVersion(self.version) >= LooseVersion("9.5"):
             super(EB_Geant4, self).build_step()
 
         else:
@@ -261,7 +261,7 @@ class EB_Geant4(CMakeMake):
     def install_step(self):
         """Install Geant4."""
 
-        if LooseVersion(self.get_installversion()) >= LooseVersion("9.5"):
+        if LooseVersion(self.version) >= LooseVersion("9.5"):
             super(EB_Geant4, self).install_step()
             self.datadst = os.path.join(self.installdir,
                                         'share',
@@ -359,7 +359,7 @@ class EB_Geant4(CMakeMake):
         #no longer needed in > 9.5, but leave it there for now.
         txt += self.moduleGenerator.set_environment('G4VERSION', g4version)
 
-        if LooseVersion(self.get_installversion()) >= LooseVersion("9.5"):
+        if LooseVersion(self.version) >= LooseVersion("9.5"):
             txt += self.moduleGenerator.set_environment('G4INCLUDE', "$root/include/Geant4")
             txt += self.moduleGenerator.set_environment('G4LIB', "$root/lib64/Geant4")
         else:
