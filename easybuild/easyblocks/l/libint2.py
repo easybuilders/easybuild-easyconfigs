@@ -33,9 +33,34 @@ import os.path
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 
 class EB_libint2(ConfigureMake):
+    def configure_step(self):
+        """Add some extra configure options."""
+
+        if self.toolchain.options['pic']:
+            # Enforce consistency.
+            self.cfg.update('configopts', "--with-pic")
+
+        # The code in libint is automatically generated and hence it is in some
+        # parts so compex that -O2 or -O3 compiler optimization takes forever.
+        self.cfg.update('configopts', "--with-cxx-optflags='-O1'")
+
+        # Also build shared libraries. (not enabled by default)
+        self.cfg.update('configopts', "--enable-shared")
+
+        super(EB_libint2, self).configure_step()
+
+    def sanity_check_step(self):
+        """Custom sanity check for Libint2."""
+
+        custom_paths = {
+            'files': ['lib/libint2.a', 'lib/libint2.so', 'include/libint2/libint2.h'],
+            'dirs': [],
+        }
+        super(EB_libint2, self).sanity_check_step(custom_paths=custom_paths)
+
     def make_module_req_guess(self):
         """Specify correct LD_LIBRARY_PATH and CPATH for this installation."""
-        guesses = ConfigureMake.make_module_req_guess(self)
+        guesses = super(EB_libint2, self).make_module_req_guess()
         guesses.update({
             'CPATH': [os.path.join("include", "libint2")],
         })
