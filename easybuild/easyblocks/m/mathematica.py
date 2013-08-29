@@ -57,9 +57,7 @@ class EB_Mathematica(Binary):
         no_qa = [
             "Now installing.*\n\n.*\[.*\].*",
         ]
-        std_qa = {
-        }
-        run_cmd_qa(cmd, qa, no_qa=no_qa, std_qa=std_qa, log_all=True, simple=True)
+        run_cmd_qa(cmd, qa, no_qa=no_qa, log_all=True, simple=True)
 
     def sanity_check_step(self):
         """Custom sanity check for Mathematica."""
