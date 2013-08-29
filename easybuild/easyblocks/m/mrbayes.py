@@ -65,11 +65,16 @@ class EB_MrBayes(ConfigureMake):
             run_cmd(cmd)
 
             # set config opts
-            beagle = get_software_root('BEAGLE')
+            beagle = get_software_root('beagle-lib')
             if beagle:
                 self.cfg.update('configopts', '--with-beagle=%s' % beagle)
             else:
-                self.log.error("BEAGLE module not loaded?")
+                beagle = get_software_root('BEAGLE')
+                if beagle:
+                    self.log.deprecated('BEAGLE module as dependency, should be beagle-lib', '2.0')
+                    self.cfg.update('configopts', '--with-beagle=%s' % beagle)
+                else:
+                    self.log.error("beagle-lib module not loaded?")
 
             if self.toolchain.options['usempi']:
                 self.cfg.update('configopts', '--enable-mpi')

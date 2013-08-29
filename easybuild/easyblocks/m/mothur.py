@@ -58,6 +58,7 @@ class EB_Mothur(ConfigureMake):
         # enable MPI support
         if self.toolchain.options['usempi']:
             self.cfg.update('makeopts', 'USEMPI=yes CXX="%s"' % os.getenv('MPICXX'))
+            self.cfg.update('premakeopts', 'CXXFLAGS="$CXXFLAGS -DMPICH_IGNORE_CXX_SEEK"')
         # enable compression
         if get_software_root('bzip2') or get_software_root('gzip'):
             self.cfg.update('makeopts', 'USE_COMPRESSION=yes')

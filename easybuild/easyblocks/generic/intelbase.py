@@ -172,21 +172,31 @@ class IntelBase(EasyBlock):
         """Binary installation files, so no building."""
         pass
 
-    def install_step(self):
+    def install_step(self, silent_cfg_names_map=None):
         """Actual installation
 
         - create silent cfg file
         - set environment parameters
         - execute command
         """
-        silent = """
-ACTIVATION=%s
-PSET_LICENSE_FILE=%s
-PSET_INSTALL_DIR=%s
-ACCEPT_EULA=accept
-INSTALL_MODE=NONRPM
-CONTINUE_WITH_OPTIONAL_ERROR=yes
-""" % (self.cfg['license_activation'], self.license_file, self.installdir)
+        if silent_cfg_names_map is None:
+            silent_cfg_names_map = {}
+
+        silent = '\n'.join([
+            "%(activation_name)s=%(activation)s",
+            "%(license_file_name)s=%(license_file)s",
+            "%(install_dir_name)s=%(install_dir)s",
+            "ACCEPT_EULA=accept",
+            "INSTALL_MODE=NONRPM",
+            "CONTINUE_WITH_OPTIONAL_ERROR=yes",
+        ]) % {
+            'activation_name': silent_cfg_names_map.get('activation_name', 'ACTIVATION'),
+            'license_file_name': silent_cfg_names_map.get('license_file_name', 'PSET_LICENSE_FILE'),
+            'install_dir_name': silent_cfg_names_map.get('install_dir_name', 'PSET_INSTALL_DIR'),
+            'activation': self.cfg['license_activation'],
+            'license_file': self.license_file,
+            'install_dir': silent_cfg_names_map.get('install_dir', self.installdir),
+        }
 
         # we should be already in the correct directory
         silentcfg = os.path.join(os.getcwd(), "silent.cfg")
@@ -196,6 +206,7 @@ CONTINUE_WITH_OPTIONAL_ERROR=yes
             f.close()
         except:
             self.log.exception("Writing silent cfg % failed" % silent)
+        self.log.debug("Contents of %s: %s" % (silentcfg, silent))
 
         # workaround for mktmp: create tmp dir and use it
         tmpdir = os.path.join(self.cfg['start_dir'], 'mytmpdir')
