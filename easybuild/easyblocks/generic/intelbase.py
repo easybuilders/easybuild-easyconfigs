@@ -172,7 +172,7 @@ class IntelBase(EasyBlock):
         else:
             # pick up $INTEL_LICENSE_FILE if it's set
             self.log.info("Picking up Intel license file specification from $%s: %s" % (lic_env_var, intel_license_file))
-            self.setcfg('license_file', intel_license_file)
+            self.cfg['license_file'] = intel_license_file
             self.license_file = intel_license_file
 
         # clean home directory
