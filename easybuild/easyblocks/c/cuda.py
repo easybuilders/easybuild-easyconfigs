@@ -58,7 +58,11 @@ class EB_CUDA(Binary):
                  # this question is only asked if CUDA tools are already available system-wide
                  r"Would you like to remove all CUDA files under .*? (yes/no/abort): ": "no",
                 }
-        noqanda = [r"Installation Complete"]
+        noqanda = [
+            r"^Configuring",
+            r"Installation Complete",
+            r".* -> .*",
+        ]
 
         # patch install script to handle Q&A autonomously
         patch_perl_script_autoflush(os.path.join(self.builddir, install_script))
