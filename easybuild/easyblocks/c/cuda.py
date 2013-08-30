@@ -61,6 +61,7 @@ class EB_CUDA(Binary):
         noqanda = [
             r"^Configuring",
             r"Installation Complete",
+            r".* -> .*",
         ]
 
         # patch install script to handle Q&A autonomously
