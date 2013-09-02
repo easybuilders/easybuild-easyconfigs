@@ -68,6 +68,8 @@ class EB_Qt(ConfigureMake):
         # cfr. https://elist.ornl.gov/pipermail/visit-developers/2011-September/010063.html
         self.cfg.update('premakeopts', 'LD_LIBRARY_PATH=%s:$LD_LIBRARY_PATH' % os.path.join(self.builddir, 'lib'))
 
+        super(EB_Qt, self).build_step()
+
     def sanity_check_step(self):
         """Custom sanity check for Qt."""
 
