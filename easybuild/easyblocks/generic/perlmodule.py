@@ -30,7 +30,7 @@ EasyBuild support for Perl module, implemented as an easyblock
 """
 import os
 
-from easybuild.easyblocks.perl import EXTS_FILTER_PERL_MODULES, get_major_perl_version, get_sitearch_suffix
+from easybuild.easyblocks.perl import EXTS_FILTER_PERL_MODULES, get_major_perl_version, get_site_suffix
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.framework.extensioneasyblock import ExtensionEasyBlock
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
@@ -99,10 +99,14 @@ class PerlModule(ExtensionEasyBlock, ConfigureMake):
         """
         return ExtensionEasyBlock.sanity_check_step(self, EXTS_FILTER_PERL_MODULES, *args, **kwargs)
 
-    def make_module_extra(self):
-        """Add install path to PERL*LIB"""
+    def make_module_req_guess(self):
+        """Customized dictionary of paths to look for with PERL*LIB."""
         majver = get_major_perl_version()
-        sitearchsuffix = get_sitearch_suffix()
-        # also add sitearch dir to Perl search path
-        txt = self.moduleGenerator.prepend_paths("PERL%sLIB" % majver, ['', sitearchsuffix])
-        return ExtensionEasyBlock.make_module_extra(self, txt)
+        sitearchsuffix = get_site_suffix('sitearch')
+        sitelibsuffix = get_site_suffix('sitelib')
+
+        guesses = super(PerlModule, self).make_module_req_guess()
+        guesses.update({
+            "PERL%sLIB" % majver: ['', sitearchsuffix, sitelibsuffix],
+        })
+        return guesses

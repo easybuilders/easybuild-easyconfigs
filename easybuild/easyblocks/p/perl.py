@@ -81,13 +81,22 @@ def get_major_perl_version():
     (perlmajver, _) = run_cmd(cmd, log_all=True, log_output=True, simple=False)
     return perlmajver
 
-def get_sitearch_suffix():
+def get_site_suffix(tag):
     """
-    Returns the suffix for sitearch
+    Returns the suffix for site* (e.g. sitearch, sitelib)
     this will look something like /lib/perl5/site_perl/5.16.3/x86_64-linux-thread-multi
-    so, sitearch withouth site prefix
+    so, e.g. sitearch without site prefix
+
+    @tag: site tag to use, e.g. 'sitearch', 'sitelib'
     """
-    cmd = """perl -MConfig -e 'my $a = $Config::Config{"sitearch"}; $a =~ s/($Config::Config{"siteprefix"})//; print $a'"""
-    (sitearchsuffix, _) = run_cmd(cmd, log_all=True, log_output=True, simple=False)
+    perl_cmd = 'my $a = $Config::Config{"%s"}; $a =~ s/($Config::Config{"siteprefix"})//; print $a' % tag
+    cmd = "perl -MConfig -e '%s'" % perl_cmd
+    (sitesuffix, _) = run_cmd(cmd, log_all=True, log_output=True, simple=False)
     # obtained value usually contains leading '/', so strip it off
-    return sitearchsuffix.lstrip(os.path.sep)
+    return sitesuffix.lstrip(os.path.sep)
+
+def get_sitearch_suffix():
+    """Deprecated more specific version of get_site_suffix. Only here for backward compatibility."""
+    _log = fancylogger.getLogger('Perl.get_sitearch_suffix', fname=False)
+    _log.deprecated("Use get_site_suffix('sitearch') instead of get_sitearch_suffix()", "2.0")
+    return get_site_suffix('sitearch')
