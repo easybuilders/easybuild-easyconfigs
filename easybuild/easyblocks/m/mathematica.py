@@ -38,7 +38,9 @@ class EB_Mathematica(Binary):
 
     def configure_step(self):
         """No configuration for Mathematica."""
-        pass
+        # ensure a license server is specified
+        if self.cfg['license_server'] is None:
+            self.log.error("No license server specified.")
 
     def build_step(self):
         """No build step for Mathematica."""
@@ -58,6 +60,20 @@ class EB_Mathematica(Binary):
             "Now installing.*\n\n.*\[.*\].*",
         ]
         run_cmd_qa(cmd, qa, no_qa=no_qa, log_all=True, simple=True)
+
+        # add license server configuration file
+        # some relevant documentation at http://reference.wolfram.com/mathematica/tutorial/ConfigurationFiles.html
+        mathpass_path = os.path.join(self.installdir, 'Configuration', 'Licensing', 'mathpass')
+        try:
+            # append to file, to avoid overwriting anything that might be there
+            f = open(mathpass_path, "a")
+            f.write("!%s" % self.cfg['license_server'])
+            f.seek(0)
+            mathpass_txt = f.read()
+            f.close()
+            self.log.info("Updated license file %s: %s" % (mathpass_path, mathpass_txt))
+        except IOError, err:
+            self.log.error("Failed to update %s with license server info" % mathpass_path)
 
     def sanity_check_step(self):
         """Custom sanity check for Mathematica."""
