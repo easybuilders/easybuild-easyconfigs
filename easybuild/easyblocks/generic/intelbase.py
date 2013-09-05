@@ -135,35 +135,45 @@ class IntelBase(EasyBlock):
     def configure_step(self):
         """Configure: handle license file and clean home dir."""
 
-        # obtain license path
-        try:
-            self.license_file = self.cfg['license_file']
-        except:
-            # the default should exist
-            self.log.deprecated('No new style license_file parameter, license_file is now mandatory', '2.0')
-            self.license_file = None
+        lic_env_var = 'INTEL_LICENSE_FILE'
+        intel_license_file = os.getenv(lic_env_var)
 
-        if self.license_file is None:
-            self.log.deprecated('Checking for old style license', '2.0')
-            self.cfg.enable_templating = False
-            lic = self.cfg['license']
-            # old style license is a path (type string)
-            if isinstance(lic, License) and isinstance(lic, str):
-                self.log.deprecated('No old style license parameter, license has to be pure License subclass', '2.0')
-                self.license_file = lic
-            self.cfg.enable_templating = True
+        if intel_license_file is None:
+            self.log.debug("Env var $%s not set, trying 'license_file' easyconfig parameter..." % lic_env_var)
+            # obtain license path
+            try:
+                self.license_file = self.cfg['license_file']
+            except:
+                # the default should exist
+                self.log.deprecated('No new style license_file parameter, license_file is now mandatory', '2.0')
+                self.license_file = None
 
-        if self.license_file:
-            self.log.info("Using license file %s" % self.license_file)
+            if self.license_file is None:
+                self.log.deprecated('Checking for old style license', '2.0')
+                self.cfg.enable_templating = False
+                lic = self.cfg['license']
+                # old style license is a path (type string)
+                if isinstance(lic, License) and isinstance(lic, str):
+                    self.log.deprecated('No old style license parameter, license has to be pure License subclass', '2.0')
+                    self.license_file = lic
+                self.cfg.enable_templating = True
+
+            if self.license_file:
+                self.log.info("Using license file %s" % self.license_file)
+            else:
+                self.log.error("No license file defined")
+
+            # verify license path
+            if not os.path.exists(self.license_file):
+                self.log.error("Can't find license at %s" % self.license_file)
+
+            # set INTEL_LICENSE_FILE
+            env.setvar(lic_env_var, self.license_file)
         else:
-            self.log.error("No license file defined")
-
-        # verify license path
-        if not os.path.exists(self.license_file):
-            self.log.error("Can't find license at %s" % self.license_file)
-
-        # set INTEL_LICENSE_FILE
-        env.setvar("INTEL_LICENSE_FILE", self.license_file)
+            # pick up $INTEL_LICENSE_FILE if it's set
+            self.log.info("Picking up Intel license file specification from $%s: %s" % (lic_env_var, intel_license_file))
+            self.cfg['license_file'] = intel_license_file
+            self.license_file = intel_license_file
 
         # clean home directory
         self.clean_home_subdir()
