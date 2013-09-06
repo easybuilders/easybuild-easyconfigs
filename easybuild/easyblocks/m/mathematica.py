@@ -67,13 +67,14 @@ class EB_Mathematica(Binary):
         try:
             # append to file, to avoid overwriting anything that might be there
             f = open(mathpass_path, "a")
-            f.write("!%s" % self.cfg['license_server'])
-            f.seek(0)
+            f.write("!%s\n" % self.cfg['license_server'])
+            f.close()
+            f = open(mathpass_path, "r")
             mathpass_txt = f.read()
             f.close()
             self.log.info("Updated license file %s: %s" % (mathpass_path, mathpass_txt))
         except IOError, err:
-            self.log.error("Failed to update %s with license server info" % mathpass_path)
+            self.log.error("Failed to update %s with license server info: %s" % (mathpass_path, err))
 
     def sanity_check_step(self):
         """Custom sanity check for Mathematica."""
