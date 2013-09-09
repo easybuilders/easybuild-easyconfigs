@@ -50,9 +50,9 @@ class EB_Mathematica(Binary):
         """Install Mathematica using install script."""
         cmd = "./%s_%s_LINUX.sh" % (self.name, self.version)
         shortver = '.'.join(self.version.split('.')[:2])
-        default_install_path = "/usr/local/Wolfram/%s/%s" % (self.name, shortver)
+        qa_install_path = "/usr/local/Wolfram/%s/%s" % (self.name, shortver)
         qa = {
-            "Enter the installation directory, or press ENTER to select %s: >" % default_install_path: self.installdir,
+            "Enter the installation directory, or press ENTER to select %s: >" % qa_install_path: self.installdir,
             "Create directory (y/n)? >": 'y',
             "or press ENTER to select /usr/local/bin: >": os.path.join(self.installdir, "bin"), 
         }
