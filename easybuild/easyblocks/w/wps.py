@@ -109,27 +109,27 @@ class EB_WPS(EasyBlock):
         libpng = get_software_root('libpng')
         zlib = get_software_root('zlib')
         if libpng:
+            paths = [libpng]
             if zlib:
-                libpnginc = "-I%s/include -I%s/include" % (zlib, libpng)
-                libpnglibdir = "-L%s/lib -L%s/lib" % (zlib, libpng)
-            else:
-                libpnginc = "-I%s/include" % libpng
-                libpnglibdir = "-L%s/lib" % libpng
+                paths.prepend(zlib)
+            libpnginc = ' '.join(['-I%s' % os.path.join(path, 'include') for path in paths])
+            libpnglib = ' '.join(['-L%s' % os.path.join(path, 'lib') for path in paths])
         else:
             self.log.error("libpng module not loaded?")
 
         # JasPer dependency check + setting env vars
         jasper = get_software_root('JasPer')
-        jasperlibdir = os.path.join(jasper, "lib")
         if jasper:
             env.setvar('JASPERINC', os.path.join(jasper, "include"))
+            jasperlibdir = os.path.join(jasper, "lib")
             env.setvar('JASPERLIB', jasperlibdir)
+            jasperlib = "-L%s" % jasperlibdir
         else:
             self.log.error("JasPer module not loaded?")
 
         # patch ungrib Makefile so that JasPer is found
         fn = os.path.join("ungrib", "src", "Makefile")
-        jasperlibs = "-L%s -ljasper %s -lpng" % (jasperlibdir, libpnglibdir)
+        jasperlibs = "%s -ljasper %s -lpng" % (jasperlib, libpnglib)
         try:
             for line in fileinput.input(fn, inplace=1, backup='.orig.JasPer'):
                 line = re.sub(r"^(\s*-L\.\s*-l\$\(LIBTARGET\))(\s*;.*)$", r"\1 %s\2" % jasperlibs, line)
