@@ -111,7 +111,7 @@ class EB_WPS(EasyBlock):
         if libpng:
             paths = [libpng]
             if zlib:
-                paths.prepend(zlib)
+                paths.insert(0, zlib)
             libpnginc = ' '.join(['-I%s' % os.path.join(path, 'include') for path in paths])
             libpnglib = ' '.join(['-L%s' % os.path.join(path, 'lib') for path in paths])
         else:
