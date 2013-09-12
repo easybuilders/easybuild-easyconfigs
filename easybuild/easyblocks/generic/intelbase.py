@@ -30,11 +30,13 @@ Generic EasyBuild support for installing Intel tools, implemented as an easybloc
 @author: Kenneth Hoste (Ghent University)
 @author: Pieter De Baets (Ghent University)
 @author: Jens Timmerman (Ghent University)
+@author: Ward Poelmans (Ghent University)
 """
 
 import os
 import shutil
 import tempfile
+import glob
 
 import easybuild.tools.environment as env
 from easybuild.framework.easyblock import EasyBlock
@@ -170,10 +172,23 @@ class IntelBase(EasyBlock):
             # set INTEL_LICENSE_FILE
             env.setvar(lic_env_var, self.license_file)
         else:
-            # pick up $INTEL_LICENSE_FILE if it's set
-            self.log.info("Picking up Intel license file specification from $%s: %s" % (lic_env_var, intel_license_file))
-            self.cfg['license_file'] = intel_license_file
-            self.license_file = intel_license_file
+            # iterate through $INTEL_LICENSE_FILE until a .lic file is found
+            for lic in intel_license_file.split(':'):
+                if os.path.isfile(lic):
+                    self.cfg['license_file'] = lic
+                    self.license_file = lic
+                else:
+                    lic_file = glob.glob("%s/*.lic" % lic)
+                    if not lic_file:
+                        continue
+                    # just pick the first .lic, if it's not correct, ajust $INTEL_LICENSE_FILE
+                    self.cfg['license_file'] = lic_file[0]
+                    self.license_file = lic_file[0]
+
+            if not self.license_file:
+                self.log.error("Cannot find a license file in %s" % intel_license_file)
+
+            self.log.info("Picking up Intel license file specification from $%s: %s" % (lic_env_var, self.license_file))
 
         # clean home directory
         self.clean_home_subdir()
