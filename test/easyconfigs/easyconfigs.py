@@ -46,6 +46,7 @@ from easybuild.framework.easyconfig.easyconfig import EasyConfig
 from easybuild.framework.easyconfig.tools import get_paths_for
 from easybuild.main import dep_graph, resolve_dependencies, process_easyconfig
 from easybuild.tools import config
+from easybuild.tools.module_generator import det_full_module_name
 
 
 # indicates whether all the single tests are OK,
@@ -111,10 +112,16 @@ class EasyConfigTest(TestCase):
         if self.ordered_specs is None:
             self.process_all_easyconfigs()
 
+        def mk_dep_mod_name(spec):
+            return tuple(det_full_module_name(spec).split(os.path.sep))
+
         # construct a dictionary: (name, installver) tuple to dependencies
         depmap = {}
         for spec in self.ordered_specs:
-            depmap.update({spec['module']: [spec['builddependencies'], spec['unresolvedDependencies']]})
+            builddeps = map(mk_dep_mod_name, spec['builddependencies'])
+            deps = map(mk_dep_mod_name, spec['unresolvedDependencies'])
+            key = tuple(spec['module'].split(os.path.sep))
+            depmap.update({key: [builddeps, deps]})
 
         # iteratively expand list of (non-build) dependencies until we reach the end (toolchain)
         depmap_last = None
