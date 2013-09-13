@@ -123,7 +123,7 @@ EULA=accept
         custom_paths = {
             'files': ["bin/mpi%s" % x for x in ["icc", "icpc", "ifort"]] +
                      ["include%s/mpi%s.h" % (suff, x) for x in ["cxx", "f", "", "o", "of"]] +
-                     ["include%s/%s" % (suff, x) for x in ["i_malloc.h"] + mpi_mods],
+                     ["include%s/%s" % (suff, x) for x in ["i_malloc.h"] + mpi_mods] +
                      ["lib%s/libmpi.so" % suff, "lib%s/libmpi.a" % suff],
             'dirs': [],
         }
