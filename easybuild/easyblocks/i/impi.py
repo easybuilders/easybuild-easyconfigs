@@ -116,15 +116,17 @@ EULA=accept
         if self.cfg['m32']:
             suff = ""
 
+        mpi_mods = ['mpi.mod']
+        if LooseVersion(self.version) > LooseVersion('4.0'):
+            mpi_mods.extend(["mpi_base.mod", "mpi_constants.mod", "mpi_sizeofs.mod"])
+
         custom_paths = {
-                        'files': ["bin/mpi%s" % x for x in ["icc", "icpc", "ifort"]] +
-                                 ["include%s/mpi%s.h" % (suff, x) for x in ["cxx", "f", "", "o", "of"]] +
-                                 ["include%s/%s" % (suff, x) for x in ["i_malloc.h", "mpi_base.mod",
-                                                                       "mpi_constants.mod", "mpi.mod",
-                                                                       "mpi_sizeofs.mod"]] +
-                                 ["lib%s/libmpi.so" % suff, "lib%s/libmpi.a" % suff],
-                        'dirs': []
-                       }
+            'files': ["bin/mpi%s" % x for x in ["icc", "icpc", "ifort"]] +
+                     ["include%s/mpi%s.h" % (suff, x) for x in ["cxx", "f", "", "o", "of"]] +
+                     ["include%s/%s" % (suff, x) for x in ["i_malloc.h"] + mpi_mods],
+                     ["lib%s/libmpi.so" % suff, "lib%s/libmpi.a" % suff],
+            'dirs': [],
+        }
 
         super(EB_impi, self).sanity_check_step(custom_paths=custom_paths)
 
