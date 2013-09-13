@@ -143,9 +143,9 @@ class EB_imkl(IntelBase):
                         self.log.exception("Can't write file %s" % (dest))
 
             # build the mkl interfaces (pic and no-pic)
-            # load the dependencies
+            # reload the dependencies
             m = Modules()
-            m.load(self.cfg.dependencies())
+            m.load([det_full_module_name(dep) for dep in self.cfg.dependencies()])
 
             if not self.cfg['interfaces']:
                 return
@@ -278,7 +278,7 @@ class EB_imkl(IntelBase):
 
             # load the dependencies
             m = Modules()
-            m.load(self.cfg.dependencies())
+            m.load([det_full_module_name(dep) for dep in self.cfg.dependencies()])
 
             if not self.cfg['interfaces']:
                 return
