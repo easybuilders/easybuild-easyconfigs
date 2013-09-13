@@ -41,6 +41,7 @@ import easybuild.tools.environment as env
 from easybuild.easyblocks.generic.intelbase import IntelBase
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.filetools import rmtree2, run_cmd
+from easybuild.tools.module_generator import det_full_module_name
 from easybuild.tools.modules import Modules, get_software_root
 
 
