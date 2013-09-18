@@ -29,6 +29,7 @@
 Support for building and installing Clang, implemented as an easyblock.
 
 @author: Dmitri Gribenko (National Technical University of Ukraine "KPI")
+@author: Ward Poelmans (Ghent University)
 """
 
 import os
@@ -48,6 +49,8 @@ class EB_Clang(CMakeMake):
     def extra_options():
         extra_vars = [
             ('assertions', [True, "Enable assertions.  Helps to catch bugs in Clang.  (default: True)", CUSTOM]),
+            ('build_targets', [["X86"], "Build targets for LLVM. Possible values: all, AArch64, ARM, CppBackend, Hexagon, " +
+                               "Mips, MBlaze, MSP430, NVPTX, PowerPC, Sparc, SystemZ, X86, XCore (default: X86)", CUSTOM]),
         ]
         return EasyBlock.extra_options(extra_vars)
 
@@ -90,9 +93,12 @@ class EB_Clang(CMakeMake):
 
         # Move other directories into the LLVM tree.
         src_dirs = {
-            'clang-%s.src' % self.version: os.path.join(self.llvm_src_dir, 'tools', 'clang'),
             'compiler-rt-%s.src' % self.version: os.path.join(self.llvm_src_dir, 'projects', 'compiler-rt')
         }
+        if self.version < 3.3:
+            src_dirs['clang-%s.src' % self.version] = os.path.join(self.llvm_src_dir, 'tools', 'clang')
+        else:
+            src_dirs['cfe-%s.src' % self.version] = os.path.join(self.llvm_src_dir, 'tools', 'clang')
         for tmp in self.src:
             for (dir, new_path) in src_dirs.items():
                 if tmp['name'].startswith(dir):
@@ -124,6 +130,8 @@ class EB_Clang(CMakeMake):
             self.cfg['configopts'] += "-DLLVM_ENABLE_ASSERTIONS=ON "
         else:
             self.cfg['configopts'] += "-DLLVM_ENABLE_ASSERTIONS=OFF "
+
+        self.cfg['configopts'] += "-DLLVM_TARGETS_TO_BUILD=\"%s\" " % ';'.join(self.cfg['build_targets'])
 
         if self.cfg['parallel']:
             self.make_parallel_opts = "-j %s" % self.cfg['parallel']
