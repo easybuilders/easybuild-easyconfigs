@@ -34,6 +34,7 @@ Support for building and installing Clang, implemented as an easyblock.
 
 import os
 import shutil
+from distutils.version import LooseVersion
 
 from easybuild.easyblocks.generic.cmakemake import CMakeMake
 from easybuild.framework.easyblock import EasyBlock
@@ -95,10 +96,12 @@ class EB_Clang(CMakeMake):
         src_dirs = {
             'compiler-rt-%s.src' % self.version: os.path.join(self.llvm_src_dir, 'projects', 'compiler-rt')
         }
-        if self.version < 3.3:
-            src_dirs['clang-%s.src' % self.version] = os.path.join(self.llvm_src_dir, 'tools', 'clang')
+        if LooseVersion(self.version) < LooseVersion('3.3'):
+            clang_src_dir = 'clang-%s.src' % self.version
         else:
-            src_dirs['cfe-%s.src' % self.version] = os.path.join(self.llvm_src_dir, 'tools', 'clang')
+            clang_src_dir = 'cfe-%s.src' % self.version
+        src_dirs[clang_src_dir] = os.path.join(self.llvm_src_dir, 'tools', 'clang')
+
         for tmp in self.src:
             for (dir, new_path) in src_dirs.items():
                 if tmp['name'].startswith(dir):
@@ -131,7 +134,7 @@ class EB_Clang(CMakeMake):
         else:
             self.cfg['configopts'] += "-DLLVM_ENABLE_ASSERTIONS=OFF "
 
-        self.cfg['configopts'] += "-DLLVM_TARGETS_TO_BUILD=\"%s\" " % ';'.join(self.cfg['build_targets'])
+        self.cfg['configopts'] += '-DLLVM_TARGETS_TO_BUILD="%s" ' % ';'.join(self.cfg['build_targets'])
 
         if self.cfg['parallel']:
             self.make_parallel_opts = "-j %s" % self.cfg['parallel']
