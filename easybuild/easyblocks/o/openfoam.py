@@ -55,6 +55,7 @@ class EB_OpenFOAM(EasyBlock):
         self.wm_compiler= None
         self.wm_mplib = None
         self.mpipath = None
+        self.openfoamdir = None
         self.thrdpartydir = None
 
     def configure_step(self):
@@ -85,7 +86,7 @@ class EB_OpenFOAM(EasyBlock):
         else:
             self.log.error("Unknown compiler family, don't know how to set WM_COMPILER")
 
-        env.setvar("WM_COMPILER",self.wm_compiler)
+        env.setvar("WM_COMPILER", self.wm_compiler)
 
         # type of MPI
         mpi_type = self.toolchain.mpi_family()
@@ -112,24 +113,27 @@ class EB_OpenFOAM(EasyBlock):
         # parallel build spec
         env.setvar("WM_NCOMPPROCS", str(self.cfg['parallel']))
 
+        self.openfoamdir = '-'.join([self.name, '-'.join(self.version.split('-')[:2])])
+        self.log.debug("openfoamdir: %s" % self.openfoamdir)
+
     def build_step(self):
         """Build OpenFOAM using make after sourcing script to set environment."""
 
-        nameversion = "%s-%s"%(self.name, self.version)
-
-        precmd = "source %s" % os.path.join(self.builddir, nameversion, "etc", "bashrc")
+        precmd = "source %s" % os.path.join(self.builddir, self.openfoamdir, "etc", "bashrc")
 
         # make directly in install directory
-        cmd="%(precmd)s && %(premakeopts)s %(makecmd)s"%{'precmd':precmd,
-                                                         'premakeopts':self.cfg['premakeopts'],
-                                                         'makecmd':os.path.join(self.builddir, nameversion, "Allwmake")}
+        cmd="%(precmd)s && %(premakeopts)s %(makecmd)s" % {
+            'precmd': precmd,
+            'premakeopts': self.cfg['premakeopts'],
+            'makecmd': os.path.join(self.builddir, self.openfoamdir, "Allwmake"),
+        }
         run_cmd(cmd,log_all=True,simple=True,log_output=True)
 
     def install_step(self):
         """Building was performed in install dir, so just fix permissions."""
 
         # fix permissions of OpenFOAM dir
-        fullpath = os.path.join(self.installdir, "%s-%s" % (self.name, self.version))
+        fullpath = os.path.join(self.installdir, self.openfoamdir)
         adjust_permissions(fullpath, stat.S_IROTH, add=True, recursive=True)
         adjust_permissions(fullpath, stat.S_IXOTH, add=True, recursive=True, onlydirs=True)
 
@@ -143,23 +147,21 @@ class EB_OpenFOAM(EasyBlock):
     def sanity_check_step(self):
         """Custom sanity check for OpenFOAM"""
 
-        odir = "%s-%s" % (self.name, self.version)
-
         psubdir = "linux64%sDPOpt" % self.wm_compiler
 
         if LooseVersion(self.version) < LooseVersion("2"):
-            toolsdir = os.path.join(odir, "applications", "bin", psubdir)
+            toolsdir = os.path.join(self.openfoamdir, "applications", "bin", psubdir)
 
         else:
-            toolsdir = os.path.join(odir, "platforms", psubdir, "bin")
+            toolsdir = os.path.join(self.openfoamdir, "platforms", psubdir, "bin")
 
         pdirs = []
         if LooseVersion(self.version) >= LooseVersion("2"):
-            pdirs = [toolsdir, os.path.join(odir, "platforms", psubdir, "lib")]
+            pdirs = [toolsdir, os.path.join(self.openfoamdir, "platforms", psubdir, "lib")]
 
         # some randomly selected binaries
         # if one of these is missing, it's very likely something went wrong
-        bins = [os.path.join(odir, "bin", x) for x in ["foamExec", "paraFoam"]] + \
+        bins = [os.path.join(self.openfoamdir, "bin", x) for x in ["foamExec", "paraFoam"]] + \
                [os.path.join(toolsdir, "buoyant%sSimpleFoam" % x) for x in ["", "Boussinesq"]] + \
                [os.path.join(toolsdir, "%sFoam" % x) for x in ["boundary", "engine", "sonic"]] + \
                [os.path.join(toolsdir, "surface%s" % x) for x in ["Add", "Find", "Smooth"]] + \
@@ -167,9 +169,9 @@ class EB_OpenFOAM(EasyBlock):
                                                     "refineMesh", "vorticity"]]
 
         custom_paths = {
-                        'files':["%s/etc/%s" % (odir, x) for x in ["bashrc", "cshrc"]] + bins,
-                        'dirs':pdirs
-                       }
+            'files': [os.path.join(self.openfoamdir, 'etc', x) for x in ["bashrc", "cshrc"]] + bins,
+            'dirs': pdirs,
+        }
 
         super(EB_OpenFOAM, self).sanity_check_step(custom_paths=custom_paths)
 
@@ -178,16 +180,17 @@ class EB_OpenFOAM(EasyBlock):
 
         txt = super(EB_OpenFOAM, self).make_module_extra()
 
-        env_vars = [("WM_PROJECT_VERSION", self.version),
-                    ("FOAM_INST_DIR", "$root"),
-                    ("WM_COMPILER", self.wm_compiler),
-                    ("WM_MPLIB", self.wm_mplib),
-                    ("MPI_ARCH_PATH", self.mpipath),
-                    ("FOAM_BASH", "$root/%s-%s/etc/bashrc" % (self.name, self.version)),
-                    ("FOAM_CSH", "$root/%s-%s/etc/cshrc" % (self.name, self.version)),
-                    ]
+        env_vars = [
+            ("WM_PROJECT_VERSION", self.version),
+            ("FOAM_INST_DIR", "$root"),
+            ("WM_COMPILER", self.wm_compiler),
+            ("WM_MPLIB", self.wm_mplib),
+            ("MPI_ARCH_PATH", self.mpipath),
+            ("FOAM_BASH", os.path.join("$root", self.openfoamdir, "etc", "bashrc")),
+            ("FOAM_CSH", os.path.join("$root", self.openfoamdir, "etc", "cshrc")),
+        ]
 
-        for env_var in env_vars:
-            txt += "setenv\t%s\t%s\n" % env_var
+        for (env_var, val) in env_vars:
+            txt += self.moduleGenerator.set_environment(env_var, val)
 
         return txt
