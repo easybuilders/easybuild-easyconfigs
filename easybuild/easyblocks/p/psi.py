@@ -26,6 +26,7 @@
 EasyBuild support for building and installing PSI, implemented as an easyblock
 
 @author: Kenneth Hoste (Ghent University)
+@author: Ward Poelmans (Ghent University)
 """
 
 import os
@@ -104,6 +105,11 @@ class EB_PSI(ConfigureMake):
         # enable support for plugins
         self.cfg.update('configopts', "--with-plugins")
 
+        self.install_psi_objdir = os.path.join(self.installdir, 'obj')
+        self.install_psi_srcdir = os.path.join(self.installdir, os.path.relpath(self.cfg['start_dir'],self.builddir))
+        env.setvar('PSI_OBJ_INSTALL_DIR', self.install_psi_objdir)
+        env.setvar('PSI_SRC_INSTALL_DIR', self.install_psi_srcdir)
+
         super(EB_PSI, self).configure_step(cmd_prefix=self.cfg['start_dir'])
 
     def install_step(self):
@@ -112,8 +118,8 @@ class EB_PSI(ConfigureMake):
 
         # the obj and unpacked sources must remain available for working with plugins
         try:
-            for subdir in ['obj', 'psi%s' % self.version]:
-                shutil.copytree(os.path.join(self.builddir, subdir), os.path.join(self.installdir, subdir))
+            shutil.copytree(os.path.join(self.builddir, 'obj'), self.install_psi_objdir)
+            shutil.copytree(self.cfg['start_dir'], self.install_psi_srcdir)
         except OSError, err:
             self.log.error("Failed to copy obj and unpacked sources to install dir: %s" % err)
 
