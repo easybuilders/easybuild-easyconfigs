@@ -119,7 +119,7 @@ class EasyConfigTest(TestCase):
         depmap = {}
         for spec in self.ordered_specs:
             builddeps = map(mk_dep_mod_name, spec['builddependencies'])
-            deps = map(mk_dep_mod_name, spec['unresolvedDependencies'])
+            deps = map(mk_dep_mod_name, spec['unresolved_deps'])
             key = tuple(spec['module'].split(os.path.sep))
             depmap.update({key: [builddeps, deps]})
 
