@@ -23,7 +23,7 @@
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
 """
-EasyBuild support for installing FoldX, implemented as an easyblock
+EasyBuild support for installing a tarball of binaries, implemented as an easyblock
 
 @author: Kenneth Hoste (Ghent University)
 """
@@ -35,30 +35,28 @@ from easybuild.easyblocks.generic.tarball import Tarball
 from easybuild.tools.filetools import adjust_permissions
 
 
-class EB_FoldX(Tarball):
+class BinariesTarball(Tarball):
     """
-    Support for installing FoldX
+    Support for installing a tarball of binaries
     """
 
     def install_step(self):
-        """Install FoldX by copying unzipped binary to 'bin' subdir of installation dir, and fixing permissions."""
+        """Install by copying unzipped binaries to 'bin' subdir of installation dir, and fixing permissions."""
 
-        binfile_name = '%s_%s.linux' % (self.name.lower(), self.version)
-        binfile = os.path.join(self.cfg['start_dir'], binfile_name)
         bindir = os.path.join(self.installdir, 'bin')
         try:
             os.makedirs(bindir)
-            shutil.copy2(binfile, bindir)
+            for item in os.listdir(self.cfg['start_dir']):
+                if os.path.isfile(item):
+                    shutil.copy2(os.path.join(self.cfg['start_dir'], item), bindir)
+                else:
+                    self.log.warning("Skipping non-file %s in %s, not copying it." % (item, self.cfg['start_dir']))
         except OSError, err:
-            self.log.exception("Copying %s to installation dir failed: %s" % (binfile, err))
+            self.log.exception("Copying binaries in %s to installation dir 'bin' failed: %s" % (self.cfg['start_dir'], err))
 
-        # make sure binary has executable permissions
-        adjust_permissions(os.path.join(bindir, binfile_name), stat.S_IXUSR|stat.S_IXGRP|stat.S_IXOTH, add=True)
+        # make sure binaries have executable permissions
+        for binary in os.listdir(bindir):
+            path = os.path.join(bindir, binary)
+            self.log.debug("Fixing permissions for %s..." % path)
+            adjust_permissions(path, stat.S_IXUSR|stat.S_IXGRP|stat.S_IXOTH, add=True)
 
-    def sanity_check_step(self):
-        """Custom sanity check for FoldX."""
-        custom_paths = {
-            'files': ['bin/%s_%s.linux' % (self.name.lower(), self.version)],
-            'dirs': [],
-        }
-        super(EB_FoldX, self).sanity_check_step(custom_paths=custom_paths)
