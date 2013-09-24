@@ -49,14 +49,11 @@ class BinariesTarball(Tarball):
             for item in os.listdir(self.cfg['start_dir']):
                 if os.path.isfile(item):
                     shutil.copy2(os.path.join(self.cfg['start_dir'], item), bindir)
+                    # make sure binary has executable permissions
+                    adjust_permissions(os.path.join(bindir, item), stat.S_IXUSR|stat.S_IXGRP|stat.S_IXOTH, add=True)
+                    self.log.debug("Copied %s to %s and fixed permissions" % (item, bindir))
                 else:
                     self.log.warning("Skipping non-file %s in %s, not copying it." % (item, self.cfg['start_dir']))
         except OSError, err:
-            self.log.exception("Copying binaries in %s to installation dir 'bin' failed: %s" % (self.cfg['start_dir'], err))
-
-        # make sure binaries have executable permissions
-        for binary in os.listdir(bindir):
-            path = os.path.join(bindir, binary)
-            self.log.debug("Fixing permissions for %s..." % path)
-            adjust_permissions(path, stat.S_IXUSR|stat.S_IXGRP|stat.S_IXOTH, add=True)
+            self.log.exception("Copying binaries in %s to install dir 'bin' failed: %s" % (self.cfg['start_dir'], err))
 
