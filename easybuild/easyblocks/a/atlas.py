@@ -71,21 +71,34 @@ class EB_ATLAS(ConfigureMake):
             # ignore CPU throttling check
             # this is not recommended, it will disturb the measurements done by ATLAS
             # used for the EasyBuild demo, to avoid requiring root privileges
-            cputhrchk_gone_version = LooseVersion('3.10')
+            cputhrchk_gone_version = LooseVersion('3.9')
             if LooseVersion(self.version) < cputhrchk_gone_version:
                 self.cfg.update('configopts', '-Si cputhrchk 0')
             else:
-                self.log.warning("Can ignore CPU throttling being enabled, configure option 'cputhrchk' was removed.")
+                self.log.warning("Can't ignore CPU throttling, configure option 'cputhrchk' not available anymore.")
 
         # if LAPACK is found, instruct ATLAS to provide a full LAPACK library
         # ATLAS only provides a few LAPACK routines natively
         if self.cfg['full_lapack']:
-            lapack = get_software_root('LAPACK')
-            if lapack:
-                self.cfg.update('configopts', ' --with-netlib-lapack=%s/lib/liblapack.a' % lapack)
+            lapack_lib_version = LooseVersion('3.9')
+            if LooseVersion(self.version) < lapack_lib_version:
+                # pass built LAPACK library
+                lapack = get_software_root('LAPACK')
+                if lapack:
+                    self.cfg.update('configopts', ' --with-netlib-lapack=%s/lib/liblapack.a' % lapack)
+                else:
+                    self.log.error("netlib's LAPACK library not available,"\
+                                   " required to build ATLAS with a full LAPACK library.")
             else:
-                self.log.error("netlib's LAPACK library not available,"\
-                               " required to build ATLAS with a full LAPACK library.")
+                # pass LAPACK source tarball
+                lapack_src = None
+                for src in self.src:
+                    if src['name'].startswith('lapack'):
+                        lapack_src = src['path']
+                if lapack_src is not None:
+                    self.cfg.update('configopts', ' --with-netlib-lapack-tarfile=%s' % lapack_src)
+                else:
+                    self.log.error("LAPACK source tarball not available, but required.")
 
         # enable building of shared libraries (requires -fPIC)
         if self.cfg['sharedlibs'] or self.toolchain.options['pic']:
