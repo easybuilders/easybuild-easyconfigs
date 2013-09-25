@@ -34,6 +34,7 @@ EasyBuild support for building and installing ATLAS, implemented as an easyblock
 
 import re
 import os
+from distutils.version import LooseVersion
 
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.framework.easyconfig import CUSTOM
@@ -70,7 +71,11 @@ class EB_ATLAS(ConfigureMake):
             # ignore CPU throttling check
             # this is not recommended, it will disturb the measurements done by ATLAS
             # used for the EasyBuild demo, to avoid requiring root privileges
-            self.cfg.update('configopts', '-Si cputhrchk 0')
+            cputhrchk_gone_version = LooseVersion('3.10')
+            if LooseVersion(self.version) < cputhrchk_gone_version:
+                self.cfg.update('configopts', '-Si cputhrchk 0')
+            else:
+                self.log.warning("Can ignore CPU throttling being enabled, configure option 'cputhrchk' was removed.")
 
         # if LAPACK is found, instruct ATLAS to provide a full LAPACK library
         # ATLAS only provides a few LAPACK routines natively
