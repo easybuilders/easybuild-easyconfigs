@@ -75,7 +75,7 @@ class EB_ATLAS(ConfigureMake):
                 self.cfg.update('configopts', '-Si cputhrchk 0')
                 # use wall time to optimize (cpu freq would be better)
                 self.cfg.update('configopts', "-D c -DWALL")
-                self.log.info('CPU throttling check ignored: NOT recommended!')
+                self.log.warning('CPU throttling check ignored: NOT recommended!')
             else:
                 self.log.error("Ignore CPU throttling check is not possible: set the CPU governor to performance!")
         else:
@@ -95,15 +95,25 @@ class EB_ATLAS(ConfigureMake):
         # if LAPACK is found, instruct ATLAS to provide a full LAPACK library
         # ATLAS only provides a few LAPACK routines natively
         if self.cfg['full_lapack']:
-            lapack = get_software_root('LAPACK')
-            if lapack:
-                if LooseVersion(self.version) < LooseVersion('3.10.0'):
+            lapack_lib_version = LooseVersion('3.9')
+            if LooseVersion(self.version) < lapack_lib_version:
+                # pass built LAPACK library
+                lapack = get_software_root('LAPACK')
+                if lapack:
                     self.cfg.update('configopts', ' --with-netlib-lapack=%s/lib/liblapack.a' % lapack)
                 else:
-                    self.cfg.update('configopts', ' -Ss flapack %s/lib/liblapack.a' % lapack)
+                    self.log.error("netlib's LAPACK library not available,"\
+                                   " required to build ATLAS with a full LAPACK library.")
             else:
-                self.log.error("netlib's LAPACK library not available,"\
-                               " required to build ATLAS with a full LAPACK library.")
+                # pass LAPACK source tarball
+                lapack_src = None
+                for src in self.src:
+                    if src['name'].startswith('lapack'):
+                        lapack_src = src['path']
+                if lapack_src is not None:
+                    self.cfg.update('configopts', ' --with-netlib-lapack-tarfile=%s' % lapack_src)
+                else:
+                    self.log.error("LAPACK source tarball not available, but required.")
 
         # enable building of shared libraries (requires -fPIC)
         if self.cfg['sharedlibs'] or self.toolchain.options['pic']:
@@ -229,7 +239,7 @@ Configure failed, not sure why (see output above).""" % out
             shared_libs = []
 
         custom_paths = {
-                        'files': ["include/%s" % x for x in ["cblas.h", "clapack.h"]] + 
+                        'files': ["include/%s" % x for x in ["cblas.h", "clapack.h"]] +
                                  static_libs + shared_libs,
                         'dirs': ["include/atlas"]
                        }
