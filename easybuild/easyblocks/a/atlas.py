@@ -34,6 +34,7 @@ EasyBuild support for building and installing ATLAS, implemented as an easyblock
 
 import re
 import os
+from distutils.version import LooseVersion
 
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.framework.easyconfig import CUSTOM
@@ -70,14 +71,36 @@ class EB_ATLAS(ConfigureMake):
             # ignore CPU throttling check
             # this is not recommended, it will disturb the measurements done by ATLAS
             # used for the EasyBuild demo, to avoid requiring root privileges
-            self.cfg.update('configopts', '-Si cputhrchk 0')
+            if LooseVersion(self.version) < LooseVersion('3.10.0'):
+                self.cfg.update('configopts', '-Si cputhrchk 0')
+                # use wall time to optimize (cpu freq would be better)
+                self.cfg.update('configopts', "-D c -DWALL")
+                self.log.info('CPU throttling check ignored: NOT recommended!')
+            else:
+                self.log.error("Ignore CPU throttling check is not possible: set the CPU governor to performance!")
+        else:
+            try:
+                cpu_freq_fd = open('/proc/cpuinfo','r')
+                for line in cpu_freq_fd:
+                    cpu_freq_re = re.match("^cpu MHz\s*:\s*([0-9.]*)",line)
+                    if cpu_freq_re:
+                        cpu_freq = cpu_freq_re.group(1)
+                        break
+
+                self.cfg.update('configopts', "-D c -DPentiumCPS=%s" % cpu_freq)
+            except IOError:
+                self.cfg.update('configopts', "-D c -DWALL")
+                pass
 
         # if LAPACK is found, instruct ATLAS to provide a full LAPACK library
         # ATLAS only provides a few LAPACK routines natively
         if self.cfg['full_lapack']:
             lapack = get_software_root('LAPACK')
             if lapack:
-                self.cfg.update('configopts', ' --with-netlib-lapack=%s/lib/liblapack.a' % lapack)
+                if LooseVersion(self.version) < LooseVersion('3.10.0'):
+                    self.cfg.update('configopts', ' --with-netlib-lapack=%s/lib/liblapack.a' % lapack)
+                else:
+                    self.cfg.update('configopts', ' -Ss flapack %s/lib/liblapack.a' % lapack)
             else:
                 self.log.error("netlib's LAPACK library not available,"\
                                " required to build ATLAS with a full LAPACK library.")
