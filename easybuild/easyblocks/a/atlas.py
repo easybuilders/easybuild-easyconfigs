@@ -40,6 +40,7 @@ from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.filetools import run_cmd
 from easybuild.tools.modules import get_software_root
+from easybuild.tools.systemtools import get_cpu_speed,UNKNOWN
 
 
 class EB_ATLAS(ConfigureMake):
@@ -79,18 +80,12 @@ class EB_ATLAS(ConfigureMake):
             else:
                 self.log.error("Ignore CPU throttling check is not possible: set the CPU governor to performance!")
         else:
-            try:
-                cpu_freq_fd = open('/proc/cpuinfo','r')
-                for line in cpu_freq_fd:
-                    cpu_freq_re = re.match("^cpu MHz\s*:\s*([0-9.]*)",line)
-                    if cpu_freq_re:
-                        cpu_freq = cpu_freq_re.group(1)
-                        break
-
-                self.cfg.update('configopts', "-D c -DPentiumCPS=%s" % cpu_freq)
-            except IOError:
+            cpu_freq = get_cpu_speed()
+            if cpu_freq == UNKNOWN:
                 self.cfg.update('configopts', "-D c -DWALL")
-                pass
+            else:
+                self.cfg.update('configopts', "-D c -DPentiumCPS=%s" % cpu_freq)
+
 
         # if LAPACK is found, instruct ATLAS to provide a full LAPACK library
         # ATLAS only provides a few LAPACK routines natively
