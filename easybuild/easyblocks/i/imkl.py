@@ -117,6 +117,9 @@ class EB_imkl(IntelBase):
         The mkl directory structure has thoroughly changed as from version 10.3.
         Hence post processing is quite different in both situations
         """
+        # reload the dependencies
+        self.load_dependency_modules()
+
         if LooseVersion(self.version) >= LooseVersion('10.3'):
             # Add convenient wrapper libs
             # - form imkl 10.3
@@ -144,9 +147,6 @@ class EB_imkl(IntelBase):
                         self.log.exception("Can't write file %s" % (dest))
 
             # build the mkl interfaces (pic and no-pic)
-            # reload the dependencies
-            m = Modules()
-            m.load([det_full_module_name(dep) for dep in self.cfg.dependencies()])
 
             if not self.cfg['interfaces']:
                 return
@@ -276,10 +276,6 @@ class EB_imkl(IntelBase):
                         self.log.info("File %s written" % dest)
                     except:
                         self.log.exception("Can't write file %s" % (dest))
-
-            # load the dependencies
-            m = Modules()
-            m.load([det_full_module_name(dep) for dep in self.cfg.dependencies()])
 
             if not self.cfg['interfaces']:
                 return
