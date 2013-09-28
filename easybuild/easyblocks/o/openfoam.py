@@ -116,6 +116,16 @@ class EB_OpenFOAM(EasyBlock):
         self.openfoamdir = '-'.join([self.name, '-'.join(self.version.split('-')[:2])])
         self.log.debug("openfoamdir: %s" % self.openfoamdir)
 
+        # make sure lib/include dirs for dependencies are found
+        if LooseVersion(self.version) < LooseVersion("2"):
+            for dep in self.cfg.dependencies():
+                self.cfg.update('premakeopts', "%(name)s_LIB_DIR=$EBROOT%(name)s/lib" % {'name': dep['name'].upper()})
+                self.cfg.update('premakeopts', "%(name)s_INCLUDE_DIR=$EBROOT%(name)s/include" % {'name': dep['name'].upper()})
+        else:
+            scotch = get_software_root('SCOTCH')
+            if scotch:
+                self.cfg.update('premakeopts', "SCOTCH_ROOT=$EBROOTSCOTCH")
+
     def build_step(self):
         """Build OpenFOAM using make after sourcing script to set environment."""
 
