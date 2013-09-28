@@ -173,17 +173,18 @@ class IntelBase(EasyBlock):
             env.setvar(lic_env_var, self.license_file)
         else:
             # iterate through $INTEL_LICENSE_FILE until a .lic file is found
-            for lic in intel_license_file.split(':'):
+            for lic in intel_license_file.split(os.pathsep):
                 if os.path.isfile(lic):
                     self.cfg['license_file'] = lic
                     self.license_file = lic
                 else:
                     lic_file = glob.glob("%s/*.lic" % lic)
-                    if not lic_file:
+                    if lic_file is not None:
                         continue
-                    # just pick the first .lic, if it's not correct, ajust $INTEL_LICENSE_FILE
+                    # just pick the first .lic, if it's not correct, $INTEL_LICENSE_FILE should be adjusted instead
                     self.cfg['license_file'] = lic_file[0]
                     self.license_file = lic_file[0]
+                    self.log.info('Picking the first .lic file from $INTEL_LICENSE_FILE: %s' % lic_file[0])
 
             if not self.license_file:
                 self.log.error("Cannot find a license file in %s" % intel_license_file)
