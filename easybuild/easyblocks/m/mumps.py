@@ -75,17 +75,6 @@ class EB_MUMPS(ConfigureMake):
         except OSError, err:
             self.log.error("Copying Makefile.inc to builddir failed.:%s" % err)
 
-        # prepare compiler specific compiler flags
-        comp_fam = self.toolchain.comp_family()
-        if comp_fam == toolchain.GCC:  #@UndefinedVariable
-            optf = "-DALLOW_NON_INIT"
-            optl = ""
-        elif comp_fam == toolchain.INTELCOMP:  #@UndefinedVariable
-            optf = "-Dintel_ -DALLOW_NON_INIT -nofor-main"
-            optl = "-nofor-main"
-        else:
-            self.log.error("Unknown compiler family, don't know how to set compiler flags.")
-
         # check whether dependencies are available, and prepare
         scotch = get_software_root('SCOTCH')
         if not scotch:
