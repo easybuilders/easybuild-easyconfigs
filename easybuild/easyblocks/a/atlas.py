@@ -32,8 +32,10 @@ EasyBuild support for building and installing ATLAS, implemented as an easyblock
 @author: Jens Timmerman (Ghent University)
 """
 
+import fileinput
 import re
 import os
+import sys
 from distutils.version import LooseVersion
 
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
@@ -74,14 +76,21 @@ class EB_ATLAS(ConfigureMake):
             # used for the EasyBuild demo, to avoid requiring root privileges
             if LooseVersion(self.version) < LooseVersion('3.10.0'):
                 self.cfg.update('configopts', '-Si cputhrchk 0')
-                # use wall time to optimize (cpu freq would be better)
-                self.cfg.update('configopts', "-D c -DWALL")
-                self.log.warning('CPU throttling check ignored: NOT recommended!')
             else:
-                self.log.error("Ignore CPU throttling check is not possible: set the CPU governor to performance!")
-        else:
-            cpu_freq = get_cpu_speed()
-            self.cfg.update('configopts', "-D c -DPentiumCPS=%s" % cpu_freq)
+                self.log.warning("Ignore CPU throttling check is not possible via command line.")
+                # apply patch to ignore CPU throttling: make ProbeCPUThrottle always return 0
+                # see http://sourceforge.net/p/math-atlas/support-requests/857/
+                cfg_file = os.path.join('CONFIG', 'src', 'config.c')
+                for line in fileinput.input(cfgfile, inplace=1, backup='.orig.eb'):
+                    line = re.sub(r"^(\s*iret)\s*=\s*.*CPU THROTTLE.*$" % k, r"\1 = 0;", line)
+                    sys.stdout.write(line)
+            self.log.warning('CPU throttling check ignored: NOT recommended!')
+
+        # use cycle accurate timer for timings
+        # see http://math-atlas.sourceforge.net/atlas_install/node23.html
+        # this should work on Linux with both GCC and Intel compilers
+        cpu_freq = int(get_cpu_speed())
+        self.cfg.update('configopts', "-D c -DPentiumCPS=%s" % cpu_freq)
 
 
         # if LAPACK is found, instruct ATLAS to provide a full LAPACK library
