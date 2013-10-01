@@ -163,11 +163,11 @@ class IntelBase(EasyBlock):
             if self.license_file:
                 self.log.info("Using license file %s" % self.license_file)
             else:
-                self.log.error("No license file defined")
+                self.log.error("No license file defined, consider setting $%s that will be picked up" % lic_env_var)
 
             # verify license path
             if not os.path.exists(self.license_file):
-                self.log.error("Can't find license at %s" % self.license_file)
+                self.log.error("%s not found, correct 'license_file' value or $%s" % (self.license_file, lic_env_var))
 
             # set INTEL_LICENSE_FILE
             env.setvar(lic_env_var, self.license_file)
