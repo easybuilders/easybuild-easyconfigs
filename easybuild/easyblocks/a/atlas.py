@@ -81,8 +81,8 @@ class EB_ATLAS(ConfigureMake):
                 # apply patch to ignore CPU throttling: make ProbeCPUThrottle always return 0
                 # see http://sourceforge.net/p/math-atlas/support-requests/857/
                 cfg_file = os.path.join('CONFIG', 'src', 'config.c')
-                for line in fileinput.input(cfgfile, inplace=1, backup='.orig.eb'):
-                    line = re.sub(r"^(\s*iret)\s*=\s*.*CPU THROTTLE.*$" % k, r"\1 = 0;", line)
+                for line in fileinput.input(cfg_file, inplace=1, backup='.orig.eb'):
+                    line = re.sub(r"^(\s*iret)\s*=\s*.*CPU THROTTLE.*$", r"\1 = 0;", line)
                     sys.stdout.write(line)
             self.log.warning('CPU throttling check ignored: NOT recommended!')
 
