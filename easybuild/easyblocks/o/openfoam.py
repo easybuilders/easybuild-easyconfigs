@@ -101,7 +101,10 @@ class EB_OpenFOAM(EasyBlock):
 
         elif mpi_type == toolchain.OPENMPI:  #@UndefinedVariable
             self.mpipath = get_software_root('OpenMPI')
-            self.wm_mplib = "OPENMPI"
+            if '-ext-' in self.version:
+                self.wm_mplib = "OPENMPI"
+            else:
+                self.wm_mplib = "MPI-MVAPICH2"
 
         else:
             self.log.error("Unknown MPI, don't know how to set MPI_ARCH_PATH, WM_MPLIB or FOAM_MPI_LIBBIN")
