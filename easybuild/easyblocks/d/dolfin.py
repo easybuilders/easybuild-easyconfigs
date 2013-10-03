@@ -171,6 +171,9 @@ class EB_DOLFIN(CMakePythonPackage):
         if not_found_re.search(out):
             self.log.error("Optional packages could not be found, this should not happen...")
 
+        # enable verbose build, so we have enough information if something goes wrong
+        self.cfg.update('makeopts', "VERBOSE=1")
+
     def make_module_extra(self):
         """Set extra environment variables for DOLFIN."""
 
@@ -215,10 +218,19 @@ class EB_DOLFIN(CMakePythonPackage):
         pref = os.path.join('share', 'dolfin', 'demo')
 
         # test command templates
-        cmd_template_python = " && ".join(["cd %(dir)s", "python demo_%(name)s.py", "cd -"])
+        cmd_template_python = " && ".join([
+            "cd %(dir)s",
+            "python demo_%(name)s.py",
+            "cd -",
+        ])
 
-        cmd_template_cpp = " && ".join(["cd %(dir)s", "cmake . %s" % self.saved_configopts,
-                                        "make", "./demo_%(name)s", "cd -"])
+        cmd_template_cpp = " && ".join([
+            "cd %(dir)s",
+            "cmake . %s" % self.saved_configopts,
+            "make VERBOSE=1",
+            "./demo_%(name)s",
+            "cd -",
+        ])
 
         # list based on demos available for DOLFIN v1.0.0
         pde_demos = ['biharmonic', 'cahn-hilliard', 'hyperelasticity', 'mixed-poisson',
