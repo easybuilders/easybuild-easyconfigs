@@ -1,10 +1,11 @@
 name = 'motif'
-version = '2.2.4' # this version provides libXm.so.3
+version = '2.2.4'  # this version provides libXm.so.3
 easyblock = 'ConfigureMake'
 
 homepage = 'http://motif.ics.com/'
 description = """Motif refers to both a graphical user interface (GUI) specification and the widget toolkit for building
-applications that follow that specification under the X Window System on Unix and other POSIX-compliant systems. It was the standard toolkit for the Common Desktop Environment and thus for Unix."""
+ applications that follow that specification under the X Window System on Unix and other POSIX-compliant systems.
+ It was the standard toolkit for the Common Desktop Environment and thus for Unix."""
 
 toolchain = {'name': 'goolf', 'version': '1.4.10'}
 toolchainopts = {'optarch': True, 'pic': True}
@@ -18,14 +19,13 @@ patches = [
     'XmResizeHashTable.patch',
 ]
 
-
 dependencies = [
     ('libtool', '2.4.2'),
     ('libXt', '1.1.4'),
     ('xbitmaps', '1.1.1'),
     ('flex', '2.5.35'),
     ('Bison', '2.7'),
-    ('Automake','1.13.4'),
+    ('Automake', '1.13.4'),
     ('gettext', '0.18.2'),
     ('libXp', '1.0.2'),
     ('libX11', '1.6.1'),
@@ -36,15 +36,17 @@ builddependencies = [
     ('printproto', '1.0.5'),
 ]
 
+premakeopts = "LANG=C "
+# motif ships a broken automake and libtool
+preconfigopts = """rm -f libtool install-sh missing depcomp config.guess config.sub && \
+cp $EBROOTAUTOMAKE/share/automake*/* . || cp $EBROOTLIBTOOL/bin/libtool . && """
+configopts = "--enable-shared"
+# make is not parallel safe
+parallel = 1
+
 sanity_check_paths = {
     'files': ['lib/libXm.so.3'],
     'dirs': []
 }
 
-premakeopts = "LANG=C "
-# motif ships a broken automake and libtool
-preconfigopts = "rm -f libtool install-sh missing depcomp config.guess config.sub && cp $EBROOTAUTOMAKE/share/automake*/* . || cp $EBROOTLIBTOOL/bin/libtool . && "
-configopts = "--enable-shared"
 moduleclass = 'vis'
-# make is not parallel safe
-parallel = 1
