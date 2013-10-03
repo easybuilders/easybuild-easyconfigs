@@ -115,7 +115,7 @@ class EB_PSI(ConfigureMake):
         # In order to create new plugins with PSI, it needs to know the location of the source
         # and the obj dir after install. These env vars give that information to the configure script.
         self.install_psi_objdir = os.path.join(self.installdir, 'obj')
-        self.install_psi_srcdir = os.path.join(self.installdir, os.path.relpath(self.cfg['start_dir'], self.builddir))
+        self.install_psi_srcdir = os.path.join(self.installdir, os.path.basename(self.cfg['start_dir']))
         env.setvar('PSI_OBJ_INSTALL_DIR', self.install_psi_objdir)
         env.setvar('PSI_SRC_INSTALL_DIR', self.install_psi_srcdir)
 
