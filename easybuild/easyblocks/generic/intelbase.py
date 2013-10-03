@@ -30,11 +30,13 @@ Generic EasyBuild support for installing Intel tools, implemented as an easybloc
 @author: Kenneth Hoste (Ghent University)
 @author: Pieter De Baets (Ghent University)
 @author: Jens Timmerman (Ghent University)
+@author: Ward Poelmans (Ghent University)
 """
 
 import os
 import shutil
 import tempfile
+import glob
 
 import easybuild.tools.environment as env
 from easybuild.framework.easyblock import EasyBlock
@@ -161,19 +163,33 @@ class IntelBase(EasyBlock):
             if self.license_file:
                 self.log.info("Using license file %s" % self.license_file)
             else:
-                self.log.error("No license file defined")
+                self.log.error("No license file defined, consider setting $%s that will be picked up" % lic_env_var)
 
             # verify license path
             if not os.path.exists(self.license_file):
-                self.log.error("Can't find license at %s" % self.license_file)
+                self.log.error("%s not found, correct 'license_file' value or $%s" % (self.license_file, lic_env_var))
 
             # set INTEL_LICENSE_FILE
             env.setvar(lic_env_var, self.license_file)
         else:
-            # pick up $INTEL_LICENSE_FILE if it's set
-            self.log.info("Picking up Intel license file specification from $%s: %s" % (lic_env_var, intel_license_file))
-            self.cfg['license_file'] = intel_license_file
-            self.license_file = intel_license_file
+            # iterate through $INTEL_LICENSE_FILE until a .lic file is found
+            for lic in intel_license_file.split(os.pathsep):
+                if os.path.isfile(lic):
+                    self.cfg['license_file'] = lic
+                    self.license_file = lic
+                else:
+                    lic_file = glob.glob("%s/*.lic" % lic)
+                    if lic_file is not None:
+                        continue
+                    # just pick the first .lic, if it's not correct, $INTEL_LICENSE_FILE should be adjusted instead
+                    self.cfg['license_file'] = lic_file[0]
+                    self.license_file = lic_file[0]
+                    self.log.info('Picking the first .lic file from $INTEL_LICENSE_FILE: %s' % lic_file[0])
+
+            if not self.license_file:
+                self.log.error("Cannot find a license file in %s" % intel_license_file)
+
+            self.log.info("Picking up Intel license file specification from $%s: %s" % (lic_env_var, self.license_file))
 
         # clean home directory
         self.clean_home_subdir()
