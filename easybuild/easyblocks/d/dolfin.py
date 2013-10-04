@@ -47,6 +47,7 @@ class EB_DOLFIN(CMakePythonPackage):
         super(EB_DOLFIN, self).__init__(*args, **kwargs)
 
         self.boost_dir = None
+        self.saved_configopts = None
 
     def configure_step(self):
         """Set DOLFIN-specific configure options and configure with CMake."""
@@ -207,24 +208,37 @@ class EB_DOLFIN(CMakePythonPackage):
         tmpdir = tempfile.mkdtemp()
         instant_cache_dir = os.path.join(tmpdir, '.instant', 'cache')
         instant_error_dir = os.path.join(tmpdir, '.instant', 'error')
-        env.setvar("INSTANT_CACHE_DIR",  instant_cache_dir)
-        env.setvar("INSTANT_ERROR_DIR",  instant_error_dir)
         try:
             os.makedirs(instant_cache_dir)
             os.makedirs(instant_error_dir)
         except OSError, err:
             self.log.error("Failed to create Instant cache/error dirs: %s" % err)
 
+        # keep track of $LDFLAGS, so we can restore them for the sanity check commands
+        # this is required to make sure that linking of libraries (OpenBLAS, etc.) works as expected
+        ldflags = os.getenv('LDFLAGS')
+
+        # we need to explicitely set the following environment variables as a part of the sanity check command,
+        # because the environment is reset and only the environment variables set by the DOLFIN module are there
+        env_vars = [
+            ('LDFLAGS', ldflags),
+            ('INSTANT_CACHE_DIR', instant_cache_dir),
+            ('INSTANT_ERROR_DIR', instant_error_dir),
+        ]
+        env_var_cmds = ' && '.join(['export %s="%s"' % (var, val) for (var, val) in env_vars])
+
         pref = os.path.join('share', 'dolfin', 'demo')
 
         # test command templates
         cmd_template_python = " && ".join([
+            env_var_cmds,
             "cd %(dir)s",
             "python demo_%(name)s.py",
             "cd -",
         ])
 
         cmd_template_cpp = " && ".join([
+            env_var_cmds,
             "cd %(dir)s",
             "cmake . %s" % self.saved_configopts,
             "make VERBOSE=1",
