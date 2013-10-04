@@ -127,8 +127,8 @@ class EB_PSI(ConfigureMake):
 
         # the obj and unpacked sources must remain available for working with plugins
         try:
-            shutil.copytree(os.path.join(self.builddir, 'obj'), self.install_psi_objdir)
-            shutil.copytree(self.cfg['start_dir'], self.install_psi_srcdir)
+            for subdir in ['obj', os.path.basename(self.cfg['start_dir'])]:
+                shutil.copytree(os.path.join(self.builddir, subdir), os.path.join(self.installdir, subdir))
         except OSError, err:
             self.log.error("Failed to copy obj and unpacked sources to install dir: %s" % err)
 
