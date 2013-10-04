@@ -107,23 +107,29 @@ class EB_WPS(EasyBlock):
 
         # libpng dependency check
         libpng = get_software_root('libpng')
-        libpnginc = "%s/include" % libpng
-        libpnglibdir = "%s/lib" % libpng
-        if not libpng:
+        zlib = get_software_root('zlib')
+        if libpng:
+            paths = [libpng]
+            if zlib:
+                paths.insert(0, zlib)
+            libpnginc = ' '.join(['-I%s' % os.path.join(path, 'include') for path in paths])
+            libpnglib = ' '.join(['-L%s' % os.path.join(path, 'lib') for path in paths])
+        else:
             self.log.error("libpng module not loaded?")
 
         # JasPer dependency check + setting env vars
         jasper = get_software_root('JasPer')
-        jasperlibdir = os.path.join(jasper, "lib")
         if jasper:
             env.setvar('JASPERINC', os.path.join(jasper, "include"))
+            jasperlibdir = os.path.join(jasper, "lib")
             env.setvar('JASPERLIB', jasperlibdir)
+            jasperlib = "-L%s" % jasperlibdir
         else:
             self.log.error("JasPer module not loaded?")
 
         # patch ungrib Makefile so that JasPer is found
         fn = os.path.join("ungrib", "src", "Makefile")
-        jasperlibs = "-L%s -ljasper -L%s -lpng" % (jasperlibdir, libpnglibdir)
+        jasperlibs = "%s -ljasper %s -lpng" % (jasperlib, libpnglib)
         try:
             for line in fileinput.input(fn, inplace=1, backup='.orig.JasPer'):
                 line = re.sub(r"^(\s*-L\.\s*-l\$\(LIBTARGET\))(\s*;.*)$", r"\1 %s\2" % jasperlibs, line)
@@ -195,7 +201,7 @@ class EB_WPS(EasyBlock):
 
         # make sure correct compilers and compiler flags are being used
         comps = {
-                 'SCC': "%s -I$(JASPERINC) -I%s" % (os.getenv('CC'), libpnginc),
+                 'SCC': "%s -I$(JASPERINC) %s" % (os.getenv('CC'), libpnginc),
                  'SFC': os.getenv('F90'),
                  'DM_FC': os.getenv('MPIF90'),
                  'DM_CC': os.getenv('MPICC'),

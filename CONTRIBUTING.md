@@ -19,7 +19,7 @@ Ghent University understands and agrees that Contributor retains copyright in it
 Nothing in this Contributor Agreement shall be interpreted to prohibit Contributor from licensing its Contributions
 under different terms from the Initial License or this Contributor Agreement.
 
-## Preperation
+## Preparation
 
 ### Fork easybuild-easyblocks
 
