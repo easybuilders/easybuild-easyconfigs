@@ -26,6 +26,7 @@
 EasyBuild support for building and installing PSI, implemented as an easyblock
 
 @author: Kenneth Hoste (Ghent University)
+@author: Ward Poelmans (Ghent University)
 """
 
 import os
@@ -41,6 +42,13 @@ class EB_PSI(ConfigureMake):
     """
     Support for building and installing PSI
     """
+
+    def __init__(self, *args, **kwargs):
+        """Initialize class variables custom to PSI."""
+        super(EB_PSI, self).__init__(*args, **kwargs)
+
+        self.install_psi_objdir = None
+        self.install_psi_srcdir = None
 
     @staticmethod
     def extra_options():
@@ -104,6 +112,13 @@ class EB_PSI(ConfigureMake):
         # enable support for plugins
         self.cfg.update('configopts', "--with-plugins")
 
+        # In order to create new plugins with PSI, it needs to know the location of the source
+        # and the obj dir after install. These env vars give that information to the configure script.
+        self.install_psi_objdir = os.path.join(self.installdir, 'obj')
+        self.install_psi_srcdir = os.path.join(self.installdir, os.path.basename(self.cfg['start_dir']))
+        env.setvar('PSI_OBJ_INSTALL_DIR', self.install_psi_objdir)
+        env.setvar('PSI_SRC_INSTALL_DIR', self.install_psi_srcdir)
+
         super(EB_PSI, self).configure_step(cmd_prefix=self.cfg['start_dir'])
 
     def install_step(self):
@@ -112,7 +127,7 @@ class EB_PSI(ConfigureMake):
 
         # the obj and unpacked sources must remain available for working with plugins
         try:
-            for subdir in ['obj', 'psi%s' % self.version]:
+            for subdir in ['obj', os.path.basename(self.cfg['start_dir'])]:
                 shutil.copytree(os.path.join(self.builddir, subdir), os.path.join(self.installdir, subdir))
         except OSError, err:
             self.log.error("Failed to copy obj and unpacked sources to install dir: %s" % err)
