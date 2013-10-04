@@ -88,7 +88,7 @@ class EB_PSI(ConfigureMake):
             ('cxx', 'CXX'),
             ('fc', fcompvar),
             ('libdirs', 'LDFLAGS'),
-            ('blas', 'LIBBLAS_MT'),  
+            ('blas', 'LIBBLAS_MT'),
             ('lapack', 'LIBLAPACK_MT'),
         ]
         for (opt, var) in opt_vars:
