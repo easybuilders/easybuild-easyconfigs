@@ -1,0 +1,37 @@
+easyblock = "Toolchain"
+
+name = 'goalf'
+version = '1.5.12'
+
+homepage = '(none)'
+description = """GNU Compiler Collection (GCC) based compiler toolchain, including
+ OpenMPI for MPI support, ATLAS (BLAS and LAPACK support), FFTW and ScaLAPACK."""
+
+toolchain = {'name': 'dummy', 'version': 'dummy'}
+
+comp_name = 'GCC'
+comp_version = '4.8.1'
+comp = (comp_name, comp_version)
+
+blaslib = 'ATLAS'
+blasver = '3.10.1'
+blas = '%s-%s' % (blaslib, blasver)
+blassuff = '-LAPACK-3.4.2'
+
+# toolchain used to build goalf dependencies
+comp_mpi_tc_name = 'gompi'
+comp_mpi_tc_ver = version
+comp_mpi_tc = (comp_mpi_tc_name, comp_mpi_tc_ver)
+
+# compiler toolchain depencies
+# we need GCC and OpenMPI as explicit dependencies instead of gompi toolchain
+# because of toolchain preperation functions
+dependencies = [
+    comp,  # part of gompi
+    ('OpenMPI', '1.6.5', '', comp),  # part of gompi
+    (blaslib, blasver, blassuff, comp_mpi_tc),
+    ('FFTW', '3.3.3', '', comp_mpi_tc),
+    ('ScaLAPACK', '2.0.2', '-%s%s' % (blas, blassuff), comp_mpi_tc),
+]
+
+moduleclass = 'toolchain'
