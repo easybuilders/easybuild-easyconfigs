@@ -91,7 +91,7 @@ class EB_NWChem(ConfigureMake):
                 if not os.path.exists(self.local_nwchemrc):
                     open(self.local_nwchemrc, 'w').write('dummy')
                 if not os.path.samefile(self.home_nwchemrc, self.local_nwchemrc):
-                    self.log.error("A file is present at %s, but it's not a symlink (to %s)." % (self.home_nwchemrc, self.local_nwchemrc))
+                    self.log.error("Found %s, but it's not a symlink to %s" % (self.home_nwchemrc, self.local_nwchemrc))
                 # ok to remove, we'll recreated it anyway
                 os.remove(self.local_nwchemrc)
         except (IOError, OSError), err:
