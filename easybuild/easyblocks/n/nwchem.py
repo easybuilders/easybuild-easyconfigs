@@ -341,19 +341,19 @@ class EB_NWChem(ConfigureMake):
             home_nwchemrc = os.path.join(os.getenv('HOME'), '.nwchemrc')
             local_nwchemrc = os.path.join(tempfile.gettempdir(), os.getenv('USER'), 'easybuild_nwchem', '.nwchemrc')
 
+            # make a local copy of the default .nwchemrc file at a fixed path, so we can symlink to it
+            # this makes sure that multiple parallel builds can reuse the same symlink, even for different builds
+            # there is apparently no way to point NWChem to a particular config file other that $HOME/.nwchemrc
             local_nwchemrc_dir = os.path.dirname(local_nwchemrc)
             if not os.path.exists(local_nwchemrc_dir):
                 os.makedirs(local_nwchemrc_dir)
-
             shutil.copy2(default_nwchemrc, local_nwchemrc)
-            symlink_ok = False
-            if os.path.exists(home_nwchemrc):
-                if not os.path.islink(home_nwchemrc) or not os.path.samefile(home_nwchemrc, local_nwchemrc):
-                    self.log.error("File %s is present, but is not a symlink to %s" % (home_nwchemrc, local_nwchemrc))
-                else:
-                    symlink_ok = True
 
-            if not symlink_ok:
+            # check whether a (valid) symlink exists, and create it if it's not there
+            if os.path.exists(home_nwchemrc):
+                if not os.path.samefile(home_nwchemrc, local_nwchemrc):
+                    self.log.error("A file is present at %s, but it's not a symlink (to %s)." % (home_nwchemrc, local_nwchemrc))
+            else:
                 os.symlink(local_nwchemrc, home_nwchemrc)
 
             # run tests, keep track of fail ratio
