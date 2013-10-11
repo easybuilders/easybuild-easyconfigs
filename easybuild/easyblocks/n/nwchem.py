@@ -447,7 +447,7 @@ class EB_NWChem(ConfigureMake):
                 self.log.error("Over %s%% of test cases failed, assuming broken build." % max_fail_pcnt)
 
             shutil.rmtree(self.examples_dir)
-            shutil.rmtree(self.local_nwchemrc)
+            shutil.rmtree(local_nwchemrc_dir)
 
         except OSError, err:
             self.log.error("Failed to run test cases: %s" % err)
