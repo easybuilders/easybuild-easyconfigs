@@ -456,7 +456,7 @@ class EB_NWChem(ConfigureMake):
                 self.log.error("Cleanup failed: %s" % err)
 
             # set post msg w.r.t. cleaning up $HOME/.nwchemrc symlink
-            self.postmsg += "\nRemember to clean up %s after all NWChem builds are finished." % self.home_nwchemrc)
+            self.postmsg += "\nRemember to clean up %s after all NWChem builds are finished." % self.home_nwchemrc
 
         except OSError, err:
             self.log.error("Failed to run test cases: %s" % err)
