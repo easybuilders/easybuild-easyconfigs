@@ -91,7 +91,9 @@ class EB_NWChem(ConfigureMake):
                 if not os.path.exists(self.local_nwchemrc):
                     open(self.local_nwchemrc, 'w').write('dummy')
                 if not os.path.samefile(self.home_nwchemrc, self.local_nwchemrc):
-                    self.log.error("Found %s, but it's not a symlink to %s" % (self.home_nwchemrc, self.local_nwchemrc))
+                    msg = "Found %s, but it's not a symlink to %s" % (self.home_nwchemrc, self.local_nwchemrc)
+                    msg += "\nPlease (re)move %s while installing NWChem; it can be restored later" % self.home_nwchemrc
+                    self.log.error(msg)
                 # ok to remove, we'll recreated it anyway
                 os.remove(self.local_nwchemrc)
         except (IOError, OSError), err:
@@ -446,8 +448,14 @@ class EB_NWChem(ConfigureMake):
                 max_fail_pcnt = self.cfg['max_fail_ratio'] * 100
                 self.log.error("Over %s%% of test cases failed, assuming broken build." % max_fail_pcnt)
 
-            shutil.rmtree(self.examples_dir)
-            shutil.rmtree(local_nwchemrc_dir)
+            # cleanup
+            try:
+                shutil.rmtree(self.examples_dir)
+                if os.path.samefile(self.home_nwchemrc, self.local_nwchemrc):
+                    os.remove(self.home_nwchemrc)
+                shutil.rmtree(local_nwchemrc_dir)
+            except OSError, err:
+                self.log.error("Cleanup failed: %s" % err)
 
         except OSError, err:
             self.log.error("Failed to run test cases: %s" % err)
