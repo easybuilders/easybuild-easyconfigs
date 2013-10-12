@@ -451,8 +451,6 @@ class EB_NWChem(ConfigureMake):
             # cleanup
             try:
                 shutil.rmtree(self.examples_dir)
-                if os.path.samefile(self.home_nwchemrc, self.local_nwchemrc):
-                    os.remove(self.home_nwchemrc)
                 shutil.rmtree(local_nwchemrc_dir)
             except OSError, err:
                 self.log.error("Cleanup failed: %s" % err)
