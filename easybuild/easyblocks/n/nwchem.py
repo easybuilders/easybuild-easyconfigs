@@ -50,6 +50,12 @@ class EB_NWChem(ConfigureMake):
         super(EB_NWChem, self).__init__(*args, **kwargs)
 
         self.test_cases_dir = None
+        # path for symlink to local copy of default .nwchemrc, required by NWChem at runtime
+        # this path is hardcoded by NWChem, and there's no way to make it use a config file at another path...
+        self.home_nwchemrc = os.path.join(os.getenv('HOME'), '.nwchemrc')
+        # local NWChem .nwchemrc config file, to which symlink will point
+        # using this approach, multiple parallel builds (on different nodes) can use the same symlink
+        self.local_nwchemrc = os.path.join(tempfile.gettempdir(), os.getenv('USER'), 'easybuild_nwchem', '.nwchemrc')
 
     @staticmethod
     def extra_options():
@@ -76,6 +82,22 @@ class EB_NWChem(ConfigureMake):
 
     def configure_step(self):
         """Custom configuration procedure for NWChem."""
+
+        # check whether a (valid) symlink to a .nwchemrc config file exists (via a dummy file if necessary)
+        # fail early if the link is not what's we expect, since running the test cases will likely fail in this case
+        try:
+            if os.path.exists(self.home_nwchemrc):
+                # create a dummy file to check symlink
+                if not os.path.exists(self.local_nwchemrc):
+                    open(self.local_nwchemrc, 'w').write('dummy')
+                if not os.path.samefile(self.home_nwchemrc, self.local_nwchemrc):
+                    msg = "Found %s, but it's not a symlink to %s" % (self.home_nwchemrc, self.local_nwchemrc)
+                    msg += "\nPlease (re)move %s while installing NWChem; it can be restored later" % self.home_nwchemrc
+                    self.log.error(msg)
+                # ok to remove, we'll recreated it anyway
+                os.remove(self.local_nwchemrc)
+        except (IOError, OSError), err:
+            self.log.error("Failed to validate %s symlink: %s" % (self.home_nwchemrc, err))
 
         # building NWChem in a long path name is an issue, so let's make sure we have a short one
         try:
@@ -338,23 +360,22 @@ class EB_NWChem(ConfigureMake):
         try:
             # symlink $HOME/.nwchemrc to local copy of default nwchemrc
             default_nwchemrc = os.path.join(self.installdir, 'data', 'default.nwchemrc')
-            home_nwchemrc = os.path.join(os.getenv('HOME'), '.nwchemrc')
-            local_nwchemrc = os.path.join(tempfile.gettempdir(), os.getenv('USER'), 'easybuild_nwchem', '.nwchemrc')
 
-            local_nwchemrc_dir = os.path.dirname(local_nwchemrc)
-            if not os.path.exists(local_nwchemrc_dir):
-                os.makedirs(local_nwchemrc_dir)
+            # make a local copy of the default .nwchemrc file at a fixed path, so we can symlink to it
+            # this makes sure that multiple parallel builds can reuse the same symlink, even for different builds
+            # there is apparently no way to point NWChem to a particular config file other that $HOME/.nwchemrc
+            try:
+                local_nwchemrc_dir = os.path.dirname(self.local_nwchemrc)
+                if not os.path.exists(local_nwchemrc_dir):
+                    os.makedirs(local_nwchemrc_dir)
+                shutil.copy2(default_nwchemrc, self.local_nwchemrc)
 
-            shutil.copy2(default_nwchemrc, local_nwchemrc)
-            symlink_ok = False
-            if os.path.exists(home_nwchemrc):
-                if not os.path.islink(home_nwchemrc) or not os.path.samefile(home_nwchemrc, local_nwchemrc):
-                    self.log.error("File %s is present, but is not a symlink to %s" % (home_nwchemrc, local_nwchemrc))
-                else:
-                    symlink_ok = True
-
-            if not symlink_ok:
-                os.symlink(local_nwchemrc, home_nwchemrc)
+                # only try to create symlink if it's not there yet
+                # we've verified earlier that the symlink is what we expect it to be if it's there
+                if not os.path.exists(self.home_nwchemrc):
+                    os.symlink(self.local_nwchemrc, self.home_nwchemrc)
+            except OSError, err:
+                self.log.error("Failed to symlink %s to %s: %s" % (self.home_nwchemrc, self.local_nwchemrc, err))
 
             # run tests, keep track of fail ratio
             cwd = os.getcwd()
@@ -427,8 +448,15 @@ class EB_NWChem(ConfigureMake):
                 max_fail_pcnt = self.cfg['max_fail_ratio'] * 100
                 self.log.error("Over %s%% of test cases failed, assuming broken build." % max_fail_pcnt)
 
-            shutil.rmtree(self.examples_dir)
-            shutil.rmtree(local_nwchemrc_dir)
+            # cleanup
+            try:
+                shutil.rmtree(self.examples_dir)
+                shutil.rmtree(local_nwchemrc_dir)
+            except OSError, err:
+                self.log.error("Cleanup failed: %s" % err)
+
+            # set post msg w.r.t. cleaning up $HOME/.nwchemrc symlink
+            self.postmsg += "\nRemember to clean up %s after all NWChem builds are finished." % self.home_nwchemrc
 
         except OSError, err:
             self.log.error("Failed to run test cases: %s" % err)
