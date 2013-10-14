@@ -47,6 +47,7 @@ class EB_PSI(ConfigureMake):
         """Initialize class variables custom to PSI."""
         super(EB_PSI, self).__init__(*args, **kwargs)
 
+        self.psi_srcdir = None
         self.install_psi_objdir = None
         self.install_psi_srcdir = None
 
@@ -87,7 +88,7 @@ class EB_PSI(ConfigureMake):
             ('cxx', 'CXX'),
             ('fc', fcompvar),
             ('libdirs', 'LDFLAGS'),
-            ('blas', 'LIBBLAS_MT'),  
+            ('blas', 'LIBBLAS_MT'),
             ('lapack', 'LIBLAPACK_MT'),
         ]
         for (opt, var) in opt_vars:
@@ -114,8 +115,9 @@ class EB_PSI(ConfigureMake):
 
         # In order to create new plugins with PSI, it needs to know the location of the source
         # and the obj dir after install. These env vars give that information to the configure script.
+        self.psi_srcdir = os.path.basename(self.cfg['start_dir'].rstrip(os.sep))
         self.install_psi_objdir = os.path.join(self.installdir, 'obj')
-        self.install_psi_srcdir = os.path.join(self.installdir, os.path.basename(self.cfg['start_dir']))
+        self.install_psi_srcdir = os.path.join(self.installdir, self.psi_srcdir)
         env.setvar('PSI_OBJ_INSTALL_DIR', self.install_psi_objdir)
         env.setvar('PSI_SRC_INSTALL_DIR', self.install_psi_srcdir)
 
@@ -127,7 +129,7 @@ class EB_PSI(ConfigureMake):
 
         # the obj and unpacked sources must remain available for working with plugins
         try:
-            for subdir in ['obj', os.path.basename(self.cfg['start_dir'])]:
+            for subdir in ['obj', self.psi_srcdir]:
                 shutil.copytree(os.path.join(self.builddir, subdir), os.path.join(self.installdir, subdir))
         except OSError, err:
             self.log.error("Failed to copy obj and unpacked sources to install dir: %s" % err)
