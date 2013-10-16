@@ -39,6 +39,17 @@ from easybuild.tools.utilities import flatten
 class EB_EasyBuildMeta(PythonPackage):
     """Support for install EasyBuild."""
 
+    def check_readiness_step(self):
+        """Make sure EasyBuild can be installed with a loaded EasyBuild module."""
+        env_var_name = get_software_root_env_var_name(self.name)
+        if env_var_name in os.environ:
+            os.environ.pop(env_var_name)
+            self.log.debug("$%s is unset so EasyBuild can be installed with a loaded EasyBuild module" % env_var_name)
+        else:
+            self.log.debug("Not unsetting $%s since it's not set" % env_var_name)
+
+        super(EB_EasyBuildMeta, self).check_readiness_step()
+
     def build_step(self):
         """No building for EasyBuild packages."""
         pass
