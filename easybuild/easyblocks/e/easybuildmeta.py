@@ -149,12 +149,13 @@ class EB_EasyBuildMeta(PythonPackage):
 
         super(EB_EasyBuildMeta, self).sanity_check_step(custom_paths=custom_paths, custom_commands=custom_commands)
 
-    def make_module_step(self, *args, **kwargs):
+    def make_module_step(self, fake=False):
         """Create module file, before copy of original environment that was tampered with is restored."""
         modpath = super(EB_EasyBuildMeta, self).make_module_step(*args, **kwargs)
 
-        # restore copy of original environment
-        self.orig_environ = copy.deepcopy(self.orig_orig_environ)
-        self.log.debug("Restored copy of original environment")
+        if not fake:
+            # restore copy of original environment
+            self.orig_environ = copy.deepcopy(self.orig_orig_environ)
+            self.log.debug("Restored copy of original environment")
 
         return modpath
