@@ -139,9 +139,11 @@ class EB_EasyBuildMeta(PythonPackage):
         for env_var in ['_LMFILES_', 'LOADEDMODULES']:
             if env_var in self.orig_environ:
                 self.orig_environ.pop(env_var)
-                self.log.debug("Unset $%s to make sanity check for EasyBuild work" % env_var)
+                os.environ.pop(env_var)
+                self.log.debug("Unset $%s in current env and copy of original env to make sanity check work" % env_var)
 
         super(EB_EasyBuildMeta, self).sanity_check_step(custom_paths=custom_paths, custom_commands=custom_commands)
 
         # restore copy of original environment
         self.orig_environ = copy.deepcopy(orig_orig_environ)
+        self.log.debug("Restored copy of original environment")
