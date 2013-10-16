@@ -1,0 +1,105 @@
+##
+# Copyright 2013 Ghent University
+#
+# This file is part of EasyBuild,
+# originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
+# with support of Ghent University (http://ugent.be/hpc),
+# the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
+# the Hercules foundation (http://www.herculesstichting.be/in_English)
+# and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
+#
+# http://github.com/hpcugent/easybuild
+#
+# EasyBuild is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation v2.
+#
+# EasyBuild is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
+##
+"""
+EasyBuild support for building and installing Allinea tools, implemented as an easyblock
+
+@author: Kenneth Hoste (Ghent University)
+"""
+import os
+import shutil
+from os.path import expanduser
+
+from easybuild.framework.easyblock import EasyBlock
+from easybuild.framework.easyconfig import CUSTOM
+from easybuild.tools.filetools import run_cmd
+
+
+class EB_Allinea(EasyBlock):
+    """Support for building/installing Allinea."""
+
+    @staticmethod
+    def extra_options(extra_vars=None):
+        """Define extra easyconfig parameters specific to Allinea."""
+
+        orig_vars = EasyBlock.extra_options(extra_vars)
+        allinea_vars = [
+            ('templates', [[], "List of templates.", CUSTOM]),
+        ]
+        allinea_vars.extend(orig_vars)
+        return allinea_vars
+
+    def configure_step(self):
+        """No configuration for Allinea."""
+        # ensure a license server is specified
+        if self.cfg['license_file'] is None:
+            self.log.error("No license file specified.")
+
+    def build_step(self):
+        """No build step for Allinea."""
+        pass
+
+    def install_step(self):
+        """Install Allinea using install script."""
+
+        cmd = "./textinstall.sh --accept-licence %s" % self.installdir
+        run_cmd(cmd, log_all=True, simple=True)
+
+        # copy license file
+        lic_path = os.path.join(self.installdir, 'licences')
+        try:
+            shutil.copy2(self.cfg['license_file'], lic_path)
+        except OSError, err:
+            self.log.error("Failed to copy license file to %s: %s" % (lic_path, err))
+
+        # copy templates
+        templ_path = os.path.join(self.installdir, 'templates')
+        for templ in self.cfg['templates']:
+            try:
+                shutil.copy2(templ, templ_path)
+            except OSError, err:
+                self.log.error("Failed to copy template %s to %s: %s" % (templ, templ_path, err))
+
+        # generate system config file, and move it to install dir
+        cfg_file = os.path.join(expanduser('~'), '.allinea', 'system.config')
+        if os.path.exists(cfg_file):
+            self.log.error("A config file is already present at %s, please (re)move it first." % cfg_file)
+
+        # note: this requires X-forwarding to be enabled (and there's no alternative)
+        # TODO: can be solved by adding -offline out.html to the command line,
+        # but this requires to have a system.config file present in $HOME/.allinea
+        cmd = "%s/bin/ddt -cleanconfig" % self.installdir
+        run_cmd(cmd, log_all=True, simple=True)
+        try:
+            shutil.move(cfg_file, self.installdir)
+        except OSError, err:
+            self.log.error("Failed to move %s to %s: %s" % (cfg_file, self.installdir, err))
+
+    def sanity_check_step(self):
+        """Custom sanity check for Allinea."""
+        custom_paths = {
+            'files': ['bin/ddt', 'bin/map'],
+            'dirs': [],
+        }
+        super(EB_Allinea, self).sanity_check_step(custom_paths=custom_paths)
