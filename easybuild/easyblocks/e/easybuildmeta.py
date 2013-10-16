@@ -42,6 +42,11 @@ from easybuild.tools.utilities import flatten
 class EB_EasyBuildMeta(PythonPackage):
     """Support for install EasyBuild."""
 
+    def __init__(self, *args, **kwargs):
+        """Initialize custom class variables."""
+        super(EB_EasyBuildMeta, self).__init__(*args, **kwargs)
+        self.orig_orig_environ = None
+
     def check_readiness_step(self):
         """Make sure EasyBuild can be installed with a loaded EasyBuild module."""
         env_var_name = get_software_root_env_var_name(self.name)
@@ -135,7 +140,7 @@ class EB_EasyBuildMeta(PythonPackage):
                           ]
 
         # (temporary) cleanse copy of original environment to avoid conflict with (potentially) loaded EasyBuild module
-        orig_orig_environ = copy.deepcopy(self.orig_environ)
+        self.orig_orig_environ = copy.deepcopy(self.orig_environ)
         for env_var in ['_LMFILES_', 'LOADEDMODULES']:
             if env_var in self.orig_environ:
                 self.orig_environ.pop(env_var)
@@ -144,6 +149,12 @@ class EB_EasyBuildMeta(PythonPackage):
 
         super(EB_EasyBuildMeta, self).sanity_check_step(custom_paths=custom_paths, custom_commands=custom_commands)
 
+    def make_module_step(self):
+        """Create module file, before copy of original environment that was tampered with is restored."""
+        modpath = super(EB_EasyBuildMeta, self).make_module_step()
+
         # restore copy of original environment
-        self.orig_environ = copy.deepcopy(orig_orig_environ)
+        self.orig_environ = copy.deepcopy(self.orig_orig_environ)
         self.log.debug("Restored copy of original environment")
+
+        return modpath
