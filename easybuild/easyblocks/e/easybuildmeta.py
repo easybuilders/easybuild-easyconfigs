@@ -31,8 +31,10 @@ import os
 
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.easyblocks.generic.pythonpackage import PythonPackage
+from easybuild.tools.modules import get_software_root_env_var_name
 from easybuild.tools.ordereddict import OrderedDict
 from easybuild.tools.utilities import flatten
+
 
 # note: we can't use EB_EasyBuild as easyblock name, as that would require an easyblock named 'easybuild.py',
 #       which would screw up namespacing and create all kinds of problems (e.g. easyblocks not being found anymore)
