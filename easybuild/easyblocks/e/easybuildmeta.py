@@ -27,6 +27,7 @@ EasyBuild support for installing EasyBuild, implemented as an easyblock
 
 @author: Kenneth Hoste (UGent)
 """
+import copy
 import os
 
 from easybuild.framework.easyblock import EasyBlock
@@ -133,4 +134,14 @@ class EB_EasyBuildMeta(PythonPackage):
                            ('eb', '-e ConfigureMake -a')
                           ]
 
+        # (temporary) cleanse copy of original environment to avoid conflict with (potentially) loaded EasyBuild module
+        orig_orig_environ = copy.deepcopy(self.orig_environ)
+        for env_var in ['_LMFILES_', 'LOADEDMODULES']:
+            if env_var in self.orig_environ:
+                self.orig_environ.pop(env_var)
+                self.log.debug("Unset $%s to make sanity check for EasyBuild work" % env_var)
+
         super(EB_EasyBuildMeta, self).sanity_check_step(custom_paths=custom_paths, custom_commands=custom_commands)
+
+        # restore copy of original environment
+        self.orig_environ = copy.deepcopy(orig_orig_environ)
