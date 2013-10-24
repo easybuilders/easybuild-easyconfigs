@@ -67,7 +67,8 @@ class EB_HDF5(ConfigureMake):
         self.cfg.update('makeopts', fcomp)
 
         # set RUNPARALLEL
-        env.setvar('RUNPARALLEL', 'mpirun -np \$\${NPROCS:=2}')
+        if self.toolchain.options['usempi']:
+            env.setvar('RUNPARALLEL', 'mpirun -np \$\${NPROCS:=2}')
 
         super(EB_HDF5, self).configure_step()
 
