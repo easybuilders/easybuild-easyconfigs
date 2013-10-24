@@ -54,7 +54,7 @@ class ConfigureMake(EasyBlock):
 
         extra_vars.extend([
                            ('tar_config_opts', [False, "Override tar settings as determined by configure.", CUSTOM]),
-                           ('prefix_opt', ['--prefix=', "Installation prefix command line option for configure script", CUSTOM]),
+                           ('prefix_opt', ['--prefix=', "Prefix command line option for configure script", CUSTOM]),
                           ])
         return EasyBlock.extra_options(extra_vars)
 
