@@ -1,0 +1,45 @@
+name = 'ParFlow'
+version = '605'
+
+homepage = 'http://computation.llnl.gov/casc/parflow/parflow_home.html'
+description = """ParFlow is an integrated, parallel watershed model that makes use of high-performance computing to simulate surface and subsurface fluid flow."""  
+
+toolchain = {'name': 'goolf', 'version': '1.4.10'}
+toolchainopts = {'opt': True, 'pic': True, 'usempi': True}
+
+sources = ['%s.r%s.tar.gz' % (name.lower(), version)]
+source_urls = ['http://inside.mines.edu/~rmaxwell/']
+
+dependencies = [
+    ('Silo', '4.9.1'),
+    ('Hypre', '2.8.0b'),
+    ('Tcl', '8.5.14'),
+]
+
+preconfigopts = [ 'cd pfsimulator &&', 
+                  'cd pftools &&',
+]
+
+configopts = [ ' --with-amps=mpi1 --enable-timing  --with-clm --with-silo=$EBROOTSILO --with-hypre=$EBROOTHYPRE',
+               ' --with-amps=mpi1 --enable-timing  --with-clm --with-silo=$EBROOTSILO --with-tcl=$EBROOTTCL',
+]
+
+premakeopts =  [ 'cd pfsimulator &&',
+                  'cd pftools &&',
+]
+
+makeopts = [ 'LDLIBS="$LDLIBS_EXTRA -lHYPRE -lsilo -lmpi -lgfortran -lm -L/usr/lib/gcc/x86_64-linux-gnu/4.6/../../.. -L/usr/lib/../lib -L/usr/lib/x86_64-linux-gnu -L/lib/../lib -L/lib/x86_64-linux-gnu -L/usr/lib/gcc/x86_64-linux-gnu/4.6/../../../../lib -L/usr/lib/gcc/x86_64-linux-gnu/4.6/../../../x86_64-linux-gnu -L/usr/lib/gcc/x86_64-linux-gnu/4.6 -lgcc_s -lgcc -lquadmath"',
+             'LDLIBS="$(LDLIBS_EXTRA) $(PARFLOW_TOOLS_LIBS)  -lsilo -ltcl8.5  -lgfortran -lm -L/usr/lib/gcc/x86_64-linux-gnu/4.6/../../.. -L/usr/lib/../lib -L/usr/lib/x86_64-linux-gnu -L/lib/../lib -L/lib/x86_64-linux-gnu -L/usr/lib/gcc/x86_64-linux-gnu/4.6/../../../../lib -L/usr/lib/gcc/x86_64-linux-gnu/4.6/../../../x86_64-linux-gnu -L/usr/lib/gcc/x86_64-linux-gnu/4. -lgcc_s -lgcc -lquadmath"',
+	    ]
+
+preinstallopts =  [ 'cd pfsimulator &&',
+                  'cd pftools &&',
+]
+
+sanity_check_paths = {
+    			'files': ["lib/libamps.a", "lib/libamps_common.a", "lib/libclm.a", "lib/libkinsol.a", "lib/libparflow.a", "bin/batchmc", "bin/bgmsfem2pfsol", "bin/bootmc", "bin/freemc", "bin/getmc", "bin/gmssol2pfsol", "bin/gmstinvertices", "bin/gmstriangulate", "bin/killmc", "bin/parflow", "bin/peekmc", "bin/pfhelp", "bin/pfwell_cat", "bin/pfsbtosa", "bin/pfbtosa", "bin/pfstrip", "bin/pfbtovis", "bin/projecttin", "bin/run"],   
+		        'dirs': [],
+}
+
+moduleclass = 'data'
+
