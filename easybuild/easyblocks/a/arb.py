@@ -43,10 +43,11 @@ class EB_ARB(ConfigureMake):
         super(EB_ARB, self).__init__(*args, **kwargs)
 
         self.build_in_installdir = True
+        self.subdir = None
 
     def configure_step(self):
         """No separate configure step for ARB."""
-        pass
+        self.subdir = os.path.basename(self.cfg['start_dir'].strip(os.path.sep))
 
     def build_step(self):
         """Build ARB by running make."""
@@ -81,16 +82,16 @@ class EB_ARB(ConfigureMake):
         """Specify correct LD_LIBRARY_PATH and CPATH for this installation."""
         guesses = super(EB_ARB, self).make_module_req_guess()
         guesses.update({
-            'CPATH': [os.path.join(self.cfg['start_dir'], "include")],
-            'PATH': [os.path.join(self.cfg['start_dir'], "bin")],
-            'LD_LIBRARY_PATH': [os.path.join(self.cfg['start_dir'], "lib")],
+            'CPATH': [os.path.join(self.subdir, "include")],
+            'PATH': [os.path.join(self.subdir, "bin")],
+            'LD_LIBRARY_PATH': [os.path.join(self.subdir, "lib")],
         })
         return guesses
 
     def sanity_check_step(self):
         """Custom sanity check for ARB."""
         custom_paths = {
-            'files': [os.path.join(self.cfg['start_dir'], "bin/arb") ],
-            'dirs': [os.path.join(self.cfg['start_dir'], x) for x in ["lib"]],
+            'files': [os.path.join(self.subdir, "bin/arb") ],
+            'dirs': [os.path.join(self.subdir, x) for x in ["lib"]],
         }
         super(EB_ARB, self).sanity_check_step(custom_paths=custom_paths)
