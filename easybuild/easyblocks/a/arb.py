@@ -31,6 +31,7 @@ EasyBuild support for ARB, implemented as an easyblock
 import os
 
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
+from easybuild.tools.environment import setvar
 from easybuild.tools.filetools import run_cmd
 
 
@@ -44,8 +45,23 @@ class EB_ARB(ConfigureMake):
         self.build_in_installdir = True
 
     def configure_step(self):
-        """Run make without arguments instead of configure for ARB."""
-        run_cmd("make")
+        """No separate configure step for ARB."""
+        pass
+
+    def build_step(self):
+        """Build ARB by running make."""
+        # set/extend required environment variables
+        path = os.environ.get('PATH', '')
+        ld_library_path = os.environ.get('LD_LIBRARY_PATH', '')
+        setvar('ARBHOME', os.getcwd())
+        setvar('PATH', os.pathsep.join('$ARBHOME/bin', path))
+        setvar('LD_LIBRARY_PATH', os.pathsep.join('$ARBHOME/lib', '$ARBHOME/LIBLINK', ld_library_path))
+
+        # update make options
+        # no OpenGL support, verbose, 64-bit
+        self.cfg.update('makeopts', 'all OPENGL=0 V=1 ARB_64=1')
+
+        super(EB_ARB, self).build_step()
 
     def install_step(self):
         """No installation step, ARB was built in installdir"""
