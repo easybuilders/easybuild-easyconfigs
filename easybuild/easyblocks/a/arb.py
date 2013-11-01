@@ -54,8 +54,8 @@ class EB_ARB(ConfigureMake):
         path = os.environ.get('PATH', '')
         ld_library_path = os.environ.get('LD_LIBRARY_PATH', '')
         setvar('ARBHOME', os.getcwd())
-        setvar('PATH', os.pathsep.join('$ARBHOME/bin', path))
-        setvar('LD_LIBRARY_PATH', os.pathsep.join('$ARBHOME/lib', '$ARBHOME/LIBLINK', ld_library_path))
+        setvar('PATH', os.pathsep.join(['$ARBHOME/bin', path]))
+        setvar('LD_LIBRARY_PATH', os.pathsep.join(['$ARBHOME/lib', '$ARBHOME/LIBLINK', ld_library_path]))
 
         # update make options
         # no OpenGL support, verbose, 64-bit
