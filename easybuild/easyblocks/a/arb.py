@@ -23,50 +23,48 @@
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
 """
-EasyBuild support for Armadillo, implemented as an easyblock
+EasyBuild support for ARB, implemented as an easyblock
 
-@author: Kenneth Hoste (Ghent University), Jens Timmerman
+@author: Jens Timmerman (Ghent University)
+@author: Kenneth Hoste (Ghent University)
 """
 import os
+
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.tools.filetools import run_cmd
 
 
-class EB_arb(ConfigureMake):
-    """Support for building and installing ant."""
+class EB_ARB(ConfigureMake):
+    """Support for building and installing ARB."""
 
     def __init__(self, *args, **kwargs):
-        """Initialisation of custom class variables for arb.
-
-        build in install dir
-        """
-        ConfigureMake.__init__(self, *args, **kwargs)
+        """Initialisation of custom class variables for ARB, specify building in install dir."""
+        super(EB_ARB, self).__init__(*args, **kwargs)
 
         self.build_in_installdir = True
-        self.subdir = "arbsrc_9167"
 
     def configure_step(self):
-        """Run make without arguments instead of configure for arb."""
-        run_cmd("make || echo This is not a failure, continue...")
+        """Run make without arguments instead of configure for ARB."""
+        run_cmd("make")
 
     def install_step(self):
-        """No installation step, was built in installdir"""
+        """No installation step, ARB was built in installdir"""
         pass
 
     def make_module_req_guess(self):
         """Specify correct LD_LIBRARY_PATH and CPATH for this installation."""
-        guesses = ConfigureMake.make_module_req_guess(self)
+        guesses = super(EB_ARB, self).make_module_req_guess()
         guesses.update({
-            'CPATH': [os.path.join(self.subdir, "include")],
-            'PATH': [os.path.join(self.subdir, "bin")],
-            'LD_LIBRARY_PATH': [os.path.join(self.subdir, "lib")]
+            'CPATH': [os.path.join(self.cfg['start_dir'], "include")],
+            'PATH': [os.path.join(self.cfg['start_dir'], "bin")],
+            'LD_LIBRARY_PATH': [os.path.join(self.cfg['start_dir'], "lib")],
         })
         return guesses
 
     def sanity_check_step(self):
-        """Custom sanity check"""
+        """Custom sanity check for ARB."""
         custom_paths = {
-            'files': [os.path.join(self.subdir, "bin/arb") ],
-            'dirs': [os.path.join(self.subdir, x) for x in ["lib"]]
+            'files': [os.path.join(self.cfg['start_dir'], "bin/arb") ],
+            'dirs': [os.path.join(self.cfg['start_dir'], x) for x in ["lib"]],
         }
-        ConfigureMake.sanity_check_step(self, custom_paths=custom_paths)
+        super(EB_ARB, self).sanity_check_step(custom_paths=custom_paths)
