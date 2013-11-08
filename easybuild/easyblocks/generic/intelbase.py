@@ -34,6 +34,7 @@ Generic EasyBuild support for installing Intel tools, implemented as an easybloc
 """
 
 import os
+import re
 import shutil
 import tempfile
 import glob
@@ -137,11 +138,14 @@ class IntelBase(EasyBlock):
     def configure_step(self):
         """Configure: handle license file and clean home dir."""
 
-        lic_env_var = 'INTEL_LICENSE_FILE'
-        intel_license_file = os.getenv(lic_env_var)
+        lic_env_var = None  # environment variable that will be used
+        default_lic_env_var = 'INTEL_LICENSE_FILE'
+        lic_env_vars = [default_lic_env_var, 'LM_LICENSE_FILE']
+        env_var_names = ', '.join(['$%s' % x for x in lic_env_vars])
+        license_specs = [(v, e) for v in map(os.getenv, lic_env_vars) if v is not None for e in v.split(os.pathsep)]
 
-        if intel_license_file is None:
-            self.log.debug("Env var $%s not set, trying 'license_file' easyconfig parameter..." % lic_env_var)
+        if not license_specs:
+            self.log.debug("No env var from %s set, trying 'license_file' easyconfig parameter..." % lic_env_vars)
             # obtain license path
             try:
                 self.license_file = self.cfg['license_file']
@@ -163,32 +167,50 @@ class IntelBase(EasyBlock):
             if self.license_file:
                 self.log.info("Using license file %s" % self.license_file)
             else:
-                self.log.error("No license file defined, consider setting $%s that will be picked up" % lic_env_var)
+                self.log.error("No license file defined, maybe set one these env vars: %s" % env_var_names)
 
             # verify license path
             if not os.path.exists(self.license_file):
-                self.log.error("%s not found, correct 'license_file' value or $%s" % (self.license_file, lic_env_var))
+                tup = (self.license_file, env_var_names)
+                self.log.error("%s not found; correct 'license_file', or define one of the these env vars: %s" % tup)
 
-            # set INTEL_LICENSE_FILE
-            env.setvar(lic_env_var, self.license_file)
+            # set default environment variable for license specification
+            env.setvar(default_lic_env_var, self.license_file)
         else:
-            # iterate through $INTEL_LICENSE_FILE until a .lic file is found
-            for lic in intel_license_file.split(os.pathsep):
-                if os.path.isfile(lic):
-                    self.cfg['license_file'] = lic
-                    self.license_file = lic
-                else:
-                    lic_file = glob.glob("%s/*.lic" % lic)
-                    if lic_file is not None:
+            valid_license_specs = {}
+            # iterate through entries in environment variables until a valid license specification is found
+            # valid options are:
+            # * an (existing) license file
+            # * a directory containing atleast one file named *.lic (only one is used, first listed alphabetically)
+            # * a license server, format: <port>@<server>
+            server_port_regex = re.compile('^[0-9]+@\S+$')
+            for (lic_env_var, license_spec) in license_specs:
+                if server_port_regex.matches(license_spec):
+                    self.log.info("Found license server spec %s in $%s, retaining it" % (license_spec, lic_env_var))
+                    valid_license_specs.setdefault(lic_env_var, []).append(license_spec)
+                elif os.path.isfile(license_spec):
+                    # a value that seems to match a license server specification, or an existing file
+                    self.log.info("Found existing license file %s via $%s, retaining it" % (license_spec, lic_env_var))
+                    valid_license_specs.setdefault(lic_env_var, []).append(license_spec)
+                elif os.path.isdir(license_spec):
+                    # assume directory, should contain at least one *.lic file
+                    lic_files = glob.glob("%s/*.lic" % license_spec)
+                    if not lic_files:
+                        self.log.debug("Found no license files (*.lic) in %s" % license_spec)
                         continue
                     # just pick the first .lic, if it's not correct, $INTEL_LICENSE_FILE should be adjusted instead
-                    self.cfg['license_file'] = lic_file[0]
-                    self.license_file = lic_file[0]
-                    self.log.info('Picking the first .lic file from $INTEL_LICENSE_FILE: %s' % lic_file[0])
+                    valid_license_specs.setdefault(lic_env_var, []).append(lic_files[0])
+                    self.log.info('Picked the first *.lic file from $%s: %s' % (lic_env_var, lic_files[0]))
 
-            if not self.license_file:
-                self.log.error("Cannot find a license file in %s" % intel_license_file)
+            if not valid_license_specs:
+                self.log.error("Cannot find a valid license specification in %s" % license_specs)
 
+            # only retain one environment variable (by order of preference), retain all valid matches for that env var
+            for lic_env_var in lic_env_vars:
+                if lic_env_var in valid_license_specs:
+                    self.license_file = os.pathsep.join(valid_license_specs[lic_env_var])
+                    break
+            self.cfg['license_file'] = self.license_file
             self.log.info("Picking up Intel license file specification from $%s: %s" % (lic_env_var, self.license_file))
 
         # clean home directory
