@@ -1,0 +1,49 @@
+# This is an easyconfig file for EasyBuild, see https://github.com/hpcugent/easybuild
+# Copyright:: Copyright 2013 Juelich Supercomputing Centre, Germany
+# Authors::   Bernd Mohr <b.mohr@fz-juelich.de>
+# License::   New BSD
+#
+# This work is based from experiences from the UNITE project
+# http://apps.fz-juelich.de/unite/
+##
+name = "Scalasca"
+version = "2.0"
+
+homepage = 'http://www.scalasca.org/'
+description = """Scalasca is a software tool that supports the performance optimization of
+ parallel programs by measuring and analyzing their runtime behavior. The analysis identifies
+ potential performance bottlenecks -- in particular those concerning communication and
+ synchronization -- and offers guidance in exploring their causes."""
+
+toolchain = {'name': 'gompi', 'version': '1.5.12-no-OFED'}
+toolchainopts = {"usempi": True}
+
+compname = 'GCC'
+compver = '4.7.3'
+
+# compiler toolchain depencies
+dependencies = [
+    ('Cube', '4.2', "", (compname, compver)),
+    ('OTF2', '1.2.1', "", (compname, compver)),
+]
+
+# http://apps.fz-juelich.de/scalasca/releases/scalasca/2.0/dist/scalasca-2.0.tar.gz
+sources = [SOURCELOWER_TAR_GZ]
+source_urls = ['http://apps.fz-juelich.de/scalasca/releases/scalasca/2.0/dist']
+
+# --- BM CONFIGOPTS ---
+# 
+# Compiler and MPI suite should always be specified -- MUCH quicker and SAVER than autodetect
+# --with-nocross-compiler-suite=(gcc|ibm|intel|pgi|studio)
+# --with-mpi=(bullxmpi|hp|ibmpoe|intel|intel2|intelpoe|lam|mpibull2|mpich|mpich2|mpich3|openmpi|platform|scali|sgimpt|sun)
+configopts  = ' --with-nocross-compiler-suite=gcc --with-mpi=openmpi'
+
+# --- BM LIB64 ---
+#
+# On some systems libraries end up in lib/
+sanity_check_paths = {
+    'files': ["bin/scalasca", "lib64/libpearl.replay.a"],
+    'dirs': []
+}
+
+moduleclass = 'perf'

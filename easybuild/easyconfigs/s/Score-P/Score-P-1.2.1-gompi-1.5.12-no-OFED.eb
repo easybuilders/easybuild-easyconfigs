@@ -1,0 +1,65 @@
+# This is an easyconfig file for EasyBuild, see https://github.com/hpcugent/easybuild
+# Copyright:: Copyright 2013 Juelich Supercomputing Centre, Germany
+# Authors::   Bernd Mohr <b.mohr@fz-juelich.de>
+# License::   New BSD
+#
+# This work is based from experiences from the UNITE project
+# http://apps.fz-juelich.de/unite/
+##
+name = "Score-P"
+version = "1.2.1"
+
+homepage = 'http://www.score-p.org'
+description = """The Score-P measurement infrastructure is a highly scalable and
+ easy-to-use tool suite for profiling, event tracing, and online analysis of HPC
+ applications."""
+
+toolchain = {'name': 'gompi', 'version': '1.5.12-no-OFED'}
+toolchainopts = {"usempi": True}
+
+compname = 'GCC'
+compver = '4.7.3'
+
+# compiler toolchain depencies
+dependencies = [
+    ('binutils', '2.22', "", (compname, compver)),
+    ('Cube', '4.2', "", (compname, compver)),
+    ('OPARI2', '1.1.1', "", (compname, compver)),
+    ('OTF2', '1.2.1', "", (compname, compver)),
+    ('PAPI', '5.2.0', "", (compname, compver)),
+    ('PDT', '3.19', "", (compname, compver)),
+]
+
+# http://www.vi-hps.org/upload/packages/scorep/scorep-1.2.1.tar.gz
+sources = ["scorep-%(version)s.tar.gz"]
+source_urls = ['http://www.vi-hps.org/upload/packages/scorep/']
+
+# --- BM CONFIGOPTS ---
+# 
+# Compiler and MPI suite should always be specified -- MUCH quicker and SAVER than autodetect
+# --with-nocross-compiler-suite=(gcc|ibm|intel|pgi|studio)
+# --with-mpi=(bullxmpi|hp|ibmpoe|intel|intel2|intelpoe|lam|mpibull2|mpich|mpich2|mpich3|openmpi|platform|scali|sgimpt|sun)
+#
+# OTF2, OPARI2, Cube, PDT autodetection worked fine under EasyBuild, so only if needed use
+# --with-otf2[=<otf2-bindir>]       # Provide path to otf2-config. Auto-detected if already in $PATH.
+# --with-opari2[=<opari2-bindir>]   # Provide path to opari2-config. Auto-detected if already in $PATH.
+# --with-cube[=<cube-bindir>]       # Provide path to cube-config. Auto-detected if already in $PATH.
+# --with-pdt=<path-to-binaries>     # Specifies the path to the program database toolkit (PDT) binaries, e.g., cparse.
+configopts  = ' --with-nocross-compiler-suite=gcc --with-mpi=openmpi'
+configopts += ' --with-papi-header=${EBROOTPAPI}/include --with-papi-lib=${EBROOTPAPI}/lib64'
+configopts += ' --with-libbfd=${EBROOTBINUTILS}'
+
+# --- BM EXTENSIONS ---
+#
+# Score-P does also support CUDA measurements - not yet tested in EasyBuild
+# configopts += ' --with-libcudart=(yes|no|<Path to libcudart installation>)'
+
+# --- BM LIB64 ---
+#
+# On some systems libraries end up in lib/
+sanity_check_paths = {
+    'files': ["bin/scorep", "include/scorep/SCOREP_User.h", "lib64/libscorep_adapter_mpi_event.a"],
+    'dirs': []
+}
+
+moduleclass = 'perf'
