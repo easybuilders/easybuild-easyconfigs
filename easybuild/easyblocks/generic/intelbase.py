@@ -75,6 +75,7 @@ class IntelBase(EasyBlock):
     def __init__(self, *args, **kwargs):
         """Constructor, adds extra config options"""
         self.license_file = None
+        self.license_env_var = None
 
         self.home_subdir = os.path.join(os.getenv('HOME'), 'intel')
         self.home_subdir_local = os.path.join(tempfile.gettempdir(), os.getenv('USER'), 'easybuild_intel')
@@ -227,7 +228,8 @@ class IntelBase(EasyBlock):
             # only retain one environment variable (by order of preference), retain all valid matches for that env var
             for lic_env_var in lic_env_vars:
                 if lic_env_var in valid_license_specs:
-                    retained = valid_license_specs[lic_env_var]
+                    self.license_env_var = lic_env_var
+                    retained = valid_license_specs[self.license_env_var]
                     self.license_file = os.pathsep.join(retained)
                     # if we have multiple retained lic specs, specify to 'use a license which exists on the system'
                     if len(retained) > 1:
@@ -239,8 +241,8 @@ class IntelBase(EasyBlock):
                 self.log.error("self.license_file is still None, something went horribly wrong...")
 
             self.cfg['license_file'] = self.license_file
-            env.setvar(lic_env_var, self.license_file)
-            self.log.info("Picking up Intel license specifications from $%s: %s" % (lic_env_var, self.license_file))
+            env.setvar(self.license_env_var, self.license_file)
+            self.log.info("Using Intel license specifications from $%s: %s" % (self.license_env_var, self.license_file))
 
         # clean home directory
         self.clean_home_subdir()
