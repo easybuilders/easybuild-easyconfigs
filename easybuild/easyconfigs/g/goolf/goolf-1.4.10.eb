@@ -1,0 +1,37 @@
+easyblock = "Toolchain"
+
+name = 'goolf'
+version = '1.4.10'
+
+homepage = '(none)'
+description = """GNU Compiler Collection (GCC) based compiler toolchain, including
+ OpenMPI for MPI support, OpenBLAS (BLAS and LAPACK support), FFTW and ScaLAPACK."""
+
+toolchain = {'name': 'dummy', 'version': 'dummy'}
+
+comp_name = 'GCC'
+comp_version = '4.7.2'
+comp = (comp_name, comp_version)
+
+blaslib = 'OpenBLAS'
+blasver = '0.2.6'
+blas = '%s-%s' % (blaslib, blasver)
+blas_suff = '-LAPACK-3.4.2'
+
+# toolchain used to build goolf dependencies
+comp_mpi_tc_name = 'gompi'
+comp_mpi_tc_ver = "%s" % version
+comp_mpi_tc = (comp_mpi_tc_name, comp_mpi_tc_ver)
+
+# compiler toolchain dependencies
+# we need GCC and OpenMPI as explicit dependencies instead of gompi toolchain
+# because of toolchain preperation functions
+dependencies = [
+    comp,
+    ('OpenMPI', '1.6.4', '', comp),  # part of gompi-1.4.10
+    (blaslib, blasver, blas_suff, comp_mpi_tc),
+    ('FFTW', '3.3.3', '', comp_mpi_tc),
+    ('ScaLAPACK', '2.0.2', '-%s%s' % (blas, blas_suff), comp_mpi_tc)
+]
+
+moduleclass = 'toolchain'
