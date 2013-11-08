@@ -292,7 +292,7 @@ class IntelBase(EasyBlock):
             f.close()
         except:
             self.log.exception("Writing silent cfg % failed" % silent)
-        self.log.debug("Contents of %s: %s" % (silentcfg, silent))
+        self.log.debug("Contents of %s:\n%s" % (silentcfg, silent))
 
         # workaround for mktmp: create tmp dir and use it
         tmpdir = os.path.join(self.cfg['start_dir'], 'mytmpdir')
