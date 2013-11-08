@@ -230,7 +230,7 @@ class IntelBase(EasyBlock):
                     retained = valid_license_specs[lic_env_var]
                     # if we have multiple retained lic specs, or if the only one retained is not a license file,
                     # specify to 'use a license which exists on the system'
-                    if len(retained) > 1 or (len(retained) == 1 and not os.path.isfile(retained[0])):
+                    if len(retained) > 1 or (len(retained) == 1 and not os.path.isfile(list(retained)[0])):
                         self.cfg['license_activation'] = ACTIVATION_EXIST_LIC
                     self.license_file = os.pathsep.join(retained_license_specs)
                     break
