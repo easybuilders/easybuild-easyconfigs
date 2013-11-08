@@ -185,15 +185,18 @@ class IntelBase(EasyBlock):
             # * a license server, format: <port>@<server>
             server_port_regex = re.compile('^[0-9]+@\S+$')
             for (lic_env_var, license_spec) in license_specs:
-                if server_port_regex.matches(license_spec):
+                # a value that seems to match a license server specification
+                if server_port_regex.match(license_spec):
                     self.log.info("Found license server spec %s in $%s, retaining it" % (license_spec, lic_env_var))
                     valid_license_specs.setdefault(lic_env_var, []).append(license_spec)
+
+                # an (existing) license file
                 elif os.path.isfile(license_spec):
-                    # a value that seems to match a license server specification, or an existing file
                     self.log.info("Found existing license file %s via $%s, retaining it" % (license_spec, lic_env_var))
                     valid_license_specs.setdefault(lic_env_var, []).append(license_spec)
+
+                # a directory, should contain at least one *.lic file (use only the first one)
                 elif os.path.isdir(license_spec):
-                    # assume directory, should contain at least one *.lic file
                     lic_files = glob.glob("%s/*.lic" % license_spec)
                     if not lic_files:
                         self.log.debug("Found no license files (*.lic) in %s" % license_spec)
