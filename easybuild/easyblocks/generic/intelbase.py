@@ -142,7 +142,8 @@ class IntelBase(EasyBlock):
         default_lic_env_var = 'INTEL_LICENSE_FILE'
         lic_env_vars = [default_lic_env_var, 'LM_LICENSE_FILE']
         env_var_names = ', '.join(['$%s' % x for x in lic_env_vars])
-        license_specs = [(v, e) for v in map(os.getenv, lic_env_vars) if v is not None for e in v.split(os.pathsep)]
+        lic_env_var_vals = map(os.getenv, lic_env_vars)
+        license_specs = [(var, e) for (var, val) in lic_env_var_vals if val is not None for e in val.split(os.pathsep)]
 
         if not license_specs:
             self.log.debug("No env var from %s set, trying 'license_file' easyconfig parameter..." % lic_env_vars)
@@ -213,6 +214,9 @@ class IntelBase(EasyBlock):
                 if lic_env_var in valid_license_specs:
                     self.license_file = os.pathsep.join(valid_license_specs[lic_env_var])
                     break
+            if self.license_file is None:
+                self.log.error("self.license_file is still None, something went horribly wrong...")
+
             self.cfg['license_file'] = self.license_file
             self.log.info("Picking up Intel license file specification from $%s: %s" % (lic_env_var, self.license_file))
 
