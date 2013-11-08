@@ -1,0 +1,63 @@
+# This is an easyconfig file for EasyBuild, see https://github.com/hpcugent/easybuild
+# Copyright:: Copyright 2013 Juelich Supercomputing Centre, Germany
+# Authors::   Bernd Mohr <b.mohr@fz-juelich.de>
+# License::   New BSD
+#
+# This work is based from experiences from the UNITE project
+# http://apps.fz-juelich.de/unite/
+##
+name = "Extrae"
+version = "2.4.1"
+
+homepage = 'http://www.bsc.es/computer-sciences/performance-tools'
+description = """Extrae is the core instrumentation package developed by the Performance Tools
+ group at BSC. Extrae is capable of instrumenting applications based on MPI, OpenMP, pthreads,
+ CUDA1, OpenCL1, and StarSs1 using different instrumentation approaches. The information gathered
+ by Extrae typically includes timestamped events of runtime calls, performance counters and source
+ code references. Besides, Extrae provides its own API to allow the user to manually instrument his
+ or her application."""
+
+toolchain = {'name': 'gompi', 'version': '1.5.12-no-OFED'}
+toolchainopts = {"usempi": True}
+
+compname = 'GCC'
+compver = '4.7.3'
+
+# compiler toolchain depencies
+dependencies = [
+    ('binutils', '2.22', "", (compname, compver)),
+    ('Boost', '1.53.0', '-serial', (compname, compver)),
+    ('libunwind', '1.1', "", (compname, compver)),
+    ('libxml2', '2.9.1', "", (compname, compver)),
+    ('PAPI', '5.2.0', "", (compname, compver)),
+]
+
+# http://www.bsc.es/computer-sciences/performance-tools/downloads
+# Requires input of email address for download
+sources = [SOURCELOWER_TAR_BZ2]
+
+configopts  = ' --with-mpi=${EBROOTOPENMPI}'
+configopts += ' --with-papi=${EBROOTPAPI} --enable-sampling'
+configopts += ' --enable-xml --enable-merge-in-trace'
+configopts += ' --with-unwind=${EBROOTLIBUNWIND}'
+configopts += ' --without-dwarf --without-dyninst'
+configopts += ' --with-boost=${EBROOTBOOST}'
+# --- BM ISSUE ---
+#
+# Does not build with EasyChair provided binutils (libbfd/liberty not shared/compiler with -fPIC)
+#configopts += ' --with-binutils=${EBROOTBINUTILS}'
+
+# --- BM EXTENSIONS ---
+#
+# Extrae also supports CUDA measurements - not yet tested
+# configopts ++ '  --with-cuda=${CUDADIR} --with-cupti=${CUDADIR}/extras/CUPTI'
+
+# --- BM LIB64 ---
+#
+# On some systems libraries end up in lib/
+sanity_check_paths = {
+    'files': ["bin/mpi2prv", "include/extrae_user_events.h", "lib64/libmpitrace.a"],
+    'dirs': []
+}
+
+moduleclass = 'perf'
