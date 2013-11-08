@@ -50,6 +50,21 @@ from vsc import fancylogger
 _log = fancylogger.getLogger('generic.intelbase')
 
 
+# different supported activation types (cfr. Intel documentation)
+ACTIVATION_EXIST_LIC = 'exist_lic'  # use a license which exists on the system
+ACTIVATION_LIC_FILE = 'license_file'  # use a license file
+ACTIVATION_LIC_SERVER = 'license_server'  # use a license server
+ACTIVATION_SERIAL = 'serial_number'  # use a serial number
+ACTIVATION_TRIAL = 'trial_lic'  # use trial activation
+ACTIVATION_TYPES = [
+    ACTIVATION_EXIST_LIC,
+    ACTIVATION_EXIST_LIC,
+    ACTIVATION_LIC_SERVER,
+    ACTIVATION_SERIAL,
+    ACTIVATION_TRIAL,
+]
+
+
 class IntelBase(EasyBlock):
     """
     Base class for Intel software
@@ -74,7 +89,7 @@ class IntelBase(EasyBlock):
     def extra_options(extra_vars=None):
         origvars = EasyBlock.extra_options(extra_vars)
         intel_vars = [
-            ('license_activation', ['license_server', "License activation type", CUSTOM]),
+            ('license_activation', [ACTIVATION_LIC_SERVER, "License activation type", CUSTOM]),
             # 'usetmppath':
             # workaround for older SL5 version (5.5 and earlier)
             # used to be True, but False since SL5.6/SL6
@@ -189,12 +204,12 @@ class IntelBase(EasyBlock):
                 # a value that seems to match a license server specification
                 if server_port_regex.match(license_spec):
                     self.log.info("Found license server spec %s in $%s, retaining it" % (license_spec, lic_env_var))
-                    valid_license_specs.setdefault(lic_env_var, []).append(license_spec)
+                    valid_license_specs.setdefault(lic_env_var, set()).add(license_spec)
 
                 # an (existing) license file
                 elif os.path.isfile(license_spec):
                     self.log.info("Found existing license file %s via $%s, retaining it" % (license_spec, lic_env_var))
-                    valid_license_specs.setdefault(lic_env_var, []).append(license_spec)
+                    valid_license_specs.setdefault(lic_env_var, set()).add(license_spec)
 
                 # a directory, should contain at least one *.lic file (use only the first one)
                 elif os.path.isdir(license_spec):
@@ -203,7 +218,7 @@ class IntelBase(EasyBlock):
                         self.log.debug("Found no license files (*.lic) in %s" % license_spec)
                         continue
                     # just pick the first .lic, if it's not correct, $INTEL_LICENSE_FILE should be adjusted instead
-                    valid_license_specs.setdefault(lic_env_var, []).append(lic_files[0])
+                    valid_license_specs.setdefault(lic_env_var, set()).add(lic_files[0])
                     self.log.info('Picked the first *.lic file from $%s: %s' % (lic_env_var, lic_files[0]))
 
             if not valid_license_specs:
@@ -212,13 +227,19 @@ class IntelBase(EasyBlock):
             # only retain one environment variable (by order of preference), retain all valid matches for that env var
             for lic_env_var in lic_env_vars:
                 if lic_env_var in valid_license_specs:
-                    self.license_file = os.pathsep.join(valid_license_specs[lic_env_var])
+                    retained = valid_license_specs[lic_env_var]
+                    # if we have multiple retained lic specs, or if the only one retained is not a license file,
+                    # specify to 'use a license which exists on the system'
+                    if len(retained) > 1 or (len(retained) == 1 and not os.path.isfile(retained[0])):
+                        self.cfg['license_activation'] = ACTIVATION_EXIST_LIC
+                    self.license_file = os.pathsep.join(retained_license_specs)
                     break
             if self.license_file is None:
                 self.log.error("self.license_file is still None, something went horribly wrong...")
 
             self.cfg['license_file'] = self.license_file
-            self.log.info("Picking up Intel license file specification from $%s: %s" % (lic_env_var, self.license_file))
+            env.setvar(lic_env_var, self.license_file)
+            self.log.info("Picking up Intel license specifications from $%s: %s" % (lic_env_var, self.license_file))
 
         # clean home directory
         self.clean_home_subdir()
@@ -237,9 +258,20 @@ class IntelBase(EasyBlock):
         if silent_cfg_names_map is None:
             silent_cfg_names_map = {}
 
+        # license file entry is only applicable with license file or server type of activation
+        # also check whether specified activation type makes sense
+        lic_activation = self.cfg['license_activation']
+        lic_file_server_activations = [ACTIVATION_LIC_FILE, ACTIVATION_LIC_SERVER]
+        other_activations = [act for act in ACTIVATION_TYPES if not act in lic_file_server_activations]
+        lic_file_entry = ""
+        if lic_activation in lic_file_server_activations:
+            lic_file_entry = "%(license_file_name)s=%(license_file)s"
+        elif not self.cfg['license_activation'] in other_activations:
+            self.log.error("Unknown type of activation specified: %s (known :%s)" % (lic_activation, ACTIVATION_TYPES))
+
         silent = '\n'.join([
             "%(activation_name)s=%(activation)s",
-            "%(license_file_name)s=%(license_file)s",
+            lic_file_entry,
             "%(install_dir_name)s=%(install_dir)s",
             "ACCEPT_EULA=accept",
             "INSTALL_MODE=NONRPM",
