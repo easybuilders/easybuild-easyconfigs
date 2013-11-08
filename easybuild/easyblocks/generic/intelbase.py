@@ -142,7 +142,7 @@ class IntelBase(EasyBlock):
         default_lic_env_var = 'INTEL_LICENSE_FILE'
         lic_env_vars = [default_lic_env_var, 'LM_LICENSE_FILE']
         env_var_names = ', '.join(['$%s' % x for x in lic_env_vars])
-        lic_env_var_vals = map(os.getenv, lic_env_vars)
+        lic_env_var_vals = [(var, os.getenv(var) for var in lic_env_vars]
         license_specs = [(var, e) for (var, val) in lic_env_var_vals if val is not None for e in val.split(os.pathsep)]
 
         if not license_specs:
