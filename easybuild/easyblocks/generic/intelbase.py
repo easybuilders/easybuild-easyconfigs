@@ -232,7 +232,7 @@ class IntelBase(EasyBlock):
                     # specify to 'use a license which exists on the system'
                     if len(retained) > 1 or (len(retained) == 1 and not os.path.isfile(list(retained)[0])):
                         self.cfg['license_activation'] = ACTIVATION_EXIST_LIC
-                    self.license_file = os.pathsep.join(retained_license_specs)
+                    self.license_file = os.pathsep.join(retained)
                     break
             if self.license_file is None:
                 self.log.error("self.license_file is still None, something went horribly wrong...")
