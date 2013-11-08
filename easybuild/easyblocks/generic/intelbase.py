@@ -228,10 +228,12 @@ class IntelBase(EasyBlock):
             for lic_env_var in lic_env_vars:
                 if lic_env_var in valid_license_specs:
                     retained = valid_license_specs[lic_env_var]
+                    self.license_file = os.pathsep.join(retained)
                     # if we have multiple retained lic specs, specify to 'use a license which exists on the system'
                     if len(retained) > 1:
                         self.cfg['license_activation'] = ACTIVATION_EXIST_LIC
-                    self.license_file = os.pathsep.join(retained)
+                        # $INTEL_LICENSE_FILE should always be set during installation with existing license
+                        env.setvar(default_lic_env_var, self.license_file)
                     break
             if self.license_file is None:
                 self.log.error("self.license_file is still None, something went horribly wrong...")
