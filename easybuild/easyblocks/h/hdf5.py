@@ -45,14 +45,19 @@ class EB_HDF5(ConfigureMake):
     def configure_step(self):
         """Configure build: set require config and make options, and run configure script."""
 
-        # configure options
-        deps = ["Szip", "zlib"]
-        for dep in deps:
-            root = get_software_root(dep)
-            if root:
-                self.cfg.update('configopts', '--with-%s=%s' % (dep.lower(), root))
-            else:
-                self.log.error("Dependency module %s not loaded." % dep)
+        # Szip configure option -> --with-szlib
+        szip_root = get_software_root("Szip")
+        if szip_root:
+            self.cfg.update('configopts', '--with-szlib=%s' % (szip_root))
+        else:
+            self.log.error("Dependency module Szip not loaded.")
+
+        # zlib configure option -> --with-zlib
+        zlib_root = get_software_root("zlib")
+        if zlib_root:
+            self.cfg.update('configopts', '--with-zlib=%s' % (zlib_root))
+        else:
+            self.log.error("Dependency module zlib not loaded.")
 
         fcomp = 'FC="%s"' % os.getenv('F90')
 
@@ -67,7 +72,8 @@ class EB_HDF5(ConfigureMake):
         self.cfg.update('makeopts', fcomp)
 
         # set RUNPARALLEL
-        env.setvar('RUNPARALLEL', 'mpirun -np \$\${NPROCS:=2}')
+        if self.toolchain.options['usempi']:
+            env.setvar('RUNPARALLEL', 'mpirun -np \$\${NPROCS:=2}')
 
         super(EB_HDF5, self).configure_step()
 
