@@ -42,7 +42,7 @@ class EB_Allinea(Binary):
     def extra_options(extra_vars=None):
         """Define extra easyconfig parameters specific to Allinea."""
 
-        orig_vars = super(EB_Allinea, self).extra_options(extra_vars)
+        orig_vars = EB_Allinea.extra_options(extra_vars)
         allinea_vars = [
             ('templates', [[], "List of templates.", CUSTOM]),
         ]
