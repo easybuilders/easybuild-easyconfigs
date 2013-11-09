@@ -81,21 +81,6 @@ class EB_Allinea(EasyBlock):
             except OSError, err:
                 self.log.error("Failed to copy template %s to %s: %s" % (templ, templ_path, err))
 
-        # generate system config file, and move it to install dir
-        cfg_file = os.path.join(expanduser('~'), '.allinea', 'system.config')
-        if os.path.exists(cfg_file):
-            self.log.error("A config file is already present at %s, please (re)move it first." % cfg_file)
-
-        # note: this requires X-forwarding to be enabled (and there's no alternative)
-        # TODO: can be solved by adding -offline out.html to the command line,
-        # but this requires to have a system.config file present in $HOME/.allinea
-        cmd = "%s/bin/ddt -cleanconfig" % self.installdir
-        run_cmd(cmd, log_all=True, simple=True)
-        try:
-            shutil.move(cfg_file, self.installdir)
-        except OSError, err:
-            self.log.error("Failed to move %s to %s: %s" % (cfg_file, self.installdir, err))
-
     def sanity_check_step(self):
         """Custom sanity check for Allinea."""
         custom_paths = {
