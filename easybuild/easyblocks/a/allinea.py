@@ -32,7 +32,6 @@ import shutil
 from os.path import expanduser
 
 from easybuild.easyblocks.generic.binary import Binary
-from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import CUSTOM
 
 
@@ -43,7 +42,7 @@ class EB_Allinea(Binary):
     def extra_options(extra_vars=None):
         """Define extra easyconfig parameters specific to Allinea."""
 
-        orig_vars = EasyBlock.extra_options(extra_vars)
+        orig_vars = super(EB_Allinea, self).extra_options(extra_vars)
         allinea_vars = [
             ('templates', [[], "List of templates.", CUSTOM]),
         ]
