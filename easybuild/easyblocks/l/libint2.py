@@ -1,5 +1,5 @@
 ##
-# Copyright 2009-2013 Ghent University
+# Copyright 2013 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -30,6 +30,7 @@ EasyBuild support for building and installing libint2, implemented as an easyblo
 """
 
 import os.path
+
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 
 
@@ -51,7 +52,7 @@ class EB_libint2(ConfigureMake):
         super(EB_libint2, self).configure_step()
 
     def make_module_req_guess(self):
-        """Specify correct LD_LIBRARY_PATH and CPATH for this installation."""
+        """Specify correct CPATH for this installation."""
         guesses = super(EB_libint2, self).make_module_req_guess()
         guesses.update({
             'CPATH': ["include", os.path.join("include", "libint2")],
