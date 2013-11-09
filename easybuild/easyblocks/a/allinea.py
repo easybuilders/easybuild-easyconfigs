@@ -32,6 +32,7 @@ import shutil
 from os.path import expanduser
 
 from easybuild.easyblocks.generic.binary import Binary
+from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import CUSTOM
 
 
