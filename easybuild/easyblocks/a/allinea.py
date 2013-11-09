@@ -49,6 +49,10 @@ class EB_Allinea(Binary):
         allinea_vars.extend(orig_vars)
         return allinea_vars
 
+    def extract_step(self):
+        """Extract Allinea installation files."""
+        EasyBlock.extract_step(self)
+
     def configure_step(self):
         """No configuration for Allinea."""
         # ensure a license file is specified
