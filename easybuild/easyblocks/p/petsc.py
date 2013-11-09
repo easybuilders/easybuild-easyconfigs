@@ -94,7 +94,7 @@ class EB_PETSc(ConfigureMake):
                 self.cfg.update('configopts', '--with-gnu-compilers=0')
 
             # MPI
-            if self.toolchain.options['usempi']:
+            if self.toolchain.options.get('usempi', None):
                 self.cfg.update('configopts', '--with-mpi=1')
 
             # build options

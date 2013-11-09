@@ -54,6 +54,7 @@ class ConfigureMake(EasyBlock):
 
         extra_vars.extend([
                            ('tar_config_opts', [False, "Override tar settings as determined by configure.", CUSTOM]),
+                           ('prefix_opt', ['--prefix=', "Prefix command line option for configure script", CUSTOM]),
                           ])
         return EasyBlock.extra_options(extra_vars)
 
@@ -75,8 +76,13 @@ class ConfigureMake(EasyBlock):
             for (key, val) in tar_vars.items():
                 self.cfg.update('preconfigopts', "%s='%s'" % (key, val))
 
-        cmd = "%s %s./configure --prefix=%s %s" % (self.cfg['preconfigopts'], cmd_prefix,
-                                                    self.installdir, self.cfg['configopts'])
+        cmd = "%(preconfigopts)s %(cmd_prefix)s./configure %(prefix_opt)s%(installdir)s %(configopts)s" % {
+            'preconfigopts': self.cfg['preconfigopts'],
+            'cmd_prefix': cmd_prefix,
+            'prefix_opt': self.cfg['prefix_opt'],
+            'installdir': self.installdir,
+            'configopts': self.cfg['configopts'],
+        }
 
         (out, _) = run_cmd(cmd, log_all=True, simple=False)
 

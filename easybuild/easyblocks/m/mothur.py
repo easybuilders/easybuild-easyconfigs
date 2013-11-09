@@ -56,7 +56,7 @@ class EB_Mothur(ConfigureMake):
         if get_software_root('libreadline') and get_software_root('ncurses'):
             self.cfg.update('makeopts', 'USEREADLINE=yes')
         # enable MPI support
-        if self.toolchain.options['usempi']:
+        if self.toolchain.options.get('usempi', None):
             self.cfg.update('makeopts', 'USEMPI=yes CXX="%s"' % os.getenv('MPICXX'))
             self.cfg.update('premakeopts', 'CXXFLAGS="$CXXFLAGS -DMPICH_IGNORE_CXX_SEEK"')
         # enable compression
