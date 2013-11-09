@@ -60,6 +60,9 @@ class EB_Qt(ConfigureMake):
         no_qa = [
             "for .*pro",
             r"%s.*" % os.getenv('CXX').replace('+', '\\+'),  # need to escape + in 'g++'
+            "Reading .*",
+            "WARNING .*",
+            "Project MESSAGE:.*",
         ]
         run_cmd_qa(cmd, qa, no_qa=no_qa, log_all=True, simple=True)
 
