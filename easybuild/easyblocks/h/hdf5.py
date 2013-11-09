@@ -64,7 +64,7 @@ class EB_HDF5(ConfigureMake):
 
         # MPI and C++ support enabled requires --enable-unsupported, because this is untested by HDF5
         # also returns False if MPI is not supported by this toolchain
-        if self.toolchain.options.get('usempi', False):
+        if self.toolchain.options.get('usempi', None):
             self.cfg.update('configopts', "--enable-unsupported --enable-parallel")
         else:
             self.cfg.update('configopts', "--disable-parallel")
@@ -73,7 +73,7 @@ class EB_HDF5(ConfigureMake):
         self.cfg.update('makeopts', fcomp)
 
         # set RUNPARALLEL if MPI is not enabled (or not supported by this toolchain)
-        if self.toolchain.options.get('usempi', False):
+        if self.toolchain.options.get('usempi', None):
             env.setvar('RUNPARALLEL', 'mpirun -np \$\${NPROCS:=2}')
 
         super(EB_HDF5, self).configure_step()
@@ -86,7 +86,7 @@ class EB_HDF5(ConfigureMake):
         """
 
         # also returns False if MPI is not supported by this toolchain
-        if self.toolchain.options.get('usempi', False):
+        if self.toolchain.options.get('usempi', None):
             extra_binaries = ["bin/%s" % x for x in ["h5perf", "h5pcc", "h5pfc", "ph5diff"]]
         else:
             extra_binaries = ["bin/%s" % x for x in ["h5cc", "h5fc"]]

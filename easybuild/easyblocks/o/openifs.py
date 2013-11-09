@@ -43,7 +43,7 @@ class EB_OpenIFS(EasyBlock):
     def configure_step(self):
         """Custom configuration procedure for OpenIFS."""
         # make sure use of MPI is enabled
-        if not self.toolchain.options['usempi']:
+        if not self.toolchain.options.get('usempi', None):
             self.log.error("Use of MPI should be enabled, set 'usempi' toolchain option to 'True'.")
 
         # configure build via OIFS_* environment variables

@@ -71,7 +71,7 @@ class EB_QuantumESPRESSO(ConfigureMake):
         if self.cfg['hybrid']:
             self.cfg.update('configopts', '--enable-openmp')
 
-        if not self.toolchain.options['usempi']:
+        if not self.toolchain.options.get('usempi', None):
             self.cfg.update('configopts', '--disable-parallel')
 
         if not self.cfg['with_scalapack']:
@@ -108,7 +108,7 @@ class EB_QuantumESPRESSO(ConfigureMake):
         if get_software_root('ACML'):
             dflags.append('-D__ACML')
 
-        if self.toolchain.options['usempi']:
+        if self.toolchain.options.get('usempi', None):
             dflags.append('-D__MPI -D__PARA')
 
         if self.cfg['hybrid']:

@@ -61,7 +61,7 @@ class EB_Boost(EasyBlock):
         """Configure Boost build using custom tools"""
 
         # mpi sanity check
-        if self.cfg['boost_mpi'] and not self.toolchain.options['usempi']:
+        if self.cfg['boost_mpi'] and not self.toolchain.options.get('usempi', None):
             self.log.error("When enabling building boost_mpi, also enable the 'usempi' toolchain option.")
 
         # create build directory (Boost doesn't like being built in source dir)

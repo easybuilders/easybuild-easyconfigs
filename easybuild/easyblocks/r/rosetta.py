@@ -91,7 +91,7 @@ class EB_Rosetta(EasyBlock):
             self.log.error("Don't know how to determine C++ compiler version.")
         self.cfg.update('makeopts', "cxx=%s cxx_ver=%s" % (self.cxx, cxx_ver))
 
-        if self.toolchain.options['usempi']:
+        if self.toolchain.options.get('usempi', None):
             self.cfg.update('makeopts', 'extras=mpi')
             defines.extend(['USEMPI', 'MPICH_IGNORE_CXX_SEEK'])
 
@@ -238,7 +238,7 @@ class EB_Rosetta(EasyBlock):
         """Custom sanity check for Rosetta."""
 
         infix = ''
-        if self.toolchain.options['usempi']:
+        if self.toolchain.options.get('usempi', None):
             infix = 'mpi.'
 
         binaries = ["AbinitioRelax", "backrub", "cluster", "combine_silent", "extract_pdbs",
