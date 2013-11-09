@@ -1,5 +1,5 @@
 ##
-# Copyright 2009-2013 Ghent University
+# Copyright 2013 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -29,9 +29,10 @@ EasyBuild support for OpenBabel, implemented as an easyblock
 """
 
 import os
-from easybuild.tools.filetools import mkdir
+
 from easybuild.easyblocks.generic.cmakemake import CMakeMake
 from easybuild.tools.modules import get_software_root
+from easybuild.tools.filetools import mkdir
 
 
 class EB_OpenBabel(CMakeMake):
@@ -63,6 +64,6 @@ class EB_OpenBabel(CMakeMake):
         """Custom variables for OpenBabel module."""
         txt = super(EB_OpenBabel, self).make_module_extra()
         txt += self.moduleGenerator.set_environment('PYTHONPATH', '$root/lib')
-        txt += self.moduleGenerator.set_environment('BABEL_LIBDIR', '$root/lib/openbabel/%s/' % self.cfg['version'])
-        txt += self.moduleGenerator.set_environment('BABEL_DATADIR', '$root/share/openbabel/%s/' % self.cfg['version'])
+        txt += self.moduleGenerator.set_environment('BABEL_LIBDIR', '$root/lib/openbabel/%s/' % self.version)
+        txt += self.moduleGenerator.set_environment('BABEL_DATADIR', '$root/share/openbabel/%s/' % self.version)
         return txt
