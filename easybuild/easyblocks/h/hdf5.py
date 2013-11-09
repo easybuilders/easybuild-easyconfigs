@@ -45,19 +45,17 @@ class EB_HDF5(ConfigureMake):
     def configure_step(self):
         """Configure build: set require config and make options, and run configure script."""
 
-        # Szip configure option -> --with-szlib
-        szip_root = get_software_root("Szip")
-        if szip_root:
-            self.cfg.update('configopts', '--with-szlib=%s' % (szip_root))
-        else:
-            self.log.error("Dependency module Szip not loaded.")
-
-        # zlib configure option -> --with-zlib
-        zlib_root = get_software_root("zlib")
-        if zlib_root:
-            self.cfg.update('configopts', '--with-zlib=%s' % (zlib_root))
-        else:
-            self.log.error("Dependency module zlib not loaded.")
+        # configure options for dependencies
+        deps = [
+            ("Szip", "--with-szlib"),
+            ("zlib", "--with-zlib"),
+        ]
+        for (dep, opt) in deps:
+            root = get_software_root(dep)
+            if root:
+                self.cfg.update('configopts', '%s=%s' % (opt, root))
+            else:
+                self.log.error("Dependency module %s not loaded." % dep)
 
         fcomp = 'FC="%s"' % os.getenv('F90')
 
@@ -65,8 +63,8 @@ class EB_HDF5(ConfigureMake):
         self.cfg.update('configopts', "--enable-cxx --enable-fortran %s" % fcomp)
 
         # MPI and C++ support enabled requires --enable-unsupported, because this is untested by HDF5
-        # (this test returns False if MPI is not supported by this toolchain)
-        if self.toolchain.options.get('usempi', False):           
+        # also returns False if MPI is not supported by this toolchain
+        if self.toolchain.options.get('usempi', False):
             self.cfg.update('configopts', "--enable-unsupported --enable-parallel")
         else:
             self.cfg.update('configopts', "--disable-parallel")
@@ -74,8 +72,8 @@ class EB_HDF5(ConfigureMake):
         # make options
         self.cfg.update('makeopts', fcomp)
 
-        # set RUNPARALLEL
-        if self.toolchain.options['usempi']:
+        # set RUNPARALLEL if MPI is not enabled (or not supported by this toolchain)
+        if self.toolchain.options.get('usempi', False):
             env.setvar('RUNPARALLEL', 'mpirun -np \$\${NPROCS:=2}')
 
         super(EB_HDF5, self).configure_step()
@@ -87,8 +85,8 @@ class EB_HDF5(ConfigureMake):
         Custom sanity check for HDF5
         """
 
-        # (this test returns False if MPI is not supported by this toolchain)
-        if self.toolchain.options.get('usempi', False):           
+        # also returns False if MPI is not supported by this toolchain
+        if self.toolchain.options.get('usempi', False):
             extra_binaries = ["bin/%s" % x for x in ["h5perf", "h5pcc", "h5pfc", "ph5diff"]]
         else:
             extra_binaries = ["bin/%s" % x for x in ["h5cc", "h5fc"]]
