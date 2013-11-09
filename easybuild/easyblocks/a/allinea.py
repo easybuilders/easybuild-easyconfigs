@@ -31,12 +31,11 @@ import os
 import shutil
 from os.path import expanduser
 
-from easybuild.framework.easyblock import EasyBlock
+from easybuild.easyblocks.generic.binary import Binary
 from easybuild.framework.easyconfig import CUSTOM
-from easybuild.tools.filetools import run_cmd
 
 
-class EB_Allinea(EasyBlock):
+class EB_Allinea(Binary):
     """Support for building/installing Allinea."""
 
     @staticmethod
@@ -52,7 +51,7 @@ class EB_Allinea(EasyBlock):
 
     def configure_step(self):
         """No configuration for Allinea."""
-        # ensure a license server is specified
+        # ensure a license file is specified
         if self.cfg['license_file'] is None:
             self.log.error("No license file specified.")
 
@@ -63,8 +62,10 @@ class EB_Allinea(EasyBlock):
     def install_step(self):
         """Install Allinea using install script."""
 
-        cmd = "./textinstall.sh --accept-licence %s" % self.installdir
-        run_cmd(cmd, log_all=True, simple=True)
+        if self.cfg['install_cmd'] is None:
+            self.cfg['install_cmd'] = "./textinstall.sh --accept-licence %s" % self.installdir
+
+        super(EB_Allinea, self).install_step()
 
         # copy license file
         lic_path = os.path.join(self.installdir, 'licences')
