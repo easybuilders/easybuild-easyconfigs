@@ -80,7 +80,7 @@ class EB_Score_minus_P(ConfigureMake):
             dep_root = get_software_root(dep_name)
             if dep_root:
                 for dep_opt in dep_opts:
-                    self.cfg.update('configopts', dep_opt % root)
+                    self.cfg.update('configopts', dep_opt % dep_name)
 
         super(EB_Score_P, self).configure_step(*args, **kwargs)
 
