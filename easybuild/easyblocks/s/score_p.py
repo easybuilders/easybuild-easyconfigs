@@ -32,7 +32,7 @@ import os
 
 import easybuild.tools.toolchain as toolchain
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
-from easybuild.tools.modules import get_software_root
+from easybuild.tools.modules import get_software_root, get_software_libdir
 
 
 class EB_Score_minus_P(ConfigureMake):
@@ -68,19 +68,19 @@ class EB_Score_minus_P(ConfigureMake):
 
         # auto-detection for dependencies mostly works fine, but hard specify paths anyway to have full control
         deps = {
-            'binutils': ['--with-libbfd=%s/lib'],
+            'binutils': ['--with-libbfd=%%s/%s' % get_software_libdir('binutils')],
             'Cube': ['--with-cube=%s/bin'],
             'CUDA': ['--with-libcudart=%s'],
             'OTF2': ['--with-otf2=%s/bin'],
             'OPARI2': ['--with-opari2=%s/bin'],
-            'PAPI': ['--with-papi-header=%s/include', '--with-papi-lib=%s/lib'],
+            'PAPI': ['--with-papi-header=%s/include', '--with-papi-lib=%%s/%s' % get_software_libdir('PAPI')],
             'PDT': ['--with-pdt=%s/bin'],
         }
         for (dep_name, dep_opts) in deps.items():
             dep_root = get_software_root(dep_name)
             if dep_root:
                 for dep_opt in dep_opts:
-                    self.cfg.update('configopts', dep_opt % dep_name)
+                    self.cfg.update('configopts', dep_opt % dep_root)
 
         super(EB_Score_minus_P, self).configure_step(*args, **kwargs)
 
