@@ -82,7 +82,7 @@ class EB_Score_minus_P(ConfigureMake):
                 for dep_opt in dep_opts:
                     self.cfg.update('configopts', dep_opt % dep_name)
 
-        super(EB_Score_P, self).configure_step(*args, **kwargs)
+        super(EB_Score_minus_P, self).configure_step(*args, **kwargs)
 
     def sanity_check_step(self):
         """Custom sanity check for Score-P."""
@@ -93,4 +93,4 @@ class EB_Score_minus_P(ConfigureMake):
             'dirs': [],
         }
 
-        super(EB_Score_P, self).sanity_check_step(custom_paths=custom_paths)
+        super(EB_Score_minus_P, self).sanity_check_step(custom_paths=custom_paths)
