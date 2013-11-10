@@ -35,7 +35,7 @@ from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.tools.modules import get_software_root
 
 
-class EB_Score_P(ConfigureMake):
+class EB_Score_minus_P(ConfigureMake):
     """Support for building and installing Score-P."""
 
     def configure_step(self, *args, **kwargs):
