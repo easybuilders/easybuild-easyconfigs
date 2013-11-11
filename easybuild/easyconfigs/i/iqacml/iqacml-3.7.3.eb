@@ -9,27 +9,34 @@ description = """Intel Cluster Toolkit Compiler Edition provides Intel C,C++ and
 toolchain = {'name': 'dummy', 'version': 'dummy'}
 
 compv = '11.1.075'
-mlib = 'ACML'
-mlibv = '5.3.0-ifort-64bit'
-blacs = 'BLACS'
+
+mlibn = 'ACML'
+mlibv = '5.3.0'
+mlibs = '-ifort-64bit'
+mlib = '%s-%s%s' % (mlibn, mlibv, mlibs)
+
+blacsn = 'BLACS'
 blacsv = '1.1'
-tc = 'iiqmpi'
+blacs = '%s-%s' % (blacsn, blacsv)
+
+tcname = 'iiqmpi'
 tcver = '3.3.0'
+tc = (tcname, tcver)
 
 dependencies = [
-                ('icc', compv),
-                ('ifort', compv),
-                ('QLogicMPI', '2.9-926.1005_rhel5_qlc'),
-                (mlib, mlibv),
-                (blacs, '-'.join([blacsv, tc, tcver])),
-                ('ScaLAPACK', '-'.join(['1.8.0', tc, tcver, mlib, mlibv, blacs, blacsv])),
-                ('FFTW', '-'.join(['3.3.3', tc, tcver])),
-               ]
-
-moduleclass = 'compiler'
+    ('icc', compv),
+    ('ifort', compv),
+    ('QLogicMPI', '2.9-926.1005_rhel5_qlc'),
+    (mlibn, mlibv, mlibs),
+    (blacsn, blacsv, '', tc),
+    ('ScaLAPACK', '1.8.0', '-%s-%s' % (mlib, blacs), tc),
+    ('FFTW', '3.3.3', '', tc),
+]
 
 modextravars = {
-                'MPICH_CC':'icc',
-                'MPICH_F77':'ifort',
-                'MPICH_F90':'ifort',
-               }
+    'MPICH_CC':'icc',
+    'MPICH_F77':'ifort',
+    'MPICH_F90':'ifort',
+}
+
+moduleclass = 'toolchain'

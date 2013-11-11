@@ -1,3 +1,21 @@
+Build status - *master branch (Python 2.4, Python 2.6, Python 2.7)*
+
+.. image:: https://jenkins1.ugent.be/view/EasyBuild/job/easybuild-easyconfigs_unit-test_hpcugent_master-python24/badge/icon
+    :target: https://jenkins1.ugent.be/view/EasyBuild/job/easybuild-easyconfigs_unit-test_hpcugent_master-python24/
+.. image:: https://jenkins1.ugent.be/view/EasyBuild/job/easybuild-easyconfigs_unit-test_hpcugent_master/badge/icon
+    :target: https://jenkins1.ugent.be/view/EasyBuild/job/easybuild-easyconfigs_unit-test_hpcugent_master/  
+.. image:: https://jenkins1.ugent.be/view/EasyBuild/job/easybuild-easyconfigs_unit-test_hpcugent_master-python27/badge/icon
+    :target: https://jenkins1.ugent.be/view/EasyBuild/job/easybuild-easyconfigs_unit-test_hpcugent_master-python27/ 
+    
+Build status - *develop branch (Python 2.4, Python 2.6, Python 2.7)*
+
+.. image:: https://jenkins1.ugent.be/view/EasyBuild/job/easybuild-easyconfigs_unit-test_hpcugent_develop-python24/badge/icon
+    :target: https://jenkins1.ugent.be/view/EasyBuild/job/easybuild-easyconfigs_unit-test_hpcugent_develop-python24/  
+.. image:: https://jenkins1.ugent.be/view/EasyBuild/job/easybuild-easyconfigs_unit-test_hpcugent_develop/badge/icon
+    :target: https://jenkins1.ugent.be/view/EasyBuild/job/easybuild-easyconfigs_unit-test_hpcugent_develop/  
+.. image:: https://jenkins1.ugent.be/view/EasyBuild/job/easybuild-easyconfigs_unit-test_hpcugent_develop-python27/badge/icon
+    :target: https://jenkins1.ugent.be/view/EasyBuild/job/easybuild-easyconfigs_unit-test_hpcugent_develop-python27/
+
 EasyBuild: building software with ease
 --------------------------------------
 
