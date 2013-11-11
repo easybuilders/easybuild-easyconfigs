@@ -1,0 +1,2307 @@
+diff -urN llvm-3.3.src.org/projects/compiler-rt/lib/asan/lit_tests/allow_user_segv.cc llvm-3.3.src/projects/compiler-rt/lib/asan/lit_tests/allow_user_segv.cc
+--- llvm-3.3.src.org/projects/compiler-rt/lib/asan/lit_tests/allow_user_segv.cc	2013-04-25 12:52:15.000000000 +0200
++++ llvm-3.3.src/projects/compiler-rt/lib/asan/lit_tests/allow_user_segv.cc	1970-01-01 01:00:00.000000000 +0100
+@@ -1,42 +0,0 @@
+-// Regression test for
+-// https://code.google.com/p/address-sanitizer/issues/detail?id=180
+-
+-// RUN: %clangxx_asan -m64 -O0 %s -o %t && ASAN_OPTIONS=allow_user_segv_handler=true %t 2>&1 | FileCheck %s
+-// RUN: %clangxx_asan -m64 -O2 %s -o %t && ASAN_OPTIONS=allow_user_segv_handler=true %t 2>&1 | FileCheck %s
+-// RUN: %clangxx_asan -m32 -O0 %s -o %t && ASAN_OPTIONS=allow_user_segv_handler=true %t 2>&1 | FileCheck %s
+-// RUN: %clangxx_asan -m32 -O2 %s -o %t && ASAN_OPTIONS=allow_user_segv_handler=true %t 2>&1 | FileCheck %s
+-
+-#include <signal.h>
+-#include <stdio.h>
+-
+-struct sigaction user_sigaction;
+-struct sigaction original_sigaction;
+-
+-void User_OnSIGSEGV(int signum, siginfo_t *siginfo, void *context) {
+-  fprintf(stderr, "User sigaction called\n");
+-  if (original_sigaction.sa_flags | SA_SIGINFO)
+-    original_sigaction.sa_sigaction(signum, siginfo, context);
+-  else
+-    original_sigaction.sa_handler(signum);
+-}
+-
+-int DoSEGV() {
+-  volatile int *x = 0;
+-  return *x;
+-}
+-
+-int main() {
+-  user_sigaction.sa_sigaction = User_OnSIGSEGV;
+-  user_sigaction.sa_flags = SA_SIGINFO;
+-  if (sigaction(SIGSEGV, &user_sigaction, &original_sigaction)) {
+-    perror("sigaction");
+-    return 1;
+-  }
+-  fprintf(stderr, "User sigaction installed\n");
+-  return DoSEGV();
+-}
+-
+-// CHECK: User sigaction installed
+-// CHECK-NEXT: User sigaction called
+-// CHECK-NEXT: ASAN:SIGSEGV
+-// CHECK: AddressSanitizer: SEGV on unknown address
+diff -urN llvm-3.3.src.org/projects/compiler-rt/lib/asan/lit_tests/blacklist.cc llvm-3.3.src/projects/compiler-rt/lib/asan/lit_tests/blacklist.cc
+--- llvm-3.3.src.org/projects/compiler-rt/lib/asan/lit_tests/blacklist.cc	2012-12-07 23:21:21.000000000 +0100
++++ llvm-3.3.src/projects/compiler-rt/lib/asan/lit_tests/blacklist.cc	1970-01-01 01:00:00.000000000 +0100
+@@ -1,44 +0,0 @@
+-// Test the blacklist functionality of ASan
+-
+-// RUN: echo "fun:*brokenFunction*" > %tmp
+-// RUN: echo "global:*badGlobal*" >> %tmp
+-// RUN: echo "src:*blacklist-extra.cc" >> %tmp
+-// RUN: %clangxx_asan -fsanitize-blacklist=%tmp -m64 -O0 %s -o %t \
+-// RUN: %p/Helpers/blacklist-extra.cc && %t 2>&1
+-// RUN: %clangxx_asan -fsanitize-blacklist=%tmp -m64 -O1 %s -o %t \
+-// RUN: %p/Helpers/blacklist-extra.cc && %t 2>&1
+-// RUN: %clangxx_asan -fsanitize-blacklist=%tmp -m64 -O2 %s -o %t \
+-// RUN: %p/Helpers/blacklist-extra.cc && %t 2>&1
+-// RUN: %clangxx_asan -fsanitize-blacklist=%tmp -m64 -O3 %s -o %t \
+-// RUN: %p/Helpers/blacklist-extra.cc && %t 2>&1
+-// RUN: %clangxx_asan -fsanitize-blacklist=%tmp -m32 -O0 %s -o %t \
+-// RUN: %p/Helpers/blacklist-extra.cc && %t 2>&1
+-// RUN: %clangxx_asan -fsanitize-blacklist=%tmp -m32 -O1 %s -o %t \
+-// RUN: %p/Helpers/blacklist-extra.cc && %t 2>&1
+-// RUN: %clangxx_asan -fsanitize-blacklist=%tmp -m32 -O2 %s -o %t \
+-// RUN: %p/Helpers/blacklist-extra.cc && %t 2>&1
+-// RUN: %clangxx_asan -fsanitize-blacklist=%tmp -m32 -O3 %s -o %t \
+-// RUN: %p/Helpers/blacklist-extra.cc && %t 2>&1
+-
+-// badGlobal is accessed improperly, but we blacklisted it.
+-int badGlobal;
+-int readBadGlobal() {
+-  return (&badGlobal)[1];
+-}
+-
+-// A function which is broken, but excluded in the blacklist.
+-int brokenFunction(int argc) {
+-  char x[10] = {0};
+-  return x[argc * 10];  // BOOM
+-}
+-
+-// This function is defined in Helpers/blacklist-extra.cc, a source file which
+-// is blacklisted by name
+-int externalBrokenFunction(int x);
+-
+-int main(int argc, char **argv) {
+-  brokenFunction(argc);
+-  int x = readBadGlobal();
+-  externalBrokenFunction(argc);
+-  return 0;
+-}
+diff -urN llvm-3.3.src.org/projects/compiler-rt/lib/asan/lit_tests/deep_stack_uaf.cc llvm-3.3.src/projects/compiler-rt/lib/asan/lit_tests/deep_stack_uaf.cc
+--- llvm-3.3.src.org/projects/compiler-rt/lib/asan/lit_tests/deep_stack_uaf.cc	2012-12-21 09:53:59.000000000 +0100
++++ llvm-3.3.src/projects/compiler-rt/lib/asan/lit_tests/deep_stack_uaf.cc	1970-01-01 01:00:00.000000000 +0100
+@@ -1,36 +0,0 @@
+-// Check that we can store lots of stack frames if asked to.
+-
+-// RUN: %clangxx_asan -m64 -O0 %s -o %t 2>&1
+-// RUN: ASAN_OPTIONS=malloc_context_size=120:redzone=512 %t 2>&1 | \
+-// RUN: %symbolize | FileCheck %s
+-
+-// RUN: %clangxx_asan -m32 -O0 %s -o %t 2>&1
+-// RUN: ASAN_OPTIONS=malloc_context_size=120:redzone=512 %t 2>&1 | \
+-// RUN: %symbolize | FileCheck %s
+-#include <stdlib.h>
+-#include <stdio.h>
+-
+-template <int depth>
+-struct DeepFree {
+-  static void free(char *x) {
+-    DeepFree<depth - 1>::free(x);
+-  }
+-};
+-
+-template<>
+-struct DeepFree<0> {
+-  static void free(char *x) {
+-    ::free(x);
+-  }
+-};
+-
+-int main() {
+-  char *x = (char*)malloc(10);
+-  // deep_free(x);
+-  DeepFree<200>::free(x);
+-  return x[5];
+-  // CHECK: {{.*ERROR: AddressSanitizer: heap-use-after-free on address}}
+-  // CHECK: DeepFree<36>
+-  // CHECK: DeepFree<98>
+-  // CHECK: DeepFree<115>
+-}
+diff -urN llvm-3.3.src.org/projects/compiler-rt/lib/asan/lit_tests/deep_tail_call.cc llvm-3.3.src/projects/compiler-rt/lib/asan/lit_tests/deep_tail_call.cc
+--- llvm-3.3.src.org/projects/compiler-rt/lib/asan/lit_tests/deep_tail_call.cc	2012-10-15 15:04:58.000000000 +0200
++++ llvm-3.3.src/projects/compiler-rt/lib/asan/lit_tests/deep_tail_call.cc	1970-01-01 01:00:00.000000000 +0100
+@@ -1,24 +0,0 @@
+-// RUN: %clangxx_asan -m64 -O0 %s -o %t && %t 2>&1 | %symbolize | FileCheck %s
+-// RUN: %clangxx_asan -m64 -O1 %s -o %t && %t 2>&1 | %symbolize | FileCheck %s
+-// RUN: %clangxx_asan -m64 -O2 %s -o %t && %t 2>&1 | %symbolize | FileCheck %s
+-// RUN: %clangxx_asan -m64 -O3 %s -o %t && %t 2>&1 | %symbolize | FileCheck %s
+-// RUN: %clangxx_asan -m32 -O0 %s -o %t && %t 2>&1 | %symbolize | FileCheck %s
+-// RUN: %clangxx_asan -m32 -O1 %s -o %t && %t 2>&1 | %symbolize | FileCheck %s
+-// RUN: %clangxx_asan -m32 -O2 %s -o %t && %t 2>&1 | %symbolize | FileCheck %s
+-// RUN: %clangxx_asan -m32 -O3 %s -o %t && %t 2>&1 | %symbolize | FileCheck %s
+-
+-// CHECK: AddressSanitizer: global-buffer-overflow
+-int global[10];
+-// CHECK: {{#0.*call4}}
+-void __attribute__((noinline)) call4(int i) { global[i+10]++; }
+-// CHECK: {{#1.*call3}}
+-void __attribute__((noinline)) call3(int i) { call4(i); }
+-// CHECK: {{#2.*call2}}
+-void __attribute__((noinline)) call2(int i) { call3(i); }
+-// CHECK: {{#3.*call1}}
+-void __attribute__((noinline)) call1(int i) { call2(i); }
+-// CHECK: {{#4.*main}}
+-int main(int argc, char **argv) {
+-  call1(argc);
+-  return global[0];
+-}
+diff -urN llvm-3.3.src.org/projects/compiler-rt/lib/asan/lit_tests/deep_thread_stack.cc llvm-3.3.src/projects/compiler-rt/lib/asan/lit_tests/deep_thread_stack.cc
+--- llvm-3.3.src.org/projects/compiler-rt/lib/asan/lit_tests/deep_thread_stack.cc	2012-10-15 15:04:58.000000000 +0200
++++ llvm-3.3.src/projects/compiler-rt/lib/asan/lit_tests/deep_thread_stack.cc	1970-01-01 01:00:00.000000000 +0100
+@@ -1,61 +0,0 @@
+-// RUN: %clangxx_asan -m64 -O0 %s -o %t && %t 2>&1 | %symbolize | FileCheck %s
+-// RUN: %clangxx_asan -m64 -O1 %s -o %t && %t 2>&1 | %symbolize | FileCheck %s
+-// RUN: %clangxx_asan -m64 -O2 %s -o %t && %t 2>&1 | %symbolize | FileCheck %s
+-// RUN: %clangxx_asan -m64 -O3 %s -o %t && %t 2>&1 | %symbolize | FileCheck %s
+-// RUN: %clangxx_asan -m32 -O0 %s -o %t && %t 2>&1 | %symbolize | FileCheck %s
+-// RUN: %clangxx_asan -m32 -O1 %s -o %t && %t 2>&1 | %symbolize | FileCheck %s
+-// RUN: %clangxx_asan -m32 -O2 %s -o %t && %t 2>&1 | %symbolize | FileCheck %s
+-// RUN: %clangxx_asan -m32 -O3 %s -o %t && %t 2>&1 | %symbolize | FileCheck %s
+-
+-#include <pthread.h>
+-
+-int *x;
+-
+-void *AllocThread(void *arg) {
+-  x = new int;
+-  *x = 42;
+-  return NULL;
+-}
+-
+-void *FreeThread(void *arg) {
+-  delete x;
+-  return NULL;
+-}
+-
+-void *AccessThread(void *arg) {
+-  *x = 43;  // BOOM
+-  return NULL;
+-}
+-
+-typedef void* (*callback_type)(void* arg);
+-
+-void *RunnerThread(void *function) {
+-  pthread_t thread;
+-  pthread_create(&thread, NULL, (callback_type)function, NULL);
+-  pthread_join(thread, NULL);
+-  return NULL;
+-}
+-
+-void RunThread(callback_type function) {
+-  pthread_t runner;
+-  pthread_create(&runner, NULL, RunnerThread, (void*)function);
+-  pthread_join(runner, NULL);
+-}
+-
+-int main(int argc, char *argv[]) {
+-  RunThread(AllocThread);
+-  RunThread(FreeThread);
+-  RunThread(AccessThread);
+-  return (x != 0);
+-}
+-
+-// CHECK: AddressSanitizer: heap-use-after-free
+-// CHECK: WRITE of size 4 at 0x{{.*}} thread T[[ACCESS_THREAD:[0-9]+]]
+-// CHECK: freed by thread T[[FREE_THREAD:[0-9]+]] here:
+-// CHECK: previously allocated by thread T[[ALLOC_THREAD:[0-9]+]] here:
+-// CHECK: Thread T[[ACCESS_THREAD]] created by T[[ACCESS_RUNNER:[0-9]+]] here:
+-// CHECK: Thread T[[ACCESS_RUNNER]] created by T0 here:
+-// CHECK: Thread T[[FREE_THREAD]] created by T[[FREE_RUNNER:[0-9]+]] here:
+-// CHECK: Thread T[[FREE_RUNNER]] created by T0 here:
+-// CHECK: Thread T[[ALLOC_THREAD]] created by T[[ALLOC_RUNNER:[0-9]+]] here:
+-// CHECK: Thread T[[ALLOC_RUNNER]] created by T0 here:
+diff -urN llvm-3.3.src.org/projects/compiler-rt/lib/asan/lit_tests/dlclose-test.cc llvm-3.3.src/projects/compiler-rt/lib/asan/lit_tests/dlclose-test.cc
+--- llvm-3.3.src.org/projects/compiler-rt/lib/asan/lit_tests/dlclose-test.cc	2012-08-15 13:26:57.000000000 +0200
++++ llvm-3.3.src/projects/compiler-rt/lib/asan/lit_tests/dlclose-test.cc	1970-01-01 01:00:00.000000000 +0100
+@@ -1,88 +0,0 @@
+-// Regression test for
+-// http://code.google.com/p/address-sanitizer/issues/detail?id=19
+-// Bug description:
+-// 1. application dlopens foo.so
+-// 2. asan registers all globals from foo.so
+-// 3. application dlcloses foo.so
+-// 4. application mmaps some memory to the location where foo.so was before
+-// 5. application starts using this mmaped memory, but asan still thinks there
+-// are globals.
+-// 6. BOOM
+-
+-// RUN: %clangxx_asan -m64 -O0 %p/SharedLibs/dlclose-test-so.cc \
+-// RUN:     -fPIC -shared -o %t-so.so
+-// RUN: %clangxx_asan -m64 -O0 %s -o %t && %t 2>&1 | FileCheck %s
+-// RUN: %clangxx_asan -m64 -O1 %p/SharedLibs/dlclose-test-so.cc \
+-// RUN:     -fPIC -shared -o %t-so.so
+-// RUN: %clangxx_asan -m64 -O1 %s -o %t && %t 2>&1 | FileCheck %s
+-// RUN: %clangxx_asan -m64 -O2 %p/SharedLibs/dlclose-test-so.cc \
+-// RUN:     -fPIC -shared -o %t-so.so
+-// RUN: %clangxx_asan -m64 -O2 %s -o %t && %t 2>&1 | FileCheck %s
+-// RUN: %clangxx_asan -m64 -O3 %p/SharedLibs/dlclose-test-so.cc \
+-// RUN:     -fPIC -shared -o %t-so.so
+-// RUN: %clangxx_asan -m64 -O3 %s -o %t && %t 2>&1 | FileCheck %s
+-// RUN: %clangxx_asan -m32 -O0 %p/SharedLibs/dlclose-test-so.cc \
+-// RUN:     -fPIC -shared -o %t-so.so
+-// RUN: %clangxx_asan -m32 -O0 %s -o %t && %t 2>&1 | FileCheck %s
+-// RUN: %clangxx_asan -m32 -O1 %p/SharedLibs/dlclose-test-so.cc \
+-// RUN:     -fPIC -shared -o %t-so.so
+-// RUN: %clangxx_asan -m32 -O1 %s -o %t && %t 2>&1 | FileCheck %s
+-// RUN: %clangxx_asan -m32 -O2 %p/SharedLibs/dlclose-test-so.cc \
+-// RUN:     -fPIC -shared -o %t-so.so
+-// RUN: %clangxx_asan -m32 -O2 %s -o %t && %t 2>&1 | FileCheck %s
+-// RUN: %clangxx_asan -m32 -O3 %p/SharedLibs/dlclose-test-so.cc \
+-// RUN:     -fPIC -shared -o %t-so.so
+-// RUN: %clangxx_asan -m32 -O3 %s -o %t && %t 2>&1 | FileCheck %s
+-
+-#include <assert.h>
+-#include <dlfcn.h>
+-#include <stdio.h>
+-#include <string.h>
+-#include <sys/mman.h>
+-
+-#include <string>
+-
+-using std::string;
+-
+-static const int kPageSize = 4096;
+-
+-typedef int *(fun_t)();
+-
+-int main(int argc, char *argv[]) {
+-  string path = string(argv[0]) + "-so.so";
+-  printf("opening %s ... \n", path.c_str());
+-  void *lib = dlopen(path.c_str(), RTLD_NOW);
+-  if (!lib) {
+-    printf("error in dlopen(): %s\n", dlerror());
+-    return 1;
+-  }
+-  fun_t *get = (fun_t*)dlsym(lib, "get_address_of_static_var");
+-  if (!get) {
+-    printf("failed dlsym\n");
+-    return 1;
+-  }
+-  int *addr = get();
+-  assert(((size_t)addr % 32) == 0);  // should be 32-byte aligned.
+-  printf("addr: %p\n", addr);
+-  addr[0] = 1;  // make sure we can write there.
+-
+-  // Now dlclose the shared library.
+-  printf("attempting to dlclose\n");
+-  if (dlclose(lib)) {
+-    printf("failed to dlclose\n");
+-    return 1;
+-  }
+-  // Now, the page where 'addr' is unmapped. Map it.
+-  size_t page_beg = ((size_t)addr) & ~(kPageSize - 1);
+-  void *res = mmap((void*)(page_beg), kPageSize,
+-                   PROT_READ | PROT_WRITE,
+-                   MAP_PRIVATE | MAP_ANON | MAP_FIXED | MAP_NORESERVE, 0, 0);
+-  if (res == (char*)-1L) {
+-    printf("failed to mmap\n");
+-    return 1;
+-  }
+-  addr[1] = 2;  // BOOM (if the bug is not fixed).
+-  printf("PASS\n");
+-  // CHECK: PASS
+-  return 0;
+-}
+diff -urN llvm-3.3.src.org/projects/compiler-rt/lib/asan/lit_tests/global-overflow.cc llvm-3.3.src/projects/compiler-rt/lib/asan/lit_tests/global-overflow.cc
+--- llvm-3.3.src.org/projects/compiler-rt/lib/asan/lit_tests/global-overflow.cc	2012-12-28 09:38:09.000000000 +0100
++++ llvm-3.3.src/projects/compiler-rt/lib/asan/lit_tests/global-overflow.cc	1970-01-01 01:00:00.000000000 +0100
+@@ -1,25 +0,0 @@
+-// RUN: %clangxx_asan -m64 -O0 %s -o %t && %t 2>&1 | %symbolize | FileCheck %s
+-// RUN: %clangxx_asan -m64 -O1 %s -o %t && %t 2>&1 | %symbolize | FileCheck %s
+-// RUN: %clangxx_asan -m64 -O2 %s -o %t && %t 2>&1 | %symbolize | FileCheck %s
+-// RUN: %clangxx_asan -m64 -O3 %s -o %t && %t 2>&1 | %symbolize | FileCheck %s
+-// RUN: %clangxx_asan -m32 -O0 %s -o %t && %t 2>&1 | %symbolize | FileCheck %s
+-// RUN: %clangxx_asan -m32 -O1 %s -o %t && %t 2>&1 | %symbolize | FileCheck %s
+-// RUN: %clangxx_asan -m32 -O2 %s -o %t && %t 2>&1 | %symbolize | FileCheck %s
+-// RUN: %clangxx_asan -m32 -O3 %s -o %t && %t 2>&1 | %symbolize | FileCheck %s
+-
+-#include <string.h>
+-int main(int argc, char **argv) {
+-  static char XXX[10];
+-  static char YYY[10];
+-  static char ZZZ[10];
+-  memset(XXX, 0, 10);
+-  memset(YYY, 0, 10);
+-  memset(ZZZ, 0, 10);
+-  int res = YYY[argc * 10];  // BOOOM
+-  // CHECK: {{READ of size 1 at 0x.* thread T0}}
+-  // CHECK: {{    #0 0x.* in _?main .*global-overflow.cc:}}[[@LINE-2]]
+-  // CHECK: {{0x.* is located 0 bytes to the right of global variable}}
+-  // CHECK:   {{.*YYY.* of size 10}}
+-  res += XXX[argc] + ZZZ[argc];
+-  return res;
+-}
+diff -urN llvm-3.3.src.org/projects/compiler-rt/lib/asan/lit_tests/heap-overflow.cc llvm-3.3.src/projects/compiler-rt/lib/asan/lit_tests/heap-overflow.cc
+--- llvm-3.3.src.org/projects/compiler-rt/lib/asan/lit_tests/heap-overflow.cc	2013-01-22 10:14:54.000000000 +0100
++++ llvm-3.3.src/projects/compiler-rt/lib/asan/lit_tests/heap-overflow.cc	1970-01-01 01:00:00.000000000 +0100
+@@ -1,36 +0,0 @@
+-// RUN: %clangxx_asan -m64 -O0 %s -o %t && %t 2>&1 | %symbolize > %t.out
+-// RUN: FileCheck %s < %t.out && FileCheck %s --check-prefix=CHECK-%os < %t.out
+-// RUN: %clangxx_asan -m64 -O1 %s -o %t && %t 2>&1 | %symbolize > %t.out
+-// RUN: FileCheck %s < %t.out && FileCheck %s --check-prefix=CHECK-%os < %t.out
+-// RUN: %clangxx_asan -m64 -O2 %s -o %t && %t 2>&1 | %symbolize > %t.out
+-// RUN: FileCheck %s < %t.out && FileCheck %s --check-prefix=CHECK-%os < %t.out
+-// RUN: %clangxx_asan -m64 -O3 %s -o %t && %t 2>&1 | %symbolize > %t.out
+-// RUN: FileCheck %s < %t.out && FileCheck %s --check-prefix=CHECK-%os < %t.out
+-// RUN: %clangxx_asan -m32 -O0 %s -o %t && %t 2>&1 | %symbolize > %t.out
+-// RUN: FileCheck %s < %t.out && FileCheck %s --check-prefix=CHECK-%os < %t.out
+-// RUN: %clangxx_asan -m32 -O1 %s -o %t && %t 2>&1 | %symbolize > %t.out
+-// RUN: FileCheck %s < %t.out && FileCheck %s --check-prefix=CHECK-%os < %t.out
+-// RUN: %clangxx_asan -m32 -O2 %s -o %t && %t 2>&1 | %symbolize > %t.out
+-// RUN: FileCheck %s < %t.out && FileCheck %s --check-prefix=CHECK-%os < %t.out
+-// RUN: %clangxx_asan -m32 -O3 %s -o %t && %t 2>&1 | %symbolize > %t.out
+-// RUN: FileCheck %s < %t.out && FileCheck %s --check-prefix=CHECK-%os < %t.out
+-
+-#include <stdlib.h>
+-#include <string.h>
+-int main(int argc, char **argv) {
+-  char *x = (char*)malloc(10 * sizeof(char));
+-  memset(x, 0, 10);
+-  int res = x[argc * 10];  // BOOOM
+-  // CHECK: {{READ of size 1 at 0x.* thread T0}}
+-  // CHECK: {{    #0 0x.* in _?main .*heap-overflow.cc:}}[[@LINE-2]]
+-  // CHECK: {{0x.* is located 0 bytes to the right of 10-byte region}}
+-  // CHECK: {{allocated by thread T0 here:}}
+-
+-  // CHECK-Linux: {{    #0 0x.* in .*malloc}}
+-  // CHECK-Linux: {{    #1 0x.* in main .*heap-overflow.cc:21}}
+-
+-  // CHECK-Darwin: {{    #0 0x.* in _?wrap_malloc.*}}
+-  // CHECK-Darwin: {{    #1 0x.* in _?main .*heap-overflow.cc:21}}
+-  free(x);
+-  return res;
+-}
+diff -urN llvm-3.3.src.org/projects/compiler-rt/lib/asan/lit_tests/initialization-blacklist.cc llvm-3.3.src/projects/compiler-rt/lib/asan/lit_tests/initialization-blacklist.cc
+--- llvm-3.3.src.org/projects/compiler-rt/lib/asan/lit_tests/initialization-blacklist.cc	2013-04-11 15:21:41.000000000 +0200
++++ llvm-3.3.src/projects/compiler-rt/lib/asan/lit_tests/initialization-blacklist.cc	1970-01-01 01:00:00.000000000 +0100
+@@ -1,47 +0,0 @@
+-// Test for blacklist functionality of initialization-order checker.
+-
+-// RUN: %clangxx_asan -m64 -O0 %s %p/Helpers/initialization-blacklist-extra.cc\
+-// RUN:   %p/Helpers/initialization-blacklist-extra2.cc \
+-// RUN:   -fsanitize-blacklist=%p/Helpers/initialization-blacklist.txt \
+-// RUN:   -fsanitize=init-order -o %t
+-// RUN: ASAN_OPTIONS=check_initialization_order=true %t 2>&1
+-// RUN: %clangxx_asan -m64 -O1 %s %p/Helpers/initialization-blacklist-extra.cc\
+-// RUN:   %p/Helpers/initialization-blacklist-extra2.cc \
+-// RUN:   -fsanitize-blacklist=%p/Helpers/initialization-blacklist.txt \
+-// RUN:   -fsanitize=init-order -o %t
+-// RUN: ASAN_OPTIONS=check_initialization_order=true %t 2>&1
+-// RUN: %clangxx_asan -m64 -O2 %s %p/Helpers/initialization-blacklist-extra.cc\
+-// RUN:   %p/Helpers/initialization-blacklist-extra2.cc \
+-// RUN:   -fsanitize-blacklist=%p/Helpers/initialization-blacklist.txt \
+-// RUN:   -fsanitize=init-order -o %t
+-// RUN: ASAN_OPTIONS=check_initialization_order=true %t 2>&1
+-// RUN: %clangxx_asan -m32 -O0 %s %p/Helpers/initialization-blacklist-extra.cc\
+-// RUN:   %p/Helpers/initialization-blacklist-extra2.cc \
+-// RUN:   -fsanitize-blacklist=%p/Helpers/initialization-blacklist.txt \
+-// RUN:   -fsanitize=init-order -o %t
+-// RUN: ASAN_OPTIONS=check_initialization_order=true %t 2>&1
+-// RUN: %clangxx_asan -m32 -O1 %s %p/Helpers/initialization-blacklist-extra.cc\
+-// RUN:   %p/Helpers/initialization-blacklist-extra2.cc \
+-// RUN:   -fsanitize-blacklist=%p/Helpers/initialization-blacklist.txt \
+-// RUN:   -fsanitize=init-order -o %t
+-// RUN: ASAN_OPTIONS=check_initialization_order=true %t 2>&1
+-// RUN: %clangxx_asan -m32 -O2 %s %p/Helpers/initialization-blacklist-extra.cc\
+-// RUN:   %p/Helpers/initialization-blacklist-extra2.cc \
+-// RUN:   -fsanitize-blacklist=%p/Helpers/initialization-blacklist.txt \
+-// RUN:   -fsanitize=init-order -o %t
+-// RUN: ASAN_OPTIONS=check_initialization_order=true %t 2>&1
+-
+-// Function is defined in another TU.
+-int readBadGlobal();
+-int x = readBadGlobal();  // init-order bug.
+-
+-// Function is defined in another TU.
+-int accessBadObject();
+-int y = accessBadObject();  // init-order bug.
+-
+-int readBadSrcGlobal();
+-int z = readBadSrcGlobal();  // init-order bug.
+-
+-int main(int argc, char **argv) {
+-  return argc + x + y + z - 1;
+-}
+diff -urN llvm-3.3.src.org/projects/compiler-rt/lib/asan/lit_tests/initialization-bug.cc llvm-3.3.src/projects/compiler-rt/lib/asan/lit_tests/initialization-bug.cc
+--- llvm-3.3.src.org/projects/compiler-rt/lib/asan/lit_tests/initialization-bug.cc	2013-03-14 13:43:03.000000000 +0100
++++ llvm-3.3.src/projects/compiler-rt/lib/asan/lit_tests/initialization-bug.cc	1970-01-01 01:00:00.000000000 +0100
+@@ -1,46 +0,0 @@
+-// Test to make sure basic initialization order errors are caught.
+-
+-// RUN: %clangxx_asan -m64 -O0 %s %p/Helpers/initialization-bug-extra2.cc -o %t
+-// RUN: ASAN_OPTIONS=check_initialization_order=true %t 2>&1 \
+-// RUN:    | %symbolize | FileCheck %s
+-// RUN: %clangxx_asan -m32 -O0 %s %p/Helpers/initialization-bug-extra2.cc -o %t
+-// RUN: ASAN_OPTIONS=check_initialization_order=true %t 2>&1 \
+-// RUN:     | %symbolize | FileCheck %s
+-
+-// Do not test with optimization -- the error may be optimized away.
+-
+-#include <cstdio>
+-
+-// The structure of the test is:
+-// "x", "y", "z" are dynamically initialized globals.
+-// Value of "x" depends on "y", value of "y" depends on "z".
+-// "x" and "z" are defined in this TU, "y" is defined in another one.
+-// Thus we shoud stably report initialization order fiasco independently of
+-// the translation unit order.
+-
+-int initZ() {
+-  return 5;
+-}
+-int z = initZ();
+-
+-// 'y' is a dynamically initialized global residing in a different TU.  This
+-// dynamic initializer will read the value of 'y' before main starts.  The
+-// result is undefined behavior, which should be caught by initialization order
+-// checking.
+-extern int y;
+-int __attribute__((noinline)) initX() {
+-  return y + 1;
+-  // CHECK: {{AddressSanitizer: initialization-order-fiasco}}
+-  // CHECK: {{READ of size .* at 0x.* thread T0}}
+-  // CHECK: {{0x.* is located 0 bytes inside of global variable .*(y|z).*}}
+-}
+-
+-// This initializer begins our initialization order problems.
+-static int x = initX();
+-
+-int main() {
+-  // ASan should have caused an exit before main runs.
+-  printf("PASS\n");
+-  // CHECK-NOT: PASS
+-  return 0;
+-}
+diff -urN llvm-3.3.src.org/projects/compiler-rt/lib/asan/lit_tests/initialization-constexpr.cc llvm-3.3.src/projects/compiler-rt/lib/asan/lit_tests/initialization-constexpr.cc
+--- llvm-3.3.src.org/projects/compiler-rt/lib/asan/lit_tests/initialization-constexpr.cc	2013-04-05 09:51:49.000000000 +0200
++++ llvm-3.3.src/projects/compiler-rt/lib/asan/lit_tests/initialization-constexpr.cc	1970-01-01 01:00:00.000000000 +0100
+@@ -1,43 +0,0 @@
+-// Constexpr:
+-// We need to check that a global variable initialized with a constexpr
+-// constructor can be accessed during dynamic initialization (as a constexpr
+-// constructor implies that it was initialized during constant initialization,
+-// not dynamic initialization).
+-
+-// RUN: %clangxx_asan -m64 -O0 %s %p/Helpers/initialization-constexpr-extra.cc\
+-// RUN:   --std=c++11 -fsanitize=init-order -o %t
+-// RUN: ASAN_OPTIONS=check_initialization_order=true %t 2>&1
+-// RUN: %clangxx_asan -m64 -O1 %s %p/Helpers/initialization-constexpr-extra.cc\
+-// RUN:   --std=c++11 -fsanitize=init-order -o %t
+-// RUN: ASAN_OPTIONS=check_initialization_order=true %t 2>&1
+-// RUN: %clangxx_asan -m64 -O2 %s %p/Helpers/initialization-constexpr-extra.cc\
+-// RUN:   --std=c++11 -fsanitize=init-order -o %t
+-// RUN: ASAN_OPTIONS=check_initialization_order=true %t 2>&1
+-// RUN: %clangxx_asan -m64 -O3 %s %p/Helpers/initialization-constexpr-extra.cc\
+-// RUN:   --std=c++11 -fsanitize=init-order -o %t
+-// RUN: ASAN_OPTIONS=check_initialization_order=true %t 2>&1
+-// RUN: %clangxx_asan -m32 -O0 %s %p/Helpers/initialization-constexpr-extra.cc\
+-// RUN:   --std=c++11 -fsanitize=init-order -o %t
+-// RUN: ASAN_OPTIONS=check_initialization_order=true %t 2>&1
+-// RUN: %clangxx_asan -m32 -O1 %s %p/Helpers/initialization-constexpr-extra.cc\
+-// RUN:   --std=c++11 -fsanitize=init-order -o %t
+-// RUN: ASAN_OPTIONS=check_initialization_order=true %t 2>&1
+-// RUN: %clangxx_asan -m32 -O2 %s %p/Helpers/initialization-constexpr-extra.cc\
+-// RUN:   --std=c++11 -fsanitize=init-order -o %t
+-// RUN: ASAN_OPTIONS=check_initialization_order=true %t 2>&1
+-// RUN: %clangxx_asan -m32 -O3 %s %p/Helpers/initialization-constexpr-extra.cc\
+-// RUN:   --std=c++11 -fsanitize=init-order -o %t
+-// RUN: ASAN_OPTIONS=check_initialization_order=true %t 2>&1
+-
+-class Integer {
+-  private:
+-  int value;
+-
+-  public:
+-  constexpr Integer(int x = 0) : value(x) {}
+-  int getValue() {return value;}
+-};
+-Integer coolestInteger(42);
+-int getCoolestInteger() { return coolestInteger.getValue(); }
+-
+-int main() { return 0; }
+diff -urN llvm-3.3.src.org/projects/compiler-rt/lib/asan/lit_tests/initialization-nobug.cc llvm-3.3.src/projects/compiler-rt/lib/asan/lit_tests/initialization-nobug.cc
+--- llvm-3.3.src.org/projects/compiler-rt/lib/asan/lit_tests/initialization-nobug.cc	2013-04-05 09:51:49.000000000 +0200
++++ llvm-3.3.src/projects/compiler-rt/lib/asan/lit_tests/initialization-nobug.cc	1970-01-01 01:00:00.000000000 +0100
+@@ -1,56 +0,0 @@
+-// A collection of various initializers which shouldn't trip up initialization
+-// order checking.  If successful, this will just return 0.
+-
+-// RUN: %clangxx_asan -m64 -O0 %s %p/Helpers/initialization-nobug-extra.cc -fsanitize=init-order -o %t
+-// RUN: ASAN_OPTIONS=check_initialization_order=true %t 2>&1
+-// RUN: %clangxx_asan -m64 -O1 %s %p/Helpers/initialization-nobug-extra.cc -fsanitize=init-order -o %t
+-// RUN: ASAN_OPTIONS=check_initialization_order=true %t 2>&1
+-// RUN: %clangxx_asan -m64 -O2 %s %p/Helpers/initialization-nobug-extra.cc -fsanitize=init-order -o %t
+-// RUN: ASAN_OPTIONS=check_initialization_order=true %t 2>&1
+-// RUN: %clangxx_asan -m64 -O3 %s %p/Helpers/initialization-nobug-extra.cc -fsanitize=init-order -o %t
+-// RUN: ASAN_OPTIONS=check_initialization_order=true %t 2>&1
+-// RUN: %clangxx_asan -m32 -O0 %s %p/Helpers/initialization-nobug-extra.cc -fsanitize=init-order -o %t
+-// RUN: ASAN_OPTIONS=check_initialization_order=true %t 2>&1
+-// RUN: %clangxx_asan -m32 -O1 %s %p/Helpers/initialization-nobug-extra.cc -fsanitize=init-order -o %t
+-// RUN: ASAN_OPTIONS=check_initialization_order=true %t 2>&1
+-// RUN: %clangxx_asan -m32 -O2 %s %p/Helpers/initialization-nobug-extra.cc -fsanitize=init-order -o %t
+-// RUN: ASAN_OPTIONS=check_initialization_order=true %t 2>&1
+-// RUN: %clangxx_asan -m32 -O3 %s %p/Helpers/initialization-nobug-extra.cc -fsanitize=init-order -o %t
+-// RUN: ASAN_OPTIONS=check_initialization_order=true %t 2>&1
+-
+-// Simple access:
+-// Make sure that accessing a global in the same TU is safe
+-
+-bool condition = true;
+-int initializeSameTU() {
+-  return condition ? 0x2a : 052;
+-}
+-int sameTU = initializeSameTU();
+-
+-// Linker initialized:
+-// Check that access to linker initialized globals originating from a different
+-// TU's initializer is safe.
+-
+-int A = (1 << 1) + (1 << 3) + (1 << 5), B;
+-int getAB() {
+-  return A * B;
+-}
+-
+-// Function local statics:
+-// Check that access to function local statics originating from a different
+-// TU's initializer is safe.
+-
+-int countCalls() {
+-  static int calls;
+-  return ++calls;
+-}
+-
+-// Trivial constructor, non-trivial destructor.
+-struct StructWithDtor {
+-  ~StructWithDtor() { }
+-  int value;
+-};
+-StructWithDtor struct_with_dtor;
+-int getStructWithDtorValue() { return struct_with_dtor.value; }
+-
+-int main() { return 0; }
+diff -urN llvm-3.3.src.org/projects/compiler-rt/lib/asan/lit_tests/large_func_test.cc llvm-3.3.src/projects/compiler-rt/lib/asan/lit_tests/large_func_test.cc
+--- llvm-3.3.src.org/projects/compiler-rt/lib/asan/lit_tests/large_func_test.cc	2013-02-21 17:54:09.000000000 +0100
++++ llvm-3.3.src/projects/compiler-rt/lib/asan/lit_tests/large_func_test.cc	1970-01-01 01:00:00.000000000 +0100
+@@ -1,63 +0,0 @@
+-// RUN: %clangxx_asan -m64 -O0 %s -o %t && %t 2>&1 | %symbolize > %t.out
+-// RUN: FileCheck %s < %t.out && FileCheck %s --check-prefix=CHECK-%os < %t.out
+-// RUN: %clangxx_asan -m64 -O1 %s -o %t && %t 2>&1 | %symbolize > %t.out
+-// RUN: FileCheck %s < %t.out && FileCheck %s --check-prefix=CHECK-%os < %t.out
+-// RUN: %clangxx_asan -m64 -O2 %s -o %t && %t 2>&1 | %symbolize > %t.out
+-// RUN: FileCheck %s < %t.out && FileCheck %s --check-prefix=CHECK-%os < %t.out
+-// RUN: %clangxx_asan -m64 -O3 %s -o %t && %t 2>&1 | %symbolize > %t.out
+-// RUN: FileCheck %s < %t.out && FileCheck %s --check-prefix=CHECK-%os < %t.out
+-// RUN: %clangxx_asan -m32 -O0 %s -o %t && %t 2>&1 | %symbolize > %t.out
+-// RUN: FileCheck %s < %t.out && FileCheck %s --check-prefix=CHECK-%os < %t.out
+-// RUN: %clangxx_asan -m32 -O1 %s -o %t && %t 2>&1 | %symbolize > %t.out
+-// RUN: FileCheck %s < %t.out && FileCheck %s --check-prefix=CHECK-%os < %t.out
+-// RUN: %clangxx_asan -m32 -O2 %s -o %t && %t 2>&1 | %symbolize > %t.out
+-// RUN: FileCheck %s < %t.out && FileCheck %s --check-prefix=CHECK-%os < %t.out
+-// RUN: %clangxx_asan -m32 -O3 %s -o %t && %t 2>&1 | %symbolize > %t.out
+-// RUN: FileCheck %s < %t.out && FileCheck %s --check-prefix=CHECK-%os < %t.out
+-
+-#include <stdlib.h>
+-__attribute__((noinline))
+-static void LargeFunction(int *x, int zero) {
+-  x[0]++;
+-  x[1]++;
+-  x[2]++;
+-  x[3]++;
+-  x[4]++;
+-  x[5]++;
+-  x[6]++;
+-  x[7]++;
+-  x[8]++;
+-  x[9]++;
+-
+-  // CHECK: {{.*ERROR: AddressSanitizer: heap-buffer-overflow on address}}
+-  // CHECK:   {{0x.* at pc 0x.* bp 0x.* sp 0x.*}}
+-  // CHECK: {{READ of size 4 at 0x.* thread T0}}
+-  x[zero + 103]++;  // we should report this exact line
+-  // atos incorrectly extracts the symbol name for the static functions on
+-  // Darwin.
+-  // CHECK-Linux:  {{#0 0x.* in LargeFunction.*large_func_test.cc:}}[[@LINE-3]]
+-  // CHECK-Darwin: {{#0 0x.* in .*LargeFunction.*large_func_test.cc}}:[[@LINE-4]]
+-
+-  x[10]++;
+-  x[11]++;
+-  x[12]++;
+-  x[13]++;
+-  x[14]++;
+-  x[15]++;
+-  x[16]++;
+-  x[17]++;
+-  x[18]++;
+-  x[19]++;
+-}
+-
+-int main(int argc, char **argv) {
+-  int *x = new int[100];
+-  LargeFunction(x, argc - 1);
+-  // CHECK: {{    #1 0x.* in _?main .*large_func_test.cc:}}[[@LINE-1]]
+-  // CHECK: {{0x.* is located 12 bytes to the right of 400-byte region}}
+-  // CHECK: {{allocated by thread T0 here:}}
+-  // CHECK-Linux: {{    #0 0x.* in operator new.*}}
+-  // CHECK-Darwin: {{    #0 0x.* in .*_Zna.*}}
+-  // CHECK: {{    #1 0x.* in _?main .*large_func_test.cc:}}[[@LINE-7]]
+-  delete x;
+-}
+diff -urN llvm-3.3.src.org/projects/compiler-rt/lib/asan/lit_tests/Linux/clone_test.cc llvm-3.3.src/projects/compiler-rt/lib/asan/lit_tests/Linux/clone_test.cc
+--- llvm-3.3.src.org/projects/compiler-rt/lib/asan/lit_tests/Linux/clone_test.cc	2012-08-29 17:48:14.000000000 +0200
++++ llvm-3.3.src/projects/compiler-rt/lib/asan/lit_tests/Linux/clone_test.cc	1970-01-01 01:00:00.000000000 +0100
+@@ -1,48 +0,0 @@
+-// Regression test for:
+-// http://code.google.com/p/address-sanitizer/issues/detail?id=37
+-
+-// RUN: %clangxx_asan -m64 -O0 %s -o %t && %t | FileCheck %s
+-// RUN: %clangxx_asan -m64 -O1 %s -o %t && %t | FileCheck %s
+-// RUN: %clangxx_asan -m64 -O2 %s -o %t && %t | FileCheck %s
+-// RUN: %clangxx_asan -m64 -O3 %s -o %t && %t | FileCheck %s
+-// RUN: %clangxx_asan -m32 -O0 %s -o %t && %t | FileCheck %s
+-// RUN: %clangxx_asan -m32 -O1 %s -o %t && %t | FileCheck %s
+-// RUN: %clangxx_asan -m32 -O2 %s -o %t && %t | FileCheck %s
+-// RUN: %clangxx_asan -m32 -O3 %s -o %t && %t | FileCheck %s
+-
+-#include <stdio.h>
+-#include <sched.h>
+-#include <sys/syscall.h>
+-#include <sys/types.h>
+-#include <sys/wait.h>
+-#include <unistd.h>
+-
+-int Child(void *arg) {
+-  char x[32] = {0};  // Stack gets poisoned.
+-  printf("Child:  %p\n", x);
+-  _exit(1);  // NoReturn, stack will remain unpoisoned unless we do something.
+-}
+-
+-int main(int argc, char **argv) {
+-  const int kStackSize = 1 << 20;
+-  char child_stack[kStackSize + 1];
+-  char *sp = child_stack + kStackSize;  // Stack grows down.
+-  printf("Parent: %p\n", sp);
+-  pid_t clone_pid = clone(Child, sp, CLONE_FILES | CLONE_VM, NULL, 0, 0, 0);
+-  int status;
+-  pid_t wait_result = waitpid(clone_pid, &status, __WCLONE);
+-  if (wait_result < 0) {
+-    perror("waitpid");
+-    return 0;
+-  }
+-  if (wait_result == clone_pid && WIFEXITED(status)) {
+-    // Make sure the child stack was indeed unpoisoned.
+-    for (int i = 0; i < kStackSize; i++)
+-      child_stack[i] = i;
+-    int ret = child_stack[argc - 1];
+-    printf("PASSED\n");
+-    // CHECK: PASSED
+-    return ret;
+-  }
+-  return 0;
+-}
+diff -urN llvm-3.3.src.org/projects/compiler-rt/lib/asan/lit_tests/Linux/glob.cc llvm-3.3.src/projects/compiler-rt/lib/asan/lit_tests/Linux/glob.cc
+--- llvm-3.3.src.org/projects/compiler-rt/lib/asan/lit_tests/Linux/glob.cc	2013-04-09 13:35:13.000000000 +0200
++++ llvm-3.3.src/projects/compiler-rt/lib/asan/lit_tests/Linux/glob.cc	1970-01-01 01:00:00.000000000 +0100
+@@ -1,30 +0,0 @@
+-// RUN: %clangxx_asan -m64 -O0 %s -o %t && %t %p 2>&1 | FileCheck %s
+-// RUN: %clangxx_asan -m64 -O3 %s -o %t && %t %p 2>&1 | FileCheck %s
+-// RUN: %clangxx_asan -m32 -O0 %s -o %t && %t %p 2>&1 | FileCheck %s
+-// RUN: %clangxx_asan -m32 -O3 %s -o %t && %t %p 2>&1 | FileCheck %s
+-
+-#include <assert.h>
+-#include <glob.h>
+-#include <stdio.h>
+-#include <string.h>
+-#include <errno.h>
+-#include <string>
+-
+-
+-int main(int argc, char *argv[]) {
+-  std::string path = argv[1];
+-  std::string pattern = path + "/glob_test_root/*a";
+-  printf("pattern: %s\n", pattern.c_str());
+-
+-  glob_t globbuf;
+-  int res = glob(pattern.c_str(), 0, 0, &globbuf);
+-
+-  printf("%d %s\n", errno, strerror(errno));
+-  assert(res == 0);
+-  assert(globbuf.gl_pathc == 2);
+-  printf("%zu\n", strlen(globbuf.gl_pathv[0]));
+-  printf("%zu\n", strlen(globbuf.gl_pathv[1]));
+-  printf("PASS\n");
+-  // CHECK: PASS
+-  return 0;
+-}
+diff -urN llvm-3.3.src.org/projects/compiler-rt/lib/asan/lit_tests/Linux/heavy_uar_test.cc llvm-3.3.src/projects/compiler-rt/lib/asan/lit_tests/Linux/heavy_uar_test.cc
+--- llvm-3.3.src.org/projects/compiler-rt/lib/asan/lit_tests/Linux/heavy_uar_test.cc	2013-04-11 20:27:02.000000000 +0200
++++ llvm-3.3.src/projects/compiler-rt/lib/asan/lit_tests/Linux/heavy_uar_test.cc	1970-01-01 01:00:00.000000000 +0100
+@@ -1,55 +0,0 @@
+-// RUN: %clangxx_asan -fsanitize=use-after-return -m64 -O0 %s -o %t && \
+-// RUN:   %t 2>&1 | %symbolize | FileCheck %s
+-// RUN: %clangxx_asan -fsanitize=use-after-return -m64 -O2 %s -o %t && \
+-// RUN:   %t 2>&1 | %symbolize | FileCheck %s
+-// RUN: %clangxx_asan -fsanitize=use-after-return -m32 -O2 %s -o %t && \
+-// RUN:   %t 2>&1 | %symbolize | FileCheck %s
+-
+-#include <stdio.h>
+-#include <string.h>
+-#include <stdlib.h>
+-
+-__attribute__((noinline))
+-char *pretend_to_do_something(char *x) {
+-  __asm__ __volatile__("" : : "r" (x) : "memory");
+-  return x;
+-}
+-
+-__attribute__((noinline))
+-char *LeakStack() {
+-  char x[1024];
+-  memset(x, 0, sizeof(x));
+-  return pretend_to_do_something(x);
+-}
+-
+-template<size_t kFrameSize>
+-__attribute__((noinline))
+-void RecuriveFunctionWithStackFrame(int depth) {
+-  if (depth <= 0) return;
+-  char x[kFrameSize];
+-  x[0] = depth;
+-  pretend_to_do_something(x);
+-  RecuriveFunctionWithStackFrame<kFrameSize>(depth - 1);
+-}
+-
+-int main(int argc, char **argv) {
+-  int n_iter = argc >= 2 ? atoi(argv[1]) : 1000;
+-  int depth  = argc >= 3 ? atoi(argv[2]) : 500;
+-  for (int i = 0; i < n_iter; i++) {
+-    RecuriveFunctionWithStackFrame<10>(depth);
+-    RecuriveFunctionWithStackFrame<100>(depth);
+-    RecuriveFunctionWithStackFrame<500>(depth);
+-    RecuriveFunctionWithStackFrame<1024>(depth);
+-    RecuriveFunctionWithStackFrame<2000>(depth);
+-    RecuriveFunctionWithStackFrame<5000>(depth);
+-    RecuriveFunctionWithStackFrame<10000>(depth);
+-  }
+-  char *stale_stack = LeakStack();
+-  RecuriveFunctionWithStackFrame<1024>(10);
+-  stale_stack[100]++;
+-  // CHECK: ERROR: AddressSanitizer: stack-use-after-return on address
+-  // CHECK: is located in stack of thread T0 at offset 132 in frame
+-  // CHECK:  in LeakStack(){{.*}}heavy_uar_test.cc:
+-  // CHECK: [32, 1056) 'x'
+-  return 0;
+-}
+diff -urN llvm-3.3.src.org/projects/compiler-rt/lib/asan/lit_tests/Linux/interception_failure_test.cc llvm-3.3.src/projects/compiler-rt/lib/asan/lit_tests/Linux/interception_failure_test.cc
+--- llvm-3.3.src.org/projects/compiler-rt/lib/asan/lit_tests/Linux/interception_failure_test.cc	2012-08-15 13:26:57.000000000 +0200
++++ llvm-3.3.src/projects/compiler-rt/lib/asan/lit_tests/Linux/interception_failure_test.cc	1970-01-01 01:00:00.000000000 +0100
+@@ -1,26 +0,0 @@
+-// If user provides his own libc functions, ASan doesn't
+-// intercept these functions.
+-
+-// RUN: %clangxx_asan -m64 -O0 %s -o %t && %t 2>&1 | FileCheck %s
+-// RUN: %clangxx_asan -m64 -O1 %s -o %t && %t 2>&1 | FileCheck %s
+-// RUN: %clangxx_asan -m64 -O2 %s -o %t && %t 2>&1 | FileCheck %s
+-// RUN: %clangxx_asan -m64 -O3 %s -o %t && %t 2>&1 | FileCheck %s
+-// RUN: %clangxx_asan -m32 -O0 %s -o %t && %t 2>&1 | FileCheck %s
+-// RUN: %clangxx_asan -m32 -O1 %s -o %t && %t 2>&1 | FileCheck %s
+-// RUN: %clangxx_asan -m32 -O2 %s -o %t && %t 2>&1 | FileCheck %s
+-// RUN: %clangxx_asan -m32 -O3 %s -o %t && %t 2>&1 | FileCheck %s
+-#include <stdlib.h>
+-#include <stdio.h>
+-
+-extern "C" long strtol(const char *nptr, char **endptr, int base) {
+-  fprintf(stderr, "my_strtol_interceptor\n");
+-  return 0;
+-}
+-
+-int main() {
+-  char *x = (char*)malloc(10 * sizeof(char));
+-  free(x);
+-  return (int)strtol(x, 0, 10);
+-  // CHECK: my_strtol_interceptor
+-  // CHECK-NOT: heap-use-after-free
+-}
+diff -urN llvm-3.3.src.org/projects/compiler-rt/lib/asan/lit_tests/Linux/interception_malloc_test.cc llvm-3.3.src/projects/compiler-rt/lib/asan/lit_tests/Linux/interception_malloc_test.cc
+--- llvm-3.3.src.org/projects/compiler-rt/lib/asan/lit_tests/Linux/interception_malloc_test.cc	2012-08-15 13:26:57.000000000 +0200
++++ llvm-3.3.src/projects/compiler-rt/lib/asan/lit_tests/Linux/interception_malloc_test.cc	1970-01-01 01:00:00.000000000 +0100
+@@ -1,27 +0,0 @@
+-// ASan interceptor can be accessed with __interceptor_ prefix.
+-
+-// RUN: %clangxx_asan -m64 -O0 %s -o %t && %t 2>&1 | FileCheck %s
+-// RUN: %clangxx_asan -m64 -O1 %s -o %t && %t 2>&1 | FileCheck %s
+-// RUN: %clangxx_asan -m64 -O2 %s -o %t && %t 2>&1 | FileCheck %s
+-// RUN: %clangxx_asan -m64 -O3 %s -o %t && %t 2>&1 | FileCheck %s
+-// RUN: %clangxx_asan -m32 -O0 %s -o %t && %t 2>&1 | FileCheck %s
+-// RUN: %clangxx_asan -m32 -O1 %s -o %t && %t 2>&1 | FileCheck %s
+-// RUN: %clangxx_asan -m32 -O2 %s -o %t && %t 2>&1 | FileCheck %s
+-// RUN: %clangxx_asan -m32 -O3 %s -o %t && %t 2>&1 | FileCheck %s
+-#include <stdlib.h>
+-#include <stdio.h>
+-#include <unistd.h>
+-
+-extern "C" void *__interceptor_malloc(size_t size);
+-extern "C" void *malloc(size_t size) {
+-  write(2, "malloc call\n", sizeof("malloc call\n") - 1);
+-  return __interceptor_malloc(size);
+-}
+-
+-int main() {
+-  char *x = (char*)malloc(10 * sizeof(char));
+-  free(x);
+-  return (int)strtol(x, 0, 10);
+-  // CHECK: malloc call
+-  // CHECK: heap-use-after-free
+-}
+diff -urN llvm-3.3.src.org/projects/compiler-rt/lib/asan/lit_tests/Linux/interception_test.cc llvm-3.3.src/projects/compiler-rt/lib/asan/lit_tests/Linux/interception_test.cc
+--- llvm-3.3.src.org/projects/compiler-rt/lib/asan/lit_tests/Linux/interception_test.cc	2012-08-15 13:26:57.000000000 +0200
++++ llvm-3.3.src/projects/compiler-rt/lib/asan/lit_tests/Linux/interception_test.cc	1970-01-01 01:00:00.000000000 +0100
+@@ -1,26 +0,0 @@
+-// ASan interceptor can be accessed with __interceptor_ prefix.
+-
+-// RUN: %clangxx_asan -m64 -O0 %s -o %t && %t 2>&1 | FileCheck %s
+-// RUN: %clangxx_asan -m64 -O1 %s -o %t && %t 2>&1 | FileCheck %s
+-// RUN: %clangxx_asan -m64 -O2 %s -o %t && %t 2>&1 | FileCheck %s
+-// RUN: %clangxx_asan -m64 -O3 %s -o %t && %t 2>&1 | FileCheck %s
+-// RUN: %clangxx_asan -m32 -O0 %s -o %t && %t 2>&1 | FileCheck %s
+-// RUN: %clangxx_asan -m32 -O1 %s -o %t && %t 2>&1 | FileCheck %s
+-// RUN: %clangxx_asan -m32 -O2 %s -o %t && %t 2>&1 | FileCheck %s
+-// RUN: %clangxx_asan -m32 -O3 %s -o %t && %t 2>&1 | FileCheck %s
+-#include <stdlib.h>
+-#include <stdio.h>
+-
+-extern "C" long __interceptor_strtol(const char *nptr, char **endptr, int base);
+-extern "C" long strtol(const char *nptr, char **endptr, int base) {
+-  fprintf(stderr, "my_strtol_interceptor\n");
+-  return __interceptor_strtol(nptr, endptr, base);
+-}
+-
+-int main() {
+-  char *x = (char*)malloc(10 * sizeof(char));
+-  free(x);
+-  return (int)strtol(x, 0, 10);
+-  // CHECK: my_strtol_interceptor
+-  // CHECK: heap-use-after-free
+-}
+diff -urN llvm-3.3.src.org/projects/compiler-rt/lib/asan/lit_tests/Linux/swapcontext_test.cc llvm-3.3.src/projects/compiler-rt/lib/asan/lit_tests/Linux/swapcontext_test.cc
+--- llvm-3.3.src.org/projects/compiler-rt/lib/asan/lit_tests/Linux/swapcontext_test.cc	2012-11-23 12:20:54.000000000 +0100
++++ llvm-3.3.src/projects/compiler-rt/lib/asan/lit_tests/Linux/swapcontext_test.cc	1970-01-01 01:00:00.000000000 +0100
+@@ -1,66 +0,0 @@
+-// Check that ASan plays well with easy cases of makecontext/swapcontext.
+-
+-// RUN: %clangxx_asan -m64 -O0 %s -o %t && %t 2>&1 | FileCheck %s
+-// RUN: %clangxx_asan -m64 -O1 %s -o %t && %t 2>&1 | FileCheck %s
+-// RUN: %clangxx_asan -m64 -O2 %s -o %t && %t 2>&1 | FileCheck %s
+-// RUN: %clangxx_asan -m64 -O3 %s -o %t && %t 2>&1 | FileCheck %s
+-// RUN: %clangxx_asan -m32 -O0 %s -o %t && %t 2>&1 | FileCheck %s
+-// RUN: %clangxx_asan -m32 -O1 %s -o %t && %t 2>&1 | FileCheck %s
+-// RUN: %clangxx_asan -m32 -O2 %s -o %t && %t 2>&1 | FileCheck %s
+-// RUN: %clangxx_asan -m32 -O3 %s -o %t && %t 2>&1 | FileCheck %s
+-
+-#include <stdio.h>
+-#include <ucontext.h>
+-#include <unistd.h>
+-
+-ucontext_t orig_context;
+-ucontext_t child_context;
+-
+-void Child(int mode) {
+-  char x[32] = {0};  // Stack gets poisoned.
+-  printf("Child: %p\n", x);
+-  // (a) Do nothing, just return to parent function.
+-  // (b) Jump into the original function. Stack remains poisoned unless we do
+-  //     something.
+-  if (mode == 1) {
+-    if (swapcontext(&child_context, &orig_context) < 0) {
+-      perror("swapcontext");
+-      _exit(0);
+-    }
+-  }
+-}
+-
+-int Run(int arg, int mode) {
+-  const int kStackSize = 1 << 20;
+-  char child_stack[kStackSize + 1];
+-  printf("Child stack: %p\n", child_stack);
+-  // Setup child context.
+-  getcontext(&child_context);
+-  child_context.uc_stack.ss_sp = child_stack;
+-  child_context.uc_stack.ss_size = kStackSize / 2;
+-  if (mode == 0) {
+-    child_context.uc_link = &orig_context;
+-  }
+-  makecontext(&child_context, (void (*)())Child, 1, mode);
+-  if (swapcontext(&orig_context, &child_context) < 0) {
+-    perror("swapcontext");
+-    return 0;
+-  }
+-  // Touch childs's stack to make sure it's unpoisoned.
+-  for (int i = 0; i < kStackSize; i++) {
+-    child_stack[i] = i;
+-  }
+-  return child_stack[arg];
+-}
+-
+-int main(int argc, char **argv) {
+-  // CHECK: WARNING: ASan doesn't fully support makecontext/swapcontext
+-  int ret = 0;
+-  ret += Run(argc - 1, 0);
+-  printf("Test1 passed\n");
+-  // CHECK: Test1 passed
+-  ret += Run(argc - 1, 1);
+-  printf("Test2 passed\n");
+-  // CHECK: Test2 passed
+-  return ret;
+-}
+diff -urN llvm-3.3.src.org/projects/compiler-rt/lib/asan/lit_tests/Linux/zero-base-shadow.cc llvm-3.3.src/projects/compiler-rt/lib/asan/lit_tests/Linux/zero-base-shadow.cc
+--- llvm-3.3.src.org/projects/compiler-rt/lib/asan/lit_tests/Linux/zero-base-shadow.cc	2013-04-09 09:08:05.000000000 +0200
++++ llvm-3.3.src/projects/compiler-rt/lib/asan/lit_tests/Linux/zero-base-shadow.cc	1970-01-01 01:00:00.000000000 +0100
+@@ -1,28 +0,0 @@
+-// RUN: %clangxx_asan -m64 -O0 -fsanitize-address-zero-base-shadow -fPIE -pie %s -o %t && %t 2>&1 | %symbolize > %t.out
+-// RUN: FileCheck %s < %t.out && FileCheck %s --check-prefix=CHECK-64 < %t.out
+-// RUN: %clangxx_asan -m64 -O1 -fsanitize-address-zero-base-shadow -fPIE -pie %s -o %t && %t 2>&1 | %symbolize > %t.out
+-// RUN: FileCheck %s < %t.out && FileCheck %s --check-prefix=CHECK-64 < %t.out
+-// RUN: %clangxx_asan -m64 -O2 -fsanitize-address-zero-base-shadow -fPIE -pie %s -o %t && %t 2>&1 | %symbolize > %t.out
+-// RUN: FileCheck %s < %t.out && FileCheck %s --check-prefix=CHECK-64 < %t.out
+-// RUN: %clangxx_asan -m32 -O0 -fsanitize-address-zero-base-shadow -fPIE -pie %s -o %t && %t 2>&1 | %symbolize > %t.out
+-// RUN: FileCheck %s < %t.out && FileCheck %s --check-prefix=CHECK-32 < %t.out
+-// RUN: %clangxx_asan -m32 -O1 -fsanitize-address-zero-base-shadow -fPIE -pie %s -o %t && %t 2>&1 | %symbolize > %t.out
+-// RUN: FileCheck %s < %t.out && FileCheck %s --check-prefix=CHECK-32 < %t.out
+-// RUN: %clangxx_asan -m32 -O2 -fsanitize-address-zero-base-shadow -fPIE -pie %s -o %t && %t 2>&1 | %symbolize > %t.out
+-// RUN: FileCheck %s < %t.out && FileCheck %s --check-prefix=CHECK-32 < %t.out
+-
+-#include <string.h>
+-int main(int argc, char **argv) {
+-  char x[10];
+-  memset(x, 0, 10);
+-  int res = x[argc * 10];  // BOOOM
+-  // CHECK: {{READ of size 1 at 0x.* thread T0}}
+-  // CHECK: {{    #0 0x.* in _?main .*zero-base-shadow.cc:}}[[@LINE-2]]
+-  // CHECK: {{Address 0x.* is .* frame}}
+-  // CHECK: main
+-
+-  // Check that shadow for stack memory occupies lower part of address space.
+-  // CHECK-64: =>0x0f
+-  // CHECK-32: =>0x1
+-  return res;
+-}
+diff -urN llvm-3.3.src.org/projects/compiler-rt/lib/asan/lit_tests/memcmp_test.cc llvm-3.3.src/projects/compiler-rt/lib/asan/lit_tests/memcmp_test.cc
+--- llvm-3.3.src.org/projects/compiler-rt/lib/asan/lit_tests/memcmp_test.cc	2012-10-15 15:04:58.000000000 +0200
++++ llvm-3.3.src/projects/compiler-rt/lib/asan/lit_tests/memcmp_test.cc	1970-01-01 01:00:00.000000000 +0100
+@@ -1,19 +0,0 @@
+-// RUN: %clangxx_asan -m64 -O0 %s -o %t && %t 2>&1 | %symbolize | FileCheck %s
+-// RUN: %clangxx_asan -m64 -O1 %s -o %t && %t 2>&1 | %symbolize | FileCheck %s
+-// RUN: %clangxx_asan -m64 -O2 %s -o %t && %t 2>&1 | %symbolize | FileCheck %s
+-// RUN: %clangxx_asan -m64 -O3 %s -o %t && %t 2>&1 | %symbolize | FileCheck %s
+-// RUN: %clangxx_asan -m32 -O0 %s -o %t && %t 2>&1 | %symbolize | FileCheck %s
+-// RUN: %clangxx_asan -m32 -O1 %s -o %t && %t 2>&1 | %symbolize | FileCheck %s
+-// RUN: %clangxx_asan -m32 -O2 %s -o %t && %t 2>&1 | %symbolize | FileCheck %s
+-// RUN: %clangxx_asan -m32 -O3 %s -o %t && %t 2>&1 | %symbolize | FileCheck %s
+-
+-#include <string.h>
+-int main(int argc, char **argv) {
+-  char a1[] = {argc, 2, 3, 4};
+-  char a2[] = {1, 2*argc, 3, 4};
+-  int res = memcmp(a1, a2, 4 + argc);  // BOOM
+-  // CHECK: AddressSanitizer: stack-buffer-overflow
+-  // CHECK: {{#0.*memcmp}}
+-  // CHECK: {{#1.*main}}
+-  return res;
+-}
+diff -urN llvm-3.3.src.org/projects/compiler-rt/lib/asan/lit_tests/null_deref.cc llvm-3.3.src/projects/compiler-rt/lib/asan/lit_tests/null_deref.cc
+--- llvm-3.3.src.org/projects/compiler-rt/lib/asan/lit_tests/null_deref.cc	2012-12-28 09:38:09.000000000 +0100
++++ llvm-3.3.src/projects/compiler-rt/lib/asan/lit_tests/null_deref.cc	1970-01-01 01:00:00.000000000 +0100
+@@ -1,31 +0,0 @@
+-// RUN: %clangxx_asan -m64 -O0 %s -o %t && %t 2>&1 | %symbolize > %t.out
+-// RUN: FileCheck %s < %t.out && FileCheck %s --check-prefix=CHECK-%os < %t.out
+-// RUN: %clangxx_asan -m64 -O1 %s -o %t && %t 2>&1 | %symbolize > %t.out
+-// RUN: FileCheck %s < %t.out && FileCheck %s --check-prefix=CHECK-%os < %t.out
+-// RUN: %clangxx_asan -m64 -O2 %s -o %t && %t 2>&1 | %symbolize > %t.out
+-// RUN: FileCheck %s < %t.out && FileCheck %s --check-prefix=CHECK-%os < %t.out
+-// RUN: %clangxx_asan -m64 -O3 %s -o %t && %t 2>&1 | %symbolize > %t.out
+-// RUN: FileCheck %s < %t.out && FileCheck %s --check-prefix=CHECK-%os < %t.out
+-// RUN: %clangxx_asan -m32 -O0 %s -o %t && %t 2>&1 | %symbolize > %t.out
+-// RUN: FileCheck %s < %t.out && FileCheck %s --check-prefix=CHECK-%os < %t.out
+-// RUN: %clangxx_asan -m32 -O1 %s -o %t && %t 2>&1 | %symbolize > %t.out
+-// RUN: FileCheck %s < %t.out && FileCheck %s --check-prefix=CHECK-%os < %t.out
+-// RUN: %clangxx_asan -m32 -O2 %s -o %t && %t 2>&1 | %symbolize > %t.out
+-// RUN: FileCheck %s < %t.out && FileCheck %s --check-prefix=CHECK-%os < %t.out
+-// RUN: %clangxx_asan -m32 -O3 %s -o %t && %t 2>&1 | %symbolize > %t.out
+-// RUN: FileCheck %s < %t.out && FileCheck %s --check-prefix=CHECK-%os < %t.out
+-
+-__attribute__((noinline))
+-static void NullDeref(int *ptr) {
+-  // CHECK: ERROR: AddressSanitizer: SEGV on unknown address
+-  // CHECK:   {{0x0*00028 .*pc 0x.*}}
+-  // CHECK: {{AddressSanitizer can not provide additional info.}}
+-  ptr[10]++;  // BOOM
+-  // atos on Mac cannot extract the symbol name correctly.
+-  // CHECK-Linux: {{    #0 0x.* in NullDeref.*null_deref.cc:}}[[@LINE-2]]
+-  // CHECK-Darwin: {{    #0 0x.* in .*NullDeref.*null_deref.cc:}}[[@LINE-3]]
+-}
+-int main() {
+-  NullDeref((int*)0);
+-  // CHECK: {{    #1 0x.* in _?main.*null_deref.cc:}}[[@LINE-1]]
+-}
+diff -urN llvm-3.3.src.org/projects/compiler-rt/lib/asan/lit_tests/partial_right.cc llvm-3.3.src/projects/compiler-rt/lib/asan/lit_tests/partial_right.cc
+--- llvm-3.3.src.org/projects/compiler-rt/lib/asan/lit_tests/partial_right.cc	2013-02-05 15:32:03.000000000 +0100
++++ llvm-3.3.src/projects/compiler-rt/lib/asan/lit_tests/partial_right.cc	1970-01-01 01:00:00.000000000 +0100
+@@ -1,17 +0,0 @@
+-// RUN: %clangxx_asan -m64 -O0 %s -o %t && %t 2>&1 | %symbolize | FileCheck %s
+-// RUN: %clangxx_asan -m64 -O1 %s -o %t && %t 2>&1 | %symbolize | FileCheck %s
+-// RUN: %clangxx_asan -m64 -O2 %s -o %t && %t 2>&1 | %symbolize | FileCheck %s
+-// RUN: %clangxx_asan -m64 -O3 %s -o %t && %t 2>&1 | %symbolize | FileCheck %s
+-// RUN: %clangxx_asan -m32 -O0 %s -o %t && %t 2>&1 | %symbolize | FileCheck %s
+-// RUN: %clangxx_asan -m32 -O1 %s -o %t && %t 2>&1 | %symbolize | FileCheck %s
+-// RUN: %clangxx_asan -m32 -O2 %s -o %t && %t 2>&1 | %symbolize | FileCheck %s
+-// RUN: %clangxx_asan -m32 -O3 %s -o %t && %t 2>&1 | %symbolize | FileCheck %s
+-
+-#include <stdlib.h>
+-int main(int argc, char **argv) {
+-  volatile int *x = (int*)malloc(2*sizeof(int) + 2);
+-  int res = x[2];  // BOOOM
+-  // CHECK: {{READ of size 4 at 0x.* thread T0}}
+-  // CHECK: [[ADDR:0x[01-9a-fa-f]+]] is located 0 bytes to the right of {{.*}}-byte region [{{.*}},{{.*}}[[ADDR]])
+-  return res;
+-}
+diff -urN llvm-3.3.src.org/projects/compiler-rt/lib/asan/lit_tests/shared-lib-test.cc llvm-3.3.src/projects/compiler-rt/lib/asan/lit_tests/shared-lib-test.cc
+--- llvm-3.3.src.org/projects/compiler-rt/lib/asan/lit_tests/shared-lib-test.cc	2012-12-28 09:38:09.000000000 +0100
++++ llvm-3.3.src/projects/compiler-rt/lib/asan/lit_tests/shared-lib-test.cc	1970-01-01 01:00:00.000000000 +0100
+@@ -1,54 +0,0 @@
+-// RUN: %clangxx_asan -m64 -O0 %p/SharedLibs/shared-lib-test-so.cc \
+-// RUN:     -fPIC -shared -o %t-so.so
+-// RUN: %clangxx_asan -m64 -O0 %s -o %t && %t 2>&1 | %symbolize | FileCheck %s
+-// RUN: %clangxx_asan -m64 -O1 %p/SharedLibs/shared-lib-test-so.cc \
+-// RUN:     -fPIC -shared -o %t-so.so
+-// RUN: %clangxx_asan -m64 -O1 %s -o %t && %t 2>&1 | %symbolize | FileCheck %s
+-// RUN: %clangxx_asan -m64 -O2 %p/SharedLibs/shared-lib-test-so.cc \
+-// RUN:     -fPIC -shared -o %t-so.so
+-// RUN: %clangxx_asan -m64 -O2 %s -o %t && %t 2>&1 | %symbolize | FileCheck %s
+-// RUN: %clangxx_asan -m64 -O3 %p/SharedLibs/shared-lib-test-so.cc \
+-// RUN:     -fPIC -shared -o %t-so.so
+-// RUN: %clangxx_asan -m64 -O3 %s -o %t && %t 2>&1 | %symbolize | FileCheck %s
+-// RUN: %clangxx_asan -m32 -O0 %p/SharedLibs/shared-lib-test-so.cc \
+-// RUN:     -fPIC -shared -o %t-so.so
+-// RUN: %clangxx_asan -m32 -O0 %s -o %t && %t 2>&1 | %symbolize | FileCheck %s
+-// RUN: %clangxx_asan -m32 -O1 %p/SharedLibs/shared-lib-test-so.cc \
+-// RUN:     -fPIC -shared -o %t-so.so
+-// RUN: %clangxx_asan -m32 -O1 %s -o %t && %t 2>&1 | %symbolize | FileCheck %s
+-// RUN: %clangxx_asan -m32 -O2 %p/SharedLibs/shared-lib-test-so.cc \
+-// RUN:     -fPIC -shared -o %t-so.so
+-// RUN: %clangxx_asan -m32 -O2 %s -o %t && %t 2>&1 | %symbolize | FileCheck %s
+-// RUN: %clangxx_asan -m32 -O3 %p/SharedLibs/shared-lib-test-so.cc \
+-// RUN:     -fPIC -shared -o %t-so.so
+-// RUN: %clangxx_asan -m32 -O3 %s -o %t && %t 2>&1 | %symbolize | FileCheck %s
+-
+-#include <dlfcn.h>
+-#include <stdio.h>
+-#include <string.h>
+-
+-#include <string>
+-
+-using std::string;
+-
+-typedef void (fun_t)(int x);
+-
+-int main(int argc, char *argv[]) {
+-  string path = string(argv[0]) + "-so.so";
+-  printf("opening %s ... \n", path.c_str());
+-  void *lib = dlopen(path.c_str(), RTLD_NOW);
+-  if (!lib) {
+-    printf("error in dlopen(): %s\n", dlerror());
+-    return 1;
+-  }
+-  fun_t *inc = (fun_t*)dlsym(lib, "inc");
+-  if (!inc) return 1;
+-  printf("ok\n");
+-  inc(1);
+-  inc(-1);  // BOOM
+-  // CHECK: {{.*ERROR: AddressSanitizer: global-buffer-overflow}}
+-  // CHECK: {{READ of size 4 at 0x.* thread T0}}
+-  // CHECK: {{    #0 0x.*}}
+-  // CHECK: {{    #1 0x.* in _?main .*shared-lib-test.cc:}}[[@LINE-4]]
+-  return 0;
+-}
+diff -urN llvm-3.3.src.org/projects/compiler-rt/lib/asan/lit_tests/stack-overflow.cc llvm-3.3.src/projects/compiler-rt/lib/asan/lit_tests/stack-overflow.cc
+--- llvm-3.3.src.org/projects/compiler-rt/lib/asan/lit_tests/stack-overflow.cc	2013-03-22 11:36:24.000000000 +0100
++++ llvm-3.3.src/projects/compiler-rt/lib/asan/lit_tests/stack-overflow.cc	1970-01-01 01:00:00.000000000 +0100
+@@ -1,20 +0,0 @@
+-// RUN: %clangxx_asan -m64 -O0 %s -o %t && %t 2>&1 | %symbolize | FileCheck %s
+-// RUN: %clangxx_asan -m64 -O1 %s -o %t && %t 2>&1 | %symbolize | FileCheck %s
+-// RUN: %clangxx_asan -m64 -O2 %s -o %t && %t 2>&1 | %symbolize | FileCheck %s
+-// RUN: %clangxx_asan -m64 -O3 %s -o %t && %t 2>&1 | %symbolize | FileCheck %s
+-// RUN: %clangxx_asan -m32 -O0 %s -o %t && %t 2>&1 | %symbolize | FileCheck %s
+-// RUN: %clangxx_asan -m32 -O1 %s -o %t && %t 2>&1 | %symbolize | FileCheck %s
+-// RUN: %clangxx_asan -m32 -O2 %s -o %t && %t 2>&1 | %symbolize | FileCheck %s
+-// RUN: %clangxx_asan -m32 -O3 %s -o %t && %t 2>&1 | %symbolize | FileCheck %s
+-
+-#include <string.h>
+-int main(int argc, char **argv) {
+-  char x[10];
+-  memset(x, 0, 10);
+-  int res = x[argc * 10];  // BOOOM
+-  // CHECK: {{READ of size 1 at 0x.* thread T0}}
+-  // CHECK: {{    #0 0x.* in _?main .*stack-overflow.cc:}}[[@LINE-2]]
+-  // CHECK: {{Address 0x.* is located in stack of thread T0 at offset}}
+-  // CHECK: main
+-  return res;
+-}
+diff -urN llvm-3.3.src.org/projects/compiler-rt/lib/asan/lit_tests/strncpy-overflow.cc llvm-3.3.src/projects/compiler-rt/lib/asan/lit_tests/strncpy-overflow.cc
+--- llvm-3.3.src.org/projects/compiler-rt/lib/asan/lit_tests/strncpy-overflow.cc	2013-02-05 15:32:03.000000000 +0100
++++ llvm-3.3.src/projects/compiler-rt/lib/asan/lit_tests/strncpy-overflow.cc	1970-01-01 01:00:00.000000000 +0100
+@@ -1,38 +0,0 @@
+-// RUN: %clangxx_asan -m64 -O0 %s -o %t && %t 2>&1 | %symbolize > %t.out
+-// RUN: FileCheck %s < %t.out && FileCheck %s --check-prefix=CHECK-%os < %t.out
+-// RUN: %clangxx_asan -m64 -O1 %s -o %t && %t 2>&1 | %symbolize > %t.out
+-// RUN: FileCheck %s < %t.out && FileCheck %s --check-prefix=CHECK-%os < %t.out
+-// RUN: %clangxx_asan -m64 -O2 %s -o %t && %t 2>&1 | %symbolize > %t.out
+-// RUN: FileCheck %s < %t.out && FileCheck %s --check-prefix=CHECK-%os < %t.out
+-// RUN: %clangxx_asan -m64 -O3 %s -o %t && %t 2>&1 | %symbolize > %t.out
+-// RUN: FileCheck %s < %t.out && FileCheck %s --check-prefix=CHECK-%os < %t.out
+-// RUN: %clangxx_asan -m32 -O0 %s -o %t && %t 2>&1 | %symbolize > %t.out
+-// RUN: FileCheck %s < %t.out && FileCheck %s --check-prefix=CHECK-%os < %t.out
+-// RUN: %clangxx_asan -m32 -O1 %s -o %t && %t 2>&1 | %symbolize > %t.out
+-// RUN: FileCheck %s < %t.out && FileCheck %s --check-prefix=CHECK-%os < %t.out
+-// RUN: %clangxx_asan -m32 -O2 %s -o %t && %t 2>&1 | %symbolize > %t.out
+-// RUN: FileCheck %s < %t.out && FileCheck %s --check-prefix=CHECK-%os < %t.out
+-// RUN: %clangxx_asan -m32 -O3 %s -o %t && %t 2>&1 | %symbolize > %t.out
+-// RUN: FileCheck %s < %t.out && FileCheck %s --check-prefix=CHECK-%os < %t.out
+-
+-#include <string.h>
+-#include <stdlib.h>
+-int main(int argc, char **argv) {
+-  char *hello = (char*)malloc(6);
+-  strcpy(hello, "hello");
+-  char *short_buffer = (char*)malloc(9);
+-  strncpy(short_buffer, hello, 10);  // BOOM
+-  // CHECK: {{WRITE of size 10 at 0x.* thread T0}}
+-  // CHECK-Linux: {{    #0 0x.* in .*strncpy}}
+-  // CHECK-Darwin: {{    #0 0x.* in _?wrap_strncpy}}
+-  // CHECK: {{    #1 0x.* in _?main .*strncpy-overflow.cc:}}[[@LINE-4]]
+-  // CHECK: {{0x.* is located 0 bytes to the right of 9-byte region}}
+-  // CHECK: {{allocated by thread T0 here:}}
+-
+-  // CHECK-Linux: {{    #0 0x.* in .*malloc}}
+-  // CHECK-Linux: {{    #1 0x.* in main .*strncpy-overflow.cc:}}[[@LINE-10]]
+-
+-  // CHECK-Darwin: {{    #0 0x.* in _?wrap_malloc.*}}
+-  // CHECK-Darwin: {{    #1 0x.* in _?main .*strncpy-overflow.cc:}}[[@LINE-13]]
+-  return short_buffer[8];
+-}
+diff -urN llvm-3.3.src.org/projects/compiler-rt/lib/asan/lit_tests/use-after-free.cc llvm-3.3.src/projects/compiler-rt/lib/asan/lit_tests/use-after-free.cc
+--- llvm-3.3.src.org/projects/compiler-rt/lib/asan/lit_tests/use-after-free.cc	2013-01-22 10:14:54.000000000 +0100
++++ llvm-3.3.src/projects/compiler-rt/lib/asan/lit_tests/use-after-free.cc	1970-01-01 01:00:00.000000000 +0100
+@@ -1,43 +0,0 @@
+-// RUN: %clangxx_asan -m64 -O0 %s -o %t && %t 2>&1 | %symbolize > %t.out
+-// RUN: FileCheck %s < %t.out && FileCheck %s --check-prefix=CHECK-%os < %t.out
+-// RUN: %clangxx_asan -m64 -O1 %s -o %t && %t 2>&1 | %symbolize > %t.out
+-// RUN: FileCheck %s < %t.out && FileCheck %s --check-prefix=CHECK-%os < %t.out
+-// RUN: %clangxx_asan -m64 -O2 %s -o %t && %t 2>&1 | %symbolize > %t.out
+-// RUN: FileCheck %s < %t.out && FileCheck %s --check-prefix=CHECK-%os < %t.out
+-// RUN: %clangxx_asan -m64 -O3 %s -o %t && %t 2>&1 | %symbolize > %t.out
+-// RUN: FileCheck %s < %t.out && FileCheck %s --check-prefix=CHECK-%os < %t.out
+-// RUN: %clangxx_asan -m32 -O0 %s -o %t && %t 2>&1 | %symbolize > %t.out
+-// RUN: FileCheck %s < %t.out && FileCheck %s --check-prefix=CHECK-%os < %t.out
+-// RUN: %clangxx_asan -m32 -O1 %s -o %t && %t 2>&1 | %symbolize > %t.out
+-// RUN: FileCheck %s < %t.out && FileCheck %s --check-prefix=CHECK-%os < %t.out
+-// RUN: %clangxx_asan -m32 -O2 %s -o %t && %t 2>&1 | %symbolize > %t.out
+-// RUN: FileCheck %s < %t.out && FileCheck %s --check-prefix=CHECK-%os < %t.out
+-// RUN: %clangxx_asan -m32 -O3 %s -o %t && %t 2>&1 | %symbolize > %t.out
+-// RUN: FileCheck %s < %t.out && FileCheck %s --check-prefix=CHECK-%os < %t.out
+-
+-#include <stdlib.h>
+-int main() {
+-  char *x = (char*)malloc(10 * sizeof(char));
+-  free(x);
+-  return x[5];
+-  // CHECK: {{.*ERROR: AddressSanitizer: heap-use-after-free on address}}
+-  // CHECK:   {{0x.* at pc 0x.* bp 0x.* sp 0x.*}}
+-  // CHECK: {{READ of size 1 at 0x.* thread T0}}
+-  // CHECK: {{    #0 0x.* in _?main .*use-after-free.cc:22}}
+-  // CHECK: {{0x.* is located 5 bytes inside of 10-byte region .0x.*,0x.*}}
+-  // CHECK: {{freed by thread T0 here:}}
+-
+-  // CHECK-Linux: {{    #0 0x.* in .*free}}
+-  // CHECK-Linux: {{    #1 0x.* in main .*use-after-free.cc:21}}
+-
+-  // CHECK-Darwin: {{    #0 0x.* in _?wrap_free}}
+-  // CHECK-Darwin: {{    #1 0x.* in _?main .*use-after-free.cc:21}}
+-
+-  // CHECK: {{previously allocated by thread T0 here:}}
+-
+-  // CHECK-Linux: {{    #0 0x.* in .*malloc}}
+-  // CHECK-Linux: {{    #1 0x.* in main .*use-after-free.cc:20}}
+-
+-  // CHECK-Darwin: {{    #0 0x.* in _?wrap_malloc.*}}
+-  // CHECK-Darwin: {{    #1 0x.* in _?main .*use-after-free.cc:20}}
+-}
+diff -urN llvm-3.3.src.org/projects/compiler-rt/lib/asan/lit_tests/use-after-free-right.cc llvm-3.3.src/projects/compiler-rt/lib/asan/lit_tests/use-after-free-right.cc
+--- llvm-3.3.src.org/projects/compiler-rt/lib/asan/lit_tests/use-after-free-right.cc	2013-02-11 08:19:24.000000000 +0100
++++ llvm-3.3.src/projects/compiler-rt/lib/asan/lit_tests/use-after-free-right.cc	1970-01-01 01:00:00.000000000 +0100
+@@ -1,46 +0,0 @@
+-// RUN: %clangxx_asan -m64 -O0 %s -o %t && %t 2>&1 | %symbolize > %t.out
+-// RUN: FileCheck %s < %t.out && FileCheck %s --check-prefix=CHECK-%os < %t.out
+-// RUN: %clangxx_asan -m64 -O1 %s -o %t && %t 2>&1 | %symbolize > %t.out
+-// RUN: FileCheck %s < %t.out && FileCheck %s --check-prefix=CHECK-%os < %t.out
+-// RUN: %clangxx_asan -m64 -O2 %s -o %t && %t 2>&1 | %symbolize > %t.out
+-// RUN: FileCheck %s < %t.out && FileCheck %s --check-prefix=CHECK-%os < %t.out
+-// RUN: %clangxx_asan -m64 -O3 %s -o %t && %t 2>&1 | %symbolize > %t.out
+-// RUN: FileCheck %s < %t.out && FileCheck %s --check-prefix=CHECK-%os < %t.out
+-// RUN: %clangxx_asan -m32 -O0 %s -o %t && %t 2>&1 | %symbolize > %t.out
+-// RUN: FileCheck %s < %t.out && FileCheck %s --check-prefix=CHECK-%os < %t.out
+-// RUN: %clangxx_asan -m32 -O1 %s -o %t && %t 2>&1 | %symbolize > %t.out
+-// RUN: FileCheck %s < %t.out && FileCheck %s --check-prefix=CHECK-%os < %t.out
+-// RUN: %clangxx_asan -m32 -O2 %s -o %t && %t 2>&1 | %symbolize > %t.out
+-// RUN: FileCheck %s < %t.out && FileCheck %s --check-prefix=CHECK-%os < %t.out
+-// RUN: %clangxx_asan -m32 -O3 %s -o %t && %t 2>&1 | %symbolize > %t.out
+-// RUN: FileCheck %s < %t.out && FileCheck %s --check-prefix=CHECK-%os < %t.out
+-
+-// Test use-after-free report in the case when access is at the right border of
+-//  the allocation.
+-
+-#include <stdlib.h>
+-int main() {
+-  volatile char *x = (char*)malloc(sizeof(char));
+-  free((void*)x);
+-  *x = 42;
+-  // CHECK: {{.*ERROR: AddressSanitizer: heap-use-after-free on address}}
+-  // CHECK:   {{0x.* at pc 0x.* bp 0x.* sp 0x.*}}
+-  // CHECK: {{WRITE of size 1 at 0x.* thread T0}}
+-  // CHECK: {{    #0 0x.* in _?main .*use-after-free-right.cc:25}}
+-  // CHECK: {{0x.* is located 0 bytes inside of 1-byte region .0x.*,0x.*}}
+-  // CHECK: {{freed by thread T0 here:}}
+-
+-  // CHECK-Linux: {{    #0 0x.* in .*free}}
+-  // CHECK-Linux: {{    #1 0x.* in main .*use-after-free-right.cc:24}}
+-
+-  // CHECK-Darwin: {{    #0 0x.* in _?wrap_free}}
+-  // CHECK-Darwin: {{    #1 0x.* in _?main .*use-after-free-right.cc:24}}
+-
+-  // CHECK: {{previously allocated by thread T0 here:}}
+-
+-  // CHECK-Linux: {{    #0 0x.* in .*malloc}}
+-  // CHECK-Linux: {{    #1 0x.* in main .*use-after-free-right.cc:23}}
+-
+-  // CHECK-Darwin: {{    #0 0x.* in _?wrap_malloc.*}}
+-  // CHECK-Darwin: {{    #1 0x.* in _?main .*use-after-free-right.cc:23}}
+-}
+diff -urN llvm-3.3.src.org/projects/compiler-rt/lib/asan/lit_tests/use-after-scope-inlined.cc llvm-3.3.src/projects/compiler-rt/lib/asan/lit_tests/use-after-scope-inlined.cc
+--- llvm-3.3.src.org/projects/compiler-rt/lib/asan/lit_tests/use-after-scope-inlined.cc	2013-03-22 11:36:24.000000000 +0100
++++ llvm-3.3.src/projects/compiler-rt/lib/asan/lit_tests/use-after-scope-inlined.cc	1970-01-01 01:00:00.000000000 +0100
+@@ -1,30 +0,0 @@
+-// Test with "-O2" only to make sure inlining (leading to use-after-scope)
+-// happens. "always_inline" is not enough, as Clang doesn't emit
+-// llvm.lifetime intrinsics at -O0.
+-//
+-// RUN: %clangxx_asan -m64 -O2 -fsanitize=use-after-scope %s -o %t && \
+-// RUN:     %t 2>&1 | %symbolize | FileCheck %s
+-// RUN: %clangxx_asan -m32 -O2 -fsanitize=use-after-scope %s -o %t && \
+-// RUN:     %t 2>&1 | %symbolize | FileCheck %s
+-
+-int *arr;
+-
+-__attribute__((always_inline))
+-void inlined(int arg) {
+-  int x[5];
+-  for (int i = 0; i < arg; i++) x[i] = i;
+-  arr = x;
+-}
+-
+-int main(int argc, char *argv[]) {
+-  inlined(argc);
+-  return arr[argc - 1];  // BOOM
+-  // CHECK: ERROR: AddressSanitizer: stack-use-after-scope
+-  // CHECK: READ of size 4 at 0x{{.*}} thread T0
+-  // CHECK:   #0 0x{{.*}} in {{_?}}main
+-  // CHECK:      {{.*}}use-after-scope-inlined.cc:[[@LINE-4]]
+-  // CHECK: Address 0x{{.*}} is located in stack of thread T0 at offset
+-  // CHECK:      [[OFFSET:[^ ]*]] in frame
+-  // CHECK: main
+-  // CHECK:   {{\[}}[[OFFSET]], {{.*}}) 'x.i'
+-}
+diff -urN llvm-3.3.src.org/projects/compiler-rt/lib/asan/lit_tests/wait.cc llvm-3.3.src/projects/compiler-rt/lib/asan/lit_tests/wait.cc
+--- llvm-3.3.src.org/projects/compiler-rt/lib/asan/lit_tests/wait.cc	2013-04-23 14:36:37.000000000 +0200
++++ llvm-3.3.src/projects/compiler-rt/lib/asan/lit_tests/wait.cc	1970-01-01 01:00:00.000000000 +0100
+@@ -1,77 +0,0 @@
+-// RUN: %clangxx_asan -DWAIT -m64 -O0 %s -o %t && %t 2>&1 | %symbolize | FileCheck %s
+-// RUN: %clangxx_asan -DWAIT -m64 -O3 %s -o %t && %t 2>&1 | %symbolize | FileCheck %s
+-// RUN: %clangxx_asan -DWAIT -m32 -O0 %s -o %t && %t 2>&1 | %symbolize | FileCheck %s
+-// RUN: %clangxx_asan -DWAIT -m32 -O3 %s -o %t && %t 2>&1 | %symbolize | FileCheck %s
+-
+-// RUN: %clangxx_asan -DWAITPID -m64 -O0 %s -o %t && %t 2>&1 | %symbolize | FileCheck %s
+-// RUN: %clangxx_asan -DWAITPID -m64 -O3 %s -o %t && %t 2>&1 | %symbolize | FileCheck %s
+-// RUN: %clangxx_asan -DWAITPID -m32 -O0 %s -o %t && %t 2>&1 | %symbolize | FileCheck %s
+-// RUN: %clangxx_asan -DWAITPID -m32 -O3 %s -o %t && %t 2>&1 | %symbolize | FileCheck %s
+-
+-// RUN: %clangxx_asan -DWAITID -m64 -O0 %s -o %t && %t 2>&1 | %symbolize | FileCheck %s
+-// RUN: %clangxx_asan -DWAITID -m64 -O3 %s -o %t && %t 2>&1 | %symbolize | FileCheck %s
+-// RUN: %clangxx_asan -DWAITID -m32 -O0 %s -o %t && %t 2>&1 | %symbolize | FileCheck %s
+-// RUN: %clangxx_asan -DWAITID -m32 -O3 %s -o %t && %t 2>&1 | %symbolize | FileCheck %s
+-
+-// RUN: %clangxx_asan -DWAIT3 -m64 -O0 %s -o %t && %t 2>&1 | %symbolize | FileCheck %s
+-// RUN: %clangxx_asan -DWAIT3 -m64 -O3 %s -o %t && %t 2>&1 | %symbolize | FileCheck %s
+-// RUN: %clangxx_asan -DWAIT3 -m32 -O0 %s -o %t && %t 2>&1 | %symbolize | FileCheck %s
+-// RUN: %clangxx_asan -DWAIT3 -m32 -O3 %s -o %t && %t 2>&1 | %symbolize | FileCheck %s
+-
+-// RUN: %clangxx_asan -DWAIT4 -m64 -O0 %s -o %t && %t 2>&1 | %symbolize | FileCheck %s
+-// RUN: %clangxx_asan -DWAIT4 -m64 -O3 %s -o %t && %t 2>&1 | %symbolize | FileCheck %s
+-// RUN: %clangxx_asan -DWAIT4 -m32 -O0 %s -o %t && %t 2>&1 | %symbolize | FileCheck %s
+-// RUN: %clangxx_asan -DWAIT4 -m32 -O3 %s -o %t && %t 2>&1 | %symbolize | FileCheck %s
+-
+-// RUN: %clangxx_asan -DWAIT3_RUSAGE -m64 -O0 %s -o %t && %t 2>&1 | %symbolize | FileCheck %s
+-// RUN: %clangxx_asan -DWAIT3_RUSAGE -m64 -O3 %s -o %t && %t 2>&1 | %symbolize | FileCheck %s
+-// RUN: %clangxx_asan -DWAIT3_RUSAGE -m32 -O0 %s -o %t && %t 2>&1 | %symbolize | FileCheck %s
+-// RUN: %clangxx_asan -DWAIT3_RUSAGE -m32 -O3 %s -o %t && %t 2>&1 | %symbolize | FileCheck %s
+-
+-// RUN: %clangxx_asan -DWAIT4_RUSAGE -m64 -O0 %s -o %t && %t 2>&1 | %symbolize | FileCheck %s
+-// RUN: %clangxx_asan -DWAIT4_RUSAGE -m64 -O3 %s -o %t && %t 2>&1 | %symbolize | FileCheck %s
+-// RUN: %clangxx_asan -DWAIT4_RUSAGE -m32 -O0 %s -o %t && %t 2>&1 | %symbolize | FileCheck %s
+-// RUN: %clangxx_asan -DWAIT4_RUSAGE -m32 -O3 %s -o %t && %t 2>&1 | %symbolize | FileCheck %s
+-
+-
+-#include <assert.h>
+-#include <sys/wait.h>
+-#include <unistd.h>
+-
+-int main(int argc, char **argv) {
+-  pid_t pid = fork();
+-  if (pid) { // parent
+-    int x[3];
+-    int *status = x + argc * 3;
+-    int res;
+-#if defined(WAIT)
+-    res = wait(status);
+-#elif defined(WAITPID)
+-    res = waitpid(pid, status, WNOHANG);
+-#elif defined(WAITID)
+-    siginfo_t *si = (siginfo_t*)(x + argc * 3);
+-    res = waitid(P_ALL, 0, si, WEXITED | WNOHANG);
+-#elif defined(WAIT3)
+-    res = wait3(status, WNOHANG, NULL);
+-#elif defined(WAIT4)
+-    res = wait4(pid, status, WNOHANG, NULL);
+-#elif defined(WAIT3_RUSAGE) || defined(WAIT4_RUSAGE)
+-    struct rusage *ru = (struct rusage*)(x + argc * 3);
+-    int good_status;
+-# if defined(WAIT3_RUSAGE)
+-    res = wait3(&good_status, WNOHANG, ru);
+-# elif defined(WAIT4_RUSAGE)
+-    res = wait4(pid, &good_status, WNOHANG, ru);
+-# endif
+-#endif
+-    // CHECK: stack-buffer-overflow
+-    // CHECK: {{WRITE of size .* at 0x.* thread T0}}
+-    // CHECK: {{in .*wait}}
+-    // CHECK: {{in _?main .*wait.cc:}}
+-    // CHECK: is located in stack of thread T0 at offset
+-    // CHECK: {{in _?main}}
+-    return res != -1;
+-  }
+-  // child
+-  return 0;
+-}
+diff -urN llvm-3.3.src.org/projects/compiler-rt/lib/msan/lit_tests/heap-origin.cc llvm-3.3.src/projects/compiler-rt/lib/msan/lit_tests/heap-origin.cc
+--- llvm-3.3.src.org/projects/compiler-rt/lib/msan/lit_tests/heap-origin.cc	2013-02-11 12:34:26.000000000 +0100
++++ llvm-3.3.src/projects/compiler-rt/lib/msan/lit_tests/heap-origin.cc	1970-01-01 01:00:00.000000000 +0100
+@@ -1,33 +0,0 @@
+-// RUN: %clangxx_msan -m64 -O0 %s -o %t && not %t >%t.out 2>&1
+-// RUN: FileCheck %s < %t.out
+-// RUN: %clangxx_msan -m64 -O1 %s -o %t && not %t >%t.out 2>&1
+-// RUN: FileCheck %s < %t.out
+-// RUN: %clangxx_msan -m64 -O2 %s -o %t && not %t >%t.out 2>&1
+-// RUN: FileCheck %s < %t.out
+-// RUN: %clangxx_msan -m64 -O3 %s -o %t && not %t >%t.out 2>&1
+-// RUN: FileCheck %s < %t.out
+-
+-// RUN: %clangxx_msan -fsanitize-memory-track-origins -m64 -O0 %s -o %t && not %t >%t.out 2>&1
+-// RUN: FileCheck %s < %t.out && FileCheck %s --check-prefix=CHECK-ORIGINS < %t.out
+-// RUN: %clangxx_msan -fsanitize-memory-track-origins -m64 -O1 %s -o %t && not %t >%t.out 2>&1
+-// RUN: FileCheck %s < %t.out && FileCheck %s --check-prefix=CHECK-ORIGINS < %t.out
+-// RUN: %clangxx_msan -fsanitize-memory-track-origins -m64 -O2 %s -o %t && not %t >%t.out 2>&1
+-// RUN: FileCheck %s < %t.out && FileCheck %s --check-prefix=CHECK-ORIGINS < %t.out
+-// RUN: %clangxx_msan -fsanitize-memory-track-origins -m64 -O3 %s -o %t && not %t >%t.out 2>&1
+-// RUN: FileCheck %s < %t.out && FileCheck %s --check-prefix=CHECK-ORIGINS < %t.out
+-
+-#include <stdlib.h>
+-int main(int argc, char **argv) {
+-  char *volatile x = (char*)malloc(5 * sizeof(char));
+-  if (*x)
+-    exit(0);
+-  // CHECK: WARNING: Use of uninitialized value
+-  // CHECK: {{#0 0x.* in main .*heap-origin.cc:}}[[@LINE-3]]
+-
+-  // CHECK-ORIGINS: Uninitialized value was created by a heap allocation
+-  // CHECK-ORIGINS: {{#0 0x.* in .*malloc}}
+-  // CHECK-ORIGINS: {{#1 0x.* in main .*heap-origin.cc:}}[[@LINE-8]]
+-
+-  // CHECK: SUMMARY: MemorySanitizer: use-of-uninitialized-value {{.*heap-origin.cc:.* main}}
+-  return 0;
+-}
+diff -urN llvm-3.3.src.org/projects/compiler-rt/lib/msan/lit_tests/Linux/glob.cc llvm-3.3.src/projects/compiler-rt/lib/msan/lit_tests/Linux/glob.cc
+--- llvm-3.3.src.org/projects/compiler-rt/lib/msan/lit_tests/Linux/glob.cc	2013-04-09 13:35:13.000000000 +0200
++++ llvm-3.3.src/projects/compiler-rt/lib/msan/lit_tests/Linux/glob.cc	1970-01-01 01:00:00.000000000 +0100
+@@ -1,26 +0,0 @@
+-// RUN: %clangxx_msan -m64 -O0 %s -o %t && %t %p 2>&1 | FileCheck %s
+-// RUN: %clangxx_msan -m64 -O3 %s -o %t && %t %p 2>&1 | FileCheck %s
+-
+-#include <assert.h>
+-#include <glob.h>
+-#include <stdio.h>
+-#include <string.h>
+-#include <errno.h>
+-
+-int main(int argc, char *argv[]) {
+-  assert(argc == 2);
+-  char buf[1024];
+-  snprintf(buf, sizeof(buf), "%s/%s", argv[1], "glob_test_root/*a");
+-
+-  glob_t globbuf;
+-  int res = glob(buf, 0, 0, &globbuf);
+-
+-  printf("%d %s\n", errno, strerror(errno));
+-  assert(res == 0);
+-  assert(globbuf.gl_pathc == 2);
+-  printf("%zu\n", strlen(globbuf.gl_pathv[0]));
+-  printf("%zu\n", strlen(globbuf.gl_pathv[1]));
+-  printf("PASS\n");
+-  // CHECK: PASS
+-  return 0;
+-}
+diff -urN llvm-3.3.src.org/projects/compiler-rt/lib/msan/lit_tests/no_sanitize_memory_prop.cc llvm-3.3.src/projects/compiler-rt/lib/msan/lit_tests/no_sanitize_memory_prop.cc
+--- llvm-3.3.src.org/projects/compiler-rt/lib/msan/lit_tests/no_sanitize_memory_prop.cc	2013-02-28 12:25:54.000000000 +0100
++++ llvm-3.3.src/projects/compiler-rt/lib/msan/lit_tests/no_sanitize_memory_prop.cc	1970-01-01 01:00:00.000000000 +0100
+@@ -1,33 +0,0 @@
+-// RUN: %clangxx_msan -m64 -O0 %s -o %t && %t >%t.out 2>&1
+-// RUN: %clangxx_msan -m64 -O1 %s -o %t && not %t >%t.out 2>&1
+-// RUN: FileCheck %s < %t.out
+-// RUN: %clangxx_msan -m64 -O2 %s -o %t && not %t >%t.out 2>&1
+-// RUN: FileCheck %s < %t.out
+-// RUN: %clangxx_msan -m64 -O3 %s -o %t && not %t >%t.out 2>&1
+-// RUN: FileCheck %s < %t.out
+-
+-// Test that (no_sanitize_memory) functions propagate shadow.
+-
+-// Note that at -O0 there is no report, because 'x' in 'f' is spilled to the
+-// stack, and then loaded back as a fully initialiazed value (due to
+-// no_sanitize_memory attribute).
+-
+-#include <stdlib.h>
+-#include <stdio.h>
+-
+-__attribute__((noinline))
+-__attribute__((no_sanitize_memory))
+-int f(int x) {
+-  return x;
+-}
+-
+-int main(void) {
+-  int x;
+-  int * volatile p = &x;
+-  int y = f(*p);
+-  // CHECK: WARNING: Use of uninitialized value
+-  // CHECK: {{#0 0x.* in main .*no_sanitize_memory_prop.cc:}}[[@LINE+1]]
+-  if (y)
+-    exit(0);
+-  return 0;
+-}
+diff -urN llvm-3.3.src.org/projects/compiler-rt/lib/msan/lit_tests/stack-origin.cc llvm-3.3.src/projects/compiler-rt/lib/msan/lit_tests/stack-origin.cc
+--- llvm-3.3.src.org/projects/compiler-rt/lib/msan/lit_tests/stack-origin.cc	2013-02-11 12:34:26.000000000 +0100
++++ llvm-3.3.src/projects/compiler-rt/lib/msan/lit_tests/stack-origin.cc	1970-01-01 01:00:00.000000000 +0100
+@@ -1,32 +0,0 @@
+-// RUN: %clangxx_msan -m64 -O0 %s -o %t && not %t >%t.out 2>&1
+-// RUN: FileCheck %s < %t.out
+-// RUN: %clangxx_msan -m64 -O1 %s -o %t && not %t >%t.out 2>&1
+-// RUN: FileCheck %s < %t.out
+-// RUN: %clangxx_msan -m64 -O2 %s -o %t && not %t >%t.out 2>&1
+-// RUN: FileCheck %s < %t.out
+-// RUN: %clangxx_msan -m64 -O3 %s -o %t && not %t >%t.out 2>&1
+-// RUN: FileCheck %s < %t.out
+-
+-// RUN: %clangxx_msan -fsanitize-memory-track-origins -m64 -O0 %s -o %t && not %t >%t.out 2>&1
+-// RUN: FileCheck %s < %t.out && FileCheck %s --check-prefix=CHECK-ORIGINS < %t.out
+-// RUN: %clangxx_msan -fsanitize-memory-track-origins -m64 -O1 %s -o %t && not %t >%t.out 2>&1
+-// RUN: FileCheck %s < %t.out && FileCheck %s --check-prefix=CHECK-ORIGINS < %t.out
+-// RUN: %clangxx_msan -fsanitize-memory-track-origins -m64 -O2 %s -o %t && not %t >%t.out 2>&1
+-// RUN: FileCheck %s < %t.out && FileCheck %s --check-prefix=CHECK-ORIGINS < %t.out
+-// RUN: %clangxx_msan -fsanitize-memory-track-origins -m64 -O3 %s -o %t && not %t >%t.out 2>&1
+-// RUN: FileCheck %s < %t.out && FileCheck %s --check-prefix=CHECK-ORIGINS < %t.out
+-
+-#include <stdlib.h>
+-int main(int argc, char **argv) {
+-  int x;
+-  int *volatile p = &x;
+-  if (*p)
+-    exit(0);
+-  // CHECK: WARNING: Use of uninitialized value
+-  // CHECK: {{#0 0x.* in main .*stack-origin.cc:}}[[@LINE-3]]
+-
+-  // CHECK-ORIGINS: Uninitialized value was created by an allocation of 'x' in the stack frame of function 'main'
+-
+-  // CHECK: SUMMARY: MemorySanitizer: use-of-uninitialized-value {{.*stack-origin.cc:.* main}}
+-  return 0;
+-}
+diff -urN llvm-3.3.src.org/projects/compiler-rt/lib/tsan/lit_tests/blacklist.cc llvm-3.3.src/projects/compiler-rt/lib/tsan/lit_tests/blacklist.cc
+--- llvm-3.3.src.org/projects/compiler-rt/lib/tsan/lit_tests/blacklist.cc	2012-12-28 11:06:26.000000000 +0100
++++ llvm-3.3.src/projects/compiler-rt/lib/tsan/lit_tests/blacklist.cc	1970-01-01 01:00:00.000000000 +0100
+@@ -1,31 +0,0 @@
+-// Test blacklist functionality for TSan.
+-
+-// RUN: %clangxx_tsan -O1 %s \
+-// RUN:   -fsanitize-blacklist=%p/Helpers/blacklist.txt \
+-// RUN:   -o %t && %t 2>&1 | FileCheck %s
+-#include <pthread.h>
+-#include <stdio.h>
+-
+-int Global;
+-
+-void *Thread1(void *x) {
+-  Global++;
+-  return NULL;
+-}
+-
+-void *Blacklisted_Thread2(void *x) {
+-  Global--;
+-  return NULL;
+-}
+-
+-int main() {
+-  pthread_t t[2];
+-  pthread_create(&t[0], NULL, Thread1, NULL);
+-  pthread_create(&t[1], NULL, Blacklisted_Thread2, NULL);
+-  pthread_join(t[0], NULL);
+-  pthread_join(t[1], NULL);
+-  printf("PASS\n");
+-  return 0;
+-}
+-
+-// CHECK-NOT: ThreadSanitizer: data race
+diff -urN llvm-3.3.src.org/projects/compiler-rt/lib/tsan/lit_tests/load_shared_lib.cc llvm-3.3.src/projects/compiler-rt/lib/tsan/lit_tests/load_shared_lib.cc
+--- llvm-3.3.src.org/projects/compiler-rt/lib/tsan/lit_tests/load_shared_lib.cc	2013-04-09 09:08:05.000000000 +0200
++++ llvm-3.3.src/projects/compiler-rt/lib/tsan/lit_tests/load_shared_lib.cc	1970-01-01 01:00:00.000000000 +0100
+@@ -1,44 +0,0 @@
+-// Check that if the list of shared libraries changes between the two race
+-// reports, the second report occurring in a new shared library is still
+-// symbolized correctly.
+-
+-// RUN: %clangxx_tsan -O1 %p/SharedLibs/load_shared_lib-so.cc \
+-// RUN:     -fPIC -shared -o %t-so.so
+-// RUN: %clangxx_tsan -O1 %s -o %t && %t 2>&1 | FileCheck %s
+-
+-#include <dlfcn.h>
+-#include <pthread.h>
+-#include <stdio.h>
+-
+-#include <string>
+-
+-int GLOB = 0;
+-
+-void *write_glob(void *unused) {
+-  GLOB++;
+-  return NULL;
+-}
+-
+-void race_two_threads(void *(*access_callback)(void *unused)) {
+-  pthread_t t1, t2;
+-  pthread_create(&t1, NULL, access_callback, NULL);
+-  pthread_create(&t2, NULL, access_callback, NULL);
+-  pthread_join(t1, NULL);
+-  pthread_join(t2, NULL);
+-}
+-
+-int main(int argc, char *argv[]) {
+-  std::string path = std::string(argv[0]) + std::string("-so.so");
+-  race_two_threads(write_glob);
+-  // CHECK: write_glob
+-  void *lib = dlopen(path.c_str(), RTLD_NOW);
+-    if (!lib) {
+-    printf("error in dlopen(): %s\n", dlerror());
+-    return 1;
+-  }
+-  void *(*write_from_so)(void *unused);
+-  *(void **)&write_from_so = dlsym(lib, "write_from_so");
+-  race_two_threads(write_from_so);
+-  // CHECK: write_from_so
+-  return 0;
+-}
+diff -urN llvm-3.3.src.org/projects/compiler-rt/lib/tsan/lit_tests/mutex_destroy_locked.cc llvm-3.3.src/projects/compiler-rt/lib/tsan/lit_tests/mutex_destroy_locked.cc
+--- llvm-3.3.src.org/projects/compiler-rt/lib/tsan/lit_tests/mutex_destroy_locked.cc	2013-02-06 15:24:00.000000000 +0100
++++ llvm-3.3.src/projects/compiler-rt/lib/tsan/lit_tests/mutex_destroy_locked.cc	1970-01-01 01:00:00.000000000 +0100
+@@ -1,22 +0,0 @@
+-// RUN: %clangxx_tsan -O1 %s -o %t && %t 2>&1 | FileCheck %s
+-#include <pthread.h>
+-#include <unistd.h>
+-
+-int main() {
+-  pthread_mutex_t m;
+-  pthread_mutex_init(&m, 0);
+-  pthread_mutex_lock(&m);
+-  pthread_mutex_destroy(&m);
+-  return 0;
+-}
+-
+-// CHECK: WARNING: ThreadSanitizer: destroy of a locked mutex
+-// CHECK:     #0 pthread_mutex_destroy
+-// CHECK:     #1 main
+-// CHECK:   and:
+-// CHECK:     #0 pthread_mutex_lock
+-// CHECK:     #1 main
+-// CHECK:   Mutex {{.*}} created at:
+-// CHECK:     #0 pthread_mutex_init
+-// CHECK:     #1 main
+-// CHECK: SUMMARY: ThreadSanitizer: destroy of a locked mutex{{.*}}main
+diff -urN llvm-3.3.src.org/projects/compiler-rt/lib/tsan/lit_tests/mutexset1.cc llvm-3.3.src/projects/compiler-rt/lib/tsan/lit_tests/mutexset1.cc
+--- llvm-3.3.src.org/projects/compiler-rt/lib/tsan/lit_tests/mutexset1.cc	2012-12-28 09:38:09.000000000 +0100
++++ llvm-3.3.src/projects/compiler-rt/lib/tsan/lit_tests/mutexset1.cc	1970-01-01 01:00:00.000000000 +0100
+@@ -1,37 +0,0 @@
+-// RUN: %clangxx_tsan -O1 %s -o %t && %t 2>&1 | FileCheck %s
+-#include <pthread.h>
+-#include <stdio.h>
+-#include <unistd.h>
+-
+-int Global;
+-pthread_mutex_t mtx;
+-
+-void *Thread1(void *x) {
+-  sleep(1);
+-  pthread_mutex_lock(&mtx);
+-  Global++;
+-  pthread_mutex_unlock(&mtx);
+-  return NULL;
+-}
+-
+-void *Thread2(void *x) {
+-  Global--;
+-  return NULL;
+-}
+-
+-int main() {
+-  // CHECK: WARNING: ThreadSanitizer: data race
+-  // CHECK:   Write of size 4 at {{.*}} by thread T1
+-  // CHECK:                         (mutexes: write [[M1:M[0-9]+]]):
+-  // CHECK:   Previous write of size 4 at {{.*}} by thread T2:
+-  // CHECK:   Mutex [[M1]] created at:
+-  // CHECK:     #0 pthread_mutex_init
+-  // CHECK:     #1 main {{.*}}/mutexset1.cc:[[@LINE+1]]
+-  pthread_mutex_init(&mtx, 0);
+-  pthread_t t[2];
+-  pthread_create(&t[0], NULL, Thread1, NULL);
+-  pthread_create(&t[1], NULL, Thread2, NULL);
+-  pthread_join(t[0], NULL);
+-  pthread_join(t[1], NULL);
+-  pthread_mutex_destroy(&mtx);
+-}
+diff -urN llvm-3.3.src.org/projects/compiler-rt/lib/tsan/lit_tests/mutexset2.cc llvm-3.3.src/projects/compiler-rt/lib/tsan/lit_tests/mutexset2.cc
+--- llvm-3.3.src.org/projects/compiler-rt/lib/tsan/lit_tests/mutexset2.cc	2012-12-28 09:38:09.000000000 +0100
++++ llvm-3.3.src/projects/compiler-rt/lib/tsan/lit_tests/mutexset2.cc	1970-01-01 01:00:00.000000000 +0100
+@@ -1,37 +0,0 @@
+-// RUN: %clangxx_tsan -O1 %s -o %t && %t 2>&1 | FileCheck %s
+-#include <pthread.h>
+-#include <stdio.h>
+-#include <unistd.h>
+-
+-int Global;
+-pthread_mutex_t mtx;
+-
+-void *Thread1(void *x) {
+-  pthread_mutex_lock(&mtx);
+-  Global++;
+-  pthread_mutex_unlock(&mtx);
+-  return NULL;
+-}
+-
+-void *Thread2(void *x) {
+-  sleep(1);
+-  Global--;
+-  return NULL;
+-}
+-
+-int main() {
+-  // CHECK: WARNING: ThreadSanitizer: data race
+-  // CHECK:   Write of size 4 at {{.*}} by thread T2:
+-  // CHECK:   Previous write of size 4 at {{.*}} by thread T1
+-  // CHECK:                     (mutexes: write [[M1:M[0-9]+]]):
+-  // CHECK:   Mutex [[M1]] created at:
+-  // CHECK:     #0 pthread_mutex_init
+-  // CHECK:     #1 main {{.*}}/mutexset2.cc:[[@LINE+1]]
+-  pthread_mutex_init(&mtx, 0);
+-  pthread_t t[2];
+-  pthread_create(&t[0], NULL, Thread1, NULL);
+-  pthread_create(&t[1], NULL, Thread2, NULL);
+-  pthread_join(t[0], NULL);
+-  pthread_join(t[1], NULL);
+-  pthread_mutex_destroy(&mtx);
+-}
+diff -urN llvm-3.3.src.org/projects/compiler-rt/lib/tsan/lit_tests/mutexset3.cc llvm-3.3.src/projects/compiler-rt/lib/tsan/lit_tests/mutexset3.cc
+--- llvm-3.3.src.org/projects/compiler-rt/lib/tsan/lit_tests/mutexset3.cc	2012-12-28 09:38:09.000000000 +0100
++++ llvm-3.3.src/projects/compiler-rt/lib/tsan/lit_tests/mutexset3.cc	1970-01-01 01:00:00.000000000 +0100
+@@ -1,45 +0,0 @@
+-// RUN: %clangxx_tsan -O1 %s -o %t && %t 2>&1 | FileCheck %s
+-#include <pthread.h>
+-#include <stdio.h>
+-#include <unistd.h>
+-
+-int Global;
+-pthread_mutex_t mtx1;
+-pthread_mutex_t mtx2;
+-
+-void *Thread1(void *x) {
+-  sleep(1);
+-  pthread_mutex_lock(&mtx1);
+-  pthread_mutex_lock(&mtx2);
+-  Global++;
+-  pthread_mutex_unlock(&mtx2);
+-  pthread_mutex_unlock(&mtx1);
+-  return NULL;
+-}
+-
+-void *Thread2(void *x) {
+-  Global--;
+-  return NULL;
+-}
+-
+-int main() {
+-  // CHECK: WARNING: ThreadSanitizer: data race
+-  // CHECK: Write of size 4 at {{.*}} by thread T1
+-  // CHECK:               (mutexes: write [[M1:M[0-9]+]], write [[M2:M[0-9]+]]):
+-  // CHECK:   Previous write of size 4 at {{.*}} by thread T2:
+-  // CHECK:   Mutex [[M1]] created at:
+-  // CHECK:     #0 pthread_mutex_init
+-  // CHECK:     #1 main {{.*}}/mutexset3.cc:[[@LINE+4]]
+-  // CHECK:   Mutex [[M2]] created at:
+-  // CHECK:     #0 pthread_mutex_init
+-  // CHECK:     #1 main {{.*}}/mutexset3.cc:[[@LINE+2]]
+-  pthread_mutex_init(&mtx1, 0);
+-  pthread_mutex_init(&mtx2, 0);
+-  pthread_t t[2];
+-  pthread_create(&t[0], NULL, Thread1, NULL);
+-  pthread_create(&t[1], NULL, Thread2, NULL);
+-  pthread_join(t[0], NULL);
+-  pthread_join(t[1], NULL);
+-  pthread_mutex_destroy(&mtx1);
+-  pthread_mutex_destroy(&mtx2);
+-}
+diff -urN llvm-3.3.src.org/projects/compiler-rt/lib/tsan/lit_tests/mutexset4.cc llvm-3.3.src/projects/compiler-rt/lib/tsan/lit_tests/mutexset4.cc
+--- llvm-3.3.src.org/projects/compiler-rt/lib/tsan/lit_tests/mutexset4.cc	2012-12-28 09:38:09.000000000 +0100
++++ llvm-3.3.src/projects/compiler-rt/lib/tsan/lit_tests/mutexset4.cc	1970-01-01 01:00:00.000000000 +0100
+@@ -1,45 +0,0 @@
+-// RUN: %clangxx_tsan -O1 %s -o %t && %t 2>&1 | FileCheck %s
+-#include <pthread.h>
+-#include <stdio.h>
+-#include <unistd.h>
+-
+-int Global;
+-pthread_mutex_t mtx1;
+-pthread_mutex_t mtx2;
+-
+-void *Thread1(void *x) {
+-  pthread_mutex_lock(&mtx1);
+-  pthread_mutex_lock(&mtx2);
+-  Global++;
+-  pthread_mutex_unlock(&mtx2);
+-  pthread_mutex_unlock(&mtx1);
+-  return NULL;
+-}
+-
+-void *Thread2(void *x) {
+-  sleep(1);
+-  Global--;
+-  return NULL;
+-}
+-
+-int main() {
+-  // CHECK: WARNING: ThreadSanitizer: data race
+-  // CHECK:   Write of size 4 at {{.*}} by thread T2:
+-  // CHECK:   Previous write of size 4 at {{.*}} by thread T1
+-  // CHECK:                 (mutexes: write [[M1:M[0-9]+]], write [[M2:M[0-9]+]]):
+-  // CHECK:   Mutex [[M1]] created at:
+-  // CHECK:     #0 pthread_mutex_init
+-  // CHECK:     #1 main {{.*}}/mutexset4.cc:[[@LINE+4]]
+-  // CHECK:   Mutex [[M2]] created at:
+-  // CHECK:     #0 pthread_mutex_init
+-  // CHECK:     #1 main {{.*}}/mutexset4.cc:[[@LINE+2]]
+-  pthread_mutex_init(&mtx1, 0);
+-  pthread_mutex_init(&mtx2, 0);
+-  pthread_t t[2];
+-  pthread_create(&t[0], NULL, Thread1, NULL);
+-  pthread_create(&t[1], NULL, Thread2, NULL);
+-  pthread_join(t[0], NULL);
+-  pthread_join(t[1], NULL);
+-  pthread_mutex_destroy(&mtx1);
+-  pthread_mutex_destroy(&mtx2);
+-}
+diff -urN llvm-3.3.src.org/projects/compiler-rt/lib/tsan/lit_tests/mutexset5.cc llvm-3.3.src/projects/compiler-rt/lib/tsan/lit_tests/mutexset5.cc
+--- llvm-3.3.src.org/projects/compiler-rt/lib/tsan/lit_tests/mutexset5.cc	2012-12-28 09:38:09.000000000 +0100
++++ llvm-3.3.src/projects/compiler-rt/lib/tsan/lit_tests/mutexset5.cc	1970-01-01 01:00:00.000000000 +0100
+@@ -1,46 +0,0 @@
+-// RUN: %clangxx_tsan -O1 %s -o %t && %t 2>&1 | FileCheck %s
+-#include <pthread.h>
+-#include <stdio.h>
+-#include <unistd.h>
+-
+-int Global;
+-pthread_mutex_t mtx1;
+-pthread_mutex_t mtx2;
+-
+-void *Thread1(void *x) {
+-  sleep(1);
+-  pthread_mutex_lock(&mtx1);
+-  Global++;
+-  pthread_mutex_unlock(&mtx1);
+-  return NULL;
+-}
+-
+-void *Thread2(void *x) {
+-  pthread_mutex_lock(&mtx2);
+-  Global--;
+-  pthread_mutex_unlock(&mtx2);
+-  return NULL;
+-}
+-
+-int main() {
+-  // CHECK: WARNING: ThreadSanitizer: data race
+-  // CHECK:   Write of size 4 at {{.*}} by thread T1
+-  // CHECK:                              (mutexes: write [[M1:M[0-9]+]]):
+-  // CHECK:   Previous write of size 4 at {{.*}} by thread T2
+-  // CHECK:                              (mutexes: write [[M2:M[0-9]+]]):
+-  // CHECK:   Mutex [[M1]] created at:
+-  // CHECK:     #0 pthread_mutex_init
+-  // CHECK:     #1 main {{.*}}/mutexset5.cc:[[@LINE+4]]
+-  // CHECK:   Mutex [[M2]] created at:
+-  // CHECK:     #0 pthread_mutex_init
+-  // CHECK:     #1 main {{.*}}/mutexset5.cc:[[@LINE+5]]
+-  pthread_mutex_init(&mtx1, 0);
+-  pthread_mutex_init(&mtx2, 0);
+-  pthread_t t[2];
+-  pthread_create(&t[0], NULL, Thread1, NULL);
+-  pthread_create(&t[1], NULL, Thread2, NULL);
+-  pthread_join(t[0], NULL);
+-  pthread_join(t[1], NULL);
+-  pthread_mutex_destroy(&mtx1);
+-  pthread_mutex_destroy(&mtx2);
+-}
+diff -urN llvm-3.3.src.org/projects/compiler-rt/lib/tsan/lit_tests/mutexset6.cc llvm-3.3.src/projects/compiler-rt/lib/tsan/lit_tests/mutexset6.cc
+--- llvm-3.3.src.org/projects/compiler-rt/lib/tsan/lit_tests/mutexset6.cc	2012-12-28 09:38:09.000000000 +0100
++++ llvm-3.3.src/projects/compiler-rt/lib/tsan/lit_tests/mutexset6.cc	1970-01-01 01:00:00.000000000 +0100
+@@ -1,53 +0,0 @@
+-// RUN: %clangxx_tsan -O1 %s -o %t && %t 2>&1 | FileCheck %s
+-#include <pthread.h>
+-#include <stdio.h>
+-#include <unistd.h>
+-
+-int Global;
+-pthread_mutex_t mtx1;
+-pthread_spinlock_t mtx2;
+-pthread_rwlock_t mtx3;
+-
+-void *Thread1(void *x) {
+-  sleep(1);
+-  pthread_mutex_lock(&mtx1);
+-  Global++;
+-  pthread_mutex_unlock(&mtx1);
+-  return NULL;
+-}
+-
+-void *Thread2(void *x) {
+-  pthread_mutex_lock(&mtx1);
+-  pthread_mutex_unlock(&mtx1);
+-  pthread_spin_lock(&mtx2);
+-  pthread_rwlock_rdlock(&mtx3);
+-  Global--;
+-  pthread_spin_unlock(&mtx2);
+-  pthread_rwlock_unlock(&mtx3);
+-  return NULL;
+-}
+-
+-int main() {
+-  // CHECK: WARNING: ThreadSanitizer: data race
+-  // CHECK:   Write of size 4 at {{.*}} by thread T1
+-  // CHECK:                          (mutexes: write [[M1:M[0-9]+]]):
+-  // CHECK:   Previous write of size 4 at {{.*}} by thread T2
+-  // CHECK:               (mutexes: write [[M2:M[0-9]+]], read [[M3:M[0-9]+]]):
+-  // CHECK:   Mutex [[M1]] created at:
+-  // CHECK:     #1 main {{.*}}/mutexset6.cc:[[@LINE+5]]
+-  // CHECK:   Mutex [[M2]] created at:
+-  // CHECK:     #1 main {{.*}}/mutexset6.cc:[[@LINE+4]]
+-  // CHECK:   Mutex [[M3]] created at:
+-  // CHECK:     #1 main {{.*}}/mutexset6.cc:[[@LINE+3]]
+-  pthread_mutex_init(&mtx1, 0);
+-  pthread_spin_init(&mtx2, 0);
+-  pthread_rwlock_init(&mtx3, 0);
+-  pthread_t t[2];
+-  pthread_create(&t[0], NULL, Thread1, NULL);
+-  pthread_create(&t[1], NULL, Thread2, NULL);
+-  pthread_join(t[0], NULL);
+-  pthread_join(t[1], NULL);
+-  pthread_mutex_destroy(&mtx1);
+-  pthread_spin_destroy(&mtx2);
+-  pthread_rwlock_destroy(&mtx3);
+-}
+diff -urN llvm-3.3.src.org/projects/compiler-rt/lib/tsan/lit_tests/mutexset8.cc llvm-3.3.src/projects/compiler-rt/lib/tsan/lit_tests/mutexset8.cc
+--- llvm-3.3.src.org/projects/compiler-rt/lib/tsan/lit_tests/mutexset8.cc	2013-04-30 14:00:40.000000000 +0200
++++ llvm-3.3.src/projects/compiler-rt/lib/tsan/lit_tests/mutexset8.cc	1970-01-01 01:00:00.000000000 +0100
+@@ -1,39 +0,0 @@
+-// RUN: %clangxx_tsan -O1 %s -o %t && %t 2>&1 | FileCheck %s
+-#include <pthread.h>
+-#include <stdio.h>
+-#include <unistd.h>
+-
+-int Global;
+-pthread_mutex_t *mtx;
+-
+-void *Thread1(void *x) {
+-  sleep(1);
+-  pthread_mutex_lock(mtx);
+-  Global++;
+-  pthread_mutex_unlock(mtx);
+-  return NULL;
+-}
+-
+-void *Thread2(void *x) {
+-  Global--;
+-  return NULL;
+-}
+-
+-int main() {
+-  // CHECK: WARNING: ThreadSanitizer: data race
+-  // CHECK:   Write of size 4 at {{.*}} by thread T1
+-  // CHECK:                         (mutexes: write [[M1:M[0-9]+]]):
+-  // CHECK:   Previous write of size 4 at {{.*}} by thread T2:
+-  // CHECK:   Mutex [[M1]] created at:
+-  // CHECK:     #0 pthread_mutex_init
+-  // CHECK:     #1 main {{.*}}/mutexset8.cc
+-  mtx = new pthread_mutex_t;
+-  pthread_mutex_init(mtx, 0);
+-  pthread_t t[2];
+-  pthread_create(&t[0], NULL, Thread1, NULL);
+-  pthread_create(&t[1], NULL, Thread2, NULL);
+-  pthread_join(t[0], NULL);
+-  pthread_join(t[1], NULL);
+-  pthread_mutex_destroy(mtx);
+-  delete mtx;
+-}
+diff -urN llvm-3.3.src.org/projects/compiler-rt/lib/tsan/lit_tests/race_on_mutex.c llvm-3.3.src/projects/compiler-rt/lib/tsan/lit_tests/race_on_mutex.c
+--- llvm-3.3.src.org/projects/compiler-rt/lib/tsan/lit_tests/race_on_mutex.c	2013-02-01 12:10:53.000000000 +0100
++++ llvm-3.3.src/projects/compiler-rt/lib/tsan/lit_tests/race_on_mutex.c	1970-01-01 01:00:00.000000000 +0100
+@@ -1,42 +0,0 @@
+-// RUN: %clang_tsan -O1 %s -o %t && %t 2>&1 | FileCheck %s
+-#include <pthread.h>
+-#include <stdio.h>
+-#include <stddef.h>
+-#include <unistd.h>
+-
+-pthread_mutex_t Mtx;
+-int Global;
+-
+-void *Thread1(void *x) {
+-  pthread_mutex_init(&Mtx, 0);
+-  pthread_mutex_lock(&Mtx);
+-  Global = 42;
+-  pthread_mutex_unlock(&Mtx);
+-  return NULL;
+-}
+-
+-void *Thread2(void *x) {
+-  sleep(1);
+-  pthread_mutex_lock(&Mtx);
+-  Global = 43;
+-  pthread_mutex_unlock(&Mtx);
+-  return NULL;
+-}
+-
+-int main() {
+-  pthread_t t[2];
+-  pthread_create(&t[0], NULL, Thread1, NULL);
+-  pthread_create(&t[1], NULL, Thread2, NULL);
+-  pthread_join(t[0], NULL);
+-  pthread_join(t[1], NULL);
+-  pthread_mutex_destroy(&Mtx);
+-  return 0;
+-}
+-
+-// CHECK:      WARNING: ThreadSanitizer: data race
+-// CHECK-NEXT:   Atomic read of size 1 at {{.*}} by thread T2:
+-// CHECK-NEXT:     #0 pthread_mutex_lock
+-// CHECK-NEXT:     #1 Thread2{{.*}} {{.*}}race_on_mutex.c:20{{(:3)?}} ({{.*}})
+-// CHECK:        Previous write of size 1 at {{.*}} by thread T1:
+-// CHECK-NEXT:     #0 pthread_mutex_init {{.*}} ({{.*}})
+-// CHECK-NEXT:     #1 Thread1{{.*}} {{.*}}race_on_mutex.c:11{{(:3)?}} ({{.*}})
+diff -urN llvm-3.3.src.org/projects/compiler-rt/lib/tsan/lit_tests/signal_malloc.cc llvm-3.3.src/projects/compiler-rt/lib/tsan/lit_tests/signal_malloc.cc
+--- llvm-3.3.src.org/projects/compiler-rt/lib/tsan/lit_tests/signal_malloc.cc	2013-02-06 15:24:00.000000000 +0100
++++ llvm-3.3.src/projects/compiler-rt/lib/tsan/lit_tests/signal_malloc.cc	1970-01-01 01:00:00.000000000 +0100
+@@ -1,26 +0,0 @@
+-// RUN: %clang_tsan -O1 %s -o %t && %t 2>&1 | FileCheck %s
+-#include <stdio.h>
+-#include <stdlib.h>
+-#include <signal.h>
+-#include <sys/types.h>
+-#include <unistd.h>
+-
+-static void handler(int, siginfo_t*, void*) {
+-  // CHECK: WARNING: ThreadSanitizer: signal-unsafe call inside of a signal
+-  // CHECK:     #0 malloc
+-  // CHECK:     #{{(1|2)}} handler(int, siginfo{{(_t)?}}*, void*) {{.*}}signal_malloc.cc:[[@LINE+2]]
+-  // CHECK: SUMMARY: ThreadSanitizer: signal-unsafe call inside of a signal{{.*}}handler
+-  volatile char *p = (char*)malloc(1);
+-  p[0] = 0;
+-  free((void*)p);
+-}
+-
+-int main() {
+-  struct sigaction act = {};
+-  act.sa_sigaction = &handler;
+-  sigaction(SIGPROF, &act, 0);
+-  kill(getpid(), SIGPROF);
+-  sleep(1);
+-  return 0;
+-}
+-
+diff -urN llvm-3.3.src.org/projects/compiler-rt/lib/tsan/lit_tests/simple_race.cc llvm-3.3.src/projects/compiler-rt/lib/tsan/lit_tests/simple_race.cc
+--- llvm-3.3.src.org/projects/compiler-rt/lib/tsan/lit_tests/simple_race.cc	2013-02-06 15:24:00.000000000 +0100
++++ llvm-3.3.src/projects/compiler-rt/lib/tsan/lit_tests/simple_race.cc	1970-01-01 01:00:00.000000000 +0100
+@@ -1,26 +0,0 @@
+-// RUN: %clangxx_tsan -O1 %s -o %t && %t 2>&1 | FileCheck %s
+-#include <pthread.h>
+-#include <stdio.h>
+-
+-int Global;
+-
+-void *Thread1(void *x) {
+-  Global++;
+-  return NULL;
+-}
+-
+-void *Thread2(void *x) {
+-  Global--;
+-  return NULL;
+-}
+-
+-int main() {
+-  pthread_t t[2];
+-  pthread_create(&t[0], NULL, Thread1, NULL);
+-  pthread_create(&t[1], NULL, Thread2, NULL);
+-  pthread_join(t[0], NULL);
+-  pthread_join(t[1], NULL);
+-}
+-
+-// CHECK: WARNING: ThreadSanitizer: data race
+-// CHECK: SUMMARY: ThreadSanitizer: data race{{.*}}Thread
+diff -urN llvm-3.3.src.org/projects/compiler-rt/lib/tsan/lit_tests/simple_stack2.cc llvm-3.3.src/projects/compiler-rt/lib/tsan/lit_tests/simple_stack2.cc
+--- llvm-3.3.src.org/projects/compiler-rt/lib/tsan/lit_tests/simple_stack2.cc	2012-12-07 10:24:57.000000000 +0100
++++ llvm-3.3.src/projects/compiler-rt/lib/tsan/lit_tests/simple_stack2.cc	1970-01-01 01:00:00.000000000 +0100
+@@ -1,53 +0,0 @@
+-// RUN: %clangxx_tsan -O1 %s -o %t && %t 2>&1 | FileCheck %s
+-#include <pthread.h>
+-#include <stdio.h>
+-#include <unistd.h>
+-
+-int Global;
+-
+-void __attribute__((noinline)) foo1() {
+-  Global = 42;
+-}
+-
+-void __attribute__((noinline)) bar1() {
+-  volatile int tmp = 42;
+-  int tmp2 = tmp;
+-  (void)tmp2;
+-  foo1();
+-}
+-
+-void __attribute__((noinline)) foo2() {
+-  volatile int tmp = Global;
+-  int tmp2 = tmp;
+-  (void)tmp2;
+-}
+-
+-void __attribute__((noinline)) bar2() {
+-  volatile int tmp = 42;
+-  int tmp2 = tmp;
+-  (void)tmp2;
+-  foo2();
+-}
+-
+-void *Thread1(void *x) {
+-  sleep(1);
+-  bar1();
+-  return NULL;
+-}
+-
+-int main() {
+-  pthread_t t;
+-  pthread_create(&t, NULL, Thread1, NULL);
+-  bar2();
+-  pthread_join(t, NULL);
+-}
+-
+-// CHECK:      WARNING: ThreadSanitizer: data race
+-// CHECK-NEXT:   Write of size 4 at {{.*}} by thread T1:
+-// CHECK-NEXT:     #0 foo1{{.*}} {{.*}}simple_stack2.cc:9{{(:3)?}} ({{.*}})
+-// CHECK-NEXT:     #1 bar1{{.*}} {{.*}}simple_stack2.cc:16{{(:3)?}} ({{.*}})
+-// CHECK-NEXT:     #2 Thread1{{.*}} {{.*}}simple_stack2.cc:34{{(:3)?}} ({{.*}})
+-// CHECK:        Previous read of size 4 at {{.*}} by main thread:
+-// CHECK-NEXT:     #0 foo2{{.*}} {{.*}}simple_stack2.cc:20{{(:28)?}} ({{.*}})
+-// CHECK-NEXT:     #1 bar2{{.*}} {{.*}}simple_stack2.cc:29{{(:3)?}} ({{.*}})
+-// CHECK-NEXT:     #2 main{{.*}} {{.*}}simple_stack2.cc:41{{(:3)?}} ({{.*}})
+diff -urN llvm-3.3.src.org/projects/compiler-rt/lib/tsan/lit_tests/simple_stack.c llvm-3.3.src/projects/compiler-rt/lib/tsan/lit_tests/simple_stack.c
+--- llvm-3.3.src.org/projects/compiler-rt/lib/tsan/lit_tests/simple_stack.c	2012-12-17 17:28:15.000000000 +0100
++++ llvm-3.3.src/projects/compiler-rt/lib/tsan/lit_tests/simple_stack.c	1970-01-01 01:00:00.000000000 +0100
+@@ -1,66 +0,0 @@
+-// RUN: %clang_tsan -O1 %s -o %t && %t 2>&1 | FileCheck %s
+-#include <pthread.h>
+-#include <stdio.h>
+-#include <unistd.h>
+-
+-int Global;
+-
+-void __attribute__((noinline)) foo1() {
+-  Global = 42;
+-}
+-
+-void __attribute__((noinline)) bar1() {
+-  volatile int tmp = 42; (void)tmp;
+-  foo1();
+-}
+-
+-void __attribute__((noinline)) foo2() {
+-  volatile int v = Global; (void)v;
+-}
+-
+-void __attribute__((noinline)) bar2() {
+-  volatile int tmp = 42; (void)tmp;
+-  foo2();
+-}
+-
+-void *Thread1(void *x) {
+-  sleep(1);
+-  bar1();
+-  return NULL;
+-}
+-
+-void *Thread2(void *x) {
+-  bar2();
+-  return NULL;
+-}
+-
+-void StartThread(pthread_t *t, void *(*f)(void*)) {
+-  pthread_create(t, NULL, f, NULL);
+-}
+-
+-int main() {
+-  pthread_t t[2];
+-  StartThread(&t[0], Thread1);
+-  StartThread(&t[1], Thread2);
+-  pthread_join(t[0], NULL);
+-  pthread_join(t[1], NULL);
+-  return 0;
+-}
+-
+-// CHECK:      WARNING: ThreadSanitizer: data race
+-// CHECK-NEXT:   Write of size 4 at {{.*}} by thread T1:
+-// CHECK-NEXT:     #0 foo1{{.*}} {{.*}}simple_stack.c:9{{(:3)?}} ({{.*}})
+-// CHECK-NEXT:     #1 bar1{{.*}} {{.*}}simple_stack.c:14{{(:3)?}} ({{.*}})
+-// CHECK-NEXT:     #2 Thread1{{.*}} {{.*}}simple_stack.c:28{{(:3)?}} ({{.*}})
+-// CHECK:        Previous read of size 4 at {{.*}} by thread T2:
+-// CHECK-NEXT:     #0 foo2{{.*}} {{.*}}simple_stack.c:18{{(:26)?}} ({{.*}})
+-// CHECK-NEXT:     #1 bar2{{.*}} {{.*}}simple_stack.c:23{{(:3)?}} ({{.*}})
+-// CHECK-NEXT:     #2 Thread2{{.*}} {{.*}}simple_stack.c:33{{(:3)?}} ({{.*}})
+-// CHECK:        Thread T1 (tid={{.*}}, running) created by main thread at:
+-// CHECK-NEXT:     #0 pthread_create {{.*}} ({{.*}})
+-// CHECK-NEXT:     #1 StartThread{{.*}} {{.*}}simple_stack.c:38{{(:3)?}} ({{.*}})
+-// CHECK-NEXT:     #2 main{{.*}} {{.*}}simple_stack.c:43{{(:3)?}} ({{.*}})
+-// CHECK:        Thread T2 ({{.*}}) created by main thread at:
+-// CHECK-NEXT:     #0 pthread_create {{.*}} ({{.*}})
+-// CHECK-NEXT:     #1 StartThread{{.*}} {{.*}}simple_stack.c:38{{(:3)?}} ({{.*}})
+-// CHECK-NEXT:     #2 main{{.*}} {{.*}}simple_stack.c:44{{(:3)?}} ({{.*}})
+diff -urN llvm-3.3.src.org/projects/compiler-rt/lib/tsan/lit_tests/thread_leak3.c llvm-3.3.src/projects/compiler-rt/lib/tsan/lit_tests/thread_leak3.c
+--- llvm-3.3.src.org/projects/compiler-rt/lib/tsan/lit_tests/thread_leak3.c	2013-03-21 17:55:17.000000000 +0100
++++ llvm-3.3.src/projects/compiler-rt/lib/tsan/lit_tests/thread_leak3.c	1970-01-01 01:00:00.000000000 +0100
+@@ -1,17 +0,0 @@
+-// RUN: %clang_tsan -O1 %s -o %t && %t 2>&1 | FileCheck %s
+-#include <pthread.h>
+-#include <unistd.h>
+-
+-void *Thread(void *x) {
+-  return 0;
+-}
+-
+-int main() {
+-  pthread_t t;
+-  pthread_create(&t, 0, Thread, 0);
+-  sleep(1);
+-  return 0;
+-}
+-
+-// CHECK: WARNING: ThreadSanitizer: thread leak
+-// CHECK: SUMMARY: ThreadSanitizer: thread leak{{.*}}main
+diff -urN llvm-3.3.src.org/projects/compiler-rt/lib/tsan/lit_tests/tiny_race.c llvm-3.3.src/projects/compiler-rt/lib/tsan/lit_tests/tiny_race.c
+--- llvm-3.3.src.org/projects/compiler-rt/lib/tsan/lit_tests/tiny_race.c	2012-09-18 09:23:54.000000000 +0200
++++ llvm-3.3.src/projects/compiler-rt/lib/tsan/lit_tests/tiny_race.c	1970-01-01 01:00:00.000000000 +0100
+@@ -1,15 +0,0 @@
+-// RUN: %clang_tsan -O1 %s -o %t && %t 2>&1 | FileCheck %s
+-#include <pthread.h>
+-int Global;
+-void *Thread1(void *x) {
+-  Global = 42;
+-  return x;
+-}
+-int main() {
+-  pthread_t t;
+-  pthread_create(&t, NULL, Thread1, NULL);
+-  Global = 43;
+-  pthread_join(t, NULL);
+-  return Global;
+-}
+-// CHECK: WARNING: ThreadSanitizer: data race
+diff -urN llvm-3.3.src.org/projects/compiler-rt/lib/tsan/lit_tests/write_in_reader_lock.cc llvm-3.3.src/projects/compiler-rt/lib/tsan/lit_tests/write_in_reader_lock.cc
+--- llvm-3.3.src.org/projects/compiler-rt/lib/tsan/lit_tests/write_in_reader_lock.cc	2012-12-07 10:24:57.000000000 +0100
++++ llvm-3.3.src/projects/compiler-rt/lib/tsan/lit_tests/write_in_reader_lock.cc	1970-01-01 01:00:00.000000000 +0100
+@@ -1,35 +0,0 @@
+-// RUN: %clangxx_tsan -O1 %s -o %t && %t 2>&1 | FileCheck %s
+-#include <pthread.h>
+-#include <unistd.h>
+-
+-pthread_rwlock_t rwlock;
+-int GLOB;
+-
+-void *Thread1(void *p) {
+-  (void)p;
+-  pthread_rwlock_rdlock(&rwlock);
+-  // Write under reader lock.
+-  sleep(1);
+-  GLOB++;
+-  pthread_rwlock_unlock(&rwlock);
+-  return 0;
+-}
+-
+-int main(int argc, char *argv[]) {
+-  pthread_rwlock_init(&rwlock, NULL);
+-  pthread_rwlock_rdlock(&rwlock);
+-  pthread_t t;
+-  pthread_create(&t, 0, Thread1, 0);
+-  volatile int x = GLOB;
+-  (void)x;
+-  pthread_rwlock_unlock(&rwlock);
+-  pthread_join(t, 0);
+-  pthread_rwlock_destroy(&rwlock);
+-  return 0;
+-}
+-
+-// CHECK: WARNING: ThreadSanitizer: data race
+-// CHECK:   Write of size 4 at {{.*}} by thread T1{{.*}}:
+-// CHECK:     #0 Thread1(void*) {{.*}}write_in_reader_lock.cc:13
+-// CHECK:   Previous read of size 4 at {{.*}} by main thread{{.*}}:
+-// CHECK:     #0 main {{.*}}write_in_reader_lock.cc:23
