@@ -20,6 +20,12 @@ description = """Extrae is the core instrumentation package developed by the Per
 toolchain = {'name': 'gompi', 'version': '1.4.12-no-OFED'}
 toolchainopts = {"usempi": True}
 
+# http://www.bsc.es/computer-sciences/performance-tools/downloads
+# Requires input of email address for download
+sources = [SOURCELOWER_TAR_BZ2]
+
+patches = ['Extra-2.4.1_configure-no-shared-binutils.patch']
+
 # compiler toolchain depencies
 dependencies = [
     ('binutils', '2.22'),
@@ -29,29 +35,21 @@ dependencies = [
     ('PAPI', '5.2.0'),
 ]
 
-# http://www.bsc.es/computer-sciences/performance-tools/downloads
-# Requires input of email address for download
-sources = [SOURCELOWER_TAR_BZ2]
-
 configopts  = ' --with-mpi=${EBROOTOPENMPI}'
 configopts += ' --with-papi=${EBROOTPAPI} --enable-sampling'
 configopts += ' --enable-xml --enable-merge-in-trace'
 configopts += ' --with-unwind=${EBROOTLIBUNWIND}'
 configopts += ' --without-dwarf --without-dyninst'
 configopts += ' --with-boost=${EBROOTBOOST}'
-# --- BM ISSUE ---
-#
-# Does not build with EasyBuild provided binutils (libbfd/liberty not shared/compiler with -fPIC)
-#configopts += ' --with-binutils=${EBROOTBINUTILS}'
+configopts += ' --with-binutils=${EBROOTBINUTILS}'
+# make sure libbfd.a/libiberty.a provided by binutils is used rather than the ones provided by GCC
+preconfigopts = 'export LDFLAGS="-L${EBROOTBINUTILS}/lib -L${EBROOTBINUTILS}/lib64 $LDFLAGS" && '
 
 # --- BM EXTENSIONS ---
 #
 # Extrae also supports CUDA measurements - not yet tested
-# configopts ++ '  --with-cuda=${CUDADIR} --with-cupti=${CUDADIR}/extras/CUPTI'
+# configopts += '  --with-cuda=${EBROOTCUDA} --with-cupti=${EBROOTCUDA}/extras/CUPTI'
 
-# --- BM LIB64 ---
-#
-# On some systems libraries end up in lib/
 sanity_check_paths = {
     'files': ["bin/mpi2prv", "include/extrae_user_events.h", ("lib64/libmpitrace.a", "lib/libmpitrace.a")],
     'dirs': []
