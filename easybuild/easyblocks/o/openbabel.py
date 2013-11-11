@@ -39,13 +39,6 @@ class EB_OpenBabel(CMakeMake):
     """Support for installing the OpenBabel package."""
 
     def configure_step(self):
-        try:
-            self.openbabelbuilddir = os.path.join(self.builddir, 'EasyBuild')
-            mkdir(self.openbabelbuilddir)
-            os.chdir(self.openbabelbuilddir)
-        except OSError, err:
-            self.log.error("Failed to create build dir(%s): %s" % (self.openbabelbuilddir, err))
-
         self.cfg['configopts'] += " -DPYTHON_BINDINGS=ON "
         self.cfg['configopts'] += "-DENABLE_TESTS=ON "
         # Needs wxWidgets
@@ -58,7 +51,7 @@ class EB_OpenBabel(CMakeMake):
         else:
             self.log.info("Not using Eigen")
 
-        super(EB_OpenBabel, self).configure_step(srcdir=self.cfg['start_dir'])
+        super(EB_OpenBabel, self).configure_step()
 
     def make_module_extra(self):
         """Custom variables for OpenBabel module."""
