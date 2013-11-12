@@ -47,16 +47,16 @@ class EB_OpenBabel(CMakeMake):
         if root_python:
             self.log.info("Enabling Python bindings")
             shortpyver = '.'.join(get_software_version('Python').split('.')[:2])
-            self.cfg['configopts'] += " -DPYTHON_BINDINGS=ON"
-            self.cfg['configopts'] += " -DPYTHON_LIBRARY=%s/lib/libpython%s.so" % (root_python, shortpyver)
-            self.cfg['configopts'] += " -DPYTHON_INCLUDE_DIR=%s/include/python%s" % (root_python, shortpyver)
+            self.cfg['configopts'] += "-DPYTHON_BINDINGS=ON "
+            self.cfg['configopts'] += "-DPYTHON_LIBRARY=%s/lib/libpython%s.so " % (root_python, shortpyver)
+            self.cfg['configopts'] += "-DPYTHON_INCLUDE_DIR=%s/include/python%s " % (root_python, shortpyver)
         else:
             self.log.info("Not enabling Python bindings")
 
         root_eigen = get_software_root("Eigen")
         if root_eigen:
             self.log.info("Using Eigen")
-            self.cfg['configopts'] += " -DEIGEN3_INCLUDE_DIR='%s/include' " % root_eigen
+            self.cfg['configopts'] += "-DEIGEN3_INCLUDE_DIR='%s/include' " % root_eigen
         else:
             self.log.info("Not using Eigen")
 
