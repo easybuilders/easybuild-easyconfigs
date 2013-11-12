@@ -56,7 +56,7 @@ class EB_OpenBabel(CMakeMake):
         root_eigen = get_software_root("Eigen")
         if root_eigen:
             self.log.info("Using Eigen")
-            self.cfg['configopts'] += "-DEIGEN3_INCLUDE_DIR='%s/include' " % root_eigen
+            self.cfg['configopts'] += " -DEIGEN3_INCLUDE_DIR='%s/include' " % root_eigen
         else:
             self.log.info("Not using Eigen")
 
