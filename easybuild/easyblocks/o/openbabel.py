@@ -29,7 +29,7 @@ EasyBuild support for OpenBabel, implemented as an easyblock
 """
 
 from easybuild.easyblocks.generic.cmakemake import CMakeMake
-from easybuild.tools.modules import get_software_root
+from easybuild.tools.modules import get_software_root, get_software_version
 
 
 class EB_OpenBabel(CMakeMake):
