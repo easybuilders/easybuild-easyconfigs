@@ -28,17 +28,17 @@ EasyBuild support for OpenBabel, implemented as an easyblock
 @author: Ward Poelmans (Ghent University)
 """
 
-import os
-
 from easybuild.easyblocks.generic.cmakemake import CMakeMake
 from easybuild.tools.modules import get_software_root
-from easybuild.tools.filetools import mkdir
 
 
 class EB_OpenBabel(CMakeMake):
     """Support for installing the OpenBabel package."""
 
     def configure_step(self):
+        # Use separate build directory
+        self.cfg['separate_build_dir'] = True
+
         self.cfg['configopts'] += " -DPYTHON_BINDINGS=ON "
         self.cfg['configopts'] += "-DENABLE_TESTS=ON "
         # Needs wxWidgets
