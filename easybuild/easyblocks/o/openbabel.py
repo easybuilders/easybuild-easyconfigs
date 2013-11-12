@@ -49,7 +49,7 @@ class EB_OpenBabel(CMakeMake):
             shortpyver = '.'.join(get_software_version('Python').split('.')[:2])
             self.cfg['configopts'] += " -DPYTHON_BINDINGS=ON"
             self.cfg['configopts'] += " -DPYTHON_LIBRARY=%s/lib/libpython%s.so" % (root_python, shortpyver)
-            self.cfg['configopts'] += " -DPYTHON_INCLUDE_DIR=%s/include" % root_python
+            self.cfg['configopts'] += " -DPYTHON_INCLUDE_DIR=%s/include/python%s" % (root_python, shortpyver)
         else:
             self.log.info("Not enabling Python bindings")
 
