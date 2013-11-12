@@ -1,13 +1,14 @@
 name = 'ParFlow'
 version = '605'
 
-homepage = 'http://computation.llnl.gov/casc/parflow/parflow_home.html'
-description = """ParFlow is an integrated, parallel watershed model that makes use of high-performance computing to simulate surface and subsurface fluid flow."""  
+homepage = 'http://computation.llnl.gov/casc/parflow/'
+description = """ParFlow is an integrated, parallel watershed model that makes use of high-performance computing
+to simulate surface and subsurface fluid flow."""
 
 toolchain = {'name': 'goolf', 'version': '1.4.10'}
 toolchainopts = {'opt': True, 'pic': True, 'usempi': True}
 
-sources = ['%s.r%s.tar.gz' % (name.lower(), version)]
+sources = ['%(namelower)s.r%(version)s.tar.gz']
 source_urls = ['http://inside.mines.edu/~rmaxwell/']
 
 dependencies = [
@@ -16,30 +17,31 @@ dependencies = [
     ('Tcl', '8.5.14'),
 ]
 
-preconfigopts = [ 'cd pfsimulator &&', 
-                  'cd pftools &&',
+preconfigopts = [
+    'cd pfsimulator &&',
+    'cd pftools &&',
+]
+# copies of preconfigopts are required, not references, hence the [:]
+premakeopts =  preconfigopts[:]
+preinstallopts =  preconfigopts[:]
+
+configopts = [
+    ' --with-amps=mpi1 --enable-timing  --with-clm --with-silo=$EBROOTSILO --with-hypre=$EBROOTHYPRE',
+    ' --with-amps=mpi1 --enable-timing  --with-clm --with-silo=$EBROOTSILO --with-tcl=$EBROOTTCL',
 ]
 
-configopts = [ ' --with-amps=mpi1 --enable-timing  --with-clm --with-silo=$EBROOTSILO --with-hypre=$EBROOTHYPRE',
-               ' --with-amps=mpi1 --enable-timing  --with-clm --with-silo=$EBROOTSILO --with-tcl=$EBROOTTCL',
+makeopts = [
+    'LDLIBS="$(LDLIBS_EXTRA) -lHYPRE -lsilo -lmpi -lgfortran -lm -lgcc_s -lgcc -lquadmath"',
+    'LDLIBS="$(LDLIBS_EXTRA) $(PARFLOW_TOOLS_LIBS) -lsilo -ltcl8.5  -lgfortran -lm -lgcc_s -lgcc -lquadmath"',
 ]
 
-premakeopts =  [ 'cd pfsimulator &&',
-                  'cd pftools &&',
-]
-
-makeopts = [ 'LDLIBS="$LDLIBS_EXTRA -lHYPRE -lsilo -lmpi -lgfortran -lm -L/usr/lib/gcc/x86_64-linux-gnu/4.6/../../.. -L/usr/lib/../lib -L/usr/lib/x86_64-linux-gnu -L/lib/../lib -L/lib/x86_64-linux-gnu -L/usr/lib/gcc/x86_64-linux-gnu/4.6/../../../../lib -L/usr/lib/gcc/x86_64-linux-gnu/4.6/../../../x86_64-linux-gnu -L/usr/lib/gcc/x86_64-linux-gnu/4.6 -lgcc_s -lgcc -lquadmath"',
-             'LDLIBS="$(LDLIBS_EXTRA) $(PARFLOW_TOOLS_LIBS)  -lsilo -ltcl8.5  -lgfortran -lm -L/usr/lib/gcc/x86_64-linux-gnu/4.6/../../.. -L/usr/lib/../lib -L/usr/lib/x86_64-linux-gnu -L/lib/../lib -L/lib/x86_64-linux-gnu -L/usr/lib/gcc/x86_64-linux-gnu/4.6/../../../../lib -L/usr/lib/gcc/x86_64-linux-gnu/4.6/../../../x86_64-linux-gnu -L/usr/lib/gcc/x86_64-linux-gnu/4. -lgcc_s -lgcc -lquadmath"',
-	    ]
-
-preinstallopts =  [ 'cd pfsimulator &&',
-                  'cd pftools &&',
-]
-
+binaries = ['batchmc', 'bgmsfem2pfsol', 'bootmc', 'freemc', 'getmc', 'gmssol2pfsol', 'gmstinvertices',
+            'gmstriangulate', 'killmc', 'parflow', 'peekmc', 'pfhelp', 'pfwell_cat', 'pfsbtosa', 'pfbtosa',
+            'pfstrip', 'pfbtovis', 'projecttin', 'run']
+libraries = ['libamps.a', 'libamps_common.a', 'libclm.a', 'libkinsol.a', 'libparflow.a']
 sanity_check_paths = {
-    			'files': ["lib/libamps.a", "lib/libamps_common.a", "lib/libclm.a", "lib/libkinsol.a", "lib/libparflow.a", "bin/batchmc", "bin/bgmsfem2pfsol", "bin/bootmc", "bin/freemc", "bin/getmc", "bin/gmssol2pfsol", "bin/gmstinvertices", "bin/gmstriangulate", "bin/killmc", "bin/parflow", "bin/peekmc", "bin/pfhelp", "bin/pfwell_cat", "bin/pfsbtosa", "bin/pfbtosa", "bin/pfstrip", "bin/pfbtovis", "bin/projecttin", "bin/run"],   
-		        'dirs': [],
+    'files': ["bin/%s" % x for x in binaries] + ["lib/%s" % x for x in libraries],
+    'dirs': [],
 }
 
-moduleclass = 'data'
-
+moduleclass = 'cae'
