@@ -34,21 +34,46 @@ EasyBuild support for software that is configured with CMake, implemented as an 
 import os
 
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
+from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.filetools import run_cmd
 
 
 class CMakeMake(ConfigureMake):
     """Support for configuring build with CMake instead of traditional configure script"""
 
+    @staticmethod
+    def extra_options(extra_vars=None):
+        """Define extra easyconfig parameters specific to CMakeMake."""
+
+        orig_vars = ConfigureMake.extra_options(extra_vars)
+        cmakemake_vars = [
+            ('srcdir', [None, "Source directory location to provide to cmake command", CUSTOM]),
+            ('separate_build_dir', [False, "Perform build in a separate directory", CUSTOM]),
+        ]
+        cmakemake_vars.extend(orig_vars)
+        return cmakemake_vars
+
     def configure_step(self, srcdir=None, builddir=None):
         """Configure build using cmake"""
 
+        default_srcdir = '.'
+        if self.cfg['separate_build_dir']:
+            objdir = 'easybuild_obj'
+            try:
+                os.mkdir(objdir)
+                os.chdir(objdir)
+            except OSError, err:
+                self.log.error("Failed to create separate build dir %s in %s: %s" % (objdir, os.getcwd(), err))
+            default_srcdir = '..'
+
         if srcdir is None:
-            if builddir is not None:
+            if self.cfg['srcdir'] is not None:
+                srcdir = self.cfg['srcdir']
+            elif builddir is not None:
                 self.log.deprecated("CMakeMake.configure_step: named argument 'builddir' (should be 'srcdir')", "2.0")
                 srcdir = builddir
             else:
-                srcdir = '.'
+                srcdir = default_srcdir
 
         options = ['-DCMAKE_INSTALL_PREFIX=%s' % self.installdir]
         env_to_options = {
