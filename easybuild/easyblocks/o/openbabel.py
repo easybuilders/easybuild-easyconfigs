@@ -39,10 +39,19 @@ class EB_OpenBabel(CMakeMake):
         # Use separate build directory
         self.cfg['separate_build_dir'] = True
 
-        self.cfg['configopts'] += " -DPYTHON_BINDINGS=ON "
         self.cfg['configopts'] += "-DENABLE_TESTS=ON "
         # Needs wxWidgets
         self.cfg['configopts'] += "-DBUILD_GUI=OFF "
+
+        root_python = get_software_root('Python')
+        if root_python:
+            self.log.info("Enabling Python bindings")
+            shortpyver = '.'.join(get_software_version('Python').split('.')[:2])
+            self.cfg['configopts'] += " -DPYTHON_BINDINGS=ON"
+            self.cfg['configopts'] += " -DPYTHON_LIBRARY=%s/lib/libpython%s.so" % (root_python, shortpyver)
+            self.cfg['configopts'] += " -DPYTHON_INCLUDE_DIR=%s/include" % root_python
+        else:
+            self.log.info("Not enabling Python bindings")
 
         root_eigen = get_software_root("Eigen")
         if root_eigen:
@@ -52,6 +61,16 @@ class EB_OpenBabel(CMakeMake):
             self.log.info("Not using Eigen")
 
         super(EB_OpenBabel, self).configure_step()
+
+    def sanity_check_step(self):
+        """Custom sanity check for OpenBabel."""
+
+        custom_paths = {
+            'files': ['bin/babel', 'lib/libopenbabel.so'],
+            'dirs': ['share/openbabel'],
+        }
+
+        super(EB_OpenBabel, self).sanity_check_step(custom_paths=custom_paths)
 
     def make_module_extra(self):
         """Custom variables for OpenBabel module."""
