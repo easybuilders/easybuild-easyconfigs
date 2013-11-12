@@ -51,6 +51,15 @@ class EB_libint2(ConfigureMake):
 
         super(EB_libint2, self).configure_step()
 
+    def sanity_check_step(self):
+        """Custom sanity check for Libint2."""
+
+        custom_paths = {
+            'files': ['lib/libint2.a', 'lib/libint2.so', 'include/libint2/libint2.h'],
+            'dirs': [],
+        }
+        super(EB_libint2, self).sanity_check_step(custom_paths=custom_paths)
+
     def make_module_req_guess(self):
         """Specify correct CPATH for this installation."""
         guesses = super(EB_libint2, self).make_module_req_guess()
