@@ -39,13 +39,6 @@ from easybuild.tools.modules import get_software_root, get_software_libdir
 class EB_Scalasca1(ConfigureMake):
     """Support for building and installing Scalasca v1.x."""
 
-    def __init__(self, *args, **kwargs):
-        """Add extra config options specific to Scalasca v1.x."""
-        super(EB_Scalasca1, self).__init__(*args, **kwargs)
-
-        self.comp_opt_val = None
-        self.mpi_opt_val = None
-
     def check_readiness_step(self):
         """Make sure this easyblock is applicable to the Scalasca version being built."""
         ver = LooseVersion(self.version)
@@ -67,8 +60,7 @@ class EB_Scalasca1(ConfigureMake):
         }
         comp_fam = self.toolchain.comp_family()
         if comp_fam in comp_opts:
-            self.comp_opt_val = comp_opts[comp_fam]
-            self.cfg.update('configopts', "--compiler=%s" % self.comp_opt_val)
+            self.cfg.update('configopts', "--compiler=%s" % comp_opts[comp_fam])
         else:
             self.log.error("Compiler family %s not supported yet (only: %s)" % (comp_fam, ', '.join(comp_opts.keys())))
 
@@ -80,8 +72,7 @@ class EB_Scalasca1(ConfigureMake):
         }
         mpi_fam = self.toolchain.mpi_family()
         if mpi_fam in mpi_opts:
-            self.mpi_opt_val = mpi_opts[mpi_fam]
-            self.cfg.update('configopts', "--mpi=%s --enable-all-mpi-wrappers" % self.mpi_opt_val)
+            self.cfg.update('configopts', "--mpi=%s --enable-all-mpi-wrappers" % mpi_opts[mpi_fam])
         else:
             self.log.error("MPI family %s not supported yet (only: %s)" % (mpi_fam, ', '.join(mpi_opts.keys())))
 
@@ -105,10 +96,12 @@ class EB_Scalasca1(ConfigureMake):
 
     def build_step(self):
         """Build Scalasca using make, after stepping into the build dir."""
-        build_dir = 'build-linux-%s-%s' % (self.comp_opt_val, self.mpi_opt_val)
         try:
-            os.chdir(build_dir)
-            self.log.info("Stepped into build dir %s" % build_dir)
+            for entry in os.listdir(os.getcwd()):
+                if entry.startswith('build-linux-') and os.path.isdir(entry):
+                    os.chdir(entry)
+                    self.log.info("Stepped into build dir %s" % build_dir)
+            self.log.error("Could not find build dir to step into.")
         except OSError, err:
-            self.log.error("Failed to step into build dir %s before starting actual build: %s" % (build_dir, err))
+            self.log.error("Failed to step into build dir before starting actual build: %s" % err)
         super(EB_Scalasca1, self).build_step()
