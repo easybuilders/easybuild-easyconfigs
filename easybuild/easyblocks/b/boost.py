@@ -77,12 +77,13 @@ class EB_Boost(EasyBlock):
 
         # generate config depending on compiler used
         toolset = self.cfg['toolset']
-        if self.toolchain.comp_family() == toolchain.INTELCOMP:
-            toolset = 'intel-linux'
-        elif self.toolchain.comp_family() == toolchain.GCC:
-            toolset = 'gcc'
-        else:
-            self.log.error("Unknown compiler used, aborting.")
+        if toolset is None:
+            if self.toolchain.comp_family() == toolchain.INTELCOMP:
+                toolset = 'intel-linux'
+            elif self.toolchain.comp_family() == toolchain.GCC:
+                toolset = 'gcc'
+            else:
+                self.log.error("Unknown compiler used, don't know what to specify to --with-toolset, aborting.")
 
         cmd = "./bootstrap.sh --with-toolset=%s --prefix=%s %s" % (toolset, self.objdir, self.cfg['configopts'])
         run_cmd(cmd, log_all=True, simple=True)
