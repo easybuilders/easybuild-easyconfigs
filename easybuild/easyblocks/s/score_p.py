@@ -23,7 +23,7 @@
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
 """
-EasyBuild support for Score-P, implemented as an easyblock
+EasyBuild support for software using the Score-P configuration style, implemented as an easyblock
 
 @author: Kenneth Hoste (Ghent University)
 @author: Bernd Mohr (Juelich Supercomputing Centre)
@@ -36,7 +36,7 @@ from easybuild.tools.modules import get_software_root, get_software_libdir
 
 
 class EB_Score_minus_P(ConfigureMake):
-    """Support for building and installing Score-P."""
+    """Support for building and installing software using the Score-P configuration style."""
 
     def configure_step(self, *args, **kwargs):
         """Configure Score-P build, set configure options for compiler, MPI and dependencies."""
@@ -83,14 +83,3 @@ class EB_Score_minus_P(ConfigureMake):
                     self.cfg.update('configopts', dep_opt % dep_root)
 
         super(EB_Score_minus_P, self).configure_step(*args, **kwargs)
-
-    def sanity_check_step(self):
-        """Custom sanity check for Score-P."""
-
-        custom_paths = {
-            'files': ["bin/scorep", "include/scorep/SCOREP_User.h",
-                      ("lib64/libscorep_adapter_mpi_event.a", "lib/libscorep_adapter_mpi_event.a")],
-            'dirs': [],
-        }
-
-        super(EB_Score_minus_P, self).sanity_check_step(custom_paths=custom_paths)
