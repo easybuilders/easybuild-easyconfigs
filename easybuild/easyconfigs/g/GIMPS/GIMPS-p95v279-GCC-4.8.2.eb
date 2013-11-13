@@ -6,6 +6,7 @@
 # License::   MIT/GPL
 # $Id$
 ##
+easyblock = 'MakeCp'
 
 name = 'GIMPS'
 version = 'p95v279'
@@ -18,16 +19,20 @@ toolchain = {'name': 'GCC', 'version': '4.8.2'}
 
 builddependencies = [('cURL', '7.33.0')]
 
-# eg. http://www.mersenne.info/gimps/p95v279.source.zip
-sources = [('%s.source.zip' % version, 'unzip -qq %s || /bin/true')] # workaround, since unzip IS effectively buggy
-source_urls = ['http://www.mersenne.info/%s' % name.lower()]
+# make sure unzip works, zipped sources may contain some 'corruption',
+# e.g. "linux64/:  ucsize 306 <> csize 0 for STORED entry"
+sources = [('%(version)s.source.zip', 'unzip -qq %s || /bin/true')]
+# e.g. http://www.mersenne.info/gimps/p95v279.source.zip
+source_urls = ['http://www.mersenne.info/%(namelower)s']
 
 # ref. https://bbs.archlinux.org/viewtopic.php?id=114996 & http://pastebin.com/PEFUUxHq
-patches = ['gimps-linux64.patch']
+patches = ['GIMPS-p95v279_linux64-makefile.patch']
 
-skipsteps = ['configure']
 start_dir = 'linux64'
-preinstallopts = ["PREFIX=%(installdir)s "]
+
+makeopts = "-C ../gwnum -f make64 && make"
+
+files_to_copy = [(['mprime'], 'bin')]
 
 sanity_check_paths = {
     'files': ["bin/mprime"],
