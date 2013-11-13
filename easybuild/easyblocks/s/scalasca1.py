@@ -100,7 +100,7 @@ class EB_Scalasca1(ConfigureMake):
             for entry in os.listdir(os.getcwd()):
                 if entry.startswith('build-linux-') and os.path.isdir(entry):
                     os.chdir(entry)
-                    self.log.info("Stepped into build dir %s" % build_dir)
+                    self.log.info("Stepped into build dir %s" % entry)
             self.log.error("Could not find build dir to step into.")
         except OSError, err:
             self.log.error("Failed to step into build dir before starting actual build: %s" % err)
