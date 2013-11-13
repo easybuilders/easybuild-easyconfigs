@@ -96,12 +96,15 @@ class EB_Scalasca1(ConfigureMake):
 
     def build_step(self):
         """Build Scalasca using make, after stepping into the build dir."""
+        build_dir_found = False
         try:
             for entry in os.listdir(os.getcwd()):
                 if entry.startswith('build-linux-') and os.path.isdir(entry):
                     os.chdir(entry)
+                    build_dir_found = True
                     self.log.info("Stepped into build dir %s" % entry)
-            self.log.error("Could not find build dir to step into.")
         except OSError, err:
             self.log.error("Failed to step into build dir before starting actual build: %s" % err)
+        if not build_dir_found:
+            self.log.error("Could not find build dir to step into.")
         super(EB_Scalasca1, self).build_step()
