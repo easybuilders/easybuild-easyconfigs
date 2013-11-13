@@ -238,7 +238,7 @@ class IntelBase(EasyBlock):
                         # $INTEL_LICENSE_FILE should always be set during installation with existing license
                         env.setvar(default_lic_env_var, self.license_file)
                     break
-            if self.license_file is None or self.license_env_var:
+            if self.license_file is None or self.license_env_var is None:
                 self.log.error("self.license_file or self.license_env_var still None, something went horribly wrong...")
 
             self.cfg['license_file'] = self.license_file
