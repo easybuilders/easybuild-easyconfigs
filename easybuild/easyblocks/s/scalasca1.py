@@ -62,7 +62,7 @@ class EB_Scalasca1(ConfigureMake):
         # --compiler=(gnu|pgi|intel|path|ibm|sun|clang)
         # --mpi=(mpich|mpich2|lam|openmpi|intel|intel2|hp|scali|mpibull2|bullxmpi|sun|ibmpoe|intelpoe)
         comp_opts = {
-            toolchain.GCC: 'gcc',
+            toolchain.GCC: 'gnu',
             toolchain.INTELCOMP: 'intel',
         }
         comp_fam = self.toolchain.comp_family()
