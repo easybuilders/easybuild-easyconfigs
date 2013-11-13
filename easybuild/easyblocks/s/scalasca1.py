@@ -68,7 +68,7 @@ class EB_Scalasca1(ConfigureMake):
         comp_fam = self.toolchain.comp_family()
         if comp_fam in comp_opts:
             self.comp_opt_val = comp_opts[comp_fam]
-            self.cfg.update('configopts', "--compiler=%s" % comp_opt_val)
+            self.cfg.update('configopts', "--compiler=%s" % self.comp_opt_val)
         else:
             self.log.error("Compiler family %s not supported yet (only: %s)" % (comp_fam, ', '.join(comp_opts.keys())))
 
@@ -81,7 +81,7 @@ class EB_Scalasca1(ConfigureMake):
         mpi_fam = self.toolchain.mpi_family()
         if mpi_fam in mpi_opts:
             self.mpi_opt_val = mpi_opts[mpi_fam]
-            self.cfg.update('configopts', "--mpi=%s --enable-all-mpi-wrappers" % mpi_opt_val)
+            self.cfg.update('configopts', "--mpi=%s --enable-all-mpi-wrappers" % self.mpi_opt_val)
         else:
             self.log.error("MPI family %s not supported yet (only: %s)" % (mpi_fam, ', '.join(mpi_opts.keys())))
 
