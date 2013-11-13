@@ -33,7 +33,7 @@ from distutils.version import LooseVersion
 
 import easybuild.tools.toolchain as toolchain
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
-from easybuild.tools.modules import get_software_root, get_software_libdir
+from easybuild.tools.modules import get_software_root
 
 
 class EB_Scalasca1(ConfigureMake):
