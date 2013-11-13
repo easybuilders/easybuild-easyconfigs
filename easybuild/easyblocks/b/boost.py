@@ -53,7 +53,10 @@ class EB_Boost(EasyBlock):
     @staticmethod
     def extra_options():
         """Add extra easyconfig parameters for Boost."""
-        extra_vars = [('boost_mpi', [False, "Build mpi boost module (default: False)", CUSTOM])]
+        extra_vars = [
+            ('boost_mpi', [False, "Build mpi boost module (default: False)", CUSTOM]),
+            ('toolset', [None, "Toolset to use for Boost configuration ('--with-toolset fo bootstrap.sh')", CUSTOM]),
+        ]
 
         return EasyBlock.extra_options(extra_vars)
 
@@ -73,7 +76,7 @@ class EB_Boost(EasyBlock):
             self.log.error("Failed to create directory %s: %s" % (self.objdir, err))
 
         # generate config depending on compiler used
-        toolset = None
+        toolset = self.cfg['toolset']
         if self.toolchain.comp_family() == toolchain.INTELCOMP:
             toolset = 'intel-linux'
         elif self.toolchain.comp_family() == toolchain.GCC:
