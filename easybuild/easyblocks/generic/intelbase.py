@@ -193,6 +193,7 @@ class IntelBase(EasyBlock):
 
             # set default environment variable for license specification
             env.setvar(default_lic_env_var, self.license_file)
+            self.license_env_var = default_lic_env_var
         else:
             valid_license_specs = {}
             # iterate through entries in environment variables until a valid license specification is found
@@ -237,8 +238,8 @@ class IntelBase(EasyBlock):
                         # $INTEL_LICENSE_FILE should always be set during installation with existing license
                         env.setvar(default_lic_env_var, self.license_file)
                     break
-            if self.license_file is None:
-                self.log.error("self.license_file is still None, something went horribly wrong...")
+            if self.license_file is None or self.license_env_var:
+                self.log.error("self.license_file or self.license_env_var still None, something went horribly wrong...")
 
             self.cfg['license_file'] = self.license_file
             env.setvar(self.license_env_var, self.license_file)
