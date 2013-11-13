@@ -101,7 +101,7 @@ class EB_Scalasca1(ConfigureMake):
         if get_software_root('Cube'):
             self.cfg.update('configopts', '--disable-gui')
 
-        super(EB_Score_minus_P, self).configure_step(*args, **kwargs)
+        super(EB_Scalasca1, self).configure_step(*args, **kwargs)
 
     def build_step(self):
         """Build Scalasca using make, after stepping into the build dir."""

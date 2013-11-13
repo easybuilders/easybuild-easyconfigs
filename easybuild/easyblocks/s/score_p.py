@@ -55,7 +55,7 @@ class EB_Score_minus_P(ConfigureMake):
             self.log.error("Compiler family %s not supported yet (only: %s)" % (comp_fam, ', '.join(comp_opts.keys())))
 
         mpi_opts = {
-            toolchain.INTELMPI: 'intel',  # intel2? intelpoe?
+            toolchain.INTELMPI: 'intel2',  # intel: Intel MPI v1.x (ancient); intelpoe: IBM POE MPI for Intel platforms
             toolchain.OPENMPI: 'openmpi',
             toolchain.MPICH: 'mpich',
             toolchain.MPICH2: 'mpich2',
