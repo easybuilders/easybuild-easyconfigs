@@ -58,7 +58,7 @@ class MakeCp(ConfigureMake):
     def install_step(self):
         """Install by copying specified files and directories."""
         try:
-            for fil in self.cfg.get('files_to_copy', False):
+            for fil in self.cfg.get('files_to_copy', {}):
                 if isinstance(fil, tuple):
                     # ([src1, src2], targetdir)
                     if len(fil) == 2 and isinstance(fil[0], list) and isinstance(fil[1], basestring):
