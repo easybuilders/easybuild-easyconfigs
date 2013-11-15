@@ -57,7 +57,7 @@ class CMakeMake(ConfigureMake):
         """Configure build using cmake"""
 
         default_srcdir = '.'
-        if self.cfg['separate_build_dir']:
+        if self.cfg.get('separate_build_dir', False):
             objdir = 'easybuild_obj'
             try:
                 os.mkdir(objdir)
@@ -67,7 +67,7 @@ class CMakeMake(ConfigureMake):
             default_srcdir = '..'
 
         if srcdir is None:
-            if self.cfg['srcdir'] is not None:
+            if self.cfg.get('srcdir', None) is not None:
                 srcdir = self.cfg['srcdir']
             elif builddir is not None:
                 self.log.deprecated("CMakeMake.configure_step: named argument 'builddir' (should be 'srcdir')", "2.0")
