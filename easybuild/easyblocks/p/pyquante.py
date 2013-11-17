@@ -23,25 +23,27 @@
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
 """
-General EasyBuild support for installing the Enthought Python Distribution
+EasyBuild support for PyQuante, implemented as an easyblock
 
-@author: Jens Timmerman
+@author: Ward Poelmans (Ghent University)
 """
-import os
 
-from easybuild.tools.filetools import run_cmd
-from easybuild.easyblocks.generic.binary import Binary
+from easybuild.easyblocks.generic.pythonpackage import PythonPackage
+from easybuild.tools.modules import get_software_root
 
 
-class EB_EPD(Binary):
-    """Easyblock implementing the build step for EPD,
-    this is just running the installer script, with an argument to the installdir
-    """
+class EB_PyQuante(PythonPackage):
+    """Support for installing the PyQuante Python package."""
 
-    def install_step(self):
-        """Overwrite install_step from Binary"""
-        os.chdir(self.builddir)
-        if self.cfg['install_cmd'] is None:
-            self.cfg['install_cmd'] = "./epd_free-%s-x86_64.sh -b -p %s" % (self.version, self.installdir)
-        super(EB_EPD, self).install_step()
+    def configure_step(self):
+        """Check for Libint and use it if present"""
+
+        root_libint = get_software_root("Libint")
+        if root_libint:
+            self.log.info("Building Libint extension")
+            self.cfg.update('installopts', "--enable-libint")
+        else:
+            self.log.warn("Not building Libint extension")
+
+        super(EB_PyQuante, self).configure_step()
 

@@ -53,7 +53,10 @@ class EB_Boost(EasyBlock):
     @staticmethod
     def extra_options():
         """Add extra easyconfig parameters for Boost."""
-        extra_vars = [('boost_mpi', [False, "Build mpi boost module (default: False)", CUSTOM])]
+        extra_vars = [
+            ('boost_mpi', [False, "Build mpi boost module (default: False)", CUSTOM]),
+            ('toolset', [None, "Toolset to use for Boost configuration ('--with-toolset fo bootstrap.sh')", CUSTOM]),
+        ]
 
         return EasyBlock.extra_options(extra_vars)
 
@@ -61,7 +64,7 @@ class EB_Boost(EasyBlock):
         """Configure Boost build using custom tools"""
 
         # mpi sanity check
-        if self.cfg['boost_mpi'] and not self.toolchain.options['usempi']:
+        if self.cfg['boost_mpi'] and not self.toolchain.options.get('usempi', None):
             self.log.error("When enabling building boost_mpi, also enable the 'usempi' toolchain option.")
 
         # create build directory (Boost doesn't like being built in source dir)
@@ -73,13 +76,14 @@ class EB_Boost(EasyBlock):
             self.log.error("Failed to create directory %s: %s" % (self.objdir, err))
 
         # generate config depending on compiler used
-        toolset = None
-        if self.toolchain.comp_family() == toolchain.INTELCOMP:
-            toolset = 'intel-linux'
-        elif self.toolchain.comp_family() == toolchain.GCC:
-            toolset = 'gcc'
-        else:
-            self.log.error("Unknown compiler used, aborting.")
+        toolset = self.cfg['toolset']
+        if toolset is None:
+            if self.toolchain.comp_family() == toolchain.INTELCOMP:
+                toolset = 'intel-linux'
+            elif self.toolchain.comp_family() == toolchain.GCC:
+                toolset = 'gcc'
+            else:
+                self.log.error("Unknown compiler used, don't know what to specify to --with-toolset, aborting.")
 
         cmd = "./bootstrap.sh --with-toolset=%s --prefix=%s %s" % (toolset, self.objdir, self.cfg['configopts'])
         run_cmd(cmd, log_all=True, simple=True)

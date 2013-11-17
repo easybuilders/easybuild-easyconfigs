@@ -72,7 +72,7 @@ class EB_PSI(ConfigureMake):
         except OSError, err:
             self.log.error("Failed to prepare for configuration of PSI build: %s" % err)
 
-        if self.toolchain.options['usempi']:
+        if self.toolchain.options.get('usempi', None):
             # PSI doesn't require a Fortran compiler itself, but may require it to link to BLAS/LAPACK correctly
             # we should always specify the sequential Fortran compiler,
             # to avoid problems with -lmpi vs -lmpi_mt during linking

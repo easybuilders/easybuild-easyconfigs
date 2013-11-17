@@ -87,7 +87,8 @@ class EB_ScaLAPACK(ConfigureMake):
         """Build ScaLAPACK using make after setting make options."""
 
         # MPI compiler commands
-        known_mpi_libs = [toolchain.OPENMPI, toolchain.MVAPICH2, toolchain.MPICH, toolchain.QLOGICMPI]  #@UndefinedVariable
+        known_mpi_libs = [toolchain.MPICH, toolchain.MPICH2, toolchain.MVAPICH2]  #@UndefinedVariable
+        known_mpi_libs += [toolchain.OPENMPI, toolchain.QLOGICMPI]  #@UndefinedVariable
         if os.getenv('MPICC') and os.getenv('MPIF77') and os.getenv('MPIF90'):
             mpicc = os.getenv('MPICC')
             mpif77 = os.getenv('MPIF77')
