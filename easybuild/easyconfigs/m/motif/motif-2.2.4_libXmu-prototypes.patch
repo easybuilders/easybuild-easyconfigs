@@ -1,0 +1,42 @@
+based on http://bugzillafiles.novell.org/attachment.cgi?id=553093 obtained via http://lists.opensuse.org/opensuse-bugs/2013-08/msg01273.html
+--- openmotif-2.2.4/lib/Xm/EditresCom.c.orig	2013-11-02 17:17:01.964238060 +0100
++++ openmotif-2.2.4/lib/Xm/EditresCom.c	2013-11-02 17:22:54.975419721 +0100
+@@ -147,15 +147,23 @@
+ 
+ static Globals globals;
+ 
+-static void SendFailure(), SendCommand(), InsertWidget(), ExecuteCommand();
+-static void FreeEvent(), ExecuteSetValues(), ExecuteGetGeometry();
+-static void ExecuteGetResources();
++static void SendFailure(Widget w,Atom sel,ResIdent ident,char * str);
++static void SendCommand(Widget w, Atom sel, ResIdent ident,EditresCommand command,ProtocolStream * stream);
++static void InsertWidget(ProtocolStream * stream, Widget w);
++static void FreeEvent(EditresEvent * event);
++static void ExecuteGetGeometry(Widget w,ProtocolStream * stream);
++static void ExecuteGetResources(Widget w,ProtocolStream * stream);
++static void ExecuteCommand(Widget w,Atom sel,ResIdent ident,EditresEvent * event);
++static void ExecuteSetValues( Widget w,SetValuesEvent * sv_event,WidgetInfo * entry,ProtocolStream * stream,unsigned short * count);
++
+ 
+ static void GetCommand();
+-static void LoadResources();
++static void LoadResources(Widget w);
+ static Boolean IsChild();
+-static void DumpChildren();
+-static char *DumpWidgets(), *DoSetValues(), *DoFindChild();
++static void DumpChildren(Widget w, ProtocolStream * stream,unsigned short *count);
++static char *DumpWidgets(Widget w, EditresEvent * event    /* UNUSED */,  ProtocolStream * stream);
++static char *DoSetValues();
++static char *DoFindChild(Widget w,EditresEvent * event,ProtocolStream * stream);
+ static char *DoGetGeometry(), *DoGetResources(), *DumpValues();
+ 
+ #ifndef HAVE_XMU_N_COPY_ISO
+@@ -1789,7 +1797,7 @@
+ void
+ _XEditResPutString8(stream, str)
+ ProtocolStream * stream;
+-char * str;
++_Xconst char * str;
+ {
+     int i, len = strlen(str);
+ 
