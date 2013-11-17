@@ -1,7 +1,7 @@
 We'd love you to contribute back to EasyBuild, and here's how you can do it: the branch - hack - pull request cycle.
 
 
-## Praperation
+## Preparation
 
 ### Fork easybuild-easyconfigs
 
