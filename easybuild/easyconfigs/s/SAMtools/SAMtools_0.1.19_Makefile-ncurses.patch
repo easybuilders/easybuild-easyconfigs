@@ -1,0 +1,46 @@
+--- samtools-0.1.19.orig/Makefile	2013-03-19 08:48:09.000000000 +0100
++++ samtools-0.1.19/Makefile	2013-11-29 13:17:00.210306930 +0100
+@@ -12,10 +12,10 @@
+ 			cut_target.o phase.o bam2depth.o padding.o bedcov.o bamshuf.o \
+ 			bam_tview_curses.o bam_tview_html.o
+ PROG=		samtools
+-INCLUDES=	-I.
++INCLUDES=	-I$(EBROOTNCURSES)/include -I$(EBROOTZLIB)/include -I.
+ SUBDIRS=	. bcftools misc
+-LIBPATH=
+-LIBCURSES=	-lcurses # -lXCurses
++LIBPATH=	-L$(EBROOTZLIB)/lib
++LIBCURSES=	-L$(EBROOTNCURSES)/lib -lcurses -L$(EBROOTZLIB)/lib -lz # -lXCurses
+ 
+ .SUFFIXES:.c .o
+ .PHONY: all lib
+@@ -44,13 +44,13 @@
+ 		$(AR) -csru $@ $(LOBJS)
+ 
+ samtools:lib-recur $(AOBJS)
+-		$(CC) $(CFLAGS) -o $@ $(AOBJS) $(LDFLAGS) libbam.a -Lbcftools -lbcf $(LIBPATH) $(LIBCURSES) -lm -lz -lpthread
++		$(CC) $(CFLAGS) -o $@ $(AOBJS) $(LDFLAGS) libbam.a -Lbcftools -lbcf $(LIBPATH) $(LIBCURSES) -lm -L$(EBROOTZLIB)/lib -lz -lpthread
+ 
+ razip:razip.o razf.o $(KNETFILE_O)
+-		$(CC) $(CFLAGS) -o $@ $^ -lz
++		$(CC) $(CFLAGS) -o $@ $^ -L$(EBROOTZLIB)/lib -lz
+ 
+ bgzip:bgzip.o bgzf.o $(KNETFILE_O)
+-		$(CC) $(CFLAGS) -o $@ $^ -lz -lpthread
++		$(CC) $(CFLAGS) -o $@ $^ -L$(EBROOTZLIB)/lib -lz -lpthread
+ 
+ bgzf.o:bgzf.c bgzf.h
+ 		$(CC) -c $(CFLAGS) $(DFLAGS) -DBGZF_CACHE $(INCLUDES) bgzf.c -o $@
+@@ -81,10 +81,10 @@
+ 
+ 
+ libbam.1.dylib-local:$(LOBJS)
+-		libtool -dynamic $(LOBJS) -o libbam.1.dylib -lc -lz
++		libtool -dynamic $(LOBJS) -o libbam.1.dylib -lc -L$(EBROOTZLIB)/lib -lz
+ 
+ libbam.so.1-local:$(LOBJS)
+-		$(CC) -shared -Wl,-soname,libbam.so -o libbam.so.1 $(LOBJS) -lc -lz
++		$(CC) -shared -Wl,-soname,libbam.so -o libbam.so.1 $(LOBJS) -lc -L$(EBROOTZLIB)/lib -lz
+ 
+ dylib:
+ 		@$(MAKE) cleanlocal; \
