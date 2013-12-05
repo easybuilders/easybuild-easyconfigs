@@ -39,31 +39,31 @@ import shutil
 import sys
 
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
+from easybuild.easyblocks.generic.rpm import Rpm
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.tools.filetools import run_cmd
 from easybuild.tools.config import source_path
 
 
-class EB_Mono(ConfigureMake):
+class EB_Mono(ConfigureMake, Rpm):
     """Support for building/installing Mono."""
 
     def __init__(self, *args, **kwargs):
         """Custom constructor for Mono easyblock, initialize custom class variables."""
         super(EB_Mono, self).__init__(*args, **kwargs)
+        self.mono_srcs = []
         self.rpms = []
 
     def extract_step(self):
         """Custom extract step for Mono: don't try and extract any of the provided RPMs."""
 
-        allsrc = self.src[:]
-        self.src = []
-        for src in allsrc:
+        for src in self.src:
             if src['name'].endswith('.rpm'):
                 self.rpms.append(src)
             else:
-                self.src.append(src)
+                self.mono_srcs.append(src)
 
-        super(EB_Mono, self).extract_step()
+        ConfigureMake.extract_step(self)
     
     def configure_step(self):
         """Dedicated configure step for Mono: install Mono from RPM (if provided), then run configure."""
@@ -77,7 +77,13 @@ class EB_Mono(ConfigureMake):
                 os.makedirs(os.path.join(monorpms_path, 'rpm'))
             except OSError, err:
                 self.log.error("Failed to create directories for installing Mono RPMs in: %s" % err)
-       
+
+            self.src = self.rpms
+            self.rebuildRPM = True
+
+            # rebuild RPMs to make them relocatable
+            Rpm.configure_step(self)
+
             # prepare to install RPMs 
             self.log.debug("Initializing temporary RPM repository to install to...")
             cmd = "rpm --initdb --dbpath /rpm --root %s" % monorpms_path
@@ -161,6 +167,8 @@ class EB_Mono(ConfigureMake):
                 "EXTERNAL_RUNTIME=%(path)s/bin/mono",
             ]) % {'path': tmp_mono_path}
             self.cfg.update('makeopts', more_makeopts)
-        
+
+            self.src = self.mono_srcs
+
         # continue with normal configure, and subsequent make, make install
-        super(ConfigureMake, self).configure_step()
+        ConfigureMake.configure_step(self)
