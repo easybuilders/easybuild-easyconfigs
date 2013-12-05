@@ -97,7 +97,6 @@ class EB_Mono(ConfigureMake, Rpm):
                     cmd = ' '.join([
                         "rpm -i",
                         "--dbpath /rpm",
-                        "--root %(inst)s",
                         "--relocate /=%(inst)s",
                         "--nodeps --nopost",
                         "%(rpm)s",
