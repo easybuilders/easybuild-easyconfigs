@@ -96,7 +96,7 @@ class EB_Mono(ConfigureMake, Rpm):
                 if os.path.exists(rpm['path']):
                     cmd = ' '.join([
                         "rpm -i",
-                        "--dbpath /rpm",
+                        "--dbpath %(inst)s/rpm",
                         "--relocate /=%(inst)s",
                         "--nodeps --nopost",
                         "%(rpm)s",
