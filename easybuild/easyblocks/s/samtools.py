@@ -41,10 +41,10 @@ class EB_SAMtools(ConfigureMake):
                       "misc/maq2sam-long", "misc/wgsim", "samtools"]
         if LooseVersion(self.version) <= LooseVersion('0.1.18'):
             # seqtk is no longer there in v0.1.19
-            self.binfiles += ["misc/seqtk"]
+            self.bin_files += ["misc/seqtk"]
         elif LooseVersion(self.version) >= LooseVersion('0.1.19'):
             # new tools in v0.1.18
-            self.binfiles += ["misc/ace2sam", "misc/bamcheck","misc/plot-bamcheck","misc/r2plot.lua"]
+            self.bin_files += ["misc/ace2sam", "misc/bamcheck","misc/plot-bamcheck","misc/r2plot.lua"]
 
         self.lib_files = ["libbam.a"]
         self.include_files = ["bam.h", "bam2bcf.h", "bam_endian.h", "bgzf.h", "errmod.h", "faidx.h", "kaln.h",
