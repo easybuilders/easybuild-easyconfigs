@@ -11,12 +11,26 @@ description = """The pbs_python package is a wrapper class for the Torque Batch 
 toolchain = {'name': 'ictce', 'version': '5.5.0'}
 toolchainopts = {'usempi': True}
 
-source_urls = ['http://ftp.sara.nl/pub/outgoing/', 'https://raw.github.com/adaptivecomputing/torque/4.2-dev/src/include/']
+source_urls = [
+    'http://ftp.sara.nl/pub/outgoing/',
+    'https://raw.github.com/adaptivecomputing/torque/4.2-dev/src/include/',
+    'https://oss.trac.surfsara.nl/pbs_python/raw-attachment/ticket/36/',
+    ]
 
 # torque-devel is missing a log.h file we need, so we ship it.
-place_for_include_file = "%s-%s/include/torque" % (name, version)
-sources = [SOURCE_TAR_GZ, ('log.h', 'mkdir -p %s && cp %%s %s ' % (place_for_include_file, place_for_include_file))]
-patches = ['docdir.patch']
+my_startdir = "%s-%s/" % (name, version)
+
+place_for_include_file = "include/torque"
+copy_cmd = 'mkdir -p %s%%s && cp %%%%s %s%%s ' % (my_startdir, my_startdir)
+sources = [
+    SOURCE_TAR_GZ,
+    ('log.h', copy_cmd % (place_for_include_file, place_for_include_file)),
+    ('pbs_wrap_4.2.c', copy_cmd % ('src', 'src')),
+]
+patches = [
+    'docdir.patch',
+    'setup.py.in_4.2.patch',
+]
 
 python = 'Python'
 pythonver = '2.7.6'
@@ -28,8 +42,8 @@ dependencies = [
     (python, pythonver),
 ]
 
-premakeopts = 'export CFLAGS="$CFLAGS -I$PWD/include/torque" && '
 configopts = "--datarootdir=%(installdir)s --docdir=%(installdir)s"
+premakeopts = 'export CFLAGS="$CFLAGS -I$PWD/%s" && ' % place_for_include_file
 
 pythonpath = 'lib/python%s/site-packages/' % pythonshortver
 modextrapaths = {"PYTHONPATH": pythonpath}
