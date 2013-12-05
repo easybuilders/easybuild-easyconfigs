@@ -91,7 +91,7 @@ class EB_Mono(ConfigureMake, Rpm):
             run_cmd(cmd, log_all=True, simple=True)
 
             # install RPMs one by one
-            for rpm in self.rpms:
+            for rpm in self.src:
                 self.log.debug("Installing RPM %s ..." % rpm['name'])
                 if os.path.exists(rpm['path']):
                     cmd = ' '.join([
