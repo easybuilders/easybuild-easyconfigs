@@ -127,6 +127,11 @@ class Rpm(Binary):
             self.log.error("Failed to create RPMREBUILD_TMPDIR dir %s: %s" % (rpmrebuild_tmpdir, err))
 
         rpms_path = os.path.join(self.builddir, 'rebuiltRPMs')
+        try:
+            os.makedirs(rpms_path)
+        except OSError, err:
+            self.log.error("Failed to create %s: %s" % (rpms_path, err))
+
         for rpm in self.src:
             cmd = ' '.join([
                 "rpmrebuild -v",
