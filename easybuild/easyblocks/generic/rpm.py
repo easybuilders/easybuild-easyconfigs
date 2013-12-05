@@ -138,8 +138,8 @@ class Rpm(Binary):
                 """--change-spec-whole='sed -e "s/^BuildArch:.*/BuildArch:    x86_64/"'""",
                 """--change-spec-whole='sed -e "s/^Prefix:.*/Prefix:    \//"'""",
                 """--change-spec-whole='sed -e "s/^\(.*:[ ]\+\..*\)/#ERROR \1/"'""",
-                "-p -d",
                 "--notest-install",
+                "-p -d",
                 rpms_path,
                 rpm['path'],
             ])
