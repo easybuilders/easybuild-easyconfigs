@@ -63,6 +63,7 @@ class EB_Mono(ConfigureMake, Rpm):
             else:
                 self.mono_srcs.append(src)
 
+        self.src = self.mono_srcs
         ConfigureMake.extract_step(self)
     
     def configure_step(self):
