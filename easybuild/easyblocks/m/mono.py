@@ -74,7 +74,7 @@ class EB_Mono(ConfigureMake):
             # prepare path for installing RPMs in
             monorpms_path = os.path.join(self.builddir, "monorpms")            
             try:
-                os.mkdirs(os.path.join(monorpms_path, 'rpm'))
+                os.makedirs(os.path.join(monorpms_path, 'rpm'))
             except OSError, err:
                 self.log.error("Failed to create directories for installing Mono RPMs in: %s" % err)
        
