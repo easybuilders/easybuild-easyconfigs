@@ -99,6 +99,7 @@ class EB_Mono(ConfigureMake, Rpm):
                         "--dbpath %(inst)s/rpm",
                         "--force",
                         "--relocate /=%(inst)s",
+                        "--badreloc",
                         "--nodeps --nopost",
                         "%(rpm)s",
                     ]) % {
