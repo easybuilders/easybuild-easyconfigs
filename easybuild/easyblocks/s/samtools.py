@@ -34,17 +34,18 @@ class EB_SAMtools(ConfigureMake):
         super(EB_SAMtools, self).__init__(*args, **kwargs)
 
         self.bin_files = ["bcftools/vcfutils.pl", "bcftools/bcftools", "misc/blast2sam.pl",
-                      "misc/bowtie2sam.pl", "misc/export2sam.pl", "misc/interpolate_sam.pl",
-                      "misc/novo2sam.pl", "misc/psl2sam.pl", "misc/sam2vcf.pl", "misc/samtools.pl",
-                      "misc/soap2sam.pl", "misc/varfilter.py", "misc/wgsim_eval.pl",
-                      "misc/zoom2sam.pl", "misc/md5sum-lite", "misc/md5fa", "misc/maq2sam-short",
-                      "misc/maq2sam-long", "misc/wgsim", "samtools"]
+                          "misc/bowtie2sam.pl", "misc/export2sam.pl", "misc/interpolate_sam.pl",
+                          "misc/novo2sam.pl", "misc/psl2sam.pl", "misc/sam2vcf.pl", "misc/samtools.pl",
+                          "misc/soap2sam.pl", "misc/varfilter.py", "misc/wgsim_eval.pl",
+                          "misc/zoom2sam.pl", "misc/md5sum-lite", "misc/md5fa", "misc/maq2sam-short",
+                          "misc/maq2sam-long", "misc/wgsim", "samtools"]
         if LooseVersion(self.version) <= LooseVersion('0.1.18'):
             # seqtk is no longer there in v0.1.19
             self.bin_files += ["misc/seqtk"]
         elif LooseVersion(self.version) >= LooseVersion('0.1.19'):
-            # new tools in v0.1.18
-            self.bin_files += ["misc/ace2sam", "misc/bamcheck","misc/plot-bamcheck","misc/r2plot.lua"]
+            # new tools in v0.1.19
+            self.bin_files += ["misc/ace2sam", "misc/bamcheck","misc/plot-bamcheck","misc/r2plot.lua",
+                               "misc/vcfutils.lua"]
 
         self.lib_files = ["libbam.a"]
         self.include_files = ["bam.h", "bam2bcf.h", "bam_endian.h", "bgzf.h", "errmod.h", "faidx.h", "kaln.h",
