@@ -32,10 +32,10 @@ EasyBuild support for MyMediaLite, implemented as an easyblock
 @author: Jens Timmerman (Ghent University)
 """
 
-from easybuild.framework.easyblock import EasyBlock
+from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.tools.filetools import run_cmd
 
-class EB_MyMediaLite(EasyBlock):
+class EB_MyMediaLite(ConfigureMake):
     """Support for building/installing MyMediaLite."""
 
     def configure_step(self):
@@ -43,10 +43,18 @@ class EB_MyMediaLite(EasyBlock):
 
         cmd = "make CONFIGURE_OPTIONS='--prefix=%s' configure" % self.installdir
         run_cmd(cmd, log_all=True, simple=True)
-        
+
     def build_step(self):
         """Custom build step for MyMediaLite, using 'make all' in 'src' directory."""
 
         cmd = "cd src && make all && cd .."
-        run_cmd(cmd, log_all=True, simple=True)               
-        
+        run_cmd(cmd, log_all=True, simple=True)
+
+    def sanity_check_step(self):
+        """Custom sanity check for MyMediaLite."""
+
+        custom_paths = {
+            'files': ["bin/%s_prediction" % x for x in ['item', 'mapping_item', 'mapping_rating', 'rating']],
+            'dirs': ["lib/mymedialite"],
+        }
+        super(EB_MyMediaLite, self).sanity_check_step(custom_paths=custom_paths)
