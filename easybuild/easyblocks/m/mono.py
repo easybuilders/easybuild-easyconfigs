@@ -65,15 +65,15 @@ class EB_Mono(ConfigureMake, Rpm):
 
         self.src = self.mono_srcs
         ConfigureMake.extract_step(self)
-    
+
     def configure_step(self):
         """Dedicated configure step for Mono: install Mono from RPM (if provided), then run configure."""
-        
+
         # install Mono from RPMs if provided (because we need Mono to build Mono)
         if self.rpms:
 
             # prepare path for installing RPMs in
-            monorpms_path = os.path.join(self.builddir, "monorpms")            
+            monorpms_path = os.path.join(self.builddir, "monorpms")
             try:
                 os.makedirs(os.path.join(monorpms_path, 'rpm'))
             except OSError, err:
@@ -85,7 +85,7 @@ class EB_Mono(ConfigureMake, Rpm):
             # rebuild RPMs to make them relocatable
             Rpm.configure_step(self)
 
-            # prepare to install RPMs 
+            # prepare to install RPMs
             self.log.debug("Initializing temporary RPM repository to install to...")
             cmd = "rpm --initdb --dbpath /rpm --root %s" % monorpms_path
             run_cmd(cmd, log_all=True, simple=True)
@@ -112,18 +112,18 @@ class EB_Mono(ConfigureMake, Rpm):
 
             # create patched version of gmcs command
             self.log.debug("Making our own copy of gmcs (one that works).")
-            
+
             mygmcs_path = os.path.join(monorpms_path, 'usr', 'bin', 'mygmcs')
             try:
                 shutil.copy(os.path.join(monorpms_path, 'usr' ,'bin', 'gmcs'), mygmcs_path)
             except OSError, err:
                 self.log.error("Failed to copy gmcs to %s: %s" % (mygmcs_path, err))
-            
+
             rpls = {
                 "exec /usr/bin/mono": "exec %s/usr/bin/mono" % monorpms_path,
                 "`/usr/bin/monodir`": "%s/usr/lib64/mono" % monorpms_path,
             }
-            
+
             for line in fileinput.input(mygmcs_path, inplace=1, backup='.orig'):
                 for (k,v) in rpls.items():
                     line = re.sub(k, v, line)
@@ -145,7 +145,7 @@ class EB_Mono(ConfigureMake, Rpm):
             par = ''
             if self.cfg['parallel']:
                 par = "-j %s" % self.cfg['parallel']
-            
+
             config_cmd = "%s ./configure --prefix=%s %s" % (self.cfg['preconfigopts'], tmp_mono_path, self.cfg['configopts'])
             build_cmd = ' '.join([
                 "%(premakeopts)s"
@@ -174,3 +174,12 @@ class EB_Mono(ConfigureMake, Rpm):
 
         # continue with normal configure, and subsequent make, make install
         ConfigureMake.configure_step(self)
+
+    def sanity_check_step(self):
+        """Custom sanity check for Mono."""
+
+        custom_paths = {
+            'files': ['bin/mono', 'bin/gmcs', 'bin/xbuild'],
+            'dirs': ['include/mono-%s.0/mono' % self.version.split('.')[0], 'lib'],
+        }
+        ConfigureMake.sanity_check_step(self, custom_paths=custom_paths)
