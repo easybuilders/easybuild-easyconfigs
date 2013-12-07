@@ -59,8 +59,13 @@ class EB_MyMediaLite(ConfigureMake):
     def sanity_check_step(self):
         """Custom sanity check for MyMediaLite."""
 
+        if LooseVersion(self.version) < LooseVersion('3'):
+            bin_files = ["bin/%s_prediction" % x for x in ['item', 'mapping_item', 'mapping_rating', 'rating']]
+        else:
+            bin_files = ["bin/item_recommendation", "bin/rating_based_ranking", "bin/rating_prediction"]
+
         custom_paths = {
-            'files': ["bin/%s_prediction" % x for x in ['item', 'mapping_item', 'mapping_rating', 'rating']],
+            'files': bin_files,
             'dirs': ["lib/mymedialite"],
         }
         super(EB_MyMediaLite, self).sanity_check_step(custom_paths=custom_paths)
