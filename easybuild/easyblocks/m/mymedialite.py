@@ -32,8 +32,11 @@ EasyBuild support for MyMediaLite, implemented as an easyblock
 @author: Jens Timmerman (Ghent University)
 """
 
+from distutils.version import LooseVersion
+
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.tools.filetools import run_cmd
+
 
 class EB_MyMediaLite(ConfigureMake):
     """Support for building/installing MyMediaLite."""
@@ -41,8 +44,11 @@ class EB_MyMediaLite(ConfigureMake):
     def configure_step(self):
         """Custom configure step for MyMediaLite, using "make CONFIGURE_OPTIONS='...' configure"."""
 
-        cmd = "make CONFIGURE_OPTIONS='--prefix=%s' configure" % self.installdir
-        run_cmd(cmd, log_all=True, simple=True)
+        if LooseVersion(self.version) < LooseVersion('3'):
+            cmd = "make CONFIGURE_OPTIONS='--prefix=%s' configure" % self.installdir
+            run_cmd(cmd, log_all=True, simple=True)
+        else:
+            self.cfg.update('installopts', "PREFIX=%s" % self.installdir)
 
     def build_step(self):
         """Custom build step for MyMediaLite, using 'make all' in 'src' directory."""
