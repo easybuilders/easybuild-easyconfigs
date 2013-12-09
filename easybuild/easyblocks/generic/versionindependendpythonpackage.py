@@ -23,7 +23,11 @@
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
 """
-EasyBuild support for building and installing VSC-tools, implemented as an easyblock
+EasyBuild support for building and installing a Pythonpackage independend of a python version as an easyblock.
+
+Python installs libraries by defailt in site-packages/python-xxx/
+But packages that are not dependend on the python version can be installed in a different prefix, e.g. lib
+as long as we add this folder to the pythonpath.
 
 @author: Kenneth Hoste, Jens Timmerman (Ghent University)
 """
