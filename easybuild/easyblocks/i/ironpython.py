@@ -44,20 +44,19 @@ class EB_IronPython(EasyBlock):
     def __init__(self, *args, **kwargs):
         """Custom constructor for IronPython easyblock, indicate building in installdir."""
         super(EB_IronPython, self).__init__(*args, **kwargs)
-        
+
         self.subdir = None
-        
         self.build_in_installdir = True
 
     def configure_step(self):
         """No dedicated configure step for IronPython."""
         pass
-    
+
     def build_step(self):
         """No dedicated build step for IronPython."""
         pass
 
-    def install_step(self):        
+    def install_step(self):
         """Custom install step for IronPython, using xbuild command."""
 
         cmd = "xbuild /p:Configuration=Release Solutions/%s.sln" % self.name
