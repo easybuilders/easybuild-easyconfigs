@@ -53,7 +53,9 @@ class EB_impi(IntelBase):
         if LooseVersion(self.version) >= LooseVersion('4.0.1'):
             # impi starting from version 4.0.1.x uses standard installation procedure.
 
-            silent_cfg_names_map = None
+            silent_cfg_names_map = {
+                'install_dir': install_path(),  # impi installer creates impi/<version> subdir itself!
+            }
 
             if LooseVersion(self.version) < LooseVersion('4.1.1'):
                 # since impi v4.1.1, silent.cfg has been slightly changed to be 'more standard'
@@ -61,7 +63,6 @@ class EB_impi(IntelBase):
                 silent_cfg_names_map = {
                     'activation_name': ACTIVATION_NAME_2012,
                     'license_file_name': LICENSE_FILE_NAME_2012,
-                    'install_dir': install_path(),  # impi installer creates impi/<version> subdir itself!
                 }
 
             super(EB_impi, self).install_step(silent_cfg_names_map=silent_cfg_names_map)
