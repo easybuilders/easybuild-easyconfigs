@@ -1,19 +1,19 @@
 We'd love you to contribute back to EasyBuild, and here's how you can do it: the branch - hack - pull request cycle.
 
 
-## Preperation
+## Preparation
 
-### Fork easybuild-easyconfings
+### Fork easybuild-easyconfigs
 
-First, you'll need to fork [easybuild-easyconfings on GitHub](http://github.com/hpcugent/easybuild-easyconfigs).
+First, you'll need to fork [easybuild-easyconfigs on GitHub](http://github.com/hpcugent/easybuild-easyconfigs).
 
 If you do not have a (free) GitHub account yet, you'll need to get one.
 
 You should also register an SSH public key, so you can easily clone, push to and pull from your repository.
 
-### Clone your easybuild-easyconfings repository
+### Clone your easybuild-easyconfigs repository
 
-Clone your fork of the easybuild-easyconfings repository to your favorite workstation. 
+Clone your fork of the easybuild-easyconfigs repository to your favorite workstation. 
 
 ```bash
 git clone git@github.com:YOUR\_GITHUB\_LOGIN/easybuild-easyconfigs.git
@@ -21,7 +21,7 @@ git clone git@github.com:YOUR\_GITHUB\_LOGIN/easybuild-easyconfigs.git
 
 ### Pull in the develop branch
 
-Pull the _develop_ branch from the main easybuild-easyconfings repository:
+Pull the _develop_ branch from the main easybuild-easyconfigs repository:
 
 ```bash
 cd easybuild
@@ -33,7 +33,7 @@ git pull github_hpcugent develop
 
 ### Keep develop up-to-date
 
-The _develop_ branch hosts the latest bleeding-edge version of easybuild-easyconfings, and is merged into _master_ regularly (after thorough testing). 
+The _develop_ branch hosts the latest bleeding-edge version of easybuild-easyconfigs, and is merged into _master_ regularly (after thorough testing). 
 
 Make sure you update it every time you create a feature branch (see below):
 
@@ -85,11 +85,11 @@ If you are working on several things at the same time, try and keep things isola
 
 ## Pull request
 
-When you've finished the implementation of a particular contribution, here's how to get it into the main easybuild-easyconfings repository (also see https://help.github.com/articles/using-pull-requests/)
+When you've finished the implementation of a particular contribution, here's how to get it into the main easybuild-easyconfigs repository (also see https://help.github.com/articles/using-pull-requests/)
 
 ### Push your branch
 
-Push your branch to your easybuild-easyconfings repository on GitHub:
+Push your branch to your easybuild-easyconfigs repository on GitHub:
  
 ```bash
 git push origin <BRANCH_NAME>
@@ -98,11 +98,11 @@ git push origin <BRANCH_NAME>
 
 ### Issue a pull request
 
-Issue a pull request for your branch into the main easybuild-easyconfings repository, as follows:
+Issue a pull request for your branch into the main easybuild-easyconfigs repository, as follows:
 
  * go to github.com/YOUR\_GITHUB\_LOGIN/easybuild-easyconfigs, and make sure the branch you just pushed is selected (not _master_, but _<BRANCH_NAME>_)
 
- * issue a pull request (see button at the top of the page) for your branch to the **_develop_** branch of the main easybuild-easyconfings repository; **note**: don't issue a pull request to the _master_ branch, as it will be simply closed by the EasyBuild team
+ * issue a pull request (see button at the top of the page) for your branch to the **_develop_** branch of the main easybuild-easyconfigs repository; **note**: don't issue a pull request to the _master_ branch, as it will be simply closed by the EasyBuild team
 
  * make sure to reference the corresponding issue number in the pull request, using the notation # followed by a number, e.g. `#83`
 
@@ -129,6 +129,6 @@ Try and act on the remarks made, either by commiting additional changes to your 
 
 ### Aftermath
 
-Once your pull request has been reviewed and remarks have been processed, your contribution will be merged into the _develop_ branch of the main easybuild-easyconfings repository.
+Once your pull request has been reviewed and remarks have been processed, your contribution will be merged into the _develop_ branch of the main easybuild-easyconfigs repository.
 
 On frequent occasions, the _develop_ branch is merged into the _master_ branch and a new version is tagged, and your contribution truly becomes part of EasyBuild.
