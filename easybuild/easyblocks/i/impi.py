@@ -137,14 +137,14 @@ EULA=accept
         """
         if self.cfg['m32']:
             return {
-                    'PATH':['bin', 'bin/ia32', 'ia32/bin'],
-                    'LD_LIBRARY_PATH':['lib', 'lib/ia32', 'ia32/lib'],
-                   }
+                'PATH':['bin', 'bin/ia32', 'ia32/bin'],
+                'LD_LIBRARY_PATH':['lib', 'lib/ia32', 'ia32/lib'],
+            }
         else:
             return {
-                    'PATH':['bin', 'bin/intel64', 'bin64'],
-                    'LD_LIBRARY_PATH':['lib', 'lib/em64t', 'lib64'],
-                   }
+                'PATH':['bin', 'bin/intel64', 'bin64'],
+                'LD_LIBRARY_PATH':['lib', 'lib/em64t', 'lib64'],
+            }
 
     def make_module_extra(self):
         """Overwritten from Application to add extra txt"""
