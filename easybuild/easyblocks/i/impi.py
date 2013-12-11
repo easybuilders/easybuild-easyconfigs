@@ -35,7 +35,7 @@ EasyBuild support for installing the Intel MPI library, implemented as an easybl
 import os
 from distutils.version import LooseVersion
 
-from easybuild.easyblocks.generic.intelbase import IntelBase
+from easybuild.easyblocks.generic.intelbase import IntelBase, ACTIVATION_NAME_2012, LICENSE_FILE_NAME_2012
 from easybuild.tools.filetools import run_cmd
 from easybuild.tools.config import install_path
 
@@ -55,12 +55,12 @@ class EB_impi(IntelBase):
 
             silent_cfg_names_map = None
 
-            if LooseVersion(self.version) >= LooseVersion('4.1.1'):
-                # since impi 4.1.1, the silent.cfg have been slightly changed
+            if LooseVersion(self.version) < LooseVersion('4.1.1'):
+                # since impi v4.1.1, silent.cfg has been slightly changed to be 'more standard'
 
                 silent_cfg_names_map = {
-                    'activation_name': 'ACTIVATION_TYPE',
-                    'license_file_name': 'ACTIVATION_LICENSE_FILE',
+                    'activation_name': ACTIVATION_NAME_2012,
+                    'license_file_name': LICENSE_FILE_NAME_2012,
                     'install_dir': install_path(),  # impi installer creates impi/<version> subdir itself!
                 }
 

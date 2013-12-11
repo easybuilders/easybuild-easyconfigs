@@ -64,6 +64,13 @@ ACTIVATION_TYPES = [
     ACTIVATION_TRIAL,
 ]
 
+# different entries for silent.cfg
+ACTIVATION_NAME = 'ACTIVATION_TYPE'  # since icc/ifort v2013_sp1, impi v4.1.1, imkl v11.1
+ACTIVATION_NAME_2012 = 'ACTIVATION'
+INSTALL_DIR_NAME = 'PSET_INSTALL_DIR'
+LICENSE_FILE_NAME = 'ACTIVATION_LICENSE_FILE'
+LICENSE_FILE_NAME_2012 = 'PSET_LICENSE_FILE'  # since icc/ifort v2013_sp1, impi v4.1.1, imkl v11.1
+
 
 class IntelBase(EasyBlock):
     """
@@ -281,9 +288,9 @@ class IntelBase(EasyBlock):
             "INSTALL_MODE=NONRPM",
             "CONTINUE_WITH_OPTIONAL_ERROR=yes",
         ]) % {
-            'activation_name': silent_cfg_names_map.get('activation_name', 'ACTIVATION'),
-            'license_file_name': silent_cfg_names_map.get('license_file_name', 'PSET_LICENSE_FILE'),
-            'install_dir_name': silent_cfg_names_map.get('install_dir_name', 'PSET_INSTALL_DIR'),
+            'activation_name': silent_cfg_names_map.get('activation_name', ACTIVATION_NAME),
+            'license_file_name': silent_cfg_names_map.get('license_file_name', LICENSE_FILE_NAME),
+            'install_dir_name': silent_cfg_names_map.get('install_dir_name', INSTALL_DIR_NAME),
             'activation': self.cfg['license_activation'],
             'license_file': self.license_file,
             'install_dir': silent_cfg_names_map.get('install_dir', self.installdir),

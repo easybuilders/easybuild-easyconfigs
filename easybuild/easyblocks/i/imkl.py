@@ -38,7 +38,7 @@ import tempfile
 from distutils.version import LooseVersion
 
 import easybuild.tools.environment as env
-from easybuild.easyblocks.generic.intelbase import IntelBase
+from easybuild.easyblocks.generic.intelbase import IntelBase, ACTIVATION_NAME_2012, LICENSE_FILE_NAME_2012
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.filetools import rmtree2, run_cmd
 from easybuild.tools.module_generator import det_full_module_name
@@ -54,15 +54,34 @@ class EB_imkl(IntelBase):
 
     @staticmethod
     def extra_options():
+        """Add easyconfig parameters custom to imkl (e.g. interfaces)."""
         extra_vars = [('interfaces', [True, "Indicates whether interfaces should be built (default: True)", CUSTOM])]
         return IntelBase.extra_options(extra_vars)
 
-
     def configure_step(self):
+        """Custom configure step, make sure $MKLROOT is not set."""
         super(EB_imkl, self).configure_step()
 
         if os.getenv('MKLROOT'):
             self.log.error("Found MKLROOT in current environment, which may cause problems...")
+
+    def install_step(self):
+        """
+        Actual installation
+        - create silent cfg file
+        - execute command
+        """
+        silent_cfg_names_map = None
+
+        if LooseVersion(self.version) < LooseVersion('11.1'):
+            # since imkl v11.1, silent.cfg has been slightly changed to be 'more standard'
+
+            silent_cfg_names_map = {
+                'activation_name': ACTIVATION_NAME_2012,
+                'license_file_name': LICENSE_FILE_NAME_2012,
+            }
+
+        super(EB_imkl, self).install_step(silent_cfg_names_map=silent_cfg_names_map)
 
     def make_module_req_guess(self):
         """

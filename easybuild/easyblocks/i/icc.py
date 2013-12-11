@@ -36,7 +36,7 @@ import os
 import re
 from distutils.version import LooseVersion
 
-from easybuild.easyblocks.generic.intelbase import IntelBase
+from easybuild.easyblocks.generic.intelbase import IntelBase, ACTIVATION_NAME_2012, LICENSE_FILE_NAME_2012
 from easybuild.tools.filetools import run_cmd
 
 
@@ -57,6 +57,24 @@ class EB_icc(IntelBase):
     - tested with 11.1.046
         - will fail for all older versions (due to newer silent installer)
     """
+
+    def install_step(self):
+        """
+        Actual installation
+        - create silent cfg file
+        - execute command
+        """
+        silent_cfg_names_map = None
+
+        if LooseVersion(self.version) < LooseVersion('2013_sp1'):
+            # since icc v2013_sp1, silent.cfg has been slightly changed to be 'more standard'
+
+            silent_cfg_names_map = {
+                'activation_name': ACTIVATION_NAME_2012,
+                'license_file_name': LICENSE_FILE_NAME_2012,
+            }
+
+        super(EB_icc, self).install_step(silent_cfg_names_map=silent_cfg_names_map)
 
     def sanity_check_step(self):
         """Custom sanity check paths for icc."""
