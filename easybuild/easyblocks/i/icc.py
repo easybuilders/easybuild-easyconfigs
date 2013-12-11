@@ -84,14 +84,17 @@ class EB_icc(IntelBase):
         if LooseVersion(self.version) >= LooseVersion("2011"):
             if LooseVersion(self.version) <= LooseVersion("2011.3.174"):
                 binprefix = "bin"
+            elif LooseVersion(self.version) >= LooseVersion("2013_sp1"):
+                binprefix = "bin"
+                libprefix = "lib/intel64/lib"
             else:
                 libprefix = "compiler/lib/intel64/lib"
 
         custom_paths = {
-                        'files': ["%s/%s" % (binprefix, x) for x in ["icc", "icpc", "idb"]] +
-                                 ["%s%s" % (libprefix, x) for x in ["iomp5.a", "iomp5.so"]],
-                        'dirs': []
-                       }
+            'files': ["%s/%s" % (binprefix, x) for x in ["icc", "icpc", "idb"]] +
+                     ["%s%s" % (libprefix, x) for x in ["iomp5.a", "iomp5.so"]],
+            'dirs': [],
+        }
 
         super(EB_icc, self).sanity_check_step(custom_paths=custom_paths)
 
