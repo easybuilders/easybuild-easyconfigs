@@ -45,12 +45,15 @@ class EB_HDF5(ConfigureMake):
     def configure_step(self):
         """Configure build: set require config and make options, and run configure script."""
 
-        # configure options
-        deps = ["Szip", "zlib"]
-        for dep in deps:
+        # configure options for dependencies
+        deps = [
+            ("Szip", "--with-szlib"),
+            ("zlib", "--with-zlib"),
+        ]
+        for (dep, opt) in deps:
             root = get_software_root(dep)
             if root:
-                self.cfg.update('configopts', '--with-%s=%s' % (dep.lower(), root))
+                self.cfg.update('configopts', '%s=%s' % (opt, root))
             else:
                 self.log.error("Dependency module %s not loaded." % dep)
 
@@ -60,14 +63,18 @@ class EB_HDF5(ConfigureMake):
         self.cfg.update('configopts', "--enable-cxx --enable-fortran %s" % fcomp)
 
         # MPI and C++ support enabled requires --enable-unsupported, because this is untested by HDF5
-        if self.toolchain.options['usempi']:
-            self.cfg.update('configopts', "--enable-unsupported")
+        # also returns False if MPI is not supported by this toolchain
+        if self.toolchain.options.get('usempi', None):
+            self.cfg.update('configopts', "--enable-unsupported --enable-parallel")
+        else:
+            self.cfg.update('configopts', "--disable-parallel")
 
         # make options
         self.cfg.update('makeopts', fcomp)
 
-        # set RUNPARALLEL
-        env.setvar('RUNPARALLEL', 'mpirun -np \$\${NPROCS:=2}')
+        # set RUNPARALLEL if MPI is not enabled (or not supported by this toolchain)
+        if self.toolchain.options.get('usempi', None):
+            env.setvar('RUNPARALLEL', 'mpirun -np \$\${NPROCS:=2}')
 
         super(EB_HDF5, self).configure_step()
 
@@ -78,7 +85,8 @@ class EB_HDF5(ConfigureMake):
         Custom sanity check for HDF5
         """
 
-        if self.toolchain.options['usempi']:
+        # also returns False if MPI is not supported by this toolchain
+        if self.toolchain.options.get('usempi', None):
             extra_binaries = ["bin/%s" % x for x in ["h5perf", "h5pcc", "h5pfc", "ph5diff"]]
         else:
             extra_binaries = ["bin/%s" % x for x in ["h5cc", "h5fc"]]

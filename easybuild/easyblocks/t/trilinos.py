@@ -81,7 +81,7 @@ class EB_Trilinos(CMakeMake):
             self.cfg.update('configopts', "-DTrilinos_ENABLE_OpenMP:BOOL=ON")
 
         # MPI
-        if self.toolchain.options['usempi']:
+        if self.toolchain.options.get('usempi', None):
             self.cfg.update('configopts', "-DTPL_ENABLE_MPI:BOOL=ON")
 
         # shared libraries

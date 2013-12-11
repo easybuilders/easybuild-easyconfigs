@@ -76,7 +76,7 @@ class EB_MrBayes(ConfigureMake):
                 else:
                     self.log.error("beagle-lib module not loaded?")
 
-            if self.toolchain.options['usempi']:
+            if self.toolchain.options.get('usempi', None):
                 self.cfg.update('configopts', '--enable-mpi')
 
             # configure

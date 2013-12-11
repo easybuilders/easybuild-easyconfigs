@@ -37,7 +37,6 @@ import shutil
 from distutils.version import LooseVersion
 
 from easybuild.easyblocks.generic.cmakemake import CMakeMake
-from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.filetools import run_cmd, mkdir
 from easybuild.tools.modules import get_software_root
@@ -53,7 +52,7 @@ class EB_Clang(CMakeMake):
             ('build_targets', [["X86"], "Build targets for LLVM. Possible values: all, AArch64, ARM, CppBackend, Hexagon, " +
                                "Mips, MBlaze, MSP430, NVPTX, PowerPC, Sparc, SystemZ, X86, XCore (default: X86)", CUSTOM]),
         ]
-        return EasyBlock.extra_options(extra_vars)
+        return CMakeMake.extra_options(extra_vars)
 
     def __init__(self, *args, **kwargs):
         """Initialize custom class variables for Clang."""
@@ -65,6 +64,9 @@ class EB_Clang(CMakeMake):
         self.llvm_obj_dir_stage3 = None
         self.make_parallel_opts = ""
 
+    def check_readiness_step(self):
+        """Fail early on RHEL 5.x and derivatives because of known bug in libc."""
+        super(EB_Clang, self).check_readiness_step()
         # RHEL 5.x have a buggy libc.  Building stage 2 will fail.
         if get_os_name() in ['redhat', 'RHEL', 'centos', 'SL'] and get_os_version().startswith('5.'):
             self.log.error(("Can not build clang on %s v5.x: libc is buggy, building stage 2 will fail.  " +
