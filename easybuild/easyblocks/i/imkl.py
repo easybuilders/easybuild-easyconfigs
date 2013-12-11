@@ -177,7 +177,9 @@ class EB_imkl(IntelBase):
             # blas95 and lapack also need include/.mod to be processed
             lis1 = ['fftw2xc', 'fftw2xf']
             lis2 = ['fftw3xc', 'fftw3xf']
-            lis3 = ['fftw2x_cdft', 'fftw3x_cdft']
+            lis3 = []
+            if LooseVersion(self.version) < LooseVersion('11.1'):
+                lis3 = ['fftw2x_cdft', 'fftw3x_cdft']
 
             interfacedir = os.path.join(self.installdir, 'mkl/interfaces')
             try:
