@@ -64,12 +64,14 @@ ACTIVATION_TYPES = [
     ACTIVATION_TRIAL,
 ]
 
-# different entries for silent.cfg
+# silent.cfg parameter name for type of license activation (cfr. options listed above)
 ACTIVATION_NAME = 'ACTIVATION_TYPE'  # since icc/ifort v2013_sp1, impi v4.1.1, imkl v11.1
-ACTIVATION_NAME_2012 = 'ACTIVATION'
+ACTIVATION_NAME_2012 = 'ACTIVATION'  # previous activation type parameter used in older versions
+# silent.cfg parameter name for install prefix
 INSTALL_DIR_NAME = 'PSET_INSTALL_DIR'
-LICENSE_FILE_NAME = 'ACTIVATION_LICENSE_FILE'
-LICENSE_FILE_NAME_2012 = 'PSET_LICENSE_FILE'  # since icc/ifort v2013_sp1, impi v4.1.1, imkl v11.1
+# silent.cfg parameter name for license file/server specification
+LICENSE_FILE_NAME = 'ACTIVATION_LICENSE_FILE'  # since icc/ifort v2013_sp1, impi v4.1.1, imkl v11.1
+LICENSE_FILE_NAME_2012 = 'PSET_LICENSE_FILE'  # previous license file parameter used in older versions
 
 
 class IntelBase(EasyBlock):
