@@ -68,7 +68,7 @@ class EB_impi(IntelBase):
                     # up to v4.1.2 which uses exact specified install path again
                     silent_cfg_names_map.update({
                         'install_dir': install_path(),
-                    }
+                    })
 
             super(EB_impi, self).install_step(silent_cfg_names_map=silent_cfg_names_map)
         else:
