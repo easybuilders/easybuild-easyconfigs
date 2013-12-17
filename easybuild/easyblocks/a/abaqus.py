@@ -75,9 +75,10 @@ class EB_ABAQUS(Binary):
     def install_step(self):
         """Install ABAQUS using 'setup'."""
         os.chdir(self.builddir)
-        cmd = "%s/%s-%s/setup" % (self.builddir, self.name, self.version.split('-')[0])
-        cmd += " -nosystemcheck -replay %s" % self.replayfile
-        run_cmd(cmd,log_all=True,simple=True)
+        if self.cfg['install_cmd'] is None:
+            self.cfg['install_cmd'] = "%s/%s-%s/setup" % (self.builddir, self.name, self.version.split('-')[0])
+            self.cfg['install_cmd'] += " -nosystemcheck -replay %s" % self.replayfile
+        super(EB_ABAQUS, self).install_step()
 
     def sanity_check_step(self):
         """Custom sanity check for ABAQUS."""

@@ -189,6 +189,11 @@ class EB_LAPACK(ConfigureMake):
         except OSError, err:
             self.log.error("Copying %s to installation dir %s failed: %s" % (srcdir, destdir, err))
 
+    def load_module(self, mod_paths=None, purge=True):
+        """Don't try to load (non-existing) LAPACK module when performing a test build."""
+        if not self.cfg['test_only']:
+            super(EB_LAPACK, self).load_module(mod_paths=mod_paths, purge=purge)
+
     def test_step(self):
         """
         Run BLAS and LAPACK tests that come with netlib's LAPACK.

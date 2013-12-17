@@ -31,7 +31,7 @@ import os
 import shutil
 
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
-from easybuild.framework.easyconfig import MANDATORY
+from easybuild.framework.easyconfig import BUILD, MANDATORY
 
 class MakeCp(ConfigureMake):
     """
@@ -44,19 +44,21 @@ class MakeCp(ConfigureMake):
         """
         extra_vars = [
             ('files_to_copy', [{}, "List of files or dirs to copy", MANDATORY]),
+            ('with_configure', [False, "Run configure script before building", BUILD]),
         ]
         return ConfigureMake.extra_options(extra_vars)
 
-    def configure_step(self):
+    def configure_step(self, cmd_prefix=''):
         """
-        Dummy configure method
+        Configure build if required
         """
-        pass
+        if self.cfg.get('with_configure', False):
+            return super(MakeCp, self).configure_step(cmd_prefix=cmd_prefix)
 
     def install_step(self):
         """Install by copying specified files and directories."""
         try:
-            for fil in self.cfg["files_to_copy"]:
+            for fil in self.cfg.get('files_to_copy', {}):
                 if isinstance(fil, tuple):
                     # ([src1, src2], targetdir)
                     if len(fil) == 2 and isinstance(fil[0], list) and isinstance(fil[1], basestring):

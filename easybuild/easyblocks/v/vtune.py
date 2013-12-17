@@ -67,7 +67,7 @@ class EB_VTune(IntelBase):
         """Custom variable definitions in module file."""
         
         txt = super(EB_VTune, self).make_module_extra()
-        txt += self.moduleGenerator.prepend_paths('INTEL_LICENSE_FILE', self.license_file, allow_abs=True)
+        txt += self.moduleGenerator.prepend_paths(self.license_env_var, self.license_file, allow_abs=True)
 
         return txt
 
