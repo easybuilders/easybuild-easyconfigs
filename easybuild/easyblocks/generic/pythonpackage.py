@@ -82,7 +82,6 @@ class PythonPackage(ExtensionEasyBlock):
         self.testcmd = None
         self.unpack_options = ''
 
-        self.python = None
         self.pylibdir = None
 
         # make sure there's no site.cfg in $HOME, because setup.py will find it and use it
@@ -94,8 +93,9 @@ class PythonPackage(ExtensionEasyBlock):
 
     def prepare_step(self):
         """Prepare easyblock by determining Python site lib dir."""
+        if not self.pylibdir:
+            self.pylibdir = det_pylibdir()
         super(PythonPackage, self).prepare_step()
-        self.pylibdir = det_pylibdir()
 
     def prerun(self):
         """Prepare extension by determining Python site lib dir."""
@@ -105,8 +105,7 @@ class PythonPackage(ExtensionEasyBlock):
     def configure_step(self):
         """Configure Python package build."""
 
-        self.python = get_software_root('Python')
-        if not self.python:
+        if not self.pylibdir:
             self.log.error('Python module not loaded.')
         self.log.debug("Python library dir: %s" % self.pylibdir)
 
