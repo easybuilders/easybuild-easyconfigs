@@ -48,7 +48,7 @@ class VersionIndependendPythonPackage(PythonPackage):
     def prepare_step(self):
         """Set pylibdir"""
         self.pylibdir = 'lib'
-        PythonPackage.prepare_step()
+        PythonPackage.prepare_step(self)
 
     def install_step(self):
         """Custom install procedure to skip selection of python package versions."""
