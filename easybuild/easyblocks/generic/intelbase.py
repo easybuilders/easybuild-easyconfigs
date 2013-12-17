@@ -64,6 +64,15 @@ ACTIVATION_TYPES = [
     ACTIVATION_TRIAL,
 ]
 
+# silent.cfg parameter name for type of license activation (cfr. options listed above)
+ACTIVATION_NAME = 'ACTIVATION_TYPE'  # since icc/ifort v2013_sp1, impi v4.1.1, imkl v11.1
+ACTIVATION_NAME_2012 = 'ACTIVATION'  # previous activation type parameter used in older versions
+# silent.cfg parameter name for install prefix
+INSTALL_DIR_NAME = 'PSET_INSTALL_DIR'
+# silent.cfg parameter name for license file/server specification
+LICENSE_FILE_NAME = 'ACTIVATION_LICENSE_FILE'  # since icc/ifort v2013_sp1, impi v4.1.1, imkl v11.1
+LICENSE_FILE_NAME_2012 = 'PSET_LICENSE_FILE'  # previous license file parameter used in older versions
+
 
 class IntelBase(EasyBlock):
     """
@@ -193,6 +202,7 @@ class IntelBase(EasyBlock):
 
             # set default environment variable for license specification
             env.setvar(default_lic_env_var, self.license_file)
+            self.license_env_var = default_lic_env_var
         else:
             valid_license_specs = {}
             # iterate through entries in environment variables until a valid license specification is found
@@ -237,8 +247,8 @@ class IntelBase(EasyBlock):
                         # $INTEL_LICENSE_FILE should always be set during installation with existing license
                         env.setvar(default_lic_env_var, self.license_file)
                     break
-            if self.license_file is None:
-                self.log.error("self.license_file is still None, something went horribly wrong...")
+            if self.license_file is None or self.license_env_var is None:
+                self.log.error("self.license_file or self.license_env_var still None, something went horribly wrong...")
 
             self.cfg['license_file'] = self.license_file
             env.setvar(self.license_env_var, self.license_file)
@@ -280,9 +290,9 @@ class IntelBase(EasyBlock):
             "INSTALL_MODE=NONRPM",
             "CONTINUE_WITH_OPTIONAL_ERROR=yes",
         ]) % {
-            'activation_name': silent_cfg_names_map.get('activation_name', 'ACTIVATION'),
-            'license_file_name': silent_cfg_names_map.get('license_file_name', 'PSET_LICENSE_FILE'),
-            'install_dir_name': silent_cfg_names_map.get('install_dir_name', 'PSET_INSTALL_DIR'),
+            'activation_name': silent_cfg_names_map.get('activation_name', ACTIVATION_NAME),
+            'license_file_name': silent_cfg_names_map.get('license_file_name', LICENSE_FILE_NAME),
+            'install_dir_name': silent_cfg_names_map.get('install_dir_name', INSTALL_DIR_NAME),
             'activation': self.cfg['license_activation'],
             'license_file': self.license_file,
             'install_dir': silent_cfg_names_map.get('install_dir', self.installdir),
