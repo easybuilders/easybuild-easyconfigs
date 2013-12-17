@@ -52,16 +52,16 @@ class VersionIndependendPythonPackage(PythonPackage):
 
     def install_step(self):
         """Custom install procedure to skip selection of python package versions."""
-        pylibdir = os.path.join(self.installdir, self.pylibdir)
-        args = "install --prefix=%(path)s --install-lib=%(path)s/%(pylibdir)s" % {'path': self.installdir,
-                                                                                  'pylibdir': self.pylibdir}
+        full_pylibdir = os.path.join(self.installdir, self.pylibdir)
 
-        env.setvar('PYTHONPATH', '%s:%s' % (pylibdir, os.getenv('PYTHONPATH')))
+        env.setvar('PYTHONPATH', '%s:%s' % (full_pylibdir, os.getenv('PYTHONPATH')))
 
         try:
-            os.mkdir(pylibdir)
+            os.mkdir(full_pylibdir)
         except OSError, err:
             # this will raise an error and not return
             self.log.error("Failed to install: %s" % err)
-        cmd = "python setup.py %s" % args
+
+        args = "--prefix=%s --install-lib=%s" % (self.installdir, full_pylibdir)
+        cmd = "python setup.py install %s" % args
         run_cmd(cmd, log_all=True, simple=True, log_output=True)
