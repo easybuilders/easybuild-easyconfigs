@@ -30,6 +30,7 @@ EasyBuild support for installing the Intel Math Kernel Library (MKL), implemente
 @author: Kenneth Hoste (Ghent University)
 @author: Pieter De Baets (Ghent University)
 @author: Jens Timmerman (Ghent University)
+@author: Ward Poelmans (Ghent University)
 """
 
 import os
@@ -58,12 +59,10 @@ class EB_imkl(IntelBase):
         extra_vars = [('interfaces', [True, "Indicates whether interfaces should be built (default: True)", CUSTOM])]
         return IntelBase.extra_options(extra_vars)
 
-    def configure_step(self):
-        """Custom configure step, make sure $MKLROOT is not set."""
-        super(EB_imkl, self).configure_step()
-
-        if os.getenv('MKLROOT'):
-            self.log.error("Found MKLROOT in current environment, which may cause problems...")
+    def __init__(self, *args, **kwargs):
+        super(EB_imkl, self).__init__(*args, **kwargs)
+        # make sure $MKLROOT isn't set, it's known to cause problems with the installation
+        self.cfg.update('unwanted_env_vars', ['MKLROOT'])
 
     def install_step(self):
         """
