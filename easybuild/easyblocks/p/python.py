@@ -107,6 +107,7 @@ class EB_Python(ConfigureMake):
             'dirs': ["include/%s%s" % (pyver, abiflags), "lib/%s" % pyver]
         }
 
+        # make sure that ctypes are actually working, this is needed for a lot of dependencies
         custom_commands = [('python', '-c "import _ctypes"')]
 
         # cleanup

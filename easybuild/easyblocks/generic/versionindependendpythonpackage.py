@@ -1,5 +1,5 @@
 ##
-# Copyright 2009-2013 Ghent University
+# Copyright 2013 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -38,7 +38,7 @@ from easybuild.easyblocks.generic.pythonpackage import PythonPackage
 from easybuild.tools.filetools import run_cmd
 
 
-class EB_VersionIndependendPythonPackage(PythonPackage):
+class VersionIndependendPythonPackage(PythonPackage):
     """Support for building/installing python packages without requiring a specific python package."""
 
     def build_step(self):
@@ -48,11 +48,11 @@ class EB_VersionIndependendPythonPackage(PythonPackage):
     def prepare_step(self):
         """Set pylibdir"""
         self.pylibdir = 'lib'
-        super(EB_VSC_minus_tools, self).prepare_step()
+        PythonPackage.prepare_step()
 
     def install_step(self):
         """Custom install procedure to skip selection of python package versions."""
-        pylibdir = "%s/%s" % (self.installdir, self.pylibdir)
+        pylibdir = os.path.join(self.installdir, self.pylibdir)
         args = "install --prefix=%(path)s --install-lib=%(path)s/%(pylibdir)s" % {'path': self.installdir,
                                                                                   'pylibdir': self.pylibdir}
 
@@ -60,8 +60,8 @@ class EB_VersionIndependendPythonPackage(PythonPackage):
 
         try:
             os.mkdir(pylibdir)
-
-            cmd = "python setup.py %s" % args
-            run_cmd(cmd, log_all=True, simple=True, log_output=True)
         except OSError, err:
+            # this will raise an error and not return
             self.log.error("Failed to install: %s" % err)
+        cmd = "python setup.py %s" % args
+        run_cmd(cmd, log_all=True, simple=True, log_output=True)
