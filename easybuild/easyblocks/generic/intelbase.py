@@ -155,6 +155,9 @@ class IntelBase(EasyBlock):
                     os.symlink(self.home_subdir_local, self.home_subdir)
 
             else:
+                # if a broken symlink is present, remove it first
+                if os.path.islink(self.home_subdir):
+                    os.remove(self.home_subdir)
                 os.symlink(self.home_subdir_local, self.home_subdir)
 
         except OSError, err:
