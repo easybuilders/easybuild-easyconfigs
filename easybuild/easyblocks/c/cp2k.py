@@ -356,7 +356,7 @@ class EB_CP2K(EasyBlock):
             if not libxc:
                 self.log.error("libxc module not loaded.")
 
-            libxc_version = get_software_version('Libxc')
+            libxc_version = get_software_version('libxc')
             if LooseVersion('2.0.1') != LooseVersion(libxc_version):
                 self.log.error("CP2K only works with libxc-2.0.1")
 
@@ -381,10 +381,10 @@ class EB_CP2K(EasyBlock):
             extrainc = '-I%s' % self.modincpath
 
         options.update({
-            ## -Vaxlib : older options
+            # -Vaxlib : older options
             'FREE': '-fpp -free',
 
-            #SAFE = -assume protect_parens -fp-model precise -ftz # problems
+            # SAFE = -assume protect_parens -fp-model precise -ftz  # causes problems, so don't use this
             'SAFE': '-assume protect_parens -no-unroll-aggressive',
 
             'INCFLAGS': '$(DFLAGS) -I$(INTEL_INC) -I$(INTEL_INCF) %s' % extrainc,
@@ -595,10 +595,11 @@ class EB_CP2K(EasyBlock):
                     break
 
             # location of do_regtest script
-            if LooseVersion(self.version) < LooseVersion('20131205'):
+            regtest_script = os.path.join(self.cfg['start_dir'], 'tools', 'regtesting', 'do_regtest')
+            # older version of CP2K
+            if not os.path.exists(regtest_script):
                 regtest_script = os.path.join(self.cfg['start_dir'], 'tools', 'do_regtest')
-            else:
-                regtest_script = os.path.join(self.cfg['start_dir'], 'tools', 'regtesting', 'do_regtest')
+                usecvs = True
 
             # patch do_regtest so that reference output is used
             if regtest_refdir:
@@ -648,7 +649,7 @@ cp2k_run_prefix="%(mpicmd_prefix)s"
             self.log.debug("Contents of %s: %s" % (cfg_fn, cfg_txt))
 
             # run regression test
-            if LooseVersion(self.version) < LooseVersion('20131205'):
+            if usecvs:
                 cmd = "%s -nocvs -quick -nocompile -config %s" % (regtest_script, cfg_fn)
             else:
                 cmd = "%s -nosvn -nobuild -config %s" % (regtest_script, cfg_fn)
