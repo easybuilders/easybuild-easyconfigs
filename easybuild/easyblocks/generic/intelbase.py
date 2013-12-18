@@ -87,7 +87,8 @@ class IntelBase(EasyBlock):
         self.license_env_var = None
 
         self.home_subdir = os.path.join(os.getenv('HOME'), 'intel')
-        self.home_subdir_local = os.path.join(tempfile.gettempdir(), os.getenv('USER'), 'easybuild_intel')
+        common_tmp_dir = os.path.dirname(tempfile.gettempdir())  # common tmp directory, same across nodes
+        self.home_subdir_local = os.path.join(common_tmp_dir, os.getenv('USER'), 'easybuild_intel')
 
         super(IntelBase, self).__init__(*args, **kwargs)
 
