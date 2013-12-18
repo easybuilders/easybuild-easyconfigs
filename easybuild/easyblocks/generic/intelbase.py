@@ -139,6 +139,7 @@ class IntelBase(EasyBlock):
             # make sure local directory exists
             if not os.path.exists(self.home_subdir_local):
                 os.makedirs(self.home_subdir_local)
+                self.log.debug("Created local dir %s" % self.home_subdir_local)
 
             if os.path.exists(self.home_subdir):
                 # if 'intel' dir in $HOME already exists, make sure it's the right symlink
@@ -153,12 +154,14 @@ class IntelBase(EasyBlock):
 
                     # set symlink in place
                     os.symlink(self.home_subdir_local, self.home_subdir)
+                    self.log.debug("Created symlink (1) %s to %s" % (self.home_subdir, self.home_subdir_local))
 
             else:
                 # if a broken symlink is present, remove it first
                 if os.path.islink(self.home_subdir):
                     os.remove(self.home_subdir)
                 os.symlink(self.home_subdir_local, self.home_subdir)
+                self.log.debug("Created symlink (2) %s to %s" % (self.home_subdir, self.home_subdir_local))
 
         except OSError, err:
             self.log.error("Failed to symlink %s to %s: %s" % (self.home_subdir_local, self.home_subdir, err))
