@@ -190,7 +190,8 @@ class PythonPackage(ExtensionEasyBlock):
         env.setvar('PYTHONPATH', ":".join([x for x in [abs_pylibdir, pythonpath] if x is not None]))
 
         # actually install Python package
-        cmd = "python setup.py install --prefix=%s %s" % (self.installdir, self.cfg['installopts'])
+        tup = (self.cfg.['preinstallopts'], self.installdir, self.cfg['installopts'])
+        cmd = "%s python setup.py install --prefix=%s %s" % tup
         run_cmd(cmd, log_all=True, simple=True)
 
         # restore PYTHONPATH if it was set
