@@ -50,6 +50,7 @@ from easybuild.tools.systemtools import get_avail_core_count
 
 # CP2K needs this version
 LIBXC_VERSION = '2.0.1'
+MULTICORE = 2
 
 
 class EB_CP2K(EasyBlock):
@@ -617,7 +618,7 @@ class EB_CP2K(EasyBlock):
             else:
                 self.log.info("No reference output found for regression test, just continuing without it...")
 
-            if get_avail_core_count() < 2:
+            if get_avail_core_count() < MULTICORE:
                 self.log.error("Cannot run MPI tests as only one core is available")
 
             # configure regression test
