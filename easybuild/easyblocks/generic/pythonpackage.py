@@ -78,7 +78,6 @@ class PythonPackage(ExtensionEasyBlock):
         self.sitecfglibdir = None
         self.sitecfgincdir = None
         self.testinstall = False
-        self.installopts = ''
         self.testcmd = None
         self.unpack_options = ''
 
@@ -93,9 +92,9 @@ class PythonPackage(ExtensionEasyBlock):
 
     def prepare_step(self):
         """Prepare easyblock by determining Python site lib dir."""
+        super(PythonPackage, self).prepare_step()
         if not self.pylibdir:
             self.pylibdir = det_pylibdir()
-        super(PythonPackage, self).prepare_step()
 
     def prerun(self):
         """Prepare extension by determining Python site lib dir."""
@@ -162,7 +161,8 @@ class PythonPackage(ExtensionEasyBlock):
                 except OSError, err:
                     self.log.error("Failed to create test install dir: %s" % err)
 
-                cmd = "python setup.py install --prefix=%s %s" % (testinstalldir, self.installopts)
+                tup = (self.cfg['preinstallopts'], testinstalldir, self.cfg['installopts'])
+                cmd = "%s python setup.py install --prefix=%s %s" % tup
                 run_cmd(cmd, log_all=True, simple=True)
 
                 run_cmd("python -c 'import sys; print(sys.path)'")  # print Python search path (debug)
@@ -190,7 +190,8 @@ class PythonPackage(ExtensionEasyBlock):
         env.setvar('PYTHONPATH', ":".join([x for x in [abs_pylibdir, pythonpath] if x is not None]))
 
         # actually install Python package
-        cmd = "python setup.py install --prefix=%s %s" % (self.installdir, self.cfg['installopts'])
+        tup = (self.cfg['preinstallopts'], self.installdir, self.cfg['installopts'])
+        cmd = "%s python setup.py install --prefix=%s %s" % tup
         run_cmd(cmd, log_all=True, simple=True)
 
         # restore PYTHONPATH if it was set
