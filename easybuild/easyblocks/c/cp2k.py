@@ -50,7 +50,6 @@ from easybuild.tools.systemtools import get_avail_core_count
 
 # CP2K needs this version
 LIBXC_VERSION = '2.0.1'
-MULTICORE = 2
 
 
 class EB_CP2K(EasyBlock):
@@ -618,8 +617,11 @@ class EB_CP2K(EasyBlock):
             else:
                 self.log.info("No reference output found for regression test, just continuing without it...")
 
-            if get_avail_core_count() < MULTICORE:
+            TEST_CORE_CNT = min(self.cfg['maxparallel'], 2)
+            if get_avail_core_count() < TEST_CORE_CNT:
                 self.log.error("Cannot run MPI tests as only one core is available")
+            else:
+                self.log.info("Using %s cores for the MPI tests" % TEST_CORE_CNT)
 
             # configure regression test
             cfg_txt = """FORT_C_NAME="%(f90)s"
@@ -638,7 +640,7 @@ cp2k_run_prefix="%(mpicmd_prefix)s"
                 'triplet': self.typearch,
                 'cp2k_dir': os.path.basename(os.path.normpath(self.cfg['start_dir'])),
                 'maxtasks': self.cfg['maxtasks'],
-                'mpicmd_prefix': self.toolchain.mpi_cmd_for('', 2),
+                'mpicmd_prefix': self.toolchain.mpi_cmd_for('', TEST_CORE_CNT),
             }
 
             cfg_fn = "cp2k_regtest.cfg"
