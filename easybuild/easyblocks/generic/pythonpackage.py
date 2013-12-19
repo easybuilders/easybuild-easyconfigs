@@ -93,9 +93,9 @@ class PythonPackage(ExtensionEasyBlock):
 
     def prepare_step(self):
         """Prepare easyblock by determining Python site lib dir."""
+        super(PythonPackage, self).prepare_step()
         if not self.pylibdir:
             self.pylibdir = det_pylibdir()
-        super(PythonPackage, self).prepare_step()
 
     def prerun(self):
         """Prepare extension by determining Python site lib dir."""
