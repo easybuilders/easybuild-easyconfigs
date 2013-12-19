@@ -78,7 +78,6 @@ class PythonPackage(ExtensionEasyBlock):
         self.sitecfglibdir = None
         self.sitecfgincdir = None
         self.testinstall = False
-        self.installopts = ''
         self.testcmd = None
         self.unpack_options = ''
 
@@ -162,7 +161,8 @@ class PythonPackage(ExtensionEasyBlock):
                 except OSError, err:
                     self.log.error("Failed to create test install dir: %s" % err)
 
-                cmd = "python setup.py install --prefix=%s %s" % (testinstalldir, self.installopts)
+                tup = (self.cfg['preinstallopts'], testinstalldir, self.cfg['installopts'])
+                cmd = "%s python setup.py install --prefix=%s %s" % tup
                 run_cmd(cmd, log_all=True, simple=True)
 
                 run_cmd("python -c 'import sys; print(sys.path)'")  # print Python search path (debug)

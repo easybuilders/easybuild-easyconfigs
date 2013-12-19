@@ -47,13 +47,13 @@ class EB_scipy(FortranPythonPackage):
         self.testinstall = True
         self.testcmd = "cd .. && python -c 'import numpy; import scipy; scipy.test(verbose=2)'"
 
-    def install_step(self):
-        """Custom install step for scipy: set extra installation options when needed."""
+    def configure_step(self):
+        """Custom configure step for scipy: set extra installation options when needed."""
+        super(EB_scipy, self).configure_step()
+
         if LooseVersion(self.version) >= LooseVersion('0.13'):
             # in recent scipy versions, additional compilation is done in the install step,
             # which requires unsetting $LDFLAGS
             if self.toolchain.comp_family() in [toolchain.GCC, toolchain.CLANGGCC]:  # @UndefinedVariable
                 self.cfg.update('preinstallopts', "unset LDFLAGS && ")
-                self.cfg.update('installopts', "--fcompiler=gnu95")
 
-        super(EB_scipy, self).install_step()
