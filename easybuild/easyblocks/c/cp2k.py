@@ -48,6 +48,9 @@ from easybuild.tools.filetools import run_cmd
 from easybuild.tools.modules import get_software_root, get_software_version
 from easybuild.tools.systemtools import get_avail_core_count
 
+# CP2K needs this version
+LIBXC_VERSION = '2.0.1'
+
 
 class EB_CP2K(EasyBlock):
     """
@@ -356,13 +359,13 @@ class EB_CP2K(EasyBlock):
             if not libxc:
                 self.log.error("libxc module not loaded.")
 
-            libxc_version = get_software_version('libxc')
-            if LooseVersion('2.0.1') != LooseVersion(libxc_version):
-                self.log.error("CP2K only works with libxc-2.0.1")
+            cur_libxc_version = get_software_version('libxc')
+            if LooseVersion(LIBXC_VERSION) != LooseVersion(cur_libxc_version):
+                self.log.error("CP2K only works with libxc-%s" % LIBXC_VERSION)
 
             options['DFLAGS'] += ' -D__LIBXC2'
             options['LIBS'] += ' -L%s/lib -lxc' % libxc
-            self.log.info("Using Libxc 2.0.1")
+            self.log.info("Using Libxc-%s" % LIBXC_VERSION)
 
         return options
 
