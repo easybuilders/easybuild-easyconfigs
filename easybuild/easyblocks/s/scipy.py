@@ -52,6 +52,6 @@ class EB_scipy(FortranPythonPackage):
         if LooseVersion(self.version) >= LooseVersion('0.13'):
             # in recent scipy versions, additional compilation is done in the install step,
             # which requires unsetting $LDFLAGS
-            if comp_fam in [toolchain.GCC, toolchain.CLANGGCC]:  # @UndefinedVariable
+            if self.toolchain.comp_family() in [toolchain.GCC, toolchain.CLANGGCC]:  # @UndefinedVariable
                 self.cfg.update('preinstallopts', "unset LDFLAGS && ")
                 self.cfg.update('installopts', "--fcompiler=gnu95")
