@@ -55,3 +55,5 @@ class EB_scipy(FortranPythonPackage):
             if self.toolchain.comp_family() in [toolchain.GCC, toolchain.CLANGGCC]:  # @UndefinedVariable
                 self.cfg.update('preinstallopts', "unset LDFLAGS && ")
                 self.cfg.update('installopts', "--fcompiler=gnu95")
+
+        super(EB_scipy, self).install_step()
