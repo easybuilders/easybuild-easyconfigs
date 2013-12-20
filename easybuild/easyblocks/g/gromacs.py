@@ -65,7 +65,7 @@ class EB_GROMACS(CMakeMake):
 
             # enable MPI support if desired
             if self.toolchain.options.get('usempi', None):
-                self.cfg.update('configopts', "-DGMX_MPI=ON")
+                self.cfg.update('configopts', "-DGMX_MPI=ON -DGMX_THREAD_MPI=OFF")
             else:
                 self.cfg.update('configopts', "-DGMX_MPI=OFF")
 
