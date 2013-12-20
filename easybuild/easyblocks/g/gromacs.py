@@ -45,11 +45,23 @@ class EB_GROMACS(CMakeMake):
             self.log.info("Using configure script for configuring GROMACS build.")
             self.log.error("Configuration procedure for older GROMACS versions not implemented yet.")
         else:
+            # build a release build
+            self.cfg.update('configopts', "-DCMAKE_BUILD_TYPE=Release")
+
+            # prefer static libraries, if available
+            self.cfg.update('configopts', "-DGMX_PREFER_STATIC_LIBS=ON")
+
             # always specify to use external BLAS/LAPACK
             self.cfg.update('configopts', "-DGMX_EXTERNAL_BLAS=ON -DGMX_EXTERNAL_LAPACK=ON")
 
             # disable GUI tools
             self.cfg.update('configopts', "-DGMX_X11=OFF")
+
+            # enable OpenMP support if desired
+            if self.toolchain.options.get('openmp', None):
+                self.cfg.update('configopts', "-DGMX_OPENMP=ON")
+            else:
+                self.cfg.update('configopts', "-DGMX_OPENMP=OFF")
 
             # enable MPI support if desired
             if self.toolchain.options.get('usempi', None):
@@ -59,8 +71,9 @@ class EB_GROMACS(CMakeMake):
 
             # explicitely disable GPU support if CUDA is not available,
             # to avoid that GROMACS find and uses a system-wide CUDA compiler
-            if get_software_root('CUDA'):
-                self.cfg.update('configopts', "-DGMX_GPU=ON")
+            cuda = get_software_root('CUDA')
+            if cuda:
+                self.cfg.update('configopts', "-DGMX_GPU=ON -DCUDA_TOOLKIT_ROOT_DIR=%s" % cuda)
             else:
                 self.cfg.update('configopts', "-DGMX_GPU=OFF")
 
@@ -84,16 +97,17 @@ class EB_GROMACS(CMakeMake):
         # complete configuration with configure_method of parent
         out = super(EB_GROMACS, self).configure_step()
 
-        # make very sure that a decent BLAS, LAPACK and FFT is found and used
-        patterns = [
-            r"Using external FFT library - \S*",
-            r"Looking for dgemm_ - found",
-            r"Looking for cheev_ - found",
-        ]
-        for pattern in patterns:
-            regex = re.compile(pattern, re.M)
-            if not regex.search(out):
-                self.log.error("Pattern '%s' not found in GROMACS configuration output." % pattern)
+        # for recent GROMACS versions, make very sure that a decent BLAS, LAPACK and FFT is found and used
+        if LooseVersion(self.version) >= LooseVersion('4.6.5'):
+            patterns = [
+                r"Using external FFT library - \S*",
+                r"Looking for dgemm_ - found",
+                r"Looking for cheev_ - found",
+            ]
+            for pattern in patterns:
+                regex = re.compile(pattern, re.M)
+                if not regex.search(out):
+                    self.log.error("Pattern '%s' not found in GROMACS configuration output." % pattern)
 
     def test_step(self):
         """Specify to running tests is done using 'make check'."""
