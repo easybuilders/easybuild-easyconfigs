@@ -127,7 +127,7 @@ class EB_GROMACS(CMakeMake):
         custom_paths = {
             # check for a handful of binaries that should be there
             'files': ['bin/%s%s' % (binary, suff) for binary in ['editconf', 'g_lie', 'genbox', 'genconf', 'mdrun']] +
-                     ['lib/lib%s%s.so' % (lib, suff) for lib in ['gmxana', 'gmx', 'gmxpreprocess', 'md']],
-            'dirs': ['include/gromacs'],
+                     ['lib/lib%s%s.a' % (lib, suff) for lib in ['gmxana', 'gmx', 'gmxpreprocess', 'md']],
+            'dirs': ['include/gromacs', 'lib/pkgconfig'],
         }
         super(EB_GROMACS, self).sanity_check_step(custom_paths=custom_paths)
