@@ -59,7 +59,7 @@ class EB_GROMACS(CMakeMake):
             if not get_software_root('CUDA'):
                 self.cfg.update('configopts', "-DGMX_GPU=OFF")
 
-            if get_software_root('MKL'):
+            if get_software_root('imkl'):
                 # using MKL for FFT, so it will also be used for BLAS/LAPACK
                 self.cfg.update('configopts', '-DGMX_FFT_LIBRARY=mkl -DMKL_INCLUDE_DIR="$EBROOTMKL/mkl/include" ')
                 mkl_libs = [os.path.join(os.getenv('LAPACK_LIB_DIR'), lib) for lib in ['libmkl.a', 'libmkl_lapack.a']]
