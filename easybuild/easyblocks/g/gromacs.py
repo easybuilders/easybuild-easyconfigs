@@ -81,7 +81,18 @@ class EB_GROMACS(CMakeMake):
             
 
         # complete configuration with configure_method of parent
-        super(EB_GROMACS, self).configure_step()
+        out = super(EB_GROMACS, self).configure_step()
+
+        # make very sure that a decent BLAS, LAPACK and FFT is found and used
+        patterns = [
+            r"Using external FFT library - \S*",
+            r"Looking for dgemm_ - found",
+            r"Looking for cheev_ - found",
+        ]
+        for pattern in patterns:
+            regex = re.compile(pattern, re.M)
+            if not regex.search(out):
+                self.log.error("Pattern '%s' not found in GROMACS configuration output." % pattern)
 
     def test_step(self):
         """Specify to running tests is done using 'make check'."""
