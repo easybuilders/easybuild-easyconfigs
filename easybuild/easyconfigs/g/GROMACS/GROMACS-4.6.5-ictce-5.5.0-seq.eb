@@ -10,41 +10,29 @@
 # This work implements a part of the HPCBIOS project and is a component of the policy:
 # http://hpcbios.readthedocs.org/en/latest/HPCBIOS_2012-93.html
 ##
-
-easyblock = 'CMakeMake'
-
 name = 'GROMACS'
 version = '4.6.5'
+versionsuffix = '-seq'
 
 homepage = 'http://www.gromacs.org'
 description = """GROMACS is a versatile package to perform molecular dynamics,
-  i.e. simulate the Newtonian equations of motion for systems with hundreds to millions of particles."""
+ i.e. simulate the Newtonian equations of motion for systems with hundreds to millions of particles."""
 
 toolchain = {'name': 'ictce', 'version': '5.5.0'}
-toolchainopts = {'usempi': True}
+toolchainopts = {'openmp': False, 'usempi': False}
 
 # eg. ftp://ftp.gromacs.org/pub/gromacs/gromacs-4.6.tar.gz
-sources = [
-    SOURCELOWER_TAR_GZ,
-    'regressiontests-%(version)s.tar.gz',
-]
 source_urls = [
     'ftp://ftp.gromacs.org/pub/gromacs/',  # GROMACS sources
     'http://gerrit.gromacs.org/download/',  # regression tests sources
+]
+sources = [
+    SOURCELOWER_TAR_GZ,
+    'regressiontests-%(version)s.tar.gz',
 ]
 
 dependencies = [('GSL', '1.16')]
 
 builddependencies = [('CMake', '2.8.12')]
-
-configopts = '-DGMX_FFT_LIBRARY=mkl -DMKL_INCLUDE_DIR="$EBROOTMKL/mkl/include" '
-configopts += '-DMKL_LIBRARIES="$EBROOTMKL/mkl/lib/intel64/libmkl.a;$EBROOTMKL/mkl/lib/intel64/libmkl_lapack.a" '
-configopts += '-DGMX_EXTERNAL_BLAS=ON -DGMX_EXTERNAL_LAPACK=ON -DGMX_MPI=ON -DGMX_X11=OFF '
-
-# explicitely disable CUDA support, i.e. avoid that GROMACS find and uses a system-wide CUDA compiler
-configopts += '-DGMX_GPU=OFF '
-
-configopts += '-DREGRESSIONTEST_PATH="%(builddir)s/regressiontests-%(version)s" '
-runtest = 'check'
 
 moduleclass = 'bio'
