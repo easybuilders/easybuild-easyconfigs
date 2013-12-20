@@ -28,6 +28,7 @@ EasyBuild support for building and installing GROMACS, implemented as an easyblo
 @author: Kenneth Hoste (Ghent University)
 """
 import os
+import re
 from distutils.version import LooseVersion
 
 from easybuild.easyblocks.generic.cmakemake import CMakeMake
