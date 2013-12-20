@@ -53,10 +53,14 @@ class EB_GROMACS(CMakeMake):
             # enable MPI support if desired
             if self.toolchain.options.get('usempi', None):
                 self.cfg.update('configopts', "-DGMX_MPI=ON")
+            else:
+                self.cfg.update('configopts', "-DGMX_MPI=OFF")
 
             # explicitely disable GPU support if CUDA is not available,
             # to avoid that GROMACS find and uses a system-wide CUDA compiler
-            if not get_software_root('CUDA'):
+            if get_software_root('CUDA'):
+                self.cfg.update('configopts', "-DGMX_GPU=ON")
+            else:
                 self.cfg.update('configopts', "-DGMX_GPU=OFF")
 
             if get_software_root('imkl'):
