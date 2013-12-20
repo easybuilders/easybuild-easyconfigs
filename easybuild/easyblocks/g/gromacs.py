@@ -90,8 +90,14 @@ class EB_GROMACS(CMakeMake):
     def sanity_check_step(self):
         """Custom sanity check for GROMACS."""
 
+        suff = ''
+        if self.toolchain.options.get('usempi', None):
+            suff = '_mpi'
+
         custom_paths = {
-            'files': ['bin/gromacs'],
-            'dirs': [],
+            # check for a handful of binaries that should be there
+            'files': ['bin/%s%s' % (binary, suff) for binary in ['editconf', 'g_lie', 'genbox', 'genconf', 'mdrun']] +
+                     ['lib/%s%s' % (lib, suff) for lib in ['gmxana', 'gmx', 'gmxpreprocess', 'md']],
+            'dirs': ['include/gromacs'],
         }
         super(EB_GROMACS, self).sanity_check_step(custom_paths=custom_paths)
