@@ -115,6 +115,9 @@ class EB_GROMACS(CMakeMake):
         if not self.cfg['runtest'] and not isinstance(self.cfg['runtest'], bool):
             self.cfg['runtest'] = 'check'
 
+        # make very sure OMP_NUM_THREADS is set to 1, to avoid hanging GROMACS regression test
+        env.setvar('OMP_NUM_THREADS', '1')
+
         super(EB_GROMACS, self).test_step()
 
     def sanity_check_step(self):
