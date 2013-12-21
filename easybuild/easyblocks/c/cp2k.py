@@ -48,7 +48,7 @@ from easybuild.tools.filetools import run_cmd
 from easybuild.tools.modules import get_software_root, get_software_version
 from easybuild.tools.systemtools import get_avail_core_count
 
-# CP2K needs this version
+# CP2K needs this version of libxc
 LIBXC_VERSION = '2.0.1'
 
 
