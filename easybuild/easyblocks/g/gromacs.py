@@ -89,6 +89,12 @@ class EB_GROMACS(CMakeMake):
                     libs = os.getenv('LIB%s' % libname)
                     self.cfg.update('configopts', '-DGMX_%s_USER="-L%s %s"' % (libname, lib_dir, libs))
 
+            # enable GSL when it's provided
+            if get_software_root('GSL'):
+                self.cfg.update('configopts', "-DGMX_GSL=ON")
+            else:
+                self.cfg.update('configopts', "-DGMX_GSL=ON")
+
             # set regression test path
             prefix = 'regressiontests'
             if any([src['name'].startswith(prefix) for src in self.src]):
