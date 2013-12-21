@@ -93,7 +93,7 @@ class EB_GROMACS(CMakeMake):
             if get_software_root('GSL'):
                 self.cfg.update('configopts', "-DGMX_GSL=ON")
             else:
-                self.cfg.update('configopts', "-DGMX_GSL=ON")
+                self.cfg.update('configopts', "-DGMX_GSL=OFF")
 
             # set regression test path
             prefix = 'regressiontests'
