@@ -81,7 +81,8 @@ class EB_GROMACS(CMakeMake):
             if get_software_root('imkl'):
                 # using MKL for FFT, so it will also be used for BLAS/LAPACK
                 self.cfg.update('configopts', '-DGMX_FFT_LIBRARY=mkl -DMKL_INCLUDE_DIR="$EBROOTMKL/mkl/include" ')
-                mkl_libs = [os.path.join(os.getenv('LAPACK_LIB_DIR'), lib) for lib in ['libmkl.a', 'libmkl_lapack.a']]
+                lapack_static_libs = os.getenv('LAPACK_STATIC_LIBS').split(',')
+                mkl_libs = [os.path.join(os.getenv('LAPACK_LIB_DIR'), lib) for lib in lapack_static_libs]
                 self.cfg.update('configopts', '-DMKL_LIBRARIES="%s" ' % ';'.join(mkl_libs))
             else:
                 for libname in ['BLAS', 'LAPACK']:
@@ -115,6 +116,9 @@ class EB_GROMACS(CMakeMake):
                 regex = re.compile(pattern, re.M)
                 if not regex.search(out):
                     self.log.error("Pattern '%s' not found in GROMACS configuration output." % pattern)
+
+        # enable verbose build
+        self.cfg.update('makeopts', 'VERBOSE=1')
 
     def test_step(self):
         """Specify to running tests is done using 'make check'."""
