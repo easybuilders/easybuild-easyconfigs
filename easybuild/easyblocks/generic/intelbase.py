@@ -148,7 +148,8 @@ class IntelBase(EasyBlock):
                                                                                    self.home_subdir_local)
                 if not symlink_ok:
                     # rename current 'intel' dir
-                    home_intel_bk = '.'.join([self.home_subdir, "bk_easybuild"])
+                    home_intel_bk = tempfile.mkdtemp(dir=os.path.dirname(self.home_subdir),
+                                                     prefix='%s.bk.' % os.path.basename(self.home_subdir))
                     self.log.info("Moving %(ih)s to %(ihl)s, I need %(ih)s myself..." % {'ih': self.home_subdir,
                                                                                          'ihl': home_intel_bk})
                     shutil.move(self.home_subdir, home_intel_bk)
