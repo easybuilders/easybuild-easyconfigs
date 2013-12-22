@@ -348,6 +348,10 @@ class EB_CP2K(EasyBlock):
             options['LIBINTLIB'] = '%s/lib' % libint
             options['LIBS'] += ' %s -lstdc++ %s' % (libint_libs, libint_wrapper)
 
+        else:
+            # throw a warning, since CP2K without LibInt doesn't make much sense
+            self.log.warning("LibInt module not loaded, so building without LibInt support")
+
         if get_software_root('libxc'):
             cur_libxc_version = get_software_version('libxc')
             if LooseVersion(LIBXC_VERSION) != LooseVersion(cur_libxc_version):
@@ -356,6 +360,8 @@ class EB_CP2K(EasyBlock):
             options['DFLAGS'] += ' -D__LIBXC2'
             options['LIBS'] += ' -L%s/lib -lxc' % libxc
             self.log.info("Using Libxc-%s" % LIBXC_VERSION)
+        else:
+            self.log.info("libxc module not loaded, so building without libxc support")
 
         return options
 
