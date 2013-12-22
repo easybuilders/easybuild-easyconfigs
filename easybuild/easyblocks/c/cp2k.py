@@ -88,8 +88,6 @@ class EB_CP2K(EasyBlock):
         extra_vars = [
             ('type', ['popt', "Type of build ('popt' or 'psmp')", CUSTOM]),
             ('typeopt', [True, "Enable optimization", CUSTOM]),
-            ('libint', [True, "Use LibInt", CUSTOM]),
-            ('libxc', [False, "Use Libxc", CUSTOM]),
             ('modincprefix', ['', "IMKL prefix for modinc include dir", CUSTOM]),
             ('modinc', [[], ("List of modinc's to use (*.f90), or 'True' to use "
                              "all found at given prefix"), CUSTOM]),
@@ -307,12 +305,8 @@ class EB_CP2K(EasyBlock):
             'FCFLAGSOPT2': '-O1 $(FREE) $(SAFE) $(FPIC) $(DEBUG)'
         }
 
-        if self.cfg['libint']:
-
-            libint = get_software_root('LibInt')
-            if not libint:
-                self.log.error("LibInt module not loaded.")
-
+        libint = get_software_root('LibInt')
+        if libint:
             options['DFLAGS'] += ' -D__LIBINT'
 
             libintcompiler = "%s %s" % (os.getenv('CC'), os.getenv('CFLAGS'))
@@ -354,11 +348,7 @@ class EB_CP2K(EasyBlock):
             options['LIBINTLIB'] = '%s/lib' % libint
             options['LIBS'] += ' %s -lstdc++ %s' % (libint_libs, libint_wrapper)
 
-        if self.cfg['libxc']:
-            libxc = get_software_root('libxc')
-            if not libxc:
-                self.log.error("libxc module not loaded.")
-
+        if get_software_root('libxc'):
             cur_libxc_version = get_software_version('libxc')
             if LooseVersion(LIBXC_VERSION) != LooseVersion(cur_libxc_version):
                 self.log.error("CP2K only works with libxc-%s" % LIBXC_VERSION)
