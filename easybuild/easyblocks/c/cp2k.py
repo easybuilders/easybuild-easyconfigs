@@ -353,7 +353,7 @@ class EB_CP2K(EasyBlock):
             self.log.warning("LibInt module not loaded, so building without LibInt support")
 
             
-        libxc = get_software_root('libxc'):
+        libxc = get_software_root('libxc')
         if libxc:
             cur_libxc_version = get_software_version('libxc')
             if LooseVersion(LIBXC_VERSION) != LooseVersion(cur_libxc_version):
