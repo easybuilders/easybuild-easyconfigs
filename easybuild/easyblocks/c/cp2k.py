@@ -86,19 +86,19 @@ class EB_CP2K(EasyBlock):
     @staticmethod
     def extra_options():
         extra_vars = [
-            ('type', ['popt', "Type of build ('popt' or 'psmp') (default: 'popt)", CUSTOM]),
-            ('typeopt', [True, "Enable optimization (default: True)", CUSTOM]),
-            ('libint', [True, "Use LibInt (default: True)", CUSTOM]),
-            ('libxc', [True, "Use Libxc (default: True)", CUSTOM]),
-            ('modincprefix', ['', "IMKL prefix for modinc include dir (default: '')", CUSTOM]),
+            ('type', ['popt', "Type of build ('popt' or 'psmp')", CUSTOM]),
+            ('typeopt', [True, "Enable optimization", CUSTOM]),
+            ('libint', [True, "Use LibInt", CUSTOM]),
+            ('libxc', [True, "Use Libxc", CUSTOM]),
+            ('modincprefix', ['', "IMKL prefix for modinc include dir", CUSTOM]),
             ('modinc', [[], ("List of modinc's to use (*.f90), or 'True' to use "
-                             "all found at given prefix (default: [])"), CUSTOM]),
-            ('extracflags', ['', "Extra CFLAGS to be added (default: '')", CUSTOM]),
-            ('extradflags', ['', "Extra DFLAGS to be added (default: '')", CUSTOM]),
+                             "all found at given prefix"), CUSTOM]),
+            ('extracflags', ['', "Extra CFLAGS to be added", CUSTOM]),
+            ('extradflags', ['', "Extra DFLAGS to be added", CUSTOM]),
             ('ignore_regtest_fails', [False, ("Ignore failures in regression test "
-                                              "(should be used with care) (default: False)."), CUSTOM]),
+                                              "(should be used with care)"), CUSTOM]),
             ('maxtasks', [3, ("Maximum number of CP2K instances run at "
-                              "the same time during testing (default:3)"), CUSTOM]),
+                              "the same time during testing"), CUSTOM]),
         ]
         return EasyBlock.extra_options(extra_vars)
 
@@ -598,11 +598,13 @@ class EB_CP2K(EasyBlock):
                     break
 
             # location of do_regtest script
+            cfg_fn = "cp2k_regtest.cfg"
             regtest_script = os.path.join(self.cfg['start_dir'], 'tools', 'regtesting', 'do_regtest')
+            regtest_cmd = "%s -nosvn -nobuild -config %s" % (regtest_script, cfg_fn)
             # older version of CP2K
             if not os.path.exists(regtest_script):
                 regtest_script = os.path.join(self.cfg['start_dir'], 'tools', 'do_regtest')
-                usecvs = True
+                regtest_cmd = "%s -nocvs -quick -nocompile -config %s" % (regtest_script, cfg_fn)
 
             # patch do_regtest so that reference output is used
             if regtest_refdir:
@@ -619,21 +621,22 @@ class EB_CP2K(EasyBlock):
 
             TEST_CORE_CNT = min(self.cfg['maxparallel'], 2)
             if get_avail_core_count() < TEST_CORE_CNT:
-                self.log.error("Cannot run MPI tests as only one core is available")
+                self.log.error("Cannot run MPI tests as not enough cores (< %s) are available" % TEST_CORE_CNT)
             else:
                 self.log.info("Using %s cores for the MPI tests" % TEST_CORE_CNT)
 
             # configure regression test
-            cfg_txt = """FORT_C_NAME="%(f90)s"
-dir_base=%(base)s
-cp2k_version=%(cp2k_version)s
-dir_triplet=%(triplet)s
-export ARCH=${dir_triplet}
-cp2k_dir=%(cp2k_dir)s
-leakcheck="YES"
-maxtasks=%(maxtasks)s
-cp2k_run_prefix="%(mpicmd_prefix)s"
-            """ % {
+            cfg_txt = '\n'.join([
+                'FORT_C_NAME="%(f90)s"',
+                'dir_base=%(base)s',
+                'cp2k_version=%(cp2k_version)s',
+                'dir_triplet=%(triplet)s',
+                'export ARCH=${dir_triplet}',
+                'cp2k_dir=%(cp2k_dir)s',
+                'leakcheck="YES"',
+                'maxtasks=%(maxtasks)s',
+                'cp2k_run_prefix="%(mpicmd_prefix)s"',
+            ]) % {
                 'f90': os.getenv('F90'),
                 'base': os.path.dirname(os.path.normpath(self.cfg['start_dir'])),
                 'cp2k_version': self.cfg['type'],
@@ -642,8 +645,6 @@ cp2k_run_prefix="%(mpicmd_prefix)s"
                 'maxtasks': self.cfg['maxtasks'],
                 'mpicmd_prefix': self.toolchain.mpi_cmd_for('', TEST_CORE_CNT),
             }
-
-            cfg_fn = "cp2k_regtest.cfg"
 
             try:
                 f = open(cfg_fn, "w")
@@ -655,12 +656,7 @@ cp2k_run_prefix="%(mpicmd_prefix)s"
             self.log.debug("Contents of %s: %s" % (cfg_fn, cfg_txt))
 
             # run regression test
-            if usecvs:
-                cmd = "%s -nocvs -quick -nocompile -config %s" % (regtest_script, cfg_fn)
-            else:
-                cmd = "%s -nosvn -nobuild -config %s" % (regtest_script, cfg_fn)
-
-            (regtest_output, ec) = run_cmd(cmd, log_all=True, simple=False, log_output=True)
+            (regtest_output, ec) = run_cmd(regtest_cmd, log_all=True, simple=False, log_output=True)
 
             if ec == 0:
                 self.log.info("Regression test output:\n%s" % regtest_output)
