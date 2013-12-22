@@ -89,7 +89,7 @@ class EB_CP2K(EasyBlock):
             ('type', ['popt', "Type of build ('popt' or 'psmp')", CUSTOM]),
             ('typeopt', [True, "Enable optimization", CUSTOM]),
             ('libint', [True, "Use LibInt", CUSTOM]),
-            ('libxc', [True, "Use Libxc", CUSTOM]),
+            ('libxc', [False, "Use Libxc", CUSTOM]),
             ('modincprefix', ['', "IMKL prefix for modinc include dir", CUSTOM]),
             ('modinc', [[], ("List of modinc's to use (*.f90), or 'True' to use "
                              "all found at given prefix"), CUSTOM]),
