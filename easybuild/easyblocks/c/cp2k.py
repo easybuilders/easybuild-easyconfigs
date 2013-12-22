@@ -619,11 +619,11 @@ class EB_CP2K(EasyBlock):
             else:
                 self.log.info("No reference output found for regression test, just continuing without it...")
 
-            TEST_CORE_CNT = min(self.cfg['maxparallel'], 2)
-            if get_avail_core_count() < TEST_CORE_CNT:
-                self.log.error("Cannot run MPI tests as not enough cores (< %s) are available" % TEST_CORE_CNT)
+            test_core_cnt = min(self.cfg.get('parallel', sys.maxint), 2)
+            if get_avail_core_count() < test_core_cnt:
+                self.log.error("Cannot run MPI tests as not enough cores (< %s) are available" % test_core_cnt)
             else:
-                self.log.info("Using %s cores for the MPI tests" % TEST_CORE_CNT)
+                self.log.info("Using %s cores for the MPI tests" % test_core_cnt)
 
             # configure regression test
             cfg_txt = '\n'.join([
@@ -643,7 +643,7 @@ class EB_CP2K(EasyBlock):
                 'triplet': self.typearch,
                 'cp2k_dir': os.path.basename(os.path.normpath(self.cfg['start_dir'])),
                 'maxtasks': self.cfg['maxtasks'],
-                'mpicmd_prefix': self.toolchain.mpi_cmd_for('', TEST_CORE_CNT),
+                'mpicmd_prefix': self.toolchain.mpi_cmd_for('', test_core_cnt),
             }
 
             try:
