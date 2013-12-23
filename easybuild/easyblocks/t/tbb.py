@@ -37,7 +37,7 @@ import shutil
 import glob
 from distutils.version import LooseVersion
 
-from easybuild.easyblocks.generic.intelbase import IntelBase
+from easybuild.easyblocks.generic.intelbase import IntelBase, ACTIVATION_NAME_2012, LICENSE_FILE_NAME_2012
 
 
 class EB_tbb(IntelBase):
