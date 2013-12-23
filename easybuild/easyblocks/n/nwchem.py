@@ -55,7 +55,8 @@ class EB_NWChem(ConfigureMake):
         self.home_nwchemrc = os.path.join(os.getenv('HOME'), '.nwchemrc')
         # local NWChem .nwchemrc config file, to which symlink will point
         # using this approach, multiple parallel builds (on different nodes) can use the same symlink
-        self.local_nwchemrc = os.path.join(tempfile.gettempdir(), os.getenv('USER'), 'easybuild_nwchem', '.nwchemrc')
+        common_tmp_dir = os.path.dirname(tempfile.gettempdir())  # common tmp directory, same across nodes
+        self.local_nwchemrc = os.path.join(common_tmp_dir, os.getenv('USER'), 'easybuild_nwchem', '.nwchemrc')
 
     @staticmethod
     def extra_options():
@@ -86,7 +87,7 @@ class EB_NWChem(ConfigureMake):
         # check whether a (valid) symlink to a .nwchemrc config file exists (via a dummy file if necessary)
         # fail early if the link is not what's we expect, since running the test cases will likely fail in this case
         try:
-            if os.path.exists(self.home_nwchemrc):
+            if os.path.exists(self.home_nwchemrc) or os.path.islink(self.home_nwchemrc):
                 # create a dummy file to check symlink
                 if not os.path.exists(self.local_nwchemrc):
                     open(self.local_nwchemrc, 'w').write('dummy')
@@ -94,7 +95,7 @@ class EB_NWChem(ConfigureMake):
                     msg = "Found %s, but it's not a symlink to %s" % (self.home_nwchemrc, self.local_nwchemrc)
                     msg += "\nPlease (re)move %s while installing NWChem; it can be restored later" % self.home_nwchemrc
                     self.log.error(msg)
-                # ok to remove, we'll recreated it anyway
+                # ok to remove, we'll recreate it anyway
                 os.remove(self.local_nwchemrc)
         except (IOError, OSError), err:
             self.log.error("Failed to validate %s symlink: %s" % (self.home_nwchemrc, err))
