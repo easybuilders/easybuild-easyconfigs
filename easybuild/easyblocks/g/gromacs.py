@@ -30,6 +30,7 @@ EasyBuild support for building and installing GROMACS, implemented as an easyblo
 import os
 import re
 from distutils.version import LooseVersion
+from vsc.utils.missing import any
 
 import easybuild.tools.environment as env
 from easybuild.easyblocks.generic.cmakemake import CMakeMake
