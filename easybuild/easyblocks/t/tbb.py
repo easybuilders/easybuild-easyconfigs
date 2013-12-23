@@ -35,6 +35,7 @@ EasyBuild support for installing the Intel Threading Building Blocks (TBB) libra
 import os
 import shutil
 import glob
+from distutils.version import LooseVersion
 
 from easybuild.easyblocks.generic.intelbase import IntelBase
 

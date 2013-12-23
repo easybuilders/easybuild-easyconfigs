@@ -27,6 +27,7 @@ EasyBuild support for installing Intel VTune, implemented as an easyblock
 
 @author: Kenneth Hoste (Ghent University)
 """
+from distutils.version import LooseVersion
 
 from easybuild.easyblocks.generic.intelbase import IntelBase
 
