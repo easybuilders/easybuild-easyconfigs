@@ -31,11 +31,30 @@ EasyBuild support for installing the Intel Performance Primitives (IPP) library,
 @author: Pieter De Baets (Ghent University)
 @author: Jens Timmerman (Ghent University)
 """
+from distutils.version import LooseVersion
 
-from easybuild.easyblocks.generic.intelbase import IntelBase
+from easybuild.easyblocks.generic.intelbase import IntelBase, ACTIVATION_NAME_2012, LICENSE_FILE_NAME_2012
 
 
 class EB_ipp(IntelBase):
+    """
+    Support for installing Intel Integrated Performance Primitives library
+    """
+    def install_step(self):
+        """
+        Actual installation
+        - create silent cfg file
+        - execute command
+        """
+        silent_cfg_names_map = None
+
+        if LooseVersion(self.version) < LooseVersion('8.0'):
+            silent_cfg_names_map = {
+                'activation_name': ACTIVATION_NAME_2012,
+                'license_file_name': LICENSE_FILE_NAME_2012,
+            }
+
+        super(EB_ipp, self).install_step(silent_cfg_names_map=silent_cfg_names_map)
 
     def sanity_check_step(self):
         """Custom sanity check paths for IPP."""
