@@ -63,6 +63,7 @@ class EB_Qt(ConfigureMake):
             "Reading .*",
             "WARNING .*",
             "Project MESSAGE:.*",
+            "rm -f .*",
         ]
         run_cmd_qa(cmd, qa, no_qa=no_qa, log_all=True, simple=True)
 
