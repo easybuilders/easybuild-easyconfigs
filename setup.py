@@ -41,7 +41,7 @@ from distutils import log
 
 # note: release candidates should be versioned as a pre-release, e.g. "1.1rc1"
 # 1.1-rc1 would indicate a post-release, i.e., and update of 1.1, so beware!
-VERSION = "1.9.0.0"
+VERSION = "1.10.0.0"
 
 API_VERSION = VERSION.split('.')[0]
 EB_VERSION = '.'.join(VERSION.split('.')[0:2])

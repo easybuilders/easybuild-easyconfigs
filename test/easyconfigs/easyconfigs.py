@@ -60,6 +60,7 @@ class EasyConfigTest(TestCase):
     # initialize configuration (required for e.g. default modules_tool setting)
     eb_go = eboptions.parse_options()
     config.init(eb_go.options, eb_go.get_options_by_section('config'))
+    config.set_tmpdir()
     del eb_go
         
     log = fancylogger.getLogger("EasyConfigTest", fname=False)
