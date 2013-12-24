@@ -127,15 +127,22 @@ class Rpm(Binary):
             self.log.error("Failed to create RPMREBUILD_TMPDIR dir %s: %s" % (rpmrebuild_tmpdir, err))
 
         rpms_path = os.path.join(self.builddir, 'rebuiltRPMs')
-        for rpm in self.src:
-            cmd = ' '.join(["rpmrebuild -v",
-                            """--change-spec-whole='sed -e "s/^BuildArch:.*/BuildArch:    x86_64/"'""",
-                            """--change-spec-whole='sed -e "s/^Prefix:.*/Prefix:    \//"'""",
-                            """--change-spec-whole='sed -e "s/^\(.*:[ ]\+\..*\)/#ERROR \1/"'""",
-                            "-p -d",
-                            rpms_path,
-                            rpm['path']])
+        try:
+            os.makedirs(rpms_path)
+        except OSError, err:
+            self.log.error("Failed to create %s: %s" % (rpms_path, err))
 
+        for rpm in self.src:
+            cmd = ' '.join([
+                "rpmrebuild -v",
+                """--change-spec-whole='sed -e "s/^BuildArch:.*/BuildArch:    x86_64/"'""",
+                """--change-spec-whole='sed -e "s/^Prefix:.*/Prefix:    \//"'""",
+                """--change-spec-whole='sed -e "s/^\(.*:[ ]\+\..*\)/#ERROR \1/"'""",
+                "--notest-install",
+                "-p -d",
+                rpms_path,
+                rpm['path'],
+            ])
             run_cmd(cmd, log_all=True, simple=True)
 
         self.oldsrc = self.src

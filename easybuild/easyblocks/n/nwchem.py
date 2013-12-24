@@ -55,24 +55,25 @@ class EB_NWChem(ConfigureMake):
         self.home_nwchemrc = os.path.join(os.getenv('HOME'), '.nwchemrc')
         # local NWChem .nwchemrc config file, to which symlink will point
         # using this approach, multiple parallel builds (on different nodes) can use the same symlink
-        self.local_nwchemrc = os.path.join(tempfile.gettempdir(), os.getenv('USER'), 'easybuild_nwchem', '.nwchemrc')
+        common_tmp_dir = os.path.dirname(tempfile.gettempdir())  # common tmp directory, same across nodes
+        self.local_nwchemrc = os.path.join(common_tmp_dir, os.getenv('USER'), 'easybuild_nwchem', '.nwchemrc')
 
     @staticmethod
     def extra_options():
         """Custom easyconfig parameters for NWChem."""
 
         extra_vars = [
-                      ('target', ["LINUX64", "Target platform", CUSTOM]),
-                      # possible options for ARMCI_NETWORK on LINUX64 with Infiniband:
-                      # OPENIB, MPI-MT, MPI-SPAWN, MELLANOX
-                      ('armci_network', ["OPENIB", "Network protocol to use", CUSTOM]),
-                      ('msg_comms', ["MPI", "Type of message communication", CUSTOM]),
-                      ('modules', ["all", "NWChem modules to build", CUSTOM]),
-                      ('lib_defines', ["", "Additional defines for C preprocessor", CUSTOM]),
-                      ('tests', [True, "Run example test cases", CUSTOM]),
-                      # lots of tests fail, so allow a certain fail ratio
-                      ('max_fail_ratio', [0.5, "Maximum test case fail ratio", CUSTOM])
-                     ]
+            ('target', ["LINUX64", "Target platform", CUSTOM]),
+            # possible options for ARMCI_NETWORK on LINUX64 with Infiniband:
+            # OPENIB, MPI-MT, MPI-SPAWN, MELLANOX
+            ('armci_network', ["OPENIB", "Network protocol to use", CUSTOM]),
+            ('msg_comms', ["MPI", "Type of message communication", CUSTOM]),
+            ('modules', ["all", "NWChem modules to build", CUSTOM]),
+            ('lib_defines', ["", "Additional defines for C preprocessor", CUSTOM]),
+            ('tests', [True, "Run example test cases", CUSTOM]),
+            # lots of tests fail, so allow a certain fail ratio
+            ('max_fail_ratio', [0.5, "Maximum test case fail ratio", CUSTOM]),
+        ]
         return ConfigureMake.extra_options(extra_vars)
 
     def setvar_env_makeopt(self, name, value):
@@ -86,15 +87,15 @@ class EB_NWChem(ConfigureMake):
         # check whether a (valid) symlink to a .nwchemrc config file exists (via a dummy file if necessary)
         # fail early if the link is not what's we expect, since running the test cases will likely fail in this case
         try:
-            if os.path.exists(self.home_nwchemrc):
+            if os.path.exists(self.home_nwchemrc) or os.path.islink(self.home_nwchemrc):
                 # create a dummy file to check symlink
                 if not os.path.exists(self.local_nwchemrc):
                     open(self.local_nwchemrc, 'w').write('dummy')
-                if not os.path.samefile(self.home_nwchemrc, self.local_nwchemrc):
+                if os.path.exists(self.home_nwchemrc) and not os.path.samefile(self.home_nwchemrc, self.local_nwchemrc):
                     msg = "Found %s, but it's not a symlink to %s" % (self.home_nwchemrc, self.local_nwchemrc)
                     msg += "\nPlease (re)move %s while installing NWChem; it can be restored later" % self.home_nwchemrc
                     self.log.error(msg)
-                # ok to remove, we'll recreated it anyway
+                # ok to remove, we'll recreate it anyway
                 os.remove(self.local_nwchemrc)
         except (IOError, OSError), err:
             self.log.error("Failed to validate %s symlink: %s" % (self.home_nwchemrc, err))
@@ -271,17 +272,17 @@ class EB_NWChem(ConfigureMake):
         # create NWChem settings file
         fn = os.path.join(self.installdir, 'data', 'default.nwchemrc')
         txt = '\n'.join([
-                         "nwchem_basis_library %(path)s/data/libraries/",
-                         "nwchem_nwpw_library %(path)s/data/libraryps/",
-                         "ffield amber",
-                         "amber_1 %(path)s/data/amber_s/",
-                         "amber_2 %(path)s/data/amber_q/",
-                         "amber_3 %(path)s/data/amber_x/",
-                         "amber_4 %(path)s/data/amber_u/",
-                         "spce %(path)s/data/solvents/spce.rst",
-                         "charmm_s %(path)s/data/charmm_s/",
-                         "charmm_x %(path)s/data/charmm_x/",
-                        ]) % {'path': self.installdir}
+            "nwchem_basis_library %(path)s/data/libraries/",
+            "nwchem_nwpw_library %(path)s/data/libraryps/",
+            "ffield amber",
+            "amber_1 %(path)s/data/amber_s/",
+            "amber_2 %(path)s/data/amber_q/",
+            "amber_3 %(path)s/data/amber_x/",
+            "amber_4 %(path)s/data/amber_u/",
+            "spce %(path)s/data/solvents/spce.rst",
+            "charmm_s %(path)s/data/charmm_s/",
+            "charmm_x %(path)s/data/charmm_x/",
+        ]) % {'path': self.installdir}
 
         try:
             f = open(fn, 'w')
