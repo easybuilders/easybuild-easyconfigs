@@ -42,16 +42,18 @@ from easybuild.tools.filetools import run_cmd, mkdir
 from easybuild.tools.modules import get_software_root
 from easybuild.tools.systemtools import get_os_name, get_os_version
 
+
 class EB_Clang(CMakeMake):
     """Support for bootstrapping Clang."""
 
     @staticmethod
     def extra_options():
         extra_vars = [
-            ('assertions', [True, "Enable assertions.  Helps to catch bugs in Clang.  (default: True)", CUSTOM]),
+            ('assertions', [True, "Enable assertions.  Helps to catch bugs in Clang.", CUSTOM]),
             ('build_targets', [["X86"], "Build targets for LLVM. Possible values: all, AArch64, ARM, CppBackend, Hexagon, " +
-                               "Mips, MBlaze, MSP430, NVPTX, PowerPC, Sparc, SystemZ, X86, XCore (default: X86)", CUSTOM]),
+                               "Mips, MBlaze, MSP430, NVPTX, PowerPC, R600, Sparc, SystemZ, X86, XCore", CUSTOM]),
         ]
+
         return CMakeMake.extra_options(extra_vars)
 
     def __init__(self, *args, **kwargs):
@@ -64,13 +66,16 @@ class EB_Clang(CMakeMake):
         self.llvm_obj_dir_stage3 = None
         self.make_parallel_opts = ""
 
+        if LooseVersion(self.version) < LooseVersion('3.4') and "R600" in self.cfg['build_targets']:
+            self.log.warning("Build target R600 not supported in < Clang-3.4")
+
     def check_readiness_step(self):
         """Fail early on RHEL 5.x and derivatives because of known bug in libc."""
         super(EB_Clang, self).check_readiness_step()
         # RHEL 5.x have a buggy libc.  Building stage 2 will fail.
         if get_os_name() in ['redhat', 'RHEL', 'centos', 'SL'] and get_os_version().startswith('5.'):
             self.log.error(("Can not build clang on %s v5.x: libc is buggy, building stage 2 will fail.  " +
-                            "See http://stackoverflow.com/questions/7276828/") % get_os_name()) 
+                            "See http://stackoverflow.com/questions/7276828/") % get_os_name())
 
     def extract_step(self):
         """
@@ -95,10 +100,17 @@ class EB_Clang(CMakeMake):
             self.log.error("Could not determine LLVM source root (LLVM source was not unpacked?)")
 
         # Move other directories into the LLVM tree.
+        if LooseVersion(self.version) > LooseVersion('3.3'):
+            compiler_rt_src_dir = 'compiler-rt-%s' % self.version
+        else:
+            compiler_rt_src_dir = 'compiler-rt-%s.src' % self.version
         src_dirs = {
-            'compiler-rt-%s.src' % self.version: os.path.join(self.llvm_src_dir, 'projects', 'compiler-rt')
+            compiler_rt_src_dir: os.path.join(self.llvm_src_dir, 'projects', 'compiler-rt')
         }
-        if LooseVersion(self.version) < LooseVersion('3.3'):
+
+        if LooseVersion(self.version) > LooseVersion('3.3'):
+            clang_src_dir = 'clang-%s' % self.version
+        elif LooseVersion(self.version) < LooseVersion('3.3'):
             clang_src_dir = 'clang-%s.src' % self.version
         else:
             clang_src_dir = 'cfe-%s.src' % self.version
@@ -126,12 +138,12 @@ class EB_Clang(CMakeMake):
         mkdir(self.llvm_obj_dir_stage1)
         os.chdir(self.llvm_obj_dir_stage1)
 
-	# GCC and Clang are installed in different prefixes and Clang will not
-	# find the GCC installation on its own.
-	self.cfg['configopts'] += "-DGCC_INSTALL_PREFIX='%s' " % get_software_root('GCC')
+        # GCC and Clang are installed in different prefixes and Clang will not
+        # find the GCC installation on its own.
+        self.cfg['configopts'] += "-DGCC_INSTALL_PREFIX='%s' " % get_software_root('GCC')
 
         self.cfg['configopts'] += "-DCMAKE_BUILD_TYPE=Release "
-        if self.cfg['assertions']: 
+        if self.cfg['assertions']:
             self.cfg['configopts'] += "-DLLVM_ENABLE_ASSERTIONS=ON "
         else:
             self.cfg['configopts'] += "-DLLVM_ENABLE_ASSERTIONS=OFF "
@@ -176,6 +188,7 @@ class EB_Clang(CMakeMake):
         """Build Clang stage 1, 2, 3"""
 
         # Stage 1: build using system compiler.
+        self.log.info("Building stage 1")
         os.chdir(self.llvm_obj_dir_stage1)
         super(EB_Clang, self).build_step()
 
@@ -198,4 +211,3 @@ class EB_Clang(CMakeMake):
 
         os.chdir(self.llvm_obj_dir_stage3)
         super(EB_Clang, self).install_step()
-
