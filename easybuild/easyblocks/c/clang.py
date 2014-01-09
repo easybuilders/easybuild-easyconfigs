@@ -52,7 +52,7 @@ class EB_Clang(CMakeMake):
             ('assertions', [True, "Enable assertions.  Helps to catch bugs in Clang.", CUSTOM]),
             ('build_targets', [["X86"], "Build targets for LLVM. Possible values: all, AArch64, ARM, CppBackend, Hexagon, " +
                                "Mips, MBlaze, MSP430, NVPTX, PowerPC, R600, Sparc, SystemZ, X86, XCore", CUSTOM]),
-            ('stagedbuild', [True, "Use a 3 stage build for Clang", CUSTOM]),
+            ('bootstrap', [True, "Bootstrap Clang using GCC", CUSTOM]),
         ]
 
         return CMakeMake.extra_options(extra_vars)
@@ -68,7 +68,10 @@ class EB_Clang(CMakeMake):
         self.make_parallel_opts = ""
 
         if LooseVersion(self.version) < LooseVersion('3.4') and "R600" in self.cfg['build_targets']:
-            self.log.warning("Build target R600 not supported in < Clang-3.4")
+            self.log.error("Build target R600 not supported in < Clang-3.4")
+
+        if LooseVersion(self.version) > LooseVersion('3.3') and "MBlaze" in self.cfg['build_targets']:
+            self.log.error("Build target MBlaze is not supported anymore in > Clang-3.3")
 
     def check_readiness_step(self):
         """Fail early on RHEL 5.x and derivatives because of known bug in libc."""
@@ -132,7 +135,7 @@ class EB_Clang(CMakeMake):
         """Run CMake for stage 1 Clang."""
 
         self.llvm_obj_dir_stage1 = os.path.join(self.builddir, 'llvm.obj.1')
-        if self.cfg['stagedbuild']:
+        if self.cfg['bootstrap']:
             self.llvm_obj_dir_stage2 = os.path.join(self.builddir, 'llvm.obj.2')
             self.llvm_obj_dir_stage3 = os.path.join(self.builddir, 'llvm.obj.3')
 
@@ -190,10 +193,11 @@ class EB_Clang(CMakeMake):
         """Build Clang stage 1, 2, 3"""
 
         # Stage 1: build using system compiler.
+        self.log.info("Building stage 1")
         os.chdir(self.llvm_obj_dir_stage1)
         super(EB_Clang, self).build_step()
 
-        if self.cfg['stagedbuild']:
+        if self.cfg['bootstrap']:
             # Stage 1: run tests.
             self.run_clang_tests(self.llvm_obj_dir_stage1)
 
@@ -206,7 +210,7 @@ class EB_Clang(CMakeMake):
             # Don't run stage 3 tests here, do it in the test step.
 
     def test_step(self):
-        if self.cfg['stagedbuild']:
+        if self.cfg['bootstrap']:
             self.run_clang_tests(self.llvm_obj_dir_stage3)
         else:
             self.run_clang_tests(self.llvm_obj_dir_stage1)
@@ -214,7 +218,7 @@ class EB_Clang(CMakeMake):
     def install_step(self):
         """Install stage 3 binaries."""
 
-        if self.cfg['stagedbuild']:
+        if self.cfg['bootstrap']:
             os.chdir(self.llvm_obj_dir_stage3)
         else:
             os.chdir(self.llvm_obj_dir_stage1)
