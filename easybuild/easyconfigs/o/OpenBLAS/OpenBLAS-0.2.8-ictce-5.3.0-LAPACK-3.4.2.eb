@@ -1,0 +1,50 @@
+name = 'OpenBLAS'
+version = '0.2.8'
+
+lapackver = '3.4.2'
+versionsuffix = '-LAPACK-%s' % lapackver
+
+homepage = 'http://xianyi.github.com/OpenBLAS/'
+description = """OpenBLAS is an optimized BLAS library based on GotoBLAS2 1.13 BSD version."""
+
+toolchain = {'name': 'ictce', 'version': '5.3.0'}
+
+lapack_src = 'lapack-%s.tgz' % lapackver
+large_src = 'large.tgz'
+timing_src = 'timing.tgz'
+sources = [
+    'v%(version)s.tar.gz',
+    lapack_src,
+    large_src,
+    timing_src,
+]
+source_urls = [
+    # order matters, trying to download the LAPACK tarball from GitHub causes trouble
+    "http://www.netlib.org/lapack/",
+    "http://www.netlib.org/lapack/timing/",
+    "https://github.com/xianyi/OpenBLAS/archive/",
+]
+
+patches = [
+    (lapack_src, '.'),  # copy LAPACK tarball to unpacked OpenBLAS dir
+    (large_src, '.'),
+    (timing_src, '.'),
+]
+
+skipsteps = ['configure']
+
+threading = 'USE_THREAD=1'
+makeopts = 'BINARY=64 ' + threading + ' CC="$CC" FC="$F77"'
+installopts = threading + " PREFIX=%(installdir)s"
+
+# extensive testing can be enabled by uncommenting the line below
+#runtest = 'PATH=.:$PATH lapack-timing'
+
+sanity_check_paths = {
+    'files': ['include/cblas.h', 'include/f77blas.h', 'include/lapacke_config.h', 'include/lapacke.h',
+              'include/lapacke_mangling.h', 'include/lapacke_utils.h', 'include/openblas_config.h',
+              'lib/libopenblas.a', 'lib/libopenblas.%s' % shared_lib_ext],
+    'dirs': [],
+}
+
+moduleclass = 'numlib'
