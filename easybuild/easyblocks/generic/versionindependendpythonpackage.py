@@ -25,43 +25,17 @@
 """
 EasyBuild support for building and installing a Pythonpackage independend of a python version as an easyblock.
 
-Python installs libraries by defailt in site-packages/python-xxx/
-But packages that are not dependend on the python version can be installed in a different prefix, e.g. lib
-as long as we add this folder to the pythonpath.
+This easyblock is deprecated, and is replaced by VersionIndependentPythonPackage (fixes a typo in the class name).
 
 @author: Kenneth Hoste, Jens Timmerman (Ghent University)
 """
-import os
-
-import easybuild.tools.environment as env
-from easybuild.easyblocks.generic.pythonpackage import PythonPackage
-from easybuild.tools.filetools import run_cmd
+from easybuild.easyblocks.generic.versionindependentpythonpackage import VersionIndependentPythonPackage
 
 
-class VersionIndependendPythonPackage(PythonPackage):
-    """Support for building/installing python packages without requiring a specific python package."""
-
-    def build_step(self):
-        """No build procedure."""
-        pass
+class VersionIndependendPythonPackage(VersionIndependentPythonPackage):
+    """Deprecated support for building/installing python packages without requiring a specific python package."""
 
     def prepare_step(self):
-        """Set pylibdir"""
-        self.pylibdir = 'lib'
-        PythonPackage.prepare_step(self)
-
-    def install_step(self):
-        """Custom install procedure to skip selection of python package versions."""
-        full_pylibdir = os.path.join(self.installdir, self.pylibdir)
-
-        env.setvar('PYTHONPATH', '%s:%s' % (full_pylibdir, os.getenv('PYTHONPATH')))
-
-        try:
-            os.mkdir(full_pylibdir)
-        except OSError, err:
-            # this will raise an error and not return
-            self.log.error("Failed to install: %s" % err)
-
-        args = "--prefix=%s --install-lib=%s" % (self.installdir, full_pylibdir)
-        cmd = "python setup.py install %s" % args
-        run_cmd(cmd, log_all=True, simple=True, log_output=True)
+        """Indicate that this easyblock is deprecated."""
+        super(VersionIndependendPythonPackage, self).prepare_step()
+        self.log.deprecated("Replaced by VersionIndependentPythonPackage easyblock", '2.0')
