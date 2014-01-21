@@ -53,6 +53,7 @@ class EB_Clang(CMakeMake):
             ('build_targets', [["X86"], "Build targets for LLVM. Possible values: all, AArch64, ARM, CppBackend, Hexagon, " +
                                "Mips, MBlaze, MSP430, NVPTX, PowerPC, R600, Sparc, SystemZ, X86, XCore", CUSTOM]),
             ('bootstrap', [True, "Bootstrap Clang using GCC", CUSTOM]),
+            ('usepolly', [True, "Build Clang with polly", CUSTOM]),
         ]
 
         return CMakeMake.extra_options(extra_vars)
@@ -89,6 +90,7 @@ class EB_Clang(CMakeMake):
             compiler-rt/  Unpack compiler-rt-*.tar.gz here
           tools/
             clang/        Unpack clang-*.tar.gz here
+            polly/        Unpack polly-*.tar.gz here
         """
 
         # Extract everything into separate directories.
@@ -106,11 +108,16 @@ class EB_Clang(CMakeMake):
         # Move other directories into the LLVM tree.
         if LooseVersion(self.version) > LooseVersion('3.3'):
             compiler_rt_src_dir = 'compiler-rt-%s' % self.version
+            polly_src_dir = 'polly-%s' % self.version
         else:
             compiler_rt_src_dir = 'compiler-rt-%s.src' % self.version
+            polly_src_dir = 'polly-%s.src' % self.version
         src_dirs = {
             compiler_rt_src_dir: os.path.join(self.llvm_src_dir, 'projects', 'compiler-rt')
         }
+
+        if self.cfg["usepolly"]:
+            src_dirs[polly_src_dir] = os.path.join(self.llvm_src_dir, 'tools', 'polly')
 
         if LooseVersion(self.version) > LooseVersion('3.3'):
             clang_src_dir = 'clang-%s' % self.version
