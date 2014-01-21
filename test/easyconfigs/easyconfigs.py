@@ -174,7 +174,7 @@ def template_easyconfig_test(self, spec):
         self.assertTrue(False, "Obtained software name directly from easyconfig file")
 
     # parse easyconfig 
-    ec = EasyConfig(spec, validate=False)
+    ec = EasyConfig(spec, build_options={'validate': False})
 
     # sanity check for software name
     self.assertTrue(ec['name'], name) 
@@ -186,7 +186,7 @@ def template_easyconfig_test(self, spec):
 
     # instantiate easyblock with easyconfig file
     app_class = get_class(easyblock, name=name)
-    app = app_class(spec, validate_ec=False)
+    app = app_class(spec, build_options={'validate_ec': False})
 
     # more sanity checks
     self.assertTrue(name, app.name)
