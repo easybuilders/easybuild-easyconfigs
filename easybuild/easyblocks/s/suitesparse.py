@@ -161,11 +161,16 @@ class EB_SuiteSparse(ConfigureMake):
     def sanity_check_step(self):
         """Custom sanity check for SuiteSparse."""
 
+        if LooseVersion(self.version) < LooseVersion('4.0'):
+            csparse_dir = 'CSparse3'
+        else:
+            csparse_dir = 'CSparse'
+
         custom_paths = {
-            'files':["%s/lib/lib%s.a" % (x, x.lower()) for x in ["AMD", "BTF", "CAMD", "CCOLAMD", "CHOLMOD",
-                                                                 "COLAMD", "CXSparse", "KLU", "LDL", "RBio",
-                                                                 "SPQR", "UMFPACK"]] +
-                    ["CSparse3/lib/libcsparse.a"],
+            'files':[os.path.join(x, 'lib', 'lib%s.a' % x.lower() for x in ["AMD", "BTF", "CAMD", "CCOLAMD", "CHOLMOD",
+                                                                            "COLAMD", "CXSparse", "KLU", "LDL", "RBio",
+                                                                            "SPQR", "UMFPACK"]] +
+                    [os.path.join(csparse_dir, 'lib', 'libcsparse.a')],
             'dirs':["MATLAB_Tools"],
         }
 
