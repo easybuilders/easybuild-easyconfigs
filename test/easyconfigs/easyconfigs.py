@@ -79,7 +79,7 @@ class EasyConfigTest(TestCase):
         # parse all easyconfigs
         easyconfigs = []
         for spec in specs:
-            easyconfigs.extend(process_easyconfig(spec, validate=False))
+            easyconfigs.extend(process_easyconfig(spec, build_options={'validate': False}))
 
         self.ordered_specs = resolve_dependencies(easyconfigs, easyconfigs_path, force=True)
 
