@@ -79,9 +79,13 @@ class EasyConfigTest(TestCase):
         # parse all easyconfigs
         easyconfigs = []
         for spec in specs:
-            easyconfigs.extend(process_easyconfig(spec, validate=False))
+            easyconfigs.extend(process_easyconfig(spec, build_options={'validate': False}))
 
-        self.ordered_specs = resolve_dependencies(easyconfigs, easyconfigs_path, force=True)
+        build_options = {
+            'robot_path': easyconfigs_path,
+            'force': True,
+        }
+        self.ordered_specs = resolve_dependencies(easyconfigs, build_options=build_options)
 
     def test_dep_graph(self):
         """Unit test that builds a full dependency graph."""
