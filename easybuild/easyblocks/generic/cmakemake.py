@@ -61,8 +61,10 @@ class CMakeMake(ConfigureMake):
         # Set the search paths for CMake
         include_paths = os.pathsep.join(self.toolchain.get_variable("CPPFLAGS", list))
         library_paths = os.pathsep.join(self.toolchain.get_variable("LDFLAGS", list))
+        prefix_paths = os.pathsep.join([env_val for env_name, env_val in os.environ.items() if env_name.startswith('EBROOT')])
         setvar("CMAKE_INCLUDE_PATH", include_paths)
         setvar("CMAKE_LIBRARY_PATH", library_paths)
+        setvar("CMAKE_PREFIX_PATH", prefix_paths)
 
         default_srcdir = '.'
         if self.cfg.get('separate_build_dir', False):
