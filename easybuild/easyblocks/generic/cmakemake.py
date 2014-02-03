@@ -40,7 +40,7 @@ from easybuild.tools.environment import setvar
 from easybuild.tools.filetools import run_cmd
 
 
-class CMakeMake(ConfigureMake):
+class CMakeMake(ConfigureMak):
     """Support for configuring build with CMake instead of traditional configure script"""
 
     @staticmethod
