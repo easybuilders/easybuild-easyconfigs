@@ -33,6 +33,8 @@ EasyBuild support for building and installing Python, implemented as an easybloc
 """
 
 import os
+import fileinput
+import sys
 from distutils.version import LooseVersion
 
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
@@ -66,6 +68,19 @@ class EB_Python(ConfigureMake):
     def configure_step(self):
         """Set extra configure options."""
         self.cfg.update('configopts', "--with-threads --enable-shared")
+
+        ssl = os.environ["EBROOTOPENSSL"]
+        if (ssl):
+                setupfile = os.path.join(self.builddir,self.name + "-" + self.version, "setup.py")
+                print "setupfile %s",(setupfile)
+                def replaceline(file,searchExp,replaceExp):
+                        for line in fileinput.input(file, inplace=1):
+                                if searchExp in line:
+                                        line = line.replace(searchExp,replaceExp)
+                                sys.stdout.write(line)
+                # This replace default search paths during configuration with ones from EB's OpenSSL installation.      
+                replaceline(setupfile,'/usr/local/ssl/include',ssl+'/include')
+                replaceline(setupfile,'/usr/local/ssl/lib',ssl+'lib')
 
         super(EB_Python, self).configure_step()
 
@@ -103,14 +118,11 @@ class EB_Python(ConfigureMake):
                 abiflags = abiflags.strip()
 
         custom_paths = {
-            'files': ["bin/%s" % pyver, "lib/lib%s%s.so" % (pyver, abiflags)],
-            'dirs': ["include/%s%s" % (pyver, abiflags), "lib/%s" % pyver]
-        }
-
-        # make sure that ctypes are actually working, this is needed for a lot of dependencies
-        custom_commands = [('python', '-c "import _ctypes"')]
+                        'files': ["bin/%s" % pyver, "lib/lib%s%s.so" % (pyver, abiflags)],
+                        'dirs': ["include/%s%s" % (pyver, abiflags), "lib/%s" % pyver]
+                       }
 
         # cleanup
         self.clean_up_fake_module(fake_mod_data)
 
-        super(EB_Python, self).sanity_check_step(custom_paths=custom_paths, custom_commands=custom_commands)
+        super(EB_Python, self).sanity_check_step(custom_paths=custom_paths)
