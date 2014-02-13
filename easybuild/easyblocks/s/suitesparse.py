@@ -167,11 +167,11 @@ class EB_SuiteSparse(ConfigureMake):
             csparse_dir = 'CSparse'
 
         custom_paths = {
-            'files':[os.path.join(x, 'lib', 'lib%s.a' % x.lower()) for x in ["AMD", "BTF", "CAMD", "CCOLAMD", "CHOLMOD",
-                                                                             "COLAMD", "CXSparse", "KLU", "LDL", "RBio",
-                                                                             "SPQR", "UMFPACK"]] +
-                    [os.path.join(csparse_dir, 'lib', 'libcsparse.a')],
-            'dirs':["MATLAB_Tools"],
+            'files': [os.path.join(x, 'lib', 'lib%s.a' % x.lower()) for x in ["AMD", "BTF", "CAMD", "CCOLAMD", "CHOLMOD",
+                                                                              "COLAMD", "CXSparse", "KLU", "LDL", "RBio",
+                                                                              "SPQR", "UMFPACK"]] +
+                     [os.path.join(csparse_dir, 'lib', 'libcsparse.a')],
+            'dirs': ["MATLAB_Tools"],
         }
 
         super(EB_SuiteSparse, self).sanity_check_step(custom_paths=custom_paths)
