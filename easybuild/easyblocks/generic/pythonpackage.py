@@ -41,7 +41,7 @@ from easybuild.easyblocks.python import EXTS_FILTER_PYTHON_PACKAGES
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.framework.extensioneasyblock import ExtensionEasyBlock
 from easybuild.tools.filetools import mkdir, rmtree2, run_cmd
-from easybuild.tools.modules import get_software_root, get_software_version
+from easybuild.tools.modules import get_software_version
 
 
 def det_pylibdir():
@@ -65,8 +65,8 @@ class PythonPackage(ExtensionEasyBlock):
     def extra_options():
         """Easyconfig parameters specific to Python packages."""
         extra_vars = [
-                      ('runtest', [True, "Run unit tests.", CUSTOM]),  # overrides default
-                     ]
+            ('runtest', [True, "Run unit tests.", CUSTOM]),  # overrides default
+        ]
         return ExtensionEasyBlock.extra_options(extra_vars)
 
     def __init__(self, *args, **kwargs):
@@ -139,7 +139,7 @@ class PythonPackage(ExtensionEasyBlock):
     def build_step(self):
         """Build Python package using setup.py"""
 
-        cmd = "python setup.py build"
+        cmd = "python setup.py build %s" % self.cfg['makeopts']
         run_cmd(cmd, log_all=True, simple=True)
 
     def test_step(self):
