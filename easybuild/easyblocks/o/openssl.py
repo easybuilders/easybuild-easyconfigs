@@ -28,6 +28,7 @@ EasyBuild support for OpenSSL, implemented as an easyblock
 @author: Kenneth Hoste (Ghent University)
 @author: Jens Timmerman (Ghent University)
 """
+import os
 
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.tools.filetools import run_cmd
@@ -51,12 +52,20 @@ class EB_OpenSSL(ConfigureMake):
     def sanity_check_step(self):
         """Custom sanity check"""
 
-        custom_paths = {'files':["lib64/%s" % x for x in ['engines', 'libcrypto.a', 'libcrypto.so',
-                                                          'libcrypto.so.1.0.0', 'libssl.a',
-                                                          'libssl.so', 'libssl.so.1.0.0']] + 
-                                ['bin/openssl'],
-                        'dirs': []
-                       }
+        libdir = None
+        for libdir_cand in ['lib', 'lib64']:
+            if os.path.exists(os.path.join(self.installdir, libdir_cand)):
+                libdir = libdir_cand
+        if libdir is None:
+            self.log.error("Failed to determine library directory.")
+
+        custom_paths = {
+            'files': [os.path.join(libdir, x) for x in ['engines', 'libcrypto.a', 'libcrypto.so',
+                                                        'libcrypto.so.1.0.0', 'libssl.a',
+                                                        'libssl.so', 'libssl.so.1.0.0']] +
+                     ['bin/openssl'],
+            'dirs': [],
+        }
 
         super(EB_OpenSSL, self).sanity_check_step(custom_paths=custom_paths)
     
