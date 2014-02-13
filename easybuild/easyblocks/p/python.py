@@ -33,6 +33,7 @@ EasyBuild support for building and installing Python, implemented as an easybloc
 """
 
 import os
+import re
 import fileinput
 import sys
 from distutils.version import LooseVersion
@@ -69,18 +70,14 @@ class EB_Python(ConfigureMake):
         """Set extra configure options."""
         self.cfg.update('configopts', "--with-threads --enable-shared")
 
-        ssl = os.environ["EBROOTOPENSSL"]
-        if (ssl):
-                setupfile = os.path.join(self.builddir,self.name + "-" + self.version, "setup.py")
-                print "setupfile %s",(setupfile)
-                def replaceline(file,searchExp,replaceExp):
-                        for line in fileinput.input(file, inplace=1):
-                                if searchExp in line:
-                                        line = line.replace(searchExp,replaceExp)
-                                sys.stdout.write(line)
-                # This replace default search paths during configuration with ones from EB's OpenSSL installation.      
-                replaceline(setupfile,'/usr/local/ssl/include',ssl+'/include')
-                replaceline(setupfile,'/usr/local/ssl/lib',ssl+'lib')
+        openssl = os.environ["EBROOTOPENSSL"]
+        if openssl:
+            modules_setup_dist = os.path.join(self.cfg['start_dir'], 'Modules', 'Setup.dist')
+            for line in fileinput.input(modules_setup_dist, inplace='1'):
+                line = re.sub(r"^#SSL=.*", "SSL=%s" % openssl, line)
+                line = re.sub(r"^#(\s*-DUSE_SSL -I)", r"\1", line)
+                line = re.sub(r"^#(\s*-L\$\(SSL\)/lib )", r"\1 -L$(SSL)/lib64 ", line)
+                sys.stdout.write(line)
 
         super(EB_Python, self).configure_step()
 
