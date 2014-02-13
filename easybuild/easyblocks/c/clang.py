@@ -53,7 +53,7 @@ class EB_Clang(CMakeMake):
             ('build_targets', [["X86"], "Build targets for LLVM. Possible values: all, AArch64, ARM, CppBackend, Hexagon, " +
                                "Mips, MBlaze, MSP430, NVPTX, PowerPC, R600, Sparc, SystemZ, X86, XCore", CUSTOM]),
             ('bootstrap', [True, "Bootstrap Clang using GCC", CUSTOM]),
-            ('usepolly', [True, "Build Clang with polly", CUSTOM]),
+            ('usepolly', [False, "Build Clang with polly", CUSTOM]),
         ]
 
         return CMakeMake.extra_options(extra_vars)
