@@ -116,11 +116,17 @@ class EB_Python(ConfigureMake):
                 abiflags = abiflags.strip()
 
         custom_paths = {
-                        'files': ["bin/%s" % pyver, "lib/lib%s%s.so" % (pyver, abiflags)],
-                        'dirs': ["include/%s%s" % (pyver, abiflags), "lib/%s" % pyver]
-                       }
+            'files': ["bin/%s" % pyver, "lib/lib%s%s.so" % (pyver, abiflags)],
+            'dirs': ["include/%s%s" % (pyver, abiflags), "lib/%s" % pyver],
+        }
 
         # cleanup
         self.clean_up_fake_module(fake_mod_data)
 
-        super(EB_Python, self).sanity_check_step(custom_paths=custom_paths)
+        custom_commands = [
+            ('python', '--version'),
+            ('python', '-c "import _ctypes"'),  # make sure the Python build isn't crippled
+            ('python', '-c "import _ssl"'),  # make sure SSL support is enabled one way or another
+        ]
+
+        super(EB_Python, self).sanity_check_step(custom_paths=custom_paths, custom_commands=custom_commands)
