@@ -41,6 +41,7 @@ from distutils.version import LooseVersion
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.filetools import run_cmd
+from easybuild.tools.modules import get_software_root
 
 
 EXTS_FILTER_PYTHON_PACKAGES = ('python -c "import %(ext_name)s"', "")
@@ -70,7 +71,7 @@ class EB_Python(ConfigureMake):
         """Set extra configure options."""
         self.cfg.update('configopts', "--with-threads --enable-shared")
 
-        openssl = os.environ["EBROOTOPENSSL"]
+        openssl = get_software_root('OpenSSL')
         if openssl:
             modules_setup_dist = os.path.join(self.cfg['start_dir'], 'Modules', 'Setup.dist')
             for line in fileinput.input(modules_setup_dist, inplace='1'):
