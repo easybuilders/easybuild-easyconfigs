@@ -33,11 +33,15 @@ EasyBuild support for building and installing Python, implemented as an easybloc
 """
 
 import os
+import re
+import fileinput
+import sys
 from distutils.version import LooseVersion
 
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.filetools import run_cmd
+from easybuild.tools.modules import get_software_root
 
 
 EXTS_FILTER_PYTHON_PACKAGES = ('python -c "import %(ext_name)s"', "")
@@ -66,6 +70,15 @@ class EB_Python(ConfigureMake):
     def configure_step(self):
         """Set extra configure options."""
         self.cfg.update('configopts', "--with-threads --enable-shared")
+
+        openssl = get_software_root('OpenSSL')
+        if openssl:
+            modules_setup_dist = os.path.join(self.cfg['start_dir'], 'Modules', 'Setup.dist')
+            for line in fileinput.input(modules_setup_dist, inplace='1'):
+                line = re.sub(r"^#SSL=.*", "SSL=%s" % openssl, line)
+                line = re.sub(r"^#(\s*-DUSE_SSL -I)", r"\1", line)
+                line = re.sub(r"^#(\s*-L\$\(SSL\)/lib )", r"\1 -L$(SSL)/lib64 ", line)
+                sys.stdout.write(line)
 
         super(EB_Python, self).configure_step()
 
@@ -104,13 +117,16 @@ class EB_Python(ConfigureMake):
 
         custom_paths = {
             'files': ["bin/%s" % pyver, "lib/lib%s%s.so" % (pyver, abiflags)],
-            'dirs': ["include/%s%s" % (pyver, abiflags), "lib/%s" % pyver]
+            'dirs': ["include/%s%s" % (pyver, abiflags), "lib/%s" % pyver],
         }
-
-        # make sure that ctypes are actually working, this is needed for a lot of dependencies
-        custom_commands = [('python', '-c "import _ctypes"')]
 
         # cleanup
         self.clean_up_fake_module(fake_mod_data)
+
+        custom_commands = [
+            ('python', '--version'),
+            ('python', '-c "import _ctypes"'),  # make sure the Python build isn't crippled
+            ('python', '-c "import _ssl"'),  # make sure SSL support is enabled one way or another
+        ]
 
         super(EB_Python, self).sanity_check_step(custom_paths=custom_paths, custom_commands=custom_commands)
