@@ -54,6 +54,8 @@ class EB_ALADIN(EasyBlock):
         self.conf_filepath = None
         self.rootpack_dir = None
 
+        self.orig_library_path = None
+
     @staticmethod
     def extra_options():
         """Custom easyconfig parameters for ALADIN."""
@@ -69,7 +71,7 @@ class EB_ALADIN(EasyBlock):
         # unset $LIBRARY_PATH set by modules of dependencies, because it may screw up linking
         if 'LIBRARY_PATH' in os.environ:
             self.log.debug("Unsetting $LIBRARY_PATH (was: %s)" % os.environ['LIBRARY_PATH'])
-            del os.environ['LIBRARY_PATH']
+            self.orig_library_path = os.environ.pop('LIBRARY_PATH')
         
         # build auxiliary libraries
         auxlibs_dir = None
@@ -291,6 +293,10 @@ class EB_ALADIN(EasyBlock):
 
         # build rootpack
         run_cmd(os.path.join(self.installdir, self.rootpack_dir, 'ics_master'))
+
+        # restore original $LIBRARY_PATH
+        if self.orig_library_path is not None:
+            os.environ['LIBRARY_PATH'] = self.orig_library_path
 
     def sanity_check_step(self):
         """Custom sanity check for ALADIN."""
