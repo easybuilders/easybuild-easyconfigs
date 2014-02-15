@@ -146,6 +146,7 @@ EULA=accept
                 'PATH': ['bin', 'bin/ia32', 'ia32/bin'],
                 'LD_LIBRARY_PATH': lib_dirs,
                 'LIBRARY_PATH': lib_dirs,
+                'CPATH':['include'],
             })
         else:
             lib_dirs = ['lib', 'lib/em64t', 'lib64']
@@ -153,6 +154,7 @@ EULA=accept
                 'PATH': ['bin', 'bin/intel64', 'bin64'],
                 'LD_LIBRARY_PATH': lib_dirs,
                 'LIBRARY_PATH': lib_dirs,
+                'CPATH':['include64'],
             })
 
         return guesses
