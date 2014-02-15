@@ -138,16 +138,24 @@ EULA=accept
         """
         A dictionary of possible directories to look for
         """
+        guesses = super(EB_impi, self).make_module_req_guess()
+
         if self.cfg['m32']:
-            return {
-                'PATH':['bin', 'bin/ia32', 'ia32/bin'],
-                'LD_LIBRARY_PATH':['lib', 'lib/ia32', 'ia32/lib'],
-            }
+            lib_dirs = ['lib', 'lib/ia32', 'ia32/lib']
+            guesses.update({
+                'PATH': ['bin', 'bin/ia32', 'ia32/bin'],
+                'LD_LIBRARY_PATH': lib_dirs,
+                'LIBRARY_PATH': lib_dirs,
+            })
         else:
-            return {
-                'PATH':['bin', 'bin/intel64', 'bin64'],
-                'LD_LIBRARY_PATH':['lib', 'lib/em64t', 'lib64'],
-            }
+            lib_dirs = ['lib', 'lib/em64t', 'lib64']
+            guesses.update({
+                'PATH': ['bin', 'bin/intel64', 'bin64'],
+                'LD_LIBRARY_PATH': lib_dirs,
+                'LIBRARY_PATH': lib_dirs,
+            })
+
+        return guesses
 
     def make_module_extra(self):
         """Overwritten from Application to add extra txt"""
