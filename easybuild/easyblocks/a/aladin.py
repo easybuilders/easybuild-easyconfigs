@@ -65,6 +65,11 @@ class EB_ALADIN(EasyBlock):
 
     def configure_step(self):
         """Custom configuration procedure for ALADIN."""
+
+        # unset $LIBRARY_PATH set by modules of dependencies, because it may screw up linking
+        if 'LIBRARY_PATH' in os.environ:
+            self.log.debug("Unsetting $LIBRARY_PATH (was: %s)" % os.environ['LIBRARY_PATH'])
+            del os.environ['LIBRARY_PATH']
         
         # build auxiliary libraries
         auxlibs_dir = None
