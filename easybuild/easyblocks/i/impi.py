@@ -146,9 +146,9 @@ EULA=accept
                 'LIBRARY_PATH': lib_dirs,
             }
         else:
-            lib_dirs = ['lib', 'lib/em64t', 'lib64']
+            lib_dirs = ['lib/em64t', 'lib64']
             return {
-                'PATH': ['bin', 'bin/intel64', 'bin64'],
+                'PATH': ['bin/intel64', 'bin64'],
                 'LD_LIBRARY_PATH': lib_dirs,
                 'LIBRARY_PATH': lib_dirs,
             }
