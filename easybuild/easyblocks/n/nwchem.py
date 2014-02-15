@@ -90,7 +90,9 @@ class EB_NWChem(ConfigureMake):
             if os.path.exists(self.home_nwchemrc) or os.path.islink(self.home_nwchemrc):
                 # create a dummy file to check symlink
                 if not os.path.exists(self.local_nwchemrc):
-                    open(self.local_nwchemrc, 'w').write('dummy')
+                    f = open(self.local_nwchemrc, 'w')
+                    f.write('dummy')
+                    f.close()
                 if os.path.exists(self.home_nwchemrc) and not os.path.samefile(self.home_nwchemrc, self.local_nwchemrc):
                     msg = "Found %s, but it's not a symlink to %s" % (self.home_nwchemrc, self.local_nwchemrc)
                     msg += "\nPlease (re)move %s while installing NWChem; it can be restored later" % self.home_nwchemrc
