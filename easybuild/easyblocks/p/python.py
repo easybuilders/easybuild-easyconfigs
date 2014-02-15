@@ -125,8 +125,8 @@ class EB_Python(ConfigureMake):
 
         custom_commands = [
             ('python', '--version'),
-            ('python', '-c "import _ctypes"'),  # make sure the Python build isn't crippled
-            ('python', '-c "import _ssl"'),  # make sure SSL support is enabled one way or another
+            ('python', '-c "import _ctypes"'),  # make sure that foreign function interface (libffi) works
+            ('python', '-c "import _ssl"'),  # make sure SSL support is enabled one way or anothe$Gr
         ]
 
         super(EB_Python, self).sanity_check_step(custom_paths=custom_paths, custom_commands=custom_commands)
