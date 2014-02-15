@@ -139,14 +139,18 @@ EULA=accept
         A dictionary of possible directories to look for
         """
         if self.cfg['m32']:
+            lib_dirs = ['lib', 'lib/ia32', 'ia32/lib']
             return {
-                'PATH':['bin', 'bin/ia32', 'ia32/bin'],
-                'LD_LIBRARY_PATH':['lib', 'lib/ia32', 'ia32/lib'],
+                'PATH': ['bin', 'bin/ia32', 'ia32/bin'],
+                'LD_LIBRARY_PATH': lib_dirs,
+                'LIBRARY_PATH': lib_dirs,
             }
         else:
+            lib_dirs = ['lib/em64t', 'lib64']
             return {
-                'PATH':['bin', 'bin/intel64', 'bin64'],
-                'LD_LIBRARY_PATH':['lib', 'lib/em64t', 'lib64'],
+                'PATH': ['bin/intel64', 'bin64'],
+                'LD_LIBRARY_PATH': lib_dirs,
+                'LIBRARY_PATH': lib_dirs,
             }
 
     def make_module_extra(self):
