@@ -79,9 +79,13 @@ class EasyConfigTest(TestCase):
         # parse all easyconfigs
         easyconfigs = []
         for spec in specs:
-            easyconfigs.extend(process_easyconfig(spec, validate=False))
+            easyconfigs.extend(process_easyconfig(spec, build_options={'validate': False}))
 
-        self.ordered_specs = resolve_dependencies(easyconfigs, easyconfigs_path, force=True)
+        build_options = {
+            'robot_path': easyconfigs_path,
+            'force': True,
+        }
+        self.ordered_specs = resolve_dependencies(easyconfigs, build_options=build_options)
 
     def test_dep_graph(self):
         """Unit test that builds a full dependency graph."""
@@ -174,7 +178,7 @@ def template_easyconfig_test(self, spec):
         self.assertTrue(False, "Obtained software name directly from easyconfig file")
 
     # parse easyconfig 
-    ec = EasyConfig(spec, validate=False)
+    ec = EasyConfig(spec, build_options={'validate': False})
 
     # sanity check for software name
     self.assertTrue(ec['name'], name) 
@@ -186,7 +190,7 @@ def template_easyconfig_test(self, spec):
 
     # instantiate easyblock with easyconfig file
     app_class = get_class(easyblock, name=name)
-    app = app_class(spec, validate_ec=False)
+    app = app_class(spec, build_options={'validate_ec': False})
 
     # more sanity checks
     self.assertTrue(name, app.name)
