@@ -104,19 +104,21 @@ class EB_icc(IntelBase):
         if self.cfg['m32']:
             # 32-bit toolchain
             dirmap = {
-                      'PATH': ['bin', 'bin/ia32', 'tbb/bin/ia32'],
-                      'LD_LIBRARY_PATH': ['lib', 'lib/ia32'],
-                      'MANPATH': ['man', 'share/man', 'man/en_US'],
-                      'IDB_HOME': ['bin/intel64']
-                     }
+                'PATH': ['bin', 'bin/ia32', 'tbb/bin/ia32'],
+                'LD_LIBRARY_PATH': ['lib', 'lib/ia32'],
+                'LIBRARY_PATH': ['lib', 'lib/ia32'],
+                'MANPATH': ['man', 'share/man', 'man/en_US'],
+                'IDB_HOME': ['bin/intel64']
+            }
         else:
             # 64-bit toolit
             dirmap = {
-                      'PATH': ['bin', 'bin/intel64', 'tbb/bin/emt64'],
-                      'LD_LIBRARY_PATH': ['lib', 'lib/intel64'],
-                      'MANPATH': ['man', 'share/man', 'man/en_US'],
-                      'IDB_HOME': ['bin/intel64']
-                   }
+                'PATH': ['bin', 'bin/intel64', 'tbb/bin/emt64'],
+                'LD_LIBRARY_PATH': ['lib', 'lib/intel64'],
+                'LIBRARY_PATH': ['lib', 'lib/intel64'],
+                'MANPATH': ['man', 'share/man', 'man/en_US'],
+                'IDB_HOME': ['bin/intel64']
+            }
 
         # in recent Intel compiler distributions, the actual binaries are
         # in deeper directories, and symlinked in top-level directories

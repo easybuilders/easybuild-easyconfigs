@@ -30,12 +30,15 @@ EasyBuild support for software that is configured with CMake, implemented as an 
 @author: Kenneth Hoste (Ghent University)
 @author: Pieter De Baets (Ghent University)
 @author: Jens Timmerman (Ghent University)
+@author: Ward Poelmans (Ghent University)
 """
 import os
 
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.framework.easyconfig import CUSTOM
+from easybuild.tools.environment import setvar
 from easybuild.tools.filetools import run_cmd
+from easybuild.tools.modules import ROOT_ENV_VAR_NAME_PREFIX
 
 
 class CMakeMake(ConfigureMake):
@@ -55,6 +58,12 @@ class CMakeMake(ConfigureMake):
 
     def configure_step(self, srcdir=None, builddir=None):
         """Configure build using cmake"""
+
+        # Set the search paths for CMake
+        include_paths = os.pathsep.join(self.toolchain.get_variable("CPPFLAGS", list))
+        library_paths = os.pathsep.join(self.toolchain.get_variable("LDFLAGS", list))
+        setvar("CMAKE_INCLUDE_PATH", include_paths)
+        setvar("CMAKE_LIBRARY_PATH", library_paths)
 
         default_srcdir = '.'
         if self.cfg.get('separate_build_dir', False):

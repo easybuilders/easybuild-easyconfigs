@@ -36,6 +36,7 @@ import re
 import os
 import shutil
 import sys
+from distutils.version import LooseVersion
 
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.tools.filetools import mkdir
@@ -45,30 +46,49 @@ from easybuild.tools.modules import get_software_root
 class EB_SuiteSparse(ConfigureMake):
     """Support for building SuiteSparse."""
 
-    def configure_step(self):
-        """Configure build by patching UFconfig.mk."""
-        metis = get_software_root('METIS')
-        parmetis = get_software_root('ParMETIS')
-        if not metis and not parmetis:
-            self.log.error("Neither METIS or ParMETIS module loaded.")
+    def __init__(self, *args, **kwargs):
+        """Custom constructor for SuiteSparse easyblock, initialize custom class parameters."""
+        super(EB_SuiteSparse, self).__init__(*args, **kwargs)
+        self.config_name = None
 
-        fp = os.path.join("UFconfig","UFconfig.mk")
+    def configure_step(self):
+        """Configure build by patching UFconfig.mk or SuiteSparse_config.mk."""
+
+        if LooseVersion(self.version) < LooseVersion('4.0'):
+            self.config_name = 'UFconfig'
+        else:
+            self.config_name = 'SuiteSparse_config'
+
+        fp = os.path.join(self.cfg['start_dir'], self.config_name, '%s.mk' % self.config_name)
 
         cfgvars = {
-                   'CC': os.getenv('MPICC'),
-                   'CFLAGS': os.getenv('CFLAGS'),
-                   'CXX': os.getenv('MPICXX'),
-                   'F77': os.getenv('MPIF77'),
-                   'F77FLAGS': os.getenv('F77FLAGS'),
-                   'BLAS': os.getenv('LIBBLAS_MT'),
-                   'LAPACK': os.getenv('LIBLAPACK_MT'),
-               }
+            'CC': os.getenv('MPICC'),
+            'CFLAGS': os.getenv('CFLAGS'),
+            'CXX': os.getenv('MPICXX'),
+            'F77': os.getenv('MPIF77'),
+            'F77FLAGS': os.getenv('F77FLAGS'),
+            'BLAS': os.getenv('LIBBLAS_MT'),
+            'LAPACK': os.getenv('LIBLAPACK_MT'),
+        }
 
+        metis = get_software_root('METIS')
+        parmetis = get_software_root('ParMETIS')
         if parmetis:
-            cfgvars.update({
-                            'METIS_PATH': parmetis,
-                            'METIS': "%(p)s/lib/libparmetis.a %(p)s/lib/metis.a" % {'p':parmetis}
-                            })
+            metis_path = parmetis
+            metis_libs = ' '.join([
+                os.path.join(parmetis, 'lib', 'libparmetis.a'),
+                os.path.join(parmetis, 'lib', 'metis.a'),
+            ])
+        elif metis:
+            metis_path = metis
+            metis_libs = os.path.join(metis, 'lib', 'metis.a')
+        else:
+            self.log.error("Neither METIS or ParMETIS module loaded.")
+
+        cfgvars.update({
+            'METIS_PATH': metis_path,
+            'METIS': metis_libs,
+        })
 
         # patch file
         try:
@@ -93,9 +113,7 @@ class EB_SuiteSparse(ConfigureMake):
                 self.log.error("Failed to complete %s: %s" % (fp, err))
 
     def install_step(self):
-        """Install by copying the contents of the builddir to the installdir
-        - keep permissions with copy2 !!
-        """
+        """Install by copying the contents of the builddir to the installdir (preserving permissions)"""
         for x in os.listdir(self.cfg['start_dir']):
             src = os.path.join(self.cfg['start_dir'], x)
             dst = os.path.join(self.installdir, x)
@@ -116,15 +134,16 @@ class EB_SuiteSparse(ConfigureMake):
                 self.log.exception("Copying src %s to dst %s failed" % (src, dst))
 
         # some extra symlinks are necessary for UMFPACK to work.
-        for p in [
-                  os.path.join('AMD', 'include', 'amd.h'),
-                  os.path.join('AMD' ,'include' ,'amd_internal.h'),
-                  os.path.join('UFconfig', 'UFconfig.h'),
-                  os.path.join('AMD', 'lib', 'libamd.a')
-                  ]:
-            src = os.path.join(self.installdir, p)
-            dn = p.split(os.path.sep)[-2]
-            fn = p.split(os.path.sep)[-1]
+        paths = [
+            os.path.join('AMD', 'include', 'amd.h'),
+            os.path.join('AMD' ,'include' ,'amd_internal.h'),
+            os.path.join(self.config_name, '%s.h' % self.config_name),
+            os.path.join('AMD', 'lib', 'libamd.a')
+        ]
+        for path in paths:
+            src = os.path.join(self.installdir, path)
+            dn = path.split(os.path.sep)[-2]
+            fn = path.split(os.path.sep)[-1]
             dstdir = os.path.join(self.installdir, 'UMFPACK', dn)
             mkdir(dstdir)
             if os.path.exists(src):
@@ -134,21 +153,25 @@ class EB_SuiteSparse(ConfigureMake):
                     self.log.error("Failed to make symbolic link from %s to %s: %s" % (src, dst, err))
 
     def make_module_req_guess(self):
-        """Add UFconfig dir to CPATH so UFconfig include file is found."""
+        """Add config dir to CPATH so include file is found."""
         guesses = super(EB_SuiteSparse, self).make_module_req_guess()
-        guesses.update({'CPATH': ["UFconfig"]})
-
+        guesses.update({'CPATH': [self.config_name]})
         return guesses
 
     def sanity_check_step(self):
         """Custom sanity check for SuiteSparse."""
 
+        if LooseVersion(self.version) < LooseVersion('4.0'):
+            csparse_dir = 'CSparse3'
+        else:
+            csparse_dir = 'CSparse'
+
         custom_paths = {
-                        'files':["%s/lib/lib%s.a" % (x, x.lower()) for x in ["AMD", "BTF", "CAMD", "CCOLAMD", "CHOLMOD",
-                                                                             "COLAMD", "CXSparse", "KLU", "LDL", "RBio",
-                                                                             "SPQR", "UMFPACK"]] +
-                                ["CSparse3/lib/libcsparse.a"],
-                        'dirs':["MATLAB_Tools"]
-                       }
+            'files': [os.path.join(x, 'lib', 'lib%s.a' % x.lower()) for x in ["AMD", "BTF", "CAMD", "CCOLAMD", "CHOLMOD",
+                                                                              "COLAMD", "CXSparse", "KLU", "LDL", "RBio",
+                                                                              "SPQR", "UMFPACK"]] +
+                     [os.path.join(csparse_dir, 'lib', 'libcsparse.a')],
+            'dirs': ["MATLAB_Tools"],
+        }
 
         super(EB_SuiteSparse, self).sanity_check_step(custom_paths=custom_paths)
