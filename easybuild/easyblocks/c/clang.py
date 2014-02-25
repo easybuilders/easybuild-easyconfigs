@@ -32,8 +32,10 @@ Support for building and installing Clang, implemented as an easyblock.
 @author: Ward Poelmans (Ghent University)
 """
 
+import fileinput
 import os
 import shutil
+import sys
 from distutils.version import LooseVersion
 
 from easybuild.easyblocks.generic.cmakemake import CMakeMake
@@ -146,6 +148,15 @@ class EB_Clang(CMakeMake):
             self.llvm_obj_dir_stage2 = os.path.join(self.builddir, 'llvm.obj.2')
             self.llvm_obj_dir_stage3 = os.path.join(self.builddir, 'llvm.obj.3')
 
+        # all sanitizer tests will fail with there's a limit on the vmem
+        # this is ugly but I haven't found a cleaner way so far
+        (vmemlim, ec) = run_cmd("ulimit -v", regexp=False)
+        if not vmemlim.startswith("unlimited"):
+            self.log.warn("There is a virtual memory limit set of %s KB. The tests of the "
+                          "sanitizers will be disabled as they need unlimited virtual "
+                          "memory." % vmemlim.strip())
+            self.disablesanitizertests()
+
         # Create and enter build directory.
         mkdir(self.llvm_obj_dir_stage1)
         os.chdir(self.llvm_obj_dir_stage1)
@@ -167,6 +178,33 @@ class EB_Clang(CMakeMake):
 
         self.log.info("Configuring")
         super(EB_Clang, self).configure_step(srcdir=self.llvm_src_dir)
+
+    def disablesanitizertests(self):
+        """Disable the tests of all the sanitizers"""
+        patchfiles = [
+            "projects/compiler-rt/lib/asan/CMakeLists.txt",
+            "projects/compiler-rt/lib/dfsan/CMakeLists.txt",
+            "projects/compiler-rt/lib/lsan/CMakeLists.txt",
+            "projects/compiler-rt/lib/msan/CMakeLists.txt",
+            "projects/compiler-rt/lib/tsan/CMakeLists.txt",
+            "projects/compiler-rt/lib/ubsan/CMakeLists.txt",
+        ]
+
+        for patchfile in patchfiles:
+            try:
+                for line in fileinput.input("%s/%s" % (self.llvm_src_dir, patchfile), inplace=1, backup='.orig'):
+                    if "add_subdirectory(lit_tests)" not in line:
+                        sys.stdout.write(line)
+            except IOError, err:
+                self.log.error("Failed to patch %s/%s: %s" % (self.llvm_src_dir, patchfile, err))
+
+        patchfile = "projects/compiler-rt/lib/sanitizer_common/CMakeLists.txt"
+        try:
+            for line in fileinput.input("%s/%s" % (self.llvm_src_dir, patchfile), inplace=1, backup='.orig'):
+                if "add_subdirectory(tests)" not in line:
+                    sys.stdout.write(line)
+        except IOError, err:
+            self.log.error("Failed to patch %s/%s: %s" % (self.llvm_src_dir, patchfile, err))
 
     def build_with_prev_stage(self, prev_obj, next_obj):
         """Build Clang stage N using Clang stage N-1"""
