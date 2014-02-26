@@ -29,6 +29,7 @@
 """
 import os
 import shutil
+import glob
 
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.framework.easyconfig import BUILD, MANDATORY
@@ -75,6 +76,16 @@ class MakeCp(ConfigureMake):
 
                 if not os.path.exists(target):
                     os.makedirs(target)
+
+                # in this loop we expand expresions like
+                # files_to_copy = [(["scripts/*"], 'bin')]
+                for src in srcs:
+                    if '*' in src:
+                        elements = glob.glob(src)
+                        srcs.remove(src)
+                        for e in elements:
+                            srcs.append(e)
+
                 for src in srcs:
                     src = os.path.join(self.cfg['start_dir'], src)
                     # copy individual file
