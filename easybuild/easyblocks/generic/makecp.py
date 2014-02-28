@@ -78,13 +78,8 @@ class MakeCp(ConfigureMake):
                     os.makedirs(target)
 
                 # in this loop we expand expresions like
-                # files_to_copy = [(["scripts/*"], 'bin')]
-                for src in srcs:
-                    if '*' in src:
-                        elements = glob.glob(src)
-                        srcs.remove(src)
-                        for e in elements:
-                            srcs.append(e)
+                # files_to_copy = [(["scripts/*.sh"], 'bin')]
+                srcs = reduce(list.__add__, [glob.glob(src) for src in srcs])
 
                 for src in srcs:
                     src = os.path.join(self.cfg['start_dir'], src)
