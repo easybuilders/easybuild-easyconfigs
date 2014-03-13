@@ -127,6 +127,7 @@ class EB_Python(ConfigureMake):
             ('python', '--version'),
             ('python', '-c "import _ctypes"'),  # make sure that foreign function interface (libffi) works
             ('python', '-c "import _ssl"'),  # make sure SSL support is enabled one way or another
+            ('python', '-c "import readline"'),  # make sure readline support was built correctly
         ]
 
         super(EB_Python, self).sanity_check_step(custom_paths=custom_paths, custom_commands=custom_commands)
