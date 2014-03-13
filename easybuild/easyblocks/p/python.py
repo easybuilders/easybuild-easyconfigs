@@ -81,7 +81,7 @@ class EB_Python(ConfigureMake):
                 ncurses_libdir = get_software_libdir('ncurses')
                 readline = "readline readline.c -L%s -lreadline -L%s -lncurses" % (readline_libdir, ncurses_libdir)
                 for line in fileinput.input(modules_setup_dist, inplace='1', backup='.readline'):
-                    line = re.sub(r"#readline readline.c.*", readline, line)
+                    line = re.sub(r"^#readline readline.c.*", readline, line)
                     sys.stdout.write(line)
             else:
                 self.log.error("Both libreadline and ncurses are required to ensure readline support")
