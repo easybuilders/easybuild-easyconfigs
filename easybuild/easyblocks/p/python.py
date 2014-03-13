@@ -41,7 +41,7 @@ from distutils.version import LooseVersion
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.filetools import run_cmd
-from easybuild.tools.modules import get_software_root
+from easybuild.tools.modules import get_software_root, get_software_libdir
 
 
 EXTS_FILTER_PYTHON_PACKAGES = ('python -c "import %(ext_name)s"', "")
@@ -71,10 +71,24 @@ class EB_Python(ConfigureMake):
         """Set extra configure options."""
         self.cfg.update('configopts', "--with-threads --enable-shared")
 
+        modules_setup_dist = os.path.join(self.cfg['start_dir'], 'Modules', 'Setup.dist')
+
+        libreadline = get_software_root('libreadline')
+        if libreadline:
+            ncurses = get_software_root('ncurses')
+            if ncurses:
+                readline_libdir = get_software_libdir('libreadline')
+                ncurses_libdir = get_software_libdir('ncurses')
+                readline = "readline readline.c -L%s -lreadline -L%s -lncurses" % (readline_libdir, ncurses_libdir)
+                for line in fileinput.input(modules_setup_dist, inplace='1', backup='.readline'):
+                    line = re.sub(r"#readline readline.c.*", readline, line)
+                    sys.stdout.write(line)
+            else:
+                self.log.error("Both libreadline and ncurses are required to ensure readline support")
+
         openssl = get_software_root('OpenSSL')
         if openssl:
-            modules_setup_dist = os.path.join(self.cfg['start_dir'], 'Modules', 'Setup.dist')
-            for line in fileinput.input(modules_setup_dist, inplace='1'):
+            for line in fileinput.input(modules_setup_dist, inplace='1', backup='.ssl'):
                 line = re.sub(r"^#SSL=.*", "SSL=%s" % openssl, line)
                 line = re.sub(r"^#(\s*-DUSE_SSL -I)", r"\1", line)
                 line = re.sub(r"^#(\s*-L\$\(SSL\)/lib )", r"\1 -L$(SSL)/lib64 ", line)
