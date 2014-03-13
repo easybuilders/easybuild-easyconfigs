@@ -25,7 +25,7 @@ Then try:
 
 If so, you implemented the better instance of: https://hpcbios.readthedocs.org/en/latest/HPCBIOS_06-17.html
 Lmod's caching can help to work with *buildsets*; ref. https://fosdem.org/2014/schedule/event/hpc_devroom_hpcbios/
-You should now be able to try alternative Lmod/Lua versions, such as 3.x variety, enable cache, and so on so forth.
+You should now be able to try alternative Lmod/Lua versions, such as 3.x variety, toggle cache, and so forth.
 
 enjoy,
 Fotis
