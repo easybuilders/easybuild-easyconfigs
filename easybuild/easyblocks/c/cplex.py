@@ -37,6 +37,7 @@ import stat
 
 import easybuild.tools.environment as env
 from easybuild.easyblocks.generic.binary import Binary
+from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.filetools import run_cmd_qa
 
 
@@ -54,7 +55,7 @@ class EB_CPLEX(Binary):
     @staticmethod
     def extra_options():
         extra_vars = [
-            ('stage_install', [False, "Indicates whether the installation should be staged via a temporary dir."]),
+            ('staged_install', [False, "Should the installation should be staged via a temporary dir?", CUSTOM]),
         ]
         return Binary.extra_options(extra_vars)
 
