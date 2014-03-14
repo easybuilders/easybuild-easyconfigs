@@ -33,6 +33,7 @@ EasyBuild support for CPLEX, implemented as an easyblock
 """
 import glob
 import os
+import shutil
 import stat
 
 import easybuild.tools.environment as env
