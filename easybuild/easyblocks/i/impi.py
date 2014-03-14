@@ -140,17 +140,21 @@ EULA=accept
         """
         if self.cfg['m32']:
             lib_dirs = ['lib', 'lib/ia32', 'ia32/lib']
+            include_dirs = ['include']
             return {
                 'PATH': ['bin', 'bin/ia32', 'ia32/bin'],
                 'LD_LIBRARY_PATH': lib_dirs,
                 'LIBRARY_PATH': lib_dirs,
+                'CPATH': include_dirs,
             }
         else:
             lib_dirs = ['lib/em64t', 'lib64']
+            include_dirs = ['include64']
             return {
                 'PATH': ['bin/intel64', 'bin64'],
                 'LD_LIBRARY_PATH': lib_dirs,
                 'LIBRARY_PATH': lib_dirs,
+                'CPATH': include_dirs,
             }
 
     def make_module_extra(self):
