@@ -77,7 +77,7 @@ class EB_CPLEX(Binary):
         cmd = "%s -i console" % dst
 
         install_target = self.installdir
-        if self.cfg['stage_install']:
+        if self.cfg['staged_install']:
             install_target = stagedir
 
         qanda = {
@@ -96,7 +96,7 @@ class EB_CPLEX(Binary):
 
         run_cmd_qa(cmd, qanda, no_qa=noqanda, log_all=True, simple=True)
 
-        if self.cfg['stage_install']:
+        if self.cfg['staged_install']:
             # move staged installation to actual install dir
             try:
                 # copytree expects target directory to not exist yet
