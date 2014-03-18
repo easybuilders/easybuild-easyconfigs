@@ -38,7 +38,7 @@ from distutils.version import LooseVersion
 import easybuild.tools.environment as env
 import easybuild.tools.toolchain as toolchain
 from easybuild.framework.easyblock import EasyBlock
-from easybuild.tools.filetools import run_cmd, adjust_permissions
+from easybuild.tools.filetools import adjust_permissions, run_cmd, run_cmd_qa
 from easybuild.tools.modules import get_software_root
 
 
@@ -60,6 +60,9 @@ class EB_OpenFOAM(EasyBlock):
 
     def configure_step(self):
         """Configure OpenFOAM build by setting appropriate environment variables."""
+
+        # enable verbose build for debug purposes
+        env.setvar("FOAM_VERBOSE", "1")
 
         # installation directory
         env.setvar("FOAM_INST_DIR", self.installdir)
@@ -101,8 +104,8 @@ class EB_OpenFOAM(EasyBlock):
 
         elif mpi_type == toolchain.OPENMPI:  #@UndefinedVariable
             self.mpipath = get_software_root('OpenMPI')
-            if '-ext-' in self.version:
-                self.wm_mplib = "OPENMPI"
+            if '-ext' in self.version or 'extend' in self.name.lower():
+                self.wm_mplib = "SYSTEMOPENMPI"
             else:
                 self.wm_mplib = "MPI-MVAPICH2"
 
@@ -116,12 +119,18 @@ class EB_OpenFOAM(EasyBlock):
         # parallel build spec
         env.setvar("WM_NCOMPPROCS", str(self.cfg['parallel']))
 
-        self.openfoamdir = '-'.join([self.name, '-'.join(self.version.split('-')[:2])])
+        if 'extend' in self.name.lower() and LooseVersion(self.version) >= LooseVersion('3.0'):
+            self.openfoamdir = 'foam-extend-%s' % self.version
+        else:
+            self.openfoamdir = '-'.join([self.name, '-'.join(self.version.split('-')[:2])])
         self.log.debug("openfoamdir: %s" % self.openfoamdir)
 
         # make sure lib/include dirs for dependencies are found
-        if LooseVersion(self.version) < LooseVersion("2"):
+        openfoam_extend_v3 = 'extend' in self.name.lower() and LooseVersion(self.version) >= LooseVersion('3.0')
+        if LooseVersion(self.version) < LooseVersion("2") or openfoam_extend_v3:
+            self.log.debug("List of deps: %s" % self.cfg.dependencies())
             for dep in self.cfg.dependencies():
+                self.cfg.update('premakeopts', "%s_SYSTEM=1" % dep['name'].upper())
                 self.cfg.update('premakeopts', "%(name)s_LIB_DIR=$EBROOT%(name)s/lib" % {'name': dep['name'].upper()})
                 self.cfg.update('premakeopts', "%(name)s_INCLUDE_DIR=$EBROOT%(name)s/include" % {'name': dep['name'].upper()})
         else:
@@ -135,12 +144,27 @@ class EB_OpenFOAM(EasyBlock):
         precmd = "source %s" % os.path.join(self.builddir, self.openfoamdir, "etc", "bashrc")
 
         # make directly in install directory
-        cmd="%(precmd)s && %(premakeopts)s %(makecmd)s" % {
+        cmd_tmpl = "%(precmd)s && %(premakeopts)s %(makecmd)s" % {
             'precmd': precmd,
             'premakeopts': self.cfg['premakeopts'],
-            'makecmd': os.path.join(self.builddir, self.openfoamdir, "Allwmake"),
+            'makecmd': os.path.join(self.builddir, self.openfoamdir, '%s'),
         }
-        run_cmd(cmd,log_all=True,simple=True,log_output=True)
+        if 'extend' in self.name.lower() and LooseVersion(self.version) >= LooseVersion('3.0'):
+            qa = {
+                "Proceed without compiling ParaView [Y/n]": 'Y',
+                "Proceed without compiling cudaSolvers? [Y/n]": 'Y',
+            }
+            noqa = [
+                ".* -o .*\.o",
+                "checking .*",
+                "warning.*",
+                "configure: creating.*",
+                "%s .*" % os.environ['CC'],
+            ]
+            #run_cmd_qa(cmd_tmpl % 'Allwmake.firstInstall', qa, no_qa=noqa, log_all=True, simple=True)
+            run_cmd(cmd_tmpl % 'Allwmake.firstInstall', inp="Y\nY\n", log_all=True, simple=True, log_output=True)
+        else:
+            run_cmd(cmd_tmpl % 'Allwmake', log_all=True, simple=True, log_output=True)
 
     def install_step(self):
         """Building was performed in install dir, so just fix permissions."""
@@ -162,15 +186,15 @@ class EB_OpenFOAM(EasyBlock):
 
         psubdir = "linux64%sDPOpt" % self.wm_compiler
 
-        if LooseVersion(self.version) < LooseVersion("2"):
+        openfoam_extend_v3 = 'extend' in self.name.lower() and LooseVersion(self.version) >= LooseVersion('3.0')
+        if openfoam_extend_v3 or LooseVersion(self.version) < LooseVersion("2"):
             toolsdir = os.path.join(self.openfoamdir, "applications", "bin", psubdir)
-
+            libsdir = os.path.join(self.openfoamdir, "lib", psubdir)
+            dirs = [toolsdir, libsdir]
         else:
             toolsdir = os.path.join(self.openfoamdir, "platforms", psubdir, "bin")
-
-        pdirs = []
-        if LooseVersion(self.version) >= LooseVersion("2"):
-            pdirs = [toolsdir, os.path.join(self.openfoamdir, "platforms", psubdir, "lib")]
+            libsdir = os.path.join(self.openfoamdir, "platforms", psubdir, "lib")
+            dirs = [toolsdir, libsdir]
 
         # some randomly selected binaries
         # if one of these is missing, it's very likely something went wrong
@@ -183,7 +207,7 @@ class EB_OpenFOAM(EasyBlock):
 
         custom_paths = {
             'files': [os.path.join(self.openfoamdir, 'etc', x) for x in ["bashrc", "cshrc"]] + bins,
-            'dirs': pdirs,
+            'dirs': dirs,
         }
 
         super(EB_OpenFOAM, self).sanity_check_step(custom_paths=custom_paths)
