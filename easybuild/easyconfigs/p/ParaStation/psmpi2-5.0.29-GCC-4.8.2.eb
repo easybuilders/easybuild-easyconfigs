@@ -1,0 +1,47 @@
+name = 'psmpi2'
+version = '5.0.29'
+
+homepage = 'http://www.par-tec.com'
+description = """ParaStation is a robust and efficient cluster middleware, consisting 
+of a high-performance communication layer (MPI) and a sophisticated management layer."""
+
+toolchain = {'name': 'GCC', 'version': '4.8.2'}
+
+source_urls = ['https://github.com/ParaStation/psmpi2/archive/']
+sources = ['5.0.29-1.zip']
+
+# Alternatively, get sources via git from sourceforge and make your own tarball:
+# > git clone git://git.code.sf.net/p/parastation/psmpi2 parastation-psmpi2
+# > ( cd parastation-psmpi2 ; git checkout 5.0.29-1 )
+# > tar -cjf psmpi2-5.0.29.tar.bz2 psmpi2-5.0.29
+#sources = [SOURCELOWER_TAR_BZ2]
+
+
+# MPICH configure wants F90/F90FLAGS to be renamed to FC/FCFLAGS.
+preconfigopts = 'export FC="$F90"; export FCFLAGS="$F90FLAGS"; unset F90; unset F90FLAGS; '
+
+# Patch for potential lib vs. lib64 mismatches when installing on openSUSE:
+#patches = ['psmpi2-5.0.29_make_install_openSUSE.patch']
+
+configopts = '--with-confset=default'
+
+sanity_check_paths = {
+    'files': ['bin/mpicc', 'bin/mpicxx', 'bin/mpic++', 'bin/mpif77', 'bin/mpif90', 
+              'include/mpi.h', 'include/mpi.mod', 'include/mpif.h', 
+              ('lib/libfmpich.a',    'lib64/libfmpich.a'),
+              ('lib/libfmpich.so',   'lib64/libfmpich.so'),
+              ('lib/libmpich.a',     'lib64/libmpich.a'),
+              ('lib/libmpich.so',    'lib64/libmpich.so'),
+              ('lib/libmpichcxx.a',  'lib64/libmpichcxx.a'),
+              ('lib/libmpichcxx.so', 'lib64/libmpichcxx.so'),
+              ('lib/libmpichf90.a',  'lib64/libmpichf90.a'),
+              ('lib/libmpichf90.so', 'lib64/libmpichf90.so')],
+    'dirs': [],
+}
+
+dependencies = [
+    ('pscom', '5.0.43'),
+]
+
+moduleclass = 'mpi'
+
