@@ -71,6 +71,7 @@ class EB_imkl(IntelBase):
         - execute command
         """
         silent_cfg_names_map = None
+        silent_cfg_extras = None
 
         if LooseVersion(self.version) < LooseVersion('11.1'):
             # since imkl v11.1, silent.cfg has been slightly changed to be 'more standard'
@@ -80,7 +81,12 @@ class EB_imkl(IntelBase):
                 'license_file_name': LICENSE_FILE_NAME_2012,
             }
 
-        super(EB_imkl, self).install_step(silent_cfg_names_map=silent_cfg_names_map)
+        if LooseVersion(self.version) > LooseVersion('11.1.1'):
+            silent_cfg_extras = {
+                'COMPONENTS': 'ALL',
+            }
+
+        super(EB_imkl, self).install_step(silent_cfg_names_map=silent_cfg_names_map, silent_cfg_extras=silent_cfg_extras)
 
     def make_module_req_guess(self):
         """
