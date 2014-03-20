@@ -159,7 +159,7 @@ class EasyConfigTest(TestCase):
 
     def test_easyconfig_locations(self):
         """Make sure all easyconfigs files are in the right location."""
-        easyconfig_dirs_regex = re.compile('.*/easybuild/easyconfigs/[a-z]/[^/]+$')
+        easyconfig_dirs_regex = re.compile(r'/easybuild/easyconfigs/[a-z]/[^/]+$')
         topdir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
         for (dirpath, _, filenames) in os.walk(topdir):
             # ignore git/svn dirs
@@ -169,7 +169,7 @@ class EasyConfigTest(TestCase):
             easyconfig_files = [fn for fn in filenames if fn.endswith('eb')]
             if easyconfig_files:
                 # check whether path matches required pattern
-                if not easyconfig_dirs_regex.match(dirpath):
+                if not easyconfig_dirs_regex.search(dirpath):
                     # only exception: TEMPLATE.eb
                     if not (dirpath.endswith('/easybuild/easyconfigs') and filenames == ['TEMPLATE.eb']):
                         self.assertTrue(False, "List of easyconfig files in %s is empty: %s" % (dirpath, filenames))
