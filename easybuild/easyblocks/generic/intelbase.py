@@ -297,7 +297,7 @@ class IntelBase(EasyBlock):
             "ACCEPT_EULA=accept",
             "INSTALL_MODE=NONRPM",
             "CONTINUE_WITH_OPTIONAL_ERROR=yes",
-            ""
+            ""  # Add a newline at the end, so we can easily append if needed
         ]) % {
             'activation_name': silent_cfg_names_map.get('activation_name', ACTIVATION_NAME),
             'license_file_name': silent_cfg_names_map.get('license_file_name', LICENSE_FILE_NAME),
@@ -308,7 +308,10 @@ class IntelBase(EasyBlock):
         }
 
         if silent_cfg_extras is not None:
-            silent += '\n'.join("%s=%s" % (key, value) for (key, value) in silent_cfg_extras.iteritems())
+            if isinstance(silent_cfg_extras, dict):
+                silent += '\n'.join("%s=%s" % (key, value) for (key, value) in silent_cfg_extras.iteritems())
+            else:
+                self.log.error("silent_cfg_extras needs to be a dict")
 
         # we should be already in the correct directory
         silentcfg = os.path.join(os.getcwd(), "silent.cfg")

@@ -384,10 +384,10 @@ class EB_imkl(IntelBase):
             if self.cfg['m32']:
                 self.log.error("Sanity check for 32-bit not implemented yet for IMKL v%s (>= 10.3)" % self.version)
             else:
-                mklfiles = ["mkl/lib/intel64/libmkl.so", "mkl/include/mkl.h"]
                 mkldirs = ["bin", "mkl/bin", "mkl/bin/intel64", "mkl/lib/intel64", "mkl/include"]
                 libnames += ["libmkl_blacs_intelmpi_lp64.so", "libmkl_scalapack_lp64.so"]
-                mklfiles += ["mkl/lib/intel64/%s" % lib for lib in libnames]
+                mklfiles = ["mkl/lib/intel64/libmkl.so", "mkl/include/mkl.h"] + \
+                           ["mkl/lib/intel64/%s" % lib for lib in libnames]
                 if ver >= LooseVersion('10.3.4') and ver < LooseVersion('11.1'):
                     mkldirs += ["compiler/lib/intel64"]
                 else:
