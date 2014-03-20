@@ -379,15 +379,14 @@ class EB_imkl(IntelBase):
         mkldirs = None
         ver = LooseVersion(self.version)
         libnames = ["libmkl_core.so", "libmkl_gnu_thread.so", "libmkl_intel_thread.so", "libmkl_sequential.so"]
-        libnames_extra = ["libmkl_blacs_intelmpi_%(lpver)s64.so", "libmkl_scalapack_%(lpver)s64.so"]
+        libnames_extra = ["libmkl_blacs_intelmpi_%(suff)s.so", "libmkl_scalapack_%(suff)s.so"]
 
         if ver >= LooseVersion('10.3'):
             if self.cfg['m32']:
                 self.log.error("Sanity check for 32-bit not implemented yet for IMKL v%s (>= 10.3)" % self.version)
             else:
                 mkldirs = ["bin", "mkl/bin", "mkl/bin/intel64", "mkl/lib/intel64", "mkl/include"]
-                libnames += [lib % {'lpver': 'lp'} for lib in libnames_extra] + \
-                            [lib % {'lpver': 'ilp'} for lib in libnames_extra]
+                libnames += [lib % {'suff': suff} for lib in libnames_extra for suff in ['lp64', 'ilp64']]
                 mklfiles = ["mkl/lib/intel64/libmkl.so", "mkl/include/mkl.h"] + \
                            ["mkl/lib/intel64/%s" % lib for lib in libnames]
                 if ver >= LooseVersion('10.3.4') and ver < LooseVersion('11.1'):
@@ -401,8 +400,7 @@ class EB_imkl(IntelBase):
                            ["lib/32/%s" % lib for lib in libnames]
                 mkldirs = ["lib/32", "include/32", "interfaces"]
             else:
-                libnames += [lib % {'lpver': 'lp'} for lib in libnames_extra] + \
-                            [lib % {'lpver': 'ilp'} for lib in libnames_extra]
+                libnames += [lib % {'suff': suff} for lib in libnames_extra for suff in ['lp64', 'ilp64']]
                 mklfiles = ["lib/em64t/libmkl.so", "include/mkl.h"] + \
                            ["lib/em64t/%s" % lib for lib in libnames]
                 mkldirs = ["lib/em64t", "include/em64t", "interfaces"]
