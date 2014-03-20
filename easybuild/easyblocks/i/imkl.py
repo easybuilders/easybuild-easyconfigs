@@ -80,7 +80,7 @@ class EB_imkl(IntelBase):
                 'license_file_name': LICENSE_FILE_NAME_2012,
             }
 
-        if LooseVersion(self.version) > LooseVersion('11.1.1'):
+        if LooseVersion(self.version) >= LooseVersion('11.1'):
             silent_cfg_extras = {
                 'COMPONENTS': 'ALL',
             }
