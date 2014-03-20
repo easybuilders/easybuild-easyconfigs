@@ -157,6 +157,22 @@ class EasyConfigTest(TestCase):
                         conflicts = True
         self.assertFalse(conflicts, "No conflicts detected")
 
+    def test_easyconfig_locations(self):
+        """Make sure all easyconfigs files are in the right location."""
+        easyconfig_dirs_regex = re.compile('.*/easybuild/easyconfigs/[a-z]/[^/]+$')
+        topdir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+        for (dirpath, _, filenames) in os.walk(topdir):
+            # ignore git/svn dirs
+            if '/.git/' in dirpath or '.svn' in dirpath:
+                continue
+            # check whether list of .eb files is non-empty
+            easyconfig_files = [fn for fn in filenames if fn.endswith('eb')]
+            if easyconfig_files:
+                # check whether path matches required pattern
+                if not easyconfig_dirs_regex.match(dirpath):
+                    # only exception: TEMPLATE.eb
+                    if not (dirpath.endswith('/easybuild/easyconfigs') and filenames == ['TEMPLATE.eb']):
+                        self.assertTrue(False, "List of easyconfig files in %s is empty: %s" % (dirpath, filenames))
 
 def template_easyconfig_test(self, spec):
     """Test whether all easyconfigs can be initialized."""
