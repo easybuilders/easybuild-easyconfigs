@@ -57,7 +57,10 @@ class EB_tbb(IntelBase):
 
         # save libdir
         os.chdir(self.installdir)
-        libglob = 'tbb/lib/intel64/cc*libc*_kernel*'
+        if LooseVersion(self.version) < LooseVersion('4.1.0'):
+            libglob = 'tbb/lib/intel64/cc*libc*_kernel*'
+        else:
+            libglob = 'tbb/lib/intel64/gcc*'
         libs = glob.glob(libglob)
         if len(libs):
             libdir = libs[-1]  # take the last one, should be ordered by cc get_version.
