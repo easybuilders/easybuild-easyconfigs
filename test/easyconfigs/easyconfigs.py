@@ -163,7 +163,7 @@ class EasyConfigTest(TestCase):
         topdir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
         for (dirpath, _, filenames) in os.walk(topdir):
             # ignore git/svn dirs
-            if '/.git/' in dirpath or '.svn' in dirpath:
+            if '/.git/' in dirpath or '/.svn/' in dirpath:
                 continue
             # check whether list of .eb files is non-empty
             easyconfig_files = [fn for fn in filenames if fn.endswith('eb')]
