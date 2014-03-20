@@ -38,7 +38,6 @@ import tempfile
 import unittest
 from vsc import fancylogger
 
-import easybuild.tools.config as config
 import test.easyconfigs.easyconfigs as e
 
 # initialize logger for all the unit tests
@@ -48,7 +47,7 @@ os.remove(log_fn)
 fancylogger.logToFile(log_fn)
 fancylogger.setLogLevelDebug()
 
-config.variables['tmp_logdir'] = tempfile.mkdtemp(prefix='easyconfigs_test_')
+os.environ['EASYBUILD_TMP_LOGDIR'] = tempfile.mkdtemp(prefix='easyconfigs_test_')
 
 # call suite() for each module and then run them all
 SUITE = unittest.TestSuite([x.suite() for x in [e]])
@@ -65,7 +64,8 @@ except ImportError, err:
     res = unittest.TextTestRunner().run(SUITE)
 
 fancylogger.logToFile(log_fn, enable=False)
-shutil.rmtree(config.variables['tmp_logdir'])
+shutil.rmtree(os.environ['EASYBUILD_TMP_LOGDIR'])
+del os.environ['EASYBUILD_TMP_LOGDIR']
 
 for f in glob.glob('%s*' % log_fn):
     os.remove(f)
