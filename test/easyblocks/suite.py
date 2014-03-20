@@ -38,7 +38,6 @@ import tempfile
 import unittest
 from vsc import fancylogger
 
-import easybuild.tools.config as config
 import test.easyblocks.init_easyblocks as i
 
 # initialize logger for all the unit tests
@@ -49,7 +48,7 @@ fancylogger.logToFile(log_fn)
 log = fancylogger.getLogger()
 log.setLevelName('DEBUG')
 
-config.variables['tmp_logdir'] = tempfile.mkdtemp(prefix='easyblocks_init_test_')
+os.environ['EASYBUILD_TMP_LOGDIR'] = tempfile.mkdtemp(prefix='easyblocks_init_test_')
 
 # call suite() for each module and then run them all
 SUITE = unittest.TestSuite([x.suite() for x in [i]])
@@ -66,7 +65,8 @@ except ImportError, err:
     res = unittest.TextTestRunner().run(SUITE)
 
 fancylogger.logToFile(log_fn, enable=False)
-shutil.rmtree(config.variables['tmp_logdir'])
+shutil.rmtree(os.environ['EASYBUILD_TMP_LOGDIR'])
+del os.environ['EASYBUILD_TMP_LOGDIR']
 
 if not res.wasSuccessful():
     sys.stderr.write("ERROR: Not all tests were successful.\n")
