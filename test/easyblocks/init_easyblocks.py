@@ -36,10 +36,12 @@ from vsc import fancylogger
 from unittest import TestCase, TestLoader, main
 
 import easybuild.tools.options as eboptions
-from easybuild.framework.easyblock import get_class
+from easybuild.framework.easyblock import EasyBlock, get_class
 from easybuild.framework.easyconfig import MANDATORY
 from easybuild.framework.easyconfig.tools import get_paths_for
 from easybuild.tools import config
+
+
 
 
 class InitTest(TestCase):
@@ -48,6 +50,11 @@ class InitTest(TestCase):
     # initialize configuration (required for e.g. default modules_tool setting)
     eb_go = eboptions.parse_options()
     config.init(eb_go.options, eb_go.get_options_by_section('config'))
+    build_options = {
+        'valid_module_classes': config.module_classes(),
+        'valid_stops': [x[0] for x in EasyBlock.get_steps()],
+    }
+    config.init_build_options(build_options=build_options)
     config.set_tmpdir()
     del eb_go
 
