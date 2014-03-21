@@ -60,10 +60,11 @@ class EasyConfigTest(TestCase):
     eb_go = eboptions.parse_options()
     config.init(eb_go.options, eb_go.get_options_by_section('config'))
     build_options = {
+        'check_osdeps': False,
+        'force': True,
+        'robot_path': get_paths_for("easyconfigs")[0],
         'valid_module_classes': config.module_classes(),
         'valid_stops': [x[0] for x in EasyBlock.get_steps()],
-        'robot_path': get_paths_for("easyconfigs")[0],
-        'force': True,
     }
     config.init_build_options(build_options=build_options)
     config.set_tmpdir()
