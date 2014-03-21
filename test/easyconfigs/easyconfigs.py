@@ -43,8 +43,7 @@ import easybuild.main as main
 import easybuild.tools.options as eboptions
 from easybuild.framework.easyblock import EasyBlock, get_class
 from easybuild.framework.easyconfig.easyconfig import EasyConfig
-from easybuild.framework.easyconfig.tools import get_paths_for
-from easybuild.main import dep_graph, resolve_dependencies, process_easyconfig
+from easybuild.framework.easyconfig.tools import dep_graph, get_paths_for, process_easyconfig, resolve_dependencies
 from easybuild.tools import config
 from easybuild.tools.module_generator import det_full_module_name
 
@@ -60,6 +59,14 @@ class EasyConfigTest(TestCase):
     # initialize configuration (required for e.g. default modules_tool setting)
     eb_go = eboptions.parse_options()
     config.init(eb_go.options, eb_go.get_options_by_section('config'))
+    build_options = {
+        'check_osdeps': False,
+        'force': True,
+        'robot_path': get_paths_for("easyconfigs")[0],
+        'valid_module_classes': config.module_classes(),
+        'valid_stops': [x[0] for x in EasyBlock.get_steps()],
+    }
+    config.init_build_options(build_options=build_options)
     config.set_tmpdir()
     del eb_go
         
@@ -69,6 +76,7 @@ class EasyConfigTest(TestCase):
     # make sure a logger is present for main
     main._log = log
     ordered_specs = None
+    parsed_easyconfigs = []
 
     def process_all_easyconfigs(self):
         """Process all easyconfigs and resolve inter-easyconfig dependencies."""
@@ -76,16 +84,12 @@ class EasyConfigTest(TestCase):
         easyconfigs_path = get_paths_for("easyconfigs")[0]
         specs = glob.glob('%s/*/*/*.eb' % easyconfigs_path)
 
-        # parse all easyconfigs
-        easyconfigs = []
-        for spec in specs:
-            easyconfigs.extend(process_easyconfig(spec, build_options={'validate': False}))
+        # parse all easyconfigs if they haven't been already
+        if not self.parsed_easyconfigs:
+            for spec in specs:
+                self.parsed_easyconfigs.extend(process_easyconfig(spec))
 
-        build_options = {
-            'robot_path': easyconfigs_path,
-            'force': True,
-        }
-        self.ordered_specs = resolve_dependencies(easyconfigs, build_options=build_options)
+        self.ordered_specs = resolve_dependencies(self.parsed_easyconfigs)
 
     def test_dep_graph(self):
         """Unit test that builds a full dependency graph."""
@@ -194,7 +198,11 @@ def template_easyconfig_test(self, spec):
         self.assertTrue(False, "Obtained software name directly from easyconfig file")
 
     # parse easyconfig 
-    ec = EasyConfig(spec, build_options={'validate': False})
+    ecs = process_easyconfig(spec)
+    if len(ecs) == 1:
+        ec = ecs[0]['ec']
+    else:
+        self.assertTrue(False, "easyconfig %s does not contain blocks, yields only one parsed easyconfig" % spec)
 
     # sanity check for software name
     self.assertTrue(ec['name'], name) 
@@ -206,7 +214,7 @@ def template_easyconfig_test(self, spec):
 
     # instantiate easyblock with easyconfig file
     app_class = get_class(easyblock, name=name)
-    app = app_class(spec, build_options={'validate_ec': False})
+    app = app_class(spec)
 
     # more sanity checks
     self.assertTrue(name, app.name)
@@ -238,6 +246,9 @@ def template_easyconfig_test(self, spec):
 
     app.close_log()
     os.remove(app.logfile)
+
+    # cache the parsed easyconfig, to avoid that it is parsed again
+    self.parsed_easyconfigs.append(ecs[0])
 
     # test passed, so set back to True
     single_tests_ok = True and prev_single_tests_ok
