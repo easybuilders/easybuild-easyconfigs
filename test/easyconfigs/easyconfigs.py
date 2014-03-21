@@ -60,6 +60,11 @@ class EasyConfigTest(TestCase):
     # initialize configuration (required for e.g. default modules_tool setting)
     eb_go = eboptions.parse_options()
     config.init(eb_go.options, eb_go.get_options_by_section('config'))
+    build_options = {
+        'valid_module_classes': config.module_classes(),
+        'valid_stops': [x[0] for x in EasyBlock.get_steps()],
+    }
+    config.init_build_options(build_options=build_options)
     config.set_tmpdir()
     del eb_go
         
@@ -79,13 +84,13 @@ class EasyConfigTest(TestCase):
         # parse all easyconfigs
         easyconfigs = []
         for spec in specs:
-            easyconfigs.extend(process_easyconfig(spec, build_options={'validate': False}))
+            easyconfigs.extend(process_easyconfig(spec))
 
         build_options = {
             'robot_path': easyconfigs_path,
             'force': True,
         }
-        self.ordered_specs = resolve_dependencies(easyconfigs, build_options=build_options)
+        self.ordered_specs = resolve_dependencies(easyconfigs)
 
     def test_dep_graph(self):
         """Unit test that builds a full dependency graph."""
@@ -194,7 +199,7 @@ def template_easyconfig_test(self, spec):
         self.assertTrue(False, "Obtained software name directly from easyconfig file")
 
     # parse easyconfig 
-    ec = EasyConfig(spec, build_options={'validate': False})
+    ec = EasyConfig(spec, validate=False)
 
     # sanity check for software name
     self.assertTrue(ec['name'], name) 
@@ -206,7 +211,7 @@ def template_easyconfig_test(self, spec):
 
     # instantiate easyblock with easyconfig file
     app_class = get_class(easyblock, name=name)
-    app = app_class(spec, build_options={'validate_ec': False})
+    app = app_class(spec)
 
     # more sanity checks
     self.assertTrue(name, app.name)
