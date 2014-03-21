@@ -63,6 +63,8 @@ class EasyConfigTest(TestCase):
     build_options = {
         'valid_module_classes': config.module_classes(),
         'valid_stops': [x[0] for x in EasyBlock.get_steps()],
+        'robot_path': get_paths_for("easyconfigs")[0],
+        'force': True,
     }
     config.init_build_options(build_options=build_options)
     config.set_tmpdir()
@@ -86,10 +88,6 @@ class EasyConfigTest(TestCase):
         for spec in specs:
             easyconfigs.extend(process_easyconfig(spec))
 
-        build_options = {
-            'robot_path': easyconfigs_path,
-            'force': True,
-        }
         self.ordered_specs = resolve_dependencies(easyconfigs)
 
     def test_dep_graph(self):
