@@ -41,8 +41,9 @@ from unittest import TestCase, TestLoader, main
 
 import easybuild.main as main
 import easybuild.tools.options as eboptions
-from easybuild.framework.easyblock import EasyBlock, get_class
-from easybuild.framework.easyconfig.easyconfig import EasyConfig
+from easybuild.framework.easyblock import EasyBlock
+from easybuild.framework.easyconfig.easyconfig import EasyConfig, fetch_parameter_from_easyconfig_file
+from easybuild.framework.easyconfig.easyconfig import get_easyblock_class
 from easybuild.framework.easyconfig.tools import dep_graph, get_paths_for, process_easyconfig, resolve_dependencies
 from easybuild.tools import config
 from easybuild.tools.module_generator import det_full_module_name
@@ -71,8 +72,6 @@ class EasyConfigTest(TestCase):
     del eb_go
         
     log = fancylogger.getLogger("EasyConfigTest", fname=False)
-    name_regex = re.compile("^name\s*=\s*['\"](.*)['\"]$", re.M)
-    easyblock_regex = re.compile(r"^\s*easyblock\s*=['\"](.*)['\"]$", re.M)
     # make sure a logger is present for main
     main._log = log
     ordered_specs = None
@@ -86,6 +85,7 @@ class EasyConfigTest(TestCase):
 
         # parse all easyconfigs if they haven't been already
         if not self.parsed_easyconfigs:
+            print "parsing ALL easyconfigs..."
             for spec in specs:
                 self.parsed_easyconfigs.extend(process_easyconfig(spec))
 
@@ -186,17 +186,6 @@ def template_easyconfig_test(self, spec):
     prev_single_tests_ok = single_tests_ok
     single_tests_ok = False
 
-    f = open(spec, 'r')
-    spectxt = f.read()
-    f.close()
-
-    # determine software name directly from easyconfig file
-    res = self.name_regex.search(spectxt)
-    if res:
-        name = res.group(1)
-    else:
-        self.assertTrue(False, "Obtained software name directly from easyconfig file")
-
     # parse easyconfig 
     ecs = process_easyconfig(spec)
     if len(ecs) == 1:
@@ -205,16 +194,15 @@ def template_easyconfig_test(self, spec):
         self.assertTrue(False, "easyconfig %s does not contain blocks, yields only one parsed easyconfig" % spec)
 
     # sanity check for software name
+    name = fetch_parameter_from_easyconfig_file(spec, 'name')
     self.assertTrue(ec['name'], name) 
 
     # try and fetch easyblock spec from easyconfig
-    easyblock = self.easyblock_regex.search(spectxt)
-    if easyblock:
-        easyblock = easyblock.group(1)
+    easyblock = fetch_parameter_from_easyconfig_file(spec, 'easyblock')
 
     # instantiate easyblock with easyconfig file
-    app_class = get_class(easyblock, name=name)
-    app = app_class(spec)
+    app_class = get_easyblock_class(easyblock, name=name)
+    app = app_class(ec)
 
     # more sanity checks
     self.assertTrue(name, app.name)
