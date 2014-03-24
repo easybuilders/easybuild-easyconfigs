@@ -85,7 +85,6 @@ class EasyConfigTest(TestCase):
 
         # parse all easyconfigs if they haven't been already
         if not self.parsed_easyconfigs:
-            print "parsing ALL easyconfigs..."
             for spec in specs:
                 self.parsed_easyconfigs.extend(process_easyconfig(spec))
 
