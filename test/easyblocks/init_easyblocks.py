@@ -36,8 +36,9 @@ from vsc import fancylogger
 from unittest import TestCase, TestLoader, main
 
 import easybuild.tools.options as eboptions
-from easybuild.framework.easyblock import EasyBlock, get_class
+from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import MANDATORY
+from easybuild.framework.easyconfig.easyconfig import EasyConfig, get_easyblock_class
 from easybuild.framework.easyconfig.tools import get_paths_for
 from easybuild.tools import config
 
@@ -106,7 +107,7 @@ def template_init_test(self, easyblock):
         self.log.debug("Found class name for easyblock %s: %s" % (easyblock, ebname))
 
         # figure out list of mandatory variables, and define with dummy values as necessary
-        app_class = get_class(ebname)
+        app_class = get_easyblock_class(ebname)
         ec_opts = app_class.extra_options()
         extra_txt = ''
         for ec_opt in ec_opts:
@@ -118,7 +119,7 @@ def template_init_test(self, easyblock):
 
         # initialize easyblock
         # if this doesn't fail, the test succeeds
-        app = app_class(self.eb_file)
+        app = app_class(EasyConfig(self.eb_file))
 
         # cleanup
         app.close_log()
