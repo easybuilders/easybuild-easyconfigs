@@ -62,18 +62,18 @@ class EB_NWChem(ConfigureMake):
     def extra_options():
         """Custom easyconfig parameters for NWChem."""
 
-        extra_vars = [
-            ('target', ["LINUX64", "Target platform", CUSTOM]),
+        extra_vars = {
+            'target': ["LINUX64", "Target platform", CUSTOM],
             # possible options for ARMCI_NETWORK on LINUX64 with Infiniband:
             # OPENIB, MPI-MT, MPI-SPAWN, MELLANOX
-            ('armci_network', ["OPENIB", "Network protocol to use", CUSTOM]),
-            ('msg_comms', ["MPI", "Type of message communication", CUSTOM]),
-            ('modules', ["all", "NWChem modules to build", CUSTOM]),
-            ('lib_defines', ["", "Additional defines for C preprocessor", CUSTOM]),
-            ('tests', [True, "Run example test cases", CUSTOM]),
+            'armci_network': ["OPENIB", "Network protocol to use", CUSTOM],
+            'msg_comms': ["MPI", "Type of message communication", CUSTOM],
+            'modules': ["all", "NWChem modules to build", CUSTOM],
+            'lib_defines': ["", "Additional defines for C preprocessor", CUSTOM],
+            'tests': [True, "Run example test cases", CUSTOM],
             # lots of tests fail, so allow a certain fail ratio
-            ('max_fail_ratio', [0.5, "Maximum test case fail ratio", CUSTOM]),
-        ]
+            'max_fail_ratio': [0.5, "Maximum test case fail ratio", CUSTOM],
+        }
         return ConfigureMake.extra_options(extra_vars)
 
     def setvar_env_makeopt(self, name, value):

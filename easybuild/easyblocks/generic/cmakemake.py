@@ -47,13 +47,12 @@ class CMakeMake(ConfigureMake):
     @staticmethod
     def extra_options(extra_vars=None):
         """Define extra easyconfig parameters specific to CMakeMake."""
-
         orig_vars = ConfigureMake.extra_options(extra_vars)
-        cmakemake_vars = [
-            ('srcdir', [None, "Source directory location to provide to cmake command", CUSTOM]),
-            ('separate_build_dir', [False, "Perform build in a separate directory", CUSTOM]),
-        ]
-        cmakemake_vars.extend(orig_vars)
+        cmakemake_vars = {
+            'srcdir': [None, "Source directory location to provide to cmake command", CUSTOM],
+            'separate_build_dir': [False, "Perform build in a separate directory", CUSTOM],
+        }
+        cmakemake_vars.update(orig_vars)
         return cmakemake_vars
 
     def configure_step(self, srcdir=None, builddir=None):

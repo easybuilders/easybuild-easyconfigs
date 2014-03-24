@@ -99,21 +99,21 @@ class IntelBase(EasyBlock):
     @staticmethod
     def extra_options(extra_vars=None):
         origvars = EasyBlock.extra_options(extra_vars)
-        intel_vars = [
-            ('license_activation', [ACTIVATION_LIC_SERVER, "License activation type", CUSTOM]),
+        intel_vars = {
+            'license_activation': [ACTIVATION_LIC_SERVER, "License activation type", CUSTOM],
             # 'usetmppath':
             # workaround for older SL5 version (5.5 and earlier)
             # used to be True, but False since SL5.6/SL6
             # disables TMP_PATH env and command line option
-            ('usetmppath', [False, "Use temporary path for installation", CUSTOM]),
-            ('m32', [False, "Enable 32-bit toolchain", CUSTOM]),
-        ]
+            'usetmppath': [False, "Use temporary path for installation", CUSTOM],
+            'm32': [False, "Enable 32-bit toolchain", CUSTOM],
+        }
 
         # Support for old easyconfigs with license parameter
         _log.deprecated('No old style license parameter, use license_file', '2.0')
-        intel_vars.append(('license', [None, "License file", CUSTOM]))
+        intel_vars.update({'license': (None, "License file", CUSTOM)})
 
-        intel_vars.extend(origvars)
+        intel_vars.update(origvars)
         return intel_vars
 
     def clean_home_subdir(self):

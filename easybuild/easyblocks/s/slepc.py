@@ -55,10 +55,10 @@ class EB_SLEPc(ConfigureMake):
     @staticmethod
     def extra_options():
         """Add extra config options specific to SLEPc."""
-        extra_vars = [
-                      ('sourceinstall', [False, "Indicates whether a source installation should be performed (default: False)", CUSTOM]),
-                      ('runtest', ['test', "Make target to test build (default: test)", BUILD])
-                     ]
+        extra_vars = {
+            'sourceinstall': [False, "Indicates whether a source installation should be performed (default: False)", CUSTOM],
+            'runtest': ['test', "Make target to test build (default: test)", BUILD],
+        }
         return ConfigureMake.extra_options(extra_vars)
 
     def make_builddir(self):

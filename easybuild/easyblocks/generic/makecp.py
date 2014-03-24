@@ -42,10 +42,10 @@ class MakeCp(ConfigureMake):
         """
         Define list of files or directories to be copied after make
         """
-        extra_vars = [
-            ('files_to_copy', [{}, "List of files or dirs to copy", MANDATORY]),
-            ('with_configure', [False, "Run configure script before building", BUILD]),
-        ]
+        extra_vars = {
+            'files_to_copy': [{}, "List of files or dirs to copy", MANDATORY],
+            'with_configure': [False, "Run configure script before building", BUILD],
+        }
         return ConfigureMake.extra_options(extra_vars)
 
     def configure_step(self, cmd_prefix=''):

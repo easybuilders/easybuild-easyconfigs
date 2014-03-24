@@ -53,14 +53,14 @@ class EB_PETSc(ConfigureMake):
     @staticmethod
     def extra_options():
         """Add extra config options specific to PETSc."""
-        extra_vars = [
-                      ('sourceinstall', [False, "Indicates whether a source installation should be performed (default: False)", CUSTOM]),
-                      ('shared_libs', [False, "Build shared libraries (default: False)", CUSTOM]),
-                      ('with_papi', [False, "Enable PAPI support (default: False)", CUSTOM]),
-                      ('papi_inc', ['/usr/include', "Path for PAPI include files (default: /usr/include)", CUSTOM]),
-                      ('papi_lib', ['/usr/lib64/libpapi.so', "Path for PAPI library (default: '/usr/lib64/libpapi.so')", CUSTOM]),
-                      ('runtest', ['test', "Make target to test build (default: test)", BUILD])
-                     ]
+        extra_vars = {
+            'sourceinstall': [False, "Indicates whether a source installation should be performed (default: False)", CUSTOM],
+            'shared_libs': [False, "Build shared libraries (default: False)", CUSTOM],
+            'with_papi': [False, "Enable PAPI support (default: False)", CUSTOM],
+            'papi_inc': ['/usr/include', "Path for PAPI include files (default: /usr/include)", CUSTOM],
+            'papi_lib': ['/usr/lib64/libpapi.so', "Path for PAPI library (default: '/usr/lib64/libpapi.so')", CUSTOM],
+            'runtest': ['test', "Make target to test build (default: test)", BUILD],
+        }
         return ConfigureMake.extra_options(extra_vars)
 
     def make_builddir(self):

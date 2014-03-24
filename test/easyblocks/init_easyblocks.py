@@ -110,9 +110,9 @@ def template_init_test(self, easyblock):
         app_class = get_easyblock_class(ebname)
         ec_opts = app_class.extra_options()
         extra_txt = ''
-        for ec_opt in ec_opts:
-            if ec_opt[1][2] == MANDATORY:
-                extra_txt += '%s = "foo"\n' % ec_opt[0]
+        for key in ec_opts:
+            if ec_opts[key][2] == MANDATORY:
+                extra_txt += '%s = "foo"\n' % key
 
         # write easyconfig file
         self.writeEC(ebname, extra_txt)

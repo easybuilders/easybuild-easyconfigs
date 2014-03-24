@@ -81,12 +81,11 @@ class EB_LAPACK(ConfigureMake):
 
     @staticmethod
     def extra_options():
-        extra_vars = [
-                      ('supply_blas', [False, "Supply BLAS lib to LAPACK for building (default: False)", CUSTOM]),
-                      ('test_only', [False, "Only make tests, don't try and build LAPACK lib.", CUSTOM])
-                     ]
+        extra_vars = {
+            'supply_blas': [False, "Supply BLAS lib to LAPACK for building (default: False)", CUSTOM],
+            'test_only': [False, "Only make tests, don't try and build LAPACK lib.", CUSTOM],
+        }
         return ConfigureMake.extra_options(extra_vars)
-
 
     def configure_step(self):
         """
