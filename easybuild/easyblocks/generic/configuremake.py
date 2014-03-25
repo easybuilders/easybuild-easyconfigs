@@ -47,12 +47,7 @@ class ConfigureMake(EasyBlock):
     @staticmethod
     def extra_options(extra_vars=None):
         """Extra easyconfig parameters specific to ConfigureMake."""
-        # using {} as default value is a bad idea, so we handle it this way
-        if extra_vars is None:
-            extra_vars = {}
-        if not isinstance(extra_vars, dict):
-            self.log.deprecated("Obtained value of type '%s' for extra_vars, should be 'dict'" % type(extra_vars), '2.0')
-            extra_vars = dict(extra_vars)
+        extra_vars = dict(EasyBlock.extra_options(extra_vars))
         extra_vars.update({
             'tar_config_opts': [False, "Override tar settings as determined by configure.", CUSTOM],
             'prefix_opt': ['--prefix=', "Prefix command line option for configure script", CUSTOM],

@@ -50,12 +50,7 @@ class Binary(EasyBlock):
     @staticmethod
     def extra_options(extra_vars=None):
         """Extra easyconfig parameters specific to Binary easyblock."""
-        # using [] as default value is a bad idea, so we handle it this way
-        if extra_vars is None:
-            extra_vars = {}
-        if not isinstance(extra_vars, dict):
-            self.log.deprecated("Value passed to extra_vars should be of type 'dict', found type '%s'" % type(extra_vars))
-            extra_vars = dict(extra_vars)
+        extra_vars = dict(EasyBlock.extra_options(extra_vars))
         extra_vars.update({
             'install_cmd': [None, "Install command to be used.", CUSTOM],
         })

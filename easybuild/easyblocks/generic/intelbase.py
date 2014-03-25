@@ -98,8 +98,8 @@ class IntelBase(EasyBlock):
 
     @staticmethod
     def extra_options(extra_vars=None):
-        origvars = EasyBlock.extra_options(extra_vars)
-        intel_vars = {
+        extra_vars = dict(EasyBlock.extra_options(extra_vars))
+        extra_vars.update({
             'license_activation': [ACTIVATION_LIC_SERVER, "License activation type", CUSTOM],
             # 'usetmppath':
             # workaround for older SL5 version (5.5 and earlier)
@@ -107,14 +107,13 @@ class IntelBase(EasyBlock):
             # disables TMP_PATH env and command line option
             'usetmppath': [False, "Use temporary path for installation", CUSTOM],
             'm32': [False, "Enable 32-bit toolchain", CUSTOM],
-        }
+        })
 
         # Support for old easyconfigs with license parameter
         _log.deprecated('No old style license parameter, use license_file', '2.0')
-        intel_vars.update({'license': (None, "License file", CUSTOM)})
+        extra_vars.update({'license': [None, "License file", CUSTOM]})
 
-        intel_vars.update(origvars)
-        return intel_vars
+        return EasyBlock.extra_options(extra_vars)
 
     def clean_home_subdir(self):
         """Remove contents of (local) 'intel' directory home subdir, where stuff is cached."""
