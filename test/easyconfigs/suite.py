@@ -43,7 +43,7 @@ import test.easyconfigs.easyconfigs as e
 
 # disable all logging to significantly speed up tests
 fancylogger.disableDefaultHandlers()
-fancylogger.setLogLevel('APOCALYPTIC')
+fancylogger.setLogLevelError()
 
 os.environ['EASYBUILD_TMP_LOGDIR'] = tempfile.mkdtemp(prefix='easyconfigs_test_')
 
