@@ -56,8 +56,8 @@ class EB_SLEPc(ConfigureMake):
     def extra_options():
         """Add extra config options specific to SLEPc."""
         extra_vars = {
-            'sourceinstall': [False, "Indicates whether a source installation should be performed (default: False)", CUSTOM],
-            'runtest': ['test', "Make target to test build (default: test)", BUILD],
+            'sourceinstall': [False, "Indicates whether a source installation should be performed", CUSTOM],
+            'runtest': ['test', "Make target to test build", BUILD],
         }
         return ConfigureMake.extra_options(extra_vars)
 

@@ -63,8 +63,8 @@ class EB_WRF(EasyBlock):
         extra_vars = {
             'buildtype': [None, "Specify the type of build (serial, smpar (OpenMP), " \
                                 "dmpar (MPI), dm+sm (hybrid OpenMP/MPI)).", MANDATORY],
-            'rewriteopts': [True, "Replace -O3 with CFLAGS/FFLAGS (default: True).", CUSTOM],
-            'runtest': [True, "Build and run WRF tests (default: True).", CUSTOM],
+            'rewriteopts': [True, "Replace -O3 with CFLAGS/FFLAGS", CUSTOM],
+            'runtest': [True, "Build and run WRF tests", CUSTOM],
         }
         return EasyBlock.extra_options(extra_vars)
 

@@ -70,8 +70,8 @@ class EB_WPS(EasyBlock):
         ]
         extra_vars = {
             'buildtype': [None, "Specify the type of build (smpar: OpenMP, dmpar: MPI).", MANDATORY],
-            'runtest': [True, "Build and run WPS tests (default: True).", CUSTOM],
-            'testdata': [testdata_urls, "URL to test data required to run WPS test (default: %s)." % testdata_urls, CUSTOM],
+            'runtest': [True, "Build and run WPS tests", CUSTOM],
+            'testdata': [testdata_urls, "URL to test data required to run WPS test", CUSTOM],
         }
         return EasyBlock.extra_options(extra_vars)
 

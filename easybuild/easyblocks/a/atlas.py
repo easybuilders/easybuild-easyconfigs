@@ -59,9 +59,9 @@ class EB_ATLAS(ConfigureMake):
     @staticmethod
     def extra_options():
         extra_vars = {
-            'ignorethrottling': [False, "Ignore check done by ATLAS for CPU throttling (not recommended) (default: False)", CUSTOM],
-            'full_lapack': [False, "Build a full LAPACK library (requires netlib's LAPACK) (default: False)", CUSTOM],
-            'sharedlibs': [False, "Enable building of shared libs as well (default: False)", CUSTOM],
+            'ignorethrottling': [False, "Ignore check done by ATLAS for CPU throttling (not recommended)", CUSTOM],
+            'full_lapack': [False, "Build a full LAPACK library (requires netlib's LAPACK)", CUSTOM],
+            'sharedlibs': [False, "Enable building of shared libs as well", CUSTOM],
         }
         return ConfigureMake.extra_options(extra_vars)
 

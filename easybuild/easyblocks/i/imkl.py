@@ -56,7 +56,7 @@ class EB_imkl(IntelBase):
     def extra_options():
         """Add easyconfig parameters custom to imkl (e.g. interfaces)."""
         extra_vars = {
-            'interfaces': [True, "Indicates whether interfaces should be built (default: True)", CUSTOM],
+            'interfaces': [True, "Indicates whether interfaces should be built", CUSTOM],
         }
         return IntelBase.extra_options(extra_vars)
 
