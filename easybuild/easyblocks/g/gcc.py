@@ -65,13 +65,13 @@ class EB_GCC(ConfigureMake):
     @staticmethod
     def extra_options():
         extra_vars = [
-                      ('languages', [[], "List of languages to build GCC for (--enable-languages) (default: [])", CUSTOM]),
-                      ('withlto', [True, "Enable LTO support (default: True)", CUSTOM]),
-                      ('withcloog', [False, "Build GCC with CLooG support (default: False).", CUSTOM]),
-                      ('withppl', [False, "Build GCC with PPL support (default: False).", CUSTOM]),
-                      ('pplwatchdog', [False, "Enable PPL watchdog (default: False)", CUSTOM]),
-                      ('clooguseisl', [False, "Use ISL with CLooG or not (use PPL otherwise) (default: False)", CUSTOM])
-                     ]
+            ('languages', [[], "List of languages to build GCC for (--enable-languages)", CUSTOM]),
+            ('withlto', [True, "Enable LTO support", CUSTOM]),
+            ('withcloog', [False, "Build GCC with CLooG support", CUSTOM]),
+            ('withppl', [False, "Build GCC with PPL support", CUSTOM]),
+            ('pplwatchdog', [False, "Enable PPL watchdog", CUSTOM]),
+            ('clooguseisl', [False, "Use ISL with CLooG or not (use PPL otherwise)", CUSTOM]),
+        ]
         return ConfigureMake.extra_options(extra_vars)
 
     def create_dir(self, dirname):
@@ -135,9 +135,9 @@ class EB_GCC(ConfigureMake):
             for sd in extra_src_dirs:
                 if d.startswith(sd):
                     found_src_dirs.append({
-                                           'source_dir': d,
-                                           'target_dir': sd
-                                          })
+                        'source_dir': d,
+                        'target_dir': sd
+                    })
                     # expected format: get_name[-subname]-get_version
                     ds = os.path.basename(d).split('-')
                     name = '-'.join(ds[0:-1])
@@ -168,10 +168,10 @@ class EB_GCC(ConfigureMake):
         self.log.debug("Prepared extra src dirs for %s: %s (configopts: %s)" % (stage, found_src_dirs, configopts))
 
         return {
-                'configopts': configopts,
-                'names': names,
-                'versions': versions
-               }
+            'configopts': configopts,
+            'names': names,
+            'versions': versions
+        }
 
     def run_configure_cmd(self, cmd):
         """
@@ -242,13 +242,13 @@ class EB_GCC(ConfigureMake):
             #
             self.log.info("Starting with stage 1 of 3-staged build to enable CLooG and/or PPL support...")
             self.stage1installdir = os.path.join(self.builddir, 'GCC_stage1_eb')
-            configopts += " --prefix=%(p)s --with-local-prefix=%(p)s" % {'p' : self.stage1installdir}
+            configopts += " --prefix=%(p)s --with-local-prefix=%(p)s" % {'p': self.stage1installdir}
 
         else:
             # unstaged build, so just run standard configure/make/make install
             # set prefixes
             self.log.info("Performing regular GCC build...")
-            configopts += " --prefix=%(p)s --with-local-prefix=%(p)s" % {'p' : self.installdir}
+            configopts += " --prefix=%(p)s --with-local-prefix=%(p)s" % {'p': self.installdir}
 
         # III) create obj dir to build in, and change to it
         #     GCC doesn't like to be built in the source dir
@@ -290,9 +290,9 @@ class EB_GCC(ConfigureMake):
             env.setvar('PATH', path)
 
             ld_lib_path = "%(dir)s/lib64:%(dir)s/lib:%(val)s" % {
-                                                                 'dir': self.stage1installdir,
-                                                                 'val': os.getenv('LD_LIBRARY_PATH')
-                                                                }
+                'dir': self.stage1installdir,
+                'val': os.getenv('LD_LIBRARY_PATH')
+            }
             env.setvar('LD_LIBRARY_PATH', ld_lib_path)
 
             #
@@ -411,7 +411,7 @@ class EB_GCC(ConfigureMake):
 
             stage3_info = self.prep_extra_src_dirs("stage3")
             configopts = stage3_info['configopts']
-            configopts += " --prefix=%(p)s --with-local-prefix=%(p)s" % {'p' : self.installdir }
+            configopts += " --prefix=%(p)s --with-local-prefix=%(p)s" % {'p': self.installdir}
 
             # enable bootstrapping for self-containment
             configopts += " --enable-bootstrap "
@@ -504,9 +504,9 @@ class EB_GCC(ConfigureMake):
         libexec_files = ["libexec/%s/%s" % (common_infix, x) for x in libexec_files]
 
         custom_paths = {
-                        'files': bin_files + lib_files + libexec_files,
-                        'dirs': dirs
-                       }
+            'files': bin_files + lib_files + libexec_files,
+            'dirs': dirs
+        }
 
         super(EB_GCC, self).sanity_check_step(custom_paths=custom_paths)
 
@@ -516,9 +516,9 @@ class EB_GCC(ConfigureMake):
         """
         guesses = super(EB_GCC, self).make_module_req_guess()
         guesses.update({
-                        'PATH': ['bin'],
-                        'LD_LIBRARY_PATH': ['lib', 'lib64',
-                                            'lib/gcc/%s/%s' % (self.platform_lib, self.cfg['version'])],
-                        'MANPATH': ['man', 'share/man']
-                       })
+            'PATH': ['bin'],
+            'LD_LIBRARY_PATH': ['lib', 'lib64',
+                                'lib/gcc/%s/%s' % (self.platform_lib, self.cfg['version'])],
+            'MANPATH': ['man', 'share/man']
+        })
         return guesses
