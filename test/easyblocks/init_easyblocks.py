@@ -89,8 +89,25 @@ class InitTest(TestCase):
         except OSError, err:
             self.log.error("Failed to remove %s/%s: %s" % (self.eb_file, err))
 
+
 def template_init_test(self, easyblock):
     """Test whether all easyconfigs can be initialized."""
+
+    def check_extra_options_format(extra_options):
+        """Make sure extra_options value is of correct format."""
+        # EasyBuild v1.x
+        self.assertTrue(isinstance(extra_options, list))
+        for extra_option in extra_options:
+            self.assertTrue(isinstance(extra_option, tuple))
+            self.assertEqual(len(extra_option), 2)
+            self.assertTrue(isinstance(extra_option[0], basestring))
+            self.assertTrue(isinstance(extra_option[1], list))
+            self.assertEqual(len(extra_option[1]), 3)
+        # EasyBuild v2.0 (breaks backward compatibility compared to v1.x)
+        #self.assertTrue(isinstance(extra_options, dict))
+        #for key in extra_options:
+        #    self.assertTrue(isinstance(extra_options[key], list))
+        #    self.assertTrue(len(extra_options[key]), 3)
 
     class_regex = re.compile("^class (.*)\(.*", re.M)
 
@@ -108,10 +125,13 @@ def template_init_test(self, easyblock):
 
         # figure out list of mandatory variables, and define with dummy values as necessary
         app_class = get_easyblock_class(ebname)
-        ec_opts = app_class.extra_options()
+        extra_options = app_class.extra_options()
+        check_extra_options_format(extra_options)
+
+        # extend easyconfig to make sure mandatory custom easyconfig paramters are defined
         extra_txt = ''
-        for key in ec_opts:
-            if ec_opts[key][2] == MANDATORY:
+        for (key, val) in extra_options:
+            if val[2] == MANDATORY:
                 extra_txt += '%s = "foo"\n' % key
 
         # write easyconfig file
