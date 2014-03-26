@@ -60,9 +60,9 @@ class EB_ALADIN(EasyBlock):
     def extra_options():
         """Custom easyconfig parameters for ALADIN."""
 
-        extra_vars = [
-                      ('optional_extra_param', ['default value', "short description", CUSTOM]),
-                     ]
+        extra_vars = {
+            'optional_extra_param': ['default value', "short description", CUSTOM],
+        }
         return EasyBlock.extra_options(extra_vars)
 
     def configure_step(self):

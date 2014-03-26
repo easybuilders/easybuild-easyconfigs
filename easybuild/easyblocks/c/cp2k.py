@@ -85,19 +85,19 @@ class EB_CP2K(EasyBlock):
 
     @staticmethod
     def extra_options():
-        extra_vars = [
-            ('type', ['popt', "Type of build ('popt' or 'psmp')", CUSTOM]),
-            ('typeopt', [True, "Enable optimization", CUSTOM]),
-            ('modincprefix', ['', "IMKL prefix for modinc include dir", CUSTOM]),
-            ('modinc', [[], ("List of modinc's to use (*.f90), or 'True' to use "
-                             "all found at given prefix"), CUSTOM]),
-            ('extracflags', ['', "Extra CFLAGS to be added", CUSTOM]),
-            ('extradflags', ['', "Extra DFLAGS to be added", CUSTOM]),
-            ('ignore_regtest_fails', [False, ("Ignore failures in regression test "
-                                              "(should be used with care)"), CUSTOM]),
-            ('maxtasks', [3, ("Maximum number of CP2K instances run at "
-                              "the same time during testing"), CUSTOM]),
-        ]
+        extra_vars = {
+            'type': ['popt', "Type of build ('popt' or 'psmp')", CUSTOM],
+            'typeopt': [True, "Enable optimization", CUSTOM],
+            'modincprefix': ['', "IMKL prefix for modinc include dir", CUSTOM],
+            'modinc': [[], ("List of modinc's to use (*.f90], or 'True' to use "
+                            "all found at given prefix"), CUSTOM],
+            'extracflags': ['', "Extra CFLAGS to be added", CUSTOM],
+            'extradflags': ['', "Extra DFLAGS to be added", CUSTOM],
+            'ignore_regtest_fails': [False, ("Ignore failures in regression test "
+                                             "(should be used with care)"), CUSTOM],
+            'maxtasks': [3, ("Maximum number of CP2K instances run at "
+                             "the same time during testing"), CUSTOM],
+        }
         return EasyBlock.extra_options(extra_vars)
 
     def _generate_makefile(self, options):

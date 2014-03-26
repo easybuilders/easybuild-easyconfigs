@@ -37,9 +37,9 @@ class EB_ESPResSo(ConfigureMake):
 
     @staticmethod
     def extra_options():
-        extra_vars = [
-                      ('runtest', [True, "Run ESPResSo tests.", CUSTOM])
-                     ]
+        extra_vars = {
+            'runtest': [True, "Run ESPResSo tests.", CUSTOM],
+        }
         return ConfigureMake.extra_options(extra_vars)
 
     def test_step(self):

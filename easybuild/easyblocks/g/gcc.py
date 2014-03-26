@@ -65,15 +65,15 @@ class EB_GCC(ConfigureMake):
 
     @staticmethod
     def extra_options():
-        extra_vars = [
-            ('languages', [[], "List of languages to build GCC for (--enable-languages)", CUSTOM]),
-            ('withlto', [True, "Enable LTO support", CUSTOM]),
-            ('withcloog', [False, "Build GCC with CLooG support", CUSTOM]),
-            ('withppl', [False, "Build GCC with PPL support", CUSTOM]),
-            ('pplwatchdog', [False, "Enable PPL watchdog", CUSTOM]),
-            ('clooguseisl', [False, "Use ISL with CLooG or not (use PPL otherwise)", CUSTOM]),
-            ('multilib', [False, "Build multilib gcc (both i386 and x86_64)", CUSTOM]),
-        ]
+        extra_vars = {
+            'languages': [[], "List of languages to build GCC for (--enable-languages)", CUSTOM],
+            'withlto': [True, "Enable LTO support", CUSTOM],
+            'withcloog': [False, "Build GCC with CLooG support", CUSTOM],
+            'withppl': [False, "Build GCC with PPL support", CUSTOM],
+            'pplwatchdog': [False, "Enable PPL watchdog", CUSTOM],
+            'clooguseisl': [False, "Use ISL with CLooG or not (use PPL otherwise)", CUSTOM],
+            'multilib': [False, "Build multilib gcc (both i386 and x86_64)", CUSTOM],
+        }
         return ConfigureMake.extra_options(extra_vars)
 
     def create_dir(self, dirname):

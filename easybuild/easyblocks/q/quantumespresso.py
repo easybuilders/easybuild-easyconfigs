@@ -47,10 +47,10 @@ class EB_QuantumESPRESSO(ConfigureMake):
     @staticmethod
     def extra_options():
         """Custom easyconfig parameters for Quantum ESPRESSO."""
-        extra_vars = [
-                      ('hybrid', [False, "Enable hybrid build (with OpenMP)", CUSTOM]),
-                      ('with_scalapack', [True, "Enable ScaLAPACK support", CUSTOM]),
-                     ]
+        extra_vars = {
+            'hybrid': [False, "Enable hybrid build (with OpenMP)", CUSTOM],
+            'with_scalapack': [True, "Enable ScaLAPACK support", CUSTOM],
+        }
         return ConfigureMake.extra_options(extra_vars)
 
     def __init__(self, *args, **kwargs):
