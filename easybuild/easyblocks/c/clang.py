@@ -37,6 +37,8 @@ import os
 import shutil
 import sys
 from distutils.version import LooseVersion
+from vsc.utils.missing import all
+
 
 from easybuild.easyblocks.generic.cmakemake import CMakeMake
 from easybuild.framework.easyconfig import CUSTOM
@@ -72,9 +74,8 @@ class EB_Clang(CMakeMake):
         self.llvm_obj_dir_stage3 = None
         self.make_parallel_opts = ""
 
-        for target in self.cfg['build_targets']:
-            if target not in CLANG_TARGETS:
-                self.log.error("One of the chosen build targets (%s) is not in %s." % (target, ", ".join(CLANG_TARGETS)))
+        if not all(target in CLANG_TARGETS for target in self.cfg['build_targets']):
+            self.log.error("One of the chosen build targets (%s) is not in %s." % (", ".join(self.cfg['build_targets']), ", ".join(CLANG_TARGETS)))
 
         if LooseVersion(self.version) < LooseVersion('3.4') and "R600" in self.cfg['build_targets']:
             self.log.error("Build target R600 not supported in < Clang-3.4")
