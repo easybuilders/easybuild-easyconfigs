@@ -55,7 +55,7 @@ class EB_Boost(EasyBlock):
         """Add extra easyconfig parameters for Boost."""
         extra_vars = {
             'boost_mpi': [False, "Build mpi boost module", CUSTOM],
-            'toolset': [None, "Toolset to use for Boost configuration ('--with-toolset fo bootstrap.sh')", CUSTOM],
+            'toolset': [None, "Toolset to use for Boost configuration ('--with-toolset for bootstrap.sh')", CUSTOM],
         }
         return EasyBlock.extra_options(extra_vars)
 
