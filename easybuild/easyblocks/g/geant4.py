@@ -55,13 +55,13 @@ class EB_Geant4(CMakeMake):
         """
         Define extra options needed by Geant4
         """
-        extra_vars = [
-                      ('G4ABLAVersion', [None, "G4ABLA version", CUSTOM]),
-                      ('G4NDLVersion', [None, "G4NDL version", CUSTOM]),
-                      ('G4EMLOWVersion', [None, "G4EMLOW version", CUSTOM]),
-                      ('PhotonEvaporationVersion', [None, "PhotonEvaporation version", CUSTOM]),
-                      ('G4RadioactiveDecayVersion', [None, "G4RadioactiveDecay version", CUSTOM]),
-                     ]
+        extra_vars = {
+            'G4ABLAVersion': [None, "G4ABLA version", CUSTOM],
+            'G4NDLVersion': [None, "G4NDL version", CUSTOM],
+            'G4EMLOWVersion': [None, "G4EMLOW version", CUSTOM],
+            'PhotonEvaporationVersion': [None, "PhotonEvaporation version", CUSTOM],
+            'G4RadioactiveDecayVersion': [None, "G4RadioactiveDecay version", CUSTOM],
+        }
         return CMakeMake.extra_options(extra_vars)
 
     def configure_step(self):
