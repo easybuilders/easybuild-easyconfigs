@@ -39,13 +39,14 @@ import os
 import shutil
 from copy import copy
 from distutils.version import LooseVersion
+from vsc.utils.missing import any
 
 import easybuild.tools.environment as env
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.filetools import run_cmd
 from easybuild.tools.modules import get_software_root
-from easybuild.tools.systemtools import get_kernel_name, get_shared_lib_ext, get_platform_name
+from easybuild.tools.systemtools import check_os_dependency, get_kernel_name, get_shared_lib_ext, get_platform_name
 
 
 class EB_GCC(ConfigureMake):
@@ -71,6 +72,7 @@ class EB_GCC(ConfigureMake):
             ('withppl', [False, "Build GCC with PPL support", CUSTOM]),
             ('pplwatchdog', [False, "Enable PPL watchdog", CUSTOM]),
             ('clooguseisl', [False, "Use ISL with CLooG or not (use PPL otherwise)", CUSTOM]),
+            ('multilib', [False, "Build multilib gcc (both i386 and x86_64)", CUSTOM]),
         ]
         return ConfigureMake.extra_options(extra_vars)
 
@@ -220,8 +222,13 @@ class EB_GCC(ConfigureMake):
 
         # configure for a release build
         self.configopts += " --enable-checking=release "
-        # disable multilib (???)
-        self.configopts += " --disable-multilib"
+        # enable multilib: allow both 32 and 64 bit
+        if self.cfg['multilib']:
+            if not any([check_os_dependency(dep) for dep in ["glibc.i686", "libc6-dev-i386"]]):
+                self.log.error("To use multilib, we need a 32bit glibc. Install glibc.i686 (rpm) or libc6-dev-i386 (deb).")
+            self.configopts += " --enable-multilib --with-multilib-list=m32,m64"
+        else:
+            self.configopts += " --disable-multilib"
         # build both static and dynamic libraries (???)
         self.configopts += " --enable-shared=yes --enable-static=yes "
         # use POSIX threads
