@@ -74,7 +74,7 @@ class EB_Clang(CMakeMake):
         self.llvm_obj_dir_stage3 = None
         self.make_parallel_opts = ""
 
-        if not all(target in CLANG_TARGETS for target in self.cfg['build_targets']):
+        if not all([target in CLANG_TARGETS for target in self.cfg['build_targets']]):
             self.log.error("One of the chosen build targets (%s) is not in %s." % (", ".join(self.cfg['build_targets']), ", ".join(CLANG_TARGETS)))
 
         if LooseVersion(self.version) < LooseVersion('3.4') and "R600" in self.cfg['build_targets']:
