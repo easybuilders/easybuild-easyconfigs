@@ -64,9 +64,9 @@ class PythonPackage(ExtensionEasyBlock):
     @staticmethod
     def extra_options():
         """Easyconfig parameters specific to Python packages."""
-        extra_vars = [
-            ('runtest', [True, "Run unit tests.", CUSTOM]),  # overrides default
-        ]
+        extra_vars = {
+            'runtest': [True, "Run unit tests.", CUSTOM],  # overrides default
+        }
         return ExtensionEasyBlock.extra_options(extra_vars)
 
     def __init__(self, *args, **kwargs):

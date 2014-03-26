@@ -62,17 +62,13 @@ class Rpm(Binary):
     @staticmethod
     def extra_options(extra_vars=None):
         """Extra easyconfig parameters specific to RPMs."""
-
-        # using [] as default value is a bad idea, so we handle it this way
-        if extra_vars == None:
-            extra_vars = []
-
-        extra_vars.extend([
-                           ('force', [False, "Use force", CUSTOM]),
-                           ('preinstall', [False, "Enable pre install", CUSTOM]),
-                           ('postinstall', [False, "Enable post install", CUSTOM]),
-                           ('makesymlinks', [[], "Create symlinks for listed paths", CUSTOM]),  # supports glob
-                          ])
+        extra_vars = dict(EasyBlock.extra_options(extra_vars))
+        extra_vars.update({
+            'force': [False, "Use force", CUSTOM],
+            'preinstall': [False, "Enable pre install", CUSTOM],
+            'postinstall': [False, "Enable post install", CUSTOM],
+            'makesymlinks': [[], "Create symlinks for listed paths", CUSTOM],  # supports glob
+        })
         return EasyBlock.extra_options(extra_vars)
 
     def configure_step(self):

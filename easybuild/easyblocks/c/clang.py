@@ -48,14 +48,13 @@ class EB_Clang(CMakeMake):
 
     @staticmethod
     def extra_options():
-        extra_vars = [
-            ('assertions', [True, "Enable assertions.  Helps to catch bugs in Clang.", CUSTOM]),
-            ('build_targets', [["X86"], "Build targets for LLVM. Possible values: all, AArch64, ARM, CppBackend, Hexagon, " +
-                               "Mips, MBlaze, MSP430, NVPTX, PowerPC, R600, Sparc, SystemZ, X86, XCore", CUSTOM]),
-            ('bootstrap', [True, "Bootstrap Clang using GCC", CUSTOM]),
-            ('usepolly', [False, "Build Clang with polly", CUSTOM]),
-        ]
-
+        extra_vars = {
+            'assertions': [True, "Enable assertions.  Helps to catch bugs in Clang.", CUSTOM],
+            'build_targets': [["X86"], "Build targets for LLVM. Possible values: all, AArch64, ARM, CppBackend, Hexagon, " +
+                                       "Mips, MBlaze, MSP430, NVPTX, PowerPC, R600, Sparc, SystemZ, X86, XCore", CUSTOM],
+            'bootstrap': [True, "Bootstrap Clang using GCC", CUSTOM],
+            'usepolly': [False, "Build Clang with polly", CUSTOM],
+        }
         return CMakeMake.extra_options(extra_vars)
 
     def __init__(self, *args, **kwargs):
