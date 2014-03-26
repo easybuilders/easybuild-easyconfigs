@@ -38,14 +38,12 @@ import tempfile
 import unittest
 from vsc import fancylogger
 
+import easybuild.tools.build_log  # initialize EasyBuild logging, so we disable it
 import test.easyconfigs.easyconfigs as e
 
-# initialize logger for all the unit tests
-fd, log_fn = tempfile.mkstemp(prefix='easybuild-easyconfigs-tests-', suffix='.log')
-os.close(fd)
-os.remove(log_fn)
-fancylogger.logToFile(log_fn)
-fancylogger.setLogLevelDebug()
+# disable all logging to significantly speed up tests
+fancylogger.disableDefaultHandlers()
+fancylogger.setLogLevelError()
 
 os.environ['EASYBUILD_TMP_LOGDIR'] = tempfile.mkdtemp(prefix='easyconfigs_test_')
 
@@ -63,12 +61,8 @@ except ImportError, err:
     sys.stderr.write("WARNING: xmlrunner module not available, falling back to using unittest...\n\n")
     res = unittest.TextTestRunner().run(SUITE)
 
-fancylogger.logToFile(log_fn, enable=False)
 shutil.rmtree(os.environ['EASYBUILD_TMP_LOGDIR'])
 del os.environ['EASYBUILD_TMP_LOGDIR']
-
-for f in glob.glob('%s*' % log_fn):
-    os.remove(f)
 
 if not res.wasSuccessful():
     sys.stderr.write("ERROR: Not all tests were successful.\n")
