@@ -44,6 +44,9 @@ from easybuild.tools.filetools import run_cmd, mkdir
 from easybuild.tools.modules import get_software_root
 from easybuild.tools.systemtools import get_os_name, get_os_version
 
+# List of all possible build targets for Clang
+CLANG_TARGETS = ["all", "AArch64", "ARM", "CppBackend", "Hexagon", "Mips", "MBlaze", "MSP430", "NVPTX", "PowerPC", "R600", "Sparc", "SystemZ", "X86", "XCore"]
+
 
 class EB_Clang(CMakeMake):
     """Support for bootstrapping Clang."""
@@ -52,8 +55,7 @@ class EB_Clang(CMakeMake):
     def extra_options():
         extra_vars = [
             ('assertions', [True, "Enable assertions.  Helps to catch bugs in Clang.", CUSTOM]),
-            ('build_targets', [["X86"], "Build targets for LLVM. Possible values: all, AArch64, ARM, CppBackend, Hexagon, " +
-                               "Mips, MBlaze, MSP430, NVPTX, PowerPC, R600, Sparc, SystemZ, X86, XCore", CUSTOM]),
+            ('build_targets', [["X86"], "Build targets for LLVM. Possible values: " + ', '.join(CLANG_TARGETS), CUSTOM]),
             ('bootstrap', [True, "Bootstrap Clang using GCC", CUSTOM]),
             ('usepolly', [False, "Build Clang with polly", CUSTOM]),
         ]
@@ -69,6 +71,10 @@ class EB_Clang(CMakeMake):
         self.llvm_obj_dir_stage2 = None
         self.llvm_obj_dir_stage3 = None
         self.make_parallel_opts = ""
+
+        for target in self.cfg['build_targets']:
+            if target not in CLANG_TARGETS:
+                self.log.error("One of the chosen build targets (%s) is not in %s." % (target, ", ".join(CLANG_TARGETS)))
 
         if LooseVersion(self.version) < LooseVersion('3.4') and "R600" in self.cfg['build_targets']:
             self.log.error("Build target R600 not supported in < Clang-3.4")
