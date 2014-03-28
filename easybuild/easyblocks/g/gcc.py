@@ -224,8 +224,10 @@ class EB_GCC(ConfigureMake):
         self.configopts += " --enable-checking=release "
         # enable multilib: allow both 32 and 64 bit
         if self.cfg['multilib']:
-            if not any([check_os_dependency(dep) for dep in ["glibc.i686", "libc6-dev-i386"]]):
-                self.log.error("To use multilib, we need a 32bit glibc. Install glibc.i686 (rpm) or libc6-dev-i386 (deb).")
+            glibc_32bit = ["glibc.i686", "libc6-dev-i386", "glibc-32bit"]
+            if not any([check_os_dependency(dep) for dep in glibc_32bit]):
+                msg = "Using multilib requires 32-bit glibc (install one of %s, depending on your OS)" % ', '.join(glibc_32bit)
+                self.log.error(msg)
             self.configopts += " --enable-multilib --with-multilib-list=m32,m64"
         else:
             self.configopts += " --disable-multilib"
