@@ -227,7 +227,7 @@ class EB_GCC(ConfigureMake):
             glibc_32bit = [
                 "glibc.i686",  # Fedora, RedHat-based
                 "libc6-dev-i386",  # Debian-based
-                "gcc-c++-32",  # OpenSuSE, SLES
+                "gcc-c++-32bit",  # OpenSuSE, SLES
             ]
             if not any([check_os_dependency(dep) for dep in glibc_32bit]):
                 msg = "Using multilib requires 32-bit glibc (install one of %s, depending on your OS)" % ', '.join(glibc_32bit)
@@ -472,10 +472,8 @@ class EB_GCC(ConfigureMake):
         """
 
         kernel_name = get_kernel_name()
-
         sharedlib_ext = get_shared_lib_ext()
-
-        common_infix = 'gcc/%s/%s' % (self.platform_lib, self.version)
+        common_infix = os.path.join('gcc', self.platform_lib, self.version)
 
         bin_files = ["gcov"]
         lib_files = ["libgomp.%s" % sharedlib_ext, "libgomp.a"]
@@ -510,11 +508,16 @@ class EB_GCC(ConfigureMake):
                 libexec_files.append('liblto_plugin.%s' % sharedlib_ext)
 
         bin_files = ["bin/%s" % x for x in bin_files]
-        if kernel_name in ['Darwin']:
-            lib_files = ["lib/%s" % x for x in lib_files]
+        libdirs = ['lib', 'lib64']
+        if self.cfg['multilib']:
+            # with multilib enabled, both lib and lib64 should be there
+            lib_files = [os.path.join(libdir, x) for libdir in libdirs for x in lib_files]
         else:
-            lib_files = ["lib64/%s" % x for x in lib_files]
-        libexec_files = ["libexec/%s/%s" % (common_infix, x) for x in libexec_files]
+            # lib64 on SuSE and Darwin, lib otherwise
+            lib_files = [tuple([os.path.join(libdir, x) for libdir in libdirs]) for x in lib_files]
+        # lib on SuSE, libexec otherwise
+        libdirs = ['libexec', 'lib']
+        libexec_files = [tuple([os.path.join(libdir, common_infix, x) for libdir in libdirs]) for x in libexec_files]
 
         custom_paths = {
             'files': bin_files + lib_files + libexec_files,
