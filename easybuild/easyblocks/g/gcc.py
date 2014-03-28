@@ -514,7 +514,7 @@ class EB_GCC(ConfigureMake):
 
         custom_paths = {
             'files': bin_files + lib_files + libexec_files,
-            'dirs': dirs
+            'dirs': dirs,
         }
 
         super(EB_GCC, self).sanity_check_step(custom_paths=custom_paths)
