@@ -39,13 +39,14 @@ import os
 import shutil
 from copy import copy
 from distutils.version import LooseVersion
+from vsc.utils.missing import any
 
 import easybuild.tools.environment as env
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.filetools import run_cmd
 from easybuild.tools.modules import get_software_root
-from easybuild.tools.systemtools import get_kernel_name, get_shared_lib_ext, get_platform_name
+from easybuild.tools.systemtools import check_os_dependency, get_kernel_name, get_shared_lib_ext, get_platform_name
 
 
 class EB_GCC(ConfigureMake):
@@ -71,6 +72,7 @@ class EB_GCC(ConfigureMake):
             'withppl': [False, "Build GCC with PPL support", CUSTOM],
             'pplwatchdog': [False, "Enable PPL watchdog", CUSTOM],
             'clooguseisl': [False, "Use ISL with CLooG or not (use PPL otherwise)", CUSTOM],
+            'multilib': [False, "Build multilib gcc (both i386 and x86_64)", CUSTOM],
         }
         return ConfigureMake.extra_options(extra_vars)
 
@@ -135,9 +137,9 @@ class EB_GCC(ConfigureMake):
             for sd in extra_src_dirs:
                 if d.startswith(sd):
                     found_src_dirs.append({
-                                           'source_dir': d,
-                                           'target_dir': sd
-                                          })
+                        'source_dir': d,
+                        'target_dir': sd
+                    })
                     # expected format: get_name[-subname]-get_version
                     ds = os.path.basename(d).split('-')
                     name = '-'.join(ds[0:-1])
@@ -168,10 +170,10 @@ class EB_GCC(ConfigureMake):
         self.log.debug("Prepared extra src dirs for %s: %s (configopts: %s)" % (stage, found_src_dirs, configopts))
 
         return {
-                'configopts': configopts,
-                'names': names,
-                'versions': versions
-               }
+            'configopts': configopts,
+            'names': names,
+            'versions': versions
+        }
 
     def run_configure_cmd(self, cmd):
         """
@@ -220,8 +222,19 @@ class EB_GCC(ConfigureMake):
 
         # configure for a release build
         self.configopts += " --enable-checking=release "
-        # disable multilib (???)
-        self.configopts += " --disable-multilib"
+        # enable multilib: allow both 32 and 64 bit
+        if self.cfg['multilib']:
+            glibc_32bit = [
+                "glibc.i686",  # Fedora, RedHat-based
+                "libc6-dev-i386",  # Debian-based
+                "gcc-c++-32",  # OpenSuSE, SLES
+            ]
+            if not any([check_os_dependency(dep) for dep in glibc_32bit]):
+                msg = "Using multilib requires 32-bit glibc (install one of %s, depending on your OS)" % ', '.join(glibc_32bit)
+                self.log.error(msg)
+            self.configopts += " --enable-multilib --with-multilib-list=m32,m64"
+        else:
+            self.configopts += " --disable-multilib"
         # build both static and dynamic libraries (???)
         self.configopts += " --enable-shared=yes --enable-static=yes "
         # use POSIX threads
@@ -242,13 +255,13 @@ class EB_GCC(ConfigureMake):
             #
             self.log.info("Starting with stage 1 of 3-staged build to enable CLooG and/or PPL support...")
             self.stage1installdir = os.path.join(self.builddir, 'GCC_stage1_eb')
-            configopts += " --prefix=%(p)s --with-local-prefix=%(p)s" % {'p' : self.stage1installdir}
+            configopts += " --prefix=%(p)s --with-local-prefix=%(p)s" % {'p': self.stage1installdir}
 
         else:
             # unstaged build, so just run standard configure/make/make install
             # set prefixes
             self.log.info("Performing regular GCC build...")
-            configopts += " --prefix=%(p)s --with-local-prefix=%(p)s" % {'p' : self.installdir}
+            configopts += " --prefix=%(p)s --with-local-prefix=%(p)s" % {'p': self.installdir}
 
         # III) create obj dir to build in, and change to it
         #     GCC doesn't like to be built in the source dir
@@ -290,9 +303,9 @@ class EB_GCC(ConfigureMake):
             env.setvar('PATH', path)
 
             ld_lib_path = "%(dir)s/lib64:%(dir)s/lib:%(val)s" % {
-                                                                 'dir': self.stage1installdir,
-                                                                 'val': os.getenv('LD_LIBRARY_PATH')
-                                                                }
+                'dir': self.stage1installdir,
+                'val': os.getenv('LD_LIBRARY_PATH')
+            }
             env.setvar('LD_LIBRARY_PATH', ld_lib_path)
 
             #
@@ -411,7 +424,7 @@ class EB_GCC(ConfigureMake):
 
             stage3_info = self.prep_extra_src_dirs("stage3")
             configopts = stage3_info['configopts']
-            configopts += " --prefix=%(p)s --with-local-prefix=%(p)s" % {'p' : self.installdir }
+            configopts += " --prefix=%(p)s --with-local-prefix=%(p)s" % {'p': self.installdir}
 
             # enable bootstrapping for self-containment
             configopts += " --enable-bootstrap "
@@ -504,9 +517,9 @@ class EB_GCC(ConfigureMake):
         libexec_files = ["libexec/%s/%s" % (common_infix, x) for x in libexec_files]
 
         custom_paths = {
-                        'files': bin_files + lib_files + libexec_files,
-                        'dirs': dirs
-                       }
+            'files': bin_files + lib_files + libexec_files,
+            'dirs': dirs,
+        }
 
         super(EB_GCC, self).sanity_check_step(custom_paths=custom_paths)
 
@@ -516,9 +529,9 @@ class EB_GCC(ConfigureMake):
         """
         guesses = super(EB_GCC, self).make_module_req_guess()
         guesses.update({
-                        'PATH': ['bin'],
-                        'LD_LIBRARY_PATH': ['lib', 'lib64',
-                                            'lib/gcc/%s/%s' % (self.platform_lib, self.cfg['version'])],
-                        'MANPATH': ['man', 'share/man']
-                       })
+            'PATH': ['bin'],
+            'LD_LIBRARY_PATH': ['lib', 'lib64',
+                                'lib/gcc/%s/%s' % (self.platform_lib, self.cfg['version'])],
+            'MANPATH': ['man', 'share/man']
+        })
         return guesses
