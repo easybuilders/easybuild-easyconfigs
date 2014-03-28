@@ -508,9 +508,13 @@ class EB_GCC(ConfigureMake):
                 libexec_files.append('liblto_plugin.%s' % sharedlib_ext)
 
         bin_files = ["bin/%s" % x for x in bin_files]
-        # lib64 on SuSE and Darwin, lib otherwise
         libdirs = ['lib', 'lib64']
-        lib_files = [tuple([os.path.join(libdir, x) for libdir in libdirs]) for x in lib_files]
+        if self.cfg['multilib']:
+            # with multilib enabled, both lib and lib64 should be there
+            lib_files = [os.path.join(libdir, x) for libdir in libdirs for x in lib_files]
+        else:
+            # lib64 on SuSE and Darwin, lib otherwise
+            lib_files = [tuple([os.path.join(libdir, x) for libdir in libdirs]) for x in lib_files]
         # lib on SuSE, libexec otherwise
         libdirs = ['libexec', 'lib']
         libexec_files = [tuple([os.path.join(libdir, common_infix, x) for libdir in libdirs]) for x in libexec_files]
