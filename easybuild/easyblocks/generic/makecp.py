@@ -59,6 +59,10 @@ class MakeCp(ConfigureMake):
     def install_step(self):
         """Install by copying specified files and directories."""
         try:
+            os.chdir(self.cfg['start_dir'])
+        except OSError, err:
+            self.log.error("Failed to move (back) to %s: %s" % (self.cfg['start_dir'], err))
+        try:
             files_to_copy = self.cfg.get('files_to_copy', {})
             self.log.debug("Starting install_step with files_to_copy: %s" % files_to_copy)
             for fil in files_to_copy:
