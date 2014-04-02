@@ -39,7 +39,7 @@ import easybuild.tools.toolchain as toolchain
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.filetools import mkdir, run_cmd, adjust_permissions
-from easybuild.tools.modules import get_software_root, get_software_version
+from easybuild.tools.modules import get_software_libdir, get_software_root, get_software_version
 
 
 class EB_NWChem(ConfigureMake):
@@ -142,6 +142,13 @@ class EB_NWChem(ConfigureMake):
             env.setvar('PYTHONHOME', python_root)
             pyver = '.'.join(get_software_version('Python').split('.')[0:2])
             env.setvar('PYTHONVERSION', pyver)
+            # if libreadline is loaded, assume it was a dependency for Python
+            # pass -lreadline to avoid linking issues (libpython2.7.a doesn't include readline symbols)
+            libreadline = get_software_root('libreadline')
+            if libreadline:
+                libreadline_libdir = os.path.join(libreadline, get_software_libdir('libreadline'))
+                extra_libs = os.environ.get('EXTRA_LIBS', '')
+                env.setvar('EXTRA_LIBS', "%s -L%s -lreadline" % (extra_libs, libreadline_libdir))
 
         env.setvar('LARGE_FILES', 'TRUE')
         env.setvar('USE_NOFSCHECK', 'TRUE')
