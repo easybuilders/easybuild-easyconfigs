@@ -81,10 +81,7 @@ class EB_Python(ConfigureMake):
                 ncurses_libdir = get_software_libdir('ncurses')
                 readline_static_lib = os.path.join(libreadline, readline_libdir, 'libreadline.a')
                 ncurses_static_lib = os.path.join(ncurses, ncurses_libdir, 'libncurses.a')
-                readline = '\n'.join([
-                    "*static*",  # required to get libreadline symbols included in libpythonx.y.a
-                    "readline readline.c %s %s" % (readline_static_lib, ncurses_static_lib),
-                ])
+                readline = "readline readline.c %s %s" % (readline_static_lib, ncurses_static_lib)
                 for line in fileinput.input(modules_setup_dist, inplace='1', backup='.readline'):
                     line = re.sub(r"^#readline readline.c.*", readline, line)
                     sys.stdout.write(line)
