@@ -38,7 +38,6 @@ import shutil
 import sys
 from distutils.version import LooseVersion
 
-
 from easybuild.easyblocks.generic.cmakemake import CMakeMake
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.filetools import run_cmd, mkdir
