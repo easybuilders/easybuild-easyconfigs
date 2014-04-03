@@ -32,8 +32,10 @@ Support for building and installing Clang, implemented as an easyblock.
 @author: Ward Poelmans (Ghent University)
 """
 
+import fileinput
 import os
 import shutil
+import sys
 from distutils.version import LooseVersion
 
 from easybuild.easyblocks.generic.cmakemake import CMakeMake
@@ -42,19 +44,24 @@ from easybuild.tools.filetools import run_cmd, mkdir
 from easybuild.tools.modules import get_software_root
 from easybuild.tools.systemtools import get_os_name, get_os_version
 
+# List of all possible build targets for Clang
+CLANG_TARGETS = ["all", "AArch64", "ARM", "CppBackend", "Hexagon", "Mips",
+                 "MBlaze", "MSP430", "NVPTX", "PowerPC", "R600", "Sparc",
+                 "SystemZ", "X86", "XCore"]
+
 
 class EB_Clang(CMakeMake):
     """Support for bootstrapping Clang."""
 
     @staticmethod
     def extra_options():
-        extra_vars = {
-            'assertions': [True, "Enable assertions.  Helps to catch bugs in Clang.", CUSTOM],
-            'build_targets': [["X86"], "Build targets for LLVM. Possible values: all, AArch64, ARM, CppBackend, Hexagon, " +
-                                       "Mips, MBlaze, MSP430, NVPTX, PowerPC, R600, Sparc, SystemZ, X86, XCore", CUSTOM],
-            'bootstrap': [True, "Bootstrap Clang using GCC", CUSTOM],
-            'usepolly': [False, "Build Clang with polly", CUSTOM],
-        }
+        extra_vars = [
+            ('assertions', [True, "Enable assertions.  Helps to catch bugs in Clang.", CUSTOM]),
+            ('build_targets', [["X86"], "Build targets for LLVM. Possible values: " + ', '.join(CLANG_TARGETS), CUSTOM]),
+            ('bootstrap', [True, "Bootstrap Clang using GCC", CUSTOM]),
+            ('usepolly', [False, "Build Clang with polly", CUSTOM]),
+        ]
+
         return CMakeMake.extra_options(extra_vars)
 
     def __init__(self, *args, **kwargs):
@@ -66,6 +73,12 @@ class EB_Clang(CMakeMake):
         self.llvm_obj_dir_stage2 = None
         self.llvm_obj_dir_stage3 = None
         self.make_parallel_opts = ""
+
+        unknown_targets = [target for target in self.cfg['build_targets'] if target not in CLANG_TARGETS]
+
+        if unknown_targets:
+            self.log.error("Some of the chosen build targets (%s) are not in %s." % (", ".join(unknown_targets),
+                                                                                     ", ".join(CLANG_TARGETS)))
 
         if LooseVersion(self.version) < LooseVersion('3.4') and "R600" in self.cfg['build_targets']:
             self.log.error("Build target R600 not supported in < Clang-3.4")
@@ -145,6 +158,15 @@ class EB_Clang(CMakeMake):
             self.llvm_obj_dir_stage2 = os.path.join(self.builddir, 'llvm.obj.2')
             self.llvm_obj_dir_stage3 = os.path.join(self.builddir, 'llvm.obj.3')
 
+        # all sanitizer tests will fail when there's a limit on the vmem
+        # this is ugly but I haven't found a cleaner way so far
+        (vmemlim, ec) = run_cmd("ulimit -v", regexp=False)
+        if not vmemlim.startswith("unlimited"):
+            self.log.warn("There is a virtual memory limit set of %s KB. The tests of the "
+                          "sanitizers will be disabled as they need unlimited virtual "
+                          "memory." % vmemlim.strip())
+            self.disable_sanitizer_tests()
+
         # Create and enter build directory.
         mkdir(self.llvm_obj_dir_stage1)
         os.chdir(self.llvm_obj_dir_stage1)
@@ -166,6 +188,33 @@ class EB_Clang(CMakeMake):
 
         self.log.info("Configuring")
         super(EB_Clang, self).configure_step(srcdir=self.llvm_src_dir)
+
+    def disable_sanitizer_tests(self):
+        """Disable the tests of all the sanitizers"""
+        patchfiles = [
+            "projects/compiler-rt/lib/asan/CMakeLists.txt",
+            "projects/compiler-rt/lib/dfsan/CMakeLists.txt",
+            "projects/compiler-rt/lib/lsan/CMakeLists.txt",
+            "projects/compiler-rt/lib/msan/CMakeLists.txt",
+            "projects/compiler-rt/lib/tsan/CMakeLists.txt",
+            "projects/compiler-rt/lib/ubsan/CMakeLists.txt",
+        ]
+
+        for patchfile in patchfiles:
+            try:
+                for line in fileinput.input("%s/%s" % (self.llvm_src_dir, patchfile), inplace=1, backup='.orig'):
+                    if "add_subdirectory(lit_tests)" not in line:
+                        sys.stdout.write(line)
+            except IOError, err:
+                self.log.error("Failed to patch %s/%s: %s" % (self.llvm_src_dir, patchfile, err))
+
+        patchfile = "projects/compiler-rt/lib/sanitizer_common/CMakeLists.txt"
+        try:
+            for line in fileinput.input("%s/%s" % (self.llvm_src_dir, patchfile), inplace=1, backup='.orig'):
+                if "add_subdirectory(tests)" not in line:
+                    sys.stdout.write(line)
+        except IOError, err:
+            self.log.error("Failed to patch %s/%s: %s" % (self.llvm_src_dir, patchfile, err))
 
     def build_with_prev_stage(self, prev_obj, next_obj):
         """Build Clang stage N using Clang stage N-1"""
