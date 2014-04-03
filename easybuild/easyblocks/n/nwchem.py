@@ -147,8 +147,16 @@ class EB_NWChem(ConfigureMake):
             libreadline = get_software_root('libreadline')
             if libreadline:
                 libreadline_libdir = os.path.join(libreadline, get_software_libdir('libreadline'))
+                ncurses = get_software_root('ncurses')
+                if not ncurses:
+                    self.log.error("ncurses is not loaded, but required to link with libreadline")
+                ncurses_libdir = os.path.join(ncurses, get_software_libdir('ncurses'))
+                readline_libs = ' '.join([
+                    os.path.join(libreadline_libdir, 'libreadline.a')),
+                    os.path.join(ncurses_libdir, 'libcurses.a')),
+                ]
                 extra_libs = os.environ.get('EXTRA_LIBS', '')
-                env.setvar('EXTRA_LIBS', "%s %s" % (extra_libs, os.path.join(libreadline_libdir, 'libreadline.a')))
+                env.setvar('EXTRA_LIBS', ' '.join([extra_libs, readline_libs]))
 
         env.setvar('LARGE_FILES', 'TRUE')
         env.setvar('USE_NOFSCHECK', 'TRUE')
