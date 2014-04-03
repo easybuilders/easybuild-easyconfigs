@@ -148,7 +148,7 @@ class EB_NWChem(ConfigureMake):
             if libreadline:
                 libreadline_libdir = os.path.join(libreadline, get_software_libdir('libreadline'))
                 extra_libs = os.environ.get('EXTRA_LIBS', '')
-                env.setvar('EXTRA_LIBS', "%s -L%s -lreadline" % (extra_libs, libreadline_libdir))
+                env.setvar('EXTRA_LIBS', "%s %s" % (extra_libs, os.path.join(libreadline_libdir, 'libreadline.a')))
 
         env.setvar('LARGE_FILES', 'TRUE')
         env.setvar('USE_NOFSCHECK', 'TRUE')
