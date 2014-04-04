@@ -65,15 +65,14 @@ class EB_WPS(EasyBlock):
     @staticmethod
     def extra_options():
         testdata_urls = [
-                         "http://www.mmm.ucar.edu/wrf/src/data/avn_data.tar.gz",
-                         "http://www.mmm.ucar.edu/wrf/src/wps_files/geog.tar.gz" # 697MB download, 16GB unpacked!
-                        ]
-
-        extra_vars = [
-                      ('buildtype', [None, "Specify the type of build (smpar: OpenMP, dmpar: MPI).", MANDATORY]),
-                      ('runtest', [True, "Build and run WPS tests (default: True).", CUSTOM]),
-                      ('testdata', [testdata_urls, "URL to test data required to run WPS test (default: %s)." % testdata_urls, CUSTOM])
-                     ]
+            "http://www.mmm.ucar.edu/wrf/src/data/avn_data.tar.gz",
+            "http://www.mmm.ucar.edu/wrf/src/wps_files/geog.tar.gz",  # 697MB download, 16GB unpacked!
+        ]
+        extra_vars = {
+            'buildtype': [None, "Specify the type of build (smpar: OpenMP, dmpar: MPI).", MANDATORY],
+            'runtest': [True, "Build and run WPS tests", CUSTOM],
+            'testdata': [testdata_urls, "URL to test data required to run WPS test", CUSTOM],
+        }
         return EasyBlock.extra_options(extra_vars)
 
     def configure_step(self):

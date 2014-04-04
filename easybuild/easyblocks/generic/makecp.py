@@ -29,6 +29,7 @@
 """
 import os
 import shutil
+import glob
 
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.framework.easyconfig import BUILD, MANDATORY
@@ -42,10 +43,10 @@ class MakeCp(ConfigureMake):
         """
         Define list of files or directories to be copied after make
         """
-        extra_vars = [
-            ('files_to_copy', [{}, "List of files or dirs to copy", MANDATORY]),
-            ('with_configure', [False, "Run configure script before building", BUILD]),
-        ]
+        extra_vars = {
+            'files_to_copy': [{}, "List of files or dirs to copy", MANDATORY],
+            'with_configure': [False, "Run configure script before building", BUILD],
+        }
         return ConfigureMake.extra_options(extra_vars)
 
     def configure_step(self, cmd_prefix=''):
@@ -58,7 +59,13 @@ class MakeCp(ConfigureMake):
     def install_step(self):
         """Install by copying specified files and directories."""
         try:
-            for fil in self.cfg.get('files_to_copy', {}):
+            os.chdir(self.cfg['start_dir'])
+        except OSError, err:
+            self.log.error("Failed to move (back) to %s: %s" % (self.cfg['start_dir'], err))
+        try:
+            files_to_copy = self.cfg.get('files_to_copy', {})
+            self.log.debug("Starting install_step with files_to_copy: %s" % files_to_copy)
+            for fil in files_to_copy:
                 if isinstance(fil, tuple):
                     # ([src1, src2], targetdir)
                     if len(fil) == 2 and isinstance(fil[0], list) and isinstance(fil[1], basestring):
@@ -75,6 +82,11 @@ class MakeCp(ConfigureMake):
 
                 if not os.path.exists(target):
                     os.makedirs(target)
+
+                # in this loop we expand expresions like
+                # files_to_copy = [(["scripts/*.sh"], 'bin')]
+                srcs = reduce(list.__add__, [glob.glob(src) for src in srcs])
+
                 for src in srcs:
                     src = os.path.join(self.cfg['start_dir'], src)
                     # copy individual file

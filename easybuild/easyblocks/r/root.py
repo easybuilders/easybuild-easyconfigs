@@ -40,9 +40,9 @@ class EB_ROOT(ConfigureMake):
         """
         Define extra options needed by Geant4
         """
-        extra_vars = [
-                      ('arch', [None, "Target architecture", MANDATORY]),
-                     ]
+        extra_vars = {
+            'arch': [None, "Target architecture", MANDATORY],
+        }
         return ConfigureMake.extra_options(extra_vars)
 
     def configure_step(self):

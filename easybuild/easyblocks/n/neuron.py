@@ -52,9 +52,9 @@ class EB_NEURON(ConfigureMake):
     def extra_options():
         """Custom easyconfig parameters for NEURON."""
 
-        extra_vars = [
-                      ('paranrn', [True, "Enable support for distributed simulations.", CUSTOM]),
-                     ]
+        extra_vars = {
+            'paranrn': [True, "Enable support for distributed simulations.", CUSTOM],
+        }
         return ConfigureMake.extra_options(extra_vars)
 
     def configure_step(self):
