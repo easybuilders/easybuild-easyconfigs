@@ -1,0 +1,50 @@
+# This file is an EasyBuild reciPY as per https://github.com/hpcugent/easybuild
+# Author: Pablo Escobar Lopez
+# Swiss Institute of Bioinformatics
+# Biozentrum - University of Basel
+
+easyblock = 'MakeCp'
+
+name = "RSEM"
+version = "1.2.12"
+
+homepage = 'http://deweylab.biostat.wisc.edu/rsem/'
+description = """ RSEM: RNA-Seq by Expectation-Maximization, is a software package for 
+ estimating gene and isoform expression levels from RNA-Seq data. The RSEM package 
+ provides an user-friendly interface, supports threads for parallel computation of the 
+ EM algorithm, single-end and paired-end read data, quality scores, variable-length 
+ reads and RSPD estimation. """
+
+toolchain = {'name': 'goolf', 'version': '1.4.10'}
+
+source_urls = ['http://deweylab.biostat.wisc.edu/rsem/src/']
+sources = [SOURCELOWER_TAR_GZ]
+
+# RSEM will use bowtie and/or bowtie2 if found in user $PATH
+dependencies = [
+    ('Bowtie', '1.0.0'),
+    ('Bowtie2', '2.1.0'),
+    ('R', '3.0.2', '-bare')
+]
+
+# this will install the R package "EBSeq" to the R version defined as dependency
+# if internet access is available will download the latest version of EBSeq, if not,
+# it will install the provided EBSeq version.
+makeopts = ' && make ebseq'
+
+parallel = 1
+
+# put here the list of generated executables when compiling
+list_of_executables = ["extract-transcript-to-gene-map-from-trinity", "convert-sam-for-rsem",
+                       "rsem-*"]
+
+# this is the real EasyBuild line to copy all the executables and perl scripts to "bin"
+files_to_copy = [(list_of_executables, "bin")]
+
+sanity_check_paths = {
+    'files': ["bin/%s" % x for x in ["convert-sam-for-rsem", "rsem-run-em", "rsem-tbam2gbam",
+                                    "rsem-scan-for-paired-end-reads", "rsem-run-gibbs"]],
+    'dirs': []
+}
+
+moduleclass = 'bio'
