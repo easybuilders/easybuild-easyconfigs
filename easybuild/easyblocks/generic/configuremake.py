@@ -49,8 +49,9 @@ class ConfigureMake(EasyBlock):
         """Extra easyconfig parameters specific to ConfigureMake."""
         extra_vars = dict(EasyBlock.extra_options(extra_vars))
         extra_vars.update({
-            'tar_config_opts': [False, "Override tar settings as determined by configure.", CUSTOM],
+            'configure_cmd_prefix': ['', "Prefix to be glued before ./configure", CUSTOM],
             'prefix_opt': ['--prefix=', "Prefix command line option for configure script", CUSTOM],
+            'tar_config_opts': [False, "Override tar settings as determined by configure.", CUSTOM],
         })
         return EasyBlock.extra_options(extra_vars)
 
@@ -59,6 +60,11 @@ class ConfigureMake(EasyBlock):
         Configure step
         - typically ./configure --prefix=/install/path style
         """
+
+        if self.cfg['configure_cmd_prefix']:
+            if cmd_prefix:
+                self.log.debug("Specified cmd_prefix '%s' overruled by configure_cmd_prefix" % cmd_prefix)
+            cmd_prefix = self.cfg['configure_cmd_prefix']
 
         if self.cfg['tar_config_opts']:
             # setting am_cv_prog_tar_ustar avoids that configure tries to figure out
