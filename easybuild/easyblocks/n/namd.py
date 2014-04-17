@@ -45,10 +45,10 @@ class EB_NAMD(MakeCp):
         if len(charm_tarballs) != 1:
             self.log.error("Expected to find exactly one tarball for Charm++, found: %s" % charm_tarballs)
 
-        charm_path = extract_file(charm_tarballs[0], os.getcwd())
+        extract_file(charm_tarballs[0], os.getcwd())
 
         cmd = "./build charm++ %s -j %s" % (self.cfg["charm_opts"], self.cfg['parallel'])
-        run_cmd(cmd, path=os.path.basename(charm_path))
+        run_cmd(cmd, path=charm_tarballs[0].split('.')[0])
 
         cmd = "./config %s %s " % (self.cfg["namd_arch"], self.cfg["namd_cfg_opts"])
         run_cmd(cmd)
