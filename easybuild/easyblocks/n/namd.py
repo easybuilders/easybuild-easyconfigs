@@ -33,10 +33,10 @@ class EB_NAMD(MakeCp):
             ('namd_arch', [None, "NAMD target architecture", MANDATORY]),
             ('namd_cfg_opts', ['', "NAMD configure options w.r.t. Charm++", CUSTOM]),
         ]
-        extra = MakeCp.extra_options(extra_vars=extra_vars)
+        extra = dict(MakeCp.extra_options(extra_vars=extra_vars))
         # files_to_copy is useless here, and definitely not mandatory, so get rid of it
         del extra['files_to_copy']
-        return extra
+        return extra.items()
 
     def configure_step(self):
         """Custom configure step for NAMD, we build charm++ first (if required)."""
