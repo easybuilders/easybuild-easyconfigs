@@ -31,8 +31,9 @@ import os
 import shutil
 
 from easybuild.framework.easyblock import EasyBlock
+from easybuild.framework.easyconfig import MANDATORY
 from easybuild.tools.modules import get_software_root, get_software_version
-from easybuild.tools.filetools import run_cmd_qa
+from easybuild.tools.filetools import run_cmd
 
 class EB_SNPhylo(EasyBlock):
     """Support for building and installing SNPhylo."""
@@ -54,18 +55,8 @@ class EB_SNPhylo(EasyBlock):
 
     def build_step(self):
         """No build step for SNPhylo."""
-        cmd = "./setup.sh"
-        qanda = {
-                'The detected path of R is.*Is it correct? [Y/n]': 'y'
-                'The detected path of python is.*Is it correct? [Y/n]': 'y'
-                'The detected path of muscle is.*Is it correct? [Y/n]': 'y'
-                'The detected path of dnaml is.*Is it correct? [Y/n]': 'y'
-                }
-        no_qa = [
-                 'START TO SET UP FOR SNPHYLO!!!'
-                ]
-
-        run_cmd_qa(cmd, qanda, no_qa=no_qa, log_all=True, simple=True)
+        cmd = "yes | bash ./setup.sh"
+        run_cmd(cmd, log_all=True, simple=True)
 
 
     def install_step(self):
