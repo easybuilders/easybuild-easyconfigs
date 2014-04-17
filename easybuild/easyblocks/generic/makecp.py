@@ -43,7 +43,7 @@ class MakeCp(ConfigureMake):
         """
         Define list of files or directories to be copied after make
         """
-        extra = ConfigureMake.extra_options(extra_vars=extra_vars)
+        extra = dict(ConfigureMake.extra_options(extra_vars=extra_vars))
         extra.update({
             'files_to_copy': [{}, "List of files or dirs to copy", MANDATORY],
             'with_configure': [False, "Run configure script before building", BUILD],
