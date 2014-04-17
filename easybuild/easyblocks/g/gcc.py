@@ -95,7 +95,7 @@ class EB_GCC(ConfigureMake):
         """
 
         known_stages = ["stage1", "stage2", "stage3"]
-        if not stage in known_stages:
+        if stage not in known_stages:
             self.log.error("Incorrect argument for prep_extra_src_dirs, should be one of: %s" % known_stages)
 
         configopts = ''
@@ -478,7 +478,9 @@ class EB_GCC(ConfigureMake):
         bin_files = ["gcov"]
         lib_files = ["libgomp.%s" % sharedlib_ext, "libgomp.a"]
         if kernel_name == 'Linux':
-            lib_files.extend(["libgcc_s.%s" % sharedlib_ext, "libmudflap.%s" % sharedlib_ext, "libmudflap.a"])
+            lib_files.extend(["libgcc_s.%s" % sharedlib_ext])
+            if self.version < LooseVersion("4.9.0"):
+                lib_files.extend(["libmudflap.%s" % sharedlib_ext, "libmudflap.a"])
         libexec_files = []
         dirs = ['lib/%s' % common_infix]
         if kernel_name == 'Linux':
@@ -508,7 +510,11 @@ class EB_GCC(ConfigureMake):
                 libexec_files.append('liblto_plugin.%s' % sharedlib_ext)
 
         bin_files = ["bin/%s" % x for x in bin_files]
-        libdirs = ['lib', 'lib64']
+        if self.version < LooseVersion("4.9.0"):
+            libdirs = ['lib']
+        else:
+            libdirs = ['lib32']
+        libdirs.append('lib64')
         if self.cfg['multilib']:
             # with multilib enabled, both lib and lib64 should be there
             lib_files = [os.path.join(libdir, x) for libdir in libdirs for x in lib_files]
