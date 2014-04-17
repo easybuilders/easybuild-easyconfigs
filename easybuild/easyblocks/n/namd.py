@@ -33,7 +33,7 @@ class EB_NAMD(MakeCp):
             ('namd_arch', [None, "NAMD target architecture", MANDATORY]),
             ('namd_cfg_opts', ['', "NAMD configure options w.r.t. Charm++", CUSTOM]),
         ]
-        return MakeCp.extra_options(extra=extra_vars)
+        return MakeCp.extra_options(extra_vars=extra_vars)
 
     def configure_step(self):
         """Custom configure step for NAMD, we build charm++ first (if required)."""
