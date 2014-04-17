@@ -13,52 +13,55 @@ Easybuild support for building NAMD, implemented as an easyblock
 @author: George Tsouloupas (Cyprus Institute)
 @author: Kenneth Hoste (Ghent University)
 """
+import glob
 import os
 import shutil
 
-from easybuild.framework.easyblock import EasyBlock
+from easybuild.easyblocks.generic.makecp import MakeCp
 from easybuild.framework.easyconfig import CUSTOM, MANDATORY
-from easybuild.tools.filetools import run_cmd
+from easybuild.tools.filetools import extract_file, run_cmd
 
-class EB_NAMD(EasyBlock):
+class EB_NAMD(MakeCp):
     """
     Support for building NAMD
     """
-    
     @staticmethod
     def extra_options():
         """Define extra NAMD-specific easyconfig parameters."""
         extra_vars = [
-            ('charm_ver', [None, "Charm++ version", CUSTOM]),
-            ('charm_opts', ['', "Charm++ build options", CUSTOM]),
-            ('namd_charm_opts', ['', "NAMD configure options w.r.t. Charm++", CUSTOM]),
-            ('namd_arch', [None, "NAMD target architecture", MANDATORY])
+            ('charm_opts', ['--with-production', "Charm++ build options", CUSTOM]),
+            ('namd_arch', [None, "NAMD target architecture", MANDATORY]),
+            ('namd_cfg_opts', ['', "NAMD configure options w.r.t. Charm++", CUSTOM]),
         ]
-        return EasyBlock.extra_options(extra=extra_vars)
+        return MakeCp.extra_options(extra=extra_vars)
 
     def configure_step(self):
         """Custom configure step for NAMD, we build charm++ first (if required)."""
 
-        run_cmd("tar xf charm-"+self.cfg["charm_ver"]+".tar")
+        charm_tarballs = glob.glob('charm-*.tar')
+        if len(charm_tarballs) != 1:
+            self.log.error("Expected to find exactly one tarball for Charm++, found: %s" % charm_tarballs)
 
-        cmd = "./build charm++ " + self.cfg["charm_opts"] 
-        cmd += " -j"+str(self.cfg['parallel'])
-        cmd += " --with-production"
-        run_cmd(cmd, path="charm-" + self.cfg["charm_ver"])
+        charm_path = extract_file(charm_tarballs[0], os.getcwd())
 
-        cmd = "./config " + self.cfg["namd_arch"]  
-        cmd += " --charm-arch " + self.cfg["namd_charm_opts"]
-        run_cmd(cmd, path=self.src[0]['finalpath'])
+        cmd = "./build charm++ %s -j %s" % (self.cfg["charm_opts"], self.cfg['parallel'])
+        run_cmd(cmd, path=os.path.basename(charm_path))
+
+        cmd = "./config %s %s " % (self.cfg["namd_arch"], self.cfg["namd_cfg_opts"])
+        run_cmd(cmd)
 
     def build_step(self):
         """Build NAMD for configured architecture"""
-        cmd = "make -j" + str(self.cfg['parallel'])
-        run_cmd(cmd, path=os.path.join(self.src[0]['finalpath'], self.cfg["namd_arch"]))
+        super(EB_NAMD, self).build_step(path=self.cfg['namd_arch'])
 
     def install_step(self):
         """Install by copying the correct directory to the install dir"""
-        run_cmd("mkdir -p "+self.installdir)
-        run_cmd("cp -aL " + os.path.join(self.src[0]['finalpath'], self.cfg["namd_arch"], "/* ") + " " + self.installdir)   
+        srcdir = os.path.join(self.cfg['startdir'], self.cfg['namd_arc'])
+        try:
+            os.rmdir(self.installdir)  # copytree requires that target is non-existent
+            shutil.copytree(srcdir, self.installdir)
+        except OSError, err:
+            self.log.error("Failed to copy NAMD build from %s to install directory: %s" % (srcdir, err))
 
     def make_module_extra(self):
         """Add the install directory to PATH"""
