@@ -48,7 +48,7 @@ class EB_NAMD(MakeCp):
         extract_file(charm_tarballs[0], os.getcwd())
 
         cmd = "./build charm++ %s -j %s" % (self.cfg["charm_opts"], self.cfg['parallel'])
-        run_cmd(cmd, path=charm_tarballs[0].split('.')[0])
+        run_cmd(cmd, path=os.path.basename(charm_tarballs[0]).split('.')[0])
 
         cmd = "./config %s %s " % (self.cfg["namd_arch"], self.cfg["namd_cfg_opts"])
         run_cmd(cmd)
