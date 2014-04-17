@@ -49,10 +49,10 @@ class EB_CHARMM(EasyBlock):
     @staticmethod
     def extra_options():
         """Add extra easyconfig parameters custom to CHARMM."""
-        extra_vars = [
-            ('build_options', ["FULL", "Specify the options to the build script", CUSTOM]),
-            ('system_size', ["medium", "Specify the supported systemsize: %s" % ', '.join(KNOWN_SYSTEM_SIZES), CUSTOM]),
-        ]
+        extra_vars = {
+            'build_options': ["FULL", "Specify the options to the build script", CUSTOM],
+            'system_size': ["medium", "Specify the supported systemsize: %s" % ', '.join(KNOWN_SYSTEM_SIZES), CUSTOM],
+        }
         return EasyBlock.extra_options(extra_vars)
 
     def configure_step(self):

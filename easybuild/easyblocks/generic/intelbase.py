@@ -98,23 +98,22 @@ class IntelBase(EasyBlock):
 
     @staticmethod
     def extra_options(extra_vars=None):
-        origvars = EasyBlock.extra_options(extra_vars)
-        intel_vars = [
-            ('license_activation', [ACTIVATION_LIC_SERVER, "License activation type", CUSTOM]),
+        extra_vars = dict(EasyBlock.extra_options(extra_vars))
+        extra_vars.update({
+            'license_activation': [ACTIVATION_LIC_SERVER, "License activation type", CUSTOM],
             # 'usetmppath':
             # workaround for older SL5 version (5.5 and earlier)
             # used to be True, but False since SL5.6/SL6
             # disables TMP_PATH env and command line option
-            ('usetmppath', [False, "Use temporary path for installation", CUSTOM]),
-            ('m32', [False, "Enable 32-bit toolchain", CUSTOM]),
-        ]
+            'usetmppath': [False, "Use temporary path for installation", CUSTOM],
+            'm32': [False, "Enable 32-bit toolchain", CUSTOM],
+        })
 
         # Support for old easyconfigs with license parameter
         _log.deprecated('No old style license parameter, use license_file', '2.0')
-        intel_vars.append(('license', [None, "License file", CUSTOM]))
+        extra_vars.update({'license': [None, "License file", CUSTOM]})
 
-        intel_vars.extend(origvars)
-        return intel_vars
+        return EasyBlock.extra_options(extra_vars)
 
     def clean_home_subdir(self):
         """Remove contents of (local) 'intel' directory home subdir, where stuff is cached."""
@@ -269,7 +268,7 @@ class IntelBase(EasyBlock):
         """Binary installation files, so no building."""
         pass
 
-    def install_step(self, silent_cfg_names_map=None):
+    def install_step(self, silent_cfg_names_map=None, silent_cfg_extras=None):
         """Actual installation
 
         - create silent cfg file
@@ -297,6 +296,7 @@ class IntelBase(EasyBlock):
             "ACCEPT_EULA=accept",
             "INSTALL_MODE=NONRPM",
             "CONTINUE_WITH_OPTIONAL_ERROR=yes",
+            ""  # Add a newline at the end, so we can easily append if needed
         ]) % {
             'activation_name': silent_cfg_names_map.get('activation_name', ACTIVATION_NAME),
             'license_file_name': silent_cfg_names_map.get('license_file_name', LICENSE_FILE_NAME),
@@ -305,6 +305,12 @@ class IntelBase(EasyBlock):
             'license_file': self.license_file,
             'install_dir': silent_cfg_names_map.get('install_dir', self.installdir),
         }
+
+        if silent_cfg_extras is not None:
+            if isinstance(silent_cfg_extras, dict):
+                silent += '\n'.join("%s=%s" % (key, value) for (key, value) in silent_cfg_extras.iteritems())
+            else:
+                self.log.error("silent_cfg_extras needs to be a dict")
 
         # we should be already in the correct directory
         silentcfg = os.path.join(os.getcwd(), "silent.cfg")

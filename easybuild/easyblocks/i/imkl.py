@@ -42,8 +42,7 @@ import easybuild.tools.environment as env
 from easybuild.easyblocks.generic.intelbase import IntelBase, ACTIVATION_NAME_2012, LICENSE_FILE_NAME_2012
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.filetools import rmtree2, run_cmd
-from easybuild.tools.module_generator import det_full_module_name
-from easybuild.tools.modules import Modules, get_software_root
+from easybuild.tools.modules import get_software_root
 
 
 class EB_imkl(IntelBase):
@@ -56,7 +55,9 @@ class EB_imkl(IntelBase):
     @staticmethod
     def extra_options():
         """Add easyconfig parameters custom to imkl (e.g. interfaces)."""
-        extra_vars = [('interfaces', [True, "Indicates whether interfaces should be built (default: True)", CUSTOM])]
+        extra_vars = {
+            'interfaces': [True, "Indicates whether interfaces should be built", CUSTOM],
+        }
         return IntelBase.extra_options(extra_vars)
 
     def __init__(self, *args, **kwargs):
@@ -71,6 +72,7 @@ class EB_imkl(IntelBase):
         - execute command
         """
         silent_cfg_names_map = None
+        silent_cfg_extras = None
 
         if LooseVersion(self.version) < LooseVersion('11.1'):
             # since imkl v11.1, silent.cfg has been slightly changed to be 'more standard'
@@ -80,7 +82,12 @@ class EB_imkl(IntelBase):
                 'license_file_name': LICENSE_FILE_NAME_2012,
             }
 
-        super(EB_imkl, self).install_step(silent_cfg_names_map=silent_cfg_names_map)
+        if LooseVersion(self.version) >= LooseVersion('11.1'):
+            silent_cfg_extras = {
+                'COMPONENTS': 'ALL',
+            }
+
+        super(EB_imkl, self).install_step(silent_cfg_names_map=silent_cfg_names_map, silent_cfg_extras=silent_cfg_extras)
 
     def make_module_req_guess(self):
         """
@@ -256,8 +263,6 @@ class EB_imkl(IntelBase):
                         self.log.debug('Removed temporary directory %s' % tmpbuild)
                     except:
                         self.log.exception("Removing temporary directory %s failed" % tmpbuild)
-
-
         else:
             # Follow this procedure for mkl version lower than 10.3
             # Extra
@@ -325,7 +330,6 @@ class EB_imkl(IntelBase):
                     # use install_to and CFLAGS
                     cmd = "make -f makefile %s install_to=$INSTALL_DIR" % interfacestarget
 
-
                 for opt in ['', '-fPIC']:
                     try:
                         tmpbuild = tempfile.mkdtemp()
@@ -371,29 +375,36 @@ class EB_imkl(IntelBase):
                     except:
                         self.log.exception("Removing temporary directory %s failed" % (tmpbuild))
 
-
     def sanity_check_step(self):
         """Custom sanity check paths for Intel MKL."""
-
         mklfiles = None
         mkldirs = None
         ver = LooseVersion(self.version)
+        libnames = ["libmkl_core.so", "libmkl_gnu_thread.so", "libmkl_intel_thread.so", "libmkl_sequential.so"]
+        libnames_extra = ["libmkl_blacs_intelmpi_%(suff)s.so", "libmkl_scalapack_%(suff)s.so"]
+
         if ver >= LooseVersion('10.3'):
             if self.cfg['m32']:
                 self.log.error("Sanity check for 32-bit not implemented yet for IMKL v%s (>= 10.3)" % self.version)
             else:
-                mklfiles = ["mkl/lib/intel64/libmkl.so", "mkl/include/mkl.h"]
                 mkldirs = ["bin", "mkl/bin", "mkl/bin/intel64", "mkl/lib/intel64", "mkl/include"]
+                libnames += [lib % {'suff': suff} for lib in libnames_extra for suff in ['lp64', 'ilp64']]
+                mklfiles = ["mkl/lib/intel64/libmkl.so", "mkl/include/mkl.h"] + \
+                           ["mkl/lib/intel64/%s" % lib for lib in libnames]
                 if ver >= LooseVersion('10.3.4') and ver < LooseVersion('11.1'):
                     mkldirs += ["compiler/lib/intel64"]
                 else:
                     mkldirs += ["lib/intel64"]
+
         else:
             if self.cfg['m32']:
-                mklfiles = ["lib/32/libmkl.so", "include/mkl.h"]
+                mklfiles = ["lib/32/libmkl.so", "include/mkl.h"] + \
+                           ["lib/32/%s" % lib for lib in libnames]
                 mkldirs = ["lib/32", "include/32", "interfaces"]
             else:
-                mklfiles = ["lib/em64t/libmkl.so", "include/mkl.h"]
+                libnames += [lib % {'suff': suff} for lib in libnames_extra for suff in ['lp64', 'ilp64']]
+                mklfiles = ["lib/em64t/libmkl.so", "include/mkl.h"] + \
+                           ["lib/em64t/%s" % lib for lib in libnames]
                 mkldirs = ["lib/em64t", "include/em64t", "interfaces"]
 
         custom_paths = {

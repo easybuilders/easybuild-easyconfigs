@@ -32,8 +32,10 @@ Support for building and installing Clang, implemented as an easyblock.
 @author: Ward Poelmans (Ghent University)
 """
 
+import fileinput
 import os
 import shutil
+import sys
 from distutils.version import LooseVersion
 
 from easybuild.easyblocks.generic.cmakemake import CMakeMake
@@ -42,16 +44,24 @@ from easybuild.tools.filetools import run_cmd, mkdir
 from easybuild.tools.modules import get_software_root
 from easybuild.tools.systemtools import get_os_name, get_os_version
 
+# List of all possible build targets for Clang
+CLANG_TARGETS = ["all", "AArch64", "ARM", "CppBackend", "Hexagon", "Mips",
+                 "MBlaze", "MSP430", "NVPTX", "PowerPC", "R600", "Sparc",
+                 "SystemZ", "X86", "XCore"]
+
+
 class EB_Clang(CMakeMake):
     """Support for bootstrapping Clang."""
 
     @staticmethod
     def extra_options():
         extra_vars = [
-            ('assertions', [True, "Enable assertions.  Helps to catch bugs in Clang.  (default: True)", CUSTOM]),
-            ('build_targets', [["X86"], "Build targets for LLVM. Possible values: all, AArch64, ARM, CppBackend, Hexagon, " +
-                               "Mips, MBlaze, MSP430, NVPTX, PowerPC, Sparc, SystemZ, X86, XCore (default: X86)", CUSTOM]),
+            ('assertions', [True, "Enable assertions.  Helps to catch bugs in Clang.", CUSTOM]),
+            ('build_targets', [["X86"], "Build targets for LLVM. Possible values: " + ', '.join(CLANG_TARGETS), CUSTOM]),
+            ('bootstrap', [True, "Bootstrap Clang using GCC", CUSTOM]),
+            ('usepolly', [False, "Build Clang with polly", CUSTOM]),
         ]
+
         return CMakeMake.extra_options(extra_vars)
 
     def __init__(self, *args, **kwargs):
@@ -64,13 +74,25 @@ class EB_Clang(CMakeMake):
         self.llvm_obj_dir_stage3 = None
         self.make_parallel_opts = ""
 
+        unknown_targets = [target for target in self.cfg['build_targets'] if target not in CLANG_TARGETS]
+
+        if unknown_targets:
+            self.log.error("Some of the chosen build targets (%s) are not in %s." % (", ".join(unknown_targets),
+                                                                                     ", ".join(CLANG_TARGETS)))
+
+        if LooseVersion(self.version) < LooseVersion('3.4') and "R600" in self.cfg['build_targets']:
+            self.log.error("Build target R600 not supported in < Clang-3.4")
+
+        if LooseVersion(self.version) > LooseVersion('3.3') and "MBlaze" in self.cfg['build_targets']:
+            self.log.error("Build target MBlaze is not supported anymore in > Clang-3.3")
+
     def check_readiness_step(self):
         """Fail early on RHEL 5.x and derivatives because of known bug in libc."""
         super(EB_Clang, self).check_readiness_step()
         # RHEL 5.x have a buggy libc.  Building stage 2 will fail.
         if get_os_name() in ['redhat', 'RHEL', 'centos', 'SL'] and get_os_version().startswith('5.'):
             self.log.error(("Can not build clang on %s v5.x: libc is buggy, building stage 2 will fail.  " +
-                            "See http://stackoverflow.com/questions/7276828/") % get_os_name()) 
+                            "See http://stackoverflow.com/questions/7276828/") % get_os_name())
 
     def extract_step(self):
         """
@@ -80,6 +102,7 @@ class EB_Clang(CMakeMake):
             compiler-rt/  Unpack compiler-rt-*.tar.gz here
           tools/
             clang/        Unpack clang-*.tar.gz here
+            polly/        Unpack polly-*.tar.gz here
         """
 
         # Extract everything into separate directories.
@@ -95,10 +118,22 @@ class EB_Clang(CMakeMake):
             self.log.error("Could not determine LLVM source root (LLVM source was not unpacked?)")
 
         # Move other directories into the LLVM tree.
+        if LooseVersion(self.version) > LooseVersion('3.3'):
+            compiler_rt_src_dir = 'compiler-rt-%s' % self.version
+            polly_src_dir = 'polly-%s' % self.version
+        else:
+            compiler_rt_src_dir = 'compiler-rt-%s.src' % self.version
+            polly_src_dir = 'polly-%s.src' % self.version
         src_dirs = {
-            'compiler-rt-%s.src' % self.version: os.path.join(self.llvm_src_dir, 'projects', 'compiler-rt')
+            compiler_rt_src_dir: os.path.join(self.llvm_src_dir, 'projects', 'compiler-rt')
         }
-        if LooseVersion(self.version) < LooseVersion('3.3'):
+
+        if self.cfg["usepolly"]:
+            src_dirs[polly_src_dir] = os.path.join(self.llvm_src_dir, 'tools', 'polly')
+
+        if LooseVersion(self.version) > LooseVersion('3.3'):
+            clang_src_dir = 'clang-%s' % self.version
+        elif LooseVersion(self.version) < LooseVersion('3.3'):
             clang_src_dir = 'clang-%s.src' % self.version
         else:
             clang_src_dir = 'cfe-%s.src' % self.version
@@ -119,19 +154,29 @@ class EB_Clang(CMakeMake):
         """Run CMake for stage 1 Clang."""
 
         self.llvm_obj_dir_stage1 = os.path.join(self.builddir, 'llvm.obj.1')
-        self.llvm_obj_dir_stage2 = os.path.join(self.builddir, 'llvm.obj.2')
-        self.llvm_obj_dir_stage3 = os.path.join(self.builddir, 'llvm.obj.3')
+        if self.cfg['bootstrap']:
+            self.llvm_obj_dir_stage2 = os.path.join(self.builddir, 'llvm.obj.2')
+            self.llvm_obj_dir_stage3 = os.path.join(self.builddir, 'llvm.obj.3')
+
+        # all sanitizer tests will fail when there's a limit on the vmem
+        # this is ugly but I haven't found a cleaner way so far
+        (vmemlim, ec) = run_cmd("ulimit -v", regexp=False)
+        if not vmemlim.startswith("unlimited"):
+            self.log.warn("There is a virtual memory limit set of %s KB. The tests of the "
+                          "sanitizers will be disabled as they need unlimited virtual "
+                          "memory." % vmemlim.strip())
+            self.disable_sanitizer_tests()
 
         # Create and enter build directory.
         mkdir(self.llvm_obj_dir_stage1)
         os.chdir(self.llvm_obj_dir_stage1)
 
-	# GCC and Clang are installed in different prefixes and Clang will not
-	# find the GCC installation on its own.
-	self.cfg['configopts'] += "-DGCC_INSTALL_PREFIX='%s' " % get_software_root('GCC')
+        # GCC and Clang are installed in different prefixes and Clang will not
+        # find the GCC installation on its own.
+        self.cfg['configopts'] += "-DGCC_INSTALL_PREFIX='%s' " % get_software_root('GCC')
 
         self.cfg['configopts'] += "-DCMAKE_BUILD_TYPE=Release "
-        if self.cfg['assertions']: 
+        if self.cfg['assertions']:
             self.cfg['configopts'] += "-DLLVM_ENABLE_ASSERTIONS=ON "
         else:
             self.cfg['configopts'] += "-DLLVM_ENABLE_ASSERTIONS=OFF "
@@ -143,6 +188,33 @@ class EB_Clang(CMakeMake):
 
         self.log.info("Configuring")
         super(EB_Clang, self).configure_step(srcdir=self.llvm_src_dir)
+
+    def disable_sanitizer_tests(self):
+        """Disable the tests of all the sanitizers"""
+        patchfiles = [
+            "projects/compiler-rt/lib/asan/CMakeLists.txt",
+            "projects/compiler-rt/lib/dfsan/CMakeLists.txt",
+            "projects/compiler-rt/lib/lsan/CMakeLists.txt",
+            "projects/compiler-rt/lib/msan/CMakeLists.txt",
+            "projects/compiler-rt/lib/tsan/CMakeLists.txt",
+            "projects/compiler-rt/lib/ubsan/CMakeLists.txt",
+        ]
+
+        for patchfile in patchfiles:
+            try:
+                for line in fileinput.input("%s/%s" % (self.llvm_src_dir, patchfile), inplace=1, backup='.orig'):
+                    if "add_subdirectory(lit_tests)" not in line:
+                        sys.stdout.write(line)
+            except IOError, err:
+                self.log.error("Failed to patch %s/%s: %s" % (self.llvm_src_dir, patchfile, err))
+
+        patchfile = "projects/compiler-rt/lib/sanitizer_common/CMakeLists.txt"
+        try:
+            for line in fileinput.input("%s/%s" % (self.llvm_src_dir, patchfile), inplace=1, backup='.orig'):
+                if "add_subdirectory(tests)" not in line:
+                    sys.stdout.write(line)
+        except IOError, err:
+            self.log.error("Failed to patch %s/%s: %s" % (self.llvm_src_dir, patchfile, err))
 
     def build_with_prev_stage(self, prev_obj, next_obj):
         """Build Clang stage N using Clang stage N-1"""
@@ -176,26 +248,33 @@ class EB_Clang(CMakeMake):
         """Build Clang stage 1, 2, 3"""
 
         # Stage 1: build using system compiler.
+        self.log.info("Building stage 1")
         os.chdir(self.llvm_obj_dir_stage1)
         super(EB_Clang, self).build_step()
 
-        # Stage 1: run tests.
-        self.run_clang_tests(self.llvm_obj_dir_stage1)
+        if self.cfg['bootstrap']:
+            # Stage 1: run tests.
+            self.run_clang_tests(self.llvm_obj_dir_stage1)
 
-        self.log.info("Building stage 2")
-        self.build_with_prev_stage(self.llvm_obj_dir_stage1, self.llvm_obj_dir_stage2)
-        self.run_clang_tests(self.llvm_obj_dir_stage2)
+            self.log.info("Building stage 2")
+            self.build_with_prev_stage(self.llvm_obj_dir_stage1, self.llvm_obj_dir_stage2)
+            self.run_clang_tests(self.llvm_obj_dir_stage2)
 
-        self.log.info("Building stage 3")
-        self.build_with_prev_stage(self.llvm_obj_dir_stage2, self.llvm_obj_dir_stage3)
-        # Don't run stage 3 tests here, do it in the test step.
+            self.log.info("Building stage 3")
+            self.build_with_prev_stage(self.llvm_obj_dir_stage2, self.llvm_obj_dir_stage3)
+            # Don't run stage 3 tests here, do it in the test step.
 
     def test_step(self):
-        self.run_clang_tests(self.llvm_obj_dir_stage3)
+        if self.cfg['bootstrap']:
+            self.run_clang_tests(self.llvm_obj_dir_stage3)
+        else:
+            self.run_clang_tests(self.llvm_obj_dir_stage1)
 
     def install_step(self):
         """Install stage 3 binaries."""
 
-        os.chdir(self.llvm_obj_dir_stage3)
+        if self.cfg['bootstrap']:
+            os.chdir(self.llvm_obj_dir_stage3)
+        else:
+            os.chdir(self.llvm_obj_dir_stage1)
         super(EB_Clang, self).install_step()
-

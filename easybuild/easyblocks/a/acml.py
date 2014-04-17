@@ -44,9 +44,9 @@ class EB_ACML(EasyBlock):
 
     @staticmethod
     def extra_options():
-        extra_vars = [
-                      ('use_fma4', [False, "Use library with FMA support.", CUSTOM]),
-                     ]
+        extra_vars = {
+            'use_fma4': [False, "Use library with FMA support.", CUSTOM],
+        }
         return EasyBlock.extra_options(extra_vars)
 
     def __init__(self, *args, **kwargs):
