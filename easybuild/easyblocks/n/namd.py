@@ -33,7 +33,10 @@ class EB_NAMD(MakeCp):
             ('namd_arch', [None, "NAMD target architecture", MANDATORY]),
             ('namd_cfg_opts', ['', "NAMD configure options w.r.t. Charm++", CUSTOM]),
         ]
-        return MakeCp.extra_options(extra_vars=extra_vars)
+        extra = MakeCp.extra_options(extra_vars=extra_vars)
+        # files_to_copy is useless here, and definitely not mandatory, so get rid of it
+        del extra['files_to_copy']
+        return extra
 
     def configure_step(self):
         """Custom configure step for NAMD, we build charm++ first (if required)."""
@@ -56,7 +59,7 @@ class EB_NAMD(MakeCp):
 
     def install_step(self):
         """Install by copying the correct directory to the install dir"""
-        srcdir = os.path.join(self.cfg['startdir'], self.cfg['namd_arc'])
+        srcdir = os.path.join(self.cfg['startdir'], self.cfg['namd_arch'])
         try:
             os.rmdir(self.installdir)  # copytree requires that target is non-existent
             shutil.copytree(srcdir, self.installdir)
