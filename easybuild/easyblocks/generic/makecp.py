@@ -39,14 +39,14 @@ class MakeCp(ConfigureMake):
     Software with no configure and no make install step.
     """
     @staticmethod
-    def extra_options():
+    def extra_options(extra_vars=None):
         """
         Define list of files or directories to be copied after make
         """
-        extra_vars = {
-            'files_to_copy': [{}, "List of files or dirs to copy", MANDATORY],
-            'with_configure': [False, "Run configure script before building", BUILD],
-        }
+        if not extra_vars:
+            extra_vars={}
+        extra_vars['files_to_copy'] = [{}, "List of files or dirs to copy", MANDATORY]
+        extra_vars['with_configure'] = [False, "Run configure script before building", BUILD]
         return ConfigureMake.extra_options(extra_vars)
 
     def configure_step(self, cmd_prefix=''):
