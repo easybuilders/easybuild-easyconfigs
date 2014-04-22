@@ -39,6 +39,7 @@ class EB_NAMD(MakeCp):
             ('charm_opts', ['--with-production', "Charm++ build options", CUSTOM]),
             ('namd_basearch', ['Linux-x86_64', "NAMD base target architecture (compiler family is appended", CUSTOM]),
             ('namd_cfg_opts', ['', "NAMD configure options", CUSTOM]),
+            'runtest': [True, "Run NAMD test case after building", CUSTOM],
         ]
         extra = dict(MakeCp.extra_options(extra_vars=extra_vars))
         # files_to_copy is useless here, and definitely not mandatory, so get rid of it
@@ -55,15 +56,18 @@ class EB_NAMD(MakeCp):
 
         # complete Charm ++ and NAMD architecture string with compiler family
         comp_fam = self.toolchain.comp_family()
-        charm_arch_comps = {
-            toolchain.GCC: 'gcc',
-            toolchain.INTELCOMP: 'icc8',
-        }
+        if self.toolchain.options['usempi']:
+            charm_arch_comp = 'mpicxx'
+        else:
+            charm_arch_comps = {
+                toolchain.GCC: 'gcc',
+                toolchain.INTELCOMP: 'icc8',
+            }
+            charm_arch_comp = charm_arch_comps.get(comp_fam, None)
         namd_comps = {
             toolchain.GCC: 'g++',
             toolchain.INTELCOMP: 'icc',
         }
-        charm_arch_comp = charm_arch_comps.get(comp_fam, None)
         namd_comp = namd_comps.get(comp_fam, None)
         if charm_arch_comp is None or namd_comp is None:
             self.log.error("Unknown compiler family, can't complete Charm++/NAMD target architecture.")
@@ -110,17 +114,20 @@ class EB_NAMD(MakeCp):
 
     def test_step(self):
         """Run NAMD test case."""
-        cmd = "%(namd)s %(testdir)s" % {
-            'namd': os.path.join(self.cfg['start_dir'], self.namd_arch, 'namd2'),
-            'testdir': os.path.join(self.cfg['start_dir'], self.namd_arch, 'src', 'alanin'),
-        }
-        out, ec = run_cmd(cmd, simple=False)
-        if ec == 0:
-            test_ok_regex = re.compile("^Program finished.$", re.M)
-            if test_ok_regex.search(out):
-                self.log.debug("Test '%s' ran fine." % cmd)
-            else:
-                self.log.error("Test '%s' failed ('%s' not found), output: %s" % (cmd, test_ok_regex.pattern, out))
+        if self.cfg['runtest']:
+            cmd = "%(namd)s %(testdir)s" % {
+                'namd': os.path.join(self.cfg['start_dir'], self.namd_arch, 'namd2'),
+                'testdir': os.path.join(self.cfg['start_dir'], self.namd_arch, 'src', 'alanin'),
+            }
+            out, ec = run_cmd(cmd, simple=False)
+            if ec == 0:
+                test_ok_regex = re.compile("^Program finished.$", re.M)
+                if test_ok_regex.search(out):
+                    self.log.debug("Test '%s' ran fine." % cmd)
+                else:
+                    self.log.error("Test '%s' failed ('%s' not found), output: %s" % (cmd, test_ok_regex.pattern, out))
+        else:
+            self.log.debug("Skipping running NAMD test case after building")
 
     def install_step(self):
         """Install by copying the correct directory to the install dir"""
