@@ -47,14 +47,27 @@ class EB_NAMD(MakeCp):
     def configure_step(self):
         """Custom configure step for NAMD, we build charm++ first (if required)."""
 
-        if self.toolchain.comp_family() == toolchain.INTELCOMP:  #@UndefinedVariable
+        # complete Charm ++ and NAMD architecture string with compiler family
+        comp_fam = self.toolchain.comp_family()
+        namd_comp = None
+        if comp_fam in [toolchain.intelcomp]:  #@undefinedvariable
             if self.toolchain.options['32bit']:
                 # Intel compilers, 32-bit
                 self.cfg.update('charm_arch', "icc")
             else:
                 # Intel compilers, 64-bit
                 self.cfg.update('charm_arch', "icc8")
-            self.log.info("Updated 'charm_arch': %s" % self.cfg['charm_arch'])
+            namd_comp = '-icc'
+
+        elif comp_fam in [toolchain.GCC]:  #@UndefinedVariable
+            self.cfg.update('charm_arch', "gcc")
+            namd_comp = '-g++'
+        else:
+            self.log.error("Unknown compiler family, can't complete NAMD target architecture.")
+
+        self.log.info("Updated 'charm_arch': %s" % self.cfg['charm_arch'])
+        namd_arch = '%s-%s' % (self.cfg['namd_basearch'], namd_comp)
+        self.log.info("Completed NAMD target architecture: %s" % namd_arch)
 
         charm_tarballs = glob.glob('charm-*.tar')
         if len(charm_tarballs) != 1:
@@ -66,15 +79,6 @@ class EB_NAMD(MakeCp):
         charm_subdir = '.'.join(os.path.basename(charm_tarballs[0]).split('.')[:-1])
         self.log.debug("Building Charm++ using cmd '%s' in '%s'" % (cmd, charm_subdir))
         run_cmd(cmd, path=charm_subdir)
-
-        # complete NAMD architecture string with compiler family
-        namd_comp = None
-        if self.toolchain.comp_family() == toolchain.INTELCOMP:  #@UndefinedVariable
-            namd_comp = '-icc'
-        elif self.toolchain.comp_family() == toolchain.GCC:  #@UndefinedVariable
-            namd_comp = '-g++'
-        namd_arch = '%s-%s' % (self.cfg['namd_basearch'], namd_comp)
-        self.log.info("Completed NAMD target architecture: %s" % namd_arch)
 
         # NAMD dependencies: CUDA, FFTW
         cuda = get_software_version('CUDA')
