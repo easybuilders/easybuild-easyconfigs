@@ -55,21 +55,19 @@ class EB_NAMD(MakeCp):
 
         # complete Charm ++ and NAMD architecture string with compiler family
         comp_fam = self.toolchain.comp_family()
-        namd_comp = None
-        if comp_fam in [toolchain.INTELCOMP]:  #@undefinedvariable
-            if self.toolchain.options['32bit']:
-                # Intel compilers, 32-bit
-                self.cfg.update('charm_arch', "icc")
-            else:
-                # Intel compilers, 64-bit
-                self.cfg.update('charm_arch', "icc8")
-            namd_comp = 'icc'
-
-        elif comp_fam in [toolchain.GCC]:  #@UndefinedVariable
-            self.cfg.update('charm_arch', "gcc")
-            namd_comp = 'g++'
-        else:
-            self.log.error("Unknown compiler family, can't complete NAMD target architecture.")
+        charm_arch_comps = {
+            toolchain.GCC: 'gcc',
+            toolchain.INTELCOMP: 'icc8',
+        }
+        namd_comps = {
+            toolchain.GCC: 'g++',
+            toolchain.INTELCOMP: 'icc8',
+        }
+        charm_arch_comp = charm_arch_compss.get(comp_fam, None)
+        namd_comp = namd_comps.get(comp_fam, None)
+        if charm_arch_comp is None or namd_comp is None:
+            self.log.error("Unknown compiler family, can't complete Charm++/NAMD target architecture.")
+        self.cfg.update('charm_arch', charm_arch_comp)
 
         self.log.info("Updated 'charm_arch': %s" % self.cfg['charm_arch'])
         self.namd_arch = '%s-%s' % (self.cfg['namd_basearch'], namd_comp)
@@ -87,14 +85,17 @@ class EB_NAMD(MakeCp):
         run_cmd(cmd, path=charm_subdir)
 
         # NAMD dependencies: CUDA, FFTW
-        cuda = get_software_version('CUDA')
+        cuda = get_software_root('CUDA')
         if cuda:
             self.cfg.update('namd_cfg_opts', "--with-cuda --cuda-prefix %s" % cuda)
 
         fftw = get_software_root('FFTW')
         if fftw:
             if LooseVersion(get_software_version('FFTW')) >= LooseVersion('3.0'):
-                self.cfg.update('namd_cfg_opts', "--with-fftw3")
+                if LooseVersion(self.version) >= LooseVersion('2.9'):
+                    self.cfg.update('namd_cfg_opts', "--with-fftw3")
+                else:
+                    self.log.error("Using FFTW v3.x only supported in NAMD v2.9 and up.")
             else:
                 self.cfg.update('namd_cfg_opts', "--with-fftw")
             self.cfg.update('namd_cfg_opts', "--fftw-prefix %s" % fftw)
