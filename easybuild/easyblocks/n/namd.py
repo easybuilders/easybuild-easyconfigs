@@ -63,7 +63,7 @@ class EB_NAMD(MakeCp):
             toolchain.GCC: 'g++',
             toolchain.INTELCOMP: 'icc8',
         }
-        charm_arch_comp = charm_arch_compss.get(comp_fam, None)
+        charm_arch_comp = charm_arch_comps.get(comp_fam, None)
         namd_comp = namd_comps.get(comp_fam, None)
         if charm_arch_comp is None or namd_comp is None:
             self.log.error("Unknown compiler family, can't complete Charm++/NAMD target architecture.")
