@@ -39,7 +39,7 @@ class EB_NAMD(MakeCp):
             ('charm_opts', ['--with-production', "Charm++ build options", CUSTOM]),
             ('namd_basearch', ['Linux-x86_64', "NAMD base target architecture (compiler family is appended", CUSTOM]),
             ('namd_cfg_opts', ['', "NAMD configure options", CUSTOM]),
-            'runtest': [True, "Run NAMD test case after building", CUSTOM],
+            ('runtest': [True, "Run NAMD test case after building", CUSTOM]),
         ]
         extra = dict(MakeCp.extra_options(extra_vars=extra_vars))
         # files_to_copy is useless here, and definitely not mandatory, so get rid of it
