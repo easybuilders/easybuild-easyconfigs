@@ -50,7 +50,7 @@ class EB_NAMD(MakeCp):
         # complete Charm ++ and NAMD architecture string with compiler family
         comp_fam = self.toolchain.comp_family()
         namd_comp = None
-        if comp_fam in [toolchain.intelcomp]:  #@undefinedvariable
+        if comp_fam in [toolchain.INTELCOMP]:  #@undefinedvariable
             if self.toolchain.options['32bit']:
                 # Intel compilers, 32-bit
                 self.cfg.update('charm_arch', "icc")
