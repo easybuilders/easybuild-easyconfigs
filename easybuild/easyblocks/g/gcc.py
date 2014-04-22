@@ -1,5 +1,5 @@
 ##
-# Copyright 2009-2013 Ghent University
+# Copyright 2009-2014 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -55,14 +55,6 @@ class EB_GCC(ConfigureMake):
     Uses system compiler for initial build, then bootstraps.
     """
 
-    def __init__(self, *args, **kwargs):
-        super(EB_GCC, self).__init__(*args, **kwargs)
-
-        self.stagedbuild = False
-
-        # unset some environment variables that are known to may cause nasty build errors when bootstrapping
-        self.cfg.update('unwanted_env_vars', ['CPATH', 'C_INCLUDE_PATH', 'CPLUS_INCLUDE_PATH', 'OBJC_INCLUDE_PATH', 'LIBRARY_PATH'])
-
     @staticmethod
     def extra_options():
         extra_vars = {
@@ -70,11 +62,27 @@ class EB_GCC(ConfigureMake):
             'withlto': [True, "Enable LTO support", CUSTOM],
             'withcloog': [False, "Build GCC with CLooG support", CUSTOM],
             'withppl': [False, "Build GCC with PPL support", CUSTOM],
+            'withisl': [False, "Build GCC with ISL support", CUSTOM],
             'pplwatchdog': [False, "Enable PPL watchdog", CUSTOM],
-            'clooguseisl': [False, "Use ISL with CLooG or not (use PPL otherwise)", CUSTOM],
+            'clooguseisl': [False, "Use ISL with CLooG or not", CUSTOM],
             'multilib': [False, "Build multilib gcc (both i386 and x86_64)", CUSTOM],
         }
         return ConfigureMake.extra_options(extra_vars)
+
+    def __init__(self, *args, **kwargs):
+        super(EB_GCC, self).__init__(*args, **kwargs)
+
+        self.stagedbuild = False
+
+        if self.version >= LooseVersion("4.8.0") and self.cfg['clooguseisl'] and not self.cfg['withisl']:
+            self.log.error("Use ISL bundled with CLooG is unsupported in >=GCC-4.8.0. Use a seperate ISL: set withisl=True")
+
+        # I think ISL with CLooG has no purpose in GCC...
+        if self.cfg['withisl'] and not self.cfg['withcloog']:
+            self.log.error("Activating ISL without CLooG is pointless")
+
+        # unset some environment variables that are known to may cause nasty build errors when bootstrapping
+        self.cfg.update('unwanted_env_vars', ['CPATH', 'C_INCLUDE_PATH', 'CPLUS_INCLUDE_PATH', 'OBJC_INCLUDE_PATH', 'LIBRARY_PATH'])
 
     def create_dir(self, dirname):
         """
@@ -106,7 +114,7 @@ class EB_GCC(ConfigureMake):
             extra_src_dirs = ["gmp", "mpfr", "mpc"]
 
         # add optional ones that were selected (e.g. CLooG, PPL, ...)
-        for x in ["cloog", "ppl"]:
+        for x in ["isl", "cloog", "ppl"]:
             if self.cfg['with%s' % x]:
                 extra_src_dirs.append(x)
 
@@ -117,12 +125,12 @@ class EB_GCC(ConfigureMake):
             if envvar:
                 configopts += " --with-%s=%s" % (extra, envvar)
                 extra_src_dirs.remove(extra)
-            elif extra in ["cloog", "ppl"] and stage in ["stage1", "stage3"]:
-                # building CLooG or PPL requires a recent compiler
+            elif extra in ["isl", "cloog", "ppl"] and stage in ["stage1", "stage3"]:
+                # building CLooG or PPL or ISL requires a recent compiler
                 # our best bet is to do a 3-staged build of GCC, and
-                # build CLooG/PPL with the GCC we're building in stage 2
+                # build CLooG/PPL/ISL with the GCC we're building in stage 2
                 # then (bootstrap) build GCC in stage 3
-                # also, no need to stage cloog/ppl in stage3 (may even cause troubles)
+                # also, no need to stage cloog/ppl/isl in stage3 (may even cause troubles)
                 self.stagedbuild = True
                 extra_src_dirs.remove(extra)
 
@@ -253,7 +261,7 @@ class EB_GCC(ConfigureMake):
             #
             # STAGE 1: configure GCC build that will be used to build PPL/CLooG
             #
-            self.log.info("Starting with stage 1 of 3-staged build to enable CLooG and/or PPL support...")
+            self.log.info("Starting with stage 1 of 3-staged build to enable CLooG and/or PPL, ISL support...")
             self.stage1installdir = os.path.join(self.builddir, 'GCC_stage1_eb')
             configopts += " --prefix=%(p)s --with-local-prefix=%(p)s" % {'p': self.stage1installdir}
 
@@ -322,7 +330,7 @@ class EB_GCC(ConfigureMake):
 
             # build PPL and CLooG (GMP as dependency)
 
-            for lib in ["gmp", "ppl", "cloog"]:
+            for lib in ["gmp", "ppl", "isl", "cloog"]:
 
                 self.log.debug("Building %s in stage 2" % lib)
 
@@ -360,6 +368,11 @@ class EB_GCC(ConfigureMake):
                         # make sure GMP we just built is found
                         cmd += "--with-gmp=%s " % stage2prefix
 
+                    elif lib == "isl":
+
+                        cmd = "./configure --prefix=%s --with-pic --disable-shared " % stage2prefix
+                        cmd += "--with-gmp=system --with-gmp-prefix=%s " % stage2prefix
+
                     elif lib == "cloog":
 
                         self.cloogname = stage2_info['names']['cloog']
@@ -369,9 +382,13 @@ class EB_GCC(ConfigureMake):
 
                         cmd = "./configure --prefix=%s --with-pic --disable-shared " % stage2prefix
 
-                        # use isl or PPL
+                        # use ISL or PPL
                         if self.cfg['clooguseisl']:
-                            if self.cloogver >= v0_16:
+                            if self.cfg['withisl']:
+                                self.log.debug("Using external ISL for CLooG")
+                                cmd += "--with-isl=system --with-isl-prefix=%s " % stage2prefix
+                            elif self.cloogver >= v0_16:
+                                self.log.debug("Using bundled ISL for CLooG")
                                 cmd += "--with-isl=bundled "
                             else:
                                 self.log.error("Using ISL is only supported in CLooG >= v0.16 (detected v%s)." % self.cloogver)
@@ -420,7 +437,7 @@ class EB_GCC(ConfigureMake):
             self.create_dir("stage3_obj")
 
             # reconfigure for stage 3 build
-            self.log.info("Stage 2 of 3-staged build completed, continuing with stage 2 (with CLooG and/or PPL support enabled)...")
+            self.log.info("Stage 2 of 3-staged build completed, continuing with stage 2 (with CLooG and/or PPL, ISL support enabled)...")
 
             stage3_info = self.prep_extra_src_dirs("stage3")
             configopts = stage3_info['configopts']
@@ -451,8 +468,11 @@ class EB_GCC(ConfigureMake):
             if self.cfg['withcloog']:
                 configopts += "--with-cloog=%s " % stage2prefix
 
-                if self.cfg['clooguseisl'] and self.cloogver >= LooseVersion("0.16"):
+                if self.cfg['clooguseisl'] and self.cloogver >= LooseVersion("0.16") and self.version < LooseVersion("4.8.0"):
                     configopts += "--enable-cloog-backend=isl "
+
+            if self.cfg['withisl']:
+                configopts += "--with-isl=%s " % stage2prefix
 
             # configure
             cmd = "../configure %s %s" % (self.configopts, configopts)
