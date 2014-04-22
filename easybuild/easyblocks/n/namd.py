@@ -87,8 +87,13 @@ class EB_NAMD(MakeCp):
         """Install by copying the correct directory to the install dir"""
         srcdir = os.path.join(self.cfg['start_dir'], self.cfg['namd_arch'])
         try:
-            os.rmdir(self.installdir)  # copytree requires that target is non-existent
-            shutil.copytree(srcdir, self.installdir, symlinks=True)
+            # copy all files, except for .rootdir (required to avoid cyclic copying)
+            for item in [x for x in os.listdir(srcdir) is not x in ['.rootdir']]:
+                fullsrc = os.path.join(srcdir, item)
+                if os.path.isdir(fullsrc):
+                    shutil.copytree(fullsrc, os.path.join(self.installdir, item), symlinks=False)
+                elif os.path.isfile(fullsrc):
+                    shutil.copy2(fullsrc, self.installdir)
         except OSError, err:
             self.log.error("Failed to copy NAMD build from %s to install directory: %s" % (srcdir, err))
 
@@ -101,7 +106,7 @@ class EB_NAMD(MakeCp):
     def sanity_check_step(self):
         """Custom sanity check for NAMD."""
         custom_paths = {
-            'files': ['charmrun', 'flipbinpdb', 'flipdcd', 'namd2', 'psfgen', 'sb'],
+            'files': ['charmrun', 'flipbinpdb', 'flipdcd', 'namd2', 'psfgen'],
             'dirs': ['inc'],
         }
         super(EB_NAMD, self).sanity_check_step(custom_paths=custom_paths)
