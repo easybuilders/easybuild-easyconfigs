@@ -57,11 +57,11 @@ class EB_NAMD(MakeCp):
             else:
                 # Intel compilers, 64-bit
                 self.cfg.update('charm_arch', "icc8")
-            namd_comp = '-icc'
+            namd_comp = 'icc'
 
         elif comp_fam in [toolchain.GCC]:  #@UndefinedVariable
             self.cfg.update('charm_arch', "gcc")
-            namd_comp = '-g++'
+            namd_comp = 'g++'
         else:
             self.log.error("Unknown compiler family, can't complete NAMD target architecture.")
 
