@@ -75,7 +75,7 @@ class EB_NAMD(MakeCp):
                 self.cfg.update('namd_cfg_opts', "--with-fftw")
             self.cfg.update('namd_cfg_opts', "--fftw-prefix %s" % fftw)
 
-        namd_charm_arch = "--charm-arch %s" % '-'.join(' '.split(self.cfg['charm_arch']))
+        namd_charm_arch = "--charm-arch %s" % '-'.join(self.cfg['charm_arch'].split(' '))
         cmd = "./config %s %s %s " % (self.cfg["namd_arch"], namd_charm_arch, self.cfg["namd_cfg_opts"])
         run_cmd(cmd)
 
