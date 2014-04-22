@@ -64,7 +64,7 @@ class EB_NAMD(MakeCp):
         srcdir = os.path.join(self.cfg['start_dir'], self.cfg['namd_arch'])
         try:
             os.rmdir(self.installdir)  # copytree requires that target is non-existent
-            shutil.copytree(srcdir, self.installdir)
+            shutil.copytree(srcdir, self.installdir, symlinks=True)
         except OSError, err:
             self.log.error("Failed to copy NAMD build from %s to install directory: %s" % (srcdir, err))
 
