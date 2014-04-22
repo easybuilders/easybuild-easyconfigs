@@ -36,7 +36,7 @@ class EB_NAMD(MakeCp):
             # see http://charm.cs.illinois.edu/manuals/html/charm++/A.html
             ('charm_arch', ['net-linux-x86_64 ibverbs', "Charm++ target architecture", CUSTOM]),
             ('charm_opts', ['--with-production', "Charm++ build options", CUSTOM]),
-            ('namd_arch', ['Linux-x86_64-icc', "NAMD target architecture", CUSTOM]),
+            ('namd_basearch', ['Linux-x86_64', "NAMD base target architecture (compiler family is appended", CUSTOM]),
             ('namd_cfg_opts', ['', "NAMD configure options", CUSTOM]),
         ]
         extra = dict(MakeCp.extra_options(extra_vars=extra_vars))
@@ -67,6 +67,20 @@ class EB_NAMD(MakeCp):
         self.log.debug("Building Charm++ using cmd '%s' in '%s'" % (cmd, charm_subdir))
         run_cmd(cmd, path=charm_subdir)
 
+        # complete NAMD architecture string with compiler family
+        namd_comp = None
+        if self.toolchain.comp_family() == toolchain.INTELCOMP:  #@UndefinedVariable
+            namd_comp = '-icc'
+        elif self.toolchain.comp_family() == toolchain.GCC:  #@UndefinedVariable
+            namd_comp = '-g++'
+        namd_arch = '%s-%s' % (self.cfg['namd_basearch'], namd_comp)
+        self.log.info("Completed NAMD target architecture: %s" % namd_arch)
+
+        # NAMD dependencies: CUDA, FFTW
+        cuda = get_software_version('CUDA')
+        if cuda:
+            self.cfg.update('namd_cfg_opts', "--with-cuda --cuda-prefix %s" % cuda)
+
         fftw = get_software_root('FFTW')
         if fftw:
             if LooseVersion(get_software_version('FFTW')) >= LooseVersion('3.0'):
@@ -76,7 +90,7 @@ class EB_NAMD(MakeCp):
             self.cfg.update('namd_cfg_opts', "--fftw-prefix %s" % fftw)
 
         namd_charm_arch = "--charm-arch %s" % '-'.join(self.cfg['charm_arch'].strip().split(' '))
-        cmd = "./config %s %s %s " % (self.cfg["namd_arch"], namd_charm_arch, self.cfg["namd_cfg_opts"])
+        cmd = "./config %s %s %s " % (namd_arch, namd_charm_arch, self.cfg["namd_cfg_opts"])
         run_cmd(cmd)
 
     def build_step(self):
@@ -88,7 +102,7 @@ class EB_NAMD(MakeCp):
         srcdir = os.path.join(self.cfg['start_dir'], self.cfg['namd_arch'])
         try:
             # copy all files, except for .rootdir (required to avoid cyclic copying)
-            for item in [x for x in os.listdir(srcdir) is not x in ['.rootdir']]:
+            for item in [x for x in os.listdir(srcdir) if not x in ['.rootdir']]:
                 fullsrc = os.path.join(srcdir, item)
                 if os.path.isdir(fullsrc):
                     shutil.copytree(fullsrc, os.path.join(self.installdir, item), symlinks=False)
