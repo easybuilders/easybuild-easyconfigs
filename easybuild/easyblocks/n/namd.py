@@ -61,7 +61,7 @@ class EB_NAMD(MakeCp):
 
     def install_step(self):
         """Install by copying the correct directory to the install dir"""
-        srcdir = os.path.join(self.cfg['startdir'], self.cfg['namd_arch'])
+        srcdir = os.path.join(self.cfg['start_dir'], self.cfg['namd_arch'])
         try:
             os.rmdir(self.installdir)  # copytree requires that target is non-existent
             shutil.copytree(srcdir, self.installdir)
