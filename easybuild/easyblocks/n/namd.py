@@ -44,6 +44,11 @@ class EB_NAMD(MakeCp):
         del extra['files_to_copy']
         return extra.items()
 
+    def __init__(self,*args,**kwargs):
+        """Custom easyblock constructor for NAMD, initialize class variables."""
+        super(EB_NAMD, self).__init__(*args, **kwargs)
+        self.namd_arch = None
+
     def configure_step(self):
         """Custom configure step for NAMD, we build charm++ first (if required)."""
 
@@ -66,8 +71,8 @@ class EB_NAMD(MakeCp):
             self.log.error("Unknown compiler family, can't complete NAMD target architecture.")
 
         self.log.info("Updated 'charm_arch': %s" % self.cfg['charm_arch'])
-        namd_arch = '%s-%s' % (self.cfg['namd_basearch'], namd_comp)
-        self.log.info("Completed NAMD target architecture: %s" % namd_arch)
+        self.namd_arch = '%s-%s' % (self.cfg['namd_basearch'], namd_comp)
+        self.log.info("Completed NAMD target architecture: %s" % self.namd_arch)
 
         charm_tarballs = glob.glob('charm-*.tar')
         if len(charm_tarballs) != 1:
@@ -94,16 +99,16 @@ class EB_NAMD(MakeCp):
             self.cfg.update('namd_cfg_opts', "--fftw-prefix %s" % fftw)
 
         namd_charm_arch = "--charm-arch %s" % '-'.join(self.cfg['charm_arch'].strip().split(' '))
-        cmd = "./config %s %s %s " % (namd_arch, namd_charm_arch, self.cfg["namd_cfg_opts"])
+        cmd = "./config %s %s %s " % (self.namd_arch, namd_charm_arch, self.cfg["namd_cfg_opts"])
         run_cmd(cmd)
 
     def build_step(self):
         """Build NAMD for configured architecture"""
-        super(EB_NAMD, self).build_step(path=self.cfg['namd_arch'])
+        super(EB_NAMD, self).build_step(path=self.namd_arch)
 
     def install_step(self):
         """Install by copying the correct directory to the install dir"""
-        srcdir = os.path.join(self.cfg['start_dir'], self.cfg['namd_arch'])
+        srcdir = os.path.join(self.cfg['start_dir'], self.namd_arch)
         try:
             # copy all files, except for .rootdir (required to avoid cyclic copying)
             for item in [x for x in os.listdir(srcdir) if not x in ['.rootdir']]:
