@@ -20,7 +20,7 @@ from distutils.version import LooseVersion
 
 import easybuild.tools.toolchain as toolchain
 from easybuild.easyblocks.generic.makecp import MakeCp
-from easybuild.framework.easyconfig import CUSTOM, MANDATORY
+from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.filetools import extract_file, run_cmd
 from easybuild.tools.modules import get_software_root, get_software_version
 
@@ -36,7 +36,7 @@ class EB_NAMD(MakeCp):
             # see http://charm.cs.illinois.edu/manuals/html/charm++/A.html
             ('charm_arch', ['net-linux-x86_64 ibverbs', "Charm++ target architecture", CUSTOM]),
             ('charm_opts', ['--with-production', "Charm++ build options", CUSTOM]),
-            ('namd_arch', ['Linux-x86_64-icc', "NAMD target architecture", MANDATORY]),
+            ('namd_arch', ['Linux-x86_64-icc', "NAMD target architecture", CUSTOM]),
             ('namd_cfg_opts', ['', "NAMD configure options", CUSTOM]),
         ]
         extra = dict(MakeCp.extra_options(extra_vars=extra_vars))
