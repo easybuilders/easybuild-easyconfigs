@@ -15,6 +15,7 @@ Easybuild support for building NAMD, implemented as an easyblock
 """
 import glob
 import os
+import re
 import shutil
 from distutils.version import LooseVersion
 
@@ -105,6 +106,20 @@ class EB_NAMD(MakeCp):
     def build_step(self):
         """Build NAMD for configured architecture"""
         super(EB_NAMD, self).build_step(path=self.namd_arch)
+
+    def test_step(self):
+        """Run NAMD test case."""
+        cmd = "%(namd)s %(testdir)s" % {
+            'namd': os.path.join(self.cfg['start_dir'], self.namd_arch, 'namd2'),
+            'testdir': os.path.join(self.cfg['start_dir'], self.namd_arch, 'src', 'alanin'),
+        }
+        out, ec = run_cmd(cmd, simple=False)
+        if ec == 0:
+            test_ok_regex = re.compile("^Program finished.$", re.M)
+            if test_ok_regex.search(out):
+                self.log.debug("Test '%s' ran fine." % cmd)
+            else:
+                self.log.error("Test '%s' failed ('%s' not found), output: %s" % (cmd, test_ok_regex.pattern, out))
 
     def install_step(self):
         """Install by copying the correct directory to the install dir"""
