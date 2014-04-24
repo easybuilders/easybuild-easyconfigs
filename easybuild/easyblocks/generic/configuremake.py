@@ -63,7 +63,8 @@ class ConfigureMake(EasyBlock):
 
         if self.cfg['configure_cmd_prefix']:
             if cmd_prefix:
-                self.log.debug("Specified cmd_prefix '%s' overruled by configure_cmd_prefix" % cmd_prefix)
+                tup = (cmd_prefix, self.cfg['configure_cmd_prefix'])
+                self.log.debug("Specified cmd_prefix '%s' is overruled by configure_cmd_prefix '%s'" % tup)
             cmd_prefix = self.cfg['configure_cmd_prefix']
 
         if self.cfg['tar_config_opts']:
