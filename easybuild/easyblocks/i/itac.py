@@ -61,7 +61,7 @@ class EB_itac(IntelBase):
         """
 
         if LooseVersion(self.version) >= LooseVersion('8.1'):
-            super(EB_itac, self).install_step(silent_cfg_names_map={})
+            super(EB_itac, self).install_step(silent_cfg_names_map=None)
         else:
             silent = \
 """
