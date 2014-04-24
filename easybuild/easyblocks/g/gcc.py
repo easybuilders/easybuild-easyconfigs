@@ -484,7 +484,10 @@ class EB_GCC(ConfigureMake):
         common_infix = os.path.join('gcc', self.platform_lib, self.version)
 
         bin_files = ["gcov"]
-        lib_files = ["libgomp.%s" % sharedlib_ext, "libgomp.a"]
+        lib_files = []
+        if LooseVersion(self.version) >= LooseVersion('4.2'):
+            # libgomp was added in GCC 4.2.0
+            ["libgomp.%s" % sharedlib_ext, "libgomp.a"]
         if kernel_name == 'Linux':
             lib_files.extend(["libgcc_s.%s" % sharedlib_ext, "libmudflap.%s" % sharedlib_ext, "libmudflap.a"])
         libexec_files = []
