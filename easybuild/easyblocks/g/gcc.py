@@ -46,7 +46,7 @@ from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.filetools import run_cmd
 from easybuild.tools.modules import get_software_root
-from easybuild.tools.systemtools import check_os_dependency, get_kernel_name, get_shared_lib_ext, get_platform_name
+from easybuild.tools.systemtools import check_os_dependency, get_kernel_name, get_os_name, get_shared_lib_ext, get_platform_name
 
 
 class EB_GCC(ConfigureMake):
@@ -77,12 +77,15 @@ class EB_GCC(ConfigureMake):
         if self.version >= LooseVersion("4.8.0") and self.cfg['clooguseisl'] and not self.cfg['withisl']:
             self.log.error("Use ISL bundled with CLooG is unsupported in >=GCC-4.8.0. Use a seperate ISL: set withisl=True")
 
-        # I think ISL with CLooG has no purpose in GCC...
+        # I think ISL without CLooG has no purpose in GCC...
         if self.cfg['withisl'] and not self.cfg['withcloog']:
             self.log.error("Activating ISL without CLooG is pointless")
 
         # unset some environment variables that are known to may cause nasty build errors when bootstrapping
-        self.cfg.update('unwanted_env_vars', ['CPATH', 'C_INCLUDE_PATH', 'CPLUS_INCLUDE_PATH', 'OBJC_INCLUDE_PATH', 'LIBRARY_PATH'])
+        self.cfg.update('unwanted_env_vars', ['CPATH', 'C_INCLUDE_PATH', 'CPLUS_INCLUDE_PATH', 'OBJC_INCLUDE_PATH'])
+        # ubuntu needs the LIBRARY_PATH env var to work apparently
+        if get_os_name() is not 'ubuntu':
+            self.cfg.update('unwanted_env_vars', ['LIBRARY_PATH'])
 
     def create_dir(self, dirname):
         """
@@ -113,8 +116,12 @@ class EB_GCC(ConfigureMake):
         else:
             extra_src_dirs = ["gmp", "mpfr", "mpc"]
 
+        # list of the extra dirs that are needed depending on the 'with%s' option
+        # the order is important: keep CLooG last!
+        self.with_dirs = ["isl", "ppl", "cloog"]
+
         # add optional ones that were selected (e.g. CLooG, PPL, ...)
-        for x in ["isl", "cloog", "ppl"]:
+        for x in self.with_dirs:
             if self.cfg['with%s' % x]:
                 extra_src_dirs.append(x)
 
@@ -125,7 +132,7 @@ class EB_GCC(ConfigureMake):
             if envvar:
                 configopts += " --with-%s=%s" % (extra, envvar)
                 extra_src_dirs.remove(extra)
-            elif extra in ["isl", "cloog", "ppl"] and stage in ["stage1", "stage3"]:
+            elif extra in self.with_dirs and stage in ["stage1", "stage3"]:
                 # building CLooG or PPL or ISL requires a recent compiler
                 # our best bet is to do a 3-staged build of GCC, and
                 # build CLooG/PPL/ISL with the GCC we're building in stage 2
@@ -330,29 +337,21 @@ class EB_GCC(ConfigureMake):
 
             # build PPL and CLooG (GMP as dependency)
 
-            for lib in ["gmp", "ppl", "isl", "cloog"]:
-
+            for lib in ["gmp"] + self.with_dirs:
                 self.log.debug("Building %s in stage 2" % lib)
-
                 if lib == "gmp" or self.cfg['with%s' % lib]:
-
                     libdir = os.path.join(stage2prefix, lib)
                     try:
                         os.chdir(libdir)
                     except OSError, err:
                         self.log.error("Failed to change to %s: %s" % (libdir, err))
-
                     if lib == "gmp":
-
                         cmd = "./configure --prefix=%s " % stage2prefix
                         cmd += "--with-pic --disable-shared --enable-cxx"
-
                     elif lib == "ppl":
-
                         self.pplver = LooseVersion(stage2_info['versions']['ppl'])
 
                         cmd = "./configure --prefix=%s --with-pic -disable-shared " % stage2prefix
-
                         # only enable C/C++ interfaces (Java interface is sometimes troublesome)
                         cmd += "--enable-interfaces='c c++' "
 
@@ -367,14 +366,10 @@ class EB_GCC(ConfigureMake):
 
                         # make sure GMP we just built is found
                         cmd += "--with-gmp=%s " % stage2prefix
-
                     elif lib == "isl":
-
                         cmd = "./configure --prefix=%s --with-pic --disable-shared " % stage2prefix
                         cmd += "--with-gmp=system --with-gmp-prefix=%s " % stage2prefix
-
                     elif lib == "cloog":
-
                         self.cloogname = stage2_info['names']['cloog']
                         self.cloogver = LooseVersion(stage2_info['versions']['cloog'])
                         v0_15 = LooseVersion("0.15")
@@ -407,7 +402,6 @@ class EB_GCC(ConfigureMake):
                             cmd += "--with-gmp=system --with-gmp-prefix=%s " % stage2prefix
                         else:
                             self.log.error("Don't know how to specify location of GMP to configure of CLooG v%s." % self.cloogver)
-
                     else:
                         self.log.error("Don't know how to configure for %s" % lib)
 
@@ -499,6 +493,7 @@ class EB_GCC(ConfigureMake):
         lib_files = ["libgomp.%s" % sharedlib_ext, "libgomp.a"]
         if kernel_name == 'Linux':
             lib_files.extend(["libgcc_s.%s" % sharedlib_ext])
+            # libmudflap is replaced by asan (see release notes gcc 4.9.0)
             if self.version < LooseVersion("4.9.0"):
                 lib_files.extend(["libmudflap.%s" % sharedlib_ext, "libmudflap.a"])
         libexec_files = []
@@ -530,14 +525,13 @@ class EB_GCC(ConfigureMake):
                 libexec_files.append('liblto_plugin.%s' % sharedlib_ext)
 
         bin_files = ["bin/%s" % x for x in bin_files]
-        if self.version < LooseVersion("4.9.0"):
-            libdirs = ['lib']
-        else:
-            libdirs = ['lib32']
-        libdirs.append('lib64')
+        libdirs64 = ['lib64']
+        libdirs32 = ['lib', 'lib32']
+        libdirs = libdirs64 + libdirs32
         if self.cfg['multilib']:
             # with multilib enabled, both lib and lib64 should be there
-            lib_files = [os.path.join(libdir, x) for libdir in libdirs for x in lib_files]
+            lib_files = [os.path.join(libdir, x) for libdir in libdirs64 for x in lib_files] + \
+                [tuple([os.path.join(libdir, x) for libdir in libdirs32]) for x in lib_files]
         else:
             # lib64 on SuSE and Darwin, lib otherwise
             lib_files = [tuple([os.path.join(libdir, x) for libdir in libdirs]) for x in lib_files]
