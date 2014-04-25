@@ -60,6 +60,7 @@ class EB_Clang(CMakeMake):
             ('build_targets', [["X86"], "Build targets for LLVM. Possible values: " + ', '.join(CLANG_TARGETS), CUSTOM]),
             ('bootstrap', [True, "Bootstrap Clang using GCC", CUSTOM]),
             ('usepolly', [False, "Build Clang with polly", CUSTOM]),
+            ('static_analyzer', [True, "Install the static analyser of Clang", CUSTOM]),
         ]
 
         return CMakeMake.extra_options(extra_vars)
@@ -278,3 +279,32 @@ class EB_Clang(CMakeMake):
         else:
             os.chdir(self.llvm_obj_dir_stage1)
         super(EB_Clang, self).install_step()
+
+        # the static analyzer is not installed by default
+        # we do it by hand
+        if self.cfg['static_analyzer']:
+            try:
+                shutil.copytree("%s/tools/clang/tools/scan-build/" % self.llvm_src_dir,
+                                "%s/libexec/clang-analyzer/scan-build" % self.installdir)
+                shutil.copytree("%s/tools/clang/tools/scan-view/" % self.llvm_src_dir,
+                                "%s/libexec/clang-analyzer/scan-view/" % self.installdir)
+                os.makedirs("%s/share/man/man1" % self.installdir)
+                shutil.copy2("%s/tools/clang/tools/scan-build/scan-build.1" % self.llvm_src_dir,
+                             "%s/share/man/man1" % self.installdir)
+                os.symlink("../../../bin",
+                           "%s/libexec/clang-analyzer/scan-build/bin" % self.installdir)
+                os.symlink("../../../bin",
+                           "%s/libexec/clang-analyzer/scan-view/bin" % self.installdir)
+                os.symlink("../libexec/clang-analyzer/scan-build/scan-build",
+                           "%s/bin/scan-build" % self.installdir)
+                os.symlink("../libexec/clang-analyzer/scan-view/scan-view",
+                           "%s/bin/scan-view" % self.installdir)
+            except OSError, err:
+                self.log.error("Failed to copy static analyzer dirs to install dir: %s" % err)
+
+    def make_module_extra(self):
+        """Custom variables for Clang module."""
+        txt = super(EB_Clang, self).make_module_extra()
+        # we set the symbolizer path so that asan/tsan give meanfull output by default
+        txt += self.moduleGenerator.set_environment('ASAN_SYMBOLIZER_PATH', '$root/bin/llvm-symbolizer')
+        return txt
