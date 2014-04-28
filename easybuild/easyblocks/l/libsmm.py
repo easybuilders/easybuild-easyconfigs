@@ -54,11 +54,11 @@ class EB_libsmm(EasyBlock):
     def extra_options():
         # default dimensions
         dd = [1,4,5,6,9,13,16,17,22]
-        extra_vars = [
-                      ('transpose_flavour', [1, "Transpose flavour of routines (default: 1)", CUSTOM]),
-                      ('max_tiny_dim', [12, "Maximum tiny dimension (default: 12)", CUSTOM]),
-                      ('dims', [dd, "Generate routines for these matrix dims (default: %s)" % dd, CUSTOM])
-                     ]
+        extra_vars = {
+            'transpose_flavour': [1, "Transpose flavour of routines", CUSTOM],
+            'max_tiny_dim': [12, "Maximum tiny dimension", CUSTOM],
+            'dims': [dd, "Generate routines for these matrix dims", CUSTOM],
+        }
         return EasyBlock.extra_options(extra_vars)
 
     def configure_step(self):

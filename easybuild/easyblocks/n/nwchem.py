@@ -39,7 +39,7 @@ import easybuild.tools.toolchain as toolchain
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.filetools import mkdir, run_cmd, adjust_permissions
-from easybuild.tools.modules import get_software_root, get_software_version
+from easybuild.tools.modules import get_software_libdir, get_software_root, get_software_version
 
 
 class EB_NWChem(ConfigureMake):
@@ -62,18 +62,18 @@ class EB_NWChem(ConfigureMake):
     def extra_options():
         """Custom easyconfig parameters for NWChem."""
 
-        extra_vars = [
-            ('target', ["LINUX64", "Target platform", CUSTOM]),
+        extra_vars = {
+            'target': ["LINUX64", "Target platform", CUSTOM],
             # possible options for ARMCI_NETWORK on LINUX64 with Infiniband:
             # OPENIB, MPI-MT, MPI-SPAWN, MELLANOX
-            ('armci_network', ["OPENIB", "Network protocol to use", CUSTOM]),
-            ('msg_comms', ["MPI", "Type of message communication", CUSTOM]),
-            ('modules', ["all", "NWChem modules to build", CUSTOM]),
-            ('lib_defines', ["", "Additional defines for C preprocessor", CUSTOM]),
-            ('tests', [True, "Run example test cases", CUSTOM]),
+            'armci_network': ["OPENIB", "Network protocol to use", CUSTOM],
+            'msg_comms': ["MPI", "Type of message communication", CUSTOM],
+            'modules': ["all", "NWChem modules to build", CUSTOM],
+            'lib_defines': ["", "Additional defines for C preprocessor", CUSTOM],
+            'tests': [True, "Run example test cases", CUSTOM],
             # lots of tests fail, so allow a certain fail ratio
-            ('max_fail_ratio', [0.5, "Maximum test case fail ratio", CUSTOM]),
-        ]
+            'max_fail_ratio': [0.5, "Maximum test case fail ratio", CUSTOM],
+        }
         return ConfigureMake.extra_options(extra_vars)
 
     def setvar_env_makeopt(self, name, value):
@@ -142,6 +142,21 @@ class EB_NWChem(ConfigureMake):
             env.setvar('PYTHONHOME', python_root)
             pyver = '.'.join(get_software_version('Python').split('.')[0:2])
             env.setvar('PYTHONVERSION', pyver)
+            # if libreadline is loaded, assume it was a dependency for Python
+            # pass -lreadline to avoid linking issues (libpython2.7.a doesn't include readline symbols)
+            libreadline = get_software_root('libreadline')
+            if libreadline:
+                libreadline_libdir = os.path.join(libreadline, get_software_libdir('libreadline'))
+                ncurses = get_software_root('ncurses')
+                if not ncurses:
+                    self.log.error("ncurses is not loaded, but required to link with libreadline")
+                ncurses_libdir = os.path.join(ncurses, get_software_libdir('ncurses'))
+                readline_libs = ' '.join([
+                    os.path.join(libreadline_libdir, 'libreadline.a'),
+                    os.path.join(ncurses_libdir, 'libcurses.a'),
+                ])
+                extra_libs = os.environ.get('EXTRA_LIBS', '')
+                env.setvar('EXTRA_LIBS', ' '.join([extra_libs, readline_libs]))
 
         env.setvar('LARGE_FILES', 'TRUE')
         env.setvar('USE_NOFSCHECK', 'TRUE')

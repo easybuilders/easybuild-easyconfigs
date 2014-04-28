@@ -58,13 +58,11 @@ class EB_Trinity(EasyBlock):
     @staticmethod
     def extra_options():
         """Custom easyconfig parameters for Trinity."""
-
-        extra_vars = [
-            ('withsampledata', [False, "Include sample data", CUSTOM]),
-            ('bwapluginver', [None, "BWA pugin version", CUSTOM]),
-            ('RSEMmod', [False, "Enable RSEMmod", CUSTOM]),
-        ]
-
+        extra_vars = {
+            'withsampledata': [False, "Include sample data", CUSTOM],
+            'bwapluginver': [None, "BWA pugin version", CUSTOM],
+            'RSEMmod': [False, "Enable RSEMmod", CUSTOM],
+        }
         return EasyBlock.extra_options(extra_vars)
 
     def butterfly(self):

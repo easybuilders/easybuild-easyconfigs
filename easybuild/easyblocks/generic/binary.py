@@ -50,12 +50,10 @@ class Binary(EasyBlock):
     @staticmethod
     def extra_options(extra_vars=None):
         """Extra easyconfig parameters specific to Binary easyblock."""
-        # using [] as default value is a bad idea, so we handle it this way
-        if extra_vars == None:
-            extra_vars = []
-        extra_vars.extend([
-            ('install_cmd', [None, "Install command to be used.", CUSTOM]),
-        ])
+        extra_vars = dict(EasyBlock.extra_options(extra_vars))
+        extra_vars.update({
+            'install_cmd': [None, "Install command to be used.", CUSTOM],
+        })
         return EasyBlock.extra_options(extra_vars)
 
     def extract_step(self):

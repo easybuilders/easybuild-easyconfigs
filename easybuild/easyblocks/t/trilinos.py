@@ -43,13 +43,13 @@ class EB_Trilinos(CMakeMake):
     @staticmethod
     def extra_options():
         """Add extra config options specific to Trilinos."""
-        extra_vars = [
-                      ('shared_libs', [False, "Build shared libs; if False, build static libs. (default: False).", CUSTOM]),
-                      ('openmp', [True, "Enable OpenMP support (default: True)", CUSTOM]),
-                      ('all_exts', [True, "Enable all Trilinos packages (default: True)", CUSTOM]),
-                      ('skip_exts', [[], "List of Trilinos packages to skip (default: [])", CUSTOM]),
-                      ('verbose', [False, 'Configure for verbose output (default: False)', CUSTOM])
-                     ]
+        extra_vars = {
+            'shared_libs': [False, "Build shared libs; if False, build static libs", CUSTOM],
+            'openmp': [True, "Enable OpenMP support", CUSTOM],
+            'all_exts': [True, "Enable all Trilinos packages", CUSTOM],
+            'skip_exts': [[], "List of Trilinos packages to skip", CUSTOM],
+            'verbose': [False, "Configure for verbose output", CUSTOM],
+        }
         return CMakeMake.extra_options(extra_vars)
 
     def configure_step(self):

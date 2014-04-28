@@ -43,12 +43,12 @@ class EB_Allinea(Binary):
     def extra_options(extra_vars=None):
         """Define extra easyconfig parameters specific to Allinea."""
 
-        orig_vars = Binary.extra_options(extra_vars)
-        allinea_vars = [
-            ('templates', [[], "List of templates.", CUSTOM]),
-        ]
-        allinea_vars.extend(orig_vars)
-        return allinea_vars
+        orig_vars = dict(Binary.extra_options(extra_vars))
+        allinea_vars = {
+            'templates': [[], "List of templates.", CUSTOM],
+        }
+        allinea_vars.update(orig_vars)
+        return allinea_vars.items()
 
     def extract_step(self):
         """Extract Allinea installation files."""

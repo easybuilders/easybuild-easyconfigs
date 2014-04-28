@@ -47,7 +47,9 @@ class EB_itac(IntelBase):
 
     @staticmethod
     def extra_options():
-        extra_vars = [('preferredmpi', ['impi3', "Preferred MPI type (default: 'impi3')", CUSTOM])]
+        extra_vars = {
+            'preferredmpi': ['impi3', "Preferred MPI type", CUSTOM],
+        }
         return IntelBase.extra_options(extra_vars)
 
     def install_step(self):
