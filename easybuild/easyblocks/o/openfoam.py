@@ -104,7 +104,7 @@ class EB_OpenFOAM(EasyBlock):
 
         elif mpi_type == toolchain.OPENMPI:  #@UndefinedVariable
             self.mpipath = get_software_root('OpenMPI')
-            if '-ext' in self.version or 'extend' in self.name.lower():
+            if 'extend' in self.name.lower():
                 self.wm_mplib = "SYSTEMOPENMPI"
             else:
                 # set to an MPI unknown by OpenFOAM, since we're handling the MPI settings ourselves (via mpicc, etc.)
