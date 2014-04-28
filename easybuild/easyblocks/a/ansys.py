@@ -41,6 +41,11 @@ from easybuild.tools.filetools import adjust_permissions
 class EB_ANSYS(EasyBlock):
     """Support for installing ANSYS."""
 
+    def __init__(self, *args, **kwargs):
+        """Initialize Chapel-specific variables."""
+        super(EB_ANSYS, self).__init__(*args, **kwargs)
+        ver = "v%s" % ''.join(self.version.split('.'))
+
     def configure_step(self):
         """No configuration for ANSYS."""
         pass
@@ -59,8 +64,7 @@ class EB_ANSYS(EasyBlock):
 
     def sanity_check_step(self):
         """Custom sanity check for ANSYS."""
-        
-        ver = 'v%s' % ''.join(self.version.split('.'))
+
         custom_paths = {
                         'files': ["%s/fluent/bin/fluent%s" % (ver, x) for x in ['', '_arch', '_sysinfo']],
                         'dirs': ["%s/%s" % (ver,x) for x in ["ansys", "aisol", "CFD-Post","CFX"]]
@@ -72,19 +76,21 @@ class EB_ANSYS(EasyBlock):
         """Custom extra module file entries for ANSYS."""
         
         guesses = super(EB_ANSYS, self).make_module_req_guess()
-        ver = "v%s" % ''.join(self.version.split('.'))
+        dirs = ["tgrid/bin",
+            "Framework/bin/linux64",
+            "aisol/bin/linux64",
+            "RSM/bin",
+            "ansys/bin",
+            "autodin/bin",
+            "CFX/bin",
+            "fluent/bin",
+            "CFD-Post/bin",
+            "TurboGrid/bin",
+            "polyflow/bin",
+            "IcePack/bin"]
+            
         guesses.update({
-                        "PATH": [os.path.join(ver, "tgrid", "bin") ,
-                        os.path.join(ver, "Framework", "bin/linux64") ,
-                        os.path.join(ver, "aisol", "bin/linux64"),
-                        os.path.join(ver, "RSM", "bin"),
-                        os.path.join(ver, "ansys", "bin"),
-                        os.path.join(ver, "autodin", "bin"),
-                        os.path.join(ver, "CFX", "bin"),
-                        os.path.join(ver, "fluent", "bin"),
-                        os.path.join(ver, "CFD-Post", "bin"),
-                        os.path.join(ver, "TurboGrid", "bin"),
-                        os.path.join(ver, "polyflow", "bin"),
-                        os.path.join(ver, "IcePack", "bin")],
+                        "PATH": [os.path.join(ver, dir) for dir in dirs],
                        })
+                       
         return guesses
