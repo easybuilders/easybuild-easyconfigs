@@ -30,19 +30,16 @@ EasyBuild support for installing ANSYS, implemented as an easyblock
 """
 
 
-import shutil
 import os
 import stat
 
 from easybuild.framework.easyblock import EasyBlock
-from easybuild.framework.easyconfig import CUSTOM
-from easybuild.tools.filetools import run_cmd, rmtree2
+from easybuild.tools.filetools import run_cmd
 from easybuild.tools.filetools import adjust_permissions
 
 
 class EB_ANSYS(EasyBlock):
     """Support for installing ANSYS."""
-
 
     def configure_step(self):
         """No configuration for ANSYS."""
@@ -64,7 +61,6 @@ class EB_ANSYS(EasyBlock):
         """Custom sanity check for ANSYS."""
         
         ver = 'v%s' % ''.join(self.version.split('.'))
-
         custom_paths = {
                         'files': ["%s/fluent/bin/fluent%s" % (ver, x) for x in ['', '_arch', '_sysinfo']],
                         'dirs': ["%s/%s" % (ver,x) for x in ["ansys", "aisol", "CFD-Post","CFX"]]
@@ -76,9 +72,7 @@ class EB_ANSYS(EasyBlock):
         """Custom extra module file entries for ANSYS."""
         
         guesses = super(EB_ANSYS, self).make_module_req_guess()
-
         ver = "v%s" % ''.join(self.version.split('.'))
-        
         guesses.update({
                         "PATH": [os.path.join(ver, "tgrid", "bin") ,
                         os.path.join(ver, "Framework", "bin/linux64") ,
