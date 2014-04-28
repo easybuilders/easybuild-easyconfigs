@@ -1,0 +1,221 @@
+--- Makefile.orig	2013-09-26 16:43:53.016909280 +0200
++++ Makefile	2013-09-26 16:48:39.953144714 +0200
+@@ -31,7 +31,7 @@
+ #                       configurable in config.makefile
+ #
+ # -----------------------------------------------------
+-# Read configuration 
++# Read configuration
+ include config.makefile
+ 
+ ifeq ($(LD_LIBRARY_PATH),'')
+@@ -121,10 +121,10 @@
+ 
+ # Enable several warnings
+ 	extended_warnings     := -Wwrite-strings -Wunused -Wno-aggregate-return -Wshadow
+-	extended_cpp_warnings := -Wnon-virtual-dtor -Wreorder -Wpointer-arith 
++	extended_cpp_warnings := -Wnon-virtual-dtor -Wreorder -Wpointer-arith
+  ifneq ('$(USING_GCC_3XX)','')
+ 	extended_cpp_warnings += -Wdisabled-optimization -Wmissing-format-attribute
+-	extended_cpp_warnings += -Wmissing-noreturn # -Wfloat-equal 
++	extended_cpp_warnings += -Wmissing-noreturn # -Wfloat-equal
+  endif
+  ifneq ('$(USING_GCC_4XX)','')
+ #	extended_cpp_warnings += -Wwhatever
+@@ -135,7 +135,7 @@
+  endif
+ endif
+ 
+-#---------------------- developer 
++#---------------------- developer
+ 
+ ifneq ($(DEVELOPER),ANY) # ANY=default setting (skip all developer specific code)
+ ifdef dflags
+@@ -153,7 +153,7 @@
+ endif
+ 
+ ifeq ($(ARB_64),1)
+-	dflags += -DARB_64 #-fPIC 
++	dflags += -DARB_64 #-fPIC
+ 	lflags +=
+ 	shared_cflags += -fPIC
+ 
+@@ -175,7 +175,7 @@
+ #		build 32-bit ARB version on 64-bit host
+ 		CROSS_LIB:=# empty = autodetect below
+ 		cflags += -m32
+-		lflags += -m32 -m elf_i386 
++		lflags += -m32 -m elf_i386
+ 	else
+ #		build 32-bit ARB version on 32-bit host
+ 		CROSS_LIB:=/lib
+@@ -214,20 +214,20 @@
+ 	XHOME:=/usr/X11R6
+ endif
+ 
+-XINCLUDES:=-I$(XHOME)/include
++XINCLUDES:=$(CPPFLAGS)
+ ifdef DARWIN
+ 	XINCLUDES += -I$(OSX_FW)/GLUT.framework/Headers -I$(OSX_FW)/OpenGL.framework/Headers -I$(OSX_SDK)/usr/include/krb5
+ 
+-	XLIBS := -L$(XHOME)/lib -lXm -lpng -lz -lXt -lX11 -lXext -lXp -lXmu -lXi
++	XLIBS := -$(LDFLAGS) L$(XHOME)/lib -lXm -lpng -lz -lXt -lX11 -lXext -lXp -lXmu -lXi
+ 	XLIBS += -Wl,-dylib_file,$(OSX_FW_OPENGL)/libGL.dylib:$(OSX_FW_OPENGL)/libGL.dylib
+ 	XLIBS += -Wl,-dylib_file,$(OSX_FW_OPENGL)/libGLU.dylib:$(OSX_FW_OPENGL)/libGLU.dylib
+ else
+-	XLIBS:=-L$(XHOME)/$(CROSS_LIB) -lXm -lXpm -lXt -lXext -lX11
++	XLIBS:=$(LDFLAGS) -L$(XHOME)/$(CROSS_LIB) -lXm -lXpm -lXt -lXext -lX11
+ endif
+ 
+ #---------------------- open GL
+ 
+-ifeq ($(OPENGL),1) 
++ifeq ($(OPENGL),1)
+ 	cflags += -DARB_OPENGL # activate OPENGL code
+ 	GL     := gl # this is the name of the OPENGL base target
+ 	GL_LIB := -lGL -L$(ARBHOME)/GL/glAW -lglAW
+@@ -280,7 +280,7 @@
+ 	endif
+ endif
+ 
+-# ------------------------------------------------------------------------- 
++# -------------------------------------------------------------------------
+ #	Don't put any machine/version/etc conditionals below!
+ #	(instead define variables above)
+ # -------------------------------------------------------------------------
+@@ -335,9 +335,9 @@
+ 
+ lflags:=
+ 
+-# ------------------------- 
+-#     Main arb targets:     
+-# ------------------------- 
++# -------------------------
++#     Main arb targets:
++# -------------------------
+ 
+ first_target:
+ 		$(MAKE) checks
+@@ -521,7 +521,7 @@
+ 
+ # ---------------------
+ 
+-check_setup: check_ENVIRONMENT check_DEBUG check_ARB_64 check_DEVELOPER check_GCC_VERSION 
++check_setup: check_ENVIRONMENT check_DEBUG check_ARB_64 check_DEVELOPER check_GCC_VERSION
+ 		@echo Your setup seems to be ok.
+ 
+ checks: check_setup check_tabs
+@@ -558,7 +558,7 @@
+ cflags:=$(cflags) -DFAKE_VTAB_PTR=char
+ endif
+ 
+-# ------------------------------- 
++# -------------------------------
+ #     old PTSERVER or PTPAN?
+ 
+ ifeq ($(PTPAN),1)
+@@ -583,7 +583,7 @@
+ ARCHS_PT_SERVER_LINK = $(ARCHS_PT_SERVER)
+ endif
+ 
+-# ------------------------------- 
++# -------------------------------
+ #     List of all Directories
+ 
+ ARCHS = \
+@@ -894,7 +894,7 @@
+ 		$(ARCHS_PROBE_COMMON) \
+ 		$(ARCHS_PT_SERVER) \
+ 
+-$(PROBE): $(ARCHS_PROBE_DEPEND:.a=.dummy) shared_libs 
++$(PROBE): $(ARCHS_PROBE_DEPEND:.a=.dummy) shared_libs
+ 	@SOURCE_TOOLS/binuptodate.pl $@ $(ARCHS_PROBE_LINK) $(ARBDB_LIB) $(ARCHS_CLIENT_PROBE) || ( \
+ 		echo Link $@ ; \
+ 		echo "$(LINK_EXECUTABLE) $@ $(LIBPATH) $(ARCHS_PROBE_LINK) $(ARBDB_LIB) $(ARCHS_CLIENT_PROBE) $(SYSLIBS)" ; \
+@@ -1008,7 +1008,7 @@
+ NAMES_COM/server.dummy : comtools
+ NAMES_COM/client.dummy : comtools
+ 
+-com_probe: PROBE_COM/PROBE_COM.dummy 
++com_probe: PROBE_COM/PROBE_COM.dummy
+ com_names: NAMES_COM/NAMES_COM.dummy
+ com_all: com_probe com_names
+ 
+@@ -1151,7 +1151,7 @@
+ #********************************************************************************
+ 
+ depends:
+-	$(MAKE) comtools 
++	$(MAKE) comtools
+ 	@echo "$(SEP) Partially build com interface"
+ 	$(MAKE) PROBE_COM/PROBE_COM.depends
+ 	$(MAKE) NAMES_COM/NAMES_COM.depends
+@@ -1162,10 +1162,10 @@
+ depend: depends
+ 
+ proto_tools:
+-	@echo $(SEP) Building prototyper 
++	@echo $(SEP) Building prototyper
+ 	$(MAKE) AISC_MKPTPS/AISC_MKPTPS.dummy
+ 
+-#proto: proto_tools TOOLS/TOOLS.dummy 
++#proto: proto_tools TOOLS/TOOLS.dummy
+ proto: proto_tools
+ 	@echo $(SEP) Updating prototypes
+ 	$(MAKE) \
+@@ -1270,7 +1270,7 @@
+ 		all
+ 	@$(MAKE) testperlscripts
+ 
+-testperlscripts: 
++testperlscripts:
+ 	@$(MAKE) -C PERL_SCRIPTS/test test
+ 
+ perl_clean:
+@@ -1346,16 +1346,16 @@
+ 	$(MAKE) all
+ 
+ tarfile: rebuild
+-	$(MAKE) addlibs 
++	$(MAKE) addlibs
+ 	util/arb_compress
+ 
+ tarfile_quick: all
+-	$(MAKE) addlibs 
++	$(MAKE) addlibs
+ 	util/arb_compress
+ 
+-save: sourcetarfile 
++save: sourcetarfile
+ 
+-# test early whether save will work 
++# test early whether save will work
+ testsave:
+ 	@util/arb_srclst.pl >/dev/null
+ 
+@@ -1377,14 +1377,14 @@
+ 	touch SOURCE_TOOLS/inc_major.stamp
+ 	$(MAKE) do_release
+ 
+-do_release: 
++do_release:
+ 	@echo Building release
+ 	@echo PATH=$(PATH)
+ 	@echo ARBHOME=$(ARBHOME)
+ 	-rm arb.tgz arbsrc.tgz
+ 	$(MAKE) testsave
+ 	$(MAKE) templ # auto upgrades version early
+-	$(MAKE) tarfile 
++	$(MAKE) tarfile
+ 	$(MAKE) sourcetarfile
+ 
+ release_quick:
+@@ -1407,7 +1407,7 @@
+ arbapplications: nt pa ed e4 wetc pt na nal di ph ds pgt
+ 
+ # optionally things (no real harm for ARB if any of them fails):
+-arbxtras: tg pst a3 xmlin 
++arbxtras: tg pst a3 xmlin
+ 
+ tryxtras:
+ 	@echo $(SEP)
