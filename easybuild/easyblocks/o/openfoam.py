@@ -204,6 +204,10 @@ class EB_OpenFOAM(EasyBlock):
                [os.path.join(toolsdir, "surface%s" % x) for x in ["Add", "Find", "Smooth"]] + \
                [os.path.join(toolsdir, x) for x in ["deformedGeom", "engineSwirl", "modifyMesh",
                                                     "refineMesh", "vorticity"]]
+        if LooseVersion(self.version) >= LooseVersion("2.3.0"):
+            # surfaceSmooth is replaced by surfaceLambdaMuSmooth is OpenFOAM v2.3.0
+            bins.remove(os.path.join(toolsdir, "surfaceSmooth"))
+            bins.append(os.path.join(toolsdir, "surfaceLambdaMuSmooth"))
 
         custom_paths = {
             'files': [os.path.join(self.openfoamdir, 'etc', x) for x in ["bashrc", "cshrc"]] + bins,
