@@ -93,9 +93,7 @@ class EB_GCC(ConfigureMake):
         """
         Prepare extra (optional) source directories, so GCC will build these as well.
         """
-
         if LooseVersion(self.version) >= LooseVersion('4.5'):
-
             known_stages = ["stage1", "stage2", "stage3"]
             if not stage in known_stages:
                 self.log.error("Incorrect argument for prep_extra_src_dirs, should be one of: %s" % known_stages)
