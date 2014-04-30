@@ -120,8 +120,11 @@ class EB_OpenFOAM(EasyBlock):
         # parallel build spec
         env.setvar("WM_NCOMPPROCS", str(self.cfg['parallel']))
 
-        if 'extend' in self.name.lower() and LooseVersion(self.version) >= LooseVersion('3.0'):
-            self.openfoamdir = 'foam-extend-%s' % self.version
+        if 'extend' in self.name.lower():
+            if LooseVersion(self.version) >= LooseVersion('3.0'):
+                self.openfoamdir = 'foam-extend-%s' % self.version
+            else:
+                self.openfoamdir = 'OpenFOAM-%s-ext' % self.version
         else:
             self.openfoamdir = '-'.join([self.name, '-'.join(self.version.split('-')[:2])])
         self.log.debug("openfoamdir: %s" % self.openfoamdir)
