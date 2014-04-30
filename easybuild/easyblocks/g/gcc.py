@@ -503,9 +503,7 @@ class EB_GCC(ConfigureMake):
             if self.version < LooseVersion("4.9.0"):
                 lib_files.extend(["libmudflap.%s" % sharedlib_ext, "libmudflap.a"])
             else:
-                lib_files.extend(["libasan.%s" % sharedlib_ext, "libasan.a",
-                                  "libtsan.%s" % sharedlib_ext, "libtsan.a",
-                                  "liblsan.%s" % sharedlib_ext, "liblsan.a"])
+                lib_files.extend(["libasan.%s" % sharedlib_ext, "libasan.a"])
         libexec_files = []
         dirs = ['lib/%s' % common_infix]
         if kernel_name == 'Linux':
