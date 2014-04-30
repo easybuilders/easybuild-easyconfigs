@@ -75,7 +75,7 @@ class EB_GCC(ConfigureMake):
         self.stagedbuild = False
 
         if self.version >= LooseVersion("4.8.0") and self.cfg['clooguseisl'] and not self.cfg['withisl']:
-            self.log.error("Use ISL bundled with CLooG is unsupported in >=GCC-4.8.0. Use a seperate ISL: set withisl=True")
+            self.log.error("Using ISL bundled with CLooG is unsupported in >=GCC-4.8.0. Use a seperate ISL: set withisl=True")
 
         # I think ISL without CLooG has no purpose in GCC...
         if self.cfg['withisl'] and not self.cfg['withcloog']:
@@ -83,7 +83,7 @@ class EB_GCC(ConfigureMake):
 
         # unset some environment variables that are known to may cause nasty build errors when bootstrapping
         self.cfg.update('unwanted_env_vars', ['CPATH', 'C_INCLUDE_PATH', 'CPLUS_INCLUDE_PATH', 'OBJC_INCLUDE_PATH'])
-        # ubuntu needs the LIBRARY_PATH env var to work apparently
+        # ubuntu needs the LIBRARY_PATH env var to work apparently (#363)
         if get_os_name() is not 'ubuntu':
             self.cfg.update('unwanted_env_vars', ['LIBRARY_PATH'])
 
@@ -496,6 +496,10 @@ class EB_GCC(ConfigureMake):
             # libmudflap is replaced by asan (see release notes gcc 4.9.0)
             if self.version < LooseVersion("4.9.0"):
                 lib_files.extend(["libmudflap.%s" % sharedlib_ext, "libmudflap.a"])
+            else:
+                lib_files.extend(["libasan.%s" % sharedlib_ext, "libasan.a",
+                                  "libtsan.%s" % sharedlib_ext, "libtsan.a",
+                                  "liblsan.%s" % sharedlib_ext, "liblsan.a"])
         libexec_files = []
         dirs = ['lib/%s' % common_infix]
         if kernel_name == 'Linux':
@@ -530,8 +534,9 @@ class EB_GCC(ConfigureMake):
         libdirs = libdirs64 + libdirs32
         if self.cfg['multilib']:
             # with multilib enabled, both lib and lib64 should be there
-            lib_files = [os.path.join(libdir, x) for libdir in libdirs64 for x in lib_files] + \
-                [tuple([os.path.join(libdir, x) for libdir in libdirs32]) for x in lib_files]
+            lib_files64 = [os.path.join(libdir, x) for libdir in libdirs64 for x in lib_files]
+            lib_files32 = [tuple([os.path.join(libdir, x) for libdir in libdirs32]) for x in lib_files]
+            lib_files = lib_files64 + lib_files32
         else:
             # lib64 on SuSE and Darwin, lib otherwise
             lib_files = [tuple([os.path.join(libdir, x) for libdir in libdirs]) for x in lib_files]
