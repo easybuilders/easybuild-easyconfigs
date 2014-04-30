@@ -162,8 +162,7 @@ class EB_OpenFOAM(EasyBlock):
                 "configure: creating.*",
                 "%s .*" % os.environ['CC'],
             ]
-            #run_cmd_qa(cmd_tmpl % 'Allwmake.firstInstall', qa, no_qa=noqa, log_all=True, simple=True)
-            run_cmd(cmd_tmpl % 'Allwmake.firstInstall', inp="Y\nY\n", log_all=True, simple=True, log_output=True)
+            run_cmd_qa(cmd_tmpl % 'Allwmake.firstInstall', qa, no_qa=noqa, log_all=True, simple=True)
         else:
             run_cmd(cmd_tmpl % 'Allwmake', log_all=True, simple=True, log_output=True)
 
@@ -205,7 +204,7 @@ class EB_OpenFOAM(EasyBlock):
                [os.path.join(toolsdir, "surface%s" % x) for x in ["Add", "Find", "Smooth"]] + \
                [os.path.join(toolsdir, x) for x in ["deformedGeom", "engineSwirl", "modifyMesh",
                                                     "refineMesh", "vorticity"]]
-        if LooseVersion(self.version) >= LooseVersion("2.3.0"):
+        if not 'extend' in self.name.lower() and LooseVersion(self.version) >= LooseVersion("2.3.0"):
             # surfaceSmooth is replaced by surfaceLambdaMuSmooth is OpenFOAM v2.3.0
             bins.remove(os.path.join(toolsdir, "surfaceSmooth"))
             bins.append(os.path.join(toolsdir, "surfaceLambdaMuSmooth"))
