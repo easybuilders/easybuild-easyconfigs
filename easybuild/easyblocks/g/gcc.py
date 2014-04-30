@@ -104,85 +104,88 @@ class EB_GCC(ConfigureMake):
         """
         Prepare extra (optional) source directories, so GCC will build these as well.
         """
+        if LooseVersion(self.version) >= LooseVersion('4.5'):
+            known_stages = ["stage1", "stage2", "stage3"]
+            if stage not in known_stages:
+                self.log.error("Incorrect argument for prep_extra_src_dirs, should be one of: %s" % known_stages)
 
-        known_stages = ["stage1", "stage2", "stage3"]
-        if stage not in known_stages:
-            self.log.error("Incorrect argument for prep_extra_src_dirs, should be one of: %s" % known_stages)
+            configopts = ''
+            if stage == "stage2":
+                # no MPFR/MPC needed in stage 2
+                extra_src_dirs = ["gmp"]
+            else:
+                extra_src_dirs = ["gmp", "mpfr", "mpc"]
 
-        configopts = ''
-        if stage == "stage2":
-            # no MPFR/MPC needed in stage 2
-            extra_src_dirs = ["gmp"]
+            # list of the extra dirs that are needed depending on the 'with%s' option
+            # the order is important: keep CLooG last!
+            self.with_dirs = ["isl", "ppl", "cloog"]
+
+            # add optional ones that were selected (e.g. CLooG, PPL, ...)
+            for x in self.with_dirs:
+                if self.cfg['with%s' % x]:
+                    extra_src_dirs.append(x)
+
+            # see if modules are loaded
+            # if module is available, just use the --with-X GCC configure option
+            for extra in copy(extra_src_dirs):
+                envvar = get_software_root(extra)
+                if envvar:
+                    configopts += " --with-%s=%s" % (extra, envvar)
+                    extra_src_dirs.remove(extra)
+                elif extra in self.with_dirs and stage in ["stage1", "stage3"]:
+                    # building CLooG or PPL or ISL requires a recent compiler
+                    # our best bet is to do a 3-staged build of GCC, and
+                    # build CLooG/PPL/ISL with the GCC we're building in stage 2
+                    # then (bootstrap) build GCC in stage 3
+                    # also, no need to stage cloog/ppl/isl in stage3 (may even cause troubles)
+                    self.stagedbuild = True
+                    extra_src_dirs.remove(extra)
+
+            # try and find source directories with given prefixes
+            # these sources should be included in list of sources in .eb spec file,
+            # so EasyBuild can unpack them in the build dir
+            found_src_dirs = []
+            versions = {}
+            names = {}
+            all_dirs = os.listdir(self.builddir)
+            for d in all_dirs:
+                for sd in extra_src_dirs:
+                    if d.startswith(sd):
+                        found_src_dirs.append({
+                            'source_dir': d,
+                            'target_dir': sd
+                        })
+                        # expected format: get_name[-subname]-get_version
+                        ds = os.path.basename(d).split('-')
+                        name = '-'.join(ds[0:-1])
+                        names.update({sd: name})
+                        ver = ds[-1]
+                        versions.update({sd: ver})
+
+            # we need to find all dirs specified, or else...
+            if not len(found_src_dirs) == len(extra_src_dirs):
+                self.log.error("Couldn't find all source dirs %s: found %s from %s" % (extra_src_dirs, found_src_dirs, all_dirs))
+
+            # copy to a dir with name as expected by GCC build framework
+            for d in found_src_dirs:
+                src = os.path.join(self.builddir, d['source_dir'])
+                if target_prefix:
+                    dst = os.path.join(target_prefix, d['target_dir'])
+                else:
+                    dst = os.path.join(self.cfg['start_dir'], d['target_dir'])
+                if not os.path.exists(dst):
+                    try:
+                        shutil.copytree(src, dst)
+                    except OSError, err:
+                        self.log.error("Failed to copy src %s to dst %s: %s" % (src, dst, err))
+                    self.log.debug("Copied %s to %s, so GCC can build %s" % (src, dst, d['target_dir']))
+                else:
+                    self.log.debug("No need to copy %s to %s, it's already there." % (src, dst))
         else:
-            extra_src_dirs = ["gmp", "mpfr", "mpc"]
-
-        # list of the extra dirs that are needed depending on the 'with%s' option
-        # the order is important: keep CLooG last!
-        self.with_dirs = ["isl", "ppl", "cloog"]
-
-        # add optional ones that were selected (e.g. CLooG, PPL, ...)
-        for x in self.with_dirs:
-            if self.cfg['with%s' % x]:
-                extra_src_dirs.append(x)
-
-        # see if modules are loaded
-        # if module is available, just use the --with-X GCC configure option
-        for extra in copy(extra_src_dirs):
-            envvar = get_software_root(extra)
-            if envvar:
-                configopts += " --with-%s=%s" % (extra, envvar)
-                extra_src_dirs.remove(extra)
-            elif extra in self.with_dirs and stage in ["stage1", "stage3"]:
-                # building CLooG or PPL or ISL requires a recent compiler
-                # our best bet is to do a 3-staged build of GCC, and
-                # build CLooG/PPL/ISL with the GCC we're building in stage 2
-                # then (bootstrap) build GCC in stage 3
-                # also, no need to stage cloog/ppl/isl in stage3 (may even cause troubles)
-                self.stagedbuild = True
-                extra_src_dirs.remove(extra)
-
-        # try and find source directories with given prefixes
-        # these sources should be included in list of sources in .eb spec file,
-        # so EasyBuild can unpack them in the build dir
-        found_src_dirs = []
-        versions = {}
-        names = {}
-        all_dirs = os.listdir(self.builddir)
-        for d in all_dirs:
-            for sd in extra_src_dirs:
-                if d.startswith(sd):
-                    found_src_dirs.append({
-                        'source_dir': d,
-                        'target_dir': sd
-                    })
-                    # expected format: get_name[-subname]-get_version
-                    ds = os.path.basename(d).split('-')
-                    name = '-'.join(ds[0:-1])
-                    names.update({sd: name})
-                    ver = ds[-1]
-                    versions.update({sd: ver})
-
-        # we need to find all dirs specified, or else...
-        if not len(found_src_dirs) == len(extra_src_dirs):
-            self.log.error("Couldn't find all source dirs %s: found %s from %s" % (extra_src_dirs, found_src_dirs, all_dirs))
-
-        # copy to a dir with name as expected by GCC build framework
-        for d in found_src_dirs:
-            src = os.path.join(self.builddir, d['source_dir'])
-            if target_prefix:
-                dst = os.path.join(target_prefix, d['target_dir'])
-            else:
-                dst = os.path.join(self.cfg['start_dir'], d['target_dir'])
-            if not os.path.exists(dst):
-                try:
-                    shutil.copytree(src, dst)
-                except OSError, err:
-                    self.log.error("Failed to copy src %s to dst %s: %s" % (src, dst, err))
-                self.log.debug("Copied %s to %s, so GCC can build %s" % (src, dst, d['target_dir']))
-            else:
-                self.log.debug("No need to copy %s to %s, it's already there." % (src, dst))
-
-        self.log.debug("Prepared extra src dirs for %s: %s (configopts: %s)" % (stage, found_src_dirs, configopts))
+            # in versions prior to GCC v4.5, there's no support for extra source dirs, so return only empty info
+            configopts = ''
+            names = {}
+            versions = {}
 
         return {
             'configopts': configopts,
@@ -490,7 +493,10 @@ class EB_GCC(ConfigureMake):
         common_infix = os.path.join('gcc', self.platform_lib, self.version)
 
         bin_files = ["gcov"]
-        lib_files = ["libgomp.%s" % sharedlib_ext, "libgomp.a"]
+        lib_files = []
+        if LooseVersion(self.version) >= LooseVersion('4.2'):
+            # libgomp was added in GCC 4.2.0
+            ["libgomp.%s" % sharedlib_ext, "libgomp.a"]
         if kernel_name == 'Linux':
             lib_files.extend(["libgcc_s.%s" % sharedlib_ext])
             # libmudflap is replaced by asan (see release notes gcc 4.9.0)
