@@ -18,10 +18,11 @@ EasyBuild support for building SAMtools (SAM - Sequence Alignment/Map), implemen
 """
 import os
 import shutil
+import stat
 from distutils.version import LooseVersion
 
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
-
+from easybuild.tools.filetools import adjust_permissions
 
 class EB_SAMtools(ConfigureMake):
     """
@@ -79,12 +80,11 @@ class EB_SAMtools(ConfigureMake):
             except OSError, err:
                 self.log.error("Copying %s to installation dir %s failed: %s" % (srcfile, destdir, err))
 
-        # fix permissions. Everything 755
-        for root, dirs, files in os.walk(self.installdir):
-                for d in dirs:
-                        os.chmod(os.path.join(root, d), 0755)
-                for f in files:
-                        os.chmod(os.path.join(root, f), 0755)
+        # fix permissions so ownwer group and others have R-X
+        adjust_permissions(self.installdir, stat.S_IRGRP, add=True, recursive=True)
+        adjust_permissions(self.installdir, stat.S_IXGRP, add=True, recursive=True)
+        adjust_permissions(self.installdir, stat.S_IROTH, add=True, recursive=True)
+        adjust_permissions(self.installdir, stat.S_IXOTH, add=True, recursive=True)
 
     def sanity_check_step(self):
         """Custom sanity check for SAMtools."""
