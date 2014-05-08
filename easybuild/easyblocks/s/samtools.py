@@ -81,10 +81,7 @@ class EB_SAMtools(ConfigureMake):
                 self.log.error("Copying %s to installation dir %s failed: %s" % (srcfile, destdir, err))
 
         # fix permissions so ownwer group and others have R-X
-        adjust_permissions(self.installdir, stat.S_IRGRP, add=True, recursive=True)
-        adjust_permissions(self.installdir, stat.S_IXGRP, add=True, recursive=True)
-        adjust_permissions(self.installdir, stat.S_IROTH, add=True, recursive=True)
-        adjust_permissions(self.installdir, stat.S_IXOTH, add=True, recursive=True)
+        adjust_permissions(self.installdir, stat.S_IRGRP|stat.S_IXGRP|stat.S_IROTH|stat.S_IXOTH, add=True, recursive=True)
 
     def sanity_check_step(self):
         """Custom sanity check for SAMtools."""
