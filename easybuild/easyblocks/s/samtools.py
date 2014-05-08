@@ -16,7 +16,6 @@ EasyBuild support for building SAMtools (SAM - Sequence Alignment/Map), implemen
 @author: Fotis Georgatos (Uni.Lu)
 @author: Kenneth Hoste (Ghent University)
 """
-import glob
 import os
 import shutil
 from distutils.version import LooseVersion
@@ -80,11 +79,12 @@ class EB_SAMtools(ConfigureMake):
             except OSError, err:
                 self.log.error("Copying %s to installation dir %s failed: %s" % (srcfile, destdir, err))
 
-        # fix permissions in bin directory
-        for f in glob.glob(self.installdir + '/bin/*'):
-            self.log.info("Fixing permissions of %s in bin dir" % f)
-            os.chmod(f, 0755)
- 
+        # fix permissions. Everything 755
+        for root, dirs, files in os.walk(self.installdir):
+                for d in dirs:
+                        os.chmod(os.path.join(root, d), 0755)
+                for f in files:
+                        os.chmod(os.path.join(root, f), 0755)
 
     def sanity_check_step(self):
         """Custom sanity check for SAMtools."""
