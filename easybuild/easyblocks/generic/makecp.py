@@ -85,7 +85,7 @@ class MakeCp(ConfigureMake):
 
                 # in this loop we expand expresions like
                 # files_to_copy = [(["scripts/*.sh"], 'bin')]
-		srcs = reduce(list.__add__, [glob.glob(src) for src in src])
+		srcs = reduce(list.__add__, [glob.glob(src) for src in srcs])
 
                 for src in srcs:
 		    # check if the file is in the root folder containing the sources
