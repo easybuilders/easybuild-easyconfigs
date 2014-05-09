@@ -30,15 +30,18 @@ EasyBuild support for Boost, implemented as an easyblock
 @author: Kenneth Hoste (Ghent University)
 @author: Pieter De Baets (Ghent University)
 @author: Jens Timmerman (Ghent University)
+@author: Ward Poelmans (Ghent University)
 """
+from distutils.version import LooseVersion
 import os
 import shutil
 
 import easybuild.tools.toolchain as toolchain
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import CUSTOM
-from easybuild.tools.filetools import run_cmd
 from easybuild.tools.modules import get_software_root
+from easybuild.tools.run import run_cmd
+from easybuild.tools.systemtools import get_libc_version
 
 
 class EB_Boost(EasyBlock):
@@ -47,6 +50,11 @@ class EB_Boost(EasyBlock):
     def __init__(self, *args, **kwargs):
         """Initialize Boost-specific variables."""
         super(EB_Boost, self).__init__(*args, **kwargs)
+
+        libc_version = get_libc_version()
+        if LooseVersion(libc_version) > LooseVersion("2.15") and LooseVersion(self.version) <= LooseVersion("1.47.0"):
+            self.log.info("Adding patch for too new version of libc")
+            self.cfg["patches"] = self.cfg["patches"] + ["TIMEUTC-Boost-1.47.0.patch"]
 
         self.objdir = None
 
