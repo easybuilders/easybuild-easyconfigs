@@ -33,6 +33,7 @@ Support for building and installing Clang, implemented as an easyblock.
 """
 
 import fileinput
+import glob
 import os
 import shutil
 import sys
@@ -117,27 +118,27 @@ class EB_Clang(CMakeMake):
         if self.llvm_src_dir is None:
             self.log.error("Could not determine LLVM source root (LLVM source was not unpacked?)")
 
-        # Move other directories into the LLVM tree.
-        if LooseVersion(self.version) > LooseVersion('3.3'):
-            compiler_rt_src_dir = 'compiler-rt-%s' % self.version
-            polly_src_dir = 'polly-%s' % self.version
-        else:
-            compiler_rt_src_dir = 'compiler-rt-%s.src' % self.version
-            polly_src_dir = 'polly-%s.src' % self.version
+        compiler_rt_src_dir = glob.glob('compiler-rt-*')
+        if not compiler_rt_src_dir:
+            self.log.error("Could not determine the compiler-rt source directory")
+
         src_dirs = {
-            compiler_rt_src_dir: os.path.join(self.llvm_src_dir, 'projects', 'compiler-rt')
+            compiler_rt_src_dir[0]: os.path.join(self.llvm_src_dir, 'projects', 'compiler-rt')
         }
 
-        if self.cfg["usepolly"]:
-            src_dirs[polly_src_dir] = os.path.join(self.llvm_src_dir, 'tools', 'polly')
 
-        if LooseVersion(self.version) > LooseVersion('3.3'):
-            clang_src_dir = 'clang-%s' % self.version
-        elif LooseVersion(self.version) < LooseVersion('3.3'):
-            clang_src_dir = 'clang-%s.src' % self.version
-        else:
-            clang_src_dir = 'cfe-%s.src' % self.version
-        src_dirs[clang_src_dir] = os.path.join(self.llvm_src_dir, 'tools', 'clang')
+        if self.cfg["usepolly"]:
+            polly_src_dir = glob.glob('polly-*')
+            if not polly_src_dir:
+                self.log.error("Could not determine the polly source directory")
+            src_dirs[polly_src_dir[0]] = os.path.join(self.llvm_src_dir, 'tools', 'polly')
+
+        clang_src_dir = glob.glob('clang-*') + glob.glob('cfe-*')
+
+        if not clang_src_dir:
+            self.log.error("Could not determine the Clang source directory")
+
+        src_dirs[clang_src_dir[0]] = os.path.join(self.llvm_src_dir, 'tools', 'clang')
 
         for tmp in self.src:
             for (dir, new_path) in src_dirs.items():
