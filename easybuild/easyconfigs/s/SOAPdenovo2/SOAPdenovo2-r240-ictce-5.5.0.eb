@@ -1,32 +1,38 @@
+#    With <3 for EasyBuild
+#    
+#    EasyConfig for SOAPdenovo2:
+#    ----------------------------------------------------------------------------
+#    Copyright: 2013 - Gregor Mendel Institute of Molecular Plant Biology GmBH
+#    License: MIT
+#    Authors: Petar <petar.forai@gmi.oeaw.ac.at> Forai
+#    ----------------------------------------------------------------------------
+
+easyblock = "MakeCp"
+
 name = 'SOAPdenovo2'
 version = 'r240'
 
 homepage = 'http://soap.genomics.org.cn/index.html'
-description = """
-SOAPdenovo is a novel short-read assembly method that can build a de novo draft assembly for human-sized genomes. The
- program is specially designed to assemble Illumina short reads. It creates new opportunities for building reference
- sequences and carrying out accurate analyses of unexplored genomes in a cost effective way. SOAPdenovo2 is the
- successor of SOAPdenovo.
-"""
+description = """SOAPdenovo is a novel short-read assembly method that can build a 
+ de novo draft assembly for human-sized genomes. The program is specially designed to 
+ assemble Illumina short reads. It creates new opportunities for building reference 
+ sequences and carrying out accurate analyses of unexplored genomes in a cost effective way. 
+ SOAPdenovo2 is the successor of SOAPdenovo.""" 
 
 toolchain = {'name': 'ictce', 'version': '5.5.0'}
 toolchainopts = {'optarch': True, 'pic': True}
 
-sourcename = '%s-src-%s' % (name, version)
-sources = [sourcename + '.tgz']
 source_urls = [SOURCEFORGE_SOURCE]
+sources = ['%(name)s-src-%(version)s.tgz']
 
-# only a make step, no configure and install, so build in install dir
-buildininstalldir = True
-skipsteps = ['configure', 'install']
-patches = ['SOAPdenovo2_inistd.patch']
-# parallel build seems to fail
-parallel = 1
+patches = ['SOAPdenovo2_fix-unistd-includes.patch']
 
-modextrapaths = {'PATH': 'sourcename'}
+# parallel build is broken
+maxparallel = 1
+
+files_to_copy = [(['SOAPdenovo-127mer','SOAPdenovo-63mer'], 'bin')]
+
 sanity_check_paths = {
-    'files': [sourcename + '/SOAPdenovo-127mer', sourcename + '/SOAPdenovo-63mer'],
+    'files': ['bin/SOAPdenovo-63mer', 'bin/SOAPdenovo-127mer'],
     'dirs': [],
 }
-
-moduleclass = 'bio'
