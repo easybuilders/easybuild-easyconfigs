@@ -506,8 +506,6 @@ class EB_GCC(ConfigureMake):
                 lib_files.extend(["libasan.%s" % sharedlib_ext, "libasan.a"])
         libexec_files = []
         dirs = ['lib/%s' % common_infix]
-        if kernel_name == 'Linux':
-            dirs.append('lib64')
 
         if not self.cfg['languages']:
             # default languages are c, c++, fortran
