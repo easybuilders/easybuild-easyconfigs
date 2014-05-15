@@ -1,0 +1,46 @@
+# This file is an EasyBuild reciPY as per https://github.com/hpcugent/easybuild
+# Author: Pablo Escobar Lopez
+# Swiss Institute of Bioinformatics
+# Biozentrum - University of Basel
+
+easyblock = 'MakeCp'
+
+name = "RSEM"
+# this is the version that galaxy wrapper uses
+version = "1.1.17"
+
+homepage = 'http://deweylab.biostat.wisc.edu/rsem/'
+description = """ RSEM: RNA-Seq by Expectation-Maximization, is a software package for 
+ estimating gene and isoform expression levels from RNA-Seq data. The RSEM package 
+ provides an user-friendly interface, supports threads for parallel computation of the 
+ EM algorithm, single-end and paired-end read data, quality scores, variable-length 
+ reads and RSPD estimation. """
+
+toolchain = {'name': 'goolf', 'version': '1.4.10'}
+
+source_urls = ['http://deweylab.biostat.wisc.edu/rsem/src/']
+sources = [SOURCELOWER_TAR_GZ]
+
+# RSEM will use bowtie if found in user $PATH
+dependencies = [
+    ('Bowtie', '1.0.0'),
+]
+
+parallel = 1
+
+# put here the list of generated executables when compiling
+list_of_executables = ["extract-transcript-to-gene-map-from-trinity", "convert-sam-for-rsem",
+                       "rsem-*"]
+
+# this is the real EasyBuild line to copy all the executables and perl scripts to "bin"
+# glob support in MakeCp easyblock is required so EasyBuild-1.12 or higher is required
+easybuild_version = '1.12.0'
+files_to_copy = [(list_of_executables, "bin")]
+
+sanity_check_paths = {
+    'files': ["bin/%s" % x for x in ["convert-sam-for-rsem", "rsem-run-em", "rsem-tbam2gbam",
+                                    "rsem-run-gibbs"]],
+    'dirs': []
+}
+
+moduleclass = 'bio'
