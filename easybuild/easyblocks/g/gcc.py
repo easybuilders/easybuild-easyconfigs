@@ -84,7 +84,7 @@ class EB_GCC(ConfigureMake):
         # unset some environment variables that are known to may cause nasty build errors when bootstrapping
         self.cfg.update('unwanted_env_vars', ['CPATH', 'C_INCLUDE_PATH', 'CPLUS_INCLUDE_PATH', 'OBJC_INCLUDE_PATH'])
         # ubuntu needs the LIBRARY_PATH env var to work apparently (#363)
-        if get_os_name() is not ['ubuntu', 'debian']:
+        if get_os_name() is not in ['ubuntu', 'debian']:
             self.cfg.update('unwanted_env_vars', ['LIBRARY_PATH'])
 
     def create_dir(self, dirname):
