@@ -11,11 +11,15 @@ toolchain = {'name': 'GCC', 'version': '4.8.2'}
 source_urls = ['https://github.com/ParaStation/%s/archive/' % name]
 sources = ['%s-1.zip' % version]
 
+# patch for potential lib vs. lib64 mismatches when installing on e.g. openSUSE
+patches = ['psmpi2-%(version)s_lib-dir.patch']
+
+dependencies = [
+    ('pscom', '5.0.43'),
+]
+
 # MPICH configure wants F90/F90FLAGS to be renamed to FC/FCFLAGS.
 preconfigopts = 'export FC="$F90"; export FCFLAGS="$F90FLAGS"; unset F90; unset F90FLAGS; '
-
-# Patch for potential lib vs. lib64 mismatches when installing on openSUSE:
-patches = ['psmpi2-5.0.29_make_install_openSUSE.patch']
 
 configopts = '--with-confset=default --with-threading MPICH2_LDFLAGS=-lpscom'
 
@@ -32,10 +36,6 @@ sanity_check_paths = {
               ('lib/libmpichf90.so', 'lib64/libmpichf90.so')],
     'dirs': [],
 }
-
-dependencies = [
-    ('pscom', '5.0.43'),
-]
 
 moduleclass = 'mpi'
 
