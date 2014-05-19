@@ -41,7 +41,7 @@ from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.modules import get_software_root
 from easybuild.tools.run import run_cmd
-from easybuild.tools.systemtools import get_libc_version
+from easybuild.tools.systemtools import get_glibc_version, UNKNOWN
 
 
 class EB_Boost(EasyBlock):
@@ -51,9 +51,10 @@ class EB_Boost(EasyBlock):
         """Initialize Boost-specific variables."""
         super(EB_Boost, self).__init__(*args, **kwargs)
 
-        libc_version = get_libc_version()
-        if LooseVersion(libc_version) > LooseVersion("2.15") and LooseVersion(self.version) <= LooseVersion("1.47.0"):
-            self.log.info("Adding patch for too new version of libc")
+        glibc_version = get_glibc_version()
+        if glibc_version is not UNKNOWN and LooseVersion(glibc_version) > LooseVersion("2.15") \
+                and LooseVersion(self.version) <= LooseVersion("1.47.0"):
+            self.log.info("Adding patch for too new version of glibc")
             self.cfg["patches"] = self.cfg["patches"] + ["TIMEUTC-Boost-1.47.0.patch"]
 
         self.objdir = None
