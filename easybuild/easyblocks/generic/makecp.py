@@ -59,23 +59,22 @@ class MakeCp(ConfigureMake):
     def install_step(self):
         """Install by copying specified files and directories."""
         try:
+            # make sure we're (still) in the start dir
             os.chdir(self.cfg['start_dir'])
-        except OSError, err:
-            self.log.error("Failed to move (back) to %s: %s" % (self.cfg['start_dir'], err))
-        try:
+
             files_to_copy = self.cfg.get('files_to_copy', {})
             self.log.debug("Starting install_step with files_to_copy: %s" % files_to_copy)
             for fil in files_to_copy:
                 if isinstance(fil, tuple):
                     # ([src1, src2], targetdir)
                     if len(fil) == 2 and isinstance(fil[0], list) and isinstance(fil[1], basestring):
-                        srcs = fil[0]
+                        files_specs = fil[0]
                         target = os.path.join(self.installdir, fil[1])
                     else:
                         self.log.error("Only tuples of format '([<source files>], <target dir>)' supported.")
                 # 'src_file' or 'src_dir'
                 elif isinstance(fil, basestring):
-                    srcs = [fil]
+                    files_specs = [fil]
                     target = self.installdir
                 else:
                     self.log.error("Found neither string nor tuple as file to copy: '%s' (type %s)" % (fil, type(fil)))
@@ -83,28 +82,34 @@ class MakeCp(ConfigureMake):
                 if not os.path.exists(target):
                     os.makedirs(target)
 
-                # in this loop we expand expresions like
-                # files_to_copy = [(["scripts/*.sh"], 'bin')]
-		srcs = reduce(list.__add__, [glob.glob(src) for src in srcs])
+                for files_spec in files_specs:
+                    # first look for files in start dir
+                    filepaths = glob.glob(os.path.join(self.cfg['start_dir'], files_spec))
+                    tup = (files_spec, self.cfg['start_dir'], filepaths)
+                    self.log.debug("List of files matching '%s' in start dir %s: %s" % tup)
 
-                for src in srcs:
-		    # check if the file is in the root folder containing the sources
-		    if os.path.exists(os.path.join(self.src[0]['finalpath'], src)):
-  			src = os.path.join(self.src[0]['finalpath'], src)
-		    # if the file is not in the root folder try to look for it 
-		    # in the start_dir defined in the easyconfig
-		    else:
-			src = os.path.join(self.cfg['start_dir'], src)
-                    # copy individual file
-                    if os.path.isfile(src):
-                        self.log.debug("Copying file %s to %s" % (src, target))
-                        shutil.copy2(src, target)
-                    # copy directory
-                    elif os.path.isdir(src):
-                        self.log.debug("Copying directory %s to %s" % (src, target))
-                        shutil.copytree(src, os.path.join(target, os.path.basename(src)))
-                    else:
-                        self.log.error("Can't copy non-existing path %s to %s" % (src, target))
+                    if not filepaths and len(self.src) > 0:
+                        # use location of first unpacked source file as fallback location
+                        tup = (files_spec, self.cfg['start_dir'])
+                        self.log.warning("No files matching '%s' found in start dir %s" % tup)
+                        filepaths = glob.glob(os.path.join(self.src[0]['finalpath'], files_spec))
+                        self.log.debug("List of files matching '%s' in %s: %s" % (tup + (filepaths,)))
+
+                    # there should be at least one match per file spec
+                    if not filepaths:
+                        self.log.error("No files matching '%s' found anywhere." % files_spec)
+
+                    for filepath in filepaths:
+                        # copy individual file
+                        if os.path.isfile(filepath):
+                            self.log.debug("Copying file %s to %s" % (filepath, target))
+                            shutil.copy2(filepath, target)
+                        # copy directory
+                        elif os.path.isdir(filepath):
+                            self.log.debug("Copying directory %s to %s" % (filepath, target))
+                            shutil.copytree(filepath, os.path.join(target, os.path.basename(filepath)))
+                        else:
+                            self.log.error("Can't copy non-existing path %s to %s" % (filepath, target))
 
         except OSError, err:
             self.log.error("Copying %s to installation dir failed: %s" % (fil, err))
