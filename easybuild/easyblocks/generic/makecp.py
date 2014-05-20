@@ -85,10 +85,16 @@ class MakeCp(ConfigureMake):
 
                 # in this loop we expand expresions like
                 # files_to_copy = [(["scripts/*.sh"], 'bin')]
-                srcs = reduce(list.__add__, [glob.glob(src) for src in srcs])
+		srcs = reduce(list.__add__, [glob.glob(src) for src in srcs])
 
                 for src in srcs:
-                    src = os.path.join(self.cfg['start_dir'], src)
+		    # check if the file is in the root folder containing the sources
+		    if os.path.exists(os.path.join(self.src[0]['finalpath'], src)):
+  			src = os.path.join(self.src[0]['finalpath'], src)
+		    # if the file is not in the root folder try to look for it 
+		    # in the start_dir defined in the easyconfig
+		    else:
+			src = os.path.join(self.cfg['start_dir'], src)
                     # copy individual file
                     if os.path.isfile(src):
                         self.log.debug("Copying file %s to %s" % (src, target))
