@@ -1,5 +1,5 @@
 ##
-# Copyright 2009-2013 Ghent University
+# Copyright 2014 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -26,26 +26,42 @@
 EasyBuild support for building and installing Go, implemented as an easyblock
 
 @author: Adam DeConinck (NVIDIA)
+@author: Kenneth Hoste (HPC-UGent)
 """
 import os
+import shutil
 
-from easybuild.easyblocks.generic.makecp import MakeCp
-from easybuild.tools.filetools import run_cmd
+from easybuild.easyblocks.generic.configuremake import ConfigureMake
+from easybuild.tools.filetools import rmtree2, run_cmd
 
-class EB_Go(MakeCp):
+class EB_Go(ConfigureMake):
     """
     Build Go compiler
     """
+    def configure_step(self):
+        """No dedicated configure step."""
+        pass
 
-    def build_step(self, verbose=False):
+    def build_step(self):
+        """No dedicated build step, building & installing is done in one go."""
+        pass
+
+    def install_step(self):
         """
-        Execute the all.bash script to build the Go compiler,
-        setting GOROOT_FINAL to the eventual install location.
-        """   
+        Execute the all.bash script to build and install the Go compiler,
+        specifying the final installation prefix by setting $GOROOT_FINAL.
+        """
+        srcdir = os.path.join(self.cfg['start_dir'], 'src')
         try:
-             os.chdir("%s/src" % (self.cfg['start_dir']))
+            os.chdir(srcdir)
         except OSError, err:
-             self.log.error("Failed to move (back) to %s: %s" % (self.cfg['start_dir'], err))
-        cmd = "GOROOT_FINAL=%s ./all.bash" % (self.installdir)
-        (out, _) = run_cmd(cmd, log_all=True, simple=False, log_output=verbose)
-        return out
+            self.log.error("Failed to move to %s: %s" % (srcdir, err))
+
+        cmd = "GOROOT_FINAL=%s ./all.bash" % self.installdir
+        run_cmd(cmd, log_all=True, simple=False)
+
+        try:
+            rmtree2(self.installdir)
+            shutil.copytree(self.cfg['start_dir'], self.installdir, symlinks=self.cfg['keepsymlinks'])
+        except OSError, err:
+            self.log.error("Failed to copy installation to %s: %s" % (self.installdir, err))
