@@ -46,16 +46,27 @@ from easybuild.tools.modules import get_software_version
 
 def det_pylibdir():
     """Determine Python library directory."""
-
-    # note: we can't rely on distutils.sysconfig.get_python_lib(),
-    # since setuptools and distribute hardcode 'lib/python2.X/site-packages'
+    log = fancylogger.getLogger('det_pylibdir', fname=False)
     pyver = get_software_version('Python')
     if not pyver:
-        log = fancylogger.getLogger('det_pylibdir', fname=False)
         log.error("Python module not loaded.")
     else:
-        short_pyver = '.'.join(pyver.split('.')[:2])
-        return "lib/python%s/site-packages" % short_pyver
+        # determine Python lib dir via distutils
+        # use run_cmd, we can to talk to the active Python, not the system Python running EasyBuild
+        prefix = '/tmp/'
+        pycmd = 'import distutils.sysconfig; print distutils.sysconfig.get_python_lib(prefix="%s")' % prefix
+        cmd = "python -c '%s'" % pycmd
+        out, ec = run_cmd(cmd, simple=False)
+        out = out.strip()
+
+        # value obtained should start with specified prefix, otherwise something is very wrong
+        if not out.startswith(prefix):
+            tup = (cmd, prefix, out, ec)
+            log.error("Output of %s does not start with specified prefix %s: %s (exit code %s)" % tup)
+
+        pylibdir = out.strip()[len(prefix):]
+        log.debug("Determined pylibdir using '%s': %s" % (cmd, pylibdir))
+        return pylibdir
 
 
 class PythonPackage(ExtensionEasyBlock):
