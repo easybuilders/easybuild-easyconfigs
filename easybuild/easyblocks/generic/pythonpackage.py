@@ -55,9 +55,17 @@ def det_pylibdir():
         # use run_cmd, we can to talk to the active Python, not the system Python running EasyBuild
         prefix = '/tmp/'
         pycmd = 'import distutils.sysconfig; print distutils.sysconfig.get_python_lib(prefix="%s")' % prefix
-        out, _ = run_cmd("python -c '%s'" % pycmd, simple=False)
+        cmd = "python -c '%s'" % pycmd
+        out, ec = run_cmd(cmd, simple=False)
+        out = out.strip()
+
+        # value obtained should start with specified prefix, otherwise something is very wrong
+        if not out.startswith(prefix):
+            tup = (cmd, prefix, out, ec)
+            log.error("Output of %s does not start with specified prefix %s: %s (exit code %s)" % tup)
+
         pylibdir = out.strip()[len(prefix):]
-        log.debug("Determined pylibdir using '%s': %s" % (pycmd, pylibdir))
+        log.debug("Determined pylibdir using '%s': %s" % (cmd, pylibdir))
         return pylibdir
 
 
