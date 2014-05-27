@@ -284,23 +284,32 @@ class EB_Clang(CMakeMake):
         # we do it by hand
         if self.cfg['static_analyzer']:
             try:
-                shutil.copytree("%s/tools/clang/tools/scan-build/" % self.llvm_src_dir,
-                                "%s/libexec/clang-analyzer/scan-build" % self.installdir)
-                shutil.copytree("%s/tools/clang/tools/scan-view/" % self.llvm_src_dir,
-                                "%s/libexec/clang-analyzer/scan-view/" % self.installdir)
-                os.makedirs("%s/share/man/man1" % self.installdir)
-                shutil.copy2("%s/tools/clang/tools/scan-build/scan-build.1" % self.llvm_src_dir,
-                             "%s/share/man/man1" % self.installdir)
-                os.symlink("../../../bin",
-                           "%s/libexec/clang-analyzer/scan-build/bin" % self.installdir)
-                os.symlink("../../../bin",
-                           "%s/libexec/clang-analyzer/scan-view/bin" % self.installdir)
-                os.symlink("../libexec/clang-analyzer/scan-build/scan-build",
-                           "%s/bin/scan-build" % self.installdir)
-                os.symlink("../libexec/clang-analyzer/scan-view/scan-view",
-                           "%s/bin/scan-view" % self.installdir)
+                tools_src_dir = os.path.join(self.llvm_src_dir, 'tools', 'clang', 'tools')
+                analyzer_target_dir = os.path.join(self.installdir, 'libexec', 'clang-analyzer')
+                bindir = os.path.join(self.installdir, 'bin')
+                for scan_dir in ['scan-build', 'scan-view']:
+                    shutil.copytree(os.path.join(tools_src_dir, scan_dir), os.path.join(analyzer_target_dir, scan_dir))
+                    os.symlink(os.path.relpath(bindir, os.path.join(analyzer_target_dir, scan_dir)),
+                               os.path.join(analyzer_target_dir, scan_dir, 'bin'))
+                    os.symlink(os.path.relpath(os.path.join(analyzer_target_dir, scan_dir, scan_dir), bindir),
+                               os.path.join(bindir, scan_dir))
+
+                mandir = os.path.join(self.installdir, 'share', 'man', 'man1')
+                os.makedirs(mandir)
+                shutil.copy2(os.path.join(tools_src_dir, 'scan-build', 'scan-build.1'), mandir)
             except OSError, err:
                 self.log.error("Failed to copy static analyzer dirs to install dir: %s" % err)
+
+    def sanity_check_step(self):
+        """Custom sanity check for Clang."""
+        custom_paths = {
+            'files': ["bin/llvm-symbolizer"],
+            'dirs': [],
+        }
+        if self.cfg['static_analyzer']:
+            custom_paths['files'].extend(["bin/scan-build", "bin/scan-view"])
+
+        super(EB_Clang, self).sanity_check_step(custom_paths=custom_paths)
 
     def make_module_extra(self):
         """Custom variables for Clang module."""
