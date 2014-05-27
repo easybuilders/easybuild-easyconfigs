@@ -60,6 +60,7 @@ class EB_Clang(CMakeMake):
             ('build_targets', [["X86"], "Build targets for LLVM. Possible values: " + ', '.join(CLANG_TARGETS), CUSTOM]),
             ('bootstrap', [True, "Bootstrap Clang using GCC", CUSTOM]),
             ('usepolly', [False, "Build Clang with polly", CUSTOM]),
+            ('static_analyzer', [True, "Install the static analyser of Clang", CUSTOM]),
         ]
 
         return CMakeMake.extra_options(extra_vars)
@@ -278,3 +279,49 @@ class EB_Clang(CMakeMake):
         else:
             os.chdir(self.llvm_obj_dir_stage1)
         super(EB_Clang, self).install_step()
+
+        # the static analyzer is not installed by default
+        # we do it by hand
+        if self.cfg['static_analyzer']:
+            try:
+                tools_src_dir = os.path.join(self.llvm_src_dir, 'tools', 'clang', 'tools')
+                analyzer_target_dir = os.path.join(self.installdir, 'libexec', 'clang-analyzer')
+                bindir = os.path.join(self.installdir, 'bin')
+                for scan_dir in ['scan-build', 'scan-view']:
+                    shutil.copytree(os.path.join(tools_src_dir, scan_dir), os.path.join(analyzer_target_dir, scan_dir))
+                    os.symlink(os.path.relpath(bindir, os.path.join(analyzer_target_dir, scan_dir)),
+                               os.path.join(analyzer_target_dir, scan_dir, 'bin'))
+                    os.symlink(os.path.relpath(os.path.join(analyzer_target_dir, scan_dir, scan_dir), bindir),
+                               os.path.join(bindir, scan_dir))
+
+                mandir = os.path.join(self.installdir, 'share', 'man', 'man1')
+                os.makedirs(mandir)
+                shutil.copy2(os.path.join(tools_src_dir, 'scan-build', 'scan-build.1'), mandir)
+            except OSError, err:
+                self.log.error("Failed to copy static analyzer dirs to install dir: %s" % err)
+
+    def sanity_check_step(self):
+        """Custom sanity check for Clang."""
+        custom_paths = {
+            'files': [
+                "bin/clang", "bin/clang++", "bin/llvm-ar", "bin/llvm-nm", "bin/llvm-as", "bin/opt", "bin/llvm-link",
+                "bin/llvm-config", "bin/llvm-symbolizer", "include/llvm-c/Core.h", "include/clang-c/Index.h",
+                "lib/libclang.so", "lib/clang/%s/include/stddef.h" % self.version,
+            ],
+            'dirs': ["include/clang", "include/llvm", "lib/clang/%s/lib" % self.version],
+        }
+        if self.cfg['static_analyzer']:
+            custom_paths['files'].extend(["bin/scan-build", "bin/scan-view"])
+
+        if self.cfg["usepolly"]:
+            custom_paths['files'].extend(["lib/LLVMPolly.so"])
+            custom_paths['dirs'].extend(["include/polly"])
+
+        super(EB_Clang, self).sanity_check_step(custom_paths=custom_paths)
+
+    def make_module_extra(self):
+        """Custom variables for Clang module."""
+        txt = super(EB_Clang, self).make_module_extra()
+        # we set the symbolizer path so that asan/tsan give meanfull output by default
+        txt += self.moduleGenerator.set_environment('ASAN_SYMBOLIZER_PATH', '$root/bin/llvm-symbolizer')
+        return txt
