@@ -56,6 +56,7 @@ class EB_CPLEX(Binary):
     @staticmethod
     def extra_options():
         extra_vars = [
+            # staged install via a tmp dir can help with the hard (potentially faulty) check on available disk space
             ('staged_install', [False, "Should the installation should be staged via a temporary dir?", CUSTOM]),
         ]
         return Binary.extra_options(extra_vars)
