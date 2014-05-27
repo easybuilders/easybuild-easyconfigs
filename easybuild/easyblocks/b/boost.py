@@ -34,6 +34,7 @@ EasyBuild support for Boost, implemented as an easyblock
 """
 from distutils.version import LooseVersion
 import fileinput
+import glob
 import os
 import re
 import shutil
@@ -65,35 +66,27 @@ class EB_Boost(EasyBlock):
         }
         return EasyBlock.extra_options(extra_vars)
 
-    def configure_step(self):
-        """Configure Boost build using custom tools"""
+    def patch_step(self):
+        """Patch Boost source code before building."""
+        super(EB_Boost, self).patch_step()
 
+        # TIME_UTC is also defined in recent glibc versions, so we need to rename it for old Boost versions (<= 1.47)
         glibc_version = get_glibc_version()
-        if glibc_version is not UNKNOWN and LooseVersion(glibc_version) > LooseVersion("2.15") \
-                and LooseVersion(self.version) <= LooseVersion("1.47.0"):
+        old_glibc = glibc_version is not UNKNOWN and LooseVersion(glibc_version) > LooseVersion("2.15")
+        if old_glibc and LooseVersion(self.version) <= LooseVersion("1.47.0"):
             self.log.info("Patching because the glibc version is too new")
-            patchfiles = [
-                "boost/thread/xtime.hpp",
-                "libs/interprocess/test/condition_test_template.hpp",
-                "libs/interprocess/test/util.hpp",
-                "libs/spirit/classic/test/grammar_mt_tests.cpp",
-                "libs/spirit/classic/test/owi_mt_tests.cpp",
-                "libs/thread/example/starvephil.cpp",
-                "libs/thread/example/tennis.cpp",
-                "libs/thread/example/thread.cpp",
-                "libs/thread/example/xtime.cpp",
-                "libs/thread/src/pthread/timeconv.inl",
-                "libs/thread/src/win32/timeconv.inl",
-                "libs/thread/test/test_xtime.cpp",
-                "libs/thread/test/util.inl",
-            ]
-            for patchfile in patchfiles:
+            files_to_patch = ["boost/thread/xtime.hpp"] + glob.glob("libs/interprocess/test/*.hpp")
+            files_to_patch += glob.glob("libs/spirit/classic/test/*.cpp") + glob.glob("libs/spirit/classic/test/*.inl")
+            for patchfile in files_to_patch:
                 try:
                     for line in fileinput.input("%s" % patchfile, inplace=1, backup='.orig'):
                         line = re.sub(r"TIME_UTC", r"TIME_UTC_", line)
                         sys.stdout.write(line)
                 except IOError, err:
                     self.log.error("Failed to patch %s: %s" % (patchfile, err))
+
+    def configure_step(self):
+        """Configure Boost build using custom tools"""
 
         # mpi sanity check
         if self.cfg['boost_mpi'] and not self.toolchain.options.get('usempi', None):
