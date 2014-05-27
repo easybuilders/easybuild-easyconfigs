@@ -303,11 +303,19 @@ class EB_Clang(CMakeMake):
     def sanity_check_step(self):
         """Custom sanity check for Clang."""
         custom_paths = {
-            'files': ["bin/llvm-symbolizer"],
-            'dirs': [],
+            'files': [
+                "bin/clang", "bin/clang++", "bin/llvm-ar", "bin/llvm-nm", "bin/llvm-as", "bin/opt", "bin/llvm-link",
+                "bin/llvm-config", "bin/llvm-symbolizer", "include/llvm-c/Core.h", "include/clang-c/Index.h",
+                "lib/libclang.so", "lib/clang/%s/include/stddef.h" % self.version,
+            ],
+            'dirs': ["include/clang", "include/llvm", "lib/clang/%s/lib" % self.version],
         }
         if self.cfg['static_analyzer']:
             custom_paths['files'].extend(["bin/scan-build", "bin/scan-view"])
+
+        if self.cfg["usepolly"]:
+            custom_paths['files'].extend(["lib/LLVMPolly.so"])
+            custom_paths['dirs'].extend(["include/polly"])
 
         super(EB_Clang, self).sanity_check_step(custom_paths=custom_paths)
 
