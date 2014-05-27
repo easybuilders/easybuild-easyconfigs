@@ -33,8 +33,11 @@ EasyBuild support for Boost, implemented as an easyblock
 @author: Ward Poelmans (Ghent University)
 """
 from distutils.version import LooseVersion
+import fileinput
 import os
+import re
 import shutil
+import sys
 
 import easybuild.tools.toolchain as toolchain
 from easybuild.framework.easyblock import EasyBlock
@@ -51,12 +54,6 @@ class EB_Boost(EasyBlock):
         """Initialize Boost-specific variables."""
         super(EB_Boost, self).__init__(*args, **kwargs)
 
-        glibc_version = get_glibc_version()
-        if glibc_version is not UNKNOWN and LooseVersion(glibc_version) > LooseVersion("2.15") \
-                and LooseVersion(self.version) <= LooseVersion("1.47.0"):
-            self.log.info("Adding patch for too new version of glibc")
-            self.cfg["patches"] = self.cfg["patches"] + ["TIMEUTC-Boost-1.47.0.patch"]
-
         self.objdir = None
 
     @staticmethod
@@ -70,6 +67,33 @@ class EB_Boost(EasyBlock):
 
     def configure_step(self):
         """Configure Boost build using custom tools"""
+
+        glibc_version = get_glibc_version()
+        if glibc_version is not UNKNOWN and LooseVersion(glibc_version) > LooseVersion("2.15") \
+                and LooseVersion(self.version) <= LooseVersion("1.47.0"):
+            self.log.info("Patching because the glibc version is too new")
+            patchfiles = [
+                "boost/thread/xtime.hpp",
+                "libs/interprocess/test/condition_test_template.hpp",
+                "libs/interprocess/test/util.hpp",
+                "libs/spirit/classic/test/grammar_mt_tests.cpp",
+                "libs/spirit/classic/test/owi_mt_tests.cpp",
+                "libs/thread/example/starvephil.cpp",
+                "libs/thread/example/tennis.cpp",
+                "libs/thread/example/thread.cpp",
+                "libs/thread/example/xtime.cpp",
+                "libs/thread/src/pthread/timeconv.inl",
+                "libs/thread/src/win32/timeconv.inl",
+                "libs/thread/test/test_xtime.cpp",
+                "libs/thread/test/util.inl",
+            ]
+            for patchfile in patchfiles:
+                try:
+                    for line in fileinput.input("%s" % patchfile, inplace=1, backup='.orig'):
+                        line = re.sub(r"TIME_UTC", r"TIME_UTC_", line)
+                        sys.stdout.write(line)
+                except IOError, err:
+                    self.log.error("Failed to patch %s: %s" % (patchfile, err))
 
         # mpi sanity check
         if self.cfg['boost_mpi'] and not self.toolchain.options.get('usempi', None):
@@ -156,16 +180,14 @@ class EB_Boost(EasyBlock):
 
     def sanity_check_step(self):
         """Custom sanity check for Boost."""
-
-        fs = []
-        if self.cfg['boost_mpi']:
-            fs.append('lib/libboost_mpi.so')
-        if get_software_root('Python'):
-            fs.append('lib/libboost_python.so')
-
         custom_paths = {
-                        'files': ['lib/libboost_system.so'] + fs,
-                       'dirs':['include/boost']
-                       }
+            'files': ['lib/libboost_system.so'],
+            'dirs': ['include/boost']
+        }
+
+        if self.cfg['boost_mpi']:
+            custom_paths["files"].append('lib/libboost_mpi.so')
+        if get_software_root('Python'):
+            custom_paths["files"].append('lib/libboost_python.so')
 
         super(EB_Boost, self).sanity_check_step(custom_paths=custom_paths)
