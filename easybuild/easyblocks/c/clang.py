@@ -118,27 +118,29 @@ class EB_Clang(CMakeMake):
         if self.llvm_src_dir is None:
             self.log.error("Could not determine LLVM source root (LLVM source was not unpacked?)")
 
-        compiler_rt_src_dir = glob.glob('compiler-rt-*')
-        if not compiler_rt_src_dir:
-            self.log.error("Could not determine the compiler-rt source directory")
+        compiler_rt_src_dirs = glob.glob('compiler-rt-*')
+        if len(compiler_rt_src_dirs) != 1:
+            self.log.error("Failed to find exactly one compiler-rt source directory: %s" % compiler_rt_src_dirs)
+        compiler_rt_src_dir = compiler_rt_src_dirs[0]
 
         src_dirs = {
-            compiler_rt_src_dir[0]: os.path.join(self.llvm_src_dir, 'projects', 'compiler-rt')
+            compiler_rt_src_dir: os.path.join(self.llvm_src_dir, 'projects', 'compiler-rt')
         }
 
-
         if self.cfg["usepolly"]:
-            polly_src_dir = glob.glob('polly-*')
-            if not polly_src_dir:
-                self.log.error("Could not determine the polly source directory")
-            src_dirs[polly_src_dir[0]] = os.path.join(self.llvm_src_dir, 'tools', 'polly')
+            polly_src_dirs = glob.glob('polly-*')
+            if len(polly_src_dirs) != 1:
+                self.log.error("Failed to find exactly one polly source directory: %s" % polly_src_dirs)
+            polly_src_dir = polly_src_dirs[0]
+            src_dirs[polly_src_dir] = os.path.join(self.llvm_src_dir, 'tools', 'polly')
 
-        clang_src_dir = glob.glob('clang-*') + glob.glob('cfe-*')
+        clang_src_dirs = glob.glob('clang-*') + glob.glob('cfe-*')
 
-        if not clang_src_dir:
-            self.log.error("Could not determine the Clang source directory")
+        if len(clang_src_dirs) != 1:
+            self.log.error("Failed to find exactly one clang source directory: %s" % clang_src_dirs)
+        clang_src_dir = clang_src_dirs[0]
 
-        src_dirs[clang_src_dir[0]] = os.path.join(self.llvm_src_dir, 'tools', 'clang')
+        src_dirs[clang_src_dir] = os.path.join(self.llvm_src_dir, 'tools', 'clang')
 
         for tmp in self.src:
             for (dir, new_path) in src_dirs.items():
