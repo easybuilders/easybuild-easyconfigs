@@ -33,6 +33,7 @@ Support for building and installing Clang, implemented as an easyblock.
 """
 
 import fileinput
+import glob
 import os
 import shutil
 import sys
@@ -118,26 +119,28 @@ class EB_Clang(CMakeMake):
         if self.llvm_src_dir is None:
             self.log.error("Could not determine LLVM source root (LLVM source was not unpacked?)")
 
-        # Move other directories into the LLVM tree.
-        if LooseVersion(self.version) > LooseVersion('3.3'):
-            compiler_rt_src_dir = 'compiler-rt-%s' % self.version
-            polly_src_dir = 'polly-%s' % self.version
-        else:
-            compiler_rt_src_dir = 'compiler-rt-%s.src' % self.version
-            polly_src_dir = 'polly-%s.src' % self.version
+        compiler_rt_src_dirs = glob.glob('compiler-rt-*')
+        if len(compiler_rt_src_dirs) != 1:
+            self.log.error("Failed to find exactly one compiler-rt source directory: %s" % compiler_rt_src_dirs)
+        compiler_rt_src_dir = compiler_rt_src_dirs[0]
+
         src_dirs = {
             compiler_rt_src_dir: os.path.join(self.llvm_src_dir, 'projects', 'compiler-rt')
         }
 
         if self.cfg["usepolly"]:
+            polly_src_dirs = glob.glob('polly-*')
+            if len(polly_src_dirs) != 1:
+                self.log.error("Failed to find exactly one polly source directory: %s" % polly_src_dirs)
+            polly_src_dir = polly_src_dirs[0]
             src_dirs[polly_src_dir] = os.path.join(self.llvm_src_dir, 'tools', 'polly')
 
-        if LooseVersion(self.version) > LooseVersion('3.3'):
-            clang_src_dir = 'clang-%s' % self.version
-        elif LooseVersion(self.version) < LooseVersion('3.3'):
-            clang_src_dir = 'clang-%s.src' % self.version
-        else:
-            clang_src_dir = 'cfe-%s.src' % self.version
+        clang_src_dirs = glob.glob('clang-*') + glob.glob('cfe-*')
+
+        if len(clang_src_dirs) != 1:
+            self.log.error("Failed to find exactly one clang source directory: %s" % clang_src_dirs)
+        clang_src_dir = clang_src_dirs[0]
+
         src_dirs[clang_src_dir] = os.path.join(self.llvm_src_dir, 'tools', 'clang')
 
         for tmp in self.src:
