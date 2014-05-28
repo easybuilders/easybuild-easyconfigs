@@ -66,9 +66,9 @@ class EB_ANSYS(EasyBlock):
         """Custom sanity check for ANSYS."""
 
         custom_paths = {
-                        'files': ["%s/fluent/bin/fluent%s" % (self._ver, x) for x in ['', '_arch', '_sysinfo']],
-                        'dirs': ["%s/%s" % (self._ver,x) for x in ["ansys", "aisol", "CFD-Post","CFX"]]
-                       }
+           'files': ["%s/fluent/bin/fluent%s" % (self._ver, x) for x in ['', '_arch', '_sysinfo']],
+           'dirs': ["%s/%s" % (self._ver,x) for x in ["ansys", "aisol", "CFD-Post","CFX"]]
+        }
 
         super(EB_ANSYS, self).sanity_check_step(custom_paths=custom_paths)
 
@@ -90,7 +90,7 @@ class EB_ANSYS(EasyBlock):
             "IcePack/bin"]
             
         guesses.update({
-                        "PATH": [os.path.join(self._ver, dir) for dir in dirs],
-                       })
+            "PATH": [os.path.join(self._ver, dir) for dir in dirs],
+        })
                        
         return guesses
