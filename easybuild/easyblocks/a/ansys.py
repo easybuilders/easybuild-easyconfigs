@@ -56,8 +56,11 @@ class EB_ANSYS(EasyBlock):
 
     def install_step(self):
         """Custom install procedure for ANSYS."""
-        
-        cmd = "./INSTALL -noroot -silent -install_dir %s %s" % (self.installdir,self.cfg['installopts'])
+
+        licserv = self.cfg['license_server']
+        licport = self.cfg['license_server_port']
+
+        cmd = "./INSTALL -noroot -silent -install_dir %s -licserverinfo %s:%s" % (self.installdir,licport,licserv)
         run_cmd(cmd, log_all=True, simple=True)
 
         adjust_permissions(self.installdir, stat.S_IWOTH, add=False)
