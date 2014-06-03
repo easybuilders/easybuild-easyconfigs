@@ -27,7 +27,7 @@ EasyBuild support for Mothur, implemented as an easyblock
 
 @author: Kenneth Hoste (Ghent University)
 """
-
+import glob
 import os
 import shutil
 
@@ -38,12 +38,15 @@ from easybuild.tools.modules import get_software_root
 class EB_Mothur(ConfigureMake):
     """Support for building and installing Mothur."""
 
-    def __init__(self, *args, **kwargs):
-        """Custom easyblock initialisation for Mothur."""
-        super(EB_Mothur, self).__init__(*args, **kwargs)
-
-        # set correct start dir
-        self.cfg['start_dir'] = '%s.%s' % (self.name, self.version)
+    def guess_start_dir(self):
+        """Set correct start directory."""
+        # Mothur zip files tend to contain multiple directories next to the actual source dir (e.g. __MACOSX),
+        # so the default start directory guess is most likely incorrect
+        mothur_dirs = glob.glob(os.path.join(self.builddir, 'Mothur.*'))
+        if len(mothur_dirs) == 1:
+            self.cfg['start_dir'] = os.path.basename(mothur_dirs[0])
+        else:
+            self.log.error("Failed to guess start directory in %s" % mothur_dirs)
 
     def configure_step(self, cmd_prefix=''):
         """Configure Mothur build by setting make options."""
