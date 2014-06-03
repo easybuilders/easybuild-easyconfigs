@@ -43,7 +43,7 @@ class EB_BLAT(MakeCp):
 
     def build_step(self, verbose=False):
         """Build BLAT using make and the appropriate options (e.g. BINDIR=)."""
-        self.cfg.update('prebuildpts', "MACHTYPE=x86_64")
+        self.cfg.update('prebuildopts', "MACHTYPE=x86_64")
         bindir = os.path.join(os.getcwd(), "bin")
         self.cfg.update('buildopts', "BINDIR=%s" % bindir)
 
