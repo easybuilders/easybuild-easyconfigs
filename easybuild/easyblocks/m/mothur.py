@@ -44,9 +44,11 @@ class EB_Mothur(ConfigureMake):
         # so the default start directory guess is most likely incorrect
         mothur_dirs = glob.glob(os.path.join(self.builddir, 'Mothur.*'))
         if len(mothur_dirs) == 1:
-            self.cfg['start_dir'] = os.path.basename(mothur_dirs[0])
+            self.cfg['start_dir'] = mothur_dirs[0]
         else:
             self.log.error("Failed to guess start directory in %s" % mothur_dirs)
+
+        super(EB_Mothur, self).guess_start_dir()
 
     def configure_step(self, cmd_prefix=''):
         """Configure Mothur build by setting make options."""
