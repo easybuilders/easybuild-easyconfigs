@@ -45,9 +45,9 @@ class CmdCp(MakeCp):
         Define list of files or directories to be copied after make
         """
         extra_vars = dict(MakeCp.extra_options(extra_vars=extra_vars))
-        extra_vars['cmd'] = [
-            "$CC $CFLAGS %(source)s -o %(target)s",
-            "Template command with 'source'/'target' fields, or list of regex/template command tuples",
+        extra_vars['cmds_map'] = [
+            [('.*', "$CC $CFLAGS %(source)s -o %(target)s")],
+            "List of regex/template command (with 'source'/'target' fields) tuples",
             CUSTOM,
         ]
         return MakeCp.extra_options(extra_vars=extra_vars)
@@ -64,20 +64,13 @@ class CmdCp(MakeCp):
             target, _ = os.path.splitext(os.path.basename(src))
 
             # determine command to use
-            if isinstance(self.cfg['cmd'], basestring):
-                # complete command template with source/target
-                cmd = self.cfg['cmd'] % {'source': src, 'target': target}
-
-            elif isinstance(self.cfg['cmd'], list) and len(self.cfg['cmd']) > 0:
-                # find (first) regex match, then complete matching command template
-                cmd = None
-                for regex, regex_cmd in self.cfg['cmd']:
-                    if re.match(regex, os.path.basename(src)):
-                        cmd = regex_cmd % {'source': src, 'target': target}
-                        break
-                if cmd is None:
-                    self.log.error("No match for %s in %s, don't know which command to use." % (src, self.cfg['cmd']))
-            else:
-                self.log.error("Wrong value type for 'cmd': %s (value: %s)" % (type(self.cfg['cmd']), self.cfg['cmd']))
+            # find (first) regex match, then complete matching command template
+            cmd = None
+            for regex, regex_cmd in self.cfg['cmds_map']:
+                if re.match(regex, os.path.basename(src)):
+                    cmd = regex_cmd % {'source': src, 'target': target}
+                    break
+            if cmd is None:
+                self.log.error("No match for %s in %s, don't know which command to use." % (src, self.cfg['cmds_map']))
 
             run_cmd(cmd, log_all=True, simple=True)
