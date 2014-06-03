@@ -43,11 +43,14 @@ class MakeCp(ConfigureMake):
         """
         Define list of files or directories to be copied after make
         """
-        if not extra_vars:
-            extra_vars={}
-        extra_vars['files_to_copy'] = [{}, "List of files or dirs to copy", MANDATORY]
-        extra_vars['with_configure'] = [False, "Run configure script before building", BUILD]
-        return ConfigureMake.extra_options(extra_vars)
+        extra = {
+            'files_to_copy': [{}, "List of files or dirs to copy", MANDATORY],
+            'with_configure': [False, "Run configure script before building", BUILD],
+        }
+        if extra_vars is None:
+            extra_vars = {}
+        extra.update(extra_vars)
+        return ConfigureMake.extra_options(extra_vars=extra)
 
     def configure_step(self, cmd_prefix=''):
         """
@@ -88,7 +91,7 @@ class MakeCp(ConfigureMake):
                     tup = (files_spec, self.cfg['start_dir'], filepaths)
                     self.log.debug("List of files matching '%s' in start dir %s: %s" % tup)
 
-                    if not filepaths and len(self.src) > 0:
+                    if not filepaths and len(self.src) > 0 and 'finalpath' in self.src[0]:
                         # use location of first unpacked source file as fallback location
                         tup = (files_spec, self.cfg['start_dir'])
                         self.log.warning("No files matching '%s' found in start dir %s" % tup)

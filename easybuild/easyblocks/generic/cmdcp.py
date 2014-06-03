@@ -24,35 +24,33 @@
 ##
 """
 @author: Jens Timmerman (Ghent University)
+@author: Kenneth Hoste (Ghent Univeristy)
 """
 import os
+import re
 
 from easybuild.easyblocks.generic.makecp import MakeCp
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.filetools import run_cmd
 
 
-class RunCmdCp(MakeCp):
+class CmdCp(MakeCp):
     """
     Software with no configure, no make, and no make install step.
-    Just run a command with a glob pattern for all soruces and copy everything to the install dir
+    Just run the specified command for all sources, and copy specified files to the install dir
     """
     @staticmethod
     def extra_options(extra_vars=None):
         """
         Define list of files or directories to be copied after make
         """
-        if not extra_vars:
-            extra_vars = {}
-        extra_vars['command'] = [
-            '$CC -c $CFLAGS -o %(outputfile)s %(inputfile)s',
-            'Compilation command, this will be templated with "inputfile" and "outputfile" for each matched file in the'
-            'files_to_compile list"',
+        extra_vars = dict(MakeCp.extra_options(extra_vars=extra_vars))
+        extra_vars['cmds_map'] = [
+            [('.*', "$CC $CFLAGS %(source)s -o %(target)s")],
+            "List of regex/template command (with 'source'/'target' fields) tuples",
             CUSTOM,
         ]
-        extra_vars['files_to_copy'] = [{}, "List of files or dirs to copy", CUSTOM]
-
-        return extra_vars
+        return MakeCp.extra_options(extra_vars=extra_vars)
 
     def build_step(self):
         """Build by running the command with the inputfiles"""
@@ -61,13 +59,18 @@ class RunCmdCp(MakeCp):
         except OSError, err:
             self.log.error("Failed to move (back) to %s: %s" % (self.cfg['start_dir'], err))
 
-        command = self.cfg.get('command')
-        outputfiles = []
-        for fil in self.src:
-            # run cmd on individual file
-            fil = fil['path']
-            out, _ = os.path.splitext(fil)
-            cmd = command % {'inputfile': fil, 'outputfile': out}
+        for src in self.src:
+            src = src['path']
+            target, _ = os.path.splitext(os.path.basename(src))
+
+            # determine command to use
+            # find (first) regex match, then complete matching command template
+            cmd = None
+            for regex, regex_cmd in self.cfg['cmds_map']:
+                if re.match(regex, os.path.basename(src)):
+                    cmd = regex_cmd % {'source': src, 'target': target}
+                    break
+            if cmd is None:
+                self.log.error("No match for %s in %s, don't know which command to use." % (src, self.cfg['cmds_map']))
+
             run_cmd(cmd, log_all=True, simple=True)
-            outputfiles.append(out)
-        self.cfg['files_to_copy'] = outputfiles
