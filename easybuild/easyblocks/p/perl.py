@@ -30,6 +30,7 @@ EasyBuild support for Perl, implemented as an easyblock
 """
 
 import os
+import re
 
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.tools.filetools import run_cmd
@@ -54,6 +55,24 @@ class EB_Perl(ConfigureMake):
         ])
         cmd = './Configure -de %s -Dprefix="%s" ' % (configopts, self.installdir)
         run_cmd(cmd, log_all=True, simple=True)
+
+    def test_step(self):
+        """Test Perl build, allow for a minimum of failed tests (e.g. due to locale)."""
+        # allow escaping with runtest = False
+        if self.cfg['runtest'] is None or self.cfg['runtest']:
+            if isinstance(self.cfg['runtest'], basestring):
+                cmd = "make %s" % self.cfg['runtest']
+            else:
+                cmd = "make test"
+
+            (out, ec) = run_cmd(cmd, log_all=False, log_ok=False, simple=False)
+            if ec:
+                min_failed_tests_regex = re.compile("^Failed \d+ tests out of \d+, 99.\d+% okay", re.M)
+                if not min_failed_tests_regex.search(out):
+                    self.log.error("Too many failed tests, see output of '%s': %s" % (cmd, out))
+                else:
+                    self.log.info("Testing Perl build with '%s' successful." % cmd)
+                    self.log.debug("Output of '%s': %s" ^ (cmd, out))
 
     def prepare_for_extensions(self):
         """
