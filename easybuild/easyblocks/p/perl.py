@@ -66,6 +66,7 @@ class EB_Perl(ConfigureMake):
                 cmd = "make test"
 
             (out, ec) = run_cmd(cmd, log_all=False, log_ok=False, simple=False)
+            self.log.debug("Output of '%s': %s" % (cmd, out))
             if ec:
                 min_failed_tests_regex = re.compile("^Failed \d+ tests out of \d+, 99.\d+% okay", re.M)
                 if min_failed_tests_regex.search(out):
@@ -74,7 +75,6 @@ class EB_Perl(ConfigureMake):
                     self.log.error("Too many failed tests, see output of '%s': %s" % (cmd, out))
             else:
                 self.log.info("Testing Perl build with '%s' successful." % cmd)
-            self.log.debug("Output of '%s': %s" % (cmd, out))
 
     def prepare_for_extensions(self):
         """
