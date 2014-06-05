@@ -68,7 +68,7 @@ class EB_Perl(ConfigureMake):
             (out, ec) = run_cmd(cmd, log_all=False, log_ok=False, simple=False)
             self.log.debug("Output of '%s': %s" % (cmd, out))
             if ec:
-                min_failed_tests_regex = re.compile("^Failed \d+ tests out of \d+, 99.\d+% okay", re.M)
+                min_failed_tests_regex = re.compile("^Failed \d+ tests? out of \d+, 99.\d+% okay", re.M)
                 if min_failed_tests_regex.search(out):
                     self.log.warning("Limited number of failed tests with '%s', but still acceptable: %s" % (cmd, out))
                 else:
