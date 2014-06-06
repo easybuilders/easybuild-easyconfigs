@@ -48,6 +48,10 @@ class EB_Mathematica(Binary):
 
     def install_step(self):
         """Install Mathematica using install script."""
+
+        # make sure $DISPLAY is not set (to avoid that installer uses GUI)
+        orig_display = os.environ.pop('DISPLAY', None)
+
         cmd = "./%s_%s_LINUX.sh" % (self.name, self.version)
         shortver = '.'.join(self.version.split('.')[:2])
         qa_install_path = "/usr/local/Wolfram/%s/%s" % (self.name, shortver)
@@ -75,6 +79,10 @@ class EB_Mathematica(Binary):
             self.log.info("Updated license file %s: %s" % (mathpass_path, mathpass_txt))
         except IOError, err:
             self.log.error("Failed to update %s with license server info: %s" % (mathpass_path, err))
+
+        # restore $DISPLAY if required
+        if orig_display is not None:
+            os.environ['DISPLAY'] = orig_display
 
     def sanity_check_step(self):
         """Custom sanity check for Mathematica."""

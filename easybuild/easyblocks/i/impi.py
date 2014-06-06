@@ -35,7 +35,7 @@ EasyBuild support for installing the Intel MPI library, implemented as an easybl
 import os
 from distutils.version import LooseVersion
 
-from easybuild.easyblocks.generic.intelbase import IntelBase
+from easybuild.easyblocks.generic.intelbase import IntelBase, ACTIVATION_NAME_2012, LICENSE_FILE_NAME_2012
 from easybuild.tools.filetools import run_cmd
 from easybuild.tools.config import install_path
 
@@ -53,16 +53,20 @@ class EB_impi(IntelBase):
         if LooseVersion(self.version) >= LooseVersion('4.0.1'):
             # impi starting from version 4.0.1.x uses standard installation procedure.
 
-            silent_cfg_names_map = None
+            silent_cfg_names_map = {}
 
-            if LooseVersion(self.version) >= LooseVersion('4.1.1'):
-                # since impi 4.1.1, the silent.cfg have been slightly changed
+            if LooseVersion(self.version) < LooseVersion('4.1.1'):
+                # since impi v4.1.1, silent.cfg has been slightly changed to be 'more standard'
+                silent_cfg_names_map.update({
+                    'activation_name': ACTIVATION_NAME_2012,
+                    'license_file_name': LICENSE_FILE_NAME_2012,
+                })
 
-                silent_cfg_names_map = {
-                    'activation_name': 'ACTIVATION_TYPE',
-                    'license_file_name': 'ACTIVATION_LICENSE_FILE',
-                    'install_dir': install_path(),  # impi installer creates impi/<version> subdir itself!
-                }
+            if LooseVersion(self.version) == LooseVersion('4.1.1.036'):
+                # impi v4.1.1 installer creates impi/<version> subdir itself, so specify parent install dir
+                silent_cfg_names_map.update({
+                    'install_dir': install_path(),
+                })
 
             super(EB_impi, self).install_step(silent_cfg_names_map=silent_cfg_names_map)
         else:
@@ -116,15 +120,17 @@ EULA=accept
         if self.cfg['m32']:
             suff = ""
 
+        mpi_mods = ['mpi.mod']
+        if LooseVersion(self.version) > LooseVersion('4.0'):
+            mpi_mods.extend(["mpi_base.mod", "mpi_constants.mod", "mpi_sizeofs.mod"])
+
         custom_paths = {
-                        'files': ["bin/mpi%s" % x for x in ["icc", "icpc", "ifort"]] +
-                                 ["include%s/mpi%s.h" % (suff, x) for x in ["cxx", "f", "", "o", "of"]] +
-                                 ["include%s/%s" % (suff, x) for x in ["i_malloc.h", "mpi_base.mod",
-                                                                       "mpi_constants.mod", "mpi.mod",
-                                                                       "mpi_sizeofs.mod"]] +
-                                 ["lib%s/libmpi.so" % suff, "lib%s/libmpi.a" % suff],
-                        'dirs': []
-                       }
+            'files': ["bin/mpi%s" % x for x in ["icc", "icpc", "ifort"]] +
+                     ["include%s/mpi%s.h" % (suff, x) for x in ["cxx", "f", "", "o", "of"]] +
+                     ["include%s/%s" % (suff, x) for x in ["i_malloc.h"] + mpi_mods] +
+                     ["lib%s/libmpi.so" % suff, "lib%s/libmpi.a" % suff],
+            'dirs': [],
+        }
 
         super(EB_impi, self).sanity_check_step(custom_paths=custom_paths)
 
@@ -133,15 +139,23 @@ EULA=accept
         A dictionary of possible directories to look for
         """
         if self.cfg['m32']:
+            lib_dirs = ['lib', 'lib/ia32', 'ia32/lib']
+            include_dirs = ['include']
             return {
-                    'PATH':['bin', 'bin/ia32', 'ia32/bin'],
-                    'LD_LIBRARY_PATH':['lib', 'lib/ia32', 'ia32/lib'],
-                   }
+                'PATH': ['bin', 'bin/ia32', 'ia32/bin'],
+                'LD_LIBRARY_PATH': lib_dirs,
+                'LIBRARY_PATH': lib_dirs,
+                'CPATH': include_dirs,
+            }
         else:
+            lib_dirs = ['lib/em64t', 'lib64']
+            include_dirs = ['include64']
             return {
-                    'PATH':['bin', 'bin/intel64', 'bin64'],
-                    'LD_LIBRARY_PATH':['lib', 'lib/em64t', 'lib64'],
-                   }
+                'PATH': ['bin/intel64', 'bin64'],
+                'LD_LIBRARY_PATH': lib_dirs,
+                'LIBRARY_PATH': lib_dirs,
+                'CPATH': include_dirs,
+            }
 
     def make_module_extra(self):
         """Overwritten from Application to add extra txt"""

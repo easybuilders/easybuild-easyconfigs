@@ -64,6 +64,15 @@ ACTIVATION_TYPES = [
     ACTIVATION_TRIAL,
 ]
 
+# silent.cfg parameter name for type of license activation (cfr. options listed above)
+ACTIVATION_NAME = 'ACTIVATION_TYPE'  # since icc/ifort v2013_sp1, impi v4.1.1, imkl v11.1
+ACTIVATION_NAME_2012 = 'ACTIVATION'  # previous activation type parameter used in older versions
+# silent.cfg parameter name for install prefix
+INSTALL_DIR_NAME = 'PSET_INSTALL_DIR'
+# silent.cfg parameter name for license file/server specification
+LICENSE_FILE_NAME = 'ACTIVATION_LICENSE_FILE'  # since icc/ifort v2013_sp1, impi v4.1.1, imkl v11.1
+LICENSE_FILE_NAME_2012 = 'PSET_LICENSE_FILE'  # previous license file parameter used in older versions
+
 
 class IntelBase(EasyBlock):
     """
@@ -78,7 +87,8 @@ class IntelBase(EasyBlock):
         self.license_env_var = None
 
         self.home_subdir = os.path.join(os.getenv('HOME'), 'intel')
-        self.home_subdir_local = os.path.join(tempfile.gettempdir(), os.getenv('USER'), 'easybuild_intel')
+        common_tmp_dir = os.path.dirname(tempfile.gettempdir())  # common tmp directory, same across nodes
+        self.home_subdir_local = os.path.join(common_tmp_dir, os.getenv('USER'), 'easybuild_intel')
 
         super(IntelBase, self).__init__(*args, **kwargs)
 
@@ -88,23 +98,22 @@ class IntelBase(EasyBlock):
 
     @staticmethod
     def extra_options(extra_vars=None):
-        origvars = EasyBlock.extra_options(extra_vars)
-        intel_vars = [
-            ('license_activation', [ACTIVATION_LIC_SERVER, "License activation type", CUSTOM]),
+        extra_vars = dict(EasyBlock.extra_options(extra_vars))
+        extra_vars.update({
+            'license_activation': [ACTIVATION_LIC_SERVER, "License activation type", CUSTOM],
             # 'usetmppath':
             # workaround for older SL5 version (5.5 and earlier)
             # used to be True, but False since SL5.6/SL6
             # disables TMP_PATH env and command line option
-            ('usetmppath', [False, "Use temporary path for installation", CUSTOM]),
-            ('m32', [False, "Enable 32-bit toolchain", CUSTOM]),
-        ]
+            'usetmppath': [False, "Use temporary path for installation", CUSTOM],
+            'm32': [False, "Enable 32-bit toolchain", CUSTOM],
+        })
 
         # Support for old easyconfigs with license parameter
         _log.deprecated('No old style license parameter, use license_file', '2.0')
-        intel_vars.append(('license', [None, "License file", CUSTOM]))
+        extra_vars.update({'license': [None, "License file", CUSTOM]})
 
-        intel_vars.extend(origvars)
-        return intel_vars
+        return EasyBlock.extra_options(extra_vars)
 
     def clean_home_subdir(self):
         """Remove contents of (local) 'intel' directory home subdir, where stuff is cached."""
@@ -130,6 +139,7 @@ class IntelBase(EasyBlock):
             # make sure local directory exists
             if not os.path.exists(self.home_subdir_local):
                 os.makedirs(self.home_subdir_local)
+                self.log.debug("Created local dir %s" % self.home_subdir_local)
 
             if os.path.exists(self.home_subdir):
                 # if 'intel' dir in $HOME already exists, make sure it's the right symlink
@@ -137,16 +147,22 @@ class IntelBase(EasyBlock):
                                                                                    self.home_subdir_local)
                 if not symlink_ok:
                     # rename current 'intel' dir
-                    home_intel_bk = '.'.join([self.home_subdir, "bk_easybuild"])
+                    home_intel_bk = tempfile.mkdtemp(dir=os.path.dirname(self.home_subdir),
+                                                     prefix='%s.bk.' % os.path.basename(self.home_subdir))
                     self.log.info("Moving %(ih)s to %(ihl)s, I need %(ih)s myself..." % {'ih': self.home_subdir,
                                                                                          'ihl': home_intel_bk})
                     shutil.move(self.home_subdir, home_intel_bk)
 
                     # set symlink in place
                     os.symlink(self.home_subdir_local, self.home_subdir)
+                    self.log.debug("Created symlink (1) %s to %s" % (self.home_subdir, self.home_subdir_local))
 
             else:
+                # if a broken symlink is present, remove it first
+                if os.path.islink(self.home_subdir):
+                    os.remove(self.home_subdir)
                 os.symlink(self.home_subdir_local, self.home_subdir)
+                self.log.debug("Created symlink (2) %s to %s" % (self.home_subdir, self.home_subdir_local))
 
         except OSError, err:
             self.log.error("Failed to symlink %s to %s: %s" % (self.home_subdir_local, self.home_subdir, err))
@@ -252,7 +268,7 @@ class IntelBase(EasyBlock):
         """Binary installation files, so no building."""
         pass
 
-    def install_step(self, silent_cfg_names_map=None):
+    def install_step(self, silent_cfg_names_map=None, silent_cfg_extras=None):
         """Actual installation
 
         - create silent cfg file
@@ -280,14 +296,21 @@ class IntelBase(EasyBlock):
             "ACCEPT_EULA=accept",
             "INSTALL_MODE=NONRPM",
             "CONTINUE_WITH_OPTIONAL_ERROR=yes",
+            ""  # Add a newline at the end, so we can easily append if needed
         ]) % {
-            'activation_name': silent_cfg_names_map.get('activation_name', 'ACTIVATION'),
-            'license_file_name': silent_cfg_names_map.get('license_file_name', 'PSET_LICENSE_FILE'),
-            'install_dir_name': silent_cfg_names_map.get('install_dir_name', 'PSET_INSTALL_DIR'),
+            'activation_name': silent_cfg_names_map.get('activation_name', ACTIVATION_NAME),
+            'license_file_name': silent_cfg_names_map.get('license_file_name', LICENSE_FILE_NAME),
+            'install_dir_name': silent_cfg_names_map.get('install_dir_name', INSTALL_DIR_NAME),
             'activation': self.cfg['license_activation'],
             'license_file': self.license_file,
             'install_dir': silent_cfg_names_map.get('install_dir', self.installdir),
         }
+
+        if silent_cfg_extras is not None:
+            if isinstance(silent_cfg_extras, dict):
+                silent += '\n'.join("%s=%s" % (key, value) for (key, value) in silent_cfg_extras.iteritems())
+            else:
+                self.log.error("silent_cfg_extras needs to be a dict")
 
         # we should be already in the correct directory
         silentcfg = os.path.join(os.getcwd(), "silent.cfg")

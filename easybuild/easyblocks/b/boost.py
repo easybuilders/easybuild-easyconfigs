@@ -30,15 +30,22 @@ EasyBuild support for Boost, implemented as an easyblock
 @author: Kenneth Hoste (Ghent University)
 @author: Pieter De Baets (Ghent University)
 @author: Jens Timmerman (Ghent University)
+@author: Ward Poelmans (Ghent University)
 """
+from distutils.version import LooseVersion
+import fileinput
+import glob
 import os
+import re
 import shutil
+import sys
 
 import easybuild.tools.toolchain as toolchain
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import CUSTOM
-from easybuild.tools.filetools import run_cmd
 from easybuild.tools.modules import get_software_root
+from easybuild.tools.run import run_cmd
+from easybuild.tools.systemtools import get_glibc_version, UNKNOWN
 
 
 class EB_Boost(EasyBlock):
@@ -53,12 +60,30 @@ class EB_Boost(EasyBlock):
     @staticmethod
     def extra_options():
         """Add extra easyconfig parameters for Boost."""
-        extra_vars = [
-            ('boost_mpi', [False, "Build mpi boost module (default: False)", CUSTOM]),
-            ('toolset', [None, "Toolset to use for Boost configuration ('--with-toolset fo bootstrap.sh')", CUSTOM]),
-        ]
-
+        extra_vars = {
+            'boost_mpi': [False, "Build mpi boost module", CUSTOM],
+            'toolset': [None, "Toolset to use for Boost configuration ('--with-toolset for bootstrap.sh')", CUSTOM],
+        }
         return EasyBlock.extra_options(extra_vars)
+
+    def patch_step(self):
+        """Patch Boost source code before building."""
+        super(EB_Boost, self).patch_step()
+
+        # TIME_UTC is also defined in recent glibc versions, so we need to rename it for old Boost versions (<= 1.47)
+        glibc_version = get_glibc_version()
+        old_glibc = glibc_version is not UNKNOWN and LooseVersion(glibc_version) > LooseVersion("2.15")
+        if old_glibc and LooseVersion(self.version) <= LooseVersion("1.47.0"):
+            self.log.info("Patching because the glibc version is too new")
+            files_to_patch = ["boost/thread/xtime.hpp"] + glob.glob("libs/interprocess/test/*.hpp")
+            files_to_patch += glob.glob("libs/spirit/classic/test/*.cpp") + glob.glob("libs/spirit/classic/test/*.inl")
+            for patchfile in files_to_patch:
+                try:
+                    for line in fileinput.input("%s" % patchfile, inplace=1, backup='.orig'):
+                        line = re.sub(r"TIME_UTC", r"TIME_UTC_", line)
+                        sys.stdout.write(line)
+                except IOError, err:
+                    self.log.error("Failed to patch %s: %s" % (patchfile, err))
 
     def configure_step(self):
         """Configure Boost build using custom tools"""
@@ -148,16 +173,14 @@ class EB_Boost(EasyBlock):
 
     def sanity_check_step(self):
         """Custom sanity check for Boost."""
-
-        fs = []
-        if self.cfg['boost_mpi']:
-            fs.append('lib/libboost_mpi.so')
-        if get_software_root('Python'):
-            fs.append('lib/libboost_python.so')
-
         custom_paths = {
-                        'files': ['lib/libboost_system.so'] + fs,
-                       'dirs':['include/boost']
-                       }
+            'files': ['lib/libboost_system.so'],
+            'dirs': ['include/boost']
+        }
+
+        if self.cfg['boost_mpi']:
+            custom_paths["files"].append('lib/libboost_mpi.so')
+        if get_software_root('Python'):
+            custom_paths["files"].append('lib/libboost_python.so')
 
         super(EB_Boost, self).sanity_check_step(custom_paths=custom_paths)

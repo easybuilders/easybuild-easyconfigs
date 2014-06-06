@@ -40,9 +40,9 @@ class EB_FreeSurfer(Tarball):
 
     @staticmethod
     def extra_options():
-        extra_vars = [
-            ('license_text', ['', "Text for required license file.", MANDATORY])
-        ]
+        extra_vars = {
+            'license_text': ['', "Text for required license file.", MANDATORY],
+        }
         return EasyBlock.extra_options(extra_vars)
 
     def install_step(self):

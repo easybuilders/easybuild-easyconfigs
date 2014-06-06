@@ -61,12 +61,12 @@ class EB_WIEN2k(EasyBlock):
         testdata_urls = ["http://www.wien2k.at/reg_user/benchmark/test_case.tar.gz",
                          "http://www.wien2k.at/reg_user/benchmark/mpi-benchmark.tar.gz"]
 
-        extra_vars = [
-                      ('runtest', [True, "Run WIEN2k tests", CUSTOM]),
-                      ('testdata', [testdata_urls, "test data URL for WIEN2k benchmark test", CUSTOM]),
-                      ('wien_mpirun', [None, "MPI wrapper comand to use", CUSTOM]),
-                      ('remote', [None, "Remote command to use (e.g. pbsssh, ...)", CUSTOM]),
-                     ]
+        extra_vars = {
+            'runtest': [True, "Run WIEN2k tests", CUSTOM],
+            'testdata': [testdata_urls, "test data URL for WIEN2k benchmark test", CUSTOM],
+            'wien_mpirun': [None, "MPI wrapper comand to use", CUSTOM],
+            'remote': [None, "Remote command to use (e.g. pbsssh, ...)", CUSTOM],
+        }
         return EasyBlock.extra_options(extra_vars)
 
     def extract_step(self):

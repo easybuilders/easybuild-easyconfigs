@@ -47,6 +47,7 @@ class EB_FoldX(Tarball):
         binaries = [
             'foldx_%s.linux' % self.version,  # FoldX v2.x
             'FoldX.linux64',  # FoldX 3.x
+            'foldx64Linux',  # FoldX 3.0-beta6
         ]
         try:
             os.makedirs(bindir)

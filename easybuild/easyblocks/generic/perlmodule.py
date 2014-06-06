@@ -43,9 +43,9 @@ class PerlModule(ExtensionEasyBlock, ConfigureMake):
     @staticmethod
     def extra_options():
         """Easyconfig parameters specific to Perl modules."""
-        extra_vars = [
-            ('runtest', ['test', "Run unit tests.", CUSTOM]),  # overrides default
-        ]
+        extra_vars = {
+            'runtest': ['test', "Run unit tests.", CUSTOM],  # overrides default
+        }
         return ExtensionEasyBlock.extra_options(extra_vars)
 
     def __init__(self, *args, **kwargs):
@@ -64,8 +64,9 @@ class PerlModule(ExtensionEasyBlock, ConfigureMake):
             ConfigureMake.install_step(self)
         elif os.path.exists('Build.PL'):
             run_cmd('perl Build.PL --prefix %s' % self.installdir)
-            out, ec  = run_cmd('perl Build test')
-            out, ec  = run_cmd('perl Build install')
+            run_cmd('perl Build build')
+            run_cmd('perl Build test')
+            run_cmd('perl Build install')
 
     def run(self):
         """Perform the actual Perl module build/installation procedure"""

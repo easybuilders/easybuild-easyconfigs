@@ -55,10 +55,10 @@ class EB_PSI(ConfigureMake):
     def extra_options():
         """Extra easyconfig parameters specific to PSI."""
 
-        extra_vars = [
+        extra_vars = {
             # always include running PSI unit tests (takes about 2h or less)
-            ('runtest', ["tests TESTFLAGS='-u -q'", "Run tests included with PSI, without interruption.", BUILD]),
-        ]
+            'runtest': ["tests TESTFLAGS='-u -q'", "Run tests included with PSI, without interruption.", BUILD],
+        }
         return ConfigureMake.extra_options(extra_vars)
 
     def configure_step(self):

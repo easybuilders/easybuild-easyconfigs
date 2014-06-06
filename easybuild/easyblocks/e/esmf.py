@@ -69,7 +69,7 @@ class EB_ESMF(ConfigureMake):
 
         # specify decent LAPACK lib
         env.setvar('ESMF_LAPACK', 'user')
-        env.setvar('ESMF_LAPACK_LIBS', '%s %s' % (os.getenv('LDFLAGS'), os.getenv('LIBLAPACK')))
+        env.setvar('ESMF_LAPACK_LIBS', '%s %s' % (os.getenv('LDFLAGS'), os.getenv('LIBLAPACK_MT')))
 
         # specify netCDF
         netcdf = get_software_root('netCDF')

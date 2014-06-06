@@ -27,14 +27,31 @@ EasyBuild support for installing Intel VTune, implemented as an easyblock
 
 @author: Kenneth Hoste (Ghent University)
 """
+from distutils.version import LooseVersion
 
-from easybuild.easyblocks.generic.intelbase import IntelBase
+from easybuild.easyblocks.generic.intelbase import IntelBase, ACTIVATION_NAME_2012, LICENSE_FILE_NAME_2012
 
 
 class EB_VTune(IntelBase):
     """
     Support for installing Intel VTune
     """
+    def install_step(self):
+        """
+        Actual installation
+        - create silent cfg file
+        - execute command
+        """
+        silent_cfg_names_map = None
+
+        if LooseVersion(self.version) <= LooseVersion('2013_update10'):
+            silent_cfg_names_map = {
+                'activation_name': ACTIVATION_NAME_2012,
+                'license_file_name': LICENSE_FILE_NAME_2012,
+            }
+
+        super(EB_VTune, self).install_step(silent_cfg_names_map=silent_cfg_names_map)
+
     def make_module_req_guess(self):
         """
         A dictionary of possible directories to look for

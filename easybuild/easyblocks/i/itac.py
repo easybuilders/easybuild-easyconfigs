@@ -34,10 +34,11 @@ EasyBuild support for installing the Intel Trace Analyzer and Collector (ITAC), 
 
 import os
 
+from distutils.version import LooseVersion
+
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.easyblocks.generic.intelbase import IntelBase
 from easybuild.tools.filetools import run_cmd
-
 
 class EB_itac(IntelBase):
     """
@@ -47,7 +48,9 @@ class EB_itac(IntelBase):
 
     @staticmethod
     def extra_options():
-        extra_vars = [('preferredmpi', ['impi3', "Preferred MPI type (default: 'impi3')", CUSTOM])]
+        extra_vars = {
+            'preferredmpi': ['impi3', "Preferred MPI type", CUSTOM],
+        }
         return IntelBase.extra_options(extra_vars)
 
     def install_step(self):
@@ -57,7 +60,10 @@ class EB_itac(IntelBase):
         - execute command
         """
 
-        silent = \
+        if LooseVersion(self.version) >= LooseVersion('8.1'):
+            super(EB_itac, self).install_step(silent_cfg_names_map=None)
+        else:
+            silent = \
 """
 [itac]
 INSTALLDIR=%(ins)s
@@ -70,22 +76,22 @@ DEFAULT_MPI=%(mpi)s
 EULA=accept
 """ % {'lic': self.license_file, 'ins': self.installdir, 'mpi': self.cfg['preferredmpi']}
 
-        # already in correct directory
-        silentcfg = os.path.join(os.getcwd(), "silent.cfg")
-        f = open(silentcfg, 'w')
-        f.write(silent)
-        f.close()
-        self.log.debug("Contents of %s: %s" % (silentcfg, silent))
+            # already in correct directory
+            silentcfg = os.path.join(os.getcwd(), "silent.cfg")
+            f = open(silentcfg, 'w')
+            f.write(silent)
+            f.close()
+            self.log.debug("Contents of %s: %s" % (silentcfg, silent))
 
-        tmpdir = os.path.join(os.getcwd(), self.version, 'mytmpdir')
-        try:
-            os.makedirs(tmpdir)
-        except:
-            self.log.exception("Directory %s can't be created" % (tmpdir))
+            tmpdir = os.path.join(os.getcwd(), self.version, 'mytmpdir')
+            try:
+                os.makedirs(tmpdir)
+            except:
+                self.log.exception("Directory %s can't be created" % (tmpdir))
 
-        cmd = "./install.sh --tmp-dir=%s --silent=%s" % (tmpdir, silentcfg)
+            cmd = "./install.sh --tmp-dir=%s --silent=%s" % (tmpdir, silentcfg)
 
-        run_cmd(cmd, log_all=True, simple=True)
+            run_cmd(cmd, log_all=True, simple=True)
 
     def sanity_check_step(self):
         """Custom sanity check paths for ITAC."""
