@@ -41,10 +41,10 @@ from unittest import TestCase, TestLoader, main
 
 import easybuild.main as main
 import easybuild.tools.options as eboptions
-from easybuild.framework.easyblock import EasyBlock, get_class
-from easybuild.framework.easyconfig.easyconfig import EasyConfig
-from easybuild.framework.easyconfig.tools import get_paths_for
-from easybuild.main import dep_graph, resolve_dependencies, process_easyconfig
+from easybuild.framework.easyblock import EasyBlock
+from easybuild.framework.easyconfig.easyconfig import EasyConfig, fetch_parameter_from_easyconfig_file
+from easybuild.framework.easyconfig.easyconfig import get_easyblock_class
+from easybuild.framework.easyconfig.tools import dep_graph, get_paths_for, process_easyconfig, resolve_dependencies
 from easybuild.tools import config
 from easybuild.tools.module_generator import det_full_module_name
 
@@ -60,15 +60,22 @@ class EasyConfigTest(TestCase):
     # initialize configuration (required for e.g. default modules_tool setting)
     eb_go = eboptions.parse_options()
     config.init(eb_go.options, eb_go.get_options_by_section('config'))
+    build_options = {
+        'check_osdeps': False,
+        'force': True,
+        'robot_path': get_paths_for("easyconfigs")[0],
+        'valid_module_classes': config.module_classes(),
+        'valid_stops': [x[0] for x in EasyBlock.get_steps()],
+    }
+    config.init_build_options(build_options=build_options)
     config.set_tmpdir()
     del eb_go
         
     log = fancylogger.getLogger("EasyConfigTest", fname=False)
-    name_regex = re.compile("^name\s*=\s*['\"](.*)['\"]$", re.M)
-    easyblock_regex = re.compile(r"^\s*easyblock\s*=['\"](.*)['\"]$", re.M)
     # make sure a logger is present for main
     main._log = log
     ordered_specs = None
+    parsed_easyconfigs = []
 
     def process_all_easyconfigs(self):
         """Process all easyconfigs and resolve inter-easyconfig dependencies."""
@@ -76,12 +83,12 @@ class EasyConfigTest(TestCase):
         easyconfigs_path = get_paths_for("easyconfigs")[0]
         specs = glob.glob('%s/*/*/*.eb' % easyconfigs_path)
 
-        # parse all easyconfigs
-        easyconfigs = []
-        for spec in specs:
-            easyconfigs.extend(process_easyconfig(spec, validate=False))
+        # parse all easyconfigs if they haven't been already
+        if not self.parsed_easyconfigs:
+            for spec in specs:
+                self.parsed_easyconfigs.extend(process_easyconfig(spec))
 
-        self.ordered_specs = resolve_dependencies(easyconfigs, easyconfigs_path, force=True)
+        self.ordered_specs = resolve_dependencies(self.parsed_easyconfigs)
 
     def test_dep_graph(self):
         """Unit test that builds a full dependency graph."""
@@ -153,6 +160,22 @@ class EasyConfigTest(TestCase):
                         conflicts = True
         self.assertFalse(conflicts, "No conflicts detected")
 
+    def test_easyconfig_locations(self):
+        """Make sure all easyconfigs files are in the right location."""
+        easyconfig_dirs_regex = re.compile(r'/easybuild/easyconfigs/[a-z]/[^/]+$')
+        topdir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+        for (dirpath, _, filenames) in os.walk(topdir):
+            # ignore git/svn dirs
+            if '/.git/' in dirpath or '/.svn/' in dirpath:
+                continue
+            # check whether list of .eb files is non-empty
+            easyconfig_files = [fn for fn in filenames if fn.endswith('eb')]
+            if easyconfig_files:
+                # check whether path matches required pattern
+                if not easyconfig_dirs_regex.search(dirpath):
+                    # only exception: TEMPLATE.eb
+                    if not (dirpath.endswith('/easybuild/easyconfigs') and filenames == ['TEMPLATE.eb']):
+                        self.assertTrue(False, "List of easyconfig files in %s is empty: %s" % (dirpath, filenames))
 
 def template_easyconfig_test(self, spec):
     """Test whether all easyconfigs can be initialized."""
@@ -162,31 +185,23 @@ def template_easyconfig_test(self, spec):
     prev_single_tests_ok = single_tests_ok
     single_tests_ok = False
 
-    f = open(spec, 'r')
-    spectxt = f.read()
-    f.close()
-
-    # determine software name directly from easyconfig file
-    res = self.name_regex.search(spectxt)
-    if res:
-        name = res.group(1)
-    else:
-        self.assertTrue(False, "Obtained software name directly from easyconfig file")
-
     # parse easyconfig 
-    ec = EasyConfig(spec, validate=False)
+    ecs = process_easyconfig(spec)
+    if len(ecs) == 1:
+        ec = ecs[0]['ec']
+    else:
+        self.assertTrue(False, "easyconfig %s does not contain blocks, yields only one parsed easyconfig" % spec)
 
     # sanity check for software name
+    name = fetch_parameter_from_easyconfig_file(spec, 'name')
     self.assertTrue(ec['name'], name) 
 
     # try and fetch easyblock spec from easyconfig
-    easyblock = self.easyblock_regex.search(spectxt)
-    if easyblock:
-        easyblock = easyblock.group(1)
+    easyblock = fetch_parameter_from_easyconfig_file(spec, 'easyblock')
 
     # instantiate easyblock with easyconfig file
-    app_class = get_class(easyblock, name=name)
-    app = app_class(spec, validate_ec=False)
+    app_class = get_easyblock_class(easyblock, name=name)
+    app = app_class(ec)
 
     # more sanity checks
     self.assertTrue(name, app.name)
@@ -218,6 +233,9 @@ def template_easyconfig_test(self, spec):
 
     app.close_log()
     os.remove(app.logfile)
+
+    # cache the parsed easyconfig, to avoid that it is parsed again
+    self.parsed_easyconfigs.append(ecs[0])
 
     # test passed, so set back to True
     single_tests_ok = True and prev_single_tests_ok

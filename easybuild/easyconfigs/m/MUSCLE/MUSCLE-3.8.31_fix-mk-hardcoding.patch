@@ -1,0 +1,24 @@
+--- muscle3.8.31/src/mk.orig	2010-05-02 01:15:42.000000000 +0200
++++ muscle3.8.31/src/mk	2014-06-03 13:36:54.675282794 +0200
+@@ -5,16 +5,17 @@
+ rm -f *.o muscle.make.stdout.txt muscle.make.stderr.txt
+ for CPPName in $CPPNames
+ do
+-  echo $CPPName >> /dev/tty
+-  g++ $ENV_GCC_OPTS -c -O3 -msse2 -mfpmath=sse -D_FILE_OFFSET_BITS=64 -DNDEBUG=1 $CPPName.cpp -o $CPPName.o  >> muscle.make.stdout.txt 2>> muscle.make.stderr.txt
++  echo "$CXX $ENV_GCC_OPTS -c $CXXFLAGS -D_FILE_OFFSET_BITS=64 -DNDEBUG=1 $CPPName.cpp -o $CPPName.o"
++  $CXX $ENV_GCC_OPTS -c $CXXFLAGS -D_FILE_OFFSET_BITS=64 -DNDEBUG=1 $CPPName.cpp -o $CPPName.o  #>> muscle.make.stdout.txt 2>> muscle.make.stderr.txt
+ done
+ 
+ LINK_OPTS=
+ if [ `uname -s` == Linux ] ; then
+     LINK_OPTS=-static
+ fi
+-g++ $LINK_OPTS $ENV_LINK_OPTS -g -o muscle $ObjNames  >> muscle.make.stdout.txt 2>> muscle.make.stderr.txt
+-tail muscle.make.stderr.txt
++echo "$CXX $LINK_OPTS $ENV_LINK_OPTS $CXXFLAGS -o muscle $ObjNames"
++$CXX $LINK_OPTS $ENV_LINK_OPTS $CXXFLAGS -o muscle $ObjNames  #>> muscle.make.stdout.txt 2>> muscle.make.stderr.txt
++#tail muscle.make.stderr.txt
+ 
+ strip muscle
+ ls -lh muscle
