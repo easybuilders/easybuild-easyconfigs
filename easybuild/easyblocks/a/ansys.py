@@ -85,9 +85,9 @@ class EB_ANSYS(EasyBlock):
             "RSM/bin",
             "ansys/bin",
             "autodin/bin",
+            "CFD-Post/bin",
             "CFX/bin",
             "fluent/bin",
-            "CFD-Post/bin",
             "TurboGrid/bin",
             "polyflow/bin",
             "IcePack/bin"]
