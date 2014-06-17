@@ -99,7 +99,7 @@ class EB_ANSYS(EasyBlock):
                        
         return guesses
         
-        def make_module_extra(self):
+    def make_module_extra(self):
         """Define extra environment variables required by Ansys"""
 
         txt = super(EB_ANSYS, self).make_module_extra()
