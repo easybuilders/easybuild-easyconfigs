@@ -90,10 +90,25 @@ class EB_ANSYS(EasyBlock):
             "fluent/bin",
             "TurboGrid/bin",
             "polyflow/bin",
-            "IcePack/bin"]
-            
+            "IcePack/bin",
+            "icemcfd/linux64_amd/bin"]
+
         guesses.update({
             "PATH": [os.path.join(self._ver, dir) for dir in dirs],
         })
                        
         return guesses
+        
+        def make_module_extra(self):
+        """Define extra environment variables required by Ansys"""
+
+        txt = super(EB_ANSYS, self).make_module_extra()
+
+        env_vars = [("ICEM_ACN", "$root/icemcfd/linux64_amd" ),
+                    ]
+
+        for env_var in env_vars:
+            txt += "setenv\t%s\t%s\n" % env_var
+
+        return txt
+
