@@ -1,0 +1,52 @@
+# This file is an EasyBuild reciPY as per https://github.com/hpcugent/easybuild
+# Author: Pablo Escobar Lopez
+# Swiss Institute of Bioinformatics
+# Biozentrum - University of Basel
+
+name = 'bcl2fastq'
+version = '1.8.4'
+
+homepage = 'http://support.illumina.com/downloads/bcl2fastq_conversion_software_184.ilmn'
+description = """ The Bcl2FastQ conversion software is a tool to handle bcl conversion 
+ and demultiplexing. """
+
+toolchain = {'name': 'goolf', 'version': '1.4.10'}
+
+source_urls = ['ftp://webdata:webdata@ussd-ftp.illumina.com//Downloads/Software/bcl2fastq/']
+sources = [SOURCELOWER_TAR_BZ2]
+
+builddependencies = [('CMake', '2.8.12')]
+
+dependencies = [
+    ('Boost', '1.44.0'),
+    ('libxslt', '1.1.28'),
+    ('libxml2', '2.9.1'),
+    ('bzip2', '1.0.6'),
+    ('zlib', '1.2.8'),
+]
+
+# configure script has to be run in a different folder so we skip the configure step 
+# and will run configure in premakeopts
+skipsteps = ['configure']
+
+# the software requires to be built outside of the original source folder
+separate_build_dir = True
+
+# build system requires BOOST_ROOT env var to find the right boost library
+premakeopts = 'export BOOST_ROOT=$EBROOTBOOST && '
+
+# here we run ./configure
+premakeopts += '%(builddir)s/bcl2fastq/src/configure --prefix=%(installdir)s && '
+
+sanity_check_paths = {
+    'files': ["bin/%s" % x for x in ["FastqConverter", "configureBclToFastq.pl", 
+                                    "configureQseqToFastq.pl", "configureValidation.pl"]],
+    'dirs': ["etc", "lib", "libexec", "share"],
+}
+
+modextrapaths = {
+    'PERL5LIB': 'lib/bcl2fastq-1.8.4/perl'
+    }
+
+moduleclass = 'bio'
+
