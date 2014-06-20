@@ -53,8 +53,8 @@ class EB_g2lib(ConfigureMake):
         if not jasper:
             self.log.error("JasPer module not loaded?")
 
-        makeopts = 'CC="%s" FC="%s" INCDIR="-I%s/include"' % (os.getenv('CC'), os.getenv('F90'), jasper)
-        self.cfg.update('makeopts', makeopts)
+        buildopts = 'CC="%s" FC="%s" INCDIR="-I%s/include"' % (os.getenv('CC'), os.getenv('F90'), jasper)
+        self.cfg.update('buildopts', buildopts)
 
         super(EB_g2lib, self).build_step()
 

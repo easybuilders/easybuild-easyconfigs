@@ -49,7 +49,7 @@ class EB_MrBayes(ConfigureMake):
         """Configure build: <single-line description how this deviates from standard configure>"""
 
         # set generic make options
-        self.cfg.update('makeopts', 'CC="%s" OPTFLAGS="%s"' % (os.getenv('MPICC'), os.getenv('CFLAGS')))
+        self.cfg.update('buildopts', 'CC="%s" OPTFLAGS="%s"' % (os.getenv('MPICC'), os.getenv('CFLAGS')))
 
         if LooseVersion(self.version) >= LooseVersion("3.2"):
 
@@ -84,7 +84,7 @@ class EB_MrBayes(ConfigureMake):
         else:
 
             # no configure script prior to v3.2
-            self.cfg.update('makeopts', 'MPI=yes')
+            self.cfg.update('buildopts', 'MPI=yes')
 
     def install_step(self):
         """Install by copying bniaries to install dir."""

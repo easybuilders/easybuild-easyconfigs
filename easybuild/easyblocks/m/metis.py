@@ -53,10 +53,10 @@ class EB_METIS(ConfigureMake):
     def build_step(self):
         """Add make options before building."""
 
-        self.cfg.update('makeopts', 'LIBDIR=""')
+        self.cfg.update('buildopts', 'LIBDIR=""')
 
         if self.toolchain.options['pic']:
-            self.cfg.update('makeopts', 'CC="$CC -fPIC"')
+            self.cfg.update('buildopts', 'CC="$CC -fPIC"')
 
         super(EB_METIS, self).build_step()
 

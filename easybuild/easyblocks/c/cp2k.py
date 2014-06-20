@@ -563,12 +563,12 @@ class EB_CP2K(EasyBlock):
                 self.log.error("Can't modify/write Makefile in %s: %s" % (makefiles, err))
 
         # update make options with MAKE
-        self.cfg.update('makeopts', 'MAKE="make -j %s" all' % self.cfg['parallel'])
+        self.cfg.update('buildopts', 'MAKE="make -j %s" all' % self.cfg['parallel'])
 
         # update make options with ARCH and VERSION
-        self.cfg.update('makeopts', 'ARCH=%s VERSION=%s' % (self.typearch, self.cfg['type']))
+        self.cfg.update('buildopts', 'ARCH=%s VERSION=%s' % (self.typearch, self.cfg['type']))
 
-        cmd = "make %s" % self.cfg['makeopts']
+        cmd = "make %s" % self.cfg['buildopts']
 
         # clean first
         run_cmd(cmd + " clean", log_all=True, simple=True, log_output=True)

@@ -236,30 +236,30 @@ class EB_QuantumESPRESSO(ConfigureMake):
         # build list of expected binaries based on make targets
         bins = ["iotk", "iotk.x", "iotk_print_kinds.x"]
 
-        if 'cp' in self.cfg['makeopts'] or 'all' in self.cfg['makeopts']:
+        if 'cp' in self.cfg['buildopts'] or 'all' in self.cfg['buildopts']:
             bins.extend(["cp.x", "cppp.x", "wfdd.x"])
 
-        if 'gww' in self.cfg['makeopts']:  # only for v4.x, not in v5.0 anymore
+        if 'gww' in self.cfg['buildopts']:  # only for v4.x, not in v5.0 anymore
             bins.extend(["gww_fit.x", "gww.x", "head.x", "pw4gww.x"])
 
-        if 'ld1' in self.cfg['makeopts'] or 'all' in self.cfg['makeopts']:
+        if 'ld1' in self.cfg['buildopts'] or 'all' in self.cfg['buildopts']:
             bins.extend(["ld1.x"])
 
-        if 'gipaw' in self.cfg['makeopts']:
+        if 'gipaw' in self.cfg['buildopts']:
             bins.extend(["gipaw.x"])
 
-        if 'neb' in self.cfg['makeopts'] or 'pwall' in self.cfg['makeopts'] or \
-           'all' in self.cfg['makeopts']:
+        if 'neb' in self.cfg['buildopts'] or 'pwall' in self.cfg['buildopts'] or \
+           'all' in self.cfg['buildopts']:
             if LooseVersion(self.version) > LooseVersion("5"):
                 bins.extend(["neb.x", "path_interpolation.x"])
 
-        if 'ph' in self.cfg['makeopts'] or 'all' in self.cfg['makeopts']:
+        if 'ph' in self.cfg['buildopts'] or 'all' in self.cfg['buildopts']:
             bins.extend(["d3.x", "dynmat.x", "lambda.x", "matdyn.x", "ph.x", "phcg.x", "q2r.x"])
             if LooseVersion(self.version) > LooseVersion("5"):
                 bins.extend(["fqha.x", "q2qstar.x"])
 
-        if 'pp' in self.cfg['makeopts'] or 'pwall' in self.cfg['makeopts'] or \
-           'all' in self.cfg['makeopts']:
+        if 'pp' in self.cfg['buildopts'] or 'pwall' in self.cfg['buildopts'] or \
+           'all' in self.cfg['buildopts']:
             bins.extend(["average.x", "bands.x", "dos.x", "epsilon.x", "initial_state.x",
                          "plan_avg.x", "plotband.x", "plotproj.x", "plotrho.x", "pmw.x", "pp.x",
                          "projwfc.x", "sumpdos.x", "pw2wannier90.x", "pw_export.x", "pw2gw.x",
@@ -269,7 +269,7 @@ class EB_QuantumESPRESSO(ConfigureMake):
             else:
                 bins.extend(["pw2casino.x"])
 
-        if 'pw' in self.cfg['makeopts'] or 'all' in self.cfg['makeopts']:
+        if 'pw' in self.cfg['buildopts'] or 'all' in self.cfg['buildopts']:
             bins.extend(["band_plot.x", "dist.x", "ev.x", "kpoints.x", "pw.x", "pwi2xsf.x",
                          "bands_FS.x", "kvecs_FS.x"])
             if LooseVersion(self.version) > LooseVersion("5"):
@@ -277,42 +277,42 @@ class EB_QuantumESPRESSO(ConfigureMake):
             else:
                 bins.extend(["path_int.x"])
 
-        if 'pwcond' in self.cfg['makeopts'] or 'pwall' in self.cfg['makeopts'] or \
-           'all' in self.cfg['makeopts']:
+        if 'pwcond' in self.cfg['buildopts'] or 'pwall' in self.cfg['buildopts'] or \
+           'all' in self.cfg['buildopts']:
             bins.extend(["pwcond.x"])
 
-        if 'tddfpt' in self.cfg['makeopts'] or 'all' in self.cfg['makeopts']:
+        if 'tddfpt' in self.cfg['buildopts'] or 'all' in self.cfg['buildopts']:
             if LooseVersion(self.version) > LooseVersion("5"):
                 bins.extend(["turbo_lanczos.x", "turbo_spectrum.x"])
 
         upftools = []
-        if 'upf' in self.cfg['makeopts'] or 'all' in self.cfg['makeopts']:
+        if 'upf' in self.cfg['buildopts'] or 'all' in self.cfg['buildopts']:
             upftools = ["casino2upf.x", "cpmd2upf.x", "fhi2upf.x", "fpmd2upf.x", "ncpp2upf.x",
                         "oldcp2upf.x", "read_upf_tofile.x", "rrkj2upf.x", "uspp2upf.x", "vdb2upf.x",
                         "virtual.x"]
             if LooseVersion(self.version) > LooseVersion("5"):
                 upftools.extend(["interpolate.x", "upf2casino.x"])
 
-        if 'vdw' in self.cfg['makeopts']:  # only for v4.x, not in v5.0 anymore
+        if 'vdw' in self.cfg['buildopts']:  # only for v4.x, not in v5.0 anymore
             bins.extend(["vdw.x"])
 
-        if 'w90' in self.cfg['makeopts']:
+        if 'w90' in self.cfg['buildopts']:
             bins.extend(["wannier90.x"])
 
         want_bins = []
-        if 'want' in self.cfg['makeopts']:
+        if 'want' in self.cfg['buildopts']:
             want_bins = ["bands.x", "blc2wan.x", "conductor.x", "current.x", "disentangle.x",
                          "dos.x", "gcube2plt.x", "kgrid.x", "midpoint.x", "plot.x", "sumpdos",
                          "wannier.x", "wfk2etsf.x"]
             if LooseVersion(self.version) > LooseVersion("5"):
                 want_bins.extend(["cmplx_bands.x", "decay.x", "sax2qexml.x", "sum_sgm.x"])
 
-        if 'xspectra' in self.cfg['makeopts']:
+        if 'xspectra' in self.cfg['buildopts']:
             bins.extend(["xspectra.x"])
 
 
         yambo_bins = []
-        if 'yambo' in self.cfg['makeopts']:
+        if 'yambo' in self.cfg['buildopts']:
             yambo_bins = ["a2y", "p2y", "yambo", "ypp"]
 
         pref = self.install_subdir

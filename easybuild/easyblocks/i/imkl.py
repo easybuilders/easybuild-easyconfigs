@@ -195,9 +195,9 @@ class EB_imkl(IntelBase):
                 self.log.exception("Can't change to interfaces directory %s" % interfacedir)
 
             # compiler defaults to icc, but we could be using gcc to create gimkl.
-            makeopts = ''
+            buildopts = ''
             if get_software_root('GCC'):  # can't use toolchain.comp_family, because of dummy toolchain
-                makeopts = 'compiler=gnu '
+                buildopts = 'compiler=gnu '
 
             for i in lis1 + lis2 + lis3:
                 if i in lis1:
@@ -217,7 +217,7 @@ class EB_imkl(IntelBase):
                     cmd = "make -f makefile libintel64 %s" % extramakeopts
 
                 # add other make options as well
-                cmd = ' '.join([cmd, makeopts])
+                cmd = ' '.join([cmd, buildopts])
 
                 for opt in ['', '-fPIC']:
                     try:

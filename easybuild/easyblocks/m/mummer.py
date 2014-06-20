@@ -65,7 +65,7 @@ class EB_MUMmer(ConfigureMake):
         cmd = "%s make check %s" % (self.cfg['preconfigopts'], self.cfg['configopts'])
         run_cmd(cmd, log_all=True, simple=True, log_output=True)
 
-        self.cfg.update('makeopts', 'all')
+        self.cfg.update('buildopts', 'all')
 
     def install_step(self):
         """Patch files to avoid use of build dir, install by copying files to install dir."""
