@@ -208,13 +208,13 @@ class EB_imkl(IntelBase):
                     cmd = "make -f makefile libintel64 install_to=$INSTALL_DIR"
                 if i in lis3:
                     # use INSTALL_DIR and SPEC_OPT
-                    extramakeopts = ''
+                    extrabuildopts = ''
                     # can't use toolchain.mpi_family, because of dummy toolchain
                     if get_software_root('MPICH2') or get_software_root('MVAPICH2'):
-                        extramakeopts = 'mpi=mpich2'
+                        extrabuildopts = 'mpi=mpich2'
                     elif get_software_root('OpenMPI'):
-                        extramakeopts = 'mpi=openmpi'
-                    cmd = "make -f makefile libintel64 %s" % extramakeopts
+                        extrabuildopts = 'mpi=openmpi'
+                    cmd = "make -f makefile libintel64 %s" % extrabuildopts
 
                 # add other make options as well
                 cmd = ' '.join([cmd, buildopts])
