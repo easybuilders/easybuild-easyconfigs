@@ -194,10 +194,14 @@ class EB_imkl(IntelBase):
             except:
                 self.log.exception("Can't change to interfaces directory %s" % interfacedir)
 
-            # compiler defaults to icc, but we could be using gcc to create gimkl.
             makeopts = ''
-            if get_software_root('GCC'):  # can't use toolchain.comp_family, because of dummy toolchain
-                makeopts = 'compiler=gnu '
+            # determine whether we're using a non-Intel GCC-based toolchain
+            # can't use toolchain.comp_family, because of dummy toolchain used when installing imkl
+            if get_software_root('icc') is None:
+                if get_software_root('GCC'):
+                    makeopts = 'compiler=gnu '
+                else:
+                    self.log.error("Not using either Intel compilers nor GCC, don't know how to build wrapper libs")
 
             for i in lis1 + lis2 + lis3:
                 if i in lis1:
