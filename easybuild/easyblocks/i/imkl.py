@@ -96,14 +96,21 @@ class EB_imkl(IntelBase):
         if LooseVersion(self.version) >= LooseVersion('10.3'):
             if self.cfg['m32']:
                 self.log.error("32-bit not supported yet for IMKL v%s (>= 10.3)" % self.version)
-            return {
-                'PATH': ['bin', 'mkl/bin', 'mkl/bin/intel64', 'composerxe-2011/bin'],
-                'LD_LIBRARY_PATH': ['lib/intel64', 'mkl/lib/intel64'],
-                'LIBRARY_PATH': ['lib/intel64', 'mkl/lib/intel64'],
-                'MANPATH': ['man', 'man/en_US'],
-                'CPATH': ['mkl/include', 'mkl/include/fftw'],
-                'FPATH': ['mkl/include', 'mkl/include/fftw'],
-            }
+            else:
+                retdict = {
+                    'PATH': ['bin', 'mkl/bin', 'mkl/bin/intel64', 'composerxe-2011/bin'],
+                    'LD_LIBRARY_PATH': ['lib/intel64', 'mkl/lib/intel64'],
+                    'LIBRARY_PATH': ['lib/intel64', 'mkl/lib/intel64'],
+                     'MANPATH': ['man', 'man/en_US'],
+                     'CPATH': ['mkl/include', 'mkl/include/fftw'],
+                     'FPATH': ['mkl/include', 'mkl/include/fftw'],
+                }
+                if LooseVersion(self.version) >= LooseVersion('11.0'):
+                    if LooseVersion(self.version) >= LooseVersion('11.1'):
+                        retdict['MIC_LD_LIBRARY_PATH'] = ['lib/mic', 'mkl/lib/mic'];
+                    else:
+                        retdict['MIC_LD_LIBRARY_PATH'] = ['compiler/lib/mic', 'mkl/lib/mic'];
+                return retdict;
         else:
             if self.cfg['m32']:
                 return {
