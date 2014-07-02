@@ -1,0 +1,42 @@
+# This file is an EasyBuild reciPY as per https://github.com/hpcugent/easybuild
+# Author: Pablo Escobar Lopez
+# Swiss Institute of Bioinformatics
+# Biozentrum - University of Basel
+
+easyblock = 'MakeCp'
+
+name = 'RAD'
+version = '06-2014'
+
+homepage = 'http://webpages.uidaho.edu/hohenlohe/software.html'
+description = """ These programs are designed to conduct population genomic analysis 
+ on RAD sequencing data. They were designed for cases with a reference genome (including 
+ a reference set of RAD contigs), although many of the analyses are possible without 
+ alignment to a reference. """
+
+toolchain = {'name': 'goolf', 'version': '1.4.10'}
+
+source_urls = ['http://webpages.uidaho.edu/hohenlohe/']
+sources = ['%(name)spopgen.tar.gz']
+
+# we run the compilation here. Lines like this:
+# gcc collate.c -lm -o collate
+premakeopts = '$CC $OPTFLAGS collate.c -lm -o collate && '
+premakeopts += '$CC $OPTFLAGS SNPstats0.c -lm -o SNPstats0 && '
+premakeopts += '$CC $OPTFLAGS SNPstats1.c -lm -o SNPstats1 && '
+premakeopts += '$CC $OPTFLAGS genotype.c -lm -o genotype && '
+premakeopts += '$CC $OPTFLAGS statistics0.c -lm -o statistics0 && '
+premakeopts += '$CC $OPTFLAGS statistics1.c -lm -o statistics1 && '
+
+# with this hack we avoid the "make" command from MakeCp block to be executed
+premakeopts += 'echo compilation done. Avoiding to run make '
+
+files_to_copy = [(["collate", "SNPstats0", "SNPstats1", "genotype", "statistics0", "statistics1"], "bin")]
+        
+sanity_check_paths = {
+    'files': ["bin/%s" % x for x in ["collate", "SNPstats0", "SNPstats1", "genotype", "statistics0", "statistics1"]],
+    'dirs': [""],
+}
+
+moduleclass = 'bio'
+
