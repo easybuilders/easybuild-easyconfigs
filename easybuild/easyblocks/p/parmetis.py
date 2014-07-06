@@ -58,7 +58,7 @@ class EB_ParMETIS(EasyBlock):
 
             self.cfg.update('configopts', '-DOPENMP="%s"' % self.toolchain.get_flag('openmp'))
 
-            if self.toolchain.options['usempi']:
+            if self.toolchain.options.get('usempi', None):
                 self.cfg.update('configopts', '-DCMAKE_C_COMPILER="$MPICC"')
 
             if self.toolchain.options['pic']:

@@ -47,10 +47,10 @@ class EB_QuantumESPRESSO(ConfigureMake):
     @staticmethod
     def extra_options():
         """Custom easyconfig parameters for Quantum ESPRESSO."""
-        extra_vars = [
-                      ('hybrid', [False, "Enable hybrid build (with OpenMP)", CUSTOM]),
-                      ('with_scalapack', [True, "Enable ScaLAPACK support", CUSTOM]),
-                     ]
+        extra_vars = {
+            'hybrid': [False, "Enable hybrid build (with OpenMP)", CUSTOM],
+            'with_scalapack': [True, "Enable ScaLAPACK support", CUSTOM],
+        }
         return ConfigureMake.extra_options(extra_vars)
 
     def __init__(self, *args, **kwargs):
@@ -71,7 +71,7 @@ class EB_QuantumESPRESSO(ConfigureMake):
         if self.cfg['hybrid']:
             self.cfg.update('configopts', '--enable-openmp')
 
-        if not self.toolchain.options['usempi']:
+        if not self.toolchain.options.get('usempi', None):
             self.cfg.update('configopts', '--disable-parallel')
 
         if not self.cfg['with_scalapack']:
@@ -92,9 +92,9 @@ class EB_QuantumESPRESSO(ConfigureMake):
         dflags = []
 
         comp_fam_dflags = {
-                           toolchain.INTELCOMP: '-D__INTEL',
-                           toolchain.GCC: '-D__GFORTRAN -D__STD_F95',
-                          }
+            toolchain.INTELCOMP: '-D__INTEL',
+            toolchain.GCC: '-D__GFORTRAN -D__STD_F95',
+        }
         dflags.append(comp_fam_dflags[self.toolchain.comp_family()])
 
         libfft = os.getenv('LIBFFT')
@@ -108,7 +108,7 @@ class EB_QuantumESPRESSO(ConfigureMake):
         if get_software_root('ACML'):
             dflags.append('-D__ACML')
 
-        if self.toolchain.options['usempi']:
+        if self.toolchain.options.get('usempi', None):
             dflags.append('-D__MPI -D__PARA')
 
         if self.cfg['hybrid']:
@@ -116,6 +116,9 @@ class EB_QuantumESPRESSO(ConfigureMake):
 
         if self.cfg['with_scalapack']:
             dflags.append(" -D__SCALAPACK")
+
+        # always include -w to supress warnings
+        dflags.append('-w')
 
         repls.append(('DFLAGS', ' '.join(dflags), False))
 
@@ -311,7 +314,6 @@ class EB_QuantumESPRESSO(ConfigureMake):
         yambo_bins = []
         if 'yambo' in self.cfg['makeopts']:
             yambo_bins = ["a2y", "p2y", "yambo", "ypp"]
-
 
         pref = self.install_subdir
 

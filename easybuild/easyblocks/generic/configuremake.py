@@ -47,14 +47,12 @@ class ConfigureMake(EasyBlock):
     @staticmethod
     def extra_options(extra_vars=None):
         """Extra easyconfig parameters specific to ConfigureMake."""
-
-        # using [] as default value is a bad idea, so we handle it this way
-        if extra_vars == None:
-            extra_vars = []
-
-        extra_vars.extend([
-                           ('tar_config_opts', [False, "Override tar settings as determined by configure.", CUSTOM]),
-                          ])
+        extra_vars = dict(EasyBlock.extra_options(extra_vars))
+        extra_vars.update({
+            'configure_cmd_prefix': ['', "Prefix to be glued before ./configure", CUSTOM],
+            'prefix_opt': ['--prefix=', "Prefix command line option for configure script", CUSTOM],
+            'tar_config_opts': [False, "Override tar settings as determined by configure.", CUSTOM],
+        })
         return EasyBlock.extra_options(extra_vars)
 
     def configure_step(self, cmd_prefix=''):
@@ -62,6 +60,12 @@ class ConfigureMake(EasyBlock):
         Configure step
         - typically ./configure --prefix=/install/path style
         """
+
+        if self.cfg['configure_cmd_prefix']:
+            if cmd_prefix:
+                tup = (cmd_prefix, self.cfg['configure_cmd_prefix'])
+                self.log.debug("Specified cmd_prefix '%s' is overruled by configure_cmd_prefix '%s'" % tup)
+            cmd_prefix = self.cfg['configure_cmd_prefix']
 
         if self.cfg['tar_config_opts']:
             # setting am_cv_prog_tar_ustar avoids that configure tries to figure out
@@ -75,8 +79,13 @@ class ConfigureMake(EasyBlock):
             for (key, val) in tar_vars.items():
                 self.cfg.update('preconfigopts', "%s='%s'" % (key, val))
 
-        cmd = "%s %s./configure --prefix=%s %s" % (self.cfg['preconfigopts'], cmd_prefix,
-                                                    self.installdir, self.cfg['configopts'])
+        cmd = "%(preconfigopts)s %(cmd_prefix)s./configure %(prefix_opt)s%(installdir)s %(configopts)s" % {
+            'preconfigopts': self.cfg['preconfigopts'],
+            'cmd_prefix': cmd_prefix,
+            'prefix_opt': self.cfg['prefix_opt'],
+            'installdir': self.installdir,
+            'configopts': self.cfg['configopts'],
+        }
 
         (out, _) = run_cmd(cmd, log_all=True, simple=False)
 

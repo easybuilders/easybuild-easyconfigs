@@ -27,14 +27,31 @@ EasyBuild support for installing Intel Inspector, implemented as an easyblock
 
 @author: Kenneth Hoste (Ghent University)
 """
+from distutils.version import LooseVersion
 
-from easybuild.easyblocks.generic.intelbase import IntelBase
+from easybuild.easyblocks.generic.intelbase import IntelBase, ACTIVATION_NAME_2012, LICENSE_FILE_NAME_2012
 
 
 class EB_Inspector(IntelBase):
     """
     Support for installing Intel Inspector
     """
+    def install_step(self):
+        """
+        Actual installation
+        - create silent cfg file
+        - execute command
+        """
+        silent_cfg_names_map = None
+
+        if LooseVersion(self.version) <= LooseVersion('2013_update6'):
+            silent_cfg_names_map = {
+                'activation_name': ACTIVATION_NAME_2012,
+                'license_file_name': LICENSE_FILE_NAME_2012,
+            }
+
+        super(EB_Inspector, self).install_step(silent_cfg_names_map=silent_cfg_names_map)
+
     def make_module_req_guess(self):
         """
         A dictionary of possible directories to look for
@@ -66,7 +83,7 @@ class EB_Inspector(IntelBase):
         """Custom variable definitions in module file."""
         
         txt = super(EB_Inspector, self).make_module_extra()
-        txt += self.moduleGenerator.prepend_paths('INTEL_LICENSE_FILE', self.license_file, allow_abs=True)
+        txt += self.moduleGenerator.prepend_paths(self.license_env_var, self.license_file, allow_abs=True)
 
         return txt
 

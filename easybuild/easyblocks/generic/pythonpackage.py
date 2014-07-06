@@ -41,21 +41,32 @@ from easybuild.easyblocks.python import EXTS_FILTER_PYTHON_PACKAGES
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.framework.extensioneasyblock import ExtensionEasyBlock
 from easybuild.tools.filetools import mkdir, rmtree2, run_cmd
-from easybuild.tools.modules import get_software_root, get_software_version
+from easybuild.tools.modules import get_software_version
 
 
 def det_pylibdir():
     """Determine Python library directory."""
-
-    # note: we can't rely on distutils.sysconfig.get_python_lib(),
-    # since setuptools and distribute hardcode 'lib/python2.X/site-packages'
+    log = fancylogger.getLogger('det_pylibdir', fname=False)
     pyver = get_software_version('Python')
     if not pyver:
-        log = fancylogger.getLogger('det_pylibdir', fname=False)
         log.error("Python module not loaded.")
     else:
-        short_pyver = '.'.join(pyver.split('.')[:2])
-        return "lib/python%s/site-packages" % short_pyver
+        # determine Python lib dir via distutils
+        # use run_cmd, we can to talk to the active Python, not the system Python running EasyBuild
+        prefix = '/tmp/'
+        pycmd = 'import distutils.sysconfig; print(distutils.sysconfig.get_python_lib(prefix="%s"))' % prefix
+        cmd = "python -c '%s'" % pycmd
+        out, ec = run_cmd(cmd, simple=False)
+        out = out.strip()
+
+        # value obtained should start with specified prefix, otherwise something is very wrong
+        if not out.startswith(prefix):
+            tup = (cmd, prefix, out, ec)
+            log.error("Output of %s does not start with specified prefix %s: %s (exit code %s)" % tup)
+
+        pylibdir = out.strip()[len(prefix):]
+        log.debug("Determined pylibdir using '%s': %s" % (cmd, pylibdir))
+        return pylibdir
 
 
 class PythonPackage(ExtensionEasyBlock):
@@ -64,9 +75,9 @@ class PythonPackage(ExtensionEasyBlock):
     @staticmethod
     def extra_options():
         """Easyconfig parameters specific to Python packages."""
-        extra_vars = [
-                      ('runtest', [True, "Run unit tests.", CUSTOM]),  # overrides default
-                     ]
+        extra_vars = {
+            'runtest': [True, "Run unit tests.", CUSTOM],  # overrides default
+        }
         return ExtensionEasyBlock.extra_options(extra_vars)
 
     def __init__(self, *args, **kwargs):
@@ -78,11 +89,9 @@ class PythonPackage(ExtensionEasyBlock):
         self.sitecfglibdir = None
         self.sitecfgincdir = None
         self.testinstall = False
-        self.installopts = ''
         self.testcmd = None
         self.unpack_options = ''
 
-        self.python = None
         self.pylibdir = None
 
         # make sure there's no site.cfg in $HOME, because setup.py will find it and use it
@@ -95,7 +104,8 @@ class PythonPackage(ExtensionEasyBlock):
     def prepare_step(self):
         """Prepare easyblock by determining Python site lib dir."""
         super(PythonPackage, self).prepare_step()
-        self.pylibdir = det_pylibdir()
+        if not self.pylibdir:
+            self.pylibdir = det_pylibdir()
 
     def prerun(self):
         """Prepare extension by determining Python site lib dir."""
@@ -105,8 +115,7 @@ class PythonPackage(ExtensionEasyBlock):
     def configure_step(self):
         """Configure Python package build."""
 
-        self.python = get_software_root('Python')
-        if not self.python:
+        if not self.pylibdir:
             self.log.error('Python module not loaded.')
         self.log.debug("Python library dir: %s" % self.pylibdir)
 
@@ -141,7 +150,7 @@ class PythonPackage(ExtensionEasyBlock):
     def build_step(self):
         """Build Python package using setup.py"""
 
-        cmd = "python setup.py build"
+        cmd = "python setup.py build %s" % self.cfg['makeopts']
         run_cmd(cmd, log_all=True, simple=True)
 
     def test_step(self):
@@ -163,7 +172,8 @@ class PythonPackage(ExtensionEasyBlock):
                 except OSError, err:
                     self.log.error("Failed to create test install dir: %s" % err)
 
-                cmd = "python setup.py install --prefix=%s %s" % (testinstalldir, self.installopts)
+                tup = (self.cfg['preinstallopts'], testinstalldir, self.cfg['installopts'])
+                cmd = "%s python setup.py install --prefix=%s %s" % tup
                 run_cmd(cmd, log_all=True, simple=True)
 
                 run_cmd("python -c 'import sys; print(sys.path)'")  # print Python search path (debug)
@@ -191,7 +201,8 @@ class PythonPackage(ExtensionEasyBlock):
         env.setvar('PYTHONPATH', ":".join([x for x in [abs_pylibdir, pythonpath] if x is not None]))
 
         # actually install Python package
-        cmd = "python setup.py install --prefix=%s %s" % (self.installdir, self.cfg['installopts'])
+        tup = (self.cfg['preinstallopts'], self.installdir, self.cfg['installopts'])
+        cmd = "%s python setup.py install --prefix=%s %s" % tup
         run_cmd(cmd, log_all=True, simple=True)
 
         # restore PYTHONPATH if it was set
@@ -216,7 +227,9 @@ class PythonPackage(ExtensionEasyBlock):
         """
         Custom sanity check for Python packages
         """
-        return super(PythonPackage, self).sanity_check_step(EXTS_FILTER_PYTHON_PACKAGES, *args, **kwargs)
+        if not 'exts_filter' in kwargs:
+            kwargs.update({'exts_filter': EXTS_FILTER_PYTHON_PACKAGES})
+        return super(PythonPackage, self).sanity_check_step(*args, **kwargs)
 
     def make_module_extra(self):
         """Add install path to PYTHONPATH"""

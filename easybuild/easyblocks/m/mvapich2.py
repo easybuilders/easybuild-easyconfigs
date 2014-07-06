@@ -47,17 +47,17 @@ class EB_MVAPICH2(ConfigureMake):
 
     @staticmethod
     def extra_options():
-        extra_vars = [
-                      ('withchkpt', [False, "Enable checkpointing support (required BLCR) (default: False)", CUSTOM]),
-                      ('withmpe', [False, "Build MPE routines (default: False)", CUSTOM]),
-                      ('withhwloc', [False, "Enable support for using hwloc support for process binding (default: False)", CUSTOM]),
-                      ('withlimic2', [False, "Enable LiMIC2 support for intra-node communication (default: False)", CUSTOM]),
-                      ('debug', [False, "Enable debug build (which is slower) (default: False)", CUSTOM]),
-                      ('rdma_type', ["gen2", "Specify the RDMA type (gen2/udapl) (default: gen2)", CUSTOM]),
-                      ('blcr_path', [None, "Path to BLCR package (default: None)", CUSTOM]),
-                      ('blcr_inc_path', [None, "Path to BLCR header files (default: None)", CUSTOM]),
-                      ('blcr_lib_path', [None, "Path to BLCR library (default: None)", CUSTOM]),
-                     ]
+        extra_vars = {
+            'withchkpt': [False, "Enable checkpointing support (required BLCR)", CUSTOM],
+            'withmpe': [False, "Build MPE routines", CUSTOM],
+            'withhwloc': [False, "Enable support for using hwloc support for process binding", CUSTOM],
+            'withlimic2': [False, "Enable LiMIC2 support for intra-node communication", CUSTOM],
+            'debug': [False, "Enable debug build (which is slower)", CUSTOM],
+            'rdma_type': ["gen2", "Specify the RDMA type (gen2/udapl)", CUSTOM],
+            'blcr_path': [None, "Path to BLCR package", CUSTOM],
+            'blcr_inc_path': [None, "Path to BLCR header files", CUSTOM],
+            'blcr_lib_path': [None, "Path to BLCR library", CUSTOM],
+        }
         return ConfigureMake.extra_options(extra_vars)
 
     def configure_step(self):

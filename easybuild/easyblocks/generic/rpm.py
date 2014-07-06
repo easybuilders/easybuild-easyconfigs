@@ -62,17 +62,13 @@ class Rpm(Binary):
     @staticmethod
     def extra_options(extra_vars=None):
         """Extra easyconfig parameters specific to RPMs."""
-
-        # using [] as default value is a bad idea, so we handle it this way
-        if extra_vars == None:
-            extra_vars = []
-
-        extra_vars.extend([
-                           ('force', [False, "Use force", CUSTOM]),
-                           ('preinstall', [False, "Enable pre install", CUSTOM]),
-                           ('postinstall', [False, "Enable post install", CUSTOM]),
-                           ('makesymlinks', [[], "Create symlinks for listed paths", CUSTOM]),  # supports glob
-                          ])
+        extra_vars = dict(EasyBlock.extra_options(extra_vars))
+        extra_vars.update({
+            'force': [False, "Use force", CUSTOM],
+            'preinstall': [False, "Enable pre install", CUSTOM],
+            'postinstall': [False, "Enable post install", CUSTOM],
+            'makesymlinks': [[], "Create symlinks for listed paths", CUSTOM],  # supports glob
+        })
         return EasyBlock.extra_options(extra_vars)
 
     def configure_step(self):
@@ -127,24 +123,30 @@ class Rpm(Binary):
             self.log.error("Failed to create RPMREBUILD_TMPDIR dir %s: %s" % (rpmrebuild_tmpdir, err))
 
         rpms_path = os.path.join(self.builddir, 'rebuiltRPMs')
-        for rpm in self.src:
-            cmd = ' '.join(["rpmrebuild -v",
-                            """--change-spec-whole='sed -e "s/^BuildArch:.*/BuildArch:    x86_64/"'""",
-                            """--change-spec-whole='sed -e "s/^Prefix:.*/Prefix:    \//"'""",
-                            """--change-spec-whole='sed -e "s/^\(.*:[ ]\+\..*\)/#ERROR \1/"'""",
-                            "-p -d",
-                            rpms_path,
-                            rpm['path']])
+        try:
+            os.makedirs(rpms_path)
+        except OSError, err:
+            self.log.error("Failed to create %s: %s" % (rpms_path, err))
 
+        for rpm in self.src:
+            cmd = ' '.join([
+                "rpmrebuild -v",
+                """--change-spec-whole='sed -e "s/^Prefix:.*/Prefix:    \//"'""",
+                """--change-spec-whole='sed -e "s/^\(.*:[ ]\+\..*\)/#ERROR \1/"'""",
+                "--notest-install",
+                "-p -d",
+                rpms_path,
+                rpm['path'],
+            ])
             run_cmd(cmd, log_all=True, simple=True)
 
         self.oldsrc = self.src
         self.src = []
-        for rpm in os.listdir(os.path.join(rpms_path, 'x86_64')):
+        for path in glob.glob(os.path.join(rpms_path, '*', '*.rpm')):
             self.src.append({
-                             'name': rpm,
-                             'path': os.path.join(rpms_path, 'x86_64', rpm)
-                            })
+                'name': os.path.basename(path),
+                'path': path,
+        })
         self.log.debug("oldsrc: %s, src: %s" % (self.oldsrc, self.src))
 
     def install_step(self):
@@ -172,7 +174,7 @@ class Rpm(Binary):
 
         if self.rebuildRPM:
             cmd_tpl = "rpm -i --dbpath %(inst)s/rpm %(force)s --relocate /=%(inst)s " \
-                      "%(pre)s %(post)s --nodeps %(rpm)s"
+                      "%(pre)s %(post)s --nodeps --ignorearch %(rpm)s"
         else:
             cmd_tpl = "rpm -i --dbpath /rpm %(force)s --root %(inst)s --relocate /=%(inst)s " \
                       "%(pre)s %(post)s --nodeps %(rpm)s"
@@ -183,12 +185,12 @@ class Rpm(Binary):
 
         for rpm in self.src:
             cmd = cmd_tpl % {
-                             'inst': self.installdir,
-                             'rpm': rpm['path'],
-                             'force': force,
-                             'pre': preinstall,
-                             'post': postinstall
-                            }
+                'inst': self.installdir,
+                'rpm': rpm['path'],
+                'force': force,
+                'pre': preinstall,
+                'post': postinstall,
+            }
             run_cmd(cmd, log_all=True, simple=True)
 
         for path in self.cfg['makesymlinks']:

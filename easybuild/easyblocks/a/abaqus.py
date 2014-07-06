@@ -38,6 +38,7 @@ from easybuild.framework.easyblock import EasyBlock
 from easybuild.tools.filetools import run_cmd
 from distutils.version import LooseVersion
 
+
 class EB_ABAQUS(Binary):
     """Support for installing ABAQUS."""
 
@@ -76,11 +77,12 @@ class EB_ABAQUS(Binary):
     def install_step(self):
         """Install ABAQUS using 'setup'."""
         os.chdir(self.builddir)
-        cmd = "%s/%s-%s/setup" % (self.builddir, self.name, self.version.split('-')[0])
-        cmd += " -replay %s" % self.replayfile
-        if LooseVersion(self.version) < LooseVersion("6.13"):
-            cmd += " -nosystemcheck"
-        run_cmd(cmd,log_all=True,simple=True)
+        if self.cfg['install_cmd'] is None:
+            self.cfg['install_cmd'] = "%s/%s-%s/setup" % (self.builddir, self.name, self.version.split('-')[0])
+            self.cfg['install_cmd'] += " -replay %s" % self.replayfile
+            if LooseVersion(self.version) < LooseVersion("6.13"):
+                self.cfg['install_cmd'] += " -nosystemcheck"
+        super(EB_ABAQUS, self).install_step()
 
     def sanity_check_step(self):
         """Custom sanity check for ABAQUS."""
