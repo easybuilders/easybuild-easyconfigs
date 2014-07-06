@@ -54,17 +54,24 @@ class EB_ALADIN(EasyBlock):
         self.conf_filepath = None
         self.rootpack_dir = None
 
+        self.orig_library_path = None
+
     @staticmethod
     def extra_options():
         """Custom easyconfig parameters for ALADIN."""
 
-        extra_vars = [
-                      ('optional_extra_param', ['default value', "short description", CUSTOM]),
-                     ]
+        extra_vars = {
+            'optional_extra_param': ['default value', "short description", CUSTOM],
+        }
         return EasyBlock.extra_options(extra_vars)
 
     def configure_step(self):
         """Custom configuration procedure for ALADIN."""
+
+        # unset $LIBRARY_PATH set by modules of dependencies, because it may screw up linking
+        if 'LIBRARY_PATH' in os.environ:
+            self.log.debug("Unsetting $LIBRARY_PATH (was: %s)" % os.environ['LIBRARY_PATH'])
+            self.orig_library_path = os.environ.pop('LIBRARY_PATH')
         
         # build auxiliary libraries
         auxlibs_dir = None
@@ -151,7 +158,8 @@ class EB_ALADIN(EasyBlock):
             self.log.error("Failed to remove existing file %s: %s" % (self.conf_filepath, err))
 
         mpich = 'n'
-        if self.toolchain.options['usempi'] and self.toolchain.mpi_family() in [toolchain.MPICH2, toolchain.INTELMPI]:
+        known_mpi_libs = [toolchain.MPICH2, toolchain.INTELMPI]
+        if self.toolchain.options.get('usempi', None) and self.toolchain.mpi_family() in known_mpi_libs:
             mpich = 'y'
 
         qpref = 'Please type the ABSOLUTE name of '
@@ -285,6 +293,10 @@ class EB_ALADIN(EasyBlock):
 
         # build rootpack
         run_cmd(os.path.join(self.installdir, self.rootpack_dir, 'ics_master'))
+
+        # restore original $LIBRARY_PATH
+        if self.orig_library_path is not None:
+            os.environ['LIBRARY_PATH'] = self.orig_library_path
 
     def sanity_check_step(self):
         """Custom sanity check for ALADIN."""

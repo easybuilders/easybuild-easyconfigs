@@ -33,11 +33,15 @@ EasyBuild support for building and installing Python, implemented as an easybloc
 """
 
 import os
+import re
+import fileinput
+import sys
 from distutils.version import LooseVersion
 
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.filetools import run_cmd
+from easybuild.tools.modules import get_software_libdir, get_software_root
 
 
 EXTS_FILTER_PYTHON_PACKAGES = ('python -c "import %(ext_name)s"', "")
@@ -66,6 +70,31 @@ class EB_Python(ConfigureMake):
     def configure_step(self):
         """Set extra configure options."""
         self.cfg.update('configopts', "--with-threads --enable-shared")
+
+        modules_setup_dist = os.path.join(self.cfg['start_dir'], 'Modules', 'Setup.dist')
+
+        libreadline = get_software_root('libreadline')
+        if libreadline:
+            ncurses = get_software_root('ncurses')
+            if ncurses:
+                readline_libdir = get_software_libdir('libreadline')
+                ncurses_libdir = get_software_libdir('ncurses')
+                readline_static_lib = os.path.join(libreadline, readline_libdir, 'libreadline.a')
+                ncurses_static_lib = os.path.join(ncurses, ncurses_libdir, 'libncurses.a')
+                readline = "readline readline.c %s %s" % (readline_static_lib, ncurses_static_lib)
+                for line in fileinput.input(modules_setup_dist, inplace='1', backup='.readline'):
+                    line = re.sub(r"^#readline readline.c.*", readline, line)
+                    sys.stdout.write(line)
+            else:
+                self.log.error("Both libreadline and ncurses are required to ensure readline support")
+
+        openssl = get_software_root('OpenSSL')
+        if openssl:
+            for line in fileinput.input(modules_setup_dist, inplace='1', backup='.ssl'):
+                line = re.sub(r"^#SSL=.*", "SSL=%s" % openssl, line)
+                line = re.sub(r"^#(\s*-DUSE_SSL -I)", r"\1", line)
+                line = re.sub(r"^#(\s*-L\$\(SSL\)/lib )", r"\1 -L$(SSL)/lib64 ", line)
+                sys.stdout.write(line)
 
         super(EB_Python, self).configure_step()
 
@@ -103,11 +132,18 @@ class EB_Python(ConfigureMake):
                 abiflags = abiflags.strip()
 
         custom_paths = {
-                        'files': ["bin/%s" % pyver, "lib/lib%s%s.so" % (pyver, abiflags)],
-                        'dirs': ["include/%s%s" % (pyver, abiflags), "lib/%s" % pyver]
-                       }
+            'files': ["bin/%s" % pyver, "lib/lib%s%s.so" % (pyver, abiflags)],
+            'dirs': ["include/%s%s" % (pyver, abiflags), "lib/%s" % pyver],
+        }
 
         # cleanup
         self.clean_up_fake_module(fake_mod_data)
 
-        super(EB_Python, self).sanity_check_step(custom_paths=custom_paths)
+        custom_commands = [
+            ('python', '--version'),
+            ('python', '-c "import _ctypes"'),  # make sure that foreign function interface (libffi) works
+            ('python', '-c "import _ssl"'),  # make sure SSL support is enabled one way or another
+            ('python', '-c "import readline"'),  # make sure readline support was built correctly
+        ]
+
+        super(EB_Python, self).sanity_check_step(custom_paths=custom_paths, custom_commands=custom_commands)

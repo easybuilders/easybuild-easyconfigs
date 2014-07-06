@@ -61,6 +61,8 @@ class EB_CUDA(Binary):
         noqanda = [
             r"^Configuring",
             r"Installation Complete",
+            r"Verifying archive integrity.*",
+            r"^Uncompressing NVIDIA CUDA",
             r".* -> .*",
         ]
 

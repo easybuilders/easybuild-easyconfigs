@@ -35,20 +35,32 @@ EasyBuild support for installing the Intel Threading Building Blocks (TBB) libra
 import os
 import shutil
 import glob
+from distutils.version import LooseVersion
 
-from easybuild.easyblocks.generic.intelbase import IntelBase
+from easybuild.easyblocks.generic.intelbase import IntelBase, ACTIVATION_NAME_2012, LICENSE_FILE_NAME_2012
 
 
 class EB_tbb(IntelBase):
     """EasyBlock for tbb, threading building blocks"""
 
     def install_step(self):
-        """overwrite make_install to add extra symlinks"""
-        super(EB_tbb, self).install_step()
+        """Custom install step, to add extra symlinks"""
+        silent_cfg_names_map = None
+
+        if LooseVersion(self.version) < LooseVersion('4.2'):
+            silent_cfg_names_map = {
+                'activation_name': ACTIVATION_NAME_2012,
+                'license_file_name': LICENSE_FILE_NAME_2012,
+            }
+
+        super(EB_tbb, self).install_step(silent_cfg_names_map=silent_cfg_names_map)
 
         # save libdir
         os.chdir(self.installdir)
-        libglob = 'tbb/lib/intel64/cc*libc*_kernel*'
+        if LooseVersion(self.version) < LooseVersion('4.1.0'):
+            libglob = 'tbb/lib/intel64/cc*libc*_kernel*'
+        else:
+            libglob = 'tbb/lib/intel64/gcc*'
         libs = glob.glob(libglob)
         if len(libs):
             libdir = libs[-1]  # take the last one, should be ordered by cc get_version.

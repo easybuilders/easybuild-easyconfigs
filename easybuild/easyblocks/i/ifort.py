@@ -53,6 +53,9 @@ class EB_ifort(EB_icc, IntelBase):
         if LooseVersion(self.version) >= LooseVersion("2011"):
             if LooseVersion(self.version) <= LooseVersion("2011.3.174"):
                 binprefix = "bin"
+            elif LooseVersion(self.version) >= LooseVersion("2013_sp1"):
+                binprefix = "bin"
+                libprefix = "lib/intel64/lib"
             else:
                 libprefix = "compiler/lib/intel64/lib"
 
@@ -62,10 +65,9 @@ class EB_ifort(EB_icc, IntelBase):
             bins.append("idb")
 
         custom_paths = {
-                        'files': ["%s/%s" % (binprefix, x) for x in bins] +
-                                 ["%s%s" % (libprefix, x) for x in ["ifcore.a", "ifcore.so",
-                                                                    "iomp5.a", "iomp5.so"]],
-                        'dirs': []
-                       }
+            'files': ["%s/%s" % (binprefix, x) for x in bins] +
+                     ["%s%s" % (libprefix, x) for x in ["ifcore.a", "ifcore.so", "iomp5.a", "iomp5.so"]],
+            'dirs': [],
+        }
 
         IntelBase.sanity_check_step(self, custom_paths=custom_paths)

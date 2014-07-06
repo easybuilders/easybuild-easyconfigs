@@ -39,7 +39,7 @@ import easybuild.tools.toolchain as toolchain
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.filetools import mkdir, run_cmd, adjust_permissions
-from easybuild.tools.modules import get_software_root, get_software_version
+from easybuild.tools.modules import get_software_libdir, get_software_root, get_software_version
 
 
 class EB_NWChem(ConfigureMake):
@@ -50,23 +50,30 @@ class EB_NWChem(ConfigureMake):
         super(EB_NWChem, self).__init__(*args, **kwargs)
 
         self.test_cases_dir = None
+        # path for symlink to local copy of default .nwchemrc, required by NWChem at runtime
+        # this path is hardcoded by NWChem, and there's no way to make it use a config file at another path...
+        self.home_nwchemrc = os.path.join(os.getenv('HOME'), '.nwchemrc')
+        # local NWChem .nwchemrc config file, to which symlink will point
+        # using this approach, multiple parallel builds (on different nodes) can use the same symlink
+        common_tmp_dir = os.path.dirname(tempfile.gettempdir())  # common tmp directory, same across nodes
+        self.local_nwchemrc = os.path.join(common_tmp_dir, os.getenv('USER'), 'easybuild_nwchem', '.nwchemrc')
 
     @staticmethod
     def extra_options():
         """Custom easyconfig parameters for NWChem."""
 
-        extra_vars = [
-                      ('target', ["LINUX64", "Target platform", CUSTOM]),
-                      # possible options for ARMCI_NETWORK on LINUX64 with Infiniband:
-                      # OPENIB, MPI-MT, MPI-SPAWN, MELLANOX
-                      ('armci_network', ["OPENIB", "Network protocol to use", CUSTOM]),
-                      ('msg_comms', ["MPI", "Type of message communication", CUSTOM]),
-                      ('modules', ["all", "NWChem modules to build", CUSTOM]),
-                      ('lib_defines', ["", "Additional defines for C preprocessor", CUSTOM]),
-                      ('tests', [True, "Run example test cases", CUSTOM]),
-                      # lots of tests fail, so allow a certain fail ratio
-                      ('max_fail_ratio', [0.5, "Maximum test case fail ratio", CUSTOM])
-                     ]
+        extra_vars = {
+            'target': ["LINUX64", "Target platform", CUSTOM],
+            # possible options for ARMCI_NETWORK on LINUX64 with Infiniband:
+            # OPENIB, MPI-MT, MPI-SPAWN, MELLANOX
+            'armci_network': ["OPENIB", "Network protocol to use", CUSTOM],
+            'msg_comms': ["MPI", "Type of message communication", CUSTOM],
+            'modules': ["all", "NWChem modules to build", CUSTOM],
+            'lib_defines': ["", "Additional defines for C preprocessor", CUSTOM],
+            'tests': [True, "Run example test cases", CUSTOM],
+            # lots of tests fail, so allow a certain fail ratio
+            'max_fail_ratio': [0.5, "Maximum test case fail ratio", CUSTOM],
+        }
         return ConfigureMake.extra_options(extra_vars)
 
     def setvar_env_makeopt(self, name, value):
@@ -76,6 +83,28 @@ class EB_NWChem(ConfigureMake):
 
     def configure_step(self):
         """Custom configuration procedure for NWChem."""
+
+        # check whether a (valid) symlink to a .nwchemrc config file exists (via a dummy file if necessary)
+        # fail early if the link is not what's we expect, since running the test cases will likely fail in this case
+        try:
+            if os.path.exists(self.home_nwchemrc) or os.path.islink(self.home_nwchemrc):
+                # create a dummy file to check symlink
+                if not os.path.exists(self.local_nwchemrc):
+                    local_nwchemrc_dir = os.path.dirname(self.local_nwchemrc)
+                    if not os.path.exists(local_nwchemrc_dir):
+                        os.makedirs(local_nwchemrc_dir)
+                    f = open(self.local_nwchemrc, 'w')
+                    f.write('dummy')
+                    f.close()
+                self.log.debug("Contents of %s: %s" % (os.path.dirname(self.local_nwchemrc), os.listdir(os.path.dirname(self.local_nwchemrc))))
+                if os.path.exists(self.home_nwchemrc) and not os.path.samefile(self.home_nwchemrc, self.local_nwchemrc):
+                    msg = "Found %s, but it's not a symlink to %s" % (self.home_nwchemrc, self.local_nwchemrc)
+                    msg += "\nPlease (re)move %s while installing NWChem; it can be restored later" % self.home_nwchemrc
+                    self.log.error(msg)
+                # ok to remove, we'll recreate it anyway
+                os.remove(self.local_nwchemrc)
+        except (IOError, OSError), err:
+            self.log.error("Failed to validate %s symlink: %s" % (self.home_nwchemrc, err))
 
         # building NWChem in a long path name is an issue, so let's make sure we have a short one
         try:
@@ -113,6 +142,21 @@ class EB_NWChem(ConfigureMake):
             env.setvar('PYTHONHOME', python_root)
             pyver = '.'.join(get_software_version('Python').split('.')[0:2])
             env.setvar('PYTHONVERSION', pyver)
+            # if libreadline is loaded, assume it was a dependency for Python
+            # pass -lreadline to avoid linking issues (libpython2.7.a doesn't include readline symbols)
+            libreadline = get_software_root('libreadline')
+            if libreadline:
+                libreadline_libdir = os.path.join(libreadline, get_software_libdir('libreadline'))
+                ncurses = get_software_root('ncurses')
+                if not ncurses:
+                    self.log.error("ncurses is not loaded, but required to link with libreadline")
+                ncurses_libdir = os.path.join(ncurses, get_software_libdir('ncurses'))
+                readline_libs = ' '.join([
+                    os.path.join(libreadline_libdir, 'libreadline.a'),
+                    os.path.join(ncurses_libdir, 'libcurses.a'),
+                ])
+                extra_libs = os.environ.get('EXTRA_LIBS', '')
+                env.setvar('EXTRA_LIBS', ' '.join([extra_libs, readline_libs]))
 
         env.setvar('LARGE_FILES', 'TRUE')
         env.setvar('USE_NOFSCHECK', 'TRUE')
@@ -249,17 +293,17 @@ class EB_NWChem(ConfigureMake):
         # create NWChem settings file
         fn = os.path.join(self.installdir, 'data', 'default.nwchemrc')
         txt = '\n'.join([
-                         "nwchem_basis_library %(path)s/data/libraries/",
-                         "nwchem_nwpw_library %(path)s/data/libraryps/",
-                         "ffield amber",
-                         "amber_1 %(path)s/data/amber_s/",
-                         "amber_2 %(path)s/data/amber_q/",
-                         "amber_3 %(path)s/data/amber_x/",
-                         "amber_4 %(path)s/data/amber_u/",
-                         "spce %(path)s/data/solvents/spce.rst",
-                         "charmm_s %(path)s/data/charmm_s/",
-                         "charmm_x %(path)s/data/charmm_x/",
-                        ]) % {'path': self.installdir}
+            "nwchem_basis_library %(path)s/data/libraries/",
+            "nwchem_nwpw_library %(path)s/data/libraryps/",
+            "ffield amber",
+            "amber_1 %(path)s/data/amber_s/",
+            "amber_2 %(path)s/data/amber_q/",
+            "amber_3 %(path)s/data/amber_x/",
+            "amber_4 %(path)s/data/amber_u/",
+            "spce %(path)s/data/solvents/spce.rst",
+            "charmm_s %(path)s/data/charmm_s/",
+            "charmm_x %(path)s/data/charmm_x/",
+        ]) % {'path': self.installdir}
 
         try:
             f = open(fn, 'w')
@@ -338,23 +382,22 @@ class EB_NWChem(ConfigureMake):
         try:
             # symlink $HOME/.nwchemrc to local copy of default nwchemrc
             default_nwchemrc = os.path.join(self.installdir, 'data', 'default.nwchemrc')
-            home_nwchemrc = os.path.join(os.getenv('HOME'), '.nwchemrc')
-            local_nwchemrc = os.path.join(tempfile.gettempdir(), os.getenv('USER'), 'easybuild_nwchem', '.nwchemrc')
 
-            local_nwchemrc_dir = os.path.dirname(local_nwchemrc)
-            if not os.path.exists(local_nwchemrc_dir):
-                os.makedirs(local_nwchemrc_dir)
+            # make a local copy of the default .nwchemrc file at a fixed path, so we can symlink to it
+            # this makes sure that multiple parallel builds can reuse the same symlink, even for different builds
+            # there is apparently no way to point NWChem to a particular config file other that $HOME/.nwchemrc
+            try:
+                local_nwchemrc_dir = os.path.dirname(self.local_nwchemrc)
+                if not os.path.exists(local_nwchemrc_dir):
+                    os.makedirs(local_nwchemrc_dir)
+                shutil.copy2(default_nwchemrc, self.local_nwchemrc)
 
-            shutil.copy2(default_nwchemrc, local_nwchemrc)
-            symlink_ok = False
-            if os.path.exists(home_nwchemrc):
-                if not os.path.islink(home_nwchemrc) or not os.path.samefile(home_nwchemrc, local_nwchemrc):
-                    self.log.error("File %s is present, but is not a symlink to %s" % (home_nwchemrc, local_nwchemrc))
-                else:
-                    symlink_ok = True
-
-            if not symlink_ok:
-                os.symlink(local_nwchemrc, home_nwchemrc)
+                # only try to create symlink if it's not there yet
+                # we've verified earlier that the symlink is what we expect it to be if it's there
+                if not os.path.exists(self.home_nwchemrc):
+                    os.symlink(self.local_nwchemrc, self.home_nwchemrc)
+            except OSError, err:
+                self.log.error("Failed to symlink %s to %s: %s" % (self.home_nwchemrc, self.local_nwchemrc, err))
 
             # run tests, keep track of fail ratio
             cwd = os.getcwd()
@@ -427,8 +470,15 @@ class EB_NWChem(ConfigureMake):
                 max_fail_pcnt = self.cfg['max_fail_ratio'] * 100
                 self.log.error("Over %s%% of test cases failed, assuming broken build." % max_fail_pcnt)
 
-            shutil.rmtree(self.examples_dir)
-            shutil.rmtree(local_nwchemrc_dir)
+            # cleanup
+            try:
+                shutil.rmtree(self.examples_dir)
+                shutil.rmtree(local_nwchemrc_dir)
+            except OSError, err:
+                self.log.error("Cleanup failed: %s" % err)
+
+            # set post msg w.r.t. cleaning up $HOME/.nwchemrc symlink
+            self.postmsg += "\nRemember to clean up %s after all NWChem builds are finished." % self.home_nwchemrc
 
         except OSError, err:
             self.log.error("Failed to run test cases: %s" % err)

@@ -37,12 +37,24 @@ import os
 import stat
 
 from easybuild.framework.easyblock import EasyBlock
-from easybuild.tools.filetools import run_cmd
+from easybuild.framework.easyconfig import CUSTOM
+from easybuild.tools.filetools import run_cmd, rmtree2
 
 
 class Binary(EasyBlock):
-    """Support for installing software that comes in binary form.
-    Just copy the sources to the install dir"""
+    """
+    Support for installing software that comes in binary form.
+    Just copy the sources to the install dir, or use the specified install command.
+    """
+
+    @staticmethod
+    def extra_options(extra_vars=None):
+        """Extra easyconfig parameters specific to Binary easyblock."""
+        extra_vars = dict(EasyBlock.extra_options(extra_vars))
+        extra_vars.update({
+            'install_cmd': [None, "Install command to be used.", CUSTOM],
+        })
+        return EasyBlock.extra_options(extra_vars)
 
     def extract_step(self):
         """Move all source files to the build directory"""
@@ -69,13 +81,21 @@ class Binary(EasyBlock):
 
     def install_step(self):
         """Copy all files in build directory to the install directory"""
-        # can't use shutil.copytree because that doesn't allow the target directory to exist already
-        run_cmd("cp -a %s/* %s" % (self.cfg['start_dir'], self.installdir))
+        if self.cfg['install_cmd'] is None:
+            try:
+                # shutil.copytree doesn't allow the target directory to exist already
+                rmtree2(self.installdir)
+                shutil.copytree(self.cfg['start_dir'], self.installdir)
+            except OSError, err:
+                self.log.error("Failed to copy %s to %s: %s" % (self.cfg['start_dir'], self.installdir))
+        else:
+            self.log.info("Installing %s using command '%s'..." % (self.name, self.cfg['install_cmd']))
+            run_cmd(self.cfg['install_cmd'], log_all=True, simple=True)
 
     def make_module_extra(self):
         """Add the install directory to the PATH."""
 
         txt = super(Binary, self).make_module_extra()
-        txt += self.moduleGenerator.prepend_paths("PATH", [""])
+        txt += self.moduleGenerator.prepend_paths("PATH", [''])
         self.log.debug("make_module_extra added this: %s" % txt)
         return txt

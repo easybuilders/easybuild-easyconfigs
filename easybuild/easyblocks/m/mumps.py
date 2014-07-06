@@ -48,7 +48,7 @@ class EB_MUMPS(ConfigureMake):
         """Configure MUMPS build by copying right Makefile.inc template."""
 
         # pick a Makefile.inc template based on compiler family and MPI enabled
-        if self.toolchain.options['usempi']:
+        if self.toolchain.options.get('usempi', None):
             make_inc_suff = 'PAR'
         else:
             make_inc_suff = 'SEQ'

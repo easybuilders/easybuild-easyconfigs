@@ -57,7 +57,7 @@ class EB_FSL(EasyBlock):
         env.setvar('FSLDIR', self.fsldir)
 
         # determine FSL machine type
-        cmd = ". %s/etc/fslconf/fsl.sh && echo $FSLMACHTYPE" % self.fsldir
+        cmd = ". %s/etc/fslconf/fslmachtype.sh" % self.fsldir
         (out, _) = run_cmd(cmd, log_all=True, simple=False)
         fslmachtype = out.strip()
         self.log.debug("FSL machine type: %s" % fslmachtype)

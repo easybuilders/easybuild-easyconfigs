@@ -41,6 +41,7 @@ class EB_EPD(Binary):
     def install_step(self):
         """Overwrite install_step from Binary"""
         os.chdir(self.builddir)
-        cmd = "./epd_free-%s-x86_64.sh -b -p %s" % (self.version, self.installdir)
-        run_cmd(cmd, log_all=True, simple=True)
+        if self.cfg['install_cmd'] is None:
+            self.cfg['install_cmd'] = "./epd_free-%s-x86_64.sh -b -p %s" % (self.version, self.installdir)
+        super(EB_EPD, self).install_step()
 
