@@ -131,7 +131,6 @@ class Rpm(Binary):
         for rpm in self.src:
             cmd = ' '.join([
                 "rpmrebuild -v",
-                """--change-spec-whole='sed -e "s/^BuildArch:.*/BuildArch:    x86_64/"'""",
                 """--change-spec-whole='sed -e "s/^Prefix:.*/Prefix:    \//"'""",
                 """--change-spec-whole='sed -e "s/^\(.*:[ ]\+\..*\)/#ERROR \1/"'""",
                 "--notest-install",
@@ -143,11 +142,11 @@ class Rpm(Binary):
 
         self.oldsrc = self.src
         self.src = []
-        for rpm in os.listdir(os.path.join(rpms_path, 'x86_64')):
+        for path in glob.glob(os.path.join(rpms_path, '*', '*.rpm')):
             self.src.append({
-                             'name': rpm,
-                             'path': os.path.join(rpms_path, 'x86_64', rpm)
-                            })
+                'name': os.path.basename(path),
+                'path': path,
+        })
         self.log.debug("oldsrc: %s, src: %s" % (self.oldsrc, self.src))
 
     def install_step(self):
