@@ -91,7 +91,7 @@ class EB_icc(IntelBase):
                 libprefix = "compiler/lib/intel64/lib"
 
         binfiles = ["icc", "icpc"]
-        if LooseVersion(self.version) <= LooseVersion("2013_sp1"):
+        if LooseVersion(self.version) < LooseVersion("2014"):
             binfiles += ["idb"]
 
         custom_paths = {
