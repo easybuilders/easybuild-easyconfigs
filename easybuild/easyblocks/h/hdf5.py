@@ -70,7 +70,7 @@ class EB_HDF5(ConfigureMake):
             self.cfg.update('configopts', "--disable-parallel")
 
         # make options
-        self.cfg.update('makeopts', fcomp)
+        self.cfg.update('buildopts', fcomp)
 
         # set RUNPARALLEL if MPI is not enabled (or not supported by this toolchain)
         if self.toolchain.options.get('usempi', None):

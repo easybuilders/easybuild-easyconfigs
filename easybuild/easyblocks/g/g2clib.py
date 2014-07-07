@@ -55,8 +55,8 @@ class EB_g2clib(ConfigureMake):
             self.log.error("JasPer module not loaded?")
 
         # beware: g2clib uses INC, while g2lib uses INCDIR !
-        makeopts = 'CC="%s" FC="%s" INC="-I%s/include"' % (os.getenv('CC'), os.getenv('F90'), jasper)
-        self.cfg.update('makeopts', makeopts)
+        buildopts = 'CC="%s" FC="%s" INC="-I%s/include"' % (os.getenv('CC'), os.getenv('F90'), jasper)
+        self.cfg.update('buildopts', buildopts)
 
         super(EB_g2clib, self).build_step()
 

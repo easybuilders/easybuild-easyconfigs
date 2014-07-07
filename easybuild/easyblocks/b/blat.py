@@ -32,7 +32,8 @@ EasyBuild support for BLAT
 import os
 
 from easybuild.easyblocks.generic.makecp import MakeCp
-from easybuild.tools.filetools import run_cmd, mkdir
+from easybuild.tools.filetools import mkdir
+
 
 class EB_BLAT(MakeCp):
     """Support for building and installing BLAT."""

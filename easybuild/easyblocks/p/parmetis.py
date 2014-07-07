@@ -81,15 +81,15 @@ class EB_ParMETIS(EasyBlock):
         if self.cfg['parallel']:
             paracmd = "-j %s" % self.cfg['parallel']
 
-        self.cfg.update('makeopts', 'LIBDIR=""')
+        self.cfg.update('buildopts', 'LIBDIR=""')
 
         if self.toolchain.options['usempi']:
             if self.toolchain.options['pic']:
-                self.cfg.update('makeopts', 'CC="$MPICC -fPIC"')
+                self.cfg.update('buildopts', 'CC="$MPICC -fPIC"')
             else:
-                self.cfg.update('makeopts', 'CC="$MPICC"')
+                self.cfg.update('buildopts', 'CC="$MPICC"')
 
-        cmd = "%s make %s %s" % (self.cfg['premakeopts'], paracmd, self.cfg['makeopts'])
+        cmd = "%s make %s %s" % (self.cfg['prebuildopts'], paracmd, self.cfg['buildopts'])
 
         # run make in build dir as well for recent version
         if LooseVersion(self.version) >= LooseVersion("4"):

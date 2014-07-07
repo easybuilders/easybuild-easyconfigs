@@ -105,7 +105,7 @@ class EB_HPL(ConfigureMake):
         extra_makeopts += "CCFLAGS='$(HPL_DEFS) %s' " % os.getenv('CFLAGS')
 
         # set options and build
-        self.cfg.update('makeopts', extra_makeopts)
+        self.cfg.update('buildopts', extra_makeopts)
         super(EB_HPL, self).build_step()
 
     def install_step(self):

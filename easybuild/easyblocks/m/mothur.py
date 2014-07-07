@@ -53,20 +53,20 @@ class EB_Mothur(ConfigureMake):
     def configure_step(self, cmd_prefix=''):
         """Configure Mothur build by setting make options."""
         # Fortran compiler and options
-        self.cfg.update('makeopts', 'FORTAN_COMPILER="%s" FORTRAN_FLAGS="%s"' % (os.getenv('F77'), os.getenv('FFLAGS')))
+        self.cfg.update('buildopts', 'FORTAN_COMPILER="%s" FORTRAN_FLAGS="%s"' % (os.getenv('F77'), os.getenv('FFLAGS')))
         # enable 64-bit build
         if not self.toolchain.options['32bit']:
-            self.cfg.update('makeopts', '64BIT_VERSION=yes')
+            self.cfg.update('buildopts', '64BIT_VERSION=yes')
         # enable readline support
         if get_software_root('libreadline') and get_software_root('ncurses'):
-            self.cfg.update('makeopts', 'USEREADLINE=yes')
+            self.cfg.update('buildopts', 'USEREADLINE=yes')
         # enable MPI support
         if self.toolchain.options.get('usempi', None):
-            self.cfg.update('makeopts', 'USEMPI=yes CXX="%s"' % os.getenv('MPICXX'))
-            self.cfg.update('premakeopts', 'CXXFLAGS="$CXXFLAGS -DMPICH_IGNORE_CXX_SEEK"')
+            self.cfg.update('buildopts', 'USEMPI=yes CXX="%s"' % os.getenv('MPICXX'))
+            self.cfg.update('prebuildopts', 'CXXFLAGS="$CXXFLAGS -DMPICH_IGNORE_CXX_SEEK"')
         # enable compression
         if get_software_root('bzip2') or get_software_root('gzip'):
-            self.cfg.update('makeopts', 'USE_COMPRESSION=yes')
+            self.cfg.update('buildopts', 'USE_COMPRESSION=yes')
 
     def install_step(self):
         """

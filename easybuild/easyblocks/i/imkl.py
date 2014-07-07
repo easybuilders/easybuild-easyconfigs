@@ -194,12 +194,12 @@ class EB_imkl(IntelBase):
             except:
                 self.log.exception("Can't change to interfaces directory %s" % interfacedir)
 
-            makeopts = ''
+            buildopts = ''
             # determine whether we're using a non-Intel GCC-based toolchain
             # can't use toolchain.comp_family, because of dummy toolchain used when installing imkl
             if get_software_root('icc') is None:
                 if get_software_root('GCC'):
-                    makeopts = 'compiler=gnu '
+                    buildopts = 'compiler=gnu '
                 else:
                     self.log.error("Not using either Intel compilers nor GCC, don't know how to build wrapper libs")
 
@@ -212,16 +212,16 @@ class EB_imkl(IntelBase):
                     cmd = "make -f makefile libintel64 install_to=$INSTALL_DIR"
                 if i in lis3:
                     # use INSTALL_DIR and SPEC_OPT
-                    extramakeopts = ''
+                    extrabuildopts = ''
                     # can't use toolchain.mpi_family, because of dummy toolchain
                     if get_software_root('MPICH2') or get_software_root('MVAPICH2'):
-                        extramakeopts = 'mpi=mpich2'
+                        extrabuildopts = 'mpi=mpich2'
                     elif get_software_root('OpenMPI'):
-                        extramakeopts = 'mpi=openmpi'
-                    cmd = "make -f makefile libintel64 %s" % extramakeopts
+                        extrabuildopts = 'mpi=openmpi'
+                    cmd = "make -f makefile libintel64 %s" % extrabuildopts
 
                 # add other make options as well
-                cmd = ' '.join([cmd, makeopts])
+                cmd = ' '.join([cmd, buildopts])
 
                 for opt in ['', '-fPIC']:
                     try:
