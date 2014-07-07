@@ -47,4 +47,4 @@ class EB_BLAT(MakeCp):
         bindir = os.path.join(os.getcwd(), "bin")
         self.cfg.update('buildopts', "BINDIR=%s" % bindir)
 
-        return super(EB_BLAT, self).build_step()
+        return super(EB_BLAT, self).build_step(verbose=verbose)
