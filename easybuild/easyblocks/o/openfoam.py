@@ -30,6 +30,7 @@ EasyBuild support for building and installing OpenFOAM, implemented as an easybl
 @author: Kenneth Hoste (Ghent University)
 @author: Pieter De Baets (Ghent University)
 @author: Jens Timmerman (Ghent University)
+@author: Xavier Besseron (University of Luxembourg)
 """
 import os
 import stat
@@ -91,31 +92,10 @@ class EB_OpenFOAM(EasyBlock):
 
         env.setvar("WM_COMPILER", self.wm_compiler)
 
-        # type of MPI
-        mpi_type = self.toolchain.mpi_family()
-
-        if mpi_type == toolchain.INTELMPI:  #@UndefinedVariable
-            self.mpipath = os.path.join(get_software_root('IMPI'),'intel64')
-            self.wm_mplib = "IMPI"
-
-        elif mpi_type == toolchain.QLOGICMPI:  #@UndefinedVariable
-            self.mpipath = get_software_root('QLogicMPI')
-            self.wm_mplib = "MPICH"
-
-        elif mpi_type == toolchain.OPENMPI:  #@UndefinedVariable
-            self.mpipath = get_software_root('OpenMPI')
-            if 'extend' in self.name.lower():
-                self.wm_mplib = "SYSTEMOPENMPI"
-            else:
-                # set to an MPI unknown by OpenFOAM, since we're handling the MPI settings ourselves (via mpicc, etc.)
-                self.wm_mplib = "EASYBUILD"
-
-        else:
-            self.log.error("Unknown MPI, don't know how to set MPI_ARCH_PATH, WM_MPLIB or FOAM_MPI_LIBBIN")
-
+        # set to an MPI unknown by OpenFOAM, since we're handling the MPI settings ourselves (via mpicc, etc.)
+        # Note: this name must contain 'MPI' so the MPI version of the Pstream library is built (cf src/Pstream/Allwmake)
+        self.wm_mplib = "EASYBUILDMPI"
         env.setvar("WM_MPLIB", self.wm_mplib)
-        env.setvar("MPI_ARCH_PATH", self.mpipath)
-        env.setvar("FOAM_MPI_LIBBIN", self.mpipath)
 
         # parallel build spec
         env.setvar("WM_NCOMPPROCS", str(self.cfg['parallel']))
@@ -208,13 +188,16 @@ class EB_OpenFOAM(EasyBlock):
                [os.path.join(toolsdir, "surface%s" % x) for x in ["Add", "Find", "Smooth"]] + \
                [os.path.join(toolsdir, x) for x in ["deformedGeom", "engineSwirl", "modifyMesh",
                                                     "refineMesh", "vorticity"]]
+	# check for the Pstream libraries, there must be a dummy one and an mpi one
+	libs = [os.path.join(libsdir, x, "libPstream.so" ) for x in ["dummy", "mpi"]]
+	     
         if not 'extend' in self.name.lower() and LooseVersion(self.version) >= LooseVersion("2.3.0"):
             # surfaceSmooth is replaced by surfaceLambdaMuSmooth is OpenFOAM v2.3.0
             bins.remove(os.path.join(toolsdir, "surfaceSmooth"))
             bins.append(os.path.join(toolsdir, "surfaceLambdaMuSmooth"))
 
         custom_paths = {
-            'files': [os.path.join(self.openfoamdir, 'etc', x) for x in ["bashrc", "cshrc"]] + bins,
+            'files': [os.path.join(self.openfoamdir, 'etc', x) for x in ["bashrc", "cshrc"]] + bins + libs,
             'dirs': dirs,
         }
 
