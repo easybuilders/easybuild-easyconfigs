@@ -43,13 +43,8 @@ class EB_BLAT(MakeCp):
 
     def build_step(self, verbose=False):
         """Build BLAT using make and the appropriate options (e.g. BINDIR=)."""
-        paracmd = ''
-        if self.cfg['parallel']:
-            paracmd = "-j %s" % self.cfg['parallel']
-
+        self.cfg.update('prebuildopts', "MACHTYPE=x86_64")
         bindir = os.path.join(os.getcwd(), "bin")
+        self.cfg.update('buildopts', "BINDIR=%s" % bindir)
 
-        cmd = "MACHTYPE=x86_64 %s make %s BINDIR=%s" % (self.cfg['premakeopts'], paracmd, bindir)
-        (out, _) = run_cmd(cmd, log_all=True, simple=False, log_output=verbose)
-
-        return out
+        return super(EB_BLAT, self).build_step(verbose=verbose)
