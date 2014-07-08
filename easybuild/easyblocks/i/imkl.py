@@ -101,9 +101,9 @@ class EB_imkl(IntelBase):
                     'PATH': ['bin', 'mkl/bin', 'mkl/bin/intel64', 'composerxe-2011/bin'],
                     'LD_LIBRARY_PATH': ['lib/intel64', 'mkl/lib/intel64'],
                     'LIBRARY_PATH': ['lib/intel64', 'mkl/lib/intel64'],
-                     'MANPATH': ['man', 'man/en_US'],
-                     'CPATH': ['mkl/include', 'mkl/include/fftw'],
-                     'FPATH': ['mkl/include', 'mkl/include/fftw'],
+                    'MANPATH': ['man', 'man/en_US'],
+                    'CPATH': ['mkl/include', 'mkl/include/fftw'],
+                    'FPATH': ['mkl/include', 'mkl/include/fftw'],
                 }
                 if LooseVersion(self.version) >= LooseVersion('11.0'):
                     if LooseVersion(self.version) >= LooseVersion('11.1'):
