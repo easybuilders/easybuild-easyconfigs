@@ -112,9 +112,12 @@ class RPackage(ExtensionEasyBlock):
         else:
             prefix = ''
 
-        cmd = "R CMD INSTALL %s %s %s %s --no-clean-on-error" % (self.ext_src, confargs, confvars, prefix)
-        self.log.debug("make_cmdline_cmd returns %s" % cmd)
+        if self.patches:
+            cmd = "R CMD INSTALL %s %s %s %s --no-clean-on-error" % (self.ext_dir, confargs, confvars, prefix)       
+        else:
+            cmd = "R CMD INSTALL %s %s %s %s --no-clean-on-error" % (self.ext_src, confargs, confvars, prefix)
 
+        self.log.debug("make_cmdline_cmd returns %s" % cmd)
         return cmd, None
 
     def extract_step(self):
@@ -167,7 +170,10 @@ class RPackage(ExtensionEasyBlock):
     def run(self):
         """Install R package as an extension."""
 
-        super(RPackage, self).run()
+        if self.patches:
+            super(RPackage, self).run(unpack_src=True)
+        else:
+            super(RPackage, self).run()
 
         if self.src:
             self.ext_src = self.src

@@ -32,6 +32,7 @@ EasyBuild support for building and installing the Rmpi R library, implemented as
 @author: Toon Willems (Ghent University)
 """
 import easybuild.tools.toolchain as toolchain
+from distutils.version import LooseVersion
 from easybuild.easyblocks.generic.rpackage import RPackage
 
 
@@ -46,12 +47,17 @@ class EB_Rmpi(RPackage):
             toolchain.MPI_TYPE_MPICH: "MPICH",
             #toolchain.MPI_TYPE_LAM: "LAM",  # no support for LAM yet
         }
+        # type of MPI
+        mpi_type = self.toolchain.mpi_family()
+        Rmpi_type = mpi_types[self.toolchain.MPI_TYPE]
+        if ((LooseVersion(self.version) >= LooseVersion('0.6-4')) and (mpi_type == toolchain.INTELMPI)):
+             Rmpi_type = 'INTELMPI'
 
         self.log.debug("Setting configure args for Rmpi")
         self.configureargs = [
             "--with-Rmpi-include=%s" % self.toolchain.get_variable('MPI_INC_DIR'),
             "--with-Rmpi-libpath=%s" % self.toolchain.get_variable('MPI_LIB_DIR'),
             "--with-mpi=%s" % self.toolchain.get_software_root(self.toolchain.MPI_MODULE_NAME)[0],
-            "--with-Rmpi-type=%s" % mpi_types[self.toolchain.MPI_TYPE],
+            "--with-Rmpi-type=%s" % Rmpi_type,
         ]
         super(EB_Rmpi, self).run()  # it might be needed to get the R cmd and run it with mympirun...
