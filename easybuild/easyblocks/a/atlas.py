@@ -157,8 +157,7 @@ Configure failed, not sure why (see output above).""" % out
 
         if self.cfg['parallel'] != 1:
             self.log.warning("Ignoring requested build parallelism, it breaks ATLAS, so setting to 1")
-        self.log.info("Disabling parallel build, makes no sense for ATLAS.")
-        self.cfg['parallel'] = 1
+            self.cfg['parallel'] = 1
 
         # default make is fine
         super(EB_ATLAS, self).build_step(verbose=verbose)
