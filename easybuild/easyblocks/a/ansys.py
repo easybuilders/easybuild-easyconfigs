@@ -1,5 +1,5 @@
 ##
-# Copyright 2009-2013 Ghent University
+# Copyright 2009-2014 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -26,15 +26,13 @@
 EasyBuild support for installing ANSYS, implemented as an easyblock
 
 @author: Kenneth Hoste (Ghent University)
-@author: Bart Verleye (Auckland)
+@author: Bart Verleye (Centre for eResearch, Auckland)
 """
-
-
 import os
 import stat
 
 from easybuild.framework.easyblock import EasyBlock
-from easybuild.tools.filetools import run_cmd
+from easybuild.tools.run import run_cmd
 from easybuild.tools.filetools import adjust_permissions
 
 
@@ -42,7 +40,7 @@ class EB_ANSYS(EasyBlock):
     """Support for installing ANSYS."""
 
     def __init__(self, *args, **kwargs):
-        """Initialize Chapel-specific variables."""
+        """Initialize ANSYS-specific variables."""
         super(EB_ANSYS, self).__init__(*args, **kwargs)
         self._ver = "v%s" % ''.join(self.version.split('.'))
 
@@ -60,7 +58,7 @@ class EB_ANSYS(EasyBlock):
         licserv = self.cfg['license_server']
         licport = self.cfg['license_server_port']
 
-        cmd = "./INSTALL -noroot -silent -install_dir %s -licserverinfo %s:%s" % (self.installdir,licport,licserv)
+        cmd = "./INSTALL -silent -install_dir %s -licserverinfo %s:%s" % (self.installdir, licport, licserv)
         run_cmd(cmd, log_all=True, simple=True)
 
         adjust_permissions(self.installdir, stat.S_IWOTH, add=False)
@@ -79,7 +77,8 @@ class EB_ANSYS(EasyBlock):
         """Custom extra module file entries for ANSYS."""
         
         guesses = super(EB_ANSYS, self).make_module_req_guess()
-        dirs = ["tgrid/bin",
+        dirs = [
+            "tgrid/bin",
             "Framework/bin/linux64",
             "aisol/bin/linux64",
             "RSM/bin",
@@ -91,7 +90,8 @@ class EB_ANSYS(EasyBlock):
             "TurboGrid/bin",
             "polyflow/bin",
             "IcePack/bin",
-            "icemcfd/linux64_amd/bin"]
+            "icemcfd/linux64_amd/bin"
+        ]
 
         guesses.update({
             "PATH": [os.path.join(self._ver, dir) for dir in dirs],
@@ -101,14 +101,15 @@ class EB_ANSYS(EasyBlock):
         
     def make_module_extra(self):
         """Define extra environment variables required by Ansys"""
+        
+        super(EB_ANSYS, self).make_module_extra()
+        self.moduleGenerator.set_environment("ICEM_ACN", "$root/icemcfd/linux64_amd")
 
-        txt = super(EB_ANSYS, self).make_module_extra()
+        #txt = super(EB_ANSYS, self).make_module_extra()
 
-        env_vars = [("ICEM_ACN", "$root/icemcfd/linux64_amd" ),
-                    ]
+        #env_vars = [("ICEM_ACN", "$root/icemcfd/linux64_amd" ),]
 
-        for env_var in env_vars:
-            txt += "setenv\t%s\t%s\n" % env_var
-
-        return txt
+        #for env_var in env_vars:
+        #    txt += "setenv\t%s\t%s\n" % env_var
+        #return txt
 
