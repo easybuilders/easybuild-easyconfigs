@@ -42,11 +42,10 @@ from unittest import TestCase, TestLoader, main
 import easybuild.main as main
 import easybuild.tools.options as eboptions
 from easybuild.framework.easyblock import EasyBlock
-from easybuild.framework.easyconfig.easyconfig import EasyConfig, fetch_parameter_from_easyconfig_file
+from easybuild.framework.easyconfig.easyconfig import ActiveMNS, EasyConfig, fetch_parameter_from_easyconfig_file
 from easybuild.framework.easyconfig.easyconfig import get_easyblock_class
 from easybuild.framework.easyconfig.tools import dep_graph, get_paths_for, process_easyconfig, resolve_dependencies
 from easybuild.tools import config
-from easybuild.tools.module_generator import det_full_module_name
 
 
 # indicates whether all the single tests are OK,
@@ -121,7 +120,7 @@ class EasyConfigTest(TestCase):
             self.process_all_easyconfigs()
 
         def mk_dep_mod_name(spec):
-            return tuple(det_full_module_name(spec).split(os.path.sep))
+            return tuple(ActiveMNS().det_full_module_name(spec).split(os.path.sep))
 
         # construct a dictionary: (name, installver) tuple to dependencies
         depmap = {}
