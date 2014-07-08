@@ -127,7 +127,7 @@ class EasyConfigTest(TestCase):
         for spec in self.ordered_specs:
             builddeps = map(mk_dep_mod_name, spec['builddependencies'])
             deps = map(mk_dep_mod_name, spec['unresolved_deps'])
-            key = tuple(spec['module'].split(os.path.sep))
+            key = tuple(spec['full_mod_name'].split(os.path.sep))
             depmap.update({key: [builddeps, deps]})
 
         # iteratively expand list of (non-build) dependencies until we reach the end (toolchain)
