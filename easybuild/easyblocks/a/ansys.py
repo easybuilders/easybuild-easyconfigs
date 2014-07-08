@@ -102,14 +102,8 @@ class EB_ANSYS(EasyBlock):
     def make_module_extra(self):
         """Define extra environment variables required by Ansys"""
         
-        super(EB_ANSYS, self).make_module_extra()
-        self.moduleGenerator.set_environment("ICEM_ACN", "$root/icemcfd/linux64_amd")
+        txt = super(EB_ANSYS, self).make_module_extra()
+        txt +=self.moduleGenerator.set_environment("ICEM_ACN", "$root/icemcfd/linux64_amd")
 
-        #txt = super(EB_ANSYS, self).make_module_extra()
-
-        #env_vars = [("ICEM_ACN", "$root/icemcfd/linux64_amd" ),]
-
-        #for env_var in env_vars:
-        #    txt += "setenv\t%s\t%s\n" % env_var
-        #return txt
+        return txt
 
