@@ -28,6 +28,23 @@ diff -ru OpenFOAM-2.0.1.ORIG/etc/bashrc OpenFOAM-2.0.1/etc/bashrc
  
  # Location of site-specific templates etc
  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+diff -ru OpenFOAM-2.0.1.ORIG/etc/config/scotch.sh OpenFOAM-2.0.1/etc/config/scotch.sh
+--- OpenFOAM-2.0.1.ORIG/etc/config/scotch.sh	2011-08-03 11:42:18.000000000 +0200
++++ OpenFOAM-2.0.1/etc/config/scotch.sh	2014-07-08 00:06:23.422603272 +0200
+@@ -33,7 +33,11 @@
+ #     during the wmake process
+ #------------------------------------------------------------------------------
+ 
+-export SCOTCH_VERSION=scotch_5.1.11
+-export SCOTCH_ARCH_PATH=$WM_THIRD_PARTY_DIR/platforms/$WM_ARCH$WM_COMPILER/$SCOTCH_VERSION
++if [ -n "${SCOTCH_ROOT}" ] ; then
++	export SCOTCH_ARCH_PATH="${SCOTCH_ROOT}"
++else
++	export SCOTCH_VERSION=scotch_5.1.11
++	export SCOTCH_ARCH_PATH=$WM_THIRD_PARTY_DIR/platforms/$WM_ARCH$WM_COMPILER/$SCOTCH_VERSION
++fi
+ 
+ # -----------------------------------------------------------------------------
 diff -ru OpenFOAM-2.0.1.ORIG/etc/config/settings.csh OpenFOAM-2.0.1/etc/config/settings.csh
 --- OpenFOAM-2.0.1.ORIG/etc/config/settings.csh	2011-08-03 11:42:18.000000000 +0200
 +++ OpenFOAM-2.0.1/etc/config/settings.csh	2014-07-01 10:58:53.982635976 +0200
@@ -114,7 +131,7 @@ diff -ru OpenFOAM-2.0.1.ORIG/src/Pstream/dummy/UIPread.C OpenFOAM-2.0.1/src/Pstr
  Foam::label Foam::UIPstream::read
 diff -ru OpenFOAM-2.0.1.ORIG/src/parallel/decompose/ptscotchDecomp/Make/options OpenFOAM-2.0.1/src/parallel/decompose/ptscotchDecomp/Make/options
 --- OpenFOAM-2.0.1.ORIG/src/parallel/decompose/ptscotchDecomp/Make/options	2011-08-03 11:42:19.000000000 +0200
-+++ OpenFOAM-2.0.1/src/parallel/decompose/ptscotchDecomp/Make/options	2014-07-03 21:33:33.580873233 +0200
++++ OpenFOAM-2.0.1/src/parallel/decompose/ptscotchDecomp/Make/options	2014-07-08 09:13:19.985079768 +0200
 @@ -4,8 +4,7 @@
  EXE_INC = \
      $(PFLAGS) $(PINC) \
@@ -124,7 +141,7 @@ diff -ru OpenFOAM-2.0.1.ORIG/src/parallel/decompose/ptscotchDecomp/Make/options 
  
  LIB_LIBS = \
 -    -L$(FOAM_EXT_LIBBIN)/$(FOAM_MPI) -lptscotch -lptscotcherrexit -lrt
-+    -L$(SCOTCH_ARCH_PATH)/lib/$(FOAM_MPI) -L$(FOAM_EXT_LIBBIN)/$(FOAM_MPI) -lptscotch -lptscotcherrexit -lrt
++    -L$(SCOTCH_ARCH_PATH)/lib -L$(FOAM_EXT_LIBBIN)/$(FOAM_MPI) -lptscotch -lptscotcherrexit -lrt
 diff -ru OpenFOAM-2.0.1.ORIG/src/parallel/decompose/ptscotchDecomp/ptscotchDecomp.C OpenFOAM-2.0.1/src/parallel/decompose/ptscotchDecomp/ptscotchDecomp.C
 --- OpenFOAM-2.0.1.ORIG/src/parallel/decompose/ptscotchDecomp/ptscotchDecomp.C	2011-08-03 11:42:19.000000000 +0200
 +++ OpenFOAM-2.0.1/src/parallel/decompose/ptscotchDecomp/ptscotchDecomp.C	2014-07-01 10:58:54.067635849 +0200
