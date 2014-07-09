@@ -42,7 +42,7 @@ class EB_ANSYS(EasyBlock):
     def __init__(self, *args, **kwargs):
         """Initialize ANSYS-specific variables."""
         super(EB_ANSYS, self).__init__(*args, **kwargs)
-        self._ver = "v%s" % ''.join(self.version.split('.'))
+        self.ansysver = "v%s" % ''.join(self.version.split('.'))
 
     def configure_step(self):
         """No configuration for ANSYS."""
@@ -54,7 +54,6 @@ class EB_ANSYS(EasyBlock):
 
     def install_step(self):
         """Custom install procedure for ANSYS."""
-
         licserv = self.cfg['license_server']
         licport = self.cfg['license_server_port']
 
@@ -63,19 +62,8 @@ class EB_ANSYS(EasyBlock):
 
         adjust_permissions(self.installdir, stat.S_IWOTH, add=False)
 
-    def sanity_check_step(self):
-        """Custom sanity check for ANSYS."""
-
-        custom_paths = {
-           'files': ["%s/fluent/bin/fluent%s" % (self._ver, x) for x in ['', '_arch', '_sysinfo']],
-           'dirs': ["%s/%s" % (self._ver,x) for x in ["ansys", "aisol", "CFD-Post","CFX"]]
-        }
-
-        super(EB_ANSYS, self).sanity_check_step(custom_paths=custom_paths)
-
     def make_module_req_guess(self):
         """Custom extra module file entries for ANSYS."""
-        
         guesses = super(EB_ANSYS, self).make_module_req_guess()
         dirs = [
             "tgrid/bin",
@@ -92,18 +80,19 @@ class EB_ANSYS(EasyBlock):
             "IcePack/bin",
             "icemcfd/linux64_amd/bin"
         ]
-
-        guesses.update({
-            "PATH": [os.path.join(self._ver, dir) for dir in dirs],
-        })
-                       
+        guesses.update({"PATH": [os.path.join(self.ansysver, dir) for dir in dirs]})
         return guesses
-        
+
     def make_module_extra(self):
         """Define extra environment variables required by Ansys"""
-        
         txt = super(EB_ANSYS, self).make_module_extra()
-        txt +=self.moduleGenerator.set_environment("ICEM_ACN", "$root/icemcfd/linux64_amd")
-
+        txt += self.moduleGenerator.set_environment("ICEM_ACN", "$root/icemcfd/linux64_amd")
         return txt
 
+    def sanity_check_step(self):
+        """Custom sanity check for ANSYS."""
+        custom_paths = {
+           'files': [os.path.join(self.ansysver, "fluent", "bin", "fluent%s" % x) for x in ['', '_arch', '_sysinfo']],
+           'dirs': [os.path.join(self.ansysver, x) for x in ["ansys", "aisol", "CFD-Post","CFX"]]
+        }
+        super(EB_ANSYS, self).sanity_check_step(custom_paths=custom_paths)
