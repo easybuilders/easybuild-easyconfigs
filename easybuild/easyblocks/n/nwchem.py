@@ -36,6 +36,7 @@ import tempfile
 import easybuild.tools.config as config
 import easybuild.tools.environment as env
 import easybuild.tools.toolchain as toolchain
+from distutils.version import LooseVersion
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.filetools import mkdir, run_cmd, adjust_permissions
@@ -142,6 +143,7 @@ class EB_NWChem(ConfigureMake):
             env.setvar('PYTHONHOME', python_root)
             pyver = '.'.join(get_software_version('Python').split('.')[0:2])
             env.setvar('PYTHONVERSION', pyver)
+            env.setvar('USE_PYTHON64','y')
             # if libreadline is loaded, assume it was a dependency for Python
             # pass -lreadline to avoid linking issues (libpython2.7.a doesn't include readline symbols)
             libreadline = get_software_root('libreadline')
@@ -160,6 +162,10 @@ class EB_NWChem(ConfigureMake):
 
         env.setvar('LARGE_FILES', 'TRUE')
         env.setvar('USE_NOFSCHECK', 'TRUE')
+        env.setvar('CCSDTLR', 'y')  # enable CCSDTLR 
+        env.setvar('CCSDTQ', 'TRUE') # enable CCSDTQ (compilation is long, executable is big)
+        if LooseVersion(self.version) >= LooseVersion("6.2"):
+            env.setvar('MRCC_METHODS','y') # enable multireference coupled cluster capability
 
         for var in ['USE_MPI', 'USE_MPIF', 'USE_MPIF4']:
             env.setvar(var, 'y')
