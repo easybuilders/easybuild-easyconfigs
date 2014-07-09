@@ -46,6 +46,7 @@ from easybuild.framework.easyconfig.easyconfig import ActiveMNS, EasyConfig, fet
 from easybuild.framework.easyconfig.easyconfig import get_easyblock_class
 from easybuild.framework.easyconfig.tools import dep_graph, get_paths_for, process_easyconfig, resolve_dependencies
 from easybuild.tools import config
+from easybuild.tools.module_naming_scheme import GENERAL_CLASS
 
 
 # indicates whether all the single tests are OK,
@@ -63,6 +64,7 @@ class EasyConfigTest(TestCase):
         'check_osdeps': False,
         'force': True,
         'robot_path': get_paths_for("easyconfigs")[0],
+        'suffix_modules_path': GENERAL_CLASS,
         'valid_module_classes': config.module_classes(),
         'valid_stops': [x[0] for x in EasyBlock.get_steps()],
     }
