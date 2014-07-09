@@ -41,8 +41,7 @@ from easybuild.framework.easyconfig import MANDATORY
 from easybuild.framework.easyconfig.easyconfig import EasyConfig, get_easyblock_class
 from easybuild.framework.easyconfig.tools import get_paths_for
 from easybuild.tools import config
-
-
+from easybuild.tools.module_naming_scheme import GENERAL_CLASS
 
 
 class InitTest(TestCase):
@@ -52,6 +51,7 @@ class InitTest(TestCase):
     eb_go = eboptions.parse_options()
     config.init(eb_go.options, eb_go.get_options_by_section('config'))
     build_options = {
+        'suffix_modules_path': GENERAL_CLASS,
         'valid_module_classes': config.module_classes(),
         'valid_stops': [x[0] for x in EasyBlock.get_steps()],
     }
