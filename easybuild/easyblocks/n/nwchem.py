@@ -143,7 +143,6 @@ class EB_NWChem(ConfigureMake):
             env.setvar('PYTHONHOME', python_root)
             pyver = '.'.join(get_software_version('Python').split('.')[0:2])
             env.setvar('PYTHONVERSION', pyver)
-            env.setvar('USE_PYTHON64','y')
             # if libreadline is loaded, assume it was a dependency for Python
             # pass -lreadline to avoid linking issues (libpython2.7.a doesn't include readline symbols)
             libreadline = get_software_root('libreadline')
