@@ -310,7 +310,7 @@ class EB_GCC(ConfigureMake):
             if self.cfg['parallel']:
                 paracmd = "-j %s" % self.cfg['parallel']
 
-            cmd = "%s make %s %s" % (self.cfg['premakeopts'], paracmd, self.cfg['makeopts'])
+            cmd = "%s make %s %s" % (self.cfg['prebuildopts'], paracmd, self.cfg['buildopts'])
             run_cmd(cmd, log_all=True, simple=True)
 
             cmd = "make install %s" % (self.cfg['installopts'])
@@ -476,7 +476,7 @@ class EB_GCC(ConfigureMake):
             self.run_configure_cmd(cmd)
 
         # build with bootstrapping for self-containment
-        self.cfg.update('makeopts', 'bootstrap')
+        self.cfg.update('buildopts', 'bootstrap')
 
         # call standard build_step
         super(EB_GCC, self).build_step()

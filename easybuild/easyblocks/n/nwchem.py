@@ -79,7 +79,7 @@ class EB_NWChem(ConfigureMake):
     def setvar_env_makeopt(self, name, value):
         """Set a variable both in the environment and a an option to make."""
         env.setvar(name, value)
-        self.cfg.update('makeopts', "%s='%s'" % (name, value))
+        self.cfg.update('buildopts', "%s='%s'" % (name, value))
 
     def configure_step(self):
         """Custom configuration procedure for NWChem."""
@@ -213,7 +213,7 @@ class EB_NWChem(ConfigureMake):
         run_cmd("make clean", simple=True, log_all=True, log_ok=True)
 
         # configure build
-        cmd = "make %s nwchem_config" % self.cfg['makeopts']
+        cmd = "make %s nwchem_config" % self.cfg['buildopts']
         run_cmd(cmd, simple=True, log_all=True, log_ok=True, log_output=True)
 
     def build_step(self):
@@ -225,8 +225,8 @@ class EB_NWChem(ConfigureMake):
         # check whether 64-bit integers should be used, and act on it
         if not self.toolchain.options['i8']:
             if self.cfg['parallel']:
-                self.cfg.update('makeopts', '-j %s' % self.cfg['parallel'])
-            run_cmd("make %s 64_to_32" % self.cfg['makeopts'], simple=True, log_all=True, log_ok=True, log_output=True)
+                self.cfg.update('buildopts', '-j %s' % self.cfg['parallel'])
+            run_cmd("make %s 64_to_32" % self.cfg['buildopts'], simple=True, log_all=True, log_ok=True, log_output=True)
 
             self.setvar_env_makeopt('USE_64TO32', "y")
 

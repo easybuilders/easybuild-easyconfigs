@@ -72,10 +72,10 @@ class ConfigureMake(EasyBlock):
             # which command should be used for tarring/untarring
             # am__tar and am__untar should be set to something decent (tar should work)
             tar_vars = {
-                        'am__tar': 'tar chf - "$$tardir"',
-                        'am__untar': 'tar xf -',
-                        'am_cv_prog_tar_ustar': 'easybuild_avoid_ustar_testing'
-                       }
+                'am__tar': 'tar chf - "$$tardir"',
+                'am__untar': 'tar xf -',
+                'am_cv_prog_tar_ustar': 'easybuild_avoid_ustar_testing'
+            }
             for (key, val) in tar_vars.items():
                 self.cfg.update('preconfigopts', "%s='%s'" % (key, val))
 
@@ -101,7 +101,7 @@ class ConfigureMake(EasyBlock):
         if self.cfg['parallel']:
             paracmd = "-j %s" % self.cfg['parallel']
 
-        cmd = "%s make %s %s" % (self.cfg['premakeopts'], paracmd, self.cfg['makeopts'])
+        cmd = "%s make %s %s" % (self.cfg['prebuildopts'], paracmd, self.cfg['buildopts'])
 
         (out, _) = run_cmd(cmd, log_all=True, simple=False, log_output=verbose)
 
@@ -130,4 +130,3 @@ class ConfigureMake(EasyBlock):
         (out, _) = run_cmd(cmd, log_all=True, simple=False)
 
         return out
-

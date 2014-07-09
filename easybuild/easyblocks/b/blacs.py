@@ -157,7 +157,7 @@ class EB_BLACS(ConfigureMake):
         add_makeopts = ' MPICC="%(mpicc)s" MPIF77="%(mpif77)s" %(comm)s ' % opts
         add_makeopts += ' INTERFACE=%(int)s MPIdir=%(mpidir)s BTOPdir=%(builddir)s mpi ' % opts
 
-        self.cfg.update('makeopts', add_makeopts)
+        self.cfg.update('buildopts', add_makeopts)
 
         super(EB_BLACS, self).build_step()
 

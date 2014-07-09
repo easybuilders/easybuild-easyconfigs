@@ -96,14 +96,21 @@ class EB_imkl(IntelBase):
         if LooseVersion(self.version) >= LooseVersion('10.3'):
             if self.cfg['m32']:
                 self.log.error("32-bit not supported yet for IMKL v%s (>= 10.3)" % self.version)
-            return {
-                'PATH': ['bin', 'mkl/bin', 'mkl/bin/intel64', 'composerxe-2011/bin'],
-                'LD_LIBRARY_PATH': ['lib/intel64', 'mkl/lib/intel64'],
-                'LIBRARY_PATH': ['lib/intel64', 'mkl/lib/intel64'],
-                'MANPATH': ['man', 'man/en_US'],
-                'CPATH': ['mkl/include', 'mkl/include/fftw'],
-                'FPATH': ['mkl/include', 'mkl/include/fftw'],
-            }
+            else:
+                retdict = {
+                    'PATH': ['bin', 'mkl/bin', 'mkl/bin/intel64', 'composerxe-2011/bin'],
+                    'LD_LIBRARY_PATH': ['lib/intel64', 'mkl/lib/intel64'],
+                    'LIBRARY_PATH': ['lib/intel64', 'mkl/lib/intel64'],
+                    'MANPATH': ['man', 'man/en_US'],
+                    'CPATH': ['mkl/include', 'mkl/include/fftw'],
+                    'FPATH': ['mkl/include', 'mkl/include/fftw'],
+                }
+                if LooseVersion(self.version) >= LooseVersion('11.0'):
+                    if LooseVersion(self.version) >= LooseVersion('11.1'):
+                        retdict['MIC_LD_LIBRARY_PATH'] = ['lib/mic', 'mkl/lib/mic'];
+                    else:
+                        retdict['MIC_LD_LIBRARY_PATH'] = ['compiler/lib/mic', 'mkl/lib/mic'];
+                return retdict;
         else:
             if self.cfg['m32']:
                 return {
@@ -194,10 +201,14 @@ class EB_imkl(IntelBase):
             except:
                 self.log.exception("Can't change to interfaces directory %s" % interfacedir)
 
-            # compiler defaults to icc, but we could be using gcc to create gimkl.
-            makeopts = ''
-            if get_software_root('GCC'):  # can't use toolchain.comp_family, because of dummy toolchain
-                makeopts = 'compiler=gnu '
+            buildopts = ''
+            # determine whether we're using a non-Intel GCC-based toolchain
+            # can't use toolchain.comp_family, because of dummy toolchain used when installing imkl
+            if get_software_root('icc') is None:
+                if get_software_root('GCC'):
+                    buildopts = 'compiler=gnu '
+                else:
+                    self.log.error("Not using either Intel compilers nor GCC, don't know how to build wrapper libs")
 
             for i in lis1 + lis2 + lis3:
                 if i in lis1:
@@ -208,16 +219,16 @@ class EB_imkl(IntelBase):
                     cmd = "make -f makefile libintel64 install_to=$INSTALL_DIR"
                 if i in lis3:
                     # use INSTALL_DIR and SPEC_OPT
-                    extramakeopts = ''
+                    extrabuildopts = ''
                     # can't use toolchain.mpi_family, because of dummy toolchain
                     if get_software_root('MPICH2') or get_software_root('MVAPICH2'):
-                        extramakeopts = 'mpi=mpich2'
+                        extrabuildopts = 'mpi=mpich2'
                     elif get_software_root('OpenMPI'):
-                        extramakeopts = 'mpi=openmpi'
-                    cmd = "make -f makefile libintel64 %s" % extramakeopts
+                        extrabuildopts = 'mpi=openmpi'
+                    cmd = "make -f makefile libintel64 %s" % extrabuildopts
 
                 # add other make options as well
-                cmd = ' '.join([cmd, makeopts])
+                cmd = ' '.join([cmd, buildopts])
 
                 for opt in ['', '-fPIC']:
                     try:

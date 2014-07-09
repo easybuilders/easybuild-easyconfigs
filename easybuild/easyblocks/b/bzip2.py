@@ -40,8 +40,8 @@ class EB_bzip2(ConfigureMake):
     def configure_step(self):
         """Set extra configure options (CC, CFLAGS)."""
 
-        self.cfg.update('makeopts', 'CC="%s"' % os.getenv('CC'))
-        self.cfg.update('makeopts', "CFLAGS='-Wall -Winline %s -g $(BIGFILES)'" % os.getenv('CFLAGS'))
+        self.cfg.update('buildopts', 'CC="%s"' % os.getenv('CC'))
+        self.cfg.update('buildopts', "CFLAGS='-Wall -Winline %s -g $(BIGFILES)'" % os.getenv('CFLAGS'))
 
     def install_step(self):
         """Install in non-standard path by passing PREFIX variable to make install."""

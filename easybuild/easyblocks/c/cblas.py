@@ -50,16 +50,16 @@ class EB_CBLAS(ConfigureMake):
         except OSError, err:
             self.log.error("Failed to copy makefile: %s" % err)
 
-        if not self.cfg['makeopts']:
-            self.cfg.update('makeopts', 'all')
+        if not self.cfg['buildopts']:
+            self.cfg.update('buildopts', 'all')
 
-        self.cfg.update('makeopts', 'CC="%s"' % os.getenv('CC'))
-        self.cfg.update('makeopts', 'FC="%s"' % os.getenv('F77'))
-        self.cfg.update('makeopts', 'CFLAGS="%s -DADD_"' % os.getenv('CFLAGS'))
-        self.cfg.update('makeopts', 'FFLAGS="%s -DADD_"' % os.getenv('FFLAGS'))
+        self.cfg.update('buildopts', 'CC="%s"' % os.getenv('CC'))
+        self.cfg.update('buildopts', 'FC="%s"' % os.getenv('F77'))
+        self.cfg.update('buildopts', 'CFLAGS="%s -DADD_"' % os.getenv('CFLAGS'))
+        self.cfg.update('buildopts', 'FFLAGS="%s -DADD_"' % os.getenv('FFLAGS'))
         blas_lib_dir = os.getenv('BLAS_LIB_DIR')
         blas_libs = [os.path.join(blas_lib_dir, lib) for lib in os.getenv('BLAS_STATIC_LIBS').split(',')]
-        self.cfg.update('makeopts', 'BLLIB="%s"' % ' '.join(blas_libs))
+        self.cfg.update('buildopts', 'BLLIB="%s"' % ' '.join(blas_libs))
 
     # default build procedure should do
 

@@ -125,7 +125,7 @@ EULA=accept
             mpi_mods.extend(["mpi_base.mod", "mpi_constants.mod", "mpi_sizeofs.mod"])
 
         custom_paths = {
-            'files': ["bin/mpi%s" % x for x in ["icc", "icpc", "ifort"]] +
+            'files': ["bin%s/mpi%s" % (suff, x) for x in ["icc", "icpc", "ifort"]] +
                      ["include%s/mpi%s.h" % (suff, x) for x in ["cxx", "f", "", "o", "of"]] +
                      ["include%s/%s" % (suff, x) for x in ["i_malloc.h"] + mpi_mods] +
                      ["lib%s/libmpi.so" % suff, "lib%s/libmpi.a" % suff],
