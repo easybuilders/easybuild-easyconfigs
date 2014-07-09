@@ -163,7 +163,7 @@ class EB_NWChem(ConfigureMake):
         env.setvar('LARGE_FILES', 'TRUE')
         env.setvar('USE_NOFSCHECK', 'TRUE')
         env.setvar('CCSDTLR', 'y')  # enable CCSDTLR 
-        env.setvar('CCSDTQ', 'TRUE') # enable CCSDTQ (compilation is long, executable is big)
+        env.setvar('CCSDTQ', 'y') # enable CCSDTQ (compilation is long, executable is big)
         if LooseVersion(self.version) >= LooseVersion("6.2"):
             env.setvar('MRCC_METHODS','y') # enable multireference coupled cluster capability
 
