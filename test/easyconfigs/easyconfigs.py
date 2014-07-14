@@ -42,11 +42,11 @@ from unittest import TestCase, TestLoader, main
 import easybuild.main as main
 import easybuild.tools.options as eboptions
 from easybuild.framework.easyblock import EasyBlock
-from easybuild.framework.easyconfig.easyconfig import EasyConfig, fetch_parameter_from_easyconfig_file
+from easybuild.framework.easyconfig.easyconfig import ActiveMNS, EasyConfig, fetch_parameter_from_easyconfig_file
 from easybuild.framework.easyconfig.easyconfig import get_easyblock_class
 from easybuild.framework.easyconfig.tools import dep_graph, get_paths_for, process_easyconfig, resolve_dependencies
 from easybuild.tools import config
-from easybuild.tools.module_generator import det_full_module_name
+from easybuild.tools.module_naming_scheme import GENERAL_CLASS
 
 
 # indicates whether all the single tests are OK,
@@ -64,6 +64,7 @@ class EasyConfigTest(TestCase):
         'check_osdeps': False,
         'force': True,
         'robot_path': get_paths_for("easyconfigs")[0],
+        'suffix_modules_path': GENERAL_CLASS,
         'valid_module_classes': config.module_classes(),
         'valid_stops': [x[0] for x in EasyBlock.get_steps()],
     }
@@ -121,14 +122,14 @@ class EasyConfigTest(TestCase):
             self.process_all_easyconfigs()
 
         def mk_dep_mod_name(spec):
-            return tuple(det_full_module_name(spec).split(os.path.sep))
+            return tuple(ActiveMNS().det_full_module_name(spec).split(os.path.sep))
 
         # construct a dictionary: (name, installver) tuple to dependencies
         depmap = {}
         for spec in self.ordered_specs:
             builddeps = map(mk_dep_mod_name, spec['builddependencies'])
             deps = map(mk_dep_mod_name, spec['unresolved_deps'])
-            key = tuple(spec['module'].split(os.path.sep))
+            key = tuple(spec['full_mod_name'].split(os.path.sep))
             depmap.update({key: [builddeps, deps]})
 
         # iteratively expand list of (non-build) dependencies until we reach the end (toolchain)
