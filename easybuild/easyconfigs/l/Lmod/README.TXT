@@ -9,9 +9,9 @@ Howto:
 Assuming you have successfully used the bootstrap procedure of EasyBuild,
 you should be able to initiate a recursive build of the following bits:
 
-  `time eb Lmod-5.6.2-GCC-4.8.2.eb -r`
+  `time eb Lmod-5.6.4-GCC-4.8.2.eb -r`
 
-l/Lmod/Lmod-5.6.2-GCC-4.8.2.eb ### so, you just aim for this one, with "-r"
+l/Lmod/Lmod-5.6.4-GCC-4.8.2.eb ### so, you just aim for this one, with "-r"
 l/Lua/Lua-5.1.4-8-GCC-4.8.2.eb
 n/ncurses/ncurses-5.9-GCC-4.8.2.eb
 g/GCC/GCC-4.8.2.eb
