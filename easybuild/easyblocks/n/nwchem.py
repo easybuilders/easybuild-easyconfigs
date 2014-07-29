@@ -370,35 +370,47 @@ class EB_NWChem(ConfigureMake):
 
         # run all examples if no test cases were specified
         # order and grouping is important for some of these tests (e.g., [o]h3tr*
-        if LooseVersion(self.version) >= LooseVersion("6.3"):
-            if type(self.cfg['tests']) is bool:
-                examples = [('qmd', ['3carbo_dft.nw', '3carbo.nw', 'h2o_scf.nw']),
-                            ('pspw', ['C2.nw', 'C6.nw', 'Carbene.nw', 'Na16.nw', 'NaCl.nw']),
-                            ('tcepolar', ['ccsd_polar_small.nw']), ('dirdyvtst/h3', ['h3tr1.nw', 'h3tr2.nw']),
-                            ('dirdyvtst/h3', ['h3tr3.nw']), ('dirdyvtst/h3', ['h3tr4.nw']), ('dirdyvtst/h3', ['h3tr5.nw']),
-                            ('dirdyvtst/oh3', ['oh3tr1.nw', 'oh3tr2.nw']),
-                            ('dirdyvtst/oh3', ['oh3tr3.nw']), ('dirdyvtst/oh3', ['oh3tr4.nw']), ('dirdyvtst/oh3', ['oh3tr5.nw']),
-                            ('pspw/session1', ['band.nw', 'si4.linear.nw', 'si4.rhombus.nw', 'S2-drift.nw',
-                                               'silicon.nw', 'S2.nw', 'si4.rectangle.nw']),
-                            ('md/myo', ['myo.nw']), ('md/nak', ['NaK.nw']), ('md/crown', ['crown.nw']), ('md/hrc', ['hrc.nw']),
-                            ('md/benzene', ['benzene.nw'])]
-                self.cfg['tests'] = [(os.path.join(self.examples_dir, d), l) for (d, l) in examples]
-                self.log.info("List of examples to be run as test cases: %s" % self.cfg['tests'])
-            else:
-                examples = [('qmd', ['3carbo_dft.nw', '3carbo.nw', 'h2o_scf.nw']),
-                            ('pspw', ['C2.nw', 'C6.nw', 'CG.nw', 'Carbene.nw', 'Na16.nw', 'NaCl.nw']),
-                            ('tcepolar', ['ccsdt_polar_small.nw', 'ccsd_polar_big.nw', 'ccsd_polar_small.nw']),
-                            ('dirdyvtst/h3', ['h3tr1.nw', 'h3tr2.nw', 'h3tr3.nw', 'h3tr4.nw', 'h3tr5.nw']),
-                            ('dirdyvtst/oh3', ['oh3tr1.nw', 'oh3tr2.nw', 'oh3tr3.nw', 'oh3tr4.nw', 'oh3tr5.nw']),
-                            ('pspw/session1', ['band.nw', 'si4.linear.nw', 'si4.rhombus.nw', 'S2-drift.nw', 'diamond.nw',
-                                               'silicon.nw', 'S2.nw', 'si4.rectangle.nw']),
-                            ('pspw/MgO+Cu', ['pspw_MgO.nw']), ('pspw/C2H6', ['C2H6.nw']), ('pspw/Carbene', ['triplet.nw']),
-                            ('md/dna', ['dna.nw']), ('md/ache', ['mache.nw']), ('md/myo', ['myo.nw']),
-                            ('md/nak', ['NaK.nw']), ('md/nak', ['18c6NaK.nw']), ('md/membrane', ['membrane.nw']),
-                            ('md/sdm', ['sdm.nw']), ('md/crown', ['crown.nw']), ('md/hrc', ['hrc.nw']),
-                            ('md/benzene', ['benzene.nw'])]
-                self.cfg['tests'] = [(os.path.join(self.examples_dir, d), l) for (d, l) in examples]
-                self.log.info("List of examples to be run as test cases: %s" % self.cfg['tests'])
+        if type(self.cfg['tests']) is bool:
+            examples = [('qmd', ['3carbo_dft.nw', '3carbo.nw', 'h2o_scf.nw']),
+                        ('pspw', ['C2.nw', 'C6.nw', 'CG.nw', 'Carbene.nw', 'Na16.nw', 'NaCl.nw']),
+                        ('tcepolar', ['ccsdt_polar_small.nw', 'ccsd_polar_big.nw', 'ccsd_polar_small.nw']),
+                        ('dirdyvtst/h3', ['h3tr1.nw', 'h3tr2.nw', 'h3tr3.nw', 'h3tr4.nw', 'h3tr5.nw']),
+                        ('dirdyvtst/oh3', ['oh3tr1.nw', 'oh3tr2.nw', 'oh3tr3.nw', 'oh3tr4.nw', 'oh3tr5.nw']),
+                        ('pspw/session1', ['band.nw', 'si4.linear.nw', 'si4.rhombus.nw', 'S2-drift.nw', 'diamond.nw',
+                                           'silicon.nw', 'S2.nw', 'si4.rectangle.nw']),
+                        ('pspw/MgO+Cu', ['pspw_MgO.nw']), ('pspw/C2H6', ['C2H6.nw']), ('pspw/Carbene', ['triplet.nw']),
+                        ('md/dna', ['dna.nw']), ('md/ache', ['mache.nw']), ('md/myo', ['myo.nw']),
+                        ('md/nak', ['NaK.nw']), ('md/nak', ['18c6NaK.nw']), ('md/membrane', ['membrane.nw']),
+                        ('md/sdm', ['sdm.nw']), ('md/crown', ['crown.nw']), ('md/hrc', ['hrc.nw']),
+                        ('md/benzene', ['benzene.nw'])]
+            if LooseVersion(self.version) >= LooseVersion("6.3"):
+                del examples[15] # sdm.nw
+                del examples[14] # membrane.nw
+                del examples[13] # 18c6NaK.nw
+                del examples[10] # mache.nw
+                del examples[9] # dna.nw
+                del examples[8] # triplet.nw
+                del examples[7] # C2H6.nw
+                del examples[6] # pspw_MgO.nw
+                del examples[5][1][4] # diamond.nw
+                del examples[4][1][4] # oh3tr5.nw
+                del examples[4][1][3] # oh3tr4.nw
+                del examples[4][1][2] # oh3tr3.nw
+                del examples[3][1][4] # h3tr5.nw
+                del examples[3][1][3] # h3tr4.nw
+                del examples[3][1][2] # h3tr3.nw
+                del examples[2][1][2] # ccsd_polar_small.nw
+                del examples[2][1][1] # ccsd_polar_big.nw
+                del examples[1][1][2] # CG.nw
+                examples.insert(5, ('dirdyvtst/oh3', ['oh3tr5.nw']))
+                examples.insert(5, ('dirdyvtst/oh3', ['oh3tr4.nw']))
+                examples.insert(5, ('dirdyvtst/oh3', ['oh3tr3.nw']))
+                examples.insert(4, ('dirdyvtst/h3', ['h3tr5.nw']))
+                examples.insert(4, ('dirdyvtst/h3', ['h3tr4.nw']))
+                examples.insert(4, ('dirdyvtst/h3', ['h3tr3.nw']))
+
+            self.cfg['tests'] = [(os.path.join(self.examples_dir, d), l) for (d, l) in examples]
+            self.log.info("List of examples to be run as test cases: %s" % self.cfg['tests'])
 
         try:
             # symlink $HOME/.nwchemrc to local copy of default nwchemrc
