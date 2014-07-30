@@ -36,6 +36,7 @@ EasyBuild support for installing the Intel Math Kernel Library (MKL), implemente
 import os
 import shutil
 import tempfile
+import itertools
 from distutils.version import LooseVersion
 
 import easybuild.tools.environment as env
@@ -207,8 +208,13 @@ class EB_imkl(IntelBase):
             if get_software_root('icc') is None:
                 if get_software_root('GCC'):
                     buildopts = 'compiler=gnu '
+                    build_compiler = '_gnu' 
                 else:
                     self.log.error("Not using either Intel compilers nor GCC, don't know how to build wrapper libs")
+            else:
+                build_compiler = '_intel'
+
+            self.log.debug("Build_compiler is Set to %s" % build_compiler)
 
             for i in lis1 + lis2 + lis3:
                 if i in lis1:
@@ -260,6 +266,136 @@ class EB_imkl(IntelBase):
                             newfil = '.'.join(ff[:-1]) + '_pic.' + ff[-1]
                         else:
                             newfil = fil
+                        dest = os.path.join(self.installdir, 'mkl/lib/intel64', newfil)
+                        try:
+                            src = os.path.join(tmpbuild, fil)
+                            if os.path.isfile(src):
+                                shutil.move(src, dest)
+                                self.log.info("Moved %s to %s" % (src, dest))
+                        except:
+                            self.log.exception("Failed to move %s to %s" % (src, dest))
+
+                    try:
+                        rmtree2(tmpbuild)
+                        self.log.debug('Removed temporary directory %s' % tmpbuild)
+                    except:
+                        self.log.exception("Removing temporary directory %s failed" % tmpbuild)
+
+            # I know that there are lots of repeating from here, but I am not enough talented to make a better version.
+            if LooseVersion(self.version) >= LooseVersion('11.1'):
+                i = 'fftw2x_cdft'
+                # use INSTALL_DIR and SPEC_OPT
+                extrabuildopts = ''
+                mpi_name_in_lib = ''
+                # can't use toolchain.mpi_family, because of dummy toolchain
+                if get_software_root('MPICH2'):
+                    extrabuildopts = 'mpi=mpich2'
+                    mpi_name_in_lib = '_MPICH2'
+                if get_software_root('MVAPICH2'):
+                    extrabuildopts = 'mpi=mpich2'
+                    mpi_name_in_lib = '_MVAPICH2'
+                if get_software_root('OpenMPI'):
+                    extrabuildopts = 'mpi=openmpi'
+                    mpi_name_in_lib = '_OpenMPI'
+                cmd = "make -f makefile libintel64 %s" % extrabuildopts
+
+                # add other make options as well
+                cmd = ' '.join([cmd, buildopts])
+ 
+                for opt, opt1, opt2 in itertools.product(['', '-fPIC'],
+                                                         ['interface=lp64', 'interface=ilp64'],
+                                                         ['PRECISION=MKL_DOUBLE', 'PRECISION=MKL_SINGLE']
+                                                        ):
+                    cmd = ' '.join([cmd, opt1])
+                    cmd = ' '.join([cmd, opt2])
+                    try:
+                        tmpbuild = tempfile.mkdtemp()
+                        self.log.debug("Created temporary directory %s" % tmpbuild)
+                    except:
+                        self.log.exception("Creating temporary directory failed")
+
+                    # always set INSTALL_DIR, SPEC_OPT, COPTS and CFLAGS
+                    env.setvar('INSTALL_DIR', tmpbuild)
+                    env.setvar('SPEC_OPT', opt)
+                    env.setvar('COPTS', opt)
+                    env.setvar('CFLAGS', opt)
+
+                    try:
+                        intdir = os.path.join(interfacedir, i)
+                        os.chdir(intdir)
+                        self.log.info("Changed to interface %s directory %s" % (i, intdir))
+                    except:
+                        self.log.exception("Can't change to interface %s directory %s" % (i, intdir))
+
+                    if not run_cmd(cmd, log_all=True, simple=True):
+                        self.log.error("Building %s (opt: %s) failed" % (i, opt))
+
+                    for fil in os.listdir(tmpbuild):
+                        #add _gnu or _intel to filename
+                        ff = fil.split('.')
+                        newfil = '.'.join(ff[:-1]) + build_compiler + '.' + ff[-1]
+                        #add mpi_name_in_lib (None for intel)
+                        ff = newfil.split('.')
+                        newfil = '.'.join(ff[:-1]) + mpi_name_in_lib + '.' + ff[-1]
+                        if opt == '-fPIC':
+                            # add _pic to filename
+                            ff = newfil.split('.')
+                            newfil = '.'.join(ff[:-1]) + '_pic.' + ff[-1]
+                        
+                        dest = os.path.join(self.installdir, 'mkl/lib/intel64', newfil)
+                        try:
+                            src = os.path.join(tmpbuild, fil)
+                            if os.path.isfile(src):
+                                shutil.move(src, dest)
+                                self.log.info("Moved %s to %s" % (src, dest))
+                        except:
+                            self.log.exception("Failed to move %s to %s" % (src, dest))
+
+                    try:
+                        rmtree2(tmpbuild)
+                        self.log.debug('Removed temporary directory %s' % tmpbuild)
+                    except:
+                        self.log.exception("Removing temporary directory %s failed" % tmpbuild)
+
+                i = 'fftw3x_cdft'
+                for opt, opt1 in itertools.product(['', '-fPIC'],
+                                                   ['interface=lp64','interface=ilp64']
+                                                  ):
+                    cmd = ' '.join([cmd, opt1])
+                    try:
+                        tmpbuild = tempfile.mkdtemp()
+                        self.log.debug("Created temporary directory %s" % tmpbuild)
+                    except:
+                        self.log.exception("Creating temporary directory failed")
+
+                    # always set INSTALL_DIR, SPEC_OPT, COPTS and CFLAGS
+                    env.setvar('INSTALL_DIR', tmpbuild)
+                    env.setvar('SPEC_OPT', opt)
+                    env.setvar('COPTS', opt)
+                    env.setvar('CFLAGS', opt)
+
+                    try:
+                        intdir = os.path.join(interfacedir, i)
+                        os.chdir(intdir)
+                        self.log.info("Changed to interface %s directory %s" % (i, intdir))
+                    except:
+                        self.log.exception("Can't change to interface %s directory %s" % (i, intdir))
+
+                    if not run_cmd(cmd, log_all=True, simple=True):
+                        self.log.error("Building %s (opt: %s) failed" % (i, opt))
+
+                    for fil in os.listdir(tmpbuild):
+                        #add _gnu or _intel to filename
+                        ff = fil.split('.')
+                        newfil = '.'.join(ff[:-1]) + build_compiler + '.' + ff[-1]
+                        #add mpi_name_in_lib (None for intel)
+                        ff = newfil.split('.')
+                        newfil = '.'.join(ff[:-1]) + mpi_name_in_lib + '.' + ff[-1]
+                        if opt == '-fPIC':
+                            # add _pic to filename
+                            ff = newfil.split('.')
+                            newfil = '.'.join(ff[:-1]) + '_pic.' + ff[-1]
+                        
                         dest = os.path.join(self.installdir, 'mkl/lib/intel64', newfil)
                         try:
                             src = os.path.join(tmpbuild, fil)
