@@ -141,8 +141,9 @@ class EB_PETSc(ConfigureMake):
                     self.cfg.update('configopts', '%s-lib=[%s/%s]' % (ff_arg, ff_libdir, ff_libs))
                 else:    
                     self.log.info("Missing inc/lib info, so not enabling FFTW support.")
+                # SCALAPACK_INC_DIR is not set for intel/2014b toolchain
                 if self.toolchain.name == 'intel':
-                     sc_inc = os.path.join(get_software_root('imkl'),include) # SCALAPACK_INC_DIR is not set for intel/2014b toolchain
+                     sc_inc = os.path.join(get_software_root('imkl'), "mkl", "include")
                 else:
                      sc_inc = os.getenv('SCALAPACK_INC_DIR')
                 sc_libdir = os.getenv('SCALAPACK_LIB_DIR')
@@ -276,14 +277,15 @@ class EB_PETSc(ConfigureMake):
     # default make should be fine
     # but only if PETSc < 3.5, because you cannot define -j for make 
 
-    if LooseVersion(self.version) >= LooseVersion("3.5"):
-        def build_step(self): 
-            """
-            Install without -j option
-            """
+    def build_step(self): 
+        """
+        Install without -j option
+        """
+        if LooseVersion(self.version) >= LooseVersion("3.5"):
             cmd = "make %s" % self.cfg['buildopts']
-            (out, _) = run_cmd(cmd, log_all=True, simple=False, log_output=verbose)
-            return out
+            run_cmd(cmd)
+        else:
+            super(EB_PETSc, self).build_step()
 
     def install_step(self):
         """
