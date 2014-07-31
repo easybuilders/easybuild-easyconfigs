@@ -217,18 +217,17 @@ class EB_imkl(IntelBase):
                         buildopts.append('mpi=mpich2')
                     elif get_software_root('OpenMPI'):
                         buildopts.append('mpi=openmpi')
-                precflags = []
+                precflags = ['']
                 if lib.startswith('fftw2x'):
                     # build both single and double precision variants
                     precflags = ['PRECISION=MKL_DOUBLE', 'PRECISION=MKL_SINGLE']
 
-                intflags = []
-                if lib.startswith('fftw3x'):
+                intflags = ['']
+                if lib.startswith('fftw3x') or lib in cdftlibs:
                     # build both 32-bit and 64-bit interfaces
                     intflags = ['interface=lp64', 'interface=ilp64']
 
                 cmd = "make -f makefile libintel64"
-
                 allopts = [' '.join(opts) for opts in itertools.product(intflags, precflags)]
 
                 for flags, extraopts in itertools.product(['', '-fPIC'], allopts):
