@@ -197,8 +197,8 @@ class EB_PETSc(ConfigureMake):
 
             #SuiteSparse options changed in PETSc 3.5,
             suitesparse = get_software_root('SuiteSparse')
-            if LooseVersion(self.version) >= LooseVersion("3.5"):
-                if suitesparse:
+            if suitesparse:
+                if LooseVersion(self.version) >= LooseVersion("3.5"):
                     withdep = "--with-suitesparse"
                     # specified order of libs matters! 
                     ss_libs = ["UMFPACK", "KLU", "CHOLMOD", "BTF", "CCOLAMD", "COLAMD", "CAMD", "AMD"]
@@ -215,9 +215,8 @@ class EB_PETSc(ConfigureMake):
                                                                                 ]
                                                            ])
                                    )
-            else:
+                else:
                 # CHOLMOD and UMFPACK are part of SuiteSparse (PETSc < 3.5)
-                if suitesparse:
                     withdep = "--with-umfpack"
                     # specified order of libs matters!
                     umfpack_libs = [os.path.join(suitesparse, l, "Lib", "lib%s.a" % l.lower())
