@@ -199,16 +199,19 @@ class EB_imkl(IntelBase):
             except:
                 self.log.exception("Can't change to interfaces directory %s" % interfacedir)
 
-            buildopts = []
+            compopt = None
             # determine whether we're using a non-Intel GCC-based toolchain
             # can't use toolchain.comp_family, because of dummy toolchain used when installing imkl
             if get_software_root('icc') is None:
                 if get_software_root('GCC'):
-                    buildopts.append('compiler=gnu')
+                    compopt = 'compiler=gnu'
                 else:
                     self.log.error("Not using either Intel compilers nor GCC, don't know how to build wrapper libs")
+            else:
+                compopt = 'compiler=intel'
 
             for lib in fftw2libs + fftw3libs + cdftlibs:
+                buildopts = [compopt]
                 if lib in fftw3libs:
                     buildopts.append('install_to=$INSTALL_DIR')
                 elif lib in cdftlibs:
