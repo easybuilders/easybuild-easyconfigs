@@ -274,17 +274,10 @@ class EB_PETSc(ConfigureMake):
             run_cmd(cmd, log_all=True, simple=True)
 
     # default make should be fine
-    # but only if PETSc < 3.5, because you cannot define -j for make 
-
-    def build_step(self): 
-        """
-        Install without -j option
-        """
-        if LooseVersion(self.version) >= LooseVersion("3.5"):
-            cmd = "make %s" % self.cfg['buildopts']
-            run_cmd(cmd)
-        else:
-            super(EB_PETSc, self).build_step()
+    
+    # PETSc > 3.5, make does not accept -j 
+    if LooseVersion(self.version) >= LooseVersion("3.5"):
+        self.cfg['parallel'] = None
 
     def install_step(self):
         """
