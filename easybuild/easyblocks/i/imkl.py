@@ -228,7 +228,7 @@ class EB_imkl(IntelBase):
                     intflags = ['interface=lp64', 'interface=ilp64']
 
                 cmd = "make -f makefile libintel64"
-                allopts = [' '.join(opts) for opts in itertools.product(intflags, precflags)]
+                allopts = list(itertools.product(intflags, precflags))
 
                 for flags, extraopts in itertools.product(['', '-fPIC'], allopts):
                     tmpbuild = tempfile.mkdtemp()
