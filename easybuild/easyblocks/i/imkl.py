@@ -228,9 +228,12 @@ class EB_imkl(IntelBase):
                     intflags = ['interface=lp64', 'interface=ilp64']
 
                 cmd = "make -f makefile libintel64"
-                allopts = list(itertools.product(intflags, precflags))
+                allopts = [list(opts) for opts in itertools.product(intflags, precflags)]
 
                 for flags, extraopts in itertools.product(['', '-fPIC'], allopts):
+                    tup = (lib, flags, buildopts, extraopts)
+                    self.log.debug("Building lib %s with: flags %s, buildopts %s, extraopts %s" % tup)
+
                     tmpbuild = tempfile.mkdtemp()
                     self.log.debug("Created temporary directory %s" % tmpbuild)
 
@@ -271,13 +274,7 @@ class EB_imkl(IntelBase):
                         except OSError, err:
                             self.log.error("Failed to move %s to %s: %s" % (src, dest, err))
 
-                    try:
-                        rmtree2(tmpbuild)
-                        self.log.debug('Removed temporary directory %s' % tmpbuild)
-                    except OSError, err:
-                        self.log.error("Removing temporary directory %s failed: %s" % (tmpbuild, err))
-
-            # I know that there are lots of repeating from here, but I am not enough talented to make a better version.
+                    rmtree2(tmpbuild)
         else:
             # Follow this procedure for mkl version lower than 10.3
             # Extra
