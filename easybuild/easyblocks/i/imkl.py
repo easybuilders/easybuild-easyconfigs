@@ -408,7 +408,7 @@ class EB_imkl(IntelBase):
         if self.cfg['interfaces']:
             fftw_vers = ['2xc', '2xf', '3xc', '3xf']
             pics = ['', '_pic']
-            libs = ['libfftw%s%s%s.a' % (compsuff, ver, pic) for ver in fftw_vers for pic in pics]
+            libs = ['libfftw%s%s%s.a' % (compsuff, fftwver, pic) for fftwver in fftw_vers for pic in pics]
 
             fftw_cdft_vers = ['2x']
             if ver >= LooseVersion('10.3'):
