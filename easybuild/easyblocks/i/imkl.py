@@ -237,7 +237,7 @@ class EB_imkl(IntelBase):
                     tup = (lib, flags, buildopts, extraopts)
                     self.log.debug("Building lib %s with: flags %s, buildopts %s, extraopts %s" % tup)
 
-                    tmpbuild = tempfile.mkdtemp()
+                    tmpbuild = tempfile.mkdtemp(dir=self.builddir)
                     self.log.debug("Created temporary directory %s" % tmpbuild)
 
                     # always set INSTALL_DIR, SPEC_OPT, COPTS and CFLAGS
@@ -347,7 +347,7 @@ class EB_imkl(IntelBase):
 
                 for opt in ['', '-fPIC']:
                     try:
-                        tmpbuild = tempfile.mkdtemp()
+                        tmpbuild = tempfile.mkdtemp(dir=self.builddir)
                         self.log.debug("Created temporary directory %s" % tmpbuild)
                     except:
                         self.log.exception("Creating temporary directory failed")
