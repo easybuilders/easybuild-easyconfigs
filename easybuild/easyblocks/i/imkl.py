@@ -147,19 +147,21 @@ class EB_imkl(IntelBase):
 
     def post_install_step(self):
         """
-        The mkl directory structure has thoroughly changed as from version 10.3.
-        Hence post processing is quite different in both situations
+        Install group libraries and interfaces (if desired).
         """
         # reload the dependencies
         self.load_dependency_modules()
 
-        if LooseVersion(self.version) >= LooseVersion('10.3'):
-            # Add convenient wrapper libs
-            # - form imkl 10.3
-
-            if self.cfg['m32']:
-                self.log.error("32-bit not supported yet for IMKL v%s (>=10.3)" % self.version)
-
+        if self.cfg['m32']:
+            extra = {
+                'libmkl.so': 'GROUP (-lmkl_intel -lmkl_intel_thread -lmkl_core)',
+                'libmkl_em64t.a': 'GROUP (libmkl_intel.a libmkl_intel_thread.a libmkl_core.a)',
+                'libmkl_solver.a': 'GROUP (libmkl_solver.a)',
+                'libmkl_scalapack.a': 'GROUP (libmkl_scalapack_core.a)',
+                'libmkl_lapack.a': 'GROUP (libmkl_intel.a libmkl_intel_thread.a libmkl_core.a)',
+                'libmkl_cdft.a': 'GROUP (libmkl_cdft_core.a)'
+            }
+        else:
             extra = {
                 'libmkl.so': 'GROUP (-lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core)',
                 'libmkl_em64t.a': 'GROUP (libmkl_intel_lp64.a libmkl_intel_thread.a libmkl_core.a)',
@@ -168,35 +170,54 @@ class EB_imkl(IntelBase):
                 'libmkl_lapack.a': 'GROUP (libmkl_intel_lp64.a libmkl_intel_thread.a libmkl_core.a)',
                 'libmkl_cdft.a': 'GROUP (libmkl_cdft_core.a)'
             }
-            for fil, txt in extra.items():
-                dest = os.path.join(self.installdir, 'mkl/lib/intel64', fil)
-                if not os.path.exists(dest):
-                    try:
-                        f = open(dest, 'w')
-                        f.write(txt)
-                        f.close()
-                        self.log.info("File %s written" % dest)
-                    except:
-                        self.log.exception("Can't write file %s" % (dest))
 
-            # build the mkl interfaces (pic and no-pic)
+        if LooseVersion(self.version) >= LooseVersion('10.3'):
+            libsubdir = os.path.join('mkl', 'lib', 'intel64')
+        else:
+            if self.cfg['m32']:
+                libsubdir = os.path.join('lib', '32')
+            else:
+                libsubdir = os.path.join('lib', 'em64t')
 
-            if not self.cfg['interfaces']:
-                return
+        for fil, txt in extra.items():
+            dest = os.path.join(self.installdir, libsubdir, fil)
+            if not os.path.exists(dest):
+                try:
+                    f = open(dest, 'w')
+                    f.write(txt)
+                    f.close()
+                    self.log.info("File %s written" % dest)
+                except IOError, err:
+                    self.log.exception("Can't write file %s: %s" % (dest, err))
 
-            # build the interfaces
-            # - blas95 and lapack95 need more work, ignore for now
-            # lis1 = ['blas95','fftw2xc','fftw2xf','lapack95']
+        # build the mkl interfaces, if desired
+        if self.cfg['interfaces']:
+
+            if LooseVersion(self.version) >= LooseVersion('10.3'):
+                intsubdir = os.path.join('mkl', 'interfaces')
+                inttarget = 'libintel64'
+            else:
+                intsubdir = 'interfaces'
+                if self.cfg['m32']:
+                    inttarget = 'lib32'
+                else:
+                    inttarget = 'libem64t'
+
+            cmd = "make -f makefile %s" % inttarget
+
+            # blas95 and lapack95 need more work, ignore for now
             # blas95 and lapack also need include/.mod to be processed
             fftw2libs = ['fftw2xc', 'fftw2xf']
             fftw3libs = ['fftw3xc', 'fftw3xf']
-            cdftlibs = ['fftw2x_cdft', 'fftw3x_cdft']
+            cdftlibs = ['fftw2x_cdft']
+            if LooseVersion(self.version) >= LooseVersion('10.3'):
+                cdftlibs.append('fftw3x_cdft')
 
-            interfacedir = os.path.join(self.installdir, 'mkl/interfaces')
+            interfacedir = os.path.join(self.installdir, intsubdir)
             try:
                 os.chdir(interfacedir)
                 self.log.info("Changed to interfaces directory %s" % interfacedir)
-            except:
+            except OSError, err:
                 self.log.exception("Can't change to interfaces directory %s" % interfacedir)
 
             compopt = None
@@ -221,16 +242,15 @@ class EB_imkl(IntelBase):
                     elif get_software_root('OpenMPI'):
                         buildopts.append('mpi=openmpi')
                 precflags = ['']
-                if lib.startswith('fftw2x'):
+                if lib.startswith('fftw2x') and not self.cfg['m32']:
                     # build both single and double precision variants
                     precflags = ['PRECISION=MKL_DOUBLE', 'PRECISION=MKL_SINGLE']
 
                 intflags = ['']
-                if lib.startswith('fftw3x') or lib in cdftlibs:
+                if lib in cdftlibs and not self.cfg['m32']:
                     # build both 32-bit and 64-bit interfaces
                     intflags = ['interface=lp64', 'interface=ilp64']
 
-                cmd = "make -f makefile libintel64"
                 allopts = [list(opts) for opts in itertools.product(intflags, precflags)]
 
                 for flags, extraopts in itertools.product(['', '-fPIC'], allopts):
@@ -261,16 +281,14 @@ class EB_imkl(IntelBase):
                     if not res:
                         self.log.error("Building %s (flags: %s, fullcmd: %s) failed" % (lib, flags, fullcmd))
 
-                    for fil in os.listdir(tmpbuild):
+                    for fn in os.listdir(tmpbuild):
                         if flags == '-fPIC':
                             # add _pic to filename
-                            ff = fil.split('.')
-                            newfil = '.'.join(ff[:-1]) + '_pic.' + ff[-1]
-                        else:
-                            newfil = fil
-                        dest = os.path.join(self.installdir, 'mkl/lib/intel64', newfil)
+                            ff = fn.split('.')
+                            fn = '.'.join(ff[:-1]) + '_pic.' + ff[-1]
+                        dest = os.path.join(self.installdir, libsubdir, fn)
                         try:
-                            src = os.path.join(tmpbuild, fil)
+                            src = os.path.join(tmpbuild, fn)
                             if os.path.isfile(src):
                                 shutil.move(src, dest)
                                 self.log.info("Moved %s to %s" % (src, dest))
@@ -278,117 +296,6 @@ class EB_imkl(IntelBase):
                             self.log.error("Failed to move %s to %s: %s" % (src, dest, err))
 
                     rmtree2(tmpbuild)
-        else:
-            # Follow this procedure for mkl version lower than 10.3
-            # Extra
-            # - build the mkl interfaces (pic and no-pic)
-            # - add wrapper libs
-            #            Add convenient libs
-            # - form imkl 10.1
-            if self.cfg['m32']:
-                extra = {
-                    'libmkl.so': 'GROUP (-lmkl_intel -lmkl_intel_thread -lmkl_core)',
-                    'libmkl_em64t.a': 'GROUP (libmkl_intel.a libmkl_intel_thread.a libmkl_core.a)',
-                    'libmkl_solver.a': 'GROUP (libmkl_solver.a)',
-                    'libmkl_scalapack.a': 'GROUP (libmkl_scalapack_core.a)',
-                    'libmkl_lapack.a': 'GROUP (libmkl_intel.a libmkl_intel_thread.a libmkl_core.a)',
-                    'libmkl_cdft.a': 'GROUP (libmkl_cdft_core.a)'
-                }
-            else:
-                extra = {
-                    'libmkl.so': 'GROUP (-lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core)',
-                    'libmkl_em64t.a': 'GROUP (libmkl_intel_lp64.a libmkl_intel_thread.a libmkl_core.a)',
-                    'libmkl_solver.a': 'GROUP (libmkl_solver_lp64.a)',
-                    'libmkl_scalapack.a': 'GROUP (libmkl_scalapack_lp64.a)',
-                    'libmkl_lapack.a': 'GROUP (libmkl_intel_lp64.a libmkl_intel_thread.a libmkl_core.a)',
-                    'libmkl_cdft.a': 'GROUP (libmkl_cdft_core.a)'
-                }
-            for fil, txt in extra.items():
-                if self.cfg['m32']:
-                    dest = os.path.join(self.installdir, 'lib/32', fil)
-                else:
-                    dest = os.path.join(self.installdir, 'lib/em64t', fil)
-                if not os.path.exists(dest):
-                    try:
-                        f = open(dest, 'w')
-                        f.write(txt)
-                        f.close()
-                        self.log.info("File %s written" % dest)
-                    except:
-                        self.log.exception("Can't write file %s" % (dest))
-
-            if not self.cfg['interfaces']:
-                return
-
-            # build the interfaces
-            # - blas95 and lapack95 need more work, ignore for now
-            # lis1=['blas95','fftw2xc','fftw2x_cdft','fftw2xf','lapack95']
-            # blas95 and lapack also need include/.mod to be processed
-            lis1 = ['fftw2xc', 'fftw2x_cdft', 'fftw2xf']
-            lis2 = ['fftw3xc', 'fftw3xf']
-
-            interfacedir = os.path.join(self.installdir, 'interfaces')
-            try:
-                os.chdir(interfacedir)
-            except:
-                self.log.exception("Can't change to interfaces directory %s" % interfacedir)
-
-            interfacestarget = "libem64t"
-            if self.cfg['m32']:
-                interfacestarget = "lib32"
-
-            for i in lis1 + lis2:
-                if i in lis1:
-                    # use INSTALL_DIR and SPEC_OPT
-                    cmd = "make -f makefile %s" % interfacestarget
-                if i in lis2:
-                    # use install_to and CFLAGS
-                    cmd = "make -f makefile %s install_to=$INSTALL_DIR" % interfacestarget
-
-                for opt in ['', '-fPIC']:
-                    try:
-                        tmpbuild = tempfile.mkdtemp(dir=self.builddir)
-                        self.log.debug("Created temporary directory %s" % tmpbuild)
-                    except:
-                        self.log.exception("Creating temporary directory failed")
-
-                    # always set INSTALL_DIR, SPEC_OPT and CFLAGS
-                    env.setvar('INSTALL_DIR', tmpbuild)
-                    env.setvar('SPEC_OPT', opt)
-                    env.setvar('CFLAGS', opt)
-
-                    try:
-                        intdir = os.path.join(interfacedir, i)
-                        os.chdir(intdir)
-                    except:
-                        self.log.exception("Can't change to interface %s directory %s" % (i, intdir))
-
-                    if not run_cmd(cmd, log_all=True, simple=True):
-                        self.log.error("Building %s (opt: %s) failed" % (i, opt))
-
-                    for fil in os.listdir(tmpbuild):
-                        if opt == '-fPIC':
-                            # add _pic to filename
-                            ff = fil.split('.')
-                            newfil = '.'.join(ff[:-1]) + '_pic.' + ff[-1]
-                        else:
-                            newfil = fil
-                        if self.cfg['m32']:
-                            dest = os.path.join(self.installdir, 'lib/32', newfil)
-                        else:
-                            dest = os.path.join(self.installdir, 'lib/em64t', newfil)
-                        try:
-                            src = os.path.join(tmpbuild, fil)
-                            shutil.move(src, dest)
-                            self.log.debug("Moved %s to %s" % (src, dest))
-                        except:
-                            self.log.exception("Failed to move %s to %s" % (src, dest))
-
-                    try:
-                        rmtree2(tmpbuild)
-                        self.log.debug('Removed temporary directory %s' % tmpbuild)
-                    except:
-                        self.log.exception("Removing temporary directory %s failed" % (tmpbuild))
 
     def sanity_check_step(self):
         """Custom sanity check paths for Intel MKL."""
