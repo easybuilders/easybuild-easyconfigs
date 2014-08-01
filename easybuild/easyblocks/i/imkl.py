@@ -313,14 +313,27 @@ class EB_imkl(IntelBase):
                 self.log.error("Not using Intel compilers or GCC, don't know compiler suffix for FFTW libraries.")
 
         if self.cfg['interfaces']:
-            fftw_vers = ['2x%s_%s' % (x, prec) for x in ['c', 'f'] for prec in ['double', 'single']] + ['3xc', '3xf']
+            precs = ['double', 'single']
+            if ver < LooseVersion('11'):
+                # no precision suffix in libfftw2 libs before imkl v11
+                precs = ['']
+            fftw_vers = ['2x%s_%s' % (x, prec) for x in ['c', 'f'] for prec in precs] + ['3xc', '3xf']
             pics = ['', '_pic']
             libs = ['libfftw%s%s%s.a' % (fftwver, compsuff, pic) for fftwver in fftw_vers for pic in pics]
 
-            fftw_cdft_vers = ['2x_cdft_DOUBLE', '2x_cdft_SINGLE']
+            fftw_cdft_vers = ['2x_cdft_DOUBLE']
+            if not self.cfg['m32']:
+                fftw_cdft_vers.append('2x_cdft_SINGLE')
             if ver >= LooseVersion('10.3'):
                 fftw_cdft_vers.append('3x_cdft')
-            libs += ['libfftw%s_%s%s.a' % x for x in itertools.product(fftw_cdft_vers, ['lp64', 'ilp64'], pics)]
+            if ver >= LooseVersion('11.0.2'):
+                bits = ['lp64']
+                if not self.cfg['m32']:
+                    bits.append('ilp64')
+            else:
+                # no bits suffix in cdft libs before imkl v11.0.2
+                bits = ['']
+            libs += ['libfftw%s_%s%s.a' % x for x in itertools.product(fftw_cdft_vers, bits, pics)]
 
         if ver >= LooseVersion('10.3'):
             if self.cfg['m32']:
