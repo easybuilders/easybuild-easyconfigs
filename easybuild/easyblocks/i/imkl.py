@@ -282,13 +282,13 @@ class EB_imkl(IntelBase):
                         self.log.error("Building %s (flags: %s, fullcmd: %s) failed" % (lib, flags, fullcmd))
 
                     for fn in os.listdir(tmpbuild):
+                        src = os.path.join(tmpbuild, fn)
                         if flags == '-fPIC':
                             # add _pic to filename
                             ff = fn.split('.')
                             fn = '.'.join(ff[:-1]) + '_pic.' + ff[-1]
                         dest = os.path.join(self.installdir, libsubdir, fn)
                         try:
-                            src = os.path.join(tmpbuild, fn)
                             if os.path.isfile(src):
                                 shutil.move(src, dest)
                                 self.log.info("Moved %s to %s" % (src, dest))
