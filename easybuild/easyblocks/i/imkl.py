@@ -406,7 +406,7 @@ class EB_imkl(IntelBase):
                 self.log.error("Not using Intel compilers or GCC, don't know compiler suffix for FFTW libraries.")
 
         if self.cfg['interfaces']:
-            fftw_vers = ['2xc', '2xf', '3xc', '3xf']
+            fftw_vers = ['2x%s_%s' % (x, prec) for x in ['c', 'f'] for prec in ['double', 'single']] + ['3xc', '3xf']
             pics = ['', '_pic']
             libs = ['libfftw%s%s%s.a' % (fftwver, compsuff, pic) for fftwver in fftw_vers for pic in pics]
 
