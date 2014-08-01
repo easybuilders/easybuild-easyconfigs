@@ -408,12 +408,12 @@ class EB_imkl(IntelBase):
         if self.cfg['interfaces']:
             fftw_vers = ['2xc', '2xf', '3xc', '3xf']
             pics = ['', '_pic']
-            libs = ['libfftw%s%s%s.a' % (compsuff, fftwver, pic) for fftwver in fftw_vers for pic in pics]
+            libs = ['libfftw%s%s%s.a' % (fftwver, compsuff, pic) for fftwver in fftw_vers for pic in pics]
 
-            fftw_cdft_vers = ['2x']
+            fftw_cdft_vers = ['2x_cdft_DOUBLE', '2x_cdft_SINGLE']
             if ver >= LooseVersion('10.3'):
-                fftw_cdft_vers.append('3x')
-            libs += ['libfftw%s%s%s.a' % x for x in itertools.product(fftw_cdft_vers, ['lp64', 'ilp64'], pics)]
+                fftw_cdft_vers.append('3x_cdft')
+            libs += ['libfftw%s_%s%s.a' % x for x in itertools.product(fftw_cdft_vers, ['lp64', 'ilp64'], pics)]
 
         if ver >= LooseVersion('10.3'):
             if self.cfg['m32']:
