@@ -113,9 +113,10 @@ class RPackage(ExtensionEasyBlock):
             prefix = ''
 
         if self.patches:
-            cmd = "R CMD INSTALL %s %s %s %s --no-clean-on-error" % (self.ext_dir, confargs, confvars, prefix)       
+            loc = self.ext_dir
         else:
-            cmd = "R CMD INSTALL %s %s %s %s --no-clean-on-error" % (self.ext_src, confargs, confvars, prefix)
+            loc = self.ext_src
+        cmd = "R CMD INSTALL %s %s %s %s --no-clean-on-error" % (loc, confargs, confvars, prefix)
 
         self.log.debug("make_cmdline_cmd returns %s" % cmd)
         return cmd, None

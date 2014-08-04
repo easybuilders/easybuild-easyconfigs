@@ -48,10 +48,10 @@ class EB_Rmpi(RPackage):
             #toolchain.MPI_TYPE_LAM: "LAM",  # no support for LAM yet
         }
         # type of MPI
-        # MPI_TYPE does not distinguish between MPICH and MPI, which is why we also check mpi_family()
+        # MPI_TYPE does not distinguish between MPICH and IntelMPI, which is why we also check mpi_family()
         mpi_type = self.toolchain.mpi_family()
         Rmpi_type = mpi_types[self.toolchain.MPI_TYPE]
-        # Fromrmpi  0.6-4 INTELMPI supported in the build (via --with-Rmpi-type config switch)
+        # Rmpi versions 0.6-4 and up support INTELMPI (using --with-Rmpi-type=INTELMPI) 
         if ((LooseVersion(self.version) >= LooseVersion('0.6-4')) and (mpi_type == toolchain.INTELMPI)):
              Rmpi_type = 'INTELMPI'
 
