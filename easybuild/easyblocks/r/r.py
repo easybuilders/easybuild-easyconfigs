@@ -57,15 +57,6 @@ class EB_R(ConfigureMake):
         environment.setvar("FC", self.toolchain.get_variable('F90'))
         ConfigureMake.configure_step(self)
 
-    def extra_packages_pre(self):
-        """
-        We set some default configs here for extentions for R.
-        """
-        self.setcfg('pkgdefaultclass', ['easybuild.easyblocks.rextension', "EB_RExtension"])
-        self.setcfg('pkgfilter', EXTS_FILTER_R_PACKAGES)
-        self.setcfg('pkgtemplate', '%(name)s/%(name)s_%(version)s.tar.gz')
-        self.setcfg('pkginstalldeps', True)
-
     def sanity_check_step(self):
         """Custom sanity check for R."""
 
