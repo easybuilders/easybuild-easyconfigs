@@ -68,7 +68,7 @@ class EB_R(ConfigureMake):
 
         custom_paths = {
             'files': ['bin/%s' % x for x in ['R', 'Rscript']] +
-                     [(os.path.join('lib', 'R', f), os.path.join('lib64', 'R', f)) for f in libfiles],
+                     [(os.path.join('lib64', 'R', f), os.path.join('lib', 'R', f)) for f in libfiles],
             'dirs': [],
         }
         super(EB_R, self).sanity_check_step(custom_paths=custom_paths)
