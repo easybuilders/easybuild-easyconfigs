@@ -27,10 +27,14 @@ EasyBuild support for building and installing R, implemented as an easyblock
 
 @author: Jens Timmerman (Ghent University)
 """
+import os
+
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.tools import environment
 
+
 EXTS_FILTER_R_PACKAGES = ("R -q --no-save", "library(%(ext_name)s)")
+
 
 class EB_R(ConfigureMake):
     """
@@ -53,11 +57,18 @@ class EB_R(ConfigureMake):
         environment.setvar("FC", self.toolchain.get_variable('F90'))
         ConfigureMake.configure_step(self)
 
-    def extra_packages_pre(self):
-        """
-        We set some default configs here for extentions for R.
-        """
-        self.setcfg('pkgdefaultclass', ['easybuild.easyblocks.rextension', "EB_RExtension"])
-        self.setcfg('pkgfilter', EXTS_FILTER_R_PACKAGES)
-        self.setcfg('pkgtemplate', '%(name)s/%(name)s_%(version)s.tar.gz')
-        self.setcfg('pkginstalldeps', True)
+    def sanity_check_step(self):
+        """Custom sanity check for R."""
+
+        libfiles = [os.path.join('include', x) for x in ['Rconfig.h', 'Rdefines.h', 'Rembedded.h',
+                                                         'R.h', 'Rinterface.h', 'Rinternals.h',
+                                                         'Rmath.h', 'Rversion.h', 'S.h']]
+        libfiles += [os.path.join('modules', x) for x in ['internet.so', 'lapack.so', 'vfonts.so']]
+        libfiles += ['lib/libR.so']
+
+        custom_paths = {
+            'files': ['bin/%s' % x for x in ['R', 'Rscript']] +
+                     [(os.path.join('lib64', 'R', f), os.path.join('lib', 'R', f)) for f in libfiles],
+            'dirs': [],
+        }
+        super(EB_R, self).sanity_check_step(custom_paths=custom_paths)
