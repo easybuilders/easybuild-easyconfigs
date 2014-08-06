@@ -99,7 +99,7 @@ class EB_Mathematica(Binary):
             # activation key is printed by using '$ActivationKey' in Mathematica, so no reason to keep it 'secret'
             self.log.info("Activating installation using provided activation key '%s'." % self.cfg['activation_key'])
             qa = {
-                r"enter your activation key\n(enter return to skip Web Activation):": self.cfg['activation_key'],
+                r"(enter return to skip Web Activation):": self.cfg['activation_key'],
                 r"In\[1\]:= ": 'Quit[]',
             }
             noqa = [
