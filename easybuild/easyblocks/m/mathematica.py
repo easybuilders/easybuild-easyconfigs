@@ -100,7 +100,7 @@ class EB_Mathematica(Binary):
             self.log.info("Activating installation using provided activation key '%s'." % self.cfg['activation_key'])
             qa = {
                 r"(enter return to skip Web Activation):": self.cfg['activation_key'],
-                r"In\[1\]:= ": 'Quit[]',
+                r"In[1]:= ": 'Quit[]',
             }
             noqa = [
                 '^%s %s .*' % (self.name, self.version),
