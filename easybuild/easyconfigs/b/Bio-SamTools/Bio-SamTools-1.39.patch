@@ -1,0 +1,23 @@
+# 1) Obey the CC and CFLAGS using make in the c_bin subdirectory
+# 2) Extend the header file search to the $samtools/include/bam directory
+# B. Hajgato August 6th 2014
+--- Bio-SamTools-1.39/Build.PL.orig	2013-08-29 18:59:35.000000000 +0200
++++ Bio-SamTools-1.39/Build.PL	2014-08-06 10:37:13.310401233 +0200
+@@ -15,7 +15,7 @@
+ 	chomp(my \$make  = `which make`);
+ 	chomp(my \$nmake = `which nmake`);
+ 	\$make ||= \$nmake;
+-	system "cd c_bin; \$make INCLUDES=-I$sam_include LIBPATH=-L$sam_lib";
++	system "cd c_bin; \$make CC=\\\$CC CFLAGS=\\\"\\\$CFLAGS\\\" INCLUDES=-I$sam_include LIBPATH=-L$sam_lib";
+ 	mkdir "blib/bin" unless -e "blib/bin";
+         my \@exec = grep {-x \$_} <c_bin/*>;
+ 	\$self->copy_if_modified(from   =>\$_,
+@@ -75,6 +75,8 @@
+ 	    if -e "$samtools/$HeaderFile";
+ 	$sam_include = "$samtools/include"
+ 	    if -e "$samtools/include/$HeaderFile";
++	$sam_include = "$samtools/include/bam"
++	    if -e "$samtools/include/bam/$HeaderFile";
+ 	$sam_lib     = $samtools
+ 	    if -e "$samtools/$LibFile";
+ 	$sam_lib     = "$samtools/lib"
