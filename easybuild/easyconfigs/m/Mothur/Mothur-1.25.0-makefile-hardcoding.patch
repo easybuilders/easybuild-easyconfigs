@@ -1,0 +1,37 @@
+diff -ru Mothur.source.orig/makefile Mothur.source/makefile
+--- Mothur.source.orig/makefile	2012-05-01 15:35:08.000000000 +0200
++++ Mothur.source/makefile	2014-08-06 22:23:19.833997000 +0200
+@@ -28,7 +28,7 @@
+ 	#CXX = g++44
+ 	
+ 	#if you are a mac user use the following line
+-	TARGET_ARCH += -arch x86_64
++	#TARGET_ARCH += -arch x86_64
+ 	
+ 	#if you using cygwin to build Windows the following line
+ 	#CXX = x86_64-w64-mingw32-g++
+diff -ru Mothur.source.orig/uchime_src/mk Mothur.source/uchime_src/mk
+--- Mothur.source.orig/uchime_src/mk	2012-03-13 19:58:44.000000000 +0100
++++ Mothur.source/uchime_src/mk	2014-08-06 22:25:03.984392000 +0200
+@@ -6,8 +6,7 @@
+ 
+ for CPPName in $CPPNames
+ do
+-  echo $CPPName >> /dev/tty
+-  g++ $ENV_GCC_OPTS -c -O3 -msse2 -mfpmath=sse -D_FILE_OFFSET_BITS=64 -DNDEBUG=1 -DUCHIMES=1 $CPPName.cpp -o $CPPName.o  >> mk.stdout 2>> tmp.stderr
++  $CXX $ENV_GCC_OPTS -c $CXXFLAGS -D_FILE_OFFSET_BITS=64 -DNDEBUG=1 -DUCHIMES=1 $CPPName.cpp -o $CPPName.o  >> mk.stdout 2>> tmp.stderr
+ 	cat tmp.stderr
+ 	cat tmp.stderr >> mk.stderr
+ 	rm -f tmp.stderr
+@@ -15,9 +14,9 @@
+ 
+ LINK_OPTS= 
+ if [ `uname -s` == Linux ] ; then
+-    LINK_OPTS=-static
++    LINK_OPTS=-static -Wl,--no-export-dynamic
+ fi
+-g++ $LINK_OPTS $ENV_LINK_OPTS -g -o uchime $ObjNames >> mk.stdout 2>> tmp.stderr
++$CXX $CXXFLAGS  $LINK_OPTS $ENV_LINK_OPTS -g -o uchime $ObjNames >> mk.stdout 2>> tmp.stderr
+ cat tmp.stderr
+ cat tmp.stderr >> mk.stderr
+ rm -f tmp.stderr
