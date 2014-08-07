@@ -141,11 +141,7 @@ class EB_PETSc(ConfigureMake):
                     self.cfg.update('configopts', '%s-lib=[%s/%s]' % (ff_arg, ff_libdir, ff_libs))
                 else:    
                     self.log.info("Missing inc/lib info, so not enabling FFTW support.")
-                # SCALAPACK_INC_DIR is not set for intel/2014b toolchain
-                if self.toolchain.name == 'intel':
-                     sc_inc = os.path.join(get_software_root('imkl'), "mkl", "include")
-                else:
-                     sc_inc = os.getenv('SCALAPACK_INC_DIR')
+                sc_inc = os.getenv('SCALAPACK_INC_DIR')
                 sc_libdir = os.getenv('SCALAPACK_LIB_DIR')
                 sc_libs = os.getenv('SCALAPACK_STATIC_LIBS')
                 if sc_inc and sc_libdir and sc_libs:
