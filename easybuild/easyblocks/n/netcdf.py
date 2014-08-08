@@ -88,7 +88,7 @@ class EB_netCDF(CMakeMake):
         custom_paths = {
                         'files': ["bin/nc%s" % x for x in ["-config", "copy", "dump",
                                                           "gen", "gen3"]] +
-                                 ["lib/%s" % x for x in libs] +
+                                 [("lib/%s" % x,"lib64/%s" % x) for x in libs] +
                                  ["include/%s" % x for x in incs],
                         'dirs': []
                        }
