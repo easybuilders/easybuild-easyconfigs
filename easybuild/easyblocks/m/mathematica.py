@@ -65,12 +65,12 @@ class EB_Mathematica(Binary):
         shortver = '.'.join(self.version.split('.')[:2])
         qa_install_path = "/usr/local/Wolfram/%s/%s" % (self.name, shortver)
         qa = {
-            "Enter the installation directory, or press ENTER to select %s: >" % qa_install_path: self.installdir,
-            "Create directory (y/n)? >": 'y',
-            "or press ENTER to select /usr/local/bin: >": os.path.join(self.installdir, "bin"), 
+            r"Enter the installation directory, or press ENTER to select %s: >" % qa_install_path: self.installdir,
+            r"Create directory (y/n)? >": 'y',
+            r"or press ENTER to select /usr/local/bin: >": os.path.join(self.installdir, "bin"), 
         }
         no_qa = [
-            "Now installing.*\n\n.*\[.*\].*",
+            r"Now installing.*\n\n.*\[.*\].*",
         ]
         run_cmd_qa(cmd, qa, no_qa=no_qa, log_all=True, simple=True)
 
@@ -103,8 +103,8 @@ class EB_Mathematica(Binary):
                 r"In[1]:= ": 'Quit[]',
             }
             noqa = [
-                '^%s %s .*' % (self.name, self.version),
-                '^Copyright.*',
+                r'^%s %s .*' % (self.name, self.version),
+                r'^Copyright.*',
             ]
             run_cmd_qa(os.path.join(self.installdir, 'bin', 'math'), qa, no_qa=noqa)
         else:
