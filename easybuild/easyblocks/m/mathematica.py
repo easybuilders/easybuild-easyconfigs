@@ -70,7 +70,7 @@ class EB_Mathematica(Binary):
             r"or press ENTER to select /usr/local/bin: >": os.path.join(self.installdir, "bin"), 
         }
         no_qa = [
-            r"Now installing.*\n\n.*\[.*\].*",
+            "Now installing.*\n\n.*\[.*\].*",
         ]
         run_cmd_qa(cmd, qa, no_qa=no_qa, log_all=True, simple=True)
 
@@ -103,8 +103,8 @@ class EB_Mathematica(Binary):
                 r"In[1]:= ": 'Quit[]',
             }
             noqa = [
-                r'^%s %s .*' % (self.name, self.version),
-                r'^Copyright.*',
+                '^%s %s .*' % (self.name, self.version),
+                '^Copyright.*',
             ]
             run_cmd_qa(os.path.join(self.installdir, 'bin', 'math'), qa, no_qa=noqa)
         else:
