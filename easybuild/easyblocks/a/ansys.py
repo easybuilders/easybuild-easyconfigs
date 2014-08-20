@@ -42,7 +42,7 @@ class EB_ANSYS(EasyBlock):
     def __init__(self, *args, **kwargs):
         """Initialize ANSYS-specific variables."""
         super(EB_ANSYS, self).__init__(*args, **kwargs)
-        self.ansysver = "v%s" % ''.join(self.version.split('.'))
+        self.ansysver = "v%s" % ''.join(self.version.split('.')[0:2])
 
     def configure_step(self):
         """No configuration for ANSYS."""
