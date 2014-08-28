@@ -30,6 +30,8 @@ EasyBuild support for Trilinos, implemented as an easyblock
 import os
 import re
 
+from distutils.version import LooseVersion
+
 import easybuild.tools.toolchain as toolchain
 from easybuild.easyblocks.generic.cmakemake import CMakeMake
 from easybuild.framework.easyconfig import CUSTOM
@@ -225,9 +227,16 @@ class EB_Trilinos(CMakeMake):
 
         libs = [l for l in libs if not l in self.cfg['skip_exts']]
 
+        # teuchos was refactored in 11.2
+        if LooseVersion(self.version) >= LooseVersion("11.2") and  'Teuchos' in libs:
+            # remove it
+            libs = [l for l in libs if l is not "Teuchos"]
+            # add new libs
+            libs.extend(['teuchoscomm', 'teuchoscore', 'teuchosnumerics', 'teuchosparameterlist', 'teuchosremainder'])
+
         custom_paths = {
-                        'files':[os.path.join("lib", "lib%s.a" % x.lower()) for x in libs],
-                        'dirs':['bin', 'include']
-                       }
+            'files':[os.path.join("lib", "lib%s.a" % x.lower()) for x in libs],
+            'dirs':['bin', 'include']
+        }
 
         super(EB_Trilinos, self).sanity_check_step(custom_paths=custom_paths)
