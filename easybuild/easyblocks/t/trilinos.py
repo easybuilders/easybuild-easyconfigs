@@ -125,6 +125,9 @@ class EB_Trilinos(CMakeMake):
                 incdirs.append(os.path.join(suitesparse, lib, "Include"))
                 libdirs.append(os.path.join(suitesparse, lib, "Lib"))
                 libnames.append(lib.lower())
+            # add SuiteSparse config lib, it is in recent versions of suitesparse
+            libdirs.append(os.path.join(suitesparse, 'SuiteSparse_config'))
+            libnames.append('suitesparseconfig')
             self.cfg.update('configopts', '-DUMFPACK_INCLUDE_DIRS:PATH="%s"' % ';'.join(incdirs))
             self.cfg.update('configopts', '-DUMFPACK_LIBRARY_DIRS:PATH="%s"' % ';'.join(libdirs))
             self.cfg.update('configopts', '-DUMFPACK_LIBRARY_NAMES:STRING="%s"' % ';'.join(libnames))
@@ -144,7 +147,6 @@ class EB_Trilinos(CMakeMake):
             self.cfg.update('configopts', '-DSCALAPACK_INCLUDE_DIRS:PATH="%s"' % os.getenv('SCALAPACK_INC_DIR'))
             self.cfg.update('configopts', '-DSCALAPACK_LIBRARY_DIRS:PATH="%s;%s"' % (os.getenv('SCALAPACK_LIB_DIR'),
                                                                                     os.getenv('BLACS_LIB_DIR')))
-
         # PETSc
         petsc = get_software_root('PETSc')
         if petsc:
