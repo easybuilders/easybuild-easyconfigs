@@ -70,11 +70,19 @@ class EB_impi(IntelBase):
                 subdir = os.path.join(self.installdir, self.name, self.version)
                 self.log.debug("Moving contents of %s to %s" % (subdir, self.installdir))
                 try:
+                    # remove senseless symlinks, e.g. impi_5.0.1 and impi_latest
+                    majver = '.'.join(self.version.split('.')[:-1])
+                    for symlink in ['impi_%s' % majver, 'impi_latest']:
+                        symlink_fp = os.path.join(self.installdir, symlink)
+                        if os.path.exists(symlink_fp):
+                            os.remove(symlink_fp)
+                    # move contents of 'impi/<version>' dir to installdir
                     for fil in os.listdir(subdir):
-                        shutil.move(os.path.join(subdir, fil), os.path.join(self.installdir, fil))
-                    # remove now senseless symlinks, e.g. impi_5.0.1 and impi_latest
-                    os.remove(os.path.join(self.installdir, 'impi_%s' % '.'.join(self.version.split('.')[:-1])))
-                    os.remove(os.path.join(self.installdir, 'impi_latest'))
+                        source = os.path.join(subdir, fil)
+                        target = os.path.join(self.installdir, fil)
+                        self.log.debug("Moving %s to %s" % (source, target))
+                        shutil.move(source, target)
+                    shutil.rmtree(os.path.join(self.installdir, 'impi'))
                 except OSError, err:
                     self.log.error("Failed to move contents of %s to %s: %s" % (subdir, self.installdir, err))
         else:
