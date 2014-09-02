@@ -33,6 +33,7 @@ EasyBuild support for installing the Intel MPI library, implemented as an easybl
 """
 
 import os
+import shutil
 from distutils.version import LooseVersion
 
 from easybuild.easyblocks.generic.intelbase import IntelBase, ACTIVATION_NAME_2012, LICENSE_FILE_NAME_2012
@@ -62,13 +63,28 @@ class EB_impi(IntelBase):
                     'license_file_name': LICENSE_FILE_NAME_2012,
                 })
 
-            if LooseVersion(self.version) == LooseVersion('4.1.1.036'):
-                # impi v4.1.1 installer creates impi/<version> subdir itself, so specify parent install dir
-                silent_cfg_names_map.update({
-                    'install_dir': install_path(),
-                })
-
             super(EB_impi, self).install_step(silent_cfg_names_map=silent_cfg_names_map)
+
+            # impi v4.1.1 and v5.0.1 installers create impi/<version> subdir, so stuff needs to be moved afterwards
+            if LooseVersion(self.version) in map(LooseVersion, ['4.1.1.036', '5.0.1.035']):
+                subdir = os.path.join(self.installdir, self.name, self.version)
+                self.log.debug("Moving contents of %s to %s" % (subdir, self.installdir))
+                try:
+                    # remove senseless symlinks, e.g. impi_5.0.1 and impi_latest
+                    majver = '.'.join(self.version.split('.')[:-1])
+                    for symlink in ['impi_%s' % majver, 'impi_latest']:
+                        symlink_fp = os.path.join(self.installdir, symlink)
+                        if os.path.exists(symlink_fp):
+                            os.remove(symlink_fp)
+                    # move contents of 'impi/<version>' dir to installdir
+                    for fil in os.listdir(subdir):
+                        source = os.path.join(subdir, fil)
+                        target = os.path.join(self.installdir, fil)
+                        self.log.debug("Moving %s to %s" % (source, target))
+                        shutil.move(source, target)
+                    shutil.rmtree(os.path.join(self.installdir, 'impi'))
+                except OSError, err:
+                    self.log.error("Failed to move contents of %s to %s: %s" % (subdir, self.installdir, err))
         else:
             # impi up until version 4.0.0.x uses custom installation procedure.
             silent = \
