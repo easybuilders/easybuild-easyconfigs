@@ -73,10 +73,10 @@ class EB_impi(IntelBase):
                     for fil in os.listdir(subdir):
                         shutil.move(os.path.join(subdir, fil), os.path.join(self.installdir, fil))
                     # remove now senseless symlinks, e.g. impi_5.0.1 and impi_latest
-                    shutil.rmtree(os.path.join(self.installdir, 'impi_%s' % '.'.join(self.version.split('.')[:-1])))
-                    shutil.rmtree(os.path.join(self.installdir, 'impi_latest'))
+                    os.remove(os.path.join(self.installdir, 'impi_%s' % '.'.join(self.version.split('.')[:-1])))
+                    os.remove(os.path.join(self.installdir, 'impi_latest'))
                 except OSError, err:
-                    self.log.error("Failed to move contents of %s to %s" % (subdir, self.installdir))
+                    self.log.error("Failed to move contents of %s to %s: %s" % (subdir, self.installdir, err))
         else:
             # impi up until version 4.0.0.x uses custom installation procedure.
             silent = \
