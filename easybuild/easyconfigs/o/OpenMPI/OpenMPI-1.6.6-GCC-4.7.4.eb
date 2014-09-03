@@ -1,20 +1,20 @@
 name = 'OpenMPI'
-version = "1.7.3"
+version = "1.6.6"
 
 homepage = 'http://www.open-mpi.org/'
 description = """The Open MPI Project is an open source MPI-2 implementation."""
 
-toolchain = {'name': 'gcccuda', 'version': '2.6.10'}
+toolchain = {'name': 'GCC', 'version': '4.7.4'}
 
 sources = [SOURCELOWER_TAR_GZ]
 source_urls = ['http://www.open-mpi.org/software/ompi/v%(version_major_minor)s/downloads']
 
-dependencies = [('hwloc', '1.8')]
+dependencies = [('hwloc', '1.9')]
 
 configopts = '--with-threads=posix --enable-shared --enable-mpi-thread-multiple --with-openib '
 configopts += '--enable-mpirun-prefix-by-default '  # suppress failure modes in relation to mpirun path
 configopts += '--with-hwloc=$EBROOTHWLOC '  # hwloc support
-configopts += '--with-cuda=$CUDA_HOME '             # CUDA-aware build; N.B. --disable-dlopen is incompatible
+configopts += '--disable-dlopen '  # statically link component, don't do dynamic loading
 
 # needed for --with-openib
 if OS_NAME in ['debian', 'ubuntu']:
@@ -26,6 +26,7 @@ else:
 sanity_check_paths = {
     'files': ["bin/%s" % binfile for binfile in ["ompi_info", "opal_wrapper", "orterun"]] +
              ["lib/lib%s.%s" % (libfile, shared_lib_ext) for libfile in ["mpi_cxx", "mpi_mpifh",
+                                                                         "mpi", "ompitrace", "open-pal",
                                                                          "mpi", "ompitrace", "open-pal",
                                                                          "open-rte", "vt", "vt-hyb",
                                                                          "vt-mpi", "vt-mpi-unify"]] +
