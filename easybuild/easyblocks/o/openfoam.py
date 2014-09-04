@@ -77,14 +77,15 @@ class EB_OpenFOAM(EasyBlock):
         openfoam_installdir = os.path.join(self.installdir, self.openfoamdir)
         if not os.path.exists(openfoam_installdir):
             self.log.warning("Creating expected directory %s, and moving everything there" % openfoam_installdir)
-            mkdir(openfoam_installdir)
             try:
+                mkdir(openfoam_installdir)
                 for fil in os.listdir(self.installdir):
                     if fil != self.openfoamdir:
                         source = os.path.join(self.installdir, fil)
                         target = os.path.join(openfoam_installdir, fil)
                         self.log.debug("Moving %s to %s" % (source, target))
                         shutil.move(source, target)
+                os.chdir(openfoam_installdir)
             except OSError, err:
                 self.log.error("Failed to move all files to %s: %s" % (openfoam_installdir, err))
 
