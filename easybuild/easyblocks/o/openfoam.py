@@ -176,15 +176,15 @@ class EB_OpenFOAM(EasyBlock):
 
         # fix permissions of OpenFOAM dir
         fullpath = os.path.join(self.installdir, self.openfoamdir)
-        adjust_permissions(fullpath, stat.S_IROTH, add=True, recursive=True)
-        adjust_permissions(fullpath, stat.S_IXOTH, add=True, recursive=True, onlydirs=True)
+        adjust_permissions(fullpath, stat.S_IROTH, add=True, recursive=True, ignore_errors=True)
+        adjust_permissions(fullpath, stat.S_IXOTH, add=True, recursive=True, onlydirs=True, ignore_errors=True)
 
         # fix permissions of ThirdParty dir and subdirs (also for 2.x)
         # if the thirdparty tarball is installed
         fullpath = os.path.join(self.installdir, self.thrdpartydir)
         if os.path.exists(fullpath):
-            adjust_permissions(fullpath, stat.S_IROTH, add=True, recursive=True)
-            adjust_permissions(fullpath, stat.S_IXOTH, add=True, recursive=True, onlydirs=True)
+            adjust_permissions(fullpath, stat.S_IROTH, add=True, recursive=True, ignore_errors=True)
+            adjust_permissions(fullpath, stat.S_IXOTH, add=True, recursive=True, onlydirs=True, ignore_errors=True)
 
     def sanity_check_step(self):
         """Custom sanity check for OpenFOAM"""
