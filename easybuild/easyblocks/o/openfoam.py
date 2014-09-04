@@ -33,13 +33,14 @@ EasyBuild support for building and installing OpenFOAM, implemented as an easybl
 @author: Xavier Besseron (University of Luxembourg)
 """
 import os
+import shutil
 import stat
 from distutils.version import LooseVersion
 
 import easybuild.tools.environment as env
 import easybuild.tools.toolchain as toolchain
 from easybuild.framework.easyblock import EasyBlock
-from easybuild.tools.filetools import adjust_permissions, run_cmd, run_cmd_qa
+from easybuild.tools.filetools import adjust_permissions, mkdir, run_cmd, run_cmd_qa
 from easybuild.tools.modules import get_software_root
 
 
@@ -75,7 +76,17 @@ class EB_OpenFOAM(EasyBlock):
         # if not, the build scripts (e.g., the etc/bashrc being sourced) will likely fail
         openfoam_installdir = os.path.join(self.installdir, self.openfoamdir)
         if not os.path.exists(openfoam_installdir):
-            self.log.error("Expected directory %s is not there" % openfoam_installdir)
+            self.log.warning("Creating expected directory %s, and moving everything there" % openfoam_installdir)
+            mkdir(openfoam_installdir)
+            try:
+                for fil in os.listdir(self.installdir):
+                    if fil != self.openfoamdir:
+                        source = os.path.join(self.installdir, fil)
+                        target = os.path.join(openfoam_installdir, fil)
+                        self.log.debug("Moving %s to %s" % (source, target))
+                        shutil.move(source, target)
+            except OSError, err:
+                self.log.error("Failed to move all files to %s: %s" % (openfoam_installdir, err))
 
     def configure_step(self):
         """Configure OpenFOAM build by setting appropriate environment variables."""
