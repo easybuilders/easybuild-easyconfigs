@@ -59,6 +59,24 @@ class EB_OpenFOAM(EasyBlock):
         self.openfoamdir = None
         self.thrdpartydir = None
 
+        if 'extend' in self.name.lower():
+            if LooseVersion(self.version) >= LooseVersion('3.0'):
+                self.openfoamdir = 'foam-extend-%s' % self.version
+            else:
+                self.openfoamdir = 'OpenFOAM-%s-ext' % self.version
+        else:
+            self.openfoamdir = '-'.join([self.name, '-'.join(self.version.split('-')[:2])])
+        self.log.debug("openfoamdir: %s" % self.openfoamdir)
+
+    def extract_step(self):
+        """Extract sources as expected by the OpenFOAM(-Extend) build scripts."""
+        super(EB_OpenFOAM, self).extract_step()
+        # make sure that the expected subdir is really there after extracting
+        # if not, the build scripts (e.g., the etc/bashrc being sourced) will likely fail
+        openfoam_installdir = os.path.join(self.installdir, self.openfoamdir)
+        if not os.path.exists(openfoam_installdir):
+            self.log.error("Expected directory %s is not there" % openfoam_installdir)
+
     def configure_step(self):
         """Configure OpenFOAM build by setting appropriate environment variables."""
 
@@ -99,15 +117,6 @@ class EB_OpenFOAM(EasyBlock):
 
         # parallel build spec
         env.setvar("WM_NCOMPPROCS", str(self.cfg['parallel']))
-
-        if 'extend' in self.name.lower():
-            if LooseVersion(self.version) >= LooseVersion('3.0'):
-                self.openfoamdir = 'foam-extend-%s' % self.version
-            else:
-                self.openfoamdir = 'OpenFOAM-%s-ext' % self.version
-        else:
-            self.openfoamdir = '-'.join([self.name, '-'.join(self.version.split('-')[:2])])
-        self.log.debug("openfoamdir: %s" % self.openfoamdir)
 
         # make sure lib/include dirs for dependencies are found
         openfoam_extend_v3 = 'extend' in self.name.lower() and LooseVersion(self.version) >= LooseVersion('3.0')
