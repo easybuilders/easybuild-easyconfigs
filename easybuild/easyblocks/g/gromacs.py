@@ -135,20 +135,13 @@ class EB_GROMACS(CMakeMake):
         if self.toolchain.options.get('usempi', None):
             suff = '_mpi'
 
-        # check for a handful of binaries that should be there
+        # check for a handful of binaries/libraries that should be there
+        libnames = ['gromacs']
         if LooseVersion(self.version) < LooseVersion('5.0'):
-            self.log.info("Version is < 5.0")
-            custom_paths = {
-                'files': ['bin/%s%s' % (binary, suff) for binary in ['editconf', 'g_lie', 'genbox', 'genconf', 'mdrun']] +
-                         ['lib/lib%s%s.a' % (lib, suff) for lib in ['gmxana', 'gmx', 'gmxpreprocess', 'md']],
-                'dirs': ['include/gromacs', 'lib/pkgconfig'],
-            }
-        else:
-            self.log.info("Version is >= 5.0")
-            custom_paths = {
-                'files': ['bin/%s%s' % (binary, suff) for binary in ['editconf', 'g_lie', 'genbox', 'genconf', 'mdrun']] +
-                         ['lib64/lib%s%s.a' % (lib, suff) for lib in ['gromacs']],
-                'dirs': ['include/gromacs', 'lib64/pkgconfig'],
-            }
-
+            libnames = ['gmxana', 'gmx', 'gmxpreprocess', 'md']
+        custom_paths = {
+            'files': ['bin/%s%s' % (binary, suff) for binary in ['editconf', 'g_lie', 'genbox', 'genconf', 'mdrun']] +
+                     ['lib/lib%s%s.a' % (lib, suff) for lib in libnames],
+            'dirs': ['include/gromacs', 'lib/pkgconfig'],
+        }
         super(EB_GROMACS, self).sanity_check_step(custom_paths=custom_paths)
