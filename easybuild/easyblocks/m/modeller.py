@@ -35,7 +35,7 @@ class EB_Modeller(EasyBlock):
     def install_step(self):
         """Interactive install of Modeller."""
 
-        cmd = "%s/Install" % (self.cfg['start_dir'])
+        cmd = "%s/Install" % (self.cfg'start_dir')
 
         # by default modeller tries to install to $HOME/bin/modeller9.13
         # get this path to use it in the question/answer
@@ -44,12 +44,12 @@ class EB_Modeller(EasyBlock):
         default_install_path = ''.join(('[',default_install_path,']:'))
 
         qa = {
-              # installer will autodetect the right arch. [3] = x86_64
-              'Select the type of your computer from the list above [3]:': '',
-              default_install_path: self.installdir,
-              'http://salilab.org/modeller/registration.html:': self.cfg["LICENSEKEY"],
-              'Press <Enter> to begin the installation:': '',
-              'Press <Enter> to continue:': ''
+             # installer will autodetect the right arch. [3] = x86_64
+             'Select the type of your computer from the list above [3]:': '',
+             default_install_path: self.installdir,
+             'http://salilab.org/modeller/registration.html:': self.cfg["LICENSEKEY"],
+             'Press <Enter> to begin the installation:': '',
+             'Press <Enter> to continue:': ''
              }
 
         run_cmd_qa(cmd, qa, log_all=True, simple=True)
