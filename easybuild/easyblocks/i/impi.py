@@ -38,7 +38,7 @@ from distutils.version import LooseVersion
 
 from easybuild.easyblocks.generic.intelbase import IntelBase, ACTIVATION_NAME_2012, LICENSE_FILE_NAME_2012
 from easybuild.tools.filetools import run_cmd
-from easybuild.tools.config import install_path
+
 
 class EB_impi(IntelBase):
     """
@@ -51,12 +51,13 @@ class EB_impi(IntelBase):
         - create silent cfg file
         - execute command
         """
-        if LooseVersion(self.version) >= LooseVersion('4.0.1'):
+        impiver = LooseVersion(self.version)
+        if impiver >= LooseVersion('4.0.1'):
             # impi starting from version 4.0.1.x uses standard installation procedure.
 
             silent_cfg_names_map = {}
 
-            if LooseVersion(self.version) < LooseVersion('4.1.1'):
+            if impiver < LooseVersion('4.1.1'):
                 # since impi v4.1.1, silent.cfg has been slightly changed to be 'more standard'
                 silent_cfg_names_map.update({
                     'activation_name': ACTIVATION_NAME_2012,
@@ -66,7 +67,7 @@ class EB_impi(IntelBase):
             super(EB_impi, self).install_step(silent_cfg_names_map=silent_cfg_names_map)
 
             # impi v4.1.1 and v5.0.1 installers create impi/<version> subdir, so stuff needs to be moved afterwards
-            if LooseVersion(self.version) in map(LooseVersion, ['4.1.1.036', '5.0.1.035']):
+            if impiver == LooseVersion('4.1.1.036') or impiver >= LooseVersion('5.0.1.035'):
                 subdir = os.path.join(self.installdir, self.name, self.version)
                 self.log.debug("Moving contents of %s to %s" % (subdir, self.installdir))
                 try:
@@ -108,7 +109,7 @@ PROCEED_WITHOUT_PYTHON=yes
 AUTOMOUNTED_CLUSTER=yes
 EULA=accept
 
-""" % {'lic':self.license_file, 'ins':self.installdir}
+""" % {'lic': self.license_file, 'ins': self.installdir}
 
             # already in correct directory
             silentcfg = os.path.join(os.getcwd(), "silent.cfg")
