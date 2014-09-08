@@ -51,12 +51,13 @@ class EB_impi(IntelBase):
         - create silent cfg file
         - execute command
         """
-        if LooseVersion(self.version) >= LooseVersion('4.0.1'):
+        impiver = LooseVersion(self.version)
+        if impiver >= LooseVersion('4.0.1'):
             # impi starting from version 4.0.1.x uses standard installation procedure.
 
             silent_cfg_names_map = {}
 
-            if LooseVersion(self.version) < LooseVersion('4.1.1'):
+            if impiver < LooseVersion('4.1.1'):
                 # since impi v4.1.1, silent.cfg has been slightly changed to be 'more standard'
                 silent_cfg_names_map.update({
                     'activation_name': ACTIVATION_NAME_2012,
@@ -66,7 +67,6 @@ class EB_impi(IntelBase):
             super(EB_impi, self).install_step(silent_cfg_names_map=silent_cfg_names_map)
 
             # impi v4.1.1 and v5.0.1 installers create impi/<version> subdir, so stuff needs to be moved afterwards
-            impiver = LooseVersion(self.version)
             if impiver == LooseVersion('4.1.1.036') or impiver >= LooseVersion('5.0.1.035'):
                 subdir = os.path.join(self.installdir, self.name, self.version)
                 self.log.debug("Moving contents of %s to %s" % (subdir, self.installdir))
