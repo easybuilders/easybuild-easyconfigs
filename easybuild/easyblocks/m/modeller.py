@@ -9,8 +9,8 @@ EasyBuild support for installing Modeller, implemented as an easyblock
 import os
 
 from easybuild.framework.easyblock import EasyBlock
-from easybuild.tools.filetools import run_cmd_qa
 from easybuild.framework.easyconfig import CUSTOM
+from easybuild.tools.filetools import run_cmd_qa
 
 
 class EB_Modeller(EasyBlock):
