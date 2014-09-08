@@ -48,7 +48,7 @@ class EB_Modeller(EasyBlock):
     def install_step(self):
         """Interactive install of Modeller."""
 
-        cmd = "%s/Install" % (self.cfg'start_dir')
+        cmd = "%s/Install" % self.cfg['start_dir']
 
         # by default modeller tries to install to $HOME/bin/modeller9.13
         # get this path to use it in the question/answer
@@ -64,3 +64,20 @@ class EB_Modeller(EasyBlock):
              }
 
         run_cmd_qa(cmd, qa, log_all=True, simple=True)
+
+    def sanity_check_step(self):
+        """Custom sanity check for Modeller."""
+        custom_paths = {
+            'files': ["bin/mod%s" % self.version, "bin/modpy.sh", "bin/modslave.py"],
+            'dirs': ["doc", "lib", "examples"],
+        }
+        super(EB_Modeller, self).sanity_check_step(custom_paths=custom_paths)
+
+    def make_module_req_guess(self):
+        """Custom guesses for environment variables (PYTHONPATH, LD_LIBRARY_PATH) for modeller."""
+        guesses = super(EB_Modeller, self).make_module_req_guess()
+        guesses.update({
+            'PYTHONPATH': ['lib/x86_64-intel8/python2.5'],
+            'LD_LIBRARY_PATH': ['lib/x86_64-intel8'],
+        })
+        return guesses
