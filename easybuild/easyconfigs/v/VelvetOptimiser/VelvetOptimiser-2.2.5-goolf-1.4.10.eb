@@ -1,0 +1,53 @@
+# This file is an EasyBuild reciPY as per https://github.com/hpcugent/easybuild
+# Author: Pablo Escobar Lopez
+# Swiss Institute of Bioinformatics
+# Biozentrum - University of Basel
+
+easyblock = "Tarball"
+
+name = 'VelvetOptimiser'
+version = '2.2.5'
+
+homepage = 'http://bioinformatics.net.au/software.velvetoptimiser.shtml'
+description = """  VelvetOptimiser is a multi-threaded Perl script for automatically 
+ optimising the three primary parameter options (K, -exp_cov, -cov_cutoff) for the Velvet 
+ de novo sequence assembler. """
+
+toolchain = {'name': 'dummy', 'version': 'dummy'}
+
+source_urls = ['https://github.com/Victorian-Bioinformatics-Consortium/VelvetOptimiser/archive/']
+sources = ['%(version)s.tar.gz']
+
+perl = 'Perl'
+perlver = '5.16.3'
+versionsuffix = '-%s-%s' % (perl, perlver)
+
+deps_toolchain = 'goolf'
+deps_toolchain_ver = '1.4.10'
+
+dependencies = [
+    ('Velvet', '1.2.09', '', (deps_toolchain, deps_toolchain_ver)), 
+    (perl, perlver, '', (deps_toolchain, deps_toolchain_ver)),
+    ('BioPerl', '1.6.1', versionsuffix, (deps_toolchain, deps_toolchain_ver))
+]
+
+# create a "bin" folder in install_dir
+postinstallcmds = ["mkdir %(installdir)s/bin"]
+# mv VelvetOptimiser.pl to "bin" folder
+postinstallcmds += ["mv %(installdir)s/VelvetOptimiser.pl %(installdir)s/bin/"]
+# replace the hardcoded /usr/bin/perl in the main script
+postinstallcmds += ["sed -i -e 's|/usr/bin/perl|/usr/bin/env\ perl|' %(installdir)s/bin/VelvetOptimiser.pl"]
+
+# We require at least EasyBuild-1.13 to have postinstallcmds feature
+easybuild_version = '1.13.0'
+
+sanity_check_paths = {
+    'files': ["bin/VelvetOptimiser.pl", "VelvetOpt/Assembly.pm"],
+    'dirs': [""]
+}
+
+# define PERL5LIB so included perl libs are found
+modextrapaths = {'PERL5LIB': ['']}
+
+moduleclass = 'bio'
+
