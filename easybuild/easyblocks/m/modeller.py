@@ -58,7 +58,7 @@ class EB_Modeller(EasyBlock):
              # installer will autodetect the right arch. [3] = x86_64
              'Select the type of your computer from the list above [3]:': '',
              default_install_path: self.installdir,
-             'http://salilab.org/modeller/registration.html:': self.cfg["license_key"],
+             'http://salilab.org/modeller/registration.html:': self.cfg["key"],
              'Press <Enter> to begin the installation:': '',
              'Press <Enter> to continue:': ''
              }
