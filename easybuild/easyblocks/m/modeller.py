@@ -1,9 +1,30 @@
-# This file is an EasyBuild reciPY as per https://github.com/hpcugent/easybuild
-# Author: Pablo Escobar Lopez
-# Swiss Institute of Bioinformatics
-# Biozentrum - University of Basel
+##
+# Copyright 2014 Ghent University
+#
+# This file is part of EasyBuild,
+# originally created by the HPC team of the University of Ghent (http://ugent.be/hpc).
+#
+# http://github.com/hpcugent/easybuild
+#
+# EasyBuild is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation v2.
+#
+# EasyBuild is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
+#
+# This work implements a part of the HPCBIOS project and is a component of the policy:
+# http://hpcbios.readthedocs.org/en/latest/HPCBIOS_2012-94.html
+##
 """
 EasyBuild support for installing Modeller, implemented as an easyblock
+
+@author: Pablo Escobar Lopez (SIB - University of Basel)
 """
 
 import os
@@ -15,14 +36,6 @@ from easybuild.tools.filetools import run_cmd_qa
 
 class EB_Modeller(EasyBlock):
     """Support for installing Modeller."""
-    
-    @staticmethod
-    def extra_options():
-        """Add extra easyconfig parameters custom to Modeller"""
-        extra_vars = {
-            'LICENSEKEY': ["", "Specify the modeller license key", CUSTOM],
-        }
-        return EasyBlock.extra_options(extra_vars)
 
     def configure_step(self):
         """ Skip configuration step """
@@ -45,7 +58,7 @@ class EB_Modeller(EasyBlock):
              # installer will autodetect the right arch. [3] = x86_64
              'Select the type of your computer from the list above [3]:': '',
              default_install_path: self.installdir,
-             'http://salilab.org/modeller/registration.html:': self.cfg["LICENSEKEY"],
+             'http://salilab.org/modeller/registration.html:': self.cfg["license_key"],
              'Press <Enter> to begin the installation:': '',
              'Press <Enter> to continue:': ''
              }
