@@ -76,8 +76,21 @@ class EB_Modeller(EasyBlock):
     def make_module_req_guess(self):
         """Custom guesses for environment variables (PYTHONPATH, LD_LIBRARY_PATH) for modeller."""
         guesses = super(EB_Modeller, self).make_module_req_guess()
+
+        libdirs = os.listdir(os.path.join(self.installdir, 'lib'))
+        if len(libdirs) == 1:
+            libdir = libdirs[0]
+        else:
+            self.log.error("Failed to isolate a single libdir from list of 'lib' subdirectories: %s" % libdirs)
+
+        py2libdirs = [d for d in os.listdir(os.path.join(self.installdir, 'lib', libdir)) if d.startswith('python2')]
+        if len(py2libdirs) >= 1:
+            py2libdir = py2libdirs[-1]
+        else:
+            self.log.error("Failed to isolate latest Python lib dir from list %s" % py2libdirs)
+
         guesses.update({
-            'PYTHONPATH': ['lib/x86_64-intel8/python2.5'],
-            'LD_LIBRARY_PATH': ['lib/x86_64-intel8'],
+            'PYTHONPATH': [os.path.join('lib', libdir, py2libdir)],
+            'LD_LIBRARY_PATH': [os.path.join('lib', libdir)],
         })
         return guesses
