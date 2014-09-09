@@ -61,7 +61,7 @@ class EB_NAMD(MakeCp):
         else:
             charm_arch_comps = {
                 toolchain.GCC: 'gcc',
-                toolchain.INTELCOMP: 'icc8',
+                toolchain.INTELCOMP: 'icc',
             }
             charm_arch_comp = charm_arch_comps.get(comp_fam, None)
         namd_comps = {
