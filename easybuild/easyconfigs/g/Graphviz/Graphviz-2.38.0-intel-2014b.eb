@@ -1,26 +1,58 @@
-name = 'Grapviz'
+name = 'Graphviz'
 version = '2.38.0'
 
-homepage = 'http://www.example.com'
-description = """TEMPLATE DESCRIPTION"""
+homepage = 'http://www.graphviz.org/'
+description = """Graphviz is open source graph visualization software. Graph visualization
+ is a way of representing structural information as diagrams of
+ abstract graphs and networks. It has important applications in networking,
+ bioinformatics,  software engineering, database and web design, machine learning,
+ and in visual interfaces for other technical domains."""
 
-# toolchain name should be 'TEMPLATE' if this is a template, so EasyBuild knows and is willing to use it as a template
-toolchain = {'name': 'TEMPLATE', 'version': 'TK_VERSION'}
-toolchainopts = {}  # toolchain options, e.g. opt, pic, usempi, optarch, ...
+toolchain = {'name': 'intel', 'version': '2014b'}
 
-# For sources line to work correctly with --try-software-version, you MUST employ %s OR use a construct like SOURCE_TAR_GZ
-sources = ['%(name)s-%(version)s.tar.gz']
-source_urls = ['http://www.example.com']
+source_urls = ['http://www.graphviz.org/pub/graphviz/stable/SOURCES/']
+sources = [SOURCELOWER_TAR_GZ]
 
-patches = []
+python = "Python"
+pythonversion = '2.7.8'
 
-dependencies = []
+dependencies = [
+    ('cairo', '1.12.14'),
+    ('expat', '2.1.0'),
+    ('freetype', '2.5.3'),
+    ('fontconfig', '2.11.1'),
+    ('Ghostscript', '9.14'),
+    ('GLib', '2.40.0'),
+    ('GTS', '0.7.6'),
+    ('Java', '1.7.0_60', '', True),
+    ('libpng', '1.6.12'),
+    ('Pango', '1.36.7'),
+    ('Perl', '5.20.0'),
+    (python, pythonversion),
+    ('Qt', '4.8.6'),
+    ('SWIG', '3.0.2', '-%s-%s' % (python, pythonversion)),
+    ('Tcl', '8.6.2'),
+    ('zlib', '1.2.8'),
+]
 
-# The sanity test MUST be tuned before going production and submitting your contribution to upstream git repositories
+builddependencies = [
+    ('M4', '1.4.17'),
+]
+
+patches = [
+   'Graphviz-2.38.0_icc_vmalloc.patch',
+   'Graphviz-2.38.0_icc_sfio.patch',
+]
+
+configopts = '--enable-guile=no --enable-lua=no --enable-ocaml=no '
+configopts += '--enable-r=no --enable-ruby=no '
+
+prebuildopts = 'qmake -o cmd/gvedit/qMakefile cmd/gvedit/gvedit.pro && '
+
 sanity_check_paths = {
-    'files': [],
-    'dirs': ["."]
+    'files': ['bin/cluster', 'bin/dot', 'bin/gvmap',
+              'lib/libcdt.so', 'lib/libgvc.so', 'lib/libxdot.so'],
+    'dirs': ['include']
 }
 
-# You SHOULD change the following line; Kindly consult other easyconfigs for possible options
-moduleclass = 'base'
+moduleclass = 'vis'
