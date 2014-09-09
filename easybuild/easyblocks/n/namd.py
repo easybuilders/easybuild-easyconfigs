@@ -83,7 +83,8 @@ class EB_NAMD(MakeCp):
 
         extract_file(charm_tarballs[0], os.getcwd())
 
-        cmd = "./build charm++ %s %s -j%s" % (self.cfg['charm_arch'], self.cfg['charm_opts'], self.cfg['parallel'])
+        tup = (self.cfg['charm_arch'], self.cfg['charm_opts'], self.cfg['parallel'], os.environ['CXXFLAGS'])
+        cmd = "./build charm++ %s %s -j%s %s -DMPICH_IGNORE_CXX_SEEK" % tup
         charm_subdir = '.'.join(os.path.basename(charm_tarballs[0]).split('.')[:-1])
         self.log.debug("Building Charm++ using cmd '%s' in '%s'" % (cmd, charm_subdir))
         run_cmd(cmd, path=charm_subdir)
