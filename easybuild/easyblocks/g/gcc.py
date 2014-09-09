@@ -1,5 +1,5 @@
 ##
-# Copyright 2009-2013 Ghent University
+# Copyright 2009-2014 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -46,7 +46,7 @@ from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.filetools import run_cmd
 from easybuild.tools.modules import get_software_root
-from easybuild.tools.systemtools import check_os_dependency, get_kernel_name, get_shared_lib_ext, get_platform_name
+from easybuild.tools.systemtools import check_os_dependency, get_kernel_name, get_os_name, get_shared_lib_ext, get_platform_name
 
 
 class EB_GCC(ConfigureMake):
@@ -55,14 +55,6 @@ class EB_GCC(ConfigureMake):
     Uses system compiler for initial build, then bootstraps.
     """
 
-    def __init__(self, *args, **kwargs):
-        super(EB_GCC, self).__init__(*args, **kwargs)
-
-        self.stagedbuild = False
-
-        # unset some environment variables that are known to may cause nasty build errors when bootstrapping
-        self.cfg.update('unwanted_env_vars', ['CPATH', 'C_INCLUDE_PATH', 'CPLUS_INCLUDE_PATH', 'OBJC_INCLUDE_PATH', 'LIBRARY_PATH'])
-
     @staticmethod
     def extra_options():
         extra_vars = {
@@ -70,11 +62,30 @@ class EB_GCC(ConfigureMake):
             'withlto': [True, "Enable LTO support", CUSTOM],
             'withcloog': [False, "Build GCC with CLooG support", CUSTOM],
             'withppl': [False, "Build GCC with PPL support", CUSTOM],
+            'withisl': [False, "Build GCC with ISL support", CUSTOM],
             'pplwatchdog': [False, "Enable PPL watchdog", CUSTOM],
-            'clooguseisl': [False, "Use ISL with CLooG or not (use PPL otherwise)", CUSTOM],
+            'clooguseisl': [False, "Use ISL with CLooG or not", CUSTOM],
             'multilib': [False, "Build multilib gcc (both i386 and x86_64)", CUSTOM],
         }
         return ConfigureMake.extra_options(extra_vars)
+
+    def __init__(self, *args, **kwargs):
+        super(EB_GCC, self).__init__(*args, **kwargs)
+
+        self.stagedbuild = False
+
+        if self.version >= LooseVersion("4.8.0") and self.cfg['clooguseisl'] and not self.cfg['withisl']:
+            self.log.error("Using ISL bundled with CLooG is unsupported in >=GCC-4.8.0. Use a seperate ISL: set withisl=True")
+
+        # I think ISL without CLooG has no purpose in GCC...
+        if self.cfg['withisl'] and not self.cfg['withcloog']:
+            self.log.error("Activating ISL without CLooG is pointless")
+
+        # unset some environment variables that are known to may cause nasty build errors when bootstrapping
+        self.cfg.update('unwanted_env_vars', ['CPATH', 'C_INCLUDE_PATH', 'CPLUS_INCLUDE_PATH', 'OBJC_INCLUDE_PATH'])
+        # ubuntu needs the LIBRARY_PATH env var to work apparently (#363)
+        if get_os_name() not in ['ubuntu', 'debian']:
+            self.cfg.update('unwanted_env_vars', ['LIBRARY_PATH'])
 
     def create_dir(self, dirname):
         """
@@ -93,81 +104,88 @@ class EB_GCC(ConfigureMake):
         """
         Prepare extra (optional) source directories, so GCC will build these as well.
         """
+        if LooseVersion(self.version) >= LooseVersion('4.5'):
+            known_stages = ["stage1", "stage2", "stage3"]
+            if stage not in known_stages:
+                self.log.error("Incorrect argument for prep_extra_src_dirs, should be one of: %s" % known_stages)
 
-        known_stages = ["stage1", "stage2", "stage3"]
-        if not stage in known_stages:
-            self.log.error("Incorrect argument for prep_extra_src_dirs, should be one of: %s" % known_stages)
+            configopts = ''
+            if stage == "stage2":
+                # no MPFR/MPC needed in stage 2
+                extra_src_dirs = ["gmp"]
+            else:
+                extra_src_dirs = ["gmp", "mpfr", "mpc"]
 
-        configopts = ''
-        if stage == "stage2":
-            # no MPFR/MPC needed in stage 2
-            extra_src_dirs = ["gmp"]
+            # list of the extra dirs that are needed depending on the 'with%s' option
+            # the order is important: keep CLooG last!
+            self.with_dirs = ["isl", "ppl", "cloog"]
+
+            # add optional ones that were selected (e.g. CLooG, PPL, ...)
+            for x in self.with_dirs:
+                if self.cfg['with%s' % x]:
+                    extra_src_dirs.append(x)
+
+            # see if modules are loaded
+            # if module is available, just use the --with-X GCC configure option
+            for extra in copy(extra_src_dirs):
+                envvar = get_software_root(extra)
+                if envvar:
+                    configopts += " --with-%s=%s" % (extra, envvar)
+                    extra_src_dirs.remove(extra)
+                elif extra in self.with_dirs and stage in ["stage1", "stage3"]:
+                    # building CLooG or PPL or ISL requires a recent compiler
+                    # our best bet is to do a 3-staged build of GCC, and
+                    # build CLooG/PPL/ISL with the GCC we're building in stage 2
+                    # then (bootstrap) build GCC in stage 3
+                    # also, no need to stage cloog/ppl/isl in stage3 (may even cause troubles)
+                    self.stagedbuild = True
+                    extra_src_dirs.remove(extra)
+
+            # try and find source directories with given prefixes
+            # these sources should be included in list of sources in .eb spec file,
+            # so EasyBuild can unpack them in the build dir
+            found_src_dirs = []
+            versions = {}
+            names = {}
+            all_dirs = os.listdir(self.builddir)
+            for d in all_dirs:
+                for sd in extra_src_dirs:
+                    if d.startswith(sd):
+                        found_src_dirs.append({
+                            'source_dir': d,
+                            'target_dir': sd
+                        })
+                        # expected format: get_name[-subname]-get_version
+                        ds = os.path.basename(d).split('-')
+                        name = '-'.join(ds[0:-1])
+                        names.update({sd: name})
+                        ver = ds[-1]
+                        versions.update({sd: ver})
+
+            # we need to find all dirs specified, or else...
+            if not len(found_src_dirs) == len(extra_src_dirs):
+                self.log.error("Couldn't find all source dirs %s: found %s from %s" % (extra_src_dirs, found_src_dirs, all_dirs))
+
+            # copy to a dir with name as expected by GCC build framework
+            for d in found_src_dirs:
+                src = os.path.join(self.builddir, d['source_dir'])
+                if target_prefix:
+                    dst = os.path.join(target_prefix, d['target_dir'])
+                else:
+                    dst = os.path.join(self.cfg['start_dir'], d['target_dir'])
+                if not os.path.exists(dst):
+                    try:
+                        shutil.copytree(src, dst)
+                    except OSError, err:
+                        self.log.error("Failed to copy src %s to dst %s: %s" % (src, dst, err))
+                    self.log.debug("Copied %s to %s, so GCC can build %s" % (src, dst, d['target_dir']))
+                else:
+                    self.log.debug("No need to copy %s to %s, it's already there." % (src, dst))
         else:
-            extra_src_dirs = ["gmp", "mpfr", "mpc"]
-
-        # add optional ones that were selected (e.g. CLooG, PPL, ...)
-        for x in ["cloog", "ppl"]:
-            if self.cfg['with%s' % x]:
-                extra_src_dirs.append(x)
-
-        # see if modules are loaded
-        # if module is available, just use the --with-X GCC configure option
-        for extra in copy(extra_src_dirs):
-            envvar = get_software_root(extra)
-            if envvar:
-                configopts += " --with-%s=%s" % (extra, envvar)
-                extra_src_dirs.remove(extra)
-            elif extra in ["cloog", "ppl"] and stage in ["stage1", "stage3"]:
-                # building CLooG or PPL requires a recent compiler
-                # our best bet is to do a 3-staged build of GCC, and
-                # build CLooG/PPL with the GCC we're building in stage 2
-                # then (bootstrap) build GCC in stage 3
-                # also, no need to stage cloog/ppl in stage3 (may even cause troubles)
-                self.stagedbuild = True
-                extra_src_dirs.remove(extra)
-
-        # try and find source directories with given prefixes
-        # these sources should be included in list of sources in .eb spec file,
-        # so EasyBuild can unpack them in the build dir
-        found_src_dirs = []
-        versions = {}
-        names = {}
-        all_dirs = os.listdir(self.builddir)
-        for d in all_dirs:
-            for sd in extra_src_dirs:
-                if d.startswith(sd):
-                    found_src_dirs.append({
-                        'source_dir': d,
-                        'target_dir': sd
-                    })
-                    # expected format: get_name[-subname]-get_version
-                    ds = os.path.basename(d).split('-')
-                    name = '-'.join(ds[0:-1])
-                    names.update({sd: name})
-                    ver = ds[-1]
-                    versions.update({sd: ver})
-
-        # we need to find all dirs specified, or else...
-        if not len(found_src_dirs) == len(extra_src_dirs):
-            self.log.error("Couldn't find all source dirs %s: found %s from %s" % (extra_src_dirs, found_src_dirs, all_dirs))
-
-        # copy to a dir with name as expected by GCC build framework
-        for d in found_src_dirs:
-            src = os.path.join(self.builddir, d['source_dir'])
-            if target_prefix:
-                dst = os.path.join(target_prefix, d['target_dir'])
-            else:
-                dst = os.path.join(self.cfg['start_dir'], d['target_dir'])
-            if not os.path.exists(dst):
-                try:
-                    shutil.copytree(src, dst)
-                except OSError, err:
-                    self.log.error("Failed to copy src %s to dst %s: %s" % (src, dst, err))
-                self.log.debug("Copied %s to %s, so GCC can build %s" % (src, dst, d['target_dir']))
-            else:
-                self.log.debug("No need to copy %s to %s, it's already there." % (src, dst))
-
-        self.log.debug("Prepared extra src dirs for %s: %s (configopts: %s)" % (stage, found_src_dirs, configopts))
+            # in versions prior to GCC v4.5, there's no support for extra source dirs, so return only empty info
+            configopts = ''
+            names = {}
+            versions = {}
 
         return {
             'configopts': configopts,
@@ -253,7 +271,7 @@ class EB_GCC(ConfigureMake):
             #
             # STAGE 1: configure GCC build that will be used to build PPL/CLooG
             #
-            self.log.info("Starting with stage 1 of 3-staged build to enable CLooG and/or PPL support...")
+            self.log.info("Starting with stage 1 of 3-staged build to enable CLooG and/or PPL, ISL support...")
             self.stage1installdir = os.path.join(self.builddir, 'GCC_stage1_eb')
             configopts += " --prefix=%(p)s --with-local-prefix=%(p)s" % {'p': self.stage1installdir}
 
@@ -292,7 +310,7 @@ class EB_GCC(ConfigureMake):
             if self.cfg['parallel']:
                 paracmd = "-j %s" % self.cfg['parallel']
 
-            cmd = "%s make %s %s" % (self.cfg['premakeopts'], paracmd, self.cfg['makeopts'])
+            cmd = "%s make %s %s" % (self.cfg['prebuildopts'], paracmd, self.cfg['buildopts'])
             run_cmd(cmd, log_all=True, simple=True)
 
             cmd = "make install %s" % (self.cfg['installopts'])
@@ -322,29 +340,21 @@ class EB_GCC(ConfigureMake):
 
             # build PPL and CLooG (GMP as dependency)
 
-            for lib in ["gmp", "ppl", "cloog"]:
-
+            for lib in ["gmp"] + self.with_dirs:
                 self.log.debug("Building %s in stage 2" % lib)
-
                 if lib == "gmp" or self.cfg['with%s' % lib]:
-
                     libdir = os.path.join(stage2prefix, lib)
                     try:
                         os.chdir(libdir)
                     except OSError, err:
                         self.log.error("Failed to change to %s: %s" % (libdir, err))
-
                     if lib == "gmp":
-
                         cmd = "./configure --prefix=%s " % stage2prefix
                         cmd += "--with-pic --disable-shared --enable-cxx"
-
                     elif lib == "ppl":
-
                         self.pplver = LooseVersion(stage2_info['versions']['ppl'])
 
                         cmd = "./configure --prefix=%s --with-pic -disable-shared " % stage2prefix
-
                         # only enable C/C++ interfaces (Java interface is sometimes troublesome)
                         cmd += "--enable-interfaces='c c++' "
 
@@ -359,9 +369,10 @@ class EB_GCC(ConfigureMake):
 
                         # make sure GMP we just built is found
                         cmd += "--with-gmp=%s " % stage2prefix
-
+                    elif lib == "isl":
+                        cmd = "./configure --prefix=%s --with-pic --disable-shared " % stage2prefix
+                        cmd += "--with-gmp=system --with-gmp-prefix=%s " % stage2prefix
                     elif lib == "cloog":
-
                         self.cloogname = stage2_info['names']['cloog']
                         self.cloogver = LooseVersion(stage2_info['versions']['cloog'])
                         v0_15 = LooseVersion("0.15")
@@ -369,9 +380,13 @@ class EB_GCC(ConfigureMake):
 
                         cmd = "./configure --prefix=%s --with-pic --disable-shared " % stage2prefix
 
-                        # use isl or PPL
+                        # use ISL or PPL
                         if self.cfg['clooguseisl']:
-                            if self.cloogver >= v0_16:
+                            if self.cfg['withisl']:
+                                self.log.debug("Using external ISL for CLooG")
+                                cmd += "--with-isl=system --with-isl-prefix=%s " % stage2prefix
+                            elif self.cloogver >= v0_16:
+                                self.log.debug("Using bundled ISL for CLooG")
                                 cmd += "--with-isl=bundled "
                             else:
                                 self.log.error("Using ISL is only supported in CLooG >= v0.16 (detected v%s)." % self.cloogver)
@@ -390,7 +405,6 @@ class EB_GCC(ConfigureMake):
                             cmd += "--with-gmp=system --with-gmp-prefix=%s " % stage2prefix
                         else:
                             self.log.error("Don't know how to specify location of GMP to configure of CLooG v%s." % self.cloogver)
-
                     else:
                         self.log.error("Don't know how to configure for %s" % lib)
 
@@ -420,7 +434,7 @@ class EB_GCC(ConfigureMake):
             self.create_dir("stage3_obj")
 
             # reconfigure for stage 3 build
-            self.log.info("Stage 2 of 3-staged build completed, continuing with stage 2 (with CLooG and/or PPL support enabled)...")
+            self.log.info("Stage 2 of 3-staged build completed, continuing with stage 2 (with CLooG and/or PPL, ISL support enabled)...")
 
             stage3_info = self.prep_extra_src_dirs("stage3")
             configopts = stage3_info['configopts']
@@ -451,15 +465,18 @@ class EB_GCC(ConfigureMake):
             if self.cfg['withcloog']:
                 configopts += "--with-cloog=%s " % stage2prefix
 
-                if self.cfg['clooguseisl'] and self.cloogver >= LooseVersion("0.16"):
+                if self.cfg['clooguseisl'] and self.cloogver >= LooseVersion("0.16") and self.version < LooseVersion("4.8.0"):
                     configopts += "--enable-cloog-backend=isl "
+
+            if self.cfg['withisl']:
+                configopts += "--with-isl=%s " % stage2prefix
 
             # configure
             cmd = "../configure %s %s" % (self.configopts, configopts)
             self.run_configure_cmd(cmd)
 
         # build with bootstrapping for self-containment
-        self.cfg.update('makeopts', 'bootstrap')
+        self.cfg.update('buildopts', 'bootstrap')
 
         # call standard build_step
         super(EB_GCC, self).build_step()
@@ -476,13 +493,19 @@ class EB_GCC(ConfigureMake):
         common_infix = os.path.join('gcc', self.platform_lib, self.version)
 
         bin_files = ["gcov"]
-        lib_files = ["libgomp.%s" % sharedlib_ext, "libgomp.a"]
+        lib_files = []
+        if LooseVersion(self.version) >= LooseVersion('4.2'):
+            # libgomp was added in GCC 4.2.0
+            ["libgomp.%s" % sharedlib_ext, "libgomp.a"]
         if kernel_name == 'Linux':
-            lib_files.extend(["libgcc_s.%s" % sharedlib_ext, "libmudflap.%s" % sharedlib_ext, "libmudflap.a"])
+            lib_files.extend(["libgcc_s.%s" % sharedlib_ext])
+            # libmudflap is replaced by asan (see release notes gcc 4.9.0)
+            if self.version < LooseVersion("4.9.0"):
+                lib_files.extend(["libmudflap.%s" % sharedlib_ext, "libmudflap.a"])
+            else:
+                lib_files.extend(["libasan.%s" % sharedlib_ext, "libasan.a"])
         libexec_files = []
         dirs = ['lib/%s' % common_infix]
-        if kernel_name == 'Linux':
-            dirs.append('lib64')
 
         if not self.cfg['languages']:
             # default languages are c, c++, fortran
@@ -508,10 +531,14 @@ class EB_GCC(ConfigureMake):
                 libexec_files.append('liblto_plugin.%s' % sharedlib_ext)
 
         bin_files = ["bin/%s" % x for x in bin_files]
-        libdirs = ['lib', 'lib64']
+        libdirs64 = ['lib64']
+        libdirs32 = ['lib', 'lib32']
+        libdirs = libdirs64 + libdirs32
         if self.cfg['multilib']:
             # with multilib enabled, both lib and lib64 should be there
-            lib_files = [os.path.join(libdir, x) for libdir in libdirs for x in lib_files]
+            lib_files64 = [os.path.join(libdir, x) for libdir in libdirs64 for x in lib_files]
+            lib_files32 = [tuple([os.path.join(libdir, x) for libdir in libdirs32]) for x in lib_files]
+            lib_files = lib_files64 + lib_files32
         else:
             # lib64 on SuSE and Darwin, lib otherwise
             lib_files = [tuple([os.path.join(libdir, x) for libdir in libdirs]) for x in lib_files]

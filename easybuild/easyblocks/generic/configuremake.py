@@ -49,8 +49,9 @@ class ConfigureMake(EasyBlock):
         """Extra easyconfig parameters specific to ConfigureMake."""
         extra_vars = dict(EasyBlock.extra_options(extra_vars))
         extra_vars.update({
-            'tar_config_opts': [False, "Override tar settings as determined by configure.", CUSTOM],
+            'configure_cmd_prefix': ['', "Prefix to be glued before ./configure", CUSTOM],
             'prefix_opt': ['--prefix=', "Prefix command line option for configure script", CUSTOM],
+            'tar_config_opts': [False, "Override tar settings as determined by configure.", CUSTOM],
         })
         return EasyBlock.extra_options(extra_vars)
 
@@ -60,15 +61,21 @@ class ConfigureMake(EasyBlock):
         - typically ./configure --prefix=/install/path style
         """
 
+        if self.cfg['configure_cmd_prefix']:
+            if cmd_prefix:
+                tup = (cmd_prefix, self.cfg['configure_cmd_prefix'])
+                self.log.debug("Specified cmd_prefix '%s' is overruled by configure_cmd_prefix '%s'" % tup)
+            cmd_prefix = self.cfg['configure_cmd_prefix']
+
         if self.cfg['tar_config_opts']:
             # setting am_cv_prog_tar_ustar avoids that configure tries to figure out
             # which command should be used for tarring/untarring
             # am__tar and am__untar should be set to something decent (tar should work)
             tar_vars = {
-                        'am__tar': 'tar chf - "$$tardir"',
-                        'am__untar': 'tar xf -',
-                        'am_cv_prog_tar_ustar': 'easybuild_avoid_ustar_testing'
-                       }
+                'am__tar': 'tar chf - "$$tardir"',
+                'am__untar': 'tar xf -',
+                'am_cv_prog_tar_ustar': 'easybuild_avoid_ustar_testing'
+            }
             for (key, val) in tar_vars.items():
                 self.cfg.update('preconfigopts', "%s='%s'" % (key, val))
 
@@ -94,7 +101,7 @@ class ConfigureMake(EasyBlock):
         if self.cfg['parallel']:
             paracmd = "-j %s" % self.cfg['parallel']
 
-        cmd = "%s make %s %s" % (self.cfg['premakeopts'], paracmd, self.cfg['makeopts'])
+        cmd = "%s make %s %s" % (self.cfg['prebuildopts'], paracmd, self.cfg['buildopts'])
 
         (out, _) = run_cmd(cmd, path=path, log_all=True, simple=False, log_output=verbose)
 
@@ -123,4 +130,3 @@ class ConfigureMake(EasyBlock):
         (out, _) = run_cmd(cmd, log_all=True, simple=False)
 
         return out
-

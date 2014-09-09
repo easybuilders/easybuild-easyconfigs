@@ -27,7 +27,7 @@ EasyBuild support for Mothur, implemented as an easyblock
 
 @author: Kenneth Hoste (Ghent University)
 """
-
+import glob
 import os
 import shutil
 
@@ -38,30 +38,35 @@ from easybuild.tools.modules import get_software_root
 class EB_Mothur(ConfigureMake):
     """Support for building and installing Mothur."""
 
-    def __init__(self, *args, **kwargs):
-        """Custom easyblock initialisation for Mothur."""
-        super(EB_Mothur, self).__init__(*args, **kwargs)
+    def guess_start_dir(self):
+        """Set correct start directory."""
+        # Mothur zip files tend to contain multiple directories next to the actual source dir (e.g. __MACOSX),
+        # so the default start directory guess is most likely incorrect
+        mothur_dirs = glob.glob(os.path.join(self.builddir, 'Mothur.*'))
+        if len(mothur_dirs) == 1:
+            self.cfg['start_dir'] = mothur_dirs[0]
+        else:
+            self.log.error("Failed to guess start directory in %s" % mothur_dirs)
 
-        # set correct start dir
-        self.cfg['start_dir'] = '%s.%s' % (self.name, self.version)
+        super(EB_Mothur, self).guess_start_dir()
 
     def configure_step(self, cmd_prefix=''):
         """Configure Mothur build by setting make options."""
         # Fortran compiler and options
-        self.cfg.update('makeopts', 'FORTAN_COMPILER="%s" FORTRAN_FLAGS="%s"' % (os.getenv('F77'), os.getenv('FFLAGS')))
+        self.cfg.update('buildopts', 'FORTAN_COMPILER="%s" FORTRAN_FLAGS="%s"' % (os.getenv('F77'), os.getenv('FFLAGS')))
         # enable 64-bit build
         if not self.toolchain.options['32bit']:
-            self.cfg.update('makeopts', '64BIT_VERSION=yes')
+            self.cfg.update('buildopts', '64BIT_VERSION=yes')
         # enable readline support
         if get_software_root('libreadline') and get_software_root('ncurses'):
-            self.cfg.update('makeopts', 'USEREADLINE=yes')
+            self.cfg.update('buildopts', 'USEREADLINE=yes')
         # enable MPI support
         if self.toolchain.options.get('usempi', None):
-            self.cfg.update('makeopts', 'USEMPI=yes CXX="%s"' % os.getenv('MPICXX'))
-            self.cfg.update('premakeopts', 'CXXFLAGS="$CXXFLAGS -DMPICH_IGNORE_CXX_SEEK"')
+            self.cfg.update('buildopts', 'USEMPI=yes CXX="%s"' % os.getenv('MPICXX'))
+            self.cfg.update('prebuildopts', 'CXXFLAGS="$CXXFLAGS -DMPICH_IGNORE_CXX_SEEK"')
         # enable compression
         if get_software_root('bzip2') or get_software_root('gzip'):
-            self.cfg.update('makeopts', 'USE_COMPRESSION=yes')
+            self.cfg.update('buildopts', 'USE_COMPRESSION=yes')
 
     def install_step(self):
         """

@@ -118,7 +118,7 @@ class EB_LAPACK(ConfigureMake):
         fpic = ''
         if self.toolchain.options['pic']:
             fpic = '-fPIC'
-        self.cfg.update('makeopts', 'OPTS="$FFLAGS -m64" NOOPT="%s -m64 -O0"' % fpic)
+        self.cfg.update('buildopts', 'OPTS="$FFLAGS -m64" NOOPT="%s -m64 -O0"' % fpic)
 
         # prematurely exit configure when we're only testing
         if self.cfg['test_only']:
@@ -131,16 +131,16 @@ class EB_LAPACK(ConfigureMake):
             blaslib = get_blas_lib(self.log)
 
             self.log.debug("Providing '%s' as BLAS lib" % blaslib)
-            self.cfg.update('makeopts', 'BLASLIB="%s"' % blaslib)
+            self.cfg.update('buildopts', 'BLASLIB="%s"' % blaslib)
 
         else:
             self.log.debug("Not providing a BLAS lib to LAPACK.")
-            self.cfg.update('makeopts', 'BLASLIB=""')
+            self.cfg.update('buildopts', 'BLASLIB=""')
 
         # only build library if we're not supplying a BLAS library (otherwise testing fails)
         if not self.cfg['supply_blas']:
             self.log.info('No BLAS library provided, so only building LAPACK library (no testing).')
-            self.cfg.update('makeopts', 'lib')
+            self.cfg.update('buildopts', 'lib')
 
     # don't create a module if we're only testing
     def build_step(self):

@@ -180,7 +180,7 @@ class EB_ScaLAPACK(ConfigureMake):
             extra_makeopts.append('CDEFS="-D%s"' % interface)
 
         # update make opts, and build_step
-        self.cfg.update('makeopts', ' '.join(extra_makeopts))
+        self.cfg.update('buildopts', ' '.join(extra_makeopts))
 
         super(EB_ScaLAPACK, self).build_step()
 

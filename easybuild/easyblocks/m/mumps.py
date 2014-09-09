@@ -117,7 +117,7 @@ class EB_MUMPS(ConfigureMake):
             'OPTC': "$CFLAGS",
         }
         for (key, val) in mumps_make_opts.items():
-            self.cfg.update('makeopts', '%s="%s"' % (key, val))
+            self.cfg.update('buildopts', '%s="%s"' % (key, val))
 
     def install_step(self):
         """Install MUMPS by copying files to install dir."""

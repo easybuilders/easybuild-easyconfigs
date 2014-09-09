@@ -67,7 +67,7 @@ class EB_ARB(ConfigureMake):
 
         # update make options
         # no OpenGL support, verbose, 64-bit
-        self.cfg.update('makeopts', 'all OPENGL=0 V=1 ARB_64=1')
+        self.cfg.update('buildopts', 'all OPENGL=0 V=1 ARB_64=1')
 
         # run 'make' without arguments to configure build, ignore non-zero exit code
         (out, ec) = run_cmd("make", simple=False, log_all=False, log_ok=False)

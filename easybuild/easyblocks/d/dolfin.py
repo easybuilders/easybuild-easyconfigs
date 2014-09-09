@@ -173,7 +173,7 @@ class EB_DOLFIN(CMakePythonPackage):
             self.log.error("Optional packages could not be found, this should not happen...")
 
         # enable verbose build, so we have enough information if something goes wrong
-        self.cfg.update('makeopts', "VERBOSE=1")
+        self.cfg.update('buildopts', "VERBOSE=1")
 
     def make_module_extra(self):
         """Set extra environment variables for DOLFIN."""
