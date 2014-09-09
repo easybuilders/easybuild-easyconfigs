@@ -115,8 +115,11 @@ class EB_NAMD(MakeCp):
     def test_step(self):
         """Run NAMD test case."""
         if self.cfg['runtest']:
+            namdcmd = os.path.join(self.cfg['start_dir'], self.namd_arch, 'namd%s' % self.version.split('.')[0])
+            if self.cfg['charm_arch'].startswith('mpi'):
+                namdcmd = self.toolchain.mpi_cmd_for(namdcmd, 2)
             cmd = "%(namd)s %(testdir)s" % {
-                'namd': os.path.join(self.cfg['start_dir'], self.namd_arch, 'namd2'),
+                'namd': namdcmd,
                 'testdir': os.path.join(self.cfg['start_dir'], self.namd_arch, 'src', 'alanin'),
             }
             out, ec = run_cmd(cmd, simple=False)
@@ -152,7 +155,7 @@ class EB_NAMD(MakeCp):
     def sanity_check_step(self):
         """Custom sanity check for NAMD."""
         custom_paths = {
-            'files': ['charmrun', 'flipbinpdb', 'flipdcd', 'namd2', 'psfgen'],
+            'files': ['charmrun', 'flipbinpdb', 'flipdcd', 'namd' % self.version.split('.')[0], 'psfgen'],
             'dirs': ['inc'],
         }
         super(EB_NAMD, self).sanity_check_step(custom_paths=custom_paths)
