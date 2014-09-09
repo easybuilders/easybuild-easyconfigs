@@ -21,7 +21,7 @@ from distutils.version import LooseVersion
 
 import easybuild.tools.toolchain as toolchain
 from easybuild.easyblocks.generic.makecp import MakeCp
-from easybuild.framework.easyconfig import CUSTOM
+from easybuild.framework.easyconfig import CUSTOM, MANDATORY
 from easybuild.tools.filetools import extract_file, run_cmd
 from easybuild.tools.modules import get_software_root, get_software_version
 
@@ -35,7 +35,7 @@ class EB_NAMD(MakeCp):
         """Define extra NAMD-specific easyconfig parameters."""
         extra_vars = [
             # see http://charm.cs.illinois.edu/manuals/html/charm++/A.html
-            ('charm_arch', ['net-linux-x86_64 ibverbs', "Charm++ target architecture", CUSTOM]),
+            ('charm_arch', [None, "Charm++ target architecture", MANDATORY]),
             ('charm_opts', ['--with-production', "Charm++ build options", CUSTOM]),
             ('namd_basearch', ['Linux-x86_64', "NAMD base target architecture (compiler family is appended", CUSTOM]),
             ('namd_cfg_opts', ['', "NAMD configure options", CUSTOM]),
