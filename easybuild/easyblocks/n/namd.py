@@ -124,7 +124,7 @@ class EB_NAMD(MakeCp):
             }
             out, ec = run_cmd(cmd, simple=False)
             if ec == 0:
-                test_ok_regex = re.compile("^Program finished.$", re.M)
+                test_ok_regex = re.compile("^(Program finished.|End of program\s*)$", re.M)
                 if test_ok_regex.search(out):
                     self.log.debug("Test '%s' ran fine." % cmd)
                 else:
