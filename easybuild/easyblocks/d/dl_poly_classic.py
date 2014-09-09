@@ -41,7 +41,7 @@ class EB_DL_underscore_POLY_underscore_Classic(ConfigureMake):
         """Copy the makefile to the source directory and use MPIF90 to do a parrallel build"""
         shutil.copy("build/MakePAR", "source/Makefile")
         os.chdir("source")
-        self.cfg.update('makeopts', 'LD="$MPIF90 -o" FC="$MPIF90 -c" par')
+        self.cfg.update('buildopts', 'LD="$MPIF90 -o" FC="$MPIF90 -c" par')
 
     def install_step(self):
         """Copy the executables to the installation directory"""

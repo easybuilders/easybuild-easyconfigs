@@ -176,7 +176,7 @@ class EB_PETSc(ConfigureMake):
 
             # set PETSC_DIR for configure (env) and build_step
             env.setvar('PETSC_DIR', self.cfg['start_dir'])
-            self.cfg.update('makeopts', 'PETSC_DIR=%s' % self.cfg['start_dir'])
+            self.cfg.update('buildopts', 'PETSC_DIR=%s' % self.cfg['start_dir'])
 
             if self.cfg['sourceinstall']:
                 # run configure without --prefix (required)
@@ -196,7 +196,7 @@ class EB_PETSc(ConfigureMake):
                 res = petsc_arch_regex.search(out)
                 if res:
                     self.petsc_arch = res.group(1)
-                    self.cfg.update('makeopts', 'PETSC_ARCH=%s' % self.petsc_arch)
+                    self.cfg.update('buildopts', 'PETSC_ARCH=%s' % self.petsc_arch)
                 else:
                     self.log.error("Failed to determine PETSC_ARCH setting.")
 

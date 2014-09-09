@@ -99,13 +99,13 @@ class EB_HPL(ConfigureMake):
         extra_makeopts += 'HPL_OPTS="%s -DUSING_FFTW" ' % os.getenv('CPPFLAGS')
 
         # linker flags
-        extra_makeopts += 'LINKFLAGS="%s" ' % os.getenv('LDFLAGS')
+        extra_makeopts += 'LINKFLAGS="%s %s" ' % (os.getenv('CFLAGS'), os.getenv('LDFLAGS'))
 
         # C compilers flags
         extra_makeopts += "CCFLAGS='$(HPL_DEFS) %s' " % os.getenv('CFLAGS')
 
         # set options and build
-        self.cfg.update('makeopts', extra_makeopts)
+        self.cfg.update('buildopts', extra_makeopts)
         super(EB_HPL, self).build_step()
 
     def install_step(self):

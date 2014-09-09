@@ -77,7 +77,7 @@ class EB_Rosetta(EasyBlock):
         """
         # construct build options
         defines = ['NDEBUG']
-        self.cfg.update('makeopts', "mode=release")
+        self.cfg.update('buildopts', "mode=release")
 
         self.cxx = os.getenv('CC_SEQ')
         if self.cxx is None:
@@ -89,10 +89,10 @@ class EB_Rosetta(EasyBlock):
             cxx_ver = '.'.join(get_icc_version().split('.')[:2])
         else:
             self.log.error("Don't know how to determine C++ compiler version.")
-        self.cfg.update('makeopts', "cxx=%s cxx_ver=%s" % (self.cxx, cxx_ver))
+        self.cfg.update('buildopts', "cxx=%s cxx_ver=%s" % (self.cxx, cxx_ver))
 
         if self.toolchain.options.get('usempi', None):
-            self.cfg.update('makeopts', 'extras=mpi')
+            self.cfg.update('buildopts', 'extras=mpi')
             defines.extend(['USEMPI', 'MPICH_IGNORE_CXX_SEEK'])
 
         # make sure important environment variables are passed down
@@ -170,7 +170,7 @@ class EB_Rosetta(EasyBlock):
         par = ''
         if self.cfg['parallel']:
             par = "-j %s" % self.cfg['parallel']
-        cmd = "python ./scons.py %s %s bin" % (self.cfg['makeopts'], par)
+        cmd = "python ./scons.py %s %s bin" % (self.cfg['buildopts'], par)
         run_cmd(cmd, log_all=True, simple=True)
 
     def install_step(self):

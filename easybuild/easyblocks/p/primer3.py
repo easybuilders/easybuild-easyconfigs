@@ -56,7 +56,7 @@ class EB_Primer3(ConfigureMake):
     def configure_step(self):
         """Configure Primer3 build by setting make options."""
 
-        self.cfg.update('makeopts', 'CC="%s" CPP="%s" O_OPTS="%s" all' % (os.getenv('CC'),
+        self.cfg.update('buildopts', 'CC="%s" CPP="%s" O_OPTS="%s" all' % (os.getenv('CC'),
                                                                          os.getenv('CXX'),
                                                                          os.getenv('CFLAGS')))
 

@@ -64,13 +64,14 @@ class EB_Qt(ConfigureMake):
             "WARNING .*",
             "Project MESSAGE:.*",
             "rm -f .*",
+            'Creating qmake...',
         ]
         run_cmd_qa(cmd, qa, no_qa=no_qa, log_all=True, simple=True)
 
     def build_step(self):
         """Set $LD_LIBRARY_PATH before calling make, to ensure that all required libraries are found during linking."""
         # cfr. https://elist.ornl.gov/pipermail/visit-developers/2011-September/010063.html
-        self.cfg.update('premakeopts', 'LD_LIBRARY_PATH=%s:$LD_LIBRARY_PATH' % os.path.join(self.cfg['start_dir'], 'lib'))
+        self.cfg.update('prebuildopts', 'LD_LIBRARY_PATH=%s:$LD_LIBRARY_PATH' % os.path.join(self.cfg['start_dir'], 'lib'))
 
         super(EB_Qt, self).build_step()
 

@@ -90,8 +90,12 @@ class EB_icc(IntelBase):
             else:
                 libprefix = "compiler/lib/intel64/lib"
 
+        binfiles = ["icc", "icpc"]
+        if LooseVersion(self.version) < LooseVersion("2014"):
+            binfiles += ["idb"]
+
         custom_paths = {
-            'files': ["%s/%s" % (binprefix, x) for x in ["icc", "icpc", "idb"]] +
+            'files': ["%s/%s" % (binprefix, x) for x in binfiles] +
                      ["%s%s" % (libprefix, x) for x in ["iomp5.a", "iomp5.so"]],
             'dirs': [],
         }

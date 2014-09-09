@@ -106,7 +106,7 @@ class EB_XCrySDen(ConfigureMake):
         self.log.debug("Patched Make.sys: %s" % open(makesys_file, "r").read())
 
         # set make target to 'xcrysden', such that dependencies are not downloaded/built
-        self.cfg.update('makeopts', 'xcrysden')
+        self.cfg.update('buildopts', 'xcrysden')
 
         # set installation prefix
         self.cfg.update('preinstallopts', 'prefix=%s' % self.installdir)

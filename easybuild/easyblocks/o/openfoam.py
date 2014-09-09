@@ -84,7 +84,7 @@ class EB_OpenFOAM(EasyBlock):
             self.wm_compiler="Icc"
 
             # make sure -no-prec-div is used with Intel compilers
-            self.cfg.update('premakeopts', 'CFLAGS="$CFLAGS -no-prec-div" CXXFLAGS="$CXXFLAGS -no-prec-div"')
+            self.cfg.update('prebuildopts', 'CFLAGS="$CFLAGS -no-prec-div" CXXFLAGS="$CXXFLAGS -no-prec-div"')
 
         else:
             self.log.error("Unknown compiler family, don't know how to set WM_COMPILER")
@@ -134,13 +134,13 @@ class EB_OpenFOAM(EasyBlock):
         if LooseVersion(self.version) < LooseVersion("2") or openfoam_extend_v3:
             self.log.debug("List of deps: %s" % self.cfg.dependencies())
             for dep in self.cfg.dependencies():
-                self.cfg.update('premakeopts', "%s_SYSTEM=1" % dep['name'].upper())
-                self.cfg.update('premakeopts', "%(name)s_LIB_DIR=$EBROOT%(name)s/lib" % {'name': dep['name'].upper()})
-                self.cfg.update('premakeopts', "%(name)s_INCLUDE_DIR=$EBROOT%(name)s/include" % {'name': dep['name'].upper()})
+                self.cfg.update('prebuildopts', "%s_SYSTEM=1" % dep['name'].upper())
+                self.cfg.update('prebuildopts', "%(name)s_LIB_DIR=$EBROOT%(name)s/lib" % {'name': dep['name'].upper()})
+                self.cfg.update('prebuildopts', "%(name)s_INCLUDE_DIR=$EBROOT%(name)s/include" % {'name': dep['name'].upper()})
         else:
             scotch = get_software_root('SCOTCH')
             if scotch:
-                self.cfg.update('premakeopts', "SCOTCH_ROOT=$EBROOTSCOTCH")
+                self.cfg.update('prebuildopts', "SCOTCH_ROOT=$EBROOTSCOTCH")
 
     def build_step(self):
         """Build OpenFOAM using make after sourcing script to set environment."""
@@ -148,9 +148,9 @@ class EB_OpenFOAM(EasyBlock):
         precmd = "source %s" % os.path.join(self.builddir, self.openfoamdir, "etc", "bashrc")
 
         # make directly in install directory
-        cmd_tmpl = "%(precmd)s && %(premakeopts)s %(makecmd)s" % {
+        cmd_tmpl = "%(precmd)s && %(prebuildopts)s %(makecmd)s" % {
             'precmd': precmd,
-            'premakeopts': self.cfg['premakeopts'],
+            'prebuildopts': self.cfg['prebuildopts'],
             'makecmd': os.path.join(self.builddir, self.openfoamdir, '%s'),
         }
         if 'extend' in self.name.lower() and LooseVersion(self.version) >= LooseVersion('3.0'):
