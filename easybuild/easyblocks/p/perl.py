@@ -57,7 +57,7 @@ class EB_Perl(ConfigureMake):
         run_cmd(cmd, log_all=True, simple=True)
 
     def test_step(self):
-        """Test Perl build, allow for a minimum of failed tests (e.g. due to locale)."""
+        """Test Perl build via 'make test'."""
         # allow escaping with runtest = False
         if self.cfg['runtest'] is None or self.cfg['runtest']:
             if isinstance(self.cfg['runtest'], basestring):
@@ -65,16 +65,10 @@ class EB_Perl(ConfigureMake):
             else:
                 cmd = "make test"
 
-            (out, ec) = run_cmd(cmd, log_all=False, log_ok=False, simple=False)
-            self.log.debug("Output of '%s': %s" % (cmd, out))
-            if ec:
-                min_failed_tests_regex = re.compile("^Failed \d+ tests? out of \d+, 99.\d+% okay", re.M)
-                if min_failed_tests_regex.search(out):
-                    self.log.warning("Limited number of failed tests with '%s', but still acceptable: %s" % (cmd, out))
-                else:
-                    self.log.error("Too many failed tests, see output of '%s': %s" % (cmd, out))
-            else:
-                self.log.info("Testing Perl build with '%s' successful." % cmd)
+            # specify locale to be used, to avoid that a handful of tests fail
+            cmd = "export LC_ALL=C && %s" % cmd
+
+            run_cmd(cmd, log_all=False, log_ok=False, simple=False)
 
     def prepare_for_extensions(self):
         """
