@@ -89,6 +89,10 @@ class EB_NAMD(MakeCp):
         self.log.debug("Building Charm++ using cmd '%s' in '%s'" % (cmd, charm_subdir))
         run_cmd(cmd, path=charm_subdir)
 
+        # compiler (options)
+        self.cfg.update('namd_cfg_opts', '--cc "%s" --cc-opts "%s"' % (os.environ['CC'], os.environ['CFLAGS']))
+        self.cfg.update('namd_cfg_opts', '--cxx "%s" --cxx-opts "%s"' % (os.environ['CXX'], os.environ['CXXFLAGS']))
+
         # NAMD dependencies: CUDA, FFTW
         cuda = get_software_root('CUDA')
         if cuda:
