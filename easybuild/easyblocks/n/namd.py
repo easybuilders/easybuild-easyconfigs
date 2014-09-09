@@ -155,7 +155,7 @@ class EB_NAMD(MakeCp):
     def sanity_check_step(self):
         """Custom sanity check for NAMD."""
         custom_paths = {
-            'files': ['charmrun', 'flipbinpdb', 'flipdcd', 'namd' % self.version.split('.')[0], 'psfgen'],
+            'files': ['charmrun', 'flipbinpdb', 'flipdcd', 'namd%s' % self.version.split('.')[0], 'psfgen'],
             'dirs': ['inc'],
         }
         super(EB_NAMD, self).sanity_check_step(custom_paths=custom_paths)
