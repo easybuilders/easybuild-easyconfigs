@@ -30,6 +30,7 @@ EasyBuild support for building and installing R packages, implemented as an easy
 @author: Kenneth Hoste (Ghent University)
 @author: Jens Timmerman (Ghent University)
 @author: Toon Willems (Ghent University)
+@author: Balazs Hajgato (Vrije Universiteit Brussel)
 """
 import shutil
 
