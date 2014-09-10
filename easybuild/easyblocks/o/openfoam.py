@@ -210,11 +210,15 @@ class EB_OpenFOAM(EasyBlock):
                [os.path.join(toolsdir, x) for x in ["deformedGeom", "engineSwirl", "modifyMesh",
                                                     "refineMesh", "vorticity"]]
         # check for the Pstream and scotchDecomp libraries, there must be a dummy one and an mpi one
-        libs = [os.path.join(libsdir, x, "libPstream.so" ) for x in ["dummy", "mpi"]] + \
-               [os.path.join(libsdir, x, "libptscotchDecomp.so" ) for x in ["dummy", "mpi"]] +\
-               [os.path.join(libsdir, "libscotchDecomp.so" )] + \
-               [os.path.join(libsdir, "dummy", "libscotchDecomp.so" )]
-	     
+        if 'extend' in self.name.lower():
+            libs = [os.path.join(libsdir, x, "libPstream.so") for x in ["dummy", "mpi"]] + \
+                   [os.path.join(libsdir, "libscotchDecomp.so")]
+        else:
+            libs = [os.path.join(libsdir, x, "libPstream.so") for x in ["dummy", "mpi"]] + \
+                   [os.path.join(libsdir, x, "libptscotchDecomp.so") for x in ["dummy", "mpi"]] +\
+                   [os.path.join(libsdir, "libscotchDecomp.so")] + \
+                   [os.path.join(libsdir, "dummy", "libscotchDecomp.so")]
+
         if not 'extend' in self.name.lower() and LooseVersion(self.version) >= LooseVersion("2.3.0"):
             # surfaceSmooth is replaced by surfaceLambdaMuSmooth is OpenFOAM v2.3.0
             bins.remove(os.path.join(toolsdir, "surfaceSmooth"))
