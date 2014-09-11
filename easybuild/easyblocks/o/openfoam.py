@@ -33,13 +33,14 @@ EasyBuild support for building and installing OpenFOAM, implemented as an easybl
 @author: Xavier Besseron (University of Luxembourg)
 """
 import os
+import shutil
 import stat
 from distutils.version import LooseVersion
 
 import easybuild.tools.environment as env
 import easybuild.tools.toolchain as toolchain
 from easybuild.framework.easyblock import EasyBlock
-from easybuild.tools.filetools import adjust_permissions, run_cmd, run_cmd_qa
+from easybuild.tools.filetools import adjust_permissions, mkdir, run_cmd, run_cmd_qa
 from easybuild.tools.modules import get_software_root
 
 
@@ -58,6 +59,35 @@ class EB_OpenFOAM(EasyBlock):
         self.mpipath = None
         self.openfoamdir = None
         self.thrdpartydir = None
+
+        if 'extend' in self.name.lower():
+            if LooseVersion(self.version) >= LooseVersion('3.0'):
+                self.openfoamdir = 'foam-extend-%s' % self.version
+            else:
+                self.openfoamdir = 'OpenFOAM-%s-ext' % self.version
+        else:
+            self.openfoamdir = '-'.join([self.name, '-'.join(self.version.split('-')[:2])])
+        self.log.debug("openfoamdir: %s" % self.openfoamdir)
+
+    def extract_step(self):
+        """Extract sources as expected by the OpenFOAM(-Extend) build scripts."""
+        super(EB_OpenFOAM, self).extract_step()
+        # make sure that the expected subdir is really there after extracting
+        # if not, the build scripts (e.g., the etc/bashrc being sourced) will likely fail
+        openfoam_installdir = os.path.join(self.installdir, self.openfoamdir)
+        if not os.path.exists(openfoam_installdir):
+            self.log.warning("Creating expected directory %s, and moving everything there" % openfoam_installdir)
+            try:
+                mkdir(openfoam_installdir)
+                for fil in os.listdir(self.installdir):
+                    if fil != self.openfoamdir:
+                        source = os.path.join(self.installdir, fil)
+                        target = os.path.join(openfoam_installdir, fil)
+                        self.log.debug("Moving %s to %s" % (source, target))
+                        shutil.move(source, target)
+                os.chdir(openfoam_installdir)
+            except OSError, err:
+                self.log.error("Failed to move all files to %s: %s" % (openfoam_installdir, err))
 
     def configure_step(self):
         """Configure OpenFOAM build by setting appropriate environment variables."""
@@ -99,15 +129,6 @@ class EB_OpenFOAM(EasyBlock):
 
         # parallel build spec
         env.setvar("WM_NCOMPPROCS", str(self.cfg['parallel']))
-
-        if 'extend' in self.name.lower():
-            if LooseVersion(self.version) >= LooseVersion('3.0'):
-                self.openfoamdir = 'foam-extend-%s' % self.version
-            else:
-                self.openfoamdir = 'OpenFOAM-%s-ext' % self.version
-        else:
-            self.openfoamdir = '-'.join([self.name, '-'.join(self.version.split('-')[:2])])
-        self.log.debug("openfoamdir: %s" % self.openfoamdir)
 
         # make sure lib/include dirs for dependencies are found
         openfoam_extend_v3 = 'extend' in self.name.lower() and LooseVersion(self.version) >= LooseVersion('3.0')
@@ -155,15 +176,15 @@ class EB_OpenFOAM(EasyBlock):
 
         # fix permissions of OpenFOAM dir
         fullpath = os.path.join(self.installdir, self.openfoamdir)
-        adjust_permissions(fullpath, stat.S_IROTH, add=True, recursive=True)
-        adjust_permissions(fullpath, stat.S_IXOTH, add=True, recursive=True, onlydirs=True)
+        adjust_permissions(fullpath, stat.S_IROTH, add=True, recursive=True, ignore_errors=True)
+        adjust_permissions(fullpath, stat.S_IXOTH, add=True, recursive=True, onlydirs=True, ignore_errors=True)
 
         # fix permissions of ThirdParty dir and subdirs (also for 2.x)
         # if the thirdparty tarball is installed
         fullpath = os.path.join(self.installdir, self.thrdpartydir)
         if os.path.exists(fullpath):
-            adjust_permissions(fullpath, stat.S_IROTH, add=True, recursive=True)
-            adjust_permissions(fullpath, stat.S_IXOTH, add=True, recursive=True, onlydirs=True)
+            adjust_permissions(fullpath, stat.S_IROTH, add=True, recursive=True, ignore_errors=True)
+            adjust_permissions(fullpath, stat.S_IXOTH, add=True, recursive=True, onlydirs=True, ignore_errors=True)
 
     def sanity_check_step(self):
         """Custom sanity check for OpenFOAM"""
@@ -189,11 +210,15 @@ class EB_OpenFOAM(EasyBlock):
                [os.path.join(toolsdir, x) for x in ["deformedGeom", "engineSwirl", "modifyMesh",
                                                     "refineMesh", "vorticity"]]
         # check for the Pstream and scotchDecomp libraries, there must be a dummy one and an mpi one
-        libs = [os.path.join(libsdir, x, "libPstream.so" ) for x in ["dummy", "mpi"]] + \
-               [os.path.join(libsdir, x, "libptscotchDecomp.so" ) for x in ["dummy", "mpi"]] +\
-               [os.path.join(libsdir, "libscotchDecomp.so" )] + \
-               [os.path.join(libsdir, "dummy", "libscotchDecomp.so" )]
-	     
+        if 'extend' in self.name.lower():
+            libs = [os.path.join(libsdir, x, "libPstream.so") for x in ["dummy", "mpi"]] + \
+                   [os.path.join(libsdir, "libscotchDecomp.so")]
+        else:
+            libs = [os.path.join(libsdir, x, "libPstream.so") for x in ["dummy", "mpi"]] + \
+                   [os.path.join(libsdir, x, "libptscotchDecomp.so") for x in ["dummy", "mpi"]] +\
+                   [os.path.join(libsdir, "libscotchDecomp.so")] + \
+                   [os.path.join(libsdir, "dummy", "libscotchDecomp.so")]
+
         if not 'extend' in self.name.lower() and LooseVersion(self.version) >= LooseVersion("2.3.0"):
             # surfaceSmooth is replaced by surfaceLambdaMuSmooth is OpenFOAM v2.3.0
             bins.remove(os.path.join(toolsdir, "surfaceSmooth"))
