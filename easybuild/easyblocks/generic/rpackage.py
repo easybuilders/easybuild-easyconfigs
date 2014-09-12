@@ -30,6 +30,7 @@ EasyBuild support for building and installing R packages, implemented as an easy
 @author: Kenneth Hoste (Ghent University)
 @author: Jens Timmerman (Ghent University)
 @author: Toon Willems (Ghent University)
+@author: Balazs Hajgato (Vrije Universiteit Brussel)
 """
 import shutil
 
@@ -112,9 +113,13 @@ class RPackage(ExtensionEasyBlock):
         else:
             prefix = ''
 
-        cmd = "R CMD INSTALL %s %s %s %s --no-clean-on-error" % (self.ext_src, confargs, confvars, prefix)
-        self.log.debug("make_cmdline_cmd returns %s" % cmd)
+        if self.patches:
+            loc = self.ext_dir
+        else:
+            loc = self.ext_src
+        cmd = "R CMD INSTALL %s %s %s %s --no-clean-on-error" % (loc, confargs, confvars, prefix)
 
+        self.log.debug("make_cmdline_cmd returns %s" % cmd)
         return cmd, None
 
     def extract_step(self):
@@ -167,7 +172,10 @@ class RPackage(ExtensionEasyBlock):
     def run(self):
         """Install R package as an extension."""
 
-        super(RPackage, self).run()
+        if self.patches:
+            super(RPackage, self).run(unpack_src=True)
+        else:
+            super(RPackage, self).run()
 
         if self.src:
             self.ext_src = self.src

@@ -91,7 +91,7 @@ class ConfigureMake(EasyBlock):
 
         return out
 
-    def build_step(self, verbose=False):
+    def build_step(self, verbose=False, path=None):
         """
         Start the actual build
         - typical: make -j X
@@ -103,7 +103,7 @@ class ConfigureMake(EasyBlock):
 
         cmd = "%s make %s %s" % (self.cfg['prebuildopts'], paracmd, self.cfg['buildopts'])
 
-        (out, _) = run_cmd(cmd, log_all=True, simple=False, log_output=verbose)
+        (out, _) = run_cmd(cmd, path=path, log_all=True, simple=False, log_output=verbose)
 
         return out
 
