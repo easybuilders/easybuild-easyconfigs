@@ -30,7 +30,6 @@ EasyBuild support for building and installing WIEN2k, implemented as an easybloc
 @author: Kenneth Hoste (Ghent University)
 @author: Pieter De Baets (Ghent University)
 @author: Jens Timmerman (Ghent University)
-Modified 24 September 2014
 @author: Michael Sluydts (Ghent University)
 
 """
@@ -64,15 +63,15 @@ class EB_WIEN2k(EasyBlock):
                          "http://www.wien2k.at/reg_user/benchmark/mpi-benchmark.tar.gz"]
 
         extra_vars = [
-                      ('runtest', [True, "Run WIEN2k tests", CUSTOM]),
-                      ('testdata', [testdata_urls, "test data URL for WIEN2k benchmark test", CUSTOM]),
-                      ('wien_mpirun', [None, "MPI wrapper command to use", CUSTOM]),
-                      ('remote', [None, "Remote command to use (e.g. pbsssh, ...)", CUSTOM]),
-                      ('USE_REMOTE', [1,"Whether to remotely login to initiate the k-point parallellization calls",CUSTOM]),
-                      ('MPI_REMOTE', [0,"Whether to initiate MPI calls locally or remotely",CUSTOM]),
-                      ('WIEN_GRANULARITY', [1,"Granularity for parallel execution (see manual)",CUSTOM]),
-                      ('taskset', ['no','specifies an optional command for binding a process to a specific core',CUSTOM])
-                     ]
+            ('runtest', [True, "Run WIEN2k tests", CUSTOM]),
+            ('testdata', [testdata_urls, "test data URL for WIEN2k benchmark test", CUSTOM]),
+            ('wien_mpirun', [None, "MPI wrapper command to use", CUSTOM]),
+            ('remote', [None, "Remote command to use (e.g. pbsssh, ...)", CUSTOM]),
+            ('USE_REMOTE', [1,"Whether to remotely login to initiate the k-point parallellization calls",CUSTOM]),
+            ('MPI_REMOTE', [0,"Whether to initiate MPI calls locally or remotely",CUSTOM]),
+            ('WIEN_GRANULARITY', [1,"Granularity for parallel execution (see manual)",CUSTOM]),
+            ('taskset', ['no','specifies an optional command for binding a process to a specific core',CUSTOM])
+        ]
         return EasyBlock.extra_options(extra_vars)
 
     def extract_step(self):
@@ -167,7 +166,7 @@ class EB_WIEN2k(EasyBlock):
         self.log.debug('%s part I (configure)' % self.cfgscript)
 
         cmd = "./%s" % self.cfgscript
-        if int(self.version[0:2]) >= 13:
+        if LooseVersion(self.version[0:2]) >= LooseVersion("13"):
             qanda = {                             
                  'Press RETURN to continue': '',                   
                  '(not updated) Selection:': comp_answer,                               
@@ -200,7 +199,7 @@ class EB_WIEN2k(EasyBlock):
                  'Remote shell (default is ssh) =': '',
                  'and you need to know details about your installed  mpi ..) (y/n)': 'y',
                  'Recommended setting for parallel f90 compiler: mpiifort ' \
-                        'Current selection: Your compiler:': os.getenv('MPIF90'),
+                    'Current selection: Your compiler:': os.getenv('MPIF90'),
                  'Q to quit Selection:': 'Q',
                  'A Compile all programs (suggested) Q Quit Selection:': 'Q',
                  ' Please enter the full path of the perl program: ': '',
@@ -208,9 +207,9 @@ class EB_WIEN2k(EasyBlock):
                  '(like taskset -c). Enter N / your_specific_command:': 'N',
                  'If you are using mpi2 set MPI_REMOTE to 0  Set MPI_REMOTE to 0 / 1:': '0',
                  'Do you have MPI and Scalapack installed and intend to run ' \
-                 'finegrained parallel? (This is usefull only for BIG cases ' \
-                 '(50 atoms and more / unit cell) and you need to know details ' \
-                 'about your installed  mpi and fftw ) (y/n)': 'y'
+                    'finegrained parallel? (This is usefull only for BIG cases ' \
+                    '(50 atoms and more / unit cell) and you need to know details ' \
+                    'about your installed  mpi and fftw ) (y/n)': 'y',
                 }
 
         no_qa = [
