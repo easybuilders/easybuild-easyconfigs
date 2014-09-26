@@ -45,7 +45,7 @@ import easybuild.tools.environment as env
 import easybuild.tools.toolchain as toolchain
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import CUSTOM
-from easybuild.tools.filetools import extract_file, rmtree2, run_cmd, run_cmd_qa
+from easybuild.tools.filetools import extract_file, rmtree2, run_cmd, run_cmd_qa, read_file
 from easybuild.tools.modules import get_software_version
 
 
@@ -282,7 +282,7 @@ class EB_WIEN2k(EasyBlock):
             f.write(extra)
             f.close()
 
-            self.log.debug("Patched file %s: %s" % (fn, open(fn, 'r').read()))
+            self.log.debug("Patched file %s: %s" % (fn, read_file(fn)))
         except IOError, err:
             self.log.error("Failed to patch %s: %s" % (fn, err))
 
