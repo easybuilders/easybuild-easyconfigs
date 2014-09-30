@@ -364,7 +364,7 @@ class EB_CP2K(EasyBlock):
                 options['LIBS'] += ' -L%s/lib -lxcf90 -lxc' % libxc
             else:
                 options['LIBS'] += ' -L%s/lib -lxc' % libxc
-            self.log.info("Using Libxc-%s" % LIBXC_MIN_VERSION)
+            self.log.info("Using Libxc-%s" % cur_libxc_version)
         else:
             self.log.info("libxc module not loaded, so building without libxc support")
 
