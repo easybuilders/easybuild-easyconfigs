@@ -57,12 +57,12 @@ class EB_FLUENT(EasyBlock):
     def sanity_check_step(self):
         """Custom sanity check for FLUENT."""
 
-        ver = 'v%s' % ''.join(self.version.split('.'))
+        ver = 'v%s' % ''.join(self.version.split('.')[:2])
 
         custom_paths = {
-                        'files': ["%s/fluent/bin/fluent%s" % (ver, x) for x in ['', '_arch', '_sysinfo']],
-                        'dirs': ["%s/%s" % (ver, x) for x in ["ansys", "aisol", "CFD-Post"]]
-                       }
+            'files': ["%s/fluent/bin/fluent%s" % (ver, x) for x in ['', '_arch', '_sysinfo']],
+            'dirs': ["%s/%s" % (ver, x) for x in ["ansys", "aisol", "CFD-Post"]]
+        }
 
         super(EB_FLUENT, self).sanity_check_step(custom_paths=custom_paths)
 
@@ -71,11 +71,11 @@ class EB_FLUENT(EasyBlock):
 
         guesses = super(EB_FLUENT, self).make_module_req_guess()
 
-        ver = "v%s" % ''.join(self.version.split('.'))
+        ver = "v%s" % ''.join(self.version.split('.')[:2])
 
         guesses.update({
-                        "PATH": [os.path.join(ver, "fluent", "bin")],
-                        "LD_LIBRARY_PATH": [os.path.join(ver, "fluent", "lib")],
-                       })
+            "PATH": [os.path.join(ver, "fluent", "bin")],
+            "LD_LIBRARY_PATH": [os.path.join(ver, "fluent", "lib")],
+        })
 
         return guesses
