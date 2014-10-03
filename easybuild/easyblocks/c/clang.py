@@ -162,7 +162,7 @@ class EB_Clang(CMakeMake):
             self.llvm_obj_dir_stage2 = os.path.join(self.builddir, 'llvm.obj.2')
             self.llvm_obj_dir_stage3 = os.path.join(self.builddir, 'llvm.obj.3')
 
-        if LooseVersion(self.version) >= LooseVersion('3.2'):
+        if LooseVersion(self.version) >= LooseVersion('3.3'):
             # all sanitizer tests will fail when there's a limit on the vmem
             # this is ugly but I haven't found a cleaner way so far
             (vmemlim, ec) = run_cmd("ulimit -v", regexp=False)
