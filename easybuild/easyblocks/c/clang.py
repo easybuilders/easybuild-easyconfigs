@@ -162,14 +162,15 @@ class EB_Clang(CMakeMake):
             self.llvm_obj_dir_stage2 = os.path.join(self.builddir, 'llvm.obj.2')
             self.llvm_obj_dir_stage3 = os.path.join(self.builddir, 'llvm.obj.3')
 
-        # all sanitizer tests will fail when there's a limit on the vmem
-        # this is ugly but I haven't found a cleaner way so far
-        (vmemlim, ec) = run_cmd("ulimit -v", regexp=False)
-        if not vmemlim.startswith("unlimited"):
-            self.log.warn("There is a virtual memory limit set of %s KB. The tests of the "
-                          "sanitizers will be disabled as they need unlimited virtual "
-                          "memory." % vmemlim.strip())
-            self.disable_sanitizer_tests()
+        if LooseVersion(self.version) >= LooseVersion('3.2'):
+            # all sanitizer tests will fail when there's a limit on the vmem
+            # this is ugly but I haven't found a cleaner way so far
+            (vmemlim, ec) = run_cmd("ulimit -v", regexp=False)
+            if not vmemlim.startswith("unlimited"):
+                self.log.warn("There is a virtual memory limit set of %s KB. The tests of the "
+                              "sanitizers will be disabled as they need unlimited virtual "
+                              "memory." % vmemlim.strip())
+                self.disable_sanitizer_tests()
 
         # Create and enter build directory.
         mkdir(self.llvm_obj_dir_stage1)
@@ -209,7 +210,7 @@ class EB_Clang(CMakeMake):
                 for line in fileinput.input("%s/%s" % (self.llvm_src_dir, patchfile), inplace=1, backup='.orig'):
                     if "add_subdirectory(lit_tests)" not in line:
                         sys.stdout.write(line)
-            except IOError, err:
+            except (IOError, OSError), err:
                 self.log.error("Failed to patch %s/%s: %s" % (self.llvm_src_dir, patchfile, err))
 
         patchfile = "projects/compiler-rt/lib/sanitizer_common/CMakeLists.txt"
