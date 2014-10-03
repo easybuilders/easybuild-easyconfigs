@@ -206,12 +206,17 @@ class EB_Clang(CMakeMake):
         ]
 
         for patchfile in patchfiles:
-            try:
-                for line in fileinput.input("%s/%s" % (self.llvm_src_dir, patchfile), inplace=1, backup='.orig'):
-                    if "add_subdirectory(lit_tests)" not in line:
-                        sys.stdout.write(line)
-            except (IOError, OSError), err:
-                self.log.error("Failed to patch %s/%s: %s" % (self.llvm_src_dir, patchfile, err))
+            patchfile_fp = os.path.join(self.llvm_src_dir, patchfile)
+            if os.path.exists(patchfile_fp):
+                self.log.debug("Patching %s in %s" % (patchfile, self.llvm_src_dir))
+                try:
+                    for line in fileinput.input(patchfile_fp, inplace=1, backup='.orig'):
+                        if "add_subdirectory(lit_tests)" not in line:
+                            sys.stdout.write(line)
+                except (IOError, OSError), err:
+                    self.log.error("Failed to patch %s: %s" % (patchfile_fp, err))
+            else:
+                self.log.debug("Not patching non-existent %s in %s" % (patchfile, self.llvm_src_dir))
 
         patchfile = "projects/compiler-rt/lib/sanitizer_common/CMakeLists.txt"
         try:
