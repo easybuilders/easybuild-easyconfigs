@@ -172,10 +172,11 @@ class EasyConfigTest(TestCase):
             if ec_scp != {}:
                 # if sanity_check_paths is specified (i.e., non-default), it must adher to the requirements
                 # both 'files' and 'dirs' keys, both with list values and with at least one a non-empty list
-                self.assertEqual(sorted(ec_scp.keys()), ['dirs', 'files'])
-                self.assertTrue(isinstance(ec_scp['dirs'], list))
-                self.assertTrue(isinstance(ec_scp['files'], list))
-                self.assertTrue(ec_scp['dirs'] or ec_scp['files'])
+                error_msg = "sanity_check_paths for %s does not meet requirements: %s" % (ec['spec'], ec_scp)
+                self.assertEqual(sorted(ec_scp.keys()), ['dirs', 'files'], error_msg)
+                self.assertTrue(isinstance(ec_scp['dirs'], list), error_msg)
+                self.assertTrue(isinstance(ec_scp['files'], list), error_msg)
+                self.assertTrue(ec_scp['dirs'] or ec_scp['files'], error_msg)
 
     def test_easyconfig_locations(self):
         """Make sure all easyconfigs files are in the right location."""
