@@ -42,11 +42,11 @@ from unittest import TestCase, TestLoader, main
 import easybuild.main as main
 import easybuild.tools.options as eboptions
 from easybuild.framework.easyblock import EasyBlock
-from easybuild.framework.easyconfig.easyconfig import EasyConfig, fetch_parameter_from_easyconfig_file
+from easybuild.framework.easyconfig.easyconfig import ActiveMNS, EasyConfig, fetch_parameter_from_easyconfig_file
 from easybuild.framework.easyconfig.easyconfig import get_easyblock_class
 from easybuild.framework.easyconfig.tools import dep_graph, get_paths_for, process_easyconfig, resolve_dependencies
 from easybuild.tools import config
-from easybuild.tools.module_generator import det_full_module_name
+from easybuild.tools.module_naming_scheme import GENERAL_CLASS
 
 
 # indicates whether all the single tests are OK,
@@ -64,6 +64,7 @@ class EasyConfigTest(TestCase):
         'check_osdeps': False,
         'force': True,
         'robot_path': get_paths_for("easyconfigs")[0],
+        'suffix_modules_path': GENERAL_CLASS,
         'valid_module_classes': config.module_classes(),
         'valid_stops': [x[0] for x in EasyBlock.get_steps()],
     }
@@ -121,14 +122,14 @@ class EasyConfigTest(TestCase):
             self.process_all_easyconfigs()
 
         def mk_dep_mod_name(spec):
-            return tuple(det_full_module_name(spec).split(os.path.sep))
+            return tuple(ActiveMNS().det_full_module_name(spec).split(os.path.sep))
 
         # construct a dictionary: (name, installver) tuple to dependencies
         depmap = {}
         for spec in self.ordered_specs:
             builddeps = map(mk_dep_mod_name, spec['builddependencies'])
             deps = map(mk_dep_mod_name, spec['unresolved_deps'])
-            key = tuple(spec['module'].split(os.path.sep))
+            key = tuple(spec['full_mod_name'].split(os.path.sep))
             depmap.update({key: [builddeps, deps]})
 
         # iteratively expand list of (non-build) dependencies until we reach the end (toolchain)
@@ -159,6 +160,23 @@ class EasyConfigTest(TestCase):
                         print "Conflict found for (non-build) dependencies of %s: %s" % (specname, vs_msg)
                         conflicts = True
         self.assertFalse(conflicts, "No conflicts detected")
+
+    def test_sanity_check_paths(self):
+        """Make sure specified sanity check paths adher to the requirements."""
+
+        if self.ordered_specs is None:
+            self.process_all_easyconfigs()
+
+        for ec in self.parsed_easyconfigs:
+            ec_scp = ec['ec']['sanity_check_paths']
+            if ec_scp != {}:
+                # if sanity_check_paths is specified (i.e., non-default), it must adher to the requirements
+                # both 'files' and 'dirs' keys, both with list values and with at least one a non-empty list
+                error_msg = "sanity_check_paths for %s does not meet requirements: %s" % (ec['spec'], ec_scp)
+                self.assertEqual(sorted(ec_scp.keys()), ['dirs', 'files'], error_msg)
+                self.assertTrue(isinstance(ec_scp['dirs'], list), error_msg)
+                self.assertTrue(isinstance(ec_scp['files'], list), error_msg)
+                self.assertTrue(ec_scp['dirs'] or ec_scp['files'], error_msg)
 
     def test_easyconfig_locations(self):
         """Make sure all easyconfigs files are in the right location."""
