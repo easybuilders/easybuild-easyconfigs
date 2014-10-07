@@ -160,7 +160,7 @@ class EB_OpenFOAM(EasyBlock):
                 "Proceed without compiling cudaSolvers? [Y/n]": 'Y',
             }
             noqa = [
-                ".* -o .*\.o",
+                ".* -o .*",
                 "checking .*",
                 "warning.*",
                 "configure: creating.*",
