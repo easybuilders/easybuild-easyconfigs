@@ -44,20 +44,20 @@ class EB_CUDA(Binary):
         if LooseVersion(self.version) <= LooseVersion("5"):
             install_script = "install-linux.pl"
             install_script_path = os.path.join(self.builddir, install_script)
-            cmd = "perl ./%s --prefix=%s" % (install_script, self.installdir)
+            cmd = "perl ./%s --prefix=%s %s" % (install_script, self.installdir, self.cfg['installopts'])
         else:
             # the following would require to include "osdependencies = 'libglut'" because of samples
             # installparams = "-samplespath=%(x)s/samples/ -toolkitpath=%(x)s -samples -toolkit" % {'x': self.installdir}
             install_script = "cuda-installer.pl"
             installparams = "-toolkitpath=%s -toolkit" % self.installdir
-            cmd = "perl ./%s -verbose -silent %s" % (install_script, installparams)
+            cmd = "perl ./%s -verbose -silent %s %s" % (install_script, installparams, self.cfg['installopts'])
 
         # prepare for running install script autonomously
         qanda = {}
         stdqa = {
-                 # this question is only asked if CUDA tools are already available system-wide
-                 r"Would you like to remove all CUDA files under .*? (yes/no/abort): ": "no",
-                }
+            # this question is only asked if CUDA tools are already available system-wide
+            r"Would you like to remove all CUDA files under .*? (yes/no/abort): ": "no",
+        }
         noqanda = [
             r"^Configuring",
             r"Installation Complete",
@@ -95,11 +95,11 @@ class EB_CUDA(Binary):
         guesses = super(EB_CUDA, self).make_module_req_guess()
 
         guesses.update({
-                        'PATH': ['open64/bin', 'bin'],
-                        'LD_LIBRARY_PATH': ['lib64'],
-                        'CPATH': ['include'],
-                        'CUDA_HOME': [''],
-                        'CUDA_PATH': [''],
-                       })
+            'PATH': ['open64/bin', 'bin'],
+            'LD_LIBRARY_PATH': ['lib64'],
+            'CPATH': ['include'],
+            'CUDA_HOME': [''],
+            'CUDA_PATH': [''],
+        })
 
         return guesses
