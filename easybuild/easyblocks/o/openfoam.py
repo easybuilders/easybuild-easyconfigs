@@ -167,6 +167,7 @@ class EB_OpenFOAM(EasyBlock):
                 "%s .*" % os.environ['CC'],
                 "wmake .*",
                 "Making dependency list for source file.*",
+                "[ ]*\^[ ]*",  # warning indicator
             ]
             run_cmd_qa(cmd_tmpl % 'Allwmake.firstInstall', qa, no_qa=noqa, log_all=True, simple=True)
         else:
