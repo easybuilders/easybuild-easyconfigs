@@ -1,0 +1,61 @@
+#
+# author: Benjamin P. Roberts (University of Auckland)
+#
+# based on work by Marios Constantinou (University of Cyprus)
+#
+
+easyblock = 'MakeCp'
+
+name = 'Amber'
+version = "12.21-AmberTools-13.25"
+
+homepage = 'http://ambermd.org/amber.html'
+description = """Amber (originally Assisted Model Building with Energy Refinement) is software for performing molecular dynamics and structure prediction."""
+
+toolchain = {'name': 'ictce', 'version': '4.1.13'}
+toolchainopts = {'usempi': True}
+
+#source_urls = ['http://www.example.com']
+# Preparation of source tarball:
+# tar xjvf AmberTools13.tar.bz2
+# tar xjvf ber12.tar.bz2
+# cd amber12
+# export AMBERHOME=$(pwd)
+# ./update_amber --update-to=AmberTools/25,Amber/21 
+# tar cjvf Amber-12.21-AmberTools-13.25.tar.bz2 amber12
+# rm -r amber12
+# mv Amber-12.21-AmberTools-13.25.tar.bz2 /share/easybuild/src/a/Amber/.
+sources = ['Amber-12.21-AmberTools-13.25.tar.bz2']
+dependencies = [('CUDA', '5.0.35-1', '', True), ('netCDF', '4.1.3')]
+
+with_configure = True
+
+preconfigopts = 'export AMBERHOME=%(installdir)s && export MPI_HOME=$EBROOTIMPI && export MKL_HOME=$EBROOTIMKL && '
+
+# HACK, should be done in easyblock
+# BPR asks: Does this really need to be in an EasyBlock? If so, how does
+# one prepare such a thing?
+# We need a NetCDF installation with C and Fortran support, and the
+# directory containing this installation needs to be supplied to configure
+# following the "--with-netcdf" flag as the form "--with-netcdf <path>"
+# Also, the final argument to ./configure should be the word "intel"
+configopts = "-static -noX11 -mpi -cuda intel"
+# Serial (neither -mpi nor -cuda) first
+# Then -mpi, but not -cuda
+# Then -cuda, but not -mpi
+# I think "make clean" has to be run between each build
+
+# It seems that "make parallel" is no longer necessary if -mpi was supplied
+# at configure time. There is no "parallel" rule in the Makefile.
+makeopts = "parallel"
+
+# Get a better list of files to copy
+files_to_copy = [(['../exe/lmodprmtop', '../exe/sander.LES.MPI', '../exe/sander.MPI', '../exe/sander.PIMD.MPI'], 'bin')]
+
+# What on Earth does this do?
+sanity_check_paths = {
+	'files': ['bin/lmodprmtop'],
+	'dirs': ["."]
+}
+
+moduleclass = 'chem'

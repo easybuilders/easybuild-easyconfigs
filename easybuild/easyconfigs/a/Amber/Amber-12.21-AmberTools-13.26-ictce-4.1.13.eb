@@ -1,0 +1,50 @@
+#
+# author: Benjamin P. Roberts (University of Auckland)
+#
+# based on work by Marios Constantinou (University of Cyprus)
+#
+
+name = 'Amber'
+version = "12"
+
+easyblock = 'Amber'
+
+homepage = 'http://ambermd.org/amber.html'
+description = """Amber (originally Assisted Model Building with Energy Refinement) is software for performing molecular dynamics and structure prediction."""
+
+toolchain = {'name': 'ictce', 'version': '4.1.13'}
+toolchainopts = {'openmp': False, 'usempi': True}
+onlytcmod = True
+
+sources = ['AmberTools13.tar.bz2', 'Amber12.tar.bz2']
+patches = ['Amber-12-ictce-4.1.13.patch']
+
+dependencies = [
+    ('CUDA', '5.5', '', True), 
+    ('netCDF', '4.1.3'),
+    ('Python', '2.7.3'),
+    ]
+
+patchlevels = (26, 21)
+
+preconfigopts = "unset LIBS && export MKL_HOME=$EBROOTIMKL && export CUDA_HOME=$EBROOTCUDA && export MPI_HOME=$EBROOTIMPI &&"
+configopts = [ "--with-netcdf $EBROOTNETCDF --with-python `which python` -static -noX11 intel",
+               "--with-netcdf $EBROOTNETCDF --with-python `which python` -static -noX11 -mpi intel",
+               "--with-netcdf $EBROOTNETCDF --with-python `which python` -static -noX11 -cuda intel" ]
+
+prebuildopts = 'AMBERHOME="%(installdir)s/amber12"'
+buildopts = [ "install", "install", "install" ]
+parallel = 1
+buildininstalldir = True
+
+runtest = ['test', 'test.parallel', 'test.cuda']
+
+skipsteps = ['install']
+postinstallcmds = [ 'AMBERHOME="%(installdir)s/amber12" make clean"' ]
+
+sanity_check_paths = {
+	'files': ['amber12/bin/tleap', 'amber12/bin/sander', 'amber12/bin/pmemd'],
+	'dirs': ["."]
+}
+
+moduleclass = 'chem'
