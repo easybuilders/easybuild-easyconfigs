@@ -340,15 +340,17 @@ class EB_WIEN2k(EasyBlock):
             scratch = os.getenv('SCRATCH')
             
             env.setvar('PATH', "%s:%s" % (self.installdir, path))
-            env.setvar('SCRATCH',self.cfg['SCRATCH'])
             
             # create SCRATCH directory if it doesn't exist yet
             try:
-                os.makedirs(os.getenv('SCRATCH'))
-                except OSError as exception:
-                    if exception.errno != errno.EEXIST:
-                        raise
-        
+                os.makedirs(self.cfg['SCRATCH'])
+            except OSError as exception:
+                if exception.errno != errno.EEXIST:
+                    raise
+                
+            scratchdir = tempfile.mkdtemp(dir=self.cfg('SCRATCH'))
+            env.setvar('SCRATCH',scratchdir)
+            
             try:
                 cwd = os.getcwd()
 
