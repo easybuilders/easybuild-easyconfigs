@@ -71,7 +71,7 @@ class EB_WIEN2k(EasyBlock):
             ('MPI_REMOTE', [0,"Whether to initiate MPI calls locally or remotely",CUSTOM]),
             ('WIEN_GRANULARITY', [1,"Granularity for parallel execution (see manual)",CUSTOM]),
             ('taskset', ['no','specifies an optional command for binding a process to a specific core',CUSTOM]),
-            ('SCRATCH', [os.getenv('TMPDIR') if os.getenv('TMPDIR') else '/tmp','Specifies a temporary directory for the test step',CUSTOM])
+            ('SCRATCH', [None,'In this path a temporary directory will be created to serve as SCRATCH',CUSTOM])
         ]
         return EasyBlock.extra_options(extra_vars)
 
@@ -336,19 +336,16 @@ class EB_WIEN2k(EasyBlock):
             if not self.cfg['testdata']:
                 self.log.error("List of URLs for testdata not provided.")
 
-            path = os.getenv('PATH')
-            scratch = os.getenv('SCRATCH')
+            self.cfg['unwanted_env_vars'] = env.unset_env_vars(['PATH','SCRATCH'])
             
-            env.setvar('PATH', "%s:%s" % (self.installdir, path))
+            env.setvar('PATH', "%s:%s" % (self.installdir, self.cfg['unwanted_env_vars']['PATH']))
             
-            # create SCRATCH directory if it doesn't exist yet
-            try:
-                os.makedirs(self.cfg['SCRATCH'])
-            except OSError as exception:
-                if exception.errno != errno.EEXIST:
-                    raise
+            #Create a temp dir in the scratch directory and set the var, ignoring any existing environment $SCRATCH
+            if self.cfg['SCRATCH']:
+                scratchdir = tempfile.mkdtemp(dir=self.cfg('SCRATCH'))
+            else:
+                scratchdir = tempfile.mkdtemp()
                 
-            scratchdir = tempfile.mkdtemp(dir=self.cfg('SCRATCH'))
             env.setvar('SCRATCH',scratchdir)
             
             try:
@@ -386,18 +383,23 @@ class EB_WIEN2k(EasyBlock):
 
                 os.chdir(cwd)
                 rmtree2(tmpdir)
+                rmtree2(os.getenv('SCRATCH'))
 
             except OSError, err:
                 self.log.error("Failed to run WIEN2k benchmark tests: %s" % err)
 
             # reset original path and SCRATCH
-            env.setvar('PATH', path)
-            env.setvar('SCRATCH', scratch)
+            restore_env_vars(self.cfg['unwanted_env_vars'])
 
             self.log.debug("Current dir: %s" % os.getcwd())
 
     def test_cases_step(self):
         """Run test cases, if specified."""
+        
+        self.cfg['unwanted_env_vars'] = env.unset_env_vars(['PATH','SCRATCH'])
+            
+        env.setvar('PATH', "%s:%s" % (self.installdir, self.cfg['unwanted_env_vars']['PATH']))
+            
         for test in self.cfg['tests']:
 
             # check expected format
@@ -415,8 +417,15 @@ class EB_WIEN2k(EasyBlock):
                 tmpdir = os.path.join(tempfile.mkdtemp(), test_name)
                 os.mkdir(tmpdir)
                 os.chdir(tmpdir)
+                
+                if self.cfg['SCRATCH']:
+                    scratchdir = tempfile.mkdtemp(dir=self.cfg('SCRATCH'))
+                else:
+                    scratchdir = tempfile.mkdtemp()
+                
+                env.setvar('SCRATCH',scratchdir)
             except OSError, err:
-                self.log.error("Failed to create temporary directory for test %s: %s" % (test_name, err))
+                self.log.error("Failed to create temporary directories for test %s: %s" % (test_name, err))
 
             # try and find struct file for test
             test_fp = self.obtain_file("%s.struct" % test_name)
@@ -453,8 +462,10 @@ class EB_WIEN2k(EasyBlock):
             try:
                 os.chdir(cwd)
                 rmtree2(tmpdir)
+                rmtree2(os.getenv('SCRATCH'))
             except OSError, err:
                 self.log.error("Failed to clean up temporary test dir: %s" % err)
+        restore_env_vars(self.cfg['unwanted_env_vars'])
 
     def install_step(self):
         """Fix broken symlinks after build/installation."""
