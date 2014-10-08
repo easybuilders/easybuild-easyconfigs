@@ -70,7 +70,8 @@ class EB_WIEN2k(EasyBlock):
             ('USE_REMOTE', [1,"Whether to remotely login to initiate the k-point parallellization calls",CUSTOM]),
             ('MPI_REMOTE', [0,"Whether to initiate MPI calls locally or remotely",CUSTOM]),
             ('WIEN_GRANULARITY', [1,"Granularity for parallel execution (see manual)",CUSTOM]),
-            ('taskset', ['no','specifies an optional command for binding a process to a specific core',CUSTOM])
+            ('taskset', ['no','specifies an optional command for binding a process to a specific core',CUSTOM]),
+            ('SCRATCH', [os.getenv('TMPDIR') if os.getenv('TMPDIR') else '/tmp','Specifies a temporary directory for the test step',CUSTOM])
         ]
         return EasyBlock.extra_options(extra_vars)
 
@@ -186,7 +187,7 @@ class EB_WIEN2k(EasyBlock):
                  'You need to KNOW details about your installed  MPI and FFTW ) (y/n)': 'y',
                  'Please specify whether you want to use FFTW3 (default) or FFTW2  (FFTW3 / FFTW2):' : 'FFTW3',
                  'Please specify the ROOT-path of your FFTW installation (like /opt/fftw3):' : '/apps/gent/SL5/nehalem/software/FFTW/3.3.1-ictce-4.0.10',
-                 'is this correct? enter Y (default) or n:' : 'Y'
+                 'is this correct? enter Y (default) or n:' : 'Y',
                  }   
        
         else:   
@@ -336,8 +337,18 @@ class EB_WIEN2k(EasyBlock):
                 self.log.error("List of URLs for testdata not provided.")
 
             path = os.getenv('PATH')
+            scratch = os.getenv('SCRATCH')
+            
             env.setvar('PATH', "%s:%s" % (self.installdir, path))
-
+            env.setvar('SCRATCH',self.cfg['SCRATCH'])
+            
+            # create SCRATCH directory if it doesn't exist yet
+            try:
+                os.makedirs(os.getenv('SCRATCH'))
+                except OSError as exception:
+                    if exception.errno != errno.EEXIST:
+                        raise
+        
             try:
                 cwd = os.getcwd()
 
@@ -377,8 +388,9 @@ class EB_WIEN2k(EasyBlock):
             except OSError, err:
                 self.log.error("Failed to run WIEN2k benchmark tests: %s" % err)
 
-            # reset original path
+            # reset original path and SCRATCH
             env.setvar('PATH', path)
+            env.setvar('SCRATCH', scratch)
 
             self.log.debug("Current dir: %s" % os.getcwd())
 
