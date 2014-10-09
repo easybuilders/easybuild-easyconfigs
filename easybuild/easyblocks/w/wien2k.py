@@ -234,7 +234,8 @@ class EB_WIEN2k(EasyBlock):
             else:
                 self.log.error("Don't know how to handle remote %s" % self.cfg['remote'])
 
-        for opt in ['taskset', 'use_remote', 'mpi_remote', 'wien_granularity']:
+        parallel_options.append("setenv TASKSET %s" % self.cfg['taskset'])
+        for opt in ['use_remote', 'mpi_remote', 'wien_granularity']:
             parallel_options.append("setenv %s %s" % (opt.upper(), int(self.cfg[opt])))
 
         parallel_options_fp = os.path.join(self.cfg['start_dir'], 'parallel_options')
