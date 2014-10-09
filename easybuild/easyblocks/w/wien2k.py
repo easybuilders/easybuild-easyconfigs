@@ -233,14 +233,12 @@ class EB_WIEN2k(EasyBlock):
         for opt in ['use_remote', 'mpi_remote', 'wien_granularity']:
             parallel_options.update({opt.upper(): int(self.cfg[opt])})
 
-        for line in fileinput.input(parallel_options_fp, inplace=1, backup='.orig.eb'):
-            for key, val in parallel_options.items():
-                line = re.sub(r"(setenv %s\s*).*" % key, r'\1 "%s"' % val, line)
-                sys.stdout.write(line)
+        write_file(parallel_options_fp, '\n'.join(['setenv %s "%s"' % tup for tup in parallel_options.items()]))
 
         if self.cfg['remote']:
             if self.cfg['remote'] == 'pbsssh':
                 extratxt = '\n'.join([
+                    '',
                     "set remote = pbsssh",
                     "setenv PBSSSHENV 'LD_LIBRARY_PATH PATH'",
                     '',
