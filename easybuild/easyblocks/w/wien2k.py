@@ -220,26 +220,33 @@ class EB_WIEN2k(EasyBlock):
         run_cmd_qa(cmd, qanda, no_qa=no_qa, std_qa=std_qa, log_all=True, simple=True)
 
         # post-configure patches
-        parallel_options = []
+        parallel_options = {}
+        parallel_options_fp = os.path.join(self.cfg['start_dir'], 'parallel_options')
 
         if self.cfg['wien_mpirun']:
-            parallel_options.append('setenv WIEN_MPIRUN "%s"' % self.cfg['wien_mpirun'])
+            parallel_options.update({'WIEN_MPIRUN': self.cfg['wien_mpirun']})
+
+        parallel_options.update({'TASKSET': self.cfg['taskset']})
+
+        for opt in ['use_remote', 'mpi_remote', 'wien_granularity']:
+            parallel_options.update({opt.upper(): int(self.cfg[opt])})
+
+        for line in fileinput.input(parallel_options_fp, inplace=1, backup='.orig.eb'):
+            for key, val in parallel_options.items():
+                line = re.sub(r"(setenv %s\s*).*" % key, r'\1 "%s"' % val, line)
+                sys.stdout.write(line)
 
         if self.cfg['remote']:
             if self.cfg['remote'] == 'pbsssh':
-                parallel_options.extend([
+                extratxt = '\n'.join([
                     "set remote = pbsssh",
                     "setenv PBSSSHENV 'LD_LIBRARY_PATH PATH'",
+                    '',
                 ])
+                write_file(parallel_options_fp, extratxt, append=True)
             else:
                 self.log.error("Don't know how to handle remote %s" % self.cfg['remote'])
 
-        parallel_options.append("setenv TASKSET %s" % self.cfg['taskset'])
-        for opt in ['use_remote', 'mpi_remote', 'wien_granularity']:
-            parallel_options.append("setenv %s %s" % (opt.upper(), int(self.cfg[opt])))
-
-        parallel_options_fp = os.path.join(self.cfg['start_dir'], 'parallel_options')
-        write_file(parallel_options_fp, '\n'.join(parallel_options))
         self.log.debug("Patched file %s: %s" % (parallel_options_fp, read_file(parallel_options_fp)))
 
     def build_step(self):
@@ -298,6 +305,7 @@ class EB_WIEN2k(EasyBlock):
                 # create temporary directory
                 tmpdir = tempfile.mkdtemp()
                 os.chdir(tmpdir)
+                self.log.info("Running tests in %s" % tmpdir)
 
                 scratch = os.path.join(tmpdir, 'scratch')
                 mkdir(scratch)
@@ -361,6 +369,7 @@ class EB_WIEN2k(EasyBlock):
                 env.setvar('SCRATCH', scratch)
 
                 os.chdir(tmpdir)
+                self.log.info("Running test case %s in %s" % (test_name, tmpdir))
             except OSError, err:
                 self.log.error("Failed to create temporary directory for test %s: %s" % (test_name, err))
 
