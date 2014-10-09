@@ -68,7 +68,7 @@ class EB_WIEN2k(EasyBlock):
             ('wien_mpirun', [None, "MPI wrapper command to use", CUSTOM]),
             ('remote', [None, "Remote command to use (e.g. pbsssh, ...)", CUSTOM]),
             ('use_remote', [True, "Whether to remotely login to initiate the k-point parallellization calls", CUSTOM]),
-            ('mpI_remote', [False, "Whether to initiate MPI calls locally or remotely", CUSTOM]),
+            ('mpi_remote', [False, "Whether to initiate MPI calls locally or remotely", CUSTOM]),
             ('wien_granularity', [True, "Granularity for parallel execution (see manual)", CUSTOM]),
             ('taskset', ['no', "Specifies an optional command for binding a process to a specific core", CUSTOM]),
         ]
