@@ -45,8 +45,8 @@ import easybuild.tools.environment as env
 import easybuild.tools.toolchain as toolchain
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import CUSTOM
-from easybuild.tools.filetools import extract_file, rmtree2, run_cmd, run_cmd_qa, read_file
-from easybuild.tools.modules import get_software_version
+from easybuild.tools.filetools import extract_file, mkdir, read_file, rmtree2, run_cmd, run_cmd_qa, write_file
+from easybuild.tools.modules import get_software_root, get_software_version
 
 
 class EB_WIEN2k(EasyBlock):
@@ -55,7 +55,7 @@ class EB_WIEN2k(EasyBlock):
     def __init__(self,*args,**kwargs):
         """Enable building in install dir."""
         super(EB_WIEN2k, self).__init__(*args, **kwargs)
-        self.build_in_installdir = True 
+        self.build_in_installdir = True
 
     @staticmethod
     def extra_options():
@@ -67,11 +67,10 @@ class EB_WIEN2k(EasyBlock):
             ('testdata', [testdata_urls, "test data URL for WIEN2k benchmark test", CUSTOM]),
             ('wien_mpirun', [None, "MPI wrapper command to use", CUSTOM]),
             ('remote', [None, "Remote command to use (e.g. pbsssh, ...)", CUSTOM]),
-            ('USE_REMOTE', [1,"Whether to remotely login to initiate the k-point parallellization calls",CUSTOM]),
-            ('MPI_REMOTE', [0,"Whether to initiate MPI calls locally or remotely",CUSTOM]),
-            ('WIEN_GRANULARITY', [1,"Granularity for parallel execution (see manual)",CUSTOM]),
-            ('taskset', ['no','specifies an optional command for binding a process to a specific core',CUSTOM]),
-            ('SCRATCH', [None,'In this path a temporary directory will be created to serve as SCRATCH',CUSTOM])
+            ('use_remote', [True, "Whether to remotely login to initiate the k-point parallellization calls", CUSTOM]),
+            ('mpI_remote', [False, "Whether to initiate MPI calls locally or remotely", CUSTOM]),
+            ('wien_granularity', [True, "Granularity for parallel execution (see manual)", CUSTOM]),
+            ('taskset', ['no', "Specifies an optional command for binding a process to a specific core", CUSTOM]),
         ]
         return EasyBlock.extra_options(extra_vars)
 
@@ -153,140 +152,94 @@ class EB_WIEN2k(EasyBlock):
         env.setvar('bin', os.getcwd())
 
         dc = {
-              'COMPILERC': os.getenv('CC'),
-              'COMPILER': os.getenv('F90'),
-              'COMPILERP': os.getenv('MPIF90'),
-             }
+            'COMPILERC': os.getenv('CC'),
+            'COMPILER': os.getenv('F90'),
+            'COMPILERP': os.getenv('MPIF90'),
+        }
 
-        for (k,v) in dc.items():
-            f = open(k,"w")
-            f.write(v)
-            f.close()
+        for (k, v) in dc.items():
+            write_file(k, v)
 
         # configure with patched configure script
         self.log.debug('%s part I (configure)' % self.cfgscript)
 
         cmd = "./%s" % self.cfgscript
-        if LooseVersion(self.version[0:2]) >= LooseVersion("13"):
-            qanda = {                             
-                 'Press RETURN to continue': '',                   
-                 '(not updated) Selection:': comp_answer,                               
-                 'Your compiler:': '',                                                               
-                 'Hit Enter to continue': '',                                                                         
-                 'Shared Memory Architecture? (y/N):': 'N',                                                                            
-                 'Remote shell (default is ssh) =': '',
-                 'and you need to know details about your installed  mpi ..) (y/n)': 'y',                                                               
-                 'Recommended setting for parallel f90 compiler: mpif90 ' \
-                        'Current selection: Your compiler:': os.getenv('MPIF90'),                                                                                                       
-                 'Q to quit Selection:': 'Q',
-                 'A Compile all programs (suggested) Q Quit Selection:': 'Q',
-                 ' Please enter the full path of the perl program: ': '',
-                 'continue or stop (c/s)': 'c',
-                 '(like taskset -c). Enter N / your_specific_command:': 'N',
+        qanda = {
+             'Press RETURN to continue': '',
+             'Your compiler:': '',
+             'Hit Enter to continue': '',
+             'Remote shell (default is ssh) =': '',
+             'and you need to know details about your installed  mpi ..) (y/n)': 'y',
+             'Q to quit Selection:': 'Q',
+             'A Compile all programs (suggested) Q Quit Selection:': 'Q',
+             ' Please enter the full path of the perl program: ': '',
+             'continue or stop (c/s)': 'c',
+             '(like taskset -c). Enter N / your_specific_command:': 'N',
+        }
+        if LooseVersion(self.version) >= LooseVersion("13"):
+            fftw_root = get_software_root('FFTW')
+            if fftw_root:
+                fftw_maj = get_software_version('FFTW').split('.')[0]
+                fftw_spec = 'FFTW%s' % fftw_maj
+            else:
+                self.log.error("Required FFTW dependency is missing")
+            qanda.update({
+                 '(not updated) Selection:': comp_answer,
+                 'Shared Memory Architecture? (y/N):': 'N',
                  'Set MPI_REMOTE to  0 / 1:': '0',
                  'You need to KNOW details about your installed  MPI and FFTW ) (y/n)': 'y',
-                 'Please specify whether you want to use FFTW3 (default) or FFTW2  (FFTW3 / FFTW2):' : 'FFTW3',
-                 'Please specify the ROOT-path of your FFTW installation (like /opt/fftw3):' : '/apps/gent/SL5/nehalem/software/FFTW/3.3.1-ictce-4.0.10',
+                 'Please specify whether you want to use FFTW3 (default) or FFTW2  (FFTW3 / FFTW2):' : fftw_spec,
+                 'Please specify the ROOT-path of your FFTW installation (like /opt/fftw3):' : fftw_root,
                  'is this correct? enter Y (default) or n:' : 'Y',
-                 }   
-       
-        else:   
-            qanda = {
-                 'Press RETURN to continue': '',
+            })
+        else:
+            qanda.update({
                  'compiler) Selection:': comp_answer,
-                 'Your compiler:': '',
-                 'Hit Enter to continue': '',
                  'Shared Memory Architecture? (y/n):': 'n',
-                 'Remote shell (default is ssh) =': '',
-                 'and you need to know details about your installed  mpi ..) (y/n)': 'y',
-                 'Recommended setting for parallel f90 compiler: mpiifort ' \
-                    'Current selection: Your compiler:': os.getenv('MPIF90'),
-                 'Q to quit Selection:': 'Q',
-                 'A Compile all programs (suggested) Q Quit Selection:': 'Q',
-                 ' Please enter the full path of the perl program: ': '',
-                 'continue or stop (c/s)': 'c',
-                 '(like taskset -c). Enter N / your_specific_command:': 'N',
                  'If you are using mpi2 set MPI_REMOTE to 0  Set MPI_REMOTE to 0 / 1:': '0',
                  'Do you have MPI and Scalapack installed and intend to run ' \
                     'finegrained parallel? (This is usefull only for BIG cases ' \
                     '(50 atoms and more / unit cell) and you need to know details ' \
                     'about your installed  mpi and fftw ) (y/n)': 'y',
-                }
+            })
 
         no_qa = [
-                 'You have the following mkl libraries in %s :' % os.getenv('MKLROOT'),
-                 "%s[ \t]*.*"%os.getenv('MPIF90'),
-                 "%s[ \t]*.*"%os.getenv('F90'),
-                 "%s[ \t]*.*"%os.getenv('CC'),
-                 ".*SRC_.*",
-                 "Please enter the full path of the perl program:",
-                ]
+            'You have the following mkl libraries in %s :' % os.getenv('MKLROOT'),
+            "%s[ \t]*.*" % os.getenv('MPIF90'),
+            "%s[ \t]*.*" % os.getenv('F90'),
+            "%s[ \t]*.*" % os.getenv('CC'),
+            ".*SRC_.*",
+            "Please enter the full path of the perl program:",
+        ]
 
         std_qa = {
-                  r'S\s+Save and Quit[\s\n]+To change an item select option.[\s\n]+Selection:': 'S',
-                 }
+            r'S\s+Save and Quit[\s\n]+To change an item select option.[\s\n]+Selection:': 'S',
+            'Recommended setting for parallel f90 compiler: .* Current selection: Your compiler:': os.getenv('MPIF90'),
+        }
 
         run_cmd_qa(cmd, qanda, no_qa=no_qa, std_qa=std_qa, log_all=True, simple=True)
 
         # post-configure patches
-        fn = os.path.join(self.cfg['start_dir'], 'parallel_options')
-        remote = self.cfg['remote']
-        wien_mpirun = self.cfg['wien_mpirun']
-        USE_REMOTE = self.cfg['USE_REMOTE']
-        MPI_REMOTE = self.cfg['MPI_REMOTE']
-        WIEN_GRANULARITY = self.cfg['WIEN_GRANULARITY']
-        taskset = self.cfg['taskset']
-        f= open(fn, 'w')
-        extra = "";
+        parallel_options = []
 
-        try:
-            if wien_mpirun:
-                extra += 'setenv WIEN_MPIRUN "' + wien_mpirun + '"\n'
-    
-            if remote:
-                if remote == 'pbsssh':
-                    extra += "set remote = pbsssh\n"
-                    extra += "setenv PBSSSHENV 'LD_LIBRARY_PATH PATH'\n"
-                else:
-                    self.log.error("Don't know how to patch %s for remote %s" % (fn, remote))
+        if self.cfg['wien_mpirun']:
+            parallel_options.append('setenv WIEN_MPIRUN "%s"' % self.cfg['wien_mpirun'])
 
-            
-            #due to defaults there may be some redundancy here
-            
-            extra += "setenv TASKSET "
-            
-            if taskset:
-                extra += str(taskset)
+        if self.cfg['remote']:
+            if self.cfg['remote'] == 'pbsssh':
+                parallel_options.extend([
+                    "set remote = pbsssh",
+                    "setenv PBSSSHENV 'LD_LIBRARY_PATH PATH'",
+                ])
             else:
-                extra += 'no'
-            extra += "\nsetenv USE_REMOTE "
-            
-            if USE_REMOTE:
-                extra += str(USE_REMOTE)
-            else:
-                extra += '1'
-            
-            extra += "\nsetenv MPI_REMOTE "
-            if MPI_REMOTE:
-                extra += str(MPI_REMOTE)
-            else:
-                extra += '0'
-            
-            extra += "\nsetenv WIEN_GRANULARITY "
+                self.log.error("Don't know how to handle remote %s" % self.cfg['remote'])
 
-            if WIEN_GRANULARITY:
-                extra += str(WIEN_GRANULARITY)
-            else:
-                extra += '1'
-            extra += "\n"
+        for opt in ['taskset', 'use_remote', 'mpi_remote', 'wien_granularity']:
+            parallel_options.append("setenv %s %s" % (opt.upper(), int(self.cfg[opt])))
 
-            f.write(extra)
-            f.close()
-
-            self.log.debug("Patched file %s: %s" % (fn, read_file(fn)))
-        except IOError, err:
-            self.log.error("Failed to patch %s: %s" % (fn, err))
-
+        parallel_options_fp = os.path.join(self.cfg['start_dir'], 'parallel_options')
+        write_file(parallel_options_fp, '\n'.join(parallel_options))
+        self.log.debug("Patched file %s: %s" % (parallel_options_fp, read_file(parallel_options_fp)))
 
     def build_step(self):
         """Build WIEN2k by running siteconfig_lapw script again."""
@@ -336,24 +289,18 @@ class EB_WIEN2k(EasyBlock):
             if not self.cfg['testdata']:
                 self.log.error("List of URLs for testdata not provided.")
 
-            self.cfg['unwanted_env_vars'] = env.unset_env_vars(['PATH','SCRATCH'])
-            
-            env.setvar('PATH', "%s:%s" % (self.installdir, self.cfg['unwanted_env_vars']['PATH']))
-            
-            #Create a temp dir in the scratch directory and set the var, ignoring any existing environment $SCRATCH
-            if self.cfg['SCRATCH']:
-                scratchdir = tempfile.mkdtemp(dir=self.cfg('SCRATCH'))
-            else:
-                scratchdir = tempfile.mkdtemp()
-                
-            env.setvar('SCRATCH',scratchdir)
-            
+            # prepend $PATH with install directory, define $SCRATCH which is used by the tests
+            env.setvar('PATH', "%s:%s" % (self.installdir, os.environ['PATH']))
             try:
                 cwd = os.getcwd()
 
                 # create temporary directory
                 tmpdir = tempfile.mkdtemp()
                 os.chdir(tmpdir)
+
+                scratch = os.path.join(tmpdir, 'scratch')
+                mkdir(scratch)
+                env.setvar('SCRATCH', scratch)
 
                 # download data
                 testdata_paths = {}
@@ -383,23 +330,15 @@ class EB_WIEN2k(EasyBlock):
 
                 os.chdir(cwd)
                 rmtree2(tmpdir)
-                rmtree2(os.getenv('SCRATCH'))
 
             except OSError, err:
                 self.log.error("Failed to run WIEN2k benchmark tests: %s" % err)
-
-            # reset original path and SCRATCH
-            restore_env_vars(self.cfg['unwanted_env_vars'])
 
             self.log.debug("Current dir: %s" % os.getcwd())
 
     def test_cases_step(self):
         """Run test cases, if specified."""
-        
-        self.cfg['unwanted_env_vars'] = env.unset_env_vars(['PATH','SCRATCH'])
-            
-        env.setvar('PATH', "%s:%s" % (self.installdir, self.cfg['unwanted_env_vars']['PATH']))
-            
+
         for test in self.cfg['tests']:
 
             # check expected format
@@ -415,17 +354,14 @@ class EB_WIEN2k(EasyBlock):
                 cwd = os.getcwd()
                 # WIEN2k enforces that working dir has same name as test case
                 tmpdir = os.path.join(tempfile.mkdtemp(), test_name)
-                os.mkdir(tmpdir)
+
+                scratch = os.path.join(tmpdir, 'scratch')
+                mkdir(scratch, parents=True)
+                env.setvar('SCRATCH', scratch)
+
                 os.chdir(tmpdir)
-                
-                if self.cfg['SCRATCH']:
-                    scratchdir = tempfile.mkdtemp(dir=self.cfg('SCRATCH'))
-                else:
-                    scratchdir = tempfile.mkdtemp()
-                
-                env.setvar('SCRATCH',scratchdir)
             except OSError, err:
-                self.log.error("Failed to create temporary directories for test %s: %s" % (test_name, err))
+                self.log.error("Failed to create temporary directory for test %s: %s" % (test_name, err))
 
             # try and find struct file for test
             test_fp = self.obtain_file("%s.struct" % test_name)
@@ -445,12 +381,7 @@ class EB_WIEN2k(EasyBlock):
             # check output
             scf_fn = "%s.scf" % test_name
             self.log.debug("Checking output of test %s in %s" % (str(test), scf_fn))
-            try:
-                f = open(scf_fn, "r")
-                scftxt = f.read()
-                f.close()
-            except IOError, err:
-                self.log.error("Failed to read file %s: %s" % (scf_fn, err))
+            scftxt = read_file(scf_fn)
             for regexp_pat in scf_regexp_patterns:
                 regexp = re.compile(regexp_pat, re.M)
                 if not regexp.search(scftxt):
@@ -462,10 +393,8 @@ class EB_WIEN2k(EasyBlock):
             try:
                 os.chdir(cwd)
                 rmtree2(tmpdir)
-                rmtree2(os.getenv('SCRATCH'))
             except OSError, err:
                 self.log.error("Failed to clean up temporary test dir: %s" % err)
-        restore_env_vars(self.cfg['unwanted_env_vars'])
 
     def install_step(self):
         """Fix broken symlinks after build/installation."""
@@ -478,15 +407,15 @@ class EB_WIEN2k(EasyBlock):
         """Custom sanity check for WIEN2k."""
 
         lapwfiles = []
-        for suffix in ["0","0_mpi","1","1_mpi","1c","1c_mpi","2","2_mpi","2c","2c_mpi",
-                       "3","3c","5","5c","7","7c","dm","dmc","so"]:
+        for suffix in ['0', '0_mpi', '1', '1_mpi', '1c', '1c_mpi', '2', '2_mpi', '2c' ,'2c_mpi',
+                       '3', '3c', '5', '5c', '7', '7c', 'dm', 'dmc', 'so']:
             p = os.path.join(self.installdir, "lapw%s" % suffix)
             lapwfiles.append(p)
 
         custom_paths = {
-                        'files': lapwfiles,
-                        'dirs': []
-                       }
+            'files': lapwfiles,
+            'dirs': [],
+        }
 
         super(EB_WIEN2k, self).sanity_check_step(custom_paths=custom_paths)
 
