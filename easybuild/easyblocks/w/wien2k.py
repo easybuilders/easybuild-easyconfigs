@@ -70,7 +70,7 @@ class EB_WIEN2k(EasyBlock):
             ('use_remote', [True, "Whether to remotely login to initiate the k-point parallellization calls", CUSTOM]),
             ('mpi_remote', [False, "Whether to initiate MPI calls locally or remotely", CUSTOM]),
             ('wien_granularity', [True, "Granularity for parallel execution (see manual)", CUSTOM]),
-            ('taskset', ['no', "Specifies an optional command for binding a process to a specific core", CUSTOM]),
+            ('taskset', [None, "Specifies an optional command for binding a process to a specific core", CUSTOM]),
         ]
         return EasyBlock.extra_options(extra_vars)
 
@@ -226,6 +226,8 @@ class EB_WIEN2k(EasyBlock):
         if self.cfg['wien_mpirun']:
             parallel_options.update({'WIEN_MPIRUN': self.cfg['wien_mpirun']})
 
+        if self.cfg['taskset'] is None:
+            self.cfg['taskset'] = 'no'
         parallel_options.update({'TASKSET': self.cfg['taskset']})
 
         for opt in ['use_remote', 'mpi_remote', 'wien_granularity']:
