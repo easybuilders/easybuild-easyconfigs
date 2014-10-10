@@ -136,7 +136,7 @@ EULA=accept
     def make_module_extra(self):
         """Overwritten from IntelBase to add extra txt"""
         txt = super(EB_itac, self).make_module_extra()
-        txt += self.moduleGenerator.prepend_paths(self.license_env_var, [self.license_file])
+        txt += self.moduleGenerator.prepend_paths(self.license_env_var, [self.license_file], allow_abs=True)
         txt += self.moduleGenerator.set_environment('VT_ROOT', '$root')
         txt += self.moduleGenerator.set_environment('VT_MPI', self.cfg['preferredmpi'])
         txt += self.moduleGenerator.set_environment('VT_ADD_LIBS', "-ldwarf -lelf -lvtunwind -lnsl -lm -ldl -lpthread")

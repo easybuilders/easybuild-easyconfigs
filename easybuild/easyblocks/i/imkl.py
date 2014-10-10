@@ -136,7 +136,7 @@ class EB_imkl(IntelBase):
     def make_module_extra(self):
         """Overwritten from Application to add extra txt"""
         txt = super(EB_imkl, self).make_module_extra()
-        txt += self.moduleGenerator.prepend_paths(self.license_env_var, [self.license_file])
+        txt += self.moduleGenerator.prepend_paths(self.license_env_var, [self.license_file], allow_abs=True)
         if self.cfg['m32']:
             txt += self.moduleGenerator.prepend_paths('NLSPATH', '$root/idb/32/locale/%l_%t/%N')
         else:
