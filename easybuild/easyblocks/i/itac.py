@@ -111,14 +111,15 @@ EULA=accept
         """
         A dictionary of possible directories to look for
         """
+        guesses = {}
         if LooseVersion(self.version) < LooseVersion('9.0'):
             preferredmpi = self.cfg["preferredmpi"]
-            guesses = {
+            guesses.update({
                 'MANPATH': ['man'],
                 'CLASSPATH': ['itac/lib_%s' % preferredmpi],
                 'VT_LIB_DIR': ['itac/lib_%s' % preferredmpi],
                 'VT_SLIB_DIR': ['itac/lib_s%s' % preferredmpi]
-            }
+            })
 
         if self.cfg['m32']:
             guesses.update({
