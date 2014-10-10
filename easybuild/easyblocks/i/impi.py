@@ -68,24 +68,7 @@ class EB_impi(IntelBase):
 
             # impi v4.1.1 and v5.0.1 installers create impi/<version> subdir, so stuff needs to be moved afterwards
             if impiver == LooseVersion('4.1.1.036') or impiver >= LooseVersion('5.0.1.035'):
-                subdir = os.path.join(self.installdir, self.name, self.version)
-                self.log.debug("Moving contents of %s to %s" % (subdir, self.installdir))
-                try:
-                    # remove senseless symlinks, e.g. impi_5.0.1 and impi_latest
-                    majver = '.'.join(self.version.split('.')[:-1])
-                    for symlink in ['impi_%s' % majver, 'impi_latest']:
-                        symlink_fp = os.path.join(self.installdir, symlink)
-                        if os.path.exists(symlink_fp):
-                            os.remove(symlink_fp)
-                    # move contents of 'impi/<version>' dir to installdir
-                    for fil in os.listdir(subdir):
-                        source = os.path.join(subdir, fil)
-                        target = os.path.join(self.installdir, fil)
-                        self.log.debug("Moving %s to %s" % (source, target))
-                        shutil.move(source, target)
-                    shutil.rmtree(os.path.join(self.installdir, 'impi'))
-                except OSError, err:
-                    self.log.error("Failed to move contents of %s to %s: %s" % (subdir, self.installdir, err))
+                super(EB_impi, self).move_after_install()
         else:
             # impi up until version 4.0.0.x uses custom installation procedure.
             silent = \
@@ -177,7 +160,6 @@ EULA=accept
     def make_module_extra(self):
         """Overwritten from Application to add extra txt"""
         txt = super(EB_impi, self).make_module_extra()
-        txt += "prepend-path\t%s\t\t%s\n" % (self.license_env_var, self.license_file)
-        txt += "setenv\t%s\t\t$root\n" % ('I_MPI_ROOT')
-
+        txt += self.moduleGenerator.prepend_paths(self.license_env_var, [self.license_file], allow_abs=True)
+        txt += self.moduleGenerator.set_environment('I_MPI_ROOT', '$root')
         return txt
