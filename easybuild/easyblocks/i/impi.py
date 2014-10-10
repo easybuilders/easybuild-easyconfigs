@@ -160,7 +160,6 @@ EULA=accept
     def make_module_extra(self):
         """Overwritten from Application to add extra txt"""
         txt = super(EB_impi, self).make_module_extra()
-        txt += "prepend-path\t%s\t\t%s\n" % (self.license_env_var, self.license_file)
-        txt += "setenv\t%s\t\t$root\n" % ('I_MPI_ROOT')
-
+        txt += self.moduleGenerator.prepend_paths(self.license_env_var, [self.license_file])
+        txt += self.moduleGenerator.set_environment('I_MPI_ROOT', '$root')
         return txt

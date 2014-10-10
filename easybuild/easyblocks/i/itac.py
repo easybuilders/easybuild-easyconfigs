@@ -101,9 +101,9 @@ EULA=accept
         """Custom sanity check paths for ITAC."""
 
         custom_paths = {
-                        'files': ["include/%s" % x for x in ["i_malloc.h", "VT_dynamic.h", "VT.h", "VT.inc"]],
-                        'dirs': ["bin", "itac", "lib", "slib"]
-                       }
+            'files': ["include/%s" % x for x in ["i_malloc.h", "VT_dynamic.h", "VT.h", "VT.inc"]],
+            'dirs': ["bin", "lib", "slib"],
+        }
 
         super(EB_itac, self).sanity_check_step(custom_paths=custom_paths)
 
@@ -111,32 +111,32 @@ EULA=accept
         """
         A dictionary of possible directories to look for
         """
-        preferredmpi = self.cfg["preferredmpi"]
-        guesses = {
-                   'MANPATH': ['man'],
-                   'CLASSPATH': ['itac/lib_%s' % preferredmpi],
-                   'VT_LIB_DIR': ['itac/lib_%s' % preferredmpi],
-                   'VT_SLIB_DIR': ['itac/lib_s%s' % preferredmpi]
-                  }
+        if LooseVersion(self.version) < LooseVersion('9.0'):
+            preferredmpi = self.cfg["preferredmpi"]
+            guesses = {
+                'MANPATH': ['man'],
+                'CLASSPATH': ['itac/lib_%s' % preferredmpi],
+                'VT_LIB_DIR': ['itac/lib_%s' % preferredmpi],
+                'VT_SLIB_DIR': ['itac/lib_s%s' % preferredmpi]
+            }
 
         if self.cfg['m32']:
             guesses.update({
-                            'PATH': ['bin', 'bin/ia32', 'ia32/bin'],
-                            'LD_LIBRARY_PATH': ['lib', 'lib/ia32', 'ia32/lib'],
-                           })
+                'PATH': ['bin', 'bin/ia32', 'ia32/bin'],
+                'LD_LIBRARY_PATH': ['lib', 'lib/ia32', 'ia32/lib'],
+            })
         else:
             guesses.update({
-                            'PATH': ['bin', 'bin/intel64', 'bin64'],
-                            'LD_LIBRARY_PATH': ['lib', 'lib/intel64', 'lib64'],
-                           })
+                'PATH': ['bin', 'bin/intel64', 'bin64'],
+                'LD_LIBRARY_PATH': ['lib', 'lib/intel64', 'lib64'],
+            })
         return guesses
 
     def make_module_extra(self):
         """Overwritten from IntelBase to add extra txt"""
         txt = super(EB_itac, self).make_module_extra()
-        txt += "prepend-path\t%s\t\t%s\n" % (self.license_env_var, self.license_file)
-        txt += "setenv\t%s\t\t$root\n" % 'VT_ROOT'
-        txt += "setenv\t%s\t\t%s\n" % ('VT_MPI', self.cfg['preferredmpi'])
-        txt += "setenv\t%s\t\t%s\n" % ('VT_ADD_LIBS', '"-ldwarf -lelf -lvtunwind -lnsl -lm -ldl -lpthread"')
-
+        txt += self.moduleGenerator.prepend_paths(self.license_env_var, [self.license_file])
+        txt += self.moduleGenerator.set_environment('VT_ROOT', '$root')
+        txt += self.moduleGenerator.set_environment('VT_MPI', self.cfg['preferredmpi'])
+        txt += self.moduleGenerator.set_environment('VT_ADD_LIBS', "-ldwarf -lelf -lvtunwind -lnsl -lm -ldl -lpthread")
         return txt
