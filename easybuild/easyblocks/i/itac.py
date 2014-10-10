@@ -62,6 +62,10 @@ class EB_itac(IntelBase):
 
         if LooseVersion(self.version) >= LooseVersion('8.1'):
             super(EB_itac, self).install_step(silent_cfg_names_map=None)
+
+            # itac v9.0.1 installer create itac/<version> subdir, so stuff needs to be moved afterwards
+            if LooseVersion(self.version) >= LooseVersion('9.0'):
+                super(EB_itac, self).move_after_install()
         else:
             silent = \
 """
