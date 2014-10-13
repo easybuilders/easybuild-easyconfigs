@@ -24,6 +24,8 @@
 ##
 """
 EasyBuild support for building and installing Xmlm, implemented as an easyblock
+
+@author: Kenneth Hoste (Ghent University)
 """
 from easybuild.easyblocks.generic.makecp import MakeCp
 from easybuild.framework.easyconfig import CUSTOM
