@@ -44,9 +44,10 @@ import easybuild.tools.options as eboptions
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig.easyconfig import ActiveMNS, EasyConfig, fetch_parameter_from_easyconfig_file
 from easybuild.framework.easyconfig.easyconfig import get_easyblock_class
-from easybuild.framework.easyconfig.tools import dep_graph, get_paths_for, process_easyconfig, resolve_dependencies
+from easybuild.framework.easyconfig.tools import dep_graph, get_paths_for, process_easyconfig
 from easybuild.tools import config
 from easybuild.tools.module_naming_scheme import GENERAL_CLASS
+from easybuild.tools.robot import resolve_dependencies
 
 
 # indicates whether all the single tests are OK,
