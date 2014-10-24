@@ -169,7 +169,7 @@ EULA=accept
         txt = super(EB_impi, self).make_module_extra()
         txt += self.moduleGenerator.prepend_paths(self.license_env_var, [self.license_file], allow_abs=True)
         txt += self.moduleGenerator.set_environment('I_MPI_ROOT', '$root')
-        if self.cfg['override_impi_default_compilers']:
+        if self.cfg['set_mpi_wrappers_compiler']:
             for var in ['CC', 'CXX', 'F77', 'F90']:
                 txt += self.moduleGenerator.set_environment('I_MPI_%s' % var, os.getenv[var])
             # $FC isn't defined by EasyBuild framework, so use $F90 instead 
