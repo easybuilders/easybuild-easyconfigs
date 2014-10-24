@@ -169,13 +169,11 @@ EULA=accept
         txt += self.moduleGenerator.prepend_paths(self.license_env_var, [self.license_file], allow_abs=True)
         txt += self.moduleGenerator.set_environment('I_MPI_ROOT', '$root')
         if self.cfg['override_impi_default_compilers']:
-            txt += self.moduleGenerator.set_environment('I_MPI_CC', os.getenv['CC'])
-            txt += self.moduleGenerator.set_environment('I_MPI_CXX', os.getenv['CXX'])
-            txt += self.moduleGenerator.set_environment('I_MPI_F77', os.getenv['F77'])
-            txt += self.moduleGenerator.set_environment('I_MPI_F90', os.getenv['F90'])
-# EB doesn't set this one so I'll just set it to the F90 value 
+            for var in ['CC', 'CXX', 'F77', 'F90']:
+                txt += self.moduleGenerator.set_environment('I_MPI_%s' % var, os.getenv[var])
+            # $FC isn't defined by EasyBuild framework, so use $F90 instead 
             txt += self.moduleGenerator.set_environment('I_MPI_FC', os.getenv['F90'])
-# Force mpigcc and mpigxx to point to gcc compilers (INTEL BUG)
+            # force mpigcc/mpigxx to use GCC compilers, as would be expected based on their name
             txt += self.moduleGenerator.set_alias('mpigcc', 'mpigcc -cc=gcc')
             txt += self.moduleGenerator.set_alias('mpigxx', 'mpigxx -cc=g++')
             
