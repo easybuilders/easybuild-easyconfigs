@@ -46,7 +46,7 @@ class EB_impi(IntelBase):
     """
     def extra_options():
         extra_vars = [
-            ('override_impi_default_compiler', [False, 'Override the Intel MPI defaults so that mpicc, mpicxx etc. wrap the installing compiler.', CUSTOM]),
+            ('override_impi_default_compilers', [False, 'Override the Intel MPI defaults so that mpicc, mpicxx etc. wrap the installing compiler.', CUSTOM]),
             ]
         return IntelBase.extra_options(extra_vars)
 
@@ -167,7 +167,7 @@ EULA=accept
         txt = super(EB_impi, self).make_module_extra()
         txt += self.moduleGenerator.prepend_paths(self.license_env_var, [self.license_file], allow_abs=True)
         txt += self.moduleGenerator.set_environment('I_MPI_ROOT', '$root')
-        if self.cfg['override_impi_default_compiler']:
+        if self.cfg['override_impi_default_compilers']:
             txt += self.moduleGenerator.set_environment('I_MPI_CC', os.getenv['CC'])
             txt += self.moduleGenerator.set_environment('I_MPI_CXX', os.getenv['CXX'])
             txt += self.moduleGenerator.set_environment('I_MPI_F77', os.getenv['F77'])
