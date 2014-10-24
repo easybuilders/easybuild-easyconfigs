@@ -44,6 +44,7 @@ class EB_impi(IntelBase):
     """
     Support for installing Intel MPI library
     """
+    @staticmethod
     def extra_options():
         extra_vars = [
             ('set_mpi_wrappers_compiler', [False, 'Override default compiler used by MPI wrapper commands', CUSTOM]),
