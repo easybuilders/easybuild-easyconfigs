@@ -44,6 +44,11 @@ class EB_impi(IntelBase):
     """
     Support for installing Intel MPI library
     """
+    def extra_options():
+        extra_vars = [
+            ('override_impi_default_compiler', [False, 'Override the Intel MPI defaults so that mpicc, mpicxx etc. wrap the installing compiler.', CUSTOM]),
+            ]
+        return IntelBase.extra_options(extra_vars)
 
     def install_step(self):
         """
@@ -162,4 +167,15 @@ EULA=accept
         txt = super(EB_impi, self).make_module_extra()
         txt += self.moduleGenerator.prepend_paths(self.license_env_var, [self.license_file], allow_abs=True)
         txt += self.moduleGenerator.set_environment('I_MPI_ROOT', '$root')
+        if self.cfg['override_impi_default_compiler']:
+            txt += self.moduleGenerator.set_environment('I_MPI_CC', os.getenv['CC'])
+            txt += self.moduleGenerator.set_environment('I_MPI_CXX', os.getenv['CXX'])
+            txt += self.moduleGenerator.set_environment('I_MPI_F77', os.getenv['F77'])
+            txt += self.moduleGenerator.set_environment('I_MPI_F90', os.getenv['F90'])
+# EB doesn't set this one so I'll just set it to the F90 value 
+            txt += self.moduleGenerator.set_environment('I_MPI_FC', os.getenv['F90'])
+# Force mpigcc and mpigxx to point to gcc compilers (INTEL BUG)
+            txt += self.moduleGenerator.set_alias('mpigcc', 'mpigcc -cc=gcc')
+            txt += self.moduleGenerator.set_alias('mpigxx', 'mpigxx -cc=g++')
+            
         return txt
