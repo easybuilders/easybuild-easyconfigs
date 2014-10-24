@@ -46,7 +46,7 @@ class EB_impi(IntelBase):
     """
     def extra_options():
         extra_vars = [
-            ('override_impi_default_compilers', [False, 'Override the Intel MPI defaults so that mpicc, mpicxx etc. wrap the installing compiler.', CUSTOM]),
+            ('set_mpi_wrappers_compiler', [False, 'Override default compiler used by MPI wrapper commands', CUSTOM]),
             ]
         return IntelBase.extra_options(extra_vars)
 
