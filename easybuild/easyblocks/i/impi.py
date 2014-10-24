@@ -171,9 +171,9 @@ EULA=accept
         txt += self.moduleGenerator.set_environment('I_MPI_ROOT', '$root')
         if self.cfg['set_mpi_wrappers_compiler']:
             for var in ['CC', 'CXX', 'F77', 'F90']:
-                txt += self.moduleGenerator.set_environment('I_MPI_%s' % var, os.getenv[var])
+                txt += self.moduleGenerator.set_environment('I_MPI_%s' % var, os.getenv(var))
             # $FC isn't defined by EasyBuild framework, so use $F90 instead 
-            txt += self.moduleGenerator.set_environment('I_MPI_FC', os.getenv['F90'])
+            txt += self.moduleGenerator.set_environment('I_MPI_FC', os.getenv('F90'))
             # force mpigcc/mpigxx to use GCC compilers, as would be expected based on their name
             txt += self.moduleGenerator.set_alias('mpigcc', 'mpigcc -cc=gcc')
             txt += self.moduleGenerator.set_alias('mpigxx', 'mpigxx -cc=g++')
