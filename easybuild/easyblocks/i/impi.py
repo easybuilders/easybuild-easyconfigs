@@ -40,6 +40,7 @@ from easybuild.easyblocks.generic.intelbase import IntelBase, ACTIVATION_NAME_20
 from easybuild.tools.filetools import run_cmd
 from easybuild.framework.easyconfig import CUSTOM
 
+
 class EB_impi(IntelBase):
     """
     Support for installing Intel MPI library
