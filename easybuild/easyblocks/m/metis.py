@@ -47,7 +47,7 @@ class EB_METIS(ConfigureMake):
 
         if LooseVersion(self.version) >= LooseVersion("5"):
 
-            cmd = "make config prefix=%s" % self.installdir
+            cmd = "make %s config prefix=%s" % (self.cfg['configopts'],self.installdir)
             run_cmd(cmd, log_all=True, simple=True)
 
     def build_step(self):
@@ -125,7 +125,7 @@ class EB_METIS(ConfigureMake):
 
         custom_paths = {
                         'files': ['bin/%s' % x for x in binfiles] + ['include/%s' % x for x in incfiles] +
-                                 ['lib/libmetis.a'],
+                                 [('lib/libmetis.a','lib/libmetis.so')],
                         'dirs' : dirs
                        }
 
