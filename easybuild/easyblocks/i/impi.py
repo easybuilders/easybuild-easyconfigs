@@ -177,9 +177,14 @@ EULA=accept
                 else:
                     self.log.error("Environment variable $%(var)s not set, can't define $I_MPI_%(var)s" % {'var': var})
             # $FC isn't defined by EasyBuild framework, so use $F90 instead 
-            txt += self.moduleGenerator.set_environment('I_MPI_FC', os.getenv('F90'))
+            val = os.getenv('F90')
+            if val:
+                    txt += self.moduleGenerator.set_environment('I_MPI_FC', val)
             # force mpigcc/mpigxx to use GCC compilers, as would be expected based on their name
             txt += self.moduleGenerator.set_alias('mpigcc', 'mpigcc -cc=gcc')
             txt += self.moduleGenerator.set_alias('mpigxx', 'mpigxx -cc=g++')
-            
+            # do the same for mpiicc/mpiifort/mpiicpc to be consistent, even if they may not exist
+            txt += self.moduleGenerator.set_alias('mpiicc', 'mpiicc -cc=icc')
+            txt += self.moduleGenerator.set_alias('mpiicpc', 'mpiicpc -cc=icpc')
+            txt += self.moduleGenerator.set_alias('mpiifort', 'mpiifort -cc=ifort')
         return txt
