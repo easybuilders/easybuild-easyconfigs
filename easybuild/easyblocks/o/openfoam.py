@@ -139,9 +139,13 @@ class EB_OpenFOAM(EasyBlock):
                 self.cfg.update('prebuildopts', "%(name)s_LIB_DIR=$EBROOT%(name)s/lib" % {'name': dep['name'].upper()})
                 self.cfg.update('prebuildopts', "%(name)s_INCLUDE_DIR=$EBROOT%(name)s/include" % {'name': dep['name'].upper()})
         else:
-            scotch = get_software_root('SCOTCH')
-            if scotch:
-                self.cfg.update('prebuildopts', "SCOTCH_ROOT=$EBROOTSCOTCH")
+            for depend in ['SCOTCH', 'METIS', 'CGAL', 'PARAVIEW']:
+                dependloc = None
+                dependloc = get_software_root(depend)
+                if dependloc:
+                    self.cfg.update('prebuildopts', "{0}_ROOT=$EBROOT{0}".format(depend))
+                    if depend == 'CGAL':
+                        self.cfg.update('prebuildopts', "BOOST_ROOT=$EBROOTBOOST")
 
     def build_step(self):
         """Build OpenFOAM using make after sourcing script to set environment."""
