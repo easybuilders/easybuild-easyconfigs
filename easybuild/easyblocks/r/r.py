@@ -64,9 +64,9 @@ class EB_R(ConfigureMake):
         guesses = super(EB_R, self).make_module_req_guess()
 
         guesses.update({
-            'LD_LIBRARY_PATH': ['lib64', 'lib64/R/lib'],
-            'LIBRARY_PATH': ['lib64', 'lib64/R/lib'],
-            'PKG_CONFIG_PATH': ['lib64/pkgconfig'],
+            'LD_LIBRARY_PATH': ['lib64', 'lib', 'lib64/R/lib', 'lib/R/lib'],
+            'LIBRARY_PATH': ['lib64', 'lib', 'lib64/R/lib', 'lib/R/lib'],
+            'PKG_CONFIG_PATH': ['lib/pkgconfig', 'lib64/pkgconfig'],
         })
 
         return guesses
