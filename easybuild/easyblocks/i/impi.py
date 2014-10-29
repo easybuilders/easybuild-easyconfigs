@@ -180,9 +180,12 @@ EULA=accept
                 else:
                     self.log.error("Environment variable $%(var)s not set, can't define $I_MPI_%(var)s" % {'var': var})
             # $FC isn't defined by EasyBuild framework, so use $F90 instead 
-            val = os.getenv('F90')
+            var = 'F90'
+            val = os.getenv(var)
             if val:
                 txt += self.moduleGenerator.set_environment('I_MPI_FC', val)
+            else:
+                self.log.error("Environment variable $%(var)s not set, can't define $I_MPI_FC")
         if (self.cfg['set_mpi_wrappers_aliases_gcc'] or self.cfg['set_mpi_wrappers_all']):
             # force mpigcc/mpigxx to use GCC compilers, as would be expected based on their name
             txt += self.moduleGenerator.set_alias('mpigcc', 'mpigcc -cc=gcc')
