@@ -41,7 +41,6 @@ from os.path import expanduser
 
 import easybuild.tools.environment as env
 from easybuild.easyblocks.generic.binary import Binary
-from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.filetools import run_cmd
 
@@ -62,14 +61,14 @@ class Rpm(Binary):
     @staticmethod
     def extra_options(extra_vars=None):
         """Extra easyconfig parameters specific to RPMs."""
-        extra_vars = dict(EasyBlock.extra_options(extra_vars))
+        extra_vars = dict(Binary.extra_options(extra_vars))
         extra_vars.update({
             'force': [False, "Use force", CUSTOM],
             'preinstall': [False, "Enable pre install", CUSTOM],
             'postinstall': [False, "Enable post install", CUSTOM],
             'makesymlinks': [[], "Create symlinks for listed paths", CUSTOM],  # supports glob
         })
-        return EasyBlock.extra_options(extra_vars)
+        return Binary.extra_options(extra_vars)
 
     def configure_step(self):
         """Custom configuration procedure for RPMs: rebuild RPMs for relocation if required."""
