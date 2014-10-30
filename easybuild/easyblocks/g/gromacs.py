@@ -142,7 +142,7 @@ class EB_GROMACS(CMakeMake):
         libs = ['lib%s%s.a' % (libname, suff) for libname in libnames]
         custom_paths = {
             'files': ['bin/%s%s' % (binary, suff) for binary in ['editconf', 'g_lie', 'genbox', 'genconf', 'mdrun']] +
-                     [('lib/%s' % lib, 'lib64/%s' % lib) for lib in libs],
+                     [(os.path.join('lib', lib), os.path.join('lib64', lib)) for lib in libs],
             'dirs': ['include/gromacs', ('lib/pkgconfig', 'lib64/pkgconfig')],
         }
         super(EB_GROMACS, self).sanity_check_step(custom_paths=custom_paths)
