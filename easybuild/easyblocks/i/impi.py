@@ -173,25 +173,30 @@ EULA=accept
         txt += self.moduleGenerator.prepend_paths(self.license_env_var, [self.license_file], allow_abs=True)
         txt += self.moduleGenerator.set_environment('I_MPI_ROOT', '$root')
         if self.cfg['set_mpi_wrappers_compiler'] or self.cfg['set_mpi_wrappers_all']:
-            for var in ['CC', 'CXX', 'F77', 'F90']:
-                val = os.getenv(var)
-                if val:
-                    txt += self.moduleGenerator.set_environment('I_MPI_%s' % var, val)
+            for var in ['CC', 'CXX', 'F77', 'F90', 'FC']:
+                if var == 'FC':
+                    # $FC isn't defined by EasyBuild framework, so use $F90 instead
+                    src_var = 'F90'
                 else:
-                    self.log.error("Environment variable $%(var)s not set, can't define $I_MPI_%(var)s" % {'var': var})
-            # $FC isn't defined by EasyBuild framework, so use $F90 instead 
-            val = os.getenv('F90')
-            if val:
-                txt += self.moduleGenerator.set_environment('I_MPI_FC', val)
-            else:
-                self.log.error("Environment variable $%(var)s not set, can't define $I_MPI_FC")
+                    src_var = var
+
+                target_var = 'I_MPI_%s' % var
+
+                val = os.getenv(src_var)
+                if val:
+                    txt += self.moduleGenerator.set_environment(target_var, val)
+                else:
+                    self.log.error("Environment variable $%s not set, can't define $%s" % (src_var, target_var))
+
         if self.cfg['set_mpi_wrapper_aliases_gcc'] or self.cfg['set_mpi_wrappers_all']:
             # force mpigcc/mpigxx to use GCC compilers, as would be expected based on their name
             txt += self.moduleGenerator.set_alias('mpigcc', 'mpigcc -cc=gcc')
             txt += self.moduleGenerator.set_alias('mpigxx', 'mpigxx -cc=g++')
+
         if self.cfg['set_mpi_wrapper_aliases_intel'] or self.cfg['set_mpi_wrappers_all']:
             # do the same for mpiicc/mpiipc/mpiifort to be consistent, even if they may not exist
             txt += self.moduleGenerator.set_alias('mpiicc', 'mpiicc -cc=icc')
             txt += self.moduleGenerator.set_alias('mpiicpc', 'mpiicpc -cc=icpc')
             txt += self.moduleGenerator.set_alias('mpiifort', 'mpiifort -cc=ifort')
+
         return txt
