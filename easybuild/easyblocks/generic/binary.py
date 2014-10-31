@@ -87,10 +87,11 @@ class Binary(EasyBlock):
                 rmtree2(self.installdir)
                 shutil.copytree(self.cfg['start_dir'], self.installdir)
             except OSError, err:
-                self.log.error("Failed to copy %s to %s: %s" % (self.cfg['start_dir'], self.installdir))
+                self.log.error("Failed to copy %s to %s: %s" % (self.cfg['start_dir'], self.installdir, err))
         else:
-            self.log.info("Installing %s using command '%s'..." % (self.name, self.cfg['install_cmd']))
-            run_cmd(self.cfg['install_cmd'], log_all=True, simple=True)
+            cmd = ' '.join([self.cfg['preinstallopts'], self.cfg['install_cmd'], self.cfg['installopts']])
+            self.log.info("Installing %s using command '%s'..." % (self.name, cmd))
+            run_cmd(cmd, log_all=True, simple=True)
 
     def make_module_extra(self):
         """Add the install directory to the PATH."""
