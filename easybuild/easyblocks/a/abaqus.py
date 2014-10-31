@@ -92,7 +92,8 @@ class EB_ABAQUS(Binary):
             'files': [os.path.join("Commands", "abaqus")],
             'dirs': ["%s-%s" % ('.'.join(verparts[0:2]), verparts[2])]
         }
-        super(EB_ABAQUS, self).sanity_check_step(custom_paths=custom_paths)
+        custom_commands = [('abaqus', 'information=all')]
+        super(EB_ABAQUS, self).sanity_check_step(custom_paths=custom_paths, custom_commands=custom_commands)
 
     def make_module_req_guess(self):
         """Update PATH guesses for ABAQUS."""
