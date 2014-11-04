@@ -20,25 +20,32 @@ The easybuild-easyconfigs package is hosted on GitHub, along
 with an issue tracker for bug reports and feature requests, see
 http://github.com/hpcugent/easybuild-easyconfigs.
 
-Related repositories:
+Related Python packages:
 
-* `easybuild-framework <http://github.com/hpcugent/easybuild-framework>`_: the EasyBuild framework, which includes the ``easybuild.framework`` and ``easybuild.tools`` Python packages that provide general support for building and installing software
-* `easybuild-easyblocks <http://github.com/hpcugent/easybuild-easyblocks>`_: a collection of easyblocks that implement support for building and installing (groups of) software packages.
+* **easybuild-framework**
+
+  * the EasyBuild framework, which includes the ``easybuild.framework`` and ``easybuild.tools`` Python
+    packages that provide general support for building and installing software
+  * GitHub repository: http://github.com/hpcugent/easybuild-framework
+  * PyPi: https://pypi.python.org/pypi/easybuild-framework
+
+* **easybuild-easyblocks**
+
+  * a collection of easyblocks that implement support for building and installing (groups of) software packages
+  * GitHub repository: http://github.com/hpcugent/easybuild-easyblocks
+  * package on PyPi: https://pypi.python.org/pypi/easybuild-easyblocks
 
 *Build status overview:*
 
 * **master** branch *(Python 2.4, Python 2.6, Python 2.7)*
 
   .. image:: https://jenkins1.ugent.be/view/EasyBuild/job/easybuild-easyconfigs_unit-test_hpcugent_master-python24/badge/icon
-
       :target: https://jenkins1.ugent.be/view/EasyBuild/job/easybuild-easyconfigs_unit-test_hpcugent_master-python24/
 
   .. image:: https://jenkins1.ugent.be/view/EasyBuild/job/easybuild-easyconfigs_unit-test_hpcugent_master/badge/icon
-
       :target: https://jenkins1.ugent.be/view/EasyBuild/job/easybuild-easyconfigs_unit-test_hpcugent_master/  
 
   .. image:: https://jenkins1.ugent.be/view/EasyBuild/job/easybuild-easyconfigs_unit-test_hpcugent_master-python27/badge/icon
-
       :target: https://jenkins1.ugent.be/view/EasyBuild/job/easybuild-easyconfigs_unit-test_hpcugent_master-python27/ 
 
 * **develop** branch *(Python 2.4, Python 2.6, Python 2.7)*

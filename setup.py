@@ -96,11 +96,9 @@ setup(
     version = VERSION,
     author = "EasyBuild community",
     author_email = "easybuild@lists.ugent.be",
-    description = """EasyBuild is a software installation framework in Python that allows you to \
-install software in a structured and robust way.
-This package contains a collection of easyconfigs, i.e. simple text files written in Python syntax \
+    description = """Easyconfig files are simple build specification files for EasyBuild,
 that specify the build parameters for software packages (version, compiler toolchain, dependency \
-versions, etc.)""",
+versions, etc.).""",
     license = "GPLv2",
     keywords = "software build building installation installing compilation HPC scientific",
     url = "http://hpcugent.github.com/easybuild",
