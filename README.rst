@@ -8,8 +8,8 @@ EasyBuild: building software with ease
 and installation framework that allows you to manage (scientific) software
 on High Performance Computing (HPC) systems in an efficient way.
 
-The easybuild-easyconfigs package provides a collection of well-tested
-example easyconfig files for EasyBuild.
+The **easybuild-easyconfigs** package provides a collection of well-tested
+example *easyconfig files* for EasyBuild.
 Easyconfig files are used to specify which software to build, which
 version of the software (and its dependencies), which build parameters
 to use (e.g., which compiler toolchain to use), etc.
