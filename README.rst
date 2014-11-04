@@ -8,7 +8,7 @@ EasyBuild: building software with ease
 and installation framework that allows you to manage (scientific) software
 on High Performance Computing (HPC) systems in an efficient way.
 
-The easybuild-easyblocks package provides a collection of *easyblocks* for
+The **easybuild-easyblocks** package provides a collection of *easyblocks* for
 EasyBuild. Easyblocks are Python modules that implement the install procedure for a
 (group of) software package(s). Together with the EasyBuild framework,
 they allow to easily build and install supported software packages.
