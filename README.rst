@@ -1,6 +1,3 @@
-EasyBuild: building software with ease
---------------------------------------
-
 .. image:: http://hpcugent.github.io/easybuild/images/easybuild_logo_small.png
    :align: center
 
