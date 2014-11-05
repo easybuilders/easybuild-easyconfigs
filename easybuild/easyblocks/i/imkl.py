@@ -136,12 +136,12 @@ class EB_imkl(IntelBase):
     def make_module_extra(self):
         """Overwritten from Application to add extra txt"""
         txt = super(EB_imkl, self).make_module_extra()
-        txt += self.moduleGenerator.prepend_paths(self.license_env_var, [self.license_file], allow_abs=True)
+        txt += self.module_generator.prepend_paths(self.license_env_var, [self.license_file], allow_abs=True)
         if self.cfg['m32']:
-            txt += self.moduleGenerator.prepend_paths('NLSPATH', '$root/idb/32/locale/%l_%t/%N')
+            txt += self.module_generator.prepend_paths('NLSPATH', '$root/idb/32/locale/%l_%t/%N')
         else:
-            txt += self.moduleGenerator.prepend_paths('NLSPATH', '$root/idb/intel64/locale/%l_%t/%N')
-        txt += self.moduleGenerator.set_environment('MKLROOT', '$root')
+            txt += self.module_generator.prepend_paths('NLSPATH', '$root/idb/intel64/locale/%l_%t/%N')
+        txt += self.module_generator.set_environment('MKLROOT', '$root')
         return txt
 
     def post_install_step(self):

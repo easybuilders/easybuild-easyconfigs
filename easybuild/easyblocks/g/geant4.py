@@ -355,29 +355,29 @@ class EB_Geant4(CMakeMake):
         g4version = '.'.join(self.version.split('.')[:2])
 
         txt = super(EB_Geant4, self).make_module_extra()
-        txt += self.moduleGenerator.set_environment('G4INSTALL', "$root")
+        txt += self.module_generator.set_environment('G4INSTALL', "$root")
         #no longer needed in > 9.5, but leave it there for now.
-        txt += self.moduleGenerator.set_environment('G4VERSION', g4version)
+        txt += self.module_generator.set_environment('G4VERSION', g4version)
 
         if LooseVersion(self.version) >= LooseVersion("9.5"):
-            txt += self.moduleGenerator.set_environment('G4INCLUDE', "$root/include/Geant4")
-            txt += self.moduleGenerator.set_environment('G4LIB', "$root/lib64/Geant4")
+            txt += self.module_generator.set_environment('G4INCLUDE', "$root/include/Geant4")
+            txt += self.module_generator.set_environment('G4LIB', "$root/lib64/Geant4")
         else:
-            txt += self.moduleGenerator.set_environment('G4INCLUDE', "$root/include/geant4")
-            txt += self.moduleGenerator.set_environment('G4LIB', "$root/lib/geant4")
-            txt += self.moduleGenerator.set_environment('G4SYSTEM', self.g4system)
-            txt += self.moduleGenerator.set_environment('G4ABLADATA',
+            txt += self.module_generator.set_environment('G4INCLUDE', "$root/include/geant4")
+            txt += self.module_generator.set_environment('G4LIB', "$root/lib/geant4")
+            txt += self.module_generator.set_environment('G4SYSTEM', self.g4system)
+            txt += self.module_generator.set_environment('G4ABLADATA',
                                                         "%s/G4ABLA%s" % (self.datadst, self.cfg['G4ABLAVersion']))
 
-        txt += self.moduleGenerator.set_environment('G4LEVELGAMMADATA',
+        txt += self.module_generator.set_environment('G4LEVELGAMMADATA',
                                                     "%s/PhotonEvaporation%s" % (self.datadst,
                                                                                 self.cfg['PhotonEvaporationVersion']))
-        txt += self.moduleGenerator.set_environment('G4RADIOACTIVEDATA',
+        txt += self.module_generator.set_environment('G4RADIOACTIVEDATA',
                                                     "%s/RadioactiveDecay%s" % (self.datadst,
                                                                                self.cfg['G4RadioactiveDecayVersion']))
-        txt += self.moduleGenerator.set_environment('G4LEDATA',
+        txt += self.module_generator.set_environment('G4LEDATA',
                                                     "%s/G4EMLOW%s" % (self.datadst, self.cfg['G4EMLOWVersion']))
-        txt += self.moduleGenerator.set_environment('G4NEUTRONHPDATA', "%s/G4NDL%s" % (self.datadst,
+        txt += self.module_generator.set_environment('G4NEUTRONHPDATA', "%s/G4NDL%s" % (self.datadst,
                                                                                        self.cfg['G4NDLVersion']))
 
         return txt

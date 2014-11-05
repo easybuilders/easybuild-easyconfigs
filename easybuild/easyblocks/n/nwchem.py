@@ -340,11 +340,11 @@ class EB_NWChem(ConfigureMake):
 
         txt = super(EB_NWChem, self).make_module_extra()
 
-        txt += self.moduleGenerator.set_environment("PYTHONHOME", get_software_root('Python'))
+        txt += self.module_generator.set_environment("PYTHONHOME", get_software_root('Python'))
         # '/' at the end is critical for NWCHEM_BASIS_LIBRARY!
-        txt += self.moduleGenerator.set_environment('NWCHEM_BASIS_LIBRARY', "$root/data/libraries/")
+        txt += self.module_generator.set_environment('NWCHEM_BASIS_LIBRARY', "$root/data/libraries/")
         if LooseVersion(self.version) >= LooseVersion("6.3"):
-            txt += self.moduleGenerator.set_environment('NWCHEM_NWPW_LIBRARY', "$root/data/libraryps/")
+            txt += self.module_generator.set_environment('NWCHEM_NWPW_LIBRARY', "$root/data/libraryps/")
 
         return txt
 

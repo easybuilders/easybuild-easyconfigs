@@ -91,6 +91,6 @@ class EB_SHRiMP(ConfigureMake):
 
         txt = super(EB_SHRiMP, self).make_module_extra()
 
-        txt += self.moduleGenerator.set_environment('SHRIMP_FOLDER', "$root")
+        txt += self.module_generator.set_environment('SHRIMP_FOLDER', "$root")
 
         return txt
