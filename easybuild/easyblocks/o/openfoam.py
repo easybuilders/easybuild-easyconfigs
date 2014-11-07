@@ -247,6 +247,6 @@ class EB_OpenFOAM(EasyBlock):
         ]
 
         for (env_var, val) in env_vars:
-            txt += self.moduleGenerator.set_environment(env_var, val)
+            txt += self.module_generator.set_environment(env_var, val)
 
         return txt

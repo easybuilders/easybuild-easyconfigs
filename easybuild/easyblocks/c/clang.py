@@ -332,5 +332,5 @@ class EB_Clang(CMakeMake):
         """Custom variables for Clang module."""
         txt = super(EB_Clang, self).make_module_extra()
         # we set the symbolizer path so that asan/tsan give meanfull output by default
-        txt += self.moduleGenerator.set_environment('ASAN_SYMBOLIZER_PATH', '$root/bin/llvm-symbolizer')
+        txt += self.module_generator.set_environment('ASAN_SYMBOLIZER_PATH', '$root/bin/llvm-symbolizer')
         return txt

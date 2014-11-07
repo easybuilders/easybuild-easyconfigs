@@ -116,7 +116,7 @@ class EB_FSL(EasyBlock):
 
         txt = super(EB_FSL, self).make_module_extra()
 
-        txt += self.moduleGenerator.set_environment("FSLDIR", "$root/fsl")
+        txt += self.module_generator.set_environment("FSLDIR", "$root/fsl")
 
         return txt
 

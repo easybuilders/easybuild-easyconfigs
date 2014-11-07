@@ -170,8 +170,8 @@ EULA=accept
     def make_module_extra(self):
         """Overwritten from Application to add extra txt"""
         txt = super(EB_impi, self).make_module_extra()
-        txt += self.moduleGenerator.prepend_paths(self.license_env_var, [self.license_file], allow_abs=True)
-        txt += self.moduleGenerator.set_environment('I_MPI_ROOT', '$root')
+        txt += self.module_generator.prepend_paths(self.license_env_var, [self.license_file], allow_abs=True)
+        txt += self.module_generator.set_environment('I_MPI_ROOT', '$root')
         if self.cfg['set_mpi_wrappers_compiler'] or self.cfg['set_mpi_wrappers_all']:
             for var in ['CC', 'CXX', 'F77', 'F90', 'FC']:
                 if var == 'FC':
@@ -184,19 +184,19 @@ EULA=accept
 
                 val = os.getenv(src_var)
                 if val:
-                    txt += self.moduleGenerator.set_environment(target_var, val)
+                    txt += self.module_generator.set_environment(target_var, val)
                 else:
                     self.log.error("Environment variable $%s not set, can't define $%s" % (src_var, target_var))
 
         if self.cfg['set_mpi_wrapper_aliases_gcc'] or self.cfg['set_mpi_wrappers_all']:
             # force mpigcc/mpigxx to use GCC compilers, as would be expected based on their name
-            txt += self.moduleGenerator.set_alias('mpigcc', 'mpigcc -cc=gcc')
-            txt += self.moduleGenerator.set_alias('mpigxx', 'mpigxx -cc=g++')
+            txt += self.module_generator.set_alias('mpigcc', 'mpigcc -cc=gcc')
+            txt += self.module_generator.set_alias('mpigxx', 'mpigxx -cc=g++')
 
         if self.cfg['set_mpi_wrapper_aliases_intel'] or self.cfg['set_mpi_wrappers_all']:
             # do the same for mpiicc/mpiipc/mpiifort to be consistent, even if they may not exist
-            txt += self.moduleGenerator.set_alias('mpiicc', 'mpiicc -cc=icc')
-            txt += self.moduleGenerator.set_alias('mpiicpc', 'mpiicpc -cc=icpc')
-            txt += self.moduleGenerator.set_alias('mpiifort', 'mpiifort -cc=ifort')
+            txt += self.module_generator.set_alias('mpiicc', 'mpiicc -cc=icc')
+            txt += self.module_generator.set_alias('mpiicpc', 'mpiicpc -cc=icpc')
+            txt += self.module_generator.set_alias('mpiifort', 'mpiifort -cc=ifort')
 
         return txt

@@ -85,6 +85,6 @@ class EB_GenomeAnalysisTK(EasyBlock):
     def make_module_extra(self):
         """Add module entries specific to GenomeAnalysisTK"""
         txt = super(EB_GenomeAnalysisTK, self).make_module_extra()
-        txt += self.moduleGenerator.prepend_paths('PATH', '')
+        txt += self.module_generator.prepend_paths('PATH', '')
         return txt
 

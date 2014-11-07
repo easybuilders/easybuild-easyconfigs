@@ -103,9 +103,9 @@ class EB_MUMmer(ConfigureMake):
 
         # set $PATH and $PERLXLIB correctly
         txt = super(EB_MUMmer, self).make_module_extra()
-        txt += self.moduleGenerator.prepend_paths("PATH", ['bin'])
-        txt += self.moduleGenerator.prepend_paths("PATH", ['bin/aux_bin'])
-        txt += self.moduleGenerator.prepend_paths("PERL%sLIB" % perlmajver, ['bin/scripts'])
+        txt += self.module_generator.prepend_paths("PATH", ['bin'])
+        txt += self.module_generator.prepend_paths("PATH", ['bin/aux_bin'])
+        txt += self.module_generator.prepend_paths("PERL%sLIB" % perlmajver, ['bin/scripts'])
         return txt
 
     def sanity_check_step(self):
