@@ -114,6 +114,10 @@ class EB_CP2K(EasyBlock):
         - generate Makefile
         """
 
+        known_types = ['popt', 'psmp']
+        if not self.cfg['type'] in known_types:
+            self.log.error("Unknown build type specified: '%s', known types are %s" % (self.cfg['type'], known_types))
+
         # correct start dir, if needed
         # recent CP2K versions have a 'cp2k' dir in the unpacked 'cp2k' dir
         cp2k_path = os.path.join(self.cfg['start_dir'], 'cp2k')
