@@ -115,7 +115,7 @@ class EB_CP2K(EasyBlock):
         """
 
         known_types = ['popt', 'psmp']
-        if not self.cfg['type'] in known_types:
+        if self.cfg['type'] not in known_types:
             self.log.error("Unknown build type specified: '%s', known types are %s" % (self.cfg['type'], known_types))
 
         # correct start dir, if needed
