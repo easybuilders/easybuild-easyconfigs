@@ -60,7 +60,7 @@ class EB_SAMtools(ConfigureMake):
             self.include_files += [ "bgzf.h", "faidx.h",  "khash.h", "klist.h", "knetfile.h", "razf.h"
                                     "kseq.h", "ksort.h", "kstring.h"]
         elif LooseVersion(self.version) >= LooseVersion('1.0'):
-            self.bin_files += ["misc/plot-bamstats"]
+            self.bin_files += ["misc/plot-bamstats","misc/seq_cache_populate.pl"]
 
         self.lib_files = ["libbam.a"]
 
