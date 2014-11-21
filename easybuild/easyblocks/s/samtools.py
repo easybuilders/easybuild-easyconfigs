@@ -57,7 +57,7 @@ class EB_SAMtools(ConfigureMake):
         
         if LooseVersion(self.version) < LooseVersion('1.0'):
             self.bin_files += ["bcftools/vcfutils.pl", "bcftools/bcftools"]
-            self.include_files += [ "bgzf.h", "faidx.h",  "khash.h", "klist.h", "knetfile.h", "razf.h"
+            self.include_files += [ "bgzf.h", "faidx.h",  "khash.h", "klist.h", "knetfile.h", "razf.h",
                                     "kseq.h", "ksort.h", "kstring.h"]
         elif LooseVersion(self.version) >= LooseVersion('1.0'):
             self.bin_files += ["misc/plot-bamstats","misc/seq_cache_populate.pl"]
