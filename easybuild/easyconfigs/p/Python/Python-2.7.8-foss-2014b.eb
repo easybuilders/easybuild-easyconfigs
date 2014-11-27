@@ -7,11 +7,14 @@ description = "Python is a programming language that lets you work more quickly 
 toolchain = {'name': 'foss', 'version': '2014b'}
 toolchainopts = {'pic': True, 'opt': True, 'optarch': True}
 
-numpyversion = '1.6.1'
-scipyversion = '0.10.1'
+numpyversion = '1.8.1'
+scipyversion = '0.14.0'
 
 source_urls = ['http://www.python.org/ftp/%(namelower)s/%(version)s/']
 sources = [SOURCE_TGZ]
+
+# libffi build in python is still broken, see http://bugs.python.org/issue4130
+patches = ['python-2.7_libffi-include-xmmintrin.patch']
 
 # python needs bzip2 to build the bz2 package
 dependencies = [
@@ -19,7 +22,6 @@ dependencies = [
     ('zlib', '1.2.8'),
     ('libreadline', '6.3'),
     ('ncurses', '5.9'),
-#   ('OpenSSL', '1.0.1g'),  # OS dependency should be preferred for security reasons
 ]
 
 # order is important!
@@ -36,11 +38,14 @@ exts_list = [
     ('numpy', numpyversion, {
         'source_urls': [('http://sourceforge.net/projects/numpy/files/NumPy/%s' % numpyversion, 'download')],
         'patches': [
-            'numpy-%s_distutils_multiple-lib-dirs.patch' % numpyversion,
+            'numpy-%s-mkl.patch' % numpyversion,
         ],
     }),
     ('scipy', scipyversion, {
         'source_urls': [('http://sourceforge.net/projects/scipy/files/scipy/%s' % scipyversion, 'download')],
+    }),
+    ('blist', '1.3.6', {
+        'source_urls': ['http://pypi.python.org/packages/source/b/blist/'],
     }),
     ('mpi4py', '1.3.1', {
         'source_urls': ['https://mpi4py.googlecode.com/files/'],
@@ -62,7 +67,7 @@ exts_list = [
         'source_urls': ['http://pypi.python.org/packages/source/p/python-dateutil/'],
     }),
     ('deap', '1.0.1', {
-        'source_urls': ['https://deap.googlecode.com/files/'],
+        'source_urls': ['https://pypi.python.org/packages/source/d/deap/'],
     }),
     ('decorator', '3.4.0', {
         'source_urls': ['https://pypi.python.org/packages/source/d/decorator/'],
@@ -83,10 +88,6 @@ exts_list = [
     }),
     ('matplotlib', '1.3.1', {
         'source_urls': ['https://pypi.python.org/packages/source/m/matplotlib/'],
-    }),
-    ('pygments', '1.6', {
-        'source_urls': ['https://pypi.python.org/packages/source/P/Pygments/'],
-        'source_tmpl': 'Pygments-%(version)s.tar.gz',
     }),
 ]
 
