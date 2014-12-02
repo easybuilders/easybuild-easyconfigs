@@ -26,6 +26,7 @@
 EasyBuild support for building and installing GROMACS, implemented as an easyblock
 
 @author: Kenneth Hoste (Ghent University)
+@author: Ward Poelmans (Ghent University)
 """
 import os
 import re
@@ -36,6 +37,7 @@ import easybuild.tools.environment as env
 from easybuild.easyblocks.generic.cmakemake import CMakeMake
 from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.modules import get_software_root
+from easybuild.tools.systemtools import get_platform_name
 
 
 class EB_GROMACS(CMakeMake):
@@ -91,17 +93,17 @@ class EB_GROMACS(CMakeMake):
                     libs = os.getenv('LIB%s' % libname)
                     self.cfg.update('configopts', '-DGMX_%s_USER="-L%s %s"' % (libname, lib_dir, libs))
 
+            # set regression test path
+            prefix = 'regressiontests'
+            if any([src['name'].startswith(prefix) for src in self.src]):
+                self.cfg.update('configopts', "-DREGRESSIONTEST_PATH='%%(builddir)s/%s-%%(version)s' " % prefix)
+
+        if LooseVersion(self.version) < LooseVersion('5.0'):
             # enable GSL when it's provided
             if get_software_root('GSL'):
                 self.cfg.update('configopts', "-DGMX_GSL=ON")
             else:
                 self.cfg.update('configopts', "-DGMX_GSL=OFF")
-
-            # set regression test path
-            prefix = 'regressiontests'
-            if any([src['name'].startswith(prefix) for src in self.src]):
-                self.cfg.update('configopts', "-DREGRESSIONTEST_PATH='%%(builddir)s/%s-%%(version)s' " % prefix)
-            
 
         # complete configuration with configure_method of parent
         out = super(EB_GROMACS, self).configure_step()
@@ -140,10 +142,14 @@ class EB_GROMACS(CMakeMake):
         libnames = ['gromacs']
         if LooseVersion(self.version) < LooseVersion('5.0'):
             libnames = ['gmxana', 'gmx', 'gmxpreprocess', 'md']
+
+        libprefix = ''
+        if LooseVersion(self.version) >= LooseVersion('5.0'):
+            libprefix = get_platform_name()
         libs = ['lib%s%s.a' % (libname, suff) for libname in libnames]
         custom_paths = {
             'files': ['bin/%s%s' % (binary, suff) for binary in ['editconf', 'g_lie', 'genbox', 'genconf', 'mdrun']] +
-                     [(os.path.join('lib', lib), os.path.join('lib64', lib)) for lib in libs],
-            'dirs': ['include/gromacs', ('lib/pkgconfig', 'lib64/pkgconfig')],
+                     [(os.path.join('lib', libprefix, lib), os.path.join('lib64', libprefix, lib)) for lib in libs],
+            'dirs': ['include/gromacs', (os.path.join('lib', libprefix, 'pkgconfig'), os.path.join('lib64', libprefix, 'pkgconfig'))],
         }
         super(EB_GROMACS, self).sanity_check_step(custom_paths=custom_paths)
