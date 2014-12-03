@@ -138,7 +138,7 @@ You might also want to look into [hub](https://github.com/defunkt/hub) for more 
 
 ### Review process
 
-A member of the EasyBuild team will then review your pull request, paying attention to what you're contributing, how you implemented it and [code style](https://github.com/hpcugent/easybuild/wiki/Code-style).
+A member of the EasyBuild team will then review your pull request, paying attention to what you're contributing, how you implemented it and [code style](http://easybuild.readthedocs.org/en/latest/Code_style.html).
 
 Most likely, some remarks will be made on your pull request. Note that this is nothing personal, we're just trying to keep the EasyBuild codebase as high quality as possible. Even when an EasyBuild team member makes changes, the same public review process is followed.
 
