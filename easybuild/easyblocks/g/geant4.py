@@ -261,7 +261,7 @@ class EB_Geant4(CMakeMake):
     def install_step(self):
         """Install Geant4."""
 
-        if LooseVersion(self.version) >= LooseVersion("9.5"):
+        if LooseVersion(self.version) >= LooseVersion("9.4"):
             super(EB_Geant4, self).install_step()
             self.datadst = os.path.join(self.installdir,
                                         'share',
