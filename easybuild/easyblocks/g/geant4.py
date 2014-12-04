@@ -362,6 +362,9 @@ class EB_Geant4(CMakeMake):
         if LooseVersion(self.version) >= LooseVersion("9.5"):
             txt += self.module_generator.set_environment('G4INCLUDE', "$root/include/Geant4")
             txt += self.module_generator.set_environment('G4LIB', "$root/lib64/Geant4")
+        elif LooseVersion(self.version) >= LooseVersion("9.4"):
+            txt += self.module_generator.set_environment('G4INCLUDE', "$root/include/geant4")
+            txt += self.module_generator.set_environment('G4LIB', "$root/lib")
         else:
             txt += self.module_generator.set_environment('G4INCLUDE', "$root/include/geant4")
             txt += self.module_generator.set_environment('G4LIB', "$root/lib/geant4")
