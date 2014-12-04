@@ -160,12 +160,14 @@ class EB_OpenFOAM(EasyBlock):
                 "Proceed without compiling cudaSolvers? [Y/n]": 'Y',
             }
             noqa = [
-                ".* -o .*\.o",
+                ".* -o .*",
                 "checking .*",
                 "warning.*",
                 "configure: creating.*",
                 "%s .*" % os.environ['CC'],
                 "wmake .*",
+                "Making dependency list for source file.*",
+                "\s*\^\s*",  # warning indicator
             ]
             run_cmd_qa(cmd_tmpl % 'Allwmake.firstInstall', qa, no_qa=noqa, log_all=True, simple=True)
         else:
