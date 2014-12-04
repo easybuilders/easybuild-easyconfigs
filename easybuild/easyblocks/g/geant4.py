@@ -268,6 +268,17 @@ class EB_Geant4(CMakeMake):
                                         '%s-%s' % (self.name, self.version.replace("p0", "")),
                                         'data',
                                         )
+
+            if LooseVersion(self.version) < LooseVersion("9.5"):
+                version_parts = self.version.split('.')
+                name = 'geant4-%s' % '.'.join(version_parts[:2] + [version_parts[-1][-1]])
+                for (source, target) in [("%s.sh" % name, "env.sh"), ("%s.csh" % name, "env.csh")]:
+                    source = os.path.join(self.installdir, 'share', name, 'config', source)
+                    target = os.path.join(self.installdir, target)
+                    try:
+                        os.symlink(source, target)
+                    except OSError, err:
+                        self.log.error("Failed to symlink %s to %s: %s" % (source, target, err))
         else:
             pwd = self.cfg['start_dir']
 
