@@ -67,7 +67,8 @@ class EB_Scalasca1(ConfigureMake):
         mpi_opts = {
             toolchain.INTELMPI: 'intel2',  # intel: Intel MPI v1.x (ancient)
             toolchain.OPENMPI: 'openmpi',
-            toolchain.MPICH: 'mpich',
+            toolchain.MPICH: 'mpich2',  # In EB terms, MPICH means MPICH 3.x; use 'mpich2' as safe fallback
+                                        # supported in all versions; MPICH 1.x is ancient and unsupported
             toolchain.MPICH2: 'mpich2',
         }
         mpi_fam = self.toolchain.mpi_family()
