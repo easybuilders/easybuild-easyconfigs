@@ -69,6 +69,6 @@ class EB_TotalView(EasyBlock):
 
         txt = super(EB_TotalView, self).make_module_extra()
 
-        txt += self.moduleGenerator.prepend_paths('LM_LICENSE_FILE', self.cfg['license_file'], allow_abs=True)
+        txt += self.module_generator.prepend_paths('LM_LICENSE_FILE', self.cfg['license_file'], allow_abs=True)
 
         return txt

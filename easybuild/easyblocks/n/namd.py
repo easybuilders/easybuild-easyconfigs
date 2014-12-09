@@ -154,7 +154,7 @@ class EB_NAMD(MakeCp):
     def make_module_extra(self):
         """Add the install directory to PATH"""
         txt = super(EB_NAMD, self).make_module_extra()
-        txt += self.moduleGenerator.prepend_paths("PATH", [''])
+        txt += self.module_generator.prepend_paths("PATH", [''])
         return txt
 
     def sanity_check_step(self):

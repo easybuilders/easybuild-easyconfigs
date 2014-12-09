@@ -150,7 +150,7 @@ class EB_MATLAB(EasyBlock):
 
         txt = super(EB_MATLAB, self).make_module_extra()
 
-        txt += self.moduleGenerator.set_environment('_JAVA_OPTIONS', self.cfg['java_options'])
+        txt += self.module_generator.set_environment('_JAVA_OPTIONS', self.cfg['java_options'])
 
         return txt
 

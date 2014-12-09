@@ -162,14 +162,15 @@ class EB_Clang(CMakeMake):
             self.llvm_obj_dir_stage2 = os.path.join(self.builddir, 'llvm.obj.2')
             self.llvm_obj_dir_stage3 = os.path.join(self.builddir, 'llvm.obj.3')
 
-        # all sanitizer tests will fail when there's a limit on the vmem
-        # this is ugly but I haven't found a cleaner way so far
-        (vmemlim, ec) = run_cmd("ulimit -v", regexp=False)
-        if not vmemlim.startswith("unlimited"):
-            self.log.warn("There is a virtual memory limit set of %s KB. The tests of the "
-                          "sanitizers will be disabled as they need unlimited virtual "
-                          "memory." % vmemlim.strip())
-            self.disable_sanitizer_tests()
+        if LooseVersion(self.version) >= LooseVersion('3.3'):
+            # all sanitizer tests will fail when there's a limit on the vmem
+            # this is ugly but I haven't found a cleaner way so far
+            (vmemlim, ec) = run_cmd("ulimit -v", regexp=False)
+            if not vmemlim.startswith("unlimited"):
+                self.log.warn("There is a virtual memory limit set of %s KB. The tests of the "
+                              "sanitizers will be disabled as they need unlimited virtual "
+                              "memory." % vmemlim.strip())
+                self.disable_sanitizer_tests()
 
         # Create and enter build directory.
         mkdir(self.llvm_obj_dir_stage1)
@@ -205,12 +206,17 @@ class EB_Clang(CMakeMake):
         ]
 
         for patchfile in patchfiles:
-            try:
-                for line in fileinput.input("%s/%s" % (self.llvm_src_dir, patchfile), inplace=1, backup='.orig'):
-                    if "add_subdirectory(lit_tests)" not in line:
-                        sys.stdout.write(line)
-            except IOError, err:
-                self.log.error("Failed to patch %s/%s: %s" % (self.llvm_src_dir, patchfile, err))
+            patchfile_fp = os.path.join(self.llvm_src_dir, patchfile)
+            if os.path.exists(patchfile_fp):
+                self.log.debug("Patching %s in %s" % (patchfile, self.llvm_src_dir))
+                try:
+                    for line in fileinput.input(patchfile_fp, inplace=1, backup='.orig'):
+                        if "add_subdirectory(lit_tests)" not in line:
+                            sys.stdout.write(line)
+                except (IOError, OSError), err:
+                    self.log.error("Failed to patch %s: %s" % (patchfile_fp, err))
+            else:
+                self.log.debug("Not patching non-existent %s in %s" % (patchfile, self.llvm_src_dir))
 
         patchfile = "projects/compiler-rt/lib/sanitizer_common/CMakeLists.txt"
         try:
@@ -326,5 +332,5 @@ class EB_Clang(CMakeMake):
         """Custom variables for Clang module."""
         txt = super(EB_Clang, self).make_module_extra()
         # we set the symbolizer path so that asan/tsan give meanfull output by default
-        txt += self.moduleGenerator.set_environment('ASAN_SYMBOLIZER_PATH', '$root/bin/llvm-symbolizer')
+        txt += self.module_generator.set_environment('ASAN_SYMBOLIZER_PATH', '$root/bin/llvm-symbolizer')
         return txt

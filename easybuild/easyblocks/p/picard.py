@@ -79,5 +79,5 @@ class EB_picard(EasyBlock):
     def make_module_extra(self):
         """Add module entries specific to picard"""
         txt = super(EB_picard, self).make_module_extra()
-        txt += self.moduleGenerator.prepend_paths('PATH', '')
+        txt += self.module_generator.prepend_paths('PATH', '')
         return txt

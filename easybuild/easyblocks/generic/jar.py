@@ -57,6 +57,6 @@ class JAR(Binary):
 
             if srcname.endswith('.jar'):
                 self.log.debug('Adding %s to classpath' % srcname)
-                txt += self.moduleGenerator.prepend_paths('CLASSPATH', [srcname])
+                txt += self.module_generator.prepend_paths('CLASSPATH', [srcname])
 
         return txt
