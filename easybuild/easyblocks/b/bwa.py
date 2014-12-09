@@ -1,7 +1,7 @@
 ##
 # This file is an EasyBuild reciPY as per https://github.com/hpcugent/easybuild
 #
-# Copyright:: Copyright 2012-2013 University of Luxembourg/Luxembourg Centre for Systems Biomedicine
+# Copyright:: Copyright 2012-2014 University of Luxembourg/Luxembourg Centre for Systems Biomedicine
 # Authors::   Cedric Laczny <cedric.laczny@uni.lu>, Kenneth Hoste
 # Authors::   George Tsouloupas <g.tsouloupas@cyi.ac.cy>, Fotis Georgatos <fotis@cern.ch>
 # License::   MIT/GPL
