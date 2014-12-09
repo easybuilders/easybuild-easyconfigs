@@ -168,6 +168,7 @@ class EB_OpenFOAM(EasyBlock):
                 "wmake .*",
                 "Making dependency list for source file.*",
                 "\s*\^\s*",  # warning indicator
+                "Cleaning .*",
             ]
             run_cmd_qa(cmd_tmpl % 'Allwmake.firstInstall', qa, no_qa=noqa, log_all=True, simple=True)
         else:
