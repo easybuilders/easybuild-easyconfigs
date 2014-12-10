@@ -1,0 +1,38 @@
+##
+# This file is an EasyBuild reciPY as per https://github.com/hpcugent/easybuild
+#
+# Copyright:: Copyright 2012-2014 NTUA
+# Authors::   Fotis Georgatos <fotis@cern.ch>
+# License::   MIT/GPL
+# $Id$
+##
+
+easyblock = 'MakeCp'
+
+name = 'fastqz'
+version = '1.5'
+
+homepage = 'http://mattmahoney.net/dc/fastqz/'
+description = """fastqz is a compressor for FASTQ files. FASTQ is the output of DNA sequencing machines.
+ It is one of the compressors described in the paper: Bonfield JK, Mahoney MV (2013) Compression of
+ FASTQ and SAM Format Sequencing Data. (mirror) PLoS ONE 8(3): e59190. doi:10.1371/journal.pone.0059190"""
+
+toolchain = {'name': 'GCC', 'version': '4.8.2'}
+
+dependencies = [('ZPAQ', '6.57')]
+
+# eg. http://mattmahoney.net/dc/fastqz/fastqz15.cpp & http://mattmahoney.net/dc/fastqz/fapack.cpp
+sources = [('fastqz15.cpp', 'cp %s %(builddir)s/fastqz.cpp'), ('fapack.cpp', 'cp %s %(builddir)s')]
+source_urls = [homepage]
+
+premakeopts = 'g++ -O3 -msse2 -s -lpthread fastqz.cpp $EBROOTZPAQ/include/libzpaq.cpp -o fastqz'
+premakeopts += '&& g++ -O3 -s fapack.cpp -o fapack && /bin/true '
+
+files_to_copy = [(['fastqz', 'fapack'], 'bin')]
+
+sanity_check_paths = {
+    'files': ["bin/fastqz", "bin/fapack"], 
+    'dirs': []
+}
+
+moduleclass = 'bio'
