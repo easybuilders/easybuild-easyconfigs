@@ -71,7 +71,7 @@ class EB_picard(EasyBlock):
     def sanity_check_step(self):
         """Custom sanity check for picard"""
         custom_paths = {
-            'files': ["%s-%s.jar" % (x, self.version) for x in ['picard', 'sam']],
+            'files': ["%s-%s.jar" % (x, self.version) for x in ['picard']],
             'dirs': [],
         }
         super(EB_picard, self).sanity_check_step(custom_paths=custom_paths)
