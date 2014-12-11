@@ -1,0 +1,127 @@
+--- /apps/gent/SL6/sandybridge/software/FSL/5.0.7-ictce-5.5.0-pbs/fsl/src/sgeutils/fsl_sub.orig	2014-07-14 17:01:43.000000000 +0200
++++ /apps/gent/SL6/sandybridge/software/FSL/5.0.7-ictce-5.5.0-pbs/fsl/src/sgeutils/fsl_sub	2014-10-14 11:29:39.288913100 +0200
+@@ -80,11 +80,11 @@
+ # "NONE". Note that a user can unset SGE_ROOT if they don't want the
+ # cluster to be used.
+ ###########################################################################
+-METHOD=SGE
++METHOD=PBS
+ unset module
+ if [ "x$SGE_ROOT" = "x" ] ; then
+ 	METHOD=NONE
+-else
++elif [ "x$METHOD" != "xPBS" ]; then
+ 	QCONF=`which qconf`
+ 	if [ "x$QCONF" = "x" ]; then
+ 		METHOD=NONE
+@@ -123,13 +123,13 @@
+ map_qname ()
+ {
+     if [ $1 -le 20 ] ; then
+-	queue=veryshort.q
++	queue=short
+     elif [ $1 -le 120 ] ; then
+-	queue=short.q
++	queue=short
+     elif [ $1 -le 1440 ] ; then
+-	queue=long.q
++	queue=long
+     else
+-	queue=verylong.q
++	queue=long
+     fi
+     queueCmd=" -q $queue " 
+ 
+@@ -228,8 +228,8 @@
+ # change. It also sets up the basic emailing control.
+ ###########################################################################
+ 
+-queue=long.q
+-queueCmd=" -q long.q "
++queue=long
++queueCmd=" -q long "
+ mailto=`whoami`@fmrib.ox.ac.uk
+ MailOpts="n"
+ 
+@@ -277,6 +277,7 @@
+       shift;;
+     -T)
+       map_qname $2
++      pbs_walltime="-l walltime=`echo "$2 * 60" | bc`"
+       shift;;
+     -q)
+       queue=$2
+@@ -312,6 +313,13 @@
+     -j)
+       jid=$2
+       sge_hold="-hold_jid $jid"
++      jid_is_array=`echo $jid | grep "\[.*\]" | wc -l`
++      if [ $jid_is_array -gt 0 ]
++      then
++        pbs_hold="-W depend=afteranyarray:$jid"
++      else
++        pbs_hold="-W depend=afterany:$jid"
++      fi
+       shift;;
+     -t)
+       taskfile=$2
+@@ -319,6 +327,7 @@
+ 	      tasks=`wc -l $taskfile | awk '{print $1}'`
+ 	      if [ $tasks -ne 0 ]; then
+     	  	sge_tasks="-t 1-$tasks"
++            pbs_tasks=$sge_tasks
+     	  else
+     	    echo "Task file ${taskfile} is empty"
+     	    echo "Should be a text file listing all the commands to run!"
+@@ -398,6 +407,51 @@
+ # commands.
+ ###########################################################################
+ 
++    PBS)
++	if [ "x$peName" != x ]; then
++        echo $@
++        echo "No support for Parallel Environment specification with PBS"
++        exit -1
++    fi
++
++    MailOpts=`echo $MailOpts | sed 's/s//g'`
++
++	if [ "x$tasks" = "x" ] ; then
++	    if [ $scriptmode -ne 1 ] ; then
++		pbs_command="qsub -V -r y $queueCmd $pe_options -N $JobName $pbs_walltime -m $MailOpts $LogOpts $sge_arch $pbs_hold"
++	    else
++		pbs_command="qsub $LogOpts $sge_arch $pbs_hold"
++	    fi
++	    if [ $verbose -eq 1 ] ; then 
++		echo pbs_command: $pbs_command >&2
++		echo executing: $@ >&2
++	    fi
++	    exec $pbs_command << EOF
++#!/bin/sh
++#PBS -l nodes=1:ppn=all
++cd $PBS_O_WORKDIR
++exec /bin/sh -c "$@"
++# provide ample time so jobs depending on this can be submitted
++sleep 300
++EOF
++	else
++	    pbs_command="qsub -V $queueCmd $pe_options -N $JobName $pbs_walltime -m $MailOpts $LogOpts $sge_arch $pbs_hold $sge_tasks"
++	    if [ $verbose -eq 1 ] ; then 
++		echo pbs_command: $pbs_command >&2
++		echo control file: $taskfile >&2
++	    fi
++	    exec $pbs_command <<EOF
++#!/bin/sh
++
++#$ -S /bin/sh
++
++command=\`sed -n -e "\${PBS_ARRAYID}p" $taskfile\`
++
++exec /bin/sh -c "\$command"
++EOF
++    fi
++    ;;
++
+     SGE)
+        ###########################################################################
+        # Test Parallel environment options
