@@ -223,8 +223,9 @@ def template_easyconfig_test(self, spec):
     app_class = get_easyblock_class(easyblock, name=name)
 
     # check that automagic fallback to ConfigureMake isn't done (deprecated behaviour)
-    tup = (spec, easyblock, app_class)
-    self.assertTrue(easyblock or not app_class is ConfigureMake, "no fallback to ConfigureMake: %s" % str(tup))
+    fn = os.path.basename(spec)
+    error_msg = "%s relies on automagic fallback to ConfigureMake, should use easyblock = 'ConfigureMake' instead" % fn
+    self.assertTrue(easyblock or not app_class is ConfigureMake, error_msg)
 
     app = app_class(ec)
 
