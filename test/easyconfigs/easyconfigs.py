@@ -41,6 +41,7 @@ from unittest import TestCase, TestLoader, main
 
 import easybuild.main as main
 import easybuild.tools.options as eboptions
+from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig.easyconfig import ActiveMNS, EasyConfig, fetch_parameter_from_easyconfig_file
 from easybuild.framework.easyconfig.easyconfig import get_easyblock_class
@@ -197,7 +198,7 @@ class EasyConfigTest(TestCase):
                         self.assertTrue(False, "List of easyconfig files in %s is empty: %s" % (dirpath, filenames))
 
 def template_easyconfig_test(self, spec):
-    """Test whether all easyconfigs can be initialized."""
+    """Tests for an individual easyconfig: parsing, instantiating easyblock, check patches, ..."""
 
     # set to False, so it's False in case of this test failing
     global single_tests_ok
@@ -220,6 +221,11 @@ def template_easyconfig_test(self, spec):
 
     # instantiate easyblock with easyconfig file
     app_class = get_easyblock_class(easyblock, name=name)
+
+    # check that automagic fallback to ConfigureMake isn't done (deprecated behaviour)
+    tup = (spec, easyblock, app_class)
+    self.assertTrue(easyblock or not app_class is ConfigureMake, "no fallback to ConfigureMake: %s" % str(tup))
+
     app = app_class(ec)
 
     # more sanity checks
