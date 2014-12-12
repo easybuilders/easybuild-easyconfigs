@@ -158,7 +158,7 @@ class EB_ALADIN(EasyBlock):
             self.log.error("Failed to remove existing file %s: %s" % (self.conf_filepath, err))
 
         mpich = 'n'
-        known_mpi_libs = [toolchain.MPICH2, toolchain.INTELMPI]
+        known_mpi_libs = [toolchain.MPICH, toolchain.MPICH2, toolchain.INTELMPI]
         if self.toolchain.options.get('usempi', None) and self.toolchain.mpi_family() in known_mpi_libs:
             mpich = 'y'
 
