@@ -240,7 +240,7 @@ class EB_imkl(IntelBase):
                     # check whether MPI_FAMILY constant is defined, so mpi_family() can be used
                     if hasattr(self.toolchain, 'MPI_FAMILY') and self.toolchain.MPI_FAMILY is not None:
                         mpi_spec_by_fam = {
-                            toolchain.MPICH: 'mpich2',  # MPICH is MPICH v3.x, whcih MPICH2 compatible
+                            toolchain.MPICH: 'mpich2',  # MPICH is MPICH v3.x, which is MPICH2 compatible
                             toolchain.MPICH2: 'mpich2',
                             toolchain.MVAPICH2: 'mpich2',
                             toolchain.OPENMPI: 'openmpi',
