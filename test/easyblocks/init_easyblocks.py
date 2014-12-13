@@ -97,19 +97,23 @@ def template_init_test(self, easyblock):
 
     def check_extra_options_format(extra_options):
         """Make sure extra_options value is of correct format."""
-        # EasyBuild v1.x
-        self.assertTrue(isinstance(extra_options, list))
+        # EasyBuild v1.x: list of (<string>, <list>) tuples
+        self.assertTrue(isinstance(list(extra_options), list))  # conversion to a list works
         for extra_option in extra_options:
             self.assertTrue(isinstance(extra_option, tuple))
             self.assertEqual(len(extra_option), 2)
             self.assertTrue(isinstance(extra_option[0], basestring))
             self.assertTrue(isinstance(extra_option[1], list))
             self.assertEqual(len(extra_option[1]), 3)
-        # EasyBuild v2.0 (breaks backward compatibility compared to v1.x)
-        #self.assertTrue(isinstance(extra_options, dict))
-        #for key in extra_options:
-        #    self.assertTrue(isinstance(extra_options[key], list))
-        #    self.assertTrue(len(extra_options[key]), 3)
+        # EasyBuild v2.0: dict with <string> keys and <list> values
+        # (breaks backward compatibility compared to v1.x)
+        self.assertTrue(isinstance(dict(extra_options), dict))  # conversion to a dict works
+        extra_options.items()
+        extra_options.keys()
+        extra_options.values()
+        for key in extra_options.keys():
+            self.assertTrue(isinstance(extra_options[key], list))
+            self.assertTrue(len(extra_options[key]), 3)
 
     class_regex = re.compile("^class (.*)\(.*", re.M)
 
