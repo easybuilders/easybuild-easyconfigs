@@ -40,8 +40,9 @@ from distutils.version import LooseVersion
 import easybuild.tools.environment as env
 import easybuild.tools.toolchain as toolchain
 from easybuild.framework.easyblock import EasyBlock
-from easybuild.tools.filetools import adjust_permissions, mkdir, run_cmd, run_cmd_qa
+from easybuild.tools.filetools import adjust_permissions, mkdir
 from easybuild.tools.modules import get_software_root
+from easybuild.tools.run import run_cmd, run_cmd_qa
 
 
 class EB_OpenFOAM(EasyBlock):

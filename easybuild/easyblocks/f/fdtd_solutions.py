@@ -28,7 +28,7 @@ EasyBuild support for building and installing FDTD Solutions, implemented as an 
 @author: Kenneth Hoste (Ghent University)
 """
 from easybuild.framework.easyblock import EasyBlock
-from easybuild.tools.filetools import run_cmd_qa
+from easybuild.tools.run import run_cmd_qa
 
 
 class EB_FDTD_underscore_Solutions(EasyBlock):

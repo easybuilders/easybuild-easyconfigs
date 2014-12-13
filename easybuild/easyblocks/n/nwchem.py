@@ -39,8 +39,9 @@ import easybuild.tools.toolchain as toolchain
 from distutils.version import LooseVersion
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.framework.easyconfig import CUSTOM
-from easybuild.tools.filetools import mkdir, run_cmd, adjust_permissions
+from easybuild.tools.filetools import adjust_permissions, mkdir
 from easybuild.tools.modules import get_software_libdir, get_software_root, get_software_version
+from easybuild.tools.run import run_cmd
 
 
 class EB_NWChem(ConfigureMake):

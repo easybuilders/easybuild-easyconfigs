@@ -42,6 +42,8 @@ from easybuild.framework.easyconfig.easyconfig import EasyConfig, get_easyblock_
 from easybuild.framework.easyconfig.tools import get_paths_for
 from easybuild.tools import config
 from easybuild.tools.module_naming_scheme import GENERAL_CLASS
+from easybuild.tools.run import parse_log_for_error, run_cmd, run_cmd_qa
+from easybuild.tools.environment import modify_env, read_environment
 
 
 class InitTest(TestCase):
@@ -140,6 +142,22 @@ def template_init_test(self, easyblock):
         # initialize easyblock
         # if this doesn't fail, the test succeeds
         app = app_class(EasyConfig(self.eb_file))
+
+        # check whether easyblock instance is still using functions from a deprecated location
+        mod = __import__(app.__module__, fromlist=['easybuild.easyblocks'])
+        moved_functions = ['modify_env', 'parse_log_for_error', 'read_environment', 'run_cmd', 'run_cmd_qa']
+        for fn in moved_functions:
+            if hasattr(mod, fn):
+                tup = (fn, app.__module__, globals()[fn].__module__)
+                self.assertTrue(getattr(mod, fn) is globals()[fn], "%s in %s is imported from %s" % tup)
+        renamed_functions = [
+            ('source_paths', 'source_path'),
+            ('get_avail_core_count', 'get_core_count'),
+            ('get_os_type', 'get_kernel_name'),
+            ('det_full_ec_version', 'det_installversion'),
+        ]
+        for (new_fn, old_fn) in renamed_functions:
+            self.assertFalse(hasattr(mod, old_fn), "%s: %s is replaced by %s" % (app.__module__, old_fn, new_fn))
 
         # cleanup
         app.close_log()

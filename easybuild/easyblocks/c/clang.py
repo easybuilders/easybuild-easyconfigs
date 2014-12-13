@@ -41,8 +41,9 @@ from distutils.version import LooseVersion
 
 from easybuild.easyblocks.generic.cmakemake import CMakeMake
 from easybuild.framework.easyconfig import CUSTOM
-from easybuild.tools.filetools import run_cmd, mkdir
+from easybuild.tools.filetools import mkdir
 from easybuild.tools.modules import get_software_root
+from easybuild.tools.run import run_cmd
 from easybuild.tools.systemtools import get_os_name, get_os_version
 
 # List of all possible build targets for Clang

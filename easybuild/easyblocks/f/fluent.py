@@ -32,7 +32,8 @@ import os
 import stat
 
 from easybuild.framework.easyblock import EasyBlock
-from easybuild.tools.filetools import adjust_permissions, run_cmd
+from easybuild.tools.filetools import adjust_permissions
+from easybuild.tools.run import run_cmd
 
 
 class EB_FLUENT(EasyBlock):

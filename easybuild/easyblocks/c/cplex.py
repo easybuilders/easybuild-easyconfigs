@@ -39,7 +39,7 @@ import stat
 import easybuild.tools.environment as env
 from easybuild.easyblocks.generic.binary import Binary
 from easybuild.framework.easyconfig import CUSTOM
-from easybuild.tools.filetools import run_cmd_qa
+from easybuild.tools.run import run_cmd_qa
 
 
 class EB_CPLEX(Binary):

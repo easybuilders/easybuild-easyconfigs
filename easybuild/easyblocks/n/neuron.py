@@ -33,8 +33,9 @@ import re
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.easyblocks.generic.pythonpackage import det_pylibdir
 from easybuild.framework.easyconfig import CUSTOM
-from easybuild.tools.filetools import run_cmd, adjust_permissions
+from easybuild.tools.filetools import adjust_permissions
 from easybuild.tools.modules import get_software_root
+from easybuild.tools.run import run_cmd
 
 
 class EB_NEURON(ConfigureMake):

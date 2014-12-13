@@ -42,8 +42,8 @@ from easybuild.framework.easyconfig import CUSTOM
 from easybuild.toolchains.linalg.atlas import Atlas
 from easybuild.toolchains.linalg.gotoblas import GotoBLAS
 from easybuild.toolchains.linalg.openblas import OpenBLAS
-from easybuild.tools.filetools import run_cmd
 from easybuild.tools.modules import get_software_root
+from easybuild.tools.run import run_cmd
 
 # also used for e.g. ScaLAPACK
 def get_blas_lib(log):

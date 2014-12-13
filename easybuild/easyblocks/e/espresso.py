@@ -19,10 +19,10 @@ EasyBuild support for building and installing ESPResSo, implemented as an easybl
 import os
 
 import easybuild.tools.environment as env
-import easybuild.tools.toolchain   as toolchain
-from   easybuild.easyblocks.generic.configuremake import ConfigureMake
-from   easybuild.framework.easyconfig             import CUSTOM
-from   easybuild.tools.filetools                  import run_cmd
+import easybuild.tools.toolchain as toolchain
+from easybuild.easyblocks.generic.configuremake import ConfigureMake
+from easybuild.framework.easyconfig import CUSTOM
+from easybuild.tools.run import run_cmd
 
 
 class EB_ESPResSo(ConfigureMake):

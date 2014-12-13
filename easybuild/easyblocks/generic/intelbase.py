@@ -42,7 +42,8 @@ import glob
 import easybuild.tools.environment as env
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import CUSTOM
-from easybuild.tools.filetools import rmtree2, run_cmd
+from easybuild.tools.filetools import rmtree2
+from easybuild.tools.run import run_cmd
 
 # required for deprecated log in static function (ie no self)
 from easybuild.framework.easyconfig.licenses import License

@@ -36,9 +36,9 @@ import os
 
 from distutils.version import LooseVersion
 
-from easybuild.framework.easyconfig import CUSTOM
 from easybuild.easyblocks.generic.intelbase import IntelBase
-from easybuild.tools.filetools import run_cmd
+from easybuild.framework.easyconfig import CUSTOM
+from easybuild.tools.run import run_cmd
 
 class EB_itac(IntelBase):
     """
