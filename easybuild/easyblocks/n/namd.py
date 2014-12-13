@@ -35,17 +35,17 @@ class EB_NAMD(MakeCp):
     def extra_options():
         """Define extra NAMD-specific easyconfig parameters."""
         extra = dict(MakeCp.extra_options())
-        # files_to_copy is useless here, and definitely not mandatory, so get rid of it
-        del extra['files_to_copy']
-        extra_vars = {
+        # files_to_copy is not mandatory here
+        extra['files_to_copy'][2] = CUSTOM
+        extra.update({
             # see http://charm.cs.illinois.edu/manuals/html/charm++/A.html
             'charm_arch': [None, "Charm++ target architecture", MANDATORY],
             'charm_opts': ['--with-production', "Charm++ build options", CUSTOM],
             'namd_basearch': ['Linux-x86_64', "NAMD base target architecture (compiler family is appended", CUSTOM],
             'namd_cfg_opts': ['', "NAMD configure options", CUSTOM],
             'runtest': [True, "Run NAMD test case after building", CUSTOM],
-        }
-        return MakeCp.extra_options(extra_vars)
+        })
+        return MakeCp.extra_options(extra)
 
     def __init__(self,*args,**kwargs):
         """Custom easyblock constructor for NAMD, initialize class variables."""
