@@ -97,6 +97,9 @@ class IntelBase(EasyBlock):
         self.setup_local_home_subdir()
         self.clean_home_subdir()
 
+        if self.cfg['license'] is not None:
+            _log.deprecated('No old style license parameter, use license_file', '2.0')
+
     @staticmethod
     def extra_options(extra_vars=None):
         extra_vars = dict(EasyBlock.extra_options(extra_vars))
@@ -111,7 +114,6 @@ class IntelBase(EasyBlock):
         })
 
         # Support for old easyconfigs with license parameter
-        _log.deprecated('No old style license parameter, use license_file', '2.0')
         extra_vars.update({'license': [None, "License file", CUSTOM]})
 
         return EasyBlock.extra_options(extra_vars)
