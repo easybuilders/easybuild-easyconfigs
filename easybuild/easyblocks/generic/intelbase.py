@@ -97,7 +97,7 @@ class IntelBase(EasyBlock):
         self.setup_local_home_subdir()
         self.clean_home_subdir()
 
-        if self.cfg['license'] is not None:
+        if self.cfg._config['license'][0] is not None:
             _log.deprecated('No old style license parameter, use license_file', '2.0')
 
     @staticmethod
