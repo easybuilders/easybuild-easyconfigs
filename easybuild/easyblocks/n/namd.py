@@ -34,7 +34,7 @@ class EB_NAMD(MakeCp):
     @staticmethod
     def extra_options():
         """Define extra NAMD-specific easyconfig parameters."""
-        extra = dict(MakeCp.extra_options(extra_vars))
+        extra = dict(MakeCp.extra_options())
         # files_to_copy is useless here, and definitely not mandatory, so get rid of it
         del extra['files_to_copy']
         extra_vars = {
