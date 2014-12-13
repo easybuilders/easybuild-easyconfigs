@@ -47,12 +47,12 @@ class EB_impi(IntelBase):
     """
     @staticmethod
     def extra_options():
-        extra_vars = [
-            ('set_mpi_wrappers_compiler', [False, 'Override default compiler used by MPI wrapper commands', CUSTOM]),
-            ('set_mpi_wrapper_aliases_gcc', [False, 'Set compiler for mpigcc/mpigxx via aliases', CUSTOM]),
-            ('set_mpi_wrapper_aliases_intel', [False, 'Set compiler for mpiicc/mpiicpc/mpiifort via aliases', CUSTOM]),
-            ('set_mpi_wrappers_all', [False, 'Set (default) compiler for all MPI wrapper commands', CUSTOM]),
-            ]
+        extra_vars = {
+            'set_mpi_wrappers_compiler': [False, 'Override default compiler used by MPI wrapper commands', CUSTOM],
+            'set_mpi_wrapper_aliases_gcc': [False, 'Set compiler for mpigcc/mpigxx via aliases', CUSTOM],
+            'set_mpi_wrapper_aliases_intel': [False, 'Set compiler for mpiicc/mpiicpc/mpiifort via aliases', CUSTOM],
+            'set_mpi_wrappers_all': [False, 'Set (default) compiler for all MPI wrapper commands', CUSTOM],
+        }
         return IntelBase.extra_options(extra_vars)
 
     def install_step(self):
