@@ -40,7 +40,6 @@ class VSCPythonPackage(VersionIndependendPythonPackage):
     def __init__(self, *args, **kwargs):
         """Custom constructor for VSC Python packages."""
         super(VSCPythonPackage, self).__init__(*args, **kwargs)
-        self.log.deprecated("VSCPythonPackage is only there because EasyBuild provides a 'vsc' namespace too", '2.0')
 
     def sanity_check_step(self, *args, **kwargs):
         """Custom sanity check for VSC-tools packages."""
