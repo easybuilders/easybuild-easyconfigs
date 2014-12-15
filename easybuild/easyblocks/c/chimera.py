@@ -9,7 +9,7 @@ EasyBuild support for installing Chimera, implemented as an easyblock
 import os
 
 from easybuild.framework.easyblock import EasyBlock
-from easybuild.tools.filetools import run_cmd
+from easybuild.tools.run import run_cmd
 
 
 class EB_Chimera(EasyBlock):
