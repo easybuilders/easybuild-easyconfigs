@@ -1,0 +1,40 @@
+easyblock = 'ConfigureMake'
+
+name = 'psmpi'
+version = '5.1.0-1'
+
+homepage = 'https://github.com/ParaStation/psmpi2'
+description = """ParaStation MPI as part of the ParaStationV5 cluster suite provides robust, flexible and scalable communication and management functions for Linux-based compute clusters. Beside parallel applications based on the Message Passing Interface specification, version 2 (MPI2), also serial applications are supported."""
+
+toolchain = {'name': 'iccifort', 'version': '2015.1.133'}
+
+sources = ['%(version)s.tar.gz',
+	'openpa-1.0.4.tar.gz']
+source_urls = ['https://github.com/ParaStation/psmpi2/archive/'
+	    ,'https://trac.mpich.org/projects/openpa/attachment/wiki/Downloads']
+
+# MPICH configure wants F90/F90FLAGS to be renamed to FC/FCFLAGS.
+preconfigopts = 'export FC="$F90"; export FCFLAGS="$F90FLAGS"; unset F90; unset F90FLAGS; '
+
+# Build shared libraries
+configopts = '--with-confset=intel --enable-shared --enable-static --enable-romio --enable-mpe'
+
+dependencies = [('pscom' , '5.0.44-1')]
+
+
+sanity_check_paths = {
+	'files': ['bin/mpicc', 'bin/mpicxx', 'bin/mpic++', 'bin/mpif77', 'bin/mpif90',
+	'include/mpi.h', 'include/mpi.mod', 'include/mpif.h',
+	('lib/libfmpich.a', 'lib64/libfmpich.a'),
+	('lib/libfmpich.so', 'lib64/libfmpich.so'),
+	('lib/libmpich.a', 'lib64/libmpich.a'),
+	('lib/libmpich.so', 'lib64/libmpich.so'),
+	('lib/libmpichcxx.a', 'lib64/libmpichcxx.a'),
+	('lib/libmpichcxx.so', 'lib64/libmpichcxx.so'),
+	('lib/libmpichf90.a', 'lib64/libmpichf90.a'),
+	('lib/libmpichf90.so', 'lib64/libmpichf90.so')],
+	'dirs': [],
+}
+
+moduleclass = 'mpi'
+
