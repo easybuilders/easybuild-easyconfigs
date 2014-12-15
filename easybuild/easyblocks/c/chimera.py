@@ -40,4 +40,4 @@ class EB_Chimera(EasyBlock):
 
         cmd = "./chimera.bin -q -d %s" % self.installdir
 
-        run_cmd(cmdinstall, log_all=True, simple=True)
+        run_cmd(cmd, log_all=True, simple=True)
