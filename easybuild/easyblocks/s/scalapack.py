@@ -70,7 +70,7 @@ class EB_ScaLAPACK(ConfigureMake):
 
         # make sure required dependencies are available
         deps = [("LAPACK", "ACML", "OpenBLAS")]
-        self.log.deprecated("EB_ScaLAPACK.configure_step uses hardcoded list of LAPACK libs", "2.0")
+        self.log.deprecated("EB_ScaLAPACK.configure_step uses hardcoded list of LAPACK libs", '3.0')
         # BLACS is only a dependency for ScaLAPACK versions prior to v2.0.0
         if self.loosever < LooseVersion("2.0.0"):
             deps.append(("BLACS",))
@@ -102,7 +102,7 @@ class EB_ScaLAPACK(ConfigureMake):
 
         # set BLAS and LAPACK libs
         extra_makeopts = None
-        self.log.deprecated("EB_ScaLAPACK.build_step doesn't use toolchain support for BLAS/LAPACK libs", "2.0")
+        self.log.deprecated("EB_ScaLAPACK.build_step doesn't use toolchain support for BLAS/LAPACK libs", '3.0')
         if get_software_root('LAPACK'):
             extra_makeopts = [
                 'BLASLIB="%s -lpthread"' % lapack_get_blas_lib(self.log),
