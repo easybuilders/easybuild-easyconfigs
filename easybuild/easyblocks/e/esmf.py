@@ -61,7 +61,8 @@ class EB_ESMF(ConfigureMake):
         # specify MPI communications library
         comm = None
         mpi_family = self.toolchain.mpi_family()
-        if mpi_family in [toolchain.QLOGICMPI]:
+        if mpi_family in [toolchain.MPICH, toolchain.QLOGICMPI]:
+            # MPICH family for MPICH v3.x, which is MPICH2 compatible
             comm = 'mpich2'
         else:
             comm = mpi_family.lower()

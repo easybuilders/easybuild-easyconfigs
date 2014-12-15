@@ -40,6 +40,7 @@ import tempfile
 from distutils.version import LooseVersion
 
 import easybuild.tools.environment as env
+import easybuild.tools.toolchain as toolchain
 from easybuild.easyblocks.generic.intelbase import IntelBase, ACTIVATION_NAME_2012, LICENSE_FILE_NAME_2012
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.filetools import rmtree2
@@ -236,11 +237,29 @@ class EB_imkl(IntelBase):
                 if lib in fftw3libs:
                     buildopts.append('install_to=$INSTALL_DIR')
                 elif lib in cdftlibs:
-                    # can't use toolchain.mpi_family, because of dummy toolchain
-                    if get_software_root('MPICH2') or get_software_root('MVAPICH2'):
-                        buildopts.append('mpi=mpich2')
-                    elif get_software_root('OpenMPI'):
-                        buildopts.append('mpi=openmpi')
+                    mpi_spec = None
+                    # check whether MPI_FAMILY constant is defined, so mpi_family() can be used
+                    if hasattr(self.toolchain, 'MPI_FAMILY') and self.toolchain.MPI_FAMILY is not None:
+                        mpi_spec_by_fam = {
+                            toolchain.MPICH: 'mpich2',  # MPICH is MPICH v3.x, which is MPICH2 compatible
+                            toolchain.MPICH2: 'mpich2',
+                            toolchain.MVAPICH2: 'mpich2',
+                            toolchain.OPENMPI: 'openmpi',
+                        }
+                        mpi_fam = self.toolchain.mpi_family()
+                        mpi_spec = mpi_spec_by_fam.get(mpi_fam)
+                        self.log.debug("Determined MPI specification based on MPI toolchain component: %s" % mpi_spec)
+                    else:
+                        # can't use toolchain.mpi_family, because of dummy toolchain
+                        if get_software_root('MPICH2') or get_software_root('MVAPICH2'):
+                            mpi_spec = 'mpich2'
+                        elif get_software_root('OpenMPI'):
+                            mpi_spec = 'openmpi'
+                        self.log.debug("Determined MPI specification based on loaded MPI module: %s" % mpi_spec)
+
+                    if mpi_spec is not None:
+                        buildopts.append('mpi=%s' % mpi_spec)
+
                 precflags = ['']
                 if lib.startswith('fftw2x') and not self.cfg['m32']:
                     # build both single and double precision variants
