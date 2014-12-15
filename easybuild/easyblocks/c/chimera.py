@@ -33,8 +33,11 @@ class EB_Chimera(EasyBlock):
     def install_step(self):
         """Install using chimera.bin."""
 
-        # command line to install
-        cmdinstall = "cd %s; ./chimera.bin -q -d %s" % (self.cfg['start_dir'], self.installdir)
+        try:
+            os.chdir(self.cfg['start_dir'])
+        except OSError, err:
+            self.log.error("Failed to change to %s: %s" % (self.cfg['start_dir'], err))
 
-        # and now execute the installation
+        cmd = "./chimera.bin -q -d %s" % self.installdir
+
         run_cmd(cmdinstall, log_all=True, simple=True)
