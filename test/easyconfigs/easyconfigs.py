@@ -59,7 +59,8 @@ single_tests_ok = True
 class EasyConfigTest(TestCase):
     """Baseclass for easyconfig testcases."""
 
-    os.environ['EASYBUILD_DEPRECATED'] = '2.0'
+    if LooseVersion(sys.version) >= LooseVersion('2.6'):
+        os.environ['EASYBUILD_DEPRECATED'] = '2.0'
 
     # initialize configuration (required for e.g. default modules_tool setting)
     eb_go = eboptions.parse_options()
