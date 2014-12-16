@@ -90,7 +90,7 @@ class EB_Modeller(EasyBlock):
             self.log.error("Failed to isolate latest Python lib dir from list %s" % py2libdirs)
 
         guesses.update({
-            'PYTHONPATH': [os.path.join('lib', libdir, py2libdir)],
+            'PYTHONPATH': [os.path.join('lib', libdir, py2libdir), "modlib"],
             'LD_LIBRARY_PATH': [os.path.join('lib', libdir)],
         })
         return guesses
