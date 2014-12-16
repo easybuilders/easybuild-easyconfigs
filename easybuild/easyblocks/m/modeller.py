@@ -38,7 +38,7 @@ class EB_Modeller(EasyBlock):
     """Support for installing Modeller."""
 
     if self.cfg['key'] is None: 
-        self.log.error("You have to define your MODELLER key")
+        self.log.error("Easyconfig parameter 'key' is not defined")
 
     def configure_step(self):
         """ Skip configuration step """
