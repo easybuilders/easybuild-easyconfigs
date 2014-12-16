@@ -37,6 +37,9 @@ from easybuild.tools.filetools import run_cmd_qa
 class EB_Modeller(EasyBlock):
     """Support for installing Modeller."""
 
+    if self.cfg['key'] is None: 
+        self.log.error("You have to define your MODELLER key")
+
     def configure_step(self):
         """ Skip configuration step """
         pass
