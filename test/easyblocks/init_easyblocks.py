@@ -148,7 +148,7 @@ def template_init_test(self, easyblock):
         app = app_class(EasyConfig(self.eb_file))
 
         # check whether easyblock instance is still using functions from a deprecated location
-        mod = __import__(app.__module__, fromlist=['easybuild.easyblocks'])
+        mod = __import__(app.__module__, [], [], ['easybuild.easyblocks'])
         moved_functions = ['modify_env', 'parse_log_for_error', 'read_environment', 'run_cmd', 'run_cmd_qa']
         for fn in moved_functions:
             if hasattr(mod, fn):
