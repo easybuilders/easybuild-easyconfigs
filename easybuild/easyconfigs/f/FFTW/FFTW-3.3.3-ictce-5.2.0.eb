@@ -1,3 +1,5 @@
+easyblock = 'ConfigureMake'
+
 name = 'FFTW'
 version = '3.3.3'
 
@@ -11,9 +13,22 @@ toolchainopts = {'optarch': True, 'pic': True}
 sources = [SOURCELOWER_TAR_GZ]
 source_urls = [homepage]
 
-configopts = "--enable-sse2"
+common_configopts = "--enable-threads --enable-openmp --with-pic"
 
-# the MPI opts from FFTW2 are valid options but unused until FFTW3.3 
-configopts += " --with-openmp --with-pic --enable-mpi"
+# no quad precision, requires GCC v4.6 or higher
+# see also http://www.fftw.org/doc/Extended-and-quadruple-precision-in-Fortran.html
+configopts = [
+    common_configopts + " --enable-single --enable-sse2 --enable-mpi",
+    common_configopts + " --enable-long-double --enable-mpi",
+    common_configopts + " --enable-sse2 --enable-mpi",  # default as last
+]
 
-moduleclass = 'lib'
+sanity_check_paths = {
+    'files': ['bin/fftw%s' % x for x in ['-wisdom', '-wisdom-to-conf', 'f-wisdom', 'l-wisdom']] +
+             ['include/fftw3%s' % x for x in ['-mpi.f03', '-mpi.h', '.f', '.f03',
+                                              '.h', 'l-mpi.f03', 'l.f03', 'q.f03']] +
+             ['lib/libfftw3%s%s.a' % (x, y) for x in ['', 'f', 'l'] for y in ['', '_mpi', '_omp', '_threads']],
+    'dirs': ['lib/pkgconfig'],
+}
+
+moduleclass = 'numlib'
