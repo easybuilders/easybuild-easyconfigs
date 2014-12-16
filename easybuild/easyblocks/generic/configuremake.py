@@ -36,7 +36,7 @@ i.e. configure/make/make install, implemented as an easyblock.
 
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import CUSTOM
-from easybuild.tools.filetools import run_cmd
+from easybuild.tools.run import run_cmd
 
 
 class ConfigureMake(EasyBlock):

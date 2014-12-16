@@ -29,8 +29,8 @@ General EasyBuild support for installing the Enthought Python Distribution
 """
 import os
 
-from easybuild.tools.filetools import run_cmd
 from easybuild.easyblocks.generic.binary import Binary
+from easybuild.tools.run import run_cmd
 
 
 class EB_EPD(Binary):

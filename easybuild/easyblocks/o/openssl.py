@@ -31,7 +31,7 @@ EasyBuild support for OpenSSL, implemented as an easyblock
 import os
 
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
-from easybuild.tools.filetools import run_cmd
+from easybuild.tools.run import run_cmd
 
 
 class EB_OpenSSL(ConfigureMake):

@@ -36,7 +36,7 @@ import shutil
 
 from easybuild.easyblocks.r import EXTS_FILTER_R_PACKAGES
 from easybuild.framework.extensioneasyblock import ExtensionEasyBlock
-from easybuild.tools.filetools import run_cmd, parse_log_for_error
+from easybuild.tools.run import run_cmd, parse_log_for_error
 
 
 def make_R_install_option(opt, values, cmdline=False):

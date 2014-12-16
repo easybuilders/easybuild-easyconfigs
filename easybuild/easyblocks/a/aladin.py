@@ -38,9 +38,9 @@ import easybuild.tools.environment as env
 import easybuild.tools.toolchain as toolchain
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import CUSTOM
-from easybuild.tools.filetools import run_cmd, run_cmd_qa
 from easybuild.tools.modules import get_software_root
 from easybuild.tools.ordereddict import OrderedDict
+from easybuild.tools.run import run_cmd, run_cmd_qa
 
 
 class EB_ALADIN(EasyBlock):

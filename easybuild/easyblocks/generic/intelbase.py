@@ -42,7 +42,8 @@ import glob
 import easybuild.tools.environment as env
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import CUSTOM
-from easybuild.tools.filetools import rmtree2, run_cmd
+from easybuild.tools.filetools import rmtree2
+from easybuild.tools.run import run_cmd
 
 # required for deprecated log in static function (ie no self)
 from easybuild.framework.easyconfig.licenses import License
@@ -96,6 +97,9 @@ class IntelBase(EasyBlock):
         self.setup_local_home_subdir()
         self.clean_home_subdir()
 
+        if self.cfg._config['license'][0] is not None:
+            _log.deprecated('No old style license parameter, use license_file', '2.0')
+
     @staticmethod
     def extra_options(extra_vars=None):
         extra_vars = dict(EasyBlock.extra_options(extra_vars))
@@ -110,7 +114,6 @@ class IntelBase(EasyBlock):
         })
 
         # Support for old easyconfigs with license parameter
-        _log.deprecated('No old style license parameter, use license_file', '2.0')
         extra_vars.update({'license': [None, "License file", CUSTOM]})
 
         return EasyBlock.extra_options(extra_vars)

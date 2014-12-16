@@ -37,7 +37,7 @@ import re
 from distutils.version import LooseVersion
 
 from easybuild.easyblocks.generic.intelbase import IntelBase, ACTIVATION_NAME_2012, LICENSE_FILE_NAME_2012
-from easybuild.tools.filetools import run_cmd
+from easybuild.tools.run import run_cmd
 
 
 def get_icc_version():

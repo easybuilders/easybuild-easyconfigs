@@ -21,7 +21,8 @@ Ref: https://speakerdeck.com/ajdecon/introduction-to-the-cuda-toolkit-for-buildi
 import os
 
 from easybuild.easyblocks.generic.binary import Binary
-from easybuild.tools.filetools import patch_perl_script_autoflush, run_cmd, run_cmd_qa
+from easybuild.tools.filetools import patch_perl_script_autoflush
+from easybuild.tools.run import run_cmd, run_cmd_qa
 from distutils.version import LooseVersion
 
 

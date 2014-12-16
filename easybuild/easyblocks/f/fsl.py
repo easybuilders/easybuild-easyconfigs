@@ -35,7 +35,7 @@ import shutil
 
 import easybuild.tools.environment as env
 from easybuild.framework.easyblock import EasyBlock
-from easybuild.tools.filetools import run_cmd
+from easybuild.tools.run import run_cmd
 
 
 class EB_FSL(EasyBlock):
