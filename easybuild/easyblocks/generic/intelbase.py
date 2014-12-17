@@ -102,7 +102,7 @@ class IntelBase(EasyBlock):
 
     @staticmethod
     def extra_options(extra_vars=None):
-        extra_vars = dict(EasyBlock.extra_options(extra_vars))
+        extra_vars = EasyBlock.extra_options(extra_vars)
         extra_vars.update({
             'license_activation': [ACTIVATION_LIC_SERVER, "License activation type", CUSTOM],
             # 'usetmppath':
@@ -116,7 +116,7 @@ class IntelBase(EasyBlock):
         # Support for old easyconfigs with license parameter
         extra_vars.update({'license': [None, "License file (DEPRECATED, use 'license_file' instead)", CUSTOM]})
 
-        return EasyBlock.extra_options(extra_vars)
+        return extra_vars
 
     def clean_home_subdir(self):
         """Remove contents of (local) 'intel' directory home subdir, where stuff is cached."""
