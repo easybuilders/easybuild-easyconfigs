@@ -114,7 +114,7 @@ class IntelBase(EasyBlock):
         })
 
         # Support for old easyconfigs with license parameter
-        extra_vars.update({'license': [None, "License file", CUSTOM]})
+        extra_vars.update({'license': [None, "License file (DEPRECATED, use 'license_file' instead)", CUSTOM]})
 
         return EasyBlock.extra_options(extra_vars)
 
