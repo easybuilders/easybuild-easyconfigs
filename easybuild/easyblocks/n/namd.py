@@ -34,7 +34,7 @@ class EB_NAMD(MakeCp):
     @staticmethod
     def extra_options():
         """Define extra NAMD-specific easyconfig parameters."""
-        extra = dict(MakeCp.extra_options())
+        extra = MakeCp.extra_options()
         # files_to_copy is not mandatory here
         extra['files_to_copy'][2] = CUSTOM
         extra.update({
@@ -45,7 +45,7 @@ class EB_NAMD(MakeCp):
             'namd_cfg_opts': ['', "NAMD configure options", CUSTOM],
             'runtest': [True, "Run NAMD test case after building", CUSTOM],
         })
-        return MakeCp.extra_options(extra)
+        return extra
 
     def __init__(self,*args,**kwargs):
         """Custom easyblock constructor for NAMD, initialize class variables."""

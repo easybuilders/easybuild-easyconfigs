@@ -51,11 +51,11 @@ class Binary(EasyBlock):
     @staticmethod
     def extra_options(extra_vars=None):
         """Extra easyconfig parameters specific to Binary easyblock."""
-        extra_vars = dict(EasyBlock.extra_options(extra_vars))
+        extra_vars = EasyBlock.extra_options(extra_vars)
         extra_vars.update({
             'install_cmd': [None, "Install command to be used.", CUSTOM],
         })
-        return EasyBlock.extra_options(extra_vars)
+        return extra_vars
 
     def extract_step(self):
         """Move all source files to the build directory"""
