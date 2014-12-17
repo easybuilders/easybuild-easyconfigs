@@ -57,6 +57,11 @@ class EB_GATE(CMakeMake):
         """Initialise class variables."""
         super(EB_GATE, self).__init__(*args, **kwargs)
         self.g4system = None
+        self.gate_subdirs = [
+            '.',
+            os.path.join('cluster_tools', 'filemerger'),
+            os.path.join('cluster_tools', 'jobsplitter'),
+        ]
 
     def configure_step(self):
         """Custom configure procedure for GATE: CMake for versions 6.2 or more recent."""
@@ -70,13 +75,13 @@ class EB_GATE(CMakeMake):
         if LooseVersion(self.version) < '6.2':
             # build procedure for versions older than v6.2: source env_gate.sh and run 'make'
             env_gate_script = os.path.join(self.cfg['start_dir'], 'env_gate.sh')
-            self.cfg['prebuildopts'] = "source %s && " % env_gate_script + self.cfg['prebuildopts']
+            self.cfg['prebuildopts'] = "source %s && %s " % (env_gate_script, self.cfg['prebuildopts'])
 
             if self.toolchain.comp_family() in [toolchain.INTELCOMP]:
                 # include missing library path in linker command
                 self.cfg.update('buildopts', 'LD="$CXX -L$EBROOTICC/compiler/lib/intel64"')
 
-        # redfine $CFLAGS/$CXXFLAGS so they're picked up in the CMake configure command
+        # redefine $CFLAGS/$CXXFLAGS via options to build command ('make')
         cflags = os.getenv('CFLAGS')
         cxxflags = "%s -DGC_DEFAULT_PLATFORM=\\'openPBS\\'" % os.getenv('CXXFLAGS')
         if self.toolchain.comp_family() in [toolchain.INTELCOMP]:
@@ -87,8 +92,7 @@ class EB_GATE(CMakeMake):
         tup = (os.getenv('CC'), cflags, os.getenv('CXX'), cxxflags)
         self.cfg.update('buildopts', 'CC="%s" CFLAGS="%s" CXX="%s" CXXFLAGS="%s"' % tup)
 
-        gate_subdirs = ['.', os.path.join('cluster_tools', 'filemerger'), os.path.join('cluster_tools', 'jobsplitter')]
-        for subdir in gate_subdirs:
+        for subdir in self.gate_subdirs:
             try:
                 os.chdir(os.path.join(os.path.join(self.cfg['start_dir'], subdir)))
             except OSError, err:
@@ -107,12 +111,7 @@ class EB_GATE(CMakeMake):
             # make sure installation prefix is honored (for cluster tools, requires Makefile patch)
             self.cfg.update('installopts', 'PREFIX=%(installdir)s')
 
-            gate_subdirs = [
-                '.',
-                os.path.join('cluster_tools', 'filemerger'),
-                os.path.join('cluster_tools', 'jobsplitter'),
-            ]
-            for subdir in gate_subdirs:
+            for subdir in self.gate_subdirs:
                 try:
                     os.chdir(os.path.join(os.path.join(self.cfg['start_dir'], subdir)))
                 except OSError, err:
@@ -150,7 +149,7 @@ class EB_GATE(CMakeMake):
                 self.log.error("Failed to copy GATE library/ies to lib directory: %s" % err)
 
             # add link from tmp/<OS>-<comp>/gjs to lib
-            js_dir = os.path.join(self.cfg['start_dir'], 'cluster_tools', 'jobsplitter')
+            js_dir = os.path.join(self.installdir, 'cluster_tools', 'jobsplitter')
             try:
                 os.symlink(os.path.join(js_dir, 'tmp', self.g4system, 'gjs'), os.path.join(js_dir, 'lib'))
             except OSError, err:
