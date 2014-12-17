@@ -38,7 +38,8 @@ import stat
 
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import CUSTOM
-from easybuild.tools.filetools import run_cmd, rmtree2
+from easybuild.tools.filetools import rmtree2
+from easybuild.tools.run import run_cmd
 
 
 class Binary(EasyBlock):

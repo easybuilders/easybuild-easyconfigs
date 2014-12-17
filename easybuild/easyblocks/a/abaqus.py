@@ -35,7 +35,7 @@ import os
 
 from easybuild.easyblocks.generic.binary import Binary
 from easybuild.framework.easyblock import EasyBlock
-from easybuild.tools.filetools import run_cmd
+from easybuild.tools.run import run_cmd
 from distutils.version import LooseVersion
 
 

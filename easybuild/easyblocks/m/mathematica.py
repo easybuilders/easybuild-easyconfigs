@@ -40,9 +40,9 @@ class EB_Mathematica(Binary):
     @staticmethod
     def extra_options():
         """Additional easyconfig parameters custom to Mathematica."""
-        extra_vars = [
-            ('activation_key', [None, "Activation key (expected format: 0000-0000-AAAAA)", CUSTOM]),
-        ]
+        extra_vars = {
+            'activation_key': [None, "Activation key (expected format: 0000-0000-AAAAA)", CUSTOM],
+        }
         return Binary.extra_options(extra_vars)
 
     def configure_step(self):

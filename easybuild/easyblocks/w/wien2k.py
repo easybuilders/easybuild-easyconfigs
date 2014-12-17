@@ -43,8 +43,9 @@ import easybuild.tools.environment as env
 import easybuild.tools.toolchain as toolchain
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import CUSTOM
-from easybuild.tools.filetools import extract_file, rmtree2, run_cmd, run_cmd_qa
+from easybuild.tools.filetools import extract_file, rmtree2
 from easybuild.tools.modules import get_software_version
+from easybuild.tools.run import run_cmd, run_cmd_qa
 
 
 class EB_WIEN2k(EasyBlock):

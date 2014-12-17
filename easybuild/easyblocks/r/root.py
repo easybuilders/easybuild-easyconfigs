@@ -31,7 +31,7 @@ EasyBuild support for ROOT, implemented as an easyblock
 
 from easybuild.framework.easyconfig import MANDATORY
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
-from easybuild.tools.filetools import run_cmd
+from easybuild.tools.run import run_cmd
 
 class EB_ROOT(ConfigureMake):
 

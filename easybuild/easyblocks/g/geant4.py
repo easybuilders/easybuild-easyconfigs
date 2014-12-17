@@ -40,8 +40,8 @@ from distutils.version import LooseVersion
 import easybuild.tools.environment as env
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.easyblocks.generic.cmakemake import CMakeMake
-from easybuild.tools.filetools import run_cmd, run_cmd_qa
 from easybuild.tools.modules import get_software_root
+from easybuild.tools.run import run_cmd, run_cmd_qa
 from easybuild.tools.filetools import mkdir
 
 class EB_Geant4(CMakeMake):
