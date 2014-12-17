@@ -77,6 +77,7 @@ class EB_GATE(CMakeMake):
             env_gate_script = os.path.join(self.cfg['start_dir'], 'env_gate.sh')
             self.cfg['prebuildopts'] = "source %s && %s " % (env_gate_script, self.cfg['prebuildopts'])
 
+        if LooseVersion(self.version) <= '6.2':
             if self.toolchain.comp_family() in [toolchain.INTELCOMP]:
                 # include missing library path in linker command
                 self.cfg.update('buildopts', 'LD="$CXX -L$EBROOTICC/compiler/lib/intel64"')
