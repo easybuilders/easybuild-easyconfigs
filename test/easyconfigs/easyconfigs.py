@@ -48,6 +48,7 @@ from easybuild.framework.easyconfig.easyconfig import get_easyblock_class
 from easybuild.framework.easyconfig.tools import dep_graph, get_paths_for, process_easyconfig
 from easybuild.tools import config
 from easybuild.tools.module_naming_scheme import GENERAL_CLASS
+from easybuild.tools.module_naming_scheme.utilities import det_full_ec_version
 from easybuild.tools.robot import resolve_dependencies
 
 
@@ -214,6 +215,11 @@ def template_easyconfig_test(self, spec):
         ec = ecs[0]['ec']
     else:
         self.assertTrue(False, "easyconfig %s does not contain blocks, yields only one parsed easyconfig" % spec)
+
+    # check easyconfig file name
+    expected_fn = '%s-%s.eb' % (ec['name'], det_full_ec_version(ec))
+    msg = "Filename '%s' of parsed easconfig matches expected filename '%s'" % (spec, expected_fn)
+    self.assertEqual(os.path.basename(spec), expected_fn, msg)
 
     # sanity check for software name
     name = fetch_parameter_from_easyconfig_file(spec, 'name')
