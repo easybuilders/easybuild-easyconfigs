@@ -35,7 +35,7 @@ import shutil
 
 import easybuild.tools.environment as env
 from easybuild.framework.easyblock import EasyBlock
-from easybuild.tools.filetools import run_cmd
+from easybuild.tools.run import run_cmd
 
 
 class EB_FSL(EasyBlock):
@@ -116,7 +116,7 @@ class EB_FSL(EasyBlock):
 
         txt = super(EB_FSL, self).make_module_extra()
 
-        txt += self.moduleGenerator.set_environment("FSLDIR", "$root/fsl")
+        txt += self.module_generator.set_environment("FSLDIR", "$root/fsl")
 
         return txt
 

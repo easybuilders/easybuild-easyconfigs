@@ -63,7 +63,7 @@ class EB_DOLFIN(CMakePythonPackage):
         fflags = os.getenv('FFLAGS')
 
         # fix for "SEEK_SET is #defined but must not be for the C++ binding of MPI. Include mpi.h before stdio.h"
-        if self.toolchain.mpi_family() in [toolchain.INTELMPI, toolchain.MPICH2, toolchain.MVAPICH2]:
+        if self.toolchain.mpi_family() in [toolchain.INTELMPI, toolchain.MPICH, toolchain.MPICH2, toolchain.MVAPICH2]:
             cflags += " -DMPICH_IGNORE_CXX_SEEK"
             cxxflags += " -DMPICH_IGNORE_CXX_SEEK"
             fflags += " -DMPICH_IGNORE_CXX_SEEK"
@@ -181,14 +181,14 @@ class EB_DOLFIN(CMakePythonPackage):
         txt = super(EB_DOLFIN, self).make_module_extra()
 
         # Dolfin needs to find Boost
-        txt += self.moduleGenerator.set_environment('BOOST_DIR', self.boost_dir)
+        txt += self.module_generator.set_environment('BOOST_DIR', self.boost_dir)
 
         envvars = ['I_MPI_CXX', 'I_MPI_CC']
         for envvar in envvars:
             envar_val = os.getenv(envvar)
             # if environment variable is set, also set it in module
             if envar_val:
-                txt += self.moduleGenerator.set_environment(envvar, envar_val)
+                txt += self.module_generator.set_environment(envvar, envar_val)
 
         return txt
 

@@ -34,7 +34,7 @@ from easybuild.easyblocks.perl import EXTS_FILTER_PERL_MODULES, get_major_perl_v
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.framework.extensioneasyblock import ExtensionEasyBlock
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
-from easybuild.tools.filetools import run_cmd
+from easybuild.tools.run import run_cmd
 
 
 class PerlModule(ExtensionEasyBlock, ConfigureMake):

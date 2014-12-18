@@ -31,7 +31,7 @@ EasyBuild support for ROOT, implemented as an easyblock
 
 from easybuild.framework.easyconfig import MANDATORY
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
-from easybuild.tools.filetools import run_cmd
+from easybuild.tools.run import run_cmd
 
 class EB_ROOT(ConfigureMake):
 
@@ -60,9 +60,10 @@ class EB_ROOT(ConfigureMake):
         """Custom extra module file entries for ROOT."""
         txt = super(EB_ROOT, self).make_module_extra()
 
-        txt += self.moduleGenerator.set_environment("ROOTSYS", "$root")
-        txt += self.moduleGenerator.prepend_paths("LD_LIBRARY_PATH",["lib/root"])
-        txt += self.moduleGenerator.prepend_paths("PYTHONPATH",["lib/root", "lib/root/python"])
+        txt += self.module_generator.set_environment('ROOTSYS', '$root')
+        txt += self.module_generator.prepend_paths('CPATH',['include/root'])
+        txt += self.module_generator.prepend_paths('LD_LIBRARY_PATH',['lib/root'])
+        txt += self.module_generator.prepend_paths('PYTHONPATH', ['lib/root', 'lib/root/python'])
 
         return txt
 

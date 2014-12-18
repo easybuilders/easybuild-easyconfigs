@@ -31,7 +31,7 @@ import os
 
 import easybuild.tools.toolchain as toolchain
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
-from easybuild.tools.filetools import run_cmd_qa
+from easybuild.tools.run import run_cmd_qa
 
 
 class EB_Qt(ConfigureMake):

@@ -41,8 +41,9 @@ from distutils.version import LooseVersion
 
 from easybuild.easyblocks.generic.cmakemake import CMakeMake
 from easybuild.framework.easyconfig import CUSTOM
-from easybuild.tools.filetools import run_cmd, mkdir
+from easybuild.tools.filetools import mkdir
 from easybuild.tools.modules import get_software_root
+from easybuild.tools.run import run_cmd
 from easybuild.tools.systemtools import get_os_name, get_os_version
 
 # List of all possible build targets for Clang
@@ -56,13 +57,13 @@ class EB_Clang(CMakeMake):
 
     @staticmethod
     def extra_options():
-        extra_vars = [
-            ('assertions', [True, "Enable assertions.  Helps to catch bugs in Clang.", CUSTOM]),
-            ('build_targets', [["X86"], "Build targets for LLVM. Possible values: " + ', '.join(CLANG_TARGETS), CUSTOM]),
-            ('bootstrap', [True, "Bootstrap Clang using GCC", CUSTOM]),
-            ('usepolly', [False, "Build Clang with polly", CUSTOM]),
-            ('static_analyzer', [True, "Install the static analyser of Clang", CUSTOM]),
-        ]
+        extra_vars = {
+            'assertions': [True, "Enable assertions.  Helps to catch bugs in Clang.", CUSTOM],
+            'build_targets': [["X86"], "Build targets for LLVM. Possible values: " + ', '.join(CLANG_TARGETS), CUSTOM],
+            'bootstrap': [True, "Bootstrap Clang using GCC", CUSTOM],
+            'usepolly': [False, "Build Clang with polly", CUSTOM],
+            'static_analyzer': [True, "Install the static analyser of Clang", CUSTOM],
+        }
 
         return CMakeMake.extra_options(extra_vars)
 
@@ -332,5 +333,5 @@ class EB_Clang(CMakeMake):
         """Custom variables for Clang module."""
         txt = super(EB_Clang, self).make_module_extra()
         # we set the symbolizer path so that asan/tsan give meanfull output by default
-        txt += self.moduleGenerator.set_environment('ASAN_SYMBOLIZER_PATH', '$root/bin/llvm-symbolizer')
+        txt += self.module_generator.set_environment('ASAN_SYMBOLIZER_PATH', '$root/bin/llvm-symbolizer')
         return txt

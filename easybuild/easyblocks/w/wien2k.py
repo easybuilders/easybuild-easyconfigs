@@ -43,8 +43,9 @@ import easybuild.tools.environment as env
 import easybuild.tools.toolchain as toolchain
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import CUSTOM
-from easybuild.tools.filetools import extract_file, rmtree2, run_cmd, run_cmd_qa
+from easybuild.tools.filetools import extract_file, rmtree2
 from easybuild.tools.modules import get_software_version
+from easybuild.tools.run import run_cmd, run_cmd_qa
 
 
 class EB_WIEN2k(EasyBlock):
@@ -408,7 +409,7 @@ class EB_WIEN2k(EasyBlock):
 
         txt = super(EB_WIEN2k, self).make_module_extra()
 
-        txt += self.moduleGenerator.set_environment("WIENROOT", "$root")
-        txt += self.moduleGenerator.prepend_paths("PATH", [""])
+        txt += self.module_generator.set_environment("WIENROOT", "$root")
+        txt += self.module_generator.prepend_paths("PATH", [""])
 
         return txt

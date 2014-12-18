@@ -39,8 +39,9 @@ import easybuild.tools.toolchain as toolchain
 from distutils.version import LooseVersion
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.framework.easyconfig import CUSTOM
-from easybuild.tools.filetools import mkdir, run_cmd, adjust_permissions
+from easybuild.tools.filetools import adjust_permissions, mkdir
 from easybuild.tools.modules import get_software_libdir, get_software_root, get_software_version
+from easybuild.tools.run import run_cmd
 
 
 class EB_NWChem(ConfigureMake):
@@ -182,7 +183,7 @@ class EB_NWChem(ConfigureMake):
                 libmpi = "-lmpigf -lmpigi -lmpi_ilp64 -lmpi_mt"
             else:
                 libmpi = "-lmpigf -lmpigi -lmpi_ilp64 -lmpi"
-        elif mpi_family in [toolchain.MPICH2]:
+        elif mpi_family in [toolchain.MPICH, toolchain.MPICH2]:
             libmpi = "-lmpich -lopa -lmpl -lrt -lpthread"
         else:
             self.log.error("Don't know how to set LIBMPI for %s" % mpi_family)
@@ -340,11 +341,11 @@ class EB_NWChem(ConfigureMake):
 
         txt = super(EB_NWChem, self).make_module_extra()
 
-        txt += self.moduleGenerator.set_environment("PYTHONHOME", get_software_root('Python'))
+        txt += self.module_generator.set_environment("PYTHONHOME", get_software_root('Python'))
         # '/' at the end is critical for NWCHEM_BASIS_LIBRARY!
-        txt += self.moduleGenerator.set_environment('NWCHEM_BASIS_LIBRARY', "$root/data/libraries/")
+        txt += self.module_generator.set_environment('NWCHEM_BASIS_LIBRARY', "$root/data/libraries/")
         if LooseVersion(self.version) >= LooseVersion("6.3"):
-            txt += self.moduleGenerator.set_environment('NWCHEM_NWPW_LIBRARY', "$root/data/libraryps/")
+            txt += self.module_generator.set_environment('NWCHEM_NWPW_LIBRARY', "$root/data/libraryps/")
 
         return txt
 

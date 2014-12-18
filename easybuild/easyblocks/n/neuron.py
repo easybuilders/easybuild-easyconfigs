@@ -33,8 +33,9 @@ import re
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.easyblocks.generic.pythonpackage import det_pylibdir
 from easybuild.framework.easyconfig import CUSTOM
-from easybuild.tools.filetools import run_cmd, adjust_permissions
+from easybuild.tools.filetools import adjust_permissions
 from easybuild.tools.modules import get_software_root
+from easybuild.tools.run import run_cmd
 
 
 class EB_NEURON(ConfigureMake):
@@ -217,7 +218,7 @@ class EB_NEURON(ConfigureMake):
         for var in ['CC', 'MPICH_CC']:
             val = os.getenv(var)
             if val:
-                txt += self.moduleGenerator.set_environment(var, val)
+                txt += self.module_generator.set_environment(var, val)
                 self.log.debug("%s set to %s, adding it to module" % (var, val))
             else:
                 self.log.debug("%s not set: %s" % (var, os.environ.get(var, None)))

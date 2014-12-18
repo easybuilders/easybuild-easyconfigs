@@ -40,14 +40,14 @@ from distutils.version import LooseVersion
 import easybuild.tools.environment as env
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.easyblocks.generic.cmakemake import CMakeMake
-from easybuild.tools.filetools import run_cmd, run_cmd_qa
 from easybuild.tools.modules import get_software_root
+from easybuild.tools.run import run_cmd, run_cmd_qa
 from easybuild.tools.filetools import mkdir
 
 class EB_Geant4(CMakeMake):
     """
     Support for building Geant4.
-    Note: Geant4 moved to a CMAKE like build system as of version 9.5.
+    Note: Geant4 moved to a CMake-based build system as of version 9.4.
     """
 
     @staticmethod
@@ -66,12 +66,12 @@ class EB_Geant4(CMakeMake):
 
     def configure_step(self):
         """
-        Configure Geant4 build, either via CMake for versions more recent than 9.5,
+        Configure Geant4 build, either via CMake for versions more recent than 9.4,
         or using an interactive configuration procedure otherwise.
         """
 
-        # Geant4 switched to a cmake build system in 9.5
-        if LooseVersion(self.version) >= LooseVersion("9.5"):
+        # Geant4 switched to a CMake build system in version 9.4
+        if LooseVersion(self.version) >= LooseVersion("9.4"):
             mkdir('configdir')
             os.chdir('configdir')
             super(EB_Geant4, self).configure_step(srcdir="..")
@@ -82,140 +82,142 @@ class EB_Geant4(CMakeMake):
             clhepdir = get_software_root('CLHEP')
             cmd = "%s/Configure -E -build" % pwd
 
-            self.qanda = {# questions and answers for version 9.1.p03
-                          "There exists a config.sh file. Shall I use it to set the defaults? [y]": "n",
-                          "Would you like to see the instructions? [n]": "",
-                          "[Type carriage return to continue]": "",
-                          "Definition of G4SYSTEM variable is Linux-g++. That stands for: 1) OS : Linux" \
-                            "2) Compiler : g++ To modify default settings, select number above (e.g. 2) " \
-                            "[Press [Enter] for default settings]": "2",
-                          "Which C++ compiler? [g++]": "$(GPP)",
-                          "Confirm your selection or set recommended 'g++'! [*]": "",
-                          "Definition of G4SYSTEM variable is Linux-icc. That stands for: 1) OS : Linux 2)" \
-                            "Compiler : icc To modify default settings, select number above (e.g. 2) " \
-                            "[Press [Enter] for default settings]": "",
-                          "Do you expect to run these scripts and binaries on multiple machines? [n]": "y",
-                          "Where is Geant4 source installed? [%s]" % pwd: "",
-                          "Specify the path where Geant4 libraries and source files should be installed." \
-                            " [%s]" % pwd: dst,
-                          "Do you want to copy all Geant4 headers in one directory? [n]": "y",
-                          "Please, specify default directory where ALL the Geant4 data is installed:" \
-                            "G4LEVELGAMMADATA: %(pwd)s/data/PhotonEvaporation2.0 G4RADIOACTIVEDATA: " \
-                            "%(pwd)s/data/RadioactiveDecay3.2 G4LEDATA: %(pwd)s/data/G4EMLOW5.1 G4NEUTRONHPDATA:    " \
-                            "%(pwd)s/data/G4NDL3.12 G4ABLADATA: %(pwd)s/data/G4ABLA3.0 You will be asked about " \
-                            "customizing these next. [%(pwd)s/data]" % {'pwd': pwd}: "%s/data" % dst,
-                          "Directory %s/data doesn't exist. Use that name anyway? [n]" % dst: "y",
-                          "Please, specify default directory where the Geant4 data is installed: " \
-                            "1) G4LEVELGAMMADATA: %(dst)s/data/PhotonEvaporation2.0 2) G4RADIOACTIVEDATA: " \
-                            "%(dst)s/data/RadioactiveDecay3.2 3) G4LEDATA: %(dst)s/data/G4EMLOW5.1 4) G4NEUTRONHPDATA: " \
-                            "%(dst)s/data/G4NDL3.12 5) G4ABLADATA: %(dst)s/data/G4ABLA3.0 To modify default settings, " \
-                            "select number above (e.g. 2) [Press [Enter] for default settings]" % {'dst': dst}: "",
-                          "Please, specify where CLHEP is installed: CLHEP_BASE_DIR: ": clhepdir,
-                          "Please, specify where CLHEP is installed: CLHEP_BASE_DIR: [%s]" % clhepdir: "",
-                          "You can customize paths and library name of you CLHEP installation: 1) CLHEP_INCLUDE_DIR: " \
-                            "%(clhepdir)s/include 2) CLHEP_LIB_DIR: %(clhepdir)s/lib 3) CLHEP_LIB: CLHEP To modify " \
-                            "default settings, select number above (e.g. 2) [Press [Enter] for default settings]" % 
-                            {'clhepdir': clhepdir}: "",
-                          "By default 'static' (.a) libraries are built. Do you want to build 'shared' (.so) " \
-                            "libraries? [n]": "y",
-                          "You selected to build 'shared' (.so) libraries. Do you want to build 'static' (.a) " \
-                            "libraries too? [n]": "y",
-                          "Do you want to build 'global' compound libraries? [n]": "",
-                          "Do you want to compile libraries in DEBUG mode (-g)? [n]": "",
-                          "G4UI_NONE If this variable is set, no UI sessions nor any UI libraries are built. " \
-                            "This can be useful when running a pure batch job or in a user framework having its own " \
-                            "UI system. Do you want to set this variable ? [n]": "",
-                          "G4UI_BUILD_XAW_SESSION G4UI_USE_XAW Specifies to include and use the XAW interfaces in " \
-                            "the application to be built. The XAW (X11 Athena Widget set) extensions are required to " \
-                            "activate and build this driver. [n]": "",
-                          "G4UI_BUILD_XM_SESSION G4UI_USE_XM Specifies to include and use the XM Motif based user " \
-                            "interfaces. The XM Motif extensions are required to activate and build this driver. [n]": "",
-                          "G4VIS_NONE If this variable is set, no visualization drivers will be built or used. Do " \
-                            "you want to set this variable ? [n]": "n",
-                          "G4VIS_BUILD_OPENGLX_DRIVER G4VIS_USE_OPENGLX It is an interface to the de facto standard " \
-                            "3D graphics library, OpenGL. It is well suited for real-time fast visualization and " \
-                            "prototyping. The X11 version of the OpenGL libraries is required. [n]": "",
-                          "G4VIS_BUILD_OPENGLXM_DRIVER G4VIS_USE_OPENGLXM It is an interface to the de facto " \
-                            "standard 3D graphics library, OpenGL. It is well suited for real-time fast visualization " \
-                            "and prototyping. The X11 version of the OpenGL libraries and the Motif Xm extension is " \
-                            "required. [n]": "",
-                          "G4VIS_BUILD_DAWN_DRIVER G4VIS_USE_DAWN DAWN drivers are interfaces to the Fukui Renderer " \
-                            "DAWN. DAWN is a vectorized 3D PostScript processor suited to prepare technical high " \
-                            "quality outputs for presentation and/or documentation. [n]": "",
-                          "G4VIS_BUILD_OIX_DRIVER G4VIS_USE_OIX The OpenInventor driver is based on OpenInventor tech" \
-                            "nology for scientific visualization. The X11 version of OpenInventor is required. [n]": "",
-                          "G4VIS_BUILD_RAYTRACERX_DRIVER G4VIS_USE_RAYTRACERX Allows for interactive ray-tracing " \
-                            "graphics through X11. The X11 package is required. [n]": "",
-                          "G4VIS_BUILD_VRML_DRIVER G4VIS_USE_VRML These driver generate VRML files, which describe " \
-                            "3D scenes to be visualized with a proper VRML viewer. [n]": "",
-                          "G4LIB_BUILD_GDML Setting this variable will enable building of the GDML plugin module " \
-                            "embedded in Geant4 for detector description persistency. It requires your system to have " \
-                            "the XercesC library and headers installed. Do you want to set this variable? [n]": "",
-                          "G4LIB_BUILD_G3TOG4 The utility module 'g3tog4' will be built by setting this variable. " \
-                            "NOTE: it requires a valid FORTRAN compiler to be installed on your system and the " \
-                            "'cernlib' command in the path, in order to build the ancillary tools! Do you want to " \
-                            "build 'g3tog4' ? [n]": "",
-                          "G4LIB_BUILD_ZLIB Do you want to activate compression for output files generated by the " \
-                            "HepRep visualization driver? [n]": "y",
-                          "G4ANALYSIS_USE Activates the configuration setup for allowing plugins to analysis tools " \
-                            "based on AIDA (Astract Interfaces for Data Analysis). In order to use AIDA features and " \
-                            "compliant analysis tools, the proper environment for these tools will have to be set " \
-                            "(see documentation for the specific analysis tools). [n]": "",
-                          "Press [Enter] to start installation or use a shell escape to edit config.sh: ": "",
-                          # extra questions and answers for version 9.2.p03
-                          "Directory %s doesn't exist. Use that name anyway? [n]" % dst: "y",
-                          "Specify the path where the Geant4 data libraries PhotonEvaporation%s " \
-                            "RadioactiveDecay%s G4EMLOW%s G4NDL%s G4ABLA%s are " \
-                            "installed. For now, a flat directory structure is assumed, and this can be customized " \
-                            "at the next step if needed. [%s/data]" % (self.cfg['PhotonEvaporationVersion'],
-                                                                       self.cfg['G4RadioactiveDecayVersion'],
-                                                                       self.cfg['G4EMLOWVersion'],
-                                                                       self.cfg['G4NDLVersion'],
-                                                                       self.cfg['G4ABLAVersion'],
-                                                                       pwd
-                                                                      ): "%s/data" % dst,
-                          "Please enter 1) Another path to search in 2) 'f' to force the use of the path " \
-                            "you entered previously (the data libraries are not needed to build Geant4, but " \
-                            "are needed to run applications later). 3) 'c' to customize the data paths, e.g. " \
-                            "if you have the data libraries installed in different locations. [f]": "",
-                          "G4UI_BUILD_QT_SESSION G4UI_USE_QT Setting these variables will enable the building " \
-                            "of the G4 Qt based user interface module and the use of this module in your " \
-                            "applications respectively. The Qt3 or Qt4 headers, libraries and moc application are " \
-                            "required to enable the building of this module. Do you want to enable build and use of " \
-                            "this module? [n]": "",
-                          # extra questions and answers for version 9.4.po1
-                          "What is the path to the Geant4 source tree? [%s]" % pwd: "",
-                          "Where should Geant4 be installed? [%s]" % pwd: dst,
-                          "Do you want to install all Geant4 headers in one directory? [n]": "y",
-                          "Do you want to build shared libraries? [y]": "",
-                          "Do you want to build static libraries too? [n]": "",
-                          "Do you want to build global libraries? [y]": "",
-                          "Do you want to build granular libraries as well? [n]": "",
-                          "Do you want to build libraries with debugging information? [n]": "",
-                          "Specify the path where the Geant4 data libraries are installed: [%s/data]" % pwd: "%s/data" % dst,
-                          "How many parallel jobs should make launch? [1]": "%s" % self.cfg['parallel'],
-                          "Please enter 1) Another path to search in 2) 'f' to force the use of the path you entered " \
-                            "previously (the data libraries are NOT needed to build Geant4, but are needed to run " \
-                            "applications later). 3) 'c' to customize the data paths, e.g. if you have the data " \
-                            "libraries installed in different locations. [f]": "",
-                          "Enable building of User Interface (UI) modules? [y]": "",
-                          "Enable building of the XAW (X11 Athena Widget set) UI module? [n]": "",
-                          "Enable building of the X11-Motif (Xm) UI module? [n]": "",
-                          "Enable building of the Qt UI module? [n]": "",
-                          "Enable building of visualization drivers? [y]": "n",
-                          "Enable the Geometry Description Markup Language (GDML) module? [n]": "",
-                          "Enable build of the g3tog4 utility module? [n]": "",
-                          "Enable internal zlib compression for HepRep visualization? [n] ": "",
-                         }
+            self.qanda = {
+                # questions and answers for version 9.1.p03
+                "There exists a config.sh file. Shall I use it to set the defaults? [y]": "n",
+                "Would you like to see the instructions? [n]": "",
+                "[Type carriage return to continue]": "",
+                "Definition of G4SYSTEM variable is Linux-g++. That stands for: 1) OS : Linux" \
+                    "2) Compiler : g++ To modify default settings, select number above (e.g. 2) " \
+                    "[Press [Enter] for default settings]": "2",
+                "Which C++ compiler? [g++]": "$(GPP)",
+                "Confirm your selection or set recommended 'g++'! [*]": "",
+                "Definition of G4SYSTEM variable is Linux-icc. That stands for: 1) OS : Linux 2)" \
+                    "Compiler : icc To modify default settings, select number above (e.g. 2) " \
+                    "[Press [Enter] for default settings]": "",
+                "Do you expect to run these scripts and binaries on multiple machines? [n]": "y",
+                "Where is Geant4 source installed? [%s]" % pwd: "",
+                "Specify the path where Geant4 libraries and source files should be installed." \
+                    " [%s]" % pwd: dst,
+                "Do you want to copy all Geant4 headers in one directory? [n]": "y",
+                "Please, specify default directory where ALL the Geant4 data is installed:" \
+                    "G4LEVELGAMMADATA: %(pwd)s/data/PhotonEvaporation2.0 G4RADIOACTIVEDATA: " \
+                    "%(pwd)s/data/RadioactiveDecay3.2 G4LEDATA: %(pwd)s/data/G4EMLOW5.1 G4NEUTRONHPDATA:    " \
+                    "%(pwd)s/data/G4NDL3.12 G4ABLADATA: %(pwd)s/data/G4ABLA3.0 You will be asked about " \
+                    "customizing these next. [%(pwd)s/data]" % {'pwd': pwd}: "%s/data" % dst,
+                "Directory %s/data doesn't exist. Use that name anyway? [n]" % dst: "y",
+                "Please, specify default directory where the Geant4 data is installed: " \
+                    "1) G4LEVELGAMMADATA: %(dst)s/data/PhotonEvaporation2.0 2) G4RADIOACTIVEDATA: " \
+                    "%(dst)s/data/RadioactiveDecay3.2 3) G4LEDATA: %(dst)s/data/G4EMLOW5.1 4) G4NEUTRONHPDATA: " \
+                    "%(dst)s/data/G4NDL3.12 5) G4ABLADATA: %(dst)s/data/G4ABLA3.0 To modify default settings, " \
+                    "select number above (e.g. 2) [Press [Enter] for default settings]" % {'dst': dst}: "",
+                "Please, specify where CLHEP is installed: CLHEP_BASE_DIR: ": clhepdir,
+                "Please, specify where CLHEP is installed: CLHEP_BASE_DIR: [%s]" % clhepdir: "",
+                "You can customize paths and library name of you CLHEP installation: 1) CLHEP_INCLUDE_DIR: " \
+                    "%(clhepdir)s/include 2) CLHEP_LIB_DIR: %(clhepdir)s/lib 3) CLHEP_LIB: CLHEP To modify " \
+                    "default settings, select number above (e.g. 2) [Press [Enter] for default settings]" % 
+                    {'clhepdir': clhepdir}: "",
+                "By default 'static' (.a) libraries are built. Do you want to build 'shared' (.so) " \
+                    "libraries? [n]": "y",
+                "You selected to build 'shared' (.so) libraries. Do you want to build 'static' (.a) " \
+                    "libraries too? [n]": "y",
+                "Do you want to build 'global' compound libraries? [n]": "",
+                "Do you want to compile libraries in DEBUG mode (-g)? [n]": "",
+                "G4UI_NONE If this variable is set, no UI sessions nor any UI libraries are built. " \
+                    "This can be useful when running a pure batch job or in a user framework having its own " \
+                    "UI system. Do you want to set this variable ? [n]": "",
+                "G4UI_BUILD_XAW_SESSION G4UI_USE_XAW Specifies to include and use the XAW interfaces in " \
+                    "the application to be built. The XAW (X11 Athena Widget set) extensions are required to " \
+                    "activate and build this driver. [n]": "",
+                "G4UI_BUILD_XM_SESSION G4UI_USE_XM Specifies to include and use the XM Motif based user " \
+                    "interfaces. The XM Motif extensions are required to activate and build this driver. [n]": "",
+                "G4VIS_NONE If this variable is set, no visualization drivers will be built or used. Do " \
+                    "you want to set this variable ? [n]": "n",
+                "G4VIS_BUILD_OPENGLX_DRIVER G4VIS_USE_OPENGLX It is an interface to the de facto standard " \
+                    "3D graphics library, OpenGL. It is well suited for real-time fast visualization and " \
+                    "prototyping. The X11 version of the OpenGL libraries is required. [n]": "",
+                "G4VIS_BUILD_OPENGLXM_DRIVER G4VIS_USE_OPENGLXM It is an interface to the de facto " \
+                    "standard 3D graphics library, OpenGL. It is well suited for real-time fast visualization " \
+                    "and prototyping. The X11 version of the OpenGL libraries and the Motif Xm extension is " \
+                    "required. [n]": "",
+                "G4VIS_BUILD_DAWN_DRIVER G4VIS_USE_DAWN DAWN drivers are interfaces to the Fukui Renderer " \
+                    "DAWN. DAWN is a vectorized 3D PostScript processor suited to prepare technical high " \
+                    "quality outputs for presentation and/or documentation. [n]": "",
+                "G4VIS_BUILD_OIX_DRIVER G4VIS_USE_OIX The OpenInventor driver is based on OpenInventor tech" \
+                    "nology for scientific visualization. The X11 version of OpenInventor is required. [n]": "",
+                "G4VIS_BUILD_RAYTRACERX_DRIVER G4VIS_USE_RAYTRACERX Allows for interactive ray-tracing " \
+                    "graphics through X11. The X11 package is required. [n]": "",
+                "G4VIS_BUILD_VRML_DRIVER G4VIS_USE_VRML These driver generate VRML files, which describe " \
+                    "3D scenes to be visualized with a proper VRML viewer. [n]": "",
+                "G4LIB_BUILD_GDML Setting this variable will enable building of the GDML plugin module " \
+                    "embedded in Geant4 for detector description persistency. It requires your system to have " \
+                    "the XercesC library and headers installed. Do you want to set this variable? [n]": "",
+                "G4LIB_BUILD_G3TOG4 The utility module 'g3tog4' will be built by setting this variable. " \
+                    "NOTE: it requires a valid FORTRAN compiler to be installed on your system and the " \
+                    "'cernlib' command in the path, in order to build the ancillary tools! Do you want to " \
+                    "build 'g3tog4' ? [n]": "",
+                "G4LIB_BUILD_ZLIB Do you want to activate compression for output files generated by the " \
+                    "HepRep visualization driver? [n]": "y",
+                "G4ANALYSIS_USE Activates the configuration setup for allowing plugins to analysis tools " \
+                    "based on AIDA (Astract Interfaces for Data Analysis). In order to use AIDA features and " \
+                    "compliant analysis tools, the proper environment for these tools will have to be set " \
+                    "(see documentation for the specific analysis tools). [n]": "",
+                "Press [Enter] to start installation or use a shell escape to edit config.sh: ": "",
+                # extra questions and answers for version 9.2.p03
+                "Directory %s doesn't exist. Use that name anyway? [n]" % dst: "y",
+                "Specify the path where the Geant4 data libraries PhotonEvaporation%s " \
+                    "RadioactiveDecay%s G4EMLOW%s G4NDL%s G4ABLA%s are " \
+                    "installed. For now, a flat directory structure is assumed, and this can be customized " \
+                    "at the next step if needed. [%s/data]" % (self.cfg['PhotonEvaporationVersion'],
+                            self.cfg['G4RadioactiveDecayVersion'],
+                            self.cfg['G4EMLOWVersion'],
+                            self.cfg['G4NDLVersion'],
+                            self.cfg['G4ABLAVersion'],
+                            pwd
+                            ): "%s/data" % dst,
+                "Please enter 1) Another path to search in 2) 'f' to force the use of the path " \
+                    "you entered previously (the data libraries are not needed to build Geant4, but " \
+                    "are needed to run applications later). 3) 'c' to customize the data paths, e.g. " \
+                    "if you have the data libraries installed in different locations. [f]": "",
+                    "G4UI_BUILD_QT_SESSION G4UI_USE_QT Setting these variables will enable the building " \
+                    "of the G4 Qt based user interface module and the use of this module in your " \
+                    "applications respectively. The Qt3 or Qt4 headers, libraries and moc application are " \
+                    "required to enable the building of this module. Do you want to enable build and use of " \
+                    "this module? [n]": "",
+                # extra questions and answers for version 9.4.po1
+                "What is the path to the Geant4 source tree? [%s]" % pwd: "",
+                "Where should Geant4 be installed? [%s]" % pwd: dst,
+                "Do you want to install all Geant4 headers in one directory? [n]": "y",
+                "Do you want to build shared libraries? [y]": "",
+                "Do you want to build static libraries too? [n]": "",
+                "Do you want to build global libraries? [y]": "",
+                "Do you want to build granular libraries as well? [n]": "",
+                "Do you want to build libraries with debugging information? [n]": "",
+                "Specify the path where the Geant4 data libraries are installed: [%s/data]" % pwd: "%s/data" % dst,
+                "How many parallel jobs should make launch? [1]": "%s" % self.cfg['parallel'],
+                "Please enter 1) Another path to search in 2) 'f' to force the use of the path you entered " \
+                    "previously (the data libraries are NOT needed to build Geant4, but are needed to run " \
+                    "applications later). 3) 'c' to customize the data paths, e.g. if you have the data " \
+                    "libraries installed in different locations. [f]": "",
+                "Enable building of User Interface (UI) modules? [y]": "",
+                "Enable building of the XAW (X11 Athena Widget set) UI module? [n]": "",
+                "Enable building of the X11-Motif (Xm) UI module? [n]": "",
+                "Enable building of the Qt UI module? [n]": "",
+                "Enable building of visualization drivers? [y]": "n",
+                "Enable the Geometry Description Markup Language (GDML) module? [n]": "",
+                "Enable build of the g3tog4 utility module? [n]": "",
+                "Enable internal zlib compression for HepRep visualization? [n] ": "",
+            }
 
-            self.noqanda = [r"Compiling\s+.*?\s+\.\.\.",
-                            r"Making\s+dependency\s+for\s+file\s+.*?\s+\.\.\.",
-                            r"Making\s+libname\.map\s+starter\s+file\s+\.\.\.",
-                            r"Making\s+libname\.map\s+\.\.\.",
-                            r"Reading\s+library\s+get_name\s+map\s+file\s*\.\.\.",
-                            r"Reading\s+dependency\s+files\s*\.\.\.",
-                            r"Creating\s+shared\s+library\s+.*?\s+\.\.\."
-                           ]
+            self.noqanda = [
+                r"Compiling\s+.*?\s+\.\.\.",
+                r"Making\s+dependency\s+for\s+file\s+.*?\s+\.\.\.",
+                r"Making\s+libname\.map\s+starter\s+file\s+\.\.\.",
+                r"Making\s+libname\.map\s+\.\.\.",
+                r"Reading\s+library\s+get_name\s+map\s+file\s*\.\.\.",
+                r"Reading\s+dependency\s+files\s*\.\.\.",
+                r"Creating\s+shared\s+library\s+.*?\s+\.\.\.",
+            ]
 
             run_cmd_qa(cmd, self.qanda, self.noqanda, log_all=True, simple=True)
 
@@ -249,10 +251,8 @@ class EB_Geant4(CMakeMake):
 
     def build_step(self):
         """Build Geant4."""
-
-        if LooseVersion(self.version) >= LooseVersion("9.5"):
+        if LooseVersion(self.version) >= LooseVersion("9.4"):
             super(EB_Geant4, self).build_step()
-
         else:
             pwd = self.cfg['start_dir']
             cmd = "%s/Configure -build" % pwd
@@ -261,13 +261,24 @@ class EB_Geant4(CMakeMake):
     def install_step(self):
         """Install Geant4."""
 
-        if LooseVersion(self.version) >= LooseVersion("9.5"):
+        if LooseVersion(self.version) >= LooseVersion("9.4"):
             super(EB_Geant4, self).install_step()
             self.datadst = os.path.join(self.installdir,
                                         'share',
                                         '%s-%s' % (self.name, self.version.replace("p0", "")),
                                         'data',
                                         )
+
+            if LooseVersion(self.version) < LooseVersion("9.5"):
+                version_parts = self.version.split('.')
+                name = 'geant4-%s' % '.'.join(version_parts[:2] + [version_parts[-1][-1]])
+                for (source, target) in [("%s.sh" % name, "env.sh"), ("%s.csh" % name, "env.csh")]:
+                    source = os.path.join(self.installdir, 'share', name, 'config', source)
+                    target = os.path.join(self.installdir, target)
+                    try:
+                        os.symlink(source, target)
+                    except OSError, err:
+                        self.log.error("Failed to symlink %s to %s: %s" % (source, target, err))
         else:
             pwd = self.cfg['start_dir']
 
@@ -355,44 +366,55 @@ class EB_Geant4(CMakeMake):
         g4version = '.'.join(self.version.split('.')[:2])
 
         txt = super(EB_Geant4, self).make_module_extra()
-        txt += self.moduleGenerator.set_environment('G4INSTALL', "$root")
+        txt += self.module_generator.set_environment('G4INSTALL', "$root")
         #no longer needed in > 9.5, but leave it there for now.
-        txt += self.moduleGenerator.set_environment('G4VERSION', g4version)
+        txt += self.module_generator.set_environment('G4VERSION', g4version)
 
         if LooseVersion(self.version) >= LooseVersion("9.5"):
-            txt += self.moduleGenerator.set_environment('G4INCLUDE', "$root/include/Geant4")
-            txt += self.moduleGenerator.set_environment('G4LIB', "$root/lib64/Geant4")
+            txt += self.module_generator.set_environment('G4INCLUDE', "$root/include/Geant4")
+            txt += self.module_generator.set_environment('G4LIB', "$root/lib64/Geant4")
+        elif LooseVersion(self.version) >= LooseVersion("9.4"):
+            txt += self.module_generator.set_environment('G4INCLUDE', "$root/include/geant4")
+            txt += self.module_generator.set_environment('G4LIB', "$root/lib")
         else:
-            txt += self.moduleGenerator.set_environment('G4INCLUDE', "$root/include/geant4")
-            txt += self.moduleGenerator.set_environment('G4LIB', "$root/lib/geant4")
-            txt += self.moduleGenerator.set_environment('G4SYSTEM', self.g4system)
-            txt += self.moduleGenerator.set_environment('G4ABLADATA',
+            txt += self.module_generator.set_environment('G4INCLUDE', "$root/include/geant4")
+            txt += self.module_generator.set_environment('G4LIB', "$root/lib/geant4")
+            txt += self.module_generator.set_environment('G4SYSTEM', self.g4system)
+            txt += self.module_generator.set_environment('G4ABLADATA',
                                                         "%s/G4ABLA%s" % (self.datadst, self.cfg['G4ABLAVersion']))
 
-        txt += self.moduleGenerator.set_environment('G4LEVELGAMMADATA',
+        txt += self.module_generator.set_environment('G4LEVELGAMMADATA',
                                                     "%s/PhotonEvaporation%s" % (self.datadst,
                                                                                 self.cfg['PhotonEvaporationVersion']))
-        txt += self.moduleGenerator.set_environment('G4RADIOACTIVEDATA',
+        txt += self.module_generator.set_environment('G4RADIOACTIVEDATA',
                                                     "%s/RadioactiveDecay%s" % (self.datadst,
                                                                                self.cfg['G4RadioactiveDecayVersion']))
-        txt += self.moduleGenerator.set_environment('G4LEDATA',
+        txt += self.module_generator.set_environment('G4LEDATA',
                                                     "%s/G4EMLOW%s" % (self.datadst, self.cfg['G4EMLOWVersion']))
-        txt += self.moduleGenerator.set_environment('G4NEUTRONHPDATA', "%s/G4NDL%s" % (self.datadst,
+        txt += self.module_generator.set_environment('G4NEUTRONHPDATA', "%s/G4NDL%s" % (self.datadst,
                                                                                        self.cfg['G4NDLVersion']))
 
         return txt
 
     def sanity_check_step(self):
         """
-        Custom sanity check for Geant4 >= 9.5
-        Not tested with previous versions
+        Custom sanity check for Geant4
         """
+        bin_files = ["bin/geant4-config"]
+        if LooseVersion(self.version) >= LooseVersion("9.5"):
+            bin_files.extend(["bin/geant4.sh", "bin/geant4.csh"])
+            lib_files = ["lib64/libG4%s.so" % x for x in ['analysis', 'event', 'GMocren', 'materials',
+                                                          'persistency', 'readout', 'Tree', 'VRML']]
+            include_dir = 'include/Geant4'
+        else:
+            # paths for v9.4, untested for prior versions
+            lib_files = ["lib/libG4%s.so" % x for x in ['event', 'GMocren', 'materials', 'persistency',
+                                                        'readout', 'Tree', 'VRML']]
+            include_dir = 'include/geant4'
+
         custom_paths = {
-                        'files': ["bin/geant4%s" % x for x in [".sh", ".csh", "-config"]] +
-                                 ["lib64/libG4%s.so" % x for x in ['analysis', 'event', 'GMocren', 'materials',
-                                                                   'persistency', 'readout', 'Tree', 'VRML']],
-                        'dirs': ['include/Geant4'],
-                       }
+            'files': bin_files + lib_files,
+            'dirs': [include_dir],
+        }
 
         super(EB_Geant4, self).sanity_check_step(custom_paths)
-

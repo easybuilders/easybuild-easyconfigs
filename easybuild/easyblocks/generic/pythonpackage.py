@@ -40,8 +40,9 @@ import easybuild.tools.environment as env
 from easybuild.easyblocks.python import EXTS_FILTER_PYTHON_PACKAGES
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.framework.extensioneasyblock import ExtensionEasyBlock
-from easybuild.tools.filetools import mkdir, rmtree2, run_cmd
+from easybuild.tools.filetools import mkdir, rmtree2
 from easybuild.tools.modules import get_software_version
+from easybuild.tools.run import run_cmd
 
 
 def det_pylibdir():
@@ -234,5 +235,5 @@ class PythonPackage(ExtensionEasyBlock):
     def make_module_extra(self):
         """Add install path to PYTHONPATH"""
 
-        txt = self.moduleGenerator.prepend_paths("PYTHONPATH", [self.pylibdir])
+        txt = self.module_generator.prepend_paths("PYTHONPATH", [self.pylibdir])
         return super(PythonPackage, self).make_module_extra(txt)

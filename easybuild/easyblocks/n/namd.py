@@ -22,8 +22,9 @@ from distutils.version import LooseVersion
 import easybuild.tools.toolchain as toolchain
 from easybuild.easyblocks.generic.makecp import MakeCp
 from easybuild.framework.easyconfig import CUSTOM, MANDATORY
-from easybuild.tools.filetools import extract_file, run_cmd
+from easybuild.tools.filetools import extract_file
 from easybuild.tools.modules import get_software_root, get_software_version
+from easybuild.tools.run import run_cmd
 
 
 class EB_NAMD(MakeCp):
@@ -33,18 +34,18 @@ class EB_NAMD(MakeCp):
     @staticmethod
     def extra_options():
         """Define extra NAMD-specific easyconfig parameters."""
-        extra_vars = [
+        extra = MakeCp.extra_options()
+        # files_to_copy is not mandatory here
+        extra['files_to_copy'][2] = CUSTOM
+        extra.update({
             # see http://charm.cs.illinois.edu/manuals/html/charm++/A.html
-            ('charm_arch', [None, "Charm++ target architecture", MANDATORY]),
-            ('charm_opts', ['--with-production', "Charm++ build options", CUSTOM]),
-            ('namd_basearch', ['Linux-x86_64', "NAMD base target architecture (compiler family is appended", CUSTOM]),
-            ('namd_cfg_opts', ['', "NAMD configure options", CUSTOM]),
-            ('runtest', [True, "Run NAMD test case after building", CUSTOM]),
-        ]
-        extra = dict(MakeCp.extra_options(extra_vars=extra_vars))
-        # files_to_copy is useless here, and definitely not mandatory, so get rid of it
-        del extra['files_to_copy']
-        return extra.items()
+            'charm_arch': [None, "Charm++ target architecture", MANDATORY],
+            'charm_opts': ['--with-production', "Charm++ build options", CUSTOM],
+            'namd_basearch': ['Linux-x86_64', "NAMD base target architecture (compiler family is appended", CUSTOM],
+            'namd_cfg_opts': ['', "NAMD configure options", CUSTOM],
+            'runtest': [True, "Run NAMD test case after building", CUSTOM],
+        })
+        return extra
 
     def __init__(self,*args,**kwargs):
         """Custom easyblock constructor for NAMD, initialize class variables."""
@@ -154,7 +155,7 @@ class EB_NAMD(MakeCp):
     def make_module_extra(self):
         """Add the install directory to PATH"""
         txt = super(EB_NAMD, self).make_module_extra()
-        txt += self.moduleGenerator.prepend_paths("PATH", [''])
+        txt += self.module_generator.prepend_paths("PATH", [''])
         return txt
 
     def sanity_check_step(self):

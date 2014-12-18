@@ -39,7 +39,7 @@ import stat
 import easybuild.tools.environment as env
 from easybuild.easyblocks.generic.binary import Binary
 from easybuild.framework.easyconfig import CUSTOM
-from easybuild.tools.filetools import run_cmd_qa
+from easybuild.tools.run import run_cmd_qa
 
 
 class EB_CPLEX(Binary):
@@ -55,10 +55,10 @@ class EB_CPLEX(Binary):
 
     @staticmethod
     def extra_options():
-        extra_vars = [
+        extra_vars = {
             # staged install via a tmp dir can help with the hard (potentially faulty) check on available disk space
-            ('staged_install', [False, "Should the installation should be staged via a temporary dir?", CUSTOM]),
-        ]
+            'staged_install': [False, "Should the installation should be staged via a temporary dir?", CUSTOM],
+        }
         return Binary.extra_options(extra_vars)
 
     def install_step(self):
@@ -128,8 +128,8 @@ class EB_CPLEX(Binary):
         """Add installdir to path and set CPLEX_HOME"""
 
         txt = super(EB_CPLEX, self).make_module_extra()
-        txt += self.moduleGenerator.prepend_paths("PATH", [self.bindir])
-        txt += self.moduleGenerator.set_environment("CPLEX_HOME", "$root/cplex")
+        txt += self.module_generator.prepend_paths("PATH", [self.bindir])
+        txt += self.module_generator.set_environment("CPLEX_HOME", "$root/cplex")
         self.log.debug("make_module_extra added %s" % txt)
         return txt
 

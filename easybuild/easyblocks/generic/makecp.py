@@ -24,7 +24,7 @@
 ##
 """
 @author: George Tsouloupas (The Cyprus Institute)
-@author: Fotis Georgatos (University of Luxembourg)
+@author: Fotis Georgatos (Uni.Lu, NTUA)
 @author: Kenneth Hoste (Ghent University)
 """
 import os
@@ -44,7 +44,7 @@ class MakeCp(ConfigureMake):
         Define list of files or directories to be copied after make
         """
         extra = {
-            'files_to_copy': [{}, "List of files or dirs to copy", MANDATORY],
+            'files_to_copy': [[], "List of files or dirs to copy", MANDATORY],
             'with_configure': [False, "Run configure script before building", BUILD],
         }
         if extra_vars is None:
@@ -65,7 +65,7 @@ class MakeCp(ConfigureMake):
             # make sure we're (still) in the start dir
             os.chdir(self.cfg['start_dir'])
 
-            files_to_copy = self.cfg.get('files_to_copy', {})
+            files_to_copy = self.cfg.get('files_to_copy', [])
             self.log.debug("Starting install_step with files_to_copy: %s" % files_to_copy)
             for fil in files_to_copy:
                 if isinstance(fil, tuple):
