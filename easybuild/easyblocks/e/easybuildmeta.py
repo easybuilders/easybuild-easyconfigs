@@ -134,8 +134,8 @@ class EB_EasyBuildMeta(PythonPackage):
 
         # make sure we don't trip over deprecated behavior in old EasyBuild versions
         eb_cmd = 'eb'
-        if LooseVersion(self.version) < LooseVersion('1.16'):
-            eb_cmd = 'EASYBUILD_DEPRECATED=0.0 eb'
+        if LooseVersion(self.version) <= LooseVersion('1.16.0'):
+            eb_cmd = 'EASYBUILD_DEPRECATED=1.0 eb'
 
         # set of sanity check commands to run for EasyBuild
         custom_commands = [
