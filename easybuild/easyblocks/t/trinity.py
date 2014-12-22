@@ -147,6 +147,9 @@ class EB_Trinity(EasyBlock):
             try:
                 # remove original symlink
                 os.unlink(orig_jellyfishdir)
+            except OSError, err:
+                self.log.warning("jellyfish plugin: failed to remove dir %s: %s" % (orig_jellyfishdir, err))
+            try:
                 # create new one
                 os.symlink(jellyfishdir, orig_jellyfishdir)
                 os.chdir(orig_jellyfishdir)
