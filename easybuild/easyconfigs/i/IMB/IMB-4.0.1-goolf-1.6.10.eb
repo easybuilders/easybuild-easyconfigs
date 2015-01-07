@@ -1,0 +1,30 @@
+easyblock = 'MakeCp'
+
+name = 'IMB'
+version = '4.0.1'
+
+homepage = 'https://software.intel.com/en-us/articles/intel-mpi-benchmarks'
+description = """The Intel MPI Benchmarks perform a set of MPI performance measurements for point-to-point and
+ global communication operations for a range of message sizes"""
+
+toolchain = {'name': 'goolf', 'version': '1.6.10'}
+toolchainopts = {'usempi': True}
+
+source_urls = ['https://software.intel.com/sites/default/files/managed/34/aa/']
+sources = ['%(name)s_%(version)s.tgz']
+
+prebuildopts = "cd src && "
+# RMA not built, due to missing required MPI-3 support in OpenMPI v1.7.3
+targets = ['MPI1', 'EXT', 'IO', 'NBC']
+buildopts = ["-f make_mpich IMB-%s MPI_HOME=$EBROOTOPENMPI" % t for t in targets]
+
+parallel = 1
+
+files_to_copy = [(['src/IMB-*'], 'bin')]
+
+sanity_check_paths = {
+    'files': ['bin/IMB-%s' % t for t in targets],
+    'dirs': [],
+}
+
+moduleclass = 'perf'
