@@ -62,8 +62,8 @@ class EB_Libint(ConfigureMake):
             }
         else:
             custom_paths = {
-                'files': ["include/libint/libint.h", "include/libint/hrr_header.h", "include/libint/vrr_header.h",
-                          "lib/libint.a"],
+                'files': ['include/libint/libint.h', 'include/libint/hrr_header.h', 'include/libint/vrr_header.h',
+                          'lib/libint.a', 'lib/libint.so'],
                 'dirs': [],
             }
         super(EB_Libint, self).sanity_check_step(custom_paths=custom_paths)
@@ -72,11 +72,10 @@ class EB_Libint(ConfigureMake):
         """Specify correct CPATH for this installation."""
         guesses = super(EB_Libint, self).make_module_req_guess()
         if LooseVersion(self.version) >= LooseVersion('2.0'):
-            guesses.update({
-                'CPATH': ["include", os.path.join("include", "libint2")],
-            })
+            libint_include = os.path.join('include', 'libint2')
         else:
-            guesses.update({
-                'CPATH': ["include", os.path.join("include", "libint")],
-            })
+            libint_include = os.path.join('include', 'libint')
+        guesses.update({
+            'CPATH': ['include', libint_include],
+        })
         return guesses
