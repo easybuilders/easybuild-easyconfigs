@@ -23,47 +23,59 @@
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
 """
-EasyBuild support for building and installing libint2, implemented as an easyblock
+EasyBuild support for building and installing Libint, implemented as an easyblock
 
 @author: Toon Verstraelen (Ghent University)
 @author: Ward Poelmans (Ghent University)
 """
 
 import os.path
+from distutils.version import LooseVersion
 
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 
 
-class EB_libint2(ConfigureMake):
+class EB_Libint(ConfigureMake):
     def configure_step(self):
         """Add some extra configure options."""
+
+        # also build shared libraries (not enabled by default)
+        self.cfg.update('configopts', "--enable-shared")
 
         if self.toolchain.options['pic']:
             # Enforce consistency.
             self.cfg.update('configopts', "--with-pic")
 
-        # The code in libint is automatically generated and hence it is in some
-        # parts so compex that -O2 or -O3 compiler optimization takes forever.
-        self.cfg.update('configopts', "--with-cxx-optflags='-O1'")
+        if LooseVersion(self.version) >= LooseVersion('2.0'):
+            # the code in libint is automatically generated and hence it is in some
+            # parts so complex that -O2 or -O3 compiler optimization takes forever
+            self.cfg.update('configopts', "--with-cxx-optflags='-O1'")
 
-        # Also build shared libraries. (not enabled by default)
-        self.cfg.update('configopts', "--enable-shared")
-
-        super(EB_libint2, self).configure_step()
+        super(EB_Libint, self).configure_step()
 
     def sanity_check_step(self):
-        """Custom sanity check for Libint2."""
-
-        custom_paths = {
-            'files': ['lib/libint2.a', 'lib/libint2.so', 'include/libint2/libint2.h'],
-            'dirs': [],
-        }
-        super(EB_libint2, self).sanity_check_step(custom_paths=custom_paths)
+        """Custom sanity check for Libint."""
+        if LooseVersion(self.version) >= LooseVersion('2.0'):
+            custom_paths = {
+                'files': ['lib/libint2.a', 'lib/libint2.so', 'include/libint2/libint2.h'],
+                'dirs': [],
+            }
+        else:
+            custom_paths = {
+                'files': ['include/libint/libint.h', 'include/libint/hrr_header.h', 'include/libint/vrr_header.h',
+                          'lib/libint.a', 'lib/libint.so'],
+                'dirs': [],
+            }
+        super(EB_Libint, self).sanity_check_step(custom_paths=custom_paths)
 
     def make_module_req_guess(self):
         """Specify correct CPATH for this installation."""
-        guesses = super(EB_libint2, self).make_module_req_guess()
+        guesses = super(EB_Libint, self).make_module_req_guess()
+        if LooseVersion(self.version) >= LooseVersion('2.0'):
+            libint_include = os.path.join('include', 'libint2')
+        else:
+            libint_include = os.path.join('include', 'libint')
         guesses.update({
-            'CPATH': ["include", os.path.join("include", "libint2")],
+            'CPATH': ['include', libint_include],
         })
         return guesses
