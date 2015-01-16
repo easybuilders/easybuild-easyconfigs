@@ -28,10 +28,8 @@ EasyBuild support for GAMESS-US
 @author: Benjamin Roberts (The University of Auckland)
 """
 
-from easybuild.framework.easyblock import EasyBlock
-from easybuild.framework.easyconfig import CUSTOM
+from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.tools.run import run_cmd
-
 
 class GAMESS-US(ConfigureMake):
 
@@ -66,11 +64,26 @@ class GAMESS-US(ConfigureMake):
             for (key, val) in tar_vars.items():
                 self.cfg.update('preconfigopts', "%s='%s'" % (key, val))
 
-        preconfigopts = """ echo  > ./config_answers.txt && \
-                            echo >> ./config_answers.txt &&"""
+        configopts = self.cfg['configopts'] + """<< EOF
 
-        configopts = self.cfg['configopts'] + "< ./config_answers.txt && rm ./config_answers.txt"
+linux64
+%(gamess_source_dir)s
+%(gamess_build_dir)s
+VERSION_STRING
+ifort
+13
 
+mkl
+%(mkl_directory)s
+skip
+
+
+mpi
+impi
+%(impi_directory)s
+no
+
+EOF"""
         cmd = "%(preconfigopts)s %(cmd_prefix)s./config %(configopts)s" % {
             'preconfigopts': self.cfg['preconfigopts'],
             'cmd_prefix': cmd_prefix,
