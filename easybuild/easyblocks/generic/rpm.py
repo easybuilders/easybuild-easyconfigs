@@ -46,6 +46,7 @@ from easybuild.easyblocks.generic.binary import Binary
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.run import run_cmd
+from easybuild.tools.systemtools import check_os_dependency
 
 
 _log = fancylogger.getLogger('easyblocks.generic.rpm')
@@ -53,6 +54,10 @@ _log = fancylogger.getLogger('easyblocks.generic.rpm')
 
 def rebuild_rpm(rpm_path, targetdir):
     """Rebuild the RPM on the specified location, to make it relocatable."""
+    # make sure that rpmrebuild command is available
+    if not check_os_dependency('rpmrebuild'):
+        _log.error("Command 'rpmrebuild' is required but not available.")
+
     rpmmacros = os.path.join(expanduser('~'), '.rpmmacros')
     if os.path.exists(rpmmacros):
         _log.error("rpmmacros file %s found which will override any other settings, so exiting." % rpmmacros)
@@ -73,7 +78,9 @@ def rebuild_rpm(rpm_path, targetdir):
     _log.debug("Rebuilding %s in %s to make it relocatable" % (rpm_path, targetdir))
     cmd = ' '.join([
         "rpmrebuild -v",
-        r"""--change-spec-whole='sed -e "s/^Prefix:.*/Prefix:    \//"'""",
+        # replace whathever prefix is set with '/'
+        r"""--change-spec-whole='sed -e "s/^Prefix:.*/Prefix: \//"'""",
+        # comment out any specifications that involve relative file path (starting with '.') (??)
         r"""--change-spec-whole='sed -e "s/^\(.*:[ ]\+\..*\)/#ERROR \1/"'""",
         "--notest-install",
         "-p -d",
@@ -112,9 +119,8 @@ class Rpm(Binary):
         """Custom configuration procedure for RPMs: rebuild RPMs for relocation if required."""
 
         # make sure that rpm is available
-        if not 'rpm' in self.cfg['osdependencies']:
-            self.cfg['osdependencies'].append('rpm')
-            self.cfg.validate_os_deps()
+        if not check_os_dependency('rpm'):
+            self.log.error("Command 'rpm' is required but not available.")
 
         # determine whether RPMs need to be rebuilt to make relocation work
         cmd = "rpm --version"
@@ -127,6 +133,7 @@ class Rpm(Binary):
         if res:
             ver = res.groupdict()['version']
 
+            # rebuilding is required on SL6, which implies rpm v4.8 (works fine without rebuilding on SL5)
             if LooseVersion(ver) >= LooseVersion('4.8.0'):
                 self.rebuild_rpm = True
                 self.log.debug("Enabling rebuild of RPMs to make relocation work...")
@@ -140,11 +147,6 @@ class Rpm(Binary):
     # --relocate doesn't seem to work (error: Unable to change root directory: Operation not permitted)
     def rebuild_rpms(self):
         """Rebuild RPMs to make relocation work."""
-        # make sure that rpmrebuild command is available
-        if not 'rpmrebuild' in self.cfg['osdependencies']:
-            self.cfg['osdependencies'].append('rpmrebuild')
-            self.cfg.validate_os_deps()
-
         for rpm in self.src:
             rebuild_rpm(rpm['path'], targetdir=self.builddir)
 
