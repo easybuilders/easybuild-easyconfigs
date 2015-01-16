@@ -45,16 +45,16 @@ class EB_FDTD_underscore_Solutions(EasyBlock):
     def build_step(self):
         """No build step for FDTD Solutions."""
         # locate RPM and rebuild it to make it relocatable
-        rpms = glob.glob(os.path.join(self.builddir, 'rpm_install_files', 'FDTD-%s*.rpm' % self.version))
+        rpms = glob.glob(os.path.join(self.cfg['start_dir'], 'rpm_install_files', 'FDTD-%s*.rpm' % self.version))
         if len(rpms) != 1:
-            self.log.debug("Incorrect number of RPMs found, was expecting exactly one: %s" % rpms)
-        rebuilt_dir = os.path.join(self.builddir, 'rebuilt')
+            self.log.error("Incorrect number of RPMs found, was expecting exactly one: %s" % rpms)
+        rebuilt_dir = os.path.join(self.cfg['start_dir'], 'rebuilt')
         rebuild_rpm(rpms[0], rebuilt_dir)
 
         # replace original RPM with relocatable RPM
         rebuilt_rpms = glob.glob(os.path.join(rebuilt_dir, '*', '*.rpm'))
         if len(rebuilt_rpms) != 1:
-            self.log.debug("Incorrect number of rebuilt RPMs found, was expecting exactly one: %s" % rebuilt_rpms)
+            self.log.error("Incorrect number of rebuilt RPMs found, was expecting exactly one: %s" % rebuilt_rpms)
 
         try:
             os.rename(rpms[0], '%s.bk' % rpms[0])
