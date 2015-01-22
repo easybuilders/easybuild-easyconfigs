@@ -1,5 +1,5 @@
 ##
-# Copyright 2009-2013 Ghent University
+# Copyright 2015-2015 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -23,51 +23,49 @@
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
 """
-EasyBuild support for Python packages that are configured with CMake, implemented as an easyblock
+EasyBuild support for Python packages that are configured with 'python configure/make/make install', implemented as an easyblock
 
 @author: Bart Verleye (Centre for eResearch, Auckland)
+@author: Kenneth Hoste (Ghent University)
 """
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.easyblocks.generic.pythonpackage import PythonPackage
-from easybuild.tools.filetools import run_cmd
+from easybuild.tools.run import run_cmd
 from easybuild.easyblocks.python import EXTS_FILTER_PYTHON_PACKAGES
 
 
 class ConfigureMakePythonPackage(ConfigureMake, PythonPackage):
-    """Build a Python package and module with cmake.
+    """
+    Build a Python package and module with 'python configure/make/make install'.
 
-    Some packages use cmake to first build and install C Python packages
-    and then put the Python package in lib/pythonX.Y/site-packages.
-
-    We install this in a seperate location and generate a module file 
-    which sets the PYTHONPATH.
-
-    We use the default CMake implementation, and use make_module_extra from PythonPackage.
+    Implemented by using:
+    - a custom implementation of configure_step
+    - using the build_step and install_step from ConfigureMake
+    - using the sanity_check_step and make_module_extra from PythonPackage
     """
 
     def __init__(self, *args, **kwargs):
         """Initialize with PythonPackage."""
         PythonPackage.__init__(self, *args, **kwargs)
 
-    def configure_step(self, *args, **kwargs):
-        """Main configuration using cmake"""
-
-        command = "%s python %s" % (self.cfg['preconfigopts'], self.cfg['configopts'])
-        (out, _) = run_cmd(command, log_all=True, simple=False)
+    def configure_step(self):
+        """Configure build using 'python configure'."""
+        cmd = "%s python %s" % (self.cfg['preconfigopts'], self.cfg['configopts'])
+        run_cmd(cmd, log_all=True)
 
     def build_step(self, *args, **kwargs):
-        """Build Python package with cmake"""
+        """Build Python package with 'make'."""
         return ConfigureMake.build_step(self, *args, **kwargs)
 
     def install_step(self):
-        """Install with cmake install"""
+        """Install with 'make install'."""
         return ConfigureMake.install_step(self)
 
     def sanity_check_step(self, *args, **kwargs):
         """
         Custom sanity check for Python packages
         """
-        #return super(PythonPackage, self).sanity_check_step(EXTS_FILTER_PYTHON_PACKAGES, *args, **kwargs)
+        return PythonPackage.sanity_check_step(self, EXTS_FILTER_PYTHON_PACKAGES, *args, **kwargs)
 
     def make_module_extra(self):
         """Add extra Python package module parameters"""
