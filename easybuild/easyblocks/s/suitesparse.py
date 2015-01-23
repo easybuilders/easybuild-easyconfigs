@@ -94,8 +94,12 @@ class EB_SuiteSparse(ConfigureMake):
         try:
             for line in fileinput.input(fp, inplace=1, backup='.orig'):
                 for (k, v) in cfgvars.items():
-                    line = re.sub(r"^(%s\s*=\s*).*$" % k, r"\1 %s # patched by EasyBuild" % v, line)
-                    if k in line:
+                    orig_line = line
+                    line = re.sub(r"^\s*(%s\s*=\s*).*$" % k,
+                                  r"\1 %s # patched by EasyBuild" % v,
+                                  line)
+                    if line != orig_line:
+# Note: this will crash & burn in Python 3
                         cfgvars.pop(k)
                 sys.stdout.write(line)
         except IOError, err:
