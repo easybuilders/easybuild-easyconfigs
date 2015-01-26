@@ -35,8 +35,8 @@ import easybuild.tools.environment as env
 import easybuild.tools.toolchain as toolchain
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.framework.easyconfig import BUILD, CUSTOM
-from easybuild.tools.filetools import run_cmd
 from easybuild.tools.modules import get_software_root
+from easybuild.tools.run import run_cmd
 from easybuild.tools.systemtools import get_shared_lib_ext
 
 
@@ -289,11 +289,11 @@ class EB_PETSc(ConfigureMake):
         txt = super(EB_PETSc, self).make_module_extra()
 
         if self.cfg['sourceinstall']:
-            txt += self.moduleGenerator.set_environment('PETSC_DIR', '$root/%s' % self.petsc_subdir)
-            txt += self.moduleGenerator.set_environment('PETSC_ARCH', self.petsc_arch)
+            txt += self.module_generator.set_environment('PETSC_DIR', '$root/%s' % self.petsc_subdir)
+            txt += self.module_generator.set_environment('PETSC_ARCH', self.petsc_arch)
 
         else:
-            txt += self.moduleGenerator.set_environment('PETSC_DIR', '$root')
+            txt += self.module_generator.set_environment('PETSC_DIR', '$root')
 
         return txt
 

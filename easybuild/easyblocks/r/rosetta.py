@@ -40,8 +40,9 @@ import easybuild.tools.toolchain as toolchain
 from easybuild.easyblocks.icc import get_icc_version
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import CUSTOM
-from easybuild.tools.filetools import run_cmd, extract_file
+from easybuild.tools.filetools import extract_file
 from easybuild.tools.modules import get_software_root, get_software_version
+from easybuild.tools.run import run_cmd
 
 
 class EB_Rosetta(EasyBlock):

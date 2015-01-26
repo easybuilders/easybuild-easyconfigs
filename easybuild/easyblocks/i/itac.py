@@ -36,9 +36,9 @@ import os
 
 from distutils.version import LooseVersion
 
-from easybuild.framework.easyconfig import CUSTOM
 from easybuild.easyblocks.generic.intelbase import IntelBase
-from easybuild.tools.filetools import run_cmd
+from easybuild.framework.easyconfig import CUSTOM
+from easybuild.tools.run import run_cmd
 
 class EB_itac(IntelBase):
     """
@@ -136,8 +136,8 @@ EULA=accept
     def make_module_extra(self):
         """Overwritten from IntelBase to add extra txt"""
         txt = super(EB_itac, self).make_module_extra()
-        txt += self.moduleGenerator.prepend_paths(self.license_env_var, [self.license_file], allow_abs=True)
-        txt += self.moduleGenerator.set_environment('VT_ROOT', '$root')
-        txt += self.moduleGenerator.set_environment('VT_MPI', self.cfg['preferredmpi'])
-        txt += self.moduleGenerator.set_environment('VT_ADD_LIBS', "-ldwarf -lelf -lvtunwind -lnsl -lm -ldl -lpthread")
+        txt += self.module_generator.prepend_paths(self.license_env_var, [self.license_file], allow_abs=True)
+        txt += self.module_generator.set_environment('VT_ROOT', '$root')
+        txt += self.module_generator.set_environment('VT_MPI', self.cfg['preferredmpi'])
+        txt += self.module_generator.set_environment('VT_ADD_LIBS', "-ldwarf -lelf -lvtunwind -lnsl -lm -ldl -lpthread")
         return txt

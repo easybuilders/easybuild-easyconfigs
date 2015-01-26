@@ -145,5 +145,5 @@ class EB_PSI(ConfigureMake):
     def make_module_extra(self):
         """Custom variables for PSI module."""
         txt = super(EB_PSI, self).make_module_extra()
-        txt += self.moduleGenerator.set_environment('PSI4DATADIR', '$root/share/psi')
+        txt += self.module_generator.set_environment('PSI4DATADIR', '$root/share/psi')
         return txt

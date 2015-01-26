@@ -44,8 +44,8 @@ from distutils.version import LooseVersion
 import easybuild.tools.toolchain as toolchain
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import CUSTOM
-from easybuild.tools.filetools import run_cmd
 from easybuild.tools.modules import get_software_root, get_software_version
+from easybuild.tools.run import run_cmd
 from easybuild.tools.systemtools import get_avail_core_count
 
 # CP2K needs this version of libxc
@@ -113,6 +113,10 @@ class EB_CP2K(EasyBlock):
         - build Libint wrapper
         - generate Makefile
         """
+
+        known_types = ['popt', 'psmp']
+        if self.cfg['type'] not in known_types:
+            self.log.error("Unknown build type specified: '%s', known types are %s" % (self.cfg['type'], known_types))
 
         # correct start dir, if needed
         # recent CP2K versions have a 'cp2k' dir in the unpacked 'cp2k' dir
@@ -770,7 +774,7 @@ class EB_CP2K(EasyBlock):
 
         cp2k_type = self.cfg['type']
         custom_paths = {
-            'files': ["bin/%s.%s" % (x, cp2k_type) for x in ["cp2k", "cp2k_shell", "fes"]],
+            'files': ["bin/%s.%s" % (x, cp2k_type) for x in ["cp2k", "cp2k_shell"]],
             'dirs': ["tests"]
         }
 

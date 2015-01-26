@@ -37,13 +37,23 @@ import shutil
 from distutils.version import LooseVersion
 
 from easybuild.easyblocks.generic.intelbase import IntelBase, ACTIVATION_NAME_2012, LICENSE_FILE_NAME_2012
-from easybuild.tools.filetools import run_cmd
+from easybuild.framework.easyconfig import CUSTOM
+from easybuild.tools.run import run_cmd
 
 
 class EB_impi(IntelBase):
     """
     Support for installing Intel MPI library
     """
+    @staticmethod
+    def extra_options():
+        extra_vars = {
+            'set_mpi_wrappers_compiler': [False, 'Override default compiler used by MPI wrapper commands', CUSTOM],
+            'set_mpi_wrapper_aliases_gcc': [False, 'Set compiler for mpigcc/mpigxx via aliases', CUSTOM],
+            'set_mpi_wrapper_aliases_intel': [False, 'Set compiler for mpiicc/mpiicpc/mpiifort via aliases', CUSTOM],
+            'set_mpi_wrappers_all': [False, 'Set (default) compiler for all MPI wrapper commands', CUSTOM],
+        }
+        return IntelBase.extra_options(extra_vars)
 
     def install_step(self):
         """
@@ -160,6 +170,33 @@ EULA=accept
     def make_module_extra(self):
         """Overwritten from Application to add extra txt"""
         txt = super(EB_impi, self).make_module_extra()
-        txt += self.moduleGenerator.prepend_paths(self.license_env_var, [self.license_file], allow_abs=True)
-        txt += self.moduleGenerator.set_environment('I_MPI_ROOT', '$root')
+        txt += self.module_generator.prepend_paths(self.license_env_var, [self.license_file], allow_abs=True)
+        txt += self.module_generator.set_environment('I_MPI_ROOT', '$root')
+        if self.cfg['set_mpi_wrappers_compiler'] or self.cfg['set_mpi_wrappers_all']:
+            for var in ['CC', 'CXX', 'F77', 'F90', 'FC']:
+                if var == 'FC':
+                    # $FC isn't defined by EasyBuild framework, so use $F90 instead
+                    src_var = 'F90'
+                else:
+                    src_var = var
+
+                target_var = 'I_MPI_%s' % var
+
+                val = os.getenv(src_var)
+                if val:
+                    txt += self.module_generator.set_environment(target_var, val)
+                else:
+                    self.log.error("Environment variable $%s not set, can't define $%s" % (src_var, target_var))
+
+        if self.cfg['set_mpi_wrapper_aliases_gcc'] or self.cfg['set_mpi_wrappers_all']:
+            # force mpigcc/mpigxx to use GCC compilers, as would be expected based on their name
+            txt += self.module_generator.set_alias('mpigcc', 'mpigcc -cc=gcc')
+            txt += self.module_generator.set_alias('mpigxx', 'mpigxx -cc=g++')
+
+        if self.cfg['set_mpi_wrapper_aliases_intel'] or self.cfg['set_mpi_wrappers_all']:
+            # do the same for mpiicc/mpiipc/mpiifort to be consistent, even if they may not exist
+            txt += self.module_generator.set_alias('mpiicc', 'mpiicc -cc=icc')
+            txt += self.module_generator.set_alias('mpiicpc', 'mpiicpc -cc=icpc')
+            txt += self.module_generator.set_alias('mpiifort', 'mpiifort -cc=ifort')
+
         return txt

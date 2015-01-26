@@ -40,8 +40,8 @@ from distutils.version import LooseVersion
 
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.tools.build_log import EasyBuildError
-from easybuild.tools.filetools import run_cmd
 from easybuild.tools.modules import get_software_libdir, get_software_root
+from easybuild.tools.run import run_cmd
 
 
 EXTS_FILTER_PYTHON_PACKAGES = ('python -c "import %(ext_name)s"', "")

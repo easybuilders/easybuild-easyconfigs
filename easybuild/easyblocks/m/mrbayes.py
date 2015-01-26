@@ -38,8 +38,8 @@ import shutil
 from distutils.version import LooseVersion
 
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
-from easybuild.tools.filetools import run_cmd
 from easybuild.tools.modules import get_software_root
+from easybuild.tools.run import run_cmd
 
 
 class EB_MrBayes(ConfigureMake):

@@ -57,7 +57,7 @@ class EB_Score_minus_P(ConfigureMake):
         mpi_opts = {
             toolchain.INTELMPI: 'intel2',  # intel: Intel MPI v1.x (ancient); intelpoe: IBM POE MPI for Intel platforms
             toolchain.OPENMPI: 'openmpi',
-            toolchain.MPICH: 'mpich',
+            toolchain.MPICH: 'mpich3',  # In EB terms, MPICH means MPICH 3.x; MPICH 1.x is ancient and unsupported
             toolchain.MPICH2: 'mpich2',
         }
         mpi_fam = self.toolchain.mpi_family()

@@ -33,7 +33,7 @@ import os
 import re
 
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
-from easybuild.tools.filetools import run_cmd
+from easybuild.tools.run import run_cmd
 
 # perldoc -lm seems to be the safest way to test if a module is available, based on exit code
 EXTS_FILTER_PERL_MODULES = ("perldoc -lm %(ext_name)s ", "")

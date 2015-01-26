@@ -31,7 +31,7 @@ import os
 
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import CUSTOM
-from easybuild.tools.filetools import run_cmd_qa
+from easybuild.tools.run import run_cmd_qa
 
 
 class EB_Modeller(EasyBlock):
@@ -47,6 +47,9 @@ class EB_Modeller(EasyBlock):
 
     def install_step(self):
         """Interactive install of Modeller."""
+    
+        if self.cfg['key'] is None: 
+            self.log.error("Easyconfig parameter 'key' is not defined")
 
         cmd = "%s/Install" % self.cfg['start_dir']
 
@@ -90,7 +93,7 @@ class EB_Modeller(EasyBlock):
             self.log.error("Failed to isolate latest Python lib dir from list %s" % py2libdirs)
 
         guesses.update({
-            'PYTHONPATH': [os.path.join('lib', libdir, py2libdir)],
+            'PYTHONPATH': [os.path.join('lib', libdir, py2libdir), "modlib"],
             'LD_LIBRARY_PATH': [os.path.join('lib', libdir)],
         })
         return guesses

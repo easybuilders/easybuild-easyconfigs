@@ -34,8 +34,8 @@ import re
 import easybuild.tools.environment as env
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.framework.easyconfig import BUILD, CUSTOM
-from easybuild.tools.filetools import run_cmd
 from easybuild.tools.modules import get_software_root
+from easybuild.tools.run import run_cmd
 
 
 class EB_SLEPc(ConfigureMake):
@@ -125,11 +125,11 @@ class EB_SLEPc(ConfigureMake):
         txt = super(EB_SLEPc, self).make_module_extra()
 
         if self.cfg['sourceinstall']:
-            txt += self.moduleGenerator.set_environment('SLEPC_DIR', '$root/%s-%s' % (self.name.lower(),
+            txt += self.module_generator.set_environment('SLEPC_DIR', '$root/%s-%s' % (self.name.lower(),
                                                                                      self.version))
 
         else:
-            txt += self.moduleGenerator.set_environment('SLEPC_DIR', '$root')
+            txt += self.module_generator.set_environment('SLEPC_DIR', '$root')
 
         return txt
 

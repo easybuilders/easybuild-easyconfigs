@@ -32,7 +32,7 @@ import os
 
 import easybuild.tools.environment as env
 from easybuild.easyblocks.generic.pythonpackage import PythonPackage
-from easybuild.tools.filetools import run_cmd
+from easybuild.tools.run import run_cmd
 
 
 class EB_VSC_minus_tools(PythonPackage):
@@ -91,7 +91,7 @@ class EB_VSC_minus_tools(PythonPackage):
 
         txt = super(EB_VSC_minus_tools, self).make_module_extra()
 
-        txt += self.moduleGenerator.prepend_paths('PATH', ["bin/fake"])
-        txt += self.moduleGenerator.prepend_paths('PYTHONPATH', ["lib"])
+        txt += self.module_generator.prepend_paths('PATH', ["bin/fake"])
+        txt += self.module_generator.prepend_paths('PYTHONPATH', ["lib"])
 
         return txt

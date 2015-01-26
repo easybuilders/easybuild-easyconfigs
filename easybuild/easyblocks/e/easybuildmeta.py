@@ -29,7 +29,9 @@ EasyBuild support for installing EasyBuild, implemented as an easyblock
 """
 import copy
 import os
+from distutils.version import LooseVersion
 
+import easybuild.tools.environment as env
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.easyblocks.generic.pythonpackage import PythonPackage
 from easybuild.tools.modules import get_software_root_env_var_name
@@ -126,18 +128,23 @@ class EB_EasyBuildMeta(PythonPackage):
 
         # set of sanity check paths to check for EasyBuild
         custom_paths = {
-                        'files': ['bin/eb'],
-                        'dirs': [self.pylibdir] + [[x, os.path.join(self.pylibdir, x)][y] for (x, y) in eb_dirs[setup_tool]],
-                       }
+            'files': ['bin/eb'],
+            'dirs': [self.pylibdir] + [[x, os.path.join(self.pylibdir, x)][y] for (x, y) in eb_dirs[setup_tool]],
+        }
+
+        # make sure we don't trip over deprecated behavior in old EasyBuild versions
+        eb_cmd = 'eb'
+        if LooseVersion(self.version) <= LooseVersion('1.16.0'):
+            eb_cmd = 'EASYBUILD_DEPRECATED=1.0 eb'
 
         # set of sanity check commands to run for EasyBuild
         custom_commands = [
-                           # this may spit out a wrong version, but that should be safe to ignore
-                           # occurs when the EasyBuild being used is newer than the EasyBuild being installed
-                           ('eb', '--version'),
-                           ('eb', '-a'),
-                           ('eb', '-e ConfigureMake -a')
-                          ]
+            # this may spit out a wrong version, but that should be safe to ignore
+            # occurs when the EasyBuild being used is newer than the EasyBuild being installed
+            (eb_cmd, '--version'),
+            (eb_cmd, '-a'),
+            (eb_cmd, '-e ConfigureMake -a'),
+        ]
 
         # (temporary) cleanse copy of original environment to avoid conflict with (potentially) loaded EasyBuild module
         self.orig_orig_environ = copy.deepcopy(self.orig_environ)

@@ -139,9 +139,10 @@ class EB_GROMACS(CMakeMake):
         libnames = ['gromacs']
         if LooseVersion(self.version) < LooseVersion('5.0'):
             libnames = ['gmxana', 'gmx', 'gmxpreprocess', 'md']
+        libs = ['lib%s%s.a' % (libname, suff) for libname in libnames]
         custom_paths = {
             'files': ['bin/%s%s' % (binary, suff) for binary in ['editconf', 'g_lie', 'genbox', 'genconf', 'mdrun']] +
-                     ['lib/lib%s%s.a' % (lib, suff) for lib in libnames],
-            'dirs': ['include/gromacs', 'lib/pkgconfig'],
+                     [(os.path.join('lib', lib), os.path.join('lib64', lib)) for lib in libs],
+            'dirs': ['include/gromacs', ('lib/pkgconfig', 'lib64/pkgconfig')],
         }
         super(EB_GROMACS, self).sanity_check_step(custom_paths=custom_paths)

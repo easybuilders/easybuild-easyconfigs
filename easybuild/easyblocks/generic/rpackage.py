@@ -36,7 +36,7 @@ import shutil
 
 from easybuild.easyblocks.r import EXTS_FILTER_R_PACKAGES
 from easybuild.framework.extensioneasyblock import ExtensionEasyBlock
-from easybuild.tools.filetools import run_cmd, parse_log_for_error
+from easybuild.tools.run import run_cmd, parse_log_for_error
 
 
 def make_R_install_option(opt, values, cmdline=False):
@@ -195,5 +195,5 @@ class RPackage(ExtensionEasyBlock):
 
     def make_module_extra(self):
         """Add install path to R_LIBS"""
-        extra = self.moduleGenerator.prepend_paths("R_LIBS", [''])  # prepend R_LIBS with install path
+        extra = self.module_generator.prepend_paths("R_LIBS", [''])  # prepend R_LIBS with install path
         return super(RPackage, self).make_module_extra(extra)

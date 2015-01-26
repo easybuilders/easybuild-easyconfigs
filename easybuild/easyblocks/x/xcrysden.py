@@ -133,8 +133,8 @@ class EB_XCrySDen(ConfigureMake):
         txt = super(EB_XCrySDen, self).make_module_extra()
 
         tclpath = os.path.join(self.tclroot, 'lib', "tcl%s" % self.tclver)
-        txt += self.moduleGenerator.set_environment('TCL_LIBRARY', tclpath)
+        txt += self.module_generator.set_environment('TCL_LIBRARY', tclpath)
         tkpath = os.path.join(self.tkroot, 'lib', "tk%s" % self.tkver)
-        txt += self.moduleGenerator.set_environment('TK_LIBRARY', tkpath)
+        txt += self.module_generator.set_environment('TK_LIBRARY', tkpath)
 
         return txt

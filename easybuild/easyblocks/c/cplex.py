@@ -39,7 +39,7 @@ import stat
 import easybuild.tools.environment as env
 from easybuild.easyblocks.generic.binary import Binary
 from easybuild.framework.easyconfig import CUSTOM
-from easybuild.tools.filetools import run_cmd_qa
+from easybuild.tools.run import run_cmd_qa
 
 
 class EB_CPLEX(Binary):
@@ -111,8 +111,8 @@ class EB_CPLEX(Binary):
         """Add installdir to path and set CPLEX_HOME"""
 
         txt = super(EB_CPLEX, self).make_module_extra()
-        txt += self.moduleGenerator.prepend_paths("PATH", [self.bindir])
-        txt += self.moduleGenerator.set_environment("CPLEX_HOME", "$root/cplex")
+        txt += self.module_generator.prepend_paths("PATH", [self.bindir])
+        txt += self.module_generator.set_environment("CPLEX_HOME", "$root/cplex")
         self.log.debug("make_module_extra added %s" % txt)
         return txt
 

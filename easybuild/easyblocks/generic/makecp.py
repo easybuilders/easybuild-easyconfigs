@@ -24,7 +24,7 @@
 ##
 """
 @author: George Tsouloupas (The Cyprus Institute)
-@author: Fotis Georgatos (University of Luxembourg)
+@author: Fotis Georgatos (Uni.Lu, NTUA)
 @author: Kenneth Hoste (Ghent University)
 """
 import os
