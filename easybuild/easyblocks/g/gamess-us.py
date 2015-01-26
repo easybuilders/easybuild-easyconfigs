@@ -29,9 +29,18 @@ EasyBuild support for GAMESS-US
 """
 
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
+from easybuild.easyblocks.icc import get_icc_version
 from easybuild.tools.run import run_cmd
+import easybuild.tools.toolchain as toolchain
 
-class GAMESS-US(ConfigureMake):
+class EB_GAMESS-US(ConfigureMake):
+
+    def __init__(self, *args, **kwargs):
+        """Add extra config options specific to WRF."""
+        super(EB_GAMESS-US, self).__init__(*args, **kwargs)
+
+        self.build_in_installdir = True
+
 
     @staticmethod
     def extra_options(extra_vars=None):
@@ -64,26 +73,51 @@ class GAMESS-US(ConfigureMake):
             for (key, val) in tar_vars.items():
                 self.cfg.update('preconfigopts', "%s='%s'" % (key, val))
 
-        configopts = self.cfg['configopts'] + """<< EOF
+        if self.toolchain.comp_family() == toolchain.INTELCOMP:
+            compiler = 'ifort'
+            compver = '.'.join(get_icc_version().split('.')[:2])
+        elif self.toolchain.comp_family() == toolchain.GCC:
+            compiler = 'gfortran'
+            compver = '.'.join(get_software_version('GCC').split('.')[:2])
+
+        # Still need support for ACML and ATLAS.
+        if get_software_root('imkl'):
+            mathlib = 'mkl'
+            mathlibdir = os.path.join(os.getenv('EBROOTIMKL'),'mkl')
+        else:
+            self.log.error("Only the Intel MKL is currently supported by this EasyBlock.")
+            mathlib = 'none'
+
+        # Still need support for MVAPICH2 and MPT.
+        # "Sockets" is the non-MPI option at this point.
+        if get_software_root('impi'):
+            mpiimpl = 'impi'
+            mpidir = os.getenv('EBROOTIMPI')
+        else:
+            self.log.error("Only the Intel MPI is currently supported by this EasyBlock.")
+            mpiimpl = 'sockets'
+        
+        configanswers = """<< EOF
 
 linux64
-%(gamess_source_dir)s
-%(gamess_build_dir)s
-VERSION_STRING
-ifort
-13
+{0}
+{1}
+00
+{2}
+{3}
 
-mkl
-%(mkl_directory)s
+{4}
+{5}
 skip
 
 
 mpi
-impi
-%(impi_directory)s
+{6}
+{7}
 no
 
 EOF"""
+        configopts = self.cfg['configopts'] + configanswers.format(source_dir,install_dir,compiler,compver,mathlib,mathlibdir,mpiimpl,mpidir)
         cmd = "%(preconfigopts)s %(cmd_prefix)s./config %(configopts)s" % {
             'preconfigopts': self.cfg['preconfigopts'],
             'cmd_prefix': cmd_prefix,
@@ -99,12 +133,9 @@ EOF"""
         Start the actual build
         - typical: make -j X
         """
-
-        paracmd = ''
-        if self.cfg['parallel']:
-            paracmd = "-j %s" % self.cfg['parallel']
-
-        cmd = "%s make %s %s" % (self.cfg['prebuildopts'], paracmd, self.cfg['buildopts'])
+        
+        compall = os.path.join(source_dir, 'compall')
+        cmd = "%s %s %s" % (self.cfg['prebuildopts'], compall, self.cfg['buildopts'])
 
         (out, _) = run_cmd(cmd, path=path, log_all=True, simple=False, log_output=verbose)
 
