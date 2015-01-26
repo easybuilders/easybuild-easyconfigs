@@ -94,11 +94,10 @@ class EB_SuiteSparse(ConfigureMake):
         try:
             for line in fileinput.input(fp, inplace=1, backup='.orig'):
                 for (var, val) in cfgvars.items():
-                    # varaibles in cfgvars that have not been substituted
-                    # here will have to be appended to the end of the file,
-                    # so those substituted should be removed from cfgvars
-                    # if a line was modified
                     orig_line = line
+                    # for variables in cfgvars, substiture lines assignment 
+                    # in the file, whatever they are, by assignments to the
+                    # values in cfgvars
                     line = re.sub(r"^\s*(%s\s*=\s*).*$" % var,
                                   r"\1 %s # patched by EasyBuild" % val,
                                   line)
