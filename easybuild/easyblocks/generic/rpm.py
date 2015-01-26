@@ -43,7 +43,6 @@ from vsc.utils import fancylogger
 
 import easybuild.tools.environment as env
 from easybuild.easyblocks.generic.binary import Binary
-from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.run import run_cmd
 from easybuild.tools.systemtools import check_os_dependency
@@ -106,7 +105,7 @@ class Rpm(Binary):
     @staticmethod
     def extra_options(extra_vars=None):
         """Extra easyconfig parameters specific to RPMs."""
-        extra_vars = EasyBlock.extra_options(extra_vars)
+        extra_vars = Binary.extra_options(extra_vars)
         extra_vars.update({
             'force': [False, "Use force", CUSTOM],
             'preinstall': [False, "Enable pre install", CUSTOM],
