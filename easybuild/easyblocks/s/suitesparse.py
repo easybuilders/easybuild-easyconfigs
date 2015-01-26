@@ -59,8 +59,6 @@ class EB_SuiteSparse(ConfigureMake):
         else:
             self.config_name = 'SuiteSparse_config'
 
-        fp = os.path.join(self.cfg['start_dir'], self.config_name, '%s.mk' % self.config_name)
-
         cfgvars = {
             'CC': os.getenv('MPICC'),
             'CFLAGS': os.getenv('CFLAGS'),
@@ -91,16 +89,21 @@ class EB_SuiteSparse(ConfigureMake):
         })
 
         # patch file
+        fp = os.path.join(self.cfg['start_dir'], self.config_name, '%s.mk' % self.config_name)
+
         try:
             for line in fileinput.input(fp, inplace=1, backup='.orig'):
-                for (k, v) in cfgvars.items():
+                for (var, val) in cfgvars.items():
+                    # varaibles in cfgvars that have not been substituted
+                    # here will have to be appended to the end of the file,
+                    # so those substituted should be removed from cfgvars
+                    # if a line was modified
                     orig_line = line
-                    line = re.sub(r"^\s*(%s\s*=\s*).*$" % k,
-                                  r"\1 %s # patched by EasyBuild" % v,
+                    line = re.sub(r"^\s*(%s\s*=\s*).*$" % var,
+                                  r"\1 %s # patched by EasyBuild" % val,
                                   line)
                     if line != orig_line:
-# Note: this will crash & burn in Python 3
-                        cfgvars.pop(k)
+                        cfgvars.pop(var)
                 sys.stdout.write(line)
         except IOError, err:
             self.log.error("Failed to patch %s in: %s" % (fp, err))
@@ -110,8 +113,8 @@ class EB_SuiteSparse(ConfigureMake):
             try:
                 f = open(fp, "a")
                 f.write("# lines below added automatically by EasyBuild")
-                for (k, v) in cfgvars.items():
-                    f.write("%s = %s\n" % (k,v))
+                for (var, val) in cfgvars.items():
+                    f.write("%s = %s\n" % (var, val))
                 f.close()
             except IOError, err:
                 self.log.error("Failed to complete %s: %s" % (fp, err))
