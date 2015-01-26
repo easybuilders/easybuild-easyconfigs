@@ -115,7 +115,7 @@ class Binary(EasyBlock):
             try:
                 # copytree expects target directory to not exist yet
                 if os.path.exists(self.installdir):
-                    shutil.rmtree(self.installdir)
+                    rmtree2(self.installdir)
                 shutil.copytree(staged_installdir, self.installdir)
             except OSError, err:
                 tup = (staged_installdir, self.installdir, err)

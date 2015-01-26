@@ -93,6 +93,7 @@ class EB_CPLEX(Binary):
 
     def post_install_step(self):
         """Determine bin directory for this CPLEX installation."""
+        # handle staged install via Binary parent class
         super(EB_CPLEX, self).post_install_step()
 
         # determine bin dir
