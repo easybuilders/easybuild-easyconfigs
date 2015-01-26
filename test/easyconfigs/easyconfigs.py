@@ -41,12 +41,14 @@ from unittest import TestCase, TestLoader, main
 
 import easybuild.main as main
 import easybuild.tools.options as eboptions
+from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig.easyconfig import ActiveMNS, EasyConfig, fetch_parameter_from_easyconfig_file
 from easybuild.framework.easyconfig.easyconfig import get_easyblock_class
 from easybuild.framework.easyconfig.tools import dep_graph, get_paths_for, process_easyconfig
 from easybuild.tools import config
 from easybuild.tools.module_naming_scheme import GENERAL_CLASS
+from easybuild.tools.module_naming_scheme.utilities import det_full_ec_version
 from easybuild.tools.robot import resolve_dependencies
 
 
@@ -57,6 +59,9 @@ single_tests_ok = True
 
 class EasyConfigTest(TestCase):
     """Baseclass for easyconfig testcases."""
+
+    if LooseVersion(sys.version) >= LooseVersion('2.6'):
+        os.environ['EASYBUILD_DEPRECATED'] = '2.0'
 
     # initialize configuration (required for e.g. default modules_tool setting)
     eb_go = eboptions.parse_options()
@@ -197,7 +202,7 @@ class EasyConfigTest(TestCase):
                         self.assertTrue(False, "List of easyconfig files in %s is empty: %s" % (dirpath, filenames))
 
 def template_easyconfig_test(self, spec):
-    """Test whether all easyconfigs can be initialized."""
+    """Tests for an individual easyconfig: parsing, instantiating easyblock, check patches, ..."""
 
     # set to False, so it's False in case of this test failing
     global single_tests_ok
@@ -211,6 +216,11 @@ def template_easyconfig_test(self, spec):
     else:
         self.assertTrue(False, "easyconfig %s does not contain blocks, yields only one parsed easyconfig" % spec)
 
+    # check easyconfig file name
+    expected_fn = '%s-%s.eb' % (ec['name'], det_full_ec_version(ec))
+    msg = "Filename '%s' of parsed easconfig matches expected filename '%s'" % (spec, expected_fn)
+    self.assertEqual(os.path.basename(spec), expected_fn, msg)
+
     # sanity check for software name
     name = fetch_parameter_from_easyconfig_file(spec, 'name')
     self.assertTrue(ec['name'], name) 
@@ -220,6 +230,12 @@ def template_easyconfig_test(self, spec):
 
     # instantiate easyblock with easyconfig file
     app_class = get_easyblock_class(easyblock, name=name)
+
+    # check that automagic fallback to ConfigureMake isn't done (deprecated behaviour)
+    fn = os.path.basename(spec)
+    error_msg = "%s relies on automagic fallback to ConfigureMake, should use easyblock = 'ConfigureMake' instead" % fn
+    self.assertTrue(easyblock or not app_class is ConfigureMake, error_msg)
+
     app = app_class(ec)
 
     # more sanity checks
