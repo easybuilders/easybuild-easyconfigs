@@ -33,11 +33,11 @@ from easybuild.easyblocks.icc import get_icc_version
 from easybuild.tools.run import run_cmd
 import easybuild.tools.toolchain as toolchain
 
-class EB_GAMESS-US(ConfigureMake):
+class EB_GamessUS(ConfigureMake):
 
     def __init__(self, *args, **kwargs):
         """Add extra config options specific to WRF."""
-        super(EB_GAMESS-US, self).__init__(*args, **kwargs)
+        super(EB_GamessUS, self).__init__(*args, **kwargs)
 
         self.build_in_installdir = True
 
