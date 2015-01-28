@@ -127,7 +127,7 @@ def template_init_test(self, easyblock):
 
         # extend easyconfig to make sure mandatory custom easyconfig paramters are defined
         extra_txt = ''
-        for (key, val) in extra_options:
+        for (key, val) in extra_options.items():
             if val[2] == MANDATORY:
                 extra_txt += '%s = "foo"\n' % key
 
