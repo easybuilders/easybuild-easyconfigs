@@ -29,6 +29,8 @@ EasyBuild support for GAMESS-US
 """
 
 import sys, os
+import fileinput, re
+import time
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.easyblocks.icc import get_icc_version
 from easybuild.tools.modules import get_software_root
@@ -42,10 +44,32 @@ class EB_GAMESS_minus_US(ConfigureMake):
         super(EB_GAMESS_minus_US, self).__init__(*args, **kwargs)
 
         self.build_in_installdir = True
+        self.gamess_build = time.strftime("%Y%m%d")
+        self.connectivity = 'sockets'
+        self.mpiimpl = ''
+        self.mpidir = '' 
 
     def extract_step(self):
         self.cfg['unpack_options'] = "--strip-components=1"
         super(EB_GAMESS_minus_US, self).extract_step()
+
+    def patch_step(self):
+        """ Patch, then amend one of the patched files with values from the config. """
+
+        super(EB_GAMESS_minus_US, self).patch_step()
+
+        rungms = os.path.join(self.builddir, "rungms")
+        try:
+            for line in fileinput.input(rungms, inplace=1, backup='.orig'):
+                line = re.sub(r"self.builddir", r"%s" % self.builddir, line)
+                line = re.sub(r"self.connectivity", r"%s" % self.connectivity, line)
+                line = re.sub(r"self.gamess_build", r"%s" % self.gamess_build, line)
+                line = re.sub(r"self.installdir", r"%s" % self.installdir, line)
+                line = re.sub(r"self.mpidir", r"%s" % self.mpidir, line)
+                line = re.sub(r"self.mpiimpl", r"%s" % self.mpiimpl, line)
+                sys.stdout.write(line)
+        except IOError, err:
+            self.log.error("Failed to patch %s: %s" % (fn, err))
 
     def configure_step(self, cmd_prefix=''):
 
@@ -73,36 +97,36 @@ class EB_GAMESS_minus_US(ConfigureMake):
         # Still need support for MVAPICH2 and MPT.
         # "Sockets" is the non-MPI option at this point.
         if get_software_root('impi'):
-            mpiimpl = 'impi'
-            mpidir = os.getenv('EBROOTIMPI')
+            self.connectivity = 'mpi'
+            self.mpiimpl = 'impi'
+            self.mpidir = os.getenv('EBROOTIMPI')
         else:
             self.log.error("Only the Intel MPI is currently supported by this EasyBlock.")
-            mpiimpl = 'sockets'
         
-        print 'start_dir: ' + self.cfg['start_dir']
-        print 'installdir: ' + self.installdir
-
         configanswers = """<< EOF
 
 linux64
-{0}
-{1}
-00
-{2}
-{3}
+{builddir}
+{installdir}
+{gamess_build}
+{compiler}
+{compver}
 
-{4}
-{5}
+{mathlib}
+{mathlibdir}
 skip
 
 
 mpi
-{6}
-{7}
+{mpiimpl}
+{mpidir}
 no
 
 EOF"""
-        configopts = self.cfg['configopts'] + configanswers.format(self.cfg['start_dir'],self.installdir,compiler,compver,mathlib,mathlibdir,mpiimpl,mpidir)
+        configopts = self.cfg['configopts'] + configanswers.format(builddir=self.builddir,
+                compiler=compiler,compver=compver,installdir=self.installdir,
+                mathlib=mathlib,mathlibdir=mathlibdir,
+                mpiimpl=self.mpiimpl,mpidir=self.mpidir,gamess_build=self.gamess_build)
         cmd = "%(preconfigopts)s %(cmd_prefix)s./config %(configopts)s" % {
             'preconfigopts': self.cfg['preconfigopts'],
             'cmd_prefix': cmd_prefix,
@@ -116,36 +140,41 @@ EOF"""
     def build_step(self, verbose=False, path=None):
         """
         Start the actual build
-        - typical: make -j X
         """
+
+        compddi = os.path.join(self.builddir, 'ddi', 'compddi')
+        (compddi_out, _) = run_cmd(compddi, path=path, log_all=True, simple=False, log_output=verbose)
         
-        compall = os.path.join(self.cfg['start_dir'], 'compall')
-        cmd = "%s %s %s" % (self.cfg['prebuildopts'], compall, self.cfg['buildopts'])
+        compall = os.path.join(self.builddir, 'compall')
+        compall_cmd = "%s %s %s" % (self.cfg['prebuildopts'], compall, self.cfg['buildopts'])
+        (compall_out, _) = run_cmd(compall_cmd, path=path, log_all=True, simple=False, log_output=verbose)
 
-        (out, _) = run_cmd(cmd, path=path, log_all=True, simple=False, log_output=verbose)
+        lked = os.path.join(self.builddir, 'lked')
+        lked_cmd = "%s %s %s" % (lked, 'gamess', self.gamess_build)
+        (lked_out, _) = run_cmd(lked_cmd, path=path, log_all=True, simple=False, log_output=verbose)
 
+        out = compddi_out + compall_out + lked_out
         return out
 
     def test_step(self):
         """
         Test the compilation
-        - default: None
         """
-
-        if self.cfg['runtest']:
-            cmd = "make %s" % (self.cfg['runtest'])
-            (out, _) = run_cmd(cmd, log_all=True, simple=False)
-
-            return out
-
-    def install_step(self):
-        """
-        Create the installation in correct location
-        - typical: make install
-        """
-
-        cmd = "%s make install %s" % (self.cfg['preinstallopts'], self.cfg['installopts'])
-
-        (out, _) = run_cmd(cmd, log_all=True, simple=False)
+        runall = os.path.join(self.builddir, 'runall')
+        runall_cmd = "%s %s" % (runall, self.gamess_build)
+        (out, _) = run_cmd(runall_cmd, path=self.builddir, log_all=True, simple=False)
 
         return out
+
+    def install_step(self):
+        """Skip install step, since we're building in the install directory."""
+        pass
+
+    def sanity_check_step(self):
+        """Custom sanity check for XCrySDen."""
+
+        custom_paths = {'files': [ "gamess.%s.x" % self.gamess_build ],
+                        'dirs': []
+                        }
+
+        super(EB_GAMESS_minus_US, self).sanity_check_step(custom_paths=custom_paths)
