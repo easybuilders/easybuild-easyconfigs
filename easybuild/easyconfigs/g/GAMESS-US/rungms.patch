@@ -1,0 +1,121 @@
+--- gamess.orig/rungms	2013-05-18 04:15:11.000000000 +1200
++++ gamess/rungms	2015-01-29 17:39:53.359679532 +1300
+@@ -59,17 +59,23 @@
+ #       both Sun Grid Engine (SGE), and Portable Batch System (PBS).
+ #       See also a very old LoadLeveler "ll-gms" for some IBM systems.
+ #
+-set TARGET=sockets
+-set SCR=/scr/$USER
+-set USERSCR=~$USER/scr
+-set GMSPATH=/u1/mike/gamess
++set TARGET=mpi
++# SCR is for large binary temporary files. Accordingly, it should only be set
++# to a network file system if the connection to that file system is fast.
++set SCR=$SCRATCH_DIR
++# USERSCR is for small ASCII temporary files, and can be on a network file
++# system of any speed.
++set USERSCR=$SCRATCH_DIR
++set GMSPATH=self.installdir
++set ERICFMT=$GMSPATH/auxdata/ericfmt.dat
++set MCPPATH=$GMSPATH/auxdata/MCP
+ #
+ set JOB=$1      # name of the input file xxx.inp, give only the xxx part
+ set VERNO=$2    # revision number of the executable created by 'lked' step
+ set NCPUS=$3    # number of compute processes to be run
+ #
+ # provide defaults if last two arguments are not given to this script
+-if (null$VERNO == null) set VERNO=00
++if (null$VERNO == null) set VERNO=self.gamess_build
+ if (null$NCPUS == null) set NCPUS=1
+ #
+ #  ---- the top third of the script is input and other file assignments ----
+@@ -86,6 +92,7 @@
+                       set SCHED=none
+ if ($?PBS_O_LOGNAME)  set SCHED=PBS
+ if ($?SGE_O_LOGNAME)  set SCHED=SGE
++if ($?SLURM_JOB_ID)   set SCHED=SLURM
+ if ($SCHED == SGE) then
+    set SCR=$TMPDIR
+    echo "SGE has assigned the following compute nodes to this run:"
+@@ -96,6 +103,13 @@
+    echo "PBS has assigned the following compute nodes to this run:"
+    uniq $PBS_NODEFILE
+ endif
++if ($SCHED == SLURM) then
++   # SCR is for large binary temporary files. Accordingly, it should only be
++   # set to a network file system if the connection to that file system is fast.
++   set SCR=$SCRATCH_DIR
++   echo "SLURM has assigned the following compute nodes to this run:"
++   scontrol show hostnames $SLURM_JOB_NODELIST | sort | uniq
++endif
+ #
+ echo "Available scratch disk space (Kbyte units) at beginning of the job is"
+ df -k $SCR
+@@ -528,14 +542,14 @@
+    #         specify your MPI library's top level path just below,
+    #         this will have directories like include/lib/bin below it.
+    #
+-   set DDI_MPI_CHOICE=impi
++   set DDI_MPI_CHOICE=self.mpiimpl
+    #
+    #        ISU's various clusters have various iMPI paths
+    #          the examples are our dynamo/chemphys2011/exalted/bolt clusters
+    if ($DDI_MPI_CHOICE == impi) then
+       #-- DDI_MPI_ROOT=/opt/intel/impi/3.2
+       #-- DDI_MPI_ROOT=/share/apps/intel/impi/4.0.1.007/intel64
+-      set DDI_MPI_ROOT=/share/apps/intel/impi/4.0.2.003/intel64
++      set DDI_MPI_ROOT=self.mpidir/intel64
+       #-- DDI_MPI_ROOT=/share/apps/mpi/impi/intel64
+    endif
+    #
+@@ -543,7 +557,7 @@
+    #          the examples are our dynamo/exalted/bolt clusters
+    if ($DDI_MPI_CHOICE == mvapich2) then
+       #-- DDI_MPI_ROOT=/share/apps/mpi/mvapich2-1.9a2-generic
+-      set DDI_MPI_ROOT=/share/apps/mpi/mvapich2-1.9a2-qlc
++      set DDI_MPI_ROOT=self.mpidir
+       #-- DDI_MPI_ROOT=/share/apps/mpi/mvapich2-1.9-generic-gnu
+    endif
+    #
+@@ -594,6 +608,11 @@
+          set NNODES=`wc -l $HOSTFILE`
+          set NNODES=$NNODES[1]
+       endif
++      if ($SCHED == SLURM) then
++         scontrol show hostnames $SLURM_JOB_NODELIST | sort | uniq > $HOSTFILE
++         set NNODES=`wc -l $HOSTFILE`
++         set NNODES=$NNODES[1]
++      endif
+    endif
+    #           uncomment next lines if you need to debug host configuration.
+    #--echo '-----debug----'
+@@ -695,7 +714,7 @@
+    #         ignore this, or comment out all lines if you're using gfortran.
+    #--env LD_LIBRARY_PATH /opt/intel/fce/10.1.018/lib:$LD_LIBRARY_PATH
+    #--env LD_LIBRARY_PATH /share/apps/intel/composerxe-2011.1.107/compiler/lib/intel64:$LD_LIBRARY_PATH
+-   setenv LD_LIBRARY_PATH /share/apps/intel/composerxe-2011.4.191/compiler/lib/intel64:$LD_LIBRARY_PATH
++   #setenv LD_LIBRARY_PATH /share/apps/intel/composerxe-2011.4.191/compiler/lib/intel64:$LD_LIBRARY_PATH
+    #--env LD_LIBRARY_PATH /share/apps/intel/composer_xe_2013/compiler/lib/intel64:$LD_LIBRARY_PATH
+    #
+    #    Math library setup:
+@@ -867,7 +886,7 @@
+    #        ISU's various clusters have various iMPI paths
+    #          the examples are our exalted/bolt clusters
+    if ($GA_MPI_CHOICE == impi) then
+-      set GA_MPI_ROOT=/share/apps/intel/impi/4.0.2.003/intel64
++      set GA_MPI_ROOT=self.mpidir/intel64
+       #-- GA_MPI_ROOT=/share/apps/mpi/impi/intel64
+    endif
+    #        ISU's various clusters have various MVAPICH2 paths
+@@ -906,6 +925,11 @@
+          set NNODES=`wc -l $HOSTFILE`
+          set NNODES=$NNODES[1]
+       endif
++      if ($SCHED == SLURM) then
++         scontrol show hostnames $SLURM_JOB_NODELIST | sort | uniq > $HOSTFILE
++         set NNODES=`wc -l $HOSTFILE`
++         set NNODES=$NNODES[1]
++      endif
+    endif
+    #           uncomment next lines if you need to debug host configuration.
+    #--echo '-----debug----'
