@@ -28,30 +28,24 @@ EasyBuild support for GAMESS-US
 @author: Benjamin Roberts (The University of Auckland)
 """
 
+import sys, os
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.easyblocks.icc import get_icc_version
+from easybuild.tools.modules import get_software_root
 from easybuild.tools.run import run_cmd
 import easybuild.tools.toolchain as toolchain
 
-class EB_GamessUS(ConfigureMake):
+class EB_GAMESS_minus_US(ConfigureMake):
 
     def __init__(self, *args, **kwargs):
         """Add extra config options specific to WRF."""
-        super(EB_GamessUS, self).__init__(*args, **kwargs)
+        super(EB_GAMESS_minus_US, self).__init__(*args, **kwargs)
 
         self.build_in_installdir = True
 
-
-    @staticmethod
-    def extra_options(extra_vars=None):
-        """Extra easyconfig parameters specific to ConfigureMake."""
-        extra_vars = EasyBlock.extra_options(extra_vars)
-        extra_vars.update({
-            'configure_cmd_prefix': ['', "Prefix to be glued before ./configure", CUSTOM],
-            'prefix_opt': ['--prefix=', "Prefix command line option for configure script", CUSTOM],
-            'tar_config_opts': [False, "Override tar settings as determined by configure.", CUSTOM],
-        })
-        return extra_vars
+    def extract_step(self):
+        self.cfg['unpack_options'] = "--strip-components=1"
+        super(EB_GAMESS_minus_US, self).extract_step()
 
     def configure_step(self, cmd_prefix=''):
 
@@ -61,21 +55,9 @@ class EB_GamessUS(ConfigureMake):
                 self.log.debug("Specified cmd_prefix '%s' is overridden by configure_cmd_prefix '%s'" % tup)
             cmd_prefix = self.cfg['configure_cmd_prefix']
 
-        if self.cfg['tar_config_opts']:
-            # setting am_cv_prog_tar_ustar avoids that configure tries to figure out
-            # which command should be used for tarring/untarring
-            # am__tar and am__untar should be set to something decent (tar should work)
-            tar_vars = {
-                'am__tar': 'tar chf - "$$tardir"',
-                'am__untar': 'tar xf -',
-                'am_cv_prog_tar_ustar': 'easybuild_avoid_ustar_testing'
-            }
-            for (key, val) in tar_vars.items():
-                self.cfg.update('preconfigopts', "%s='%s'" % (key, val))
-
         if self.toolchain.comp_family() == toolchain.INTELCOMP:
             compiler = 'ifort'
-            compver = '.'.join(get_icc_version().split('.')[:2])
+            compver = '.'.join(get_icc_version().split('.')[:1])
         elif self.toolchain.comp_family() == toolchain.GCC:
             compiler = 'gfortran'
             compver = '.'.join(get_software_version('GCC').split('.')[:2])
@@ -97,6 +79,9 @@ class EB_GamessUS(ConfigureMake):
             self.log.error("Only the Intel MPI is currently supported by this EasyBlock.")
             mpiimpl = 'sockets'
         
+        print 'start_dir: ' + self.cfg['start_dir']
+        print 'installdir: ' + self.installdir
+
         configanswers = """<< EOF
 
 linux64
@@ -117,11 +102,11 @@ mpi
 no
 
 EOF"""
-        configopts = self.cfg['configopts'] + configanswers.format(source_dir,install_dir,compiler,compver,mathlib,mathlibdir,mpiimpl,mpidir)
+        configopts = self.cfg['configopts'] + configanswers.format(self.cfg['start_dir'],self.installdir,compiler,compver,mathlib,mathlibdir,mpiimpl,mpidir)
         cmd = "%(preconfigopts)s %(cmd_prefix)s./config %(configopts)s" % {
             'preconfigopts': self.cfg['preconfigopts'],
             'cmd_prefix': cmd_prefix,
-            'configopts': self.cfg['configopts'],
+            'configopts': configopts,
         }
 
         (out, _) = run_cmd(cmd, log_all=True, simple=False)
@@ -134,7 +119,7 @@ EOF"""
         - typical: make -j X
         """
         
-        compall = os.path.join(source_dir, 'compall')
+        compall = os.path.join(self.cfg['start_dir'], 'compall')
         cmd = "%s %s %s" % (self.cfg['prebuildopts'], compall, self.cfg['buildopts'])
 
         (out, _) = run_cmd(cmd, path=path, log_all=True, simple=False, log_output=verbose)
