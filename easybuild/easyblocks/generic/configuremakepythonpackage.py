@@ -43,6 +43,11 @@ class ConfigureMakePythonPackage(ConfigureMake, PythonPackage):
     - using the build_step and install_step from ConfigureMake
     - using the sanity_check_step and make_module_extra from PythonPackage
     """
+    @staticmethod
+    def extra_options():
+        """Extra easyconfig parameters for Python packages being installed with python configure/make/make install."""
+        extra = PythonPackage.extra_options()
+        return ConfigureMake.extra_options(extra_vars=extra)
 
     def __init__(self, *args, **kwargs):
         """Initialize with PythonPackage."""
@@ -57,9 +62,13 @@ class ConfigureMakePythonPackage(ConfigureMake, PythonPackage):
         """Build Python package with 'make'."""
         return ConfigureMake.build_step(self, *args, **kwargs)
 
-    def install_step(self):
+    def test_step(self, *args, **kwargs):
+        """Test Python package."""
+        PythonPackage.test_step(self, *args, **kwargs)
+
+    def install_step(self, *args, **kargs):
         """Install with 'make install'."""
-        return ConfigureMake.install_step(self)
+        return ConfigureMake.install_step(self, *args, **kargs)
 
     def sanity_check_step(self, *args, **kwargs):
         """
