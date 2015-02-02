@@ -31,7 +31,6 @@ EasyBuild support for Python packages that are configured with 'python configure
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.easyblocks.generic.pythonpackage import PythonPackage
 from easybuild.tools.run import run_cmd
-from easybuild.easyblocks.python import EXTS_FILTER_PYTHON_PACKAGES
 
 
 class ConfigureMakePythonPackage(ConfigureMake, PythonPackage):
@@ -74,7 +73,7 @@ class ConfigureMakePythonPackage(ConfigureMake, PythonPackage):
         """
         Custom sanity check for Python packages
         """
-        return PythonPackage.sanity_check_step(self, EXTS_FILTER_PYTHON_PACKAGES, *args, **kwargs)
+        return PythonPackage.sanity_check_step(self, *args, **kwargs)
 
     def make_module_extra(self):
         """Add extra Python package module parameters"""
