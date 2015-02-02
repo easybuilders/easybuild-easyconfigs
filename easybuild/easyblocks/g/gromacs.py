@@ -33,9 +33,9 @@ from distutils.version import LooseVersion
 from vsc.utils.missing import any
 
 import easybuild.tools.environment as env
+from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.easyblocks.generic.cmakemake import CMakeMake
 from easybuild.tools.modules import get_software_root
-
 
 class EB_GROMACS(CMakeMake):
     """Support for building/installing GROMACS."""
@@ -44,8 +44,43 @@ class EB_GROMACS(CMakeMake):
         """Custom configuration procedure for GROMACS: set configure options for configure or cmake."""
 
         if LooseVersion(self.version) < LooseVersion('4.6'):
-            self.log.info("Using configure script for configuring GROMACS build.")
-            self.log.error("Configuration procedure for older GROMACS versions not implemented yet.")
+
+            # Use static libraries if possible
+            self.cfg.update('configopts', "--enable-static")
+
+            # Use external BLAS and LAPACK
+            self.cfg.update('configopts', "--with-external-blas --with-external-lapack")
+
+            # Don't use the X window system
+            self.cfg.update('configopts', "--without-x")
+
+            # OpenMPI is not supported for versions older than 4.5.
+            if LooseVersion(self.version) >= LooseVersion('4.5'):
+                # enable OpenMP support if desired
+                if self.toolchain.options.get('openmp', None):
+                    self.cfg.update('configopts', "--enable-threads")
+                else:
+                    self.cfg.update('configopts', "--disable-threads")
+
+            # enable MPI support if desired
+            if self.toolchain.options.get('usempi', None):
+                self.cfg.update('configopts', "--enable-mpi")
+            else:
+                self.cfg.update('configopts', "--disable-mpi")
+
+            # GSL support
+            if get_software_root('GSL'):
+                self.cfg.update('configopts', "--with-gsl")
+            else:
+                self.cfg.update('configopts', "--without-gsl")
+
+            # I don't think it's necessary to explicitly set the location
+            # of math libraries (MKL and/or BLAS, LAPACK) but we shall see.
+            
+            # Because ConfigureMake is (currently) an ancestral class of
+            # CMakeMake, we may not need to specify it as an ancestral class
+            # of gromacs.py.
+            ConfigureMake.configure_step(self)
         else:
             # build a release build
             self.cfg.update('configopts', "-DCMAKE_BUILD_TYPE=Release")
@@ -100,22 +135,21 @@ class EB_GROMACS(CMakeMake):
             prefix = 'regressiontests'
             if any([src['name'].startswith(prefix) for src in self.src]):
                 self.cfg.update('configopts', "-DREGRESSIONTEST_PATH='%%(builddir)s/%s-%%(version)s' " % prefix)
-            
 
-        # complete configuration with configure_method of parent
-        out = super(EB_GROMACS, self).configure_step()
+            # complete configuration with configure_method of parent
+            out = super(EB_GROMACS, self).configure_step()
 
-        # for recent GROMACS versions, make very sure that a decent BLAS, LAPACK and FFT is found and used
-        if LooseVersion(self.version) >= LooseVersion('4.6.5'):
-            patterns = [
-                r"Using external FFT library - \S*",
-                r"Looking for dgemm_ - found",
-                r"Looking for cheev_ - found",
-            ]
-            for pattern in patterns:
-                regex = re.compile(pattern, re.M)
-                if not regex.search(out):
-                    self.log.error("Pattern '%s' not found in GROMACS configuration output." % pattern)
+            # for recent GROMACS versions, make very sure that a decent BLAS, LAPACK and FFT is found and used
+            if LooseVersion(self.version) >= LooseVersion('4.6.5'):
+                patterns = [
+                    r"Using external FFT library - \S*",
+                    r"Looking for dgemm_ - found",
+                    r"Looking for cheev_ - found",
+                ]
+                for pattern in patterns:
+                    regex = re.compile(pattern, re.M)
+                    if not regex.search(out):
+                        self.log.error("Pattern '%s' not found in GROMACS configuration output." % pattern)
 
     def test_step(self):
         """Specify to running tests is done using 'make check'."""
