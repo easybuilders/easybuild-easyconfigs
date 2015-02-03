@@ -53,24 +53,6 @@ class EB_GAMESS_minus_US(ConfigureMake):
         self.cfg['unpack_options'] = "--strip-components=1"
         super(EB_GAMESS_minus_US, self).extract_step()
 
-    def patch_step(self):
-        """ Patch, then amend one of the patched files with values from the config. """
-
-        super(EB_GAMESS_minus_US, self).patch_step()
-
-        rungms = os.path.join(self.builddir, "rungms")
-        try:
-            for line in fileinput.input(rungms, inplace=1, backup='.orig'):
-                line = re.sub(r"self.builddir", r"%s" % self.builddir, line)
-                line = re.sub(r"self.connectivity", r"%s" % self.connectivity, line)
-                line = re.sub(r"self.gamess_build", r"%s" % self.gamess_build, line)
-                line = re.sub(r"self.installdir", r"%s" % self.installdir, line)
-                line = re.sub(r"self.mpidir", r"%s" % self.mpidir, line)
-                line = re.sub(r"self.mpiimpl", r"%s" % self.mpiimpl, line)
-                sys.stdout.write(line)
-        except IOError, err:
-            self.log.error("Failed to patch %s: %s" % (fn, err))
-
     def configure_step(self, cmd_prefix=''):
 
         if self.cfg['configure_cmd_prefix']:
@@ -132,9 +114,23 @@ EOF"""
             'cmd_prefix': cmd_prefix,
             'configopts': configopts,
         }
+        
+        # This can't go in patch_step, because it relies on certain values that
+        # are set during the configuration process.
+        rungms = os.path.join(self.builddir, "rungms")
+        try:
+            for line in fileinput.input(rungms, inplace=1, backup='.orig'):
+                line = re.sub(r"self.builddir", r"%s" % self.builddir, line)
+                line = re.sub(r"self.connectivity", r"%s" % self.connectivity, line)
+                line = re.sub(r"self.gamess_build", r"%s" % self.gamess_build, line)
+                line = re.sub(r"self.installdir", r"%s" % self.installdir, line)
+                line = re.sub(r"self.mpidir", r"%s" % self.mpidir, line)
+                line = re.sub(r"self.mpiimpl", r"%s" % self.mpiimpl, line)
+                sys.stdout.write(line)
+        except IOError, err:
+            self.log.error("Failed to patch %s: %s" % (fn, err))
 
         (out, _) = run_cmd(cmd, log_all=True, simple=False)
-
         return out
 
     def build_step(self, verbose=False, path=None):
