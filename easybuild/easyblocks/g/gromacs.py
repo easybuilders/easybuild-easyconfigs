@@ -62,12 +62,6 @@ class EB_GROMACS(CMakeMake):
                 else:
                     self.cfg.update('configopts', "--disable-threads")
 
-            # enable MPI support if desired
-            if self.toolchain.options.get('usempi', None):
-                self.cfg.update('configopts', "--enable-mpi")
-            else:
-                self.cfg.update('configopts', "--disable-mpi")
-
             # GSL support
             if get_software_root('GSL'):
                 self.cfg.update('configopts', "--with-gsl")
@@ -106,7 +100,7 @@ class EB_GROMACS(CMakeMake):
             else:
                 self.cfg.update('configopts', "-DGMX_MPI=OFF")
 
-            # explicitely disable GPU support if CUDA is not available,
+            # explicitly disable GPU support if CUDA is not available,
             # to avoid that GROMACS find and uses a system-wide CUDA compiler
             cuda = get_software_root('CUDA')
             if cuda:
@@ -150,6 +144,22 @@ class EB_GROMACS(CMakeMake):
                     regex = re.compile(pattern, re.M)
                     if not regex.search(out):
                         self.log.error("Pattern '%s' not found in GROMACS configuration output." % pattern)
+
+    def build_step(self):
+        """ For older versions of GROMACS, allow for a separate mdrun build if
+            MPI support has been requested. """
+        if LooseVersion(self.version) < LooseVersion('4.6'):
+            if "--enable-mpi" in self.cfg['configopts']:
+                self.cfg.update("buildopts", "mdrun")
+        super(EB_GROMACS, self).build_step()
+
+    def install_step(self):
+        """ For older versions of GROMACS, allow for a separate mdrun install
+            if MPI support has been requested. """
+        if LooseVersion(self.version) < LooseVersion('4.6'):
+            if "--enable-mpi" in self.cfg['configopts']:
+                self.cfg.update("installopts", "install-mdrun")
+        super(EB_GROMACS, self).install_step()
 
     def test_step(self):
         """Specify to running tests is done using 'make check'."""
