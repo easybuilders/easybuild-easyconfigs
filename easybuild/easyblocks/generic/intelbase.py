@@ -94,7 +94,7 @@ class IntelBase(EasyBlock):
         self.setup_local_home_subdir()
         self.clean_home_subdir()
 
-        if self.cfg._config['license'][0] is not None:
+        if 'license' in self.cfg._config:
             _log.nosupport('No old style license parameter, use license_file', '2.0')
 
     @staticmethod
