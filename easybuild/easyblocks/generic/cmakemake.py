@@ -96,6 +96,9 @@ class CMakeMake(ConfigureMake):
             if value is not None:
                 options.append("-D%s='%s'" % (option, value))
 
+        # show what CMake is doing by default
+        options.append("-DCMAKE_VERBOSE_MAKEFILE=ON")
+
         options_string = " ".join(options)
 
         command = "%s cmake %s %s %s" % (self.cfg['preconfigopts'], srcdir, options_string, self.cfg['configopts'])
