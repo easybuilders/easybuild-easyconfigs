@@ -35,6 +35,6 @@ from easybuild.easyblocks.generic.versionindependentpythonpackage import Version
 class VersionIndependendPythonPackage(VersionIndependentPythonPackage):
     """No longer supported class for building/installing python packages without requiring a specific python package."""
 
-    def __init__(self, *args, **kwargs):
+    def prepare_step(self):
         """Indicate that this easyblock is no longer supported."""
         self.log.nosupport("Replaced by VersionIndependentPythonPackage easyblock", '2.0')
