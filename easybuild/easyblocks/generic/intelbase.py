@@ -94,9 +94,6 @@ class IntelBase(EasyBlock):
         self.setup_local_home_subdir()
         self.clean_home_subdir()
 
-        if 'license' in self.cfg._config:
-            _log.nosupport('No old style license parameter, use license_file', '2.0')
-
     @staticmethod
     def extra_options(extra_vars=None):
         extra_vars = EasyBlock.extra_options(extra_vars)
@@ -177,11 +174,7 @@ class IntelBase(EasyBlock):
         if not license_specs:
             self.log.debug("No env var from %s set, trying 'license_file' easyconfig parameter..." % lic_env_vars)
             # obtain license path
-            try:
-                self.license_file = self.cfg['license_file']
-            except:
-                # the default should exist
-                self.log.nosupport('No new style license_file parameter, license_file is now mandatory', '2.0')
+            self.license_file = self.cfg['license_file']
 
             if self.license_file:
                 self.log.info("Using license file %s" % self.license_file)
