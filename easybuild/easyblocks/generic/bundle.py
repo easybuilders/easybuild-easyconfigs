@@ -54,6 +54,9 @@ class Bundle(EasyBlock):
 
     def sanity_check_step(self):
         """
-        Nothing is being installed, so nothing to sanity check on
+        Nothing is being installed, so just being able to load the (fake) module is sufficient
         """
-        pass
+        self.log.info("Testing loading of module '%s' by means of sanity check" % self.full_mod_name)
+        fake_mod_data = self.load_fake_module(purge=True)
+        self.log.debug("Cleaning up after testing loading of module")
+        self.clean_up_fake_module(fake_mod_data)
