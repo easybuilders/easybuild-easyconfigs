@@ -32,9 +32,10 @@ EasyBuild support for building and installing R packages, implemented as an easy
 @author: Toon Willems (Ghent University)
 @author: Balazs Hajgato (Vrije Universiteit Brussel)
 """
+import os
 import shutil
 
-from easybuild.easyblocks.r import EXTS_FILTER_R_PACKAGES
+from easybuild.easyblocks.r import EXTS_FILTER_R_PACKAGES, EB_R
 from easybuild.framework.extensioneasyblock import ExtensionEasyBlock
 from easybuild.tools.run import run_cmd, parse_log_for_error
 
@@ -72,7 +73,7 @@ class RPackage(ExtensionEasyBlock):
         self.configureargs = []
         self.ext_src = None
 
-    def make_r_cmd(self):
+    def make_r_cmd(self, prefix=None):
         """Create a command to run in R to install an R package."""
         confvars = "confvars"
         confargs = "confargs"
@@ -87,12 +88,17 @@ class RPackage(ExtensionEasyBlock):
             confargslist = confargslist + "; names(%s)=\"%s\"" % (confargs, self.name)
             confargsstr = ", configure.args=%s" % confargs
 
+        if prefix:
+            prefix = '%s, ' % prefix
+        else:
+            prefix = ''
+
         r_cmd = """
         options(repos=c(CRAN="http://www.freestatistics.org/cran"))
         %s
         %s
-        install.packages("%s", dependencies = FALSE %s%s)
-        """ % (confvarslist, confargslist, self.name, confvarsstr, confargsstr)
+        install.packages("%s", %s dependencies = FALSE %s%s)
+        """ % (confvarslist, confargslist, self.name, prefix, confvarsstr, confargsstr)
         cmd = "R -q --no-save"
 
         self.log.debug("make_r_cmd returns %s with input %s" % (cmd, r_cmd))
@@ -172,6 +178,15 @@ class RPackage(ExtensionEasyBlock):
     def run(self):
         """Install R package as an extension."""
 
+        # determine location
+        if isinstance(self.master, EB_R):
+            # extension is being installed as part of an R installation/module
+            (rhome, _) = run_cmd("R RHOME", log_all=True, simple=False)
+            lib_install_prefix = os.path.join(rhome, 'library')
+        else:
+            # extension is being installed in a separate installation prefix
+            lib_install_prefix = self.installdir
+
         if self.patches:
             super(RPackage, self).run(unpack_src=True)
         else:
@@ -180,10 +195,10 @@ class RPackage(ExtensionEasyBlock):
         if self.src:
             self.ext_src = self.src
             self.log.debug("Installing R package %s version %s." % (self.name, self.version))
-            cmd, stdin = self.make_cmdline_cmd()
+            cmd, stdin = self.make_cmdline_cmd(prefix=lib_install_prefix)
         else:
             self.log.debug("Installing most recent version of R package %s (source not found)." % self.name)
-            cmd, stdin = self.make_r_cmd()
+            cmd, stdin = self.make_r_cmd(prefix=lib_install_prefix)
 
         self.install_R_package(cmd, inp=stdin)
 
