@@ -42,11 +42,8 @@ import glob
 import easybuild.tools.environment as env
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import CUSTOM
-from easybuild.tools.filetools import rmtree2
 from easybuild.tools.run import run_cmd
 
-# required for deprecated log in static function (ie no self)
-from easybuild.framework.easyconfig.licenses import License
 from vsc import fancylogger
 _log = fancylogger.getLogger('generic.intelbase')
 
@@ -97,9 +94,6 @@ class IntelBase(EasyBlock):
         self.setup_local_home_subdir()
         self.clean_home_subdir()
 
-        if self.cfg._config['license'][0] is not None:
-            _log.deprecated('No old style license parameter, use license_file', '2.0')
-
     @staticmethod
     def extra_options(extra_vars=None):
         extra_vars = EasyBlock.extra_options(extra_vars)
@@ -112,9 +106,6 @@ class IntelBase(EasyBlock):
             'usetmppath': [False, "Use temporary path for installation", CUSTOM],
             'm32': [False, "Enable 32-bit toolchain", CUSTOM],
         })
-
-        # Support for old easyconfigs with license parameter
-        extra_vars.update({'license': [None, "License file (DEPRECATED, use 'license_file' instead)", CUSTOM]})
 
         return extra_vars
 
@@ -183,22 +174,7 @@ class IntelBase(EasyBlock):
         if not license_specs:
             self.log.debug("No env var from %s set, trying 'license_file' easyconfig parameter..." % lic_env_vars)
             # obtain license path
-            try:
-                self.license_file = self.cfg['license_file']
-            except:
-                # the default should exist
-                self.log.deprecated('No new style license_file parameter, license_file is now mandatory', '2.0')
-                self.license_file = None
-
-            if self.license_file is None:
-                self.log.deprecated('Checking for old style license', '2.0')
-                self.cfg.enable_templating = False
-                lic = self.cfg['license']
-                # old style license is a path (type string)
-                if isinstance(lic, License) and isinstance(lic, str):
-                    self.log.deprecated('No old style license parameter, license has to be pure License subclass', '2.0')
-                    self.license_file = lic
-                self.cfg.enable_templating = True
+            self.license_file = self.cfg['license_file']
 
             if self.license_file:
                 self.log.info("Using license file %s" % self.license_file)
@@ -285,7 +261,7 @@ class IntelBase(EasyBlock):
         # also check whether specified activation type makes sense
         lic_activation = self.cfg['license_activation']
         lic_file_server_activations = [ACTIVATION_LIC_FILE, ACTIVATION_LIC_SERVER]
-        other_activations = [act for act in ACTIVATION_TYPES if not act in lic_file_server_activations]
+        other_activations = [act for act in ACTIVATION_TYPES if act not in lic_file_server_activations]
         lic_file_entry = ""
         if lic_activation in lic_file_server_activations:
             lic_file_entry = "%(license_file_name)s=%(license_file)s"
