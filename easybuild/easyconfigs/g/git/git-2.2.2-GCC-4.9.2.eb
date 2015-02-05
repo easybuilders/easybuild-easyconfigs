@@ -22,11 +22,14 @@ to handle everything from small to very large projects with speed and efficiency
 
 toolchain = {'name': 'GCC', 'version': '4.9.2'}
 
-# eg. http://git-core.googlecode.com/files/git-1.8.2.tar.gz
-sources = ['v%s.tar.gz' % version]
+sources = ['v%(version)s.tar.gz']
 source_urls = ['https://github.com/git/git/archive']
 
 preconfigopts = 'make configure && '
+
+# Work around git build system bug.  If LIBS contains -lpthread, then configure
+# will not append -lpthread to LDFLAGS, but Makefile ignores LIBS.
+configopts = "--enable-pthreads='-lpthread'"
 
 dependencies = [
     ('cURL', '7.40.0'),
@@ -38,9 +41,5 @@ sanity_check_paths = {
     'files': ['bin/git'],
     'dirs': [],
 }
-
-# Work around git build system bug.  If LIBS contains -lpthread, then configure
-# will not append -lpthread to LDFLAGS, but Makefile ignores LIBS.
-configopts = "--enable-pthreads='-lpthread'"
 
 moduleclass = 'tools'
