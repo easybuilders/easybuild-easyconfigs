@@ -23,7 +23,7 @@
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
 """
-EasyBuild support for installing compiler toolchains, implemented as an easyblock
+EasyBuild support for installing a bundle of modules, implemented as a generic easyblock
 
 @author: Stijn De Weirdt (Ghent University)
 @author: Dries Verdegem (Ghent University)
@@ -32,11 +32,28 @@ EasyBuild support for installing compiler toolchains, implemented as an easybloc
 @author: Jens Timmerman (Ghent University)
 """
 
-from easybuild.easyblocks.generic.bundle import Bundle
+from easybuild.framework.easyblock import EasyBlock
 
 
-class Toolchain(Bundle):
+class Bundle(EasyBlock):
     """
-    Compiler toolchain: generate module file only, nothing to build/install
+    Bundle of modules: only generate module files, nothing to build/install
     """
-    pass
+
+    def configure_step(self):
+        """Do nothing."""
+        pass
+
+    def build_step(self):
+        """Do nothing."""
+        pass
+
+    def install_step(self):
+        """Do nothing."""
+        pass
+
+    def sanity_check_step(self):
+        """
+        Nothing is being installed, so nothing to sanity check on
+        """
+        pass
