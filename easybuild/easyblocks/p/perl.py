@@ -114,4 +114,3 @@ def get_sitearch_suffix():
     """Deprecated more specific version of get_site_suffix. Only here for backward compatibility."""
     _log = fancylogger.getLogger('Perl.get_sitearch_suffix', fname=False)
     _log.nosupport("Use get_site_suffix('sitearch') instead of get_sitearch_suffix()", "2.0")
-    return None
