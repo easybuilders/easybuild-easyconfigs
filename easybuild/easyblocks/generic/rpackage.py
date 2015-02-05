@@ -181,7 +181,8 @@ class RPackage(ExtensionEasyBlock):
         # determine location
         if isinstance(self.master, EB_R):
             # extension is being installed as part of an R installation/module
-            (rhome, _) = run_cmd("R RHOME", log_all=True, simple=False)
+            (out, _) = run_cmd("R RHOME", log_all=True, simple=False)
+            rhome = out.strip()
             lib_install_prefix = os.path.join(rhome, 'library')
         else:
             # extension is being installed in a separate installation prefix
