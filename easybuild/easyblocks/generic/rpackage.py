@@ -89,7 +89,7 @@ class RPackage(ExtensionEasyBlock):
             confargsstr = ", configure.args=%s" % confargs
 
         if prefix:
-            prefix = '%s, ' % prefix
+            prefix = '"%s", ' % prefix
         else:
             prefix = ''
 
