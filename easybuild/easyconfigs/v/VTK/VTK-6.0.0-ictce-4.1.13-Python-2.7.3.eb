@@ -1,0 +1,62 @@
+##
+# This file is an EasyBuild reciPY as per https://github.com/hpcugent/easybuild
+#
+# Copyright:: Copyright 2012-2014 Uni.Lu/LCSB, NTUA
+# Authors::   Fotis Georgatos <fotis@cern.ch>
+# License::   MIT/GPL
+# $Id$
+#
+# This work implements a part of the HPCBIOS project and is a component of the policy:
+# http://hpcbios.readthedocs.org/en/latest/HPCBIOS_2012-97.html
+##
+
+easyblock = 'CMakeMake'
+
+name = 'VTK'
+version = '6.0.0'
+altversions = ['5.4.2', '5.8.0', '5.10.1', '6.0.0']
+
+homepage = 'http://www.vtk.org'
+description = """The Visualization Toolkit (VTK) is an open-source, freely available software system for
+ 3D computer graphics, image processing and visualization. VTK consists of a C++ class library and several
+ interpreted interface layers including Tcl/Tk, Java, and Python. VTK supports a wide variety of visualization
+ algorithms including: scalar, vector, tensor, texture, and volumetric methods; and advanced modeling techniques
+ such as: implicit modeling, polygon reduction, mesh smoothing, cutting, contouring, and Delaunay triangulation."""
+
+toolchain = {'name': 'ictce', 'version': '4.1.13'}
+
+# Download eg. http://www.vtk.org/files/release/5.10/vtk-5.10.1.tar.gz
+sources = [
+    SOURCELOWER_TAR_GZ,
+    '%sdata-%s.tar.gz' % (name.lower(), version),
+]
+source_urls = ['http://www.vtk.org/files/release/%(version_major_minor)s']
+
+builddependencies = [('CMake', '2.8.10.2')]
+
+python = 'Python'
+pythonver = '2.7.3'
+pythonshortver = '.'.join(pythonver.split('.')[0:2])
+versionsuffix = '-%s-%s' % (python, pythonver)
+
+dependencies = [
+    (python, pythonver),
+    ('Mesa', '7.11.2', versionsuffix),
+]
+
+configopts = "-DOPENGL_glu_LIBRARY=$EBROOTMESA/lib/libGLU.so -DOPENGL_gl_LIBRARY=$EBROOTMESA/lib/libGL.so "
+configopts += "-DOPENGL_INCLUDE_DIR=$EBROOTMESA/include -DVTK_WRAP_PYTHON=ON "
+configopts += "-DPYTHON_LIBRARY=$EBROOTPYTHON/lib/libpython2.7.so -DPYTHON_INCLUDE_DIR=$EBROOTPYTHON/include/python2.7 "
+preinstallopts = "mkdir -p %(installdir)s/lib/python2.7/site-packages/ && "
+preinstallopts += "export PYTHONPATH=%(installdir)s/lib/python2.7/site-packages:$PYTHONPATH && "
+
+modextrapaths = {'PYTHONPATH': ['lib/python2.7/site-packages']}
+
+sanity_check_paths = {
+    'files': ['bin/vtk%s-%%(version_major_minor)s' % x for x in ['EncodeString', 'HashSource', 'mkg3states',
+                                                                 'ParseOGLExt', 'ProcessShader']],
+    'dirs': ['lib/python2.7/site-packages/%(name)s-%(version_major_minor)s-py2.7.egg',
+             'include/vtk-%(version_major_minor)s'],
+}
+
+moduleclass = 'vis'

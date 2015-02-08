@@ -41,12 +41,15 @@ from unittest import TestCase, TestLoader, main
 
 import easybuild.main as main
 import easybuild.tools.options as eboptions
-from easybuild.framework.easyblock import EasyBlock, get_class
-from easybuild.framework.easyconfig.easyconfig import EasyConfig
-from easybuild.framework.easyconfig.tools import get_paths_for
-from easybuild.main import dep_graph, resolve_dependencies, process_easyconfig
+from easybuild.easyblocks.generic.configuremake import ConfigureMake
+from easybuild.framework.easyblock import EasyBlock
+from easybuild.framework.easyconfig.easyconfig import ActiveMNS, EasyConfig, fetch_parameter_from_easyconfig_file
+from easybuild.framework.easyconfig.easyconfig import get_easyblock_class
+from easybuild.framework.easyconfig.tools import dep_graph, get_paths_for, process_easyconfig
 from easybuild.tools import config
-from easybuild.tools.module_generator import det_full_module_name
+from easybuild.tools.module_naming_scheme import GENERAL_CLASS
+from easybuild.tools.module_naming_scheme.utilities import det_full_ec_version
+from easybuild.tools.robot import resolve_dependencies
 
 
 # indicates whether all the single tests are OK,
@@ -57,18 +60,29 @@ single_tests_ok = True
 class EasyConfigTest(TestCase):
     """Baseclass for easyconfig testcases."""
 
+    if LooseVersion(sys.version) >= LooseVersion('2.6'):
+        os.environ['EASYBUILD_DEPRECATED'] = '2.0'
+
     # initialize configuration (required for e.g. default modules_tool setting)
     eb_go = eboptions.parse_options()
     config.init(eb_go.options, eb_go.get_options_by_section('config'))
+    build_options = {
+        'check_osdeps': False,
+        'force': True,
+        'robot_path': get_paths_for("easyconfigs")[0],
+        'suffix_modules_path': GENERAL_CLASS,
+        'valid_module_classes': config.module_classes(),
+        'valid_stops': [x[0] for x in EasyBlock.get_steps()],
+    }
+    config.init_build_options(build_options=build_options)
     config.set_tmpdir()
     del eb_go
         
     log = fancylogger.getLogger("EasyConfigTest", fname=False)
-    name_regex = re.compile("^name\s*=\s*['\"](.*)['\"]$", re.M)
-    easyblock_regex = re.compile(r"^\s*easyblock\s*=['\"](.*)['\"]$", re.M)
     # make sure a logger is present for main
     main._log = log
     ordered_specs = None
+    parsed_easyconfigs = []
 
     def process_all_easyconfigs(self):
         """Process all easyconfigs and resolve inter-easyconfig dependencies."""
@@ -76,16 +90,12 @@ class EasyConfigTest(TestCase):
         easyconfigs_path = get_paths_for("easyconfigs")[0]
         specs = glob.glob('%s/*/*/*.eb' % easyconfigs_path)
 
-        # parse all easyconfigs
-        easyconfigs = []
-        for spec in specs:
-            easyconfigs.extend(process_easyconfig(spec, build_options={'validate': False}))
+        # parse all easyconfigs if they haven't been already
+        if not self.parsed_easyconfigs:
+            for spec in specs:
+                self.parsed_easyconfigs.extend(process_easyconfig(spec))
 
-        build_options = {
-            'robot_path': easyconfigs_path,
-            'force': True,
-        }
-        self.ordered_specs = resolve_dependencies(easyconfigs, build_options=build_options)
+        self.ordered_specs = resolve_dependencies(self.parsed_easyconfigs)
 
     def test_dep_graph(self):
         """Unit test that builds a full dependency graph."""
@@ -118,14 +128,14 @@ class EasyConfigTest(TestCase):
             self.process_all_easyconfigs()
 
         def mk_dep_mod_name(spec):
-            return tuple(det_full_module_name(spec).split(os.path.sep))
+            return tuple(ActiveMNS().det_full_module_name(spec).split(os.path.sep))
 
         # construct a dictionary: (name, installver) tuple to dependencies
         depmap = {}
         for spec in self.ordered_specs:
             builddeps = map(mk_dep_mod_name, spec['builddependencies'])
             deps = map(mk_dep_mod_name, spec['unresolved_deps'])
-            key = tuple(spec['module'].split(os.path.sep))
+            key = tuple(spec['full_mod_name'].split(os.path.sep))
             depmap.update({key: [builddeps, deps]})
 
         # iteratively expand list of (non-build) dependencies until we reach the end (toolchain)
@@ -157,40 +167,76 @@ class EasyConfigTest(TestCase):
                         conflicts = True
         self.assertFalse(conflicts, "No conflicts detected")
 
+    def test_sanity_check_paths(self):
+        """Make sure specified sanity check paths adher to the requirements."""
+
+        if self.ordered_specs is None:
+            self.process_all_easyconfigs()
+
+        for ec in self.parsed_easyconfigs:
+            ec_scp = ec['ec']['sanity_check_paths']
+            if ec_scp != {}:
+                # if sanity_check_paths is specified (i.e., non-default), it must adher to the requirements
+                # both 'files' and 'dirs' keys, both with list values and with at least one a non-empty list
+                error_msg = "sanity_check_paths for %s does not meet requirements: %s" % (ec['spec'], ec_scp)
+                self.assertEqual(sorted(ec_scp.keys()), ['dirs', 'files'], error_msg)
+                self.assertTrue(isinstance(ec_scp['dirs'], list), error_msg)
+                self.assertTrue(isinstance(ec_scp['files'], list), error_msg)
+                self.assertTrue(ec_scp['dirs'] or ec_scp['files'], error_msg)
+
+    def test_easyconfig_locations(self):
+        """Make sure all easyconfigs files are in the right location."""
+        easyconfig_dirs_regex = re.compile(r'/easybuild/easyconfigs/[a-z]/[^/]+$')
+        topdir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+        for (dirpath, _, filenames) in os.walk(topdir):
+            # ignore git/svn dirs
+            if '/.git/' in dirpath or '/.svn/' in dirpath:
+                continue
+            # check whether list of .eb files is non-empty
+            easyconfig_files = [fn for fn in filenames if fn.endswith('eb')]
+            if easyconfig_files:
+                # check whether path matches required pattern
+                if not easyconfig_dirs_regex.search(dirpath):
+                    # only exception: TEMPLATE.eb
+                    if not (dirpath.endswith('/easybuild/easyconfigs') and filenames == ['TEMPLATE.eb']):
+                        self.assertTrue(False, "List of easyconfig files in %s is empty: %s" % (dirpath, filenames))
 
 def template_easyconfig_test(self, spec):
-    """Test whether all easyconfigs can be initialized."""
+    """Tests for an individual easyconfig: parsing, instantiating easyblock, check patches, ..."""
 
     # set to False, so it's False in case of this test failing
     global single_tests_ok
     prev_single_tests_ok = single_tests_ok
     single_tests_ok = False
 
-    f = open(spec, 'r')
-    spectxt = f.read()
-    f.close()
-
-    # determine software name directly from easyconfig file
-    res = self.name_regex.search(spectxt)
-    if res:
-        name = res.group(1)
-    else:
-        self.assertTrue(False, "Obtained software name directly from easyconfig file")
-
     # parse easyconfig 
-    ec = EasyConfig(spec, build_options={'validate': False})
+    ecs = process_easyconfig(spec)
+    if len(ecs) == 1:
+        ec = ecs[0]['ec']
+    else:
+        self.assertTrue(False, "easyconfig %s does not contain blocks, yields only one parsed easyconfig" % spec)
+
+    # check easyconfig file name
+    expected_fn = '%s-%s.eb' % (ec['name'], det_full_ec_version(ec))
+    msg = "Filename '%s' of parsed easconfig matches expected filename '%s'" % (spec, expected_fn)
+    self.assertEqual(os.path.basename(spec), expected_fn, msg)
 
     # sanity check for software name
+    name = fetch_parameter_from_easyconfig_file(spec, 'name')
     self.assertTrue(ec['name'], name) 
 
     # try and fetch easyblock spec from easyconfig
-    easyblock = self.easyblock_regex.search(spectxt)
-    if easyblock:
-        easyblock = easyblock.group(1)
+    easyblock = fetch_parameter_from_easyconfig_file(spec, 'easyblock')
 
     # instantiate easyblock with easyconfig file
-    app_class = get_class(easyblock, name=name)
-    app = app_class(spec, build_options={'validate_ec': False})
+    app_class = get_easyblock_class(easyblock, name=name)
+
+    # check that automagic fallback to ConfigureMake isn't done (deprecated behaviour)
+    fn = os.path.basename(spec)
+    error_msg = "%s relies on automagic fallback to ConfigureMake, should use easyblock = 'ConfigureMake' instead" % fn
+    self.assertTrue(easyblock or not app_class is ConfigureMake, error_msg)
+
+    app = app_class(ec)
 
     # more sanity checks
     self.assertTrue(name, app.name)
@@ -220,8 +266,15 @@ def template_easyconfig_test(self, spec):
                     msg = "Patch file %s is available for %s" % (ext_patch_full, specfn)
                     self.assertTrue(os.path.isfile(ext_patch_full), msg)
 
+    # check whether all extra_options defined for used easyblock are defined
+    for key in app.extra_options():
+        self.assertTrue(key in app.cfg)
+
     app.close_log()
     os.remove(app.logfile)
+
+    # cache the parsed easyconfig, to avoid that it is parsed again
+    self.parsed_easyconfigs.append(ecs[0])
 
     # test passed, so set back to True
     single_tests_ok = True and prev_single_tests_ok
