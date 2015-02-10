@@ -266,6 +266,10 @@ def template_easyconfig_test(self, spec):
                     msg = "Patch file %s is available for %s" % (ext_patch_full, specfn)
                     self.assertTrue(os.path.isfile(ext_patch_full), msg)
 
+    # check whether all extra_options defined for used easyblock are defined
+    for key in app.extra_options():
+        self.assertTrue(key in app.cfg)
+
     app.close_log()
     os.remove(app.logfile)
 
