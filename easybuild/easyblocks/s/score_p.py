@@ -27,6 +27,7 @@ EasyBuild support for software using the Score-P configuration style, implemente
 
 @author: Kenneth Hoste (Ghent University)
 @author: Bernd Mohr (Juelich Supercomputing Centre)
+@author: Markus Geimer (Juelich Supercomputing Centre)
 """
 import os
 
@@ -61,10 +62,11 @@ class EB_Score_minus_P(ConfigureMake):
             toolchain.MPICH2: 'mpich2',
         }
         mpi_fam = self.toolchain.mpi_family()
-        if mpi_fam in mpi_opts:
-            self.cfg.update('configopts', "--with-mpi=%s" % mpi_opts[mpi_fam])
-        else:
-            self.log.error("MPI family %s not supported yet (only: %s)" % (mpi_fam, ', '.join(mpi_opts.keys())))
+        if mpi_fam is not None:
+            if mpi_fam in mpi_opts:
+                self.cfg.update('configopts', "--with-mpi=%s" % mpi_opts[mpi_fam])
+            else:
+                self.log.error("MPI family %s not supported yet (only: %s)" % (mpi_fam, ', '.join(mpi_opts.keys())))
 
         # auto-detection for dependencies mostly works fine, but hard specify paths anyway to have full control
         deps = {
