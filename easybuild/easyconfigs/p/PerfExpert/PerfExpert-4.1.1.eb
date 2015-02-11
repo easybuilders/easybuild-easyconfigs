@@ -1,0 +1,53 @@
+name = 'PerfExpert'
+version = '4.1.1'
+
+homepage = "https://www.tacc.utexas.edu/perfexpert"
+description = """PerfExpert is a tool that combines a simple user interface with a sophisticated analysis engine to:
+ (i) detect and diagnosis the causes for any core-, socket-, and node-level performance bottlenecks in each procedure
+ and loop of an application; (ii) apply pattern-based software transformations on the application source code to
+ enhance performance on identified bottlenecks; and (iii) provide performance analysis report and suggestions for
+ bottleneck remediation for application’s performance bottlenecks which we are unable to optimize automatically."""
+
+toolchain = {'name': 'dummy', 'version': ''}
+
+# download from https://github.com/TACC/perfexpert/releases
+sources = [SOURCELOWER_TAR_GZ]
+
+patches = ['PerfExpert-4.1.1_PAPI-5.3.patch']
+
+dependencies = [
+    ('libxml2', '2.9.1'),
+    ('PAPI', '5.3.0'),
+    ('libmatheval', '1.1.11'),
+    ('SQLite', '3.8.4.3'),
+    ('Java', '1.7.0_45', '', True),
+    ('ROSE', '0.9.5a'),
+    ('HPCToolkit', '5.3.2'),
+    ('google-sparsehash', '2.0.2'),
+]
+
+builddependencies = [
+    ('Autoconf', '2.69'),
+    ('Bison', '3.0.2'),
+]
+
+preconfigopts = "./autogen.sh && "
+configopts = "--with-libxml2-include=$EBROOTLIBXML2/include/libxml2 --with-jvm=$EBROOTJAVA/jre/lib/amd64/server "
+configopts += "--with-papi=$EBROOTPAPI --with-rose=$EBROOTROSE --with-boost=$EBROOTBOOST --with-sqlite=$EBROOTSQLITE "
+configopts += "--with-matheval=$EBROOTMATHEVAL --with-gmp=$EBROOTGMP --with-sparsehash=$EBROOTGOOGLEMINSPARSEHASH/include "
+
+# parallel building tends to break
+parallel = 1
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in ['hound', 'loop_interchange', 'macpo-analyze', 'macpo.sh', 'minst',
+                                     'nested_c_loops', 'perfexpert', 'perfexpert_analyzer', 'perfexpert_ct',
+                                     'perfexpert_get_compiler_info.pl', 'perfexpert_recommender',
+                                     'perfexpert_run_exp', 'sniffer']] +
+             ['include/macpo_record.h', 'include/mrt.h'] +
+             ['lib/lib%s.a' % x for x in ['mrt', 'perfexpert_module', 'perfexpert_module_hpctoolkit']] +
+             ['lib/lib%s.so' % x for x in ['perfexpert_module', 'perfexpert_module_hpctoolkit']],
+    'dirs': ['etc'],
+}
+
+moduleclass = 'tools'
