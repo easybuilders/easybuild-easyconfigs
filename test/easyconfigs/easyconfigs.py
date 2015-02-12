@@ -41,12 +41,15 @@ from unittest import TestCase, TestLoader, main
 
 import easybuild.main as main
 import easybuild.tools.options as eboptions
+from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.framework.easyblock import EasyBlock
-from easybuild.framework.easyconfig.easyconfig import EasyConfig, fetch_parameter_from_easyconfig_file
+from easybuild.framework.easyconfig.easyconfig import ActiveMNS, EasyConfig, fetch_parameter_from_easyconfig_file
 from easybuild.framework.easyconfig.easyconfig import get_easyblock_class
-from easybuild.framework.easyconfig.tools import dep_graph, get_paths_for, process_easyconfig, resolve_dependencies
+from easybuild.framework.easyconfig.tools import dep_graph, get_paths_for, process_easyconfig
 from easybuild.tools import config
-from easybuild.tools.module_generator import det_full_module_name
+from easybuild.tools.module_naming_scheme import GENERAL_CLASS
+from easybuild.tools.module_naming_scheme.utilities import det_full_ec_version
+from easybuild.tools.robot import resolve_dependencies
 
 
 # indicates whether all the single tests are OK,
@@ -57,6 +60,9 @@ single_tests_ok = True
 class EasyConfigTest(TestCase):
     """Baseclass for easyconfig testcases."""
 
+    if LooseVersion(sys.version) >= LooseVersion('2.6'):
+        os.environ['EASYBUILD_DEPRECATED'] = '2.0'
+
     # initialize configuration (required for e.g. default modules_tool setting)
     eb_go = eboptions.parse_options()
     config.init(eb_go.options, eb_go.get_options_by_section('config'))
@@ -64,6 +70,7 @@ class EasyConfigTest(TestCase):
         'check_osdeps': False,
         'force': True,
         'robot_path': get_paths_for("easyconfigs")[0],
+        'suffix_modules_path': GENERAL_CLASS,
         'valid_module_classes': config.module_classes(),
         'valid_stops': [x[0] for x in EasyBlock.get_steps()],
     }
@@ -121,14 +128,14 @@ class EasyConfigTest(TestCase):
             self.process_all_easyconfigs()
 
         def mk_dep_mod_name(spec):
-            return tuple(det_full_module_name(spec).split(os.path.sep))
+            return tuple(ActiveMNS().det_full_module_name(spec).split(os.path.sep))
 
         # construct a dictionary: (name, installver) tuple to dependencies
         depmap = {}
         for spec in self.ordered_specs:
             builddeps = map(mk_dep_mod_name, spec['builddependencies'])
             deps = map(mk_dep_mod_name, spec['unresolved_deps'])
-            key = tuple(spec['module'].split(os.path.sep))
+            key = tuple(spec['full_mod_name'].split(os.path.sep))
             depmap.update({key: [builddeps, deps]})
 
         # iteratively expand list of (non-build) dependencies until we reach the end (toolchain)
@@ -160,6 +167,23 @@ class EasyConfigTest(TestCase):
                         conflicts = True
         self.assertFalse(conflicts, "No conflicts detected")
 
+    def test_sanity_check_paths(self):
+        """Make sure specified sanity check paths adher to the requirements."""
+
+        if self.ordered_specs is None:
+            self.process_all_easyconfigs()
+
+        for ec in self.parsed_easyconfigs:
+            ec_scp = ec['ec']['sanity_check_paths']
+            if ec_scp != {}:
+                # if sanity_check_paths is specified (i.e., non-default), it must adher to the requirements
+                # both 'files' and 'dirs' keys, both with list values and with at least one a non-empty list
+                error_msg = "sanity_check_paths for %s does not meet requirements: %s" % (ec['spec'], ec_scp)
+                self.assertEqual(sorted(ec_scp.keys()), ['dirs', 'files'], error_msg)
+                self.assertTrue(isinstance(ec_scp['dirs'], list), error_msg)
+                self.assertTrue(isinstance(ec_scp['files'], list), error_msg)
+                self.assertTrue(ec_scp['dirs'] or ec_scp['files'], error_msg)
+
     def test_easyconfig_locations(self):
         """Make sure all easyconfigs files are in the right location."""
         easyconfig_dirs_regex = re.compile(r'/easybuild/easyconfigs/[a-z]/[^/]+$')
@@ -178,7 +202,7 @@ class EasyConfigTest(TestCase):
                         self.assertTrue(False, "List of easyconfig files in %s is empty: %s" % (dirpath, filenames))
 
 def template_easyconfig_test(self, spec):
-    """Test whether all easyconfigs can be initialized."""
+    """Tests for an individual easyconfig: parsing, instantiating easyblock, check patches, ..."""
 
     # set to False, so it's False in case of this test failing
     global single_tests_ok
@@ -192,6 +216,11 @@ def template_easyconfig_test(self, spec):
     else:
         self.assertTrue(False, "easyconfig %s does not contain blocks, yields only one parsed easyconfig" % spec)
 
+    # check easyconfig file name
+    expected_fn = '%s-%s.eb' % (ec['name'], det_full_ec_version(ec))
+    msg = "Filename '%s' of parsed easconfig matches expected filename '%s'" % (spec, expected_fn)
+    self.assertEqual(os.path.basename(spec), expected_fn, msg)
+
     # sanity check for software name
     name = fetch_parameter_from_easyconfig_file(spec, 'name')
     self.assertTrue(ec['name'], name) 
@@ -201,6 +230,12 @@ def template_easyconfig_test(self, spec):
 
     # instantiate easyblock with easyconfig file
     app_class = get_easyblock_class(easyblock, name=name)
+
+    # check that automagic fallback to ConfigureMake isn't done (deprecated behaviour)
+    fn = os.path.basename(spec)
+    error_msg = "%s relies on automagic fallback to ConfigureMake, should use easyblock = 'ConfigureMake' instead" % fn
+    self.assertTrue(easyblock or not app_class is ConfigureMake, error_msg)
+
     app = app_class(ec)
 
     # more sanity checks
@@ -230,6 +265,10 @@ def template_easyconfig_test(self, spec):
                     ext_patch_full = os.path.join(specdir, ext_patch)
                     msg = "Patch file %s is available for %s" % (ext_patch_full, specfn)
                     self.assertTrue(os.path.isfile(ext_patch_full), msg)
+
+    # check whether all extra_options defined for used easyblock are defined
+    for key in app.extra_options():
+        self.assertTrue(key in app.cfg)
 
     app.close_log()
     os.remove(app.logfile)
