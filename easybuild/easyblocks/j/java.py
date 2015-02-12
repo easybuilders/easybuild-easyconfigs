@@ -39,5 +39,5 @@ class EB_Java(PackedBinary):
         Set JAVA_HOME to install dir
         """
         txt = PackedBinary.make_module_extra(self)
-        txt += self.moduleGenerator.set_environment('JAVA_HOME', '$root')
+        txt += self.module_generator.set_environment('JAVA_HOME', '$root')
         return txt

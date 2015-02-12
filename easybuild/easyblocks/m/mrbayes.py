@@ -38,8 +38,8 @@ import shutil
 from distutils.version import LooseVersion
 
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
-from easybuild.tools.filetools import run_cmd
 from easybuild.tools.modules import get_software_root
+from easybuild.tools.run import run_cmd
 
 
 class EB_MrBayes(ConfigureMake):
@@ -69,12 +69,9 @@ class EB_MrBayes(ConfigureMake):
             if beagle:
                 self.cfg.update('configopts', '--with-beagle=%s' % beagle)
             else:
-                beagle = get_software_root('BEAGLE')
-                if beagle:
-                    self.log.deprecated('BEAGLE module as dependency, should be beagle-lib', '2.0')
-                    self.cfg.update('configopts', '--with-beagle=%s' % beagle)
-                else:
-                    self.log.error("beagle-lib module not loaded?")
+                if get_software_root('BEAGLE'):
+                    self.log.nosupport('BEAGLE module as dependency, should be beagle-lib', '2.0')
+                self.log.error("beagle-lib module not loaded?")
 
             if self.toolchain.options.get('usempi', None):
                 self.cfg.update('configopts', '--enable-mpi')

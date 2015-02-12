@@ -59,8 +59,6 @@ class EB_SuiteSparse(ConfigureMake):
         else:
             self.config_name = 'SuiteSparse_config'
 
-        fp = os.path.join(self.cfg['start_dir'], self.config_name, '%s.mk' % self.config_name)
-
         cfgvars = {
             'CC': os.getenv('MPICC'),
             'CFLAGS': os.getenv('CFLAGS'),
@@ -91,12 +89,20 @@ class EB_SuiteSparse(ConfigureMake):
         })
 
         # patch file
+        fp = os.path.join(self.cfg['start_dir'], self.config_name, '%s.mk' % self.config_name)
+
         try:
             for line in fileinput.input(fp, inplace=1, backup='.orig'):
-                for (k, v) in cfgvars.items():
-                    line = re.sub(r"^(%s\s*=\s*).*$" % k, r"\1 %s # patched by EasyBuild" % v, line)
-                    if k in line:
-                        cfgvars.pop(k)
+                for (var, val) in cfgvars.items():
+                    orig_line = line
+                    # for variables in cfgvars, substiture lines assignment 
+                    # in the file, whatever they are, by assignments to the
+                    # values in cfgvars
+                    line = re.sub(r"^\s*(%s\s*=\s*).*$" % var,
+                                  r"\1 %s # patched by EasyBuild" % val,
+                                  line)
+                    if line != orig_line:
+                        cfgvars.pop(var)
                 sys.stdout.write(line)
         except IOError, err:
             self.log.error("Failed to patch %s in: %s" % (fp, err))
@@ -106,8 +112,8 @@ class EB_SuiteSparse(ConfigureMake):
             try:
                 f = open(fp, "a")
                 f.write("# lines below added automatically by EasyBuild")
-                for (k, v) in cfgvars.items():
-                    f.write("%s = %s\n" % (k,v))
+                for (var, val) in cfgvars.items():
+                    f.write("%s = %s\n" % (var, val))
                 f.close()
             except IOError, err:
                 self.log.error("Failed to complete %s: %s" % (fp, err))

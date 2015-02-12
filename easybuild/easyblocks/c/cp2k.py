@@ -44,12 +44,12 @@ from distutils.version import LooseVersion
 import easybuild.tools.toolchain as toolchain
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import CUSTOM
-from easybuild.tools.filetools import run_cmd
 from easybuild.tools.modules import get_software_root, get_software_version
+from easybuild.tools.run import run_cmd
 from easybuild.tools.systemtools import get_avail_core_count
 
 # CP2K needs this version of libxc
-LIBXC_VERSION = '2.0.1'
+LIBXC_MIN_VERSION = '2.0.1'
 
 
 class EB_CP2K(EasyBlock):
@@ -113,6 +113,10 @@ class EB_CP2K(EasyBlock):
         - build Libint wrapper
         - generate Makefile
         """
+
+        known_types = ['popt', 'psmp']
+        if self.cfg['type'] not in known_types:
+            self.log.error("Unknown build type specified: '%s', known types are %s" % (self.cfg['type'], known_types))
 
         # correct start dir, if needed
         # recent CP2K versions have a 'cp2k' dir in the unpacked 'cp2k' dir
@@ -356,12 +360,15 @@ class EB_CP2K(EasyBlock):
         libxc = get_software_root('libxc')
         if libxc:
             cur_libxc_version = get_software_version('libxc')
-            if LooseVersion(LIBXC_VERSION) != LooseVersion(cur_libxc_version):
-                self.log.error("CP2K only works with libxc-%s" % LIBXC_VERSION)
+            if LooseVersion(cur_libxc_version) < LooseVersion(LIBXC_MIN_VERSION):
+                self.log.error("CP2K only works with libxc v%s (or later)" % LIBXC_MIN_VERSION)
 
             options['DFLAGS'] += ' -D__LIBXC2'
-            options['LIBS'] += ' -L%s/lib -lxc' % libxc
-            self.log.info("Using Libxc-%s" % LIBXC_VERSION)
+            if LooseVersion(cur_libxc_version) >= LooseVersion('2.2'):
+                options['LIBS'] += ' -L%s/lib -lxcf90 -lxc' % libxc
+            else:
+                options['LIBS'] += ' -L%s/lib -lxc' % libxc
+            self.log.info("Using Libxc-%s" % cur_libxc_version)
         else:
             self.log.info("libxc module not loaded, so building without libxc support")
 
@@ -767,7 +774,7 @@ class EB_CP2K(EasyBlock):
 
         cp2k_type = self.cfg['type']
         custom_paths = {
-            'files': ["bin/%s.%s" % (x, cp2k_type) for x in ["cp2k", "cp2k_shell", "fes"]],
+            'files': ["bin/%s.%s" % (x, cp2k_type) for x in ["cp2k", "cp2k_shell"]],
             'dirs': ["tests"]
         }
 

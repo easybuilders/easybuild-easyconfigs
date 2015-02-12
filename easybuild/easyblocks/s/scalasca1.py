@@ -53,7 +53,7 @@ class EB_Scalasca1(ConfigureMake):
         """Configure Scalasca build, set configure options for compiler, MPI and dependencies."""
         # compiler and MPI suite should always be specified -- MUCH quicker and SAFER than autodetect
         # --compiler=(gnu|pgi|intel|path|ibm|sun|clang)
-        # --mpi=(mpich|mpich2|lam|openmpi|intel|intel2|hp|scali|mpibull2|bullxmpi|sun|ibmpoe|intelpoe)
+        # --mpi=(mpich|mpich2|mpich3|lam|openmpi|intel|intel2|hp|scali|mpibull2|bullxmpi|sun|ibmpoe|intelpoe)
         comp_opts = {
             toolchain.GCC: 'gnu',
             toolchain.INTELCOMP: 'intel',
@@ -67,7 +67,7 @@ class EB_Scalasca1(ConfigureMake):
         mpi_opts = {
             toolchain.INTELMPI: 'intel2',  # intel: Intel MPI v1.x (ancient)
             toolchain.OPENMPI: 'openmpi',
-            toolchain.MPICH: 'mpich',
+            toolchain.MPICH: 'mpich3',  # In EB terms, MPICH means MPICH 3.x; MPICH 1.x is ancient and unsupported
             toolchain.MPICH2: 'mpich2',
         }
         mpi_fam = self.toolchain.mpi_family()

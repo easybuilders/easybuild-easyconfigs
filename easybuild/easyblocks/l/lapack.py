@@ -42,15 +42,15 @@ from easybuild.framework.easyconfig import CUSTOM
 from easybuild.toolchains.linalg.atlas import Atlas
 from easybuild.toolchains.linalg.gotoblas import GotoBLAS
 from easybuild.toolchains.linalg.openblas import OpenBLAS
-from easybuild.tools.filetools import run_cmd
 from easybuild.tools.modules import get_software_root
+from easybuild.tools.run import run_cmd
 
 # also used for e.g. ScaLAPACK
 def get_blas_lib(log):
     """
     Determine BLAS lib to provide to e.g. LAPACK for building/testing
     """
-    log.deprecated("get_blas_lib uses hardcoded list of known BLAS libs, should rely on toolchain support", "2.0")
+    log.deprecated("get_blas_lib uses hardcoded list of known BLAS libs, should rely on toolchain support", '3.0')
     blaslib = None
     known_blas_libs = {
                        'GotoBLAS': GotoBLAS.BLAS_LIB,

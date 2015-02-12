@@ -44,9 +44,9 @@ from vsc.utils.missing import any
 import easybuild.tools.environment as env
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.framework.easyconfig import CUSTOM
-from easybuild.tools.filetools import run_cmd
 from easybuild.tools.modules import get_software_root
-from easybuild.tools.systemtools import check_os_dependency, get_kernel_name, get_os_name, get_shared_lib_ext, get_platform_name
+from easybuild.tools.run import run_cmd
+from easybuild.tools.systemtools import check_os_dependency, get_os_name, get_os_type, get_shared_lib_ext, get_platform_name
 
 
 class EB_GCC(ConfigureMake):
@@ -488,7 +488,7 @@ class EB_GCC(ConfigureMake):
         Custom sanity check for GCC
         """
 
-        kernel_name = get_kernel_name()
+        os_type = get_os_type()
         sharedlib_ext = get_shared_lib_ext()
         common_infix = os.path.join('gcc', self.platform_lib, self.version)
 
@@ -497,7 +497,7 @@ class EB_GCC(ConfigureMake):
         if LooseVersion(self.version) >= LooseVersion('4.2'):
             # libgomp was added in GCC 4.2.0
             ["libgomp.%s" % sharedlib_ext, "libgomp.a"]
-        if kernel_name == 'Linux':
+        if os_type == 'Linux':
             lib_files.extend(["libgcc_s.%s" % sharedlib_ext])
             # libmudflap is replaced by asan (see release notes gcc 4.9.0)
             if self.version < LooseVersion("4.9.0"):
@@ -525,9 +525,9 @@ class EB_GCC(ConfigureMake):
             bin_files.append('gfortran')
             lib_files.extend(['libgfortran.%s' % sharedlib_ext, 'libgfortran.a'])
 
-        if 'lto' in self.cfg['languages']:
+        if self.cfg['withlto']:
             libexec_files.extend(['lto1', 'lto-wrapper'])
-            if kernel_name in ['Linux']:
+            if os_type in ['Linux']:
                 libexec_files.append('liblto_plugin.%s' % sharedlib_ext)
 
         bin_files = ["bin/%s" % x for x in bin_files]

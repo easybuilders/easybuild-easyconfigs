@@ -36,7 +36,7 @@ import re
 
 import easybuild.tools.environment as env
 from easybuild.easyblocks.generic.pythonpackage import PythonPackage
-from easybuild.tools.filetools import run_cmd
+from easybuild.tools.run import run_cmd
 
 
 class VersionIndependentPythonPackage(PythonPackage):

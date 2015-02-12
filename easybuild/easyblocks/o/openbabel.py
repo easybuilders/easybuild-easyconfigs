@@ -75,7 +75,7 @@ class EB_OpenBabel(CMakeMake):
     def make_module_extra(self):
         """Custom variables for OpenBabel module."""
         txt = super(EB_OpenBabel, self).make_module_extra()
-        txt += self.moduleGenerator.prepend_paths('PYTHONPATH', ['lib'])
-        txt += self.moduleGenerator.set_environment('BABEL_LIBDIR', '$root/lib/openbabel/%s/' % self.version)
-        txt += self.moduleGenerator.set_environment('BABEL_DATADIR', '$root/share/openbabel/%s/' % self.version)
+        txt += self.module_generator.prepend_paths('PYTHONPATH', ['lib'])
+        txt += self.module_generator.set_environment('BABEL_LIBDIR', '$root/lib/openbabel/%s/' % self.version)
+        txt += self.module_generator.set_environment('BABEL_DATADIR', '$root/share/openbabel/%s/' % self.version)
         return txt

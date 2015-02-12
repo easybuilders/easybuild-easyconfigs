@@ -36,14 +36,57 @@ EasyBuild support for installing RPMs, implemented as an easyblock.
 import glob
 import os
 import re
+import tempfile
 from distutils.version import LooseVersion
 from os.path import expanduser
+from vsc.utils import fancylogger
 
 import easybuild.tools.environment as env
 from easybuild.easyblocks.generic.binary import Binary
-from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import CUSTOM
-from easybuild.tools.filetools import run_cmd
+from easybuild.tools.run import run_cmd
+from easybuild.tools.systemtools import check_os_dependency
+
+
+_log = fancylogger.getLogger('easyblocks.generic.rpm')
+
+
+def rebuild_rpm(rpm_path, targetdir):
+    """Rebuild the RPM on the specified location, to make it relocatable."""
+    # make sure that rpmrebuild command is available
+    if not check_os_dependency('rpmrebuild'):
+        _log.error("Command 'rpmrebuild' is required but not available.")
+
+    rpmmacros = os.path.join(expanduser('~'), '.rpmmacros')
+    if os.path.exists(rpmmacros):
+        _log.error("rpmmacros file %s found which will override any other settings, so exiting." % rpmmacros)
+
+    rpmrebuild_tmpdir = os.path.join(tempfile.gettempdir(), "rpmrebuild")
+    env.setvar("RPMREBUILD_TMPDIR", rpmrebuild_tmpdir)
+
+    try:
+        if not os.path.exists(rpmrebuild_tmpdir):
+            os.makedirs(rpmrebuild_tmpdir)
+            _log.debug("Created RPMREBUILD_TMPDIR dir %s" % rpmrebuild_tmpdir)
+        if not os.path.exists(targetdir):
+            os.makedirs(targetdir)
+            _log.debug("Created target directory for rebuilt RPMs %s" % targetdir)
+    except OSError, err:
+        _log.error("Failed to create directories for rebuilding RPM: %s" % err)
+
+    _log.debug("Rebuilding %s in %s to make it relocatable" % (rpm_path, targetdir))
+    cmd = ' '.join([
+        "rpmrebuild -v",
+        # replace whathever prefix is set with '/'
+        r"""--change-spec-whole='sed -e "s/^Prefix:.*/Prefix: \//"'""",
+        # comment out any specifications that involve relative file path (starting with '.') (??)
+        r"""--change-spec-whole='sed -e "s/^\(.*:[ ]\+\..*\)/#ERROR \1/"'""",
+        "--notest-install",
+        "-p -d",
+        targetdir,
+        rpm_path,
+    ])
+    run_cmd(cmd, log_all=True, simple=True)
 
 
 class Rpm(Binary):
@@ -57,27 +100,26 @@ class Rpm(Binary):
         """Initialize class variables."""
         super(Rpm, self).__init__(*args, **kwargs)
         
-        self.rebuildRPM = False
+        self.rebuild_rpm = False
 
     @staticmethod
     def extra_options(extra_vars=None):
         """Extra easyconfig parameters specific to RPMs."""
-        extra_vars = dict(EasyBlock.extra_options(extra_vars))
+        extra_vars = Binary.extra_options(extra_vars)
         extra_vars.update({
             'force': [False, "Use force", CUSTOM],
             'preinstall': [False, "Enable pre install", CUSTOM],
             'postinstall': [False, "Enable post install", CUSTOM],
             'makesymlinks': [[], "Create symlinks for listed paths", CUSTOM],  # supports glob
         })
-        return EasyBlock.extra_options(extra_vars)
+        return extra_vars
 
     def configure_step(self):
         """Custom configuration procedure for RPMs: rebuild RPMs for relocation if required."""
 
         # make sure that rpm is available
-        if not 'rpm' in self.cfg['osdependencies']:
-            self.cfg['osdependencies'].append('rpm')
-            self.cfg.validate_os_deps()
+        if not check_os_dependency('rpm'):
+            self.log.error("Command 'rpm' is required but not available.")
 
         # determine whether RPMs need to be rebuilt to make relocation work
         cmd = "rpm --version"
@@ -90,59 +132,26 @@ class Rpm(Binary):
         if res:
             ver = res.groupdict()['version']
 
+            # rebuilding is required on SL6, which implies rpm v4.8 (works fine without rebuilding on SL5)
             if LooseVersion(ver) >= LooseVersion('4.8.0'):
-                self.rebuildRPM = True
+                self.rebuild_rpm = True
                 self.log.debug("Enabling rebuild of RPMs to make relocation work...")
         else:
             self.log.error("Checking RPM version failed, so just carrying on with the default behavior...")
 
-        if self.rebuildRPM:
-            self.rebuildRPMs()
+        if self.rebuild_rpm:
+            self.rebuild_rpms()
     
     # when installing RPMs under a non-default path for e.g. SL6,
     # --relocate doesn't seem to work (error: Unable to change root directory: Operation not permitted)
-    def rebuildRPMs(self):
+    def rebuild_rpms(self):
         """Rebuild RPMs to make relocation work."""
-
-        # make sure that rpm is available
-        if not 'rpmrebuild' in self.cfg['osdependencies']:
-            self.cfg['osdependencies'].append('rpmrebuild')
-            self.cfg.validate_os_deps()
-
-        rpmmacros = os.path.join(expanduser('~'), '.rpmmacros')
-        if os.path.exists(rpmmacros):
-            self.log.error("rpmmacros file %s found which will override any other settings, so exiting." % rpmmacros)
-
-        rpmrebuild_tmpdir = os.path.join(self.builddir, "rpmrebuild")
-        env.setvar("RPMREBUILD_TMPDIR", rpmrebuild_tmpdir)
-
-        try:
-            os.makedirs(rpmrebuild_tmpdir)
-            self.log.debug("Created RPMREBUILD_TMPDIR dir %s" % rpmrebuild_tmpdir)
-        except OSError, err:
-            self.log.error("Failed to create RPMREBUILD_TMPDIR dir %s: %s" % (rpmrebuild_tmpdir, err))
-
-        rpms_path = os.path.join(self.builddir, 'rebuiltRPMs')
-        try:
-            os.makedirs(rpms_path)
-        except OSError, err:
-            self.log.error("Failed to create %s: %s" % (rpms_path, err))
-
         for rpm in self.src:
-            cmd = ' '.join([
-                "rpmrebuild -v",
-                """--change-spec-whole='sed -e "s/^Prefix:.*/Prefix:    \//"'""",
-                """--change-spec-whole='sed -e "s/^\(.*:[ ]\+\..*\)/#ERROR \1/"'""",
-                "--notest-install",
-                "-p -d",
-                rpms_path,
-                rpm['path'],
-            ])
-            run_cmd(cmd, log_all=True, simple=True)
+            rebuild_rpm(rpm['path'], targetdir=self.builddir)
 
         self.oldsrc = self.src
         self.src = []
-        for path in glob.glob(os.path.join(rpms_path, '*', '*.rpm')):
+        for path in glob.glob(os.path.join(self.builddir, '*', '*.rpm')):
             self.src.append({
                 'name': os.path.basename(path),
                 'path': path,
@@ -172,7 +181,7 @@ class Rpm(Binary):
         if self.cfg['preinstall']:
             preinstall = ''
 
-        if self.rebuildRPM:
+        if self.rebuild_rpm:
             cmd_tpl = "rpm -i --dbpath %(inst)s/rpm %(force)s --relocate /=%(inst)s " \
                       "%(pre)s %(post)s --nodeps --ignorearch %(rpm)s"
         else:

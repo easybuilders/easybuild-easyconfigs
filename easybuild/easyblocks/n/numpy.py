@@ -36,9 +36,11 @@ import re
 import tempfile
 
 import easybuild.tools.environment as env
+import easybuild.tools.toolchain as toolchain
 from easybuild.easyblocks.generic.fortranpythonpackage import FortranPythonPackage
-from easybuild.tools.filetools import rmtree2, run_cmd
+from easybuild.tools.filetools import rmtree2
 from easybuild.tools.modules import get_software_root
+from easybuild.tools.run import run_cmd
 
 
 class EB_numpy(FortranPythonPackage):
@@ -67,11 +69,20 @@ class EB_numpy(FortranPythonPackage):
 
         if get_software_root("imkl"):
 
-            extrasiteconfig = '\n'.join([
-                "[mkl]",
-                "lapack_libs = %(lapack)s",
-                "mkl_libs = %(blas)s",
-            ])
+            if self.toolchain.comp_family() == toolchain.GCC:
+                # see https://software.intel.com/en-us/articles/numpyscipy-with-intel-mkl,
+                # section Building with GNU Compiler chain
+                extrasiteconfig = '\n'.join([
+                    "[mkl]",
+                    "lapack_libs = ",
+                    "mkl_libs = mkl_rt",
+                ])
+            else:
+                extrasiteconfig = '\n'.join([
+                    "[mkl]",
+                    "lapack_libs = %(lapack)s",
+                    "mkl_libs = %(blas)s",
+                ])
 
         else:
             # [atlas] the only real alternative, even for non-ATLAS BLAS libs (e.g., OpenBLAS, ACML, ...)

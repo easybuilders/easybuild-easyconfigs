@@ -32,11 +32,17 @@ import os
 import stat
 
 from easybuild.framework.easyblock import EasyBlock
-from easybuild.tools.filetools import adjust_permissions, run_cmd
+from easybuild.tools.filetools import adjust_permissions
+from easybuild.tools.run import run_cmd
 
 
 class EB_FLUENT(EasyBlock):
     """Support for installing FLUENT."""
+
+    def __init__(self, *args, **kwargs):
+        """Custom constructor for FLUENT easyblock, initialize/define class parameters."""
+        super(EB_FLUENT, self).__init__(*args, **kwargs)
+        self.fluent_verdir = 'v%s' % ''.join(self.version.split('.')[:2])
 
     def configure_step(self):
         """No configuration for FLUENT."""
@@ -56,26 +62,19 @@ class EB_FLUENT(EasyBlock):
 
     def sanity_check_step(self):
         """Custom sanity check for FLUENT."""
-
-        ver = 'v%s' % ''.join(self.version.split('.'))
-
         custom_paths = {
-                        'files': ["%s/fluent/bin/fluent%s" % (ver, x) for x in ['', '_arch', '_sysinfo']],
-                        'dirs': ["%s/%s" % (ver, x) for x in ["ansys", "aisol", "CFD-Post"]]
-                       }
-
+            'files': ["%s/fluent/bin/fluent%s" % (self.fluent_verdir, x) for x in ['', '_arch', '_sysinfo']],
+            'dirs': ["%s/%s" % (self.fluent_verdir, x) for x in ["ansys", "aisol", "CFD-Post"]]
+        }
         super(EB_FLUENT, self).sanity_check_step(custom_paths=custom_paths)
 
     def make_module_req_guess(self):
         """Custom extra module file entries for FLUENT."""
-
         guesses = super(EB_FLUENT, self).make_module_req_guess()
 
-        ver = "v%s" % ''.join(self.version.split('.'))
-
         guesses.update({
-                        "PATH": [os.path.join(ver, "fluent", "bin")],
-                        "LD_LIBRARY_PATH": [os.path.join(ver, "fluent", "lib")],
-                       })
+            "PATH": [os.path.join(self.fluent_verdir, "fluent", "bin")],
+            "LD_LIBRARY_PATH": [os.path.join(self.fluent_verdir, "fluent", "lib")],
+        })
 
         return guesses

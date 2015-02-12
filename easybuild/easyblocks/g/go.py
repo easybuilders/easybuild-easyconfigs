@@ -32,7 +32,8 @@ import os
 import shutil
 
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
-from easybuild.tools.filetools import rmtree2, run_cmd
+from easybuild.tools.filetools import rmtree2
+from easybuild.tools.run import run_cmd
 
 class EB_Go(ConfigureMake):
     """
