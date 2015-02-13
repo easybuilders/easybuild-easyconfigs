@@ -1,0 +1,37 @@
+# This file is an EasyBuild reciPY as per https://github.com/hpcugent/easybuild
+# Author: Pablo Escobar Lopez
+# Swiss Institute of Bioinformatics
+# Biozentrum - University of Basel
+
+name = 'GLEW'
+version = '1.10.0'
+
+homepage = 'http://glew.sourceforge.net/index.html'
+description = """ The OpenGL Extension Wrangler Library (GLEW) is a cross-platform 
+ open-source C/C++ extension loading library. GLEW provides efficient run-time mechanisms 
+ for determining which OpenGL extensions are supported on the target platform. OpenGL core 
+ and extension functionality is exposed in a single header file. GLEW has been tested on 
+ a variety of operating systems, including Windows, Linux, Mac OS X, FreeBSD, Irix, and Solaris. """
+
+toolchain = {'name': 'goolf', 'version': '1.4.10'}
+
+source_urls = [SOURCEFORGE_SOURCE]
+sources = [SOURCELOWER_TGZ]
+
+# this is not standard " configure && make && make install" so let's tweak it
+skipsteps = ['configure', 'install']
+
+# we setup as env vars the system to compile and the install dir
+premakeopts = 'export SYSTEM=linux && export GLEW_DEST=%(installdir)s && '
+
+# and we do "make all && make install.all"
+makeopts = 'all && make install.all'
+
+osdependencies = ['libXi-devel', 'mesa-libGL-devel', 'freeglut-devel']
+
+sanity_check_paths = {
+    'files': ["bin/glewinfo", "include/GL/glew.h", "lib64/libGLEW.so", "lib64/libGLEW.a"],
+    'dirs': [],
+}
+
+moduleclass = 'devel'
