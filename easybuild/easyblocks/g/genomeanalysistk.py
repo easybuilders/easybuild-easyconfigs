@@ -24,6 +24,7 @@
 ##
 """
 Support for building and installing GenomeAnalysisTK, implemented as an easyblock.
+DEPRECATED, use generic Tarball easyblock instead.
 
 @author: Stijn De Weirdt (Ghent University)
 @author: Dries Verdegem (Ghent University)
@@ -39,7 +40,15 @@ from easybuild.framework.easyblock import EasyBlock
 
 
 class EB_GenomeAnalysisTK(EasyBlock):
-    """Support for building and installing GenomeAnalysisTK."""
+    """
+    Support for building and installing GenomeAnalysisTK.
+    DEPRECATED, use generic Tarball easyblock instead.
+    """
+
+    def __init__(self, *args, **kwargs):
+        """Constructor."""
+        super(EB_GenomeAnalysisTK, self).__init__(*args, **kwargs)
+        self.log.deprecated("Use the generic Tarball easyblock rather than this software-specific easyblock", '3.0')
 
     def configure_step(self):
         """No configure step for GenomeAnalysisTK"""
