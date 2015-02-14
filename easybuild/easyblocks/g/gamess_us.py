@@ -35,13 +35,16 @@ EasyBuild support for building and installing GAMESS-US, implemented as an easyb
 @author: Benjamin Roberts (The University of Auckland)
 """
 import fileinput
+import glob
 import os
 import re
+import shutil
 import sys
+import tempfile
 
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import CUSTOM, MANDATORY
-from easybuild.tools.filetools import read_file
+from easybuild.tools.filetools import read_file, write_file
 from easybuild.tools.modules import get_software_root, get_software_version
 from easybuild.tools.run import run_cmd, run_cmd_qa
 from easybuild.tools.systemtools import get_platform_name
@@ -170,10 +173,11 @@ class EB_GAMESS_minus_US(EasyBlock):
 
         # patch hardcoded settings in rungms to use values specified in easyconfig file
         rungms = os.path.join(self.builddir, 'rungms')
+        extra_gmspath_lines = "set ERICFMT=$GMSPATH/auxdata/ericfmt.dat\nset MCPPATH=$GMSPATH/auxdata/MCP\n"
         try:
             for line in fileinput.input(rungms, inplace=1, backup='.orig'):
                 line = re.sub(r"^(\s*set\s*TARGET)=.*", r"\1=%s" % self.cfg['ddi_comm'], line)
-                line = re.sub(r"^(\s*set\s*GMSPATH)=.*", r"\1=%s" % self.installdir, line)
+                line = re.sub(r"^(\s*set\s*GMSPATH)=.*", r"\1=%s\n%s" % (self.installdir, extra_gmspath_lines), line)
                 line = re.sub(r"(null\) set VERNO)=.*", r"\1=%s" % self.version, line)
                 line = re.sub(r"^(\s*set DDI_MPI_CHOICE)=.*", r"\1=%s" % mpilib, line)
                 line = re.sub(r"^(\s*set DDI_MPI_ROOT)=.*%s.*" % mpilib.lower(), r"\1=%s" % mpilib_path, line)
@@ -208,9 +212,44 @@ class EB_GAMESS_minus_US(EasyBlock):
 
     def test_step(self):
         """Run GAMESS-US tests (if 'runtest' easyconfig parameter is set to True)."""
+        # don't use provided 'runall' script for tests, since that only runs the tests single-core
         if self.cfg['runtest']:
-            runall_cmd = "%s %s" % (os.path.join(self.builddir, 'runall'), self.version)
-            run_cmd(runall_cmd, path=self.builddir, log_all=True)
+            testdir = tempfile.mkdtemp()
+            try:
+                cwd = os.getcwd()
+                os.chdir(testdir)
+            except OSError, err:
+                self.log.error("Failed to move to temporary directory for running tests: %s" % err)
+
+            # copy input files for exam<id> standard tests
+            for test_input in glob.glob(os.path.join(self.installdir, 'tests', 'standard', 'exam*.inp')):
+                try:
+                    shutil.copy2(test_input, os.getcwd())
+                except OSError, err:
+                    self.log.error("Failed to copy %s to %s: %s" % (test_input, os.getcwd(), err))
+
+            # run all exam<id> tests, dump output to exam<id>.log
+            n_tests = 47
+            for i in range(1, n_tests+1):
+                test_cmd = ' '.join([os.path.join(self.installdir, 'rungms'), 'exam%02d' % i, self.version, '1', '2'])
+                (out, _) = run_cmd(test_cmd, log_all=True, simple=False)
+                write_file('exam%02d.log' % i, out)
+
+            # verify output of tests
+            check_cmd = os.path.join(self.installdir, 'tests', 'standard', 'checktst')
+            (out, _) = run_cmd(check_cmd, log_all=True, simple=False)
+            success_regex = re.compile("^All %d test results are correct" % n_tests, re.M)
+            if success_regex.search(out):
+                self.log.info("All tests ran successfully!")
+            else:
+                self.log.error("Not all tests ran successfully...")
+
+            # cleanup
+            os.chdir(cwd)
+            try:
+                shutil.rmtree(testdir)
+            except OSError, err:
+                self.log.error("Failed to remove test directory %s: %s" % (testdir, err))
 
     def install_step(self):
         """Skip install step, since we're building in the install directory."""
