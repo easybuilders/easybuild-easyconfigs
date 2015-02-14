@@ -31,19 +31,20 @@ EasyBuild support for building and installing GAMESS-US, implemented as an easyb
 @author: Pieter De Baets (Ghent University)
 @author: Jens Timmerman (Ghent University)
 @author: Toon Willems (Ghent University)
+@author: Pablo Escobar (sciCORE, SIB, University of Basel)
+@author: Benjamin Roberts (The University of Auckland)
 """
 import fileinput
 import os
 import re
-import shutil
 import sys
 
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import CUSTOM, MANDATORY
-from easybuild.tools.filetools import mkdir
+from easybuild.tools.filetools import read_file
 from easybuild.tools.modules import get_software_root, get_software_version
-from easybuild.tools.run import run_cmd
-from easybuild.tools.systemtools import get_avail_core_count, get_platform_name
+from easybuild.tools.run import run_cmd, run_cmd_qa
+from easybuild.tools.systemtools import get_platform_name
 from easybuild.tools import toolchain
 
 
@@ -57,34 +58,29 @@ class EB_GAMESS_minus_US(EasyBlock):
             'ddi_comm': ['mpi', "DDI communication layer to use", CUSTOM],
             'maxcpus': [None, "Maximum number of cores per node", MANDATORY],
             'maxnodes': [None, "Maximum number of nodes", MANDATORY],
+            'runtest': [True, "Run GAMESS-US tests", CUSTOM],
+            'scratch_dir': ['$TMPDIR', "Scratch dir to be used in rungms script", CUSTOM],
         }
         return EasyBlock.extra_options(extra_vars)
 
+    def __init__(self, *args, **kwargs):
+        """Easyblock constructor, enable building in installation directory."""
+        super(EB_GAMESS_minus_US, self).__init__(*args, **kwargs)
+        self.build_in_installdir = True
+
+    def extract_step(self):
+        """Extract sources."""
+        # strip off 'gamess' part to avoid having everything in a 'gamess' subdirectory
+        self.cfg['unpack_options'] = "--strip-components=1"
+        super(EB_GAMESS_minus_US, self).extract_step()
+
     def configure_step(self):
-        """Custom configure procedure for GAMESS-US."""
+        """Configure GAMESS-US build via provided interactive 'config' script."""
 
-        # copy, edit and build the source code activator
-        actvtecode = os.path.join(self.cfg['start_dir'], 'tools', 'actvte.code')
-        actvtef = os.path.join(self.cfg['start_dir'], 'tools', 'actvte.f')
-        try:
-            shutil.copy2(actvtecode, actvtef)
-            for line in fileinput.input(actvtef, inplace=1, backup='.orig'):
-                # uncomment lines by replacing '*UNX' with 4 spaces
-                line = re.sub(r"^\*UNX", ' '*4, line)
-                sys.stdout.write(line)
-        except (IOError, OSError), err:
-            self.log.error("Failed to create %s: %s" % (actvtef, err))
-
-        try:
-            cmd = "%s -o tools/actvte.x tools/actvte.f" % os.environ['F77']
-            run_cmd(cmd, log_all=True, simple=True)
-        except Exception, err:
-            self.log.error("Something went wrong during compilation of %s" % actvtef)
-
-        # creating the install.info file
+        # machine type
         platform_name = get_platform_name()
-        x86_64_linux_re = re.compile('^x86_64-.*-linux$')
-        if x86_64_linux_re.match(platform_name) or platform_name == 'x86_64-apple-darwin':  # FIXME
+        x86_64_linux_re = re.compile('^x86_64-.*$')
+        if x86_64_linux_re.match(platform_name):
             machinetype = "linux64"
         else:
             self.log.error("Build target %s currently unsupported" % platform_name)
@@ -94,37 +90,32 @@ class EB_GAMESS_minus_US(EasyBlock):
         fortran_comp, fortran_ver = None, None
         if comp_fam == toolchain.INTELCOMP:
             fortran_comp = 'ifort'
-            fortran_ver = get_software_version('ifort')
+            (out, _) = run_cmd("ifort -v", simple=False)
+            res = re.search(r"^ifort version ([0-9]+)\.[0-9.]+$", out)
+            if res:
+                fortran_ver = res.group(1)
+            else:
+                self.log.error("Failed to determine ifort major version number")
         elif comp_fam == toolchain.GCC:
             fortran_comp = 'gfortran'
             fortran_ver = '.'.join(get_software_version('GCC').split('.')[:2])
         else:
-            self.log.error("Compiler family %s currently unsupported." % comp_fam)
+            self.log.error("Compiler family '%s' currently unsupported." % comp_fam)
 
         # math library config
         known_mathlibs = ['imkl', 'OpenBLAS', 'ATLAS', 'ACML']
-        mathlib, mathlib_ver, mathlib_path = None, None, None
+        mathlib, mathlib_root = None, None
         for mathlib in known_mathlibs:
-            mathlib_ver = get_software_version(mathlib)
-            if mathlib_ver is not None:
-                mathlib_path = os.environ['LAPACK_LIB_DIR'].split(os.pathsep)[0]
+            mathlib_root = get_software_root(mathlib)
+            if mathlib_root is not None:
                 break
-        if mathlib_ver is None:
+        if mathlib_root is None:
             self.log.error("None of the know math libraries (%s) available, giving up." % known_mathlibs)
         if mathlib == 'imkl':
             mathlib = 'mkl'
+            mathlib_root = os.path.join(mathlib_root, 'mkl')
         elif mathlib == 'OpenBLAS':
-            mathlib = 'blas'  # FIXME, only for old GAMESS-US versions?
-
-        # MPI library config
-        known_mpilibs = ['impi', 'OpenMPI', 'MVAPICH2', 'MPICH2']
-        mpilib, mpilib_path = None, None
-        for mpilib in known_mpilibs:
-            mpilib_path = get_software_root(mpilib)
-            if mpilib_path is not None:
-                break
-        if mpilib_path is None:
-            self.log.error("None of the known MPI libraries (%s) available, giving up." % known_mpilibs)
+            mathlib = 'blas'
 
         # verify selected DDI communication layer
         known_ddi_comms = ['mpi', 'mixed', 'shmem', 'sockets']
@@ -132,67 +123,73 @@ class EB_GAMESS_minus_US(EasyBlock):
             tup = (known_ddi_comms, self.cfg['ddi_comm'])
             self.log.error("Unsupported DDI communication layer specified (known: %s): %s" % tup)
 
-        install_info = {
-            'GMS_BUILD_DIR': self.cfg['start_dir'],
-            'GMS_PATH': self.cfg['start_dir'],
-            'GMS_TARGET': machinetype,
-            'GMS_FORTRAN': os.environ['F77'],
-            #'GMS_%s_VERNO' % fortran_comp.upper(): fortran_ver,
-            'GMS_%s_VERNO' % fortran_comp.upper(): "14",
-            'GMS_MATHLIB': mathlib.lower(),
-            'GMS_MATHLIB_PATH': mathlib_path,
-            'GMS_DDI_COMM': self.cfg['ddi_comm'],
-            'GMS_MPI_LIB': mpilib.lower(),
-            'GMS_MPI_PATH': mpilib_path,
+        # MPI library config
+        mpilib, mpilib_root, mpilib_path = None, None, None
+        if self.cfg['ddi_comm'] == 'mpi':
+
+            known_mpilibs = ['impi', 'OpenMPI', 'MVAPICH2', 'MPICH2']
+            for mpilib in known_mpilibs:
+                mpilib_root = get_software_root(mpilib)
+                if mpilib_root is not None:
+                    break
+            if mpilib_root is None:
+                self.log.error("None of the known MPI libraries (%s) available, giving up." % known_mpilibs)
+            mpilib_path = mpilib_root
+            if mpilib == 'impi':
+                mpilib_path = os.path.join(mpilib_root, 'intel64')
+
+        # run interactive 'config' script to generate install.info file
+        cmd = "%(preconfigopts)s ./config %(configopts)s" % {
+            'preconfigopts': self.cfg['preconfigopts'],
+            'configopts': self.cfg['configopts'],
         }
-        if mathlib == 'mkl':
-            #install_info.update({'GMS_MKL_VERNO': mathlib_ver})
-            install_info.update({'GMS_MKL_VERNO': "11"})
+        qa = {
+            "After the new window is open, please hit <return> to go on.": '',
+            "please enter your target machine name: ": machinetype,
+            "Version? [00] ": self.version,
+            "Please enter your choice of FORTRAN: ": fortran_comp,
+            "Enter only the main version number, such as 8, ... 11, 12, 13, 14.\nVersion? ": fortran_ver,
+            "hit <return> to continue to the math library setup.": '',
+            "Enter your choice of 'mkl' or 'atlas' or 'acml' or 'none': ": mathlib,
+            "MKL pathname? ": mathlib_root,
+            "MKL version (or 'skip')? ": 'skip',
+            "please hit <return> to compile the GAMESS source code activator": '',
+            "please hit <return> to set up your network for Linux clusters.": '',
+            "communication library ('sockets' or 'mpi')? ": self.cfg['ddi_comm'],
+            "Enter MPI library (impi, mvapich2, mpt, sockets):": mpilib,
+            "Please enter your %s's location: " % mpilib: mpilib_root,
+            "Do you want to try LIBCCHEM?  (yes/no): ": 'no',
+        }
+        stdqa = {
+            r"GAMESS directory\? \[.*\] ": self.builddir,
+            r"GAMESS build directory\? \[.*\] ": self.installdir,  # building in install directory
+        }
+        run_cmd_qa(cmd, qa=qa, std_qa=stdqa, log_all=True, simple=True)
 
-        install_info_lines = [
-            "#!/bin/csh",
-            "# Build configuration from GAMESS-US",
-            "# generated by EasyBuild",
-        ]
-        for key, val in sorted(install_info.items()):
-            setenv = "setenv %s\t\t%s" % (key, val)
-            install_info_lines.append("setenv %s\t\t%s" % (key, val))
-        install_info_txt = '\n'.join(install_info_lines) + '\n'  # each line *must* end with newline in a csh script
+        self.log.debug("Contents of install.info:\n%s" % read_file(os.path.join(self.builddir, 'install.info')))
 
-        install_info_fp = "install.info"
-        tup = (install_info_fp, install_info_txt)
-        self.log.info("The %s script used for this build has the following content:\n%s" % tup)
+        # patch hardcoded settings in rungms to use values specified in easyconfig file
+        rungms = os.path.join(self.builddir, 'rungms')
         try:
-            f = open(install_info_fp, 'w')
-            f.write(install_info_txt)
-            f.close()
-        except IOError, err:
-            self.log.error("Failed to create %s: %s" % (install_info_fp, err))
-
-        # adapt and execute the compddi file
-        compddi = os.path.join(self.cfg['start_dir'], 'ddi', 'compddi')
-        try:
-            maxcpus_re = re.compile(r"^set MAXCPUS.*", re.M)
-            set_maxcpus = "set MAXCPUS = %s" % self.cfg['maxcpus']
-            maxnodes_re = re.compile(r"^set MAXNODES.*", re.M)
-            set_maxnodes = "set MAXNODES = %s" % self.cfg['maxnodes']
-            cc_re = re.compile(r"set CC = \S*")
-            set_cc = "set CC = '%s'" % os.environ['MPICC']
-            f77_re = re.compile(r"case %s\s*:" % os.environ['F77_SEQ'])
-            case_f77 = "case %s:" % os.environ['F77']
-            for line in fileinput.input(compddi, inplace=1, backup='.orig'):
-                # set MAXCPUS/MAXNODES as configured
-                line = maxcpus_re.sub(set_maxcpus, line)
-                line = maxnodes_re.sub(set_maxnodes, line)
-                # adjust hardcoded settings for C compiler
-                line = cc_re.sub(set_cc, line)
-                # make sure switch statements also work when $F77 is an MPI compiler wrapper
-                if os.environ['F77'].startswith('mpi'):
-                    line = f77_re.sub(case_f77, line)
+            for line in fileinput.input(rungms, inplace=1, backup='.orig'):
+                line = re.sub(r"^(\s*set\s*TARGET)=.*", r"\1=%s" % self.cfg['ddi_comm'], line)
+                line = re.sub(r"^(\s*set\s*GMSPATH)=.*", r"\1=%s" % self.installdir, line)
+                line = re.sub(r"(null\) set VERNO)=.*", r"\1=%s" % self.version, line)
+                line = re.sub(r"^(\s*set DDI_MPI_CHOICE)=.*", r"\1=%s" % mpilib, line)
+                line = re.sub(r"^(\s*set DDI_MPI_ROOT)=.*%s.*" % mpilib.lower(), r"\1=%s" % mpilib_path, line)
+                line = re.sub(r"^(\s*set GA_MPI_ROOT)=.*%s.*" % mpilib.lower(), r"\1=%s" % mpilib_path, line)
+                # comment out all adjustments to $LD_LIBRARY_PATH that involves hardcoded paths
+                line = re.sub(r"^(\s*)(setenv\s*LD_LIBRARY_PATH\s*/.*)", r"\1#\2", line)
+                if self.cfg['scratch_dir']:
+                    line = re.sub(r"^(\s*set\s*SCR)=.*", r"\1=%s" % self.cfg['scratch_dir'], line)
+                    line = re.sub(r"^(\s*set\s*USERSCR)=.*", r"\1=%s" % self.cfg['scratch_dir'], line)
                 sys.stdout.write(line)
         except IOError, err:
-            self.log.error("Failed to patch %s: %s" % (compddi, err))
+            self.log.error("Failed to patch %s: %s" % (rungms, err))
 
+    def build_step(self):
+        """Custom build procedure for GAMESS-US: using compddi, compall and lked scripts."""
+        compddi = os.path.join(self.cfg['start_dir'], 'ddi', 'compddi')
         run_cmd(compddi, log_all=True, simple=True)
 
         # make sure the libddi.a library is present
@@ -202,62 +199,34 @@ class EB_GAMESS_minus_US(EasyBlock):
         else:
             self.log.info("The libddi.a library (%s) was successfully built." % libddi)
 
-    def build_step(self):
-        """Custom build procedure for GAMESS-US."""
-        # patch comp/lked scripts if required (if $F77 is an MPI command wrapper)
-        comp = os.path.join(self.cfg['start_dir'], 'comp')
-        lked = os.path.join(self.cfg['start_dir'], 'lked')
-        if os.environ['F77'].startswith('mpi'):
-            f77_re = re.compile(r"case %s\s*:" % os.environ['F77_SEQ'])
-            case_f77 = "case %s:" % os.environ['F77']
-            for line in fileinput.input(comp, inplace=1, backup='.orig'):
-                line = f77_re.sub(case_f77, line)
-                sys.stdout.write(line)
-            for line in fileinput.input(lked, inplace=1, backup='.orig'):
-                line = f77_re.sub(case_f77, line)
-                sys.stdout.write(line)
-
-        compall = os.path.join(self.cfg['start_dir'], 'compall')
+        compall_cmd = os.path.join(self.cfg['start_dir'], 'compall')
+        compall = "%s %s %s" % (self.cfg['prebuildopts'], compall_cmd, self.cfg['buildopts'])
         run_cmd(compall, log_all=True, simple=True)
 
-        cmd = "%s gamess mpi" % lked
+        cmd = "%s gamess %s" % (os.path.join(self.cfg['start_dir'], 'lked'), self.version)
         run_cmd(cmd, log_all=True, simple=True)
 
-        # sanity check for gamess executable
-        executable = os.path.join(self.builddir, 'gamess', 'gamess.%s.x' % self.cfg['ddi_comm'])
-        if not os.path.isfile(executable):
-            self.log.error("the executable (%s) was never built" % executable)
+    def test_step(self):
+        """Run GAMESS-US tests (if 'runtest' easyconfig parameter is set to True)."""
+        if self.cfg['runtest']:
+            runall_cmd = "%s %s" % (os.path.join(self.builddir, 'runall'), self.version)
+            run_cmd(runall_cmd, path=self.builddir, log_all=True)
 
     def install_step(self):
-        """Custom install procedure for GAMESS-US (copy files/directories to install dir)."""
-        try:
-            for item in os.listdir(os.path.join(self.cfg['start_dir'])):
-                srcpath = os.path.join(self.cfg['start_dir'], item)
-                if os.path.isdir(item):
-                    shutil.copytree(srcpath, os.path.join(self.installdir, item))
-                else:
-                    shutil.copy2(srcpath, os.path.join(self.installdir))
-            #shutil.copytree(os.path.join(self.cfg['start_dir']), self.installdir)
-            #for subdir in ['auxdata', 'graphics', 'mcpdata', 'misc', 'qmnuc', 'tests', 'tools']:
-                #srcpath = os.path.join(self.cfg['start_dir'], subdir)
-                #if os.path.exists(srcpath):
-                #    shutil.copytree(srcpath, os.path.join(self.installdir, subdir))
-                #bindir = os.path.join(self.installdir, 'bin')
-                #mkdir(bindir)
-                #shutil.copy2(os.path.join(self.cfg['start_dir'], 'gamess.%s.x' % self.cfg['ddi_comm']), bindir)
-                #shutil.copy2(os.path.join(self.cfg['start_dir'], 'gamess.%s.x' % self.cfg['ddi_comm']), self.installdir)
-                #for file in ['runall', 'rungms', 'gms-files.csh']:
-                #    shutil.copy2(os.path.join(self.cfg['start_dir'], file), self.installdir)
+        """Skip install step, since we're building in the install directory."""
+        pass
 
-
-        except OSError, err:
-            self.log.error("Failed to install GAMESS-US by copying files/directories: %s" % err)
+    def sanity_check_step(self):
+        """Custom sanity check for GAMESS-US."""
+        custom_paths = {
+            'files': ['gamess.%s.x' % self.version, 'rungms'],
+            'dirs': [],
+        }
+        super(EB_GAMESS_minus_US, self).sanity_check_step(custom_paths=custom_paths)
 
     def make_module_extra(self):
         """Define GAMESS-US specific variables in generated module file, i.e. $GAMESSUSROOT."""
         txt = super(EB_GAMESS_minus_US, self).make_module_extra()
-        txt += self.moduleGenerator.set_environment('GAMESSUSROOT', '$root')
-        #txt += self.moduleGenerator.set_environment('PATH', '$root')
-        # add install directory to PATH
-        txt += self.moduleGenerator.prepend_paths("PATH", [''])
+        txt += self.module_generator.set_environment('GAMESSUSROOT', '$root')
+        txt += self.module_generator.prepend_paths("PATH", [''])
         return txt
