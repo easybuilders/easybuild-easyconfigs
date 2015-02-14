@@ -151,7 +151,6 @@ class EB_GAMESS_minus_US(EasyBlock):
             "please enter your target machine name: ": machinetype,
             "Version? [00] ": self.version,
             "Please enter your choice of FORTRAN: ": fortran_comp,
-            "Enter only the main version number, such as 8, ... 11, 12, 13, 14.\nVersion? ": fortran_ver,
             "hit <return> to continue to the math library setup.": '',
             "Enter your choice of 'mkl' or 'atlas' or 'acml' or 'none': ": mathlib,
             "MKL pathname? ": mathlib_root,
@@ -166,6 +165,7 @@ class EB_GAMESS_minus_US(EasyBlock):
         stdqa = {
             r"GAMESS directory\? \[.*\] ": self.builddir,
             r"GAMESS build directory\? \[.*\] ": self.installdir,  # building in install directory
+            r"Enter only the main version number, such as .*\nVersion? ": fortran_ver,
         }
         run_cmd_qa(cmd, qa=qa, std_qa=stdqa, log_all=True, simple=True)
 
