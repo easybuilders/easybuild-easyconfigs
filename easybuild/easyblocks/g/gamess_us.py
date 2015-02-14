@@ -165,7 +165,7 @@ class EB_GAMESS_minus_US(EasyBlock):
         stdqa = {
             r"GAMESS directory\? \[.*\] ": self.builddir,
             r"GAMESS build directory\? \[.*\] ": self.installdir,  # building in install directory
-            r"Enter only the main version number, such as .*\nVersion? ": fortran_ver,
+            r"Enter only the main version number, such as .*\nVersion\? ": fortran_ver,
         }
         run_cmd_qa(cmd, qa=qa, std_qa=stdqa, log_all=True, simple=True)
 
