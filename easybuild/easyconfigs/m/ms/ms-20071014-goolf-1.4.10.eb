@@ -1,0 +1,46 @@
+# This file is an EasyBuild reciPY as per https://github.com/hpcugent/easybuild
+# Author: Pablo Escobar Lopez
+# Swiss Institute of Bioinformatics
+# Biozentrum - University of Basel
+
+easyblock = "Tarball"
+
+name = 'ms'
+version = '20071014'
+
+homepage = 'http://home.uchicago.edu/~rhudson1/source/mksamples.html'
+description = """A program for generating samples under neutral models"""
+
+toolchain = {'name': 'goolf', 'version': '1.4.10'}
+
+source_urls = ['https://webshare.uchicago.edu/users/rhudson1/Public/ms.folder/']
+sources = ['%(name)s.tar.gz']
+
+# as no version is provided in the tarball I verify checksum is fine
+checksums = [('md5', 'ef693dcc424fd5293b0bea4c68953700')]
+
+# delete provided binary
+postinstallcmds = ["rm -fr %(installdir)s/msdir/ms"]
+
+# here is where we do the compilation 
+# I got this line from the provided build script in %(installdir)s/msdir/clms
+postinstallcmds += ["cd %(installdir)s/msdir && $CC -O2 -o ms  ms.c  rand1.c streec.c -lm"]
+
+# delete all provided .c and .h files
+postinstallcmds += ["rm %(installdir)s/msdir/*.{c,h}"]
+
+# fix persmissions
+postinstallcmds += ["chmod -R 755 %(installdir)s"]
+
+sanity_check_paths = {
+    'files': ["msdir/ms"],
+    'dirs': []
+}
+
+# add the msdir in installation dir to PATH
+modextrapaths = { 
+    'PATH': "msdir",
+}
+
+moduleclass = 'bio'
+
