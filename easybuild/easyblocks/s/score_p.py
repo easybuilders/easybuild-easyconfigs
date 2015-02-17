@@ -77,6 +77,7 @@ class EB_Score_minus_P(ConfigureMake):
             'OPARI2': ['--with-opari2=%s/bin'],
             'PAPI': ['--with-papi-header=%s/include', '--with-papi-lib=%%s/%s' % get_software_libdir('PAPI')],
             'PDT': ['--with-pdt=%s/bin'],
+            'Qt': ['--with-qt=%s'],
         }
         for (dep_name, dep_opts) in deps.items():
             dep_root = get_software_root(dep_name)
