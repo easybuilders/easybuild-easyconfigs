@@ -31,11 +31,53 @@ postinstallcmds = ['touch $HOME/.agree2ccp4v6',
                    'cd %(installdir)s/arp_warp_7.5 && ./install.sh ccp4=%(installdir)s/%(namelower)s-%(version)s']
 
 sanity_check_paths = {
-    'files': ["" ],
+    'files': ["%(namelower)s-%(version)s/bin/ccp4.setup-sh" ], # this file is created after ./BINARY.setup postinstall cmd
     'dirs': ["%(namelower)s-%(version)s"]
 }
 
-modloadmsg = """BASH USERS RUN: source \\$EBROOTCCP4/ccp4-6.5/bin/ccp4.setup-sh
- CSH USERS RUN: source \\$EBROOTCCP4/ccp4-6.5/bin/ccp4.setup-csh"""
+# module definition is based on ccp4-6.5/include/ccp4.setup-module
+
+modextrapaths = {
+    prepend-path PATH ${ccp4}/bin
+prepend-path PATH ${ccp4}/etc
+append-path PATH ${ccp4}/share/xia2/Applications
+
+prepend-path MANPATH ${ccp4}/share/man
+
+
+    prepend-path PATH ${arpwarp}/bin/bin-x86_64-Linux
+}
+ 
+modextravars = {
+    'CCP4_MASTER': 'j',
+    'CCP4': '%s-%s' % (namelower, version),
+    'CCP4I_TCLTK': 'bin',
+    'BALBES_ROOT': 'BALBES',
+# 
+    'GFORTRAN_UNBUFFERED_PRECONNECTED': '1'
+    'CBIN' ${ccp4}/bin'
+    'CLIB': ${ccp4}/lib'
+    'CCP4I_TOP ${ccp4}/share/ccp4i'
+    'CCP4_OPEN UNKNOWN'
+    'MMCIFDIC ${ccp4}/lib/ccp4/cif_mmdic.lib'
+    'CRANK': '${ccp4}/share/ccp4i/crank'
+    'CLIBD_MON': '${ccp4}/lib/data/monomers/
+    'CCP4_HELPDIR': '${ccp4}/help/
+#
+    'CETC ${ccp4}/etc
+    'CEXAM ${ccp4}/examples
+    'CHTML ${ccp4}/html
+    'CINCL ${ccp4}/include
+    'CLIBD ${ccp4}/lib/data
+#
+    'warpbin ${arpwarp}/bin/bin-x86_64-Linux
+    'warpdoc ${arpwarp}/manual
+#
+    'CCP4_SCR ${ccp4_scr}
+# TODO: ask Kenneth how to implement it in the easyconf or maybe easyblock
+#if { ! [ file exists $ccp4_scr ] } {
+#    file mkdir $ccp4_scr
+#}
+}
 
 moduleclass = 'bio'
