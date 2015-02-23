@@ -68,4 +68,4 @@ class Tarball(EasyBlock):
             # self.cfg['keepsymlinks'] is False by default except when explicitly put to True in .eb file
             shutil.copytree(src, self.installdir, symlinks=self.cfg['keepsymlinks'])
         except OSError, err:
-            self.log.exception("Copying %s to installation dir %s failed: %s" % (src, self.installdir, err))
+            self.log.error("Copying %s to installation dir %s failed: %s" % (src, self.installdir, err))
