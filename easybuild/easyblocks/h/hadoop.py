@@ -77,5 +77,4 @@ class EB_Hadoop(Tarball):
         txt = super(EB_Hadoop, self).make_module_extra()
         mapreduce_subdir = os.path.join('share', 'hadoop', 'mapreduce')
         txt += self.module_generator.prepend_paths('HADOOP_HOME', mapreduce_subdir)
-        txt += self.module_generator.prepend_paths('HADOOP_CONF_DIR', os.path.join(mapreduce_subdir, 'conf'))
         return txt
