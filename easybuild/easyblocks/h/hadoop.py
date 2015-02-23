@@ -56,11 +56,7 @@ class EB_Hadoop(Tarball):
         """Custom install procedure for Hadoop: install-by-copy."""
         if self.cfg['build_native_libs']:
             src = os.path.join(self.cfg['start_dir'], 'hadoop-dist', 'target', 'hadoop-%s' % self.version)
-            try:
-                shutil.rmtree(self.installdir)
-                shutil.copytree(src, self.installdir)
-            except OSError, err:
-                self.log.error("Failed to copy contents of %s to install dir %s: %s" % (src, self.installdir, err))
+            super(EB_Hadoop, self).install_step(src=src)
         else:
             super(EB_Hadoop, self).install_step()
 
