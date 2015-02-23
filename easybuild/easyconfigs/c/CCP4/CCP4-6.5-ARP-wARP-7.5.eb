@@ -26,58 +26,55 @@ toolchain = {'name': 'dummy', 'version': ''}
 # You should download the file containing CCP4 Program Suite + ARP/wARP  (64 bit)
 sources = ['%(namelower)s-%(version)s-arp-linux-x86_64.tar.bz2']
 
+ccp4dir = '%(namelower)s-%(version)s'
+arpwarpdir = 'arp_warp_7.5'
+
 postinstallcmds = ['touch $HOME/.agree2ccp4v6',
-                   'cd %(installdir)s/%(namelower)s-%(version)s && ./BINARY.setup',
-                   'cd %(installdir)s/arp_warp_7.5 && ./install.sh ccp4=%(installdir)s/%(namelower)s-%(version)s']
+                   'cd %(installdir)s/' + ccp4dir + ' && ./BINARY.setup',
+                   'cd %(installdir)s/' + arpwarpdir + ' && ./install.sh ccp4=%(installdir)s/' + ccp4dir]
 
 sanity_check_paths = {
-    'files': ["%(namelower)s-%(version)s/bin/ccp4.setup-sh" ], # this file is created after ./BINARY.setup postinstall cmd
-    'dirs': ["%(namelower)s-%(version)s"]
+    'files': [ccp4dir + '/bin/ccp4.setup-sh'], # this file is created after ./BINARY.setup postinstall cmd
+    'dirs': [ccp4dir, arpwarpdir],
 }
 
-# module definition is based on ccp4-6.5/include/ccp4.setup-module
+# module definition is based on installdir/ccp4-6.5/include/ccp4.setup-module
 
 modextrapaths = {
-    prepend-path PATH ${ccp4}/bin
-prepend-path PATH ${ccp4}/etc
-append-path PATH ${ccp4}/share/xia2/Applications
-
-prepend-path MANPATH ${ccp4}/share/man
-
-
-    prepend-path PATH ${arpwarp}/bin/bin-x86_64-Linux
+    'PATH': '%s/bin:$root/%s/etc:$root/%s/bin/bin-x86_64-Linux:$root/%s/share/xia2/Applications' % (ccp4dir, ccp4dir, arpwarpdir, ccp4dir),
+    'MANPATH': '%s/share/man' % ccp4dir
 }
  
 modextravars = {
-    'CCP4_MASTER': 'j',
-    'CCP4': '%s-%s' % (namelower, version),
-    'CCP4I_TCLTK': 'bin',
-    'BALBES_ROOT': 'BALBES',
-# 
-    'GFORTRAN_UNBUFFERED_PRECONNECTED': '1'
-    'CBIN' ${ccp4}/bin'
-    'CLIB': ${ccp4}/lib'
-    'CCP4I_TOP ${ccp4}/share/ccp4i'
-    'CCP4_OPEN UNKNOWN'
-    'MMCIFDIC ${ccp4}/lib/ccp4/cif_mmdic.lib'
-    'CRANK': '${ccp4}/share/ccp4i/crank'
-    'CLIBD_MON': '${ccp4}/lib/data/monomers/
-    'CCP4_HELPDIR': '${ccp4}/help/
-#
-    'CETC ${ccp4}/etc
-    'CEXAM ${ccp4}/examples
-    'CHTML ${ccp4}/html
-    'CINCL ${ccp4}/include
-    'CLIBD ${ccp4}/lib/data
-#
-    'warpbin ${arpwarp}/bin/bin-x86_64-Linux
-    'warpdoc ${arpwarp}/manual
-#
-    'CCP4_SCR ${ccp4_scr}
+    'CCP4_MASTER': '$root',
+    'CCP4': '$root/%s' % ccp4dir,
+    'CCP4I_TCLTK': '$root/%s/bin' % ccp4dir,
+    'BALBES_ROOT': '$root/BALBES',
+
+    'GFORTRAN_UNBUFFERED_PRECONNECTED': '1',
+    'CBIN': '$root/%s/bin' % ccp4dir,
+    'CLIB': '$root/%s/lib' % ccp4dir,
+    'CCP4I_TOP': '$root/%s/share/ccp4i' % ccp4dir,
+    'CCP4_OPEN': 'UNKNOWN',
+    'MMCIFDIC': '$root/%s/lib/ccp4/cif_mmdic.lib' % ccp4dir,
+    'CRANK': '$root/%s/share/ccp4i/crank' % ccp4dir,
+    'CLIBD_MON': '$root/%s/lib/data/monomers/' % ccp4dir,
+    'CCP4_HELPDIR': '$root/%s/help/' % ccp4dir,
+
+    'CETC' : '$root/%s/etc' % ccp4dir,
+    'CEXAM' : '$root/%s/examples' % ccp4dir,
+    'CHTML' : '$root/%s/html' % ccp4dir,
+    'CINCL' : '$root/%s/include' % ccp4dir,
+    'CLIBD' : '$root/%s/lib/data' % ccp4dir,
+
+    'warpbin': '$root/%s/bin/bin-x86_64-Linux' % arpwarpdir,
+    'warpdoc': '$root/%s/manual' % arpwarpdir
+}
+
+#    'CCP4_SCR ${ccp4_scr}
 # TODO: ask Kenneth how to implement it in the easyconf or maybe easyblock
 #if { ! [ file exists $ccp4_scr ] } {
 #    file mkdir $ccp4_scr
 #}
-}
 
 moduleclass = 'bio'
