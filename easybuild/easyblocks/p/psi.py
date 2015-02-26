@@ -74,9 +74,6 @@ class EB_PSI(CMakeMake):
         except OSError, err:
             self.log.error("Failed to prepare for configuration of PSI build: %s" % err)
 
-        # Tell the buildscript how to use BLAS/LAPACK
-        env.setvar('LAPACK', os.getenv('LIBLAPACK_MT'))
-
         env.setvar('F77FLAGS', os.getenv('F90FLAGS'))
 
         # In order to create new plugins with PSI, it needs to know the location of the source
@@ -87,23 +84,29 @@ class EB_PSI(CMakeMake):
         env.setvar('PSI_OBJ_INSTALL_DIR', self.install_psi_objdir)
         env.setvar('PSI_SRC_INSTALL_DIR', self.install_psi_srcdir)
 
+        if self.toolchain.options.get('usempi', None):
+            self.cfg['configopts'] += "-DENABLE_MPI=ON "
+
+        if get_software_root('impi'):
+            self.cfg['configopts'] += "-DENABLE_CSR=ON -DBLAS_TYPE=MKL "
+
         # explicitely specify Python binary to use
         pythonroot = get_software_root('Python')
         if not pythonroot:
             self.log.error("Python module not loaded.")
-        env.setvar('PYTHON', os.path.join(pythonroot, 'bin', 'python'))
 
-        # They have a non-standard variable to define the install path
-        env.setvar('PREFIX', self.installdir)
+        self.cfg['configopts'] += "-DPYTHON_INTERPRETER=%s " % os.path.join(pythonroot, 'bin', 'python')
+        self.cfg['configopts'] += "-DCMAKE_BUILD_TYPE=Release "
 
         # Use EB Boost
         boostroot = get_software_root('Boost')
         if not boostroot:
             self.log.error("Boost module not loaded.")
-        env.setvar('USE_SYSTEM_BOOST', 'TRUE')
 
         # pre 4.0b5, they were using autotools, on newer it's CMake
         if LooseVersion(self.version) <= LooseVersion("4.0b5"):
+            env.setvar('PYTHON', os.path.join(pythonroot, 'bin', 'python'))
+            env.setvar('USE_SYSTEM_BOOST', 'TRUE')
 
             if self.toolchain.options.get('usempi', None):
                 # PSI doesn't require a Fortran compiler itself, but may require it to link to BLAS/LAPACK correctly
@@ -148,7 +151,8 @@ class EB_PSI(CMakeMake):
         # the obj and unpacked sources must remain available for working with plugins
         try:
             for subdir in ['obj', self.psi_srcdir]:
-                shutil.copytree(os.path.join(self.builddir, subdir), os.path.join(self.installdir, subdir))
+                # copy symlinks as symlinks to work around broken symlinks
+                shutil.copytree(os.path.join(self.builddir, subdir), os.path.join(self.installdir, subdir), symlinks=True)
         except OSError, err:
             self.log.error("Failed to copy obj and unpacked sources to install dir: %s" % err)
 
