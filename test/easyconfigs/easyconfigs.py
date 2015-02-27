@@ -43,8 +43,9 @@ import easybuild.main as main
 import easybuild.tools.options as eboptions
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.framework.easyblock import EasyBlock
-from easybuild.framework.easyconfig.easyconfig import ActiveMNS, EasyConfig, fetch_parameter_from_easyconfig_file
+from easybuild.framework.easyconfig.easyconfig import ActiveMNS, EasyConfig
 from easybuild.framework.easyconfig.easyconfig import get_easyblock_class
+from easybuild.framework.easyconfig.parser import fetch_parameters_from_easyconfig
 from easybuild.framework.easyconfig.tools import dep_graph, get_paths_for, process_easyconfig
 from easybuild.tools import config
 from easybuild.tools.module_naming_scheme import GENERAL_CLASS
@@ -59,9 +60,6 @@ single_tests_ok = True
 
 class EasyConfigTest(TestCase):
     """Baseclass for easyconfig testcases."""
-
-    if LooseVersion(sys.version) >= LooseVersion('2.6'):
-        os.environ['EASYBUILD_DEPRECATED'] = '2.0'
 
     # initialize configuration (required for e.g. default modules_tool setting)
     eb_go = eboptions.parse_options()
@@ -221,12 +219,10 @@ def template_easyconfig_test(self, spec):
     msg = "Filename '%s' of parsed easconfig matches expected filename '%s'" % (spec, expected_fn)
     self.assertEqual(os.path.basename(spec), expected_fn, msg)
 
-    # sanity check for software name
-    name = fetch_parameter_from_easyconfig_file(spec, 'name')
-    self.assertTrue(ec['name'], name) 
+    name, easyblock = fetch_parameters_from_easyconfig(ec.rawtxt, ['name', 'easyblock'])
 
-    # try and fetch easyblock spec from easyconfig
-    easyblock = fetch_parameter_from_easyconfig_file(spec, 'easyblock')
+    # sanity check for software name
+    self.assertTrue(ec['name'], name) 
 
     # instantiate easyblock with easyconfig file
     app_class = get_easyblock_class(easyblock, name=name)
