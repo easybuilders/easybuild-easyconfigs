@@ -84,19 +84,10 @@ class EB_PSI(CMakeMake):
         env.setvar('PSI_OBJ_INSTALL_DIR', self.install_psi_objdir)
         env.setvar('PSI_SRC_INSTALL_DIR', self.install_psi_srcdir)
 
-        if self.toolchain.options.get('usempi', None):
-            self.cfg['configopts'] += "-DENABLE_MPI=ON "
-
-        if get_software_root('impi'):
-            self.cfg['configopts'] += "-DENABLE_CSR=ON -DBLAS_TYPE=MKL "
-
         # explicitely specify Python binary to use
         pythonroot = get_software_root('Python')
         if not pythonroot:
             self.log.error("Python module not loaded.")
-
-        self.cfg['configopts'] += "-DPYTHON_INTERPRETER=%s " % os.path.join(pythonroot, 'bin', 'python')
-        self.cfg['configopts'] += "-DCMAKE_BUILD_TYPE=Release "
 
         # Use EB Boost
         boostroot = get_software_root('Boost')
@@ -142,6 +133,15 @@ class EB_PSI(CMakeMake):
 
             ConfigureMake.configure_step(self, cmd_prefix=self.cfg['start_dir'])
         else:
+            self.cfg['configopts'] += "-DPYTHON_INTERPRETER=%s " % os.path.join(pythonroot, 'bin', 'python')
+            self.cfg['configopts'] += "-DCMAKE_BUILD_TYPE=Release "
+
+            if self.toolchain.options.get('usempi', None):
+                self.cfg['configopts'] += "-DENABLE_MPI=ON "
+
+            if get_software_root('impi'):
+                self.cfg['configopts'] += "-DENABLE_CSR=ON -DBLAS_TYPE=MKL "
+
             CMakeMake.configure_step(self, srcdir=self.cfg['start_dir'])
 
     def install_step(self):
