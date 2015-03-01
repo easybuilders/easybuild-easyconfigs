@@ -159,8 +159,8 @@ class EB_PSI(CMakeMake):
     def sanity_check_step(self):
         """Custom sanity check for PSI."""
         custom_paths = {
-            'files': ['bin/psi%s' % self.version.split('.')[0], 'lib/libplugin.a', 'include/libplugin/plugin.h'],
-            'dirs': ['include', 'lib', 'share/psi'],
+            'files': ['bin/psi%s' % self.version.split('.')[0]],
+            'dirs': ['include', 'share/psi'],
         }
         super(EB_PSI, self).sanity_check_step(custom_paths=custom_paths)
 
