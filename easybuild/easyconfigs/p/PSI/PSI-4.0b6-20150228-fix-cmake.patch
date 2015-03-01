@@ -78,16 +78,6 @@ diff --git a/CMakeLists.txt b/CMakeLists.txt
  include_directories(
      ${PROJECT_BINARY_DIR}/include 
      ${PROJECT_SOURCE_DIR}/include
-@@ -225,7 +229,8 @@ set(PSILIB mints_wrapper dfmp2 dfocc scf ccenergy ccsort psimrcc transqt2
-            cchbar cclambda ccdensity transqt ccresponse detci occ mrcc fnocc
-            cceom adc thermo functional disp thce 3index deriv_wrapper optking
-            findif mints trans dpd chkpt iwl psio qt ciomr options moinfo psi4util
--           stable deriv scfgrad int diis plugin parallel parallel2 babel frag efp_solver efp)
-+           stable deriv scfgrad int diis plugin parallel parallel2 babel frag efp_solver efp
-+           parallel parallel2 PsiUtil)
- 
- # PCMSolver
- if(ENABLE_PCMSOLVER)
 @@ -303,9 +308,11 @@ add_subdirectory(lib)
  # Handle creation of Makefile for plugins
  get_property(dirs DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY INCLUDE_DIRECTORIES)
@@ -120,6 +110,59 @@ diff -ur psi4public-3815c4672b20557818d653694ff2cb5c78819708.orig/src/bin/psi4/g
  except:
      branch = "detached?"
  
-+version = "3815c4672b2055"
++version = "14c78eabdca86f8e094576890518d93d300d2500"
 +branch = "master"
  write_version(version, branch)
+diff --git a/doc/sphinxman/CMakeLists.txt b/doc/sphinxman/CMakeLists.txt
+--- a/doc/sphinxman/CMakeLists.txt
++++ b/doc/sphinxman/CMakeLists.txt
+@@ -256,6 +256,24 @@ if(PERL_FOUND AND SPHINX_FOUND)
+         add_custom_target(sphinxpdf
+             DEPENDS sphinxman
+             COMMENT "Preparing Sphinx HTML and PDF documentation build")
++
++        # * full, proper build with latex builder
++        add_custom_command(
++            TARGET sphinxpdf POST_BUILD
++            COMMAND ${SPHINX_EXECUTABLE} 
++                -b latex              # builder
++                -d ${CCBD}/_doctrees  # cache w/ pickled reST
++                -c ${CCBD}/source     # whereabouts of conf.py
++                ${CCBD}/source        # build from
++                ${CCBD}/latex         # build to
++            COMMENT "Building latex documentation ...")
++        add_custom_command(
++            TARGET sphinxpdf POST_BUILD
++            COMMAND ${PDFLATEX_COMPILER}
++                -interaction=nonstopmode 
++                "Psi4.tex" > /dev/null 2>&1
++            WORKING_DIRECTORY ${CCBD}/latex
++            COMMENT "Building remarkably ugly PDF documentation from LaTeX ... (ignore the make exit error)")
+     endif()
+ 
+ 
+@@ -295,24 +313,5 @@ if(PERL_FOUND AND SPHINX_FOUND)
+             ${CCBD}/html
+         COMMENT "Building abridged html documentation ...")
+ 
+-    # * full, proper build with latex builder
+-    add_custom_command(
+-        TARGET sphinxpdf POST_BUILD
+-        COMMAND ${SPHINX_EXECUTABLE} 
+-            -b latex              # builder
+-            -d ${CCBD}/_doctrees  # cache w/ pickled reST
+-            -c ${CCBD}/source     # whereabouts of conf.py
+-            ${CCBD}/source        # build from
+-            ${CCBD}/latex         # build to
+-        COMMENT "Building latex documentation ...")
+-    add_custom_command(
+-        TARGET sphinxpdf POST_BUILD
+-        COMMAND ${PDFLATEX_COMPILER}
+-            -interaction=nonstopmode 
+-            "Psi4.tex" > /dev/null 2>&1
+-        WORKING_DIRECTORY ${CCBD}/latex
+-        COMMENT "Building remarkably ugly PDF documentation from LaTeX ... (ignore the make exit error)")
+-
+-
+ endif(PERL_FOUND AND SPHINX_FOUND)
+ 
