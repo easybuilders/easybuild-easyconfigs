@@ -113,7 +113,7 @@ class EB_GAMESS_minus_US(EasyBlock):
             if mathlib_root is not None:
                 break
         if mathlib_root is None:
-            self.log.error("None of the know math libraries (%s) available, giving up." % known_mathlibs)
+            self.log.error("None of the known math libraries (%s) available, giving up." % known_mathlibs)
         if mathlib == 'imkl':
             mathlib = 'mkl'
             mathlib_root = os.path.join(mathlib_root, 'mkl')
