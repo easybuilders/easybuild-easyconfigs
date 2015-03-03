@@ -32,6 +32,7 @@ EasyBuild support for building and installing PSI, implemented as an easyblock
 from distutils.version import LooseVersion
 import os
 import shutil
+import tempfile
 
 import easybuild.tools.environment as env
 from easybuild.easyblocks.generic.cmakemake import CMakeMake
@@ -160,8 +161,14 @@ class EB_PSI(CMakeMake):
         """
         Run the testsuite of PSI4
         """
-        env.setvar('PSI_SCRATCH', os.getenv('TMPDIR'))
+        testdir = tempfile.mkdtemp()
+        env.setvar('PSI_SCRATCH', testdir)
         super(EB_PSI, self).test_step()
+
+        try:
+            shutil.rmtree(testdir)
+        except OSError, err:
+            self.log.error("Failed to remove test directory %s: %s" % (testdir, err))
 
     def sanity_check_step(self):
         """Custom sanity check for PSI."""
