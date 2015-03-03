@@ -117,8 +117,8 @@ class EB_GAMESS_minus_US(EasyBlock):
         if mathlib == 'imkl':
             mathlib = 'mkl'
             mathlib_root = os.path.join(mathlib_root, 'mkl')
-        elif mathlib == 'OpenBLAS':
-            mathlib = 'blas'
+        else:
+            mathlib = mathlib.lower()
 
         # verify selected DDI communication layer
         known_ddi_comms = ['mpi', 'mixed', 'shmem', 'sockets']
@@ -152,7 +152,6 @@ class EB_GAMESS_minus_US(EasyBlock):
             "Version? [00] ": self.version,
             "Please enter your choice of FORTRAN: ": fortran_comp,
             "hit <return> to continue to the math library setup.": '',
-            "Enter your choice of 'mkl' or 'atlas' or 'acml' or 'none': ": mathlib,
             "MKL pathname? ": mathlib_root,
             "MKL version (or 'skip')? ": 'skip',
             "please hit <return> to compile the GAMESS source code activator": '',
@@ -161,11 +160,14 @@ class EB_GAMESS_minus_US(EasyBlock):
             "Enter MPI library (impi, mvapich2, mpt, sockets):": mpilib,
             "Please enter your %s's location: " % mpilib: mpilib_root,
             "Do you want to try LIBCCHEM?  (yes/no): ": 'no',
+            "Enter full path to OpenBLAS libraries (without 'lib' subdirectory):": mathlib_root,
         }
         stdqa = {
             r"GAMESS directory\? \[.*\] ": self.builddir,
             r"GAMESS build directory\? \[.*\] ": self.installdir,  # building in install directory
             r"Enter only the main version number, such as .*\nVersion\? ": fortran_ver,
+            r"gfortran version.\nPlease enter only the first decimal place, such as .*:": fortran_ver,
+            "Enter your choice of 'mkl' or .* 'none': ": mathlib,
         }
         run_cmd_qa(cmd, qa=qa, std_qa=stdqa, log_all=True, simple=True)
 
