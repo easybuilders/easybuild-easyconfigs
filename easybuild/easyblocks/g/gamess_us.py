@@ -140,6 +140,8 @@ class EB_GAMESS_minus_US(EasyBlock):
             mpilib_path = mpilib_root
             if mpilib == 'impi':
                 mpilib_path = os.path.join(mpilib_root, 'intel64')
+            else:
+                mpilib = mpilib.lower()
 
         # run interactive 'config' script to generate install.info file
         cmd = "%(preconfigopts)s ./config %(configopts)s" % {
