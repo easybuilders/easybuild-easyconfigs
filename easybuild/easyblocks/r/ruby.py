@@ -25,17 +25,20 @@
 """
 EasyBuild support for Ruby, implemented as an easyblock
 
-@author: Robert Schmidt (OHRI)
+@author: Robert Schmidt (Ottawa Hospital Research Institute)
 """
 
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 
 #Seems like the quickest test for whether a gem is installed
+
 EXTS_FILTER_GEMS = ("gem list %(ext_name)s -i", "")
 
 class EB_Ruby(ConfigureMake):
+    """Building and installing Ruby including support for gems"""
     
     def prepare_for_extensions(self):
+        """Sets default class and filter for gems"""
+
         self.cfg['exts_defaultclass'] = "RubyGem"
         self.cfg['exts_filter'] = EXTS_FILTER_GEMS
-

@@ -25,12 +25,12 @@
 """
 EasyBuild support for Ruby Gems, implemented as an easyblock
 
-@author: Robert Schmidt (OHRI)
+@author: Robert Schmidt (Ottawa Hospital Research Institute)
 """
 
 from easybuild.framework.extensioneasyblock import ExtensionEasyBlock
-
 from easybuild.tools.run import run_cmd
+
 
 class RubyGem(ExtensionEasyBlock):
     """ Builds and installs Ruby Gems """
@@ -43,6 +43,7 @@ class RubyGem(ExtensionEasyBlock):
         run_cmd('gem install %s' % (self.ext_src))
 
     def run(self):
+        """Perform the actual Ruby gem build/install"""
         
         if not self.src:
             self.log.error("No source found for Ruby Gem %s, required for installation. (src: %s)" %
@@ -60,7 +61,7 @@ class RubyGem(ExtensionEasyBlock):
         """Skip extraction, gemfiles will be installed as downloaded"""
         pass
         if len(self.src) > 1:
-            self.log.error("Don't know how to handle R packages with multiple sources.'")
+            self.log.error("Don't know how to handle Ruby gems with multiple sources.'")
         else:
             try:
                 shutil.copy2(self.src[0]['path'], self.builddir)
@@ -86,4 +87,3 @@ class RubyGem(ExtensionEasyBlock):
     def install_step(self):
         """Run install for Ruby Gems"""
         self.install_ruby_gem()
-
