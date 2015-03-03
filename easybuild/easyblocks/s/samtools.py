@@ -41,7 +41,7 @@ class EB_SAMtools(ConfigureMake):
                           "misc/zoom2sam.pl", "misc/md5sum-lite", "misc/md5fa", "misc/maq2sam-short",
                           "misc/maq2sam-long", "misc/wgsim", "samtools"]
         
-        self.include_files = ["bam.h", "bam2bcf.h", "bam_endian.h", "errmod.h", "kaln.h",
+        self.include_files = ["bam.h", "bam2bcf.h", "bam_endian.h", "errmod.h",
                               "kprobaln.h",  "sam.h", "sam_header.h", "sample.h"]
 
         if LooseVersion(self.version) <= LooseVersion('0.1.18'):
@@ -61,6 +61,10 @@ class EB_SAMtools(ConfigureMake):
                                     "kseq.h", "ksort.h", "kstring.h"]
         elif LooseVersion(self.version) >= LooseVersion('1.0'):
             self.bin_files += ["misc/plot-bamstats","misc/seq_cache_populate.pl"]
+
+        if LooseVersion(self.version) < LooseVersion('1.2'):
+            # kaln aligner removed in 1.2 (commit 19c9f6)
+            self.include_files += ["kaln.h"]
 
         self.lib_files = ["libbam.a"]
 
