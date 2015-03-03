@@ -156,6 +156,13 @@ class EB_PSI(CMakeMake):
         except OSError, err:
             self.log.error("Failed to copy obj and unpacked sources to install dir: %s" % err)
 
+    def test_step(self):
+        """
+        Run the testsuite of PSI4
+        """
+        env.setvar('PSI_SCRATCH', os.getenv('TMPDIR'))
+        super(EB_PSI, self).test_step()
+
     def sanity_check_step(self):
         """Custom sanity check for PSI."""
         custom_paths = {
