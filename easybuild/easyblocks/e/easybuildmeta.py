@@ -29,11 +29,12 @@ EasyBuild support for installing EasyBuild, implemented as an easyblock
 """
 import copy
 import os
+import re
 from distutils.version import LooseVersion
 
 import easybuild.tools.environment as env
-from easybuild.framework.easyblock import EasyBlock
-from easybuild.easyblocks.generic.pythonpackage import PythonPackage
+from easybuild.easyblocks.generic.pythonpackage import PythonPackage, det_pylibdir
+from easybuild.tools.filetools import read_file
 from easybuild.tools.modules import get_software_root_env_var_name
 from easybuild.tools.ordereddict import OrderedDict
 from easybuild.tools.utilities import flatten
@@ -67,9 +68,14 @@ class EB_EasyBuildMeta(PythonPackage):
     def install_step(self):
         """Install EasyBuild packages one by one."""
 
+        # unset $PYTHONPATH to try and avoid that current EasyBuild is picked up, and ends up in easy-install.pth
+        orig_pythonpath = os.getenv('PYTHONPATH')
+        env.setvar('PYTHONPATH', '')
+
+        easybuild_pkgs = ['framework', 'easyblocks', 'easyconfigs']
         try:
             subdirs = os.listdir(self.builddir)
-            for pkg in ['framework', 'easyblocks', 'easyconfigs']:
+            for pkg in easybuild_pkgs:
                 seldirs = [x for x in subdirs if x.startswith('easybuild-%s' % pkg)]
                 if not len(seldirs) == 1:
                     self.log.error("Failed to find EasyBuild %s package (subdirs: %s, seldirs: %s)" % (pkg, subdirs, seldirs))
@@ -81,16 +87,27 @@ class EB_EasyBuildMeta(PythonPackage):
         except OSError, err:
             self.log.error("Failed to install EasyBuild packages: %s" % err)
 
+        env.setvar('PYTHONPATH', orig_pythonpath)
+
+        # check whether easy-install.pth contains correct entries
+        easy_install_pth = os.path.join(self.installdir, det_pylibdir(), 'easy-install.pth')
+        easy_install_pth_txt = read_file(easy_install_pth)
+        for pkg in easybuild_pkgs:
+            pkg_regex = re.compile(r"^\./easybuild_%s-%s" % (pkg, self.version), re.M)
+            if not pkg_regex.search(easy_install_pth_txt):
+                tup = (pkg_regex.pattern, easy_install_pth, easy_install_pth_txt)
+                self.log.error("Failed to find pattern '%s' in %s: %s" % tup)
+
     def sanity_check_step(self):
         """Custom sanity check for EasyBuild."""
 
         # list of dirs to check, by package
         # boolean indicates whether dir is expected to reside in Python lib/pythonX/site-packages dir
         subdirs_by_pkg = [
-                          ('framework', [('easybuild/framework', True), ('easybuild/tools', True)]),
-                          ('easyblocks', [('easybuild/easyblocks', True)]),
-                          ('easyconfigs', [('easybuild/easyconfigs', False)]),
-                         ]
+            ('framework', [('easybuild/framework', True), ('easybuild/tools', True)]),
+            ('easyblocks', [('easybuild/easyblocks', True)]),
+            ('easyconfigs', [('easybuild/easyconfigs', False)]),
+        ]
 
         # final list of directories to check, by setup tool
         # order matters, e.g. setuptools before distutils
