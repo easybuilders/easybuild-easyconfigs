@@ -40,7 +40,7 @@ class RubyGem(ExtensionEasyBlock):
 
     def install_ruby_gem(self):
         """install ruby gems using gem package manager"""
-        run_cmd('gem install --ignore-dependencies %s' % (self.ext_src))
+        run_cmd('gem install --local %s' % (self.ext_src))
 
     def run(self):
         """Perform the actual Ruby gem build/install"""
