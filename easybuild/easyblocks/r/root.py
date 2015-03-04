@@ -50,9 +50,10 @@ class EB_ROOT(ConfigureMake):
 
         self.cfg.update('configopts', "--etcdir=%s/etc/root " % self.installdir)
 
-        cmd = "./configure %s --prefix=%s %s" % (self.cfg['arch'],
-                                                 self.installdir,
-                                                 self.cfg['configopts'])
+        cmd = "%s ./configure %s --prefix=%s %s" % (self.cfg['preconfigopts'],
+                                                    self.cfg['arch'],
+                                                    self.installdir,
+                                                    self.cfg['configopts'])
 
         run_cmd(cmd, log_all=True, log_ok=True, simple=True)
 
