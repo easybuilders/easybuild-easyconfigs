@@ -50,6 +50,10 @@ class EB_EasyBuildMeta(PythonPackage):
         super(EB_EasyBuildMeta, self).__init__(*args, **kwargs)
         self.orig_orig_environ = None
 
+        self.easybuild_pkgs = ['easybuild-framework', 'easybuild-easyblocks', 'easybuild-easyconfigs']
+        if LooseVersion(self.version) >= LooseVersion('2.0'):
+            self.easybuild_pkgs.insert(0, 'vsc-base')
+
     def check_readiness_step(self):
         """Make sure EasyBuild can be installed with a loaded EasyBuild module."""
         env_var_name = get_software_root_env_var_name(self.name)
@@ -72,13 +76,9 @@ class EB_EasyBuildMeta(PythonPackage):
         orig_pythonpath = os.getenv('PYTHONPATH')
         env.setvar('PYTHONPATH', '')
 
-        easybuild_pkgs = ['easybuild-framework', 'easybuild-easyblocks', 'easybuild-easyconfigs']
-        if LooseVersion(self.version) >= LooseVersion('2.0'):
-            easybuild_pkgs.insert(0, 'vsc-base')
-
         try:
             subdirs = os.listdir(self.builddir)
-            for pkg in easybuild_pkgs:
+            for pkg in self.easybuild_pkgs:
                 seldirs = [x for x in subdirs if x.startswith(pkg)]
                 if not len(seldirs) == 1:
                     self.log.error("Failed to find EasyBuild %s package (subdirs: %s, seldirs: %s)" % (pkg, subdirs, seldirs))
@@ -92,37 +92,42 @@ class EB_EasyBuildMeta(PythonPackage):
 
         env.setvar('PYTHONPATH', orig_pythonpath)
 
-        # check whether easy-install.pth contains correct entries
-        easy_install_pth = os.path.join(self.installdir, det_pylibdir(), 'easy-install.pth')
-        easy_install_pth_txt = read_file(easy_install_pth)
-        for pkg in easybuild_pkgs:
-            if pkg == 'vsc-base':
-                # don't include strict version check for vsc-base
-                pkg_regex = re.compile(r"^\./%s" % pkg.replace('-', '_'), re.M)
-            else:
-                major_minor_version = '.'.join(self.version.split('.')[:2])
-                pkg_regex = re.compile(r"^\./%s-%s" % (pkg.replace('-', '_'), major_minor_version), re.M)
-
-            if not pkg_regex.search(easy_install_pth_txt):
-                tup = (pkg_regex.pattern, easy_install_pth, easy_install_pth_txt)
-                self.log.error("Failed to find pattern '%s' in %s: %s" % tup)
-
     def sanity_check_step(self):
         """Custom sanity check for EasyBuild."""
 
+        # check whether easy-install.pth contains correct entries
+        easy_install_pth = os.path.join(self.installdir, det_pylibdir(), 'easy-install.pth')
+        if os.path.exists(easy_install_pth):
+            easy_install_pth_txt = read_file(easy_install_pth)
+            for pkg in self.easybuild_pkgs:
+                if pkg == 'vsc-base':
+                    # don't include strict version check for vsc-base
+                    pkg_regex = re.compile(r"^\./%s" % pkg.replace('-', '_'), re.M)
+                else:
+                    major_minor_version = '.'.join(self.version.split('.')[:2])
+                    pkg_regex = re.compile(r"^\./%s-%s" % (pkg.replace('-', '_'), major_minor_version), re.M)
+
+                if not pkg_regex.search(easy_install_pth_txt):
+                    tup = (pkg_regex.pattern, easy_install_pth, easy_install_pth_txt)
+                    self.log.error("Failed to find pattern '%s' in %s: %s" % tup)
+
         # list of dirs to check, by package
         # boolean indicates whether dir is expected to reside in Python lib/pythonX/site-packages dir
-        subdirs_by_pkg = [
-            ('framework', [('easybuild/framework', True), ('easybuild/tools', True)]),
-            ('easyblocks', [('easybuild/easyblocks', True)]),
-            ('easyconfigs', [('easybuild/easyconfigs', False)]),
-        ]
+        subdirs_by_pkg = {
+            'easybuild-framework': [('easybuild/framework', True), ('easybuild/tools', True)],
+            'easybuild-easyblocks': [('easybuild/easyblocks', True)],
+            'easybuild-easyconfigs': [('easybuild/easyconfigs', False)],
+        }
+        if LooseVersion(self.version) >= LooseVersion('2.0'):
+            subdirs_by_pkg.update({
+                'vsc-base': [('vsc/utils', True)],
+            })
 
         # final list of directories to check, by setup tool
         # order matters, e.g. setuptools before distutils
         eb_dirs = OrderedDict()
         eb_dirs['setuptools'] = []
-        eb_dirs['distutils.core'] = flatten([x[1] for x in subdirs_by_pkg])
+        eb_dirs['distutils.core'] = flatten([x for x in subdirs_by_pkg.values()])
 
         # determine setup tool (setuptools or distutils)
         setup_tool = None
@@ -141,10 +146,10 @@ class EB_EasyBuildMeta(PythonPackage):
         if setup_tool == 'setuptools':
             try:
                 installed_dirs = os.listdir(os.path.join(self.installdir, self.pylibdir))
-                for (pkg, subdirs) in subdirs_by_pkg:
-                    sel_dirs = [x for x in installed_dirs if x.startswith('easybuild_%s' % pkg)]
+                for (pkg, subdirs) in subdirs_by_pkg.items():
+                    sel_dirs = [x for x in installed_dirs if x.startswith(pkg.replace('-', '_'))]
                     if not len(sel_dirs) == 1:
-                        self.log.error("Failed to isolate installed egg dir for easybuild-%s" % pkg)
+                        self.log.error("Failed to isolate installed egg dir for %s" % pkg)
 
                     for (subdir, _) in subdirs:
                         # eggs always go in Python lib/pythonX/site-packages dir with setuptools 
