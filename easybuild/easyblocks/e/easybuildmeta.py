@@ -72,11 +72,14 @@ class EB_EasyBuildMeta(PythonPackage):
         orig_pythonpath = os.getenv('PYTHONPATH')
         env.setvar('PYTHONPATH', '')
 
-        easybuild_pkgs = ['framework', 'easyblocks', 'easyconfigs']
+        easybuild_pkgs = ['easybuild-framework', 'easybuild-easyblocks', 'easybuild-easyconfigs']
+        if LooseVersion(self.version) >= LooseVersion('2.0'):
+            easybuild_pkgs.insert(0, 'vsc-base')
+
         try:
             subdirs = os.listdir(self.builddir)
             for pkg in easybuild_pkgs:
-                seldirs = [x for x in subdirs if x.startswith('easybuild-%s' % pkg)]
+                seldirs = [x for x in subdirs if x.startswith(pkg)]
                 if not len(seldirs) == 1:
                     self.log.error("Failed to find EasyBuild %s package (subdirs: %s, seldirs: %s)" % (pkg, subdirs, seldirs))
 
@@ -93,7 +96,13 @@ class EB_EasyBuildMeta(PythonPackage):
         easy_install_pth = os.path.join(self.installdir, det_pylibdir(), 'easy-install.pth')
         easy_install_pth_txt = read_file(easy_install_pth)
         for pkg in easybuild_pkgs:
-            pkg_regex = re.compile(r"^\./easybuild_%s-%s" % (pkg, self.version), re.M)
+            if pkg == 'vsc-base':
+                # don't include strict version check for vsc-base
+                pkg_regex = re.compile(r"^\./%s" % pkg.replace('-', '_'), re.M)
+            else:
+                major_minor_version = '.'.join(self.version.split('.')[:2])
+                pkg_regex = re.compile(r"^\./%s-%s" % (pkg.replace('-', '_'), major_minor_version), re.M)
+
             if not pkg_regex.search(easy_install_pth_txt):
                 tup = (pkg_regex.pattern, easy_install_pth, easy_install_pth_txt)
                 self.log.error("Failed to find pattern '%s' in %s: %s" % tup)
