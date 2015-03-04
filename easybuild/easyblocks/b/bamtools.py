@@ -1,5 +1,5 @@
 ##
-# Copyright 2009-2013 The Cyprus Institute 
+# Copyright 2009-2015 The Cyprus Institute 
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
