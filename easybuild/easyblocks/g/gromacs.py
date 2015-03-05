@@ -54,7 +54,10 @@ class EB_GROMACS(CMakeMake):
             # Don't use the X window system
             self.cfg.update('configopts', "--without-x")
 
-            # OpenMPI is not supported for versions older than 4.5.
+            if self.toolchain.options.get('usempi', None):
+                self.cfg.update('configopts', "--enable-mpi --program-suffix='mpi'")
+
+            # OpenMP is not supported for versions older than 4.5.
             if LooseVersion(self.version) >= LooseVersion('4.5'):
                 # enable OpenMP support if desired
                 if self.toolchain.options.get('openmp', None):
@@ -149,6 +152,7 @@ class EB_GROMACS(CMakeMake):
         """ For older versions of GROMACS, allow for a separate mdrun build if
             MPI support has been requested. """
         if LooseVersion(self.version) < LooseVersion('4.6'):
+            self.cfg.update("prebuildopts", 'LIBS="${EBVARLIBLAPACK} ${LIBS}"')
             if "--enable-mpi" in self.cfg['configopts']:
                 self.cfg.update("buildopts", "mdrun")
         super(EB_GROMACS, self).build_step()
@@ -166,6 +170,8 @@ class EB_GROMACS(CMakeMake):
         # allow to escape testing by setting runtest to False
         if not self.cfg['runtest'] and not isinstance(self.cfg['runtest'], bool):
             self.cfg['runtest'] = 'check'
+            if LooseVersion(self.version) < LooseVersion('4.6'):
+                self.cfg['runtest'] = 'LIBS="${EBVARLIBLAPACK} ${LIBS}" check'
 
         # make very sure OMP_NUM_THREADS is set to 1, to avoid hanging GROMACS regression test
         env.setvar('OMP_NUM_THREADS', '1')
