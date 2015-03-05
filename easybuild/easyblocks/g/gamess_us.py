@@ -45,7 +45,7 @@ import tempfile
 import easybuild.tools.toolchain as toolchain
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import CUSTOM, MANDATORY
-from easybuild.tools.filetools import read_file, write_file
+from easybuild.tools.filetools import mkdir, read_file, write_file
 from easybuild.tools.modules import get_software_root, get_software_version
 from easybuild.tools.run import run_cmd, run_cmd_qa
 from easybuild.tools.systemtools import get_platform_name
@@ -219,7 +219,9 @@ class EB_GAMESS_minus_US(EasyBlock):
         """Run GAMESS-US tests (if 'runtest' easyconfig parameter is set to True)."""
         # don't use provided 'runall' script for tests, since that only runs the tests single-core
         if self.cfg['runtest']:
-            testdir = tempfile.mkdtemp()
+            # make sure test dir doesn't contain '[' or ']', csh doesn't handle that well ("set: No match")
+            testdir = re.sub(r'[\[\]]', '-', tempfile.mkdtemp())
+            mkdir(testdir, parents=True)
             try:
                 cwd = os.getcwd()
                 os.chdir(testdir)
@@ -236,7 +238,10 @@ class EB_GAMESS_minus_US(EasyBlock):
             rungms = os.path.join(self.installdir, 'rungms')
             test_env_vars = ['TMPDIR=%s' % testdir]
             if self.toolchain.mpi_family() == toolchain.INTELMPI:
-                test_env_vars.append('I_MPI_FALLBACK=enable')
+                test_env_vars.extend([
+                    'I_MPI_FALLBACK=enable',  # enable fallback in case first fabric fails (see $I_MPI_FABRICS_LIST)
+                    'I_MPI_HYDRA_BOOTSTRAP=fork',  # tests are only run locally (2 processes), so no SSH required
+                ])
 
             # run all exam<id> tests, dump output to exam<id>.log
             n_tests = 47
