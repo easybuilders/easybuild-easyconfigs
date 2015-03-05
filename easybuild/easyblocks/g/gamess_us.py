@@ -71,6 +71,12 @@ class EB_GAMESS_minus_US(EasyBlock):
         """Easyblock constructor, enable building in installation directory."""
         super(EB_GAMESS_minus_US, self).__init__(*args, **kwargs)
         self.build_in_installdir = True
+        self.testdir = None
+        if self.cfg['runtest']:
+            self.testdir = tempfile.mkdtemp()
+            # make sure test dir doesn't contain [ or ], rungms csh script doesn't handle that well ("set: No match")
+            if re.search(r'[\[\]]', self.testdir):
+                self.log.error("Temporary dir for tests '%s' will cause problems with rungms csh script" % self.testdir)
 
     def extract_step(self):
         """Extract sources."""
@@ -219,12 +225,9 @@ class EB_GAMESS_minus_US(EasyBlock):
         """Run GAMESS-US tests (if 'runtest' easyconfig parameter is set to True)."""
         # don't use provided 'runall' script for tests, since that only runs the tests single-core
         if self.cfg['runtest']:
-            # make sure test dir doesn't contain '[' or ']', csh doesn't handle that well ("set: No match")
-            testdir = re.sub(r'[\[\]]', '-', tempfile.mkdtemp())
-            mkdir(testdir, parents=True)
             try:
                 cwd = os.getcwd()
-                os.chdir(testdir)
+                os.chdir(self.testdir)
             except OSError, err:
                 self.log.error("Failed to move to temporary directory for running tests: %s" % err)
 
@@ -236,7 +239,7 @@ class EB_GAMESS_minus_US(EasyBlock):
                     self.log.error("Failed to copy %s to %s: %s" % (test_input, os.getcwd(), err))
 
             rungms = os.path.join(self.installdir, 'rungms')
-            test_env_vars = ['TMPDIR=%s' % testdir]
+            test_env_vars = ['TMPDIR=%s' % self.testdir]
             if self.toolchain.mpi_family() == toolchain.INTELMPI:
                 test_env_vars.extend([
                     'I_MPI_FALLBACK=enable',  # enable fallback in case first fabric fails (see $I_MPI_FABRICS_LIST)
@@ -262,9 +265,9 @@ class EB_GAMESS_minus_US(EasyBlock):
             # cleanup
             os.chdir(cwd)
             try:
-                shutil.rmtree(testdir)
+                shutil.rmtree(self.testdir)
             except OSError, err:
-                self.log.error("Failed to remove test directory %s: %s" % (testdir, err))
+                self.log.error("Failed to remove test directory %s: %s" % (self.testdir, err))
 
     def install_step(self):
         """Skip install step, since we're building in the install directory."""
