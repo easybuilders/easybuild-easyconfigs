@@ -35,10 +35,18 @@ from vsc.utils.missing import any
 import easybuild.tools.environment as env
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.easyblocks.generic.cmakemake import CMakeMake
+from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.modules import get_software_root
 
 class EB_GROMACS(CMakeMake):
     """Support for building/installing GROMACS."""
+
+    @staticmethod
+    def extra_options():
+        extra_vars = {
+            'mpisuffix': ['_mpi', "Suffix to append to MPI-enabled executables", CUSTOM],
+        }
+        return ConfigureMake.extra_options(extra_vars)
 
     def configure_step(self):
         """Custom configuration procedure for GROMACS: set configure options for configure or cmake."""
@@ -55,7 +63,7 @@ class EB_GROMACS(CMakeMake):
             self.cfg.update('configopts', "--without-x")
 
             if self.toolchain.options.get('usempi', None):
-                self.cfg.update('configopts', "--enable-mpi --program-suffix='mpi'")
+                self.cfg.update('configopts', "--enable-mpi --program-suffix={0}".format(self.cfg['mpisuffix']))
 
             # OpenMP is not supported for versions older than 4.5.
             if LooseVersion(self.version) >= LooseVersion('4.5'):
@@ -64,6 +72,8 @@ class EB_GROMACS(CMakeMake):
                     self.cfg.update('configopts', "--enable-threads")
                 else:
                     self.cfg.update('configopts', "--disable-threads")
+            elif self.toolchain.options.get('openmp', None):
+                self.log.error("GROMACS version {0} does not support OpenMP.".format(LooseVersion(self.version)))
 
             # GSL support
             if get_software_root('GSL'):
@@ -183,16 +193,25 @@ class EB_GROMACS(CMakeMake):
 
         suff = ''
         if self.toolchain.options.get('usempi', None):
-            suff = '_mpi'
+            suff = self.cfg['mpisuffix']
 
         # check for a handful of binaries/libraries that should be there
         libnames = ['gromacs']
         if LooseVersion(self.version) < LooseVersion('5.0'):
-            libnames = ['gmxana', 'gmx', 'gmxpreprocess', 'md']
+            libnames = ['gmxana', 'gmx', 'md']
+            # I don't know when the gmxpreprocess library was introduced.
+            # This LooseVersion number may have to be tweaked.
+            if LooseVersion(self.version) > LooseVersion('3.3.3'):
+                libnames.append('gmxpreprocess')
         libs = ['lib%s%s.a' % (libname, suff) for libname in libnames]
+        dirs = ['include/gromacs']
+        # I don't know when the pkgconfig directory was introduced.
+        # This LooseVersion number may have to be tweaked.
+        if LooseVersion(self.version) > LooseVersion('3.3.3'):
+            dirs.append(('lib/pkgconfig', 'lib64/pkgconfig'))
         custom_paths = {
             'files': ['bin/%s%s' % (binary, suff) for binary in ['editconf', 'g_lie', 'genbox', 'genconf', 'mdrun']] +
                      [(os.path.join('lib', lib), os.path.join('lib64', lib)) for lib in libs],
-            'dirs': ['include/gromacs', ('lib/pkgconfig', 'lib64/pkgconfig')],
+            'dirs': dirs,
         }
         super(EB_GROMACS, self).sanity_check_step(custom_paths=custom_paths)
