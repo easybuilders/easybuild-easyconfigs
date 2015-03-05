@@ -42,6 +42,7 @@ import shutil
 import sys
 import tempfile
 
+import easybuild.tools.toolchain as toolchain
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import CUSTOM, MANDATORY
 from easybuild.tools.filetools import read_file, write_file
@@ -232,10 +233,15 @@ class EB_GAMESS_minus_US(EasyBlock):
                 except OSError, err:
                     self.log.error("Failed to copy %s to %s: %s" % (test_input, os.getcwd(), err))
 
+            rungms = os.path.join(self.installdir, 'rungms')
+            test_env_vars = ['TMPDIR=%s' % testdir]
+            if self.toolchain.mpi_family() == toolchain.INTELMPI:
+                test_env_vars.append('I_MPI_FALLBACK=enable')
+
             # run all exam<id> tests, dump output to exam<id>.log
             n_tests = 47
             for i in range(1, n_tests+1):
-                test_cmd = ' '.join([os.path.join(self.installdir, 'rungms'), 'exam%02d' % i, self.version, '1', '2'])
+                test_cmd = ' '.join(test_env_vars + [rungms, 'exam%02d' % i, self.version, '1', '2'])
                 (out, _) = run_cmd(test_cmd, log_all=True, simple=False)
                 write_file('exam%02d.log' % i, out)
 
