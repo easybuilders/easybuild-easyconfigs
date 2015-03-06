@@ -35,6 +35,7 @@ Support for building and installing Clang, implemented as an easyblock.
 import fileinput
 import glob
 import os
+import re
 import shutil
 import sys
 from distutils.version import LooseVersion
@@ -196,36 +197,54 @@ class EB_Clang(CMakeMake):
         super(EB_Clang, self).configure_step(srcdir=self.llvm_src_dir)
 
     def disable_sanitizer_tests(self):
-        """Disable the tests of all the sanitizers"""
-        patchfiles = [
-            "projects/compiler-rt/lib/asan/CMakeLists.txt",
-            "projects/compiler-rt/lib/dfsan/CMakeLists.txt",
-            "projects/compiler-rt/lib/lsan/CMakeLists.txt",
-            "projects/compiler-rt/lib/msan/CMakeLists.txt",
-            "projects/compiler-rt/lib/tsan/CMakeLists.txt",
-            "projects/compiler-rt/lib/ubsan/CMakeLists.txt",
-        ]
+        """Disable the tests of all the sanitizers by removing the test directories from the build system"""
+        if LooseVersion(self.version) < LooseVersion('3.6'):
+            # for Clang 3.5 and lower, the tests are scattered over several CMakeLists.
+            # We loop over them, and patch out the rule that adds the sanitizers tests to the testsuite
+            patchfiles = [
+                "lib/asan",
+                "lib/dfsan",
+                "lib/lsan",
+                "lib/msan",
+                "lib/tsan",
+                "lib/ubsan",
+            ]
 
-        for patchfile in patchfiles:
+            for patchfile in patchfiles:
+                patchfile_fp = os.path.join(self.llvm_src_dir, "projects/compiler-rt", patchfile, "CMakeLists.txt")
+                if os.path.exists(patchfile_fp):
+                    self.log.debug("Patching %s in %s" % (patchfile, self.llvm_src_dir))
+                    try:
+                        for line in fileinput.input(patchfile_fp, inplace=1, backup='.orig'):
+                            if "add_subdirectory(lit_tests)" not in line:
+                                sys.stdout.write(line)
+                    except (IOError, OSError), err:
+                        self.log.error("Failed to patch %s: %s" % (patchfile_fp, err))
+                else:
+                    self.log.debug("Not patching non-existent %s in %s" % (patchfile, self.llvm_src_dir))
+
+            # There is a common part seperate for the specific saniters, we disable all
+            # the common tests
+            patchfile = "projects/compiler-rt/lib/sanitizer_common/CMakeLists.txt"
+            try:
+                for line in fileinput.input("%s/%s" % (self.llvm_src_dir, patchfile), inplace=1, backup='.orig'):
+                    if "add_subdirectory(tests)" not in line:
+                        sys.stdout.write(line)
+            except IOError, err:
+                self.log.error("Failed to patch %s/%s: %s" % (self.llvm_src_dir, patchfile, err))
+        else:
+            # In Clang 3.6, the sanitizer tests are grouped together in one CMakeLists
+            # We patch out adding the subdirectories with the sanitizer tests
+            patchfile = "projects/compiler-rt/test/CMakeLists.txt"
             patchfile_fp = os.path.join(self.llvm_src_dir, patchfile)
-            if os.path.exists(patchfile_fp):
-                self.log.debug("Patching %s in %s" % (patchfile, self.llvm_src_dir))
-                try:
-                    for line in fileinput.input(patchfile_fp, inplace=1, backup='.orig'):
-                        if "add_subdirectory(lit_tests)" not in line:
-                            sys.stdout.write(line)
-                except (IOError, OSError), err:
-                    self.log.error("Failed to patch %s: %s" % (patchfile_fp, err))
-            else:
-                self.log.debug("Not patching non-existent %s in %s" % (patchfile, self.llvm_src_dir))
-
-        patchfile = "projects/compiler-rt/lib/sanitizer_common/CMakeLists.txt"
-        try:
-            for line in fileinput.input("%s/%s" % (self.llvm_src_dir, patchfile), inplace=1, backup='.orig'):
-                if "add_subdirectory(tests)" not in line:
-                    sys.stdout.write(line)
-        except IOError, err:
-            self.log.error("Failed to patch %s/%s: %s" % (self.llvm_src_dir, patchfile, err))
+            self.log.debug("Patching %s in %s" % (patchfile, self.llvm_src_dir))
+            patch_regex = re.compile(r'add_subdirectory\((.*san|sanitizer_common)\)')
+            try:
+                for line in fileinput.input(patchfile_fp, inplace=1, backup='.orig'):
+                    if not patch_regex.search(line):
+                        sys.stdout.write(line)
+            except IOError, err:
+                self.log.error("Failed to patch %s: %s" % (patchfile_fp, err))
 
     def build_with_prev_stage(self, prev_obj, next_obj):
         """Build Clang stage N using Clang stage N-1"""
