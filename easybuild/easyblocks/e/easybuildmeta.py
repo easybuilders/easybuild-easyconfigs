@@ -69,14 +69,16 @@ class EB_EasyBuildMeta(PythonPackage):
 
         try:
             subdirs = os.listdir(self.builddir)
-            for pkg in ['easyconfigs', 'easyblocks', 'framework']:
-                seldirs = [x for x in subdirs if x.startswith('easybuild-%s-' % pkg)]
+            for pkg in ['vsc-base', 'easybuild-framework', 'easybuild-easyblocks', 'easybuild-easyconfigs']:
+                seldirs = [x for x in subdirs if x.startswith(pkg)]
                 if not len(seldirs) == 1:
-                    self.log.error("Failed to find EasyBuild %s package (subdirs: %s, seldirs: %s)" % (pkg, subdirs, seldirs))
-
-                self.log.debug("Installing EasyBuild package %s" % pkg)
-                os.chdir(os.path.join(self.builddir, seldirs[0]))
-                super(EB_EasyBuildMeta, self).install_step()
+                    if pkg != 'vsc-base':
+                        tup = (pkg, subdirs, seldirs)
+                        self.log.error("Failed to find EasyBuild %s package (subdirs: %s, seldirs: %s)" % tup)
+                else:
+                    self.log.debug("Installing EasyBuild package %s" % pkg)
+                    os.chdir(os.path.join(self.builddir, seldirs[0]))
+                    super(EB_EasyBuildMeta, self).install_step()
 
         except OSError, err:
             self.log.error("Failed to install EasyBuild packages: %s" % err)
