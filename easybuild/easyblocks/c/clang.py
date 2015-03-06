@@ -199,8 +199,8 @@ class EB_Clang(CMakeMake):
     def disable_sanitizer_tests(self):
         """Disable the tests of all the sanitizers by removing the test directories from the build system"""
         if LooseVersion(self.version) < LooseVersion('3.6'):
-        # for Clang 3.5 and lower, the tests are scattered over several CMakeLists.
-        # We loop over them, and patch out the rule that adds the sanitizers tests to the testsuite
+            # for Clang 3.5 and lower, the tests are scattered over several CMakeLists.
+            # We loop over them, and patch out the rule that adds the sanitizers tests to the testsuite
             patchfiles = [
                 "lib/asan",
                 "lib/dfsan",
