@@ -1,5 +1,5 @@
 ##
-# Copyright 2009-2013 Ghent University
+# Copyright 2009-2015 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -55,15 +55,17 @@ class Tarball(EasyBlock):
         """
         pass
 
-    def install_step(self):
+    def install_step(self, src=None):
+        """Install by copying from specified source directory (or 'start_dir' if not specified)."""
+        if src is None:
+            src = self.cfg['start_dir']
 
-        src = self.cfg['start_dir']
         # shutil.copytree cannot handle destination dirs that exist already.
         # On the other hand, Python2.4 cannot create entire paths during copytree.
         # Therefore, only the final directory is deleted.
         rmtree2(self.installdir)
         try:
             # self.cfg['keepsymlinks'] is False by default except when explicitly put to True in .eb file
-            shutil.copytree(src,self.installdir, symlinks=self.cfg['keepsymlinks'])
-        except:
-            self.log.exception("Copying %s to installation dir %s failed" % (src,self.installdir))
+            shutil.copytree(src, self.installdir, symlinks=self.cfg['keepsymlinks'])
+        except OSError, err:
+            self.log.error("Copying %s to installation dir %s failed: %s" % (src, self.installdir, err))

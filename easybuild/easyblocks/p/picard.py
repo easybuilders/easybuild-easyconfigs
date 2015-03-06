@@ -1,5 +1,5 @@
 ##
-# Copyright 2009-2013 Ghent University
+# Copyright 2009-2015 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -36,6 +36,7 @@ import os
 import re
 import shutil
 
+from distutils.version import LooseVersion
 from easybuild.framework.easyblock import EasyBlock
 
 
@@ -70,8 +71,11 @@ class EB_picard(EasyBlock):
 
     def sanity_check_step(self):
         """Custom sanity check for picard"""
+        jar_files = ['picard']
+        if LooseVersion(self.version) < LooseVersion('1.115'):
+            jar_files.append('sam')
         custom_paths = {
-            'files': ["%s-%s.jar" % (x, self.version) for x in ['picard', 'sam']],
+            'files': ["%s-%s.jar" % (x, self.version) for x in jar_files],
             'dirs': [],
         }
         super(EB_picard, self).sanity_check_step(custom_paths=custom_paths)

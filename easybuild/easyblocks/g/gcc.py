@@ -1,5 +1,5 @@
 ##
-# Copyright 2009-2014 Ghent University
+# Copyright 2009-2015 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -525,7 +525,7 @@ class EB_GCC(ConfigureMake):
             bin_files.append('gfortran')
             lib_files.extend(['libgfortran.%s' % sharedlib_ext, 'libgfortran.a'])
 
-        if 'lto' in self.cfg['languages']:
+        if self.cfg['withlto']:
             libexec_files.extend(['lto1', 'lto-wrapper'])
             if os_type in ['Linux']:
                 libexec_files.append('liblto_plugin.%s' % sharedlib_ext)

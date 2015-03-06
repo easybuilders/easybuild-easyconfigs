@@ -1,5 +1,5 @@
 ##
-# Copyright 2009-2013 Ghent University
+# Copyright 2009-2015 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -774,7 +774,7 @@ class EB_CP2K(EasyBlock):
 
         cp2k_type = self.cfg['type']
         custom_paths = {
-            'files': ["bin/%s.%s" % (x, cp2k_type) for x in ["cp2k", "cp2k_shell", "fes"]],
+            'files': ["bin/%s.%s" % (x, cp2k_type) for x in ["cp2k", "cp2k_shell"]],
             'dirs': ["tests"]
         }
 

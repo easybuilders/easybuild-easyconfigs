@@ -1,5 +1,5 @@
 ##
-# Copyright 2009-2013 Ghent University
+# Copyright 2009-2015 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -69,12 +69,9 @@ class EB_MrBayes(ConfigureMake):
             if beagle:
                 self.cfg.update('configopts', '--with-beagle=%s' % beagle)
             else:
-                beagle = get_software_root('BEAGLE')
-                if beagle:
-                    self.log.deprecated('BEAGLE module as dependency, should be beagle-lib', '2.0')
-                    self.cfg.update('configopts', '--with-beagle=%s' % beagle)
-                else:
-                    self.log.error("beagle-lib module not loaded?")
+                if get_software_root('BEAGLE'):
+                    self.log.nosupport('BEAGLE module as dependency, should be beagle-lib', '2.0')
+                self.log.error("beagle-lib module not loaded?")
 
             if self.toolchain.options.get('usempi', None):
                 self.cfg.update('configopts', '--enable-mpi')
