@@ -197,19 +197,21 @@ class EB_Clang(CMakeMake):
         super(EB_Clang, self).configure_step(srcdir=self.llvm_src_dir)
 
     def disable_sanitizer_tests(self):
-        """Disable the tests of all the sanitizers"""
+        """Disable the tests of all the sanitizers by removing the test directories from the build system"""
         if LooseVersion(self.version) < LooseVersion('3.6'):
+        # for Clang 3.5 and lower, the tests are scattered over several CMakeLists.
+        # We loop over them, and patch out the rule that adds the sanitizers tests to the testsuite
             patchfiles = [
-                "projects/compiler-rt/lib/asan/CMakeLists.txt",
-                "projects/compiler-rt/lib/dfsan/CMakeLists.txt",
-                "projects/compiler-rt/lib/lsan/CMakeLists.txt",
-                "projects/compiler-rt/lib/msan/CMakeLists.txt",
-                "projects/compiler-rt/lib/tsan/CMakeLists.txt",
-                "projects/compiler-rt/lib/ubsan/CMakeLists.txt",
+                "lib/asan",
+                "lib/dfsan",
+                "lib/lsan",
+                "lib/msan",
+                "lib/tsan",
+                "lib/ubsan",
             ]
 
             for patchfile in patchfiles:
-                patchfile_fp = os.path.join(self.llvm_src_dir, patchfile)
+                patchfile_fp = os.path.join(self.llvm_src_dir, "projects/compiler-rt", patchfile, "CMakeLists.txt")
                 if os.path.exists(patchfile_fp):
                     self.log.debug("Patching %s in %s" % (patchfile, self.llvm_src_dir))
                     try:
@@ -221,6 +223,8 @@ class EB_Clang(CMakeMake):
                 else:
                     self.log.debug("Not patching non-existent %s in %s" % (patchfile, self.llvm_src_dir))
 
+            # There is a common part seperate for the specific saniters, we disable all
+            # the common tests
             patchfile = "projects/compiler-rt/lib/sanitizer_common/CMakeLists.txt"
             try:
                 for line in fileinput.input("%s/%s" % (self.llvm_src_dir, patchfile), inplace=1, backup='.orig'):
@@ -229,6 +233,8 @@ class EB_Clang(CMakeMake):
             except IOError, err:
                 self.log.error("Failed to patch %s/%s: %s" % (self.llvm_src_dir, patchfile, err))
         else:
+            # In Clang 3.6, the sanitizer tests are grouped together in one CMakeLists
+            # We patch out adding the subdirectories with the sanitizer tests
             patchfile = "projects/compiler-rt/test/CMakeLists.txt"
             patchfile_fp = os.path.join(self.llvm_src_dir, patchfile)
             self.log.debug("Patching %s in %s" % (patchfile, self.llvm_src_dir))
