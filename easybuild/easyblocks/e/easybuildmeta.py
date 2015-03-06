@@ -81,7 +81,8 @@ class EB_EasyBuildMeta(PythonPackage):
             for pkg in self.easybuild_pkgs:
                 seldirs = [x for x in subdirs if x.startswith(pkg)]
                 if not len(seldirs) == 1:
-                    self.log.error("Failed to find EasyBuild %s package (subdirs: %s, seldirs: %s)" % (pkg, subdirs, seldirs))
+                    tup = (pkg, subdirs, seldirs)
+                    self.log.error("Failed to find EasyBuild %s package (subdirs: %s, seldirs: %s)" % tup)
 
                 self.log.debug("Installing EasyBuild package %s" % pkg)
                 os.chdir(os.path.join(self.builddir, seldirs[0]))
