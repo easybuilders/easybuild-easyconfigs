@@ -43,8 +43,9 @@ import easybuild.main as main
 import easybuild.tools.options as eboptions
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.framework.easyblock import EasyBlock
-from easybuild.framework.easyconfig.easyconfig import ActiveMNS, EasyConfig, fetch_parameter_from_easyconfig_file
+from easybuild.framework.easyconfig.easyconfig import ActiveMNS, EasyConfig
 from easybuild.framework.easyconfig.easyconfig import get_easyblock_class
+from easybuild.framework.easyconfig.parser import fetch_parameters_from_easyconfig
 from easybuild.framework.easyconfig.tools import dep_graph, get_paths_for, process_easyconfig
 from easybuild.tools import config
 from easybuild.tools.module_naming_scheme import GENERAL_CLASS
@@ -59,9 +60,6 @@ single_tests_ok = True
 
 class EasyConfigTest(TestCase):
     """Baseclass for easyconfig testcases."""
-
-    if LooseVersion(sys.version) >= LooseVersion('2.6'):
-        os.environ['EASYBUILD_DEPRECATED'] = '2.0'
 
     # initialize configuration (required for e.g. default modules_tool setting)
     eb_go = eboptions.parse_options()
@@ -130,41 +128,51 @@ class EasyConfigTest(TestCase):
         def mk_dep_mod_name(spec):
             return tuple(ActiveMNS().det_full_module_name(spec).split(os.path.sep))
 
-        # construct a dictionary: (name, installver) tuple to dependencies
+        # construct a dictionary: (name, installver) tuple to (build) dependencies
         depmap = {}
         for spec in self.ordered_specs:
-            builddeps = map(mk_dep_mod_name, spec['builddependencies'])
+            build_deps = map(mk_dep_mod_name, spec['builddependencies'])
             deps = map(mk_dep_mod_name, spec['unresolved_deps'])
+            # separate runtime deps from build deps
+            runtime_deps = [d for d in deps if d not in build_deps]
             key = tuple(spec['full_mod_name'].split(os.path.sep))
-            depmap.update({key: [builddeps, deps]})
+            depmap.update({key: [build_deps, runtime_deps]})
 
-        # iteratively expand list of (non-build) dependencies until we reach the end (toolchain)
+        # iteratively expand list of dependencies
         depmap_last = None
         while depmap != depmap_last:
             depmap_last = copy.deepcopy(depmap)
-            for (spec, (builddependencies, dependencies)) in depmap_last.items():
-                # extend dependencies with non-build dependencies of own (non-build) dependencies
-                for dep in dependencies:
-                    if dep not in builddependencies:
-                        depmap[spec][1].extend([d for d in depmap[dep][1] if d not in depmap[dep][0]])
+            for (spec, (build_deps, runtime_deps)) in depmap_last.items():
+                # extend runtime dependencies with non-build dependencies of own runtime dependencies
+                for dep in runtime_deps:
+                    depmap[spec][1].extend([d for d in depmap[dep][1] if d not in depmap[dep][0]])
                 depmap[spec][1] = sorted(nub(depmap[spec][1]))
+                # extend build dependencies with non-build dependencies of own build dependencies
+                for dep in build_deps:
+                    depmap[spec][0].extend([d for d in depmap[dep][1] if d not in depmap[dep][0]])
+                depmap[spec][0] = sorted(nub(depmap[spec][0]))
 
-        # for each of the easyconfigs, check whether the dependencies contain any conflicts
+        def check_conflict((name, installver), (name1, installver1), (name2, installver2)):
+            """Check whether dependencies with given name/(install) version conflict with each other."""
+            # dependencies with the same name should have the exact same install version
+            # if not => CONFLICT!
+            if name1 == name2 and installver1 != installver2:
+                specname = '%s-%s' % (name, installver)
+                vs_msg = "%s-%s vs %s-%s" % (name1, installver1, name2, installver2)
+                print "Conflict found for dependencies of %s: %s" % (specname, vs_msg)
+                return True
+            else:
+                return False
+
+        # for each of the easyconfigs, check whether the dependencies (incl. build deps) contain any conflicts
         conflicts = False
-        for ((name, installver), (builddependencies, dependencies)) in depmap.items():
-            # only consider non-build dependencies
-            non_build_deps = [d for d in dependencies if d not in builddependencies]
-            for i in xrange(len(non_build_deps)):
-                (name_dep1, installver_dep1) = non_build_deps[i]
-                # also make sure that module for easyconfig doesn't conflict with any of its dependencies
-                for (name_dep2, installver_dep2) in [(name, installver)] + non_build_deps[i+1:]:
-                    # dependencies with the same name should have the exact same install version
-                    # if not => CONFLICT!
-                    if name_dep1 == name_dep2 and installver_dep1 != installver_dep2:
-                        specname = '%s-%s' % (name, installver)
-                        vs_msg = "%s-%s vs %s-%s" % (name_dep1, installver_dep1, name_dep2, installver_dep2)
-                        print "Conflict found for (non-build) dependencies of %s: %s" % (specname, vs_msg)
-                        conflicts = True
+        for ((name, installver), (build_deps, runtime_deps)) in depmap.items():
+            # also check whether module itself clashes with any of its dependencies
+            for i, dep1 in enumerate(build_deps + runtime_deps + [(name, installver)]):
+                for dep2 in (build_deps + runtime_deps)[i+1:]:
+                    # don't worry about conflicts between module itself and any of its build deps
+                    if dep1 != (name, installver) or dep2 not in build_deps:
+                        conflicts |= check_conflict((name, installver), dep1, dep2)
         self.assertFalse(conflicts, "No conflicts detected")
 
     def test_sanity_check_paths(self):
@@ -221,12 +229,10 @@ def template_easyconfig_test(self, spec):
     msg = "Filename '%s' of parsed easconfig matches expected filename '%s'" % (spec, expected_fn)
     self.assertEqual(os.path.basename(spec), expected_fn, msg)
 
-    # sanity check for software name
-    name = fetch_parameter_from_easyconfig_file(spec, 'name')
-    self.assertTrue(ec['name'], name) 
+    name, easyblock = fetch_parameters_from_easyconfig(ec.rawtxt, ['name', 'easyblock'])
 
-    # try and fetch easyblock spec from easyconfig
-    easyblock = fetch_parameter_from_easyconfig_file(spec, 'easyblock')
+    # sanity check for software name
+    self.assertTrue(ec['name'], name) 
 
     # instantiate easyblock with easyconfig file
     app_class = get_easyblock_class(easyblock, name=name)
@@ -265,6 +271,10 @@ def template_easyconfig_test(self, spec):
                     ext_patch_full = os.path.join(specdir, ext_patch)
                     msg = "Patch file %s is available for %s" % (ext_patch_full, specfn)
                     self.assertTrue(os.path.isfile(ext_patch_full), msg)
+
+    # check whether all extra_options defined for used easyblock are defined
+    for key in app.extra_options():
+        self.assertTrue(key in app.cfg)
 
     app.close_log()
     os.remove(app.logfile)
