@@ -148,6 +148,11 @@ class PythonPackage(ExtensionEasyBlock):
         run_cmd("which python")
         run_cmd("python -c 'import sys; print(sys.executable)'")
 
+        # don't add user site directory to sys.path (equivalent to python -s)
+        # see https://www.python.org/dev/peps/pep-0370/
+        env.setvar('PYTHONNOUSERSITE', '1')
+        run_cmd("python -c 'import sys; print(sys.path)'")
+
     def build_step(self):
         """Build Python package using setup.py"""
 
