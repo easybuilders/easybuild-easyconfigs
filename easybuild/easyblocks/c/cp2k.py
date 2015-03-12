@@ -272,7 +272,7 @@ class EB_CP2K(EasyBlock):
             regflags = 'NOOPT'
 
         # make sure a MPI-2 able MPI lib is used
-        mpi2libs = ['impi', 'MVAPICH2', 'OpenMPI']
+        mpi2libs = ['impi', 'MVAPICH2', 'OpenMPI', 'MPICH2', 'MPICH']
         mpi2 = False
         for mpi2lib in mpi2libs:
             if get_software_root(mpi2lib):
