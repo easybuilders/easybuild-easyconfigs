@@ -80,9 +80,6 @@ class EB_CP2K(EasyBlock):
 
         self.make_instructions = ''
 
-        # always enable testing for CP2K
-        self.cfg['runtest'] = True
-
     @staticmethod
     def extra_options():
         extra_vars = {
@@ -97,6 +94,7 @@ class EB_CP2K(EasyBlock):
                                              "(should be used with care)"), CUSTOM],
             'maxtasks': [3, ("Maximum number of CP2K instances run at "
                              "the same time during testing"), CUSTOM],
+            'runtest': [True, "Build and run CP2K tests", CUSTOM],
         }
         return EasyBlock.extra_options(extra_vars)
 
