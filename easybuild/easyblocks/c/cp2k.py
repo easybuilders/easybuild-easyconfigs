@@ -285,14 +285,16 @@ class EB_CP2K(EasyBlock):
             mpi_spec = mpi_spec_by_fam.get(mpi_fam)
             if mpi_spec is not None:
                 mpi2 = True
-            self.log.debug("Determined MPI specification based on MPI toolchain component: %s" % mpi_spec)
+                self.log.debug("Determined MPI2 compatibility based on MPI toolchain component: %s" % mpi_fam)
+            else:
+                self.log.debug("Cannot determine MPI2 compatibility based on MPI toolchain component: %s" % mpi_fam)
         else:
             # can't use toolchain.mpi_family, because of dummy toolchain
             mpi2libs = ['impi', 'MVAPICH2', 'OpenMPI', 'MPICH2', 'MPICH']
             for mpi2lib in mpi2libs:
                 if get_software_root(mpi2lib):
                     mpi2 = True
-                    self.log.debug("Determined MPI specification based on loaded MPI module: %s")
+                    self.log.debug("Determined MPI2 compatibility based on loaded MPI module: %s")
                 else:
                     self.log.debug("MPI-2 supporting MPI library %s not loaded.")
             
