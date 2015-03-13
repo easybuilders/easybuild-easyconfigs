@@ -277,7 +277,7 @@ class EB_CP2K(EasyBlock):
                 toolchain.MPICH2: 'mpi2',
                 toolchain.MVAPICH2: 'mpi2',
                 toolchain.OPENMPI: 'mpi2',
-                toolchain.IMPI: 'mpi2',
+                toolchain.IntelMPI: 'mpi2',
             }
             mpi_fam = self.toolchain.mpi_family()
             mpi_spec = mpi_spec_by_fam.get(mpi_fam)
