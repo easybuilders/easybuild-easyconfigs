@@ -272,7 +272,7 @@ class EB_CP2K(EasyBlock):
         # make sure a MPI-2 able MPI lib is used
         mpi2 = False
         if hasattr(self.toolchain, 'MPI_FAMILY') and self.toolchain.MPI_FAMILY is not None:
-            known_mpi2_fams = [toolchain.MPICH, toolchain.MPICH2, toolchain.MVAPICH2, toolchan.OPENMPI, toolchain.IntelMPI]
+            known_mpi2_fams = [toolchain.MPICH, toolchain.MPICH2, toolchain.MVAPICH2, toolchain.OPENMPI, toolchain.IntelMPI]
             if self.toolchain.mpi_family() in known_mpi2_fams:
                 mpi2 = True
                 self.log.debug("Determined MPI2 compatibility based on MPI toolchain component: %s" % mpi_fam)
