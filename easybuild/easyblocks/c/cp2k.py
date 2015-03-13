@@ -275,9 +275,9 @@ class EB_CP2K(EasyBlock):
             known_mpi2_fams = [toolchain.MPICH, toolchain.MPICH2, toolchain.MVAPICH2, toolchain.OPENMPI, toolchain.INTELMPI]
             if self.toolchain.mpi_family() in known_mpi2_fams:
                 mpi2 = True
-                self.log.debug("Determined MPI2 compatibility based on MPI toolchain component: %s" % mpi_fam)
+                self.log.debug("Determined MPI2 compatibility based on MPI toolchain component: %s" % self.toolchain.mpi_family())
             else:
-                self.log.debug("Cannot determine MPI2 compatibility based on MPI toolchain component: %s" % mpi_fam)
+                self.log.debug("Cannot determine MPI2 compatibility based on MPI toolchain component: %s" % self.toolchain.mpi_family())
         else:
             # can't use toolchain.mpi_family, because of dummy toolchain
             mpi2libs = ['impi', 'MVAPICH2', 'OpenMPI', 'MPICH2', 'MPICH']
