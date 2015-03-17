@@ -76,7 +76,6 @@ class EB_Xmipp(EasyBlock):
             external_path = os.path.join(os.getcwd(), 'external')
             extract_file(os.path.join(external_path, src), external_path)
 
-        # TODO: add support for java and gtest (and others?)
         cmd = ('{preconfigopts} PATH=$PWD:$PATH xmipp_python external/scons/scons.py mode=configure -j {parallel}'
                ' --config=force  profile=no fast=yes warn=no release=yes gtest=no cuda=no debug=no matlab=no'
                ' java=no LINKERFORPROGRAMS="$CXX" MPI_BINDIR="$EBROOTIMPI" JAVA_HOME="$JAVA_HOME" JAVAC=javac CC="$CC"'
@@ -94,14 +93,6 @@ class EB_Xmipp(EasyBlock):
               'mode=compile -j {parallel}'.format(parallel=self.cfg['parallel'])
 
         run_cmd(cmd, log_all=True, simple=True)
-
-    def test_step(self):
-        """
-        Run Xmipp tests (if 'runtest' easyconfig parameter is set to True).
-        TODO: patch for gtest includes first
-        """
-        # TODO: implement
-        super(self.__class__, self).test_step(self)
 
     def install_step(self):
         """install step for xmipp, this builds a local database and seems to do some tests?"""
