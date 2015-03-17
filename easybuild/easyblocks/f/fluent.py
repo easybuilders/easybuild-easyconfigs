@@ -27,9 +27,9 @@ EasyBuild support for installing FLUENT, implemented as an easyblock
 
 @author: Kenneth Hoste (Ghent University)
 """
-
 import os
 import stat
+from distutils.version import LooseVersion
 
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.tools.filetools import adjust_permissions
@@ -55,7 +55,12 @@ class EB_FLUENT(EasyBlock):
     def install_step(self):
         """Custom install procedure for FLUENT."""
 
-        cmd = "./INSTALL -noroot -silent -install_dir %s" % self.installdir
+        extra_args =''
+        # only include -noroot flag for older versions
+        if LooseVersion(self.version) < LooseVersion('16.0'):
+            extra_args += '-noroot'
+
+        cmd = "./INSTALL %s -silent -install_dir %s" % (extra_args, self.installdir)
         run_cmd(cmd, log_all=True, simple=True)
 
         adjust_permissions(self.installdir, stat.S_IWOTH, add=False)
