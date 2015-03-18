@@ -153,5 +153,5 @@ class EB_Xmipp(EasyBlock):
     def make_module_extra(self):
         """Define Xmipp specific variables in generated module file, i.e. XMIPP_HOME."""
         txt = super(EB_Xmipp, self).make_module_extra()
-        txt += self.module_generator.set_environment('XMIPP_HOME', '$root')
+        txt += self.module_generator.set_environment('XMIPP_HOME', self.cfg['install_dir'])
         return txt
