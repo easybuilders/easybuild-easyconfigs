@@ -141,7 +141,7 @@ class EB_Xmipp(EasyBlock):
         cmd = ' '.join([
             'XMIPP_HOME=$PWD',
             'PATH=$PWD/bin:$PATH',
-            'PYTHONPATH="$PYTHONPATH:$PWD/protocols:$PWD/libraries/bindings/python/:{python_dynlib_dir}"'
+            'PYTHONPATH="$PYTHONPATH:$PWD/protocols:$PWD/libraries/bindings/python/:{python_dynlib_dir}"',
             'python setup.py install'
         ]).format(python_dynlib_dir=python_dynlib_dir)
         run_cmd(cmd, log_all=True, simple=True)
