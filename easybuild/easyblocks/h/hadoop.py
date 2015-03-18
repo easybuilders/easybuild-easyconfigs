@@ -43,7 +43,6 @@ class EB_Hadoop(Tarball):
         """Custom easyconfig parameters for Hadoop."""
         extra_vars = {
             'build_native_libs': [False, "Build native libraries", CUSTOM],
-            'parallel': [1, "Build in parallel with more threads", CUSTOM],
          }
         return Tarball.extra_options(extra_vars)
 
