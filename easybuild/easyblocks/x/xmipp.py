@@ -56,8 +56,8 @@ class EB_Xmipp(EasyBlock):
     def configure_step(self):
         """Configure xmipp build via a provided wrapper around scons."""
         # check if all our dependencies are in place
-        python_root = get_software_root('Python')
-        if not python_root:
+        self.python_root = get_software_root('Python')
+        if not self.python_root:
             self.log.error("Python not loaded as a dependency, which is required for %s" % self.name)
         python_libdir = det_pylibdir()
         self.python_short_ver = ".".join(get_software_version('Python').split(".")[0:2])
@@ -113,8 +113,8 @@ class EB_Xmipp(EasyBlock):
         ]).format(
             parallel=self.cfg['parallel'],
             python_libdir=python_libdir,
-            python_include_dir=os.path.join(python_root, 'include', 'python%s' % self.python_short_ver),
-            numpy_include_dir=os.path.join(python_root, python_libdir, 'numpy', 'core', 'include'),
+            python_include_dir=os.path.join(self.python_root, 'include', 'python%s' % self.python_short_ver),
+            numpy_include_dir=os.path.join(self.python_root, python_libdir, 'numpy', 'core', 'include'),
             mpi_bindir=os.path.join(get_software_root(self.toolchain.MPI_MODULE_NAME[0]), 'bin'),
             java_home=java_root
         )
