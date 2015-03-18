@@ -82,7 +82,9 @@ class EB_Xmipp(EasyBlock):
 
         cmd = ' '.join([
             '{preconfigopts}',
-            'python external/scons/scons.py mode=configure -j {parallel}',
+            'python external/scons/scons.py',
+            'mode=configure',
+            '-j {parallel}',
             '--config=force',
             'profile=no',
             'fast=yes',
@@ -98,8 +100,12 @@ class EB_Xmipp(EasyBlock):
             'JAVA_HOME="{java_home}"',
             'JAVAC=javac',
             'CC="$CC"',
-            'CXXFLAGS="$CXXFLAGS -DMPICH_IGNORE_CXX_SEEK -I$EBROOTPYTHON/include/python{short_python_ver} \
-                      -I$EBROOTPYTHON/{python_libdir}/numpy/core/include/"',
+            'CXXFLAGS="%s"' % ' '.join(
+                '$CXXFLAGS',
+                '-DMPICH_IGNORE_CXX_SEEK',
+                '-I$EBROOTPYTHON/include/python{short_python_ver}',
+                '-I$EBROOTPYTHON/{python_libdir}/numpy/core/include/',
+            ),
             'CXX="$CXX"',
             'MPI_CC="$MPICC"',
             'MPI_CXX="$MPICXX"',
@@ -108,8 +114,7 @@ class EB_Xmipp(EasyBlock):
             'MPI_LINKERFORPROGRAMS="$MPICC"',
             'LIBPATH="$LD_LIBRARY_PATH"',
             '{configopts}',
-        ])
-        cmd = cmd.format(
+        ]).format(
             parallel=self.cfg['parallel'],
             short_python_ver=self.python_short_ver,
             python_libdir=python_libdir,
@@ -125,21 +130,22 @@ class EB_Xmipp(EasyBlock):
         cmd = ' '.join([
             'LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$PWD/lib',
             'python external/scons/scons.py',
-            'mode=compile -j {parallel}',
+            'mode=compile',
+            '-j %s' % self.cfg['parallel'],
         ])
-        cmd = cmd.format(parallel=self.cfg['parallel'])
         run_cmd(cmd, log_all=True, simple=True)
 
     def install_step(self):
         """install step for xmipp, this builds a local database and seems to do some tests?"""
+        python_dynlib_dir = '$EBROOTPYTHON/lib/python{short_python_ver}/lib-dynload/"'
+
         cmd = ' '.join([
             'XMIPP_HOME=$PWD',
             'PATH=$PWD/bin:$PATH',
-            'PYTHONPATH="$PYTHONPATH:$PWD/protocols:$PWD/libraries/bindings/python/:' \
-            '$EBROOTPYTHON/lib/python{short_python_ver}/lib-dynload/"',
+            'PYTHONPATH="$PYTHONPATH:$PWD/protocols:$PWD/libraries/bindings/python/:{python_dynlib_dir}'
             'python setup.py install'
         ])
-        cmd = cmd.format(short_python_ver=self.python_short_ver)
+        cmd = cmd.format(short_python_ver=self.python_short_ver, python_dynlib_dir=python_dynlib_dir)
         run_cmd(cmd, log_all=True, simple=True)
 
     def sanity_check_step(self):
