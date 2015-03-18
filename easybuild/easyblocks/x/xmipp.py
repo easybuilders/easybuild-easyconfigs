@@ -82,7 +82,7 @@ class EB_Xmipp(EasyBlock):
         mkdir(os.path.join(self.cfg['start_dir'], 'lib'))
 
         cmd = ' '.join([
-            '{preconfigopts}',
+            self.cfg['preconfigopts'],
             'python external/scons/scons.py',
             'mode=configure',
             '-j {parallel}',
@@ -114,13 +114,11 @@ class EB_Xmipp(EasyBlock):
             'MPI_LIBDIR="$MPI_LIB_DIR"',
             'MPI_LINKERFORPROGRAMS="$MPICC"',
             'LIBPATH="$LD_LIBRARY_PATH"',
-            '{configopts}',
+            self.cfg['preconfigopts'],
         ]).format(
             parallel=self.cfg['parallel'],
             short_python_ver=self.python_short_ver,
             python_libdir=python_libdir,
-            preconfigopts=self.cfg['preconfigopts'],
-            configopts=self.cfg['configopts'],
             mpi_bindir=os.path.join(get_software_root(self.toolchain.MPI_MODULE_NAME[0]), 'bin'),
             java_home=java_root
         )
