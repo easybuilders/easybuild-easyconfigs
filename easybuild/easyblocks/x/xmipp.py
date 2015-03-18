@@ -139,9 +139,9 @@ class EB_Xmipp(EasyBlock):
             python_dynlib_dir,
         ]
         cmd = ' '.join([
-            'XMIPP_HOME={cwd}',
+            'XMIPP_HOME=%s' % self.cfg['start_dir'],
             'PATH=%s:$PATH' % os.path.join(self.cfg['start_dir'], 'bin'),
-            'PYTHONPATH="%s"' % os.pathsep.join(['$PYTHONPATH'] + [extra_pythonpaths]),
+            'PYTHONPATH="%s"' % os.pathsep.join(['$PYTHONPATH'] + extra_pythonpaths),
             'python setup.py install',
         ])
         run_cmd(cmd, log_all=True, simple=True)
