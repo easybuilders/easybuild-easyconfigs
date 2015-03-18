@@ -52,13 +52,6 @@ class EB_Xmipp(EasyBlock):
         self.cfg.update('unpack_options', '--strip-components=1')
         super(EB_Xmipp, self).extract_step()
 
-        # extract some dependencies that we really need and can't find anywhere else
-        # alglib tarball has version in name, so lets find it with a glob
-        alglib_tar = glob.glob(os.path.join(os.getcwd(), 'external', 'alglib*.tgz'))[0]
-        for src in ['bilib.tgz', 'bilib.tgz', 'condor.tgz', alglib_tar]:
-            external_path = os.path.join(self.cfg['start_dir'], 'external')
-            extract_file(os.path.join(external_path, src), external_path)
-
     def configure_step(self):
         """Configure xmipp build via a provided wrapper around sconss."""
         # check if all our dependencies are in place
@@ -70,6 +63,16 @@ class EB_Xmipp(EasyBlock):
         java_root = get_software_root('Python')
         if not java_root:
             self.log.error("Java not loaded as a dependency, which is required for %s" % self.name)
+
+        # extract some dependencies that we really need and can't find anywhere else
+        # alglib tarball has version in name, so lets find it with a glob
+        # we can't do this in extract step before these are in the original sources tarball, so we need to know
+        # startdir first
+        alglib_tar = glob.glob(os.path.join(os.getcwd(), 'external', 'alglib*.tgz'))[0]
+        for src in ['bilib.tgz', 'bilib.tgz', 'condor.tgz', alglib_tar]:
+            external_path = os.path.join(self.cfg['start_dir'], 'external')
+            extract_file(os.path.join(external_path, src), external_path)
+
 
         # build step expects these to exist
         mkdir(os.path.join(self.cfg['start_dir'], 'bin'))
