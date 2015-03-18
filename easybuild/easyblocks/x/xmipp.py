@@ -68,11 +68,13 @@ class EB_Xmipp(EasyBlock):
         # alglib tarball has version in name, so lets find it with a glob
         # we can't do this in extract step before these are in the original sources tarball, so we need to know
         # startdir first
-        alglib_tar = glob.glob(os.path.join(os.getcwd(), 'external', 'alglib*.tgz'))[0]
-        for src in ['bilib.tgz', 'bilib.tgz', 'condor.tgz', alglib_tar]:
-            external_path = os.path.join(self.cfg['start_dir'], 'external')
+        external_path = os.path.join(self.cfg['start_dir'], 'external')
+        alglib_tar = glob.glob(external_path, 'alglib*.tgz'))[0]
+        for src in ['bilib.tgz', 'bilib.tgz', 'condor.tgz', alglib_tar, 'scons.tgz']:
             extract_file(os.path.join(external_path, src), external_path)
 
+        # make sure we start in the start dir
+        os.chdir(self.cfg['start_dird'])
 
         # build step expects these to exist
         mkdir(os.path.join(self.cfg['start_dir'], 'bin'))
