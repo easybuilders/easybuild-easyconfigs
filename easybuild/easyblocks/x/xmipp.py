@@ -107,7 +107,7 @@ class EB_Xmipp(EasyBlock):
             'LIBPATH="$LD_LIBRARY_PATH"',
             '{configopts}',
         ])
-        cmd.format(
+        cmd = cmd.format(
             parallel=self.cfg['parallel'],
             short_python_ver=self.python_short_ver,
             python_libdir=python_libdir,
@@ -125,7 +125,7 @@ class EB_Xmipp(EasyBlock):
             'python external/scons/scons.py',
             'mode=compile -j {parallel}',
         ])
-        cmd.format(parallel=self.cfg['parallel'])
+        cmd = cmd.format(parallel=self.cfg['parallel'])
         run_cmd(cmd, log_all=True, simple=True)
 
     def install_step(self):
@@ -137,7 +137,7 @@ class EB_Xmipp(EasyBlock):
             '$EBROOTPYTHON/lib/python{short_python_ver}/lib-dynload/"',
             'python setup.py install'
         ])
-        cmd.format(short_python_ver=self.python_short_ver)
+        cmd = cmd.format(short_python_ver=self.python_short_ver)
         run_cmd(cmd, log_all=True, simple=True)
 
     def sanity_check_step(self):
