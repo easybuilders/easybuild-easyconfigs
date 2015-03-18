@@ -101,12 +101,7 @@ class EB_Xmipp(EasyBlock):
             'JAVA_HOME="{java_home}"',
             'JAVAC=javac',
             'CC="$CC"',
-            'CXXFLAGS="%s"' % ' '.join([
-                '$CXXFLAGS',
-                '-DMPICH_IGNORE_CXX_SEEK',
-                '-I$EBROOTPYTHON/include/python{short_python_ver}',
-                '-I$EBROOTPYTHON/{python_libdir}/numpy/core/include/',
-            ]),
+            'CXXFLAGS="$CXXFLAGS -DMPICH_IGNORE_CXX_SEEK -I{python_include_dir} -I{numpy_include_dir}"',
             'CXX="$CXX"',
             'MPI_CC="$MPICC"',
             'MPI_CXX="$MPICXX"',
@@ -117,8 +112,9 @@ class EB_Xmipp(EasyBlock):
             self.cfg['configopts'],
         ]).format(
             parallel=self.cfg['parallel'],
-            short_python_ver=self.python_short_ver,
             python_libdir=python_libdir,
+            python_include_dir=os.path.join(python_root, 'include', 'python%s' % self.python_short_ver),
+            numpy_include_dir=os.path.join(python_root, python_libdir, 'numpy', 'core', 'include'),
             mpi_bindir=os.path.join(get_software_root(self.toolchain.MPI_MODULE_NAME[0]), 'bin'),
             java_home=java_root
         )
