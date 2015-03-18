@@ -101,12 +101,12 @@ class EB_Xmipp(EasyBlock):
             'JAVA_HOME="{java_home}"',
             'JAVAC=javac',
             'CC="$CC"',
-            'CXXFLAGS="%s"' % ' '.join(
+            'CXXFLAGS="%s"' % ' '.join([
                 '$CXXFLAGS',
                 '-DMPICH_IGNORE_CXX_SEEK',
                 '-I$EBROOTPYTHON/include/python{short_python_ver}',
                 '-I$EBROOTPYTHON/{python_libdir}/numpy/core/include/',
-            ),
+            ]),
             'CXX="$CXX"',
             'MPI_CC="$MPICC"',
             'MPI_CXX="$MPICXX"',
