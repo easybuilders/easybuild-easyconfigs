@@ -49,7 +49,8 @@ class EB_Xmipp(EasyBlock):
     def extract_step(self):
         """Extract sources."""
         # strip off 'xmipp' part to avoid having everything in a 'xmipp' subdirectory
-        self.cfg.update('unpack_options', '--strip-components=1')
+        if not self.cfg['unpack_options']:
+            self.cfg['unpack_options'] = '--strip-components=1'
         super(EB_Xmipp, self).extract_step()
 
     def configure_step(self):
