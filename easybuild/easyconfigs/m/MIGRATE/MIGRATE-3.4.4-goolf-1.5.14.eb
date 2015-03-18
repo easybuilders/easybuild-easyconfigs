@@ -1,0 +1,45 @@
+# 
+# This is an easyconfig file for EasyBuild, see https://github.com/hpcugent/easybuild
+# Authors::   Jordi Blasco <jordi.blasco@nesi.org.nz>
+# New Zealand eScience Infrastructure (NeSI)
+
+name = 'MIGRATE'
+version = "3.4.4" 
+
+homepage = 'http://popgen.sc.fsu.edu/Migrate/Migrate-n.html'
+description = """Migrate estimates effective population sizes and past migration rates between n population assuming a migration matrix model with asymmetric migration rates and different subpopulation sizes. Migrate uses maximum likelihood or Bayesian inference to jointly estimate all parameters."""
+
+toolchain = {'name': 'goolf', 'version': '1.5.14'} 
+toolchainopts = {'opt': True, 'optarch': True, 'unroll': True, 'static': False}
+
+# For sources line to work correctly with --try-software-version, you MUST employ %s OR use a construct like SOURCE_TAR_GZ
+oldversions="oldversions/%s.x/%s/" % (".".join(version.split('.')[:1]), ".".join(version.split('.')[:2])) 
+sources = ['%(namelower)s-%(version)s.src.tar.gz']
+source_urls = ['http://popgen.sc.fsu.edu/newversions/', 'http://popgen.sc.fsu.edu/currentversions/', 'http://popgen.sc.fsu.edu/%s' % oldversions ]
+
+patches = []
+
+dependencies = [('zlib', '1.2.5')]
+
+preconfigopts = 'cd ./src && sed -i "s/ \-fast / /g" configure && ' 
+
+configopts = '--with-zlib=system --enable-sse2 '
+
+parallel = 1
+
+prebuildopts = 'cd ./src && '
+
+buildopts = ' mpis && make cleanall && make thread '
+
+preinstallopts = 'cd ./src && mkdir -p %(installdir)s/{bin,man/man1} && '
+
+binary_files = ["migrate-n-mpi", "migrate-n"]
+
+# The sanity test MUST be tuned before going production and submitting your contribution to upstream git repositories
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in binary_files],
+    'dirs': []
+}
+
+# You SHOULD change the following line; Kindly consult other easyconfigs for possible options
+moduleclass = 'bio'
