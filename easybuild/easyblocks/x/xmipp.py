@@ -69,7 +69,7 @@ class EB_Xmipp(EasyBlock):
         # we can't do this in extract step before these are in the original sources tarball, so we need to know
         # startdir first
         external_path = os.path.join(self.cfg['start_dir'], 'external')
-        alglib_tar = glob.glob(external_path, 'alglib*.tgz'))[0]
+        alglib_tar = glob.glob(os.path.join(external_path, 'alglib*.tgz'))[0]
         for src in ['bilib.tgz', 'bilib.tgz', 'condor.tgz', alglib_tar, 'scons.tgz']:
             extract_file(os.path.join(external_path, src), external_path)
 
@@ -98,8 +98,8 @@ class EB_Xmipp(EasyBlock):
             'JAVA_HOME="{java_home}"',
             'JAVAC=javac',
             'CC="$CC"',
-            'CXXFLAGS="$CXXFLAGS -DMPICH_IGNORE_CXX_SEEK -I$EBROOTPYTHON/include/python{short_python_ver}" \
-                      "-I{python_libdir}/numpy/core/include/"',
+            'CXXFLAGS="$CXXFLAGS -DMPICH_IGNORE_CXX_SEEK -I$EBROOTPYTHON/include/python{short_python_ver} \
+                      -I$EBROOTPYTHON/{python_libdir}/numpy/core/include/"',
             'CXX="$CXX"',
             'MPI_CC="$MPICC"',
             'MPI_CXX="$MPICXX"',
