@@ -53,14 +53,14 @@ class EB_Xmipp(EasyBlock):
         super(EB_Xmipp, self).extract_step()
 
     def configure_step(self):
-        """Configure xmipp build via a provided wrapper around sconss."""
+        """Configure xmipp build via a provided wrapper around scons."""
         # check if all our dependencies are in place
         python_root = get_software_root('Python')
         if not python_root:
             self.log.error("Python not loaded as a dependency, which is required for %s" % self.name)
         python_libdir = det_pylibdir()
         self.python_short_ver = ".".join(get_software_version('Python').split(".")[0:2])
-        java_root = get_software_root('Python')
+        java_root = get_software_root('Java')
         if not java_root:
             self.log.error("Java not loaded as a dependency, which is required for %s" % self.name)
 
@@ -74,7 +74,7 @@ class EB_Xmipp(EasyBlock):
             extract_file(os.path.join(external_path, src), external_path)
 
         # make sure we start in the start dir
-        os.chdir(self.cfg['start_dird'])
+        os.chdir(self.cfg['start_dir'])
 
         # build step expects these to exist
         mkdir(os.path.join(self.cfg['start_dir'], 'bin'))
