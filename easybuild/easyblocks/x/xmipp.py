@@ -136,14 +136,18 @@ class EB_Xmipp(EasyBlock):
 
     def install_step(self):
         """install step for xmipp, this builds a local database and seems to do some tests?"""
-        python_dynlib_dir = '$EBROOTPYTHON/lib/python%s/lib-dynload/' % self.python_short_ver
-
+        python_dynlib_dir = os.path.join(self.python_root, 'lib', 'python%s' % self.python_short_ver, 'lib-dynload')
+        extra_pythonpaths = [
+            os.path.join(self.cfg['start_dir'], 'protocols'),
+            os.path.join(self.cfg['start_dir'], 'libraries', 'bindings', 'python'),
+            python_dynlib_dir,
+        ]
         cmd = ' '.join([
-            'XMIPP_HOME=$PWD',
-            'PATH=$PWD/bin:$PATH',
-            'PYTHONPATH="$PYTHONPATH:$PWD/protocols:$PWD/libraries/bindings/python/:{python_dynlib_dir}"',
-            'python setup.py install'
-        ]).format(python_dynlib_dir=python_dynlib_dir)
+            'XMIPP_HOME={cwd}',
+            'PATH=%s:$PATH' % os.path.join(self.cfg['start_dir'], 'bin'),
+            'PYTHONPATH="%s"' % os.pathsep.join(['$PYTHONPATH'] + [extra_pythonpaths]),
+            'python setup.py install',
+        ])
         run_cmd(cmd, log_all=True, simple=True)
 
     def sanity_check_step(self):
