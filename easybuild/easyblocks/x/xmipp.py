@@ -114,7 +114,7 @@ class EB_Xmipp(EasyBlock):
             'MPI_LIBDIR="$MPI_LIB_DIR"',
             'MPI_LINKERFORPROGRAMS="$MPICC"',
             'LIBPATH="$LD_LIBRARY_PATH"',
-            self.cfg['preconfigopts'],
+            self.cfg['configopts'],
         ]).format(
             parallel=self.cfg['parallel'],
             short_python_ver=self.python_short_ver,
