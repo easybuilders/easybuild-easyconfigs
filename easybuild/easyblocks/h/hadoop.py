@@ -50,6 +50,8 @@ class EB_Hadoop(Tarball):
         """Custom build procedure for Hadoop: build native libraries, if requested."""
         if self.cfg['build_native_libs']:
             cmd = "mvn package -DskipTests -Dmaven.javadoc.skip -Dtar -Pdist,native"
+            if self.cfg['parallel'] > 1:
+                cmd += " -T%d" % self.cfg['parallel']
             run_cmd(cmd, log_all=True, simple=True, log_ok=True)
 
     def install_step(self):
