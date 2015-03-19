@@ -57,10 +57,10 @@ class EB_FLUENT(EasyBlock):
 
         extra_args =''
         # only include -noroot flag for older versions
-        if LooseVersion(self.version) < LooseVersion('16.0'):
+        if LooseVersion(self.version) < LooseVersion('15.0'):
             extra_args += '-noroot'
 
-        cmd = "./INSTALL %s -silent -install_dir %s" % (extra_args, self.installdir)
+        cmd = "./INSTALL %s -debug -silent -install_dir %s %s" % (extra_args, self.installdir, self.cfg['installopts'])
         run_cmd(cmd, log_all=True, simple=True)
 
         adjust_permissions(self.installdir, stat.S_IWOTH, add=False)
