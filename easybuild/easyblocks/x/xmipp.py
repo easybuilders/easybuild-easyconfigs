@@ -164,7 +164,9 @@ class EB_Xmipp(EasyBlock):
     def sanity_check_step(self):
         """Custom sanity check for Xmipp."""
         custom_paths = {
-            'files': ['xmipp_%s' % x for x in ['imagej', 'mpi_run', 'phantom_create', 'tomo_project', 'volume_align']],
+            # incomplete list, random picks, cfr. http://xmipp.cnb.csic.es/twiki/bin/view/Xmipp/ListOfProgramsv3
+            'files': ['bin/xmipp_%s' % x for x in ['compile', 'imagej', 'mpi_run', 'phantom_create',
+                                                   'transform_filter', 'tomo_project', 'volume_align']],
             'dirs': ['lib'],
         }
         super(EB_Xmipp, self).sanity_check_step(custom_paths=custom_paths)
