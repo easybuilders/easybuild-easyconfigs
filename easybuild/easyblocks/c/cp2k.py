@@ -1,5 +1,5 @@
 ##
-# Copyright 2009-2013 Ghent University
+# Copyright 2009-2015 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -80,9 +80,6 @@ class EB_CP2K(EasyBlock):
 
         self.make_instructions = ''
 
-        # always enable testing for CP2K
-        self.cfg['runtest'] = True
-
     @staticmethod
     def extra_options():
         extra_vars = {
@@ -97,6 +94,7 @@ class EB_CP2K(EasyBlock):
                                              "(should be used with care)"), CUSTOM],
             'maxtasks': [3, ("Maximum number of CP2K instances run at "
                              "the same time during testing"), CUSTOM],
+            'runtest': [True, "Build and run CP2K tests", CUSTOM],
         }
         return EasyBlock.extra_options(extra_vars)
 
@@ -272,14 +270,26 @@ class EB_CP2K(EasyBlock):
             regflags = 'NOOPT'
 
         # make sure a MPI-2 able MPI lib is used
-        mpi2libs = ['impi', 'MVAPICH2', 'OpenMPI']
         mpi2 = False
-        for mpi2lib in mpi2libs:
-            if get_software_root(mpi2lib):
+        if hasattr(self.toolchain, 'MPI_FAMILY') and self.toolchain.MPI_FAMILY is not None:
+            known_mpi2_fams = [toolchain.MPICH, toolchain.MPICH2, toolchain.MVAPICH2, toolchain.OPENMPI,
+                               toolchain.INTELMPI]
+            mpi_fam = self.toolchain.mpi_family()
+            if mpi_fam in known_mpi2_fams:
                 mpi2 = True
+                self.log.debug("Determined MPI2 compatibility based on MPI toolchain component: %s" % mpi_fam)
             else:
-                self.log.debug("MPI-2 supporting MPI library %s not loaded.")
-
+                self.log.debug("Cannot determine MPI2 compatibility based on MPI toolchain component: %s" % mpi_fam)
+        else:
+            # can't use toolchain.mpi_family, because of dummy toolchain
+            mpi2libs = ['impi', 'MVAPICH2', 'OpenMPI', 'MPICH2', 'MPICH']
+            for mpi2lib in mpi2libs:
+                if get_software_root(mpi2lib):
+                    mpi2 = True
+                    self.log.debug("Determined MPI2 compatibility based on loaded MPI module: %s")
+                else:
+                    self.log.debug("MPI-2 supporting MPI library %s not loaded.")
+            
         if not mpi2:
             self.log.error("CP2K needs MPI-2, no known MPI-2 supporting library loaded?")
 
