@@ -30,6 +30,7 @@ EasyBuild support for building and installing Xmipp, implemented as an easyblock
 import glob
 import os
 
+import easybuild.tools.toolchain as toolchain
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.tools.filetools import mkdir, extract_file
 from easybuild.tools.modules import get_software_root, get_software_version
@@ -83,7 +84,10 @@ class EB_Xmipp(EasyBlock):
 
         python_inc_dir = os.path.join(self.python_root, 'include', 'python%s' % self.python_short_ver)
         numpy_inc_dir = os.path.join(self.python_root, python_libdir, 'numpy', 'core', 'include')
-        mpi_bindir = os.path.join(get_software_root(self.toolchain.MPI_MODULE_NAME[0]), 'bin')
+        if self.toolchain.mpi_family() == toolchain.INTELMPI:
+            mpi_bindir = os.path.join(get_software_root('impi'), 'intel64', 'bin')
+        else:
+            mpi_bindir = os.path.join(get_software_root(self.toolchain.MPI_MODULE_NAME[0]), 'bin')
 
         if not os.path.exists(numpy_inc_dir):
             self.log.error("numpy 'include' directory %s not found" % numpy_inc_dir)
