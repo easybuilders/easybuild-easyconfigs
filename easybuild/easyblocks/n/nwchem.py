@@ -184,7 +184,7 @@ class EB_NWChem(ConfigureMake):
             else:
                 libmpi = "-lmpigf -lmpigi -lmpi_ilp64 -lmpi"
         elif mpi_family in [toolchain.MPICH, toolchain.MPICH2]:
-            libmpi = "-lmpich -lopa -lmpl -lrt -lpthread"
+            libmpi = "-lmpichf90 -lmpich -lopa -lmpl -lrt -lpthread"
         else:
             self.log.error("Don't know how to set LIBMPI for %s" % mpi_family)
         env.setvar('LIBMPI', libmpi)
