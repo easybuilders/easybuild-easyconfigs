@@ -234,6 +234,9 @@ class EB_Rosetta(EasyBlock):
         # (extract and) copy database and biotools (if it's there)
         extract_and_copy('rosetta_database%s')
         extract_and_copy('BioTools%s', optional=True)
+        extract_and_copy('rosetta_tools%s')
+        extract_and_copy('rosetta_demos%s')
+
 
     def sanity_check_step(self):
         """Custom sanity check for Rosetta."""
