@@ -235,7 +235,6 @@ class EB_Rosetta(EasyBlock):
         extract_and_copy('rosetta_database%s')
         extract_and_copy('BioTools%s', optional=True)
         extract_and_copy('rosetta_tools%s')
-        extract_and_copy('rosetta_demos%s')
 
 
     def sanity_check_step(self):
