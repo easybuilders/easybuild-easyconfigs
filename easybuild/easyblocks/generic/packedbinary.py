@@ -32,6 +32,7 @@ import shutil
 
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.easyblocks.generic.binary import Binary
+from easybuild.tools.build_log import EasyBuildError
 
 
 class PackedBinary(Binary, EasyBlock):
@@ -56,7 +57,7 @@ class PackedBinary(Binary, EasyBlock):
                 elif os.path.isfile(srcpath):
                     shutil.copy2(srcpath, self.installdir)
                 else:
-                    self.log.error("Path %s is not a file nor a directory?" % srcpath)
+                    raise EasyBuildError("Path %s is not a file nor a directory?", srcpath)
         except OSError, err:
-            self.log.error("Failed to copy unpacked sources to install directory: %s" % err)
+            raise EasyBuildError("Failed to copy unpacked sources to install directory: %s", err)
 

@@ -38,6 +38,7 @@ import easybuild.tools.environment as env
 from easybuild.easyblocks.generic.cmakemake import CMakeMake
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.framework.easyconfig import BUILD
+from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.modules import get_software_root
 
 
@@ -73,7 +74,7 @@ class EB_PSI(CMakeMake):
             os.makedirs(objdir)
             os.chdir(objdir)
         except OSError, err:
-            self.log.error("Failed to prepare for configuration of PSI build: %s" % err)
+            raise EasyBuildError("Failed to prepare for configuration of PSI build: %s", err)
 
         env.setvar('F77FLAGS', os.getenv('F90FLAGS'))
 
@@ -88,12 +89,12 @@ class EB_PSI(CMakeMake):
         # explicitely specify Python binary to use
         pythonroot = get_software_root('Python')
         if not pythonroot:
-            self.log.error("Python module not loaded.")
+            raise EasyBuildError("Python module not loaded.")
 
         # Use EB Boost
         boostroot = get_software_root('Boost')
         if not boostroot:
-            self.log.error("Boost module not loaded.")
+            raise EasyBuildError("Boost module not loaded.")
 
         # pre 4.0b5, they were using autotools, on newer it's CMake
         if LooseVersion(self.version) <= LooseVersion("4.0b5"):
@@ -155,7 +156,7 @@ class EB_PSI(CMakeMake):
                 # copy symlinks as symlinks to work around broken symlinks
                 shutil.copytree(os.path.join(self.builddir, subdir), os.path.join(self.installdir, subdir), symlinks=True)
         except OSError, err:
-            self.log.error("Failed to copy obj and unpacked sources to install dir: %s" % err)
+            raise EasyBuildError("Failed to copy obj and unpacked sources to install dir: %s", err)
 
     def test_step(self):
         """
@@ -168,7 +169,7 @@ class EB_PSI(CMakeMake):
         try:
             shutil.rmtree(testdir)
         except OSError, err:
-            self.log.error("Failed to remove test directory %s: %s" % (testdir, err))
+            raise EasyBuildError("Failed to remove test directory %s: %s", testdir, err)
 
     def sanity_check_step(self):
         """Custom sanity check for PSI."""

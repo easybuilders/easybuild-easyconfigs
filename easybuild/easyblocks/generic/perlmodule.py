@@ -34,6 +34,7 @@ from easybuild.easyblocks.perl import EXTS_FILTER_PERL_MODULES, get_major_perl_v
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.framework.extensioneasyblock import ExtensionEasyBlock
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
+from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.run import run_cmd
 
 
@@ -72,8 +73,8 @@ class PerlModule(ExtensionEasyBlock, ConfigureMake):
         """Perform the actual Perl module build/installation procedure"""
 
         if not self.src:
-            self.log.error("No source found for Perl module %s, required for installation. (src: %s)" %
-                           (self.name, self.src))
+            raise EasyBuildError("No source found for Perl module %s, required for installation. (src: %s)",
+                                 self.name, self.src)
         ExtensionEasyBlock.run(self, unpack_src=True)
 
         self.install_perl_module()

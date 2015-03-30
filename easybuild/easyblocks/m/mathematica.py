@@ -31,6 +31,7 @@ import os
 
 from easybuild.easyblocks.generic.binary import Binary
 from easybuild.framework.easyconfig import CUSTOM
+from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.run import run_cmd_qa
 
 
@@ -49,7 +50,7 @@ class EB_Mathematica(Binary):
         """No configuration for Mathematica."""
         # ensure a license server is specified
         if self.cfg['license_server'] is None:
-            self.log.error("No license server specified.")
+            raise EasyBuildError("No license server specified.")
 
     def build_step(self):
         """No build step for Mathematica."""
@@ -87,7 +88,7 @@ class EB_Mathematica(Binary):
             f.close()
             self.log.info("Updated license file %s: %s" % (mathpass_path, mathpass_txt))
         except IOError, err:
-            self.log.error("Failed to update %s with license server info: %s" % (mathpass_path, err))
+            raise EasyBuildError("Failed to update %s with license server info: %s", mathpass_path, err)
 
         # restore $DISPLAY if required
         if orig_display is not None:

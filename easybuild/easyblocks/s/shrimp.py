@@ -33,6 +33,7 @@ import shutil
 
 import easybuild.tools.environment as env
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
+from easybuild.tools.build_log import EasyBuildError
 
 
 class EB_SHRiMP(ConfigureMake):
@@ -62,7 +63,7 @@ class EB_SHRiMP(ConfigureMake):
             os.chdir(cwd)
 
         except OSError, err:
-            self.log.error("Failed to copy files to install dir: %s" % err)
+            raise EasyBuildError("Failed to copy files to install dir: %s", err)
 
 
     def sanity_check_step(self):

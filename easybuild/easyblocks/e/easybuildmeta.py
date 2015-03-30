@@ -34,6 +34,7 @@ from distutils.version import LooseVersion
 
 import easybuild.tools.environment as env
 from easybuild.easyblocks.generic.pythonpackage import PythonPackage, det_pylibdir
+from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.filetools import read_file
 from easybuild.tools.modules import get_software_root_env_var_name
 from easybuild.tools.ordereddict import OrderedDict
@@ -81,15 +82,15 @@ class EB_EasyBuildMeta(PythonPackage):
             for pkg in self.easybuild_pkgs:
                 seldirs = [x for x in subdirs if x.startswith(pkg)]
                 if not len(seldirs) == 1:
-                    tup = (pkg, subdirs, seldirs)
-                    self.log.error("Failed to find EasyBuild %s package (subdirs: %s, seldirs: %s)" % tup)
+                    raise EasyBuildError("Failed to find EasyBuild %s package (subdirs: %s, seldirs: %s)",
+                                         pkg, subdirs, seldirs)
 
                 self.log.debug("Installing EasyBuild package %s" % pkg)
                 os.chdir(os.path.join(self.builddir, seldirs[0]))
                 super(EB_EasyBuildMeta, self).install_step()
 
         except OSError, err:
-            self.log.error("Failed to install EasyBuild packages: %s" % err)
+            raise EasyBuildError("Failed to install EasyBuild packages: %s", err)
 
         env.setvar('PYTHONPATH', orig_pythonpath)
 
@@ -109,8 +110,8 @@ class EB_EasyBuildMeta(PythonPackage):
                     pkg_regex = re.compile(r"^\./%s-%s" % (pkg.replace('-', '_'), major_minor_version), re.M)
 
                 if not pkg_regex.search(easy_install_pth_txt):
-                    tup = (pkg_regex.pattern, easy_install_pth, easy_install_pth_txt)
-                    self.log.error("Failed to find pattern '%s' in %s: %s" % tup)
+                    raise EasyBuildError("Failed to find pattern '%s' in %s: %s",
+                                         pkg_regex.pattern, easy_install_pth, easy_install_pth_txt)
 
         # list of dirs to check, by package
         # boolean indicates whether dir is expected to reside in Python lib/pythonX/site-packages dir
@@ -150,13 +151,13 @@ class EB_EasyBuildMeta(PythonPackage):
                 for (pkg, subdirs) in subdirs_by_pkg.items():
                     sel_dirs = [x for x in installed_dirs if x.startswith(pkg.replace('-', '_'))]
                     if not len(sel_dirs) == 1:
-                        self.log.error("Failed to isolate installed egg dir for %s" % pkg)
+                        raise EasyBuildError("Failed to isolate installed egg dir for %s", pkg)
 
                     for (subdir, _) in subdirs:
                         # eggs always go in Python lib/pythonX/site-packages dir with setuptools 
                         eb_dirs['setuptools'].append((os.path.join(sel_dirs[0], subdir), True))
             except OSError, err:
-                self.log.error("Failed to determine sanity check dir paths: %s" % err)
+                raise EasyBuildError("Failed to determine sanity check dir paths: %s", err)
 
         # set of sanity check paths to check for EasyBuild
         custom_paths = {

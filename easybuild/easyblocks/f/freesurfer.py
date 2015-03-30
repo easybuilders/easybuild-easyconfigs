@@ -33,6 +33,7 @@ import os
 from easybuild.easyblocks.generic.tarball import Tarball
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import MANDATORY
+from easybuild.tools.build_log import EasyBuildError
 
 
 class EB_FreeSurfer(Tarball):
@@ -53,7 +54,7 @@ class EB_FreeSurfer(Tarball):
             f.write(self.cfg['license_text'])
             f.close()
         except IOError, err:
-            self.log.error("Failed to install license file: %s" % err)
+            raise EasyBuildError("Failed to install license file: %s", err)
 
     def make_module_extra(self):
         """Add setting of FREESURFER_HOME in module."""

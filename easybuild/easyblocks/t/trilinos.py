@@ -35,6 +35,7 @@ from distutils.version import LooseVersion
 import easybuild.tools.toolchain as toolchain
 from easybuild.easyblocks.generic.cmakemake import CMakeMake
 from easybuild.framework.easyconfig import CUSTOM
+from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.modules import get_software_root
 
 
@@ -206,7 +207,7 @@ class EB_Trilinos(CMakeMake):
             os.mkdir(build_dir)
             os.chdir(build_dir)
         except OSError, err:
-            self.log.error("Failed to create and move into build directory: %s" % err)
+            raise EasyBuildError("Failed to create and move into build directory: %s", err)
 
         # configure using cmake
         super(EB_Trilinos, self).configure_step(srcdir="..")

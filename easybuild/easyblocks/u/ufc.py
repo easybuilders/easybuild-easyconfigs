@@ -30,6 +30,7 @@ EasyBuild support for UFC, implemented as an easyblock
 from distutils.version import LooseVersion
 
 from easybuild.easyblocks.generic.cmakepythonpackage import CMakePythonPackage
+from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.modules import get_software_root, get_software_version
 
 
@@ -51,7 +52,7 @@ class EB_UFC(CMakePythonPackage):
         for dep in deps:
             deproot = get_software_root(dep)
             if not deproot:
-                self.log.error("%s module not loaded?" % dep)
+                raise EasyBuildError("%s module not loaded?", dep)
             else:
                 depsdict.update({dep:deproot})
 
@@ -59,8 +60,8 @@ class EB_UFC(CMakePythonPackage):
         # which causes problems with e.g. DOLFIN if UFC was built with it
         # fixed in 2.0.7? see https://bugs.launchpad.net/dolfin/+bug/996398
         if LooseVersion(get_software_version('SWIG')) > '2.0.4':
-            self.log.error("Using bad version of SWIG, expecting swig <= 2.0.4." \
-                           " See https://bugs.launchpad.net/dolfin/+bug/996398")
+            raise EasyBuildError("Using bad version of SWIG, expecting swig <= 2.0.4. "
+                                 "See https://bugs.launchpad.net/dolfin/+bug/996398")
 
         self.pyver = ".".join(get_software_version('Python').split(".")[:-1])
 

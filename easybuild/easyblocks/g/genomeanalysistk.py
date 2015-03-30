@@ -37,6 +37,7 @@ import os
 import shutil
 
 from easybuild.framework.easyblock import EasyBlock
+from easybuild.tools.build_log import EasyBuildError
 
 
 class EB_GenomeAnalysisTK(EasyBlock):
@@ -69,7 +70,7 @@ class EB_GenomeAnalysisTK(EasyBlock):
                     shutil.copy2(src, dst)
                     self.log.info("Successfully copied %s to %s" % (src, dst))
             except OSError, err:
-                self.log.error("Failed to copy %s to %s: %s" % (src, dst, err))
+                raise EasyBuildError("Failed to copy %s to %s: %s", src, dst, err)
 
         for subdir in ['resources']:
             try:
@@ -81,7 +82,7 @@ class EB_GenomeAnalysisTK(EasyBlock):
                     self.log.warning("No directory %s, so not copying it." % src_dir)
                 self.log.info("Successfully copied %s to %s" % (src_dir, dst_dir))
             except OSError, err:
-                self.log.error("Failed to copy %s to %s: %s" % (src_dir, dst_dir, err))
+                raise EasyBuildError("Failed to copy %s to %s: %s", src_dir, dst_dir, err)
 
     def sanity_check_step(self):
         """Custom sanity check for GenomeAnalysisTK"""

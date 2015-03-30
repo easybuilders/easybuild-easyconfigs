@@ -38,6 +38,7 @@ from distutils.version import LooseVersion
 
 from easybuild.easyblocks.generic.intelbase import IntelBase
 from easybuild.framework.easyconfig import CUSTOM
+from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.run import run_cmd
 
 class EB_itac(IntelBase):
@@ -91,7 +92,7 @@ EULA=accept
             try:
                 os.makedirs(tmpdir)
             except:
-                self.log.exception("Directory %s can't be created" % (tmpdir))
+                raise EasyBuildError("Directory %s can't be created", tmpdir)
 
             cmd = "./install.sh --tmp-dir=%s --silent=%s" % (tmpdir, silentcfg)
 

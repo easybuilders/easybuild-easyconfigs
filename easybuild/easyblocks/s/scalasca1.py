@@ -33,6 +33,7 @@ from distutils.version import LooseVersion
 
 import easybuild.tools.toolchain as toolchain
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
+from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.modules import get_software_root
 
 
@@ -43,9 +44,9 @@ class EB_Scalasca1(ConfigureMake):
         """Make sure this easyblock is applicable to the Scalasca version being built."""
         ver = LooseVersion(self.version)
         if ver >= LooseVersion('2.0') or ver < LooseVersion('1.0'):
-            msg = "The %s easyblock should only be used for Scalasca v1.x; " % self.__class__.__name__
-            msg += "for Scalasca v2.0 and more recent, try the EB_Score_minus_P easyblock."
-            self.log.error(msg)
+            raise EasyBuildError("The %s easyblock should only be used for Scalasca v1.x; "
+                                 "for Scalasca v2.0 and more recent, try the EB_Score_minus_P easyblock.",
+                                 self.__class__.__name__)
 
         super(EB_Scalasca1, self).check_readiness_step()
 
@@ -62,7 +63,8 @@ class EB_Scalasca1(ConfigureMake):
         if comp_fam in comp_opts:
             self.cfg.update('configopts', "--compiler=%s" % comp_opts[comp_fam])
         else:
-            self.log.error("Compiler family %s not supported yet (only: %s)" % (comp_fam, ', '.join(comp_opts.keys())))
+            raise EasyBuildError("Compiler family %s not supported yet (only: %s)",
+                                 comp_fam, ', '.join(comp_opts.keys()))
 
         mpi_opts = {
             toolchain.INTELMPI: 'intel2',  # intel: Intel MPI v1.x (ancient)
@@ -74,7 +76,7 @@ class EB_Scalasca1(ConfigureMake):
         if mpi_fam in mpi_opts:
             self.cfg.update('configopts', "--mpi=%s --enable-all-mpi-wrappers" % mpi_opts[mpi_fam])
         else:
-            self.log.error("MPI family %s not supported yet (only: %s)" % (mpi_fam, ', '.join(mpi_opts.keys())))
+            raise EasyBuildError("MPI family %s not supported yet (only: %s)", mpi_fam, ', '.join(mpi_opts.keys()))
 
         # auto-detection for dependencies mostly works fine, but hard specify paths anyway to have full control
         deps = {
@@ -104,7 +106,7 @@ class EB_Scalasca1(ConfigureMake):
                     build_dir_found = True
                     self.log.info("Stepped into build dir %s" % entry)
         except OSError, err:
-            self.log.error("Failed to step into build dir before starting actual build: %s" % err)
+            raise EasyBuildError("Failed to step into build dir before starting actual build: %s", err)
         if not build_dir_found:
-            self.log.error("Could not find build dir to step into.")
+            raise EasyBuildError("Could not find build dir to step into.")
         super(EB_Scalasca1, self).build_step()

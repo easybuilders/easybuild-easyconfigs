@@ -39,6 +39,7 @@ import easybuild.tools.toolchain as toolchain
 from distutils.version import LooseVersion
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.framework.easyconfig import CUSTOM
+from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.filetools import adjust_permissions, mkdir
 from easybuild.tools.modules import get_software_libdir, get_software_root, get_software_version
 from easybuild.tools.run import run_cmd
@@ -98,15 +99,16 @@ class EB_NWChem(ConfigureMake):
                     f = open(self.local_nwchemrc, 'w')
                     f.write('dummy')
                     f.close()
-                self.log.debug("Contents of %s: %s" % (os.path.dirname(self.local_nwchemrc), os.listdir(os.path.dirname(self.local_nwchemrc))))
+                self.log.debug("Contents of %s: %s", os.path.dirname(self.local_nwchemrc),
+                               os.listdir(os.path.dirname(self.local_nwchemrc)))
                 if os.path.exists(self.home_nwchemrc) and not os.path.samefile(self.home_nwchemrc, self.local_nwchemrc):
-                    msg = "Found %s, but it's not a symlink to %s" % (self.home_nwchemrc, self.local_nwchemrc)
-                    msg += "\nPlease (re)move %s while installing NWChem; it can be restored later" % self.home_nwchemrc
-                    self.log.error(msg)
+                    raise EasyBuildError("Found %s, but it's not a symlink to %s. "
+                                         "Please (re)move %s while installing NWChem; it can be restored later",
+                                         self.home_nwchemrc, self.local_nwchemrc, self.home_nwchemrc)
                 # ok to remove, we'll recreate it anyway
                 os.remove(self.local_nwchemrc)
         except (IOError, OSError), err:
-            self.log.error("Failed to validate %s symlink: %s" % (self.home_nwchemrc, err))
+            raise EasyBuildError("Failed to validate %s symlink: %s", self.home_nwchemrc, err)
 
         # building NWChem in a long path name is an issue, so let's make sure we have a short one
         try:
@@ -117,13 +119,13 @@ class EB_NWChem(ConfigureMake):
             os.chdir(tmpdir)
             self.cfg['start_dir'] = tmpdir
         except OSError, err:
-            self.log.error("Failed to symlink build dir to a shorter path name: %s" % err)
+            raise EasyBuildError("Failed to symlink build dir to a shorter path name: %s", err)
 
         # change to actual build dir
         try:
             os.chdir('src')
         except OSError, err:
-            self.log.error("Failed to change to build dir: %s" % err)
+            raise EasyBuildError("Failed to change to build dir: %s", err)
 
         nwchem_modules = self.cfg['modules']
 
@@ -140,7 +142,7 @@ class EB_NWChem(ConfigureMake):
         if 'python' in self.cfg['modules']:
             python_root = get_software_root('Python')
             if not python_root:
-                self.log.error("Python module not loaded, you should add Python as a dependency.")
+                raise EasyBuildError("Python module not loaded, you should add Python as a dependency.")
             env.setvar('PYTHONHOME', python_root)
             pyver = '.'.join(get_software_version('Python').split('.')[0:2])
             env.setvar('PYTHONVERSION', pyver)
@@ -151,7 +153,7 @@ class EB_NWChem(ConfigureMake):
                 libreadline_libdir = os.path.join(libreadline, get_software_libdir('libreadline'))
                 ncurses = get_software_root('ncurses')
                 if not ncurses:
-                    self.log.error("ncurses is not loaded, but required to link with libreadline")
+                    raise EasyBuildError("ncurses is not loaded, but required to link with libreadline")
                 ncurses_libdir = os.path.join(ncurses, get_software_libdir('ncurses'))
                 readline_libs = ' '.join([
                     os.path.join(libreadline_libdir, 'libreadline.a'),
@@ -186,7 +188,7 @@ class EB_NWChem(ConfigureMake):
         elif mpi_family in [toolchain.MPICH, toolchain.MPICH2]:
             libmpi = "-lmpichf90 -lmpich -lopa -lmpl -lrt -lpthread"
         else:
-            self.log.error("Don't know how to set LIBMPI for %s" % mpi_family)
+            raise EasyBuildError("Don't know how to set LIBMPI for %s", mpi_family)
         env.setvar('LIBMPI', libmpi)
 
         # compiler optimization flags: set environment variables _and_ add them to list of make options
@@ -262,7 +264,7 @@ class EB_NWChem(ConfigureMake):
             os.chdir(cwd)
 
         except OSError, err:
-            self.log.error("Failed to build version info: %s" % err)
+            raise EasyBuildError("Failed to build version info: %s", err)
 
         # run getmem.nwchem script to assess memory availability and make an educated guess
         # this is an alternative to specifying -DDFLT_TOT_MEM via LIB_DEFINES
@@ -273,7 +275,7 @@ class EB_NWChem(ConfigureMake):
                 run_cmd("./getmem.nwchem", simple=True, log_all=True, log_ok=True, log_output=True)
                 os.chdir(self.cfg['start_dir'])
             except OSError, err:
-                self.log.error("Failed to run getmem.nwchem script: %s" % err)
+                raise EasyBuildError("Failed to run getmem.nwchem script: %s", err)
 
     def install_step(self):
         """Custom install procedure for NWChem."""
@@ -294,7 +296,7 @@ class EB_NWChem(ConfigureMake):
                             os.path.join(self.installdir, 'data', 'libraryps'))
 
         except OSError, err:
-            self.log.error("Failed to install NWChem: %s" % err)
+            raise EasyBuildError("Failed to install NWChem: %s", err)
 
         # create NWChem settings file
         fn = os.path.join(self.installdir, 'data', 'default.nwchemrc')
@@ -316,7 +318,7 @@ class EB_NWChem(ConfigureMake):
             f.write(txt)
             f.close()
         except IOError, err:
-            self.log.error("Failed to create %s: %s" % (fn, err))
+            raise EasyBuildError("Failed to create %s: %s", fn, err)
 
         # fix permissions in data directory
         datadir = os.path.join(self.installdir, 'data')
@@ -362,7 +364,7 @@ class EB_NWChem(ConfigureMake):
             self.log.info("Copied %s to %s." % (exs_dir, self.examples_dir))
 
         except OSError, err:
-            self.log.error("Failed to copy examples: %s" % err)
+            raise EasyBuildError("Failed to copy examples: %s", err)
 
         super(EB_NWChem, self).cleanup_step()
 
@@ -410,7 +412,7 @@ class EB_NWChem(ConfigureMake):
                 if not os.path.exists(self.home_nwchemrc):
                     os.symlink(self.local_nwchemrc, self.home_nwchemrc)
             except OSError, err:
-                self.log.error("Failed to symlink %s to %s: %s" % (self.home_nwchemrc, self.local_nwchemrc, err))
+                raise EasyBuildError("Failed to symlink %s to %s: %s", self.home_nwchemrc, self.local_nwchemrc, err)
 
             # run tests, keep track of fail ratio
             cwd = os.getcwd()
@@ -481,17 +483,17 @@ class EB_NWChem(ConfigureMake):
 
             if fail_ratio > self.cfg['max_fail_ratio']:
                 max_fail_pcnt = self.cfg['max_fail_ratio'] * 100
-                self.log.error("Over %s%% of test cases failed, assuming broken build." % max_fail_pcnt)
+                raise EasyBuildError("Over %s%% of test cases failed, assuming broken build.", max_fail_pcnt)
 
             # cleanup
             try:
                 shutil.rmtree(self.examples_dir)
                 shutil.rmtree(local_nwchemrc_dir)
             except OSError, err:
-                self.log.error("Cleanup failed: %s" % err)
+                raise EasyBuildError("Cleanup failed: %s", err)
 
             # set post msg w.r.t. cleaning up $HOME/.nwchemrc symlink
             self.postmsg += "\nRemember to clean up %s after all NWChem builds are finished." % self.home_nwchemrc
 
         except OSError, err:
-            self.log.error("Failed to run test cases: %s" % err)
+            raise EasyBuildError("Failed to run test cases: %s", err)
