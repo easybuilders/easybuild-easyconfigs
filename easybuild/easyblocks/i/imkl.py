@@ -1,5 +1,5 @@
 # #
-# Copyright 2009-2013 Ghent University
+# Copyright 2009-2015 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -43,6 +43,7 @@ import easybuild.tools.environment as env
 import easybuild.tools.toolchain as toolchain
 from easybuild.easyblocks.generic.intelbase import IntelBase, ACTIVATION_NAME_2012, LICENSE_FILE_NAME_2012
 from easybuild.framework.easyconfig import CUSTOM
+from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.filetools import rmtree2
 from easybuild.tools.modules import get_software_root
 from easybuild.tools.run import run_cmd
@@ -98,7 +99,7 @@ class EB_imkl(IntelBase):
         """
         if LooseVersion(self.version) >= LooseVersion('10.3'):
             if self.cfg['m32']:
-                self.log.error("32-bit not supported yet for IMKL v%s (>= 10.3)" % self.version)
+                raise EasyBuildError("32-bit not supported yet for IMKL v%s (>= 10.3)", self.version)
             else:
                 retdict = {
                     'PATH': ['bin', 'mkl/bin', 'mkl/bin/intel64', 'composerxe-2011/bin'],
@@ -189,7 +190,7 @@ class EB_imkl(IntelBase):
                     f.close()
                     self.log.info("File %s written" % dest)
                 except IOError, err:
-                    self.log.exception("Can't write file %s: %s" % (dest, err))
+                    raise EasyBuildError("Can't write file %s: %s", dest, err)
 
         # build the mkl interfaces, if desired
         if self.cfg['interfaces']:
@@ -219,7 +220,7 @@ class EB_imkl(IntelBase):
                 os.chdir(interfacedir)
                 self.log.info("Changed to interfaces directory %s" % interfacedir)
             except OSError, err:
-                self.log.exception("Can't change to interfaces directory %s" % interfacedir)
+                raise EasyBuildError("Can't change to interfaces directory %s", interfacedir)
 
             compopt = None
             # determine whether we're using a non-Intel GCC-based toolchain
@@ -228,7 +229,8 @@ class EB_imkl(IntelBase):
                 if get_software_root('GCC'):
                     compopt = 'compiler=gnu'
                 else:
-                    self.log.error("Not using either Intel compilers nor GCC, don't know how to build wrapper libs")
+                    raise EasyBuildError("Not using either Intel compilers nor GCC, "
+                                         "don't know how to build wrapper libs")
             else:
                 compopt = 'compiler=intel'
 
@@ -293,12 +295,12 @@ class EB_imkl(IntelBase):
                         os.chdir(intdir)
                         self.log.info("Changed to interface %s directory %s" % (lib, intdir))
                     except OSError, err:
-                        self.log.error("Can't change to interface %s directory %s: %s" % (lib, intdir, err))
+                        raise EasyBuildError("Can't change to interface %s directory %s: %s", lib, intdir, err)
 
                     fullcmd = "%s %s" % (cmd, ' '.join(buildopts + extraopts))
                     res = run_cmd(fullcmd, log_all=True, simple=True)
                     if not res:
-                        self.log.error("Building %s (flags: %s, fullcmd: %s) failed" % (lib, flags, fullcmd))
+                        raise EasyBuildError("Building %s (flags: %s, fullcmd: %s) failed", lib, flags, fullcmd)
 
                     for fn in os.listdir(tmpbuild):
                         src = os.path.join(tmpbuild, fn)
@@ -312,7 +314,7 @@ class EB_imkl(IntelBase):
                                 shutil.move(src, dest)
                                 self.log.info("Moved %s to %s" % (src, dest))
                         except OSError, err:
-                            self.log.error("Failed to move %s to %s: %s" % (src, dest, err))
+                            raise EasyBuildError("Failed to move %s to %s: %s", src, dest, err)
 
                     rmtree2(tmpbuild)
 
@@ -329,7 +331,7 @@ class EB_imkl(IntelBase):
             if get_software_root('GCC'):
                 compsuff = '_gnu'
             else:
-                self.log.error("Not using Intel compilers or GCC, don't know compiler suffix for FFTW libraries.")
+                raise EasyBuildError("Not using Intel compilers or GCC, don't know compiler suffix for FFTW libraries.")
 
         if self.cfg['interfaces']:
             precs = ['_double', '_single']
@@ -356,7 +358,7 @@ class EB_imkl(IntelBase):
 
         if ver >= LooseVersion('10.3'):
             if self.cfg['m32']:
-                self.log.error("Sanity check for 32-bit not implemented yet for IMKL v%s (>= 10.3)" % self.version)
+                raise EasyBuildError("Sanity check for 32-bit not implemented yet for IMKL v%s (>= 10.3)", self.version)
             else:
                 mkldirs = ["bin", "mkl/bin", "mkl/bin/intel64", "mkl/lib/intel64", "mkl/include"]
                 libs += [lib % {'suff': suff} for lib in extralibs for suff in ['lp64', 'ilp64']]

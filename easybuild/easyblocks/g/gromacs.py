@@ -36,6 +36,7 @@ import easybuild.tools.environment as env
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.easyblocks.generic.cmakemake import CMakeMake
 from easybuild.framework.easyconfig import CUSTOM
+from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.modules import get_software_root
 
 class EB_GROMACS(CMakeMake):
@@ -52,7 +53,7 @@ class EB_GROMACS(CMakeMake):
         """Custom configuration procedure for GROMACS: set configure options for configure or cmake."""
 
         if LooseVersion(self.version) < LooseVersion('4.6'):
-
+            self.log.info("Using configure script for configuring GROMACS build.")
             # Use static libraries if possible
             self.cfg.update('configopts', "--enable-static")
 
@@ -156,7 +157,7 @@ class EB_GROMACS(CMakeMake):
                 for pattern in patterns:
                     regex = re.compile(pattern, re.M)
                     if not regex.search(out):
-                        self.log.error("Pattern '%s' not found in GROMACS configuration output." % pattern)
+                        raise EasyBuildError("Pattern '%s' not found in GROMACS configuration output.", pattern)
 
     def build_step(self):
         """ For older versions of GROMACS, allow for a separate mdrun build if

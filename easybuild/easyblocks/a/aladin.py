@@ -1,5 +1,5 @@
 ##
-# Copyright 2009-2013 Ghent University
+# Copyright 2009-2015 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -38,6 +38,7 @@ import easybuild.tools.environment as env
 import easybuild.tools.toolchain as toolchain
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import CUSTOM
+from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.modules import get_software_root
 from easybuild.tools.ordereddict import OrderedDict
 from easybuild.tools.run import run_cmd, run_cmd_qa
@@ -86,7 +87,7 @@ class EB_ALADIN(EasyBlock):
         elif self.toolchain.comp_family() == toolchain.INTELCOMP:
             my_gnu = 'i'  # icc/ifort
         else:
-            self.log.error("Don't know how to set 'my_gnu' variable in auxlibs build script.")
+            raise EasyBuildError("Don't know how to set 'my_gnu' variable in auxlibs build script.")
         self.log.info("my_gnu set to '%s'" % my_gnu)
 
         tmp_installroot = tempfile.mkdtemp(prefix='aladin_auxlibs_')
@@ -116,7 +117,7 @@ class EB_ALADIN(EasyBlock):
             os.chdir(cwd)
 
         except OSError, err:
-            self.log.error("Failed to build ALADIN: %s" % err)
+            raise EasyBuildError("Failed to build ALADIN: %s", err)
 
         # build gmkpack, update PATH and set GMKROOT
         # we build gmkpack here because a config file is generated in the gmkpack isntall path
@@ -139,7 +140,7 @@ class EB_ALADIN(EasyBlock):
             env.setvar('GMKROOT', os.path.join(self.builddir, gmkpack_dir))
 
         except OSError, err:
-            self.log.error("Failed to build gmkpack: %s" % err)
+            raise EasyBuildError("Failed to build gmkpack: %s", err)
 
         # generate gmkpack configuration file
         self.conf_file = 'ALADIN_%s' % self.version
@@ -155,7 +156,7 @@ class EB_ALADIN(EasyBlock):
                 os.makedirs(archdir)
 
         except OSError, err:
-            self.log.error("Failed to remove existing file %s: %s" % (self.conf_filepath, err))
+            raise EasyBuildError("Failed to remove existing file %s: %s", self.conf_filepath, err)
 
         mpich = 'n'
         known_mpi_libs = [toolchain.MPICH, toolchain.MPICH2, toolchain.INTELMPI]
@@ -172,7 +173,7 @@ class EB_ALADIN(EasyBlock):
         elif comp_fam == toolchain.INTELCOMP:
             gribdir = 'INTEL'
         else:
-            self.log.error("Don't know which grib lib dir to use for compiler %s" % comp_fam)
+            raise EasyBuildError("Don't know which grib lib dir to use for compiler %s", comp_fam)
 
         aux_lib_gribex = os.path.join(tmp_installroot, gribdir, 'lib', 'libgribex.a')
         aux_lib_ibm = os.path.join(tmp_installroot, gribdir, 'lib', 'libibmdummy.a')
@@ -267,7 +268,7 @@ class EB_ALADIN(EasyBlock):
             os.mkdir(os.getenv('ROOTPACK'))
             os.mkdir(os.getenv('HOMEPACK'))
         except OSError, err:
-            self.log.error("Failed to create rootpack dir in %s: %s" % err)
+            raise EasyBuildError("Failed to create rootpack dir in %s: %s", err)
 
         # create rootpack
         [v1, v2] = self.version.split('_')
@@ -278,7 +279,7 @@ class EB_ALADIN(EasyBlock):
         if res:
             self.rootpack_dir = os.path.join('rootpack', res.group(1))
         else:
-            self.log.error("Failed to determine rootpack dir.")
+            raise EasyBuildError("Failed to determine rootpack dir.")
 
         # copy ALADIN sources to right directory
         try:
@@ -289,7 +290,7 @@ class EB_ALADIN(EasyBlock):
                 shutil.copytree(os.path.join(self.builddir, srcdir), os.path.join(target, srcdir))
                 self.log.info("Copied %s" % srcdir)
         except OSError, err:
-            self.log.error("Failed to copy ALADIN sources: %s" % err)
+            raise EasyBuildError("Failed to copy ALADIN sources: %s", err)
 
         if self.cfg['parallel']:
             env.setvar('GMK_THREADS', str(self.cfg['parallel']))

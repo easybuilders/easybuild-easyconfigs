@@ -1,5 +1,5 @@
 ##
-# Copyright 2009-2013 Ghent University
+# Copyright 2009-2015 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -42,6 +42,7 @@ from distutils.version import LooseVersion
 import easybuild.tools.toolchain as toolchain
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import CUSTOM
+from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.modules import get_software_root
 from easybuild.tools.run import run_cmd
 
@@ -74,7 +75,7 @@ class EB_Trinity(EasyBlock):
         try:
             os.chdir(dst)
         except OSError, err:
-            self.log.error("Butterfly: failed to change to dst dir %s" % (dst, err))
+            raise EasyBuildError("Butterfly: failed to change to dst dir %s: %s", dst, err)
 
         cmd = "ant"
         run_cmd(cmd)
@@ -99,7 +100,7 @@ class EB_Trinity(EasyBlock):
             try:
                 os.chdir(dst)
             except OSError, err:
-                self.log.error("Chrysalis: failed to change to dst dir %s: %s" % (dst, err))
+                raise EasyBuildError("Chrysalis: failed to change to dst dir %s: %s", dst, err)
 
             run_cmd("make clean")
             run_cmd("make %s" % make_flags)
@@ -121,7 +122,7 @@ class EB_Trinity(EasyBlock):
             try:
                 os.chdir(dst)
             except OSError, err:
-                self.log.error("Inchworm: failed to change to dst dir %s: %s" % (dst, err))
+                raise EasyBuildError("Inchworm: failed to change to dst dir %s: %s", dst, err)
 
             run_cmd('./configure --prefix=%s' % dst)
             run_cmd("make install %s" % make_flags)
@@ -147,11 +148,14 @@ class EB_Trinity(EasyBlock):
             try:
                 # remove original symlink
                 os.unlink(orig_jellyfishdir)
+            except OSError, err:
+                self.log.warning("jellyfish plugin: failed to remove dir %s: %s" % (orig_jellyfishdir, err))
+            try:
                 # create new one
                 os.symlink(jellyfishdir, orig_jellyfishdir)
                 os.chdir(orig_jellyfishdir)
             except OSError, err:
-                self.log.error("jellyfish plugin: failed to change dir %s: %s" % (orig_jellyfishdir, err))
+                raise EasyBuildError("jellyfish plugin: failed to change dir %s: %s", orig_jellyfishdir, err)
 
             run_cmd('./configure --prefix=%s' % orig_jellyfishdir)
             cmd = "make CC='%s' CXX='%s' CFLAGS='%s'" % (os.getenv('CC'), os.getenv('CXX'), os.getenv('CFLAGS'))
@@ -164,9 +168,9 @@ class EB_Trinity(EasyBlock):
             try:
                 os.chdir(cwd)
             except OSError:
-                self.log.error("jellyfish: Could not return to original dir %s", cwd)
+                raise EasyBuildError("jellyfish: Could not return to original dir %s", cwd)
         elif jellyfishdirs:
-            self.log.error("Found multiple 'jellyfish-*' directories: %s", jellyfishdirs)
+            raise EasyBuildError("Found multiple 'jellyfish-*' directories: %s", jellyfishdirs)
         else:
             self.log.info("no seperate source found for jellyfish, letting Makefile build shipped version")
 
@@ -181,7 +185,7 @@ class EB_Trinity(EasyBlock):
         try:
             os.chdir(dst)
         except OSError, err:
-            self.log.error("Meryl: failed to change to dst dir %s: %s" % (dst, err))
+            raise EasyBuildError("Meryl: failed to change to dst dir %s: %s", dst, err)
 
         cmd = "./configure.sh"
         run_cmd(cmd)
@@ -203,7 +207,7 @@ class EB_Trinity(EasyBlock):
         try:
             os.chdir(dst)
         except OSError, err:
-            self.log.error("%s plugin: failed to change to dst dir %s: %s" % (plugindir, dst, err))
+            raise EasyBuildError("%s plugin: failed to change to dst dir %s: %s", plugindir, dst, err)
 
         if not cc:
             cc = os.getenv('CC')
@@ -273,7 +277,7 @@ class EB_Trinity(EasyBlock):
             elif comp_fam in [toolchain.GCC]:
                 trinity_compiler = "gcc"
             else:
-                self.log.error("Don't know how to set TRINITY_COMPILER for %s compiler" % comp_fam)
+                raise EasyBuildError("Don't know how to set TRINITY_COMPILER for %s compiler", comp_fam)
 
             cmd = "make TRINITY_COMPILER=%s" % trinity_compiler
             run_cmd(cmd)
@@ -286,7 +290,7 @@ class EB_Trinity(EasyBlock):
             try:
                 shutil.rmtree(os.path.join(self.cfg['start_dir'], 'sample_data'))
             except OSError, err:
-                self.log.error("Failed to remove sample data: %s" % err)
+                raise EasyBuildError("Failed to remove sample data: %s", err)
 
     def sanity_check_step(self):
         """Custom sanity check for Trinity."""

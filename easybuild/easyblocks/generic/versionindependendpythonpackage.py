@@ -25,7 +25,7 @@
 """
 EasyBuild support for building and installing a Pythonpackage independend of a python version as an easyblock.
 
-This easyblock is deprecated, and is replaced by VersionIndependentPythonPackage (fixes a typo in the class name).
+This easyblock is no longer supported, and is replaced by VersionIndependentPythonPackage (fixes a typo in the class name).
 
 @author: Kenneth Hoste, Jens Timmerman (Ghent University)
 """
@@ -33,9 +33,8 @@ from easybuild.easyblocks.generic.versionindependentpythonpackage import Version
 
 
 class VersionIndependendPythonPackage(VersionIndependentPythonPackage):
-    """Deprecated support for building/installing python packages without requiring a specific python package."""
+    """No longer supported class for building/installing python packages without requiring a specific python package."""
 
     def prepare_step(self):
-        """Indicate that this easyblock is deprecated."""
-        super(VersionIndependendPythonPackage, self).prepare_step()
-        self.log.deprecated("Replaced by VersionIndependentPythonPackage easyblock", '2.0')
+        """Indicate that this easyblock is no longer supported."""
+        self.log.nosupport("Replaced by VersionIndependentPythonPackage easyblock", '2.0')

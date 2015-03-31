@@ -1,5 +1,5 @@
 ##
-# Copyright 2009-2013 Ghent University
+# Copyright 2009-2015 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -86,7 +86,7 @@ class EB_Python(ConfigureMake):
                     line = re.sub(r"^#readline readline.c.*", readline, line)
                     sys.stdout.write(line)
             else:
-                self.log.error("Both libreadline and ncurses are required to ensure readline support")
+                raise EasyBuildError("Both libreadline and ncurses are required to ensure readline support")
 
         openssl = get_software_root('OpenSSL')
         if openssl:
@@ -109,7 +109,7 @@ class EB_Python(ConfigureMake):
             try:
                 os.symlink(srcbin, python_binary_path)
             except OSError, err:
-                self.log.error("Failed to symlink %s to %s: %s" % err)
+                raise EasyBuildError("Failed to symlink %s to %s: %s", srcbin, python_binary_path, err)
 
     def sanity_check_step(self):
         """Custom sanity check for Python."""
@@ -119,7 +119,7 @@ class EB_Python(ConfigureMake):
         try:
             fake_mod_data = self.load_fake_module()
         except EasyBuildError, err:
-            self.log.error("Loading fake module failed: %s" % err)
+            raise EasyBuildError("Loading fake module failed: %s", err)
 
         abiflags = ''
         if LooseVersion(self.version) >= LooseVersion("3"):
@@ -127,7 +127,7 @@ class EB_Python(ConfigureMake):
             cmd = 'python -c "import sysconfig; print(sysconfig.get_config_var(\'abiflags\'));"'
             (abiflags, _) = run_cmd(cmd, log_all=True, simple=False)
             if not abiflags:
-                self.log.error("Failed to determine abiflags: %s" % abiflags)
+                raise EasyBuildError("Failed to determine abiflags: %s", abiflags)
             else:
                 abiflags = abiflags.strip()
 

@@ -1,5 +1,5 @@
 ##
-# Copyright 2009-2013 Ghent University
+# Copyright 2009-2015 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -44,6 +44,7 @@ from distutils.version import LooseVersion
 import easybuild.tools.toolchain as toolchain
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import CUSTOM
+from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.modules import get_software_root, get_software_version
 from easybuild.tools.run import run_cmd
 from easybuild.tools.systemtools import get_avail_core_count
@@ -80,9 +81,6 @@ class EB_CP2K(EasyBlock):
 
         self.make_instructions = ''
 
-        # always enable testing for CP2K
-        self.cfg['runtest'] = True
-
     @staticmethod
     def extra_options():
         extra_vars = {
@@ -97,6 +95,7 @@ class EB_CP2K(EasyBlock):
                                              "(should be used with care)"), CUSTOM],
             'maxtasks': [3, ("Maximum number of CP2K instances run at "
                              "the same time during testing"), CUSTOM],
+            'runtest': [True, "Build and run CP2K tests", CUSTOM],
         }
         return EasyBlock.extra_options(extra_vars)
 
@@ -116,7 +115,8 @@ class EB_CP2K(EasyBlock):
 
         known_types = ['popt', 'psmp']
         if self.cfg['type'] not in known_types:
-            self.log.error("Unknown build type specified: '%s', known types are %s" % (self.cfg['type'], known_types))
+            raise EasyBuildError("Unknown build type specified: '%s', known types are %s",
+                                 self.cfg['type'], known_types)
 
         # correct start dir, if needed
         # recent CP2K versions have a 'cp2k' dir in the unpacked 'cp2k' dir
@@ -168,7 +168,7 @@ class EB_CP2K(EasyBlock):
         elif comp_fam == toolchain.GCC:
             options = self.configure_GCC_based()
         else:
-            self.log.error("Don't know how to tweak configuration for compiler used.")
+            raise EasyBuildError("Don't know how to tweak configuration for compiler used.")
 
         # BLAS related
         if get_software_root('IMKL'):
@@ -202,7 +202,7 @@ class EB_CP2K(EasyBlock):
             f.close()
             self.log.info("Content of makefile (%s):\n%s" % (archfile, txt))
         except IOError, err:
-            self.log.error("Writing makefile %s failed: %s" % (archfile, err))
+            raise EasyBuildError("Writing makefile %s failed: %s", archfile, err)
 
     def prepmodinc(self):
         """Prepare list of module files"""
@@ -220,7 +220,7 @@ class EB_CP2K(EasyBlock):
             try:
                 os.mkdir(modincpath)
             except OSError, err:
-                self.log.error("Failed to create directory for module include files: %s" % err)
+                raise EasyBuildError("Failed to create directory for module include files: %s", err)
 
             # get list of modinc source files
             modincdir = os.path.join(imkl, self.cfg["modincprefix"], 'include')
@@ -232,12 +232,12 @@ class EB_CP2K(EasyBlock):
                 modfiles = glob.glob(os.path.join(modincdir, '*.f90'))
 
             else:
-                self.log.error("prepmodinc: Please specify either a boolean value "
-                               "or a list of files in modinc (found: %s)." % self.cfg["modinc"])
+                raise EasyBuildError("prepmodinc: Please specify either a boolean value or a list of files in modinc "
+                                     "(found: %s).", self.cfg["modinc"])
 
             f77 = os.getenv('F77')
             if not f77:
-                self.log.error("F77 environment variable not set, can't continue.")
+                raise EasyBuildError("F77 environment variable not set, can't continue.")
 
             # create modinc files
             for f in modfiles:
@@ -246,13 +246,13 @@ class EB_CP2K(EasyBlock):
                 elif f77 in ['gfortran', 'mpif77']:
                     cmd = "%s -J%s -c %s" % (f77, modincpath, f)
                 else:
-                    self.log.error("prepmodinc: Unknown value specified for F77 (%s)" % f77)
+                    raise EasyBuildError("prepmodinc: Unknown value specified for F77 (%s)", f77)
 
                 run_cmd(cmd, log_all=True, simple=True)
 
             return modincpath
         else:
-            self.log.error("Don't know how to prepare modinc, IMKL not found")
+            raise EasyBuildError("Don't know how to prepare modinc, IMKL not found")
 
     def configure_common(self):
         """Common configuration for all toolchains"""
@@ -272,16 +272,28 @@ class EB_CP2K(EasyBlock):
             regflags = 'NOOPT'
 
         # make sure a MPI-2 able MPI lib is used
-        mpi2libs = ['impi', 'MVAPICH2', 'OpenMPI']
         mpi2 = False
-        for mpi2lib in mpi2libs:
-            if get_software_root(mpi2lib):
+        if hasattr(self.toolchain, 'MPI_FAMILY') and self.toolchain.MPI_FAMILY is not None:
+            known_mpi2_fams = [toolchain.MPICH, toolchain.MPICH2, toolchain.MVAPICH2, toolchain.OPENMPI,
+                               toolchain.INTELMPI]
+            mpi_fam = self.toolchain.mpi_family()
+            if mpi_fam in known_mpi2_fams:
                 mpi2 = True
+                self.log.debug("Determined MPI2 compatibility based on MPI toolchain component: %s" % mpi_fam)
             else:
-                self.log.debug("MPI-2 supporting MPI library %s not loaded.")
-
+                self.log.debug("Cannot determine MPI2 compatibility based on MPI toolchain component: %s" % mpi_fam)
+        else:
+            # can't use toolchain.mpi_family, because of dummy toolchain
+            mpi2libs = ['impi', 'MVAPICH2', 'OpenMPI', 'MPICH2', 'MPICH']
+            for mpi2lib in mpi2libs:
+                if get_software_root(mpi2lib):
+                    mpi2 = True
+                    self.log.debug("Determined MPI2 compatibility based on loaded MPI module: %s")
+                else:
+                    self.log.debug("MPI-2 supporting MPI library %s not loaded.")
+            
         if not mpi2:
-            self.log.error("CP2K needs MPI-2, no known MPI-2 supporting library loaded?")
+            raise EasyBuildError("CP2K needs MPI-2, no known MPI-2 supporting library loaded?")
 
         options = {
             'CC': os.getenv('MPICC'),
@@ -331,12 +343,12 @@ class EB_CP2K(EasyBlock):
                         libinttools_path = path
                         os.chdir(libinttools_path)
                 if not libinttools_path:
-                    self.log.error("No libinttools dir found")
+                    raise EasyBuildError("No libinttools dir found")
 
                 # build libint wrapper
                 cmd = "%s -c libint_cpp_wrapper.cpp -I%s/include" % (libintcompiler, libint)
                 if not run_cmd(cmd, log_all=True, simple=True):
-                    self.log.error("Building the libint wrapper failed")
+                    raise EasyBuildError("Building the libint wrapper failed")
                 libint_wrapper = '%s/libint_cpp_wrapper.o' % libinttools_path
 
             # determine LibInt libraries based on major version number
@@ -346,7 +358,7 @@ class EB_CP2K(EasyBlock):
             elif libint_maj_ver == '2':
                 libint_libs = "$(LIBINTLIB)/libint2.a"
             else:
-                self.log.error("Don't know how to handle libint version %s" % libint_maj_ver)
+                raise EasyBuildError("Don't know how to handle libint version %s", libint_maj_ver)
             self.log.info("Using LibInt version %s" % (libint_maj_ver))
 
             options['LIBINTLIB'] = '%s/lib' % libint
@@ -361,7 +373,7 @@ class EB_CP2K(EasyBlock):
         if libxc:
             cur_libxc_version = get_software_version('libxc')
             if LooseVersion(cur_libxc_version) < LooseVersion(LIBXC_MIN_VERSION):
-                self.log.error("CP2K only works with libxc v%s (or later)" % LIBXC_MIN_VERSION)
+                raise EasyBuildError("CP2K only works with libxc v%s (or later)", LIBXC_MIN_VERSION)
 
             options['DFLAGS'] += ' -D__LIBXC2'
             if LooseVersion(cur_libxc_version) >= LooseVersion('2.2'):
@@ -422,17 +434,17 @@ class EB_CP2K(EasyBlock):
                 self.make_instructions += "qs_vxc_atom.o: qs_vxc_atom.F\n\t$(FC) -c $(FCFLAGS2) $<\n"
 
             else:
-                self.log.error(failmsg % ("v12", "v2011.8"))
+                raise EasyBuildError(failmsg, "v12", "v2011.8")
 
         elif ifortver >= LooseVersion("11"):
             if LooseVersion(get_software_version('ifort')) >= LooseVersion("11.1.072"):
                 self.make_instructions += "qs_vxc_atom.o: qs_vxc_atom.F\n\t$(FC) -c $(FCFLAGS2) $<\n"
 
             else:
-                self.log.error(failmsg % ("v11", "v11.1.072"))
+                raise EasyBuildError(failmsg, "v11", "v11.1.072")
 
         else:
-            self.log.error("Intel compilers version %s not supported yet." % ifortver)
+            raise EasyBuildError("Intel compilers version %s not supported yet.", ifortver)
 
         return options
 
@@ -555,8 +567,8 @@ class EB_CP2K(EasyBlock):
         makefiles = os.path.join(self.cfg['start_dir'], 'makefiles')
         try:
             os.chdir(makefiles)
-        except:
-            self.log.error("Can't change to makefiles dir %s: %s" % (makefiles))
+        except OSError, err:
+            raise EasyBuildError("Can't change to makefiles dir %s: %s", makefiles, err)
 
         # modify makefile for parallel build
         parallel = self.cfg['parallel']
@@ -567,7 +579,7 @@ class EB_CP2K(EasyBlock):
                     line = re.sub(r"^PMAKE\s*=.*$", "PMAKE\t= $(SMAKE) -j %s" % parallel, line)
                     sys.stdout.write(line)
             except IOError, err:
-                self.log.error("Can't modify/write Makefile in %s: %s" % (makefiles, err))
+                raise EasyBuildError("Can't modify/write Makefile in %s: %s", makefiles, err)
 
         # update make options with MAKE
         self.cfg.update('buildopts', 'MAKE="make -j %s" all' % self.cfg['parallel'])
@@ -592,7 +604,7 @@ class EB_CP2K(EasyBlock):
             try:
                 os.chdir(self.builddir)
             except OSError, err:
-                self.log.error("Failed to change to %s: %s" % self.builddir)
+                raise EasyBuildError("Failed to change to %s: %s", self.builddir, err)
 
             # use regression test reference output if available
             # try and find an unpacked directory that starts with 'LAST-'
@@ -619,14 +631,14 @@ class EB_CP2K(EasyBlock):
                         line = re.sub(r"^(dir_last\s*=\${dir_base})/.*$", r"\1/%s" % regtest_refdir, line)
                         sys.stdout.write(line)
                 except IOError, err:
-                    self.log.error("Failed to modify '%s': %s" % (regtest_script, err))
+                    raise EasyBuildError("Failed to modify '%s': %s", regtest_script, err)
 
             else:
                 self.log.info("No reference output found for regression test, just continuing without it...")
 
             test_core_cnt = min(self.cfg.get('parallel', sys.maxint), 2)
             if get_avail_core_count() < test_core_cnt:
-                self.log.error("Cannot run MPI tests as not enough cores (< %s) are available" % test_core_cnt)
+                raise EasyBuildError("Cannot run MPI tests as not enough cores (< %s) are available", test_core_cnt)
             else:
                 self.log.info("Using %s cores for the MPI tests" % test_core_cnt)
 
@@ -656,7 +668,7 @@ class EB_CP2K(EasyBlock):
                 f.write(cfg_txt)
                 f.close()
             except IOError, err:
-                self.log.error("Failed to create config file %s: %s" % (cfg_fn, err))
+                raise EasyBuildError("Failed to create config file %s: %s", cfg_fn, err)
 
             self.log.debug("Contents of %s: %s" % (cfg_fn, cfg_txt))
 
@@ -666,7 +678,7 @@ class EB_CP2K(EasyBlock):
             if ec == 0:
                 self.log.info("Regression test output:\n%s" % regtest_output)
             else:
-                self.log.error("Regression test failed (non-zero exit code): %s" % regtest_output)
+                raise EasyBuildError("Regression test failed (non-zero exit code): %s", regtest_output)
 
             # pattern to search for regression test summary
             re_pattern = "number\s+of\s+%s\s+tests\s+(?P<cnt>[0-9]+)"
@@ -678,8 +690,7 @@ class EB_CP2K(EasyBlock):
             if res:
                 tot_cnt = int(res.group('cnt'))
             else:
-                self.log.error("Finding total number of tests in regression test summary failed")
-            msg = "Regression test reported %%s / %s %%s tests" % tot_cnt
+                raise EasyBuildError("Finding total number of tests in regression test summary failed")
 
             # function to report on regtest results
             def test_report(test_result):
@@ -693,24 +704,26 @@ class EB_CP2K(EasyBlock):
                 cnt = None
                 res = regexp.search(regtest_output)
                 if not res:
-                    self.log.error("Finding number of %s tests in regression test summary failed" % test_result.lower())
+                    raise EasyBuildError("Finding number of %s tests in regression test summary failed",
+                                         test_result.lower())
                 else:
                     cnt = int(res.group('cnt'))
 
-                logmsg = msg % (cnt, test_result.lower())
+                logmsg = "Regression test reported %s / %s %s tests"
+                logmsg_values = (cnt, tot_cnt, test_result.lower())
 
                 # failed tests indicate problem with installation
                 # wrong tests are only an issue when there are excessively many
                 if (test_result == "FAILED" and cnt > 0) or (test_result == "WRONG" and (cnt / tot_cnt) > 0.1):
                     if self.cfg['ignore_regtest_fails']:
-                        self.log.warning(logmsg)
+                        self.log.warning(logmsg, *logmsg_values)
                         self.log.info("Ignoring failures in regression test, as requested.")
                     else:
-                        self.log.error(logmsg)
+                        raise EasyBuildError(logmsg, *logmsg_values)
                 elif test_result == "CORRECT" or cnt == 0:
-                    self.log.info(logmsg)
+                    self.log.info(logmsg, *logmsg_values)
                 else:
-                    self.log.warning(logmsg)
+                    self.log.warning(logmsg, *logmsg_values)
 
                 return postmsg
 
@@ -742,7 +755,7 @@ class EB_CP2K(EasyBlock):
                 if os.path.isfile(exefile):
                     shutil.copy2(exefile, targetdir)
         except OSError, err:
-            self.log.error("Copying executables from %s to bin dir %s failed: %s" % (exedir, targetdir, err))
+            raise EasyBuildError("Copying executables from %s to bin dir %s failed: %s", exedir, targetdir, err)
 
         # copy tests
         srctests = os.path.join(self.cfg['start_dir'], 'tests')
@@ -753,7 +766,7 @@ class EB_CP2K(EasyBlock):
             try:
                 shutil.copytree(srctests, targetdir)
             except:
-                self.log.error("Copying tests from %s to %s failed" % (srctests, targetdir))
+                raise EasyBuildError("Copying tests from %s to %s failed", srctests, targetdir)
 
         # copy regression test results
         if self.cfg['runtest']:
@@ -767,7 +780,7 @@ class EB_CP2K(EasyBlock):
                         self.log.info("Regression test results dir %s copied to %s" % (d, self.installdir))
                         break
             except (OSError, IOError), err:
-                self.log.error("Failed to copy regression test results dir: %s" % err)
+                raise EasyBuildError("Failed to copy regression test results dir: %s", err)
 
     def sanity_check_step(self):
         """Custom sanity check for CP2K"""

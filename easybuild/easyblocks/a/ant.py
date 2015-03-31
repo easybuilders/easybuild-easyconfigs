@@ -1,5 +1,5 @@
 ##
-# Copyright 2009-2013 Ghent University
+# Copyright 2009-2015 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -32,6 +32,7 @@ import os
 import shutil
 
 from easybuild.framework.easyblock import EasyBlock
+from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.modules import get_software_root, get_software_version
 from easybuild.tools.run import run_cmd
 
@@ -52,7 +53,7 @@ class EB_ant(EasyBlock):
 
         junit_root = get_software_root('JUnit')
         if not junit_root:
-            self.log.error("JUnit module not loaded!")
+            raise EasyBuildError("JUnit module not loaded!")
 
         junit_ver = get_software_version('JUnit')
 
@@ -61,7 +62,7 @@ class EB_ant(EasyBlock):
             shutil.copy(os.path.join(junit_root, 'junit-%s.jar' % junit_ver),
                         os.path.join(os.getcwd(), "lib", "optional"))
         except OSError, err:
-            self.log.error("Failed to copy JUnit jar: %s" % err)
+            raise EasyBuildError("Failed to copy JUnit jar: %s", err)
 
         cmd = "sh build.sh -Ddist.dir=%s dist" % self.installdir
 

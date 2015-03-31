@@ -1,7 +1,7 @@
 ##
 # This file is an EasyBuild reciPY as per https://github.com/hpcugent/easybuild
 #
-# Copyright:: Copyright 2012-2014 Uni.Lu/LCSB, NTUA
+# Copyright:: Copyright 2012-2015 Uni.Lu/LCSB, NTUA
 # Authors::   Cedric Laczny <cedric.laczny@uni.lu>, Fotis Georgatos <fotis@cern.ch>, Kenneth Hoste
 # License::   MIT/GPL
 # $Id$
@@ -21,6 +21,7 @@ import os
 import shutil
 
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
+from easybuild.tools.build_log import EasyBuildError
 
 
 class EB_Bowtie2(ConfigureMake):
@@ -49,7 +50,7 @@ class EB_Bowtie2(ConfigureMake):
                 srcfile = os.path.join(srcdir, filename)
                 shutil.copy2(srcfile, destdir)
         except OSError, err:
-            self.log.error("Copying %s to installation dir %s failed: %s" % (srcfile, destdir, err))
+            raise EasyBuildError("Copying %s to installation dir %s failed: %s", srcfile, destdir, err)
 
     def sanity_check_step(self):
         """Custom sanity check for Bowtie2."""

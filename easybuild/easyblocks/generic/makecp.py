@@ -33,6 +33,8 @@ import glob
 
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.framework.easyconfig import BUILD, MANDATORY
+from easybuild.tools.build_log import EasyBuildError
+
 
 class MakeCp(ConfigureMake):
     """
@@ -74,13 +76,13 @@ class MakeCp(ConfigureMake):
                         files_specs = fil[0]
                         target = os.path.join(self.installdir, fil[1])
                     else:
-                        self.log.error("Only tuples of format '([<source files>], <target dir>)' supported.")
+                        raise EasyBuildError("Only tuples of format '([<source files>], <target dir>)' supported.")
                 # 'src_file' or 'src_dir'
                 elif isinstance(fil, basestring):
                     files_specs = [fil]
                     target = self.installdir
                 else:
-                    self.log.error("Found neither string nor tuple as file to copy: '%s' (type %s)" % (fil, type(fil)))
+                    raise EasyBuildError("Found neither string nor tuple as file to copy: '%s' (type %s)", fil, type(fil))
 
                 if not os.path.exists(target):
                     os.makedirs(target)
@@ -100,7 +102,7 @@ class MakeCp(ConfigureMake):
 
                     # there should be at least one match per file spec
                     if not filepaths:
-                        self.log.error("No files matching '%s' found anywhere." % files_spec)
+                        raise EasyBuildError("No files matching '%s' found anywhere.", files_spec)
 
                     for filepath in filepaths:
                         # copy individual file
@@ -112,7 +114,7 @@ class MakeCp(ConfigureMake):
                             self.log.debug("Copying directory %s to %s" % (filepath, target))
                             shutil.copytree(filepath, os.path.join(target, os.path.basename(filepath)))
                         else:
-                            self.log.error("Can't copy non-existing path %s to %s" % (filepath, target))
+                            raise EasyBuildError("Can't copy non-existing path %s to %s", filepath, target)
 
         except OSError, err:
-            self.log.error("Copying %s to installation dir failed: %s" % (fil, err))
+            raise EasyBuildError("Copying %s to installation dir failed: %s", fil, err)

@@ -23,30 +23,40 @@
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
 """
-EasyBuild support for PyZMQ, implemented as an easyblock
+EasyBuild support for installing a bundle of modules, implemented as a generic easyblock
 
 @author: Stijn De Weirdt (Ghent University)
+@author: Dries Verdegem (Ghent University)
+@author: Kenneth Hoste (Ghent University)
+@author: Pieter De Baets (Ghent University)
+@author: Jens Timmerman (Ghent University)
 """
 
-from easybuild.easyblocks.generic.pythonpackage import PythonPackage
-from easybuild.tools.modules import get_software_root
+from easybuild.framework.easyblock import EasyBlock
 
 
-class EB_PyZMQ(PythonPackage):
-    """Support for installing the PyZMQ Python package."""
+class Bundle(EasyBlock):
+    """
+    Bundle of modules: only generate module files, nothing to build/install
+    """
 
     def configure_step(self):
-        """Generate the setup.cfg file for the ZeroMQ libs/includes"""
-        self.sitecfgfn = 'setup.cfg'
-        root_zmq = get_software_root("ZeroMQ")
-        if root_zmq:
-            self.log.info("External ZeroMQ found with root %s" % root_zmq)
-            self.sitecfg = """[build_ext]
-library_dirs = %(zmq)s/lib
-include_dirs = %(zmq)s/include
-""" % { 'zmq': root_zmq }
-        else:
-            self.log.info("External ZeroMQ not found, PyZMQ will (try to) use shipped ZeroMQ.")
+        """Do nothing."""
+        pass
 
-        super(EB_PyZMQ, self).configure_step()
+    def build_step(self):
+        """Do nothing."""
+        pass
 
+    def install_step(self):
+        """Do nothing."""
+        pass
+
+    def sanity_check_step(self):
+        """
+        Nothing is being installed, so just being able to load the (fake) module is sufficient
+        """
+        self.log.info("Testing loading of module '%s' by means of sanity check" % self.full_mod_name)
+        fake_mod_data = self.load_fake_module(purge=True)
+        self.log.debug("Cleaning up after testing loading of module")
+        self.clean_up_fake_module(fake_mod_data)

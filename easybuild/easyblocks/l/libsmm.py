@@ -1,5 +1,5 @@
 ##
-# Copyright 2009-2013 Ghent University
+# Copyright 2009-2015 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -39,6 +39,7 @@ from distutils.version import LooseVersion
 import easybuild.tools.toolchain as toolchain
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import CUSTOM
+from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.modules import get_software_root, get_software_version
 from easybuild.tools.run import run_cmd
 
@@ -68,7 +69,7 @@ class EB_libsmm(EasyBlock):
             os.chdir(dst)
             self.log.debug('Change to directory %s' % dst)
         except OSError, err:
-            self.log.exception('Failed to change to directory %s: %s' % (dst, err))
+            raise EasyBuildError("Failed to change to directory %s: %s", dst, err)
 
     def build_step(self):
         """Build libsmm
@@ -159,10 +160,10 @@ tasks=%(tasks)s
 
             targetcompile = "%s %s %s" % (hostcompile, opts, extra)
         else:
-            self.log.error('No supported compiler found (tried GCC)')
+            raise EasyBuildError("No supported compiler found (tried GCC)")
 
         if not os.getenv('LIBBLAS'):
-            self.log.error('No BLAS library specifications found (LIBBLAS not set)!')
+            raise EasyBuildError("No BLAS library specifications found (LIBBLAS not set)!")
 
         cfgdict = {
                    'datatype': None,
@@ -187,7 +188,7 @@ tasks=%(tasks)s
                 f.close()
                 self.log.debug("config file %s for datatype %s ('%s'): %s" % (fn, dt, descr, txt))
             except IOError, err:
-                self.log.error("Failed to write %s: %s" % (fn, err))
+                raise EasyBuildError("Failed to write %s: %s", fn, err)
 
             self.log.info("Building for datatype %s ('%s')..." % (dt, descr))
             run_cmd("./do_clean")
@@ -200,7 +201,7 @@ tasks=%(tasks)s
         try:
             shutil.copytree('lib', os.path.join(self.installdir, 'lib'))
         except Exception, err:
-            self.log.error("Something went wrong during dir lib copying to installdir: %s" % err)
+            raise EasyBuildError("Something went wrong during dir lib copying to installdir: %s", err)
 
     def sanity_check_step(self):
         """Custom sanity check for libsmm"""

@@ -1,5 +1,5 @@
 ##
-# Copyright 2009-2013 Ghent University
+# Copyright 2009-2015 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -38,6 +38,7 @@ import shutil
 from distutils.version import LooseVersion
 
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
+from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.modules import get_software_root
 from easybuild.tools.run import run_cmd
 
@@ -58,7 +59,7 @@ class EB_MrBayes(ConfigureMake):
             try:
                 os.chdir(self.cfg['start_dir'])
             except OSError, err:
-                self.log.error("Failed to change to correct source dir %s: %s" % (self.cfg['start_dir'], err))
+                raise EasyBuildError("Failed to change to correct source dir %s: %s", self.cfg['start_dir'], err)
 
             # run autoconf to generate configure script
             cmd = "autoconf"
@@ -69,12 +70,9 @@ class EB_MrBayes(ConfigureMake):
             if beagle:
                 self.cfg.update('configopts', '--with-beagle=%s' % beagle)
             else:
-                beagle = get_software_root('BEAGLE')
-                if beagle:
-                    self.log.deprecated('BEAGLE module as dependency, should be beagle-lib', '2.0')
-                    self.cfg.update('configopts', '--with-beagle=%s' % beagle)
-                else:
-                    self.log.error("beagle-lib module not loaded?")
+                if get_software_root('BEAGLE'):
+                    self.log.nosupport('BEAGLE module as dependency, should be beagle-lib', '2.0')
+                raise EasyBuildError("beagle-lib module not loaded?")
 
             if self.toolchain.options.get('usempi', None):
                 self.cfg.update('configopts', '--enable-mpi')
@@ -99,7 +97,7 @@ class EB_MrBayes(ConfigureMake):
                 shutil.copy2(src, dst)
                 self.log.info("Successfully copied %s to %s" % (src, dst))
             except (IOError,OSError), err:
-                self.log.error("Failed to copy %s to %s (%s)" % (src, dst, err))
+                raise EasyBuildError("Failed to copy %s to %s (%s)", src, dst, err)
 
     def sanity_check_step(self):
         """Custom sanity check for MrBayes."""

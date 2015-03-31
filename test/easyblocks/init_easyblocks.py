@@ -97,17 +97,8 @@ def template_init_test(self, easyblock):
 
     def check_extra_options_format(extra_options):
         """Make sure extra_options value is of correct format."""
-        # EasyBuild v1.x: list of (<string>, <list>) tuples
-        self.assertTrue(isinstance(list(extra_options), list))  # conversion to a list works
-        for extra_option in extra_options:
-            self.assertTrue(isinstance(extra_option, tuple))
-            self.assertEqual(len(extra_option), 2)
-            self.assertTrue(isinstance(extra_option[0], basestring))
-            self.assertTrue(isinstance(extra_option[1], list))
-            self.assertEqual(len(extra_option[1]), 3)
         # EasyBuild v2.0: dict with <string> keys and <list> values
-        # (breaks backward compatibility compared to v1.x)
-        self.assertTrue(isinstance(dict(extra_options), dict))  # conversion to a dict works
+        self.assertTrue(isinstance(extra_options, dict))
         extra_options.items()
         extra_options.keys()
         extra_options.values()
@@ -119,11 +110,21 @@ def template_init_test(self, easyblock):
 
     self.log.debug("easyblock: %s" % easyblock)
 
-    # obtain easyblock class name using regex
+    # read easyblock Python module
     f = open(easyblock, "r")
     txt = f.read()
     f.close()
 
+    # make sure error reporting is done correctly (no more log.error, log.exception)
+    log_method_regexes = [
+        re.compile(r"log\.error\("),
+        re.compile(r"log\.exception\("),
+        re.compile(r"log\.raiseException\("),
+    ]
+    for regex in log_method_regexes:
+        self.assertFalse(regex.search(txt), "No match for '%s' in %s" % (regex.pattern, easyblock))
+
+    # obtain easyblock class name using regex
     res = class_regex.search(txt)
     if res:
         ebname = res.group(1)
@@ -136,7 +137,7 @@ def template_init_test(self, easyblock):
 
         # extend easyconfig to make sure mandatory custom easyconfig paramters are defined
         extra_txt = ''
-        for (key, val) in extra_options:
+        for (key, val) in extra_options.items():
             if val[2] == MANDATORY:
                 extra_txt += '%s = "foo"\n' % key
 

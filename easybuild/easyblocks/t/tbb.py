@@ -1,5 +1,5 @@
 ##
-# Copyright 2009-2013 Ghent University
+# Copyright 2009-2015 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -38,6 +38,7 @@ import glob
 from distutils.version import LooseVersion
 
 from easybuild.easyblocks.generic.intelbase import IntelBase, ACTIVATION_NAME_2012, LICENSE_FILE_NAME_2012
+from easybuild.tools.build_log import EasyBuildError
 
 
 class EB_tbb(IntelBase):
@@ -67,7 +68,7 @@ class EB_tbb(IntelBase):
             # we're only interested in the last bit
             libdir = libdir.split('/')[-1]
         else:
-            self.log.error("No libs found using %s in %s" % (libglob, self.installdir))
+            raise EasyBuildError("No libs found using %s in %s", libglob, self.installdir)
         self.libdir = libdir
 
 

@@ -1,5 +1,5 @@
 # #
-# Copyright 2009-2013 Ghent University
+# Copyright 2009-2015 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -38,6 +38,7 @@ from distutils.version import LooseVersion
 
 from easybuild.easyblocks.generic.intelbase import IntelBase
 from easybuild.framework.easyconfig import CUSTOM
+from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.run import run_cmd
 
 class EB_itac(IntelBase):
@@ -90,8 +91,8 @@ EULA=accept
             tmpdir = os.path.join(os.getcwd(), self.version, 'mytmpdir')
             try:
                 os.makedirs(tmpdir)
-            except:
-                self.log.exception("Directory %s can't be created" % (tmpdir))
+            except OSError, err:
+                raise EasyBuildError("Directory %s can't be created: %s", tmpdir, err)
 
             cmd = "./install.sh --tmp-dir=%s --silent=%s" % (tmpdir, silentcfg)
 
