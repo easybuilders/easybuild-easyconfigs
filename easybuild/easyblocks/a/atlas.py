@@ -40,6 +40,7 @@ from distutils.version import LooseVersion
 
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.framework.easyconfig import CUSTOM
+from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.modules import get_software_root
 from easybuild.tools.run import run_cmd
 from easybuild.tools.systemtools import get_cpu_speed
@@ -103,8 +104,8 @@ class EB_ATLAS(ConfigureMake):
                 if lapack:
                     self.cfg.update('configopts', ' --with-netlib-lapack=%s/lib/liblapack.a' % lapack)
                 else:
-                    self.log.error("netlib's LAPACK library not available,"\
-                                   " required to build ATLAS with a full LAPACK library.")
+                    raise EasyBuildError("netlib's LAPACK library not available, required to build ATLAS "
+                                         "with a full LAPACK library.")
             else:
                 # pass LAPACK source tarball
                 lapack_src = None
@@ -114,7 +115,7 @@ class EB_ATLAS(ConfigureMake):
                 if lapack_src is not None:
                     self.cfg.update('configopts', ' --with-netlib-lapack-tarfile=%s' % lapack_src)
                 else:
-                    self.log.error("LAPACK source tarball not available, but required.")
+                    raise EasyBuildError("LAPACK source tarball not available, but required.")
 
         # enable building of shared libraries (requires -fPIC)
         if self.cfg['sharedlibs'] or self.toolchain.options['pic']:
@@ -127,7 +128,7 @@ class EB_ATLAS(ConfigureMake):
             os.makedirs(objdir)
             os.chdir(objdir)
         except OSError, err:
-            self.log.error("Failed to create obj directory to build in: %s" % err)
+            raise EasyBuildError("Failed to create obj directory to build in: %s", err)
 
         # specify compilers
         self.cfg.update('configopts', '-C ic %(cc)s -C if %(f77)s' % {
@@ -143,15 +144,15 @@ class EB_ATLAS(ConfigureMake):
         if exitcode != 0:
             throttling_regexp = re.compile("cpu throttling [a-zA-Z]* enabled", re.IGNORECASE)
             if throttling_regexp.search(out):
-                errormsg = """Configure failed, possible because CPU throttling is enabled; ATLAS doesn't like that.
-You can either disable CPU throttling, or set 'ignorethrottling' to True in the ATLAS .eb spec file.
-Also see http://math-atlas.sourceforge.net/errata.html#cputhrottle .
-Configure output:
-%s """ % out
+                errormsg = ' '.join([
+                    "Configure failed, possible because CPU throttling is enabled; ATLAS doesn't like that. ",
+                    "You can either disable CPU throttling, or set 'ignorethrottling' to True in the ATLAS .eb spec file.",
+                    "Also see http://math-atlas.sourceforge.net/errata.html#cputhrottle .",
+                    "Configure output: %s",
+                ]) % out
             else:
-                errormsg = """configure output: %s
-Configure failed, not sure why (see output above).""" % out
-            self.log.error(errormsg)
+                errormsg = "configure output: %s\nConfigure failed, not sure why (see output above)." % out
+            raise EasyBuildError(errormsg)
 
     def build_step(self, verbose=False):
 
@@ -167,7 +168,7 @@ Configure failed, not sure why (see output above).""" % out
             try:
                 os.chdir('lib')
             except OSError, err:
-                self.log.error("Failed to change to 'lib' directory for building the shared libs." % err)
+                raise EasyBuildError("Failed to change to 'lib' directory for building the shared libs.", err)
 
             self.log.debug("Building shared libraries")
             cmd = "make shared cshared ptshared cptshared"
@@ -176,7 +177,7 @@ Configure failed, not sure why (see output above).""" % out
             try:
                 os.chdir('..')
             except OSError, err:
-                self.log.error("Failed to get back to previous dir after building shared libs: %s " % err)
+                raise EasyBuildError("Failed to get back to previous dir after building shared libs: %s ", err)
 
     def install_step(self):
         """Install step

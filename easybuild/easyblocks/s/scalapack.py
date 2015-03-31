@@ -41,6 +41,7 @@ import easybuild.tools.toolchain as toolchain
 from easybuild.easyblocks.blacs import det_interface  #@UnresolvedImport
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.easyblocks.lapack import get_blas_lib as lapack_get_blas_lib  #@UnresolvedImport
+from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.modules import get_software_root
 
 
@@ -56,15 +57,15 @@ class EB_ScaLAPACK(ConfigureMake):
         dest = os.path.join(self.cfg['start_dir'], 'SLmake.inc')
 
         if not os.path.isfile(src):
-            self.log.error("Can't fin source file %s" % src)
+            raise EasyBuildError("Can't fin source file %s", src)
 
         if os.path.exists(dest):
-            self.log.error("Destination file %s exists" % dest)
+            raise EasyBuildError("Destination file %s exists", dest)
 
         try:
             shutil.copy(src, dest)
         except OSError, err:
-            self.log.error("Symlinking %s to % failed: %s" % (src, dest, err))
+            raise EasyBuildError("Symlinking %s to %s failed: %s", src, dest, err)
 
         self.loosever = LooseVersion(self.version)
 
@@ -81,7 +82,7 @@ class EB_ScaLAPACK(ConfigureMake):
                     ok = True
                     break
             if not ok:
-                self.log.error("None of the following dependencies %s are available/loaded." % (depgrp, ))
+                raise EasyBuildError("None of the following dependencies %s are available/loaded.", str(depgrp))
 
     def build_step(self):
         """Build ScaLAPACK using make after setting make options."""
@@ -98,7 +99,7 @@ class EB_ScaLAPACK(ConfigureMake):
             mpif77 = 'mpif77'
             mpif90 = 'mpif90'
         else:
-            self.log.error("Don't know which compiler commands to use.")
+            raise EasyBuildError("Don't know which compiler commands to use.")
 
         # set BLAS and LAPACK libs
         extra_makeopts = None
@@ -122,7 +123,7 @@ class EB_ScaLAPACK(ConfigureMake):
                 'LAPACKLIB="%s"' % lapack_get_blas_lib(self.log),
             ]
         else:
-            self.log.error("LAPACK, ACML or OpenBLAS are not available, no idea how to set BLASLIB/LAPACKLIB make options.")
+            raise EasyBuildError("LAPACK, ACML or OpenBLAS are not available, no idea how to set BLASLIB/LAPACKLIB make options.")
 
         # build procedure changed in v2.0.0
         if self.loosever < LooseVersion("2.0.0"):
@@ -166,7 +167,7 @@ class EB_ScaLAPACK(ConfigureMake):
             if self.toolchain.mpi_family() in known_mpi_libs:
                 interface = 'Add_'
             else:
-                self.log.error("Don't know which interface to pick for the MPI library being used.")
+                raise EasyBuildError("Don't know which interface to pick for the MPI library being used.")
 
             # set compilers and options
             extra_makeopts += [
@@ -209,7 +210,7 @@ class EB_ScaLAPACK(ConfigureMake):
                     self.log.debug("Copied %s to %s" % (lib, dest))
 
             except OSError, err:
-                self.log.error("Copying %s/*.%s to installation dir %s failed: %s" % (src, ext, dest, err))
+                raise EasyBuildError("Copying %s/*.%s to installation dir %s failed: %s", src, ext, dest, err)
 
     def sanity_check_step(self):
         """Custom sanity check for ScaLAPACK."""

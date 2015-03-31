@@ -9,6 +9,7 @@ EasyBuild support for installing Chimera, implemented as an easyblock
 import os
 
 from easybuild.framework.easyblock import EasyBlock
+from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.run import run_cmd
 
 
@@ -36,7 +37,7 @@ class EB_Chimera(EasyBlock):
         try:
             os.chdir(self.cfg['start_dir'])
         except OSError, err:
-            self.log.error("Failed to change to %s: %s" % (self.cfg['start_dir'], err))
+            raise EasyBuildError("Failed to change to %s: %s", self.cfg['start_dir'], err)
 
         cmd = "./chimera.bin -q -d %s" % self.installdir
 

@@ -35,7 +35,9 @@ implemented as an easyblock
 import shutil
 
 from easybuild.framework.easyblock import EasyBlock
+from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.filetools import rmtree2
+
 
 class Tarball(EasyBlock):
     """
@@ -68,4 +70,4 @@ class Tarball(EasyBlock):
             # self.cfg['keepsymlinks'] is False by default except when explicitly put to True in .eb file
             shutil.copytree(src, self.installdir, symlinks=self.cfg['keepsymlinks'])
         except OSError, err:
-            self.log.error("Copying %s to installation dir %s failed: %s" % (src, self.installdir, err))
+            raise EasyBuildError("Copying %s to installation dir %s failed: %s", src, self.installdir, err)

@@ -37,8 +37,9 @@ import tempfile
 
 import easybuild.tools.toolchain as toolchain
 from easybuild.framework.easyblock import EasyBlock
-from easybuild.tools.modules import get_software_root
+from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.filetools import mkdir
+from easybuild.tools.modules import get_software_root
 from easybuild.tools.run import run_cmd
 from easybuild.tools.systemtools import DARWIN, LINUX, get_os_type
 
@@ -57,7 +58,7 @@ class EB_TINKER(EasyBlock):
         """Custom configuration procedure for TINKER."""
         # make sure FFTW is available
         if get_software_root('FFTW') is None:
-            self.log.error("FFTW dependency is not available.")
+            raise EasyBuildError("FFTW dependency is not available.")
 
         os_dirs = {
             LINUX: 'linux',
@@ -66,7 +67,7 @@ class EB_TINKER(EasyBlock):
         os_type = get_os_type()
         os_dir = os_dirs.get(os_type)
         if os_dir is None:
-            self.log.error("Failed to determine OS directory for %s (known: %s)" % (os_type, os_dirs))
+            raise EasyBuildError("Failed to determine OS directory for %s (known: %s)", os_type, os_dirs)
 
         comp_dirs = {
             toolchain.INTELCOMP: 'intel',
@@ -75,7 +76,7 @@ class EB_TINKER(EasyBlock):
         comp_fam = self.toolchain.comp_family()
         comp_dir = comp_dirs.get(comp_fam)
         if comp_dir is None:
-            self.log.error("Failed to determine compiler directory for %s (known: %s)" % (comp_fam, comp_dirs))
+            raise EasyBuildError("Failed to determine compiler directory for %s (known: %s)", comp_fam, comp_dirs)
 
         self.build_subdir = os.path.join(os_dir, comp_dir)
         self.log.info("Using build scripts from %s subdirectory" % self.build_subdir)
@@ -92,7 +93,7 @@ class EB_TINKER(EasyBlock):
         try:
             os.chdir(source_dir)
         except OSError, err:
-            self.log.error("Failed to move to %s: %s" % (source_dir, err))
+            raise EasyBuildError("Failed to move to %s: %s", source_dir, err)
 
         run_cmd(os.path.join(self.cfg['start_dir'], self.build_subdir, 'compile.make'))
         run_cmd(os.path.join(self.cfg['start_dir'], self.build_subdir, 'library.make'))
@@ -113,12 +114,12 @@ class EB_TINKER(EasyBlock):
                 shutil.copytree(os.path.join(self.cfg['start_dir'], 'test'), testdir)
                 shutil.copytree(os.path.join(self.cfg['start_dir'], 'params'), os.path.join(tmpdir, 'params'))
             except OSError, err:
-                self.log.error("Failed to copy binaries and tests to %s: %s" % (tmpdir, err))
+                raise EasyBuildError("Failed to copy binaries and tests to %s: %s", tmpdir, err)
 
             try:
                 os.chdir(testdir)
             except OSError, err:
-                self.log.error("Failed to move to %s to run tests: %s" % (testdir, err))
+                raise EasyBuildError("Failed to move to %s to run tests: %s", testdir, err)
 
             # run all tests via the provided 'run' scripts
             tests = glob.glob(os.path.join(testdir, '*.run'))
@@ -133,7 +134,7 @@ class EB_TINKER(EasyBlock):
         try:
             os.chdir(source_dir)
         except OSError, err:
-            self.log.error("Failed to move to %s: %s" % (source_dir, err))
+            raise EasyBuildError("Failed to move to %s: %s", source_dir, err)
 
         mkdir(os.path.join(self.cfg['start_dir'], 'bin'))
         run_cmd(os.path.join(self.cfg['start_dir'], self.build_subdir, 'rename.make'))

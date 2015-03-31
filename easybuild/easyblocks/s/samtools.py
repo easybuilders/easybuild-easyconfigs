@@ -22,6 +22,7 @@ import stat
 from distutils.version import LooseVersion
 
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
+from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.filetools import adjust_permissions
 
 class EB_SAMtools(ConfigureMake):
@@ -93,7 +94,7 @@ class EB_SAMtools(ConfigureMake):
                     srcfile = os.path.join(srcdir, filename)
                     shutil.copy2(srcfile, destdir)
             except OSError, err:
-                self.log.error("Copying %s to installation dir %s failed: %s" % (srcfile, destdir, err))
+                raise EasyBuildError("Copying %s to installation dir %s failed: %s", srcfile, destdir, err)
 
         # fix permissions so ownwer group and others have R-X
         adjust_permissions(self.installdir, stat.S_IRGRP|stat.S_IXGRP|stat.S_IROTH|stat.S_IXOTH, add=True, recursive=True)

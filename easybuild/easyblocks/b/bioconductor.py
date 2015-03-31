@@ -32,6 +32,7 @@ EasyBuild support for building and installing the Bioconductor R library, implem
 @author: Toon Willems (Ghent University)
 """
 from easybuild.easyblocks.generic.rpackage import RPackage
+from easybuild.tools.build_log import EasyBuildError
 
 
 class EB_Bioconductor(RPackage):
@@ -41,17 +42,17 @@ class EB_Bioconductor(RPackage):
     """
     def make_cmdline_cmd(self):
         """Create a command line to install an R library."""
-        self.log.error("Don't know how to install a specific version of a bioconductor package.")
+        raise EasyBuildError("Don't know how to install a specific version of a Bioconductor package.")
 
     def make_r_cmd(self):
         """Create a command to run in R to install an R library."""
         name = self.ext['name']
-        self.log.debug("Installing bioconductor package %s." % name)
+        self.log.debug("Installing Bioconductor package %s." % name)
 
         r_cmd = '\n'.join([
-                           'source("http://bioconductor.org/biocLite.R")',
-                           'biocLite("%s")' % name,
-                          ])
+            'source("http://bioconductor.org/biocLite.R")',
+            'biocLite("%s")' % name,
+        ])
         cmd = "R -q --no-save"
 
         return cmd, r_cmd

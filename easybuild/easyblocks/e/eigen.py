@@ -21,6 +21,7 @@ import os
 import shutil
 
 from easybuild.framework.easyblock import EasyBlock
+from easybuild.tools.build_log import EasyBuildError
 
 
 class EB_Eigen(EasyBlock):
@@ -50,7 +51,7 @@ class EB_Eigen(EasyBlock):
                 os.makedirs(os.path.dirname(destdir))
                 shutil.copytree(srcdir, destdir)
         except OSError, err:
-            self.log.error("Copying %s to installation dir %s failed: %s" % (srcdir, destdir, err))
+            raise EasyBuildError("Copying %s to installation dir %s failed: %s", srcdir, destdir, err)
 
     def sanity_check_step(self):
         """Custom sanity check for Eigen."""

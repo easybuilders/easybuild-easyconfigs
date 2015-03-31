@@ -40,6 +40,7 @@ from distutils.version import LooseVersion
 import easybuild.tools.environment as env
 import easybuild.tools.toolchain as toolchain
 from easybuild.framework.easyblock import EasyBlock
+from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.filetools import adjust_permissions, mkdir
 from easybuild.tools.modules import get_software_root
 from easybuild.tools.run import run_cmd, run_cmd_qa
@@ -88,7 +89,7 @@ class EB_OpenFOAM(EasyBlock):
                         shutil.move(source, target)
                 os.chdir(openfoam_installdir)
             except OSError, err:
-                self.log.error("Failed to move all files to %s: %s" % (openfoam_installdir, err))
+                raise EasyBuildError("Failed to move all files to %s: %s", openfoam_installdir, err)
 
     def configure_step(self):
         """Configure OpenFOAM build by setting appropriate environment variables."""
@@ -119,7 +120,7 @@ class EB_OpenFOAM(EasyBlock):
             self.cfg.update('prebuildopts', 'CFLAGS="$CFLAGS -no-prec-div" CXXFLAGS="$CXXFLAGS -no-prec-div"')
 
         else:
-            self.log.error("Unknown compiler family, don't know how to set WM_COMPILER")
+            raise EasyBuildError("Unknown compiler family, don't know how to set WM_COMPILER")
 
         env.setvar("WM_COMPILER", self.wm_compiler)
 

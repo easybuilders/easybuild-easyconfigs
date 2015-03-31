@@ -37,6 +37,7 @@ EasyBuild support for building and installing Ferret, implemented as an easybloc
 import os,re,fileinput,sys
 import easybuild.tools.toolchain as toolchain
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
+from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.modules import get_software_root
 from easybuild.tools.run import run_cmd
 
@@ -51,13 +52,13 @@ class EB_Ferret(ConfigureMake):
         try:
             os.chdir('FERRET')
         except OSError, err:
-            self.log.error("Failed to change to FERRET dir: %s" % err)
+            raise EasyBuildError("Failed to change to FERRET dir: %s", err)
 
         deps = ['HDF5', 'netCDF', 'Java']
 
         for name in deps:
             if not get_software_root(name):
-                self.log.error("%s module not loaded?" % name)
+                raise EasyBuildError("%s module not loaded?", name)
 
         fn = "site_specific.mk"
 

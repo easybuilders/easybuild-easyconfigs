@@ -110,11 +110,21 @@ def template_init_test(self, easyblock):
 
     self.log.debug("easyblock: %s" % easyblock)
 
-    # obtain easyblock class name using regex
+    # read easyblock Python module
     f = open(easyblock, "r")
     txt = f.read()
     f.close()
 
+    # make sure error reporting is done correctly (no more log.error, log.exception)
+    log_method_regexes = [
+        re.compile(r"log\.error\("),
+        re.compile(r"log\.exception\("),
+        re.compile(r"log\.raiseException\("),
+    ]
+    for regex in log_method_regexes:
+        self.assertFalse(regex.search(txt), "No match for '%s' in %s" % (regex.pattern, easyblock))
+
+    # obtain easyblock class name using regex
     res = class_regex.search(txt)
     if res:
         ebname = res.group(1)

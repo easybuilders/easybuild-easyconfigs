@@ -32,6 +32,7 @@ import os
 
 import easybuild.tools.toolchain as toolchain
 from easybuild.framework.easyblock import EasyBlock
+from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.filetools import mkdir, extract_file
 from easybuild.tools.modules import get_software_root, get_software_version
 from easybuild.tools.run import run_cmd
@@ -58,13 +59,13 @@ class EB_Xmipp(EasyBlock):
         # check if all our dependencies are in place
         self.python_root = get_software_root('Python')
         if not self.python_root:
-            self.log.error("Python not loaded as a dependency, which is required for %s" % self.name)
+            raise EasyBuildError("Python not loaded as a dependency, which is required for %s", self.name)
         python_libdir = det_pylibdir()
         self.python_short_ver = '.'.join(get_software_version('Python').split('.')[:2])
 
         java_root = get_software_root('Java')
         if not java_root:
-            self.log.error("Java not loaded as a dependency, which is required for %s" % self.name)
+            raise EasyBuildError("Java not loaded as a dependency, which is required for %s", self.name)
 
         # extract some dependencies that we really need and can't find anywhere else
         # alglib tarball has version in name, so lets find it with a glob
@@ -90,10 +91,10 @@ class EB_Xmipp(EasyBlock):
             mpi_bindir = os.path.join(get_software_root(self.toolchain.MPI_MODULE_NAME[0]), 'bin')
 
         if not os.path.exists(numpy_inc_dir):
-            self.log.error("numpy 'include' directory %s not found" % numpy_inc_dir)
+            raise EasyBuildError("numpy 'include' directory %s not found", numpy_inc_dir)
 
         if not os.path.exists(mpi_bindir):
-            self.log.error("MPI 'bin' subdir %s does not exist" % mpi_bindir)
+            raise EasyBuildError("MPI 'bin' subdir %s does not exist", mpi_bindir)
 
         cmd = ' '.join([
             self.cfg['preconfigopts'],
@@ -144,7 +145,7 @@ class EB_Xmipp(EasyBlock):
         python_dynlib_dir = os.path.join(self.python_root, 'lib', 'python%s' % self.python_short_ver, 'lib-dynload')
 
         if not os.path.exists(python_dynlib_dir):
-            self.log.error("Python lib-dynload dir %s not found" % python_dynlib_dir)
+            raise EasyBuildError("Python lib-dynload dir %s not found", python_dynlib_dir)
 
         extra_pythonpaths = [
             os.path.join(self.cfg['start_dir'], 'protocols'),

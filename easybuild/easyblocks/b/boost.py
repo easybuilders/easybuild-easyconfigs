@@ -43,6 +43,7 @@ import sys
 import easybuild.tools.toolchain as toolchain
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import CUSTOM
+from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.modules import get_software_root
 from easybuild.tools.run import run_cmd
 from easybuild.tools.systemtools import get_glibc_version, UNKNOWN
@@ -83,14 +84,14 @@ class EB_Boost(EasyBlock):
                         line = re.sub(r"TIME_UTC", r"TIME_UTC_", line)
                         sys.stdout.write(line)
                 except IOError, err:
-                    self.log.error("Failed to patch %s: %s" % (patchfile, err))
+                    raise EasyBuildError("Failed to patch %s: %s", patchfile, err)
 
     def configure_step(self):
         """Configure Boost build using custom tools"""
 
         # mpi sanity check
         if self.cfg['boost_mpi'] and not self.toolchain.options.get('usempi', None):
-            self.log.error("When enabling building boost_mpi, also enable the 'usempi' toolchain option.")
+            raise EasyBuildError("When enabling building boost_mpi, also enable the 'usempi' toolchain option.")
 
         # create build directory (Boost doesn't like being built in source dir)
         try:
@@ -98,7 +99,7 @@ class EB_Boost(EasyBlock):
             os.mkdir(self.objdir)
             self.log.debug("Succesfully created directory %s" % self.objdir)
         except OSError, err:
-            self.log.error("Failed to create directory %s: %s" % (self.objdir, err))
+            raise EasyBuildError("Failed to create directory %s: %s", self.objdir, err)
 
         # generate config depending on compiler used
         toolset = self.cfg['toolset']
@@ -108,7 +109,7 @@ class EB_Boost(EasyBlock):
             elif self.toolchain.comp_family() == toolchain.GCC:
                 toolset = 'gcc'
             else:
-                self.log.error("Unknown compiler used, don't know what to specify to --with-toolset, aborting.")
+                raise EasyBuildError("Unknown compiler used, don't know what to specify to --with-toolset, aborting.")
 
         cmd = "./bootstrap.sh --with-toolset=%s --prefix=%s %s" % (toolset, self.objdir, self.cfg['configopts'])
         run_cmd(cmd, log_all=True, simple=True)
@@ -167,9 +168,7 @@ class EB_Boost(EasyBlock):
                 else:
                     shutil.copy2(src, dst)
         except OSError, err:
-            self.log.error("Copying %s to installation dir %s failed: %s" % (self.objdir,
-                                                                             self.installdir,
-                                                                             err))
+            raise EasyBuildError("Copying %s to installation dir %s failed: %s", self.objdir, self.installdir, err)
 
     def sanity_check_step(self):
         """Custom sanity check for Boost."""

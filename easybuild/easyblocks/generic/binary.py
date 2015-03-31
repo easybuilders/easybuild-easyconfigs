@@ -38,6 +38,7 @@ import stat
 
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import CUSTOM
+from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.filetools import mkdir, rmtree2
 from easybuild.tools.run import run_cmd
 
@@ -83,7 +84,7 @@ class Binary(EasyBlock):
                 shutil.copy2(src, self.builddir)
                 os.chmod(dst, stat.S_IRWXU)
             except (OSError, IOError), err:
-                self.log.exception("Couldn't copy %s to %s: %s" % (src, self.builddir, err))
+                raise EasyBuildError("Couldn't copy %s to %s: %s", src, self.builddir, err)
 
     def configure_step(self):
         """No configuration, this is binary software"""
@@ -101,7 +102,7 @@ class Binary(EasyBlock):
                 rmtree2(self.installdir)
                 shutil.copytree(self.cfg['start_dir'], self.installdir)
             except OSError, err:
-                self.log.error("Failed to copy %s to %s: %s" % (self.cfg['start_dir'], self.installdir, err))
+                raise EasyBuildError("Failed to copy %s to %s: %s", self.cfg['start_dir'], self.installdir, err)
         else:
             cmd = ' '.join([self.cfg['preinstallopts'], self.cfg['install_cmd'], self.cfg['installopts']])
             self.log.info("Installing %s using command '%s'..." % (self.name, cmd))
@@ -118,8 +119,8 @@ class Binary(EasyBlock):
                     rmtree2(self.installdir)
                 shutil.copytree(staged_installdir, self.installdir)
             except OSError, err:
-                tup = (staged_installdir, self.installdir, err)
-                self.log.error("Failed to move staged install from %s to %s: %s" % tup)
+                raise EasyBuildError("Failed to move staged install from %s to %s: %s",
+                                     staged_installdir, self.installdir, err)
 
         super(Binary, self).post_install_step()
 

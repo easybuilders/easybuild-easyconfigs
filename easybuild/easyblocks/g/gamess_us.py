@@ -45,6 +45,7 @@ import tempfile
 import easybuild.tools.toolchain as toolchain
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import CUSTOM, MANDATORY
+from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.filetools import mkdir, read_file, write_file
 from easybuild.tools.modules import get_software_root, get_software_version
 from easybuild.tools.run import run_cmd, run_cmd_qa
@@ -76,7 +77,7 @@ class EB_GAMESS_minus_US(EasyBlock):
             self.testdir = tempfile.mkdtemp()
             # make sure test dir doesn't contain [ or ], rungms csh script doesn't handle that well ("set: No match")
             if re.search(r'[\[\]]', self.testdir):
-                self.log.error("Temporary dir for tests '%s' will cause problems with rungms csh script" % self.testdir)
+                raise EasyBuildError("Temporary dir for tests '%s' will cause problems with rungms csh script", self.testdir)
 
     def extract_step(self):
         """Extract sources."""
@@ -93,7 +94,7 @@ class EB_GAMESS_minus_US(EasyBlock):
         if x86_64_linux_re.match(platform_name):
             machinetype = "linux64"
         else:
-            self.log.error("Build target %s currently unsupported" % platform_name)
+            raise EasyBuildError("Build target %s currently unsupported", platform_name)
 
         # compiler config
         comp_fam = self.toolchain.comp_family()
@@ -105,12 +106,12 @@ class EB_GAMESS_minus_US(EasyBlock):
             if res:
                 fortran_ver = res.group(1)
             else:
-                self.log.error("Failed to determine ifort major version number")
+                raise EasyBuildError("Failed to determine ifort major version number")
         elif comp_fam == toolchain.GCC:
             fortran_comp = 'gfortran'
             fortran_ver = '.'.join(get_software_version('GCC').split('.')[:2])
         else:
-            self.log.error("Compiler family '%s' currently unsupported." % comp_fam)
+            raise EasyBuildError("Compiler family '%s' currently unsupported.", comp_fam)
 
         # math library config
         known_mathlibs = ['imkl', 'OpenBLAS', 'ATLAS', 'ACML']
@@ -120,7 +121,7 @@ class EB_GAMESS_minus_US(EasyBlock):
             if mathlib_root is not None:
                 break
         if mathlib_root is None:
-            self.log.error("None of the known math libraries (%s) available, giving up." % known_mathlibs)
+            raise EasyBuildError("None of the known math libraries (%s) available, giving up.", known_mathlibs)
         if mathlib == 'imkl':
             mathlib = 'mkl'
             mathlib_root = os.path.join(mathlib_root, 'mkl')
@@ -130,8 +131,8 @@ class EB_GAMESS_minus_US(EasyBlock):
         # verify selected DDI communication layer
         known_ddi_comms = ['mpi', 'mixed', 'shmem', 'sockets']
         if not self.cfg['ddi_comm'] in known_ddi_comms:
-            tup = (known_ddi_comms, self.cfg['ddi_comm'])
-            self.log.error("Unsupported DDI communication layer specified (known: %s): %s" % tup)
+            raise EasyBuildError("Unsupported DDI communication layer specified (known: %s): %s",
+                                 known_ddi_comms, self.cfg['ddi_comm'])
 
         # MPI library config
         mpilib, mpilib_root, mpilib_path = None, None, None
@@ -143,7 +144,7 @@ class EB_GAMESS_minus_US(EasyBlock):
                 if mpilib_root is not None:
                     break
             if mpilib_root is None:
-                self.log.error("None of the known MPI libraries (%s) available, giving up." % known_mpilibs)
+                raise EasyBuildError("None of the known MPI libraries (%s) available, giving up.", known_mpilibs)
             mpilib_path = mpilib_root
             if mpilib == 'impi':
                 mpilib_path = os.path.join(mpilib_root, 'intel64')
@@ -200,7 +201,7 @@ class EB_GAMESS_minus_US(EasyBlock):
                     line = re.sub(r"^(\s*set\s*USERSCR)=.*", r"\1=%s" % self.cfg['scratch_dir'], line)
                 sys.stdout.write(line)
         except IOError, err:
-            self.log.error("Failed to patch %s: %s" % (rungms, err))
+            raise EasyBuildError("Failed to patch %s: %s", rungms, err)
 
     def build_step(self):
         """Custom build procedure for GAMESS-US: using compddi, compall and lked scripts."""
@@ -210,7 +211,7 @@ class EB_GAMESS_minus_US(EasyBlock):
         # make sure the libddi.a library is present
         libddi = os.path.join(self.cfg['start_dir'], 'ddi', 'libddi.a')
         if not os.path.isfile(libddi):
-            self.log.error("The libddi.a library (%s) was never built" % libddi)
+            raise EasyBuildError("The libddi.a library (%s) was never built", libddi)
         else:
             self.log.info("The libddi.a library (%s) was successfully built." % libddi)
 
@@ -229,14 +230,14 @@ class EB_GAMESS_minus_US(EasyBlock):
                 cwd = os.getcwd()
                 os.chdir(self.testdir)
             except OSError, err:
-                self.log.error("Failed to move to temporary directory for running tests: %s" % err)
+                raise EasyBuildError("Failed to move to temporary directory for running tests: %s", err)
 
             # copy input files for exam<id> standard tests
             for test_input in glob.glob(os.path.join(self.installdir, 'tests', 'standard', 'exam*.inp')):
                 try:
                     shutil.copy2(test_input, os.getcwd())
                 except OSError, err:
-                    self.log.error("Failed to copy %s to %s: %s" % (test_input, os.getcwd(), err))
+                    raise EasyBuildError("Failed to copy %s to %s: %s", test_input, os.getcwd(), err)
 
             rungms = os.path.join(self.installdir, 'rungms')
             test_env_vars = ['TMPDIR=%s' % self.testdir]
@@ -260,14 +261,14 @@ class EB_GAMESS_minus_US(EasyBlock):
             if success_regex.search(out):
                 self.log.info("All tests ran successfully!")
             else:
-                self.log.error("Not all tests ran successfully...")
+                raise EasyBuildError("Not all tests ran successfully...")
 
             # cleanup
             os.chdir(cwd)
             try:
                 shutil.rmtree(self.testdir)
             except OSError, err:
-                self.log.error("Failed to remove test directory %s: %s" % (self.testdir, err))
+                raise EasyBuildError("Failed to remove test directory %s: %s", self.testdir, err)
 
     def install_step(self):
         """Skip install step, since we're building in the install directory."""

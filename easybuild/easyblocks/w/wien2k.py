@@ -43,6 +43,7 @@ import easybuild.tools.environment as env
 import easybuild.tools.toolchain as toolchain
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import CUSTOM
+from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.filetools import extract_file, rmtree2
 from easybuild.tools.modules import get_software_version
 from easybuild.tools.run import run_cmd, run_cmd_qa
@@ -105,7 +106,7 @@ class EB_WIEN2k(EasyBlock):
             comp_answer = 'V'  # Linux (gfortran compiler + gotolib)
 
         else:
-            self.log.error("Failed to determine toolchain-dependent answers.")
+            raise EasyBuildError("Failed to determine toolchain-dependent answers.")
 
         # libraries
         rlibs = "%s %s" % (os.getenv('LIBLAPACK_MT'), self.toolchain.get_flag('openmp'))
@@ -215,7 +216,7 @@ class EB_WIEN2k(EasyBlock):
                     extra = "set remote = pbsssh\n"
                     extra += "setenv PBSSSHENV 'LD_LIBRARY_PATH PATH'\n"
                 else:
-                    self.log.error("Don't know how to patch %s for remote %s" % (fn, remote))
+                    raise EasyBuildError("Don't know how to patch %s for remote %s", fn, remote)
 
                 f.write(extra)
                 f.close()
@@ -223,7 +224,7 @@ class EB_WIEN2k(EasyBlock):
             self.log.debug("Patched file %s: %s" % (fn, open(fn, 'r').read()))
 
         except IOError, err:
-            self.log.error("Failed to patch %s: %s" % (fn, err))
+            raise EasyBuildError("Failed to patch %s: %s", fn, err)
 
 
     def build_step(self):
@@ -265,14 +266,14 @@ class EB_WIEN2k(EasyBlock):
 
             re_success = re.compile("LAPW1\s+END")
             if not re_success.search(out):
-                self.log.error("Test '%s' in %s failed (pattern '%s' not found)?" % (cmd, os.getcwd(),
-                                                                                     re_success.pattern))
+                raise EasyBuildError("Test '%s' in %s failed (pattern '%s' not found)?",
+                                     cmd, os.getcwd(), re_success.pattern)
             else:
                 self.log.info("Test '%s' seems to have run successfully: %s" % (cmd, out))
 
         if self.cfg['runtest']:
             if not self.cfg['testdata']:
-                self.log.error("List of URLs for testdata not provided.")
+                raise EasyBuildError("List of URLs for testdata not provided.")
 
             path = os.getenv('PATH')
             env.setvar('PATH', "%s:%s" % (self.installdir, path))
@@ -289,7 +290,7 @@ class EB_WIEN2k(EasyBlock):
                 for testdata in self.cfg['testdata']:
                     td_path = self.obtain_file(testdata)
                     if not td_path:
-                        self.log.error("Downloading file from %s failed?" % testdata)
+                        raise EasyBuildError("Downloading file from %s failed?", testdata)
                     testdata_paths.update({os.path.basename(testdata): td_path})
 
                 self.log.debug('testdata_paths: %s' % testdata_paths)
@@ -314,7 +315,7 @@ class EB_WIEN2k(EasyBlock):
                 rmtree2(tmpdir)
 
             except OSError, err:
-                self.log.error("Failed to run WIEN2k benchmark tests: %s" % err)
+                raise EasyBuildError("Failed to run WIEN2k benchmark tests: %s", err)
 
             # reset original path
             env.setvar('PATH', path)
@@ -327,8 +328,8 @@ class EB_WIEN2k(EasyBlock):
 
             # check expected format
             if not len(test) == 4:
-                self.log.error("WIEN2k test case not specified in expected format: " \
-                               "(testcase_name, init_lapw_args, run_lapw_args, [scf_regexp_pattern])")
+                raise EasyBuildError("WIEN2k test case not specified in expected format: "
+                                     "(testcase_name, init_lapw_args, run_lapw_args, [scf_regexp_pattern])")
             test_name = test[0]
             init_args = test[1]
             run_args = test[2]
@@ -341,7 +342,7 @@ class EB_WIEN2k(EasyBlock):
                 os.mkdir(tmpdir)
                 os.chdir(tmpdir)
             except OSError, err:
-                self.log.error("Failed to create temporary directory for test %s: %s" % (test_name, err))
+                raise EasyBuildError("Failed to create temporary directory for test %s: %s", test_name, err)
 
             # try and find struct file for test
             test_fp = self.obtain_file("%s.struct" % test_name)
@@ -349,7 +350,7 @@ class EB_WIEN2k(EasyBlock):
             try:
                 shutil.copy2(test_fp, tmpdir)
             except OSError, err:
-                self.log.error("Failed to copy %s: %s" % (test_fp, err))
+                raise EasyBuildError("Failed to copy %s: %s", test_fp, err)
 
             # run test
             cmd = "init_lapw %s" % init_args
@@ -366,11 +367,11 @@ class EB_WIEN2k(EasyBlock):
                 scftxt = f.read()
                 f.close()
             except IOError, err:
-                self.log.error("Failed to read file %s: %s" % (scf_fn, err))
+                raise EasyBuildError("Failed to read file %s: %s", scf_fn, err)
             for regexp_pat in scf_regexp_patterns:
                 regexp = re.compile(regexp_pat, re.M)
                 if not regexp.search(scftxt):
-                    self.log.error("Failed to find pattern %s in %s" % (regexp.pattern, scf_fn))
+                    raise EasyBuildError("Failed to find pattern %s in %s", regexp.pattern, scf_fn)
                 else:
                     self.log.debug("Found pattern %s in %s" % (regexp.pattern, scf_fn))
 
@@ -379,7 +380,7 @@ class EB_WIEN2k(EasyBlock):
                 os.chdir(cwd)
                 rmtree2(tmpdir)
             except OSError, err:
-                self.log.error("Failed to clean up temporary test dir: %s" % err)
+                raise EasyBuildError("Failed to clean up temporary test dir: %s", err)
 
     def install_step(self):
         """Fix broken symlinks after build/installation."""

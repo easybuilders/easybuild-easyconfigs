@@ -34,6 +34,7 @@ import re
 import easybuild.tools.environment as env
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.framework.easyconfig import BUILD, CUSTOM
+from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.modules import get_software_root
 from easybuild.tools.run import run_cmd
 
@@ -73,7 +74,7 @@ class EB_SLEPc(ConfigureMake):
 
         # check PETSc dependency
         if not get_software_root("PETSc"):
-            self.log.error("PETSc module not loaded?")
+            raise EasyBuildError("PETSc module not loaded?")
 
         # set SLEPC_DIR environment variable
         env.setvar('SLEPC_DIR', self.cfg['start_dir'])
@@ -103,7 +104,7 @@ class EB_SLEPc(ConfigureMake):
         # check for errors in configure
         error_regexp = re.compile("ERROR")
         if error_regexp.search(out):
-            self.log.error("Error(s) detected in configure output!")
+            raise EasyBuildError("Error(s) detected in configure output!")
 
         # set default PETSC_ARCH if required
         if not os.getenv('PETSC_ARCH'):
