@@ -567,8 +567,8 @@ class EB_CP2K(EasyBlock):
         makefiles = os.path.join(self.cfg['start_dir'], 'makefiles')
         try:
             os.chdir(makefiles)
-        except:
-            raise EasyBuildError("Can't change to makefiles dir %s: %s", makefiles)
+        except OSError, err:
+            raise EasyBuildError("Can't change to makefiles dir %s: %s", makefiles, err)
 
         # modify makefile for parallel build
         parallel = self.cfg['parallel']
@@ -604,7 +604,7 @@ class EB_CP2K(EasyBlock):
             try:
                 os.chdir(self.builddir)
             except OSError, err:
-                raise EasyBuildError("Failed to change to %s: %s", self.builddir)
+                raise EasyBuildError("Failed to change to %s: %s", self.builddir, err)
 
             # use regression test reference output if available
             # try and find an unpacked directory that starts with 'LAST-'

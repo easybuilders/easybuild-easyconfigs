@@ -137,8 +137,8 @@ class EB_SuiteSparse(ConfigureMake):
                             os.symlink(nsrc, ndst)
                 else:
                     shutil.copy2(src, dst)
-            except:
-                raise EasyBuildError("Copying src %s to dst %s failed", src, dst)
+            except OSError, err:
+                raise EasyBuildError("Copying src %s to dst %s failed: %s", src, dst, err)
 
         # some extra symlinks are necessary for UMFPACK to work.
         paths = [
@@ -156,7 +156,7 @@ class EB_SuiteSparse(ConfigureMake):
             if os.path.exists(src):
                 try:
                     os.symlink(src, os.path.join(dstdir, fn))
-                except Exception, err:
+                except OSError, err:
                     raise EasyBuildError("Failed to make symbolic link from %s to %s: %s", src, dst, err)
 
     def make_module_req_guess(self):

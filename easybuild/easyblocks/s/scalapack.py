@@ -65,7 +65,7 @@ class EB_ScaLAPACK(ConfigureMake):
         try:
             shutil.copy(src, dest)
         except OSError, err:
-            raise EasyBuildError("Symlinking %s to, failed: %s", src, dest, err)
+            raise EasyBuildError("Symlinking %s to %s failed: %s", src, dest, err)
 
         self.loosever = LooseVersion(self.version)
 

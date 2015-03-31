@@ -75,7 +75,7 @@ class EB_Trinity(EasyBlock):
         try:
             os.chdir(dst)
         except OSError, err:
-            raise EasyBuildError("Butterfly: failed to change to dst dir %s", dst, err)
+            raise EasyBuildError("Butterfly: failed to change to dst dir %s: %s", dst, err)
 
         cmd = "ant"
         run_cmd(cmd)

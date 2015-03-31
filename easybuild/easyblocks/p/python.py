@@ -109,7 +109,7 @@ class EB_Python(ConfigureMake):
             try:
                 os.symlink(srcbin, python_binary_path)
             except OSError, err:
-                raise EasyBuildError("Failed to symlink %s to %s: %s", err)
+                raise EasyBuildError("Failed to symlink %s to %s: %s", srcbin, python_binary_path, err)
 
     def sanity_check_step(self):
         """Custom sanity check for Python."""

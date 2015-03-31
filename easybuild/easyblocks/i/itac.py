@@ -91,8 +91,8 @@ EULA=accept
             tmpdir = os.path.join(os.getcwd(), self.version, 'mytmpdir')
             try:
                 os.makedirs(tmpdir)
-            except:
-                raise EasyBuildError("Directory %s can't be created", tmpdir)
+            except OSError, err:
+                raise EasyBuildError("Directory %s can't be created: %s", tmpdir, err)
 
             cmd = "./install.sh --tmp-dir=%s --silent=%s" % (tmpdir, silentcfg)
 
