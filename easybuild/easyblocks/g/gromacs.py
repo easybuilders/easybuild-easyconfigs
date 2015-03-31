@@ -38,6 +38,7 @@ from easybuild.easyblocks.generic.cmakemake import CMakeMake
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.modules import get_software_root
+from easybuild.tools.run import run_cmd
 
 class EB_GROMACS(CMakeMake):
     """Support for building/installing GROMACS."""
@@ -59,12 +60,10 @@ class EB_GROMACS(CMakeMake):
 
             # Use external BLAS and LAPACK
             self.cfg.update('configopts', "--with-external-blas --with-external-lapack")
+            self.cfg.update("preconfigopts", 'LIBS="${EBVARLIBLAPACK} ${LIBS}"')
 
             # Don't use the X window system
             self.cfg.update('configopts', "--without-x")
-
-            if self.toolchain.options.get('usempi', None):
-                self.cfg.update('configopts', "--enable-mpi --program-suffix={0}".format(self.cfg['mpisuffix']))
 
             # OpenMP is not supported for versions older than 4.5.
             if LooseVersion(self.version) >= LooseVersion('4.5'):
@@ -164,17 +163,22 @@ class EB_GROMACS(CMakeMake):
             MPI support has been requested. """
         if LooseVersion(self.version) < LooseVersion('4.6'):
             self.cfg.update("prebuildopts", 'LIBS="${EBVARLIBLAPACK} ${LIBS}"')
-            if "--enable-mpi" in self.cfg['configopts']:
-                self.cfg.update("buildopts", "mdrun")
         super(EB_GROMACS, self).build_step()
 
     def install_step(self):
         """ For older versions of GROMACS, allow for a separate mdrun install
             if MPI support has been requested. """
-        if LooseVersion(self.version) < LooseVersion('4.6'):
-            if "--enable-mpi" in self.cfg['configopts']:
-                self.cfg.update("installopts", "install-mdrun")
         super(EB_GROMACS, self).install_step()
+        if LooseVersion(self.version) < LooseVersion('4.6'):
+            if self.toolchain.options.get('usempi', None):
+                cmd = "make distclean"
+                (out, _) = run_cmd(cmd, log_all=True, simple=False)
+                self.cfg.update('configopts', "--enable-mpi --program-suffix={0}".format(self.cfg['mpisuffix']))
+                ConfigureMake.configure_step(self)
+                self.cfg.update("buildopts", "mdrun")
+                super(EB_GROMACS, self).build_step()
+                cmd = "%s make install-mdrun %s" % (self.cfg['preinstallopts'], self.cfg['installopts'])
+                (out, _) = run_cmd(cmd, log_all=True, simple=False)
 
     def test_step(self):
         """Specify to running tests is done using 'make check'."""
@@ -192,10 +196,6 @@ class EB_GROMACS(CMakeMake):
     def sanity_check_step(self):
         """Custom sanity check for GROMACS."""
 
-        suff = ''
-        if self.toolchain.options.get('usempi', None):
-            suff = self.cfg['mpisuffix']
-
         # check for a handful of binaries/libraries that should be there
         libnames = ['gromacs']
         if LooseVersion(self.version) < LooseVersion('5.0'):
@@ -204,15 +204,22 @@ class EB_GROMACS(CMakeMake):
             # This LooseVersion number may have to be tweaked.
             if LooseVersion(self.version) > LooseVersion('3.3.3'):
                 libnames.append('gmxpreprocess')
-        libs = ['lib%s%s.a' % (libname, suff) for libname in libnames]
+        libs = ['lib%s.a' % libname for libname in libnames]
         dirs = ['include/gromacs']
         # I don't know when the pkgconfig directory was introduced.
         # This LooseVersion number may have to be tweaked.
         if LooseVersion(self.version) > LooseVersion('3.3.3'):
             dirs.append(('lib/pkgconfig', 'lib64/pkgconfig'))
         custom_paths = {
-            'files': ['bin/%s%s' % (binary, suff) for binary in ['editconf', 'g_lie', 'genbox', 'genconf', 'mdrun']] +
+            'files': ['bin/%s' % binary for binary in ['editconf', 'g_lie', 'genbox', 'genconf', 'mdrun']] +
                      [(os.path.join('lib', lib), os.path.join('lib64', lib)) for lib in libs],
             'dirs': dirs,
         }
+        if self.toolchain.options.get('usempi', None):
+            suff = self.cfg['mpisuffix']
+            mdrun_mpi = 'bin/mdrun%s' % suff
+            libgmx_mpi = 'lib/libgmx%s.a' % suff
+            libmd_mpi = 'lib/libmd%s.a' % suff
+            custom_paths['files'] += [mdrun_mpi, libgmx_mpi, libmd_mpi]
+
         super(EB_GROMACS, self).sanity_check_step(custom_paths=custom_paths)
