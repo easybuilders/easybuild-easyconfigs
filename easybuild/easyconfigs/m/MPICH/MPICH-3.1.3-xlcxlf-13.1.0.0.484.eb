@@ -1,0 +1,30 @@
+easyblock = 'ConfigureMake'
+
+name = 'MPICH'
+version = '3.1.3'
+gccsver = '484'
+
+homepage = 'http://www.mpich.org/'
+description = """MPICH v3.x is an open source high-performance MPI 3.0 implementation.
+It does not support InfiniBand (use MVAPICH2 with InfiniBand devices)."""
+
+toolchain = {'name': 'xlcxlf', 'version': '13.1.0.0.%s' % gccsver}
+
+sources = ['mpich-%(version)s.tar.gz']
+source_urls = ['http://www.mpich.org/static/tarballs/%(version)s']
+
+# MPICH configure wants F90/F90FLAGS to be renamed to FC/FCFLAGS.
+preconfigopts = 'unset F90; unset F90FLAGS; LDFLAGS=-L$EBROOTXLSMP/xlsmp/`echo $EBVERSIONXLSMP | cut -b1-5`/lib64 '
+
+# Build shared libraries
+configopts = '--enable-shared'
+
+sanity_check_paths = {
+    'files': ['bin/mpicc', 'bin/mpicxx', 'bin/mpic++', 'bin/mpif77', 'bin/mpif90', 'bin/mpiexec', 'bin/mpirun',
+              'include/mpi.h', 'include/mpi.mod', 'include/mpif.h', 'lib/libmpifort.a', 'lib/libfmpich.so',
+              'lib/libmpi.a', 'lib/libmpich.so', 'lib/libmpicxx.a', 'lib/libmpichcxx.so', 'lib/libmpichf90.so',
+              'lib/pkgconfig'],
+    'dirs': [],
+}
+
+moduleclass = 'mpi'

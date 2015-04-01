@@ -1,0 +1,22 @@
+name = 'MVAPICH2'
+version = '1.9'
+gccsver = '447'
+
+homepage = 'http://mvapich.cse.ohio-state.edu/overview/mvapich2/'
+description = "This is an MPI 3.0 implementation.  It is based on MPICH2 and MVICH."
+
+toolchain = {'name': 'xlcxlf', 'version': '13.1.0.0.%s' % gccsver}
+toolchainopts = {'noopt': 'True'}  # XL throws an internal compiler error with -O2 (and there is no -O1)
+
+source_urls = ['http://mvapich.cse.ohio-state.edu/download/mvapich2/']
+sources = [SOURCELOWER_TGZ]
+
+builddependencies = [('Bison', '2.7')]
+
+# --enable-fast=O0 doesn't remove all -O2 uses
+preconfigopts = '/bin/sed -e "s/O2/O0/g" -i configure ; LDFLAGS=-L$EBROOTXLSMP/xlsmp/`echo $EBVERSIONXLSMP | cut -b1-5`/lib64  '
+configopts = '--disable-mcast --enable-fast=O0'
+# fix stuff
+prebuildopts = '/bin/sed -e "s/func_apped/func_append/" -i libtool && echo -e "all:\n\ninstall:" > osu_benchmarks/Makefile && echo -e "all:\n\ninstall:" > src/env/mpiname/Makefile && '
+
+moduleclass = 'mpi'

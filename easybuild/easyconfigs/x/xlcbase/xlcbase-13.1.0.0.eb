@@ -1,0 +1,73 @@
+#
+# quick and dirty install of IBM XL components
+# RPM sources can be found in the xlC/xlf installation files
+#
+# After building, edit xlC/<version>/crt/include/limits.h and disable the
+# redefinition of MB_LEN_MAX (should be 16, not 4, to agree with
+# /usr/include/limits.h)
+#
+
+easyblock = "XLRpm"
+
+name = 'xlcbase'
+version = '13.1.0.0'
+basever = version
+rdate = '140510'
+arch = 'ppc64'
+xlmassver = '8.1.0.0'
+xlsmpver = '4.1.0.0'
+gccsver = '447'  # system-installed gcc
+#Core = 'Core'  # if using hierarchical MNS
+Core = ''  # if using flat MNS
+
+homepage = 'http://www.ibm.com/us/en/'
+description = """IBM XL C/C++ for Linux (SLES11/RHEL6)"""
+
+toolchain = {'name': 'dummy', 'version': 'dummy'}
+
+dependencies = [
+    ('xlmass', xlmassver),
+    ('xlsmp', xlsmpver),
+]
+
+# order is important
+#sources = [
+#    'vacpp.rte-%s-%s.%s.rpm' % (version, rdate, arch),
+#    'xlc.%s-%s-%s.%s.rpm' % (version[0:6], version, rdate, arch),
+#    'libxlc-devel.%s-%s-%s.%s.rpm' % (version[0:6], version, rdate, arch),
+#    'xlc-license.%s-%s-%s.%s.rpm' % (version[0:6], version, rdate, arch),
+#]
+
+sources = [
+    'vacpp.rte-%s-%s.%s.rpm' % (version, rdate, arch),
+    'libxlc-devel.%s-%s-%s.%s.rpm' % (version[0:6], version, rdate, arch),  # needs vacpp.rte
+    'xlc-license.%s-%s-%s.%s.rpm' % (version[0:6], version, rdate, arch),
+    'xlc.%s-%s-%s.%s.rpm' % (version[0:6], version, rdate, arch),  # needs libxlc-devel and xlc-license
+]
+
+postinstall = 'RUNPOST'  # cause RPM %post scripts to run
+
+sanity_check_paths = {
+     'dirs': ["xlC/%s/%s" % (version[0:6], x) for x in
+               ["bin", "etc", "include", "lib", "lib64", "msg"]] +
+             ["%s" % x for x in ["lib", "lib64"]],
+     'files': ["xlC/%s/%s" % (version[0:6], x) for x in
+                ["include/stdlib.h", "lib64/libxl.a", "lib64/libibmc++.so"]] +
+              ["%s/libibmc++.so.1" % x for x in ["lib", "lib64"]]
+}
+
+# configure
+postinstallcmds = [
+    ('/bin/cp $EASYBUILD_SOURCEPATH/%s/%s/xlc_configure $EASYBUILD_PREFIX/software/%s/%s/%s/xlC/%s/bin/xlc_configure' % (name[0:1], name, Core, name, version, version[0:6])),
+   ('$EASYBUILD_PREFIX/software/%s/xlcbase/%s/xlC/%s/bin/xlc_configure -force -gcc /usr -gcc64 /usr -smp $EASYBUILD_PREFIX/software/%s/xlsmp/%s/xlsmp/%s -smprt $EASYBUILD_PREFIX/software/%s/xlsmp/%s -mass $EASYBUILD_PREFIX/software/%s/xlmass/%s/xlmass/%s -xlclic $EASYBUILD_PREFIX/software/%s/xlcbase/%s/xlC/%s -xlc $EASYBUILD_PREFIX/software/%s/xlcbase/%s/xlC/%s -xlcpprt $EASYBUILD_PREFIX/software/%s/xlcbase/%s -xlcpp $EASYBUILD_PREFIX/software/%s/xlcbase/%s/xlC/%s $EASYBUILD_PREFIX/software/%s/xlcbase/%s/xlC/%s/etc/xlc.base.cfg -o $EASYBUILD_PREFIX/software/%s/xlcbase/%s/xlC/%s/etc/xlc.cfg.rhel6.5.gcc%s > /tmp/xlc_was_here' % (Core, basever, basever[0:6],  Core, xlsmpver, xlsmpver[0:5],  Core, xlsmpver,  Core, xlmassver, xlmassver[0:5],  Core, basever, basever[0:6],  Core, basever, basever[0:6],  Core, basever,  Core, basever, basever[0:6],  Core, basever, basever[0:6],  Core, basever, basever[0:6], gccsver)),
+]
+
+modextrapaths = {
+    'PATH': 'xlC/%s/bin' % version[0:6],
+}
+
+modextravars = {
+    'OBJECT_MODE': '64',
+}
+
+# EOF

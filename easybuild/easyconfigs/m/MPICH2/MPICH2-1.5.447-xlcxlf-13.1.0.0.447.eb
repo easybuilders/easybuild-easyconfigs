@@ -1,0 +1,29 @@
+easyblock = 'ConfigureMake'
+
+name = 'MPICH2'
+gccsver = '447'
+mpich2ver = '1.5'
+version = '%s.%s' % (mpich2ver, gccsver)
+
+homepage = 'http://www.mpich.org/'
+description = """MPICH v3.x is an open source high-performance MPI 3.0 implementation.
+It does not support InfiniBand (use MVAPICH2 with InfiniBand devices)."""
+
+toolchain = {'name': 'xlcxlf', 'version': '13.1.0.0.%s' % gccsver}
+
+sources = ['mpich2-%s.tar.gz' % mpich2ver]
+source_urls = ['http://www.mpich.org/static/tarballs/%s' % mpich2ver]
+
+# MPICH configure wants F90/F90FLAGS to be renamed to FC/FCFLAGS.
+preconfigopts = 'export FC="$F77"; export FCFLAGS="$F77FLAGS"; unset F90; unset F90FLAGS; LDFLAGS=-L$EBROOTXLSMP/xlsmp/`echo $EBVERSIONXLSMP | cut -b1-5`/lib64 '
+
+sanity_check_paths = {
+    'files': ['bin/mpicc', 'bin/mpicxx', 'bin/mpif77', 'bin/mpiexec', 'bin/mpirun',
+              'include/mpi.h', 'include/mpif.h', 'lib/libmpich.a'],
+    'dirs': [],
+}
+
+# parallel build may fail
+parallel = 1
+
+moduleclass = 'mpi'

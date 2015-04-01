@@ -1,0 +1,37 @@
+# quick and dirty install of IBM XL components
+# RPM sources can be found in the xlC/xlf installation files
+
+easyblock = "XLRpm"
+
+name = 'xlsmp'
+version = '4.1.0.0'
+rdate = '140411'
+arch = 'ppc64'
+
+homepage = 'http://www.ibm.com/us/en/'
+description = """IBM SMP support packages (SLES10)"""
+
+toolchain = {'name': 'dummy', 'version': 'dummy'}
+
+sources = [
+           'xlsmp.msg.rte-%s-%s.%s.rpm' % (version, rdate, arch),
+           'xlsmp.rte-%s-%s.%s.rpm' % (version, rdate, arch),
+           'libxlsmp-devel.%s-%s-%s.%s.rpm' % (version[0:5], version, rdate, arch),
+          ]
+
+postinstall = 'RUNPOST'  # setting to anything will cause RPM %post scripts to run
+
+sanity_check_paths = {
+     'dirs': ["xlsmp/%s/%s" % (version[0:5], x) for x in ["include", "lib", "lib64"]] +
+             ["%s" % x for x in ["lib", "lib64", "msg"]],
+     'files': ["xlsmp/%s/%s" % (version[0:5], x) for x in ["include/omp.h", "lib64/libxlsmp.a", "lib64/libxlsmp.so"]] +
+              ["%s/libxlsmp.so.1" % x for x in ["lib", "lib64"]]
+}
+
+modextrapaths = {
+    'CPATH': 'xlsmp/%s/include' % version[0:5],
+    'LIBRARY_PATH': 'xlsmp/%s/lib64' % version[0:5],
+    'LD_LIBRARY_PATH': 'lib64',
+}
+
+# EOF
