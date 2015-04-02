@@ -1,0 +1,46 @@
+easyblock = 'MakeCp'
+
+name = 'AFNI'
+version = '20141023'
+
+homepage = 'http://afni.nimh.nih.gov/'
+description = """AFNI is a set of C programs for processing, analyzing, and displaying functional MRI (FMRI) data -
+ a technique for mapping human brain activity."""
+
+toolchain = {'name': 'intel', 'version': '2015a'}
+toolchainopts = {'openmp': True}
+
+# download afni_src.tgz manually from http://afni.nimh.nih.gov/pub/dist/tgz/, and rename to include datestamp
+# detailed release notes are available at http://afni.nimh.nih.gov/pub/dist/doc/misc/history/afni_hist_level1_all.html
+# but last update doesn't match datestamp of most recent afni_src.tgz?
+sources = ['afni_src-%(version)s.tgz']
+checksums = ['87d8fcea9b9214dd37f5d89d61605647']
+
+libx11suff = '-libX11-1.6.3'
+
+pyver = '2.7.9'
+majpyver = '.'.join(pyver.split('.')[:2])
+dependencies = [
+    ('tcsh', '6.18.01'),
+    ('libXp', '1.0.3'),
+    ('libXt', '1.1.4', libx11suff),
+    ('libXpm', '3.5.11'),
+    ('libXmu', '1.1.2', libx11suff),
+    ('motif', '2.3.4', libx11suff),
+    ('R', '3.1.3'),
+    ('PyQt', '4.11.3', '-Python-%s' % pyver),
+    ('expat', '2.1.0'),
+    ('libpng', '1.6.16'),
+    ('libjpeg-turbo', '1.4.0'),
+]
+
+buildopts = '-f Makefile.linux_openmp_64 LGIFTI="$EBROOTEXPAT/lib/libexpat.a" LDPYTHON="-lpython%s"' % majpyver
+
+files_to_copy = [(['afni'], 'bin')]
+
+sanity_check_paths = {
+    'files': ['bin/afni'],
+    'dirs': [],
+}
+
+moduleclass = 'bio'
