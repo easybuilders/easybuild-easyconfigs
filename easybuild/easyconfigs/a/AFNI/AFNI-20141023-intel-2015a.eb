@@ -8,13 +8,15 @@ description = """AFNI is a set of C programs for processing, analyzing, and disp
  a technique for mapping human brain activity."""
 
 toolchain = {'name': 'intel', 'version': '2015a'}
-toolchainopts = {'openmp': True}
+toolchainopts = {'openmp': True, 'pic': True}
 
 # download afni_src.tgz manually from http://afni.nimh.nih.gov/pub/dist/tgz/, and rename to include datestamp
 # detailed release notes are available at http://afni.nimh.nih.gov/pub/dist/doc/misc/history/afni_hist_level1_all.html
 # but last update doesn't match datestamp of most recent afni_src.tgz?
 sources = ['afni_src-%(version)s.tgz']
 checksums = ['87d8fcea9b9214dd37f5d89d61605647']
+
+patches = ['AFNI-%(version)s_omp-pragma-statement-fix.patch']
 
 libx11suff = '-libX11-1.6.3'
 
@@ -34,7 +36,17 @@ dependencies = [
     ('libjpeg-turbo', '1.4.0'),
 ]
 
-buildopts = '-f Makefile.linux_openmp_64 LGIFTI="$EBROOTEXPAT/lib/libexpat.a" LDPYTHON="-lpython%s"' % majpyver
+buildopts = '-f Makefile.linux_openmp_64 LGIFTI="$EBROOTEXPAT/lib/libexpat.a" LDPYTHON="-lpython%s" ' % majpyver
+buildopts += 'CC="${CC} ${CFLAGS} -fPIC -DREAD_WRITE_64 -DLINUX2 \$(CEXTRA)" '
+buildopts += 'CCVOL="${CC} ${CFLAGS} -fPIC -DREAD_WRITE_64 -DLINUX2 \$(CEXTRA)" '
+buildopts += 'CCFAST="${CC} ${CFLAGS} -fPIC -DREAD_WRITE_64 -DLINUX2 \$(CEXTRA)" '
+buildopts += 'CCOLD="${CC} ${CFLAGS} -fPIC -DREAD_WRITE_64 -DLINUX2 \$(CEXTRA)" '
+buildopts += 'CCMIN="${CC} ${CFLAGS} -fPIC -DREAD_WRITE_64 -DLINUX2 \$(CEXTRA)" '
+buildopts += 'CCSVD="${CC} ${CFLAGS} -fPIC -DREAD_WRITE_64 -DLINUX2 \$(CEXTRA)" '
+buildopts += 'LD="${CC} \$(CPROF)" '
+buildopts += 'IFLAGS="-I. -I$EBROOTPYTHON/include/python%s" ' % majpyver
+
+parallel = 1
 
 files_to_copy = [(['afni'], 'bin')]
 
