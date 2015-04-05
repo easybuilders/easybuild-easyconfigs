@@ -144,7 +144,7 @@ class EB_imkl(IntelBase):
             txt += self.module_generator.prepend_paths('NLSPATH', '$root/idb/32/locale/%l_%t/%N')
         else:
             txt += self.module_generator.prepend_paths('NLSPATH', '$root/idb/intel64/locale/%l_%t/%N')
-        txt += self.module_generator.set_environment('MKLROOT', '$root')
+        txt += self.module_generator.set_environment('MKLROOT', self.installdir)
         return txt
 
     def post_install_step(self):

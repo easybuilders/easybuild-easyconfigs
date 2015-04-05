@@ -130,7 +130,7 @@ class EB_SLEPc(ConfigureMake):
                                                                                      self.version))
 
         else:
-            txt += self.module_generator.set_environment('SLEPC_DIR', '$root')
+            txt += self.module_generator.set_environment('SLEPC_DIR', self.installdir)
 
         return txt
 

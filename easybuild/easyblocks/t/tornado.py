@@ -49,7 +49,7 @@ class EB_Tornado(PackedBinary):
 
         txt += self.module_generator.prepend_paths('LD_LIBRARY_PATH', ["Tornado/bin/linux/", "ThirdParty/bin/linux/"])
         txt += self.module_generator.prepend_paths('PATH', ["Tornado/bin/linux/"] )
-        txt += self.module_generator.set_environment('TORNADO_ROOT_PATH', "$root" )
+        txt += self.module_generator.set_environment('TORNADO_ROOT_PATH', self.installdir )
         txt += self.module_generator.set_environment('TORNADO_DATA_PATH', "$root/Data/WEST" )
 
         return txt

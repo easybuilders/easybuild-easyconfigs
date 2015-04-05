@@ -367,7 +367,7 @@ class EB_Geant4(CMakeMake):
         g4version = '.'.join(self.version.split('.')[:2])
 
         txt = super(EB_Geant4, self).make_module_extra()
-        txt += self.module_generator.set_environment('G4INSTALL', "$root")
+        txt += self.module_generator.set_environment('G4INSTALL', self.installdir)
         #no longer needed in > 9.5, but leave it there for now.
         txt += self.module_generator.set_environment('G4VERSION', g4version)
 

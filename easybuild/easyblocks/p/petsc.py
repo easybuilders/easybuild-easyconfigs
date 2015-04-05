@@ -293,7 +293,7 @@ class EB_PETSc(ConfigureMake):
             txt += self.module_generator.set_environment('PETSC_ARCH', self.petsc_arch)
 
         else:
-            txt += self.module_generator.set_environment('PETSC_DIR', '$root')
+            txt += self.module_generator.set_environment('PETSC_DIR', self.installdir)
 
         return txt
 
