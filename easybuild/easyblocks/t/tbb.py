@@ -91,8 +91,6 @@ class EB_tbb(IntelBase):
 
     def make_module_extra(self):
         """Add correct path to lib to LD_LIBRARY_PATH. and intel license file"""
-
         txt = super(EB_tbb, self).make_module_extra()
-        txt += "prepend-path\t%s\t\t%s\n" % ('LD_LIBRARY_PATH', self.libpath)
-
+        txt += self.module_generator.prepend_paths('LD_LIBRARY_PATH', [self.libpath])
         return txt
