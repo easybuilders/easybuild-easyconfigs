@@ -289,7 +289,7 @@ class EB_PETSc(ConfigureMake):
         txt = super(EB_PETSc, self).make_module_extra()
 
         if self.cfg['sourceinstall']:
-            txt += self.module_generator.set_environment('PETSC_DIR', '$root/%s' % self.petsc_subdir)
+            txt += self.module_generator.set_environment('PETSC_DIR', os.path.join(self.installdir, self.petsc_subdir))
             txt += self.module_generator.set_environment('PETSC_ARCH', self.petsc_arch)
 
         else:

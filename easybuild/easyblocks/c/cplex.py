@@ -114,7 +114,7 @@ class EB_CPLEX(Binary):
 
         txt = super(EB_CPLEX, self).make_module_extra()
         txt += self.module_generator.prepend_paths("PATH", [self.bindir])
-        txt += self.module_generator.set_environment("CPLEX_HOME", "$root/cplex")
+        txt += self.module_generator.set_environment("CPLEX_HOME", os.path.join(self.installdir, 'cplex'))
         self.log.debug("make_module_extra added %s" % txt)
         return txt
 
