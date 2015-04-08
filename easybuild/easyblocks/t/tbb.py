@@ -72,13 +72,13 @@ class EB_tbb(IntelBase):
         self.libdir = libdir
 
 
-        self.libpath = "%s/tbb/libs/intel64/%s/" % (self.installdir, libdir)
+        self.libpath = os.path.join('tbb', 'libs', 'intel64', libdir)
         self.log.debug("self.libpath: %s" % self.libpath)
         # applications go looking into tbb/lib so we move what's in there to libs
         # and symlink the right lib from /tbb/libs/intel64/... to lib
         install_libpath = os.path.join(self.installdir, 'tbb', 'lib')
         shutil.move(install_libpath, os.path.join(self.installdir, 'tbb', 'libs'))
-        os.symlink(self.libpath, install_libpath)
+        os.symlink(os.path.join(self.installdir, self.libpath), install_libpath)
 
     def sanity_check_step(self):
 
