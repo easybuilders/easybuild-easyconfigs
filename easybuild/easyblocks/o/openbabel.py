@@ -78,6 +78,6 @@ class EB_OpenBabel(CMakeMake):
         txt += self.module_generator.prepend_paths('PYTHONPATH', ['lib'])
         babel_libdir = os.path.join(self.installdir, 'lib', 'openbabel', self.version)
         txt += self.module_generator.set_environment('BABEL_LIBDIR', babel_libdir)
-        babel_datadir = os.path.join('share', 'openbabel', self.version)
+        babel_datadir = os.path.join(self.installdir, 'share', 'openbabel', self.version)
         txt += self.module_generator.set_environment('BABEL_DATADIR', babel_datadir)
         return txt
