@@ -366,7 +366,7 @@ class EB_WPS(EasyBlock):
     def make_module_extra(self):
         """Add netCDF environment variables to module file."""
         txt = super(EB_WPS, self).make_module_extra()
-        txt += self.module_generator('NETCDF', os.getenv('NETCDF'))
+        txt += self.module_generator.set_environment('NETCDF', os.getenv('NETCDF'))
         if os.getenv('NETCDFF', None) is not None:
-            txt += self.module_generator('NETCDFF', os.getenv('NETCDFF'))
+            txt += self.module_generator.set_environment('NETCDFF', os.getenv('NETCDFF'))
         return txt
