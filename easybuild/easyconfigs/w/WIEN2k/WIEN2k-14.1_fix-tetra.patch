@@ -1,0 +1,57 @@
+see http://www.mail-archive.com/wien%40zeus.theochem.tuwien.ac.at/msg11178.html
+--- WIEN2k_14.orig/SRC_tetra/tetra.f    2014-09-19 13:30:20.757390463 +0200
++++ WIEN2k_14/SRC_tetra/tetra.f 2014-09-19 13:30:37.671774186 +0200
+@@ -165,7 +165,7 @@
+         SO=1.d0
+         NSORT=1
+         KLMAX=1
+-        allocate( TEXT(Nsort+1),QTL(Nsort+1,klmax+1),xqtl(nsort,lxdos2*(lxdos2+1)) )
++        allocate( TEXT(0:Nsort+1),QTL(Nsort+1,klmax+1),xqtl(nsort,lxdos2*(lxdos2+1)) )
+         IDOS(1,1)=0
+         IDOS(1,2)=0
+         DOSTYP(1)='TOTAL'
+@@ -220,7 +220,7 @@
+             READ(4,1010) ALAT1,ALAT2,ALAT3,EFERM                        
+             READ(4,1020) MINWAV,MAXWAV,KSPIN,NSORT,kso,kLmax
+             if(klmax.eq.0) klmax=14
+-        allocate( TEXT(Nsort+1),QTL(Nsort+1,klmax+1),xqtl(nsort,lxdos2*(lxdos2+1)) )
++        allocate( TEXT(0:Nsort+1),QTL(Nsort+1,klmax+1),xqtl(nsort,lxdos2*(lxdos2+1)) )
+ !           INCREASE NSORT BY ONE FOR THE INTERSTITIAL DOS (OUT)        
+             NSORT=NSORT+1                                               
+             WRITE(6,2000) SYSTEM                                        
+@@ -240,7 +240,7 @@
+          DO 107 ISORT=1,NSORT                                           
+                IF(ISORT.EQ.NSORT) GOTO 107                              
+                READ(4,1030) JATOM,NEQU,isplit,text(isort)                      
+-               WRITE(6,2030) JATOM,NEQU,isplit,text(isort)                    
++               WRITE(6,2030) JATOM,NEQU,isplit,text(isort) 
+  107     CONTINUE  
+          nndos_save=nndos
+       DO 90 JCASE=1,NNDOS                                               
+@@ -364,7 +364,11 @@
+       if(nst.eq.1.and.ibrsw.eq.-1) then    ! for one k-point calculate the DOS with broadening
+          ibrsw=1
+          print*,'Only 1 k-point, switching to Gauss-broadening with',br
+-      endif
++         if(br.lt.1.d-6) then
++             br=0.002
++             print*,' No broadening specified, increasing broadening to',br
++         endif 
++     endif
+       if(ibrsw.ne.-1) then
+         CALL broadDOS (ibrsw,br,brlor,NNDOS,1,JEND,EMIN,EMAX,NYMIN,NYMAX,DE,ebs,fc,nst,densty)
+       endif
+@@ -523,7 +527,7 @@
+  1000 FORMAT(1X,A70,/)                                                  
+  1010 FORMAT(1X,15X,3F8.5,16X,F10.5)                                    
+  1020 FORMAT(1X,I4,10X,I4,8X,I1,7X,I3,8x,i2,6x,i3)                             
+- 1030 FORMAT(6X,I3,7X,I2,9x,i2,2x,a200)                                       
++ 1030 FORMAT(6X,I3,7X,I2,9x,i2,2x,a96)                                       
+  1040 FORMAT(6X,I4)                                                     
+  1041 FORMAT(5X,I5)                                                     
+  1050 FORMAT(F10.5,I3,F8.5,3X,(40F8.5))                                
+@@ -532,3 +536,4 @@
+  2020 FORMAT(1X,I4,' < NMAT < ',I4,3X,'SPIN=',I1,3X,'NATO=',I4)         
+  2030 FORMAT(1X,'JATOM',I3,2X,'MULT=',I2,2x,'ISPLIT=',i2,2x,a96)            
+       END                                                               
++
