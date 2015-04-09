@@ -64,16 +64,16 @@ class EB_WIEN2k(EasyBlock):
         testdata_urls = ["http://www.wien2k.at/reg_user/benchmark/test_case.tar.gz",
                          "http://www.wien2k.at/reg_user/benchmark/mpi-benchmark.tar.gz"]
 
-        extra_vars = [
-            ('runtest', [True, "Run WIEN2k tests", CUSTOM]),
-            ('testdata', [testdata_urls, "test data URL for WIEN2k benchmark test", CUSTOM]),
-            ('wien_mpirun', [None, "MPI wrapper command to use", CUSTOM]),
-            ('remote', [None, "Remote command to use (e.g. pbsssh, ...)", CUSTOM]),
-            ('use_remote', [True, "Whether to remotely login to initiate the k-point parallellization calls", CUSTOM]),
-            ('mpi_remote', [False, "Whether to initiate MPI calls locally or remotely", CUSTOM]),
-            ('wien_granularity', [True, "Granularity for parallel execution (see manual)", CUSTOM]),
-            ('taskset', [None, "Specifies an optional command for binding a process to a specific core", CUSTOM]),
-        ]
+        extra_vars = {
+            'runtest': [True, "Run WIEN2k tests", CUSTOM],
+            'testdata': [testdata_urls, "test data URL for WIEN2k benchmark test", CUSTOM],
+            'wien_mpirun': [None, "MPI wrapper command to use", CUSTOM],
+            'remote': [None, "Remote command to use (e.g. pbsssh, ...)", CUSTOM],
+            'use_remote': [True, "Whether to remotely login to initiate the k-point parallellization calls", CUSTOM],
+            'mpi_remote': [False, "Whether to initiate MPI calls locally or remotely", CUSTOM],
+            'wien_granularity': [True, "Granularity for parallel execution (see manual)", CUSTOM],
+            'taskset': [None, "Specifies an optional command for binding a process to a specific core", CUSTOM],
+        }
         return EasyBlock.extra_options(extra_vars)
 
     def extract_step(self):
