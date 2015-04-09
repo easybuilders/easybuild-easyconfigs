@@ -136,10 +136,10 @@ class EB_python_minus_meep(PythonPackage):
 
         meep = get_software_root('Meep')
 
-        txt += "setenv\tMEEP_INCLUDE\t\t%s/include\n" % meep
-        txt += "setenv\tMEEP_LIB\t\t%s/lib\n" % meep
+        txt += self.module_generator.set_environment('MEEP_INCLUDE', os.path.join(meep, 'include'))
+        txt += self.module_generator.set_environment('MEEP_LIB', os.path.join(meep, 'lib'))
 
         for var in ["PYTHONMEEPPATH", "PYTHONMEEP_INCLUDE", "PYTHONPATH"]:
-            txt += "setenv\t%s\t\t$root/site-packages\n" % var
+            txt += self.module_generator.set_environment(var, os.path.join(self.installdir, 'site-packages'))
 
         return txt

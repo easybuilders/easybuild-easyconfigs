@@ -285,6 +285,6 @@ class EB_GAMESS_minus_US(EasyBlock):
     def make_module_extra(self):
         """Define GAMESS-US specific variables in generated module file, i.e. $GAMESSUSROOT."""
         txt = super(EB_GAMESS_minus_US, self).make_module_extra()
-        txt += self.module_generator.set_environment('GAMESSUSROOT', '$root')
+        txt += self.module_generator.set_environment('GAMESSUSROOT', self.installdir)
         txt += self.module_generator.prepend_paths("PATH", [''])
         return txt

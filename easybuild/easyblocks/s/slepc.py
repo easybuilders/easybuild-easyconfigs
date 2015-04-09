@@ -126,11 +126,11 @@ class EB_SLEPc(ConfigureMake):
         txt = super(EB_SLEPc, self).make_module_extra()
 
         if self.cfg['sourceinstall']:
-            txt += self.module_generator.set_environment('SLEPC_DIR', '$root/%s-%s' % (self.name.lower(),
-                                                                                     self.version))
+            subdir = '%s-%s' % (self.name.lower(), self.version)
+            txt += self.module_generator.set_environment('SLEPC_DIR', os.path.join(self.installdir, subdir))
 
         else:
-            txt += self.module_generator.set_environment('SLEPC_DIR', '$root')
+            txt += self.module_generator.set_environment('SLEPC_DIR', self.installdir)
 
         return txt
 

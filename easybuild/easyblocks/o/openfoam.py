@@ -58,7 +58,6 @@ class EB_OpenFOAM(EasyBlock):
 
         self.wm_compiler= None
         self.wm_mplib = None
-        self.mpipath = None
         self.openfoamdir = None
         self.thrdpartydir = None
 
@@ -243,12 +242,11 @@ class EB_OpenFOAM(EasyBlock):
 
         env_vars = [
             ("WM_PROJECT_VERSION", self.version),
-            ("FOAM_INST_DIR", "$root"),
+            ("FOAM_INST_DIR", self.installdir),
             ("WM_COMPILER", self.wm_compiler),
             ("WM_MPLIB", self.wm_mplib),
-            ("MPI_ARCH_PATH", self.mpipath),
-            ("FOAM_BASH", os.path.join("$root", self.openfoamdir, "etc", "bashrc")),
-            ("FOAM_CSH", os.path.join("$root", self.openfoamdir, "etc", "cshrc")),
+            ("FOAM_BASH", os.path.join(self.installdir, self.openfoamdir, "etc", "bashrc")),
+            ("FOAM_CSH", os.path.join(self.installdir, self.openfoamdir, "etc", "cshrc")),
         ]
 
         for (env_var, val) in env_vars:

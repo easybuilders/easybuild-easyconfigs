@@ -59,7 +59,7 @@ class EB_FreeSurfer(Tarball):
     def make_module_extra(self):
         """Add setting of FREESURFER_HOME in module."""
         txt = super(EB_FreeSurfer, self).make_module_extra()
-        txt += self.module_generator.set_environment("FREESURFER_HOME", "$root")
+        txt += self.module_generator.set_environment("FREESURFER_HOME", self.installdir)
         return txt
 
     def sanity_check_step(self):
