@@ -1,5 +1,5 @@
 ##
-# Copyright 2009-2013 Ghent University
+# Copyright 2009-2015 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -47,9 +47,9 @@ class EB_Tornado(PackedBinary):
 
         txt = super(EB_Tornado, self).make_module_extra()
 
-        txt += self.moduleGenerator.prepend_paths('LD_LIBRARY_PATH', ["Tornado/bin/linux/", "ThirdParty/bin/linux/"])
-        txt += self.moduleGenerator.prepend_paths('PATH', ["Tornado/bin/linux/"] )
-        txt += self.moduleGenerator.set_environment('TORNADO_ROOT_PATH', "$root" )
-        txt += self.moduleGenerator.set_environment('TORNADO_DATA_PATH', "$root/Data/WEST" )
+        txt += self.module_generator.prepend_paths('LD_LIBRARY_PATH', ["Tornado/bin/linux/", "ThirdParty/bin/linux/"])
+        txt += self.module_generator.prepend_paths('PATH', ["Tornado/bin/linux/"] )
+        txt += self.module_generator.set_environment('TORNADO_ROOT_PATH', "$root" )
+        txt += self.module_generator.set_environment('TORNADO_DATA_PATH', "$root/Data/WEST" )
 
         return txt

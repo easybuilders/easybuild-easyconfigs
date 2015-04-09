@@ -1,5 +1,5 @@
 ##
-# Copyright 2009-2013 Ghent University
+# Copyright 2009-2015 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -36,6 +36,7 @@ import os
 
 import easybuild.tools.environment as env
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
+from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.modules import get_software_root
 
 
@@ -55,7 +56,7 @@ class EB_HDF5(ConfigureMake):
             if root:
                 self.cfg.update('configopts', '%s=%s' % (opt, root))
             else:
-                self.log.error("Dependency module %s not loaded." % dep)
+                raise EasyBuildError("Dependency module %s not loaded.", dep)
 
         fcomp = 'FC="%s"' % os.getenv('F90')
 

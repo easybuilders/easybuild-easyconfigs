@@ -1,8 +1,8 @@
 ## 
 # This file is an EasyBuild reciPY as per https://github.com/hpcugent/easybuild
 #
-# Copyright:: Copyright 2012-2013 University of Luxembourg/Luxembourg Centre for Systems Biomedicine
-# Authors::   Cedric Laczny <cedric.laczny@uni.lu>, Fotis Georgatos <fotis.georgatos@uni.lu>, Kenneth Hoste
+# Copyright:: Copyright 2012-2015 Uni.Lu/LCSB, NTUA
+# Authors::   Cedric Laczny <cedric.laczny@uni.lu>, Fotis Georgatos <fotis@cern.ch>, Kenneth Hoste
 # License::   MIT/GPL
 # $Id$
 #
@@ -23,6 +23,7 @@ import os
 import sys
 
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
+from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.modules import get_software_root
 
 
@@ -37,7 +38,7 @@ class EB_Cufflinks(ConfigureMake):
         """
         for dep in ['Boost', 'Eigen', 'SAMtools']:
             if not get_software_root(dep):
-                self.log.error("Dependency module %s not loaded?" % dep)
+                raise EasyBuildError("Dependency module %s not loaded?", dep)
 
         super(EB_Cufflinks, self).configure_step()
 

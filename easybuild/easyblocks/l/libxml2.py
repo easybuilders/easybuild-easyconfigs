@@ -1,5 +1,5 @@
 ##
-# Copyright 2009-2013 Ghent University
+# Copyright 2009-2015 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -33,6 +33,7 @@ import os
 import easybuild.tools.environment as env
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.easyblocks.generic.pythonpackage import PythonPackage
+from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.modules import get_software_root
 
 
@@ -51,7 +52,7 @@ class EB_libxml2(ConfigureMake, PythonPackage):
         Test if python module is loaded
         """
         if not get_software_root('Python'):
-            self.log.error("Python module not loaded")
+            raise EasyBuildError("Python module not loaded")
        
         ConfigureMake.configure_step(self)
 
@@ -60,7 +61,7 @@ class EB_libxml2(ConfigureMake, PythonPackage):
             PythonPackage.configure_step(self)
             os.chdir('..')
         except OSError, err:
-            self.log.error("Failed to configure libxml2 Python bindings: %s" % err)
+            raise EasyBuildError("Failed to configure libxml2 Python bindings: %s", err)
 
     def build_step(self):
         """
@@ -75,7 +76,7 @@ class EB_libxml2(ConfigureMake, PythonPackage):
             PythonPackage.build_step(self)
             os.chdir('..')
         except OSError, err:
-            self.log.error("Failed to build libxml2 Python bindings: %s" % err)
+            raise EasyBuildError("Failed to build libxml2 Python bindings: %s", err)
 
     def install_step(self):
         """
@@ -88,7 +89,7 @@ class EB_libxml2(ConfigureMake, PythonPackage):
             PythonPackage.install_step(self)
             os.chdir('..')
         except OSError, err:
-            self.log.error("Failed to install libxml2 Python bindings: %s" % err)
+            raise EasyBuildError("Failed to install libxml2 Python bindings: %s", err)
 
     def make_module_extra(self):
         """

@@ -1,5 +1,5 @@
 ##
-# Copyright 2009-2013 Ghent University
+# Copyright 2009-2015 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -37,8 +37,10 @@ import shutil
 import tempfile
 
 from easybuild.easyblocks.generic.pythonpackage import PythonPackage
-from easybuild.tools.filetools import extract_file, rmtree2, run_cmd
+from easybuild.tools.build_log import EasyBuildError
+from easybuild.tools.filetools import extract_file, rmtree2
 from easybuild.tools.modules import get_software_root
+from easybuild.tools.run import run_cmd
 
 
 class EB_python_minus_meep(PythonPackage):
@@ -53,7 +55,7 @@ class EB_python_minus_meep(PythonPackage):
         deps = ["Meep", "Python"]
         for dep in deps:
             if not get_software_root(dep):
-                self.log.error("Module for %s not loaded." % dep)
+                raise EasyBuildError("Module for %s not loaded.", dep)
 
     def build_step(self):
         """Build python-meep using available make/make-mpi script."""
@@ -87,9 +89,9 @@ class EB_python_minus_meep(PythonPackage):
                                   "%s-%s.*.tar.gz" % (self.name, shortver))
         matches = glob.glob(fn_pattern)
         if not matches:
-            self.log.error("No tarball found at %s" % fn_pattern)
+            raise EasyBuildError("No tarball found at %s", fn_pattern)
         elif len(matches) > 1:
-            self.log.error("Multiple matches found for tarball: %s" % matches)
+            raise EasyBuildError("Multiple matches found for tarball: %s", matches)
         else:
             tarball = matches[0]
             self.log.info("Tarball found at %s" % tarball)
@@ -98,14 +100,14 @@ class EB_python_minus_meep(PythonPackage):
         tmpdir = tempfile.mkdtemp()
         srcdir = extract_file(tarball, tmpdir)
         if not srcdir:
-            self.log.error("Unpacking tarball %s failed?" % tarball)
+            raise EasyBuildError("Unpacking tarball %s failed?", tarball)
 
         # locate site-packages dir to copy by diving into unpacked tarball
         src = srcdir
         while len(os.listdir(src)) == 1:
             src = os.path.join(src, os.listdir(src)[0])
         if not os.path.basename(src) =='site-packages':
-            self.log.error("Expected to find a site-packages path, but found something else: %s" % src)
+            raise EasyBuildError("Expected to find a site-packages path, but found something else: %s", src)
 
         # copy contents of site-packages dir
         dest = os.path.join(self.installdir, 'site-packages')
@@ -114,7 +116,7 @@ class EB_python_minus_meep(PythonPackage):
             rmtree2(tmpdir)
             os.chdir(self.installdir)
         except OSError, err:
-            self.log.exception("Failed to copy directory %s to %s: %s" % (src, dest, err))
+            raise EasyBuildError("Failed to copy directory %s to %s: %s", src, dest, err)
 
     def sanity_check_step(self):
 

@@ -32,6 +32,7 @@ import os
 
 import easybuild.tools.toolchain as toolchain
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
+from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.modules import get_software_root, get_software_libdir
 
 
@@ -52,19 +53,20 @@ class EB_Score_minus_P(ConfigureMake):
         if comp_fam in comp_opts:
             self.cfg.update('configopts', "--with-nocross-compiler-suite=%s" % comp_opts[comp_fam])
         else:
-            self.log.error("Compiler family %s not supported yet (only: %s)" % (comp_fam, ', '.join(comp_opts.keys())))
+            raise EasyBuildError("Compiler family %s not supported yet (only: %s)",
+                                 comp_fam, ', '.join(comp_opts.keys()))
 
         mpi_opts = {
             toolchain.INTELMPI: 'intel2',  # intel: Intel MPI v1.x (ancient); intelpoe: IBM POE MPI for Intel platforms
             toolchain.OPENMPI: 'openmpi',
-            toolchain.MPICH: 'mpich',
+            toolchain.MPICH: 'mpich3',  # In EB terms, MPICH means MPICH 3.x; MPICH 1.x is ancient and unsupported
             toolchain.MPICH2: 'mpich2',
         }
         mpi_fam = self.toolchain.mpi_family()
         if mpi_fam in mpi_opts:
             self.cfg.update('configopts', "--with-mpi=%s" % mpi_opts[mpi_fam])
         else:
-            self.log.error("MPI family %s not supported yet (only: %s)" % (mpi_fam, ', '.join(mpi_opts.keys())))
+            raise EasyBuildError("MPI family %s not supported yet (only: %s)", mpi_fam, ', '.join(mpi_opts.keys()))
 
         # auto-detection for dependencies mostly works fine, but hard specify paths anyway to have full control
         deps = {

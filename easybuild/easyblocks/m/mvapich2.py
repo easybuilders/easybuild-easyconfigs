@@ -1,5 +1,5 @@
 ##
-# Copyright 2009-2013 Ghent University
+# Copyright 2009-2015 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -37,6 +37,7 @@ import os
 import easybuild.tools.environment as env
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.framework.easyconfig import CUSTOM
+from easybuild.tools.build_log import EasyBuildError
 
 
 class EB_MVAPICH2(ConfigureMake):
@@ -97,12 +98,8 @@ class EB_MVAPICH2(ConfigureMake):
                     env.setvar(new_envvar, envvar_val)
                     env.setvar(envvar, '')
                 else:
-                    self.log.error("Both %(ev)s and %(nev)s set, can I overwrite %(nev)s with %(ev)s (%(evv)s) ?" %
-                                     {
-                                      'ev': envvar,
-                                      'nev': new_envvar,
-                                      'evv': envvar_val
-                                     })
+                    raise EasyBuildError("Both $%s and $%s set, can I overwrite $%s with $%s (%s) ?",
+                                         envvar, new_envvar, new_envvar, envvar, envvar_val)
 
         # enable specific support options (if desired)
         if self.cfg['withmpe']:

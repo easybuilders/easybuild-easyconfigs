@@ -1,5 +1,5 @@
 ##
-# Copyright 2009-2013 Ghent University
+# Copyright 2009-2015 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -45,8 +45,10 @@ import easybuild.tools.environment as env
 import easybuild.tools.toolchain as toolchain
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import CUSTOM
-from easybuild.tools.filetools import extract_file, mkdir, read_file, rmtree2, run_cmd, run_cmd_qa, write_file
+from easybuild.tools.build_log import EasyBuildError
+from easybuild.tools.filetools import extract_file, mkdir, read_file, rmtree2, write_file
 from easybuild.tools.modules import get_software_root, get_software_version
+from easybuild.tools.run import run_cmd, run_cmd_qa
 
 
 class EB_WIEN2k(EasyBlock):
@@ -109,7 +111,7 @@ class EB_WIEN2k(EasyBlock):
             comp_answer = 'V'  # Linux (gfortran compiler + gotolib)
 
         else:
-            self.log.error("Failed to determine toolchain-dependent answers.")
+            raise EasyBuildError("Failed to determine toolchain-dependent answers.")
 
         # libraries
         rlibs = "%s %s" % (os.getenv('LIBLAPACK_MT'), self.toolchain.get_flag('openmp'))
@@ -182,7 +184,7 @@ class EB_WIEN2k(EasyBlock):
                 fftw_maj = get_software_version('FFTW').split('.')[0]
                 fftw_spec = 'FFTW%s' % fftw_maj
             else:
-                self.log.error("Required FFTW dependency is missing")
+                raise EasyBuildError("Required FFTW dependency is missing")
             qanda.update({
                  '(not updated) Selection:': comp_answer,
                  'Shared Memory Architecture? (y/N):': 'N',
@@ -245,9 +247,9 @@ class EB_WIEN2k(EasyBlock):
                 ])
                 write_file(parallel_options_fp, extratxt, append=True)
             else:
-                self.log.error("Don't know how to handle remote %s" % self.cfg['remote'])
+                raise EasyBuildError("Don't know how to handle remote %s", self.cfg['remote'])
 
-        self.log.debug("Patched file %s: %s" % (parallel_options_fp, read_file(parallel_options_fp)))
+        self.log.debug("Patched file %s: %s", parallel_options_fp, read_file(parallel_options_fp))
 
     def build_step(self):
         """Build WIEN2k by running siteconfig_lapw script again."""
@@ -288,14 +290,14 @@ class EB_WIEN2k(EasyBlock):
 
             re_success = re.compile("LAPW1\s+END")
             if not re_success.search(out):
-                self.log.error("Test '%s' in %s failed (pattern '%s' not found)?" % (cmd, os.getcwd(),
-                                                                                     re_success.pattern))
+                raise EasyBuildError("Test '%s' in %s failed (pattern '%s' not found)?",
+                                     cmd, os.getcwd(), re_success.pattern)
             else:
                 self.log.info("Test '%s' seems to have run successfully: %s" % (cmd, out))
 
         if self.cfg['runtest']:
             if not self.cfg['testdata']:
-                self.log.error("List of URLs for testdata not provided.")
+                raise EasyBuildError("List of URLs for testdata not provided.")
 
             # prepend $PATH with install directory, define $SCRATCH which is used by the tests
             env.setvar('PATH', "%s:%s" % (self.installdir, os.environ['PATH']))
@@ -316,7 +318,7 @@ class EB_WIEN2k(EasyBlock):
                 for testdata in self.cfg['testdata']:
                     td_path = self.obtain_file(testdata)
                     if not td_path:
-                        self.log.error("Downloading file from %s failed?" % testdata)
+                        raise EasyBuildError("Downloading file from %s failed?", testdata)
                     testdata_paths.update({os.path.basename(testdata): td_path})
 
                 self.log.debug('testdata_paths: %s' % testdata_paths)
@@ -341,7 +343,7 @@ class EB_WIEN2k(EasyBlock):
                 rmtree2(tmpdir)
 
             except OSError, err:
-                self.log.error("Failed to run WIEN2k benchmark tests: %s" % err)
+                raise EasyBuildError("Failed to run WIEN2k benchmark tests: %s", err)
 
             self.log.debug("Current dir: %s" % os.getcwd())
 
@@ -352,8 +354,8 @@ class EB_WIEN2k(EasyBlock):
 
             # check expected format
             if not len(test) == 4:
-                self.log.error("WIEN2k test case not specified in expected format: " \
-                               "(testcase_name, init_lapw_args, run_lapw_args, [scf_regexp_pattern])")
+                raise EasyBuildError("WIEN2k test case not specified in expected format: "
+                                     "(testcase_name, init_lapw_args, run_lapw_args, [scf_regexp_pattern])")
             test_name = test[0]
             init_args = test[1]
             run_args = test[2]
@@ -371,7 +373,7 @@ class EB_WIEN2k(EasyBlock):
                 os.chdir(tmpdir)
                 self.log.info("Running test case %s in %s" % (test_name, tmpdir))
             except OSError, err:
-                self.log.error("Failed to create temporary directory for test %s: %s" % (test_name, err))
+                raise EasyBuildError("Failed to create temporary directory for test %s: %s", test_name, err)
 
             # try and find struct file for test
             test_fp = self.obtain_file("%s.struct" % test_name)
@@ -379,7 +381,7 @@ class EB_WIEN2k(EasyBlock):
             try:
                 shutil.copy2(test_fp, tmpdir)
             except OSError, err:
-                self.log.error("Failed to copy %s: %s" % (test_fp, err))
+                raise EasyBuildError("Failed to copy %s: %s", test_fp, err)
 
             # run test
             cmd = "init_lapw %s" % init_args
@@ -395,7 +397,7 @@ class EB_WIEN2k(EasyBlock):
             for regexp_pat in scf_regexp_patterns:
                 regexp = re.compile(regexp_pat, re.M)
                 if not regexp.search(scftxt):
-                    self.log.error("Failed to find pattern %s in %s" % (regexp.pattern, scf_fn))
+                    raise EasyBuildError("Failed to find pattern %s in %s", regexp.pattern, scf_fn)
                 else:
                     self.log.debug("Found pattern %s in %s" % (regexp.pattern, scf_fn))
 
@@ -404,7 +406,7 @@ class EB_WIEN2k(EasyBlock):
                 os.chdir(cwd)
                 rmtree2(tmpdir)
             except OSError, err:
-                self.log.error("Failed to clean up temporary test dir: %s" % err)
+                raise EasyBuildError("Failed to clean up temporary test dir: %s", err)
 
     def install_step(self):
         """Fix broken symlinks after build/installation."""
@@ -434,7 +436,7 @@ class EB_WIEN2k(EasyBlock):
 
         txt = super(EB_WIEN2k, self).make_module_extra()
 
-        txt += self.moduleGenerator.set_environment("WIENROOT", "$root")
-        txt += self.moduleGenerator.prepend_paths("PATH", [""])
+        txt += self.module_generator.set_environment("WIENROOT", "$root")
+        txt += self.module_generator.prepend_paths("PATH", [""])
 
         return txt

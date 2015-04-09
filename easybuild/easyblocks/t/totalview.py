@@ -1,8 +1,8 @@
 ##
 # This file is an EasyBuild reciPY as per https://github.com/hpcugent/easybuild
 #
-# Copyright:: Copyright 2012-2013 University of Luxembourg/Luxembourg Centre for Systems Biomedicine
-# Authors::   Fotis Georgatos <fotis.georgatos@uni.lu>
+# Copyright:: Copyright 2012-2015 Uni.Lu/LCSB, NTUA
+# Authors::   Fotis Georgatos <fotis@cern.ch>
 # License::   MIT/GPL
 # $Id$
 #
@@ -17,8 +17,8 @@ EasyBuild support for installing Totalview, implemented as an easyblock
 import os
 
 from easybuild.framework.easyblock import EasyBlock
-from easybuild.tools.filetools import run_cmd
 from easybuild.tools.modules import get_software_root
+from easybuild.tools.run import run_cmd
 
 class EB_TotalView(EasyBlock):
     """EasyBlock for TotalView"""
@@ -69,6 +69,6 @@ class EB_TotalView(EasyBlock):
 
         txt = super(EB_TotalView, self).make_module_extra()
 
-        txt += self.moduleGenerator.prepend_paths('LM_LICENSE_FILE', self.cfg['license_file'], allow_abs=True)
+        txt += self.module_generator.prepend_paths('LM_LICENSE_FILE', self.cfg['license_file'], allow_abs=True)
 
         return txt

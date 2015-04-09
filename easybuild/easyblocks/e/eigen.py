@@ -1,8 +1,8 @@
 ##
 # This file is an EasyBuild reciPY as per https://github.com/hpcugent/easybuild
 #
-# Copyright:: Copyright 2012-2013 University of Luxembourg/Luxembourg Centre for Systems Biomedicine
-# Authors::   Cedric Laczny <cedric.laczny@uni.lu>, Fotis Georgatos <fotis.georgatos@uni.lu>, Kenneth Hoste
+# Copyright:: Copyright 2012-2015 Uni.Lu/LCSB, NTUA
+# Authors::   Cedric Laczny <cedric.laczny@uni.lu>, Fotis Georgatos <fotis@cern.ch>, Kenneth Hoste
 # License::   MIT/GPL
 # $Id$
 #
@@ -21,6 +21,7 @@ import os
 import shutil
 
 from easybuild.framework.easyblock import EasyBlock
+from easybuild.tools.build_log import EasyBuildError
 
 
 class EB_Eigen(EasyBlock):
@@ -50,7 +51,7 @@ class EB_Eigen(EasyBlock):
                 os.makedirs(os.path.dirname(destdir))
                 shutil.copytree(srcdir, destdir)
         except OSError, err:
-            self.log.error("Copying %s to installation dir %s failed: %s" % (srcdir, destdir, err))
+            raise EasyBuildError("Copying %s to installation dir %s failed: %s", srcdir, destdir, err)
 
     def sanity_check_step(self):
         """Custom sanity check for Eigen."""

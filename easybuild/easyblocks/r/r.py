@@ -1,5 +1,5 @@
 ##
-# Copyright 2012-2013 Ghent University
+# Copyright 2012-2015 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -56,6 +56,20 @@ class EB_R(ConfigureMake):
         FC is used for Fortan90"""
         environment.setvar("FC", self.toolchain.get_variable('F90'))
         ConfigureMake.configure_step(self)
+    
+    def make_module_req_guess(self):
+        """
+        Add extra paths to modulefile
+        """
+        guesses = super(EB_R, self).make_module_req_guess()
+
+        guesses.update({
+            'LD_LIBRARY_PATH': ['lib64', 'lib', 'lib64/R/lib', 'lib/R/lib'],
+            'LIBRARY_PATH': ['lib64', 'lib', 'lib64/R/lib', 'lib/R/lib'],
+            'PKG_CONFIG_PATH': ['lib64/pkgconfig', 'lib/pkgconfig'],
+        })
+
+        return guesses
 
     def sanity_check_step(self):
         """Custom sanity check for R."""

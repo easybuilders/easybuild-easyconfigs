@@ -1,8 +1,8 @@
 ##
 # This file is an EasyBuild reciPY as per https://github.com/hpcugent/easybuild
 #
-# Copyright:: Copyright 2012-2013 Cyprus Institute / CaSToRC, University of Luxembourg / LCSB, Ghent University
-# Authors::   George Tsouloupas <g.tsouloupas@cyi.ac.cy>, Fotis Georgatos <fotis.georgatos@uni.lu>, Kenneth Hoste
+# Copyright:: Copyright 2012-2015 Cyprus Institute / CaSToRC, Uni.Lu, NTUA, Ghent University
+# Authors::   George Tsouloupas <g.tsouloupas@cyi.ac.cy>, Fotis Georgatos <fotis@cern.ch>, Kenneth Hoste
 # License::   MIT/GPL
 # $Id$
 #
@@ -21,7 +21,8 @@ Ref: https://speakerdeck.com/ajdecon/introduction-to-the-cuda-toolkit-for-buildi
 import os
 
 from easybuild.easyblocks.generic.binary import Binary
-from easybuild.tools.filetools import patch_perl_script_autoflush, run_cmd, run_cmd_qa
+from easybuild.tools.filetools import patch_perl_script_autoflush
+from easybuild.tools.run import run_cmd, run_cmd_qa
 from distutils.version import LooseVersion
 
 

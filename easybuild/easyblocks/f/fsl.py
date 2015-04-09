@@ -1,5 +1,5 @@
 ##
-# Copyright 2009-2013 Ghent University
+# Copyright 2009-2015 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -35,7 +35,8 @@ import shutil
 
 import easybuild.tools.environment as env
 from easybuild.framework.easyblock import EasyBlock
-from easybuild.tools.filetools import run_cmd
+from easybuild.tools.build_log import EasyBuildError
+from easybuild.tools.run import run_cmd
 
 
 class EB_FSL(EasyBlock):
@@ -77,7 +78,7 @@ class EB_FSL(EasyBlock):
                 shutil.copytree(srcdir, tgtdir)
                 self.log.debug("Copied %s to %s" % (srcdir, tgtdir))
         except OSError, err:
-            self.log.error("Failed to copy closest matching config dir: %s" % err)
+            raise EasyBuildError("Failed to copy closest matching config dir: %s", err)
 
     def build_step(self):
         """Build FSL using supplied script."""
@@ -93,7 +94,7 @@ class EB_FSL(EasyBlock):
 
         error_regexp = re.compile("ERROR in BUILD")
         if error_regexp.search(txt):
-            self.log.error("Error detected in build log %s." % buildlog)
+            raise EasyBuildError("Error detected in build log %s.", buildlog)
 
     def install_step(self):
         """Building was performed in install dir, no explicit install step required."""
@@ -116,7 +117,7 @@ class EB_FSL(EasyBlock):
 
         txt = super(EB_FSL, self).make_module_extra()
 
-        txt += self.moduleGenerator.set_environment("FSLDIR", "$root/fsl")
+        txt += self.module_generator.set_environment("FSLDIR", "$root/fsl")
 
         return txt
 
