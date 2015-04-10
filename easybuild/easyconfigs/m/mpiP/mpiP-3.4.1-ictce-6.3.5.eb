@@ -1,0 +1,38 @@
+
+# Author:: Jack Perdue <j-perdue@tamu.edu> - TAMU SC Facil.  http://sc.tamu.edu
+
+name = 'mpiP'
+version = '3.4.1'
+
+homepage = 'http://mpip.sourceforge.net/'
+description = """ mpiP is a lightweight profiling library for MPI applications.
+    Because it only collects statistical information about MPI functions, mpiP
+    generates considerably less overhead and much less data than tracing tools.
+    All the information captured by mpiP is task-local. It only uses
+    communication during report generation, typically at the end of the
+    experiment, to merge results from all of the tasks into one output file."""
+
+toolchain = {'name': 'ictce', 'version': '6.3.5'}
+toolchainopts = {'usempi': True, 'strict': True, 'pic': True}
+
+source_urls = [SOURCEFORGE_SOURCE]
+sources = ['%(name)s-%(version)s.tar.gz']
+
+osdependencies = [('glibc', 'libgcc')]
+dependencies = [
+    ('libunwind', '1.1'),
+    ('zlib', '1.2.8'),
+]
+
+preconfigopts = '  \
+    sed -e \'s,/home/chcham/workspace/mpiP,$EBROOTMPIP/lib,\' -i bin/mpirun-mpip ; \
+    sed -e \'s,/usr/local/tools/mpip,$EBROOTMPIP,\' -i bin/srun-mpip ; '
+buildopts = ' ; make shared'
+installopts = 'install-all'
+
+sanity_check_paths = {
+    'dirs': ['bin', 'include', 'lib', 'share'],
+    'files': ['bin/mpirun-mpip', 'include/mpiP-API.h', 'lib/libmpiP.so'],
+}
+
+moduleclass = 'perf'

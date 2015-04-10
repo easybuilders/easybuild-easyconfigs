@@ -1,0 +1,26 @@
+name = 'OpenMPI'
+version = '1.4.5'
+versionsuffix = "-no-OFED"
+
+homepage = 'http://www.open-mpi.org/'
+description = """The Open MPI Project is an open source MPI-2 implementation."""
+
+toolchain = {'name': 'GCC', 'version': '4.8.2'}
+
+sources = [SOURCELOWER_TAR_GZ]
+source_urls = ['http://www.open-mpi.org/software/ompi/v%(version_major_minor)s/downloads']
+
+patches = ['pax_disable.patch']
+
+configopts = '--with-threads=posix --enable-shared --enable-mpi-threads --without-openib '
+configopts += '--enable-mpirun-prefix-by-default '  # suppress failure modes in relation to mpirun path
+
+sanity_check_paths = {
+    'files': ["bin/%s" % binfile for binfile in ["ompi_info", "opal_wrapper", "orterun"]] +
+             ["lib/lib%s.%s" % (libfile, shared_lib_ext) for libfile in ["mca_common_sm", "mpi_cxx",
+                                                                         "mpi_f77", "mpi_f90",
+                                                                         "mpi", "open-pal", "open-rte"]],
+    'dirs': ["include/openmpi/ompi/mpi/cxx"],
+}
+
+moduleclass = 'mpi'

@@ -1,0 +1,64 @@
+
+# Author:: Jack Perdue <j-perdue@tamu.edu> - TAMU SC Facil.  http://sc.tamu.edu
+
+easyblock = 'CmdCp'
+
+name = 'VisIt'
+version = '2.7.3'
+
+python = "Python"
+pythonversion = '2.7.6'
+versionsuffix = "-%s-%s" % (python, pythonversion)
+
+homepage = 'https://wci.llnl.gov/simulation/computer-codes/visit'
+description = """ VisIt is an Open Source, interactive, scalable,
+    visualization, animation and analysis tool."""
+
+toolchain = {'name': 'ictce', 'version': '6.3.5'}
+toolchainopts = {'openmp': True}
+
+source_urls = ['http://portal.nersc.gov/svn/visit/trunk/releases/%(version)s/']
+build_visit = "build_visit%s" % version.replace('.', '_')
+sources = [build_visit]
+
+dependencies = [
+    (python, pythonversion),
+    ('Boost', '1.55.0', versionsuffix),
+    ('CMake', '3.0.0'),
+    ('Qt', '4.8.6')
+]
+
+skipsteps = ['source']
+
+# '-j' fixed at 8 since there was no easy way to access 'parallel' with CmdCp
+# easyblock (and there is no "EB_EC_PARAM_MAXPARALLEL" yet) and leaving it
+# unbounded is a bad idea... and leaving it at 1 is unecessarily slow
+cmds_map = [(build_visit, '  \
+    PYTHON_LIBRARIES=$EBROOTPYTHON/lib \
+    PYTHON_INCLUDE_PATH=$EBROOTPYTHON/include \
+    %(source)s \
+        --prefix `pwd`/installdir \
+        --makeflags "-j 8" \
+        --console \
+        --parallel \
+        --no-thirdparty \
+        --system-cmake \
+        --system-python \
+        --system-qt \
+        --cc $CC \
+        --cxx $CXX \
+        --vtk \
+    '),
+]
+
+files_to_copy = [
+    (['installdir/*'], '.'),
+    (['%s_log' % build_visit], 'easybuild'),
+]
+
+sanity_check_paths = {
+    'files': ['bin/visit'],
+    'dirs': ['bin', version],
+}
+
+moduleclass = 'vis'

@@ -1,0 +1,35 @@
+# Author:: Jack Perdue <j-perdue@tamu.edu> - TAMU SC Facil.  http://sc.tamu.edu
+
+name = 'OMB'
+version = '4.4'
+ompiversion = '1.8.3'
+cudaversion = '6.5.14'
+cudasuffix = '-CUDA-%s' % cudaversion
+versionsuffix = '-OpenMPI-%s%s' % (ompiversion, cudasuffix)
+
+homepage = 'http://mvapich.cse.ohio-state.edu/benchmarks/'
+description = """OSU (MPI) Micro-Benchmarks"""
+
+toolchain = {'name': 'iccifort', 'version': '2015.0.090'}
+#toolchainopts = {}  # toolchain options, e.g. opt, pic, usempi, optarch, ...
+
+sources = ['osu-micro-benchmarks-%(version)s.tar.gz']
+source_urls = ['http://mvapich.cse.ohio-state.edu/download/mvapich/']
+
+patches = []
+
+dependencies = [
+    ('OpenMPI', ompiversion, cudasuffix),
+    ('CUDA', cudaversion, '', True),
+]
+
+preconfigopts = 'unset CC ; '  # this seems counterintuitive but is needed
+configopts = '--enable-cuda --with-cuda=$EBROOTCUDA'
+
+sanity_check_paths = {
+    'files': ['libexec/osu-micro-benchmarks/mpi/collective/osu_allgather'],
+    'dirs': ['libexec/osu-micro-benchmarks/mpi/%s' % (dir)
+      for dir in ['collective', 'one-sided', 'pt2pt']]
+}
+
+moduleclass = 'perf'

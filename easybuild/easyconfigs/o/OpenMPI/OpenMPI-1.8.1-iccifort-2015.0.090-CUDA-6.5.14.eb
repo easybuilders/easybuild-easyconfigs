@@ -1,0 +1,47 @@
+name = 'OpenMPI'
+version = "1.8.1"
+cuda = 'CUDA'
+cudaversion = '6.5.14'
+versionsuffix = '-%s-%s' % (cuda, cudaversion)
+
+homepage = 'http://www.open-mpi.org/'
+description = """The Open MPI Project is an open source MPI-2 implementation."""
+
+toolchain = {'name': 'iccifort', 'version': '2015.0.090'}
+
+sources = [SOURCELOWER_TAR_GZ]
+source_urls = ['http://www.open-mpi.org/software/ompi/v%(version_major_minor)s/downloads']
+
+builddependencies = [
+    ('Automake', '1.14'),
+    ('Autoconf', '2.69'),
+    (cuda, cudaversion, '', True),
+]
+
+dependencies = [('hwloc', '1.10.0')]
+
+configopts = '--with-threads=posix --enable-shared --enable-mpi-thread-multiple --with-openib '
+configopts += '--enable-mpirun-prefix-by-default '  # suppress failure modes in relation to mpirun path
+configopts += '--with-hwloc=$EBROOTHWLOC '  # hwloc support
+configopts += '--with-cuda=$CUDA_HOME '             # CUDA-aware build; N.B. --disable-dlopen is incompatible
+# From: http://community.mellanox.com/community/support/software-drivers/rdma-software-for-gpu/blog/2014/01/27/using-gpudirect-rdma-with-mpi
+
+configopts += '--disable-vt --enable-orterun-prefix-by-default --disable-io-romio --enable-picky'
+
+# needed for --with-openib
+if OS_NAME in ['debian', 'ubuntu']:
+    osdependencies = ['libibverbs-dev']
+else:
+    # OK for OS_NAME == redhat, fedora, RHEL, SL, centos
+    osdependencies = ['libibverbs-devel']
+
+sanity_check_paths = {
+    'files': ["bin/%s" % binfile for binfile in ["ompi_info", "opal_wrapper", "orterun"]] +
+             ["lib/lib%s.%s" % (libfile, shared_lib_ext) for libfile in ["mpi_cxx", "mpi_mpifh", "mpi",
+                                                                         "ompitrace", "open-pal", 
+                                                                         "open-rte"]] +
+             ["include/%s.h" % x for x in ["mpi-ext", "mpif-config", "mpif", "mpi", "mpi_portable_platform"]],
+    'dirs': ["include/openmpi/ompi/mpi/cxx"],
+}
+
+moduleclass = 'mpi'

@@ -1,0 +1,66 @@
+name = 'Mesa'
+version = '9.2.5'
+gluver = '9.0.0'
+
+homepage = 'http://www.mesa3d.org/'
+description = """Mesa is an open-source implementation of the OpenGL specification -
+ a system for rendering interactive 3D graphics."""
+
+toolchain = {'name': 'ictce', 'version': '7.1.2'}
+toolchainopts = {'optarch': True}
+
+sources = [
+    "%(name)sLib-%(version)s.tar.gz",
+    "glu-%s.tar.gz" % gluver,
+]
+source_urls = [
+    'ftp://ftp.freedesktop.org/pub/mesa/%(version)s',
+    'ftp://ftp.freedesktop.org/pub/mesa/older-versions/%(version_major)s.x/%(version)s',
+    'ftp://ftp.freedesktop.org/pub/mesa/glu',
+]
+
+pythonver = '2.7.8'
+pythonshortver = '.'.join(pythonver.split('.')[0:2])
+versionsuffix = '-%s-%s' % ('Python', pythonver)
+
+dependencies = [
+        ('Autoconf', '2.69'),
+        ('Automake', '1.14.1'),
+        ('Bison', '3.0.2'),
+        ('flex', '2.5.39'),
+        ('glproto', '1.4.17'),
+        ('libdrm', '2.4.58'),
+        ('libtool', '2.4.2'),
+        ('libxml2', '2.9.2', versionsuffix),
+        ('makedepend', '1.0.5'),
+        ('pkg-config', '0.28'),
+        ('Python', pythonver),
+        ]
+
+osdependencies = [
+            'libX11-devel',  # Xlibs.h
+            'xorg-x11-proto-devel',  # X.h, glproto, xproto
+            'libXdamage-devel',
+            'libXext-devel',
+            'libXfixes-devel',
+        ]
+
+configopts = " --disable-osmesa --enable-glu --disable-gallium-llvm --disable-gallium-gbm --enable-glx"
+configopts += " --disable-driglx-direct --with-gallium-drivers='' --without-demos --disable-egl"""
+
+# package-config files for os dependencies are in an os specific place
+preconfigopts = 'cd ../glu-9.0.0 ; ./configure --prefix=%(installdir)s ; cd ../%(name)s-%(version)s ; autoreconf -i && PKG_CONFIG_PATH="$PKG_CONFIG_PATH:/usr/lib64/pkgconfig/:/usr/share/pkgconfig" ' 
+
+premakeopts = 'cd ../glu-9.0.0 ; make ; cd ../%(name)s-%(version)s ; CPATH="$EBROOTLIBDRM/include/libdrm" '
+preinstallopts = 'cd ../glu-9.0.0 ; make install ; cd ../%(name)s-%(version)s ; '
+
+sanity_check_paths = {
+                      'files': ['lib/libGL.so', 'lib/libGLU.so', 'include/GL/glext.h', 'include/GL/gl_mangle.h',
+                                'include/GL/glu_mangle.h', 'include/GL/glx.h', 'include/GL/osmesa.h',
+                                'include/GL/wglext.h', 'include/GL/gl.h', 'include/GL/glu.h',
+                                'include/GL/glxext.h', 'include/GL/glx_mangle.h',
+                                'include/GL/wmesa.h'],
+                      'dirs': []
+                     }
+
+moduleclass = 'vis'

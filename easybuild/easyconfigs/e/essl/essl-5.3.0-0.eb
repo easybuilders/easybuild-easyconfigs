@@ -1,0 +1,50 @@
+# quick and dirty install of IBM XL components
+# RPM sources can be found in the xlC/xlf installation files
+#
+# Note: after building/installing, the following steps must be run manuall
+#
+# cd <installation directory>
+# for x in lib lib64 ; do /sbin/ldconfig -N $x ; cd $x ; for y in `ls *.so.1` ; do chmod 755 $y.7 ; ln -s $y `echo $y | sed 's/.so.1/.so/'` ; done ; cd .. ; done
+
+# unfornately, essl wants to use /usr in addition to opt... rebuild to relocat
+easyblock = "XLRpm"
+#easyblock = "Rpm"
+
+name = 'essl'
+version = '5.3.0-0'
+arch = 'ppc64'
+
+homepage = 'http://www.ibm.com/us/en/'
+description = """IBM Engineering and Scientific Subroutine Library for Linux on POWER Version 5.3.0"""
+
+toolchain = {'name': 'dummy', 'version': 'dummy'}
+
+sources = [
+           'essl.license-%s.%s.rpm' % (version, arch),  # first
+           'essl.rte.common-%s.%s.rpm' % (version,arch),  # second
+           'essl.common-%s.%s.rpm' % (version, arch),  # not sure about the rest
+           'essl.3232.rte-%s.%s.rpm' % (version,arch),
+           'essl.3264.rte-%s.%s.rpm' % (version,arch),
+           'essl.6464.rte-%s.%s.rpm' % (version,arch),
+           'essl.man-%s.%s.rpm' % (version, arch),
+           'essl.msg-%s.%s.rpm' % (version, arch),
+           'essl.rte-%s.%s.rpm' % (version, arch),
+          ]
+
+#postinstall = 'RUNPOST'  # setting to anything will cause RPM %post scripts to run
+
+sanity_check_paths = {
+     'dirs': ["essl/%s/%s" % (version[0:3], x) for x in ["include", "man", "FFTW3"]] +
+             ["%s" % x for x in ["lib", "lib64"]],
+     'files': ["essl/%s/%s" % (version[0:3], x) for x in ["include/essl.h", "man/essl_man_inv", "FFTW3/include/fftw3_essl.h"]] +
+              ["%s/libesslsmp.so.1.7" % x for x in ["lib", "lib64"]]
+}
+
+modextrapaths = {
+    'CPATH': 'essl/%s/include' % version[0:3],
+    'CPATH': 'essl/%s/FFTW3/include' % version[0:3],
+    'MANPATH': 'essl/%s/man' % version[0:3],
+    'PATH': 'essl/%s/lap/lap-c',  # is this needed/helpful???
+}
+
+# EOF

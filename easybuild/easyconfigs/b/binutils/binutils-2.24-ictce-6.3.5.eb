@@ -1,0 +1,42 @@
+##
+# This file is an EasyBuild reciPY as per https://github.com/hpcugent/easybuild
+#
+# Copyright:: Copyright 2012-2013 University of Luxembourg/Luxembourg Centre for Systems Biomedicine
+# Authors::   Fotis Georgatos <fotis.georgatos@uni.lu>
+# License::   MIT/GPL
+# $Id$
+#
+# This work implements a part of the HPCBIOS project and is a component of the policy:
+# http://hpcbios.readthedocs.org/en/latest/HPCBIOS_07-02.html
+##
+
+name = 'binutils'
+version = '2.24'
+
+homepage = 'http://directory.fsf.org/project/binutils/'
+description = """ Binutils includes tools capable of creating and managing
+    binary program files, including handling object files, libraries, profile
+    data, and assembly source code."""
+
+source_urls = [GNU_SOURCE]
+sources = [SOURCE_TAR_BZ2]
+
+toolchain = {'name': 'ictce', 'version': '6.3.5'}
+
+# we want libiberty for mpiP
+preconfigopts = '  \
+    sed -e "s/^target_header_dir=//" -i libiberty/configure \
+    sed -e "s/^MULTIOSDIR.*//" -i.eb libiberty/Makefile.in ; '
+configopts = '--enable-shared --enable-install-libiberty'
+ 
+binlist = ['addr2line', 'ar', 'as', 'c++filt', 'elfedit', 'gprof', 'ld', 'ld.bfd', 'nm',
+           'objcopy', 'objdump', 'ranlib', 'readelf', 'size', 'strings', 'strip']
+sanity_check_paths = {
+    'dirs': ['bin', 'include', 'lib', 'share'],
+    'files': ['bin/%s' % x for x in binlist] +
+             ['lib/libbfd.a', 'lib/libopcodes.a', 'lib/libiberty.a'] +
+             ['include/%s' % x for x in
+                 ['ansidecl.h', 'bfd.h', 'bfdlink.h', 'dis-asm.h', 'symcat.h']],
+}
+
+moduleclass = 'tools'

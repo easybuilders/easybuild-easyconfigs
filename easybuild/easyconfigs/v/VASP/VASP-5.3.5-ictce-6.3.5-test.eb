@@ -1,0 +1,54 @@
+
+# Author:: Jack Perdue <j-perdue@tamu.edu> - Texas A&M Supercomputing Facility - http://sc.tamu.edu
+
+easyblock = 'CmdCp'
+
+name = 'VASP'
+version = '5.3.5'
+versionsuffix="-test"
+
+homepage = 'http://www.vasp.at/'
+description = """ The Vienna Ab initio Simulation Package (VASP) is a computer
+    program for atomic scale materials modelling, e.g. electronic structure
+    calculations and quantum-mechanical molecular dynamics, from first
+    principles."""
+
+toolchain = {'name': 'ictce', 'version': '6.3.5'}
+
+vasplib = "%s.%s.lib" % (name.lower(), version[0])
+vasp = "%s.%s" % (name.lower(), version)
+vaspd = "%s.%s" % (name.lower(), version[0:3])
+
+sources = [
+  "%s.tar.gz" % vasplib,  # this needs to be built first so list it first
+  "%s.tar.gz" % vasp,
+]
+
+cmds_map = [
+    (vasplib, 'make -f makefile.linux_ifc_P4 FC=ifort'),
+    (vasp, "  \
+        cd ../%s ; \
+        pwd ; \
+        make -f makefile.linux_ifc_P4 \
+           CPP='$(CPP_) -DMPI -DHOST=\\\"LinuxIFC\\\" -DIFC -DCACHE_SIZE=4000 -DPGF90 -Davoidalloc -DNGZhalf -DMPI_BLOCK=8000 -Duse_collective -DscaLAPACK -DRPROMU_DGEMV  -DRACCMU_DGEMV' \
+           BLAS=\"$LIBBLAS\" \
+           FC=mpiifort \
+           LINK=\"$LDFLAGS -lmpi\"  \
+           FFT3D='fftmpiw.o fftmpi_map.o fftw3d.o fft3dlib.o' \
+           LIB=\"$LDFLAGS -L../vasp.5.lib -ldmy ../vasp.5.lib/linpack_double.o $LIBBLAS $LIBSCALAPACK $LIBBLACS $LIBFFT\" \
+           INCS=$CPPFLAGS \
+        " % vaspd),
+]
+
+files_to_copy = [
+    (['../%s/vasp' % vaspd], 'bin'),
+]
+
+sanity_check_paths = {
+    'dirs': ['bin'],
+    'files': ['bin/vasp'],
+}
+
+parallel = 1  # no support for parallel make
+
+moduleclass = 'phys'

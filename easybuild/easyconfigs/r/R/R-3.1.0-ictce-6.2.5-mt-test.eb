@@ -1,0 +1,103 @@
+name = 'R'
+version = '3.1.0'
+versionsuffix = '-mt-test'
+
+homepage = 'http://www.r-project.org/'
+description = """R is a free software environment for statistical computing and graphics."""
+
+toolchain = {'name': 'ictce', 'version': '6.2.5'}
+# turn on -fpmodel=precise and -O3
+toolchainopts = {'precise': True, 'opt': True} # 'openmp' is enabled in R by default
+
+sources = [SOURCE_TAR_GZ]
+source_urls = ['http://cran.us.r-project.org/src/base/R-%(version_major)s']
+
+#import os
+#os.environ['MPI_ROOT'] = '/g/software/easybuild/software/impi/4.1.3.049'
+##os.environ['MPI_TYPE'] = 'INTELMPI'
+#os.environ['MPI_TYPE'] = 'OPENMPI'
+#os.environ['MPI_INCLUDE_PATH'] = '/g/software/easybuild/software/impi/4.1.3.049/include64/'
+#os.environ['MPI_LIBPATH'] = '/g/software/easybuild/software/impi/4.1.3.049/lib64/'
+#os.environ['RMPI_TYPE'] = 'OPENMPI' # works for for Intel too (???)
+#os.environ['RMPI_INCLUDE'] = '/g/software/easybuild/software/impi/4.1.3.049/include64'
+#os.environ['RMPI_LIB_PATH'] = '/g/software/easybuild/software/impi/4.1.3.049/lib64/'
+
+
+preconfigopts = 'BLAS_LIBS="$LIBBLAS_MT" LAPACK_LIBS="$LIBLAPACK_MT"'
+# MPI_ROOT="$I_MPI_ROOT" MPI_TYPE=INTELMPI MPI_INCLUDE_PATH="$MPI_ROOT/include64/" MPI_LIBPATH="$MPI_ROOT/lib64/" RMPI_TYPE=OPENMPI RMPI_INCLUDE="$MPI_ROOT/include64" RMPI_LIB_PATH="$I_MPI_ROOT/lib64"' # use multi-thread BLAS/LAPACK
+configopts = "--with-lapack --with-blas --with-pic --enable-threads --with-x=no --enable-R-shlib"
+
+dependencies = [
+    ('libreadline', '6.3'),
+    ('ncurses', '5.9'),
+    ('libpng', '1.6.10'),  # for plotting in R
+    ('Java', '1.7.0_21', '', True),  # Java bindings are built if Java is found, might as well provide it
+    ('cURL', '7.33.0'), # for curl-config (when building RCurl extension)
+]
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in ['R', 'Rscript']] +
+             ['lib64/R/include/%s' % x for x in ['Rconfig.h', 'Rdefines.h', 'Rembedded.h',
+                                                 'R.h', 'Rinterface.h', 'Rinternals.h',
+                                                 'Rmath.h', 'Rversion.h', 'S.h']] +
+             ['lib64/R/modules/%s' % x for x in ['internet.so', 'lapack.so', 'vfonts.so']] +
+             ['lib64/R/lib/libR.so'],
+    'dirs': []
+}
+
+name_tmpl = '%(name)s_%(version)s.tar.gz'
+ext_options = {
+    'source_urls': [
+        'http://cran.r-project.org/src/contrib/Archive/%(name)s',  # package archive
+        'http://cran.freestatistics.org/src/contrib',  # alternative for packages
+    ],
+    'source_tmpl': name_tmpl,
+}
+# Bioconductor packages have a different download url
+bioconductor_options = {
+    'source_urls': ['http://www.bioconductor.org/packages/2.14/bioc/src/contrib/'],
+    'source_tmpl': name_tmpl,
+}
+
+exts_list = [
+    # default libraries, only here to sanity check their presence
+    'base',
+    'boot',
+    'class',
+    'cluster',
+    'codetools',
+    'compiler',
+    'datasets',
+    'foreign',
+    'graphics',
+    'grDevices',
+    'grid',
+    'KernSmooth',
+    'lattice',
+    'MASS',
+    'Matrix',
+    'methods',
+    'mgcv',
+    'nlme',
+    'nnet',
+    'parallel',
+    'rpart',
+    'spatial',
+    'splines',
+    'stats',
+    'stats4',
+    'survival',
+    'tcltk',
+    'tools',
+    'translations',
+    'utils',
+
+    # non-standard libraries, should be specified with fixed versions!
+    # !!!! order of packages is important !!!!
+
+    # extensions to test
+    ('Rmpi', '0.6-3', ext_options),
+
+]
+
+moduleclass = 'lang'
