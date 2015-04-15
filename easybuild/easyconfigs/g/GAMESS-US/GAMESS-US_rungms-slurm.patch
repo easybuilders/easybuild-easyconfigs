@@ -4,7 +4,7 @@ the PBS or SGE schedulers).
 Written by Benjamin Roberts, New Zealand eScience Infrastructure
 University of Auckland, Auckland, New Zealand
 --- gamess.orig/rungms	2013-05-18 04:15:11.000000000 +1200
-+++ gamess/rungms	2015-04-09 12:12:14.934483470 +1200
++++ gamess/rungms	2015-04-14 13:46:29.572868507 +1200
 @@ -86,6 +86,7 @@
                        set SCHED=none
  if ($?PBS_O_LOGNAME)  set SCHED=PBS
@@ -27,19 +27,31 @@ University of Auckland, Auckland, New Zealand
  #
  echo "Available scratch disk space (Kbyte units) at beginning of the job is"
  df -k $SCR
-@@ -594,6 +602,11 @@
-          set NNODES=`wc -l $HOSTFILE`
-          set NNODES=$NNODES[1]
-       endif
-+      if ($SCHED == SLURM) then
+@@ -586,14 +594,17 @@
+              # Parallel run gets node names from schedular's assigned list:
+       if ($SCHED == SGE) then
+          uniq $TMPDIR/machines $HOSTFILE
+-         set NNODES=`wc -l $HOSTFILE`
+-         set NNODES=$NNODES[1]
+-      endif
+-      if ($SCHED == PBS) then
++      else if ($SCHED == PBS) then
+          uniq $PBS_NODEFILE $HOSTFILE
+-         set NNODES=`wc -l $HOSTFILE`
+-         set NNODES=$NNODES[1]
++      else if ($SCHED == SLURM) then
 +         scontrol show hostnames $SLURM_JOB_NODELIST | sort | uniq > $HOSTFILE
-+         set NNODES=`wc -l $HOSTFILE`
-+         set NNODES=$NNODES[1]
-+      endif
++      else
++         echo "Don't know how to get node names for scheduler '$SCHED'."
++         echo "Trying to run parallel tasks on current host ..."
++         echo `hostname` >> $HOSTFILE
+       endif
++      set NNODES=`wc -l $HOSTFILE`
++      set NNODES=$NNODES[1]
     endif
     #           uncomment next lines if you need to debug host configuration.
     #--echo '-----debug----'
-@@ -825,8 +838,12 @@
+@@ -825,8 +836,12 @@
           unset echo
        endif
        set echo
@@ -53,15 +65,27 @@ University of Auckland, Auckland, New Zealand
        unset echo
        breaksw
     #
-@@ -906,6 +923,11 @@
-          set NNODES=`wc -l $HOSTFILE`
-          set NNODES=$NNODES[1]
-       endif
-+      if ($SCHED == SLURM) then
+@@ -898,14 +913,17 @@
+              # Parallel run gets node names from schedular's assigned list:
+       if ($SCHED == SGE) then
+          uniq $TMPDIR/machines $HOSTFILE
+-         set NNODES=`wc -l $HOSTFILE`
+-         set NNODES=$NNODES[1]
+-      endif
+-      if ($SCHED == PBS) then
++      else if ($SCHED == PBS) then
+          uniq $PBS_NODEFILE $HOSTFILE
+-         set NNODES=`wc -l $HOSTFILE`
+-         set NNODES=$NNODES[1]
++      else if ($SCHED == SLURM) then
 +         scontrol show hostnames $SLURM_JOB_NODELIST | sort | uniq > $HOSTFILE
-+         set NNODES=`wc -l $HOSTFILE`
-+         set NNODES=$NNODES[1]
-+      endif
++      else
++         echo "Don't know how to get node names for scheduler '$SCHED'."
++         echo "Trying to run parallel tasks on current host ..."
++         echo `hostname` >> $HOSTFILE
+       endif
++      set NNODES=`wc -l $HOSTFILE`
++      set NNODES=$NNODES[1]
     endif
     #           uncomment next lines if you need to debug host configuration.
     #--echo '-----debug----'
