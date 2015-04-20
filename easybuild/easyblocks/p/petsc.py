@@ -239,7 +239,8 @@ class EB_PETSc(ConfigureMake):
 
             cmd = "./config/configure.py %s" % self.get_cfg('configopts')
             run_cmd(cmd, log_all=True, simple=True)
-        # PETSc > 3.5, make does not accept -j 
+
+        # PETSc > 3.5, make does not accept -j
         if LooseVersion(self.version) >= LooseVersion("3.5"):
             self.cfg['parallel'] = None
 
