@@ -84,7 +84,8 @@ class EB_HPL(ConfigureMake):
         """
 
         for envvar in ['MPICC', 'LIBLAPACK_MT', 'CPPFLAGS', 'LDFLAGS', 'CFLAGS']:
-            if not os.getenv(envvar):
+            # environment variable may be defined but empty
+            if os.getenv(envvar, None) is None:
                 raise EasyBuildError("Required environment variable %s not found (no toolchain used?).", envvar)
 
         # build dir
