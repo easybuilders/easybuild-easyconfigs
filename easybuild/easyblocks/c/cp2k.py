@@ -168,7 +168,7 @@ class EB_CP2K(EasyBlock):
         elif comp_fam == toolchain.GCC:
             options = self.configure_GCC_based()
         else:
-            raise EasyBuildError("Don't know how to tweak configuration for compiler used.")
+            raise EasyBuildError("Don't know how to tweak configuration for compiler family %s" % comp_fam)
 
         # BLAS related
         if get_software_root('IMKL'):
@@ -178,13 +178,15 @@ class EB_CP2K(EasyBlock):
         else:
             options = self.configure_BLAS_lib(options)
 
-        if get_software_root('FFTW'):
-            options = self.configure_FFTW(options)
+        # FFT(W)
+        if 'fftw3' in os.getenv('LIBFFT', ''):
+            options = self.configure_FFTW3(options)
 
-        if get_software_root('LAPACK'):
+        # LAPACK
+        if os.getenv('LIBLAPACK_MT', None) is not None:
             options = self.configure_LAPACK(options)
 
-        if get_software_root('ScaLAPACK'):
+        if os.getenv('LIBSCALAPACK', None) is not None:
             options = self.configure_ScaLAPACK(options)
 
         # avoid group nesting
@@ -490,9 +492,7 @@ class EB_CP2K(EasyBlock):
 
     def configure_BLAS_lib(self, options):
         """Configure for BLAS library."""
-
         options['LIBS'] += ' %s %s' % (self.libsmm, os.getenv('LIBBLAS'))
-
         return options
 
     def configure_MKL(self, options):
@@ -526,28 +526,24 @@ class EB_CP2K(EasyBlock):
 
         return options
 
-    def configure_FFTW(self, options):
-        """Configure for Fastest Fourier Transform in the West (FFTW)"""
-
-        fftw = get_software_root('FFTW')
+    def configure_FFTW3(self, options):
+        """Configure for FFTW3"""
 
         options.update({
-            'FFTW_INC': '%s/include' % fftw,  # GCC
-            'FFTW3INC': '%s/include' % fftw,  # Intel
-            'FFTW3LIB': '%s/lib' % fftw,  # Intel
+            'FFTW_INC': os.getenv('FFT_INC_DIR'),  # GCC
+            'FFTW3INC': os.getenv('FFT_INC_DIR'),  # Intel
+            'FFTW3LIB': os.getenv('FFT_LIB_DIR'),  # Intel
         })
 
         options['DFLAGS'] += ' -D__FFTW3'
 
-        options['LIBS'] += ' -L%s -lfftw3' % os.path.join(os.getenv('EBROOTFFTW'), 'lib')
+        options['LIBS'] += ' -L%s %s' % (os.getenv('FFT_LIB_DIR'), os.getenv('LIBFFT'))
 
         return options
 
     def configure_LAPACK(self, options):
         """Configure for LAPACK library"""
-
         options['LIBS'] += ' %s' % os.getenv('LIBLAPACK_MT')
-
         return options
 
     def configure_ScaLAPACK(self, options):
