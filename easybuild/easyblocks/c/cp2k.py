@@ -316,7 +316,7 @@ class EB_CP2K(EasyBlock):
                                                        self.cfg['extracflags']),
             'DFLAGS': ' -D__parallel -D__BLACS -D__SCALAPACK -D__FFTSG %s' % self.cfg['extradflags'],
 
-            'LIBS': os.getenv('LIBS'),
+            'LIBS': os.getenv('LIBS', ''),
 
             'FCFLAGSNOOPT': '$(DFLAGS) $(CFLAGS) -O0  $(FREE) $(FPIC) $(DEBUG)',
             'FCFLAGSOPT': '-O2 $(FREE) $(SAFE) $(FPIC) $(DEBUG)',
