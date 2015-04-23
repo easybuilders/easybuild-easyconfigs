@@ -170,17 +170,19 @@ class EB_CP2K(EasyBlock):
         else:
             raise EasyBuildError("Don't know how to tweak configuration for compiler family %s" % comp_fam)
 
-        # BLAS related
+        # BLAS/FFTW
         if get_software_root('IMKL'):
             options = self.configure_MKL(options)
-        elif get_software_root('ACML'):
-            options = self.configure_ACML(options)
         else:
-            options = self.configure_BLAS_lib(options)
+            # BLAS
+            if get_software_root('ACML'):
+                options = self.configure_ACML(options)
+            else:
+                options = self.configure_BLAS_lib(options)
 
-        # FFT(W)
-        if 'fftw3' in os.getenv('LIBFFT', ''):
-            options = self.configure_FFTW3(options)
+            # FFTW (no MKL involved)
+            if 'fftw3' in os.getenv('LIBFFT', ''):
+                options = self.configure_FFTW3(options)
 
         # LAPACK
         if os.getenv('LIBLAPACK_MT', None) is not None:
