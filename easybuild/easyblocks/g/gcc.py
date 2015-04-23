@@ -81,7 +81,7 @@ class EB_GCC(ConfigureMake):
 
         # I think ISL without CLooG has no purpose in GCC < 5.0.0 ...
         if self.version < LooseVersion("5.0.0") and self.cfg['withisl'] and not self.cfg['withcloog']:
-            self.log.error("Activating ISL without CLooG is pointless")
+            raise EasyBuildError("Activating ISL without CLooG is pointless")
 
         # unset some environment variables that are known to may cause nasty build errors when bootstrapping
         self.cfg.update('unwanted_env_vars', ['CPATH', 'C_INCLUDE_PATH', 'CPLUS_INCLUDE_PATH', 'OBJC_INCLUDE_PATH'])
