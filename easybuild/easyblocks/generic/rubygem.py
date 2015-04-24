@@ -35,10 +35,6 @@ from easybuild.tools.run import run_cmd
 class RubyGem(ExtensionEasyBlock):
     """ Builds and installs Ruby Gems """
 
-    def __init__(self, *args, **kwargs):
-        """A place to override any variables"""
-        super(RubyGem, self).__init__(*args, **kwargs)
-
     def install_ruby_gem(self):
         """install ruby gems using gem package manager"""
         run_cmd('gem install --local %s' % (self.ext_src))
