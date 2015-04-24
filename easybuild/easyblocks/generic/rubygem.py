@@ -36,6 +36,7 @@ class RubyGem(ExtensionEasyBlock):
     """ Builds and installs Ruby Gems """
 
     def __init__(self, *args, **kwargs):
+        """A place to override any variables"""
         super(RubyGem, self).__init__(*args, **kwargs)
 
     def install_ruby_gem(self):
@@ -46,14 +47,11 @@ class RubyGem(ExtensionEasyBlock):
         """Perform the actual Ruby gem build/install"""
         
         if not self.src:
-            self.log.error("No source found for Ruby Gem %s, required for installation. (src: %s)" %
+            raise EasyBuildError("No source found for Ruby Gem %s, required for installation. (src: %s)" %
                            (self.name, self.src))
         super(RubyGem, self).run()
-        if self.src:
-            self.ext_src = self.src
-            self.log.debug("Installing Ruby gem %s version %s." % (self.name, self.version))
-        else:
-            self.log.error("Do we need to install the newest version?")
+        self.ext_src = self.src
+        self.log.debug("Installing Ruby gem %s version %s." % (self.name, self.version))
 
         self.install_ruby_gem()
 
@@ -61,12 +59,12 @@ class RubyGem(ExtensionEasyBlock):
         """Skip extraction, gemfiles will be installed as downloaded"""
         pass
         if len(self.src) > 1:
-            self.log.error("Don't know how to handle Ruby gems with multiple sources.'")
+            raise EasyBuildError("Don't know how to handle Ruby gems with multiple sources.'")
         else:
             try:
                 shutil.copy2(self.src[0]['path'], self.builddir)
             except OSError, err:
-                self.log.error("Failed to copy source to build dir: %s" % err)
+                raise EasyBuildError("Failed to copy source to build dir: %s" % err)
             self.ext_src = self.src[0]['name']
 
             # set final path since it can't be determined from unpacked sources (used for guessing start_dir)

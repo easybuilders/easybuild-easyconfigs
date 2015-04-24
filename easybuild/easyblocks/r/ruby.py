@@ -30,7 +30,7 @@ EasyBuild support for Ruby, implemented as an easyblock
 
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 
-#Seems like the quickest test for whether a gem is installed
+# Seems like the quickest test for whether a gem is installed
 
 EXTS_FILTER_GEMS = ("gem list %(ext_name)s -i", "")
 
