@@ -313,8 +313,7 @@ class EB_CP2K(EasyBlock):
             'FCFLAGS': '$(FCFLAGS%s)' % optflags,
             'FCFLAGS2': '$(FCFLAGS%s)' % regflags,
 
-            'CFLAGS': ' %s %s $(FPIC) $(DEBUG) %s ' % (os.getenv('EBVARCPPFLAGS'),
-                                                       os.getenv('EBVARLDFLAGS'),
+            'CFLAGS': ' %s %s $(FPIC) $(DEBUG) %s ' % (os.getenv('CPPFLAGS'), os.getenv('LDFLAGS'),
                                                        self.cfg['extracflags']),
             'DFLAGS': ' -D__parallel -D__BLACS -D__SCALAPACK -D__FFTSG %s' % self.cfg['extradflags'],
 
@@ -486,15 +485,15 @@ class EB_CP2K(EasyBlock):
         options['CFLAGS'] += ' -I$(ACML_INC) -I$(FFTW_INC)'
         options['DFLAGS'] += ' -D__FFTACML'
 
-        blas = os.getenv('LIBBLAS')
+        blas = os.getenv('LIBBLAS', '')
         blas = blas.replace('gfortran64', 'gfortran64%s' % openmp_suffix)
-        options['LIBS'] += ' %s %s %s' % (self.libsmm, os.getenv('LIBSCALAPACK'), blas)
+        options['LIBS'] += ' %s %s %s' % (self.libsmm, os.getenv('LIBSCALAPACK', ''), blas)
 
         return options
 
     def configure_BLAS_lib(self, options):
         """Configure for BLAS library."""
-        options['LIBS'] += ' %s %s' % (self.libsmm, os.getenv('LIBBLAS'))
+        options['LIBS'] += ' %s %s' % (self.libsmm, os.getenv('LIBBLAS', ''))
         return options
 
     def configure_MKL(self, options):
@@ -511,7 +510,7 @@ class EB_CP2K(EasyBlock):
             extra = '-I%s' % self.modincpath
         options['CFLAGS'] += ' -I$(INTEL_INC) %s $(FPIC) $(DEBUG)' % extra
 
-        options['LIBS'] += ' %s %s' % (self.libsmm, os.getenv('LIBSCALAPACK'))
+        options['LIBS'] += ' %s %s' % (self.libsmm, os.getenv('LIBSCALAPACK', ''))
 
         # only use Intel FFTW wrappers if FFTW is not loaded
         if not get_software_root('FFTW'):
@@ -524,7 +523,7 @@ class EB_CP2K(EasyBlock):
 
             options['CFLAGS'] += ' -I$(INTEL_INCF)'
 
-            options['LIBS'] = '%s %s' % (os.getenv('LIBFFT'), options['LIBS'])
+            options['LIBS'] = '%s %s' % (os.getenv('LIBFFT', ''), options['LIBS'])
 
         return options
 
@@ -532,26 +531,26 @@ class EB_CP2K(EasyBlock):
         """Configure for FFTW3"""
 
         options.update({
-            'FFTW_INC': os.getenv('FFT_INC_DIR'),  # GCC
-            'FFTW3INC': os.getenv('FFT_INC_DIR'),  # Intel
-            'FFTW3LIB': os.getenv('FFT_LIB_DIR'),  # Intel
+            'FFTW_INC': os.getenv('FFT_INC_DIR', ''),  # GCC
+            'FFTW3INC': os.getenv('FFT_INC_DIR', ''),  # Intel
+            'FFTW3LIB': os.getenv('FFT_LIB_DIR', ''),  # Intel
         })
 
         options['DFLAGS'] += ' -D__FFTW3'
 
-        options['LIBS'] += ' -L%s %s' % (os.getenv('FFT_LIB_DIR'), os.getenv('LIBFFT'))
+        options['LIBS'] += ' -L%s %s' % (os.getenv('FFT_LIB_DIR', '.'), os.getenv('LIBFFT', ''))
 
         return options
 
     def configure_LAPACK(self, options):
         """Configure for LAPACK library"""
-        options['LIBS'] += ' %s' % os.getenv('LIBLAPACK_MT')
+        options['LIBS'] += ' %s' % os.getenv('LIBLAPACK_MT', '')
         return options
 
     def configure_ScaLAPACK(self, options):
         """Configure for ScaLAPACK library"""
 
-        options['LIBS'] += ' %s' % os.getenv('LIBSCALAPACK')
+        options['LIBS'] += ' %s' % os.getenv('LIBSCALAPACK', '')
 
         return options
 
