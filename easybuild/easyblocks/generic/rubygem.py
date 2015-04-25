@@ -1,5 +1,5 @@
 ##
-# Copyright 2009-2013 Ghent University
+# Copyright 2015-2015 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -27,40 +27,45 @@ EasyBuild support for Ruby Gems, implemented as an easyblock
 
 @author: Robert Schmidt (Ottawa Hospital Research Institute)
 """
+import shutil
 
 from easybuild.framework.extensioneasyblock import ExtensionEasyBlock
+from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.run import run_cmd
 
 
 class RubyGem(ExtensionEasyBlock):
-    """ Builds and installs Ruby Gems """
+    """Builds and installs Ruby Gems."""
+
+    def __init__(self, *args, **kwargs):
+        """RubyGem easyblock constructor."""
+        super(RubyGem, self).__init__(self, *args, **kwargs)
+        self.ext_src = None
 
     def install_ruby_gem(self):
         """install ruby gems using gem package manager"""
-        run_cmd('gem install --local %s' % (self.ext_src))
+        run_cmd('gem install --local %s' % self.ext_src)
 
     def run(self):
         """Perform the actual Ruby gem build/install"""
-        
         if not self.src:
-            raise EasyBuildError("No source found for Ruby Gem %s, required for installation. (src: %s)" %
-                           (self.name, self.src))
+            raise EasyBuildError("No source found for Ruby Gem %s, required for installation.", self.name)
+
         super(RubyGem, self).run()
+
         self.ext_src = self.src
         self.log.debug("Installing Ruby gem %s version %s." % (self.name, self.version))
-
         self.install_ruby_gem()
 
     def extract_step(self):
         """Skip extraction, gemfiles will be installed as downloaded"""
-        pass
         if len(self.src) > 1:
             raise EasyBuildError("Don't know how to handle Ruby gems with multiple sources.'")
         else:
             try:
                 shutil.copy2(self.src[0]['path'], self.builddir)
             except OSError, err:
-                raise EasyBuildError("Failed to copy source to build dir: %s" % err)
+                raise EasyBuildError("Failed to copy source to build dir: %s", err)
             self.ext_src = self.src[0]['name']
 
             # set final path since it can't be determined from unpacked sources (used for guessing start_dir)
