@@ -28,6 +28,7 @@ EasyBuild support for building and installing R, implemented as an easyblock
 @author: Jens Timmerman (Ghent University)
 """
 import os
+from distutils.version import LooseVersion
 
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.tools import environment
@@ -77,7 +78,10 @@ class EB_R(ConfigureMake):
         libfiles = [os.path.join('include', x) for x in ['Rconfig.h', 'Rdefines.h', 'Rembedded.h',
                                                          'R.h', 'Rinterface.h', 'Rinternals.h',
                                                          'Rmath.h', 'Rversion.h', 'S.h']]
-        libfiles += [os.path.join('modules', x) for x in ['internet.so', 'lapack.so', 'vfonts.so']]
+        modfiles = ['internet.so', 'lapack.so']
+        if LooseVersion(self.version) < LooseVersion('3.2'):
+            modfiles.append('vfonts.so')
+        libfiles += [os.path.join('modules', x) for x in modfiles]
         libfiles += ['lib/libR.so']
 
         custom_paths = {
