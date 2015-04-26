@@ -49,7 +49,7 @@ class EB_EasyBuildMeta(PythonPackage):
     def __init__(self, *args, **kwargs):
         """Initialize custom class variables."""
         super(EB_EasyBuildMeta, self).__init__(*args, **kwargs)
-        self.orig_orig_environ = None
+        self.real_initial_environ = None
 
         self.easybuild_pkgs = ['easybuild-framework', 'easybuild-easyblocks', 'easybuild-easyconfigs']
         if LooseVersion(self.version) >= LooseVersion('2.0'):
@@ -88,7 +88,7 @@ class EB_EasyBuildMeta(PythonPackage):
                                              pkg, subdirs, seldirs)
 
                 else:
-                    self.log.debug("Installing EasyBuild package %s" % pkg)
+                    self.log.info("Installing EasyBuild package %s" % pkg)
                     os.chdir(os.path.join(self.builddir, seldirs[0]))
                     super(EB_EasyBuildMeta, self).install_step()
 
@@ -182,8 +182,8 @@ class EB_EasyBuildMeta(PythonPackage):
             (eb_cmd, '-e ConfigureMake -a'),
         ]
 
-        # (temporary) cleanse copy of original environment to avoid conflict with (potentially) loaded EasyBuild module
-        self.orig_orig_environ = copy.deepcopy(self.initial_environ)
+        # (temporary) cleanse copy of initial environment to avoid conflict with (potentially) loaded EasyBuild module
+        self.real_initial_environ = copy.deepcopy(self.initial_environ)
         for env_var in ['_LMFILES_', 'LOADEDMODULES']:
             if env_var in self.initial_environ:
                 self.initial_environ.pop(env_var)
@@ -198,7 +198,7 @@ class EB_EasyBuildMeta(PythonPackage):
 
         if not fake:
             # restore copy of original environment
-            self.initial_environ = copy.deepcopy(self.orig_orig_environ)
+            self.initial_environ = copy.deepcopy(self.real_initial_environ)
             self.log.debug("Restored copy of original environment")
 
         return modpath
