@@ -68,7 +68,8 @@ class EB_Score_minus_P(ConfigureMake):
             if mpi_fam in mpi_opts:
                 self.cfg.update('configopts', "--with-mpi=%s" % mpi_opts[mpi_fam])
             else:
-                self.log.error("MPI family %s not supported yet (only: %s)" % (mpi_fam, ', '.join(mpi_opts.keys())))
+                raise EasyBuildError("MPI family %s not supported yet (only: %s)",
+                                     mpi_fam, ', '.join(mpi_opts.keys()))
 
         # auto-detection for dependencies mostly works fine, but hard specify paths anyway to have full control
         deps = {
