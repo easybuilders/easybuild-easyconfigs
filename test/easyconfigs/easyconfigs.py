@@ -111,7 +111,7 @@ class EasyConfigTest(TestCase):
                 if dep.get('external_module', False):
                     ec['unresolved_deps'].remove(dep)
 
-        self.ordered_specs = resolve_dependencies(self.parsed_easyconfigs)
+        self.ordered_specs = resolve_dependencies(self.parsed_easyconfigs, retain_all_deps=True)
 
     def test_dep_graph(self):
         """Unit test that builds a full dependency graph."""
