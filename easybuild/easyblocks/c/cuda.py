@@ -1,7 +1,7 @@
 ##
 # This file is an EasyBuild reciPY as per https://github.com/hpcugent/easybuild
 #
-# Copyright:: Copyright 2012-2014 Cyprus Institute / CaSToRC, Uni.Lu, NTUA, Ghent University
+# Copyright:: Copyright 2012-2015 Cyprus Institute / CaSToRC, Uni.Lu, NTUA, Ghent University
 # Authors::   George Tsouloupas <g.tsouloupas@cyi.ac.cy>, Fotis Georgatos <fotis@cern.ch>, Kenneth Hoste
 # License::   MIT/GPL
 # $Id$

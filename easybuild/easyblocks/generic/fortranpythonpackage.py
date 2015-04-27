@@ -1,5 +1,5 @@
 ##
-# Copyright 2009-2013 Ghent University
+# Copyright 2009-2015 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -35,6 +35,7 @@ import os
 
 import easybuild.tools.toolchain as toolchain
 from easybuild.easyblocks.generic.pythonpackage import PythonPackage
+from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.run import run_cmd
 
 
@@ -65,6 +66,6 @@ class FortranPythonPackage(PythonPackage):
             cmd = "%s python setup.py build --fcompiler=gnu95" % cmdprefix
 
         else:
-            self.log.error("Unknown family of compilers being used: %s" % comp_fam)
+            raise EasyBuildError("Unknown family of compilers being used: %s", comp_fam)
 
         run_cmd(cmd, log_all=True, simple=True)

@@ -31,6 +31,7 @@ import re
 
 from easybuild.easyblocks.generic.makecp import MakeCp
 from easybuild.framework.easyconfig import CUSTOM
+from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.run import run_cmd
 
 
@@ -57,7 +58,7 @@ class CmdCp(MakeCp):
         try:
             os.chdir(self.cfg['start_dir'])
         except OSError, err:
-            self.log.error("Failed to move (back) to %s: %s" % (self.cfg['start_dir'], err))
+            raise EasyBuildError("Failed to move (back) to %s: %s", self.cfg['start_dir'], err)
 
         for src in self.src:
             src = src['path']
@@ -71,6 +72,7 @@ class CmdCp(MakeCp):
                     cmd = regex_cmd % {'source': src, 'target': target}
                     break
             if cmd is None:
-                self.log.error("No match for %s in %s, don't know which command to use." % (src, self.cfg['cmds_map']))
+                raise EasyBuildError("No match for %s in %s, don't know which command to use.",
+                                     src, self.cfg['cmds_map'])
 
             run_cmd(cmd, log_all=True, simple=True)

@@ -1,5 +1,5 @@
 ##
-# Copyright 2009-2013 Ghent University
+# Copyright 2009-2015 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -39,6 +39,7 @@ import shutil
 
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import CUSTOM
+from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.run import run_cmd
 
 
@@ -75,7 +76,7 @@ class EB_MATLAB(EasyBlock):
             f.write(lictxt)
             f.close()
         except IOError, err:
-            self.log.error("Failed to create license file %s: %s" % (licfile, err))
+            raise EasyBuildError("Failed to create license file %s: %s", licfile, err)
 
         configfile = os.path.join(self.builddir, self.configfilename)
         try:
@@ -100,7 +101,7 @@ class EB_MATLAB(EasyBlock):
             f.close()
 
         except IOError, err:
-            self.log.error("Failed to create installation config file %s: %s" % (configfile, err))
+            raise EasyBuildError("Failed to create installation config file %s: %s", configfile, err)
 
         self.log.debug('configuration file written to %s:\n %s' % (configfile, config))
 
@@ -121,7 +122,7 @@ class EB_MATLAB(EasyBlock):
             else:
                 self.log.info("Did not find source file %s" % src)
         except OSError, err:
-            self.log.error("Failed to chmod install script: %s" % err)
+            raise EasyBuildError("Failed to chmod install script: %s", err)
 
         # make sure $DISPLAY is not defined, which may lead to (hard to trace) problems
         # this is a workaround for not being able to specify --nodisplay to the install scripts

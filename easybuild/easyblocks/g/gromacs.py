@@ -34,6 +34,7 @@ from vsc.utils.missing import any
 
 import easybuild.tools.environment as env
 from easybuild.easyblocks.generic.cmakemake import CMakeMake
+from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.modules import get_software_root
 
 
@@ -45,7 +46,7 @@ class EB_GROMACS(CMakeMake):
 
         if LooseVersion(self.version) < LooseVersion('4.6'):
             self.log.info("Using configure script for configuring GROMACS build.")
-            self.log.error("Configuration procedure for older GROMACS versions not implemented yet.")
+            raise EasyBuildError("Configuration procedure for older GROMACS versions not implemented yet.")
         else:
             # build a release build
             self.cfg.update('configopts', "-DCMAKE_BUILD_TYPE=Release")
@@ -115,7 +116,7 @@ class EB_GROMACS(CMakeMake):
             for pattern in patterns:
                 regex = re.compile(pattern, re.M)
                 if not regex.search(out):
-                    self.log.error("Pattern '%s' not found in GROMACS configuration output." % pattern)
+                    raise EasyBuildError("Pattern '%s' not found in GROMACS configuration output.", pattern)
 
     def test_step(self):
         """Specify to running tests is done using 'make check'."""

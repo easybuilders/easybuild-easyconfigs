@@ -1,5 +1,5 @@
 ##
-# Copyright 2009-2013 Ghent University
+# Copyright 2009-2015 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -27,9 +27,9 @@ EasyBuild support for installing FLUENT, implemented as an easyblock
 
 @author: Kenneth Hoste (Ghent University)
 """
-
 import os
 import stat
+from distutils.version import LooseVersion
 
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.tools.filetools import adjust_permissions
@@ -55,7 +55,12 @@ class EB_FLUENT(EasyBlock):
     def install_step(self):
         """Custom install procedure for FLUENT."""
 
-        cmd = "./INSTALL -noroot -silent -install_dir %s" % self.installdir
+        extra_args =''
+        # only include -noroot flag for older versions
+        if LooseVersion(self.version) < LooseVersion('15.0'):
+            extra_args += '-noroot'
+
+        cmd = "./INSTALL %s -debug -silent -install_dir %s %s" % (extra_args, self.installdir, self.cfg['installopts'])
         run_cmd(cmd, log_all=True, simple=True)
 
         adjust_permissions(self.installdir, stat.S_IWOTH, add=False)

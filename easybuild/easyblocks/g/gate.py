@@ -1,5 +1,5 @@
 ##
-# Copyright 2009-2014 Ghent University
+# Copyright 2009-2015 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -40,6 +40,7 @@ import easybuild.tools.environment as env
 import easybuild.tools.toolchain as toolchain
 from easybuild.easyblocks.generic.cmakemake import CMakeMake
 from easybuild.framework.easyconfig import CUSTOM
+from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.run import run_cmd
 
 
@@ -97,14 +98,14 @@ class EB_GATE(CMakeMake):
             try:
                 os.chdir(os.path.join(os.path.join(self.cfg['start_dir'], subdir)))
             except OSError, err:
-                self.log.error("Failed to move to %s: %s" % (subdir, err))
+                raise EasyBuildError("Failed to move to %s: %s", subdir, err)
 
             super(EB_GATE, self).build_step()
 
         try:
             os.chdir(self.cfg['start_dir'])
         except OSError, err:
-            self.log.error("Failed to return to start dir %s: %s" % (self.cfg['start_dir'], err))
+            raise EasyBuildError("Failed to return to start dir %s: %s", self.cfg['start_dir'], err)
 
     def install_step(self):
         """Custom installation procedure for GATE."""
@@ -116,7 +117,7 @@ class EB_GATE(CMakeMake):
                 try:
                     os.chdir(os.path.join(os.path.join(self.cfg['start_dir'], subdir)))
                 except OSError, err:
-                    self.log.error("Failed to move to %s: %s" % (subdir, err))
+                    raise EasyBuildError("Failed to move to %s: %s", subdir, err)
 
                 super(EB_GATE, self).install_step()
         else:
@@ -127,7 +128,7 @@ class EB_GATE(CMakeMake):
                 shutil.rmtree(self.installdir)
                 shutil.copytree(self.cfg['start_dir'], self.installdir)
             except OSError, err:
-                self.log.error("Failed to copy %s to %s: %s" % (self.cfg['start_dir'], self.installdir, err))
+                raise EasyBuildError("Failed to copy %s to %s: %s", self.cfg['start_dir'], self.installdir, err)
 
             cmd = "source %s &> /dev/null && echo $G4SYSTEM" % os.path.join(self.cfg['start_dir'], 'env_gate.sh')
             out, _ = run_cmd(cmd, simple=False)
@@ -135,7 +136,7 @@ class EB_GATE(CMakeMake):
             if self.g4system:
                 self.log.debug("Value obtained for $G4SYSTEM: %s" % self.g4system)
             else:
-                self.log.error("Failed to obtain value for $G4SYSTEM, not set?")
+                raise EasyBuildError("Failed to obtain value for $G4SYSTEM, not set?")
 
             # copy Gate libraries to 'lib' subdir in installation directory
             try:
@@ -147,14 +148,14 @@ class EB_GATE(CMakeMake):
                         shutil.copy2(os.path.join(srclibdir, fil), os.path.join(libdir, fil))
                         self.log.debug("Copied library %s to 'lib' install subdirectory" % fil)
             except OSError, err:
-                self.log.error("Failed to copy GATE library/ies to lib directory: %s" % err)
+                raise EasyBuildError("Failed to copy GATE library/ies to lib directory: %s", err)
 
             # add link from tmp/<OS>-<comp>/gjs to lib
             js_dir = os.path.join(self.installdir, 'cluster_tools', 'jobsplitter')
             try:
                 os.symlink(os.path.join(js_dir, 'tmp', self.g4system, 'gjs'), os.path.join(js_dir, 'lib'))
             except OSError, err:
-                self.log.error("Failed to symlink tmp js dir to lib in %s: %s" % (js_dir, err))
+                raise EasyBuildError("Failed to symlink tmp js dir to lib in %s: %s", js_dir, err)
 
     def make_module_extra(self):
         """Overwritten from Application to add extra txt"""
@@ -169,8 +170,8 @@ class EB_GATE(CMakeMake):
                 path_dirs.append(path_dir)
         txt += self.module_generator.prepend_paths('PATH', path_dirs)
         txt += self.module_generator.prepend_paths('LD_LIBRARY_PATH', [os.path.join(js_dir, 'lib')])
-        txt += self.module_generator.set_environment('GATEHOME', '$root')
-        txt += self.module_generator.set_environment('GC_GATE_EXE_DIR', os.path.join('$root', 'bin', subdir))
+        txt += self.module_generator.set_environment('GATEHOME', self.installdir)
+        txt += self.module_generator.set_environment('GC_GATE_EXE_DIR', os.path.join(self.installdir, 'bin', subdir))
         return txt
 
     def sanity_check_step(self):

@@ -1,5 +1,5 @@
 ##
-# Copyright 2009-2013 Ghent University
+# Copyright 2009-2015 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -34,6 +34,7 @@ import shutil
 import sys
 
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
+from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.modules import get_software_root, get_software_version
 
 
@@ -50,7 +51,7 @@ class EB_XCrySDen(ConfigureMake):
         deps = ["Mesa", "Tcl", "Tk"]
         for dep in deps:
             if not get_software_root(dep):
-                self.log.error("Module for dependency %s not loaded." % dep)
+                raise EasyBuildError("Module for dependency %s not loaded.", dep)
 
         # copy template Make.sys to apply_patch
         makesys_tpl_file = os.path.join("system", "Make.sys-shared")
@@ -58,7 +59,7 @@ class EB_XCrySDen(ConfigureMake):
         try:
             shutil.copy2(makesys_tpl_file, makesys_file)
         except OSError, err:
-            self.log.error("Failed to copy %s: %s" % (makesys_tpl_file, err))
+            raise EasyBuildError("Failed to copy %s: %s", makesys_tpl_file, err)
 
         self.tclroot = get_software_root("Tcl")
         self.tclver = '.'.join(get_software_version("Tcl").split('.')[0:2])

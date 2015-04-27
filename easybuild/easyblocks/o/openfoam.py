@@ -1,5 +1,5 @@
 ##
-# Copyright 2009-2013 Ghent University
+# Copyright 2009-2015 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -40,6 +40,7 @@ from distutils.version import LooseVersion
 import easybuild.tools.environment as env
 import easybuild.tools.toolchain as toolchain
 from easybuild.framework.easyblock import EasyBlock
+from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.filetools import adjust_permissions, mkdir
 from easybuild.tools.modules import get_software_root
 from easybuild.tools.run import run_cmd, run_cmd_qa
@@ -57,7 +58,6 @@ class EB_OpenFOAM(EasyBlock):
 
         self.wm_compiler= None
         self.wm_mplib = None
-        self.mpipath = None
         self.openfoamdir = None
         self.thrdpartydir = None
 
@@ -88,7 +88,7 @@ class EB_OpenFOAM(EasyBlock):
                         shutil.move(source, target)
                 os.chdir(openfoam_installdir)
             except OSError, err:
-                self.log.error("Failed to move all files to %s: %s" % (openfoam_installdir, err))
+                raise EasyBuildError("Failed to move all files to %s: %s", openfoam_installdir, err)
 
     def configure_step(self):
         """Configure OpenFOAM build by setting appropriate environment variables."""
@@ -119,7 +119,7 @@ class EB_OpenFOAM(EasyBlock):
             self.cfg.update('prebuildopts', 'CFLAGS="$CFLAGS -no-prec-div" CXXFLAGS="$CXXFLAGS -no-prec-div"')
 
         else:
-            self.log.error("Unknown compiler family, don't know how to set WM_COMPILER")
+            raise EasyBuildError("Unknown compiler family, don't know how to set WM_COMPILER")
 
         env.setvar("WM_COMPILER", self.wm_compiler)
 
@@ -242,12 +242,11 @@ class EB_OpenFOAM(EasyBlock):
 
         env_vars = [
             ("WM_PROJECT_VERSION", self.version),
-            ("FOAM_INST_DIR", "$root"),
+            ("FOAM_INST_DIR", self.installdir),
             ("WM_COMPILER", self.wm_compiler),
             ("WM_MPLIB", self.wm_mplib),
-            ("MPI_ARCH_PATH", self.mpipath),
-            ("FOAM_BASH", os.path.join("$root", self.openfoamdir, "etc", "bashrc")),
-            ("FOAM_CSH", os.path.join("$root", self.openfoamdir, "etc", "cshrc")),
+            ("FOAM_BASH", os.path.join(self.installdir, self.openfoamdir, "etc", "bashrc")),
+            ("FOAM_CSH", os.path.join(self.installdir, self.openfoamdir, "etc", "cshrc")),
         ]
 
         for (env_var, val) in env_vars:

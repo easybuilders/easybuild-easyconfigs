@@ -1,5 +1,5 @@
 ##
-# Copyright 2009-2013 Ghent University
+# Copyright 2009-2015 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -38,6 +38,7 @@ import tempfile
 import easybuild.tools.environment as env
 import easybuild.tools.toolchain as toolchain
 from easybuild.easyblocks.generic.fortranpythonpackage import FortranPythonPackage
+from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.filetools import rmtree2
 from easybuild.tools.modules import get_software_root
 from easybuild.tools.run import run_cmd
@@ -134,8 +135,8 @@ class EB_numpy(FortranPythonPackage):
                     patch_found = True
                     break
             if not patch_found:
-                self.log.error("Building numpy on top of Intel MKL requires a patch to "
-                               "handle -Wl linker flags correctly, which doesn't seem to be there.")
+                raise EasyBuildError("Building numpy on top of Intel MKL requires a patch to "
+                                     "handle -Wl linker flags correctly, which doesn't seem to be there.")
 
         else:
             # unless Intel MKL is used, $ATLAS should be set to take full control,
@@ -159,7 +160,8 @@ class EB_numpy(FortranPythonPackage):
                 if not cblaslib in libs:
                     libs = ':'.join([libs, cblaslib])
             else:
-                self.log.error("CBLAS is required next to ACML to provide a C interface to BLAS, but it's not loaded.")
+                raise EasyBuildError("CBLAS is required next to ACML to provide a C interface to BLAS, "
+                                     "but it's not loaded.")
 
         if fft:
             extrasiteconfig += "\n[fftw]\nlibraries = %s" % fft
@@ -192,7 +194,7 @@ class EB_numpy(FortranPythonPackage):
             pwd = os.getcwd()
             os.chdir(tmpdir)
         except OSError, err:
-            self.log.error("Faild to change to %s: %s" % (tmpdir, err))
+            raise EasyBuildError("Faild to change to %s: %s", tmpdir, err)
 
         # evaluate performance of numpy.dot (3 runs, 3 loops each)
         size = 1000
@@ -218,21 +220,20 @@ class EB_numpy(FortranPythonPackage):
             if res:
                 time_msec = 1000 * float(res.group('time'))
             else:
-                self.log.error("Failed to determine time for numpy.dot test run.")
+                raise EasyBuildError("Failed to determine time for numpy.dot test run.")
 
         # make sure we observe decent performance
         if time_msec < max_time_msec:
-            self.log.info("Time for %(size)dx%(size)d matrix dot product: %(time)d msec < %(maxtime)d msec => OK" %
-                {'size': size, 'time': time_msec, 'maxtime': max_time_msec})
+            self.log.info("Time for %dx%d matrix dot product: %d msec < %d msec => OK",
+                          size, size, time_msec, max_time_msec)
         else:
-            self.log.error("Time for %(size)dx%(size)d matrix dot product: %(time)d msec >= %(maxtime)d msec => ERROR" %
-                {'size': size, 'time': time_msec, 'maxtime': max_time_msec})
-
+            raise EasyBuildError("Time for %dx%d matrix dot product: %d msec >= %d msec => ERROR",
+                                 size, size, time_msec, max_time_msec)
         try:
             os.chdir(pwd)
             rmtree2(tmpdir)
         except OSError, err:
-            self.log.error("Failed to change back to %s: %s" % (pwd, err))
+            raise EasyBuildError("Failed to change back to %s: %s", pwd, err)
 
     def sanity_check_step(self, *args, **kwargs):
         """Custom sanity check for numpy."""

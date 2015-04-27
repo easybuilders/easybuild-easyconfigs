@@ -1,5 +1,5 @@
 # #
-# Copyright 2009-2013 Ghent University
+# Copyright 2009-2015 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -38,6 +38,7 @@ from distutils.version import LooseVersion
 
 from easybuild.easyblocks.generic.intelbase import IntelBase, ACTIVATION_NAME_2012, LICENSE_FILE_NAME_2012
 from easybuild.framework.easyconfig import CUSTOM
+from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.run import run_cmd
 
 
@@ -111,14 +112,14 @@ EULA=accept
                 f.write(silent)
                 f.close()
             except:
-                self.log.exception("Writing silent cfg file %s failed." % silent)
+                raise EasyBuildError("Writing silent cfg file %s failed.", silent)
             self.log.debug("Contents of %s: %s" % (silentcfg, silent))
 
             tmpdir = os.path.join(os.getcwd(), self.version, 'mytmpdir')
             try:
                 os.makedirs(tmpdir)
             except:
-                self.log.exception("Directory %s can't be created" % (tmpdir))
+                raise EasyBuildError("Directory %s can't be created", tmpdir)
 
             cmd = "./install.sh --tmp-dir=%s --silent=%s" % (tmpdir, silentcfg)
             run_cmd(cmd, log_all=True, simple=True)
@@ -171,7 +172,7 @@ EULA=accept
         """Overwritten from Application to add extra txt"""
         txt = super(EB_impi, self).make_module_extra()
         txt += self.module_generator.prepend_paths(self.license_env_var, [self.license_file], allow_abs=True)
-        txt += self.module_generator.set_environment('I_MPI_ROOT', '$root')
+        txt += self.module_generator.set_environment('I_MPI_ROOT', self.installdir)
         if self.cfg['set_mpi_wrappers_compiler'] or self.cfg['set_mpi_wrappers_all']:
             for var in ['CC', 'CXX', 'F77', 'F90', 'FC']:
                 if var == 'FC':
@@ -186,7 +187,7 @@ EULA=accept
                 if val:
                     txt += self.module_generator.set_environment(target_var, val)
                 else:
-                    self.log.error("Environment variable $%s not set, can't define $%s" % (src_var, target_var))
+                    raise EasyBuildError("Environment variable $%s not set, can't define $%s", src_var, target_var)
 
         if self.cfg['set_mpi_wrapper_aliases_gcc'] or self.cfg['set_mpi_wrappers_all']:
             # force mpigcc/mpigxx to use GCC compilers, as would be expected based on their name

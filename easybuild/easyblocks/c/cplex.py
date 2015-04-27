@@ -1,5 +1,5 @@
 ##
-# Copyright 2009-2013 Ghent University
+# Copyright 2009-2015 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -39,6 +39,7 @@ import stat
 import easybuild.tools.environment as env
 from easybuild.easyblocks.generic.binary import Binary
 from easybuild.framework.easyconfig import CUSTOM
+from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.run import run_cmd_qa
 
 
@@ -63,7 +64,7 @@ class EB_CPLEX(Binary):
             os.makedirs(tmpdir)
             os.makedirs(stagedir)
         except OSError, err:
-            self.log.exception("Failed to prepare for installation: %s" % err)
+            raise EasyBuildError("Failed to prepare for installation: %s", err)
 
         env.setvar('IATEMPDIR', tmpdir)
         dst = os.path.join(self.builddir, self.src[0]['name'])
@@ -89,7 +90,7 @@ class EB_CPLEX(Binary):
         try:
             os.chmod(self.installdir, stat.S_IRWXU | stat.S_IXOTH | stat.S_IXGRP | stat.S_IROTH | stat.S_IRGRP)
         except OSError, err:
-            self.log.exception("Can't set permissions on %s: %s" % (self.installdir, err))
+            raise EasyBuildError("Can't set permissions on %s: %s", self.installdir, err)
 
     def post_install_step(self):
         """Determine bin directory for this CPLEX installation."""
@@ -104,16 +105,16 @@ class EB_CPLEX(Binary):
         if len(bins) == 1:
             self.bindir = bins[0]
         elif len(bins) > 1:
-            self.log.error("More than one possible path for bin found: %s" % bins)
+            raise EasyBuildError("More than one possible path for bin found: %s", bins)
         else:
-            self.log.error("No bins found using %s in %s" % (binglob, self.installdir))
+            raise EasyBuildError("No bins found using %s in %s", binglob, self.installdir)
 
     def make_module_extra(self):
         """Add installdir to path and set CPLEX_HOME"""
 
         txt = super(EB_CPLEX, self).make_module_extra()
         txt += self.module_generator.prepend_paths("PATH", [self.bindir])
-        txt += self.module_generator.set_environment("CPLEX_HOME", "$root/cplex")
+        txt += self.module_generator.set_environment("CPLEX_HOME", os.path.join(self.installdir, 'cplex'))
         self.log.debug("make_module_extra added %s" % txt)
         return txt
 

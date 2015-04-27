@@ -31,6 +31,7 @@ import os
 
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import CUSTOM
+from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.run import run_cmd_qa
 
 
@@ -49,7 +50,7 @@ class EB_Modeller(EasyBlock):
         """Interactive install of Modeller."""
     
         if self.cfg['key'] is None: 
-            self.log.error("Easyconfig parameter 'key' is not defined")
+            raise EasyBuildError("Easyconfig parameter 'key' is not defined")
 
         cmd = "%s/Install" % self.cfg['start_dir']
 
@@ -84,13 +85,13 @@ class EB_Modeller(EasyBlock):
         if len(libdirs) == 1:
             libdir = libdirs[0]
         else:
-            self.log.error("Failed to isolate a single libdir from list of 'lib' subdirectories: %s" % libdirs)
+            raise EasyBuildError("Failed to isolate a single libdir from list of 'lib' subdirectories: %s", libdirs)
 
         py2libdirs = [d for d in os.listdir(os.path.join(self.installdir, 'lib', libdir)) if d.startswith('python2')]
         if len(py2libdirs) >= 1:
             py2libdir = py2libdirs[-1]
         else:
-            self.log.error("Failed to isolate latest Python lib dir from list %s" % py2libdirs)
+            raise EasyBuildError("Failed to isolate latest Python lib dir from list %s", py2libdirs)
 
         guesses.update({
             'PYTHONPATH': [os.path.join('lib', libdir, py2libdir), "modlib"],

@@ -1,5 +1,5 @@
 ##
-# Copyright 2009-2013 Ghent University
+# Copyright 2009-2015 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -40,6 +40,7 @@ from distutils.version import LooseVersion
 import easybuild.tools.environment as env
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.easyblocks.generic.cmakemake import CMakeMake
+from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.modules import get_software_root
 from easybuild.tools.run import run_cmd, run_cmd_qa
 from easybuild.tools.filetools import mkdir
@@ -226,16 +227,16 @@ class EB_Geant4(CMakeMake):
                 scriptdirbase = os.path.join(pwd, '.config', 'bin')
                 filelist = os.listdir(scriptdirbase)
             except OSError, err:
-                self.log.error("Failed to determine self.g4system: %s" % err)
+                raise EasyBuildError("Failed to determine self.g4system: %s", err)
     
             if len(filelist) != 1:
-                self.log.error("Exactly one directory is expected in %s; found back: %s" % (scriptdirbase, filelist))
+                raise EasyBuildError("Exactly one directory is expected in %s; found back: %s", scriptdirbase, filelist)
             else:
                 self.g4system = filelist[0]
     
             self.scriptdir = os.path.join(scriptdirbase, self.g4system)
             if not os.path.isdir(self.scriptdir):
-                self.log.error("Something went wrong. Dir: %s doesn't exist." % self.scriptdir)
+                raise EasyBuildError("Something went wrong. Dir: %s doesn't exist.", self.scriptdir)
             self.log.info("The directory containing several important scripts to be copied was found: %s" % self.scriptdir)
 
             # copying config.sh to pwd
@@ -243,7 +244,7 @@ class EB_Geant4(CMakeMake):
                 self.log.info("copying config.sh to %s" % pwd)
                 shutil.copy2(os.path.join(self.scriptdir, 'config.sh'), pwd)
             except IOError, err:
-                self.log.error("Failed to copy config.sh to %s" % pwd)
+                raise EasyBuildError("Failed to copy config.sh to %s", pwd)
 
             # creating several scripts containing environment variables
             cmd = "%s/Configure -S -f config.sh -D g4conf=%s -D abssrc=%s" % (pwd, self.scriptdir, pwd)
@@ -278,7 +279,7 @@ class EB_Geant4(CMakeMake):
                     try:
                         os.symlink(source, target)
                     except OSError, err:
-                        self.log.error("Failed to symlink %s to %s: %s" % (source, target, err))
+                        raise EasyBuildError("Failed to symlink %s to %s: %s", source, target, err)
         else:
             pwd = self.cfg['start_dir']
 
@@ -287,7 +288,7 @@ class EB_Geant4(CMakeMake):
                 self.datadst = os.path.join(self.installdir, 'data')
                 os.mkdir(self.datadst)
             except OSError, err:
-                self.log.error("Failed to create data destination file %s: %s" % (self.datadst, err))
+                raise EasyBuildError("Failed to create data destination file %s: %s", self.datadst, err)
 
             datalist = ['G4ABLA%s' % self.cfg['G4ABLAVersion'],
                         'G4EMLOW%s' % self.cfg['G4EMLOWVersion'],
@@ -300,31 +301,31 @@ class EB_Geant4(CMakeMake):
                     self.log.info("Copying %s to %s" % (dat, self.datadst))
                     shutil.copytree(os.path.join(datasrc, dat), os.path.join(self.datadst, dat))
             except IOError, err:
-                self.log.error("Something went wrong during data copying (%s) to %s: %s" % (dat, self.datadst, err))
+                raise EasyBuildError("Something went wrong during data copying (%s) to %s: %s", dat, self.datadst, err)
 
             try:
                 for fil in ['config', 'environments', 'examples']:
                     self.log.info("Copying %s to %s" % (fil, self.installdir))
                     if not os.path.exists(os.path.join(pwd, fil)):
-                        self.log.error("No such file or directory: %s" % fil)
+                        raise EasyBuildError("No such file or directory: %s", fil)
                     if os.path.isdir(os.path.join(pwd, fil)):
                         shutil.copytree(os.path.join(pwd, fil), os.path.join(self.installdir, fil))
                     elif os.path.isfile(os.path.join(pwd, fil)):
                         shutil.copy2(os.path.join(pwd, fil), os.path.join(self.installdir, fil))
             except IOError, err:
-                self.log.error("Something went wrong during copying of %s to %s: %s" % (fil, self.installdir, err))
+                raise EasyBuildError("Something went wrong during copying of %s to %s: %s", fil, self.installdir, err)
 
             try:
                 for fil in ['config.sh', 'env.sh', 'env.csh']:
                     self.log.info("Copying %s to %s" % (fil, self.installdir))
                     if not os.path.exists(os.path.join(self.scriptdir, fil)):
-                        self.log.error("No such file or directory: %s" % fil)
+                        raise EasyBuildError("No such file or directory: %s", fil)
                     if os.path.isdir(os.path.join(self.scriptdir, fil)):
                         shutil.copytree(os.path.join(self.scriptdir, fil), os.path.join(self.installdir, fil))
                     elif os.path.isfile(os.path.join(self.scriptdir, fil)):
                         shutil.copy2(os.path.join(self.scriptdir, fil), os.path.join(self.installdir, fil))
             except IOError, err:
-                self.log.error("Something went wrong during copying of (%s) to %s: %s" % (fil, self.installdir, err))
+                raise EasyBuildError("Something went wrong during copying of (%s) to %s: %s", fil, self.installdir, err)
 
             cmd = "%(pwd)s/Configure -f %(pwd)s/config.sh -d -install" % {'pwd': pwd}
             run_cmd(cmd, log_all=True, simple=True)
@@ -366,19 +367,21 @@ class EB_Geant4(CMakeMake):
         g4version = '.'.join(self.version.split('.')[:2])
 
         txt = super(EB_Geant4, self).make_module_extra()
-        txt += self.module_generator.set_environment('G4INSTALL', "$root")
+        txt += self.module_generator.set_environment('G4INSTALL', self.installdir)
         #no longer needed in > 9.5, but leave it there for now.
         txt += self.module_generator.set_environment('G4VERSION', g4version)
 
+        incdir = os.path.join(self.installdir, 'include')
+        libdir = os.path.join(self.installdir, 'lib')
         if LooseVersion(self.version) >= LooseVersion("9.5"):
-            txt += self.module_generator.set_environment('G4INCLUDE', "$root/include/Geant4")
-            txt += self.module_generator.set_environment('G4LIB', "$root/lib64/Geant4")
+            txt += self.module_generator.set_environment('G4INCLUDE', os.path.join(incdir, 'Geant4'))
+            txt += self.module_generator.set_environment('G4LIB', os.path.join(self.installdir, 'lib64', 'Geant4'))
         elif LooseVersion(self.version) >= LooseVersion("9.4"):
-            txt += self.module_generator.set_environment('G4INCLUDE', "$root/include/geant4")
-            txt += self.module_generator.set_environment('G4LIB', "$root/lib")
+            txt += self.module_generator.set_environment('G4INCLUDE', os.path.join(incdir, 'geant4'))
+            txt += self.module_generator.set_environment('G4LIB', libdir)
         else:
-            txt += self.module_generator.set_environment('G4INCLUDE', "$root/include/geant4")
-            txt += self.module_generator.set_environment('G4LIB', "$root/lib/geant4")
+            txt += self.module_generator.set_environment('G4INCLUDE', os.path.join(incdir, 'geant4'))
+            txt += self.module_generator.set_environment('G4LIB', os.path.join(libdir, 'geant4'))
             txt += self.module_generator.set_environment('G4SYSTEM', self.g4system)
             txt += self.module_generator.set_environment('G4ABLADATA',
                                                         "%s/G4ABLA%s" % (self.datadst, self.cfg['G4ABLAVersion']))

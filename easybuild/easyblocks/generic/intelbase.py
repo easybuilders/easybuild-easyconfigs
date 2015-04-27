@@ -1,5 +1,5 @@
 # #
-# Copyright 2009-2013 Ghent University
+# Copyright 2009-2015 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -42,6 +42,7 @@ import glob
 import easybuild.tools.environment as env
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import CUSTOM
+from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.run import run_cmd
 
 from vsc import fancylogger
@@ -122,7 +123,7 @@ class IntelBase(EasyBlock):
                 else:
                     shutil.rmtree(path)
         except OSError, err:
-            self.log.error("Cleaning up intel dir %s failed: %s" % (self.home_subdir_local, err))
+            raise EasyBuildError("Cleaning up intel dir %s failed: %s", self.home_subdir_local, err)
 
     def setup_local_home_subdir(self):
         """
@@ -159,7 +160,7 @@ class IntelBase(EasyBlock):
                 self.log.debug("Created symlink (2) %s to %s" % (self.home_subdir, self.home_subdir_local))
 
         except OSError, err:
-            self.log.error("Failed to symlink %s to %s: %s" % (self.home_subdir_local, self.home_subdir, err))
+            raise EasyBuildError("Failed to symlink %s to %s: %s", self.home_subdir_local, self.home_subdir, err)
 
     def configure_step(self):
         """Configure: handle license file and clean home dir."""
@@ -179,12 +180,12 @@ class IntelBase(EasyBlock):
             if self.license_file:
                 self.log.info("Using license file %s" % self.license_file)
             else:
-                self.log.error("No license file defined, maybe set one these env vars: %s" % env_var_names)
+                raise EasyBuildError("No license file defined, maybe set one these env vars: %s", env_var_names)
 
             # verify license path
             if not os.path.exists(self.license_file):
-                tup = (self.license_file, env_var_names)
-                self.log.error("%s not found; correct 'license_file', or define one of the these env vars: %s" % tup)
+                raise EasyBuildError("%s not found; correct 'license_file', or define one of the these env vars: %s",
+                                     self.license_file, env_var_names)
 
             # set default environment variable for license specification
             env.setvar(default_lic_env_var, self.license_file)
@@ -219,7 +220,7 @@ class IntelBase(EasyBlock):
                     self.log.info('Picked the first *.lic file from $%s: %s' % (lic_env_var, lic_files[0]))
 
             if not valid_license_specs:
-                self.log.error("Cannot find a valid license specification in %s" % license_specs)
+                raise EasyBuildError("Cannot find a valid license specification in %s", license_specs)
 
             # only retain one environment variable (by order of preference), retain all valid matches for that env var
             for lic_env_var in lic_env_vars:
@@ -234,11 +235,12 @@ class IntelBase(EasyBlock):
                         env.setvar(default_lic_env_var, self.license_file)
                     break
             if self.license_file is None or self.license_env_var is None:
-                self.log.error("self.license_file or self.license_env_var still None, something went horribly wrong...")
+                raise EasyBuildError("self.license_file or self.license_env_var still None, "
+                                     "something went horribly wrong...")
 
             self.cfg['license_file'] = self.license_file
             env.setvar(self.license_env_var, self.license_file)
-            self.log.info("Using Intel license specifications from $%s: %s" % (self.license_env_var, self.license_file))
+            self.log.info("Using Intel license specifications from $%s: %s", self.license_env_var, self.license_file)
 
         # clean home directory
         self.clean_home_subdir()
@@ -266,7 +268,7 @@ class IntelBase(EasyBlock):
         if lic_activation in lic_file_server_activations:
             lic_file_entry = "%(license_file_name)s=%(license_file)s"
         elif not self.cfg['license_activation'] in other_activations:
-            self.log.error("Unknown type of activation specified: %s (known :%s)" % (lic_activation, ACTIVATION_TYPES))
+            raise EasyBuildError("Unknown type of activation specified: %s (known :%s)", lic_activation, ACTIVATION_TYPES)
 
         silent = '\n'.join([
             "%(activation_name)s=%(activation)s",
@@ -289,7 +291,7 @@ class IntelBase(EasyBlock):
             if isinstance(silent_cfg_extras, dict):
                 silent += '\n'.join("%s=%s" % (key, value) for (key, value) in silent_cfg_extras.iteritems())
             else:
-                self.log.error("silent_cfg_extras needs to be a dict")
+                raise EasyBuildError("silent_cfg_extras needs to be a dict")
 
         # we should be already in the correct directory
         silentcfg = os.path.join(os.getcwd(), "silent.cfg")
@@ -298,7 +300,7 @@ class IntelBase(EasyBlock):
             f.write(silent)
             f.close()
         except:
-            self.log.exception("Writing silent cfg % failed" % silent)
+            raise EasyBuildError("Writing silent cfg, failed", silent)
         self.log.debug("Contents of %s:\n%s" % (silentcfg, silent))
 
         # workaround for mktmp: create tmp dir and use it
@@ -306,7 +308,7 @@ class IntelBase(EasyBlock):
         try:
             os.makedirs(tmpdir)
         except:
-            self.log.exception("Directory %s can't be created" % (tmpdir))
+            raise EasyBuildError("Directory %s can't be created", tmpdir)
         tmppathopt = ''
         if self.cfg['usetmppath']:
             env.setvar('TMP_PATH', tmpdir)
@@ -341,7 +343,7 @@ class IntelBase(EasyBlock):
                 shutil.move(source, target)
             shutil.rmtree(os.path.join(self.installdir, self.name))
         except OSError, err:
-            self.log.error("Failed to move contents of %s to %s: %s" % (subdir, self.installdir, err))
+            raise EasyBuildError("Failed to move contents of %s to %s: %s", subdir, self.installdir, err)
 
     def cleanup_step(self):
         """Cleanup leftover mess

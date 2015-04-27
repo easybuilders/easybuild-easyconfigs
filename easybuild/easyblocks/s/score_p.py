@@ -33,6 +33,7 @@ import os
 
 import easybuild.tools.toolchain as toolchain
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
+from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.modules import get_software_root, get_software_libdir
 
 
@@ -53,7 +54,8 @@ class EB_Score_minus_P(ConfigureMake):
         if comp_fam in comp_opts:
             self.cfg.update('configopts', "--with-nocross-compiler-suite=%s" % comp_opts[comp_fam])
         else:
-            self.log.error("Compiler family %s not supported yet (only: %s)" % (comp_fam, ', '.join(comp_opts.keys())))
+            raise EasyBuildError("Compiler family %s not supported yet (only: %s)",
+                                 comp_fam, ', '.join(comp_opts.keys()))
 
         mpi_opts = {
             toolchain.INTELMPI: 'intel2',  # intel: Intel MPI v1.x (ancient); intelpoe: IBM POE MPI for Intel platforms

@@ -1,5 +1,5 @@
 ##
-# Copyright 2009-2013 Ghent University
+# Copyright 2009-2015 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -38,6 +38,7 @@ import glob
 from distutils.version import LooseVersion
 
 from easybuild.easyblocks.generic.intelbase import IntelBase, ACTIVATION_NAME_2012, LICENSE_FILE_NAME_2012
+from easybuild.tools.build_log import EasyBuildError
 
 
 class EB_tbb(IntelBase):
@@ -67,17 +68,17 @@ class EB_tbb(IntelBase):
             # we're only interested in the last bit
             libdir = libdir.split('/')[-1]
         else:
-            self.log.error("No libs found using %s in %s" % (libglob, self.installdir))
+            raise EasyBuildError("No libs found using %s in %s", libglob, self.installdir)
         self.libdir = libdir
 
 
-        self.libpath = "%s/tbb/libs/intel64/%s/" % (self.installdir, libdir)
+        self.libpath = os.path.join('tbb', 'libs', 'intel64', libdir)
         self.log.debug("self.libpath: %s" % self.libpath)
         # applications go looking into tbb/lib so we move what's in there to libs
         # and symlink the right lib from /tbb/libs/intel64/... to lib
         install_libpath = os.path.join(self.installdir, 'tbb', 'lib')
         shutil.move(install_libpath, os.path.join(self.installdir, 'tbb', 'libs'))
-        os.symlink(self.libpath, install_libpath)
+        os.symlink(os.path.join(self.installdir, self.libpath), install_libpath)
 
     def sanity_check_step(self):
 
@@ -90,8 +91,6 @@ class EB_tbb(IntelBase):
 
     def make_module_extra(self):
         """Add correct path to lib to LD_LIBRARY_PATH. and intel license file"""
-
         txt = super(EB_tbb, self).make_module_extra()
-        txt += "prepend-path\t%s\t\t%s\n" % ('LD_LIBRARY_PATH', self.libpath)
-
+        txt += self.module_generator.prepend_paths('LD_LIBRARY_PATH', [self.libpath])
         return txt

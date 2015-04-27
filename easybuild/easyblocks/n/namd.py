@@ -1,7 +1,7 @@
 ##
 # This file is an EasyBuild reciPY as per https://github.com/hpcugent/easybuild
 #
-# Copyright:: Copyright 2013-2014 CaSToRC, The Cyprus Institute
+# Copyright:: Copyright 2013-2015 CaSToRC, The Cyprus Institute
 # Authors::   George Tsouloupas <g.tsouloupas@cyi.ac.cy>
 # License::   MIT/GPL
 # $Id$
@@ -22,6 +22,7 @@ from distutils.version import LooseVersion
 import easybuild.tools.toolchain as toolchain
 from easybuild.easyblocks.generic.makecp import MakeCp
 from easybuild.framework.easyconfig import CUSTOM, MANDATORY
+from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.filetools import extract_file
 from easybuild.tools.modules import get_software_root, get_software_version
 from easybuild.tools.run import run_cmd
@@ -71,7 +72,7 @@ class EB_NAMD(MakeCp):
         }
         namd_comp = namd_comps.get(comp_fam, None)
         if charm_arch_comp is None or namd_comp is None:
-            self.log.error("Unknown compiler family, can't complete Charm++/NAMD target architecture.")
+            raise EasyBuildError("Unknown compiler family, can't complete Charm++/NAMD target architecture.")
         self.cfg.update('charm_arch', charm_arch_comp)
 
         self.log.info("Updated 'charm_arch': %s" % self.cfg['charm_arch'])
@@ -80,7 +81,7 @@ class EB_NAMD(MakeCp):
 
         charm_tarballs = glob.glob('charm-*.tar')
         if len(charm_tarballs) != 1:
-            self.log.error("Expected to find exactly one tarball for Charm++, found: %s" % charm_tarballs)
+            raise EasyBuildError("Expected to find exactly one tarball for Charm++, found: %s", charm_tarballs)
 
         extract_file(charm_tarballs[0], os.getcwd())
 
@@ -105,7 +106,7 @@ class EB_NAMD(MakeCp):
                 if LooseVersion(self.version) >= LooseVersion('2.9'):
                     self.cfg.update('namd_cfg_opts', "--with-fftw3")
                 else:
-                    self.log.error("Using FFTW v3.x only supported in NAMD v2.9 and up.")
+                    raise EasyBuildError("Using FFTW v3.x only supported in NAMD v2.9 and up.")
             else:
                 self.cfg.update('namd_cfg_opts', "--with-fftw")
             self.cfg.update('namd_cfg_opts', "--fftw-prefix %s" % fftw)
@@ -134,7 +135,8 @@ class EB_NAMD(MakeCp):
                 if test_ok_regex.search(out):
                     self.log.debug("Test '%s' ran fine." % cmd)
                 else:
-                    self.log.error("Test '%s' failed ('%s' not found), output: %s" % (cmd, test_ok_regex.pattern, out))
+                    raise EasyBuildError("Test '%s' failed ('%s' not found), output: %s",
+                                         cmd, test_ok_regex.pattern, out)
         else:
             self.log.debug("Skipping running NAMD test case after building")
 
@@ -150,7 +152,7 @@ class EB_NAMD(MakeCp):
                 elif os.path.isfile(fullsrc):
                     shutil.copy2(fullsrc, self.installdir)
         except OSError, err:
-            self.log.error("Failed to copy NAMD build from %s to install directory: %s" % (srcdir, err))
+            raise EasyBuildError("Failed to copy NAMD build from %s to install directory: %s", srcdir, err)
 
     def make_module_extra(self):
         """Add the install directory to PATH"""
