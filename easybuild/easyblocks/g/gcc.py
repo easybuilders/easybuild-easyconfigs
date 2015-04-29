@@ -89,6 +89,8 @@ class EB_GCC(ConfigureMake):
         if get_os_name() not in ['ubuntu', 'debian']:
             self.cfg.update('unwanted_env_vars', ['LIBRARY_PATH'])
 
+        self.platform_lib = get_platform_name(withversion=True)
+
     def create_dir(self, dirname):
         """
         Create a dir to build in.
@@ -299,8 +301,6 @@ class EB_GCC(ConfigureMake):
         out, ec = run_cmd("../config.guess", simple=False)
         if ec == 0:
             self.platform_lib = out.rstrip()
-        else:
-            self.platform_lib = get_platform_name(withversion=True)
 
         self.run_configure_cmd(cmd)
 
