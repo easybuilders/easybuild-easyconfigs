@@ -33,8 +33,8 @@ from pkgutil import extend_path
 
 # note: release candidates should be versioned as a pre-release, e.g. "1.1rc1"
 # 1.1-rc1 would indicate a post-release, i.e., and update of 1.1, so beware
-VERSION = LooseVersion("2.1.0dev")
-UNKNOWN = "UNKNOWN"
+VERSION = LooseVersion('2.1.0')
+UNKNOWN = 'UNKNOWN'
 
 
 def get_git_revision():
