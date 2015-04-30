@@ -36,6 +36,7 @@ import os
 import shutil
 
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
+from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.modules import get_software_root
 
 
@@ -51,7 +52,7 @@ class EB_g2lib(ConfigureMake):
 
         jasper = get_software_root('JASPER')
         if not jasper:
-            self.log.error("JasPer module not loaded?")
+            raise EasyBuildError("JasPer module not loaded?")
 
         buildopts = 'CC="%s" FC="%s" INCDIR="-I%s/include"' % (os.getenv('CC'), os.getenv('F90'), jasper)
         self.cfg.update('buildopts', buildopts)
@@ -67,7 +68,7 @@ class EB_g2lib(ConfigureMake):
             fn = "libg2.a"
             shutil.copyfile(os.path.join(self.cfg['start_dir'], fn), os.path.join(targetdir, fn))
         except OSError, err:
-            self.log.error("Failed to copy files to install dir: %s" % err)
+            raise EasyBuildError("Failed to copy files to install dir: %s", err)
 
     def sanity_check_step(self):
         """Custom sanity check for g2lib."""

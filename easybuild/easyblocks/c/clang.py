@@ -42,6 +42,7 @@ from distutils.version import LooseVersion
 
 from easybuild.easyblocks.generic.cmakemake import CMakeMake
 from easybuild.framework.easyconfig import CUSTOM
+from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.filetools import mkdir
 from easybuild.tools.modules import get_software_root
 from easybuild.tools.run import run_cmd
@@ -81,22 +82,22 @@ class EB_Clang(CMakeMake):
         unknown_targets = [target for target in self.cfg['build_targets'] if target not in CLANG_TARGETS]
 
         if unknown_targets:
-            self.log.error("Some of the chosen build targets (%s) are not in %s." % (", ".join(unknown_targets),
-                                                                                     ", ".join(CLANG_TARGETS)))
+            raise EasyBuildError("Some of the chosen build targets (%s) are not in %s.",
+                                 ', '.join(unknown_targets), ', '.join(CLANG_TARGETS))
 
         if LooseVersion(self.version) < LooseVersion('3.4') and "R600" in self.cfg['build_targets']:
-            self.log.error("Build target R600 not supported in < Clang-3.4")
+            raise EasyBuildError("Build target R600 not supported in < Clang-3.4")
 
         if LooseVersion(self.version) > LooseVersion('3.3') and "MBlaze" in self.cfg['build_targets']:
-            self.log.error("Build target MBlaze is not supported anymore in > Clang-3.3")
+            raise EasyBuildError("Build target MBlaze is not supported anymore in > Clang-3.3")
 
     def check_readiness_step(self):
         """Fail early on RHEL 5.x and derivatives because of known bug in libc."""
         super(EB_Clang, self).check_readiness_step()
         # RHEL 5.x have a buggy libc.  Building stage 2 will fail.
         if get_os_name() in ['redhat', 'RHEL', 'centos', 'SL'] and get_os_version().startswith('5.'):
-            self.log.error(("Can not build clang on %s v5.x: libc is buggy, building stage 2 will fail.  " +
-                            "See http://stackoverflow.com/questions/7276828/") % get_os_name())
+            raise EasyBuildError("Can not build Clang on %s v5.x: libc is buggy, building stage 2 will fail. "
+                                 "See http://stackoverflow.com/questions/7276828/", get_os_name())
 
     def extract_step(self):
         """
@@ -119,11 +120,11 @@ class EB_Clang(CMakeMake):
                 break
 
         if self.llvm_src_dir is None:
-            self.log.error("Could not determine LLVM source root (LLVM source was not unpacked?)")
+            raise EasyBuildError("Could not determine LLVM source root (LLVM source was not unpacked?)")
 
         compiler_rt_src_dirs = glob.glob('compiler-rt-*')
         if len(compiler_rt_src_dirs) != 1:
-            self.log.error("Failed to find exactly one compiler-rt source directory: %s" % compiler_rt_src_dirs)
+            raise EasyBuildError("Failed to find exactly one compiler-rt source directory: %s", compiler_rt_src_dirs)
         compiler_rt_src_dir = compiler_rt_src_dirs[0]
 
         src_dirs = {
@@ -133,14 +134,14 @@ class EB_Clang(CMakeMake):
         if self.cfg["usepolly"]:
             polly_src_dirs = glob.glob('polly-*')
             if len(polly_src_dirs) != 1:
-                self.log.error("Failed to find exactly one polly source directory: %s" % polly_src_dirs)
+                raise EasyBuildError("Failed to find exactly one polly source directory: %s", polly_src_dirs)
             polly_src_dir = polly_src_dirs[0]
             src_dirs[polly_src_dir] = os.path.join(self.llvm_src_dir, 'tools', 'polly')
 
         clang_src_dirs = glob.glob('clang-*') + glob.glob('cfe-*')
 
         if len(clang_src_dirs) != 1:
-            self.log.error("Failed to find exactly one clang source directory: %s" % clang_src_dirs)
+            raise EasyBuildError("Failed to find exactly one clang source directory: %s", clang_src_dirs)
         clang_src_dir = clang_src_dirs[0]
 
         src_dirs[clang_src_dir] = os.path.join(self.llvm_src_dir, 'tools', 'clang')
@@ -152,7 +153,7 @@ class EB_Clang(CMakeMake):
                     try:
                         shutil.move(old_path, new_path)
                     except IOError, err:
-                        self.log.error("Failed to move %s to %s: %s" % (old_path, new_path, err))
+                        raise EasyBuildError("Failed to move %s to %s: %s", old_path, new_path, err)
                     tmp['finalpath'] = new_path
                     break
 
@@ -219,7 +220,7 @@ class EB_Clang(CMakeMake):
                             if "add_subdirectory(lit_tests)" not in line:
                                 sys.stdout.write(line)
                     except (IOError, OSError), err:
-                        self.log.error("Failed to patch %s: %s" % (patchfile_fp, err))
+                        raise EasyBuildError("Failed to patch %s: %s", patchfile_fp, err)
                 else:
                     self.log.debug("Not patching non-existent %s in %s" % (patchfile, self.llvm_src_dir))
 
@@ -231,7 +232,7 @@ class EB_Clang(CMakeMake):
                     if "add_subdirectory(tests)" not in line:
                         sys.stdout.write(line)
             except IOError, err:
-                self.log.error("Failed to patch %s/%s: %s" % (self.llvm_src_dir, patchfile, err))
+                raise EasyBuildError("Failed to patch %s/%s: %s", self.llvm_src_dir, patchfile, err)
         else:
             # In Clang 3.6, the sanitizer tests are grouped together in one CMakeLists
             # We patch out adding the subdirectories with the sanitizer tests
@@ -244,7 +245,7 @@ class EB_Clang(CMakeMake):
                     if not patch_regex.search(line):
                         sys.stdout.write(line)
             except IOError, err:
-                self.log.error("Failed to patch %s: %s" % (patchfile_fp, err))
+                raise EasyBuildError("Failed to patch %s: %s", patchfile_fp, err)
 
     def build_with_prev_stage(self, prev_obj, next_obj):
         """Build Clang stage N using Clang stage N-1"""
@@ -327,7 +328,7 @@ class EB_Clang(CMakeMake):
                 os.makedirs(mandir)
                 shutil.copy2(os.path.join(tools_src_dir, 'scan-build', 'scan-build.1'), mandir)
             except OSError, err:
-                self.log.error("Failed to copy static analyzer dirs to install dir: %s" % err)
+                raise EasyBuildError("Failed to copy static analyzer dirs to install dir: %s", err)
 
     def sanity_check_step(self):
         """Custom sanity check for Clang."""
@@ -352,5 +353,6 @@ class EB_Clang(CMakeMake):
         """Custom variables for Clang module."""
         txt = super(EB_Clang, self).make_module_extra()
         # we set the symbolizer path so that asan/tsan give meanfull output by default
-        txt += self.module_generator.set_environment('ASAN_SYMBOLIZER_PATH', '$root/bin/llvm-symbolizer')
+        asan_symbolizer_path = os.path.join(self.installdir, 'bin', 'llvm-symbolizer')
+        txt += self.module_generator.set_environment('ASAN_SYMBOLIZER_PATH', asan_symbolizer_path)
         return txt

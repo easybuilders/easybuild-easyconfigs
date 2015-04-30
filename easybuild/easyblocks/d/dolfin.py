@@ -35,6 +35,7 @@ import tempfile
 import easybuild.tools.environment as env
 import easybuild.tools.toolchain as toolchain
 from easybuild.easyblocks.generic.cmakepythonpackage import CMakePythonPackage
+from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.filetools import rmtree2
 from easybuild.tools.modules import get_software_root, get_software_version
 
@@ -86,7 +87,7 @@ class EB_DOLFIN(CMakePythonPackage):
             self.cfg.update('configopts', ' -DMPI_LIBRARY="%s"' % os.getenv('MPI_LIB_SHARED'))
             self.cfg.update('configopts', ' -DMPI_INCLUDE_PATH="%s"' % os.getenv('MPI_INC_DIR'))
         else:
-            self.log.error('MPI_LIB_SHARED or MPI_INC_DIR not set, could not determine MPI-related paths.')
+            raise EasyBuildError("MPI_LIB_SHARED or MPI_INC_DIR not set, could not determine MPI-related paths.")
 
         # save config options to reuse them later (e.g. for sanity check commands)
         self.saved_configopts = self.cfg['configopts']
@@ -98,7 +99,7 @@ class EB_DOLFIN(CMakePythonPackage):
         for dep in deps:
             deproot = get_software_root(dep)
             if not deproot:
-                self.log.error("Dependency %s not available." % dep)
+                raise EasyBuildError("Dependency %s not available.", dep)
             else:
                 depsdict.update({dep:deproot})
 
@@ -170,7 +171,7 @@ class EB_DOLFIN(CMakePythonPackage):
         # make sure that all optional packages are found
         not_found_re = re.compile("The following optional packages could not be found")
         if not_found_re.search(out):
-            self.log.error("Optional packages could not be found, this should not happen...")
+            raise EasyBuildError("Optional packages could not be found, this should not happen...")
 
         # enable verbose build, so we have enough information if something goes wrong
         self.cfg.update('buildopts', "VERBOSE=1")
@@ -212,7 +213,7 @@ class EB_DOLFIN(CMakePythonPackage):
             os.makedirs(instant_cache_dir)
             os.makedirs(instant_error_dir)
         except OSError, err:
-            self.log.error("Failed to create Instant cache/error dirs: %s" % err)
+            raise EasyBuildError("Failed to create Instant cache/error dirs: %s", err)
 
         # keep track of $LDFLAGS, so we can restore them for the sanity check commands
         # this is required to make sure that linking of libraries (OpenBLAS, etc.) works as expected
@@ -281,4 +282,4 @@ class EB_DOLFIN(CMakePythonPackage):
         try:
             rmtree2(tmpdir)
         except OSError, err:
-            self.log.error("Failed to remove Instant cache/error dirs: %s" % err)
+            raise EasyBuildError("Failed to remove Instant cache/error dirs: %s", err)

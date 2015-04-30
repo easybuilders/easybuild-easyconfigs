@@ -30,6 +30,7 @@ EasyBuild support for Armadillo, implemented as an easyblock
 import os
 
 from easybuild.easyblocks.generic.cmakemake import CMakeMake
+from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.modules import get_software_root
 
 
@@ -41,7 +42,7 @@ class EB_Armadillo(CMakeMake):
 
         boost = get_software_root('Boost')
         if not boost:
-            self.log.error("Dependency module Boost not loaded?")
+            raise EasyBuildError("Dependency module Boost not loaded?")
 
         self.cfg.update('configopts', "-DBoost_DIR=%s" % boost)
         self.cfg.update('configopts', "-DBOOST_INCLUDEDIR=%s/include" % boost)

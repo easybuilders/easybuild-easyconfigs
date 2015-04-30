@@ -39,6 +39,7 @@ import sys
 
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.easyblocks.perl import get_major_perl_version
+from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.run import run_cmd
 
 
@@ -94,7 +95,7 @@ class EB_MUMmer(ConfigureMake):
                     shutil.copy2(srcfile, destdir)
 
             except OSError, err:
-                self.log.error("Copying %s to installation dir %s failed: %s" % (srcfile, destdir, err))
+                raise EasyBuildError("Copying %s to installation dir %s failed: %s", srcfile, destdir, err)
 
     def make_module_extra(self):
         """Correctly prepend $PATH and $PERLXLIB for MUMmer."""

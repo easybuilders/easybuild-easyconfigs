@@ -37,6 +37,7 @@ import shutil
 
 from easybuild.easyblocks.r import EXTS_FILTER_R_PACKAGES, EB_R
 from easybuild.framework.extensioneasyblock import ExtensionEasyBlock
+from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.run import run_cmd, parse_log_for_error
 
 
@@ -132,12 +133,12 @@ class RPackage(ExtensionEasyBlock):
         """Source should not be extracted."""
         pass
         if len(self.src) > 1:
-            self.log.error("Don't know how to handle R packages with multiple sources.'")
+            raise EasyBuildError("Don't know how to handle R packages with multiple sources.'")
         else:
             try:
                 shutil.copy2(self.src[0]['path'], self.builddir)
             except OSError, err:
-                self.log.error("Failed to copy source to build dir: %s" % err)
+                raise EasyBuildError("Failed to copy source to build dir: %s", err)
             self.ext_src = self.src[0]['name']
 
             # set final path since it can't be determined from unpacked sources (used for guessing start_dir)
@@ -165,7 +166,7 @@ class RPackage(ExtensionEasyBlock):
             # remove package if errors were detected
             # it's possible that some of the dependencies failed, but the package itself was installed
             run_cmd(cmd, log_all=False, log_ok=False, simple=False, inp=stdin, regexp=False)
-            self.log.error("Errors detected during installation of R package %s!" % self.name)
+            raise EasyBuildError("Errors detected during installation of R package %s!", self.name)
         else:
             self.log.debug("R package %s installed succesfully" % self.name)
 

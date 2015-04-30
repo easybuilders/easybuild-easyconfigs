@@ -38,6 +38,7 @@ import shutil
 
 from distutils.version import LooseVersion
 from easybuild.framework.easyblock import EasyBlock
+from easybuild.tools.build_log import EasyBuildError
 
 
 class EB_picard(EasyBlock):
@@ -58,7 +59,7 @@ class EB_picard(EasyBlock):
         if not re.search("%s/?$" % picard_tools_dir, self.cfg['start_dir']):
             self.cfg['start_dir'] = os.path.join(self.cfg['start_dir'], picard_tools_dir)
             if not os.path.exists(self.cfg['start_dir']):
-                self.log.error("Path %s to copy files from doesn't exist." % self.cfg['start_dir'])
+                raise EasyBuildError("Path %s to copy files from doesn't exist.", self.cfg['start_dir'])
 
         for jar in os.listdir(self.cfg['start_dir']):
             src = os.path.join(self.cfg['start_dir'], jar)
@@ -67,7 +68,7 @@ class EB_picard(EasyBlock):
                 shutil.copy2(src, dst)
                 self.log.info("Successfully copied %s to %s" % (src, dst))
             except OSError, err:
-                self.log.error("Failed to copy %s to %s (%s)" % (src, dst, err))
+                raise EasyBuildError("Failed to copy %s to %s (%s)", src, dst, err)
 
     def sanity_check_step(self):
         """Custom sanity check for picard"""

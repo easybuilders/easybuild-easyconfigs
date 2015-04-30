@@ -27,19 +27,18 @@ EasyBuild support for installing Tornado, implemented as an easyblock
 
 @author: Jens Timmerman (Ghent University)
 """
-
+import os
 from easybuild.easyblocks.generic.packedbinary import PackedBinary
 
 class EB_Tornado(PackedBinary):
     """EasyBlock for Tornado"""
 
     def sanity_check_step(self):
-
+        """Custom sanity check for Tornado."""
         custom_paths = {
-                        'files':[],
-                        'dirs':["Tornado/bin/linux/", "ThirdParty/bin/linux/"]
-                       }
-
+            'files': [],
+            'dirs': ["Tornado/bin/linux/", "ThirdParty/bin/linux/"],
+        }
         super(EB_Tornado, self).sanity_check_step(custom_paths=custom_paths)
 
     def make_module_extra(self):
@@ -48,8 +47,8 @@ class EB_Tornado(PackedBinary):
         txt = super(EB_Tornado, self).make_module_extra()
 
         txt += self.module_generator.prepend_paths('LD_LIBRARY_PATH', ["Tornado/bin/linux/", "ThirdParty/bin/linux/"])
-        txt += self.module_generator.prepend_paths('PATH', ["Tornado/bin/linux/"] )
-        txt += self.module_generator.set_environment('TORNADO_ROOT_PATH', "$root" )
-        txt += self.module_generator.set_environment('TORNADO_DATA_PATH', "$root/Data/WEST" )
+        txt += self.module_generator.prepend_paths('PATH', ["Tornado/bin/linux/"])
+        txt += self.module_generator.set_environment('TORNADO_ROOT_PATH', self.installdir)
+        txt += self.module_generator.set_environment('TORNADO_DATA_PATH', os.path.join(self.installdir, 'Data', 'WEST'))
 
         return txt

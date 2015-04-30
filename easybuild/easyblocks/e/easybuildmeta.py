@@ -34,6 +34,7 @@ from distutils.version import LooseVersion
 
 import easybuild.tools.environment as env
 from easybuild.easyblocks.generic.pythonpackage import PythonPackage, det_pylibdir
+from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.filetools import read_file
 from easybuild.tools.modules import get_software_root_env_var_name
 from easybuild.tools.ordereddict import OrderedDict
@@ -48,7 +49,7 @@ class EB_EasyBuildMeta(PythonPackage):
     def __init__(self, *args, **kwargs):
         """Initialize custom class variables."""
         super(EB_EasyBuildMeta, self).__init__(*args, **kwargs)
-        self.orig_orig_environ = None
+        self.real_initial_environ = None
 
         self.easybuild_pkgs = ['easybuild-framework', 'easybuild-easyblocks', 'easybuild-easyconfigs']
         if LooseVersion(self.version) >= LooseVersion('2.0'):
@@ -80,16 +81,19 @@ class EB_EasyBuildMeta(PythonPackage):
             subdirs = os.listdir(self.builddir)
             for pkg in self.easybuild_pkgs:
                 seldirs = [x for x in subdirs if x.startswith(pkg)]
-                if not len(seldirs) == 1:
-                    tup = (pkg, subdirs, seldirs)
-                    self.log.error("Failed to find EasyBuild %s package (subdirs: %s, seldirs: %s)" % tup)
+                if len(seldirs) != 1:
+                    # vsc-base sources are optional, can be pulled in from PyPi when installing easybuild-framework too
+                    if pkg != 'vsc-base':
+                        raise EasyBuildError("Failed to find EasyBuild %s package (subdirs: %s, seldirs: %s)",
+                                             pkg, subdirs, seldirs)
 
-                self.log.debug("Installing EasyBuild package %s" % pkg)
-                os.chdir(os.path.join(self.builddir, seldirs[0]))
-                super(EB_EasyBuildMeta, self).install_step()
+                else:
+                    self.log.info("Installing EasyBuild package %s" % pkg)
+                    os.chdir(os.path.join(self.builddir, seldirs[0]))
+                    super(EB_EasyBuildMeta, self).install_step()
 
         except OSError, err:
-            self.log.error("Failed to install EasyBuild packages: %s" % err)
+            raise EasyBuildError("Failed to install EasyBuild packages: %s", err)
 
         env.setvar('PYTHONPATH', orig_pythonpath)
 
@@ -109,8 +113,8 @@ class EB_EasyBuildMeta(PythonPackage):
                     pkg_regex = re.compile(r"^\./%s-%s" % (pkg.replace('-', '_'), major_minor_version), re.M)
 
                 if not pkg_regex.search(easy_install_pth_txt):
-                    tup = (pkg_regex.pattern, easy_install_pth, easy_install_pth_txt)
-                    self.log.error("Failed to find pattern '%s' in %s: %s" % tup)
+                    raise EasyBuildError("Failed to find pattern '%s' in %s: %s",
+                                         pkg_regex.pattern, easy_install_pth, easy_install_pth_txt)
 
         # list of dirs to check, by package
         # boolean indicates whether dir is expected to reside in Python lib/pythonX/site-packages dir
@@ -150,13 +154,13 @@ class EB_EasyBuildMeta(PythonPackage):
                 for (pkg, subdirs) in subdirs_by_pkg.items():
                     sel_dirs = [x for x in installed_dirs if x.startswith(pkg.replace('-', '_'))]
                     if not len(sel_dirs) == 1:
-                        self.log.error("Failed to isolate installed egg dir for %s" % pkg)
+                        raise EasyBuildError("Failed to isolate installed egg dir for %s", pkg)
 
                     for (subdir, _) in subdirs:
                         # eggs always go in Python lib/pythonX/site-packages dir with setuptools 
                         eb_dirs['setuptools'].append((os.path.join(sel_dirs[0], subdir), True))
             except OSError, err:
-                self.log.error("Failed to determine sanity check dir paths: %s" % err)
+                raise EasyBuildError("Failed to determine sanity check dir paths: %s", err)
 
         # set of sanity check paths to check for EasyBuild
         custom_paths = {
@@ -178,11 +182,11 @@ class EB_EasyBuildMeta(PythonPackage):
             (eb_cmd, '-e ConfigureMake -a'),
         ]
 
-        # (temporary) cleanse copy of original environment to avoid conflict with (potentially) loaded EasyBuild module
-        self.orig_orig_environ = copy.deepcopy(self.orig_environ)
+        # (temporary) cleanse copy of initial environment to avoid conflict with (potentially) loaded EasyBuild module
+        self.real_initial_environ = copy.deepcopy(self.initial_environ)
         for env_var in ['_LMFILES_', 'LOADEDMODULES']:
-            if env_var in self.orig_environ:
-                self.orig_environ.pop(env_var)
+            if env_var in self.initial_environ:
+                self.initial_environ.pop(env_var)
                 os.environ.pop(env_var)
                 self.log.debug("Unset $%s in current env and copy of original env to make sanity check work" % env_var)
 
@@ -194,7 +198,7 @@ class EB_EasyBuildMeta(PythonPackage):
 
         if not fake:
             # restore copy of original environment
-            self.orig_environ = copy.deepcopy(self.orig_orig_environ)
+            self.initial_environ = copy.deepcopy(self.real_initial_environ)
             self.log.debug("Restored copy of original environment")
 
         return modpath

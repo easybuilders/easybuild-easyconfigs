@@ -23,6 +23,7 @@ import os
 import sys
 
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
+from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.modules import get_software_root
 
 
@@ -37,7 +38,7 @@ class EB_Cufflinks(ConfigureMake):
         """
         for dep in ['Boost', 'Eigen', 'SAMtools']:
             if not get_software_root(dep):
-                self.log.error("Dependency module %s not loaded?" % dep)
+                raise EasyBuildError("Dependency module %s not loaded?", dep)
 
         super(EB_Cufflinks, self).configure_step()
 

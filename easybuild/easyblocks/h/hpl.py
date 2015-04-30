@@ -36,6 +36,7 @@ import os
 import shutil
 
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
+from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.run import run_cmd
 
 
@@ -63,7 +64,7 @@ class EB_HPL(ConfigureMake):
         try:
             os.chdir(setupdir)
         except OSError, err:
-            self.log.exception("Failed to change to to dir %s: %s" % (setupdir, err))
+            raise EasyBuildError("Failed to change to to dir %s: %s", setupdir, err)
 
         cmd = "/bin/bash make_generic"
 
@@ -72,7 +73,7 @@ class EB_HPL(ConfigureMake):
         try:
             os.symlink(os.path.join(setupdir, 'Make.UNKNOWN'), os.path.join(makeincfile))
         except OSError, err:
-            self.log.exception("Failed to symlink Make.UNKNOWN from %s to %s: %s" % (setupdir, makeincfile, err))
+            raise EasyBuildError("Failed to symlink Make.UNKNOWN from %s to %s: %s", setupdir, makeincfile, err)
 
         # go back
         os.chdir(self.cfg['start_dir'])
@@ -83,8 +84,9 @@ class EB_HPL(ConfigureMake):
         """
 
         for envvar in ['MPICC', 'LIBLAPACK_MT', 'CPPFLAGS', 'LDFLAGS', 'CFLAGS']:
-            if not os.getenv(envvar):
-                self.log.error("Required environment variable %s not found (no toolchain used?)." % envvar)
+            # environment variable may be defined but empty
+            if os.getenv(envvar, None) is None:
+                raise EasyBuildError("Required environment variable %s not found (no toolchain used?).", envvar)
 
         # build dir
         extra_makeopts = 'TOPdir="%s" ' % self.cfg['start_dir']
@@ -121,7 +123,7 @@ class EB_HPL(ConfigureMake):
                 srcfile = os.path.join(srcdir, filename)
                 shutil.copy2(srcfile, destdir)
         except OSError, err:
-            self.log.exception("Copying %s to installation dir %s failed: %s" % (srcfile, destdir, err))
+            raise EasyBuildError("Copying %s to installation dir %s failed: %s", srcfile, destdir, err)
 
     def sanity_check_step(self):
         """

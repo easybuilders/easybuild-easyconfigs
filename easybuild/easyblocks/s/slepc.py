@@ -30,10 +30,12 @@ EasyBuild support for SLEPc, implemented as an easyblock
 
 import os
 import re
+from distutils.version import LooseVersion
 
 import easybuild.tools.environment as env
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.framework.easyconfig import BUILD, CUSTOM
+from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.modules import get_software_root
 from easybuild.tools.run import run_cmd
 
@@ -41,25 +43,21 @@ from easybuild.tools.run import run_cmd
 class EB_SLEPc(ConfigureMake):
     """Support for building and installing SLEPc"""
 
-    def __init__(self, *args, **kwargs):
-        """Initialize SLEPc custom variables."""
-        super(EB_SLEPc, self).__init__(*args, **kwargs)
-
-        self.slepc_arch_dir = None
-
-        self.slepc_subdir = ''
-        if self.cfg['sourceinstall']:
-            self.slepc_subdir = os.path.join('%s-%s' % (self.name.lower(), self.version),
-                                             os.getenv('PETSC_ARCH'))
-
     @staticmethod
     def extra_options():
         """Add extra config options specific to SLEPc."""
         extra_vars = {
-            'sourceinstall': [False, "Indicates whether a source installation should be performed", CUSTOM],
             'runtest': ['test', "Make target to test build", BUILD],
+            'petsc_arch': [None, "PETSc architecture to use (value for $PETSC_ARCH)", CUSTOM],
+            'sourceinstall': [False, "Indicates whether a source installation should be performed", CUSTOM],
         }
         return ConfigureMake.extra_options(extra_vars)
+
+    def __init__(self, *args, **kwargs):
+        """Initialize SLEPc custom variables."""
+        super(EB_SLEPc, self).__init__(*args, **kwargs)
+
+        self.slepc_subdir = ''
 
     def make_builddir(self):
         """Decide whether or not to build in install dir before creating build dir."""
@@ -73,7 +71,7 @@ class EB_SLEPc(ConfigureMake):
 
         # check PETSc dependency
         if not get_software_root("PETSc"):
-            self.log.error("PETSc module not loaded?")
+            raise EasyBuildError("PETSc module not loaded?")
 
         # set SLEPC_DIR environment variable
         env.setvar('SLEPC_DIR', self.cfg['start_dir'])
@@ -103,20 +101,30 @@ class EB_SLEPc(ConfigureMake):
         # check for errors in configure
         error_regexp = re.compile("ERROR")
         if error_regexp.search(out):
-            self.log.error("Error(s) detected in configure output!")
+            raise EasyBuildError("Error(s) detected in configure output!")
 
-        # set default PETSC_ARCH if required
-        if not os.getenv('PETSC_ARCH'):
-            env.setvar('PETSC_ARCH' , 'arch-installed-petsc')
+        # define $PETSC_ARCH
+        petsc_arch = self.cfg['petsc_arch']
+        if self.cfg['petsc_arch'] is None:
+            petsc_arch = 'arch-installed-petsc'
+
+        env.setvar('PETSC_ARCH', petsc_arch)
+
+        if self.cfg['sourceinstall']:
+            self.slepc_subdir = os.path.join('%s-%s' % (self.name.lower(), self.version), petsc_arch)
+
+        # SLEPc > 3.5, make does not accept -j
+        if LooseVersion(self.version) >= LooseVersion("3.5"):
+            self.cfg['parallel'] = None
 
     def make_module_req_guess(self):
         """Specify correct LD_LIBRARY_PATH and CPATH for SLEPc installation."""
         guesses = super(EB_SLEPc, self).make_module_req_guess()
 
         guesses.update({
-                        'CPATH': [os.path.join(self.slepc_subdir, "include")],
-                        'LD_LIBRARY_PATH': [os.path.join(self.slepc_subdir, "lib")]
-                        })
+            'CPATH': [os.path.join(self.slepc_subdir, "include")],
+            'LD_LIBRARY_PATH': [os.path.join(self.slepc_subdir, "lib")],
+        })
 
         return guesses
 
@@ -125,20 +133,18 @@ class EB_SLEPc(ConfigureMake):
         txt = super(EB_SLEPc, self).make_module_extra()
 
         if self.cfg['sourceinstall']:
-            txt += self.module_generator.set_environment('SLEPC_DIR', '$root/%s-%s' % (self.name.lower(),
-                                                                                     self.version))
+            subdir = '%s-%s' % (self.name.lower(), self.version)
+            txt += self.module_generator.set_environment('SLEPC_DIR', os.path.join(self.installdir, subdir))
 
         else:
-            txt += self.module_generator.set_environment('SLEPC_DIR', '$root')
+            txt += self.module_generator.set_environment('SLEPC_DIR', self.installdir)
 
         return txt
 
     def sanity_check_step(self):
         """Custom sanity check for SLEPc"""
-
         custom_paths = {
-                        'files': [],
-                        'dirs': [os.path.join(self.slepc_subdir, x) for x in ["conf", "include", "lib"]]
-                       }
-
+            'files': [],
+            'dirs': [os.path.join(self.slepc_subdir, x) for x in ["conf", "include", "lib"]],
+        }
         super(EB_SLEPc, self).sanity_check_step(custom_paths=custom_paths)

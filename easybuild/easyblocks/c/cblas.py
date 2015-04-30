@@ -33,6 +33,7 @@ import os
 import shutil
 
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
+from easybuild.tools.build_log import EasyBuildError
 
 
 class EB_CBLAS(ConfigureMake):
@@ -48,7 +49,7 @@ class EB_CBLAS(ConfigureMake):
         try:
             shutil.copy2('Makefile.LINUX', 'Makefile.in')
         except OSError, err:
-            self.log.error("Failed to copy makefile: %s" % err)
+            raise EasyBuildError("Failed to copy makefile: %s", err)
 
         if not self.cfg['buildopts']:
             self.cfg.update('buildopts', 'all')
@@ -78,7 +79,7 @@ class EB_CBLAS(ConfigureMake):
                 for solib in glob.glob(os.path.join(srcdir, 'libcblas.so*')):
                     shutil.copy2(solib, targetdir)
         except OSError, err:
-            self.log.error("Failed to install CBLAS (srcdir: %s, targetdir: %s): %s" % (srcdir, targetdir, err))
+            raise EasyBuildError("Failed to install CBLAS (srcdir: %s, targetdir: %s): %s", srcdir, targetdir, err)
 
     def sanity_check_step(self):
         """

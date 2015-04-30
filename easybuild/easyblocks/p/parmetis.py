@@ -36,6 +36,7 @@ import shutil
 from distutils.version import LooseVersion
 
 from easybuild.framework.easyblock import EasyBlock
+from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.filetools import mkdir
 from easybuild.tools.run import run_cmd
 
@@ -73,7 +74,7 @@ class EB_ParMETIS(EasyBlock):
                 run_cmd(cmd, log_all=True, simple=True)
                 os.chdir(self.cfg['start_dir'])
             except OSError, err:
-                self.log.error("Running cmake in %s failed: %s" % (self.parmetis_builddir, err))
+                raise EasyBuildError("Running cmake in %s failed: %s", self.parmetis_builddir, err)
 
     def build_step(self, verbose=False):
         """Build ParMETIS (and METIS) using build_step."""
@@ -99,7 +100,7 @@ class EB_ParMETIS(EasyBlock):
                 run_cmd(cmd, log_all=True, simple=True, log_output=verbose)
                 os.chdir(self.cfg['start_dir'])
             except OSError, err:
-                self.log.error("Running cmd '%s' in %s failed: %s" % (cmd, self.parmetis_builddir, err))
+                raise EasyBuildError("Running cmd '%s' in %s failed: %s", cmd, self.parmetis_builddir, err)
         else:
             run_cmd(cmd, log_all=True, simple=True, log_output=verbose)
 
@@ -120,7 +121,7 @@ class EB_ParMETIS(EasyBlock):
                 run_cmd(cmd, log_all=True, simple=True)
                 os.chdir(self.cfg['start_dir'])
             except OSError, err:
-                self.log.error("Running '%s' in %s failed: %s" % (cmd, self.parmetis_builddir, err))
+                raise EasyBuildError("Running '%s' in %s failed: %s", cmd, self.parmetis_builddir, err)
 
             # libraries
             try:
@@ -128,7 +129,7 @@ class EB_ParMETIS(EasyBlock):
                 dst = os.path.join(libdir, 'libmetis.a')
                 shutil.copy2(src, dst)
             except OSError, err:
-                self.log.error("Copying files to installation dir failed: %s" % err)
+                raise EasyBuildError("Copying files to installation dir failed: %s", err)
 
             # include files
             try:
@@ -136,7 +137,7 @@ class EB_ParMETIS(EasyBlock):
                 dst = os.path.join(includedir, 'metis.h')
                 shutil.copy2(src, dst)
             except OSError, err:
-                self.log.error("Copying files to installation dir failed: %s" % err)
+                raise EasyBuildError("Copying files to installation dir failed: %s", err)
 
         else:
             mkdir(libdir)
@@ -149,7 +150,7 @@ class EB_ParMETIS(EasyBlock):
                     dst = os.path.join(libdir, fil)
                     shutil.copy2(src, dst)
             except OSError, err:
-                self.log.error("Copying files to installation dir failed: %s" % err)
+                raise EasyBuildError("Copying files to installation dir failed: %s", err)
 
             # include files
             try:
@@ -160,7 +161,7 @@ class EB_ParMETIS(EasyBlock):
                 dst = os.path.join(includedir, 'metis.h')
                 shutil.copy2(src, dst)
             except OSError, err:
-                self.log.error("Copying files to installation dir failed: %s" % err)
+                raise EasyBuildError("Copying files to installation dir failed: %s", err)
 
         # other applications depending on ParMETIS (SuiteSparse for one) look for both ParMETIS libraries
         # and header files in the Lib directory (capital L). The following symlink are hence created.
@@ -170,7 +171,7 @@ class EB_ParMETIS(EasyBlock):
             for f in ['metis.h', 'parmetis.h']:
                 os.symlink(os.path.join(includedir, f), os.path.join(libdir, f))
         except OSError, err:
-            self.log.error("Something went wrong during symlink creation: %s" % err)
+            raise EasyBuildError("Something went wrong during symlink creation: %s", err)
 
     def sanity_check_step(self):
         """Custom sanity check for ParMETIS."""

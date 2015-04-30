@@ -34,8 +34,8 @@ EasyBuild support for building and installing GCC, implemented as an easyblock
 @author: Ward Poelmans (Ghent University)
 """
 
-import re
 import os
+import re
 import shutil
 from copy import copy
 from distutils.version import LooseVersion
@@ -44,6 +44,7 @@ from vsc.utils.missing import any
 import easybuild.tools.environment as env
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.framework.easyconfig import CUSTOM
+from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.modules import get_software_root
 from easybuild.tools.run import run_cmd
 from easybuild.tools.systemtools import check_os_dependency, get_os_name, get_os_type, get_shared_lib_ext, get_platform_name
@@ -74,18 +75,21 @@ class EB_GCC(ConfigureMake):
 
         self.stagedbuild = False
 
-        if self.version >= LooseVersion("4.8.0") and self.cfg['clooguseisl'] and not self.cfg['withisl']:
-            self.log.error("Using ISL bundled with CLooG is unsupported in >=GCC-4.8.0. Use a seperate ISL: set withisl=True")
+        if LooseVersion(self.version) >= LooseVersion("4.8.0") and self.cfg['clooguseisl'] and not self.cfg['withisl']:
+            raise EasyBuildError("Using ISL bundled with CLooG is unsupported in >=GCC-4.8.0. "
+                                 "Use a seperate ISL: set withisl=True")
 
-        # I think ISL without CLooG has no purpose in GCC...
-        if self.cfg['withisl'] and not self.cfg['withcloog']:
-            self.log.error("Activating ISL without CLooG is pointless")
+        # I think ISL without CLooG has no purpose in GCC < 5.0.0 ...
+        if LooseVersion(self.version) < LooseVersion("5.0.0") and self.cfg['withisl'] and not self.cfg['withcloog']:
+            raise EasyBuildError("Activating ISL without CLooG is pointless")
 
         # unset some environment variables that are known to may cause nasty build errors when bootstrapping
         self.cfg.update('unwanted_env_vars', ['CPATH', 'C_INCLUDE_PATH', 'CPLUS_INCLUDE_PATH', 'OBJC_INCLUDE_PATH'])
         # ubuntu needs the LIBRARY_PATH env var to work apparently (#363)
         if get_os_name() not in ['ubuntu', 'debian']:
             self.cfg.update('unwanted_env_vars', ['LIBRARY_PATH'])
+
+        self.platform_lib = get_platform_name(withversion=True)
 
     def create_dir(self, dirname):
         """
@@ -98,7 +102,7 @@ class EB_GCC(ConfigureMake):
             self.log.debug("Created dir at %s" % dirpath)
             return dirpath
         except OSError, err:
-            self.log.error("Can't use dir %s to build in: %s" % (dirpath, err))
+            raise EasyBuildError("Can't use dir %s to build in: %s", dirpath, err)
 
     def prep_extra_src_dirs(self, stage, target_prefix=None):
         """
@@ -107,7 +111,7 @@ class EB_GCC(ConfigureMake):
         if LooseVersion(self.version) >= LooseVersion('4.5'):
             known_stages = ["stage1", "stage2", "stage3"]
             if stage not in known_stages:
-                self.log.error("Incorrect argument for prep_extra_src_dirs, should be one of: %s" % known_stages)
+                raise EasyBuildError("Incorrect argument for prep_extra_src_dirs, should be one of: %s", known_stages)
 
             configopts = ''
             if stage == "stage2":
@@ -164,7 +168,8 @@ class EB_GCC(ConfigureMake):
 
             # we need to find all dirs specified, or else...
             if not len(found_src_dirs) == len(extra_src_dirs):
-                self.log.error("Couldn't find all source dirs %s: found %s from %s" % (extra_src_dirs, found_src_dirs, all_dirs))
+                raise EasyBuildError("Couldn't find all source dirs %s: found %s from %s",
+                                     extra_src_dirs, found_src_dirs, all_dirs)
 
             # copy to a dir with name as expected by GCC build framework
             for d in found_src_dirs:
@@ -177,7 +182,7 @@ class EB_GCC(ConfigureMake):
                     try:
                         shutil.copytree(src, dst)
                     except OSError, err:
-                        self.log.error("Failed to copy src %s to dst %s: %s" % (src, dst, err))
+                        raise EasyBuildError("Failed to copy src %s to dst %s: %s", src, dst, err)
                     self.log.debug("Copied %s to %s, so GCC can build %s" % (src, dst, d['target_dir']))
                 else:
                     self.log.debug("No need to copy %s to %s, it's already there." % (src, dst))
@@ -200,7 +205,7 @@ class EB_GCC(ConfigureMake):
         (out, ec) = run_cmd("%s %s" % (self.cfg['preconfigopts'], cmd), log_all=True, simple=False)
 
         if ec != 0:
-            self.log.error("Command '%s' exited with exit code != 0 (%s)" % (cmd, ec))
+            raise EasyBuildError("Command '%s' exited with exit code != 0 (%s)", cmd, ec)
 
         # configure scripts tend to simply ignore unrecognized options
         # we should be more strict here, because GCC is very much a moving target
@@ -208,7 +213,7 @@ class EB_GCC(ConfigureMake):
 
         unknown_options = unknown_re.findall(out)
         if unknown_options:
-            self.log.error("Unrecognized options found during configure: %s" % unknown_options)
+            raise EasyBuildError("Unrecognized options found during configure: %s", unknown_options)
 
     def configure_step(self):
         """
@@ -248,8 +253,8 @@ class EB_GCC(ConfigureMake):
                 "gcc-c++-32bit",  # OpenSuSE, SLES
             ]
             if not any([check_os_dependency(dep) for dep in glibc_32bit]):
-                msg = "Using multilib requires 32-bit glibc (install one of %s, depending on your OS)" % ', '.join(glibc_32bit)
-                self.log.error(msg)
+                raise EasyBuildError("Using multilib requires 32-bit glibc (install one of %s, depending on your OS)",
+                                     ', '.join(glibc_32bit))
             self.configopts += " --enable-multilib --with-multilib-list=m32,m64"
         else:
             self.configopts += " --disable-multilib"
@@ -296,8 +301,6 @@ class EB_GCC(ConfigureMake):
         out, ec = run_cmd("../config.guess", simple=False)
         if ec == 0:
             self.platform_lib = out.rstrip()
-        else:
-            self.platform_lib = get_platform_name(withversion=True)
 
         self.run_configure_cmd(cmd)
 
@@ -347,7 +350,7 @@ class EB_GCC(ConfigureMake):
                     try:
                         os.chdir(libdir)
                     except OSError, err:
-                        self.log.error("Failed to change to %s: %s" % (libdir, err))
+                        raise EasyBuildError("Failed to change to %s: %s", libdir, err)
                     if lib == "gmp":
                         cmd = "./configure --prefix=%s " % stage2prefix
                         cmd += "--with-pic --disable-shared --enable-cxx"
@@ -365,7 +368,7 @@ class EB_GCC(ConfigureMake):
                             else:
                                 cmd += "--disable-watchdog "
                         elif self.cfg['pplwatchdog']:
-                            self.log.error("Enabling PPL watchdog only supported in PPL <= v0.11 .")
+                            raise EasyBuildError("Enabling PPL watchdog only supported in PPL <= v0.11 .")
 
                         # make sure GMP we just built is found
                         cmd += "--with-gmp=%s " % stage2prefix
@@ -389,14 +392,15 @@ class EB_GCC(ConfigureMake):
                                 self.log.debug("Using bundled ISL for CLooG")
                                 cmd += "--with-isl=bundled "
                             else:
-                                self.log.error("Using ISL is only supported in CLooG >= v0.16 (detected v%s)." % self.cloogver)
+                                raise EasyBuildError("Using ISL is only supported in CLooG >= v0.16 (detected v%s).",
+                                                     self.cloogver)
                         else:
                             if self.cloogname == "cloog-ppl" and self.cloogver >= v0_15 and self.cloogver < v0_16:
                                 cmd += "--with-ppl=%s " % stage2prefix
                             else:
                                 errormsg = "PPL only supported with CLooG-PPL v0.15.x (detected v%s)" % self.cloogver
                                 errormsg += "\nNeither using PPL or ISL-based ClooG, I'm out of options..."
-                                self.log.error(errormsg)
+                                raise EasyBuildError(errormsg)
 
                         # make sure GMP is found
                         if self.cloogver >= v0_15 and self.cloogver < v0_16:
@@ -404,9 +408,10 @@ class EB_GCC(ConfigureMake):
                         elif self.cloogver >= v0_16:
                             cmd += "--with-gmp=system --with-gmp-prefix=%s " % stage2prefix
                         else:
-                            self.log.error("Don't know how to specify location of GMP to configure of CLooG v%s." % self.cloogver)
+                            raise EasyBuildError("Don't know how to specify location of GMP to configure of CLooG v%s.",
+                                                 self.cloogver)
                     else:
-                        self.log.error("Don't know how to configure for %s" % lib)
+                        raise EasyBuildError("Don't know how to configure for %s", lib)
 
                     # configure
                     self.run_configure_cmd(cmd)
@@ -434,7 +439,8 @@ class EB_GCC(ConfigureMake):
             self.create_dir("stage3_obj")
 
             # reconfigure for stage 3 build
-            self.log.info("Stage 2 of 3-staged build completed, continuing with stage 2 (with CLooG and/or PPL, ISL support enabled)...")
+            self.log.info("Stage 2 of 3-staged build completed, continuing with stage 2 "
+                          "(with CLooG and/or PPL, ISL support enabled)...")
 
             stage3_info = self.prep_extra_src_dirs("stage3")
             configopts = stage3_info['configopts']
@@ -465,7 +471,7 @@ class EB_GCC(ConfigureMake):
             if self.cfg['withcloog']:
                 configopts += "--with-cloog=%s " % stage2prefix
 
-                if self.cfg['clooguseisl'] and self.cloogver >= LooseVersion("0.16") and self.version < LooseVersion("4.8.0"):
+                if self.cfg['clooguseisl'] and self.cloogver >= LooseVersion("0.16") and LooseVersion(self.version) < LooseVersion("4.8.0"):
                     configopts += "--enable-cloog-backend=isl "
 
             if self.cfg['withisl']:
@@ -500,7 +506,7 @@ class EB_GCC(ConfigureMake):
         if os_type == 'Linux':
             lib_files.extend(["libgcc_s.%s" % sharedlib_ext])
             # libmudflap is replaced by asan (see release notes gcc 4.9.0)
-            if self.version < LooseVersion("4.9.0"):
+            if LooseVersion(self.version) < LooseVersion("4.9.0"):
                 lib_files.extend(["libmudflap.%s" % sharedlib_ext, "libmudflap.a"])
             else:
                 lib_files.extend(["libasan.%s" % sharedlib_ext, "libasan.a"])

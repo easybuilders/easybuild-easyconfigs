@@ -28,6 +28,7 @@ EasyBuild support for SWIG, implemented as an easyblock
 @author: Kenneth Hoste (Ghent University)
 """
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
+from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.modules import get_software_root
 
 
@@ -47,7 +48,7 @@ class EB_SWIG(ConfigureMake):
         if python:
             self.cfg.update('configopts', "--with-python=%s/bin/python" % python)
         else:
-            self.log.error("Python module not loaded?")
+            raise EasyBuildError("Python module not loaded?")
 
         super(EB_SWIG, self).configure_step()
 

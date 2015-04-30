@@ -38,6 +38,7 @@ from distutils.version import LooseVersion
 
 from easybuild.easyblocks.generic.intelbase import IntelBase
 from easybuild.framework.easyconfig import CUSTOM
+from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.run import run_cmd
 
 class EB_itac(IntelBase):
@@ -90,8 +91,8 @@ EULA=accept
             tmpdir = os.path.join(os.getcwd(), self.version, 'mytmpdir')
             try:
                 os.makedirs(tmpdir)
-            except:
-                self.log.exception("Directory %s can't be created" % (tmpdir))
+            except OSError, err:
+                raise EasyBuildError("Directory %s can't be created: %s", tmpdir, err)
 
             cmd = "./install.sh --tmp-dir=%s --silent=%s" % (tmpdir, silentcfg)
 
@@ -137,7 +138,7 @@ EULA=accept
         """Overwritten from IntelBase to add extra txt"""
         txt = super(EB_itac, self).make_module_extra()
         txt += self.module_generator.prepend_paths(self.license_env_var, [self.license_file], allow_abs=True)
-        txt += self.module_generator.set_environment('VT_ROOT', '$root')
+        txt += self.module_generator.set_environment('VT_ROOT', self.installdir)
         txt += self.module_generator.set_environment('VT_MPI', self.cfg['preferredmpi'])
         txt += self.module_generator.set_environment('VT_ADD_LIBS', "-ldwarf -lelf -lvtunwind -lnsl -lm -ldl -lpthread")
         return txt

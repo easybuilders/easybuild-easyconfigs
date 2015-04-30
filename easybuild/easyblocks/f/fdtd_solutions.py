@@ -32,6 +32,7 @@ import os
 import shutil
 from easybuild.easyblocks.generic.rpm import rebuild_rpm
 from easybuild.framework.easyblock import EasyBlock
+from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.run import run_cmd_qa
 
 
@@ -47,20 +48,20 @@ class EB_FDTD_underscore_Solutions(EasyBlock):
         # locate RPM and rebuild it to make it relocatable
         rpms = glob.glob(os.path.join(self.cfg['start_dir'], 'rpm_install_files', 'FDTD-%s*.rpm' % self.version))
         if len(rpms) != 1:
-            self.log.error("Incorrect number of RPMs found, was expecting exactly one: %s" % rpms)
+            raise EasyBuildError("Incorrect number of RPMs found, was expecting exactly one: %s", rpms)
         rebuilt_dir = os.path.join(self.cfg['start_dir'], 'rebuilt')
         rebuild_rpm(rpms[0], rebuilt_dir)
 
         # replace original RPM with relocatable RPM
         rebuilt_rpms = glob.glob(os.path.join(rebuilt_dir, '*', '*.rpm'))
         if len(rebuilt_rpms) != 1:
-            self.log.error("Incorrect number of rebuilt RPMs found, was expecting exactly one: %s" % rebuilt_rpms)
+            raise EasyBuildError("Incorrect number of rebuilt RPMs found, was expecting exactly one: %s", rebuilt_rpms)
 
         try:
             os.rename(rpms[0], '%s.bk' % rpms[0])
             shutil.copy2(rebuilt_rpms[0], rpms[0])
         except OSError, err:
-            self.log.error("Failed to replace original RPM with rebuilt RPM: %s" % err)
+            raise EasyBuildError("Failed to replace original RPM with rebuilt RPM: %s", err)
 
     def install_step(self):
         """Install FDTD Solutions using install.sh script."""

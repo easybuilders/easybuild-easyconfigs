@@ -38,9 +38,10 @@ import sys
 
 import easybuild.tools.environment as env
 import easybuild.tools.toolchain as toolchain
-from easybuild.easyblocks.netcdf import set_netcdf_env_vars, get_netcdf_module_set_cmds  # @UnresolvedImport
+from easybuild.easyblocks.netcdf import set_netcdf_env_vars  # @UnresolvedImport
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import CUSTOM, MANDATORY
+from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.filetools import patch_perl_script_autoflush
 from easybuild.tools.modules import get_software_root
 from easybuild.tools.run import run_cmd, run_cmd_qa
@@ -56,8 +57,6 @@ class EB_WRF(EasyBlock):
         self.build_in_installdir = True
         self.wrfsubdir = None
         self.comp_fam = None
-
-        self.netcdf_mod_cmds = None
 
     @staticmethod
     def extra_options():
@@ -78,7 +77,6 @@ class EB_WRF(EasyBlock):
 
         # netCDF dependency
         set_netcdf_env_vars(self.log)
-        self.netcdf_mod_cmds = get_netcdf_module_set_cmds(self.log)
 
         # HDF5 (optional) dependency
         hdf5 = get_software_root('HDF5')
@@ -91,7 +89,7 @@ class EB_WRF(EasyBlock):
                     parallel_hdf5 = False
                     break
             if not (hdf5 or parallel_hdf5):
-                self.log.error("Parallel HDF5 module not loaded?")
+                raise EasyBuildError("Parallel HDF5 module not loaded?")
             else:
                 env.setvar('PHDF5', hdf5)
         else:
@@ -106,7 +104,7 @@ class EB_WRF(EasyBlock):
 
         else:
             if os.getenv('JASPERINC') or os.getenv('JASPERLIB'):
-                self.log.error("JasPer module not loaded, but JASPERINC and/or JASPERLIB still set?")
+                raise EasyBuildError("JasPer module not loaded, but JASPERINC and/or JASPERLIB still set?")
             else:
                 self.log.info("JasPer module not loaded, assuming that's OK...")
 
@@ -126,7 +124,7 @@ class EB_WRF(EasyBlock):
             build_type_option = "x86_64 Linux, gfortran compiler with gcc"
 
         else:
-            self.log.error("Don't know how to figure out build type to select.")
+            raise EasyBuildError("Don't know how to figure out build type to select.")
 
         # fetch selected build type (and make sure it makes sense)
         known_build_types = ['serial', 'smpar', 'dmpar', 'dm+sm']
@@ -134,7 +132,7 @@ class EB_WRF(EasyBlock):
         bt = self.cfg['buildtype']
 
         if not bt in known_build_types:
-            self.log.error("Unknown build type: '%s'. Supported build types: %s" % (bt, known_build_types))
+            raise EasyBuildError("Unknown build type: '%s'. Supported build types: %s", bt, known_build_types)
 
         # fetch option number based on build type option and selected build type
         build_type_question = "\s*(?P<nr>[0-9]+).\s*%s\s*\(%s\)" % (build_type_option, bt)
@@ -223,7 +221,7 @@ class EB_WRF(EasyBlock):
                 self.testcases = os.listdir('test')
 
             except OSError, err:
-                self.log.error("Failed to determine list of test cases: %s" % err)
+                raise EasyBuildError("Failed to determine list of test cases: %s", err)
 
             # exclude 2d testcases in non-parallel WRF builds
             if self.cfg['buildtype'] in self.parallel_build_types:
@@ -273,15 +271,13 @@ class EB_WRF(EasyBlock):
                     txt = f.read()
                     f.close()
                 except IOError, err:
-                    self.log.error("Failed to read output file %s: %s" % (fn, err))
+                    raise EasyBuildError("Failed to read output file %s: %s", fn, err)
 
                 if re_success.search(txt):
                     self.log.info("Test %s ran successfully." % test)
 
                 else:
-                    self.log.error("Test %s failed, pattern '%s' not found." % (test,
-                                                                                re_success.pattern
-                                                                                ))
+                    raise EasyBuildError("Test %s failed, pattern '%s' not found.", test, re_success.pattern)
 
                 # clean up stuff that gets in the way
                 fn_prefs = ["wrfinput_", "namelist.output", "wrfout_", "rsl.out.", "rsl.error."]
@@ -330,7 +326,7 @@ class EB_WRF(EasyBlock):
                     os.chdir('..')
 
                 except OSError, err:
-                    self.log.error("An error occured when running test %s: %s" % (test, err))
+                    raise EasyBuildError("An error occured when running test %s: %s", test, err)
 
     # building/installing is done in build_step, so we can run tests
     def install_step(self):
@@ -367,9 +363,9 @@ class EB_WRF(EasyBlock):
                }
 
     def make_module_extra(self):
-
+        """Add netCDF environment variables to module file."""
         txt = super(EB_WRF, self).make_module_extra()
-
-        txt += self.netcdf_mod_cmds
-
+        txt += self.module_generator.set_environment('NETCDF', os.getenv('NETCDF'))
+        if os.getenv('NETCDFF', None) is not None:
+            txt += self.module_generator.set_environment('NETCDFF', os.getenv('NETCDFF'))
         return txt

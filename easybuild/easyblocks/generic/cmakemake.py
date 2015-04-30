@@ -36,6 +36,7 @@ import os
 
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.framework.easyconfig import CUSTOM
+from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.environment import setvar
 from easybuild.tools.run import run_cmd
 
@@ -72,7 +73,7 @@ class CMakeMake(ConfigureMake):
                 os.mkdir(objdir)
                 os.chdir(objdir)
             except OSError, err:
-                self.log.error("Failed to create separate build dir %s in %s: %s" % (objdir, os.getcwd(), err))
+                raise EasyBuildError("Failed to create separate build dir %s in %s: %s", objdir, os.getcwd(), err)
             default_srcdir = '..'
 
         if srcdir is None:

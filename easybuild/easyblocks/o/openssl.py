@@ -31,6 +31,7 @@ EasyBuild support for OpenSSL, implemented as an easyblock
 import os
 
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
+from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.run import run_cmd
 
 
@@ -57,7 +58,7 @@ class EB_OpenSSL(ConfigureMake):
             if os.path.exists(os.path.join(self.installdir, libdir_cand)):
                 libdir = libdir_cand
         if libdir is None:
-            self.log.error("Failed to determine library directory.")
+            raise EasyBuildError("Failed to determine library directory.")
 
         custom_paths = {
             'files': [os.path.join(libdir, x) for x in ['engines', 'libcrypto.a', 'libcrypto.so',

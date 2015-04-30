@@ -44,6 +44,7 @@ from vsc.utils import fancylogger
 import easybuild.tools.environment as env
 from easybuild.easyblocks.generic.binary import Binary
 from easybuild.framework.easyconfig import CUSTOM
+from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.run import run_cmd
 from easybuild.tools.systemtools import check_os_dependency
 
@@ -55,11 +56,11 @@ def rebuild_rpm(rpm_path, targetdir):
     """Rebuild the RPM on the specified location, to make it relocatable."""
     # make sure that rpmrebuild command is available
     if not check_os_dependency('rpmrebuild'):
-        _log.error("Command 'rpmrebuild' is required but not available.")
+        raise EasyBuildError("Command 'rpmrebuild' is required but not available.")
 
     rpmmacros = os.path.join(expanduser('~'), '.rpmmacros')
     if os.path.exists(rpmmacros):
-        _log.error("rpmmacros file %s found which will override any other settings, so exiting." % rpmmacros)
+        raise EasyBuildError("rpmmacros file %s found which will override any other settings, so exiting.", rpmmacros)
 
     rpmrebuild_tmpdir = os.path.join(tempfile.gettempdir(), "rpmrebuild")
     env.setvar("RPMREBUILD_TMPDIR", rpmrebuild_tmpdir)
@@ -72,7 +73,7 @@ def rebuild_rpm(rpm_path, targetdir):
             os.makedirs(targetdir)
             _log.debug("Created target directory for rebuilt RPMs %s" % targetdir)
     except OSError, err:
-        _log.error("Failed to create directories for rebuilding RPM: %s" % err)
+        raise EasyBuildError("Failed to create directories for rebuilding RPM: %s", err)
 
     _log.debug("Rebuilding %s in %s to make it relocatable" % (rpm_path, targetdir))
     cmd = ' '.join([
@@ -119,7 +120,7 @@ class Rpm(Binary):
 
         # make sure that rpm is available
         if not check_os_dependency('rpm'):
-            self.log.error("Command 'rpm' is required but not available.")
+            raise EasyBuildError("Command 'rpm' is required but not available.")
 
         # determine whether RPMs need to be rebuilt to make relocation work
         cmd = "rpm --version"
@@ -137,7 +138,7 @@ class Rpm(Binary):
                 self.rebuild_rpm = True
                 self.log.debug("Enabling rebuild of RPMs to make relocation work...")
         else:
-            self.log.error("Checking RPM version failed, so just carrying on with the default behavior...")
+            raise EasyBuildError("Checking RPM version failed, so just carrying on with the default behaviour...")
 
         if self.rebuild_rpm:
             self.rebuild_rpms()
@@ -164,7 +165,7 @@ class Rpm(Binary):
             os.chdir(self.installdir)
             os.mkdir('rpm')
         except:
-            self.log.error("Can't create rpm dir in install dir %s" % self.installdir)
+            raise EasyBuildError("Can't create rpm dir in install dir %s", self.installdir)
 
         cmd = "rpm --initdb --dbpath /rpm --root %s" % self.installdir
 
