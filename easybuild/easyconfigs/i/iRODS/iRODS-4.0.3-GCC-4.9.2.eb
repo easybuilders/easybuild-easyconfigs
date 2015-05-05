@@ -1,0 +1,51 @@
+easyblock = 'CmdCp'
+
+name = 'iRODS'
+version = '4.0.3'
+
+homepage = 'irods.org'
+description = """The Integrated Rule-Oriented Data System (iRODS) 
+  is open source data management software used by research 
+  organizations and government agencies worldwide. iRODS is 
+  supported and maintained by the iRODS Consortium at RENCI, a 
+  research institute of the University of North Carolina at 
+  Chapel Hill (UNC-CH), in partnership with the Data Intensive 
+  Cyber Environments (DICE) Center at UNC-CH.
+ """
+
+toolchain = {'name': 'GCC', 'version': '4.9.2'}
+
+source_urls = [('https://github.com/irods/irods/archive/')]
+sources = ['%(version)s.tar.gz']
+
+builddependencies = [
+		('Python', '2.7.9', '-bare'),
+		('cURL', '7.40.0'),
+		('bzip2', '1.0.6'),
+]
+
+osdependencies = [('libpam0g-dev', 'pam-devel', 'help2man', 'unixodbc', 'unixODBC', 'libfuse-dev', 'fuse-devel')]
+
+# EBROOTIRODS is used in find_home_irods.sh script - makes i-commands search for plugins in installdir instead of in /var/lib/irods/
+# *DEV variables could be set to anything but "" - needed to make build.sh believe these -devel packages are installed.
+cmds_str = 'EBROOTIRODS=%(installdir)s/lib LIBCURLDEV=y PYTHONDEV=y BZIP2DEV=y ./packaging/build.sh icommands -r'
+cmds_map = [('', cmds_str)]
+
+# irods_build_sh.patch removes build.sh dependency checks (find /usr curl.h etc) of python-devel, curl-devel and bzip2-devel (as these are in easybuild).
+# irods_find_irods_home.patch alters the path returned by finds_irods_home.sh to installdir/lib
+patches = ['irods_build_sh.patch', 'irods_find_irods_home.patch']
+
+files_to_copy = [
+		(['iRODS/clients/icommands/bin/i*', 'iRODS/clients/icommands/bin/genOSAuth'], 'bin'),
+		(['plugins/network/libssl.so', 'plugins/network/libtcp.so'], 'lib/plugins/network'),
+		(['plugins/auth/libnative.so', 'plugins/auth/libosauth.so', 'plugins/auth/libpam.so'], 'lib/plugins/auth'),
+		]
+
+sanity_check_paths = {
+    'files': ["bin/%s" % x for x in ["genOSAuth", "iadmin", "icd", "icp", "ienv",
+                                     "iget", "iinit", "ils", "imeta", "imkdir", "imv", 
+				     "iput", "irm", "irmtrash"]] + [ 'lib/plugins/network/libtcp.so' ], 
+    'dirs': [],
+}
+
+moduleclass = 'tools'
