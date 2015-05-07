@@ -327,14 +327,14 @@ class EB_imkl(IntelBase):
         libs = ["libmkl_core.so", "libmkl_gnu_thread.so", "libmkl_intel_thread.so", "libmkl_sequential.so"]
         extralibs = ["libmkl_blacs_intelmpi_%(suff)s.so", "libmkl_scalapack_%(suff)s.so"]
 
-        compsuff = '_intel'
-        if get_software_root('icc') is None:
-            if get_software_root('GCC'):
-                compsuff = '_gnu'
-            else:
-                raise EasyBuildError("Not using Intel compilers or GCC, don't know compiler suffix for FFTW libraries.")
-
         if self.cfg['interfaces']:
+	    compsuff = '_intel'
+	    if get_software_root('icc') is None:
+		if get_software_root('GCC'):
+		    compsuff = '_gnu'
+		else:
+		    raise EasyBuildError("Not using Intel compilers or GCC, don't know compiler suffix for FFTW libraries.")
+
             precs = ['_double', '_single']
             if ver < LooseVersion('11'):
                 # no precision suffix in libfftw2 libs before imkl v11
