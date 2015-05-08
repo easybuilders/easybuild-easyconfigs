@@ -50,7 +50,7 @@ class EB_SuiteSparse(ConfigureMake):
     def __init__(self, *args, **kwargs):
         """Custom constructor for SuiteSparse easyblock, initialize custom class parameters."""
         super(EB_SuiteSparse, self).__init__(*args, **kwargs)
-        self.config_name = None
+        self.config_name = 'UNKNOWN'
 
     def configure_step(self):
         """Configure build by patching UFconfig.mk or SuiteSparse_config.mk."""

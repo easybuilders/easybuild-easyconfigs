@@ -41,6 +41,11 @@ from easybuild.tools.modules import get_software_root, get_software_version
 class EB_XCrySDen(ConfigureMake):
     """Support for building/installing XCrySDen."""
 
+    def __init__(self, *args, **kwargs):
+        """Initialisation of custom class variables for XCrySDen"""
+        super(EB_XCrySDen, self).__init__(*args, **kwargs)
+        self.tclroot = self.tclver = self.tkroot = self.tkver = 'UNKNOWN'
+
     def configure_step(self):
         """
         Check required dependencies, configure XCrySDen build by patching Make.sys file

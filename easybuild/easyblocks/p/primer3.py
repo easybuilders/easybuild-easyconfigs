@@ -44,23 +44,22 @@ class EB_Primer3(ConfigureMake):
 
     def __init__(self, *args, **kwargs):
         """Custom initialization for Primer3: build in install dir, set correct bin dir, specify to start from 'src'."""
-
         super(EB_Primer3, self).__init__(*args, **kwargs)
-
         self.build_in_installdir = True
-
         self.bindir = "%s-%s/src" % (self.name.lower(), self.version)
 
-        self.cfg['start_dir'] = 'src'
+    def guess_start_dir(self):
+        """Set correct start directory."""
+        if not self.cfg['start_dir']:
+            self.cfg['start_dir'] = 'src'
 
     def configure_step(self):
         """Configure Primer3 build by setting make options."""
-
         self.cfg.update('buildopts', 'CC="%s" CPP="%s" O_OPTS="%s" all' % (os.getenv('CC'),
                                                                          os.getenv('CXX'),
                                                                          os.getenv('CFLAGS')))
 
-    # default make should be fine
+    # default build_step should be fine
 
     def install_step(self):
         """(no make install)"""
