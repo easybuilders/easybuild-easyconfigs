@@ -65,6 +65,12 @@ class EB_Geant4(CMakeMake):
         }
         return CMakeMake.extra_options(extra_vars)
 
+    def __init__(self, *args, **kwargs):
+        """Initialisation of custom class variables for Geant4."""
+        super(EB_Geant4, self).__init__(*args, **kwargs)
+        self.g4system = 'UNKNOWN'
+        self.datadst = 'UNKNOWN'
+
     def configure_step(self):
         """
         Configure Geant4 build, either via CMake for versions more recent than 9.4,

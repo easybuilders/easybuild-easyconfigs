@@ -53,7 +53,7 @@ class EB_ALADIN(EasyBlock):
 
         self.conf_file = None
         self.conf_filepath = None
-        self.rootpack_dir = None
+        self.rootpack_dir = 'UNKNOWN'
 
         self.orig_library_path = None
 
@@ -304,28 +304,23 @@ class EB_ALADIN(EasyBlock):
 
     def sanity_check_step(self):
         """Custom sanity check for ALADIN."""
-
         bindir = os.path.join(self.rootpack_dir, 'bin')
         libdir = os.path.join(self.rootpack_dir, 'lib')
         custom_paths = {
-                        'files': [os.path.join(bindir, x) for x in ['MASTER']] +
-                                 [os.path.join(libdir, 'lib%s.local.a' % x) for x in ['aeo', 'ald', 'arp', 'bip',
-                                                                                      'bla', 'mpa', 'mse', 'obt',
-                                                                                      'odb', 'sat', 'scr', 'sct',
-                                                                                      'sur', 'surfex', 'tal', 'tfl',
-                                                                                      'uti', 'xla', 'xrd']],
-                        'dirs': [],
-                       }
-
+            'files': [os.path.join(bindir, x) for x in ['MASTER']] +
+                     [os.path.join(libdir, 'lib%s.local.a' % x) for x in ['aeo', 'ald', 'arp', 'bip',
+                                                                          'bla', 'mpa', 'mse', 'obt',
+                                                                          'odb', 'sat', 'scr', 'sct',
+                                                                          'sur', 'surfex', 'tal', 'tfl',
+                                                                          'uti', 'xla', 'xrd']],
+            'dirs': [],
+        }
         super(EB_ALADIN, self).sanity_check_step(custom_paths=custom_paths)
 
     def make_module_req_guess(self):
         """Custom guesses for environment variables (PATH, ...) for ALADIN."""
-
         guesses = super(EB_ALADIN, self).make_module_req_guess()
-
         guesses.update({
-                        'PATH': [os.path.join(self.rootpack_dir, 'bin')],
-                       })
-
+            'PATH': [os.path.join(self.rootpack_dir, 'bin')],
+        })
         return guesses

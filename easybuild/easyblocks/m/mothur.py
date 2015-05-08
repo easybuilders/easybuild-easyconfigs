@@ -46,8 +46,9 @@ class EB_Mothur(ConfigureMake):
         mothur_dirs = glob.glob(os.path.join(self.builddir, 'Mothur.*'))
         if len(mothur_dirs) == 1:
             self.cfg['start_dir'] = mothur_dirs[0]
-        else:
-            raise EasyBuildError("Failed to guess start directory in %s", mothur_dirs)
+        elif len(os.listdir(self.builddir)) > 1:
+            # we only have an issue if the default guessing approach will not work
+            raise EasyBuildError("Failed to guess start directory from %s", mothur_dirs)
 
         super(EB_Mothur, self).guess_start_dir()
 

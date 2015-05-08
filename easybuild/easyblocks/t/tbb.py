@@ -44,6 +44,11 @@ from easybuild.tools.build_log import EasyBuildError
 class EB_tbb(IntelBase):
     """EasyBlock for tbb, threading building blocks"""
 
+    def __init__(self, *args, **kwargs):
+        """Initialisation of custom class variables for tbb"""
+        super(EB_tbb, self).__init__(*args, **kwargs)
+        self.libpath = 'UNKNOWN'
+
     def install_step(self):
         """Custom install step, to add extra symlinks"""
         silent_cfg_names_map = None
@@ -81,12 +86,10 @@ class EB_tbb(IntelBase):
         os.symlink(os.path.join(self.installdir, self.libpath), install_libpath)
 
     def sanity_check_step(self):
-
         custom_paths = {
-                        'files':[],
-                        'dirs':["tbb/bin", "tbb/lib/", "tbb/libs/"]
-                       }
-
+            'files': [],
+            'dirs': ['tbb/bin', 'tbb/lib', 'tbb/libs'],
+        }
         super(EB_tbb, self).sanity_check_step(custom_paths=custom_paths)
 
     def make_module_extra(self):

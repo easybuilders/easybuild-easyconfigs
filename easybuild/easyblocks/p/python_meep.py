@@ -135,9 +135,9 @@ class EB_python_minus_meep(PythonPackage):
         txt = super(EB_python_minus_meep, self).make_module_extra()
 
         meep = get_software_root('Meep')
-
-        txt += self.module_generator.set_environment('MEEP_INCLUDE', os.path.join(meep, 'include'))
-        txt += self.module_generator.set_environment('MEEP_LIB', os.path.join(meep, 'lib'))
+        if meep is not None:
+            txt += self.module_generator.set_environment('MEEP_INCLUDE', os.path.join(meep, 'include'))
+            txt += self.module_generator.set_environment('MEEP_LIB', os.path.join(meep, 'lib'))
 
         for var in ["PYTHONMEEPPATH", "PYTHONMEEP_INCLUDE", "PYTHONPATH"]:
             txt += self.module_generator.set_environment(var, os.path.join(self.installdir, 'site-packages'))
