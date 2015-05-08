@@ -1,5 +1,5 @@
 ##
-# Copyright 2013-2015 Ghent University
+# Copyright 2015-2015 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -23,7 +23,7 @@
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
 """
-Unit tests for initializing easyblocks.
+Unit tests to check that easyblocks are compatible with --module-only.
 
 @author: Kenneth Hoste (Ghent University)
 """
@@ -33,9 +33,14 @@ import os
 import re
 import tempfile
 from vsc import fancylogger
-from unittest import TestCase, TestLoader, main
+from unittest import TestLoader, main
+from vsc.utils.patterns import Singleton
+from vsc.utils.testing import EnhancedTestCase
 
+from easybuild.framework.easyconfig import easyconfig
+import easybuild.tools.module_naming_scheme.toolchain as mns_toolchain
 import easybuild.tools.options as eboptions
+import easybuild.tools.toolchain.utilities as tc_utils
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import MANDATORY
 from easybuild.framework.easyconfig.easyconfig import EasyConfig, get_easyblock_class
@@ -43,24 +48,25 @@ from easybuild.framework.easyconfig.tools import get_paths_for
 from easybuild.tools import config
 from easybuild.tools.filetools import write_file
 from easybuild.tools.module_naming_scheme import GENERAL_CLASS
-from easybuild.tools.run import parse_log_for_error, run_cmd, run_cmd_qa
-from easybuild.tools.environment import modify_env, read_environment
 
 
-class InitTest(TestCase):
+TMPDIR = tempfile.gettempdir()
+
+
+def cleanup():
+    """Perform cleanup of singletons and caches."""
+    # clear Singelton instances, to start afresh
+    Singleton._instances.clear()
+
+    # empty caches
+    tc_utils._initial_toolchain_instances.clear()
+    easyconfig._easyconfigs_cache.clear()
+    easyconfig._easyconfig_files_cache.clear()
+    mns_toolchain._toolchain_details_cache.clear()
+
+
+class ModuleOnlyTest(EnhancedTestCase):
     """ Baseclass for easyblock testcases """
-
-    # initialize configuration (required for e.g. default modules_tool setting)
-    eb_go = eboptions.parse_options()
-    config.init(eb_go.options, eb_go.get_options_by_section('config'))
-    build_options = {
-        'suffix_modules_path': GENERAL_CLASS,
-        'valid_module_classes': config.module_classes(),
-        'valid_stops': [x[0] for x in EasyBlock.get_steps()],
-    }
-    config.init_build_options(build_options=build_options)
-    config.set_tmpdir()
-    del eb_go
 
     def writeEC(self, easyblock, extratxt=''):
         """ create temporary easyconfig file """
@@ -70,7 +76,7 @@ class InitTest(TestCase):
             'version = "1.3.2"',
             'homepage = "http://example.com"',
             'description = "Dummy easyconfig file."',
-            'toolchain = {"name": "dummy", "version": "dummy"}',
+            "toolchain = {'name': 'dummy', 'version': 'dummy'}",
             'sources = []',
             extratxt,
         ])
@@ -79,8 +85,8 @@ class InitTest(TestCase):
 
     def setUp(self):
         """Setup test."""
-        self.log = fancylogger.getLogger("EasyblocksInitTest", fname=False)
-        fd, self.eb_file = tempfile.mkstemp(prefix='easyblocks_init_test_', suffix='.eb')
+        self.log = fancylogger.getLogger("EasyblocksModuleOnlyTest", fname=False)
+        fd, self.eb_file = tempfile.mkstemp(prefix='easyblocks_module_only_test_', suffix='.eb')
         os.close(fd)
 
     def tearDown(self):
@@ -88,22 +94,11 @@ class InitTest(TestCase):
         try:
             os.remove(self.eb_file)
         except OSError, err:
-            self.log.error("Failed to remove %s/%s: %s" % (self.eb_file, err))
+            self.log.error("Failed to remove %s: %s", self.eb_file, err)
 
 
-def template_init_test(self, easyblock):
-    """Test whether all easyblocks can be initialized."""
-
-    def check_extra_options_format(extra_options):
-        """Make sure extra_options value is of correct format."""
-        # EasyBuild v2.0: dict with <string> keys and <list> values
-        self.assertTrue(isinstance(extra_options, dict))
-        extra_options.items()
-        extra_options.keys()
-        extra_options.values()
-        for key in extra_options.keys():
-            self.assertTrue(isinstance(extra_options[key], list))
-            self.assertTrue(len(extra_options[key]), 3)
+def template_module_only_test(self, easyblock):
+    """Test whether all easyblocks are compatible with --module-only."""
 
     class_regex = re.compile("^class (.*)\(.*", re.M)
 
@@ -114,15 +109,6 @@ def template_init_test(self, easyblock):
     txt = f.read()
     f.close()
 
-    # make sure error reporting is done correctly (no more log.error, log.exception)
-    log_method_regexes = [
-        re.compile(r"log\.error\("),
-        re.compile(r"log\.exception\("),
-        re.compile(r"log\.raiseException\("),
-    ]
-    for regex in log_method_regexes:
-        self.assertFalse(regex.search(txt), "No match for '%s' in %s" % (regex.pattern, easyblock))
-
     # obtain easyblock class name using regex
     res = class_regex.search(txt)
     if res:
@@ -131,10 +117,9 @@ def template_init_test(self, easyblock):
 
         # figure out list of mandatory variables, and define with dummy values as necessary
         app_class = get_easyblock_class(ebname)
-        extra_options = app_class.extra_options()
-        check_extra_options_format(extra_options)
 
         # extend easyconfig to make sure mandatory custom easyconfig paramters are defined
+        extra_options = app_class.extra_options()
         extra_txt = ''
         for (key, val) in extra_options.items():
             if val[2] == MANDATORY:
@@ -147,21 +132,15 @@ def template_init_test(self, easyblock):
         # if this doesn't fail, the test succeeds
         app = app_class(EasyConfig(self.eb_file))
 
-        # check whether easyblock instance is still using functions from a deprecated location
-        mod = __import__(app.__module__, [], [], ['easybuild.easyblocks'])
-        moved_functions = ['modify_env', 'parse_log_for_error', 'read_environment', 'run_cmd', 'run_cmd_qa']
-        for fn in moved_functions:
-            if hasattr(mod, fn):
-                tup = (fn, app.__module__, globals()[fn].__module__)
-                self.assertTrue(getattr(mod, fn) is globals()[fn], "%s in %s is imported from %s" % tup)
-        renamed_functions = [
-            ('source_paths', 'source_path'),
-            ('get_avail_core_count', 'get_core_count'),
-            ('get_os_type', 'get_kernel_name'),
-            ('det_full_ec_version', 'det_installversion'),
-        ]
-        for (new_fn, old_fn) in renamed_functions:
-            self.assertFalse(hasattr(mod, old_fn), "%s: %s is replaced by %s" % (app.__module__, old_fn, new_fn))
+        # run all steps, most should be skipped
+        orig_workdir = os.getcwd()
+        try:
+            app.run_all_steps(run_test_cases=False)
+        finally:
+            os.chdir(orig_workdir)
+
+        modfile = os.path.join(TMPDIR, 'modules', 'all', 'foo', '1.3.2')
+        self.assertTrue(os.path.exists(modfile), "Module file %s was generated" % modfile)
 
         # cleanup
         app.close_log()
@@ -170,21 +149,39 @@ def template_init_test(self, easyblock):
         self.assertTrue(False, "Class found in easyblock %s" % easyblock)
 
 def suite():
-    """Return all easyblock initialisation tests."""
+    """Return all easyblock --module-only tests."""
+    # initialize configuration (required for e.g. default modules_tool setting)
+    cleanup()
+    eb_go = eboptions.parse_options(args=['--prefix=%s' % TMPDIR])
+    config.init(eb_go.options, eb_go.get_options_by_section('config'))
+    build_options = {
+        # enable --force --module-only
+        'force': True,
+        'module_only': True,
+        'silent': True,
+        'suffix_modules_path': GENERAL_CLASS,
+        'valid_module_classes': config.module_classes(),
+        'valid_stops': [x[0] for x in EasyBlock.get_steps()],
+    }
+    config.init_build_options(build_options=build_options)
+    config.set_tmpdir()
 
     # dynamically generate a separate test for each of the available easyblocks
     easyblocks_path = get_paths_for("easyblocks")[0]
     all_pys = glob.glob('%s/*/*.py' % easyblocks_path)
-    easyblocks = [eb for eb in all_pys if not eb.endswith('__init__.py') and not '/test/' in eb]
+    easyblocks = [eb for eb in all_pys if os.path.basename(eb) != '__init__.py' and '/test/' not in eb]
+
+    # filter out no longer supported easyblocks
+    easyblocks = [e for e in easyblocks if os.path.basename(e) not in ['versionindependendpythonpackage.py']]
 
     for easyblock in easyblocks:
-        # dynamically define new inner functions that can be added as class methods to InitTest
-        exec("def innertest(self): template_init_test(self, '%s')" % easyblock)
-        innertest.__doc__ = "Test for initialisation of easyblock %s" % easyblock
+        # dynamically define new inner functions that can be added as class methods to ModuleOnlyTest
+        exec("def innertest(self): template_module_only_test(self, '%s')" % easyblock)
+        innertest.__doc__ = "Test for using --module-only with easyblock %s" % easyblock
         innertest.__name__ = "test_easyblock_%s" % '_'.join(easyblock.replace('.py', '').split('/'))
-        setattr(InitTest, innertest.__name__, innertest)
+        setattr(ModuleOnlyTest, innertest.__name__, innertest)
 
-    return TestLoader().loadTestsFromTestCase(InitTest)
+    return TestLoader().loadTestsFromTestCase(ModuleOnlyTest)
 
 if __name__ == '__main__':
     main()
