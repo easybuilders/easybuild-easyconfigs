@@ -52,6 +52,7 @@ class EB_Primer3(ConfigureMake):
         """Set correct start directory."""
         if not self.cfg['start_dir']:
             self.cfg['start_dir'] = 'src'
+        super(EB_Primer3, self).guess_start_dir()
 
     def configure_step(self):
         """Configure Primer3 build by setting make options."""
