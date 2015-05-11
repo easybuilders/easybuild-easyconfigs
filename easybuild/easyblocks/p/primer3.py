@@ -34,6 +34,7 @@ EasyBuild support for Primer3, implemented as an easyblock
 import os
 
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
+from easybuild.tools.build_log import EasyBuildError
 
 
 class EB_Primer3(ConfigureMake):
@@ -50,14 +51,12 @@ class EB_Primer3(ConfigureMake):
 
     def guess_start_dir(self):
         """Set correct start directory."""
-        if not self.cfg['start_dir']:
-            srcdir = os.path.join(self.src[0]['finalpath'], 'src')
-            if os.path.exists(srcdir):
-                self.cfg['start_dir'] = srcdir
-            else:
-                self.log.warning("Expected subdirectory %s does not exist" % srcdir)
-
         super(EB_Primer3, self).guess_start_dir()
+        if os.path.exists('src'):
+            try:
+                os.chdir('src')
+            except OSError, err:
+                raise EasyBuildError("Failed to move to 'src' subdirectory: %s", err)
 
     def configure_step(self):
         """Configure Primer3 build by setting make options."""
