@@ -51,7 +51,12 @@ class EB_Primer3(ConfigureMake):
     def guess_start_dir(self):
         """Set correct start directory."""
         if not self.cfg['start_dir']:
-            self.cfg['start_dir'] = 'src'
+            srcdir = os.path.join(self.src[0]['finalpath'], 'src')
+            if os.path.exists(srcdir):
+                self.cfg['start_dir'] = srcdir
+            else:
+                self.log.warning("Expected subdirectory %s does not exist" % srcdir)
+
         super(EB_Primer3, self).guess_start_dir()
 
     def configure_step(self):
