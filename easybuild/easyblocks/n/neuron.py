@@ -46,9 +46,9 @@ class EB_NEURON(ConfigureMake):
         """Initialisation of custom class variables for NEURON."""
         super(EB_NEURON, self).__init__(*args, **kwargs)
 
-        self.hostcpu = None
+        self.hostcpu = 'UNKNOWN'
         self.with_python = False
-        self.pylibdir = None
+        self.pylibdir = 'UNKNOWN'
 
     @staticmethod
     def extra_options():
@@ -199,13 +199,13 @@ class EB_NEURON(ConfigureMake):
         guesses = super(EB_NEURON, self).make_module_req_guess()
 
         guesses.update({
-                        'PATH': [os.path.join(self.hostcpu, 'bin')],
-                       })
+            'PATH': [os.path.join(self.hostcpu, 'bin')],
+        })
 
         if self.with_python:
             guesses.update({
-                            'PYTHONPATH': [self.pylibdir],
-                           })
+                'PYTHONPATH': [self.pylibdir],
+            })
 
         return guesses
 

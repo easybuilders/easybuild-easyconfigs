@@ -82,14 +82,14 @@ class IntelBase(EasyBlock):
 
     def __init__(self, *args, **kwargs):
         """Constructor, adds extra config options"""
-        self.license_file = None
-        self.license_env_var = None
+        super(IntelBase, self).__init__(*args, **kwargs)
+
+        self.license_file = 'UNKNOWN'
+        self.license_env_var = 'UNKNOWN'
 
         self.home_subdir = os.path.join(os.getenv('HOME'), 'intel')
         common_tmp_dir = os.path.dirname(tempfile.gettempdir())  # common tmp directory, same across nodes
         self.home_subdir_local = os.path.join(common_tmp_dir, os.getenv('USER'), 'easybuild_intel')
-
-        super(IntelBase, self).__init__(*args, **kwargs)
 
         # prepare (local) 'intel' home subdir
         self.setup_local_home_subdir()
