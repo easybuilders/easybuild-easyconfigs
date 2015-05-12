@@ -143,9 +143,11 @@ class EB_GROMACS(CMakeMake):
         super(EB_GROMACS, self).install_step()
 
         if LooseVersion(self.version) < LooseVersion('5.0'):
-            libname = 'libgmx.a'
+            # libgmx.a or libgmx_mpi.a
+            libname = 'libgmx*.a'
         else:
-            libname = 'libgromacs.a'
+            # libgromacs.a or libgromacs_mpi.a
+            libname = 'libgromacs*.a'
 
         for libdir in ['lib', 'lib64']:
             if os.path.exists(os.path.join(self.installdir, libdir)):
