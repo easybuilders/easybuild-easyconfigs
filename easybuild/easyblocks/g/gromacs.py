@@ -142,6 +142,10 @@ class EB_GROMACS(CMakeMake):
         """Custom install step for GROMACS; figure out where libraries were installed to."""
         super(EB_GROMACS, self).install_step()
 
+        # the GROMACS libraries get installed in different locations (deeper subdirectory), depending on the platform;
+        # this is determined by the GNUInstallDirs CMake module;
+        # rather than trying to replicate the logic, we just figure out where the library was placed
+
         if LooseVersion(self.version) < LooseVersion('5.0'):
             # libgmx.a or libgmx_mpi.a
             libname = 'libgmx*.a'
@@ -154,7 +158,7 @@ class EB_GROMACS(CMakeMake):
                 for subdir in [libdir, os.path.join(libdir, '*')]:
                     libpaths = glob.glob(os.path.join(self.installdir, subdir, libname))
                     if libpaths:
-                        self.lib_subdir = subdir
+                        self.lib_subdir = os.path.dirname(libpaths[0])[len(self.installdir)+1:]
                         self.log.info("Found lib subdirectory that contains %s: %s", libname, self.lib_subdir)
                         break
 
