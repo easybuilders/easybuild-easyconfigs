@@ -153,7 +153,7 @@ class EB_GROMACS(CMakeMake):
             if os.path.exists(os.path.join(self.installdir, libdir)):
                 for subdir in [libdir, os.path.join(libdir, '*')]:
                     libpaths = glob.glob(os.path.join(self.installdir, subdir, libname))
-                    if len(libpaths) == 1:
+                    if libpaths:
                         self.lib_subdir = subdir
                         self.log.info("Found lib subdirectory that contains %s: %s", libname, self.lib_subdir)
                         break
