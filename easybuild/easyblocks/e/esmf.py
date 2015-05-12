@@ -34,8 +34,8 @@ import easybuild.tools.toolchain as toolchain
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import BUILD
-from easybuild.tools.filetools import run_cmd
 from easybuild.tools.modules import get_software_root
+from easybuild.tools.run import run_cmd
 
 
 class EB_ESMF(ConfigureMake):
@@ -61,7 +61,8 @@ class EB_ESMF(ConfigureMake):
         # specify MPI communications library
         comm = None
         mpi_family = self.toolchain.mpi_family()
-        if mpi_family in [toolchain.QLOGICMPI]:
+        if mpi_family in [toolchain.MPICH, toolchain.QLOGICMPI]:
+            # MPICH family for MPICH v3.x, which is MPICH2 compatible
             comm = 'mpich2'
         else:
             comm = mpi_family.lower()

@@ -1,5 +1,5 @@
 ##
-# Copyright 2009-2013 Ghent University
+# Copyright 2009-2015 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -41,11 +41,13 @@ from distutils.version import LooseVersion
 
 import easybuild.tools.environment as env
 import easybuild.tools.toolchain as toolchain
-from easybuild.easyblocks.netcdf import set_netcdf_env_vars, get_netcdf_module_set_cmds  #@UnresolvedImport
+from easybuild.easyblocks.netcdf import set_netcdf_env_vars  #@UnresolvedImport
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import CUSTOM, MANDATORY
-from easybuild.tools.filetools import extract_file, patch_perl_script_autoflush, rmtree2, run_cmd, run_cmd_qa
+from easybuild.tools.build_log import EasyBuildError
+from easybuild.tools.filetools import extract_file, patch_perl_script_autoflush, rmtree2
 from easybuild.tools.modules import get_software_root, get_software_version
+from easybuild.tools.run import run_cmd, run_cmd_qa
 
 
 class EB_WPS(EasyBlock):
@@ -60,7 +62,6 @@ class EB_WPS(EasyBlock):
         self.comp_fam = None
         self.wrfdir = None
         self.compile_script = None
-        self.netcdf_mod_cmds = None
 
     @staticmethod
     def extra_options():
@@ -85,7 +86,6 @@ class EB_WPS(EasyBlock):
 
         # netCDF dependency check + setting env vars (NETCDF, NETCDFF)
         set_netcdf_env_vars(self.log)
-        self.netcdf_mod_cmds = get_netcdf_module_set_cmds(self.log)
 
         # WRF dependency check
         wrf = get_software_root('WRF')
@@ -93,7 +93,7 @@ class EB_WPS(EasyBlock):
             majver = get_software_version('WRF').split('.')[0]
             self.wrfdir = os.path.join(wrf, "WRFV%s" % majver)
         else:
-            self.log.error("WRF module not loaded?")
+            raise EasyBuildError("WRF module not loaded?")
 
         # patch compile script so that WRF is found
         self.compile_script = "compile"
@@ -102,7 +102,7 @@ class EB_WPS(EasyBlock):
                 line = re.sub(r"^(\s*set\s*WRF_DIR_PRE\s*=\s*)\${DEV_TOP}(.*)$", r"\1%s\2" % self.wrfdir, line)
                 sys.stdout.write(line)
         except IOError, err:
-            self.log.error("Failed to patch %s script: %s" % (self.compile_script, err))
+            raise EasyBuildError("Failed to patch %s script: %s", self.compile_script, err)
 
         # libpng dependency check
         libpng = get_software_root('libpng')
@@ -114,7 +114,7 @@ class EB_WPS(EasyBlock):
             libpnginc = ' '.join(['-I%s' % os.path.join(path, 'include') for path in paths])
             libpnglib = ' '.join(['-L%s' % os.path.join(path, 'lib') for path in paths])
         else:
-            self.log.error("libpng module not loaded?")
+            raise EasyBuildError("libpng module not loaded?")
 
         # JasPer dependency check + setting env vars
         jasper = get_software_root('JasPer')
@@ -124,7 +124,7 @@ class EB_WPS(EasyBlock):
             env.setvar('JASPERLIB', jasperlibdir)
             jasperlib = "-L%s" % jasperlibdir
         else:
-            self.log.error("JasPer module not loaded?")
+            raise EasyBuildError("JasPer module not loaded?")
 
         # patch ungrib Makefile so that JasPer is found
         fn = os.path.join("ungrib", "src", "Makefile")
@@ -135,7 +135,7 @@ class EB_WPS(EasyBlock):
                 line = re.sub(r"^(\s*\$\(COMPRESSION_LIBS\))(\s*;.*)$", r"\1 %s\2" % jasperlibs, line)
                 sys.stdout.write(line)
         except IOError, err:
-            self.log.error("Failed to patch %s: %s" % (fn, err))
+            raise EasyBuildError("Failed to patch %s: %s", fn, err)
 
         # patch arch/Config.pl script, so that run_cmd_qa receives all output to answer questions
         patch_perl_script_autoflush(os.path.join("arch", "Config.pl"))
@@ -160,7 +160,7 @@ class EB_WPS(EasyBlock):
                 build_type_option = "Linux x86_64 g95 compiler"
 
             else:
-                self.log.error("Don't know how to figure out build type to select.")
+                raise EasyBuildError("Don't know how to figure out build type to select.")
 
         else:
 
@@ -177,13 +177,13 @@ class EB_WPS(EasyBlock):
                 knownbuildtypes['dmpar'] = knownbuildtypes['dmpar'].upper()
 
             else:
-                self.log.error("Don't know how to figure out build type to select.")
+                raise EasyBuildError("Don't know how to figure out build type to select.")
 
         # check and fetch selected build type
         bt = self.cfg['buildtype']
 
         if not bt in knownbuildtypes.keys():
-            self.log.error("Unknown build type: '%s'. Supported build types: %s" % (bt, knownbuildtypes.keys()))
+            raise EasyBuildError("Unknown build type: '%s'. Supported build types: %s", bt, knownbuildtypes.keys())
 
         # fetch option number based on build type option and selected build type
         build_type_question = "\s*(?P<nr>[0-9]+).\s*%s\s*\(?%s\)?\s*\n" % (build_type_option, knownbuildtypes[bt])
@@ -236,11 +236,11 @@ class EB_WPS(EasyBlock):
 
             re_success = re.compile("Successful completion of %s" % cmdname)
             if not re_success.search(out):
-                self.log.error("%s.exe failed (pattern '%s' not found)?" % (cmdname, re_success.pattern))
+                raise EasyBuildError("%s.exe failed (pattern '%s' not found)?", cmdname, re_success.pattern)
 
         if self.cfg['runtest']:
             if not self.cfg['testdata']:
-                self.log.error("List of URLs for testdata not provided.")
+                raise EasyBuildError("List of URLs for testdata not provided.")
 
             wpsdir = os.path.join(self.builddir, "WPS")
 
@@ -254,7 +254,7 @@ class EB_WPS(EasyBlock):
                 for testdata in self.cfg['testdata']:
                     path = self.obtain_file(testdata)
                     if not path:
-                        self.log.error("Downloading file from %s failed?" % testdata)
+                        raise EasyBuildError("Downloading file from %s failed?", testdata)
                     testdata_paths.append(path)
 
                 # unpack data
@@ -330,7 +330,7 @@ class EB_WPS(EasyBlock):
                 os.chdir(self.builddir)
 
             except OSError, err:
-                self.log.error("Failed to run WPS test: %s" % err)
+                raise EasyBuildError("Failed to run WPS test: %s", err)
 
     # installing is done in build_step, so we can run tests
     def install_step(self):
@@ -365,9 +365,8 @@ class EB_WPS(EasyBlock):
 
     def make_module_extra(self):
         """Add netCDF environment variables to module file."""
-
         txt = super(EB_WPS, self).make_module_extra()
-
-        txt += self.netcdf_mod_cmds
-
+        txt += self.module_generator.set_environment('NETCDF', os.getenv('NETCDF'))
+        if os.getenv('NETCDFF', None) is not None:
+            txt += self.module_generator.set_environment('NETCDFF', os.getenv('NETCDFF'))
         return txt

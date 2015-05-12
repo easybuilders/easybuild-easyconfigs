@@ -1,5 +1,5 @@
 ##
-# Copyright 2009-2013 Ghent University
+# Copyright 2009-2015 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -40,7 +40,9 @@ from distutils.version import LooseVersion
 
 import easybuild.tools.toolchain as toolchain
 from easybuild.framework.easyblock import EasyBlock
-from easybuild.tools.filetools import run_cmd, copytree
+from easybuild.tools.build_log import EasyBuildError
+from easybuild.tools.filetools import copytree
+from easybuild.tools.run import run_cmd
 
 
 class EB_SCOTCH(EasyBlock):
@@ -56,7 +58,7 @@ class EB_SCOTCH(EasyBlock):
         elif comp_fam == toolchain.GCC:  #@UndefinedVariable
             makefilename = 'Makefile.inc.x86-64_pc_linux2'
         else:
-            self.log.error("Unknown compiler family used: %s" % comp_fam)
+            raise EasyBuildError("Unknown compiler family used: %s", comp_fam)
 
         # create Makefile.inc
         try:
@@ -66,7 +68,7 @@ class EB_SCOTCH(EasyBlock):
             shutil.copy2(src, dst)
             self.log.debug("Successfully copied Makefile.inc to src dir.")
         except OSError:
-            self.log.error("Copying Makefile.inc to src dir failed.")
+            raise EasyBuildError("Copying Makefile.inc to src dir failed.")
 
         # the default behaviour of these makefiles is still wrong
         # e.g., compiler settings, and we need -lpthread
@@ -80,14 +82,14 @@ class EB_SCOTCH(EasyBlock):
                 line = re.sub(r"^LDFLAGS\s*=(?P<ldflags>.*$)", "LDFLAGS\t=\g<ldflags> -lpthread", line)
                 sys.stdout.write(line)
         except IOError, err:
-            self.log.error("Can't modify/write Makefile in 'Makefile.inc': %s" % (err))
+            raise EasyBuildError("Can't modify/write Makefile in 'Makefile.inc': %s", err)
 
         # change to src dir for building
         try:
             os.chdir(srcdir)
             self.log.debug("Changing to src dir.")
         except OSError, err:
-            self.log.error("Failed to change to src dir: %s" % err)
+            raise EasyBuildError("Failed to change to src dir: %s", err)
 
     def build_step(self):
         """Build by running build_step, but with some special options for SCOTCH depending on the compiler."""
@@ -129,7 +131,7 @@ class EB_SCOTCH(EasyBlock):
                 copytree(src, dst, ignore=lambda path, files: [x for x in files if regmetis.match(x)])
 
         except OSError, err:
-            self.log.error("Copying %s to installation dir %s failed: %s" % (src, dst, err))
+            raise EasyBuildError("Copying %s to installation dir %s failed: %s", src, dst, err)
 
         # create group library file
         scotchlibdir = os.path.join(self.installdir, 'lib')
@@ -144,7 +146,7 @@ class EB_SCOTCH(EasyBlock):
             f.close()
             self.log.info("Successfully written group lib file: %s" % scotchgrouplib)
         except (IOError, OSError), err:
-            self.log.error("Can't write to file %s: %s" % (scotchgrouplib, err))
+            raise EasyBuildError("Can't write to file %s: %s", scotchgrouplib, err)
 
     def sanity_check_step(self):
         """Custom sanity check for SCOTCH."""

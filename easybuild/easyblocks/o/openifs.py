@@ -33,8 +33,9 @@ import shutil
 import easybuild.tools.environment as env
 import easybuild.tools.toolchain as toolchain
 from easybuild.framework.easyblock import EasyBlock
-from easybuild.tools.filetools import run_cmd
+from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.modules import get_software_root
+from easybuild.tools.run import run_cmd
 
 
 class EB_OpenIFS(EasyBlock):
@@ -44,7 +45,7 @@ class EB_OpenIFS(EasyBlock):
         """Custom configuration procedure for OpenIFS."""
         # make sure use of MPI is enabled
         if not self.toolchain.options.get('usempi', None):
-            self.log.error("Use of MPI should be enabled, set 'usempi' toolchain option to 'True'.")
+            raise EasyBuildError("Use of MPI should be enabled, set 'usempi' toolchain option to 'True'.")
 
         # configure build via OIFS_* environment variables
         env.setvar('OIFS_ARCH', 'x86_64')
@@ -54,7 +55,7 @@ class EB_OpenIFS(EasyBlock):
         elif self.toolchain.comp_family() == toolchain.INTELCOMP: 
             env.setvar('OIFS_COMP', 'intel')
         else:
-            self.log.error("Unknown compiler used, don't know how to set $OIFS_COMP.")
+            raise EasyBuildError("Unknown compiler used, don't know how to set $OIFS_COMP.")
 
         # give EasyBuild control over compiler options
         env.setvar('OIFS_CC', os.getenv('CC'))
@@ -67,7 +68,7 @@ class EB_OpenIFS(EasyBlock):
         if grib_api_root:
             env.setvar('OIFS_GRIB_API_DIR', grib_api_root)
         else:
-            self.log.error("grib_api module not loaded")
+            raise EasyBuildError("grib_api module not loaded")
 
         env.setvar('OIFS_LAPACK_LIB', "-L%s %s" % (os.getenv('LAPACK_LIB_DIR'), os.getenv('LIBLAPACK')))
 
@@ -76,7 +77,7 @@ class EB_OpenIFS(EasyBlock):
         try:
             os.chdir('make')
         except OSError, err:
-            self.log.error("Failed to move to 'make' dir: %s" % err)
+            raise EasyBuildError("Failed to move to 'make' dir: %s", err)
 
         # enable parallel build
         par = self.cfg['parallel']
@@ -92,7 +93,7 @@ class EB_OpenIFS(EasyBlock):
             shutil.copy2(os.path.join(srcdir, 'bin', 'master.exe'), bindir)
             shutil.copytree(os.path.join(srcdir, 'include'), os.path.join(self.installdir, 'include'))
         except OSError, err:
-            self.log.error("Failed to install OpenIFS: %s" % err)
+            raise EasyBuildError("Failed to install OpenIFS: %s", err)
 
     def sanity_check_step(self):
         """Custom sanity check for OpenIFS."""
