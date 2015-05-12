@@ -29,9 +29,13 @@ EasyBuild support for installing EasyBuild, implemented as an easyblock
 """
 import copy
 import os
+import re
+from distutils.version import LooseVersion
 
-from easybuild.framework.easyblock import EasyBlock
-from easybuild.easyblocks.generic.pythonpackage import PythonPackage
+import easybuild.tools.environment as env
+from easybuild.easyblocks.generic.pythonpackage import PythonPackage, det_pylibdir
+from easybuild.tools.build_log import EasyBuildError
+from easybuild.tools.filetools import read_file
 from easybuild.tools.modules import get_software_root_env_var_name
 from easybuild.tools.ordereddict import OrderedDict
 from easybuild.tools.utilities import flatten
@@ -45,7 +49,11 @@ class EB_EasyBuildMeta(PythonPackage):
     def __init__(self, *args, **kwargs):
         """Initialize custom class variables."""
         super(EB_EasyBuildMeta, self).__init__(*args, **kwargs)
-        self.orig_orig_environ = None
+        self.real_initial_environ = None
+
+        self.easybuild_pkgs = ['easybuild-framework', 'easybuild-easyblocks', 'easybuild-easyconfigs']
+        if LooseVersion(self.version) >= LooseVersion('2.0'):
+            self.easybuild_pkgs.insert(0, 'vsc-base')
 
     def check_readiness_step(self):
         """Make sure EasyBuild can be installed with a loaded EasyBuild module."""
@@ -65,36 +73,66 @@ class EB_EasyBuildMeta(PythonPackage):
     def install_step(self):
         """Install EasyBuild packages one by one."""
 
+        # unset $PYTHONPATH to try and avoid that current EasyBuild is picked up, and ends up in easy-install.pth
+        orig_pythonpath = os.getenv('PYTHONPATH')
+        env.setvar('PYTHONPATH', '')
+
         try:
             subdirs = os.listdir(self.builddir)
-            for pkg in ['easyconfigs', 'easyblocks', 'framework']:
-                seldirs = [x for x in subdirs if x.startswith('easybuild-%s-' % pkg)]
-                if not len(seldirs) == 1:
-                    self.log.error("Failed to find EasyBuild %s package (subdirs: %s, seldirs: %s)" % (pkg, subdirs, seldirs))
+            for pkg in self.easybuild_pkgs:
+                seldirs = [x for x in subdirs if x.startswith(pkg)]
+                if len(seldirs) != 1:
+                    # vsc-base sources are optional, can be pulled in from PyPi when installing easybuild-framework too
+                    if pkg != 'vsc-base':
+                        raise EasyBuildError("Failed to find EasyBuild %s package (subdirs: %s, seldirs: %s)",
+                                             pkg, subdirs, seldirs)
 
-                self.log.debug("Installing EasyBuild package %s" % pkg)
-                os.chdir(os.path.join(self.builddir, seldirs[0]))
-                super(EB_EasyBuildMeta, self).install_step()
+                else:
+                    self.log.info("Installing EasyBuild package %s" % pkg)
+                    os.chdir(os.path.join(self.builddir, seldirs[0]))
+                    super(EB_EasyBuildMeta, self).install_step()
 
         except OSError, err:
-            self.log.error("Failed to install EasyBuild packages: %s" % err)
+            raise EasyBuildError("Failed to install EasyBuild packages: %s", err)
+
+        env.setvar('PYTHONPATH', orig_pythonpath)
 
     def sanity_check_step(self):
         """Custom sanity check for EasyBuild."""
 
+        # check whether easy-install.pth contains correct entries
+        easy_install_pth = os.path.join(self.installdir, det_pylibdir(), 'easy-install.pth')
+        if os.path.exists(easy_install_pth):
+            easy_install_pth_txt = read_file(easy_install_pth)
+            for pkg in self.easybuild_pkgs:
+                if pkg == 'vsc-base':
+                    # don't include strict version check for vsc-base
+                    pkg_regex = re.compile(r"^\./%s" % pkg.replace('-', '_'), re.M)
+                else:
+                    major_minor_version = '.'.join(self.version.split('.')[:2])
+                    pkg_regex = re.compile(r"^\./%s-%s" % (pkg.replace('-', '_'), major_minor_version), re.M)
+
+                if not pkg_regex.search(easy_install_pth_txt):
+                    raise EasyBuildError("Failed to find pattern '%s' in %s: %s",
+                                         pkg_regex.pattern, easy_install_pth, easy_install_pth_txt)
+
         # list of dirs to check, by package
         # boolean indicates whether dir is expected to reside in Python lib/pythonX/site-packages dir
-        subdirs_by_pkg = [
-                          ('framework', [('easybuild/framework', True), ('easybuild/tools', True)]),
-                          ('easyblocks', [('easybuild/easyblocks', True)]),
-                          ('easyconfigs', [('easybuild/easyconfigs', False)]),
-                         ]
+        subdirs_by_pkg = {
+            'easybuild-framework': [('easybuild/framework', True), ('easybuild/tools', True)],
+            'easybuild-easyblocks': [('easybuild/easyblocks', True)],
+            'easybuild-easyconfigs': [('easybuild/easyconfigs', False)],
+        }
+        if LooseVersion(self.version) >= LooseVersion('2.0'):
+            subdirs_by_pkg.update({
+                'vsc-base': [('vsc/utils', True)],
+            })
 
         # final list of directories to check, by setup tool
         # order matters, e.g. setuptools before distutils
         eb_dirs = OrderedDict()
         eb_dirs['setuptools'] = []
-        eb_dirs['distutils.core'] = flatten([x[1] for x in subdirs_by_pkg])
+        eb_dirs['distutils.core'] = flatten([x for x in subdirs_by_pkg.values()])
 
         # determine setup tool (setuptools or distutils)
         setup_tool = None
@@ -113,37 +151,42 @@ class EB_EasyBuildMeta(PythonPackage):
         if setup_tool == 'setuptools':
             try:
                 installed_dirs = os.listdir(os.path.join(self.installdir, self.pylibdir))
-                for (pkg, subdirs) in subdirs_by_pkg:
-                    sel_dirs = [x for x in installed_dirs if x.startswith('easybuild_%s' % pkg)]
+                for (pkg, subdirs) in subdirs_by_pkg.items():
+                    sel_dirs = [x for x in installed_dirs if x.startswith(pkg.replace('-', '_'))]
                     if not len(sel_dirs) == 1:
-                        self.log.error("Failed to isolate installed egg dir for easybuild-%s" % pkg)
+                        raise EasyBuildError("Failed to isolate installed egg dir for %s", pkg)
 
                     for (subdir, _) in subdirs:
                         # eggs always go in Python lib/pythonX/site-packages dir with setuptools 
                         eb_dirs['setuptools'].append((os.path.join(sel_dirs[0], subdir), True))
             except OSError, err:
-                self.log.error("Failed to determine sanity check dir paths: %s" % err)
+                raise EasyBuildError("Failed to determine sanity check dir paths: %s", err)
 
         # set of sanity check paths to check for EasyBuild
         custom_paths = {
-                        'files': ['bin/eb'],
-                        'dirs': [self.pylibdir] + [[x, os.path.join(self.pylibdir, x)][y] for (x, y) in eb_dirs[setup_tool]],
-                       }
+            'files': ['bin/eb'],
+            'dirs': [self.pylibdir] + [[x, os.path.join(self.pylibdir, x)][y] for (x, y) in eb_dirs[setup_tool]],
+        }
+
+        # make sure we don't trip over deprecated behavior in old EasyBuild versions
+        eb_cmd = 'eb'
+        if LooseVersion(self.version) <= LooseVersion('1.16.0'):
+            eb_cmd = 'EASYBUILD_DEPRECATED=1.0 eb'
 
         # set of sanity check commands to run for EasyBuild
         custom_commands = [
-                           # this may spit out a wrong version, but that should be safe to ignore
-                           # occurs when the EasyBuild being used is newer than the EasyBuild being installed
-                           ('eb', '--version'),
-                           ('eb', '-a'),
-                           ('eb', '-e ConfigureMake -a')
-                          ]
+            # this may spit out a wrong version, but that should be safe to ignore
+            # occurs when the EasyBuild being used is newer than the EasyBuild being installed
+            (eb_cmd, '--version'),
+            (eb_cmd, '-a'),
+            (eb_cmd, '-e ConfigureMake -a'),
+        ]
 
-        # (temporary) cleanse copy of original environment to avoid conflict with (potentially) loaded EasyBuild module
-        self.orig_orig_environ = copy.deepcopy(self.orig_environ)
+        # (temporary) cleanse copy of initial environment to avoid conflict with (potentially) loaded EasyBuild module
+        self.real_initial_environ = copy.deepcopy(self.initial_environ)
         for env_var in ['_LMFILES_', 'LOADEDMODULES']:
-            if env_var in self.orig_environ:
-                self.orig_environ.pop(env_var)
+            if env_var in self.initial_environ:
+                self.initial_environ.pop(env_var)
                 os.environ.pop(env_var)
                 self.log.debug("Unset $%s in current env and copy of original env to make sanity check work" % env_var)
 
@@ -155,7 +198,7 @@ class EB_EasyBuildMeta(PythonPackage):
 
         if not fake:
             # restore copy of original environment
-            self.orig_environ = copy.deepcopy(self.orig_orig_environ)
+            self.initial_environ = copy.deepcopy(self.real_initial_environ)
             self.log.debug("Restored copy of original environment")
 
         return modpath

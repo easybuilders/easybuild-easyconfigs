@@ -27,7 +27,7 @@ EasyBuild support for OpenBabel, implemented as an easyblock
 
 @author: Ward Poelmans (Ghent University)
 """
-
+import os
 from easybuild.easyblocks.generic.cmakemake import CMakeMake
 from easybuild.tools.modules import get_software_root, get_software_version
 
@@ -76,6 +76,8 @@ class EB_OpenBabel(CMakeMake):
         """Custom variables for OpenBabel module."""
         txt = super(EB_OpenBabel, self).make_module_extra()
         txt += self.module_generator.prepend_paths('PYTHONPATH', ['lib'])
-        txt += self.module_generator.set_environment('BABEL_LIBDIR', '$root/lib/openbabel/%s/' % self.version)
-        txt += self.module_generator.set_environment('BABEL_DATADIR', '$root/share/openbabel/%s/' % self.version)
+        babel_libdir = os.path.join(self.installdir, 'lib', 'openbabel', self.version)
+        txt += self.module_generator.set_environment('BABEL_LIBDIR', babel_libdir)
+        babel_datadir = os.path.join(self.installdir, 'share', 'openbabel', self.version)
+        txt += self.module_generator.set_environment('BABEL_DATADIR', babel_datadir)
         return txt

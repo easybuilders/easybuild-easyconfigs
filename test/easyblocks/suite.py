@@ -1,6 +1,6 @@
 #!/usr/bin/python
 ##
-# Copyright 2012-2013 Ghent University
+# Copyright 2012-2015 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -38,7 +38,11 @@ import tempfile
 import unittest
 from vsc import fancylogger
 
+from easybuild.tools.build_log import EasyBuildError
+from easybuild.tools.config import set_tmpdir
+
 import test.easyblocks.init_easyblocks as i
+import test.easyblocks.module_only as m
 
 # initialize logger for all the unit tests
 fd, log_fn = tempfile.mkstemp(prefix='easybuild-easyblocks-tests-', suffix='.log')
@@ -48,10 +52,16 @@ fancylogger.logToFile(log_fn)
 log = fancylogger.getLogger()
 log.setLevelName('DEBUG')
 
-os.environ['EASYBUILD_TMP_LOGDIR'] = tempfile.mkdtemp(prefix='easyblocks_init_test_')
+try:
+    tmpdir = set_tmpdir(raise_error=True)
+except EasyBuildError, err:
+    sys.stderr.write("No execution rights on temporary files, specify another location via $TMPDIR: %s\n" % err)
+    sys.exit(1)
+
+os.environ['EASYBUILD_TMP_LOGDIR'] = tempfile.mkdtemp(prefix='easyblocks_test_')
 
 # call suite() for each module and then run them all
-SUITE = unittest.TestSuite([x.suite() for x in [i]])
+SUITE = unittest.TestSuite([x.suite() for x in [i, m]])
 
 # uses XMLTestRunner if possible, so we can output an XML file that can be supplied to Jenkins
 xml_msg = ""
@@ -75,3 +85,4 @@ if not res.wasSuccessful():
 else:
     for f in glob.glob('%s*' % log_fn):
         os.remove(f)
+    shutil.rmtree(tmpdir)

@@ -31,7 +31,8 @@ import re
 
 from easybuild.easyblocks.generic.makecp import MakeCp
 from easybuild.framework.easyconfig import CUSTOM
-from easybuild.tools.filetools import run_cmd
+from easybuild.tools.build_log import EasyBuildError
+from easybuild.tools.run import run_cmd
 
 
 class CmdCp(MakeCp):
@@ -44,20 +45,20 @@ class CmdCp(MakeCp):
         """
         Define list of files or directories to be copied after make
         """
-        extra_vars = dict(MakeCp.extra_options(extra_vars=extra_vars))
+        extra_vars = MakeCp.extra_options(extra_vars=extra_vars)
         extra_vars['cmds_map'] = [
             [('.*', "$CC $CFLAGS %(source)s -o %(target)s")],
             "List of regex/template command (with 'source'/'target' fields) tuples",
             CUSTOM,
         ]
-        return MakeCp.extra_options(extra_vars=extra_vars)
+        return extra_vars
 
     def build_step(self):
         """Build by running the command with the inputfiles"""
         try:
             os.chdir(self.cfg['start_dir'])
         except OSError, err:
-            self.log.error("Failed to move (back) to %s: %s" % (self.cfg['start_dir'], err))
+            raise EasyBuildError("Failed to move (back) to %s: %s", self.cfg['start_dir'], err)
 
         for src in self.src:
             src = src['path']
@@ -71,6 +72,7 @@ class CmdCp(MakeCp):
                     cmd = regex_cmd % {'source': src, 'target': target}
                     break
             if cmd is None:
-                self.log.error("No match for %s in %s, don't know which command to use." % (src, self.cfg['cmds_map']))
+                raise EasyBuildError("No match for %s in %s, don't know which command to use.",
+                                     src, self.cfg['cmds_map'])
 
             run_cmd(cmd, log_all=True, simple=True)

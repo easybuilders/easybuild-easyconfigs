@@ -29,18 +29,17 @@ EasyBuild support for installing VSC-tools Python packages, implemented as an ea
 """
 import os
 
-from easybuild.easyblocks.generic.versionindependendpythonpackage import VersionIndependendPythonPackage
+from easybuild.easyblocks.generic.versionindependentpythonpackage import VersionIndependentPythonPackage
 
 
 # EasyBuild provides its own 'vsc' namespace, that shouldn't be mixed with a 'vsc' namespace available somewhere else
 # therefore, we need a dedicated easyblock for VSC-tools packages like vsc-base, vsc-mympirun, etc.
-class VSCPythonPackage(VersionIndependendPythonPackage):
+class VSCPythonPackage(VersionIndependentPythonPackage):
     """Support for install VSC Python packages."""
 
     def __init__(self, *args, **kwargs):
         """Custom constructor for VSC Python packages."""
         super(VSCPythonPackage, self).__init__(*args, **kwargs)
-        self.log.deprecated("VSCPythonPackage is only there because EasyBuild provides a 'vsc' namespace too", '2.0')
 
     def sanity_check_step(self, *args, **kwargs):
         """Custom sanity check for VSC-tools packages."""

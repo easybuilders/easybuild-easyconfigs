@@ -28,6 +28,7 @@ EasyBuild support for building and installing GROMACS, implemented as an easyblo
 @author: Kenneth Hoste (Ghent University)
 @author: Ward Poelmans (Ghent University)
 """
+import glob
 import os
 import re
 from distutils.version import LooseVersion
@@ -35,6 +36,7 @@ from vsc.utils.missing import any
 
 import easybuild.tools.environment as env
 from easybuild.easyblocks.generic.cmakemake import CMakeMake
+from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.modules import get_software_root
 from easybuild.tools.systemtools import get_platform_name
 
@@ -42,12 +44,17 @@ from easybuild.tools.systemtools import get_platform_name
 class EB_GROMACS(CMakeMake):
     """Support for building/installing GROMACS."""
 
+    def __init__(self, *args, **kwargs):
+        """Initialize GROMACS-specific variables."""
+        super(EB_GROMACS, self).__init__(*args, **kwargs)
+        self.lib_subdir = ''
+
     def configure_step(self):
         """Custom configuration procedure for GROMACS: set configure options for configure or cmake."""
 
         if LooseVersion(self.version) < LooseVersion('4.6'):
             self.log.info("Using configure script for configuring GROMACS build.")
-            self.log.error("Configuration procedure for older GROMACS versions not implemented yet.")
+            raise EasyBuildError("Configuration procedure for older GROMACS versions not implemented yet.")
         else:
             # build a release build
             self.cfg.update('configopts', "-DCMAKE_BUILD_TYPE=Release")
@@ -97,6 +104,7 @@ class EB_GROMACS(CMakeMake):
             if any([src['name'].startswith(prefix) for src in self.src]):
                 self.cfg.update('configopts', "-DREGRESSIONTEST_PATH='%%(builddir)s/%s-%%(version)s' " % prefix)
 
+        # no more GSL support in GROMACS 5.x, see http://redmine.gromacs.org/issues/1472
         if LooseVersion(self.version) < LooseVersion('5.0'):
             # enable GSL when it's provided
             if get_software_root('GSL'):
@@ -117,7 +125,7 @@ class EB_GROMACS(CMakeMake):
             for pattern in patterns:
                 regex = re.compile(pattern, re.M)
                 if not regex.search(out):
-                    self.log.error("Pattern '%s' not found in GROMACS configuration output." % pattern)
+                    raise EasyBuildError("Pattern '%s' not found in GROMACS configuration output.", pattern)
 
     def test_step(self):
         """Specify to running tests is done using 'make check'."""
@@ -130,6 +138,37 @@ class EB_GROMACS(CMakeMake):
 
         super(EB_GROMACS, self).test_step()
 
+    def install_step(self):
+        """Custom install step for GROMACS; figure out where libraries were installed to."""
+        super(EB_GROMACS, self).install_step()
+
+        if LooseVersion(self.version) < LooseVersion('5.0'):
+            libname = 'libgmx.a'
+        else:
+            libname = 'libgromacs.a'
+
+        for libdir in ['lib', 'lib64']:
+            if os.path.exists(os.path.join(self.installdir, libdir)):
+                for subdir in [libdir, os.path.join(libdir, '*')]:
+                    libpaths = glob.glob(os.path.join(self.installdir, subdir, libname))
+                    if len(libpaths) == 1:
+                        self.lib_subdir = subdir
+                        self.log.info("Found lib subdirectory that contains %s: %s", libname, self.lib_subdir)
+                        break
+
+        if not self.lib_subdir:
+            raise EasyBuildError("Failed to determine lib subdirectory in %s", self.installdir)
+
+    def make_module_req_guess(self):
+        """Custom library subdirectories for GROMACS."""
+        guesses = super(EB_GROMACS, self).make_module_req_guess()
+        guesses.update({
+            'LD_LIBRARY_PATH': [self.lib_subdir],
+            'LIBRARY_PATH': [self.lib_subdir],
+            'PKG_CONFIG_PATH': [os.path.join(self.lib_subdir, 'pkgconfig')],
+        })
+        return guesses
+
     def sanity_check_step(self):
         """Custom sanity check for GROMACS."""
 
@@ -137,18 +176,25 @@ class EB_GROMACS(CMakeMake):
         if self.toolchain.options.get('usempi', None):
             suff = '_mpi'
 
+        # in GROMACS v5.1, only 'gmx' binary is there
+        # (only) in GROMACS v5.0, other binaries are symlinks to 'gmx'
+        binaries = []
+        if LooseVersion(self.version) < LooseVersion('5.1'):
+            binaries.extend(['editconf', 'g_lie', 'genbox', 'genconf', 'mdrun'])
+        if LooseVersion(self.version) >= LooseVersion('5.0'):
+            binaries.append('gmx')
+
         # check for a handful of binaries/libraries that should be there
-        libnames = ['gromacs']
         if LooseVersion(self.version) < LooseVersion('5.0'):
             libnames = ['gmxana', 'gmx', 'gmxpreprocess', 'md']
+        else:
+            libnames = ['gromacs']
 
-        libprefix = ''
-        if LooseVersion(self.version) >= LooseVersion('5.0'):
-            libprefix = get_platform_name()
         libs = ['lib%s%s.a' % (libname, suff) for libname in libnames]
+
         custom_paths = {
-            'files': ['bin/%s%s' % (binary, suff) for binary in ['editconf', 'g_lie', 'genbox', 'genconf', 'mdrun']] +
-                     [(os.path.join('lib', libprefix, lib), os.path.join('lib64', libprefix, lib)) for lib in libs],
-            'dirs': ['include/gromacs', (os.path.join('lib', libprefix, 'pkgconfig'), os.path.join('lib64', libprefix, 'pkgconfig'))],
+            'files': ['bin/%s%s' % (binary, suff) for binary in binaries] +
+                     [os.path.join(self.lib_subdir, lib) for lib in libs],
+            'dirs': ['include/gromacs', os.path.join(self.lib_subdir, 'pkgconfig')]
         }
         super(EB_GROMACS, self).sanity_check_step(custom_paths=custom_paths)

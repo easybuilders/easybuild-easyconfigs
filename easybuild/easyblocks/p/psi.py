@@ -1,5 +1,5 @@
 ##
-# Copyright 2013 Ghent University
+# Copyright 2013-2015 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -29,16 +29,20 @@ EasyBuild support for building and installing PSI, implemented as an easyblock
 @author: Ward Poelmans (Ghent University)
 """
 
+from distutils.version import LooseVersion
 import os
 import shutil
+import tempfile
 
 import easybuild.tools.environment as env
+from easybuild.easyblocks.generic.cmakemake import CMakeMake
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.framework.easyconfig import BUILD
+from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.modules import get_software_root
 
 
-class EB_PSI(ConfigureMake):
+class EB_PSI(CMakeMake):
     """
     Support for building and installing PSI
     """
@@ -59,7 +63,7 @@ class EB_PSI(ConfigureMake):
             # always include running PSI unit tests (takes about 2h or less)
             'runtest': ["tests TESTFLAGS='-u -q'", "Run tests included with PSI, without interruption.", BUILD],
         }
-        return ConfigureMake.extra_options(extra_vars)
+        return CMakeMake.extra_options(extra_vars)
 
     def configure_step(self):
         """
@@ -70,48 +74,9 @@ class EB_PSI(ConfigureMake):
             os.makedirs(objdir)
             os.chdir(objdir)
         except OSError, err:
-            self.log.error("Failed to prepare for configuration of PSI build: %s" % err)
+            raise EasyBuildError("Failed to prepare for configuration of PSI build: %s", err)
 
-        if self.toolchain.options.get('usempi', None):
-            # PSI doesn't require a Fortran compiler itself, but may require it to link to BLAS/LAPACK correctly
-            # we should always specify the sequential Fortran compiler,
-            # to avoid problems with -lmpi vs -lmpi_mt during linking
-            fcompvar = 'F77_SEQ'
-        else:
-            fcompvar = 'F77'
-
-        # update configure options
-        # using multi-threaded BLAS/LAPACK is important for performance,
-        # cfr. http://sirius.chem.vt.edu/psi4manual/latest/installfile.html#sec-install-iii
-        opt_vars = [
-            ('cc', 'CC'),
-            ('cxx', 'CXX'),
-            ('fc', fcompvar),
-            ('libdirs', 'LDFLAGS'),
-            ('blas', 'LIBBLAS_MT'),
-            ('lapack', 'LIBLAPACK_MT'),
-        ]
-        for (opt, var) in opt_vars:
-            self.cfg.update('configopts', "--with-%s='%s'" % (opt, os.getenv(var)))
-
-        # -DMPICH_IGNORE_CXX_SEEK dances around problem with order of stdio.h and mpi.h headers
-        # both define SEEK_SET, this makes the one for MPI be ignored
-        self.cfg.update('configopts', "--with-opt='%s -DMPICH_IGNORE_CXX_SEEK'" % os.getenv('CFLAGS'))
-
-        # explicitely specify Python binary to use
-        pythonroot = get_software_root('Python')
-        if not pythonroot:
-            self.log.error("Python module not loaded.")
-        env.setvar('PYTHON', os.path.join(pythonroot, 'bin', 'python'))
-
-        # specify location of Boost
-        boostroot = get_software_root('Boost')
-        if not boostroot:
-            self.log.error("Boost module not loaded.")
-        self.cfg.update('configopts', "--with-boost=%s" % boostroot)
-
-        # enable support for plugins
-        self.cfg.update('configopts', "--with-plugins")
+        env.setvar('F77FLAGS', os.getenv('F90FLAGS'))
 
         # In order to create new plugins with PSI, it needs to know the location of the source
         # and the obj dir after install. These env vars give that information to the configure script.
@@ -121,7 +86,65 @@ class EB_PSI(ConfigureMake):
         env.setvar('PSI_OBJ_INSTALL_DIR', self.install_psi_objdir)
         env.setvar('PSI_SRC_INSTALL_DIR', self.install_psi_srcdir)
 
-        super(EB_PSI, self).configure_step(cmd_prefix=self.cfg['start_dir'])
+        # explicitely specify Python binary to use
+        pythonroot = get_software_root('Python')
+        if not pythonroot:
+            raise EasyBuildError("Python module not loaded.")
+
+        # Use EB Boost
+        boostroot = get_software_root('Boost')
+        if not boostroot:
+            raise EasyBuildError("Boost module not loaded.")
+
+        # pre 4.0b5, they were using autotools, on newer it's CMake
+        if LooseVersion(self.version) <= LooseVersion("4.0b5"):
+            env.setvar('PYTHON', os.path.join(pythonroot, 'bin', 'python'))
+            env.setvar('USE_SYSTEM_BOOST', 'TRUE')
+
+            if self.toolchain.options.get('usempi', None):
+                # PSI doesn't require a Fortran compiler itself, but may require it to link to BLAS/LAPACK correctly
+                # we should always specify the sequential Fortran compiler,
+                # to avoid problems with -lmpi vs -lmpi_mt during linking
+                fcompvar = 'F77_SEQ'
+            else:
+                fcompvar = 'F77'
+
+            # update configure options
+            # using multi-threaded BLAS/LAPACK is important for performance,
+            # cfr. http://sirius.chem.vt.edu/psi4manual/latest/installfile.html#sec-install-iii
+            opt_vars = [
+                ('cc', 'CC'),
+                ('cxx', 'CXX'),
+                ('fc', fcompvar),
+                ('libdirs', 'LDFLAGS'),
+                ('blas', 'LIBBLAS_MT'),
+                ('lapack', 'LIBLAPACK_MT'),
+            ]
+            for (opt, var) in opt_vars:
+                self.cfg.update('configopts', "--with-%s='%s'" % (opt, os.getenv(var)))
+
+            # -DMPICH_IGNORE_CXX_SEEK dances around problem with order of stdio.h and mpi.h headers
+            # both define SEEK_SET, this makes the one for MPI be ignored
+            self.cfg.update('configopts', "--with-opt='%s -DMPICH_IGNORE_CXX_SEEK'" % os.getenv('CFLAGS'))
+
+            # specify location of Boost
+            self.cfg.update('configopts', "--with-boost=%s" % boostroot)
+
+            # enable support for plugins
+            self.cfg.update('configopts', "--with-plugins")
+
+            ConfigureMake.configure_step(self, cmd_prefix=self.cfg['start_dir'])
+        else:
+            self.cfg['configopts'] += "-DPYTHON_INTERPRETER=%s " % os.path.join(pythonroot, 'bin', 'python')
+            self.cfg['configopts'] += "-DCMAKE_BUILD_TYPE=Release "
+
+            if self.toolchain.options.get('usempi', None):
+                self.cfg['configopts'] += "-DENABLE_MPI=ON "
+
+            if get_software_root('impi'):
+                self.cfg['configopts'] += "-DENABLE_CSR=ON -DBLAS_TYPE=MKL "
+
+            CMakeMake.configure_step(self, srcdir=self.cfg['start_dir'])
 
     def install_step(self):
         """Custom install procedure for PSI."""
@@ -130,9 +153,23 @@ class EB_PSI(ConfigureMake):
         # the obj and unpacked sources must remain available for working with plugins
         try:
             for subdir in ['obj', self.psi_srcdir]:
-                shutil.copytree(os.path.join(self.builddir, subdir), os.path.join(self.installdir, subdir))
+                # copy symlinks as symlinks to work around broken symlinks
+                shutil.copytree(os.path.join(self.builddir, subdir), os.path.join(self.installdir, subdir), symlinks=True)
         except OSError, err:
-            self.log.error("Failed to copy obj and unpacked sources to install dir: %s" % err)
+            raise EasyBuildError("Failed to copy obj and unpacked sources to install dir: %s", err)
+
+    def test_step(self):
+        """
+        Run the testsuite of PSI4
+        """
+        testdir = tempfile.mkdtemp()
+        env.setvar('PSI_SCRATCH', testdir)
+        super(EB_PSI, self).test_step()
+
+        try:
+            shutil.rmtree(testdir)
+        except OSError, err:
+            raise EasyBuildError("Failed to remove test directory %s: %s", testdir, err)
 
     def sanity_check_step(self):
         """Custom sanity check for PSI."""
@@ -145,5 +182,5 @@ class EB_PSI(ConfigureMake):
     def make_module_extra(self):
         """Custom variables for PSI module."""
         txt = super(EB_PSI, self).make_module_extra()
-        txt += self.module_generator.set_environment('PSI4DATADIR', '$root/share/psi')
+        txt += self.module_generator.set_environment('PSI4DATADIR', os.path.join(self.installdir, 'share', 'psi'))
         return txt

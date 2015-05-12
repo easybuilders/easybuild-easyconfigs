@@ -1,5 +1,5 @@
 ##
-# Copyright 2009-2014 Ghent University
+# Copyright 2009-2015 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -33,6 +33,7 @@ import re
 import shutil
 
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
+from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.filetools import mkdir
 from easybuild.tools.run import run_cmd
 
@@ -70,17 +71,17 @@ class EB_HPCG(ConfigureMake):
         try:
             hpcg_logs = glob.glob('hpcg_log*txt')
             if len(hpcg_logs) == 1:
-                tup = (success_regex.pattern, hpcg_logs[0])
                 txt = open(hpcg_logs[0], 'r').read()
                 self.log.debug("Contents of HPCG log file %s: %s" % (hpcg_logs[0], txt))
                 if success_regex.search(txt):
-                    self.log.info("Found pattern '%s' in HPCG log file %s, OK!" % tup)
+                    self.log.info("Found pattern '%s' in HPCG log file %s, OK!", success_regex.pattern, hpcg_logs[0])
                 else:
-                    self.log.error("Failed to find pattern '%s' in HPCG log file %s" % tup)
+                    raise EasyBuildError("Failed to find pattern '%s' in HPCG log file %s",
+                                         success_regex.pattern, hpcg_logs[0])
             else:
-                self.log.error("Failed to find exactly one HPCG log file: %s" % hpcg_logs)
+                raise EasyBuildError("Failed to find exactly one HPCG log file: %s", hpcg_logs)
         except OSError, err:
-            self.log.error("Failed to check for success in HPCG log file: %s" % err)
+            raise EasyBuildError("Failed to check for success in HPCG log file: %s", err)
 
     def install_step(self):
         """Custom install procedure for HPCG."""
@@ -89,7 +90,7 @@ class EB_HPCG(ConfigureMake):
         try:
             shutil.copytree(objbindir, bindir)
         except OSError, err:
-            self.log.error("Failed to copy HPCG files to %s: %s" % (bindir, err))
+            raise EasyBuildError("Failed to copy HPCG files to %s: %s", bindir, err)
 
     def sanity_check_step(self):
         """Custom sanity check for HPCG."""

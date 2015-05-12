@@ -1,5 +1,5 @@
 ##
-# Copyright 2009-2013 Ghent University
+# Copyright 2009-2015 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -31,6 +31,7 @@ EasyBuild support for CGAL, implemented as an easyblock
 import os
 
 from easybuild.easyblocks.generic.cmakemake import CMakeMake
+from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.modules import get_software_root
 
 
@@ -43,7 +44,7 @@ class EB_CGAL(CMakeMake):
         deps = ["Boost", "GMP", "MPFR"]
         for dep in deps:
             if not get_software_root(dep):
-                self.log.error("Dependency module %s not loaded?" % dep)
+                raise EasyBuildError("Dependency module %s not loaded?", dep)
 
         for lib in ["GMP", "MPFR"]:
             os.environ['%s_INC_DIR' % lib] = "%s%s" % (get_software_root(lib), "/include/")

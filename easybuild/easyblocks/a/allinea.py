@@ -34,6 +34,7 @@ from os.path import expanduser
 from easybuild.easyblocks.generic.binary import Binary
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import CUSTOM
+from easybuild.tools.build_log import EasyBuildError
 
 
 class EB_Allinea(Binary):
@@ -42,13 +43,11 @@ class EB_Allinea(Binary):
     @staticmethod
     def extra_options(extra_vars=None):
         """Define extra easyconfig parameters specific to Allinea."""
-
-        orig_vars = dict(Binary.extra_options(extra_vars))
-        allinea_vars = {
+        extra = Binary.extra_options(extra_vars)
+        extra.update({
             'templates': [[], "List of templates.", CUSTOM],
-        }
-        allinea_vars.update(orig_vars)
-        return allinea_vars.items()
+        })
+        return extra
 
     def extract_step(self):
         """Extract Allinea installation files."""
@@ -58,7 +57,7 @@ class EB_Allinea(Binary):
         """No configuration for Allinea."""
         # ensure a license file is specified
         if self.cfg['license_file'] is None:
-            self.log.error("No license file specified.")
+            raise EasyBuildError("No license file specified.")
 
     def build_step(self):
         """No build step for Allinea."""
@@ -77,7 +76,7 @@ class EB_Allinea(Binary):
         try:
             shutil.copy2(self.cfg['license_file'], lic_path)
         except OSError, err:
-            self.log.error("Failed to copy license file to %s: %s" % (lic_path, err))
+            raise EasyBuildError("Failed to copy license file to %s: %s", lic_path, err)
 
         # copy templates
         templ_path = os.path.join(self.installdir, 'templates')
@@ -85,7 +84,7 @@ class EB_Allinea(Binary):
             try:
                 shutil.copy2(templ, templ_path)
             except OSError, err:
-                self.log.error("Failed to copy template %s to %s: %s" % (templ, templ_path, err))
+                raise EasyBuildError("Failed to copy template %s to %s: %s", templ, templ_path, err)
 
     def sanity_check_step(self):
         """Custom sanity check for Allinea."""
