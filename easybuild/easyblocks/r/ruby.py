@@ -42,3 +42,9 @@ class EB_Ruby(ConfigureMake):
 
         self.cfg['exts_defaultclass'] = "RubyGem"
         self.cfg['exts_filter'] = EXTS_FILTER_GEMS
+
+    def configure_step(self):
+        """Updates configure options for the Ruby base install"""
+
+        self.cfg.update('configopts', "--disable-install-doc --enable-shared")
+        super(EB_Ruby, self).configure_step()
