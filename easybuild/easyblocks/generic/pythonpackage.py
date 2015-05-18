@@ -46,6 +46,9 @@ from easybuild.tools.modules import get_software_version
 from easybuild.tools.run import run_cmd
 
 
+UNKNOWN = 'UNKNOWN'
+
+
 def det_pylibdir():
     """Determine Python library directory."""
     log = fancylogger.getLogger('det_pylibdir', fname=False)
@@ -94,7 +97,7 @@ class PythonPackage(ExtensionEasyBlock):
         self.testcmd = None
         self.unpack_options = ''
 
-        self.pylibdir = None
+        self.pylibdir = UNKNOWN
 
         # make sure there's no site.cfg in $HOME, because setup.py will find it and use it
         if os.path.exists(os.path.join(expanduser('~'), 'site.cfg')):
@@ -103,12 +106,6 @@ class PythonPackage(ExtensionEasyBlock):
         if not 'modulename' in self.options:
             self.options['modulename'] = self.name.lower()
 
-    def prepare_step(self):
-        """Prepare easyblock by determining Python site lib dir."""
-        super(PythonPackage, self).prepare_step()
-        if not self.pylibdir:
-            self.pylibdir = det_pylibdir()
-
     def prerun(self):
         """Prepare extension by determining Python site lib dir."""
         super(PythonPackage, self).prerun()
@@ -116,6 +113,9 @@ class PythonPackage(ExtensionEasyBlock):
 
     def configure_step(self):
         """Configure Python package build."""
+        # prepare easyblock by determining Python site lib dir
+        if self.pylibdir == UNKNOWN:
+            self.pylibdir = det_pylibdir()
 
         if not self.pylibdir:
             raise EasyBuildError("Python module not loaded.")

@@ -52,7 +52,7 @@ class EB_CPLEX(Binary):
     def __init__(self, *args, **kwargs):
         """Initialize CPLEX-specific variables."""
         super(EB_CPLEX, self).__init__(*args, **kwargs)
-        self.bindir = None
+        self.bindir = 'UNKNOWN'
 
     def install_step(self):
         """CPLEX has an interactive installer, so use Q&A"""

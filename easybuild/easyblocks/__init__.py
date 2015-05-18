@@ -33,7 +33,7 @@ from pkgutil import extend_path
 
 # note: release candidates should be versioned as a pre-release, e.g. "1.1rc1"
 # 1.1-rc1 would indicate a post-release, i.e., and update of 1.1, so beware
-VERSION = LooseVersion('2.1.0')
+VERSION = LooseVersion('2.1.1')
 UNKNOWN = 'UNKNOWN'
 
 
