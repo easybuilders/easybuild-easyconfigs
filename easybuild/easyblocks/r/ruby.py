@@ -1,5 +1,5 @@
 ##
-# Copyright 2009-2013 Ghent University
+# Copyright 2015-2015 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -30,17 +30,17 @@ EasyBuild support for Ruby, implemented as an easyblock
 
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 
-#Seems like the quickest test for whether a gem is installed
 
+# seems like the quickest test for whether a gem is installed
 EXTS_FILTER_GEMS = ("gem list %(ext_name)s -i", "")
+
 
 class EB_Ruby(ConfigureMake):
     """Building and installing Ruby including support for gems"""
     
     def prepare_for_extensions(self):
         """Sets default class and filter for gems"""
-
-        self.cfg['exts_defaultclass'] = "RubyGem"
+        self.cfg['exts_defaultclass'] = 'RubyGem'
         self.cfg['exts_filter'] = EXTS_FILTER_GEMS
 
     def configure_step(self):
