@@ -39,7 +39,7 @@ class RubyGem(ExtensionEasyBlock):
 
     def __init__(self, *args, **kwargs):
         """RubyGem easyblock constructor."""
-        super(RubyGem, self).__init__(self, *args, **kwargs)
+        super(RubyGem, self).__init__(*args, **kwargs)
         self.ext_src = None
 
     def run(self):
