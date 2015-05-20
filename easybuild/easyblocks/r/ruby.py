@@ -29,6 +29,7 @@ EasyBuild support for Ruby, implemented as an easyblock
 """
 
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
+from easybuild.tools.systemtools import get_shared_lib_ext
 
 
 # seems like the quickest test for whether a gem is installed
@@ -48,3 +49,14 @@ class EB_Ruby(ConfigureMake):
 
         self.cfg.update('configopts', "--disable-install-doc --enable-shared")
         super(EB_Ruby, self).configure_step()
+
+    def sanity_check_step(self):
+        """Custom sanity check for Ruby gems"""
+        majver = '.'.join(self.version.split('.')[:2])
+        custom_paths = {
+            'files': ['bin/ruby', 'bin/rake', 'bin/gem', 'bin/testrb', 'bin/erb',
+                      'bin/ri', 'bin/irb', 'bin/rdoc', 'lib/libruby.%s' % get_shared_lib_ext()],
+            'dirs': ['lib/ruby/%s.0' % majver, 'lib/ruby/gems', 'lib/pkgconfig',
+                     'include/ruby-%s.0' % majver],
+        }
+        return super(EB_Ruby, self).sanity_check_step(custom_paths=custom_paths)

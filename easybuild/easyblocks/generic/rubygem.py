@@ -39,12 +39,8 @@ class RubyGem(ExtensionEasyBlock):
 
     def __init__(self, *args, **kwargs):
         """RubyGem easyblock constructor."""
-        super(RubyGem, self).__init__(self, *args, **kwargs)
+        super(RubyGem, self).__init__(*args, **kwargs)
         self.ext_src = None
-
-    def install_ruby_gem(self):
-        """install ruby gems using gem package manager"""
-        run_cmd('gem install --local %s' % self.ext_src)
 
     def run(self):
         """Perform the actual Ruby gem build/install"""
@@ -55,7 +51,7 @@ class RubyGem(ExtensionEasyBlock):
 
         self.ext_src = self.src
         self.log.debug("Installing Ruby gem %s version %s." % (self.name, self.version))
-        self.install_ruby_gem()
+        self.install_step()
 
     def extract_step(self):
         """Skip extraction, gemfiles will be installed as downloaded"""
@@ -84,5 +80,5 @@ class RubyGem(ExtensionEasyBlock):
         pass
 
     def install_step(self):
-        """Run install for Ruby Gems"""
-        self.install_ruby_gem()
+        """Install Ruby Gems using gem package manager"""
+        run_cmd('gem install --local %s' % self.ext_src)
