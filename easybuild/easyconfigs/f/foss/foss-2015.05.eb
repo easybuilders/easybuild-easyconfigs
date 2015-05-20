@@ -1,0 +1,39 @@
+easyblock = "Toolchain"
+
+name = 'foss'
+version = '2015.05'
+
+homepage = '(none)'
+description = """GNU Compiler Collection (GCC) based compiler toolchain, including
+ OpenMPI for MPI support, OpenBLAS (BLAS and LAPACK support), FFTW and ScaLAPACK."""
+
+toolchain = {'name': 'dummy', 'version': 'dummy'}
+
+gccver = '4.9.2'
+binutilsver = '2.25'
+tcver = '%s-binutils-%s' % (gccver, binutilsver)
+
+blaslib = 'OpenBLAS'
+blasver = '0.2.14'
+blas = '%s-%s' % (blaslib, blasver)
+blassuff = '-LAPACK-3.5.0'
+
+# toolchain used to build foss dependencies
+comp_mpi_tc_name = 'gompi'
+comp_mpi_tc_ver = "%s" % version
+comp_mpi_tc = (comp_mpi_tc_name, comp_mpi_tc_ver)
+
+# compiler toolchain depencies
+# we need GCC and OpenMPI as explicit dependencies instead of gompi toolchain
+# because of toolchain preperation functions
+# For binutils, stick to http://wiki.osdev.org/Cross-Compiler_Successful_Builds
+dependencies = [
+    ('GCC', gccver, '-binutils-%s' % binutilsver),
+    ('binutils', binutilsver, '', ('GCC', tcver)),
+    ('OpenMPI', '1.8.5', '', ('GNU', '%s-%s' % (gccver, binutilsver))),
+    (blaslib, blasver, blassuff, ('GNU', '%s-%s' % (gccver, binutilsver))),
+    ('FFTW', '3.3.4', '', comp_mpi_tc),
+    ('ScaLAPACK', '2.0.2', '-%s%s' % (blas, blassuff), comp_mpi_tc),
+]
+
+moduleclass = 'toolchain'
