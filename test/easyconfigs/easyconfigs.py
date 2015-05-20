@@ -244,7 +244,7 @@ def template_easyconfig_test(self, spec):
 
     # check easyconfig file name
     expected_fn = '%s-%s.eb' % (ec['name'], det_full_ec_version(ec))
-    msg = "Filename '%s' of parsed easconfig matches expected filename '%s'" % (spec, expected_fn)
+    msg = "Filename '%s' of parsed easyconfig matches expected filename '%s'" % (spec, expected_fn)
     self.assertEqual(os.path.basename(spec), expected_fn, msg)
 
     name, easyblock = fetch_parameters_from_easyconfig(ec.rawtxt, ['name', 'easyblock'])
