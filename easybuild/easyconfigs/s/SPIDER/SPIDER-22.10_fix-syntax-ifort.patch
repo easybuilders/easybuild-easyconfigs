@@ -1,0 +1,71 @@
+--- spider/src/copyfromtif.f.orig	2014-11-20 17:31:58.000000000 +0100
++++ spider/src/copyfromtif.f	2015-05-20 20:18:45.688100002 +0200
+@@ -88,7 +88,7 @@
+         INTEGER(KIND=1),  ALLOCATABLE :: I1VALS(:)
+         INTEGER(KIND=4),  ALLOCATABLE :: I4VALS(:)
+ 
+-        CHARACTER(LEN=1), ALLOCATABLE :: CVAL(:)
++        CHARACTER(LEN=:), ALLOCATABLE :: CVAL
+ 
+         CHARACTER(LEN=24)             :: CDATE
+ 
+@@ -290,7 +290,7 @@
+               IF ( ICOUNT  > ICVAL_LEN) THEN
+                  IF (ALLOCATED(CVAL)) DEALLOCATE(CVAL)
+                  ICVAL_LEN = ICOUNT
+-                 ALLOCATE(CVAL(1)(ICVAL_LEN), STAT=IRTFLG)
++                 ALLOCATE(CHARACTER(LEN=ICVAL_LEN) :: CVAL, STAT=IRTFLG)
+                 
+                  IF (IRTFLG .NE. 0) THEN
+                    CALL ERRT(46,'COPYFROMTIF; CVAL...',ICVAL_LEN)
+@@ -432,7 +432,7 @@
+               GOTRESU = .TRUE.
+ 
+            ELSEIF (ITAG == 306) THEN
+-             CDATE = CVAL(1)(1:22)
++             CDATE = CVAL(1:22)
+ c            IF (DEBUG) WRITE(NOUT,'(2X,A,1X,200A)')'DATE & TIME:',
+ c     &                                    CVAL(1)(1:ICOUNT)
+              GOTDATE = .TRUE.
+--- spider/src/copypos.f.orig	2015-05-20 21:21:12.693293000 +0200
++++ spider/src/copypos.f	2015-05-20 21:21:37.499077116 +0200
+@@ -269,7 +269,7 @@
+           ENDIF
+ 
+ C         GREATER OF (0 AND (THE SMALLER OF RVAL AND 255))
+-          IVAL = MAX(0,MIN(RVAL, 255.))
++          IVAL = MAX(0.,MIN(RVAL, 255.))
+ 
+           IF (FLIP)   THEN
+              IVAL = 255 - IVAL
+--- spider/src/hisd.f.orig	2015-05-20 21:30:04.788208000 +0200
++++ spider/src/hisd.f	2015-05-20 21:30:29.848221000 +0200
+@@ -146,9 +146,7 @@
+      &           'OUTPUT DOC FILE (OR * IF NONE)',ISOLD,APPEND,MESSAGE,
+      &            NEWFILE,IRTFLG)
+ 
+-        WANTDOC = (IRTFLG == 0)
+-
+-        IF (WANTDOC) THEN
++        IF (IRTFLG == 0) THEN
+ C          OUTPUT TO DOC FILE
+ 
+ C                    123456789 123456789 123456789 123456789 123456789 
+--- spider/src/star2doc.f.orig	2015-05-20 21:41:24.588241000 +0200
++++ spider/src/star2doc.f	2015-05-20 21:41:50.069338858 +0200
+@@ -82,6 +82,7 @@
+       CHARACTER(LEN=1)         :: CDUM  
+       INTEGER                  :: LUNDOCT,ILOC,IT,NLIST,ILAST
+       INTEGER                  :: IHI,I,IKEY,IRTFLG,LENREC,IVAR,ITOK
++      INTEGER                  :: NSPI
+ 
+       LOGICAL                  :: ISOPEN,EX,CALLERRT,ASKNAM
+       LOGICAL                  :: ADDEXT,GETNAME
+--- /gpfs/scratch/projects/project_gpilot/vsc40023/software/SPIDER/22.10-intel-2015a/spider/src/Makebody.inc.orig	2015-05-21 09:53:57.937621000 +0200
++++ /gpfs/scratch/projects/project_gpilot/vsc40023/software/SPIDER/22.10-intel-2015a/spider/src/Makebody.inc	2015-05-21 09:52:36.558197000 +0200
+@@ -14,4 +14,4 @@
+ .f.a:
+ 	$(COMP) $(FFLAGS) $<
+ 	$(AR) $(AFLAGS) $(LIB) $*.o
+-	@\rm $*.o
++#	@\rm $*.o
