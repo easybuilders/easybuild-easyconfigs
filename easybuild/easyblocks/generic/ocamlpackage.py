@@ -40,7 +40,7 @@ class OCamlPackage(ExtensionEasyBlock):
 
     def configure_step(self):
         """No separate configuration for OCaml packages."""
-        env.setvar('OPAMROOT', os.path.join(self.installdir, 'opam'))
+        env.setvar('OPAMROOT', self.installdir)
 
     def build_step(self):
         """No separate build procedure for OCaml packages."""
@@ -58,7 +58,7 @@ class OCamlPackage(ExtensionEasyBlock):
 
     def run(self):
         """Perform OCaml package installation (as extension)."""
-        self.configure_step()
+        env.setvar('OPAMROOT', os.path.join(self.installdir, 'opam'))
         self.install_step()
 
     def sanity_check_step(self, *args, **kwargs):
