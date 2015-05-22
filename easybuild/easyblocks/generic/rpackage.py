@@ -1,5 +1,5 @@
 ##
-# Copyright 2009-2013 Ghent University
+# Copyright 2009-2015 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -30,12 +30,15 @@ EasyBuild support for building and installing R packages, implemented as an easy
 @author: Kenneth Hoste (Ghent University)
 @author: Jens Timmerman (Ghent University)
 @author: Toon Willems (Ghent University)
+@author: Balazs Hajgato (Vrije Universiteit Brussel)
 """
+import os
 import shutil
 
-from easybuild.easyblocks.r import EXTS_FILTER_R_PACKAGES
+from easybuild.easyblocks.r import EXTS_FILTER_R_PACKAGES, EB_R
 from easybuild.framework.extensioneasyblock import ExtensionEasyBlock
-from easybuild.tools.filetools import run_cmd, parse_log_for_error
+from easybuild.tools.build_log import EasyBuildError
+from easybuild.tools.run import run_cmd, parse_log_for_error
 
 
 def make_R_install_option(opt, values, cmdline=False):
@@ -71,7 +74,7 @@ class RPackage(ExtensionEasyBlock):
         self.configureargs = []
         self.ext_src = None
 
-    def make_r_cmd(self):
+    def make_r_cmd(self, prefix=None):
         """Create a command to run in R to install an R package."""
         confvars = "confvars"
         confargs = "confargs"
@@ -86,12 +89,17 @@ class RPackage(ExtensionEasyBlock):
             confargslist = confargslist + "; names(%s)=\"%s\"" % (confargs, self.name)
             confargsstr = ", configure.args=%s" % confargs
 
+        if prefix:
+            prefix = '"%s", ' % prefix
+        else:
+            prefix = ''
+
         r_cmd = """
         options(repos=c(CRAN="http://www.freestatistics.org/cran"))
         %s
         %s
-        install.packages("%s", dependencies = FALSE %s%s)
-        """ % (confvarslist, confargslist, self.name, confvarsstr, confargsstr)
+        install.packages("%s", %s dependencies = FALSE %s%s)
+        """ % (confvarslist, confargslist, self.name, prefix, confvarsstr, confargsstr)
         cmd = "R -q --no-save"
 
         self.log.debug("make_r_cmd returns %s with input %s" % (cmd, r_cmd))
@@ -112,21 +120,25 @@ class RPackage(ExtensionEasyBlock):
         else:
             prefix = ''
 
-        cmd = "R CMD INSTALL %s %s %s %s --no-clean-on-error" % (self.ext_src, confargs, confvars, prefix)
-        self.log.debug("make_cmdline_cmd returns %s" % cmd)
+        if self.patches:
+            loc = self.ext_dir
+        else:
+            loc = self.ext_src
+        cmd = "R CMD INSTALL %s %s %s %s --no-clean-on-error" % (loc, confargs, confvars, prefix)
 
+        self.log.debug("make_cmdline_cmd returns %s" % cmd)
         return cmd, None
 
     def extract_step(self):
         """Source should not be extracted."""
         pass
         if len(self.src) > 1:
-            self.log.error("Don't know how to handle R packages with multiple sources.'")
+            raise EasyBuildError("Don't know how to handle R packages with multiple sources.'")
         else:
             try:
                 shutil.copy2(self.src[0]['path'], self.builddir)
             except OSError, err:
-                self.log.error("Failed to copy source to build dir: %s" % err)
+                raise EasyBuildError("Failed to copy source to build dir: %s", err)
             self.ext_src = self.src[0]['name']
 
             # set final path since it can't be determined from unpacked sources (used for guessing start_dir)
@@ -154,7 +166,7 @@ class RPackage(ExtensionEasyBlock):
             # remove package if errors were detected
             # it's possible that some of the dependencies failed, but the package itself was installed
             run_cmd(cmd, log_all=False, log_ok=False, simple=False, inp=stdin, regexp=False)
-            self.log.error("Errors detected during installation of R package %s!" % self.name)
+            raise EasyBuildError("Errors detected during installation of R package %s!", self.name)
         else:
             self.log.debug("R package %s installed succesfully" % self.name)
 
@@ -167,15 +179,28 @@ class RPackage(ExtensionEasyBlock):
     def run(self):
         """Install R package as an extension."""
 
-        super(RPackage, self).run()
+        # determine location
+        if isinstance(self.master, EB_R):
+            # extension is being installed as part of an R installation/module
+            (out, _) = run_cmd("R RHOME", log_all=True, simple=False)
+            rhome = out.strip()
+            lib_install_prefix = os.path.join(rhome, 'library')
+        else:
+            # extension is being installed in a separate installation prefix
+            lib_install_prefix = self.installdir
+
+        if self.patches:
+            super(RPackage, self).run(unpack_src=True)
+        else:
+            super(RPackage, self).run()
 
         if self.src:
             self.ext_src = self.src
             self.log.debug("Installing R package %s version %s." % (self.name, self.version))
-            cmd, stdin = self.make_cmdline_cmd()
+            cmd, stdin = self.make_cmdline_cmd(prefix=lib_install_prefix)
         else:
             self.log.debug("Installing most recent version of R package %s (source not found)." % self.name)
-            cmd, stdin = self.make_r_cmd()
+            cmd, stdin = self.make_r_cmd(prefix=lib_install_prefix)
 
         self.install_R_package(cmd, inp=stdin)
 
@@ -187,5 +212,5 @@ class RPackage(ExtensionEasyBlock):
 
     def make_module_extra(self):
         """Add install path to R_LIBS"""
-        extra = self.moduleGenerator.prepend_paths("R_LIBS", [''])  # prepend R_LIBS with install path
+        extra = self.module_generator.prepend_paths("R_LIBS", [''])  # prepend R_LIBS with install path
         return super(RPackage, self).make_module_extra(extra)

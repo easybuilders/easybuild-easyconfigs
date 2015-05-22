@@ -1,5 +1,5 @@
 ##
-# Copyright 2009-2013 Ghent University
+# Copyright 2009-2015 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -36,7 +36,7 @@ i.e. configure/make/make install, implemented as an easyblock.
 
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import CUSTOM
-from easybuild.tools.filetools import run_cmd
+from easybuild.tools.run import run_cmd
 
 
 class ConfigureMake(EasyBlock):
@@ -47,13 +47,13 @@ class ConfigureMake(EasyBlock):
     @staticmethod
     def extra_options(extra_vars=None):
         """Extra easyconfig parameters specific to ConfigureMake."""
-        extra_vars = dict(EasyBlock.extra_options(extra_vars))
+        extra_vars = EasyBlock.extra_options(extra_vars)
         extra_vars.update({
             'configure_cmd_prefix': ['', "Prefix to be glued before ./configure", CUSTOM],
             'prefix_opt': ['--prefix=', "Prefix command line option for configure script", CUSTOM],
             'tar_config_opts': [False, "Override tar settings as determined by configure.", CUSTOM],
         })
-        return EasyBlock.extra_options(extra_vars)
+        return extra_vars
 
     def configure_step(self, cmd_prefix=''):
         """
@@ -91,7 +91,7 @@ class ConfigureMake(EasyBlock):
 
         return out
 
-    def build_step(self, verbose=False):
+    def build_step(self, verbose=False, path=None):
         """
         Start the actual build
         - typical: make -j X
@@ -103,7 +103,7 @@ class ConfigureMake(EasyBlock):
 
         cmd = "%s make %s %s" % (self.cfg['prebuildopts'], paracmd, self.cfg['buildopts'])
 
-        (out, _) = run_cmd(cmd, log_all=True, simple=False, log_output=verbose)
+        (out, _) = run_cmd(cmd, path=path, log_all=True, simple=False, log_output=verbose)
 
         return out
 

@@ -1,5 +1,5 @@
 ##
-# Copyright 2009-2013 Ghent University
+# Copyright 2009-2015 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -36,9 +36,9 @@ import os
 
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.framework.easyconfig import CUSTOM
+from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.environment import setvar
-from easybuild.tools.filetools import run_cmd
-from easybuild.tools.modules import ROOT_ENV_VAR_NAME_PREFIX
+from easybuild.tools.run import run_cmd
 
 
 class CMakeMake(ConfigureMake):
@@ -47,15 +47,18 @@ class CMakeMake(ConfigureMake):
     @staticmethod
     def extra_options(extra_vars=None):
         """Define extra easyconfig parameters specific to CMakeMake."""
-        extra_vars = dict(ConfigureMake.extra_options(extra_vars))
+        extra_vars = ConfigureMake.extra_options(extra_vars)
         extra_vars.update({
             'srcdir': [None, "Source directory location to provide to cmake command", CUSTOM],
             'separate_build_dir': [False, "Perform build in a separate directory", CUSTOM],
         })
-        return ConfigureMake.extra_options(extra_vars)
+        return extra_vars
 
     def configure_step(self, srcdir=None, builddir=None):
         """Configure build using cmake"""
+
+        if builddir is not None:
+            self.log.nosupport("CMakeMake.configure_step: named argument 'builddir' (should be 'srcdir')", "2.0")
 
         # Set the search paths for CMake
         include_paths = os.pathsep.join(self.toolchain.get_variable("CPPFLAGS", list))
@@ -70,15 +73,12 @@ class CMakeMake(ConfigureMake):
                 os.mkdir(objdir)
                 os.chdir(objdir)
             except OSError, err:
-                self.log.error("Failed to create separate build dir %s in %s: %s" % (objdir, os.getcwd(), err))
+                raise EasyBuildError("Failed to create separate build dir %s in %s: %s", objdir, os.getcwd(), err)
             default_srcdir = '..'
 
         if srcdir is None:
             if self.cfg.get('srcdir', None) is not None:
                 srcdir = self.cfg['srcdir']
-            elif builddir is not None:
-                self.log.deprecated("CMakeMake.configure_step: named argument 'builddir' (should be 'srcdir')", "2.0")
-                srcdir = builddir
             else:
                 srcdir = default_srcdir
 
@@ -95,6 +95,9 @@ class CMakeMake(ConfigureMake):
             value = os.getenv(env_name)
             if value is not None:
                 options.append("-D%s='%s'" % (option, value))
+
+        # show what CMake is doing by default
+        options.append("-DCMAKE_VERBOSE_MAKEFILE=ON")
 
         options_string = " ".join(options)
 

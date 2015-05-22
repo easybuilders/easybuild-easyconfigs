@@ -1,5 +1,5 @@
 ##
-# Copyright 2009-2013 Ghent University
+# Copyright 2009-2015 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -30,9 +30,12 @@ EasyBuild support for Trilinos, implemented as an easyblock
 import os
 import re
 
+from distutils.version import LooseVersion
+
 import easybuild.tools.toolchain as toolchain
 from easybuild.easyblocks.generic.cmakemake import CMakeMake
 from easybuild.framework.easyconfig import CUSTOM
+from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.modules import get_software_root
 
 
@@ -65,7 +68,7 @@ class EB_Trilinos(CMakeMake):
         cxxflags = [os.getenv('CXXFLAGS')]
         fflags = [os.getenv('FFLAGS')]
 
-        ignore_cxx_seek_mpis = [toolchain.INTELMPI, toolchain.MPICH2, toolchain.MVAPICH2]  #@UndefinedVariable
+        ignore_cxx_seek_mpis = [toolchain.INTELMPI, toolchain.MPICH, toolchain.MPICH2, toolchain.MVAPICH2]  #@UndefinedVariable
         ignore_cxx_seek_flag = "-DMPICH_IGNORE_CXX_SEEK"
         if self.toolchain.mpi_family() in ignore_cxx_seek_mpis:
             cflags.append(ignore_cxx_seek_flag)
@@ -125,6 +128,9 @@ class EB_Trilinos(CMakeMake):
                 incdirs.append(os.path.join(suitesparse, lib, "Include"))
                 libdirs.append(os.path.join(suitesparse, lib, "Lib"))
                 libnames.append(lib.lower())
+            # add SuiteSparse config lib, it is in recent versions of suitesparse
+            libdirs.append(os.path.join(suitesparse, 'SuiteSparse_config'))
+            libnames.append('suitesparseconfig')
             self.cfg.update('configopts', '-DUMFPACK_INCLUDE_DIRS:PATH="%s"' % ';'.join(incdirs))
             self.cfg.update('configopts', '-DUMFPACK_LIBRARY_DIRS:PATH="%s"' % ';'.join(libdirs))
             self.cfg.update('configopts', '-DUMFPACK_LIBRARY_NAMES:STRING="%s"' % ';'.join(libnames))
@@ -144,7 +150,6 @@ class EB_Trilinos(CMakeMake):
             self.cfg.update('configopts', '-DSCALAPACK_INCLUDE_DIRS:PATH="%s"' % os.getenv('SCALAPACK_INC_DIR'))
             self.cfg.update('configopts', '-DSCALAPACK_LIBRARY_DIRS:PATH="%s;%s"' % (os.getenv('SCALAPACK_LIB_DIR'),
                                                                                     os.getenv('BLACS_LIB_DIR')))
-
         # PETSc
         petsc = get_software_root('PETSc')
         if petsc:
@@ -202,7 +207,7 @@ class EB_Trilinos(CMakeMake):
             os.mkdir(build_dir)
             os.chdir(build_dir)
         except OSError, err:
-            self.log.error("Failed to create and move into build directory: %s" % err)
+            raise EasyBuildError("Failed to create and move into build directory: %s", err)
 
         # configure using cmake
         super(EB_Trilinos, self).configure_step(srcdir="..")
@@ -223,9 +228,16 @@ class EB_Trilinos(CMakeMake):
 
         libs = [l for l in libs if not l in self.cfg['skip_exts']]
 
+        # teuchos was refactored in 11.2
+        if LooseVersion(self.version) >= LooseVersion("11.2") and  'Teuchos' in libs:
+            # remove it
+            libs = [l for l in libs if l is not "Teuchos"]
+            # add new libs
+            libs.extend(['teuchoscomm', 'teuchoscore', 'teuchosnumerics', 'teuchosparameterlist', 'teuchosremainder'])
+
         custom_paths = {
-                        'files':[os.path.join("lib", "lib%s.a" % x.lower()) for x in libs],
-                        'dirs':['bin', 'include']
-                       }
+            'files':[os.path.join("lib", "lib%s.a" % x.lower()) for x in libs],
+            'dirs':['bin', 'include']
+        }
 
         super(EB_Trilinos, self).sanity_check_step(custom_paths=custom_paths)

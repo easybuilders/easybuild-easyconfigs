@@ -1,5 +1,5 @@
 ##
-# Copyright 2009-2013 Ghent University
+# Copyright 2009-2015 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -34,7 +34,8 @@ from easybuild.easyblocks.perl import EXTS_FILTER_PERL_MODULES, get_major_perl_v
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.framework.extensioneasyblock import ExtensionEasyBlock
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
-from easybuild.tools.filetools import run_cmd
+from easybuild.tools.build_log import EasyBuildError
+from easybuild.tools.run import run_cmd
 
 
 class PerlModule(ExtensionEasyBlock, ConfigureMake):
@@ -58,22 +59,22 @@ class PerlModule(ExtensionEasyBlock, ConfigureMake):
         # Perl modules have two possible installation procedures: using Makefile.PL and Build.PL
         # configure, build, test, install
         if os.path.exists('Makefile.PL'):
-            run_cmd('perl Makefile.PL PREFIX=%s' % self.installdir)
+            run_cmd('%s perl Makefile.PL PREFIX=%s %s' % (self.cfg['preconfigopts'], self.installdir, self.cfg['configopts']))
             ConfigureMake.build_step(self)
             ConfigureMake.test_step(self)
             ConfigureMake.install_step(self)
         elif os.path.exists('Build.PL'):
-            run_cmd('perl Build.PL --prefix %s' % self.installdir)
-            run_cmd('perl Build build')
+            run_cmd('%s perl Build.PL --prefix %s %s' % (self.cfg['preconfigopts'], self.installdir, self.cfg['configopts']))
+            run_cmd('%s perl Build build %s' % (self.cfg['prebuildopts'], self.cfg['buildopts']))
             run_cmd('perl Build test')
-            run_cmd('perl Build install')
+            run_cmd('%s perl Build install %s' % (self.cfg['preinstallopts'], self.cfg['installopts']))
 
     def run(self):
         """Perform the actual Perl module build/installation procedure"""
 
         if not self.src:
-            self.log.error("No source found for Perl module %s, required for installation. (src: %s)" %
-                           (self.name, self.src))
+            raise EasyBuildError("No source found for Perl module %s, required for installation. (src: %s)",
+                                 self.name, self.src)
         ExtensionEasyBlock.run(self, unpack_src=True)
 
         self.install_perl_module()
