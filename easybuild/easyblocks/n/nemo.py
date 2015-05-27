@@ -95,7 +95,7 @@ class EB_NEMO(EasyBlock):
             os.chdir(dst)
             self.log.debug('Change to directory %s' % dst)
         except OSError, err:
-            self.log.exception('Failed to change to directory %s: %s' % (dst, err))
+            raise EasyBuildError("Failed to change to directory %s: %s", dst, err)
 
         cmd = "./makenemo -n %s -d '%s' -j0 -m eb %s " % (self.conf_name, ' '.join(self.cfg['with_components']), keys)
         run_cmd(cmd, log_all=True, simple=True, log_ok=True)
