@@ -68,13 +68,13 @@ class CMakeMake(ConfigureMake):
 
         default_srcdir = '.'
         if self.cfg.get('separate_build_dir', False):
-            objdir = 'easybuild_obj'
+            objdir = os.path.join(self.builddir, 'easybuild_obj')
             try:
                 os.mkdir(objdir)
                 os.chdir(objdir)
             except OSError, err:
                 raise EasyBuildError("Failed to create separate build dir %s in %s: %s", objdir, os.getcwd(), err)
-            default_srcdir = '..'
+            default_srcdir = self.cfg['start_dir']
 
         if srcdir is None:
             if self.cfg.get('srcdir', None) is not None:
