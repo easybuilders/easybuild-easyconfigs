@@ -92,11 +92,19 @@ class GeneralEasyblockTest(EnhancedTestCase):
 
     def test_custom_easyblocks_repo(self):
         """Test whether using a custom easyblocks repo works as expected."""
-        easyblocks_repo_path = up(os.path.abspath(__file__), 3)
+        easyblocks_path = up(os.path.abspath(__file__), 3)
+
+        # determine path to where easybuild.framework/vsc is imported from, so we can hard set $PYTHONPATH
+        # this is required to dance around issues with easy-install.pth files determining the actual Python search path
+        # see also http://blog.olgabotvinnik.com/blog/2014/03/03/2014-03-03-pythonpath-is-a-liar-site-py-and-easy-install-pth-tell/
+        import easybuild.framework
+        framework_path = up(easybuild.framework.__file__, 3)
+        import vsc.utils.generaloption
+        vsc_path = up(vsc.utils.generaloption.__file__, 3)
 
         # prepend path to easybuild-easyblocks repo to $PYTHONPATH, so we're in full(?) control
-        pythonpaths = os.environ['PYTHONPATH'].split(os.pathsep)
-        os.environ['PYTHONPATH'] = os.pathsep.join([easyblocks_repo_path] + pythonpaths)
+        pythonpaths = os.environ.get('PYTHONPATH', '').split(os.pathsep)
+        os.environ['PYTHONPATH'] = os.pathsep.join([easyblocks_path, framework_path, vsc_path])
 
         # set up custom easyblocks repo
         custom_easyblocks_repo_path = os.path.join(self.tmpdir, 'myeasyblocks')
@@ -121,8 +129,8 @@ class GeneralEasyblockTest(EnhancedTestCase):
         for (mod, depth) in eb_easyblocks:
             res = det_path_for_import(mod)
             parent_path = up(res, depth)
-            msg = "parent path for '%s' module %s == %s" % (mod, parent_path, easyblocks_repo_path)
-            self.assertTrue(os.path.samefile(easyblocks_repo_path, parent_path), msg)
+            msg = "parent path for '%s' module %s == %s" % (mod, parent_path, easyblocks_path)
+            self.assertTrue(os.path.samefile(easyblocks_path, parent_path), msg)
 
         # importing EB_R class from easybuild.easyblocks.r works fine
         run_cmd("python -c 'from easybuild.easyblocks.r import EB_R'")
@@ -143,8 +151,8 @@ class GeneralEasyblockTest(EnhancedTestCase):
         easyblocks = eb_easyblocks + [('easybuild.easyblocks.foobar', 3)]
         repo_paths = [
             custom_easyblocks_repo_path,  # easybuild.easyblocks is now initialised via custom easyblocks repo
-            easyblocks_repo_path,  # GCC easyblock
-            easyblocks_repo_path,  # R easyblock/package
+            easyblocks_path,  # GCC easyblock
+            easyblocks_path,  # R easyblock/package
             custom_easyblocks_repo_path,  # foobar easyblock
         ]
         for (mod, depth), repo_path in zip(easyblocks, repo_paths):
