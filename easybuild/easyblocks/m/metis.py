@@ -47,7 +47,7 @@ class EB_METIS(ConfigureMake):
 
         if LooseVersion(self.version) >= LooseVersion("5"):
 
-            cmd = "make %s config prefix=%s" % (self.cfg['configopts'],self.installdir)
+            cmd = "make %s config prefix=%s" % (self.cfg['configopts'], self.installdir)
             run_cmd(cmd, log_all=True, simple=True)
 
     def build_step(self):
@@ -123,9 +123,22 @@ class EB_METIS(ConfigureMake):
         if LooseVersion(self.version) < LooseVersion("5"):
             dirs += ["Lib"]
 
+        libext = []
+        if isinstance(self.cfg['configopts'], list):
+            for elements in self.cfg['configopts']:
+                if 'shared=1' in elements:
+                     libext += ['so']
+                if 'shared=1' not in elements:
+                     libext += ['a']
+        else:
+            if 'shared=1' in self.cfg['configopts']:
+                libext += ['so']
+            else:
+                libext += ['a']
+
         custom_paths = {
                         'files': ['bin/%s' % x for x in binfiles] + ['include/%s' % x for x in incfiles] +
-                                 [('lib/libmetis.a','lib/libmetis.so')],
+                                 [('lib/libmetis.%s' % x for x in libext],
                         'dirs' : dirs
                        }
 
