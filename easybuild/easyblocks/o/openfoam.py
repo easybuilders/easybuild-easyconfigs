@@ -136,8 +136,8 @@ class EB_OpenFOAM(EasyBlock):
             self.log.debug("List of deps: %s" % self.cfg.dependencies())
             for dep in self.cfg.dependencies():
                 self.cfg.update('prebuildopts', "%s_SYSTEM=1" % dep['name'].upper())
-                self.cfg.update('prebuildopts', "{0}_LIB_DIR=$EBROOT{0}/lib".format(dep['name'].upper())
-                self.cfg.update('prebuildopts', "{0}_INCLUDE_DIR=$EBROOT{0}/include".format(dep['name'].upper())
+                self.cfg.update('prebuildopts', "{0}_LIB_DIR=$EBROOT{0}/lib".format(dep['name'].upper()))
+                self.cfg.update('prebuildopts', "{0}_INCLUDE_DIR=$EBROOT{0}/include".format(dep['name'].upper()))
         else:
             for depend in ['SCOTCH', 'METIS', 'CGAL', 'PARAVIEW']:
                 dependloc = None
