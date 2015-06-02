@@ -32,7 +32,7 @@ import os
 
 from easybuild.easyblocks.generic.pythonpackage import PythonPackage
 from easybuild.tools.modules import get_software_root
-from easybuild.tools.filetools import run_cmd
+from easybuild.tools.run import run_cmd
 
 class EB_wxPython(PythonPackage):
     """Support for installing the wxPython Python package."""
