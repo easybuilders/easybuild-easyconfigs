@@ -138,7 +138,7 @@ class EB_METIS(ConfigureMake):
 
         custom_paths = {
                         'files': ['bin/%s' % x for x in binfiles] + ['include/%s' % x for x in incfiles] +
-                                 [('lib/libmetis.%s' % x for x in libext],
+                                 ['lib/libmetis.%s' % x for x in libext],
                         'dirs' : dirs
                        }
 
