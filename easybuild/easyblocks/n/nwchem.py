@@ -168,6 +168,9 @@ class EB_NWChem(ConfigureMake):
         env.setvar('CCSDTQ', 'y') # enable CCSDTQ (compilation is long, executable is big)
         if LooseVersion(self.version) >= LooseVersion("6.2"):
             env.setvar('MRCC_METHODS','y') # enable multireference coupled cluster capability
+        if LooseVersion(self.version) >= LooseVersion("6.5"):
+            env.setvar('EACCSD','y') # enable EOM electron-attachemnt coupled cluster capability
+            env.setvar('IPCCSD','y') # enable EOM ionization-potential coupled cluster capability
 
         for var in ['USE_MPI', 'USE_MPIF', 'USE_MPIF4']:
             env.setvar(var, 'y')
