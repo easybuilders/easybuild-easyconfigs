@@ -1,26 +1,55 @@
-easyblock = 'RPackage'
+easyblock = 'Bundle'
 
 name = 'DEXSeq'
 version = '1.10.8'
+rver = '3.1.1'
+versionsuffix = '-R-%s' % rver
 
-homepage = 'http://www.bioconductor.org/packages/2.14/bioc/html/DEXSeq.html'
-description = """R package, Inference of differential exon usage in RNA-Seq"""
+homepage = 'http://www.r-project.org/'
+description = """R is a free software environment for statistical computing and graphics."""
 
 toolchain = {'name': 'intel', 'version': '2014b'}
 
-source_urls = ['http://www.bioconductor.org/packages/2.14/bioc/src/contrib/']
-sources = ['%s_%s.tar.gz' % (name, version)]
-
-r = 'R'
-rver = '3.1.1'
-versionsuffix = '-%s-%s' % (r, rver)
+# these are extensions for R
+exts_defaultclass = 'RPackage'
+exts_filter = ("R -q --no-save", "library(%(ext_name)s)")
 
 dependencies = [
-                (r, rver),
-                ('biomaRt', '2.20.0', versionsuffix),
-                ('DESeq2', '1.4.5', versionsuffix),
-                ('geneplotter', '1.42.0', versionsuffix),
-                ('genefilter', '1.46.1', versionsuffix),
-               ]
+    ('R', rver),
+    ('cURL', '7.37.1'),
+    ('libxml2', '2.9.1'),
+    ('zlib;, '1.2.8'),
+]
 
-moduleclass = 'data'
+name_tmpl = '%(name)s_%(version)s.tar.gz'
+ext_options = {
+    'source_urls': [
+        'http://cran.r-project.org/src/contrib/Archive/%(name)s',  # package archive
+        'http://cran.r-project.org/src/contrib/',  # current version of packages
+        'http://cran.freestatistics.org/src/contrib',  # mirror alternative for current packages
+    ],
+    'source_tmpl': name_tmpl,
+}
+# Bioconductor packages have a different download url
+bioconductor_options = {
+    'source_urls': [ 'http://www.bioconductor.org/packages/2.14/bioc/src/contrib/']
+    'source_tmpl': name_tmpl,
+}
+
+# !! order of packages is important !!
+exts_list = [
+    ('RCurl', '1.95-4.3', ext_options),  # requires cURL
+    ('XML', '3.98-1.1', ext_options),  # requires libxml2
+    # extensions below require one or more extensions that have an external dependency listed above
+    ('locfit', '1.5-9.1', ext_options),
+    ('biomaRT', '2.20.0', bioconductor_options),
+    ('annotate', '1.42.1', bioconductor_options),
+    ('geneplotter', '1.42.0', bioconductor_options),
+    ('genefilter', '1.46.1', bioconductor_options),
+    ('DESeq2', '1.4.5', bioconductor_options),
+    (name, version, bioconductor_options),
+]
+
+modextrapaths = {'R_LIBS': ''}
+
+moduleclass = 'lang'
