@@ -1,3 +1,5 @@
+easyblock = 'ConfigureMake'
+
 name = 'OpenMPI'
 version = "1.7.3"
 
@@ -9,28 +11,21 @@ toolchain = {'name': 'gcccuda', 'version': '2.6.10'}
 sources = [SOURCELOWER_TAR_GZ]
 source_urls = ['http://www.open-mpi.org/software/ompi/v%(version_major_minor)s/downloads']
 
-builddependencies = [
-    ('Automake', '1.14'),
-    ('Autoconf', '2.69'),
-]
+patches = ['OpenMPI-%(version)s-vt_cupti_events.patch']
 
 dependencies = [('hwloc', '1.8')]
 
-configopts = '--with-threads=posix --enable-shared --enable-mpi-thread-multiple --with-openib '
+configopts = '--with-threads=posix --enable-shared --enable-mpi-thread-multiple --with-verbs '
 configopts += '--enable-mpirun-prefix-by-default '  # suppress failure modes in relation to mpirun path
 configopts += '--with-hwloc=$EBROOTHWLOC '  # hwloc support
 configopts += '--with-cuda=$CUDA_HOME '             # CUDA-aware build; N.B. --disable-dlopen is incompatible
 
-# needed for --with-openib
-if OS_NAME in ['debian', 'ubuntu']:
-    osdependencies = ['libibverbs-dev']
-else:
-    # OK for OS_NAME == redhat, fedora, RHEL, SL, centos
-    osdependencies = ['libibverbs-devel']
+# needed for --with-verbs
+osdependencies = [('libibverbs-dev', 'libibverbs-devel')]
 
 sanity_check_paths = {
     'files': ["bin/%s" % binfile for binfile in ["ompi_info", "opal_wrapper", "orterun"]] +
-             ["lib/lib%s.%s" % (libfile, shared_lib_ext) for libfile in ["mpi_cxx", "mpi_mpifh",
+             ["lib/lib%s.%s" % (libfile, SHLIB_EXT) for libfile in ["mpi_cxx", "mpi_mpifh",
                                                                          "mpi", "ompitrace", "open-pal",
                                                                          "open-rte", "vt", "vt-hyb",
                                                                          "vt-mpi", "vt-mpi-unify"]] +
