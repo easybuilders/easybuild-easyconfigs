@@ -32,6 +32,7 @@ import os
 import shutil
 
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
+from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.modules import get_software_root
 
 
@@ -45,8 +46,9 @@ class EB_Mothur(ConfigureMake):
         mothur_dirs = glob.glob(os.path.join(self.builddir, 'Mothur.*'))
         if len(mothur_dirs) == 1:
             self.cfg['start_dir'] = mothur_dirs[0]
-        else:
-            self.log.error("Failed to guess start directory in %s" % mothur_dirs)
+        elif len(os.listdir(self.builddir)) > 1:
+            # we only have an issue if the default guessing approach will not work
+            raise EasyBuildError("Failed to guess start directory from %s", mothur_dirs)
 
         super(EB_Mothur, self).guess_start_dir()
 
@@ -81,7 +83,7 @@ class EB_Mothur(ConfigureMake):
                 srcfile = os.path.join(srcdir, filename)
                 shutil.copy2(srcfile, destdir)
         except OSError, err:
-            self.log.error("Copying %s to installation dir %s failed: %s", srcfile, destdir, err)
+            raise EasyBuildError("Copying %s to installation dir %s failed: %s", srcfile, destdir, err)
 
     def sanity_check_step(self):
         """Custom sanity check for Mothur."""

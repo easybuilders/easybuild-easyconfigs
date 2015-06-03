@@ -1,5 +1,5 @@
 ##
-# Copyright 2009-2013 Ghent University
+# Copyright 2009-2015 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -31,6 +31,7 @@ import os
 
 import easybuild.tools.environment as env
 from easybuild.easyblocks.generic.rpackage import RPackage
+from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.modules import get_software_root
 
 
@@ -44,7 +45,7 @@ class EB_XML(RPackage):
         zlib = get_software_root('zlib')
 
         if not zlib:
-            self.log.error("zlib module not loaded (required)")
+            raise EasyBuildError("zlib module not loaded (required)")
 
         env.setvar('LIBS', "%s -L%s" % (libs, os.path.join(zlib, 'lib')))
 

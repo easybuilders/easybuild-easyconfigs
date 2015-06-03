@@ -1,8 +1,8 @@
 ##
 # This file is an EasyBuild reciPY as per https://github.com/hpcugent/easybuild
 #
-# Copyright:: Copyright 2012-2013 University of Luxembourg/Luxembourg Centre for Systems Biomedicine
-# Authors::   Cedric Laczny <cedric.laczny@uni.lu>, Fotis Georgatos <fotis.georgatos@uni.lu>, Kenneth Hoste
+# Copyright:: Copyright 2012-2015 Uni.Lu/LCSB, NTUA
+# Authors::   Cedric Laczny <cedric.laczny@uni.lu>, Fotis Georgatos <fotis@cern.ch>, Kenneth Hoste
 # License::   MIT/GPL
 # $Id$
 #
@@ -22,6 +22,7 @@ import stat
 from distutils.version import LooseVersion
 
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
+from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.filetools import adjust_permissions
 
 class EB_SAMtools(ConfigureMake):
@@ -34,24 +35,39 @@ class EB_SAMtools(ConfigureMake):
         """Define lists of files to install."""
         super(EB_SAMtools, self).__init__(*args, **kwargs)
 
-        self.bin_files = ["bcftools/vcfutils.pl", "bcftools/bcftools", "misc/blast2sam.pl",
+        self.bin_files = ["misc/blast2sam.pl",
                           "misc/bowtie2sam.pl", "misc/export2sam.pl", "misc/interpolate_sam.pl",
                           "misc/novo2sam.pl", "misc/psl2sam.pl", "misc/sam2vcf.pl", "misc/samtools.pl",
                           "misc/soap2sam.pl", "misc/varfilter.py", "misc/wgsim_eval.pl",
                           "misc/zoom2sam.pl", "misc/md5sum-lite", "misc/md5fa", "misc/maq2sam-short",
                           "misc/maq2sam-long", "misc/wgsim", "samtools"]
+        
+        self.include_files = ["bam.h", "bam2bcf.h", "bam_endian.h", "errmod.h",
+                              "kprobaln.h",  "sam.h", "sam_header.h", "sample.h"]
+
         if LooseVersion(self.version) <= LooseVersion('0.1.18'):
             # seqtk is no longer there in v0.1.19
             self.bin_files += ["misc/seqtk"]
         elif LooseVersion(self.version) >= LooseVersion('0.1.19'):
             # new tools in v0.1.19
-            self.bin_files += ["misc/ace2sam", "misc/bamcheck","misc/plot-bamcheck","misc/r2plot.lua",
+            self.bin_files += ["misc/ace2sam", "misc/r2plot.lua",
                                "misc/vcfutils.lua"]
 
+        if LooseVersion(self.version) >= LooseVersion('0.1.19') and LooseVersion(self.version) < LooseVersion('1.0'):
+            self.bin_files += ["misc/bamcheck", "misc/plot-bamcheck"]
+        
+        if LooseVersion(self.version) < LooseVersion('1.0'):
+            self.bin_files += ["bcftools/vcfutils.pl", "bcftools/bcftools"]
+            self.include_files += [ "bgzf.h", "faidx.h",  "khash.h", "klist.h", "knetfile.h", "razf.h",
+                                    "kseq.h", "ksort.h", "kstring.h"]
+        elif LooseVersion(self.version) >= LooseVersion('1.0'):
+            self.bin_files += ["misc/plot-bamstats","misc/seq_cache_populate.pl"]
+
+        if LooseVersion(self.version) < LooseVersion('1.2'):
+            # kaln aligner removed in 1.2 (commit 19c9f6)
+            self.include_files += ["kaln.h"]
+
         self.lib_files = ["libbam.a"]
-        self.include_files = ["bam.h", "bam2bcf.h", "bam_endian.h", "bgzf.h", "errmod.h", "faidx.h", "kaln.h",
-                              "khash.h", "klist.h", "knetfile.h", "kprobaln.h", "kseq.h", "ksort.h", "kstring.h",
-                              "razf.h", "sam.h", "sam_header.h", "sample.h"]
 
     def configure_step(self):
         """
@@ -78,7 +94,7 @@ class EB_SAMtools(ConfigureMake):
                     srcfile = os.path.join(srcdir, filename)
                     shutil.copy2(srcfile, destdir)
             except OSError, err:
-                self.log.error("Copying %s to installation dir %s failed: %s" % (srcfile, destdir, err))
+                raise EasyBuildError("Copying %s to installation dir %s failed: %s", srcfile, destdir, err)
 
         # fix permissions so ownwer group and others have R-X
         adjust_permissions(self.installdir, stat.S_IRGRP|stat.S_IXGRP|stat.S_IROTH|stat.S_IXOTH, add=True, recursive=True)
