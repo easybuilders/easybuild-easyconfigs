@@ -59,9 +59,9 @@ class EB_METIS(ConfigureMake):
             run_cmd(cmd, log_all=True, simple=True)
 
             if 'shared=1' in self.cfg['configopts']:
-                self.lib_exts.append('.so')
+                self.lib_exts.append('so')
             else:
-                self.lib_exts.append('.a')
+                self.lib_exts.append('a')
 
     def build_step(self):
         """Add make options before building."""
