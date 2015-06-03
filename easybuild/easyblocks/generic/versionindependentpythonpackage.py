@@ -36,7 +36,8 @@ import re
 
 import easybuild.tools.environment as env
 from easybuild.easyblocks.generic.pythonpackage import PythonPackage
-from easybuild.tools.filetools import run_cmd
+from easybuild.tools.build_log import EasyBuildError
+from easybuild.tools.run import run_cmd
 
 
 class VersionIndependentPythonPackage(PythonPackage):
@@ -61,7 +62,7 @@ class VersionIndependentPythonPackage(PythonPackage):
             os.mkdir(full_pylibdir)
         except OSError, err:
             # this will raise an error and not return
-            self.log.error("Failed to install: %s" % err)
+            raise EasyBuildError("Failed to install: %s", err)
 
         args = "--prefix=%s --install-lib=%s " % (self.installdir, full_pylibdir)
         args += "--single-version-externally-managed --record %s --no-compile" % os.path.join(self.builddir, 'record')
@@ -85,4 +86,4 @@ class VersionIndependentPythonPackage(PythonPackage):
                             txt = shebang_re.sub(new_shebang, txt)
                             open(script, 'w').write(txt)
                     except IOError, err:
-                        self.log.error("Failed to patch shebang header line in %s: %s" % (script, err))
+                        raise EasyBuildError("Failed to patch shebang header line in %s: %s", script, err)

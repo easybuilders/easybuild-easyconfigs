@@ -1,5 +1,5 @@
 ##
-# Copyright 2009-2013 Ghent University
+# Copyright 2009-2015 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -35,7 +35,8 @@ import os
 
 from easybuild.easyblocks.generic.binary import Binary
 from easybuild.framework.easyblock import EasyBlock
-from easybuild.tools.filetools import run_cmd
+from easybuild.tools.build_log import EasyBuildError
+from easybuild.tools.run import run_cmd
 from distutils.version import LooseVersion
 
 
@@ -72,7 +73,7 @@ class EB_ABAQUS(Binary):
             f.write(txt)
             f.close()
         except IOError, err:
-            self.log.error("Failed to create install properties file used for replaying installation: %s" % err)
+            raise EasyBuildError("Failed to create install properties file used for replaying installation: %s", err)
 
     def install_step(self):
         """Install ABAQUS using 'setup'."""

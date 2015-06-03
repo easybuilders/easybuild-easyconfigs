@@ -1,8 +1,8 @@
 ##
 # This file is an EasyBuild reciPY as per https://github.com/hpcugent/easybuild
 #
-# Copyright:: Copyright 2012-2013 University of Luxembourg/Luxembourg Centre for Systems Biomedicine
-# Authors::   Josh Berryman <the.real.josh.berryman@gmail.com>, Fotis Georgatos <fotis.georgatos@uni.lu>, Kenneth Hoste
+# Copyright:: Copyright 2012-2015 Uni.Lu/LCSB, NTUA
+# Authors::   Josh Berryman <the.real.josh.berryman@gmail.com>, Fotis Georgatos <fotis@cern.ch>, Kenneth Hoste
 # License::   MIT/GPL
 # $Id$
 #
@@ -19,10 +19,10 @@ EasyBuild support for building and installing ESPResSo, implemented as an easybl
 import os
 
 import easybuild.tools.environment as env
-import easybuild.tools.toolchain   as toolchain
-from   easybuild.easyblocks.generic.configuremake import ConfigureMake
-from   easybuild.framework.easyconfig             import CUSTOM
-from   easybuild.tools.filetools                  import run_cmd
+import easybuild.tools.toolchain as toolchain
+from easybuild.easyblocks.generic.configuremake import ConfigureMake
+from easybuild.framework.easyconfig import CUSTOM
+from easybuild.tools.run import run_cmd
 
 
 class EB_ESPResSo(ConfigureMake):

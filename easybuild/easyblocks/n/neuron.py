@@ -1,5 +1,5 @@
 ##
-# Copyright 2009-2013 Ghent University
+# Copyright 2009-2015 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -33,8 +33,10 @@ import re
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.easyblocks.generic.pythonpackage import det_pylibdir
 from easybuild.framework.easyconfig import CUSTOM
-from easybuild.tools.filetools import run_cmd, adjust_permissions
+from easybuild.tools.build_log import EasyBuildError
+from easybuild.tools.filetools import adjust_permissions
 from easybuild.tools.modules import get_software_root
+from easybuild.tools.run import run_cmd
 
 
 class EB_NEURON(ConfigureMake):
@@ -44,9 +46,9 @@ class EB_NEURON(ConfigureMake):
         """Initialisation of custom class variables for NEURON."""
         super(EB_NEURON, self).__init__(*args, **kwargs)
 
-        self.hostcpu = None
+        self.hostcpu = 'UNKNOWN'
         self.with_python = False
-        self.pylibdir = None
+        self.pylibdir = 'UNKNOWN'
 
     @staticmethod
     def extra_options():
@@ -101,7 +103,7 @@ class EB_NEURON(ConfigureMake):
                 pwd = os.getcwd()
                 os.chdir(pypath)
             except OSError, err:
-                self.log.error("Failed to change to %s: %s" % (pypath, err))
+                raise EasyBuildError("Failed to change to %s: %s", pypath, err)
 
             cmd = "python setup.py install --prefix=%s" % self.installdir
             run_cmd(cmd, simple=True, log_all=True, log_ok=True)
@@ -109,7 +111,7 @@ class EB_NEURON(ConfigureMake):
             try:
                 os.chdir(pwd)
             except OSError, err:
-                self.log.error("Failed to change back to %s: %s" % (pwd, err))
+                raise EasyBuildError("Failed to change back to %s: %s", pwd, err)
 
 
     def sanity_check_step(self):
@@ -160,7 +162,7 @@ class EB_NEURON(ConfigureMake):
 
         validate_regexp = re.compile("^\s+-65\s*\n\s+5\s*\n\s+-68.134337", re.M)
         if ec or not validate_regexp.search(out):
-            self.log.error("Validation of NEURON demo run failed.")
+            raise EasyBuildError("Validation of NEURON demo run failed.")
         else:
             self.log.info("Validation of NEURON demo OK!")
 
@@ -175,7 +177,7 @@ class EB_NEURON(ConfigureMake):
 
             os.chdir(cwd)
         except OSError, err:
-            self.log.error("Failed to run parallel hello world: %s" % err)
+            raise EasyBuildError("Failed to run parallel hello world: %s", err)
 
         valid = True
         for i in range(0, nproc):
@@ -184,7 +186,7 @@ class EB_NEURON(ConfigureMake):
                 valid = False
                 break
         if ec or not valid:
-            self.log.error("Validation of parallel hello world run failed.")
+            raise EasyBuildError("Validation of parallel hello world run failed.")
         else:
             self.log.info("Parallel hello world OK!")
 
@@ -197,13 +199,13 @@ class EB_NEURON(ConfigureMake):
         guesses = super(EB_NEURON, self).make_module_req_guess()
 
         guesses.update({
-                        'PATH': [os.path.join(self.hostcpu, 'bin')],
-                       })
+            'PATH': [os.path.join(self.hostcpu, 'bin')],
+        })
 
         if self.with_python:
             guesses.update({
-                            'PYTHONPATH': [self.pylibdir],
-                           })
+                'PYTHONPATH': [self.pylibdir],
+            })
 
         return guesses
 

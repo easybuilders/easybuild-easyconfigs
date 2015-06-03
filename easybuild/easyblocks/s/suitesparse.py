@@ -1,5 +1,5 @@
 ##
-# Copyright 2009-2013 Ghent University
+# Copyright 2009-2015 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -39,6 +39,7 @@ import sys
 from distutils.version import LooseVersion
 
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
+from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.filetools import mkdir
 from easybuild.tools.modules import get_software_root
 
@@ -49,7 +50,7 @@ class EB_SuiteSparse(ConfigureMake):
     def __init__(self, *args, **kwargs):
         """Custom constructor for SuiteSparse easyblock, initialize custom class parameters."""
         super(EB_SuiteSparse, self).__init__(*args, **kwargs)
-        self.config_name = None
+        self.config_name = 'UNKNOWN'
 
     def configure_step(self):
         """Configure build by patching UFconfig.mk or SuiteSparse_config.mk."""
@@ -58,8 +59,6 @@ class EB_SuiteSparse(ConfigureMake):
             self.config_name = 'UFconfig'
         else:
             self.config_name = 'SuiteSparse_config'
-
-        fp = os.path.join(self.cfg['start_dir'], self.config_name, '%s.mk' % self.config_name)
 
         cfgvars = {
             'CC': os.getenv('MPICC'),
@@ -83,7 +82,7 @@ class EB_SuiteSparse(ConfigureMake):
             metis_path = metis
             metis_libs = os.path.join(metis, 'lib', 'metis.a')
         else:
-            self.log.error("Neither METIS or ParMETIS module loaded.")
+            raise EasyBuildError("Neither METIS or ParMETIS module loaded.")
 
         cfgvars.update({
             'METIS_PATH': metis_path,
@@ -91,26 +90,34 @@ class EB_SuiteSparse(ConfigureMake):
         })
 
         # patch file
+        fp = os.path.join(self.cfg['start_dir'], self.config_name, '%s.mk' % self.config_name)
+
         try:
             for line in fileinput.input(fp, inplace=1, backup='.orig'):
-                for (k, v) in cfgvars.items():
-                    line = re.sub(r"^(%s\s*=\s*).*$" % k, r"\1 %s # patched by EasyBuild" % v, line)
-                    if k in line:
-                        cfgvars.pop(k)
+                for (var, val) in cfgvars.items():
+                    orig_line = line
+                    # for variables in cfgvars, substiture lines assignment 
+                    # in the file, whatever they are, by assignments to the
+                    # values in cfgvars
+                    line = re.sub(r"^\s*(%s\s*=\s*).*$" % var,
+                                  r"\1 %s # patched by EasyBuild" % val,
+                                  line)
+                    if line != orig_line:
+                        cfgvars.pop(var)
                 sys.stdout.write(line)
         except IOError, err:
-            self.log.error("Failed to patch %s in: %s" % (fp, err))
+            raise EasyBuildError("Failed to patch %s in: %s", fp, err)
 
         # add remaining entries at the end
         if cfgvars:
             try:
                 f = open(fp, "a")
                 f.write("# lines below added automatically by EasyBuild")
-                for (k, v) in cfgvars.items():
-                    f.write("%s = %s\n" % (k,v))
+                for (var, val) in cfgvars.items():
+                    f.write("%s = %s\n" % (var, val))
                 f.close()
             except IOError, err:
-                self.log.error("Failed to complete %s: %s" % (fp, err))
+                raise EasyBuildError("Failed to complete %s: %s", fp, err)
 
     def install_step(self):
         """Install by copying the contents of the builddir to the installdir (preserving permissions)"""
@@ -130,8 +137,8 @@ class EB_SuiteSparse(ConfigureMake):
                             os.symlink(nsrc, ndst)
                 else:
                     shutil.copy2(src, dst)
-            except:
-                self.log.exception("Copying src %s to dst %s failed" % (src, dst))
+            except OSError, err:
+                raise EasyBuildError("Copying src %s to dst %s failed: %s", src, dst, err)
 
         # some extra symlinks are necessary for UMFPACK to work.
         paths = [
@@ -149,8 +156,8 @@ class EB_SuiteSparse(ConfigureMake):
             if os.path.exists(src):
                 try:
                     os.symlink(src, os.path.join(dstdir, fn))
-                except Exception, err:
-                    self.log.error("Failed to make symbolic link from %s to %s: %s" % (src, dst, err))
+                except OSError, err:
+                    raise EasyBuildError("Failed to make symbolic link from %s to %s: %s", src, dst, err)
 
     def make_module_req_guess(self):
         """Add config dir to CPATH so include file is found."""

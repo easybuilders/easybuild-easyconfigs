@@ -1,5 +1,5 @@
 ##
-# Copyright 2009-2013 Ghent University
+# Copyright 2009-2015 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -42,15 +42,16 @@ from easybuild.framework.easyconfig import CUSTOM
 from easybuild.toolchains.linalg.atlas import Atlas
 from easybuild.toolchains.linalg.gotoblas import GotoBLAS
 from easybuild.toolchains.linalg.openblas import OpenBLAS
-from easybuild.tools.filetools import run_cmd
+from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.modules import get_software_root
+from easybuild.tools.run import run_cmd
 
 # also used for e.g. ScaLAPACK
 def get_blas_lib(log):
     """
     Determine BLAS lib to provide to e.g. LAPACK for building/testing
     """
-    log.deprecated("get_blas_lib uses hardcoded list of known BLAS libs, should rely on toolchain support", "2.0")
+    log.deprecated("get_blas_lib uses hardcoded list of known BLAS libs, should rely on toolchain support", '3.0')
     blaslib = None
     known_blas_libs = {
                        'GotoBLAS': GotoBLAS.BLAS_LIB,
@@ -67,7 +68,7 @@ def get_blas_lib(log):
             log.debug("%s module not loaded" % key)
 
     if not blaslib:
-        log.error("No or unknown BLAS lib loaded; known BLAS libs: %s" % known_blas_libs.keys())
+        raise EasyBuildError("No or unknown BLAS lib loaded; known BLAS libs: %s", known_blas_libs.keys())
 
     return blaslib
 
@@ -98,21 +99,21 @@ class EB_LAPACK(ConfigureMake):
         elif self.toolchain.comp_family() == toolchain.INTELCOMP:  #@UndefinedVariable
             makeinc = 'ifort'
         else:
-            self.log.error("Don't know which build_step.inc file to pick, unknown compiler being used...")
+            raise EasyBuildError("Don't know which build_step.inc file to pick, unknown compiler being used...")
 
         src = os.path.join(self.cfg['start_dir'], 'INSTALL', 'make.inc.%s' % makeinc)
         dest = os.path.join(self.cfg['start_dir'], 'make.inc')
 
         if not os.path.isfile(src):
-            self.log.error("Can't find source file %s" % src)
+            raise EasyBuildError("Can't find source file %s", src)
 
         if os.path.exists(dest):
-            self.log.error("Destination file %s exists" % dest)
+            raise EasyBuildError("Destination file %s exists", dest)
 
         try:
             shutil.copy(src, dest)
         except OSError, err:
-            self.log.error("Copying %s to %s failed: %s" % (src, dest, err))
+            raise EasyBuildError("Copying %s to %s failed: %s", src, dest, err)
 
         # set optimization flags
         fpic = ''
@@ -186,7 +187,7 @@ class EB_LAPACK(ConfigureMake):
                     os.symlink(frompath, topath)
 
         except OSError, err:
-            self.log.error("Copying %s to installation dir %s failed: %s" % (srcdir, destdir, err))
+            raise EasyBuildError("Copying %s to installation dir %s failed: %s", srcdir, destdir, err)
 
     def load_module(self, mod_paths=None, purge=True):
         """Don't try to load (non-existing) LAPACK module when performing a test build."""
@@ -200,7 +201,7 @@ class EB_LAPACK(ConfigureMake):
         if self.cfg['test_only']:
 
             if not get_software_root('LAPACK'):
-                self.log.error("You need to make sure that the LAPACK module is loaded to perform testing.")
+                raise EasyBuildError("You need to make sure that the LAPACK module is loaded to perform testing.")
 
             blaslib = get_blas_lib(self.log)
 

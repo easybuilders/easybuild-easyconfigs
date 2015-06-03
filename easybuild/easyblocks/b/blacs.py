@@ -1,5 +1,5 @@
 ##
-# Copyright 2009-2013 Ghent University
+# Copyright 2009-2015 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -38,7 +38,8 @@ import os
 import shutil
 
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
-from easybuild.tools.filetools import run_cmd
+from easybuild.tools.build_log import EasyBuildError
+from easybuild.tools.run import run_cmd
 
 
 # also used by ScaLAPACK
@@ -52,7 +53,7 @@ def det_interface(log, path):
     if res:
         return res.group(1)
     else:
-        log.error("Failed to determine interface, output for xintface: %s" % out)
+        raise EasyBuildError("Failed to determine interface, output for xintface: %s", out)
 
 
 class EB_BLACS(ConfigureMake):
@@ -69,15 +70,15 @@ class EB_BLACS(ConfigureMake):
         dest = os.path.join(self.cfg['start_dir'], 'Bmake.inc')
 
         if not os.path.isfile(src):
-            self.log.error("Can't find source file %s" % src)
+            raise EasyBuildError("Can't find source file %s", src)
 
         if os.path.exists(dest):
-            self.log.error("Destination file %s exists" % dest)
+            raise EasyBuildError("Destination file %s exists", dest)
 
         try:
             shutil.copy(src, dest)
         except OSError, err:
-            self.log.error("Copying %s to % failed: %s" % (src, dest, err))
+            raise EasyBuildError("Copying %s to %s failed: %s", src, dest, err)
 
     def build_step(self):
         """Build BLACS using build_step, after figuring out the make options based on the heuristic tools available."""
@@ -147,7 +148,7 @@ class EB_BLACS(ConfigureMake):
 
             os.chdir(cwd)
         except OSError, err:
-            self.log.error("Failed to determine interface and transcomm settings: %s" % err)
+            raise EasyBuildError("Failed to determine interface and transcomm settings: %s", err)
 
         opts.update({
                      'comm': comm,
@@ -191,7 +192,7 @@ class EB_BLACS(ConfigureMake):
                         self.log.debug("Symlinked %s/%s to %s" % (dest, lib, symlink_name))
 
             except OSError, err:
-                self.log.error("Copying %s/*.%s to installation dir %s failed: %s"%(src, ext, dest, err))
+                raise EasyBuildError("Copying %s/*.%s to installation dir %s failed: %s", src, ext, dest, err)
 
         # utilities
         src = os.path.join(self.cfg['start_dir'], 'INSTALL', 'EXE', 'xintface')
@@ -205,7 +206,7 @@ class EB_BLACS(ConfigureMake):
             self.log.debug("Copied %s to %s" % (src, dest))
 
         except OSError, err:
-            self.log.error("Copying %s to installation dir %s failed: %s" % (src, dest, err))
+            raise EasyBuildError("Copying %s to installation dir %s failed: %s", src, dest, err)
 
     def sanity_check_step(self):
         """Custom sanity check for BLACS."""

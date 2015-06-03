@@ -1,5 +1,5 @@
 ##
-# Copyright 2013 Ghent University
+# Copyright 2013-2015 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -41,7 +41,10 @@ from easybuild.framework.easyconfig import MANDATORY
 from easybuild.framework.easyconfig.easyconfig import EasyConfig, get_easyblock_class
 from easybuild.framework.easyconfig.tools import get_paths_for
 from easybuild.tools import config
+from easybuild.tools.filetools import write_file
 from easybuild.tools.module_naming_scheme import GENERAL_CLASS
+from easybuild.tools.run import parse_log_for_error, run_cmd, run_cmd_qa
+from easybuild.tools.environment import modify_env, read_environment
 
 
 class InitTest(TestCase):
@@ -72,9 +75,7 @@ class InitTest(TestCase):
             extratxt,
         ])
 
-        f = open(self.eb_file, "w")
-        f.write(txt % easyblock)
-        f.close()
+        write_file(self.eb_file, txt % easyblock)
 
     def setUp(self):
         """Setup test."""
@@ -91,33 +92,38 @@ class InitTest(TestCase):
 
 
 def template_init_test(self, easyblock):
-    """Test whether all easyconfigs can be initialized."""
+    """Test whether all easyblocks can be initialized."""
 
     def check_extra_options_format(extra_options):
         """Make sure extra_options value is of correct format."""
-        # EasyBuild v1.x
-        self.assertTrue(isinstance(extra_options, list))
-        for extra_option in extra_options:
-            self.assertTrue(isinstance(extra_option, tuple))
-            self.assertEqual(len(extra_option), 2)
-            self.assertTrue(isinstance(extra_option[0], basestring))
-            self.assertTrue(isinstance(extra_option[1], list))
-            self.assertEqual(len(extra_option[1]), 3)
-        # EasyBuild v2.0 (breaks backward compatibility compared to v1.x)
-        #self.assertTrue(isinstance(extra_options, dict))
-        #for key in extra_options:
-        #    self.assertTrue(isinstance(extra_options[key], list))
-        #    self.assertTrue(len(extra_options[key]), 3)
+        # EasyBuild v2.0: dict with <string> keys and <list> values
+        self.assertTrue(isinstance(extra_options, dict))
+        extra_options.items()
+        extra_options.keys()
+        extra_options.values()
+        for key in extra_options.keys():
+            self.assertTrue(isinstance(extra_options[key], list))
+            self.assertTrue(len(extra_options[key]), 3)
 
     class_regex = re.compile("^class (.*)\(.*", re.M)
 
     self.log.debug("easyblock: %s" % easyblock)
 
-    # obtain easyblock class name using regex
+    # read easyblock Python module
     f = open(easyblock, "r")
     txt = f.read()
     f.close()
 
+    # make sure error reporting is done correctly (no more log.error, log.exception)
+    log_method_regexes = [
+        re.compile(r"log\.error\("),
+        re.compile(r"log\.exception\("),
+        re.compile(r"log\.raiseException\("),
+    ]
+    for regex in log_method_regexes:
+        self.assertFalse(regex.search(txt), "No match for '%s' in %s" % (regex.pattern, easyblock))
+
+    # obtain easyblock class name using regex
     res = class_regex.search(txt)
     if res:
         ebname = res.group(1)
@@ -130,7 +136,7 @@ def template_init_test(self, easyblock):
 
         # extend easyconfig to make sure mandatory custom easyconfig paramters are defined
         extra_txt = ''
-        for (key, val) in extra_options:
+        for (key, val) in extra_options.items():
             if val[2] == MANDATORY:
                 extra_txt += '%s = "foo"\n' % key
 
@@ -140,6 +146,22 @@ def template_init_test(self, easyblock):
         # initialize easyblock
         # if this doesn't fail, the test succeeds
         app = app_class(EasyConfig(self.eb_file))
+
+        # check whether easyblock instance is still using functions from a deprecated location
+        mod = __import__(app.__module__, [], [], ['easybuild.easyblocks'])
+        moved_functions = ['modify_env', 'parse_log_for_error', 'read_environment', 'run_cmd', 'run_cmd_qa']
+        for fn in moved_functions:
+            if hasattr(mod, fn):
+                tup = (fn, app.__module__, globals()[fn].__module__)
+                self.assertTrue(getattr(mod, fn) is globals()[fn], "%s in %s is imported from %s" % tup)
+        renamed_functions = [
+            ('source_paths', 'source_path'),
+            ('get_avail_core_count', 'get_core_count'),
+            ('get_os_type', 'get_kernel_name'),
+            ('det_full_ec_version', 'det_installversion'),
+        ]
+        for (new_fn, old_fn) in renamed_functions:
+            self.assertFalse(hasattr(mod, old_fn), "%s: %s is replaced by %s" % (app.__module__, old_fn, new_fn))
 
         # cleanup
         app.close_log()

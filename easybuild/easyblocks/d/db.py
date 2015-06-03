@@ -31,6 +31,7 @@ import os
 import shutil
 
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
+from easybuild.tools.build_log import EasyBuildError
 
 
 class EB_DB(ConfigureMake):
@@ -41,5 +42,5 @@ class EB_DB(ConfigureMake):
         try:
             os.chdir('build_unix')
         except OSError, err:
-            self.log.error("Failed to move to build dir: %s" % err)
+            raise EasyBuildError("Failed to move to build dir: %s", err)
         super(EB_DB, self).configure_step(cmd_prefix='../dist/')

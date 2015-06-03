@@ -1,5 +1,5 @@
 ##
-# Copyright 2009-2013 Ghent University
+# Copyright 2009-2015 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -39,6 +39,7 @@ import easybuild.tools.environment as env
 import easybuild.tools.toolchain as toolchain
 from easybuild.easyblocks.generic.cmakemake import CMakeMake
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
+from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.modules import get_software_root, get_software_version
 
 
@@ -100,7 +101,7 @@ def set_netcdf_env_vars(log):
 
     netcdf = get_software_root('netCDF')
     if not netcdf:
-        log.error("netCDF module not loaded?")
+        raise EasyBuildError("netCDF module not loaded?")
     else:
         env.setvar('NETCDF', netcdf)
         log.debug("Set NETCDF to %s" % netcdf)
@@ -108,14 +109,14 @@ def set_netcdf_env_vars(log):
         netcdf_ver = get_software_version('netCDF')
         if not netcdff:
             if LooseVersion(netcdf_ver) >= LooseVersion("4.2"):
-                log.error("netCDF v4.2 no longer supplies Fortran library, also need netCDF-Fortran")
+                raise EasyBuildError("netCDF v4.2 no longer supplies Fortran library, also need netCDF-Fortran")
         else:
             env.setvar('NETCDFF', netcdff)
             log.debug("Set NETCDFF to %s" % netcdff)
 
 def get_netcdf_module_set_cmds(log):
     """Get module setenv commands for netCDF."""
-
+    log.deprecated("Use self.module_generator.set_environment rather than relying on get_netcdf_module_set_cmds", '3.0')
     netcdf = os.getenv('NETCDF')
     if netcdf:
         txt = "setenv NETCDF %s\n" % netcdf
@@ -125,4 +126,4 @@ def get_netcdf_module_set_cmds(log):
             txt += "setenv NETCDFF %s\n" % netcdff
         return txt
     else:
-        log.error("NETCDF environment variable not set?")
+        raise EasyBuildError("NETCDF environment variable not set?")
