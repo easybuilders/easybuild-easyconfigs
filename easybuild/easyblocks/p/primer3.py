@@ -1,5 +1,5 @@
 ##
-# Copyright 2009-2013 Ghent University
+# Copyright 2009-2015 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -34,6 +34,7 @@ EasyBuild support for Primer3, implemented as an easyblock
 import os
 
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
+from easybuild.tools.build_log import EasyBuildError
 
 
 class EB_Primer3(ConfigureMake):
@@ -44,23 +45,26 @@ class EB_Primer3(ConfigureMake):
 
     def __init__(self, *args, **kwargs):
         """Custom initialization for Primer3: build in install dir, set correct bin dir, specify to start from 'src'."""
-
         super(EB_Primer3, self).__init__(*args, **kwargs)
-
         self.build_in_installdir = True
-
         self.bindir = "%s-%s/src" % (self.name.lower(), self.version)
 
-        self.cfg['start_dir'] = 'src'
+    def guess_start_dir(self):
+        """Set correct start directory."""
+        super(EB_Primer3, self).guess_start_dir()
+        if os.path.exists('src'):
+            try:
+                os.chdir('src')
+            except OSError, err:
+                raise EasyBuildError("Failed to move to 'src' subdirectory: %s", err)
 
     def configure_step(self):
         """Configure Primer3 build by setting make options."""
-
         self.cfg.update('buildopts', 'CC="%s" CPP="%s" O_OPTS="%s" all' % (os.getenv('CC'),
                                                                          os.getenv('CXX'),
                                                                          os.getenv('CFLAGS')))
 
-    # default make should be fine
+    # default build_step should be fine
 
     def install_step(self):
         """(no make install)"""

@@ -1,5 +1,5 @@
 ##
-# Copyright 2009-2013 Ghent University
+# Copyright 2009-2015 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -36,7 +36,9 @@ import shutil
 from distutils.version import LooseVersion
 
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
-from easybuild.tools.filetools import run_cmd, mkdir
+from easybuild.tools.build_log import EasyBuildError
+from easybuild.tools.filetools import mkdir
+from easybuild.tools.run import run_cmd
 
 
 class EB_METIS(ConfigureMake):
@@ -94,7 +96,7 @@ class EB_METIS(ConfigureMake):
                 dst = os.path.join(libdir, 'libmetis.a')
                 shutil.copy2(src, dst)
             except OSError, err:
-                self.log.error("Copying file libmetis.a to lib dir failed: %s" % err)
+                raise EasyBuildError("Copying file libmetis.a to lib dir failed: %s", err)
 
             # copy include files
             try:
@@ -104,7 +106,7 @@ class EB_METIS(ConfigureMake):
                     shutil.copy2(src, dst)
                     os.chmod(dst, 0755)
             except OSError, err:
-                self.log.error("Copying file metis.h to include dir failed: %s" % err)
+                raise EasyBuildError("Copying file metis.h to include dir failed: %s", err)
 
             # other applications depending on ParMETIS (SuiteSparse for one) look for both ParMETIS libraries
             # and header files in the Lib directory (capital L). The following symlinks are hence created.
@@ -114,7 +116,7 @@ class EB_METIS(ConfigureMake):
                 for f in ['defs.h', 'macros.h', 'metis.h', 'proto.h', 'rename.h', 'struct.h']:
                     os.symlink(os.path.join(includedir, f), os.path.join(libdir, f))
             except OSError, err:
-                self.log.error("Something went wrong during symlink creation: %s" % err)
+                raise EasyBuildError("Something went wrong during symlink creation: %s", err)
 
         else:
             super(EB_METIS, self).install_step()
