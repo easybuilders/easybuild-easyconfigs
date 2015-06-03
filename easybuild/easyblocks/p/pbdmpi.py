@@ -41,6 +41,9 @@ class EB_pbdMPI(RPackage):
     def __init__(self, *args, **kwargs):
         """Initialisation of custom class variables for pbdMPI."""
         super(EB_pbdMPI, self).__init__(*args, **kwargs)
+        self.example = None
+
+    def configure_step(self):
         mpi_types = {
                 toolchain.INTELMPI: 'INTELMPI',
                 toolchain.MPI_TYPE_MPICH: 'MPICH',
@@ -49,5 +52,6 @@ class EB_pbdMPI(RPackage):
         mpi_type = mpi_types[self.toolchain.mpi_family()]
         self.configureargs.append("--with-mpi-type=%s" % mpi_type)
 
-        self.example = None
+        super(EB_pbdMPI, self).configure_step()
+
 
