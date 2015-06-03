@@ -32,7 +32,9 @@ import os
 import shutil
 
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
-from easybuild.tools.filetools import rmtree2, run_cmd
+from easybuild.tools.build_log import EasyBuildError
+from easybuild.tools.filetools import rmtree2
+from easybuild.tools.run import run_cmd
 
 class EB_Go(ConfigureMake):
     """
@@ -55,7 +57,7 @@ class EB_Go(ConfigureMake):
         try:
             os.chdir(srcdir)
         except OSError, err:
-            self.log.error("Failed to move to %s: %s" % (srcdir, err))
+            raise EasyBuildError("Failed to move to %s: %s", srcdir, err)
 
         # $GOROOT_FINAL only specifies the location of the final installation, which gets baked into the binaries
         # the installation itself is *not* done by the all.bash script, that needs to be done manually
@@ -66,4 +68,4 @@ class EB_Go(ConfigureMake):
             rmtree2(self.installdir)
             shutil.copytree(self.cfg['start_dir'], self.installdir, symlinks=self.cfg['keepsymlinks'])
         except OSError, err:
-            self.log.error("Failed to copy installation to %s: %s" % (self.installdir, err))
+            raise EasyBuildError("Failed to copy installation to %s: %s", self.installdir, err)

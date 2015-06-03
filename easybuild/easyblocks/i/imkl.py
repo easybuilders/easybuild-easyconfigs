@@ -1,5 +1,5 @@
 # #
-# Copyright 2009-2013 Ghent University
+# Copyright 2009-2015 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -40,10 +40,13 @@ import tempfile
 from distutils.version import LooseVersion
 
 import easybuild.tools.environment as env
+import easybuild.tools.toolchain as toolchain
 from easybuild.easyblocks.generic.intelbase import IntelBase, ACTIVATION_NAME_2012, LICENSE_FILE_NAME_2012
 from easybuild.framework.easyconfig import CUSTOM
-from easybuild.tools.filetools import rmtree2, run_cmd
+from easybuild.tools.build_log import EasyBuildError
+from easybuild.tools.filetools import rmtree2
 from easybuild.tools.modules import get_software_root
+from easybuild.tools.run import run_cmd
 
 
 class EB_imkl(IntelBase):
@@ -96,7 +99,7 @@ class EB_imkl(IntelBase):
         """
         if LooseVersion(self.version) >= LooseVersion('10.3'):
             if self.cfg['m32']:
-                self.log.error("32-bit not supported yet for IMKL v%s (>= 10.3)" % self.version)
+                raise EasyBuildError("32-bit not supported yet for IMKL v%s (>= 10.3)", self.version)
             else:
                 retdict = {
                     'PATH': ['bin', 'mkl/bin', 'mkl/bin/intel64', 'composerxe-2011/bin'],
@@ -138,10 +141,11 @@ class EB_imkl(IntelBase):
         txt = super(EB_imkl, self).make_module_extra()
         txt += self.module_generator.prepend_paths(self.license_env_var, [self.license_file], allow_abs=True)
         if self.cfg['m32']:
-            txt += self.module_generator.prepend_paths('NLSPATH', '$root/idb/32/locale/%l_%t/%N')
+            nlspath = os.path.join('idb', '32', 'locale', '%l_%t', '%N')
         else:
-            txt += self.module_generator.prepend_paths('NLSPATH', '$root/idb/intel64/locale/%l_%t/%N')
-        txt += self.module_generator.set_environment('MKLROOT', '$root')
+            nlspath = os.path.join('idb', 'intel64', 'locale', '%l_%t', '%N')
+        txt += self.module_generator.prepend_paths('NLSPATH', nlspath)
+        txt += self.module_generator.set_environment('MKLROOT', os.path.join(self.installdir, 'mkl'))
         return txt
 
     def post_install_step(self):
@@ -187,7 +191,7 @@ class EB_imkl(IntelBase):
                     f.close()
                     self.log.info("File %s written" % dest)
                 except IOError, err:
-                    self.log.exception("Can't write file %s: %s" % (dest, err))
+                    raise EasyBuildError("Can't write file %s: %s", dest, err)
 
         # build the mkl interfaces, if desired
         if self.cfg['interfaces']:
@@ -217,7 +221,7 @@ class EB_imkl(IntelBase):
                 os.chdir(interfacedir)
                 self.log.info("Changed to interfaces directory %s" % interfacedir)
             except OSError, err:
-                self.log.exception("Can't change to interfaces directory %s" % interfacedir)
+                raise EasyBuildError("Can't change to interfaces directory %s", interfacedir)
 
             compopt = None
             # determine whether we're using a non-Intel GCC-based toolchain
@@ -226,7 +230,8 @@ class EB_imkl(IntelBase):
                 if get_software_root('GCC'):
                     compopt = 'compiler=gnu'
                 else:
-                    self.log.error("Not using either Intel compilers nor GCC, don't know how to build wrapper libs")
+                    raise EasyBuildError("Not using either Intel compilers nor GCC, "
+                                         "don't know how to build wrapper libs")
             else:
                 compopt = 'compiler=intel'
 
@@ -235,11 +240,29 @@ class EB_imkl(IntelBase):
                 if lib in fftw3libs:
                     buildopts.append('install_to=$INSTALL_DIR')
                 elif lib in cdftlibs:
-                    # can't use toolchain.mpi_family, because of dummy toolchain
-                    if get_software_root('MPICH2') or get_software_root('MVAPICH2'):
-                        buildopts.append('mpi=mpich2')
-                    elif get_software_root('OpenMPI'):
-                        buildopts.append('mpi=openmpi')
+                    mpi_spec = None
+                    # check whether MPI_FAMILY constant is defined, so mpi_family() can be used
+                    if hasattr(self.toolchain, 'MPI_FAMILY') and self.toolchain.MPI_FAMILY is not None:
+                        mpi_spec_by_fam = {
+                            toolchain.MPICH: 'mpich2',  # MPICH is MPICH v3.x, which is MPICH2 compatible
+                            toolchain.MPICH2: 'mpich2',
+                            toolchain.MVAPICH2: 'mpich2',
+                            toolchain.OPENMPI: 'openmpi',
+                        }
+                        mpi_fam = self.toolchain.mpi_family()
+                        mpi_spec = mpi_spec_by_fam.get(mpi_fam)
+                        self.log.debug("Determined MPI specification based on MPI toolchain component: %s" % mpi_spec)
+                    else:
+                        # can't use toolchain.mpi_family, because of dummy toolchain
+                        if get_software_root('MPICH2') or get_software_root('MVAPICH2'):
+                            mpi_spec = 'mpich2'
+                        elif get_software_root('OpenMPI'):
+                            mpi_spec = 'openmpi'
+                        self.log.debug("Determined MPI specification based on loaded MPI module: %s" % mpi_spec)
+
+                    if mpi_spec is not None:
+                        buildopts.append('mpi=%s' % mpi_spec)
+
                 precflags = ['']
                 if lib.startswith('fftw2x') and not self.cfg['m32']:
                     # build both single and double precision variants
@@ -273,12 +296,12 @@ class EB_imkl(IntelBase):
                         os.chdir(intdir)
                         self.log.info("Changed to interface %s directory %s" % (lib, intdir))
                     except OSError, err:
-                        self.log.error("Can't change to interface %s directory %s: %s" % (lib, intdir, err))
+                        raise EasyBuildError("Can't change to interface %s directory %s: %s", lib, intdir, err)
 
                     fullcmd = "%s %s" % (cmd, ' '.join(buildopts + extraopts))
                     res = run_cmd(fullcmd, log_all=True, simple=True)
                     if not res:
-                        self.log.error("Building %s (flags: %s, fullcmd: %s) failed" % (lib, flags, fullcmd))
+                        raise EasyBuildError("Building %s (flags: %s, fullcmd: %s) failed", lib, flags, fullcmd)
 
                     for fn in os.listdir(tmpbuild):
                         src = os.path.join(tmpbuild, fn)
@@ -292,7 +315,7 @@ class EB_imkl(IntelBase):
                                 shutil.move(src, dest)
                                 self.log.info("Moved %s to %s" % (src, dest))
                         except OSError, err:
-                            self.log.error("Failed to move %s to %s: %s" % (src, dest, err))
+                            raise EasyBuildError("Failed to move %s to %s: %s", src, dest, err)
 
                     rmtree2(tmpbuild)
 
@@ -304,14 +327,14 @@ class EB_imkl(IntelBase):
         libs = ["libmkl_core.so", "libmkl_gnu_thread.so", "libmkl_intel_thread.so", "libmkl_sequential.so"]
         extralibs = ["libmkl_blacs_intelmpi_%(suff)s.so", "libmkl_scalapack_%(suff)s.so"]
 
-        compsuff = '_intel'
-        if get_software_root('icc') is None:
-            if get_software_root('GCC'):
-                compsuff = '_gnu'
-            else:
-                self.log.error("Not using Intel compilers or GCC, don't know compiler suffix for FFTW libraries.")
-
         if self.cfg['interfaces']:
+	    compsuff = '_intel'
+	    if get_software_root('icc') is None:
+		if get_software_root('GCC'):
+		    compsuff = '_gnu'
+		else:
+		    raise EasyBuildError("Not using Intel compilers or GCC, don't know compiler suffix for FFTW libraries.")
+
             precs = ['_double', '_single']
             if ver < LooseVersion('11'):
                 # no precision suffix in libfftw2 libs before imkl v11
@@ -336,7 +359,7 @@ class EB_imkl(IntelBase):
 
         if ver >= LooseVersion('10.3'):
             if self.cfg['m32']:
-                self.log.error("Sanity check for 32-bit not implemented yet for IMKL v%s (>= 10.3)" % self.version)
+                raise EasyBuildError("Sanity check for 32-bit not implemented yet for IMKL v%s (>= 10.3)", self.version)
             else:
                 mkldirs = ["bin", "mkl/bin", "mkl/bin/intel64", "mkl/lib/intel64", "mkl/include"]
                 libs += [lib % {'suff': suff} for lib in extralibs for suff in ['lp64', 'ilp64']]
