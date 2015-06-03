@@ -81,14 +81,14 @@ class EB_CUDA(Binary):
 
         chk_libdir = ["lib64"]
         
-# Versions higher than 6 do not provide 32 bit libraries
+        # Versions higher than 6 do not provide 32 bit libraries
         if LooseVersion(self.version) < LooseVersion("6"):
             chk_libdir += ["lib"]
 
         custom_paths = {
             'files': ["bin/%s" % x for x in ["fatbinary", "nvcc", "nvlink", "ptxas"]] +
                      ["%s/lib%s.so" % (x, y) for x in chk_libdir for y in ["cublas", "cudart", "cufft",
-                                                                                 "curand", "cusparse"]] +
+                                                                           "curand", "cusparse"]] +
                      ["open64/bin/nvopencc"],
             'dirs': ["include"],
         }
