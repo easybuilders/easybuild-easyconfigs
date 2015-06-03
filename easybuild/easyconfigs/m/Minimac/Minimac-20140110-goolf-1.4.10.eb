@@ -1,0 +1,42 @@
+# This file is an EasyBuild reciPY as per https://github.com/hpcugent/easybuild
+# Author: Pablo Escobar Lopez
+# Swiss Institute of Bioinformatics
+# Biozentrum - University of Basel
+
+easyblock = 'MakeCp'
+
+name = 'Minimac'
+version = '20140110'
+
+homepage = 'http://genome.sph.umich.edu/wiki/Minimac'
+description = """ Minimac is a low memory, computationally efficient implementation 
+ of the MaCH algorithm for genotype imputation. It is designed to work on phased genotypes
+ and can handle very large reference panels with hundreds or thousands of haplotypes. 
+ The name has two parts. The first, 'mini', refers to the modest amount of computational
+ resources it requires. The second, 'mac', is short hand for MaCH, our widely used 
+ algorithm for genotype imputation.  """
+
+toolchain = {'name': 'goolf', 'version': '1.4.10'}
+
+# # download minimac.src.tgz from http://www.sph.umich.edu/csg/cfuchsb and rename to include version/datestamp
+sources = ['%(namelower)s-%(version)s.src.tgz']
+checksums = [('md5', 'a8011a4cf8a9be8add07815e9e42246d')]
+
+# first move to folder libStatGen to run make
+prebuildopts = ["cd libStatGen && "]
+
+# in libStatGen folder run just "make"
+# in minimac folder run "make opt && make openmp"
+buildopts = [" && cd ../minimac && make opt && make openmp"]
+
+# parallel build fails
+parallel = 1
+
+files_to_copy = [(["minimac/bin/minimac", "minimac/bin/minimac-omp"], "bin")]
+
+sanity_check_paths = {
+    'files': ['bin/minimac', 'bin/minimac-omp'],
+    'dirs': []
+}
+
+moduleclass = 'bio'
