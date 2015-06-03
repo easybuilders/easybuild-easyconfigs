@@ -1,5 +1,5 @@
 ##
-# Copyright 2009-2013 Ghent University
+# Copyright 2009-2015 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -33,7 +33,7 @@ import os
 import re
 
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
-from easybuild.tools.filetools import run_cmd
+from easybuild.tools.run import run_cmd
 
 # perldoc -lm seems to be the safest way to test if a module is available, based on exit code
 EXTS_FILTER_PERL_MODULES = ("perldoc -lm %(ext_name)s ", "")
@@ -113,5 +113,4 @@ def get_site_suffix(tag):
 def get_sitearch_suffix():
     """Deprecated more specific version of get_site_suffix. Only here for backward compatibility."""
     _log = fancylogger.getLogger('Perl.get_sitearch_suffix', fname=False)
-    _log.deprecated("Use get_site_suffix('sitearch') instead of get_sitearch_suffix()", "2.0")
-    return get_site_suffix('sitearch')
+    _log.nosupport("Use get_site_suffix('sitearch') instead of get_sitearch_suffix()", "2.0")

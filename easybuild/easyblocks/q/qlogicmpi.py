@@ -1,5 +1,5 @@
 ##
-# Copyright 2009-2013 Ghent University
+# Copyright 2009-2015 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -45,7 +45,7 @@ class EB_QLogicMPI(Rpm):
         
         txt = super(EB_QLogicMPI, self).make_module_extra()
 
-        txt += self.moduleGenerator.set_environment('MPICH_ROOT', self.installdir)
+        txt += self.module_generator.set_environment('MPICH_ROOT', self.installdir)
 
         return txt
 
