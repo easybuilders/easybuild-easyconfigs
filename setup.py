@@ -1,5 +1,5 @@
 ##
-# Copyright 2012-2013 Ghent University
+# Copyright 2012-2015 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -41,7 +41,7 @@ from distutils import log
 
 # note: release candidates should be versioned as a pre-release, e.g. "1.1rc1"
 # 1.1-rc1 would indicate a post-release, i.e., and update of 1.1, so beware!
-VERSION = "1.10.0.0dev"
+VERSION = '2.2.0dev'
 
 API_VERSION = VERSION.split('.')[0]
 EB_VERSION = '.'.join(VERSION.split('.')[0:2])
@@ -96,11 +96,9 @@ setup(
     version = VERSION,
     author = "EasyBuild community",
     author_email = "easybuild@lists.ugent.be",
-    description = """EasyBuild is a software installation framework in Python that allows you to \
-install software in a structured and robust way.
-This package contains a collection of easyconfigs, i.e. simple text files written in Python syntax \
+    description = """Easyconfig files are simple build specification files for EasyBuild,
 that specify the build parameters for software packages (version, compiler toolchain, dependency \
-versions, etc.)""",
+versions, etc.).""",
     license = "GPLv2",
     keywords = "software build building installation installing compilation HPC scientific",
     url = "http://hpcugent.github.com/easybuild",
