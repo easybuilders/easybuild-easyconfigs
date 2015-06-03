@@ -40,7 +40,6 @@ class EB_pbdMPI(RPackage):
 
     def __init__(self, *args, **kwargs):
         """Initialisation of custom class variables for pbdMPI."""
-        print 'Hello!'
         super(EB_pbdMPI, self).__init__(*args, **kwargs)
         mpi_types = {
                 toolchain.INTELMPI: 'INTELMPI',
