@@ -1,5 +1,5 @@
 ##
-# Copyright 2009-2013 Ghent University
+# Copyright 2009-2015 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -38,7 +38,9 @@ import stat
 
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import CUSTOM
-from easybuild.tools.filetools import run_cmd, rmtree2
+from easybuild.tools.build_log import EasyBuildError
+from easybuild.tools.filetools import mkdir, rmtree2
+from easybuild.tools.run import run_cmd
 
 
 class Binary(EasyBlock):
@@ -50,11 +52,24 @@ class Binary(EasyBlock):
     @staticmethod
     def extra_options(extra_vars=None):
         """Extra easyconfig parameters specific to Binary easyblock."""
-        extra_vars = dict(EasyBlock.extra_options(extra_vars))
+        extra_vars = EasyBlock.extra_options(extra_vars)
         extra_vars.update({
             'install_cmd': [None, "Install command to be used.", CUSTOM],
+            # staged installation can help with the hard (potentially faulty) check on available disk space
+            'staged_install': [False, "Perform staged installation via subdirectory of build directory", CUSTOM],
         })
-        return EasyBlock.extra_options(extra_vars)
+        return extra_vars
+
+    def __init__(self, *args, **kwargs):
+        """Initialize Binary-specific variables."""
+        super(Binary, self).__init__(*args, **kwargs)
+
+        self.actual_installdir = None
+        if self.cfg['staged_install']:
+            self.actual_installdir = self.installdir
+            self.installdir = os.path.join(self.builddir, 'staged')
+            mkdir(self.installdir, parents=True)
+            self.log.info("Performing staged installation via %s" % self.installdir)
 
     def extract_step(self):
         """Move all source files to the build directory"""
@@ -69,7 +84,7 @@ class Binary(EasyBlock):
                 shutil.copy2(src, self.builddir)
                 os.chmod(dst, stat.S_IRWXU)
             except (OSError, IOError), err:
-                self.log.exception("Couldn't copy %s to %s: %s" % (src, self.builddir, err))
+                raise EasyBuildError("Couldn't copy %s to %s: %s", src, self.builddir, err)
 
     def configure_step(self):
         """No configuration, this is binary software"""
@@ -87,15 +102,32 @@ class Binary(EasyBlock):
                 rmtree2(self.installdir)
                 shutil.copytree(self.cfg['start_dir'], self.installdir)
             except OSError, err:
-                self.log.error("Failed to copy %s to %s: %s" % (self.cfg['start_dir'], self.installdir))
+                raise EasyBuildError("Failed to copy %s to %s: %s", self.cfg['start_dir'], self.installdir, err)
         else:
-            self.log.info("Installing %s using command '%s'..." % (self.name, self.cfg['install_cmd']))
-            run_cmd(self.cfg['install_cmd'], log_all=True, simple=True)
+            cmd = ' '.join([self.cfg['preinstallopts'], self.cfg['install_cmd'], self.cfg['installopts']])
+            self.log.info("Installing %s using command '%s'..." % (self.name, cmd))
+            run_cmd(cmd, log_all=True, simple=True)
+
+    def post_install_step(self):
+        """Copy installation to actual installation directory in case of a staged installation."""
+        if self.cfg['staged_install']:
+            staged_installdir = self.installdir
+            self.installdir = self.actual_installdir
+            try:
+                # copytree expects target directory to not exist yet
+                if os.path.exists(self.installdir):
+                    rmtree2(self.installdir)
+                shutil.copytree(staged_installdir, self.installdir)
+            except OSError, err:
+                raise EasyBuildError("Failed to move staged install from %s to %s: %s",
+                                     staged_installdir, self.installdir, err)
+
+        super(Binary, self).post_install_step()
 
     def make_module_extra(self):
         """Add the install directory to the PATH."""
 
         txt = super(Binary, self).make_module_extra()
-        txt += self.moduleGenerator.prepend_paths("PATH", [''])
+        txt += self.module_generator.prepend_paths("PATH", [''])
         self.log.debug("make_module_extra added this: %s" % txt)
         return txt
