@@ -1,5 +1,5 @@
 ##
-# Copyright 2009-2015 Ghent University
+# Copyright 2015 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -24,16 +24,12 @@
 ##
 """
 EasyBuild support for building and installing pbdMPI, implemented as an easyblock
-"""
-import os
 
-import easybuild.tools.environment as env
+@author: Ewan Higgs (Ghent University)
+"""
+
 import easybuild.tools.toolchain as toolchain
 from easybuild.easyblocks.generic.rpackage import RPackage
-from easybuild.framework.easyconfig import CUSTOM, MANDATORY
-import easybuild.tools.toolchain as toolchain
-from easybuild.tools.run import run_cmd
-
 
 class EB_pbdMPI(RPackage):
     """Support for building/installing pbdMPI."""
@@ -41,17 +37,15 @@ class EB_pbdMPI(RPackage):
     def __init__(self, *args, **kwargs):
         """Initialisation of custom class variables for pbdMPI."""
         super(EB_pbdMPI, self).__init__(*args, **kwargs)
-        self.example = None
 
     def configure_step(self):
+        """Configure Step of build process for pbdMPI."""
         mpi_types = {
-                toolchain.INTELMPI: 'INTELMPI',
-                toolchain.MPI_TYPE_MPICH: 'MPICH',
-                toolchain.MPI_TYPE_OPENMPI: 'OPENMPI',
+            toolchain.INTELMPI: 'INTELMPI',
+            toolchain.MPI_TYPE_MPICH: 'MPICH',
+            toolchain.MPI_TYPE_OPENMPI: 'OPENMPI',
         }
         mpi_type = mpi_types[self.toolchain.mpi_family()]
         self.configureargs.append("--with-mpi-type=%s" % mpi_type)
 
         super(EB_pbdMPI, self).configure_step()
-
-

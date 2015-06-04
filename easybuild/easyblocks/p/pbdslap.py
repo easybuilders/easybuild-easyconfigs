@@ -1,5 +1,5 @@
 ##
-# Copyright 2009-2015 Ghent University
+# Copyright 2015 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -24,22 +24,16 @@
 ##
 """
 EasyBuild support for building and installing pbdSLAP, implemented as an easyblock
+
+@author: Ewan Higgs (Ghent University)
 """
-import os
 
-import easybuild.tools.environment as env
-import easybuild.tools.toolchain as toolchain
 from easybuild.easyblocks.generic.rpackage import RPackage
-from easybuild.framework.easyconfig import CUSTOM, MANDATORY
-import easybuild.tools.toolchain as toolchain
-from easybuild.tools.run import run_cmd
-
 
 class EB_pbdSLAP(RPackage):
-    """Support for building/installing pbdMPI."""
+    """Support for building/installing pbdSLAP."""
 
     def __init__(self, *args, **kwargs):
         """Initialisation of custom class variables for pbdSLAP."""
         super(EB_pbdSLAP, self).__init__(*args, **kwargs)
         self.configurevars.append("EXT_LDFLAGS='$LIBSCALAPACK'")
-
