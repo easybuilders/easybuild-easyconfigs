@@ -166,13 +166,24 @@ class EB_Clang(CMakeMake):
             self.llvm_obj_dir_stage3 = os.path.join(self.builddir, 'llvm.obj.3')
 
         if LooseVersion(self.version) >= LooseVersion('3.3'):
+            disable_san_tests = False
             # all sanitizer tests will fail when there's a limit on the vmem
             # this is ugly but I haven't found a cleaner way so far
             (vmemlim, ec) = run_cmd("ulimit -v", regexp=False)
             if not vmemlim.startswith("unlimited"):
+                disable_san_tests = True
                 self.log.warn("There is a virtual memory limit set of %s KB. The tests of the "
                               "sanitizers will be disabled as they need unlimited virtual "
                               "memory." % vmemlim.strip())
+
+            # the same goes for unlimited stacksize
+            (stacklim, ec) = run_cmd("ulimit -s", regexp=False)
+            if stacklim.startswith("unlimited"):
+                disable_san_tests = True
+                self.log.warn("The stacksize limit is set to unlimited. This causes the ThreadSanitizer "
+                              "to fail. The sanitizers tests will be disabled.")
+
+            if disable_san_tests:
                 self.disable_sanitizer_tests()
 
         # Create and enter build directory.
