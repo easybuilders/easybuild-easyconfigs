@@ -185,7 +185,7 @@ class EB_Clang(CMakeMake):
                 self.log.warn("The stacksize limit is set to unlimited. This causes the ThreadSanitizer "
                               "to fail. The sanitizers tests will be disabled unless --strict=error is used.")
 
-            if disable_san_tests and not build_option('strict') == run.ERROR:
+            if disable_san_tests and build_option('strict') != run.ERROR:
                 self.disable_sanitizer_tests()
 
         # Create and enter build directory.
