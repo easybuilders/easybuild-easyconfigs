@@ -1,8 +1,8 @@
 ##
 # This file is an EasyBuild reciPY as per https://github.com/hpcugent/easybuild
 #
-# Copyright:: Copyright 2012-2013 University of Luxembourg/Luxembourg Centre for Systems Biomedicine
-# Authors::   Fotis Georgatos <fotis.georgatos@uni.lu>
+# Copyright:: Copyright 2012-2014 Uni.Lu/LCSB, NTUA
+# Authors::   Fotis Georgatos <fotis@cern.ch>
 # License::   MIT/GPL
 # $Id$
 #
@@ -10,22 +10,29 @@
 # http://hpcbios.readthedocs.org/en/latest/HPCBIOS_07-02.html
 ##
 
+easyblock = 'ConfigureMake'
+
 name = 'binutils'
 version = '2.22'
 
 homepage = 'http://directory.fsf.org/project/binutils/'
 description = "binutils-2.22: GNU binary utilities"
 
-sources = ['binutils-%s.tar.bz2' % version]
-source_urls = ['http://ftp.gnu.org/gnu/binutils']
-
 toolchain = {'name': 'goalf', 'version': '1.1.0-no-OFED'}
+toolchainopts = {'pic': True}
+
+sources = ['binutils-%s.tar.bz2' % version]
+source_urls = [GNU_SOURCE]
+
+# make sure that system libraries are also considered by ld
+configopts = '--with-sysroot=/'
 
 binlist = ['addr2line', 'ar', 'as', 'c++filt', 'elfedit', 'gprof', 'ld', 'ld.bfd', 'nm',
            'objcopy', 'objdump', 'ranlib', 'readelf', 'size', 'strings', 'strip' ]
 sanity_check_paths = {
-                      'files': ['bin/%s' % x for x in binlist],
-                      'dirs': []
-                     }
+    'files': ['bin/%s' % x for x in binlist] + ['lib/libbfd.a', 'lib/libopcodes.a', 'lib64/libiberty.a'] + 
+             ['include/%s' % x for x in ['ansidecl.h', 'bfd.h', 'bfdlink.h', 'dis-asm.h', 'symcat.h']],
+    'dirs': [],
+}
 
 moduleclass = 'tools'

@@ -1,0 +1,49 @@
+# This patch fixes the LD_LIBRARY_PATH for the tests. By default, it was overwritten.
+# By Ward Poelmans <wpoely86@gmail.com>
+--- a/test/CMakeLists.txt	2013-11-08 17:23:06.533668767 +0100
++++ b/test/CMakeLists.txt	2013-11-08 17:23:09.905655675 +0100
+@@ -64,7 +64,7 @@
+   add_test(${test}_Test ${TEST_PATH}/test_${test})
+   set_tests_properties(${test}_Test PROPERTIES
+     FAIL_REGULAR_EXPRESSION "ERROR;FAIL;Test failed"
+-    ENVIRONMENT "BABEL_DATADIR=${CMAKE_SOURCE_DIR}/data;LD_LIBRARY_PATH=${CMAKE_BINARY_DIR}/lib")
++    ENVIRONMENT "BABEL_DATADIR=${CMAKE_SOURCE_DIR}/data;LD_LIBRARY_PATH=${CMAKE_BINARY_DIR}/lib:$ENV{LD_LIBRARY_PATH}")
+ endforeach(test ${tests})
+ 
+ ############################################################
+@@ -127,7 +127,7 @@
+              ${TEST_PATH}/test_inchiwrite ${inchidata}/${test} ${inchidata}/${test}.txt)
+     set_tests_properties(inchi${test}_Test PROPERTIES
+                          FAIL_REGULAR_EXPRESSION "Not ok"
+-                         ENVIRONMENT "BABEL_DATADIR=${CMAKE_SOURCE_DIR}/data;LD_LIBRARY_PATH=${CMAKE_BINARY_DIR}/lib"
++                         ENVIRONMENT "BABEL_DATADIR=${CMAKE_SOURCE_DIR}/data;LD_LIBRARY_PATH=${CMAKE_BINARY_DIR}/lib:$ENV{LD_LIBRARY_PATH}"
+     )
+   endforeach(test ${inchitests})
+ endif(WITH_INCHI)
+@@ -141,7 +141,7 @@
+   add_test(${test}_Test ${TEST_PATH}/test_${test})
+   set_tests_properties(${test}_Test PROPERTIES
+     FAIL_REGULAR_EXPRESSION "not ok"
+-    ENVIRONMENT "BABEL_DATADIR=${CMAKE_SOURCE_DIR}/data;LD_LIBRARY_PATH=${CMAKE_BINARY_DIR}/lib"
++    ENVIRONMENT "BABEL_DATADIR=${CMAKE_SOURCE_DIR}/data;LD_LIBRARY_PATH=${CMAKE_BINARY_DIR}/lib:$ENV{LD_LIBRARY_PATH}"
+  )
+ endforeach(test ${old_tests})
+ 
+@@ -177,7 +177,7 @@
+       PYTHONPATH "${CMAKE_SOURCE_DIR}/scripts/python:${CMAKE_BINARY_DIR}/lib"
+       BABEL_LIBDIR "${CMAKE_BINARY_DIR}/lib"
+       BABEL_DATADIR "${CMAKE_SOURCE_DIR}/data"
+-      LD_LIBRARY_PATH "${CMAKE_BINARY_DIR}/lib"
++      LD_LIBRARY_PATH "${CMAKE_BINARY_DIR}/lib:$ENV{LD_LIBRARY_PATH}"
+     )
+       ADD_PYTHON_TEST(pytest_${pytest} test${pytest}.py)
+       set_tests_properties(pytest_${pytest} PROPERTIES
+@@ -199,7 +199,7 @@
+         PYTHONPATH "${CMAKE_SOURCE_DIR}/scripts/python:${CMAKE_BINARY_DIR}/lib"
+         BABEL_LIBDIR "${CMAKE_BINARY_DIR}/lib"
+         BABEL_DATADIR "${CMAKE_SOURCE_DIR}/data"
+-        LD_LIBRARY_PATH "${CMAKE_BINARY_DIR}/lib"
++        LD_LIBRARY_PATH "${CMAKE_BINARY_DIR}/lib:$ENV{LD_LIBRARY_PATH}"
+     )
+     if(MSVC)
+       SET_SOURCE_FILES_PROPERTIES(test${pybindtest}.py PROPERTIES

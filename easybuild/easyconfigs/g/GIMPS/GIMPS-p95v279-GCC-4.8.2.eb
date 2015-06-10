@@ -1,0 +1,42 @@
+##
+# This file is an EasyBuild reciPY as per https://github.com/hpcugent/easybuild
+#
+# Copyright:: Copyright 2012-2014 Uni.Lu/LCSB, NTUA
+# Authors::   Fotis Georgatos <fotis@cern.ch>
+# License::   MIT/GPL
+# $Id$
+##
+easyblock = 'MakeCp'
+
+name = 'GIMPS'
+version = 'p95v279'
+
+homepage = 'http://www.mersenne.org/'
+description = """GIMPS: Great Internet Mersenne Prime Search;
+ it can be useful for limited stress testing of nodes, in user space"""
+
+toolchain = {'name': 'GCC', 'version': '4.8.2'}
+
+builddependencies = [('cURL', '7.33.0')]
+
+# make sure unzip works, zipped sources may contain some 'corruption',
+# e.g. "linux64/:  ucsize 306 <> csize 0 for STORED entry"
+sources = [('%(version)s.source.zip', 'unzip -qq %s || /bin/true')]
+# e.g. http://www.mersenne.info/gimps/p95v279.source.zip
+source_urls = ['http://www.mersenne.info/%(namelower)s']
+
+# ref. https://bbs.archlinux.org/viewtopic.php?id=114996 & http://pastebin.com/PEFUUxHq
+patches = ['GIMPS-p95v279_linux64-makefile.patch']
+
+start_dir = 'linux64'
+
+buildopts = "-C ../gwnum -f make64 && make"
+
+files_to_copy = [(['mprime'], 'bin')]
+
+sanity_check_paths = {
+    'files': ["bin/mprime"],
+    'dirs': []
+}
+
+moduleclass = 'tools'

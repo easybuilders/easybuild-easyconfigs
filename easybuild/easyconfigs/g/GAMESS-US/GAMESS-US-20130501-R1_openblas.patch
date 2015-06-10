@@ -1,0 +1,47 @@
+include support for OpenBLAS in config and lked scripts
+author: Kenneth Hoste (Ghent University)
+--- config.orig	2015-03-03 10:45:24.562802000 +0100
++++ config	2015-03-03 10:48:31.411157020 +0100
+@@ -569,7 +569,7 @@
+    echo "Type 'ls /usr/lib64/atlas'               to look for Atlas"
+ endif
+ echo " "
+-echo -n "Enter your choice of 'mkl' or 'atlas' or 'acml' or 'none': "
++echo -n "Enter your choice of 'mkl' or 'atlas' or 'acml' or 'openblas' or 'none': "
+ set GMS_MATHLIB=$<
+ #
+ switch ($GMS_MATHLIB)
+@@ -773,6 +773,19 @@
+       endif
+       breaksw
+ 
++   case openblas:
++      badopenblas:
++      echo -n "Enter full path to OpenBLAS libraries (without 'lib' subdirectory): "
++      set openblaspath=$<
++      if (!(-d $openblaspath)) then
++         echo " "
++         echo "The directory $openblaspath does not exist."
++         echo " "
++         goto badopenblas
++      endif
++      set GMS_MATHLIB_PATH=$openblaspath/lib
++      breaksw
++
+    default:
+       echo "You didn't provide a valid math library name, try again."
+       echo " "
+--- lked.orig	2015-03-03 12:03:13.657079000 +0100
++++ lked	2015-03-03 12:03:58.829061256 +0100
+@@ -473,6 +473,11 @@
+       set BLAS=' '
+       breaksw
+ 
++   case openblas:
++      set MATHLIBS="$GMS_MATHLIB_PATH/libopenblas.a"
++      set BLAS=' '
++      breaksw
++
+    case none:
+    default:
+       echo "Warning.  No math library was found, you should install one."
