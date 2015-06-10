@@ -132,7 +132,7 @@ class EB_MCR(EasyBlock):
 
         txt += self.module_generator.set_environment('XAPPLRESDIR', os.path.join(self.installdir, self.extradir[self.cfg['version']], 'X11', 'app-defaults'))
         for ldlibdir in ['runtime', 'bin', os.path.join('sys', 'os')]:
-            txt += self.module_generator.prepend_paths('PATH', os.path.join(self.extradir[self.cfg['version']], ldlibdir, 'glnxa64'))
+            txt += self.module_generator.prepend_paths('LD_LIBRARY_PATH', os.path.join(self.extradir[self.cfg['version']], ldlibdir, 'glnxa64'))
 
         
         txt += self.module_generator.set_environment('_JAVA_OPTIONS', self.cfg['java_options'])
