@@ -67,14 +67,19 @@ class EB_Xmipp(EasyBlock):
         if not java_root:
             raise EasyBuildError("Java not loaded as a dependency, which is required for %s", self.name)
 
-        # extract some dependencies that we really need and can't find anywhere else
+        # extract some dependencies that we really need and can't find anywhere else, if needed
         # alglib tarball has version in name, so lets find it with a glob
         # we can't do this in extract step before these are in the original sources tarball, so we need to know
         # startdir first
         external_path = os.path.join(self.cfg['start_dir'], 'external')
-        alglib_tar = glob.glob(os.path.join(external_path, 'alglib*.tgz'))[0]
-        for src in ['bilib.tgz', 'bilib.tgz', 'condor.tgz', alglib_tar, 'scons.tgz']:
-            extract_file(os.path.join(external_path, src), external_path)
+        deps = [('alglib', True), ('bilib', True), ('condor', True), ('scons', False)]
+        for dep, expected in deps:
+            if not os.path.exists(os.path.join(external_path, dep)):
+                srcfile = glob.glob(os.path.join(external_path, '%s*.tgz' % dep))
+                if srcfile:
+                    extract_file(srcfile, external_path)
+                elif expected:
+                    raise EasyBuildError("Expected external dependency %s not found in %s", dep, external_path)
 
         # make sure we are back in the start dir
         os.chdir(self.cfg['start_dir'])
