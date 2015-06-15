@@ -60,7 +60,7 @@ def det_pylibdir(plat_specific=False):
         # determine Python lib dir via distutils
         # use run_cmd, we can to talk to the active Python, not the system Python running EasyBuild
         prefix = '/tmp/'
-        args = "platform_specific=%s, prefix=\\'%s\\'" % (plat_specific, prefix)
+        args = 'platform_specific=%s, prefix="%s"' % (plat_specific, prefix)
         pycmd = "import distutils.sysconfig; print(distutils.sysconfig.get_python_lib(%s))" % args
         cmd = "python -c '%s'" % pycmd
         out, ec = run_cmd(cmd, simple=False)
