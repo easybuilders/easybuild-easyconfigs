@@ -40,15 +40,6 @@ class Bundle(EasyBlock):
     """
     Bundle of modules: only generate module files, nothing to build/install
     """
-    @staticmethod
-    def extra_options(extra_vars=None):
-        """Extra easyconfig parameters specific to ConfigureMake."""
-        extra_vars = EasyBlock.extra_options(extra_vars)
-        extra_vars.update({
-            'full_sanity_check' : [False, "Run full sanity check, rather than just testing 'module load'", CUSTOM],
-        })
-        return extra_vars
-
     def configure_step(self):
         """Do nothing."""
         pass
@@ -65,7 +56,7 @@ class Bundle(EasyBlock):
         """
         Nothing is being installed, so just being able to load the (fake) module is sufficient
         """
-        if self.cfg['full_sanity_check']:
+        if self.cfg['exts_list'] or self.cfg['sanity_check_paths'] or self.cfg['sanity_check_commands']:
             super(Bundle, self).sanity_check_step(*args, **kwargs)
         else:
             self.log.info("Testing loading of module '%s' by means of sanity check" % self.full_mod_name)
