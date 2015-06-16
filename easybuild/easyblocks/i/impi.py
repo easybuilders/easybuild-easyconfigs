@@ -92,7 +92,6 @@ class EB_impi(IntelBase):
                         ["sed -i '/I_MPI_ROOT=/c\I_MPI_ROOT=%%(installdir)s; export I_MPI_ROOT' %%(installdir)s/%s" \
                         % script]
                         )
-
         else:
             # impi up until version 4.0.0.x uses custom installation procedure.
             silent = \
