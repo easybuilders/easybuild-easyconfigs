@@ -80,6 +80,14 @@ class EB_impi(IntelBase):
             # impi v4.1.1 and v5.0.1 installers create impi/<version> subdir, so stuff needs to be moved afterwards
             if impiver == LooseVersion('4.1.1.036') or impiver >= LooseVersion('5.0.1.035'):
                 super(EB_impi, self).move_after_install()
+                # Fix broken env scripts afther the move
+                for script in ['intel64/bin/mpivars.csh', 'mic/bin/mpivars.csh']:
+                    self.cfg.update('postinstallcmds',
+                                    ["sed -i '/setenv I_MPI_ROOT/c\setenv I_MPI_ROOT=%%(installdir)s' %%(installdir)s/%s" % script])
+                for script in ['intel64/bin/mpivars.sh', 'mic/bin/mpivars.sh']:
+                    self.cfg.update('postinstallcmds',
+                                    ["sed -i '/I_MPI_ROOT=/c\I_MPI_ROOT=%%(installdir)s; export I_MPI_ROOT' %%(installdir)s/%s" % script])
+
         else:
             # impi up until version 4.0.0.x uses custom installation procedure.
             silent = \
