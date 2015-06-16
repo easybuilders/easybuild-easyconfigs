@@ -26,22 +26,27 @@
 EasyBuild support for building and installing Xmipp, implemented as an easyblock
 
 @author: Jens Timmerman (Ghent University)
+@author: Pablo Escobar (sciCORE, SIB, University of Basel)
+@author: Kenneth Hoste (Ghent University)
 """
-import glob
 import os
+import re
+import stat
 
+import easybuild.tools.environment as env
 import easybuild.tools.toolchain as toolchain
 from easybuild.framework.easyblock import EasyBlock
+from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.build_log import EasyBuildError
-from easybuild.tools.filetools import mkdir, extract_file
-from easybuild.tools.modules import get_software_root, get_software_version
+from easybuild.tools.filetools import adjust_permissions, mkdir, write_file
+from easybuild.tools.modules import get_software_root
 from easybuild.tools.run import run_cmd
-
-from easybuild.easyblocks.generic.pythonpackage import det_pylibdir
 
 
 class EB_Xmipp(EasyBlock):
-    """Support for building/installing Xmipp."""
+    """
+    easyblock to install Xmipp
+    """
 
     def __init__(self, *args, **kwargs):
         """Easyblock constructor, enable building in installation directory."""
@@ -55,112 +60,101 @@ class EB_Xmipp(EasyBlock):
         super(EB_Xmipp, self).extract_step()
 
     def configure_step(self):
-        """Configure Xmipp build via a provided wrapper around scons."""
-        # check if all our dependencies are in place
-        self.python_root = get_software_root('Python')
-        if not self.python_root:
-            raise EasyBuildError("Python not loaded as a dependency, which is required for %s", self.name)
-        python_libdir = det_pylibdir()
-        self.python_short_ver = '.'.join(get_software_version('Python').split('.')[:2])
-
-        java_root = get_software_root('Java')
-        if not java_root:
-            raise EasyBuildError("Java not loaded as a dependency, which is required for %s", self.name)
-
-        # extract some dependencies that we really need and can't find anywhere else
-        # alglib tarball has version in name, so lets find it with a glob
-        # we can't do this in extract step before these are in the original sources tarball, so we need to know
-        # startdir first
-        external_path = os.path.join(self.cfg['start_dir'], 'external')
-        alglib_tar = glob.glob(os.path.join(external_path, 'alglib*.tgz'))[0]
-        for src in ['bilib.tgz', 'bilib.tgz', 'condor.tgz', alglib_tar, 'scons.tgz']:
-            extract_file(os.path.join(external_path, src), external_path)
-
-        # make sure we are back in the start dir
-        os.chdir(self.cfg['start_dir'])
-
-        # build step expects these to exist
-        mkdir(os.path.join(self.cfg['start_dir'], 'bin'))
-        mkdir(os.path.join(self.cfg['start_dir'], 'lib'))
-
-        python_inc_dir = os.path.join(self.python_root, 'include', 'python%s' % self.python_short_ver)
-        numpy_inc_dir = os.path.join(self.python_root, python_libdir, 'numpy', 'core', 'include')
+        """Configure by defining $CONFIGURE_ARGS"""
         if self.toolchain.mpi_family() == toolchain.INTELMPI:
             mpi_bindir = os.path.join(get_software_root('impi'), 'intel64', 'bin')
         else:
             mpi_bindir = os.path.join(get_software_root(self.toolchain.MPI_MODULE_NAME[0]), 'bin')
 
-        if not os.path.exists(numpy_inc_dir):
-            raise EasyBuildError("numpy 'include' directory %s not found", numpy_inc_dir)
+        root_java = get_software_root("Java")
+        if not get_software_root("Java"):
+            raise EasyBuildError("Module for dependency Java not loaded.")
 
-        if not os.path.exists(mpi_bindir):
-            raise EasyBuildError("MPI 'bin' subdir %s does not exist", mpi_bindir)
-
-        cmd = ' '.join([
-            self.cfg['preconfigopts'],
-            'python external/scons/scons.py',
-            'mode=configure',
-            '-j %s' % self.cfg['parallel'],
-            '--config=force',
-            'profile=no',
-            'fast=yes',
-            'warn=no',
-            'release=yes',
-            'gtest=no',
-            'cuda=no',
-            'debug=no',
-            'matlab=no',
-            'java=no',
-            'LINKERFORPROGRAMS="$CXX"',
+        configure_args = ' '.join([
+            'profile=no fast=yes warn=no release=yes gtest=yes static=no cuda=no debug=no matlab=no',
+            'LINKERFORPROGRAMS=%s' % os.getenv('CXX'),
             'MPI_BINDIR=%s' % mpi_bindir,
-            'JAVA_HOME=%s' % java_root,
+            'MPI_LIB=mpi',
+            'JAVA_HOME=%s' % os.getenv('JAVA_HOME'),
             'JAVAC=javac',
-            'CC="$CC"',
-            'CXXFLAGS="$CXXFLAGS -DMPICH_IGNORE_CXX_SEEK -I%s -I%s"' % (python_inc_dir, numpy_inc_dir),
-            'CXX="$CXX"',
-            'MPI_CC="$MPICC"',
-            'MPI_CXX="$MPICXX"',
-            'MPI_INCLUDE="$MPI_INC_DIR"',
-            'MPI_LIBDIR="$MPI_LIB_DIR"',
-            'MPI_LINKERFORPROGRAMS="$MPICC"',
-            'LIBPATH="$LD_LIBRARY_PATH"',
-            self.cfg['configopts'],
+            'CC=%s' % os.getenv('CC'),
+            'CXXFLAGS=',
+            'CXX=%s' % os.getenv('CXX'),
+            'MPI_CC=%s' % os.getenv('MPICC'),
+            'CCFLAGS=',
+            'MPI_CXX=%s' % os.getenv('MPICXX'),
+            'MPI_INCLUDE=%s' % os.getenv('MPI_INC_DIR'),
+            'MPI_LIBDIR=%s' % os.getenv('MPI_LIB_DIR'),
+            'MPI_LINKERFORPROGRAMS=%s' % os.getenv('MPICC'),
+            'LIBPATH=%s' % os.getenv('LD_LIBRARY_PATH'),
         ])
-        run_cmd(cmd, log_all=True, simple=True)
+
+        # defining env var CONFIGURE_ARGS the install.sh script will fetch all the required paths
+        # CONFIGURE_ARGS is inside install.sh and it's empty by default
+        self.log.info("configure arguments to be picked up by Xmipp install.sh script: %s", configure_args)
+        env.setvar('CONFIGURE_ARGS', configure_args)
 
     def build_step(self):
-        """Custom build procedure for Xmipp: call the scons wrapper with compile argument"""
-        cmd = ' '.join([
-            self.cfg['prebuildopts'],
-            'LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$PWD/lib',
-            'python external/scons/scons.py',
-            'mode=compile',
-            '-j %s' % self.cfg['parallel'],
-            self.cfg['buildopts'],
-        ])
-        run_cmd(cmd, log_all=True, simple=True)
+        """No custom build step (see install step)."""
+        pass
 
     def install_step(self):
-        """install step for Xmipp, this builds a local database and seems to do some tests?"""
-        python_dynlib_dir = os.path.join(self.python_root, 'lib', 'python%s' % self.python_short_ver, 'lib-dynload')
+        """Build/install Xmipp using provided install.sh script."""
 
-        if not os.path.exists(python_dynlib_dir):
-            raise EasyBuildError("Python lib-dynload dir %s not found", python_dynlib_dir)
-
-        extra_pythonpaths = [
-            os.path.join(self.cfg['start_dir'], 'protocols'),
-            os.path.join(self.cfg['start_dir'], 'libraries', 'bindings', 'python'),
-            python_dynlib_dir,
+        # extend $PYTHONPATH
+        pythonpath = os.environ.get('PYTHONPATH', '')
+        pythonpaths = [
+            os.path.join(self.installdir, 'protocols'),
+            os.path.join(self.installdir, 'lib', 'python2.7', 'site-packages'),
+            os.path.join(self.installdir, 'libraries', 'bindings', 'python'),
+            pythonpath,
         ]
-        cmd = ' '.join([
-            self.cfg['preinstallopts'],
-            'XMIPP_HOME=%s' % self.cfg['start_dir'],
-            'PATH=%s:$PATH' % os.path.join(self.cfg['start_dir'], 'bin'),
-            'PYTHONPATH="%s"' % os.pathsep.join(['$PYTHONPATH'] + extra_pythonpaths),
-            'python setup.py install',
-            self.cfg['installopts'],
-        ])
-        run_cmd(cmd, log_all=True, simple=True)
+        mkdir(os.path.join(self.installdir, 'lib', 'python2.7', 'site-packages'), parents=True)
+
+        # put dummy xmipp_python script in place if Python is used as a dependency
+        bindir = os.path.join(self.installdir, 'bin')
+        mkdir(bindir)
+        python_root = get_software_root('Python')
+        if python_root:
+            xmipp_python = os.path.join(bindir, 'xmipp_python')
+            xmipp_python_script_body = '\n'.join([
+                '#!/bin/sh',
+                '%s/bin/python "$@"' % python_root,
+            ])
+            write_file(xmipp_python, xmipp_python_script_body)
+            adjust_permissions(xmipp_python, stat.S_IXUSR|stat.S_IXGRP|stat.S_IXOTH)
+
+            env.setvar('CPATH', os.pathsep.join([
+                os.path.join(python_root, 'include', 'python2.7'),
+                os.path.join(python_root, 'lib', 'python2.7', 'site-packages', 'numpy', 'core', 'include'),
+                os.environ.get('CPATH', ''),
+            ]))
+
+            pythonpaths.append(os.path.join(python_root, 'lib', 'python2.7', 'site-packages'))
+
+        env.setvar('PYTHONPATH', os.pathsep.join(pythonpaths))
+
+        cmd_opts = []
+        for dep in ['FFTW', 'HDF5', ('libjpeg-turbo', 'jpeg'), ('LibTIFF', 'tiff'), 'matplotlib', 'Python', 'SQLite',
+                    'Tcl', 'Tk']:
+            if isinstance(dep, tuple):
+                dep, opt = dep
+            else:
+                opt = dep.lower()
+            if get_software_root(dep):
+                cmd_opts.append('--%s=false' % opt)
+                # Python should also provide numpy/mpi4py
+                if dep == 'Python':
+                    cmd_opts.extend(['--numpy=false', '--mpi4py=false'])
+
+        if '--tcl=false' in cmd_opts and '--tk=false' in cmd_opts:
+            cmd_opts.append('--tcl-tk=false')
+
+        cmd = './install.sh -j %s --unattended=true %s' % (self.cfg['parallel'], ' '.join(cmd_opts))
+        out, _ = run_cmd(cmd, log_all=True, simple=False)
+
+        if not re.search("Xmipp has been successfully compiled", out):
+            raise EasyBuildError("Xmipp installation did not complete successfully?")
 
     def sanity_check_step(self):
         """Custom sanity check for Xmipp."""
