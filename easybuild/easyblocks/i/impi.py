@@ -89,7 +89,8 @@ class EB_impi(IntelBase):
                 for script in ['intel64/bin/mpivars.sh', 'mic/bin/mpivars.sh']:
                     self.cfg.update(
                         'postinstallcmds',
-                        ["sed -i '/I_MPI_ROOT=/c\I_MPI_ROOT=%%(installdir)s; export I_MPI_ROOT' %%(installdir)s/%s" % script]
+                        ["sed -i '/I_MPI_ROOT=/c\I_MPI_ROOT=%%(installdir)s; export I_MPI_ROOT' %%(installdir)s/%s" \
+                        % script]
                         )
 
         else:
