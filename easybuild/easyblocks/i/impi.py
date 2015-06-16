@@ -82,11 +82,15 @@ class EB_impi(IntelBase):
                 super(EB_impi, self).move_after_install()
                 # Fix broken env scripts afther the move
                 for script in ['intel64/bin/mpivars.csh', 'mic/bin/mpivars.csh']:
-                    self.cfg.update('postinstallcmds',
-                                    ["sed -i '/setenv I_MPI_ROOT/c\setenv I_MPI_ROOT=%%(installdir)s' %%(installdir)s/%s" % script])
+                    self.cfg.update(
+                        'postinstallcmds',
+                        ["sed -i '/setenv I_MPI_ROOT/c\setenv I_MPI_ROOT=%%(installdir)s' %%(installdir)s/%s" % script]
+                        )
                 for script in ['intel64/bin/mpivars.sh', 'mic/bin/mpivars.sh']:
-                    self.cfg.update('postinstallcmds',
-                                    ["sed -i '/I_MPI_ROOT=/c\I_MPI_ROOT=%%(installdir)s; export I_MPI_ROOT' %%(installdir)s/%s" % script])
+                    self.cfg.update(
+                        'postinstallcmds',
+                        ["sed -i '/I_MPI_ROOT=/c\I_MPI_ROOT=%%(installdir)s; export I_MPI_ROOT' %%(installdir)s/%s" % script]
+                        )
 
         else:
             # impi up until version 4.0.0.x uses custom installation procedure.
