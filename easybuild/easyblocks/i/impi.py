@@ -80,7 +80,7 @@ class EB_impi(IntelBase):
             # impi v4.1.1 and v5.0.1 installers create impi/<version> subdir, so stuff needs to be moved afterwards
             if impiver == LooseVersion('4.1.1.036') or impiver >= LooseVersion('5.0.1.035'):
                 super(EB_impi, self).move_after_install()
-                # Fix broken env scripts afther the move
+                # Fix broken env scripts after the move
                 for script in ['intel64/bin/mpivars.csh', 'mic/bin/mpivars.csh']:
                     self.cfg.update(
                         'postinstallcmds',
