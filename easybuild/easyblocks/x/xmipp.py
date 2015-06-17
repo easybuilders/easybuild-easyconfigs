@@ -29,17 +29,20 @@ EasyBuild support for building and installing Xmipp, implemented as an easyblock
 @author: Pablo Escobar (sciCORE, SIB, University of Basel)
 @author: Kenneth Hoste (Ghent University)
 """
+import fileinput
 import os
 import re
 import stat
+import sys
 
 import easybuild.tools.environment as env
 import easybuild.tools.toolchain as toolchain
+from easybuild.easyblocks.generic.pythonpackage import det_pylibdir
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.filetools import adjust_permissions, mkdir, write_file
-from easybuild.tools.modules import get_software_root
+from easybuild.tools.modules import get_software_root, get_software_version
 from easybuild.tools.run import run_cmd
 
 
@@ -52,6 +55,7 @@ class EB_Xmipp(EasyBlock):
         """Easyblock constructor, enable building in installation directory."""
         super(EB_Xmipp, self).__init__(*args, **kwargs)
         self.build_in_installdir = True
+        self.xmipp_pythonpaths = []
 
     def extract_step(self):
         """Extract Xmipp sources."""
@@ -60,7 +64,7 @@ class EB_Xmipp(EasyBlock):
         super(EB_Xmipp, self).extract_step()
 
     def configure_step(self):
-        """Configure by defining $CONFIGURE_ARGS"""
+        """Set configure options."""
         if self.toolchain.mpi_family() == toolchain.INTELMPI:
             mpi_bindir = os.path.join(get_software_root('impi'), 'intel64', 'bin')
         else:
@@ -85,14 +89,13 @@ class EB_Xmipp(EasyBlock):
             'MPI_CXX=%s' % os.getenv('MPICXX'),
             'MPI_INCLUDE=%s' % os.getenv('MPI_INC_DIR'),
             'MPI_LIBDIR=%s' % os.getenv('MPI_LIB_DIR'),
-            'MPI_LINKERFORPROGRAMS=%s' % os.getenv('MPICC'),
+            'MPI_LINKERFORPROGRAMS=%s' % os.getenv('MPICXX'),
             'LIBPATH=%s' % os.getenv('LD_LIBRARY_PATH'),
         ])
 
-        # defining env var CONFIGURE_ARGS the install.sh script will fetch all the required paths
-        # CONFIGURE_ARGS is inside install.sh and it's empty by default
-        self.log.info("configure arguments to be picked up by Xmipp install.sh script: %s", configure_args)
-        env.setvar('CONFIGURE_ARGS', configure_args)
+        # define list of configure options, which will be passed to Xmipp's install.sh script via --configure-args
+        self.cfg['configopts'] = configure_args
+        self.log.info("Configure arguments for Xmipp install.sh script: %s", self.cfg['configopts'])
 
     def build_step(self):
         """No custom build step (see install step)."""
@@ -100,22 +103,32 @@ class EB_Xmipp(EasyBlock):
 
     def install_step(self):
         """Build/install Xmipp using provided install.sh script."""
+        pylibdir = det_pylibdir()
 
-        # extend $PYTHONPATH
-        pythonpath = os.environ.get('PYTHONPATH', '')
-        pythonpaths = [
-            os.path.join(self.installdir, 'protocols'),
-            os.path.join(self.installdir, 'lib', 'python2.7', 'site-packages'),
-            os.path.join(self.installdir, 'libraries', 'bindings', 'python'),
-            pythonpath,
+        self.xmipp_pythonpaths = [
+            # location where Python packages will be installed by Xmipp installer
+            pylibdir,
+            'protocols',
+            os.path.join('libraries', 'bindings', 'python'),
         ]
-        mkdir(os.path.join(self.installdir, 'lib', 'python2.7', 'site-packages'), parents=True)
 
-        # put dummy xmipp_python script in place if Python is used as a dependency
-        bindir = os.path.join(self.installdir, 'bin')
-        mkdir(bindir)
         python_root = get_software_root('Python')
         if python_root:
+            # extend $PYTHONPATH
+            all_pythonpaths = [os.path.join(self.installdir, p) for p in self.xmipp_pythonpaths]
+            # required so packages installed as extensions in Pythpn dep are picked up
+            all_pythonpaths.append(os.path.join(python_root, pylibdir))
+            all_pythonpaths.append(os.environ.get('PYTHONPATH', ''))
+
+            env.setvar('PYTHONPATH', os.pathsep.join(all_pythonpaths))
+
+            # location where Python packages will be installed by Xmipp installer must exist already (setuptools)
+            mkdir(os.path.join(self.installdir, pylibdir), parents=True)
+
+            # put dummy xmipp_python script in place if Python is used as a dependency
+            bindir = os.path.join(self.installdir, 'bin')
+            mkdir(bindir)
+
             xmipp_python = os.path.join(bindir, 'xmipp_python')
             xmipp_python_script_body = '\n'.join([
                 '#!/bin/sh',
@@ -124,24 +137,27 @@ class EB_Xmipp(EasyBlock):
             write_file(xmipp_python, xmipp_python_script_body)
             adjust_permissions(xmipp_python, stat.S_IXUSR|stat.S_IXGRP|stat.S_IXOTH)
 
+            pyshortver = '.'.join(get_software_version('Python').split('.')[:2])
+
+            # make sure Python.h and numpy header are found
             env.setvar('CPATH', os.pathsep.join([
-                os.path.join(python_root, 'include', 'python2.7'),
-                os.path.join(python_root, 'lib', 'python2.7', 'site-packages', 'numpy', 'core', 'include'),
+                os.path.join(python_root, 'include', 'python%s' % pyshortver),
+                os.path.join(python_root, pylibdir, 'numpy', 'core', 'include'),
                 os.environ.get('CPATH', ''),
             ]))
 
-            pythonpaths.append(os.path.join(python_root, 'lib', 'python2.7', 'site-packages'))
-
-        env.setvar('PYTHONPATH', os.pathsep.join(pythonpaths))
-
         cmd_opts = []
+
+        # disable (re)building of supplied dependencies
+        dep_names = [dep['name'] for dep in self.cfg['dependencies']]
         for dep in ['FFTW', 'HDF5', ('libjpeg-turbo', 'jpeg'), ('LibTIFF', 'tiff'), 'matplotlib', 'Python', 'SQLite',
                     'Tcl', 'Tk']:
             if isinstance(dep, tuple):
                 dep, opt = dep
             else:
                 opt = dep.lower()
-            if get_software_root(dep):
+            # don't check via get_software_root, check listed dependencies directly (relevant for FFTW)
+            if dep in dep_names:
                 cmd_opts.append('--%s=false' % opt)
                 # Python should also provide numpy/mpi4py
                 if dep == 'Python':
@@ -149,6 +165,12 @@ class EB_Xmipp(EasyBlock):
 
         if '--tcl=false' in cmd_opts and '--tk=false' in cmd_opts:
             cmd_opts.append('--tcl-tk=false')
+
+        # patch install.sh script to inject configure options
+        # setting $CONFIGURE_ARGS or using --configure-args doesn't work...
+        for line in fileinput.input('install.sh', inplace=1, backup='.orig.eb'):
+            line = re.sub(r"^CONFIGURE_ARGS.*$", 'CONFIGURE_ARGS="%s"' % self.cfg['configopts'], line)
+            sys.stdout.write(line)
 
         cmd = './install.sh -j %s --unattended=true %s' % (self.cfg['parallel'], ' '.join(cmd_opts))
         out, _ = run_cmd(cmd, log_all=True, simple=False)
@@ -170,4 +192,5 @@ class EB_Xmipp(EasyBlock):
         """Define Xmipp specific variables in generated module file, i.e. XMIPP_HOME."""
         txt = super(EB_Xmipp, self).make_module_extra()
         txt += self.module_generator.set_environment('XMIPP_HOME', self.installdir)
+        txt += self.module_generator.prepend_paths('PYTHONPATH', self.xmipp_pythonpaths)
         return txt
