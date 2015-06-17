@@ -33,7 +33,6 @@ EasyBuild support for installing a bundle of modules, implemented as a generic e
 """
 
 from easybuild.framework.easyblock import EasyBlock
-from easybuild.framework.easyconfig import CUSTOM
 
 
 class Bundle(EasyBlock):
