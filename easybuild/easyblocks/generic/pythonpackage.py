@@ -42,7 +42,7 @@ from easybuild.easyblocks.python import EXTS_FILTER_PYTHON_PACKAGES
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.framework.extensioneasyblock import ExtensionEasyBlock
 from easybuild.tools.build_log import EasyBuildError
-from easybuild.tools.filetools import mkdir, rmtree2
+from easybuild.tools.filetools import mkdir, rmtree2, which
 from easybuild.tools.modules import get_software_root, get_software_version
 from easybuild.tools.run import run_cmd
 
@@ -60,6 +60,9 @@ def det_pylibdir(plat_specific=False):
     args = 'plat_specific=%s, prefix="%s"' % (plat_specific, prefix)
     pycmd = "import distutils.sysconfig; print(distutils.sysconfig.get_python_lib(%s))" % args
     cmd = "python -c '%s'" % pycmd
+
+    log.debug("Determining Python library directory using %s and command '%s'", which('python'), cmd)
+
     out, ec = run_cmd(cmd, simple=False)
     txt = out.strip().split('\n')[-1]
 
