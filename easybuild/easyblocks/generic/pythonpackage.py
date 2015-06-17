@@ -42,7 +42,7 @@ from easybuild.easyblocks.python import EXTS_FILTER_PYTHON_PACKAGES
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.framework.extensioneasyblock import ExtensionEasyBlock
 from easybuild.tools.build_log import EasyBuildError
-from easybuild.tools.filetools import mkdir, rmtree2
+from easybuild.tools.filetools import mkdir, rmtree2, which
 from easybuild.tools.modules import get_software_root, get_software_version
 from easybuild.tools.run import run_cmd
 
@@ -53,27 +53,27 @@ UNKNOWN = 'UNKNOWN'
 def det_pylibdir(plat_specific=False):
     """Determine Python library directory."""
     log = fancylogger.getLogger('det_pylibdir', fname=False)
-    pyver = get_software_version('Python')
-    if not pyver:
-        raise EasyBuildError("Python module not loaded.")
-    else:
-        # determine Python lib dir via distutils
-        # use run_cmd, we can to talk to the active Python, not the system Python running EasyBuild
-        prefix = '/tmp/'
-        args = 'plat_specific=%s, prefix="%s"' % (plat_specific, prefix)
-        pycmd = "import distutils.sysconfig; print(distutils.sysconfig.get_python_lib(%s))" % args
-        cmd = "python -c '%s'" % pycmd
-        out, ec = run_cmd(cmd, simple=False)
-        txt = out.strip().split('\n')[-1]
 
-        # value obtained should start with specified prefix, otherwise something is very wrong
-        if not txt.startswith(prefix):
-            raise EasyBuildError("Last line of output of %s does not start with specified prefix %s: %s (exit code %s)",
-                                 cmd, prefix, out, ec)
+    # determine Python lib dir via distutils
+    # use run_cmd, we can to talk to the active Python, not the system Python running EasyBuild
+    prefix = '/tmp/'
+    args = 'plat_specific=%s, prefix="%s"' % (plat_specific, prefix)
+    pycmd = "import distutils.sysconfig; print(distutils.sysconfig.get_python_lib(%s))" % args
+    cmd = "python -c '%s'" % pycmd
 
-        pylibdir = txt[len(prefix):]
-        log.debug("Determined pylibdir using '%s': %s", cmd, pylibdir)
-        return pylibdir
+    log.debug("Determining Python library directory using %s and command '%s'", which('python'), cmd)
+
+    out, ec = run_cmd(cmd, simple=False)
+    txt = out.strip().split('\n')[-1]
+
+    # value obtained should start with specified prefix, otherwise something is very wrong
+    if not txt.startswith(prefix):
+        raise EasyBuildError("Last line of output of %s does not start with specified prefix %s: %s (exit code %s)",
+                             cmd, prefix, out, ec)
+
+    pylibdir = txt[len(prefix):]
+    log.debug("Determined pylibdir using '%s': %s", cmd, pylibdir)
+    return pylibdir
 
 
 class PythonPackage(ExtensionEasyBlock):
