@@ -82,10 +82,12 @@ class EB_Xmipp(EasyBlock):
             'JAVA_HOME=%s' % os.getenv('JAVA_HOME'),
             'JAVAC=javac',
             'CC=%s' % os.getenv('CC'),
-            'CXXFLAGS=',
+            # pass $CXXFLAGS in Python list syntax and avoid spaces, e.g.: ['-O2','-march=native']
+            'CXXFLAGS=%s' % str(os.getenv('CXXFLAGS').split(' ')).replace(' ', ''),
             'CXX=%s' % os.getenv('CXX'),
             'MPI_CC=%s' % os.getenv('MPICC'),
-            'CCFLAGS=',
+            # pass $CFLAGS in Python list syntax and avoid spaces, e.g.: ['-O2','-march=native']
+            'CCFLAGS=%s' % str(os.getenv('CFLAGS').split(' ')).replace(' ', ''),
             'MPI_CXX=%s' % os.getenv('MPICXX'),
             'MPI_INCLUDE=%s' % os.getenv('MPI_INC_DIR'),
             'MPI_LIBDIR=%s' % os.getenv('MPI_LIB_DIR'),
