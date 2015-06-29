@@ -52,12 +52,12 @@ class EB_Hadoop(Tarball):
     def build_step(self):
         """Custom build procedure for Hadoop: build native libraries, if requested."""
         if self.cfg['build_native_libs']:
-            # Building snappy, bzip2 jars w/ native libs requires -Drequire.snappy -Drequire.bzip2, etc.
-            native_lib_flags = ""
-            for native_lib, lib_path in self.cfg['extra_native_libs']:
-                native_lib_flags += '-Drequire.%s=true ' % native_lib
+            cmd = "mvn package -DskipTests -Dmaven.javadoc.skip -Dtar -Pdist,native"
 
-            cmd = "mvn package -DskipTests -Dmaven.javadoc.skip %s -Dtar -Pdist,native" % native_lib_flags
+            # Building snappy, bzip2 jars w/ native libs requires -Drequire.snappy -Drequire.bzip2, etc.
+            for native_lib, lib_path in self.cfg['extra_native_libs']:
+                cmd += ' -Drequire.%s=true' % native_lib
+
             if self.cfg['parallel'] > 1:
                 cmd += " -T%d" % self.cfg['parallel']
             run_cmd(cmd, log_all=True, simple=True, log_ok=True)
