@@ -28,10 +28,12 @@ EasyBuild support for building and installing Hadoop, implemented as an easybloc
 @author: Kenneth Hoste (Ghent University)
 """
 import os
+import os.path
 import shutil
 
 from easybuild.easyblocks.generic.tarball import Tarball
 from easybuild.framework.easyconfig import CUSTOM
+from easybuild.tools.modules import get_software_root
 from easybuild.tools.run import run_cmd
 
 
@@ -43,13 +45,19 @@ class EB_Hadoop(Tarball):
         """Custom easyconfig parameters for Hadoop."""
         extra_vars = {
             'build_native_libs': [False, "Build native libraries", CUSTOM],
+            'extra_native_libs': [[], "Extra native libraries to install (list of tuples)", CUSTOM],
          }
         return Tarball.extra_options(extra_vars)
 
     def build_step(self):
         """Custom build procedure for Hadoop: build native libraries, if requested."""
         if self.cfg['build_native_libs']:
-            cmd = "mvn package -DskipTests -Dmaven.javadoc.skip -Dtar -Pdist,native"
+            # Building snappy, bzip2 jars w/ native libs requires -Drequire.snappy -Drequire.bzip2, etc.
+            native_lib_flags = ""
+            for native_lib, lib_path in self.cfg['extra_native_libs']:
+                native_lib_flags += '-Drequire.%s=true ' % native_lib
+
+            cmd = "mvn package -DskipTests -Dmaven.javadoc.skip %s -Dtar -Pdist,native" % native_lib_flags
             if self.cfg['parallel'] > 1:
                 cmd += " -T%d" % self.cfg['parallel']
             run_cmd(cmd, log_all=True, simple=True, log_ok=True)
@@ -61,6 +69,17 @@ class EB_Hadoop(Tarball):
             super(EB_Hadoop, self).install_step(src=src)
         else:
             super(EB_Hadoop, self).install_step()
+
+    def post_install_step(self):
+        """After the install, copy libsnappy into place."""
+        for native_library, lib_path in self.cfg['extra_native_libs']:
+            lib_root = get_software_root(native_library)
+            if not lib_root:
+                self.log.warn("%s not found. Skipping install" % native_library)
+                continue
+            lib_src = os.path.join(lib_root, lib_path)
+            lib_dest = os.path.join(self.installdir, 'lib')
+            shutil.copytree(lib_src, lib_dest)
 
     def sanity_check_step(self):
         """Custom sanity check for Hadoop."""
