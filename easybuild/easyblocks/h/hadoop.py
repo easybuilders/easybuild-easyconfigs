@@ -28,11 +28,11 @@ EasyBuild support for building and installing Hadoop, implemented as an easybloc
 @author: Kenneth Hoste (Ghent University)
 """
 import os
-import os.path
 import shutil
 
 from easybuild.easyblocks.generic.tarball import Tarball
 from easybuild.framework.easyconfig import CUSTOM
+from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.modules import get_software_root
 from easybuild.tools.run import run_cmd
 
@@ -75,8 +75,7 @@ class EB_Hadoop(Tarball):
         for native_library, lib_path in self.cfg['extra_native_libs']:
             lib_root = get_software_root(native_library)
             if not lib_root:
-                self.log.warn("%s not found. Skipping install" % native_library)
-                continue
+                raise EasyBuildError("%s not found. Skipping install" % native_library)
             lib_src = os.path.join(lib_root, lib_path)
             lib_dest = os.path.join(self.installdir, 'lib')
             shutil.copytree(lib_src, lib_dest)
