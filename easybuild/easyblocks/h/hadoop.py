@@ -56,6 +56,9 @@ class EB_Hadoop(Tarball):
 
             # Building snappy, bzip2 jars w/ native libs requires -Drequire.snappy -Drequire.bzip2, etc.
             for native_lib, lib_path in self.cfg['extra_native_libs']:
+                lib_root = get_software_root(native_lib)
+                if not lib_root:
+                    raise EasyBuildError("%s not found. Failing install" % native_lib)
                 cmd += ' -Drequire.%s=true' % native_lib
 
             if self.cfg['parallel'] > 1:
@@ -74,8 +77,6 @@ class EB_Hadoop(Tarball):
         """After the install, copy libsnappy into place."""
         for native_library, lib_path in self.cfg['extra_native_libs']:
             lib_root = get_software_root(native_library)
-            if not lib_root:
-                raise EasyBuildError("%s not found. Skipping install" % native_library)
             lib_src = os.path.join(lib_root, lib_path)
             lib_dest = os.path.join(self.installdir, 'lib')
             shutil.copytree(lib_src, lib_dest)
