@@ -59,7 +59,7 @@ class EB_Hadoop(Tarball):
                 lib_root = get_software_root(native_lib)
                 if not lib_root:
                     raise EasyBuildError("%s not found. Failing install" % native_lib)
-                cmd += ' -Drequire.%s=true' % native_lib
+                cmd += ' -Drequire.%s=true -D%s.prefix=%s' % (native_lib, native_lib, lib_root)
 
             if self.cfg['parallel'] > 1:
                 cmd += " -T%d" % self.cfg['parallel']
@@ -79,7 +79,7 @@ class EB_Hadoop(Tarball):
             lib_root = get_software_root(native_library)
             lib_src = os.path.join(lib_root, lib_path)
             lib_dest = os.path.join(self.installdir, 'lib')
-            shutil.copytree(lib_src, lib_dest)
+            shutil.copy2(lib_src, lib_dest)
 
     def sanity_check_step(self):
         """Custom sanity check for Hadoop."""
