@@ -349,7 +349,8 @@ class IntelBase(EasyBlock):
         """Custom variable definitions in module file."""
         txt = super(IntelBase, self).make_module_extra()
 
-        txt += self.module_generator.prepend_paths(self.license_env_var, [self.license_file], allow_abs=True)
+        txt += self.module_generator.prepend_paths(self.license_env_var, [self.license_file],
+                                                   allow_abs=True, expand_relpaths=False)
 
         if self.cfg['m32']:
             nlspath = os.path.join('idb', '32', 'locale', '%l_%t', '%N')
