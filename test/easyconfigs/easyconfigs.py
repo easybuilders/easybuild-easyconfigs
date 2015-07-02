@@ -52,8 +52,6 @@ from easybuild.tools.module_naming_scheme import GENERAL_CLASS
 from easybuild.tools.module_naming_scheme.utilities import det_full_ec_version
 from easybuild.tools.modules import modules_tool
 from easybuild.tools.robot import resolve_dependencies
-from easybuild.tools.filetools import read_file, write_file
-
 
 # indicates whether all the single tests are OK,
 # and that bigger tests (building dep graph, testing for conflicts, ...) can be run as well
@@ -235,8 +233,6 @@ def template_easyconfig_test(self, spec):
     global single_tests_ok
     prev_single_tests_ok = single_tests_ok
     single_tests_ok = False
-
-    ec_orig = read_file(spec)
 
     # parse easyconfig
     ecs = process_easyconfig(spec)
