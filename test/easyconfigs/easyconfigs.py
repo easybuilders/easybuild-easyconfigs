@@ -52,6 +52,7 @@ from easybuild.tools.module_naming_scheme import GENERAL_CLASS
 from easybuild.tools.module_naming_scheme.utilities import det_full_ec_version
 from easybuild.tools.modules import modules_tool
 from easybuild.tools.robot import resolve_dependencies
+from easybuild.tools.filetools import read_file, write_file
 
 
 # indicates whether all the single tests are OK,
@@ -235,7 +236,9 @@ def template_easyconfig_test(self, spec):
     prev_single_tests_ok = single_tests_ok
     single_tests_ok = False
 
-    # parse easyconfig 
+    ec_orig = read_file(spec)
+
+    # parse easyconfig
     ecs = process_easyconfig(spec)
     if len(ecs) == 1:
         ec = ecs[0]['ec']
@@ -250,7 +253,7 @@ def template_easyconfig_test(self, spec):
     name, easyblock = fetch_parameters_from_easyconfig(ec.rawtxt, ['name', 'easyblock'])
 
     # sanity check for software name
-    self.assertTrue(ec['name'], name) 
+    self.assertTrue(ec['name'], name)
 
     # instantiate easyblock with easyconfig file
     app_class = get_easyblock_class(easyblock, name=name)
@@ -296,6 +299,14 @@ def template_easyconfig_test(self, spec):
 
     app.close_log()
     os.remove(app.logfile)
+
+    # dump the easyconfig file
+    ec.dump('test.eb')
+    dumped_ec = EasyConfig('test.eb')
+
+    self.assertEqual(ec['name'], dumped_ec['name'])
+    self.assertEqual(ec['version'], dumped_ec['version'])
+    self.assertEqual(ec['sanity_check_paths'], dumped_ec['sanity_check_paths'])
 
     # cache the parsed easyconfig, to avoid that it is parsed again
     self.parsed_easyconfigs.append(ecs[0])
