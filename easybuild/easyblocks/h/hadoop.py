@@ -78,7 +78,7 @@ class EB_Hadoop(Tarball):
         for native_library, lib_path in self.cfg['extra_native_libs']:
             lib_root = get_software_root(native_library)
             lib_src = os.path.join(lib_root, lib_path)
-            lib_dest = os.path.join(self.installdir, 'lib')
+            lib_dest = os.path.join(self.installdir, 'lib', 'native')
             shutil.copy2(lib_src, lib_dest)
 
     def sanity_check_step(self):
