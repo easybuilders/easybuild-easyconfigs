@@ -241,7 +241,7 @@ def template_easyconfig_test(self, spec):
     prev_single_tests_ok = single_tests_ok
     single_tests_ok = False
 
-    # parse easyconfig 
+    # parse easyconfig
     ecs = process_easyconfig(spec)
     if len(ecs) == 1:
         ec = ecs[0]['ec']
@@ -256,7 +256,7 @@ def template_easyconfig_test(self, spec):
     name, easyblock = fetch_parameters_from_easyconfig(ec.rawtxt, ['name', 'easyblock'])
 
     # sanity check for software name
-    self.assertTrue(ec['name'], name) 
+    self.assertTrue(ec['name'], name)
 
     # instantiate easyblock with easyconfig file
     app_class = get_easyblock_class(easyblock, name=name)
@@ -302,6 +302,17 @@ def template_easyconfig_test(self, spec):
 
     app.close_log()
     os.remove(app.logfile)
+
+    # dump the easyconfig file
+    handle, test_ecfile = tempfile.mkstemp()
+    os.close(handle)
+
+    ec.dump(test_ecfile)
+    dumped_ec = EasyConfig(test_ecfile)
+    os.remove(test_ecfile)
+
+    for key in sorted(ec._config):
+        self.assertEqual(ec[key], dumped_ec[key])
 
     # cache the parsed easyconfig, to avoid that it is parsed again
     self.parsed_easyconfigs.append(ecs[0])
