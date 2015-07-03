@@ -104,7 +104,7 @@ class EB_NEMO(EasyBlock):
 
     def install_step(self):
         """Custom install procedure for NEMO."""
-        binpath = os.path.join(self.cfg['start_dir'], self.conf_name, 'BLD/bin')
+        binpath = os.path.join(self.cfg['start_dir'], 'NEMOGCM', 'CONFIG', self.conf_name, 'BLD/bin')
         try:
             shutil.copytree(binpath, os.path.join(self.installdir, 'bin'))
         except OSError, err:
