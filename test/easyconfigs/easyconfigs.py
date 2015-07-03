@@ -53,6 +53,7 @@ from easybuild.tools.module_naming_scheme.utilities import det_full_ec_version
 from easybuild.tools.modules import modules_tool
 from easybuild.tools.robot import resolve_dependencies
 
+
 # indicates whether all the single tests are OK,
 # and that bigger tests (building dep graph, testing for conflicts, ...) can be run as well
 # other than optimizing for time, this also helps to get around problems like http://bugs.python.org/issue10949
@@ -297,12 +298,15 @@ def template_easyconfig_test(self, spec):
     os.remove(app.logfile)
 
     # dump the easyconfig file
-    ec.dump('test.eb')
-    dumped_ec = EasyConfig('test.eb')
+    handle, test_ecfile = tempfile.mkstemp()
+    os.close(handle)
 
-    self.assertEqual(ec['name'], dumped_ec['name'])
-    self.assertEqual(ec['version'], dumped_ec['version'])
-    self.assertEqual(ec['sanity_check_paths'], dumped_ec['sanity_check_paths'])
+    ec.dump(test_ecfile)
+    dumped_ec = EasyConfig(test_ecfile)
+    os.remove(test_ecfile)
+
+    for key in sorted(ec._config):
+        self.assertEqual(ec[key], dumped_ec[key])
 
     # cache the parsed easyconfig, to avoid that it is parsed again
     self.parsed_easyconfigs.append(ecs[0])
