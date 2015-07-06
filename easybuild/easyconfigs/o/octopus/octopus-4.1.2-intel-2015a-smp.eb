@@ -6,7 +6,7 @@ easyblock = 'ConfigureMake'
 
 name = 'octopus'
 version = '4.1.2'
-versionsuffix = '-hybrid'
+versionsuffix = '-smp'
 
 homepage = 'http://www.tddft.org/programs/octopus/wiki/index.php/Main_Page'
 description = """Octopus is a scientific program aimed at the ab initio virtual experimentation 
@@ -16,7 +16,7 @@ in time. Nuclei are described classically as point particles.
 Electron-nucleus interaction is described within the pseudopotential approximation."""
 
 toolchain = {'name': 'intel', 'version': '2015a'}
-toolchainopts = {'usempi': True, 'openmp': True, 'opt': True}
+toolchainopts = {'usempi': False, 'openmp': True, 'opt': True}
 
 sources = ['octopus-%(version)s.tar.gz']
 source_urls = ['http://www.tddft.org/programs/octopus/down.php?file=%(version)s/' ]
@@ -28,30 +28,26 @@ dependencies = [
     ('netCDF-Fortran', '4.4.0'),
     ('GSL', '1.16'),
     ('ETSF_IO', '1.0.4'),
-    ('ParMETIS', '4.0.3'),
     ('METIS', '5.1.0'),
 ]
 
 #The standard Easybuild FCFLAGS doesn't work in this case for Intel Toolchain.
-configopts = "FC=$MPIF90 FCFLAGS='-O3 -xHost -openmp -ip -prec-div -static-intel -sox -I$MKLROOT/include' "
+configopts = "FC=$F90 FCFLAGS='-O3 -xHost -openmp -ip -prec-div -static-intel -sox -I$MKLROOT/include' "
 configopts += "CFLAGS='-O3 -xHost -openmp -ip -prec-div -static-intel -sox -I$MKLROOT/include' "
-configopts += "--enable-openmp --enable-mpi --enable-newuoa --disable-python --disable-gdlib --with-fft=fftw3 --with-pfft-prefix=$EBROOTPFFT "
+configopts += "--enable-openmp --disable-mpi --enable-newuoa --disable-python --disable-gdlib --with-fft=fftw3 --with-pfft-prefix=$EBROOTPFFT "
 configopts += "--with-gsl-prefix=$EBROOTGSL --with-etsf-io-prefix=$EBROOTETSF_IO "
 configopts += "--with-libxc-prefix=$EBROOTLIBXC --with-gsl-prefix=$EBROOTGSL "
-configopts += "--with-metis-prefix=$EBROOTMETIS --with-parmetis-prefix=$EBROOTPARMETIS "
-configopts += "LIBS_FFT='-Wl,--start-group -L$EBROOTPFFT/lib -L$EBROOTFFTW/lib -lpfft -lfftw3 -lfftw3_mpi -Wl,--end-group' "
-configopts += "LIBS_BLAS='-L$SCALAPACK_LIB_DIR -lmkl_scalapack_lp64 -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core -lmkl_blacs_intelmpi_lp64 -lpthread -lm' "
+configopts += "--with-metis-prefix=$EBROOTMETIS "
+configopts += "--with-blas='-L$LAPACK_LIB_DIR -Wl,--start-group -lmkl_intel_lp64 -lmkl_sequential -lmkl_core -Wl,--end-group -lpthread ' "
+configopts += "LIBS_FFT='-L$EBROOTFFTW/lib -lfftw3' "
 # The configure script it doesn't accept the standard and suggested Intel MKL link options 
 #configopts += "LIBS_BLAS='-L$SCALAPACK_LIB_DIR $EBVARLIBLAPACK' "
 
 sanity_check_paths = {
-    'files': ["bin/octopus_mpi"], 
+    'files': ["bin/octopus"], 
     'dirs': []
 }
 
 runtest = 'installcheck' 
-
-# hybrid build (enable OpenMP)
-hybrid = True
 
 moduleclass = 'chem'
