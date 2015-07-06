@@ -27,7 +27,9 @@ EasyBuild support for building and installing Hadoop, implemented as an easybloc
 
 @author: Kenneth Hoste (Ghent University)
 """
+import glob
 import os
+import re
 import shutil
 
 from easybuild.easyblocks.generic.tarball import Tarball
@@ -79,7 +81,8 @@ class EB_Hadoop(Tarball):
             lib_root = get_software_root(native_library)
             lib_src = os.path.join(lib_root, lib_path)
             lib_dest = os.path.join(self.installdir, 'lib', 'native')
-            shutil.copy2(lib_src, lib_dest)
+            for lib in glob.glob(os.path.join(lib_src, '*.so*')):
+                shutil.copy2(lib, lib_dest)
 
     def sanity_check_step(self):
         """Custom sanity check for Hadoop."""
@@ -92,6 +95,19 @@ class EB_Hadoop(Tarball):
             'dirs': ['etc', 'libexec'],
         }
         super(EB_Hadoop, self).sanity_check_step(custom_paths=custom_paths)
+
+        fake_mod_data = self.load_fake_module(purge=True)
+        cmd = "hadoop checknative -a"
+        out, _ = run_cmd(cmd, log_all=True, simple=False, log_ok=True)
+        self.clean_up_fake_module(fake_mod_data)
+
+        not_found = []
+        for lib, lib_path  in self.cfg['extra_native_libs']:
+            if not re.search(r'%s: *true' % lib, out):
+                not_found.append(lib)
+        if not_found:
+            raise EasyBuildError("%s not found by 'hadoop checknative -a'" %
+                    ', '.join(not_found))
 
     def make_module_extra(self):
         """Custom extra module file entries for Hadoop."""
