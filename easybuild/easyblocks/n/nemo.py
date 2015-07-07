@@ -45,8 +45,8 @@ class EB_NEMO(EasyBlock):
         """Initialisation of custom class variables for NEMO."""
         super(EB_NEMO, self).__init__(*args, **kwargs)
 
-        self.conf_name = "EB_NEMO_CONFIG"
-        self.conf_arch_file = None
+        self.conf_name = 'EB_NEMO_CONFIG'
+        self.conf_arch_file = 'NEMOGCM/ARCH/arch-eb.fcm'
 
     @staticmethod
     def extra_options():
@@ -60,13 +60,13 @@ class EB_NEMO(EasyBlock):
 
     def configure_step(self):
         """Custom configuration procedure for NEMO."""
-
-        keys = ''
-        self.conf_arch_file = "NEMOGCM/ARCH/arch-eb.fcm"
+        netcdf_fortran_root = get_software_root('netCDF-Fortran')
+        if not netcdf_fortran_root:
+            raise EasyBuildError("netCDF-Fortran is not available, but is a required dependency")
 
         cfg = '\n'.join([
-            "%%NCDF_INC -I%s/include" % get_software_root("netCDF-Fortran"),
-            "%%NCDF_LIB -L%s/lib -lnetcdff" % get_software_root("netCDF-Fortran"),
+            "%%NCDF_INC -I%s/include" % netcdf_fortran_root,
+            "%%NCDF_LIB -L%s/lib -lnetcdff" % netcdf_fortran_root,
             "%%FC %s" % os.getenv('F90'),
             "%FCFLAGS -r8 -O3  -traceback",
             "%FFLAGS %FCFLAGS",
@@ -79,49 +79,41 @@ class EB_NEMO(EasyBlock):
             "%USER_INC %NCDF_INC",
             "%USER_LIB %NCDF_LIB"
         ])
-
         write_file(self.conf_arch_file, cfg)
 
-        ak = self.cfg['add_keys']
-        if ak is not None:
-            keys += "add_key '%s'" % ' '.join(self.cfg['add_keys'])
+        cmd = "./makenemo -n %s -d '%s' -j0 -m eb" % (self.conf_name, ' '.join(self.cfg['with_components']))
 
-        dk = self.cfg['del_keys']
-        if dk is not None:
-            keys += " del_key '%s'" % ' '.join(self.cfg['del_keys'])
+        if self.cfg['add_keys'] is not None:
+            cmd += " add_key '%s'" % ' '.join(self.cfg['add_keys'])
+        if self.cfg['del_keys'] is not None:
+            cmd += " del_key '%s'" % ' '.join(self.cfg['del_keys'])
 
         try:
             dst = 'NEMOGCM/CONFIG'
             os.chdir(dst)
-            self.log.debug('Change to directory %s' % dst)
+            self.log.debug("Changed to directory %s", dst)
         except OSError, err:
             raise EasyBuildError("Failed to change to directory %s: %s", dst, err)
 
-        cmd = "./makenemo -n %s -d '%s' -j0 -m eb %s " % (self.conf_name, ' '.join(self.cfg['with_components']), keys)
         run_cmd(cmd, log_all=True, simple=True, log_ok=True)
 
     def build_step(self):
         """Custom build procedure for NEMO."""
-
         cmd = "./makenemo -n %s -m eb" % self.conf_name
         run_cmd(cmd, log_all=True, simple=True, log_ok=True)
 
     def install_step(self):
         """Custom install procedure for NEMO."""
-
-        binpath = os.path.join(os.getcwd(), self.conf_name, 'BLD/bin')
-
+        binpath = os.path.join(self.cfg['start_dir'], 'NEMOGCM', 'CONFIG', self.conf_name, 'BLD/bin')
         try:
             shutil.copytree(binpath, os.path.join(self.installdir, 'bin'))
         except OSError, err:
-            raise EasyBuildError("Copying %s to installation dir %s failed: %s", srcdir, destdir, err)
+            raise EasyBuildError("Copying %s to installation dir failed: %s", binpath, err)
 
     def sanity_check_step(self):
         """Custom sanity check for NEMO."""
-
         custom_paths = {
             'files': ['bin/nemo.exe'],
             'dirs': [],
         }
-
         super(EB_NEMO, self).sanity_check_step(custom_paths=custom_paths)
