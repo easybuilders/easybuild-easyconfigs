@@ -76,12 +76,14 @@ class EB_Hadoop(Tarball):
             super(EB_Hadoop, self).install_step()
 
     def post_install_step(self):
-        """After the install, copy libsnappy into place."""
+        """After the install, copy the extra native libraries into place."""
         for native_library, lib_path in self.cfg['extra_native_libs']:
             lib_root = get_software_root(native_library)
             lib_src = os.path.join(lib_root, lib_path)
             lib_dest = os.path.join(self.installdir, 'lib', 'native')
-            for lib in glob.glob(os.path.join(lib_src, '*.so*')):
+            self.log.info('Copying shared objects in "%s"', lib_src)
+            for lib in glob.glob(lib_src):
+                self.log.info('Copying "%s" to "%s"', lib, lib_dest)
                 shutil.copy2(lib, lib_dest)
 
     def sanity_check_step(self):
@@ -102,12 +104,13 @@ class EB_Hadoop(Tarball):
         self.clean_up_fake_module(fake_mod_data)
 
         not_found = []
-        for lib, lib_path  in self.cfg['extra_native_libs']:
-            if not re.search(r'%s: *true' % lib, out):
-                not_found.append(lib)
+        installdir = os.path.realpath(self.installdir)
+        for native_lib, lib_path  in self.cfg['extra_native_libs']:
+            lib_src = os.path.join([installdir, 'lib', 'native'])
+            if not re.search(r'%s: *true *%s' % (native_lib, lib_src), out):
+                not_found.append(native_lib)
         if not_found:
-            raise EasyBuildError("%s not found by 'hadoop checknative -a'" %
-                    ', '.join(not_found))
+            raise EasyBuildError("%s not found by 'hadoop checknative -a'.", ', '.join(not_found))
 
     def make_module_extra(self):
         """Custom extra module file entries for Hadoop."""
