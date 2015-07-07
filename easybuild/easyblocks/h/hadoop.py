@@ -106,7 +106,7 @@ class EB_Hadoop(Tarball):
         not_found = []
         installdir = os.path.realpath(self.installdir)
         lib_src = os.path.join([installdir, 'lib', 'native'])
-        for native_lib, lib_path  in self.cfg['extra_native_libs']:
+        for native_lib, _ in self.cfg['extra_native_libs']:
             if not re.search(r'%s: *true *%s' % (native_lib, lib_src), out):
                 not_found.append(native_lib)
         if not_found:
