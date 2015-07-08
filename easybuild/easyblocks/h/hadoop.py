@@ -27,7 +27,9 @@ EasyBuild support for building and installing Hadoop, implemented as an easybloc
 
 @author: Kenneth Hoste (Ghent University)
 """
+import glob
 import os
+import re
 import shutil
 
 from easybuild.easyblocks.generic.tarball import Tarball
@@ -74,12 +76,15 @@ class EB_Hadoop(Tarball):
             super(EB_Hadoop, self).install_step()
 
     def post_install_step(self):
-        """After the install, copy libsnappy into place."""
+        """After the install, copy the extra native libraries into place."""
         for native_library, lib_path in self.cfg['extra_native_libs']:
             lib_root = get_software_root(native_library)
             lib_src = os.path.join(lib_root, lib_path)
-            lib_dest = os.path.join(self.installdir, 'lib')
-            shutil.copy2(lib_src, lib_dest)
+            lib_dest = os.path.join(self.installdir, 'lib', 'native')
+            self.log.info('Copying shared objects in "%s"', lib_src)
+            for lib in glob.glob(lib_src):
+                self.log.info('Copying "%s" to "%s"', lib, lib_dest)
+                shutil.copy2(lib, lib_dest)
 
     def sanity_check_step(self):
         """Custom sanity check for Hadoop."""
@@ -92,6 +97,20 @@ class EB_Hadoop(Tarball):
             'dirs': ['etc', 'libexec'],
         }
         super(EB_Hadoop, self).sanity_check_step(custom_paths=custom_paths)
+
+        fake_mod_data = self.load_fake_module(purge=True)
+        cmd = "hadoop checknative -a"
+        out, _ = run_cmd(cmd, log_all=True, simple=False, log_ok=True)
+        self.clean_up_fake_module(fake_mod_data)
+
+        not_found = []
+        installdir = os.path.realpath(self.installdir)
+        lib_src = os.path.join([installdir, 'lib', 'native'])
+        for native_lib, _ in self.cfg['extra_native_libs']:
+            if not re.search(r'%s: *true *%s' % (native_lib, lib_src), out):
+                not_found.append(native_lib)
+        if not_found:
+            raise EasyBuildError("%s not found by 'hadoop checknative -a'.", ', '.join(not_found))
 
     def make_module_extra(self):
         """Custom extra module file entries for Hadoop."""
