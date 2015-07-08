@@ -39,7 +39,14 @@ from easybuild.tools.build_log import EasyBuildError
 
 
 class SystemCompiler(Bundle):
-    """Create EasyBuild 'dummy' module for system compiler."""
+    """
+    Support for generating a module file for the system compiler with specified name.
+
+    The compiler is expected to be available in $PATH, required libraries are assumed to be readily available.
+
+    Specifying 'system' as a version leads to using the derived compiler version in the generated module;
+    if an actual version is specified, it is checked against the derived version of the system compiler that was found.
+    """
 
     def extract_compiler_version(self, txt):
         """Extract compiler version from provided string."""
