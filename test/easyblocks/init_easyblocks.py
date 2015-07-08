@@ -62,12 +62,12 @@ class InitTest(TestCase):
     config.set_tmpdir()
     del eb_go
 
-    def writeEC(self, easyblock, extratxt=''):
+    def writeEC(self, easyblock, name='foo', version='1.3.2', extratxt=''):
         """ create temporary easyconfig file """
         txt = '\n'.join([
             'easyblock = "%s"',
-            'name = "foo"',
-            'version = "1.3.2"',
+            'name = "%s"' % name,
+            'version = "%s"' % version,
             'homepage = "http://example.com"',
             'description = "Dummy easyconfig file."',
             'toolchain = {"name": "dummy", "version": "dummy"}',
@@ -88,10 +88,10 @@ class InitTest(TestCase):
         try:
             os.remove(self.eb_file)
         except OSError, err:
-            self.log.error("Failed to remove %s/%s: %s" % (self.eb_file, err))
+            self.log.error("Failed to remove %s: %s" % (self.eb_file, err))
 
 
-def template_init_test(self, easyblock):
+def template_init_test(self, easyblock, name='foo', version='1.3.2'):
     """Test whether all easyblocks can be initialized."""
 
     def check_extra_options_format(extra_options):
@@ -141,7 +141,7 @@ def template_init_test(self, easyblock):
                 extra_txt += '%s = "foo"\n' % key
 
         # write easyconfig file
-        self.writeEC(ebname, extra_txt)
+        self.writeEC(ebname, name=name, version=version, extratxt=extra_txt)
 
         # initialize easyblock
         # if this doesn't fail, the test succeeds
@@ -169,6 +169,7 @@ def template_init_test(self, easyblock):
     else:
         self.assertTrue(False, "Class found in easyblock %s" % easyblock)
 
+
 def suite():
     """Return all easyblock initialisation tests."""
 
@@ -179,7 +180,12 @@ def suite():
 
     for easyblock in easyblocks:
         # dynamically define new inner functions that can be added as class methods to InitTest
-        exec("def innertest(self): template_init_test(self, '%s')" % easyblock)
+        if os.path.basename(easyblock) == 'systemcompiler.py':
+            # use GCC as name when testing SystemCompiler easyblock
+            exec("def innertest(self): template_init_test(self, '%s', name='GCC', version='system')" % easyblock)
+        else:
+            exec("def innertest(self): template_init_test(self, '%s')" % easyblock)
+
         innertest.__doc__ = "Test for initialisation of easyblock %s" % easyblock
         innertest.__name__ = "test_easyblock_%s" % '_'.join(easyblock.replace('.py', '').split('/'))
         setattr(InitTest, innertest.__name__, innertest)
