@@ -1,0 +1,35 @@
+easyblock = "MakeCp"
+
+name = "LAMMPS"
+version = "1Feb14"
+versionsuffix = "-gpu" 
+
+homepage = 'http://lammps.sandia.gov/'
+description = """LAMMPS is a classical molecular dynamics code, 
+and an acronym for Large-scale Atomic/Molecular Massively Parallel Simulator."""
+
+toolchain = {'name': 'goolfc', 'version': '1.3.12'}
+toolchainopts = {'pic': True}
+
+source_urls = [SOURCEFORGE_SOURCE]
+sources = [SOURCELOWER_TAR_GZ]
+
+patches = [
+    'LAMMPS-1Feb2014_makefile-deps.patch',
+    'LAMMPS-1Feb2014_gpu_package.patch',
+]
+
+prebuildopts = 'cd lib/gpu && make -f Makefile.linux && cd ../.. &&'
+prebuildopts += ' mkdir bin && cd src && make yes-gpu &&'
+
+buildopts = 'openmpi && cp lmp_openmpi ../bin'
+
+files_to_copy = ["bench", "bin", "doc", "examples", "lib", "LICENSE", 
+                 "potentials", "python", "README", "src", "tools"]
+
+sanity_check_paths = {
+    'files': ['bin/lmp_openmpi'],
+    'dirs': [],
+}
+
+moduleclass = 'chem'
