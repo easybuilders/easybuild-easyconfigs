@@ -171,8 +171,9 @@ def suite():
     all_pys = glob.glob('%s/*/*.py' % easyblocks_path)
     easyblocks = [eb for eb in all_pys if os.path.basename(eb) != '__init__.py' and '/test/' not in eb]
 
-    # filter out no longer supported easyblocks
-    easyblocks = [e for e in easyblocks if os.path.basename(e) not in ['versionindependendpythonpackage.py']]
+    # filter out no longer supported easyblocks, or easyblocks that are tested in a different way
+    excluded_easyblocks = ['systemcompiler.py', 'versionindependendpythonpackage.py']
+    easyblocks = [e for e in easyblocks if os.path.basename(e) not in excluded_easyblocks]
 
     for easyblock in easyblocks:
         # dynamically define new inner functions that can be added as class methods to ModuleOnlyTest
