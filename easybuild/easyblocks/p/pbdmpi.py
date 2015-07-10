@@ -47,7 +47,6 @@ class EB_pbdMPI(RPackage):
             toolchain.MPI_TYPE_OPENMPI: 'OPENMPI',
         }
         mpi_type = mpi_types[self.toolchain.mpi_family()]
-        self.configureargs.append("--with-mpi-type=%s" % mpi_type)
         self.configureargs.extend([
             "--with-mpi-include=%s" % self.toolchain.get_variable('MPI_INC_DIR'),
             "--with-mpi-libpath=%s" % self.toolchain.get_variable('MPI_LIB_DIR'),
