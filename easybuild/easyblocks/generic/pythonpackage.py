@@ -43,7 +43,6 @@ from easybuild.framework.easyconfig import CUSTOM
 from easybuild.framework.extensioneasyblock import ExtensionEasyBlock
 from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.filetools import mkdir, rmtree2, which
-from easybuild.tools.modules import get_software_root, get_software_version
 from easybuild.tools.run import run_cmd
 
 
@@ -128,9 +127,6 @@ class PythonPackage(ExtensionEasyBlock):
 
     def configure_step(self):
         """Configure Python package build."""
-        if not get_software_root('Python'):
-            raise EasyBuildError("Python module not loaded.")
-
         # prepare easyblock by determining Python site lib dir(s)
         self.set_pylibdirs()
 
