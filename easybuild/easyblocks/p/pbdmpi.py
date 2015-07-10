@@ -1,5 +1,5 @@
 ##
-# Copyright 2015 Ghent University
+# Copyright 2015-2015 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -26,6 +26,7 @@
 EasyBuild support for building and installing pbdMPI, implemented as an easyblock
 
 @author: Ewan Higgs (Ghent University)
+@author: Peter Maxwell (University of Auckland)
 """
 
 import easybuild.tools.toolchain as toolchain
@@ -46,6 +47,11 @@ class EB_pbdMPI(RPackage):
             toolchain.MPI_TYPE_OPENMPI: 'OPENMPI',
         }
         mpi_type = mpi_types[self.toolchain.mpi_family()]
-        self.configureargs.append("--with-mpi-type=%s" % mpi_type)
+        self.configureargs.extend([
+            "--with-mpi-include=%s" % self.toolchain.get_variable('MPI_INC_DIR'),
+            "--with-mpi-libpath=%s" % self.toolchain.get_variable('MPI_LIB_DIR'),
+            "--with-mpi=%s" % self.toolchain.get_software_root(self.toolchain.MPI_MODULE_NAME)[0],
+            "--with-mpi-type=%s" % mpi_type,
+        ])
 
         super(EB_pbdMPI, self).configure_step()
