@@ -68,12 +68,12 @@ def cleanup():
 class ModuleOnlyTest(EnhancedTestCase):
     """ Baseclass for easyblock testcases """
 
-    def writeEC(self, easyblock, extratxt=''):
+    def writeEC(self, easyblock, name='foo', version='1.3.2', extratxt=''):
         """ create temporary easyconfig file """
         txt = '\n'.join([
             'easyblock = "%s"',
-            'name = "foo"',
-            'version = "1.3.2"',
+            'name = "%s"' % name,
+            'version = "%s"' % version,
             'homepage = "http://example.com"',
             'description = "Dummy easyconfig file."',
             "toolchain = {'name': 'dummy', 'version': 'dummy'}",
@@ -97,7 +97,7 @@ class ModuleOnlyTest(EnhancedTestCase):
             self.log.error("Failed to remove %s: %s", self.eb_file, err)
 
 
-def template_module_only_test(self, easyblock):
+def template_module_only_test(self, easyblock, name='foo', version='1.3.2'):
     """Test whether all easyblocks are compatible with --module-only."""
 
     class_regex = re.compile("^class (.*)\(.*", re.M)
@@ -126,7 +126,7 @@ def template_module_only_test(self, easyblock):
                 extra_txt += '%s = "foo"\n' % key
 
         # write easyconfig file
-        self.writeEC(ebname, extra_txt)
+        self.writeEC(ebname, name=name, version=version, extratxt=extra_txt)
 
         # initialize easyblock
         # if this doesn't fail, the test succeeds
@@ -172,12 +172,16 @@ def suite():
     easyblocks = [eb for eb in all_pys if os.path.basename(eb) != '__init__.py' and '/test/' not in eb]
 
     # filter out no longer supported easyblocks, or easyblocks that are tested in a different way
-    excluded_easyblocks = ['systemcompiler.py', 'versionindependendpythonpackage.py']
+    excluded_easyblocks = ['versionindependendpythonpackage.py']
     easyblocks = [e for e in easyblocks if os.path.basename(e) not in excluded_easyblocks]
 
     for easyblock in easyblocks:
         # dynamically define new inner functions that can be added as class methods to ModuleOnlyTest
-        exec("def innertest(self): template_module_only_test(self, '%s')" % easyblock)
+        if os.path.basename(easyblock) == 'systemcompiler.py':
+            # use GCC as name when testing SystemCompiler easyblock
+            exec("def innertest(self): template_module_only_test(self, '%s', name='GCC', version='system')" % easyblock)
+        else:
+            exec("def innertest(self): template_module_only_test(self, '%s')" % easyblock)
         innertest.__doc__ = "Test for using --module-only with easyblock %s" % easyblock
         innertest.__name__ = "test_easyblock_%s" % '_'.join(easyblock.replace('.py', '').split('/'))
         setattr(ModuleOnlyTest, innertest.__name__, innertest)
