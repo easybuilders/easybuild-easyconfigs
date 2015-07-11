@@ -99,8 +99,9 @@ class EB_Hadoop(Tarball):
         super(EB_Hadoop, self).sanity_check_step(custom_paths=custom_paths)
 
         fake_mod_data = self.load_fake_module(purge=True)
+        # exit code is ignored, since this cmd exits with 1 if not all native libraries were found
         cmd = "hadoop checknative -a"
-        out, _ = run_cmd(cmd, log_all=True, simple=False, log_ok=True)
+        out, _ = run_cmd(cmd, simple=False, log_all=False, log_ok=False)
         self.clean_up_fake_module(fake_mod_data)
 
         not_found = []
