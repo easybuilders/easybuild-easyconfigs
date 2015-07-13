@@ -35,10 +35,6 @@ from easybuild.easyblocks.generic.rpackage import RPackage
 class EB_pbdMPI(RPackage):
     """Support for building/installing pbdMPI."""
 
-    def __init__(self, *args, **kwargs):
-        """Initialisation of custom class variables for pbdMPI."""
-        super(EB_pbdMPI, self).__init__(*args, **kwargs)
-
     def configure_step(self):
         """Configure Step of build process for pbdMPI."""
         mpi_types = {
@@ -55,3 +51,8 @@ class EB_pbdMPI(RPackage):
         ])
 
         super(EB_pbdMPI, self).configure_step()
+
+    def run(self):
+        """Configure before installing pbdMPI as an extension."""
+        self.configure_step()
+        super(EB_pbdMPI, self).run()
