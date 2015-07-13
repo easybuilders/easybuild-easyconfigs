@@ -32,6 +32,7 @@ import copy
 import glob
 import os
 import re
+import shutil
 import sys
 import tempfile
 from distutils.version import LooseVersion
@@ -48,8 +49,10 @@ from easybuild.framework.easyconfig.easyconfig import get_easyblock_class
 from easybuild.framework.easyconfig.parser import fetch_parameters_from_easyconfig
 from easybuild.framework.easyconfig.tools import dep_graph, get_paths_for, process_easyconfig
 from easybuild.tools import config
+from easybuild.tools.filetools import write_file
 from easybuild.tools.module_naming_scheme import GENERAL_CLASS
 from easybuild.tools.module_naming_scheme.utilities import det_full_ec_version
+from easybuild.tools.modules import modules_tool
 from easybuild.tools.robot import resolve_dependencies
 
 
@@ -66,7 +69,9 @@ class EasyConfigTest(TestCase):
     config.init(eb_go.options, eb_go.get_options_by_section('config'))
     build_options = {
         'check_osdeps': False,
+        'external_modules_metadata': {},
         'force': True,
+        'optarch': 'test',
         'robot_path': get_paths_for("easyconfigs")[0],
         'suffix_modules_path': GENERAL_CLASS,
         'valid_module_classes': config.module_classes(),
@@ -75,8 +80,14 @@ class EasyConfigTest(TestCase):
     config.init_build_options(build_options=build_options)
     config.set_tmpdir()
     del eb_go
-        
+
+    # put dummy 'craype-test' module in place, which is required for parsing easyconfigs using Cray* toolchains
+    TMPDIR = tempfile.mkdtemp()
+    os.environ['MODULEPATH'] = TMPDIR
+    write_file(os.path.join(TMPDIR, 'craype-test'), '#%Module\n')
+
     log = fancylogger.getLogger("EasyConfigTest", fname=False)
+
     # make sure a logger is present for main
     main._log = log
     ordered_specs = None
@@ -93,7 +104,16 @@ class EasyConfigTest(TestCase):
             for spec in specs:
                 self.parsed_easyconfigs.extend(process_easyconfig(spec))
 
-        self.ordered_specs = resolve_dependencies(self.parsed_easyconfigs)
+        # filter out external modules
+        for ec in self.parsed_easyconfigs:
+            for dep in ec['dependencies'][:]:
+                if dep.get('external_module', False):
+                    ec['dependencies'].remove(dep)
+            for dep in ec['unresolved_deps'][:]:
+                if dep.get('external_module', False):
+                    ec['unresolved_deps'].remove(dep)
+
+        self.ordered_specs = resolve_dependencies(self.parsed_easyconfigs, retain_all_deps=True)
 
     def test_dep_graph(self):
         """Unit test that builds a full dependency graph."""
@@ -209,6 +229,10 @@ class EasyConfigTest(TestCase):
                     if not (dirpath.endswith('/easybuild/easyconfigs') and filenames == ['TEMPLATE.eb']):
                         self.assertTrue(False, "List of easyconfig files in %s is empty: %s" % (dirpath, filenames))
 
+    def test_zzz_cleanup(self):
+        """Dummy test to clean up global temporary directory."""
+        shutil.rmtree(self.TMPDIR)
+
 def template_easyconfig_test(self, spec):
     """Tests for an individual easyconfig: parsing, instantiating easyblock, check patches, ..."""
 
@@ -217,7 +241,7 @@ def template_easyconfig_test(self, spec):
     prev_single_tests_ok = single_tests_ok
     single_tests_ok = False
 
-    # parse easyconfig 
+    # parse easyconfig
     ecs = process_easyconfig(spec)
     if len(ecs) == 1:
         ec = ecs[0]['ec']
@@ -226,13 +250,13 @@ def template_easyconfig_test(self, spec):
 
     # check easyconfig file name
     expected_fn = '%s-%s.eb' % (ec['name'], det_full_ec_version(ec))
-    msg = "Filename '%s' of parsed easconfig matches expected filename '%s'" % (spec, expected_fn)
+    msg = "Filename '%s' of parsed easyconfig matches expected filename '%s'" % (spec, expected_fn)
     self.assertEqual(os.path.basename(spec), expected_fn, msg)
 
     name, easyblock = fetch_parameters_from_easyconfig(ec.rawtxt, ['name', 'easyblock'])
 
     # sanity check for software name
-    self.assertTrue(ec['name'], name) 
+    self.assertTrue(ec['name'], name)
 
     # instantiate easyblock with easyconfig file
     app_class = get_easyblock_class(easyblock, name=name)
@@ -278,6 +302,17 @@ def template_easyconfig_test(self, spec):
 
     app.close_log()
     os.remove(app.logfile)
+
+    # dump the easyconfig file
+    handle, test_ecfile = tempfile.mkstemp()
+    os.close(handle)
+
+    ec.dump(test_ecfile)
+    dumped_ec = EasyConfig(test_ecfile)
+    os.remove(test_ecfile)
+
+    for key in sorted(ec._config):
+        self.assertEqual(ec[key], dumped_ec[key])
 
     # cache the parsed easyconfig, to avoid that it is parsed again
     self.parsed_easyconfigs.append(ecs[0])
