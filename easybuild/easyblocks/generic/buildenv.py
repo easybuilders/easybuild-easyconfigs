@@ -42,7 +42,7 @@ class BuildEnv(Bundle):
 
         # include environment variables defined for (non-dummy) toolchain
         if self.toolchain.name != DUMMY_TOOLCHAIN_NAME:
-            for key, val in self.toolchain.vars.items():
+            for key, val in sorted(self.toolchain.vars.items()):
                 txt += self.module_generator.set_environment(key, val)
 
         self.log.debug("make_module_extra added this: %s" % txt)
