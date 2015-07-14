@@ -31,9 +31,10 @@ EasyBuild support for installing the Intel MPI library, implemented as an easybl
 @author: Pieter De Baets (Ghent University)
 @author: Jens Timmerman (Ghent University)
 """
-
+import fileinput
 import os
-import shutil
+import re
+import sys
 from distutils.version import LooseVersion
 
 from easybuild.easyblocks.generic.intelbase import IntelBase, ACTIVATION_NAME_2012, LICENSE_FILE_NAME_2012
@@ -80,18 +81,6 @@ class EB_impi(IntelBase):
             # impi v4.1.1 and v5.0.1 installers create impi/<version> subdir, so stuff needs to be moved afterwards
             if impiver == LooseVersion('4.1.1.036') or impiver >= LooseVersion('5.0.1.035'):
                 super(EB_impi, self).move_after_install()
-                # Fix broken env scripts after the move
-                for script in ['intel64/bin/mpivars.csh', 'mic/bin/mpivars.csh']:
-                    self.cfg.update(
-                        'postinstallcmds',
-                        ["sed -i '/setenv I_MPI_ROOT/c\setenv I_MPI_ROOT=%%(installdir)s' %%(installdir)s/%s" % script]
-                        )
-                for script in ['intel64/bin/mpivars.sh', 'mic/bin/mpivars.sh']:
-                    self.cfg.update(
-                        'postinstallcmds',
-                        ["sed -i '/I_MPI_ROOT=/c\I_MPI_ROOT=%%(installdir)s; export I_MPI_ROOT' %%(installdir)s/%s" \
-                        % script]
-                        )
         else:
             # impi up until version 4.0.0.x uses custom installation procedure.
             silent = \
@@ -135,6 +124,22 @@ EULA=accept
 
             cmd = "./install.sh --tmp-dir=%s --silent=%s" % (tmpdir, silentcfg)
             run_cmd(cmd, log_all=True, simple=True)
+
+    def post_install_step(self):
+        """Custom post install step for IMPI, fix broken env scripts after moving installed files."""
+        super(EB_impi, self).post_install_step()
+
+        impiver = LooseVersion(self.version)
+        if impiver == LooseVersion('4.1.1.036') or impiver >= LooseVersion('5.0.1.035'):
+            # fix broken env scripts after the move
+            for script in [os.path.join('intel64', 'bin', 'mpivars.csh'), os.path.join('mic', 'bin', 'mpivars.csh')]:
+                for line in fileinput.input(os.path.join(self.installdir, script), inplace=1, backup='.orig.eb'):
+                    line = re.sub(r"^setenv I_MPI_ROOT.*", "setenv I_MPI_ROOT %s" % self.installdir, line)
+                    sys.stdout.write(line)
+            for script in [os.path.join('intel64', 'bin', 'mpivars.sh'), os.path.join('mic', 'bin', 'mpivars.sh')]:
+                for line in fileinput.input(os.path.join(self.installdir, script), inplace=1, backup='.orig.eb'):
+                    line = re.sub(r"^I_MPI_ROOT=", "I_MPI_ROOT=%s; export I_MPI_ROOT" % self.installdir, line)
+                    sys.stdout.write(line)
 
     def sanity_check_step(self):
         """Custom sanity check paths for IMPI."""
