@@ -28,6 +28,7 @@ environment flags for the current toolchain
 
 @author: Alan O'Cais (Juelich Supercomputing Centre)
 """
+from easybuild.tools.toolchain import DUMMY_TOOLCHAIN_NAME
 from easybuild.easyblocks.generic.bundle import Bundle
 
 
@@ -38,7 +39,11 @@ class BuildEnv(Bundle):
     def make_module_extra(self):
         """Add all the build environment variables."""
         txt = super(BuildEnv, self).make_module_extra()
-        for key, val in self.toolchain.vars.items():
-            txt += self.module_generator.set_environment(key, val)
+
+        # include environment variables defined for (non-dummy) toolchain
+        if self.toolchain.name != DUMMY_TOOLCHAIN_NAME:
+            for key, val in self.toolchain.vars.items():
+                txt += self.module_generator.set_environment(key, val)
+
         self.log.debug("make_module_extra added this: %s" % txt)
         return txt
