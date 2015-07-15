@@ -41,6 +41,7 @@ from vsc import fancylogger
 from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.config import set_tmpdir
 
+import test.easyblocks.general as g
 import test.easyblocks.init_easyblocks as i
 import test.easyblocks.module_only as m
 
@@ -61,7 +62,7 @@ except EasyBuildError, err:
 os.environ['EASYBUILD_TMP_LOGDIR'] = tempfile.mkdtemp(prefix='easyblocks_test_')
 
 # call suite() for each module and then run them all
-SUITE = unittest.TestSuite([x.suite() for x in [i, m]])
+SUITE = unittest.TestSuite([x.suite() for x in [g, i, m]])
 
 # uses XMLTestRunner if possible, so we can output an XML file that can be supplied to Jenkins
 xml_msg = ""
