@@ -1,0 +1,46 @@
+# With <3 for EasyBuild
+#
+# EasyConfig for BLASR:
+# ----------------------------------------------------------------------------
+#   Copyright: 2013 - Gregor Mendel Institute of Molecular Plant Biology GmBH
+#   License: MIT
+#   Authors: Petar <petar.forai@gmi.oeaw.ac.at> Forai
+# ----------------------------------------------------------------------------
+
+easyblock = 'MakeCp'
+
+name = 'blasr'
+version = 'smrtanalysis-2.1'
+
+homepage = 'https://github.com/PacificBiosciences/blasr'
+description = """BLASR (Basic Local Alignment with Successive Refinement) rapidly maps reads to genomes by finding the
+ highest scoring local alignment or set of local alignments between the read and the genome. Optimized for PacBio's
+ extraordinarily long reads and taking advantage of rich quality values, BLASR maps reads rapidly with high accuracy."""
+
+toolchain = {'name': 'goolf', 'version': '1.4.10'}
+toolchainopts = {'optarch': True, 'pic': True}
+
+sources = ['%(version)s.tar.gz']
+source_urls = ['https://github.com/PacificBiosciences/blasr/archive/']
+
+patches = ['blasr-%(version)s_non-static.patch']
+
+dependencies = [('HDF5', '1.8.9')]
+
+buildopts = 'HDF5INCLUDEDIR=${EBROOTHDF5}/include HDF5LIBDIR=${EBROOTHDF5}/lib'
+
+binaries = [
+    'wordCounter', 'printReadWordCount', 'blasr', 'sdpMatcher', 'swMatcher', 'kbandMatcher', 'sawriter',
+    'saquery', 'samodify', 'printTupleCountTable', 'malign', 'cmpPrintTupleCountTable', 'removeAdapters',
+    'tabulateAlignment', 'samatcher', 'sals', 'saprinter', 'buildQualityValueProfile', 'extendAlign',
+    'guidedalign', 'pbmask',
+]
+
+files_to_copy = [(['alignment/bin/%s' % x for x in binaries], 'bin')]
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in binaries],
+    'dirs': [],
+}
+
+moduleclass = 'bio'
