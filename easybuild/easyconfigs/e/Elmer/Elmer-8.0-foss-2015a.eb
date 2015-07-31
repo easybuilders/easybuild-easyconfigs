@@ -1,0 +1,48 @@
+##
+# This file is an EasyBuild reciPY as per https://github.com/hpcugent/easybuild
+# Author: Jordi Blasco <jordi.blasco@nesi.org.nz>
+# New Zealand eScience Infrastructure (NeSI)
+
+easyblock = 'CMakeMake'
+
+name = 'Elmer'
+version = '8.0'
+
+homepage = 'https://www.csc.fi/web/elmer/elmer'
+description = """Elmer is an open source multiphysical simulation software mainly developed by 
+CSC - IT Center for Science (CSC). Elmer includes physical models of fluid dynamics, structural 
+mechanics, electromagnetics, heat transfer and acoustics, for example. These are described by 
+partial differential equations which Elmer solves by the Finite Element Method (FEM)."""
+
+toolchain = {'name': 'foss', 'version': '2015a'}
+toolchainopts = {'opt': True, 'optarch': True}
+
+source_urls = ['https://github.com/ElmerCSC/elmerfem/archive/']
+sources = ['release-%(version)s.tar.gz']
+
+builddependencies = [
+    ('CMake', '3.1.3'),
+]
+
+dependencies = [
+    ('Hypre', '2.10.0b'),
+    ('MUMPS', '5.0.0', '-parmetis'),
+#    ('Trilinos', '12.0.1', '-Python-2.7.9'),
+]
+
+configopts = '-DWITH_ELMERGUI:BOOL=FALSE '
+configopts += '-DWITH_MPI:BOOL=TRUE '
+configopts += '-DCMAKE_C_COMPILER=$(which $CC) '
+configopts += '-DCMAKE_Fortran_COMPILER=$(which $F90) '
+configopts += '-DCMAKE_CXX_COMPILER=$(which $CXX) '
+configopts += '-DBLAS_LIBRARIES="-L$EBVARBLAS_LAPACK_INC_DIR $EBVARLIBBLAS" '
+configopts += '-DLAPACK_LIBRARIES="-L$EBVARBLAS_LAPACK_INC_DIR $EBVARLIBLAPACK" '
+configopts += '-DSCALAPACK_LIBRARIES="-L$EBVARSCALAPACK_LIB_DIR $EBVARLIBSCALAPACK" '
+
+sanity_check_paths = {
+    'files': ['lib/elmersolver/libelmersolver.so'] +
+             [ 'bin/%s' % x for x in ['elmerf90', 'ElmerGrid', 'elmerld', 'ElmerSolver', 'ElmerSolver_mpi', 'GebhardtFactors', 'matc', 'Mesh2D', 'ViewFactors'] ],
+    'dirs': ['share/elmersolver/include']
+}
+
+moduleclass = 'cae'
