@@ -311,6 +311,14 @@ def template_easyconfig_test(self, spec):
     dumped_ec = EasyConfig(test_ecfile)
     os.remove(test_ecfile)
 
+    # inject dummy values for templates that are only known at a later stage
+    dummy_template_values = {
+        'builddir': '/dummy/builddir',
+        'installdir': '/dummy/installdir',
+    }
+    ec.template_values.update(dummy_template_values)
+    dumped_ec.template_values.update(dummy_template_values)
+
     for key in sorted(ec._config):
         self.assertEqual(ec[key], dumped_ec[key])
 
