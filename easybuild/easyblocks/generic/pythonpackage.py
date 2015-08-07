@@ -34,7 +34,7 @@ EasyBuild support for Python packages, implemented as an easyblock
 import os
 import tempfile
 from os.path import expanduser
-from vsc import fancylogger
+from vsc.utils import fancylogger
 from vsc.utils.missing import nub
 
 import easybuild.tools.environment as env

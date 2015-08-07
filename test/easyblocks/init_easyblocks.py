@@ -32,7 +32,7 @@ import glob
 import os
 import re
 import tempfile
-from vsc import fancylogger
+from vsc.utils import fancylogger
 from unittest import TestCase, TestLoader, main
 
 import easybuild.tools.options as eboptions
