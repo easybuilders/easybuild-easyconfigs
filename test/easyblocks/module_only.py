@@ -32,7 +32,7 @@ import glob
 import os
 import re
 import tempfile
-from vsc import fancylogger
+from vsc.utils import fancylogger
 from unittest import TestLoader, main
 from vsc.utils.patterns import Singleton
 from vsc.utils.testing import EnhancedTestCase

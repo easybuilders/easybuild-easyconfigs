@@ -45,7 +45,7 @@ from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.run import run_cmd
 
-from vsc import fancylogger
+from vsc.utils import fancylogger
 _log = fancylogger.getLogger('generic.intelbase')
 
 
