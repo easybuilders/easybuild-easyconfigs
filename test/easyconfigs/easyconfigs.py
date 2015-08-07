@@ -36,7 +36,7 @@ import shutil
 import sys
 import tempfile
 from distutils.version import LooseVersion
-from vsc import fancylogger
+from vsc.utils import fancylogger
 from vsc.utils.missing import nub
 from unittest import TestCase, TestLoader, main
 
