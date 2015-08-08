@@ -1,5 +1,8 @@
 ##
-# Copyright 2015 Bart Oldeman
+# Copyright 2015-2015 Bart Oldeman
+#
+# This file is triple-licensed under GPLv2 (see below), MIT, and
+# BSD three-clause licenses.
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -28,67 +31,84 @@ EasyBuild support for installing PGI compilers, implemented as an easyblock
 @author: Bart Oldeman (McGill University, Calcul Quebec, Compute Canada)
 """
 import os
+import fileinput
+import re
+import sys
 
-from easybuild.easyblocks.generic.tarball import Tarball
+from easybuild.framework.easyblock import EasyBlock
 from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.run import run_cmd
 
-class EB_pgi(Tarball):
+class EB_pgi(EasyBlock):
     """
     Support for installing the PGI compilers
     """
 
-    def make_module_req_guess(self):
+    def __init__(self, *args, **kwargs):
+        """Easyblock constructor, define custom class variables specific to PGI."""
+        super(EB_pgi, self).__init__(*args, **kwargs)
+        if not self.cfg['license_file']:
+            self.cfg['license_file'] = 'UNKNOWN'
+        self.install_subdir = os.path.join('linux86-64', self.version)
+
+    def configure_step(self):
         """
-        A dictionary of possible directories to look for.
+        Dummy configure method, just a license check
         """
-        dirs = super(EB_pgi, self).make_module_req_guess()
-        prefix = os.path.join('linux86-64', self.version)
-        for key in dirs:
-            dirs[key] = [os.path.join(prefix, d) for d in dirs[key]]
-        return dirs
+        if not os.path.exists(self.cfg['license_file']):
+            raise EasyBuildError("Non-existing license file specified: %s", self.cfg['license_file'])
+
+    def build_step(self):
+        """
+        Dummy build method: nothing to build
+        """
+        pass
+
+    def install_step(self):
+        """Install by running install command."""
+
+        pgi_env_vars = {
+            'PGI_ACCEPT_EULA': 'accept',
+            'PGI_INSTALL_AMD': 'true',
+            'PGI_INSTALL_DIR': self.installdir,
+            'PGI_INSTALL_JAVA': 'true',
+            'PGI_INSTALL_MANAGED': 'true',
+            'PGI_INSTALL_NVIDIA': 'true',
+            'PGI_SILENT': 'true',
+            }
+        cmd = "%s ./install" % ' '.join(['%s=%s' % x for x in sorted(pgi_env_vars.items())])
+        run_cmd(cmd, log_all=True, simple=True)
+
+        # make sure localrc uses GCC in PATH, not always the system GCC, and does not use a system g77 but gfortran
+        install_abs_subdir = os.path.join(self.installdir, self.install_subdir)
+        filename = os.path.join(install_abs_subdir, "bin", "makelocalrc")
+        for line in fileinput.input(filename, inplace='1', backup='.orig'):
+            line = re.sub(r"^PATH=/", r"#PATH=/", line)
+            sys.stdout.write(line)
+
+        cmd = "%s -x %s -g77 /" % (filename, install_abs_subdir)
+        run_cmd(cmd, log_all=True, simple=True)
 
     def sanity_check_step(self):
         """Custom sanity check for PGI"""
-
-        prefix = os.path.join('linux86-64', self.version)
+        prefix = self.install_subdir
         custom_paths = {
                         'files': [os.path.join(prefix, "bin", "pgcc")],
                         'dirs': [os.path.join(prefix, "bin"), os.path.join(prefix, "lib"),
                                  os.path.join(prefix, "include"), os.path.join(prefix, "man")]
                        }
-
         super(EB_pgi, self).sanity_check_step(custom_paths=custom_paths)
 
+    def make_module_req_guess(self):
+        """Prefix subdirectories in PGI install directory considered for environment variables defined in module file."""
+        dirs = super(EB_pgi, self).make_module_req_guess()
+        for key in dirs:
+            dirs[key] = [os.path.join(self.install_subdir, d) for d in dirs[key]]
+        return dirs
+
     def make_module_extra(self):
-        """Overwritten from Application to add extra txt"""
+        """Add environment variables LM_LICENSE_FILE and PGI for license file and PGI location"""
         txt = super(EB_pgi, self).make_module_extra()
+        txt += self.module_generator.prepend_paths('LM_LICENSE_FILE', [self.cfg['license_file']], allow_abs=True)
         txt += self.module_generator.set_environment('PGI', self.installdir)
         return txt
-
-    def install_step(self):
-        """Install by running install command."""
-
-        # make sure localrc uses GCC in PATH, not always the system GCC
-        cmd = "sed -i 's/^PATH/#PATH/' install"
-        run_cmd(cmd, log_all=True, simple=True)
-        cmd = "sed -i 's/^PATH/#PATH/' %s" % os.path.join("linux86-64", self.version,
-                                                          "bin", "makelocalrc")
-        run_cmd(cmd, log_all=True, simple=True)
-
-        cmd = 'PGI_SILENT=true PGI_ACCEPT_EULA=accept PGI_INSTALL_DIR=%s ' % self.installdir
-        cmd += 'PGI_INSTALL_NVIDIA=true PGI_INSTALL_AMD=true PGI_INSTALL_JAVA=true '
-        cmd += 'PGI_INSTALL_MANAGED=true '
-        cmd += './install'
-
-        run_cmd(cmd, log_all=True, simple=True)
-        if self.cfg['license_file']:
-            license_file = self.cfg['license_file']
-            try:
-                licfile = os.path.join(self.installdir, "license.dat")
-                os.symlink(license_file, licfile)
-            except OSError, err:
-                raise EasyBuildError("Failed to symlink %s to %s: %s", licfile, license_file, err)
-        else:
-            raise EasyBuildError("Please specify a license_file location in your easyconfig")
-
