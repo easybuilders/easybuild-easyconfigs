@@ -146,7 +146,7 @@ class EB_imkl(IntelBase):
         """
         Install group libraries and interfaces (if desired).
         """
-        super(EB_imkl, self).post_install_step(self)
+        super(EB_imkl, self).post_install_step()
 
         # reload the dependencies
         self.load_dependency_modules()
