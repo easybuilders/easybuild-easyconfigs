@@ -138,7 +138,7 @@ EULA=accept
                     sys.stdout.write(line)
             for script in [os.path.join('intel64', 'bin', 'mpivars.sh'), os.path.join('mic', 'bin', 'mpivars.sh')]:
                 for line in fileinput.input(os.path.join(self.installdir, script), inplace=1, backup='.orig.eb'):
-                    line = re.sub(r"^I_MPI_ROOT=", "I_MPI_ROOT=%s; export I_MPI_ROOT" % self.installdir, line)
+                    line = re.sub(r"^I_MPI_ROOT=.*", "I_MPI_ROOT=%s; export I_MPI_ROOT" % self.installdir, line)
                     sys.stdout.write(line)
 
     def sanity_check_step(self):
