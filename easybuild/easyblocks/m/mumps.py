@@ -40,7 +40,7 @@ import easybuild.tools.toolchain as toolchain
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.tools import toolchain
 from easybuild.tools.build_log import EasyBuildError
-from easybuild.tools.modules import get_software_root, get_software_version
+from easybuild.tools.modules import get_software_root
 
 
 class EB_MUMPS(ConfigureMake):
@@ -62,7 +62,7 @@ class EB_MUMPS(ConfigureMake):
             optf = "-Dintel_ -DALLOW_NON_INIT -nofor-main"
             optl = "-nofor-main"
         elif comp_fam == toolchain.GCC:  #@UndefinedVariable
-            if LooseVersion(self.version) >= LooseVersion("5.0.0"):
+            if LooseVersion(self.version) >= LooseVersion('5.0.0'):
                 make_inc_templ = 'Makefile.debian.%s'
             else:
                 make_inc_templ = 'Makefile.gfortran.%s'
