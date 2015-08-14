@@ -77,7 +77,7 @@ class EB_Molpro(ConfigureMake):
 
         self.log.info("Contents of CONFIG file:\n%s", read_file('CONFIG'))
 
-    def build_step(self):
+    def install_step(self):
         """
         Custom install procedure for Molpro:
         * put license token in place in $installdir/.token
