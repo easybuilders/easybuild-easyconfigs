@@ -100,7 +100,7 @@ class EB_SuiteSparse(ConfigureMake):
                     # in the file, whatever they are, by assignments to the
                     # values in cfgvars
                     line = re.sub(r"^\s*(%s\s*=\s*).*\n$" % var,
-                                  r"\1 %s # patched by EasyBuild" % val,
+                                  r"\1 %s # patched by EasyBuild\n" % val,
                                   line)
                     if line != orig_line:
                         cfgvars.pop(var)
