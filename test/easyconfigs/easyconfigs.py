@@ -36,7 +36,7 @@ import shutil
 import sys
 import tempfile
 from distutils.version import LooseVersion
-from vsc import fancylogger
+from vsc.utils import fancylogger
 from vsc.utils.missing import nub
 from unittest import TestCase, TestLoader, main
 
@@ -109,9 +109,6 @@ class EasyConfigTest(TestCase):
             for dep in ec['dependencies'][:]:
                 if dep.get('external_module', False):
                     ec['dependencies'].remove(dep)
-            for dep in ec['unresolved_deps'][:]:
-                if dep.get('external_module', False):
-                    ec['unresolved_deps'].remove(dep)
 
         self.ordered_specs = resolve_dependencies(self.parsed_easyconfigs, retain_all_deps=True)
 
@@ -152,7 +149,7 @@ class EasyConfigTest(TestCase):
         depmap = {}
         for spec in self.ordered_specs:
             build_deps = map(mk_dep_mod_name, spec['builddependencies'])
-            deps = map(mk_dep_mod_name, spec['unresolved_deps'])
+            deps = map(mk_dep_mod_name, spec['dependencies'])
             # separate runtime deps from build deps
             runtime_deps = [d for d in deps if d not in build_deps]
             key = tuple(spec['full_mod_name'].split(os.path.sep))
@@ -310,6 +307,14 @@ def template_easyconfig_test(self, spec):
     ec.dump(test_ecfile)
     dumped_ec = EasyConfig(test_ecfile)
     os.remove(test_ecfile)
+
+    # inject dummy values for templates that are only known at a later stage
+    dummy_template_values = {
+        'builddir': '/dummy/builddir',
+        'installdir': '/dummy/installdir',
+    }
+    ec.template_values.update(dummy_template_values)
+    dumped_ec.template_values.update(dummy_template_values)
 
     for key in sorted(ec._config):
         self.assertEqual(ec[key], dumped_ec[key])
