@@ -45,18 +45,20 @@ class EB_Molpro(ConfigureMake):
         self.cfg.update('configopts', "-prefix %s" % self.installdir)
 
         # compilers
-        self.cfg.update('configopts', "-%s -%s" % (os.environ['CC'], os.environ['F90']))
 
-        # MPI
+        # compilers & MPI
         if self.toolchain.options.get('usempi', None):
+            self.cfg.update('configopts', "-%s -%s" % (os.environ['CC_SEQ'], os.environ['F90_SEQ']))
             if 'MPI_INC_DIR' in os.environ:
                 self.cfg.update('configopts', "-mpp -mppbase %s" % os.environ['MPI_INC_DIR'])
             else:
                 raise EasyBuildError("$MPI_INC_DIR not defined")
+        else:
+            self.cfg.update('configopts', "-%s -%s" % (os.environ['CC'], os.environ['F90']))
 
         # BLAS/LAPACK
         if 'BLAS_LIB_DIR' in os.environ:
-            self.cfg.update('configopts', "-blas3 -blaspath %s" % os.environ['BLAS_LIB_DIR'])
+            self.cfg.update('configopts', "-blas -blaspath %s" % os.environ['BLAS_LIB_DIR'])
         else:
             raise EasyBuildError("$BLAS_LIB_DIR not defined")
 
