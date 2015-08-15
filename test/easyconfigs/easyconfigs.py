@@ -44,13 +44,14 @@ import easybuild.main as main
 import easybuild.tools.options as eboptions
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.framework.easyblock import EasyBlock
-from easybuild.framework.easyconfig.easyconfig import ActiveMNS, EasyConfig
+from easybuild.framework.easyconfig.easyconfig import EasyConfig
 from easybuild.framework.easyconfig.easyconfig import get_easyblock_class
 from easybuild.framework.easyconfig.parser import fetch_parameters_from_easyconfig
 from easybuild.framework.easyconfig.tools import dep_graph, get_paths_for, process_easyconfig
 from easybuild.tools import config
 from easybuild.tools.filetools import write_file
 from easybuild.tools.module_naming_scheme import GENERAL_CLASS
+from easybuild.tools.module_naming_scheme.easybuild_mns import EasyBuildMNS
 from easybuild.tools.module_naming_scheme.utilities import det_full_ec_version
 from easybuild.tools.modules import modules_tool
 from easybuild.tools.robot import resolve_dependencies
@@ -143,13 +144,15 @@ class EasyConfigTest(TestCase):
             self.process_all_easyconfigs()
 
         def mk_dep_mod_name(spec):
-            return tuple(ActiveMNS().det_full_module_name(spec).split(os.path.sep))
+            return tuple(EasyBuildMNS().det_full_module_name(spec).split(os.path.sep))
 
         # construct a dictionary: (name, installver) tuple to (build) dependencies
         depmap = {}
         for spec in self.ordered_specs:
-            build_deps = map(mk_dep_mod_name, spec['builddependencies'])
-            deps = map(mk_dep_mod_name, spec['ec'].all_dependencies)
+            # exclude external modules, since we can't check conflicts on them (we don't even know the software name)
+            build_deps = [mk_dep_mod_name(d) for d in spec['builddependencies'] if not d['external_module']]
+            deps = [mk_dep_mod_name(d) for d in spec['ec'].all_dependencies if not d['external_module']]
+
             # separate runtime deps from build deps
             runtime_deps = [d for d in deps if d not in build_deps]
             key = tuple(spec['full_mod_name'].split(os.path.sep))
