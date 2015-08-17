@@ -27,9 +27,13 @@ EasyBuild support for Molpro, implemented as an easyblock
 
 @author: Kenneth Hoste (Ghent University)
 """
+import fileinput
 import os
+import re
 import shutil
+import sys
 
+import easybuild.tools.environment as env
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.filetools import read_file
@@ -75,7 +79,15 @@ class EB_Molpro(ConfigureMake):
 
         run_cmd("./configure -batch %s" % self.cfg['configopts'])
 
-        self.log.info("Contents of CONFIG file:\n%s", read_file('CONFIG'))
+        cfgfile = os.path.join(self.cfg['start_dir'], 'CONFIG')
+
+        # patch CONFIG file to change LAUNCHER definition, in order to avoid having to start mpd
+        launcher = self.toolchain.mpi_cmd_for('%x', self.cfg['parallel'])
+        for line in fileinput.input(cfgfile, inplace=1, backup='.orig'):
+            line = re.sub(r"^(LAUNCHER\s*=\s*).*$", r"\1 %s" % launcher, line)
+            sys.stdout.write(line)
+
+        self.log.info("Contents of CONFIG file:\n%s", cfgfile)
 
     def install_step(self):
         """
