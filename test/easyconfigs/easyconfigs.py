@@ -74,6 +74,7 @@ class EasyConfigTest(TestCase):
         'force': True,
         'optarch': 'test',
         'robot_path': get_paths_for("easyconfigs")[0],
+        'silent': True,
         'suffix_modules_path': GENERAL_CLASS,
         'valid_module_classes': config.module_classes(),
         'valid_stops': [x[0] for x in EasyBlock.get_steps()],
@@ -124,7 +125,7 @@ class EasyConfigTest(TestCase):
             if self.ordered_specs is None:
                 self.process_all_easyconfigs()
 
-            dep_graph(fn, self.ordered_specs, silent=True)
+            dep_graph(fn, self.ordered_specs)
 
             try:
                 os.remove(fn)
