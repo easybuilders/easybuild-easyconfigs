@@ -150,8 +150,8 @@ class EasyConfigTest(TestCase):
         depmap = {}
         for spec in self.ordered_specs:
             # exclude external modules, since we can't check conflicts on them (we don't even know the software name)
-            build_deps = [mk_dep_mod_name(d) for d in spec['builddependencies'] if not d['external_module']]
-            deps = [mk_dep_mod_name(d) for d in spec['ec'].all_dependencies if not d['external_module']]
+            build_deps = [mk_dep_mod_name(d) for d in spec['builddependencies'] if not d.get('external_module', False)]
+            deps = [mk_dep_mod_name(d) for d in spec['ec'].all_dependencies if not d.get('external_module', False)]
 
             # separate runtime deps from build deps
             runtime_deps = [d for d in deps if d not in build_deps]
