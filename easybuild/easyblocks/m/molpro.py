@@ -139,11 +139,6 @@ class EB_Molpro(ConfigureMake):
         cfgtxt = read_file(cfgfile)
         self.log.info("Contents of CONFIG file:\n%s", cfgtxt)
 
-        # make sure license token is available
-        token_path = os.path.join(os.environ['HOME'], '.molpro', 'token')
-        if not os.path.exists(token_path):
-            raise EasyBuildError("Molpro license token not found at %s", token_path)
-
     def test_step(self):
         """Custom test procedure for Molpro: make quicktest, make test."""
         # check 'main routes' only
