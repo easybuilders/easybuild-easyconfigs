@@ -51,6 +51,9 @@ class EB_Molpro(ConfigureMake):
         self.cleanup_token_symlink = False
         self.license_token = os.path.join(os.path.expanduser('~'), '.molpro', 'token')
 
+    def configure_step(self):
+        """Custom configuration procedure for Molpro: use 'configure -batch'."""
+
         if not os.path.isfile(self.license_token):
             if self.cfg['license_file'] is not None and os.path.isfile(self.cfg['license_file']):
                 # put symlink in place to specified license file in $HOME/.molpro/token
@@ -67,12 +70,7 @@ class EB_Molpro(ConfigureMake):
                 # no license token available, so fail early
                 raise EasyBuildError("No license token found at either %s or via 'license_file'", self.license_token)
 
-    def configure_step(self):
-        """Custom configuration procedure for Molpro: use 'configure -batch'."""
-
-        if not self.cfg['license_file'] or not os.path.exists(self.cfg['license_file']):
-            raise EasyBuildError("Path to an existing license file must be specified in 'license_file' parameter.")
-
+        # installation prefix
         self.cfg.update('configopts', "-prefix %s" % self.installdir)
 
         # compilers
