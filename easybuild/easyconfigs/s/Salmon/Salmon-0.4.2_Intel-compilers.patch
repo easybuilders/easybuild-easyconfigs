@@ -1,0 +1,48 @@
+--- salmon-0.4.2/CMakeLists.txt.orig	2015-06-15 02:31:09.000000000 +0200
++++ salmon-0.4.2/CMakeLists.txt	2015-08-18 21:13:29.684010359 +0200
+@@ -118,6 +118,15 @@
+     else()
+         set (PTHREAD_LIB "pthread")
+     endif()
++elseif ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Intel")
++    execute_process(
++        COMMAND ${CMAKE_CXX_COMPILER} -dumpversion OUTPUT_VARIABLE INTEL_VERSION)
++    set (INTEL TRUE)
++    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -static-libstdc++")
++    set (BOOST_TOOLSET "intel-linux")
++    set (BOOST_CONFIGURE_TOOLSET "--with-toolset=intel-linux")
++	set (BCXX_FLAGS "-std=c++11")
++    set (BOOST_EXTRA_FLAGS toolset=intel-linux cxxflags=${BCXX_FLAGS})
+ else ()
+     message(FATAL_ERROR "Your C++ compiler does not support C++11.")
+ endif ()
+@@ -357,14 +366,14 @@
+ message("==================================================================")
+ ExternalProject_Add(libjellyfish
+     DOWNLOAD_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external
+-    URL ftp://ftp.genome.umd.edu/pub/jellyfish/jellyfish-2.1.3.tar.gz
+-    SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/jellyfish-2.1.3
++    URL https://github.com/gmarcais/Jellyfish/releases/download/v2.2.3/jellyfish-2.2.3.tar.gz
++    SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/jellyfish-2.2.3
+     INSTALL_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/install
+-    CONFIGURE_COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/external/jellyfish-2.1.3/configure --prefix=<INSTALL_DIR> CC=${CMAKE_C_COMPILER} CXX=${CMAKE_CXX_COMPILER} CXXFLAGS=${JELLYFISH_CXX_FLAGS}
++    CONFIGURE_COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/external/jellyfish-2.2.3/configure --prefix=<INSTALL_DIR> CC=${CMAKE_C_COMPILER} CXX=${CMAKE_CXX_COMPILER} CXXFLAGS=${JELLYFISH_CXX_FLAGS}
+     BUILD_COMMAND ${MAKE} CC=${CMAKE_C_COMPILER} CXX=${CMAKE_CXX_COMPILER} CXXFLAGS=${JELLYFISH_CXX_FLAGS}
+     BUILD_IN_SOURCE 1
+     INSTALL_COMMAND make install && 
+-                    cp config.h <INSTALL_DIR>/include/jellyfish-2.1.3/jellyfish/ &&
++                    cp config.h <INSTALL_DIR>/include/jellyfish-2.2.3/jellyfish/ &&
+                     cp config.h <INSTALL_DIR>/include/
+ )
+ 
+--- salmon-0.4.2/src/CMakeLists.txt.orig	2015-08-18 21:21:14.892734948 +0200
++++ salmon-0.4.2/src/CMakeLists.txt	2015-08-18 21:20:51.292295094 +0200
+@@ -42,7 +42,7 @@
+ ${GAT_SOURCE_DIR}/external
+ ${GAT_SOURCE_DIR}/external/cereal/include
+ ${GAT_SOURCE_DIR}/external/install/include
+-${GAT_SOURCE_DIR}/external/install/include/jellyfish-2.1.3
++${GAT_SOURCE_DIR}/external/install/include/jellyfish-2.2.3
+ ${GAT_SOURCE_DIR}/external/install/include/bwa
+ ${ZLIB_INCLUDE_DIR}
+ ${TBB_INCLUDE_DIRS}
