@@ -52,14 +52,14 @@ class EB_Molpro(ConfigureMake):
         self.license_token = os.path.join(os.path.expanduser('~'), '.molpro', 'token')
 
         if not os.path.isfile(self.license_token):
-            if os.path.isfile(self.cfg['license_file']):
+            if self.cfg['license_file'] is not None and os.path.isfile(self.cfg['license_file']):
                 # put symlink in place to specified license file in $HOME/.molpro/token
                 # other approaches (like defining $MOLPRO_KEY) don't seem to work
                 self.cleanup_token_symlink = True
                 mkdir(os.path.dirname(self.license_token))
                 try:
                     os.symlink(self.cfg['license_file'], self.license_token)
-                    self.debug.log("Symlinked %s to %s", self.cfg['license_file'], self.license_token)
+                    self.log.debug("Symlinked %s to %s", self.cfg['license_file'], self.license_token)
                 except OSError, err:
                     raise EasyBuildError("Failed to create symlink for license token at %s", self.license_token)
 
