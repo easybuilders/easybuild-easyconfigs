@@ -45,7 +45,7 @@ class EB_Molpro(ConfigureMake):
         """Easyblock constructor, initialize class variables specific to Molpro and check on license token."""
         super(EB_Molpro, self).__init__(*args, **kwargs)
 
-        self.full_prefix = None
+        self.full_prefix = ''  # no None, to make easyblock compatible with --module-only
         self.orig_launcher = None
 
         self.cleanup_token_symlink = False
