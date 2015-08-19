@@ -18,12 +18,19 @@ builddependencies = [('zlib', '1.2.8')]
 preconfigopts = 'LIBS="$EBROOTZLIB/lib/libz.a"'
 prebuildopts = 'LIBS="$EBROOTZLIB/lib/libz.a"'
 
-# make sure that system libraries are also considered by ld
-configopts = '--with-sysroot=/'
+# make sure that system libraries are also considered by ld and ld.gold is also built
+configopts = '--with-sysroot=/ --enable-gold --enable-ld=default '
 
-binlist = ['addr2line', 'ar', 'as', 'c++filt', 'elfedit', 'gprof', 'ld', 'ld.bfd', 'nm',
+# Ensure PIC
+buildopts = 'CFLAGS="-fPIC"'
+
+# If you require libiberty uncomment the following
+#postinstallcmds = ["cp libiberty/libiberty.a %(installdir)s/lib/; cp include/libiberty.h %(installdir)s/include/",
+#                   "mkdir %(installdir)s/info",
+#                   "cp libiberty/libiberty.texi %(installdir)s/info/"]
+
+binlist = ['addr2line', 'ar', 'as', 'c++filt', 'elfedit', 'gprof', 'ld', 'ld.bfd', 'ld.gold', 'nm',
            'objcopy', 'objdump', 'ranlib', 'readelf', 'size', 'strings', 'strip' ]
-
 sanity_check_paths = {
     'files': ['bin/%s' % x for x in binlist] + ['lib/libbfd.a', 'lib/libopcodes.a'] +
              ['include/%s' % x for x in ['ansidecl.h', 'bfd.h', 'bfdlink.h', 'dis-asm.h', 'symcat.h']],
