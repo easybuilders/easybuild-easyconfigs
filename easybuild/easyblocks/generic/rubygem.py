@@ -88,7 +88,7 @@ class RubyGem(ExtensionEasyBlock):
         ruby_root = get_software_root('Ruby')
         ruby_ver = get_software_version('Ruby')
         rub_maj_min_ver = '.'.join(ruby_ver.split('.')[:2])
-        gems_dir = os.path.join(ruby_root, 'lib', 'ruby', 'gems', rub_maj_min_ver, 'gems')
+        gems_dir = os.path.join(ruby_root, 'lib', 'ruby', 'gems', '%s.0' % rub_maj_min_ver, 'gems')
         if not ruby_root:
             raise EasyBuildError("Ruby module not loaded?")
         if self.is_extension:
