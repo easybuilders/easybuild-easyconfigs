@@ -91,7 +91,7 @@ class RubyGem(ExtensionEasyBlock):
         gems_dir = os.path.join(ruby_root, 'lib', 'ruby', 'gems', '%s.0' % rub_maj_min_ver, 'gems')
         if not ruby_root:
             raise EasyBuildError("Ruby module not loaded?")
-        if self.is_extension:
+        if not self.is_extension:
             env.setvar('GEM_HOME', self.installdir)
         bindir = os.path.join(self.installdir, 'bin')
         run_cmd("gem install --install-dir %s --bindir %s --local %s" % (gems_dir, bindir, self.ext_src))
