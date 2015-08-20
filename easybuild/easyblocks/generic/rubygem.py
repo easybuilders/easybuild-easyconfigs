@@ -27,6 +27,7 @@ EasyBuild support for Ruby Gems, implemented as an easyblock
 
 @author: Robert Schmidt (Ottawa Hospital Research Institute)
 """
+import os
 import shutil
 
 import easybuild.tools.environment as env
@@ -87,4 +88,5 @@ class RubyGem(ExtensionEasyBlock):
         if not ruby_root:
             raise EasyBuildError("Ruby module not loaded?")
         env.setvar('GEM_HOME', self.installdir)
-        run_cmd("gem install --install-dir %s --local %s" % (ruby_root, self.ext_src))
+        bindir = os.path.join(self.installdir, 'bin')
+        run_cmd("gem install --install-dir %s --bindir %s --local %s" % (ruby_root, bindir, self.ext_src))
