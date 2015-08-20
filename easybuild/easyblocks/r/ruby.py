@@ -66,6 +66,7 @@ class EB_Ruby(ConfigureMake):
     def make_module_extra(self):
         """Define $GEM_PATH in module file."""
         txt = super(EB_Ruby, self).make_module_extra()
-        gems_dir = os.path.join(self.installdir, 'lib', 'ruby', 'gems', self.version)
+        maj_min_ver = '.'.join(self.version.split('.')[:2])
+        gems_dir = os.path.join(self.installdir, 'lib', 'ruby', 'gems', '%s.0' % maj_min_ver)
         txt += self.module_generator.set_environment('GEM_PATH', gems_dir)
         return txt
