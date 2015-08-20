@@ -26,7 +26,9 @@
 EasyBuild support for Ruby, implemented as an easyblock
 
 @author: Robert Schmidt (Ottawa Hospital Research Institute)
+@author: Kenneth Hoste (Ghent University)
 """
+import os
 
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.tools.systemtools import get_shared_lib_ext
@@ -63,7 +65,7 @@ class EB_Ruby(ConfigureMake):
 
     def make_module_extra(self):
         """Define $GEM_PATH in module file."""
-        txt = super(RubyGem, self).make_module_extra()
+        txt = super(EB_Ruby, self).make_module_extra()
         gems_dir = os.path.join(self.installdir, 'lib', 'ruby', 'gems', self.version)
         txt += self.module_generator.set_environment('GEM_PATH', gems_dir)
         return txt
