@@ -26,6 +26,7 @@
 EasyBuild support for Ruby Gems, implemented as an easyblock
 
 @author: Robert Schmidt (Ottawa Hospital Research Institute)
+@author: Kenneth Hoste (Ghent University)
 """
 import os
 import shutil
