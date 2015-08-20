@@ -87,6 +87,13 @@ class RubyGem(ExtensionEasyBlock):
         ruby_root = get_software_root('Ruby')
         if not ruby_root:
             raise EasyBuildError("Ruby module not loaded?")
-        env.setvar('GEM_HOME', self.installdir)
+        if self.is_extension:
+            env.setvar('GEM_HOME', self.installdir)
         bindir = os.path.join(self.installdir, 'bin')
         run_cmd("gem install --install-dir %s --bindir %s --local %s" % (ruby_root, bindir, self.ext_src))
+
+    def make_module_extra(self):
+        """Extend $GEM_PATH in module file."""
+        txt = super(RubyGem, self).make_module_extra()
+        txt += self.module_generator.prepend_paths('GEM_PATH', [''])
+        return txt
