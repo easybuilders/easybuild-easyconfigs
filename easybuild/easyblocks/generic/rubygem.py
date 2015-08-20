@@ -34,7 +34,7 @@ import shutil
 import easybuild.tools.environment as env
 from easybuild.framework.extensioneasyblock import ExtensionEasyBlock
 from easybuild.tools.build_log import EasyBuildError
-from easybuild.tools.modules import get_software_root, get_software_version
+from easybuild.tools.modules import get_software_root
 from easybuild.tools.run import run_cmd
 
 
@@ -86,9 +86,7 @@ class RubyGem(ExtensionEasyBlock):
     def install_step(self):
         """Install Ruby Gems using gem package manager"""
         ruby_root = get_software_root('Ruby')
-        ruby_ver = get_software_version('Ruby')
-        rub_maj_min_ver = '.'.join(ruby_ver.split('.')[:2])
-        gems_dir = os.path.join(ruby_root, 'lib', 'ruby', 'gems', '%s.0' % rub_maj_min_ver, 'gems')
+        gems_dir = os.path.join(ruby_root, 'lib', 'ruby', 'gems')
         if not ruby_root:
             raise EasyBuildError("Ruby module not loaded?")
         if not self.is_extension:
