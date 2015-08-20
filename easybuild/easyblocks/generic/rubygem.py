@@ -99,5 +99,6 @@ class RubyGem(ExtensionEasyBlock):
     def make_module_extra(self):
         """Extend $GEM_PATH in module file."""
         txt = super(RubyGem, self).make_module_extra()
-        txt += self.module_generator.prepend_paths('GEM_PATH', [''])
+        if not self.is_extension:
+            txt += self.module_generator.prepend_paths('GEM_PATH', [''])
         return txt
