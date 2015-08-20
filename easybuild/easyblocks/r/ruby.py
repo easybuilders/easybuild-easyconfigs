@@ -62,10 +62,3 @@ class EB_Ruby(ConfigureMake):
                      'include/ruby-%s.0' % majver],
         }
         return super(EB_Ruby, self).sanity_check_step(custom_paths=custom_paths)
-
-    def make_module_extra(self):
-        """Define $GEM_PATH in module file."""
-        txt = super(EB_Ruby, self).make_module_extra()
-        gems_dir = os.path.join(self.installdir, 'lib', 'ruby', 'gems')
-        txt += self.module_generator.set_environment('GEM_PATH', gems_dir)
-        return txt
