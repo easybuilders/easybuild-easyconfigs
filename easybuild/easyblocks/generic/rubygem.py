@@ -88,14 +88,18 @@ class RubyGem(ExtensionEasyBlock):
         ruby_root = get_software_root('Ruby')
         if not ruby_root:
             raise EasyBuildError("Ruby module not loaded?")
+
+        # this is the 'proper' way to specify a custom installation prefix: set $GEM_HOME
         if not self.is_extension:
             env.setvar('GEM_HOME', self.installdir)
+
         bindir = os.path.join(self.installdir, 'bin')
         run_cmd("gem install --bindir %s --local %s" % (bindir, self.ext_src))
 
     def make_module_extra(self):
         """Extend $GEM_PATH in module file."""
         txt = super(RubyGem, self).make_module_extra()
+        # for stand-alone Ruby gem installs, $GEM_PATH needs to be updated
         if not self.is_extension:
             txt += self.module_generator.prepend_paths('GEM_PATH', [''])
         return txt

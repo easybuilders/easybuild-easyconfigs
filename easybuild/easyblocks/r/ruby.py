@@ -26,9 +26,7 @@
 EasyBuild support for Ruby, implemented as an easyblock
 
 @author: Robert Schmidt (Ottawa Hospital Research Institute)
-@author: Kenneth Hoste (Ghent University)
 """
-import os
 
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.tools.systemtools import get_shared_lib_ext
