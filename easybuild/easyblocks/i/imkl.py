@@ -139,12 +139,6 @@ class EB_imkl(IntelBase):
     def make_module_extra(self):
         """Overwritten from Application to add extra txt"""
         txt = super(EB_imkl, self).make_module_extra()
-        txt += self.module_generator.prepend_paths(self.license_env_var, [self.license_file], allow_abs=True)
-        if self.cfg['m32']:
-            nlspath = os.path.join('idb', '32', 'locale', '%l_%t', '%N')
-        else:
-            nlspath = os.path.join('idb', 'intel64', 'locale', '%l_%t', '%N')
-        txt += self.module_generator.prepend_paths('NLSPATH', nlspath)
         txt += self.module_generator.set_environment('MKLROOT', os.path.join(self.installdir, 'mkl'))
         return txt
 
@@ -152,6 +146,8 @@ class EB_imkl(IntelBase):
         """
         Install group libraries and interfaces (if desired).
         """
+        super(EB_imkl, self).post_install_step()
+
         # reload the dependencies
         self.load_dependency_modules()
 
