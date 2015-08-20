@@ -81,4 +81,4 @@ class RubyGem(ExtensionEasyBlock):
 
     def install_step(self):
         """Install Ruby Gems using gem package manager"""
-        run_cmd("gem install --installdir %s --local %s" % (self.installdir, self.ext_src))
+        run_cmd("gem install --install-dir %s --local %s" % (self.installdir, self.ext_src))
