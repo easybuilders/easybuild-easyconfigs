@@ -1,4 +1,4 @@
-easyblock = 'MakeCp'
+easyblock = 'ConfigureMake'
 
 name = 'AFNI'
 version = '20150717'
@@ -39,23 +39,27 @@ dependencies = [
     ('zlib', '1.2.8'),
 ]
 
-buildopts = '-f Makefile.linux_openmp_64 LGIFTI="$EBROOTEXPAT/lib/libexpat.a" LDPYTHON="-lpython%s" ' % majpyver
+skipsteps = ['configure', 'install']
+
+prebuildopts = "cp Makefile.linux_openmp_64 Makefile && "
+buildopts = 'totality LGIFTI="$EBROOTEXPAT/lib/libexpat.a" LDPYTHON="-lpython%s" ' % majpyver
 buildopts += 'CC="${CC} ${CFLAGS} -fPIC -DREAD_WRITE_64 -DLINUX2 \$(CEXTRA)" '
 buildopts += 'CCVOL="${CC} ${CFLAGS} -fPIC -DREAD_WRITE_64 -DLINUX2 \$(CEXTRA)" '
 buildopts += 'CCFAST="${CC} ${CFLAGS} -fPIC -DREAD_WRITE_64 -DLINUX2 \$(CEXTRA)" '
 buildopts += 'CCOLD="${CC} ${CFLAGS} -fPIC -DREAD_WRITE_64 -DLINUX2 \$(CEXTRA)" '
 buildopts += 'CCMIN="${CC} ${CFLAGS} -fPIC -DREAD_WRITE_64 -DLINUX2 \$(CEXTRA)" '
 buildopts += 'CCSVD="${CC} ${CFLAGS} -fPIC -DREAD_WRITE_64 -DLINUX2 \$(CEXTRA)" '
-buildopts += 'LD="${CC} \$(CPROF)" LZLIB="${EBROOTZLIB}/lib/libz.a" '
-buildopts += 'IFLAGS="-I. -I$EBROOTPYTHON/include/python%s -I$EBROOTGLIB/lib/glib-2.0/include -I$EBROOTGLIB/include/glib-2.0" ' % majpyver
-buildopts += 'XLIBS="-lXm -lXt"'
+buildopts += 'LD="${CC} \$(CPROF)" LZLIB="${EBROOTZLIB}/lib/libz.a" XLIBS="-lXm -lXt" '
+buildopts += 'IFLAGS="-I. -I$EBROOTPYTHON/include/python%s ' % majpyver
+buildopts += '-I$EBROOTGLIB/lib/glib-2.0/include -I$EBROOTGLIB/include/glib-2.0"'
+buildopts += ' INSTALLDIR=%(installdir)s'
 
 parallel = 1
 
-files_to_copy = [(['afni'], 'bin')]
+modextrapaths = {'PATH': ['']}
 
 sanity_check_paths = {
-    'files': ['bin/afni'],
+    'files': ['afni'],
     'dirs': [],
 }
 
