@@ -106,9 +106,12 @@ class EB_OpenFOAM(EasyBlock):
             os.symlink(os.path.join("..", self.thrdpartydir), self.thrdpartydir)
             env.setvar("WM_THIRD_PARTY_DIR", os.path.join(self.installdir, self.thrdpartydir))
 
-        # compiler
+        # compiler & compiler flags
         comp_fam = self.toolchain.comp_family()
 
+        # make sure non-gold version of ld is used, since OpenFOAM requires it
+        # see http://www.openfoam.org/mantisbt/view.php?id=685
+        extra_flags = '-fuse-ld=bfd'
         if comp_fam == toolchain.GCC:  #@UndefinedVariable
             self.wm_compiler="Gcc"
 
@@ -116,10 +119,13 @@ class EB_OpenFOAM(EasyBlock):
             self.wm_compiler="Icc"
 
             # make sure -no-prec-div is used with Intel compilers
-            self.cfg.update('prebuildopts', 'CFLAGS="$CFLAGS -no-prec-div" CXXFLAGS="$CXXFLAGS -no-prec-div"')
+            extra_flags += ' -no-prec-div'
 
         else:
             raise EasyBuildError("Unknown compiler family, don't know how to set WM_COMPILER")
+
+        self.cfg.update('prebuildopts', 'CFLAGS="$CFLAGS %s"' % extra_flags)
+        self.cfg.update('prebuildopts', 'CXXFLAGS="$CXXFLAGS %s"' % extra_flags)
 
         env.setvar("WM_COMPILER", self.wm_compiler)
 
