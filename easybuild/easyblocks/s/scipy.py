@@ -65,4 +65,4 @@ class EB_scipy(FortranPythonPackage):
             'dirs': [],
         }
         custom_commands = [('python', '-c "import scipy"')]
-        return (EB_scipy, self).sanity_check_step(custom_paths=custom_paths, custom_commands=custom_commands)
+        return super(EB_scipy, self).sanity_check_step(custom_paths=custom_paths, custom_commands=custom_commands)
