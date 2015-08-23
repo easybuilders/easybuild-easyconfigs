@@ -57,3 +57,11 @@ class EB_scipy(FortranPythonPackage):
             if self.toolchain.comp_family() in [toolchain.GCC, toolchain.CLANGGCC]:  # @UndefinedVariable
                 self.cfg.update('preinstallopts', "unset LDFLAGS && ")
 
+    def sanity_check_step(self, *args, **kwargs):
+        """Custom sanity check for scipy."""
+        custom_paths = {
+            'files': [os.path.join(self.pylibdir, 'scipy', '__init__.py')],
+            'dirs': [],
+        }
+        custom_commands = [('python', '-c "import scipy"')]
+        return (EB_scipy, self).sanity_check_step(custom_paths=custom_paths, custom_commands=custom_commands)
