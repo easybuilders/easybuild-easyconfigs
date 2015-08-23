@@ -111,7 +111,7 @@ class EB_OpenFOAM(EasyBlock):
 
         # make sure non-gold version of ld is used, since OpenFOAM requires it
         # see http://www.openfoam.org/mantisbt/view.php?id=685
-        extra_flags = '-fuse-ld=bfd'
+        extra_flags = '-Wl,-fuse-ld=bfd'
         if comp_fam == toolchain.GCC:  #@UndefinedVariable
             self.wm_compiler="Gcc"
 
