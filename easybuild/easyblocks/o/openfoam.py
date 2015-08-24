@@ -109,6 +109,7 @@ class EB_OpenFOAM(EasyBlock):
         # compiler & compiler flags
         comp_fam = self.toolchain.comp_family()
 
+        extra_flags = ''
         if comp_fam == toolchain.GCC:  #@UndefinedVariable
             self.wm_compiler = 'Gcc'
             if get_software_version('GCC') >= LooseVersion('4.8'):
