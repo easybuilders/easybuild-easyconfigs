@@ -37,6 +37,7 @@ import re
 import os
 import shutil
 
+from distutils.version import LooseVersion
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.build_log import EasyBuildError
@@ -65,16 +66,20 @@ class EB_MCR(EasyBlock):
 
         configfile = os.path.join(self.builddir, self.configfilename)
         try:
-            shutil.copyfile("%s/installer_input.txt" % self.builddir, configfile)
-            config = file(configfile).read()
+            if LooseVersion(self.version) < LooseVersion('2015a'):
+                shutil.copyfile("%s/installer_input.txt" % self.builddir, configfile)
+                config = file(configfile).read()
+                regdest = re.compile(r"^# destinationFolder=.*", re.M)
+                regagree = re.compile(r"^# agreeToLicense=.*", re.M)
+                regmode = re.compile(r"^# mode=.*", re.M)
 
-            regdest = re.compile(r"^# destinationFolder=.*", re.M)
-            regagree = re.compile(r"^# agreeToLicense=.*", re.M)
-            regmode = re.compile(r"^# mode=.*", re.M)
-
-            config = regdest.sub("destinationFolder=%s" % self.installdir, config)
-            config = regagree.sub("agreeToLicense=Yes", config)
-            config = regmode.sub("mode=silent", config)
+                config = regdest.sub("destinationFolder=%s" % self.installdir, config)
+                config = regagree.sub("agreeToLicense=Yes", config)
+                config = regmode.sub("mode=silent", config)
+            else:
+                config = "destinationFolder=%s\n" % self.installdir
+                config += "agreeToLicense=Yes\n"
+                config += "mode=silent\n"
 
             f = open(configfile, 'w')
             f.write(config)
