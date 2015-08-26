@@ -32,10 +32,11 @@ import copy
 import glob
 import os
 import re
+import shutil
 import sys
 import tempfile
 from distutils.version import LooseVersion
-from vsc import fancylogger
+from vsc.utils import fancylogger
 from vsc.utils.missing import nub
 from unittest import TestCase, TestLoader, main
 
@@ -43,12 +44,14 @@ import easybuild.main as main
 import easybuild.tools.options as eboptions
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.framework.easyblock import EasyBlock
-from easybuild.framework.easyconfig.easyconfig import ActiveMNS, EasyConfig
+from easybuild.framework.easyconfig.easyconfig import EasyConfig
 from easybuild.framework.easyconfig.easyconfig import get_easyblock_class
 from easybuild.framework.easyconfig.parser import fetch_parameters_from_easyconfig
 from easybuild.framework.easyconfig.tools import dep_graph, get_paths_for, process_easyconfig
 from easybuild.tools import config
+from easybuild.tools.filetools import write_file
 from easybuild.tools.module_naming_scheme import GENERAL_CLASS
+from easybuild.tools.module_naming_scheme.easybuild_mns import EasyBuildMNS
 from easybuild.tools.module_naming_scheme.utilities import det_full_ec_version
 from easybuild.tools.modules import modules_tool
 from easybuild.tools.robot import resolve_dependencies
@@ -71,6 +74,7 @@ class EasyConfigTest(TestCase):
         'force': True,
         'optarch': 'test',
         'robot_path': get_paths_for("easyconfigs")[0],
+        'silent': True,
         'suffix_modules_path': GENERAL_CLASS,
         'valid_module_classes': config.module_classes(),
         'valid_stops': [x[0] for x in EasyBlock.get_steps()],
@@ -79,10 +83,10 @@ class EasyConfigTest(TestCase):
     config.set_tmpdir()
     del eb_go
 
-    # mock 'exist' and 'load' methods of modules tool, which are used for 'craype' external module
-    modtool = modules_tool()
-    modtool.exist = lambda m: [True]*len(m)
-    modtool.load = lambda m: True
+    # put dummy 'craype-test' module in place, which is required for parsing easyconfigs using Cray* toolchains
+    TMPDIR = tempfile.mkdtemp()
+    os.environ['MODULEPATH'] = TMPDIR
+    write_file(os.path.join(TMPDIR, 'craype-test'), '#%Module\n')
 
     log = fancylogger.getLogger("EasyConfigTest", fname=False)
 
@@ -107,9 +111,6 @@ class EasyConfigTest(TestCase):
             for dep in ec['dependencies'][:]:
                 if dep.get('external_module', False):
                     ec['dependencies'].remove(dep)
-            for dep in ec['unresolved_deps'][:]:
-                if dep.get('external_module', False):
-                    ec['unresolved_deps'].remove(dep)
 
         self.ordered_specs = resolve_dependencies(self.parsed_easyconfigs, retain_all_deps=True)
 
@@ -124,7 +125,7 @@ class EasyConfigTest(TestCase):
             if self.ordered_specs is None:
                 self.process_all_easyconfigs()
 
-            dep_graph(fn, self.ordered_specs, silent=True)
+            dep_graph(fn, self.ordered_specs)
 
             try:
                 os.remove(fn)
@@ -144,13 +145,15 @@ class EasyConfigTest(TestCase):
             self.process_all_easyconfigs()
 
         def mk_dep_mod_name(spec):
-            return tuple(ActiveMNS().det_full_module_name(spec).split(os.path.sep))
+            return tuple(EasyBuildMNS().det_full_module_name(spec).split(os.path.sep))
 
         # construct a dictionary: (name, installver) tuple to (build) dependencies
         depmap = {}
         for spec in self.ordered_specs:
-            build_deps = map(mk_dep_mod_name, spec['builddependencies'])
-            deps = map(mk_dep_mod_name, spec['unresolved_deps'])
+            # exclude external modules, since we can't check conflicts on them (we don't even know the software name)
+            build_deps = [mk_dep_mod_name(d) for d in spec['builddependencies'] if not d.get('external_module', False)]
+            deps = [mk_dep_mod_name(d) for d in spec['ec'].all_dependencies if not d.get('external_module', False)]
+
             # separate runtime deps from build deps
             runtime_deps = [d for d in deps if d not in build_deps]
             key = tuple(spec['full_mod_name'].split(os.path.sep))
@@ -227,6 +230,10 @@ class EasyConfigTest(TestCase):
                     if not (dirpath.endswith('/easybuild/easyconfigs') and filenames == ['TEMPLATE.eb']):
                         self.assertTrue(False, "List of easyconfig files in %s is empty: %s" % (dirpath, filenames))
 
+    def test_zzz_cleanup(self):
+        """Dummy test to clean up global temporary directory."""
+        shutil.rmtree(self.TMPDIR)
+
 def template_easyconfig_test(self, spec):
     """Tests for an individual easyconfig: parsing, instantiating easyblock, check patches, ..."""
 
@@ -235,7 +242,7 @@ def template_easyconfig_test(self, spec):
     prev_single_tests_ok = single_tests_ok
     single_tests_ok = False
 
-    # parse easyconfig 
+    # parse easyconfig
     ecs = process_easyconfig(spec)
     if len(ecs) == 1:
         ec = ecs[0]['ec']
@@ -244,13 +251,13 @@ def template_easyconfig_test(self, spec):
 
     # check easyconfig file name
     expected_fn = '%s-%s.eb' % (ec['name'], det_full_ec_version(ec))
-    msg = "Filename '%s' of parsed easconfig matches expected filename '%s'" % (spec, expected_fn)
+    msg = "Filename '%s' of parsed easyconfig matches expected filename '%s'" % (spec, expected_fn)
     self.assertEqual(os.path.basename(spec), expected_fn, msg)
 
     name, easyblock = fetch_parameters_from_easyconfig(ec.rawtxt, ['name', 'easyblock'])
 
     # sanity check for software name
-    self.assertTrue(ec['name'], name) 
+    self.assertTrue(ec['name'], name)
 
     # instantiate easyblock with easyconfig file
     app_class = get_easyblock_class(easyblock, name=name)
@@ -296,6 +303,25 @@ def template_easyconfig_test(self, spec):
 
     app.close_log()
     os.remove(app.logfile)
+
+    # dump the easyconfig file
+    handle, test_ecfile = tempfile.mkstemp()
+    os.close(handle)
+
+    ec.dump(test_ecfile)
+    dumped_ec = EasyConfig(test_ecfile)
+    os.remove(test_ecfile)
+
+    # inject dummy values for templates that are only known at a later stage
+    dummy_template_values = {
+        'builddir': '/dummy/builddir',
+        'installdir': '/dummy/installdir',
+    }
+    ec.template_values.update(dummy_template_values)
+    dumped_ec.template_values.update(dummy_template_values)
+
+    for key in sorted(ec._config):
+        self.assertEqual(ec[key], dumped_ec[key])
 
     # cache the parsed easyconfig, to avoid that it is parsed again
     self.parsed_easyconfigs.append(ecs[0])
