@@ -67,22 +67,18 @@ class EB_MCR(EasyBlock):
         """Configure MCR installation: create license file."""
 
         configfile = os.path.join(self.builddir, self.configfilename)
-        try:
-            if LooseVersion(self.version) < LooseVersion('2015a'):
-                shutil.copyfile("%s/installer_input.txt" % self.builddir, configfile)
-                read_file(configfile, config)
-                config = re.sub(r"^# destinationFolder=.*", "destinationFolder=%s" % self.installdir, config, re.M)
-                config = re.sub(r"^# agreeToLicense=.*", "agreeToLicense=Yes", config, re.M)
-                config = re.sub(r"^# mode=.*", "mode=silent", config, re.M)
-            else:
-                config = "destinationFolder=%s\n" % self.installdir
-                config += "agreeToLicense=Yes\n"
-                config += "mode=silent\n"
+        if LooseVersion(self.version) < LooseVersion('2015a'):
+            shutil.copyfile("%s/installer_input.txt" % self.builddir, configfile)
+            read_file(configfile, config)
+            config = re.sub(r"^# destinationFolder=.*", "destinationFolder=%s" % self.installdir, config, re.M)
+            config = re.sub(r"^# agreeToLicense=.*", "agreeToLicense=Yes", config, re.M)
+            config = re.sub(r"^# mode=.*", "mode=silent", config, re.M)
+        else:
+            config = "destinationFolder=%s\n" % self.installdir
+            config += "agreeToLicense=Yes\n"
+            config += "mode=silent\n"
 
-            write_file(configfile, config)
-
-        except IOError, err:
-            raise EasyBuildError("Failed to create installation config file %s: %s", configfile, err)
+        write_file(configfile, config)
 
         self.log.debug('configuration file written to %s:\n %s' % (configfile, config))
 
