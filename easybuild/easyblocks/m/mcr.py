@@ -31,6 +31,7 @@ EasyBuild support for installing MCR, implemented as an easyblock
 @author: Pieter De Baets (Ghent University)
 @author: Jens Timmerman (Ghent University)
 @author: Fotis Georgatos (Uni.Lu, NTUA)
+@author: Balazs Hajgato (VUB)
 """
 
 import re
@@ -42,7 +43,7 @@ from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.run import run_cmd
-
+from easybuild.tools.filetools write_file read_file
 
 class EB_MCR(EasyBlock):
     """Support for installing MCR."""
@@ -52,7 +53,8 @@ class EB_MCR(EasyBlock):
         super(EB_MCR, self).__init__(*args, **kwargs)
         self.comp_fam = None
         self.configfilename = "my_installer_input.txt"
-        self.extradir =  {'R2014a': 'v83', 'R2014b': 'v84', 'R2015a': 'v85'}
+        known_versions =  {'R2014a': 'v83', 'R2014b': 'v84', 'R2015a': 'v85'}
+        self.extradir = known_versions.get(self.version, 'UNKNOWN')
 
     @staticmethod
     def extra_options():
@@ -68,22 +70,16 @@ class EB_MCR(EasyBlock):
         try:
             if LooseVersion(self.version) < LooseVersion('2015a'):
                 shutil.copyfile("%s/installer_input.txt" % self.builddir, configfile)
-                config = file(configfile).read()
-                regdest = re.compile(r"^# destinationFolder=.*", re.M)
-                regagree = re.compile(r"^# agreeToLicense=.*", re.M)
-                regmode = re.compile(r"^# mode=.*", re.M)
-
-                config = regdest.sub("destinationFolder=%s" % self.installdir, config)
-                config = regagree.sub("agreeToLicense=Yes", config)
-                config = regmode.sub("mode=silent", config)
+                read_file(configfile, config)
+                config = re.sub(r"^# destinationFolder=.*", "destinationFolder=%s" % self.installdir, config, re.M)
+                config = re.sub(r"^# agreeToLicense=.*", "agreeToLicense=Yes", config, re.M)
+                config = re.sub(r"^# mode=.*", "mode=silent", config, re.M)
             else:
                 config = "destinationFolder=%s\n" % self.installdir
                 config += "agreeToLicense=Yes\n"
                 config += "mode=silent\n"
 
-            f = open(configfile, 'w')
-            f.write(config)
-            f.close()
+            write_file(configfile, config)
 
         except IOError, err:
             raise EasyBuildError("Failed to create installation config file %s: %s", configfile, err)
@@ -124,23 +120,22 @@ class EB_MCR(EasyBlock):
         """Custom sanity check for MCR."""
 
         custom_paths = {
-                        'files': [''],
-                        'dirs': ['%s/%s/glnxa64' % (self.extradir[self.cfg['version']], x) for x in ['runtime' , 'bin', 'sys/os']],
-                       }
+            'files': [''],
+            'dirs': ['%s/%s/glnxa64' % (self.extradir[self.version], x) for x in ['runtime' , 'bin', 'sys/os']],
+        }
 
         super(EB_MCR, self).sanity_check_step(custom_paths=custom_paths)
 
     def make_module_extra(self):
         """Extend PATH and set proper _JAVA_OPTIONS (e.g., -Xmx)."""
 
+        extradir = self.extradir.get(self.version. 'UNKNOWN')
         txt = super(EB_MCR, self).make_module_extra()
 
-        txt += self.module_generator.set_environment('XAPPLRESDIR', os.path.join(self.installdir, self.extradir[self.cfg['version']], 'X11', 'app-defaults'))
+        txt += self.module_generator.set_environment('XAPPLRESDIR', os.path.join(self.installdir, self.extradir[self.version], 'X11', 'app-defaults'))
         for ldlibdir in ['runtime', 'bin', os.path.join('sys', 'os')]:
-            txt += self.module_generator.prepend_paths('LD_LIBRARY_PATH', os.path.join(self.extradir[self.cfg['version']], ldlibdir, 'glnxa64'))
+            txt += self.module_generator.prepend_paths('LD_LIBRARY_PATH', os.path.join(self.extradir[self.version], ldlibdir, 'glnxa64'))
 
-        
         txt += self.module_generator.set_environment('_JAVA_OPTIONS', self.cfg['java_options'])
 
         return txt
-
