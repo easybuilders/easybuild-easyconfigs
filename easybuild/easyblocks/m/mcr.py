@@ -43,7 +43,7 @@ from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.run import run_cmd
-from easybuild.tools.filetools write_file read_file
+from easybuild.tools.filetools write_file, read_file
 
 class EB_MCR(EasyBlock):
     """Support for installing MCR."""
