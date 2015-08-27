@@ -31,7 +31,7 @@ EasyBuild support for installing MCR, implemented as an easyblock
 @author: Pieter De Baets (Ghent University)
 @author: Jens Timmerman (Ghent University)
 @author: Fotis Georgatos (Uni.Lu, NTUA)
-@author: Balazs Hajgato (VUB)
+@author: Balazs Hajgato (Vrije Universiteit Brussel)
 """
 
 import re
@@ -42,8 +42,8 @@ from distutils.version import LooseVersion
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.build_log import EasyBuildError
+from easybuild.tools.filetools import read_file, write_file
 from easybuild.tools.run import run_cmd
-from easybuild.tools.filetools write_file, read_file
 
 class EB_MCR(EasyBlock):
     """Support for installing MCR."""
@@ -58,6 +58,7 @@ class EB_MCR(EasyBlock):
 
     @staticmethod
     def extra_options():
+        """Custom easyconfig parameters for MCR."""
         extra_vars = {
             'java_options': ['-Xmx256m', "$_JAVA_OPTIONS value set for install and in module file.", CUSTOM],
         }
