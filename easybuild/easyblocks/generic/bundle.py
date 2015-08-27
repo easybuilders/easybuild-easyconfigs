@@ -39,7 +39,6 @@ class Bundle(EasyBlock):
     """
     Bundle of modules: only generate module files, nothing to build/install
     """
-
     def configure_step(self):
         """Do nothing."""
         pass
@@ -52,11 +51,14 @@ class Bundle(EasyBlock):
         """Do nothing."""
         pass
 
-    def sanity_check_step(self):
+    def sanity_check_step(self, *args, **kwargs):
         """
         Nothing is being installed, so just being able to load the (fake) module is sufficient
         """
-        self.log.info("Testing loading of module '%s' by means of sanity check" % self.full_mod_name)
-        fake_mod_data = self.load_fake_module(purge=True)
-        self.log.debug("Cleaning up after testing loading of module")
-        self.clean_up_fake_module(fake_mod_data)
+        if self.cfg['exts_list'] or self.cfg['sanity_check_paths'] or self.cfg['sanity_check_commands']:
+            super(Bundle, self).sanity_check_step(*args, **kwargs)
+        else:
+            self.log.info("Testing loading of module '%s' by means of sanity check" % self.full_mod_name)
+            fake_mod_data = self.load_fake_module(purge=True)
+            self.log.debug("Cleaning up after testing loading of module")
+            self.clean_up_fake_module(fake_mod_data)

@@ -32,14 +32,15 @@ EasyBuild support for installing MATLAB, implemented as an easyblock
 @author: Jens Timmerman (Ghent University)
 @author: Fotis Georgatos (Uni.Lu, NTUA)
 """
-
 import re
 import os
 import shutil
+import stat
 
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.build_log import EasyBuildError
+from easybuild.tools.filetools import adjust_permissions, read_file, write_file
 from easybuild.tools.run import run_cmd
 
 
@@ -50,7 +51,7 @@ class EB_MATLAB(EasyBlock):
         """Add extra config options specific to MATLAB."""
         super(EB_MATLAB, self).__init__(*args, **kwargs)
         self.comp_fam = None
-        self.configfilename = "my_installer_input.txt"
+        self.configfile = os.path.join(self.builddir, 'my_installer_input.txt')
 
     @staticmethod
     def extra_options():
@@ -66,22 +67,16 @@ class EB_MATLAB(EasyBlock):
         licserv = self.cfg['license_server']
         licport = self.cfg['license_server_port']
         lictxt = '\n'.join([
-                            "SERVER %s 000000000000 %s" % (licserv, licport),
-                            "USE_SERVER",
-                           ])
+            "SERVER %s 000000000000 %s" % (licserv, licport),
+            "USE_SERVER",
+        ])
 
-        licfile = "%s/matlab.lic" % self.builddir
-        try:
-            f = file(licfile, "w")
-            f.write(lictxt)
-            f.close()
-        except IOError, err:
-            raise EasyBuildError("Failed to create license file %s: %s", licfile, err)
+        licfile = os.path.join(self.builddir, 'matlab.lic')
+        write_file(licfile, lictxt)
 
-        configfile = os.path.join(self.builddir, self.configfilename)
         try:
-            shutil.copyfile("%s/%s/installer_input.txt" % (self.builddir, self.version), configfile)
-            config = file(configfile).read()
+            shutil.copyfile(os.path.join(self.cfg['start_dir'], 'installer_input.txt'), self.configfile)
+            config = read_file(self.configfile)
 
             regdest = re.compile(r"^# destinationFolder=.*", re.M)
             regkey = re.compile(r"^# fileInstallationKey=.*", re.M)
@@ -96,14 +91,12 @@ class EB_MATLAB(EasyBlock):
             config = regmode.sub("mode=silent", config)
             config = reglicpath.sub("licensePath=%s" % licfile, config)
 
-            f = open(configfile, 'w')
-            f.write(config)
-            f.close()
+            write_file(self.configfile, config)
 
         except IOError, err:
-            raise EasyBuildError("Failed to create installation config file %s: %s", configfile, err)
+            raise EasyBuildError("Failed to create installation config file %s: %s", self.configfile, err)
 
-        self.log.debug('configuration file written to %s:\n %s' % (configfile, config))
+        self.log.debug('configuration file written to %s:\n %s', self.configfile, config)
 
     def build_step(self):
         """No building of MATLAB, no sources available."""
@@ -115,14 +108,7 @@ class EB_MATLAB(EasyBlock):
         src = os.path.join(self.cfg['start_dir'], 'install')
 
         # make sure install script is executable
-        try:
-            if os.path.isfile(src):
-                self.log.info("Doing chmod on source file %s" % src)
-                os.chmod(src, 0755)
-            else:
-                self.log.info("Did not find source file %s" % src)
-        except OSError, err:
-            raise EasyBuildError("Failed to chmod install script: %s", err)
+        adjust_permissions(src, stat.S_IXUSR)
 
         # make sure $DISPLAY is not defined, which may lead to (hard to trace) problems
         # this is a workaround for not being able to specify --nodisplay to the install scripts
@@ -131,27 +117,22 @@ class EB_MATLAB(EasyBlock):
 
         if not '_JAVA_OPTIONS' in self.cfg['preinstallopts']:
             self.cfg['preinstallopts'] = ('export _JAVA_OPTIONS="%s" && ' % self.cfg['java_options']) + self.cfg['preinstallopts']
-        configfile = "%s/%s" % (self.builddir, self.configfilename)
-        cmd = "%s ./install -v -inputFile %s %s" % (self.cfg['preinstallopts'], configfile, self.cfg['installopts'])
+        cmd = "%s ./install -v -inputFile %s %s" % (self.cfg['preinstallopts'], self.configfile, self.cfg['installopts'])
         run_cmd(cmd, log_all=True, simple=True)
 
     def sanity_check_step(self):
         """Custom sanity check for MATLAB."""
 
         custom_paths = {
-                        'files': ["bin/matlab", "bin/mcc", "bin/glnxa64/MATLAB", "bin/glnxa64/mcc",
-                                  "runtime/glnxa64/libmwmclmcrrt.so", "toolbox/local/classpath.txt"],
-                        'dirs': ["java/jar", "toolbox/compiler"],
-                       }
+            'files': ["bin/matlab", "bin/mcc", "bin/glnxa64/MATLAB", "bin/glnxa64/mcc",
+                      "runtime/glnxa64/libmwmclmcrrt.so", "toolbox/local/classpath.txt"],
+            'dirs': ["java/jar", "toolbox/compiler"],
+        }
 
         super(EB_MATLAB, self).sanity_check_step(custom_paths=custom_paths)
 
     def make_module_extra(self):
         """Extend PATH and set proper _JAVA_OPTIONS (e.g., -Xmx)."""
-
         txt = super(EB_MATLAB, self).make_module_extra()
-
         txt += self.module_generator.set_environment('_JAVA_OPTIONS', self.cfg['java_options'])
-
         return txt
-

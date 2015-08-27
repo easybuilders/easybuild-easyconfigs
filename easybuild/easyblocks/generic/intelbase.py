@@ -45,7 +45,7 @@ from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.run import run_cmd
 
-from vsc import fancylogger
+from vsc.utils import fancylogger
 _log = fancylogger.getLogger('generic.intelbase')
 
 
@@ -344,6 +344,21 @@ class IntelBase(EasyBlock):
             shutil.rmtree(os.path.join(self.installdir, self.name))
         except OSError, err:
             raise EasyBuildError("Failed to move contents of %s to %s: %s", subdir, self.installdir, err)
+
+    def make_module_extra(self):
+        """Custom variable definitions in module file."""
+        txt = super(IntelBase, self).make_module_extra()
+
+        txt += self.module_generator.prepend_paths(self.license_env_var, [self.license_file],
+                                                   allow_abs=True, expand_relpaths=False)
+
+        if self.cfg['m32']:
+            nlspath = os.path.join('idb', '32', 'locale', '%l_%t', '%N')
+        else:
+            nlspath = os.path.join('idb', 'intel64', 'locale', '%l_%t', '%N')
+        txt += self.module_generator.prepend_paths('NLSPATH', nlspath)
+
+        return txt
 
     def cleanup_step(self):
         """Cleanup leftover mess
