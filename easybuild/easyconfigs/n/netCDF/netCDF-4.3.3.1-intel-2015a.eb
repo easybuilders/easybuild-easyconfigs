@@ -15,20 +15,26 @@ source_urls = [
     'ftp://ftp.unidata.ucar.edu/pub/netcdf/old',
 ]
 
-dependencies = [('HDF5', '1.8.15')]
+dependencies = [
+    ('HDF5', '1.8.15'),
+    ('cURL', '7.43.0'),
+]
 
 builddependencies = [
     ('CMake', '3.2.2'),
     ('Doxygen', '1.8.9.1', '', ('GCC', '4.9.2')),
-    ('cURL', '7.43.0'),
 ]
 
 # make sure both static and shared libs are built
-configopts_tmpl = "-DCURL_LIBRARY=$EBROOTCURL/lib/libcurl.{0} -DCURL_INCLUDE_DIR=$EBROOTCURL/include "
-configopts_tmpl += "-DSZIP_LIBRARY=$EBROOTSZIP/lib/libsz.{0} -DBUILD_SHARED_LIBS={1} "
+configopts_tmpl = '-DBUILD_SHARED_LIBS={0} -DCMAKE_C_FLAGS_DEBUG="" '
+configopts_tmpl += "-DHDF5_LIB=$EBROOTHDF5/lib/libhdf5.so -DHDF5_HL_LIB=$EBROOTHDF5/lib/libhdf5_hl.so "
+configopts_tmpl += "-DHDF5_INCLUDE_DIR=$EBROOTHDF5/include "
+configopts_tmpl += "-DSZIP_LIBRARY=$EBROOTSZIP/lib/libsz.so "
+configopts_tmpl += "-DZLIB_LIBRARY=$EBROOTZLIB/lib/libz.so "
+configopts_tmpl += "-DCURL_LIBRARY=$EBROOTCURL/lib/libcurl.so -DCURL_INCLUDE_DIR=$EBROOTCURL/include "
 configopts = [
-    configopts_tmpl.format('a', 'OFF'),
-    configopts_tmpl.format('so', 'ON'),
+    configopts_tmpl.format('OFF'),
+    configopts_tmpl.format('ON'),
 ]
 
 moduleclass = 'data'
