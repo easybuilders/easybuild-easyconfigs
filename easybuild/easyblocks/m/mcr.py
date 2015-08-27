@@ -33,17 +33,18 @@ EasyBuild support for installing MCR, implemented as an easyblock
 @author: Fotis Georgatos (Uni.Lu, NTUA)
 @author: Balazs Hajgato (Vrije Universiteit Brussel)
 """
-
 import re
 import os
 import shutil
+import stat
 
 from distutils.version import LooseVersion
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.build_log import EasyBuildError
-from easybuild.tools.filetools import read_file, write_file
+from easybuild.tools.filetools import adjust_permissions, read_file, write_file
 from easybuild.tools.run import run_cmd
+
 
 class EB_MCR(EasyBlock):
     """Support for installing MCR."""
@@ -53,8 +54,7 @@ class EB_MCR(EasyBlock):
         super(EB_MCR, self).__init__(*args, **kwargs)
         self.comp_fam = None
         self.configfilename = "my_installer_input.txt"
-        known_versions =  {'R2014a': 'v83', 'R2014b': 'v84', 'R2015a': 'v85'}
-        self.extradir = known_versions.get(self.version, 'UNKNOWN')
+        self.subdir = ''
 
     @staticmethod
     def extra_options():
@@ -69,19 +69,21 @@ class EB_MCR(EasyBlock):
 
         configfile = os.path.join(self.builddir, self.configfilename)
         if LooseVersion(self.version) < LooseVersion('2015a'):
-            shutil.copyfile("%s/installer_input.txt" % self.builddir, configfile)
-            read_file(configfile, config)
+            shutil.copyfile(os.path.join(self.cfg['start_dir'], 'installer_input.txt'), configfile)
+            config = read_file(configfile)
             config = re.sub(r"^# destinationFolder=.*", "destinationFolder=%s" % self.installdir, config, re.M)
             config = re.sub(r"^# agreeToLicense=.*", "agreeToLicense=Yes", config, re.M)
             config = re.sub(r"^# mode=.*", "mode=silent", config, re.M)
         else:
-            config = "destinationFolder=%s\n" % self.installdir
-            config += "agreeToLicense=Yes\n"
-            config += "mode=silent\n"
+            config = '\n'.join([
+                "destinationFolder=%s" % self.installdir,
+                "agreeToLicense=Yes",
+                "mode=silent",
+            ])
 
         write_file(configfile, config)
 
-        self.log.debug('configuration file written to %s:\n %s' % (configfile, config))
+        self.log.debug("configuration file written to %s:\n %s", configfile, config)
 
     def build_step(self):
         """No building of MCR, no sources available."""
@@ -93,14 +95,7 @@ class EB_MCR(EasyBlock):
         src = os.path.join(self.cfg['start_dir'], 'install')
 
         # make sure install script is executable
-        try:
-            if os.path.isfile(src):
-                self.log.info("Doing chmod on source file %s" % src)
-                os.chmod(src, 0755)
-            else:
-                self.log.info("Did not find source file %s" % src)
-        except OSError, err:
-            raise EasyBuildError("Failed to chmod install script: %s", err)
+        adjust_permissions(src, stat.S_IXUSR)
 
         # make sure $DISPLAY is not defined, which may lead to (hard to trace) problems
         # this is a workaround for not being able to specify --nodisplay to the install scripts
@@ -108,30 +103,37 @@ class EB_MCR(EasyBlock):
             os.environ.pop('DISPLAY')
 
         if not '_JAVA_OPTIONS' in self.cfg['preinstallopts']:
-            self.cfg['preinstallopts'] = ('export _JAVA_OPTIONS="%s" && ' % self.cfg['java_options']) + self.cfg['preinstallopts']
+            java_options = 'export _JAVA_OPTIONS="%s" && ' % self.cfg['java_options']
+            self.cfg['preinstallopts'] = java_options + self.cfg['preinstallopts']
+
         configfile = "%s/%s" % (self.builddir, self.configfilename)
         cmd = "%s ./install -v -inputFile %s %s" % (self.cfg['preinstallopts'], configfile, self.cfg['installopts'])
         run_cmd(cmd, log_all=True, simple=True)
 
+        # determine subdirectory (e.g. v84 (2014a, 2014b), v85 (2015a), ...)
+        subdirs = os.listdir(self.installdir)
+        if len(subdirs) == 1:
+            self.subdir = subdirs[0]
+        else:
+            raise EasyBuildError("Found multiple subdirectories, don't know which one to pick: %s", subdirs)
+
     def sanity_check_step(self):
         """Custom sanity check for MCR."""
-
         custom_paths = {
-            'files': [''],
-            'dirs': ['%s/%s/glnxa64' % (self.extradir[self.version], x) for x in ['runtime' , 'bin', 'sys/os']],
+            'files': [],
+            'dirs': [os.path.join(self.subdir, x, 'glnxa64') for x in ['runtime', 'bin', 'sys/os']],
         }
-
         super(EB_MCR, self).sanity_check_step(custom_paths=custom_paths)
 
     def make_module_extra(self):
         """Extend PATH and set proper _JAVA_OPTIONS (e.g., -Xmx)."""
-
-        extradir = self.extradir.get(self.version. 'UNKNOWN')
         txt = super(EB_MCR, self).make_module_extra()
 
-        txt += self.module_generator.set_environment('XAPPLRESDIR', os.path.join(self.installdir, self.extradir[self.version], 'X11', 'app-defaults'))
+        xapplresdir = os.path.join(self.installdir, self.subdir, 'X11', 'app-defaults')
+        txt += self.module_generator.set_environment('XAPPLRESDIR', xapplresdir)
         for ldlibdir in ['runtime', 'bin', os.path.join('sys', 'os')]:
-            txt += self.module_generator.prepend_paths('LD_LIBRARY_PATH', os.path.join(self.extradir[self.version], ldlibdir, 'glnxa64'))
+            libdir = os.path.join(self.subdir, ldlibdir, 'glnxa64')
+            txt += self.module_generator.prepend_paths('LD_LIBRARY_PATH', libdir)
 
         txt += self.module_generator.set_environment('_JAVA_OPTIONS', self.cfg['java_options'])
 
