@@ -53,12 +53,18 @@ class EB_BWA(ConfigureMake):
         """
         srcdir = self.cfg['start_dir']
         destdir = os.path.join(self.installdir, 'bin')
+        mandir = os.path.join(self.installdir, 'man')
+        manman1dir = os.path.join(self.installdir, 'man/man1')
+        manfile = os.path.join(srcdir, 'bwa.1')
         srcfile = None
         try:
             os.makedirs(destdir)
+            os.makedirs(mandir)
+            os.makedirs(manman1dir)
             for filename in self.files:
                 srcfile = os.path.join(srcdir, filename)
                 shutil.copy2(srcfile, destdir)
+            shutil.copy2(manfile, manman1dir)
         except OSError, err:
             raise EasyBuildError("Copying %s to installation dir %s failed: %s", srcfile, destdir, err)
 
