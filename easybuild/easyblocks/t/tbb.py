@@ -67,7 +67,7 @@ class EB_tbb(IntelBase):
             libglob = 'tbb/lib/intel64/cc*libc*_kernel*'
         else:
             libglob = 'tbb/lib/intel64/gcc*'
-        libs = glob.glob(libglob)
+        libs = sorted(glob.glob(libglob), key=LooseVersion)
         if len(libs):
             libdir = libs[-1]  # take the last one, should be ordered by cc get_version.
             # we're only interested in the last bit
