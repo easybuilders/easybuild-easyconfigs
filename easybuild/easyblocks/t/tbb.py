@@ -96,4 +96,7 @@ class EB_tbb(IntelBase):
         """Add correct path to lib to LD_LIBRARY_PATH. and intel license file"""
         txt = super(EB_tbb, self).make_module_extra()
         txt += self.module_generator.prepend_paths('LD_LIBRARY_PATH', [self.libpath])
+        txt += self.module_generator.prepend_paths('LIBRARY_PATH', [self.libpath])
+        txt += self.module_generator.prepend_paths('CPATH', [os.path.join('tbb', 'include')])
+        txt += self.module_generator.set_environment('TBBROOT', os.path.join(self.installdir, 'tbb'))
         return txt
