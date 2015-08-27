@@ -79,14 +79,6 @@ class EB_Inspector(IntelBase):
 
         return guesses
 
-    def make_module_extra(self):
-        """Custom variable definitions in module file."""
-        
-        txt = super(EB_Inspector, self).make_module_extra()
-        txt += self.module_generator.prepend_paths(self.license_env_var, self.license_file, allow_abs=True)
-
-        return txt
-
     def sanity_check_step(self):
         """Custom sanity check paths for Intel Inspector."""
 
