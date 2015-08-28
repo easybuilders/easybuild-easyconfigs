@@ -65,33 +65,22 @@ class EB_netCDF(CMakeMake):
             ConfigureMake.configure_step(self)
 
         else:
+            set.cfg.update('configopts', '-DCMAKE_BUILD_TYPE=RELEASE -DCMAKE_C_FLAGS_RELEASE="-DNDEBUG " ')
             hdf5 = get_software_root('HDF5')
-            if hdf5:
-                env.setvar('HDF5_ROOT', hdf5)
+            for (dep, libname) in [('cURL', 'curl'), ('HDF5', 'hdf5'), ('Szip', 'sz'), ('zlib', 'z')]:
+                dep_root = get_software_root(dep)
+                dep_libdir = get_software_libdir(dep)
+                if dep_root:
+                    set.cfg.update('configopts', '-D%s_INCLUDE_DIR=%s/include ' % (dep.upper(), dep_root))
+                    if dep == 'HDF5':
+                        env.setvar('HDF5_ROOT', hdf5)
+                        set.cfg.update('configopts', '-DHDF5_LIB=%s/libhdf5.so ' % dep_libdir)
+                        set.cfg.update('configopts', '-DHDF5_HL_LIB=%s/libhdf5_hl.so ' % dep_libdir)
+                    else:
+                        set.cfg.update('configopts', '-D%s_LIBRARY=%s/lib%s.so ' % (dep.upper(), dep_libdir, libname))
 
             CMakeMake.configure_step(self)
 
-        if LooseVersion(self.version) >= LooseVersion("4.3.3"):
-            set.cfg.update('configopts', '-DCMAKE_BUILD_TYPE=RELEASE -DCMAKE_C_FLAGS_RELEASE="-DNDEBUG " ')
-            hdf5 = get_software_root('HDF5')
-            hdf5_libdir = get_software_libdir('HDF5')
-            szip_libdir = get_software_libdir('Szip')
-            if hdf5_libdir and szip_libdir:
-                set.cfg.update('configopts', '-DHDF5_LIB=%s/libhdf5.so ' % hdf5_libdir)
-                set.cfg.update('configopts', '-DHDF5_HL_LIB=%s/libhdf5_hl.so ' % hdf5_libdir)
-                set.cfg.update('configopts', '-DHDF5_INCLUDE_DIR=%s/include ' % hdf5)
-                set.cfg.update('configopts', '-DSZIP_LIBRARY=%s/libsz.so ' % szip_libdir)
-
-            zlib_libdir = get_software_libdir('zlib')
-            if zlib_libdir:
-                 set.cfg.update('configopts', '-DZLIB_LIBRARY=%s/libz.so ' % zlib_libdir)
-
-            curl = get_software_root('cURL')
-            curl_libdir = get_software_libdir('cURL')
-            if curl_libdir:
-                set.cfg.update('configopts', '-DCURL_LIBRARY=%s/libcurl.so ' % curl_libdir)
-                set.cfg.update('configopts', '-DCURL_INCLUDE_DIR=%s/include ' % curl)
-                 
     def sanity_check_step(self):
         """
         Custom sanity check for netCDF
