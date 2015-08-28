@@ -65,18 +65,18 @@ class EB_netCDF(CMakeMake):
             ConfigureMake.configure_step(self)
 
         else:
-            set.cfg.update('configopts', '-DCMAKE_BUILD_TYPE=RELEASE -DCMAKE_C_FLAGS_RELEASE="-DNDEBUG " ')
+            self.cfg.update('configopts', '-DCMAKE_BUILD_TYPE=RELEASE -DCMAKE_C_FLAGS_RELEASE="-DNDEBUG " ')
             for (dep, libname) in [('cURL', 'curl'), ('HDF5', 'hdf5'), ('Szip', 'sz'), ('zlib', 'z')]:
                 dep_root = get_software_root(dep)
                 dep_libdir = get_software_libdir(dep)
                 if dep_root:
-                    set.cfg.update('configopts', '-D%s_INCLUDE_DIR=%s/include ' % (dep.upper(), dep_root))
+                    self.cfg.update('configopts', '-D%s_INCLUDE_DIR=%s/include ' % (dep.upper(), dep_root))
                     if dep == 'HDF5':
                         env.setvar('HDF5_ROOT', dep_root)
-                        set.cfg.update('configopts', '-DHDF5_LIB=%s/libhdf5.so ' % dep_libdir)
-                        set.cfg.update('configopts', '-DHDF5_HL_LIB=%s/libhdf5_hl.so ' % dep_libdir)
+                        self.cfg.update('configopts', '-DHDF5_LIB=%s/%s/libhdf5.so ' % (dep_root, dep_libdir))
+                        self.cfg.update('configopts', '-DHDF5_HL_LIB=%s/%s/libhdf5_hl.so ' % (dep_root, dep_libdir))
                     else:
-                        set.cfg.update('configopts', '-D%s_LIBRARY=%s/lib%s.so ' % (dep.upper(), dep_libdir, libname))
+                        self.cfg.update('configopts', '-D%s_LIBRARY=%s/%s/lib%s.so ' % (dep.upper(), dep_root, dep_libdir, libname))
 
             CMakeMake.configure_step(self)
 
