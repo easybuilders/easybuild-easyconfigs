@@ -66,7 +66,6 @@ class EB_netCDF(CMakeMake):
 
         else:
             set.cfg.update('configopts', '-DCMAKE_BUILD_TYPE=RELEASE -DCMAKE_C_FLAGS_RELEASE="-DNDEBUG " ')
-            hdf5 = get_software_root('HDF5')
             for (dep, libname) in [('cURL', 'curl'), ('HDF5', 'hdf5'), ('Szip', 'sz'), ('zlib', 'z')]:
                 dep_root = get_software_root(dep)
                 dep_libdir = get_software_libdir(dep)
