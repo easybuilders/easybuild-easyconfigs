@@ -40,7 +40,7 @@ import easybuild.tools.toolchain as toolchain
 from easybuild.easyblocks.generic.cmakemake import CMakeMake
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.tools.build_log import EasyBuildError
-from easybuild.tools.modules import get_software_root, get_software_version
+from easybuild.tools.modules import get_software_root, get_software_version, get_software_libdir
 
 
 class EB_netCDF(CMakeMake):
@@ -71,6 +71,27 @@ class EB_netCDF(CMakeMake):
 
             CMakeMake.configure_step(self)
 
+        if LooseVersion(self.version) >= LooseVersion("4.3.3"):
+            set.cfg.update('configopts', '-DCMAKE_BUILD_TYPE=RELEASE -DCMAKE_C_FLAGS_RELEASE="-DNDEBUG " ')
+            hdf5 = get_software_root('HDF5')
+            hdf5_libdir = get_software_libdir('HDF5')
+            szip_libdir = get_software_libdir('Szip')
+            if hdf5_libdir and szip_libdir:
+                set.cfg.update('configopts', '-DHDF5_LIB=%s/libhdf5.so ' % hdf5_libdir)
+                set.cfg.update('configopts', '-DHDF5_HL_LIB=%s/libhdf5_hl.so ' % hdf5_libdir)
+                set.cfg.update('configopts', '-DHDF5_INCLUDE_DIR=%s/include ' % hdf5)
+                set.cfg.update('configopts', '-DSZIP_LIBRARY=%s/libsz.so ' % szip_libdir)
+
+            zlib_libdir = get_software_libdir('zlib')
+            if zlib_libdir:
+                 set.cfg.update('configopts', '-DZLIB_LIBRARY=%s/libz.so ' % zlib_libdir)
+
+            curl = get_software_root('cURL')
+            curl_libdir = get_software_libdir('cURL')
+            if curl_lindir:
+                set.cfg.update('configopts', '-DCURL_LIBRARY=%s/libcurl.so ' % curl_libdir)
+                set.cfg.update('configopts', '-DCURL_INCLUDE_DIR=%s/include ' % curl)
+                 
     def sanity_check_step(self):
         """
         Custom sanity check for netCDF
