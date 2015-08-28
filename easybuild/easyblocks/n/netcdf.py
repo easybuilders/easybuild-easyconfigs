@@ -88,7 +88,7 @@ class EB_netCDF(CMakeMake):
 
             curl = get_software_root('cURL')
             curl_libdir = get_software_libdir('cURL')
-            if curl_lindir:
+            if curl_libdir:
                 set.cfg.update('configopts', '-DCURL_LIBRARY=%s/libcurl.so ' % curl_libdir)
                 set.cfg.update('configopts', '-DCURL_INCLUDE_DIR=%s/include ' % curl)
                  
