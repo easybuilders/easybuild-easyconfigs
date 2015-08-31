@@ -15,15 +15,21 @@ sources = ['p7zip_%(version)s_src_all.tar.bz2']
 prebuildopts = "cp makefile.linux_amd64  makefile.linux &&"
 buildopts = 'all3 CC="$CC" CXX="$CXX" OPTFLAGS="$CFLAGS"'
 
-files_to_copy = ['bin']
+files_to_copy = [
+    (['bin/7za', 'bin/7zr', 'bin/7zCon.sfx'], 'bin'),  # stand-alone binaries
+    (['bin/7z', 'bin/7z.so', 'bin/Codecs'], 'libexec'),  # 7z requires 7z.so plugin in same directory
+]
+
+# put script in place for 7z, since it *must* be called full path, to ensure that 7z.so is found in the same directory
+# see also http://sourceforge.net/p/p7zip/discussion/383044/thread/5e4085ab/
+postinstallcmds = [
+    "echo '#!/bin/sh\n%(installdir)s/libexec/7z $@' > %(installdir)s/bin/7z",
+    "chmod a+x %(installdir)s/bin/7z",
+]
 
 sanity_check_paths = {
-    'files': ['bin/7z', 'bin/7za', 'bin/7zCon.sfx', 'bin/7zr', 'bin/7z.so', 'bin/Codecs/Rar29.so'],
-    'dirs': [],
+    'files': ['bin/7z', 'bin/7za', 'bin/7zCon.sfx', 'bin/7zr', 'libexec/7z', 'libexec/7z.so'],
+    'dirs': ['libexec/Codecs'],
 }
-
-# 7z must be called full path in order to avoid problem with 7z.so not being found
-# cfr. http://sourceforge.net/p/p7zip/discussion/383044/thread/5e4085ab/
-modaliases = {'7z': '%(installdir)s/bin/7z'}
 
 moduleclass = 'tools'
