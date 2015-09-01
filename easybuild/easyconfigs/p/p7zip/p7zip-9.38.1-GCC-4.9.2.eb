@@ -24,12 +24,18 @@ files_to_copy = [
 # see also http://sourceforge.net/p/p7zip/discussion/383044/thread/5e4085ab/
 postinstallcmds = [
     "echo '#!/bin/sh\n%(installdir)s/libexec/7z $@' > %(installdir)s/bin/7z",
-    "chmod a+x %(installdir)s/bin/7z",
+    "chmod +x %(installdir)s/bin/7z",  # set execution bits according to current umask
 ]
 
 sanity_check_paths = {
     'files': ['bin/7z', 'bin/7za', 'bin/7zCon.sfx', 'bin/7zr', 'libexec/7z', 'libexec/7z.so'],
     'dirs': ['libexec/Codecs'],
 }
+
+# check whether 7z script works
+sanity_check_commands = [
+    ('7z', '--help'),  # print help, exit 0
+    ('7z', "x || test $? -gt 0"),  # missing argument, exit code > 0
+]
 
 moduleclass = 'tools'
