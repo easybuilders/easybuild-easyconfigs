@@ -36,7 +36,7 @@ import shutil
 import sys
 import tempfile
 import unittest
-from vsc import fancylogger
+from vsc.utils import fancylogger
 
 from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.config import set_tmpdir

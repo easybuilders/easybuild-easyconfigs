@@ -45,7 +45,7 @@ from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.run import run_cmd
 
-from vsc import fancylogger
+from vsc.utils import fancylogger
 _log = fancylogger.getLogger('generic.intelbase')
 
 
@@ -90,10 +90,6 @@ class IntelBase(EasyBlock):
         self.home_subdir = os.path.join(os.getenv('HOME'), 'intel')
         common_tmp_dir = os.path.dirname(tempfile.gettempdir())  # common tmp directory, same across nodes
         self.home_subdir_local = os.path.join(common_tmp_dir, os.getenv('USER'), 'easybuild_intel')
-
-        # prepare (local) 'intel' home subdir
-        self.setup_local_home_subdir()
-        self.clean_home_subdir()
 
     @staticmethod
     def extra_options(extra_vars=None):
@@ -164,6 +160,10 @@ class IntelBase(EasyBlock):
 
     def configure_step(self):
         """Configure: handle license file and clean home dir."""
+
+        # prepare (local) 'intel' home subdir
+        self.setup_local_home_subdir()
+        self.clean_home_subdir()
 
         lic_env_var = None  # environment variable that will be used
         default_lic_env_var = 'INTEL_LICENSE_FILE'
