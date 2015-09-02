@@ -36,7 +36,8 @@ import shutil
 import sys
 import tempfile
 import unittest
-from vsc import fancylogger
+
+from vsc.utils import fancylogger
 
 import easybuild.tools.build_log  # initialize EasyBuild logging, so we disable it
 import test.easyconfigs.easyconfigs as e
