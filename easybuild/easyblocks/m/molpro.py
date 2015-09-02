@@ -32,14 +32,30 @@ import os
 import re
 import sys
 
+from easybuild.easyblocks.generic.binary import Binary
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
+from easybuild.framework.easyblock import EasyBlock
+from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.filetools import mkdir, read_file
-from easybuild.tools.run import run_cmd
+from easybuild.tools.run import run_cmd, run_cmd_qa
 
 
-class EB_Molpro(ConfigureMake):
+class EB_Molpro(Binary, ConfigureMake):
     """Support for building and installing Molpro."""
+
+    @staticmethod
+    def extra_options():
+        """Define custom easyconfig parameters for Molpro."""
+        # Combine extra variables from Binary and ConfigureMake easyblocks as
+        # well as those needed for Molpro specifically
+        extra_vars = Binary.extra_options()
+        extra_vars = ConfigureMake.extra_options(extra_vars)
+        extra_vars.update({
+            'license_token_present': [True, "Can we supply a license token at install time?", CUSTOM],
+            'precompiled_binaries': [False, "Are we installing precompiled binaries?", CUSTOM],
+        })
+        return EasyBlock.extra_options(extra_vars)
 
     def __init__(self, *args, **kwargs):
         """Easyblock constructor, initialize class variables specific to Molpro and check on license token."""
@@ -51,10 +67,16 @@ class EB_Molpro(ConfigureMake):
         self.cleanup_token_symlink = False
         self.license_token = os.path.join(os.path.expanduser('~'), '.molpro', 'token')
 
+    def extract_step(self):
+        if self.cfg['precompiled_binaries']:
+            Binary.extract_step(self)
+        else:
+            ConfigureMake.extract_step(self)
+
     def configure_step(self):
         """Custom configuration procedure for Molpro: use 'configure -batch'."""
 
-        if not os.path.isfile(self.license_token):
+        if self.cfg['license_token_present'] and not os.path.isfile(self.license_token):
             if self.cfg['license_file'] is not None and os.path.isfile(self.cfg['license_file']):
                 # put symlink in place to specified license file in $HOME/.molpro/token
                 # other approaches (like defining $MOLPRO_KEY) don't seem to work
@@ -67,8 +89,12 @@ class EB_Molpro(ConfigureMake):
                     raise EasyBuildError("Failed to create symlink for license token at %s", self.license_token)
 
             else:
-                # no license token available, so fail early
-                raise EasyBuildError("No license token found at either %s or via 'license_file'", self.license_token)
+                self.cfg['license_token_present'] = False
+                self.log.warning("No licence token found at either {0} or via 'license_file'".format(self.license_token))
+        
+        # Precompiled binaries
+        if self.cfg['precompiled_binaries']:
+            return
 
         # installation prefix
         self.cfg.update('configopts', "-prefix %s" % self.installdir)
@@ -139,13 +165,21 @@ class EB_Molpro(ConfigureMake):
         cfgtxt = read_file(cfgfile)
         self.log.info("Contents of CONFIG file:\n%s", cfgtxt)
 
-    def test_step(self):
-        """Custom test procedure for Molpro: make quicktest, make test."""
-        # check 'main routes' only
-        run_cmd("make quicktest")
+    def build_step(self):
+        if not self.cfg['precompiled_binaries']:
+            ConfigureMake.build_step(self)
 
-        # extensive test
-        run_cmd("make MOLPRO_OPTIONS='-n%s' test" % self.cfg['parallel'])
+    def test_step(self):
+        
+        # Only bother to check if the licence token is available
+        if self.cfg['license_token_present'] and not self.cfg['precompiled_binaries']:
+        
+            """Custom test procedure for Molpro: make quicktest, make test."""
+            # check 'main routes' only
+            run_cmd("make quicktest")
+
+            # extensive test
+            run_cmd("make MOLPRO_OPTIONS='-n%s' test" % self.cfg['parallel'])
 
     def install_step(self):
         """
@@ -154,15 +188,45 @@ class EB_Molpro(ConfigureMake):
         * run 'make tuning'
         * install with 'make install'
         """
-        run_cmd("make tuning")
 
-        super(EB_Molpro, self).install_step()
+        if self.cfg['precompiled_binaries']:
+            """Build by running the command with the inputfiles"""
+            try:
+                os.chdir(self.cfg['start_dir'])
+            except OSError, err:
+                raise EasyBuildError("Failed to move (back) to %s: %s", self.cfg['start_dir'], err)
 
-        # put original LAUNCHER definition back in place in bin/molpro that got installed,
-        # since the value used during installation point to temporary files
-        for line in fileinput.input(os.path.join(self.full_prefix, 'bin', 'molpro'), inplace=1):
-            line = re.sub(r"^(LAUNCHER\s*=\s*).*$", r"\1 %s" % self.orig_launcher, line)
-            sys.stdout.write(line)
+            for src in self.src:
+                # determine command to use
+                # If we need to, we can always re-use the strategy
+                # in the CmdCp easyblock down the track -- but for
+                # now, let's keep it simple
+                cmd = "{0} -batch -instbin {1}/bin -instlib {1}/lib".format(os.path.join(".", src['name']),self.installdir)
+                # Questions whose text must match exactly as asked
+                qa = {
+                        "Please give your username for accessing molpro\n": '',
+                        "Please give your password for accessing molpro\n": '',
+                }
+                # Questions whose text may be matched as a regular expression
+                stdqa = {
+                        r"Enter installation directory for executable files \[.*\]\n": "{0}/bin".format(self.installdir),
+                        r"Enter installation directory for library files \[.*\]\n": "{0}/lib".format(self.installdir),
+                        r"directory .* does not exist, try to create [Y]/n\n": '',
+                }
+                run_cmd_qa(cmd, qa=qa, std_qa=stdqa, log_all=True, simple=True)
+
+        else:
+
+            if self.cfg['license_token_present']:
+                run_cmd("make tuning")
+
+            ConfigureMake.install_step(self)
+
+            # put original LAUNCHER definition back in place in bin/molpro that got installed,
+            # since the value used during installation point to temporary files
+            for line in fileinput.input(os.path.join(self.full_prefix, 'bin', 'molpro'), inplace=1):
+                line = re.sub(r"^(LAUNCHER\s*=\s*).*$", r"\1 %s" % self.orig_launcher, line)
+                sys.stdout.write(line)
 
         if self.cleanup_token_symlink:
             try:
@@ -182,8 +246,16 @@ class EB_Molpro(ConfigureMake):
     def sanity_check_step(self):
         """Custom sanity check for Molpro."""
         prefix_subdir = os.path.basename(self.full_prefix)
+        files_to_check = ['bin/molpro']
+        dirs_to_check = []
+        if not self.cfg['precompiled_binaries']:
+            files_to_check.extend(['bin/molpro.exe'])
+            dirs_to_check.extend(['doc', 'examples', 'utilities'])
+        if self.cfg['license_token_present']:
+            files_to_check.extend(['lib/.token'])
+
         custom_paths = {
-            'files': [os.path.join(prefix_subdir, x) for x in ['bin/molpro.exe', 'bin/molpro', 'lib/.token']],
-            'dirs': [os.path.join(prefix_subdir, x) for x in ['doc', 'examples', 'utilities']],
+            'files': [os.path.join(prefix_subdir, x) for x in files_to_check],
+            'dirs': [os.path.join(prefix_subdir, x) for x in dirs_to_check],
         }
         super(EB_Molpro, self).sanity_check_step(custom_paths=custom_paths)
