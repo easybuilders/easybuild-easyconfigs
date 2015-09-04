@@ -80,7 +80,7 @@ class EB_netCDF(CMakeMake):
                         self.cfg.update('configopts', '-DHDF5_HL_LIB=%s ' % libhdf5_hl)
                     else:
                         libso = os.path.join(dep_root, dep_libdir, 'lib%s.so' % libname)
-                        self.cfg.update('configopts', '-D%s_LIBRARY=%s/%s/lib%s.so ' % (dep.upper(), libso))
+                        self.cfg.update('configopts', '-D%s_LIBRARY=%s ' % (dep.upper(), libso))
 
             CMakeMake.configure_step(self)
 
