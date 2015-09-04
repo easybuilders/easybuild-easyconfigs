@@ -195,7 +195,7 @@ class EB_CP2K(EasyBlock):
         # PLUMED
         if self.cfg["plumed"]:
             if not get_software_root('PLUMED'):
-                raise EasyBuildError("The PLUMED module needs to be loaded to use PLUMED")
+                raise EasyBuildError("The PLUMED module needs to be loaded to build CP2K with PLUMED support")
             options['LIBS'] += ' -lplumed'
             options['DFLAGS'] += ' -D__PLUMED2'
 
@@ -303,7 +303,7 @@ class EB_CP2K(EasyBlock):
                     self.log.debug("Determined MPI2 compatibility based on loaded MPI module: %s")
                 else:
                     self.log.debug("MPI-2 supporting MPI library %s not loaded.")
-            
+
         if not mpi2:
             raise EasyBuildError("CP2K needs MPI-2, no known MPI-2 supporting library loaded?")
 
@@ -379,7 +379,7 @@ class EB_CP2K(EasyBlock):
             # throw a warning, since CP2K without LibInt doesn't make much sense
             self.log.warning("LibInt module not loaded, so building without LibInt support")
 
-            
+
         libxc = get_software_root('libxc')
         if libxc:
             cur_libxc_version = get_software_version('libxc')
