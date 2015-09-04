@@ -96,6 +96,7 @@ class EB_CP2K(EasyBlock):
             'maxtasks': [3, ("Maximum number of CP2K instances run at "
                              "the same time during testing"), CUSTOM],
             'runtest': [True, "Build and run CP2K tests", CUSTOM],
+            'plumed': [False, "Enable PLUMED support", CUSTOM],
         }
         return EasyBlock.extra_options(extra_vars)
 
@@ -190,6 +191,13 @@ class EB_CP2K(EasyBlock):
 
         if os.getenv('LIBSCALAPACK', None) is not None:
             options = self.configure_ScaLAPACK(options)
+
+        # PLUMED
+        if self.cfg["plumed"]:
+            if not get_software_root('PLUMED'):
+                raise EasyBuildError("The PLUMED module needs to be loaded to use PLUMED")
+            options['LIBS'] += ' -lplumed'
+            options['DFLAGS'] += ' -D__PLUMED2'
 
         # avoid group nesting
         options['LIBS'] = options['LIBS'].replace('-Wl,--start-group', '').replace('-Wl,--end-group', '')
