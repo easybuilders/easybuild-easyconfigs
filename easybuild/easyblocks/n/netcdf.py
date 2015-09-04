@@ -70,13 +70,17 @@ class EB_netCDF(CMakeMake):
                 dep_root = get_software_root(dep)
                 dep_libdir = get_software_libdir(dep)
                 if dep_root:
-                    self.cfg.update('configopts', '-D%s_INCLUDE_DIR=%s/include ' % (dep.upper(), dep_root))
+                    incdir = os.path.join(dep_root, 'include')
+                    self.cfg.update('configopts', '-D%s_INCLUDE_DIR=%s ' % (dep.upper(), incdir))
                     if dep == 'HDF5':
                         env.setvar('HDF5_ROOT', dep_root)
-                        self.cfg.update('configopts', '-DHDF5_LIB=%s/%s/libhdf5.so ' % (dep_root, dep_libdir))
-                        self.cfg.update('configopts', '-DHDF5_HL_LIB=%s/%s/libhdf5_hl.so ' % (dep_root, dep_libdir))
+                        libhdf5 = os.path.join(dep_root, dep_libdir, 'libhdf5.so')
+                        self.cfg.update('configopts', '-DHDF5_LIB=%s ' % libhdf5)
+                        libhdf5_hl = os.path.join(dep_root, dep_libdir, 'libhdf5_hl.so')
+                        self.cfg.update('configopts', '-DHDF5_HL_LIB=%s ' % libhdf5_hl)
                     else:
-                        self.cfg.update('configopts', '-D%s_LIBRARY=%s/%s/lib%s.so ' % (dep.upper(), dep_root, dep_libdir, libname))
+                        libso = os.path.join(dep_root, dep_libdir, 'lib%s.so' % libname)
+                        self.cfg.update('configopts', '-D%s_LIBRARY=%s/%s/lib%s.so ' % (dep.upper(), libso))
 
             CMakeMake.configure_step(self)
 
