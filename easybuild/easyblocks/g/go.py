@@ -61,7 +61,7 @@ class EB_Go(ConfigureMake):
 
         # $GOROOT_FINAL only specifies the location of the final installation, which gets baked into the binaries
         # the installation itself is *not* done by the all.bash script, that needs to be done manually
-        cmd = "GOROOT_FINAL=%s ./all.bash" % self.installdir
+        cmd = "GOROOT_BOOTSTRAP=%s GOROOT_FINAL=%s ./all.bash" % (os.environ.get('EBROOTGO'),self.installdir)
         run_cmd(cmd, log_all=True, simple=False)
 
         try:
