@@ -1,0 +1,72 @@
+diff -ru a/bin/myhadoop-configure.sh b/bin/myhadoop-configure.sh
+--- a/bin/myhadoop-configure.sh	2014-07-04 02:02:29.000000000 +0200
++++ b/bin/myhadoop-configure.sh	2015-09-08 17:01:37.061966000 +0200
+@@ -146,15 +146,15 @@
+     esac
+ done
+ 
+-if [ "z$HADOOP_HOME" == "z" ]; then
++if [ "z$EBROOTHADOOP" == "z" ]; then
+     if [ "z$HADOOP_PREFIX" == "z" ]; then
+-        echo 'You must set $HADOOP_HOME before configuring a new cluster.' >&2
++        echo 'You must set $EBROOTHADOOP before configuring a new cluster.' >&2
+         exit 1
+     else
+         HADOOP_HOME=$HADOOP_PREFIX
+     fi
+ fi
+-mh_print "Using HADOOP_HOME=$HADOOP_HOME"
++mh_print "Using HADOOP_HOME=$EBROOTHADOOP"
+ 
+ if [ "z$MH_SCRATCH_DIR" == "z" ]; then
+     echo "You must specify the local disk filesystem location with -s.  Aborting." >&2
+@@ -196,12 +196,15 @@
+ mkdir -p $HADOOP_CONF_DIR
+ 
+ ### First copy over all default Hadoop configs
+-if [ -d $HADOOP_HOME/conf ]; then           # Hadoop 1.x
+-  cp $HADOOP_HOME/conf/* $HADOOP_CONF_DIR
++if [ -d $EBROOTHADOOP/conf ]; then           # Hadoop 1.x
++  cp $EBROOTHADOOP/conf/* $HADOOP_CONF_DIR
+   MH_HADOOP_VERS=1
+-elif [ -d $HADOOP_HOME/etc/hadoop ]; then   # Hadoop 2.x
+-  cp $HADOOP_HOME/etc/hadoop/* $HADOOP_CONF_DIR
++elif [ -d $EBROOTHADOOP/etc/hadoop ]; then   # Hadoop 2.x
++  cp $EBROOTHADOOP/etc/hadoop/* $HADOOP_CONF_DIR
+   MH_HADOOP_VERS=2
++  cd $HADOOP_CONF_DIR
++  patch < $MH_HOME/myhadoop-2.2.0.patch 
++  cd -
+ fi
+ 
+ ### Pick the master node as the first node in the nodefile
+@@ -283,16 +286,16 @@
+ ### Format HDFS if it does not already exist from persistent mode
+ if [ ! -e ${config_subs[DFS_NAME_DIR]}/current ]; then
+   if [ $MH_HADOOP_VERS -eq 1 ]; then
+-    HADOOP_CONF_DIR=$HADOOP_CONF_DIR $HADOOP_HOME/bin/hadoop namenode -format -nonInteractive -force
++    HADOOP_CONF_DIR=$HADOOP_CONF_DIR $EBROOTHADOOP/bin/hadoop namenode -format -nonInteractive -force
+   elif [ $MH_HADOOP_VERS -eq 2 ]; then
+-    HADOOP_CONF_DIR=$HADOOP_CONF_DIR $HADOOP_HOME/bin/hdfs namenode -format
++    HADOOP_CONF_DIR=$HADOOP_CONF_DIR $EBROOTHADOOP/bin/hdfs namenode -format
+   else
+     mh_print "Unknown Hadoop version.  You must format namenode manually."
+   fi
+ fi
+ 
+-### Enable Spark support if SPARK_HOME is defined
+-if [ "z$SPARK_HOME" != "z" ]; then
++### Enable Spark support if EBROOTSPARK is defined
++if [ "z$EBROOTSPARK" != "z" ]; then
+   mh_print " "
+   mh_print "Enabling experimental Spark support"
+   if [ "z$SPARK_CONF_DIR" == "z" ]; then
+@@ -302,7 +305,7 @@
+   mh_print " "
+ 
+   mkdir -p $SPARK_CONF_DIR
+-  cp $SPARK_HOME/conf/* $SPARK_CONF_DIR/
++  cp $EBROOTSPARK/conf/* $SPARK_CONF_DIR/
+   cp $HADOOP_CONF_DIR/slaves $SPARK_CONF_DIR/slaves
+ 
+   cat <<EOF >> $SPARK_CONF_DIR/spark-env.sh

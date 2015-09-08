@@ -1,0 +1,56 @@
+diff -ru a/examples/torque.qsub b/examples/torque.qsub
+--- a/examples/torque.qsub	2014-07-04 02:02:29.000000000 +0200
++++ b/examples/torque.qsub	2015-09-08 17:05:41.826296000 +0200
+@@ -1,40 +1,36 @@
+-#!/bin/bash
++#!/bin/bash -l
+ ################################################################################
+ #  torque.qsub - A sample submit script for Torque that illustrates how to
+ #    spin up a Hadoop cluster for a map/reduce task using myHadoop
+ #
+ #  Glenn K. Lockwood, San Diego Supercomputer Center             February 2014
+ ################################################################################
+-#PBS -q normal
+ #PBS -l nodes=4:ppn=16
+ #PBS -l walltime=1:00:00
+ 
+ cd $PBS_O_WORKDIR
+ 
+-### If these aren't already in your environment (e.g., .bashrc), you must define
+-### them.  We assume hadoop and myHadoop were installed in $HOME/hadoop-stack
+-export HADOOP_HOME=$HOME/hadoop-stack/hadoop-1.2.1
+-export PATH=$HADOOP_HOME/bin:$HOME/hadoop-stack/myhadoop/bin:$PATH:$PATH
+-export JAVA_HOME=/usr/java/latest
++module load Hadoop/2.6.0-cdh5.4.5-native
++module load myHadoop/v0.40a-sdsc
+ 
+ export HADOOP_CONF_DIR=$PBS_O_WORKDIR/hadoop-conf.$PBS_JOBID
+ 
+-myhadoop-configure.sh -s /scratch/$USER/$PBS_JOBID
++myhadoop-configure.sh -s $VSC_NODE_SCRATCH/$PBS_JOBID
+ 
+ if [ ! -f ./pg2701.txt ]; then
+   echo "*** Retrieving some sample input data"
+   wget 'http://www.gutenberg.org/cache/epub/2701/pg2701.txt'
+ fi
+ 
+-$HADOOP_HOME/bin/start-all.sh
++start-all.sh
+ 
+-$HADOOP_HOME/bin/hadoop dfs -mkdir data
+-$HADOOP_HOME/bin/hadoop dfs -put ./pg2701.txt data/
+-$HADOOP_HOME/bin/hadoop dfs -ls data
+-$HADOOP_HOME/bin/hadoop jar $HADOOP_HOME/hadoop-examples-*.jar wordcount data wordcount-output
+-$HADOOP_HOME/bin/hadoop dfs -ls wordcount-output
+-$HADOOP_HOME/bin/hadoop dfs -get wordcount-output ./
++hadoop dfs -mkdir data
++hadoop dfs -put ./pg2701.txt data/
++hadoop dfs -ls data
++hadoop jar $EBROOTHADOOP/hadoop-examples-*.jar wordcount data wordcount-output
++hadoop dfs -ls wordcount-output
++hadoop dfs -get wordcount-output ./
+ 
+-$HADOOP_HOME/bin/stop-all.sh
++stop-all.sh
+ 
+ myhadoop-cleanup.sh
