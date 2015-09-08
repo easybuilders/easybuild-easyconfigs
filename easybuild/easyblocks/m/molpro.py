@@ -41,7 +41,7 @@ from easybuild.tools.filetools import mkdir, read_file
 from easybuild.tools.run import run_cmd, run_cmd_qa
 
 
-class EB_Molpro(Binary, ConfigureMake):
+class EB_Molpro(ConfigureMake, Binary):
     """Support for building and installing Molpro."""
 
     @staticmethod
@@ -50,9 +50,8 @@ class EB_Molpro(Binary, ConfigureMake):
         # Combine extra variables from Binary and ConfigureMake easyblocks as
         # well as those needed for Molpro specifically
         extra_vars = Binary.extra_options()
-        extra_vars = ConfigureMake.extra_options(extra_vars)
+        extra_vars = super.extra_options(extra_vars)
         extra_vars.update({
-            'license_token_present': [True, "Can we supply a license token at install time?", CUSTOM],
             'precompiled_binaries': [False, "Are we installing precompiled binaries?", CUSTOM],
         })
         return EasyBlock.extra_options(extra_vars)
@@ -71,12 +70,12 @@ class EB_Molpro(Binary, ConfigureMake):
         if self.cfg['precompiled_binaries']:
             Binary.extract_step(self)
         else:
-            ConfigureMake.extract_step(self)
+            super.extract_step(self)
 
     def configure_step(self):
         """Custom configuration procedure for Molpro: use 'configure -batch'."""
 
-        if self.cfg['license_token_present'] and not os.path.isfile(self.license_token):
+        if not os.path.isfile(self.license_token):
             if self.cfg['license_file'] is not None and os.path.isfile(self.cfg['license_file']):
                 # put symlink in place to specified license file in $HOME/.molpro/token
                 # other approaches (like defining $MOLPRO_KEY) don't seem to work
@@ -89,90 +88,88 @@ class EB_Molpro(Binary, ConfigureMake):
                     raise EasyBuildError("Failed to create symlink for license token at %s", self.license_token)
 
             else:
-                self.cfg['license_token_present'] = False
                 self.log.warning("No licence token found at either {0} or via 'license_file'".format(self.license_token))
         
-        # Precompiled binaries
-        if self.cfg['precompiled_binaries']:
-            return
+        # Only do the rest of the configuration if we're building from source 
+        if not self.cfg['precompiled_binaries']:
 
-        # installation prefix
-        self.cfg.update('configopts', "-prefix %s" % self.installdir)
+            # installation prefix
+            self.cfg.update('configopts', "-prefix %s" % self.installdir)
 
-        # compilers
+            # compilers
 
-        # compilers & MPI
-        if self.toolchain.options.get('usempi', None):
-            self.cfg.update('configopts', "-%s -%s" % (os.environ['CC_SEQ'], os.environ['F90_SEQ']))
-            if 'MPI_INC_DIR' in os.environ:
-                self.cfg.update('configopts', "-mpp -mppbase %s" % os.environ['MPI_INC_DIR'])
+            # compilers & MPI
+            if self.toolchain.options.get('usempi', None):
+                self.cfg.update('configopts', "-%s -%s" % (os.environ['CC_SEQ'], os.environ['F90_SEQ']))
+                if 'MPI_INC_DIR' in os.environ:
+                    self.cfg.update('configopts', "-mpp -mppbase %s" % os.environ['MPI_INC_DIR'])
+                else:
+                    raise EasyBuildError("$MPI_INC_DIR not defined")
             else:
-                raise EasyBuildError("$MPI_INC_DIR not defined")
-        else:
-            self.cfg.update('configopts', "-%s -%s" % (os.environ['CC'], os.environ['F90']))
+                self.cfg.update('configopts', "-%s -%s" % (os.environ['CC'], os.environ['F90']))
 
-        # BLAS/LAPACK
-        if 'BLAS_LIB_DIR' in os.environ:
-            self.cfg.update('configopts', "-blas -blaspath %s" % os.environ['BLAS_LIB_DIR'])
-        else:
-            raise EasyBuildError("$BLAS_LIB_DIR not defined")
+            # BLAS/LAPACK
+            if 'BLAS_LIB_DIR' in os.environ:
+                self.cfg.update('configopts', "-blas -blaspath %s" % os.environ['BLAS_LIB_DIR'])
+            else:
+                raise EasyBuildError("$BLAS_LIB_DIR not defined")
 
-        if 'LAPACK_LIB_DIR' in os.environ:
-            self.cfg.update('configopts', "-lapack -lapackpath %s" % os.environ['LAPACK_LIB_DIR'])
-        else:
-            raise EasyBuildError("$LAPACK_LIB_DIR not defined")
+            if 'LAPACK_LIB_DIR' in os.environ:
+                self.cfg.update('configopts', "-lapack -lapackpath %s" % os.environ['LAPACK_LIB_DIR'])
+            else:
+                raise EasyBuildError("$LAPACK_LIB_DIR not defined")
 
-        # 32 vs 64 bit
-        if self.toolchain.options.get('32bit', None):
-            self.cfg.update('configopts', '-i4')
-        else:
-            self.cfg.update('configopts', '-i8')
+            # 32 vs 64 bit
+            if self.toolchain.options.get('32bit', None):
+                self.cfg.update('configopts', '-i4')
+            else:
+                self.cfg.update('configopts', '-i8')
 
-        run_cmd("./configure -batch %s" % self.cfg['configopts'])
+            run_cmd("./configure -batch %s" % self.cfg['configopts'])
 
-        cfgfile = os.path.join(self.cfg['start_dir'], 'CONFIG')
-        cfgtxt = read_file(cfgfile)
+            cfgfile = os.path.join(self.cfg['start_dir'], 'CONFIG')
+            cfgtxt = read_file(cfgfile)
 
-        # determine original LAUNCHER value
-        launcher_regex = re.compile('^LAUNCHER=(.*)$', re.M)
-        res = launcher_regex.search(cfgtxt)
-        if res:
-            self.orig_launcher = res.group(1)
-            self.log.debug("Found original value for LAUNCHER: %s", self.orig_launcher)
-        else:
-            raise EasyBuildError("Failed to determine LAUNCHER value")
+            # determine original LAUNCHER value
+            launcher_regex = re.compile('^LAUNCHER=(.*)$', re.M)
+            res = launcher_regex.search(cfgtxt)
+            if res:
+                self.orig_launcher = res.group(1)
+                self.log.debug("Found original value for LAUNCHER: %s", self.orig_launcher)
+            else:
+                raise EasyBuildError("Failed to determine LAUNCHER value")
 
-        # determine full installation prefix
-        prefix_regex = re.compile('^PREFIX=(.*)$', re.M)
-        res = prefix_regex.search(cfgtxt)
-        if res:
-            self.full_prefix = res.group(1)
-            self.log.debug("Found full installation prefix: %s", self.full_prefix)
-        else:
-            raise EasyBuildError("Failed to determine full installation prefix")
+            # determine full installation prefix
+            prefix_regex = re.compile('^PREFIX=(.*)$', re.M)
+            res = prefix_regex.search(cfgtxt)
+            if res:
+                self.full_prefix = res.group(1)
+                self.log.debug("Found full installation prefix: %s", self.full_prefix)
+            else:
+                raise EasyBuildError("Failed to determine full installation prefix")
 
-        # determine MPI launcher command that can be used during build/test
-        # obtain command with specific number of cores (required by mpi_cmd_for), then replace that number with '%n'
-        launcher = self.toolchain.mpi_cmd_for('%x', self.cfg['parallel'])
-        launcher = launcher.replace(' %s' % self.cfg['parallel'], ' %n')
+            # determine MPI launcher command that can be used during build/test
+            # obtain command with specific number of cores (required by mpi_cmd_for), then replace that number with '%n'
+            launcher = self.toolchain.mpi_cmd_for('%x', self.cfg['parallel'])
+            launcher = launcher.replace(' %s' % self.cfg['parallel'], ' %n')
 
-        # patch CONFIG file to change LAUNCHER definition, in order to avoid having to start mpd
-        for line in fileinput.input(cfgfile, inplace=1, backup='.orig'):
-            line = re.sub(r"^(LAUNCHER\s*=\s*).*$", r"\1 %s" % launcher, line)
-            sys.stdout.write(line)
+            # patch CONFIG file to change LAUNCHER definition, in order to avoid having to start mpd
+            for line in fileinput.input(cfgfile, inplace=1, backup='.orig'):
+                line = re.sub(r"^(LAUNCHER\s*=\s*).*$", r"\1 %s" % launcher, line)
+                sys.stdout.write(line)
 
-        # reread CONFIG and log contents
-        cfgtxt = read_file(cfgfile)
-        self.log.info("Contents of CONFIG file:\n%s", cfgtxt)
+            # reread CONFIG and log contents
+            cfgtxt = read_file(cfgfile)
+            self.log.info("Contents of CONFIG file:\n%s", cfgtxt)
 
     def build_step(self):
         if not self.cfg['precompiled_binaries']:
-            ConfigureMake.build_step(self)
+            super.build_step(self)
 
     def test_step(self):
         
         # Only bother to check if the licence token is available
-        if self.cfg['license_token_present'] and not self.cfg['precompiled_binaries']:
+        if os.path.isfile(self.license_token) and not self.cfg['precompiled_binaries']:
         
             """Custom test procedure for Molpro: make quicktest, make test."""
             # check 'main routes' only
@@ -217,10 +214,10 @@ class EB_Molpro(Binary, ConfigureMake):
 
         else:
 
-            if self.cfg['license_token_present']:
+            if os.path.isfile(self.license_token):
                 run_cmd("make tuning")
 
-            ConfigureMake.install_step(self)
+            super.install_step(self)
 
             # put original LAUNCHER definition back in place in bin/molpro that got installed,
             # since the value used during installation point to temporary files
@@ -251,8 +248,6 @@ class EB_Molpro(Binary, ConfigureMake):
         if not self.cfg['precompiled_binaries']:
             files_to_check.extend(['bin/molpro.exe'])
             dirs_to_check.extend(['doc', 'examples', 'utilities'])
-        if self.cfg['license_token_present']:
-            files_to_check.extend(['lib/.token'])
 
         custom_paths = {
             'files': [os.path.join(prefix_subdir, x) for x in files_to_check],
