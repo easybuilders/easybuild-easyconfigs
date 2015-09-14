@@ -1,0 +1,31 @@
+fix for 'hod dists', see https://github.com/hpcugent/hanythingondemand/issues/78
+--- lib/hod/config/config.py.orig   2015-09-14 21:44:04.978644000 +0200
++++ /lib/hod/config/config.py   2015-09-14 21:46:01.137706635 +0200
+@@ -32,7 +32,6 @@
+ from collections import Mapping, namedtuple
+ from copy import deepcopy
+ from os.path import join as mkpath, dirname, realpath
+-from pkg_resources import Requirement, resource_filename, resource_listdir
+
+ import hod
+ from hod.node.node import Node
+@@ -463,8 +462,7 @@
+
+ def resolve_dists_dir():
+     """Resolve path to distributions."""
+-    pkg = Requirement.parse(hod.NAME)
+-    return resource_filename(pkg, HOD_ETC_DIR)
++    return os.path.join(os.getenv('EBROOTHANYTHINGONDEMAND'), HOD_ETC_DIR)
+
+
+ def resolve_dist_path(dist):
+@@ -479,8 +477,7 @@
+
+ def avail_dists():
+     """Return a list of available distributions"""
+-    pkg = Requirement.parse(hod.NAME)
+-    return resource_listdir(pkg, HOD_ETC_DIR)
++    return os.listdir(resolve_dists_dir())
+
+
+ def resolve_config_paths(config, dist):
