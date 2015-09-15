@@ -4,7 +4,11 @@
 #      Univ. of California, Berkeley
 #      Univ. of Colorado, Denver
 #      @date January 2015
+#
+#  make.inc updated by @twrobinson and @gppezzi for compilation on XC30 (Piz Daint)
+#
 #//////////////////////////////////////////////////////////////////////////////
+
 
 # GPU_TARGET contains one or more of Tesla, Fermi, or Kepler,
 # to specify for which GPUs you want to compile MAGMA:
@@ -14,13 +18,12 @@
 # The default is "Fermi Kepler".
 # See http://developer.nvidia.com/cuda-gpus
 #
-#GPU_TARGET ?= Fermi Kepler
-GPU_TARGET = Kepler
+GPU_TARGET = Fermi Kepler
 
-CXX       = CC
-CC        = cc
-NVCC      = nvcc
-FORT      = ftn         
+CXX      := $(CXX)
+CC       := $(CC)
+NVCC     := nvcc
+FORT     := $(F90)
 
 ARCH      = ar
 ARCHFLAGS = cr
@@ -30,18 +33,18 @@ RANLIB    = ranlib
 # can be commented out if making only static library.
 FPIC      = -fPIC
 
-CFLAGS += -DADD_ -DMAGMA_SETAFFINITY
-CXXFLAGS += -DADD_ -DMAGMA_SETAFFINITY
-FFLAGS += -DADD_ -Wall -Wno-unused-dummy-argument
-F90FLAGS += -DADD_ -Wall -Wno-unused-dummy-argument -x f95-cpp-input
-NVCCFLAGS = -O3         -DADD_       -Xcompiler "-fno-strict-aliasing $(FPIC)"
-LDFLAGS   =     $(FPIC)              -fopenmp
+CFLAGS    += -DADD_ -DMAGMA_SETAFFINITY
+CXXFLAGS  += -DADD_ -DMAGMA_SETAFFINITY
+FFLAGS    += -DADD_ -Wall -Wno-unused-dummy-argument
+F90FLAGS  += -DADD_ -Wall -Wno-unused-dummy-argument -x f95-cpp-input
+NVCCFLAGS += -O3         -DADD_       -Xcompiler "-fno-strict-aliasing $(FPIC)"
+LDFLAGS   +=     $(FPIC)              -fopenmp
 
 # gcc with OpenBLAS (includes LAPACK)
-LIB       = -lcublas
+LIB       = -lcublas $(LIBS)
 
 # define library directories preferably in your environment, or here.
-CUDADIR=$(EBROOTCUDA)
+CUDADIR   = $(EBROOTCUDA)
 
 LIBDIR    = -L$(CUDADIR)/lib64 \
 
