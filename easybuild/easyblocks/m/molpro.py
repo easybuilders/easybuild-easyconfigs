@@ -70,7 +70,7 @@ class EB_Molpro(ConfigureMake, Binary):
         if self.cfg['precompiled_binaries']:
             Binary.extract_step(self)
         else:
-            super(EB_Molpro, self).extract_step()
+            ConfigureMake.extract_step(self)
 
     def configure_step(self):
         """Custom configuration procedure for Molpro: use 'configure -batch'."""
