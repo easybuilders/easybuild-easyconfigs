@@ -50,7 +50,7 @@ class EB_Molpro(ConfigureMake, Binary):
         # Combine extra variables from Binary and ConfigureMake easyblocks as
         # well as those needed for Molpro specifically
         extra_vars = Binary.extra_options()
-        extra_vars = super.extra_options(extra_vars)
+        extra_vars = ConfigureMake.extra_options(extra_vars)
         extra_vars.update({
             'precompiled_binaries': [False, "Are we installing precompiled binaries?", CUSTOM],
         })
@@ -70,7 +70,7 @@ class EB_Molpro(ConfigureMake, Binary):
         if self.cfg['precompiled_binaries']:
             Binary.extract_step(self)
         else:
-            super.extract_step(self)
+            super(EB_Molpro, self).extract_step()
 
     def configure_step(self):
         """Custom configuration procedure for Molpro: use 'configure -batch'."""
@@ -164,7 +164,7 @@ class EB_Molpro(ConfigureMake, Binary):
 
     def build_step(self):
         if not self.cfg['precompiled_binaries']:
-            super.build_step(self)
+            super(EB_Molpro, self).build_step()
 
     def test_step(self):
         
@@ -217,7 +217,7 @@ class EB_Molpro(ConfigureMake, Binary):
             if os.path.isfile(self.license_token):
                 run_cmd("make tuning")
 
-            super.install_step(self)
+            super(EB_Molpro, self).install_step()
 
             # put original LAUNCHER definition back in place in bin/molpro that got installed,
             # since the value used during installation point to temporary files
