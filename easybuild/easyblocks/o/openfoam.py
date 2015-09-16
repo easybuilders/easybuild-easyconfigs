@@ -32,9 +32,13 @@ EasyBuild support for building and installing OpenFOAM, implemented as an easybl
 @author: Jens Timmerman (Ghent University)
 @author: Xavier Besseron (University of Luxembourg)
 """
+import fileinput
+import glob
 import os
+import re
 import shutil
 import stat
+import sys
 from distutils.version import LooseVersion
 
 import easybuild.tools.environment as env
@@ -93,8 +97,38 @@ class EB_OpenFOAM(EasyBlock):
     def configure_step(self):
         """Configure OpenFOAM build by setting appropriate environment variables."""
 
+        # patch out hardcoding of WM_* environment variables
+        # for example, replace 'export WM_COMPILER=Gcc' with ': ${WM_COMPILER:=Gcc}; export WM_COMPILER'
+        for script in [os.path.join(self.builddir, self.openfoamdir, x) for x in ['etc/bashrc', 'etc/cshrc']]:
+            self.log.debug("Patching out hardcoded $WM_* env vars in %s", script)
+            for line in fileinput.input(script, inplace=1, backup='.orig.eb'):
+                for env_var in ['WM_COMPILER', 'WM_MPLIB', 'WM_THIRD_PARTY_DIR']:
+                    from_pat = r"^(setenv|export) (?P<var>%s)[ =](?P<val>.*)$" % env_var
+                    to_pat = r": ${\g<var>:=\g<val>}; export \g<var>"
+                    line = re.sub(from_pat, to_pat, line)
+                sys.stdout.write(line)
+
+        # inject compiler variables into wmake/rules files
+        ldirs = glob.glob(os.path.join(self.builddir, self.openfoamdir, 'wmake', 'rules', 'linux*'))
+        langs = ['c', 'c++']
+        suffixes = ['', 'Opt']
+        wmake_rules_files = [os.path.join(ldir, lang + suff) for ldir in ldirs for lang in langs for suff in suffixes]
+        comp_vars = {
+            'cc': 'MPICC',
+            'CC': 'MPICXX',
+            'cOPT': 'CFLAGS',
+            'c++OPT': 'CXXFLAGS',
+        }
+        for wmake_rules_file in wmake_rules_files:
+            fullpath = os.path.join(self.builddir, self.openfoamdir, wmake_rules_file)
+            self.log.debug("Patching compiler variables in %s", fullpath)
+            for line in fileinput.input(fullpath, inplace=1, backup='.orig.eb'):
+                for comp_var, repl_var in comp_vars.items():
+                    line = re.sub(r"^(%s\s*=\s*).*$" % re.escape(comp_var), r"\1%s" % os.environ[repl_var], line)
+                sys.stdout.write(line)
+
         # enable verbose build for debug purposes
-        env.setvar("FOAM_VERBOSE", "1")
+        env.setvar("FOAM_VERBOSE", '1')
 
         # installation directory
         env.setvar("FOAM_INST_DIR", self.installdir)
