@@ -36,7 +36,7 @@ import os
 import shutil
 import tempfile
 
-from easybuild.easyblocks.generic.pythonpackage import PythonPackage
+from easybuild.easyblocks.generic.pythonpackage import PythonPackage, det_pylibdir, UNKNOWN
 from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.filetools import extract_file, rmtree2
 from easybuild.tools.modules import get_software_root
@@ -56,6 +56,9 @@ class EB_python_minus_meep(PythonPackage):
         for dep in deps:
             if not get_software_root(dep):
                 raise EasyBuildError("Module for %s not loaded.", dep)
+        # prepare easyblock by determining Python site lib dir
+        if self.pylibdir == UNKNOWN:
+            self.pylibdir = det_pylibdir()
 
     def build_step(self):
         """Build python-meep using available make/make-mpi script."""
