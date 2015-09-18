@@ -139,10 +139,25 @@ class EB_OpenFOAM(EasyBlock):
         langs = ['c', 'c++']
         suffixes = ['', 'Opt']
         wmake_rules_files = [os.path.join(ldir, lang + suff) for ldir in ldirs for lang in langs for suff in suffixes]
+
+        mpicc = os.environ['MPICC']
+        mpicxx = os.environ['MPICXX']
+        cc_seq = os.environ.get('CC_SEQ', os.environ['CC'])
+        cxx_seq = os.environ.get('CXX_SEQ', os.environ['CXX'])
+
+        if self.toolchain.mpi_family() == toolchain.OPENMPI:
+            # no -cc/-cxx flags supported in OpenMPI compiler wrappers
+            c_comp_cmd = 'OMPI_CC="%s" %s' % (cc_seq, mpicc)
+            cxx_comp_cmd = 'OMPI_CXX="%s" %s' % (cxx_seq, mpicxx)
+        else:
+            # -cc/-cxx should work for all MPICH-based MPIs (including Intel MPI)
+            c_comp_cmd = '%s -cc="%s"' % (mpicc, cc_seq)
+            cxx_comp_cmd = '%s -cxx="%s"' % (mpicxx, cxx_seq)
+
         comp_vars = {
             # specify MPI compiler wrappers and compiler commands + sequential compiler that should be used by them
-            'cc': "%s -cc=%s" % (os.environ['MPICC'], os.environ.get('CC_SEQ', os.environ['CC'])),
-            'CC': "%s -cxx=%s" % (os.environ['MPICXX'], os.environ.get('CXX_SEQ', os.environ['CXX'])),
+            'cc': c_comp_cmd,
+            'CC': cxx_comp_cmd,
             'cOPT': os.environ['CFLAGS'],
             'c++OPT': os.environ['CXXFLAGS'],
         }
