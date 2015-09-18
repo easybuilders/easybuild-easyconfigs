@@ -42,7 +42,6 @@ from easybuild.easyblocks.python import EXTS_FILTER_PYTHON_PACKAGES
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.framework.extensioneasyblock import ExtensionEasyBlock
 from easybuild.tools.build_log import EasyBuildError
-from easybuild.tools.config import build_option
 from easybuild.tools.filetools import mkdir, rmtree2, which
 from easybuild.tools.run import run_cmd
 
@@ -111,20 +110,15 @@ class PythonPackage(ExtensionEasyBlock):
 
     def set_pylibdirs(self):
         """Set Python lib directory-related class variables."""
-        if build_option('extended_dry_run'):
-            self.all_pylibdirs = ['lib/python/site-packages']
-            self.log.debug("Using fake set of Python lib dirs during dry run: %s", self.all_pylibdirs)
-
-        else:
-            # pylibdir is the 'main' Python lib directory
-            if self.pylibdir == UNKNOWN:
-                self.pylibdir = det_pylibdir()
-            self.log.debug("Python library dir: %s" % self.pylibdir)
-            # on (some) multilib systems, the platform-specific library directory for the system Python is different
-            # cfr. http://serverfault.com/a/88739/126446
-            # so, we keep a list of different Python lib directories to take into account
-            self.all_pylibdirs = nub([self.pylibdir, det_pylibdir(plat_specific=True)])
-            self.log.debug("All Python library dirs: %s" % self.all_pylibdirs)
+        # pylibdir is the 'main' Python lib directory
+        if self.pylibdir == UNKNOWN:
+            self.pylibdir = det_pylibdir()
+        self.log.debug("Python library dir: %s" % self.pylibdir)
+        # on (some) multilib systems, the platform-specific library directory for the system Python is different
+        # cfr. http://serverfault.com/a/88739/126446
+        # so, we keep a list of different Python lib directories to take into account
+        self.all_pylibdirs = nub([self.pylibdir, det_pylibdir(plat_specific=True)])
+        self.log.debug("All Python library dirs: %s" % self.all_pylibdirs)
 
     def prerun(self):
         """Prepare extension by determining Python site lib dir."""
@@ -160,14 +154,14 @@ class PythonPackage(ExtensionEasyBlock):
                 raise EasyBuildError("Creating %s failed", self.sitecfgfn)
 
         # creates log entries for python being used, for debugging
-        run_cmd("python -V", verbose=False)
-        run_cmd("which python", verbose=False)
-        run_cmd("python -c 'import sys; print(sys.executable)'", verbose=False)
+        run_cmd("python -V")
+        run_cmd("which python")
+        run_cmd("python -c 'import sys; print(sys.executable)'")
 
         # don't add user site directory to sys.path (equivalent to python -s)
         # see https://www.python.org/dev/peps/pep-0370/
-        env.setvar('PYTHONNOUSERSITE', '1', verbose=False)
-        run_cmd("python -c 'import sys; print(sys.path)'", verbose=False)
+        env.setvar('PYTHONNOUSERSITE', '1')
+        run_cmd("python -c 'import sys; print(sys.path)'")
 
     def build_step(self):
         """Build Python package using setup.py"""
@@ -223,8 +217,7 @@ class PythonPackage(ExtensionEasyBlock):
 
         # set PYTHONPATH as expected
         pythonpath = os.getenv('PYTHONPATH')
-        new_pythonpath = os.pathsep.join([x for x in abs_pylibdirs + [pythonpath] if x is not None])
-        env.setvar('PYTHONPATH', new_pythonpath, verbose=False)
+        env.setvar('PYTHONPATH', os.pathsep.join([x for x in abs_pylibdirs + [pythonpath] if x is not None]))
 
         # actually install Python package
         tup = (self.cfg['preinstallopts'], self.installdir, self.cfg['installopts'])
@@ -233,7 +226,7 @@ class PythonPackage(ExtensionEasyBlock):
 
         # restore PYTHONPATH if it was set
         if pythonpath is not None:
-            env.setvar('PYTHONPATH', pythonpath, verbose=False)
+            env.setvar('PYTHONPATH', pythonpath)
 
     def run(self, *args, **kwargs):
         """Perform the actual Python package build/installation procedure"""
