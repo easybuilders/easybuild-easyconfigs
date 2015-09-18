@@ -96,7 +96,6 @@ class EB_OpenFOAM(EasyBlock):
 
     def configure_step(self):
         """Configure OpenFOAM build by setting appropriate environment variables."""
-
         # compiler & compiler flags
         comp_fam = self.toolchain.comp_family()
 
@@ -141,17 +140,18 @@ class EB_OpenFOAM(EasyBlock):
         suffixes = ['', 'Opt']
         wmake_rules_files = [os.path.join(ldir, lang + suff) for ldir in ldirs for lang in langs for suff in suffixes]
         comp_vars = {
-            'cc': 'MPICC',
-            'CC': 'MPICXX',
-            'cOPT': 'CFLAGS',
-            'c++OPT': 'CXXFLAGS',
+            # specify MPI compiler wrappers and compiler commands + sequential compiler that should be used by them
+            'cc': "%s -cc=%s" % (os.environ['MPICC'], os.environ.get('CC_SEQ', os.environ['CC'])),
+            'CC': "%s -cxx=%s" % (os.environ['MPICXX'], os.environ.get('CXX_SEQ', os.environ['CXX'])),
+            'cOPT': os.environ['CFLAGS'],
+            'c++OPT': os.environ['CXXFLAGS'],
         }
         for wmake_rules_file in wmake_rules_files:
             fullpath = os.path.join(self.builddir, self.openfoamdir, wmake_rules_file)
             self.log.debug("Patching compiler variables in %s", fullpath)
             for line in fileinput.input(fullpath, inplace=1, backup='.orig.eb'):
-                for comp_var, repl_var in comp_vars.items():
-                    line = re.sub(r"^(%s\s*=\s*).*$" % re.escape(comp_var), r"\1%s" % os.environ[repl_var], line)
+                for comp_var, newval in comp_vars.items():
+                    line = re.sub(r"^(%s\s*=\s*).*$" % re.escape(comp_var), r"\1%s" % newval, line)
                 sys.stdout.write(line)
 
         # enable verbose build for debug purposes
