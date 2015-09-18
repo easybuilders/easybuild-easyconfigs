@@ -148,7 +148,6 @@ class EB_icc(IntelBase):
                     'CPATH': ['daal/include', 'tbb/include', 'mkl/include', 'ipp/include'],
                     'INTEL_PYTHONHOME': ['%s/python/intel64' % debuggerpath],
                     'DAALROOT': ['daal'],
-#                    'MKLROOT': ['mkl'],
                     'TBBROOT': ['tbb'],
                     'IPPROOT': ['ipp'],
                     'CLASSPATH': ['daal/lib/daal.jar'],
