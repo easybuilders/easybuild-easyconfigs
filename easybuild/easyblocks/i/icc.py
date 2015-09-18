@@ -74,6 +74,7 @@ class EB_icc(IntelBase):
                 'license_file_name': LICENSE_FILE_NAME_2012,
             }
 
+        cfg_extras_map = {}
         if LooseVersion(self.version) >= LooseVersion('2016'):
             cfg_extras_map = {
                 'COMPONENTS': 'ALL',
@@ -88,12 +89,10 @@ class EB_icc(IntelBase):
         if LooseVersion(self.version) >= LooseVersion("2011"):
             if LooseVersion(self.version) <= LooseVersion("2011.3.174"):
                 binprefix = "bin"
-            elif LooseVersion(self.version) >= LooseVersion("2013_sp1") and LooseVersion(self.version) < LooseVersion("2016"):
+            elif LooseVersion(self.version) >= LooseVersion("2013_sp1"):
                 binprefix = "bin"
-                libprefix = "lib/intel64"
-            elif LooseVersion(self.version) >= LooseVersion("2016"):
-                binprefix = "bin"
-                libprefix = "lib/intel64_lin"
+                if LooseVersion(self.version) >= LooseVersion("2016"):
+                    libprefix = "lib/intel64_lin"
             else:
                 libprefix = "compiler/lib/intel64"
 
@@ -102,8 +101,8 @@ class EB_icc(IntelBase):
             binfiles += ["idb"]
 
         custom_paths = {
-            'files': ["%s/%s" % (binprefix, x) for x in binfiles] +
-                     ["%s/lib%s" % (libprefix, x) for x in ["iomp5.a", "iomp5.so"]],
+            'files': [os.path.join(binprefix, x) for x in binfiles] +
+                     [os.path.join(libprefix, 'lib%s' % x) for x in ['iomp5.a', 'iomp5.so']],
             'dirs': [],
         }
 
@@ -112,9 +111,6 @@ class EB_icc(IntelBase):
     def make_module_req_guess(self):
         """Customize paths to check and add in environment.
         """
-        # New Directory Layout for Intel Parallel Studio XE 2016
-        # https://software.intel.com/en-us/articles/new-directory-layout-for-intel-parallel-studio-xe-2016
-        debuggerpath = 'debugger_%s' % self.version.split('.')[0]
         if self.cfg['m32']:
             # 32-bit toolchain
             libpaths = ['lib', 'lib/ia32'],
@@ -126,9 +122,11 @@ class EB_icc(IntelBase):
                 'IDB_HOME': ['bin/intel64']
             }
         else:
+            # 64-bit toolkit
             if LooseVersion(self.version) < LooseVersion("2016"):
-                # 64-bit toolkit
-                libpaths = ['compiler/lib/intel64', 'lib/intel64', 'debugger/ipt/intel64/lib', 'ipp/lib/intel64', 'tbb/lib/intel64']
+                libpaths = ['compiler/lib/intel64', 'lib/intel64', 'debugger/ipt/intel64/lib',
+                            'ipp/lib/intel64', 'tbb/lib/intel64',
+                           ]
                 dirmap = {
                     'PATH': ['bin/intel64', 'tbb/bin/intel64', 'ipp/bin/intel64', 'debugger/gdb/intel64/bin'],
                     'LD_LIBRARY_PATH': libpaths, 
@@ -138,14 +136,32 @@ class EB_icc(IntelBase):
                     'INTEL_PYTHONHOME': ['debugger/python/intel64']
                 }
             else:
-                # 64-bit toolkit
-                libpaths = ['daal/../compiler/lib/intel64_lin', 'daal/../tbb/lib/intel64_lin/gcc4.4', 'daal/lib/intel64_lin', '%s/libipt/intel64/lib' % debuggerpath,'tbb/lib/intel64/gcc4.4', 'mkl/lib/intel64', 'ipp/lib/intel64', 'ipp/../compiler/lib/intel64', 'compiler/lib/intel64']
+                # New Directory Layout for Intel Parallel Studio XE 2016
+                # https://software.intel.com/en-us/articles/new-directory-layout-for-intel-parallel-studio-xe-2016
+                debuggerpath = 'debugger_%s' % self.version.split('.')[0]
+                libpaths = ['daal/../compiler/lib/intel64_lin',
+                            'daal/../tbb/lib/intel64_lin/gcc4.4',
+                            'daal/lib/intel64_lin',
+                            '%s/libipt/intel64/lib' % debuggerpath,
+                            'tbb/lib/intel64/gcc4.4',
+                            'mkl/lib/intel64',
+                            'ipp/lib/intel64',
+                            'ipp/../compiler/lib/intel64',
+                            'mpi/intel64/lib',
+                            'compiler/lib/intel64',
+                            'lib/intel64_lin',
+                           ]
                 dirmap = {
-                    'PATH': ['mpi/intel64/bin', 'ipp/bin/intel64', '%s/gdb/intel64/bin' % debuggerpath, 'bin/intel64'],
+                    'PATH': ['mpi/intel64/bin'
+                             'ipp/bin/intel64',
+                             '%s/gdb/intel64/bin' % debuggerpath,
+                             'bin/intel64',
+                             'bin',
+                            ],
                     'LD_LIBRARY_PATH': libpaths,
                     'LIBRARY_PATH': libpaths,
                     'MANPATH': ['man/common', 'man/en_US', 'debugger/gdb/intel64/share/man'],
-                    'CPATH': ['daal/include', 'tbb/include', 'mkl/include', 'ipp/include'],
+                    'CPATH': ['ipp/include', 'mkl/include', 'tbb/include', 'daal/include'],
                     'INTEL_PYTHONHOME': ['%s/python/intel64' % debuggerpath],
                     'DAALROOT': ['daal'],
                     'TBBROOT': ['tbb'],
@@ -153,32 +169,30 @@ class EB_icc(IntelBase):
                     'CLASSPATH': ['daal/lib/daal.jar'],
                 }
 
-
         # in recent Intel compiler distributions, the actual binaries are
         # in deeper directories, and symlinked in top-level directories
         # however, not all binaries are symlinked (e.g. mcpcom is not)
         # more recent versions of the Intel Compiler (2013.sp1 and newer)
-        if os.path.isdir("%s/composer_xe_%s" % (self.installdir, self.version)):
-            prefix = "composer_xe_%s" % self.version
+        prefix = "composer_xe_%s" % self.version
+        if os.path.isdir(os.path.join(self.installdir, prefix)):
             oldmap = dirmap
             dirmap = {}
             for k, vs in oldmap.items():
                 dirmap[k] = []
-                prefix = "composer_xe_%s" % self.version
                 for v in vs:
-                    v2 = "%s/%s" % (prefix, v)
-                    if os.path.isdir("%s/%s" % (self.installdir, v2)):
+                    v2 = os.path.join(prefix, v)
+                    if os.path.exists(os.path.join(self.installdir, v2)):
                         dirmap[k].append(v2)
 
-        if os.path.isdir("%s/compilers_and_libraries_%s/linux" % (self.installdir, self.version)):
-            prefix = "compilers_and_libraries_%s/linux" % self.version
+        prefix = "compilers_and_libraries_%s/linux" % self.version
+        if os.path.isdir(os.path.join(self.installdir, prefix)):
             oldmap = dirmap
             dirmap = {}
             for k, vs in oldmap.items():
                 dirmap[k] = []
                 for v in vs:
-                    v2 = "%s/%s" % (prefix, v)
-                    if os.path.exists("%s/%s" % (self.installdir, v2)):
+                    v2 = os.path.join(prefix, v)
+                    if os.path.exists(os.path.join(self.installdir, v2)):
                         dirmap[k].append(v2)
 
         return dirmap
