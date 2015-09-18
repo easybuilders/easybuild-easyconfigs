@@ -1,0 +1,51 @@
+fix build issue with Intel compilers that manifests itself as:
+../../libgnu/stdio.h(948): error: declaration is incompatible with previous "getchar" (declared at line 542 of "/usr/include/stdio.h")
+  _GL_CXXALIAS_SYS (getchar, int, (void));
+  ^
+see http://octave.1599824.n4.nabble.com/Build-issues-with-libgnu-tt4666148.html#a4666416
+patch available via https://savannah.gnu.org/bugs/index.php?43171
+--- octave-3.8.2/libgnu/fcntl.in.h
++++ octave-3.8.2/libgnu//fcntl.in.h
+@@ -34,7 +34,7 @@
+    extern "C" { ... } block, which leads to errors in C++ mode with the
+    overridden <sys/stat.h> from gnulib.  These errors are known to be gone
+    with g++ version >= 4.3.  */
+-#if !(defined __GLIBC__ || defined __UCLIBC__) || (defined __cplusplus && defined GNULIB_NAMESPACE && !(__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 3)))
++#if !(defined __GLIBC__ || defined __UCLIBC__) || (defined __cplusplus && defined GNULIB_NAMESPACE && (defined __ICC || !(__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 3))))
+ # include <sys/stat.h>
+ #endif
+ #@INCLUDE_NEXT@ @NEXT_FCNTL_H@
+@@ -53,7 +53,7 @@
+    extern "C" { ... } block, which leads to errors in C++ mode with the
+    overridden <sys/stat.h> from gnulib.  These errors are known to be gone
+    with g++ version >= 4.3.  */
+-#if !(defined __GLIBC__ || defined __UCLIBC__) || (defined __cplusplus && defined GNULIB_NAMESPACE && !(__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 3)))
++#if !(defined __GLIBC__ || defined __UCLIBC__) || (defined __cplusplus && defined GNULIB_NAMESPACE && (defined __ICC || !(__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 3))))
+ # include <sys/stat.h>
+ #endif
+ /* The include_next requires a split double-inclusion guard.  */
+
+--- octave-3.8.2/liboctave/cruft/misc/quit.h.orig	2015-04-22 21:47:08.614133593 +0200
++++ octave-3.8.2/liboctave/cruft/misc/quit.h	2015-04-22 21:47:24.584562436 +0200
+@@ -23,16 +23,16 @@
+ #if !defined (octave_quit_h)
+ #define octave_quit_h 1
+ 
+-#ifdef __cplusplus
+-#include <new>
+-extern "C" {
+-#endif
+-
+ #include <stdio.h>
+ 
+ #include <signal.h>
+ #include <setjmp.h>
+ 
++#ifdef __cplusplus
++#include <new>
++extern "C" {
++#endif
++
+ #if defined (__WIN32__) && ! defined (_POSIX_VERSION)
+ 
+ #define WIN32_LEAN_AND_MEAN
