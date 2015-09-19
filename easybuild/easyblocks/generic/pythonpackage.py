@@ -121,7 +121,7 @@ class PythonPackage(ExtensionEasyBlock):
             # mainly for debugging
             run_cmd("easy_install --version")
 
-            self.install_cmd = "easy_install ."
+            self.install_cmd = "easy_install"
             if self.cfg['zipped_egg']:
                 self.install_cmd += " --zip-ok"
 

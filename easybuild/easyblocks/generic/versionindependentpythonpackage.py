@@ -69,7 +69,10 @@ class VersionIndependentPythonPackage(PythonPackage):
             '--prefix=%s' % self.installdir,
         ]
         if self.install_cmd.startswith('easy_install'):
-            args.append('--install-dir=%s' % full_pylibdir)
+            args.extend([
+                '--install-dir=%s' % full_pylibdir,
+                '.',
+            ])
         else:
             args.extend([
                 '--install-lib=%s' % full_pylibdir,
