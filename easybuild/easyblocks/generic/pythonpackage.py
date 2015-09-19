@@ -258,6 +258,6 @@ class PythonPackage(ExtensionEasyBlock):
             fullpath = os.path.join(self.installdir, path)
             # only extend $PYTHONPATH with existing, non-empty directories
             if os.path.exists(fullpath) and os.listdir(fullpath):
-                txt += self.module_generator.prepend_paths('PYTHONPATH', fullpath)
+                txt += self.module_generator.prepend_paths('PYTHONPATH', path)
 
         return super(PythonPackage, self).make_module_extra(txt, *args, **kwargs)
