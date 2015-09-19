@@ -83,6 +83,8 @@ class PythonPackage(ExtensionEasyBlock):
         """Easyconfig parameters specific to Python packages."""
         extra_vars = {
             'runtest': [True, "Run unit tests.", CUSTOM],  # overrides default
+            'use_easy_install': [False, "Install using 'easy_install'", CUSTOM],
+            'zipped_egg': [False, "Install as a zipped eggs (requires use_easy_install)", CUSTOM],
         }
         return ExtensionEasyBlock.extra_options(extra_vars)
 
@@ -107,6 +109,21 @@ class PythonPackage(ExtensionEasyBlock):
 
         if not 'modulename' in self.options:
             self.options['modulename'] = self.name.lower()
+
+        if self.cfg['zipped_egg'] and not self.cfg['use_easy_install']:
+            raise EasyBuildError("Installing zipped eggs requires use_easy_install")
+
+        self.install_cmd = "python setup.py install"
+        if self.cfg['use_easy_install']:
+            if which('easy_install') is None:
+                raise EasyBuildError("easy_install command not found")
+
+            # mainly for debugging
+            run_cmd("easy_install --version")
+
+            self.install_cmd = "easy_install"
+            if self.cfg['zipped_egg']:
+                self.install_cmd += " --zip-ok"
 
     def set_pylibdirs(self):
         """Set Python lib directory-related class variables."""
@@ -165,9 +182,9 @@ class PythonPackage(ExtensionEasyBlock):
 
     def build_step(self):
         """Build Python package using setup.py"""
-
-        cmd = "%s python setup.py build %s" % (self.cfg['prebuildopts'], self.cfg['buildopts'])
-        run_cmd(cmd, log_all=True, simple=True)
+        if not self.cfg['use_easy_install']:
+            cmd = "%s python setup.py build %s" % (self.cfg['prebuildopts'], self.cfg['buildopts'])
+            run_cmd(cmd, log_all=True, simple=True)
 
     def test_step(self):
         """Test the built Python package."""
@@ -193,9 +210,8 @@ class PythonPackage(ExtensionEasyBlock):
                 abs_pylibdirs = [os.path.join(testinstalldir, pylibdir) for pylibdir in self.all_pylibdirs]
                 extrapath = "export PYTHONPATH=%s && " % os.pathsep.join(abs_pylibdirs + ['$PYTHONPATH'])
 
-                tup = (extrapath, self.cfg['preinstallopts'], testinstalldir, self.cfg['installopts'])
-                cmd = "%s%s python setup.py install --prefix=%s %s" % tup
-                run_cmd(cmd, log_all=True, simple=True)
+                tup = (extrapath, self.cfg['preinstallopts'], self.install_cmd, testinstalldir, self.cfg['installopts'])
+                run_cmd("%s%s %s --prefix=%s %s" % tup, log_all=True, simple=True)
 
             if self.testcmd:
                 cmd = "%s%s" % (extrapath, self.testcmd)
@@ -220,9 +236,8 @@ class PythonPackage(ExtensionEasyBlock):
         env.setvar('PYTHONPATH', os.pathsep.join([x for x in abs_pylibdirs + [pythonpath] if x is not None]))
 
         # actually install Python package
-        tup = (self.cfg['preinstallopts'], self.installdir, self.cfg['installopts'])
-        cmd = "%s python setup.py install --prefix=%s %s" % tup
-        run_cmd(cmd, log_all=True, simple=True)
+        tup = (self.cfg['preinstallopts'], self.install_cmd, self.installdir, self.cfg['installopts'])
+        run_cmd("%s %s --prefix=%s %s" % tup, log_all=True, simple=True)
 
         # restore PYTHONPATH if it was set
         if pythonpath is not None:
