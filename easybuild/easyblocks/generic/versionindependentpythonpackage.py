@@ -67,11 +67,16 @@ class VersionIndependentPythonPackage(PythonPackage):
         args = [
             self.install_cmd,
             '--prefix=%s' % self.installdir,
-            '--install-lib=%s' % full_pylibdir,
-            '--single-version-externally-managed',
-            '--record %s' % os.path.join(self.builddir, 'record'),
-            '--no-compile',
         ]
+        if self.install_cmd.startswith('easy_install'):
+            args.append('--install-dir=%s' % full_pylibdir)
+        else:
+            args.extend([
+                '--install-lib=%s' % full_pylibdir,
+                '--single-version-externally-managed',
+                '--record %s' % os.path.join(self.builddir, 'record'),
+                '--no-compile',
+            ])
         run_cmd(' '.join(args), log_all=True, simple=True, log_output=True)
 
         # setuptools stubbornly replaces the shebang line in scripts with
