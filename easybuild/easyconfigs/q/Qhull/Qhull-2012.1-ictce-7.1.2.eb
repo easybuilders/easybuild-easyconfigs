@@ -15,12 +15,20 @@ toolchain = {'name': 'ictce', 'version': '7.1.2'}
 sources = ['%(namelower)s-%(version)s-src.tgz']
 source_urls = ['http://www.qhull.org/download/']
 
-patches = ['Qhull-2012.1-intel-fix.patch']
+patches = [
+    'Qhull-2012.1-intel-fix.patch',
+    ('Qhull_pkgconfig.patch', 1),
+]
 
-builddependencies = [('CMake', '2.8.12')]
+builddependencies = [('CMake', '3.2.1', '', ('GNU', '4.9.3-2.25'))]
+
+postinstallcmds = [
+    "cat qhull.pc.in | sed 's@INSTALLDIR@%(installdir)s@g' | sed 's@VERSION@%(version)s@g' > %(builddir)s/qhull.pc",
+    "install -m644 -D %(builddir)s/qhull.pc %(installdir)s/lib/pkgconfig/qhull.pc",
+]
 
 sanity_check_paths = {
-    'files': ['bin/qhull', 'lib/libqhull.so'],
+    'files': ['bin/qhull', 'lib/libqhull.so', 'lib/pkgconfig/qhull.pc'],
     'dirs': [],
 }
 
