@@ -1,3 +1,5 @@
+easyblock = 'ConfigureMake'
+
 name = 'ncurses'
 version = '5.9'
 
@@ -6,13 +8,29 @@ description = """The Ncurses (new curses) library is a free software emulation o
  and more. It uses Terminfo format, supports pads and color and multiple highlights and forms characters and
  function-key mapping, and has all the other SYSV-curses enhancements over BSD Curses."""
 
-# in relation to -no-cpp-precomp bug: https://lists.gnu.org/archive/html/bug-ncurses/2012-12/msg00001.html
-patches = ['ncurses-5.9_configure_darwin.patch']
-
 toolchain = {'name': 'GCC', 'version': '4.8.2'}
 toolchainopts = {'optarch': True, 'pic': True}
 
 source_urls = [GNU_SOURCE]
 sources = [SOURCE_TAR_GZ]
+
+patches = ['ncurses-%(version)s_configure_darwin.patch']
+
+configopts = [
+    # default build
+    '--with-shared --enable-overwrite',
+    # the UTF-8 enabled version (ncursesw)
+    '--with-shared --enable-overwrite --enable-ext-colors --enable-widec --includedir=%(installdir)s/include/ncursesw/'
+]
+
+libs = ["form", "menu", "ncurses", "panel"]
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in ["captoinfo", "clear", "infocmp", "infotocap", "ncurses5-config",
+                                     "reset", "tabs", "tic", "toe", "tput", "tset"]] +
+             ['lib/lib%s%s.a' % (x, y) for x in libs for y in ['', '_g', 'w', 'w_g']] +
+             ['lib/lib%s%s.so' % (x, y) for x in libs for y in ['', 'w']] +
+             ['lib/libncurses++%s.a' % x for x in ['', 'w']],
+    'dirs': ['include', 'include/ncursesw'],
+}
 
 moduleclass = 'devel'
