@@ -1,0 +1,40 @@
+easyblock = 'ConfigureMake'
+
+name = 'RELION'
+version = '1.3'
+
+homepage = 'http://www2.mrc-lmb.cam.ac.uk/relion/index.php/Main_Page'
+description = """RELION (for REgularised LIkelihood OptimisatioN, pronounce rely-on) is a stand-alone computer
+ program that employs an empirical Bayesian approach to refinement of (multiple) 3D reconstructions or 2D class
+ averages in electron cryo-microscopy (cryo-EM)."""
+
+toolchain = {'name': 'intel', 'version': '2014b'}
+
+source_urls = ['http://www2.mrc-lmb.cam.ac.uk/groups/scheres/18jun14']
+sources = [SOURCELOWER_TAR_BZ2]
+
+patches = ['RELION-%(version)s_fltk-config.patch']
+
+pythonversion = '-Python-2.7.8'
+
+builddependencies = [
+    ('xextproto', '7.3.0'),
+]
+dependencies = [
+    ('FFTW', '3.3.4'),
+    ('FLTK', '1.3.2'),
+    ('libX11', '1.6.2', pythonversion),
+    ('fontconfig', '2.11.1'),
+    ('libXft', '2.3.2'),
+    ('libXext', '1.3.2', pythonversion),
+    ('libXinerama', '1.1.3'),
+]
+
+# RELION expects FLTK to be in external/fltk-1.3.0
+configopts = ['--enable-mpi --enable-openmp && ln -s $EBROOTFLTK/include external/fltk-1.3.0']
+buildopts = 'LIBS="-lfftw3_threads -lfftw3 -lm -lpthread -lfltk -lX11 -lXft -lfontconfig -lXext -lXinerama" '
+# users expect the maingui binary to be called relion
+installopts = " && cp %(installdir)s/bin/relion_maingui %(installdir)s/bin/%(namelower)s "
+
+
+moduleclass = 'bio'

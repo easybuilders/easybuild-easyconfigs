@@ -1,0 +1,32 @@
+diff --git a/hadoop-mapreduce-project/hadoop-mapreduce-examples/src/main/java/org/apache/hadoop/examples/terasort/TeraSort.java b/hadoop-mapreduce-project/hadoop-mapreduce-examples/src/main/java/org/apache/hadoop/examples/terasort/TeraSort.java
+Sourced from https://issues.apache.org/jira/browse/MAPREDUCE-5528
+index 6022f6c..b913769 100644
+--- hadoop-mapreduce-project/hadoop-mapreduce-examples/src/main/java/org/apache/hadoop/examples/terasort/TeraSort.java
++++ hadoop-mapreduce-project/hadoop-mapreduce-examples/src/main/java/org/apache/hadoop/examples/terasort/TeraSort.java
+@@ -28,6 +28,7 @@
+ import org.apache.hadoop.conf.Configurable;
+ import org.apache.hadoop.conf.Configuration;
+ import org.apache.hadoop.conf.Configured;
++import org.apache.hadoop.filecache.DistributedCache;;
+ import org.apache.hadoop.fs.FileSystem;
+ import org.apache.hadoop.fs.Path;
+ import org.apache.hadoop.io.Text;
+@@ -209,8 +210,8 @@ public void setConf(Configuration conf) {
+       try {
+         FileSystem fs = FileSystem.getLocal(conf);
+         this.conf = conf;
+-        Path partFile = new Path(TeraInputFormat.PARTITION_FILENAME);
+-        splitPoints = readPartitions(fs, partFile, conf);
++        Path[] localPaths = DistributedCache.getLocalCacheFiles(conf);
++        splitPoints = readPartitions(fs, localPaths[0], conf);
+         trie = buildTrie(splitPoints, 0, splitPoints.length, new Text(), 2);
+       } catch (IOException ie) {
+         throw new IllegalArgumentException("can't read partitions file", ie);
+@@ -279,6 +280,7 @@ public static void setOutputReplication(Job job, int value) {
+ 
+   public int run(String[] args) throws Exception {
+     LOG.info("starting");
++    LOG.info("starting with terasort on native filesystem patch");
+     Job job = Job.getInstance(getConf());
+     Path inputDir = new Path(args[0]);
+     Path outputDir = new Path(args[1]);
