@@ -1,0 +1,35 @@
+easyblock = 'ConfigureMake'
+
+name = 'Meep'
+version = '1.3'
+
+homepage = 'http://ab-initio.mit.edu/wiki/index.php/Meep'
+description = """Meep (or MEEP) is a free finite-difference time-domain (FDTD) simulation software package
+ developed at MIT to model electromagnetic systems."""
+
+toolchain = {'name': 'intel', 'version': '2015a'}
+toolchainopts = {'usempi': True, 'opt': True, 'optarch': True, 'unroll': True, 'pic': True}
+
+source_urls = [
+    'http://ab-initio.mit.edu/meep/',
+    'http://ab-initio.mit.edu/meep/old/',
+]
+sources = [SOURCELOWER_TAR_GZ]
+
+patches = ['Meep-%(version)s_version-string-without-spaces.patch']
+
+dependencies = [
+    ('Harminv', '1.4'),
+    ('HDF5', '1.8.14'),
+    ('libctl', '3.2.2'),
+    ('GSL', '1.16'),
+    ('FFTW', '3.3.4')
+]
+
+configopts = "--with-pic --with-mpi --with-blas=mkl_em64t --with-lapack=mkl_em64t --without-gcc-arch "
+configopts += "--with-libctl=$EBROOTLIBCTL/share/libctl --enable-shared "
+
+# fix for guile-config being broken because shebang line contains full path to bin/guile
+configopts += 'GUILE_CONFIG="$EBROOTGUILE/bin/guile -e main -s $EBROOTGUILE/bin/guile-config"'
+
+moduleclass = 'phys'
