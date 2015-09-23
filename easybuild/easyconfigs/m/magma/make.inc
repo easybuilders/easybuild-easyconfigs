@@ -37,8 +37,7 @@ CFLAGS    += -DADD_ -DMAGMA_SETAFFINITY
 CXXFLAGS  += -DADD_ -DMAGMA_SETAFFINITY
 FFLAGS    += -DADD_ -Wall -Wno-unused-dummy-argument
 F90FLAGS  += -DADD_ -Wall -Wno-unused-dummy-argument -x f95-cpp-input
-NVCCFLAGS += -O3         -DADD_       -Xcompiler "-fno-strict-aliasing $(FPIC)"
-LDFLAGS   +=     $(FPIC)              -fopenmp
+NVCCFLAGS += -O3 -DADD_ -Xcompiler "-fno-strict-aliasing $(FPIC)"
 
 # gcc with OpenBLAS (includes LAPACK)
 LIB       = -lcublas $(LIBS)
@@ -46,7 +45,7 @@ LIB       = -lcublas $(LIBS)
 # define library directories preferably in your environment, or here.
 CUDADIR   = $(EBROOTCUDA)
 
-LIBDIR    = -L$(CUDADIR)/lib64 \
+LIBDIR    = -L$(CUDADIR)/lib64 
 
 INC       = -I$(CUDADIR)/include
 prefix    = $(EBINSTALLPREFIX)
