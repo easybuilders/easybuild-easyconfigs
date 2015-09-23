@@ -28,7 +28,6 @@ EasyBuild support for building and installing SCons, implemented as an easyblock
 @author: Balazs Hajgato (Free University Brussels (VUB))
 """
 
-import os
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.tools.run import run_cmd
 
@@ -41,12 +40,13 @@ class SCons(EasyBlock):
         """
         pass
 
-    def build_step(self):
+    def build_step(self, verbose=False):
         """
         Build with SCons 
         """
         cmd = "%s scons %s PREFIX=%s" % (self.cfg['prebuildopts'], self.cfg['buildopts'], self.installdir)
-        (out, _) = run_cmd(cmd, log_all=True)
+        (out, _) = run_cmd(cmd, log_all=True, log_output=verbose)
+
 
         return out
 
