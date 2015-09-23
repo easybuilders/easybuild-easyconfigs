@@ -92,7 +92,6 @@ class EB_Molpro(ConfigureMake, Binary):
         
         # Only do the rest of the configuration if we're building from source 
         if not self.cfg['precompiled_binaries']:
-
             # installation prefix
             self.cfg.update('configopts', "-prefix %s" % self.installdir)
 
@@ -211,9 +210,7 @@ class EB_Molpro(ConfigureMake, Binary):
                         r"directory .* does not exist, try to create [Y]/n\n": '',
                 }
                 run_cmd_qa(cmd, qa=qa, std_qa=stdqa, log_all=True, simple=True)
-
         else:
-
             if os.path.isfile(self.license_token):
                 run_cmd("make tuning")
 
