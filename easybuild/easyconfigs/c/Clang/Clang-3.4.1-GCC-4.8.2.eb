@@ -1,0 +1,60 @@
+##
+# This file is an EasyBuild reciPY as per https://github.com/hpcugent/easybuild
+#
+# Copyright:: Copyright 2013 Dmitri Gribenko, Ward Poelmans
+# Authors:: Dmitri Gribenko <gribozavr@gmail.com>
+# Authors:: Ward Poelmans <wpoely86@gmail.com>
+# License:: GPLv2 or later, MIT, three-clause BSD.
+# $Id$
+##
+
+name = "Clang"
+version = "3.4.1"
+
+homepage = "http://clang.llvm.org/"
+description = """C, C++, Objective-C compiler, based on LLVM.  Does not
+ include C++ standard library -- use libstdc++ from GCC."""
+
+# Clang also depends on libstdc++ during runtime, but this dependency is
+# already specified as the toolchain.
+toolchain = {'name': 'GCC', 'version': '4.8.2'}
+# Do not set optarch to True: it will cause the build to fail
+toolchainopts = {'optarch': False}
+
+source_urls = [
+    "http://llvm.org/releases/%(version)s",
+    "http://llvm.org/releases/%(version_major_minor)s",
+]
+
+sources = [
+    "llvm-%(version)s.src.tar.gz",
+    "cfe-%(version)s.src.tar.gz",
+    "compiler-rt-%(version_major_minor)s.src.tar.gz",
+    "polly-%(version_major_minor)s.src.tar.gz",
+]
+
+patches = [
+    # Remove some tests that fail because of -DGCC_INSTALL_PREFIX.  The issue is
+    # that hardcoded GCC_INSTALL_PREFIX overrides -sysroot.  This probably breaks
+    # cross-compilation.
+    # http://lists.cs.uiuc.edu/pipermail/cfe-commits/Week-of-Mon-20130401/077539.html
+    'Clang-%(version)s-failing-tests-due-to-gcc-installation-prefix.patch',
+    'Clang-%(version_major_minor)s-failing-sanitizer-tests.patch',
+    'Clang-%(version_major_minor)s-llvm-ar-uid.patch',
+    'Clang-%(version)s-pic-crt.patch',
+]
+
+builddependencies = [('CMake', '2.8.12')]
+
+dependencies = [
+    ('GMP', '5.1.3'),
+    ('CLooG', '0.18.1'),
+]
+
+moduleclass = 'compiler'
+
+assertions = False
+
+usepolly = True
+
+build_targets = ['X86']
