@@ -47,7 +47,6 @@ class SCons(EasyBlock):
         cmd = "%s scons %s PREFIX=%s" % (self.cfg['prebuildopts'], self.cfg['buildopts'], self.installdir)
         (out, _) = run_cmd(cmd, log_all=True, log_output=verbose)
 
-
         return out
 
     def test_step(self):
