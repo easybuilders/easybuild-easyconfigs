@@ -3,6 +3,7 @@
 #
 # Copyright:: Copyright 2012-2013 The Cyprus Institute
 # Authors::   Andreas Panteli <a.panteli@cyi.ac.cy>, Thekla Loizou <t.loizou@cyi.ac.cy>
+# Updated::   Pablo Escobar <pablo.escobarlopez@unibas.ch>
 # License::   MIT/GPL
 #
 ##
@@ -20,13 +21,27 @@ toolchain = {'name': 'goolf', 'version': '1.4.10'}
 source_urls = ['http://www.cbcb.umd.edu/software/glimmer']
 sources = ['%%(namelower)s%s.tar.gz' % ''.join(version.split('.'))]
 
-makeopts = '-C ./src'
+dependencies = [('ELPH', '1.0.1')]
+
+buildopts = '-C ./src'
 
 files_to_copy = ["bin", "docs", "glim302notes.pdf", "lib", "LICENSE", "sample-run", "scripts"]
+
+# add scripts dir to PATH
+modextrapaths = {
+	'PATH': 'scripts'
+}
 
 sanity_check_paths = {
     'files': ["bin/glimmer3", "glim302notes.pdf", "LICENSE"],
     'dirs': ["docs", "lib", "sample-run", "scripts"]
 }
+
+# fix hardcoded path to scripts folder
+postinstallcmds = ["sed -i -e 's|/fs/szgenefinding/Glimmer3/scripts|%(installdir)s/scripts|' %(installdir)s/scripts/*"]
+# fix hardcoded path to bin folder
+postinstallcmds += ["sed -i -e 's|/fs/szgenefinding/Glimmer3/bin|%(installdir)s/bin|' %(installdir)s/scripts/*"]
+# fix hardcoded path to elph binary
+postinstallcmds += ["sed -i -e 's|/nfshomes/adelcher/bin/elph|${EBROOTELPH}/bin/elph|' %(installdir)s/scripts/*"]
 
 moduleclass = 'bio'
