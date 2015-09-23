@@ -1,5 +1,5 @@
 ##
-# Copyright 2009-2015 Ghent University
+# Copyright 2015-2015 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -23,7 +23,7 @@
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
 """
-EasyBuild support for building and installing Serf, implemented as an easyblock
+EasyBuild support for building and installing SCons, implemented as an easyblock
 
 @author: Balazs Hajgato (Free University Brussels (VUB))
 """
@@ -32,38 +32,38 @@ import os
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.tools.run import run_cmd
 
-class EB_Serf(EasyBlock):
-    """Support for building/installing Serf."""
+class SCons(EasyBlock):
+    """Support for building/installing with SCons."""
 
     def configure_step(self):
         """
-        No configure step for Serf
+        No configure step for SCons
         """
         pass
 
     def build_step(self):
         """
-        Build Serf using 'scons APR=/path/to/apr APU=/path/to/apu OPENSSL=/openssl/base PREFIX=/path/to/prefix
+        Build with SCons 
         """
-        cmd = "scons %s PREFIX=%s" % (self.cfg['buildopts'], self.installdir)
-        (out, _) = run_cmd(cmd, log_all=True, simple=False)
+        cmd = "%s scons %s PREFIX=%s" % (self.cfg['prebuildopts'], self.cfg['buildopts'], self.installdir)
+        (out, _) = run_cmd(cmd, log_all=True)
 
         return out
 
     def test_step(self):
         """
-        Test Serf using 'scons check' 
+        Test with SCons 
         """
         cmd = "scons check"
-        (out, _) = run_cmd(cmd, log_all=True, simple=False)
+        (out, _) = run_cmd(cmd, log_all=True)
 
         return out
 
     def install_step(self):
         """
-        Install Serf using 'scons PREFIX=/some/path install'
+        Install with SCons
         """
-        cmd = "scons PREFIX=%s install" % self.installdir
-        (out, _) = run_cmd(cmd, log_all=True, simple=False)
+        cmd = "%s scons PREFIX=%s install %s" % (self.cfg['preinstallopts'], self.installdir, self.cfg['installopts'])
+        (out, _) = run_cmd(cmd, log_all=True)
 
         return out
