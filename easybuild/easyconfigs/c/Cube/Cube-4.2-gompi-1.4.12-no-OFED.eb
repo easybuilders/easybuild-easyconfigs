@@ -1,11 +1,15 @@
+##
 # This is an easyconfig file for EasyBuild, see https://github.com/hpcugent/easybuild
-# Copyright:: Copyright 2013 Juelich Supercomputing Centre, Germany
-# Authors::   Bernd Mohr <b.mohr@fz-juelich.de>
-# License::   New BSD
 #
-# This work is based from experiences from the UNITE project
+# Copyright:: Copyright 2013-2015 Juelich Supercomputing Centre, Germany
+# Authors::   Bernd Mohr <b.mohr@fz-juelich.de>
+#             Markus Geimer <m.geimer@fz-juelich.de>
+# License::   3-clause BSD
+#
+# This work is based on experiences from the UNITE project
 # http://apps.fz-juelich.de/unite/
 ##
+
 easyblock = 'EB_Score_minus_P'
 
 name = "Cube"
@@ -20,18 +24,31 @@ description = """Cube, which is used as performance report explorer for Scalasca
 
 toolchain = {'name': 'gompi', 'version': '1.4.12-no-OFED'}
 
-# http://apps.fz-juelich.de/scalasca/releases/cube/4.2/dist/cube-4.2.tar.gz
 sources = [SOURCELOWER_TAR_GZ]
-source_urls = ['http://apps.fz-juelich.de/scalasca/releases/cube/4.2/dist']
+source_urls = ['http://apps.fz-juelich.de/scalasca/releases/cube/%(version_major_minor)s/dist']
 
-patches = ['Cube-4.2_fix-Qt-version-check.patch']
+# Backported fixes included in Cube 4.2.2 and up
+patches = [
+    'Cube-4.2_fix-Qt-version-check.patch',
+    'Cube-4.2_fix-with-qt-check.patch',
+]
+
+checksums = [
+    'aa1b1594bacddd3a1931f9a9dea23ce8',    # cube-4.2.tar.gz
+    'da69fe49d347dc7722c30bb785106d96',    # Cube-4.2_fix-Qt-version-check.patch
+    '5a746d4f6f4eb5eb8b464ca355b46891',    # Cube-4.2_fix-with-qt-check.patch
+]
 
 dependencies = [('Qt', '4.8.4')]
 
-configopts = "QMAKE=$EBROOTQT/bin/qmake MOC=$EBROOTQT/bin/moc UIC=$EBROOTQT/bin/uic"
+# The Cube Java reader is currently only used by TAU, which ships it's own
+# copy as a jar file. If you really want to enable it, make sure to set
+# 'maxparallel=1', as automake's Java support has difficulties handling
+# parallel builds.
+configopts = "--without-java-reader"
 
 sanity_check_paths = {
-    'files': ["bin/cube", "lib/libcube4.a", "lib/libcube4.so"],
+    'files': ["bin/cube", ("lib/libcube4.a", "lib64/libcube4.a"), ("lib/libcube4.so", "lib64/libcube4.so")],
     'dirs': ["include/cube", "include/cubew"],
 }
 
