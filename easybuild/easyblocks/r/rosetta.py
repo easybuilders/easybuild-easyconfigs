@@ -62,8 +62,14 @@ class EB_Rosetta(EasyBlock):
         # locate sources, and unpack if necessary
         # old 'bundles' tarballs contain a gzipped tarball for source, recent ones contain unpacked source
         try:
-            prefix = os.path.join(self.builddir, '%s-%s' % (self.name.lower(), self.version))
+            subdirs = os.listdir(self.builddir)
+            if len(subdirs) == 1:
+                prefix = os.path.join(self.builddir, subdirs[0])
+            else:
+                raise EasyBuildError("Found multiple subdirectories, don't know which one to pick: %s", subdirs)
             self.srcdir = os.path.join(prefix, 'rosetta_source')
+            if not os.path.exists(self.srcdir):
+                self.srcdir = os.path.join(prefix, 'main', 'source')
             if not os.path.exists(self.srcdir): 
                 src_tarball = os.path.join(prefix, 'rosetta%s_source.tgz' % self.version)
                 if os.path.isfile(src_tarball):
@@ -235,9 +241,16 @@ class EB_Rosetta(EasyBlock):
                 raise EasyBuildError("Getting Rosetta %s dir ready failed: %s", dirname_tmpl, err)
 
         # (extract and) copy database and biotools (if it's there)
-        extract_and_copy('rosetta_database%s')
+        if os.path.exists(os.path.join(self.cfg['start_dir'], 'main', 'database')):
+            extract_and_copy(os.path.join('main', 'database') + '%s')
+        else:
+            extract_and_copy('rosetta_database%s')
+
         extract_and_copy('BioTools%s', optional=True)
-        extract_and_copy('rosetta_tools%s', optional=True)
+        if os.path.exists(os.path.join(self.cfg['start_dir'], 'tools')):
+            extract_and_copy('tools%s', optional=True)
+        else:
+            extract_and_copy('rosetta_tools%s', optional=True)
 
     def sanity_check_step(self):
         """Custom sanity check for Rosetta."""
