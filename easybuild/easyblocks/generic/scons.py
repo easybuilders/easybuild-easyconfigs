@@ -55,6 +55,7 @@ class SCons(EasyBlock):
         """
         cmd = "scons check"
         if self.cfg['runtest']:
+            cmd = "scons %s" % (self.cfg['runtest'])
             (out, _) = run_cmd(cmd, log_all=True)
 
         return out
