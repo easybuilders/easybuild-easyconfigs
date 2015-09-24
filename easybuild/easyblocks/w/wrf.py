@@ -38,7 +38,7 @@ import sys
 
 import easybuild.tools.environment as env
 import easybuild.tools.toolchain as toolchain
-from easybuild.easyblocks.netcdf import set_netcdf_env_vars, get_netcdf_module_set_cmds  # @UnresolvedImport
+from easybuild.easyblocks.netcdf import set_netcdf_env_vars  # @UnresolvedImport
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import CUSTOM, MANDATORY
 from easybuild.tools.build_log import EasyBuildError
@@ -57,8 +57,6 @@ class EB_WRF(EasyBlock):
         self.build_in_installdir = True
         self.wrfsubdir = None
         self.comp_fam = None
-
-        self.netcdf_mod_cmds = None
 
     @staticmethod
     def extra_options():
@@ -79,7 +77,6 @@ class EB_WRF(EasyBlock):
 
         # netCDF dependency
         set_netcdf_env_vars(self.log)
-        self.netcdf_mod_cmds = get_netcdf_module_set_cmds(self.log)
 
         # HDF5 (optional) dependency
         hdf5 = get_software_root('HDF5')
@@ -366,9 +363,9 @@ class EB_WRF(EasyBlock):
                }
 
     def make_module_extra(self):
-
+        """Add netCDF environment variables to module file."""
         txt = super(EB_WRF, self).make_module_extra()
-
-        txt += self.netcdf_mod_cmds
-
+        txt += self.module_generator.set_environment('NETCDF', os.getenv('NETCDF'))
+        if os.getenv('NETCDFF', None) is not None:
+            txt += self.module_generator.set_environment('NETCDFF', os.getenv('NETCDFF'))
         return txt

@@ -44,13 +44,24 @@ from easybuild.tools.run import run_cmd
 class EB_METIS(ConfigureMake):
     """Support for building and installing METIS."""
 
+    def __init__(self, *args, **kwargs):
+        """Define custom class variables for METIS."""
+        super(EB_METIS, self).__init__(*args, **kwargs)
+
+        self.lib_exts = []
+
     def configure_step(self, *args, **kwargs):
         """Configure build using 'make config' (only for recent versions (>= v5))."""
 
         if LooseVersion(self.version) >= LooseVersion("5"):
 
-            cmd = "make config prefix=%s" % self.installdir
+            cmd = "make %s config prefix=%s" % (self.cfg['configopts'], self.installdir)
             run_cmd(cmd, log_all=True, simple=True)
+
+            if 'shared=1' in self.cfg['configopts']:
+                self.lib_exts.append('so')
+            else:
+                self.lib_exts.append('a')
 
     def build_step(self):
         """Add make options before building."""
@@ -126,9 +137,8 @@ class EB_METIS(ConfigureMake):
             dirs += ["Lib"]
 
         custom_paths = {
-                        'files': ['bin/%s' % x for x in binfiles] + ['include/%s' % x for x in incfiles] +
-                                 ['lib/libmetis.a'],
-                        'dirs' : dirs
-                       }
-
+            'files': ['bin/%s' % x for x in binfiles] + ['include/%s' % x for x in incfiles] +
+                     ['lib/libmetis.%s' % x for x in self.lib_exts],
+            'dirs' : dirs,
+        }
         super(EB_METIS, self).sanity_check_step(custom_paths=custom_paths)

@@ -56,6 +56,11 @@ class EB_CHARMM(EasyBlock):
         }
         return EasyBlock.extra_options(extra_vars)
 
+    def __init__(self, *args, **kwargs):
+        """Initialisation of custom class variables for CHARMM."""
+        super(EB_CHARMM, self).__init__(*args, **kwargs)
+        self.arch = 'UNKNOWN'
+
     def configure_step(self):
         # Clean out old dir but don't create new one
         self.cfg['dontcreateinstalldir'] = True

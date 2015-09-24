@@ -40,7 +40,7 @@ import easybuild.tools.toolchain as toolchain
 from easybuild.easyblocks.generic.cmakemake import CMakeMake
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.tools.build_log import EasyBuildError
-from easybuild.tools.modules import get_software_root, get_software_version
+from easybuild.tools.modules import get_software_root, get_software_version, get_software_libdir
 
 
 class EB_netCDF(CMakeMake):
@@ -65,9 +65,22 @@ class EB_netCDF(CMakeMake):
             ConfigureMake.configure_step(self)
 
         else:
-            hdf5 = get_software_root('HDF5')
-            if hdf5:
-                env.setvar('HDF5_ROOT', hdf5)
+            self.cfg.update('configopts', '-DCMAKE_BUILD_TYPE=RELEASE -DCMAKE_C_FLAGS_RELEASE="-DNDEBUG " ')
+            for (dep, libname) in [('cURL', 'curl'), ('HDF5', 'hdf5'), ('Szip', 'sz'), ('zlib', 'z')]:
+                dep_root = get_software_root(dep)
+                dep_libdir = get_software_libdir(dep)
+                if dep_root:
+                    incdir = os.path.join(dep_root, 'include')
+                    self.cfg.update('configopts', '-D%s_INCLUDE_DIR=%s ' % (dep.upper(), incdir))
+                    if dep == 'HDF5':
+                        env.setvar('HDF5_ROOT', dep_root)
+                        libhdf5 = os.path.join(dep_root, dep_libdir, 'libhdf5.so')
+                        self.cfg.update('configopts', '-DHDF5_LIB=%s ' % libhdf5)
+                        libhdf5_hl = os.path.join(dep_root, dep_libdir, 'libhdf5_hl.so')
+                        self.cfg.update('configopts', '-DHDF5_HL_LIB=%s ' % libhdf5_hl)
+                    else:
+                        libso = os.path.join(dep_root, dep_libdir, 'lib%s.so' % libname)
+                        self.cfg.update('configopts', '-D%s_LIBRARY=%s ' % (dep.upper(), libso))
 
             CMakeMake.configure_step(self)
 
@@ -116,7 +129,7 @@ def set_netcdf_env_vars(log):
 
 def get_netcdf_module_set_cmds(log):
     """Get module setenv commands for netCDF."""
-
+    log.deprecated("Use self.module_generator.set_environment rather than relying on get_netcdf_module_set_cmds", '3.0')
     netcdf = os.getenv('NETCDF')
     if netcdf:
         txt = "setenv NETCDF %s\n" % netcdf

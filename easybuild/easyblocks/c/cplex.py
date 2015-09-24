@@ -52,7 +52,7 @@ class EB_CPLEX(Binary):
     def __init__(self, *args, **kwargs):
         """Initialize CPLEX-specific variables."""
         super(EB_CPLEX, self).__init__(*args, **kwargs)
-        self.bindir = None
+        self.bindir = 'UNKNOWN'
 
     def install_step(self):
         """CPLEX has an interactive installer, so use Q&A"""
@@ -114,7 +114,7 @@ class EB_CPLEX(Binary):
 
         txt = super(EB_CPLEX, self).make_module_extra()
         txt += self.module_generator.prepend_paths("PATH", [self.bindir])
-        txt += self.module_generator.set_environment("CPLEX_HOME", "$root/cplex")
+        txt += self.module_generator.set_environment("CPLEX_HOME", os.path.join(self.installdir, 'cplex'))
         self.log.debug("make_module_extra added %s" % txt)
         return txt
 

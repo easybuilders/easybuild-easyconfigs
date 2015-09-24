@@ -43,7 +43,7 @@ class EB_ARB(ConfigureMake):
         super(EB_ARB, self).__init__(*args, **kwargs)
 
         self.build_in_installdir = True
-        self.subdir = None
+        self.subdir = 'UNKNOWN'
 
     def configure_step(self):
         """No separate configure step for ARB."""

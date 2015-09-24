@@ -139,18 +139,15 @@ class EB_imkl(IntelBase):
     def make_module_extra(self):
         """Overwritten from Application to add extra txt"""
         txt = super(EB_imkl, self).make_module_extra()
-        txt += self.module_generator.prepend_paths(self.license_env_var, [self.license_file], allow_abs=True)
-        if self.cfg['m32']:
-            txt += self.module_generator.prepend_paths('NLSPATH', '$root/idb/32/locale/%l_%t/%N')
-        else:
-            txt += self.module_generator.prepend_paths('NLSPATH', '$root/idb/intel64/locale/%l_%t/%N')
-        txt += self.module_generator.set_environment('MKLROOT', '$root')
+        txt += self.module_generator.set_environment('MKLROOT', os.path.join(self.installdir, 'mkl'))
         return txt
 
     def post_install_step(self):
         """
         Install group libraries and interfaces (if desired).
         """
+        super(EB_imkl, self).post_install_step()
+
         # reload the dependencies
         self.load_dependency_modules()
 
@@ -326,14 +323,14 @@ class EB_imkl(IntelBase):
         libs = ["libmkl_core.so", "libmkl_gnu_thread.so", "libmkl_intel_thread.so", "libmkl_sequential.so"]
         extralibs = ["libmkl_blacs_intelmpi_%(suff)s.so", "libmkl_scalapack_%(suff)s.so"]
 
-        compsuff = '_intel'
-        if get_software_root('icc') is None:
-            if get_software_root('GCC'):
-                compsuff = '_gnu'
-            else:
-                raise EasyBuildError("Not using Intel compilers or GCC, don't know compiler suffix for FFTW libraries.")
-
         if self.cfg['interfaces']:
+	    compsuff = '_intel'
+	    if get_software_root('icc') is None:
+		if get_software_root('GCC'):
+		    compsuff = '_gnu'
+		else:
+		    raise EasyBuildError("Not using Intel compilers or GCC, don't know compiler suffix for FFTW libraries.")
+
             precs = ['_double', '_single']
             if ver < LooseVersion('11'):
                 # no precision suffix in libfftw2 libs before imkl v11

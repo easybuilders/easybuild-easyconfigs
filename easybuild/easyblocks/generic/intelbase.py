@@ -45,7 +45,7 @@ from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.run import run_cmd
 
-from vsc import fancylogger
+from vsc.utils import fancylogger
 _log = fancylogger.getLogger('generic.intelbase')
 
 
@@ -82,18 +82,14 @@ class IntelBase(EasyBlock):
 
     def __init__(self, *args, **kwargs):
         """Constructor, adds extra config options"""
-        self.license_file = None
-        self.license_env_var = None
+        super(IntelBase, self).__init__(*args, **kwargs)
+
+        self.license_file = 'UNKNOWN'
+        self.license_env_var = 'UNKNOWN'
 
         self.home_subdir = os.path.join(os.getenv('HOME'), 'intel')
         common_tmp_dir = os.path.dirname(tempfile.gettempdir())  # common tmp directory, same across nodes
         self.home_subdir_local = os.path.join(common_tmp_dir, os.getenv('USER'), 'easybuild_intel')
-
-        super(IntelBase, self).__init__(*args, **kwargs)
-
-        # prepare (local) 'intel' home subdir
-        self.setup_local_home_subdir()
-        self.clean_home_subdir()
 
     @staticmethod
     def extra_options(extra_vars=None):
@@ -164,6 +160,10 @@ class IntelBase(EasyBlock):
 
     def configure_step(self):
         """Configure: handle license file and clean home dir."""
+
+        # prepare (local) 'intel' home subdir
+        self.setup_local_home_subdir()
+        self.clean_home_subdir()
 
         lic_env_var = None  # environment variable that will be used
         default_lic_env_var = 'INTEL_LICENSE_FILE'
@@ -344,6 +344,21 @@ class IntelBase(EasyBlock):
             shutil.rmtree(os.path.join(self.installdir, self.name))
         except OSError, err:
             raise EasyBuildError("Failed to move contents of %s to %s: %s", subdir, self.installdir, err)
+
+    def make_module_extra(self):
+        """Custom variable definitions in module file."""
+        txt = super(IntelBase, self).make_module_extra()
+
+        txt += self.module_generator.prepend_paths(self.license_env_var, [self.license_file],
+                                                   allow_abs=True, expand_relpaths=False)
+
+        if self.cfg['m32']:
+            nlspath = os.path.join('idb', '32', 'locale', '%l_%t', '%N')
+        else:
+            nlspath = os.path.join('idb', 'intel64', 'locale', '%l_%t', '%N')
+        txt += self.module_generator.prepend_paths('NLSPATH', nlspath)
+
+        return txt
 
     def cleanup_step(self):
         """Cleanup leftover mess

@@ -61,7 +61,7 @@ class EB_ROOT(ConfigureMake):
         """Custom extra module file entries for ROOT."""
         txt = super(EB_ROOT, self).make_module_extra()
 
-        txt += self.module_generator.set_environment('ROOTSYS', '$root')
+        txt += self.module_generator.set_environment('ROOTSYS', self.installdir)
         txt += self.module_generator.prepend_paths('CPATH',['include/root'])
         txt += self.module_generator.prepend_paths('LD_LIBRARY_PATH',['lib/root'])
         txt += self.module_generator.prepend_paths('PYTHONPATH', ['lib/root', 'lib/root/python'])

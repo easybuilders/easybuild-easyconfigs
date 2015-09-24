@@ -155,10 +155,3 @@ class EB_icc(IntelBase):
                     dirmap[k].append(v2)
 
         return dirmap
-
-    def make_module_extra(self):
-        """Add extra environment variables for icc, for license file and NLS path."""
-        txt = super(EB_icc, self).make_module_extra()
-        txt += self.module_generator.prepend_paths(self.license_env_var, [self.license_file], allow_abs=True)
-        txt += self.module_generator.prepend_paths('NLSPATH', '$root/idb/intel64/locale/%l_%t/%N')
-        return txt

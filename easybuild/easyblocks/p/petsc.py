@@ -239,7 +239,8 @@ class EB_PETSc(ConfigureMake):
 
             cmd = "./config/configure.py %s" % self.get_cfg('configopts')
             run_cmd(cmd, log_all=True, simple=True)
-        # PETSc > 3.5, make does not accept -j 
+
+        # PETSc > 3.5, make does not accept -j
         if LooseVersion(self.version) >= LooseVersion("3.5"):
             self.cfg['parallel'] = None
 
@@ -289,11 +290,11 @@ class EB_PETSc(ConfigureMake):
         txt = super(EB_PETSc, self).make_module_extra()
 
         if self.cfg['sourceinstall']:
-            txt += self.module_generator.set_environment('PETSC_DIR', '$root/%s' % self.petsc_subdir)
+            txt += self.module_generator.set_environment('PETSC_DIR', os.path.join(self.installdir, self.petsc_subdir))
             txt += self.module_generator.set_environment('PETSC_ARCH', self.petsc_arch)
 
         else:
-            txt += self.module_generator.set_environment('PETSC_DIR', '$root')
+            txt += self.module_generator.set_environment('PETSC_DIR', self.installdir)
 
         return txt
 

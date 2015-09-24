@@ -34,8 +34,8 @@ EasyBuild support for building and installing GCC, implemented as an easyblock
 @author: Ward Poelmans (Ghent University)
 """
 
-import re
 import os
+import re
 import shutil
 from copy import copy
 from distutils.version import LooseVersion
@@ -75,12 +75,12 @@ class EB_GCC(ConfigureMake):
 
         self.stagedbuild = False
 
-        if self.version >= LooseVersion("4.8.0") and self.cfg['clooguseisl'] and not self.cfg['withisl']:
+        if LooseVersion(self.version) >= LooseVersion("4.8.0") and self.cfg['clooguseisl'] and not self.cfg['withisl']:
             raise EasyBuildError("Using ISL bundled with CLooG is unsupported in >=GCC-4.8.0. "
                                  "Use a seperate ISL: set withisl=True")
 
-        # I think ISL without CLooG has no purpose in GCC...
-        if self.cfg['withisl'] and not self.cfg['withcloog']:
+        # I think ISL without CLooG has no purpose in GCC < 5.0.0 ...
+        if LooseVersion(self.version) < LooseVersion("5.0.0") and self.cfg['withisl'] and not self.cfg['withcloog']:
             raise EasyBuildError("Activating ISL without CLooG is pointless")
 
         # unset some environment variables that are known to may cause nasty build errors when bootstrapping
@@ -88,6 +88,8 @@ class EB_GCC(ConfigureMake):
         # ubuntu needs the LIBRARY_PATH env var to work apparently (#363)
         if get_os_name() not in ['ubuntu', 'debian']:
             self.cfg.update('unwanted_env_vars', ['LIBRARY_PATH'])
+
+        self.platform_lib = get_platform_name(withversion=True)
 
     def create_dir(self, dirname):
         """
@@ -299,8 +301,6 @@ class EB_GCC(ConfigureMake):
         out, ec = run_cmd("../config.guess", simple=False)
         if ec == 0:
             self.platform_lib = out.rstrip()
-        else:
-            self.platform_lib = get_platform_name(withversion=True)
 
         self.run_configure_cmd(cmd)
 
@@ -471,7 +471,7 @@ class EB_GCC(ConfigureMake):
             if self.cfg['withcloog']:
                 configopts += "--with-cloog=%s " % stage2prefix
 
-                if self.cfg['clooguseisl'] and self.cloogver >= LooseVersion("0.16") and self.version < LooseVersion("4.8.0"):
+                if self.cfg['clooguseisl'] and self.cloogver >= LooseVersion("0.16") and LooseVersion(self.version) < LooseVersion("4.8.0"):
                     configopts += "--enable-cloog-backend=isl "
 
             if self.cfg['withisl']:
@@ -506,7 +506,7 @@ class EB_GCC(ConfigureMake):
         if os_type == 'Linux':
             lib_files.extend(["libgcc_s.%s" % sharedlib_ext])
             # libmudflap is replaced by asan (see release notes gcc 4.9.0)
-            if self.version < LooseVersion("4.9.0"):
+            if LooseVersion(self.version) < LooseVersion("4.9.0"):
                 lib_files.extend(["libmudflap.%s" % sharedlib_ext, "libmudflap.a"])
             else:
                 lib_files.extend(["libasan.%s" % sharedlib_ext, "libasan.a"])

@@ -50,7 +50,7 @@ class EB_SuiteSparse(ConfigureMake):
     def __init__(self, *args, **kwargs):
         """Custom constructor for SuiteSparse easyblock, initialize custom class parameters."""
         super(EB_SuiteSparse, self).__init__(*args, **kwargs)
-        self.config_name = None
+        self.config_name = 'UNKNOWN'
 
     def configure_step(self):
         """Configure build by patching UFconfig.mk or SuiteSparse_config.mk."""
@@ -99,8 +99,8 @@ class EB_SuiteSparse(ConfigureMake):
                     # for variables in cfgvars, substiture lines assignment 
                     # in the file, whatever they are, by assignments to the
                     # values in cfgvars
-                    line = re.sub(r"^\s*(%s\s*=\s*).*$" % var,
-                                  r"\1 %s # patched by EasyBuild" % val,
+                    line = re.sub(r"^\s*(%s\s*=\s*).*\n$" % var,
+                                  r"\1 %s # patched by EasyBuild\n" % val,
                                   line)
                     if line != orig_line:
                         cfgvars.pop(var)

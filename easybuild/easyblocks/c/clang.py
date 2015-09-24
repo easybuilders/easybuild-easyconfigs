@@ -42,7 +42,9 @@ from distutils.version import LooseVersion
 
 from easybuild.easyblocks.generic.cmakemake import CMakeMake
 from easybuild.framework.easyconfig import CUSTOM
+from easybuild.tools import run
 from easybuild.tools.build_log import EasyBuildError
+from easybuild.tools.config import build_option
 from easybuild.tools.filetools import mkdir
 from easybuild.tools.modules import get_software_root
 from easybuild.tools.run import run_cmd
@@ -166,13 +168,24 @@ class EB_Clang(CMakeMake):
             self.llvm_obj_dir_stage3 = os.path.join(self.builddir, 'llvm.obj.3')
 
         if LooseVersion(self.version) >= LooseVersion('3.3'):
+            disable_san_tests = False
             # all sanitizer tests will fail when there's a limit on the vmem
             # this is ugly but I haven't found a cleaner way so far
             (vmemlim, ec) = run_cmd("ulimit -v", regexp=False)
             if not vmemlim.startswith("unlimited"):
+                disable_san_tests = True
                 self.log.warn("There is a virtual memory limit set of %s KB. The tests of the "
                               "sanitizers will be disabled as they need unlimited virtual "
-                              "memory." % vmemlim.strip())
+                              "memory unless --strict=error is used." % vmemlim.strip())
+
+            # the same goes for unlimited stacksize
+            (stacklim, ec) = run_cmd("ulimit -s", regexp=False)
+            if stacklim.startswith("unlimited"):
+                disable_san_tests = True
+                self.log.warn("The stacksize limit is set to unlimited. This causes the ThreadSanitizer "
+                              "to fail. The sanitizers tests will be disabled unless --strict=error is used.")
+
+            if disable_san_tests and build_option('strict') != run.ERROR:
                 self.disable_sanitizer_tests()
 
         # Create and enter build directory.
@@ -353,5 +366,6 @@ class EB_Clang(CMakeMake):
         """Custom variables for Clang module."""
         txt = super(EB_Clang, self).make_module_extra()
         # we set the symbolizer path so that asan/tsan give meanfull output by default
-        txt += self.module_generator.set_environment('ASAN_SYMBOLIZER_PATH', '$root/bin/llvm-symbolizer')
+        asan_symbolizer_path = os.path.join(self.installdir, 'bin', 'llvm-symbolizer')
+        txt += self.module_generator.set_environment('ASAN_SYMBOLIZER_PATH', asan_symbolizer_path)
         return txt

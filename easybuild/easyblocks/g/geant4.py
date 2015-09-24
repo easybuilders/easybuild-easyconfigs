@@ -65,6 +65,12 @@ class EB_Geant4(CMakeMake):
         }
         return CMakeMake.extra_options(extra_vars)
 
+    def __init__(self, *args, **kwargs):
+        """Initialisation of custom class variables for Geant4."""
+        super(EB_Geant4, self).__init__(*args, **kwargs)
+        self.g4system = 'UNKNOWN'
+        self.datadst = 'UNKNOWN'
+
     def configure_step(self):
         """
         Configure Geant4 build, either via CMake for versions more recent than 9.4,
@@ -367,19 +373,21 @@ class EB_Geant4(CMakeMake):
         g4version = '.'.join(self.version.split('.')[:2])
 
         txt = super(EB_Geant4, self).make_module_extra()
-        txt += self.module_generator.set_environment('G4INSTALL', "$root")
+        txt += self.module_generator.set_environment('G4INSTALL', self.installdir)
         #no longer needed in > 9.5, but leave it there for now.
         txt += self.module_generator.set_environment('G4VERSION', g4version)
 
+        incdir = os.path.join(self.installdir, 'include')
+        libdir = os.path.join(self.installdir, 'lib')
         if LooseVersion(self.version) >= LooseVersion("9.5"):
-            txt += self.module_generator.set_environment('G4INCLUDE', "$root/include/Geant4")
-            txt += self.module_generator.set_environment('G4LIB', "$root/lib64/Geant4")
+            txt += self.module_generator.set_environment('G4INCLUDE', os.path.join(incdir, 'Geant4'))
+            txt += self.module_generator.set_environment('G4LIB', os.path.join(self.installdir, 'lib64', 'Geant4'))
         elif LooseVersion(self.version) >= LooseVersion("9.4"):
-            txt += self.module_generator.set_environment('G4INCLUDE', "$root/include/geant4")
-            txt += self.module_generator.set_environment('G4LIB', "$root/lib")
+            txt += self.module_generator.set_environment('G4INCLUDE', os.path.join(incdir, 'geant4'))
+            txt += self.module_generator.set_environment('G4LIB', libdir)
         else:
-            txt += self.module_generator.set_environment('G4INCLUDE', "$root/include/geant4")
-            txt += self.module_generator.set_environment('G4LIB', "$root/lib/geant4")
+            txt += self.module_generator.set_environment('G4INCLUDE', os.path.join(incdir, 'geant4'))
+            txt += self.module_generator.set_environment('G4LIB', os.path.join(libdir, 'geant4'))
             txt += self.module_generator.set_environment('G4SYSTEM', self.g4system)
             txt += self.module_generator.set_environment('G4ABLADATA',
                                                         "%s/G4ABLA%s" % (self.datadst, self.cfg['G4ABLAVersion']))

@@ -170,8 +170,8 @@ class EB_GATE(CMakeMake):
                 path_dirs.append(path_dir)
         txt += self.module_generator.prepend_paths('PATH', path_dirs)
         txt += self.module_generator.prepend_paths('LD_LIBRARY_PATH', [os.path.join(js_dir, 'lib')])
-        txt += self.module_generator.set_environment('GATEHOME', '$root')
-        txt += self.module_generator.set_environment('GC_GATE_EXE_DIR', os.path.join('$root', 'bin', subdir))
+        txt += self.module_generator.set_environment('GATEHOME', self.installdir)
+        txt += self.module_generator.set_environment('GC_GATE_EXE_DIR', os.path.join(self.installdir, 'bin', subdir))
         return txt
 
     def sanity_check_step(self):

@@ -31,7 +31,7 @@ EasyBuild support for building and installing Python, implemented as an easybloc
 @author: Pieter De Baets (Ghent University)
 @author: Jens Timmerman (Ghent University)
 """
-
+import copy
 import os
 import re
 import fileinput
@@ -66,6 +66,14 @@ class EB_Python(ConfigureMake):
         # build and install additional packages with PythonPackage easyblock
         self.cfg['exts_defaultclass'] = "PythonPackage"
         self.cfg['exts_filter'] = EXTS_FILTER_PYTHON_PACKAGES
+
+        # don't pass down any build/install options that may have been specified
+        # 'make' options do not make sense for when building/installing Python libraries (usually via 'python setup.py')
+        msg = "Unsetting '%s' easyconfig parameter before building/installing extensions: %s"
+        for param in ['buildopts', 'installopts']:
+            if self.cfg[param]:
+                self.log.debug(msg, param, self.cfg[param])
+            self.cfg[param] = ''
 
     def configure_step(self):
         """Set extra configure options."""
