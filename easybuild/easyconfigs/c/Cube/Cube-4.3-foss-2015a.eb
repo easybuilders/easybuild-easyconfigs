@@ -1,11 +1,15 @@
+##
 # This is an easyconfig file for EasyBuild, see https://github.com/hpcugent/easybuild
-# Copyright:: Copyright 2013 Juelich Supercomputing Centre, Germany
-# Authors::   Bernd Mohr <b.mohr@fz-juelich.de>
-# License::   New BSD
 #
-# This work is based from experiences from the UNITE project
+# Copyright:: Copyright 2013-2015 Juelich Supercomputing Centre, Germany
+# Authors::   Bernd Mohr <b.mohr@fz-juelich.de>
+#             Markus Geimer <m.geimer@fz-juelich.de>
+# License::   3-clause BSD
+#
+# This work is based on experiences from the UNITE project
 # http://apps.fz-juelich.de/unite/
 ##
+
 easyblock = 'EB_Score_minus_P'
 
 name = "Cube"
@@ -29,14 +33,15 @@ checksums = [
 
 dependencies = [('Qt', '4.8.6')]
 
+# The Cube Java reader is currently only used by TAU, which ships it's own
+# copy as a jar file. If you really want to enable it, make sure to set
+# 'maxparallel=1', as automake's Java support has difficulties handling
+# parallel builds.
+configopts = "--without-java-reader"
+
 sanity_check_paths = {
-    'files': ["bin/cube", "lib/libcube4.a", "lib/libcube4.so"],
+    'files': ["bin/cube", ("lib/libcube4.a", "lib64/libcube4.a"), ("lib/libcube4.so", "lib64/libcube4.so")],
     'dirs': ["include/cube", "include/cubew"],
 }
-
-# If all prerequisites for the Cube Java reader are available on the system,
-# parallel builds will fail. Alternatively, disable the Java reader using
-# configopts = "--without-java-reader"
-maxparallel = 1
 
 moduleclass = 'perf'
