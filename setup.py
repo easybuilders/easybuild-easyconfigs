@@ -49,7 +49,7 @@ if res:
     suff = res.group(1)
 
 dev_regexp = re.compile("^.*[0-9](.?dev[0-9])$")
-res = dev_regexp.search(VERSION)
+res = dev_regexp.search(str(VERSION))
 if res:
     suff = res.group(1)
 
