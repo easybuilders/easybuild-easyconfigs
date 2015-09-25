@@ -37,7 +37,13 @@ from pkgutil import extend_path
 
 # note: release candidates should be versioned as a pre-release, e.g. "1.1rc1"
 # 1.1-rc1 would indicate a post-release, i.e., and update of 1.1, so beware
-VERSION = LooseVersion('2.4.0dev')
+#
+# important note: dev versions should follow the 'X.Y.Z.dev0' format
+# see https://www.python.org/dev/peps/pep-0440/#developmental-releases
+# recent setuptools versions will *TRANSFORM* something like 'X.Y.Zdev' into 'X.Y.Z.dev0', with a warning like
+#   UserWarning: Normalizing '2.4.0dev' to '2.4.0.dev0'
+# This causes problems further up the dependency chain...
+VERSION = LooseVersion('2.4.0.dev0')
 UNKNOWN = 'UNKNOWN'
 
 
