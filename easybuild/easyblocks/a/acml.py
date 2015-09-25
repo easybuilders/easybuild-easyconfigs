@@ -1,5 +1,5 @@
 ##
-# Copyright 2009-2013 Ghent University
+# Copyright 2009-2015 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -37,7 +37,7 @@ from distutils.version import LooseVersion
 
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import CUSTOM
-from easybuild.tools.filetools import run_cmd_qa
+from easybuild.tools.run import run_cmd_qa
 
 
 class EB_ACML(EasyBlock):
@@ -94,16 +94,16 @@ class EB_ACML(EasyBlock):
         basepaths = ["%s%s" % (self.basedir, self.suffix),
                      "%s_mp%s" % (self.basedir, self.suffix)]
 
-        txt += self.moduleGenerator.set_environment('ACML_BASEDIR', basepaths[0])
-        txt += self.moduleGenerator.set_environment('ACML_BASEDIR_MT', basepaths[1])
+        txt += self.module_generator.set_environment('ACML_BASEDIR', basepaths[0])
+        txt += self.module_generator.set_environment('ACML_BASEDIR_MT', basepaths[1])
 
         for key in ['CPATH', 'FPATH']:
             for path in basepaths:
-                txt += self.moduleGenerator.prepend_paths(key, os.path.join(path, 'include'))
+                txt += self.module_generator.prepend_paths(key, os.path.join(path, 'include'))
 
         for key in ['LD_LIBRARY_PATH', 'LIBRARY_PATH']:
             for path in basepaths:
-                txt += self.moduleGenerator.prepend_paths(key, os.path.join(path, 'lib'))
+                txt += self.module_generator.prepend_paths(key, os.path.join(path, 'lib'))
 
         return txt
 

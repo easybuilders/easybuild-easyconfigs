@@ -1,5 +1,5 @@
 ##
-# Copyright 2009-2013 Ghent University
+# Copyright 2009-2015 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -39,8 +39,9 @@ import sys
 from distutils.version import LooseVersion
 
 from easybuild.framework.easyblock import EasyBlock
-from easybuild.tools.filetools import run_cmd
+from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.modules import get_software_root, get_software_version
+from easybuild.tools.run import run_cmd
 
 
 class EB_NCL(EasyBlock):
@@ -58,7 +59,7 @@ class EB_NCL(EasyBlock):
         try:
             os.chdir('config')
         except OSError, err:
-            self.log.error("Failed to change to the 'config' dir: %s" % err)
+            raise EasyBuildError("Failed to change to the 'config' dir: %s", err)
 
         cmd = "make -f Makefile.ini"
         run_cmd(cmd, log_all=True, simple=True)
@@ -118,7 +119,7 @@ class EB_NCL(EasyBlock):
         try:
             os.chdir(self.cfg['start_dir'])
         except OSError, err:
-            self.log.error("Failed to change to the build dir %s: %s" % (self.cfg['start_dir'], err))
+            raise EasyBuildError("Failed to change to the build dir %s: %s", self.cfg['start_dir'], err)
 
         # instead of running the Configure script that asks a zillion questions,
         # let's just generate the config/Site.local file ourselves...
@@ -132,7 +133,7 @@ class EB_NCL(EasyBlock):
         for dep in deps:
             root = get_software_root(dep)
             if not root:
-                self.log.error('%s not available' % dep)
+                raise EasyBuildError("%s not available", dep)
             libs += ' -L%s/lib ' % root
             includes += ' -I%s/include ' % root
 
@@ -201,16 +202,13 @@ class EB_NCL(EasyBlock):
         Custom sanity check for NCL
         """
         custom_paths = {
-                        'files': ["bin/ncl", "lib/libncl.a", "lib/libncarg.a"],
-                        'dirs': ["include/ncarg"]
-                       }
-
+            'files': ["bin/ncl", "lib/libncl.a", "lib/libncarg.a"],
+            'dirs': ["include/ncarg"],
+        }
         super(EB_NCL, self).sanity_check_step(custom_paths=custom_paths)
 
     def make_module_extra(self):
         """Set NCARG_ROOT environment variable in module."""
-
         txt = super(EB_NCL, self).make_module_extra()
-        txt += "setenv\tNCARG_ROOT\t$root\n"
-
+        txt += self.module_generator.set_environment('NCARG_ROOT', self.installdir)
         return txt

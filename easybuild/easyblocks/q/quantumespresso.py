@@ -1,5 +1,5 @@
 ##
-# Copyright 2009-2013 Ghent University
+# Copyright 2009-2015 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -38,6 +38,7 @@ import easybuild.tools.environment as env
 import easybuild.tools.toolchain as toolchain
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.framework.easyconfig import CUSTOM
+from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.modules import get_software_root
 
 
@@ -162,7 +163,7 @@ class EB_QuantumESPRESSO(ConfigureMake):
 
                 sys.stdout.write(line)
         except IOError, err:
-            self.log.error("Failed to patch %s: %s" % (fn, err))
+            raise EasyBuildError("Failed to patch %s: %s", fn, err)
 
         self.log.debug("Contents of patched %s: %s" % (fn, open(fn, "r").read()))
 
@@ -178,7 +179,7 @@ class EB_QuantumESPRESSO(ConfigureMake):
                 sys.stdout.write(line)
 
         except IOError, err:
-            self.log.error("Failed to patch %s: %s" % (fn, err))
+            raise EasyBuildError("Failed to patch %s: %s", fn, err)
 
         self.log.debug("Contents of patched %s: %s" % (fn, open(fn, "r").read()))
 
@@ -187,7 +188,7 @@ class EB_QuantumESPRESSO(ConfigureMake):
         wantdirs = [d for d in os.listdir(self.builddir) if d.startswith(wantprefix)]
 
         if len(wantdirs) > 1:
-            self.log.error("Found more than one directory with %s prefix, help!" % wantprefix)
+            raise EasyBuildError("Found more than one directory with %s prefix, help!", wantprefix)
 
         if len(wantdirs) != 0:
             fn = os.path.join(self.builddir, wantdirs[0], 'conf', 'make.sys.in')
@@ -202,7 +203,7 @@ class EB_QuantumESPRESSO(ConfigureMake):
 
                     sys.stdout.write(line)
             except IOError, err:
-                self.log.error("Failed to patch %s: %s" % (fn, err))
+                raise EasyBuildError("Failed to patch %s: %s", fn, err)
 
         # move non-espresso directories to where they're expected and create symlinks
         try:
@@ -224,7 +225,7 @@ class EB_QuantumESPRESSO(ConfigureMake):
                     os.symlink(os.path.join(targetdir, dirname), os.path.join(targetdir, linkname))
 
         except OSError, err:
-            self.log.error("Failed to move non-espresso directories: %s" % err)
+            raise EasyBuildError("Failed to move non-espresso directories: %s", err)
 
     def install_step(self):
         """Skip install step, since we're building in the install directory."""

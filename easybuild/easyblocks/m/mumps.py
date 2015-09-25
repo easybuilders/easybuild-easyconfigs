@@ -1,5 +1,5 @@
 ##
-# Copyright 2009-2013 Ghent University
+# Copyright 2009-2015 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -34,10 +34,12 @@ EasyBuild support for building and installing MUMPS, implemented as an easyblock
 
 import os
 import shutil
+from distutils.version import LooseVersion
 
 import easybuild.tools.toolchain as toolchain
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.tools import toolchain
+from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.modules import get_software_root
 
 
@@ -60,11 +62,15 @@ class EB_MUMPS(ConfigureMake):
             optf = "-Dintel_ -DALLOW_NON_INIT -nofor-main"
             optl = "-nofor-main"
         elif comp_fam == toolchain.GCC:  #@UndefinedVariable
-            make_inc_templ = 'Makefile.gfortran.%s'
+            if LooseVersion(self.version) >= LooseVersion('5.0.0'):
+                make_inc_templ = 'Makefile.debian.%s'
+            else:
+                make_inc_templ = 'Makefile.gfortran.%s'
+
             optf = "-DALLOW_NON_INIT"
             optl = ""
         else:
-            self.log.error("Unknown compiler family, don't know to prepare for building with specified toolchain.")
+            raise EasyBuildError("Unknown compiler family, don't know to prepare for building with specified toolchain.")
 
         # copy selected Makefile.inc template
         try:
@@ -73,12 +79,12 @@ class EB_MUMPS(ConfigureMake):
             shutil.copy2(src, dst)
             self.log.debug("Successfully copied Makefile.inc to builddir.")
         except OSError, err:
-            self.log.error("Copying Makefile.inc to builddir failed.:%s" % err)
+            raise EasyBuildError("Copying Makefile.inc to builddir failed: %s", err)
 
         # check whether dependencies are available, and prepare
         scotch = get_software_root('SCOTCH')
         if not scotch:
-            self.log.error("SCOTCH dependency not available.")
+            raise EasyBuildError("SCOTCH dependency not available.")
 
         metis = get_software_root('METIS')
         parmetis = get_software_root('ParMETIS')
@@ -91,7 +97,7 @@ class EB_MUMPS(ConfigureMake):
             lmetis= "-L$EBROOTMETIS -lmetis"
             dmetis = "-Dmetis"
         else:
-            self.log.error("METIS or ParMETIS must be available as dependency.")
+            raise EasyBuildError("METIS or ParMETIS must be available as dependency.")
 
         # set Make options
         mumps_make_opts = {
@@ -127,7 +133,7 @@ class EB_MUMPS(ConfigureMake):
                 dst = os.path.join(self.installdir, path)
                 shutil.copytree(src, dst)
         except OSError, err:
-            self.log.error("Copying %s to installation dir %s failed: %s" % (src, dst, err))
+            raise EasyBuildError("Copying %s to installation dir %s failed: %s", src, dst, err)
 
     def sanity_check_step(self):
         """Custom sanity check for MUMPS."""

@@ -32,6 +32,7 @@ import shutil
 import stat
 
 from easybuild.easyblocks.generic.tarball import Tarball
+from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.filetools import adjust_permissions
 
 
@@ -48,6 +49,7 @@ class EB_FoldX(Tarball):
             'foldx_%s.linux' % self.version,  # FoldX v2.x
             'FoldX.linux64',  # FoldX 3.x
             'foldx64Linux',  # FoldX 3.0-beta6
+            'foldx3b6',  # FoldX 3.0 beta 6.1 >_<
         ]
         try:
             os.makedirs(bindir)
@@ -65,5 +67,5 @@ class EB_FoldX(Tarball):
                 else:
                     self.log.warning("Skipping non-file %s in %s, not copying it." % (item, self.cfg['start_dir']))
         except OSError, err:
-            self.log.exception("Copying binaries in %s to install dir 'bin' failed: %s" % (self.cfg['start_dir'], err))
+            raise EasyBuildError("Copying binaries in %s to install dir 'bin' failed: %s", self.cfg['start_dir'], err)
 

@@ -1,10 +1,5 @@
-# #
-# Copyright 2009-2014 Ghent University
-# Copyright 2009-2014 Stijn De Weirdt
-# Copyright 2010 Dries Verdegem
-# Copyright 2010-2014 Kenneth Hoste
-# Copyright 2011 Pieter De Baets
-# Copyright 2011-2014 Jens Timmerman
+##
+# Copyright 2009-2015 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -26,15 +21,24 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
-# #
+##
+"""
+easybuild.easyblocks package declaration
+
+@author: Stijn De Weirdt (Ghent University)
+@author: Dries Verdegem (Ghent University)
+@author: Kenneth Hoste (Ghent University)
+@author: Pieter De Baets (Ghent University)
+@author: Jens Timmerman (Ghent University)
+"""
 import os
 from distutils.version import LooseVersion
 from pkgutil import extend_path
 
 # note: release candidates should be versioned as a pre-release, e.g. "1.1rc1"
 # 1.1-rc1 would indicate a post-release, i.e., and update of 1.1, so beware
-VERSION = LooseVersion("1.16.0dev")
-UNKNOWN = "UNKNOWN"
+VERSION = LooseVersion('2.4.0dev')
+UNKNOWN = 'UNKNOWN'
 
 
 def get_git_revision():
@@ -64,7 +68,9 @@ else:
 
 # Extend path so python finds our easyblocks in the subdirectories where they are located
 subdirs = [chr(l) for l in range(ord('a'), ord('z') + 1)] + ['0']
-__path__.extend([os.path.join(__path__[0], subdir) for subdir in subdirs])
+for subdir in subdirs:
+    __path__ = extend_path(__path__, '%s.%s' % (__name__, subdir))
+
 # And let python know this is not the only place to look for them, so we can have multiple
 # easybuild/easyblock paths in your python search path, next to the official easyblocks distribution
 __path__ = extend_path(__path__, __name__)  # @ReservedAssignment

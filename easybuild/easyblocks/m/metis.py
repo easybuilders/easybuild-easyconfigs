@@ -1,5 +1,5 @@
 ##
-# Copyright 2009-2013 Ghent University
+# Copyright 2009-2015 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -36,19 +36,32 @@ import shutil
 from distutils.version import LooseVersion
 
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
-from easybuild.tools.filetools import run_cmd, mkdir
+from easybuild.tools.build_log import EasyBuildError
+from easybuild.tools.filetools import mkdir
+from easybuild.tools.run import run_cmd
 
 
 class EB_METIS(ConfigureMake):
     """Support for building and installing METIS."""
+
+    def __init__(self, *args, **kwargs):
+        """Define custom class variables for METIS."""
+        super(EB_METIS, self).__init__(*args, **kwargs)
+
+        self.lib_exts = []
 
     def configure_step(self, *args, **kwargs):
         """Configure build using 'make config' (only for recent versions (>= v5))."""
 
         if LooseVersion(self.version) >= LooseVersion("5"):
 
-            cmd = "make config prefix=%s" % self.installdir
+            cmd = "make %s config prefix=%s" % (self.cfg['configopts'], self.installdir)
             run_cmd(cmd, log_all=True, simple=True)
+
+            if 'shared=1' in self.cfg['configopts']:
+                self.lib_exts.append('so')
+            else:
+                self.lib_exts.append('a')
 
     def build_step(self):
         """Add make options before building."""
@@ -83,7 +96,7 @@ class EB_METIS(ConfigureMake):
                 dst = os.path.join(libdir, 'libmetis.a')
                 shutil.copy2(src, dst)
             except OSError, err:
-                self.log.error("Copying file libmetis.a to lib dir failed: %s" % err)
+                raise EasyBuildError("Copying file libmetis.a to lib dir failed: %s", err)
 
             # copy include files
             try:
@@ -93,7 +106,7 @@ class EB_METIS(ConfigureMake):
                     shutil.copy2(src, dst)
                     os.chmod(dst, 0755)
             except OSError, err:
-                self.log.error("Copying file metis.h to include dir failed: %s" % err)
+                raise EasyBuildError("Copying file metis.h to include dir failed: %s", err)
 
             # other applications depending on ParMETIS (SuiteSparse for one) look for both ParMETIS libraries
             # and header files in the Lib directory (capital L). The following symlinks are hence created.
@@ -103,7 +116,7 @@ class EB_METIS(ConfigureMake):
                 for f in ['defs.h', 'macros.h', 'metis.h', 'proto.h', 'rename.h', 'struct.h']:
                     os.symlink(os.path.join(includedir, f), os.path.join(libdir, f))
             except OSError, err:
-                self.log.error("Something went wrong during symlink creation: %s" % err)
+                raise EasyBuildError("Something went wrong during symlink creation: %s", err)
 
         else:
             super(EB_METIS, self).install_step()
@@ -124,9 +137,8 @@ class EB_METIS(ConfigureMake):
             dirs += ["Lib"]
 
         custom_paths = {
-                        'files': ['bin/%s' % x for x in binfiles] + ['include/%s' % x for x in incfiles] +
-                                 ['lib/libmetis.a'],
-                        'dirs' : dirs
-                       }
-
+            'files': ['bin/%s' % x for x in binfiles] + ['include/%s' % x for x in incfiles] +
+                     ['lib/libmetis.%s' % x for x in self.lib_exts],
+            'dirs' : dirs,
+        }
         super(EB_METIS, self).sanity_check_step(custom_paths=custom_paths)

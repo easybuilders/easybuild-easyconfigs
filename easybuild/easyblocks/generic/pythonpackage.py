@@ -1,5 +1,5 @@
 ##
-# Copyright 2009-2013 Ghent University
+# Copyright 2009-2015 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -34,39 +34,45 @@ EasyBuild support for Python packages, implemented as an easyblock
 import os
 import tempfile
 from os.path import expanduser
-from vsc import fancylogger
+from vsc.utils import fancylogger
+from vsc.utils.missing import nub
 
 import easybuild.tools.environment as env
 from easybuild.easyblocks.python import EXTS_FILTER_PYTHON_PACKAGES
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.framework.extensioneasyblock import ExtensionEasyBlock
-from easybuild.tools.filetools import mkdir, rmtree2, run_cmd
-from easybuild.tools.modules import get_software_version
+from easybuild.tools.build_log import EasyBuildError
+from easybuild.tools.filetools import mkdir, rmtree2, which
+from easybuild.tools.run import run_cmd
 
 
-def det_pylibdir():
+UNKNOWN = 'UNKNOWN'
+
+
+def det_pylibdir(plat_specific=False):
     """Determine Python library directory."""
     log = fancylogger.getLogger('det_pylibdir', fname=False)
-    pyver = get_software_version('Python')
-    if not pyver:
-        log.error("Python module not loaded.")
-    else:
-        # determine Python lib dir via distutils
-        # use run_cmd, we can to talk to the active Python, not the system Python running EasyBuild
-        prefix = '/tmp/'
-        pycmd = 'import distutils.sysconfig; print(distutils.sysconfig.get_python_lib(prefix="%s"))' % prefix
-        cmd = "python -c '%s'" % pycmd
-        out, ec = run_cmd(cmd, simple=False)
-        out = out.strip()
 
-        # value obtained should start with specified prefix, otherwise something is very wrong
-        if not out.startswith(prefix):
-            tup = (cmd, prefix, out, ec)
-            log.error("Output of %s does not start with specified prefix %s: %s (exit code %s)" % tup)
+    # determine Python lib dir via distutils
+    # use run_cmd, we can to talk to the active Python, not the system Python running EasyBuild
+    prefix = '/tmp/'
+    args = 'plat_specific=%s, prefix="%s"' % (plat_specific, prefix)
+    pycmd = "import distutils.sysconfig; print(distutils.sysconfig.get_python_lib(%s))" % args
+    cmd = "python -c '%s'" % pycmd
 
-        pylibdir = out.strip()[len(prefix):]
-        log.debug("Determined pylibdir using '%s': %s" % (cmd, pylibdir))
-        return pylibdir
+    log.debug("Determining Python library directory using %s and command '%s'", which('python'), cmd)
+
+    out, ec = run_cmd(cmd, simple=False)
+    txt = out.strip().split('\n')[-1]
+
+    # value obtained should start with specified prefix, otherwise something is very wrong
+    if not txt.startswith(prefix):
+        raise EasyBuildError("Last line of output of %s does not start with specified prefix %s: %s (exit code %s)",
+                             cmd, prefix, out, ec)
+
+    pylibdir = txt[len(prefix):]
+    log.debug("Determined pylibdir using '%s': %s", cmd, pylibdir)
+    return pylibdir
 
 
 class PythonPackage(ExtensionEasyBlock):
@@ -92,32 +98,37 @@ class PythonPackage(ExtensionEasyBlock):
         self.testcmd = None
         self.unpack_options = ''
 
-        self.pylibdir = None
+        self.pylibdir = UNKNOWN
+        self.all_pylibdirs = UNKNOWN
 
         # make sure there's no site.cfg in $HOME, because setup.py will find it and use it
         if os.path.exists(os.path.join(expanduser('~'), 'site.cfg')):
-            self.log.error('Found site.cfg in your home directory (%s), please remove it.' % expanduser('~'))
+            raise EasyBuildError("Found site.cfg in your home directory (%s), please remove it.", expanduser('~'))
 
         if not 'modulename' in self.options:
             self.options['modulename'] = self.name.lower()
 
-    def prepare_step(self):
-        """Prepare easyblock by determining Python site lib dir."""
-        super(PythonPackage, self).prepare_step()
-        if not self.pylibdir:
+    def set_pylibdirs(self):
+        """Set Python lib directory-related class variables."""
+        # pylibdir is the 'main' Python lib directory
+        if self.pylibdir == UNKNOWN:
             self.pylibdir = det_pylibdir()
+        self.log.debug("Python library dir: %s" % self.pylibdir)
+        # on (some) multilib systems, the platform-specific library directory for the system Python is different
+        # cfr. http://serverfault.com/a/88739/126446
+        # so, we keep a list of different Python lib directories to take into account
+        self.all_pylibdirs = nub([self.pylibdir, det_pylibdir(plat_specific=True)])
+        self.log.debug("All Python library dirs: %s" % self.all_pylibdirs)
 
     def prerun(self):
         """Prepare extension by determining Python site lib dir."""
         super(PythonPackage, self).prerun()
-        self.pylibdir = det_pylibdir()
+        self.set_pylibdirs()
 
     def configure_step(self):
         """Configure Python package build."""
-
-        if not self.pylibdir:
-            self.log.error('Python module not loaded.')
-        self.log.debug("Python library dir: %s" % self.pylibdir)
+        # prepare easyblock by determining Python site lib dir(s)
+        self.set_pylibdirs()
 
         if self.sitecfg is not None:
             # used by some extensions, like numpy, to find certain libs
@@ -140,17 +151,22 @@ class PythonPackage(ExtensionEasyBlock):
                 config.write(finaltxt)
                 config.close()
             except IOError:
-                self.log.exception("Creating %s failed" % self.sitecfgfn)
+                raise EasyBuildError("Creating %s failed", self.sitecfgfn)
 
         # creates log entries for python being used, for debugging
         run_cmd("python -V")
         run_cmd("which python")
         run_cmd("python -c 'import sys; print(sys.executable)'")
 
+        # don't add user site directory to sys.path (equivalent to python -s)
+        # see https://www.python.org/dev/peps/pep-0370/
+        env.setvar('PYTHONNOUSERSITE', '1')
+        run_cmd("python -c 'import sys; print(sys.path)'")
+
     def build_step(self):
         """Build Python package using setup.py"""
 
-        cmd = "python setup.py build %s" % self.cfg['buildopts']
+        cmd = "%s python setup.py build %s" % (self.cfg['prebuildopts'], self.cfg['buildopts'])
         run_cmd(cmd, log_all=True, simple=True)
 
     def test_step(self):
@@ -168,16 +184,18 @@ class PythonPackage(ExtensionEasyBlock):
 
                 try:
                     testinstalldir = tempfile.mkdtemp()
-                    mkdir(os.path.join(testinstalldir, self.pylibdir), parents=True)
+                    for pylibdir in self.all_pylibdirs:
+                        mkdir(os.path.join(testinstalldir, pylibdir), parents=True)
                 except OSError, err:
-                    self.log.error("Failed to create test install dir: %s" % err)
-
-                tup = (self.cfg['preinstallopts'], testinstalldir, self.cfg['installopts'])
-                cmd = "%s python setup.py install --prefix=%s %s" % tup
-                run_cmd(cmd, log_all=True, simple=True)
+                    raise EasyBuildError("Failed to create test install dir: %s", err)
 
                 run_cmd("python -c 'import sys; print(sys.path)'")  # print Python search path (debug)
-                extrapath = "export PYTHONPATH=%s:$PYTHONPATH && " % os.path.join(testinstalldir, self.pylibdir)
+                abs_pylibdirs = [os.path.join(testinstalldir, pylibdir) for pylibdir in self.all_pylibdirs]
+                extrapath = "export PYTHONPATH=%s && " % os.pathsep.join(abs_pylibdirs + ['$PYTHONPATH'])
+
+                tup = (extrapath, self.cfg['preinstallopts'], testinstalldir, self.cfg['installopts'])
+                cmd = "%s%s python setup.py install --prefix=%s %s" % tup
+                run_cmd(cmd, log_all=True, simple=True)
 
             if self.testcmd:
                 cmd = "%s%s" % (extrapath, self.testcmd)
@@ -187,18 +205,19 @@ class PythonPackage(ExtensionEasyBlock):
                 try:
                     rmtree2(testinstalldir)
                 except OSError, err:
-                    self.log.exception("Removing testinstalldir %s failed: %s" % (testinstalldir, err))
+                    raise EasyBuildError("Removing testinstalldir %s failed: %s", testinstalldir, err)
 
     def install_step(self):
         """Install Python package to a custom path using setup.py"""
 
         # create expected directories
-        abs_pylibdir = os.path.join(self.installdir, self.pylibdir)
-        mkdir(abs_pylibdir, parents=True)
+        abs_pylibdirs = [os.path.join(self.installdir, pylibdir) for pylibdir in self.all_pylibdirs]
+        for pylibdir in abs_pylibdirs:
+            mkdir(pylibdir, parents=True)
 
         # set PYTHONPATH as expected
         pythonpath = os.getenv('PYTHONPATH')
-        env.setvar('PYTHONPATH', ":".join([x for x in [abs_pylibdir, pythonpath] if x is not None]))
+        env.setvar('PYTHONPATH', os.pathsep.join([x for x in abs_pylibdirs + [pythonpath] if x is not None]))
 
         # actually install Python package
         tup = (self.cfg['preinstallopts'], self.installdir, self.cfg['installopts'])
@@ -209,13 +228,14 @@ class PythonPackage(ExtensionEasyBlock):
         if pythonpath is not None:
             env.setvar('PYTHONPATH', pythonpath)
 
-    def run(self):
+    def run(self, *args, **kwargs):
         """Perform the actual Python package build/installation procedure"""
 
         if not self.src:
-            self.log.error("No source found for Python package %s, required for installation. (src: %s)" % (self.name,
-                                                                                                            self.src))
-        super(PythonPackage, self).run(unpack_src=True)
+            raise EasyBuildError("No source found for Python package %s, required for installation. (src: %s)",
+                                 self.name, self.src)
+        kwargs.update({'unpack_src': True})
+        super(PythonPackage, self).run(*args, **kwargs)
 
         # configure, build, test, install
         self.configure_step()
@@ -231,8 +251,13 @@ class PythonPackage(ExtensionEasyBlock):
             kwargs.update({'exts_filter': EXTS_FILTER_PYTHON_PACKAGES})
         return super(PythonPackage, self).sanity_check_step(*args, **kwargs)
 
-    def make_module_extra(self):
+    def make_module_extra(self, *args, **kwargs):
         """Add install path to PYTHONPATH"""
+        txt = ''
+        for path in self.all_pylibdirs:
+            fullpath = os.path.join(self.installdir, path)
+            # only extend $PYTHONPATH with existing, non-empty directories
+            if os.path.exists(fullpath) and os.listdir(fullpath):
+                txt += self.module_generator.prepend_paths('PYTHONPATH', path)
 
-        txt = self.moduleGenerator.prepend_paths("PYTHONPATH", [self.pylibdir])
-        return super(PythonPackage, self).make_module_extra(txt)
+        return super(PythonPackage, self).make_module_extra(txt, *args, **kwargs)

@@ -1,9 +1,9 @@
 ##
 # This file is an EasyBuild reciPY as per https://github.com/hpcugent/easybuild
 #
-# Copyright:: Copyright 2012-2013 University of Luxembourg/Luxembourg Centre for Systems Biomedicine
+# Copyright:: Copyright 2012-2015 Uni.Lu/LCSB, NTUA
 # Authors::   Cedric Laczny <cedric.laczny@uni.lu>, Kenneth Hoste
-# Authors::   George Tsouloupas <g.tsouloupas@cyi.ac.cy>, Fotis Georgatos <fotis.georgatos@uni.lu>
+# Authors::   George Tsouloupas <g.tsouloupas@cyi.ac.cy>, Fotis Georgatos <fotis@cern.ch>
 # License::   MIT/GPL
 # $Id$
 #
@@ -24,6 +24,7 @@ import shutil
 from distutils.version import LooseVersion
 
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
+from easybuild.tools.build_log import EasyBuildError
 
 
 class EB_BWA(ConfigureMake):
@@ -52,14 +53,20 @@ class EB_BWA(ConfigureMake):
         """
         srcdir = self.cfg['start_dir']
         destdir = os.path.join(self.installdir, 'bin')
+        mandir = os.path.join(self.installdir, 'man')
+        manman1dir = os.path.join(self.installdir, 'man/man1')
+        manfile = os.path.join(srcdir, 'bwa.1')
         srcfile = None
         try:
             os.makedirs(destdir)
+            os.makedirs(mandir)
+            os.makedirs(manman1dir)
             for filename in self.files:
                 srcfile = os.path.join(srcdir, filename)
                 shutil.copy2(srcfile, destdir)
+            shutil.copy2(manfile, manman1dir)
         except OSError, err:
-            self.log.error("Copying %s to installation dir %s failed: %s" % (srcfile, destdir, err))
+            raise EasyBuildError("Copying %s to installation dir %s failed: %s", srcfile, destdir, err)
 
     def sanity_check_step(self):
         """Custom sanity check for BWA."""

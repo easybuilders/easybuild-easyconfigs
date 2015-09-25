@@ -1,5 +1,5 @@
 ##
-# Copyright 2009-2013 The Cyprus Institute 
+# Copyright 2009-2015 The Cyprus Institute 
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -32,6 +32,7 @@ import os
 
 from easybuild.easyblocks.generic.cmakemake import CMakeMake
 from easybuild.easyblocks.generic.makecp import MakeCp
+from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.filetools import mkdir
 from easybuild.tools.systemtools import get_shared_lib_ext
 
@@ -42,12 +43,12 @@ class EB_BamTools(MakeCp, CMakeMake):
     def configure_step(self):
         """Configure BamTools build."""
         # BamTools requires an out of source build.
+        builddir = os.path.join(self.cfg['start_dir'], 'build')
         try:
-            builddir = os.path.join(self.cfg['start_dir'], 'build')
             mkdir(builddir)
             os.chdir(builddir)
         except OSError, err:
-            self.log.error("")
+            raise EasyBuildError("Failed to move to %s: %s", builddir, err)
 
         CMakeMake.configure_step(self, srcdir='..')
 

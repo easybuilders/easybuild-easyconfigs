@@ -1,5 +1,5 @@
 ##
-# Copyright 2009-2013 Ghent University
+# Copyright 2009-2015 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -36,7 +36,9 @@ import os
 import re
 import shutil
 
+from distutils.version import LooseVersion
 from easybuild.framework.easyblock import EasyBlock
+from easybuild.tools.build_log import EasyBuildError
 
 
 class EB_picard(EasyBlock):
@@ -57,7 +59,7 @@ class EB_picard(EasyBlock):
         if not re.search("%s/?$" % picard_tools_dir, self.cfg['start_dir']):
             self.cfg['start_dir'] = os.path.join(self.cfg['start_dir'], picard_tools_dir)
             if not os.path.exists(self.cfg['start_dir']):
-                self.log.error("Path %s to copy files from doesn't exist." % self.cfg['start_dir'])
+                raise EasyBuildError("Path %s to copy files from doesn't exist.", self.cfg['start_dir'])
 
         for jar in os.listdir(self.cfg['start_dir']):
             src = os.path.join(self.cfg['start_dir'], jar)
@@ -66,12 +68,15 @@ class EB_picard(EasyBlock):
                 shutil.copy2(src, dst)
                 self.log.info("Successfully copied %s to %s" % (src, dst))
             except OSError, err:
-                self.log.error("Failed to copy %s to %s (%s)" % (src, dst, err))
+                raise EasyBuildError("Failed to copy %s to %s (%s)", src, dst, err)
 
     def sanity_check_step(self):
         """Custom sanity check for picard"""
+        jar_files = ['picard']
+        if LooseVersion(self.version) < LooseVersion('1.115'):
+            jar_files.append('sam')
         custom_paths = {
-            'files': ["%s-%s.jar" % (x, self.version) for x in ['picard', 'sam']],
+            'files': ["%s-%s.jar" % (x, self.version) for x in jar_files],
             'dirs': [],
         }
         super(EB_picard, self).sanity_check_step(custom_paths=custom_paths)
@@ -79,5 +84,5 @@ class EB_picard(EasyBlock):
     def make_module_extra(self):
         """Add module entries specific to picard"""
         txt = super(EB_picard, self).make_module_extra()
-        txt += self.moduleGenerator.prepend_paths('PATH', '')
+        txt += self.module_generator.prepend_paths('PATH', '')
         return txt

@@ -31,13 +31,19 @@ EasyBuild support for building and installing Go, implemented as an easyblock
 import os
 import shutil
 
+from distutils.version import LooseVersion
+
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
-from easybuild.tools.filetools import rmtree2, run_cmd
+from easybuild.tools.build_log import EasyBuildError
+from easybuild.tools.filetools import rmtree2
+from easybuild.tools.run import run_cmd
+from easybuild.tools.modules import get_software_root
 
 class EB_Go(ConfigureMake):
     """
     Build Go compiler
     """
+
     def configure_step(self):
         """No dedicated configure step."""
         pass
@@ -55,15 +61,25 @@ class EB_Go(ConfigureMake):
         try:
             os.chdir(srcdir)
         except OSError, err:
-            self.log.error("Failed to move to %s: %s" % (srcdir, err))
+            raise EasyBuildError("Failed to move to %s: %s", srcdir, err)
 
         # $GOROOT_FINAL only specifies the location of the final installation, which gets baked into the binaries
         # the installation itself is *not* done by the all.bash script, that needs to be done manually
-        cmd = "GOROOT_FINAL=%s ./all.bash" % self.installdir
+        # $GOROOT_BOOTSTRAP needs to specify a Go installation directory to build the go toolchain for versions
+        # 1.5 and later.
+        if LooseVersion(self.version) >= LooseVersion('1.5'):
+            go_root = get_software_root('Go')
+            if go_root:
+                cmd = "GOROOT_BOOTSTRAP=%s GOROOT_FINAL=%s ./all.bash" % (go_root, self.installdir)
+            else:
+                raise EasyBuildError("Go is required as a build dependency for installing Go since version 1.5")
+        else:
+            cmd = "GOROOT_FINAL=%s ./all.bash" % self.installdir
+
         run_cmd(cmd, log_all=True, simple=False)
 
         try:
             rmtree2(self.installdir)
             shutil.copytree(self.cfg['start_dir'], self.installdir, symlinks=self.cfg['keepsymlinks'])
         except OSError, err:
-            self.log.error("Failed to copy installation to %s: %s" % (self.installdir, err))
+            raise EasyBuildError("Failed to copy installation to %s: %s", self.installdir, err)

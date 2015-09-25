@@ -80,14 +80,6 @@ class EB_VTune(IntelBase):
 
         return guesses
 
-    def make_module_extra(self):
-        """Custom variable definitions in module file."""
-        
-        txt = super(EB_VTune, self).make_module_extra()
-        txt += self.moduleGenerator.prepend_paths(self.license_env_var, self.license_file, allow_abs=True)
-
-        return txt
-
     def sanity_check_step(self):
         """Custom sanity check paths for Intel VTune."""
 
