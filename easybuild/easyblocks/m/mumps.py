@@ -34,6 +34,7 @@ EasyBuild support for building and installing MUMPS, implemented as an easyblock
 
 import os
 import shutil
+from distutils.version import LooseVersion
 
 import easybuild.tools.toolchain as toolchain
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
@@ -61,7 +62,11 @@ class EB_MUMPS(ConfigureMake):
             optf = "-Dintel_ -DALLOW_NON_INIT -nofor-main"
             optl = "-nofor-main"
         elif comp_fam == toolchain.GCC:  #@UndefinedVariable
-            make_inc_templ = 'Makefile.gfortran.%s'
+            if LooseVersion(self.version) >= LooseVersion('5.0.0'):
+                make_inc_templ = 'Makefile.debian.%s'
+            else:
+                make_inc_templ = 'Makefile.gfortran.%s'
+
             optf = "-DALLOW_NON_INIT"
             optl = ""
         else:

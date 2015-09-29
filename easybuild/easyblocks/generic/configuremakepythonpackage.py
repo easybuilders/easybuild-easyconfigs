@@ -52,8 +52,9 @@ class ConfigureMakePythonPackage(ConfigureMake, PythonPackage):
         """Initialize with PythonPackage."""
         PythonPackage.__init__(self, *args, **kwargs)
 
-    def configure_step(self):
+    def configure_step(self, *args, **kwargs):
         """Configure build using 'python configure'."""
+        PythonPackage.configure_step(self, *args, **kwargs)
         cmd = "%s python %s" % (self.cfg['preconfigopts'], self.cfg['configopts'])
         run_cmd(cmd, log_all=True)
 

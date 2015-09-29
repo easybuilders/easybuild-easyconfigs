@@ -32,9 +32,13 @@ EasyBuild support for building and installing OpenFOAM, implemented as an easybl
 @author: Jens Timmerman (Ghent University)
 @author: Xavier Besseron (University of Luxembourg)
 """
+import fileinput
+import glob
 import os
+import re
 import shutil
 import stat
+import sys
 from distutils.version import LooseVersion
 
 import easybuild.tools.environment as env
@@ -42,7 +46,7 @@ import easybuild.tools.toolchain as toolchain
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.filetools import adjust_permissions, mkdir
-from easybuild.tools.modules import get_software_root
+from easybuild.tools.modules import get_software_root, get_software_version
 from easybuild.tools.run import run_cmd, run_cmd_qa
 
 
@@ -92,9 +96,81 @@ class EB_OpenFOAM(EasyBlock):
 
     def configure_step(self):
         """Configure OpenFOAM build by setting appropriate environment variables."""
+        # compiler & compiler flags
+        comp_fam = self.toolchain.comp_family()
+
+        extra_flags = ''
+        if comp_fam == toolchain.GCC:  #@UndefinedVariable
+            self.wm_compiler = 'Gcc'
+            if get_software_version('GCC') >= LooseVersion('4.8'):
+                # make sure non-gold version of ld is used, since OpenFOAM requires it
+                # see http://www.openfoam.org/mantisbt/view.php?id=685
+                extra_flags = '-fuse-ld=bfd'
+
+            # older versions of OpenFOAM-Extend require -fpermissive
+            if 'extend' in self.name.lower() and LooseVersion(self.version) < LooseVersion('2.0'):
+                extra_flags += ' -fpermissive'
+
+        elif comp_fam == toolchain.INTELCOMP:  #@UndefinedVariable
+            self.wm_compiler = 'Icc'
+
+            # make sure -no-prec-div is used with Intel compilers
+            extra_flags = '-no-prec-div'
+
+        else:
+            raise EasyBuildError("Unknown compiler family, don't know how to set WM_COMPILER")
+
+        for env_var in ['CFLAGS', 'CXXFLAGS']:
+            env.setvar(env_var, "%s %s" % (os.environ.get(env_var, ''), extra_flags))
+
+        # patch out hardcoding of WM_* environment variables
+        # for example, replace 'export WM_COMPILER=Gcc' with ': ${WM_COMPILER:=Gcc}; export WM_COMPILER'
+        for script in [os.path.join(self.builddir, self.openfoamdir, x) for x in ['etc/bashrc', 'etc/cshrc']]:
+            self.log.debug("Patching out hardcoded $WM_* env vars in %s", script)
+            for line in fileinput.input(script, inplace=1, backup='.orig.eb'):
+                for env_var in ['WM_COMPILER', 'WM_MPLIB', 'WM_THIRD_PARTY_DIR']:
+                    from_pat = r"^(setenv|export) (?P<var>%s)[ =](?P<val>.*)$" % env_var
+                    to_pat = r": ${\g<var>:=\g<val>}; export \g<var>"
+                    line = re.sub(from_pat, to_pat, line)
+                sys.stdout.write(line)
+
+        # inject compiler variables into wmake/rules files
+        ldirs = glob.glob(os.path.join(self.builddir, self.openfoamdir, 'wmake', 'rules', 'linux*'))
+        langs = ['c', 'c++']
+        suffixes = ['', 'Opt']
+        wmake_rules_files = [os.path.join(ldir, lang + suff) for ldir in ldirs for lang in langs for suff in suffixes]
+
+        mpicc = os.environ['MPICC']
+        mpicxx = os.environ['MPICXX']
+        cc_seq = os.environ.get('CC_SEQ', os.environ['CC'])
+        cxx_seq = os.environ.get('CXX_SEQ', os.environ['CXX'])
+
+        if self.toolchain.mpi_family() == toolchain.OPENMPI:
+            # no -cc/-cxx flags supported in OpenMPI compiler wrappers
+            c_comp_cmd = 'OMPI_CC="%s" %s' % (cc_seq, mpicc)
+            cxx_comp_cmd = 'OMPI_CXX="%s" %s' % (cxx_seq, mpicxx)
+        else:
+            # -cc/-cxx should work for all MPICH-based MPIs (including Intel MPI)
+            c_comp_cmd = '%s -cc="%s"' % (mpicc, cc_seq)
+            cxx_comp_cmd = '%s -cxx="%s"' % (mpicxx, cxx_seq)
+
+        comp_vars = {
+            # specify MPI compiler wrappers and compiler commands + sequential compiler that should be used by them
+            'cc': c_comp_cmd,
+            'CC': cxx_comp_cmd,
+            'cOPT': os.environ['CFLAGS'],
+            'c++OPT': os.environ['CXXFLAGS'],
+        }
+        for wmake_rules_file in wmake_rules_files:
+            fullpath = os.path.join(self.builddir, self.openfoamdir, wmake_rules_file)
+            self.log.debug("Patching compiler variables in %s", fullpath)
+            for line in fileinput.input(fullpath, inplace=1, backup='.orig.eb'):
+                for comp_var, newval in comp_vars.items():
+                    line = re.sub(r"^(%s\s*=\s*).*$" % re.escape(comp_var), r"\1%s" % newval, line)
+                sys.stdout.write(line)
 
         # enable verbose build for debug purposes
-        env.setvar("FOAM_VERBOSE", "1")
+        env.setvar("FOAM_VERBOSE", '1')
 
         # installation directory
         env.setvar("FOAM_INST_DIR", self.installdir)
@@ -105,21 +181,6 @@ class EB_OpenFOAM(EasyBlock):
         if os.path.exists(self.thrdpartydir):
             os.symlink(os.path.join("..", self.thrdpartydir), self.thrdpartydir)
             env.setvar("WM_THIRD_PARTY_DIR", os.path.join(self.installdir, self.thrdpartydir))
-
-        # compiler
-        comp_fam = self.toolchain.comp_family()
-
-        if comp_fam == toolchain.GCC:  #@UndefinedVariable
-            self.wm_compiler="Gcc"
-
-        elif comp_fam == toolchain.INTELCOMP:  #@UndefinedVariable
-            self.wm_compiler="Icc"
-
-            # make sure -no-prec-div is used with Intel compilers
-            self.cfg.update('prebuildopts', 'CFLAGS="$CFLAGS -no-prec-div" CXXFLAGS="$CXXFLAGS -no-prec-div"')
-
-        else:
-            raise EasyBuildError("Unknown compiler family, don't know how to set WM_COMPILER")
 
         env.setvar("WM_COMPILER", self.wm_compiler)
 
@@ -137,12 +198,18 @@ class EB_OpenFOAM(EasyBlock):
             self.log.debug("List of deps: %s" % self.cfg.dependencies())
             for dep in self.cfg.dependencies():
                 self.cfg.update('prebuildopts', "%s_SYSTEM=1" % dep['name'].upper())
-                self.cfg.update('prebuildopts', "%(name)s_LIB_DIR=$EBROOT%(name)s/lib" % {'name': dep['name'].upper()})
-                self.cfg.update('prebuildopts', "%(name)s_INCLUDE_DIR=$EBROOT%(name)s/include" % {'name': dep['name'].upper()})
+                self.cfg.update('prebuildopts', "{0}_LIB_DIR=$EBROOT{0}/lib".format(dep['name'].upper()))
+                self.cfg.update('prebuildopts', "{0}_INCLUDE_DIR=$EBROOT{0}/include".format(dep['name'].upper()))
         else:
-            scotch = get_software_root('SCOTCH')
-            if scotch:
-                self.cfg.update('prebuildopts', "SCOTCH_ROOT=$EBROOTSCOTCH")
+            for depend in ['SCOTCH', 'METIS', 'CGAL', 'Paraview']:
+                dependloc = None
+                dependloc = get_software_root(depend)
+                if dependloc:
+                    if depend == 'CGAL' and get_software_root('Boost'):
+                        self.cfg.update('prebuildopts', "CGAL_ROOT=%s" % dependloc)
+                        self.cfg.update('prebuildopts', "BOOST_ROOT=%s" % get_software_root('Boost'))
+                    else:
+                        self.cfg.update('prebuildopts', "%s_ROOT=%s" % (depend.upper(), dependloc))
 
     def build_step(self):
         """Build OpenFOAM using make after sourcing script to set environment."""
