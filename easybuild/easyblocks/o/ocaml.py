@@ -35,7 +35,7 @@ from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.run import run_cmd
 
 
-EXTS_FILTER_OCAML_PACKAGES = ('opam list %(ext_name)s.%(ext_version)s', '')
+EXTS_FILTER_OCAML_PACKAGES = ('opam list --installed %(ext_name)s.%(ext_version)s', '')
 OPAM_SUBDIR = 'opam'
 
 
