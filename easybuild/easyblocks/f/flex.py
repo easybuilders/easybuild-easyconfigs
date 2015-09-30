@@ -56,7 +56,7 @@ class EB_flex(ConfigureMake):
 
         custom_paths =  {
                          'files':["bin/%s" % x for x in ["flex", "lex", "lex++"]] + ["include/FlexLexer.h"] +
-                                 ["lib/lib%s.a" % x for x in ["fl", "fl_pic"]],
+                                 [("lib/lib%s.a" % x, "lib64/lib%s.a" % x) for x in ["fl", "fl_pic"]],
                          'dirs':[]
                         }
 
