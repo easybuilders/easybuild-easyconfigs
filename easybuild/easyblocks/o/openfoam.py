@@ -198,12 +198,18 @@ class EB_OpenFOAM(EasyBlock):
             self.log.debug("List of deps: %s" % self.cfg.dependencies())
             for dep in self.cfg.dependencies():
                 self.cfg.update('prebuildopts', "%s_SYSTEM=1" % dep['name'].upper())
-                self.cfg.update('prebuildopts', "%(name)s_LIB_DIR=$EBROOT%(name)s/lib" % {'name': dep['name'].upper()})
-                self.cfg.update('prebuildopts', "%(name)s_INCLUDE_DIR=$EBROOT%(name)s/include" % {'name': dep['name'].upper()})
+                self.cfg.update('prebuildopts', "{0}_LIB_DIR=$EBROOT{0}/lib".format(dep['name'].upper()))
+                self.cfg.update('prebuildopts', "{0}_INCLUDE_DIR=$EBROOT{0}/include".format(dep['name'].upper()))
         else:
-            scotch = get_software_root('SCOTCH')
-            if scotch:
-                self.cfg.update('prebuildopts', "SCOTCH_ROOT=$EBROOTSCOTCH")
+            for depend in ['SCOTCH', 'METIS', 'CGAL', 'Paraview']:
+                dependloc = None
+                dependloc = get_software_root(depend)
+                if dependloc:
+                    if depend == 'CGAL' and get_software_root('Boost'):
+                        self.cfg.update('prebuildopts', "CGAL_ROOT=%s" % dependloc)
+                        self.cfg.update('prebuildopts', "BOOST_ROOT=%s" % get_software_root('Boost'))
+                    else:
+                        self.cfg.update('prebuildopts', "%s_ROOT=%s" % (depend.upper(), dependloc))
 
     def build_step(self):
         """Build OpenFOAM using make after sourcing script to set environment."""

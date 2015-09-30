@@ -53,10 +53,9 @@ class SCons(EasyBlock):
         """
         Test with SCons 
         """
-        cmd = "scons check"
-        (out, _) = run_cmd(cmd, log_all=True)
-
-        return out
+        if self.cfg['runtest']:
+            cmd = "scons %s" % (self.cfg['runtest'])
+            run_cmd(cmd, log_all=True)
 
     def install_step(self):
         """
