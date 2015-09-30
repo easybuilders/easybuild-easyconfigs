@@ -39,7 +39,7 @@ class OCamlPackage(ExtensionEasyBlock):
     """Builds and installs OCaml packages using OPAM package manager."""
 
     def configure_step(self):
-        """No separate configuration for OCaml packages."""
+        """Configure by making sure $OPAMROOT is set correctly."""
         env.setvar('OPAMROOT', self.installdir)
 
     def build_step(self):
@@ -51,8 +51,11 @@ class OCamlPackage(ExtensionEasyBlock):
         pass
 
     def install_step(self):
-        """Installing OCaml packages is just a glorified 'make install'."""
-        # 'opam pin add' fixes the version of the package, and installs it if it's not there already (opam 1.2.x)
+        """Installing OCaml packages using 'opam install' and 'opam pin'."""
+
+        run_cmd("opam install -yv %s.%s" % (self.name, self.version))
+
+        # 'opam pin add' fixes the version of the package
         # see https://opam.ocaml.org/doc/Usage.html#opampin
         run_cmd("opam pin -yv add %s %s" % (self.name, self.version))
 
