@@ -47,16 +47,6 @@ class EB_OCaml(ConfigureMake):
         super(EB_OCaml, self).__init__(*args, **kwargs)
         self.with_opam = False
 
-    def prepare_for_extensions(self):
-        """Set default class and filter for OCaml packages."""
-        # build and install additional packages with OCamlPackage easyblock
-        self.cfg['exts_defaultclass'] = "OCamlPackage"
-        self.cfg['exts_filter'] = EXTS_FILTER_OCAML_PACKAGES
-
-    def fetch_extension_sources(self):
-        """Don't fetch extension sources, OPAM takes care of that (and archiving too)."""
-        return [{'name': ext_name, 'version': ext_version} for ext_name, ext_version in self.cfg['exts_list']]
-
     def configure_step(self):
         """Custom configuration procedure for OCaml."""
         self.cfg['prefix_opt'] = '-prefix '
@@ -100,10 +90,17 @@ class EB_OCaml(ConfigureMake):
 
         self.clean_up_fake_module(fake_mod_data)
 
-    def extensions_step(self):
-        """Install OCaml packages as extensions."""
+    def prepare_for_extensions(self):
+        """Set default class and filter for OCaml packages."""
+        # build and install additional packages with OCamlPackage easyblock
+        self.cfg['exts_defaultclass'] = "OCamlPackage"
+        self.cfg['exts_filter'] = EXTS_FILTER_OCAML_PACKAGES
+        super(EB_OCaml, self).prepare_for_extensions()
         run_cmd("opam init --root=%s" % os.path.join(self.installdir, OPAM_SUBDIR))
-        super(EB_OCaml, self).extensions_step()
+
+    def fetch_extension_sources(self):
+        """Don't fetch extension sources, OPAM takes care of that (and archiving too)."""
+        return [{'name': ext_name, 'version': ext_version} for ext_name, ext_version in self.cfg['exts_list']]
 
     def sanity_check_step(self):
         """Custom sanity check for OCaml."""
