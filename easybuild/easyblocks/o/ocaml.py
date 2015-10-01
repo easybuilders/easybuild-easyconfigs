@@ -35,7 +35,7 @@ from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.run import run_cmd
 
 
-EXTS_FILTER_OCAML_PACKAGES = ('opam list --installed %(ext_name)s.%(ext_version)s', '')
+EXTS_FILTER_OCAML_PACKAGES = ("eval `opam config env` && opam list --installed %(ext_name)s.%(ext_version)s", '')
 OPAM_SUBDIR = 'opam'
 
 
@@ -95,8 +95,10 @@ class EB_OCaml(ConfigureMake):
         # build and install additional packages with OCamlPackage easyblock
         self.cfg['exts_defaultclass'] = "OCamlPackage"
         self.cfg['exts_filter'] = EXTS_FILTER_OCAML_PACKAGES
+
         super(EB_OCaml, self).prepare_for_extensions()
-        run_cmd("opam init --root=%s" % os.path.join(self.installdir, OPAM_SUBDIR))
+
+        run_cmd("opam init")
 
     def fetch_extension_sources(self):
         """Don't fetch extension sources, OPAM takes care of that (and archiving too)."""
@@ -115,8 +117,8 @@ class EB_OCaml(ConfigureMake):
             'dirs': dirs,
         }
 
-        env.setvar('OPAMROOT', os.path.join(self.installdir, OPAM_SUBDIR))
-        run_cmd("opam init --root=%s" % os.path.join(self.installdir, OPAM_SUBDIR))
+        run_cmd("opam init")
+
         super(EB_OCaml, self).sanity_check_step(custom_paths=custom_paths)
 
     def make_module_req_guess(self):

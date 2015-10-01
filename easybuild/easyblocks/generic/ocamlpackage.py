@@ -42,8 +42,8 @@ class OCamlPackage(ExtensionEasyBlock):
     def run(self):
         """Perform OCaml package installation (as extension)."""
         # install using 'opam install'
-        run_cmd("opam install -yv %s.%s" % (self.name, self.version))
+        run_cmd("eval `opam config env` && opam install -yv %s.%s" % (self.name, self.version))
 
         # 'opam pin add' fixes the version of the package
         # see https://opam.ocaml.org/doc/Usage.html#opampin
-        run_cmd("opam pin -yv add %s %s" % (self.name, self.version))
+        run_cmd("eval `opam config env` && opam pin -yv add %s %s" % (self.name, self.version))
