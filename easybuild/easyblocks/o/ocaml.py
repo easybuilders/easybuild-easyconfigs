@@ -124,6 +124,7 @@ class EB_OCaml(ConfigureMake):
         guesses.update({
             'CAML_LD_LIBRARY_PATH': ['lib'],
             'OPAMROOT': [OPAM_SUBDIR],
+            'PATH': ['bin', os.path.join(OPAM_SUBDIR, 'system', 'bin')],
         })
 
         return guesses
