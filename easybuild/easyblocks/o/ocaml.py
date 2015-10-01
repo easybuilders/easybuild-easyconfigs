@@ -117,8 +117,6 @@ class EB_OCaml(ConfigureMake):
             'dirs': dirs,
         }
 
-        run_cmd("opam init")
-
         super(EB_OCaml, self).sanity_check_step(custom_paths=custom_paths)
 
     def make_module_req_guess(self):
