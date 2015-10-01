@@ -69,3 +69,9 @@ class OCamlPackage(ExtensionEasyBlock):
         if not 'exts_filter' in kwargs:
             kwargs.update({'exts_filter': EXTS_FILTER_OCAML_PACKAGES})
         return super(OCamlPackage, self).sanity_check_step(*args, **kwargs)
+
+    def make_module_extra(self):
+        """Update $OCAMLPATH."""
+        txt = super(OCamlPackage, self).make_module_extra()
+        txt += self.module_generator.prepend_paths('OCAMLPATH', self.installdir)
+        return txt
