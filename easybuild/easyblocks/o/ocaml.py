@@ -116,6 +116,7 @@ class EB_OCaml(ConfigureMake):
         }
 
         env.setvar('OPAMROOT', os.path.join(self.installdir, OPAM_SUBDIR))
+        run_cmd("opam init --root=%s" % os.path.join(self.installdir, OPAM_SUBDIR))
         super(EB_OCaml, self).sanity_check_step(custom_paths=custom_paths)
 
     def make_module_req_guess(self):
