@@ -27,11 +27,8 @@ EasyBuild support for OCaml packages, implemented as an easyblock
 
 @author: Kenneth Hoste (Ghent University)
 """
-import os
-
-import easybuild.tools.environment as env
-from easybuild.easyblocks.ocaml import EXTS_FILTER_OCAML_PACKAGES
 from easybuild.framework.extensioneasyblock import ExtensionEasyBlock
+from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.run import run_cmd
 
 
@@ -39,39 +36,14 @@ class OCamlPackage(ExtensionEasyBlock):
     """Builds and installs OCaml packages using OPAM package manager."""
 
     def configure_step(self):
-        """Configure by making sure $OPAMROOT is set correctly."""
-        env.setvar('OPAMROOT', self.installdir)
+        """Raise error when configure step is run: installing OCaml packages stand-alone is not supported (yet)"""
+        raise EasyBuildError("Installing OCaml packages stand-alone is not supported (yet)")
 
-    def build_step(self):
-        """No separate build procedure for OCaml packages."""
-        pass
-
-    def test_step(self):
-        """No separate (standard) test procedure for OCaml packages."""
-        pass
-
-    def install_step(self):
-        """Installing OCaml packages using 'opam install' and 'opam pin'."""
-
+    def run(self):
+        """Perform OCaml package installation (as extension)."""
+        # install using 'opam install'
         run_cmd("opam install -yv %s.%s" % (self.name, self.version))
 
         # 'opam pin add' fixes the version of the package
         # see https://opam.ocaml.org/doc/Usage.html#opampin
         run_cmd("opam pin -yv add %s %s" % (self.name, self.version))
-
-    def run(self):
-        """Perform OCaml package installation (as extension)."""
-        env.setvar('OPAMROOT', os.path.join(self.installdir, 'opam'))
-        self.install_step()
-
-    def sanity_check_step(self, *args, **kwargs):
-        """Custom sanity check for OCaml packages"""
-        if not 'exts_filter' in kwargs:
-            kwargs.update({'exts_filter': EXTS_FILTER_OCAML_PACKAGES})
-        return super(OCamlPackage, self).sanity_check_step(*args, **kwargs)
-
-    def make_module_extra(self):
-        """Update $OCAMLPATH."""
-        txt = super(OCamlPackage, self).make_module_extra()
-        txt += self.module_generator.prepend_paths('OCAMLPATH', '')
-        return txt

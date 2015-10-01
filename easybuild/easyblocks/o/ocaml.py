@@ -95,11 +95,15 @@ class EB_OCaml(ConfigureMake):
             run_cmd("make lib-ext")  # locally build/install required dependencies
             run_cmd("make")
             run_cmd("make install")
-            run_cmd("opam init --root=%s" % os.path.join(self.installdir, OPAM_SUBDIR))
         else:
             self.log.warning("OPAM sources not found in %s: %s", self.builddir, all_dirs)
 
         self.clean_up_fake_module(fake_mod_data)
+
+    def extensions_step(self):
+        """Install OCaml packages as extensions."""
+        run_cmd("opam init --root=%s" % os.path.join(self.installdir, OPAM_SUBDIR))
+        super(EB_OCaml, self).extensions_step()
 
     def sanity_check_step(self):
         """Custom sanity check for OCaml."""
