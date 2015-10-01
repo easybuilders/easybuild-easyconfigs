@@ -85,6 +85,7 @@ class EB_OCaml(ConfigureMake):
             run_cmd("make lib-ext")  # locally build/install required dependencies
             run_cmd("make")
             run_cmd("make install")
+            run_cmd("opam init --root %s" % os.path.join(self.installdir, OPAM_SUBDIR))
         else:
             self.log.warning("OPAM sources not found in %s: %s", self.builddir, all_dirs)
 
@@ -95,10 +96,7 @@ class EB_OCaml(ConfigureMake):
         # build and install additional packages with OCamlPackage easyblock
         self.cfg['exts_defaultclass'] = "OCamlPackage"
         self.cfg['exts_filter'] = EXTS_FILTER_OCAML_PACKAGES
-
         super(EB_OCaml, self).prepare_for_extensions()
-
-        run_cmd("opam init")
 
     def fetch_extension_sources(self):
         """Don't fetch extension sources, OPAM takes care of that (and archiving too)."""
