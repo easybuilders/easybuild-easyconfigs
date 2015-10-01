@@ -73,5 +73,5 @@ class OCamlPackage(ExtensionEasyBlock):
     def make_module_extra(self):
         """Update $OCAMLPATH."""
         txt = super(OCamlPackage, self).make_module_extra()
-        txt += self.module_generator.prepend_paths('OCAMLPATH', self.installdir)
+        txt += self.module_generator.prepend_paths('OCAMLPATH', '')
         return txt
