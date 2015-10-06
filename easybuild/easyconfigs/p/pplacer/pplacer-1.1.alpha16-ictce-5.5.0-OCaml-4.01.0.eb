@@ -19,6 +19,8 @@ sources = [
     'ba5e766.tar.gz',  # pplacer-opam-repository (20151002)
 ]
 
+patches = ['pplacer-%(version)s_fix-sqlite3-req-pkg.patch']
+
 ocaml = 'OCaml'
 ocamlver = '4.01.0'
 versionsuffix = '-%s-%s' % (ocaml, ocamlver)
@@ -28,12 +30,15 @@ dependencies = [
     ('GSL', '1.16'),  # for GSL-OCaml package
     ('SQLite', '3.8.6'),  # for SQLite3-OCaml package
 ]
+builddependencies = [
+    ('M4', '1.4.17'),
+]
 
 # see http://matsen.github.io/pplacer/compiling.html#opam
-prebuildopts = "export OPAMROOT=%(installdir)s && opam init && "
+prebuildopts = "rm -rf %(installdir)s && export OPAMROOT=%(installdir)s && opam init && "
 prebuildopts += "opam repo add pplacer-deps %(builddir)s/pplacer-opam-repository*/ && "
-prebuildopts += "opam update pplacer-deps && eval `opam config env` && "
-prebuildopts += "cat opam-requirements.txt | xargs opam install -y && "
+prebuildopts += "echo 'OPAM UPDATE' && opam update pplacer-deps && echo 'OPAM CONFIG' && eval `opam config env` && "
+prebuildopts += "echo 'OPAM INSTALL' && cat opam-requirements.txt | xargs opam install -y && "
 parallel = 1
 
 files_to_copy = ['bin']
