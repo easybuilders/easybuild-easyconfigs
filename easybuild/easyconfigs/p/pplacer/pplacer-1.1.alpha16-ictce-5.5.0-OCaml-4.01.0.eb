@@ -1,0 +1,48 @@
+easyblock = 'MakeCp'
+
+name = 'pplacer'
+version = '1.1.alpha16'
+
+homepage = 'http://matsen.fhcrc.org/pplacer/'
+description = """Pplacer places query sequences on a fixed reference phylogenetic tree to maximize phylogenetic
+ likelihood or posterior probability according to a reference alignment. Pplacer is designed to be fast, to give
+ useful information about uncertainty, and to offer advanced visualization and downstream analysis."""
+
+toolchain = {'name': 'ictce', 'version': '5.5.0'}
+
+source_urls = [
+    'https://github.com/matsen/pplacer/archive/',
+    'https://github.com/matsen/pplacer-opam-repository/archive/',
+]
+sources = [
+    'v%(version)s.tar.gz',
+    'ba5e766.tar.gz',  # pplacer-opam-repository (20151002)
+]
+
+ocaml = 'OCaml'
+ocamlver = '4.01.0'
+versionsuffix = '-%s-%s' % (ocaml, ocamlver)
+dependencies = [
+    (ocaml, ocamlver),
+    ('zlib', '1.2.7'),  # for CamlZIP OCaml package
+    ('GSL', '1.16'),  # for GSL-OCaml package
+    ('SQLite', '3.8.6'),  # for SQLite3-OCaml package
+]
+
+start_dir = '%(name)-%(version)s'
+
+# see http://matsen.github.io/pplacer/compiling.html#opam
+prebuildopts = "export OPAMROOT=%(installdir)s && opam init && "
+prebuildopts += "opam repo add pplacer-deps %(builddir)s/pplacer-opam-repository*/ && "
+prebuildopts += "opam update pplacer-deps && eval `opam config env` && "
+prebuildopts += "cat opam-requirements.txt | xargs opam install -y && "
+parallel = 1
+
+files_to_copy = ['bin']
+
+sanity_check_paths = {
+    'files': ['bin/guppy', 'bin/pplacer', 'bin/rppr'],
+    'dirs': [],
+}
+
+moduleclass = 'bio'
