@@ -30,7 +30,8 @@ EasyBuild support for building and installing Bowtie, implemented as an easybloc
 @author: Kenneth Hoste (Ghent University)
 @author: Jens Timmerman (Ghent University)
 """
-
+from distutils.version import LooseVersion
+import glob
 import os
 import shutil
 
@@ -47,27 +48,40 @@ class EB_Bowtie(ConfigureMake):
         """
         Set compilers in buildopts, there is no configure script.
         """
-        self.cfg.update('buildopts', 'CC="%s" CPP="%s"' % (os.getenv('CC'), os.getenv('CXX')))
+        comp_opts = 'CC="%(cc)s" CXX="%(cxx)s" CPP="%(cxx)s"' % {'cc': os.getenv('CC'), 'cxx': os.getenv('CXX')}
+        self.cfg.update('buildopts', comp_opts)
+
+        # make sure install target is specified for recent Bowtie versions that support 'make install'
+        if LooseVersion(self.version) >= LooseVersion('1.1.2'):
+            self.cfg.update('installopts', "prefix=%s" % self.installdir)
 
     def install_step(self):
         """
         Install by copying files to install dir
         """
-        srcdir = self.cfg['start_dir']
-        destdir = os.path.join(self.installdir, 'bin')
-        srcfile = None
-        try:
-            os.makedirs(destdir)
-            for filename in ['bowtie-build', 'bowtie', 'bowtie-inspect']:
-                srcfile = os.path.join(srcdir, filename)
-                shutil.copy2(srcfile, destdir)
-        except (IOError, OSError), err:
-            raise EasyBuildError("Copying %s to installation dir %s failed: %s", srcfile, destdir, err)
+        if LooseVersion(self.version) >= LooseVersion('1.1.2'):
+            # 'make install' is supported since Bowtie 1.1.2
+            super(EB_Bowtie, self).install_step()
+        else:
+            srcdir = self.cfg['start_dir']
+            destdir = os.path.join(self.installdir, 'bin')
+            srcfile = None
+            try:
+                os.makedirs(destdir)
+                for srcfile in glob.glob(os.path.join(srcdir, 'bowtie*')):
+                    if not srcfile.endswith('.cpp'):
+                        shutil.copy2(srcfile, destdir)
+            except (IOError, OSError), err:
+                raise EasyBuildError("Copying %s to installation dir %s failed: %s", srcfile, destdir, err)
 
     def sanity_check_step(self):
         """Custom sanity check for Bowtie."""
+        binaries = ['bowtie', 'bowtie-build', 'bowtie-inspect']
+        if LooseVersion(self.version) > LooseVersion('1.1.0'):
+            binaries.extend(['bowtie-align-l', 'bowtie-align-s', 'bowtie-build-l', 'bowtie-build-s',
+                             'bowtie-inspect-l', 'bowtie-inspect-s'])
         custom_paths = {
-            'files': ['bin/bowtie', 'bin/bowtie-build', 'bin/bowtie-inspect'],
+            'files': [os.path.join('bin', x) for x in binaries],
             'dirs': []
         }
         super(EB_Bowtie, self).sanity_check_step(custom_paths=custom_paths)
