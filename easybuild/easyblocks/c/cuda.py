@@ -75,7 +75,7 @@ class EB_CUDA(Binary):
         if 'DISPLAY' in os.environ:
             os.environ.pop('DISPLAY')
 
-        run_cmd_qa(cmd, qanda, std_qa=stdqa, no_qa=noqanda, log_all=True, simple=True)
+        run_cmd_qa(cmd, qanda, std_qa=stdqa, no_qa=noqanda, log_all=True, simple=True, maxhits=1500)
 
     def sanity_check_step(self):
         """Custom sanity check for CUDA."""
@@ -89,8 +89,7 @@ class EB_CUDA(Binary):
         custom_paths = {
             'files': ["bin/%s" % x for x in ["fatbinary", "nvcc", "nvlink", "ptxas"]] +
                      ["%s/lib%s.so" % (x, y) for x in chk_libdir for y in ["cublas", "cudart", "cufft",
-                                                                           "curand", "cusparse"]] +
-                     ["open64/bin/nvopencc"],
+                                                                           "curand", "cusparse"]],
             'dirs': ["include"],
         }
 
