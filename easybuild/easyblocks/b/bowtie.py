@@ -37,6 +37,7 @@ import shutil
 
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.tools.build_log import EasyBuildError
+from easybuild.tools.filetools import mkdir
 
 
 class EB_Bowtie(ConfigureMake):
@@ -63,16 +64,17 @@ class EB_Bowtie(ConfigureMake):
             # 'make install' is supported since Bowtie 1.1.2
             super(EB_Bowtie, self).install_step()
         else:
-            srcdir = self.cfg['start_dir']
             destdir = os.path.join(self.installdir, 'bin')
-            srcfile = None
+            mkdir(destdir)
             try:
-                os.makedirs(destdir)
-                for srcfile in glob.glob(os.path.join(srcdir, 'bowtie*')):
-                    if not srcfile.endswith('.cpp'):
-                        shutil.copy2(srcfile, destdir)
-            except (IOError, OSError), err:
-                raise EasyBuildError("Copying %s to installation dir %s failed: %s", srcfile, destdir, err)
+                glob_pat = os.path.join(self.cfg['start_dir'], 'bowtie*')
+                binaries = [x for x in glob.glob(glob_pat) if os.path.splitext(x)[0] == x]
+                self.log.debug("Copying binaries to %s: %s", destdir, binaries)
+                for binary in binaries:
+                    shutil.copy2(binary, destdir)
+
+            except (IOError, OSError) as err:
+                raise EasyBuildError("Copying binaries to installation dir %s failed: %s", destdir, err)
 
     def sanity_check_step(self):
         """Custom sanity check for Bowtie."""
