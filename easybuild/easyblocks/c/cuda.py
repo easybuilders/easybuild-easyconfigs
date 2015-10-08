@@ -74,8 +74,9 @@ class EB_CUDA(Binary):
         # this is workaround for not being able to specify --nox11 to the Perl install scripts
         if 'DISPLAY' in os.environ:
             os.environ.pop('DISPLAY')
-
-        run_cmd_qa(cmd, qanda, std_qa=stdqa, no_qa=noqanda, log_all=True, simple=True, maxhits=1500)
+    
+        #overriding maxhits default value to 300 (300s wait for nothing to change in the output without seeing a known question)
+        run_cmd_qa(cmd, qanda, std_qa=stdqa, no_qa=noqanda, log_all=True, simple=True, maxhits=300)
 
     def sanity_check_step(self):
         """Custom sanity check for CUDA."""
@@ -88,7 +89,7 @@ class EB_CUDA(Binary):
 
         extra_files = []
         if LooseVersion(self.version) < LooseVersion('7.5'):
-	    extra_files.append('open64/bin/ncopencc')
+            extra_files.append('open64/bin/ncopencc')
 
         custom_paths = {
             'files': ["bin/%s" % x for x in ["fatbinary", "nvcc", "nvlink", "ptxas"]] +
