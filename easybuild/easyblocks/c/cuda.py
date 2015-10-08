@@ -86,10 +86,14 @@ class EB_CUDA(Binary):
         if LooseVersion(self.version) < LooseVersion("6"):
             chk_libdir += ["lib"]
 
+        extra_files = []
+        if LooseVersion(self.version) < LooseVersion('7.5'):
+	    extra_files.append('open64/bin/ncopencc')
+
         custom_paths = {
             'files': ["bin/%s" % x for x in ["fatbinary", "nvcc", "nvlink", "ptxas"]] +
                      ["%s/lib%s.so" % (x, y) for x in chk_libdir for y in ["cublas", "cudart", "cufft",
-                                                                           "curand", "cusparse"]],
+                                                                           "curand", "cusparse"]] + extra_files,
             'dirs': ["include"],
         }
 
