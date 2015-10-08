@@ -88,7 +88,7 @@ class EB_CUDA(Binary):
             chk_libdir += ["lib"]
 
         extra_files = []
-        if LooseVersion(self.version) < LooseVersion('7.5'):
+        if LooseVersion(self.version) < LooseVersion('7'):
             extra_files.append('open64/bin/ncopencc')
 
         custom_paths = {
