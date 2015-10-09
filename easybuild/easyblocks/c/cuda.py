@@ -89,7 +89,7 @@ class EB_CUDA(Binary):
 
         extra_files = []
         if LooseVersion(self.version) < LooseVersion('7'):
-            extra_files.append('open64/bin/ncopencc')
+            extra_files.append('open64/bin/nvopencc')
 
         custom_paths = {
             'files': ["bin/%s" % x for x in ["fatbinary", "nvcc", "nvlink", "ptxas"]] +
