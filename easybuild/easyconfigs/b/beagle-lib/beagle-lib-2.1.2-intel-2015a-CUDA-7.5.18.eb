@@ -1,0 +1,41 @@
+easyblock = 'ConfigureMake'
+
+name = 'beagle-lib'
+#revision r1261
+version = '2.1.2'
+versionsuffix = '-CUDA-7.5.18'
+
+homepage = 'https://github.com/beagle-dev/beagle-lib'
+description = """beagle-lib is a high-performance library that can perform the core
+ calculations at the heart of most Bayesian and Maximum Likelihood
+ phylogenetics packages."""
+
+toolchain = {'name': 'intel', 'version': '2015a'}
+
+source_urls = ['https://github.com/beagle-dev/%(namelower)s/archive/']
+
+sources = ['beagle_release_%s.tar.gz' % (version.replace('.','_'))]
+
+patches = ['%(name)s-%(version)s.patch']
+
+dependencies = [
+    ('Java', '1.8.0_31', '', True),
+    ('Autoconf', '2.69'),
+    ('CUDA','7.5.18','', True)
+]
+
+preconfigopts = './autogen.sh && '
+
+configopts = '--with-cuda=$EBROOTCUDA'
+# parallel build does not work
+parallel = 1
+
+sanity_check_paths = {
+    'files': ["include/libhmsbeagle-1/libhmsbeagle/%s" % includefile
+              for includefile in ["beagle.h", "platform.h"]] +
+             ["lib/libhmsbeagle%s.so" % libfile
+              for libfile in ["-cpu", "-cpu-sse", "-jni" ,""]],
+    'dirs' : []
+}
+
+moduleclass = 'numlib'
