@@ -45,7 +45,7 @@ diff -ur unpatched/AmberTools/src/configure2 amber12/AmberTools/src/configure2
  
          if [ "$mpi" = 'yes' ]; then
 -          mpi_inc=`(mpicc -show 2>&1) | awk 'BEGIN{i=0} {while (i < NF) {if ( substr($i, 1, 2) == "-I" ) {printf("%s ", $i);}; i++;}}'`
-+          mpi_inc=`(mpiicc -show 2>&1) | awk 'BEGIN{i=0} {while (i < NF) {if ( substr($i, 1, 2) == "-I" ) {printf("%s ", $i);}; i++;}}'`
++          mpi_inc=`(${CC} -show 2>&1) | awk 'BEGIN{i=0} {while (i < NF) {if ( substr($i, 1, 2) == "-I" ) {printf("%s ", $i);}; i++;}}'`
            pmemd_cu_includes="$pmemd_cu_includes $mpi_inc"
            pmemd_cu_defines="$pmemd_cu_defines -DMPI -DMPICH_IGNORE_CXX_SEEK"
            pmemd_coptflags="$pmemd_coptflags -DMPICH_IGNORE_CXX_SEEK"
@@ -80,18 +80,17 @@ diff -ur unpatched/AmberTools/src/configure2 amber12/AmberTools/src/configure2
          mkl_processor="64"
          mkl_procstring="ia64"
          mklinterfacelayer='libmkl_intel_lp64.a'
-@@ -2354,12 +2357,14 @@
+@@ -2354,12 +2357,11 @@
    if [ "$crayxt5" = 'yes' -o "$compiler" = 'cray' ]; then
        cc="cc"
        fc="ftn"
 -      mpi_flag="-DMPI "
-+  elif [ "$compiler" = 'intel' ]; then
-+      cc="mpiicc"
-+      fc="mpiifort"
    else
-       cc="mpicc"
-       fc="mpif90"
+-      cc="mpicc"
+-      fc="mpif90"
 -      mpi_flag="-DMPI "
++      cc=${CC}
++      fc=${F90}
    fi
 +  mpi_flag="-DMPI "
  fi
@@ -109,22 +108,16 @@ diff -ur unpatched/AmberTools/src/cpptraj/configure amber12/AmberTools/src/cpptr
    echo "    NOTE: -openmp and -mpi are mutually exclusive, as are -profile and -gprofile."
  #  echo "   --with-hdf5=<DIR>"
  }
-@@ -560,9 +560,15 @@
+@@ -560,9 +560,9 @@
    echo "Using MPI"
    DIRECTIVES="$DIRECTIVES -DMPI"
    if [[ $USECRAY -eq 0 ]] ; then
 -    CC=mpicc
 -    CXX=mpicxx
 -    FC=mpif90
-+    if [[ "${CC}" == "icc" ]] ; then
-+      CC=mpiicc
-+      CXX=mpiicpc
-+      FC=mpiifort
-+    else
-+      CC=mpicc
-+      CXX=mpicxx
-+      FC=mpif90
-+    fi
++    CC=${CC}
++    CXX=${CXX}
++    FC=${F90}
    fi
  fi
  
