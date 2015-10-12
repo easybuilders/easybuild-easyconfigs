@@ -114,10 +114,10 @@ class PythonPackage(ExtensionEasyBlock):
             self.options['modulename'] = self.name.lower()
 
         if self.cfg.get('zipped_egg', False) and not self.cfg.get('use_easy_install', False):
-            raise EasyBuildError("Installing zipped eggs requires use_easy_install")
+            raise EasyBuildError("Installing zipped eggs requires use_easy_install = True")
 
         if self.cfg.get('use_easy_install', False):
-            if which('easy_install') is None:
+            if which(EASY_INSTALL_CMD) is None:
                 raise EasyBuildError("easy_install command not found")
 
             # mainly for debugging
