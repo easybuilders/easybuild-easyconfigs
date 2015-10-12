@@ -88,6 +88,7 @@ class PythonPackage(ExtensionEasyBlock):
             'use_easy_install': [False, "Install using 'easy_install'", CUSTOM],
             'zipped_egg': [False, "Install as a zipped eggs (requires use_easy_install)", CUSTOM],
         })
+        print 'extra_vars from PythonPackage:', extra_vars
         return ExtensionEasyBlock.extra_options(extra_vars=extra_vars)
 
     def __init__(self, *args, **kwargs):
