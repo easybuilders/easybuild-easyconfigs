@@ -231,7 +231,7 @@ class PythonPackage(ExtensionEasyBlock):
                 abs_pylibdirs = [os.path.join(testinstalldir, pylibdir) for pylibdir in self.all_pylibdirs]
                 extrapath = "export PYTHONPATH=%s &&" % os.pathsep.join(abs_pylibdirs + ['$PYTHONPATH'])
 
-                cmd = self._compose_install_command(testinstalldir, extrapath=extrapath)
+                cmd = self.compose_install_command(testinstalldir, extrapath=extrapath)
                 run_cmd(cmd, log_all=True, simple=True)
 
             if self.testcmd:
@@ -257,7 +257,7 @@ class PythonPackage(ExtensionEasyBlock):
         env.setvar('PYTHONPATH', os.pathsep.join([x for x in abs_pylibdirs + [pythonpath] if x is not None]))
 
         # actually install Python package
-        cmd = self._compose_install_command(self.installdir)
+        cmd = self.compose_install_command(self.installdir)
         run_cmd(cmd, log_all=True, simple=True)
 
         # restore PYTHONPATH if it was set
