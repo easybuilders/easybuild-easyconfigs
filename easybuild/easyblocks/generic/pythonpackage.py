@@ -79,14 +79,16 @@ class PythonPackage(ExtensionEasyBlock):
     """Builds and installs a Python package, and provides a dedicated module file."""
 
     @staticmethod
-    def extra_options():
+    def extra_options(extra_vars=None):
         """Easyconfig parameters specific to Python packages."""
-        extra_vars = {
+        if extra_vars is None:
+            extra_vars = {}
+        extra_vars.update({
             'runtest': [True, "Run unit tests.", CUSTOM],  # overrides default
             'use_easy_install': [False, "Install using 'easy_install'", CUSTOM],
             'zipped_egg': [False, "Install as a zipped eggs (requires use_easy_install)", CUSTOM],
-        }
-        return ExtensionEasyBlock.extra_options(extra_vars)
+        })
+        return ExtensionEasyBlock.extra_options(extra_vars=extra_vars)
 
     def __init__(self, *args, **kwargs):
         """Initialize custom class variables."""
