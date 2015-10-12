@@ -42,9 +42,9 @@ class EB_libxml2(ConfigureMake, PythonPackage):
     @staticmethod
     def extra_options(extra_vars=None):
         """Easyconfig parameters specific to libxml2."""
-        extra_vars = PythonPackage.extra_options()
+        extra_vars = ConfigureMake.extra_options()
         print 'extra_vars from EB_libxml2:', extra_vars
-        return ConfigureMake.extra_options(extra_vars=extra_vars)
+        return PythonPackage.extra_options(extra_vars=extra_vars)
 
     def __init__(self, *args, **kwargs):
         """
