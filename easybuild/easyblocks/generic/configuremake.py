@@ -47,12 +47,15 @@ class ConfigureMake(EasyBlock):
     @staticmethod
     def extra_options(extra_vars=None):
         """Extra easyconfig parameters specific to ConfigureMake."""
-        extra_vars = EasyBlock.extra_options(extra_vars)
+        print 'extra_vars from ConfigureMake (1):', extra_vars
+        extra_vars = EasyBlock.extra_options(extra=extra_vars)
+        print 'extra_vars from ConfigureMake (2):', extra_vars
         extra_vars.update({
             'configure_cmd_prefix': ['', "Prefix to be glued before ./configure", CUSTOM],
             'prefix_opt': ['--prefix=', "Prefix command line option for configure script", CUSTOM],
             'tar_config_opts': [False, "Override tar settings as determined by configure.", CUSTOM],
         })
+        print 'extra_vars from ConfigureMake (3):', extra_vars
         return extra_vars
 
     def configure_step(self, cmd_prefix=''):
