@@ -46,6 +46,7 @@ from easybuild.tools.filetools import mkdir, rmtree2, which
 from easybuild.tools.run import run_cmd
 
 
+EASY_INSTALL_CMD = 'easy_install'
 UNKNOWN = 'UNKNOWN'
 
 
@@ -85,7 +86,7 @@ class PythonPackage(ExtensionEasyBlock):
             extra_vars = {}
         extra_vars.update({
             'runtest': [True, "Run unit tests.", CUSTOM],  # overrides default
-            'use_easy_install': [False, "Install using 'easy_install'", CUSTOM],
+            'use_easy_install': [False, "Install using '%s'" % EASY_INSTALL_CMD, CUSTOM],
             'zipped_egg': [False, "Install as a zipped eggs (requires use_easy_install)", CUSTOM],
         })
         return ExtensionEasyBlock.extra_options(extra_vars=extra_vars)
@@ -115,17 +116,22 @@ class PythonPackage(ExtensionEasyBlock):
         if self.cfg.get('zipped_egg', False) and not self.cfg.get('use_easy_install', False):
             raise EasyBuildError("Installing zipped eggs requires use_easy_install")
 
-        self.install_cmd = "python setup.py install"
         if self.cfg.get('use_easy_install', False):
             if which('easy_install') is None:
                 raise EasyBuildError("easy_install command not found")
 
             # mainly for debugging
-            run_cmd("easy_install --version")
+            run_cmd("%s --version" % EASY_INSTALL_CMD)
 
-            self.install_cmd = "easy_install --no-deps"
+            self.install_cmd = "%s --no-deps" % EASY_INSTALL_CMD
             if self.cfg.get('zipped_egg', False):
                 self.install_cmd += " --zip-ok"
+            # '.' is required at the end when using easy_install in unpacked source dir
+            self.install_cmd_extra = '.'
+
+        else:
+            self.install_cmd = "python setup.py install"
+            self.install_cmd_extra = None
 
     def set_pylibdirs(self):
         """Set Python lib directory-related class variables."""
@@ -138,6 +144,19 @@ class PythonPackage(ExtensionEasyBlock):
         # so, we keep a list of different Python lib directories to take into account
         self.all_pylibdirs = nub([self.pylibdir, det_pylibdir(plat_specific=True)])
         self.log.debug("All Python library dirs: %s" % self.all_pylibdirs)
+
+    def compose_install_command(self, prefix, extrapath=None):
+        """Compose full install command."""
+        cmd = []
+        if extrapath:
+            cmd.append(extrapath)
+
+        cmd.extend([self.cfg['preinstallopts'], self.install_cmd, '--prefix=%s' % prefix, self.cfg['installopts']])
+
+        if self.install_cmd_extra:
+            cmd.append(self.install_cmd_extra)
+
+        return ' '.join(cmd)
 
     def prerun(self):
         """Prepare extension by determining Python site lib dir."""
@@ -210,10 +229,10 @@ class PythonPackage(ExtensionEasyBlock):
 
                 run_cmd("python -c 'import sys; print(sys.path)'")  # print Python search path (debug)
                 abs_pylibdirs = [os.path.join(testinstalldir, pylibdir) for pylibdir in self.all_pylibdirs]
-                extrapath = "export PYTHONPATH=%s && " % os.pathsep.join(abs_pylibdirs + ['$PYTHONPATH'])
+                extrapath = "export PYTHONPATH=%s &&" % os.pathsep.join(abs_pylibdirs + ['$PYTHONPATH'])
 
-                tup = (extrapath, self.cfg['preinstallopts'], self.install_cmd, testinstalldir, self.cfg['installopts'])
-                run_cmd("%s%s %s --prefix=%s %s" % tup, log_all=True, simple=True)
+                cmd = self._compose_install_command(testinstalldir, extrapath=extrapath)
+                run_cmd(cmd, log_all=True, simple=True)
 
             if self.testcmd:
                 cmd = "%s%s" % (extrapath, self.testcmd)
@@ -238,8 +257,8 @@ class PythonPackage(ExtensionEasyBlock):
         env.setvar('PYTHONPATH', os.pathsep.join([x for x in abs_pylibdirs + [pythonpath] if x is not None]))
 
         # actually install Python package
-        tup = (self.cfg['preinstallopts'], self.install_cmd, self.installdir, self.cfg['installopts'])
-        run_cmd("%s %s --prefix=%s %s" % tup, log_all=True, simple=True)
+        cmd = self._compose_install_command(self.installdir)
+        run_cmd(cmd, log_all=True, simple=True)
 
         # restore PYTHONPATH if it was set
         if pythonpath is not None:

@@ -35,7 +35,7 @@ import os
 import re
 
 import easybuild.tools.environment as env
-from easybuild.easyblocks.generic.pythonpackage import PythonPackage
+from easybuild.easyblocks.generic.pythonpackage import EASY_INSTALL_CMD, PythonPackage
 from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.run import run_cmd
 
@@ -64,23 +64,19 @@ class VersionIndependentPythonPackage(PythonPackage):
             # this will raise an error and not return
             raise EasyBuildError("Failed to install: %s", err)
 
-        args = [
-            self.install_cmd,
-            '--prefix=%s' % self.installdir,
-        ]
-        if self.install_cmd.startswith('easy_install'):
-            args.extend([
-                '--install-dir=%s' % full_pylibdir,
-                '.',
-            ])
+        if self.install_cmd.startswith(EASY_INSTALL_CMD):
+            self.cfg.update('installopts', '--install-dir=%s' % full_pylibdir)
         else:
-            args.extend([
+            extra_installopts = [
                 '--install-lib=%s' % full_pylibdir,
                 '--single-version-externally-managed',
                 '--record %s' % os.path.join(self.builddir, 'record'),
                 '--no-compile',
-            ])
-        run_cmd(' '.join(args), log_all=True, simple=True, log_output=True)
+            ]
+            self.cfg.update('installopts', ' '.join(extra_installopts))
+
+        cmd = self.compose_install_command(self.installdir)
+        run_cmd(cmd, log_all=True, simple=True, log_output=True)
 
         # setuptools stubbornly replaces the shebang line in scripts with
         # the full path to the Python interpreter used to install;
