@@ -88,7 +88,6 @@ class PythonPackage(ExtensionEasyBlock):
             'use_easy_install': [False, "Install using 'easy_install'", CUSTOM],
             'zipped_egg': [False, "Install as a zipped eggs (requires use_easy_install)", CUSTOM],
         })
-        print 'extra_vars from PythonPackage:', extra_vars
         return ExtensionEasyBlock.extra_options(extra_vars=extra_vars)
 
     def __init__(self, *args, **kwargs):
@@ -113,11 +112,11 @@ class PythonPackage(ExtensionEasyBlock):
         if not 'modulename' in self.options:
             self.options['modulename'] = self.name.lower()
 
-        if self.cfg['zipped_egg'] and not self.cfg['use_easy_install']:
+        if self.cfg.get('zipped_egg', False) and not self.cfg.get('use_easy_install', False):
             raise EasyBuildError("Installing zipped eggs requires use_easy_install")
 
         self.install_cmd = "python setup.py install"
-        if self.cfg['use_easy_install']:
+        if self.cfg.get('use_easy_install', False):
             if which('easy_install') is None:
                 raise EasyBuildError("easy_install command not found")
 
@@ -125,7 +124,7 @@ class PythonPackage(ExtensionEasyBlock):
             run_cmd("easy_install --version")
 
             self.install_cmd = "easy_install --no-deps"
-            if self.cfg['zipped_egg']:
+            if self.cfg.get('zipped_egg', False):
                 self.install_cmd += " --zip-ok"
 
     def set_pylibdirs(self):

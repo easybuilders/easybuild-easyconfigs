@@ -179,7 +179,7 @@ def suite():
     all_pys = glob.glob('%s/*/*.py' % easyblocks_path)
     easyblocks = [eb for eb in all_pys if not eb.endswith('__init__.py') and not '/test/' in eb]
 
-    for easyblock in [e for e in easyblocks if 'libxml2' in e]:
+    for easyblock in easyblocks:
         # dynamically define new inner functions that can be added as class methods to InitTest
         if os.path.basename(easyblock) == 'systemcompiler.py':
             # use GCC as name when testing SystemCompiler easyblock
