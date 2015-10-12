@@ -40,7 +40,7 @@ from easybuild.tools.modules import get_software_root
 class EB_libxml2(ConfigureMake, PythonPackage):
     """Support for building and installing libxml2 with python bindings"""
     @staticmethod
-    def extra_options():
+    def extra_options(extra_vars=None):
         """Easyconfig parameters specific to libxml2."""
         extra_vars = PythonPackage.extra_options()
         print 'extra_vars from EB_libxml2:', extra_vars
