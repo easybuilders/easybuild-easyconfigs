@@ -48,27 +48,34 @@ class EB_Eigen(EasyBlock):
         srcdir = os.path.join(self.cfg['start_dir'], 'Eigen')
         destdir = os.path.join(self.installdir, 'include/Eigen')
         try:
-                os.makedirs(os.path.dirname(destdir))
-                shutil.copytree(srcdir, destdir)
+            os.makedirs(os.path.dirname(destdir))
+            shutil.copytree(srcdir, destdir, ignore=shutil.ignore_patterns('CMakeLists.txt'))
         except OSError, err:
             raise EasyBuildError("Copying %s to installation dir %s failed: %s", srcdir, destdir, err)
+
+        srcfile = os.path.join(self.cfg['start_dir'], 'signature_of_eigen3_matrix_library')
+        destfile = os.path.join(self.installdir, 'include/signature_of_eigen3_matrix_library')
+        try:
+            shutil.copy2(srcfile, destfile)
+        except OSError, err:
+            raise EasyBuildError("Copying %s to installation dir %s failed: %s", srcfile, destfile, err)
 
     def sanity_check_step(self):
         """Custom sanity check for Eigen."""
 
         custom_paths = {
-                        'files': ['include/Eigen/%s' % x for x in ['Array', 'Cholesky', 'CholmodSupport',
-                                                                   'Core', 'Dense', 'Eigen', 'Eigen2Support',
-                                                                   'Eigenvalues', 'Geometry', 'Householder',
-                                                                   'IterativeLinearSolvers', 'Jacobi', 'LU',
-                                                                   'LeastSquares', 'OrderingMethods',
-                                                                   'PaStiXSupport', 'PardisoSupport', 'QR',
-                                                                   'QtAlignedMalloc', 'SVD', 'Sparse',
-                                                                   'SparseCholesky', 'SparseCore', 'StdDeque',
-                                                                   'StdList', 'StdVector', 'SuperLUSupport',
-                                                                   'UmfPackSupport']],
-                        'dirs': []
-                       }
+            'files': ['include/Eigen/%s' % x for x in ['Array', 'Cholesky', 'CholmodSupport',
+                                                       'Core', 'Dense', 'Eigen', 'Eigen2Support',
+                                                       'Eigenvalues', 'Geometry', 'Householder',
+                                                       'IterativeLinearSolvers', 'Jacobi', 'LU',
+                                                       'LeastSquares', 'OrderingMethods',
+                                                       'PaStiXSupport', 'PardisoSupport', 'QR',
+                                                       'QtAlignedMalloc', 'SVD', 'Sparse',
+                                                       'SparseCholesky', 'SparseCore', 'StdDeque',
+                                                       'StdList', 'StdVector', 'SuperLUSupport',
+                                                       'UmfPackSupport']] + ['include/signature_of_eigen3_matrix_library'],
+            'dirs': []
+        }
         super(EB_Eigen, self).sanity_check_step(custom_paths=custom_paths)
 
     def make_module_req_guess(self):

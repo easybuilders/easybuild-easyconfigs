@@ -268,6 +268,11 @@ class PythonPackage(ExtensionEasyBlock):
 
     def make_module_extra(self, *args, **kwargs):
         """Add install path to PYTHONPATH"""
+        txt = ''
+        for path in self.all_pylibdirs:
+            fullpath = os.path.join(self.installdir, path)
+            # only extend $PYTHONPATH with existing, non-empty directories
+            if os.path.exists(fullpath) and os.listdir(fullpath):
+                txt += self.module_generator.prepend_paths('PYTHONPATH', path)
 
-        txt = self.module_generator.prepend_paths("PYTHONPATH", self.all_pylibdirs)
         return super(PythonPackage, self).make_module_extra(txt, *args, **kwargs)
