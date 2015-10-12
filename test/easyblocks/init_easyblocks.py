@@ -132,6 +132,7 @@ def template_init_test(self, easyblock, name='foo', version='1.3.2'):
         # figure out list of mandatory variables, and define with dummy values as necessary
         app_class = get_easyblock_class(ebname)
         extra_options = app_class.extra_options()
+        print easyblock, extra_options.keys()
         check_extra_options_format(extra_options)
 
         # extend easyconfig to make sure mandatory custom easyconfig paramters are defined
@@ -178,7 +179,7 @@ def suite():
     all_pys = glob.glob('%s/*/*.py' % easyblocks_path)
     easyblocks = [eb for eb in all_pys if not eb.endswith('__init__.py') and not '/test/' in eb]
 
-    for easyblock in easyblocks:
+    for easyblock in [e for e in easyblocks if 'libxml2' in e]:
         # dynamically define new inner functions that can be added as class methods to InitTest
         if os.path.basename(easyblock) == 'systemcompiler.py':
             # use GCC as name when testing SystemCompiler easyblock

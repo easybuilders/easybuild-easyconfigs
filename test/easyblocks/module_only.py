@@ -175,7 +175,7 @@ def suite():
     excluded_easyblocks = ['versionindependendpythonpackage.py']
     easyblocks = [e for e in easyblocks if os.path.basename(e) not in excluded_easyblocks]
 
-    for easyblock in easyblocks:
+    for easyblock in [e for e in easyblocks if 'libxml2' in e]:
         # dynamically define new inner functions that can be added as class methods to ModuleOnlyTest
         if os.path.basename(easyblock) == 'systemcompiler.py':
             # use GCC as name when testing SystemCompiler easyblock
