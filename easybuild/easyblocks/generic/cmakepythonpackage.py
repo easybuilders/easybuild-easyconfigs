@@ -46,6 +46,11 @@ class CMakePythonPackage(CMakeMake, PythonPackage):
 
     We use the default CMake implementation, and use make_module_extra from PythonPackage.
     """
+    @staticmethod
+    def extra_options(extra_vars=None):
+        """Easyconfig parameters specific to Python packages thar are configured/built/installed via CMake"""
+        extra_vars = PythonPackage.extra_options(extra_vars=extra_vars)
+        return CMakeMake.extra_options(extra_vars=extra_vars)
 
     def __init__(self, *args, **kwargs):
         """Initialize with PythonPackage."""
