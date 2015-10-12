@@ -132,7 +132,7 @@ def template_init_test(self, easyblock, name='foo', version='1.3.2'):
         # figure out list of mandatory variables, and define with dummy values as necessary
         app_class = get_easyblock_class(ebname)
         extra_options = app_class.extra_options()
-        print easyblock, extra_options.keys()
+        print easyblock, app_class, extra_options.keys()
         check_extra_options_format(extra_options)
 
         # extend easyconfig to make sure mandatory custom easyconfig paramters are defined
