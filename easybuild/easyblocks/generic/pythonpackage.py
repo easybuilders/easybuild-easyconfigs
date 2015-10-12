@@ -118,7 +118,7 @@ class PythonPackage(ExtensionEasyBlock):
 
         if self.cfg.get('use_easy_install', False):
             if which(EASY_INSTALL_CMD) is None:
-                raise EasyBuildError("easy_install command not found")
+                raise EasyBuildError("%s command not found" % EASY_INSTALL_CMD)
 
             # mainly for debugging
             run_cmd("%s --version" % EASY_INSTALL_CMD)
