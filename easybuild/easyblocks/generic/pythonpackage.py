@@ -243,7 +243,8 @@ class PythonPackage(ExtensionEasyBlock):
         """Install Python package to a custom path using setup.py"""
 
         # mainly for debugging
-        run_cmd("%s --version" % EASY_INSTALL_CMD)
+        if self.install_cmd.startswith(EASY_INSTALL_CMD):
+            run_cmd("%s --version" % EASY_INSTALL_CMD)
 
         # create expected directories
         abs_pylibdirs = [os.path.join(self.installdir, pylibdir) for pylibdir in self.all_pylibdirs]
