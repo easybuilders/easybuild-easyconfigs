@@ -137,7 +137,6 @@ class EB_icc(IntelBase):
                 ver_re = re.compile("^gcc \(GCC\) (?P<version>[0-9.]+) [0-9]+", re.M)
                 gccversion = ver_re.search(out).group('version')
 
-            gccversion = None
             # TBB directory structure
             # https://www.threadingbuildingblocks.org/docs/help/tbb_userguide/Linux_OS.htm
             tbbgccversion = 'gcc4.4' # gcc version 4.4 or higher that may or may not support exception_ptr
@@ -151,8 +150,6 @@ class EB_icc(IntelBase):
                 if LooseVersion(self.version) >= LooseVersion("2015"):
                     # Debugger requires INTEL_PYTHONHOME, which only allows for a single value
                     debuggerpath = os.path.join('composer_xe_%s' % self.version.split('.')[0], 'debugger')
-                    if os.path.isdir(os.path.join(self.installdir, debuggerpath, 'python/intel64')):
-                        self.cfg['modextravars'] = { 'INTEL_PYTHONHOME': os.path.join('$root',debuggerpath, 'python/intel64') }
 
                 libpaths = [os.path.join('tbb/lib/intel64', tbbgccversion),
                             'ipp/lib/intel64',
