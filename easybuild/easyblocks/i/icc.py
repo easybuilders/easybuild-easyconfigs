@@ -37,6 +37,7 @@ import re
 from distutils.version import LooseVersion
 
 from easybuild.easyblocks.generic.intelbase import IntelBase, ACTIVATION_NAME_2012, LICENSE_FILE_NAME_2012
+from easybuild.tools.modules import get_software_root, get_software_version
 from easybuild.tools.run import run_cmd
 
 
@@ -111,6 +112,8 @@ class EB_icc(IntelBase):
     def make_module_req_guess(self):
         """Customize paths to check and add in environment.
         """
+        debuggerpath = None
+        prefix = None
         if self.cfg['m32']:
             # 32-bit toolchain
             libpaths = ['lib', 'lib/ia32'],
@@ -123,38 +126,70 @@ class EB_icc(IntelBase):
             }
         else:
             # 64-bit toolkit
+            
+            # using get_software_version('GCC') won't work, while the compiler toolchain is dummy:dummy, which does not
+            # load dependencies. 
+            gccversion = get_software_version('GCC')
+            # manual approach to at least have the system version of gcc
+            if not gccversion:
+                cmd = 'gcc --version'
+                (out, _) = run_cmd(cmd, log_all=True, simple=False)
+                ver_re = re.compile("^gcc \(GCC\) (?P<version>[0-9.]+) [0-9]+", re.M)
+                gccversion = ver_re.search(out).group('version')
+
+            gccversion = None
+            # TBB directory structure
+            # https://www.threadingbuildingblocks.org/docs/help/tbb_userguide/Linux_OS.htm
+            tbbgccversion = 'gcc4.4' # gcc version 4.4 or higher that may or may not support exception_ptr
+            if gccversion and LooseVersion(gccversion) >= LooseVersion("4.1") and LooseVersion(gccversion) < LooseVersion("4.4"):
+                tbbgccversion = 'gcc4.1' # gcc version number between 4.1 and 4.4 that do not support exception_ptr
+
             if LooseVersion(self.version) < LooseVersion("2016"):
-                libpaths = ['compiler/lib/intel64', 'lib/intel64', 'debugger/ipt/intel64/lib',
-                            'ipp/lib/intel64', 'tbb/lib/intel64',
+                prefix = "composer_xe_%s" % self.version
+
+                # Debugger is dependent on INTEL_PYTHONHOME since version 2015 and newer
+                if LooseVersion(self.version) >= LooseVersion("2015"):
+                    # Debugger requires INTEL_PYTHONHOME, which only allows for a single value
+                    debuggerpath = os.path.join('composer_xe_%s' % self.version.split('.')[0], 'debugger')
+                    if os.path.isdir(os.path.join(self.installdir, debuggerpath, 'python/intel64')):
+                        self.cfg['modextravars'] = { 'INTEL_PYTHONHOME': os.path.join('$root',debuggerpath, 'python/intel64') }
+
+                libpaths = [os.path.join('tbb/lib/intel64', tbbgccversion),
+                            'ipp/lib/intel64',
+                            'debugger/ipt/intel64/lib',
+                            'lib/intel64',
+                            'compiler/lib/intel64',
                            ]
                 dirmap = {
-                    'PATH': ['bin/intel64', 'tbb/bin/intel64', 'ipp/bin/intel64', 'debugger/gdb/intel64/bin'],
+                    'PATH': ['debugger/gdb/intel64/bin', 'ipp/bin/intel64', 'tbb/bin/intel64', 'bin/intel64'],
                     'LD_LIBRARY_PATH': libpaths, 
                     'LIBRARY_PATH': libpaths,
-                    'MANPATH': ['man', 'share/man', 'man/en_US', 'debugger/gdb/intel64/share/man'],
+                    'MANPATH': ['debugger/gdb/intel64/share/man', 'man/en_US', 'share/man', 'man'],
                     'CPATH': ['ipp/include', 'tbb/include'],
-                    'INTEL_PYTHONHOME': ['debugger/python/intel64']
                 }
             else:
                 # New Directory Layout for Intel Parallel Studio XE 2016
                 # https://software.intel.com/en-us/articles/new-directory-layout-for-intel-parallel-studio-xe-2016
+                prefix = "compilers_and_libraries_%s/linux" % self.version
+                # Debugger requires INTEL_PYTHONHOME, which only allows for a single value
                 debuggerpath = 'debugger_%s' % self.version.split('.')[0]
+
                 libpaths = ['daal/../compiler/lib/intel64_lin',
-                            'daal/../tbb/lib/intel64_lin/gcc4.4',
+                            os.path.join('daal/../tbb/lib/intel64_lin', tbbgccversion),
                             'daal/lib/intel64_lin',
-                            '%s/libipt/intel64/lib' % debuggerpath,
-                            'tbb/lib/intel64/gcc4.4',
+                            os.path.join(debuggerpath, 'libipt/intel64/lib'),
+                            os.path.join('tbb/lib/intel64', tbbgccversion),
                             'mkl/lib/intel64',
                             'ipp/lib/intel64',
                             'ipp/../compiler/lib/intel64',
-                            'mpi/intel64/lib',
+                            'mpi/intel64',
                             'compiler/lib/intel64',
                             'lib/intel64_lin',
                            ]
                 dirmap = {
-                    'PATH': ['mpi/intel64/bin'
+                    'PATH': ['mpi/intel64/bin',
                              'ipp/bin/intel64',
-                             '%s/gdb/intel64/bin' % debuggerpath,
+                              os.path.join(debuggerpath, 'gdb/intel64/bin'),
                              'bin/intel64',
                              'bin',
                             ],
@@ -162,18 +197,21 @@ class EB_icc(IntelBase):
                     'LIBRARY_PATH': libpaths,
                     'MANPATH': ['man/common', 'man/en_US', 'debugger/gdb/intel64/share/man'],
                     'CPATH': ['ipp/include', 'mkl/include', 'tbb/include', 'daal/include'],
-                    'INTEL_PYTHONHOME': ['%s/python/intel64' % debuggerpath],
                     'DAALROOT': ['daal'],
                     'TBBROOT': ['tbb'],
                     'IPPROOT': ['ipp'],
-                    'CLASSPATH': ['daal/lib/daal.jar'],
+                    'CLASSPATH': ['daal/lib/daal.jar']
                 }
+
+        # set debugger path
+        if debuggerpath:
+            if os.path.isdir(os.path.join(self.installdir, debuggerpath, 'python/intel64')):
+                self.cfg['modextravars'] = { 'INTEL_PYTHONHOME': os.path.join('$root', debuggerpath, 'python/intel64') }
 
         # in recent Intel compiler distributions, the actual binaries are
         # in deeper directories, and symlinked in top-level directories
         # however, not all binaries are symlinked (e.g. mcpcom is not)
         # more recent versions of the Intel Compiler (2013.sp1 and newer)
-        prefix = "composer_xe_%s" % self.version
         if os.path.isdir(os.path.join(self.installdir, prefix)):
             oldmap = dirmap
             dirmap = {}
@@ -183,17 +221,8 @@ class EB_icc(IntelBase):
                     v2 = os.path.join(prefix, v)
                     if os.path.exists(os.path.join(self.installdir, v2)):
                         dirmap[k].append(v2)
-
-        prefix = "compilers_and_libraries_%s/linux" % self.version
-        if os.path.isdir(os.path.join(self.installdir, prefix)):
-            oldmap = dirmap
-            dirmap = {}
-            for k, vs in oldmap.items():
-                dirmap[k] = []
-                for v in vs:
-                    v2 = os.path.join(prefix, v)
-                    if os.path.exists(os.path.join(self.installdir, v2)):
-                        dirmap[k].append(v2)
+                    elif os.path.isdir(os.path.join(self.installdir, v)):
+                        dirmap[k].append(v)
 
         return dirmap
 
