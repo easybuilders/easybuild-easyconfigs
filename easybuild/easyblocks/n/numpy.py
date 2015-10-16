@@ -166,12 +166,16 @@ class EB_numpy(FortranPythonPackage):
         if fft:
             extrasiteconfig += "\n[fftw]\nlibraries = %s" % fft
 
-        if get_software_root('SUITESPARSE'):
-            suitesparseroot = get_software_root('SUITESPARSE')
+        suitesparseroot = get_software_root('SuiteSparse')
+        if suitesparseroot:
             amddir = os.path.join(suitesparseroot, 'AMD')
             umfpackdir = os.path.join(suitesparseroot, 'UMFPACK')
-            extrasiteconfig += "\n[amd]\nlibrary_dirs = %s/Lib\ninclude_dirs = %s/Include\namd_libs = amd" % (amddir, amddir)
-            extrasiteconfig += "\n[umfpack]\nlibrary_dirs = %s/Lib\ninclude_dirs = %s/Include\numfpack_libs = umfpack" % (umfpackdir, umfpackdir)
+            extrasiteconfig += "\n[amd]\nlibrary_dirs = %s/Lib" % amddir
+            extrasiteconfig += "\ninclude_dirs = %s/Include\n" % amddir
+            extrasiteconfig += "amd_libs = amd"
+            extrasiteconfig += "\n[umfpack]\nlibrary_dirs = %s/Lib" % umfpackdir
+            extrasiteconfig += "\ninclude_dirs = %s/Include" % umfpackdir
+            extrasiteconfig += "\numfpack_libs = umfpack"
 
         self.sitecfg = '\n'.join([self.sitecfg, extrasiteconfig])
 
