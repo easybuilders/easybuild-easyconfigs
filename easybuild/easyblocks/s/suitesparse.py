@@ -161,8 +161,13 @@ class EB_SuiteSparse(ConfigureMake):
 
     def make_module_req_guess(self):
         """Add config dir to CPATH so include file is found."""
+        """Add UMFPACK adn AMD library dirs needed for scikit-umfpack."""
         guesses = super(EB_SuiteSparse, self).make_module_req_guess()
-        guesses.update({'CPATH': [self.config_name]})
+        guesses.update({
+            'CPATH': [self.config_name],
+            'LD_LIBRARY_PATH': ['UMFPACK/Lib', 'AMD/Lib'],
+        })
+
         return guesses
 
     def sanity_check_step(self):
