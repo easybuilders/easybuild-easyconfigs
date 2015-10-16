@@ -170,16 +170,18 @@ class EB_numpy(FortranPythonPackage):
         if suitesparseroot:
             amddir = os.path.join(suitesparseroot, 'AMD')
             umfpackdir = os.path.join(suitesparseroot, 'UMFPACK')
-            extrasiteconfig += '\n'.join([
-                "[amd]",
-                "library_dirs = %s" % os.path.join(amddir, 'Lib'),
-                "include_dirs = %s" % os.path.join(amddir, 'Include'),
-                "amd_libs = amd",
-                "[umfpack]",
-                "library_dirs = %s" % os.path.join(umfpackdir, 'Lib'),
-                "include_dirs = %s" % os.path.join(umfpackdir, 'Include'),
-                "umfpack_libs = umfpack",
-            ])
+
+            if os.path.exists(amddir) and os.path.exists(umfpackdir):
+                extrasiteconfig += '\n'.join([
+                    "[amd]",
+                    "library_dirs = %s" % os.path.join(amddir, 'Lib'),
+                    "include_dirs = %s" % os.path.join(amddir, 'Include'),
+                    "amd_libs = amd",
+                    "[umfpack]",
+                    "library_dirs = %s" % os.path.join(umfpackdir, 'Lib'),
+                    "include_dirs = %s" % os.path.join(umfpackdir, 'Include'),
+                    "umfpack_libs = umfpack",
+                ])
 
         self.sitecfg = '\n'.join([self.sitecfg, extrasiteconfig])
 
