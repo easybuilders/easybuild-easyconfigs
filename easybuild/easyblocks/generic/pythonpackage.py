@@ -46,6 +46,7 @@ from easybuild.tools.filetools import mkdir, rmtree2, which
 from easybuild.tools.run import run_cmd
 
 
+# not 'easy_install' deliberately, to avoid that pkg installations listed in easy-install.pth get preference
 EASY_INSTALL_CMD = "python setup.py easy_install"
 UNKNOWN = 'UNKNOWN'
 
