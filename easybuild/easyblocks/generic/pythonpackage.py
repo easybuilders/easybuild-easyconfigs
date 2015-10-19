@@ -49,7 +49,7 @@ from easybuild.tools.run import run_cmd
 # not 'easy_install' deliberately, to avoid that pkg installations listed in easy-install.pth get preference
 # '.' is required at the end when using easy_install/pip in unpacked source dir
 EASY_INSTALL_INSTALL_CMD = "python setup.py easy_install --prefix=%(prefix)s %(installopts)s ."
-PIP_INSTALL_CMD = "pip install --install-option '--prefix=%(prefix)s' %(installopts)s ."
+PIP_INSTALL_CMD = "pip install --install-option '--prefix=%(prefix)s' %(installopts)s $PWD"
 SETUP_PY_INSTALL_CMD = "python setup.py install --prefix=%(prefix)s %(installopts)s"
 UNKNOWN = 'UNKNOWN'
 
