@@ -198,7 +198,7 @@ class PythonPackage(ExtensionEasyBlock):
 
     def build_step(self):
         """Build Python package using setup.py"""
-        if not self.cfg['use_easy_install']:
+        if not self.cfg.get('use_easy_install', False):
             cmd = "%s python setup.py build %s" % (self.cfg['prebuildopts'], self.cfg['buildopts'])
             run_cmd(cmd, log_all=True, simple=True)
 
