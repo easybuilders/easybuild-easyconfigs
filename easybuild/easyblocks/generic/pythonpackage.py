@@ -47,7 +47,9 @@ from easybuild.tools.run import run_cmd
 
 
 # not 'easy_install' deliberately, to avoid that pkg installations listed in easy-install.pth get preference
-EASY_INSTALL_CMD = "python setup.py easy_install"
+# '.' is required at the end when using easy_install/pip in unpacked source dir
+EASY_INSTALL_INSTALL_CMD = "python setup.py easy_install --prefix=%(prefix)s ."
+PIP_INSTALL_CMD = "pip install --install-option '--prefix=%(prefix)s' ."
 UNKNOWN = 'UNKNOWN'
 
 
@@ -87,7 +89,8 @@ class PythonPackage(ExtensionEasyBlock):
             extra_vars = {}
         extra_vars.update({
             'runtest': [True, "Run unit tests.", CUSTOM],  # overrides default
-            'use_easy_install': [False, "Install using '%s'" % EASY_INSTALL_CMD, CUSTOM],
+            'use_easy_install': [False, "Install using '%s'" % EASY_INSTALL_INSTALL_CMD, CUSTOM],
+            'use_pip': [False, "Install using '%s'" % PIP_INSTALL_CMD, CUSTOM],
             'zipped_egg': [False, "Install as a zipped eggs (requires use_easy_install)", CUSTOM],
         })
         return ExtensionEasyBlock.extra_options(extra_vars=extra_vars)
@@ -114,20 +117,31 @@ class PythonPackage(ExtensionEasyBlock):
         if not 'modulename' in self.options:
             self.options['modulename'] = self.name.lower()
 
-        if self.cfg.get('zipped_egg', False) and not self.cfg.get('use_easy_install', False):
-            raise EasyBuildError("Installing zipped eggs requires use_easy_install = True")
-
+        self.use_setup_py = False
         if self.cfg.get('use_easy_install', False):
+            self.install_cmd = EASY_INSTALL_INSTALL_CMD
 
-            self.install_cmd = "%s --no-deps" % EASY_INSTALL_CMD
+            # don't auto-install dependencies
+            self.cfg.update('installopts', '--no-deps')
+
             if self.cfg.get('zipped_egg', False):
-                self.install_cmd += " --zip-ok"
-            # '.' is required at the end when using easy_install in unpacked source dir
-            self.install_cmd_extra = '.'
+                self.cfg.update('installopts', '--zip-ok')
+
+        elif self.cfg.get('use_pip', False):
+            self.install_cmd = PIP_INSTALL_CMD
+
+            # don't auto-install dependencies
+            self.cfg.update('installopts', '--no-deps')
+
+            if self.cfg.get('zipped_egg', False):
+                self.cfg.update('installopts', '--egg')
 
         else:
+            self.use_setup_py = True
             self.install_cmd = "python setup.py install"
-            self.install_cmd_extra = None
+
+            if self.cfg.get('zipped_egg', False):
+                raise EasyBuildError("Installing zipped eggs requires using easy_install or pip")
 
     def set_pylibdirs(self):
         """Set Python lib directory-related class variables."""
@@ -143,14 +157,22 @@ class PythonPackage(ExtensionEasyBlock):
 
     def compose_install_command(self, prefix, extrapath=None):
         """Compose full install command."""
+
+        # mainly for debugging
+        if self.install_cmd.startswith(EASY_INSTALL_INSTALL_CMD):
+            run_cmd("python setup.py easy_install --version")
+        if self.install_cmd.startswith(PIP_INSTALL_CMD):
+            run_cmd("pip --version")
+
         cmd = []
         if extrapath:
             cmd.append(extrapath)
 
-        cmd.extend([self.cfg['preinstallopts'], self.install_cmd, '--prefix=%s' % prefix, self.cfg['installopts']])
-
-        if self.install_cmd_extra:
-            cmd.append(self.install_cmd_extra)
+        cmd.extend([
+            self.cfg['preinstallopts'],
+            self.install_cmd % {'prefix': prefix},
+            self.cfg['installopts'],
+        ])
 
         return ' '.join(cmd)
 
@@ -242,10 +264,6 @@ class PythonPackage(ExtensionEasyBlock):
 
     def install_step(self):
         """Install Python package to a custom path using setup.py"""
-
-        # mainly for debugging
-        if self.install_cmd.startswith(EASY_INSTALL_CMD):
-            run_cmd("%s --version" % EASY_INSTALL_CMD)
 
         # create expected directories
         abs_pylibdirs = [os.path.join(self.installdir, pylibdir) for pylibdir in self.all_pylibdirs]
