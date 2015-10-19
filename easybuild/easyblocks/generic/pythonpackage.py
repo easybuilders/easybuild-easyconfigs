@@ -48,8 +48,9 @@ from easybuild.tools.run import run_cmd
 
 # not 'easy_install' deliberately, to avoid that pkg installations listed in easy-install.pth get preference
 # '.' is required at the end when using easy_install/pip in unpacked source dir
-EASY_INSTALL_INSTALL_CMD = "python setup.py easy_install --prefix=%(prefix)s ."
-PIP_INSTALL_CMD = "pip install --install-option '--prefix=%(prefix)s' ."
+EASY_INSTALL_INSTALL_CMD = "python setup.py easy_install --prefix=%(prefix)s %(installopts)s ."
+PIP_INSTALL_CMD = "pip install --install-option '--prefix=%(prefix)s' %(installopts)s ."
+SETUP_PY_INSTALL_CMD = "python setup.py install --prefix=%(prefix)s %(installopts)s"
 UNKNOWN = 'UNKNOWN'
 
 
@@ -138,10 +139,12 @@ class PythonPackage(ExtensionEasyBlock):
 
         else:
             self.use_setup_py = True
-            self.install_cmd = "python setup.py install"
+            self.install_cmd = SETUP_PY_INSTALL_CMD
 
             if self.cfg.get('zipped_egg', False):
                 raise EasyBuildError("Installing zipped eggs requires using easy_install or pip")
+
+        self.log.debug("Using '%s' as install command", self.install_cmd)
 
     def set_pylibdirs(self):
         """Set Python lib directory-related class variables."""
@@ -170,8 +173,10 @@ class PythonPackage(ExtensionEasyBlock):
 
         cmd.extend([
             self.cfg['preinstallopts'],
-            self.install_cmd % {'prefix': prefix},
-            self.cfg['installopts'],
+            self.install_cmd % {
+                'installopts': self.cfg['installopts'],
+                'prefix': prefix,
+            },
         ])
 
         return ' '.join(cmd)
