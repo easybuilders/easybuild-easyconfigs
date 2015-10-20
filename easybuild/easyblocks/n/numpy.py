@@ -171,7 +171,10 @@ class EB_numpy(FortranPythonPackage):
             amddir = os.path.join(suitesparseroot, 'AMD')
             umfpackdir = os.path.join(suitesparseroot, 'UMFPACK')
 
-            if os.path.exists(amddir) and os.path.exists(umfpackdir):
+            if not os.path.exists(amddir) or not os.path.exists(umfpackdir):
+                raise EasyBuildError("Expected SuiteSparse subdirectories are not both there: %s, %s",
+                                     amddir, umfpackdir)
+            else:
                 extrasiteconfig += '\n'.join([
                     "[amd]",
                     "library_dirs = %s" % os.path.join(amddir, 'Lib'),
