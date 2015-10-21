@@ -131,6 +131,12 @@ class EB_NWChem(ConfigureMake):
 
         # set required NWChem environment variables
         env.setvar('NWCHEM_TOP', self.cfg['start_dir'])
+        if len(self.cfg['start_dir']) > 64:
+            # workaround for:
+            # "The directory name chosen for NWCHEM_TOP is longer than the maximum allowed value of 64 characters"
+            # see also https://svn.pnl.gov/svn/nwchem/trunk/src/util/util_nwchem_srcdir.F
+            env.setvar('NWCHEM_LONG_PATHS', 'TRUE')
+
         env.setvar('NWCHEM_TARGET', self.cfg['target'])
         env.setvar('MSG_COMMS', self.cfg['msg_comms'])
         env.setvar('ARMCI_NETWORK', self.cfg['armci_network'])
