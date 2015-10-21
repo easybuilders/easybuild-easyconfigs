@@ -135,7 +135,7 @@ class EB_NWChem(ConfigureMake):
             # workaround for:
             # "The directory name chosen for NWCHEM_TOP is longer than the maximum allowed value of 64 characters"
             # see also https://svn.pnl.gov/svn/nwchem/trunk/src/util/util_nwchem_srcdir.F
-            env.setvar('NWCHEM_LONG_PATHS', 'TRUE')
+            self.setvar_env_makeopt('NWCHEM_LONG_PATHS', 'Y')
 
         env.setvar('NWCHEM_TARGET', self.cfg['target'])
         env.setvar('MSG_COMMS', self.cfg['msg_comms'])
