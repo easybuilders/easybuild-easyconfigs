@@ -98,7 +98,7 @@ class EB_NWChem(ConfigureMake):
                 self.log.debug("Contents of %s: %s", os.path.dirname(self.local_nwchemrc),
                                os.listdir(os.path.dirname(self.local_nwchemrc)))
 
-                if os.path.exists(self.home_nwchemrc) and not os.path.samefile(self.home_nwchemrc, self.local_nwchemrc):
+                if os.path.islink(self.home_nwchemrc) and not os.path.samefile(self.home_nwchemrc, self.local_nwchemrc):
                     raise EasyBuildError("Found %s, but it's not a symlink to %s. "
                                          "Please (re)move %s while installing NWChem; it can be restored later",
                                          self.home_nwchemrc, self.local_nwchemrc, self.home_nwchemrc)
