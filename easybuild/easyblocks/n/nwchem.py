@@ -115,6 +115,7 @@ class EB_NWChem(ConfigureMake):
             os.rmdir(tmpdir)
             # avoid having '['/']' characters in build dir name, NWChem doesn't like that
             start_dir = tmpdir.replace('[', '_').replace(']', '_')
+            mkdir(os.path.dirname(start_dir), parents=True)
             os.symlink(self.cfg['start_dir'], start_dir)
             os.chdir(start_dir)
             self.cfg['start_dir'] = start_dir
