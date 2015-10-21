@@ -40,7 +40,7 @@ from distutils.version import LooseVersion
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.build_log import EasyBuildError
-from easybuild.tools.filetools import adjust_permissions, mkdir
+from easybuild.tools.filetools import adjust_permissions, mkdir, write_file
 from easybuild.tools.modules import get_software_libdir, get_software_root, get_software_version
 from easybuild.tools.run import run_cmd
 
@@ -93,14 +93,11 @@ class EB_NWChem(ConfigureMake):
             if os.path.exists(self.home_nwchemrc) or os.path.islink(self.home_nwchemrc):
                 # create a dummy file to check symlink
                 if not os.path.exists(self.local_nwchemrc):
-                    local_nwchemrc_dir = os.path.dirname(self.local_nwchemrc)
-                    if not os.path.exists(local_nwchemrc_dir):
-                        os.makedirs(local_nwchemrc_dir)
-                    f = open(self.local_nwchemrc, 'w')
-                    f.write('dummy')
-                    f.close()
+                    write_file(self.local_nwchemrc, 'dummy')
+
                 self.log.debug("Contents of %s: %s", os.path.dirname(self.local_nwchemrc),
                                os.listdir(os.path.dirname(self.local_nwchemrc)))
+
                 if os.path.exists(self.home_nwchemrc) and not os.path.samefile(self.home_nwchemrc, self.local_nwchemrc):
                     raise EasyBuildError("Found %s, but it's not a symlink to %s. "
                                          "Please (re)move %s while installing NWChem; it can be restored later",
@@ -110,14 +107,17 @@ class EB_NWChem(ConfigureMake):
         except (IOError, OSError), err:
             raise EasyBuildError("Failed to validate %s symlink: %s", self.home_nwchemrc, err)
 
-        # building NWChem in a long path name is an issue, so let's make sure we have a short one
+        # building NWChem in a long path name is an issue, so let's try to make sure we have a short one
         try:
             # NWChem insists that version is in name of build dir
-            tmpdir = tempfile.mkdtemp(suffix=self.version)
+            tmpdir = tempfile.mkdtemp(suffix='-%s-%s' % (self.name, self.version))
+            # remove created directory, since we're not going to use it as is
             os.rmdir(tmpdir)
-            os.symlink(self.cfg['start_dir'], tmpdir)
-            os.chdir(tmpdir)
-            self.cfg['start_dir'] = tmpdir
+            # avoid having '['/']' characters in build dir name, NWChem doesn't like that
+            start_dir = tmpdir.replace('[', '_').replace([']', '_')
+            os.symlink(self.cfg['start_dir'], start_dir)
+            os.chdir(start_dir)
+            self.cfg['start_dir'] = start_dir
         except OSError, err:
             raise EasyBuildError("Failed to symlink build dir to a shorter path name: %s", err)
 
@@ -336,15 +336,11 @@ class EB_NWChem(ConfigureMake):
 
     def sanity_check_step(self):
         """Custom sanity check for NWChem."""
-
         custom_paths = {
-                        'files': ['bin/nwchem'],
-                        'dirs': [os.path.join('data', x) for x in ['amber_q', 'amber_s', 'amber_t',
-                                                                   'amber_u', 'amber_x', 'charmm_s',
-                                                                   'charmm_x', 'solvents',
-                                                                   'libraries', 'libraryps']],
-                       }
-
+            'files': ['bin/nwchem'],
+            'dirs': [os.path.join('data', x) for x in ['amber_q', 'amber_s', 'amber_t', 'amber_u', 'amber_x',
+                                                       'charmm_s', 'charmm_x', 'solvents', 'libraries', 'libraryps']],
+        }
         super(EB_NWChem, self).sanity_check_step(custom_paths=custom_paths)
 
     def make_module_extra(self):
