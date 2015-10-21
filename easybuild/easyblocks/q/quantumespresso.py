@@ -86,6 +86,9 @@ class EB_QuantumESPRESSO(ConfigureMake):
             repls.append(('CPP', cpp, False))
             env.setvar('CPP', cpp)
 
+            # also define $FCCPP, but do *not* include -C (comments should not be preserved when preprocessing Fortran)
+            env.setvar('FCCPP', "%s -E" % os.getenv('CC'))
+
         super(EB_QuantumESPRESSO, self).configure_step()
 
         # compose list of DFLAGS (flag, value, keep_stuff)
@@ -154,9 +157,9 @@ class EB_QuantumESPRESSO(ConfigureMake):
                     else:
                         line = re.sub(r"^(%s\s*=[ \t]*).*$" % k, r"\1%s" % v, line)
 
-                    # fix preprocessing directives for .f90 files in make.sys if required
+                # fix preprocessing directives for .f90 files in make.sys if required
                 if self.toolchain.comp_family() in [toolchain.GCC]:
-                    line = re.sub("\$\(MPIF90\) \$\(F90FLAGS\) -c \$<",
+                    line = re.sub(r"\$\(MPIF90\) \$\(F90FLAGS\) -c \$<",
                                   "$(CPP) -C $(CPPFLAGS) $< -o $*.F90\n" +
                                   "\t$(MPIF90) $(F90FLAGS) -c $*.F90 -o $*.o",
                                   line)
