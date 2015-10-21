@@ -308,7 +308,7 @@ class EB_NWChem(ConfigureMake):
             raise EasyBuildError("Failed to install NWChem: %s", err)
 
         # create NWChem settings file
-        fn = os.path.join(self.installdir, 'data', 'default.nwchemrc')
+        default_nwchemrc = os.path.join(self.installdir, 'data', 'default.nwchemrc')
         txt = '\n'.join([
             "nwchem_basis_library %(path)s/data/libraries/",
             "nwchem_nwpw_library %(path)s/data/libraryps/",
@@ -322,12 +322,7 @@ class EB_NWChem(ConfigureMake):
             "charmm_x %(path)s/data/charmm_x/",
         ]) % {'path': self.installdir}
 
-        try:
-            f = open(fn, 'w')
-            f.write(txt)
-            f.close()
-        except IOError, err:
-            raise EasyBuildError("Failed to create %s: %s", fn, err)
+        write_file(default_nwchemrc, txt)
 
         # fix permissions in data directory
         datadir = os.path.join(self.installdir, 'data')
