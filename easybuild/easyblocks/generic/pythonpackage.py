@@ -46,7 +46,8 @@ from easybuild.tools.filetools import mkdir, rmtree2, which
 from easybuild.tools.run import run_cmd
 
 
-EASY_INSTALL_CMD = 'easy_install'
+# not 'easy_install' deliberately, to avoid that pkg installations listed in easy-install.pth get preference
+EASY_INSTALL_CMD = "python setup.py easy_install"
 UNKNOWN = 'UNKNOWN'
 
 
@@ -117,11 +118,6 @@ class PythonPackage(ExtensionEasyBlock):
             raise EasyBuildError("Installing zipped eggs requires use_easy_install = True")
 
         if self.cfg.get('use_easy_install', False):
-            if which(EASY_INSTALL_CMD) is None:
-                raise EasyBuildError("%s command not found" % EASY_INSTALL_CMD)
-
-            # mainly for debugging
-            run_cmd("%s --version" % EASY_INSTALL_CMD)
 
             self.install_cmd = "%s --no-deps" % EASY_INSTALL_CMD
             if self.cfg.get('zipped_egg', False):
@@ -203,7 +199,7 @@ class PythonPackage(ExtensionEasyBlock):
 
     def build_step(self):
         """Build Python package using setup.py"""
-        if not self.cfg['use_easy_install']:
+        if not self.cfg.get('use_easy_install', False):
             cmd = "%s python setup.py build %s" % (self.cfg['prebuildopts'], self.cfg['buildopts'])
             run_cmd(cmd, log_all=True, simple=True)
 
@@ -246,6 +242,10 @@ class PythonPackage(ExtensionEasyBlock):
 
     def install_step(self):
         """Install Python package to a custom path using setup.py"""
+
+        # mainly for debugging
+        if self.install_cmd.startswith(EASY_INSTALL_CMD):
+            run_cmd("%s --version" % EASY_INSTALL_CMD)
 
         # create expected directories
         abs_pylibdirs = [os.path.join(self.installdir, pylibdir) for pylibdir in self.all_pylibdirs]
