@@ -1,0 +1,119 @@
+fix support for building Salmon 0.4.2 with Intel compilers
+* fix detection of C++11-compatible compiler in CMakeLists.txt
+* uncomment preprocessor directive that guard workaround for Intel compilers that is not required for recent versions
+* replace use of 'eraise' with 'throw std::runtime_error'
+  * based on https://github.com/COMBINE-lab/salmon/commit/5d3ea157eb4828e9072bc514163e2b0e9734cbf1
+author: Kenneth Hoste (HPC-UGent)
+--- CMakeLists.txt.orig    2015-06-15 02:31:09.000000000 +0200
++++ CMakeLists.txt 2015-08-18 21:40:37.514507995 +0200
+@@ -118,6 +118,15 @@
+     else()
+         set (PTHREAD_LIB "pthread")
+     endif()
++elseif ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Intel")
++    execute_process(
++        COMMAND ${CMAKE_CXX_COMPILER} -dumpversion OUTPUT_VARIABLE INTEL_VERSION)
++    set (INTEL TRUE)
++    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -static-libstdc++")
++    set (BOOST_TOOLSET "intel-linux")
++    set (BOOST_CONFIGURE_TOOLSET "--with-toolset=intel-linux")
++   set (BCXX_FLAGS "-std=c++11")
++    set (BOOST_EXTRA_FLAGS toolset=intel-linux cxxflags=${BCXX_FLAGS})
+ else ()
+     message(FATAL_ERROR "Your C++ compiler does not support C++11.")
+ endif ()
+--- include/atomicops.h.orig	2015-10-09 21:47:24.315716433 +0200
++++ include/atomicops.h	2015-10-09 21:53:38.253775566 +0200
+@@ -78,7 +78,7 @@
+ 
+ }    // end namespace moodycamel
+ 
+-#if defined(AE_VCPP) || defined(AE_ICC)
++#if defined(AE_VCPP) // || defined(AE_ICC)
+ // VS2010 and ICC13 don't support std::atomic_*_fence, implement our own fences
+ 
+ #include <intrin.h>
+--- include/PairSequenceParser.hpp.orig	2015-10-12 19:17:40.449812783 +0200
++++ include/PairSequenceParser.hpp	2015-10-12 19:24:53.158536525 +0200
+@@ -130,9 +130,9 @@
+     if(type1 == DONE_TYPE || type2 == DONE_TYPE)
+       return open_next_files(st);
+     if(type1 != type2)
+-      eraise(std::runtime_error) << "Paired files are of different format";
++      throw std::runtime_error("Paired files are of different format");
+     if(type1 == ERROR_TYPE || type2 == ERROR_TYPE)
+-      eraise(std::runtime_error) << "Unsupported format";
++      throw std::runtime_error("Unsupported format");
+     st.type = type1;
+   }
+ 
+@@ -165,7 +165,7 @@
+       hsq.seq.append(tmp);             // two lines avoiding copying
+     }
+     if(!is.good())
+-      eraise(std::runtime_error) << "Truncated fastq file";
++      throw std::runtime_error("Truncated fastq file");
+     is.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+     hsq.qual.clear();
+     while(hsq.qual.size() < hsq.seq.size() && is.good()) {
+@@ -173,9 +173,9 @@
+       hsq.qual.append(tmp);
+     }
+     if(hsq.qual.size() != hsq.seq.size())
+-      eraise(std::runtime_error) << "Invalid fastq file: wrong number of quals";
++      throw std::runtime_error("Invalid fastq file: wrong number of quals");
+     if(is.peek() != EOF && is.peek() != '@')
+-      eraise(std::runtime_error) << "Invalid fastq file: header missing";
++      throw std::runtime_error("Invalid fastq file: header missing");
+ 
+   }
+ 
+--- src/merge_files.cc.orig	2015-06-15 02:31:09.000000000 +0200
++++ src/merge_files.cc	2015-10-12 19:52:13.731664684 +0200
+@@ -96,7 +96,7 @@
+   for(size_t i = 0; i < files.size(); i++) {
+     files.init(i, input_files[i]);
+     if(!files[i].is.good())
+-      eraise(MergeError) << "Failed to open input file '" << input_files[i] << "'";
++      throw std::runtime_error("Failed to open input file '" + std::string(input_files[i]) + "'");
+ 
+     file_header& h = files[i].header;
+     if(i == 0) {
+@@ -115,22 +115,22 @@
+       out_counter_len = std::min(out_counter_len, h.counter_len());
+     } else {
+       if(format != h.format())
+-        eraise(MergeError) << "Can't merge files with different formats (" << format << ", " << h.format() << ")";
++        throw std::runtime_error("Can't merge files with different formats (" + format + ", " + h.format() + ")");
+       if(h.key_len() != key_len)
+-        eraise(MergeError) << "Can't merge hashes of different key lengths (" << key_len << ", " << h.key_len() << ")";
++        throw std::runtime_error("Can't merge hashes of different key lengths (" + std::to_string(key_len) + ", " + std::to_string(h.key_len()) + ")");
+       if(h.max_reprobe_offset() != max_reprobe_offset)
+-        eraise(MergeError) << "Can't merge hashes with different reprobing strategies";
++        throw std::runtime_error("Can't merge hashes with different reprobing strategies");
+       if(h.size() != size)
+-        eraise(MergeError) << "Can't merge hash with different size (" << size << ", " << h.size() << ")";
++        throw std::runtime_error("Can't merge hash with different size (" + std::to_string(size) + ", " + std::to_string(h.size()) + ")");
+       if(h.matrix() != *matrix)
+-        eraise(MergeError) << "Can't merge hash with different hash function";
++        throw std::runtime_error("Can't merge hash with different hash function");
+     }
+   }
+   mer_dna::k(key_len / 2);
+ 
+   std::ofstream out(out_file);
+   if(!out.good())
+-    eraise(MergeError) << "Can't open out file '" << out_file << "'";
++    throw std::runtime_error("Can't open out file '" + std::string(out_file) + "'");
+   out_header.format(format);
+ 
+   if(!format.compare(binary_dumper::format)) {
+@@ -143,7 +143,7 @@
+     text_writer writer;
+     do_merge<text_reader, text_writer>(files, out, writer, min, max);
+   } else {
+-    eraise(MergeError) << "Unknown format '" << format << "'";
++    throw std::runtime_error("Unknown format '" + format + "'");
+   }
+   out.close();
+ }
