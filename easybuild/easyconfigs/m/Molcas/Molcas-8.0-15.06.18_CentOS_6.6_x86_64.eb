@@ -1,4 +1,4 @@
-easyblock = 'BinariesTarball'
+easyblock = 'PackedBinary'
 
 name = 'Molcas'
 version = '8.0-15.06.18'
@@ -16,8 +16,17 @@ toolchain = {'name': 'dummy', 'version': 'dummy'}
 
 source_urls = ['http://www.kvant.kemi.uu.se/molcas/']
 sources = ['%(namelower)s-%(version)s%(versionsuffix)s.tgz']
+unpack_options = "--transform='s,^%(namelower)s-%(version)s%(versionsuffix)s,%(namelower)s_files,'"
 
-files_to_copy = [('sbin/molcas.driver', 'molcas')]
+buildininstalldir = True
+skipsteps = ['install']
+
+postinstallcmds = [
+    'mkdir -p %(installdir)s/bin',
+    'cp %(installdir)s/%(namelower)s_files/sbin/molcas.driver %(installdir)s/bin/molcas',
+]
+
+#files_to_copy = [('sbin/molcas.driver', 'molcas')]
 
 sanity_check_paths = {
     'files': ['bin/molcas'],
@@ -25,3 +34,4 @@ sanity_check_paths = {
 }
 
 moduleclass = 'chem'
+modextravars = {'MOLCAS': '%(installdir)s/%(namelower)s_files'}
