@@ -68,7 +68,7 @@ class Waf(EasyBlock):
 
     def install_step(self, verbose=False, path=None):
         """
-        Build with ./waf build
+        Install with ./waf install
         """
         cmd = ' '.join([
             self.cfg['preinstallopts'],
