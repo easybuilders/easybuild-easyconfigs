@@ -47,7 +47,7 @@ class ConfigureMake(EasyBlock):
     @staticmethod
     def extra_options(extra_vars=None):
         """Extra easyconfig parameters specific to ConfigureMake."""
-        extra_vars = EasyBlock.extra_options(extra_vars)
+        extra_vars = EasyBlock.extra_options(extra=extra_vars)
         extra_vars.update({
             'configure_cmd_prefix': ['', "Prefix to be glued before ./configure", CUSTOM],
             'prefix_opt': ['--prefix=', "Prefix command line option for configure script", CUSTOM],
