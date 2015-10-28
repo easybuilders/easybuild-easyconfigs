@@ -86,6 +86,9 @@ class EB_QuantumESPRESSO(ConfigureMake):
             repls.append(('CPP', cpp, False))
             env.setvar('CPP', cpp)
 
+            # also define $FCCPP, but do *not* include -C (comments should not be preserved when preprocessing Fortran)
+            env.setvar('FCCPP', "%s -E" % os.getenv('CC'))
+
         super(EB_QuantumESPRESSO, self).configure_step()
 
         # compose list of DFLAGS (flag, value, keep_stuff)
@@ -154,9 +157,9 @@ class EB_QuantumESPRESSO(ConfigureMake):
                     else:
                         line = re.sub(r"^(%s\s*=[ \t]*).*$" % k, r"\1%s" % v, line)
 
-                    # fix preprocessing directives for .f90 files in make.sys if required
+                # fix preprocessing directives for .f90 files in make.sys if required
                 if self.toolchain.comp_family() in [toolchain.GCC]:
-                    line = re.sub("\$\(MPIF90\) \$\(F90FLAGS\) -c \$<",
+                    line = re.sub(r"\$\(MPIF90\) \$\(F90FLAGS\) -c \$<",
                                   "$(CPP) -C $(CPPFLAGS) $< -o $*.F90\n" +
                                   "\t$(MPIF90) $(F90FLAGS) -c $*.F90 -o $*.o",
                                   line)
@@ -191,9 +194,20 @@ class EB_QuantumESPRESSO(ConfigureMake):
             raise EasyBuildError("Found more than one directory with %s prefix, help!", wantprefix)
 
         if len(wantdirs) != 0:
-            fn = os.path.join(self.builddir, wantdirs[0], 'conf', 'make.sys.in')
+            wantdir = os.path.join(self.builddir, wantdirs[0])
+            make_sys_in_path = None
+            cand_paths = [os.path.join('conf', 'make.sys.in'), os.path.join('config', 'make.sys.in')]
+            for path in cand_paths:
+                full_path = os.path.join(wantdir, path)
+                if os.path.exists(full_path):
+                    make_sys_in_path = full_path
+                    break
+            if make_sys_in_path is None:
+                raise EasyBuildError("Failed to find make.sys.in in want directory %s, paths considered: %s",
+                                     wantdir, ', '.join(cand_paths))
+
             try:
-                for line in fileinput.input(fn, inplace=1, backup='.orig.eb'):
+                for line in fileinput.input(make_sys_in_path, inplace=1, backup='.orig.eb'):
                     # fix preprocessing directives for .f90 files in make.sys if required
                     if self.toolchain.comp_family() in [toolchain.GCC]:
                         line = re.sub("@f90rule@",

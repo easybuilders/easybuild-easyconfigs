@@ -67,17 +67,17 @@ class EB_ANSYS(EasyBlock):
         guesses = super(EB_ANSYS, self).make_module_req_guess()
         dirs = [
             "tgrid/bin",
-            "Framework/bin/linux64",
-            "aisol/bin/linux64",
+            "Framework/bin/Linux64",
+            "aisol/bin/linx64",
             "RSM/bin",
             "ansys/bin",
-            "autodin/bin",
+            "autodyn/bin",
             "CFD-Post/bin",
             "CFX/bin",
             "fluent/bin",
             "TurboGrid/bin",
             "polyflow/bin",
-            "IcePack/bin",
+            "Icepak/bin",
             "icemcfd/linux64_amd/bin"
         ]
         guesses.update({"PATH": [os.path.join(self.ansysver, dir) for dir in dirs]})
