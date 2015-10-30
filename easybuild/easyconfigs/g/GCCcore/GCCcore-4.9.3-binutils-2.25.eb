@@ -1,7 +1,7 @@
-name = "GCC"
+easyblock = "EB_GCC"
+name = "GCCcore"
 version = '4.9.3'
 
-gccver = version
 binutilsver = '2.25'
 versionsuffix = '-binutils-%s' % binutilsver
 
@@ -12,26 +12,22 @@ description = """The GNU Compiler Collection includes front ends for C, C++, Obj
 toolchain = {'name': 'dummy', 'version': ''}
 
 mpfr_version = '3.1.2'
+gcc_name = 'GCC'
 
 source_urls = [
-    'http://ftpmirror.gnu.org/%(namelower)s/%(namelower)s-%(version)s',  # GCC auto-resolving HTTP mirror
+    'http://ftpmirror.gnu.org/%s/%s-%s' % (gcc_name.lower(), gcc_name.lower(), version),  # GCC auto-resolving HTTP mirror
     'http://ftpmirror.gnu.org/gmp',  # idem for GMP
     'http://ftpmirror.gnu.org/mpfr',  # idem for MPFR
     'http://www.multiprecision.org/mpc/download',  # MPC official
 ]
 sources = [
-    SOURCELOWER_TAR_BZ2,
+    '%s-%s.tar.bz2' % (gcc_name.lower(), version),
     'gmp-6.0.0a.tar.bz2',
     'mpfr-%s.tar.gz' % mpfr_version,
     'mpc-1.0.2.tar.gz',
 ]
 
-dependencies = [
-    # GCC built on top of (dummy-built) binutils
-    ('GCCcore', gccver, '-binutils-%s' % binutilsver),
-    # binutils built on top of GCC, which was built on top of (dummy-built) binutils
-    ('binutils', binutilsver, '', ('GCCcore', '%s-binutils-%s' % (gccver, binutilsver))),
-]
+builddependencies = [('binutils', binutilsver)]
 
 patches = [('mpfr-%s-allpatches-20141204.patch' % mpfr_version, '../mpfr-%s' % mpfr_version)]
 
