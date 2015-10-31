@@ -351,7 +351,7 @@ class EB_QuantumESPRESSO(ConfigureMake):
         # this is important since some binaries are available in two places (e.g. dos.x in both bin and WANT/bin)
         bindirs = ['upftools', 'WANT/bin', 'YAMBO/bin', 'bin']
         guesses.update({
-            'PATH': [os.path.join(self.install_subdir, x) for x in bindirs],
+            'PATH': [os.path.join(self.install_subdir, bindir) for bindir in bindirs],
             'CPATH': [os.path.join(self.install_subdir, 'include')],
         })
         return guesses
