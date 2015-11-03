@@ -63,8 +63,8 @@ class EB_OpenSSL(ConfigureMake):
         custom_paths = {
             'files': [os.path.join(libdir, x) for x in ['libcrypto.a', 'libcrypto.so', 'libcrypto.so.1.0.0',
                                                         'libssl.a', 'libssl.so', 'libssl.so.1.0.0']] +
-                     ['bin/openssl', os.path.join(libdir, 'engines')],
-            'dirs': [],
+                     ['bin/openssl'],
+            'dirs': [os.path.join(libdir, 'engines')],
         }
 
         super(EB_OpenSSL, self).sanity_check_step(custom_paths=custom_paths)
