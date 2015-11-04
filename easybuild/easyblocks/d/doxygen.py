@@ -35,23 +35,20 @@ EasyBuild support for building and installing Doxygen, implemented as an easyblo
 
 from distutils.version import LooseVersion
 from easybuild.tools.run import run_cmd
-from easybuild.easyblocks.generic.cmakemake import CMakeMake
+from easybuild.easyblocks.generic.configuremake import ConfigureMake
 
-class EB_Doxygen(CMakeMake):
+class EB_Doxygen(ConfigureMake):
     """Support for building/installing Doxygen"""
 
-    version_switch = LooseVersion(self.version) < LooseVersion("1.8.10")
-    if version_switch:
-        from easybuild.easyblocks.generic.configuremake import ConfigureMake
-
     def configure_step(self):
-        if version_switch:
+        if LooseVersion(self.version) < LooseVersion("1.8.10"):
              """Configure build using non-standard configure script (see prefix option)"""
 
              cmd = "%s ./configure --prefix %s %s" % (self.cfg['preconfigopts'], self.installdir,
                                                    self.cfg['configopts'])
              run_cmd(cmd, log_all=True, simple=True)
         else:
+            from easybuild.easyblocks.generic.cmakemake import CMakeMake
             super(EB_Doxygen, self).configure_step()
 
     def sanity_check_step(self):
