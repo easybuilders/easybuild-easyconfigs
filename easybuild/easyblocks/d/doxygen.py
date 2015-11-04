@@ -35,9 +35,9 @@ EasyBuild support for building and installing Doxygen, implemented as an easyblo
 
 from distutils.version import LooseVersion
 from easybuild.tools.run import run_cmd
-from easybuild.easyblocks.generic.configuremake import ConfigureMake
+from easybuild.easyblocks.generic.cmakemake import CMakeMake
 
-class EB_Doxygen(ConfigureMake):
+class EB_Doxygen(CMakeMake):
     """Support for building/installing Doxygen"""
 
     def configure_step(self):
@@ -48,7 +48,6 @@ class EB_Doxygen(ConfigureMake):
                                                    self.cfg['configopts'])
              run_cmd(cmd, log_all=True, simple=True)
         else:
-            from easybuild.easyblocks.generic.cmakemake import CMakeMake
             super(EB_Doxygen, self).configure_step()
 
     def sanity_check_step(self):
