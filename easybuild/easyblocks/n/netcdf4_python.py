@@ -70,7 +70,8 @@ class EB_netcdf4_minus_python(PythonPackage):
     def sanity_check_step(self):
         """Custom sanity check for netcdf4-python"""
         custom_paths = {
-            'files': ['bin/nc3tonc4', 'bin/nc4tonc3', 'bin/ncinfo'],
-            'dirs': [os.path.join(self.pylibdir, x) for x in ['netCDF4.so', 'netCDF4_utils.py', 'netcdftime.py']],
+            'files': ['bin/nc3tonc4', 'bin/nc4tonc3', 'bin/ncinfo'] +
+                     [os.path.join(self.pylibdir, x) for x in ['netCDF4.so', 'netCDF4_utils.py', 'netcdftime.py']],
+            'dirs': [],
         }
         return super(EB_netcdf4_minus_python, self).sanity_check_step(custom_paths=custom_paths)
