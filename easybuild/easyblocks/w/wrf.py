@@ -31,7 +31,6 @@ EasyBuild support for building and installing WRF, implemented as an easyblock
 @author: Pieter De Baets (Ghent University)
 @author: Jens Timmerman (Ghent University)
 """
-import fileinput
 import os
 import re
 import sys
