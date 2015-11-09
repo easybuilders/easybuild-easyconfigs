@@ -101,7 +101,7 @@ class EB_HPL(ConfigureMake):
         extra_makeopts += 'HPL_OPTS="%s -DUSING_FFTW" ' % os.getenv('CPPFLAGS')
 
         # linker flags
-        extra_makeopts += 'LINKFLAGS="%s %s %s" ' % (os.getenv('CFLAGS'), os.getenv('LDFLAGS'), os.getenv('LIBS'))
+        extra_makeopts += 'LINKFLAGS="%s %s %s" ' % (os.getenv('CFLAGS'), os.getenv('LDFLAGS'), os.getenv('LIBS', ''))
 
         # C compilers flags
         extra_makeopts += "CCFLAGS='$(HPL_DEFS) %s' " % os.getenv('CFLAGS')
