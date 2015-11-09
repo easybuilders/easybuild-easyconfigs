@@ -215,11 +215,11 @@ class EB_WRF(EasyBlock):
 
             # get list of WRF test cases
             self.testcases = []
-            try:
+            if os.path.exists('test'):
                 self.testcases = os.listdir('test')
 
-            except OSError, err:
-                raise EasyBuildError("Failed to determine list of test cases: %s", err)
+            elif not self.dry_run:
+                raise EasyBuildError("Test directory not found, failed to determine list of test cases")
 
             # exclude 2d testcases in non-parallel WRF builds
             if self.cfg['buildtype'] in self.parallel_build_types:
