@@ -40,7 +40,7 @@ from distutils.version import LooseVersion
 
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.tools.build_log import EasyBuildError
-from easybuild.tools.modules import get_software_libdir, get_software_root
+from easybuild.tools.modules import get_software_libdir, get_software_libdir, get_software_root, get_software_version
 from easybuild.tools.run import run_cmd
 
 
@@ -103,6 +103,26 @@ class EB_Python(ConfigureMake):
                 line = re.sub(r"^#(\s*-DUSE_SSL -I)", r"\1", line)
                 line = re.sub(r"^#(\s*-L\$\(SSL\)/lib )", r"\1 -L$(SSL)/lib64 ", line)
                 sys.stdout.write(line)
+
+        tcl = get_software_root('Tcl')
+        tk = get_software_root('Tk')
+        if tcl and tk:
+            tclver = get_software_version('Tcl')
+            tkver = get_software_version('Tk')
+            tcltk_maj_min_ver = '.'.join(tclver.split('.')[:2])
+            if tcltk_maj_min_ver != '.'.join(tkver.split('.')[:2]):
+                raise EasyBuildError("Tcl and Tk major/minor versions don't match: %s vs %s", tclver, tkver)
+
+            self.cfg.update('configopts', "--with-tcltk-includes='-I%s/include -I%s/include'" % (tcl, tk))
+
+            tcl_libdir = os.path.join(tcl, get_software_libdir('Tcl'))
+            tk_libdir = os.path.join(tk, get_software_libdir('Tk'))
+            tcltk_libs = "-L%(tcl_libdir)s -L%(tk_libdir)s -ltcl%(maj_min_ver)s -ltk%(maj_min_ver)s" % {
+                'tcl_libdir': tcl_libdir,
+                'tk_libdir': tk_libdir,
+                'maj_min_ver': tcltk_maj_min_ver,
+            }
+            self.cfg.update('configopts', "--with-tcltk-libs='%s'" % tcltk_libs)
 
         super(EB_Python, self).configure_step()
 
