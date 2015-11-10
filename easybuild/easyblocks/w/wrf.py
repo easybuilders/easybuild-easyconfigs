@@ -31,7 +31,6 @@ EasyBuild support for building and installing WRF, implemented as an easyblock
 @author: Pieter De Baets (Ghent University)
 @author: Jens Timmerman (Ghent University)
 """
-import fileinput
 import os
 import re
 import sys
@@ -42,7 +41,7 @@ from easybuild.easyblocks.netcdf import set_netcdf_env_vars  # @UnresolvedImport
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import CUSTOM, MANDATORY
 from easybuild.tools.build_log import EasyBuildError
-from easybuild.tools.filetools import patch_perl_script_autoflush
+from easybuild.tools.filetools import apply_regex_substitutions, patch_perl_script_autoflush
 from easybuild.tools.modules import get_software_root
 from easybuild.tools.run import run_cmd, run_cmd_qa
 
@@ -165,10 +164,8 @@ class EB_WRF(EasyBlock):
                  'DM_FC': os.getenv('MPIF90'),
                  'DM_CC': "%s -DMPI2_SUPPORT" % os.getenv('MPICC'),
                 }
-        for line in fileinput.input(cfgfile, inplace=1, backup='.orig.comps'):
-            for (k, v) in comps.items():
-                line = re.sub(r"^(%s\s*=\s*).*$" % k, r"\1 %s" % v, line)
-            sys.stdout.write(line)
+        regex_subs = [(r"^(%s\s*=\s*).*$" % k, r"\1 %s" % v) for (k, v) in comps.items()]
+        apply_regex_substitutions(cfgfile, regex_subs)
 
         # rewrite optimization options if desired
         if self.cfg['rewriteopts']:
@@ -188,10 +185,11 @@ class EB_WRF(EasyBlock):
                         self.log.info("Updated %s to '%s'" % (envvar, os.getenv(envvar)))
 
             # replace -O3 with desired optimization options
-            for line in fileinput.input(cfgfile, inplace=1, backup='.orig.rewriteopts'):
-                line = re.sub(r"^(FCOPTIM.*)(\s-O3)(\s.*)$", r"\1 %s \3" % os.getenv('FFLAGS'), line)
-                line = re.sub(r"^(CFLAGS_LOCAL.*)(\s-O3)(\s.*)$", r"\1 %s \3" % os.getenv('CFLAGS'), line)
-                sys.stdout.write(line)
+            regex_subs = [
+                (r"^(FCOPTIM.*)(\s-O3)(\s.*)$", r"\1 %s \3" % os.getenv('FFLAGS')),
+                (r"^(CFLAGS_LOCAL.*)(\s-O3)(\s.*)$", r"\1 %s \3" % os.getenv('CFLAGS')),
+            ]
+            apply_regex_substitutions(cfgfile, regex_subs)
 
     def build_step(self):
         """Build and install WRF and testcases using provided compile script."""
@@ -217,11 +215,11 @@ class EB_WRF(EasyBlock):
 
             # get list of WRF test cases
             self.testcases = []
-            try:
+            if os.path.exists('test'):
                 self.testcases = os.listdir('test')
 
-            except OSError, err:
-                raise EasyBuildError("Failed to determine list of test cases: %s", err)
+            elif not self.dry_run:
+                raise EasyBuildError("Test directory not found, failed to determine list of test cases")
 
             # exclude 2d testcases in non-parallel WRF builds
             if self.cfg['buildtype'] in self.parallel_build_types:

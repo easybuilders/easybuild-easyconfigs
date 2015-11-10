@@ -39,7 +39,7 @@ import unittest
 from vsc.utils import fancylogger
 
 from easybuild.tools.build_log import EasyBuildError
-from easybuild.tools.config import set_tmpdir
+from easybuild.tools.options import set_tmpdir
 
 import test.easyblocks.general as g
 import test.easyblocks.init_easyblocks as i

@@ -136,5 +136,6 @@ class EB_MCR(EasyBlock):
             txt += self.module_generator.prepend_paths('LD_LIBRARY_PATH', libdir)
 
         txt += self.module_generator.set_environment('_JAVA_OPTIONS', self.cfg['java_options'])
+        txt += self.module_generator.set_environment('MCRROOT', os.path.join(self.installdir, self.subdir))
 
         return txt

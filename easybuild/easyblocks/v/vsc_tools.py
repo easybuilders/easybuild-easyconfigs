@@ -60,7 +60,7 @@ class EB_VSC_minus_tools(PythonPackage):
             pkg_list = ['-'.join(src['name'].split('-')[0:-1]) for src in self.src if src['name'].startswith('vsc')]
             for pkg in pkg_list:
                 os.chdir(self.builddir)
-                sel_dirs = [d for d in glob.glob("%s-[0-9][0-9.]*" % pkg)]
+                sel_dirs = [d for d in glob.glob("*%s-[0-9][0-9.]*" % pkg)]
                 if not len(sel_dirs) == 1:
                     raise EasyBuildError("Found none or more than one %s dir in %s: %s", pkg, self.builddir, sel_dirs)
 
