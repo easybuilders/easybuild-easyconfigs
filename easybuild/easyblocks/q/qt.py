@@ -80,7 +80,7 @@ class EB_Qt(ConfigureMake):
         """Custom sanity check for Qt."""
 
         libversion = ''
-        if LooseVersion(self.version) >= LooseVersion(5):
+        if LooseVersion(self.version) >= LooseVersion('5'):
             libversion = self.version.split('.')[0]
 
         custom_paths = {
