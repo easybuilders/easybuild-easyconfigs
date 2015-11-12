@@ -84,7 +84,7 @@ class EB_Qt(ConfigureMake):
             libversion = self.version.split('.')[0]
 
         custom_paths = {
-            'files': ["lib/libQt%xCore.so" % libversion],
+            'files': ["lib/libQt%sCore.so" % libversion],
             'dirs': ["bin", "include", "plugins"],
         }
 
