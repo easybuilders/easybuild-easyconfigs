@@ -33,7 +33,7 @@ import easybuild.tools.toolchain as toolchain
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.run import run_cmd_qa
-
+from distutils.version import LooseVersion
 
 class EB_Qt(ConfigureMake):
     """
@@ -79,8 +79,12 @@ class EB_Qt(ConfigureMake):
     def sanity_check_step(self):
         """Custom sanity check for Qt."""
 
+        libversion = ''
+        if LooseVersion(self.version) >= LooseVersion(5):
+            libversion = self.version.split('.')[0]
+
         custom_paths = {
-            'files': ["lib/libQtCore.so"],
+            'files': ["lib/libQt%xCore.so" % libversion],
             'dirs': ["bin", "include", "plugins"],
         }
 
