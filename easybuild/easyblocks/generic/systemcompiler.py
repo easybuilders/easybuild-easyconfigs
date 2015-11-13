@@ -150,3 +150,17 @@ class SystemCompiler(Bundle):
         self.installdir = self.orig_installdir
         self.cfg['version'] = self.orig_version
         return res
+
+    def make_module_extend_modpath(self):
+        """
+        Custom prepend-path statements for extending $MODULEPATH: use original version specified in easyconfig file.
+        """
+        # temporarly set switch back to original version
+        self.cfg['version'] = self.orig_version
+
+        # Retrieve module path extensions
+        res = super(SystemCompiler, self).make_module_extend_modpath()
+
+        # Reset to "real" version
+        self.cfg['version'] = self.compiler_version
+        return res
