@@ -137,10 +137,6 @@ class SystemCompiler(Bundle):
         """
         return {}
 
-    def post_install_step(self):
-        """Custom post install step: Do not to touch system compiler directories and files."""
-        pass
-
     def make_module_step(self, fake=False):
         """Custom module step for SystemCompiler: make 'EBROOT' and 'EBVERSION' reflect system compiler values."""
         # For module file generation: temporarly set version and installdir to system compiler values
