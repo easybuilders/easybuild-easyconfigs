@@ -95,7 +95,9 @@ class EB_EasyBuildMeta(PythonPackage):
         except OSError, err:
             raise EasyBuildError("Failed to install EasyBuild packages: %s", err)
 
-        env.setvar('PYTHONPATH', orig_pythonpath)
+        # restore $PYTHONPATH, if it was defined
+        if orig_pythonpath is not None:
+            env.setvar('PYTHONPATH', orig_pythonpath)
 
     def sanity_check_step(self):
         """Custom sanity check for EasyBuild."""
