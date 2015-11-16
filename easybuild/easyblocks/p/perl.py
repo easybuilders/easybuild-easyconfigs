@@ -62,7 +62,10 @@ class EB_Perl(ConfigureMake):
             '-Dinc_version_list=none',
         ])
         if self.cfg['use_perl_threads']:
-            configopts.append("-Dusethreads")
+            configopts = ' '.join([
+                self.cfg['configopts'],
+                '-Dusethreads',
+            ])
 
         cmd = './Configure -de %s -Dprefix="%s" ' % (configopts, self.installdir)
         run_cmd(cmd, log_all=True, simple=True)
