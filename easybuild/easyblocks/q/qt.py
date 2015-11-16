@@ -28,12 +28,12 @@ EasyBuild support for building and installing Qt, implemented as an easyblock
 @author: Kenneth Hoste (Ghent University)
 """
 import os
+from distutils.version import LooseVersion
 
 import easybuild.tools.toolchain as toolchain
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.run import run_cmd_qa
-from distutils.version import LooseVersion
 
 class EB_Qt(ConfigureMake):
     """
