@@ -75,6 +75,7 @@ class EB_EasyBuildMeta(PythonPackage):
 
         # unset $PYTHONPATH to try and avoid that current EasyBuild is picked up, and ends up in easy-install.pth
         orig_pythonpath = os.getenv('PYTHONPATH')
+        self.log.debug("Original $PYTHONPATH: %s", orig_pythonpath)
         env.setvar('PYTHONPATH', '')
 
         try:
