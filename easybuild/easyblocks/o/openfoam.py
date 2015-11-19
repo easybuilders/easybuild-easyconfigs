@@ -128,7 +128,11 @@ class EB_OpenFOAM(EasyBlock):
         for script in [os.path.join(self.builddir, self.openfoamdir, x) for x in ['etc/bashrc', 'etc/cshrc']]:
             self.log.debug("Patching out hardcoded $WM_* env vars in %s", script)
             for line in fileinput.input(script, inplace=1, backup='.orig.eb'):
-                for env_var in ['WM_COMPILER', 'WM_MPLIB', 'WM_THIRD_PARTY_DIR']:
+                WM_env_var = ['WM_COMPILER', 'WM_MPLIB', 'WM_THIRD_PARTY_DIR']
+                # OpenFOAM >= 3.0.0 can use 64 bit integers
+                if 'extend' not in self.name.lower() and LooseVersion(self.version) >= LooseVersion('3.0'):
+                    WM_env_var += ['WM_LABEL_SIZE'] 
+                for env_var in WM_env_var:
                     from_pat = r"^(setenv|export) (?P<var>%s)[ =](?P<val>.*)$" % env_var
                     to_pat = r": ${\g<var>:=\g<val>}; export \g<var>"
                     line = re.sub(from_pat, to_pat, line)
@@ -191,6 +195,11 @@ class EB_OpenFOAM(EasyBlock):
 
         # parallel build spec
         env.setvar("WM_NCOMPPROCS", str(self.cfg['parallel']))
+
+        # OpenFOAM >= 3.0.0 can use 64 bit integers
+        if 'extend' not in self.name.lower() and LooseVersion(self.version) >= LooseVersion('3.0'):
+            if self.toolchain.options['i8']:
+                env.setvar("WM_LABEL_SIZE", '64')
 
         # make sure lib/include dirs for dependencies are found
         openfoam_extend_v3 = 'extend' in self.name.lower() and LooseVersion(self.version) >= LooseVersion('3.0')
@@ -260,7 +269,16 @@ class EB_OpenFOAM(EasyBlock):
     def sanity_check_step(self):
         """Custom sanity check for OpenFOAM"""
 
-        psubdir = "linux64%sDPOpt" % self.wm_compiler
+        # OpenFOAM >= 3.0.0 can use 64 bit integers
+        if 'extend' not in self.name.lower() and LooseVersion(self.version) >= LooseVersion('3.0'):
+            if self.toolchain.options['i8']:
+                int_size='Int64'
+            else:
+                int_size='Int32'
+        else:
+            int_size=''
+
+        psubdir = "linux64%sDP%sOpt" % (self.wm_compiler, int_size)
 
         openfoam_extend_v3 = 'extend' in self.name.lower() and LooseVersion(self.version) >= LooseVersion('3.0')
         if openfoam_extend_v3 or LooseVersion(self.version) < LooseVersion("2"):
@@ -316,6 +334,13 @@ class EB_OpenFOAM(EasyBlock):
             ("FOAM_CSH", os.path.join(self.installdir, self.openfoamdir, "etc", "cshrc")),
         ]
 
+        # OpenFOAM >= 3.0.0 can use 64 bit integers
+        if 'extend' not in self.name.lower() and LooseVersion(self.version) >= LooseVersion('3.0'):
+            if self.toolchain.options['i8']:
+                env_vars += ("WM_LABEL_SIZE", '64')
+            else:
+                env_vars += ("WM_LABEL_SIZE", '32')
+ 
         for (env_var, val) in env_vars:
             txt += self.module_generator.set_environment(env_var, val)
 
