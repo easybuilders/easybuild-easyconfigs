@@ -357,7 +357,7 @@ class EB_imkl(IntelBase):
             if self.cfg['m32']:
                 raise EasyBuildError("Sanity check for 32-bit not implemented yet for IMKL v%s (>= 10.3)", self.version)
             else:
-                mkldirs = ["bin", "mkl/bin", "mkl/bin/intel64", "mkl/lib/intel64", "mkl/include"]
+                mkldirs = ["bin", "mkl/bin", "mkl/lib/intel64", "mkl/include"]
                 libs += [lib % {'suff': suff} for lib in extralibs for suff in ['lp64', 'ilp64']]
                 mklfiles = ["mkl/lib/intel64/libmkl.so", "mkl/include/mkl.h"] + \
                            ["mkl/lib/intel64/%s" % lib for lib in libs]
