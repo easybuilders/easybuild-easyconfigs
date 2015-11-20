@@ -31,6 +31,7 @@ EasyBuild support for building and installing OpenFOAM, implemented as an easybl
 @author: Pieter De Baets (Ghent University)
 @author: Jens Timmerman (Ghent University)
 @author: Xavier Besseron (University of Luxembourg)
+@author: Balazs Hajgato (Free University Brussels (VUB))
 """
 import fileinput
 import glob
@@ -337,9 +338,9 @@ class EB_OpenFOAM(EasyBlock):
         # OpenFOAM >= 3.0.0 can use 64 bit integers
         if 'extend' not in self.name.lower() and LooseVersion(self.version) >= LooseVersion('3.0'):
             if self.toolchain.options['i8']:
-                env_vars += ("WM_LABEL_SIZE", '64')
+                env_vars += [("WM_LABEL_SIZE", '64')]
             else:
-                env_vars += ("WM_LABEL_SIZE", '32')
+                env_vars += [("WM_LABEL_SIZE", '32')]
  
         for (env_var, val) in env_vars:
             txt += self.module_generator.set_environment(env_var, val)
