@@ -67,16 +67,20 @@ class EB_WRF(EasyBlock):
         }
         return EasyBlock.extra_options(extra_vars)
 
+    def prepare_step(self):
+        """Prepare for building/installing."""
+        super(EB_WRF, self).prepare_step()
+
+        # define $NETCDF* for netCDF dependency (used when creating WRF module file)
+        # done as a part of prepare step so these are also defined under --module-only
+        set_netcdf_env_vars(self.log)
+
     def configure_step(self):
         """Configure build:
             - set some magic environment variables
             - run configure script
             - adjust configure.wrf file if needed
         """
-
-        # netCDF dependency
-        set_netcdf_env_vars(self.log)
-
         # HDF5 (optional) dependency
         hdf5 = get_software_root('HDF5')
         if hdf5:
