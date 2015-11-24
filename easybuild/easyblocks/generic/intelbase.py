@@ -358,6 +358,12 @@ class IntelBase(EasyBlock):
             nlspath = os.path.join('idb', 'intel64', 'locale', '%l_%t', '%N')
         txt += self.module_generator.prepend_paths('NLSPATH', nlspath)
 
+        # In case people are using unusual locales need to set GXXROOT, see
+        # https://software.intel.com/en-us/articles/
+        # intel-fortran-compiler-for-linux-ifort-error-could-not-find-directory-in-which-g-resides
+        get_gxxroot = "g++ --print-search-dirs | head -n1 | awk '{print $2}'"
+        txt += self.module_generator.set_environment('GXXROOT',run_cmd(get_gxxroot, log_all=True, simple=True))
+
         return txt
 
     def cleanup_step(self):
