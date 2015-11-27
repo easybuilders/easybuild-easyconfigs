@@ -309,6 +309,8 @@ class PythonPackage(ExtensionEasyBlock):
                 fullpath = os.path.join(self.installdir, subdir)
                 if os.path.exists(fullpath) and any([os.path.isfile(x) for x in os.listdir(fullpath)]):
                     newlist.append(subdir)
+            self.log.debug("Only retaining %s subdirs from %s for $%s (others don't provide any libraries)",
+                           newlist, guesses[envvar], envvar)
             guesses[envvar] = newlist
 
         return guesses
