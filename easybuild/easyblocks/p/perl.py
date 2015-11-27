@@ -55,11 +55,12 @@ class EB_Perl(ConfigureMake):
         """
         Configure Perl build: run ./Configure instead of ./configure with some different options
         """
-        configopts = []
-        configopts.append(self.cfg['configopts'])
-        configopts.append('-Dcc="{0}"'.format(os.getenv('CC')))
-        configopts.append('-Dccflags="{0}"'.format(os.getenv('CFLAGS')))
-        configopts.append('-Dinc_version_list=none')
+        configopts = [
+            self.cfg['configopts'],
+            '-Dcc="{0}"'.format(os.getenv('CC')),
+            '-Dccflags="{0}"'.format(os.getenv('CFLAGS')),
+            '-Dinc_version_list=none',
+        ]
         if self.cfg['use_perl_threads']:
             configopts.append('-Dusethreads')
 
