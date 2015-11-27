@@ -55,19 +55,15 @@ class EB_Perl(ConfigureMake):
         """
         Configure Perl build: run ./Configure instead of ./configure with some different options
         """
-        configopts = ' '.join([
-            self.cfg['configopts'],
-            '-Dcc="%s"' % os.getenv('CC'),
-            '-Dccflags="%s"' % os.getenv('CFLAGS'),
-            '-Dinc_version_list=none',
-        ])
+        configopts = []
+        configopts.append(self.cfg['configopts'])
+        configopts.append('-Dcc="{0}"'.format(os.getenv('CC')))
+        configopts.append('-Dccflags="{0}"'.format(os.getenv('CFLAGS')))
+        configopts.append('-Dinc_version_list=none')
         if self.cfg['use_perl_threads']:
-            configopts = ' '.join([
-                self.cfg['configopts'],
-                '-Dusethreads',
-            ])
+            configopts.append('-Dusethreads')
 
-        cmd = './Configure -de %s -Dprefix="%s" ' % (configopts, self.installdir)
+        cmd = './Configure -de %s -Dprefix="%s"' % (' '.join(configopts), self.installdir)
         run_cmd(cmd, log_all=True, simple=True)
 
     def test_step(self):
