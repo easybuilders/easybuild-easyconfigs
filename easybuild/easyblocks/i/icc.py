@@ -30,6 +30,7 @@ EasyBuild support for install the Intel C/C++ compiler suite, implemented as an 
 @author: Kenneth Hoste (Ghent University)
 @author: Pieter De Baets (Ghent University)
 @author: Jens Timmerman (Ghent University)
+@author: Ward Poelmans (Ghent University)
 """
 
 import os
@@ -59,6 +60,15 @@ class EB_icc(IntelBase):
         - will fail for all older versions (due to newer silent installer)
     """
 
+    def configure_step(self):
+        """have fallback for components for > 2016 versions"""
+
+        if LooseVersion(self.version) >= LooseVersion('2016') and not self.cfg['components']:
+            self.log.warning("No components specified, falling back to ALL")
+            self.cfg.update('components', ['ALL'])
+
+        super(EB_icc, self).configure_step()
+
     def install_step(self):
         """
         Actual installation
@@ -75,12 +85,7 @@ class EB_icc(IntelBase):
                 'license_file_name': LICENSE_FILE_NAME_2012,
             }
 
-        cfg_extras_map = {}
-        if LooseVersion(self.version) >= LooseVersion('2016'):
-            cfg_extras_map = {
-                'COMPONENTS': 'ALL',
-            }
-        super(EB_icc, self).install_step(silent_cfg_names_map=silent_cfg_names_map, silent_cfg_extras=cfg_extras_map)
+        super(EB_icc, self).install_step(silent_cfg_names_map=silent_cfg_names_map)
 
     def sanity_check_step(self):
         """Custom sanity check paths for icc."""
