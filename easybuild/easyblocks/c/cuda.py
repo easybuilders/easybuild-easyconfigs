@@ -1,8 +1,8 @@
 ##
 # This file is an EasyBuild reciPY as per https://github.com/hpcugent/easybuild
 #
-# Copyright:: Copyright 2012-2015 Cyprus Institute / CaSToRC, Uni.Lu, NTUA, Ghent University
-# Authors::   George Tsouloupas <g.tsouloupas@cyi.ac.cy>, Fotis Georgatos <fotis@cern.ch>, Kenneth Hoste
+# Copyright:: Copyright 2012-2015 Cyprus Institute / CaSToRC, Uni.Lu, NTUA, Ghent University, Forschungszentrum Juelich GmbH
+# Authors::   George Tsouloupas <g.tsouloupas@cyi.ac.cy>, Fotis Georgatos <fotis@cern.ch>, Kenneth Hoste, Damian Alvarez
 # License::   MIT/GPL
 # $Id$
 #
@@ -17,8 +17,13 @@ Ref: https://speakerdeck.com/ajdecon/introduction-to-the-cuda-toolkit-for-buildi
 @author: George Tsouloupas (Cyprus Institute)
 @author: Fotis Georgatos (Uni.lu)
 @author: Kenneth Hoste (Ghent University)
+@author: Damian Alvarez (Forschungszentrum Juelich)
 """
 import os
+import stat
+import shutil
+
+from easybuild.framework.easyconfig import CUSTOM
 
 from easybuild.easyblocks.generic.binary import Binary
 from easybuild.tools.filetools import patch_perl_script_autoflush
@@ -30,6 +35,14 @@ class EB_CUDA(Binary):
     """
     Support for installing CUDA.
     """
+
+    @staticmethod
+    def extra_options():
+        extra_vars = {
+            'generate_intel_wrapper': [False, "Generate an nvcc wrapper (called invcc) to enable the usage of the Intel compiler as a host compiler, without explicitely using -ccbin.", CUSTOM],
+            'generate_gcc_wrapper': [False, "Generate an nvcc wrapper (called gnvcc) to enable the usage of the GCC compiler as a host compiler, without explicitely using -ccbin. g++ is the default host compiler. The wrapper is done just for clarity and completion (invcc for Intel and gnvcc for GCC)", CUSTOM],
+        }
+        return Binary.extra_options(extra_vars)
 
     def extract_step(self):
         """Extract installer to have more control, e.g. options, patching Perl scripts, etc."""
@@ -77,6 +90,35 @@ class EB_CUDA(Binary):
     
         #overriding maxhits default value to 300 (300s wait for nothing to change in the output without seeing a known question)
         run_cmd_qa(cmd, qanda, std_qa=stdqa, no_qa=noqanda, log_all=True, simple=True, maxhits=300)
+
+
+    def post_install_step(self):
+        # Wrapper script definition
+        wrapper = """#!/bin/sh
+echo "$@" | grep -e '-ccbin' -e '--compiler-bindir' > /dev/null
+if [ $? -eq 0 ];
+then
+        echo "ERROR: do not set -ccbin or --compiler-bindir when using the `basename $0` wrapper"
+else
+        nvcc -ccbin=%s "$@"
+        exit $?
+fi """
+
+        def create_wrapper(wrapper_name,wrapper_comp):
+	    wrapper_f = os.fdopen(os.open("%s/bin/%s" % (self.installdir, wrapper_name), os.O_WRONLY | os.O_CREAT , stat.S_IXUSR | stat.S_IRUSR | stat.S_IXGRP | stat.S_IRGRP | stat.S_IXOTH | stat.S_IROTH ),'w')
+	    wrapper_f.write(wrapper % wrapper_comp)
+	    wrapper_f.close()
+
+	# Prepare wrappers to handle a default host compiler other than g++
+        if self.cfg['generate_intel_wrapper']:
+            wrapper_name = "invcc"
+            wrapper_comp = "icpc"
+            create_wrapper(wrapper_name,wrapper_comp)
+
+        if self.cfg['generate_gcc_wrapper']:
+            wrapper_name = "gnvcc"
+            wrapper_comp = "g++"
+            create_wrapper(wrapper_name,wrapper_comp)
 
     def sanity_check_step(self):
         """Custom sanity check for CUDA."""
