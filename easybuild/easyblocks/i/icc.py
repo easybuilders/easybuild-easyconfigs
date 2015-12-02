@@ -37,6 +37,7 @@ import re
 from distutils.version import LooseVersion
 
 from easybuild.easyblocks.generic.intelbase import IntelBase, ACTIVATION_NAME_2012, LICENSE_FILE_NAME_2012
+from easybuild.tools.modules import get_software_root, get_software_version
 from easybuild.tools.run import run_cmd
 
 
@@ -74,29 +75,35 @@ class EB_icc(IntelBase):
                 'license_file_name': LICENSE_FILE_NAME_2012,
             }
 
-        super(EB_icc, self).install_step(silent_cfg_names_map=silent_cfg_names_map)
+        cfg_extras_map = {}
+        if LooseVersion(self.version) >= LooseVersion('2016'):
+            cfg_extras_map = {
+                'COMPONENTS': 'ALL',
+            }
+        super(EB_icc, self).install_step(silent_cfg_names_map=silent_cfg_names_map, silent_cfg_extras=cfg_extras_map)
 
     def sanity_check_step(self):
         """Custom sanity check paths for icc."""
 
         binprefix = "bin/intel64"
-        libprefix = "lib/intel64/lib"
+        libprefix = "lib/intel64"
         if LooseVersion(self.version) >= LooseVersion("2011"):
             if LooseVersion(self.version) <= LooseVersion("2011.3.174"):
                 binprefix = "bin"
             elif LooseVersion(self.version) >= LooseVersion("2013_sp1"):
                 binprefix = "bin"
-                libprefix = "lib/intel64/lib"
+                if LooseVersion(self.version) >= LooseVersion("2016"):
+                    libprefix = "lib/intel64_lin"
             else:
-                libprefix = "compiler/lib/intel64/lib"
+                libprefix = "compiler/lib/intel64"
 
         binfiles = ["icc", "icpc"]
         if LooseVersion(self.version) < LooseVersion("2014"):
             binfiles += ["idb"]
 
         custom_paths = {
-            'files': ["%s/%s" % (binprefix, x) for x in binfiles] +
-                     ["%s%s" % (libprefix, x) for x in ["iomp5.a", "iomp5.so"]],
+            'files': [os.path.join(binprefix, x) for x in binfiles] +
+                     [os.path.join(libprefix, 'lib%s' % x) for x in ['iomp5.a', 'iomp5.so']],
             'dirs': [],
         }
 
@@ -105,53 +112,114 @@ class EB_icc(IntelBase):
     def make_module_req_guess(self):
         """Customize paths to check and add in environment.
         """
+        debuggerpath = None
+        prefix = None
         if self.cfg['m32']:
             # 32-bit toolchain
+            libpaths = ['lib', 'lib/ia32'],
             dirmap = {
                 'PATH': ['bin', 'bin/ia32', 'tbb/bin/ia32'],
-                'LD_LIBRARY_PATH': ['lib', 'lib/ia32'],
-                'LIBRARY_PATH': ['lib', 'lib/ia32'],
+                'LD_LIBRARY_PATH': libpaths,
+                'LIBRARY_PATH': libpaths,
                 'MANPATH': ['man', 'share/man', 'man/en_US'],
                 'IDB_HOME': ['bin/intel64']
             }
         else:
-            # 64-bit toolit
-            dirmap = {
-                'PATH': ['bin', 'bin/intel64', 'tbb/bin/emt64'],
-                'LD_LIBRARY_PATH': ['lib', 'lib/intel64'],
-                'LIBRARY_PATH': ['lib', 'lib/intel64'],
-                'MANPATH': ['man', 'share/man', 'man/en_US'],
-                'IDB_HOME': ['bin/intel64']
-            }
+            # 64-bit toolkit
+            
+            # using get_software_version('GCC') won't work, while the compiler toolchain is dummy:dummy, which does not
+            # load dependencies. 
+            gccversion = get_software_version('GCC')
+            # manual approach to at least have the system version of gcc
+            if not gccversion:
+                cmd = 'gcc --version'
+                (out, _) = run_cmd(cmd, log_all=True, simple=False)
+                ver_re = re.compile("^gcc \(GCC\) (?P<version>[0-9.]+) [0-9]+", re.M)
+                gccversion = ver_re.search(out).group('version')
+
+            # TBB directory structure
+            # https://www.threadingbuildingblocks.org/docs/help/tbb_userguide/Linux_OS.htm
+            tbbgccversion = 'gcc4.4' # gcc version 4.4 or higher that may or may not support exception_ptr
+            if gccversion and LooseVersion(gccversion) >= LooseVersion("4.1") and LooseVersion(gccversion) < LooseVersion("4.4"):
+                tbbgccversion = 'gcc4.1' # gcc version number between 4.1 and 4.4 that do not support exception_ptr
+
+            if LooseVersion(self.version) < LooseVersion("2016"):
+                prefix = "composer_xe_%s" % self.version
+
+                # Debugger is dependent on INTEL_PYTHONHOME since version 2015 and newer
+                if LooseVersion(self.version) >= LooseVersion("2015"):
+                    # Debugger requires INTEL_PYTHONHOME, which only allows for a single value
+                    debuggerpath = os.path.join('composer_xe_%s' % self.version.split('.')[0], 'debugger')
+
+                libpaths = [os.path.join('tbb/lib/intel64', tbbgccversion),
+                            'ipp/lib/intel64',
+                            'debugger/ipt/intel64/lib',
+                            'lib/intel64',
+                            'compiler/lib/intel64',
+                           ]
+                dirmap = {
+                    'PATH': ['debugger/gdb/intel64/bin', 'ipp/bin/intel64', 'tbb/bin/intel64', 'bin/intel64'],
+                    'LD_LIBRARY_PATH': libpaths, 
+                    'LIBRARY_PATH': libpaths,
+                    'MANPATH': ['debugger/gdb/intel64/share/man', 'man/en_US', 'share/man', 'man'],
+                    'CPATH': ['ipp/include', 'tbb/include'],
+                }
+            else:
+                # New Directory Layout for Intel Parallel Studio XE 2016
+                # https://software.intel.com/en-us/articles/new-directory-layout-for-intel-parallel-studio-xe-2016
+                prefix = "compilers_and_libraries_%s/linux" % self.version
+                # Debugger requires INTEL_PYTHONHOME, which only allows for a single value
+                debuggerpath = 'debugger_%s' % self.version.split('.')[0]
+
+                libpaths = ['daal/../compiler/lib/intel64_lin',
+                            os.path.join('daal/../tbb/lib/intel64_lin', tbbgccversion),
+                            'daal/lib/intel64_lin',
+                            os.path.join(debuggerpath, 'libipt/intel64/lib'),
+                            os.path.join('tbb/lib/intel64', tbbgccversion),
+                            'mkl/lib/intel64',
+                            'ipp/lib/intel64',
+                            'ipp/../compiler/lib/intel64',
+                            'mpi/intel64',
+                            'compiler/lib/intel64',
+                            'lib/intel64_lin',
+                           ]
+                dirmap = {
+                    'PATH': ['mpi/intel64/bin',
+                             'ipp/bin/intel64',
+                              os.path.join(debuggerpath, 'gdb/intel64/bin'),
+                             'bin/intel64',
+                             'bin',
+                            ],
+                    'LD_LIBRARY_PATH': libpaths,
+                    'LIBRARY_PATH': libpaths,
+                    'MANPATH': ['man/common', 'man/en_US', 'debugger/gdb/intel64/share/man'],
+                    'CPATH': ['ipp/include', 'mkl/include', 'tbb/include', 'daal/include'],
+                    'DAALROOT': ['daal'],
+                    'TBBROOT': ['tbb'],
+                    'IPPROOT': ['ipp'],
+                    'CLASSPATH': ['daal/lib/daal.jar']
+                }
+
+        # set debugger path
+        if debuggerpath:
+            if os.path.isdir(os.path.join(self.installdir, debuggerpath, 'python/intel64')):
+                self.cfg['modextravars'] = { 'INTEL_PYTHONHOME': os.path.join('$root', debuggerpath, 'python/intel64') }
 
         # in recent Intel compiler distributions, the actual binaries are
         # in deeper directories, and symlinked in top-level directories
         # however, not all binaries are symlinked (e.g. mcpcom is not)
-        if os.path.isdir("%s/composerxe-%s" % (self.installdir, self.version)):
-            prefix = "composerxe-%s" % self.version
+        # more recent versions of the Intel Compiler (2013.sp1 and newer)
+        if os.path.isdir(os.path.join(self.installdir, prefix)):
             oldmap = dirmap
             dirmap = {}
             for k, vs in oldmap.items():
                 dirmap[k] = []
-                if k == "LD_LIBRARY_PATH":
-                    prefix = "composerxe-%s/compiler" % self.version
-                else:
-                    prefix = "composerxe-%s" % self.version
                 for v in vs:
-                    v2 = "%s/%s" % (prefix, v)
-                    dirmap[k].append(v2)
-
-        elif os.path.isdir("%s/compiler" % (self.installdir)):
-            prefix = "compiler"
-            oldmap = dirmap
-            dirmap = {}
-            for k, vs in oldmap.items():
-                dirmap[k] = []
-                prefix = ''
-                if k == "LD_LIBRARY_PATH":
-                    prefix = "compiler/"
-                for v in vs:
-                    v2 = "%s%s" % (prefix, v)
-                    dirmap[k].append(v2)
+                    v2 = os.path.join(prefix, v)
+                    if os.path.exists(os.path.join(self.installdir, v2)):
+                        dirmap[k].append(v2)
+                    elif os.path.isdir(os.path.join(self.installdir, v)):
+                        dirmap[k].append(v)
 
         return dirmap
+
