@@ -42,6 +42,7 @@ from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.filetools import rmtree2
 from easybuild.tools.modules import get_software_root
 from easybuild.tools.run import run_cmd
+from distutils.version import LooseVersion
 
 
 class EB_numpy(FortranPythonPackage):
@@ -244,8 +245,9 @@ class EB_numpy(FortranPythonPackage):
         }
         custom_commands = [
             ('python', '-c "import numpy"'),
-            ('python', '-c "import numpy.core._dotblas"'),  # _dotblas is required for decent performance of numpy.dot()
         ]
+        if LooseVersion(self.version) < LooseVersion("1.10"):
+            custom_commands.append ('python', '-c "import numpy.core._dotblas"')  # _dotblas is required for decent performance of numpy.dot()
 
         # make sure the installation path is in $PYTHONPATH so the sanity check commands can work
         pythonpath = os.environ.get('PYTHONPATH', '')
