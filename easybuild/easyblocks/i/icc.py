@@ -64,8 +64,7 @@ class EB_icc(IntelBase):
         """have fallback for components for > 2016 versions"""
 
         if LooseVersion(self.version) >= LooseVersion('2016') and not self.cfg['components']:
-            self.log.warning("No components specified, falling back to ALL")
-            self.cfg.update('components', ['ALL'])
+            self.log.warning("No components specified")
 
         super(EB_icc, self).configure_step()
 
@@ -97,8 +96,6 @@ class EB_icc(IntelBase):
                 binprefix = "bin"
             elif LooseVersion(self.version) >= LooseVersion("2013_sp1"):
                 binprefix = "bin"
-                if LooseVersion(self.version) >= LooseVersion("2016"):
-                    libprefix = "lib/intel64_lin"
             else:
                 libprefix = "compiler/lib/intel64"
 
