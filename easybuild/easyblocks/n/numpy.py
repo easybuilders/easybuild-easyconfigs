@@ -247,7 +247,9 @@ class EB_numpy(FortranPythonPackage):
             ('python', '-c "import numpy"'),
         ]
         if LooseVersion(self.version) < LooseVersion("1.10"):
-            custom_commands.append ('python', '-c "import numpy.core._dotblas"')  # _dotblas is required for decent performance of numpy.dot()
+            custom_commands.append (
+                ('python', '-c "import numpy.core._dotblas"')
+            )  # _dotblas is required for decent performance of numpy.dot()
 
         # make sure the installation path is in $PYTHONPATH so the sanity check commands can work
         pythonpath = os.environ.get('PYTHONPATH', '')
