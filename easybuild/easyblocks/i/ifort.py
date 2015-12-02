@@ -30,6 +30,7 @@ EasyBuild support for installing the Intel Fortran compiler suite, implemented a
 @author: Kenneth Hoste (Ghent University)
 @author: Pieter De Baets (Ghent University)
 @author: Jens Timmerman (Ghent University)
+@author: Ward Poelmans (Ghent University)
 """
 
 from distutils.version import LooseVersion
@@ -56,6 +57,8 @@ class EB_ifort(EB_icc, IntelBase):
             elif LooseVersion(self.version) >= LooseVersion("2013_sp1"):
                 binprefix = "bin"
                 libprefix = "lib/intel64/lib"
+                if LooseVersion(self.version) >= LooseVersion("2016"):
+                    libprefix = "lib/intel64_lin/lib"
             else:
                 libprefix = "compiler/lib/intel64/lib"
 
