@@ -125,7 +125,7 @@ class IntelBase(EasyBlock):
 
         if 'ALL' in self.cfg['components'] or 'DEFAULTS' in self.cfg['components']:
             if len(self.cfg['components']) == 1:
-                self.install_components = self.cfg['components'][0]
+                self.install_components = self.cfg['components']
             else:
                 raise EasyBuildError("If you specify ALL or DEFAULTS as components, you cannot specify anything else: %s"
                                      % self.cfg['components'])
