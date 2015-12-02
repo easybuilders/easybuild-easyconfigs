@@ -43,6 +43,7 @@ import easybuild.tools.environment as env
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.build_log import EasyBuildError
+from easybuild.tools.filetools import read_file
 from easybuild.tools.run import run_cmd
 
 from vsc.utils import fancylogger
@@ -91,6 +92,8 @@ class IntelBase(EasyBlock):
         common_tmp_dir = os.path.dirname(tempfile.gettempdir())  # common tmp directory, same across nodes
         self.home_subdir_local = os.path.join(common_tmp_dir, os.getenv('USER'), 'easybuild_intel')
 
+        self.install_components = None
+
     @staticmethod
     def extra_options(extra_vars=None):
         extra_vars = EasyBlock.extra_options(extra_vars)
@@ -102,9 +105,40 @@ class IntelBase(EasyBlock):
             # disables TMP_PATH env and command line option
             'usetmppath': [False, "Use temporary path for installation", CUSTOM],
             'm32': [False, "Enable 32-bit toolchain", CUSTOM],
+            'components': [[], "List of components to install", CUSTOM],
         })
 
         return extra_vars
+
+    def parse_components_list(self):
+        """parse the regex in the components extra_options and select the matching components
+        from the mediaconfig.xml file in the install dir"""
+
+        mediaconfigpath = os.path.join(self.cfg['start_dir'], 'pset', 'mediaconfig.xml')
+        if not os.path.isfile(mediaconfigpath):
+            self.log.warning("Could not find pset/mediaconfig.xml in the build directory. Skipping list of components to install")
+            return
+
+        mediaconfig = read_file(mediaconfigpath)
+        available_components = re.findall("<Abbr>(?P<component>[^<]+)</Abbr>", mediaconfig, re.M)
+        self.log.debug("Intel components found: %s" % available_components)
+
+        to_install = []
+        self.log.debug("Using regex list: %s" % self.cfg['components'])
+
+        if 'ALL' in self.cfg['components']:
+            to_install = ['ALL']
+        elif 'DEFAULTS' in self.cfg['components']:
+            to_install = ['DEFAULTS']
+        else:
+            for comp in available_components:
+                for comp_regex in self.cfg['components']:
+                    if re.search(comp_regex, comp):
+                        to_install.append(comp)
+
+        if to_install:
+            self.install_components = to_install
+            self.log.debug("Components to install: %s" % self.install_components)
 
     def clean_home_subdir(self):
         """Remove contents of (local) 'intel' directory home subdir, where stuff is cached."""
@@ -245,6 +279,9 @@ class IntelBase(EasyBlock):
         # clean home directory
         self.clean_home_subdir()
 
+        # parse self.cfg['components']
+        self.parse_components_list()
+
     def build_step(self):
         """Binary installation files, so no building."""
         pass
@@ -286,6 +323,13 @@ class IntelBase(EasyBlock):
             'license_file': self.license_file,
             'install_dir': silent_cfg_names_map.get('install_dir', self.installdir),
         }
+
+        if self.install_components:
+            if len(self.install_components) == 1:
+                silent += 'COMPONENTS=%s\n' % self.install_components[0]
+            else:
+                # a list of components is specified
+                silent += 'COMPONENTS="' + ';'.join('%s' % val for val in self.install_components) + '"\n'
 
         if silent_cfg_extras is not None:
             if isinstance(silent_cfg_extras, dict):
