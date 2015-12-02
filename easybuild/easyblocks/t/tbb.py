@@ -32,13 +32,35 @@ EasyBuild support for installing the Intel Threading Building Blocks (TBB) libra
 @author: Jens Timmerman (Ghent University)
 """
 
+import glob
 import os
 import shutil
-import glob
 from distutils.version import LooseVersion
 
 from easybuild.easyblocks.generic.intelbase import IntelBase, ACTIVATION_NAME_2012, LICENSE_FILE_NAME_2012
 from easybuild.tools.build_log import EasyBuildError
+from easybuild.tools.modules import get_software_version
+from easybuild.tools.systemtools import get_gcc_version
+
+
+def get_tbb_gccprefix():
+    """
+    Find the correct gcc version for the lib dir of TBB
+    """
+    # using get_software_version('GCC') won't work, while the compiler toolchain is dummy:dummy, which does not
+    # load dependencies.
+    gccversion = get_software_version('GCC')
+    # manual approach to at least have the system version of gcc
+    if not gccversion:
+        gccversion = get_gcc_version()
+
+    # TBB directory structure
+    # https://www.threadingbuildingblocks.org/docs/help/tbb_userguide/Linux_OS.htm
+    tbbgccversion = 'gcc4.4'  # gcc version 4.4 or higher that may or may not support exception_ptr
+    if gccversion and LooseVersion(gccversion) >= LooseVersion("4.1") and LooseVersion(gccversion) < LooseVersion("4.4"):
+        tbbgccversion = 'gcc4.1'  # gcc version number between 4.1 and 4.4 that do not support exception_ptr
+
+    return tbbgccversion
 
 
 class EB_tbb(IntelBase):
@@ -75,7 +97,6 @@ class EB_tbb(IntelBase):
         else:
             raise EasyBuildError("No libs found using %s in %s", libglob, self.installdir)
         self.libdir = libdir
-
 
         self.libpath = os.path.join('tbb', 'libs', 'intel64', libdir)
         self.log.debug("self.libpath: %s" % self.libpath)
