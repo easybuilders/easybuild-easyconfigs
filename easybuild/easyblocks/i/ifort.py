@@ -33,6 +33,7 @@ EasyBuild support for installing the Intel Fortran compiler suite, implemented a
 @author: Ward Poelmans (Ghent University)
 """
 
+import os
 from distutils.version import LooseVersion
 
 from easybuild.easyblocks.generic.intelbase import IntelBase
@@ -50,7 +51,7 @@ class EB_ifort(EB_icc, IntelBase):
         """Custom sanity check paths for ifort."""
 
         binprefix = "bin/intel64"
-        libprefix = "lib/intel64/lib"
+        libprefix = "lib/intel64"
         if LooseVersion(self.version) >= LooseVersion("2011"):
             if LooseVersion(self.version) <= LooseVersion("2011.3.174"):
                 binprefix = "bin"
@@ -58,9 +59,9 @@ class EB_ifort(EB_icc, IntelBase):
                 binprefix = "bin"
                 libprefix = "lib/intel64/lib"
                 if LooseVersion(self.version) >= LooseVersion("2016"):
-                    libprefix = "lib/intel64_lin/lib"
+                    libprefix = "lib/intel64_lin"
             else:
-                libprefix = "compiler/lib/intel64/lib"
+                libprefix = "compiler/lib/intel64"
 
         bins = ["ifort"]
         if LooseVersion(self.version) < LooseVersion('2013'):
@@ -68,8 +69,8 @@ class EB_ifort(EB_icc, IntelBase):
             bins.append("idb")
 
         custom_paths = {
-            'files': ["%s/%s" % (binprefix, x) for x in bins] +
-                     ["%s%s" % (libprefix, x) for x in ["ifcore.a", "ifcore.so", "iomp5.a", "iomp5.so"]],
+            'files': [os.path.join(binprefix, x) for x in bins] +
+            [os.path.join(libprefix, 'lib%s' % x) for x in ["ifcore.a", "ifcore.so", "iomp5.a", "iomp5.so"]],
             'dirs': [],
         }
 
