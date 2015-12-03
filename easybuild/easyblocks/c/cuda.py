@@ -20,16 +20,25 @@ Ref: https://speakerdeck.com/ajdecon/introduction-to-the-cuda-toolkit-for-buildi
 @author: Damian Alvarez (Forschungszentrum Juelich)
 """
 import os
-import stat
 import shutil
-
-from easybuild.framework.easyconfig import CUSTOM
+import stat
 
 from easybuild.easyblocks.generic.binary import Binary
-from easybuild.tools.filetools import patch_perl_script_autoflush
+from easybuild.framework.easyconfig import CUSTOM
+from easybuild.tools.filetools import adjust_permissions, patch_perl_script_autoflush, write_file
 from easybuild.tools.run import run_cmd, run_cmd_qa
 from distutils.version import LooseVersion
 
+# Wrapper script definition
+wrapper = """#!/bin/sh
+echo "$@" | grep -e '-ccbin' -e '--compiler-bindir' > /dev/null
+if [ $? -eq 0 ];
+then
+        echo "ERROR: do not set -ccbin or --compiler-bindir when using the `basename $0` wrapper"
+else
+        nvcc -ccbin=%s "$@"
+        exit $?
+fi """
 
 class EB_CUDA(Binary):
     """
@@ -39,8 +48,12 @@ class EB_CUDA(Binary):
     @staticmethod
     def extra_options():
         extra_vars = {
-            'generate_intel_wrapper': [False, "Generate an nvcc wrapper (called invcc) to enable the usage of the Intel compiler as a host compiler, without explicitely using -ccbin.", CUSTOM],
-            'generate_gcc_wrapper': [False, "Generate an nvcc wrapper (called gnvcc) to enable the usage of the GCC compiler as a host compiler, without explicitely using -ccbin. g++ is the default host compiler. The wrapper is done just for clarity and completion (invcc for Intel and gnvcc for GCC)", CUSTOM],
+            'generate_intel_wrapper': [False, "Generate an nvcc wrapper (called invcc) to enable the usage of the "
+		    +"Intel compiler as a host compiler, without explicitely using -ccbin.", CUSTOM],
+            'generate_gcc_wrapper': [False, "Generate an nvcc wrapper (called gnvcc) to enable the usage of the "
+		    +"GCC compiler as a host compiler, without explicitely using -ccbin. g++ is the default host "
+		    +"compiler. The wrapper is done just for clarity and completion (invcc for Intel and gnvcc for "
+		    +"GCC)", CUSTOM],
         }
         return Binary.extra_options(extra_vars)
 
@@ -93,32 +106,17 @@ class EB_CUDA(Binary):
 
 
     def post_install_step(self):
-        # Wrapper script definition
-        wrapper = """#!/bin/sh
-echo "$@" | grep -e '-ccbin' -e '--compiler-bindir' > /dev/null
-if [ $? -eq 0 ];
-then
-        echo "ERROR: do not set -ccbin or --compiler-bindir when using the `basename $0` wrapper"
-else
-        nvcc -ccbin=%s "$@"
-        exit $?
-fi """
-
         def create_wrapper(wrapper_name,wrapper_comp):
-	    wrapper_f = os.fdopen(os.open("%s/bin/%s" % (self.installdir, wrapper_name), os.O_WRONLY | os.O_CREAT , stat.S_IXUSR | stat.S_IRUSR | stat.S_IXGRP | stat.S_IRGRP | stat.S_IXOTH | stat.S_IROTH ),'w')
-	    wrapper_f.write(wrapper % wrapper_comp)
-	    wrapper_f.close()
+	    wrapper_f = "%s/bin/%s" % (self.installdir, wrapper_name)
+	    write_file(wrapper_f, wrapper % wrapper_comp)
+            adjust_permissions(wrapper_f, stat.S_IXUSR|stat.S_IRUSR|stat.S_IXGRP|stat.S_IRGRP|stat.S_IXOTH|stat.S_IROTH)
 
 	# Prepare wrappers to handle a default host compiler other than g++
         if self.cfg['generate_intel_wrapper']:
-            wrapper_name = "invcc"
-            wrapper_comp = "icpc"
-            create_wrapper(wrapper_name,wrapper_comp)
+            create_wrapper('invcc','icpc')
 
         if self.cfg['generate_gcc_wrapper']:
-            wrapper_name = "gnvcc"
-            wrapper_comp = "g++"
-            create_wrapper(wrapper_name,wrapper_comp)
+            create_wrapper('gnvcc','g++')
 
     def sanity_check_step(self):
         """Custom sanity check for CUDA."""
