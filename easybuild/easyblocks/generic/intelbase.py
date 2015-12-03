@@ -130,6 +130,7 @@ class IntelBase(EasyBlock):
                 raise EasyBuildError("If you specify ALL or DEFAULTS as components, you cannot specify anything else: %s"
                                      % self.cfg['components'])
         else:
+            self.install_components = []
             for comp in available_components:
                 for comp_regex in self.cfg['components']:
                     if re.search(comp_regex, comp):
