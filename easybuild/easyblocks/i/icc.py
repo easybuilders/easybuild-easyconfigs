@@ -105,7 +105,8 @@ class EB_icc(IntelBase):
 
         custom_paths = {
             'files': [os.path.join(binprefix, x) for x in binfiles] +
-            [os.path.join(libprefix, 'lib%s' % x) for x in ['iomp5.a', 'iomp5.so']],
+            [os.path.join(libprefix, 'lib%s' % x) for x in ['iomp5.a', 'iomp5.so']] +
+            ['include/omp.h'],
             'dirs': [],
         }
 
@@ -150,7 +151,7 @@ class EB_icc(IntelBase):
                     'compiler/lib/intel64',
                 ],
                 'MANPATH': ['man/common', 'man/en_US', 'debugger/gdb/intel64/share/man'],
-                'CPATH': ['ipp/include', 'mkl/include', 'tbb/include', 'daal/include'],
+                'CPATH': ['include', 'ipp/include', 'mkl/include', 'tbb/include', 'daal/include'],
                 'DAALROOT': ['daal'],
                 'TBBROOT': ['tbb'],
                 'IPPROOT': ['ipp'],
