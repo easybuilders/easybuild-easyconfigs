@@ -114,7 +114,7 @@ class EB_icc(IntelBase):
     def make_module_req_guess(self):
         """Customize paths to check and add in environment.
         """
-        debuggerpath = None
+        self.debuggerpath = None
         prefix = None
         tbbgccversion = get_tbb_gccprefix()
 
@@ -157,39 +157,35 @@ class EB_icc(IntelBase):
                 'CLASSPATH': ['daal/lib/daal.jar']
             }
 
-
             if LooseVersion(self.version) < LooseVersion("2016"):
                 prefix = "composer_xe_%s" % self.version
 
                 # Debugger is dependent on INTEL_PYTHONHOME since version 2015 and newer
                 if LooseVersion(self.version) >= LooseVersion("2015"):
                     # Debugger requires INTEL_PYTHONHOME, which only allows for a single value
-                    debuggerpath = os.path.join('composer_xe_%s' % self.version.split('.')[0], 'debugger')
+                    self.debuggerpath = os.path.join('composer_xe_%s' % self.version.split('.')[0], 'debugger')
 
                 dirmap['PATH'].append('debugger/gdb/intel64/bin')
                 dirmap['MANPATH'].extend(['debugger/gdb/intel64/share/man', 'share/man', 'man'])
-
             else:
                 # New Directory Layout for Intel Parallel Studio XE 2016
                 # https://software.intel.com/en-us/articles/new-directory-layout-for-intel-parallel-studio-xe-2016
                 prefix = "compilers_and_libraries_%s/linux" % self.version
                 # Debugger requires INTEL_PYTHONHOME, which only allows for a single value
-                debuggerpath = 'debugger_%s' % self.version.split('.')[0]
+                self.debuggerpath = 'debugger_%s' % self.version.split('.')[0]
 
                 libpaths = [
-                    os.path.join(debuggerpath, 'libipt/intel64/lib'),
+                    os.path.join(self.debuggerpath, 'libipt/intel64/lib'),
                     'daal/lib/intel64_lin',
                 ]
 
                 dirmap['LD_LIBRARY_PATH'].extend(libpaths)
 
-
         dirmap['LIBRARY_PATH'] = dirmap['LD_LIBRARY_PATH']
 
         # set debugger path
-        if debuggerpath:
-            dirmap['PATH'].append(os.path.join(debuggerpath, 'gdb', 'intel64', 'bin'))
-            dirmap.update({'INTEL_PYTHONHOME': os.path.join(debuggerpath, 'python', 'intel64')})
+        if self.debuggerpath:
+            dirmap['PATH'].append(os.path.join(self.debuggerpath, 'gdb', 'intel64', 'bin'))
 
         # in recent Intel compiler distributions, the actual binaries are
         # in deeper directories, and symlinked in top-level directories
@@ -208,3 +204,10 @@ class EB_icc(IntelBase):
                         dirmap[k].append(v)
 
         return dirmap
+
+    def make_module_extra(self):
+        """Custom variables for OpenBabel module."""
+        txt = super(EB_icc, self).make_module_extra()
+        intel_pythonhome = os.path.join('$root', self.debuggerpath, 'python', 'intel64')
+        txt += self.module_generator.set_environment('INTEL_PYTHONHOME', intel_pythonhome)
+        return txt
