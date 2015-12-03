@@ -31,6 +31,7 @@ EasyBuild support for installing the Intel Math Kernel Library (MKL), implemente
 @author: Pieter De Baets (Ghent University)
 @author: Jens Timmerman (Ghent University)
 @author: Ward Poelmans (Ghent University)
+@author: Lumir Jasiok (IT4Innovations)
 """
 
 import itertools

@@ -73,6 +73,9 @@ INSTALL_DIR_NAME = 'PSET_INSTALL_DIR'
 LICENSE_FILE_NAME = 'ACTIVATION_LICENSE_FILE'  # since icc/ifort v2013_sp1, impi v4.1.1, imkl v11.1
 LICENSE_FILE_NAME_2012 = 'PSET_LICENSE_FILE'  # previous license file parameter used in older versions
 
+COMP_ALL = 'ALL'
+COMP_DEFAULTS = 'DEFAULTS'
+
 
 class IntelBase(EasyBlock):
     """
@@ -105,7 +108,7 @@ class IntelBase(EasyBlock):
             # disables TMP_PATH env and command line option
             'usetmppath': [False, "Use temporary path for installation", CUSTOM],
             'm32': [False, "Enable 32-bit toolchain", CUSTOM],
-            'components': [[], "List of components to install", CUSTOM],
+            'components': [None, "List of components to install", CUSTOM],
         })
 
         return extra_vars
@@ -116,25 +119,24 @@ class IntelBase(EasyBlock):
 
         mediaconfigpath = os.path.join(self.cfg['start_dir'], 'pset', 'mediaconfig.xml')
         if not os.path.isfile(mediaconfigpath):
-            raise EasyBuildError("Could not find pset/mediaconfig.xml in the build directory to find list of components.")
+            raise EasyBuildError("Could not find %s to find list of components." % mediaconfigpath)
 
         mediaconfig = read_file(mediaconfigpath)
         available_components = re.findall("<Abbr>(?P<component>[^<]+)</Abbr>", mediaconfig, re.M)
         self.log.debug("Intel components found: %s" % available_components)
         self.log.debug("Using regex list: %s" % self.cfg['components'])
 
-        if 'ALL' in self.cfg['components'] or 'DEFAULTS' in self.cfg['components']:
+        if COMP_ALL in self.cfg['components'] or COMP_DEFAULTS in self.cfg['components']:
             if len(self.cfg['components']) == 1:
                 self.install_components = self.cfg['components']
             else:
-                raise EasyBuildError("If you specify ALL or DEFAULTS as components, you cannot specify anything else: %s"
-                                     % self.cfg['components'])
+                raise EasyBuildError("If you specify %s as components, you cannot specify anything else: %s",
+                                     ' or '.join([COMP_ALL, COMP_DEFAULTS]), self.cfg['components'])
         else:
             self.install_components = []
-            for comp in available_components:
-                for comp_regex in self.cfg['components']:
-                    if re.search(comp_regex, comp):
-                        self.install_components.append(comp)
+            for comp_regex in self.cfg['components']:
+                comps = [comp for comp in available_components if re.match(comp_regex, comp)]
+                self.install_components.extend(comps)
 
         self.log.debug("Components to install: %s" % self.install_components)
 
@@ -277,7 +279,7 @@ class IntelBase(EasyBlock):
         # clean home directory
         self.clean_home_subdir()
 
-        # parse self.cfg['components']
+        # determine list of components, based on 'components' easyconfig parameter (if specified)
         if self.cfg['components']:
             self.parse_components_list()
 
@@ -304,7 +306,8 @@ class IntelBase(EasyBlock):
         if lic_activation in lic_file_server_activations:
             lic_file_entry = "%(license_file_name)s=%(license_file)s"
         elif not self.cfg['license_activation'] in other_activations:
-            raise EasyBuildError("Unknown type of activation specified: %s (known :%s)", lic_activation, ACTIVATION_TYPES)
+            raise EasyBuildError("Unknown type of activation specified: %s (known :%s)",
+                                 lic_activation, ACTIVATION_TYPES)
 
         silent = '\n'.join([
             "%(activation_name)s=%(activation)s",
@@ -324,12 +327,12 @@ class IntelBase(EasyBlock):
         }
 
         if self.install_components:
-            if len(self.install_components) == 1:
-                # if ALL or DEFAULTS, no quotes should be used
+            if len(self.install_components) == 1 and self.install_components[0] in [COMP_ALL, COMP_DEFAULTS]:
+                # no quotes should be used for ALL or DEFAULTS
                 silent += 'COMPONENTS=%s\n' % self.install_components[0]
             else:
                 # a list of components is specified (needs quotes)
-                silent += 'COMPONENTS="' + ';'.join('%s' % val for val in self.install_components) + '"\n'
+                silent += 'COMPONENTS="' + ';'.join(self.install_components) + '"\n'
 
         if silent_cfg_extras is not None:
             if isinstance(silent_cfg_extras, dict):
