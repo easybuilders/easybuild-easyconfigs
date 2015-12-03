@@ -105,7 +105,7 @@ class IntelBase(EasyBlock):
             # disables TMP_PATH env and command line option
             'usetmppath': [False, "Use temporary path for installation", CUSTOM],
             'm32': [False, "Enable 32-bit toolchain", CUSTOM],
-            'components': [[], "List of components to install", CUSTOM],
+            'components': [None, "List of components to install", CUSTOM],
         })
 
         return extra_vars
@@ -116,7 +116,7 @@ class IntelBase(EasyBlock):
 
         mediaconfigpath = os.path.join(self.cfg['start_dir'], 'pset', 'mediaconfig.xml')
         if not os.path.isfile(mediaconfigpath):
-            raise EasyBuildError("Could not find pset/mediaconfig.xml in the build directory to find list of components.")
+            raise EasyBuildError("Could not find %s to find list of components." % mediaconfigpath)
 
         mediaconfig = read_file(mediaconfigpath)
         available_components = re.findall("<Abbr>(?P<component>[^<]+)</Abbr>", mediaconfig, re.M)
@@ -131,10 +131,9 @@ class IntelBase(EasyBlock):
                                      % self.cfg['components'])
         else:
             self.install_components = []
-            for comp in available_components:
-                for comp_regex in self.cfg['components']:
-                    if re.search(comp_regex, comp):
-                        self.install_components.append(comp)
+            for comp_regex in self.cfg['components']:
+                comps = [comp for comp in available_components if re.match(comp_regex, comp)]
+                self.install_components.extend(comps)
 
         self.log.debug("Components to install: %s" % self.install_components)
 
@@ -277,7 +276,7 @@ class IntelBase(EasyBlock):
         # clean home directory
         self.clean_home_subdir()
 
-        # parse self.cfg['components']
+        # determine list of components, based on 'components' easyconfig parameter (if specified)
         if self.cfg['components']:
             self.parse_components_list()
 
@@ -325,11 +324,11 @@ class IntelBase(EasyBlock):
 
         if self.install_components:
             if len(self.install_components) == 1:
-                # if ALL or DEFAULTS, no quotes should be used
+                # if only a single components if listed (e.g. ALL, DEFAULTS), no quotes should be used
                 silent += 'COMPONENTS=%s\n' % self.install_components[0]
             else:
                 # a list of components is specified (needs quotes)
-                silent += 'COMPONENTS="' + ';'.join('%s' % val for val in self.install_components) + '"\n'
+                silent += 'COMPONENTS="' + ';'.join(self.install_components) + '"\n'
 
         if silent_cfg_extras is not None:
             if isinstance(silent_cfg_extras, dict):
