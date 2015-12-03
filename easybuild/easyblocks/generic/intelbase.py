@@ -73,6 +73,9 @@ INSTALL_DIR_NAME = 'PSET_INSTALL_DIR'
 LICENSE_FILE_NAME = 'ACTIVATION_LICENSE_FILE'  # since icc/ifort v2013_sp1, impi v4.1.1, imkl v11.1
 LICENSE_FILE_NAME_2012 = 'PSET_LICENSE_FILE'  # previous license file parameter used in older versions
 
+COMP_ALL = 'ALL'
+COMP_DEFAULTS = 'DEFAULTS'
+
 
 class IntelBase(EasyBlock):
     """
@@ -123,12 +126,12 @@ class IntelBase(EasyBlock):
         self.log.debug("Intel components found: %s" % available_components)
         self.log.debug("Using regex list: %s" % self.cfg['components'])
 
-        if 'ALL' in self.cfg['components'] or 'DEFAULTS' in self.cfg['components']:
+        if COMP_ALL in self.cfg['components'] or COMP_DEFAULTS in self.cfg['components']:
             if len(self.cfg['components']) == 1:
                 self.install_components = self.cfg['components']
             else:
-                raise EasyBuildError("If you specify ALL or DEFAULTS as components, you cannot specify anything else: %s"
-                                     % self.cfg['components'])
+                raise EasyBuildError("If you specify %s as components, you cannot specify anything else: %s",
+                                     ' or '.join([COMP_ALL, COMP_DEFAULTS]), self.cfg['components'])
         else:
             self.install_components = []
             for comp_regex in self.cfg['components']:
@@ -303,7 +306,8 @@ class IntelBase(EasyBlock):
         if lic_activation in lic_file_server_activations:
             lic_file_entry = "%(license_file_name)s=%(license_file)s"
         elif not self.cfg['license_activation'] in other_activations:
-            raise EasyBuildError("Unknown type of activation specified: %s (known :%s)", lic_activation, ACTIVATION_TYPES)
+            raise EasyBuildError("Unknown type of activation specified: %s (known :%s)",
+                                 lic_activation, ACTIVATION_TYPES)
 
         silent = '\n'.join([
             "%(activation_name)s=%(activation)s",
@@ -323,7 +327,7 @@ class IntelBase(EasyBlock):
         }
 
         if self.install_components:
-            if len(self.install_components) == 1 and self.install_components[0] in ['ALL', 'DEFAULTS']:
+            if len(self.install_components) == 1 and self.install_components[0] in [COMP_ALL, COMP_DEFAULTS]:
                 # no quotes should be used for ALL or DEFAULTS
                 silent += 'COMPONENTS=%s\n' % self.install_components[0]
             else:
