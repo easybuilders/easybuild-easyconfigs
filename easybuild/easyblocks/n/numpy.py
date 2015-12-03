@@ -246,11 +246,13 @@ class EB_numpy(FortranPythonPackage):
         custom_commands = [
             ('python', '-c "import numpy"'),
         ]
-        if LooseVersion(self.version) < LooseVersion("1.10"):
-            # _dotblas is required for decent performance of numpy.dot()
-            custom_commands.append (('python', '-c "import numpy.core._dotblas"'))
+        if LooseVersion(self.version) >= LooseVersion("1.10"):
+            # if blas_dot symbol is not there, numpy isn't properly linked against a BLAS library
+            multiarray_so = os.path.join(self.pylibdir, 'numpy', 'core', 'multiarray.so')
+            custom_commands.append("nm | grep blas_dot" % multiarray_so)
         else:
-            custom_commands.append (('python', '-c "from numpy.core.multiarray import dot"'))
+            # _dotblas is required for decent performance of numpy.dot(), but only there in numpy 1.9.x and older
+            custom_commands.append (('python', '-c "import numpy.core._dotblas"'))
 
         # make sure the installation path is in $PYTHONPATH so the sanity check commands can work
         pythonpath = os.environ.get('PYTHONPATH', '')
