@@ -38,6 +38,7 @@ import tempfile
 import easybuild.tools.environment as env
 import easybuild.tools.toolchain as toolchain
 from easybuild.easyblocks.generic.fortranpythonpackage import FortranPythonPackage
+from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.filetools import rmtree2
 from easybuild.tools.modules import get_software_root
@@ -47,6 +48,14 @@ from distutils.version import LooseVersion
 
 class EB_numpy(FortranPythonPackage):
     """Support for installing the numpy Python package as part of a Python installation."""
+
+    @staticmethod
+    def extra_options():
+        """Easyconfig parameters specific to numpy."""
+        extra_vars = ({
+            'blas_test_time_limit': [500, "Time limit (in ms) for 1000x1000 matrix dot product BLAS test", CUSTOM],
+        })
+        return FortranPythonPackage.extra_options(extra_vars=extra_vars)
 
     def __init__(self, *args, **kwargs):
         """Initialize numpy-specific class variables."""
@@ -199,7 +208,6 @@ class EB_numpy(FortranPythonPackage):
 
         # evaluate performance of numpy.dot (3 runs, 3 loops each)
         size = 1000
-        max_time_msec = 1000  # 1 second should really do it for a 1000x1000 matrix dot product
         cmd = ' '.join([
             'export PYTHONPATH=%s:$PYTHONPATH &&' % os.path.join(tmpdir, self.pylibdir),
             'python -m timeit -n 3 -r 3',
@@ -224,12 +232,12 @@ class EB_numpy(FortranPythonPackage):
                 raise EasyBuildError("Failed to determine time for numpy.dot test run.")
 
         # make sure we observe decent performance
-        if time_msec < max_time_msec:
+        if time_msec < self.cfg['blas_test_time_limit']:
             self.log.info("Time for %dx%d matrix dot product: %d msec < %d msec => OK",
-                          size, size, time_msec, max_time_msec)
+                          size, size, time_msec, self.cfg['blas_test_time_limit'])
         else:
             raise EasyBuildError("Time for %dx%d matrix dot product: %d msec >= %d msec => ERROR",
-                                 size, size, time_msec, max_time_msec)
+                                 size, size, time_msec, self.cfg['blas_test_time_limit'])
         try:
             os.chdir(pwd)
             rmtree2(tmpdir)
