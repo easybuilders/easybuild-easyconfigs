@@ -323,8 +323,8 @@ class IntelBase(EasyBlock):
         }
 
         if self.install_components:
-            if len(self.install_components) == 1:
-                # if only a single components if listed (e.g. ALL, DEFAULTS), no quotes should be used
+            if len(self.install_components) == 1 and self.install_components[0] in ['ALL', 'DEFAULTS']:
+                # no quotes should be used for ALL or DEFAULTS
                 silent += 'COMPONENTS=%s\n' % self.install_components[0]
             else:
                 # a list of components is specified (needs quotes)
