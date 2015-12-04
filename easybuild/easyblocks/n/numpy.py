@@ -228,7 +228,7 @@ class EB_numpy(FortranPythonPackage):
             res = sec_re.search(out)
             if res:
                 time_msec = 1000 * float(res.group('time'))
-            else:
+            elif not self.dry_run:
                 raise EasyBuildError("Failed to determine time for numpy.dot test run.")
 
         # make sure we observe decent performance
