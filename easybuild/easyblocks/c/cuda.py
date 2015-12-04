@@ -48,12 +48,9 @@ class EB_CUDA(Binary):
     @staticmethod
     def extra_options():
         extra_vars = {
-            'generate_intel_wrapper': [False, "Generate an nvcc wrapper (called invcc) to enable the usage of the "
-		    +"Intel compiler as a host compiler, without explicitely using -ccbin.", CUSTOM],
-            'generate_gcc_wrapper': [False, "Generate an nvcc wrapper (called gnvcc) to enable the usage of the "
-		    +"GCC compiler as a host compiler, without explicitely using -ccbin. g++ is the default host "
-		    +"compiler. The wrapper is done just for clarity and completion (invcc for Intel and gnvcc for "
-		    +"GCC)", CUSTOM],
+            'generate_wrapper': [False, "Generate an nvcc wrapper to enable the usage of alternative"
+		    +"  host compilers, without explicitely using -ccbin.", CUSTOM],
+            'host_compiler': ["", "Host compiler used in the wrapper", CUSTOM]
         }
         return Binary.extra_options(extra_vars)
 
@@ -112,11 +109,8 @@ class EB_CUDA(Binary):
             adjust_permissions(wrapper_f, stat.S_IXUSR|stat.S_IRUSR|stat.S_IXGRP|stat.S_IRGRP|stat.S_IXOTH|stat.S_IROTH)
 
 	# Prepare wrappers to handle a default host compiler other than g++
-        if self.cfg['generate_intel_wrapper']:
-            create_wrapper('invcc','icpc')
-
-        if self.cfg['generate_gcc_wrapper']:
-            create_wrapper('gnvcc','g++')
+        if self.cfg['generate_wrapper']:
+            create_wrapper('nvcc_%s' % self.cfg['host_compiler'],'%s' % self.cfg['host_compiler'])
 
     def sanity_check_step(self):
         """Custom sanity check for CUDA."""
