@@ -132,7 +132,8 @@ class PythonPackage(ExtensionEasyBlock):
 
     def set_pylibdirs(self):
         """Set Python lib directory-related class variables."""
-        if build_option('extended_dry_run'):
+        if self.dry_run:
+            self.pylibdir = 'lib/python/site-packages'
             self.all_pylibdirs = ['lib/python/site-packages']
             self.log.debug("Using fake set of Python lib dirs during dry run: %s", self.all_pylibdirs)
 
