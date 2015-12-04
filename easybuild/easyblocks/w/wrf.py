@@ -73,8 +73,7 @@ class EB_WRF(EasyBlock):
             - run configure script
             - adjust configure.wrf file if needed
         """
-
-        # netCDF dependency
+        # define $NETCDF* for netCDF dependency (used when creating WRF module file)
         set_netcdf_env_vars(self.log)
 
         # HDF5 (optional) dependency
@@ -363,7 +362,7 @@ class EB_WRF(EasyBlock):
     def make_module_extra(self):
         """Add netCDF environment variables to module file."""
         txt = super(EB_WRF, self).make_module_extra()
-        txt += self.module_generator.set_environment('NETCDF', os.getenv('NETCDF'))
-        if os.getenv('NETCDFF', None) is not None:
-            txt += self.module_generator.set_environment('NETCDFF', os.getenv('NETCDFF'))
+        for netcdf_var in ['NETCDF', 'NETCDFF']:
+            if os.getenv(netcdf_var) is not None:
+                txt += self.module_generator.set_environment(netcdf_var, os.getenv(netcdf_var))
         return txt

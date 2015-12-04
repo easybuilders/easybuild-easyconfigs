@@ -294,6 +294,27 @@ class PythonPackage(ExtensionEasyBlock):
             kwargs.update({'exts_filter': EXTS_FILTER_PYTHON_PACKAGES})
         return super(PythonPackage, self).sanity_check_step(*args, **kwargs)
 
+    def make_module_req_guess(self):
+        """
+        Define list of subdirectories to consider for updating path-like environment variables ($PATH, etc.).
+        """
+        guesses = super(PythonPackage, self).make_module_req_guess()
+
+        # avoid that lib subdirs are appended to $*LIBRARY_PATH if they don't provide libraries
+        # typically, only lib/pythonX.Y/site-packages should be added to $PYTHONPATH (see make_module_extra)
+        for envvar in ['LD_LIBRARY_PATH', 'LIBRARY_PATH']:
+            newlist = []
+            for subdir in guesses[envvar]:
+                # only subdirectories that contain one or more files/libraries should be retained
+                fullpath = os.path.join(self.installdir, subdir)
+                if os.path.exists(fullpath) and any([os.path.isfile(x) for x in os.listdir(fullpath)]):
+                    newlist.append(subdir)
+            self.log.debug("Only retaining %s subdirs from %s for $%s (others don't provide any libraries)",
+                           newlist, guesses[envvar], envvar)
+            guesses[envvar] = newlist
+
+        return guesses
+
     def make_module_extra(self, *args, **kwargs):
         """Add install path to PYTHONPATH"""
         txt = ''

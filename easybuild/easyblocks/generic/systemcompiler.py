@@ -137,12 +137,11 @@ class SystemCompiler(Bundle):
         """
         return {}
 
-    def post_install_step(self):
-        """Custom post install step: Do not to touch system compiler directories and files."""
-        pass
-
     def make_module_step(self, fake=False):
-        """Custom module step for SystemCompiler: make 'EBROOT' and 'EBVERSION' reflect system compiler values."""
+        """
+        Custom module step for SystemCompiler: make 'EBROOT' and 'EBVERSION' reflect actual system compiler version
+        and install path.
+        """
         # For module file generation: temporarly set version and installdir to system compiler values
         self.cfg['version'] = self.compiler_version
         self.installdir = self.compiler_prefix
@@ -153,4 +152,19 @@ class SystemCompiler(Bundle):
         # Reset version and installdir to EasyBuild values
         self.installdir = self.orig_installdir
         self.cfg['version'] = self.orig_version
+        return res
+
+    def make_module_extend_modpath(self):
+        """
+        Custom prepend-path statements for extending $MODULEPATH: use version specified in easyconfig file (e.g.,
+        "system") rather than the actual version (e.g., "4.8.2").
+        """
+        # temporarly set switch back to version specified in easyconfig file (e.g., "system")
+        self.cfg['version'] = self.orig_version
+
+        # Retrieve module path extensions
+        res = super(SystemCompiler, self).make_module_extend_modpath()
+
+        # Reset to actual compiler version (e.g., "4.8.2")
+        self.cfg['version'] = self.compiler_version
         return res
