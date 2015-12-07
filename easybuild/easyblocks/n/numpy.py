@@ -198,7 +198,7 @@ class EB_numpy(FortranPythonPackage):
         # temporarily install numpy, it doesn't alow to be used straight from the source dir
         tmpdir = tempfile.mkdtemp()
         cmd = "python setup.py install --prefix=%s %s" % (tmpdir, self.installopts)
-        run_cmd(cmd, log_all=True, simple=True)
+        run_cmd(cmd, log_all=True, simple=True, verbose=False)
 
         try:
             pwd = os.getcwd()
@@ -228,7 +228,10 @@ class EB_numpy(FortranPythonPackage):
             res = sec_re.search(out)
             if res:
                 time_msec = 1000 * float(res.group('time'))
-            elif not self.dry_run:
+            elif self.dry_run:
+                # use fake value during dry run
+                time_msec = 123
+            else:
                 raise EasyBuildError("Failed to determine time for numpy.dot test run.")
 
         # make sure we observe decent performance
@@ -256,8 +259,8 @@ class EB_numpy(FortranPythonPackage):
         ]
         if LooseVersion(self.version) >= LooseVersion("1.10"):
             # if blas_dot symbol is not there, numpy isn't properly linked against a BLAS library
-            multiarray_so = os.path.join(self.pylibdir, 'numpy', 'core', 'multiarray.so')
-            custom_commands.append("nm %s | grep blas_dot" % multiarray_so)
+            multiarray_so = os.path.join(self.installdir, self.pylibdir, 'numpy', 'core', 'multiarray.so')
+            custom_commands.append("nm %s | grep blas_dot" % self.installdir(multiarray_so)
         else:
             # _dotblas is required for decent performance of numpy.dot(), but only there in numpy 1.9.x and older
             custom_commands.append (('python', '-c "import numpy.core._dotblas"'))
