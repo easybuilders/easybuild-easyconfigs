@@ -32,8 +32,11 @@ EasyBuild support for installing the Intel Performance Primitives (IPP) library,
 @author: Jens Timmerman (Ghent University)
 @author: Lumir Jasiok (IT4Innovations)
 """
-from distutils.version import LooseVersion
 
+import platform
+
+
+from distutils.version import LooseVersion
 from easybuild.easyblocks.generic.intelbase import IntelBase, ACTIVATION_NAME_2012, LICENSE_FILE_NAME_2012, INSTALL_MODE_NAME_2015, INSTALL_MODE_2015
 
 
@@ -47,21 +50,33 @@ class EB_ipp(IntelBase):
         - create silent cfg file
         - execute command
         """
+
+        machine = platform.machine()
+        if machine == "i386":
+            self.arch = "ia32"
+        else:
+            self.arch = "intel64"
+        
         silent_cfg_names_map = None
 
         if LooseVersion(self.version) < LooseVersion('8.0'):
             silent_cfg_names_map = {
                 'activation_name': ACTIVATION_NAME_2012,
                 'license_file_name': LICENSE_FILE_NAME_2012,
-
             }
+
         if LooseVersion(self.version) < LooseVersion('9.0'):
             silent_cfg_names_map = {
                 'install_mode_name': INSTALL_MODE_NAME_2015,
                 'install_mode': INSTALL_MODE_2015,
             }
+        # In case of IPP 2016 we have to specify ARCH_SELECTED in silent.cfg
+        if LooseVersion(self.version) > LooseVersion('9.0'):
+            silent_cfg_extras = {
+                'ARCH_SELECTED': self.arch.upper()
+            }
 
-        super(EB_ipp, self).install_step(silent_cfg_names_map=silent_cfg_names_map)
+        super(EB_ipp, self).install_step(silent_cfg_names_map=silent_cfg_names_map, silent_cfg_extras=silent_cfg_extras)
 
     def sanity_check_step(self):
         """Custom sanity check paths for IPP."""
@@ -82,3 +97,22 @@ class EB_ipp(IntelBase):
                        }
 
         super(EB_ipp, self).sanity_check_step(custom_paths=custom_paths)
+
+    def make_module_req_guess(self):
+        """
+        A dictionary of possible directories to look for
+        """
+        guesses = super(EB_ipp, self).make_module_req_guess()
+
+        if LooseVersion(self.version) > LooseVersion('9.0'):
+            lib_path = 'lib/%s' % self.arch
+            include_path = 'ipp/include'
+ 
+            guesses.update({
+                'LD_LIBRARY_PATH': [lib_path],
+                'LIBRARY_PATH': [lib_path],
+                'CPATH': [include_path],
+                'INCLUDE': [include_path],
+            })
+
+        return guesses
