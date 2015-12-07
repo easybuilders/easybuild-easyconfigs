@@ -176,6 +176,26 @@ class EB_numpy(FortranPythonPackage):
         if fft:
             extrasiteconfig += "\n[fftw]\nlibraries = %s" % fft
 
+        suitesparseroot = get_software_root('SuiteSparse')
+        if suitesparseroot:
+            amddir = os.path.join(suitesparseroot, 'AMD')
+            umfpackdir = os.path.join(suitesparseroot, 'UMFPACK')
+
+            if not os.path.exists(amddir) or not os.path.exists(umfpackdir):
+                raise EasyBuildError("Expected SuiteSparse subdirectories are not both there: %s, %s",
+                                     amddir, umfpackdir)
+            else:
+                extrasiteconfig += '\n'.join([
+                    "[amd]",
+                    "library_dirs = %s" % os.path.join(amddir, 'Lib'),
+                    "include_dirs = %s" % os.path.join(amddir, 'Include'),
+                    "amd_libs = amd",
+                    "[umfpack]",
+                    "library_dirs = %s" % os.path.join(umfpackdir, 'Lib'),
+                    "include_dirs = %s" % os.path.join(umfpackdir, 'Include'),
+                    "umfpack_libs = umfpack",
+                ])
+
         self.sitecfg = '\n'.join([self.sitecfg, extrasiteconfig])
 
         self.sitecfg = self.sitecfg % {
