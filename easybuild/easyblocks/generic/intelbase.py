@@ -68,6 +68,14 @@ ACTIVATION_NAME = 'ACTIVATION_TYPE'  # since icc/ifort v2013_sp1, impi v4.1.1, i
 ACTIVATION_NAME_2012 = 'ACTIVATION'  # previous activation type parameter used in older versions
 # silent.cfg parameter name for install prefix
 INSTALL_DIR_NAME = 'PSET_INSTALL_DIR'
+# silent.cfg parameter name for install mode
+INSTALL_MODE_NAME  = 'PSET_MODE'
+# Older (2015 and previous) silent.cfg parameter name for install mode
+INSTALL_MODE_NAME_2015  = 'INSTALL_MODE'
+# Install mode for 2016 version
+INSTALL_MODE = 'install'
+# Install mode for 2015 and oder versions
+INSTALL_MODE_2015 = 'NONRPM'
 # silent.cfg parameter name for license file/server specification
 LICENSE_FILE_NAME = 'ACTIVATION_LICENSE_FILE'  # since icc/ifort v2013_sp1, impi v4.1.1, imkl v11.1
 LICENSE_FILE_NAME_2012 = 'PSET_LICENSE_FILE'  # previous license file parameter used in older versions
@@ -273,9 +281,9 @@ class IntelBase(EasyBlock):
         silent = '\n'.join([
             "%(activation_name)s=%(activation)s",
             lic_file_entry,
-            "%(install_dir_name)s=%(install_dir)s",
+            "%(install_dir_name)s=%(insstall_dir)s",
             "ACCEPT_EULA=accept",
-            "INSTALL_MODE=NONRPM",
+            "%(install_mode_name)s=%(install_mode)",
             "CONTINUE_WITH_OPTIONAL_ERROR=yes",
             ""  # Add a newline at the end, so we can easily append if needed
         ]) % {
@@ -285,6 +293,8 @@ class IntelBase(EasyBlock):
             'activation': self.cfg['license_activation'],
             'license_file': self.license_file,
             'install_dir': silent_cfg_names_map.get('install_dir', self.installdir),
+            'install_mode_name': silent_cfg_names_map('install_mode_name', INSTALL_MODE_NAME),
+            'install_mode': silent_cfg_names_map('install_mode', INSTALL_MODE),
         }
 
         if silent_cfg_extras is not None:
