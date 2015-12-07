@@ -158,7 +158,6 @@ class EB_icc(IntelBase):
             guesses['LD_LIBRARY_PATH'].extend([
                 'compiler/lib/intel64',
                 'debugger/ipt/intel64/lib',
-                'lib/intel64',
                 'ipp/lib/intel64',
                 'lib/intel64',
                 'mkl/lib/intel64',
