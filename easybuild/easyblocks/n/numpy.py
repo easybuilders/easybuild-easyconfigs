@@ -265,7 +265,7 @@ class EB_numpy(FortranPythonPackage):
             blas_check_pytxt = '\n'.join([
                 "import sys; import numpy;",
                 "blas_ok = 'HAVE_CBLAS' in dict(numpy.__config__.blas_opt_info['define_macros']);",
-                "sys.exit((1, 0)[blas_ok];",
+                "sys.exit((1, 0)[blas_ok]);",
             ])
             custom_commands.append(('python', "-c '%s'" % blas_check_pytxt))
             if get_software_root("imkl"):
