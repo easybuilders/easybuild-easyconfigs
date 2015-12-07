@@ -148,3 +148,12 @@ class EB_CUDA(Binary):
         })
 
         return guesses
+    
+    def make_module_extra(self):
+        """Specify CUDA_HOME """
+
+        txt = super(EB_CUDA, self).make_module_extra()
+
+        txt += self.module_generator.set_environment('CUDA_HOME', self.installdir)
+
+        return txt
