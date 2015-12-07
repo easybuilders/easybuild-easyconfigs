@@ -56,11 +56,13 @@ def get_tbb_gccprefix():
 
     # TBB directory structure
     # https://www.threadingbuildingblocks.org/docs/help/tbb_userguide/Linux_OS.htm
-    tbbgccversion = 'gcc4.4'  # gcc version 4.4 or higher that may or may not support exception_ptr
-    if gccversion and LooseVersion(gccversion) >= LooseVersion("4.1") and LooseVersion(gccversion) < LooseVersion("4.4"):
-        tbbgccversion = 'gcc4.1'  # gcc version number between 4.1 and 4.4 that do not support exception_ptr
+    tbb_gccprefix = 'gcc4.4'  # gcc version 4.4 or higher that may or may not support exception_ptr
+    if gccversion:
+        gccversion = LooseVersion(gccversion)
+        if gccversion >= LooseVersion("4.1") and gccversion < LooseVersion("4.4"):
+            tbb_gccprefix = 'gcc4.1'  # gcc version number between 4.1 and 4.4 that do not support exception_ptr
 
-    return tbbgccversion
+    return tbb_gccprefix
 
 
 class EB_tbb(IntelBase):
@@ -83,20 +85,19 @@ class EB_tbb(IntelBase):
 
         super(EB_tbb, self).install_step(silent_cfg_names_map=silent_cfg_names_map)
 
-        # save libdir
+        # determine libdir
         os.chdir(self.installdir)
         if LooseVersion(self.version) < LooseVersion('4.1.0'):
             libglob = 'tbb/lib/intel64/cc*libc*_kernel*'
+            libs = sorted(glob.glob(libglob), key=LooseVersion)
+            if len(libs):
+                # take the last one, should be ordered by cc version
+                # we're only interested in the last bit
+                libdir = libs[-1].split('/')[-1]
+            else:
+                raise EasyBuildError("No libs found using %s in %s", libglob, self.installdir)
         else:
-            libglob = 'tbb/lib/intel64/gcc*'
-        libs = sorted(glob.glob(libglob), key=LooseVersion)
-        if len(libs):
-            libdir = libs[-1]  # take the last one, should be ordered by cc get_version.
-            # we're only interested in the last bit
-            libdir = libdir.split('/')[-1]
-        else:
-            raise EasyBuildError("No libs found using %s in %s", libglob, self.installdir)
-        self.libdir = libdir
+            libdir = 'tbb/lib/intel64/%s' % get_tbb_gccprefix()
 
         self.libpath = os.path.join('tbb', 'libs', 'intel64', libdir)
         self.log.debug("self.libpath: %s" % self.libpath)
