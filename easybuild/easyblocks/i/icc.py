@@ -31,6 +31,7 @@ EasyBuild support for install the Intel C/C++ compiler suite, implemented as an 
 @author: Pieter De Baets (Ghent University)
 @author: Jens Timmerman (Ghent University)
 @author: Ward Poelmans (Ghent University)
+@author: Fokko Masselink
 """
 
 import os
@@ -60,13 +61,11 @@ class EB_icc(IntelBase):
         - will fail for all older versions (due to newer silent installer)
     """
 
-    def configure_step(self):
-        """have fallback for components for > 2016 versions"""
+    def __init__(self, *args, **kwargs):
+        """Constructor, initialize class variables."""
+        super(EB_icc, self).__init__(*args, **kwargs)
 
-        if LooseVersion(self.version) >= LooseVersion('2016') and not self.cfg['components']:
-            self.log.warning("No components specified")
-
-        super(EB_icc, self).configure_step()
+        self.debuggerpath = None
 
     def install_step(self):
         """
@@ -89,127 +88,124 @@ class EB_icc(IntelBase):
     def sanity_check_step(self):
         """Custom sanity check paths for icc."""
 
-        binprefix = "bin/intel64"
-        libprefix = "lib/intel64"
-        if LooseVersion(self.version) >= LooseVersion("2011"):
-            if LooseVersion(self.version) <= LooseVersion("2011.3.174"):
-                binprefix = "bin"
-            elif LooseVersion(self.version) >= LooseVersion("2013_sp1"):
-                binprefix = "bin"
+        binprefix = 'bin/intel64'
+        libprefix = 'lib/intel64'
+        if LooseVersion(self.version) >= LooseVersion('2011'):
+            if LooseVersion(self.version) <= LooseVersion('2011.3.174'):
+                binprefix = 'bin'
+            elif LooseVersion(self.version) >= LooseVersion('2013_sp1'):
+                binprefix = 'bin'
             else:
-                libprefix = "compiler/lib/intel64"
+                libprefix = 'compiler/lib/intel64'
 
-        binfiles = ["icc", "icpc"]
-        if LooseVersion(self.version) < LooseVersion("2014"):
-            binfiles += ["idb"]
+        binfiles = ['icc', 'icpc']
+        if LooseVersion(self.version) < LooseVersion('2014'):
+            binfiles += ['idb']
+
+        binaries = [os.path.join(binprefix, f) for f in binfiles]
+        libraries = [os.path.join(libprefix, 'lib%s' % l) for l in ['iomp5.a', 'iomp5.so']]
+        sanity_check_files = binaries + libraries
+        if LooseVersion(self.version) > LooseVersion('2015'):
+            sanity_check_files.append('include/omp.h')
 
         custom_paths = {
-            'files': [os.path.join(binprefix, x) for x in binfiles] +
-            [os.path.join(libprefix, 'lib%s' % x) for x in ['iomp5.a', 'iomp5.so']] +
-            ['include/omp.h'],
+            'files': sanity_check_files,
             'dirs': [],
         }
 
         super(EB_icc, self).sanity_check_step(custom_paths=custom_paths)
 
     def make_module_req_guess(self):
-        """Customize paths to check and add in environment.
         """
-        self.debuggerpath = None
+        Additional paths to consider for prepend-paths statements in module file
+        """
         prefix = None
-        tbbgccversion = get_tbb_gccprefix()
+
+        # guesses per environment variables
+        # some of these paths only apply to certain versions, but that doesn't really matter
+        # existence of paths is checked by module generator before 'prepend-paths' statements are included
+        guesses = {
+            'CLASSPATH': ['daal/lib/daal.jar'],
+            'CPATH': ['daal/include', 'include', 'ipp/include', 'mkl/include', 'tbb/include'],
+            'DAALROOT': ['daal'],
+            'IDB_HOME': ['bin/intel64'],
+            'IPPROOT': ['ipp'],
+            'LD_LIBRARY_PATH': ['lib'],
+            'LIBRARY_PATH': ['lib'],
+            'MANPATH': ['debugger/gdb/intel64/share/man', 'man', 'man/common', 'man/en_US', 'share/man'],
+            'PATH': ['bin'],
+            'TBBROOT': ['tbb'],
+        }
 
         if self.cfg['m32']:
             # 32-bit toolchain
-            libpaths = ['lib', 'lib/ia32'],
-            dirmap = {
-                'PATH': ['bin', 'bin/ia32', 'tbb/bin/ia32'],
-                'LD_LIBRARY_PATH': libpaths,
-                'LIBRARY_PATH': libpaths,
-                'MANPATH': ['man', 'share/man', 'man/en_US'],
-                'IDB_HOME': ['bin/intel64']
-            }
+            guesses['PATH'].extend(['bin/ia32', 'tbb/bin/ia32'])
+            # in the end we set 'LIBRARY_PATH' equal to 'LD_LIBRARY_PATH'
+            guesses['LD_LIBRARY_PATH'].append('lib/ia32')
+
         else:
             # 64-bit toolkit
-            dirmap = {
-                'PATH': [
-                    'mpi/intel64/bin',
-                    'ipp/bin/intel64',
-                    'tbb/bin/intel64',
-                    'bin/intel64',
-                    'bin',
-                ],
-                # in the end we set 'LIBRARY_PATH' equal to 'LD_LIBRARY_PATH'
-                'LD_LIBRARY_PATH': [
-                    os.path.join('tbb', 'lib', 'intel64', tbbgccversion),
-                    'debugger/ipt/intel64/lib',
-                    'lib/intel64',
-                    'compiler/lib/intel64',
-                    'mkl/lib/intel64',
-                    'ipp/lib/intel64',
-                    'mpi/intel64',
-                    'compiler/lib/intel64',
-                ],
-                'MANPATH': ['man/common', 'man/en_US', 'debugger/gdb/intel64/share/man'],
-                'CPATH': ['include', 'ipp/include', 'mkl/include', 'tbb/include', 'daal/include'],
-                'DAALROOT': ['daal'],
-                'TBBROOT': ['tbb'],
-                'IPPROOT': ['ipp'],
-                'CLASSPATH': ['daal/lib/daal.jar']
-            }
+            guesses['PATH'].extend([
+                'bin/intel64',
+                'debugger/gdb/intel64/bin',
+                'ipp/bin/intel64',
+                'mpi/intel64/bin',
+                'tbb/bin/emt64',
+                'tbb/bin/intel64',
+            ])
 
-            if LooseVersion(self.version) < LooseVersion("2016"):
-                prefix = "composer_xe_%s" % self.version
+            # in the end we set 'LIBRARY_PATH' equal to 'LD_LIBRARY_PATH'
+            guesses['LD_LIBRARY_PATH'].extend([
+                'compiler/lib/intel64',
+                'debugger/ipt/intel64/lib',
+                'lib/intel64',
+                'ipp/lib/intel64',
+                'lib/intel64',
+                'mkl/lib/intel64',
+                'mpi/intel64',
+                'tbb/lib/intel64/%s' % get_tbb_gccprefix(),
+            ])
 
-                # Debugger is dependent on INTEL_PYTHONHOME since version 2015 and newer
-                if LooseVersion(self.version) >= LooseVersion("2015"):
-                    # Debugger requires INTEL_PYTHONHOME, which only allows for a single value
-                    self.debuggerpath = os.path.join('composer_xe_%s' % self.version.split('.')[0], 'debugger')
+            if LooseVersion(self.version) < LooseVersion('2016'):
+                prefix = 'composer-xe-%s' % self.version
 
-                dirmap['PATH'].append('debugger/gdb/intel64/bin')
-                dirmap['MANPATH'].extend(['debugger/gdb/intel64/share/man', 'share/man', 'man'])
+                # debugger is dependent on $INTEL_PYTHONHOME since version 2015 and newer
+                if LooseVersion(self.version) >= LooseVersion('2015'):
+                    self.debuggerpath = os.path.join('composer-xe-%s' % self.version.split('.')[0], 'debugger')
+
             else:
-                # New Directory Layout for Intel Parallel Studio XE 2016
+                # new directory layout for Intel Parallel Studio XE 2016
                 # https://software.intel.com/en-us/articles/new-directory-layout-for-intel-parallel-studio-xe-2016
-                prefix = "compilers_and_libraries_%s/linux" % self.version
+                prefix = 'compilers_and_libraries_%s/linux' % self.version
                 # Debugger requires INTEL_PYTHONHOME, which only allows for a single value
                 self.debuggerpath = 'debugger_%s' % self.version.split('.')[0]
 
-                libpaths = [
+                guesses['LD_LIBRARY_PATH'].extend([
                     os.path.join(self.debuggerpath, 'libipt/intel64/lib'),
                     'daal/lib/intel64_lin',
-                ]
+                ])
 
-                dirmap['LD_LIBRARY_PATH'].extend(libpaths)
-
-        dirmap['LIBRARY_PATH'] = dirmap['LD_LIBRARY_PATH']
+        guesses['LIBRARY_PATH'] = guesses['LD_LIBRARY_PATH']
 
         # set debugger path
         if self.debuggerpath:
-            dirmap['PATH'].append(os.path.join(self.debuggerpath, 'gdb', 'intel64', 'bin'))
+            guesses['PATH'].append(os.path.join(self.debuggerpath, 'gdb', 'intel64', 'bin'))
 
         # in recent Intel compiler distributions, the actual binaries are
         # in deeper directories, and symlinked in top-level directories
         # however, not all binaries are symlinked (e.g. mcpcom is not)
         # more recent versions of the Intel Compiler (2013.sp1 and newer)
-        if os.path.isdir(os.path.join(self.installdir, prefix)):
-            oldmap = dirmap
-            dirmap = {}
-            for k, vs in oldmap.items():
-                dirmap[k] = []
-                for v in vs:
-                    v2 = os.path.join(prefix, v)
-                    if os.path.exists(os.path.join(self.installdir, v2)):
-                        dirmap[k].append(v2)
-                    elif os.path.isdir(os.path.join(self.installdir, v)):
-                        dirmap[k].append(v)
+        if prefix and os.path.isdir(os.path.join(self.installdir, prefix)):
+            for key, subdirs in guesses.items():
+                guesses[key].extend([os.path.join(prefix, subdir) for subdir in subdirs])
 
-        return dirmap
+        return guesses
 
     def make_module_extra(self):
         """Custom variables for OpenBabel module."""
         txt = super(EB_icc, self).make_module_extra()
         if self.debuggerpath:
-            intel_pythonhome = os.path.join('$root', self.debuggerpath, 'python', 'intel64')
-            txt += self.module_generator.set_environment('INTEL_PYTHONHOME', intel_pythonhome)
+            intel_pythonhome = os.path.join(self.installdir, self.debuggerpath, 'python', 'intel64')
+            if os.path.isdir(intel_pythonhome):
+                txt += self.module_generator.set_environment('INTEL_PYTHONHOME', intel_pythonhome)
         return txt

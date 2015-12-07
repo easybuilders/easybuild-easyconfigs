@@ -50,25 +50,25 @@ class EB_ifort(EB_icc, IntelBase):
     def sanity_check_step(self):
         """Custom sanity check paths for ifort."""
 
-        binprefix = "bin/intel64"
-        libprefix = "lib/intel64"
-        if LooseVersion(self.version) >= LooseVersion("2011"):
-            if LooseVersion(self.version) <= LooseVersion("2011.3.174"):
-                binprefix = "bin"
-            elif LooseVersion(self.version) >= LooseVersion("2013_sp1"):
-                binprefix = "bin"
-                libprefix = "lib/intel64"
+        binprefix = 'bin/intel64'
+        libprefix = 'lib/intel64'
+        if LooseVersion(self.version) >= LooseVersion('2011'):
+            if LooseVersion(self.version) <= LooseVersion('2011.3.174'):
+                binprefix = 'bin'
+            elif LooseVersion(self.version) >= LooseVersion('2013_sp1'):
+                binprefix = 'bin'
+                libprefix = 'lib/intel64'
             else:
-                libprefix = "compiler/lib/intel64"
+                libprefix = 'compiler/lib/intel64'
 
-        bins = ["ifort"]
+        bins = ['ifort']
         if LooseVersion(self.version) < LooseVersion('2013'):
             # idb is not shipped with ifort anymore in 2013.x versions (it is with icc though)
-            bins.append("idb")
+            bins.append('idb')
 
         custom_paths = {
             'files': [os.path.join(binprefix, x) for x in bins] +
-            [os.path.join(libprefix, 'lib%s' % x) for x in ["ifcore.a", "ifcore.so", "iomp5.a", "iomp5.so"]],
+            [os.path.join(libprefix, 'lib%s' % x) for x in ['ifcore.a', 'ifcore.so', 'iomp5.a', 'iomp5.so']],
             'dirs': [],
         }
 
