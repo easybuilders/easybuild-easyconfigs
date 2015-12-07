@@ -264,7 +264,7 @@ class EB_numpy(FortranPythonPackage):
             # cfr. https://github.com/numpy/numpy/issues/6675#issuecomment-162601149
             blas_check_pytxt = '\n'.join([
                 "import sys; import numpy;",
-                "blas_ok = 'HAVE_CBLAS' in dict(numpy.__config__.blas_opt_info['define_macros']);",
+                "blas_ok = \'HAVE_CBLAS\' in dict(numpy.__config__.blas_opt_info[\'define_macros\']);",
                 "sys.exit((1, 0)[blas_ok]);",
             ])
             custom_commands.append(('python', "-c '%s'" % blas_check_pytxt))
