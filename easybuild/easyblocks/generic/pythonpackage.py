@@ -230,12 +230,12 @@ class PythonPackage(ExtensionEasyBlock):
                 except OSError, err:
                     raise EasyBuildError("Failed to create test install dir: %s", err)
 
-                run_cmd("python -c 'import sys; print(sys.path)'")  # print Python search path (debug)
+                run_cmd("python -c 'import sys; print(sys.path)'", verbose=False)  # print Python search path (debug)
                 abs_pylibdirs = [os.path.join(testinstalldir, pylibdir) for pylibdir in self.all_pylibdirs]
                 extrapath = "export PYTHONPATH=%s &&" % os.pathsep.join(abs_pylibdirs + ['$PYTHONPATH'])
 
                 cmd = self.compose_install_command(testinstalldir, extrapath=extrapath)
-                run_cmd(cmd, log_all=True, simple=True)
+                run_cmd(cmd, log_all=True, simple=True, verbose=False)
 
             if self.testcmd:
                 cmd = "%s%s" % (extrapath, self.testcmd)
