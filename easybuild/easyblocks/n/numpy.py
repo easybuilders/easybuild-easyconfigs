@@ -268,10 +268,6 @@ class EB_numpy(FortranPythonPackage):
                 "sys.exit((1, 0)[blas_ok]);",
             ])
             custom_commands.append(('python', "-c '%s'" % blas_check_pytxt))
-            if get_software_root("imkl"):
-                # if blas_dot symbol is not there, numpy isn't properly linked against Intel MKL
-                multiarray_so = os.path.join(self.installdir, self.pylibdir, 'numpy', 'core', 'multiarray.so')
-                custom_commands.append(("nm %s | grep blas_dot" % multiarray_so, ''))
         else:
             # _dotblas is required for decent performance of numpy.dot(), but only there in numpy 1.9.x and older
             custom_commands.append (('python', '-c "import numpy.core._dotblas"'))
