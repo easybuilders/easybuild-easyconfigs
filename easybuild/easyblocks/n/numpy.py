@@ -280,9 +280,15 @@ class EB_numpy(FortranPythonPackage):
             ('python', '-c "import numpy"'),
         ]
         if LooseVersion(self.version) >= LooseVersion("1.10"):
-            # if blas_dot symbol is not there, numpy isn't properly linked against a BLAS library
-            multiarray_so = os.path.join(self.installdir, self.pylibdir, 'numpy', 'core', 'multiarray.so')
-            custom_commands.append(("nm %s | grep blas_dot" % multiarray_so, ''))
+            # generic check to see whether numpy v1.10.x and up was built against a CBLAS-enabled library
+            # cfr. https://github.com/numpy/numpy/issues/6675#issuecomment-162601149
+            blas_check_pytxt = '; '.join([
+                "import sys",
+                "import numpy",
+                "blas_ok = 'HAVE_CBLAS' in dict(numpy.__config__.blas_opt_info['define_macros'])",
+                "sys.exit((1, 0)[blas_ok])",
+            ])
+            custom_commands.append(('python', '-c "%s"' % blas_check_pytxt))
         else:
             # _dotblas is required for decent performance of numpy.dot(), but only there in numpy 1.9.x and older
             custom_commands.append (('python', '-c "import numpy.core._dotblas"'))
