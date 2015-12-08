@@ -282,6 +282,8 @@ class IntelBase(EasyBlock):
         # determine list of components, based on 'components' easyconfig parameter (if specified)
         if self.cfg['components']:
             self.parse_components_list()
+        else:
+            self.log.debug("No components specified")
 
     def build_step(self):
         """Binary installation files, so no building."""
