@@ -265,10 +265,10 @@ class EB_numpy(FortranPythonPackage):
             blas_check_pytxt = '; '.join([
                 "import sys",
                 "import numpy",
-                "blas_ok = \\'HAVE_CBLAS\\' in dict(numpy.__config__.blas_opt_info[\\'define_macros\\'])",
+                "blas_ok = 'HAVE_CBLAS' in dict(numpy.__config__.blas_opt_info['define_macros'])",
                 "sys.exit((1, 0)[blas_ok])",
             ])
-            custom_commands.append(('python', "-c '%s'" % blas_check_pytxt))
+            custom_commands.append(('python', '-c "%s"' % blas_check_pytxt))
         else:
             # _dotblas is required for decent performance of numpy.dot(), but only there in numpy 1.9.x and older
             custom_commands.append (('python', '-c "import numpy.core._dotblas"'))
