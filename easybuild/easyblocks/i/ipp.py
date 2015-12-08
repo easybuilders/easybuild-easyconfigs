@@ -84,17 +84,30 @@ class EB_ipp(IntelBase):
         if LooseVersion(self.version) < LooseVersion('8.0'):
             dirs = ["compiler/lib/intel64", "ipp/bin", "ipp/include",
                     "ipp/interfaces/data-compression", "ipp/tools/intel64"]
+        elif LooseVersion(self.version) > LooseVersion('9.0'):
+            dirs = ["ipp/bin", "ipp/include",
+                    "ipp/tools/intel64"]
         else:
             dirs = ["composerxe/lib/intel64", "ipp/bin", "ipp/include",
                     "ipp/tools/intel64"]
 
-        custom_paths = {
-                        'files': ["ipp/lib/intel64/libipp%s" % y
-                                   for x in ["ac", "cc", "ch", "core", "cv", "dc", "di",
-                                             "i", "j", "m", "r", "s", "sc", "vc", "vm"]
-                                   for y in ["%s.a" % x, "%s.so" % x]],
-                        'dirs': dirs
-                       }
+        
+        if LooseVersion(self.version) > LooseVersion('9.0'):
+            custom_paths = {
+                            'files': ["ipp/lib/intel64/libipp%s" % y
+                                       for x in ["cc", "ch", "core", "cv", "dc",
+                                                 "i", "s", "vm"]
+                                       for y in ["%s.a" % x, "%s.so" % x]],
+                            'dirs': dirs
+                           }
+        else:
+            custom_paths = {
+                            'files': ["ipp/lib/intel64/libipp%s" % y
+                                       for x in ["ac", "cc", "ch", "core", "cv", "dc", "di",
+                                                 "i", "j", "m", "r", "s", "sc", "vc", "vm"]
+                                       for y in ["%s.a" % x, "%s.so" % x]],
+                            'dirs': dirs
+               }
 
         super(EB_ipp, self).sanity_check_step(custom_paths=custom_paths)
 
