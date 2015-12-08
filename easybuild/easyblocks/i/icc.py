@@ -126,7 +126,8 @@ class EB_icc(IntelBase):
         # existence of paths is checked by module generator before 'prepend-paths' statements are included
         guesses = {
             'CLASSPATH': ['daal/lib/daal.jar'],
-            'CPATH': ['daal/include', 'include', 'ipp/include', 'mkl/include', 'tbb/include'],
+            # 'include' is deliberately listed last, so it gets precedence over the other subdirs
+            'CPATH': ['daal/include', 'ipp/include', 'mkl/include', 'tbb/include', 'include'],
             'DAALROOT': ['daal'],
             'IDB_HOME': ['bin/intel64'],
             'IPPROOT': ['ipp'],
@@ -159,7 +160,6 @@ class EB_icc(IntelBase):
                 'compiler/lib/intel64',
                 'debugger/ipt/intel64/lib',
                 'ipp/lib/intel64',
-                'lib/intel64',
                 'mkl/lib/intel64',
                 'mpi/intel64',
                 'tbb/lib/intel64/%s' % get_tbb_gccprefix(),
@@ -183,6 +183,9 @@ class EB_icc(IntelBase):
                     os.path.join(self.debuggerpath, 'libipt/intel64/lib'),
                     'daal/lib/intel64_lin',
                 ])
+
+            # 'lib/intel64' is deliberately listed last, so it gets precedence over subdirs
+            guesses['LD_LIBRARY_PATH'].append('lib/intel64')
 
         guesses['LIBRARY_PATH'] = guesses['LD_LIBRARY_PATH']
 
