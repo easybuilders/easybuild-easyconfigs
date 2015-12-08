@@ -33,11 +33,13 @@ EasyBuild support for installing the Intel Performance Primitives (IPP) library,
 @author: Lumir Jasiok (IT4Innovations)
 """
 
+import os
 import platform
 
 
 from distutils.version import LooseVersion
-from easybuild.easyblocks.generic.intelbase import IntelBase, ACTIVATION_NAME_2012, LICENSE_FILE_NAME_2012, INSTALL_MODE_NAME_2015, INSTALL_MODE_2015
+from easybuild.easyblocks.generic.intelbase import INSTALL_MODE_NAME_2015, INSTALL_MODE_2015
+from easybuild.easyblocks.generic.intelbase import IntelBase, ACTIVATION_NAME_2012, LICENSE_FILE_NAME_2012
 
 
 class EB_ipp(IntelBase):
@@ -85,29 +87,27 @@ class EB_ipp(IntelBase):
             dirs = ["compiler/lib/intel64", "ipp/bin", "ipp/include",
                     "ipp/interfaces/data-compression", "ipp/tools/intel64"]
         elif LooseVersion(self.version) > LooseVersion('9.0'):
-            dirs = ["ipp/bin", "ipp/include",
-                    "ipp/tools/intel64"]
+            dirs = ["ipp/bin", "ipp/include", "ipp/tools/intel64"]
         else:
             dirs = ["composerxe/lib/intel64", "ipp/bin", "ipp/include",
                     "ipp/tools/intel64"]
-
         
-        if LooseVersion(self.version) > LooseVersion('9.0'):
+        if LooseVersion(self.version) >= LooseVersion('9.0'):
             custom_paths = {
-                            'files': ["ipp/lib/intel64/libipp%s" % y
-                                       for x in ["cc", "ch", "core", "cv", "dc",
-                                                 "i", "s", "vm"]
-                                       for y in ["%s.a" % x, "%s.so" % x]],
-                            'dirs': dirs
-                           }
+                'files': ["ipp/lib/intel64/libipp%s" % y
+                    for x in ["cc", "ch", "core", "cv", "dc", "i", "s", "vm"]
+                    for y in ["%s.a" % x, "%s.so" % x]],
+                'dirs': dirs
+            }
+ 
         else:
             custom_paths = {
-                            'files': ["ipp/lib/intel64/libipp%s" % y
-                                       for x in ["ac", "cc", "ch", "core", "cv", "dc", "di",
-                                                 "i", "j", "m", "r", "s", "sc", "vc", "vm"]
-                                       for y in ["%s.a" % x, "%s.so" % x]],
-                            'dirs': dirs
-               }
+                'files': ["ipp/lib/intel64/libipp%s" % y
+                    for x in ["ac", "cc", "ch", "core", "cv", "dc", "di",
+                              "i", "j", "m", "r", "s", "sc", "vc", "vm"]
+                    for y in ["%s.a" % x, "%s.so" % x]],
+                'dirs': dirs
+            }
 
         super(EB_ipp, self).sanity_check_step(custom_paths=custom_paths)
 
@@ -118,7 +118,7 @@ class EB_ipp(IntelBase):
         guesses = super(EB_ipp, self).make_module_req_guess()
 
         if LooseVersion(self.version) > LooseVersion('9.0'):
-            lib_path = 'lib/%s' % self.arch
+            lib_path = os.path.join('lib', self.arch)
             include_path = 'ipp/include'
  
             guesses.update({
