@@ -41,7 +41,7 @@ class EB_Doxygen(CMakeMake):
     """Support for building/installing Doxygen"""
 
     def configure_step(self):
-        """Configure build using non-standard configure prefix option (wothout `=`)
+        """Configure build using non-standard configure prefix option (without `=`)
            for versions before 1.8.10. Newer versions use cmake instead of configure"""
         if LooseVersion(self.version) < LooseVersion("1.8.10"):
 
