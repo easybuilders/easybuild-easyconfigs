@@ -1,0 +1,15 @@
+#SCons deletes LD_LIBRARY_PATH, and cannot use non-system python in test phase.
+#This restores original LD_LIBRARY_PATH
+#B. Hajgato 16th September 2015
+--- SConstruct.org	2014-02-04 21:11:10.000000000 +0100
++++ SConstruct	2015-09-16 14:51:43.245327962 +0200
+@@ -436,7 +436,8 @@
+   TEST_EXES = [ os.path.join('test', '%s' % (prog)) for prog in TEST_PROGRAMS ]
+ 
+ env.AlwaysBuild(env.Alias('check', TEST_EXES, sys.executable + ' build/check.py',
+-                          ENV={'PATH' : os.environ['PATH']}))
++                          ENV={'PATH' : os.environ['PATH'], 
++                               'LD_LIBRARY_PATH' : os.environ['LD_LIBRARY_PATH']}))
+ 
+ # Find the (dynamic) library in this directory
+ tenv.Replace(RPATH=thisdir)

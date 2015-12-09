@@ -6,12 +6,14 @@ version = '2.25'
 homepage = 'http://directory.fsf.org/project/binutils/'
 description = "binutils: GNU binary utilities"
 
-toolchain = {'name': 'GCC', 'version': '5.1.0-binutils-%(version)s'}
+toolchain = {'name': 'GCC', 'version': '5.1.0-binutils-%s' % version}
 
 sources = [SOURCE_TAR_GZ]
 source_urls = [GNU_SOURCE]
 
 builddependencies = [
+    ('flex', '2.5.39'),
+    ('Bison', '3.0.4'),
     # zlib required, but being linked instatically, so not a runtime dep
     ('zlib', '1.2.8'),
     # use same binutils version that was used when building GCC toolchain, to 'bootstrap' this binutils
@@ -22,10 +24,11 @@ builddependencies = [
 preconfigopts = 'LIBS="$EBROOTZLIB/lib/libz.a"'
 prebuildopts = 'LIBS="$EBROOTZLIB/lib/libz.a"'
 
-# make sure that system libraries are also considered by ld
-configopts = '--with-sysroot=/'
+# make sure that system libraries are also considered by ld and ld.gold is also built
+# --enable-plugins should be used whenever --enable-gold is used, see http://llvm.org/docs/GoldPlugin.html
+configopts = '--with-sysroot=/ --enable-gold --enable-ld=default --enable-plugins'
 
-binlist = ['addr2line', 'ar', 'as', 'c++filt', 'elfedit', 'gprof', 'ld', 'ld.bfd', 'nm',
+binlist = ['addr2line', 'ar', 'as', 'c++filt', 'elfedit', 'gprof', 'ld', 'ld.bfd', 'ld.gold', 'nm',
            'objcopy', 'objdump', 'ranlib', 'readelf', 'size', 'strings', 'strip' ]
 
 sanity_check_paths = {
