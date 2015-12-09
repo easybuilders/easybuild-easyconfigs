@@ -294,8 +294,8 @@ class IntelBase(EasyBlock):
             'activation': self.cfg['license_activation'],
             'license_file': self.license_file,
             'install_dir': silent_cfg_names_map.get('install_dir', self.installdir),
-            'install_mode': silent_cfg_names_map.get('install_mode', INSTALL_MODE),
-            'install_mode_name': silent_cfg_names_map.get('install_mode_name', INSTALL_MODE_NAME),
+            'install_mode': silent_cfg_names_map.get('install_mode', INSTALL_MODE_2015),
+            'install_mode_name': silent_cfg_names_map.get('install_mode_name', INSTALL_MODE_NAME_2015),
         }
 
         if silent_cfg_extras is not None:
