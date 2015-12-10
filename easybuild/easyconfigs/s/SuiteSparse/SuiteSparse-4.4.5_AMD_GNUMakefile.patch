@@ -1,0 +1,44 @@
+# create libamd.so in SuiteSparse, as required by scikit-umfpack
+# author: Stefan Becuwe (derived from Makefile by Stefan Fuertinger, http://fuertinger.lima-city.de/research.html)
+--- SuiteSparse/AMD/Lib/GNUmakefile.org	2014-03-21 20:22:00.000000000 +0100
++++ SuiteSparse/AMD/Lib/GNUmakefile	2015-10-12 16:30:32.153222621 +0200
+@@ -2,7 +2,7 @@
+ # AMD Makefile for compiling on Unix systems (for GNU make only)
+ #-------------------------------------------------------------------------------
+ 
+-default: libamd.a
++default: libamd.a libamd.so
+ 
+ include ../../SuiteSparse_config/SuiteSparse_config.mk
+ 
+@@ -30,6 +30,9 @@
+ # compile each int and long routine (with no real/complex version)
+ #-------------------------------------------------------------------------------
+ 
++amd_global.o: ../Source/amd_global.c $(INC)
++	$(C) -c $< -o $@
++
+ amd_i_%.o: ../Source/amd_%.c $(INC)
+ 	$(C) -DDINT -c $< -o $@
+ 
+@@ -40,10 +43,13 @@
+ # Create the libamd.a library (C versions only)
+ #-------------------------------------------------------------------------------
+ 
+-libamd.a: $(AMDI) $(AMDL)
++libamd.a: amd_global.o $(AMDI) $(AMDL)
+ 	$(ARCHIVE) libamd.a $^
+ 	- $(RANLIB) libamd.a
+ 
++libamd.so: amd_global.o $(AMDI) $(AMDL)
++	$(CC) -shared $^ -lm -Wl,-soname -Wl,$@ -o libamd.so
++
+ #-------------------------------------------------------------------------------
+ # compile the Fortran versions and the libamdf77.a library
+ #-------------------------------------------------------------------------------
+@@ -72,4 +78,4 @@
+ purge: distclean
+ 
+ distclean: clean
+-	- $(RM) libamd.a libamdf77.a
++	- $(RM) libamd.a libamdf77.a libamd.so
