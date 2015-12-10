@@ -249,6 +249,7 @@ class EB_GCC(ConfigureMake):
         if self.cfg['multilib']:
             glibc_32bit = [
                 "glibc.i686",  # Fedora, RedHat-based
+                "glibc.ppc",   # "" on Power
                 "libc6-dev-i386",  # Debian-based
                 "gcc-c++-32bit",  # OpenSuSE, SLES
             ]

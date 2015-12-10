@@ -94,9 +94,12 @@ class EB_MVAPICH2(ConfigureMake):
         for (envvar, new_envvar) in [("F90", "FC"), ("F90FLAGS", "FCFLAGS")]:
             envvar_val = os.getenv(envvar)
             if envvar_val:
-                if not os.getenv(new_envvar):
+                new_envvar_val = os.getenv(new_envvar)
+                env.setvar(envvar, '')
+                if envvar_val == new_envvar_val:
+                    self.log.debug("$%s == $%s, just defined $%s as empty", envvar, new_envvar, envvar)
+                elif new_envvar_val is None:
                     env.setvar(new_envvar, envvar_val)
-                    env.setvar(envvar, '')
                 else:
                     raise EasyBuildError("Both $%s and $%s set, can I overwrite $%s with $%s (%s) ?",
                                          envvar, new_envvar, new_envvar, envvar, envvar_val)

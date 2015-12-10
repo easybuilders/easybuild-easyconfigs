@@ -42,6 +42,7 @@ from easybuild.framework.easyconfig.easyconfig import EasyConfig, get_easyblock_
 from easybuild.framework.easyconfig.tools import get_paths_for
 from easybuild.tools import config
 from easybuild.tools.filetools import write_file
+from easybuild.tools.options import set_tmpdir
 from easybuild.tools.module_naming_scheme import GENERAL_CLASS
 from easybuild.tools.run import parse_log_for_error, run_cmd, run_cmd_qa
 from easybuild.tools.environment import modify_env, read_environment
@@ -59,7 +60,7 @@ class InitTest(TestCase):
         'valid_stops': [x[0] for x in EasyBlock.get_steps()],
     }
     config.init_build_options(build_options=build_options)
-    config.set_tmpdir()
+    set_tmpdir()
     del eb_go
 
     def writeEC(self, easyblock, name='foo', version='1.3.2', extratxt=''):

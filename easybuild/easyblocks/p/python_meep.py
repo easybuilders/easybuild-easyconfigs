@@ -56,6 +56,7 @@ class EB_python_minus_meep(PythonPackage):
         for dep in deps:
             if not get_software_root(dep):
                 raise EasyBuildError("Module for %s not loaded.", dep)
+        super(EB_python_minus_meep, self).configure_step()
 
     def build_step(self):
         """Build python-meep using available make/make-mpi script."""
