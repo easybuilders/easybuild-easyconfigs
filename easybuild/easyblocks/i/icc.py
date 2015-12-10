@@ -38,7 +38,8 @@ import os
 import re
 from distutils.version import LooseVersion
 
-from easybuild.easyblocks.generic.intelbase import IntelBase, ACTIVATION_NAME_2012, LICENSE_FILE_NAME_2012
+from easybuild.easyblocks.generic.intelbase import IntelBase, ACTIVATION_NAME_2012, COMP_ALL
+from easybuild.easyblocks.generic.intelbase import LICENSE_FILE_NAME_2012
 from easybuild.easyblocks.t.tbb import get_tbb_gccprefix
 from easybuild.tools.run import run_cmd
 
@@ -66,6 +67,12 @@ class EB_icc(IntelBase):
         super(EB_icc, self).__init__(*args, **kwargs)
 
         self.debuggerpath = None
+
+        if LooseVersion(self.version) >= LooseVersion('2016') and self.cfg['components'] is None:
+            # we need to use 'ALL' by default, using 'DEFAULTS' results in key things not being installed (e.g. bin/icc)
+            self.cfg['components'] = [COMP_ALL]
+            self.log.debug("Nothing specified for components, but required for version 2016, using %s instead",
+                           self.cfg['components'])
 
     def install_step(self):
         """
