@@ -188,11 +188,13 @@ class EB_ALADIN(EasyBlock):
         netcdf = get_software_root('netCDF-Fortran')
         netcdf_fortran = get_software_root('netCDF-Fortran')
         if netcdf:
-            if netcdf_fortran:
-                netcdflib = os.path.join(get_software_libdir('netCDF-Fortran'), 'libnetcdff.a')
-            else:
-                netcdflib = os.path.join(get_software_libdir('netCDF-Fortran'), 'libnetcdff.a')
             netcdfinc = os.path.join(netcdf, 'include')
+            if netcdf_fortran:
+                netcdflib = os.path.join(netcdf_fortran, get_software_libdir('netCDF-Fortran'), 'libnetcdff.a')
+            else:
+                netcdflib = os.path.join(netcdf, get_software_libdir('netCDF'), 'libnetcdff.a')
+            if not os.path.exists(netcdflib):
+                raise EasyBuildError("%s does not exist", netcdflib)
         else:
             raise EasyBuildError("netCDF(-Fortran) not available")
 
