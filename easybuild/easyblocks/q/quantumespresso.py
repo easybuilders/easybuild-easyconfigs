@@ -344,14 +344,14 @@ class EB_QuantumESPRESSO(ConfigureMake):
 
     def make_module_req_guess(self):
         """Custom path suggestions for Quantum ESPRESSO."""
-
         guesses = super(EB_QuantumESPRESSO, self).make_module_req_guess()
 
+        # order matters here, 'bin' should be *last* in this list to ensure it gets prepended to $PATH last,
+        # so it gets preference over the others
+        # this is important since some binaries are available in two places (e.g. dos.x in both bin and WANT/bin)
+        bindirs = ['upftools', 'WANT/bin', 'YAMBO/bin', 'bin']
         guesses.update({
-                        'PATH': [os.path.join(self.install_subdir, x) for x in ['bin', 'upftools',
-                                                                                'WANT/bin',
-                                                                                'YAMBO/bin']],
-                        'CPATH': [os.path.join(self.install_subdir, 'include')],
-                       })
-
+            'PATH': [os.path.join(self.install_subdir, bindir) for bindir in bindirs],
+            'CPATH': [os.path.join(self.install_subdir, 'include')],
+        })
         return guesses
