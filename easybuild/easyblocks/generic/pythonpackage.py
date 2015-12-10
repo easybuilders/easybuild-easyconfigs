@@ -132,7 +132,8 @@ class PythonPackage(ExtensionEasyBlock):
 
     def set_pylibdirs(self):
         """Set Python lib directory-related class variables."""
-        if build_option('extended_dry_run'):
+        if self.dry_run:
+            self.pylibdir = 'lib/python/site-packages'
             self.all_pylibdirs = ['lib/python/site-packages']
             self.log.debug("Using fake set of Python lib dirs during dry run: %s", self.all_pylibdirs)
 
@@ -229,12 +230,12 @@ class PythonPackage(ExtensionEasyBlock):
                 except OSError, err:
                     raise EasyBuildError("Failed to create test install dir: %s", err)
 
-                run_cmd("python -c 'import sys; print(sys.path)'")  # print Python search path (debug)
+                run_cmd("python -c 'import sys; print(sys.path)'", verbose=False)  # print Python search path (debug)
                 abs_pylibdirs = [os.path.join(testinstalldir, pylibdir) for pylibdir in self.all_pylibdirs]
                 extrapath = "export PYTHONPATH=%s &&" % os.pathsep.join(abs_pylibdirs + ['$PYTHONPATH'])
 
                 cmd = self.compose_install_command(testinstalldir, extrapath=extrapath)
-                run_cmd(cmd, log_all=True, simple=True)
+                run_cmd(cmd, log_all=True, simple=True, verbose=False)
 
             if self.testcmd:
                 cmd = "%s%s" % (extrapath, self.testcmd)
@@ -293,6 +294,27 @@ class PythonPackage(ExtensionEasyBlock):
         if not 'exts_filter' in kwargs:
             kwargs.update({'exts_filter': EXTS_FILTER_PYTHON_PACKAGES})
         return super(PythonPackage, self).sanity_check_step(*args, **kwargs)
+
+    def make_module_req_guess(self):
+        """
+        Define list of subdirectories to consider for updating path-like environment variables ($PATH, etc.).
+        """
+        guesses = super(PythonPackage, self).make_module_req_guess()
+
+        # avoid that lib subdirs are appended to $*LIBRARY_PATH if they don't provide libraries
+        # typically, only lib/pythonX.Y/site-packages should be added to $PYTHONPATH (see make_module_extra)
+        for envvar in ['LD_LIBRARY_PATH', 'LIBRARY_PATH']:
+            newlist = []
+            for subdir in guesses[envvar]:
+                # only subdirectories that contain one or more files/libraries should be retained
+                fullpath = os.path.join(self.installdir, subdir)
+                if os.path.exists(fullpath) and any([os.path.isfile(x) for x in os.listdir(fullpath)]):
+                    newlist.append(subdir)
+            self.log.debug("Only retaining %s subdirs from %s for $%s (others don't provide any libraries)",
+                           newlist, guesses[envvar], envvar)
+            guesses[envvar] = newlist
+
+        return guesses
 
     def make_module_extra(self, *args, **kwargs):
         """Add install path to PYTHONPATH"""
