@@ -39,7 +39,8 @@ import easybuild.tools.toolchain as toolchain
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.build_log import EasyBuildError
-from easybuild.tools.modules import get_software_root
+from easybuild.tools.filetools import read_file
+from easybuild.tools.modules import get_software_root, get_software_libdir
 from easybuild.tools.ordereddict import OrderedDict
 from easybuild.tools.run import run_cmd, run_cmd_qa
 
@@ -181,9 +182,19 @@ class EB_ALADIN(EasyBlock):
         grib_api_f90_lib = os.path.join(get_software_root('grib_api'), 'lib', 'libgrib_api_f90.a')
         grib_api_inc = os.path.join(get_software_root('grib_api'), 'include')
         jasperlib = os.path.join(get_software_root('JasPer'), 'lib', 'libjasper.a')
-        netcdflib = os.path.join(get_software_root('netCDF'), 'lib', 'libnetcdff.a')
-        netcdfinc = os.path.join(get_software_root('netCDF'), 'include')
         mpilib = os.path.join(os.getenv('MPI_LIB_DIR'), os.getenv('MPI_LIB_SHARED'))
+
+        # netCDF
+        netcdf = get_software_root('netCDF-Fortran')
+        netcdf_fortran = get_software_root('netCDF-Fortran')
+        if netcdf:
+            if netcdf_fortran:
+                netcdflib = os.path.join(get_software_libdir('netCDF-Fortran'), 'libnetcdff.a')
+            else:
+                netcdflib = os.path.join(get_software_libdir('netCDF-Fortran'), 'libnetcdff.a')
+            netcdfinc = os.path.join(netcdf, 'include')
+        else:
+            raise EasyBuildError("netCDF(-Fortran) not available")
 
         ldpaths = [ldflag[2:] for ldflag in os.getenv('LDFLAGS').split(' ')]  # LDFLAGS have form '-L/path/to'
 
