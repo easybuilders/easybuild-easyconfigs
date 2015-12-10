@@ -55,6 +55,7 @@ from easybuild.tools.module_naming_scheme.easybuild_mns import EasyBuildMNS
 from easybuild.tools.module_naming_scheme.utilities import det_full_ec_version
 from easybuild.tools.modules import modules_tool
 from easybuild.tools.robot import resolve_dependencies
+from easybuild.tools.options import set_tmpdir
 
 
 # indicates whether all the single tests are OK,
@@ -80,7 +81,7 @@ class EasyConfigTest(TestCase):
         'valid_stops': [x[0] for x in EasyBlock.get_steps()],
     }
     config.init_build_options(build_options=build_options)
-    config.set_tmpdir()
+    set_tmpdir()
     del eb_go
 
     # put dummy 'craype-test' module in place, which is required for parsing easyconfigs using Cray* toolchains
