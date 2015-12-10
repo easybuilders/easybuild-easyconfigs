@@ -27,7 +27,7 @@ EasyBuild support for building and installing libxml2 with python bindings,
 implemented as an easyblock.
 
 @author: Jens Timmerman (Ghent University)
-@author: Alan O'Cais (Juelich Supercomputing Centre)
+@author: Alan O'Cais (Juelich Supercomputing 'entre)
 """
 import os
 
@@ -55,7 +55,7 @@ class EB_libxml2(ConfigureMake, PythonPackage):
         if not get_software_root('Python'):
             raise EasyBuildError("Python module not loaded")
         # We will do the python bindings ourselves so force them off
-        self.cfg.update('configopts', `--without-python`)
+        self.cfg.update('configopts', '--without-python')
         ConfigureMake.configure_step(self)
 
     def build_step(self):
