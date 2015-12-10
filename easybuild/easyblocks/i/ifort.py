@@ -57,7 +57,6 @@ class EB_ifort(EB_icc, IntelBase):
                 binprefix = 'bin'
             elif LooseVersion(self.version) >= LooseVersion('2013_sp1'):
                 binprefix = 'bin'
-                libprefix = 'lib/intel64'
             else:
                 libprefix = 'compiler/lib/intel64'
 

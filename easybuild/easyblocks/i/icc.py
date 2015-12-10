@@ -204,7 +204,7 @@ class EB_icc(IntelBase):
         return guesses
 
     def make_module_extra(self):
-        """Custom variables for OpenBabel module."""
+        """Additional custom variables for icc: $INTEL_PYTHONHOME."""
         txt = super(EB_icc, self).make_module_extra()
         if self.debuggerpath:
             intel_pythonhome = os.path.join(self.installdir, self.debuggerpath, 'python', 'intel64')
