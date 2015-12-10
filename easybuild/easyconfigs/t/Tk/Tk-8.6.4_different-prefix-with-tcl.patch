@@ -1,0 +1,27 @@
+fix for:
+    _tkinter.TclError: Can't find a usable tk.tcl in the following directories: ...
+based on https://github.com/NixOS/nixpkgs/commit/decd2feb0a1bc80940e697fa66e3b25383360c30
+see also https://github.com/NixOS/nixpkgs/issues/1479
+author: Kenneth Hoste (HPC-UGent)
+--- tk8.6.4/unix/Makefile.in.orig	2015-10-29 18:57:12.213525347 +0100
++++ tk8.6.4/unix/Makefile.in	2015-10-29 19:06:19.397015702 +0100
+@@ -1029,7 +1029,8 @@
+ 	$(CC) -c $(CC_SWITCHES) $(GENERIC_DIR)/tkVisual.c
+ 
+ tkWindow.o: $(GENERIC_DIR)/tkWindow.c
+-	$(CC) -c $(CC_SWITCHES) $(GENERIC_DIR)/tkWindow.c
++	$(CC) -c $(CC_SWITCHES) -DTK_LIBRARY=\"${TK_LIBRARY}\" \
++       $(GENERIC_DIR)/tkWindow.c
+ 
+ tkButton.o: $(GENERIC_DIR)/tkButton.c
+ 	$(CC) -c $(CC_SWITCHES) $(GENERIC_DIR)/tkButton.c
+--- tk8.6.4/generic/tkWindow.c.orig	2015-10-29 18:57:12.213525347 +0100
++++ tk8.6.4/generic/tkWindow.c	2015-10-29 19:03:30.156190540 +0100
+@@ -988,6 +988,7 @@
+ 
+     Tcl_SetVar2(interp, "tk_patchLevel", NULL, TK_PATCH_LEVEL, TCL_GLOBAL_ONLY);
+     Tcl_SetVar2(interp, "tk_version",    NULL, TK_VERSION,     TCL_GLOBAL_ONLY);
++    Tcl_SetVar2(interp, "tk_library",    NULL, TK_LIBRARY,     TCL_GLOBAL_ONLY);
+ 
+     tsdPtr->numMainWindows++;
+     return tkwin;
