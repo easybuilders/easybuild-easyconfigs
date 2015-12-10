@@ -1,0 +1,53 @@
+# Patches the build system 
+# and fixes a missing include for lua
+# Ward Poelmans <ward.poelmans@ugent.be>
+diff -ur likwid-likwid-4.0.1.orig/config.mk likwid-likwid-4.0.1/config.mk
+--- likwid-likwid-4.0.1.orig/config.mk	2015-07-23 16:55:04.000000000 +0200
++++ likwid-likwid-4.0.1/config.mk	2015-10-28 13:59:52.753519484 +0100
+@@ -9,7 +9,7 @@
+ COLOR = BLUE#NO SPACE
+ 
+ # Path were to install likwid
+-PREFIX = /usr/local#NO SPACE
++#PREFIX = /usr/local#NO SPACE
+ MANPREFIX = $(PREFIX)/man#NO SPACE
+ BINPREFIX = $(PREFIX)/bin#NO SPACE
+ LIBPREFIX = $(PREFIX)/lib#NO SPACE
+@@ -23,7 +23,7 @@
+ INSTALLED_LIBPREFIX = $(INSTALLED_PREFIX)/lib#NO SPACE
+ 
+ # chown installed tools to this user/group
+-INSTALL_CHOWN = -g root -o root
++INSTALL_CHOWN = 
+ 
+ # For the daemon based secure msr/pci access configure
+ # the absolute path to the msr daemon executable.
+@@ -35,7 +35,7 @@
+ BUILDDAEMON = true#NO SPACE
+ 
+ #Build the setFrequencies tool
+-BUILDFREQ = true#NO SPACE
++BUILDFREQ = false#NO SPACE
+ # Set the default mode for MSR access.
+ # This can usually be overriden on the commandline.
+ # Valid values are: direct, accessdaemon
+@@ -60,7 +60,7 @@
+ # Usually you do not need to edit below
+ MAX_NUM_THREADS = 263
+ MAX_NUM_NODES = 64
+-CFG_FILE_PATH = /etc/likwid.cfg
++CFG_FILE_PATH = $(PREFIX)/etc/likwid.cfg
+ 
+ # Versioning Information
+ VERSION = 4
+diff -ur likwid-likwid-4.0.1.orig/ext/lua/src/liolib.c likwid-likwid-4.0.1/ext/lua/src/liolib.c
+--- likwid-likwid-4.0.1.orig/ext/lua/src/liolib.c	2015-07-23 16:55:04.000000000 +0200
++++ likwid-likwid-4.0.1/ext/lua/src/liolib.c	2015-10-28 14:00:12.163071581 +0100
+@@ -19,6 +19,7 @@
+ #include <stdio.h>
+ #include <stdlib.h>
+ #include <string.h>
++#include <sys/types.h>
+ 
+ #define liolib_c
+ #define LUA_LIB
