@@ -185,7 +185,7 @@ class EB_ALADIN(EasyBlock):
         mpilib = os.path.join(os.getenv('MPI_LIB_DIR'), os.getenv('MPI_LIB_SHARED'))
 
         # netCDF
-        netcdf = get_software_root('netCDF-Fortran')
+        netcdf = get_software_root('netCDF')
         netcdf_fortran = get_software_root('netCDF-Fortran')
         if netcdf:
             netcdfinc = os.path.join(netcdf, 'include')
