@@ -85,7 +85,7 @@ class EB_OpenFOAM(EasyBlock):
             try:
                 contents_installdir = os.listdir(self.installdir)
                 # it's one directory but has a wrong name
-                if len(contents_installdir) == 1 and os.path.isdir(contents_installdir[0]):
+                if len(contents_installdir) == 1 and os.path.isdir(os.path.join(self.installdir, contents_installdir[0])):
                     source = os.path.join(self.installdir, contents_installdir[0])
                     target = os.path.join(self.installdir, self.openfoamdir)
                     self.log.debug("Moving %s to %s" % (source, target))
@@ -142,7 +142,7 @@ class EB_OpenFOAM(EasyBlock):
         for script in [os.path.join(self.builddir, self.openfoamdir, x) for x in ['etc/bashrc', 'etc/cshrc']]:
             self.log.debug("Patching out hardcoded $WM_* env vars in %s", script)
             # disable any third party stuff, we use EB controlled builds
-            regex_subs = [(r"^setenv|export) WM_THIRD_PARTY_USE_.*[ =].*$", r"# \g<0>")]
+            regex_subs = [(r"^(setenv|export) WM_THIRD_PARTY_USE_.*[ =].*$", r"# \g<0>")]
             for env_var in ['WM_COMPILER', 'WM_MPLIB', 'WM_THIRD_PARTY_DIR']:
                 regex_subs.append((r"^(setenv|export) (?P<var>%s)[ =](?P<val>.*)$" % env_var,
                                    r": ${\g<var>:=\g<val>}; export \g<var>"))
@@ -307,8 +307,9 @@ class EB_OpenFOAM(EasyBlock):
                                                     "refineMesh", "vorticity"]]
         # check for the Pstream and scotchDecomp libraries, there must be a dummy one and an mpi one
         if 'extend' in self.name.lower():
-            libs = [os.path.join(libsdir, x, "libPstream.so") for x in ["dummy", "mpi"]] + \
-                   [os.path.join(libsdir, "libscotchDecomp.so")]
+            libs = [os.path.join(libsdir, "libscotchDecomp.so")]
+            if LooseVersion(self.version) < LooseVersion('3.2'):
+                libs.extend([os.path.join(libsdir, x, "libPstream.so") for x in ["dummy", "mpi"]])
         else:
             libs = [os.path.join(libsdir, x, "libPstream.so") for x in ["dummy", "mpi"]] + \
                    [os.path.join(libsdir, x, "libptscotchDecomp.so") for x in ["dummy", "mpi"]] +\
