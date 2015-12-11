@@ -62,6 +62,7 @@ class EB_tbb(IntelBase):
     def install_step(self):
         """Custom install step, to add extra symlinks"""
         silent_cfg_names_map = None
+        silent_cfg_extras = None
 
 
         if LooseVersion(self.version) < LooseVersion('4.2'):
