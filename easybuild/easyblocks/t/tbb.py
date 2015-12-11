@@ -71,7 +71,7 @@ class EB_tbb(IntelBase):
                 'license_file_name': LICENSE_FILE_NAME_2012,
             }
 
-        if LooseVersion(self.version) < LooseVersion('4.4'):
+        elif LooseVersion(self.version) < LooseVersion('4.4'):
             silent_cfg_names_map = {
                 'install_mode_name': INSTALL_MODE_NAME_2015,
                 'install_mode': INSTALL_MODE_2015,
