@@ -54,7 +54,7 @@ class EB_tbb(IntelBase):
         platform_name = get_platform_name()
         if platform_name.startswith('x86_64'):
             self.arch = "intel64"
-        elif platform_name.startswith('i386'):
+        elif platform_name.startswith('i386') or platform_name.startswith('i686'):
             self.arch = 'ia32'
         else:
             raise EasyBuildError("Failed to determine system architecture based on %s", platform_name)
@@ -76,7 +76,7 @@ class EB_tbb(IntelBase):
                 'install_mode': INSTALL_MODE_2015,
             }
 
-        # In case of TBB 2016 we have to specify ARCH_SELECTED in silent.cfg
+        # In case of TBB 4.4.x and newer we have to specify ARCH_SELECTED in silent.cfg
         if LooseVersion(self.version) >= LooseVersion('4.4'):
             silent_cfg_extras = {
                 'ARCH_SELECTED': self.arch.upper()
