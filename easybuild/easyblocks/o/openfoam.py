@@ -213,19 +213,17 @@ class EB_OpenFOAM(EasyBlock):
         if LooseVersion(self.version) < LooseVersion("2") or openfoam_extend_v3:
             self.log.debug("List of deps: %s" % self.cfg.dependencies())
             for dep in self.cfg.dependencies():
-                cur_dep = {
-                    'name': dep['name'].upper(),
-                    'root': get_software_root(dep['name'])
-                }
+                dep_name = dep['name'].upper(),
+                dep_root = get_software_root(dep['name'])
                 dep_vars = [
-                    ("%(name)s_SYSTEM", "1"),
-                    ("%(name)s_DIR", "%(root)s"),
-                    ("%(name)s_BIN_DIR", "%(root)s/bin"),
-                    ("%(name)s_LIB_DIR", "%(root)s/lib"),
-                    ("%(name)s_INCLUDE_DIR", "%(root)s/include"),
+                    ("%s_SYSTEM", "1"),
+                    ("%s_DIR", "%s"),
+                    ("%s_BIN_DIR", "%s/bin"),
+                    ("%s_LIB_DIR", "%s/lib"),
+                    ("%s_INCLUDE_DIR", "%s/include"),
                 ]
                 for var, val in dep_vars:
-                    env.setvar(var % cur_dep, val % cur_dep)
+                    env.setvar(var % dep_name, val % dep_root)
         else:
             for depend in ['SCOTCH', 'METIS', 'CGAL', 'Paraview']:
                 dependloc = get_software_root(depend)
