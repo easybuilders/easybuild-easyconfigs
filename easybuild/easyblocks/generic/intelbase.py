@@ -339,13 +339,15 @@ class IntelBase(EasyBlock):
             'install_mode_name': silent_cfg_names_map.get('install_mode_name', INSTALL_MODE_NAME_2015),
         }
 
-        if self.install_components:
+        if self.install_components is not None:
             if len(self.install_components) == 1 and self.install_components[0] in [COMP_ALL, COMP_DEFAULTS]:
                 # no quotes should be used for ALL or DEFAULTS
                 silent += 'COMPONENTS=%s\n' % self.install_components[0]
-            else:
+            elif self.install_components:
                 # a list of components is specified (needs quotes)
                 silent += 'COMPONENTS="' + ';'.join(self.install_components) + '"\n'
+            else:
+                raise EasyBuildError("Empty list of components specified")
 
         if silent_cfg_extras is not None:
             if isinstance(silent_cfg_extras, dict):
