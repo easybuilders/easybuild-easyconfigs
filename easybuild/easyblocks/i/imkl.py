@@ -321,16 +321,16 @@ class EB_imkl(IntelBase):
         mklfiles = None
         mkldirs = None
         ver = LooseVersion(self.version)
-        libs = ["libmkl_core.so", "libmkl_gnu_thread.so", "libmkl_intel_thread.so", "libmkl_sequential.so"]
-        extralibs = ["libmkl_blacs_intelmpi_%(suff)s.so", "libmkl_scalapack_%(suff)s.so"]
+        libs = ['libmkl_core.so', 'libmkl_gnu_thread.so', 'libmkl_intel_thread.so', 'libmkl_sequential.so']
+        extralibs = ['libmkl_blacs_intelmpi_%(suff)s.so', 'libmkl_scalapack_%(suff)s.so']
 
         if self.cfg['interfaces']:
-	    compsuff = '_intel'
-	    if get_software_root('icc') is None:
-		if get_software_root('GCC'):
-		    compsuff = '_gnu'
-		else:
-		    raise EasyBuildError("Not using Intel compilers or GCC, don't know compiler suffix for FFTW libraries.")
+            compsuff = '_intel'
+            if get_software_root('icc') is None:
+                if get_software_root('GCC'):
+                    compsuff = '_gnu'
+                else:
+                    raise EasyBuildError("Not using Intel/GCC, don't know compiler suffix for FFTW libraries.")
 
             precs = ['_double', '_single']
             if ver < LooseVersion('11'):
@@ -358,27 +358,27 @@ class EB_imkl(IntelBase):
             if self.cfg['m32']:
                 raise EasyBuildError("Sanity check for 32-bit not implemented yet for IMKL v%s (>= 10.3)", self.version)
             else:
-                mkldirs = ["bin", "mkl/bin", "mkl/lib/intel64", "mkl/include"]
+                mkldirs = ['bin', 'mkl/bin', 'mkl/lib/intel64', 'mkl/include']
                 if ver < LooseVersion('11.3'):
-                    mkldirs.append("mkl/bin/intel64")
+                    mkldirs.append('mkl/bin/intel64')
                 libs += [lib % {'suff': suff} for lib in extralibs for suff in ['lp64', 'ilp64']]
-                mklfiles = ["mkl/lib/intel64/libmkl.so", "mkl/include/mkl.h"] + \
-                           ["mkl/lib/intel64/%s" % lib for lib in libs]
+                mklfiles = ['mkl/lib/intel64/libmkl.so', 'mkl/include/mkl.h'] + \
+                           ['mkl/lib/intel64/%s' % lib for lib in libs]
                 if ver >= LooseVersion('10.3.4') and ver < LooseVersion('11.1'):
-                    mkldirs += ["compiler/lib/intel64"]
+                    mkldirs += ['compiler/lib/intel64']
                 else:
-                    mkldirs += ["lib/intel64"]
+                    mkldirs += ['lib/intel64']
 
         else:
             if self.cfg['m32']:
-                mklfiles = ["lib/32/libmkl.so", "include/mkl.h"] + \
-                           ["lib/32/%s" % lib for lib in libs]
-                mkldirs = ["lib/32", "include/32", "interfaces"]
+                mklfiles = ['lib/32/libmkl.so', 'include/mkl.h'] + \
+                           ['lib/32/%s' % lib for lib in libs]
+                mkldirs = ['lib/32', 'include/32', 'interfaces']
             else:
                 libs += [lib % {'suff': suff} for lib in extralibs for suff in ['lp64', 'ilp64']]
-                mklfiles = ["lib/em64t/libmkl.so", "include/mkl.h"] + \
-                           ["lib/em64t/%s" % lib for lib in libs]
-                mkldirs = ["lib/em64t", "include/em64t", "interfaces"]
+                mklfiles = ['lib/em64t/libmkl.so', 'include/mkl.h'] + \
+                           ['lib/em64t/%s' % lib for lib in libs]
+                mkldirs = ['lib/em64t', 'include/em64t', 'interfaces']
 
         custom_paths = {
             'files': mklfiles,
