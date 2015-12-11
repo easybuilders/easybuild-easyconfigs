@@ -34,7 +34,6 @@ EasyBuild support for installing the Intel Threading Building Blocks (TBB) libra
 """
 
 import os
-import platform
 import shutil
 import glob
 from distutils.version import LooseVersion
@@ -42,6 +41,7 @@ from distutils.version import LooseVersion
 from easybuild.easyblocks.generic.intelbase import INSTALL_MODE_NAME_2015, INSTALL_MODE_2015
 from easybuild.easyblocks.generic.intelbase import IntelBase, ACTIVATION_NAME_2012, LICENSE_FILE_NAME_2012
 from easybuild.tools.build_log import EasyBuildError
+from easybuild.tools.systemtools import get_platform_name
 
 
 class EB_tbb(IntelBase):
@@ -51,15 +51,18 @@ class EB_tbb(IntelBase):
         """Initialisation of custom class variables for tbb"""
         super(EB_tbb, self).__init__(*args, **kwargs)
         self.libpath = 'UNKNOWN'
-        machine = platform.machine()
-        if machine == "i386":
-            self.arch = "ia32"
-        else:
+        platform_name = get_platform_name()
+        if platform_name.startswith('x86_64'):
             self.arch = "intel64"
+        elif platform_name.startswith('i386'):
+            self.arch = 'ia32'
+        else:
+            raise EasyBuildError("Failed to determine system architecture based on %s", platform_name)
 
     def install_step(self):
         """Custom install step, to add extra symlinks"""
         silent_cfg_names_map = None
+
 
         if LooseVersion(self.version) < LooseVersion('4.2'):
             silent_cfg_names_map = {
@@ -98,7 +101,6 @@ class EB_tbb(IntelBase):
 
 
         self.libpath = os.path.join('tbb', 'libs', 'intel64', libdir)
-        self.log.debug("self.libpath: %s" % self.libpath)
         # applications go looking into tbb/lib so we move what's in there to libs
         # and symlink the right lib from /tbb/libs/intel64/... to lib
         install_libpath = os.path.join(self.installdir, 'tbb', 'lib')
