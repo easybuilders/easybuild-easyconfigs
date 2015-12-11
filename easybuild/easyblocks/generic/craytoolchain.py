@@ -42,11 +42,14 @@ class CrayToolchain(Bundle):
         """
         Generate load/swap statements for dependencies in the module file
         """
-        # build dict with info for 'module swap' statements for dependencies
+        # build dict with info for 'module swap' statements for dependencies,
+        # i.e. a mapping of full module name to the module name to unload before loading
+        # for example: {'fftw/3.3.4.1': 'fftw', 'cray-libsci/13.0.4': 'cray-libsci'}
         swap_info = {}
         for dep in self.toolchain.dependencies:
             mod_name = dep['full_mod_name']
             if not mod_name.startswith('PrgEnv-'):
+                # determine versionless module name, e.g. 'fftw/3.3.4.1' => 'fftw'
                 depname = '/'.join(mod_name.split('/')[:-1])
                 swap_info.update({mod_name: depname})
         self.log.debug("Swap info for dependencies of %s: %s", self.full_mod_name, swap_info)
@@ -63,4 +66,3 @@ class CrayToolchain(Bundle):
         txt = '\n'.join(prgenv_unloads) + '\n' + comment + txt
 
         return txt
-
