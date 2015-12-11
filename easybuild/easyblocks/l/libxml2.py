@@ -76,7 +76,7 @@ class EB_libxml2(ConfigureMake, PythonPackage):
             # and that only exists after installation
             os.chdir('python')
             PythonPackage.configure_step(self)
-            # set cflags to point to include folder
+            # set cflags to point to include folder for the compilation step to succeed
             env.setvar('CFLAGS', "-I../include")
             PythonPackage.build_step(self)
             PythonPackage.install_step(self)
@@ -94,7 +94,9 @@ class EB_libxml2(ConfigureMake, PythonPackage):
         """Custom sanity check for libxml2"""
 
         custom_paths = {
-                        'files':["lib/libxml2.a", "lib/libxml2.so"],
+                        'files':["lib/libxml2.a", "lib/libxml2.so"] +
+                                [os.path.join(self.pylibdir, x)
+                                 for x in ['libxml2mod.so', 'libxml2.py', 'drv_libxml2.py']],
                         'dirs':["bin", self.pylibdir, "include/libxml2/libxml"],
                        }
 
