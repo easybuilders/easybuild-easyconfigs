@@ -27,7 +27,7 @@ EasyBuild support for building and installing libxml2 with python bindings,
 implemented as an easyblock.
 
 @author: Jens Timmerman (Ghent University)
-@author: Alan O'Cais (Juelich Supercomputing 'entre)
+@author: Alan O'Cais (Juelich Supercomputing Centre)
 """
 import os
 
