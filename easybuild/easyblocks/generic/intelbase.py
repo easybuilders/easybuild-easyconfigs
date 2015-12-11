@@ -347,7 +347,7 @@ class IntelBase(EasyBlock):
                 # a list of components is specified (needs quotes)
                 silent += 'COMPONENTS="' + ';'.join(self.install_components) + '"\n'
             else:
-                raise EasyBuildError("Empty list of components specified")
+                raise EasyBuildError("Empty list of matching components obtained via %s", self.cfg['components'])
 
         if silent_cfg_extras is not None:
             if isinstance(silent_cfg_extras, dict):
