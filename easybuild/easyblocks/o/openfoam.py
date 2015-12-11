@@ -31,21 +31,21 @@ EasyBuild support for building and installing OpenFOAM, implemented as an easybl
 @author: Pieter De Baets (Ghent University)
 @author: Jens Timmerman (Ghent University)
 @author: Xavier Besseron (University of Luxembourg)
+@author: Ward Poelmans (Ghent University)
 """
-import fileinput
+
 import glob
 import os
 import re
 import shutil
 import stat
-import sys
 from distutils.version import LooseVersion
 
 import easybuild.tools.environment as env
 import easybuild.tools.toolchain as toolchain
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.tools.build_log import EasyBuildError
-from easybuild.tools.filetools import adjust_permissions, mkdir
+from easybuild.tools.filetools import adjust_permissions, apply_regex_substitutions, mkdir
 from easybuild.tools.modules import get_software_root, get_software_version
 from easybuild.tools.run import run_cmd, run_cmd_qa
 
@@ -53,14 +53,14 @@ from easybuild.tools.run import run_cmd, run_cmd_qa
 class EB_OpenFOAM(EasyBlock):
     """Support for building and installing OpenFOAM."""
 
-    def __init__(self,*args,**kwargs):
+    def __init__(self, *args, **kwargs):
         """Specify that OpenFOAM should be built in install dir."""
 
         super(EB_OpenFOAM, self).__init__(*args, **kwargs)
 
         self.build_in_installdir = True
 
-        self.wm_compiler= None
+        self.wm_compiler = None
         self.wm_mplib = None
         self.openfoamdir = None
         self.thrdpartydir = None
@@ -83,16 +83,30 @@ class EB_OpenFOAM(EasyBlock):
         if not os.path.exists(openfoam_installdir):
             self.log.warning("Creating expected directory %s, and moving everything there" % openfoam_installdir)
             try:
-                mkdir(openfoam_installdir)
-                for fil in os.listdir(self.installdir):
-                    if fil != self.openfoamdir:
-                        source = os.path.join(self.installdir, fil)
-                        target = os.path.join(openfoam_installdir, fil)
-                        self.log.debug("Moving %s to %s" % (source, target))
-                        shutil.move(source, target)
-                os.chdir(openfoam_installdir)
+                contents_installdir = os.listdir(self.installdir)
+                # it's one directory but has a wrong name
+                if len(contents_installdir) == 1 and os.path.isdir(contents_installdir[0]):
+                    source = os.path.join(self.installdir, contents_installdir[0])
+                    target = os.path.join(self.installdir, self.openfoamdir)
+                    self.log.debug("Moving %s to %s" % (source, target))
+                    os.rename(source, target)
+                else:
+                    mkdir(openfoam_installdir)
+                    for fil in contents_installdir:
+                        if fil != self.openfoamdir:
+                            source = os.path.join(self.installdir, fil)
+                            target = os.path.join(openfoam_installdir, fil)
+                            self.log.debug("Moving %s to %s" % (source, target))
+                            shutil.move(source, target)
+                    os.chdir(openfoam_installdir)
             except OSError, err:
                 raise EasyBuildError("Failed to move all files to %s: %s", openfoam_installdir, err)
+
+    def patch_step(self):
+        """Adjust beginpath and start_dir to correct openfoam dir"""
+        beginpath = os.path.join(self.installdir, self.openfoamdir)
+        self.cfg['start_dir'] = beginpath
+        super(EB_OpenFOAM, self).patch_step(beginpath=beginpath)
 
     def configure_step(self):
         """Configure OpenFOAM build by setting appropriate environment variables."""
@@ -100,7 +114,7 @@ class EB_OpenFOAM(EasyBlock):
         comp_fam = self.toolchain.comp_family()
 
         extra_flags = ''
-        if comp_fam == toolchain.GCC:  #@UndefinedVariable
+        if comp_fam == toolchain.GCC:  # @UndefinedVariable
             self.wm_compiler = 'Gcc'
             if get_software_version('GCC') >= LooseVersion('4.8'):
                 # make sure non-gold version of ld is used, since OpenFOAM requires it
@@ -111,7 +125,7 @@ class EB_OpenFOAM(EasyBlock):
             if 'extend' in self.name.lower() and LooseVersion(self.version) < LooseVersion('2.0'):
                 extra_flags += ' -fpermissive'
 
-        elif comp_fam == toolchain.INTELCOMP:  #@UndefinedVariable
+        elif comp_fam == toolchain.INTELCOMP:  # @UndefinedVariable
             self.wm_compiler = 'Icc'
 
             # make sure -no-prec-div is used with Intel compilers
@@ -127,12 +141,13 @@ class EB_OpenFOAM(EasyBlock):
         # for example, replace 'export WM_COMPILER=Gcc' with ': ${WM_COMPILER:=Gcc}; export WM_COMPILER'
         for script in [os.path.join(self.builddir, self.openfoamdir, x) for x in ['etc/bashrc', 'etc/cshrc']]:
             self.log.debug("Patching out hardcoded $WM_* env vars in %s", script)
-            for line in fileinput.input(script, inplace=1, backup='.orig.eb'):
-                for env_var in ['WM_COMPILER', 'WM_MPLIB', 'WM_THIRD_PARTY_DIR']:
-                    from_pat = r"^(setenv|export) (?P<var>%s)[ =](?P<val>.*)$" % env_var
-                    to_pat = r": ${\g<var>:=\g<val>}; export \g<var>"
-                    line = re.sub(from_pat, to_pat, line)
-                sys.stdout.write(line)
+            # disable any third party stuff, we use EB controlled builds
+            regex_subs = [(r"^setenv|export) WM_THIRD_PARTY_USE_.*[ =].*$", r"# \g<0>")]
+            for env_var in ['WM_COMPILER', 'WM_MPLIB', 'WM_THIRD_PARTY_DIR']:
+                regex_subs.append((r"^(setenv|export) (?P<var>%s)[ =](?P<val>.*)$" % env_var,
+                                   r": ${\g<var>:=\g<val>}; export \g<var>"))
+
+            apply_regex_substitutions(script, regex_subs)
 
         # inject compiler variables into wmake/rules files
         ldirs = glob.glob(os.path.join(self.builddir, self.openfoamdir, 'wmake', 'rules', 'linux*'))
@@ -164,12 +179,13 @@ class EB_OpenFOAM(EasyBlock):
         for wmake_rules_file in wmake_rules_files:
             fullpath = os.path.join(self.builddir, self.openfoamdir, wmake_rules_file)
             self.log.debug("Patching compiler variables in %s", fullpath)
-            for line in fileinput.input(fullpath, inplace=1, backup='.orig.eb'):
-                for comp_var, newval in comp_vars.items():
-                    line = re.sub(r"^(%s\s*=\s*).*$" % re.escape(comp_var), r"\1%s" % newval, line)
-                sys.stdout.write(line)
+            regex_subs = []
+            for comp_var, newval in comp_vars.items():
+                regex_subs.append((r"^(%s\s*=\s*).*$" % re.escape(comp_var), r"\1%s" % newval))
+            apply_regex_substitutions(fullpath, regex_subs)
 
         # enable verbose build for debug purposes
+        # starting with openfoam-extend 3.2, PS1 also needs to be set
         env.setvar("FOAM_VERBOSE", '1')
 
         # installation directory
@@ -197,19 +213,28 @@ class EB_OpenFOAM(EasyBlock):
         if LooseVersion(self.version) < LooseVersion("2") or openfoam_extend_v3:
             self.log.debug("List of deps: %s" % self.cfg.dependencies())
             for dep in self.cfg.dependencies():
-                self.cfg.update('prebuildopts', "%s_SYSTEM=1" % dep['name'].upper())
-                self.cfg.update('prebuildopts', "{0}_LIB_DIR=$EBROOT{0}/lib".format(dep['name'].upper()))
-                self.cfg.update('prebuildopts', "{0}_INCLUDE_DIR=$EBROOT{0}/include".format(dep['name'].upper()))
+                cur_dep = {
+                    'name': dep['name'].upper(),
+                    'root': get_software_root(dep['name'])
+                }
+                dep_vars = [
+                    ("%(name)s_SYSTEM", "1"),
+                    ("%(name)s_DIR", "%(root)s"),
+                    ("%(name)s_BIN_DIR", "%(root)s/bin"),
+                    ("%(name)s_LIB_DIR", "%(root)s/lib"),
+                    ("%(name)s_INCLUDE_DIR", "%(root)s/include"),
+                ]
+                for var, val in dep_vars:
+                    env.setvar(var % cur_dep, val % cur_dep)
         else:
             for depend in ['SCOTCH', 'METIS', 'CGAL', 'Paraview']:
-                dependloc = None
                 dependloc = get_software_root(depend)
                 if dependloc:
                     if depend == 'CGAL' and get_software_root('Boost'):
-                        self.cfg.update('prebuildopts', "CGAL_ROOT=%s" % dependloc)
-                        self.cfg.update('prebuildopts', "BOOST_ROOT=%s" % get_software_root('Boost'))
+                        env.setvar("CGAL_ROOT", "%s" % dependloc)
+                        env.setvar("BOOST_ROOT", "%s" % get_software_root('Boost'))
                     else:
-                        self.cfg.update('prebuildopts', "%s_ROOT=%s" % (depend.upper(), dependloc))
+                        env.setvar("%s_ROOT" % depend.upper(), "%s" % dependloc)
 
     def build_step(self):
         """Build OpenFOAM using make after sourcing script to set environment."""
@@ -290,7 +315,7 @@ class EB_OpenFOAM(EasyBlock):
                    [os.path.join(libsdir, "libscotchDecomp.so")] + \
                    [os.path.join(libsdir, "dummy", "libscotchDecomp.so")]
 
-        if not 'extend' in self.name.lower() and LooseVersion(self.version) >= LooseVersion("2.3.0"):
+        if 'extend' not in self.name.lower() and LooseVersion(self.version) >= LooseVersion("2.3.0"):
             # surfaceSmooth is replaced by surfaceLambdaMuSmooth is OpenFOAM v2.3.0
             bins.remove(os.path.join(toolsdir, "surfaceSmooth"))
             bins.append(os.path.join(toolsdir, "surfaceLambdaMuSmooth"))
