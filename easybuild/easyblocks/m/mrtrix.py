@@ -63,13 +63,13 @@ class EB_MRtrix(EasyBlock):
 
     def build_step(self):
         """Custom build procedure for MRtrix."""
-        cmd = "./build"
+        cmd = "./build -verbose"
         run_cmd(cmd, log_all=True, simple=True, log_ok=True)
 
     def install_step(self):
         """Custom install procedure for MRtrix."""
         if LooseVersion(self.version) < LooseVersion('0.3'):
-            cmd = "./build install=%s linkto=" % self.installdir
+            cmd = "./build -verbose install=%s linkto=" % self.installdir
             run_cmd(cmd, log_all=True, simple=True, log_ok=True)
 
     def sanity_check_step(self):
