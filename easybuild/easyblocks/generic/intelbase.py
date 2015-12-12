@@ -361,8 +361,9 @@ class IntelBase(EasyBlock):
         # In case people are using unusual locales need to set GXX_ROOT, see
         # https://software.intel.com/en-us/articles/
         # intel-fortran-compiler-for-linux-ifort-error-could-not-find-directory-in-which-g-resides
-        get_gxxroot = "g++ --print-search-dirs | head -n1 | awk '{print $2}'"
-        txt += self.module_generator.set_environment('GXX_ROOT',run_cmd(get_gxxroot, log_all=True, simple=True))
+        out, _ = run_cmd("g++ --print-search-dirs", log_all=True, simple=False, force_in_dry_run=True)
+        gxxroot = out.split('\n')[0].split(':')[1].strip()
+        txt += self.module_generator.set_environment('GXX_ROOT', gxxroot)
 
         return txt
 
