@@ -25,6 +25,10 @@
 """
 EasyBuild support for building and installing MRtrix, implemented as an easyblock
 """
+import os
+from distutils.version import LooseVersion
+
+import easybuild.tools.environment as env
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.tools.run import run_cmd
 
@@ -32,9 +36,30 @@ from easybuild.tools.run import run_cmd
 class EB_MRtrix(EasyBlock):
     """Support for building/installing MRtrix."""
 
+    def __init__(self, *args, **kwargs):
+        """Initialize easyblock, enable build-in-installdir based on version."""
+        super(EB_MRtrix, self).__init__(*args, **kwargs)
+
+        if LooseVersion(self.version) >= LooseVersion('0.3'):
+            self.build_in_installdir = True
+            self.log.debug("Enabled build-in-installdir for version %s", self.version)
+
+    def extract_step(self):
+        """Extract MRtrix sources."""
+        # strip off 'mrtrix*' part to avoid having everything in a 'mrtrix*' subdirectory
+        if LooseVersion(self.version) >= LooseVersion('0.3'):
+            self.cfg.update('unpack_options', '--strip-components=1')
+
+        super(EB_MRtrix, self).extract_step()
+
     def configure_step(self):
         """No configuration step for MRtrix."""
-        pass
+        if LooseVersion(self.version) >= LooseVersion('0.3'):
+            env.setvar('LD', "%s LDFLAGS OBJECTS -o EXECUTABLE" % os.getenv('CXX'))
+            env.setvar('LDLIB', "%s -shared LDLIB_FLAGS OBJECTS -o LIB" % os.getenv('CXX'))
+            env.setvar('QMAKE_CXX', os.getenv('CXX'))
+            cmd = "./configure -verbose"
+            run_cmd(cmd, log_all=True, simple=True, log_ok=True)
 
     def build_step(self):
         """Custom build procedure for MRtrix."""
@@ -43,13 +68,18 @@ class EB_MRtrix(EasyBlock):
 
     def install_step(self):
         """Custom install procedure for MRtrix."""
-        cmd = "./build install=%s linkto=" % self.installdir
-        run_cmd(cmd, log_all=True, simple=True, log_ok=True)
+        if LooseVersion(self.version) < LooseVersion('0.3'):
+            cmd = "./build install=%s linkto=" % self.installdir
+            run_cmd(cmd, log_all=True, simple=True, log_ok=True)
 
     def sanity_check_step(self):
         """Custom sanity check for MRtrix."""
+        if LooseVersion(self.version) >= LooseVersion('0.3'):
+            libso = 'libmrtrix.so'
+        else:
+            libso = 'libmrtrix-%s.so' % '_'.join(self.version.split('.'))
         custom_paths = {
-            'files': ['lib/libmrtrix-0_2_12.so'],
+            'files': [os.path.join('lib', libso)],
             'dirs': ['bin'],
         }
         super(EB_MRtrix, self).sanity_check_step(custom_paths=custom_paths)
