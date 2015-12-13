@@ -203,7 +203,6 @@ class EB_icc(IntelBase):
         # in recent Intel compiler distributions, the actual binaries are
         # in deeper directories, and symlinked in top-level directories
         # however, not all binaries are symlinked (e.g. mcpcom is not)
-        # more recent versions of the Intel Compiler (2013.sp1 and newer)
         if prefix and os.path.isdir(os.path.join(self.installdir, prefix)):
             for key, subdirs in guesses.items():
                 guesses[key].extend([os.path.join(prefix, subdir) for subdir in subdirs])
@@ -213,8 +212,23 @@ class EB_icc(IntelBase):
     def make_module_extra(self):
         """Additional custom variables for icc: $INTEL_PYTHONHOME."""
         txt = super(EB_icc, self).make_module_extra()
+
         if self.debuggerpath:
             intel_pythonhome = os.path.join(self.installdir, self.debuggerpath, 'python', 'intel64')
             if os.path.isdir(intel_pythonhome):
                 txt += self.module_generator.set_environment('INTEL_PYTHONHOME', intel_pythonhome)
+
+        # in case people are using unusual locales need to set GXX_ROOT, see
+        # https://software.intel.com/en-us/articles/
+        # intel-fortran-compiler-for-linux-ifort-error-could-not-find-directory-in-which-g-resides
+        cmd = "g++ --print-search-dirs"
+        out, _ = run_cmd(cmd, log_all=True, simple=False, force_in_dry_run=True)
+        install_line_parts = out.strip().split('\n')[0].split(':')
+        if len(install_line_parts) == 2 and install_line_parts[0] == 'install':
+            gxxroot = install_line_parts[1].strip()
+        else:
+            raise EasyBuildError("Unexpected output from %s: %s", cmd, out)
+
+        txt += self.module_generator.set_environment('GXX_ROOT', gxxroot)
+
         return txt
