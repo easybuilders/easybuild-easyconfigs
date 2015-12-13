@@ -53,16 +53,17 @@ class Bundle(EasyBlock):
     def __init__(self, *args, **kwargs):
         """Initialize easyblock."""
         super(Bundle, self).__init__(*args, **kwargs)
-        self.altroot, self.altversion = None, None
+        self.altroot = None
+        self.altversion = None
 
     def configure_step(self):
         """Collect altroot/altversion info."""
         # pick up altroot/altversion, if they are defined
-        self.altroot = self.cfg['altroot']
-        if self.altroot:
+        self.altroot = None
+        if self.cfg['altroot']:
             self.altroot = get_software_root(self.altroot)
-        self.altversion = self.cfg['altversion']
-        if self.altversion:
+        self.altversion = None
+        if self.cfg['altversion']:
             self.altversion = get_software_version(self.altversion)
 
     def build_step(self):
