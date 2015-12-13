@@ -30,6 +30,7 @@ from distutils.version import LooseVersion
 
 import easybuild.tools.environment as env
 from easybuild.framework.easyblock import EasyBlock
+from easybuild.tools.modules import get_software_root, get_software_version
 from easybuild.tools.run import run_cmd
 
 
@@ -63,6 +64,9 @@ class EB_MRtrix(EasyBlock):
 
     def build_step(self):
         """Custom build procedure for MRtrix."""
+        extra_inc_path = os.path.join(get_software_root('GCC'), 'include', 'c++', get_software_version('GCC'))
+        env.setvar('CPATH', ':'.join([extra_inc_path, os.getenv('CPATH', '')]))
+
         cmd = "python build -verbose"
         run_cmd(cmd, log_all=True, simple=True, log_ok=True)
 
