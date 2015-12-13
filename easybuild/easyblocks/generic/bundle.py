@@ -61,10 +61,10 @@ class Bundle(EasyBlock):
         # pick up altroot/altversion, if they are defined
         self.altroot = None
         if self.cfg['altroot']:
-            self.altroot = get_software_root(self.altroot)
+            self.altroot = get_software_root(self.cfg['altroot'])
         self.altversion = None
         if self.cfg['altversion']:
-            self.altversion = get_software_version(self.altversion)
+            self.altversion = get_software_version(self.cfg['altversion'])
 
     def build_step(self):
         """Do nothing."""
