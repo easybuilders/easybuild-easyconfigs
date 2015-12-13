@@ -58,18 +58,18 @@ class EB_MRtrix(EasyBlock):
             env.setvar('LD', "%s LDFLAGS OBJECTS -o EXECUTABLE" % os.getenv('CXX'))
             env.setvar('LDLIB', "%s -shared LDLIB_FLAGS OBJECTS -o LIB" % os.getenv('CXX'))
             env.setvar('QMAKE_CXX', os.getenv('CXX'))
-            cmd = "./configure -verbose"
+            cmd = "python configure -verbose"
             run_cmd(cmd, log_all=True, simple=True, log_ok=True)
 
     def build_step(self):
         """Custom build procedure for MRtrix."""
-        cmd = "./build -verbose"
+        cmd = "python build -verbose"
         run_cmd(cmd, log_all=True, simple=True, log_ok=True)
 
     def install_step(self):
         """Custom install procedure for MRtrix."""
         if LooseVersion(self.version) < LooseVersion('0.3'):
-            cmd = "./build -verbose install=%s linkto=" % self.installdir
+            cmd = "python build -verbose install=%s linkto=" % self.installdir
             run_cmd(cmd, log_all=True, simple=True, log_ok=True)
 
     def sanity_check_step(self):
