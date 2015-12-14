@@ -104,6 +104,10 @@ class EB_SCOTCH(EasyBlock):
         else:
             cflags += " -restrict -DIDXSIZE64"
 
+        #USE 64 bit index
+        if self.toolchain.options['i8']:
+            cflags += " -DINTSIZE64"
+
         if not self.toolchain.mpi_family() in [toolchain.INTELMPI, toolchain.QLOGICMPI]:  #@UndefinedVariable
             cflags += " -DSCOTCH_PTHREAD"
 
