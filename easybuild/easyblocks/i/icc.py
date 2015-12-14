@@ -155,22 +155,3 @@ class EB_icc(IntelBase):
                     dirmap[k].append(v2)
 
         return dirmap
-
-    def make_module_extra(self):
-        """Custom variable definitions in module file: $GXX_ROOT."""
-        txt = super(EB_icc, self).make_module_extra()
-
-        # in case people are using unusual locales need to set GXX_ROOT, see
-        # https://software.intel.com/en-us/articles/
-        # intel-fortran-compiler-for-linux-ifort-error-could-not-find-directory-in-which-g-resides
-        cmd = "g++ --print-search-dirs"
-        out, _ = run_cmd(cmd, log_all=True, simple=False, force_in_dry_run=True)
-        install_line_parts = out.strip().split('\n')[0].split(':')
-        if len(install_line_parts) == 2 and install_line_parts[0] == 'install':
-            gxxroot = install_line_parts[1].strip()
-        else:
-            raise EasyBuildError("Unexpected output from %s: %s", cmd, out)
-
-        txt += self.module_generator.set_environment('GXX_ROOT', gxxroot)
-
-        return txt
