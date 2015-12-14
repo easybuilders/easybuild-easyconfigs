@@ -1,0 +1,28 @@
+fix hardcoding of 'g++'
+author: Kenneth Hoste (HPC-UGent)
+--- mrtrix3-0.3.12/configure.orig	2015-01-19 06:01:58.000000000 +0100
++++ mrtrix3-0.3.12/configure	2015-12-12 22:36:07.770759188 +0100
+@@ -966,20 +966,20 @@
+       except OSError: raise QMOCError
+       if process.wait() != 0: raise QMOCError
+ 
+-      cmd = [ 'g++', '-c' ] + cpp_flags + qt_cflags + [ 'qt.cpp', '-o', 'qt.o' ]
++      cmd = cxx + [ '-c' ] + cpp_flags + qt_cflags + [ 'qt.cpp', '-o', 'qt.o' ]
+       log ('\nexecuting "' + ' ' .join(cmd) + '"...\n')
+       try: process = subprocess.Popen (cmd, cwd=qt_dir.name, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+       except OSError: raise CompileError('oserror')
+       retcode = process.wait()
+       if retcode != 0: raise CompileError('process not terminated properly (exit code = %s)'%str(retcode))
+ 
+-      cmd = [ 'g++', '-c' ] + cpp_flags + qt_cflags + [ 'qt_moc.cpp', '-o', 'qt_moc.o' ]
++      cmd = cxx + [ '-c' ] + cpp_flags + qt_cflags + [ 'qt_moc.cpp', '-o', 'qt_moc.o' ]
+       log ('\nexecuting "' + ' ' .join(cmd) + '"...\n')
+       try: process = subprocess.Popen (cmd , cwd=qt_dir.name, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+       except OSError: raise CompileError('oserror')
+       if process.wait() != 0: raise CompileError('process not terminated properly')
+ 
+-      cmd = [ 'g++' ] + ld_flags + [ 'qt_moc.o', 'qt.o', '-o', 'qt' ] + qt_ldflags
++      cmd = cxx + ld_flags + [ 'qt_moc.o', 'qt.o', '-o', 'qt' ] + qt_ldflags
+       log ('\nexecuting "' + ' ' .join(cmd) + '"...\n')
+       try: process = subprocess.Popen (cmd , cwd=qt_dir.name, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+       except OSError: raise LinkError('oserror')
