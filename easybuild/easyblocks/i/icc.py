@@ -133,8 +133,9 @@ class EB_icc(IntelBase):
         # existence of paths is checked by module generator before 'prepend-paths' statements are included
         guesses = {
             'CLASSPATH': ['daal/lib/daal.jar'],
-            # 'include' is deliberately listed last, so it gets precedence over the other subdirs
-            'CPATH': ['daal/include', 'ipp/include', 'mkl/include', 'tbb/include', 'include'],
+            # 'include' is deliberately omitted, including it causes problems, e.g. with complex.h and std::complex
+            # cfr. https://software.intel.com/en-us/forums/intel-c-compiler/topic/338378
+            'CPATH': ['daal/include', 'ipp/include', 'mkl/include', 'tbb/include'],
             'DAALROOT': ['daal'],
             'IDB_HOME': ['bin/intel64'],
             'IPPROOT': ['ipp'],
