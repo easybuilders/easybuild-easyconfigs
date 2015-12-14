@@ -55,7 +55,7 @@ class EB_ipp(IntelBase):
         platform_name = get_platform_name()
         if platform_name.startswith('x86_64'):
             self.arch = "intel64"
-        elif platform_name.startswith('i386'):
+        elif platform_name.startswith('i386') or platform_name.startswith('i686'):
             self.arch = 'ia32'
         else:
             raise EasyBuildError("Failed to determine system architecture based on %s", platform_name)

@@ -30,6 +30,7 @@ EasyBuild support for installing the Intel Threading Building Blocks (TBB) libra
 @author: Kenneth Hoste (Ghent University)
 @author: Pieter De Baets (Ghent University)
 @author: Jens Timmerman (Ghent University)
+@author: Lumir Jasiok (IT4Innovations)
 """
 
 import os
@@ -37,8 +38,10 @@ import shutil
 import glob
 from distutils.version import LooseVersion
 
+from easybuild.easyblocks.generic.intelbase import INSTALL_MODE_NAME_2015, INSTALL_MODE_2015
 from easybuild.easyblocks.generic.intelbase import IntelBase, ACTIVATION_NAME_2012, LICENSE_FILE_NAME_2012
 from easybuild.tools.build_log import EasyBuildError
+from easybuild.tools.systemtools import get_platform_name
 
 
 class EB_tbb(IntelBase):
@@ -48,10 +51,19 @@ class EB_tbb(IntelBase):
         """Initialisation of custom class variables for tbb"""
         super(EB_tbb, self).__init__(*args, **kwargs)
         self.libpath = 'UNKNOWN'
+        platform_name = get_platform_name()
+        if platform_name.startswith('x86_64'):
+            self.arch = "intel64"
+        elif platform_name.startswith('i386') or platform_name.startswith('i686'):
+            self.arch = 'ia32'
+        else:
+            raise EasyBuildError("Failed to determine system architecture based on %s", platform_name)
 
     def install_step(self):
         """Custom install step, to add extra symlinks"""
         silent_cfg_names_map = None
+        silent_cfg_extras = None
+
 
         if LooseVersion(self.version) < LooseVersion('4.2'):
             silent_cfg_names_map = {
@@ -59,7 +71,19 @@ class EB_tbb(IntelBase):
                 'license_file_name': LICENSE_FILE_NAME_2012,
             }
 
-        super(EB_tbb, self).install_step(silent_cfg_names_map=silent_cfg_names_map)
+        elif LooseVersion(self.version) < LooseVersion('4.4'):
+            silent_cfg_names_map = {
+                'install_mode_name': INSTALL_MODE_NAME_2015,
+                'install_mode': INSTALL_MODE_2015,
+            }
+
+        # In case of TBB 4.4.x and newer we have to specify ARCH_SELECTED in silent.cfg
+        if LooseVersion(self.version) >= LooseVersion('4.4'):
+            silent_cfg_extras = {
+                'ARCH_SELECTED': self.arch.upper()
+            }
+
+        super(EB_tbb, self).install_step(silent_cfg_names_map=silent_cfg_names_map, silent_cfg_extras=silent_cfg_extras)
 
         # save libdir
         os.chdir(self.installdir)
