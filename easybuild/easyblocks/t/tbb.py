@@ -120,7 +120,7 @@ class EB_tbb(IntelBase):
             else:
                 raise EasyBuildError("No libs found using %s in %s", libglob, self.installdir)
         else:
-            libdir = 'tbb/lib/intel64/%s' % get_tbb_gccprefix()
+            libdir = get_tbb_gccprefix()
 
         self.libpath = os.path.join('tbb', 'libs', 'intel64', libdir)
         self.log.debug("self.libpath: %s" % self.libpath)
