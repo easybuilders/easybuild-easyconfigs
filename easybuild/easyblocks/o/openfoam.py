@@ -227,13 +227,13 @@ class EB_OpenFOAM(EasyBlock):
             for dep in self.cfg.dependencies():
                 dep_name = dep['name'].upper(),
                 dep_root = get_software_root(dep['name'])
-                dep_vars = [
-                    ("%s_SYSTEM", "1"),
-                    ("%s_DIR", "%s"),
-                    ("%s_BIN_DIR", "%s/bin"),
-                    ("%s_LIB_DIR", "%s/lib"),
-                    ("%s_INCLUDE_DIR", "%s/include"),
-                ]
+                env.setvar("%s_SYSTEM" % dep_name, "1")
+                dep_vars = {
+                    "%s_DIR": "%s",
+                    "%s_BIN_DIR": "%s/bin",
+                    "%s_LIB_DIR": "%s/lib",
+                    "%s_INCLUDE_DIR": "%s/include",
+                }
                 for var, val in dep_vars:
                     env.setvar(var % dep_name, val % dep_root)
         else:
