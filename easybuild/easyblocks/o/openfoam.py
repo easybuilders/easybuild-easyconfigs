@@ -233,7 +233,7 @@ class EB_OpenFOAM(EasyBlock):
                     "%s_LIB_DIR": "%s/lib",
                     "%s_INCLUDE_DIR": "%s/include",
                 }
-                for var, val in dep_vars:
+                for var, val in dep_vars.iteritems():
                     env.setvar(var % dep_name, val % dep_root)
         else:
             for depend in ['SCOTCH', 'METIS', 'CGAL', 'Paraview']:
