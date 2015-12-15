@@ -69,7 +69,7 @@ class EB_DIRAC(CMakeMake):
             # run tests (may take a while, especially if some tests take a while to time out)
             self.log.info("Running tests may take a while, especially if some tests timeout (default timeout is 1500s)")
             cmd = "make test"
-            out, ec = run_cmd(cmd, simple=False, log_all=True, log_ok=True)
+            out, ec = run_cmd(cmd, simple=False, log_all=False, log_ok=False)
 
             # check that majority of tests pass
             # some may fail due to timeout, but that's acceptable
