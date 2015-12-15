@@ -89,7 +89,7 @@ class EB_OpenFOAM(EasyBlock):
                 if len(contents_installdir) == 1 and os.path.isdir(os.path.join(self.installdir, contents_installdir[0])):
                     source = os.path.join(self.installdir, contents_installdir[0])
                     target = os.path.join(self.installdir, self.openfoamdir)
-                    self.log.debug("Moving %s to %s" % (source, target))
+                    self.log.debug("Renaming %s to %s", source, target)
                     os.rename(source, target)
                 else:
                     mkdir(openfoam_installdir)
@@ -97,17 +97,16 @@ class EB_OpenFOAM(EasyBlock):
                         if fil != self.openfoamdir:
                             source = os.path.join(self.installdir, fil)
                             target = os.path.join(openfoam_installdir, fil)
-                            self.log.debug("Moving %s to %s" % (source, target))
+                            self.log.debug("Moving %s to %s", source, target)
                             shutil.move(source, target)
                     os.chdir(openfoam_installdir)
             except OSError, err:
                 raise EasyBuildError("Failed to move all files to %s: %s", openfoam_installdir, err)
 
     def patch_step(self):
-        """Adjust beginpath and start_dir to correct openfoam dir"""
-        beginpath = os.path.join(self.installdir, self.openfoamdir)
-        self.cfg['start_dir'] = beginpath
-        super(EB_OpenFOAM, self).patch_step(beginpath=beginpath)
+        """Adjust start directory and start path for patching to correct directory."""
+        self.cfg['start_dir'] = os.path.join(self.installdir, self.openfoamdir)
+        super(EB_OpenFOAM, self).patch_step(beginpath=self.cfg['start_dir'])
 
     def configure_step(self):
         """Configure OpenFOAM build by setting appropriate environment variables."""
@@ -241,10 +240,10 @@ class EB_OpenFOAM(EasyBlock):
                 dependloc = get_software_root(depend)
                 if dependloc:
                     if depend == 'CGAL' and get_software_root('Boost'):
-                        env.setvar("CGAL_ROOT", "%s" % dependloc)
-                        env.setvar("BOOST_ROOT", "%s" % get_software_root('Boost'))
+                        env.setvar("CGAL_ROOT", dependloc)
+                        env.setvar("BOOST_ROOT", get_software_root('Boost'))
                     else:
-                        env.setvar("%s_ROOT" % depend.upper(), "%s" % dependloc)
+                        env.setvar("%s_ROOT" % depend.upper(), dependloc)
 
     def build_step(self):
         """Build OpenFOAM using make after sourcing script to set environment."""
