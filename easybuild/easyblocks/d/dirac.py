@@ -76,7 +76,7 @@ class EB_DIRAC(CMakeMake):
             # cfr. https://groups.google.com/forum/#!msg/dirac-users/zEd5-xflBnY/OQ1pSbuX810J
 
             # over 90% of tests should pass
-            passed_regex = re.compile('^9.% tests passed', re.M)
+            passed_regex = re.compile('^(9|10)[0-9.]+% tests passed', re.M)
             if not passed_regex.search(out) and not self.dry_run:
                 raise EasyBuildError("Too many failed tests; '%s' not found in test output: %s",
                                      passed_regex.pattern, out)
