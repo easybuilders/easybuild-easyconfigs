@@ -67,6 +67,7 @@ class EB_DIRAC(CMakeMake):
             env.setvar('DIRAC_MPI_COMMAND', self.toolchain.mpi_cmd_for('', self.cfg['parallel']))
 
             # run tests (may take a while, especially if some tests take a while to time out)
+            self.log.info("Running tests may take a while, especially if some tests timeout (default timeout is 1500s)")
             cmd = "make test"
             out, ec = run_cmd(cmd, simple=False, log_all=True, log_ok=True)
 
