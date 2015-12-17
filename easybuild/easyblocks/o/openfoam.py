@@ -323,10 +323,12 @@ class EB_OpenFOAM(EasyBlock):
                [os.path.join(toolsdir, "surface%s" % x) for x in ["Add", "Find", "Smooth"]] + \
                [os.path.join(toolsdir, x) for x in ["deformedGeom", "engineSwirl", "modifyMesh",
                                                     "refineMesh", "vorticity"]]
-        # check for the Pstream and scotchDecomp libraries, there must be a dummy one and an mpi one
+        # check for the Pstream and *Decomp libraries
         if 'extend' in self.name.lower():
-            libs = [os.path.join(libsdir, "libscotchDecomp.so")]
+            libs = [os.path.join(libsdir, "libscotchDecomp.so"), os.path.join(libsdir, "libmetisDecomp.so"),
+                    os.path.join(libsdir, "mpi", "libparmetisDecomp.so")]
             if LooseVersion(self.version) < LooseVersion('3.2'):
+                # Pstream should have both a dummy and a mpi one
                 libs.extend([os.path.join(libsdir, x, "libPstream.so") for x in ["dummy", "mpi"]])
         else:
             libs = [os.path.join(libsdir, x, "libPstream.so") for x in ["dummy", "mpi"]] + \
