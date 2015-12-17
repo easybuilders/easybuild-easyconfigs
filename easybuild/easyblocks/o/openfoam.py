@@ -329,9 +329,9 @@ class EB_OpenFOAM(EasyBlock):
             if LooseVersion(self.version) < LooseVersion('3.2'):
                 # Pstream should have both a dummy and a mpi one
                 libs.extend([os.path.join(libsdir, x, "libPstream.so") for x in ["dummy", "mpi"]])
-                libs.extend([os.path.join(libsdir, "mpi", "libparmetisDecomp.so")])
+                libs.extend([os.path.join(libsdir, "mpi", "libparMetisDecomp.so")])
             else:
-                libs.extend([os.path.join(libsdir, "libparmetisDecomp.so")])
+                libs.extend([os.path.join(libsdir, "libparMetisDecomp.so")])
         else:
             libs = [os.path.join(libsdir, x, "libPstream.so") for x in ["dummy", "mpi"]] + \
                    [os.path.join(libsdir, x, "libptscotchDecomp.so") for x in ["dummy", "mpi"]] +\
