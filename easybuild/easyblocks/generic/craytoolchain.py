@@ -26,6 +26,7 @@
 EasyBuild support for installing Cray toolchains, implemented as an easyblock
 
 @author: Kenneth Hoste (Ghent University)
+Tweaked by: @gppezzi
 """
 
 from easybuild.easyblocks.generic.bundle import Bundle
@@ -48,21 +49,26 @@ class CrayToolchain(Bundle):
         unload_info = {}
         for dep in self.toolchain.dependencies:
             mod_name = dep['full_mod_name']
+            # determine versionless module name, e.g. 'fftw/3.3.4.1' => 'fftw'
+            depname = '/'.join(mod_name.split('/')[:-1])
             if not mod_name.startswith('PrgEnv-'):
-                # determine versionless module name, e.g. 'fftw/3.3.4.1' => 'fftw'
-                depname = '/'.join(mod_name.split('/')[:-1])
                 unload_info.update({mod_name: depname})
-        self.log.debug("Swap info for dependencies of %s: %s", self.full_mod_name, unload_info)
+            else:
+                my_prgenv_short = depname
+                my_prgenv_full = dep['full_mod_name']
 
+        self.log.debug("Swap info for dependencies of %s: %s", self.full_mod_name, unload_info)
         txt = super(CrayToolchain, self).make_module_dep(unload_info=unload_info)
+        swap_prgenv =  "if { [ is-loaded " + my_prgenv_short + " ] } { \n"
+        swap_prgenv += "    module swap " + my_prgenv_short + " " + my_prgenv_full + "\n}\n"
 
         # unload statements for PrgEnv-* modules must be included *first*
         comment = self.module_generator.comment("first, unload any PrgEnv module that may be loaded").strip()
         prgenv_unloads = ['', comment]
         for prgenv in KNOWN_PRGENVS:
-            prgenv_unloads.append(self.module_generator.unload_module(prgenv).strip())
+            if prgenv not in my_prgenv_short:
+                prgenv_unloads.append(self.module_generator.unload_module(prgenv).strip())
 
         comment = self.module_generator.comment("next, load toolchain components")
-        txt = '\n'.join(prgenv_unloads) + '\n\n' + comment + txt
-
+        txt = '\n'.join(prgenv_unloads) + '\n\n' + comment + swap_prgenv + txt
         return txt
