@@ -85,7 +85,7 @@ class EB_GATE(CMakeMake):
 
         # redefine $CFLAGS/$CXXFLAGS via options to build command ('make')
         cflags = os.getenv('CFLAGS')
-        cxxflags = "%s -DGC_DEFAULT_PLATFORM=\\'openPBS\\'" % os.getenv('CXXFLAGS')
+        cxxflags = "%s -DGC_DEFAULT_PLATFORM=\\'%s\\'" % (os.getenv('CXXFLAGS'), self.cfg['default_platform'])
         if self.toolchain.comp_family() in [toolchain.INTELCOMP]:
             # make sure GNU macros are defined by Intel compiler
             cflags += " -gcc"

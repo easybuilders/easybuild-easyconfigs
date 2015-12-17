@@ -33,6 +33,7 @@ import os
 import re
 
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
+from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.run import run_cmd
 
 # perldoc -lm seems to be the safest way to test if a module is available, based on exit code
@@ -42,18 +43,28 @@ EXTS_FILTER_PERL_MODULES = ("perldoc -lm %(ext_name)s ", "")
 class EB_Perl(ConfigureMake):
     """Support for building and installing Perl."""
 
+    @staticmethod
+    def extra_options():
+        """Add extra config options specific to Perl."""
+        extra_vars = {
+            'use_perl_threads': [True, "Use internal Perl threads by means of the -Dusethreads compiler directive", CUSTOM],
+        }
+        return ConfigureMake.extra_options(extra_vars)
+
     def configure_step(self):
         """
         Configure Perl build: run ./Configure instead of ./configure with some different options
         """
-        configopts = ' '.join([
+        configopts = [
             self.cfg['configopts'],
-            "-Dusethreads",
-            '-Dcc="%s"' % os.getenv('CC'),
-            '-Dccflags="%s"' % os.getenv('CFLAGS'),
+            '-Dcc="{0}"'.format(os.getenv('CC')),
+            '-Dccflags="{0}"'.format(os.getenv('CFLAGS')),
             '-Dinc_version_list=none',
-        ])
-        cmd = './Configure -de %s -Dprefix="%s" ' % (configopts, self.installdir)
+        ]
+        if self.cfg['use_perl_threads']:
+            configopts.append('-Dusethreads')
+
+        cmd = './Configure -de %s -Dprefix="%s"' % (' '.join(configopts), self.installdir)
         run_cmd(cmd, log_all=True, simple=True)
 
     def test_step(self):
