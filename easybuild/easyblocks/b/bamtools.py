@@ -63,7 +63,7 @@ class EB_BamTools(MakeCp, CMakeMake):
                       "lib/libbamtools.%s" % sharedlib_ext],
             'dirs': ["include/api", "docs"]
         }
-        if LooseVersion(self.version) <= LooseVersion('2.3.0'):
+        if LooseVersion(self.version) < LooseVersion('2.3.0'):
             custom_paths['files'] += [
                 "lib/libbamtools-utils.%s" % sharedlib_ext,
                 "lib/libjsoncpp.%s" % sharedlib_ext]
