@@ -62,18 +62,23 @@ class EB_BamTools(MakeCp, CMakeMake):
                 "bin/bamtools",
                 "include/shared/bamtools_global.h",
                 "lib/libbamtools.a",
-                "lib/libbamtools.%s" % sharedlib_ext],
+                "lib/libbamtools.%s" % sharedlib_ext
+            ],
             'dirs': [
                 "include/api",
-                "docs"]
+                "docs"
+            ]
         }
         if LooseVersion(self.version) < LooseVersion('2.3.0'):
-            #Buid environment changed https://github.com/pezmaster31/bamtools/commit/9cfa70bfe9cdf1b6adc06beb88246b45fdd6250a
+            # Buid environment changed:
+            # https://github.com/pezmaster31/bamtools/commit/9cfa70bfe9cdf1b6adc06beb88246b45fdd6250a
             custom_paths['files'] += [
                 "lib/libbamtools-utils.%s" % sharedlib_ext,
-                "lib/libjsoncpp.%s" % sharedlib_ext]
+                "lib/libjsoncpp.%s" % sharedlib_ext
+            ]
         else:
             custom_paths['files'] += [
                 "lib/libbamtools-utils.a",
-                "lib/libjsoncpp.a"]
+                "lib/libjsoncpp.a"
+            ]
         super(EB_BamTools, self).sanity_check_step(custom_paths=custom_paths)
