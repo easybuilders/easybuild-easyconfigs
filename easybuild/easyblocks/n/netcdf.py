@@ -50,7 +50,7 @@ class EB_netCDF(CMakeMake):
     def configure_step(self):
         """Configure build: set config options and configure"""
 
-        SHLIB_EXT = get_shared_lib_ext()
+        shlib_ext = get_shared_lib_ext()
 
         if LooseVersion(self.version) < LooseVersion("4.3"):
             self.cfg.update('configopts', "--enable-shared")
@@ -77,12 +77,12 @@ class EB_netCDF(CMakeMake):
                     self.cfg.update('configopts', '-D%s_INCLUDE_DIR=%s ' % (dep.upper(), incdir))
                     if dep == 'HDF5':
                         env.setvar('HDF5_ROOT', dep_root)
-                        libhdf5 = os.path.join(dep_root, dep_libdir, 'libhdf5.'+SHLIB_EXT)
+                        libhdf5 = os.path.join(dep_root, dep_libdir, 'libhdf5.%s' % shlib_ext)
                         self.cfg.update('configopts', '-DHDF5_LIB=%s ' % libhdf5)
-                        libhdf5_hl = os.path.join(dep_root, dep_libdir, 'libhdf5_hl.'+SHLIB_EXT)
+                        libhdf5_hl = os.path.join(dep_root, dep_libdir, 'libhdf5_hl.%s' % shlib_ext)
                         self.cfg.update('configopts', '-DHDF5_HL_LIB=%s ' % libhdf5_hl)
                     else:
-                        libso = os.path.join(dep_root, dep_libdir, 'lib%s.%s' % (libname,SHLIB_EXT))
+                        libso = os.path.join(dep_root, dep_libdir, 'lib%s.%s' % (libname,shlib_ext))
                         self.cfg.update('configopts', '-D%s_LIBRARY=%s ' % (dep.upper(), libso))
 
             CMakeMake.configure_step(self)
@@ -92,16 +92,16 @@ class EB_netCDF(CMakeMake):
         Custom sanity check for netCDF
         """
 
-        SHLIB_EXT = get_shared_lib_ext()
+        shlib_ext = get_shared_lib_ext()
 
         incs = ["netcdf.h"]
-        libs = ["libnetcdf."+SHLIB_EXT, "libnetcdf.a"]
+        libs = ["libnetcdf.%s" % shlib_ext, "libnetcdf.a"]
         # since v4.2, the non-C libraries have been split off in seperate extensions_step
         # see netCDF-Fortran and netCDF-C++
         if LooseVersion(self.version) < LooseVersion("4.2"):
             incs += ["netcdf%s" % x for x in ["cpp.h", ".hh", ".inc", ".mod"]] + \
                     ["ncvalues.h", "typesizes.mod"]
-            libs += ["libnetcdf_c++."+SHLIB_EXT, "libnetcdff."+SHLIB_EXT,
+            libs += ["libnetcdf_c++.%s" % shlib_ext, "libnetcdff.%s" % shlib_ext,
                      "libnetcdf_c++.a", "libnetcdff.a"]
 
         custom_paths = {

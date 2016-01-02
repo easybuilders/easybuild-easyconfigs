@@ -62,10 +62,11 @@ class EB_netCDF_minus_Fortran(ConfigureMake):
         Custom sanity check for netCDF-Fortran
         """
 
-        SHLIB_EXT = get_shared_lib_ext()
+        shlib_ext = get_shared_lib_ext()
 
         custom_paths = {
-                        'files': ["bin/nf-config"] + ["lib/%s" % x for x in ["libnetcdff."+SHLIB_EXT, "libnetcdff.a"]] +
+                        'files': ["bin/nf-config"] + ["lib/%s" % x for x in
+                                     ["libnetcdff.%s" % shlib_ext, "libnetcdff.a"]] +
                                  ["include/%s" % x for x in ["netcdf.inc", "netcdf.mod", "typesizes.mod"]],
                         'dirs': []
                        }

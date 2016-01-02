@@ -92,15 +92,15 @@ class EB_HDF5(ConfigureMake):
         else:
             extra_binaries = ["bin/%s" % x for x in ["h5cc", "h5fc"]]
 
-        SHLIB_EXT = get_shared_lib_ext()
+        shlib_ext = get_shared_lib_ext()
         custom_paths = {
                         'files': ["bin/h5%s" % x for x in ["2gif", "c++", "copy", "debug", "diff",
                                                            "dump", "import", "jam","ls", "mkgrp",
                                                            "perf_serial", "redeploy", "repack",
                                                            "repart", "stat", "unjam"]] +
                                  ["bin/gif2h5"] + extra_binaries +
-                                 ["lib/libhdf5%s.%s" % (x,SHLIB_EXT) for x in ["_cpp", "_fortran", "_hl_cpp",
-                                                                   "_hl", "hl_fortran", ""]],
+                                 ["lib/libhdf5%s.%s" % (x, shlib_ext) for x in
+                                     ["_cpp", "_fortran", "_hl_cpp", "_hl", "hl_fortran", ""]],
                         'dirs': ['include']
                        }
 
