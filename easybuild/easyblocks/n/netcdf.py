@@ -41,6 +41,7 @@ from easybuild.easyblocks.generic.cmakemake import CMakeMake
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.modules import get_software_root, get_software_version, get_software_libdir
+from easybuild.tools.systemtools import get_shared_lib_ext
 
 
 class EB_netCDF(CMakeMake):
@@ -48,6 +49,8 @@ class EB_netCDF(CMakeMake):
 
     def configure_step(self):
         """Configure build: set config options and configure"""
+
+        SHLIB_EXT = get_shared_lib_ext()
 
         if LooseVersion(self.version) < LooseVersion("4.3"):
             self.cfg.update('configopts', "--enable-shared")
@@ -74,12 +77,12 @@ class EB_netCDF(CMakeMake):
                     self.cfg.update('configopts', '-D%s_INCLUDE_DIR=%s ' % (dep.upper(), incdir))
                     if dep == 'HDF5':
                         env.setvar('HDF5_ROOT', dep_root)
-                        libhdf5 = os.path.join(dep_root, dep_libdir, 'libhdf5.so')
+                        libhdf5 = os.path.join(dep_root, dep_libdir, 'libhdf5.'+SHLIB_EXT)
                         self.cfg.update('configopts', '-DHDF5_LIB=%s ' % libhdf5)
-                        libhdf5_hl = os.path.join(dep_root, dep_libdir, 'libhdf5_hl.so')
+                        libhdf5_hl = os.path.join(dep_root, dep_libdir, 'libhdf5_hl.'+SHLIB_EXT)
                         self.cfg.update('configopts', '-DHDF5_HL_LIB=%s ' % libhdf5_hl)
                     else:
-                        libso = os.path.join(dep_root, dep_libdir, 'lib%s.so' % libname)
+                        libso = os.path.join(dep_root, dep_libdir, 'lib%s.%s' % (libname,SHLIB_EXT))
                         self.cfg.update('configopts', '-D%s_LIBRARY=%s ' % (dep.upper(), libso))
 
             CMakeMake.configure_step(self)
@@ -89,14 +92,16 @@ class EB_netCDF(CMakeMake):
         Custom sanity check for netCDF
         """
 
+        SHLIB_EXT = get_shared_lib_ext()
+
         incs = ["netcdf.h"]
-        libs = ["libnetcdf.so", "libnetcdf.a"]
+        libs = ["libnetcdf."+SHLIB_EXT, "libnetcdf.a"]
         # since v4.2, the non-C libraries have been split off in seperate extensions_step
         # see netCDF-Fortran and netCDF-C++
         if LooseVersion(self.version) < LooseVersion("4.2"):
             incs += ["netcdf%s" % x for x in ["cpp.h", ".hh", ".inc", ".mod"]] + \
                     ["ncvalues.h", "typesizes.mod"]
-            libs += ["libnetcdf_c++.so", "libnetcdff.so",
+            libs += ["libnetcdf_c++."+SHLIB_EXT, "libnetcdff."+SHLIB_EXT,
                      "libnetcdf_c++.a", "libnetcdff.a"]
 
         custom_paths = {
