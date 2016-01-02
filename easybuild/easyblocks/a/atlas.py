@@ -44,6 +44,7 @@ from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.modules import get_software_root
 from easybuild.tools.run import run_cmd
 from easybuild.tools.systemtools import get_cpu_speed
+from easybuild.tools.systemtools import get_shared_lib_ext
 
 
 class EB_ATLAS(ConfigureMake):
@@ -186,8 +187,9 @@ class EB_ATLAS(ConfigureMake):
         If the full_lapack option was set to false we don't
         """
         super(EB_ATLAS, self).install_step()
+        shlib_ext = get_shared_lib_ext()
         if not self.cfg['full_lapack']:
-            for i in ['liblapack.a', 'liblapack.so']:
+            for i in ['liblapack.a', 'liblapack.%s' % shlib_ext]:
                 lib = os.path.join(self.installdir, "lib", i[0])
                 if os.path.exists(lib):
                     os.rename(lib, os.path.join(self.installdir, "lib",
@@ -223,12 +225,13 @@ class EB_ATLAS(ConfigureMake):
         Custom sanity check for ATLAS
         """
 
+        shlib_ext = get_shared_lib_ext()
         libs = ["atlas", "cblas", "f77blas", "lapack", "ptcblas", "ptf77blas"]
 
         static_libs = ["lib/lib%s.a" % x for x in libs]
 
         if self.cfg['sharedlibs']:
-            shared_libs = ["lib/lib%s.so" % x for x in libs]
+            shared_libs = ["lib/lib%s.%s" % (x, shlib_ext) for x in libs]
         else:
             shared_libs = []
 

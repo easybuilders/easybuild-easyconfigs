@@ -38,6 +38,7 @@ from distutils.version import LooseVersion
 
 from easybuild.easyblocks.generic.intelbase import IntelBase
 from easybuild.easyblocks.icc import EB_icc  #@UnresolvedImport
+from easybuild.tools.systemtools import get_shared_lib_ext
 
 
 class EB_ifort(EB_icc, IntelBase):
@@ -49,6 +50,7 @@ class EB_ifort(EB_icc, IntelBase):
 
     def sanity_check_step(self):
         """Custom sanity check paths for ifort."""
+        shlib_ext = get_shared_lib_ext()
 
         binprefix = 'bin/intel64'
         libprefix = 'lib/intel64'
@@ -67,7 +69,7 @@ class EB_ifort(EB_icc, IntelBase):
 
         custom_paths = {
             'files': [os.path.join(binprefix, x) for x in bins] +
-            [os.path.join(libprefix, 'lib%s' % x) for x in ['ifcore.a', 'ifcore.so', 'iomp5.a', 'iomp5.so']],
+            [os.path.join(libprefix, 'lib%s' % x) for x in ['ifcore.a', 'ifcore.%s' % shlib_ext, 'iomp5.a', 'iomp5.%s' % shlib_ext]],
             'dirs': [],
         }
 
