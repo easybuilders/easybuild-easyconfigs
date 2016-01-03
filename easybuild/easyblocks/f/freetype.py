@@ -48,14 +48,11 @@ class EB_freetype(ConfigureMake):
 
     def sanity_check_step(self):
         """Custom sanity check for freetype."""
-        shlib_ext = get_shared_lib_ext()
-
         custom_paths = {
-                        'files': ['bin/freetype-config', 'lib/libfreetype.a', 'lib/libfreetype.%s' % shlib_ext,
-                                  'lib/pkgconfig/freetype%s.pc' % self.maj_ver],
-                        'dirs': ['include/freetype%s' % self.maj_ver],
-                       }
-
+            'files': ['bin/freetype-config', 'lib/libfreetype.a', 'lib/libfreetype.%s' % get_shared_lib_ext(),
+                      'lib/pkgconfig/freetype%s.pc' % self.maj_ver],
+            'dirs': ['include/freetype%s' % self.maj_ver],
+        }
         super(EB_freetype, self).sanity_check_step(custom_paths=custom_paths)
 
     def make_module_req_guess(self):

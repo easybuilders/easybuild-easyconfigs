@@ -144,7 +144,6 @@ EULA=accept
 
     def sanity_check_step(self):
         """Custom sanity check paths for IMPI."""
-        shlib_ext = get_shared_lib_ext()
 
         suff = "64"
         if self.cfg['m32']:
@@ -158,7 +157,7 @@ EULA=accept
             'files': ["bin%s/mpi%s" % (suff, x) for x in ["icc", "icpc", "ifort"]] +
                      ["include%s/mpi%s.h" % (suff, x) for x in ["cxx", "f", "", "o", "of"]] +
                      ["include%s/%s" % (suff, x) for x in ["i_malloc.h"] + mpi_mods] +
-                     ["lib%s/libmpi.%s" % (suff, shlib_ext), "lib%s/libmpi.a" % suff],
+                     ["lib%s/libmpi.%s" % (suff, get_shared_lib_ext()), "lib%s/libmpi.a" % suff],
             'dirs': [],
         }
 

@@ -95,7 +95,6 @@ class EB_icc(IntelBase):
 
     def sanity_check_step(self):
         """Custom sanity check paths for icc."""
-        shlib_ext = get_shared_lib_ext()
 
         binprefix = 'bin/intel64'
         libprefix = 'lib/intel64'
@@ -112,7 +111,7 @@ class EB_icc(IntelBase):
             binfiles += ['idb']
 
         binaries = [os.path.join(binprefix, f) for f in binfiles]
-        libraries = [os.path.join(libprefix, 'lib%s' % l) for l in ['iomp5.a', 'iomp5.%s' % shlib_ext]]
+        libraries = [os.path.join(libprefix, 'lib%s' % l) for l in ['iomp5.a', 'iomp5.%s' % get_shared_lib_ext()]]
         sanity_check_files = binaries + libraries
         if LooseVersion(self.version) > LooseVersion('2015'):
             sanity_check_files.append('include/omp.h')
