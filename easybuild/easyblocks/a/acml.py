@@ -56,9 +56,11 @@ class EB_ACML(EasyBlock):
 
         # determine base directory and suffix for ACML installation
         vsuff_list = self.cfg['versionsuffix'].split('-')
-        comp = vsuff_list[1]  # gfortran, ifort, ...
-        bits = vsuff_list[2]  # 32bit or 64bit
-        self.basedir = comp + bits[:2]
+        self.basedir = ''
+        if len(vsuff_list) >= 3:
+            comp = vsuff_list[1]  # gfortran, ifort, ...
+            bits = vsuff_list[2]  # 32bit or 64bit
+            self.basedir += comp + bits[:2]
         # specialized suffix, e.g., _fma4 for fused multiply-add
         if LooseVersion(self.version) >= LooseVersion("5") and self.cfg['use_fma4']:
             self.basedir += '_fma4'
