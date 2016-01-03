@@ -32,6 +32,7 @@ from distutils.version import LooseVersion
 from easybuild.easyblocks.generic.cmakepythonpackage import CMakePythonPackage
 from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.modules import get_software_root, get_software_version
+from easybuild.tools.systemtools import get_shared_lib_ext
 
 
 class EB_UFC(CMakePythonPackage):
@@ -45,6 +46,7 @@ class EB_UFC(CMakePythonPackage):
 
     def configure_step(self):
         """Set some extra environment variables before configuring."""
+        shlib_ext = get_shared_lib_ext()
 
         # make sure that required dependencies are loaded
         deps = ['Boost', 'Python', 'SWIG']
@@ -71,10 +73,10 @@ class EB_UFC(CMakePythonPackage):
 
         self.cfg.update('configopts', '-DUFC_ENABLE_PYTHON:BOOL=ON')
         self.cfg.update('configopts', '-DSWIG_FOUND:BOOL=ON')
-        self.cfg.update('configopts', '-DPYTHON_LIBRARY=%s/lib/libpython%s.so' % (depsdict['Python'],
-                                                                                 self.pyver))
-        self.cfg.update('configopts', '-DPYTHON_INCLUDE_PATH=%s/include/python%s' % (depsdict['Python'],
-                                                                                    self.pyver))
+        self.cfg.update('configopts', '-DPYTHON_LIBRARY=%s/lib/libpython%s.%s' %
+                                          (depsdict['Python'], self.pyver, shlib_ext))
+        self.cfg.update('configopts', '-DPYTHON_INCLUDE_PATH=%s/include/python%s' %
+                                          (depsdict['Python'], self.pyver))
 
         super(EB_UFC, self).configure_step()
 

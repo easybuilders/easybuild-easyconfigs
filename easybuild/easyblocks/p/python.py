@@ -42,6 +42,7 @@ from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.modules import get_software_libdir, get_software_libdir, get_software_root, get_software_version
 from easybuild.tools.run import run_cmd
+from easybuild.tools.systemtools import get_shared_lib_ext
 
 
 EXTS_FILTER_PYTHON_PACKAGES = ('python -c "import %(ext_name)s"', "")
@@ -141,6 +142,7 @@ class EB_Python(ConfigureMake):
 
     def sanity_check_step(self):
         """Custom sanity check for Python."""
+        shlib_ext = get_shared_lib_ext()
 
         pyver = "python%s" % '.'.join(self.version.split('.')[0:2])
 
@@ -160,7 +162,7 @@ class EB_Python(ConfigureMake):
                 abiflags = abiflags.strip()
 
         custom_paths = {
-            'files': ["bin/%s" % pyver, "lib/lib%s%s.so" % (pyver, abiflags)],
+            'files': ["bin/%s" % pyver, "lib/lib%s%s.%s" % (pyver, abiflags, shlib_ext)],
             'dirs': ["include/%s%s" % (pyver, abiflags), "lib/%s" % pyver],
         }
 

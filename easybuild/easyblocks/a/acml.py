@@ -38,6 +38,7 @@ from distutils.version import LooseVersion
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.run import run_cmd_qa
+from easybuild.tools.systemtools import get_shared_lib_ext
 
 
 class EB_ACML(EasyBlock):
@@ -110,6 +111,7 @@ class EB_ACML(EasyBlock):
     def sanity_check_step(self):
         """Custom sanity check for ACML."""
 
+        shlib_ext = get_shared_lib_ext()
         inc_extra = []
         lib_extra = []
         if LooseVersion(self.version) < LooseVersion("5"):
@@ -125,7 +127,7 @@ class EB_ACML(EasyBlock):
                 inc_files.append(os.path.join(fp, 'include', 'acml%s.h' % inc))
 
             for lib in [suff] + lib_extra:
-                for ext in ['.a', '.so']:
+                for ext in ['.a', shlib_ext]:
                     lib_files.append(os.path.join(fp, 'lib', 'libacml%s%s' % (lib, ext)))
 
         custom_paths = {

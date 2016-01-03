@@ -37,6 +37,7 @@ from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.filetools import adjust_permissions
 from easybuild.tools.modules import get_software_root
 from easybuild.tools.run import run_cmd
+from easybuild.tools.systemtools import get_shared_lib_ext
 
 
 class EB_NEURON(ConfigureMake):
@@ -96,6 +97,7 @@ class EB_NEURON(ConfigureMake):
         """Custom install procedure for NEURON."""
 
         super(EB_NEURON, self).install_step()
+        shlib_ext = get_shared_lib_ext()
 
         if self.with_python:
             pypath = os.path.join('src', 'nrnpython')
@@ -116,9 +118,10 @@ class EB_NEURON(ConfigureMake):
 
     def sanity_check_step(self):
         """Custom sanity check for NEURON."""
+        shlib_ext = get_shared_lib_ext()
 
         binpath = os.path.join(self.hostcpu, 'bin')
-        libpath = os.path.join(self.hostcpu, 'lib', 'lib%s.so')
+        libpath = os.path.join(self.hostcpu, 'lib', 'lib%s.' + shlib_ext)
         custom_paths = {
                         'files': [os.path.join(binpath, x) for x in ["bbswork.sh", "hel2mos1.sh",
                                                                      "hoc_ed", "ivoc", "memacs",

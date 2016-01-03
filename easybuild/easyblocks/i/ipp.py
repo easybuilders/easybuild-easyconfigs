@@ -39,6 +39,7 @@ import os
 from easybuild.easyblocks.generic.intelbase import IntelBase, ACTIVATION_NAME_2012, LICENSE_FILE_NAME_2012
 from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.systemtools import get_platform_name
+from easybuild.tools.systemtools import get_shared_lib_ext
 
 
 class EB_ipp(IntelBase):
@@ -79,6 +80,7 @@ class EB_ipp(IntelBase):
 
     def sanity_check_step(self):
         """Custom sanity check paths for IPP."""
+        shlib_ext = get_shared_lib_ext()
 
         if LooseVersion(self.version) < LooseVersion('8.0'):
             dirs = ['compiler/lib/intel64', 'ipp/bin', 'ipp/include',
@@ -94,7 +96,7 @@ class EB_ipp(IntelBase):
             ipp_libs.extend(['ac', 'di', 'j', 'm', 'r', 'sc', 'vc'])
 
         custom_paths = {
-            'files': ['ipp/lib/intel64/libipp%s' % y for x in ipp_libs for y in ['%s.a' % x, '%s.so' % x]],
+            'files': ['ipp/lib/intel64/libipp%s' % y for x in ipp_libs for y in ['%s.a' % x, '%s.%s' % (x, shlib_ext)]],
             'dirs': dirs,
         }
 

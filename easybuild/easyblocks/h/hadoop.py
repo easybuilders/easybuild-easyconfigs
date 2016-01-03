@@ -37,6 +37,7 @@ from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.modules import get_software_root
 from easybuild.tools.run import run_cmd
+from easybuild.tools.systemtools import get_shared_lib_ext
 
 
 class EB_Hadoop(Tarball):
@@ -88,9 +89,11 @@ class EB_Hadoop(Tarball):
 
     def sanity_check_step(self):
         """Custom sanity check for Hadoop."""
+        shlib_ext = get_shared_lib_ext()
+
         native_files = []
         if self.cfg['build_native_libs']:
-            native_files = ['lib/native/libhadoop.so']
+            native_files = ['lib/native/libhadoop.%s' % shlib_ext]
 
         custom_paths = {
             'files': ['bin/hadoop'] + native_files,

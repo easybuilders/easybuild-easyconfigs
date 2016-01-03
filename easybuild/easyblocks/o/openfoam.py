@@ -49,6 +49,7 @@ from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.filetools import adjust_permissions, apply_regex_substitutions, mkdir
 from easybuild.tools.modules import get_software_root, get_software_version
 from easybuild.tools.run import run_cmd, run_cmd_qa
+from easybuild.tools.systemtools import get_shared_lib_ext
 
 
 class EB_OpenFOAM(EasyBlock):
@@ -293,6 +294,7 @@ class EB_OpenFOAM(EasyBlock):
 
     def sanity_check_step(self):
         """Custom sanity check for OpenFOAM"""
+        shlib_ext = get_shared_lib_ext()
 
         # OpenFOAM >= 3.0.0 can use 64 bit integers
         if 'extend' not in self.name.lower() and LooseVersion(self.version) >= LooseVersion('3.0'):
@@ -325,14 +327,14 @@ class EB_OpenFOAM(EasyBlock):
                                                     "refineMesh", "vorticity"]]
         # check for the Pstream and scotchDecomp libraries, there must be a dummy one and an mpi one
         if 'extend' in self.name.lower():
-            libs = [os.path.join(libsdir, "libscotchDecomp.so")]
+            libs = [os.path.join(libsdir, "libscotchDecomp.%s" % shlib_ext)]
             if LooseVersion(self.version) < LooseVersion('3.2'):
-                libs.extend([os.path.join(libsdir, x, "libPstream.so") for x in ["dummy", "mpi"]])
+                libs.extend([os.path.join(libsdir, x, "libPstream.%s" % shlib_ext) for x in ["dummy", "mpi"]])
         else:
-            libs = [os.path.join(libsdir, x, "libPstream.so") for x in ["dummy", "mpi"]] + \
-                   [os.path.join(libsdir, x, "libptscotchDecomp.so") for x in ["dummy", "mpi"]] +\
-                   [os.path.join(libsdir, "libscotchDecomp.so")] + \
-                   [os.path.join(libsdir, "dummy", "libscotchDecomp.so")]
+            libs = [os.path.join(libsdir, x, "libPstream.%s" % shlib_ext) for x in ["dummy", "mpi"]] + \
+                   [os.path.join(libsdir, x, "libptscotchDecomp.%s" % shlib_ext) for x in ["dummy", "mpi"]] +\
+                   [os.path.join(libsdir, "libscotchDecomp.%s" % shlib_ext)] + \
+                   [os.path.join(libsdir, "dummy", "libscotchDecomp.%s" % shlib_ext)]
 
         if 'extend' not in self.name.lower() and LooseVersion(self.version) >= LooseVersion("2.3.0"):
             # surfaceSmooth is replaced by surfaceLambdaMuSmooth is OpenFOAM v2.3.0
