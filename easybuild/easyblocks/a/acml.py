@@ -120,12 +120,11 @@ class EB_ACML(EasyBlock):
                 inc_files.append(os.path.join(fp, 'include', 'acml%s.h' % inc))
 
             for lib in [suff] + lib_extra:
-                for ext in ['.a', get_shared_lib_ext()]:
-                    lib_files.append(os.path.join(fp, 'lib', 'libacml%s%s' % (lib, ext)))
+                for ext in ['a', get_shared_lib_ext()]:
+                    lib_files.append(os.path.join(fp, 'lib', 'libacml%s.%s' % (lib, ext)))
 
         custom_paths = {
-                        'files':['util/cpuid.exe'] + inc_files + lib_files,
-                        'dirs':[]
-                       }
-
+            'files': ['util/cpuid.exe'] + inc_files + lib_files,
+            'dirs': [],
+        }
         super(EB_ACML, self).sanity_check_step(custom_paths=custom_paths)
