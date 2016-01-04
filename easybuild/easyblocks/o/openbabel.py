@@ -37,7 +37,6 @@ class EB_OpenBabel(CMakeMake):
     """Support for installing the OpenBabel package."""
 
     def configure_step(self):
-        shlib_ext = get_shared_lib_ext()
 
         # Use separate build directory
         self.cfg['separate_build_dir'] = True
@@ -51,6 +50,7 @@ class EB_OpenBabel(CMakeMake):
             self.log.info("Enabling Python bindings")
             shortpyver = '.'.join(get_software_version('Python').split('.')[:2])
             self.cfg['configopts'] += "-DPYTHON_BINDINGS=ON "
+            shlib_ext = get_shared_lib_ext()
             self.cfg['configopts'] += "-DPYTHON_LIBRARY=%s/lib/libpython%s.%s " % (root_python, shortpyver, shlib_ext)
             self.cfg['configopts'] += "-DPYTHON_INCLUDE_DIR=%s/include/python%s " % (root_python, shortpyver)
         else:
@@ -67,13 +67,10 @@ class EB_OpenBabel(CMakeMake):
 
     def sanity_check_step(self):
         """Custom sanity check for OpenBabel."""
-        shlib_ext = get_shared_lib_ext()
-
         custom_paths = {
-            'files': ['bin/babel', 'lib/libopenbabel.%s' % shlib_ext],
+            'files': ['bin/babel', 'lib/libopenbabel.%s' % get_shared_lib_ext()],
             'dirs': ['share/openbabel'],
         }
-
         super(EB_OpenBabel, self).sanity_check_step(custom_paths=custom_paths)
 
     def make_module_extra(self):

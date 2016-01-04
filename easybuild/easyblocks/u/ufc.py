@@ -73,19 +73,16 @@ class EB_UFC(CMakePythonPackage):
 
         self.cfg.update('configopts', '-DUFC_ENABLE_PYTHON:BOOL=ON')
         self.cfg.update('configopts', '-DSWIG_FOUND:BOOL=ON')
-        self.cfg.update('configopts', '-DPYTHON_LIBRARY=%s/lib/libpython%s.%s' %
-                                          (depsdict['Python'], self.pyver, shlib_ext))
-        self.cfg.update('configopts', '-DPYTHON_INCLUDE_PATH=%s/include/python%s' %
-                                          (depsdict['Python'], self.pyver))
+        python = depsdict['Python']
+        self.cfg.update('configopts', '-DPYTHON_LIBRARY=%s/lib/libpython%s.%s' % (python, self.pyver, shlib_ext))
+        self.cfg.update('configopts', '-DPYTHON_INCLUDE_PATH=%s/include/python%s' % (python, self.pyver))
 
         super(EB_UFC, self).configure_step()
 
     def sanity_check_step(self):
         """Custom sanity check for UFC."""
-
         custom_paths = {
-                        'files': ['include/ufc.h'],
-                        'dirs': ['lib/python%s/site-packages/%s/' % (self.pyver, x) for x in ['ufc', 'ufc_utils']],
-                       }
-
+            'files': ['include/ufc.h'],
+            'dirs': ['lib/python%s/site-packages/%s/' % (self.pyver, x) for x in ['ufc', 'ufc_utils']],
+        }
         super(EB_UFC, self).sanity_check_step(custom_paths=custom_paths)
