@@ -67,10 +67,9 @@ class EB_ifort(EB_icc, IntelBase):
             # idb is not shipped with ifort anymore in 2013.x versions (it is with icc though)
             bins.append('idb')
 
+        libs = ['ifcore.a', 'ifcore.%s' % shlib_ext, 'iomp5.a', 'iomp5.%s' % shlib_ext]
         custom_paths = {
-            'files': [os.path.join(binprefix, x) for x in bins] +
-            [os.path.join(libprefix, 'lib%s' % x) for x in ['ifcore.a', 'ifcore.%s' % shlib_ext, 'iomp5.a', 'iomp5.%s' % shlib_ext]],
+            'files': [os.path.join(binprefix, x) for x in bins] + [os.path.join(libprefix, 'lib%s' % l) for l in libs],
             'dirs': [],
         }
-
         IntelBase.sanity_check_step(self, custom_paths=custom_paths)

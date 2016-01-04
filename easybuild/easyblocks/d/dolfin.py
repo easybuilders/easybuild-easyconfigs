@@ -125,11 +125,10 @@ class EB_DOLFIN(CMakePythonPackage):
         self.cfg.update('configopts', "-DARMADILLO_DIR:PATH=%s " % depsdict['Armadillo'])
 
         # specify Python paths
-        python_short_ver = ".".join(get_software_version('Python').split(".")[0:2])
-        self.cfg.update('configopts', " -DPYTHON_INCLUDE_PATH=%s/include/python%s" %
-                                          (depsdict['Python'], python_short_ver))
-        self.cfg.update('configopts', " -DPYTHON_LIBRARY=%s/lib/libpython%s.%s" %
-                                          (depsdict['Python'], python_short_ver, shlib_ext))
+        python = depsdict['Python']
+        pyver = '.'.join(get_software_version('Python').split('.')[:2])
+        self.cfg.update('configopts', " -DPYTHON_INCLUDE_PATH=%s/include/python%s" % (python, pyver))
+        self.cfg.update('configopts', " -DPYTHON_LIBRARY=%s/lib/libpython%s.%s" % (python, pyver, shlib_ext))
 
         # SuiteSparse config params
         suitesparse = depsdict['SuiteSparse']

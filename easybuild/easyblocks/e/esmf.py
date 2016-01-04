@@ -38,6 +38,7 @@ from easybuild.tools.modules import get_software_root
 from easybuild.tools.run import run_cmd
 from easybuild.tools.systemtools import get_shared_lib_ext
 
+
 class EB_ESMF(ConfigureMake):
     """Support for building/installing ESMF."""
 
