@@ -63,7 +63,7 @@ class EB_netCDF_minus_Fortran(ConfigureMake):
         """
         shlib_ext = get_shared_lib_ext()
         custom_paths = {
-            'files': ["bin/nf-config"] + ["lib/libnetcdff.%s" % x for x in ['a.', shlib_ext]] +
+            'files': ["bin/nf-config"] + ["lib/libnetcdff.%s" % x for x in ['a', shlib_ext]] +
                      ["include/%s" % x for x in ["netcdf.inc", "netcdf.mod", "typesizes.mod"]],
             'dirs': [],
         }
