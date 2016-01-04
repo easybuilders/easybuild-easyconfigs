@@ -142,7 +142,6 @@ class EB_Python(ConfigureMake):
 
     def sanity_check_step(self):
         """Custom sanity check for Python."""
-        shlib_ext = get_shared_lib_ext()
 
         pyver = "python%s" % '.'.join(self.version.split('.')[0:2])
 
@@ -162,7 +161,7 @@ class EB_Python(ConfigureMake):
                 abiflags = abiflags.strip()
 
         custom_paths = {
-            'files': ["bin/%s" % pyver, "lib/lib%s%s.%s" % (pyver, abiflags, shlib_ext)],
+            'files': ["bin/%s" % pyver, "lib/lib%s%s.%s" % (pyver, abiflags, get_shared_lib_ext())],
             'dirs': ["include/%s%s" % (pyver, abiflags), "lib/%s" % pyver],
         }
 
