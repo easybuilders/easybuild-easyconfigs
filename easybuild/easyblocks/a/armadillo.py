@@ -56,12 +56,8 @@ class EB_Armadillo(CMakeMake):
 
     def sanity_check_step(self):
         """Custom sanity check for Armadillo."""
-        shlib_ext = get_shared_lib_ext()
-
         custom_paths = {
-                        'files':['lib/libarmadillo.%s' % shlib_ext,
-                                 'include/armadillo'],
-                        'dirs':['include/armadillo_bits']
-                       }
-
+            'files': ['include/armadillo', 'lib/libarmadillo.%s' % get_shared_lib_ext()],
+            'dirs': ['include/armadillo_bits'],
+        }
         super(EB_Armadillo, self).sanity_check_step(custom_paths=custom_paths)

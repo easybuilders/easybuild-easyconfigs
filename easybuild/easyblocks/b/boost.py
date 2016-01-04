@@ -46,8 +46,7 @@ from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.modules import get_software_root
 from easybuild.tools.run import run_cmd
-from easybuild.tools.systemtools import get_glibc_version, UNKNOWN
-from easybuild.tools.systemtools import get_shared_lib_ext
+from easybuild.tools.systemtools import UNKNOWN, get_glibc_version, get_shared_lib_ext
 
 
 class EB_Boost(EasyBlock):

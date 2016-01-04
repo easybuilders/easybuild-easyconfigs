@@ -19,11 +19,11 @@ Ref: https://speakerdeck.com/ajdecon/introduction-to-the-cuda-toolkit-for-buildi
 @author: Kenneth Hoste (Ghent University)
 """
 import os
+from distutils.version import LooseVersion
 
 from easybuild.easyblocks.generic.binary import Binary
 from easybuild.tools.filetools import patch_perl_script_autoflush
 from easybuild.tools.run import run_cmd, run_cmd_qa
-from distutils.version import LooseVersion
 from easybuild.tools.systemtools import get_shared_lib_ext
 
 
@@ -94,9 +94,9 @@ class EB_CUDA(Binary):
             extra_files.append('open64/bin/nvopencc')
 
         custom_paths = {
-            'files': ["bin/%s" % x for x in ["fatbinary", "nvcc", "nvlink", "ptxas"]] +
+            'files': ["bin/%s" % x for x in ["fatbinary", "nvcc", "nvlink", "ptxas"]] + extra_files +
                      ["%s/lib%s.%s" % (x, y, shlib_ext) for x in chk_libdir for y in ["cublas", "cudart", "cufft",
-                                                                           "curand", "cusparse"]] + extra_files,
+                                                                                      "curand", "cusparse"]],
             'dirs': ["include"],
         }
 
