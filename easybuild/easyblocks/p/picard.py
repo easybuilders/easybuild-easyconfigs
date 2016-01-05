@@ -75,10 +75,20 @@ class EB_picard(EasyBlock):
         jar_files = ['picard']
         if LooseVersion(self.version) < LooseVersion('1.115'):
             jar_files.append('sam')
-        custom_paths = {
-            'files': ["%s-%s.jar" % (x, self.version) for x in jar_files],
-            'dirs': [],
-        }
+        if LooseVersion(self.version) < LooseVersion('1.124'):
+            custom_paths = {
+                'files': ["%s-%s.jar" % (x, self.version) for x in jar_files],
+                'dirs': [],
+            }
+        else:
+            custom_paths = {
+                'files': [
+                    'picard.jar',
+                    'picard-lib.jar',
+                    'htsjdk-%s.jar' % self.version,
+                ],
+                'dirs': [],
+            }
         super(EB_picard, self).sanity_check_step(custom_paths=custom_paths)
 
     def make_module_extra(self):
