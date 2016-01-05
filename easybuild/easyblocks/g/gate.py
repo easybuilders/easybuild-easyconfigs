@@ -42,6 +42,7 @@ from easybuild.easyblocks.generic.cmakemake import CMakeMake
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.run import run_cmd
+from easybuild.tools.systemtools import get_shared_lib_ext
 
 
 class EB_GATE(CMakeMake):
@@ -109,6 +110,7 @@ class EB_GATE(CMakeMake):
 
     def install_step(self):
         """Custom installation procedure for GATE."""
+
         if LooseVersion(self.version) >= '6.2':
             # make sure installation prefix is honored (for cluster tools, requires Makefile patch)
             self.cfg.update('installopts', 'PREFIX=%(installdir)s')
@@ -140,11 +142,12 @@ class EB_GATE(CMakeMake):
 
             # copy Gate libraries to 'lib' subdir in installation directory
             try:
+                shlib_ext = get_shared_lib_ext()
                 libdir = os.path.join(self.installdir, "lib")
                 os.mkdir(libdir)
                 srclibdir = os.path.join(self.cfg['start_dir'], "tmp", self.g4system, "Gate")
                 for fil in os.listdir(srclibdir):
-                    if os.path.splitext(fil)[1] == '.so':
+                    if os.path.splitext(fil)[1] == shlib_ext:
                         shutil.copy2(os.path.join(srclibdir, fil), os.path.join(libdir, fil))
                         self.log.debug("Copied library %s to 'lib' install subdirectory" % fil)
             except OSError, err:
@@ -176,6 +179,7 @@ class EB_GATE(CMakeMake):
 
     def sanity_check_step(self):
         """Custom sanity check for GATE."""
+
         if LooseVersion(self.version) >= '6.2':
             subdir = ''
             extra_files = ["bin/gjm", "bin/gjs"]
@@ -191,7 +195,7 @@ class EB_GATE(CMakeMake):
             extra_files = [
                 os.path.join('cluster_tools', 'filemerger', 'bin', subdir, 'gjm'),
                 os.path.join('cluster_tools', 'jobsplitter', 'bin', subdir, 'gjs'),
-                'lib/libGate.so',
+                'lib/libGate.%s' % get_shared_lib_ext(),
             ]
             dirs = ['benchmarks', 'examples']
 

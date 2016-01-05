@@ -38,6 +38,7 @@ import easybuild.tools.environment as env
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.build_log import EasyBuildError
+from easybuild.tools.systemtools import get_shared_lib_ext
 
 
 class EB_MVAPICH2(ConfigureMake):
@@ -132,13 +133,11 @@ class EB_MVAPICH2(ConfigureMake):
         """
         Custom sanity check for MVAPICH2
         """
+        shlib_ext = get_shared_lib_ext()
         custom_paths = {
-                        'files': ["bin/%s" % x for x in ["mpicc", "mpicxx", "mpif77",
-                                                         "mpif90", "mpiexec.hydra"]] +
-                                 ["lib/lib%s" % y for x in ["fmpich", "mpichcxx", "mpichf90",
-                                                            "mpich", "mpl", "opa"]
-                                                 for y in ["%s.so"%x, "%s.a"%x]],
-                        'dirs': ["include"]
-                       }
-
+            'files': ['bin/%s' % x for x in ['mpicc', 'mpicxx', 'mpif77', 'mpif90', 'mpiexec.hydra']] +
+                     ['lib/lib%s' % y for x in ['fmpich', 'mpichcxx', 'mpichf90', 'mpich', 'mpl', 'opa']
+                                      for y in ['%s.a' % x, '%s.%s' % (x, shlib_ext)]],
+            'dirs': ['include'],
+        }
         super(EB_MVAPICH2, self).sanity_check_step(custom_paths=custom_paths)

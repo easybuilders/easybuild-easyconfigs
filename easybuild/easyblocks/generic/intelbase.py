@@ -44,6 +44,7 @@ import easybuild.tools.environment as env
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.build_log import EasyBuildError
+from easybuild.tools.filetools import read_file
 from easybuild.tools.run import run_cmd
 
 from vsc.utils import fancylogger
@@ -81,6 +82,9 @@ INSTALL_MODE_2015 = 'NONRPM'
 LICENSE_FILE_NAME = 'ACTIVATION_LICENSE_FILE'  # since icc/ifort v2013_sp1, impi v4.1.1, imkl v11.1
 LICENSE_FILE_NAME_2012 = 'PSET_LICENSE_FILE'  # previous license file parameter used in older versions
 
+COMP_ALL = 'ALL'
+COMP_DEFAULTS = 'DEFAULTS'
+
 
 class IntelBase(EasyBlock):
     """
@@ -100,6 +104,8 @@ class IntelBase(EasyBlock):
         common_tmp_dir = os.path.dirname(tempfile.gettempdir())  # common tmp directory, same across nodes
         self.home_subdir_local = os.path.join(common_tmp_dir, os.getenv('USER'), 'easybuild_intel')
 
+        self.install_components = None
+
     @staticmethod
     def extra_options(extra_vars=None):
         extra_vars = EasyBlock.extra_options(extra_vars)
@@ -111,9 +117,37 @@ class IntelBase(EasyBlock):
             # disables TMP_PATH env and command line option
             'usetmppath': [False, "Use temporary path for installation", CUSTOM],
             'm32': [False, "Enable 32-bit toolchain", CUSTOM],
+            'components': [None, "List of components to install", CUSTOM],
         })
 
         return extra_vars
+
+    def parse_components_list(self):
+        """parse the regex in the components extra_options and select the matching components
+        from the mediaconfig.xml file in the install dir"""
+
+        mediaconfigpath = os.path.join(self.cfg['start_dir'], 'pset', 'mediaconfig.xml')
+        if not os.path.isfile(mediaconfigpath):
+            raise EasyBuildError("Could not find %s to find list of components." % mediaconfigpath)
+
+        mediaconfig = read_file(mediaconfigpath)
+        available_components = re.findall("<Abbr>(?P<component>[^<]+)</Abbr>", mediaconfig, re.M)
+        self.log.debug("Intel components found: %s" % available_components)
+        self.log.debug("Using regex list: %s" % self.cfg['components'])
+
+        if COMP_ALL in self.cfg['components'] or COMP_DEFAULTS in self.cfg['components']:
+            if len(self.cfg['components']) == 1:
+                self.install_components = self.cfg['components']
+            else:
+                raise EasyBuildError("If you specify %s as components, you cannot specify anything else: %s",
+                                     ' or '.join([COMP_ALL, COMP_DEFAULTS]), self.cfg['components'])
+        else:
+            self.install_components = []
+            for comp_regex in self.cfg['components']:
+                comps = [comp for comp in available_components if re.match(comp_regex, comp)]
+                self.install_components.extend(comps)
+
+        self.log.debug("Components to install: %s" % self.install_components)
 
     def clean_home_subdir(self):
         """Remove contents of (local) 'intel' directory home subdir, where stuff is cached."""
@@ -254,6 +288,12 @@ class IntelBase(EasyBlock):
         # clean home directory
         self.clean_home_subdir()
 
+        # determine list of components, based on 'components' easyconfig parameter (if specified)
+        if self.cfg['components']:
+            self.parse_components_list()
+        else:
+            self.log.debug("No components specified")
+
     def build_step(self):
         """Binary installation files, so no building."""
         pass
@@ -277,7 +317,8 @@ class IntelBase(EasyBlock):
         if lic_activation in lic_file_server_activations:
             lic_file_entry = "%(license_file_name)s=%(license_file)s"
         elif not self.cfg['license_activation'] in other_activations:
-            raise EasyBuildError("Unknown type of activation specified: %s (known :%s)", lic_activation, ACTIVATION_TYPES)
+            raise EasyBuildError("Unknown type of activation specified: %s (known :%s)",
+                                 lic_activation, ACTIVATION_TYPES)
 
         silent = '\n'.join([
             "%(activation_name)s=%(activation)s",
@@ -297,6 +338,16 @@ class IntelBase(EasyBlock):
             'install_mode': silent_cfg_names_map.get('install_mode', INSTALL_MODE_2015),
             'install_mode_name': silent_cfg_names_map.get('install_mode_name', INSTALL_MODE_NAME_2015),
         }
+
+        if self.install_components is not None:
+            if len(self.install_components) == 1 and self.install_components[0] in [COMP_ALL, COMP_DEFAULTS]:
+                # no quotes should be used for ALL or DEFAULTS
+                silent += 'COMPONENTS=%s\n' % self.install_components[0]
+            elif self.install_components:
+                # a list of components is specified (needs quotes)
+                silent += 'COMPONENTS="' + ';'.join(self.install_components) + '"\n'
+            else:
+                raise EasyBuildError("Empty list of matching components obtained via %s", self.cfg['components'])
 
         if silent_cfg_extras is not None:
             if isinstance(silent_cfg_extras, dict):

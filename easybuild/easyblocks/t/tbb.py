@@ -33,15 +33,38 @@ EasyBuild support for installing the Intel Threading Building Blocks (TBB) libra
 @author: Lumir Jasiok (IT4Innovations)
 """
 
+import glob
 import os
 import shutil
-import glob
 from distutils.version import LooseVersion
 
 from easybuild.easyblocks.generic.intelbase import INSTALL_MODE_NAME_2015, INSTALL_MODE_2015
 from easybuild.easyblocks.generic.intelbase import IntelBase, ACTIVATION_NAME_2012, LICENSE_FILE_NAME_2012
 from easybuild.tools.build_log import EasyBuildError
-from easybuild.tools.systemtools import get_platform_name
+from easybuild.tools.modules import get_software_version
+from easybuild.tools.systemtools import get_gcc_version, get_platform_name
+
+
+def get_tbb_gccprefix():
+    """
+    Find the correct gcc version for the lib dir of TBB
+    """
+    # using get_software_version('GCC') won't work, while the compiler toolchain is dummy:dummy, which does not
+    # load dependencies.
+    gccversion = get_software_version('GCC')
+    # manual approach to at least have the system version of gcc
+    if not gccversion:
+        gccversion = get_gcc_version()
+
+    # TBB directory structure
+    # https://www.threadingbuildingblocks.org/docs/help/tbb_userguide/Linux_OS.htm
+    tbb_gccprefix = 'gcc4.4'  # gcc version 4.4 or higher that may or may not support exception_ptr
+    if gccversion:
+        gccversion = LooseVersion(gccversion)
+        if gccversion >= LooseVersion("4.1") and gccversion < LooseVersion("4.4"):
+            tbb_gccprefix = 'gcc4.1'  # gcc version number between 4.1 and 4.4 that do not support exception_ptr
+
+    return tbb_gccprefix
 
 
 class EB_tbb(IntelBase):
@@ -85,21 +108,19 @@ class EB_tbb(IntelBase):
 
         super(EB_tbb, self).install_step(silent_cfg_names_map=silent_cfg_names_map, silent_cfg_extras=silent_cfg_extras)
 
-        # save libdir
+        # determine libdir
         os.chdir(self.installdir)
         if LooseVersion(self.version) < LooseVersion('4.1.0'):
             libglob = 'tbb/lib/intel64/cc*libc*_kernel*'
+            libs = sorted(glob.glob(libglob), key=LooseVersion)
+            if len(libs):
+                # take the last one, should be ordered by cc version
+                # we're only interested in the last bit
+                libdir = libs[-1].split('/')[-1]
+            else:
+                raise EasyBuildError("No libs found using %s in %s", libglob, self.installdir)
         else:
-            libglob = 'tbb/lib/intel64/gcc*'
-        libs = sorted(glob.glob(libglob), key=LooseVersion)
-        if len(libs):
-            libdir = libs[-1]  # take the last one, should be ordered by cc get_version.
-            # we're only interested in the last bit
-            libdir = libdir.split('/')[-1]
-        else:
-            raise EasyBuildError("No libs found using %s in %s", libglob, self.installdir)
-        self.libdir = libdir
-
+            libdir = get_tbb_gccprefix()
 
         self.libpath = os.path.join('tbb', 'libs', 'intel64', libdir)
         self.log.debug("self.libpath: %s" % self.libpath)

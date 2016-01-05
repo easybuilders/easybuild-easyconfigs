@@ -32,6 +32,7 @@ import os
 from easybuild.easyblocks.generic.cmakemake import CMakeMake
 from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.modules import get_software_root
+from easybuild.tools.systemtools import get_shared_lib_ext
 
 
 class EB_Armadillo(CMakeMake):
@@ -55,10 +56,8 @@ class EB_Armadillo(CMakeMake):
 
     def sanity_check_step(self):
         """Custom sanity check for Armadillo."""
-
         custom_paths = {
-                        'files':['lib/libarmadillo.so', 'include/armadillo'],
-                        'dirs':['include/armadillo_bits']
-                       }
-
+            'files': ['include/armadillo', 'lib/libarmadillo.%s' % get_shared_lib_ext()],
+            'dirs': ['include/armadillo_bits'],
+        }
         super(EB_Armadillo, self).sanity_check_step(custom_paths=custom_paths)
