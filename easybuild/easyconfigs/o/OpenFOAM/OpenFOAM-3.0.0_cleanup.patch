@@ -1,0 +1,99 @@
+--- OpenFOAM-3.0.0/etc/config/scotch.sh.orig	2015-11-03 11:30:23.000000000 +0100
++++ OpenFOAM-3.0.0/etc/config/scotch.sh	2015-11-16 11:23:40.438003081 +0100
+@@ -33,7 +33,11 @@
+ #     during the wmake process
+ #------------------------------------------------------------------------------
+ 
+-export SCOTCH_VERSION=scotch_6.0.3
+-export SCOTCH_ARCH_PATH=$WM_THIRD_PARTY_DIR/platforms/$WM_ARCH$WM_COMPILER$WM_LABEL_OPTION/$SCOTCH_VERSION
++if [ -n "${SCOTCH_ROOT}" ] ; then
++       export SCOTCH_ARCH_PATH="${SCOTCH_ROOT}"
++else
++       export SCOTCH_VERSION=scotch_6.0.3
++       export SCOTCH_ARCH_PATH=$WM_THIRD_PARTY_DIR/platforms/$WM_ARCH$WM_COMPILER$WM_LABEL_OPTION/$SCOTCH_VERSION
++fi
+ 
+ # -----------------------------------------------------------------------------
+--- OpenFOAM-3.0.0/etc/config/settings.csh.orig	2015-11-03 11:30:23.000000000 +0100
++++ OpenFOAM-3.0.0/etc/config/settings.csh	2015-11-16 11:18:20.119434053 +0100
+@@ -361,7 +361,7 @@
+ # Communications library
+ # ~~~~~~~~~~~~~~~~~~~~~~
+ 
+-unsetenv MPI_ARCH_PATH MPI_HOME FOAM_MPI_LIBBIN
++#unsetenv MPI_ARCH_PATH MPI_HOME FOAM_MPI_LIBBIN
+ 
+ switch ("$WM_MPLIB")
+ case SYSTEMOPENMPI:
+--- OpenFOAM-3.0.0/etc/config/settings.sh.orig	2015-11-03 11:30:23.000000000 +0100
++++ OpenFOAM-3.0.0/etc/config/settings.sh	2015-11-16 11:18:20.119434053 +0100
+@@ -385,7 +385,7 @@
+ # Communications library
+ # ~~~~~~~~~~~~~~~~~~~~~~
+ 
+-unset MPI_ARCH_PATH MPI_HOME FOAM_MPI_LIBBIN
++#unset MPI_ARCH_PATH MPI_HOME FOAM_MPI_LIBBIN
+ 
+ case "$WM_MPLIB" in
+ SYSTEMOPENMPI)
+@@ -598,6 +598,11 @@
+     _foamAddPath    $MPI_ARCH_PATH/bin64
+     _foamAddLib     $MPI_ARCH_PATH/lib64
+     ;;
++
++EASYBUILDMPI)
++    export FOAM_MPI=mpi
++    ;;
++
+ *)
+     export FOAM_MPI=dummy
+     ;;
+--- OpenFOAM-3.0.0/src/parallel/decompose/ptscotchDecomp/Make/options.orig	2015-11-03 11:30:23.000000000 +0100
++++ OpenFOAM-3.0.0/src/parallel/decompose/ptscotchDecomp/Make/options	2015-11-16 11:18:20.119434053 +0100
+@@ -3,10 +3,8 @@
+ 
+ EXE_INC = \
+     $(PFLAGS) $(PINC) \
+-    -I$(SCOTCH_ROOT)/include \
+     -I$(SCOTCH_ARCH_PATH)/include/$(FOAM_MPI) \
+-    -I/usr/include/scotch \
+     -I../decompositionMethods/lnInclude
+ 
+ LIB_LIBS = \
+-    -L$(SCOTCH_ROOT)/lib -L$(FOAM_EXT_LIBBIN)/$(FOAM_MPI) -lptscotch -lptscotcherrexit -lscotch ${LINK_FLAGS} -lrt
++    -L$(SCOTCH_ARCH_PATH)/lib -L$(FOAM_EXT_LIBBIN)/$(FOAM_MPI) -lptscotch -lptscotcherrexit -lscotch ${LINK_FLAGS} -lrt
+--- OpenFOAM-3.0.0/src/parallel/decompose/ptscotchDecomp/ptscotchDecomp.C.orig	2015-11-03 11:30:23.000000000 +0100
++++ OpenFOAM-3.0.0/src/parallel/decompose/ptscotchDecomp/ptscotchDecomp.C	2015-11-16 11:21:47.579166128 +0100
+@@ -112,6 +112,8 @@
+ 
+ \*---------------------------------------------------------------------------*/
+ 
++#include "mpi.h"
++
+ #include "ptscotchDecomp.H"
+ #include "addToRunTimeSelectionTable.H"
+ #include "Time.H"
+@@ -121,8 +123,8 @@
+ 
+ extern "C"
+ {
+-    #include <stdio.h>
+     #include <mpi.h>
++    #include <stdio.h>
+     #include "ptscotch.h"
+ }
+ 
+--- OpenFOAM-3.0.0/src/parallel/decompose/scotchDecomp/Make/options.orig	2015-11-03 11:30:23.000000000 +0100
++++ OpenFOAM-3.0.0/src/parallel/decompose/scotchDecomp/Make/options	2015-11-16 11:18:20.120434051 +0100
+@@ -7,10 +7,8 @@
+ 
+ EXE_INC = \
+     $(PFLAGS) $(PINC) \
+-    -I$(SCOTCH_ROOT)/include \
+     -I$(SCOTCH_ARCH_PATH)/include \
+-    -I/usr/include/scotch \
+     -I../decompositionMethods/lnInclude
+ 
+ LIB_LIBS = \
+-    -L$(SCOTCH_ROOT)/lib -L$(FOAM_EXT_LIBBIN) -lscotch -lscotcherrexit -lrt
++    -L$(SCOTCH_ARCH_PATH)/lib -L$(FOAM_EXT_LIBBIN) -lscotch -lscotcherrexit -lrt
