@@ -48,7 +48,7 @@ from easybuild.tools.config import build_option
 from easybuild.tools.filetools import mkdir
 from easybuild.tools.modules import get_software_root
 from easybuild.tools.run import run_cmd
-from easybuild.tools.systemtools import get_os_name, get_os_version
+from easybuild.tools.systemtools import get_os_name, get_os_version, get_shared_lib_ext
 
 # List of all possible build targets for Clang
 CLANG_TARGETS = ["all", "AArch64", "ARM", "CppBackend", "Hexagon", "Mips",
@@ -345,11 +345,12 @@ class EB_Clang(CMakeMake):
 
     def sanity_check_step(self):
         """Custom sanity check for Clang."""
+        shlib_ext = get_shared_lib_ext()
         custom_paths = {
             'files': [
                 "bin/clang", "bin/clang++", "bin/llvm-ar", "bin/llvm-nm", "bin/llvm-as", "bin/opt", "bin/llvm-link",
                 "bin/llvm-config", "bin/llvm-symbolizer", "include/llvm-c/Core.h", "include/clang-c/Index.h",
-                "lib/libclang.so", "lib/clang/%s/include/stddef.h" % self.version,
+                "lib/libclang.%s" % shlib_ext, "lib/clang/%s/include/stddef.h" % self.version,
             ],
             'dirs': ["include/clang", "include/llvm", "lib/clang/%s/lib" % self.version],
         }
@@ -357,7 +358,7 @@ class EB_Clang(CMakeMake):
             custom_paths['files'].extend(["bin/scan-build", "bin/scan-view"])
 
         if self.cfg["usepolly"]:
-            custom_paths['files'].extend(["lib/LLVMPolly.so"])
+            custom_paths['files'].extend(["lib/LLVMPolly.%s" % shlib_ext])
             custom_paths['dirs'].extend(["include/polly"])
 
         super(EB_Clang, self).sanity_check_step(custom_paths=custom_paths)

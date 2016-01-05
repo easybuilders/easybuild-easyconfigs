@@ -31,6 +31,7 @@ from distutils.version import LooseVersion
 import easybuild.tools.environment as env
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.tools.run import run_cmd
+from easybuild.tools.systemtools import get_shared_lib_ext
 
 
 class EB_MRtrix(EasyBlock):
@@ -74,10 +75,12 @@ class EB_MRtrix(EasyBlock):
 
     def sanity_check_step(self):
         """Custom sanity check for MRtrix."""
+        shlib_ext = get_shared_lib_ext()
+
         if LooseVersion(self.version) >= LooseVersion('0.3'):
-            libso = 'libmrtrix.so'
+            libso = 'libmrtrix.%s' % shlib_ext
         else:
-            libso = 'libmrtrix-%s.so' % '_'.join(self.version.split('.'))
+            libso = 'libmrtrix-%s.%s' % ('_'.join(self.version.split('.')), shlib_ext)
         custom_paths = {
             'files': [os.path.join('lib', libso)],
             'dirs': ['bin'],
