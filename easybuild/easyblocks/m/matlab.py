@@ -42,6 +42,7 @@ from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.filetools import adjust_permissions, read_file, write_file
 from easybuild.tools.run import run_cmd
+from easybuild.tools.systemtools import get_shared_lib_ext
 
 
 class EB_MATLAB(EasyBlock):
@@ -122,13 +123,11 @@ class EB_MATLAB(EasyBlock):
 
     def sanity_check_step(self):
         """Custom sanity check for MATLAB."""
-
         custom_paths = {
             'files': ["bin/matlab", "bin/mcc", "bin/glnxa64/MATLAB", "bin/glnxa64/mcc",
-                      "runtime/glnxa64/libmwmclmcrrt.so", "toolbox/local/classpath.txt"],
+                      "runtime/glnxa64/libmwmclmcrrt.%s" % get_shared_lib_ext(), "toolbox/local/classpath.txt"],
             'dirs': ["java/jar", "toolbox/compiler"],
         }
-
         super(EB_MATLAB, self).sanity_check_step(custom_paths=custom_paths)
 
     def make_module_extra(self):

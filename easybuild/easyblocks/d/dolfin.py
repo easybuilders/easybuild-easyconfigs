@@ -38,6 +38,7 @@ from easybuild.easyblocks.generic.cmakepythonpackage import CMakePythonPackage
 from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.filetools import rmtree2
 from easybuild.tools.modules import get_software_root, get_software_version
+from easybuild.tools.systemtools import get_shared_lib_ext
 
 
 class EB_DOLFIN(CMakePythonPackage):
@@ -52,6 +53,8 @@ class EB_DOLFIN(CMakePythonPackage):
 
     def configure_step(self):
         """Set DOLFIN-specific configure options and configure with CMake."""
+
+        shlib_ext = get_shared_lib_ext()
 
         # compilers
         self.cfg.update('configopts', "-DCMAKE_C_COMPILER='%s' " % os.getenv('CC'))
@@ -122,11 +125,10 @@ class EB_DOLFIN(CMakePythonPackage):
         self.cfg.update('configopts', "-DARMADILLO_DIR:PATH=%s " % depsdict['Armadillo'])
 
         # specify Python paths
-        python_short_ver = ".".join(get_software_version('Python').split(".")[0:2])
-        self.cfg.update('configopts', " -DPYTHON_INCLUDE_PATH=%s/include/python%s" % (depsdict['Python'],
-                                                                                     python_short_ver))
-        self.cfg.update('configopts', " -DPYTHON_LIBRARY=%s/lib/libpython%s.so" % (depsdict['Python'],
-                                                                                  python_short_ver))
+        python = depsdict['Python']
+        pyver = '.'.join(get_software_version('Python').split('.')[:2])
+        self.cfg.update('configopts', " -DPYTHON_INCLUDE_PATH=%s/include/python%s" % (python, pyver))
+        self.cfg.update('configopts', " -DPYTHON_LIBRARY=%s/lib/libpython%s.%s" % (python, pyver, shlib_ext))
 
         # SuiteSparse config params
         suitesparse = depsdict['SuiteSparse']

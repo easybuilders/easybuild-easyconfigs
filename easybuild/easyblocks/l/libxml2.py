@@ -36,6 +36,7 @@ from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.easyblocks.generic.pythonpackage import PythonPackage
 from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.modules import get_software_root
+from easybuild.tools.systemtools import get_shared_lib_ext
 
 
 class EB_libxml2(ConfigureMake, PythonPackage):
@@ -92,12 +93,11 @@ class EB_libxml2(ConfigureMake, PythonPackage):
 
     def sanity_check_step(self):
         """Custom sanity check for libxml2"""
-
+        shlib_ext = get_shared_lib_ext()
+        pyfiles = ['libxml2mod.%s' % shlib_ext, 'libxml2.py', 'drv_libxml2.py']
         custom_paths = {
-                        'files':["lib/libxml2.a", "lib/libxml2.so"] +
-                                [os.path.join(self.pylibdir, x)
-                                 for x in ['libxml2mod.so', 'libxml2.py', 'drv_libxml2.py']],
-                        'dirs':["bin", self.pylibdir, "include/libxml2/libxml"],
-                       }
-
+            'files': ["lib/libxml2.a", "lib/libxml2.%s" % shlib_ext] +
+                     [os.path.join(self.pylibdir, x) for x in pyfiles],
+            'dirs': ["bin", self.pylibdir, "include/libxml2/libxml"],
+        }
         ConfigureMake.sanity_check_step(self, custom_paths=custom_paths)

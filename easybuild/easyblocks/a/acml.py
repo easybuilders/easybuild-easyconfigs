@@ -38,6 +38,7 @@ from distutils.version import LooseVersion
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.run import run_cmd_qa
+from easybuild.tools.systemtools import get_shared_lib_ext
 
 
 class EB_ACML(EasyBlock):
@@ -52,18 +53,14 @@ class EB_ACML(EasyBlock):
     def __init__(self, *args, **kwargs):
         """Constructor, adds extra class variables."""
         super(EB_ACML, self).__init__(*args, **kwargs)
-        self.basedir = None
-        self.suffix = None
 
-    def configure_step(self):
-        """Determine base directory and suffix for ACML installation."""
-
+        # determine base directory and suffix for ACML installation
         vsuff_list = self.cfg['versionsuffix'].split('-')
-
-        comp = vsuff_list[1]  # gfortran, ifort, ...
-        bits = vsuff_list[2]  # 32bit or 64bit
-        self.basedir = comp + bits[0:2]
-
+        self.basedir = ''
+        if len(vsuff_list) >= 3:
+            comp = vsuff_list[1]  # gfortran, ifort, ...
+            bits = vsuff_list[2]  # 32bit or 64bit
+            self.basedir += comp + bits[:2]
         # specialized suffix, e.g., _fma4 for fused multiply-add
         if LooseVersion(self.version) >= LooseVersion("5") and self.cfg['use_fma4']:
             self.basedir += '_fma4'
@@ -125,12 +122,11 @@ class EB_ACML(EasyBlock):
                 inc_files.append(os.path.join(fp, 'include', 'acml%s.h' % inc))
 
             for lib in [suff] + lib_extra:
-                for ext in ['.a', '.so']:
-                    lib_files.append(os.path.join(fp, 'lib', 'libacml%s%s' % (lib, ext)))
+                for ext in ['a', get_shared_lib_ext()]:
+                    lib_files.append(os.path.join(fp, 'lib', 'libacml%s.%s' % (lib, ext)))
 
         custom_paths = {
-                        'files':['util/cpuid.exe'] + inc_files + lib_files,
-                        'dirs':[]
-                       }
-
+            'files': ['util/cpuid.exe'] + inc_files + lib_files,
+            'dirs': [],
+        }
         super(EB_ACML, self).sanity_check_step(custom_paths=custom_paths)
