@@ -257,6 +257,12 @@ def template_easyconfig_test(self, spec):
 
     name, easyblock = fetch_parameters_from_easyconfig(ec.rawtxt, ['name', 'easyblock'])
 
+    # make sure easyconfig file is in expected location
+    expected_subdir = os.path.join('easybuild', 'easyconfigs', name.lower()[0], name)
+    subdir = os.path.join(*spec.split(os.path.sep)[-5:-1])
+    fail_msg = "Easyconfig file %s not in expected subdirectory %s" % (spec, expected_subdir)
+    self.assertEqual(expected_subdir, subdir, fail_msg)
+
     # sanity check for software name
     self.assertTrue(ec['name'], name)
 
