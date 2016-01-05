@@ -113,15 +113,13 @@ class EB_CPLEX(Binary):
         """Add bin dirs and lib dirs and set CPLEX_HOME and CPLEXDIR"""
 
         os.chdir(self.installdir)
-        binglob = '*/bin/x86-64*'
-        bins = glob.glob(binglob)
-        libglob = '*/lib/x86-64*/*pic'
-        libs = glob.glob(libglob)
+        bins = glob.glob(os.path.join('*', 'bin', 'x86-64*'))
+        libs = glob.glob(os.path.join('*', 'lib', 'x86-64*', '*pic'))
 
         txt = super(EB_CPLEX, self).make_module_extra()
 
         txt += self.module_generator.prepend_paths("PATH", [path for path in bins])
-        txt += self.module_generator.prepend_paths("LD_LIBRARY_PATH", reduce(lambda x, y: x+y, [bins,libs]))
+        txt += self.module_generator.prepend_paths("LD_LIBRARY_PATH", [path for path in bins+libs])
 
         txt += self.module_generator.set_environment("CPLEX_HOME", os.path.join(self.installdir, 'cplex'))
         txt += self.module_generator.set_environment("CPLEXDIR", os.path.join(self.installdir, 'cplex'))
