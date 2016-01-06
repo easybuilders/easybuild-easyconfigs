@@ -80,7 +80,7 @@ class EB_Eigen(EasyBlock):
         }
         
         if LooseVersion(self.version) > LooseVersion('3.0'):
-            custom_paths['files'] = custom_paths['files'] + ['include/signature_of_eigen3_matrix_library']
+            custom_paths['files'].append('include/signature_of_eigen3_matrix_library')
 
         super(EB_Eigen, self).sanity_check_step(custom_paths=custom_paths)
 
