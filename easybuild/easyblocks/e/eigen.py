@@ -19,6 +19,7 @@ EasyBuild support for building and installing Eigen, implemented as an easyblock
 
 import os
 import shutil
+from distutils.version import LooseVersion
 
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.tools.build_log import EasyBuildError
@@ -53,12 +54,13 @@ class EB_Eigen(EasyBlock):
         except OSError, err:
             raise EasyBuildError("Copying %s to installation dir %s failed: %s", srcdir, destdir, err)
 
-        srcfile = os.path.join(self.cfg['start_dir'], 'signature_of_eigen3_matrix_library')
-        destfile = os.path.join(self.installdir, 'include/signature_of_eigen3_matrix_library')
-        try:
-            shutil.copy2(srcfile, destfile)
-        except OSError, err:
-            raise EasyBuildError("Copying %s to installation dir %s failed: %s", srcfile, destfile, err)
+        if LooseVersion(self.version) > LooseVersion('3.0'):
+            srcfile = os.path.join(self.cfg['start_dir'], 'signature_of_eigen3_matrix_library')
+            destfile = os.path.join(self.installdir, 'include/signature_of_eigen3_matrix_library')
+            try:
+                shutil.copy2(srcfile, destfile)
+            except OSError, err:
+                raise EasyBuildError("Copying %s to installation dir %s failed: %s", srcfile, destfile, err)
 
     def sanity_check_step(self):
         """Custom sanity check for Eigen."""
@@ -73,9 +75,13 @@ class EB_Eigen(EasyBlock):
                                                        'QtAlignedMalloc', 'SVD', 'Sparse',
                                                        'SparseCholesky', 'SparseCore', 'StdDeque',
                                                        'StdList', 'StdVector', 'SuperLUSupport',
-                                                       'UmfPackSupport']] + ['include/signature_of_eigen3_matrix_library'],
+                                                       'UmfPackSupport']],
             'dirs': []
         }
+        
+        if LooseVersion(self.version) > LooseVersion('3.0'):
+            custom_paths['files'] = custom_paths['files'] + ['include/signature_of_eigen3_matrix_library']
+
         super(EB_Eigen, self).sanity_check_step(custom_paths=custom_paths)
 
     def make_module_req_guess(self):
