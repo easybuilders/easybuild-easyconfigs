@@ -32,7 +32,6 @@ import os
 import easybuild.tools.environment as env
 from easybuild.easyblocks.generic.pythonpackage import PythonPackage
 from easybuild.tools.modules import get_software_root
-from easybuild.tools.systemtools import get_shared_lib_ext
 
 
 class EB_netcdf4_minus_python(PythonPackage):
@@ -45,7 +44,7 @@ class EB_netcdf4_minus_python(PythonPackage):
 
     def configure_step(self):
         """
-        Configure and 
+        Configure and
         Test if python module is loaded
         """
         hdf5 = get_software_root('HDF5')
@@ -58,7 +57,7 @@ class EB_netcdf4_minus_python(PythonPackage):
         netcdf = get_software_root('netCDF')
         if netcdf:
             env.setvar('NETCDF4_DIR', netcdf)
-       
+
         super(EB_netcdf4_minus_python, self).configure_step()
 
     def test_step(self):
@@ -70,11 +69,8 @@ class EB_netcdf4_minus_python(PythonPackage):
 
     def sanity_check_step(self):
         """Custom sanity check for netcdf4-python"""
-        shlib_ext = get_shared_lib_ext()
-
         custom_paths = {
-            'files': ['bin/nc3tonc4', 'bin/nc4tonc3', 'bin/ncinfo'] +
-                     [os.path.join(self.pylibdir, x) for x in ['netCDF4.%s' % shlib_ext, 'netCDF4_utils.py', 'netcdftime.py']],
-            'dirs': [],
+            'files': ['bin/nc3tonc4', 'bin/nc4tonc3', 'bin/ncinfo'],
+            'dirs': [self.pylibdir],
         }
         return super(EB_netcdf4_minus_python, self).sanity_check_step(custom_paths=custom_paths)
