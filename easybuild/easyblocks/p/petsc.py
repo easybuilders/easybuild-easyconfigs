@@ -312,8 +312,8 @@ class EB_PETSc(ConfigureMake):
 
             custom_paths = {
                 'files': [os.path.join(prefix2, 'lib', 'libpetsc.%s' % libext)],
-                'dirs': [os.path.join(prefix1, 'bin'), os.path.join(prefix2, 'conf'),
-                         os.path.join(prefix1, 'include'), os.path.join(prefix2, 'include')]
+                'dirs': [os.path.join(prefix1, 'bin'), os.path.join(prefix1, 'include'),
+                         os.path.join(prefix2, 'include')]
             }
             if LooseVersion(self.version) < LooseVersion('3.6'):
                 custom_paths['dirs'].append(os.path.join(prefix2, 'conf'))
