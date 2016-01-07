@@ -145,6 +145,10 @@ class EB_SLEPc(ConfigureMake):
         """Custom sanity check for SLEPc"""
         custom_paths = {
             'files': [],
-            'dirs': [os.path.join(self.slepc_subdir, x) for x in ["conf", "include", "lib"]],
+            'dirs': [os.path.join(self.slepc_subdir, x) for x in ['include', 'lib']],
         }
+        if LooseVersion(self.version) < LooseVersion('3.6'):
+            custom_paths['dirs'].append('conf')
+        else:
+            custom_paths['dirs'].append(os.path.join('lib', 'slepc', 'conf'))
         super(EB_SLEPc, self).sanity_check_step(custom_paths=custom_paths)
