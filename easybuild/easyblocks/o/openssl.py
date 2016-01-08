@@ -61,11 +61,10 @@ class EB_OpenSSL(ConfigureMake):
             raise EasyBuildError("Failed to determine library directory.")
 
         custom_paths = {
-            'files': [os.path.join(libdir, x) for x in ['engines', 'libcrypto.a', 'libcrypto.so',
-                                                        'libcrypto.so.1.0.0', 'libssl.a',
-                                                        'libssl.so', 'libssl.so.1.0.0']] +
+            'files': [os.path.join(libdir, x) for x in ['libcrypto.a', 'libcrypto.so', 'libcrypto.so.1.0.0',
+                                                        'libssl.a', 'libssl.so', 'libssl.so.1.0.0']] +
                      ['bin/openssl'],
-            'dirs': [],
+            'dirs': [os.path.join(libdir, 'engines')],
         }
 
         super(EB_OpenSSL, self).sanity_check_step(custom_paths=custom_paths)

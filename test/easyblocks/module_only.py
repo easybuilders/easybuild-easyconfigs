@@ -48,6 +48,7 @@ from easybuild.framework.easyconfig.tools import get_paths_for
 from easybuild.tools import config
 from easybuild.tools.filetools import write_file
 from easybuild.tools.module_naming_scheme import GENERAL_CLASS
+from easybuild.tools.options import set_tmpdir
 
 
 TMPDIR = tempfile.gettempdir()
@@ -164,7 +165,7 @@ def suite():
         'valid_stops': [x[0] for x in EasyBlock.get_steps()],
     }
     config.init_build_options(build_options=build_options)
-    config.set_tmpdir()
+    set_tmpdir()
 
     # dynamically generate a separate test for each of the available easyblocks
     easyblocks_path = get_paths_for("easyblocks")[0]

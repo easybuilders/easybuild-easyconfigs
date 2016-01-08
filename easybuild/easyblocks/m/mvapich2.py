@@ -38,6 +38,7 @@ import easybuild.tools.environment as env
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.build_log import EasyBuildError
+from easybuild.tools.systemtools import get_shared_lib_ext
 
 
 class EB_MVAPICH2(ConfigureMake):
@@ -94,9 +95,12 @@ class EB_MVAPICH2(ConfigureMake):
         for (envvar, new_envvar) in [("F90", "FC"), ("F90FLAGS", "FCFLAGS")]:
             envvar_val = os.getenv(envvar)
             if envvar_val:
-                if not os.getenv(new_envvar):
+                new_envvar_val = os.getenv(new_envvar)
+                env.setvar(envvar, '')
+                if envvar_val == new_envvar_val:
+                    self.log.debug("$%s == $%s, just defined $%s as empty", envvar, new_envvar, envvar)
+                elif new_envvar_val is None:
                     env.setvar(new_envvar, envvar_val)
-                    env.setvar(envvar, '')
                 else:
                     raise EasyBuildError("Both $%s and $%s set, can I overwrite $%s with $%s (%s) ?",
                                          envvar, new_envvar, new_envvar, envvar, envvar_val)
@@ -129,13 +133,11 @@ class EB_MVAPICH2(ConfigureMake):
         """
         Custom sanity check for MVAPICH2
         """
+        shlib_ext = get_shared_lib_ext()
         custom_paths = {
-                        'files': ["bin/%s" % x for x in ["mpicc", "mpicxx", "mpif77",
-                                                         "mpif90", "mpiexec.hydra"]] +
-                                 ["lib/lib%s" % y for x in ["fmpich", "mpichcxx", "mpichf90",
-                                                            "mpich", "mpl", "opa"]
-                                                 for y in ["%s.so"%x, "%s.a"%x]],
-                        'dirs': ["include"]
-                       }
-
+            'files': ['bin/%s' % x for x in ['mpicc', 'mpicxx', 'mpif77', 'mpif90', 'mpiexec.hydra']] +
+                     ['lib/lib%s' % y for x in ['fmpich', 'mpichcxx', 'mpichf90', 'mpich', 'mpl', 'opa']
+                                      for y in ['%s.a' % x, '%s.%s' % (x, shlib_ext)]],
+            'dirs': ['include'],
+        }
         super(EB_MVAPICH2, self).sanity_check_step(custom_paths=custom_paths)

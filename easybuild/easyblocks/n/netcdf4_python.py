@@ -44,7 +44,7 @@ class EB_netcdf4_minus_python(PythonPackage):
 
     def configure_step(self):
         """
-        Configure and 
+        Configure and
         Test if python module is loaded
         """
         hdf5 = get_software_root('HDF5')
@@ -57,7 +57,7 @@ class EB_netcdf4_minus_python(PythonPackage):
         netcdf = get_software_root('netCDF')
         if netcdf:
             env.setvar('NETCDF4_DIR', netcdf)
-       
+
         super(EB_netcdf4_minus_python, self).configure_step()
 
     def test_step(self):
@@ -71,6 +71,6 @@ class EB_netcdf4_minus_python(PythonPackage):
         """Custom sanity check for netcdf4-python"""
         custom_paths = {
             'files': ['bin/nc3tonc4', 'bin/nc4tonc3', 'bin/ncinfo'],
-            'dirs': [os.path.join(self.pylibdir, x) for x in ['netCDF4.so', 'netCDF4_utils.py', 'netcdftime.py']],
+            'dirs': [self.pylibdir],
         }
         return super(EB_netcdf4_minus_python, self).sanity_check_step(custom_paths=custom_paths)

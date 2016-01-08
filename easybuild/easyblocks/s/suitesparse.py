@@ -160,9 +160,17 @@ class EB_SuiteSparse(ConfigureMake):
                     raise EasyBuildError("Failed to make symbolic link from %s to %s: %s", src, dst, err)
 
     def make_module_req_guess(self):
-        """Add config dir to CPATH so include file is found."""
+        """
+        Extra path to consider for module file:
+        * add config dir to $CPATH so include files are found
+        * add UMFPACK and AMD library dirs to $LD_LIBRARY_PATH
+        """
         guesses = super(EB_SuiteSparse, self).make_module_req_guess()
-        guesses.update({'CPATH': [self.config_name]})
+        guesses.update({
+            'CPATH': [self.config_name],
+            'LD_LIBRARY_PATH': ['UMFPACK/Lib', 'AMD/Lib'],
+        })
+
         return guesses
 
     def sanity_check_step(self):
