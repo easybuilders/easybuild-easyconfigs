@@ -280,7 +280,9 @@ def template_easyconfig_test(self, spec):
     # check for undesired patterns in raw easyconfig
     for regex in [LIB_SO_REGEX]:
         res = regex.findall(ec.rawtxt)
-        self.assertFalse(res, "Pattern '%s' found %d times in easyconfig %s" % (regex.pattern, len(res), spec))
+        fail_msg = "Pattern '%s' found %d times in easyconfig %s, " % (regex.pattern, len(res), spec)
+        fail_msg += "should use SHLIB_EXT instead"
+        self.assertFalse(res, fail_msg)
 
     # obtain EasyBlock instance for this easyconfig
     app = app_class(ec)
