@@ -67,6 +67,7 @@ class EB_Molpro(ConfigureMake, Binary):
         self.license_token = os.path.join(os.path.expanduser('~'), '.molpro', 'token')
 
     def extract_step(self):
+        """Extract Molpro source files, or just copy in case of binary install."""
         if self.cfg['precompiled_binaries']:
             Binary.extract_step(self)
         else:
@@ -162,15 +163,19 @@ class EB_Molpro(ConfigureMake, Binary):
             self.log.info("Contents of CONFIG file:\n%s", cfgtxt)
 
     def build_step(self):
+        """Custom build procedure for Molpro, unless it is a binary install."""
         if not self.cfg['precompiled_binaries']:
             super(EB_Molpro, self).build_step()
 
     def test_step(self):
+        """
+        Custom test procedure for Molpro.
+        Run 'make quicktest, make test', but only for source install and if license is available.
+        """
         
         # Only bother to check if the licence token is available
         if os.path.isfile(self.license_token) and not self.cfg['precompiled_binaries']:
         
-            """Custom test procedure for Molpro: make quicktest, make test."""
             # check 'main routes' only
             run_cmd("make quicktest")
 
@@ -179,10 +184,13 @@ class EB_Molpro(ConfigureMake, Binary):
 
     def install_step(self):
         """
-        Custom install procedure for Molpro:
+        Custom install procedure for Molpro.
+        For source install:
         * put license token in place in $installdir/.token
         * run 'make tuning'
         * install with 'make install'
+        For binary install:
+        * run interactive installer
         """
 
         if self.cfg['precompiled_binaries']:
@@ -197,17 +205,17 @@ class EB_Molpro(ConfigureMake, Binary):
                 # If we need to, we can always re-use the strategy
                 # in the CmdCp easyblock down the track -- but for
                 # now, let's keep it simple
-                cmd = "{0} -batch -instbin {1}/bin -instlib {1}/lib".format(os.path.join(".", src['name']),self.installdir)
+                cmd = "./{0} -batch -instbin {1}/bin -instlib {1}/lib".format(src['name'], self.installdir)
                 # Questions whose text must match exactly as asked
                 qa = {
-                        "Please give your username for accessing molpro\n": '',
-                        "Please give your password for accessing molpro\n": '',
+                    "Please give your username for accessing molpro\n": '',
+                    "Please give your password for accessing molpro\n": '',
                 }
                 # Questions whose text may be matched as a regular expression
                 stdqa = {
-                        r"Enter installation directory for executable files \[.*\]\n": "{0}/bin".format(self.installdir),
-                        r"Enter installation directory for library files \[.*\]\n": "{0}/lib".format(self.installdir),
-                        r"directory .* does not exist, try to create [Y]/n\n": '',
+                    r"Enter installation directory for executable files \[.*\]\n": os.path.join(self.installdir, 'bin'),
+                    r"Enter installation directory for library files \[.*\]\n": os.path.join(self.installdir, 'lib'),
+                    r"directory .* does not exist, try to create [Y]/n\n": '',
                 }
                 run_cmd_qa(cmd, qa=qa, std_qa=stdqa, log_all=True, simple=True)
         else:
