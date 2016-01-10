@@ -58,6 +58,9 @@ from easybuild.tools.robot import resolve_dependencies
 from easybuild.tools.options import set_tmpdir
 
 
+LIB_SO_REGEX = re.compile(r'\.so[^\w]', re.M)
+
+
 # indicates whether all the single tests are OK,
 # and that bigger tests (building dep graph, testing for conflicts, ...) can be run as well
 # other than optimizing for time, this also helps to get around problems like http://bugs.python.org/issue10949
@@ -274,6 +277,12 @@ def template_easyconfig_test(self, spec):
     error_msg = "%s relies on automagic fallback to ConfigureMake, should use easyblock = 'ConfigureMake' instead" % fn
     self.assertTrue(easyblock or not app_class is ConfigureMake, error_msg)
 
+    # check for undesired patterns in raw easyconfig
+    for regex in [LIB_SO_REGEX]:
+        res = regex.findall(ec.rawtxt)
+        self.assertFalse(res, "Pattern '%s' found %d times in easyconfig %s" % (regex.pattern, len(res), spec))
+
+    # obtain EasyBlock instance for this easyconfig
     app = app_class(ec)
 
     # more sanity checks
