@@ -53,12 +53,11 @@ from easybuild.tools.filetools import write_file
 from easybuild.tools.module_naming_scheme import GENERAL_CLASS
 from easybuild.tools.module_naming_scheme.easybuild_mns import EasyBuildMNS
 from easybuild.tools.module_naming_scheme.utilities import det_full_ec_version
-from easybuild.tools.modules import modules_tool
 from easybuild.tools.robot import resolve_dependencies
 from easybuild.tools.options import set_tmpdir
 
 
-LIB_SO_REGEX = re.compile(r'\.so[^\w]', re.M)
+LIB_SO_REGEX = re.compile(r'(?<!#)\.so[^\w]', re.M)
 
 
 # indicates whether all the single tests are OK,
