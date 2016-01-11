@@ -1,5 +1,5 @@
 ##
-# Copyright 2009-2015 Ghent University
+# Copyright 2009-2016 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -30,6 +30,7 @@ EasyBuild support for building and installing Trinity, implemented as an easyblo
 @author: Kenneth Hoste (Ghent University)
 @author: Pieter De Baets (Ghent University)
 @author: Jens Timmerman (Ghent University)
+@author: Balazs Hajgato (Vrije Universiteit Brussel)
 """
 import fileinput
 import glob
@@ -114,6 +115,8 @@ class EB_Trinity(EasyBlock):
         """Install procedure for Inchworm."""
 
         make_flags = 'CXXFLAGS="%s %s"' % (os.getenv('CXXFLAGS'), self.toolchain.get_flag('openmp'))
+        if LooseVersion(self.version) > "2" and LooseVersion(self.version) < "3":
+            make_flags += ' CXX=%s' % os.getenv('CXX')
 
         if run:
             self.log.info("Begin Inchworm")
@@ -230,7 +233,7 @@ class EB_Trinity(EasyBlock):
     def install_step(self):
         """Custom install procedure for Trinity."""
 
-        if LooseVersion(self.version) < LooseVersion('2012-10-05'):
+        if LooseVersion(self.version) < LooseVersion('2012-10-05') and LooseVersion(self.version) > "3":
             self.inchworm()
             self.chrysalis()
             self.kmer()
@@ -261,12 +264,16 @@ class EB_Trinity(EasyBlock):
             fn = "Makefile"
             for line in fileinput.input(fn, inplace=1, backup='.orig.eb'):
 
-                line = re.sub(r'^(INCHWORM_CONFIGURE_FLAGS\s*=\s*).*$', r'\1%s' % inchworm_flags, line)
-                line = re.sub(r'^(CHRYSALIS_MAKE_FLAGS\s*=\s*).*$', r'\1%s' % chrysalis_flags, line)
-                line = re.sub(r'(/rsem && \$\(MAKE\))\s*$',
-                              r'\1 CC=%s CXX="%s %s" CFLAGS_EXTRA="%s"\n' % (cc, cxx, lib_flags, lib_flags), line)
-                line = re.sub(r'(/fastool && \$\(MAKE\))\s*$',
-                              r'\1 CC="%s -std=c99" CFLAGS="%s ${CFLAGS}"\n' % (cc, lib_flags), line)
+                if LooseVersion(self.version) > "2" and LooseVersion(self.version) < "3":
+                    line = re.sub(r'^( INCHWORM_CONFIGURE_FLAGS\s*=\s*).*$', r'\1%s' % inchworm_flags, line)
+                    line = re.sub(r'^( CHRYSALIS_MAKE_FLAGS\s*=\s*).*$', r'\1%s' % chrysalis_flags, line)
+                else:
+                    line = re.sub(r'^(INCHWORM_CONFIGURE_FLAGS\s*=\s*).*$', r'\1%s' % inchworm_flags, line)
+                    line = re.sub(r'^(CHRYSALIS_MAKE_FLAGS\s*=\s*).*$', r'\1%s' % chrysalis_flags, line)
+                    line = re.sub(r'(/rsem && \$\(MAKE\))\s*$',
+                                  r'\1 CC=%s CXX="%s %s" CFLAGS_EXTRA="%s"\n' % (cc, cxx, lib_flags, lib_flags), line)
+                    line = re.sub(r'(/fastool && \$\(MAKE\))\s*$',
+                                  r'\1 CC="%s -std=c99" CFLAGS="%s ${CFLAGS}"\n' % (cc, lib_flags), line)
 
                 sys.stdout.write(line)
 
@@ -279,7 +286,16 @@ class EB_Trinity(EasyBlock):
             else:
                 raise EasyBuildError("Don't know how to set TRINITY_COMPILER for %s compiler", comp_fam)
 
-            cmd = "make TRINITY_COMPILER=%s" % trinity_compiler
+            explicit_make_args = ''
+            if LooseVersion(self.version) > "2" and LooseVersion(self.version) < "3":
+                explicit_make_args = 'all plugins'
+            # Delete CXXFLAGS CPPFLAGS and CFLAGS (interfere with plugins installation)
+            if LooseVersion(self.version) > "2" and LooseVersion(self.version) < "3":
+                del os.environ['CXXFLAGS']
+                del os.environ['CPPFLAGS']
+                del os.environ['CFLAGS']
+                 
+            cmd = "make TRINITY_COMPILER=%s %s" % (trinity_compiler, explicit_make_args)
             run_cmd(cmd)
 
             # butterfly is not included in standard build
@@ -295,7 +311,11 @@ class EB_Trinity(EasyBlock):
     def sanity_check_step(self):
         """Custom sanity check for Trinity."""
 
-        path = 'trinityrnaseq_r%s' % self.version
+        sep_r_inpath='_r'
+        if LooseVersion(self.version) > "2" and LooseVersion(self.version) < "3":
+            sep_r_inpath='-'
+
+        path = 'trinityrnaseq%s%s' % (sep_r_inpath, self.version)
 
         # these lists are definitely non-exhaustive, but better than nothing
         custom_paths = {
