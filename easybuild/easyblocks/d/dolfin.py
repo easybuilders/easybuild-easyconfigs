@@ -31,8 +31,8 @@ EasyBuild support for DOLFIN, implemented as an easyblock
 import os
 import re
 import tempfile
+from distutils.version import LooseVersion
 
-import easybuild.tools.environment as env
 import easybuild.tools.toolchain as toolchain
 from easybuild.easyblocks.generic.cmakepythonpackage import CMakePythonPackage
 from easybuild.tools.build_log import EasyBuildError
@@ -96,8 +96,22 @@ class EB_DOLFIN(CMakePythonPackage):
         self.saved_configopts = self.cfg['configopts']
 
         # make sure that required dependencies are loaded
-        deps = ['Armadillo', 'Boost', 'CGAL', 'MTL4', 'ParMETIS', 'PETSc', 'Python',
-                'SCOTCH', 'Sphinx', 'SLEPc', 'SuiteSparse', 'Trilinos', 'UFC', 'zlib']
+        deps = ['Boost', 'CGAL', 'MTL4', 'ParMETIS', 'PETSc', 'Python',
+                'SCOTCH', 'Sphinx', 'SLEPc', 'SuiteSparse', 'Trilinos', 'zlib']
+        # Armadillo was replaced by Eigen in v1.3
+        if LooseVersion(self.version) < LooseVersion('1.3'):
+            deps.append('Armadillo')
+        else:
+            deps.append('Eigen')
+
+        # UFC has been integrated into FFC in v1.4, cfr. https://bitbucket.org/fenics-project/ufc-deprecated
+        if LooseVersion(self.version) < LooseVersion('1.4'):
+            deps.append('UFC')
+
+        # PLY, petsc4py, slepc4py are required since v1.5
+        if LooseVersion(self.version) >= LooseVersion('1.5'):
+            deps.extend(['petsc4py', 'PLY', 'slepc4py'])
+
         depsdict = {}
         for dep in deps:
             deproot = get_software_root(dep)
@@ -121,8 +135,14 @@ class EB_DOLFIN(CMakePythonPackage):
         self.boost_dir = depsdict['Boost']
 
         # UFC and Armadillo config params
-        self.cfg.update('configopts', " -DUFC_DIR=%s" % depsdict['UFC'])
-        self.cfg.update('configopts', "-DARMADILLO_DIR:PATH=%s " % depsdict['Armadillo'])
+        if 'UFC' in depsdict:
+            self.cfg.update('configopts', " -DUFC_DIR=%s" % depsdict['UFC'])
+        if 'Armadillo' in depsdict:
+            self.cfg.update('configopts', "-DARMADILLO_DIR:PATH=%s " % depsdict['Armadillo'])
+
+        # Eigen config params
+        if 'Eigen' in depsdict:
+            self.cfg.update('configopts', "-DEIGEN3_INCLUDE_DIR=%s " % os.path.join(depsdict['Eigen'], 'include'))
 
         # specify Python paths
         python = depsdict['Python']
@@ -133,16 +153,16 @@ class EB_DOLFIN(CMakePythonPackage):
         # SuiteSparse config params
         suitesparse = depsdict['SuiteSparse']
         umfpack_params = [
-                          ' -DUMFPACK_DIR="%(sp)s/UMFPACK"',
-                          '-DUMFPACK_INCLUDE_DIRS="%(sp)s/UMFPACK/include;%(sp)s/UFconfig"',
-                          '-DAMD_DIR="%(sp)s/UMFPACK"',
-                          '-DCHOLMOD_DIR="%(sp)s/CHOLMOD"',
-                          '-DCHOLMOD_INCLUDE_DIRS="%(sp)s/CHOLMOD/include;%(sp)s/UFconfig"',
-                          '-DUFCONFIG_DIR="%(sp)s/UFconfig"',
-                          '-DCAMD_LIBRARY:PATH="%(sp)s/CAMD/lib/libcamd.a"',
-                          '-DCCOLAMD_LIBRARY:PATH="%(sp)s/CCOLAMD/lib/libccolamd.a"',
-                          '-DCOLAMD_LIBRARY:PATH="%(sp)s/COLAMD/lib/libcolamd.a"'
-                          ]
+            ' -DUMFPACK_DIR="%(sp)s/UMFPACK"',
+            '-DUMFPACK_INCLUDE_DIRS="%(sp)s/UMFPACK/include;%(sp)s/UFconfig"',
+            '-DAMD_DIR="%(sp)s/UMFPACK"',
+            '-DCHOLMOD_DIR="%(sp)s/CHOLMOD"',
+            '-DCHOLMOD_INCLUDE_DIRS="%(sp)s/CHOLMOD/include;%(sp)s/UFconfig"',
+            '-DUFCONFIG_DIR="%(sp)s/UFconfig"',
+            '-DCAMD_LIBRARY:PATH="%(sp)s/CAMD/lib/libcamd.a"',
+            '-DCCOLAMD_LIBRARY:PATH="%(sp)s/CCOLAMD/lib/libccolamd.a"',
+            '-DCOLAMD_LIBRARY:PATH="%(sp)s/COLAMD/lib/libcolamd.a"'
+        ]
 
         self.cfg.update('configopts', ' '.join(umfpack_params) % {'sp':suitesparse})
 
@@ -150,7 +170,7 @@ class EB_DOLFIN(CMakePythonPackage):
         self.cfg.update('configopts', '-DPARMETIS_DIR="%s"' % depsdict['ParMETIS'])
         self.cfg.update('configopts', '-DSCOTCH_DIR="%s" -DSCOTCH_DEBUG:BOOL=ON' % depsdict['SCOTCH'])
 
-        # BLACS and LAPACK 
+        # BLACS and LAPACK
         self.cfg.update('configopts', '-DBLAS_LIBRARIES:PATH="%s"' % os.getenv('LIBBLAS'))
         self.cfg.update('configopts', '-DLAPACK_LIBRARIES:PATH="%s"' % os.getenv('LIBLAPACK'))
 
@@ -200,10 +220,9 @@ class EB_DOLFIN(CMakePythonPackage):
 
         # custom sanity check paths
         custom_paths = {
-                         'files': ['bin/dolfin-%s' % x for x in ['version', 'convert', 'order', 'plot']] +
-                                  ['include/dolfin.h'],
-                         'dirs':['%s/dolfin' % self.pylibdir]
-                        }
+            'files': ['bin/dolfin-%s' % x for x in ['version', 'convert', 'order', 'plot']] + ['include/dolfin.h'],
+            'dirs':['%s/dolfin' % self.pylibdir],
+        }
 
         # custom sanity check commands
 
