@@ -291,10 +291,6 @@ class EB_Trinity(EasyBlock):
             explicit_make_args = ''
             if version >= LooseVersion('2.0') and version < LooseVersion('3.0'):
                 explicit_make_args = 'all plugins'
-                # Delete CXXFLAGS CPPFLAGS and CFLAGS (interfere with plugins installation)
-                del os.environ['CXXFLAGS']
-                del os.environ['CPPFLAGS']
-                del os.environ['CFLAGS']
                  
             cmd = "make TRINITY_COMPILER=%s %s" % (trinity_compiler, explicit_make_args)
             run_cmd(cmd)
