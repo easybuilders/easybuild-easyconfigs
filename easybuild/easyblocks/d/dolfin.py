@@ -77,18 +77,18 @@ class EB_DOLFIN(CMakePythonPackage):
         self.cfg.update('configopts', '-DCMAKE_Fortran_FLAGS="%s"' % fflags)
 
         # run cmake in debug mode
-        self.cfg.update('configopts', ' -DCMAKE_BUILD_TYPE=Debug')
+        self.cfg.update('configopts', '-DCMAKE_BUILD_TYPE=Debug')
 
         # set correct compilers to be used at runtime
-        self.cfg.update('configopts', ' -DMPI_C_COMPILER="$MPICC"')
-        self.cfg.update('configopts', ' -DMPI_CXX_COMPILER="$MPICXX"')
+        self.cfg.update('configopts', '-DMPI_C_COMPILER="$MPICC"')
+        self.cfg.update('configopts', '-DMPI_CXX_COMPILER="$MPICXX"')
 
         # specify MPI library
-        self.cfg.update('configopts', ' -DMPI_COMPILER="%s"' % os.getenv('MPICC'))
+        self.cfg.update('configopts', '-DMPI_COMPILER="%s"' % os.getenv('MPICC'))
 
         if  os.getenv('MPI_LIB_SHARED') and os.getenv('MPI_INC_DIR'):
-            self.cfg.update('configopts', ' -DMPI_LIBRARY="%s"' % os.getenv('MPI_LIB_SHARED'))
-            self.cfg.update('configopts', ' -DMPI_INCLUDE_PATH="%s"' % os.getenv('MPI_INC_DIR'))
+            self.cfg.update('configopts', '-DMPI_LIBRARY="%s"' % os.getenv('MPI_LIB_SHARED'))
+            self.cfg.update('configopts', '-DMPI_INCLUDE_PATH="%s"' % os.getenv('MPI_INC_DIR'))
         else:
             raise EasyBuildError("MPI_LIB_SHARED or MPI_INC_DIR not set, could not determine MPI-related paths.")
 
@@ -126,17 +126,17 @@ class EB_DOLFIN(CMakePythonPackage):
 
         # set correct openmp options
         openmp = self.toolchain.get_flag('openmp')
-        self.cfg.update('configopts', ' -DOpenMP_CXX_FLAGS="%s"' % openmp)
-        self.cfg.update('configopts', ' -DOpenMP_C_FLAGS="%s"' % openmp)
+        self.cfg.update('configopts', '-DOpenMP_CXX_FLAGS="%s"' % openmp)
+        self.cfg.update('configopts', '-DOpenMP_C_FLAGS="%s"' % openmp)
 
         # Boost config parameters
-        self.cfg.update('configopts', " -DBOOST_INCLUDEDIR=%s/include" % depsdict['Boost'])
-        self.cfg.update('configopts', " -DBoost_DEBUG=ON -DBOOST_ROOT=%s" % depsdict['Boost'])
+        self.cfg.update('configopts', "-DBOOST_INCLUDEDIR=%s/include" % depsdict['Boost'])
+        self.cfg.update('configopts', "-DBoost_DEBUG=ON -DBOOST_ROOT=%s" % depsdict['Boost'])
         self.boost_dir = depsdict['Boost']
 
         # UFC and Armadillo config params
         if 'UFC' in depsdict:
-            self.cfg.update('configopts', " -DUFC_DIR=%s" % depsdict['UFC'])
+            self.cfg.update('configopts', "-DUFC_DIR=%s" % depsdict['UFC'])
         if 'Armadillo' in depsdict:
             self.cfg.update('configopts', "-DARMADILLO_DIR:PATH=%s " % depsdict['Armadillo'])
 
@@ -147,8 +147,8 @@ class EB_DOLFIN(CMakePythonPackage):
         # specify Python paths
         python = depsdict['Python']
         pyver = '.'.join(get_software_version('Python').split('.')[:2])
-        self.cfg.update('configopts', " -DPYTHON_INCLUDE_PATH=%s/include/python%s" % (python, pyver))
-        self.cfg.update('configopts', " -DPYTHON_LIBRARY=%s/lib/libpython%s.%s" % (python, pyver, shlib_ext))
+        self.cfg.update('configopts', "-DPYTHON_INCLUDE_PATH=%s/include/python%s" % (python, pyver))
+        self.cfg.update('configopts', "-DPYTHON_LIBRARY=%s/lib/libpython%s.%s" % (python, pyver, shlib_ext))
 
         # SuiteSparse config params
         suitesparse = depsdict['SuiteSparse']
