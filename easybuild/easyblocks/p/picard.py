@@ -72,23 +72,116 @@ class EB_picard(EasyBlock):
 
     def sanity_check_step(self):
         """Custom sanity check for picard"""
-        jar_files = ['picard']
-        if LooseVersion(self.version) < LooseVersion('1.115'):
-            jar_files.append('sam')
+        """All versions prior to 1.124 have these jar files"""
         if LooseVersion(self.version) < LooseVersion('1.124'):
-            custom_paths = {
-                'files': ["%s-%s.jar" % (x, self.version) for x in jar_files],
-                'dirs': [],
-            }
+            jar_files = [
+                'picard-%s' % self.version,
+                
+                'AddOrReplaceReadGroups',
+                'BamIndexStats',
+                'BamToBfq',
+                'BuildBamIndex',
+                'CalculateHsMetrics',
+                'CheckIlluminaDirectory',
+                'CleanSam',
+                'CollectAlignmentSummaryMetrics',
+                'CollectGcBiasMetrics',
+                'CollectInsertSizeMetrics',
+                'CollectMultipleMetrics',
+                'CollectRnaSeqMetrics',
+                'CollectTargetedPcrMetrics',
+                'CompareSAMs',
+                'CreateSequenceDictionary',
+                'DownsampleSam',
+                'EstimateLibraryComplexity',
+                'ExtractIlluminaBarcodes',
+                'ExtractSequences',
+                'FastqToSam',
+                'FilterSamReads',
+                'FixMateInformation',
+                'IlluminaBasecallsToFastq',
+                'IlluminaBasecallsToSam',
+                'IntervalListTools',
+                'MakeSitesOnlyVcf',
+                'MarkDuplicates',
+                'MarkIlluminaAdapters',
+                'MeanQualityByCycle',
+                'MergeBamAlignment',
+                'MergeSamFiles',
+                'MergeVcfs',
+                'NormalizeFasta',
+                'QualityScoreDistribution',
+                'ReorderSam',
+                'ReplaceSamHeader',
+                'RevertSam',
+                'SamFormatConverter',
+                'SamToFastq',
+                'SortSam',
+                'SplitVcfs',
+                'ValidateSamFile',
+                'VcfFormatConverter',
+                'ViewSam',
+            ]
+            
+            """The following jar files were only available in the specified versions of picard"""
+            if LooseVersion(self.version) >= LooseVersion('1.100') and LooseVersion(self.version) < LooseVersion('1.114'):
+                jar_files += [
+                    'sam-%s' % self.version,
+                    'tribble-%s' % self.version,
+                    'variant-%s' % self.version,
+                ]
+            if LooseVersion(self.version) >= LooseVersion('1.109'):
+                jar_files += [
+                    'RevertOriginalBaseQualitiesAndAddMateCigar',
+                ]
+            if LooseVersion(self.version) >= LooseVersion('1.111'):
+                jar_files += [
+                    'GatherBamFiles',
+                ]
+            if LooseVersion(self.version) >= LooseVersion('1.113'):
+                jar_files += [
+                    'AddCommentsToBam',
+                    'CollectWgsMetrics',
+                ]
+            if LooseVersion(self.version) >= LooseVersion('1.114'):
+                jar_files += [
+                    'htsjdk-%s' % self.version,
+                ]
+            if LooseVersion(self.version) >= LooseVersion('1.119'):
+                jar_files += [
+                    'CollectBaseDistributionByCycle',
+                    'FifoBuffer',
+                ]
+            if LooseVersion(self.version) >= LooseVersion('1.120'):
+                jar_files += [
+                    'BedToIntervalList',
+                ]
+            if LooseVersion(self.version) >= LooseVersion('1.121'):
+                jar_files += [
+                    'SortVcf',
+                ]
+            if LooseVersion(self.version) >= LooseVersion('1.122'):
+                jar_files += [
+                    'CollectHiSeqXPfFailMetrics',
+                    'GenotypeConcordance',
+                    'MarkDuplicatesWithMateCigar',
+                    'UpdateVcfSequenceDictionary',
+                    'VcfToIntervalList',
+                ]
         else:
-            custom_paths = {
-                'files': [
-                    'picard.jar',
-                    'picard-lib.jar',
-                    'htsjdk-%s.jar' % self.version,
-                ],
-                'dirs': [],
-            }
+            """Starting with v1.124 a major structural change was made to picard"""
+            """All versions >= 1.124 now only have these jar files"""
+            jar_files = [
+                'htsjdk-%s' % self.version,
+                'picard',
+                'picard-lib'
+            ]
+        
+        custom_paths = {
+            'files': ["%s.jar" % (x) for x in jar_files],
+            'dirs': [],
+        }
+
         super(EB_picard, self).sanity_check_step(custom_paths=custom_paths)
 
     def make_module_extra(self):
