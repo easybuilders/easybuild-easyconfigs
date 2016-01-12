@@ -153,7 +153,7 @@ class EB_DOLFIN(CMakePythonPackage):
         # SuiteSparse config params
         suitesparse = depsdict['SuiteSparse']
         umfpack_params = [
-            ' -DUMFPACK_DIR="%(sp)s/UMFPACK"',
+            '-DUMFPACK_DIR="%(sp)s/UMFPACK"',
             '-DUMFPACK_INCLUDE_DIRS="%(sp)s/UMFPACK/include;%(sp)s/UFconfig"',
             '-DAMD_DIR="%(sp)s/UMFPACK"',
             '-DCHOLMOD_DIR="%(sp)s/CHOLMOD"',
