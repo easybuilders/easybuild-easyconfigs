@@ -115,7 +115,8 @@ class EB_Trinity(EasyBlock):
         """Install procedure for Inchworm."""
 
         make_flags = 'CXXFLAGS="%s %s"' % (os.getenv('CXXFLAGS'), self.toolchain.get_flag('openmp'))
-        if LooseVersion(self.version) > "2" and LooseVersion(self.version) < "3":
+        version = LooseVersion(self.version)
+        if version >= LooseVersion('2.0') and version < LooseVersion('3.0'):
             make_flags += ' CXX=%s' % os.getenv('CXX')
 
         if run:
@@ -233,7 +234,8 @@ class EB_Trinity(EasyBlock):
     def install_step(self):
         """Custom install procedure for Trinity."""
 
-        if LooseVersion(self.version) < LooseVersion('2012-10-05') and LooseVersion(self.version) > "3":
+        version = LooseVersion(self.version)
+        if version > LooseVersion('2012') and version < LooseVersion('2012-10-05'):
             self.inchworm()
             self.chrysalis()
             self.kmer()
@@ -264,7 +266,7 @@ class EB_Trinity(EasyBlock):
             fn = "Makefile"
             for line in fileinput.input(fn, inplace=1, backup='.orig.eb'):
 
-                if LooseVersion(self.version) > "2" and LooseVersion(self.version) < "3":
+                if version >= LooseVersion('2.0') and version < LooseVersion('3.0'):
                     line = re.sub(r'^( INCHWORM_CONFIGURE_FLAGS\s*=\s*).*$', r'\1%s' % inchworm_flags, line)
                     line = re.sub(r'^( CHRYSALIS_MAKE_FLAGS\s*=\s*).*$', r'\1%s' % chrysalis_flags, line)
                 else:
@@ -287,10 +289,9 @@ class EB_Trinity(EasyBlock):
                 raise EasyBuildError("Don't know how to set TRINITY_COMPILER for %s compiler", comp_fam)
 
             explicit_make_args = ''
-            if LooseVersion(self.version) > "2" and LooseVersion(self.version) < "3":
+            if version >= LooseVersion('2.0') and version < LooseVersion('3.0'):
                 explicit_make_args = 'all plugins'
-            # Delete CXXFLAGS CPPFLAGS and CFLAGS (interfere with plugins installation)
-            if LooseVersion(self.version) > "2" and LooseVersion(self.version) < "3":
+                # Delete CXXFLAGS CPPFLAGS and CFLAGS (interfere with plugins installation)
                 del os.environ['CXXFLAGS']
                 del os.environ['CPPFLAGS']
                 del os.environ['CFLAGS']
@@ -311,11 +312,13 @@ class EB_Trinity(EasyBlock):
     def sanity_check_step(self):
         """Custom sanity check for Trinity."""
 
-        sep_r_inpath='_r'
-        if LooseVersion(self.version) > "2" and LooseVersion(self.version) < "3":
-            sep_r_inpath='-'
+        version = LooseVersion(self.version)
+        if version >= LooseVersion('2.0') and version < LooseVersion('3.0'):
+            sep = '-'
+        else:
+            sep = '_r'
 
-        path = 'trinityrnaseq%s%s' % (sep_r_inpath, self.version)
+        path = 'trinityrnaseq%s%s' % (sep, self.version)
 
         # these lists are definitely non-exhaustive, but better than nothing
         custom_paths = {
