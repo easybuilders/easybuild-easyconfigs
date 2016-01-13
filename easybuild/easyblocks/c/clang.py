@@ -191,6 +191,7 @@ class EB_Clang(CMakeMake):
                 disable_san_tests = True
 
             if disable_san_tests and build_option('strict') != run.ERROR:
+                self.log.debug("Disabling the sanitizer tests")
                 self.disable_sanitizer_tests()
 
         # Create and enter build directory.
