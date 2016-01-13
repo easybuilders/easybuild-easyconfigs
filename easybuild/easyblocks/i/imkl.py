@@ -328,7 +328,7 @@ class EB_imkl(IntelBase):
         ver = LooseVersion(self.version)
         libs = ['libmkl_core.%s' % shlib_ext, 'libmkl_gnu_thread.%s' % shlib_ext,
                 'libmkl_intel_thread.%s' % shlib_ext, 'libmkl_sequential.%s' % shlib_ext]
-        extralibs = ['libmkl_blacs_intelmpi_%(suff)s.' + slib_ext, 'libmkl_scalapack_%(suff)s.' + shlib_ext]
+        extralibs = ['libmkl_blacs_intelmpi_%(suff)s.' + shlib_ext, 'libmkl_scalapack_%(suff)s.' + shlib_ext]
 
         if self.cfg['interfaces']:
             compsuff = '_intel'
