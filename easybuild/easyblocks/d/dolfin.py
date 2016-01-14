@@ -273,7 +273,11 @@ class EB_DOLFIN(CMakePythonPackage):
         pde_demos = ['biharmonic', 'cahn-hilliard', 'hyperelasticity', 'mixed-poisson',
                      'navier-stokes', 'poisson', 'stokes-iterative']
 
-        demos = [os.path.join('la', 'eigenvalue')] + [os.path.join('pde', x) for x in pde_demos]
+        if LooseVersion(self.version) < LooseVersion('1.1'):
+            demos = [os.path.join('la', 'eigenvalue')] + [os.path.join('pde', x) for x in pde_demos]
+        else:
+            # verified with v1.6.0
+            demos = [os.path.join('documented', x) for x in pde_demos]
 
         # construct commands
         cmds = [tmpl % {'dir': os.path.join(pref, d, subdir), 'name': os.path.basename(d)}
