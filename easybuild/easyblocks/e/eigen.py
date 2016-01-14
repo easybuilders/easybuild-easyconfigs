@@ -23,6 +23,7 @@ from distutils.version import LooseVersion
 
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.tools.build_log import EasyBuildError
+from easybuild.tools.filetools import mkdir
 
 
 class EB_Eigen(EasyBlock):
@@ -46,11 +47,11 @@ class EB_Eigen(EasyBlock):
         """
         Install by copying files to install dir
         """
+        mkdir(os.path.join(self.installdir, 'include'), parents=True)
         for subdir in ['Eigen', 'unsupported']:
             srcdir = os.path.join(self.cfg['start_dir'], subdir)
             destdir = os.path.join(self.installdir, os.path.join('include', subdir))
             try:
-                os.makedirs(os.path.dirname(destdir))
                 shutil.copytree(srcdir, destdir, ignore=shutil.ignore_patterns('CMakeLists.txt'))
             except OSError, err:
                 raise EasyBuildError("Copying %s to installation dir %s failed: %s", srcdir, destdir, err)
