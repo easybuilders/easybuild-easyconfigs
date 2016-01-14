@@ -38,6 +38,7 @@ from easybuild.easyblocks.generic.cmakepythonpackage import CMakePythonPackage
 from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.filetools import rmtree2
 from easybuild.tools.modules import get_software_root, get_software_version
+from easybuild.tools.run import run_cmd
 from easybuild.tools.systemtools import get_shared_lib_ext
 
 
@@ -199,34 +200,8 @@ class EB_DOLFIN(CMakePythonPackage):
         # enable verbose build, so we have enough information if something goes wrong
         self.cfg.update('buildopts', "VERBOSE=1")
 
-    def make_module_extra(self):
-        """Set extra environment variables for DOLFIN."""
-
-        txt = super(EB_DOLFIN, self).make_module_extra()
-
-        # Dolfin needs to find Boost
-        txt += self.module_generator.set_environment('BOOST_DIR', self.boost_dir)
-
-        envvars = ['I_MPI_CXX', 'I_MPI_CC']
-        for envvar in envvars:
-            envar_val = os.getenv(envvar)
-            # if environment variable is set, also set it in module
-            if envar_val:
-                txt += self.module_generator.set_environment(envvar, envar_val)
-
-        return txt
-
-    def sanity_check_step(self):
-        """Custom sanity check for DOLFIN."""
-
-        # custom sanity check paths
-        custom_paths = {
-            'files': ['bin/dolfin-%s' % x for x in ['version', 'convert', 'order', 'plot']] + ['include/dolfin.h'],
-            'dirs':['%s/dolfin' % self.pylibdir],
-        }
-
-        # custom sanity check commands
-
+    def test_step(self):
+        """Run DOLFIN demos by means of test."""
         # set cache/error dirs for Instant
         tmpdir = tempfile.mkdtemp()
         instant_cache_dir = os.path.join(tmpdir, '.instant', 'cache')
@@ -295,12 +270,39 @@ class EB_DOLFIN(CMakePythonPackage):
         #cmds += [cmd_template_python % {'dir': path, 'name': name}]
 
         # supply empty argument to each command
-        custom_commands = [(cmd, "") for cmd in cmds]
-
-        super(EB_DOLFIN, self).sanity_check_step(custom_paths=custom_paths, custom_commands=custom_commands)
+        for cmd in cmds:
+            run_cmd(cmd, log_all=True)
 
         # clean up temporary dir
         try:
             rmtree2(tmpdir)
         except OSError, err:
             raise EasyBuildError("Failed to remove Instant cache/error dirs: %s", err)
+
+    def make_module_extra(self):
+        """Set extra environment variables for DOLFIN."""
+
+        txt = super(EB_DOLFIN, self).make_module_extra()
+
+        # Dolfin needs to find Boost
+        txt += self.module_generator.set_environment('BOOST_DIR', self.boost_dir)
+
+        envvars = ['I_MPI_CXX', 'I_MPI_CC']
+        for envvar in envvars:
+            envar_val = os.getenv(envvar)
+            # if environment variable is set, also set it in module
+            if envar_val:
+                txt += self.module_generator.set_environment(envvar, envar_val)
+
+        return txt
+
+    def sanity_check_step(self):
+        """Custom sanity check for DOLFIN."""
+
+        # custom sanity check paths
+        custom_paths = {
+            'files': ['bin/dolfin-%s' % x for x in ['version', 'convert', 'order', 'plot']] + ['include/dolfin.h'],
+            'dirs':['%s/dolfin' % self.pylibdir],
+        }
+
+        super(EB_DOLFIN, self).sanity_check_step(custom_paths=custom_paths)
