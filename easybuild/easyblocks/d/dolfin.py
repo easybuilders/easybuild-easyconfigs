@@ -202,80 +202,81 @@ class EB_DOLFIN(CMakePythonPackage):
 
     def test_step(self):
         """Run DOLFIN demos by means of test."""
-        # set cache/error dirs for Instant
-        tmpdir = tempfile.mkdtemp()
-        instant_cache_dir = os.path.join(tmpdir, '.instant', 'cache')
-        instant_error_dir = os.path.join(tmpdir, '.instant', 'error')
-        try:
-            os.makedirs(instant_cache_dir)
-            os.makedirs(instant_error_dir)
-        except OSError, err:
-            raise EasyBuildError("Failed to create Instant cache/error dirs: %s", err)
 
-        # keep track of $LDFLAGS, so we can restore them for the sanity check commands
-        # this is required to make sure that linking of libraries (OpenBLAS, etc.) works as expected
-        ldflags = os.getenv('LDFLAGS')
+        if self.cfg['runtest']:
 
-        # we need to explicitely set the following environment variables as a part of the sanity check command,
-        # because the environment is reset and only the environment variables set by the DOLFIN module are there
-        env_vars = [
-            ('LDFLAGS', ldflags),
-            ('INSTANT_CACHE_DIR', instant_cache_dir),
-            ('INSTANT_ERROR_DIR', instant_error_dir),
-        ]
-        env_var_cmds = ' && '.join(['export %s="%s"' % (var, val) for (var, val) in env_vars])
+            # set cache/error dirs for Instant
+            tmpdir = tempfile.mkdtemp()
+            instant_cache_dir = os.path.join(tmpdir, '.instant', 'cache')
+            instant_error_dir = os.path.join(tmpdir, '.instant', 'error')
+            try:
+                os.makedirs(instant_cache_dir)
+                os.makedirs(instant_error_dir)
+            except OSError, err:
+                raise EasyBuildError("Failed to create Instant cache/error dirs: %s", err)
 
-        # test command templates
-        cmd_template_python = " && ".join([
-            env_var_cmds,
-            "cd %(dir)s",
-            "python demo_%(name)s.py",
-            "cd -",
-        ])
+            env_vars = [
+                ('INSTANT_CACHE_DIR', instant_cache_dir),
+                ('INSTANT_ERROR_DIR', instant_error_dir),
+            ]
+            env_var_cmds = ' && '.join(['export %s="%s"' % (var, val) for (var, val) in env_vars])
 
-        cmd_template_cpp = " && ".join([
-            env_var_cmds,
-            "cd %(dir)s",
-            "cmake . %s" % self.saved_configopts,
-            "make VERBOSE=1",
-            "./demo_%(name)s",
-            "cd -",
-        ])
+            # test command templates
+            cmd_template_python = " && ".join([
+                env_var_cmds,
+                "cd %(dir)s",
+                "python demo_%(name)s.py",
+                "cd -",
+            ])
 
-        # list based on demos available for DOLFIN v1.0.0
-        pde_demos = ['biharmonic', 'cahn-hilliard', 'hyperelasticity', 'mixed-poisson',
-                     'navier-stokes', 'poisson', 'stokes-iterative']
+            cpp_cmds = [
+                env_var_cmds,
+                "cd %(dir)s",
+            ]
+            if LooseVersion(self.version) < LooseVersion('1.1'):
+                cpp_cmds.append("cmake . %s" % self.saved_configopts)
 
-        if LooseVersion(self.version) < LooseVersion('1.1'):
-            demos = [os.path.join('demo', 'la', 'eigenvalue')] + [os.path.join('demo', 'pde', x) for x in pde_demos]
-        else:
-            # verified with v1.6.0
-            demos = [os.path.join('demo', 'documented', x) for x in pde_demos]
+            cpp_cmds.extend([
+                "make VERBOSE=1",
+                "./demo_%(name)s",
+                "cd -",
+            ])
+            cmd_template_cpp = " && ".join(cpp_cmds)
 
-        # construct commands
-        cmds = [tmpl % {'dir': os.path.join(d, subdir), 'name': os.path.basename(d)}
-                for d in demos for (tmpl, subdir) in [(cmd_template_cpp, 'cpp')]]
+            # list based on demos available for DOLFIN v1.0.0
+            pde_demos = ['biharmonic', 'cahn-hilliard', 'hyperelasticity', 'mixed-poisson',
+                         'navier-stokes', 'poisson', 'stokes-iterative']
 
-        # exclude Python tests for now, because they 'hang' sometimes (unclear why)
-        # they can be reinstated once run_cmd (or its equivalent) has support for timeouts
-        # see https://github.com/hpcugent/easybuild-framework/issues/581
-        #for (tmpl, subdir) in [(cmd_template_python, 'python'), (cmd_template_cpp, 'cpp')]]
+            if LooseVersion(self.version) < LooseVersion('1.1'):
+                demos = [os.path.join('demo', 'la', 'eigenvalue')] + [os.path.join('demo', 'pde', x) for x in pde_demos]
+            else:
+                # verified with v1.6.0
+                demos = [os.path.join('demo', 'documented', x) for x in pde_demos]
 
-        # subdomains-poisson has no C++ get_version, only Python
-        # Python tests excluded, see above
-        #name = 'subdomains-poisson'
-        #path = os.path.join('demo', 'pde', name, 'python')
-        #cmds += [cmd_template_python % {'dir': path, 'name': name}]
+            # construct commands
+            cmds = [tmpl % {'dir': os.path.join(d, subdir), 'name': os.path.basename(d)}
+                    for d in demos for (tmpl, subdir) in [(cmd_template_cpp, 'cpp')]]
 
-        # supply empty argument to each command
-        for cmd in cmds:
-            run_cmd(cmd, log_all=True)
+            # exclude Python tests for now, because they 'hang' sometimes (unclear why)
+            # they can be reinstated once run_cmd (or its equivalent) has support for timeouts
+            # see https://github.com/hpcugent/easybuild-framework/issues/581
+            #for (tmpl, subdir) in [(cmd_template_python, 'python'), (cmd_template_cpp, 'cpp')]]
 
-        # clean up temporary dir
-        try:
-            rmtree2(tmpdir)
-        except OSError, err:
-            raise EasyBuildError("Failed to remove Instant cache/error dirs: %s", err)
+            # subdomains-poisson has no C++ get_version, only Python
+            # Python tests excluded, see above
+            #name = 'subdomains-poisson'
+            #path = os.path.join('demo', 'pde', name, 'python')
+            #cmds += [cmd_template_python % {'dir': path, 'name': name}]
+
+            # supply empty argument to each command
+            for cmd in cmds:
+                run_cmd(cmd, log_all=True)
+
+            # clean up temporary dir
+            try:
+                rmtree2(tmpdir)
+            except OSError, err:
+                raise EasyBuildError("Failed to remove Instant cache/error dirs: %s", err)
 
     def make_module_extra(self):
         """Set extra environment variables for DOLFIN."""
