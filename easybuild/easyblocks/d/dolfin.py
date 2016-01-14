@@ -225,8 +225,6 @@ class EB_DOLFIN(CMakePythonPackage):
         ]
         env_var_cmds = ' && '.join(['export %s="%s"' % (var, val) for (var, val) in env_vars])
 
-        pref = os.path.join('share', 'dolfin', 'demo')
-
         # test command templates
         cmd_template_python = " && ".join([
             env_var_cmds,
@@ -249,13 +247,13 @@ class EB_DOLFIN(CMakePythonPackage):
                      'navier-stokes', 'poisson', 'stokes-iterative']
 
         if LooseVersion(self.version) < LooseVersion('1.1'):
-            demos = [os.path.join('la', 'eigenvalue')] + [os.path.join('pde', x) for x in pde_demos]
+            demos = [os.path.join('demo', 'la', 'eigenvalue')] + [os.path.join('demo', 'pde', x) for x in pde_demos]
         else:
             # verified with v1.6.0
-            demos = [os.path.join('documented', x) for x in pde_demos]
+            demos = [os.path.join('demo', 'documented', x) for x in pde_demos]
 
         # construct commands
-        cmds = [tmpl % {'dir': os.path.join(pref, d, subdir), 'name': os.path.basename(d)}
+        cmds = [tmpl % {'dir': os.path.join(d, subdir), 'name': os.path.basename(d)}
                 for d in demos for (tmpl, subdir) in [(cmd_template_cpp, 'cpp')]]
 
         # exclude Python tests for now, because they 'hang' sometimes (unclear why)
@@ -266,7 +264,7 @@ class EB_DOLFIN(CMakePythonPackage):
         # subdomains-poisson has no C++ get_version, only Python
         # Python tests excluded, see above
         #name = 'subdomains-poisson'
-        #path = os.path.join(pref, 'pde', name, 'python')
+        #path = os.path.join('demo', 'pde', name, 'python')
         #cmds += [cmd_template_python % {'dir': path, 'name': name}]
 
         # supply empty argument to each command
