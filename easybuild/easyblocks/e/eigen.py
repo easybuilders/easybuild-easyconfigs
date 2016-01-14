@@ -56,7 +56,7 @@ class EB_Eigen(EasyBlock):
             except OSError, err:
                 raise EasyBuildError("Copying %s to installation dir %s failed: %s", srcdir, destdir, err)
 
-        if LooseVersion(self.version) > LooseVersion('3.0'):
+        if LooseVersion(self.version) >= LooseVersion('3.0'):
             srcfile = os.path.join(self.cfg['start_dir'], 'signature_of_eigen3_matrix_library')
             destfile = os.path.join(self.installdir, 'include/signature_of_eigen3_matrix_library')
             try:
@@ -71,7 +71,7 @@ class EB_Eigen(EasyBlock):
         include_files = ['Array', 'Cholesky', 'Core', 'Dense', 'Eigen', 'Geometry', 'LU',
                          'LeastSquares', 'QR', 'QtAlignedMalloc', 'SVD', 'Sparse', 'StdVector']
 
-        if LooseVersion(self.version) > LooseVersion('3.0'):
+        if LooseVersion(self.version) >= LooseVersion('3.0'):
             # only in 3.x
             include_files.extend(['CholmodSupport', 'Eigen2Support', 'Eigenvalues', 'Householder',
                                   'IterativeLinearSolvers', 'Jacobi', 'OrderingMethods', 'PaStiXSupport',
@@ -82,7 +82,7 @@ class EB_Eigen(EasyBlock):
             'dirs': []
         }
 
-        if LooseVersion(self.version) > LooseVersion('3.0'):
+        if LooseVersion(self.version) >= LooseVersion('3.0'):
             custom_paths['files'].append('include/signature_of_eigen3_matrix_library')
 
         super(EB_Eigen, self).sanity_check_step(custom_paths=custom_paths)
