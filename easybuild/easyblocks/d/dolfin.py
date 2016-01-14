@@ -50,6 +50,7 @@ class EB_DOLFIN(CMakePythonPackage):
 
         self.boost_dir = None
         self.saved_configopts = None
+        self.cfg['separate_build_dir'] = True
 
     def configure_step(self):
         """Set DOLFIN-specific configure options and configure with CMake."""
