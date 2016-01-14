@@ -113,7 +113,7 @@ class ConfigureMake(EasyBlock):
         - default: None
         """
 
-        if self.cfg['runtest']:
+        if self.cfg['runtest'] and isinstance(self.cfg['runtest'], basestring):
             cmd = "make %s" % (self.cfg['runtest'])
             (out, _) = run_cmd(cmd, log_all=True, simple=False)
 
