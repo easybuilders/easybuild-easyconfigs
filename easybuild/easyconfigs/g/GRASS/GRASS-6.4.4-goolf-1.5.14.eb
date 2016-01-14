@@ -1,0 +1,59 @@
+easyblock = 'ConfigureMake'
+
+name = "GRASS"
+version = "6.4.4"
+
+homepage = "http://grass.osgeo.org"
+description = """The Geographic Resources Analysis Support System - used for geospatial data management and analysis, image processing, graphics and maps production, spatial modeling, and visualization"""
+
+toolchain = {'name': 'goolf', 'version': '1.5.14'}
+
+sources = ['grass-%(version)s.tar.gz']
+source_urls = ['http://grass.osgeo.org/grass%s/source' % ''.join(version.split('.')[:2])]
+
+dependencies = [
+#    ('Python', '2.7.8'),        # and so png, curses, readline
+    ('libpng', '1.6.10'),
+    ('libreadline', '6.2'),
+    ('ncurses', '5.9'),
+    ('GDAL', '1.11.1'),
+    ('libspatialite', '4.1.1'), # and so GEOS, SQLite
+    ('freetype', '2.5.3'),
+    ('ffmpeg', '2.3.3'),
+#    ('LibTIFF', '4.0.3'),
+]
+
+preconfigopts = "sed -i -e 's/-lreadline /-lreadline -lncurses /' ./configure && LDFLAGS=' -lm ' "
+
+configopts = """\
+    --with-cxx  --enable-64bit  --enable-largefile=yes \
+    --without-postgres  --with-sqlite  --with-spatialite \
+    --with-blas  --with-lapack  --with-fftw  --with-pthread \
+    --with-geos \
+    --with-readline \
+    --with-freetype \
+    --with-ffmpeg \
+    --with-ffmpeg-includes=$EBROOTFFMPEG/include/* \
+    --without-tiff \
+    --with-proj-share=$EBROOTPROJ4/share/proj \
+    --without-opengl \
+    --without-glw \
+    --without-tcltk \
+    --without-python \
+    --without-wxwidgets \
+    --without-x \
+    --with-png \
+    --with-png-libs=$EBROOTLIBPNG/lib
+"""
+
+
+#     --with-python \
+
+prebuildopts = "sed -i -e 's/gui / /' Makefile && rm -rf ./gui && "
+
+sanity_check_paths = {
+    'files': [],
+    'dirs': ["."]
+}
+
+moduleclass = 'geo'
