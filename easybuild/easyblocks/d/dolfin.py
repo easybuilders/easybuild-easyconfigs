@@ -28,6 +28,7 @@ EasyBuild support for DOLFIN, implemented as an easyblock
 @author: Kenneth Hoste (Ghent University)
 @author: Jens Timmerman (Ghent University)
 """
+import glob
 import os
 import re
 import tempfile
@@ -277,6 +278,29 @@ class EB_DOLFIN(CMakePythonPackage):
                 rmtree2(tmpdir)
             except OSError, err:
                 raise EasyBuildError("Failed to remove Instant cache/error dirs: %s", err)
+
+    def post_install_step(self):
+        """Post install actions: extend RPATH paths in .so libraries part of the DOLFIN Python package."""
+        if LooseVersion(self.version) >= LooseVersion('1.1'):
+            # cfr. https://github.com/hashdist/hashstack/blob/master/pkgs/dolfin/dolfin.yaml (look for patchelf)
+
+            # determine location of libdolfin.so
+            dolfin_lib = 'libdolfin.so'
+            dolfin_libdir = None
+            for libdir in ['lib', 'lib64']:
+                if os.path.exists(os.path.join(self.installdir, libdir, dolfin_lib)):
+                    dolfin_libdir = os.path.join(self.installdir, libdir)
+                    break
+            if dolfin_libdir is None:
+                raise EasyBuildError("Failed to locate %s", dolfin_lib)
+
+            for pylibdir in self.all_pylibdirs:
+                libs = glob.glob(os.path.join(self.installdir, pylibdir, 'dolfin', 'cpp', '_*.so'))
+                for lib in libs:
+                    out, _ = run_cmd("patchelf --print-rpath %s" % lib, simple=False, log_all=True)
+                    curr_rpath = out.strip()
+                    cmd = "patchelf --set-rpath %s:%s %s" % (curr_rpath, dolfin_libdir, lib)
+                    run_cmd(cmd, log_all=True)
 
     def make_module_extra(self):
         """Set extra environment variables for DOLFIN."""
