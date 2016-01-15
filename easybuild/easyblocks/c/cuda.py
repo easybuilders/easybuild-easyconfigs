@@ -48,9 +48,7 @@ class EB_CUDA(Binary):
     @staticmethod
     def extra_options():
         extra_vars = {
-            'generate_wrapper': [False, "Generate an nvcc wrapper to enable the usage of alternative"
-		    +"  host compilers, without explicitely using -ccbin.", CUSTOM],
-            'host_compiler': ["", "Host compiler used in the wrapper", CUSTOM]
+            'host_compilers': [[], "Host compilers for which a wrapper will be generated", CUSTOM]
         }
         return Binary.extra_options(extra_vars)
 
@@ -109,8 +107,8 @@ class EB_CUDA(Binary):
             adjust_permissions(wrapper_f, stat.S_IXUSR|stat.S_IRUSR|stat.S_IXGRP|stat.S_IRGRP|stat.S_IXOTH|stat.S_IROTH)
 
 	# Prepare wrappers to handle a default host compiler other than g++
-        if self.cfg['generate_wrapper']:
-            create_wrapper('nvcc_%s' % self.cfg['host_compiler'],'%s' % self.cfg['host_compiler'])
+        for comp in self.cfg['host_compilers']:
+            create_wrapper('nvcc_%s' % comp,'%s' % comp)
 
     def sanity_check_step(self):
         """Custom sanity check for CUDA."""
