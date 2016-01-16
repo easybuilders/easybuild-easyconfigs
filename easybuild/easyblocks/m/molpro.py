@@ -27,17 +27,17 @@ EasyBuild support for Molpro, implemented as an easyblock
 
 @author: Kenneth Hoste (Ghent University)
 """
-import fileinput
 import os
+import shutil
 import re
-import sys
+from distutils.version import LooseVersion
 
 from easybuild.easyblocks.generic.binary import Binary
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.build_log import EasyBuildError
-from easybuild.tools.filetools import mkdir, read_file
+from easybuild.tools.filetools import apply_regex_substitutions, mkdir, read_file
 from easybuild.tools.run import run_cmd, run_cmd_qa
 
 
@@ -154,9 +154,7 @@ class EB_Molpro(ConfigureMake, Binary):
             launcher = launcher.replace(' %s' % self.cfg['parallel'], ' %n')
 
             # patch CONFIG file to change LAUNCHER definition, in order to avoid having to start mpd
-            for line in fileinput.input(cfgfile, inplace=1, backup='.orig'):
-                line = re.sub(r"^(LAUNCHER\s*=\s*).*$", r"\1 %s" % launcher, line)
-                sys.stdout.write(line)
+            apply_regex_substitutions(cfgfile, [(r"^(LAUNCHER\s*=\s*).*$", r"\1 %s" % launcher)])
 
             # reread CONFIG and log contents
             cfgtxt = read_file(cfgfile)
@@ -201,17 +199,19 @@ class EB_Molpro(ConfigureMake, Binary):
                 raise EasyBuildError("Failed to move (back) to %s: %s", self.cfg['start_dir'], err)
 
             for src in self.src:
-                # determine command to use
-                # If we need to, we can always re-use the strategy
-                # in the CmdCp easyblock down the track -- but for
-                # now, let's keep it simple
-                cmd = "./{0} -batch -instbin {1}/bin -instlib {1}/lib".format(src['name'], self.installdir)
-                # Questions whose text must match exactly as asked
+                if LooseVersion(self.version) >= LooseVersion('2015'):
+                    # install dir must be non-existent
+                    shutil.rmtree(self.installdir)
+                    cmd = "./{0} -batch -prefix {1}".format(src['name'], self.installdir)
+                else:
+                    cmd = "./{0} -batch -instbin {1}/bin -instlib {1}/lib".format(src['name'], self.installdir)
+
+                # questions whose text must match exactly as asked
                 qa = {
                     "Please give your username for accessing molpro\n": '',
                     "Please give your password for accessing molpro\n": '',
                 }
-                # Questions whose text may be matched as a regular expression
+                # questions whose text may be matched as a regular expression
                 stdqa = {
                     r"Enter installation directory for executable files \[.*\]\n": os.path.join(self.installdir, 'bin'),
                     r"Enter installation directory for library files \[.*\]\n": os.path.join(self.installdir, 'lib'),
@@ -226,9 +226,8 @@ class EB_Molpro(ConfigureMake, Binary):
 
             # put original LAUNCHER definition back in place in bin/molpro that got installed,
             # since the value used during installation point to temporary files
-            for line in fileinput.input(os.path.join(self.full_prefix, 'bin', 'molpro'), inplace=1):
-                line = re.sub(r"^(LAUNCHER\s*=\s*).*$", r"\1 %s" % self.orig_launcher, line)
-                sys.stdout.write(line)
+            molpro_path = os.path.join(self.full_prefix, 'bin', 'molpro')
+            apply_regex_substitutions(molpro_path, [(r"^(LAUNCHER\s*=\s*).*$", r"\1 %s" % self.orig_launcher)])
 
         if self.cleanup_token_symlink:
             try:
