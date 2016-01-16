@@ -249,7 +249,7 @@ class EB_Molpro(ConfigureMake, Binary):
         prefix_subdir = os.path.basename(self.full_prefix)
         files_to_check = ['bin/molpro']
         dirs_to_check = []
-        if not self.cfg['precompiled_binaries']:
+        if LooseVersion(self.version) >= LooseVersion('2015') or not self.cfg['precompiled_binaries']:
             files_to_check.extend(['bin/molpro.exe'])
             dirs_to_check.extend(['doc', 'examples', 'utilities'])
 
