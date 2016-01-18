@@ -52,7 +52,7 @@ class EB_CUDA(Binary):
             'host_compilers': [[], "Host compilers for which a wrapper will be generated", CUSTOM]
         }
         return Binary.extra_options(extra_vars)
- 
+
     def extract_step(self):
         """Extract installer to have more control, e.g. options, patching Perl scripts, etc."""
         execpath = self.src[0]['path']
