@@ -7,49 +7,49 @@ homepage = "http://grass.osgeo.org"
 description = """The Geographic Resources Analysis Support System - used for geospatial data management and analysis, image processing, graphics and maps production, spatial modeling, and visualization"""
 
 toolchain = {'name': 'foss', 'version': '2015a'}
+toolchainopts = {'openmp': True}
 
 sources = ['grass-%(version)s.tar.gz']
 source_urls = ['http://grass.osgeo.org/grass%s/source' % ''.join(version.split('.')[:2])]
 
 dependencies = [
-#    ('Python', '2.7.11'),        # and so png, curses, readline
+    ('Python', '2.7.11'),        # and so png, curses, readline
     ('libpng', '1.6.20'),
     ('libreadline', '6.3'),
     ('ncurses', '6.0'),
+    ('netCDF', '4.3.3.1'),
     ('GDAL', '2.0.1'),
     ('libspatialite', '4.3.0a'), # and so GEOS, SQLite
     ('freetype', '2.6.2'),
-    ('ffmpeg', '2.8.4'),
-#    ('LibTIFF', '4.0.3'),
+    ('FFmpeg', '2.8.5'),
+    ('LibTIFF', '4.0.6'),
 ]
 
-preconfigopts = "sed -i -e 's/-lreadline /-lreadline -lncurses /' ./configure && LDFLAGS=' -lm ' "
+preconfigopts = "sed -i -e 's/-lreadline /-lreadline -lncurses /' ./configure && LDFLAGS=' -lm -lpthread ' "
 
 configopts = """\
     --with-cxx  --enable-64bit  --enable-largefile=yes \
     --without-postgres  --with-sqlite  --with-spatialite \
     --with-blas  --with-lapack  --with-fftw  --with-pthread \
+    --with-openmp \
     --with-geos \
     --with-readline \
     --with-freetype \
+    --with-netcdf \
     --with-ffmpeg \
     --with-ffmpeg-includes=$EBROOTFFMPEG/include/* \
-    --without-tiff \
     --with-proj-share=$EBROOTPROJ/share/proj \
     --without-opengl \
     --without-glw \
     --without-tcltk \
-    --without-python \
+    --with-python \
     --without-wxwidgets \
     --without-x \
     --with-png \
     --with-png-libs=$EBROOTLIBPNG/lib
 """
 
-
-#     --with-python \
-
-prebuildopts = "sed -i -e 's/gui / /' Makefile && rm -rf ./gui && "
+prebuildopts = "sed -i -e '/^\s*gui\s*\\\s*$/d' Makefile && rm -rf ./gui && "
 
 sanity_check_paths = {
     'files': [],
