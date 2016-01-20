@@ -72,10 +72,10 @@ class EB_BamTools(MakeCp, CMakeMake):
         if LooseVersion(self.version) < LooseVersion('2.3.0'):
             # Buid environment changed:
             # https://github.com/pezmaster31/bamtools/commit/9cfa70bfe9cdf1b6adc06beb88246b45fdd6250a
-            custom_paths['files'] += [
+            custom_paths['files'].extend([
                 "lib/libbamtools-utils.%s" % sharedlib_ext,
                 "lib/libjsoncpp.%s" % sharedlib_ext
-            ]
+            ])
         else:
             custom_paths['files'] += [
                 "lib/libbamtools-utils.a",
