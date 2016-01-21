@@ -50,7 +50,7 @@ class ConfigureMake(EasyBlock):
         extra_vars = EasyBlock.extra_options(extra=extra_vars)
         extra_vars.update({
             'configure_cmd_prefix': ['', "Prefix to be glued before ./configure", CUSTOM],
-            'prefix_opt': ['--prefix=', "Prefix command line option for configure script", CUSTOM],
+            'prefix_opt': [None, "Prefix command line option for configure script ('--prefix=' if None)", CUSTOM],
             'tar_config_opts': [False, "Override tar settings as determined by configure.", CUSTOM],
         })
         return extra_vars
@@ -61,13 +61,13 @@ class ConfigureMake(EasyBlock):
         - typically ./configure --prefix=/install/path style
         """
 
-        if self.cfg['configure_cmd_prefix']:
+        if self.cfg.get('configure_cmd_prefix'):
             if cmd_prefix:
                 tup = (cmd_prefix, self.cfg['configure_cmd_prefix'])
                 self.log.debug("Specified cmd_prefix '%s' is overruled by configure_cmd_prefix '%s'" % tup)
             cmd_prefix = self.cfg['configure_cmd_prefix']
 
-        if self.cfg['tar_config_opts']:
+        if self.cfg.get('tar_config_opts'):
             # setting am_cv_prog_tar_ustar avoids that configure tries to figure out
             # which command should be used for tarring/untarring
             # am__tar and am__untar should be set to something decent (tar should work)
@@ -79,10 +79,14 @@ class ConfigureMake(EasyBlock):
             for (key, val) in tar_vars.items():
                 self.cfg.update('preconfigopts', "%s='%s'" % (key, val))
 
+        prefix_opt = self.cfg.get('prefix_opt')
+        if prefix_opt is None:
+            prefix_opt = '--prefix='
+
         cmd = "%(preconfigopts)s %(cmd_prefix)s./configure %(prefix_opt)s%(installdir)s %(configopts)s" % {
             'preconfigopts': self.cfg['preconfigopts'],
             'cmd_prefix': cmd_prefix,
-            'prefix_opt': self.cfg['prefix_opt'],
+            'prefix_opt': prefix_opt,
             'installdir': self.installdir,
             'configopts': self.cfg['configopts'],
         }
