@@ -70,7 +70,7 @@ class EB_EggLib(PythonPackage, ConfigureMake):
         try:
             os.chdir(py_subdir)
         except OSError, err:
-            raise EasyBuildError("Failed to move to: %s", )
+            raise EasyBuildError("Failed to move to: %s", err)
 
         PythonPackage.build_step(self)
 
