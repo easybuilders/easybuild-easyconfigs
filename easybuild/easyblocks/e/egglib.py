@@ -38,6 +38,11 @@ from easybuild.tools.build_log import EasyBuildError
 class EB_EggLib(PythonPackage, ConfigureMake):
     """Support for building/installing EggLib."""
 
+    def configure_step(self):
+        """Configure EggLib build/install procedure."""
+        # only need to configure Python library here, configuration of C++ library is done in install step
+        PythonPackage.configure_step(self)
+
     def build_step(self):
         """No custom build procedure for EggLib; build/install is done in install_step."""
         pass
@@ -67,17 +72,17 @@ class EB_EggLib(PythonPackage, ConfigureMake):
         except OSError, err:
             raise EasyBuildError("Failed to move to: %s", )
 
-        super(EB_EggLib, self).build_step()
+        PythonPackage.build_step(self)
 
         self.cfg.update('installopts', "--install-lib %s" % os.path.join(self.installdir, self.pylibdir))
         self.cfg.update('installopts', "--install-scripts %s" % os.path.join(self.installdir, 'bin'))
 
-        super(EB_EggLib, self).install_step()
+        PythonPackage.install_step(self)
 
     def sanity_check_step(self):
         """Custom sanity check for EggLib."""
         custom_paths = {
             'files': ['bin/egglib', 'lib/libegglib-cpp.a'],
-            'dirs': ['include/egglib-cpp', 'lib/python2.7/site-packages'],
+            'dirs': ['include/egglib-cpp', self.pylibdir],
         }
         super(EB_EggLib, self).sanity_check_step(custom_paths=custom_paths)
