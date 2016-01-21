@@ -66,6 +66,8 @@ class CrayToolchain(Bundle):
                                  self.toolchain.dependencies)
 
         self.log.debug("Swap info for dependencies of %s: %s", self.full_mod_name, unload_info)
+
+        # load statement for all dependencies, including PrgEnv
         txt = super(CrayToolchain, self).make_module_dep(unload_info=unload_info)
 
         # include conditional swap for PrgEnv module,
