@@ -79,10 +79,14 @@ class ConfigureMake(EasyBlock):
             for (key, val) in tar_vars.items():
                 self.cfg.update('preconfigopts', "%s='%s'" % (key, val))
 
+        prefix_opt = self.cfg.get('prefix_opt')
+        if prefix_opt is None:
+            prefix_opt = '--prefix='
+
         cmd = "%(preconfigopts)s %(cmd_prefix)s./configure %(prefix_opt)s%(installdir)s %(configopts)s" % {
             'preconfigopts': self.cfg['preconfigopts'],
             'cmd_prefix': cmd_prefix,
-            'prefix_opt': self.cfg.get('prefix_opt') or '--prefix=',
+            'prefix_opt': prefix_opt,
             'installdir': self.installdir,
             'configopts': self.cfg['configopts'],
         }
