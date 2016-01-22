@@ -39,14 +39,14 @@ from easybuild.framework.easyblock import EasyBlock
 from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.run import run_cmd
 
-class EB_pgi(EasyBlock):
+class EB_PGI(EasyBlock):
     """
     Support for installing the PGI compilers
     """
 
     def __init__(self, *args, **kwargs):
         """Easyblock constructor, define custom class variables specific to PGI."""
-        super(EB_pgi, self).__init__(*args, **kwargs)
+        super(EB_PGI, self).__init__(*args, **kwargs)
         if not self.cfg['license_file']:
             self.cfg['license_file'] = 'UNKNOWN'
         self.install_subdir = os.path.join('linux86-64', self.version)
@@ -97,18 +97,18 @@ class EB_pgi(EasyBlock):
                         'dirs': [os.path.join(prefix, "bin"), os.path.join(prefix, "lib"),
                                  os.path.join(prefix, "include"), os.path.join(prefix, "man")]
                        }
-        super(EB_pgi, self).sanity_check_step(custom_paths=custom_paths)
+        super(EB_PGI, self).sanity_check_step(custom_paths=custom_paths)
 
     def make_module_req_guess(self):
         """Prefix subdirectories in PGI install directory considered for environment variables defined in module file."""
-        dirs = super(EB_pgi, self).make_module_req_guess()
+        dirs = super(EB_PGI, self).make_module_req_guess()
         for key in dirs:
             dirs[key] = [os.path.join(self.install_subdir, d) for d in dirs[key]]
         return dirs
 
     def make_module_extra(self):
         """Add environment variables LM_LICENSE_FILE and PGI for license file and PGI location"""
-        txt = super(EB_pgi, self).make_module_extra()
+        txt = super(EB_PGI, self).make_module_extra()
         txt += self.module_generator.prepend_paths('LM_LICENSE_FILE', [self.cfg['license_file']], allow_abs=True)
         txt += self.module_generator.set_environment('PGI', self.installdir)
         return txt
