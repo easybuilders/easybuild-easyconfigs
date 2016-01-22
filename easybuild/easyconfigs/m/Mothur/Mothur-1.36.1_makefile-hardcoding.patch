@@ -1,0 +1,68 @@
+--- makefile.org	2015-07-27 16:18:26.000000000 +0200
++++ makefile	2016-01-18 13:37:34.624809549 +0100
+@@ -18,12 +18,12 @@
+ VERSION = "\"1.36.1\""
+ 
+ # Optimize to level 3:
+-CXXFLAGS += -O3
++#CXXFLAGS += -O3
+ 
+ 
+ ifeq  ($(strip $(64BIT_VERSION)),yes)
+     #if you are a mac user use the following line
+-    TARGET_ARCH += -arch x86_64
++    #TARGET_ARCH += -arch x86_64
+ 
+     #if you using cygwin to build Windows the following line
+     #CXX = x86_64-w64-mingw32-g++
+@@ -58,20 +58,20 @@
+ 
+ 
+ ifeq  ($(strip $(USEMPI)),yes)
+-    CXX = mpic++
++    CXX = $(MPICXX)
+     CXXFLAGS += -DUSE_MPI
+ endif
+ 
+ #The boost libraries allow you to read gz files.
+ ifeq  ($(strip $(USEBOOST)),yes)
+-    BOOST_INCLUDE_DIR="/usr/local/include"
+-    BOOST_LIBRARY_DIR="/usr/local/lib"
++    BOOST_INCLUDE_DIR=$(EBROOTBOOST)/include
++    BOOST_LIBRARY_DIR=$(EBROOTBOOST)/lib
+ 
+     CXXFLAGS += -DUSE_BOOST
+ 
+     LIBS += \
+     ${BOOST_LIBRARY_DIR}/libboost_iostreams.a \
+-    ${BOOST_LIBRARY_DIR}/zlib.a
++    ${EBROOTZLIB}/lib/libz.a
+ 
+     #if linux or windows then ${BOOST_LIBRARY_DIR}/libz.a
+ endif
+--- source/uchime_src/mk.orig	2015-07-27 16:18:26.000000000 +0200
++++ source/uchime_src/mk	2016-01-18 14:07:56.834224506 +0100
+@@ -1,4 +1,4 @@
+-#!/bin/bash
++#!/bin/bash -v
+ CPPNames='addtargets2 alignchime alignchimel alnparams alpha alpha2 fractid getparents globalalign2 make3way mx myutils path searchchime seqdb setnucmx sfasta tracebackbit uchime_main usort viterbifast writechhit'
+ ObjNames='addtargets2.o alignchime.o alignchimel.o alnparams.o alpha.o alpha2.o fractid.o getparents.o globalalign2.o make3way.o mx.o myutils.o path.o searchchime.o seqdb.o setnucmx.o sfasta.o tracebackbit.o uchime_main.o usort.o viterbifast.o writechhit.o'
+ 
+@@ -7,7 +7,7 @@
+ for CPPName in $CPPNames
+ do
+   echo $CPPName >> /dev/tty
+-  g++ $ENV_GCC_OPTS -c -O3 -msse2 -mfpmath=sse -D_FILE_OFFSET_BITS=64 -DNDEBUG=1 -DUCHIMES=1 $CPPName.cpp -o $CPPName.o  >> mk.stdout 2>> tmp.stderr
++  $CXX $ENV_GCC_OPTS -c $CXXFLAGS -D_FILE_OFFSET_BITS=64 -DNDEBUG=1 -DUCHIMES=1 $CPPName.cpp -o $CPPName.o  >> mk.stdout 2>> tmp.stderr
+ 	cat tmp.stderr
+ 	cat tmp.stderr >> mk.stderr
+ 	rm -f tmp.stderr
+@@ -17,7 +17,7 @@
+ if [ `uname -s` == Linux ] ; then
+     LINK_OPTS=-static
+ fi
+-g++ $LINK_OPTS $ENV_LINK_OPTS -g -o uchime $ObjNames >> mk.stdout 2>> tmp.stderr
++$CXX $CXXFLAGS $ENV_LINK_OPTS -o uchime $ObjNames >> mk.stdout 2>> tmp.stderr
+ cat tmp.stderr
+ cat tmp.stderr >> mk.stderr
+ rm -f tmp.stderr
