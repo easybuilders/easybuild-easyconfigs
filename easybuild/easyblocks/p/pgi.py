@@ -36,6 +36,7 @@ import re
 import sys
 
 from easybuild.framework.easyblock import EasyBlock
+from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.run import run_cmd
 
@@ -43,6 +44,16 @@ class EB_PGI(EasyBlock):
     """
     Support for installing the PGI compilers
     """
+
+    @staticmethod
+    def extra_options():
+        extra_vars = {
+            'install_amd': [True, "Install AMD software components", CUSTOM],
+            'install_java': [True, "Install Java JRE for graphical debugger",  CUSTOM],
+            'install_managed': [True, "Install OpenACC Unified Memory Evaluation package", CUSTOM],
+            'install_nvidia': [True, "Install CUDA Toolkit Components", CUSTOM],
+        }
+        return EasyBlock.extra_options(extra_vars)
 
     def __init__(self, *args, **kwargs):
         """Easyblock constructor, define custom class variables specific to PGI."""
@@ -69,11 +80,11 @@ class EB_PGI(EasyBlock):
 
         pgi_env_vars = {
             'PGI_ACCEPT_EULA': 'accept',
-            'PGI_INSTALL_AMD': 'true',
+            'PGI_INSTALL_AMD': str(self.cfg['install_amd']).lower(),
             'PGI_INSTALL_DIR': self.installdir,
-            'PGI_INSTALL_JAVA': 'true',
-            'PGI_INSTALL_MANAGED': 'true',
-            'PGI_INSTALL_NVIDIA': 'true',
+            'PGI_INSTALL_JAVA': str(self.cfg['install_java']).lower(),
+            'PGI_INSTALL_MANAGED': str(self.cfg['install_managed']).lower(),
+            'PGI_INSTALL_NVIDIA': str(self.cfg['install_nvidia']).lower(),
             'PGI_SILENT': 'true',
             }
         cmd = "%s ./install" % ' '.join(['%s=%s' % x for x in sorted(pgi_env_vars.items())])
