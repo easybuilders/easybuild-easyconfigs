@@ -77,8 +77,8 @@ class EB_BamTools(MakeCp, CMakeMake):
                 "lib/libjsoncpp.%s" % sharedlib_ext
             ])
         else:
-            custom_paths['files'] += [
+            custom_paths['files'].extend([
                 "lib/libbamtools-utils.a",
                 "lib/libjsoncpp.a"
-            ]
+            ])
         super(EB_BamTools, self).sanity_check_step(custom_paths=custom_paths)
