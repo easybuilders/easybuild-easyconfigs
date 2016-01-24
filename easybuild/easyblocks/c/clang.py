@@ -67,6 +67,8 @@ class EB_Clang(CMakeMake):
             'bootstrap': [True, "Bootstrap Clang using GCC", CUSTOM],
             'usepolly': [False, "Build Clang with polly", CUSTOM],
             'static_analyzer': [True, "Install the static analyser of Clang", CUSTOM],
+            # The sanitizer tests often fail on HPC systems due to the 'weird' environment.
+            'skip_sanitizer_tests': [False, "Do not run the sanitizer tests", CUSTOM],
         }
 
         return CMakeMake.extra_options(extra_vars)
@@ -185,7 +187,8 @@ class EB_Clang(CMakeMake):
                 self.log.warn("The stacksize limit is set to unlimited. This causes the ThreadSanitizer "
                               "to fail. The sanitizers tests will be disabled unless --strict=error is used.")
 
-            if disable_san_tests and build_option('strict') != run.ERROR:
+            if (disable_san_tests or self.cfg['skip_sanitizer_tests']) and build_option('strict') != run.ERROR:
+                self.log.debug("Disabling the sanitizer tests")
                 self.disable_sanitizer_tests()
 
         # Create and enter build directory.

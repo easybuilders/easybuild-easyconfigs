@@ -69,8 +69,12 @@ class EB_ACML(EasyBlock):
         if self.cfg['versionsuffix'].split('-')[-1] == "int64":
             self.suffix = '_int64'
 
+    def configure_step(self):
+        """No custom configure step for ACML."""
+        pass
+
     def build_step(self):
-        """No build."""
+        """No custom build step for ACML."""
         pass
 
     def install_step(self):
