@@ -1,0 +1,33 @@
+easyblock = 'CMakeMake'
+
+name = 'GROMACS'
+version = '4.6.5'
+versionsuffix = '-double'
+
+homepage = 'http://www.gromacs.org'
+description = """GROMACS is a versatile package to perform molecular dynamics,
+  i.e. simulate the Newtonian equations of motion for systems with hundreds to millions of particles."""
+
+toolchain = {'name': 'goolf', 'version': '1.4.10'}
+
+# eg. ftp://ftp.gromacs.org/pub/gromacs/gromacs-4.6.tar.gz
+sources = [
+    SOURCELOWER_TAR_GZ,
+    'regressiontests-%(version)s.tar.gz',
+]
+source_urls = [
+    'ftp://ftp.gromacs.org/pub/gromacs/',  # GROMACS sources
+    'http://gerrit.gromacs.org/download/',  # regression tests sources
+]
+
+builddependencies = [('CMake', '2.8.12')]
+
+configopts = "-DREGRESSIONTEST_PATH='%(builddir)s/regressiontests-%(version)s'"
+runtest = 'check'
+
+# explicitely disable CUDA support, i.e. avoid that GROMACS find and uses a system-wide CUDA compiler
+# CUDA and GCC v4.7 don't play well together
+# enable double precision
+configopts += ' -DGMX_GPU=OFF -DGMX_DOUBLE=ON -DGMX_MPI=ON -DGMX_THREAD_MPI=OFF'
+
+moduleclass = 'bio'
