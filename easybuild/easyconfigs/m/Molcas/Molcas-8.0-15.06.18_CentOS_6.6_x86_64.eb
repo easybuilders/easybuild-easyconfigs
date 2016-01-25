@@ -16,11 +16,20 @@ toolchain = {'name': 'dummy', 'version': 'dummy'}
 
 # download requires registration, see http://www.kvant.kemi.uu.se/molcas/
 sources = ['%(namelower)s-%(version)s%(versionsuffix)s.tgz']
+
+# The Molcas installation procedure creates a binary in a separate directory,
+# but that binary depends on being able to find the originally extracted files.
+# Because we don't want to rely on root privileges, and we do want to use
+# EasyBuild paths, this means we need to extract Molcas to a subdirectory of
+# the proposed installation directory.
 unpack_options = "--transform='s,^%(namelower)s-%(version)s%(versionsuffix)s,%(namelower)s_files,'"
 
 buildininstalldir = True
 skipsteps = ['install']
 
+# For the same reason as the tarball needs an extraction prefix, we need to
+# finish up the installation by taking the Molcas driver and moving it to an
+# EasyBuild style binary directory.
 postinstallcmds = [
     'mkdir -p %(installdir)s/bin',
     'cp %(installdir)s/%(namelower)s_files/sbin/molcas.driver %(installdir)s/bin/molcas',
