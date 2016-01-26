@@ -98,7 +98,7 @@ class ModuleOnlyTest(EnhancedTestCase):
             self.log.error("Failed to remove %s: %s", self.eb_file, err)
 
 
-def template_module_only_test(self, easyblock, name='foo', version='1.3.2'):
+def template_module_only_test(self, easyblock, name='foo', version='1.3.2', extra_txt=''):
     """Test whether all easyblocks are compatible with --module-only."""
 
     class_regex = re.compile("^class (.*)\(.*", re.M)
@@ -121,7 +121,6 @@ def template_module_only_test(self, easyblock, name='foo', version='1.3.2'):
 
         # extend easyconfig to make sure mandatory custom easyconfig paramters are defined
         extra_options = app_class.extra_options()
-        extra_txt = ''
         for (key, val) in extra_options.items():
             if val[2] == MANDATORY:
                 extra_txt += '%s = "foo"\n' % key
@@ -156,6 +155,7 @@ def suite():
     eb_go = eboptions.parse_options(args=['--prefix=%s' % TMPDIR])
     config.init(eb_go.options, eb_go.get_options_by_section('config'))
     build_options = {
+        'external_modules_metadata': {},
         # enable --force --module-only
         'force': True,
         'module_only': True,
@@ -176,11 +176,20 @@ def suite():
     excluded_easyblocks = ['versionindependendpythonpackage.py']
     easyblocks = [e for e in easyblocks if os.path.basename(e) not in excluded_easyblocks]
 
+    # add dummy PrgEnv-gnu/1.2.3 module, required for testing CrayToolchain easyblock
+    write_file(os.path.join(TMPDIR, 'modules', 'all', 'PrgEnv-gnu', '1.2.3'), "#%Module")
+
+    easyblocks = [e for e in easyblocks if 'cray' in e]
+
     for easyblock in easyblocks:
         # dynamically define new inner functions that can be added as class methods to ModuleOnlyTest
         if os.path.basename(easyblock) == 'systemcompiler.py':
             # use GCC as name when testing SystemCompiler easyblock
             exec("def innertest(self): template_module_only_test(self, '%s', name='GCC', version='system')" % easyblock)
+        elif os.path.basename(easyblock) == 'craytoolchain.py':
+            # make sure that a (known) PrgEnv is included as a dependency
+            extra_txt = 'dependencies = [("PrgEnv-gnu/1.2.3", EXTERNAL_MODULE)]'
+            exec("def innertest(self): template_module_only_test(self, '%s', extra_txt='%s')" % (easyblock, extra_txt))
         else:
             exec("def innertest(self): template_module_only_test(self, '%s')" % easyblock)
         innertest.__doc__ = "Test for using --module-only with easyblock %s" % easyblock
