@@ -42,6 +42,7 @@ from easybuild.easyblocks.generic.intelbase import IntelBase, ACTIVATION_NAME_20
 from easybuild.easyblocks.generic.intelbase import LICENSE_FILE_NAME_2012
 from easybuild.easyblocks.t.tbb import get_tbb_gccprefix
 from easybuild.tools.run import run_cmd
+from easybuild.tools.systemtools import get_shared_lib_ext
 
 
 def get_icc_version():
@@ -110,7 +111,7 @@ class EB_icc(IntelBase):
             binfiles += ['idb']
 
         binaries = [os.path.join(binprefix, f) for f in binfiles]
-        libraries = [os.path.join(libprefix, 'lib%s' % l) for l in ['iomp5.a', 'iomp5.so']]
+        libraries = [os.path.join(libprefix, 'lib%s' % l) for l in ['iomp5.a', 'iomp5.%s' % get_shared_lib_ext()]]
         sanity_check_files = binaries + libraries
         if LooseVersion(self.version) > LooseVersion('2015'):
             sanity_check_files.append('include/omp.h')

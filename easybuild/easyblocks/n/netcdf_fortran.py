@@ -37,6 +37,7 @@ import os
 import easybuild.tools.environment as env
 import easybuild.tools.toolchain as toolchain
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
+from easybuild.tools.systemtools import get_shared_lib_ext
 
 
 class EB_netCDF_minus_Fortran(ConfigureMake):
@@ -60,11 +61,10 @@ class EB_netCDF_minus_Fortran(ConfigureMake):
         """
         Custom sanity check for netCDF-Fortran
         """
-
+        shlib_ext = get_shared_lib_ext()
         custom_paths = {
-                        'files': ["bin/nf-config"] + ["lib/%s" % x for x in ["libnetcdff.so", "libnetcdff.a"]] +
-                                 ["include/%s" % x for x in ["netcdf.inc", "netcdf.mod", "typesizes.mod"]],
-                        'dirs': []
-                       }
-
+            'files': ["bin/nf-config"] + ["lib/libnetcdff.%s" % x for x in ['a', shlib_ext]] +
+                     ["include/%s" % x for x in ["netcdf.inc", "netcdf.mod", "typesizes.mod"]],
+            'dirs': [],
+        }
         super(EB_netCDF_minus_Fortran, self).sanity_check_step(custom_paths=custom_paths)

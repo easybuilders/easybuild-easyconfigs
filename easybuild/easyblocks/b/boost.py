@@ -46,7 +46,7 @@ from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.modules import get_software_root
 from easybuild.tools.run import run_cmd
-from easybuild.tools.systemtools import get_glibc_version, UNKNOWN
+from easybuild.tools.systemtools import UNKNOWN, get_glibc_version, get_shared_lib_ext
 
 
 class EB_Boost(EasyBlock):
@@ -172,14 +172,16 @@ class EB_Boost(EasyBlock):
 
     def sanity_check_step(self):
         """Custom sanity check for Boost."""
+        shlib_ext = get_shared_lib_ext()
+
         custom_paths = {
-            'files': ['lib/libboost_system.so'],
+            'files': ['lib/libboost_system.%s' % shlib_ext],
             'dirs': ['include/boost']
         }
 
         if self.cfg['boost_mpi']:
-            custom_paths["files"].append('lib/libboost_mpi.so')
+            custom_paths["files"].append('lib/libboost_mpi.%s' % shlib_ext)
         if get_software_root('Python'):
-            custom_paths["files"].append('lib/libboost_python.so')
+            custom_paths["files"].append('lib/libboost_python.%s' % shlib_ext)
 
         super(EB_Boost, self).sanity_check_step(custom_paths=custom_paths)

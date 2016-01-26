@@ -32,6 +32,7 @@ from distutils.version import LooseVersion
 
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.tools import environment
+from easybuild.tools.systemtools import get_shared_lib_ext
 
 
 EXTS_FILTER_R_PACKAGES = ("R -q --no-save", "library(%(ext_name)s)")
@@ -74,15 +75,16 @@ class EB_R(ConfigureMake):
 
     def sanity_check_step(self):
         """Custom sanity check for R."""
+        shlib_ext = get_shared_lib_ext()
 
         libfiles = [os.path.join('include', x) for x in ['Rconfig.h', 'Rdefines.h', 'Rembedded.h',
                                                          'R.h', 'Rinterface.h', 'Rinternals.h',
                                                          'Rmath.h', 'Rversion.h', 'S.h']]
-        modfiles = ['internet.so', 'lapack.so']
+        modfiles = ['internet.%s' % shlib_ext, 'lapack.%s' % shlib_ext]
         if LooseVersion(self.version) < LooseVersion('3.2'):
-            modfiles.append('vfonts.so')
+            modfiles.append('vfonts.%s' % shlib_ext)
         libfiles += [os.path.join('modules', x) for x in modfiles]
-        libfiles += ['lib/libR.so']
+        libfiles += ['lib/libR.%s' % shlib_ext]
 
         custom_paths = {
             'files': ['bin/%s' % x for x in ['R', 'Rscript']] +
