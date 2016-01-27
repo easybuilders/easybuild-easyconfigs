@@ -1,0 +1,32 @@
+# This file is an EasyBuild reciPY as per https://github.com/hpcugent/easybuild
+# Author: Pablo Escobar Lopez
+# Swiss Institute of Bioinformatics
+# Biozentrum - University of Basel
+easyblock = 'ConfigureMake'
+
+name = 'Jellyfish'
+version = '2.2.4'
+
+homepage = 'http://www.genome.umd.edu/jellyfish.html'
+description = """ Jellyfish is a tool for fast, memory-efficient counting of k-mers in DNA."""
+
+toolchain = {'name': 'foss', 'version': '2015b'}
+
+source_urls = ['https://github.com/gmarcais/Jellyfish/releases/download/v%(version)s']
+sources = [SOURCELOWER_TAR_GZ]
+
+parallel = 1
+
+# The tests for the Bloom filter are statistical tests and can randomly fail, they actually don't make a lot of sense
+runtest = "check GTEST_FILTER=-'*Bloom*'"
+
+postinstallcmds = ["cp config.h %(installdir)s/include/%(namelower)s-%(version)s/%(namelower)s/"]
+
+sanity_check_paths = {
+    'files': ['bin/jellyfish'],
+    'dirs': []
+}
+
+modextrapaths = {'CPATH': 'include/%(namelower)s-%(version)s'}
+
+moduleclass = 'bio'

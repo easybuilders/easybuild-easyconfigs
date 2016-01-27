@@ -1,0 +1,37 @@
+name = 'Trilinos'
+version = '12.4.2'
+versionsuffix = '-Python-2.7.11'
+
+homepage = 'http://trilinos.sandia.gov/'
+description = """The Trilinos Project is an effort to develop algorithms and enabling technologies
+ within an object-oriented software framework for the solution of large-scale, complex multi-physics
+ engineering and scientific problems. A unique design feature of Trilinos is its focus on packages."""
+
+toolchain = {'name': 'intel', 'version': '2015b'}
+toolchainopts = {'usempi': True, 'pic': True, 'strict': True}
+
+source_urls = ['http://trilinos.csbsju.edu/download/files/']
+sources = ['%(namelower)s-%(version)s-Source.tar.gz']
+
+patches = ['fix-parmetis.patch']
+
+dependencies = [
+    ('Boost', '1.59.0', versionsuffix),
+    ('SCOTCH', '6.0.4'),
+    ('SuiteSparse', '4.4.6', '-ParMETIS-4.0.3'),
+    ('ParMETIS', '4.0.3'),
+    ('netCDF', '4.3.3.1'),
+    ('MATIO', '1.5.2'),
+    ('GLM', '0.9.7.2'),
+]
+
+builddependencies = [('CMake', '3.4.1')]
+
+# STK Classic is deprecated/broken, STKDoc_tests needs to be disabled too because of it
+# see https://trilinos.org/oldsite/release_notes-11.10.html and https://github.com/trilinos/Trilinos/issues/19
+skip_exts = ['STKClassic', 'STKDoc_tests']
+
+# too parallel is too slow, and may cause build/tests to fail
+maxparallel = 10
+
+moduleclass = 'numlib'
