@@ -80,6 +80,14 @@ class EB_Python(ConfigureMake):
         """Set extra configure options."""
         self.cfg.update('configopts', "--with-threads --enable-shared")
 
+        # Need to be careful to match the unicode settings to the underlying python
+        if sys.maxunicode == 1114111:
+            self.cfg.update('configopts', "--enable-unicode=ucs4")
+        elif sys.maxunicode == 65535:
+            self.cfg.update('configopts', "--enable-unicode=ucs2")
+        else:
+            raise EasyBuildError("Unknown maxunicode value for your python: %d" % sys.maxunicode)
+
         modules_setup_dist = os.path.join(self.cfg['start_dir'], 'Modules', 'Setup.dist')
 
         libreadline = get_software_root('libreadline')
