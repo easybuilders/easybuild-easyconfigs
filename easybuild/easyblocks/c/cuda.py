@@ -31,7 +31,7 @@ from easybuild.tools.run import run_cmd, run_cmd_qa
 from easybuild.tools.systemtools import get_shared_lib_ext
 
 # Wrapper script definition
-wrapper = """#!/bin/sh
+WRAPPER_TEMPLATE = """#!/bin/sh
 echo "$@" | grep -e '-ccbin' -e '--compiler-bindir' > /dev/null
 if [ $? -eq 0 ];
 then
@@ -48,8 +48,9 @@ class EB_CUDA(Binary):
 
     @staticmethod
     def extra_options():
+        """Create a set of wrappers based on a list determined by the easyconfig file"""
         extra_vars = {
-            'host_compilers': [[], "Host compilers for which a wrapper will be generated", CUSTOM]
+            'host_compilers': [None, "Host compilers for which a wrapper will be generated", CUSTOM]
         }
         return Binary.extra_options(extra_vars)
 
@@ -96,26 +97,28 @@ class EB_CUDA(Binary):
         # this is workaround for not being able to specify --nox11 to the Perl install scripts
         if 'DISPLAY' in os.environ:
             os.environ.pop('DISPLAY')
-    
+
         #overriding maxhits default value to 300 (300s wait for nothing to change in the output without seeing a known question)
         run_cmd_qa(cmd, qanda, std_qa=stdqa, no_qa=noqanda, log_all=True, simple=True, maxhits=300)
 
     def post_install_step(self):
-        def create_wrapper(wrapper_name,wrapper_comp):
-	    wrapper_f = "%s/bin/%s" % (self.installdir, wrapper_name)
-	    write_file(wrapper_f, wrapper % wrapper_comp)
+        """Create wrappers for the specified host compilers"""
+        def create_wrapper(wrapper_name, wrapper_comp):
+            """Create for a particular compiler, with a particular name"""
+            wrapper_f = os.path.join(self.installdir, 'bin', wrapper_name)
+            write_file(wrapper_f, WRAPPER_TEMPLATE % wrapper_comp)
             adjust_permissions(wrapper_f, stat.S_IXUSR|stat.S_IRUSR|stat.S_IXGRP|stat.S_IRGRP|stat.S_IXOTH|stat.S_IROTH)
 
-	# Prepare wrappers to handle a default host compiler other than g++
-        for comp in self.cfg['host_compilers']:
-            create_wrapper('nvcc_%s' % comp,'%s' % comp)
+        # Prepare wrappers to handle a default host compiler other than g++
+        for comp in (self.cfg['host_compilers'] or []):
+            create_wrapper('nvcc_%s' % comp, comp)
 
     def sanity_check_step(self):
         """Custom sanity check for CUDA."""
         shlib_ext = get_shared_lib_ext()
 
         chk_libdir = ["lib64"]
-        
+
         # Versions higher than 6 do not provide 32 bit libraries
         if LooseVersion(self.version) < LooseVersion("6"):
             chk_libdir += ["lib"]
@@ -147,12 +150,3 @@ class EB_CUDA(Binary):
         })
 
         return guesses
-    
-    def make_module_extra(self):
-        """Specify CUDA_HOME """
-
-        txt = super(EB_CUDA, self).make_module_extra()
-
-        txt += self.module_generator.set_environment('CUDA_HOME', self.installdir)
-
-        return txt
