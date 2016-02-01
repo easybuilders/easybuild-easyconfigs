@@ -46,6 +46,8 @@ class CrayToolchain(Bundle):
         """
         prgenv_name, prgenv_mod = None, None
         unload_info = {}
+        swap_mod = ''
+
 
         # build dict with info for 'module swap' statements for dependencies,
         # i.e. a mapping of full module name to the module name to unload before loading
@@ -55,43 +57,43 @@ class CrayToolchain(Bundle):
             # determine versionless module name, e.g. 'fftw/3.3.4.1' => 'fftw'
             dep_name = '/'.join(mod_name.split('/')[:-1])
 
-            if dep_name.startswith('PrgEnv-'):
-                prgenv_name = dep_name
-                prgenv_mod = mod_name
+            if self.module_generator.SYNTAX == 'Tcl':
+                cond = "is-loaded %s" % dep_name
+                body = "module swap %s %s" % (dep_name, mod_name)
+            elif self.module_generator.SYNTAX == 'Lua':
+                cond = 'isloaded("%s")' % dep_name
+                body = 'swap("%s", "%s")' % (dep_name, mod_name)
             else:
-                unload_info.update({mod_name: dep_name})
+                raise EasyBuildError("Unknown module syntax: %s", self.module_generator.SYNTAX)
 
-        if prgenv_name is None:
-            raise EasyBuildError("Could not find a PrgEnv-* module listed as dependency: %s",
-                                 self.toolchain.dependencies)
+            self.log.debug("Swap info for dependencies of %s: %s", self.full_mod_name, unload_info)
 
-        self.log.debug("Swap info for dependencies of %s: %s", self.full_mod_name, unload_info)
+                # not calling super is OK since we dont need unloads, we need the swaps.
+                # load statement for all dependencies, including PrgEnv
+                #txt = super(CrayToolchain, self).make_module_dep(unload_info=unload_info)
 
-        # load statement for all dependencies, including PrgEnv
-        txt = super(CrayToolchain, self).make_module_dep(unload_info=unload_info)
+                # include conditional swap for PrgEnv module,
+                # to handle the case where another version the specified PrgEnv module is already loaded
 
-        # include conditional swap for PrgEnv module,
-        # to handle the case where another version the specified PrgEnv module is already loaded
-        if self.module_generator.SYNTAX == 'Tcl':
-            cond = "is-loaded %s" % prgenv_name
-            body = "module swap %s %s" % (prgenv_name, prgenv_mod)
-        elif self.module_generator.SYNTAX == 'Lua':
-            cond = 'isloaded("%s")' % prgenv_name
-            body = 'swap("%s", "%s")' % (prgenv_name, prgenv_mod)
-        else:
-            raise EasyBuildError("Unknown module syntax: %s", self.module_generator.SYNTAX)
 
-        swap_prgenv = self.module_generator.conditional_statement(cond, body)
+            swap_mod += self.module_generator.conditional_statement(cond, body)
+	    if self.module_generator.SYNTAX == 'Tcl':
+		cond = "is-loaded %s" % dep_name
+		body = "module load %s" %mod_name
+            else:
+		raise EasyBuildError("Not right now.")
 
-        # unload statements for PrgEnv-* modules must be included *first*
-        comment = self.module_generator.comment("first, unload any PrgEnv module that may be loaded").strip()
-        prgenv_unloads = ['', comment]
+	    swap_mod += self.module_generator.conditional_statement(cond,body, True)
+            if mod_name.startswith('PrgEnv-'):
+                prgenv_name=dep_name
+	
+	prgenv_unloads = []
         for prgenv in KNOWN_PRGENVS:
             if prgenv not in prgenv_name:
                 prgenv_unloads.append(self.module_generator.unload_module(prgenv).strip())
 
         comment = self.module_generator.comment("next, load toolchain components")
 
-        txt = '\n'.join(prgenv_unloads) + '\n\n' + comment + swap_prgenv + txt
+        txt = '\n'.join(prgenv_unloads) + '\n\n' + comment + swap_mod #+ txt
 
         return txt
