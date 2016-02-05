@@ -186,7 +186,7 @@ class EB_PSI(CMakeMake):
         txt = super(EB_PSI, self).make_module_extra()
         psi4datadir = glob.glob(os.path.join(self.installdir, 'share', 'psi*'))
         if len(psi4datadir) != 1:
-            raise EasyBuildError("Could not determine the PSI4 data dir, there are multiple possibilities: %s"
-                                 % psi4datadir)
+            raise EasyBuildError("Could not determine the PSI4 data dir, there are multiple possibilities: ",
+                                 psi4datadir)
         txt += self.module_generator.set_environment('PSI4DATADIR', psi4datadir[0])
         return txt
