@@ -16,7 +16,7 @@ You should also register an SSH public key, so you can easily clone, push to and
 Clone your fork of the easybuild-easyconfigs repository to your favorite workstation. 
 
 ```bash
-git clone git@github.com:YOUR\_GITHUB\_LOGIN/easybuild-easyconfigs.git
+git clone https://github.com/YOUR\_GITHUB\_LOGIN/easybuild-easyconfigs.git
 ```
 
 ### Pull in the develop branch
@@ -24,8 +24,8 @@ git clone git@github.com:YOUR\_GITHUB\_LOGIN/easybuild-easyconfigs.git
 Pull the _develop_ branch from the main easybuild-easyconfigs repository:
 
 ```bash
-cd easybuild
-git remote add github_hpcugent git@github.com:hpcugent/easybuild-easyconfigs.git
+cd easybuild-easyconfigs
+git remote add github_hpcugent https://github.com/hpcugent/easybuild-easyconfigs.git
 git branch develop
 git checkout develop
 git pull github_hpcugent develop
