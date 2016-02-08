@@ -32,6 +32,7 @@ easybuild.easyblocks package declaration
 @author: Jens Timmerman (Ghent University)
 """
 import os
+import pkg_resources
 from distutils.version import LooseVersion
 from pkgutil import extend_path
 
@@ -79,6 +80,6 @@ for subdir in subdirs:
 
 # And let python know this is not the only place to look for them, so we can have multiple
 # easybuild/easyblock paths in your python search path, next to the official easyblocks distribution
-__path__ = extend_path(__path__, __name__)  # @ReservedAssignment
+pkg_resources.declare_namespace(__name__)
 
 del subdir, subdirs, l, git_rev
