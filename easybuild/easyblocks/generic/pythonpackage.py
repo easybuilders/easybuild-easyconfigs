@@ -49,8 +49,8 @@ from easybuild.tools.run import run_cmd
 
 # not 'easy_install' deliberately, to avoid that pkg installations listed in easy-install.pth get preference
 # '.' is required at the end when using easy_install/pip in unpacked source dir
-EASY_INSTALL_INSTALL_CMD = "python setup.py easy_install --prefix=%(prefix)s %(installopts)s ."
-PIP_INSTALL_CMD = "pip install --install-option '--prefix=%(prefix)s' %(installopts)s $PWD"
+EASY_INSTALL_INSTALL_CMD = "python setup.py easy_install --prefix=%(prefix)s %(installopts)s %(loc)s"
+PIP_INSTALL_CMD = "pip install --install-option '--prefix=%(prefix)s' %(installopts)s %(loc)s"
 SETUP_PY_INSTALL_CMD = "python setup.py install --prefix=%(prefix)s %(installopts)s"
 UNKNOWN = 'UNKNOWN'
 
@@ -90,6 +90,7 @@ class PythonPackage(ExtensionEasyBlock):
         if extra_vars is None:
             extra_vars = {}
         extra_vars.update({
+            'unpack_sources': [True, "Unpack sources prior to build/install", CUSTOM],
             'runtest': [True, "Run unit tests.", CUSTOM],  # overrides default
             'use_easy_install': [False, "Install using '%s'" % EASY_INSTALL_INSTALL_CMD, CUSTOM],
             'use_pip': [False, "Install using '%s'" % PIP_INSTALL_CMD, CUSTOM],
@@ -170,23 +171,36 @@ class PythonPackage(ExtensionEasyBlock):
 
         # mainly for debugging
         if self.install_cmd.startswith(EASY_INSTALL_INSTALL_CMD):
-            run_cmd("python setup.py easy_install --version")
+            run_cmd("python setup.py easy_install --version", verbose=False)
         if self.install_cmd.startswith(PIP_INSTALL_CMD):
-            run_cmd("pip --version")
+            run_cmd("pip --version", verbose=False)
 
         cmd = []
         if extrapath:
             cmd.append(extrapath)
 
+        if self.cfg['unpack_sources']:
+            # specify current directory
+            loc = '.'
+        else:
+            # specify path to 1st source file
+            loc = self.src[0]['path']
+
         cmd.extend([
             self.cfg['preinstallopts'],
             self.install_cmd % {
                 'installopts': self.cfg['installopts'],
+                'loc': loc,
                 'prefix': prefix,
             },
         ])
 
         return ' '.join(cmd)
+
+    def extract_step(self):
+        """Unpack source files, unless instructed otherwise."""
+        if self.cfg['unpack_sources']:
+            super(PythonPackage, self).extract_step()
 
     def prerun(self):
         """Prepare extension by determining Python site lib dir."""
@@ -233,7 +247,7 @@ class PythonPackage(ExtensionEasyBlock):
 
     def build_step(self):
         """Build Python package using setup.py"""
-        if not self.cfg.get('use_easy_install', False):
+        if self.use_setup_py:
             cmd = "%s python setup.py build %s" % (self.cfg['prebuildopts'], self.cfg['buildopts'])
             run_cmd(cmd, log_all=True, simple=True)
 
