@@ -32,8 +32,9 @@ EasyBuild support for Python packages, implemented as an easyblock
 @author: Jens Timmerman (Ghent University)
 """
 import os
+import re
 import tempfile
-from os.path import expanduser
+from distutils.version import LooseVersion
 from vsc.utils import fancylogger
 from vsc.utils.missing import nub
 
@@ -42,7 +43,6 @@ from easybuild.easyblocks.python import EXTS_FILTER_PYTHON_PACKAGES
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.framework.extensioneasyblock import ExtensionEasyBlock
 from easybuild.tools.build_log import EasyBuildError
-from easybuild.tools.config import build_option
 from easybuild.tools.filetools import mkdir, rmtree2, which
 from easybuild.tools.run import run_cmd
 
@@ -50,7 +50,7 @@ from easybuild.tools.run import run_cmd
 # not 'easy_install' deliberately, to avoid that pkg installations listed in easy-install.pth get preference
 # '.' is required at the end when using easy_install/pip in unpacked source dir
 EASY_INSTALL_INSTALL_CMD = "python setup.py easy_install --prefix=%(prefix)s %(installopts)s %(loc)s"
-PIP_INSTALL_CMD = "pip install --install-option '--prefix=%(prefix)s' %(installopts)s %(loc)s"
+PIP_INSTALL_CMD = "pip install --prefix=%(prefix)s %(installopts)s %(loc)s"
 SETUP_PY_INSTALL_CMD = "python setup.py install --prefix=%(prefix)s %(installopts)s"
 UNKNOWN = 'UNKNOWN'
 
@@ -114,8 +114,9 @@ class PythonPackage(ExtensionEasyBlock):
         self.all_pylibdirs = UNKNOWN
 
         # make sure there's no site.cfg in $HOME, because setup.py will find it and use it
-        if os.path.exists(os.path.join(expanduser('~'), 'site.cfg')):
-            raise EasyBuildError("Found site.cfg in your home directory (%s), please remove it.", expanduser('~'))
+        home = os.path.expanduser('~')
+        if os.path.exists(os.path.join(home, 'site.cfg')):
+            raise EasyBuildError("Found site.cfg in your home directory (%s), please remove it.", home)
 
         if not 'modulename' in self.options:
             self.options['modulename'] = self.name.lower()
@@ -173,7 +174,21 @@ class PythonPackage(ExtensionEasyBlock):
         if self.install_cmd.startswith(EASY_INSTALL_INSTALL_CMD):
             run_cmd("python setup.py easy_install --version", verbose=False)
         if self.install_cmd.startswith(PIP_INSTALL_CMD):
-            run_cmd("pip --version", verbose=False)
+            out, _ = run_cmd("pip --version", verbose=False, simple=False)
+
+            # pip 8.x or newer required, because of --prefix option being used
+            pip_version_regex = re.compile('^pip ([0-9.]+)')
+            res = pip_version_regex.search(out)
+            if res:
+                pip_version = res.group(1)
+                if LooseVersion(pip_version) >= LooseVersion('8.0'):
+                    self.log.info("Found pip version %s, OK", pip_version)
+                else:
+                    raise EasyBuildError("Need pip version 8.0 or newer, found version %s", pip_version)
+
+            elif not self.dry_run:
+                raise EasyBuildError("Could not determine pip version from \"%s\" using pattern '%s'",
+                                     out, pip_version_regex.pattern)
 
         cmd = []
         if extrapath:
