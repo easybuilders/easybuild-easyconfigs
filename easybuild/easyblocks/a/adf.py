@@ -70,8 +70,13 @@ class EB_ADF(EasyBlock):
     def install_step(self):
         """Custom install procedure for ADF."""
 
-        # this shouldn't be needed, is init.sh shipped in the wrong place?!
-        shutil.copy2(os.path.join('Install', 'init.sh'), os.path.join('bin', 'init.sh'))
+        # bin/init.sh is required to build, so copy it from Install/init.sh
+        src_init_path = os.path.join('Install', 'init.sh')
+        target_init_path = os.path.join('bin', 'init.sh')
+        try:
+            shutil.copy2(src_init_path, target_init_path)
+        except OSError as err:
+            raise EasyBuildError("Failed to copy %s to %s: %s", src_init_path, target_init_path, err)
 
         cmd = "./bin/foray -j %d" % self.cfg['parallel']
         run_cmd(cmd, log_all=True, simple=True, log_ok=True)
