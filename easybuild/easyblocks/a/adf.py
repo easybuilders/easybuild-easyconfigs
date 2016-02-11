@@ -24,6 +24,8 @@
 ##
 """
 EasyBuild support for building and installing ADF, implemented as an easyblock
+
+@author: Kenneth Hoste (Ghent University)
 """
 import os
 import shutil
