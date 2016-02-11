@@ -95,10 +95,10 @@ class EB_HPL(ConfigureMake):
         extra_makeopts += 'CC="%(mpicc)s" MPICC="%(mpicc)s" LINKER="%(mpicc)s" ' % {'mpicc': os.getenv('MPICC')}
 
         # libraries: LAPACK and FFTW
-        extra_makeopts += 'LAlib="%s %s" ' % (os.getenv('LIBFFT'), os.getenv('LIBLAPACK_MT'))
+        extra_makeopts += 'LAlib="%s" ' % os.getenv('LIBLAPACK_MT')
 
         # HPL options
-        extra_makeopts += 'HPL_OPTS="%s -DUSING_FFTW" ' % os.getenv('CPPFLAGS')
+        extra_makeopts += 'HPL_OPTS="%s " ' % os.getenv('CPPFLAGS')
 
         # linker flags
         extra_makeopts += 'LINKFLAGS="%s %s %s" ' % (os.getenv('CFLAGS'), os.getenv('LDFLAGS'), os.getenv('LIBS', ''))
