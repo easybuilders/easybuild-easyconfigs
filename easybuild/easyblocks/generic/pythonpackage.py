@@ -194,7 +194,7 @@ class PythonPackage(ExtensionEasyBlock):
         if extrapath:
             cmd.append(extrapath)
 
-        if self.cfg['unpack_sources']:
+        if self.cfg.get('unpack_sources', True):
             # specify current directory
             loc = '.'
         else:
@@ -214,7 +214,7 @@ class PythonPackage(ExtensionEasyBlock):
 
     def extract_step(self):
         """Unpack source files, unless instructed otherwise."""
-        if self.cfg['unpack_sources']:
+        if self.cfg.get('unpack_sources', True):
             super(PythonPackage, self).extract_step()
 
     def prerun(self):
