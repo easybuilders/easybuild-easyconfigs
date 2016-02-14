@@ -1,5 +1,5 @@
 ##
-# Copyright 2015-2015 Bart Oldeman
+# Copyright 2015-2016 Bart Oldeman
 #
 # This file is triple-licensed under GPLv2 (see below), MIT, and
 # BSD three-clause licenses.
