@@ -36,7 +36,8 @@ import shutil
 import sys
 import tempfile
 import unittest
-from vsc import fancylogger
+
+from vsc.utils import fancylogger
 
 import easybuild.tools.build_log  # initialize EasyBuild logging, so we disable it
 import test.easyconfigs.easyconfigs as e
@@ -44,6 +45,9 @@ import test.easyconfigs.easyconfigs as e
 # disable all logging to significantly speed up tests
 fancylogger.disableDefaultHandlers()
 fancylogger.setLogLevelError()
+
+# make sure no deprecated behaviour is triggered
+os.environ['EASYBUILD_DEPRECATED'] = '10000'
 
 os.environ['EASYBUILD_TMP_LOGDIR'] = tempfile.mkdtemp(prefix='easyconfigs_test_')
 
