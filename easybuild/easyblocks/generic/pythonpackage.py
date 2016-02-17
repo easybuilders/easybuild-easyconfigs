@@ -1,5 +1,5 @@
 ##
-# Copyright 2009-2015 Ghent University
+# Copyright 2009-2016 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -32,8 +32,9 @@ EasyBuild support for Python packages, implemented as an easyblock
 @author: Jens Timmerman (Ghent University)
 """
 import os
+import re
 import tempfile
-from os.path import expanduser
+from distutils.version import LooseVersion
 from vsc.utils import fancylogger
 from vsc.utils.missing import nub
 
@@ -42,13 +43,15 @@ from easybuild.easyblocks.python import EXTS_FILTER_PYTHON_PACKAGES
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.framework.extensioneasyblock import ExtensionEasyBlock
 from easybuild.tools.build_log import EasyBuildError
-from easybuild.tools.config import build_option
 from easybuild.tools.filetools import mkdir, rmtree2, which
 from easybuild.tools.run import run_cmd
 
 
 # not 'easy_install' deliberately, to avoid that pkg installations listed in easy-install.pth get preference
-EASY_INSTALL_CMD = "python setup.py easy_install"
+# '.' is required at the end when using easy_install/pip in unpacked source dir
+EASY_INSTALL_INSTALL_CMD = "python setup.py easy_install --prefix=%(prefix)s %(installopts)s %(loc)s"
+PIP_INSTALL_CMD = "pip install --prefix=%(prefix)s %(installopts)s %(loc)s"
+SETUP_PY_INSTALL_CMD = "python setup.py install --prefix=%(prefix)s %(installopts)s"
 UNKNOWN = 'UNKNOWN'
 
 
@@ -87,8 +90,10 @@ class PythonPackage(ExtensionEasyBlock):
         if extra_vars is None:
             extra_vars = {}
         extra_vars.update({
+            'unpack_sources': [True, "Unpack sources prior to build/install", CUSTOM],
             'runtest': [True, "Run unit tests.", CUSTOM],  # overrides default
-            'use_easy_install': [False, "Install using '%s'" % EASY_INSTALL_CMD, CUSTOM],
+            'use_easy_install': [False, "Install using '%s'" % EASY_INSTALL_INSTALL_CMD, CUSTOM],
+            'use_pip': [False, "Install using '%s'" % PIP_INSTALL_CMD, CUSTOM],
             'zipped_egg': [False, "Install as a zipped eggs (requires use_easy_install)", CUSTOM],
         })
         return ExtensionEasyBlock.extra_options(extra_vars=extra_vars)
@@ -109,26 +114,40 @@ class PythonPackage(ExtensionEasyBlock):
         self.all_pylibdirs = UNKNOWN
 
         # make sure there's no site.cfg in $HOME, because setup.py will find it and use it
-        if os.path.exists(os.path.join(expanduser('~'), 'site.cfg')):
-            raise EasyBuildError("Found site.cfg in your home directory (%s), please remove it.", expanduser('~'))
+        home = os.path.expanduser('~')
+        if os.path.exists(os.path.join(home, 'site.cfg')):
+            raise EasyBuildError("Found site.cfg in your home directory (%s), please remove it.", home)
 
         if not 'modulename' in self.options:
             self.options['modulename'] = self.name.lower()
 
-        if self.cfg.get('zipped_egg', False) and not self.cfg.get('use_easy_install', False):
-            raise EasyBuildError("Installing zipped eggs requires use_easy_install = True")
-
+        self.use_setup_py = False
         if self.cfg.get('use_easy_install', False):
+            self.install_cmd = EASY_INSTALL_INSTALL_CMD
 
-            self.install_cmd = "%s --no-deps" % EASY_INSTALL_CMD
+            # don't auto-install dependencies
+            self.cfg.update('installopts', '--no-deps')
+
             if self.cfg.get('zipped_egg', False):
-                self.install_cmd += " --zip-ok"
-            # '.' is required at the end when using easy_install in unpacked source dir
-            self.install_cmd_extra = '.'
+                self.cfg.update('installopts', '--zip-ok')
+
+        elif self.cfg.get('use_pip', False):
+            self.install_cmd = PIP_INSTALL_CMD
+
+            # don't auto-install dependencies
+            self.cfg.update('installopts', '--no-deps')
+
+            if self.cfg.get('zipped_egg', False):
+                self.cfg.update('installopts', '--egg')
 
         else:
-            self.install_cmd = "python setup.py install"
-            self.install_cmd_extra = None
+            self.use_setup_py = True
+            self.install_cmd = SETUP_PY_INSTALL_CMD
+
+            if self.cfg.get('zipped_egg', False):
+                raise EasyBuildError("Installing zipped eggs requires using easy_install or pip")
+
+        self.log.debug("Using '%s' as install command", self.install_cmd)
 
     def set_pylibdirs(self):
         """Set Python lib directory-related class variables."""
@@ -150,16 +169,53 @@ class PythonPackage(ExtensionEasyBlock):
 
     def compose_install_command(self, prefix, extrapath=None):
         """Compose full install command."""
+
+        # mainly for debugging
+        if self.install_cmd.startswith(EASY_INSTALL_INSTALL_CMD):
+            run_cmd("python setup.py easy_install --version", verbose=False)
+        if self.install_cmd.startswith(PIP_INSTALL_CMD):
+            out, _ = run_cmd("pip --version", verbose=False, simple=False)
+
+            # pip 8.x or newer required, because of --prefix option being used
+            pip_version_regex = re.compile('^pip ([0-9.]+)')
+            res = pip_version_regex.search(out)
+            if res:
+                pip_version = res.group(1)
+                if LooseVersion(pip_version) >= LooseVersion('8.0'):
+                    self.log.info("Found pip version %s, OK", pip_version)
+                else:
+                    raise EasyBuildError("Need pip version 8.0 or newer, found version %s", pip_version)
+
+            elif not self.dry_run:
+                raise EasyBuildError("Could not determine pip version from \"%s\" using pattern '%s'",
+                                     out, pip_version_regex.pattern)
+
         cmd = []
         if extrapath:
             cmd.append(extrapath)
 
-        cmd.extend([self.cfg['preinstallopts'], self.install_cmd, '--prefix=%s' % prefix, self.cfg['installopts']])
+        if self.cfg.get('unpack_sources', True):
+            # specify current directory
+            loc = '.'
+        else:
+            # specify path to 1st source file
+            loc = self.src[0]['path']
 
-        if self.install_cmd_extra:
-            cmd.append(self.install_cmd_extra)
+        cmd.extend([
+            self.cfg['preinstallopts'],
+            self.install_cmd % {
+                'installopts': self.cfg['installopts'],
+                'loc': loc,
+                'prefix': prefix,
+            },
+        ])
 
         return ' '.join(cmd)
+
+    def extract_step(self):
+        """Unpack source files, unless instructed otherwise."""
+        if self.cfg.get('unpack_sources', True):
+            super(PythonPackage, self).extract_step()
 
     def prerun(self):
         """Prepare extension by determining Python site lib dir."""
@@ -206,7 +262,7 @@ class PythonPackage(ExtensionEasyBlock):
 
     def build_step(self):
         """Build Python package using setup.py"""
-        if not self.cfg.get('use_easy_install', False):
+        if self.use_setup_py:
             cmd = "%s python setup.py build %s" % (self.cfg['prebuildopts'], self.cfg['buildopts'])
             run_cmd(cmd, log_all=True, simple=True)
 
@@ -249,10 +305,6 @@ class PythonPackage(ExtensionEasyBlock):
 
     def install_step(self):
         """Install Python package to a custom path using setup.py"""
-
-        # mainly for debugging
-        if self.install_cmd.startswith(EASY_INSTALL_CMD):
-            run_cmd("%s --version" % EASY_INSTALL_CMD)
 
         # create expected directories
         abs_pylibdirs = [os.path.join(self.installdir, pylibdir) for pylibdir in self.all_pylibdirs]
