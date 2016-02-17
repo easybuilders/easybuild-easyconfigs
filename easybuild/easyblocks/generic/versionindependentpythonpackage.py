@@ -35,7 +35,7 @@ import os
 import re
 
 import easybuild.tools.environment as env
-from easybuild.easyblocks.generic.pythonpackage import EASY_INSTALL_CMD, PythonPackage
+from easybuild.easyblocks.generic.pythonpackage import PythonPackage
 from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.run import run_cmd
 
@@ -64,9 +64,7 @@ class VersionIndependentPythonPackage(PythonPackage):
             # this will raise an error and not return
             raise EasyBuildError("Failed to install: %s", err)
 
-        if self.install_cmd.startswith(EASY_INSTALL_CMD):
-            self.cfg.update('installopts', '--install-dir=%s' % full_pylibdir)
-        else:
+        if self.use_setup_py:
             extra_installopts = [
                 '--install-lib=%s' % full_pylibdir,
                 '--single-version-externally-managed',
@@ -74,6 +72,10 @@ class VersionIndependentPythonPackage(PythonPackage):
                 '--no-compile',
             ]
             self.cfg.update('installopts', ' '.join(extra_installopts))
+        else:
+            # using easy_install or pip always results in installation that is specific to Python version
+            eb_name = self.__class__.__name__
+            raise EasyBuildError("%s easyblock is not compatible with using easy_install or pip", eb_name)
 
         cmd = self.compose_install_command(self.installdir)
         run_cmd(cmd, log_all=True, simple=True, log_output=True)
