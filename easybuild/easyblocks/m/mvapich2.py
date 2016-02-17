@@ -36,7 +36,7 @@ EasyBuild support for building and installing the MVAPICH2 MPI library, implemen
 import os
 
 import easybuild.tools.environment as env
-from easybuild.easyblocks.m.mpich import EB_MPICH
+from easybuild.easyblocks.mpich import EB_MPICH
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.systemtools import get_shared_lib_ext
@@ -117,4 +117,4 @@ class EB_MVAPICH2(EB_MPICH):
         custom_paths = {
             'files': ['bin/%s' % x for x in ['mpiexec.hydra']] 
         }
-        super(EB_MVAPICH2, self).sanity_check_step(additional_paths=custom_paths)
+        super(EB_MVAPICH2, self).sanity_check_step(custom_paths=custom_paths)

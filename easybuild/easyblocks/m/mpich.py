@@ -65,13 +65,17 @@ class EB_MPICH(ConfigureMake):
         # or they will leak in the mpix wrappers.
         # Specific variables to be included in the wrapper exists, but they changed between MPICH 3.1.4 and MPICH 3.2
         # and in a typical scenario we probably don't want them.
-        env_var_tuples = [("F90", "FC"), ("F90FLAGS", "FCFLAGS")]
-        env_var_tuples += [("CFLAGS", "MPICHLIB_CFLAGS"), ("CPPFLAGS", "MPICHLIB_CPPFLAGS")]
-        env_var_tuples += [("CXXFLAGS", "MPICHLIB_CXXFLAGS"), ("FFLAGS", "MPICHLIB_FFLAGS")]
-        env_var_tuples += [("FCFLAGS", "MPICHLIB_FCFLAGS")]
-        env_var_tuples += [("LDFLAGS", "MPICHLIB_LDFLAGS"), ("LIBS", "MPICHLIB_LIBS")]
-        vars_to_unset = []
-        for (envvar, new_envvar) in env_var_tuples:
+        env_vars = {
+                "CFLAGS"   : "MPICHLIB_CFLAGS",
+                "CPPFLAGS" : "MPICHLIB_CPPFLAGS",
+                "CXXFLAGS" : "MPICHLIB_CXXFLAGS",
+                "FCFLAGS"  : "MPICHLIB_FCFLAGS",
+                "FFLAGS"   : "MPICHLIB_FFLAGS",
+                "LDFLAGS"  : "MPICHLIB_LDFLAGS",
+                "LIBS"     : "MPICHLIB_LIBS",
+        }
+        vars_to_unset = [ 'F90', 'F90FLAGS' ]
+        for (envvar, new_envvar) in env_vars.items():
             envvar_val = os.getenv(envvar)
             if envvar_val:
                 new_envvar_val = os.getenv(new_envvar)
@@ -89,16 +93,17 @@ class EB_MPICH(ConfigureMake):
 
     # make and make install are default
 
-    def sanity_check_step(self, additional_paths=None):
+    def sanity_check_step(self, custom_paths=None):
         """
         Custom sanity check for MPICH
         """
         shlib_ext = get_shared_lib_ext()
-        custom_paths = {
-            'files': ['bin/%s' % x for x in ['mpicc', 'mpicxx', 'mpif77', 'mpif90' ]] +
+        if custom_paths is None:
+            custom_paths = {}
+        
+        custom_paths.setdefault('files', []).extend(['bin/%s' % x for x in ['mpicc', 'mpicxx', 'mpif77', 'mpif90' ]] +
                      ['lib/lib%s' % y for x in ['fmpich', 'mpichcxx', 'mpichf90', 'mpich', 'mpl', 'opa']
                                       for y in ['%s.%s' % (x, shlib_ext)]] +
-                     ((additional_paths or {'files': []}).get('files') or []),
-            'dirs': ['include'] + ((additional_paths or {'dirs': []}).get('dirs') or []),
-        }
+                     ((custom_paths or {'files': []}).get('files') or []))
+        custom_paths.setdefault('dirs', []).extend(['include'] + ((custom_paths or {'dirs': []}).get('dirs') or []))
         super(EB_MPICH, self).sanity_check_step(custom_paths=custom_paths)
