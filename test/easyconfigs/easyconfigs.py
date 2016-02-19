@@ -344,7 +344,7 @@ def suite():
     cnt = 0
     for (subpath, _, specs) in os.walk(easyconfigs_path, topdown=True):
         for spec in specs:
-            if spec.endswith('.eb'):
+            if spec.endswith('.eb') and spec != 'TEMPLATE.eb':
                 cnt += 1
                 exec("def innertest(self): template_easyconfig_test(self, '%s')" % os.path.join(subpath, spec))
                 innertest.__doc__ = "Test for parsing of easyconfig %s" % spec
