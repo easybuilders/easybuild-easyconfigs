@@ -125,49 +125,39 @@ class EB_picard(EasyBlock):
             
             """The following jar files were only available in the specified versions of picard"""
             if LooseVersion(self.version) >= LooseVersion('1.100') and LooseVersion(self.version) < LooseVersion('1.114'):
-                jar_files += [
+                jar_files.extend([
                     'sam-%s' % self.version,
                     'tribble-%s' % self.version,
                     'variant-%s' % self.version,
-                ]
+                ])
             if LooseVersion(self.version) >= LooseVersion('1.109'):
-                jar_files += [
-                    'RevertOriginalBaseQualitiesAndAddMateCigar',
-                ]
+                jar_files.append('RevertOriginalBaseQualitiesAndAddMateCigar')
             if LooseVersion(self.version) >= LooseVersion('1.111'):
-                jar_files += [
-                    'GatherBamFiles',
-                ]
+                jar_files.append('GatherBamFiles')
             if LooseVersion(self.version) >= LooseVersion('1.113'):
-                jar_files += [
+                jar_files.extend([
                     'AddCommentsToBam',
                     'CollectWgsMetrics',
-                ]
+                ])
             if LooseVersion(self.version) >= LooseVersion('1.114'):
-                jar_files += [
-                    'htsjdk-%s' % self.version,
-                ]
+                jar_files.append('htsjdk-%s' % self.version)
             if LooseVersion(self.version) >= LooseVersion('1.119'):
-                jar_files += [
+                jar_files.extend([
                     'CollectBaseDistributionByCycle',
                     'FifoBuffer',
-                ]
+                ])
             if LooseVersion(self.version) >= LooseVersion('1.120'):
-                jar_files += [
-                    'BedToIntervalList',
-                ]
+                jar_files.append('BedToIntervalList')
             if LooseVersion(self.version) >= LooseVersion('1.121'):
-                jar_files += [
-                    'SortVcf',
-                ]
+                jar_files.append('SortVcf')
             if LooseVersion(self.version) >= LooseVersion('1.122'):
-                jar_files += [
+                jar_files.extend([
                     'CollectHiSeqXPfFailMetrics',
                     'GenotypeConcordance',
                     'MarkDuplicatesWithMateCigar',
                     'UpdateVcfSequenceDictionary',
                     'VcfToIntervalList',
-                ]
+                ])
         else:
             """Starting with v1.124 a major structural change was made to picard"""
             """All versions >= 1.124 now only have these jar files"""
