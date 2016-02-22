@@ -168,7 +168,7 @@ class EB_picard(EasyBlock):
             ]
         
         custom_paths = {
-            'files': ["%s.jar" % (x) for x in jar_files],
+            'files': ["%s.jar" % x for x in jar_files],
             'dirs': [],
         }
 
