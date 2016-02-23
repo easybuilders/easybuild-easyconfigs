@@ -35,13 +35,6 @@ from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.filetools import write_file
 from easybuild.tools.run import run_cmd
 
-
-sanity_check_paths = {
-    'files': ['bin/guppy', 'bin/pplacer', 'bin/rppr'],
-    'dirs': [],
-}
-
-sanity_check_commands = [('pplacer', '--version | grep %(version)s')]
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 
 
@@ -52,8 +45,13 @@ class EB_pplacer(ConfigureMake):
     def configure_step(self):
         """Custom configuration procedure for pplacer."""
         # install dir has to be non-existing when we start (it may be there from a previous (failed) install
-        if os.path.exists(self.installdir):
-            shutil.rmtree(self.installdir)
+        try:
+            if os.path.exists(self.installdir):
+                shutil.rmtree(self.installdir)
+            self.log.warning("Existing install directory %s removed", self.installdir)
+
+        except OSError as err:
+            raise EasyBuildError("Failed to remove %s: %s", self.installdir, err)
 
         # configure OPAM to install pplacer dependencies
         env.setvar('OPAMROOT', self.installdir)
@@ -64,16 +62,14 @@ class EB_pplacer(ConfigureMake):
 
         env.setvar('OCAML_BACKEND', 'gcc')
 
-        run_cmd("eval `opam config env` && cat opam-requirements.txt | xargs opam install -y")
+        run_cmd("eval `opam config env` && cat opam-requirements.txt | xargs -t opam install -y")
 
         txt = "let version = \"v%s\"\n" % self.version
         write_file(os.path.join(self.builddir, 'pplacer-%s' % self.version, 'common_src', 'version.ml'), txt)
 
     def build_step(self):
         """Custom build procedure for pplacer: set up OPAM environment and run 'make'."""
-        
         self.cfg.update('prebuildopts', "eval `opam config env` && ")
-
         super(EB_pplacer, self).build_step()
 
     def install_step(self):
@@ -82,7 +78,6 @@ class EB_pplacer(ConfigureMake):
         to_bindir = os.path.join(self.installdir, 'bin')
         try:
             shutil.copytree(from_bindir, to_bindir)
-
         except OSError as err:
             raise EasyBuildError("Failed to copy %s to %s: %s", from_bindir, to_bindir, err)
 
