@@ -72,11 +72,10 @@ class EB_picard(EasyBlock):
 
     def sanity_check_step(self):
         """Custom sanity check for picard"""
-        """All versions prior to 1.124 have these jar files"""
+        # All versions prior to 1.124 have these jar files
         if LooseVersion(self.version) < LooseVersion('1.124'):
             jar_files = [
                 'picard-%s' % self.version,
-                
                 'AddOrReplaceReadGroups',
                 'BamIndexStats',
                 'BamToBfq',
@@ -123,7 +122,7 @@ class EB_picard(EasyBlock):
                 'ViewSam',
             ]
             
-            """The following jar files were only available in the specified versions of picard"""
+            # The following jar files were only available in the specified versions of picard
             if LooseVersion(self.version) >= LooseVersion('1.100') and LooseVersion(self.version) < LooseVersion('1.114'):
                 jar_files.extend([
                     'sam-%s' % self.version,
@@ -159,8 +158,8 @@ class EB_picard(EasyBlock):
                     'VcfToIntervalList',
                 ])
         else:
-            """Starting with v1.124 a major structural change was made to picard"""
-            """All versions >= 1.124 now only have these jar files"""
+            # Starting with v1.124 a major structural change was made to picard
+            # All versions >= 1.124 now only have these jar files
             jar_files = [
                 'htsjdk-%s' % self.version,
                 'picard',
