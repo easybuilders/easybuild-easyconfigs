@@ -190,7 +190,13 @@ class EB_PGI(EasyBlock):
         dirs = super(EB_PGI, self).make_module_req_guess()
         for key in dirs:
             dirs[key] = [os.path.join(self.install_subdir, d) for d in dirs[key]]
-        dirs.update({'CPATH': ''})
+
+        # $CPATH should not be defined in module for PGI, it causes problems
+        # cfr. https://github.com/hpcugent/easybuild-easyblocks/issues/830
+        if 'CPATH' in dirs:
+            self.log.info("Removing $CPATH entry: %s", dirs['CPATH']
+            del dirs['CPATH']
+
         return dirs
 
     def make_module_extra(self):
