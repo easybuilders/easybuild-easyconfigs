@@ -194,7 +194,7 @@ class EB_PGI(EasyBlock):
         # $CPATH should not be defined in module for PGI, it causes problems
         # cfr. https://github.com/hpcugent/easybuild-easyblocks/issues/830
         if 'CPATH' in dirs:
-            self.log.info("Removing $CPATH entry: %s", dirs['CPATH']
+            self.log.info("Removing $CPATH entry: %s", dirs['CPATH'])
             del dirs['CPATH']
 
         return dirs
