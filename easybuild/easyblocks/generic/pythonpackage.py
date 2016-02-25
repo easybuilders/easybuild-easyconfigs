@@ -360,8 +360,9 @@ class PythonPackage(ExtensionEasyBlock):
             for subdir in guesses[envvar]:
                 # only subdirectories that contain one or more files/libraries should be retained
                 fullpath = os.path.join(self.installdir, subdir)
-                if os.path.exists(fullpath) and any([os.path.isfile(x) for x in os.listdir(fullpath)]):
-                    newlist.append(subdir)
+                if os.path.exists(fullpath):
+                    if any([os.path.isfile(os.path.join(fullpath, x)) for x in os.listdir(fullpath)]):
+                        newlist.append(subdir)
             self.log.debug("Only retaining %s subdirs from %s for $%s (others don't provide any libraries)",
                            newlist, guesses[envvar], envvar)
             guesses[envvar] = newlist
