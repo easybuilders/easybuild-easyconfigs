@@ -46,7 +46,7 @@ from easybuild.framework.easyconfig import MANDATORY
 from easybuild.framework.easyconfig.easyconfig import EasyConfig, get_easyblock_class
 from easybuild.framework.easyconfig.tools import get_paths_for
 from easybuild.tools import config
-from easybuild.tools.filetools import write_file
+from easybuild.tools.filetools import mkdir, read_file, write_file
 from easybuild.tools.module_naming_scheme import GENERAL_CLASS
 from easybuild.tools.options import set_tmpdir
 
@@ -89,6 +89,59 @@ class ModuleOnlyTest(EnhancedTestCase):
         self.log = fancylogger.getLogger("EasyblocksModuleOnlyTest", fname=False)
         fd, self.eb_file = tempfile.mkstemp(prefix='easyblocks_module_only_test_', suffix='.eb')
         os.close(fd)
+
+    def test_make_module_pythonpackage(self):
+        """Test make_module_step of PythonPackage easyblock."""
+        app_class = get_easyblock_class('PythonPackage')
+        self.writeEC('PythonPackage', name='testpypkg', version='3.14')
+        app = app_class(EasyConfig(self.eb_file))
+
+        # install dir should not be there yet
+        self.assertFalse(os.path.exists(app.installdir))
+
+        # create install dir and populate it with subdirs/files
+        mkdir(app.installdir, parents=True)
+        # $PATH, $LD_LIBRARY_PATH, $LIBRARY_PATH, $CPATH, $PKG_CONFIG_PATH
+        write_file(os.path.join(app.installdir, 'bin', 'foo'), 'echo foo!')
+        write_file(os.path.join(app.installdir, 'include', 'foo.h'), 'bar')
+        write_file(os.path.join(app.installdir, 'lib', 'libfoo.a'), 'libfoo')
+        write_file(os.path.join(app.installdir, 'lib', 'python2.7', 'site-packages', 'foo.egg'), 'foo egg')
+        write_file(os.path.join(app.installdir, 'lib64', 'pkgconfig', 'foo.pc'), 'libfoo: foo')
+
+        # create module file
+        app.make_module_step()
+
+        self.assertTrue(TMPDIR in app.installdir)
+        self.assertTrue(TMPDIR in app.installdir_mod)
+
+        modtxt = None
+        for cand_mod_filename in ['3.14', '3.14.lua']:
+            full_modpath = os.path.join(app.installdir_mod, 'testpypkg', cand_mod_filename)
+            if os.path.exists(full_modpath):
+                modtxt = read_file(full_modpath)
+                break
+
+        self.assertFalse(modtxt is None)
+
+        regexs = [
+            (r'^prepend.path.*\WCPATH\W.*include"?\W*$', True),
+            (r'^prepend.path.*\WLD_LIBRARY_PATH\W.*lib"?\W*$', True),
+            (r'^prepend.path.*\WLIBRARY_PATH\W.*lib"?\W*$', True),
+            (r'^prepend.path.*\WPATH\W.*bin"?\W*$', True),
+            (r'^prepend.path.*\WPKG_CONFIG_PATH\W.*lib64/pkgconfig"?\W*$', True),
+            (r'^prepend.path.*\WPYTHONPATH\W.*lib/python2.7/site-packages"?\W*$', True),
+            # lib64 doesn't contain any library files, so these are *not* included in $LD_LIBRARY_PATH or $LIBRARY_PATH
+            (r'^prepend.path.*\WLD_LIBRARY_PATH\W.*lib64', False),
+            (r'^prepend.path.*\WLIBRARY_PATH\W.*lib64', False),
+        ]
+        for (pattern, found) in regexs:
+            regex = re.compile(pattern, re.M)
+            if found:
+                assert_msg = "Pattern '%s' found in: %s" % (regex.pattern, modtxt)
+            else:
+                assert_msg = "Pattern '%s' not found in: %s" % (regex.pattern, modtxt)
+
+            self.assertEqual(bool(regex.search(modtxt)), found, assert_msg)
 
     def tearDown(self):
         """Cleanup."""
