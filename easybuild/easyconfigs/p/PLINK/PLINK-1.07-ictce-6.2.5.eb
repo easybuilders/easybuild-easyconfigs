@@ -1,0 +1,47 @@
+# This file is an EasyBuild reciPY as per https://github.com/hpcugent/easybuild
+# Author: Pablo Escobar Lopez
+# Swiss Institute of Bioinformatics
+# Biozentrum - University of Basel
+
+easyblock = 'MakeCp'
+
+name = 'PLINK'
+version = '1.07'
+
+homepage = 'http://pngu.mgh.harvard.edu/~purcell/plink/'
+description = """ PLINK is a free, open-source whole genome association analysis toolset, 
+ designed to perform a range of basic, large-scale analyses in a computationally efficient manner.
+ The focus of PLINK is purely on analysis of genotype/phenotype data, so there is no support for 
+ steps prior to this (e.g. study design and planning, generating genotype or CNV calls from raw data). 
+ Through integration with gPLINK and Haploview, there is some support for the subsequent visualization, 
+ annotation and storage of results. """
+
+toolchain = {'name': 'ictce', 'version': '6.2.5'}
+toolchainopts = {'openmp': True}
+
+sources = ['%(namelower)s-%(version)s-src.zip']
+source_urls = ['http://pngu.mgh.harvard.edu/~purcell/plink/dist/']
+
+dependencies = [('zlib', '1.2.8')]
+
+# plink makefile is a little bit tricky so we pass every options as arguments
+# review plink original makefile for details
+# if you want "new version check" change to WITH_WEBCHECK="1", but if your compute nodes
+# have no internet access better leave it as is
+buildopts = ' CXX_UNIX="$CXX $CXXFLAGS" WITH_R_PLUGINS=1 WITH_WEBCHECK="" WITH_ZLIB=1 '
+buildopts += ' WITH_LAPACK=1 FORCE_DYNAMIC=1 LIB_LAPACK=$BLAS_LAPACK_LIB_DIR/libmkl_lapack.a'
+
+files_to_copy = [
+    (["plink", "gPLINK.jar"], 'bin'),
+    "test.map",
+    "test.ped",
+    "COPYING.txt",
+    "README.txt",
+]
+
+sanity_check_paths = {
+    'files': ["bin/plink", "bin/gPLINK.jar", "test.map", "test.ped", "COPYING.txt", "README.txt"],
+    'dirs': [],
+}
+
+moduleclass = 'bio'

@@ -1,6 +1,8 @@
-diff -ru OpenFOAM-2.1.1.orig/etc/bashrc OpenFOAM-2.1.1/etc/bashrc
---- OpenFOAM-2.1.1.orig/etc/bashrc	2012-05-24 16:51:32.000000000 +0200
-+++ OpenFOAM-2.1.1/etc/bashrc	2012-07-30 16:58:10.142065364 +0200
+patch to avoid hardcoding of settings, so defaults can be set on the outside by defining environment variables
+author: kenneth hoste (ghent university)
+diff -ru OpenFOAM-2.1.1.ORIG/etc/bashrc OpenFOAM-2.1.1/etc/bashrc
+--- OpenFOAM-2.1.1.ORIG/etc/bashrc	2012-05-24 16:51:32.000000000 +0200
++++ OpenFOAM-2.1.1/etc/bashrc	2014-07-07 11:48:54.265168442 +0200
 @@ -63,7 +63,7 @@
  
  #- Compiler:
@@ -28,9 +30,26 @@ diff -ru OpenFOAM-2.1.1.orig/etc/bashrc OpenFOAM-2.1.1/etc/bashrc
  
  # Location of site-specific templates etc
  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-diff -ru OpenFOAM-2.1.1.orig/etc/config/settings.csh OpenFOAM-2.1.1/etc/config/settings.csh
---- OpenFOAM-2.1.1.orig/etc/config/settings.csh	2012-05-24 16:51:32.000000000 +0200
-+++ OpenFOAM-2.1.1/etc/config/settings.csh	2012-07-30 16:58:10.142065364 +0200
+diff -ru OpenFOAM-2.1.1.ORIG/etc/config/scotch.sh OpenFOAM-2.1.1/etc/config/scotch.sh
+--- OpenFOAM-2.1.1.ORIG/etc/config/scotch.sh	2012-05-24 16:51:32.000000000 +0200
++++ OpenFOAM-2.1.1/etc/config/scotch.sh	2014-07-08 00:10:41.270022590 +0200
+@@ -33,7 +33,11 @@
+ #     during the wmake process
+ #------------------------------------------------------------------------------
+ 
+-export SCOTCH_VERSION=scotch_5.1.11
+-export SCOTCH_ARCH_PATH=$WM_THIRD_PARTY_DIR/platforms/$WM_ARCH$WM_COMPILER/$SCOTCH_VERSION
++if [ -n "${SCOTCH_ROOT}" ] ; then
++	export SCOTCH_ARCH_PATH="${SCOTCH_ROOT}"
++else
++	export SCOTCH_VERSION=scotch_5.1.11
++	export SCOTCH_ARCH_PATH=$WM_THIRD_PARTY_DIR/platforms/$WM_ARCH$WM_COMPILER/$SCOTCH_VERSION
++fi
+ 
+ # -----------------------------------------------------------------------------
+diff -ru OpenFOAM-2.1.1.ORIG/etc/config/settings.csh OpenFOAM-2.1.1/etc/config/settings.csh
+--- OpenFOAM-2.1.1.ORIG/etc/config/settings.csh	2012-05-24 16:51:32.000000000 +0200
++++ OpenFOAM-2.1.1/etc/config/settings.csh	2014-07-07 11:48:54.267168438 +0200
 @@ -373,7 +373,7 @@
  # Communications library
  # ~~~~~~~~~~~~~~~~~~~~~~
@@ -40,9 +59,9 @@ diff -ru OpenFOAM-2.1.1.orig/etc/config/settings.csh OpenFOAM-2.1.1/etc/config/s
  
  switch ("$WM_MPLIB")
  case SYSTEMOPENMPI:
-diff -ru OpenFOAM-2.1.1.orig/etc/config/settings.sh OpenFOAM-2.1.1/etc/config/settings.sh
---- OpenFOAM-2.1.1.orig/etc/config/settings.sh	2012-05-24 16:51:32.000000000 +0200
-+++ OpenFOAM-2.1.1/etc/config/settings.sh	2012-07-30 17:00:35.182064969 +0200
+diff -ru OpenFOAM-2.1.1.ORIG/etc/config/settings.sh OpenFOAM-2.1.1/etc/config/settings.sh
+--- OpenFOAM-2.1.1.ORIG/etc/config/settings.sh	2012-05-24 16:51:32.000000000 +0200
++++ OpenFOAM-2.1.1/etc/config/settings.sh	2014-07-07 11:51:33.632791855 +0200
 @@ -389,7 +389,7 @@
  # Communications library
  # ~~~~~~~~~~~~~~~~~~~~~~
@@ -52,65 +71,36 @@ diff -ru OpenFOAM-2.1.1.orig/etc/config/settings.sh OpenFOAM-2.1.1/etc/config/se
  
  case "$WM_MPLIB" in
  SYSTEMOPENMPI)
-@@ -574,6 +574,21 @@
+@@ -574,6 +574,11 @@
      _foamAddPath    $MPI_ARCH_PATH/bin64
      _foamAddLib     $MPI_ARCH_PATH/lib64
      ;;
 +
-+IMPI)
-+
-+    export MPI_HOME=$EBROOTIMPI/intel64
-+
-+    export MPI_ARCH_PATH=$EBROOTIMPI/intel64
-+
-+    _foamAddPath $MPI_ARCH_PATH/bin
-+
-+    _foamAddLib $MPI_ARCH_PATH/lib
-+
-+    export FOAM_MPI_LIBBIN=$FOAM_LIBBIN/impi
-+
-+;; 
++EASYBUILDMPI)
++    export FOAM_MPI=mpi
++    ;;
 +
  *)
      export FOAM_MPI=dummy
      ;;
-diff -ru OpenFOAM-2.1.1.orig/src/parallel/decompose/ptscotchDecomp/lnInclude/ptscotchDecomp.C OpenFOAM-2.1.1/src/parallel/decompose/ptscotchDecomp/lnInclude/ptscotchDecomp.C
---- OpenFOAM-2.1.1.orig/src/parallel/decompose/ptscotchDecomp/lnInclude/ptscotchDecomp.C	2012-05-24 16:51:32.000000000 +0200
-+++ OpenFOAM-2.1.1/src/parallel/decompose/ptscotchDecomp/lnInclude/ptscotchDecomp.C	2012-07-30 16:58:10.142065364 +0200
-@@ -112,6 +112,8 @@
+diff -ru OpenFOAM-2.1.1.ORIG/src/parallel/decompose/ptscotchDecomp/Make/options OpenFOAM-2.1.1/src/parallel/decompose/ptscotchDecomp/Make/options
+--- OpenFOAM-2.1.1.ORIG/src/parallel/decompose/ptscotchDecomp/Make/options	2012-05-24 16:51:32.000000000 +0200
++++ OpenFOAM-2.1.1/src/parallel/decompose/ptscotchDecomp/Make/options	2014-07-08 09:13:29.129056950 +0200
+@@ -3,10 +3,8 @@
  
- \*---------------------------------------------------------------------------*/
- 
-+#include "mpi.h"
-+
- #include "ptscotchDecomp.H"
- #include "addToRunTimeSelectionTable.H"
- #include "Time.H"
-@@ -121,8 +123,8 @@
- 
- extern "C"
- {
--#include <stdio.h>
- #include "mpi.h"
-+#include <stdio.h>
- #include "ptscotch.h"
- }
- 
-diff -ru OpenFOAM-2.1.1.orig/src/parallel/decompose/ptscotchDecomp/Make/options OpenFOAM-2.1.1/src/parallel/decompose/ptscotchDecomp/Make/options
---- OpenFOAM-2.1.1.orig/src/parallel/decompose/ptscotchDecomp/Make/options	2012-05-24 16:51:32.000000000 +0200
-+++ OpenFOAM-2.1.1/src/parallel/decompose/ptscotchDecomp/Make/options	2012-07-30 16:58:10.142065364 +0200
-@@ -5,7 +5,7 @@
+ EXE_INC = \
      $(PFLAGS) $(PINC) \
-     -I$(SCOTCH_ROOT)/include \
+-    -I$(SCOTCH_ROOT)/include \
      -I$(SCOTCH_ARCH_PATH)/include/$(FOAM_MPI) \
 -    -I/usr/include/scotch \
-+    -I$(EBROOTSCOTCH)/include \
      -I../decompositionMethods/lnInclude
  
  LIB_LIBS = \
-diff -ru OpenFOAM-2.1.1.orig/src/parallel/decompose/ptscotchDecomp/ptscotchDecomp.C OpenFOAM-2.1.1/src/parallel/decompose/ptscotchDecomp/ptscotchDecomp.C
---- OpenFOAM-2.1.1.orig/src/parallel/decompose/ptscotchDecomp/ptscotchDecomp.C	2012-05-24 16:51:32.000000000 +0200
-+++ OpenFOAM-2.1.1/src/parallel/decompose/ptscotchDecomp/ptscotchDecomp.C	2012-07-30 16:58:10.142065364 +0200
+-    -L$(SCOTCH_ROOT)/lib -L$(FOAM_EXT_LIBBIN)/$(FOAM_MPI) -lptscotch -lptscotcherrexit -lrt
++    -L$(SCOTCH_ARCH_PATH)/lib -L$(FOAM_EXT_LIBBIN)/$(FOAM_MPI) -lptscotch -lptscotcherrexit -lrt
+diff -ru OpenFOAM-2.1.1.ORIG/src/parallel/decompose/ptscotchDecomp/ptscotchDecomp.C OpenFOAM-2.1.1/src/parallel/decompose/ptscotchDecomp/ptscotchDecomp.C
+--- OpenFOAM-2.1.1.ORIG/src/parallel/decompose/ptscotchDecomp/ptscotchDecomp.C	2012-05-24 16:51:32.000000000 +0200
++++ OpenFOAM-2.1.1/src/parallel/decompose/ptscotchDecomp/ptscotchDecomp.C	2014-07-07 11:48:54.274168420 +0200
 @@ -112,6 +112,8 @@
  
  \*---------------------------------------------------------------------------*/
@@ -130,9 +120,24 @@ diff -ru OpenFOAM-2.1.1.orig/src/parallel/decompose/ptscotchDecomp/ptscotchDecom
  #include "ptscotch.h"
  }
  
-diff -ru OpenFOAM-2.1.1.orig/wmake/rules/linux64Gcc/c OpenFOAM-2.1.1/wmake/rules/linux64Gcc/c
---- OpenFOAM-2.1.1.orig/wmake/rules/linux64Gcc/c	2012-05-24 16:51:32.000000000 +0200
-+++ OpenFOAM-2.1.1/wmake/rules/linux64Gcc/c	2012-07-30 16:58:10.142065364 +0200
+diff -ru OpenFOAM-2.1.1.ORIG/src/parallel/decompose/scotchDecomp/Make/options OpenFOAM-2.1.1/src/parallel/decompose/scotchDecomp/Make/options
+--- OpenFOAM-2.1.1.ORIG/src/parallel/decompose/scotchDecomp/Make/options	2012-05-24 16:51:32.000000000 +0200
++++ OpenFOAM-2.1.1/src/parallel/decompose/scotchDecomp/Make/options	2014-07-07 16:40:51.514322124 +0200
+@@ -7,10 +7,8 @@
+ 
+ EXE_INC = \
+     $(PFLAGS) $(PINC) \
+-    -I$(SCOTCH_ROOT)/include \
+     -I$(SCOTCH_ARCH_PATH)/include \
+-    -I/usr/include/scotch \
+     -I../decompositionMethods/lnInclude
+ 
+ LIB_LIBS = \
+-    -L$(SCOTCH_ROOT)/lib -L$(FOAM_EXT_LIBBIN) -lscotch -lscotcherrexit -lrt
++    -L$(SCOTCH_ARCH_PATH)/lib -L$(FOAM_EXT_LIBBIN) -lscotch -lscotcherrexit -lrt
+diff -ru OpenFOAM-2.1.1.ORIG/wmake/rules/linux64Gcc/c OpenFOAM-2.1.1/wmake/rules/linux64Gcc/c
+--- OpenFOAM-2.1.1.ORIG/wmake/rules/linux64Gcc/c	2012-05-24 16:51:32.000000000 +0200
++++ OpenFOAM-2.1.1/wmake/rules/linux64Gcc/c	2014-07-07 11:48:54.276168416 +0200
 @@ -2,7 +2,7 @@
  
  cWARN        = -Wall
@@ -142,9 +147,9 @@ diff -ru OpenFOAM-2.1.1.orig/wmake/rules/linux64Gcc/c OpenFOAM-2.1.1/wmake/rules
  
  include $(RULES)/c$(WM_COMPILE_OPTION)
  
-diff -ru OpenFOAM-2.1.1.orig/wmake/rules/linux64Gcc/c++ OpenFOAM-2.1.1/wmake/rules/linux64Gcc/c++
---- OpenFOAM-2.1.1.orig/wmake/rules/linux64Gcc/c++	2012-05-24 16:51:32.000000000 +0200
-+++ OpenFOAM-2.1.1/wmake/rules/linux64Gcc/c++	2012-07-30 16:58:10.142065364 +0200
+diff -ru OpenFOAM-2.1.1.ORIG/wmake/rules/linux64Gcc/c++ OpenFOAM-2.1.1/wmake/rules/linux64Gcc/c++
+--- OpenFOAM-2.1.1.ORIG/wmake/rules/linux64Gcc/c++	2012-05-24 16:51:32.000000000 +0200
++++ OpenFOAM-2.1.1/wmake/rules/linux64Gcc/c++	2014-07-07 11:48:54.277168414 +0200
 @@ -2,7 +2,7 @@
  
  c++WARN     = -Wall -Wextra -Wno-unused-parameter -Wold-style-cast -Wnon-virtual-dtor
@@ -154,24 +159,24 @@ diff -ru OpenFOAM-2.1.1.orig/wmake/rules/linux64Gcc/c++ OpenFOAM-2.1.1/wmake/rul
  
  include $(RULES)/c++$(WM_COMPILE_OPTION)
  
-diff -ru OpenFOAM-2.1.1.orig/wmake/rules/linux64Gcc/cOpt OpenFOAM-2.1.1/wmake/rules/linux64Gcc/cOpt
---- OpenFOAM-2.1.1.orig/wmake/rules/linux64Gcc/cOpt	2012-05-24 16:51:32.000000000 +0200
-+++ OpenFOAM-2.1.1/wmake/rules/linux64Gcc/cOpt	2012-07-30 16:58:10.142065364 +0200
-@@ -1,2 +1,2 @@
- cDBUG       =
--cOPT        = -O3
-+cOPT        = $(CFLAGS)
-diff -ru OpenFOAM-2.1.1.orig/wmake/rules/linux64Gcc/c++Opt OpenFOAM-2.1.1/wmake/rules/linux64Gcc/c++Opt
---- OpenFOAM-2.1.1.orig/wmake/rules/linux64Gcc/c++Opt	2012-05-24 16:51:32.000000000 +0200
-+++ OpenFOAM-2.1.1/wmake/rules/linux64Gcc/c++Opt	2012-07-30 16:58:10.142065364 +0200
+diff -ru OpenFOAM-2.1.1.ORIG/wmake/rules/linux64Gcc/c++Opt OpenFOAM-2.1.1/wmake/rules/linux64Gcc/c++Opt
+--- OpenFOAM-2.1.1.ORIG/wmake/rules/linux64Gcc/c++Opt	2012-05-24 16:51:32.000000000 +0200
++++ OpenFOAM-2.1.1/wmake/rules/linux64Gcc/c++Opt	2014-07-07 11:48:54.279168410 +0200
 @@ -1,3 +1,3 @@
  #c++DBUG     = -O0 -DFULLDEBUG -g
  c++DBUG     =
 -c++OPT      = -O3
 +c++OPT      = $(CXXFLAGS)
-diff -ru OpenFOAM-2.1.1.orig/wmake/rules/linux64Icc/c OpenFOAM-2.1.1/wmake/rules/linux64Icc/c
---- OpenFOAM-2.1.1.orig/wmake/rules/linux64Icc/c	2012-05-24 16:51:32.000000000 +0200
-+++ OpenFOAM-2.1.1/wmake/rules/linux64Icc/c	2012-07-30 16:58:10.142065364 +0200
+diff -ru OpenFOAM-2.1.1.ORIG/wmake/rules/linux64Gcc/cOpt OpenFOAM-2.1.1/wmake/rules/linux64Gcc/cOpt
+--- OpenFOAM-2.1.1.ORIG/wmake/rules/linux64Gcc/cOpt	2012-05-24 16:51:32.000000000 +0200
++++ OpenFOAM-2.1.1/wmake/rules/linux64Gcc/cOpt	2014-07-07 11:48:54.278168412 +0200
+@@ -1,2 +1,2 @@
+ cDBUG       =
+-cOPT        = -O3
++cOPT        = $(CFLAGS)
+diff -ru OpenFOAM-2.1.1.ORIG/wmake/rules/linux64Icc/c OpenFOAM-2.1.1/wmake/rules/linux64Icc/c
+--- OpenFOAM-2.1.1.ORIG/wmake/rules/linux64Icc/c	2012-05-24 16:51:32.000000000 +0200
++++ OpenFOAM-2.1.1/wmake/rules/linux64Icc/c	2014-07-07 11:48:54.281168404 +0200
 @@ -2,7 +2,7 @@
  
  cWARN        =
@@ -181,9 +186,9 @@ diff -ru OpenFOAM-2.1.1.orig/wmake/rules/linux64Icc/c OpenFOAM-2.1.1/wmake/rules
  
  include $(RULES)/c$(WM_COMPILE_OPTION)
  
-diff -ru OpenFOAM-2.1.1.orig/wmake/rules/linux64Icc/c++ OpenFOAM-2.1.1/wmake/rules/linux64Icc/c++
---- OpenFOAM-2.1.1.orig/wmake/rules/linux64Icc/c++	2012-05-24 16:51:32.000000000 +0200
-+++ OpenFOAM-2.1.1/wmake/rules/linux64Icc/c++	2012-07-30 16:58:10.142065364 +0200
+diff -ru OpenFOAM-2.1.1.ORIG/wmake/rules/linux64Icc/c++ OpenFOAM-2.1.1/wmake/rules/linux64Icc/c++
+--- OpenFOAM-2.1.1.ORIG/wmake/rules/linux64Icc/c++	2012-05-24 16:51:32.000000000 +0200
++++ OpenFOAM-2.1.1/wmake/rules/linux64Icc/c++	2014-07-07 11:48:54.282168401 +0200
 @@ -2,7 +2,7 @@
  
  c++WARN     = -wd327,654,819,1125,1476,1505,1572
@@ -193,17 +198,17 @@ diff -ru OpenFOAM-2.1.1.orig/wmake/rules/linux64Icc/c++ OpenFOAM-2.1.1/wmake/rul
  
  include $(RULES)/c++$(WM_COMPILE_OPTION)
  
-diff -ru OpenFOAM-2.1.1.orig/wmake/rules/linux64Icc/cOpt OpenFOAM-2.1.1/wmake/rules/linux64Icc/cOpt
---- OpenFOAM-2.1.1.orig/wmake/rules/linux64Icc/cOpt	2012-05-24 16:51:32.000000000 +0200
-+++ OpenFOAM-2.1.1/wmake/rules/linux64Icc/cOpt	2012-07-30 16:58:10.142065364 +0200
-@@ -1,2 +1,2 @@
- cDBUG       =
--cOPT        = -O3 -no-prec-div
-+cOPT        = $(CFLAGS)
-diff -ru OpenFOAM-2.1.1.orig/wmake/rules/linux64Icc/c++Opt OpenFOAM-2.1.1/wmake/rules/linux64Icc/c++Opt
---- OpenFOAM-2.1.1.orig/wmake/rules/linux64Icc/c++Opt	2012-05-24 16:51:32.000000000 +0200
-+++ OpenFOAM-2.1.1/wmake/rules/linux64Icc/c++Opt	2012-07-30 17:01:08.832064481 +0200
+diff -ru OpenFOAM-2.1.1.ORIG/wmake/rules/linux64Icc/c++Opt OpenFOAM-2.1.1/wmake/rules/linux64Icc/c++Opt
+--- OpenFOAM-2.1.1.ORIG/wmake/rules/linux64Icc/c++Opt	2012-05-24 16:51:32.000000000 +0200
++++ OpenFOAM-2.1.1/wmake/rules/linux64Icc/c++Opt	2014-07-07 11:48:54.284168397 +0200
 @@ -1,2 +1,2 @@
  c++DBUG     =
 -c++OPT      = -xSSE3 -O2 -no-prec-div
 +c++OPT      = $(CXXFLAGS)
+diff -ru OpenFOAM-2.1.1.ORIG/wmake/rules/linux64Icc/cOpt OpenFOAM-2.1.1/wmake/rules/linux64Icc/cOpt
+--- OpenFOAM-2.1.1.ORIG/wmake/rules/linux64Icc/cOpt	2012-05-24 16:51:32.000000000 +0200
++++ OpenFOAM-2.1.1/wmake/rules/linux64Icc/cOpt	2014-07-07 11:48:54.283168399 +0200
+@@ -1,2 +1,2 @@
+ cDBUG       =
+-cOPT        = -O3 -no-prec-div
++cOPT        = $(CFLAGS)

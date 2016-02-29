@@ -1,0 +1,34 @@
+easyblock = 'ConfigureMake'
+
+name = 'ZeroMQ'
+version = '2.2.0'
+
+homepage = 'http://www.zeromq.org/'
+description = """ZeroMQ looks like an embeddable networking library but acts like a concurrency framework.
+ It gives you sockets that carry atomic messages across various transports like in-process,
+ inter-process, TCP, and multicast. You can connect sockets N-to-N with patterns like fanout,
+ pub-sub, task distribution, and request-reply. It's fast enough to be the fabric for clustered
+ products. Its asynchronous I/O model gives you scalable multicore applications, built as asynchronous
+ message-processing tasks. It has a score of language APIs and runs on most operating systems."""
+
+toolchain = {'name': 'ictce', 'version': '5.5.0'}
+
+source_urls = ['http://download.zeromq.org/']
+sources = [SOURCELOWER_TAR_GZ]
+
+# --with-pgm will use shipped OpenPGM (in foreign subdir)
+configopts = '--with-pic --with-system-pgm '
+configopts += 'OpenPGM_CFLAGS="-I$EBROOTOPENPGM/include/pgm-${EBVERSIONOPENPGM%.*}" '
+configopts += 'OpenPGM_LIBS="-L$EBROOTOPENPGM/lib -lpgm -lrt -lpthread -lm" '
+
+dependencies = [
+    ('OpenPGM', '5.2.122'),
+    ('util-linux', '2.22.2'),
+]
+
+sanity_check_paths = {
+    'files': ['lib/libzmq.%s' % SHLIB_EXT, 'lib/libzmq.a'],
+    'dirs': ['include', 'lib'],
+}
+
+moduleclass = 'devel'

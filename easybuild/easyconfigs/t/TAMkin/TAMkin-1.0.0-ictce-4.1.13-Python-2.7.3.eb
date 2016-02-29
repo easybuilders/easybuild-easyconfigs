@@ -1,0 +1,37 @@
+easyblock = "PythonPackage"
+
+name = 'TAMkin'
+version = '1.0.0'
+
+homepage = 'http://molmod.github.io/tamkin/'
+description = """TAMkin is a post-processing toolkit for normal mode analysis,
+ thermochemistry and reaction kinetics. It uses a Hessian computation from a
+ standard computational chemistry program as its input."""
+
+toolchain = {'name': 'ictce', 'version': '4.1.13'}
+
+source_urls = ['https://github.com/molmod/tamkin/releases/download/v%(version)s']
+sources = [SOURCE_TAR_GZ]
+
+python = "Python"
+pythonversion = '2.7.3'
+pythonshortversion = ".".join(pythonversion.split(".")[:-1])
+
+versionsuffix = "-%s-%s" % (python, pythonversion)
+
+dependencies = [
+    (python, pythonversion),
+    ('matplotlib', '1.2.1', versionsuffix),
+    ('molmod', '1.0', versionsuffix),
+]
+
+# disable tests that require X11 by specifying "backend: agg" in matplotlibrc
+runtest = 'export MATPLOTLIBRC=$PWD; echo "backend: agg" > $MATPLOTLIBRC/matplotlibrc; '
+runtest += 'export OMP_NUM_THREADS=1; nosetests -v test'
+
+sanity_check_paths = {
+    'files': [],
+    'dirs': ['lib/python%s/site-packages/%%(namelower)s' % pythonshortversion],
+}
+
+moduleclass = 'chem'

@@ -1,0 +1,47 @@
+# Use external ZLIB instead of Ghostscript provided ZLIB
+# See http://www.linuxfromscratch.org/blfs/view/svn/pst/gs.html
+# patch part #2:
+# http://git.ghostscript.com/?p=ghostpdl.git;a=commitdiff;h=0ccf3294
+--- ghostscript-9.14/configure.orig	2014-03-26 13:53:47.000000000 +0100
++++ ghostscript-9.14/configure	2014-09-09 10:03:12.742169571 +0200
+@@ -6254,7 +6254,7 @@
+ $as_echo_n "checking for local zlib source... " >&6; }
+ # we must define ZLIBDIR regardless because png.mak does a -I$(ZLIBDIR)
+ # this seems a harmless default
+-ZLIBDIR=src
++ZLIBDIR=$includedir
+ AUX_SHARED_ZLIB=
+ 
+ if test -d $srcdir/zlib; then
+--- ghostscript-9.14/configure.ac.orig	2014-03-26 13:53:48.000000000 +0100
++++ ghostscript-9.14/configure.ac	2014-09-09 10:03:12.724170038 +0200
+@@ -854,7 +854,7 @@
+ dnl zlib is needed for language level 3, and libpng
+ # we must define ZLIBDIR regardless because png.mak does a -I$(ZLIBDIR)
+ # this seems a harmless default
+-ZLIBDIR=src
++ZLIBDIR=$includedir
+ AUX_SHARED_ZLIB=
+ 
+ if test -d $srcdir/zlib; then
+--- ghostscript-9.14/devices/devs.mak.orig	2014-03-26 13:53:48.000000000 +0100
++++ ghostscript-9.14/devices/devs.mak	2014-09-09 11:33:30.513450444 +0200
+@@ -1596,9 +1596,16 @@
+ 
+ fpng_=$(DEVOBJ)gdevfpng.$(OBJ) $(DEVOBJ)gdevpccm.$(OBJ)
+ 
+-$(DEVOBJ)gdevfpng.$(OBJ) : $(DEVSRC)gdevfpng.c\
++$(DEVOBJ)gdevfpng_0.$(OBJ) : $(DEVSRC)gdevfpng.c\
+  $(gdevprn_h) $(gdevpccm_h) $(gscdefs_h) $(zlib_h)
+-	$(CC_) $(I_)$(DEVI_) $(II)$(PI_)$(_I) $(PCF_) $(GLF_) $(DEVO_)gdevfpng.$(OBJ) $(C_) $(DEVSRC)gdevfpng.c
++	$(CC_) $(I_)$(DEVI_) $(II)$(PI_)$(_I) $(PCF_) $(GLF_) $(DEVO_)gdevfpng_0.$(OBJ) $(C_) $(DEVSRC)gdevfpng.c
++
++$(DEVOBJ)gdevfpng_1.$(OBJ) : $(DEVSRC)gdevfpng.c\
++ $(gdevprn_h) $(gdevpccm_h) $(gscdefs_h)
++	$(CC_) $(I_)$(DEVI_) $(II)$(PI_)$(_I) $(PCF_) $(GLF_) $(DEVO_)gdevfpng_1.$(OBJ) $(C_) $(DEVSRC)gdevfpng.c
++
++$(DEVOBJ)gdevfpng.$(OBJ) : $(DEVOBJ)gdevfpng_$(SHARE_ZLIB).$(OBJ)
++	$(CP_) $(DEVOBJ)gdevfpng_$(SHARE_ZLIB).$(OBJ) $(DEVOBJ)gdevfpng.$(OBJ)
+ 
+ $(DD)fpng.dev : $(DEVS_MAK) $(fpng_) $(GLD)page.dev $(GDEV)
+ 	$(SETPDEV2) $(DD)fpng $(fpng_)
