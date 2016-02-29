@@ -33,6 +33,7 @@ EasyBuild support for building and installing the MVAPICH2 MPI library, implemen
 """
 
 import os
+from distutils.version import LooseVersion
 
 import easybuild.tools.environment as env
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
@@ -134,10 +135,14 @@ class EB_MVAPICH2(ConfigureMake):
         Custom sanity check for MVAPICH2
         """
         shlib_ext = get_shared_lib_ext()
-        custom_paths = {
-            'files': ['bin/%s' % x for x in ['mpicc', 'mpicxx', 'mpif77', 'mpif90', 'mpiexec.hydra']] +
-                     ['lib/lib%s' % y for x in ['fmpich', 'mpichcxx', 'mpichf90', 'mpich', 'mpl', 'opa']
-                                      for y in ['%s.a' % x, '%s.%s' % (x, shlib_ext)]],
-            'dirs': ['include'],
-        }
+        binaries = ['bin/%s' % x for x in ['mpicc', 'mpicxx', 'mpif77', 'mpif90', 'mpiexec.hydra']]
+        directories = ['include']
+        if LooseVersion(self.version) < LooseVersion('2.1'):
+            libraries = ['lib/lib%s' % y for x in ['fmpich', 'mpichcxx', 'mpichf90', 'mpich', 'mpl', 'opa']
+                                      for y in ['%s.a' % x, '%s.%s' % (x, shlib_ext)]]
+        else:
+            libraries = ['lib/lib%s' % y for x in ['mpi', 'mpicxx', 'mpifort']
+                                      for y in ['%s.a' % x, '%s.%s' % (x, shlib_ext)]]
+            
+        custom_paths = { 'files': binaries + libraries,  'dirs': directories }
         super(EB_MVAPICH2, self).sanity_check_step(custom_paths=custom_paths)
