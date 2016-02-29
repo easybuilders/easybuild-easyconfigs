@@ -1,0 +1,215 @@
+--- install/scons.py.orig  2015-05-18 15:03:53.000000000 +0200
++++ install/scons.py   2015-06-04 21:34:25.841341000 +0200
+@@ -47,7 +47,7 @@
+ def build(args):
+     """ Run scons with our python (and with the passed args) """
+     # Call SCons and show the output on the screen and logfile.
+-    proc = subprocess.Popen(['python', 'software/bin/scons'] + args,
++    proc = subprocess.Popen(['scons'] + args,
+                             stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                             cwd=SCIPION_HOME)
+     with open(LOGFILE, 'a') as logFile:
+--- install/script.py.orig 2015-05-18 15:03:53.000000000 +0200
++++ install/script.py  2015-06-04 21:34:25.843645891 +0200
+@@ -60,12 +60,14 @@
+     'fftw3',
+     tar='fftw-3.3.4.tgz',
+     flags=['--enable-threads', '--enable-shared'],
++    default=False,
+     clean=True) # We need to clean to configure again with --enable-float
+
+ fftw3f = env.addLibrary(
+     'fftw3f',
+     tar='fftw-3.3.4.tgz',
+-    flags=['--enable-threads', '--enable-shared', '--enable-float'])
++    flags=['--enable-threads', '--enable-shared', '--enable-float'],
++    default=False)
+
+ osBuildDir = 'tcl8.6.1/unix'
+ osFlags = ['--enable-threads']
+@@ -75,7 +77,8 @@
+     tar='tcl8.6.1-src.tgz',
+     buildDir=osBuildDir,
+     targets=[env.getLib('tcl8.6')],
+-    flags=osFlags)
++    flags=osFlags,
++    default=False)
+
+ osBuildDir = 'tk8.6.1/unix'
+ osFlags = ['--enable-threads']
+@@ -87,7 +90,8 @@
+     targets=[env.getLib('tk8.6')],
+     libChecks=['xft'],
+     flags=osFlags,
+-    deps=[tcl])
++    deps=[tcl],
++    default=False)
+
+ # Special case: tk does not make the link automatically, go figure.
+ tk_wish = env.addTarget('tk_wish')
+@@ -99,29 +103,34 @@
+     'zlib',
+     targets=[env.getLib('z')],
+     tar='zlib-1.2.8.tgz',
+-    configTarget='zlib.pc')
++    configTarget='zlib.pc',
++    default=False)
+
+ jpeg = env.addLibrary(
+     'jpeg',
+     tar='libjpeg-turbo-1.3.1.tgz',
+-    flags=['--without-simd'])
++    flags=['--without-simd'],
++    default=False)
+     #flags=([] if progInPath('nasm') else ['--without-simd']))
+
+ png = env.addLibrary(
+     'png',
+     tar='libpng-1.6.16.tgz',
+-    deps=[zlib])
++    deps=[zlib],
++    default=False)
+
+ tiff = env.addLibrary(
+      'tiff',
+      tar='tiff-3.9.4.tgz',
+-     deps=[zlib, jpeg])
++     deps=[zlib, jpeg],
++     default=False)
+
+ sqlite = env.addLibrary(
+     'sqlite3',
+     tar='sqlite-3.6.23.tgz',
+     flags=['CPPFLAGS=-w',
+-           'CFLAGS=-DSQLITE_ENABLE_UPDATE_DELETE_LIMIT=1'])
++           'CFLAGS=-DSQLITE_ENABLE_UPDATE_DELETE_LIMIT=1'],
++    default=False)
+
+ hdf5 = env.addLibrary(
+      'hdf5',
+@@ -129,14 +138,16 @@
+      flags=['--enable-cxx', '--enable-shared'],
+      targets=[env.getLib('hdf5'), env.getLib('hdf5_cpp')],
+      configAlways=True,
+-     deps=[zlib])
++     deps=[zlib],
++     default=False)
+
+ python = env.addLibrary(
+     'python',
+     tar='Python-2.7.8.tgz',
+     targets=[env.getLib('python2.7'), env.getBin('python')],
+     flags=['--enable-shared'],
+-    deps=[sqlite, tk, zlib])
++    deps=[sqlite, tk, zlib],
++    default=False)
+
+ pcre = env.addLibrary(
+     'pcre',
+@@ -180,7 +191,7 @@
+     targets=[env.getLib('opencv_core')],
+     flags=opencvFlags,
+     cmake=True,
+-    default=not noOpencv)
++    default=False)
+
+ # ---------- Libraries required by PyTom
+
+@@ -211,62 +222,73 @@
+ setuptools = env.addModule(
+     'setuptools',
+     tar='setuptools-5.4.1.tgz',
+-    targets=['setuptools.pth'])
++    targets=['setuptools.pth'],
++    default=False)
+
+ scons = env.addModule(
+     'scons',
+     targets=[env.getBin('scons')],
+-    tar='scons-2.3.4.tgz')
++    tar='scons-2.3.4.tgz',
++    default=False)
+
+ numpy = env.addModule(
+     'numpy',
+     tar='numpy-1.8.1.tgz',
+-    deps=[lapack])
++    deps=[lapack],
++    default=False)
+
+ six = env.addModule(
+     'six',
+     tar='six-1.7.3.tgz',
+-    targets=['six-1.7.3*'])
++    targets=['six-1.7.3*'],
++    default=False)
+
+ dateutil = env.addModule(
+     'dateutil',
+     tar='python-dateutil-1.5.tgz',
+     targets=['python_dateutil-1.5*'],
+-    deps=[setuptools, six])
++    deps=[setuptools, six],
++    default=False)
+
+ pyparsing = env.addModule(
+     'pyparsing',
+     tar='pyparsing-2.0.2.tgz',
+-    targets=['pyparsing.py'])
++    targets=['pyparsing.py'],
++    default=False)
+
+ matplotlib = env.addModule(
+     'matplotlib',
+     tar='matplotlib-1.3.1.tgz',
+     targets=['matplotlib-1.3.1*'],
+-    deps=[numpy, png, dateutil, pyparsing])
++    deps=[numpy, png, dateutil, pyparsing],
++    default=False)
+
+ psutil = env.addModule(
+     'psutil',
+     targets=['psutil-2.1.1*'],
+-    tar='psutil-2.1.1.tgz')
++    tar='psutil-2.1.1.tgz',
++    default=False)
+
+ mpi4py = env.addModule(
+     'mpi4py',
+-    tar='mpi4py-1.3.1.tgz')
++    tar='mpi4py-1.3.1.tgz',
++    default=False)
+
+ scipy = env.addModule(
+     'scipy',
+     tar='scipy-0.14.0.tgz',
+-    default=not noScipy,
+-    deps=[lapack, numpy, matplotlib])
++    deps=[lapack, numpy, matplotlib],
++    default=False)
+
+ bibtexparser = env.addModule(
+     'bibtexparser',
+-    tar='bibtexparser-0.5.tgz')
++    tar='bibtexparser-0.5.tgz',
++    default=False)
+
+ django = env.addModule(
+     'django',
+-    tar='Django-1.5.5.tgz')
++    tar='Django-1.5.5.tgz',
++    default=False)
+
+ paramiko = env.addModule(
+     'paramiko',
+@@ -277,7 +299,8 @@
+     'Pillow',
+     tar='Pillow-2.5.1.tgz',
+     targets=['Pillow-2.5.1*'],
+-    deps=[setuptools, jpeg])
++    deps=[setuptools, jpeg],
++    default=False)
+
+ winpdb = env.addModule(
+     'winpdb',
+
