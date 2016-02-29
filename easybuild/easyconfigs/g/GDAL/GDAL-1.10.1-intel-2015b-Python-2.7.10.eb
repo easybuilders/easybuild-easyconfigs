@@ -1,0 +1,54 @@
+easyblock = 'ConfigureMake'
+
+name = 'GDAL'
+version = '1.10.1'
+
+homepage = 'http://www.gdal.org/'
+description = """GDAL is a translator library for raster geospatial data formats that is released under an X/MIT style
+ Open Source license by the Open Source Geospatial Foundation. As a library, it presents a single abstract data model
+ to the calling application for all supported formats. It also comes with a variety of useful commandline utilities for
+ data translation and processing."""
+
+toolchain = {'name': 'intel', 'version': '2015b'}
+
+source_urls = ['http://download.osgeo.org/gdal/%(version)s/']
+sources = [SOURCELOWER_TAR_XZ]
+
+patches = ['GDAL-%(version)s-python.patch']
+
+pyver = '2.7.10'
+pyshortver = '.'.join(pyver.split('.')[0:2])
+versionsuffix = '-%s-%s' % ('Python', pyver)
+
+dependencies = [
+    ('Python', pyver),
+    ('netCDF', '4.3.2'),
+    ('expat', '2.1.0'),
+    ('GEOS', '3.5.0', versionsuffix),
+    ('SQLite', '3.8.10.2'),
+    ('libxml2', '2.9.3', versionsuffix),
+    ('libpng', '1.6.18'),
+    ('libjpeg-turbo', '1.4.2'),
+    ('JasPer', '1.900.1'),
+    ('LibTIFF', '4.0.3'),
+    ('zlib', '1.2.8'),
+    ('cURL', '7.43.0'),
+    ('PCRE', '8.37'),
+]
+
+configopts = '--with-expat=$EBROOTEXPAT --with-libz=$EBROOTLIBZ --with-hdf5=$EBROOTHDF5 --with-netcdf=$EBROOTNETCDF'
+configopts += ' --with-xml2=$EBROOTLIBXML2 --with-geos=$EBROOTGEOS/bin/geos-config --with-jpeg=$EBROOTLIBJPEGTURBO'
+configopts += ' --with-png=$EBROOTLIBPNG --with-sqlite3=$EBROOTSQLITE --with-jasper=$EBROOTJASPER'
+configopts += ' --with-libtiff=$EBROOTLIBTIFF --with-pcre=$EBROOTPCRE --with-python=$EBROOTPYTHON/bin/python'
+# there is a bug in the build system causing the build with libtool to fail for the moment
+# (static library is also missing because of this)
+configopts += ' --without-libtool'
+
+modextrapaths = {'PYTHONPATH': 'lib/python%s/site-packages' % pyshortver}
+
+sanity_check_paths = {
+    'files': ['lib/libgdal.%s' % SHLIB_EXT],
+    'dirs': ['bin', 'include']
+}
+
+moduleclass = 'data'

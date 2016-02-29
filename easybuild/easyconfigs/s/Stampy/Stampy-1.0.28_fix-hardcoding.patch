@@ -1,0 +1,33 @@
+flesh out hardcoded parameter in Makefile, make sure it picks up what's set in build environment by EasyBuild
+author: Kenneth Hoste (HPC-UGent)
+--- stampy-1.0.28/makefile.orig	2015-12-03 14:59:49.155432488 +0100
++++ stampy-1.0.28/makefile	2015-12-03 15:03:27.143102585 +0100
+@@ -3,6 +3,11 @@
+ #   2- and 4-byte 4-byte Unicode representations (UCS2 and UCS4) are supported.
+ #   
+ 
++CC?=gcc
++CXX?=g++
++CFLAGS?=-O2 -fPIC
++CXXFLAGS?=
++LDFLAGS?=
+ SHELL=/bin/bash
+ python?=python
+ 
+@@ -31,13 +35,13 @@
+ objs=$(bdir)/pyx/maptools.o $(bdir)/c/maputils.o $(bdir)/c/alignutils.o $(bdir)/readalign.o $(bdir)/algebras.o $(bdir)/frontend.o
+ 
+ $(bdir)/%.o:
+-	gcc -pthread -fno-strict-aliasing -DNDEBUG -g -fwrapv -O2 -Wall -fPIC `$(python)-config --includes` -c ext/readalign/$*.cc -o $@
++	$(CC) -pthread -fno-strict-aliasing -DNDEBUG -fwrapv $(CFLAGS) -Wall `$(python)-config --includes` -c ext/readalign/$*.cc -o $@
+ 
+ buildall: $(bdir)/readalign.o $(bdir)/frontend.o $(bdir)/algebras.o
+ 	cp -r build/$(python)/* .
+ ifeq ($(platform),linux-x86_64)
+-	g++ `$(python)-config --ldflags` -pthread -shared $(objs) -o maptools.so
++	$(CXX) $(CXXFLAGS) $(LDFLAGS) `$(python)-config --ldflags` -pthread -shared $(objs) -o maptools.so
+ else
+-	g++ `$(python)-config --ldflags` -pthread -dynamiclib $(objs) -o maptools.so
++	$(CXX) $(CXXFLAGS) $(LDFLAGS) `$(python)-config --ldflags` -pthread -dynamiclib $(objs) -o maptools.so
+ endif
+ 

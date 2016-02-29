@@ -1,0 +1,61 @@
+* add --with-fftw* configure options such that EasyBuild provided FFTW is picked up
+* make sure -nofor_main is also used when $FC is defined as mpif90 for yambo
+* fix check in yambo configure script w.r.t. preprocessing Fortran code by ignoring harmless warning in stderr output
+author: Kenneth Hoste (HPC-UGent)
+--- espresso-5.2.1/install/plugins_makefile.orig	2015-09-24 09:26:40.000000000 +0200
++++ espresso-5.2.1/install/plugins_makefile	2015-10-15 11:36:46.256246443 +0200
+@@ -289,6 +289,7 @@
+ 	./configure \
+ 	--with-blas="$(BLAS_LIBS)" \
+ 	--with-lapack="$(LAPACK_LIBS) $(BLAS_LIBS)" \
++	--with-fftw=$(FFT_LIB_DIR) --with-fftw-lib="$(FFT_LIBS)" \
+ 	--with-iotk="$(TOPDIR)/iotk" \
+ 	PFC="$(MPIF90)" \
+ 	FC="$(MPIF90)" \
+--- yambo-3.4.1-rev61/configure.orig	2015-02-04 17:54:55.000000000 +0100
++++ yambo-3.4.1-rev61/configure	2015-10-21 17:01:45.655105316 +0200
+@@ -6077,7 +6077,7 @@
+     UFFLAGS="-O0 -mtune=native"
+     FCMFLAG=""
+     ;;
+-  *ifort*)
++  *ifort*|*mpif90*)
+     CPU_FLAG=""
+     case "${FCVERSION}" in
+       *11* | *12* | *13* )
+@@ -6116,7 +6116,7 @@
+     UFFLAGS="-O0 -fno-second-underscore"
+     FCMFLAG=""
+     ;;
+-  *ifort*)
++  *ifort*|*mpif90*)
+     CPU_FLAG=""
+     case "${FCVERSION}" in
+       *1*)
+@@ -6159,7 +6159,7 @@
+     SYSFLAGS="-O3 -w"
+     UFFLAGS="-O0 -w"
+     ;;
+-  *ifort*)
++  *ifort*|*mpif90*)
+     CPU_FLAG=""
+     case "${FCVERSION}" in
+       *1*)
+@@ -6212,7 +6212,7 @@
+     SYSFLAGS="-O3 -w -tpp2"
+     UFFLAGS="-O0 -w -tpp2"
+     ;;
+-  *ifort*)
++  *ifort*|*mpif90*)
+     CPU_FLAG=""
+     case "${FCVERSION}" in
+       *11* | *12* | *13* )
+@@ -7316,7 +7316,7 @@
+ 
+ if ! test -s conftest.er1 || test -n "`grep successful conftest.er1`"  ; then
+  eval $CPP $CPPFLAGS conftest.F > conftest.${F90SUFFIX}
+- eval $FC $FCFLAGS -c conftest.${F90SUFFIX} 2> conftest.er2
++ eval $FC $FCFLAGS -c conftest.${F90SUFFIX} | grep -v "ifort: command line remark" 2> conftest.er2
+  if test -s conftest.er2 ; then
+   if ! test -n "`grep successful conftest.er2`"  ; then
+    acx_F90_ok=no ;
