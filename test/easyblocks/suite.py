@@ -43,7 +43,7 @@ from easybuild.tools.options import set_tmpdir
 
 import test.easyblocks.general as g
 import test.easyblocks.init_easyblocks as i
-import test.easyblocks.module_only as m
+import test.easyblocks.module as m
 
 # initialize logger for all the unit tests
 fd, log_fn = tempfile.mkstemp(prefix='easybuild-easyblocks-tests-', suffix='.log')
