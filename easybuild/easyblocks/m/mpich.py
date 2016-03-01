@@ -31,6 +31,7 @@ EasyBuild support for building and installing the MPICH MPI library and derivati
 @author: Pieter De Baets (Ghent University)
 @author: Jens Timmerman (Ghent University)
 @author: Damian Alvarez (Forschungszentrum Juelich)
+@author: Xavier Besseron (University of Luxembourg)
 """
 
 import os
@@ -49,12 +50,6 @@ class EB_MPICH(ConfigureMake):
     - basically redefinition of environment variables
     """
 
-    def use_new_libnames(self):
-        """Tell if the underlying MPICH use the new names for its libraries"""
-        # cf http://git.mpich.org/mpich.git/blob_plain/v3.1.1:/CHANGES
-        # MPICH changed its library names sinceversion 3.1.1
-        return LooseVersion(self.version) >= LooseVersion('3.1.1')
-
     @staticmethod
     def extra_options(extra_vars=None):
         extra_vars = ConfigureMake.extra_options(extra_vars)
@@ -63,9 +58,8 @@ class EB_MPICH(ConfigureMake):
         })
         return extra_vars
 
-
     # There is a number of configuration options that are typically needed that are not present
-    # here. The reason is that this easyblock is intended to be used as a parent for other 
+    # here. The reason is that this easyblock is intended to be used as a parent for other
     # easyblocks like MVAPICH2 and PSMPI. Not all of them support the same options, so they
     # are not included here.
     def configure_step(self):
@@ -102,15 +96,15 @@ class EB_MPICH(ConfigureMake):
         # Specific variables to be included in the wrapper exists, but they changed between MPICH 3.1.4 and MPICH 3.2
         # and in a typical scenario we probably don't want them.
         env_vars = {
-                "CFLAGS"   : "MPICHLIB_CFLAGS",
-                "CPPFLAGS" : "MPICHLIB_CPPFLAGS",
-                "CXXFLAGS" : "MPICHLIB_CXXFLAGS",
-                "FCFLAGS"  : "MPICHLIB_FCFLAGS",
-                "FFLAGS"   : "MPICHLIB_FFLAGS",
-                "LDFLAGS"  : "MPICHLIB_LDFLAGS",
-                "LIBS"     : "MPICHLIB_LIBS",
+            'CFLAGS'   : 'MPICHLIB_CFLAGS',
+            'CPPFLAGS' : 'MPICHLIB_CPPFLAGS',
+            'CXXFLAGS' : 'MPICHLIB_CXXFLAGS',
+            'FCFLAGS'  : 'MPICHLIB_FCFLAGS',
+            'FFLAGS'   : 'MPICHLIB_FFLAGS',
+            'LDFLAGS'  : 'MPICHLIB_LDFLAGS',
+            'LIBS'     : 'MPICHLIB_LIBS',
         }
-        vars_to_unset = [ 'F90', 'F90FLAGS' ]
+        vars_to_unset = ['F90', 'F90FLAGS']
         for (envvar, new_envvar) in env_vars.items():
             envvar_val = os.getenv(envvar)
             if envvar_val:
@@ -129,26 +123,32 @@ class EB_MPICH(ConfigureMake):
 
     # make and make install are default
 
-    def sanity_check_step(self, custom_paths=None):
+    def sanity_check_step(self, custom_paths=None, use_new_libnames=None):
         """
         Custom sanity check for MPICH
         """
         shlib_ext = get_shared_lib_ext()
         if custom_paths is None:
             custom_paths = {}
-                
+
+        if use_new_libnames is None:
+            # cfr. http://git.mpich.org/mpich.git/blob_plain/v3.1.1:/CHANGES
+            # MPICH changed its library names sinceversion 3.1.1
+            use_new_libnames = LooseVersion(self.version) >= LooseVersion('3.1.1')
+
         # Starting MPICH 3.1.1, libraries have been renamed
         # cf http://git.mpich.org/mpich.git/blob_plain/v3.1.1:/CHANGES
-        if self.use_new_libnames():
+        if use_new_libnames:
             libnames = ['mpi', 'mpicxx', 'mpifort']
         else:
             libnames = ['fmpich', 'mpichcxx', 'mpichf90', 'mpich', 'mpl', 'opa']
 
-        dirs = ['include', 'bin', 'lib']
         bins = ['bin/%s' % x for x in ['mpicc', 'mpicxx', 'mpif77', 'mpif90', 'mpiexec.hydra', 'mpirun', 'mpiexec']]
         headers = ['include/%s' % x for x in ['mpi.h', 'mpicxx.h', 'mpif.h']]
-        libs = ['lib/lib%s.%s' % (l,e) for l in libnames for e in ('a', shlib_ext)]
-            
-        custom_paths.setdefault('dirs',  []).extend(dirs)
-        custom_paths.setdefault('files', []).extend(headers + bins + libs)
+        libs = ['lib/lib%s.%s' % (l, e) for l in libnames for e in ('a', shlib_ext)]
+
+        # only set files/dirs keys if they weren't defined yet in custom_paths that was provided
+        custom_paths.setdefault('files', bins + headers + libs)
+        custom_paths.setdefault('dirs', ['bin', 'include', 'lib'])
+
         super(EB_MPICH, self).sanity_check_step(custom_paths=custom_paths)
