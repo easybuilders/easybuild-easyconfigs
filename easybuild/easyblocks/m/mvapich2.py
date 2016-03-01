@@ -34,6 +34,7 @@ EasyBuild support for building and installing the MVAPICH2 MPI library, implemen
 """
 
 import os
+from distutils.version import LooseVersion
 
 import easybuild.tools.environment as env
 from easybuild.easyblocks.mpich import EB_MPICH
@@ -47,6 +48,13 @@ class EB_MVAPICH2(EB_MPICH):
     Support for building the MVAPICH2 MPI library.
     - some compiler dependent configure options
     """
+
+    def __init__(self, *args, **kwargs):
+        """Custom constructor for EB_MVAPICH2 easyblock, initialize custom class parameters."""
+        super(EB_MVAPICH2, self).__init__(*args, **kwargs)        
+        # MVAPICH2 >=2.1 depends on MPICH >=3.1.1, which uses new library names
+        # cf http://git.mpich.org/mpich.git/blob_plain/v3.1.1:/CHANGES
+        self.use_new_libnames = LooseVersion(self.version) >= LooseVersion('2.1')
 
     @staticmethod
     def extra_options():
@@ -115,6 +123,6 @@ class EB_MVAPICH2(EB_MPICH):
         Custom sanity check for MVAPICH2
         """
         custom_paths = {
-            'files': ['bin/%s' % x for x in ['mpiexec.hydra']] 
+            'files': ['bin/%s' % x for x in ['mpiexec.mpirun_rsh']] 
         }
         super(EB_MVAPICH2, self).sanity_check_step(custom_paths=custom_paths)

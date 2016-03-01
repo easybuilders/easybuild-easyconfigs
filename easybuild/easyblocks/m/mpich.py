@@ -34,6 +34,7 @@ EasyBuild support for building and installing the MPICH MPI library and derivati
 """
 
 import os
+from distutils.version import LooseVersion
 
 import easybuild.tools.environment as env
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
@@ -46,6 +47,13 @@ class EB_MPICH(ConfigureMake):
     Support for building the MPICH MPI library and derivatives.
     - basically redefinition of environment variables
     """
+
+    def __init__(self, *args, **kwargs):
+        """Custom constructor for EB_MPICH easyblock, initialize custom class parameters."""
+        super(EB_MPICH, self).__init__(*args, **kwargs)        
+        # Starting MPICH 3.1.1, libraries have been renamed
+        # cf http://git.mpich.org/mpich.git/blob_plain/v3.1.1:/CHANGES
+        self.use_new_libnames = LooseVersion(self.version) >= LooseVersion('3.1.1')
 
     # There is a number of configuration options that are typically needed that are not present
     # here. The reason is that this easyblock is intended to be used as a parent for other 
@@ -100,10 +108,19 @@ class EB_MPICH(ConfigureMake):
         shlib_ext = get_shared_lib_ext()
         if custom_paths is None:
             custom_paths = {}
-        
-        custom_paths.setdefault('files', []).extend(['bin/%s' % x for x in ['mpicc', 'mpicxx', 'mpif77', 'mpif90' ]] +
-                     ['lib/lib%s' % y for x in ['fmpich', 'mpichcxx', 'mpichf90', 'mpich', 'mpl', 'opa']
-                                      for y in ['%s.%s' % (x, shlib_ext)]] +
-                     ((custom_paths or {'files': []}).get('files') or []))
-        custom_paths.setdefault('dirs', []).extend(['include'] + ((custom_paths or {'dirs': []}).get('dirs') or []))
+                
+        # Starting MPICH 3.1.1, libraries have been renamed
+        # cf http://git.mpich.org/mpich.git/blob_plain/v3.1.1:/CHANGES
+        if self.use_new_libnames:
+            libnames = ['mpi', 'mpicxx', 'mpifort']
+        else:
+            libnames = ['fmpich', 'mpichcxx', 'mpichf90', 'mpich', 'mpl', 'opa']
+
+        dirs = ['include', 'bin', 'lib']
+        bins = ['bin/%s' % x for x in ['mpicc', 'mpicxx', 'mpif77', 'mpif90', 'mpiexec.hydra', 'mpirun', 'mpiexec']]
+        headers = ['include/%s' % x for x in ['mpi.h', 'mpicxx.h', 'mpif.h']]
+        libs = ['lib/lib%s.%s' % (l,e) for l in libnames for e in ('a', shlib_ext)]
+            
+        custom_paths.setdefault('dirs',  []).extend(dirs)
+        custom_paths.setdefault('files', []).extend(headers + bins + libs)
         super(EB_MPICH, self).sanity_check_step(custom_paths=custom_paths)
