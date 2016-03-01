@@ -58,6 +58,8 @@ class EB_libxml2(ConfigureMake, PythonPackage):
         # We will do the python bindings ourselves so force them off
         self.cfg.update('configopts', '--without-python')
         ConfigureMake.configure_step(self)
+        # make sure self.all_pylibdirs is defined properly
+        PythonPackage.set_pylibdirs(self)
 
     def build_step(self):
         """
