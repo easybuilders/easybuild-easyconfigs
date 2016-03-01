@@ -129,9 +129,7 @@ class EB_MPICH(ConfigureMake):
         """
         shlib_ext = get_shared_lib_ext()
         if custom_paths is None:
-            orig_custom_paths = {}
-        else:
-            orig_custom_paths = copy.deepcopy(custom_paths)
+            custom_paths = {}
 
         if use_new_libnames is None:
             # cfr. http://git.mpich.org/mpich.git/blob_plain/v3.1.1:/CHANGES
@@ -150,9 +148,7 @@ class EB_MPICH(ConfigureMake):
         libs = ['lib/lib%s.%s' % (l, e) for l in libnames for e in ('a', shlib_ext)]
 
         # only set files/dirs keys if they weren't defined yet in custom_paths that was provided
-        custom_paths = {
-            'files': bins + headers + libs + orig_custom_paths.get('files', []),
-            'dirs': ['bin', 'include', 'lib'] + orig_custom_paths.get('dirs', []),
-        }
+        custom_paths.setdefault('dirs', []).extend(['bin', 'include', 'lib'])
+        custom_paths.setdefault('files', []).extend(bins + headers + libs)
 
         super(EB_MPICH, self).sanity_check_step(custom_paths=custom_paths)
