@@ -31,6 +31,7 @@ EasyBuild support for building and installing the MPICH MPI library and derivati
 @author: Pieter De Baets (Ghent University)
 @author: Jens Timmerman (Ghent University)
 @author: Damian Alvarez (Forschungszentrum Juelich)
+@author: Xavier Besseron (University of Luxembourg)
 """
 
 import os
