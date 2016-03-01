@@ -148,7 +148,7 @@ class EB_MPICH(ConfigureMake):
         libs = ['lib/lib%s.%s' % (l, e) for l in libnames for e in ('a', shlib_ext)]
 
         # only set files/dirs keys if they weren't defined yet in custom_paths that was provided
-        custom_paths.setdefault('files', bins + headers + libs)
-        custom_paths.setdefault('dirs', ['bin', 'include', 'lib'])
+        custom_paths.setdefault('files', bins + headers + libs).extend(custom_paths.get('files', []))
+        custom_paths.setdefault('dirs', ['bin', 'include', 'lib']).extend(custom_paths.get('dirs', []))
 
         super(EB_MPICH, self).sanity_check_step(custom_paths=custom_paths)
