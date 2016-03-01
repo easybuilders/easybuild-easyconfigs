@@ -90,6 +90,8 @@ class EB_MPICH(ConfigureMake):
             add_configopts.append('--enable-fast')
         # enable shared libraries, using GCC and GNU ld options
         add_configopts.extend(['--enable-shared', '--enable-sharedlibs=gcc'])
+        # enable static libraries
+        add_configopts.extend(['--enable-static'])
         # enable Fortran 77/90 and C++ bindings
         add_configopts.extend(['--enable-f77', '--enable-fc', '--enable-cxx'])
         self.cfg.update('configopts', ' '.join(add_configopts))
