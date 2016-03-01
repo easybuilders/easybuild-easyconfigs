@@ -33,7 +33,6 @@ EasyBuild support for building and installing the MPICH MPI library and derivati
 @author: Damian Alvarez (Forschungszentrum Juelich)
 @author: Xavier Besseron (University of Luxembourg)
 """
-import copy
 import os
 from distutils.version import LooseVersion
 
@@ -147,7 +146,6 @@ class EB_MPICH(ConfigureMake):
         headers = ['include/%s' % x for x in ['mpi.h', 'mpicxx.h', 'mpif.h']]
         libs = ['lib/lib%s.%s' % (l, e) for l in libnames for e in ('a', shlib_ext)]
 
-        # only set files/dirs keys if they weren't defined yet in custom_paths that was provided
         custom_paths.setdefault('dirs', []).extend(['bin', 'include', 'lib'])
         custom_paths.setdefault('files', []).extend(bins + headers + libs)
 
