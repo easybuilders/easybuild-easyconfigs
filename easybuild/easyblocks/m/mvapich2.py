@@ -34,14 +34,10 @@ EasyBuild support for building and installing the MVAPICH2 MPI library, implemen
 @author: Xavier Besseron (University of Luxembourg)
 """
 
-import os
 from distutils.version import LooseVersion
 
-import easybuild.tools.environment as env
 from easybuild.easyblocks.mpich import EB_MPICH
 from easybuild.framework.easyconfig import CUSTOM
-from easybuild.tools.build_log import EasyBuildError
-from easybuild.tools.systemtools import get_shared_lib_ext
 
 
 class EB_MVAPICH2(EB_MPICH):
@@ -50,20 +46,14 @@ class EB_MVAPICH2(EB_MPICH):
     - some compiler dependent configure options
     """
 
-    def use_new_libnames(self):
-        """Tell if the underlying MPICH use the new names for its libraries"""
-        # cf http://git.mpich.org/mpich.git/blob_plain/v3.1.1:/CHANGES
-        # MVAPICH2 2.1 is based on MPICH 3.1.4
-        return LooseVersion(self.version) >= LooseVersion('2.1')
-
     @staticmethod
     def extra_options():
+        """Define custom easyconfig parameters specific to MVAPICH2."""
         extra_vars = {
             'withchkpt': [False, "Enable checkpointing support (required BLCR)", CUSTOM],
             'withmpe': [False, "Build MPE routines", CUSTOM],
             'withhwloc': [False, "Enable support for using hwloc support for process binding", CUSTOM],
             'withlimic2': [False, "Enable LiMIC2 support for intra-node communication", CUSTOM],
-            'debug': [False, "Enable debug build (which is slower)", CUSTOM],
             'rdma_type': ["gen2", "Specify the RDMA type (gen2/udapl)", CUSTOM],
             'blcr_path': [None, "Path to BLCR package", CUSTOM],
             'blcr_inc_path': [None, "Path to BLCR header files", CUSTOM],
@@ -72,6 +62,7 @@ class EB_MVAPICH2(EB_MPICH):
         return EB_MPICH.extra_options(extra_vars)
 
     def configure_step(self):
+        """Define custom configure options for MVAPICH2."""
 
         # additional configuration options
         add_configopts = []
@@ -106,6 +97,11 @@ class EB_MVAPICH2(EB_MPICH):
         Custom sanity check for MVAPICH2
         """
         custom_paths = {
-            'files': ['bin/%s' % x for x in ['mpiexec.mpirun_rsh']] 
+            'files': ['bin/mpiexec.mpirun_rsh'],
         }
-        super(EB_MVAPICH2, self).sanity_check_step(custom_paths=custom_paths)
+
+        # cfr. http://git.mpich.org/mpich.git/blob_plain/v3.1.1:/CHANGES
+        # MVAPICH2 2.1 is based on MPICH 3.1.4
+        use_new_libnames = LooseVersion(self.version) >= LooseVersion('2.1')
+
+        super(EB_MVAPICH2, self).sanity_check_step(custom_paths=custom_paths, use_new_libnames=use_new_libnames)
