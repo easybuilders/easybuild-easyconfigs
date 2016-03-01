@@ -95,10 +95,9 @@ class EB_libxml2(ConfigureMake, PythonPackage):
         """Custom sanity check for libxml2"""
         shlib_ext = get_shared_lib_ext()
         pyfiles = ['libxml2mod.%s' % shlib_ext, 'libxml2.py', 'drv_libxml2.py']
-        #[os.path.join(self.pylibdir, x) for x in pyfiles],
         custom_paths = {
             'files': ["lib/libxml2.a", "lib/libxml2.%s" % shlib_ext] +
-                     [tuple([(os.path.join(y,x)) for y in self.all_pylibdirs]) for x in pyfiles],
+                     [tuple([(os.path.join(d, f)) for d in self.all_pylibdirs]) for f in pyfiles],
             'dirs': ["bin", tuple(self.all_pylibdirs), "include/libxml2/libxml"],
         }
         ConfigureMake.sanity_check_step(self, custom_paths=custom_paths)
