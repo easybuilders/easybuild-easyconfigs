@@ -38,6 +38,7 @@ from distutils.version import LooseVersion
 
 import easybuild.tools.environment as env
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
+from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.systemtools import get_shared_lib_ext
 
@@ -55,6 +56,15 @@ class EB_MPICH(ConfigureMake):
         # cf http://git.mpich.org/mpich.git/blob_plain/v3.1.1:/CHANGES
         self.use_new_libnames = LooseVersion(self.version) >= LooseVersion('3.1.1')
 
+    @staticmethod
+    def extra_options(extra_vars=None):
+        extra_vars = ConfigureMake.extra_options(extra_vars)
+        extra_vars.update({
+            'debug': [False, "Enable debug build (which is slower)", CUSTOM],
+        })
+        return extra_vars
+
+
     # There is a number of configuration options that are typically needed that are not present
     # here. The reason is that this easyblock is intended to be used as a parent for other 
     # easyblocks like MVAPICH2 and PSMPI. Not all of them support the same options, so they
@@ -66,6 +76,23 @@ class EB_MPICH(ConfigureMake):
         if not self.cfg['keeppreviousinstall']:
             self.log.info("Making sure any old installation is removed before we start the build...")
             super(EB_MPICH, self).make_dir(self.installdir, True, dontcreateinstalldir=True)
+
+        # additional configuration options
+        add_configopts = []
+        # use POSIX threads
+        add_configopts.append('--with-thread-package=pthreads')
+        if self.cfg['debug']:
+            # debug build, with error checking, timing and debug info
+            # note: this will affact performance
+            add_configopts.append('--enable-fast=none')
+        else:
+            # optimized build, no error checking, timing or debug info
+            add_configopts.append('--enable-fast')
+        # enable shared libraries, using GCC and GNU ld options
+        add_configopts.extend(['--enable-shared', '--enable-sharedlibs=gcc'])
+        # enable Fortran 77/90 and C++ bindings
+        add_configopts.extend(['--enable-f77', '--enable-fc', '--enable-cxx'])
+        self.cfg.update('configopts', ' '.join(add_configopts))
 
         # MPICH configure script complains when F90 or F90FLAGS are set,
         # they should be replaced with FC/FCFLAGS instead.

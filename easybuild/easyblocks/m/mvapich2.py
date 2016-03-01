@@ -77,23 +77,6 @@ class EB_MVAPICH2(EB_MPICH):
         add_configopts = []
         add_configopts.append('--with-rdma=%s' % self.cfg['rdma_type'])
 
-        # use POSIX threads
-        add_configopts.append('--with-thread-package=pthreads')
-
-        if self.cfg['debug']:
-            # debug build, with error checking, timing and debug info
-            # note: this will affact performance
-            add_configopts.append('--enable-fast=none')
-        else:
-            # optimized build, no error checking, timing or debug info
-            add_configopts.append('--enable-fast')
-
-        # enable shared libraries, using GCC and GNU ld options
-        add_configopts.extend(['--enable-shared', '--enable-sharedlibs=gcc'])
-
-        # enable Fortran 77/90 and C++ bindings
-        add_configopts.extend(['--enable-f77', '--enable-fc', '--enable-cxx'])
-
         # enable specific support options (if desired)
         if self.cfg['withmpe']:
             add_configopts.append('--enable-mpe')
