@@ -1,5 +1,5 @@
 ##
-# Copyright 2009-2016 Ghent University
+# Copyright 2009-2016 Ghent University, Forschungszentrum Juelich
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -30,19 +30,19 @@ EasyBuild support for building and installing the MVAPICH2 MPI library, implemen
 @author: Kenneth Hoste (Ghent University)
 @author: Pieter De Baets (Ghent University)
 @author: Jens Timmerman (Ghent University)
+@author: Damian Alvarez (Forschungszentrum Juelich)
 """
 
 import os
-from distutils.version import LooseVersion
 
 import easybuild.tools.environment as env
-from easybuild.easyblocks.generic.configuremake import ConfigureMake
+from easybuild.easyblocks.mpich import EB_MPICH
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.systemtools import get_shared_lib_ext
 
 
-class EB_MVAPICH2(ConfigureMake):
+class EB_MVAPICH2(EB_MPICH):
     """
     Support for building the MVAPICH2 MPI library.
     - some compiler dependent configure options
@@ -61,14 +61,9 @@ class EB_MVAPICH2(ConfigureMake):
             'blcr_inc_path': [None, "Path to BLCR header files", CUSTOM],
             'blcr_lib_path': [None, "Path to BLCR library", CUSTOM],
         }
-        return ConfigureMake.extra_options(extra_vars)
+        return EB_MPICH.extra_options(extra_vars)
 
     def configure_step(self):
-
-        # things might go wrong if a previous install dir is present, so let's get rid of it
-        if not self.cfg['keeppreviousinstall']:
-            self.log.info("Making sure any old installation is removed before we start the build...")
-            super(EB_MVAPICH2, self).make_dir(self.installdir, True, dontcreateinstalldir=True)
 
         # additional configuration options
         add_configopts = []
@@ -90,21 +85,6 @@ class EB_MVAPICH2(ConfigureMake):
 
         # enable Fortran 77/90 and C++ bindings
         add_configopts.extend(['--enable-f77', '--enable-fc', '--enable-cxx'])
-
-        # MVAPICH configure script complains when F90 or F90FLAGS are set,
-        # they should be replaced with FC/FCFLAGS instead
-        for (envvar, new_envvar) in [("F90", "FC"), ("F90FLAGS", "FCFLAGS")]:
-            envvar_val = os.getenv(envvar)
-            if envvar_val:
-                new_envvar_val = os.getenv(new_envvar)
-                env.setvar(envvar, '')
-                if envvar_val == new_envvar_val:
-                    self.log.debug("$%s == $%s, just defined $%s as empty", envvar, new_envvar, envvar)
-                elif new_envvar_val is None:
-                    env.setvar(new_envvar, envvar_val)
-                else:
-                    raise EasyBuildError("Both $%s and $%s set, can I overwrite $%s with $%s (%s) ?",
-                                         envvar, new_envvar, new_envvar, envvar, envvar_val)
 
         # enable specific support options (if desired)
         if self.cfg['withmpe']:
@@ -134,15 +114,7 @@ class EB_MVAPICH2(ConfigureMake):
         """
         Custom sanity check for MVAPICH2
         """
-        shlib_ext = get_shared_lib_ext()
-        binaries = ['bin/%s' % x for x in ['mpicc', 'mpicxx', 'mpif77', 'mpif90', 'mpiexec.hydra']]
-        directories = ['include']
-        if LooseVersion(self.version) < LooseVersion('2.1'):
-            libraries = ['lib/lib%s' % y for x in ['fmpich', 'mpichcxx', 'mpichf90', 'mpich', 'mpl', 'opa']
-                                      for y in ['%s.a' % x, '%s.%s' % (x, shlib_ext)]]
-        else:
-            libraries = ['lib/lib%s' % y for x in ['mpi', 'mpicxx', 'mpifort']
-                                      for y in ['%s.a' % x, '%s.%s' % (x, shlib_ext)]]
-            
-        custom_paths = { 'files': binaries + libraries,  'dirs': directories }
+        custom_paths = {
+            'files': ['bin/%s' % x for x in ['mpiexec.hydra']] 
+        }
         super(EB_MVAPICH2, self).sanity_check_step(custom_paths=custom_paths)
