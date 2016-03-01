@@ -49,12 +49,11 @@ class EB_MVAPICH2(EB_MPICH):
     - some compiler dependent configure options
     """
 
-    def __init__(self, *args, **kwargs):
-        """Custom constructor for EB_MVAPICH2 easyblock, initialize custom class parameters."""
-        super(EB_MVAPICH2, self).__init__(*args, **kwargs)        
-        # MVAPICH2 >=2.1 depends on MPICH >=3.1.1, which uses new library names
+    def use_new_libnames(self):
+        """Tell if the underlying MPICH use the new names for its libraries"""
         # cf http://git.mpich.org/mpich.git/blob_plain/v3.1.1:/CHANGES
-        self.use_new_libnames = LooseVersion(self.version) >= LooseVersion('2.1')
+        # MVAPICH2 2.1 is based on MPICH 3.1.4
+        return LooseVersion(self.version) >= LooseVersion('2.1')
 
     @staticmethod
     def extra_options():

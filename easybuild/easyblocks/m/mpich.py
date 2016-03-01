@@ -49,12 +49,11 @@ class EB_MPICH(ConfigureMake):
     - basically redefinition of environment variables
     """
 
-    def __init__(self, *args, **kwargs):
-        """Custom constructor for EB_MPICH easyblock, initialize custom class parameters."""
-        super(EB_MPICH, self).__init__(*args, **kwargs)        
-        # Starting MPICH 3.1.1, libraries have been renamed
+    def use_new_libnames(self):
+        """Tell if the underlying MPICH use the new names for its libraries"""
         # cf http://git.mpich.org/mpich.git/blob_plain/v3.1.1:/CHANGES
-        self.use_new_libnames = LooseVersion(self.version) >= LooseVersion('3.1.1')
+        # MPICH changed its library names sinceversion 3.1.1
+        return LooseVersion(self.version) >= LooseVersion('3.1.1')
 
     @staticmethod
     def extra_options(extra_vars=None):
@@ -140,7 +139,7 @@ class EB_MPICH(ConfigureMake):
                 
         # Starting MPICH 3.1.1, libraries have been renamed
         # cf http://git.mpich.org/mpich.git/blob_plain/v3.1.1:/CHANGES
-        if self.use_new_libnames:
+        if self.use_new_libnames():
             libnames = ['mpi', 'mpicxx', 'mpifort']
         else:
             libnames = ['fmpich', 'mpichcxx', 'mpichf90', 'mpich', 'mpl', 'opa']
