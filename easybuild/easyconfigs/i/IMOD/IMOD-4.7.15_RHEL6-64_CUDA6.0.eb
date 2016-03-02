@@ -1,5 +1,3 @@
-easyblock = 'Binary'
-
 name = 'IMOD'
 version = '4.7.15'
 versionsuffix = '_RHEL6-64_CUDA6.0'
@@ -26,38 +24,5 @@ dependencies = [
     ('CUDA', '6.0.37'),
     (java, javaver),
 ]
-
-install_cmd = "tcsh %(namelower)s_%(version)s%(versionsuffix)s.csh"
-
-# -dir: Choose location of installation directory
-# -skip: do not attempt to deploy resource files in /etc
-# -yes: do not prompt for confirmation
-installopts = "-dir %(installdir)s -skip -yes"
-
-# The assumption by the install script is that installdir will be something
-# like /usr/local. So it creates, within the specified install location, a
-# number of additional directories within which to install IMOD. We will,
-# therefore, move the contents of these directories up and throw away the
-# directories themselves. Doing so apparently is not a problem so long as
-# IMOD_DIR (see below) is correctly set in the module.
-postinstallcmds = [
-    "mv %(installdir)s/%(name)s/* %(installdir)s/.",
-    "rm -r %(installdir)s/%(name)s %(installdir)s/%(namelower)s_%(version)s",
-]
-
-sanity_check_paths = {
-    'files': ['IMOD-linux.sh', 'IMOD-linux.csh', 'installIMOD'],
-    'dirs': ['bin', 'lib']
-}
-
-modextravars = {
-    'IMOD_DIR'                : "$root",
-    'IMOD_JAVADIR'            : os.getenv('EBROOTJAVA'),
-    'IMOD_PLUGIN_DIR'         : "$root/lib/imodplug",
-    'FOR_DISABLE_STACK_TRACE' : 1,
-    'IMOD_QTLIBDIR'           : "$root/qtlib"
-}
-modaliases = {'subm' : "submfg $* &"}
-modloadmsg = """Please set the environment variable IMOD_CALIB_DIR if appropriate."""
 
 moduleclass = 'vis'
