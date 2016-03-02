@@ -32,6 +32,7 @@ import shutil
 
 from easybuild.easyblocks.generic.binary import Binary
 from easybuild.tools.filetools import rmtree2
+from easybuild.tools.run import run_cmd
 
 class EB_IMOD(Binary):
     """Support for building/installing IMOD."""
