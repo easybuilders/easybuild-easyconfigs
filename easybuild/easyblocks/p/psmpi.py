@@ -27,11 +27,8 @@ EasyBuild support for building and installing the ParaStationMPI library, implem
 
 @author: Damian Alvarez (Forschungszentrum Juelich)
 """
-import os
-from distutils.version import LooseVersion
 
 from easybuild.easyblocks.mpich import EB_MPICH
-from easybuild.tools.systemtools import get_shared_lib_ext
 
 
 class EB_psmpi(EB_MPICH):
@@ -40,24 +37,13 @@ class EB_psmpi(EB_MPICH):
     - some compiler dependent configure options
     """
 
-    def configure_step(self):
+    def add_default_options(self):
         """
-        Custom configuration procedure for ParaStationMPI
-        * unset environment variables that leak into mpi* wrappers, and define $MPICHLIB_* equivalents instead
+        Skip common options found in other MPICH-based runtimes
         """
+        pass
 
-        # things might go wrong if a previous install dir is present, so let's get rid of it
-        if not self.cfg['keeppreviousinstall']:
-            self.log.info("Making sure any old installation is removed before we start the build...")
-            super(EB_psmpi, self).make_dir(self.installdir, True, dontcreateinstalldir=True)
-
-        self.correct_mpich_build_env()
-
-        # Bypass the configure_step of EB_MPICH. ParaStationMPI has a completely different set of options. We
-        # can't have the same configure_step.
-        super(EB_MPICH, self).configure_step()
-
-    # make and make install are default
+    # configure, make and make install are default
 
     def sanity_check_step(self, custom_paths=None, use_new_libnames=None):
         """

@@ -85,20 +85,10 @@ class EB_MPICH(ConfigureMake):
                                          envvar, new_envvar, new_envvar, envvar, envvar_val)
         env.unset_env_vars(vars_to_unset)
 
-
-    def configure_step(self):
+    def add_default_options(self):
         """
-        Custom configuration procedure for MPICH
-
-        * add common configure options for MPICH-based MPI libraries
-        * unset environment variables that leak into mpi* wrappers, and define $MPICHLIB_* equivalents instead
+        Method to add common configure options for MPICH-based MPI libraries
         """
-
-        # things might go wrong if a previous install dir is present, so let's get rid of it
-        if not self.cfg['keeppreviousinstall']:
-            self.log.info("Making sure any old installation is removed before we start the build...")
-            super(EB_MPICH, self).make_dir(self.installdir, True, dontcreateinstalldir=True)
-
         # additional configuration options
         add_configopts = []
 
@@ -121,7 +111,22 @@ class EB_MPICH(ConfigureMake):
         add_configopts.extend(['--enable-f77', '--enable-fc', '--enable-cxx'])
 
         self.cfg.update('configopts', ' '.join(add_configopts))
-        
+ 
+
+    def configure_step(self):
+        """
+        Custom configuration procedure for MPICH
+
+        * add common configure options for MPICH-based MPI libraries
+        * unset environment variables that leak into mpi* wrappers, and define $MPICHLIB_* equivalents instead
+        """
+
+        # things might go wrong if a previous install dir is present, so let's get rid of it
+        if not self.cfg['keeppreviousinstall']:
+            self.log.info("Making sure any old installation is removed before we start the build...")
+            super(EB_MPICH, self).make_dir(self.installdir, True, dontcreateinstalldir=True)
+
+        self.add_default_options()
         self.correct_mpich_build_env()
 
         super(EB_MPICH, self).configure_step()
