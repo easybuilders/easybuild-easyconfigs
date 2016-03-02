@@ -36,11 +36,6 @@ from easybuild.tools.filetools import rmtree2
 class EB_IMOD(Binary):
     """Support for building/installing IMOD."""
 
-    @staticmethod
-    def extra_options():
-        """Additional easyconfig parameters custom to IMOD, if any."""
-        return Binary.extra_options(extra_vars)
-
     def install_step(self):
         """Install IMOD using install script."""
 
