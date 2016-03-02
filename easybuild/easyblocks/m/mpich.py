@@ -58,7 +58,13 @@ class EB_MPICH(ConfigureMake):
         })
         return extra_vars
 
-    def setup_env_vars(self):
+    # MPICH configure script complains when F90 or F90FLAGS are set,
+    # they should be replaced with FC/FCFLAGS instead.
+    # Additionally, there are a set of variables (FCFLAGS among them) that should not be set at configure time,
+    # or they will leak in the mpix wrappers.
+    # Specific variables to be included in the wrapper exists, but they changed between MPICH 3.1.4 and MPICH 3.2
+    # and in a typical scenario we probably don't want them.
+    def correct_mpich_build_env(self):
         """
         Method to correctly set the environment for MPICH and derivatives
         """
@@ -116,13 +122,7 @@ class EB_MPICH(ConfigureMake):
 
         self.cfg.update('configopts', ' '.join(add_configopts))
         
-        # MPICH configure script complains when F90 or F90FLAGS are set,
-        # they should be replaced with FC/FCFLAGS instead.
-        # Additionally, there are a set of variables (FCFLAGS among them) that should not be set at configure time,
-        # or they will leak in the mpix wrappers.
-        # Specific variables to be included in the wrapper exists, but they changed between MPICH 3.1.4 and MPICH 3.2
-        # and in a typical scenario we probably don't want them.
-        self.setup_env_vars()
+        self.correct_mpich_build_env()
 
         super(EB_MPICH, self).configure_step()
 

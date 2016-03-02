@@ -51,15 +51,10 @@ class EB_psmpi(EB_MPICH):
             self.log.info("Making sure any old installation is removed before we start the build...")
             super(EB_psmpi, self).make_dir(self.installdir, True, dontcreateinstalldir=True)
 
-        # MPICH configure script complains when F90 or F90FLAGS are set,
-        # they should be replaced with FC/FCFLAGS instead.
-        # Additionally, there are a set of variables (FCFLAGS among them) that should not be set at configure time,
-        # or they will leak in the mpix wrappers.
-        # Specific variables to be included in the wrapper exists, but they changed between MPICH 3.1.4 and MPICH 3.2
-        # and in a typical scenario we probably don't want them.
-        self.setup_env_vars()
+        self.correct_mpich_build_env()
 
-        # Bypass the configure_step of EB_MPICH
+        # Bypass the configure_step of EB_MPICH. ParaStationMPI has a completely different set of options. We
+        # can't have the same configure_step.
         super(EB_MPICH, self).configure_step()
 
     # make and make install are default
@@ -92,5 +87,5 @@ class EB_psmpi(EB_MPICH):
         custom_paths.setdefault('dirs', []).extend(['bin', 'include', 'lib'])
         custom_paths.setdefault('files', []).extend(bins + headers + libs)
 
-        # Bypass the sanity_check_step of EB_MPICH
+        # Bypass the sanity_check_step of EB_MPICH. ParaStationMPI doesn't generate mpiexec, mpirun, etc
         super(EB_MPICH, self).sanity_check_step(custom_paths=custom_paths)
