@@ -199,6 +199,13 @@ class EB_CP2K(EasyBlock):
             options['LIBS'] += ' -lplumed'
             options['DFLAGS'] += ' -D__PLUMED2'
 
+        # CUDA
+        cuda = get_software_root('CUDA')
+        if cuda:
+            options['DFLAGS'] += ' -D__ACC -D__DBCSR_ACC'
+            options['LIBS'] += ' -lcudart -lcublas -lcufft -lrt'
+            options['NVCC'] = ' nvcc'
+
         # avoid group nesting
         options['LIBS'] = options['LIBS'].replace('-Wl,--start-group', '').replace('-Wl,--end-group', '')
 
