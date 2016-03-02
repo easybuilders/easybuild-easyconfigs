@@ -52,12 +52,12 @@ class EB_IMOD(Binary):
         # therefore, move the contents of these directories up and throw away the
         # directories themselves. Doing so apparently is not a problem so long as
         # IMOD_DIR is correctly set in the module.
-        dir1 = os.path.join(self.installdir, self.name)
-        dir2 = os.path.join(self.installdir, "{0}_{1}".format(self.name.lower(), self.version))
-        for file in os.listdir(dir1):
-            shutil.move(os.path.join(dir1, file), self.installdir)
-        rmtree2(dir1)
-        rmtree2(dir2)
+        link_to_remove = os.path.join(self.installdir, self.name)
+        dir_to_remove = os.path.join(self.installdir, "{0}_{1}".format(self.name.lower(), self.version))
+        for file in os.listdir(dir_to_remove):
+            shutil.move(os.path.join(dir_to_remove, file), self.installdir)
+        rmtree2(dir_to_remove)
+        os.remove(link_to_remove)
 
     def sanity_check_step(self):
         """Custom sanity check for IMOD."""
