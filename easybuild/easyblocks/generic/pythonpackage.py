@@ -68,7 +68,7 @@ def det_pylibdir(plat_specific=False):
 
     log.debug("Determining Python library directory using %s and command '%s'", which('python'), cmd)
 
-    out, ec = run_cmd(cmd, simple=False)
+    out, ec = run_cmd(cmd, simple=False, force_in_dry_run=True)
     txt = out.strip().split('\n')[-1]
 
     # value obtained should start with specified prefix, otherwise something is very wrong
@@ -151,21 +151,15 @@ class PythonPackage(ExtensionEasyBlock):
 
     def set_pylibdirs(self):
         """Set Python lib directory-related class variables."""
-        if self.dry_run:
-            self.pylibdir = 'lib/python/site-packages'
-            self.all_pylibdirs = ['lib/python/site-packages']
-            self.log.debug("Using fake set of Python lib dirs during dry run: %s", self.all_pylibdirs)
-
-        else:
-            # pylibdir is the 'main' Python lib directory
-            if self.pylibdir == UNKNOWN:
-                self.pylibdir = det_pylibdir()
-            self.log.debug("Python library dir: %s" % self.pylibdir)
-            # on (some) multilib systems, the platform-specific library directory for the system Python is different
-            # cfr. http://serverfault.com/a/88739/126446
-            # so, we keep a list of different Python lib directories to take into account
-            self.all_pylibdirs = nub([self.pylibdir, det_pylibdir(plat_specific=True)])
-            self.log.debug("All Python library dirs: %s" % self.all_pylibdirs)
+        # pylibdir is the 'main' Python lib directory
+        if self.pylibdir == UNKNOWN:
+            self.pylibdir = det_pylibdir()
+        self.log.debug("Python library dir: %s" % self.pylibdir)
+        # on (some) multilib systems, the platform-specific library directory for the system Python is different
+        # cfr. http://serverfault.com/a/88739/126446
+        # so, we keep a list of different Python lib directories to take into account
+        self.all_pylibdirs = nub([self.pylibdir, det_pylibdir(plat_specific=True)])
+        self.log.debug("All Python library dirs: %s" % self.all_pylibdirs)
 
     def compose_install_command(self, prefix, extrapath=None):
         """Compose full install command."""
