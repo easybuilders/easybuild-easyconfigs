@@ -61,31 +61,7 @@ class EB_psmpi(EB_MPICH):
 
     def sanity_check_step(self, custom_paths=None, use_new_libnames=None):
         """
-        Custom sanity check for ParaStationMPI
+        Disable the checking of the launchers for ParaStationMPI
         """
-        shlib_ext = get_shared_lib_ext()
-        if custom_paths is None:
-            custom_paths = {}
-
-        if use_new_libnames is None:
-            # cfr. http://git.mpich.org/mpich.git/blob_plain/v3.1.1:/CHANGES
-            # MPICH changed its library names sinceversion 3.1.1
-            use_new_libnames = LooseVersion(self.version) >= LooseVersion('5.1.0-1')
-
-        # Starting MPICH 3.1.1, libraries have been renamed
-        # cf http://git.mpich.org/mpich.git/blob_plain/v3.1.1:/CHANGES
-        if use_new_libnames:
-            libnames = ['mpi', 'mpicxx', 'mpifort']
-        else:
-            libnames = ['fmpich', 'mpichcxx', 'mpichf90', 'mpich', 'mpl', 'opa']
-
-        binaries = ['mpicc', 'mpicxx', 'mpif77', 'mpif90']
-        bins = [os.path.join('bin', x) for x in binaries]
-        headers = [os.path.join('include', x) for x in ['mpi.h', 'mpicxx.h', 'mpif.h']]
-        libs = [os.path.join('lib', 'lib%s.%s' % (l, e)) for l in libnames for e in ['a', shlib_ext]]
-
-        custom_paths.setdefault('dirs', []).extend(['bin', 'include', 'lib'])
-        custom_paths.setdefault('files', []).extend(bins + headers + libs)
-
-        # Bypass the sanity_check_step of EB_MPICH. ParaStationMPI doesn't generate mpiexec, mpirun, etc
-        super(EB_MPICH, self).sanity_check_step(custom_paths=custom_paths)
+        super(EB_psmpi, self).sanity_check_step(custom_paths=custom_paths,use_new_libnames=use_new_libnames,
+                check_launchers=False)

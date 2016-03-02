@@ -128,7 +128,7 @@ class EB_MPICH(ConfigureMake):
 
     # make and make install are default
 
-    def sanity_check_step(self, custom_paths=None, use_new_libnames=None):
+    def sanity_check_step(self, custom_paths=None, use_new_libnames=None, check_launchers=True):
         """
         Custom sanity check for MPICH
         """
@@ -148,7 +148,13 @@ class EB_MPICH(ConfigureMake):
         else:
             libnames = ['fmpich', 'mpichcxx', 'mpichf90', 'mpich', 'mpl', 'opa']
 
-        binaries = ['mpicc', 'mpicxx', 'mpiexec', 'mpiexec.hydra', 'mpif77', 'mpif90', 'mpirun']
+        launchers = ['mpiexec', 'mpiexec.hydra', 'mpirun']
+        compilers = ['mpicc', 'mpicxx', 'mpif77', 'mpif90']
+        if check_launchers is True:
+            binaries = launchers + compilers
+        else:
+            binaries = compilers
+
         bins = [os.path.join('bin', x) for x in binaries]
         headers = [os.path.join('include', x) for x in ['mpi.h', 'mpicxx.h', 'mpif.h']]
         libs = [os.path.join('lib', 'lib%s.%s' % (l, e)) for l in libnames for e in ['a', shlib_ext]]
