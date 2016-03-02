@@ -76,8 +76,10 @@ class EB_IMOD(Binary):
         txt += self.module_generator.set_environment('IMOD_DIR', self.installdir)
         txt += self.module_generator.set_environment('IMOD_PLUGIN_DIR', os.path.join(self.installdir, 'lib', 'imodplug'))
         txt += self.module_generator.set_environment('IMOD_QTLIBDIR', os.path.join(self.installdir, 'qtlib'))
-        if os.getenv('EBROOTJAVA') is not None:
-            txt += self.module_generator.set_environment('IMOD_JAVADIR', os.getenv('EBROOTJAVA'))
+        if os.getenv('JAVA_HOME') is None:
+            raise EasyBuildError("JAVA_HOME is not defined for some reason -- check environment")
+        else:
+            txt += self.module_generator.set_environment('IMOD_JAVADIR', os.getenv('JAVA_HOME'))
         txt += self.module_generator.set_environment('FOR_DISABLE_STACK_TRACE', '1')
         txt += self.module_generator.set_alias('subm', "submfg $* &")
         txt += self.module_generator.msg_on_load("Please set the environment variable IMOD_CALIB_DIR if appropriate.")
