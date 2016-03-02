@@ -31,6 +31,7 @@ import os
 import shutil
 
 from easybuild.easyblocks.generic.binary import Binary
+from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.filetools import rmtree2
 from easybuild.tools.run import run_cmd
 
@@ -56,6 +57,8 @@ class EB_IMOD(Binary):
         dir_to_remove = os.path.join(self.installdir, "{0}_{1}".format(self.name.lower(), self.version))
         for file in os.listdir(dir_to_remove):
             shutil.move(os.path.join(dir_to_remove, file), self.installdir)
+        if os.path.realpath(link_to_remove) != os.path.realpath(dir_to_remove):
+            raise EasyBuildError("Something went wrong -- {0} doesn't point to {1}".format(link_to_remove, dir_to_remove))
         rmtree2(dir_to_remove)
         os.remove(link_to_remove)
 
