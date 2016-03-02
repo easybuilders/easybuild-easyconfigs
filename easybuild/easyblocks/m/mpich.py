@@ -51,6 +51,7 @@ class EB_MPICH(ConfigureMake):
 
     @staticmethod
     def extra_options(extra_vars=None):
+        """Define custom easyconfig parameters specific to MPICH."""
         extra_vars = ConfigureMake.extra_options(extra_vars)
         extra_vars.update({
             'debug': [False, "Enable debug build (which is slower)", CUSTOM],
@@ -62,7 +63,12 @@ class EB_MPICH(ConfigureMake):
     # easyblocks like MVAPICH2 and PSMPI. Not all of them support the same options, so they
     # are not included here.
     def configure_step(self):
-        """Renaming of various environment variables needed for the configuration of MPICH"""
+        """
+        Custom configuration procedure for MPICH
+
+        * add common configure options for MPICH-based MPI libraries
+        * unset environment variables that leak into mpi* wrappers, and define $MPICHLIB_* equivalents instead
+        """
 
         # things might go wrong if a previous install dir is present, so let's get rid of it
         if not self.cfg['keeppreviousinstall']:
@@ -71,21 +77,25 @@ class EB_MPICH(ConfigureMake):
 
         # additional configuration options
         add_configopts = []
+
         # use POSIX threads
         add_configopts.append('--with-thread-package=pthreads')
+
         if self.cfg['debug']:
             # debug build, with error checking, timing and debug info
-            # note: this will affact performance
+            # note: this will affect performance
             add_configopts.append('--enable-fast=none')
         else:
             # optimized build, no error checking, timing or debug info
             add_configopts.append('--enable-fast')
+
         # enable shared libraries, using GCC and GNU ld options
         add_configopts.extend(['--enable-shared', '--enable-sharedlibs=gcc'])
         # enable static libraries
         add_configopts.extend(['--enable-static'])
         # enable Fortran 77/90 and C++ bindings
         add_configopts.extend(['--enable-f77', '--enable-fc', '--enable-cxx'])
+
         self.cfg.update('configopts', ' '.join(add_configopts))
 
         # MPICH configure script complains when F90 or F90FLAGS are set,
@@ -94,21 +104,14 @@ class EB_MPICH(ConfigureMake):
         # or they will leak in the mpix wrappers.
         # Specific variables to be included in the wrapper exists, but they changed between MPICH 3.1.4 and MPICH 3.2
         # and in a typical scenario we probably don't want them.
-        env_vars = {
-            'CFLAGS'   : 'MPICHLIB_CFLAGS',
-            'CPPFLAGS' : 'MPICHLIB_CPPFLAGS',
-            'CXXFLAGS' : 'MPICHLIB_CXXFLAGS',
-            'FCFLAGS'  : 'MPICHLIB_FCFLAGS',
-            'FFLAGS'   : 'MPICHLIB_FFLAGS',
-            'LDFLAGS'  : 'MPICHLIB_LDFLAGS',
-            'LIBS'     : 'MPICHLIB_LIBS',
-        }
+        env_vars = ['CFLAGS', 'CPPFLAGS', 'CXXFLAGS', 'FCFLAGS', 'FFLAGS', 'LDFLAGS', 'LIBS']
         vars_to_unset = ['F90', 'F90FLAGS']
-        for (envvar, new_envvar) in env_vars.items():
+        for envvar in env_vars:
             envvar_val = os.getenv(envvar)
             if envvar_val:
+                new_envvar = 'MPICHLIB_%s' % envvar
                 new_envvar_val = os.getenv(new_envvar)
-                vars_to_unset += [envvar]
+                vars_to_unset.append(envvar)
                 if envvar_val == new_envvar_val:
                     self.log.debug("$%s == $%s, just defined $%s as empty", envvar, new_envvar, envvar)
                 elif new_envvar_val is None:
@@ -142,9 +145,10 @@ class EB_MPICH(ConfigureMake):
         else:
             libnames = ['fmpich', 'mpichcxx', 'mpichf90', 'mpich', 'mpl', 'opa']
 
-        bins = ['bin/%s' % x for x in ['mpicc', 'mpicxx', 'mpif77', 'mpif90', 'mpiexec.hydra', 'mpirun', 'mpiexec']]
-        headers = ['include/%s' % x for x in ['mpi.h', 'mpicxx.h', 'mpif.h']]
-        libs = ['lib/lib%s.%s' % (l, e) for l in libnames for e in ('a', shlib_ext)]
+        binaries = ['mpicc', 'mpicxx', 'mpiexec', 'mpiexec.hydra', 'mpif77', 'mpif90', 'mpirun']
+        bins = [os.path.join('bin', x) for x in binaries]
+        headers = [os.path.join('include', x) for x in ['mpi.h', 'mpicxx.h', 'mpif.h']]
+        libs = [os.path.join('lib', 'lib%s.%s' % (l, e)) for l in libnames for e in ['a', shlib_ext]]
 
         custom_paths.setdefault('dirs', []).extend(['bin', 'include', 'lib'])
         custom_paths.setdefault('files', []).extend(bins + headers + libs)
