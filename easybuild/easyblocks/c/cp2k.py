@@ -31,6 +31,7 @@ EasyBuild support for building and installing CP2K, implemented as an easyblock
 @author: Pieter De Baets (Ghent University)
 @author: Jens Timmerman (Ghent University)
 @author: Ward Poelmans (Ghent University)
+@author: Luca Marsella (CSCS)
 """
 
 import fileinput
