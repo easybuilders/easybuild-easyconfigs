@@ -9,12 +9,8 @@ import os
 import easybuild.tools.toolchain as toolchain
 from easybuild.easyblocks.boost import EB_Boost
 from easybuild.framework.easyblock import EasyBlock
-#from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.build_log import EasyBuildError
-#from easybuild.tools.modules import get_software_root
 from easybuild.tools.run import run_cmd
-#from easybuild.tools.systemtools import get_glibc_version, UNKNOWN
-
 
 class boostcray(EB_Boost):
     """Support for building Boost on cray."""
