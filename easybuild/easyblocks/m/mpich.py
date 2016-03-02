@@ -58,10 +58,28 @@ class EB_MPICH(ConfigureMake):
         })
         return extra_vars
 
-    # There is a number of configuration options that are typically needed that are not present
-    # here. The reason is that this easyblock is intended to be used as a parent for other
-    # easyblocks like MVAPICH2 and PSMPI. Not all of them support the same options, so they
-    # are not included here.
+    def setup_env_vars(self):
+        """
+        Method to correctly set the environment for MPICH and derivatives
+        """
+        env_vars = ['CFLAGS', 'CPPFLAGS', 'CXXFLAGS', 'FCFLAGS', 'FFLAGS', 'LDFLAGS', 'LIBS']
+        vars_to_unset = ['F90', 'F90FLAGS']
+        for envvar in env_vars:
+            envvar_val = os.getenv(envvar)
+            if envvar_val:
+                new_envvar = 'MPICHLIB_%s' % envvar
+                new_envvar_val = os.getenv(new_envvar)
+                vars_to_unset.append(envvar)
+                if envvar_val == new_envvar_val:
+                    self.log.debug("$%s == $%s, just defined $%s as empty", envvar, new_envvar, envvar)
+                elif new_envvar_val is None:
+                    env.setvar(new_envvar, envvar_val)
+                else:
+                    raise EasyBuildError("Both $%s and $%s set, can I overwrite $%s with $%s (%s) ?",
+                                         envvar, new_envvar, new_envvar, envvar, envvar_val)
+        env.unset_env_vars(vars_to_unset)
+
+
     def configure_step(self):
         """
         Custom configuration procedure for MPICH
@@ -97,29 +115,14 @@ class EB_MPICH(ConfigureMake):
         add_configopts.extend(['--enable-f77', '--enable-fc', '--enable-cxx'])
 
         self.cfg.update('configopts', ' '.join(add_configopts))
-
+        
         # MPICH configure script complains when F90 or F90FLAGS are set,
         # they should be replaced with FC/FCFLAGS instead.
         # Additionally, there are a set of variables (FCFLAGS among them) that should not be set at configure time,
         # or they will leak in the mpix wrappers.
         # Specific variables to be included in the wrapper exists, but they changed between MPICH 3.1.4 and MPICH 3.2
         # and in a typical scenario we probably don't want them.
-        env_vars = ['CFLAGS', 'CPPFLAGS', 'CXXFLAGS', 'FCFLAGS', 'FFLAGS', 'LDFLAGS', 'LIBS']
-        vars_to_unset = ['F90', 'F90FLAGS']
-        for envvar in env_vars:
-            envvar_val = os.getenv(envvar)
-            if envvar_val:
-                new_envvar = 'MPICHLIB_%s' % envvar
-                new_envvar_val = os.getenv(new_envvar)
-                vars_to_unset.append(envvar)
-                if envvar_val == new_envvar_val:
-                    self.log.debug("$%s == $%s, just defined $%s as empty", envvar, new_envvar, envvar)
-                elif new_envvar_val is None:
-                    env.setvar(new_envvar, envvar_val)
-                else:
-                    raise EasyBuildError("Both $%s and $%s set, can I overwrite $%s with $%s (%s) ?",
-                                         envvar, new_envvar, new_envvar, envvar, envvar_val)
-        env.unset_env_vars(vars_to_unset)
+        self.setup_env_vars()
 
         super(EB_MPICH, self).configure_step()
 
