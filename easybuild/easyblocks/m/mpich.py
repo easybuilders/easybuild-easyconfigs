@@ -113,7 +113,7 @@ class EB_MPICH(ConfigureMake):
         self.cfg.update('configopts', ' '.join(add_configopts))
  
 
-    def configure_step(self, set_default_options=True):
+    def configure_step(self, add_mpich_configopts=True):
         """
         Custom configuration procedure for MPICH
 
@@ -126,7 +126,7 @@ class EB_MPICH(ConfigureMake):
             self.log.info("Making sure any old installation is removed before we start the build...")
             super(EB_MPICH, self).make_dir(self.installdir, True, dontcreateinstalldir=True)
         
-        if set_default_options:
+        if add_mpich_configopts:
             self.add_mpich_configopts()
 
         self.correct_mpich_build_env()

@@ -94,7 +94,7 @@ class EB_psmpi(EB_MPICH):
         self.cfg.update('preconfigopts', ('PSCOM_LDFLAGS=-L{0}/lib '+
                 'PSCOM_CPPFLAGS=-I{0}/include').format(get_software_root('pscom')))
 
-        super(EB_psmpi, self).configure_step(set_default_options=False)
+        super(EB_psmpi, self).configure_step(add_mpich_configopts=False)
 
     # make and make install are default
 
@@ -103,8 +103,10 @@ class EB_psmpi(EB_MPICH):
         Disable the checking of the launchers for ParaStationMPI
         """
         # cfr. http://git.mpich.org/mpich.git/blob_plain/v3.1.1:/CHANGES
-        # MPICH changed its library names sinceversion 3.1.1
-        use_new_libnames = LooseVersion(self.version) >= LooseVersion('5.1.0-1')
+        # MPICH changed its library names sinceversion 3.1.1.
+        # cfr. https://github.com/ParaStation/psmpi2/blob/master/ChangeLog
+        # ParaStationMPI >= 5.1.1-1 is based on MPICH >= 3.1.3.
+        # ParaStationMPI < 5.1.1-1 is based on MPICH < 3.1.1.
+        use_new_libnames = LooseVersion(self.version) >= LooseVersion('5.1.1-1')
 
-        super(EB_psmpi, self).sanity_check_step(use_new_libnames=use_new_libnames,
-                check_launchers=False)
+        super(EB_psmpi, self).sanity_check_step(use_new_libnames=use_new_libnames, check_launchers=False)
