@@ -85,7 +85,7 @@ class EB_MPICH(ConfigureMake):
                                          envvar, new_envvar, new_envvar, envvar, envvar_val)
         env.unset_env_vars(vars_to_unset)
 
-    def add_default_options(self):
+    def add_mpich_configopts(self):
         """
         Method to add common configure options for MPICH-based MPI libraries
         """
@@ -127,7 +127,7 @@ class EB_MPICH(ConfigureMake):
             super(EB_MPICH, self).make_dir(self.installdir, True, dontcreateinstalldir=True)
         
         if set_default_options:
-            self.add_default_options()
+            self.add_mpich_configopts()
 
         self.correct_mpich_build_env()
 
@@ -155,12 +155,9 @@ class EB_MPICH(ConfigureMake):
         else:
             libnames = ['fmpich', 'mpichcxx', 'mpichf90', 'mpich', 'mpl', 'opa']
 
-        launchers = ['mpiexec', 'mpiexec.hydra', 'mpirun']
-        compilers = ['mpicc', 'mpicxx', 'mpif77', 'mpif90']
-        if check_launchers is True:
-            binaries = launchers + compilers
-        else:
-            binaries = compilers
+        binaries = ['mpicc', 'mpicxx', 'mpif77', 'mpif90']
+        if check_launchers:
+            binaries = binaries.extend(['mpiexec', 'mpiexec.hydra', 'mpirun'])
 
         bins = [os.path.join('bin', x) for x in binaries]
         headers = [os.path.join('include', x) for x in ['mpi.h', 'mpicxx.h', 'mpif.h']]
