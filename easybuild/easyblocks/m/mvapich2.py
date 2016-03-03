@@ -74,7 +74,7 @@ class EB_MVAPICH2(EB_MPICH):
         if self.cfg['withlimic2']:
             add_configopts.append('--enable-limic2')
         if self.cfg['withchkpt']:
-            add_configopts.extend(['--enable-checkpointing', '--with-hydra-ckpointlib=blcr'])
+            add_configopts.extend(['--enable-ckpt'])
         if self.cfg['withhwloc']:
             add_configopts.append('--with-hwloc')
 
