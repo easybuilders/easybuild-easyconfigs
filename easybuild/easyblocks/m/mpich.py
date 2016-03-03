@@ -113,7 +113,7 @@ class EB_MPICH(ConfigureMake):
         self.cfg.update('configopts', ' '.join(add_configopts))
  
 
-    def configure_step(self):
+    def configure_step(self, set_default_options=True):
         """
         Custom configuration procedure for MPICH
 
@@ -125,8 +125,10 @@ class EB_MPICH(ConfigureMake):
         if not self.cfg['keeppreviousinstall']:
             self.log.info("Making sure any old installation is removed before we start the build...")
             super(EB_MPICH, self).make_dir(self.installdir, True, dontcreateinstalldir=True)
+        
+        if set_default_options:
+            self.add_default_options()
 
-        self.add_default_options()
         self.correct_mpich_build_env()
 
         super(EB_MPICH, self).configure_step()

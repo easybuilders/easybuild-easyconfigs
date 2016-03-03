@@ -43,7 +43,14 @@ class EB_psmpi(EB_MPICH):
         """
         pass
 
-    # configure, make and make install are default
+    def configure_step(self):
+        """
+        Custom configuration procedure for ParaStationMPI.
+        It does the same as for MPICH, but disables the default options
+        """
+        super(EB_psmpi, self).configure_step(set_default_options=False)
+
+    # make and make install are default
 
     def sanity_check_step(self, custom_paths=None, use_new_libnames=None):
         """
