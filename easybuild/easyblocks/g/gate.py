@@ -92,8 +92,17 @@ class EB_GATE(CMakeMake):
             cflags += " -gcc"
             cxxflags += " -gcc"
 
-        tup = (os.getenv('CC'), cflags, os.getenv('CXX'), cxxflags)
-        self.cfg.update('buildopts', 'CC="%s" CFLAGS="%s" CXX="%s" CXXFLAGS="%s"' % tup)
+        # make sure right compilers and compiler options are used for building
+        make_opts = {
+            'CC': os.getenv('CC'),
+            'CFLAGS': cflags,
+            'CXX': os.getenv('CXX'),
+            'CXXFLAGS': cxxflags,
+            # filemerger Makefile hardcodes $LD to g++, so make sure right compiler is used for linking
+            'LD': os.getenv('CXX'),
+        }
+        for key in sorted(make_opts):
+            self.cfg.update('buildopts', '%s="%s"' % (key, make_opts[key]))
 
         for subdir in self.gate_subdirs:
             try:
@@ -147,7 +156,7 @@ class EB_GATE(CMakeMake):
                 os.mkdir(libdir)
                 srclibdir = os.path.join(self.cfg['start_dir'], "tmp", self.g4system, "Gate")
                 for fil in os.listdir(srclibdir):
-                    if os.path.splitext(fil)[1] == shlib_ext:
+                    if fil.endswith('.%s' % shlib_ext):
                         shutil.copy2(os.path.join(srclibdir, fil), os.path.join(libdir, fil))
                         self.log.debug("Copied library %s to 'lib' install subdirectory" % fil)
             except OSError, err:
