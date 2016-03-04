@@ -93,7 +93,7 @@ class EB_GATE(CMakeMake):
             cxxflags += " -gcc"
 
         # make sure right compilers and compiler options are used for building
-        opt_vals = {
+        make_opts = {
             'CC': os.getenv('CC'),
             'CFLAGS': cflags,
             'CXX': os.getenv('CXX'),
@@ -101,8 +101,8 @@ class EB_GATE(CMakeMake):
             # filemerger Makefile hardcodes $LD to g++, so make sure right compiler is used for linking
             'LD': os.getenv('CXX'),
         }
-        make_opts = 'CC="%(CC)s" CFLAGS="%(CFLAGS)s" CXX="%(CXX)s" CXXFLAGS="%(CXXFLAGS)s" LD="%(LD)s"' % opt_vals
-        self.cfg.update('buildopts', make_opts)
+        for key in sorted(make_opts):
+            self.cfg.update('buildopts', '%s="%s"' % (key, make_opts[key]))
 
         for subdir in self.gate_subdirs:
             try:
