@@ -41,6 +41,7 @@ import easybuild.tools.environment as env
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.build_log import EasyBuildError
+from easybuild.tools.filetools import find_flexlm_license
 from easybuild.tools.run import run_cmd
 
 class EB_PGI(EasyBlock):
