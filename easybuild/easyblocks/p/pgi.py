@@ -84,7 +84,6 @@ class EB_PGI(EasyBlock):
                 self.log.info("Using PGI license specifications from %s: %s", self.license_env_var, lic_specs)
 
             self.license_file = os.pathsep.join(lic_specs)
-            self.cfg['license_file'] = self.license_file
             env.setvar(self.license_env_var, self.license_file)
 
         else:
