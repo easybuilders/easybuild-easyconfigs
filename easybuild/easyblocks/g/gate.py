@@ -156,7 +156,7 @@ class EB_GATE(CMakeMake):
                 os.mkdir(libdir)
                 srclibdir = os.path.join(self.cfg['start_dir'], "tmp", self.g4system, "Gate")
                 for fil in os.listdir(srclibdir):
-                    if os.path.splitext(fil)[1] == shlib_ext:
+                    if fil.endswith('.%s' % shlib_ext):
                         shutil.copy2(os.path.join(srclibdir, fil), os.path.join(libdir, fil))
                         self.log.debug("Copied library %s to 'lib' install subdirectory" % fil)
             except OSError, err:
