@@ -74,9 +74,17 @@ class MakeCp(ConfigureMake):
                     # ([src1, src2], targetdir)
                     if len(fil) == 2 and isinstance(fil[0], list) and isinstance(fil[1], basestring):
                         files_specs = fil[0]
+                        new_names = None
                         target = os.path.join(self.installdir, fil[1])
+                    # ([src1, src2], [src1_new, src2_new], targetdir)
+                    elif len(fil) == 3 and isinstance(fil[0], list) and isinstance(fil[0], list) and \
+                            len(fil[0]) == len(fil[1]) and isinstance(fil[2], basestring):
+                        files_specs = fil[0]
+                        new_names = fil[1]
+                        target = os.path.join(self.installdir, fil[2])
                     else:
-                        raise EasyBuildError("Only tuples of format '([<source files>], <target dir>)' supported.")
+                        raise EasyBuildError("Only tuples of format '([<source files>], <target dir>)' or \
+                                              '([<source files>], [<new name files>], <target dir>)' are supported.")
                 # 'src_file' or 'src_dir'
                 elif isinstance(fil, basestring):
                     files_specs = [fil]
@@ -104,11 +112,15 @@ class MakeCp(ConfigureMake):
                     if not filepaths:
                         raise EasyBuildError("No files matching '%s' found anywhere.", files_spec)
 
-                    for filepath in filepaths:
+                    for idx, filepath in enumerate(filepaths):
                         # copy individual file
                         if os.path.isfile(filepath):
-                            self.log.debug("Copying file %s to %s" % (filepath, target))
-                            shutil.copy2(filepath, target)
+                            if new_names:
+                                dest = os.path.join(target, new_names[idx])
+                            else:
+                                dest = target
+                            self.log.debug("Copying file %s to %s" % (filepath, dest))
+                            shutil.copy2(filepath, dest)
                         # copy directory
                         elif os.path.isdir(filepath):
                             self.log.debug("Copying directory %s to %s" % (filepath, target))
