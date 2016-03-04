@@ -33,7 +33,7 @@ class EB_TotalView(EasyBlock):
         """Initialisation of custom class variables for Totalview"""
         super(EB_TotalView, self).__init__(*args, **kwargs)
         
-        self.license_var = 'UNKNOWN'
+        self.license_file = 'UNKNOWN'
         self.license_env_var = 'UNKNOWN'
 
     def configure_step(self):
@@ -52,7 +52,6 @@ class EB_TotalView(EasyBlock):
                 self.log.info("Using Totalview license specifications from %s: %s", self.license_env_var, lic_specs)
 
             self.license_file = os.pathsep.join(lic_specs)
-            self.cfg['license_file'] = self.license_file
             env.setvar(self.license_env_var, self.license_file)
 
         else:
