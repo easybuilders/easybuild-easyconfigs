@@ -5,7 +5,7 @@
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
 # with support of Ghent University (http://ugent.be/hpc),
 # the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
-# the Hercules foundation (http://www.herculesstichting.be/in_English)
+# Flemish Research Foundation (FWO) (http://www.fwo.be/en)
 # and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
 # http://github.com/hpcugent/easybuild
@@ -338,19 +338,21 @@ def template_easyconfig_test(self, spec):
 
 def suite():
     """Return all easyblock initialisation tests."""
+    # dynamically generate a separate test for each of the available easyconfigs
+    # define new inner functions that can be added as class methods to InitTest
+    easyconfigs_path = get_paths_for('easyconfigs')[0]
+    cnt = 0
+    for (subpath, _, specs) in os.walk(easyconfigs_path, topdown=True):
+        for spec in specs:
+            if spec.endswith('.eb') and spec != 'TEMPLATE.eb':
+                cnt += 1
+                exec("def innertest(self): template_easyconfig_test(self, '%s')" % os.path.join(subpath, spec))
+                innertest.__doc__ = "Test for parsing of easyconfig %s" % spec
+                # double underscore so parsing tests are run first
+                innertest.__name__ = "test__parse_easyconfig_%s" % spec
+                setattr(EasyConfigTest, innertest.__name__, innertest)
 
-    # dynamically generate a separate test for each of the available easyblocks
-    easyconfigs_path = get_paths_for("easyconfigs")[0]
-    specs = glob.glob('%s/*/*/*.eb' % easyconfigs_path)
-
-    for spec in specs:
-        # dynamically define new inner functions that can be added as class methods to InitTest
-        exec("def innertest(self): template_easyconfig_test(self, '%s')" % spec)
-        spec = os.path.basename(spec)
-        innertest.__doc__ = "Test for parsing of easyconfig %s" % spec
-        innertest.__name__ = "test__parse_easyconfig_%s" % spec  # double underscore so parsing tests are run first
-        setattr(EasyConfigTest, innertest.__name__, innertest)
-
+    print "Found %s easyconfigs..." % cnt
     return TestLoader().loadTestsFromTestCase(EasyConfigTest)
 
 if __name__ == '__main__':
