@@ -51,6 +51,7 @@ class EB_MVAPICH2(EB_MPICH):
         """Define custom easyconfig parameters specific to MVAPICH2."""
         extra_vars = {
             'withchkpt': [False, "Enable checkpointing support (required BLCR)", CUSTOM],
+            'withmpe': [False, "Build MPE routines", CUSTOM],
             'withlimic2': [False, "Enable LiMIC2 support for intra-node communication", CUSTOM],
             'rdma_type': ["gen2", "Specify the RDMA type (gen2/udapl)", CUSTOM],
             'blcr_path': [None, "Path to BLCR package", CUSTOM],
@@ -67,6 +68,15 @@ class EB_MVAPICH2(EB_MPICH):
         add_configopts.append('--with-rdma=%s' % self.cfg['rdma_type'])
 
         # enable specific support options (if desired)
+        if self.cfg['withmpe']:
+            # --enable-mpe is coming from MPICH.
+            # It is not available anymore in MPICH package since version 3.0, which correspond to MVAPICH2 1.9.
+            # MPE can be downloaded separately at http://www.mpich.org/static/mpe/downloads/
+            # However, the 'withmpe' option should be maintained for backward compatibility purpose
+            if LooseVersion(self.version) < LooseVersion('1.9'):
+                add_configopts.append('--enable-mpe')
+            else:
+                raise EasyBuildError("MPI Parallel Environment (MPE) is not available anymore starting MVAPICH2 1.9")
         if self.cfg['withlimic2']:
             add_configopts.append('--enable-limic2')
         if self.cfg['withchkpt']:
