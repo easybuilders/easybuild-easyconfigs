@@ -95,8 +95,6 @@ class MakeCp(ConfigureMake):
                         files_spec = orig_files_spec
                         dest = None
 
-                    self.log.debug("Found: %s to %s", files_spec, dest)
-
                     # first look for files in start dir
                     filepaths = glob.glob(os.path.join(self.cfg['start_dir'], files_spec))
                     tup = (files_spec, self.cfg['start_dir'], filepaths)

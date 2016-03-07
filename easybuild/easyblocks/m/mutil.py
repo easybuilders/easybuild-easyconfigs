@@ -32,6 +32,7 @@ import os
 import re
 
 from easybuild.easyblocks.generic.makecp import MakeCp
+from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.filetools import apply_patch
 
@@ -39,11 +40,14 @@ from easybuild.tools.filetools import apply_patch
 class EB_mutil(MakeCp):
     """Easyblock to build and install mutil"""
 
-    def __init__(self, *args, **kwargs):
-        """Easyblock constructor, set correct options"""
-        super(EB_mutil, self).__init__(*args, **kwargs)
-
-        self.cfg['with_configure'] = True
+    @staticmethod
+    def extra_options():
+        """Change default values of options"""
+        extra = MakeCp.extra_options()
+        # files_to_copy is not mandatory here
+        extra['files_to_copy'][2] = CUSTOM
+        extra['with_configure'][0] = True
+        return extra
 
     def configure_step(self):
         """Apply coreutils patch from source and run configure"""
@@ -56,7 +60,7 @@ class EB_mutil(MakeCp):
         else:
             raise EasyBuildError("Could not find the patch for coreutils: %s", coreutils_patch)
 
-        coreutils_path = glob.glob(os.path.join(self.builddir, "coreutils-"))
+        coreutils_path = glob.glob(os.path.join(self.builddir, "coreutils-*"))
         if not coreutils_path:
             raise EasyBuildError("Could not find the coreutils directory")
 
@@ -64,3 +68,11 @@ class EB_mutil(MakeCp):
             raise EasyBuildError("Applying coreutils patch %s failed", coreutils_patch)
 
         super(EB_mutil, self).configure_step()
+
+    def install_step(self):
+        """Specify list of files to copy"""
+        self.cfg['files_to_copy'] = [
+            ([('src/cp', 'mcp'), ('src/md5sum', 'msum')], 'bin'),
+            ([('man/cp.1', 'mcp.1'), ('man/md5sum.1', 'msum.1')], 'man/man1'),
+        ]
+        super(EB_mutil, self).install_step()
