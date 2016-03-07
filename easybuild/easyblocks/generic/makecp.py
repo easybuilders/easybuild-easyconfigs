@@ -95,7 +95,7 @@ class MakeCp(ConfigureMake):
                 if not os.path.exists(target):
                     os.makedirs(target)
 
-                for files_spec in files_specs:
+                for idx, files_spec in enumerate(files_specs):
                     # first look for files in start dir
                     filepaths = glob.glob(os.path.join(self.cfg['start_dir'], files_spec))
                     tup = (files_spec, self.cfg['start_dir'], filepaths)
@@ -112,7 +112,11 @@ class MakeCp(ConfigureMake):
                     if not filepaths:
                         raise EasyBuildError("No files matching '%s' found anywhere.", files_spec)
 
-                    for idx, filepath in enumerate(filepaths):
+                    if new_names and len(filepaths) != 1:
+                        raise EasyBuildError("When a list with new names has been specified, the original file spec can \
+                                             only match a single file yet it gives: %s", filepaths)
+
+                    for filepath in filepaths:
                         # copy individual file
                         if os.path.isfile(filepath):
                             if new_names:
