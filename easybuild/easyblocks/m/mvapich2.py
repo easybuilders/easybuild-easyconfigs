@@ -52,6 +52,7 @@ class EB_MVAPICH2(EB_MPICH):
         extra_vars = {
             'withchkpt': [False, "Enable checkpointing support (required BLCR)", CUSTOM],
             'withmpe': [False, "Build MPE routines", CUSTOM],
+            'withhwloc': [False, "Enable support for using hwloc support for process binding", CUSTOM],
             'withlimic2': [False, "Enable LiMIC2 support for intra-node communication", CUSTOM],
             'rdma_type': ["gen2", "Specify the RDMA type (gen2/udapl)", CUSTOM],
             'blcr_path': [None, "Path to BLCR package", CUSTOM],
@@ -81,6 +82,13 @@ class EB_MVAPICH2(EB_MPICH):
             add_configopts.append('--enable-limic2')
         if self.cfg['withchkpt']:
             add_configopts.extend(['--enable-checkpointing', '--with-hydra-ckpointlib=blcr'])
+        if self.cfg['withhwloc']:
+            # --with-hwloc/--without-hwloc option is not available anymore MVAPICH2 >= 2.0.
+            # Starting this version, HWLOC is apparently distributed with MVAPICH2 and always compiled with MVAPICH2,
+            # and it cannot be disabled.
+            # The 'withhwloc' option should be maintained for backward compatibility purpose.
+            # EasyBuild and MVAPCH2 will just silently ignore this option if it is used.
+            add_configopts.append('--with-hwloc')
 
         # pass BLCR paths if specified
         if self.cfg['blcr_path']:
