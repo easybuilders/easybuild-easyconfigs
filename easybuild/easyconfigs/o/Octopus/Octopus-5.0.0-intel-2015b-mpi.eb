@@ -18,8 +18,8 @@ sources = [SOURCELOWER_TAR_GZ]
 source_urls = ['http://www.tddft.org/programs/octopus/down.php?file=%(version)s/' ]
 
 builddependencies = [
-    ('Bison', '3.0.4', '', ('GNU', '4.9.3-2.25')),
-    ('Perl', '5.20.3'),
+    ('Bison', '3.0.4'),
+    ('Perl', '5.20.3', '-bare'),
 ]
 
 dependencies = [
@@ -34,18 +34,19 @@ dependencies = [
 
 configopts = '--disable-openmp --enable-mpi --enable-newuoa --disable-python --disable-gdlib '
 configopts += '--with-libxc-prefix=$EBROOTLIBXC --with-gsl-prefix=$EBROOTGSL '
-configopts += '--with-blas="-L$MKLROOT/lib/intel64 -Wl,--start-group -lmkl_intel_lp64 -lmkl_sequential -lmkl_core -Wl,--end-group -lpthread" '
+configopts += '--with-blas="-L$MKLROOT/lib/intel64 -Wl,--start-group -lmkl_intel_lp64 -lmkl_sequential '
+iconfigure += '-lmkl_core -Wl,--end-group -lpthread" '
 configopts += '--with-blacs="$MKLROOT/lib/intel64/libmkl_blacs_intelmpi_lp64.a" '
 configopts += '--with-scalapack="$MKLROOT/lib/intel64/libmkl_scalapack_lp64.a" '
 configopts += '--with-netcdf-prefix=$EBROOTNETCDFMINFORTRAN '
 configopts += '--with-etsf-io-prefix=$EBROOTETSF_IO '
 configopts += '--with-pfft-prefix=$EBROOTPFFT --with-mpifftw-prefix=$EBROOTFFTW '
 
+runtest = 'MPIEXEC=`which mpirun` check' 
+
 sanity_check_paths = {
     'files': ["bin/octopus_mpi"], 
     'dirs': []
 }
-
-runtest = 'MPIEXEC=`which mpirun` check' 
 
 moduleclass = 'chem'
