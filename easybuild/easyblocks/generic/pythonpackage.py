@@ -111,7 +111,7 @@ class PythonPackage(ExtensionEasyBlock):
         self.unpack_options = ''
 
         self.pylibdir = UNKNOWN
-        self.all_pylibdirs = UNKNOWN
+        self.all_pylibdirs = [UNKNOWN]
 
         # make sure there's no site.cfg in $HOME, because setup.py will find it and use it
         home = os.path.expanduser('~')
@@ -160,6 +160,14 @@ class PythonPackage(ExtensionEasyBlock):
         # so, we keep a list of different Python lib directories to take into account
         self.all_pylibdirs = nub([self.pylibdir, det_pylibdir(plat_specific=True)])
         self.log.debug("All Python library dirs: %s" % self.all_pylibdirs)
+
+        # make very sure an entry starting with lib/ is present,
+        # since older versions of setuptools hardcode 'lib' rather than using the value produced by
+        # distutils.sysconfig.get_python_lib (which may always be lib64/...)
+        if not any(pylibdir.startswith('lib/') for pylibdir in self.all_pylibdirs):
+            pylibdir = os.path.join('lib', *self.pylibdir.split(os.path.sep)[1:])
+            self.all_pylibdirs.append(pylibdir)
+            self.log.debug("No lib/ entry found in list of Python lib dirs, so added it: %s", self.all_pylibdirs)
 
     def compose_install_command(self, prefix, extrapath=None):
         """Compose full install command."""
