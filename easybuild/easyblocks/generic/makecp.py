@@ -118,11 +118,11 @@ class MakeCp(ConfigureMake):
                     for filepath in filepaths:
                         # copy individual file
                         if os.path.isfile(filepath):
-                            self.log.debug("Copying file %s to %s" % (filepath, dest))
                             if dest:
                                 target_dest = os.path.join(target, dest)
                             else:
                                 target_dest = target
+                            self.log.debug("Copying file %s to %s" % (filepath, target_dest))
                             shutil.copy2(filepath, target_dest)
                         # copy directory
                         elif os.path.isdir(filepath):
