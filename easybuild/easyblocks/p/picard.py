@@ -76,18 +76,15 @@ class EB_picard(EasyBlock):
         if LooseVersion(self.version) < LooseVersion('1.124'):
             jar_files = [
                 'picard-%s' % self.version,
-                'AddOrReplaceReadGroups',
                 'BamIndexStats',
                 'BamToBfq',
                 'BuildBamIndex',
                 'CalculateHsMetrics',
-                'CheckIlluminaDirectory',
                 'CleanSam',
                 'CollectAlignmentSummaryMetrics',
                 'CollectGcBiasMetrics',
                 'CollectInsertSizeMetrics',
                 'CollectMultipleMetrics',
-                'CollectRnaSeqMetrics',
                 'CollectTargetedPcrMetrics',
                 'CompareSAMs',
                 'CreateSequenceDictionary',
@@ -129,6 +126,12 @@ class EB_picard(EasyBlock):
                     'tribble-%s' % self.version,
                     'variant-%s' % self.version,
                 ])
+            if LooseVersion(self.version) >= LooseVersion('1.41'):
+                jar_files.append('AddOrReplaceReadGroups')
+            if LooseVersion(self.version) >= LooseVersion('1.46'):
+                jar_files.append('CollectRnaSeqMetrics')
+            if LooseVersion(self.version) >= LooseVersion('1.66'):
+                jar_files.append('CheckIlluminaDirectory')
             if LooseVersion(self.version) >= LooseVersion('1.109'):
                 jar_files.append('RevertOriginalBaseQualitiesAndAddMateCigar')
             if LooseVersion(self.version) >= LooseVersion('1.111'):
