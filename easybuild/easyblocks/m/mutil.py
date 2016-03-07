@@ -27,15 +27,17 @@ EasyBuild support for mutil, implemented as an easyblock
 
 @author: Ward Poelmans (Ghent University)
 """
-import re
+import glob
 import os
+import re
 
 from easybuild.easyblocks.generic.makecp import MakeCp
 from easybuild.tools.build_log import EasyBuildError
+from easybuild.tools.filetools import apply_patch
 
 
 class EB_mutil(MakeCp):
-    """Class to build mutil"""
+    """Easyblock to build and install mutil"""
 
     def __init__(self, *args, **kwargs):
         """Easyblock constructor, set correct options"""
@@ -43,21 +45,22 @@ class EB_mutil(MakeCp):
 
         self.cfg['with_configure'] = True
 
-    def extract_step(self):
-        """Set the start dir correctly and add patch from source."""
-        super(EB_mutil, self).extract_step()
-
+    def configure_step(self):
+        """Apply coreutils patch from source and run configure"""
         # 1.822.3 -> 8.22
         coreutils_version = re.sub(r"^\d+.(\d+)(\d\d).\d+", r"\1.\2", self.version)
         coreutils_patch = "coreutils-%s.patch" % coreutils_version
         patch_path = os.path.join(self.builddir, "%s-%s" % (self.name, self.version), "patch", coreutils_patch)
-        if not os.path.isfile(patch_path):
+        if os.path.isfile(patch_path):
+            self.log.info("coreutils patch found at %s", patch_path)
+        else:
             raise EasyBuildError("Could not find the patch for coreutils: %s", coreutils_patch)
 
-        # add the extract patch to the list of patches
-        newpatch = {
-            'name': coreutils_patch,
-            'path': patch_path,
-            'checksum': None,
-        }
-        self.patches.insert(0, newpatch)
+        coreutils_path = glob.glob(os.path.join(self.builddir, "coreutils-"))
+        if not coreutils_path:
+            raise EasyBuildError("Could not find the coreutils directory")
+
+        if not apply_patch(patch_path, coreutils_path[0]):
+            raise EasyBuildError("Applying coreutils patch %s failed", coreutils_patch)
+
+        super(EB_mutil, self).configure_step()
