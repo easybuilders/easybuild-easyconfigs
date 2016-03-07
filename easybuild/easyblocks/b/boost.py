@@ -121,9 +121,36 @@ class EB_Boost(EasyBlock):
             # http://www.boost.org/doc/libs/1_47_0/doc/html/mpi/getting_started.html
             # let Boost.Build know to look here for the config file
             f = open('user-config.jam', 'a')
-            f.write("using mpi : %s ;" % os.getenv("MPICXX"))
-            f.close()
+ 
+            # Check if using a Cray toolchain and configure MPI accordingly
+            if (self.toolchain.name.startswith('Cray') and 
+                self.toolchain.PRGENV_MODULE_NAME_SUFFIX in ['gnu', 'intel', 'cray']):
+                self.log.info("PRGENV_MODULE_NAME_SUFFIX is %s " % (self.toolchain.PRGENV_MODULE_NAME_SUFFIX))
+                craympichdir=os.getenv('CRAY_MPICH2_DIR')
+                craygccversion=os.getenv('GCC_VERSION')
+                f = open('user-config.jam','a')
+                config = '\n'.join([    
+                'import os ; ',
+                'local CRAY_MPICH2_DIR =  %s ;' %(craympichdir),
+                'using gcc ',
+                ': %s' %(craygccversion),
+                ': CC ',
+                ': <compileflags>-I$(CRAY_MPICH2_DIR)/include ',
+                '  <linkflags>-L$(CRAY_MPICH2_DIR)/lib \ ',
+                '; ',
+                'using mpi ',
+                ': CC ',
+                ': <find-shared-library>mpich ',
+                ': aprun -n \ ',
+                ';',
+                '',
+                ])
+                f.write(config)
+            else:
+                f.write("using mpi : %s ;" % os.getenv("MPICXX"))
 
+            f.close()           
+ 
     def build_step(self):
         """Build Boost with bjam tool."""
 
