@@ -72,94 +72,9 @@ class EB_picard(EasyBlock):
 
     def sanity_check_step(self):
         """Custom sanity check for picard"""
-        # All versions prior to 1.124 have these jar files
+        # All versions prior to 1.124 have this jar file
         if LooseVersion(self.version) < LooseVersion('1.124'):
-            jar_files = [
-                'picard-%s' % self.version,
-                'BamIndexStats',
-                'BamToBfq',
-                'BuildBamIndex',
-                'CalculateHsMetrics',
-                'CleanSam',
-                'CollectAlignmentSummaryMetrics',
-                'CollectGcBiasMetrics',
-                'CollectInsertSizeMetrics',
-                'CollectMultipleMetrics',
-                'CollectTargetedPcrMetrics',
-                'CompareSAMs',
-                'CreateSequenceDictionary',
-                'DownsampleSam',
-                'EstimateLibraryComplexity',
-                'ExtractIlluminaBarcodes',
-                'ExtractSequences',
-                'FastqToSam',
-                'FilterSamReads',
-                'FixMateInformation',
-                'IlluminaBasecallsToFastq',
-                'IlluminaBasecallsToSam',
-                'IntervalListTools',
-                'MakeSitesOnlyVcf',
-                'MarkDuplicates',
-                'MarkIlluminaAdapters',
-                'MeanQualityByCycle',
-                'MergeBamAlignment',
-                'MergeSamFiles',
-                'MergeVcfs',
-                'NormalizeFasta',
-                'QualityScoreDistribution',
-                'ReorderSam',
-                'ReplaceSamHeader',
-                'RevertSam',
-                'SamFormatConverter',
-                'SamToFastq',
-                'SortSam',
-                'SplitVcfs',
-                'ValidateSamFile',
-                'VcfFormatConverter',
-                'ViewSam',
-            ]
-            
-            # The following jar files were only available in the specified versions of picard
-            if LooseVersion(self.version) >= LooseVersion('1.100') and LooseVersion(self.version) < LooseVersion('1.114'):
-                jar_files.extend([
-                    'sam-%s' % self.version,
-                    'tribble-%s' % self.version,
-                    'variant-%s' % self.version,
-                ])
-            if LooseVersion(self.version) >= LooseVersion('1.41'):
-                jar_files.append('AddOrReplaceReadGroups')
-            if LooseVersion(self.version) >= LooseVersion('1.46'):
-                jar_files.append('CollectRnaSeqMetrics')
-            if LooseVersion(self.version) >= LooseVersion('1.66'):
-                jar_files.append('CheckIlluminaDirectory')
-            if LooseVersion(self.version) >= LooseVersion('1.109'):
-                jar_files.append('RevertOriginalBaseQualitiesAndAddMateCigar')
-            if LooseVersion(self.version) >= LooseVersion('1.111'):
-                jar_files.append('GatherBamFiles')
-            if LooseVersion(self.version) >= LooseVersion('1.113'):
-                jar_files.extend([
-                    'AddCommentsToBam',
-                    'CollectWgsMetrics',
-                ])
-            if LooseVersion(self.version) >= LooseVersion('1.114'):
-                jar_files.append('htsjdk-%s' % self.version)
-            if LooseVersion(self.version) >= LooseVersion('1.119'):
-                jar_files.extend([
-                    'CollectBaseDistributionByCycle',
-                    'FifoBuffer',
-                ])
-            if LooseVersion(self.version) >= LooseVersion('1.120'):
-                jar_files.append('BedToIntervalList')
-            if LooseVersion(self.version) >= LooseVersion('1.121'):
-                jar_files.append('SortVcf')
-            if LooseVersion(self.version) >= LooseVersion('1.122'):
-                jar_files.extend([
-                    'CollectHiSeqXPfFailMetrics',
-                    'GenotypeConcordance',
-                    'MarkDuplicatesWithMateCigar',
-                    'UpdateVcfSequenceDictionary',
-                    'VcfToIntervalList',
-                ])
+            jar_files = ['picard-%s' % self.version]
         else:
             # Starting with v1.124 a major structural change was made to picard
             # All versions >= 1.124 now only have these jar files
