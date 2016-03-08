@@ -1,5 +1,5 @@
 ##
-# Copyright 2016 University of Luxembourg
+# Copyright 2009-2016 Ghent University, University of Luxembourg
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -54,7 +54,6 @@ class EB_SuperLU(CMakeMake):
         }
         return CMakeMake.extra_options(extra_vars)
 
-
     def configure_step(self):
         """
         Set the CMake options for SuperLU
@@ -62,43 +61,44 @@ class EB_SuperLU(CMakeMake):
         self.cfg['separate_build_dir'] = True
 
         if self.cfg['build_shared_libs']:
-            self.cfg['configopts'] += "-DBUILD_SHARED_LIBS=ON "
+            self.cfg.update('configopts', '-DBUILD_SHARED_LIBS=ON')
         else:
-            self.cfg['configopts'] += "-DBUILD_SHARED_LIBS=OFF "
+            self.cfg.update('configopts', '-DBUILD_SHARED_LIBS=OFF')
 
-        # Make sure to add -fPIC
-        self.cfg['configopts'] += "-DCMAKE_POSITION_INDEPENDENT_CODE=ON "
+        # Add -fPIC flag if necessary
+        if self.toolchain.options['pic']:
+            self.cfg.update('configopts', '-DCMAKE_POSITION_INDEPENDENT_CODE=ON')
+        else:
+            self.cfg.update('configopts', '-DCMAKE_POSITION_INDEPENDENT_CODE=OFF')
 
         # Make sure not to build the slow BLAS library included in the package
-        self.cfg['configopts'] += "-Denable_blaslib=OFF "
+        self.cfg.update('configopts', '-Denable_blaslib=OFF')
 
         # Set the BLAS library to use
         # For this, use the BLA_VENDOR option from the FindBLAS module of CMake
         # cf https://cmake.org/cmake/help/latest/module/FindBLAS.html
-        if get_software_root('IMKL'):
-            self.cfg['configopts'] += '-DBLA_VENDOR="Intel10_64lp" '
+        if get_software_root('imkl'):
+            self.cfg.update('configopts', '-DBLA_VENDOR="Intel10_64lp"')
         elif get_software_root('ACML'):
-            self.cfg['configopts'] += '-DBLA_VENDOR="ACML" '
+            self.cfg.update('configopts', '-DBLA_VENDOR="ACML"')
         elif get_software_root('ATLAS'):
-            self.cfg['configopts'] += '-DBLA_VENDOR="ATLAS" '
+            self.cfg.update('configopts', '-DBLA_VENDOR="ATLAS"')
         elif get_software_root('OpenBLAS'):
             # Unfortunately, OpenBLAS is not recognized by FindBLAS from CMake,
             # we have to specify the OpenBLAS library manually
-            self.cfg['configopts'] += '-DBLAS_LIBRARIES="${EBROOTOPENBLAS}/lib/libopenblas.a;-pthread" '
+            self.cfg.update('configopts', '-DBLAS_LIBRARIES="${EBROOTOPENBLAS}/lib/libopenblas.a;-pthread"')
         else:
             # Fallback on Generic BLAS otherwise
-            self.cfg['configopts'] += '-DBLA_VENDOR="Generic" '
+            self.cfg.update('configopts', '-DBLA_VENDOR="Generic"')
 
         super(EB_SuperLU, self).configure_step()
-
 
     def test_step(self):
         """
         Run the testsuite of SuperLU
         """
-        self.cfg['configopts'] = "test"
+        self.cfg['runtest'] = "test"
         super(EB_SuperLU, self).test_step()
-
 
     def install_step(self):
         """
@@ -114,8 +114,10 @@ class EB_SuperLU(CMakeMake):
         actual_libpath   = os.path.join(self.installdir, "lib", "libsuperlu_%s.%s" % (self.cfg['version'],lib_ext) )
 
         if not os.path.exists(expected_libpath):
-            os.symlink(actual_libpath, expected_libpath)
-
+            try:
+                os.symlink(actual_libpath, expected_libpath)
+            except OSError as err:
+                raise EasyBuildError("Failed to create symlink '%s' -> '%s" % (expected_libpath,actual_libpath), err)
 
     def sanity_check_step(self):
         """
