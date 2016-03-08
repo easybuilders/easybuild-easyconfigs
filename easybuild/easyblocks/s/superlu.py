@@ -88,8 +88,9 @@ class EB_SuperLU(CMakeMake):
             # we have to specify the OpenBLAS library manually
             self.cfg.update('configopts', '-DBLAS_LIBRARIES="${EBROOTOPENBLAS}/lib/libopenblas.a;-pthread"')
         else:
-            # Fallback on Generic BLAS otherwise
-            self.cfg.update('configopts', '-DBLA_VENDOR="Generic"')
+            # Fallback: try everything, pick the first one
+            # CMake should fail if none is found
+            self.cfg.update('configopts', '-DBLA_VENDOR="All"')
 
         super(EB_SuperLU, self).configure_step()
 
