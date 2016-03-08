@@ -31,6 +31,7 @@ EasyBuild support for building and installing CP2K, implemented as an easyblock
 @author: Pieter De Baets (Ghent University)
 @author: Jens Timmerman (Ghent University)
 @author: Ward Poelmans (Ghent University)
+@author: Luca Marsella (CSCS)
 """
 
 import fileinput
@@ -198,6 +199,13 @@ class EB_CP2K(EasyBlock):
                 raise EasyBuildError("The PLUMED module needs to be loaded to build CP2K with PLUMED support")
             options['LIBS'] += ' -lplumed'
             options['DFLAGS'] += ' -D__PLUMED2'
+
+        # CUDA
+        cuda = get_software_root('CUDA')
+        if cuda:
+            options['DFLAGS'] += ' -D__ACC -D__DBCSR_ACC'
+            options['LIBS'] += ' -lcudart -lcublas -lcufft -lrt'
+            options['NVCC'] = ' nvcc'
 
         # avoid group nesting
         options['LIBS'] = options['LIBS'].replace('-Wl,--start-group', '').replace('-Wl,--end-group', '')
