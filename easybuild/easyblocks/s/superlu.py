@@ -29,6 +29,7 @@ EasyBuild support for building and installing the SuperLU library, implemented a
 """
 
 import os
+from distutils.version import LooseVersion
 
 import easybuild.tools.environment as env
 from easybuild.easyblocks.generic.cmakemake import CMakeMake
@@ -36,7 +37,7 @@ from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.systemtools import get_shared_lib_ext
-from easybuild.tools.modules import get_software_root
+from easybuild.tools.modules import get_software_root,get_software_version
 
 
 class EB_SuperLU(CMakeMake):
@@ -78,7 +79,11 @@ class EB_SuperLU(CMakeMake):
         # For this, use the BLA_VENDOR option from the FindBLAS module of CMake
         # cf https://cmake.org/cmake/help/latest/module/FindBLAS.html
         if get_software_root('imkl'):
-            self.cfg.update('configopts', '-DBLA_VENDOR="Intel10_64lp"')
+            imkl_version = get_software_version('imkl')
+            if LooseVersion(imkl_version) >= LooseVersion('10'):
+                self.cfg.update('configopts', '-DBLA_VENDOR="Intel10_64lp"')
+            else:
+                self.cfg.update('configopts', '-DBLA_VENDOR="Intel"')
         elif get_software_root('ACML'):
             self.cfg.update('configopts', '-DBLA_VENDOR="ACML"')
         elif get_software_root('ATLAS'):
