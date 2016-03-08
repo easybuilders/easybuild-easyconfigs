@@ -1,0 +1,43 @@
+easyblock = 'CMakeMake'
+
+name = 'SuperLU'
+version = '5.1.1'
+
+homepage = 'http://crd-legacy.lbl.gov/~xiaoye/SuperLU/'
+description = """SuperLU is a general purpose library for the direct solution of large, sparse, nonsymmetric systems of linear equations on high performance machines."""
+
+toolchain = {'name': 'foss', 'version': '2016a'}
+toolchainopts = {'opt': True, 'pic': True}
+
+source_urls = ['http://crd-legacy.lbl.gov/~xiaoye/SuperLU/']
+sources = ["superlu_%(version)s.tar.gz"]
+
+# Let's store the checksum in order to be sure it doesn't suddenly change
+checksums = ['260a3cd90b2100122abff38587a8290a']
+
+# Set to ON to generate shared library
+configopts = "-DBUILD_SHARED_LIBS=OFF"
+
+# Make sure not to build the slow BLAS library included in the package
+configopts += " -Denable_blaslib=OFF"
+
+# Set the BLAS library to use
+# cf https://cmake.org/cmake/help/latest/module/FindBLAS.html
+# Unfortunately, OpenBLAS is not recognized by FindBLAS from CMake,
+# we have to specify the OpenBLAS library manually
+configopts += ' -DBLAS_LIBRARIES="${EBROOTOPENBLAS}/lib/libopenblas.a;-pthread"'
+
+# Make symlink to version-numbered library filename
+installopts = ' && cd %(installdir)s/lib && ln -s  libsuperlu_%(version)s.a libsuperlu.a'
+
+builddependencies = [('CMake', '3.4.3')]
+separate_build_dir = True
+
+runtest = "test"
+
+sanity_check_paths = {
+    'files': ["include/supermatrix.h", "lib/libsuperlu.a"],
+    'dirs': [],
+}
+
+moduleclass = 'numlib'
