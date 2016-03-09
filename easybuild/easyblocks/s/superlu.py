@@ -78,7 +78,8 @@ class EB_SuperLU(CMakeMake):
         # Set the BLAS library to use
         # For this, use the BLA_VENDOR option from the FindBLAS module of CMake
         # Check for all possible values at https://cmake.org/cmake/help/latest/module/FindBLAS.html
-        if get_software_root('imkl'):
+        toolchain_blas = self.toolchain.definition().get('BLAS', ['NO_BLAS_IN_TOOLCHAIN'])[0]
+        if toolchain_blas == 'imkl':
             imkl_version = get_software_version('imkl')
             if LooseVersion(imkl_version) >= LooseVersion('10'):
                 # 'Intel10_64lp' -> For Intel mkl v10 64 bit,lp thread model, lp64 model
@@ -88,17 +89,20 @@ class EB_SuperLU(CMakeMake):
             else:
                 # 'Intel' -> For older versions of mkl 32 and 64 bit
                 self.cfg.update('configopts', '-DBLA_VENDOR="Intel"')
-        elif get_software_root('ACML'):
+        elif toolchain_blas == 'ACML':
             self.cfg.update('configopts', '-DBLA_VENDOR="ACML"')
-        elif get_software_root('ATLAS'):
+        elif toolchain_blas == 'ATLAS':
             self.cfg.update('configopts', '-DBLA_VENDOR="ATLAS"')
-        elif get_software_root('OpenBLAS'):
+        elif toolchain_blas == 'OpenBLAS':
             # Unfortunately, OpenBLAS is not recognized by FindBLAS from CMake,
             # we have to specify the OpenBLAS library manually
             self.cfg.update('configopts', '-DBLAS_LIBRARIES="${EBROOTOPENBLAS}/lib/libopenblas.a;-pthread"')
+        elif toolchain_blas == 'NO_BLAS_IN_TOOLCHAIN':
+            # This toolchain has no BLAS library, let CMake find one
+            self.cfg.update('configopts', '-DBLA_VENDOR="All"')
         else:
-            # If none of the above is found, just fail
-            raise EasyBuildError("Cannot find BLAS library from the toolchain", err)
+            # This BLAS library is not supported yet
+            raise EasyBuildError("BLAS library '%s' is not supported yet" % toolchain_blas, err)
 
         super(EB_SuperLU, self).configure_step()
 
