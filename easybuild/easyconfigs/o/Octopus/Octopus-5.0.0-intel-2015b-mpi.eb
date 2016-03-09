@@ -1,0 +1,51 @@
+easyblock = 'ConfigureMake'
+
+name = 'Octopus'
+version = '5.0.0'
+versionsuffix = '-mpi'
+
+homepage = 'http://www.tddft.org/programs/octopus/wiki/index.php/Main_Page'
+description = """Octopus is a scientific program aimed at the ab initio virtual experimentation 
+on a hopefully ever-increasing range of system types. Electrons are described quantum-mechanically 
+within density-functional theory (DFT), in its time-dependent form (TDDFT) when doing simulations 
+in time. Nuclei are described classically as point particles. 
+Electron-nucleus interaction is described within the pseudopotential approximation."""
+
+toolchain = {'name': 'intel', 'version': '2015b'}
+toolchainopts = {'usempi': True, 'opt': True}
+
+sources = [SOURCELOWER_TAR_GZ]
+source_urls = ['http://www.tddft.org/programs/octopus/down.php?file=%(version)s/' ]
+
+builddependencies = [
+    ('Bison', '3.0.4'),
+    ('Perl', '5.20.2', '-bare'),
+]
+
+dependencies = [
+    ('libxc', '2.2.2'),
+    ('netCDF', '4.3.3.1'),
+    ('netCDF-Fortran', '4.4.2'),
+    ('FFTW', '3.3.4', '-PFFT-20150905'),
+    ('PFFT', '1.0.8-alpha'),
+    ('ETSF_IO', '1.0.4'),
+    ('GSL', '1.16'),
+]
+
+configopts = '--disable-openmp --enable-mpi --enable-newuoa --disable-python --disable-gdlib '
+configopts += '--with-libxc-prefix=$EBROOTLIBXC --with-gsl-prefix=$EBROOTGSL '
+configopts += '--with-blas="-L$BLAS_LIB_DIR $LIBBLAS" '
+configopts += '--with-blacs="$MKLROOT/lib/intel64/libmkl_blacs_intelmpi_lp64.a" '
+configopts += '--with-scalapack="$MKLROOT/lib/intel64/libmkl_scalapack_lp64.a" '
+configopts += '--with-netcdf-prefix=$EBROOTNETCDFMINFORTRAN '
+configopts += '--with-etsf-io-prefix=$EBROOTETSF_IO '
+configopts += '--with-pfft-prefix=$EBROOTPFFT --with-mpifftw-prefix=$EBROOTFFTW '
+
+runtest = 'MPIEXEC=`which mpirun` check' 
+
+sanity_check_paths = {
+    'files': ["bin/octopus_mpi"], 
+    'dirs': []
+}
+
+moduleclass = 'chem'
