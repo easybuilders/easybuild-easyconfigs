@@ -93,9 +93,8 @@ class EB_SuperLU(CMakeMake):
             # we have to specify the OpenBLAS library manually
             self.cfg.update('configopts', '-DBLAS_LIBRARIES="${EBROOTOPENBLAS}/lib/libopenblas.a;-pthread"')
         else:
-            # Fallback: try everything, pick the first one
-            # CMake should fail if none is found
-            self.cfg.update('configopts', '-DBLA_VENDOR="All"')
+            # If none of the above is found, just fail
+            raise EasyBuildError("Cannot find BLAS library from the toolchain", err)
 
         super(EB_SuperLU, self).configure_step()
 
