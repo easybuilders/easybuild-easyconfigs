@@ -77,10 +77,12 @@ def pick_python_cmd(req_maj_ver=None, req_min_ver=None):
         # check whether specified Python command is available
         if os.path.isabs(python_cmd):
             if not os.path.isfile(python_cmd):
+                log.debug("Python command '%s' does not exist", python_cmd)
                 return False
         else:
             python_cmd_path = which(python_cmd)
             if python_cmd_path is None:
+                log.debug("Python command '%s' not available through $PATH", python_cmd)
                 return False
 
         if req_maj_ver is not None:
@@ -91,16 +93,21 @@ def pick_python_cmd(req_maj_ver=None, req_min_ver=None):
 
             pycode = 'import sys; print("%s.%s" % sys.version_info[:2])'
             out, _ = run_cmd("%s -c '%s'" % (python_cmd, pycode), simple=False)
+            out = out.strip()
 
             # (strict) check for major version
-            if out.strip().split('.')[0] != str(req_maj_ver):
+            maj_ver = out.split('.')[0]
+            if maj_ver != str(req_maj_ver):
+                log.debug("Major Python version does not match: %s vs %s", maj_ver, req_maj_ver)
                 return False
 
             # check for minimal minor version
-            if LooseVersion(out.strip()) < LooseVersion(req_majmin_ver):
+            if LooseVersion(out) < LooseVersion(req_majmin_ver):
+                log.debug("Minimal requirement for minor Python version not satisfied: %s vs %s", out, req_majmin_ver)
                 return False
 
         # all check passed
+        log.debug("All check passed for Python command '%s'!", python_cmd)
         return True
 
     # compose list of 'python' commands to consider
@@ -121,6 +128,7 @@ def pick_python_cmd(req_maj_ver=None, req_min_ver=None):
                 res = python_cmd
             else:
                 res = which(python_cmd)
+            log.debug("Absolute path to retained Python command: %s", python_cmd)
             break
         else:
             log.debug("Python command '%s' does not satisfy version requirements (maj: %s, min: %s), moving on",
@@ -264,6 +272,7 @@ class PythonPackage(ExtensionEasyBlock):
             if os.path.exists(bin_python) and os.path.samefile(which('python'), bin_python):
                 # if Python is listed as a (build) dependency, use 'python' command provided that way
                 python = os.path.join(python_root, 'bin', 'python')
+                self.log.debug("Retaining 'python' command for Python dependency: %s", python)
 
         if python is None:
             # if using system Python, go hunting for a 'python' command that satisfies the requirements
