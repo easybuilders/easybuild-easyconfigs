@@ -128,7 +128,7 @@ def pick_python_cmd(req_maj_ver=None, req_min_ver=None):
                 res = python_cmd
             else:
                 res = which(python_cmd)
-            log.debug("Absolute path to retained Python command: %s", python_cmd)
+            log.debug("Absolute path to retained Python command: %s", res)
             break
         else:
             log.debug("Python command '%s' does not satisfy version requirements (maj: %s, min: %s), moving on",
@@ -292,7 +292,7 @@ class PythonPackage(ExtensionEasyBlock):
 
         # mainly for debugging
         if self.install_cmd.startswith(EASY_INSTALL_INSTALL_CMD):
-            run_cmd("python setup.py easy_install --version", verbose=False)
+            run_cmd("%s setup.py easy_install --version" % self.python_cmd, verbose=False)
         if self.install_cmd.startswith(PIP_INSTALL_CMD):
             out, _ = run_cmd("pip --version", verbose=False, simple=False)
 
