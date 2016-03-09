@@ -42,6 +42,7 @@ from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.filetools import mkdir
 from easybuild.tools.modules import get_software_root
+from easybuild.tools.modules import get_software_libdir
 
 
 class EB_SuiteSparse(ConfigureMake):
@@ -51,6 +52,12 @@ class EB_SuiteSparse(ConfigureMake):
         """Custom constructor for SuiteSparse easyblock, initialize custom class parameters."""
         super(EB_SuiteSparse, self).__init__(*args, **kwargs)
         self.config_name = 'UNKNOWN'
+
+    def run_all_steps(self, *args, **kwargs)
+        if LooseVersion(self.version) > LooseVersion('4.5'):
+            metis = get_software_root('METIS')
+            if metis:
+                 os.environ["MY_METIS_LIB" = os.path.join(get_software_libdir('METIS'), "libmetis.so")
 
     def configure_step(self):
         """Configure build by patching UFconfig.mk or SuiteSparse_config.mk."""
@@ -174,7 +181,7 @@ class EB_SuiteSparse(ConfigureMake):
         # version 4.5+ makes shared objects and headers in lib/ and include/
         if LooseVersion(self.version) > LooseVersion('4.5'):
             guesses.update({
-                'CPATH': ['include],
+                'CPATH': ['include'],
                 'LD_LIBRARY_PATH': ['lib'],
             })
 
