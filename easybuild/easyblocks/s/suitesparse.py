@@ -57,7 +57,7 @@ class EB_SuiteSparse(ConfigureMake):
         if LooseVersion(self.version) > LooseVersion('4.5'):
             metis = get_software_root('METIS')
             if metis:
-                 os.environ["MY_METIS_LIB" = os.path.join(get_software_libdir('METIS'), "libmetis.so")
+                 os.environ["MY_METIS_LIB"] = os.path.join(get_software_libdir('METIS'), "libmetis.so")
 
     def configure_step(self):
         """Configure build by patching UFconfig.mk or SuiteSparse_config.mk."""
