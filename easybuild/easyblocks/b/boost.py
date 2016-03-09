@@ -123,29 +123,29 @@ class EB_Boost(EasyBlock):
             f = open('user-config.jam', 'a')
  
             # Check if using a Cray toolchain and configure MPI accordingly
-            if (self.toolchain.name.startswith('Cray') and 
-                self.toolchain.PRGENV_MODULE_NAME_SUFFIX in ['gnu', 'intel', 'cray']):
-                self.log.info("PRGENV_MODULE_NAME_SUFFIX is %s " % (self.toolchain.PRGENV_MODULE_NAME_SUFFIX))
-                craympichdir=os.getenv('CRAY_MPICH2_DIR')
-                craygccversion=os.getenv('GCC_VERSION')
-                f = open('user-config.jam','a')
-                config = '\n'.join([    
-                'import os ; ',
-                'local CRAY_MPICH2_DIR =  %s ;' %(craympichdir),
-                'using gcc ',
-                ': %s' %(craygccversion),
-                ': CC ',
-                ': <compileflags>-I$(CRAY_MPICH2_DIR)/include ',
-                '  <linkflags>-L$(CRAY_MPICH2_DIR)/lib \ ',
-                '; ',
-                'using mpi ',
-                ': CC ',
-                ': <find-shared-library>mpich ',
-                ': aprun -n \ ',
-                ';',
-                '',
-                ])
-                f.write(config)
+            if self.toolchain.name.startswith('Cray'):
+                if self.toolchain.PRGENV_MODULE_NAME_SUFFIX is 'gnu':
+                    craympichdir = os.getenv('CRAY_MPICH2_DIR')
+                    craygccversion = os.getenv('GCC_VERSION')
+                    f = open('user-config.jam','a')
+                    config = '\n'.join([    
+                        'local CRAY_MPICH2_DIR =  %s ;' % craympichdir,
+                        'using gcc ',
+                        ': %s' % craygccversion,
+                        ': CC ',
+                        ': <compileflags>-I$(CRAY_MPICH2_DIR)/include ',
+                        '  <linkflags>-L$(CRAY_MPICH2_DIR)/lib \ ',
+                        '; ',
+                        'using mpi ',
+                        ': CC ',
+                        ': <find-shared-library>mpich ',
+                        ': aprun -n \ ',
+                        ';',
+                        '',
+                    ])
+                    f.write(config)
+                else: 
+                    self.log.info("Bailing out: PrgEnv-intel and PrgEnv-cray not supported")
             else:
                 f.write("using mpi : %s ;" % os.getenv("MPICXX"))
 
