@@ -31,6 +31,7 @@ Unit tests to check that easyblocks are compatible with --module-only.
 import glob
 import os
 import re
+import sys
 import tempfile
 from vsc.utils import fancylogger
 from unittest import TestLoader, main
@@ -143,6 +144,20 @@ class ModuleOnlyTest(EnhancedTestCase):
 
             self.assertEqual(bool(regex.search(modtxt)), found, assert_msg)
 
+    def test_pythonpackage_det_pylibdir(self):
+        """Test det_pylibdir function from pythonpackage.py."""
+        from easybuild.easyblocks.generic.pythonpackage import det_pylibdir
+        for pylibdir in [det_pylibdir(), det_pylibdir(plat_specific=True), det_pylibdir(python_cmd=sys.executable)]:
+            self.assertTrue(pylibdir.startswith('lib') and '/python' in pylibdir and pylibdir.endswith('site-packages'))
+
+    def test_pythonpackage_pick_python_cmd(self):
+        """Test pick_python_cmd function from pythonpackage.py."""
+        from easybuild.easyblocks.generic.pythonpackage import pick_python_cmd
+        self.assertTrue(pick_python_cmd() is not None)
+        self.assertTrue(pick_python_cmd(2) is not None)
+        self.assertTrue(pick_python_cmd(2, 6) is not None)
+        self.assertTrue(pick_python_cmd(123, 456) is None)
+
     def tearDown(self):
         """Cleanup."""
         try:
@@ -200,6 +215,7 @@ def template_module_only_test(self, easyblock, name='foo', version='1.3.2', extr
         os.remove(app.logfile)
     else:
         self.assertTrue(False, "Class found in easyblock %s" % easyblock)
+
 
 def suite():
     """Return all easyblock --module-only tests."""
