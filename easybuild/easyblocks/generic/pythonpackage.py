@@ -257,7 +257,8 @@ class PythonPackage(ExtensionEasyBlock):
         python_root = get_software_root('Python')
         # keep in mind that Python may be listed as an allowed system dependency,
         # so just checking Python root is not sufficient
-        if python_root and os.path.samefile(which('python'), os.path.join(python_root, 'bin', 'python')):
+        bin_python = os.path.join(python_root, 'bin', 'python')
+        if python_root and os.path.exists(bin_python) and os.path.samefile(which('python'), bin_python):
             # if Python is listed as a (build) dependency, use 'python' command provided that way
             python = os.path.join(python_root, 'bin', 'python')
         else:
