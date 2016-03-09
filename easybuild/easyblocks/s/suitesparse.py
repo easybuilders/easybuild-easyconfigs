@@ -171,6 +171,13 @@ class EB_SuiteSparse(ConfigureMake):
             'LD_LIBRARY_PATH': ['UMFPACK/Lib', 'AMD/Lib'],
         })
 
+        # version 4.5+ makes shared objects and headers in lib/ and include/
+        if LooseVersion(self.version) > LooseVersion('4.5'):
+        guesses.update({
+            'CPATH': ['include],
+            'LD_LIBRARY_PATH': ['lib'],
+        })
+
         return guesses
 
     def sanity_check_step(self):
