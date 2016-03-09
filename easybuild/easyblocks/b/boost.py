@@ -31,6 +31,10 @@ EasyBuild support for Boost, implemented as an easyblock
 @author: Pieter De Baets (Ghent University)
 @author: Jens Timmerman (Ghent University)
 @author: Ward Poelmans (Ghent University)
+@author: Petar Forai (IMP/IMBA)
+@author: Luca Marsella (CSCS)
+@author: Guilherme Peretti-Pezzi (CSCS)
+    
 """
 from distutils.version import LooseVersion
 import fileinput
@@ -40,6 +44,7 @@ import re
 import shutil
 import sys
 
+from easybuild.tools.filetools import write_file
 import easybuild.tools.toolchain as toolchain
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import CUSTOM
@@ -62,9 +67,9 @@ class EB_Boost(EasyBlock):
     def extra_options():
         """Add extra easyconfig parameters for Boost."""
         extra_vars = {
-            'boost_mpi': [False, "Build mpi boost module", CUSTOM],
-            'toolset': [None, "Toolset to use for Boost configuration ('--with-toolset for bootstrap.sh')", CUSTOM],
-        }
+                'boost_mpi': [False, "Build mpi boost module", CUSTOM],
+                'toolset': [None, "Toolset to use for Boost configuration ('--with-toolset for bootstrap.sh')", CUSTOM],
+                }
         return EasyBlock.extra_options(extra_vars)
 
     def patch_step(self):
@@ -120,15 +125,14 @@ class EB_Boost(EasyBlock):
             # configure the boost mpi module
             # http://www.boost.org/doc/libs/1_47_0/doc/html/mpi/getting_started.html
             # let Boost.Build know to look here for the config file
-            f = open('user-config.jam', 'a')
- 
+
+            txt = ''
             # Check if using a Cray toolchain and configure MPI accordingly
             if self.toolchain.name.startswith('Cray'):
                 if self.toolchain.PRGENV_MODULE_NAME_SUFFIX is 'gnu':
                     craympichdir = os.getenv('CRAY_MPICH2_DIR')
                     craygccversion = os.getenv('GCC_VERSION')
-                    f = open('user-config.jam','a')
-                    config = '\n'.join([    
+                    txt = '\n'.join([    
                         'local CRAY_MPICH2_DIR =  %s ;' % craympichdir,
                         'using gcc ',
                         ': %s' % craygccversion,
@@ -143,13 +147,12 @@ class EB_Boost(EasyBlock):
                         ';',
                         '',
                     ])
-                    f.write(config)
                 else: 
                     self.log.info("Bailing out: PrgEnv-intel and PrgEnv-cray not supported")
             else:
-                f.write("using mpi : %s ;" % os.getenv("MPICXX"))
+                txt = "using mpi : %s ;" % os.getenv("MPICXX")
 
-            f.close()           
+        write_file('user-config.jam', txt, append=True)
  
     def build_step(self):
         """Build Boost with bjam tool."""
