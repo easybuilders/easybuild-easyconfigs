@@ -220,7 +220,6 @@ class IntelBase(EasyBlock):
                 self.log.info("Using Intel license specifications from $%s: %s", self.license_env_var, lic_specs)
 
             self.license_file = os.pathsep.join(lic_specs)
-            self.cfg['license_file'] = self.license_file
             env.setvar(self.license_env_var, self.license_file)
 
             # if we have multiple retained lic specs, specify to 'use a license which exists on the system'
