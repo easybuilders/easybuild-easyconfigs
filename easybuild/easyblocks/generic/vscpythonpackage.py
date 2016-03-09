@@ -45,6 +45,6 @@ class VSCPythonPackage(VersionIndependentPythonPackage):
         """Custom sanity check for VSC-tools packages."""
         pythonpath = os.environ.get('PYTHONPATH', '')
         os.environ['PYTHONPATH'] = ''
-        kwargs.update({'exts_filter': ('python -s -S -c "import %(ext_name)s"', "")})
+        kwargs.update({'exts_filter': ('%s -s -S -c "import %%(ext_name)s"' % self.python_cmd, "")})
         super(VSCPythonPackage, self).sanity_check_step(*args, **kwargs)
         os.environ['PYTHONPATH'] = pythonpath
