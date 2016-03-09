@@ -77,12 +77,16 @@ class EB_SuperLU(CMakeMake):
 
         # Set the BLAS library to use
         # For this, use the BLA_VENDOR option from the FindBLAS module of CMake
-        # cf https://cmake.org/cmake/help/latest/module/FindBLAS.html
+        # Check for all possible values at https://cmake.org/cmake/help/latest/module/FindBLAS.html
         if get_software_root('imkl'):
             imkl_version = get_software_version('imkl')
             if LooseVersion(imkl_version) >= LooseVersion('10'):
+                # 'Intel10_64lp' -> For Intel mkl v10 64 bit,lp thread model, lp64 model
+                # It should work for Intel MKL 10 and above, as long as the library names stay the same
+                # SuperLU requires thread, 'Intel10_64lp_seq' will not work!
                 self.cfg.update('configopts', '-DBLA_VENDOR="Intel10_64lp"')
             else:
+                # 'Intel' -> For older versions of mkl 32 and 64 bit
                 self.cfg.update('configopts', '-DBLA_VENDOR="Intel"')
         elif get_software_root('ACML'):
             self.cfg.update('configopts', '-DBLA_VENDOR="ACML"')
