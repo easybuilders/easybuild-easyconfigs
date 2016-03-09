@@ -68,7 +68,7 @@ class EB_Boost(EasyBlock):
         extra_vars = {
             'boost_mpi': [False, "Build mpi boost module", CUSTOM],
             'toolset': [None, "Toolset to use for Boost configuration ('--with-toolset for bootstrap.sh')", CUSTOM],
-            }
+        }
         return EasyBlock.extra_options(extra_vars)
 
     def patch_step(self):
