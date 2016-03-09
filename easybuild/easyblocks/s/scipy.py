@@ -46,7 +46,7 @@ class EB_scipy(FortranPythonPackage):
         super(EB_scipy, self).__init__(*args, **kwargs)
 
         self.testinstall = True
-        self.testcmd = "cd .. && python -c 'import numpy; import scipy; scipy.test(verbose=2)'"
+        self.testcmd = "cd .. && %(python)s -c 'import numpy; import scipy; scipy.test(verbose=2)'"
 
     def configure_step(self):
         """Custom configure step for scipy: set extra installation options when needed."""
@@ -64,5 +64,5 @@ class EB_scipy(FortranPythonPackage):
             'files': [os.path.join(self.pylibdir, 'scipy', '__init__.py')],
             'dirs': [],
         }
-        custom_commands = [('python', '-c "import scipy"')]
+        custom_commands = [(self.python_cmd, '-c "import scipy"')]
         return super(EB_scipy, self).sanity_check_step(custom_paths=custom_paths, custom_commands=custom_commands)
