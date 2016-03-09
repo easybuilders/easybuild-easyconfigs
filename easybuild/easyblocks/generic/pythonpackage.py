@@ -393,7 +393,7 @@ class PythonPackage(ExtensionEasyBlock):
         if isinstance(self.cfg['runtest'], basestring):
             self.testcmd = self.cfg['runtest']
 
-        if self.cfg['runtest'] and not self.testcmd is None:
+        if self.cfg['runtest'] and self.testcmd is not None:
             extrapath = ""
             testinstalldir = None
 
@@ -417,7 +417,7 @@ class PythonPackage(ExtensionEasyBlock):
                 run_cmd(cmd, log_all=True, simple=True, verbose=False)
 
             if self.testcmd:
-                cmd = "%s%s" % (extrapath, self.testcmd)
+                cmd = "%s%s" % (extrapath, self.testcmd % {'python': self.python_cmd})
                 run_cmd(cmd, log_all=True, simple=True)
 
             if testinstalldir:
@@ -466,8 +466,10 @@ class PythonPackage(ExtensionEasyBlock):
         """
         Custom sanity check for Python packages
         """
-        if not 'exts_filter' in kwargs:
-            kwargs.update({'exts_filter': EXTS_FILTER_PYTHON_PACKAGES})
+        if 'exts_filter' not in kwargs:
+            orig_exts_filter = EXTS_FILTER_PYTHON_PACKAGES
+            exts_filter = (orig_exts_filter[0].replace('python', self.python_cmd), orig_exts_filter[1])
+            kwargs.update({'exts_filter': exts_filter})
         return super(PythonPackage, self).sanity_check_step(*args, **kwargs)
 
     def make_module_req_guess(self):
