@@ -75,22 +75,30 @@ def pick_python_cmd(req_maj_ver=None, req_min_ver=None):
         """Check whether specified Python command satisfies requirements."""
 
         # check whether specified Python command is available
-        python_cmd_path = which(python_cmd)
-        if python_cmd_path is None:
-            return False
-
-        if req_maj_ver is not None:
-            # (strict) check for major version
-            out, _ = run_cmd("%s -c 'import sys; print sys.version_info[0]'" % python_cmd, simple=False)
-            if out.strip() != str(req_maj_ver):
+        if os.path.isabs(python_cmd):
+            if not os.path.isfile(python_cmd):
+                return False
+        else:
+            python_cmd_path = which(python_cmd)
+            if python_cmd_path is None:
                 return False
 
-            if req_min_ver is not None:
-                # check minor version
-                pycode = 'import sys; print "%s.%s" % sys.version_info[:2]'
-                out, _ = run_cmd("%s -c '%s'" % (python_cmd, pycode), simple=False)
-                if LooseVersion(out.strip()) < LooseVersion('%s.%s' % (req_maj_ver, req_min_ver)):
-                    return False
+        if req_maj_ver is not None:
+            if req_min_ver is None:
+                req_majmin_ver = '%s.0' % req_maj_ver
+            else:
+                req_majmin_ver = '%s.%s' % (req_maj_ver, req_min_ver)
+
+            pycode = 'import sys; print "%s.%s" % sys.version_info[:2]'
+            out, _ = run_cmd("%s -c '%s'" % (python_cmd, pycode), simple=False)
+
+            # (strict) check for major version
+            if out.strip().split('.')[0] != str(req_maj_ver):
+                return False
+
+            # check for minimal minor version
+            if LooseVersion(out.strip()) < LooseVersion(req_majmin_ver):
+                return False
 
         # all check passed
         return True
@@ -109,7 +117,10 @@ def pick_python_cmd(req_maj_ver=None, req_min_ver=None):
     for python_cmd in python_cmds:
         if check_python_cmd(python_cmd):
             log.debug("Python command '%s' satisfies version requirements!", python_cmd)
-            res = python_cmd
+            if os.path.isabs(python_cmd):
+                res = python_cmd
+            else:
+                res = which(python_cmd)
             break
         else:
             log.debug("Python command '%s' does not satisfy version requirements (maj: %s, min: %s), moving on",
@@ -244,9 +255,11 @@ class PythonPackage(ExtensionEasyBlock):
         """Python-specific preperations."""
         # pick 'python' command to use
         python_root = get_software_root('Python')
+        # keep in mind that Python may be listed as an allowed system dependency,
+        # so just checking Python root is not sufficient
         if python_root and os.path.samefile(which('python'), os.path.join(python_root, 'bin', 'python')):
             # if Python is listed as a (build) dependency, use 'python' command provided that way
-            python = 'python'
+            python = os.path.join(python_root, 'bin', 'python')
         else:
             # if using system Python, go hunting for a 'python' command that satisfies the requirements
             python = pick_python_cmd(req_maj_ver=self.cfg['req_py_majver'], req_min_ver=self.cfg['req_py_minver'])
