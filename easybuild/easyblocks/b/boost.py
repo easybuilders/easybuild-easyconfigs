@@ -34,7 +34,6 @@ EasyBuild support for Boost, implemented as an easyblock
 @author: Petar Forai (IMP/IMBA)
 @author: Luca Marsella (CSCS)
 @author: Guilherme Peretti-Pezzi (CSCS)
-    
 """
 from distutils.version import LooseVersion
 import fileinput
@@ -67,9 +66,9 @@ class EB_Boost(EasyBlock):
     def extra_options():
         """Add extra easyconfig parameters for Boost."""
         extra_vars = {
-                'boost_mpi': [False, "Build mpi boost module", CUSTOM],
-                'toolset': [None, "Toolset to use for Boost configuration ('--with-toolset for bootstrap.sh')", CUSTOM],
-                }
+            'boost_mpi': [False, "Build mpi boost module", CUSTOM],
+            'toolset': [None, "Toolset to use for Boost configuration ('--with-toolset for bootstrap.sh')", CUSTOM],
+            }
         return EasyBlock.extra_options(extra_vars)
 
     def patch_step(self):
