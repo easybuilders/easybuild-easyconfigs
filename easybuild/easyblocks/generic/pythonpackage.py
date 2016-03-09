@@ -254,14 +254,18 @@ class PythonPackage(ExtensionEasyBlock):
     def prepare_python(self):
         """Python-specific preperations."""
         # pick 'python' command to use
+        python = None
+
         python_root = get_software_root('Python')
         # keep in mind that Python may be listed as an allowed system dependency,
         # so just checking Python root is not sufficient
-        bin_python = os.path.join(python_root, 'bin', 'python')
-        if python_root and os.path.exists(bin_python) and os.path.samefile(which('python'), bin_python):
-            # if Python is listed as a (build) dependency, use 'python' command provided that way
-            python = os.path.join(python_root, 'bin', 'python')
-        else:
+        if python_root:
+            bin_python = os.path.join(python_root, 'bin', 'python')
+            if os.path.exists(bin_python) and os.path.samefile(which('python'), bin_python):
+                # if Python is listed as a (build) dependency, use 'python' command provided that way
+                python = os.path.join(python_root, 'bin', 'python')
+
+        if python is None:
             # if using system Python, go hunting for a 'python' command that satisfies the requirements
             python = pick_python_cmd(req_maj_ver=self.cfg['req_py_majver'], req_min_ver=self.cfg['req_py_minver'])
 
