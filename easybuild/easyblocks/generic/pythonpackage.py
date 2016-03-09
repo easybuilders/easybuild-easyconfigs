@@ -89,7 +89,7 @@ def pick_python_cmd(req_maj_ver=None, req_min_ver=None):
             else:
                 req_majmin_ver = '%s.%s' % (req_maj_ver, req_min_ver)
 
-            pycode = 'import sys; print "%s.%s" % sys.version_info[:2]'
+            pycode = 'import sys; print("%s.%s" % sys.version_info[:2])'
             out, _ = run_cmd("%s -c '%s'" % (python_cmd, pycode), simple=False)
 
             # (strict) check for major version
