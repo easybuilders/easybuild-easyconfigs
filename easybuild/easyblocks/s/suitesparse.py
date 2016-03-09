@@ -42,6 +42,7 @@ from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.filetools import mkdir
 from easybuild.tools.modules import get_software_root
+from easybuild.tools.systemtools import get_shared_lib_ext
 
 
 class EB_SuiteSparse(ConfigureMake):
@@ -167,9 +168,9 @@ class EB_SuiteSparse(ConfigureMake):
         """
         # Latest version of SuiteSparse put shared libraries in 'lib'
         if LooseVersion(self.version) >= LooseVersion('4.5.1'):
-            ld_library_path = ['UMFPACK/Lib', 'AMD/Lib']
-        else:
             ld_library_path = ['lib']
+        else:
+            ld_library_path = ['UMFPACK/Lib', 'AMD/Lib']
 
         guesses = super(EB_SuiteSparse, self).make_module_req_guess()
         guesses.update({
@@ -187,11 +188,16 @@ class EB_SuiteSparse(ConfigureMake):
         else:
             csparse_dir = 'CSparse'
 
+        libnames = ["AMD", "BTF", "CAMD", "CCOLAMD", "CHOLMOD", "COLAMD", "CXSparse", "KLU", "LDL", "RBio", "SPQR", "UMFPACK"]
+        libs = [os.path.join(x, 'lib', 'lib%s.a' % x.lower()) for x in libnames] + [os.path.join(csparse_dir, 'lib', 'libcsparse.a')]
+
+        # Latest version of SuiteSparse also compiles shared library and put them in 'lib'
+        shlib_ext = get_shared_lib_ext()
+        if LooseVersion(self.version) >= LooseVersion('4.5.1'):
+            libs += [os.path.join('lib', 'lib%s.%s' % (l.lower(), shlib_ext)) for l in libnames]
+
         custom_paths = {
-            'files': [os.path.join(x, 'lib', 'lib%s.a' % x.lower()) for x in ["AMD", "BTF", "CAMD", "CCOLAMD", "CHOLMOD",
-                                                                              "COLAMD", "CXSparse", "KLU", "LDL", "RBio",
-                                                                              "SPQR", "UMFPACK"]] +
-                     [os.path.join(csparse_dir, 'lib', 'libcsparse.a')],
+            'files': libs,
             'dirs': ["MATLAB_Tools"],
         }
 
