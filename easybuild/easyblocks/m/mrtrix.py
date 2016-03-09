@@ -1,11 +1,11 @@
 ##
-# Copyright 2009-2015 Ghent University
+# Copyright 2009-2016 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
 # with support of Ghent University (http://ugent.be/hpc),
 # the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
-# the Hercules foundation (http://www.herculesstichting.be/in_English)
+# Flemish Research Foundation (FWO) (http://www.fwo.be/en)
 # and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
 # http://github.com/hpcugent/easybuild
@@ -31,6 +31,7 @@ from distutils.version import LooseVersion
 import easybuild.tools.environment as env
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.tools.run import run_cmd
+from easybuild.tools.systemtools import get_shared_lib_ext
 
 
 class EB_MRtrix(EasyBlock):
@@ -74,10 +75,12 @@ class EB_MRtrix(EasyBlock):
 
     def sanity_check_step(self):
         """Custom sanity check for MRtrix."""
+        shlib_ext = get_shared_lib_ext()
+
         if LooseVersion(self.version) >= LooseVersion('0.3'):
-            libso = 'libmrtrix.so'
+            libso = 'libmrtrix.%s' % shlib_ext
         else:
-            libso = 'libmrtrix-%s.so' % '_'.join(self.version.split('.'))
+            libso = 'libmrtrix-%s.%s' % ('_'.join(self.version.split('.')), shlib_ext)
         custom_paths = {
             'files': [os.path.join('lib', libso)],
             'dirs': ['bin'],

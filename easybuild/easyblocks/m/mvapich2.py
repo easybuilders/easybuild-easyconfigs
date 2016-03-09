@@ -1,11 +1,11 @@
 ##
-# Copyright 2009-2015 Ghent University
+# Copyright 2009-2016 Ghent University, Forschungszentrum Juelich
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
 # with support of Ghent University (http://ugent.be/hpc),
 # the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
-# the Hercules foundation (http://www.herculesstichting.be/in_English)
+# Flemish Research Foundation (FWO) (http://www.fwo.be/en)
 # and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
 # http://github.com/hpcugent/easybuild
@@ -30,17 +30,17 @@ EasyBuild support for building and installing the MVAPICH2 MPI library, implemen
 @author: Kenneth Hoste (Ghent University)
 @author: Pieter De Baets (Ghent University)
 @author: Jens Timmerman (Ghent University)
+@author: Damian Alvarez (Forschungszentrum Juelich)
+@author: Xavier Besseron (University of Luxembourg)
 """
 
-import os
+from distutils.version import LooseVersion
 
-import easybuild.tools.environment as env
-from easybuild.easyblocks.generic.configuremake import ConfigureMake
+from easybuild.easyblocks.mpich import EB_MPICH
 from easybuild.framework.easyconfig import CUSTOM
-from easybuild.tools.build_log import EasyBuildError
 
 
-class EB_MVAPICH2(ConfigureMake):
+class EB_MVAPICH2(EB_MPICH):
     """
     Support for building the MVAPICH2 MPI library.
     - some compiler dependent configure options
@@ -48,61 +48,25 @@ class EB_MVAPICH2(ConfigureMake):
 
     @staticmethod
     def extra_options():
+        """Define custom easyconfig parameters specific to MVAPICH2."""
         extra_vars = {
             'withchkpt': [False, "Enable checkpointing support (required BLCR)", CUSTOM],
             'withmpe': [False, "Build MPE routines", CUSTOM],
             'withhwloc': [False, "Enable support for using hwloc support for process binding", CUSTOM],
             'withlimic2': [False, "Enable LiMIC2 support for intra-node communication", CUSTOM],
-            'debug': [False, "Enable debug build (which is slower)", CUSTOM],
             'rdma_type': ["gen2", "Specify the RDMA type (gen2/udapl)", CUSTOM],
             'blcr_path': [None, "Path to BLCR package", CUSTOM],
             'blcr_inc_path': [None, "Path to BLCR header files", CUSTOM],
             'blcr_lib_path': [None, "Path to BLCR library", CUSTOM],
         }
-        return ConfigureMake.extra_options(extra_vars)
+        return EB_MPICH.extra_options(extra_vars)
 
     def configure_step(self):
-
-        # things might go wrong if a previous install dir is present, so let's get rid of it
-        if not self.cfg['keeppreviousinstall']:
-            self.log.info("Making sure any old installation is removed before we start the build...")
-            super(EB_MVAPICH2, self).make_dir(self.installdir, True, dontcreateinstalldir=True)
+        """Define custom configure options for MVAPICH2."""
 
         # additional configuration options
         add_configopts = []
         add_configopts.append('--with-rdma=%s' % self.cfg['rdma_type'])
-
-        # use POSIX threads
-        add_configopts.append('--with-thread-package=pthreads')
-
-        if self.cfg['debug']:
-            # debug build, with error checking, timing and debug info
-            # note: this will affact performance
-            add_configopts.append('--enable-fast=none')
-        else:
-            # optimized build, no error checking, timing or debug info
-            add_configopts.append('--enable-fast')
-
-        # enable shared libraries, using GCC and GNU ld options
-        add_configopts.extend(['--enable-shared', '--enable-sharedlibs=gcc'])
-
-        # enable Fortran 77/90 and C++ bindings
-        add_configopts.extend(['--enable-f77', '--enable-fc', '--enable-cxx'])
-
-        # MVAPICH configure script complains when F90 or F90FLAGS are set,
-        # they should be replaced with FC/FCFLAGS instead
-        for (envvar, new_envvar) in [("F90", "FC"), ("F90FLAGS", "FCFLAGS")]:
-            envvar_val = os.getenv(envvar)
-            if envvar_val:
-                new_envvar_val = os.getenv(new_envvar)
-                env.setvar(envvar, '')
-                if envvar_val == new_envvar_val:
-                    self.log.debug("$%s == $%s, just defined $%s as empty", envvar, new_envvar, envvar)
-                elif new_envvar_val is None:
-                    env.setvar(new_envvar, envvar_val)
-                else:
-                    raise EasyBuildError("Both $%s and $%s set, can I overwrite $%s with $%s (%s) ?",
-                                         envvar, new_envvar, new_envvar, envvar, envvar_val)
 
         # enable specific support options (if desired)
         if self.cfg['withmpe']:
@@ -133,12 +97,11 @@ class EB_MVAPICH2(ConfigureMake):
         Custom sanity check for MVAPICH2
         """
         custom_paths = {
-                        'files': ["bin/%s" % x for x in ["mpicc", "mpicxx", "mpif77",
-                                                         "mpif90", "mpiexec.hydra"]] +
-                                 ["lib/lib%s" % y for x in ["fmpich", "mpichcxx", "mpichf90",
-                                                            "mpich", "mpl", "opa"]
-                                                 for y in ["%s.so"%x, "%s.a"%x]],
-                        'dirs': ["include"]
-                       }
+            'files': ['bin/mpiexec.mpirun_rsh'],
+        }
 
-        super(EB_MVAPICH2, self).sanity_check_step(custom_paths=custom_paths)
+        # cfr. http://git.mpich.org/mpich.git/blob_plain/v3.1.1:/CHANGES
+        # MVAPICH2 2.1 is based on MPICH 3.1.4
+        use_new_libnames = LooseVersion(self.version) >= LooseVersion('2.1')
+
+        super(EB_MVAPICH2, self).sanity_check_step(custom_paths=custom_paths, use_new_libnames=use_new_libnames)

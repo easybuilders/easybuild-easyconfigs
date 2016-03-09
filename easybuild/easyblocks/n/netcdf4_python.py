@@ -5,7 +5,7 @@
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
 # with support of Ghent University (http://ugent.be/hpc),
 # the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
-# the Hercules foundation (http://www.herculesstichting.be/in_English)
+# Flemish Research Foundation (FWO) (http://www.fwo.be/en)
 # and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
 # http://github.com/hpcugent/easybuild
@@ -44,7 +44,7 @@ class EB_netcdf4_minus_python(PythonPackage):
 
     def configure_step(self):
         """
-        Configure and 
+        Configure and
         Test if python module is loaded
         """
         hdf5 = get_software_root('HDF5')
@@ -57,7 +57,7 @@ class EB_netcdf4_minus_python(PythonPackage):
         netcdf = get_software_root('netCDF')
         if netcdf:
             env.setvar('NETCDF4_DIR', netcdf)
-       
+
         super(EB_netcdf4_minus_python, self).configure_step()
 
     def test_step(self):
@@ -70,8 +70,7 @@ class EB_netcdf4_minus_python(PythonPackage):
     def sanity_check_step(self):
         """Custom sanity check for netcdf4-python"""
         custom_paths = {
-            'files': ['bin/nc3tonc4', 'bin/nc4tonc3', 'bin/ncinfo'] +
-                     [os.path.join(self.pylibdir, x) for x in ['netCDF4.so', 'netCDF4_utils.py', 'netcdftime.py']],
-            'dirs': [],
+            'files': ['bin/nc3tonc4', 'bin/nc4tonc3', 'bin/ncinfo'],
+            'dirs': [self.pylibdir],
         }
         return super(EB_netcdf4_minus_python, self).sanity_check_step(custom_paths=custom_paths)

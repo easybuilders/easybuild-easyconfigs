@@ -1,11 +1,11 @@
 ##
-# Copyright 2009-2015 Ghent University
+# Copyright 2009-2016 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
 # with support of Ghent University (http://ugent.be/hpc),
 # the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
-# the Hercules foundation (http://www.herculesstichting.be/in_English)
+# Flemish Research Foundation (FWO) (http://www.fwo.be/en)
 # and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
 # http://github.com/hpcugent/easybuild
@@ -42,6 +42,7 @@ from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.modules import get_software_libdir, get_software_libdir, get_software_root, get_software_version
 from easybuild.tools.run import run_cmd
+from easybuild.tools.systemtools import get_shared_lib_ext
 
 
 EXTS_FILTER_PYTHON_PACKAGES = ('python -c "import %(ext_name)s"', "")
@@ -78,6 +79,14 @@ class EB_Python(ConfigureMake):
     def configure_step(self):
         """Set extra configure options."""
         self.cfg.update('configopts', "--with-threads --enable-shared")
+
+        # Need to be careful to match the unicode settings to the underlying python
+        if sys.maxunicode == 1114111:
+            self.cfg.update('configopts', "--enable-unicode=ucs4")
+        elif sys.maxunicode == 65535:
+            self.cfg.update('configopts', "--enable-unicode=ucs2")
+        else:
+            raise EasyBuildError("Unknown maxunicode value for your python: %d" % sys.maxunicode)
 
         modules_setup_dist = os.path.join(self.cfg['start_dir'], 'Modules', 'Setup.dist')
 
@@ -160,7 +169,7 @@ class EB_Python(ConfigureMake):
                 abiflags = abiflags.strip()
 
         custom_paths = {
-            'files': ["bin/%s" % pyver, "lib/lib%s%s.so" % (pyver, abiflags)],
+            'files': ["bin/%s" % pyver, "lib/lib%s%s.%s" % (pyver, abiflags, get_shared_lib_ext())],
             'dirs': ["include/%s%s" % (pyver, abiflags), "lib/%s" % pyver],
         }
 

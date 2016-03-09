@@ -1,11 +1,11 @@
 ##
-# Copyright 2009-2015 Ghent University
+# Copyright 2009-2016 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
 # with support of Ghent University (http://ugent.be/hpc),
 # the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
-# the Hercules foundation (http://www.herculesstichting.be/in_English)
+# Flemish Research Foundation (FWO) (http://www.fwo.be/en)
 # and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
 # http://github.com/hpcugent/easybuild
@@ -110,11 +110,24 @@ class EB_CPLEX(Binary):
             raise EasyBuildError("No bins found using %s in %s", binglob, self.installdir)
 
     def make_module_extra(self):
-        """Add installdir to path and set CPLEX_HOME"""
-
+        """Add bin dirs and lib dirs and set CPLEX_HOME and CPLEXDIR"""
         txt = super(EB_CPLEX, self).make_module_extra()
-        txt += self.module_generator.prepend_paths("PATH", [self.bindir])
-        txt += self.module_generator.set_environment("CPLEX_HOME", os.path.join(self.installdir, 'cplex'))
+
+        try:
+            cwd = os.getcwd()
+            os.chdir(self.installdir)
+            bins = glob.glob(os.path.join('*', 'bin', 'x86-64*'))
+            libs = glob.glob(os.path.join('*', 'lib', 'x86-64*', '*pic'))
+            os.chdir(cwd)
+        except OSError as err:
+            raise EasyBuildError("Failed to determine bin/lib subdirs: %s", err)
+
+        txt += self.module_generator.prepend_paths('PATH', [path for path in bins])
+        txt += self.module_generator.prepend_paths('LD_LIBRARY_PATH', [path for path in bins+libs])
+
+        txt += self.module_generator.set_environment('CPLEX_HOME', os.path.join(self.installdir, 'cplex'))
+        txt += self.module_generator.set_environment('CPLEXDIR', os.path.join(self.installdir, 'cplex'))
+
         self.log.debug("make_module_extra added %s" % txt)
         return txt
 
