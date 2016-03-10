@@ -33,6 +33,7 @@ EasyBuild support for Python packages, implemented as an easyblock
 """
 import os
 import re
+import sys
 import tempfile
 from distutils.version import LooseVersion
 from vsc.utils import fancylogger
@@ -44,29 +45,114 @@ from easybuild.framework.easyconfig import CUSTOM
 from easybuild.framework.extensioneasyblock import ExtensionEasyBlock
 from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.filetools import mkdir, rmtree2, which
+from easybuild.tools.modules import get_software_root
 from easybuild.tools.run import run_cmd
 
 
 # not 'easy_install' deliberately, to avoid that pkg installations listed in easy-install.pth get preference
 # '.' is required at the end when using easy_install/pip in unpacked source dir
-EASY_INSTALL_INSTALL_CMD = "python setup.py easy_install --prefix=%(prefix)s %(installopts)s %(loc)s"
+EASY_INSTALL_INSTALL_CMD = "%(python)s setup.py easy_install --prefix=%(prefix)s %(installopts)s %(loc)s"
 PIP_INSTALL_CMD = "pip install --prefix=%(prefix)s %(installopts)s %(loc)s"
-SETUP_PY_INSTALL_CMD = "python setup.py install --prefix=%(prefix)s %(installopts)s"
+SETUP_PY_INSTALL_CMD = "%(python)s setup.py install --prefix=%(prefix)s %(installopts)s"
 UNKNOWN = 'UNKNOWN'
 
 
-def det_pylibdir(plat_specific=False):
+def pick_python_cmd(req_maj_ver=None, req_min_ver=None):
+    """
+    Pick 'python' command to use, based on specified version requirements.
+    If the major version is specified, it must be an exact match (==).
+    If the minor version is specified, it is considered a minimal minor version (>=).
+
+    List of considered 'python' commands (in order)
+    * 'python' available through $PATH
+    * 'python<major_ver>' available through $PATH
+    * 'python<major_ver>.<minor_ver>' available through $PATH
+    * Python executable used in current session (sys.executable)
+    """
+    log = fancylogger.getLogger('pick_python_cmd', fname=False)
+
+    def check_python_cmd(python_cmd):
+        """Check whether specified Python command satisfies requirements."""
+
+        # check whether specified Python command is available
+        if os.path.isabs(python_cmd):
+            if not os.path.isfile(python_cmd):
+                log.debug("Python command '%s' does not exist", python_cmd)
+                return False
+        else:
+            python_cmd_path = which(python_cmd)
+            if python_cmd_path is None:
+                log.debug("Python command '%s' not available through $PATH", python_cmd)
+                return False
+
+        if req_maj_ver is not None:
+            if req_min_ver is None:
+                req_majmin_ver = '%s.0' % req_maj_ver
+            else:
+                req_majmin_ver = '%s.%s' % (req_maj_ver, req_min_ver)
+
+            pycode = 'import sys; print("%s.%s" % sys.version_info[:2])'
+            out, _ = run_cmd("%s -c '%s'" % (python_cmd, pycode), simple=False)
+            out = out.strip()
+
+            # (strict) check for major version
+            maj_ver = out.split('.')[0]
+            if maj_ver != str(req_maj_ver):
+                log.debug("Major Python version does not match: %s vs %s", maj_ver, req_maj_ver)
+                return False
+
+            # check for minimal minor version
+            if LooseVersion(out) < LooseVersion(req_majmin_ver):
+                log.debug("Minimal requirement for minor Python version not satisfied: %s vs %s", out, req_majmin_ver)
+                return False
+
+        # all check passed
+        log.debug("All check passed for Python command '%s'!", python_cmd)
+        return True
+
+    # compose list of 'python' commands to consider
+    python_cmds = ['python']
+    if req_maj_ver:
+        python_cmds.append('python%s' % req_maj_ver)
+        if req_min_ver:
+            python_cmds.append('python%s.%s' % (req_maj_ver, req_min_ver))
+    python_cmds.append(sys.executable)
+    log.debug("Considering Python commands: %s", ', '.join(python_cmds))
+
+    # try and find a 'python' command that satisfies the requirements
+    res = None
+    for python_cmd in python_cmds:
+        if check_python_cmd(python_cmd):
+            log.debug("Python command '%s' satisfies version requirements!", python_cmd)
+            if os.path.isabs(python_cmd):
+                res = python_cmd
+            else:
+                res = which(python_cmd)
+            log.debug("Absolute path to retained Python command: %s", res)
+            break
+        else:
+            log.debug("Python command '%s' does not satisfy version requirements (maj: %s, min: %s), moving on",
+                      req_maj_ver, req_min_ver, python_cmd)
+
+    return res
+
+
+def det_pylibdir(plat_specific=False, python_cmd=None):
     """Determine Python library directory."""
     log = fancylogger.getLogger('det_pylibdir', fname=False)
+
+    if python_cmd is None:
+        # use 'python' that is listed first in $PATH if none was specified
+        python_cmd = 'python'
 
     # determine Python lib dir via distutils
     # use run_cmd, we can to talk to the active Python, not the system Python running EasyBuild
     prefix = '/tmp/'
     args = 'plat_specific=%s, prefix="%s"' % (plat_specific, prefix)
-    pycmd = "import distutils.sysconfig; print(distutils.sysconfig.get_python_lib(%s))" % args
-    cmd = "python -c '%s'" % pycmd
+    pycode = "import distutils.sysconfig; print(distutils.sysconfig.get_python_lib(%s))" % args
+    cmd = "%s -c '%s'" % (python_cmd, pycode)
 
-    log.debug("Determining Python library directory using %s and command '%s'", which('python'), cmd)
+    log.debug("Determining Python library directory using command '%s'", cmd)
 
     out, ec = run_cmd(cmd, simple=False, force_in_dry_run=True)
     txt = out.strip().split('\n')[-1]
@@ -91,6 +177,8 @@ class PythonPackage(ExtensionEasyBlock):
             extra_vars = {}
         extra_vars.update({
             'unpack_sources': [True, "Unpack sources prior to build/install", CUSTOM],
+            'req_py_majver': [2, "Required major Python version (only relevant when using system Python)", CUSTOM],
+            'req_py_minver': [6, "Required minor Python version (only relevant when using system Python)", CUSTOM],
             'runtest': [True, "Run unit tests.", CUSTOM],  # overrides default
             'use_easy_install': [False, "Install using '%s'" % EASY_INSTALL_INSTALL_CMD, CUSTOM],
             'use_pip': [False, "Install using '%s'" % PIP_INSTALL_CMD, CUSTOM],
@@ -110,8 +198,9 @@ class PythonPackage(ExtensionEasyBlock):
         self.testcmd = None
         self.unpack_options = ''
 
+        self.python_cmd = None
         self.pylibdir = UNKNOWN
-        self.all_pylibdirs = UNKNOWN
+        self.all_pylibdirs = [UNKNOWN]
 
         # make sure there's no site.cfg in $HOME, because setup.py will find it and use it
         home = os.path.expanduser('~')
@@ -121,6 +210,7 @@ class PythonPackage(ExtensionEasyBlock):
         if not 'modulename' in self.options:
             self.options['modulename'] = self.name.lower()
 
+        # determine install command
         self.use_setup_py = False
         if self.cfg.get('use_easy_install', False):
             self.install_cmd = EASY_INSTALL_INSTALL_CMD
@@ -153,20 +243,56 @@ class PythonPackage(ExtensionEasyBlock):
         """Set Python lib directory-related class variables."""
         # pylibdir is the 'main' Python lib directory
         if self.pylibdir == UNKNOWN:
-            self.pylibdir = det_pylibdir()
+            self.pylibdir = det_pylibdir(python_cmd=self.python_cmd)
         self.log.debug("Python library dir: %s" % self.pylibdir)
         # on (some) multilib systems, the platform-specific library directory for the system Python is different
         # cfr. http://serverfault.com/a/88739/126446
         # so, we keep a list of different Python lib directories to take into account
-        self.all_pylibdirs = nub([self.pylibdir, det_pylibdir(plat_specific=True)])
+        self.all_pylibdirs = nub([self.pylibdir, det_pylibdir(plat_specific=True, python_cmd=self.python_cmd)])
         self.log.debug("All Python library dirs: %s" % self.all_pylibdirs)
+
+        # make very sure an entry starting with lib/ is present,
+        # since older versions of setuptools hardcode 'lib' rather than using the value produced by
+        # distutils.sysconfig.get_python_lib (which may always be lib64/...)
+        if not any(pylibdir.startswith('lib/') for pylibdir in self.all_pylibdirs):
+            pylibdir = os.path.join('lib', *self.pylibdir.split(os.path.sep)[1:])
+            self.all_pylibdirs.append(pylibdir)
+            self.log.debug("No lib/ entry found in list of Python lib dirs, so added it: %s", self.all_pylibdirs)
+
+    def prepare_python(self):
+        """Python-specific preperations."""
+        # pick 'python' command to use
+        python = None
+
+        python_root = get_software_root('Python')
+        # keep in mind that Python may be listed as an allowed system dependency,
+        # so just checking Python root is not sufficient
+        if python_root:
+            bin_python = os.path.join(python_root, 'bin', 'python')
+            if os.path.exists(bin_python) and os.path.samefile(which('python'), bin_python):
+                # if Python is listed as a (build) dependency, use 'python' command provided that way
+                python = os.path.join(python_root, 'bin', 'python')
+                self.log.debug("Retaining 'python' command for Python dependency: %s", python)
+
+        if python is None:
+            # if using system Python, go hunting for a 'python' command that satisfies the requirements
+            python = pick_python_cmd(req_maj_ver=self.cfg['req_py_majver'], req_min_ver=self.cfg['req_py_minver'])
+
+        if python:
+            self.python_cmd = python
+            self.log.info("Python command being used: %s", self.python_cmd)
+        else:
+            raise EasyBuildError("Failed to pick Python command to use")
+
+        # set Python lib directories
+        self.set_pylibdirs()
 
     def compose_install_command(self, prefix, extrapath=None):
         """Compose full install command."""
 
         # mainly for debugging
         if self.install_cmd.startswith(EASY_INSTALL_INSTALL_CMD):
-            run_cmd("python setup.py easy_install --version", verbose=False)
+            run_cmd("%s setup.py easy_install --version" % self.python_cmd, verbose=False)
         if self.install_cmd.startswith(PIP_INSTALL_CMD):
             out, _ = run_cmd("pip --version", verbose=False, simple=False)
 
@@ -201,6 +327,7 @@ class PythonPackage(ExtensionEasyBlock):
                 'installopts': self.cfg['installopts'],
                 'loc': loc,
                 'prefix': prefix,
+                'python': self.python_cmd,
             },
         ])
 
@@ -212,14 +339,15 @@ class PythonPackage(ExtensionEasyBlock):
             super(PythonPackage, self).extract_step()
 
     def prerun(self):
-        """Prepare extension by determining Python site lib dir."""
+        """Prepare for installing Python package."""
         super(PythonPackage, self).prerun()
-        self.set_pylibdirs()
+        self.prepare_python()
 
     def configure_step(self):
-        """Configure Python package build."""
-        # prepare easyblock by determining Python site lib dir(s)
-        self.set_pylibdirs()
+        """Configure Python package build/install."""
+
+        # prepare for installing Python package
+        self.prepare_python()
 
         if self.sitecfg is not None:
             # used by some extensions, like numpy, to find certain libs
@@ -245,19 +373,18 @@ class PythonPackage(ExtensionEasyBlock):
                 raise EasyBuildError("Creating %s failed", self.sitecfgfn)
 
         # creates log entries for python being used, for debugging
-        run_cmd("python -V", verbose=False)
-        run_cmd("which python", verbose=False)
-        run_cmd("python -c 'import sys; print(sys.executable)'", verbose=False)
+        run_cmd("%s -V" % self.python_cmd, verbose=False)
+        run_cmd("%s -c 'import sys; print(sys.executable)'" % self.python_cmd, verbose=False)
 
         # don't add user site directory to sys.path (equivalent to python -s)
         # see https://www.python.org/dev/peps/pep-0370/
         env.setvar('PYTHONNOUSERSITE', '1', verbose=False)
-        run_cmd("python -c 'import sys; print(sys.path)'", verbose=False)
+        run_cmd("%s -c 'import sys; print(sys.path)'" % self.python_cmd, verbose=False)
 
     def build_step(self):
         """Build Python package using setup.py"""
         if self.use_setup_py:
-            cmd = "%s python setup.py build %s" % (self.cfg['prebuildopts'], self.cfg['buildopts'])
+            cmd = "%s %s setup.py build %s" % (self.cfg['prebuildopts'], self.python_cmd, self.cfg['buildopts'])
             run_cmd(cmd, log_all=True, simple=True)
 
     def test_step(self):
@@ -266,7 +393,7 @@ class PythonPackage(ExtensionEasyBlock):
         if isinstance(self.cfg['runtest'], basestring):
             self.testcmd = self.cfg['runtest']
 
-        if self.cfg['runtest'] and not self.testcmd is None:
+        if self.cfg['runtest'] and self.testcmd is not None:
             extrapath = ""
             testinstalldir = None
 
@@ -280,7 +407,9 @@ class PythonPackage(ExtensionEasyBlock):
                 except OSError, err:
                     raise EasyBuildError("Failed to create test install dir: %s", err)
 
-                run_cmd("python -c 'import sys; print(sys.path)'", verbose=False)  # print Python search path (debug)
+                # print Python search path (just debugging purposes)
+                run_cmd("%s -c 'import sys; print(sys.path)'" % self.python_cmd, verbose=False)
+
                 abs_pylibdirs = [os.path.join(testinstalldir, pylibdir) for pylibdir in self.all_pylibdirs]
                 extrapath = "export PYTHONPATH=%s &&" % os.pathsep.join(abs_pylibdirs + ['$PYTHONPATH'])
 
@@ -288,7 +417,7 @@ class PythonPackage(ExtensionEasyBlock):
                 run_cmd(cmd, log_all=True, simple=True, verbose=False)
 
             if self.testcmd:
-                cmd = "%s%s" % (extrapath, self.testcmd)
+                cmd = "%s%s" % (extrapath, self.testcmd % {'python': self.python_cmd})
                 run_cmd(cmd, log_all=True, simple=True)
 
             if testinstalldir:
@@ -337,8 +466,10 @@ class PythonPackage(ExtensionEasyBlock):
         """
         Custom sanity check for Python packages
         """
-        if not 'exts_filter' in kwargs:
-            kwargs.update({'exts_filter': EXTS_FILTER_PYTHON_PACKAGES})
+        if 'exts_filter' not in kwargs:
+            orig_exts_filter = EXTS_FILTER_PYTHON_PACKAGES
+            exts_filter = (orig_exts_filter[0].replace('python', self.python_cmd), orig_exts_filter[1])
+            kwargs.update({'exts_filter': exts_filter})
         return super(PythonPackage, self).sanity_check_step(*args, **kwargs)
 
     def make_module_req_guess(self):

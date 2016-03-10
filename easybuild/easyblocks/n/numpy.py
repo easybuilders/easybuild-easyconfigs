@@ -65,18 +65,18 @@ class EB_numpy(FortranPythonPackage):
         self.sitecfgfn = 'site.cfg'
         self.installopts = ''
         self.testinstall = True
-        self.testcmd = "cd .. && python -c 'import numpy; numpy.test(verbose=2)'"
+        self.testcmd = "cd .. && %(python)s -c 'import numpy; numpy.test(verbose=2)'"
 
     def configure_step(self):
         """Configure numpy build by composing site.cfg contents."""
 
         # see e.g. https://github.com/numpy/numpy/pull/2809/files
         self.sitecfg = '\n'.join([
-                "[DEFAULT]",
-                "library_dirs = %(libs)s",
-                "include_dirs= %(includes)s",
-                "search_static_first=True",
-            ])
+            "[DEFAULT]",
+            "library_dirs = %(libs)s",
+            "include_dirs= %(includes)s",
+            "search_static_first=True",
+        ])
 
         if get_software_root("imkl"):
 
@@ -208,7 +208,7 @@ class EB_numpy(FortranPythonPackage):
         super(EB_numpy, self).configure_step()
 
         # check configuration (for debugging purposes)
-        cmd = "python setup.py config"
+        cmd = "%s setup.py config" % self.python_cmd
         run_cmd(cmd, log_all=True, simple=True)
 
     def test_step(self):
@@ -217,7 +217,7 @@ class EB_numpy(FortranPythonPackage):
 
         # temporarily install numpy, it doesn't alow to be used straight from the source dir
         tmpdir = tempfile.mkdtemp()
-        cmd = "python setup.py install --prefix=%s %s" % (tmpdir, self.installopts)
+        cmd = "%s setup.py install --prefix=%s %s" % (self.python_cmd, tmpdir, self.installopts)
         run_cmd(cmd, log_all=True, simple=True, verbose=False)
 
         try:
@@ -230,7 +230,7 @@ class EB_numpy(FortranPythonPackage):
         size = 1000
         cmd = ' '.join([
             'export PYTHONPATH=%s:$PYTHONPATH &&' % os.path.join(tmpdir, self.pylibdir),
-            'python -m timeit -n 3 -r 3',
+            '%s -m timeit -n 3 -r 3' % self.python_cmd,
             '-s "import numpy; x = numpy.random.random((%(size)d, %(size)d))"' % {'size': size},
             '"numpy.dot(x, x.T)"',
         ])
