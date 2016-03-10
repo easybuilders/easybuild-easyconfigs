@@ -31,13 +31,11 @@ EasyBuild support for building and installing the SuperLU library, implemented a
 import os
 from distutils.version import LooseVersion
 
-import easybuild.tools.environment as env
 from easybuild.easyblocks.generic.cmakemake import CMakeMake
-from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.systemtools import get_shared_lib_ext
-from easybuild.tools.modules import get_software_root,get_software_version
+from easybuild.tools.modules import get_software_root, get_software_version, get_software_libdir
 
 
 class EB_SuperLU(CMakeMake):
@@ -63,14 +61,15 @@ class EB_SuperLU(CMakeMake):
 
         if self.cfg['build_shared_libs']:
             self.cfg.update('configopts', '-DBUILD_SHARED_LIBS=ON')
+            self.lib_ext = get_shared_lib_ext()
+
         else:
             self.cfg.update('configopts', '-DBUILD_SHARED_LIBS=OFF')
+            self.lib_ext = 'a'
 
         # Add -fPIC flag if necessary
-        if self.toolchain.options['pic']:
-            self.cfg.update('configopts', '-DCMAKE_POSITION_INDEPENDENT_CODE=ON')
-        else:
-            self.cfg.update('configopts', '-DCMAKE_POSITION_INDEPENDENT_CODE=OFF')
+        pic_flag = ('OFF', 'ON')[self.toolchain.options['pic']]
+        self.cfg.update('configopts', '-DCMAKE_POSITION_INDEPENDENT_CODE=%s' % pic_flag)
 
         # Make sure not to build the slow BLAS library included in the package
         self.cfg.update('configopts', '-Denable_blaslib=OFF')
@@ -78,7 +77,7 @@ class EB_SuperLU(CMakeMake):
         # Set the BLAS library to use
         # For this, use the BLA_VENDOR option from the FindBLAS module of CMake
         # Check for all possible values at https://cmake.org/cmake/help/latest/module/FindBLAS.html
-        toolchain_blas = self.toolchain.definition().get('BLAS', ['NO_BLAS_IN_TOOLCHAIN'])[0]
+        toolchain_blas = self.toolchain.definition().get('BLAS', None)[0]
         if toolchain_blas == 'imkl':
             imkl_version = get_software_version('imkl')
             if LooseVersion(imkl_version) >= LooseVersion('10'):
@@ -86,23 +85,27 @@ class EB_SuperLU(CMakeMake):
                 # It should work for Intel MKL 10 and above, as long as the library names stay the same
                 # SuperLU requires thread, 'Intel10_64lp_seq' will not work!
                 self.cfg.update('configopts', '-DBLA_VENDOR="Intel10_64lp"')
+
             else:
                 # 'Intel' -> For older versions of mkl 32 and 64 bit
                 self.cfg.update('configopts', '-DBLA_VENDOR="Intel"')
-        elif toolchain_blas == 'ACML':
-            self.cfg.update('configopts', '-DBLA_VENDOR="ACML"')
-        elif toolchain_blas == 'ATLAS':
-            self.cfg.update('configopts', '-DBLA_VENDOR="ATLAS"')
+
+        elif toolchain_blas in ['ACML', 'ATLAS']:
+            self.cfg.update('configopts', '-DBLA_VENDOR="%s"' % toolchain_blas)
+
         elif toolchain_blas == 'OpenBLAS':
             # Unfortunately, OpenBLAS is not recognized by FindBLAS from CMake,
             # we have to specify the OpenBLAS library manually
-            self.cfg.update('configopts', '-DBLAS_LIBRARIES="${EBROOTOPENBLAS}/lib/libopenblas.a;-pthread"')
-        elif toolchain_blas == 'NO_BLAS_IN_TOOLCHAIN':
-            # This toolchain has no BLAS library, let CMake find one
-            self.cfg.update('configopts', '-DBLA_VENDOR="All"')
+            openblas_lib = os.path.join( get_software_root('OpenBLAS'), get_software_libdir('OpenBLAS'), "libopenblas.a" )
+            self.cfg.update('configopts', '-DBLAS_LIBRARIES="%s;-pthread"' % openblas_lib)
+
+        elif toolchain_blas == None:
+            # This toolchain has no BLAS library
+            raise EasyBuildError("No BLAS library found in the toolchain")
+
         else:
             # This BLAS library is not supported yet
-            raise EasyBuildError("BLAS library '%s' is not supported yet" % toolchain_blas, err)
+            raise EasyBuildError("BLAS library '%s' is not supported yet", toolchain_blas)
 
         super(EB_SuperLU, self).configure_step()
 
@@ -110,7 +113,8 @@ class EB_SuperLU(CMakeMake):
         """
         Run the testsuite of SuperLU
         """
-        self.cfg['runtest'] = "test"
+        if self.cfg['runtest'] is None:
+            self.cfg['runtest'] = 'test'
         super(EB_SuperLU, self).test_step()
 
     def install_step(self):
@@ -119,30 +123,22 @@ class EB_SuperLU(CMakeMake):
         """
         super(EB_SuperLU, self).install_step()
 
-        if self.cfg['build_shared_libs']:
-            lib_ext = get_shared_lib_ext()
-        else:
-            lib_ext = "a"
-        expected_libpath = os.path.join(self.installdir, "lib", "libsuperlu.%s" % lib_ext)
-        actual_libpath   = os.path.join(self.installdir, "lib", "libsuperlu_%s.%s" % (self.cfg['version'],lib_ext) )
+        expected_libpath = os.path.join(self.installdir, "lib", "libsuperlu.%s" % self.lib_ext)
+        actual_libpath   = os.path.join(self.installdir, "lib", "libsuperlu_%s.%s" % (self.cfg['version'], self.lib_ext))
 
         if not os.path.exists(expected_libpath):
             try:
                 os.symlink(actual_libpath, expected_libpath)
             except OSError as err:
-                raise EasyBuildError("Failed to create symlink '%s' -> '%s" % (expected_libpath,actual_libpath), err)
+                raise EasyBuildError("Failed to create symlink '%s' -> '%s: %s", expected_libpath, actual_libpath, err)
+
 
     def sanity_check_step(self):
         """
         Check for main library files for SuperLU
         """
-        if self.cfg['build_shared_libs']:
-            lib_ext = get_shared_lib_ext()
-        else:
-            lib_ext = "a"
-
         custom_paths = {
-            'files': ["include/supermatrix.h", "lib/libsuperlu.%s" % lib_ext],
+            'files': ["include/supermatrix.h", "lib/libsuperlu.%s" % self.lib_ext],
             'dirs': [],
         }
         super(EB_SuperLU, self).sanity_check_step(custom_paths=custom_paths)
