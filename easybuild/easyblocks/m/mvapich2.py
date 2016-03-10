@@ -52,7 +52,7 @@ class EB_MVAPICH2(EB_MPICH):
         extra_vars = {
             'withchkpt': [False, "Enable checkpointing support (required BLCR)", CUSTOM],
             'withmpe': [False, "Build MPE routines", CUSTOM],
-            'withhwloc': [False, "Enable support for using hwloc support for process binding", CUSTOM],
+            'withhwloc': [True, "Enable support for using hwloc support for process binding", CUSTOM],
             'withlimic2': [False, "Enable LiMIC2 support for intra-node communication", CUSTOM],
             'rdma_type': ["gen2", "Specify the RDMA type (gen2/udapl)", CUSTOM],
             'blcr_path': [None, "Path to BLCR package", CUSTOM],
