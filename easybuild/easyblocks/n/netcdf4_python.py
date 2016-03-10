@@ -64,7 +64,7 @@ class EB_netcdf4_minus_python(PythonPackage):
         """Run netcdf4-python tests."""
         self.testinstall = True
         cwd = os.getcwd()
-        self.testcmd = "cd %s/test && python run_all.py && cd %s" % (self.cfg['start_dir'], cwd)
+        self.testcmd = "cd %s/test && %s run_all.py && cd %s" % (self.cfg['start_dir'], self.python_cmd, cwd)
         super(EB_netcdf4_minus_python, self).test_step()
 
     def sanity_check_step(self):
