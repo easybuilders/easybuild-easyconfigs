@@ -47,7 +47,6 @@ from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.filetools import which
 from easybuild.tools.run import run_cmd
-from easybuild.tools.systemtools import check_os_dependency
 
 
 _log = fancylogger.getLogger('easyblocks.generic.rpm')
@@ -121,7 +120,7 @@ class Rpm(Binary):
         """Custom configuration procedure for RPMs: rebuild RPMs for relocation if required."""
 
         # make sure that rpm is available
-        if not check_os_dependency('rpm'):
+        if not which('rpm'):
             raise EasyBuildError("Command 'rpm' is required but not available.")
 
         # determine whether RPMs need to be rebuilt to make relocation work
