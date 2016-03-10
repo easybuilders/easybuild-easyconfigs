@@ -96,8 +96,12 @@ class EB_MVAPICH2(EB_MPICH):
         """
         Custom sanity check for MVAPICH2
         """
+        mv2_bins = ['bin/mpiexec.mpirun_rsh']
+        if self.cfg['withchkpt']:
+            mv2_bins += ['bin/mv2_checkpoint']
+
         custom_paths = {
-            'files': ['bin/mpiexec.mpirun_rsh'],
+            'files': mv2_bins,
         }
 
         # cfr. http://git.mpich.org/mpich.git/blob_plain/v3.1.1:/CHANGES
