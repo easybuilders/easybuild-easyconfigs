@@ -71,7 +71,7 @@ class EB_MVAPICH2(EB_MPICH):
 
         # enable specific support options (if desired)
         if self.cfg['withmpe']:
-            # --enable-mpe is coming from MPICH.
+            # --enable-mpe is a configure option of MPICH itself.
             # It is not available anymore in MPICH package since version 3.0, which correspond to MVAPICH2 1.9.
             # MPE can be downloaded separately at http://www.mpich.org/static/mpe/downloads/
             # However, the 'withmpe' option should be maintained for backward compatibility purpose
