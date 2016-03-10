@@ -178,7 +178,7 @@ class EB_SuiteSparse(ConfigureMake):
         # Latest version of SuiteSparse put shared libraries in 'lib'
         if LooseVersion(self.version) >= LooseVersion('4.5'):
             ld_library_path = ['lib']
-            include_dirs = ['include', self.config_name]
+            include_dirs = ['include']
         else:
             ld_library_path = ['UMFPACK/Lib', 'AMD/Lib']
             include_dirs = [self.config_name]
