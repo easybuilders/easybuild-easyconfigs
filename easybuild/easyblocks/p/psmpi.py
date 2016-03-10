@@ -30,6 +30,7 @@ EasyBuild support for building and installing the ParaStationMPI library, implem
 
 import easybuild.tools.toolchain as toolchain
 
+from distutils.version import LooseVersion
 from easybuild.easyblocks.mpich import EB_MPICH
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.build_log import EasyBuildError
