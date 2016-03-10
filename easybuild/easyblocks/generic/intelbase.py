@@ -44,7 +44,7 @@ import easybuild.tools.environment as env
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.build_log import EasyBuildError
-from easybuild.tools.filetools import read_file
+from easybuild.tools.filetools import find_flexlm_license, read_file
 from easybuild.tools.run import run_cmd
 
 from vsc.utils import fancylogger
@@ -208,82 +208,29 @@ class IntelBase(EasyBlock):
         self.setup_local_home_subdir()
         self.clean_home_subdir()
 
-        lic_env_var = None  # environment variable that will be used
         default_lic_env_var = 'INTEL_LICENSE_FILE'
-        lic_env_vars = [default_lic_env_var, 'LM_LICENSE_FILE']
-        env_var_names = ', '.join(['$%s' % x for x in lic_env_vars])
-        lic_env_var_vals = [(var, os.getenv(var)) for var in lic_env_vars]
-        license_specs = [(var, e) for (var, val) in lic_env_var_vals if val is not None for e in val.split(os.pathsep)]
+        lic_specs, self.license_env_var = find_flexlm_license(custom_env_vars=[default_lic_env_var],
+                                                              lic_specs=[self.cfg['license_file']])
 
-        if not license_specs:
-            self.log.debug("No env var from %s set, trying 'license_file' easyconfig parameter..." % lic_env_vars)
-            # obtain license path
-            self.license_file = self.cfg['license_file']
-
-            if self.license_file:
-                self.log.info("Using license file %s" % self.license_file)
+        if lic_specs:
+            if self.license_env_var is None:
+                self.log.info("Using Intel license specifications from 'license_file': %s", lic_specs)
+                self.license_env_var = default_lic_env_var
             else:
-                raise EasyBuildError("No license file defined, maybe set one these env vars: %s", env_var_names)
+                self.log.info("Using Intel license specifications from $%s: %s", self.license_env_var, lic_specs)
 
-            # verify license path
-            if not os.path.exists(self.license_file):
-                raise EasyBuildError("%s not found; correct 'license_file', or define one of the these env vars: %s",
-                                     self.license_file, env_var_names)
-
-            # set default environment variable for license specification
-            env.setvar(default_lic_env_var, self.license_file)
-            self.license_env_var = default_lic_env_var
-        else:
-            valid_license_specs = {}
-            # iterate through entries in environment variables until a valid license specification is found
-            # valid options are:
-            # * an (existing) license file
-            # * a directory containing atleast one file named *.lic (only one is used, first listed alphabetically)
-            # * a license server, format: <port>@<server>
-            server_port_regex = re.compile('^[0-9]+@\S+$')
-            for (lic_env_var, license_spec) in license_specs:
-                # a value that seems to match a license server specification
-                if server_port_regex.match(license_spec):
-                    self.log.info("Found license server spec %s in $%s, retaining it" % (license_spec, lic_env_var))
-                    valid_license_specs.setdefault(lic_env_var, set()).add(license_spec)
-
-                # an (existing) license file
-                elif os.path.isfile(license_spec):
-                    self.log.info("Found existing license file %s via $%s, retaining it" % (license_spec, lic_env_var))
-                    valid_license_specs.setdefault(lic_env_var, set()).add(license_spec)
-
-                # a directory, should contain at least one *.lic file (use only the first one)
-                elif os.path.isdir(license_spec):
-                    lic_files = glob.glob("%s/*.lic" % license_spec)
-                    if not lic_files:
-                        self.log.debug("Found no license files (*.lic) in %s" % license_spec)
-                        continue
-                    # just pick the first .lic, if it's not correct, $INTEL_LICENSE_FILE should be adjusted instead
-                    valid_license_specs.setdefault(lic_env_var, set()).add(lic_files[0])
-                    self.log.info('Picked the first *.lic file from $%s: %s' % (lic_env_var, lic_files[0]))
-
-            if not valid_license_specs:
-                raise EasyBuildError("Cannot find a valid license specification in %s", license_specs)
-
-            # only retain one environment variable (by order of preference), retain all valid matches for that env var
-            for lic_env_var in lic_env_vars:
-                if lic_env_var in valid_license_specs:
-                    self.license_env_var = lic_env_var
-                    retained = valid_license_specs[self.license_env_var]
-                    self.license_file = os.pathsep.join(retained)
-                    # if we have multiple retained lic specs, specify to 'use a license which exists on the system'
-                    if len(retained) > 1:
-                        self.cfg['license_activation'] = ACTIVATION_EXIST_LIC
-                        # $INTEL_LICENSE_FILE should always be set during installation with existing license
-                        env.setvar(default_lic_env_var, self.license_file)
-                    break
-            if self.license_file is None or self.license_env_var is None:
-                raise EasyBuildError("self.license_file or self.license_env_var still None, "
-                                     "something went horribly wrong...")
-
-            self.cfg['license_file'] = self.license_file
+            self.license_file = os.pathsep.join(lic_specs)
             env.setvar(self.license_env_var, self.license_file)
-            self.log.info("Using Intel license specifications from $%s: %s", self.license_env_var, self.license_file)
+
+            # if we have multiple retained lic specs, specify to 'use a license which exists on the system'
+            if len(lic_specs) > 1:
+                self.cfg['license_activation'] = ACTIVATION_EXIST_LIC
+                # $INTEL_LICENSE_FILE should always be set during installation with existing license
+                env.setvar(default_lic_env_var, self.license_file)
+        else:
+            msg = "No viable license specifications found; "
+            msg += "specify 'license_file', or define $INTEL_LICENSE_FILE or $LM_LICENSE_FILE"
+            raise EasyBuildError(msg)
 
         # clean home directory
         self.clean_home_subdir()
