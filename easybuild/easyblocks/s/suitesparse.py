@@ -54,12 +54,6 @@ class EB_SuiteSparse(ConfigureMake):
         super(EB_SuiteSparse, self).__init__(*args, **kwargs)
         self.config_name = 'UNKNOWN'
 
-    def run_all_steps(self, *args, **kwargs)
-        if LooseVersion(self.version) > LooseVersion('4.5'):
-            metis = get_software_root('METIS')
-            if metis:
-                 os.environ["MY_METIS_LIB"] = os.path.join(metis, get_software_libdir('METIS'), "libmetis.so")
-
     def configure_step(self):
         """Configure build by patching UFconfig.mk or SuiteSparse_config.mk."""
 
@@ -78,24 +72,32 @@ class EB_SuiteSparse(ConfigureMake):
             'LAPACK': os.getenv('LIBLAPACK_MT'),
         }
 
+        # Get METIS or ParMETIS settings
         metis = get_software_root('METIS')
         parmetis = get_software_root('ParMETIS')
         if parmetis:
             metis_path = parmetis
-            metis_libs = ' '.join([
-                os.path.join(parmetis, 'lib', 'libparmetis.a'),
-                os.path.join(parmetis, 'lib', 'metis.a'),
-            ])
+            metis_include = os.path.join( parmetis, 'include')
+            metis_libs = os.path.join(parmetis, get_software_libdir('ParMETIS'), 'libmetis.a')
+
         elif metis:
             metis_path = metis
-            metis_libs = os.path.join(metis, 'lib', 'metis.a')
+            metis_include = os.path.join( metis, 'include')
+            metis_libs = os.path.join(metis, get_software_libdir('METIS'), 'libmetis.a')
+
         else:
             raise EasyBuildError("Neither METIS or ParMETIS module loaded.")
 
-        cfgvars.update({
-            'METIS_PATH': metis_path,
-            'METIS': metis_libs,
-        })
+        if LooseVersion(self.version) >= LooseVersion('4.5.1'):
+            cfgvars.update({
+                'MY_METIS_LIB': metis_libs,
+                'MY_METIS_INC': metis_include,
+            })
+        else:
+            cfgvars.update({
+                'METIS_PATH': metis_path,
+                'METIS': metis_libs,
+            })
 
         # patch file
         fp = os.path.join(self.cfg['start_dir'], self.config_name, '%s.mk' % self.config_name)
