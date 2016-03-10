@@ -336,6 +336,7 @@ class EB_OpenFOAM(EasyBlock):
             else:
                 libs.extend([os.path.join(libsdir, "libparMetisDecomp.%s" % shlib_ext)])
         else:
+            # there must be a dummy one and an mpi one for both
             libs = [os.path.join(libsdir, x, "libPstream.%s" % shlib_ext) for x in ["dummy", "mpi"]] + \
                    [os.path.join(libsdir, x, "libptscotchDecomp.%s" % shlib_ext) for x in ["dummy", "mpi"]] +\
                    [os.path.join(libsdir, "libscotchDecomp.%s" % shlib_ext)] + \
