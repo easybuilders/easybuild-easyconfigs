@@ -77,7 +77,6 @@ class EB_MVAPICH2(EB_MPICH):
             # However, the 'withmpe' option should be maintained for backward compatibility purpose
             if LooseVersion(self.version) < LooseVersion('1.9'):
                 add_configopts.append('--enable-mpe')
-
             else:
                 raise EasyBuildError("MPI Parallel Environment (MPE) is not available anymore starting MVAPICH2 1.9")
 
@@ -88,15 +87,16 @@ class EB_MVAPICH2(EB_MPICH):
             add_configopts.extend(['--enable-checkpointing', '--with-hydra-ckpointlib=blcr'])
 
         # --with-hwloc/--without-hwloc option is not available anymore MVAPICH2 >= 2.0. Starting this version,
-        # HWLOC is apparently distributed with MVAPICH2 and always compiled with MVAPICH2, and it cannot be disabled.
+        # hwloc is apparently distributed with MVAPICH2 and always compiled with MVAPICH2, and it cannot be disabled.
         # This check happens only if 'withhwloc = False' is explicitly specified in an easyconfig with MPIVACH2 >= 2.0
-        if not self.cfg['withhwloc'] and LooseVersion(self.version) >= LooseVersion('2.0'):
-            raise EasyBuildError("'withhwloc = False' is not supported anymore in easyconfigs for MVAPICH2 >= 2.0 because it cannot be disabled anymore")
-
-        if LooseVersion(self.version) < LooseVersion('2.0'):
+        if LooseVersion(self.version) >= LooseVersion('2.0'):
+            if self.cfg['withhwloc']:
+                self.log.debug("hwloc support is always enabled in MVAPICH >= 2.0, nothing to do")
+            else:
+                raise EasyBuildError("Disabling hwloc is not supported in MVAPICH >= 2.0")
+        else:
             if self.cfg['withhwloc']:
                 add_configopts.append('--with-hwloc')
-
             else:
                 add_configopts.append('--without-hwloc')
 
