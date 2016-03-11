@@ -305,7 +305,8 @@ class EB_imkl(IntelBase):
                         # Have to patch the makefile for this library
                         run_cmd("sed -i s/gnu/pgi/g makefile", log_all=True, simple=True)
                         run_cmd("sed -i s/gcc/pgcc/g makefile", log_all=True, simple=True)
-                        run_cmd("sed -i s/-Wall//g makefile", log_all=True, simple=True)
+                        run_cmd("sed -i s/-Wall/-W0,all/g makefile", log_all=True, simple=True)
+                        run_cmd("sed -i s/-std=c99/-c99/g makefile", log_all=True, simple=True)
                         patched += [lib]
 
                     fullcmd = "%s %s" % (cmd, ' '.join(buildopts + extraopts))
