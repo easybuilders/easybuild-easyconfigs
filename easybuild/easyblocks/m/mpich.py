@@ -157,7 +157,7 @@ class EB_MPICH(ConfigureMake):
 
         binaries = ['mpicc', 'mpicxx', 'mpif77', 'mpif90']
         if check_launchers:
-            binaries = binaries.extend(['mpiexec', 'mpiexec.hydra', 'mpirun'])
+            binaries.extend(['mpiexec', 'mpiexec.hydra', 'mpirun'])
 
         bins = [os.path.join('bin', x) for x in binaries]
         headers = [os.path.join('include', x) for x in ['mpi.h', 'mpicxx.h', 'mpif.h']]
