@@ -1,5 +1,5 @@
 ##
-# Copyright 2009-2013 Ghent University
+# Copyright 2009-2016 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -25,29 +25,23 @@
 """
 EasyBuild support for SNPyhlo, implemented as an easyblock
 
-@authors: Ewan Higgs (UGent)
+@authors: Ewan Higgs (HPC-UGent)
+@authors: Kenneth Hoste (HPC-UGent)
 """
 import os
+import re
 import shutil
+import stat
 
 from easybuild.framework.easyblock import EasyBlock
-from easybuild.framework.easyconfig import MANDATORY
+from easybuild.tools.build_log import EasyBuildError
+from easybuild.tools.filetools import adjust_permissions, mkdir
 from easybuild.tools.modules import get_software_root, get_software_version
-from easybuild.tools.filetools import run_cmd
+from easybuild.tools.run import run_cmd
+
 
 class EB_SNPhylo(EasyBlock):
     """Support for building and installing SNPhylo."""
-
-    @staticmethod
-    def extra_options():
-        """
-        Define list of files or directories to be copied after the script runs
-        """
-        extra_vars = [
-            ('files_to_copy', [{}, "List of files or dirs to copy", MANDATORY]),
-        ]
-        return EasyBlock.extra_options(extra_vars)
-
 
     def configure_step(self):
         """No configure step for SNPhylo."""
@@ -55,42 +49,45 @@ class EB_SNPhylo(EasyBlock):
 
     def build_step(self):
         """No build step for SNPhylo."""
-        cmd = "yes | bash ./setup.sh"
-        run_cmd(cmd, log_all=True, simple=True)
 
+        # check for required dependencies
+        for dep in ['MUSCLE', 'PHYLIP', 'Python', 'R']:
+            if not get_software_root(dep):
+                raise EasyBuildError("Required dependency '%s' not loaded", dep)
+
+        # check for required R libraries
+        rver = get_software_version('R')
+        r_libs, _ = run_cmd("R --vanilla --no-save --slave -e 'print(installed.packages())'", simple=False)
+        for rpkg in ['gdsfmt', 'getopt', 'SNPRelate', 'phangorn']:
+            if not re.search(r'^%s\s.*%s' % (rpkg, rver), r_libs, re.M):
+                raise EasyBuildError("Required R package '%s' not installed", rpkg)
+
+        # run setup.sh, and send a bunch of newlines as stdin to 'answer' the Q&A;
+        # all questions can be answered with the default answer (if the dependencies are specified correctly);
+        # use run_cmd_qa doesn not work because of buffering issues (questions are not coming through)
+        adjust_permissions('setup.sh', stat.S_IXUSR, add=True)
+        (out, _) = run_cmd('bash ./setup.sh', inp='\n' * 10, simple=False)
+
+        success_msg = "SNPHYLO is successfully installed!!!"
+        if success_msg not in out:
+            raise EasyBuildError("Success message '%s' not found in setup.sh output: %s", success_msg, out)
 
     def install_step(self):
-        """Install by copying specified files and directories."""
+        """Install by copying files/directories."""
+        bindir = os.path.join(self.installdir, 'bin')
+        binfiles = ['snphylo.sh', 'snphylo.cfg', 'snphylo.template']
         try:
-            for fil in self.cfg.get('files_to_copy', {}):
-                if isinstance(fil, tuple):
-                    # ([src1, src2], targetdir)
-                    if len(fil) == 2 and isinstance(fil[0], list) and isinstance(fil[1], basestring):
-                        srcs = fil[0]
-                        target = os.path.join(self.installdir, fil[1])
-                    else:
-                        self.log.error("Only tuples of format '([<source files>], <target dir>)' supported.")
-                # 'src_file' or 'src_dir'
-                elif isinstance(fil, basestring):
-                    srcs = [fil]
-                    target = self.installdir
-                else:
-                    self.log.error("Found neither string nor tuple as file to copy: '%s' (type %s)" % (fil, type(fil)))
+            mkdir(bindir, parents=True)
+            for binfile in binfiles:
+                shutil.copy2(os.path.join(self.builddir, binfile), bindir)
+            shutil.copytree(os.path.join(self.builddir, 'scripts'), os.path.join(self.installdir, 'scripts'))
+        except OSError as err:
+            raise EasyBuildError("Failed to copy SNPhylo files/dirs: %s", err)
 
-                if not os.path.exists(target):
-                    os.makedirs(target)
-                for src in srcs:
-                    src = os.path.join(self.cfg['start_dir'], src)
-                    # copy individual file
-                    if os.path.isfile(src):
-                        self.log.debug("Copying file %s to %s" % (src, target))
-                        shutil.copy2(src, target)
-                    # copy directory
-                    elif os.path.isdir(src):
-                        self.log.debug("Copying directory %s to %s" % (src, target))
-                        shutil.copytree(src, os.path.join(target, os.path.basename(src)))
-                    else:
-                        self.log.error("Can't copy non-existing path %s to %s" % (src, target))
-
-        except OSError, err:
-            self.log.error("Copying %s to installation dir failed: %s" % (fil, err))
+    def sanity_check_step(self):
+        """Custom sanity check for SNPhylo."""
+        custom_paths = {
+            'files': ['bin/snphylo.sh', 'bin/snphylo.cfg', 'bin/snphylo.template'],
+            'dirs': ['scripts'],
+        }
+        super(EB_SNPhylo, self).sanity_check_step(custom_paths=custom_paths)
