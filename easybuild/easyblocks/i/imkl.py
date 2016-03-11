@@ -301,7 +301,7 @@ class EB_imkl(IntelBase):
                     except OSError, err:
                         raise EasyBuildError("Can't change to interface %s directory %s: %s", lib, intdir, err)
 
-                    if lib in cdftlibs and compopt == 'compiler=pgi' and lib not in patched:
+                    if lib in cdftlibs and get_software_root('PGI') and lib not in patched:
                         # Have to patch the makefile for this library
                         run_cmd("sed -i s/gnu/pgi/g makefile", log_all=True, simple=True)
                         run_cmd("sed -i s/gcc/pgcc/g makefile", log_all=True, simple=True)
@@ -346,8 +346,10 @@ class EB_imkl(IntelBase):
             if get_software_root('icc') is None:
                 if get_software_root('GCC'):
                     compsuff = '_gnu'
+                elif get_software_root('PGI'):
+                    compopt = 'compiler=pgi'
                 else:
-                    raise EasyBuildError("Not using Intel/GCC, don't know compiler suffix for FFTW libraries.")
+                    raise EasyBuildError("Not using Intel/GCC/PGI, don't know compiler suffix for FFTW libraries.")
 
             precs = ['_double', '_single']
             if ver < LooseVersion('11'):
