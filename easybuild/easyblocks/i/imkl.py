@@ -347,7 +347,7 @@ class EB_imkl(IntelBase):
                 if get_software_root('GCC'):
                     compsuff = '_gnu'
                 elif get_software_root('PGI'):
-                    compopt = 'compiler=pgi'
+                    compopt = '_pgi'
                 else:
                     raise EasyBuildError("Not using Intel/GCC/PGI, don't know compiler suffix for FFTW libraries.")
 
