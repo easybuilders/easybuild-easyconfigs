@@ -301,13 +301,12 @@ class EB_imkl(IntelBase):
                     except OSError, err:
                         raise EasyBuildError("Can't change to interface %s directory %s: %s", lib, intdir, err)
 
-                    if lib in cdftlibs and compopt == 'compiler=pgi':
+                    if lib in cdftlibs and compopt == 'compiler=pgi' and lib not in patched:
                         # Have to patch the makefile for this library
-                        if lib not in patched:
-                            run_cmd("sed -i s/gnu/pgi/g makefile", log_all=True, simple=True)
-                            run_cmd("sed -i s/gcc/pgcc/g makefile", log_all=True, simple=True)
-                            run_cmd("sed -i s/-Wall//g makefile", log_all=True, simple=True)
-                            patched += [lib]
+                        run_cmd("sed -i s/gnu/pgi/g makefile", log_all=True, simple=True)
+                        run_cmd("sed -i s/gcc/pgcc/g makefile", log_all=True, simple=True)
+                        run_cmd("sed -i s/-Wall//g makefile", log_all=True, simple=True)
+                        patched += [lib]
 
                     fullcmd = "%s %s" % (cmd, ' '.join(buildopts + extraopts))
                     res = run_cmd(fullcmd, log_all=True, simple=True)
