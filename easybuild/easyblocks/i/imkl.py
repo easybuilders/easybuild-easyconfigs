@@ -224,13 +224,15 @@ class EB_imkl(IntelBase):
                 raise EasyBuildError("Can't change to interfaces directory %s", interfacedir)
 
             compopt = None
-            # determine whether we're using a non-Intel GCC-based toolchain
+            # determine whether we're using a non-Intel GCC-based or PGI-based toolchain
             # can't use toolchain.comp_family, because of dummy toolchain used when installing imkl
             if get_software_root('icc') is None:
                 if get_software_root('GCC'):
                     compopt = 'compiler=gnu'
+                elif get_software_root('PGI'):
+                    compopt = 'compiler=pgi'
                 else:
-                    raise EasyBuildError("Not using either Intel compilers nor GCC, "
+                    raise EasyBuildError("Not using either Intel compilers, GCC nor PGI "
                                          "don't know how to build wrapper libs")
             else:
                 compopt = 'compiler=intel'
