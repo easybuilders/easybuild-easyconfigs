@@ -300,6 +300,12 @@ class EB_imkl(IntelBase):
                     except OSError, err:
                         raise EasyBuildError("Can't change to interface %s directory %s: %s", lib, intdir, err)
 
+                    if lib == 'fftw2x_cdft' and compopt == 'compiler=pgi':
+                        # Have to patch the makefile for this library
+                        run_cmd("sed -i s/gnu/pgi/g makefile", log_all=True, simple=True)
+                        run_cmd("sed -i s/gcc/pgcc/g makefile", log_all=True, simple=True)
+                        run_cmd("sed -i s/-Wall//g makefile", log_all=True, simple=True)
+
                     fullcmd = "%s %s" % (cmd, ' '.join(buildopts + extraopts))
                     res = run_cmd(fullcmd, log_all=True, simple=True)
                     if not res:
