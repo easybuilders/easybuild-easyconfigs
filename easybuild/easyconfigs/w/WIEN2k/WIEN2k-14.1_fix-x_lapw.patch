@@ -1,0 +1,461 @@
+see http://zeus.theochem.tuwien.ac.at/pipermail/wien/2014-September/021667.html
+--- x_lapw.orig	2014-10-09 15:03:02.181799391 +0200
++++ x_lapw	2014-10-09 15:08:25.254125143 +0200
+@@ -4,28 +4,28 @@
+ set running = ".running.$$.`hostname`.`date +%d%m%H%M%S`"
+ echo $$ >$running
+ onintr clear
+-alias error	'echo ">>> ($name) \!* -> exit"; goto error'
++alias error 'echo ">>> ($name) \!* -> exit"; goto error'
+ 
+-set name	= $0		#full name of script-file
+-set bin		= $name:h	#default directory for WIEN-executables
++set name    = $0        #full name of script-file
++set bin     = $name:h   #default directory for WIEN-executables
+ if !(-d $bin) set bin = .
+-set name	= $name:t
++set name    = $name:t
+ 
+-set def 	= def		#def-file
+-set tmp		= ( )		#tmp-files, to be deleted before exit
+-set log		= :log		#log-file
+-set t		= time		#
+-set updn			# spinpolarization switch
+-set dnup	= 'dn'		# spinpolarization switch
++set def     = def       #def-file
++set tmp     = ( )       #tmp-files, to be deleted before exit
++set log     = :log      #log-file
++set t       = time      #
++set updn            # spinpolarization switch
++set dnup    = 'dn'      # spinpolarization switch
+ set spin=1                      # for -it in lapw1
+ #set ne_it=1.1                   # for -it in lapw1
+ set emin=-999.0                 # for -emin XX   in lapw2
+ set emax=999.0                  # for -all XX YY in lapw2
+ set settol=0.00001              # tol parameter for sgroup
+ set wf=0                        # wplot: WF to plot (0 = read from file)
+-set sc				# semicore-switch
+-set so				# spinorbit-switch
+-set sodum			# spinorbit-switch
++set sc              # semicore-switch
++set so              # spinorbit-switch
++set sodum           # spinorbit-switch
+ #set cmplx
+ set cmplx1
+ set cmplx2
+@@ -62,12 +62,12 @@
+ unset efg                       # regular run in lapw2
+ unset emin1                       # regular run in lapw2
+ unset emax1                     # regular run in lapw2
+-unset command			#command
+-unset file			#file-head
+-unset deffile_only		#create just def file
+-unset fftstop			#for dstart	
+-unset vresp			#for lapw2
+-unset help_files 		#for lapw2
++unset command           #command
++unset file          #file-head
++unset deffile_only      #create just def file
++unset fftstop           #for dstart 
++unset vresp         #for lapw2
++unset help_files        #for lapw2
+ unset super                     # for dstart, creates new.clmsum
+ unset rxes                      # for tetra, uses rxes-weight file
+ unset rxesw                     # for tetra, writes rxes-weight file
+@@ -88,9 +88,9 @@
+ 
+ if ( $?SCRATCH && $SCRATCH != '') then
+   set scratch=`echo $SCRATCH  | sed -e 's/\/$//'`/ # we are afraid
+-				# different settings in different 
+-				# computing centers
+-			        #use global variable for scratch if set
++                # different settings in different 
++                # computing centers
++                    #use global variable for scratch if set
+ endif
+ set argv1=($argv)
+ 
+@@ -138,16 +138,16 @@
+     shift; breaksw
+   case -it:
+     set iter
+-    shift; breaksw	
++    shift; breaksw  
+   case -noHinv:
+     set iter
+     unset readHinv                  
+-    shift; breaksw	
++    shift; breaksw  
+   case -noHinv0:
+     set iter
+     unset readHinv
+     set writeHinv                  
+-    shift; breaksw	
++    shift; breaksw  
+ #  case -ne_it:
+ #    shift;set ne_it=$1
+ #    shift; breaksw  
+@@ -169,36 +169,36 @@
+     shift; breaksw  
+   case -help_files:
+     set help_files
+-    shift; breaksw	
++    shift; breaksw  
+   case -vresp:
+     set vresp
+-    shift; breaksw	
++    shift; breaksw  
+   case -eece:
+     set eece=eece
+-    shift; breaksw	
++    shift; breaksw  
+   case -grr:
+     set grr=grr
+-    shift; breaksw	
++    shift; breaksw  
+   case -orb:
+     set orb
+-    shift; breaksw	
++    shift; breaksw  
+   case -nmat_only:
+     set nmat_only
+-    shift; breaksw	
++    shift; breaksw  
+   case -nohns:
+     set nohns
+-    shift; breaksw	
++    shift; breaksw  
+   case -enefile:
+     set enefile
+-    shift; breaksw	
++    shift; breaksw  
+   case -rxes:
+     set rxes
+-    shift; breaksw	
++    shift; breaksw  
+   case -rxesw:
+     set rxesw
+     shift;set rxese1 = $1
+     shift;set rxese2 = $1
+-    shift; breaksw	
++    shift; breaksw  
+   case -so:
+     set so = 'so'
+     set sodum = 'dum'
+@@ -313,7 +313,7 @@
+     endif
+     shift; breaksw  
+ ## w2w stuff ##
+-  case -pp:			# passed on to Wannier90
++  case -pp:         # passed on to Wannier90
+     shift; breaksw
+   case -wf:
+     shift; set wf = $1
+@@ -338,7 +338,7 @@
+ 
+ if !($?file) then 
+ set file    = `pwd`
+-set file    = $file:t		#tail of file-names
++set file    = $file:t       #tail of file-names
+ endif
+ 
+ touch $file.struct
+@@ -409,7 +409,7 @@
+ #echo "`date`> ($name) $command $argv1[2-]" >> $log
+ echo "`date`> ($name) $argv1" >> $log
+ 
+-set def	= $updn$command$sc.def
++set def = $updn$command$sc.def
+ #touch $def
+ 
+ switch ($command)
+@@ -1200,7 +1200,7 @@
+ cat << theend > $def
+  6,'$file.outputst',      'unknown','formatted'
+  7,'$file.tmpden',        'unknown','formatted'
+-10,'$file.tmp',	          'unknown','unformatted'
++10,'$file.tmp',           'unknown','unformatted'
+ 11,'$file.vsp_st',           'unknown','formatted'
+ 12,'$file.vspdn_st',         'unknown','formatted'
+ 13,'$file.sigma',         'unknown','formatted'
+@@ -1268,7 +1268,7 @@
+ 
+ case mixer_vresp:
+ set exe = mixer
+-	if !(-e $file.clmvalup || -z $file.clmvalup) then
++    if !(-e $file.clmvalup || -z $file.clmvalup) then
+ cat << theend > $def
+  5,'$file.inm_vresp',       'old',    'formatted',0
+  6,'$file.outputm_vresp',   'unknown','formatted',0
+@@ -1283,7 +1283,7 @@
+ 32,'$file.vrespbroyd2',    'unknown','unformatted',164896
+ 51,'$file.vrespsum',    'unknown','formatted',0
+ theend
+-	else
++    else
+ cat << theend > $def
+  5,'$file.inm_vresp',      'old',    'formatted',0
+  6,'$file.outputm_vresp',  'unknown','formatted',0
+@@ -1304,7 +1304,7 @@
+ 52,'$file.vrespdn',    'unknown','formatted',0
+ 11,'$file.vrespsum',   'unknown','formatted',0
+ theend
+-	endif
++    endif
+    breaksw
+ 
+ 
+@@ -1318,7 +1318,7 @@
+    cp $file.struct $file.struct_old
+ endif
+ set exe = $command
+-	if !(-e $file.clmvalup || -z $file.clmvalup) then
++    if !(-e $file.clmvalup || -z $file.clmvalup) then
+ cat << theend > $def
+  5,'$file.inm',       'old',    'formatted',0
+  6,'$file.outputm',   'unknown','formatted',0
+@@ -1334,7 +1334,7 @@
+ 32,'$file.broyd2',    'unknown','unformatted',164896
+ 51,'$file.clmsum',    'unknown','formatted',0
+ theend
+-	else
++    else
+ cat << theend > $def
+  5,'$file.inm',      'old',    'formatted',0
+  6,'$file.outputm',  'unknown','formatted',0
+@@ -1364,7 +1364,7 @@
+ echo "75,'$file.dmatdn_old','unknown','formatted',0" >> $def
+ echo "76,'$file.dmatud_old','unknown','formatted',0" >> $def
+ endif
+-	endif
++    endif
+ 
+ if($eece  == 'eece') then
+ echo "71,'$file.vorbup','unknown','formatted',0" >> $def
+@@ -1557,16 +1557,16 @@
+ if($para == para) then
+     set cnum=0
+     if(-f .processes) then
+-	@ cnum=`grep -ce "^[0-9][0-9]* :" .processes`
+-#	@ cnum+=1
++    @ cnum=`grep -ce "^[0-9][0-9]* :" .processes`
++#   @ cnum+=1
+     endif
+     #the original file will only be removed if there are sources to concat
+     if(-f "$file.output$typ$updnso" && $cnum>0) then
+-	rm "$file.output$typ$updnso"
++    rm "$file.output$typ$updnso"
+     endif
+     unset irr
+     if(-f "$file.irrep$hf$so${updn}_$cnum" && $cnum>0) then
+-	if(-f "$file.irrep$hf$so${updn}" ) rm "$file.irrep$hf$so${updn}"
++    if(-f "$file.irrep$hf$so${updn}" ) rm "$file.irrep$hf$so${updn}"
+         head -2 "$file.irrep$hf$so${updn}_$cnum" >"$file.irrep$hf$so${updn}"
+         set irr
+     endif
+@@ -1574,9 +1574,9 @@
+     while($count <= $cnum)
+         if($?irr) then
+            tail -n +3 $file.irrep$hf$so${updn}_$count >>$file.irrep$hf$so${updn}
+-	endif
++    endif
+         cat "$file.output$typ${updnso}_$count" >>"$file.output$typ$updnso"
+-	@ count++
++    @ count++
+     end
+     echo $file.output$typ$updnso created from $cnum parallel files
+ endif
+@@ -2251,10 +2251,10 @@
+   7,'$file.amn$w90updn',     'unknown','formatted',  0
+   8,'$file.mmn$w90updn',     'unknown','formatted',  0
+   9,'${scratch}$file.vector$sc$hf$soupdn', 'unknown','unformatted',9000
+- 10,'$file.nnkp',	     'old',    'formatted',  0
+- 12,'$file.eig$updn',	     'unknown','formatted',  0
++ 10,'$file.nnkp',        'old',    'formatted',  0
++ 12,'$file.eig$updn',        'unknown','formatted',  0
+  18,'$file.vsp$updn',        'old',    'formatted',  0
+- 20,'$file.struct',   	     'old',    'formatted',  0
++ 20,'$file.struct',          'old',    'formatted',  0
+  50,'$file.energy$soupdn',   'old',    'formatted',  0
+  51,'$file.fermi$updn'       'old',    'formatted',  0
+ EOF
+@@ -2296,23 +2296,23 @@
+ if ($para == para) then
+     set cnum=0
+     if(-f .processes) then
+-	@ cnum=`grep -ce "^[0-9][0-9]* :" .processes`
++    @ cnum=`grep -ce "^[0-9][0-9]* :" .processes`
+     endif
+     #the original file will only be removed if there are sources to concat
+     if(-f "$file.output$typ$updnso" && $cnum>0) then
+-	rm "$file.output$typ$updnso"
++    rm "$file.output$typ$updnso"
+     endif
+     set count=1
+     while($count <= $cnum)
+         cat "$file.output$typ${updnso}_$count" >>"$file.output$typ$updnso"
+-	@ count++
++    @ count++
+     end
+     echo $file.output$typ$updnso created from $cnum parallel files
+ endif
+ cat >$def <<EOF
+   5,'$file.infind',           'old',    'formatted', 0
+   6,'$file.outputfind$updn',  'unknown','formatted', 0
+- 51,'$file.output$typ$updnso','old',	'formatted', 0
++ 51,'$file.output$typ$updnso','old',    'formatted', 0
+ EOF
+ if ( ! $?efermi ) then
+   if ( -s $file.fermi$updn ) then
+@@ -2334,8 +2334,8 @@
+ cat <<EOF >$def
+   4,'$file.klist',                          'old',    'formatted',  0
+  10,'${scratch}$file.vector$sc$hf$so$updn', 'old',    'unformatted',0
+- 11,'$file.vector$sc$hf$so$updn',	    'unknown','unformatted',0
+- 20,'$file.struct',   	     		    'old',    'formatted',  0
++ 11,'$file.vector$sc$hf$so$updn',       'unknown','unformatted',0
++ 20,'$file.struct',                     'old',    'formatted',  0
+  50,'$file.energy$so$updn',                 'old',    'formatted',  0
+  51,'$file.energy$so$updn',                 'unknown','formatted',  0
+ EOF
+@@ -2402,7 +2402,7 @@
+ ### end w2w   ###
+ 
+ default:
+-error	command $command does not exist
++error   command $command does not exist
+ breaksw
+ 
+ endsw
+@@ -2445,10 +2445,11 @@
+    if ($gw == 'gw') then
+       set exe = ($exe -gw)
+    endif
+-endif  	
++endif   
+ 
+ echo $exe >>$running
+ $t $bin/$exe $def 
++
+ if($status != 0) then
+   echo "error: command   $bin/$exe $def   failed"
+   if ($?qtl || $?alm || $?almd || $?qdmft || $?band || $?fermi || $?efg || $?emin1 || $?emax1 ) then
+@@ -2468,28 +2469,28 @@
+ 
+ set lapw2test=`echo $exe | cut -c 1-5`
+ if("$lapw2test" == 'lapw2') then
++    if ($?qtl || $?alm || $?almd || $?qdmft || $?band || $?fermi || $?efg || $?emin1 || $?emax1 ) then
++      if( -e .oldin2 ) mv .oldin2 $file.in2$cmplx
++    endif
+     if(! $?in1orig & ! $?band & ! $?emin1 & ! $?emax1) then
+-	if( -e $file.scf2$sc$updn && ! -z $file.scf2$sc$updn) then 
+-	    if($cmplx == 'c') then
++    if( -e $file.scf2$sc$updn && ! -z $file.scf2$sc$updn) then 
++        if($cmplx == 'c') then
+               if(! (-e $file.in1$cmplx$sc && ! -z $file.in1$cmplx$sc)) set cmplx
+             endif 
+-	    set eferm=`grep ':FER  :' $file.scf2$sc$updn|cut -f 2 -d=`
+-	    set efold=`head -1 $file.in1$cmplx${sc}|cut -c11-17 | sed -e "s/[a-zA-Z(,=]//g"`
++        set eferm=`grep ':FER  :' $file.scf2$sc$updn|cut -f 2 -d=`
++        set efold=`head -1 $file.in1$cmplx${sc}|cut -c11-17 | sed -e "s/[a-zA-Z(,=]//g"`
+             if($#efold == 0 ) set efold=0.5
+-	    set eferm=`echo " if($eferm > $efold) {if ($eferm > $efold + 0.2) {$efold + 0.2} else {$eferm} } else {if($eferm < $efold - 0.2) {$efold - 0.2} else ($eferm*0.75+$efold*0.25) }" | bc -l`    # allow for max change of ef-old +- 0.2, pratt mix
+-	    set modus=`head -1 $file.in1$cmplx${sc} | cut -c1-5`
+-	    echo "$modus  EF=$eferm   (WFFIL, WFPRI, ENFIL, SUPWF) " >$file.in1$cmplx${sc}_tmp
+-	    tail -n +2 $file.in1$cmplx${sc} >> $file.in1$cmplx${sc}_tmp
+-	    mv $file.in1$cmplx${sc}_tmp $file.in1$cmplx${sc}
+-	endif
++        set eferm=`echo " if($eferm > $efold) {if ($eferm > $efold + 0.2) {$efold + 0.2} else {$eferm} } else {if($eferm < $efold - 0.2) {$efold - 0.2} else ($eferm*0.75+$efold*0.25) }" | bc -l`    # allow for max change of ef-old +- 0.2, pratt mix
++        set modus=`head -1 $file.in1$cmplx${sc} | cut -c1-5`
++        echo "$modus  EF=$eferm   (WFFIL, WFPRI, ENFIL, SUPWF) " >$file.in1$cmplx${sc}_tmp
++        tail -n +2 $file.in1$cmplx${sc} >> $file.in1$cmplx${sc}_tmp
++        mv $file.in1$cmplx${sc}_tmp $file.in1$cmplx${sc}
++    endif
+     endif
+ endif
+ 
+ clear:
+ #cleanup
+-if ($?qtl || $?alm || $?almd || $?qdmft || $?band || $?fermi || $?efg || $?emin1 || $?emax1 ) then
+-  if( -e .oldin2 ) mv .oldin2 $file.in2$cmplx
+-endif
+   if ($?rxesw ) then
+     if( -e .oldint ) mv .oldint $file.int
+   endif
+@@ -2499,10 +2500,10 @@
+ error:
+ rm $running
+ 
+-help:					#help exit 
++help:                   #help exit 
+ cat << theend 
+ 
+-USAGE:	$0 PROGRAMNAME [flags] 
++USAGE:  $0 PROGRAMNAME [flags] 
+ 
+ PURPOSE:runs WIEN executables:  afminput,aim,arrows,broadening,cif2struct,
+       clmaddsub,clmcopy,clminter,convham,conv2prim,dftd3,dipan,dmftproj,
+@@ -2514,30 +2515,30 @@
+       symmetso,telnes3,tetra,txspec,wannier90,w2w,w2waddsp,wplot,xspec
+ 
+ FLAGS:
+--f FILEHEAD ->	FILEHEAD for path of struct & input-files
+--t/-T ->	suppress output of running time
+--h/-H ->	help
+--d    ->	create only the def-file 
+--up   ->	runs up-spin
+--dn   ->	runs dn-spin
+--du   ->	runs up/dn-crossterm
+--sc   ->	runs semicore calculation
+--c    ->	complex calculation (no inversion symmetry present)	
++-f FILEHEAD ->  FILEHEAD for path of struct & input-files
++-t/-T ->    suppress output of running time
++-h/-H ->    help
++-d    ->    create only the def-file 
++-up   ->    runs up-spin
++-dn   ->    runs dn-spin
++-du   ->    runs up/dn-crossterm
++-sc   ->    runs semicore calculation
++-c    ->    complex calculation (no inversion symmetry present) 
+ -p    ->        run lapw0/1/2/hf/so/dm/optic in parallel (needs .machines or .processes file)
+ -scratch dir/ ->defines (and makes) $SCRATCH variable
+ -grr  ->        lapw0 for mBJ or hf (using $file.in0_grr)
+ -eece ->        for hybrid-functionals (lapw0,lapw2,mixer,orb,sumpara)
+ -band ->        for lapw1/2/hf bandstructures: uses *klist_band
+--orb  ->	runs lapw1 with LDA+U/OP or B-ext correction, mixer with dmat
+--it   ->	runs lapw1 with iterative diagonalization
+--noHinv   ->	runs lapw1 with iterative diag. without  Hinv
+--noHinv0  ->	runs lapw1 with iterative diag. writing new Hinv
+--nohns ->	runs lapw1 without HNS
+--nmat_only->	runs lapw1 and yields only the matrixsize
+--nmr  ->	runs lapw1 in NMR mode
+--in1orig  ->	runs lapw2 but does not modify case.in1 
+--emin X ->	runs lapw2 with EMIN=X (in $file.in2$cmplx)
+--all X Y ->	runs lapw2 with ALL and E-window X-Y (in $file.in2$cmplx)
++-orb  ->    runs lapw1 with LDA+U/OP or B-ext correction, mixer with dmat
++-it   ->    runs lapw1 with iterative diagonalization
++-noHinv   ->    runs lapw1 with iterative diag. without  Hinv
++-noHinv0  ->    runs lapw1 with iterative diag. writing new Hinv
++-nohns ->   runs lapw1 without HNS
++-nmat_only->    runs lapw1 and yields only the matrixsize
++-nmr  ->    runs lapw1 in NMR mode
++-in1orig  ->    runs lapw2 but does not modify case.in1 
++-emin X ->  runs lapw2 with EMIN=X (in $file.in2$cmplx)
++-all X Y -> runs lapw2 with ALL and E-window X-Y (in $file.in2$cmplx)
+ -qtl  ->        runs lapw2 and calculates QTL 
+ -alm  ->        runs lapw2 and calculates ALM,BLM 
+ -almd  ->       runs lapw2 and calculates ALM,BLM in lapw2 for DMFT (Aichhorn)
+@@ -2546,11 +2547,11 @@
+ -vresp->        runs lapw2 and creates case.vrespval (for TAU/meta-GGA)
+ -fermi->        runs lapw2 with FERMI switch
+ -efg  ->        runs lapw2 with EFG switch
+--so   ->	runs lapw2/optic/spaghetti with def-file for spin-orbit calc.
++-so   ->    runs lapw2/optic/spaghetti with def-file for spin-orbit calc.
+ -hf  ->         runs lapw2 with Hartree-Fock/hybrid vectors
+ -diaghf  ->     calculates only the diagonal elements of HF Hamiltonian
+ -nonself  ->    calculates hf with Ex only (no eigenvalues/vectors)
+--fbz   ->	runs kgen and generates a full mesh in the BZ
++-fbz   ->   runs kgen and generates a full mesh in the BZ
+ -fft  ->        runs dstart only up to case.in0_std creation
+ -super->        runs dstart and creates new_super.clmsum (and not $file.clmsum)
+ -lcore->        runs dstart with $file.rsplcore (produces $file.clmsc)

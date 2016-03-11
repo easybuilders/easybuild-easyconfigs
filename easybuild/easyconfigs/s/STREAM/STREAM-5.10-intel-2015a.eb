@@ -1,0 +1,37 @@
+easyblock = 'CmdCp'
+
+name = 'STREAM'
+version = '5.10'
+
+homepage = 'http://www.cs.virginia.edu/stream/'
+description = """The STREAM benchmark is a simple synthetic benchmark program that measures sustainable
+ memory bandwidth (in MB/s) and the corresponding computation rate for simple vector kernels."""
+
+toolchain = {'name': 'intel', 'version': '2015a'}
+toolchainopts = {'openmp': True}
+
+source_urls = ['http://www.cs.virginia.edu/stream/FTP/Code/']
+sources = ['%(namelower)s.c']
+checksums = ['dd2941e3a28ff90a79b571273c10aacf']
+
+skipsteps = ['source']
+
+# 10 million array elements (1000 runs): requires ~224MB of memory
+cmds_str = "$CC $CFLAGS %(source)s -mcmodel=large -DSTREAM_ARRAY_SIZE=10000000 -DNTIMES=1000 -o stream_1Kx10M; "
+# 100 million array elements (1000 runs): requires ~2.2GiB of memory
+cmds_str += "$CC $CFLAGS %(source)s -mcmodel=large -DSTREAM_ARRAY_SIZE=100000000 -DNTIMES=1000 -o stream_1Kx100M; "
+# 1 billion array elements (1000 runs): requires ~22.4 GiB of memory
+cmds_str += "$CC $CFLAGS %(source)s -mcmodel=large -DSTREAM_ARRAY_SIZE=1000000000 -DNTIMES=1000 -o stream_1Kx1B; "
+
+cmds_map = [('stream.c', cmds_str)]
+
+files_to_copy = [(['stream_1Kx10M', 'stream_1Kx100M', 'stream_1Kx1B'], 'bin')]
+
+sanity_check_paths = {
+    'files': ['bin/stream_1Kx10M', 'bin/stream_1Kx100M', 'bin/stream_1Kx1B'],
+    'dirs': [],
+}
+
+tests = ['%(installdir)s/bin/stream_1Kx10M']
+
+moduleclass = 'perf'

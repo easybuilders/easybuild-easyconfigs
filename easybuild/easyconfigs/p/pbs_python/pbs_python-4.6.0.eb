@@ -1,0 +1,39 @@
+easyblock = 'ConfigureMake'
+
+name = 'pbs_python'
+version = '4.6.0'
+
+homepage = 'https://oss.trac.surfsara.nl/pbs_python'
+description = """The pbs_python package is a wrapper class for the Torque C library. With this package you now can
+ write utilities/extensions in Python instead of C. We developed this package because we want to replace xpbsmon by
+ an ascii version named pbsmon. PBSQuery is also included in this package. This is a python module build on top of
+ the pbs python module to simplify querying the batch server, eg: how many jobs, how many nodes, ..."""
+
+toolchain = {'name': 'dummy', 'version': ''}
+
+source_urls = ['http://ftp.sara.nl/pub/outgoing/']
+sources = [SOURCE_TAR_GZ]
+
+patches = [
+    'pbs_python-%(version)s_CC.patch',
+    'pbs_python-%(version)s_remove-printf.patch',
+]
+
+osdependencies = ['torque-devel']
+
+# this is needed for setup.py script
+configopts = "--datarootdir=%(installdir)s --docdir=%(installdir)s"
+prebuildopts = 'export CFLAGS="$CFLAGS -I/usr/include/torque/" && '
+preinstallopts = prebuildopts
+
+pyshortver = '.'.join(SYS_PYTHON_VERSION.split('.')[:2])
+modextrapaths = {'PYTHONPATH': ['lib64/python%s/site-packages' % pyshortver]}
+
+sanity_check_paths = {
+    'files': [],
+    'dirs': [('lib/python%s/site-packages' % pyshortver, 'lib64/python%s/site-packages' % pyshortver)],
+}
+
+sanity_check_commands = [('python', '-c "import pbs"')]
+
+moduleclass = 'tools'

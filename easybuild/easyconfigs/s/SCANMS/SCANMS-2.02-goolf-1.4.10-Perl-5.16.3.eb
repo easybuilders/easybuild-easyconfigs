@@ -1,0 +1,43 @@
+# This file is an EasyBuild reciPY as per https://github.com/hpcugent/easybuild
+# Author: Pablo Escobar Lopez
+# Swiss Institute of Bioinformatics
+# Biozentrum - University of Basel
+
+easyblock = 'PerlModule'
+
+name = 'SCANMS'
+version = '2.02'
+
+homepage = 'http://compbio.ucmerced.edu/ardell/software/scanms/'
+description = """SCANMS is an open source utility written in Perl that works in 
+ conjunction with Richard Hudson’s coalescent simulator MS to do parametric 
+ bootstrapping of a sliding window analysis of neutrality test statistics. 
+ Currently supported statistics are Tajima’s D and Fu and Li’s D* and F*. 
+ Its output of a joint distribution of window minima and maxima may then be 
+ used to correct for multiple comparisons in such analyses."""
+
+toolchain = {'name': 'goolf', 'version': '1.4.10'}
+
+source_urls = ['http://compbio.ucmerced.edu/']
+sources = [SOURCELOWER_TAR_GZ]
+
+perl = 'Perl'
+perlver = '5.16.3'
+versionsuffix = '-%s-%s' % (perl, perlver)
+
+dependencies = [
+    (perl, perlver),
+]
+
+# override the default sanity check for perl packages which tries to load Perl module
+exts_filter = ('scanms -v 2>&1 | grep version', "")
+
+sanity_check_paths = {
+    'files': ["bin/scanms"],
+    'dirs': []
+}
+
+# copy all the documentation provided in the tarball to install directory
+postinstallcmds = ["cp -r %(builddir)s/*/{README,SCANMS.pdf,scanms.doc.html} %(installdir)s"]
+
+moduleclass = 'bio'

@@ -1,0 +1,110 @@
+easyblock = 'Bundle'
+
+name = 'GC3Pie'
+version = '2.4.1'
+
+homepage = 'https://gc3pie.readthedocs.org'
+description = """GC3Pie is a Python package for running large job campaigns on diverse batch-oriented execution
+ environments."""
+
+toolchain = {'name': 'dummy', 'version': 'dummy'}
+
+# this is a bundle of Python packages
+exts_defaultclass = 'PythonPackage'
+
+# allow use of system Python
+allow_system_deps = [('Python', SYS_PYTHON_VERSION)]
+
+exts_list = [
+    ('setuptools', '18.1', {
+        'source_urls': ['https://pypi.python.org/packages/source/s/setuptools/'],
+    }),
+    # required for paramiko
+    ('ecdsa', '0.13', {
+        'source_urls': ['https://pypi.python.org/packages/source/e/ecdsa/'],
+    }),
+    # required for paramiko
+    ('pycrypto', '2.6.1', {
+        'source_urls': ['https://pypi.python.org/packages/source/p/pycrypto/'],
+        'modulename': 'Crypto',
+    }),
+    ('paramiko', '1.15.2', {
+        'source_urls': ['https://pypi.python.org/packages/source/p/paramiko/'],
+    }),
+    ('PrettyTable', '0.7.2', {
+        'source_urls': ['https://pypi.python.org/packages/source/P/PrettyTable/'],
+        'source_tmpl': 'prettytable-%(version)s.tar.gz',
+    }),
+    ('pyCLI', 'devel', {
+        'source_urls': ['https://pypi.python.org/packages/source/p/pyCLI/'],
+        'modulename': 'cli',
+    }),
+    ('SQLAlchemy', '1.0.8', {
+        'source_urls': ['https://pypi.python.org/packages/source/S/SQLAlchemy/'],
+    }),
+    ('parsedatetime', '1.5', {
+        'source_urls': ['https://pypi.python.org/packages/source/p/parsedatetime/'],
+    }),
+    ('boto', '2.38.0', {
+        'source_urls': ['https://pypi.python.org/packages/source/b/boto/'],
+    }),
+    # required for pbr
+    ('pip', '7.1.0', {
+        'source_urls': ['https://pypi.python.org/packages/source/p/pip/'],
+    }),
+    # required for python-novaclient
+    ('pbr', '1.4.0', {
+        'source_urls': ['https://pypi.python.org/packages/source/p/pbr/'],
+    }),
+    # required for python-novaclient
+    ('Babel', '2.0', {
+        'source_urls': ['https://pypi.python.org/packages/source/B/Babel/'],
+    }),
+    # required for python-novaclient
+    ('simplejson', '3.8.0', {
+        'source_urls': ['https://pypi.python.org/packages/source/s/simplejson/'],
+    }),
+    # required for python-novaclient
+    ('requests', '2.7.0', {
+        'source_urls': ['https://pypi.python.org/packages/source/r/requests/'],
+    }),
+    # required for python-novaclient
+    ('iso8601', '0.1.10', {
+        'source_urls': ['https://pypi.python.org/packages/source/i/iso8601/'],
+    }),
+    # required for python-novaclient
+    ('argparse', '1.3.0', {
+        'source_urls': ['https://pypi.python.org/packages/source/a/argparse/'],
+    }),
+    # required for python-novaclient
+    ('six', '1.9.0', {
+        'source_urls': ['https://pypi.python.org/packages/source/s/six/'],
+    }),
+    ('python-novaclient', '2.23.1', {
+        'source_urls': ['https://pypi.python.org/packages/source/p/python-novaclient/'],
+        'modulename': 'novaclient',
+    }),
+    (name.lower(), version, {
+        'source_urls': ['https://pypi.python.org/packages/source/g/gc3pie/'],
+        'modulename': 'gc3libs',
+    }),
+]
+
+pyver = '.'.join(SYS_PYTHON_VERSION.split('.')[:2])
+
+# on RHEL-based systems, some extensions get installed to lib, some to lib64
+modextrapaths = {'PYTHONPATH': ['lib/python%s/site-packages' % pyver, 'lib64/python%s/site-packages' % pyver]}
+
+# specify that Bundle easyblock should run a full sanity check, rather than just trying to load the module
+full_sanity_check = True
+
+eggname = 'gc3pie-%%(version)s-py%s.egg' % pyver
+sanity_check_paths = {
+    'files': ['bin/gc3utils',
+              ('lib/python%s/site-packages/%s' % (pyver, eggname), 'lib64/python%s/site-packages/%s' % (pyver, eggname))],
+    'dirs': [],
+}
+
+sanity_check_commands = [('gc3utils', 'info --version')]
+
+moduleclass = 'tools'

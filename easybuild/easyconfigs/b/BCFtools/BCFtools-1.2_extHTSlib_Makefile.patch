@@ -1,0 +1,65 @@
+# patch needed to use external HTSlib and ZLIB
+# B. Hajgato March 19 2015
+--- bcftools-1.2/Makefile.orig	2015-02-03 17:27:19.000000000 +0100
++++ bcftools-1.2/Makefile	2015-03-19 13:24:18.595228622 +0100
+@@ -29,14 +29,11 @@
+ all: $(PROG) $(TEST_PROG)
+ 
+ # Adjust $(HTSDIR) to point to your top-level htslib directory
+-HTSDIR = htslib-1.2.1
+-include $(HTSDIR)/htslib.mk
+-HTSLIB = $(HTSDIR)/libhts.a
+-BGZIP  = $(HTSDIR)/bgzip
+-TABIX  = $(HTSDIR)/tabix
++HTSDIR = $(EBROOTHTSLIB)/include
++HTSLIB = $(EBROOTHTSLIB)/lib/libhts.a
++BGZIP  = $(EBROOTHTSLIB)/bin/bgzip
++TABIX  = $(EBROOTHTSLIB)/bin/tabix
+ 
+-CC       = gcc
+-CFLAGS   = -g -Wall -Wc++-compat -O2
+ DFLAGS   =
+ OBJS     = main.o vcfindex.o tabix.o \
+            vcfstats.o vcfisec.o vcfmerge.o vcfquery.o vcffilter.o filter.o vcfsom.o \
+@@ -45,6 +42,7 @@
+            vcfcnv.o HMM.o vcfplugin.o consensus.o ploidy.o version.o \
+            ccall.o em.o prob1.o kmin.o # the original samtools calling
+ INCLUDES = -I. -I$(HTSDIR)
++ZLIB=          -L$(EBROOTZLIB)/lib -lz
+ 
+ # The polysomy command is not compiled by default because it brings dependency
+ # on libgsl. The command can be compiled wth `make USE_GPL=1`. See the INSTALL
+@@ -102,8 +100,8 @@
+ PLUGINS = $(PLUGINC:.c=.so)
+ PLUGINM = $(PLUGINC:.c=.mk)
+ 
+-%.so: %.c version.h version.c $(HTSDIR)/libhts.so
+-	$(CC) $(CFLAGS) $(INCLUDES) -fPIC -shared -o $@ version.c $< -L$(HTSDIR) -lhts
++%.so: %.c version.h version.c $(EBROOTHTSLIB)/lib/libhts.so
++	$(CC) $(CFLAGS) $(INCLUDES) -fPIC -shared -o $@ version.c $< -L$(EBROOTHTSLIB)/lib -lhts
+ 
+ -include $(PLUGINM)
+ 
+@@ -159,7 +157,7 @@
+ 	$(CC) $(CFLAGS) -o $@ -lm -ldl $<
+ 
+ bcftools: $(HTSLIB) $(OBJS)
+-	$(CC) $(CFLAGS) -o $@ $(OBJS) $(HTSLIB) -lpthread -lz -lm -ldl $(LDLIBS)
++	$(CC) $(CFLAGS) -o $@ $(OBJS) $(HTSLIB) -lpthread $(ZLIB) -lm -ldl $(LDLIBS)
+ 
+ doc/bcftools.1: doc/bcftools.txt
+ 	cd doc && a2x -adate="$(DOC_DATE)" -aversion=$(DOC_VERSION) --doctype manpage --format manpage bcftools.txt
+--- bcftools-1.2/plugins/fixploidy.mk.orig	2014-10-09 11:01:22.000000000 +0200
++++ bcftools-1.2/plugins/fixploidy.mk	2015-03-19 13:30:48.125228201 +0100
+@@ -1,2 +1,2 @@
+-plugins/fixploidy.so: plugins/fixploidy.c version.h version.c ploidy.h ploidy.c $(HTSDIR)/libhts.so
+-	$(CC) $(CFLAGS) $(INCLUDES) -fPIC -shared -o $@ ploidy.c version.c $< -L$(HTSDIR) -lhts
++plugins/fixploidy.so: plugins/fixploidy.c version.h version.c ploidy.h ploidy.c $(EBROOTHTSLIB)/lib/libhts.so
++	$(CC) $(CFLAGS) $(INCLUDES) -fPIC -shared -o $@ ploidy.c version.c $< -L$(EBROOTHTSLIB)/lib -lhts
+--- bcftools-1.2/plugins/vcf2sex.mk.orig	2014-10-09 11:01:22.000000000 +0200
++++ bcftools-1.2/plugins/vcf2sex.mk	2015-03-19 13:31:11.227228307 +0100
+@@ -1,2 +1,2 @@
+-plugins/vcf2sex.so: plugins/vcf2sex.c version.h version.c ploidy.h ploidy.c $(HTSDIR)/libhts.so
+-	$(CC) $(CFLAGS) $(INCLUDES) -fPIC -shared -o $@ ploidy.c version.c $< -L$(HTSDIR) -lhts
++plugins/vcf2sex.so: plugins/vcf2sex.c version.h version.c ploidy.h ploidy.c $(EBROOTHTSLIB)/lib/libhts.so
++	$(CC) $(CFLAGS) $(INCLUDES) -fPIC -shared -o $@ ploidy.c version.c $< -L$(EBROOTHTSLIB)/lib -lhts
