@@ -38,6 +38,7 @@ from distutils.version import LooseVersion
 
 from easybuild.easyblocks.mpich import EB_MPICH
 from easybuild.framework.easyconfig import CUSTOM
+from easybuild.tools.build_log import EasyBuildError
 
 
 class EB_MVAPICH2(EB_MPICH):
@@ -52,7 +53,7 @@ class EB_MVAPICH2(EB_MPICH):
         extra_vars = {
             'withchkpt': [False, "Enable checkpointing support (required BLCR)", CUSTOM],
             'withmpe': [False, "Build MPE routines", CUSTOM],
-            'withhwloc': [False, "Enable support for using hwloc support for process binding", CUSTOM],
+            'withhwloc': [True, "Enable support for using hwloc support for process binding", CUSTOM],
             'withlimic2': [False, "Enable LiMIC2 support for intra-node communication", CUSTOM],
             'rdma_type': ["gen2", "Specify the RDMA type (gen2/udapl)", CUSTOM],
             'blcr_path': [None, "Path to BLCR package", CUSTOM],
@@ -70,19 +71,42 @@ class EB_MVAPICH2(EB_MPICH):
 
         # enable specific support options (if desired)
         if self.cfg['withmpe']:
-            add_configopts.append('--enable-mpe')
+            # --enable-mpe is a configure option of MPICH itself.
+            # It is not available anymore in MPICH package since version 3.0, which correspond to MVAPICH2 1.9.
+            # MPE can be downloaded separately at http://www.mpich.org/static/mpe/downloads/
+            # However, the 'withmpe' option should be maintained for backward compatibility purpose
+            if LooseVersion(self.version) < LooseVersion('1.9'):
+                add_configopts.append('--enable-mpe')
+            else:
+                raise EasyBuildError("MPI Parallel Environment (MPE) is not available anymore starting MVAPICH2 1.9")
+
         if self.cfg['withlimic2']:
             add_configopts.append('--enable-limic2')
+
         if self.cfg['withchkpt']:
             add_configopts.extend(['--enable-ckpt'])
-        if self.cfg['withhwloc']:
-            add_configopts.append('--with-hwloc')
+
+        # --with-hwloc/--without-hwloc option is not available anymore MVAPICH2 >= 2.0. Starting this version,
+        # hwloc is apparently distributed with MVAPICH2 and always compiled with MVAPICH2, and it cannot be disabled.
+        # This check happens only if 'withhwloc = False' is explicitly specified in an easyconfig with MPIVACH2 >= 2.0
+        if LooseVersion(self.version) >= LooseVersion('2.0'):
+            if self.cfg['withhwloc']:
+                self.log.debug("hwloc support is always enabled in MVAPICH >= 2.0, nothing to do")
+            else:
+                raise EasyBuildError("Disabling hwloc is not supported in MVAPICH >= 2.0")
+        else:
+            if self.cfg['withhwloc']:
+                add_configopts.append('--with-hwloc')
+            else:
+                add_configopts.append('--without-hwloc')
 
         # pass BLCR paths if specified
         if self.cfg['blcr_path']:
             add_configopts.append('--with-blcr=%s' % self.cfg['blcr_path'])
+
         if self.cfg['blcr_inc_path']:
             add_configopts.append('--with-blcr-include=%s' % self.cfg['blcr_inc_path'])
+
         if self.cfg['blcr_lib_path']:
             add_configopts.append('--with-blcr-libpath=%s' % self.cfg['blcr_lib_path'])
 
