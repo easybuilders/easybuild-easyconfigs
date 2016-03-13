@@ -1,0 +1,40 @@
+easyblock = 'ConfigureMake'
+
+name = 'gnutls'
+version = '3.3.21'
+
+homepage = 'http://www.gnutls.org/'
+description = """GnuTLS is a secure communications library implementing the SSL, TLS
+ and DTLS protocols and technologies around them. It provides a simple
+ C language application programming interface (API) to access the secure
+ communications protocols as well as APIs to parse and write X.509, PKCS #12,
+ OpenPGP and other required structures. It is aimed to be portable
+ and efficient with focus on security and interoperability."""
+
+toolchain = {'name': 'intel', 'version': '2016a'}
+
+source_urls = ['ftp://ftp.gnutls.org/gcrypt/gnutls/v%(version_major_minor)s']
+sources = [SOURCE_TAR_XZ]
+
+guilever = '1.8.8'
+guileshortver = '.'.join(guilever.split('.')[:2])
+dependencies = [
+    ('GMP', '6.1.0'),
+    ('nettle', '3.1.1'),
+    ('guile', guilever),
+    ('libtasn1', '4.7'),
+    ('libidn', '1.32'),
+    ('p11-kit', '0.23.2'),
+]
+
+configopts = "--with-guile-site-dir=$EBROOTGUILE --enable-openssl-compatibility "
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in ['certtool', 'crywrap', 'gnutls-cli', 'gnutls-cli-debug',
+                                     'gnutls-serv', 'ocsptool', 'psktool', 'srptool']] +
+             ['lib/libgnutls%s' % x for x in ['.%s' % SHLIB_EXT, 'xx.%s' % SHLIB_EXT, '-openssl.%s' % SHLIB_EXT]] +
+             ['lib/guile/%s/guile-gnutls-v-2.so' % guileshortver],
+    'dirs': ['include/gnutls'],
+}
+
+moduleclass = 'system'
