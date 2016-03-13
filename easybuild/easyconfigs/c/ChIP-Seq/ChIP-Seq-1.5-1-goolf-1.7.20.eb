@@ -1,0 +1,48 @@
+# This file is an EasyBuild reciPY as per https://github.com/hpcugent/easybuild
+# Author: Pablo Escobar Lopez
+# sciCORE - University of Basel
+# SIB Swiss Institute of Bioinformatics
+
+easyblock = 'ConfigureMake'
+
+name = 'ChIP-Seq'
+version = '1.5-1'
+
+homepage = 'http://chip-seq.sourceforge.net/'
+description = """The ChIP-Seq software provides methods for the analysis of ChIP-seq data and 
+ other types of mass genome annotation data. The most common analysis tasks include positional 
+ correlation analysis, peak detection, and genome partitioning into signal-rich and signal-depleted regions."""
+
+toolchain = {'name': 'goolf', 'version': '1.7.20'}
+
+source_urls = ['http://downloads.sourceforge.net/project/chip-seq/chip-seq/%(version)s/']
+sources = ['%(namelower)s.%(version)s.tar.gz']
+
+skipsteps = ['configure']
+
+buildopts = ' CC=$CC'
+
+preinstallopts = 'mkdir -p %(installdir)s/bin && '
+
+installopts = ' binDir=%(installdir)s/bin && '
+installopts += 'mkdir -p %(installdir)s/man/man1 && '
+installopts += 'make man manDir=%(installdir)s/man/man1/ && '
+installopts += 'cp -a tools/ %(installdir)s && '
+installopts += 'cp -a README doc/ %(installdir)s'
+
+sanity_check_paths = {
+    'files': ["bin/%s" % x for x in ["chipcenter", "chipcor", "chipextract", "chippart", "chippeak",
+                                     "chipscore", "compactsga", "counts_filter", "countsga", "featreplace"]],
+    'dirs': []
+}
+
+# add tools dir to PATH
+modextrapaths = {
+    'PATH': "tools",
+}
+
+# fix shebang line in all provided perl scripts in tools folder
+postinstallcmds = ["sed -i -e 's|/usr/bin/perl|/usr/bin/env\ perl|' %(installdir)s/tools/*.pl",
+                   "sed -i -e 's|/usr/local/bin/perl|/usr/bin/env\ perl|' %(installdir)s/tools/*.pl"]
+
+moduleclass = 'bio'

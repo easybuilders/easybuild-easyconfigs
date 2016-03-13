@@ -1,0 +1,44 @@
+easyblock = "ConfigureMake"
+
+name = 'graph-tool'
+version = '2.2.42'
+
+homepage = 'https://graph-tool.skewed.de/'
+description = """Graph-tool is an efficient Python module for manipulation and
+ statistical analysis of graphs (a.k.a. networks). Contrary to
+ most other python modules with similar functionality, the core
+ data structures and algorithms are implemented in C++, making
+ extensive use of template metaprogramming, based heavily on
+ the Boost Graph Library. This confers it a level of
+ performance that is comparable (both in memory usage and
+ computation time) to that of a pure C/C++ library."""
+
+toolchain = {'name': 'foss', 'version': '2015a'}
+
+source_urls = ['https://downloads.skewed.de/%(name)s/']
+sources = [SOURCE_TAR_BZ2]
+
+python = 'Python'
+pyver = '2.7.10'
+pyshortver = '.'.join(pyver.split('.')[:2])
+versionsuffix = '-%s-%s' % (python, pyver)
+
+dependencies = [
+    (python, pyver),
+    ('Boost', '1.58.0', versionsuffix),
+    ('expat', '2.1.0'),
+    ('CGAL', '4.6', versionsuffix),
+    ('sparsehash', '2.0.2'),
+]
+
+configopts = '--enable-openmp --disable-cairo --with-boost=$EBROOTBOOST '
+configopts += '--with-python-module-path=%%(installdir)s/lib/python%s/site-packages ' % pyshortver
+
+sanity_check_paths = {
+    'files': ['lib/python%s/site-packages/graph_tool/all.py' % pyshortver],
+    'dirs': ['lib/python%s/site-packages/graph_tool/include' % pyshortver],
+}
+
+modextrapaths = {'PYTHONPATH': 'lib/python%s/site-packages' % pyshortver}
+
+moduleclass = 'math'
