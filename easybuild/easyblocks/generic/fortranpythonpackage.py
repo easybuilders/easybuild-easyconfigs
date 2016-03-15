@@ -48,7 +48,7 @@ class FortranPythonPackage(PythonPackage):
         comp_fam = self.toolchain.comp_family()
 
         if comp_fam == toolchain.INTELCOMP:  # @UndefinedVariable
-            cmd = "python setup.py build --compiler=intel --fcompiler=intelem"
+            cmd = "%s setup.py build --compiler=intel --fcompiler=intelem" % self.python_cmd
 
         elif comp_fam in [toolchain.GCC, toolchain.CLANGGCC]:  # @UndefinedVariable
             cmdprefix = ""
@@ -63,7 +63,7 @@ class FortranPythonPackage(PythonPackage):
                                                                                               ldflags,
                                                                                               cmdprefix))
 
-            cmd = "%s python setup.py build --fcompiler=gnu95" % cmdprefix
+            cmd = "%s %s setup.py build --fcompiler=gnu95" % (cmdprefix, self.python_cmd)
 
         else:
             raise EasyBuildError("Unknown family of compilers being used: %s", comp_fam)
