@@ -1,5 +1,6 @@
 ##
 # Copyright 2015-2016 Bart Oldeman
+# Copyright 2016-2016 Forschungszentrum Juelich
 #
 # This file is triple-licensed under GPLv2 (see below), MIT, and
 # BSD three-clause licenses.
@@ -29,15 +30,18 @@
 EasyBuild support for installing PGI compilers, implemented as an easyblock
 
 @author: Bart Oldeman (McGill University, Calcul Quebec, Compute Canada)
+@author: Damian Alvarez (Forschungszentrum Juelich)
 """
 import os
 import fileinput
 import re
 import sys
 
+import easybuild.tools.environment as env
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.build_log import EasyBuildError
+from easybuild.tools.filetools import find_flexlm_license
 from easybuild.tools.run import run_cmd
 
 class EB_PGI(EasyBlock):
@@ -58,16 +62,34 @@ class EB_PGI(EasyBlock):
     def __init__(self, *args, **kwargs):
         """Easyblock constructor, define custom class variables specific to PGI."""
         super(EB_PGI, self).__init__(*args, **kwargs)
-        if not self.cfg['license_file']:
-            self.cfg['license_file'] = 'UNKNOWN'
+
+        self.license_file = 'UNKNOWN'
+        self.license_env_var = 'UNKNOWN' # Probably not really necessary for PGI
+
         self.install_subdir = os.path.join('linux86-64', self.version)
 
     def configure_step(self):
         """
-        Dummy configure method, just a license check
+        Handle license file. 
         """
-        if not os.path.exists(self.cfg['license_file']):
-            raise EasyBuildError("Non-existing license file specified: %s", self.cfg['license_file'])
+        default_lic_env_var = 'PGROUPD_LICENSE_FILE'
+        lic_specs, self.license_env_var = find_flexlm_license(custom_env_vars=[default_lic_env_var],
+                                                              lic_specs=[self.cfg['license_file']])
+
+        if lic_specs:
+            if self.license_env_var is None:
+                self.log.info("Using PGI license specifications from 'license_file': %s", lic_specs)
+                self.license_env_var = default_lic_env_var
+            else:
+                self.log.info("Using PGI license specifications from %s: %s", self.license_env_var, lic_specs)
+
+            self.license_file = os.pathsep.join(lic_specs)
+            env.setvar(self.license_env_var, self.license_file)
+
+        else:
+            raise EasyBuildError("No viable license specifications found; specify 'license_file' or " +
+                                 "define $PGROUPD_LICENSE_FILE or $LM_LICENSE_FILE")
+
 
     def build_step(self):
         """
@@ -115,11 +137,18 @@ class EB_PGI(EasyBlock):
         dirs = super(EB_PGI, self).make_module_req_guess()
         for key in dirs:
             dirs[key] = [os.path.join(self.install_subdir, d) for d in dirs[key]]
+
+        # $CPATH should not be defined in module for PGI, it causes problems
+        # cfr. https://github.com/hpcugent/easybuild-easyblocks/issues/830
+        if 'CPATH' in dirs:
+            self.log.info("Removing $CPATH entry: %s", dirs['CPATH'])
+            del dirs['CPATH']
+
         return dirs
 
     def make_module_extra(self):
         """Add environment variables LM_LICENSE_FILE and PGI for license file and PGI location"""
         txt = super(EB_PGI, self).make_module_extra()
-        txt += self.module_generator.prepend_paths('LM_LICENSE_FILE', [self.cfg['license_file']], allow_abs=True)
+        txt += self.module_generator.prepend_paths(self.license_env_var, [self.license_file], allow_abs=True, expand_relpaths=False)
         txt += self.module_generator.set_environment('PGI', self.installdir)
         return txt
