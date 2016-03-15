@@ -1,0 +1,84 @@
+--- scipion/config/hosts.conf.orig	2016-02-22 14:45:09.000000000 +0100
++++ scipion/config/hosts.conf	2016-03-15 14:06:57.000000000 +0100
+@@ -1,44 +1,56 @@
+ [localhost]
+-PARALLEL_COMMAND = mpirun -np %_(JOB_NODES)d -bynode %_(COMMAND)s
++PARALLEL_COMMAND = srun %_(COMMAND)s
++NAME = SLURM
+ MANDATORY = False
+-NAME = PBS/TORQUE
+-CANCEL_COMMAND = canceljob %_(JOB_ID)s
+-CHECK_COMMAND = qstat %_(JOB_ID)s
++SUBMIT_COMMAND = sbatch %_(JOB_SCRIPT)s
+ SUBMIT_TEMPLATE = #!/bin/bash
+ 	### Inherit all current environment variables
+-	#PBS -V
++	#SBATCH --export=ALL
+ 	### Job name
+-	#PBS -N %_(JOB_NAME)s
+-	### Queue name
+-	###PBS -q %_(JOB_QUEUE)s
+-	### Standard output and standard error messages
+-	#PBS -k eo
++	#SBATCH --job-name=%_(JOB_NAME)s
++        ### Outputs (we need to escape the job id as %%j)
++        #SBATCH -o job%%j.out
++        #SBATCH -e job%%j.err
++	### Partition (queue) name
++	#SBATCH --partition=%_(JOB_QUEUE)s
+ 	### Specify the number of nodes and thread (ppn) for your job.
+-	#PBS -l nodes=%_(JOB_NODES)d:ppn=%_(JOB_THREADS)d
+-	### Tell PBS the anticipated run-time for your job, where walltime=HH:MM:SS
+-	#PBS -l walltime=%_(JOB_HOURS)d:00:00
+-	# Use as working dir the path where qsub was launched
+-	WORKDIR=$PBS_O_WORKDIR
++	#SBATCH --nodes=%_(JOB_NODES)d
++	#SBATCH --ntasks-per-node=%_(JOB_THREADS)d
++	### Specify the amount of memory (in megabytes) per CPU for your job.
++	#SBATCH --mem-per-cpu=%_(JOB_MEMORY)d
++	### Tell SLURM the anticipated run-time for your job, where walltime=HH:MM:SS
++	#SBATCH --time=%_(JOB_HOURS)d:00:00
++	# Use as working dir the path where sbatch was launched
++	WORKDIR=$SLURM_SUBMIT_DIR
+ 	#################################
+ 	### Set environment varible to know running mode is non interactive
+ 	export XMIPP_IN_QUEUE=1
+ 	### Switch to the working directory;
+ 	cd $WORKDIR
+ 	# Make a copy of PBS_NODEFILE
+-	cp $PBS_NODEFILE %_(JOB_NODEFILE)s
+-	# Calculate the number of processors allocated to this run.
+-	NPROCS=`wc -l < $PBS_NODEFILE`
+-	# Calculate the number of nodes allocated.
+-	NNODES=`uniq $PBS_NODEFILE | wc -l`
++	cp $SLURM_JOB_NODELIST %_(JOB_NODEFILE)s
++        # Calculate the number of processors allocated to this run.
++        NPROCS=`wc -l < $SLURM_JOB_NODELIST`
++        # Calculate the number of nodes allocated.
++        NNODES=`uniq $SLURM_JOB_NODELIST | wc -l`
++
+ 	### Display the job context
+ 	echo Running on host `hostname`
+ 	echo Time is `date`
+ 	echo Working directory is `pwd`
+-	echo Using ${NPROCS} processors across ${NNODES} nodes
+-	echo PBS_NODEFILE:
+-	cat $PBS_NODEFILE
++        echo Using ${NPROCS} processors across ${NNODES} nodes
++        echo NODE LIST:
++        cat $SLURM_JOB_NODELIST
+ 	#################################
+ 	%_(JOB_COMMAND)s
+-SUBMIT_COMMAND = qsub %_(JOB_SCRIPT)s
+-QUEUES = { "default": {} }
++CANCEL_COMMAND = scancel %_(JOB_ID)s
++CHECK_COMMAND = squeue -j %_(JOB_ID)s
++#QUEUES = { "default": {} }
++QUEUES = { "nodes":       [["JOB_MEMORY", "4096", "Memory per core (MB)", "Select amount of memory (in megabytes) per core for this job"],
++                          ["JOB_TIME", "72", "Time (hours)", "Select the time expected (in hours) for this job"]
++                          ],
++           "himem":       [["JOB_MEMORY", "20480", "Memory per core (MB)", "Select amount of memory (in megabytes) per core for this job"],
++                          ["JOB_TIME", "72", "Time (hours)", "Select the time expected (in hours) for this job"]
++                          ]
++         }
+ 
