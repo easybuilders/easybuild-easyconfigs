@@ -1,11 +1,11 @@
 # #
-# Copyright 2009-2015 Ghent University
+# Copyright 2009-2016 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
 # with support of Ghent University (http://ugent.be/hpc),
 # the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
-# the Hercules foundation (http://www.herculesstichting.be/in_English)
+# Flemish Research Foundation (FWO) (http://www.fwo.be/en)
 # and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
 # http://github.com/hpcugent/easybuild
@@ -134,11 +134,11 @@ EULA=accept
         if impiver == LooseVersion('4.1.1.036') or impiver >= LooseVersion('5.0.1.035'):
             # fix broken env scripts after the move
             for script in [os.path.join('intel64', 'bin', 'mpivars.csh'), os.path.join('mic', 'bin', 'mpivars.csh')]:
-                for line in fileinput.input(os.path.join(self.installdir, script), inplace=1, backup='.orig.eb'):
+                for line in fileinput.input(os.path.join(self.installdir, script), inplace=1, backup='.orig.easybuild'):
                     line = re.sub(r"^setenv I_MPI_ROOT.*", "setenv I_MPI_ROOT %s" % self.installdir, line)
                     sys.stdout.write(line)
             for script in [os.path.join('intel64', 'bin', 'mpivars.sh'), os.path.join('mic', 'bin', 'mpivars.sh')]:
-                for line in fileinput.input(os.path.join(self.installdir, script), inplace=1, backup='.orig.eb'):
+                for line in fileinput.input(os.path.join(self.installdir, script), inplace=1, backup='.orig.easybuild'):
                     line = re.sub(r"^I_MPI_ROOT=.*", "I_MPI_ROOT=%s; export I_MPI_ROOT" % self.installdir, line)
                     sys.stdout.write(line)
 

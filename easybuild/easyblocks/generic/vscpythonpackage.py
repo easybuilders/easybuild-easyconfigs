@@ -5,7 +5,7 @@
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
 # with support of Ghent University (http://ugent.be/hpc),
 # the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
-# the Hercules foundation (http://www.herculesstichting.be/in_English)
+# Flemish Research Foundation (FWO) (http://www.fwo.be/en)
 # and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
 # http://github.com/hpcugent/easybuild
@@ -45,6 +45,6 @@ class VSCPythonPackage(VersionIndependentPythonPackage):
         """Custom sanity check for VSC-tools packages."""
         pythonpath = os.environ.get('PYTHONPATH', '')
         os.environ['PYTHONPATH'] = ''
-        kwargs.update({'exts_filter': ('python -s -S -c "import %(ext_name)s"', "")})
+        kwargs.update({'exts_filter': ('%s -s -S -c "import %%(ext_name)s"' % self.python_cmd, "")})
         super(VSCPythonPackage, self).sanity_check_step(*args, **kwargs)
         os.environ['PYTHONPATH'] = pythonpath

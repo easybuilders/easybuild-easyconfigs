@@ -1,11 +1,11 @@
 ##
-# Copyright 2012-2015 Ghent University
+# Copyright 2012-2016 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
 # with support of Ghent University (http://ugent.be/hpc),
 # the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
-# the Hercules foundation (http://www.herculesstichting.be/in_English)
+# Flemish Research Foundation (FWO) (http://www.fwo.be/en)
 # and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
 # http://github.com/hpcugent/easybuild
@@ -78,6 +78,12 @@ class EB_UFC(CMakePythonPackage):
         self.cfg.update('configopts', '-DPYTHON_INCLUDE_PATH=%s/include/python%s' % (python, self.pyver))
 
         super(EB_UFC, self).configure_step()
+
+    def test_step(self):
+        """No test suite available for UFC."""
+        # PythonPackage defines 'runtest' as 'True' by default, but ConfigureMake.test_step expects string value
+        # no test suite available anyway for UFC, so just pass through
+        pass
 
     def sanity_check_step(self):
         """Custom sanity check for UFC."""

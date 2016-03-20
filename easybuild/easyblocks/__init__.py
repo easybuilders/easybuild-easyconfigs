@@ -1,11 +1,11 @@
 ##
-# Copyright 2009-2015 Ghent University
+# Copyright 2009-2016 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
 # with support of Ghent University (http://ugent.be/hpc),
 # the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
-# the Hercules foundation (http://www.herculesstichting.be/in_English)
+# Flemish Research Foundation (FWO) (http://www.fwo.be/en)
 # and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
 # http://github.com/hpcugent/easybuild
@@ -32,6 +32,7 @@ easybuild.easyblocks package declaration
 @author: Jens Timmerman (Ghent University)
 """
 import os
+import pkg_resources
 from distutils.version import LooseVersion
 from pkgutil import extend_path
 
@@ -43,7 +44,7 @@ from pkgutil import extend_path
 # recent setuptools versions will *TRANSFORM* something like 'X.Y.Zdev' into 'X.Y.Z.dev0', with a warning like
 #   UserWarning: Normalizing '2.4.0dev' to '2.4.0.dev0'
 # This causes problems further up the dependency chain...
-VERSION = LooseVersion('2.6.0')
+VERSION = LooseVersion('2.7.0')
 UNKNOWN = 'UNKNOWN'
 
 
@@ -70,15 +71,15 @@ git_rev = get_git_revision()
 if git_rev == UNKNOWN:
     VERBOSE_VERSION = VERSION
 else:
-    VERBOSE_VERSION = LooseVersion("%s-r%s" % (VERSION, get_git_revision()))
+    VERBOSE_VERSION = LooseVersion("%s-r%s" % (VERSION, git_rev))
 
-# Extend path so python finds our easyblocks in the subdirectories where they are located
+# extend path so python finds our easyblocks in the subdirectories where they are located
 subdirs = [chr(l) for l in range(ord('a'), ord('z') + 1)] + ['0']
 for subdir in subdirs:
     __path__ = extend_path(__path__, '%s.%s' % (__name__, subdir))
 
-# And let python know this is not the only place to look for them, so we can have multiple
-# easybuild/easyblock paths in your python search path, next to the official easyblocks distribution
-__path__ = extend_path(__path__, __name__)  # @ReservedAssignment
-
 del subdir, subdirs, l, git_rev
+
+# let python know this is not the only place to look for easyblocks, so we can have multiple
+# easybuild/easyblocks paths in the Python search path, next to the official easyblocks distribution
+pkg_resources.declare_namespace(__name__)

@@ -1,11 +1,11 @@
 ##
-# Copyright 2015-2015 Ghent University
+# Copyright 2015-2016 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
 # with support of Ghent University (http://ugent.be/hpc),
 # the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
-# the Hercules foundation (http://www.herculesstichting.be/in_English)
+# Flemish Research Foundation (FWO) (http://www.fwo.be/en)
 # and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
 # http://github.com/hpcugent/easybuild
@@ -31,6 +31,7 @@ Unit tests to check that easyblocks are compatible with --module-only.
 import glob
 import os
 import re
+import sys
 import tempfile
 from vsc.utils import fancylogger
 from unittest import TestLoader, main
@@ -46,7 +47,7 @@ from easybuild.framework.easyconfig import MANDATORY
 from easybuild.framework.easyconfig.easyconfig import EasyConfig, get_easyblock_class
 from easybuild.framework.easyconfig.tools import get_paths_for
 from easybuild.tools import config
-from easybuild.tools.filetools import write_file
+from easybuild.tools.filetools import mkdir, read_file, write_file
 from easybuild.tools.module_naming_scheme import GENERAL_CLASS
 from easybuild.tools.options import set_tmpdir
 
@@ -89,6 +90,73 @@ class ModuleOnlyTest(EnhancedTestCase):
         self.log = fancylogger.getLogger("EasyblocksModuleOnlyTest", fname=False)
         fd, self.eb_file = tempfile.mkstemp(prefix='easyblocks_module_only_test_', suffix='.eb')
         os.close(fd)
+
+    def test_make_module_pythonpackage(self):
+        """Test make_module_step of PythonPackage easyblock."""
+        app_class = get_easyblock_class('PythonPackage')
+        self.writeEC('PythonPackage', name='testpypkg', version='3.14')
+        app = app_class(EasyConfig(self.eb_file))
+
+        # install dir should not be there yet
+        self.assertFalse(os.path.exists(app.installdir))
+
+        # create install dir and populate it with subdirs/files
+        mkdir(app.installdir, parents=True)
+        # $PATH, $LD_LIBRARY_PATH, $LIBRARY_PATH, $CPATH, $PKG_CONFIG_PATH
+        write_file(os.path.join(app.installdir, 'bin', 'foo'), 'echo foo!')
+        write_file(os.path.join(app.installdir, 'include', 'foo.h'), 'bar')
+        write_file(os.path.join(app.installdir, 'lib', 'libfoo.a'), 'libfoo')
+        write_file(os.path.join(app.installdir, 'lib', 'python2.7', 'site-packages', 'foo.egg'), 'foo egg')
+        write_file(os.path.join(app.installdir, 'lib64', 'pkgconfig', 'foo.pc'), 'libfoo: foo')
+
+        # create module file
+        app.make_module_step()
+
+        self.assertTrue(TMPDIR in app.installdir)
+        self.assertTrue(TMPDIR in app.installdir_mod)
+
+        modtxt = None
+        for cand_mod_filename in ['3.14', '3.14.lua']:
+            full_modpath = os.path.join(app.installdir_mod, 'testpypkg', cand_mod_filename)
+            if os.path.exists(full_modpath):
+                modtxt = read_file(full_modpath)
+                break
+
+        self.assertFalse(modtxt is None)
+
+        regexs = [
+            (r'^prepend.path.*\WCPATH\W.*include"?\W*$', True),
+            (r'^prepend.path.*\WLD_LIBRARY_PATH\W.*lib"?\W*$', True),
+            (r'^prepend.path.*\WLIBRARY_PATH\W.*lib"?\W*$', True),
+            (r'^prepend.path.*\WPATH\W.*bin"?\W*$', True),
+            (r'^prepend.path.*\WPKG_CONFIG_PATH\W.*lib64/pkgconfig"?\W*$', True),
+            (r'^prepend.path.*\WPYTHONPATH\W.*lib/python2.7/site-packages"?\W*$', True),
+            # lib64 doesn't contain any library files, so these are *not* included in $LD_LIBRARY_PATH or $LIBRARY_PATH
+            (r'^prepend.path.*\WLD_LIBRARY_PATH\W.*lib64', False),
+            (r'^prepend.path.*\WLIBRARY_PATH\W.*lib64', False),
+        ]
+        for (pattern, found) in regexs:
+            regex = re.compile(pattern, re.M)
+            if found:
+                assert_msg = "Pattern '%s' found in: %s" % (regex.pattern, modtxt)
+            else:
+                assert_msg = "Pattern '%s' not found in: %s" % (regex.pattern, modtxt)
+
+            self.assertEqual(bool(regex.search(modtxt)), found, assert_msg)
+
+    def test_pythonpackage_det_pylibdir(self):
+        """Test det_pylibdir function from pythonpackage.py."""
+        from easybuild.easyblocks.generic.pythonpackage import det_pylibdir
+        for pylibdir in [det_pylibdir(), det_pylibdir(plat_specific=True), det_pylibdir(python_cmd=sys.executable)]:
+            self.assertTrue(pylibdir.startswith('lib') and '/python' in pylibdir and pylibdir.endswith('site-packages'))
+
+    def test_pythonpackage_pick_python_cmd(self):
+        """Test pick_python_cmd function from pythonpackage.py."""
+        from easybuild.easyblocks.generic.pythonpackage import pick_python_cmd
+        self.assertTrue(pick_python_cmd() is not None)
+        self.assertTrue(pick_python_cmd(2) is not None)
+        self.assertTrue(pick_python_cmd(2, 6) is not None)
+        self.assertTrue(pick_python_cmd(123, 456) is None)
 
     def tearDown(self):
         """Cleanup."""
@@ -147,6 +215,7 @@ def template_module_only_test(self, easyblock, name='foo', version='1.3.2', extr
         os.remove(app.logfile)
     else:
         self.assertTrue(False, "Class found in easyblock %s" % easyblock)
+
 
 def suite():
     """Return all easyblock --module-only tests."""

@@ -1,16 +1,16 @@
 ##
-# Copyright 2009-2015 Ghent University
-# Copyright 2009-2015 Stijn De Weirdt
+# Copyright 2009-2016 Ghent University
+# Copyright 2009-2016 Stijn De Weirdt
 # Copyright 2010 Dries Verdegem
-# Copyright 2010-2015 Kenneth Hoste
+# Copyright 2010-2016 Kenneth Hoste
 # Copyright 2011 Pieter De Baets
-# Copyright 2011-2015 Jens Timmerman
+# Copyright 2011-2016 Jens Timmerman
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
 # with support of Ghent University (http://ugent.be/hpc),
 # the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
-# the Hercules foundation (http://www.herculesstichting.be/in_English)
+# Flemish Research Foundation (FWO) (http://www.fwo.be/en)
 # and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
 # http://github.com/hpcugent/easybuild
@@ -27,7 +27,14 @@
 # You should have received a copy of the GNU General Public License
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
-from pkgutil import extend_path
+import os
+import pkg_resources
+import sys
 
-# we're not the only ones in this namespace
-__path__ = extend_path(__path__, __name__)  #@ReservedAssignment
+# check whether EasyBuild is being run from a directory that contains easybuild/__init__.py;
+# that doesn't work (fails with import errors), due to weirdness to Python packaging/setuptools/namespaces
+if __path__[0] == 'easybuild':
+    sys.stderr.write("ERROR: Running EasyBuild from %s does not work (Python packaging weirdness)...\n" % os.getcwd())
+    sys.exit(1)
+
+pkg_resources.declare_namespace(__name__)
