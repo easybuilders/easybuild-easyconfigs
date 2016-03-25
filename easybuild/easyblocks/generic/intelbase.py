@@ -331,7 +331,7 @@ class IntelBase(EasyBlock):
 
         # perform installation
         cmd = "./install.sh %s -s %s" % (tmppathopt, silentcfg)
-        return run_cmd(cmd, log_all=True, simple=True)
+        return run_cmd(cmd, log_all=True, simple=True, log_output=True)
 
     def move_after_install(self):
         """Move installed files to correct location after installation."""
