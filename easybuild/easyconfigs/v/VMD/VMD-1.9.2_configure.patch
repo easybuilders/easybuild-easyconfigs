@@ -1,0 +1,175 @@
+--- vmd-1.9.2/configure.orig	2015-12-03 10:17:20.637304717 -0800
++++ vmd-1.9.2/configure	2015-12-07 10:38:56.456192912 -0800
+@@ -6,17 +6,27 @@
+ # Perl 5.x must be in your path, and /usr/bin/env must exist in order
+ # for this to work correctly.
+ 
++use Getopt::Long;
++
+ ##############################################################################
+ # User modifiable installation parameters, can be overridden by env variables
+ ##############################################################################
+ # Name of shell script used to start program; this is the name used by users
+ $install_name = "vmd";
+ 
++my %args;
++GetOptions(\%args,
++           "prefix=s",
++) or die "Invalid arguments!";
++die "Missing --prefix!" unless $args{prefix};
++
++$install_base = $args{prefix};
++
+ # Directory where VMD startup script is installed, should be in users' paths.
+-$install_bin_dir="/usr/local/bin";
++$install_bin_dir="$install_base/bin";
+ 
+ # Directory where VMD files and executables are installed
+-$install_library_dir="/usr/local/lib/$install_name";
++$install_library_dir="$install_base/lib";
+ 
+ 
+ # optionally override hard-coded defaults above with environment variables
+@@ -444,12 +454,10 @@
+ 
+ $arch_cc          = "cc";
+ $arch_ccpp        = "CC";
+-$arch_nvcc        = "/usr/local/encap/cuda-4.0/bin/nvcc";
++$arch_nvcc        = "nvcc";
+ $arch_nvccflags   = "--ptxas-options=-v " . 
+-                    "-gencode arch=compute_10,code=sm_10 " .
+-                    "-gencode arch=compute_13,code=sm_13 " .
+-                    "-gencode arch=compute_20,code=sm_20 " .
+-                    "-gencode arch=compute_20,code=compute_20 " .
++                    "-gencode arch=compute_37,code=sm_37 " .
++                    "-gencode arch=compute_37,code=compute_37 " .
+                     "--ftz=true ";
+ $arch_gcc         = "gcc";
+ $arch_gccpp       = "g++";
+@@ -549,16 +557,16 @@
+ # location of Mesa library and include files; basically does the same
+ # as OpenGL.  This is based on the default instructions from the Mesa
+ # README; the include files should by default be in /usr/local/include/GL.
+-$mesa_dir         = "$vmd_library_dir/Mesa";
++$mesa_dir         = $ENV{'EBROOTMESA'};
+ $mesa_include     = "-I$mesa_dir/include";
+ $mesa_library     = "-L$mesa_dir/lib_$config_arch";
+-$mesa_libs        = "-lMesaGL -lMesaGLU"; 
++$mesa_libs        = "-lGL -lGLU"; 
+ $mesa_defines     = "-DUSELINEAXES -DVMDMESA -DVMDOPENGL";
+ @mesa_cc          = ();
+ @mesa_cu          = ();
+-@mesa_ccpp        = @opengl_ccpp;
+-@mesa_h           = @opengl_h;
+-@mesa_extra       = @opengl_extra;
++@mesa_ccpp        = ();
++@mesa_h           = ();
++@mesa_extra       = ();
+ 
+ 
+ #
+@@ -619,10 +627,10 @@
+ 
+ ################ FLTK GUI
+ $fltk_defines     = "-DVMDGUI -DVMDFLTK";
+-$fltk_dir         = "$vmd_library_dir/fltk";
++$fltk_dir         = $ENV{'EBROOTFLTK'};
+ $fltk_include     = "-I$fltk_dir/include";
+ $fltk_library     = "-L$fltk_dir/$config_arch";
+-$fltk_libs        = "-lfltk -lX11";
++$fltk_libs        = "-lfltk -lX11 -lXfixes -lXcursor -lXinerama";
+ #@fltk_cc          = ('forms_ui.c');
+ @fltk_cu          = ();
+ @fltk_ccpp        = ( 'ColorFltkMenu.C',
+@@ -682,8 +690,8 @@
+ if ($config_tk) { $tcl_include .= " -I$stock_tk_include_dir"; }
+ $tcl_library      = "-L$stock_tcl_library_dir";
+ if ($config_tk) { $tcl_library .= " -L$stock_tk_library_dir"; }
+-$tcl_libs         = "-ltcl8.5";  
+-if ($config_tk) { $tcl_libs = "-ltk8.5 -lX11 " . $tcl_libs; }
++$tcl_libs         = "-ltcl8.6";  
++if ($config_tk) { $tcl_libs = "-ltk8.6 -lX11 " . $tcl_libs; }
+ 
+ @tcl_cc           = ();
+ @tcl_cu           = ();
+@@ -835,7 +843,7 @@
+ #   This option enables the use of CUDA GPU acceleration functions.
+ #######################
+ $cuda_defines     = "-DVMDCUDA -DMSMPOT_CUDA";
+-$cuda_dir         = "/usr/local/encap/cuda-4.0";
++$cuda_dir         = "$CUDA_HOME";
+ $cuda_include     = "";
+ $cuda_library     = "";
+ $cuda_libs        = "-Wl,-rpath -Wl,\$\$ORIGIN/ -lcudart";
+@@ -922,7 +930,8 @@
+ # $liboptix_dir         = "/usr/local/encap/NVIDIA-OptiX-SDK-3.0.1-linux64";
+ # $liboptix_dir         = "/usr/local/encap/NVIDIA-OptiX-SDK-3.5.0-linux64";
+ # $liboptix_dir         = "/usr/local/encap/NVIDIA-OptiX-SDK-3.5.1-PRO-linux64";
+-$liboptix_dir         = "/usr/local/encap/NVIDIA-OptiX-SDK-3.6.3-linux64";
++#$liboptix_dir         = "/usr/local/encap/NVIDIA-OptiX-SDK-3.6.3-linux64";
++$liboptix_dir         = $ENV{'EBROOTOPTIX'};
+ # NCSA Blue Waters
+ # $liboptix_dir         = "/u/sciteam/stonej/local/NVIDIA-OptiX-SDK-3.5.0-linux64";
+ # $liboptix_dir         = "/u/sciteam/stonej/local/NVIDIA-OptiX-SDK-3.5.1-PRO-linux64";
+@@ -1141,8 +1150,8 @@
+ #######################
+ $actc_defines     = "-DVMDACTC";
+ $actc_dir         = "$vmd_library_dir/actc";
+-$actc_include     = "-I$actc_dir/include";
+-$actc_library     = "-L$actc_dir/lib_$config_arch";
++$actc_include     = "-I$actc_dir";
++$actc_library     = "-L$actc_dir";
+ $actc_libs        = "-lactc";
+ @actc_cc          = ();
+ @actc_cu          = ();
+@@ -1237,7 +1246,7 @@
+ $python_defines     = "-DVMDPYTHON";
+ $python_include     = "-I$stock_python_include_dir -I$stock_numpy_include_dir -I$stock_numpy_library_dir";
+ $python_library     = "-L$stock_python_library_dir";
+-$python_libs        = "-lpython2.5 -lpthread";
++$python_libs        = "-lpython2.7 -lpthread";
+ @python_h           = ('PythonTextInterp.h',
+                        'VMDTkinterMenu.h',
+ 		       'py_commands.h',
+@@ -1827,7 +1836,7 @@
+   $system_libs .= " -ldl";
+ 
+   if ($config_cuda) {
+-    $arch_nvcc        = "/opt/nvidia/cudatoolkit/default/bin/nvcc";
++    $arch_nvcc        = "nvcc";
+     # Only generate code for SM 3.5 or higher...
+     $arch_nvccflags   = "--ptxas-options=-v " .
+                     "-gencode arch=compute_35,code=sm_35 " .
+@@ -2245,12 +2254,12 @@
+ 
+     if ($config_cuda) {
+       $arch_nvccflags   .= " --machine 64 -O3 $cuda_include";
+-      $cuda_library     = "-L/usr/local/encap/cuda-4.0/lib64";
++      #$cuda_library     = "-L/usr/local/encap/cuda-4.0/lib64";
+     }
+ 
+     $arch_lex		= "flex"; # has problems with vendor lex
+     $opengl_dep_libs	= "-L/usr/X11R6/lib64 -lGL -lGLU -lX11";
+-    $mesa_libs          = "-lMesaGL -lMesaGLU -L/usr/X11R6/lib64 -lXext -lX11";
++    $mesa_libs          = "-lGL -lGLU -L/usr/X11R6/lib64 -lXext -lX11";
+ 
+     # this is to make tcl happy
+     # also needed for plugins
+@@ -2471,7 +2480,7 @@
+       $opengl_include   = $opengl_include . " -I/usr/X11R6/include";
+       $opengl_dep_libs  = "-L/usr/X11R6/lib -lGLU -lGL -framework Carbon -lXext -lX11";
+       $tcl_libs         = "-ltcl8.5-x11";
+-      if ($config_tk) { $tcl_libs = "-ltk8.5-x11 -lX11 " . $tcl_libs; }
++      if ($config_tk) { $tcl_libs = "-ltk8.6-x11 -lX11 " . $tcl_libs; }
+       $vmd_libs         = "$tcl_libs";
+     } else {
+       ##
+@@ -2586,7 +2595,7 @@
+       ##
+       $opengl_dep_libs  .= " -dylib_file /System/Library/Frameworks/OpenGL.framework/Versions/A/Libraries/libGL.dylib:/System/Library/Frameworks/OpenGL.framework/Versions/A/Libraries/libGL.dylib";
+       $tcl_libs         = "-ltcl8.5-x11";
+-      if ($config_tk) { $tcl_libs = "-ltk8.5-x11 -lX11 " . $tcl_libs; }
++      if ($config_tk) { $tcl_libs = "-ltk8.6-x11 -lX11 " . $tcl_libs; }
+       $vmd_libs          = "$tcl_libs";
+     } else {
+       ##

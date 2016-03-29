@@ -1,0 +1,51 @@
+##
+# This file is an EasyBuild reciPY as per https://github.com/hpcugent/easybuild
+# Authors::   Stephane Thiell <sthiell@stanford.edu>
+##
+easyblock = 'EB_VMD'
+name = 'VMD'
+version = '1.9.2'
+
+pythonver = '2.7.9'
+pythonshortver = '.'.join(pythonver.split('.')[0:2])
+versionsuffix = '-%s-%s' % ('Python', pythonver)
+
+homepage = 'http://www.ks.uiuc.edu/Research/vmd'
+description = "VMD is a molecular visualization program for displaying, animating, and analyzing large biomolecular systems using 3-D graphics and built-in scripting."
+
+toolchain= { 'name': 'foss' , 'version': '2015a' }
+
+actc_ver = '1.1'
+
+sources = ['%(namelower)s-%(version)s.src.tar.gz',
+           'actc-%s.tar.gz' % actc_ver]
+
+source_urls = ['http://downloads.sourceforge.net/project/actc/actc-source/1.1-final/']
+
+patches = ['%(name)s-%(version)s_configure.patch',
+           '%(name)s-%(version)s_plugins.patch']
+
+dependencies = [
+    ('Tcl', '8.6.3', '', ('GNU', '4.9.2-2.25')),
+    ('Tk', '8.6.3', '-no-X11', ('GNU', '4.9.2-2.25')),
+    ('FLTK', '1.3.3', '', ('GNU', '4.9.2-2.25')),
+    ('Python', pythonver),
+    ('Mesa', '7.11.2', versionsuffix),
+    ('netCDF', '4.3.3.1'),
+    ('OptiX', '3.8.0', '', ('GNU', '4.9.2-2.25')),
+    ('ffmpeg', '2.8.1'),
+    ('ImageMagick', '6.9.2-8', '', ('GNU', '4.9.2-2.25')),
+    # Assuming CUDA here?
+]
+
+start_dir = "plugins"
+
+# This should match wanted features
+configopts = "LINUXAMD64 OPENGL MESA FLTK TK ACTC CUDA IMD LIBOPTIX NETCDF TCL PYTHON PTHREADS NUMPY COLVARS SILENT"
+
+sanity_check_paths = {
+    'files': ['bin/vmd'],
+    'dirs': []
+}
+
+moduleclass = 'chem'
