@@ -1,0 +1,45 @@
+##
+# This file is an EasyBuild recipe; see https://github.com/hpcugent/easybuild
+#
+# Copyright:: Copyright (c) 2016 Riccardo Murri <riccardo.murri@gmail.com>
+# Authors::   Riccardo Murri <riccardo.murri@gmail.com>
+# License::   GPL
+#
+##
+
+easyblock = 'ConfigureMake'
+
+name = 'Givaro'
+version = '4.0.1'
+
+homepage = 'http://givaro.forge.imag.fr/'
+description = "C++ library for arithmetic and algebraic computations"
+
+toolchain = {'version': '2016a', 'name': 'foss'}
+
+sources = ['v4.0.1.zip']
+source_urls = ['https://github.com/linbox-team/%(namelower)s/archive']
+
+builddependencies = [
+    ('Autoconf', '2.69', '', True),
+    ('Automake', '1.15', '', True),
+    ('libtool', '2.4.6', '', True),
+]
+dependencies = [
+    ('GMP', '6.1.0', '', ('GCC', '4.9.3-2.25')),
+]
+
+preconfigopts = "env NOCONFIGURE=1 ./autogen.sh && "
+configopts = "--with-gmp=$EBROOTGMP --enable-inline"
+
+parallel = 4
+
+unwanted_env_vars = {}
+start_dir = '%(builddir)s/%(namelower)s-%(version)s/'
+
+sanity_check_paths = {
+    'files': ['bin/%(namelower)s-config', 'include/%(namelower)s-config.h'],
+    'dirs': ['bin', 'include', 'lib'],
+}
+
+moduleclass = 'math'
