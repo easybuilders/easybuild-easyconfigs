@@ -1,0 +1,55 @@
+# This file is an EasyBuild reciPY as per https://github.com/hpcugent/easybuild
+# Author: Pablo Escobar Lopez
+# sciCORE - University of Basel
+# SIB Swiss Institute of Bioinformatics 
+
+easyblock = 'Bundle'
+
+name = 'Pysam'
+version = '0.9.0'
+
+homepage = 'https://github.com/pysam-developers/pysam'
+description = """Pysam is a python module for reading and manipulating Samfiles. 
+ It's a lightweight wrapper of the samtools C-API. Pysam also includes an interface for tabix."""
+
+toolchain = {'name': 'goolf', 'version': '1.4.10'}
+toolchainopts = {'optarch': False, 'pic': False}
+
+parallel = 1
+
+python = 'Python'
+pyver = '2.7.5'
+pyshortver = '.'.join(pyver.split('.')[:2])
+versionsuffix = '-%s-%s' % (python, pyver)
+
+dependencies = [
+    (python, pyver),
+    ('ncurses', '5.9'),
+    ('zlib', '1.2.8'),  
+    ('cURL', '7.29.0'),  
+]
+
+# this is a bundle of Python packages
+exts_defaultclass = 'PythonPackage'
+exts_filter = ("python -c 'import %(ext_name)s'", '')
+
+exts_list = [
+    ('Cython', '0.23.4', {
+	'source_urls': ['http://cython.org/release/'],
+    }),
+    ('pysam', version, {
+	'source_tmpl': 'v%(version)s.tar.gz',
+        'source_urls': ['https://github.com/pysam-developers/pysam/archive/'],
+    }),
+]
+
+modextrapaths = {
+    'PYTHONPATH': ['lib/python%s/site-packages' % pyshortver],
+}
+
+sanity_check_paths = {
+    'files': [],
+    'dirs': ['lib/python%s/site-packages/pysam-%s-py%s-linux-x86_64.egg' % (pyshortver, version, pyshortver)]
+}
+
+moduleclass = 'bio'
