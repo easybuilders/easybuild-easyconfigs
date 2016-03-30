@@ -2,6 +2,7 @@ easyblock = 'ConfigureMake'
 
 name = 'PyGObject'
 version = '2.28.6'
+versionsuffix = '-Python-%(pyver)s'
 
 homepage = 'http://www.pygtk.org/'
 description = """Python Bindings for GLib/GObject/GIO/GTK+"""
@@ -15,11 +16,10 @@ patches = ['PyGObject-%(version)s_enum-types.patch']
 
 pyver = '2.7.11'
 pyshortver = '.'.join(pyver.split('.')[:2])
-versionsuffix = '-Python-%s' % pyver
 
 glibver = '2.47.5'
 dependencies = [
-    ('Python', pyver),
+    ('Python', '2.7.11'),
     ('GLib', glibver),
     ('GObject-Introspection', '1.47.1'),
     ('PyCairo', '1.10.0', versionsuffix),
@@ -28,13 +28,24 @@ dependencies = [
 configopts = "--disable-introspection"
 
 modextrapaths = {
-    'PYTHONPATH': ['lib/python%s/site-packages' % pyshortver, 'lib64/python%s/site-packages' % pyshortver],
+    'PYTHONPATH': [
+        'lib/python%(pyshortver)s/site-packages',
+        'lib/python%(pyshortver)s/site-packages/gtk-2.0',
+        'lib64/python%(pyshortver)s/site-packages',
+        'lib64/python%(pyshortver)s/site-packages/gtk-2.0',
+    ],
 }
 
 sanity_check_paths = {
     'files': ['include/pygtk-%(version_major)s.0/pyglib.h', 'include/pygtk-%(version_major)s.0/pygobject.h',
               'lib/libpyglib-%(version_major)s.0-python.so'],
-    'dirs': ['bin', 'lib/python%s/site-packages/' % pyshortver],
+    'dirs': ['bin', 'lib/python%(pyshortver)s/site-packages/'],
 }
+
+sanity_check_commands = [
+    ('python', "-c 'import gobject'"),
+    ('python', "-c 'import glib'"),
+    ('python', "-c 'import gio'"),
+]
 
 moduleclass = 'vis'
