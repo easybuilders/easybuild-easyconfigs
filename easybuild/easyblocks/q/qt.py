@@ -57,17 +57,17 @@ class EB_Qt(ConfigureMake):
         platform = None
         comp_fam = self.toolchain.comp_family()
         if self.cfg['platform']:
-                platform = self.cfg['platform']
+            platform = self.cfg['platform']
         # if no platform is specified, try to derive it based on compiler in toolchain
         elif comp_fam in [toolchain.GCC]:  #@UndefinedVariable
-                platform = 'linux-g++-64'
+            platform = 'linux-g++-64'
         elif comp_fam in [toolchain.INTELCOMP]:  #@UndefinedVariable
-                platform = 'linux-icc-64'
+            platform = 'linux-icc-64'
                 
         if platform:
-                self.cfg.update('configopts', "-platform %s" % platform)
+            self.cfg.update('configopts', "-platform %s" % platform)
         else:
-                raise EasyBuildError("Don't know which platform to set based on compiler family.")
+            raise EasyBuildError("Don't know which platform to set based on compiler family.")
 
         cmd = "%s ./configure --prefix=%s %s" % (self.cfg['preconfigopts'], self.installdir, self.cfg['configopts'])
         qa = {
