@@ -1,11 +1,11 @@
 ##
-# Copyright 2009-2015 Ghent University
+# Copyright 2009-2016 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
 # with support of Ghent University (http://ugent.be/hpc),
 # the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
-# the Hercules foundation (http://www.herculesstichting.be/in_English)
+# Flemish Research Foundation (FWO) (http://www.fwo.be/en)
 # and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
 # http://github.com/hpcugent/easybuild
@@ -228,16 +228,19 @@ class EB_Trilinos(CMakeMake):
 
         libs = [l for l in libs if not l in self.cfg['skip_exts']]
 
-        # teuchos was refactored in 11.2
-        if LooseVersion(self.version) >= LooseVersion("11.2") and  'Teuchos' in libs:
-            # remove it
-            libs = [l for l in libs if l is not "Teuchos"]
-            # add new libs
+        # Teuchos was refactored in 11.2
+        if LooseVersion(self.version) >= LooseVersion('11.2') and  'Teuchos' in libs:
+            libs.remove('Teuchos')
             libs.extend(['teuchoscomm', 'teuchoscore', 'teuchosnumerics', 'teuchosparameterlist', 'teuchosremainder'])
 
+        # Kokkos was refactored in 12.x, check for libkokkoscore.a rather than libkokkos.a
+        if LooseVersion(self.version) >= LooseVersion('12') and 'Kokkos' in libs:
+            libs.remove('Kokkos')
+            libs.append('kokkoscore')
+
         custom_paths = {
-            'files':[os.path.join("lib", "lib%s.a" % x.lower()) for x in libs],
-            'dirs':['bin', 'include']
+            'files': [os.path.join('lib', 'lib%s.a' % x.lower()) for x in libs],
+            'dirs': ['bin', 'include']
         }
 
         super(EB_Trilinos, self).sanity_check_step(custom_paths=custom_paths)

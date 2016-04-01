@@ -1,11 +1,11 @@
 ##
-# Copyright 2009-2015 Ghent University
+# Copyright 2009-2016 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
 # with support of Ghent University (http://ugent.be/hpc),
 # the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
-# the Hercules foundation (http://www.herculesstichting.be/in_English)
+# Flemish Research Foundation (FWO) (http://www.fwo.be/en)
 # and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
 # http://github.com/hpcugent/easybuild
@@ -33,15 +33,38 @@ EasyBuild support for installing a bundle of modules, implemented as a generic e
 """
 
 from easybuild.framework.easyblock import EasyBlock
+from easybuild.framework.easyconfig import CUSTOM
+from easybuild.tools.modules import get_software_root, get_software_version
 
 
 class Bundle(EasyBlock):
     """
     Bundle of modules: only generate module files, nothing to build/install
     """
+
+    @staticmethod
+    def extra_options():
+        extra_vars = {
+            'altroot': [None, "Software name of dependency to use to define $EBROOT for this bundle", CUSTOM],
+            'altversion': [None, "Software name of dependency to use to define $EBVERSION for this bundle", CUSTOM],
+        }
+        return EasyBlock.extra_options(extra_vars)
+
+    def __init__(self, *args, **kwargs):
+        """Initialize easyblock."""
+        super(Bundle, self).__init__(*args, **kwargs)
+        self.altroot = None
+        self.altversion = None
+
     def configure_step(self):
-        """Do nothing."""
-        pass
+        """Collect altroot/altversion info."""
+        # pick up altroot/altversion, if they are defined
+        self.altroot = None
+        if self.cfg['altroot']:
+            self.altroot = get_software_root(self.cfg['altroot'])
+        self.altversion = None
+        if self.cfg['altversion']:
+            self.altversion = get_software_version(self.cfg['altversion'])
 
     def build_step(self):
         """Do nothing."""
@@ -50,6 +73,10 @@ class Bundle(EasyBlock):
     def install_step(self):
         """Do nothing."""
         pass
+
+    def make_module_extra(self):
+        """Set extra stuff in module file, e.g. $EBROOT*, $EBVERSION*, etc."""
+        return super(Bundle, self).make_module_extra(altroot=self.altroot, altversion=self.altversion)
 
     def sanity_check_step(self, *args, **kwargs):
         """

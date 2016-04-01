@@ -1,11 +1,11 @@
 ##
-# Copyright 2009-2015 Ghent University
+# Copyright 2009-2016 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
 # with support of Ghent University (http://ugent.be/hpc),
 # the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
-# the Hercules foundation (http://www.herculesstichting.be/in_English)
+# Flemish Research Foundation (FWO) (http://www.fwo.be/en)
 # and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
 # http://github.com/hpcugent/easybuild
@@ -30,8 +30,8 @@ EasyBuild support for building and installing Trinity, implemented as an easyblo
 @author: Kenneth Hoste (Ghent University)
 @author: Pieter De Baets (Ghent University)
 @author: Jens Timmerman (Ghent University)
+@author: Balazs Hajgato (Vrije Universiteit Brussel)
 """
-import fileinput
 import glob
 import os
 import re
@@ -43,6 +43,7 @@ import easybuild.tools.toolchain as toolchain
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.build_log import EasyBuildError
+from easybuild.tools.filetools import apply_regex_substitutions
 from easybuild.tools.modules import get_software_root
 from easybuild.tools.run import run_cmd
 
@@ -114,6 +115,9 @@ class EB_Trinity(EasyBlock):
         """Install procedure for Inchworm."""
 
         make_flags = 'CXXFLAGS="%s %s"' % (os.getenv('CXXFLAGS'), self.toolchain.get_flag('openmp'))
+        version = LooseVersion(self.version)
+        if version >= LooseVersion('2.0') and version < LooseVersion('3.0'):
+            make_flags += ' CXX=%s' % os.getenv('CXX')
 
         if run:
             self.log.info("Begin Inchworm")
@@ -230,7 +234,8 @@ class EB_Trinity(EasyBlock):
     def install_step(self):
         """Custom install procedure for Trinity."""
 
-        if LooseVersion(self.version) < LooseVersion('2012-10-05'):
+        version = LooseVersion(self.version)
+        if version > LooseVersion('2012') and version < LooseVersion('2012-10-05'):
             self.inchworm()
             self.chrysalis()
             self.kmer()
@@ -258,17 +263,21 @@ class EB_Trinity(EasyBlock):
                 if libroot:
                     lib_flags += " -L%s/lib" % libroot
 
-            fn = "Makefile"
-            for line in fileinput.input(fn, inplace=1, backup='.orig.eb'):
-
-                line = re.sub(r'^(INCHWORM_CONFIGURE_FLAGS\s*=\s*).*$', r'\1%s' % inchworm_flags, line)
-                line = re.sub(r'^(CHRYSALIS_MAKE_FLAGS\s*=\s*).*$', r'\1%s' % chrysalis_flags, line)
-                line = re.sub(r'(/rsem && \$\(MAKE\))\s*$',
-                              r'\1 CC=%s CXX="%s %s" CFLAGS_EXTRA="%s"\n' % (cc, cxx, lib_flags, lib_flags), line)
-                line = re.sub(r'(/fastool && \$\(MAKE\))\s*$',
-                              r'\1 CC="%s -std=c99" CFLAGS="%s ${CFLAGS}"\n' % (cc, lib_flags), line)
-
-                sys.stdout.write(line)
+            if version >= LooseVersion('2.0') and version < LooseVersion('3.0'):
+                regex_subs = [
+                    (r'^( INCHWORM_CONFIGURE_FLAGS\s*=\s*).*$', r'\1%s' % inchworm_flags),
+                    (r'^( CHRYSALIS_MAKE_FLAGS\s*=\s*).*$', r'\1%s' % chrysalis_flags),
+                ]
+            else:
+                regex_subs = [
+                    (r'^(INCHWORM_CONFIGURE_FLAGS\s*=\s*).*$', r'\1%s' % inchworm_flags),
+                    (r'^(CHRYSALIS_MAKE_FLAGS\s*=\s*).*$', r'\1%s' % chrysalis_flags),
+                    (r'(/rsem && \$\(MAKE\))\s*$',
+                     r'\1 CC=%s CXX="%s %s" CFLAGS_EXTRA="%s"\n' % (cc, cxx, lib_flags, lib_flags)),
+                    (r'(/fastool && \$\(MAKE\))\s*$',
+                     r'\1 CC="%s -std=c99" CFLAGS="%s ${CFLAGS}"\n' % (cc, lib_flags)),
+                ]
+            apply_regex_substitutions('Makefile', regex_subs)
 
             trinity_compiler = None
             comp_fam = self.toolchain.comp_family()
@@ -279,7 +288,11 @@ class EB_Trinity(EasyBlock):
             else:
                 raise EasyBuildError("Don't know how to set TRINITY_COMPILER for %s compiler", comp_fam)
 
-            cmd = "make TRINITY_COMPILER=%s" % trinity_compiler
+            explicit_make_args = ''
+            if version >= LooseVersion('2.0') and version < LooseVersion('3.0'):
+                explicit_make_args = 'all plugins'
+                 
+            cmd = "make TRINITY_COMPILER=%s %s" % (trinity_compiler, explicit_make_args)
             run_cmd(cmd)
 
             # butterfly is not included in standard build
@@ -295,7 +308,13 @@ class EB_Trinity(EasyBlock):
     def sanity_check_step(self):
         """Custom sanity check for Trinity."""
 
-        path = 'trinityrnaseq_r%s' % self.version
+        version = LooseVersion(self.version)
+        if version >= LooseVersion('2.0') and version < LooseVersion('3.0'):
+            sep = '-'
+        else:
+            sep = '_r'
+
+        path = 'trinityrnaseq%s%s' % (sep, self.version)
 
         # these lists are definitely non-exhaustive, but better than nothing
         custom_paths = {

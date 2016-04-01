@@ -1,11 +1,11 @@
 ##
-# Copyright 2009-2015 Ghent University
+# Copyright 2009-2016 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
 # with support of Ghent University (http://ugent.be/hpc),
 # the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
-# the Hercules foundation (http://www.herculesstichting.be/in_English)
+# Flemish Research Foundation (FWO) (http://www.fwo.be/en)
 # and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
 # http://github.com/hpcugent/easybuild
@@ -99,8 +99,8 @@ class EB_SuiteSparse(ConfigureMake):
                     # for variables in cfgvars, substiture lines assignment 
                     # in the file, whatever they are, by assignments to the
                     # values in cfgvars
-                    line = re.sub(r"^\s*(%s\s*=\s*).*$" % var,
-                                  r"\1 %s # patched by EasyBuild" % val,
+                    line = re.sub(r"^\s*(%s\s*=\s*).*\n$" % var,
+                                  r"\1 %s # patched by EasyBuild\n" % val,
                                   line)
                     if line != orig_line:
                         cfgvars.pop(var)
@@ -160,9 +160,17 @@ class EB_SuiteSparse(ConfigureMake):
                     raise EasyBuildError("Failed to make symbolic link from %s to %s: %s", src, dst, err)
 
     def make_module_req_guess(self):
-        """Add config dir to CPATH so include file is found."""
+        """
+        Extra path to consider for module file:
+        * add config dir to $CPATH so include files are found
+        * add UMFPACK and AMD library dirs to $LD_LIBRARY_PATH
+        """
         guesses = super(EB_SuiteSparse, self).make_module_req_guess()
-        guesses.update({'CPATH': [self.config_name]})
+        guesses.update({
+            'CPATH': [self.config_name],
+            'LD_LIBRARY_PATH': ['UMFPACK/Lib', 'AMD/Lib'],
+        })
+
         return guesses
 
     def sanity_check_step(self):

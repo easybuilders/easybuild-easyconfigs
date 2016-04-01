@@ -1,11 +1,11 @@
 ##
-# Copyright 2013-2015 Ghent University
+# Copyright 2013-2016 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
 # with support of Ghent University (http://ugent.be/hpc),
 # the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
-# the Hercules foundation (http://www.herculesstichting.be/in_English)
+# Flemish Research Foundation (FWO) (http://www.fwo.be/en)
 # and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
 # http://github.com/hpcugent/easybuild
@@ -32,7 +32,7 @@ import glob
 import os
 import re
 import tempfile
-from vsc import fancylogger
+from vsc.utils import fancylogger
 from unittest import TestCase, TestLoader, main
 
 import easybuild.tools.options as eboptions
@@ -42,6 +42,7 @@ from easybuild.framework.easyconfig.easyconfig import EasyConfig, get_easyblock_
 from easybuild.framework.easyconfig.tools import get_paths_for
 from easybuild.tools import config
 from easybuild.tools.filetools import write_file
+from easybuild.tools.options import set_tmpdir
 from easybuild.tools.module_naming_scheme import GENERAL_CLASS
 from easybuild.tools.run import parse_log_for_error, run_cmd, run_cmd_qa
 from easybuild.tools.environment import modify_env, read_environment
@@ -59,7 +60,7 @@ class InitTest(TestCase):
         'valid_stops': [x[0] for x in EasyBlock.get_steps()],
     }
     config.init_build_options(build_options=build_options)
-    config.set_tmpdir()
+    set_tmpdir()
     del eb_go
 
     def writeEC(self, easyblock, name='foo', version='1.3.2', extratxt=''):

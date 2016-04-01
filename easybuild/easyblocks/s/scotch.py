@@ -1,11 +1,11 @@
 ##
-# Copyright 2009-2015 Ghent University
+# Copyright 2009-2016 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
 # with support of Ghent University (http://ugent.be/hpc),
 # the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
-# the Hercules foundation (http://www.herculesstichting.be/in_English)
+# Flemish Research Foundation (FWO) (http://www.fwo.be/en)
 # and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
 # http://github.com/hpcugent/easybuild
@@ -103,6 +103,10 @@ class EB_SCOTCH(EasyBlock):
             cflags += " -Drestrict=__restrict"
         else:
             cflags += " -restrict -DIDXSIZE64"
+
+        #USE 64 bit index
+        if self.toolchain.options['i8']:
+            cflags += " -DINTSIZE64"
 
         if not self.toolchain.mpi_family() in [toolchain.INTELMPI, toolchain.QLOGICMPI]:  #@UndefinedVariable
             cflags += " -DSCOTCH_PTHREAD"

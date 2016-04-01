@@ -5,7 +5,7 @@
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
 # with support of Ghent University (http://ugent.be/hpc),
 # the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
-# the Hercules foundation (http://www.herculesstichting.be/in_English)
+# Flemish Research Foundation (FWO) (http://www.fwo.be/en)
 # and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
 # http://github.com/hpcugent/easybuild
@@ -87,7 +87,14 @@ class MakeCp(ConfigureMake):
                 if not os.path.exists(target):
                     os.makedirs(target)
 
-                for files_spec in files_specs:
+                for orig_files_spec in files_specs:
+                    if isinstance(orig_files_spec, tuple):
+                        files_spec = orig_files_spec[0]
+                        dest = orig_files_spec[1]
+                    else:
+                        files_spec = orig_files_spec
+                        dest = None
+
                     # first look for files in start dir
                     filepaths = glob.glob(os.path.join(self.cfg['start_dir'], files_spec))
                     tup = (files_spec, self.cfg['start_dir'], filepaths)
@@ -104,11 +111,19 @@ class MakeCp(ConfigureMake):
                     if not filepaths:
                         raise EasyBuildError("No files matching '%s' found anywhere.", files_spec)
 
+                    if dest and len(filepaths) != 1:
+                        raise EasyBuildError("When a list with new names has been specified, the original file spec can \
+                                              only match a single file yet it gives: %s", filepaths)
+
                     for filepath in filepaths:
                         # copy individual file
                         if os.path.isfile(filepath):
-                            self.log.debug("Copying file %s to %s" % (filepath, target))
-                            shutil.copy2(filepath, target)
+                            if dest:
+                                target_dest = os.path.join(target, dest)
+                            else:
+                                target_dest = target
+                            self.log.debug("Copying file %s to %s" % (filepath, target_dest))
+                            shutil.copy2(filepath, target_dest)
                         # copy directory
                         elif os.path.isdir(filepath):
                             self.log.debug("Copying directory %s to %s" % (filepath, target))

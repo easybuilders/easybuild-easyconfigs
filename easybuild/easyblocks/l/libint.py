@@ -5,7 +5,7 @@
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
 # with support of Ghent University (http://ugent.be/hpc),
 # the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
-# the Hercules foundation (http://www.herculesstichting.be/in_English)
+# Flemish Research Foundation (FWO) (http://www.fwo.be/en)
 # and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
 # http://github.com/hpcugent/easybuild
@@ -33,6 +33,7 @@ import os.path
 from distutils.version import LooseVersion
 
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
+from easybuild.tools.systemtools import get_shared_lib_ext
 
 
 class EB_Libint(ConfigureMake):
@@ -55,15 +56,17 @@ class EB_Libint(ConfigureMake):
 
     def sanity_check_step(self):
         """Custom sanity check for Libint."""
+        shlib_ext = get_shared_lib_ext()
+
         if LooseVersion(self.version) >= LooseVersion('2.0'):
             custom_paths = {
-                'files': ['lib/libint2.a', 'lib/libint2.so', 'include/libint2/libint2.h'],
+                'files': ['lib/libint2.a', 'lib/libint2.%s' % shlib_ext, 'include/libint2/libint2.h'],
                 'dirs': [],
             }
         else:
             custom_paths = {
                 'files': ['include/libint/libint.h', 'include/libint/hrr_header.h', 'include/libint/vrr_header.h',
-                          'lib/libint.a', 'lib/libint.so'],
+                          'lib/libint.a', 'lib/libint.%s' % shlib_ext],
                 'dirs': [],
             }
         super(EB_Libint, self).sanity_check_step(custom_paths=custom_paths)

@@ -1,11 +1,11 @@
 ##
-# Copyright 2009-2015 Ghent University
+# Copyright 2009-2016 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
 # with support of Ghent University (http://ugent.be/hpc),
 # the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
-# the Hercules foundation (http://www.herculesstichting.be/in_English)
+# Flemish Research Foundation (FWO) (http://www.fwo.be/en)
 # and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
 # http://github.com/hpcugent/easybuild
@@ -37,6 +37,7 @@ from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.filetools import adjust_permissions
 from easybuild.tools.modules import get_software_root
 from easybuild.tools.run import run_cmd
+from easybuild.tools.systemtools import get_shared_lib_ext
 
 
 class EB_NEURON(ConfigureMake):
@@ -116,30 +117,19 @@ class EB_NEURON(ConfigureMake):
 
     def sanity_check_step(self):
         """Custom sanity check for NEURON."""
-
+        shlib_ext = get_shared_lib_ext()
         binpath = os.path.join(self.hostcpu, 'bin')
-        libpath = os.path.join(self.hostcpu, 'lib', 'lib%s.so')
+        libpath = os.path.join(self.hostcpu, 'lib', 'lib%s.' + shlib_ext)
         custom_paths = {
-                        'files': [os.path.join(binpath, x) for x in ["bbswork.sh", "hel2mos1.sh",
-                                                                     "hoc_ed", "ivoc", "memacs",
-                                                                     "mkthreadsafe", "modlunit",
-                                                                     "mos2nrn", "mos2nrn2.sh",
-                                                                     "neurondemo", "nocmodl",
-                                                                     "oc"]] +
-                                 [os.path.join(binpath, "nrn%s" % x) for x in ["gui", "iv",
-                                                                               "iv_makefile",
-                                                                               "ivmodl",
-                                                                               "mech_makefile",
-                                                                               "oc",
-                                                                               "oc_makefile",
-                                                                               "ocmodl"]] +
-                                 [libpath % x for x in ["ivoc", "ivos", "memacs", "meschach",
-                                                        "neuron_gnu", "nrniv", "nrnmpi", "nrnoc",
-                                                        "nrnpython", "oc", "ocxt", "scopmath",
-                                                        "sparse13", "sundials"]],
-                        'dirs': ['include/nrn', 'share/nrn']
-                       }
-
+            'files': [os.path.join(binpath, x) for x in ["bbswork.sh", "hel2mos1.sh", "hoc_ed", "ivoc", "memacs",
+                                                         "mkthreadsafe", "modlunit", "mos2nrn", "mos2nrn2.sh",
+                                                         "neurondemo", "nocmodl", "oc"]] +
+                     [os.path.join(binpath, "nrn%s" % x) for x in ["gui", "iv", "iv_makefile", "ivmodl",
+                                                                   "mech_makefile", "oc", "oc_makefile", "ocmodl"]] +
+                     [libpath % x for x in ["ivoc", "ivos", "memacs", "meschach", "neuron_gnu", "nrniv", "nrnmpi",
+                                            "nrnoc", "nrnpython", "oc", "ocxt", "scopmath", "sparse13", "sundials"]],
+            'dirs': ['include/nrn', 'share/nrn'],
+        }
         super(EB_NEURON, self).sanity_check_step(custom_paths=custom_paths)
 
         try:

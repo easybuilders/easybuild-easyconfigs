@@ -5,7 +5,7 @@
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
 # with support of Ghent University (http://ugent.be/hpc),
 # the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
-# the Hercules foundation (http://www.herculesstichting.be/in_English)
+# Flemish Research Foundation (FWO) (http://www.fwo.be/en)
 # and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
 # http://github.com/hpcugent/easybuild
@@ -64,9 +64,20 @@ class VersionIndependentPythonPackage(PythonPackage):
             # this will raise an error and not return
             raise EasyBuildError("Failed to install: %s", err)
 
-        args = "--prefix=%s --install-lib=%s " % (self.installdir, full_pylibdir)
-        args += "--single-version-externally-managed --record %s --no-compile" % os.path.join(self.builddir, 'record')
-        cmd = "python setup.py install %s" % args
+        if self.use_setup_py:
+            extra_installopts = [
+                '--install-lib=%s' % full_pylibdir,
+                '--single-version-externally-managed',
+                '--record %s' % os.path.join(self.builddir, 'record'),
+                '--no-compile',
+            ]
+            self.cfg.update('installopts', ' '.join(extra_installopts))
+        else:
+            # using easy_install or pip always results in installation that is specific to Python version
+            eb_name = self.__class__.__name__
+            raise EasyBuildError("%s easyblock is not compatible with using easy_install or pip", eb_name)
+
+        cmd = self.compose_install_command(self.installdir)
         run_cmd(cmd, log_all=True, simple=True, log_output=True)
 
         # setuptools stubbornly replaces the shebang line in scripts with

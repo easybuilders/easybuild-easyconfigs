@@ -8,7 +8,7 @@
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
 # with support of Ghent University (http://ugent.be/hpc),
 # the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
-# the Hercules foundation (http://www.herculesstichting.be/in_English)
+# Flemish Research Foundation (FWO) (http://www.fwo.be/en)
 # and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
 # http://github.com/hpcugent/easybuild
@@ -48,7 +48,7 @@ from easybuild.tools.config import build_option
 from easybuild.tools.filetools import mkdir
 from easybuild.tools.modules import get_software_root
 from easybuild.tools.run import run_cmd
-from easybuild.tools.systemtools import get_os_name, get_os_version
+from easybuild.tools.systemtools import get_os_name, get_os_version, get_shared_lib_ext
 
 # List of all possible build targets for Clang
 CLANG_TARGETS = ["all", "AArch64", "ARM", "CppBackend", "Hexagon", "Mips",
@@ -67,6 +67,8 @@ class EB_Clang(CMakeMake):
             'bootstrap': [True, "Bootstrap Clang using GCC", CUSTOM],
             'usepolly': [False, "Build Clang with polly", CUSTOM],
             'static_analyzer': [True, "Install the static analyser of Clang", CUSTOM],
+            # The sanitizer tests often fail on HPC systems due to the 'weird' environment.
+            'skip_sanitizer_tests': [False, "Do not run the sanitizer tests", CUSTOM],
         }
 
         return CMakeMake.extra_options(extra_vars)
@@ -185,7 +187,8 @@ class EB_Clang(CMakeMake):
                 self.log.warn("The stacksize limit is set to unlimited. This causes the ThreadSanitizer "
                               "to fail. The sanitizers tests will be disabled unless --strict=error is used.")
 
-            if disable_san_tests and build_option('strict') != run.ERROR:
+            if (disable_san_tests or self.cfg['skip_sanitizer_tests']) and build_option('strict') != run.ERROR:
+                self.log.debug("Disabling the sanitizer tests")
                 self.disable_sanitizer_tests()
 
         # Create and enter build directory.
@@ -345,11 +348,12 @@ class EB_Clang(CMakeMake):
 
     def sanity_check_step(self):
         """Custom sanity check for Clang."""
+        shlib_ext = get_shared_lib_ext()
         custom_paths = {
             'files': [
                 "bin/clang", "bin/clang++", "bin/llvm-ar", "bin/llvm-nm", "bin/llvm-as", "bin/opt", "bin/llvm-link",
                 "bin/llvm-config", "bin/llvm-symbolizer", "include/llvm-c/Core.h", "include/clang-c/Index.h",
-                "lib/libclang.so", "lib/clang/%s/include/stddef.h" % self.version,
+                "lib/libclang.%s" % shlib_ext, "lib/clang/%s/include/stddef.h" % self.version,
             ],
             'dirs': ["include/clang", "include/llvm", "lib/clang/%s/lib" % self.version],
         }
@@ -357,7 +361,7 @@ class EB_Clang(CMakeMake):
             custom_paths['files'].extend(["bin/scan-build", "bin/scan-view"])
 
         if self.cfg["usepolly"]:
-            custom_paths['files'].extend(["lib/LLVMPolly.so"])
+            custom_paths['files'].extend(["lib/LLVMPolly.%s" % shlib_ext])
             custom_paths['dirs'].extend(["include/polly"])
 
         super(EB_Clang, self).sanity_check_step(custom_paths=custom_paths)

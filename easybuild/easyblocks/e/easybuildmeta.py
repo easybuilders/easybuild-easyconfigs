@@ -5,7 +5,7 @@
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
 # with support of Ghent University (http://ugent.be/hpc),
 # the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
-# the Hercules foundation (http://www.herculesstichting.be/in_English)
+# Flemish Research Foundation (FWO) (http://www.fwo.be/en)
 # and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
 # http://github.com/hpcugent/easybuild
@@ -32,8 +32,7 @@ import os
 import re
 from distutils.version import LooseVersion
 
-import easybuild.tools.environment as env
-from easybuild.easyblocks.generic.pythonpackage import PythonPackage, det_pylibdir
+from easybuild.easyblocks.generic.pythonpackage import PythonPackage
 from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.filetools import read_file
 from easybuild.tools.modules import get_software_root_env_var_name
@@ -53,7 +52,14 @@ class EB_EasyBuildMeta(PythonPackage):
 
         self.easybuild_pkgs = ['easybuild-framework', 'easybuild-easyblocks', 'easybuild-easyconfigs']
         if LooseVersion(self.version) >= LooseVersion('2.0'):
+            # deliberately include vsc-base twice;
+            # first time to ensure the specified vsc-base package is available when framework gets installed
             self.easybuild_pkgs.insert(0, 'vsc-base')
+            # second time as last package to be installed, to ensure that the vsc-base version listed
+            # in easy-install.pth is the one specified;
+            # when installing the easybuild-* packages, the vsc-base version in easy-install.pth may be 'bumped'
+            # if a newer vsc-base version is found somewhere (e.g. provided by the OS)
+            self.easybuild_pkgs.append('vsc-base')
 
     def check_readiness_step(self):
         """Make sure EasyBuild can be installed with a loaded EasyBuild module."""
@@ -72,11 +78,6 @@ class EB_EasyBuildMeta(PythonPackage):
 
     def install_step(self):
         """Install EasyBuild packages one by one."""
-
-        # unset $PYTHONPATH to try and avoid that current EasyBuild is picked up, and ends up in easy-install.pth
-        orig_pythonpath = os.getenv('PYTHONPATH')
-        env.setvar('PYTHONPATH', '')
-
         try:
             subdirs = os.listdir(self.builddir)
             for pkg in self.easybuild_pkgs:
@@ -95,13 +96,27 @@ class EB_EasyBuildMeta(PythonPackage):
         except OSError, err:
             raise EasyBuildError("Failed to install EasyBuild packages: %s", err)
 
-        env.setvar('PYTHONPATH', orig_pythonpath)
+    def post_install_step(self):
+        """Remove setuptools.pth file that hard includes a system-wide (site-packages) path, if it is there."""
+
+        setuptools_pth = os.path.join(self.installdir, self.pylibdir, 'setuptools.pth')
+        if os.path.exists(setuptools_pth):
+            setuptools_pth_txt = read_file(setuptools_pth)
+            # any line that starts with '/' is a sign of trouble
+            sys_path_regex = re.compile('^/', re.M)
+            if sys_path_regex.search(setuptools_pth_txt):
+                self.log.warning("Found %s, and includes one or more absolute system paths. Removing it.",
+                                 setuptools_pth)
+                try:
+                    os.remove(setuptools_pth)
+                except OSError as err:
+                    raise EasyBuildError("Failed to remove %s: %s", setuptools_pth, err)
 
     def sanity_check_step(self):
         """Custom sanity check for EasyBuild."""
 
         # check whether easy-install.pth contains correct entries
-        easy_install_pth = os.path.join(self.installdir, det_pylibdir(), 'easy-install.pth')
+        easy_install_pth = os.path.join(self.installdir, self.pylibdir, 'easy-install.pth')
         if os.path.exists(easy_install_pth):
             easy_install_pth_txt = read_file(easy_install_pth)
             for pkg in self.easybuild_pkgs:
@@ -147,7 +162,8 @@ class EB_EasyBuildMeta(PythonPackage):
                 pass
         self.log.debug('setup_tool: %s' % setup_tool)
 
-        # for a setuptools installation, we need to figure out the egg dirs since we don't know the individual package versions
+        # for a setuptools installation, we need to figure out the egg dirs,
+        # since we don't know the individual package versions
         if setup_tool == 'setuptools':
             try:
                 installed_dirs = os.listdir(os.path.join(self.installdir, self.pylibdir))
@@ -157,7 +173,7 @@ class EB_EasyBuildMeta(PythonPackage):
                         raise EasyBuildError("Failed to isolate installed egg dir for %s", pkg)
 
                     for (subdir, _) in subdirs:
-                        # eggs always go in Python lib/pythonX/site-packages dir with setuptools 
+                        # eggs always go in Python lib/pythonX/site-packages dir with setuptools
                         eb_dirs['setuptools'].append((os.path.join(sel_dirs[0], subdir), True))
             except OSError, err:
                 raise EasyBuildError("Failed to determine sanity check dir paths: %s", err)
