@@ -1,0 +1,76 @@
+easyblock = 'CMakeMake'
+
+name = 'OpenCV'
+version = '3.1.0'
+
+homepage = 'http://opencv.org/'
+description = """OpenCV (Open Source Computer Vision Library) is an open source computer vision
+ and machine learning software library. OpenCV was built to provide
+ a common infrastructure for computer vision applications and to accelerate
+ the use of machine perception in the commercial products."""
+
+toolchain = {'name': 'foss', 'version': '2016a'}
+toolchainopts = {'opt': True, 'optarch': True}
+
+sources = [SOURCELOWER_ZIP]
+source_urls = [('http://sourceforge.net/projects/opencvlibrary/files/opencv-unix/%(version)s', 'download')]
+
+#patches = ['OpenCV-%(version)s_with_IPP.patch']
+
+osdependencies = ['gtk2-devel']
+
+builddependencies = [
+    ('CMake', '3.4.1'),
+]
+
+python = 'Python'
+pythonver = '2.7.11'
+pythonshortver = '.'.join(pythonver.split('.')[0:2])
+java = 'Java'
+javaver = '1.8.0_74'
+
+dependencies = [
+    (python, pythonver),
+    ('zlib', '1.2.8'),
+    ('FFmpeg', '2.8.6'),
+    ('libjpeg-turbo', '1.4.2'),
+    ('libpng', '1.6.21'),
+    ('LibTIFF', '4.0.6'),
+    ('JasPer', '1.900.1'),
+    (java, javaver ,'', True),
+    ('ant', '1.9.6', '-%s-%s' % (java,javaver), True),
+    ('GLib', '2.47.5')
+]
+
+preconfigopts = 'export IPPROOT=$EBROOTICC/ipp && '
+
+configopts = '-DCMAKE_BUILD_TYPE=RELEASE '
+configopts += '-DBUILD_PYTHON_SUPPORT=ON '
+configopts += '-DPYTHON_PACKAGES_PATH=$EBROOTPYTHON/lib/python%s/site-packages ' % pythonshortver
+configopts += '-DBUILD_NEW_PYTHON_SUPPORT=ON '
+configopts += '-DZLIB_LIBRARY=$EBROOTZLIB/lib/libz.so '
+configopts += '-DZLIB_INCLUDE_DIR=$EBROOTZLIB/include '
+configopts += '-DTIFF_LIBRARY=$EBROOTLIBTIFF/lib/libtiff.so '
+configopts += '-DTIFF_INCLUDE_DIR=$EBROOTLIBTIFF/include '
+configopts += '-DPNG_LIBRARY=$EBROOTLIBPNG/lib/libpng.so '
+configopts += '-DPNG_INCLUDE_DIR=$EBROOTLIBPNG/include '
+configopts += '-DJPEG_LIBRARY=$EBROOTLIBJPEGMINTURBO/lib/libjpeg.so '
+configopts += '-DJPEG_INCLUDE_DIR=$EBROOTLIBJPEGMINTURBO/include '
+configopts += '-DJASPER_LIBRARY=$EBROOTJASPER/lib/libjasper.a '
+configopts += '-DJASPER_INCLUDE_DIR=$EBROOTJASPER/include '
+configopts += '-DWITH_IPP=ON '
+configopts += '-DENABLE_SSE=ON -DENABLE_SSE2=ON -DENABLE_SSE3=ON '
+configopts += '-DWITH_CUDA=OFF '
+
+sanity_check_paths = {
+    'files': ['lib/libopencv_core.%s' % SHLIB_EXT] +
+             [ 'bin/opencv_%s' % x for x in ['createsamples', 'traincascade'] ],
+    'dirs': ['include']
+}
+
+modextrapaths = {
+    'PYTHONPATH': 'lib/python%s/site-packages' % pythonshortver,
+    'CLASSPATH': 'share/OpenCV/java',
+}
+
+moduleclass = 'vis'
