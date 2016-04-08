@@ -1,0 +1,42 @@
+easyblock = 'ConfigureMake'
+
+name = 'FreeFem++'
+version = '3.45'
+
+homepage = 'http://www.freefem.org'
+description = """FreeFem++ is a partial differential equation solver. It has its own language. freefem scripts can solve multiphysics non linear systems in 2D and 3D.
+Problems involving PDE (2d, 3d) from several branches of physics such as fluid-structure interactions require interpolations of data on several meshes and their manipulation within one program. FreeFem++ includes a fast 2^d-tree-based interpolation algorithm and a language for the manipulation of data on multiple meshes (as a follow up of bamg (now a part of FreeFem++ ).
+
+FreeFem++ is written in C++ and the FreeFem++ language is a C++ idiom. It runs on Macs, Windows, Unix machines. FreeFem++ replaces the older freefem and freefem+."""
+
+toolchain = {'name': 'intel', 'version': '2015b'}
+toolchainopts = {'opt': True, 'optarch': True}
+
+sources = [SOURCELOWER_TAR_GZ]
+source_urls = ['http://www.freefem.org/ff++/ftp/']
+
+patches = ['FreeFem_metis.patch']
+
+dependencies = [
+    ('HDF5', '1.8.13'),
+    ('SuiteSparse', '4.4.6', '-ParMETIS-4.0.3'),
+    ('PETSc', '3.6.3', '-Python-2.7.11'),
+    ('GSL', '1.16'),
+    ('arpack-ng', '3.3.0'),
+    ('FFTW', '3.3.4')
+]
+
+configopts = '--with-umfpack="-lumfpack -lcholmod -lcolamd -lamd -lsuitesparseconfig" ' + \
+  '--with-amd="-lumfpack -lcholmod -lcolamd -lamd -lsuitesparseconfig" --with-arpack="-larpack" ' + \
+  '--with-petsc=$EBROOTPETSC --enable-generic --with-parmetis-include=$EBROOTPARMETIS/include --with-parmetis-ldflags="-lparmetis" ' + \
+  '--disable-hpddm' # unable to get this one to work
+
+# parallel builds tend to fail ?
+parallel=1
+
+sanity_check_paths = {
+    'files': [],
+    'dirs': ['bin']
+}
+
+moduleclass = 'cae'
