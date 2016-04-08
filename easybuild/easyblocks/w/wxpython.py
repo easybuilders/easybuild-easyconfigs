@@ -1,5 +1,5 @@
 ##
-# Copyright 2009-2015 Ghent University
+# Copyright 2009-2016 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -55,10 +55,3 @@ class EB_wxPython(PythonPackage):
         """Installdir is already maked, do not delete it"""
 
         pass
-
-    def sanity_check_step(self, *args, **kwargs):
-        """The PythonPackage name is wx."""
-
-        kwargs.update({'exts_filter': ('python -c "import wx"', "")})
-        return super(PythonPackage, self).sanity_check_step(*args, **kwargs)
-        
