@@ -1,11 +1,11 @@
 ##
-# Copyright 2009-2013 Ghent University
+# Copyright 2009-2016 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
 # with support of Ghent University (http://ugent.be/hpc),
 # the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
-# the Hercules foundation (http://www.herculesstichting.be/in_English)
+# Flemish Research Foundation (FWO) (http://www.fwo.be/en)
 # and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
 # http://github.com/hpcugent/easybuild
@@ -32,28 +32,11 @@ EasyBuild support for installing compiler toolchains, implemented as an easybloc
 @author: Jens Timmerman (Ghent University)
 """
 
-from easybuild.framework.easyblock import EasyBlock
+from easybuild.easyblocks.generic.bundle import Bundle
 
 
-class Toolchain(EasyBlock):
+class Toolchain(Bundle):
     """
     Compiler toolchain: generate module file only, nothing to build/install
     """
-
-    def configure_step(self):
-        """Do nothing."""
-        pass
-
-    def build_step(self):
-        """Do nothing."""
-        pass
-
-    def install_step(self):
-        """Do nothing."""
-        pass
-
-    def sanity_check_step(self):
-        """
-        As a toolchain doesn't install anything really, this is always OK
-        """
-        pass
+    pass

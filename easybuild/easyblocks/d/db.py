@@ -5,7 +5,7 @@
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
 # with support of Ghent University (http://ugent.be/hpc),
 # the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
-# the Hercules foundation (http://www.herculesstichting.be/in_English)
+# Flemish Research Foundation (FWO) (http://www.fwo.be/en)
 # and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
 # http://github.com/hpcugent/easybuild
@@ -31,6 +31,7 @@ import os
 import shutil
 
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
+from easybuild.tools.build_log import EasyBuildError
 
 
 class EB_DB(ConfigureMake):
@@ -41,5 +42,5 @@ class EB_DB(ConfigureMake):
         try:
             os.chdir('build_unix')
         except OSError, err:
-            self.log.error("Failed to move to build dir: %s" % err)
+            raise EasyBuildError("Failed to move to build dir: %s", err)
         super(EB_DB, self).configure_step(cmd_prefix='../dist/')

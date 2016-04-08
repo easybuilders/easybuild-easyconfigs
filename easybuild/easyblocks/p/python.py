@@ -1,11 +1,11 @@
 ##
-# Copyright 2009-2013 Ghent University
+# Copyright 2009-2016 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
 # with support of Ghent University (http://ugent.be/hpc),
 # the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
-# the Hercules foundation (http://www.herculesstichting.be/in_English)
+# Flemish Research Foundation (FWO) (http://www.fwo.be/en)
 # and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
 # http://github.com/hpcugent/easybuild
@@ -31,7 +31,7 @@ EasyBuild support for building and installing Python, implemented as an easybloc
 @author: Pieter De Baets (Ghent University)
 @author: Jens Timmerman (Ghent University)
 """
-
+import copy
 import os
 import re
 import fileinput
@@ -40,8 +40,9 @@ from distutils.version import LooseVersion
 
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.tools.build_log import EasyBuildError
-from easybuild.tools.filetools import run_cmd
-from easybuild.tools.modules import get_software_libdir, get_software_root
+from easybuild.tools.modules import get_software_libdir, get_software_libdir, get_software_root, get_software_version
+from easybuild.tools.run import run_cmd
+from easybuild.tools.systemtools import get_shared_lib_ext
 
 
 EXTS_FILTER_PYTHON_PACKAGES = ('python -c "import %(ext_name)s"', "")
@@ -67,9 +68,25 @@ class EB_Python(ConfigureMake):
         self.cfg['exts_defaultclass'] = "PythonPackage"
         self.cfg['exts_filter'] = EXTS_FILTER_PYTHON_PACKAGES
 
+        # don't pass down any build/install options that may have been specified
+        # 'make' options do not make sense for when building/installing Python libraries (usually via 'python setup.py')
+        msg = "Unsetting '%s' easyconfig parameter before building/installing extensions: %s"
+        for param in ['buildopts', 'installopts']:
+            if self.cfg[param]:
+                self.log.debug(msg, param, self.cfg[param])
+            self.cfg[param] = ''
+
     def configure_step(self):
         """Set extra configure options."""
         self.cfg.update('configopts', "--with-threads --enable-shared")
+
+        # Need to be careful to match the unicode settings to the underlying python
+        if sys.maxunicode == 1114111:
+            self.cfg.update('configopts', "--enable-unicode=ucs4")
+        elif sys.maxunicode == 65535:
+            self.cfg.update('configopts', "--enable-unicode=ucs2")
+        else:
+            raise EasyBuildError("Unknown maxunicode value for your python: %d" % sys.maxunicode)
 
         modules_setup_dist = os.path.join(self.cfg['start_dir'], 'Modules', 'Setup.dist')
 
@@ -86,7 +103,7 @@ class EB_Python(ConfigureMake):
                     line = re.sub(r"^#readline readline.c.*", readline, line)
                     sys.stdout.write(line)
             else:
-                self.log.error("Both libreadline and ncurses are required to ensure readline support")
+                raise EasyBuildError("Both libreadline and ncurses are required to ensure readline support")
 
         openssl = get_software_root('OpenSSL')
         if openssl:
@@ -95,6 +112,26 @@ class EB_Python(ConfigureMake):
                 line = re.sub(r"^#(\s*-DUSE_SSL -I)", r"\1", line)
                 line = re.sub(r"^#(\s*-L\$\(SSL\)/lib )", r"\1 -L$(SSL)/lib64 ", line)
                 sys.stdout.write(line)
+
+        tcl = get_software_root('Tcl')
+        tk = get_software_root('Tk')
+        if tcl and tk:
+            tclver = get_software_version('Tcl')
+            tkver = get_software_version('Tk')
+            tcltk_maj_min_ver = '.'.join(tclver.split('.')[:2])
+            if tcltk_maj_min_ver != '.'.join(tkver.split('.')[:2]):
+                raise EasyBuildError("Tcl and Tk major/minor versions don't match: %s vs %s", tclver, tkver)
+
+            self.cfg.update('configopts', "--with-tcltk-includes='-I%s/include -I%s/include'" % (tcl, tk))
+
+            tcl_libdir = os.path.join(tcl, get_software_libdir('Tcl'))
+            tk_libdir = os.path.join(tk, get_software_libdir('Tk'))
+            tcltk_libs = "-L%(tcl_libdir)s -L%(tk_libdir)s -ltcl%(maj_min_ver)s -ltk%(maj_min_ver)s" % {
+                'tcl_libdir': tcl_libdir,
+                'tk_libdir': tk_libdir,
+                'maj_min_ver': tcltk_maj_min_ver,
+            }
+            self.cfg.update('configopts', "--with-tcltk-libs='%s'" % tcltk_libs)
 
         super(EB_Python, self).configure_step()
 
@@ -109,7 +146,7 @@ class EB_Python(ConfigureMake):
             try:
                 os.symlink(srcbin, python_binary_path)
             except OSError, err:
-                self.log.error("Failed to symlink %s to %s: %s" % err)
+                raise EasyBuildError("Failed to symlink %s to %s: %s", srcbin, python_binary_path, err)
 
     def sanity_check_step(self):
         """Custom sanity check for Python."""
@@ -119,7 +156,7 @@ class EB_Python(ConfigureMake):
         try:
             fake_mod_data = self.load_fake_module()
         except EasyBuildError, err:
-            self.log.error("Loading fake module failed: %s" % err)
+            raise EasyBuildError("Loading fake module failed: %s", err)
 
         abiflags = ''
         if LooseVersion(self.version) >= LooseVersion("3"):
@@ -127,12 +164,12 @@ class EB_Python(ConfigureMake):
             cmd = 'python -c "import sysconfig; print(sysconfig.get_config_var(\'abiflags\'));"'
             (abiflags, _) = run_cmd(cmd, log_all=True, simple=False)
             if not abiflags:
-                self.log.error("Failed to determine abiflags: %s" % abiflags)
+                raise EasyBuildError("Failed to determine abiflags: %s", abiflags)
             else:
                 abiflags = abiflags.strip()
 
         custom_paths = {
-            'files': ["bin/%s" % pyver, "lib/lib%s%s.so" % (pyver, abiflags)],
+            'files': ["bin/%s" % pyver, "lib/lib%s%s.%s" % (pyver, abiflags, get_shared_lib_ext())],
             'dirs': ["include/%s%s" % (pyver, abiflags), "lib/%s" % pyver],
         }
 

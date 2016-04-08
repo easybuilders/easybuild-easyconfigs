@@ -5,7 +5,7 @@
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
 # with support of Ghent University (http://ugent.be/hpc),
 # the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
-# the Hercules foundation (http://www.herculesstichting.be/in_English)
+# Flemish Research Foundation (FWO) (http://www.fwo.be/en)
 # and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
 # http://github.com/hpcugent/easybuild
@@ -28,29 +28,46 @@ EasyBuild support for building and installing Qt, implemented as an easyblock
 @author: Kenneth Hoste (Ghent University)
 """
 import os
+from distutils.version import LooseVersion
 
 import easybuild.tools.toolchain as toolchain
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
-from easybuild.tools.filetools import run_cmd_qa
-
+from easybuild.framework.easyconfig import CUSTOM
+from easybuild.tools.build_log import EasyBuildError
+from easybuild.tools.run import run_cmd_qa
+from easybuild.tools.systemtools import get_shared_lib_ext
 
 class EB_Qt(ConfigureMake):
     """
     Support for building and installing Qt.
     """
 
+    @staticmethod
+    def extra_options():
+        extra_vars = {
+             'platform': [None, "Target platform to build for (e.g. linux-g++-64, linux-icc-64)", CUSTOM],
+        }
+        return ConfigureMake.extra_options(extra_vars)
+
     def configure_step(self):
         """Configure Qt using interactive `configure` script."""
 
         self.cfg.update('configopts', '-release')
 
+        platform = None
         comp_fam = self.toolchain.comp_family()
-        if comp_fam in [toolchain.GCC]:  #@UndefinedVariable
-            self.cfg.update('configopts', '-platform linux-g++-64')
+        if self.cfg['platform']:
+            platform = self.cfg['platform']
+        # if no platform is specified, try to derive it based on compiler in toolchain
+        elif comp_fam in [toolchain.GCC]:  #@UndefinedVariable
+            platform = 'linux-g++-64'
         elif comp_fam in [toolchain.INTELCOMP]:  #@UndefinedVariable
-            self.cfg.update('configopts', '-platform linux-icc-64')
+            platform = 'linux-icc-64'
+                
+        if platform:
+            self.cfg.update('configopts', "-platform %s" % platform)
         else:
-            self.log.error("Don't know which platform to set based on compiler family.")
+            raise EasyBuildError("Don't know which platform to set based on compiler family.")
 
         cmd = "%s ./configure --prefix=%s %s" % (self.cfg['preconfigopts'], self.installdir, self.cfg['configopts'])
         qa = {
@@ -59,14 +76,14 @@ class EB_Qt(ConfigureMake):
         }
         no_qa = [
             "for .*pro",
-            r"%s.*" % os.getenv('CXX').replace('+', '\\+'),  # need to escape + in 'g++'
+            r"%s.*" % os.getenv('CXX', '').replace('+', '\\+'),  # need to escape + in 'g++'
             "Reading .*",
             "WARNING .*",
             "Project MESSAGE:.*",
             "rm -f .*",
             'Creating qmake...',
         ]
-        run_cmd_qa(cmd, qa, no_qa=no_qa, log_all=True, simple=True)
+        run_cmd_qa(cmd, qa, no_qa=no_qa, log_all=True, simple=True, maxhits=120)
 
     def build_step(self):
         """Set $LD_LIBRARY_PATH before calling make, to ensure that all required libraries are found during linking."""
@@ -78,8 +95,12 @@ class EB_Qt(ConfigureMake):
     def sanity_check_step(self):
         """Custom sanity check for Qt."""
 
+        libversion = ''
+        if LooseVersion(self.version) >= LooseVersion('5'):
+            libversion = self.version.split('.')[0]
+
         custom_paths = {
-            'files': ["lib/libQtCore.so"],
+            'files': ["lib/libQt%sCore.%s" % (libversion, get_shared_lib_ext())],
             'dirs': ["bin", "include", "plugins"],
         }
 

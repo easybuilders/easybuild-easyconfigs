@@ -5,7 +5,7 @@
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
 # with support of Ghent University (http://ugent.be/hpc),
 # the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
-# the Hercules foundation (http://www.herculesstichting.be/in_English)
+# Flemish Research Foundation (FWO) (http://www.fwo.be/en)
 # and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
 # http://github.com/hpcugent/easybuild
@@ -33,6 +33,7 @@ import os
 from easybuild.easyblocks.generic.tarball import Tarball
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import MANDATORY
+from easybuild.tools.build_log import EasyBuildError
 
 
 class EB_FreeSurfer(Tarball):
@@ -53,12 +54,12 @@ class EB_FreeSurfer(Tarball):
             f.write(self.cfg['license_text'])
             f.close()
         except IOError, err:
-            self.log.error("Failed to install license file: %s" % err)
+            raise EasyBuildError("Failed to install license file: %s", err)
 
     def make_module_extra(self):
         """Add setting of FREESURFER_HOME in module."""
         txt = super(EB_FreeSurfer, self).make_module_extra()
-        txt += self.moduleGenerator.set_environment("FREESURFER_HOME", "$root")
+        txt += self.module_generator.set_environment("FREESURFER_HOME", self.installdir)
         return txt
 
     def sanity_check_step(self):

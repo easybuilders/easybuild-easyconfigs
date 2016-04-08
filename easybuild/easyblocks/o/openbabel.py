@@ -5,7 +5,7 @@
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
 # with support of Ghent University (http://ugent.be/hpc),
 # the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
-# the Hercules foundation (http://www.herculesstichting.be/in_English)
+# Flemish Research Foundation (FWO) (http://www.fwo.be/en)
 # and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
 # http://github.com/hpcugent/easybuild
@@ -27,15 +27,17 @@ EasyBuild support for OpenBabel, implemented as an easyblock
 
 @author: Ward Poelmans (Ghent University)
 """
-
+import os
 from easybuild.easyblocks.generic.cmakemake import CMakeMake
 from easybuild.tools.modules import get_software_root, get_software_version
+from easybuild.tools.systemtools import get_shared_lib_ext
 
 
 class EB_OpenBabel(CMakeMake):
     """Support for installing the OpenBabel package."""
 
     def configure_step(self):
+
         # Use separate build directory
         self.cfg['separate_build_dir'] = True
 
@@ -48,7 +50,8 @@ class EB_OpenBabel(CMakeMake):
             self.log.info("Enabling Python bindings")
             shortpyver = '.'.join(get_software_version('Python').split('.')[:2])
             self.cfg['configopts'] += "-DPYTHON_BINDINGS=ON "
-            self.cfg['configopts'] += "-DPYTHON_LIBRARY=%s/lib/libpython%s.so " % (root_python, shortpyver)
+            shlib_ext = get_shared_lib_ext()
+            self.cfg['configopts'] += "-DPYTHON_LIBRARY=%s/lib/libpython%s.%s " % (root_python, shortpyver, shlib_ext)
             self.cfg['configopts'] += "-DPYTHON_INCLUDE_DIR=%s/include/python%s " % (root_python, shortpyver)
         else:
             self.log.info("Not enabling Python bindings")
@@ -64,18 +67,18 @@ class EB_OpenBabel(CMakeMake):
 
     def sanity_check_step(self):
         """Custom sanity check for OpenBabel."""
-
         custom_paths = {
-            'files': ['bin/babel', 'lib/libopenbabel.so'],
+            'files': ['bin/babel', 'lib/libopenbabel.%s' % get_shared_lib_ext()],
             'dirs': ['share/openbabel'],
         }
-
         super(EB_OpenBabel, self).sanity_check_step(custom_paths=custom_paths)
 
     def make_module_extra(self):
         """Custom variables for OpenBabel module."""
         txt = super(EB_OpenBabel, self).make_module_extra()
-        txt += self.moduleGenerator.prepend_paths('PYTHONPATH', ['lib'])
-        txt += self.moduleGenerator.set_environment('BABEL_LIBDIR', '$root/lib/openbabel/%s/' % self.version)
-        txt += self.moduleGenerator.set_environment('BABEL_DATADIR', '$root/share/openbabel/%s/' % self.version)
+        txt += self.module_generator.prepend_paths('PYTHONPATH', ['lib'])
+        babel_libdir = os.path.join(self.installdir, 'lib', 'openbabel', self.version)
+        txt += self.module_generator.set_environment('BABEL_LIBDIR', babel_libdir)
+        babel_datadir = os.path.join(self.installdir, 'share', 'openbabel', self.version)
+        txt += self.module_generator.set_environment('BABEL_DATADIR', babel_datadir)
         return txt

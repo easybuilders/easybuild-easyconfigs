@@ -5,7 +5,7 @@
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
 # with support of Ghent University (http://ugent.be/hpc),
 # the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
-# the Hercules foundation (http://www.herculesstichting.be/in_English)
+# Flemish Research Foundation (FWO) (http://www.fwo.be/en)
 # and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
 # http://github.com/hpcugent/easybuild
@@ -79,14 +79,6 @@ class EB_VTune(IntelBase):
         })
 
         return guesses
-
-    def make_module_extra(self):
-        """Custom variable definitions in module file."""
-        
-        txt = super(EB_VTune, self).make_module_extra()
-        txt += self.moduleGenerator.prepend_paths(self.license_env_var, self.license_file, allow_abs=True)
-
-        return txt
 
     def sanity_check_step(self):
         """Custom sanity check paths for Intel VTune."""

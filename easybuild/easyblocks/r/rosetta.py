@@ -1,11 +1,11 @@
 ##
-# Copyright 2009-2013 Ghent University
+# Copyright 2009-2016 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
 # with support of Ghent University (http://ugent.be/hpc),
 # the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
-# the Hercules foundation (http://www.herculesstichting.be/in_English)
+# Flemish Research Foundation (FWO) (http://www.fwo.be/en)
 # and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
 # http://github.com/hpcugent/easybuild
@@ -40,8 +40,11 @@ import easybuild.tools.toolchain as toolchain
 from easybuild.easyblocks.icc import get_icc_version
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import CUSTOM
-from easybuild.tools.filetools import run_cmd, extract_file
+from easybuild.tools.build_log import EasyBuildError
+from easybuild.tools.filetools import extract_file
 from easybuild.tools.modules import get_software_root, get_software_version
+from easybuild.tools.run import run_cmd
+from easybuild.tools.systemtools import get_shared_lib_ext
 
 
 class EB_Rosetta(EasyBlock):
@@ -60,16 +63,23 @@ class EB_Rosetta(EasyBlock):
         # locate sources, and unpack if necessary
         # old 'bundles' tarballs contain a gzipped tarball for source, recent ones contain unpacked source
         try:
-            prefix = os.path.join(self.builddir, '%s-%s' % (self.name.lower(), self.version))
+            subdirs = os.listdir(self.builddir)
+            if len(subdirs) == 1:
+                prefix = os.path.join(self.builddir, subdirs[0])
+            else:
+                raise EasyBuildError("Found multiple subdirectories, don't know which one to pick: %s", subdirs)
             self.srcdir = os.path.join(prefix, 'rosetta_source')
+            if not os.path.exists(self.srcdir):
+                self.srcdir = os.path.join(prefix, 'main', 'source')
             if not os.path.exists(self.srcdir): 
                 src_tarball = os.path.join(prefix, 'rosetta%s_source.tgz' % self.version)
                 if os.path.isfile(src_tarball):
                     self.srcdir = extract_file(src_tarball, prefix)
                 else:
-                    self.log.error("Neither source directory '%s', nor source tarball '%s' found." % (self.srcdir, src_tarball))
+                    raise EasyBuildError("Neither source directory '%s', nor source tarball '%s' found.",
+                                         self.srcdir, src_tarball)
         except OSError, err:
-            self.log.error("Getting Rosetta sources dir ready failed: %s" % err)
+            raise EasyBuildError("Getting Rosetta sources dir ready failed: %s", err)
 
     def configure_step(self):
         """
@@ -88,7 +98,7 @@ class EB_Rosetta(EasyBlock):
         elif self.toolchain.comp_family() in [toolchain.INTELCOMP]:  #@UndefinedVariable
             cxx_ver = '.'.join(get_icc_version().split('.')[:2])
         else:
-            self.log.error("Don't know how to determine C++ compiler version.")
+            raise EasyBuildError("Don't know how to determine C++ compiler version.")
         self.cfg.update('buildopts', "cxx=%s cxx_ver=%s" % (self.cxx, cxx_ver))
 
         if self.toolchain.options.get('usempi', None):
@@ -150,7 +160,7 @@ class EB_Rosetta(EasyBlock):
             f.write(txt)
             f.close()
         except IOError, err:
-            self.log.error("Failed to write settings file %s: %s" % (us_fp, err))
+            raise EasyBuildError("Failed to write settings file %s: %s", us_fp, err)
 
         # make sure specified compiler version is accepted by patching it in
         os_fp = os.path.join(self.srcdir, "tools/build/options.settings")
@@ -166,7 +176,7 @@ class EB_Rosetta(EasyBlock):
         try:
             os.chdir(self.srcdir)
         except OSError, err:
-            self.log.error("Failed to change to %s: %s" % (self.srcdir, err))
+            raise EasyBuildError("Failed to change to %s: %s", self.srcdir, err)
         par = ''
         if self.cfg['parallel']:
             par = "-j %s" % self.cfg['parallel']
@@ -178,13 +188,15 @@ class EB_Rosetta(EasyBlock):
         Copy built files (from e.g. build/src/release/linux/2.6/64/x86/icc/10.0/mpi) to <installpath>/bin,
         and copy (or untar) database and bioTools to install directory
         """
+        shlib_ext = get_shared_lib_ext()
+
         bindir = os.path.join(self.installdir, 'bin')
         libdir = os.path.join(self.installdir, 'lib')
         try:
             os.makedirs(bindir)
             os.makedirs(libdir)
         except OSError, err:
-            self.log.error("Failed to created bin/lib dirs: %s, %s" % (bindir, libdir))
+            raise EasyBuildError("Failed to created bin/lib dirs: %s, %s", bindir, libdir)
 
         for build_subdir in ['src', 'external']:
             builddir = os.path.join('build', build_subdir)
@@ -195,9 +207,9 @@ class EB_Rosetta(EasyBlock):
                 while len(os.listdir(builddir)) == 1:
                     builddir = os.path.join(builddir, os.listdir(builddir)[0])
             except OSError, err:
-                self.log.error("Failed to walk build/src dir: %s" % err)
+                raise EasyBuildError("Failed to walk build/src dir: %s", err)
             # copy binaries/libraries to install dir
-            lib_re = re.compile("^lib.*\.so$")
+            lib_re = re.compile("^lib.*\.%s$" % shlib_ext)
             try:
                 for fil in os.listdir(builddir):
                     srcfile = os.path.join(builddir, fil)
@@ -209,7 +221,7 @@ class EB_Rosetta(EasyBlock):
                             self.log.debug("Copying %s to %s" % (srcfile, bindir))
                             shutil.copy2(srcfile, os.path.join(bindir, fil))
             except OSError, err:
-                self.log.error("Copying executables from %s to bin/lib install dirs failed: %s" % (builddir, err))
+                raise EasyBuildError("Copying executables from %s to bin/lib install dirs failed: %s", builddir, err)
 
         os.chdir(self.cfg['start_dir'])
 
@@ -226,13 +238,22 @@ class EB_Rosetta(EasyBlock):
                 if os.path.exists(srcdir):
                     shutil.copytree(srcdir, os.path.join(self.installdir, os.path.basename(srcdir)))
                 elif not optional:
-                    self.log.error("Neither source directory '%s', nor source tarball '%s' found." % srcdir, src_tarball)
+                    raise EasyBuildError("Neither source directory '%s', nor source tarball '%s' found.",
+                                         srcdir, src_tarball)
             except OSError, err:
-                self.log.error("Getting Rosetta %s dir ready failed: %s" % (dirname_tmpl, err))
+                raise EasyBuildError("Getting Rosetta %s dir ready failed: %s", dirname_tmpl, err)
 
         # (extract and) copy database and biotools (if it's there)
-        extract_and_copy('rosetta_database%s')
+        if os.path.exists(os.path.join(self.cfg['start_dir'], 'main', 'database')):
+            extract_and_copy(os.path.join('main', 'database') + '%s')
+        else:
+            extract_and_copy('rosetta_database%s')
+
         extract_and_copy('BioTools%s', optional=True)
+        if os.path.exists(os.path.join(self.cfg['start_dir'], 'tools')):
+            extract_and_copy('tools%s', optional=True)
+        else:
+            extract_and_copy('rosetta_tools%s', optional=True)
 
     def sanity_check_step(self):
         """Custom sanity check for Rosetta."""

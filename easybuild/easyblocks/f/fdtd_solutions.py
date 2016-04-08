@@ -5,7 +5,7 @@
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
 # with support of Ghent University (http://ugent.be/hpc),
 # the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
-# the Hercules foundation (http://www.herculesstichting.be/in_English)
+# Flemish Research Foundation (FWO) (http://www.fwo.be/en)
 # and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
 # http://github.com/hpcugent/easybuild
@@ -27,8 +27,13 @@ EasyBuild support for building and installing FDTD Solutions, implemented as an 
 
 @author: Kenneth Hoste (Ghent University)
 """
+import glob
+import os
+import shutil
+from easybuild.easyblocks.generic.rpm import rebuild_rpm
 from easybuild.framework.easyblock import EasyBlock
-from easybuild.tools.filetools import run_cmd_qa
+from easybuild.tools.build_log import EasyBuildError
+from easybuild.tools.run import run_cmd_qa
 
 
 class EB_FDTD_underscore_Solutions(EasyBlock):
@@ -40,7 +45,23 @@ class EB_FDTD_underscore_Solutions(EasyBlock):
 
     def build_step(self):
         """No build step for FDTD Solutions."""
-        pass
+        # locate RPM and rebuild it to make it relocatable
+        rpms = glob.glob(os.path.join(self.cfg['start_dir'], 'rpm_install_files', 'FDTD-%s*.rpm' % self.version))
+        if len(rpms) != 1:
+            raise EasyBuildError("Incorrect number of RPMs found, was expecting exactly one: %s", rpms)
+        rebuilt_dir = os.path.join(self.cfg['start_dir'], 'rebuilt')
+        rebuild_rpm(rpms[0], rebuilt_dir)
+
+        # replace original RPM with relocatable RPM
+        rebuilt_rpms = glob.glob(os.path.join(rebuilt_dir, '*', '*.rpm'))
+        if len(rebuilt_rpms) != 1:
+            raise EasyBuildError("Incorrect number of rebuilt RPMs found, was expecting exactly one: %s", rebuilt_rpms)
+
+        try:
+            os.rename(rpms[0], '%s.bk' % rpms[0])
+            shutil.copy2(rebuilt_rpms[0], rpms[0])
+        except OSError, err:
+            raise EasyBuildError("Failed to replace original RPM with rebuilt RPM: %s", err)
 
     def install_step(self):
         """Install FDTD Solutions using install.sh script."""

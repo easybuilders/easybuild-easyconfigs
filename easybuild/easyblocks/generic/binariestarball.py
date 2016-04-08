@@ -5,7 +5,7 @@
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
 # with support of Ghent University (http://ugent.be/hpc),
 # the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
-# the Hercules foundation (http://www.herculesstichting.be/in_English)
+# Flemish Research Foundation (FWO) (http://www.fwo.be/en)
 # and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
 # http://github.com/hpcugent/easybuild
@@ -32,6 +32,7 @@ import shutil
 import stat
 
 from easybuild.easyblocks.generic.tarball import Tarball
+from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.filetools import adjust_permissions
 
 
@@ -55,5 +56,5 @@ class BinariesTarball(Tarball):
                 else:
                     self.log.warning("Skipping non-file %s in %s, not copying it." % (item, self.cfg['start_dir']))
         except OSError, err:
-            self.log.exception("Copying binaries in %s to install dir 'bin' failed: %s" % (self.cfg['start_dir'], err))
+            raise EasyBuildError("Copying binaries in %s to install dir 'bin' failed: %s", self.cfg['start_dir'], err)
 

@@ -1,11 +1,11 @@
 ##
-# Copyright 2009-2013 Ghent University
+# Copyright 2009-2016 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
 # with support of Ghent University (http://ugent.be/hpc),
 # the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
-# the Hercules foundation (http://www.herculesstichting.be/in_English)
+# Flemish Research Foundation (FWO) (http://www.fwo.be/en)
 # and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
 # http://github.com/hpcugent/easybuild
@@ -33,6 +33,7 @@ import shutil
 
 import easybuild.tools.environment as env
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
+from easybuild.tools.build_log import EasyBuildError
 
 
 class EB_SHRiMP(ConfigureMake):
@@ -62,7 +63,7 @@ class EB_SHRiMP(ConfigureMake):
             os.chdir(cwd)
 
         except OSError, err:
-            self.log.error("Failed to copy files to install dir: %s" % err)
+            raise EasyBuildError("Failed to copy files to install dir: %s", err)
 
 
     def sanity_check_step(self):
@@ -91,6 +92,6 @@ class EB_SHRiMP(ConfigureMake):
 
         txt = super(EB_SHRiMP, self).make_module_extra()
 
-        txt += self.moduleGenerator.set_environment('SHRIMP_FOLDER', "$root")
+        txt += self.module_generator.set_environment('SHRIMP_FOLDER', self.installdir)
 
         return txt

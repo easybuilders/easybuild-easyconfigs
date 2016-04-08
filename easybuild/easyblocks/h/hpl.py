@@ -1,11 +1,11 @@
 ##
-# Copyright 2009-2013 Ghent University
+# Copyright 2009-2016 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
 # with support of Ghent University (http://ugent.be/hpc),
 # the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
-# the Hercules foundation (http://www.herculesstichting.be/in_English)
+# Flemish Research Foundation (FWO) (http://www.fwo.be/en)
 # and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
 # http://github.com/hpcugent/easybuild
@@ -36,7 +36,8 @@ import os
 import shutil
 
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
-from easybuild.tools.filetools import run_cmd
+from easybuild.tools.build_log import EasyBuildError
+from easybuild.tools.run import run_cmd
 
 
 class EB_HPL(ConfigureMake):
@@ -63,7 +64,7 @@ class EB_HPL(ConfigureMake):
         try:
             os.chdir(setupdir)
         except OSError, err:
-            self.log.exception("Failed to change to to dir %s: %s" % (setupdir, err))
+            raise EasyBuildError("Failed to change to to dir %s: %s", setupdir, err)
 
         cmd = "/bin/bash make_generic"
 
@@ -72,7 +73,7 @@ class EB_HPL(ConfigureMake):
         try:
             os.symlink(os.path.join(setupdir, 'Make.UNKNOWN'), os.path.join(makeincfile))
         except OSError, err:
-            self.log.exception("Failed to symlink Make.UNKNOWN from %s to %s: %s" % (setupdir, makeincfile, err))
+            raise EasyBuildError("Failed to symlink Make.UNKNOWN from %s to %s: %s", setupdir, makeincfile, err)
 
         # go back
         os.chdir(self.cfg['start_dir'])
@@ -83,8 +84,9 @@ class EB_HPL(ConfigureMake):
         """
 
         for envvar in ['MPICC', 'LIBLAPACK_MT', 'CPPFLAGS', 'LDFLAGS', 'CFLAGS']:
-            if not os.getenv(envvar):
-                self.log.error("Required environment variable %s not found (no toolchain used?)." % envvar)
+            # environment variable may be defined but empty
+            if os.getenv(envvar, None) is None:
+                raise EasyBuildError("Required environment variable %s not found (no toolchain used?).", envvar)
 
         # build dir
         extra_makeopts = 'TOPdir="%s" ' % self.cfg['start_dir']
@@ -93,13 +95,13 @@ class EB_HPL(ConfigureMake):
         extra_makeopts += 'CC="%(mpicc)s" MPICC="%(mpicc)s" LINKER="%(mpicc)s" ' % {'mpicc': os.getenv('MPICC')}
 
         # libraries: LAPACK and FFTW
-        extra_makeopts += 'LAlib="%s %s" ' % (os.getenv('LIBFFT'), os.getenv('LIBLAPACK_MT'))
+        extra_makeopts += 'LAlib="%s" ' % os.getenv('LIBLAPACK_MT')
 
         # HPL options
-        extra_makeopts += 'HPL_OPTS="%s -DUSING_FFTW" ' % os.getenv('CPPFLAGS')
+        extra_makeopts += 'HPL_OPTS="%s " ' % os.getenv('CPPFLAGS')
 
         # linker flags
-        extra_makeopts += 'LINKFLAGS="%s %s" ' % (os.getenv('CFLAGS'), os.getenv('LDFLAGS'))
+        extra_makeopts += 'LINKFLAGS="%s %s %s" ' % (os.getenv('CFLAGS'), os.getenv('LDFLAGS'), os.getenv('LIBS', ''))
 
         # C compilers flags
         extra_makeopts += "CCFLAGS='$(HPL_DEFS) %s' " % os.getenv('CFLAGS')
@@ -121,7 +123,7 @@ class EB_HPL(ConfigureMake):
                 srcfile = os.path.join(srcdir, filename)
                 shutil.copy2(srcfile, destdir)
         except OSError, err:
-            self.log.exception("Copying %s to installation dir %s failed: %s" % (srcfile, destdir, err))
+            raise EasyBuildError("Copying %s to installation dir %s failed: %s", srcfile, destdir, err)
 
     def sanity_check_step(self):
         """

@@ -1,11 +1,11 @@
 ##
-# Copyright 2009-2013 Ghent University
+# Copyright 2009-2016 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
 # with support of Ghent University (http://ugent.be/hpc),
 # the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
-# the Hercules foundation (http://www.herculesstichting.be/in_English)
+# Flemish Research Foundation (FWO) (http://www.fwo.be/en)
 # and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
 # http://github.com/hpcugent/easybuild
@@ -35,8 +35,9 @@ import easybuild.tools.environment as env
 import easybuild.tools.toolchain as toolchain
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.framework.easyconfig import BUILD, CUSTOM
-from easybuild.tools.filetools import run_cmd
+from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.modules import get_software_root
+from easybuild.tools.run import run_cmd
 from easybuild.tools.systemtools import get_shared_lib_ext
 
 
@@ -118,9 +119,8 @@ class EB_PETSc(ConfigureMake):
                     self.cfg.update('configopts', '--with-papi-include=%s' % papi_inc)
                     self.cfg.update('configopts', '--with-papi-lib=%s' % papi_lib)
                 else:
-                    self.log.error("PAPI header (%s) and/or lib (%s) not found, " % (papi_inc_file,
-                                                                                     papi_lib) + \
-                                   "can not enable PAPI support?")
+                    raise EasyBuildError("PAPI header (%s) and/or lib (%s) not found, can not enable PAPI support?",
+                                         papi_inc_file, papi_lib)
 
             # Python extensions_step
             if get_software_root('Python'):
@@ -150,7 +150,7 @@ class EB_PETSc(ConfigureMake):
             if bl_libdir and bl_libs:
                 self.cfg.update('configopts', '--with-blas-lapack-lib=[%s/%s]' % (bl_libdir, bl_libs))
             else:
-                self.log.error("One or more environment variables for BLAS/LAPACK not defined?")
+                raise EasyBuildError("One or more environment variables for BLAS/LAPACK not defined?")
 
             # additional dependencies
             # filter out deps handled seperately
@@ -211,7 +211,7 @@ class EB_PETSc(ConfigureMake):
             # check for errors in configure
             error_regexp = re.compile("ERROR")
             if error_regexp.search(out):
-                self.log.error("Error(s) detected in configure output!")
+                raise EasyBuildError("Error(s) detected in configure output!")
 
             if self.cfg['sourceinstall']:
                 # figure out PETSC_ARCH setting
@@ -221,7 +221,7 @@ class EB_PETSc(ConfigureMake):
                     self.petsc_arch = res.group(1)
                     self.cfg.update('buildopts', 'PETSC_ARCH=%s' % self.petsc_arch)
                 else:
-                    self.log.error("Failed to determine PETSC_ARCH setting.")
+                    raise EasyBuildError("Failed to determine PETSC_ARCH setting.")
 
             self.petsc_subdir = '%s-%s' % (self.name.lower(), self.version)
 
@@ -239,7 +239,8 @@ class EB_PETSc(ConfigureMake):
 
             cmd = "./config/configure.py %s" % self.get_cfg('configopts')
             run_cmd(cmd, log_all=True, simple=True)
-        # PETSc > 3.5, make does not accept -j 
+
+        # PETSc > 3.5, make does not accept -j
         if LooseVersion(self.version) >= LooseVersion("3.5"):
             self.cfg['parallel'] = None
 
@@ -262,25 +263,24 @@ class EB_PETSc(ConfigureMake):
                     bmakedir = os.path.join(self.installdir, 'bmake', 'linux-gnu-c-opt')
                     os.symlink(os.path.join(bmakedir, f), os.path.join(includedir, f))
             except Exception, err:
-                self.log.error("Something went wrong during symlink creation of file %s: %s" % (f, err))
+                raise EasyBuildError("Something went wrong during symlink creation of file %s: %s", f, err)
 
     def make_module_req_guess(self):
         """Specify PETSc custom values for PATH, CPATH and LD_LIBRARY_PATH."""
 
         guesses = super(EB_PETSc, self).make_module_req_guess()
 
-        prefix1 = ""
-        prefix2 = ""
+        prefix1 = ''
+        prefix2 = ''
         if self.cfg['sourceinstall']:
             prefix1 = self.petsc_subdir
             prefix2 = os.path.join(self.petsc_subdir, self.petsc_arch)
 
         guesses.update({
-                        'PATH': [os.path.join(prefix1, "bin")],
-                        'CPATH': [os.path.join(prefix2, "include"),
-                                  os.path.join(prefix1, "include")],
-                        'LD_LIBRARY_PATH': [os.path.join(prefix2, "lib")]
-                        })
+            'CPATH': [os.path.join(prefix2, 'include'), os.path.join(prefix1, 'include')],
+            'LD_LIBRARY_PATH': [os.path.join(prefix2, 'lib')],
+            'PATH': [os.path.join(prefix1, 'bin')],
+        })
 
         return guesses
 
@@ -289,19 +289,18 @@ class EB_PETSc(ConfigureMake):
         txt = super(EB_PETSc, self).make_module_extra()
 
         if self.cfg['sourceinstall']:
-            txt += self.moduleGenerator.set_environment('PETSC_DIR', '$root/%s' % self.petsc_subdir)
-            txt += self.moduleGenerator.set_environment('PETSC_ARCH', self.petsc_arch)
-
+            txt += self.module_generator.set_environment('PETSC_DIR', os.path.join(self.installdir, self.petsc_subdir))
+            txt += self.module_generator.set_environment('PETSC_ARCH', self.petsc_arch)
         else:
-            txt += self.moduleGenerator.set_environment('PETSC_DIR', '$root')
+            txt += self.module_generator.set_environment('PETSC_DIR', self.installdir)
 
         return txt
 
     def sanity_check_step(self):
         """Custom sanity check for PETSc"""
 
-        prefix1 = ""
-        prefix2 = ""
+        prefix1 = ''
+        prefix2 = ''
         if self.cfg['sourceinstall']:
             prefix1 = self.petsc_subdir
             prefix2 = os.path.join(self.petsc_subdir, self.petsc_arch)
@@ -309,12 +308,16 @@ class EB_PETSc(ConfigureMake):
         if self.cfg['shared_libs']:
             libext = get_shared_lib_ext()
         else:
-            libext = "a"
+            libext = 'a'
 
-        custom_paths = {
-                        'files': [os.path.join(prefix2, "lib", "libpetsc.%s" % libext)],
-                        'dirs': [os.path.join(prefix1, "bin"), os.path.join(prefix2, "conf"),
-                                 os.path.join(prefix1, "include"), os.path.join(prefix2, "include")]
-                       }
+            custom_paths = {
+                'files': [os.path.join(prefix2, 'lib', 'libpetsc.%s' % libext)],
+                'dirs': [os.path.join(prefix1, 'bin'), os.path.join(prefix1, 'include'),
+                         os.path.join(prefix2, 'include')]
+            }
+            if LooseVersion(self.version) < LooseVersion('3.6'):
+                custom_paths['dirs'].append(os.path.join(prefix2, 'conf'))
+            else:
+                custom_paths['dirs'].append(os.path.join(prefix2, 'lib', 'petsc', 'conf'))
 
         super(EB_PETSc, self).sanity_check_step(custom_paths=custom_paths)

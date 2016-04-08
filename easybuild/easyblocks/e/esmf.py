@@ -5,7 +5,7 @@
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
 # with support of Ghent University (http://ugent.be/hpc),
 # the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
-# the Hercules foundation (http://www.herculesstichting.be/in_English)
+# Flemish Research Foundation (FWO) (http://www.fwo.be/en)
 # and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
 # http://github.com/hpcugent/easybuild
@@ -34,8 +34,9 @@ import easybuild.tools.toolchain as toolchain
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import BUILD
-from easybuild.tools.filetools import run_cmd
 from easybuild.tools.modules import get_software_root
+from easybuild.tools.run import run_cmd
+from easybuild.tools.systemtools import get_shared_lib_ext
 
 
 class EB_ESMF(ConfigureMake):
@@ -61,7 +62,8 @@ class EB_ESMF(ConfigureMake):
         # specify MPI communications library
         comm = None
         mpi_family = self.toolchain.mpi_family()
-        if mpi_family in [toolchain.QLOGICMPI]:
+        if mpi_family in [toolchain.MPICH, toolchain.QLOGICMPI]:
+            # MPICH family for MPICH v3.x, which is MPICH2 compatible
             comm = 'mpich2'
         else:
             comm = mpi_family.lower()
@@ -99,11 +101,12 @@ class EB_ESMF(ConfigureMake):
 
     def sanity_check_step(self):
         """Custom sanity check for ESMF."""
+        shlib_ext = get_shared_lib_ext()
 
         custom_paths = {
             'files':
                 [os.path.join('bin', x) for x in ['ESMF_Info', 'ESMF_InfoC', 'ESMF_RegridWeightGen', 'ESMF_WebServController']] +
-                [os.path.join('lib', x) for x in ['libesmf.a', 'libesmf.so']],
+                [os.path.join('lib', x) for x in ['libesmf.a', 'libesmf.%s' % shlib_ext]],
             'dirs': ['include', 'mod'],
         }
 

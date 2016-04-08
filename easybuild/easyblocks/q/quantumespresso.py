@@ -1,11 +1,11 @@
 ##
-# Copyright 2009-2013 Ghent University
+# Copyright 2009-2016 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
 # with support of Ghent University (http://ugent.be/hpc),
 # the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
-# the Hercules foundation (http://www.herculesstichting.be/in_English)
+# Flemish Research Foundation (FWO) (http://www.fwo.be/en)
 # and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
 # http://github.com/hpcugent/easybuild
@@ -38,6 +38,7 @@ import easybuild.tools.environment as env
 import easybuild.tools.toolchain as toolchain
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.framework.easyconfig import CUSTOM
+from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.modules import get_software_root
 
 
@@ -84,6 +85,9 @@ class EB_QuantumESPRESSO(ConfigureMake):
             cpp = "%s -E -C" % os.getenv('CC')
             repls.append(('CPP', cpp, False))
             env.setvar('CPP', cpp)
+
+            # also define $FCCPP, but do *not* include -C (comments should not be preserved when preprocessing Fortran)
+            env.setvar('FCCPP', "%s -E" % os.getenv('CC'))
 
         super(EB_QuantumESPRESSO, self).configure_step()
 
@@ -153,16 +157,16 @@ class EB_QuantumESPRESSO(ConfigureMake):
                     else:
                         line = re.sub(r"^(%s\s*=[ \t]*).*$" % k, r"\1%s" % v, line)
 
-                    # fix preprocessing directives for .f90 files in make.sys if required
+                # fix preprocessing directives for .f90 files in make.sys if required
                 if self.toolchain.comp_family() in [toolchain.GCC]:
-                    line = re.sub("\$\(MPIF90\) \$\(F90FLAGS\) -c \$<",
+                    line = re.sub(r"\$\(MPIF90\) \$\(F90FLAGS\) -c \$<",
                                   "$(CPP) -C $(CPPFLAGS) $< -o $*.F90\n" +
                                   "\t$(MPIF90) $(F90FLAGS) -c $*.F90 -o $*.o",
                                   line)
 
                 sys.stdout.write(line)
         except IOError, err:
-            self.log.error("Failed to patch %s: %s" % (fn, err))
+            raise EasyBuildError("Failed to patch %s: %s", fn, err)
 
         self.log.debug("Contents of patched %s: %s" % (fn, open(fn, "r").read()))
 
@@ -178,7 +182,7 @@ class EB_QuantumESPRESSO(ConfigureMake):
                 sys.stdout.write(line)
 
         except IOError, err:
-            self.log.error("Failed to patch %s: %s" % (fn, err))
+            raise EasyBuildError("Failed to patch %s: %s", fn, err)
 
         self.log.debug("Contents of patched %s: %s" % (fn, open(fn, "r").read()))
 
@@ -187,12 +191,23 @@ class EB_QuantumESPRESSO(ConfigureMake):
         wantdirs = [d for d in os.listdir(self.builddir) if d.startswith(wantprefix)]
 
         if len(wantdirs) > 1:
-            self.log.error("Found more than one directory with %s prefix, help!" % wantprefix)
+            raise EasyBuildError("Found more than one directory with %s prefix, help!", wantprefix)
 
         if len(wantdirs) != 0:
-            fn = os.path.join(self.builddir, wantdirs[0], 'conf', 'make.sys.in')
+            wantdir = os.path.join(self.builddir, wantdirs[0])
+            make_sys_in_path = None
+            cand_paths = [os.path.join('conf', 'make.sys.in'), os.path.join('config', 'make.sys.in')]
+            for path in cand_paths:
+                full_path = os.path.join(wantdir, path)
+                if os.path.exists(full_path):
+                    make_sys_in_path = full_path
+                    break
+            if make_sys_in_path is None:
+                raise EasyBuildError("Failed to find make.sys.in in want directory %s, paths considered: %s",
+                                     wantdir, ', '.join(cand_paths))
+
             try:
-                for line in fileinput.input(fn, inplace=1, backup='.orig.eb'):
+                for line in fileinput.input(make_sys_in_path, inplace=1, backup='.orig.eb'):
                     # fix preprocessing directives for .f90 files in make.sys if required
                     if self.toolchain.comp_family() in [toolchain.GCC]:
                         line = re.sub("@f90rule@",
@@ -202,7 +217,7 @@ class EB_QuantumESPRESSO(ConfigureMake):
 
                     sys.stdout.write(line)
             except IOError, err:
-                self.log.error("Failed to patch %s: %s" % (fn, err))
+                raise EasyBuildError("Failed to patch %s: %s", fn, err)
 
         # move non-espresso directories to where they're expected and create symlinks
         try:
@@ -224,7 +239,7 @@ class EB_QuantumESPRESSO(ConfigureMake):
                     os.symlink(os.path.join(targetdir, dirname), os.path.join(targetdir, linkname))
 
         except OSError, err:
-            self.log.error("Failed to move non-espresso directories: %s" % err)
+            raise EasyBuildError("Failed to move non-espresso directories: %s", err)
 
     def install_step(self):
         """Skip install step, since we're building in the install directory."""
@@ -329,14 +344,14 @@ class EB_QuantumESPRESSO(ConfigureMake):
 
     def make_module_req_guess(self):
         """Custom path suggestions for Quantum ESPRESSO."""
-
         guesses = super(EB_QuantumESPRESSO, self).make_module_req_guess()
 
+        # order matters here, 'bin' should be *last* in this list to ensure it gets prepended to $PATH last,
+        # so it gets preference over the others
+        # this is important since some binaries are available in two places (e.g. dos.x in both bin and WANT/bin)
+        bindirs = ['upftools', 'WANT/bin', 'YAMBO/bin', 'bin']
         guesses.update({
-                        'PATH': [os.path.join(self.install_subdir, x) for x in ['bin', 'upftools',
-                                                                                'WANT/bin',
-                                                                                'YAMBO/bin']],
-                        'CPATH': [os.path.join(self.install_subdir, 'include')],
-                       })
-
+            'PATH': [os.path.join(self.install_subdir, bindir) for bindir in bindirs],
+            'CPATH': [os.path.join(self.install_subdir, 'include')],
+        })
         return guesses

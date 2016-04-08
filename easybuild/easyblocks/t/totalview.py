@@ -1,8 +1,10 @@
 ##
 # This file is an EasyBuild reciPY as per https://github.com/hpcugent/easybuild
 #
-# Copyright:: Copyright 2012-2013 University of Luxembourg/Luxembourg Centre for Systems Biomedicine
-# Authors::   Fotis Georgatos <fotis.georgatos@uni.lu>
+# Copyright:: Copyright 2012-2016 Uni.Lu/LCSB, NTUA
+# Copyright:: Copyright 2016-2016 Forschungszentrum Juelich
+# Authors::   Fotis Georgatos <fotis@cern.ch>
+# Authors::   Damian Alvarez  <d.alvarez@fz-juelich.de>
 # License::   MIT/GPL
 # $Id$
 #
@@ -16,21 +18,48 @@ EasyBuild support for installing Totalview, implemented as an easyblock
 """
 import os
 
+import easybuild.tools.environment as env
 from easybuild.framework.easyblock import EasyBlock
-from easybuild.tools.filetools import run_cmd
+from easybuild.tools.build_log import EasyBuildError
+from easybuild.tools.filetools import find_flexlm_license
 from easybuild.tools.modules import get_software_root
+from easybuild.tools.run import run_cmd
+
 
 class EB_TotalView(EasyBlock):
     """EasyBlock for TotalView"""
 
-    def configure_step(self):
-        """No configuration for TotalView."""
+    def __init__(self, *args, **kwargs):
+        """Initialisation of custom class variables for Totalview"""
+        super(EB_TotalView, self).__init__(*args, **kwargs)
+        
+        self.license_file = 'UNKNOWN'
+        self.license_env_var = 'UNKNOWN'
 
-        pass
+    def configure_step(self):
+        """
+        Handle of license
+        """
+        default_lic_env_var = 'LM_LICENSE_FILE'
+        lic_specs, self.license_env_var = find_flexlm_license(custom_env_vars=[default_lic_env_var],
+                                                              lic_specs=[self.cfg['license_file']])
+
+        if lic_specs:
+            if self.license_env_var is None:
+                self.log.info("Using Totalview license specifications from 'license_file': %s", lic_specs)
+                self.license_env_var = default_lic_env_var
+            else:
+                self.log.info("Using Totalview license specifications from %s: %s", self.license_env_var, lic_specs)
+
+            self.license_file = os.pathsep.join(lic_specs)
+            env.setvar(self.license_env_var, self.license_file)
+
+        else:
+            raise EasyBuildError("No viable license specifications found; specify 'license_file' or "+
+                                 "define $LM_LICENSE_FILE")
 
     def build_step(self):
         """No building for TotalView."""
-
         pass
 
     def install_step(self):
@@ -45,30 +74,26 @@ class EB_TotalView(EasyBlock):
         binpath_t = 'toolworks/%s.%s/bin/' % (self.name.lower(), self.version) + 'tv%s'
 
         custom_paths = {
-                        'files': [binpath_t % i for i in ['8', '8cli', 'dbootstrap', 'dsvr', 'script']],
-                        'dirs': []
-                       }
+            'files': [binpath_t % i for i in ['8', '8cli', 'dbootstrap', 'dsvr', 'script']],
+            'dirs': [],
+        }
 
         super(EB_TotalView, self).sanity_check_step(custom_paths=custom_paths)
 
     def make_module_req_guess(self):
         """Specify TotalView custom values for PATH."""
-
         guesses = super(EB_TotalView, self).make_module_req_guess()
 
         prefix = os.path.join('toolworks', '%s.%s' % (self.name.lower(), self.version))
         guesses.update({
-                        'PATH': [os.path.join(prefix, 'bin')],
-                        'MANPATH': [os.path.join(prefix, 'man')],
-                       })
+            'PATH': [os.path.join(prefix, 'bin')],
+            'MANPATH': [os.path.join(prefix, 'man')],
+        })
 
         return guesses
 
     def make_module_extra(self):
         """Add extra environment variables for license file and anything else."""
-
         txt = super(EB_TotalView, self).make_module_extra()
-
-        txt += self.moduleGenerator.prepend_paths('LM_LICENSE_FILE', self.cfg['license_file'], allow_abs=True)
-
+        txt += self.module_generator.prepend_paths(self.license_env_var, [self.license_file], allow_abs=True, expand_relpaths=False)
         return txt

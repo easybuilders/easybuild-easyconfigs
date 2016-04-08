@@ -1,11 +1,11 @@
 ##
-# Copyright 2009-2013 Ghent University
+# Copyright 2009-2016 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
 # with support of Ghent University (http://ugent.be/hpc),
 # the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
-# the Hercules foundation (http://www.herculesstichting.be/in_English)
+# Flemish Research Foundation (FWO) (http://www.fwo.be/en)
 # and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
 # http://github.com/hpcugent/easybuild
@@ -34,7 +34,8 @@ from easybuild.easyblocks.perl import EXTS_FILTER_PERL_MODULES, get_major_perl_v
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.framework.extensioneasyblock import ExtensionEasyBlock
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
-from easybuild.tools.filetools import run_cmd
+from easybuild.tools.build_log import EasyBuildError
+from easybuild.tools.run import run_cmd
 
 
 class PerlModule(ExtensionEasyBlock, ConfigureMake):
@@ -72,8 +73,8 @@ class PerlModule(ExtensionEasyBlock, ConfigureMake):
         """Perform the actual Perl module build/installation procedure"""
 
         if not self.src:
-            self.log.error("No source found for Perl module %s, required for installation. (src: %s)" %
-                           (self.name, self.src))
+            raise EasyBuildError("No source found for Perl module %s, required for installation. (src: %s)",
+                                 self.name, self.src)
         ExtensionEasyBlock.run(self, unpack_src=True)
 
         self.install_perl_module()

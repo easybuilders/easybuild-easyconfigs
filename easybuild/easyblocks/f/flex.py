@@ -1,11 +1,11 @@
 ##
-# Copyright 2009-2013 Ghent University
+# Copyright 2009-2016 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
 # with support of Ghent University (http://ugent.be/hpc),
 # the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
-# the Hercules foundation (http://www.herculesstichting.be/in_English)
+# Flemish Research Foundation (FWO) (http://www.fwo.be/en)
 # and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
 # http://github.com/hpcugent/easybuild
@@ -31,6 +31,8 @@ EasyBuild support for building and installing flex, implemented as an easyblock
 import os
 
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
+from easybuild.tools.build_log import EasyBuildError
+
 
 class EB_flex(ConfigureMake):
     """Support for building and installing flex."""
@@ -47,14 +49,14 @@ class EB_flex(ConfigureMake):
                     os.symlink(os.path.join(self.installdir, "bin", "flex"), binpath)
 
         except OSError, err:
-            self.log.error("Failed to symlink binaries: %s" % err)
+            raise EasyBuildError("Failed to symlink binaries: %s", err)
 
     def sanity_check_step(self):
         """Custom sanity check for flex"""
 
         custom_paths =  {
                          'files':["bin/%s" % x for x in ["flex", "lex", "lex++"]] + ["include/FlexLexer.h"] +
-                                 ["lib/lib%s.a" % x for x in ["fl", "fl_pic"]],
+                                 [("lib/lib%s.a" % x, "lib64/lib%s.a" % x) for x in ["fl", "fl_pic"]],
                          'dirs':[]
                         }
 
