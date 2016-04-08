@@ -1,0 +1,42 @@
+name = "Trilinos"
+version = "11.12.1"
+versionsuffix = "-Python-2.7.9"
+
+homepage = 'http://trilinos.sandia.gov/'
+description = """The Trilinos Project is an effort to develop algorithms and enabling technologies
+ within an object-oriented software framework for the solution of large-scale, complex multi-physics
+ engineering and scientific problems. A unique design feature of Trilinos is its focus on packages."""
+
+
+toolchain = {'name': 'ictce', 'version': '7.2.4'}
+toolchainopts = {'usempi': True, 'pic': True, 'strict': True}
+
+# Downloads are available from oldsite
+#source_urls = ['http://trilinos.sandia.gov/download/files/']
+source_urls = ['http://trilinos.org/oldsite/download/files/']
+sources = ['%s-%s-Source.tar.gz' % (name.lower(), version)]
+
+#patches = ['fix-parmetis.patch']
+patches = ['use-MKL-BLACS.patch']
+
+# order matters!
+# ParMETIS needs to go after SCOTCH (because of include dirs)
+dependencies = [
+                ('Boost', '1.57.0', versionsuffix ),
+                ('SCOTCH', '6.0.0_esmumps'),
+                ('SuiteSparse', '4.4.3', '-ParMETIS-4.0.3'),
+                ('ParMETIS', '4.0.3')
+               ]
+
+builddependencies = [('CMake', '2.8.12.1', '', ('GCC','4.8.4'))]
+
+configopts = '-DTPL_ENABLE_BLACS:BOOL=ON -DTPL_BLACS_LIBRARIES="libmkl_blacs_intelmpi_lp64.a" -DTPL_ENABLE_SCALAPACK:BOOL=ON -DTPL_SCALAPACK_LIBRARIES="libmkl_scalapack_lp64.a"'
+
+# Reduce memory usage
+parallel = 1
+
+# Kokkos build is broken with ictce, yields:
+# internal error: 0_1670 for packages/kokkos/LinAlg/Kokkos_DefaultArithmetic.hpp (line 827)
+skip_exts = ["Kokkos", "Tpetra"]
+ 
+moduleclass = 'numlib'
