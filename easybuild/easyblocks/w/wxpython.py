@@ -31,27 +31,19 @@ EasyBuild support for wxPython, implemented as an easyblock
 import os
 
 from easybuild.easyblocks.generic.pythonpackage import PythonPackage
-from easybuild.tools.modules import get_software_root
 from easybuild.tools.run import run_cmd
+
 
 class EB_wxPython(PythonPackage):
     """Support for installing the wxPython Python package."""
 
     def build_step(self):
-        """Perform the actual Python package build procedure"""
+        """No separate build step for wxPython."""
+        pass
 
-        #wxPython configure, build, and install with one script
-        cmd = 'python '
-        cmd += os.path.join('wxPython', 'build-wxpython.py')
-        cmd += ' --prefix={0} --wxpy_installdir={0} --install '.format(self.installdir)
-        run_cmd(cmd, log_all=True, simple=True)
-    
     def install_step(self):
         """Install performed during the build_step"""
-
-        pass
-
-    def make_installdir(self):
-        """Installdir is already maked, do not delete it"""
-
-        pass
+        # wxPython configure, build, and install with one script
+        script = os.path.join('wxPython', 'build-wxpython.py')
+        cmd = "{0} {1} --prefix={2} --wxpy_installdir={2} --install".format(self.python_cmd, script, self.installdir)
+        run_cmd(cmd, log_all=True, simple=True)
