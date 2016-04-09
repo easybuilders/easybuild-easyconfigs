@@ -33,6 +33,7 @@ import re
 
 from easybuild.easyblocks.generic.pythonpackage import PythonPackage
 from easybuild.tools.run import run_cmd
+from easybuild.tools.systemtools import get_shared_lib_ext
 
 
 class EB_wxPython(PythonPackage):
@@ -52,10 +53,11 @@ class EB_wxPython(PythonPackage):
     def sanity_check_step(self):
         """Custom sanity check for wxPython."""
         majver = '.'.join(self.version.split('.')[:2])
+        shlib_ext = get_shared_lib_ext()
         py_bins = ['alacarte', 'alamode', 'crust', 'shell', 'wrap', 'wxrc']
         custom_paths = {
             'files': ['bin/wxrc'] + [os.path.join('bin', 'py%s' % x) for x in py_bins] +
-                     [os.path.join('lib/lib%s-%s.so' % (x, majver)) for x in ['wx_baseu', 'wx_gtk2u_core']],
+                     [os.path.join('lib/lib%s-%s.%s' % (x, majver, shlib_ext)) for x in ['wx_baseu', 'wx_gtk2u_core']],
             'dirs': ['include', 'share', self.pylibdir],
         }
 
