@@ -29,6 +29,7 @@ EasyBuild support for wxPython, implemented as an easyblock
 """
 
 import os
+import re
 
 from easybuild.easyblocks.generic.pythonpackage import PythonPackage
 from easybuild.tools.run import run_cmd
@@ -42,8 +43,33 @@ class EB_wxPython(PythonPackage):
         pass
 
     def install_step(self):
-        """Install performed during the build_step"""
+        """Custom install procedure for wxPython, using provided build-wxpython.py script."""
         # wxPython configure, build, and install with one script
         script = os.path.join('wxPython', 'build-wxpython.py')
         cmd = "{0} {1} --prefix={2} --wxpy_installdir={2} --install".format(self.python_cmd, script, self.installdir)
         run_cmd(cmd, log_all=True, simple=True)
+
+    def sanity_check_step(self):
+        """Custom sanity check for wxPython."""
+        majver = '.'.join(self.version.split('.')[:2])
+        py_bins = ['alacarte', 'alamode', 'crust', 'shell', 'wrap', 'wxrc']
+        custom_paths = {
+            'files': ['bin/wxrc'] + [os.path.join('bin', 'py%s' % x) for x in py_bins] +
+                     [os.path.join('lib/lib%s-%s.so' % (x, majver)) for x in ['wx_baseu', 'wx_gtk2u_core']],
+            'dirs': ['include', 'share', self.pylibdir],
+        }
+
+        # test using 'import wx'
+        self.options['modulename'] = 'wx'
+
+        super(EB_wxPython, self).sanity_check_step(custom_paths=custom_paths)
+
+    def make_module_extra(self):
+        """Custom update for $PYTHONPATH for wxPython."""
+        txt = super(EB_wxPython, self).make_module_extra()
+
+        # make sure that correct subdir is included in update to $PYTHONPATH
+        majver = '.'.join(self.version.split('.')[:2])
+        txt = re.sub(self.pylibdir, os.path.join(self.pylibdir, 'wx-%s-gtk2' % majver), txt)
+
+        return txt
