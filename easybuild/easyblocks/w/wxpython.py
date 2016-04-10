@@ -26,6 +26,7 @@
 EasyBuild support for wxPython, implemented as an easyblock
 
 @author: Balazs Hajgato (Vrije Universiteit Brussel)
+@author: Kenneth Hoste (HPC-UGent)
 """
 
 import os
