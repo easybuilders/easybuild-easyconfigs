@@ -1,0 +1,39 @@
+name = 'netCDF'
+version = '4.3.0'
+
+homepage = 'http://www.unidata.ucar.edu/software/netcdf/'
+description = """NetCDF (network Common Data Form) is a set of software libraries 
+ and machine-independent data formats that support the creation, access, and sharing of array-oriented 
+ scientific data."""
+
+toolchain = {'name': 'ictce', 'version': '5.5.0'}
+toolchainopts = {'pic': True, 'usempi': True}
+
+sources = [SOURCELOWER_TAR_GZ]
+source_urls = [
+    'ftp://ftp.unidata.ucar.edu/pub/netcdf/',
+    'ftp://ftp.unidata.ucar.edu/pub/netcdf/old',
+]
+
+patches = [('netCDF-4.3.0_nc-config.in.cmake', '%(namelower)s-%(version)s')]
+
+dependencies = [('HDF5', '1.8.12')]
+
+builddependencies = [
+    ('CMake', '2.8.12'),
+    ('Doxygen', '1.8.6'),
+    ('cURL', '7.34.0'),
+]
+
+# we need to specify correct start dir, since unpacked tarball also contains e.g. ._netcdf-4.3.0
+start_dir = '%(namelower)s-%(version)s'
+
+preconfigopts = 'mv netCDF-4.3.0_nc-config.in.cmake nc-config.in.cmake && '
+
+# make sure both static and shared libs are built
+configopts = [
+    "-DCURL_LIBRARY=$EBROOTCURL/lib/libcurl.so -DCURL_INCLUDE_DIR=$EBROOTCURL/include -DBUILD_SHARED_LIBS=ON",
+    "-DCURL_LIBRARY=$EBROOTCURL/lib/libcurl.so -DCURL_INCLUDE_DIR=$EBROOTCURL/include -DBUILD_SHARED_LIBS=OFF",
+]
+
+moduleclass = 'data'

@@ -1,0 +1,46 @@
+##
+# This file is an EasyBuild reciPY as per https://github.com/hpcugent/easybuild
+#
+# Copyright:: Copyright 2012-2014 Uni.Lu/LCSB, NTUA
+# Authors::   Fotis Georgatos <fotis@cern.ch>
+# Authors::   Dmitri Gribenko <gribozavr@gmail.com>
+# License::   MIT/GPL
+# $Id$
+#
+# This work implements a part of the HPCBIOS project and is a component of the policy:
+# http://hpcbios.readthedocs.org/en/latest/HPCBIOS_2012-90.html
+##
+
+easyblock = 'ConfigureMake'
+
+name = 'git'
+version = '2.2.2'
+
+homepage = 'http://git-scm.com/'
+description = """Git is a free and open source distributed version control system designed
+to handle everything from small to very large projects with speed and efficiency."""
+
+toolchain = {'name': 'GCC', 'version': '4.9.2'}
+
+sources = ['v%(version)s.tar.gz']
+source_urls = ['https://github.com/git/git/archive']
+
+dependencies = [
+    ('cURL', '7.40.0'),
+    ('expat', '2.1.0'),
+    ('gettext', '0.19.4'),
+    ('Perl', '5.20.1', '-bare'),
+]
+
+preconfigopts = 'make configure && '
+
+# Work around git build system bug.  If LIBS contains -lpthread, then configure
+# will not append -lpthread to LDFLAGS, but Makefile ignores LIBS.
+configopts = "--with-perl=${EBROOTPERL}/bin/perl --enable-pthreads='-lpthread'"
+
+sanity_check_paths = {
+    'files': ['bin/git'],
+    'dirs': [],
+}
+
+moduleclass = 'tools'

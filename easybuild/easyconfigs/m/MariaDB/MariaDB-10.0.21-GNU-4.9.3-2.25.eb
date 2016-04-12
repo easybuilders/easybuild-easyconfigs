@@ -1,0 +1,38 @@
+easyblock = 'CMakeMake'
+
+name = 'MariaDB'
+version = '10.0.21'
+
+homepage = 'https://mariadb.org/'
+description = """MariaDB An enhanced, drop-in replacement for MySQL."""
+
+toolchain = {'name': 'GNU', 'version': '4.9.3-2.25'}
+
+sources = [SOURCELOWER_TAR_GZ]
+source_urls = ['https://downloads.mariadb.org/f/mariadb-10.0.21/source/']
+
+dependencies = [
+    ('zlib', '1.2.8'),
+    ('ncurses', '5.9'),
+    ('libedit', '20150325'),
+    ('libxml2', '2.9.2'),
+]
+
+builddependencies = [
+    ('CMake', '3.3.2'),
+    ('Bison', '3.0.4'),
+]
+
+# remove prebundled version of libedit
+preconfigopts = "rm -rf cmd-line-utils/libedit && "
+
+configopts = "-DCURSES_LIBRARY=$EBROOTNCURSES/lib/libncurses.so -DCURSES_INCLUDE_PATH=$EBROOTNCURSES/include"
+# do not use ld.gold
+configopts += " -DCMAKE_SHARED_LINKER_FLAGS='-fuse-ld=bfd' "
+
+sanity_check_paths = {
+    'files': ['bin/mysql', 'bin/mysqld_safe', 'lib/libmysqlclient.%s' % SHLIB_EXT, 'scripts/mysql_install_db'],
+    'dirs': ['include', 'share'],
+}
+
+moduleclass = 'data'

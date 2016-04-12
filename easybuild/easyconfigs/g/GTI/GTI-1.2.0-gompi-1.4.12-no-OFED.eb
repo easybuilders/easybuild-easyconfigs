@@ -1,0 +1,38 @@
+# This is an easyconfig file for EasyBuild, see https://github.com/hpcugent/easybuild
+# Copyright:: Copyright 2013 Juelich Supercomputing Centre, Germany
+# Authors::   Bernd Mohr <b.mohr@fz-juelich.de>
+# License::   New BSD
+#
+# This work is based from experiences from the UNITE project
+# http://apps.fz-juelich.de/unite/
+##
+easyblock = 'CMakeMake'
+
+name = "GTI"
+version = "1.2.0"
+
+homepage = 'http://www.tu-dresden.de/zih/must/'
+description = """A Generic Tools Infrastructure for Event-Based Tools in Parallel Systems."""
+
+toolchain = {'name': 'gompi', 'version': '1.4.12-no-OFED'}
+toolchainopts = {"usempi": True}
+
+# http://tu-dresden.de/die_tu_dresden/zentrale_einrichtungen/zih/forschung/projekte/must/files/gti-release-1.2.0.tar.gz
+source_urls = ['http://tu-dresden.de/die_tu_dresden/zentrale_einrichtungen/zih/forschung/projekte/must/files/']
+sources = ['%(namelower)s-release-%(version)s.tar.gz']
+
+patches = ['GTI-1.2.0-missing-unistd.patch']
+
+dependencies = [('PnMPI', '1.2.0')]
+
+builddependencies = [('CMake', '2.8.10.2')]
+
+configopts = '-DCMAKE_BUILD_TYPE=Release -DPnMPI_INSTALL_PREFIX=${EBROOTPNMPI}'
+buildopts = 'CXXFLAGS="$CXXFLAGS -fpermissive"'
+
+sanity_check_paths = {
+    'files': ["bin/weaver", "include/I_Profiler.h"],
+    'dirs': [],
+}
+
+moduleclass = 'perf'
