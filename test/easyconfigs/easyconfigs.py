@@ -5,7 +5,7 @@
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
 # with support of Ghent University (http://ugent.be/hpc),
 # the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
-# the Hercules foundation (http://www.herculesstichting.be/in_English)
+# Flemish Research Foundation (FWO) (http://www.fwo.be/en)
 # and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
 # http://github.com/hpcugent/easybuild
@@ -32,10 +32,11 @@ import copy
 import glob
 import os
 import re
+import shutil
 import sys
 import tempfile
 from distutils.version import LooseVersion
-from vsc import fancylogger
+from vsc.utils import fancylogger
 from vsc.utils.missing import nub
 from unittest import TestCase, TestLoader, main
 
@@ -43,15 +44,18 @@ import easybuild.main as main
 import easybuild.tools.options as eboptions
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.framework.easyblock import EasyBlock
-from easybuild.framework.easyconfig.easyconfig import ActiveMNS, EasyConfig
+from easybuild.framework.easyconfig.easyconfig import EasyConfig
 from easybuild.framework.easyconfig.easyconfig import get_easyblock_class
 from easybuild.framework.easyconfig.parser import fetch_parameters_from_easyconfig
 from easybuild.framework.easyconfig.tools import dep_graph, get_paths_for, process_easyconfig
 from easybuild.tools import config
+from easybuild.tools.filetools import write_file
 from easybuild.tools.module_naming_scheme import GENERAL_CLASS
+from easybuild.tools.module_naming_scheme.easybuild_mns import EasyBuildMNS
 from easybuild.tools.module_naming_scheme.utilities import det_full_ec_version
 from easybuild.tools.modules import modules_tool
 from easybuild.tools.robot import resolve_dependencies
+from easybuild.tools.options import set_tmpdir
 
 
 # indicates whether all the single tests are OK,
@@ -71,18 +75,19 @@ class EasyConfigTest(TestCase):
         'force': True,
         'optarch': 'test',
         'robot_path': get_paths_for("easyconfigs")[0],
+        'silent': True,
         'suffix_modules_path': GENERAL_CLASS,
         'valid_module_classes': config.module_classes(),
         'valid_stops': [x[0] for x in EasyBlock.get_steps()],
     }
     config.init_build_options(build_options=build_options)
-    config.set_tmpdir()
+    set_tmpdir()
     del eb_go
 
-    # mock 'exist' and 'load' methods of modules tool, which are used for 'craype' external module
-    modtool = modules_tool()
-    modtool.exist = lambda m: [True]*len(m)
-    modtool.load = lambda m: True
+    # put dummy 'craype-test' module in place, which is required for parsing easyconfigs using Cray* toolchains
+    TMPDIR = tempfile.mkdtemp()
+    os.environ['MODULEPATH'] = TMPDIR
+    write_file(os.path.join(TMPDIR, 'craype-test'), '#%Module\n')
 
     log = fancylogger.getLogger("EasyConfigTest", fname=False)
 
@@ -107,9 +112,6 @@ class EasyConfigTest(TestCase):
             for dep in ec['dependencies'][:]:
                 if dep.get('external_module', False):
                     ec['dependencies'].remove(dep)
-            for dep in ec['unresolved_deps'][:]:
-                if dep.get('external_module', False):
-                    ec['unresolved_deps'].remove(dep)
 
         self.ordered_specs = resolve_dependencies(self.parsed_easyconfigs, retain_all_deps=True)
 
@@ -124,7 +126,7 @@ class EasyConfigTest(TestCase):
             if self.ordered_specs is None:
                 self.process_all_easyconfigs()
 
-            dep_graph(fn, self.ordered_specs, silent=True)
+            dep_graph(fn, self.ordered_specs)
 
             try:
                 os.remove(fn)
@@ -144,13 +146,15 @@ class EasyConfigTest(TestCase):
             self.process_all_easyconfigs()
 
         def mk_dep_mod_name(spec):
-            return tuple(ActiveMNS().det_full_module_name(spec).split(os.path.sep))
+            return tuple(EasyBuildMNS().det_full_module_name(spec).split(os.path.sep))
 
         # construct a dictionary: (name, installver) tuple to (build) dependencies
         depmap = {}
         for spec in self.ordered_specs:
-            build_deps = map(mk_dep_mod_name, spec['builddependencies'])
-            deps = map(mk_dep_mod_name, spec['unresolved_deps'])
+            # exclude external modules, since we can't check conflicts on them (we don't even know the software name)
+            build_deps = [mk_dep_mod_name(d) for d in spec['builddependencies'] if not d.get('external_module', False)]
+            deps = [mk_dep_mod_name(d) for d in spec['ec'].all_dependencies if not d.get('external_module', False)]
+
             # separate runtime deps from build deps
             runtime_deps = [d for d in deps if d not in build_deps]
             key = tuple(spec['full_mod_name'].split(os.path.sep))
@@ -227,6 +231,10 @@ class EasyConfigTest(TestCase):
                     if not (dirpath.endswith('/easybuild/easyconfigs') and filenames == ['TEMPLATE.eb']):
                         self.assertTrue(False, "List of easyconfig files in %s is empty: %s" % (dirpath, filenames))
 
+    def test_zzz_cleanup(self):
+        """Dummy test to clean up global temporary directory."""
+        shutil.rmtree(self.TMPDIR)
+
 def template_easyconfig_test(self, spec):
     """Tests for an individual easyconfig: parsing, instantiating easyblock, check patches, ..."""
 
@@ -235,7 +243,7 @@ def template_easyconfig_test(self, spec):
     prev_single_tests_ok = single_tests_ok
     single_tests_ok = False
 
-    # parse easyconfig 
+    # parse easyconfig
     ecs = process_easyconfig(spec)
     if len(ecs) == 1:
         ec = ecs[0]['ec']
@@ -249,8 +257,14 @@ def template_easyconfig_test(self, spec):
 
     name, easyblock = fetch_parameters_from_easyconfig(ec.rawtxt, ['name', 'easyblock'])
 
+    # make sure easyconfig file is in expected location
+    expected_subdir = os.path.join('easybuild', 'easyconfigs', name.lower()[0], name)
+    subdir = os.path.join(*spec.split(os.path.sep)[-5:-1])
+    fail_msg = "Easyconfig file %s not in expected subdirectory %s" % (spec, expected_subdir)
+    self.assertEqual(expected_subdir, subdir, fail_msg)
+
     # sanity check for software name
-    self.assertTrue(ec['name'], name) 
+    self.assertTrue(ec['name'], name)
 
     # instantiate easyblock with easyconfig file
     app_class = get_easyblock_class(easyblock, name=name)
@@ -297,6 +311,25 @@ def template_easyconfig_test(self, spec):
     app.close_log()
     os.remove(app.logfile)
 
+    # dump the easyconfig file
+    handle, test_ecfile = tempfile.mkstemp()
+    os.close(handle)
+
+    ec.dump(test_ecfile)
+    dumped_ec = EasyConfig(test_ecfile)
+    os.remove(test_ecfile)
+
+    # inject dummy values for templates that are only known at a later stage
+    dummy_template_values = {
+        'builddir': '/dummy/builddir',
+        'installdir': '/dummy/installdir',
+    }
+    ec.template_values.update(dummy_template_values)
+    dumped_ec.template_values.update(dummy_template_values)
+
+    for key in sorted(ec._config):
+        self.assertEqual(ec[key], dumped_ec[key])
+
     # cache the parsed easyconfig, to avoid that it is parsed again
     self.parsed_easyconfigs.append(ecs[0])
 
@@ -305,19 +338,21 @@ def template_easyconfig_test(self, spec):
 
 def suite():
     """Return all easyblock initialisation tests."""
+    # dynamically generate a separate test for each of the available easyconfigs
+    # define new inner functions that can be added as class methods to InitTest
+    easyconfigs_path = get_paths_for('easyconfigs')[0]
+    cnt = 0
+    for (subpath, _, specs) in os.walk(easyconfigs_path, topdown=True):
+        for spec in specs:
+            if spec.endswith('.eb') and spec != 'TEMPLATE.eb':
+                cnt += 1
+                exec("def innertest(self): template_easyconfig_test(self, '%s')" % os.path.join(subpath, spec))
+                innertest.__doc__ = "Test for parsing of easyconfig %s" % spec
+                # double underscore so parsing tests are run first
+                innertest.__name__ = "test__parse_easyconfig_%s" % spec
+                setattr(EasyConfigTest, innertest.__name__, innertest)
 
-    # dynamically generate a separate test for each of the available easyblocks
-    easyconfigs_path = get_paths_for("easyconfigs")[0]
-    specs = glob.glob('%s/*/*/*.eb' % easyconfigs_path)
-
-    for spec in specs:
-        # dynamically define new inner functions that can be added as class methods to InitTest
-        exec("def innertest(self): template_easyconfig_test(self, '%s')" % spec)
-        spec = os.path.basename(spec)
-        innertest.__doc__ = "Test for parsing of easyconfig %s" % spec
-        innertest.__name__ = "test__parse_easyconfig_%s" % spec  # double underscore so parsing tests are run first
-        setattr(EasyConfigTest, innertest.__name__, innertest)
-
+    print "Found %s easyconfigs..." % cnt
     return TestLoader().loadTestsFromTestCase(EasyConfigTest)
 
 if __name__ == '__main__':

@@ -1,0 +1,512 @@
+#This patch makes CP2K source code compatible with i-pi
+#It was created by the CP2K team and can be found in the following link:
+#https://github.com/i-pi/i-pi/tree/master/patches
+diff -rupN cp2k-2.4.0_ref/makefiles/Makefile cp2k-2.4.0/makefiles/Makefile
+--- cp2k-2.4.0_ref/makefiles/Makefile	2013-08-15 10:46:04.535899216 +0100
++++ cp2k-2.4.0/makefiles/Makefile	2013-08-15 10:53:45.827911028 +0100
+@@ -354,7 +354,7 @@ else
+ LIB_OBJECTS =
+ endif
+ 
+-$(LIB_CP2K_ARCHIVE): $(OBJECTS)
++$(LIB_CP2K_ARCHIVE): $(OBJECTS) sockets.o
+ 	$(AR) $(LIB_CP2K_ARCHIVE) $?
+ ifneq ($(RANLIB),)
+ 	$(RANLIB) $(LIB_CP2K_ARCHIVE)
+diff -rupN cp2k-2.4.0_ref/src/cp2k_runs.F cp2k-2.4.0/src/cp2k_runs.F
+--- cp2k-2.4.0_ref/src/cp2k_runs.F	2013-08-15 10:46:04.091899205 +0100
++++ cp2k-2.4.0/src/cp2k_runs.F	2013-08-15 10:56:31.715915275 +0100
+@@ -73,10 +73,10 @@ MODULE cp2k_runs
+   USE input_constants,                 ONLY: &
+        bsse_run, cell_opt_run, debug_run, do_atom, do_band, do_cp2k, do_ep, &
+        do_farming, do_fist, do_mixed, do_opt_basis, do_optimize_input, &
+-       do_qmmm, do_qs, do_tamc, do_test, ehrenfest, electronic_spectra_run, &
+-       energy_force_run, energy_run, geo_opt_run, linear_response_run, &
+-       mol_dyn_run, mon_car_run, none_run, pint_run, real_time_propagation, &
+-       vib_anal
++       do_qmmm, do_qs, do_tamc, do_test, driver_run, ehrenfest, &
++       electronic_spectra_run, energy_force_run, energy_run, geo_opt_run, &
++       linear_response_run, mol_dyn_run, mon_car_run, none_run, pint_run, &
++       real_time_propagation, vib_anal
+   USE input_cp2k,                      ONLY: create_cp2k_input_reading,&
+                                              create_cp2k_root_section,&
+                                              create_global_section,&
+@@ -117,6 +117,7 @@ MODULE cp2k_runs
+   USE timings,                         ONLY: timeset,&
+                                              timestop
+   USE vibrational_analysis,            ONLY: vb_anal
++  USE driver,                          ONLY: run_driver
+ #include "cp_common_uses.h"
+ 
+   IMPLICIT NONE
+@@ -362,6 +363,8 @@ CONTAINS
+                   error=suberror)
+           CASE (mol_dyn_run)
+              CALL qs_mol_dyn ( force_env, globenv, error=suberror )
++          CASE (driver_run)
++             CALL run_driver ( force_env, globenv, error=suberror )
+           CASE (geo_opt_run)
+              CALL cp_geo_opt(force_env,globenv,error=suberror)
+           CASE (cell_opt_run)
+diff -rupN cp2k-2.4.0_ref/src/driver.F cp2k-2.4.0/src/driver.F
+--- cp2k-2.4.0_ref/src/driver.F	1970-01-01 01:00:00.000000000 +0100
++++ cp2k-2.4.0/src/driver.F	2013-08-15 15:43:44.895650242 +0100
+@@ -0,0 +1,216 @@
++! *****************************************************************************
++!> \brief Driver mode - To communicate with i-PI Python wrapper
++!> \par History
++!>      none
++!> \author Michele Ceriotti 03.2012
++! *****************************************************************************
++MODULE driver
++
++  USE force_env_methods,               ONLY: force_env_calc_energy_force
++  USE force_env_types,                 ONLY: force_env_get,&
++                                             force_env_type, &
++                                             force_env_set_cell
++  USE kinds,                           ONLY: default_path_length,&
++                                             dp                                             
++  USE input_section_types,             ONLY: section_vals_get_subs_vals,&
++                                             section_vals_type,&
++                                             section_vals_val_get
++                                                                                          
++  USE cell_types,                      ONLY: cell_clone,&
++                                             cell_create,&
++                                             cell_release,&
++                                             cell_type,&
++                                             compare_cells,&
++                                             init_cell,&
++                                             real_to_scaled,&
++                                             scaled_to_real                                             
++  USE global_types,                    ONLY: global_environment_type
++  USE f77_interface,                   ONLY: default_para_env
++  USE cp_external_control,                     ONLY: external_control
++  USE message_passing,                 ONLY: mp_bcast, mp_sync
++  USE cp_subsys_types,                 ONLY: cp_subsys_release,&
++                                             cp_subsys_type
++  USE iso_c_binding 
++  USE virial_types,                    ONLY: virial_type 
++#include "cp_common_uses.h"t                                               
++                                             
++  IMPLICIT NONE
++  
++  interface
++  subroutine usleep(useconds) bind(C)
++  ! integer(c_int) function usleep(useconds) bind(C)
++  use iso_c_binding
++  implicit none
++  integer(c_int32_t), value :: useconds
++  ! end function
++  end subroutine
++  end interface
++
++  CONTAINS
++  SUBROUTINE run_driver ( force_env, globenv, error )
++    TYPE(force_env_type), POINTER            :: force_env
++    TYPE(global_environment_type), POINTER   :: globenv
++    TYPE(cp_error_type), INTENT(inout)       :: error
++
++    TYPE(section_vals_type), POINTER         :: drv_section, motion_section
++    TYPE(virial_type), POINTER               :: virial
++
++    CHARACTER(len=default_path_length)       :: drv_hostname, c_hostname
++    INTEGER                                  :: drv_port
++    LOGICAL                                  :: drv_unix
++    
++    !MIK DRIVER
++    ! server address parsing
++    CHARACTER*1024  :: serveraddr, host
++    INTEGER socket, port, inet, nread, readbuffer, slock, swait, uwait
++    ! buffers and temporaries for communication
++    INTEGER, PARAMETER :: MSGLEN=12
++    LOGICAL :: isinit=.true., hasdata=.false., ionode=.false.
++    CHARACTER*12 :: header
++    CHARACTER*1024 :: parbuffer
++    INTEGER nat
++    REAL *8 :: cellh(3,3), cellih(3,3), vir(3,3), pot
++    REAL*8, ALLOCATABLE :: combuf(:)
++    REAL*8 :: sigma(3,3)
++    ! access cp2k structures
++    TYPE(cp_subsys_type), POINTER            :: subsys
++    integer ip, ii, idir
++    TYPE(cell_type), POINTER            :: cpcell
++    logical should_stop
++    ionode=(default_para_env%source==default_para_env%mepos)
++
++    ! reads driver parameters from input
++    motion_section => section_vals_get_subs_vals(force_env%root_section,"MOTION",error=error)
++    drv_section     => section_vals_get_subs_vals(motion_section,"DRIVER",error=error)
++
++    CALL section_vals_val_get(drv_section,"HOST",c_val=drv_hostname,error=error)
++    CALL section_vals_val_get(drv_section,"PORT",i_val=drv_port,error=error)
++    CALL section_vals_val_get(drv_section,"UNIX",l_val=drv_unix,error=error)
++
++    
++    ! opens the socket
++    socket=0    
++    inet=1
++    if (ionode) then
++       write(*,*) "@ i-PI DRIVER BEING LOADED"
++       write(*,*) "@ INPUT DATA: ", TRIM(drv_hostname), drv_port, drv_unix                          
++       c_hostname=TRIM(drv_hostname)//achar(0)
++       CALL open_socket(socket, .not. drv_unix, drv_port, c_hostname) 
++    endif    
++    
++    !now we have a socket, so we can initialize the CP2K environments. 
++    NULLIFY(cpcell)
++    call cell_create(cpcell,error=error)
++    uwait=10000  ! number of MICROseconds to be waited in filesystem lock
++    driver_loop: DO
++      ! do communication on master node only...
++      header = ""
++
++      ! this syncs the processes, possibly (see sockets.c) without calling MPI_Barrier, 
++      ! which is nice as MPI_barrier eats up a lot of CPU for nothing
++      inet=slock(default_para_env%source, default_para_env%mepos) 
++      CALL mp_sync(default_para_env%group)
++
++      if (ionode) nread=readbuffer(socket, header, MSGLEN) 
++      if (ionode)  write(0,*) "returned from readbuffer" 
++
++      inet=swait(uwait, default_para_env%source, default_para_env%mepos)
++      CALL mp_sync(default_para_env%group)
++
++      call mp_bcast(nread,default_para_env%source, default_para_env%group)
++      if (nread .eq. 0) then
++        if (ionode) write(*,*) " @ DRIVER MODE: Could not read from socket, exiting now."
++        exit
++      endif
++
++      call mp_bcast(header,default_para_env%source, default_para_env%group)
++      
++      if (ionode) write(*,*) " @ DRIVER MODE: Message from server: ", trim(header)
++      if (trim(header) == "STATUS") then          
++
++         inet=slock(default_para_env%source, default_para_env%mepos) 
++         CALL mp_sync(default_para_env%group)
++         if (ionode) then  ! does not  need init (well, maybe it should, just to check atom numbers and the like... )
++            if (hasdata) then
++               call writebuffer(socket,"HAVEDATA    ",MSGLEN)
++            else
++               call writebuffer(socket,"READY       ",MSGLEN)
++            endif
++         endif
++         inet=swait(uwait,default_para_env%source, default_para_env%mepos)
++         CALL mp_sync(default_para_env%group)
++      else if (trim(header) == "POSDATA") then              
++         if (ionode) then        
++            nread=readbuffer(socket, cellh, 9*8)
++            nread=readbuffer(socket, cellih, 9*8)
++            nread=readbuffer(socket, nat, 4)
++            cellh=transpose(cellh)
++            cellih=transpose(cellih)
++         endif
++         call mp_bcast(cellh,default_para_env%source, default_para_env%group)
++         call mp_bcast(cellih,default_para_env%source, default_para_env%group)
++         call mp_bcast(nat,default_para_env%source, default_para_env%group)
++         if (.not.allocated(combuf)) allocate(combuf(3*nat))
++         if (ionode) nread=readbuffer(socket, combuf, nat*3*8)
++         call mp_bcast(combuf,default_para_env%source, default_para_env%group)
++         
++         CALL force_env_get(force_env,subsys=subsys,error=error)
++         if (nat/=subsys%particles%n_els) WRITE(*,*) " @DRIVER MODE: Uh-oh! Particle number mismatch between i-pi and cp2k input!"
++         ii=0
++         DO ip=1,subsys%particles%n_els
++          DO idir=1,3
++             ii=ii+1
++             subsys%particles%els(ip)%r(idir)=combuf(ii)
++          END DO
++         END DO
++         CALL init_cell(cpcell, hmat=cellh)
++         CALL force_env_set_cell(force_env,cell=cpcell,error=error)
++         
++         CALL force_env_calc_energy_force(force_env,calc_force=.TRUE. ,error=error)    
++    
++         if (ionode) write(*,*) " @ DRIVER MODE: Received positions "
++         
++         combuf=0
++         ii=0
++         DO ip=1,subsys%particles%n_els
++          DO idir=1,3
++             ii=ii+1
++             combuf(ii)=subsys%particles%els(ip)%f(idir)
++          END DO
++         END DO         
++         CALL force_env_get(force_env, potential_energy=pot, error=error)
++         CALL force_env_get(force_env,cell=cpcell, virial=virial, error=error)
++         vir = transpose(virial%pv_virial)
++         
++         CALL external_control(should_stop,"DPI",globenv=globenv,error=error)
++         IF (should_stop) EXIT
++       
++         hasdata=.true.
++      else if (trim(header)=="GETFORCE") then
++         if (ionode) write(*,*) " @ DRIVER MODE: Returning v,forces,stress "
++         if (ionode) then     
++            call writebuffer(socket,"FORCEREADY  ",MSGLEN)            
++            call writebuffer(socket,pot,8)
++            call writebuffer(socket,nat,4)            
++            call writebuffer(socket,combuf,3*nat*8)
++            call writebuffer(socket,vir,9*8)
++
++            ! i-pi can also receive an arbitrary string, that will be printed out to the "extra" 
++            ! trajectory file. this is useful if you want to return additional information, e.g.
++            ! atomic charges, wannier centres, etc. one must return the number of characters, then
++            ! the string. here we just send back zero characters.            
++            nat=0
++            call writebuffer(socket,nat,4)  ! writes out zero for the length of the "extra" field (not implemented yet!)
++         endif
++         hasdata=.false.
++      else 
++         if (ionode) write(*,*) " @DRIVER MODE:  Socket disconnected, time to exit. "
++         exit
++      endif
++    ENDDO driver_loop  
++    
++  END SUBROUTINE run_driver
++  
++END MODULE driver
++  
++                                         
+diff -rupN cp2k-2.4.0_ref/src/input_constants.F cp2k-2.4.0/src/input_constants.F
+--- cp2k-2.4.0_ref/src/input_constants.F	2013-08-15 10:46:04.107899205 +0100
++++ cp2k-2.4.0/src/input_constants.F	2013-08-15 10:53:45.839911028 +0100
+@@ -135,7 +135,8 @@ MODULE input_constants
+                                               cell_opt_run=14,&
+                                               real_time_propagation=15,&
+                                               ehrenfest=16, &
+-                                              do_tamc=17
++                                              do_tamc=17, &
++                                              driver_run=18
+ 
+   ! Run Types of Atom Code
+   INTEGER, PARAMETER, PUBLIC               :: atom_no_run=1,&
+diff -rupN cp2k-2.4.0_ref/src/input_cp2k.F cp2k-2.4.0/src/input_cp2k.F
+--- cp2k-2.4.0_ref/src/input_cp2k.F	2013-08-15 10:46:04.131899206 +0100
++++ cp2k-2.4.0/src/input_cp2k.F	2013-08-15 10:53:45.843911028 +0100
+@@ -422,13 +422,13 @@ CONTAINS
+          "BAND", "CELL_OPT", "WFN_OPT", "WAVEFUNCTION_OPTIMIZATION",&
+          "MOLECULAR_DYNAMICS", "GEOMETRY_OPTIMIZATION", "MONTECARLO",&
+          "ELECTRONIC_SPECTRA", "LINEAR_RESPONSE", "NORMAL_MODES","RT_PROPAGATION",&
+-         "EHRENFEST_DYN","TAMC" ),&
++         "EHRENFEST_DYN","TAMC","DRIVER" ),&
+          enum_i_vals=(/ none_run, energy_run, energy_force_run, mol_dyn_run,&
+           geo_opt_run, mon_car_run, electronic_spectra_run, debug_run,&
+           bsse_run, linear_response_run, pint_run, vib_anal,do_band,&
+           cell_opt_run, energy_run, energy_run, mol_dyn_run, geo_opt_run,&
+           mon_car_run, electronic_spectra_run, linear_response_run,&
+-          vib_anal,real_time_propagation,ehrenfest,do_tamc/),&
++          vib_anal,real_time_propagation,ehrenfest,do_tamc,driver_run/),&
+          enum_desc=s2a("Perform no tasks", "Computes energy","Computes energy and forces",&
+          "Molecular Dynamics","Geometry Optimization","Monte Carlo", "Computes absorption Spectra",&
+          "Performs a Debug analysis","Basis set superposition error","Linear Response",&
+@@ -437,7 +437,7 @@ CONTAINS
+          "Alias for MC","Alias for SPECTRA","Alias for LR","Alias for VIBRATIONAL_ANALYSIS",&
+          "Real Time propagation run (fixed ionic positions)",&
+          "Ehrenfest dynamics (using real time propagation of the wavefunction)",&
+-         "TAMC"),&
++         "TAMC","i-PI driver mode"),&
+          supported_feature=.TRUE.,error=error)
+     CALL section_add_keyword(section,keyword,error=error)
+     CALL keyword_release(keyword,error=error)
+diff -rupN cp2k-2.4.0_ref/src/input_cp2k_motion.F cp2k-2.4.0/src/input_cp2k_motion.F
+--- cp2k-2.4.0_ref/src/input_cp2k_motion.F	2013-08-15 10:46:04.095899205 +0100
++++ cp2k-2.4.0/src/input_cp2k_motion.F	2013-08-15 10:53:45.843911028 +0100
+@@ -103,6 +103,10 @@ CONTAINS
+        CALL section_add_subsection(section,subsection,error=error)
+        CALL section_release(subsection,error=error)
+ 
++       CALL create_driver_section(subsection,error=error)
++       CALL section_add_subsection(section,subsection,error=error)
++       CALL section_release(subsection,error=error)
++
+        CALL create_fe_section(subsection,error=error)
+        CALL section_add_subsection(section, subsection, error=error)
+        CALL section_release(subsection,error=error)
+@@ -1713,6 +1717,59 @@ CONTAINS
+   END SUBROUTINE create_md_section
+ 
+ ! *****************************************************************************
++!> \param section will contain the driver section
++!> \param error variable to control error logging, stopping,...
++!>        see module cp_error_handling
++!> \author mceriotti
++! *****************************************************************************
++  SUBROUTINE create_driver_section(section,error)
++    TYPE(section_type), POINTER              :: section
++    TYPE(cp_error_type), INTENT(inout)       :: error
++
++    CHARACTER(len=*), PARAMETER :: routineN = 'create_driver_section', &
++      routineP = moduleN//':'//routineN
++
++    LOGICAL                                  :: failure
++    TYPE(keyword_type), POINTER              :: keyword
++
++    failure=.FALSE.
++
++    CPPrecondition(.NOT.ASSOCIATED(section),cp_failure_level,routineP,error,failure)
++    IF (.NOT. failure) THEN
++       CALL section_create(section,name="DRIVER",&
++            description="This section defines the parameters needed to run in i-PI driver mode.",&
++            n_keywords=3, n_subsections=0, repeats=.FALSE., required=.TRUE.,&
++            error=error)
++
++       NULLIFY(keyword)
++       CALL keyword_create(keyword, name="unix",&
++            description="Use a UNIX socket rather than an INET socket.",&
++            usage="unix LOGICAL",&
++            default_l_val=.FALSE., lone_keyword_l_val=.TRUE., error=error)
++       CALL section_add_keyword(section,keyword,error=error)
++       CALL keyword_release(keyword,error=error)
++
++       CALL keyword_create(keyword, name="port",&
++            description="Port number for the i-PI server.",&
++            usage="port <INTEGER>",&
++            default_i_val=12345, error=error)
++       CALL section_add_keyword(section,keyword,error=error)
++       CALL keyword_release(keyword,error=error)       
++
++
++       CALL keyword_create(keyword, name="host",&
++            description="Host name for the i-PI server.",&
++            usage="host <HOSTNAME>",&
++            default_c_val="localhost", error=error)
++       CALL section_add_keyword(section,keyword,error=error)
++       CALL keyword_release(keyword,error=error)  
++
++    END IF
++
++  END SUBROUTINE create_driver_section
++
++
++! *****************************************************************************
+ !> \brief Defines AVERAGES section
+ !> \param error variable to control error logging, stopping,...
+ !>        see module cp_error_handling
+diff -rupN cp2k-2.4.0_ref/src/OBJECTDEFS cp2k-2.4.0/src/OBJECTDEFS
+--- cp2k-2.4.0_ref/src/OBJECTDEFS	2013-08-15 10:46:04.091899205 +0100
++++ cp2k-2.4.0/src/OBJECTDEFS	2013-08-15 10:53:45.843911028 +0100
+@@ -180,6 +180,7 @@ OBJECTS_GENERIC =\
+  dm_ls_scf.o\
+  dm_ls_scf_qs.o\
+  dm_ls_scf_types.o\
++ driver.o\
+  efield_utils.o\
+  eigenvalueproblems.o\
+  eip_environment.o\
+diff -rupN cp2k-2.4.0_ref/src/sockets.c cp2k-2.4.0/src/sockets.c
+--- cp2k-2.4.0_ref/src/sockets.c	1970-01-01 01:00:00.000000000 +0100
++++ cp2k-2.4.0/src/sockets.c	2013-08-15 15:27:36.971625458 +0100
+@@ -0,0 +1,112 @@
++#include <stdio.h>
++#include <stdlib.h>
++#include <unistd.h>
++#include <string.h>
++#include <sys/types.h>
++#include <sys/socket.h>
++#include <sys/stat.h>
++#include <netinet/in.h>
++#include <sys/un.h>
++#include <netdb.h> 
++
++
++//#define FS_WAIT 1     // uncomment to use a file system lock rather than mpi_barrier.
++
++void error(const char *msg)
++{   perror(msg);   }
++
++void open_socket_(int *psockfd, int* inet, int* port, char* host)  // the darn fortran passes an extra argument for the string length. here I just ignore it
++{
++   int sockfd, portno, n;
++   struct hostent *server;
++
++   fprintf(stderr, "Connection requested %s, %d, %d\n", host, *port, *inet);
++   struct sockaddr * psock; int ssock;
++   if (*inet!=0)
++   {  
++      struct sockaddr_in serv_addr;      psock=(struct sockaddr *)&serv_addr;     ssock=sizeof(serv_addr);
++      sockfd = socket(AF_INET, SOCK_STREAM, 0);
++      if (sockfd < 0)  error("ERROR opening socket");
++   
++      server = gethostbyname(host);
++      if (server == NULL)
++      {
++         fprintf(stderr, "ERROR, no such host %s \n", host);
++         exit(-1);
++      }
++
++      bzero((char *) &serv_addr, sizeof(serv_addr));
++      serv_addr.sin_family = AF_INET;
++      bcopy((char *)server->h_addr, (char *)&serv_addr.sin_addr.s_addr, server->h_length);
++      serv_addr.sin_port = htons(*port);
++   }
++   else
++   {
++      struct sockaddr_un serv_addr;      psock=(struct sockaddr *)&serv_addr;     ssock=sizeof(serv_addr);
++      sockfd = socket(AF_UNIX, SOCK_STREAM, 0);
++      bzero((char *) &serv_addr, sizeof(serv_addr));
++      serv_addr.sun_family = AF_UNIX;
++      strcpy(serv_addr.sun_path, "/tmp/ipi_");
++      strcpy(serv_addr.sun_path+9, host);
++   }
++   
++   if (connect(sockfd, psock, ssock) < 0) error("ERROR connecting");
++
++   *psockfd=sockfd;
++}
++
++void writebuffer_(int *psockfd, char *data, int* plen)
++{
++   int n;   
++   int sockfd=*psockfd;
++   int len=*plen;
++
++   n = write(sockfd,data,len);
++   if (n < 0) error("ERROR writing to socket\n");
++}
++
++
++int readbuffer_(int *psockfd, char *data, int* plen)
++{
++   int n, nr;
++   int sockfd=*psockfd;
++   int len=*plen;
++
++   n = nr = read(sockfd,data,len);
++   
++   while (nr>0 && n<len )
++   {  nr=read(sockfd,&data[n],len-n); n+=nr; }
++   if (n <= 0)  error("ERROR reading from socket\n"); 
++
++   return n;
++}
++
++int check_reg(const char *path) {
++	struct stat sb;
++	return stat(path, &sb) == 0 && S_ISREG(sb.st_mode);
++}
++
++#ifdef FS_LOCK
++int slock_(int *node, int *ionode)
++{
++//  fprintf(stderr,"creating file lock\n");
++  if ((*node)==(*ionode))
++  {    
++    FILE *fh = fopen(".fs_sync", "w");
++    fclose(fh);  
++  }
++}
++
++int swait_(int *usec, int *node, int *ionode)
++{
++ //  fprintf(stderr, "swait %d %d %d %d\n", *node, *ionode, check_reg(".fs_sync"), ((*node)==(*ionode)) );
++   if ((*node)==(*ionode))
++   {  unlink(".fs_sync"); }
++   else while(check_reg(".fs_sync")) {  usleep(*usec);    }
++}
++
++#else 
++// just do nothing
++int slock_(int *node, int *ionode) { return 0; }
++int swait_(int *usec, int *node, int *ionode) { return 0; }
++#endif
