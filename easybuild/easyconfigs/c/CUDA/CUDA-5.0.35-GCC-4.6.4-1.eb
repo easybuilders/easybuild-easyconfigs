@@ -1,0 +1,50 @@
+##
+# This file is an EasyBuild reciPY as per https://github.com/hpcugent/easybuild
+#
+# Copyright:: Copyright 2012-2014 Cyprus Institute / CaSToRC, Uni.Lu/LCSB, NTUA, Ghent University
+# Authors::   George Tsouloupas <g.tsouloupas@cyi.ac.cy>, Fotis Georgatos <fotis@cern.ch>, Kenneth Hoste
+# License::   MIT/GPL
+# $Id$
+#
+# This work implements a part of the HPCBIOS project and is a component of the policy:
+# http://hpcbios.readthedocs.org/en/latest/HPCBIOS_2012-99.html
+##
+
+name = 'CUDA'
+version = '5.0.35'
+versionsuffix = '-1'
+
+homepage = 'https://developer.nvidia.com/cuda-toolkit'
+description = """CUDA (formerly Compute Unified Device Architecture) is a parallel
+ computing platform and programming model created by NVIDIA and implemented by the
+ graphics processing units (GPUs) that they produce. CUDA gives developers access
+ to the virtual instruction set and memory of the parallel computational elements in CUDA GPUs."""
+
+toolchain = {'name': 'GCC', 'version': '4.6.4'}
+
+# eg. http://developer.download.nvidia.com/compute/cuda/5_0/rel-update-1/installers/cuda_5.0.35_linux_64_rhel5.x-1.run
+source_urls = ['http://developer.download.nvidia.com/compute/cuda/5_0/rel-update-1/installers/']
+
+# exhaustive list of all known Linux packages for CUDA v5.0.35
+if OS_NAME in ['fedora', 'redhat']:
+    system = 'fedora16'
+elif OS_NAME in ["RHEL", "SL", "centos"]:
+    system = 'rhel%s.x' % OS_VERSION.split('.')[0]
+elif OS_NAME in ['debian'] and OS_VERSION.startswith('6.'):
+    system = 'ubuntu10.04'
+elif OS_NAME in ['debian', 'ubuntu']:
+    if OS_VERSION in ['11.10', '10.04']:
+        system = 'ubuntu%s' % OS_VERSION
+    else:
+        print "Falling back to ubuntu11.10 as default for OS_NAME=%s, OS_VERSION=%s; kindly amend this easyconfig" % (OS_NAME, OS_VERSION)
+        system = 'ubuntu11.10'
+elif OS_NAME == "opensuse":
+    system = 'suse12.1'
+elif OS_NAME in ["suse", "SLES"] and OS_VERSION.startswith('11_SP'):
+    system = 'sles%s' % OS_VERSION.lower().replace('_', '')
+else:
+    system = 'UNKNOWN'
+
+sources = ['%%(namelower)s_%%(version)s_linux_64_%s%%(versionsuffix)s.run' % system]
+
+moduleclass = 'system'

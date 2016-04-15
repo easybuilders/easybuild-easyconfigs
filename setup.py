@@ -1,11 +1,11 @@
 ##
-# Copyright 2012-2013 Ghent University
+# Copyright 2012-2016 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
 # with support of Ghent University (http://ugent.be/hpc),
 # the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
-# the Hercules foundation (http://www.herculesstichting.be/in_English)
+# Flemish Research Foundation (FWO) (http://www.fwo.be/en)
 # and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
 # http://github.com/hpcugent/easybuild
@@ -41,7 +41,13 @@ from distutils import log
 
 # note: release candidates should be versioned as a pre-release, e.g. "1.1rc1"
 # 1.1-rc1 would indicate a post-release, i.e., and update of 1.1, so beware!
-VERSION = "1.16.0.0dev"
+#
+# important note: dev versions should follow the 'X.Y.Z.dev0' format
+# see https://www.python.org/dev/peps/pep-0440/#developmental-releases
+# recent setuptools versions will *TRANSFORM* something like 'X.Y.Zdev' into 'X.Y.Z.dev0', with a warning like
+#   UserWarning: Normalizing '2.4.0dev' to '2.4.0.dev0'
+# This causes problems further up the dependency chain...
+VERSION = '2.8.0dev0'
 
 API_VERSION = VERSION.split('.')[0]
 EB_VERSION = '.'.join(VERSION.split('.')[0:2])
@@ -51,9 +57,11 @@ rc_regexp = re.compile("^.*(rc[0-9]*)$")
 res = rc_regexp.search(str(VERSION))
 if res:
     suff = res.group(1)
-dev_regexp = re.compile("^.*[0-9]dev$")
-if dev_regexp.match(VERSION):
-    suff = 'dev'
+
+dev_regexp = re.compile("^.*[0-9](.?dev[0-9])$")
+res = dev_regexp.search(VERSION)
+if res:
+    suff = res.group(1)
 
 API_VERSION += suff
 EB_VERSION += suff

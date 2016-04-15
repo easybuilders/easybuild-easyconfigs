@@ -1,0 +1,37 @@
+diff -ur boost_1_55_0.orig/tools/build/v2/tools/mpi.jam boost_1_55_0/tools/build/v2/tools/mpi.jam
+--- boost_1_55_0.orig/tools/build/v2/tools/mpi.jam	2012-04-26 23:32:41.000000000 +0200
++++ boost_1_55_0/tools/build/v2/tools/mpi.jam	2014-09-03 13:45:45.000000000 +0200
+@@ -301,6 +301,16 @@
+     }
+     # OpenMPI and newer versions of LAM-MPI have -showme:compile and 
+     # -showme:link.
++    # Look for MPICH
++    else if [ safe-shell-command "$(command) -show" ]
++    {
++      if $(.debug-configuration)
++      {
++        ECHO "Found MPICH wrapper compiler: $(command)" ;
++      }
++      compile_flags = [ SHELL "$(command) -compile_info" ] ;
++      link_flags = [ SHELL "$(command) -link_info" ] ;
++    }
+     else if [ safe-shell-command "$(command) -showme:compile" ] &&
+               [ safe-shell-command "$(command) -showme:link" ]
+     {
+@@ -327,16 +337,6 @@
+ 
+       result = [ SHELL "$(command) -showme" ] ;
+     }
+-    # Look for MPICH
+-    else if [ safe-shell-command "$(command) -show" ]
+-    {
+-      if $(.debug-configuration)
+-      {
+-        ECHO "Found MPICH wrapper compiler: $(command)" ;
+-      }
+-      compile_flags = [ SHELL "$(command) -compile_info" ] ;
+-      link_flags = [ SHELL "$(command) -link_info" ] ;
+-    }
+     # Sun HPC and Ibm POE
+     else if [ SHELL "$(command) -v 2>/dev/null" ]
+     {
