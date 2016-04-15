@@ -43,6 +43,7 @@ from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.filetools import find_flexlm_license
 from easybuild.tools.run import run_cmd
+from easybuild.tools.modules import get_software_root
 
 class EB_PGI(EasyBlock):
     """
@@ -121,6 +122,14 @@ class EB_PGI(EasyBlock):
 
         cmd = "%s -x %s -g77 /" % (filename, install_abs_subdir)
         run_cmd(cmd, log_all=True, simple=True)
+        
+        # If an OS libnuma is NOT found, makelocalrc creates symbolic links to libpgnuma.so
+        # If we use the EB libnuma, delete those symbolic links to ensure they are not used
+        if get_software_root("numactl"):
+            for filename in ["libnuma.so", "libnuma.so.1"]:
+                path = os.path.join(install_abs_subdir, "lib", filename)
+                if os.path.islink(path):
+                    os.remove(path)
 
     def sanity_check_step(self):
         """Custom sanity check for PGI"""
