@@ -122,12 +122,13 @@ class EB_PGI(EasyBlock):
         cmd = "%s -x %s -g77 /" % (filename, install_abs_subdir)
         run_cmd(cmd, log_all=True, simple=True)
         
-        # if an OS libnuma is NOT found, makelocalrc creates symbolic links to libpgnuma.so
-        # since we use the EB libnuma, delete those symbolic links
-        for filename in ["libnuma.so", "libnuma.so.1"]:
-            path = os.path.join(install_abs_subdir, "lib", filename)
-            if os.path.islink(path):
-                os.remove(path)
+        # If an OS libnuma is NOT found, makelocalrc creates symbolic links to libpgnuma.so
+        # If we use the EB libnuma, delete those symbolic links to ensure they are not used
+        if get_software_root("numactl"):
+            for filename in ["libnuma.so", "libnuma.so.1"]:
+                path = os.path.join(install_abs_subdir, "lib", filename)
+                if os.path.islink(path):
+                    os.remove(path)
 
     def sanity_check_step(self):
         """Custom sanity check for PGI"""
