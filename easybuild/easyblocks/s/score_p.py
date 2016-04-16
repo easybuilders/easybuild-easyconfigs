@@ -1,5 +1,5 @@
 ##
-# Copyright 2013 Ghent University
+# Copyright 2013-2016 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -73,7 +73,7 @@ class EB_Score_minus_P(ConfigureMake):
 
         # auto-detection for dependencies mostly works fine, but hard specify paths anyway to have full control
         deps = {
-            'binutils': ['--with-libbfd=%%s/%s' % get_software_libdir('binutils', fs=['libbfd.a'])],
+            'binutils': ['--with-libbfd=%s'],
             'Cube': ['--with-cube=%s/bin'],
             'CUDA': ['--with-libcudart=%s'],
             'OTF2': ['--with-otf2=%s/bin'],
