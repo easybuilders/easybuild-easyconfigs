@@ -82,6 +82,7 @@ class EB_Score_minus_P(ConfigureMake):
             'PAPI': ['--with-papi-header=%s/include', '--with-papi-lib=%%s/%s' % get_software_libdir('PAPI')],
             'PDT': ['--with-pdt=%s/bin'],
             'Qt': ['--with-qt=%s'],
+            'SIONlib': ['--with-sionlib=%s/bin'],
         }
         for (dep_name, dep_opts) in deps.items():
             dep_root = get_software_root(dep_name)
