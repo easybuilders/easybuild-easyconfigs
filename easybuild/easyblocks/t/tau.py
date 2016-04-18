@@ -40,7 +40,11 @@ from easybuild.tools.modules import get_software_libdir, get_software_root, get_
 from easybuild.tools.run import run_cmd
 
 
-KNOWN_BACKENDS = ['scalasca', 'scorep', 'vampirtrace']
+KNOWN_BACKENDS = {
+    'scalasca': 'Scalasca',
+    'scorep': 'Score-P',
+    'vampirtrace': 'Vampirtrace',
+}
 
 
 class EB_TAU(ConfigureMake):
@@ -49,9 +53,9 @@ class EB_TAU(ConfigureMake):
     @staticmethod
     def extra_options():
         """Custom easyconfig parameters for Tau."""
-        backends_helpmsg = "Extra Tau backends to build and install; possible values: %s" % ','.join(KNOWN_BACKENDS)
+        backends = "Extra Tau backends to build and install; possible values: %s" % ','.join(sorted(KNOWN_BACKENDS))
         extra_vars = {
-            'extra_backends': [None, backends_helpmsg, CUSTOM],
+            'extra_backends': [None, backends, CUSTOM],
             'tau_makefile': ['Makefile.tau-papi-mpi-pdt', "Name of Makefile to use in $TAU_MAKEFILE", CUSTOM],
         }
         return ConfigureMake.extra_options(extra_vars)
@@ -112,6 +116,7 @@ class EB_TAU(ConfigureMake):
             raise EasyBuildError("Specifying additional configure options for Tau is not supported (yet)")
 
         self.cfg['configopts'] = [mpi_tmpl, openmp_tmpl, hybrid_tmpl] * iter_cnt
+        self.log.debug("List of configure options to iterate over: %s", self.cfg['configopts'])
 
         # custom prefix option for configure command
         self.cfg['prefix_opt'] = '-prefix='
@@ -127,9 +132,8 @@ class EB_TAU(ConfigureMake):
 
         # install prefixes for selected backends
         self.backend_opts = {'tau': ''}
-        for dep in ['Scalasca', 'Score-P', 'Vampirtrace']:
+        for backend_name, dep in KNOWN_BACKENDS.items():
             root = get_software_root(dep)
-            backend_name = dep.lower().replace('-', '')
             if backend_name in self.cfg['extra_backends']:
                 if root:
                     self.backend_opts[backend_name] = "-%s=%s" % (backend_name, root)
@@ -169,21 +173,16 @@ class EB_TAU(ConfigureMake):
         # determine list of labels, based on selected (extra) backends, variants and optional packages
         self.variant_labels = []
         backend_labels = ['', '-epilog-scalasca-trace', '-scorep', '-vampirtrace-trace']
-        for backend, backend_label in zip(['tau'] + KNOWN_BACKENDS, backend_labels):
+        for backend, backend_label in zip(['tau'] + KNOWN_BACKENDS.keys(), backend_labels):
             if backend in ['tau'] + self.cfg['extra_backends']:
-
                 for pref, suff in [('-mpi', ''), ('', '-openmp-opari'), ('-mpi', '-openmp-opari')]:
 
                     variant_label = 'tau'
-
                     if get_software_root('PAPI'):
                         variant_label += '-papi'
-
                     variant_label += pref
-
                     if get_software_root('PDT'):
                         variant_label += '-pdt'
-
                     variant_label += suff + backend_label
 
                     self.variant_labels.append(variant_label)
