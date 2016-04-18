@@ -35,6 +35,7 @@ from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools import toolchain
 from easybuild.tools.build_log import EasyBuildError, print_msg
+from easybuild.tools.filetools import mkdir
 from easybuild.tools.modules import get_software_libdir, get_software_root, get_software_version
 from easybuild.tools.run import run_cmd
 
@@ -50,7 +51,7 @@ class EB_TAU(ConfigureMake):
         """Custom easyconfig parameters for Tau."""
         backends_helpmsg = "Extra Tau backends to build and install; possible values: %s" % ','.join(KNOWN_BACKENDS)
         extra_vars = {
-            'extra_backends': [[], backends_helpmsg, CUSTOM],
+            'extra_backends': [None, backends_helpmsg, CUSTOM],
             'tau_makefile': ['Makefile.tau-papi-mpi-pdt', "Name of Makefile to use in $TAU_MAKEFILE", CUSTOM],
         }
         return ConfigureMake.extra_options(extra_vars)
@@ -64,12 +65,19 @@ class EB_TAU(ConfigureMake):
         self.log.info("Using '%s' as machine label", self.machine)
 
         self.variant_index = 0
+        self.cc, self.cxx, self.fortran = None, None, None
+        self.mpi_inc_dir, self.mpi_lib_dir = None, None
+        self.opt_pkgs_opts = None
+        self.variant_labels = None
 
     def run_all_steps(self, *args, **kwargs):
         """
         Put configure options in place for the different selected backends of Tau,
         for the MPI, OpenMP and hybrid variants.
         """
+        if self.cfg['extra_backends'] is None:
+            self.cfg['extra_backends'] = []
+
         # make sure selected extra backends are known
         unknown_backends = []
         for backend in self.cfg['extra_backends']:
@@ -99,43 +107,39 @@ class EB_TAU(ConfigureMake):
         # number of iterations: # backends + 1 (for basic)
         iter_cnt = len(self.cfg['extra_backends']) + 1
 
+        # define list of configure options to iterate over
+        if self.cfg['configopts']:
+            raise EasyBuildError("Specifying additional configure options for Tau is not supported (yet)")
+
         self.cfg['configopts'] = [mpi_tmpl, openmp_tmpl, hybrid_tmpl] * iter_cnt
 
         # custom prefix option for configure command
         self.cfg['prefix_opt'] = '-prefix='
 
         # installation command is 'make install clean'
-        self.cfg['installopts'] = 'clean'
+        self.cfg.update('installopts', 'clean')
 
         return super(EB_TAU, self).run_all_steps(*args, **kwargs)
-
-    def guess_start_dir(self):
-        """Guess start directory and inform which backend/variant is being handled next."""
-        super(EB_TAU, self).guess_start_dir()
-
-        # inform which backend/variant is being handled next
-        backend = (['tau'] + self.cfg['extra_backends'])[self.variant_index // 3]
-        variant = ['mpi', 'openmp', 'hybrid'][self.variant_index % 3]
-        print_msg("starting with %s backend (%s variant)" % (backend, variant), log=self.log, silent=self.silent)
 
     def prepare_step(self):
         """Custom prepare step for Tau: check required dependencies and collect information on them."""
         super(EB_TAU, self).prepare_step()
 
         # install prefixes for selected backends
+        self.backend_opts = {'tau': ''}
         for dep in ['Scalasca', 'Score-P', 'Vampirtrace']:
             root = get_software_root(dep)
             backend_name = dep.lower().replace('-', '')
             if backend_name in self.cfg['extra_backends']:
                 if root:
-                    setattr(self, backend_name, root)
+                    self.backend_opts[backend_name] = "-%s=%s" % (backend_name, root)
                 else:
-                    raise EasyBuildError("%s is listed in extra_backends, but not available as a dependency" % dep)
+                    raise EasyBuildError("%s is listed in extra_backends, but not available as a dependency", dep)
             elif root:
-                raise EasyBuildError("%s included as dependency, but '%s' not in extra_backends" % (dep, backend_name))
+                raise EasyBuildError("%s included as dependency, but '%s' not in extra_backends", dep, backend_name)
 
         # make sure Scalasca v1.x is used as a dependency (if it's there)
-        if hasattr(self, 'scalasca') and get_software_version('Scalasca').split('.')[0] != '1':
+        if 'scalasca' in self.backend_opts and get_software_version('Scalasca').split('.')[0] != '1':
             raise EasyBuildError("Scalasca v1.x must be used when scalasca backend is enabled")
 
         # determine values for compiler flags to use
@@ -145,10 +149,15 @@ class EB_TAU(ConfigureMake):
             toolchain.INTELCOMP: ['icc', 'icpc', 'intel'],
         }
         comp_fam = self.toolchain.comp_family()
-        self.cc, self.cxx, self.fortran = known_compilers.get(comp_fam, (None, None, None))
+        if comp_fam in known_compilers:
+            self.cc, self.cxx, self.fortran = known_compilers[comp_fam]
+        else:
+            raise EasyBuildError("Compiler family not supported yet: %s", comp_fam)
 
         # determine values for MPI flags
         self.mpi_inc_dir, self.mpi_lib_dir = os.getenv('MPI_INC_DIR'), os.getenv('MPI_LIB_DIR')
+        if self.mpi_inc_dir is None or self.mpi_lib_dir is None:
+            raise EasyBuildError("Failed to determine MPI include/library paths, no MPI available in toolchain?")
 
         # determine value for optional packages option template
         self.opt_pkgs_opts = ''
@@ -161,8 +170,7 @@ class EB_TAU(ConfigureMake):
         self.variant_labels = []
         backend_labels = ['', '-epilog-scalasca-trace', '-scorep', '-vampirtrace-trace']
         for backend, backend_label in zip(['tau'] + KNOWN_BACKENDS, backend_labels):
-            #if backend != 'tau' and backend not in self.cfg['extra_backends']:
-            if backend == 'tau' or backend in self.cfg['extra_backends']:
+            if backend in ['tau'] + self.cfg['extra_backends']:
 
                 for pref, suff in [('-mpi', ''), ('', '-openmp-opari'), ('-mpi', '-openmp-opari')]:
 
@@ -180,39 +188,32 @@ class EB_TAU(ConfigureMake):
 
                     self.variant_labels.append(variant_label)
 
+        # make sure selected default Tau makefile will be available
+        avail_makefiles = ['Makefile.' + l for l in self.variant_labels]
+        if self.cfg['tau_makefile'] not in avail_makefiles:
+            raise EasyBuildError("Specified tau_makefile %s will not be available (only: %s)",
+                                 self.cfg['tau_makefile'], avail_makefiles)
+
         # create install directory and make sure it does not get cleaned up again in the install step;
         # the first configure iteration already puts things in place in the install directory,
         # so that shouldn't get cleaned up afterwards...
         self.log.info("Creating install dir %s before starting configure-build-install iterations", self.installdir)
-        self.make_installdir()
-        self.cfg['keeppreviousinstall'] = True
+        mkdir(self.installdir, parents=True)
+
+    def make_installdir(self):
+        """Skip make install dir 'step', install dir is already created in prepare_step."""
+        pass
 
     def configure_step(self):
         """Custom configuration procedure for Tau: template configuration options before using them."""
-        # make sure compilers/MPI settings are known
-        comp_fam = self.toolchain.comp_family()
-        if self.cc is None or self.cxx is None or self.fortran is None:
-            raise EasyBuildError("Compiler family not supported yet: %s" % comp_fam)
 
-        if self.mpi_inc_dir is None or self.mpi_lib_dir is None:
-            raise EasyBuildError("Failed to determine MPI include/library paths, no MPI available in toolchain?")
-
-        # make sure selected default Tau makefile will be available
-        avail_makefiles = ['Makefile.' + l for l in self.variant_labels]
-        if self.cfg['tau_makefile'] not in avail_makefiles:
-            tup = (self.cfg['tau_makefile'], avail_makefiles)
-            raise EasyBuildError("Specified tau_makefile %s will not be available (only: %s)" % tup)
-
-        active_backend = (['tau'] + self.cfg['extra_backends'])[self.variant_index // 3]
-        backend_opts = {
-            'scalasca': '-scalasca=%s' % getattr(self, 'scalasca', 'NOTDEFINED'),
-            'scorep': '-scorep=%s' % getattr(self, 'scorep', 'NOTDEFINED'),
-            'tau': '',
-            'vampirtrace': '-vampirtrace=%s' % getattr(self, 'vampirtrace', 'NOTDEFINED'),
-        }
+        # inform which backend/variant is being handled
+        backend = (['tau'] + self.cfg['extra_backends'])[self.variant_index // 3]
+        variant = ['mpi', 'openmp', 'hybrid'][self.variant_index % 3]
+        print_msg("starting with %s backend (%s variant)" % (backend, variant), log=self.log, silent=self.silent)
 
         self.cfg['configopts'] = self.cfg['configopts'] % {
-            'backend_opt': backend_opts[active_backend],
+            'backend_opt': self.backend_opts[backend],
             'cc': self.cc,
             'cxx': self.cxx,
             'fortran': self.fortran,
@@ -222,7 +223,7 @@ class EB_TAU(ConfigureMake):
         }
 
         for key in ['preconfigopts', 'configopts', 'prebuildopts', 'preinstallopts']:
-            self.log.debug("%s: %s", key, self.cfg[key])
+            self.log.debug("%s for Tau (variant index: %s): %s", key, self.variant_index, self.cfg[key])
 
         super(EB_TAU, self).configure_step()
 
@@ -254,6 +255,7 @@ class EB_TAU(ConfigureMake):
     def make_module_extra(self):
         """Custom extra module file entries for Tau."""
         txt = super(EB_TAU, self).make_module_extra()
+
         txt += self.module_generator.prepend_paths('TAU_MF_DIR', os.path.join(self.machine, 'lib'))
 
         tau_makefile = os.path.join(self.installdir, self.machine, 'lib', self.cfg['tau_makefile'])
