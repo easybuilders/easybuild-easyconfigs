@@ -42,12 +42,13 @@ class EB_Score_minus_P(ConfigureMake):
 
     def configure_step(self, *args, **kwargs):
         """Configure Score-P build, set configure options for compiler, MPI and dependencies."""
-        # compiler and MPI suite should always be specified -- MUCH quicker and SAVER than autodetect
+        # compiler and MPI suite should always be specified -- MUCH quicker and SAFER than autodetect
         # --with-nocross-compiler-suite=(gcc|ibm|intel|pgi|studio)
         # --with-mpi=(bullxmpi|hp|ibmpoe|intel|intel2|intelpoe|lam|mpibull2|mpich|mpich2|mpich3|openmpi|
         #             platform|scali|sgimpt|sun)
         comp_opts = {
             toolchain.GCC: 'gcc',
+            toolchain.IBMCOMP: 'ibm',
             toolchain.INTELCOMP: 'intel',
         }
         comp_fam = self.toolchain.comp_family()
