@@ -74,6 +74,7 @@ class EB_Score_minus_P(ConfigureMake):
         # auto-detection for dependencies mostly works fine, but hard specify paths anyway to have full control
         deps = {
             'binutils': ['--with-libbfd=%s'],
+            'libunwind': ['--with-libunwind=%s'],
             'Cube': ['--with-cube=%s/bin'],
             'CUDA': ['--with-libcudart=%s'],
             'OTF2': ['--with-otf2=%s/bin'],
