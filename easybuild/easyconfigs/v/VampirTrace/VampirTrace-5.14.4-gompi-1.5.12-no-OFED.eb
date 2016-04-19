@@ -1,71 +1,49 @@
-# This is an easyconfig file for EasyBuild, see https://github.com/hpcugent/easybuild # Copyright:: Copyright 2013 Juelich Supercomputing Centre, Germany
+# This is an easyconfig file for EasyBuild, see https://github.com/hpcugent/easybuild
+# Copyright:: Copyright 2013 Juelich Supercomputing Centre, Germany
 # Authors::   Bernd Mohr <b.mohr@fz-juelich.de>
 # License::   New BSD
 #
 # This work is based from experiences from the UNITE project
 # http://apps.fz-juelich.de/unite/
 ##
-name = "VampirTrace"
-version = "5.14.4"
+easyblock = 'ConfigureMake'
+
+name = 'VampirTrace'
+version = '5.14.4'
 
 homepage = 'http:/www.tu-dresden.de/zih/vampirtrace/'
 description = """VampirTrace is an open source library that allows detailed logging of program
- execution for parallel applications using message passing (MPI) and threads (OpenMP), Pthreads).
- Besides these typical parallelization paradigms, VampirTrace is capable of tracing GPU accelerated
- applications and generates exact time stamps for all GPU related events.
- Additional highlights are I/O event and memory allocation tracing as well as recording of counter metrics
- like PAPI and external counters. 
- VampirTrace provides several variants to instrument the application source code, such as manual, automatic
- by the compiler, binary (Dyninst) instrumentation and library wrapping.  
- The log data is written in the Open Trace Format (OTF), which can be analyzed and visualized by the visualization tool Vampir.
- VampirTrace has established a wide user base and has become an integral part of Open MPI version 1.3 and higher."""
+ execution for parallel applications using message passing (MPI) and threads (OpenMP), Pthreads)."""
 
 toolchain = {'name': 'gompi', 'version': '1.5.12-no-OFED'}
-toolchainopts = {"usempi": True}
+toolchainopts = {'usempi': True}
 
-compname = 'GCC'
-compver = '4.7.3'
-
-# compiler toolchain depencies
-dependencies = [
-    ('OTF', '1.12.4', "", (compname, compver)),
-    ('PAPI', '5.2.0', "", (compname, compver)),
-    ('PDT', '3.19', "", (compname, compver)),
-]
-
-# http://wwwpub.zih.tu-dresden.de/%7Emlieber/dcount/dcount.php?package=vampirtrace&get=VampirTrace-5.14.4.tar.gz
 sources = [SOURCE_TAR_GZ]
 source_urls = ['http://wwwpub.zih.tu-dresden.de/%7Emlieber/dcount/dcount.php?package=vampirtrace&get=']
 
-# --- BM CONFIGOPTS ---
-# 
-# MPI suite should always be specified -- MUCH quicker and SAVER than autodetect
-# --with-hpmpi | --with-pcmpi | --with-intelmpi | --with-intelmpi2 | --with-lam | --with-mpibgl | --with-mpibgp |
-# --with-mpibgq | --with-mpich | --with-mpich2 | --with-mvapich | --with-mvapich2 | --with-mpisx | --with-mpisx-ew |
-# --with-openmpi | --with-openmpi17 | --with-sgimpt | --with-sunmpi | --with-sunmpi-mt | --with-mpibull2
-# 
-# --- BM ISSUE ---
-#
-# MPIxx variable settings and --enable-compinst= options are ToolChain specific!!!
-configopts  = ' MPIFC=mpif90'
-configopts += ' --with-openmpi' # quicker and saver than autodetect
-configopts += ' --enable-compinst=gnu'
-configopts += ' --with-papi-dir=${EBROOTPAPI}'
-configopts += ' --with-extern-otf-dir=${EBROOTOTF}'
-configopts += ' --with-tau-instrumentor=${EBROOTPDT}/x86_64/bin/tau_instrumentor'
-configopts += ' --with-pdt-cparse=${EBROOTPDT}/x86_64/bin/cparse'
-configopts += ' --with-pdt-cxxparse=${EBROOTPDT}/x86_64/bin/cxxparse'
-configopts += ' --with-pdt-fparse=${EBROOTPDT}/x86_64/bin/gfparse'
-# --- BM EXTENSIONS ---
-#
-# VamoirTrace does also support CUDA measurements - not yet tested in EasyBuild
-# configopts += ' --with-cuda-dir=${CUDADIR}'
+dependencies = [
+    ('OTF', '1.12.4'),
+    ('PAPI', '5.2.0'),
+    ('PDT', '3.19'),
+]
 
-# --- BM LIB64 ---
-#
-# On some systems libraries end up in lib/
+configopts  = 'MPIFC="$MPIF90"'
+
+# MPI suite should always be specified -- MUCH quicker and SAVER than autodetect
+# note: these options are toolchain specific!
+configopts += " --with-openmpi --enable-compinst=gnu"
+
+configopts += " --with-papi-dir=${EBROOTPAPI}"
+configopts += " --with-extern-otf-dir=${EBROOTOTF}"
+configopts += " --with-tau-instrumentor=${EBROOTPDT}/x86_64/bin/tau_instrumentor"
+configopts += " --with-pdt-cparse=${EBROOTPDT}/x86_64/bin/cparse"
+configopts += " --with-pdt-cxxparse=${EBROOTPDT}/x86_64/bin/cxxparse"
+configopts += " --with-pdt-fparse=${EBROOTPDT}/x86_64/bin/gfparse"
+# VamoirTrace does also support CUDA measurements - not yet tested
+# configopts += " --with-cuda-dir=${CUDADIR}"
+
 sanity_check_paths = {
-    'files': ["bin/vtcc", "include/vampirtrace/vt_user.h", "lib64/libvt.a"],
+    'files': ['bin/vtcc', 'include/vampirtrace/vt_user.h', ('lib/libvt.a', 'lib64/libvt.a')],
     'dirs': []
 }
 
