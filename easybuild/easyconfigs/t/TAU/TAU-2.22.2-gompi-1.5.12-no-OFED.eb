@@ -6,113 +6,29 @@
 # This work is based from experiences from the UNITE project
 # http://apps.fz-juelich.de/unite/
 ##
-import platform
-
-name = "TAU"
-version = "2.22.2"
-# --- BM ISSUE ---
-#
-# Use hardcoded x86_64 here?
-machine = platform.machine()
+name = 'TAU'
+version = '2.22.2'
 
 homepage = 'http://tau.uoregon.edu'
 description = """The TAU Performance System is a portable profiling and tracing toolkit
  for performance analysis of parallel programs written in Fortran, C, C++, Java, Python."""
 
 toolchain = {'name': 'gompi', 'version': '1.5.12-no-OFED'}
-toolchainopts = {"usempi": True}
+toolchainopts = {'usempi': True}
 
-compname = 'GCC'
-compver = '4.7.3'
-
-# compiler toolchain depencies
-dependencies = [
-    ('OTF', '1.12.4', "", (compname, compver)),
-    ('PAPI', '5.2.0', "", (compname, compver)),
-    ('PDT', '3.19', "", (compname, compver)),
-    #('Scalasca', '1.4.3'),  # requires enabling scalasca1 as extra backend
-    #('Score-P', '1.2.1'),  # requires enabling scorep as extra backend
-    ('VampirTrace', '5.14.4'), # requires enabling vampirtrace as extra backend
-]
-
-extra_backends = [
-    #'scalasca1',  # deprecated, use scorep backend instead (requires Scalasca v1.x as dependency)
-    #'vampirtrace',  # deprecated, use scorep backend instead (requires VampirTrace as dependency)
-    'scorep',  # requires Score-P as dependency
-]
-
-# http://www.cs.uoregon.edu/research/paracomp/tau/tauprofile/dist/tau-2.22.2.tar.gz
-sources = [SOURCELOWER_TAR_GZ]
 source_urls = ['http://www.cs.uoregon.edu/research/paracomp/tau/tauprofile/dist/']
+sources = [SOURCELOWER_TAR_GZ]
 
-# --- BM CONFIGOPTS ---
-# 
-# Compiler should always be specified -- MUCH quicker and SAVER than autodetect
-# -c++=[CC|KCC|g++|*xlC*|cxx|pgCC|pgcpp|FCC|guidec++|aCC|c++|ecpc|
-#       clang++|bgclang++|g++4|icpc|scgcc|scpathCC|pathCC|orCC]
-# -cc=[cc|gcc|clang|bgclang|gcc4|scgcc|KCC|pgcc|guidec|*xlc*|ecc|pathcc|orcc]
-# -fortran=[gnu|sgi|ibm|ibm64|hp|cray|pgi|absoft|fujitsu|sun|compaq|g95|
-#           open64|kai|nec|hitachi|intel|absoft|lahey|nagware|pathscale|gfortran|gfortran4]
-
-# Basic config: compiler, OpenMP, MPI
-compcfgopts = ' -cc=gcc -c++=g++ -fortran=gfortran4'
-ompcfgopts  = ' -opari' 
-mpicfgopts  = ' -mpiinc=${EBROOTOPENMPI}/include -mpilib=${EBROOTOPENMPI}/lib64'
-
-# Optional extra modes config:
-scacfgopts = ' -scalasca=${EBROOTSCALASCA}'
-vtcfgopts = ' -vampirtrace=${EBROOTVAMPIRTRACE}'
-scocfgopts = ' -scorep=${EBROOTSCOREMINP}'
-
-# Optional packages config:
-pdtcfgopts = ' -pdt=${EBROOTPDT}'
-papicfgopts = ' -papi=${EBROOTPAPI}'
-optionalcfgs = pdtcfgopts + papicfgopts # + otfcfgopts 
-# --- BM ISSUE ---
-#
-# TAU cannot handle name changes yet introduced with OTF-1.12.3
-#otfcfgopts = ' -otf=${EBROOTOTF}'
-
-# TAU special build procedure
-prefix_opt = '-prefix='
-installopts = 'clean'
-keeppreviousinstall = True
-skipsteps = ['build']
-
-# TAU build: Configure + make install for each combination of modes defined above
-configopts = [
-    # Basic TAU mode + MPI, OMP, OMPI
-    compcfgopts+mpicfgopts+optionalcfgs,
-    compcfgopts+ompcfgopts+optionalcfgs,
-    compcfgopts+mpicfgopts+ompcfgopts+optionalcfgs,
-    # Scalasca mode + MPI, OMP, OMPI
-    compcfgopts+mpicfgopts+scacfgopts+optionalcfgs,
-    compcfgopts+ompcfgopts+scacfgopts+optionalcfgs,
-    compcfgopts+mpicfgopts+ompcfgopts+scacfgopts+optionalcfgs,
-    # Vampirtrace mode + MPI, OMP, OMPI
-    compcfgopts+mpicfgopts+vtcfgopts+optionalcfgs,
-    compcfgopts+ompcfgopts+vtcfgopts+optionalcfgs,
-    compcfgopts+mpicfgopts+ompcfgopts+vtcfgopts+optionalcfgs,
-    # Score-P mode + MPI, OMP, OMPI
-    compcfgopts+mpicfgopts+scocfgopts+optionalcfgs,
-    compcfgopts+ompcfgopts+scocfgopts+optionalcfgs,
-    compcfgopts+mpicfgopts+ompcfgopts+scocfgopts+optionalcfgs,
+dependencies = [
+    ('OTF', '1.12.4'),
+    ('PAPI', '5.2.0'),
+    ('PDT', '3.19'),
+    ('Scalasca', '1.4.3'),
+    ('Score-P', '1.2.1'),
+    ('VampirTrace', '5.14.4'),
 ]
 
-sanity_check_paths = {
-    'files': [machine + "/bin/pprof", "include/TAU.h", machine + "/lib/libTAU.so"],
-    'dirs': []
-}
-
-
-# default measurement settings
-modextravars = {
-    'TAU_MAKEFILE':       '%(installdir)s/lib/Makefile.tau-papi-mpi-pdt',
-    'TAU_PROFILE':        '1',
-    'TAU_TRACE':          '0',
-    'TAU_CALLPATH':       '1',
-    'TAU_CALLPATH_DEPTH': '10',
-    'TAU_COMM_MATRIX':    '1',
-}
+# scalasca and vampirtrace backends are deprecated
+extra_backends = ['scalasca', 'scorep', 'vampirtrace']
 
 moduleclass = 'perf'
