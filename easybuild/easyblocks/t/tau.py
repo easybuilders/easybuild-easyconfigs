@@ -38,6 +38,7 @@ from easybuild.tools.build_log import EasyBuildError, print_msg
 from easybuild.tools.filetools import mkdir
 from easybuild.tools.modules import get_software_libdir, get_software_root, get_software_version
 from easybuild.tools.run import run_cmd
+from easybuild.tools.systemtools import get_shared_lib_ext
 
 
 KNOWN_BACKENDS = {
@@ -236,7 +237,7 @@ class EB_TAU(ConfigureMake):
         """Custom sanity check for Tau."""
         custom_paths = {
             'files': [os.path.join(self.machine, 'bin', 'pprof'), os.path.join('include', 'TAU.h'),
-                      os.path.join(self.machine, 'lib', 'libTAU.so')] +
+                      os.path.join(self.machine, 'lib', 'libTAU.%s' % get_shared_lib_ext())] +
                      [os.path.join(self.machine, 'lib', 'lib%s.a' % l) for l in self.variant_labels] +
                      [os.path.join(self.machine, 'lib', 'Makefile.' + l) for l in self.variant_labels],
             'dirs': [],
@@ -259,5 +260,16 @@ class EB_TAU(ConfigureMake):
 
         tau_makefile = os.path.join(self.installdir, self.machine, 'lib', self.cfg['tau_makefile'])
         txt += self.module_generator.set_environment('TAU_MAKEFILE', tau_makefile)
+
+        # default measurement settings
+        tau_vars = {
+            'TAU_CALLPATH': '1',
+            'TAU_CALLPATH_DEPTH': '10',
+            'TAU_COMM_MATRIX': '1',
+            'TAU_PROFILE': '1',
+            'TAU_TRACE': '0',
+        }
+        for key in tau_vars:
+            txt += self.module_generator.set_environment(key, tau_vars[key])
 
         return txt
