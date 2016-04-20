@@ -30,7 +30,7 @@ EasyBuild support for building and installing libQGLViewer, implemented as an ea
 
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.tools.run import run_cmd
-
+from easybuild.tools.systemtools import get_shared_lib_ext
 
 class EB_libQGLViewer(ConfigureMake):
     """Support for building/installing libQGLViewer."""
@@ -39,62 +39,28 @@ class EB_libQGLViewer(ConfigureMake):
         """Initialisation of custom class variables for libQGLViewer."""
         super(EB_libQGLViewer, self).__init__(*args, **kwargs)        
 
-    def configure_step(self, cmd_prefix=''):
-        """Custom configuration procedure for libQGLViewer.        
-        - typically ./qmake --prefix=/install/path style
-        """
+    def configure_step(self):
+        """Custom configuration procedure for libQGLViewer: qmake PREFIX=/install/path ..."""
 
-        if self.cfg.get('configure_cmd_prefix'):
-            if cmd_prefix:
-                tup = (cmd_prefix, self.cfg['configure_cmd_prefix'])
-                self.log.debug("Specified cmd_prefix '%s' is overruled by configure_cmd_prefix '%s'" % tup)
-            cmd_prefix = self.cfg['configure_cmd_prefix']
-
-        if self.cfg.get('tar_config_opts'):
-            # setting am_cv_prog_tar_ustar avoids that configure tries to figure out (in this case qmake)
-            # which command should be used for tarring/untarring
-            # am__tar and am__untar should be set to something decent (tar should work)
-            tar_vars = {
-                'am__tar': 'tar chf - "$$tardir"',
-                'am__untar': 'tar xf -',
-                'am_cv_prog_tar_ustar': 'easybuild_avoid_ustar_testing'
-            }
-            for (key, val) in tar_vars.items():
-                self.cfg.update('preconfigopts', "%s='%s'" % (key, val))
-
-        cmd = "%(preconfigopts)s %(cmd_prefix)sqmake PREFIX=%(installdir)s %(configopts)s" % {
-            'preconfigopts': self.cfg['preconfigopts'],
-            'cmd_prefix': cmd_prefix,
+        cmd = "%(preconfigopts)s qmake PREFIX=%(installdir)s %(configopts)s" % {
+            'preconfigopts': self.cfg['preconfigopts'],            
             'installdir': self.installdir,
             'configopts': self.cfg['configopts'],
         }
-
-        (out, _) = run_cmd(cmd, log_all=True, simple=False)
-
-        return out
-
-    def build_step(self, verbose=False, path=None):
-        """
-        Start the actual build
-        - typical: make
-        """
-
-        paracmd = ''
-        if self.cfg['parallel']:
-            paracmd = "-j %s" % self.cfg['parallel']
-
-        cmd = "%s make %s %s" % (self.cfg['prebuildopts'], paracmd, self.cfg['buildopts'])
-        
-        (out, _) = run_cmd(cmd, path=path, log_all=True, simple=False, log_output=verbose)
-
-        return out
+        run_cmd(cmd, log_all=True, simple=True)
 
     def sanity_check_step(self):
         """Custom sanity check for libQGLViewer."""
-
-        custom_paths = {
-                        'files': ['lib/libQGLViewer.prl', 'lib/libQGLViewer.so', 'lib/libQGLViewer.so.2', 'lib/libQGLViewer.so.2.5', 'lib/libQGLViewer.so.2.5.1'],
-                        'dirs': ['include/QGLViewer'],
-                       }
-
-        super(EB_libQGLViewer, self).sanity_check_step(custom_paths=custom_paths)
+        ver_maj = self.version.split('.')[0]
+        ver_min = self.version.split('.')[1]
+        ver_maj_min = ".".join([ver_maj, ver_min])
+        shlib_ext = get_shared_lib_ext()
+        
+        custom_paths = {            
+            'files': [('lib/libQGLViewer.prl', 'lib64/libQGLViewer.prl'), 
+		      ('lib/libQGLViewer.%s' % shlib_ext, 'lib64/libQGLViewer.%s' % shlib_ext),
+		      ('lib/libQGLViewer.%s.%s' % (shlib_ext, ver_maj), 'lib64/libQGLViewer.%s.%s' % (shlib_ext, ver_maj)),
+		      ('lib/libQGLViewer.%s.%s' % (shlib_ext, ver_maj_min), 'lib64/libQGLViewer.%s.%s' % (shlib_ext, ver_maj_min)), 
+		      ('lib/libQGLViewer.%s.%s' % (shlib_ext, self.version), 'lib64/libQGLViewer.%s.%s' % (shlib_ext, self.version))],                                    
+            'dirs': ['include/QGLViewer'],
+        }
