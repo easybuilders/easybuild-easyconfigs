@@ -139,6 +139,9 @@ class EB_GROMACS(CMakeMake):
                     lib_dir = os.getenv('%s_LIB_DIR' % libname)
                     libs = os.getenv('LIB%s' % libname)
                     self.cfg.update('configopts', '-DGMX_%s_USER="-L%s %s"' % (libname, lib_dir, libs))
+                    #libs = os.getenv('%s_STATIC_LIBS' % libname).split(',')
+                    #lib = libs[0]
+                    #self.cfg.update('configopts', '-DGMX_%s_USER="%s/%s"' % (libname, lib_dir, lib))
 
             # set regression test path
             prefix = 'regressiontests'
