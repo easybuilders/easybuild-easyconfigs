@@ -47,6 +47,7 @@ class EB_Score_minus_P(ConfigureMake):
         # --with-mpi=(bullxmpi|hp|ibmpoe|intel|intel2|intelpoe|lam|mpibull2|mpich|mpich2|mpich3|openmpi|
         #             platform|scali|sgimpt|sun)
         comp_opts = {
+            toolchain.DUMMY: 'gcc',  # Assume that dummy toolchain uses a system-provided GCC
             toolchain.GCC: 'gcc',
             toolchain.IBMCOMP: 'ibm',
             toolchain.INTELCOMP: 'intel',
