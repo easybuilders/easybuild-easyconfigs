@@ -23,7 +23,7 @@
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
 """
-EasyBuild support for building and installing Tau, implemented as an easyblock
+EasyBuild support for building and installing TAU, implemented as an easyblock
 
 @author Kenneth Hoste (Ghent University)
 @author Markus Geimer (Juelich Supercomputing Centre)
@@ -49,12 +49,12 @@ KNOWN_BACKENDS = {
 
 
 class EB_TAU(ConfigureMake):
-    """Support for building/installing Tau."""
+    """Support for building/installing TAU."""
 
     @staticmethod
     def extra_options():
-        """Custom easyconfig parameters for Tau."""
-        backends = "Extra Tau backends to build and install; possible values: %s" % ','.join(sorted(KNOWN_BACKENDS))
+        """Custom easyconfig parameters for TAU."""
+        backends = "Extra TAU backends to build and install; possible values: %s" % ','.join(sorted(KNOWN_BACKENDS))
         extra_vars = {
             'extra_backends': [None, backends, CUSTOM],
             'tau_makefile': ['Makefile.tau-papi-mpi-pdt', "Name of Makefile to use in $TAU_MAKEFILE", CUSTOM],
@@ -62,7 +62,7 @@ class EB_TAU(ConfigureMake):
         return ConfigureMake.extra_options(extra_vars)
 
     def __init__(self, *args, **kwargs):
-        """Initiliaze Tau easyblock."""
+        """Initialize TAU easyblock."""
         super(EB_TAU, self).__init__(*args, **kwargs)
 
         out, _ = run_cmd("uname -m", simple=False)
@@ -77,8 +77,8 @@ class EB_TAU(ConfigureMake):
 
     def run_all_steps(self, *args, **kwargs):
         """
-        Put configure options in place for the different selected backends of Tau,
-        for the MPI, OpenMP and hybrid variants.
+        Put configure options in place for the different selected backends of TAU,
+        for the MPI, OpenMP, and hybrid variants.
         """
         if self.cfg['extra_backends'] is None:
             self.cfg['extra_backends'] = []
@@ -114,7 +114,7 @@ class EB_TAU(ConfigureMake):
 
         # define list of configure options to iterate over
         if self.cfg['configopts']:
-            raise EasyBuildError("Specifying additional configure options for Tau is not supported (yet)")
+            raise EasyBuildError("Specifying additional configure options for TAU is not supported (yet)")
 
         self.cfg['configopts'] = [mpi_tmpl, openmp_tmpl, hybrid_tmpl] * iter_cnt
         self.log.debug("List of configure options to iterate over: %s", self.cfg['configopts'])
@@ -179,6 +179,9 @@ class EB_TAU(ConfigureMake):
                 for pref, suff in [('-mpi', ''), ('', '-openmp-opari'), ('-mpi', '-openmp-opari')]:
 
                     variant_label = 'tau'
+                    # For non-GCC builds, the compiler name is encoded in the variant
+                    if self.cxx != 'g++':
+                        variant_label += '-' + self.cxx
                     if get_software_root('PAPI'):
                         variant_label += '-papi'
                     variant_label += pref
@@ -188,7 +191,7 @@ class EB_TAU(ConfigureMake):
 
                     self.variant_labels.append(variant_label)
 
-        # make sure selected default Tau makefile will be available
+        # make sure selected default TAU makefile will be available
         avail_makefiles = ['Makefile.' + l for l in self.variant_labels]
         if self.cfg['tau_makefile'] not in avail_makefiles:
             raise EasyBuildError("Specified tau_makefile %s will not be available (only: %s)",
@@ -205,7 +208,7 @@ class EB_TAU(ConfigureMake):
         pass
 
     def configure_step(self):
-        """Custom configuration procedure for Tau: template configuration options before using them."""
+        """Custom configuration procedure for TAU: template configuration options before using them."""
 
         # inform which backend/variant is being handled
         backend = (['tau'] + self.cfg['extra_backends'])[self.variant_index // 3]
@@ -223,18 +226,18 @@ class EB_TAU(ConfigureMake):
         }
 
         for key in ['preconfigopts', 'configopts', 'prebuildopts', 'preinstallopts']:
-            self.log.debug("%s for Tau (variant index: %s): %s", key, self.variant_index, self.cfg[key])
+            self.log.debug("%s for TAU (variant index: %s): %s", key, self.variant_index, self.cfg[key])
 
         super(EB_TAU, self).configure_step()
 
         self.variant_index += 1
 
     def build_step(self):
-        """No custom build procedure for Tau."""
+        """No custom build procedure for TAU."""
         pass
 
     def sanity_check_step(self):
-        """Custom sanity check for Tau."""
+        """Custom sanity check for TAU."""
         custom_paths = {
             'files': [os.path.join(self.machine, 'bin', 'pprof'), os.path.join('include', 'TAU.h'),
                       os.path.join(self.machine, 'lib', 'libTAU.%s' % get_shared_lib_ext())] +
@@ -245,7 +248,7 @@ class EB_TAU(ConfigureMake):
         super(EB_TAU, self).sanity_check_step(custom_paths=custom_paths)
 
     def make_module_req_guess(self):
-        """Custom guesses for environment variables (PATH, ...) for Tau."""
+        """Custom guesses for environment variables (PATH, ...) for TAU."""
         guesses = super(EB_TAU, self).make_module_req_guess()
         guesses.update({
             'PATH': [os.path.join(self.machine, 'bin')],
@@ -253,7 +256,7 @@ class EB_TAU(ConfigureMake):
         return guesses
 
     def make_module_extra(self):
-        """Custom extra module file entries for Tau."""
+        """Custom extra module file entries for TAU."""
         txt = super(EB_TAU, self).make_module_extra()
 
         txt += self.module_generator.prepend_paths('TAU_MF_DIR', os.path.join(self.machine, 'lib'))
