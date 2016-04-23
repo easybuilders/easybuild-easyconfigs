@@ -209,7 +209,9 @@ def template_module_only_test(self, easyblock, name='foo', version='1.3.2', extr
             os.chdir(orig_workdir)
 
         modfile = os.path.join(TMPDIR, 'modules', 'all', 'foo', '1.3.2')
-        self.assertTrue(os.path.exists(modfile), "Module file %s was generated" % modfile)
+        luamodfile = '%s.lua' % modfile
+        self.assertTrue(os.path.exists(modfile) or os.path.exists(luamodfile),
+                        "Module file %s or %s was generated" % (modfile, luamodfile))
 
         # cleanup
         app.close_log()
