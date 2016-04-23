@@ -249,8 +249,6 @@ def suite():
     # add dummy PrgEnv-gnu/1.2.3 module, required for testing CrayToolchain easyblock
     write_file(os.path.join(TMPDIR, 'modules', 'all', 'PrgEnv-gnu', '1.2.3'), "#%Module")
 
-    easyblocks = [e for e in easyblocks if 'cray' in e]
-
     for easyblock in easyblocks:
         # dynamically define new inner functions that can be added as class methods to ModuleOnlyTest
         if os.path.basename(easyblock) == 'systemcompiler.py':
