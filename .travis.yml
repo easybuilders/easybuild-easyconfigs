@@ -1,0 +1,23 @@
+language: python
+python:
+  - 2.6
+  - 2.7
+addons:
+  apt:
+    packages:
+      - tcl8.5
+install:
+    # required for test_dep_graph
+    - pip install python-graph-core python-graph-dot
+    # install easybuild-framework/easybuild-easyblocks (and dependencies)
+    # use 'develop' branch of framework/easyblocks, except when testing 'master'
+    - if [ "x$TRAVIS_BRANCH" = 'xmaster' ]; then BRANCH=master; else BRANCH=develop; fi
+    - curl -si https://api.github.com/repos/hpcugent/easybuild-framework/git/refs/heads/${BRANCH} | grep sha
+    - easy_install https://github.com/hpcugent/easybuild-framework/archive/${BRANCH}.tar.gz
+    - curl -si https://api.github.com/repos/hpcugent/easybuild-easyblocks/git/refs/heads/${BRANCH} | grep sha
+    - easy_install https://github.com/hpcugent/easybuild-easyblocks/archive/${BRANCH}.tar.gz
+    # install environment modules tool using 'install_eb_dep.sh' script provided by easybuild-framework
+    - source $(which install_eb_dep.sh) modules-3.2.10 $HOME && source $MOD_INIT
+script:
+    - export PYTHONPATH=$TRAVIS_BUILD_DIR
+    - python -O -m test.easyconfigs.suite
