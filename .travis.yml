@@ -1,7 +1,17 @@
 language: python
-python:
-  - 2.6
-  - 2.7
+python: 2.6
+env:
+  matrix:
+    - ENV_MOD_VERSION=3.2.10
+    - LMOD_VERSION=5.6.3 EASYBUILD_MODULES_TOOL=Lmod
+    - LMOD_VERSION=6.3.1 EASYBUILD_MODULES_TOOL=Lmod EASYBUILD_MODULE_SYNTAX=Lua
+matrix:
+  # mark build as finished as soon as job has failed
+  fast_finish: true
+  include:
+    # also test default configuration with Python 2.7
+    - python: 2.7
+      env: ENV_MOD_VERSION=3.2.10
 addons:
   apt:
     packages:
@@ -17,7 +27,9 @@ install:
     - curl -si https://api.github.com/repos/hpcugent/easybuild-easyblocks/git/refs/heads/${BRANCH} | grep sha
     - easy_install https://github.com/hpcugent/easybuild-easyblocks/archive/${BRANCH}.tar.gz
     # install environment modules tool using 'install_eb_dep.sh' script provided by easybuild-framework
-    - source $(which install_eb_dep.sh) modules-3.2.10 $HOME && source $MOD_INIT
+    - if [ ! -z $ENV_MOD_VERSION ]; then source $(which install_eb_dep.sh) modules-${ENV_MOD_VERSION} $HOME; fi
+    - if [ ! -z $LMOD_VERSION ]; then source $(which install_eb_dep.sh) lua-5.1.4.8 $HOME; fi
+    - if [ ! -z $LMOD_VERSION ]; then source $(which install_eb_dep.sh) Lmod-${LMOD_VERSION} $HOME; fi
 script:
     - export PYTHONPATH=$TRAVIS_BUILD_DIR
     - python -O -m test.easyconfigs.suite
