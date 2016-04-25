@@ -372,6 +372,9 @@ class EB_Clang(CMakeMake):
             custom_paths['files'].extend(["lib/LLVMPolly.%s" % shlib_ext])
             custom_paths['dirs'].extend(["include/polly"])
 
+        if LooseVersion(self.version) >= LooseVersion('3.8'):
+            custom_paths['files'].extend(["lib/libomp.%s" % shlib_ext, "lib/clang/%s/include/omp.h" % self.version])
+
         super(EB_Clang, self).sanity_check_step(custom_paths=custom_paths)
 
     def make_module_extra(self):
