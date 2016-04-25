@@ -336,7 +336,7 @@ class EB_Clang(CMakeMake):
 
         # the static analyzer is not installed by default
         # we do it by hand
-        if self.cfg['static_analyzer']:
+        if self.cfg['static_analyzer'] and LooseVersion(self.version) < LooseVersion('3.8'):
             try:
                 tools_src_dir = os.path.join(self.llvm_src_dir, 'tools', 'clang', 'tools')
                 analyzer_target_dir = os.path.join(self.installdir, 'libexec', 'clang-analyzer')
