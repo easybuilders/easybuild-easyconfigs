@@ -1,5 +1,6 @@
 ##
 # Copyright 2013 Dmitri Gribenko
+# Copyright 2013-2016 Ghent University
 #
 # This file is triple-licensed under GPLv2 (see below), MIT, and
 # BSD three-clause licenses.
@@ -109,6 +110,7 @@ class EB_Clang(CMakeMake):
         llvm/             Unpack llvm-*.tar.gz here
           projects/
             compiler-rt/  Unpack compiler-rt-*.tar.gz here
+            openmp/       Unpack openmp-*.tar.xz here
           tools/
             clang/        Unpack clang-*.tar.gz here
             polly/        Unpack polly-*.tar.gz here
@@ -149,6 +151,12 @@ class EB_Clang(CMakeMake):
         clang_src_dir = clang_src_dirs[0]
 
         src_dirs[clang_src_dir] = os.path.join(self.llvm_src_dir, 'tools', 'clang')
+
+        if LooseVersion(self.version) >= LooseVersion('3.8'):
+            openmp_src_dirs = glob.glob('openmp-*')
+            if len(openmp_src_dirs) != 1:
+                raise EasyBuildError("Failed to find exactly one openmp source directory: %s", openmp_src_dirs)
+            src_dirs[openmp_src_dirs[0]] = os.path.join(self.llvm_src_dir, 'projects', 'openmp')
 
         for tmp in self.src:
             for (dir, new_path) in src_dirs.items():
