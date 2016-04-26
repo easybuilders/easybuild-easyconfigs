@@ -35,6 +35,8 @@ import os
 import re
 import sys
 
+from distutils.version import LooseVersion
+
 import easybuild.tools.environment as env
 import easybuild.tools.toolchain as toolchain
 from easybuild.easyblocks.netcdf import set_netcdf_env_vars  # @UnresolvedImport
@@ -116,10 +118,12 @@ class EB_WRF(EasyBlock):
         build_type_option = None
         self.comp_fam = self.toolchain.comp_family()
         if self.comp_fam == toolchain.INTELCOMP:  #@UndefinedVariable
-            build_type_option = "Linux x86_64 i486 i586 i686, ifort compiler with icc"
+            build_type_option = ("INTEL\ \(ifort\/icc\)" if LooseVersion(self.version) >= LooseVersion('3.7')
+                                 else "Linux x86_64 i486 i586 i686, ifort compiler with icc")
 
         elif self.comp_fam == toolchain.GCC:  #@UndefinedVariable
-            build_type_option = "x86_64 Linux, gfortran compiler with gcc"
+            build_type_option = ("GNU\ \(gfortran\/gcc\)" if LooseVersion(self.version) >= LooseVersion('3.7')
+                                 else "x86_64 Linux, gfortran compiler with gcc")
 
         else:
             raise EasyBuildError("Don't know how to figure out build type to select.")
@@ -133,7 +137,10 @@ class EB_WRF(EasyBlock):
             raise EasyBuildError("Unknown build type: '%s'. Supported build types: %s", bt, known_build_types)
 
         # fetch option number based on build type option and selected build type
-        build_type_question = "\s*(?P<nr>[0-9]+).\s*%s\s*\(%s\)" % (build_type_option, bt)
+        if LooseVersion(self.version) >= LooseVersion('3.7'):
+            build_type_question = "\s*(?P<nr>[0-9]+)\.\ \(%s\).*%s" % (bt, build_type_option)
+        else:
+            build_type_question = "\s*(?P<nr>[0-9]+).\s*%s\s*\(%s\)" % (build_type_option, bt)
 
         # run configure script
         cmd = "./configure"
