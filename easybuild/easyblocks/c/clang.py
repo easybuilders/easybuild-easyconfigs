@@ -151,15 +151,15 @@ class EB_Clang(CMakeMake):
         if LooseVersion(self.version) >= LooseVersion('3.8'):
             find_source_dir('openmp-*', os.path.join(self.llvm_src_dir, 'projects', 'openmp'))
 
-        for tmp in self.src:
-            for (dir, new_path) in src_dirs.items():
-                if tmp['name'].startswith(dir):
-                    old_path = os.path.join(tmp['finalpath'], dir)
+        for src in self.src:
+            for (dirname, new_path) in src_dirs.items():
+                if src['name'].startswith(dirname):
+                    old_path = os.path.join(src['finalpath'], dirname)
                     try:
                         shutil.move(old_path, new_path)
                     except IOError, err:
                         raise EasyBuildError("Failed to move %s to %s: %s", old_path, new_path, err)
-                    tmp['finalpath'] = new_path
+                    src['finalpath'] = new_path
                     break
 
     def configure_step(self):
