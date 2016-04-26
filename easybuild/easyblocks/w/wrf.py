@@ -118,12 +118,16 @@ class EB_WRF(EasyBlock):
         build_type_option = None
         self.comp_fam = self.toolchain.comp_family()
         if self.comp_fam == toolchain.INTELCOMP:  #@UndefinedVariable
-            build_type_option = ("INTEL\ \(ifort\/icc\)" if LooseVersion(self.version) >= LooseVersion('3.7')
-                                 else "Linux x86_64 i486 i586 i686, ifort compiler with icc")
+            if LooseVersion(self.version) >= LooseVersion('3.7'):
+                build_type_option = "INTEL\ \(ifort\/icc\)"
+            else:
+                build_type_option = "Linux x86_64 i486 i586 i686, ifort compiler with icc"
 
         elif self.comp_fam == toolchain.GCC:  #@UndefinedVariable
-            build_type_option = ("GNU\ \(gfortran\/gcc\)" if LooseVersion(self.version) >= LooseVersion('3.7')
-                                 else "x86_64 Linux, gfortran compiler with gcc")
+            if LooseVersion(self.version) >= LooseVersion('3.7'):
+                build_type_option = "GNU\ \(gfortran\/gcc\)"
+            else:
+                build_type_option = "x86_64 Linux, gfortran compiler with gcc"
 
         else:
             raise EasyBuildError("Don't know how to figure out build type to select.")
@@ -138,8 +142,20 @@ class EB_WRF(EasyBlock):
 
         # fetch option number based on build type option and selected build type
         if LooseVersion(self.version) >= LooseVersion('3.7'):
+            # the two relevant lines in the configure output for WRF 3.8 are:
+            #  13. (serial)  14. (smpar)  15. (dmpar)  16. (dm+sm)   INTEL (ifort/icc)
+            #  32. (serial)  33. (smpar)  34. (dmpar)  35. (dm+sm)   GNU (gfortran/gcc)
             build_type_question = "\s*(?P<nr>[0-9]+)\.\ \(%s\).*%s" % (bt, build_type_option)
         else:
+            # the relevant lines in the configure output for WRF 3.6 are:
+            #  13.  Linux x86_64 i486 i586 i686, ifort compiler with icc  (serial)
+            #  14.  Linux x86_64 i486 i586 i686, ifort compiler with icc  (smpar)
+            #  15.  Linux x86_64 i486 i586 i686, ifort compiler with icc  (dmpar)
+            #  16.  Linux x86_64 i486 i586 i686, ifort compiler with icc  (dm+sm)
+            #  32.  x86_64 Linux, gfortran compiler with gcc   (serial)
+            #  33.  x86_64 Linux, gfortran compiler with gcc   (smpar)
+            #  34.  x86_64 Linux, gfortran compiler with gcc   (dmpar)
+            #  35.  x86_64 Linux, gfortran compiler with gcc   (dm+sm)
             build_type_question = "\s*(?P<nr>[0-9]+).\s*%s\s*\(%s\)" % (build_type_option, bt)
 
         # run configure script
