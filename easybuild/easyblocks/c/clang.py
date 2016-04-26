@@ -128,35 +128,28 @@ class EB_Clang(CMakeMake):
         if self.llvm_src_dir is None:
             raise EasyBuildError("Could not determine LLVM source root (LLVM source was not unpacked?)")
 
-        compiler_rt_src_dirs = glob.glob('compiler-rt-*')
-        if len(compiler_rt_src_dirs) != 1:
-            raise EasyBuildError("Failed to find exactly one compiler-rt source directory: %s", compiler_rt_src_dirs)
-        compiler_rt_src_dir = compiler_rt_src_dirs[0]
+        src_dirs = {}
 
-        src_dirs = {
-            compiler_rt_src_dir: os.path.join(self.llvm_src_dir, 'projects', 'compiler-rt')
-        }
+        def find_source_dir(globpatterns, targetdir):
+            """Search for directory with globpattern and rename it to targetdir"""
+            if not isinstance(globpatterns, list):
+                globpatterns = [globpatterns]
+
+            glob_src_dirs = [glob_dir for glob_dir in glob.glob(globpattern) for globpattern in globpatterns]
+            if len(glob_src_dirs) != 1:
+                raise EasyBuildError("Failed to find exactly one source directory for pattern %s: %s", globpatterns,
+                                     glob_src_dirs)
+            src_dirs[glob_src_dirs[0]] = targetdir
+
+        find_source_dir('compiler-rt-*', os.path.join(self.llvm_src_dir, 'projects', 'compiler-rt'))
 
         if self.cfg["usepolly"]:
-            polly_src_dirs = glob.glob('polly-*')
-            if len(polly_src_dirs) != 1:
-                raise EasyBuildError("Failed to find exactly one polly source directory: %s", polly_src_dirs)
-            polly_src_dir = polly_src_dirs[0]
-            src_dirs[polly_src_dir] = os.path.join(self.llvm_src_dir, 'tools', 'polly')
+            find_source_dir('polly-*', os.path.join(self.llvm_src_dir, 'tools', 'polly'))
 
-        clang_src_dirs = glob.glob('clang-*') + glob.glob('cfe-*')
-
-        if len(clang_src_dirs) != 1:
-            raise EasyBuildError("Failed to find exactly one clang source directory: %s", clang_src_dirs)
-        clang_src_dir = clang_src_dirs[0]
-
-        src_dirs[clang_src_dir] = os.path.join(self.llvm_src_dir, 'tools', 'clang')
+        find_source_dir(['clang-*', 'cfe-*'], os.path.join(self.llvm_src_dir, 'tools', 'clang'))
 
         if LooseVersion(self.version) >= LooseVersion('3.8'):
-            openmp_src_dirs = glob.glob('openmp-*')
-            if len(openmp_src_dirs) != 1:
-                raise EasyBuildError("Failed to find exactly one openmp source directory: %s", openmp_src_dirs)
-            src_dirs[openmp_src_dirs[0]] = os.path.join(self.llvm_src_dir, 'projects', 'openmp')
+            find_source_dir('openmp-*', os.path.join(self.llvm_src_dir, 'projects', 'openmp'))
 
         for tmp in self.src:
             for (dir, new_path) in src_dirs.items():
