@@ -344,7 +344,11 @@ class EB_NWChem(ConfigureMake):
 
         txt = super(EB_NWChem, self).make_module_extra()
 
-        txt += self.module_generator.set_environment("PYTHONHOME", get_software_root('Python'))
+        # check whether Python module is loaded for compatibility with --module-only
+        python = get_software_root('Python')
+        if python:
+            txt += self.module_generator.set_environment('PYTHONHOME', python)
+
         # '/' at the end is critical for NWCHEM_BASIS_LIBRARY!
         datadir = os.path.join(self.installdir, 'data')
         txt += self.module_generator.set_environment('NWCHEM_BASIS_LIBRARY', os.path.join(datadir, 'libraries/'))
