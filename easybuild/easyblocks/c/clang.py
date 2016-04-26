@@ -135,7 +135,7 @@ class EB_Clang(CMakeMake):
             if not isinstance(globpatterns, list):
                 globpatterns = [globpatterns]
 
-            glob_src_dirs = [glob_dir for glob_dir in glob.glob(globpattern) for globpattern in globpatterns]
+            glob_src_dirs = [glob_dir for globpattern in globpatterns for glob_dir in glob.glob(globpattern)]
             if len(glob_src_dirs) != 1:
                 raise EasyBuildError("Failed to find exactly one source directory for pattern %s: %s", globpatterns,
                                      glob_src_dirs)
