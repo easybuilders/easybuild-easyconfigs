@@ -1,0 +1,47 @@
+name = 'OpenFOAM'
+version = '3.0+'
+pyver = '-Python-2.7.11'
+versionsuffix = '-eb-deps%s' % pyver
+
+homepage = 'http://www.openfoam.com/'
+description = """OpenFOAM is a free, open source CFD software package. 
+ OpenFOAM has an extensive range of features to solve anything from complex fluid flows
+ involving chemical reactions, turbulence and heat transfer, 
+ to solid dynamics and electromagnetics."""
+
+toolchain = {'name': 'intel', 'version': '2016a'}
+toolchainopts = {'cstd': 'c++14'}
+
+source_urls = ['https://sourceforge.net/projects/openfoamplus/files/']
+sources = [
+    '%(name)s-v%(version)s.tgz',
+    'ThirdParty-v%(version)s.tgz',
+]
+
+paraversion = '5.0.0'
+patches = [
+    'OpenFOAM-3.0.0_cleanup.patch',
+    'OpenFOAM-3.0.0_libreadline.patch',
+    ('ThirdParty-3.0.0_cleanup.patch', ".."),  # patch should not be applied in OpenFOAM subdir
+    'OpenFOAM-3.0.0_external-3rd.patch',
+    ('ThirdParty-3.0.0_external-3rd.patch', ".."),
+    'OpenFOAM-3.0.0_external_paraview-%s.patch' % paraversion,
+]
+
+dependencies = [
+    ('CGAL', '4.7', pyver),
+    ('libreadline', '6.3'),
+    # OpenFOAM requires 64 bit METIS using 32 bit indexes (array indexes)
+    ('METIS', '5.1.0', '-32bitIDX'),
+    ('ncurses', '6.0'),
+    ('ParaView', paraversion, '-mpi'),
+    ('SCOTCH', '6.0.4'),
+]
+
+builddependencies = [
+    ('Bison', '3.0.4'),
+    ('CMake', '3.4.3'),
+    ('flex', '2.6.0'),
+]
+
+moduleclass = 'cae'
