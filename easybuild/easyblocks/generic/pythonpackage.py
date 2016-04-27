@@ -343,11 +343,13 @@ class PythonPackage(ExtensionEasyBlock):
         super(PythonPackage, self).prerun()
         self.prepare_python()
 
+    def prepare_step(self):
+        """Prepare for building and installing this Python package."""
+        super(PythonPackage, self).prepare_step()
+        self.prepare_python()
+
     def configure_step(self):
         """Configure Python package build/install."""
-
-        # prepare for installing Python package
-        self.prepare_python()
 
         if self.sitecfg is not None:
             # used by some extensions, like numpy, to find certain libs
