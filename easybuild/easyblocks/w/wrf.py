@@ -359,13 +359,15 @@ class EB_WRF(EasyBlock):
         mainver = self.version.split('.')[0]
         self.wrfsubdir = "WRFV%s" % mainver
 
-        fs = ["libwrflib.a", "wrf.exe", "ideal.exe", "real.exe", "ndown.exe", "nup.exe", "tc.exe"]
-        ds = ["main", "run"]
+        files = ['libwrflib.a', 'wrf.exe', 'ideal.exe', 'real.exe', 'ndown.exe', 'tc.exe']
+        # nup.exe was 'temporarily removed' in WRF v3.7, at least until 3.8
+        if LooseVersion(self.version) < LooseVersion('3.7'):
+            files.append('nup.exe')
 
         custom_paths = {
-                        'files': [os.path.join(self.wrfsubdir, "main", x) for x in fs],
-                        'dirs': [os.path.join(self.wrfsubdir, x) for x in ds]
-                       }
+            'files': [os.path.join(self.wrfsubdir, 'main', f) for f in files],
+            'dirs': [os.path.join(self.wrfsubdir, d) for d in ['main', 'run']],
+        }
 
         super(EB_WRF, self).sanity_check_step(custom_paths=custom_paths)
 
