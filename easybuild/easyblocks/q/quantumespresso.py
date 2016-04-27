@@ -290,7 +290,7 @@ class EB_QuantumESPRESSO(ConfigureMake):
                 bins.extend(["generate_vdW_kernel_table.x"])
             else:
                 bins.extend(["path_int.x"])
-            if LooseVersion(self.version) <= LooseVersion("5.3.0"):
+            if LooseVersion(self.version) < LooseVersion("5.3.0"):
                 bins.extend(["band_plot.x", "bands_FS.x", "kvecs_FS.x"])
 
         if 'pwcond' in self.cfg['buildopts'] or 'pwall' in self.cfg['buildopts'] or \
