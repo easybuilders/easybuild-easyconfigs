@@ -35,10 +35,6 @@ from easybuild.tools.systemtools import get_shared_lib_ext
 class EB_libQGLViewer(ConfigureMake):
     """Support for building/installing libQGLViewer."""
 
-    def __init__(self, *args, **kwargs):
-        """Initialisation of custom class variables for libQGLViewer."""
-        super(EB_libQGLViewer, self).__init__(*args, **kwargs)        
-
     def configure_step(self):
         """Custom configuration procedure for libQGLViewer: qmake PREFIX=/install/path ..."""
 
@@ -51,16 +47,10 @@ class EB_libQGLViewer(ConfigureMake):
 
     def sanity_check_step(self):
         """Custom sanity check for libQGLViewer."""
-        ver_maj = self.version.split('.')[0]
-        ver_min = self.version.split('.')[1]
-        ver_maj_min = ".".join([ver_maj, ver_min])
         shlib_ext = get_shared_lib_ext()
         
-        custom_paths = {            
-            'files': [('lib/libQGLViewer.prl', 'lib64/libQGLViewer.prl'), 
-		      ('lib/libQGLViewer.%s' % shlib_ext, 'lib64/libQGLViewer.%s' % shlib_ext),
-		      ('lib/libQGLViewer.%s.%s' % (shlib_ext, ver_maj), 'lib64/libQGLViewer.%s.%s' % (shlib_ext, ver_maj)),
-		      ('lib/libQGLViewer.%s.%s' % (shlib_ext, ver_maj_min), 'lib64/libQGLViewer.%s.%s' % (shlib_ext, ver_maj_min)), 
-		      ('lib/libQGLViewer.%s.%s' % (shlib_ext, self.version), 'lib64/libQGLViewer.%s.%s' % (shlib_ext, self.version))],                                    
+        custom_paths = {
+            'files': [('lib/libQGLViewer.prl', 'lib64/libQGLViewer.prl'),
+		      ('lib/libQGLViewer.%s' % shlib_ext, 'lib64/libQGLViewer.%s' % shlib_ext)],
             'dirs': ['include/QGLViewer'],
         }
