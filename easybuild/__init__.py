@@ -27,14 +27,5 @@
 # You should have received a copy of the GNU General Public License
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
-import os
 import pkg_resources
-import sys
-
-# check whether EasyBuild is being run from a directory that contains easybuild/__init__.py;
-# that doesn't work (fails with import errors), due to weirdness to Python packaging/setuptools/namespaces
-if __path__[0] == 'easybuild':
-    sys.stderr.write("ERROR: Running EasyBuild from %s does not work (Python packaging weirdness)...\n" % os.getcwd())
-    sys.exit(1)
-
 pkg_resources.declare_namespace(__name__)
