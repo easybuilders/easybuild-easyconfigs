@@ -1,0 +1,40 @@
+easyblock = 'CMakeMake'
+
+name = 'MariaDB'
+version = '10.1.13'
+
+homepage = 'https://mariadb.org/'
+description = """MariaDB An enhanced, drop-in replacement for MySQL."""
+
+toolchain = {'name': 'intel', 'version': '2016a'}
+
+source_urls = ['https://downloads.mariadb.org/f/mariadb-%(version)s/source']
+sources = [SOURCELOWER_TAR_GZ]
+
+patches = [
+    'MariaDB-%(version)s-remove-Werror.patch',
+    'MariaDB-%(version)s-link-rt-for-jemalloc.patch',
+]
+
+dependencies = [
+    ('zlib', '1.2.8'),
+    ('ncurses', '6.0'),
+    ('jemalloc', '4.1.0'),
+    ('PCRE', '8.38'),
+    ('XZ', '5.2.2'),
+    ('Boost', '1.60.0', '-Python-2.7.11'),
+    ('libxml2', '2.9.3'),
+]
+
+builddependencies = [('CMake', '3.4.3')]
+
+separate_build_dir = True
+
+configopts = "-DWITH_PCRE=system -DWITH_JEMALLOC=yes -DWITH_ZLIB=system -DMYSQL_MAINTAINER_MODE=ON"
+
+sanity_check_paths = {
+    'files': ['bin/mysql', 'bin/mysqld_safe', 'lib/libmysqlclient.%s' % SHLIB_EXT, 'scripts/mysql_install_db'],
+    'dirs': ['include', 'share'],
+}
+
+moduleclass = 'data'
