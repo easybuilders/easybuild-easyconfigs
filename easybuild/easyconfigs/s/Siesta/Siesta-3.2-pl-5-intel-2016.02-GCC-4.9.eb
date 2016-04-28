@@ -13,18 +13,16 @@ toolchainopts = {'usempi': True}
 sources = [SOURCELOWER_TGZ]
 source_urls = ['https://dl.dropbox.com/u/20267285/SIESTA-DOWNLOADS/']
 
-# configure is in Src but building in Src is not allowed
-prebuildopts = 'cd Obj && ../Src/obj_setup.sh && ../Src/configure --enable-mpi && '
+cfg_cmd = '../Src/obj_setup.sh && ../Src/configure --enable-mpi'
+# must override COMP_LIBS in order to ensure usage of MKL's lapack instead of internal
+build_vars = "COMP_LIBS='' "
+build_vars += 'BLAS_LIBS="$LIBBLAS" LAPACK_LIBS="$LIBLAPACK" BLACS_LIBS="$LIBBLACS" SCALAPACK_LIBS="$LIBSCALAPACK"'
 
-# build siesta (must override COMP_LIBS in order to ensure usage of MKL's lapack instead of internal)
-buildopts = 'COMP_LIBS="" BLAS_LIBS="$LIBBLAS" LAPACK_LIBS="$LIBLAPACK" BLACS_LIBS="$LIBBLACS" '
-buildopts += 'SCALAPACK_LIBS="$LIBSCALAPACK" && '
-
+# build siesta
+prebuildopts = "cd Obj && " + cfg_cmd + ' && '
+buildopts = build_vars + ' && '
 # build transiesta
-buildopts += 'cd .. && mkdir Obj2 && cd Obj2 && ../Src/obj_setup.sh && ../Src/configure --enable-mpi && '
-buildopts += 'make transiesta COMP_LIBS="" BLAS_LIBS="$LIBBLAS" LAPACK_LIBS="$LIBLAPACK" '
-buildopts += 'BLACS_LIBS="$LIBBLACS" SCALAPACK_LIBS="$LIBSCALAPACK" && '
-
+buildopts += "cd .. && mkdir Obj2 && cd Obj2 && " + cfg_cmd + " && make transiesta " + build_vars + ' && '
 # build all utils
 buildopts += 'cd ../Util && sh ./build_all.sh'
 
