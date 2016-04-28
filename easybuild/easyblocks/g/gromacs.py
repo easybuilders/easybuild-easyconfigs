@@ -138,10 +138,10 @@ class EB_GROMACS(CMakeMake):
                 for libname in ['BLAS', 'LAPACK']:
                     lib_dir = os.getenv('%s_LIB_DIR' % libname)
                     libs = os.getenv('LIB%s' % libname)
-                    self.cfg.update('configopts', '-DGMX_%s_USER="-L%s %s"' % (libname, lib_dir, libs))
-                    #libs = os.getenv('%s_STATIC_LIBS' % libname).split(',')
-                    #lib = libs[0]
-                    #self.cfg.update('configopts', '-DGMX_%s_USER="%s/%s"' % (libname, lib_dir, lib))
+                    #self.cfg.update('configopts', '-DGMX_%s_USER="-L%s %s"' % (libname, lib_dir, libs))
+                    lib = libs.split(' ')[2:] + ".so"
+                    libstr = os.path.join(lib_dir, libfile)
+                    self.cfg.update('configopts', '-DGMX_%s_USER="%s"' % (libname, libstr))
 
             # set regression test path
             prefix = 'regressiontests'
@@ -161,20 +161,20 @@ class EB_GROMACS(CMakeMake):
             if any([src['name'].startswith(prefix) for src in self.src]):
                 self.cfg.update('configopts', "-DREGRESSIONTEST_PATH='%%(builddir)s/%s-%%(version)s' " % prefix)
 
-            # complete configuration with configure_method of parent
-            out = super(EB_GROMACS, self).configure_step()
+        # complete configuration with configure_method of parent
+        out = super(EB_GROMACS, self).configure_step()
 
-            # for recent GROMACS versions, make very sure that a decent BLAS, LAPACK and FFT is found and used
-            if LooseVersion(self.version) >= LooseVersion('4.6.5'):
-                patterns = [
-                    r"Using external FFT library - \S*",
-                    r"Looking for dgemm_ - found",
-                    r"Looking for cheev_ - found",
-                ]
-                for pattern in patterns:
-                    regex = re.compile(pattern, re.M)
-                    if not regex.search(out):
-                        raise EasyBuildError("Pattern '%s' not found in GROMACS configuration output.", pattern)
+        # for recent GROMACS versions, make very sure that a decent BLAS, LAPACK and FFT is found and used
+        if LooseVersion(self.version) >= LooseVersion('4.6.5'):
+            patterns = [
+                r"Using external FFT library - \S*",
+                r"Looking for dgemm_ - found",
+                r"Looking for cheev_ - found",
+            ]
+            for pattern in patterns:
+                regex = re.compile(pattern, re.M)
+                if not regex.search(out):
+                    raise EasyBuildError("Pattern '%s' not found in GROMACS configuration output.", pattern)
 
     def build_step(self):
         """ For older versions of GROMACS, allow for a separate mdrun build if
