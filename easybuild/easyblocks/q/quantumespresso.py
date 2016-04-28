@@ -285,12 +285,13 @@ class EB_QuantumESPRESSO(ConfigureMake):
                 bins.extend(["pw2casino.x"])
 
         if 'pw' in self.cfg['buildopts'] or 'all' in self.cfg['buildopts']:
-            bins.extend(["band_plot.x", "dist.x", "ev.x", "kpoints.x", "pw.x", "pwi2xsf.x",
-                         "bands_FS.x", "kvecs_FS.x"])
+            bins.extend(["dist.x", "ev.x", "kpoints.x", "pw.x", "pwi2xsf.x"])
             if LooseVersion(self.version) > LooseVersion("5"):
                 bins.extend(["generate_vdW_kernel_table.x"])
             else:
                 bins.extend(["path_int.x"])
+            if LooseVersion(self.version) < LooseVersion("5.3.0"):
+                bins.extend(["band_plot.x", "bands_FS.x", "kvecs_FS.x"])
 
         if 'pwcond' in self.cfg['buildopts'] or 'pwall' in self.cfg['buildopts'] or \
            'all' in self.cfg['buildopts']:
