@@ -135,11 +135,11 @@ class EB_GROMACS(CMakeMake):
                 mkl_libs = [os.path.join(os.getenv('LAPACK_LIB_DIR'), lib) for lib in ['libmkl_lapack.a']]
                 self.cfg.update('configopts', '-DMKL_LIBRARIES="%s" ' % ';'.join(mkl_libs))
             else:
+                # This may not work in all versions of GROMACS post 4.6.
                 for libname in ['BLAS', 'LAPACK']:
                     lib_dir = os.getenv('%s_LIB_DIR' % libname)
                     libs = os.getenv('LIB%s' % libname)
-                    #self.cfg.update('configopts', '-DGMX_%s_USER="-L%s %s"' % (libname, lib_dir, libs))
-                    lib = libs.split(' ')[2:] + ".so"
+                    libfile = "lib" + libs.split('-l')[1].rstrip() + ".so"
                     libstr = os.path.join(lib_dir, libfile)
                     self.cfg.update('configopts', '-DGMX_%s_USER="%s"' % (libname, libstr))
 
