@@ -42,41 +42,43 @@ class EB_Score_minus_P(ConfigureMake):
 
     def configure_step(self, *args, **kwargs):
         """Configure Score-P build, set configure options for compiler, MPI and dependencies."""
-        # compiler and MPI suite should always be specified -- MUCH quicker and SAFER than autodetect
-        # --with-nocross-compiler-suite=(gcc|ibm|intel|pgi|studio)
-        # --with-mpi=(bullxmpi|hp|ibmpoe|intel|intel2|intelpoe|lam|mpibull2|mpich|mpich2|mpich3|openmpi|
-        #             platform|scali|sgimpt|sun)
-        comp_opts = {
-            toolchain.DUMMY: 'gcc',  # Assume that dummy toolchain uses a system-provided GCC
-            toolchain.GCC: 'gcc',
-            toolchain.IBMCOMP: 'ibm',
-            toolchain.INTELCOMP: 'intel',
-        }
-        comp_fam = self.toolchain.comp_family()
-        if comp_fam in comp_opts:
-            self.cfg.update('configopts', "--with-nocross-compiler-suite=%s" % comp_opts[comp_fam])
-        else:
-            raise EasyBuildError("Compiler family %s not supported yet (only: %s)",
-                                 comp_fam, ', '.join(comp_opts.keys()))
-
-        mpi_opts = {
-            toolchain.INTELMPI: 'intel2',  # intel: Intel MPI v1.x (ancient); intelpoe: IBM POE MPI for Intel platforms
-            toolchain.OPENMPI: 'openmpi',
-            toolchain.MPICH: 'mpich3',     # In EB terms, MPICH means MPICH 3.x; MPICH 1.x is ancient and unsupported
-            toolchain.MPICH2: 'mpich2',
-            toolchain.MVAPICH2: 'mpich3',  # Though MVAPICH2 is based on MPICH 3.x only since v1.9b, this setting only
-                                           # affects options passed to the MPI (Fortran) compiler wrappers.  And
-                                           # MPICH 3.x compatible options were already supported in MVAPICH2 1.7.
-        }
-        # With minimal toolchains, packages using this easyblock may be built with a non-MPI toolchain (e.g., OTF2).
-        # In this case, skip passing the '--with-mpi' option.
-        mpi_fam = self.toolchain.mpi_family()
-        if mpi_fam is not None:
-            if mpi_fam in mpi_opts:
-                self.cfg.update('configopts', "--with-mpi=%s" % mpi_opts[mpi_fam])
+        tc_fam = self.toolchain.toolchain_family()
+        if tc_fam != toolchain.CRAYPE:
+            # compiler and MPI suite should always be specified -- MUCH quicker and SAFER than autodetect
+            # --with-nocross-compiler-suite=(gcc|ibm|intel|pgi|studio)
+            # --with-mpi=(bullxmpi|hp|ibmpoe|intel|intel2|intelpoe|lam|mpibull2|mpich|mpich2|mpich3|openmpi|
+            #             platform|scali|sgimpt|sun)
+            comp_opts = {
+                toolchain.DUMMY: 'gcc',  # Assume that dummy toolchain uses a system-provided GCC
+                toolchain.GCC: 'gcc',
+                toolchain.IBMCOMP: 'ibm',
+                toolchain.INTELCOMP: 'intel',
+            }
+            comp_fam = self.toolchain.comp_family()
+            if comp_fam in comp_opts:
+                self.cfg.update('configopts', "--with-nocross-compiler-suite=%s" % comp_opts[comp_fam])
             else:
-                raise EasyBuildError("MPI family %s not supported yet (only: %s)",
-                                     mpi_fam, ', '.join(mpi_opts.keys()))
+                raise EasyBuildError("Compiler family %s not supported yet (only: %s)",
+                                     comp_fam, ', '.join(comp_opts.keys()))
+
+            mpi_opts = {
+                toolchain.INTELMPI: 'intel2',  # intel: Intel MPI v1.x (ancient); intelpoe: IBM POE MPI for Intel platforms
+                toolchain.OPENMPI: 'openmpi',
+                toolchain.MPICH: 'mpich3',     # In EB terms, MPICH means MPICH 3.x; MPICH 1.x is ancient and unsupported
+                toolchain.MPICH2: 'mpich2',
+                toolchain.MVAPICH2: 'mpich3',  # Though MVAPICH2 is based on MPICH 3.x only since v1.9b, this setting only
+                                               # affects options passed to the MPI (Fortran) compiler wrappers.  And
+                                               # MPICH 3.x compatible options were already supported in MVAPICH2 1.7.
+            }
+            # With minimal toolchains, packages using this easyblock may be built with a non-MPI toolchain (e.g., OTF2).
+            # In this case, skip passing the '--with-mpi' option.
+            mpi_fam = self.toolchain.mpi_family()
+            if mpi_fam is not None:
+                if mpi_fam in mpi_opts:
+                    self.cfg.update('configopts', "--with-mpi=%s" % mpi_opts[mpi_fam])
+                else:
+                    raise EasyBuildError("MPI family %s not supported yet (only: %s)",
+                                         mpi_fam, ', '.join(mpi_opts.keys()))
 
         # auto-detection for dependencies mostly works fine, but hard specify paths anyway to have full control
         deps = {
