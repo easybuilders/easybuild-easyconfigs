@@ -1,0 +1,71 @@
+##
+# This is an easyconfig file for EasyBuild, see https://github.com/hpcugent/easybuild
+# Copyright:: Copyright 2013-2016 Juelich Supercomputing Centre, Germany
+# Authors::   Bernd Mohr <b.mohr@fz-juelich.de>
+#             Markus Geimer <m.geimer@fz-juelich.de>
+# License::   3-clause BSD
+#
+# This work is based on experiences from the UNITE project
+# http://apps.fz-juelich.de/unite/
+##
+
+easyblock = 'EB_Score_minus_P'
+
+name = 'Score-P'
+version = '2.0.1'
+
+homepage = 'http://www.score-p.org'
+description = """The Score-P measurement infrastructure is a highly scalable and
+ easy-to-use tool suite for profiling, event tracing, and online analysis of HPC
+ applications."""
+
+toolchain = {'name': 'CrayGNU', 'version': '2016.03'}
+
+sources = ['scorep-%(version)s.tar.gz']
+source_urls = ['http://www.vi-hps.org/upload/packages/scorep/']
+
+checksums = [
+    '031a82fa26e2c9412e55d964f92fc9e9',     # scorep-2.0.1.tar.gz
+]
+
+dependencies = [
+    ('binutils', '2.25.1', '', True),
+    ('libunwind', '1.1', '', True),
+    ('Cube', '4.3.4', '', True),
+    ('OPARI2', '2.0', '', True),
+    ('OTF2', '2.0', '', True),
+    ('SIONlib', '1.6.1-tools', '', True),
+    ('PDT', '3.21', '', True),
+    ('papi/5.4.3.1', EXTERNAL_MODULE),
+    ('craype-accel-nvidia35', EXTERNAL_MODULE),
+# /usr/bin/qmake                                 # ==> Using Qt version 4.6.3
+# easybuild/software/Qt/4.8.6/bin/qmake -version # ==> Using Qt version 4.8.6
+#    ('cudatoolkit/7.0.28-1.0502.10742.5.1', EXTERNAL_MODULE),
+# ms gcc/4.9.3; mll binutils libunwind Cube OPARI2 OTF2 SIONlib PDT papi/5.4.3.1 craype-accel-nvidia35
+
+]
+
+configopts = '--enable-shared'
+
+configopts += ' --with-libpmi-include=/opt/cray/pmi/default/include'
+configopts += ' --with-libpmi-lib=/opt/cray/pmi/default/lib64'
+configopts += ' --with-librca-include=/opt/cray/rca/default/include'
+configopts += ' --with-librca-lib=/opt/cray/rca/default/lib64'
+# -------
+# gcc -craype-verbose is supported only by the Cray wrappers (cc):
+# gcc: error: unrecognized command line option '-craype-verbose'
+# => fix it by setting CFLAGS/CXXFLAGS
+configopts += ' CC=cc CFLAGS=-O2'       # !needed for build-score
+configopts += ' CXX=CC CXXFLAGS=-O2'    # !needed for build-score
+
+sanity_check_paths = {
+    'files': ["bin/scorep", "include/scorep/SCOREP_User.h",
+              ("lib/libscorep_adapter_mpi_event.a", "lib64/libscorep_adapter_mpi_event.a"),
+              ("lib/libscorep_adapter_mpi_event.%s" % SHLIB_EXT, "lib64/libscorep_adapter_mpi_event.%s" % SHLIB_EXT)],
+    'dirs': [],
+}
+
+# Ensure that local metric documentation is found by Cube GUI
+modextrapaths = {'CUBE_DOCPATH': 'share/doc/scorep/profile'}
+
+moduleclass = 'perf'
