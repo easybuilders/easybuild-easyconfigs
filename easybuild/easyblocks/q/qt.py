@@ -95,9 +95,6 @@ class EB_Qt(ConfigureMake):
             libdirs = ['']
 
         libdirs = [os.path.join(self.cfg['start_dir'], d, 'lib') for d in libdirs]
-        if not all([os.path.exists(libdir) for libdir in libdirs]) and not self.dry_run:
-            raise EasyBuildError("One or more expected 'lib' directories not found: %s", libdirs)
-
         self.cfg.update('prebuildopts', 'LD_LIBRARY_PATH=%s' % os.pathsep.join(libdirs + ['$LD_LIBRARY_PATH']))
 
         super(EB_Qt, self).build_step()
