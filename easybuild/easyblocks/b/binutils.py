@@ -28,9 +28,12 @@ EasyBuild support for building and installing binutils, implemented as an easybl
 @author: Kenneth Hoste (HPC-UGent)
 """
 import os
+import re
 
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
+from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.modules import get_software_libdir, get_software_root
+from easybuild.tools.run import run_cmd
 from easybuild.tools.systemtools import get_shared_lib_ext
 
 
@@ -66,14 +69,26 @@ class EB_binutils(ConfigureMake):
 
     def sanity_check_step(self):
         """Custom sanity check for binutils."""
+
         binaries = ['addr2line', 'ar', 'as', 'c++filt', 'elfedit', 'gprof', 'ld', 'ld.bfd', 'ld.gold', 'nm',
                     'objcopy', 'objdump', 'ranlib', 'readelf', 'size', 'strings', 'strip']
         headers = ['ansidecl.h', 'bfd.h', 'bfdlink.h', 'dis-asm.h', 'symcat.h']
         libs = ['bfd', 'opcodes']
+
+        shlib_ext = get_shared_lib_ext()
         custom_paths = {
             'files': [os.path.join('bin', b) for b in binaries] +
-                     [os.path.join('lib', 'lib%s.%s' % (l, ext)) for l in libs for ext in ['a', get_shared_lib_ext()]] +
+                     [os.path.join('lib', 'lib%s.%s' % (l, ext)) for l in libs for ext in ['a', shlib_ext]] +
                      [os.path.join('include', h) for h in headers],
             'dirs': [],
         }
+
+        # if zlib is listed as a dependency, it should get linked in statically
+        if get_software_root('zlib'):
+            for binary in ['ar', 'as', 'ld', 'ld.gold', 'nm', 'ranlib']:
+                ar_path = os.path.join(self.installdir, 'bin', binary)
+                out, _ = run_cmd("ldd %s" % ar_path, simple=False)
+                if re.search(r'libz\.%s' % shlib_ext, out):
+                    raise EasyBuildError("zlib is not statically linked in %s: %s", ar_path, out)
+
         super(EB_binutils, self).sanity_check_step(custom_paths=custom_paths)
