@@ -29,6 +29,7 @@ EasyBuild support for building and installing binutils, implemented as an easybl
 """
 import os
 import re
+from distutils.version import LooseVersion
 
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.tools.build_log import EasyBuildError
@@ -63,8 +64,15 @@ class EB_binutils(ConfigureMake):
         # statically link to zlib if it is a (build) dependency
         zlibroot = get_software_root('zlib')
         if zlibroot:
-            #libs += ' ' + os.path.join(zlibroot, 'lib', 'zlib.a')
-            libs += ' ' + os.path.join(zlibroot, get_software_libdir('zlib'), 'libz.a')
+            self.cfg.update('configopts', '--with-system-zlib')
+            libz_path = os.path.join(zlibroot, get_software_libdir('zlib'), 'libz.a')
+
+            # for recent binutils versions, we can override ZLIB from the Makefile (default value is '-lz');
+            # for older versions, injecting the path to the static libz library into $LIBS works
+            if LooseVersion(self.version) >= LooseVersion('2.26'):
+                self.cfg.update('buildopts', "ZLIB='%s'" % libz_path)
+            else:
+                libs += ' ' + libz_path
 
         self.cfg.update('preconfigopts', "env LIBS='%s'" % libs)
         self.cfg.update('prebuildopts', "env LIBS='%s'" % libs)
