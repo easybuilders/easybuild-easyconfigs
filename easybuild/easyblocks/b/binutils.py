@@ -27,6 +27,7 @@ EasyBuild support for building and installing binutils, implemented as an easybl
 
 @author: Kenneth Hoste (HPC-UGent)
 """
+import glob
 import os
 import re
 from distutils.version import LooseVersion
@@ -34,6 +35,7 @@ from distutils.version import LooseVersion
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.modules import get_software_libdir, get_software_root
+from easybuild.tools.filetools import apply_regex_substitutions
 from easybuild.tools.run import run_cmd
 from easybuild.tools.systemtools import get_shared_lib_ext
 
@@ -67,10 +69,16 @@ class EB_binutils(ConfigureMake):
             self.cfg.update('configopts', '--with-system-zlib')
             libz_path = os.path.join(zlibroot, get_software_libdir('zlib'), 'libz.a')
 
-            # for recent binutils versions, we can override ZLIB from the Makefile (default value is '-lz');
-            # for older versions, injecting the path to the static libz library into $LIBS works
+            # for recent binutils versions, we need to override ZLIB in Makefile.in of components
             if LooseVersion(self.version) >= LooseVersion('2.26'):
-                self.cfg.update('buildopts', "ZLIB='%s'" % libz_path)
+                regex_subs = [
+                    (r"^(ZLIB\s*=\s*).*$", r"\1%s" % libz_path),
+                    (r"^(ZLIBINC\s*=\s*).*$", r"\1-I%s" % os.path.join(zlibroot, 'include')),
+                ]
+                for makefile in glob.glob(os.path.join(self.cfg['start_dir'], '*', 'Makefile.in')):
+                    apply_regex_substitutions(makefile, regex_subs)
+
+            # for older versions, injecting the path to the static libz library into $LIBS works
             else:
                 libs += ' ' + libz_path
 
@@ -80,11 +88,13 @@ class EB_binutils(ConfigureMake):
         # use correct sysroot, to make sure 'ld' also considers system libraries
         self.cfg.update('configopts', '--with-sysroot=/')
 
-        # build both static and shared libraries
-        self.cfg.update('configopts', "--enable-shared --enable-static")
+        # build both static and shared libraries for recent binutils versions (default is only static)
+        if LooseVersion(self.version) > LooseVersion('2.24'):
+            self.cfg.update('configopts', "--enable-shared --enable-static")
 
-        # enable gold linker with plugin support, use ld as default linker
-        self.cfg.update('configopts', "--enable-gold --enable-plugins --enable-ld=default")
+        # enable gold linker with plugin support, use ld as default linker (for recent versions of binutils)
+        if LooseVersion(self.version) > LooseVersion('2.24'):
+            self.cfg.update('configopts', "--enable-gold --enable-plugins --enable-ld=default")
 
         # complete configuration with configure_method of parent
         super(EB_binutils, self).configure_step()
@@ -92,25 +102,38 @@ class EB_binutils(ConfigureMake):
     def sanity_check_step(self):
         """Custom sanity check for binutils."""
 
-        binaries = ['addr2line', 'ar', 'as', 'c++filt', 'elfedit', 'gprof', 'ld', 'ld.bfd', 'ld.gold', 'nm',
+        binaries = ['addr2line', 'ar', 'as', 'c++filt', 'elfedit', 'gprof', 'ld', 'ld.bfd', 'nm',
                     'objcopy', 'objdump', 'ranlib', 'readelf', 'size', 'strings', 'strip']
+
         headers = ['ansidecl.h', 'bfd.h', 'bfdlink.h', 'dis-asm.h', 'symcat.h']
         libs = ['bfd', 'opcodes']
 
+        lib_exts = ['a']
         shlib_ext = get_shared_lib_ext()
+
+        if LooseVersion(self.version) > LooseVersion('2.24'):
+            binaries.append('ld.gold')
+            lib_exts.append(shlib_ext)
+
         custom_paths = {
             'files': [os.path.join('bin', b) for b in binaries] +
-                     [os.path.join('lib', 'lib%s.%s' % (l, ext)) for l in libs for ext in ['a', shlib_ext]] +
+                     [os.path.join('lib', 'lib%s.%s' % (l, ext)) for l in libs for ext in lib_exts] +
                      [os.path.join('include', h) for h in headers],
             'dirs': [],
         }
 
         # if zlib is listed as a dependency, it should get linked in statically
         if get_software_root('zlib'):
-            for binary in ['ar', 'as', 'ld', 'ld.gold', 'nm', 'ranlib']:
-                ar_path = os.path.join(self.installdir, 'bin', binary)
-                out, _ = run_cmd("ldd %s" % ar_path, simple=False)
+            for binary in binaries:
+                bin_path = os.path.join(self.installdir, 'bin', binary)
+                out, _ = run_cmd("file %s" % bin_path, simple=False)
+                if re.search(r'statically linked', out):
+                    # binary is fully statically linked, so no chance for dynamically linked libz
+                    continue
+
+                # check whether libz is linked dynamically, it shouldn't be
+                out, _ = run_cmd("ldd %s" % bin_path, simple=False)
                 if re.search(r'libz\.%s' % shlib_ext, out):
-                    raise EasyBuildError("zlib is not statically linked in %s: %s", ar_path, out)
+                    raise EasyBuildError("zlib is not statically linked in %s: %s", bin_path, out)
 
         super(EB_binutils, self).sanity_check_step(custom_paths=custom_paths)
