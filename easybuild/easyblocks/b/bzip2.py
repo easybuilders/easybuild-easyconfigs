@@ -63,7 +63,7 @@ class EB_bzip2(ConfigureMake):
         # copy dynamic libraries to install_dir/lib
         try:
             for lib in dynamic_libs_to_copy:
-                os.system('mv %s %s' % (lib, destdir)) # no easy way to copy sysmlinks using python shutil?
+                os.system('cp -P %s %s' % (lib, destdir)) # no easy way to copy sysmlinks using python shutil?
         except OSError, err:
             raise EasyBuildError("Copying %s to installation dir %s failed: %s", lib, destdir, err)
 
