@@ -28,9 +28,11 @@ EasyBuild support for bzip2, implemented as an easyblock
 @author: Kenneth Hoste (Ghent University)
 @author: Jens Timmerman (Ghent University)
 """
+import glob
 import os
 
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
+from easybuild.tools.build_log import EasyBuildError
 
 
 class EB_bzip2(ConfigureMake):
@@ -40,14 +42,33 @@ class EB_bzip2(ConfigureMake):
     def configure_step(self):
         """Set extra configure options (CC, CFLAGS)."""
 
+        self.cfg.update('prebuildopts', "make -f Makefile-libbz2_so && ")
         self.cfg.update('buildopts', 'CC="%s"' % os.getenv('CC'))
         self.cfg.update('buildopts', "CFLAGS='-Wall -Winline %s -g $(BIGFILES)'" % os.getenv('CFLAGS'))
-
+    
     def install_step(self):
         """Install in non-standard path by passing PREFIX variable to make install."""
 
         self.cfg.update('installopts', "PREFIX=%s" % self.installdir)
+        
+        srcdir = self.cfg['start_dir']
+        destdir = os.path.join(self.installdir, 'lib/')
+        os.mkdir(destdir)
+        dynamic_libs_to_copy = glob.glob('libbz2.so.*')
 
+        # copy dynamic libraries to install_dir/lib
+        try:
+            for lib in dynamic_libs_to_copy:
+                os.system('mv %s %s' % (lib, destdir)) # no easy way to copy sysmlinks using python shutil?
+        except OSError, err:
+            raise EasyBuildError("Copying %s to installation dir %s failed: %s", lib, destdir, err)
+
+        # create symlink libbz2.so >> libbz2.so.1.0.6
+        os.chdir(destdir)
+        libname = 'libbz2.so.%s' % self.cfg['version']
+        os.symlink('libbz2.so.%s' % self.cfg['version'], 'libbz2.so') 
+        os.chdir(srcdir)
+        
         super(EB_bzip2, self).install_step()
 
     def sanity_check_step(self):
@@ -56,7 +77,7 @@ class EB_bzip2(ConfigureMake):
         custom_paths = {
                         'files': ["bin/%s" % x for x in ["bunzip2", "bzcat", "bzdiff", "bzgrep",
                                                          "bzip2", "bzip2recover", "bzmore"]] +
-                                 ['lib/libbz2.a', 'include/bzlib.h'],
+                                 ['lib/libbz2.a', 'lib/libbz2.so.%s' % self.cfg['version'], 'lib/libbz2.so', 'include/bzlib.h'],
                          'dirs': []
                         }
 
