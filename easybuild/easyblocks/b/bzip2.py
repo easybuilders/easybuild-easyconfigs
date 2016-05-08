@@ -33,6 +33,7 @@ import os
 
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.tools.build_log import EasyBuildError
+from easybuild.tools.run import run_cmd
 
 
 class EB_bzip2(ConfigureMake):
@@ -42,7 +43,6 @@ class EB_bzip2(ConfigureMake):
     def configure_step(self):
         """Set extra configure options (CC, CFLAGS)."""
 
-        self.cfg.update('prebuildopts', "make -f Makefile-libbz2_so && ")
         self.cfg.update('buildopts', 'CC="%s"' % os.getenv('CC'))
         self.cfg.update('buildopts', "CFLAGS='-Wall -Winline %s -g $(BIGFILES)'" % os.getenv('CFLAGS'))
 
@@ -50,6 +50,10 @@ class EB_bzip2(ConfigureMake):
         """Install in non-standard path by passing PREFIX variable to make install."""
 
         self.cfg.update('installopts', "PREFIX=%s" % self.installdir)
+        
+        # build dynamic library
+        cmd = 'make -f Makefile-libbz2_so'
+        run_cmd(cmd, log_all=True, simple=True)
         
         srcdir = self.cfg['start_dir']
         destdir = os.path.join(self.installdir, 'lib/')
@@ -70,7 +74,6 @@ class EB_bzip2(ConfigureMake):
             os.chdir(srcdir)
         except OSError, err:
             raise EasyBuildError("Creating symlink for libbz2.so failed")
-                    
 
         super(EB_bzip2, self).install_step()
 
