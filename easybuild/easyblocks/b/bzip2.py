@@ -64,10 +64,14 @@ class EB_bzip2(ConfigureMake):
             raise EasyBuildError("Copying %s to installation dir %s failed: %s", lib, destdir, err)
 
         # create symlink libbz2.so >> libbz2.so.1.0.6
-        os.chdir(destdir)
-        os.symlink('libbz2.so.%s' % self.cfg['version'], 'libbz2.so') 
-        os.chdir(srcdir)
-        
+        try:
+            os.chdir(destdir)
+            os.symlink('libbz2.so.%s' % self.cfg['version'], 'libbz2.so') 
+            os.chdir(srcdir)
+        except OSError, err:
+            raise EasyBuildError("Creating symlink for libbz2.so failed")
+                    
+
         super(EB_bzip2, self).install_step()
 
     def sanity_check_step(self):
