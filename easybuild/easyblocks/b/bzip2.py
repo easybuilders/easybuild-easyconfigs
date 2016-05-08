@@ -45,7 +45,7 @@ class EB_bzip2(ConfigureMake):
         self.cfg.update('prebuildopts', "make -f Makefile-libbz2_so && ")
         self.cfg.update('buildopts', 'CC="%s"' % os.getenv('CC'))
         self.cfg.update('buildopts', "CFLAGS='-Wall -Winline %s -g $(BIGFILES)'" % os.getenv('CFLAGS'))
-    
+   
     def install_step(self):
         """Install in non-standard path by passing PREFIX variable to make install."""
 
