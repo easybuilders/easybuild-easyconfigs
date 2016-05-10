@@ -50,6 +50,9 @@ class EB_GROMACS(CMakeMake):
     def extra_options():
         extra_vars = {
             'mpisuffix': ['_mpi', "Suffix to append to MPI-enabled executables", CUSTOM],
+            'mpiexec': ['mpirun', "MPI executable to use when running tests", CUSTOM],
+            'mpiexec_numproc_flag': ['-np', "Flag to introduce the number of MPI tasks when running tests", CUSTOM],
+            'mpi_numprocs': ['4', "Number of MPI tasks to use when running tests", CUSTOM],
         }
         return ConfigureMake.extra_options(extra_vars)
 
@@ -117,7 +120,7 @@ class EB_GROMACS(CMakeMake):
 
             # enable MPI support if desired
             if self.toolchain.options.get('usempi', None):
-                self.cfg.update('configopts', "-DGMX_MPI=ON -DGMX_THREAD_MPI=OFF")
+                self.cfg.update('configopts', "-DGMX_MPI=ON -DGMX_THREAD_MPI=OFF -DMPIEXEC={0} -DMPIEXEC_NUMPROC_FLAG={1} -DNUMPROC={2}".format(self.cfg('mpiexec'), self.cfg('mpiexec_numproc_flag'), self.cfg('mpi_numprocs')))
             else:
                 self.cfg.update('configopts', "-DGMX_MPI=OFF")
 
@@ -278,7 +281,7 @@ class EB_GROMACS(CMakeMake):
         # I don't know when the pkgconfig directory was introduced.
         # This LooseVersion number may have to be tweaked.
         if LooseVersion(self.version) > LooseVersion('3.3.3'):
-            dirs.append(os.path.join(d, "pkgconfig") for d in ['lib', 'lib64'])
+            dirs.append(os.path.join(self.lib_subdir, "pkgconfig"))
 
         custom_paths = {
             'files': ['bin/%s%s' % (binary, suff) for binary in binaries] +
