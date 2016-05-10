@@ -1,0 +1,43 @@
+##
+# This file is an EasyBuild reciPY as per https://github.com/hpcugent/easybuild
+#
+# Copyright:: Copyright 2012-2013 Cyprus Institute / CaSToRC, University of Luxembourg / LCSB, Ghent University,
+# Forschungszentrum Juelich
+# Authors::   George Tsouloupas <g.tsouloupas@cyi.ac.cy>, Fotis Georgatos <fotis.georgatos@uni.lu>, Kenneth Hoste
+# Authors::   Damian Alvarez <d.alvarez@fz-juelich.de>
+# License::   MIT/GPL
+# $Id$
+#
+# This work implements a part of the HPCBIOS project and is a component of the policy:
+# http://hpcbios.readthedocs.org/en/latest/HPCBIOS_2012-99.html
+##
+
+#easyblock = 'ConfigureMake'
+
+name = 'CUDA'
+version = '7.5.18'
+
+homepage = 'https://developer.nvidia.com/cuda-toolkit'
+description = """CUDA (formerly Compute Unified Device Architecture) is a parallel
+ computing platform and programming model created by NVIDIA and implemented by the
+ graphics processing units (GPUs) that they produce. CUDA gives developers access
+ to the virtual instruction set and memory of the parallel computational elements in CUDA GPUs."""
+
+toolchain = {'name': 'iccifort', 'version': '2015.3.187-GNU-4.9.3-2.25'}
+
+source_urls = ['http://developer.download.nvidia.com/compute/cuda/%(version_major_minor)s/Prod/local_installers/']
+
+sources = ['%(namelower)s_%(version)s_linux.run']
+checksums = ['4b3bcecf0dfc35928a0898793cf3e4c6']
+
+# Necessary to allow to use a GCC 4.9.3 toolchain, as CUDA by default just supports up to 4.9.2.
+# Tested, but not throughly, so it is not guaranteed to don't cause problems
+installopts = '-override compiler'
+
+host_compilers = ["icpc", "g++"]
+
+# Be careful and have a message consistent with the generated wrappers
+modloadmsg = "nvcc uses g++ as the default host compiler. If you want to use icpc as a host compiler you can use"
+modloadmsg += " nvcc_icpc, or nvcc -ccbin=icpc. Likewise, a g++ wrapper called nvcc_g++ has been also created."
+
+moduleclass = 'system'
