@@ -88,7 +88,14 @@ class EB_Qt(ConfigureMake):
     def build_step(self):
         """Set $LD_LIBRARY_PATH before calling make, to ensure that all required libraries are found during linking."""
         # cfr. https://elist.ornl.gov/pipermail/visit-developers/2011-September/010063.html
-        self.cfg.update('prebuildopts', 'LD_LIBRARY_PATH=%s:$LD_LIBRARY_PATH' % os.path.join(self.cfg['start_dir'], 'lib'))
+
+        if LooseVersion(self.version) >= LooseVersion('5.6'):
+            libdirs = ['qtbase', 'qtdeclarative']
+        else:
+            libdirs = ['']
+
+        libdirs = [os.path.join(self.cfg['start_dir'], d, 'lib') for d in libdirs]
+        self.cfg.update('prebuildopts', 'LD_LIBRARY_PATH=%s' % os.pathsep.join(libdirs + ['$LD_LIBRARY_PATH']))
 
         super(EB_Qt, self).build_step()
 
