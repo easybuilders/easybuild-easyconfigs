@@ -81,7 +81,7 @@ class EB_GROMACS(CMakeMake):
                 else:
                     self.cfg.update('configopts', "--disable-threads")
             elif self.toolchain.options.get('openmp', None):
-                self.log.error("GROMACS version {0} does not support OpenMP.".format(LooseVersion(self.version)))
+                raise EasyBuildError("GROMACS version {0} does not support OpenMP.".format(LooseVersion(self.version)))
 
             # GSL support
             if get_software_root('GSL'):
