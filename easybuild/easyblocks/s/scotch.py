@@ -40,6 +40,7 @@ from distutils.version import LooseVersion
 
 import easybuild.tools.toolchain as toolchain
 from easybuild.framework.easyblock import EasyBlock
+from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.filetools import copytree
 from easybuild.tools.run import run_cmd
@@ -47,6 +48,14 @@ from easybuild.tools.run import run_cmd
 
 class EB_SCOTCH(EasyBlock):
     """Support for building/installing SCOTCH."""
+
+    @staticmethod
+    def extra_options(extra_vars=None):
+        """Define custom easyconfig parameters specific to Scotch."""
+        extra_vars = {
+            'threadedmpi': [False, "Use threaded MPI calls.", CUSTOM],
+        }
+        return EasyBlock.extra_options(extra_vars)
 
     def configure_step(self):
         """Configure SCOTCH build: locate the template makefile, copy it to a general Makefile.inc and patch it."""
@@ -108,7 +117,7 @@ class EB_SCOTCH(EasyBlock):
         if self.toolchain.options['i8']:
             cflags += " -DINTSIZE64"
 
-        if not self.toolchain.mpi_family() in [toolchain.INTELMPI, toolchain.QLOGICMPI]:  #@UndefinedVariable
+        if self.cfg['threadedmpi']: 
             cflags += " -DSCOTCH_PTHREAD"
 
         # actually build
