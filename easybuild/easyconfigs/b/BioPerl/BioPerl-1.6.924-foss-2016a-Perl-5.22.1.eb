@@ -1,4 +1,4 @@
-easyblock = 'PerlModule'
+easyblock = 'Bundle'
 
 name = 'BioPerl'
 version = '1.6.924'
@@ -10,21 +10,30 @@ description = """Bioperl is the product of a community effort to produce Perl co
 
 toolchain = {'name': 'foss', 'version': '2016a'}
 
-source_urls = ['https://github.com/bioperl/bioperl-live/archive/']
-sources = ['release-%s.tar.gz' % version.replace('.', '-')]
+# this is a bundle of Perl modules packages
+exts_defaultclass = 'PerlModule'
+exts_filter = ("perldoc -lm %(ext_name)s ", "")
 
 dependencies = [
     ('Perl', '5.22.1'),
     ('DB_File', '1.835', versionsuffix),
 ]
 
-#exts_list = [
-#	('CGI', '4.28', {
-#        'source_tmpl': 'CGI-4.28.tar.gz',
-#        'source_urls': ['https://cpan.metacpan.org/authors/id/L/LE/LEEJO/'],
-#    }),
-#]
+exts_list = [
+    ('CGI', '4.28', {
+        'source_tmpl': 'CGI-4.28.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/L/LE/LEEJO/'],
+    }),
+    (name, version, {
+        'modulename': 'Bio::Perl',
+       	'source_tmpl': 'release-%s.tar.gz' % version.replace('.', '-'),
+       	'source_urls': ['https://github.com/bioperl/bioperl-live/archive/'],
+    }),
+]
 
-options = {'modulename': 'Bio::Perl'}
+modextrapaths = {
+    'PERL5LIB': 'lib/perl5/site_perl/%(perlver)s/'
+}
 
 moduleclass = 'bio'
+
