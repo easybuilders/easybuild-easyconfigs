@@ -255,37 +255,35 @@ class EB_GROMACS(CMakeMake):
         if self.toolchain.options.get('usempi', None):
             suff = '_mpi'
 
+        dirs = [os.path.join('include', 'gromacs')]
+
         # in GROMACS v5.1, only 'gmx' binary is there
         # (only) in GROMACS v5.0, other binaries are symlinks to 'gmx'
         binaries = []
         if LooseVersion(self.version) < LooseVersion('5.1'):
             binaries.extend(['editconf', 'g_lie', 'genbox', 'genconf', 'mdrun'])
+
         if LooseVersion(self.version) >= LooseVersion('5.0'):
             binaries.append('gmx')
-
-        # check for a handful of binaries/libraries that should be there
-        if LooseVersion(self.version) < LooseVersion('5.0'):
+            libnames = ['gromacs']
+        else:
             libnames = ['gmxana', 'gmx', 'md']
             # I don't know when the gmxpreprocess library was introduced.
             # This LooseVersion number may have to be tweaked.
             if LooseVersion(self.version) > LooseVersion('3.3.3'):
                 libnames.append('gmxpreprocess')
+
         libs = ['lib%s%s.a' % (libname, suff) for libname in libnames]
-        dirs = ['include/gromacs']
+
         # I don't know when the pkgconfig directory was introduced.
         # This LooseVersion number may have to be tweaked.
         if LooseVersion(self.version) > LooseVersion('3.3.3'):
-            dirs.append(('lib/pkgconfig', 'lib64/pkgconfig'))
+            dirs.append(os.path.join(d, "pkgconfig") for d in ['lib', 'lib64'])
+
         custom_paths = {
             'files': ['bin/%s%s' % (binary, suff) for binary in binaries] +
                      [os.path.join(self.lib_subdir, lib) for lib in libs],
             'dirs': dirs
         }
-        if self.toolchain.options.get('usempi', None):
-            suff = self.cfg['mpisuffix']
-            mdrun_mpi = 'bin/mdrun%s' % suff
-            libgmx_mpi = 'lib/libgmx%s.a' % suff
-            libmd_mpi = 'lib/libmd%s.a' % suff
-            custom_paths['files'] += [mdrun_mpi, libgmx_mpi, libmd_mpi]
 
         super(EB_GROMACS, self).sanity_check_step(custom_paths=custom_paths)
