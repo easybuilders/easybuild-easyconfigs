@@ -52,7 +52,7 @@ class EB_GROMACS(CMakeMake):
             'mpisuffix': ['_mpi', "Suffix to append to MPI-enabled executables", CUSTOM],
             'mpiexec': ['mpirun', "MPI executable to use when running tests", CUSTOM],
             'mpiexec_numproc_flag': ['-np', "Flag to introduce the number of MPI tasks when running tests", CUSTOM],
-            'mpi_numprocs': ['4', "Number of MPI tasks to use when running tests", CUSTOM],
+            'mpi_numprocs': [0, "Number of MPI tasks to use when running tests", CUSTOM],
         }
         return ConfigureMake.extra_options(extra_vars)
 
@@ -120,7 +120,13 @@ class EB_GROMACS(CMakeMake):
 
             # enable MPI support if desired
             if self.toolchain.options.get('usempi', None):
-                self.cfg.update('configopts', "-DGMX_MPI=ON -DGMX_THREAD_MPI=OFF -DMPIEXEC={0} -DMPIEXEC_NUMPROC_FLAG={1} -DNUMPROC={2}".format(self.cfg('mpiexec'), self.cfg('mpiexec_numproc_flag'), self.cfg('mpi_numprocs')))
+                if self.cfg['mpi_numprocs'] == 0:
+                    self.log.info("No specific number of test MPI tasks requested -- using parallelism ({0})".format(self.cfg['parallel']))
+                    self.cfg['mpi_numprocs'] = self.cfg['parallel']
+                elif self.cfg['mpi_numprocs'] > self.cfg['parallel']:
+                    self.log.warning("Number of test MPI tasks ({0}) is greater than parallelism ({1})".format(self.cfg['mpi_numprocs'], self.cfg['parallel']))
+                self.cfg.update('configopts', "-DGMX_MPI=ON -DGMX_THREAD_MPI=OFF -DMPIEXEC={0} -DMPIEXEC_NUMPROC_FLAG={1} -DNUMPROC={2}".format(self.cfg['mpiexec'], self.cfg['mpiexec_numproc_flag'], self.cfg['mpi_numprocs']))
+                self.log.info("Using {0} as MPI executable when testing, with numprocs flag \"{1}\" and {2} tasks".format(self.cfg['mpiexec'], self.cfg['mpiexec_numproc_flag'], self.cfg['mpi_numprocs']))
             else:
                 self.cfg.update('configopts', "-DGMX_MPI=OFF")
 
