@@ -227,10 +227,11 @@ class EB_imkl(IntelBase):
             # determine whether we're using a non-Intel GCC-based or PGI-based toolchain
             # can't use toolchain.comp_family, because of dummy toolchain used when installing imkl
             if get_software_root('icc') is None:
-                if get_software_root('GCC'):
-                    compopt = 'compiler=gnu'
-                elif get_software_root('PGI'):
+                # check for PGI first, since there's a GCC underneath PGI too...
+                if get_software_root('PGI'):
                     compopt = 'compiler=pgi'
+                elif get_software_root('GCC'):
+                    compopt = 'compiler=gnu'
                 else:
                     raise EasyBuildError("Not using Intel/GCC/PGI compilers, don't know how to build wrapper libs")
             else:
@@ -348,10 +349,11 @@ class EB_imkl(IntelBase):
         if self.cfg['interfaces']:
             compsuff = '_intel'
             if get_software_root('icc') is None:
-                if get_software_root('GCC'):
-                    compsuff = '_gnu'
-                elif get_software_root('PGI'):
+                # check for PGI first, since there's a GCC underneath PGI too...
+                if get_software_root('PGI'):
                     compsuff = '_pgi'
+                elif get_software_root('GCC'):
+                    compsuff = '_gnu'
                 else:
                     raise EasyBuildError("Not using Intel/GCC/PGI, don't know compiler suffix for FFTW libraries.")
 
