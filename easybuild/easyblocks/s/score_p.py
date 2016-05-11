@@ -63,6 +63,7 @@ class EB_Score_minus_P(ConfigureMake):
                 toolchain.GCC: 'gcc',
                 toolchain.IBMCOMP: 'ibm',
                 toolchain.INTELCOMP: 'intel',
+                toolchain.PGI: 'pgi',
             }
             comp_fam = self.toolchain.comp_family()
             if comp_fam in comp_opts:
