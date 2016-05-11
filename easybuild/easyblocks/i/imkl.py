@@ -245,7 +245,9 @@ class EB_imkl(IntelBase):
                     # transform 'gnu' case to 'pgi' case
                     (r"ifeq \(\$\(compiler\),gnu\)", "ifeq ($(compiler),pgi)"),
                     ('=gcc', '=pgcc'),
+                    # correct flag to use C99 standard
                     ('-std=c99', '-c99'),
+                    # -Wall is not a valid option for pgcc, no close equivalent
                     ('-Wall', ''),
                 ]
                 for lib in cdftlibs:
