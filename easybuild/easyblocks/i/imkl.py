@@ -112,7 +112,9 @@ class EB_imkl(IntelBase):
                     'FPATH': ['mkl/include', 'mkl/include/fftw'],
                 }
                 if LooseVersion(self.version) >= LooseVersion('11.0'):
-                    if LooseVersion(self.version) >= LooseVersion('11.1'):
+                    if LooseVersion(self.version) >= LooseVersion('11.3'):
+                        retdict['MIC_LD_LIBRARY_PATH'] = ['lib/intel64_lin_mic', 'mkl/lib/mic'];
+                    elif LooseVersion(self.version) >= LooseVersion('11.1'):
                         retdict['MIC_LD_LIBRARY_PATH'] = ['lib/mic', 'mkl/lib/mic'];
                     else:
                         retdict['MIC_LD_LIBRARY_PATH'] = ['compiler/lib/mic', 'mkl/lib/mic'];
