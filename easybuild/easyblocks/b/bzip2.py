@@ -77,7 +77,12 @@ class EB_bzip2(ConfigureMake):
             libdir = os.path.join(self.installdir, 'lib')
             try:
                 for lib in glob.glob('libbz2.%s.*' % shlib_ext):
-                    shutil.copy2(lib, libdir)
+                    # only way to copy a symlink is to check for it,
+                    # cfr. http://stackoverflow.com/questions/4847615/copying-a-symbolic-link-in-python
+                    if os.path.islink(lib):
+                        os.symlink(os.readlink(lib), os.path.join(libdir, lib))
+                    else:
+                        shutil.copy2(lib, libdir)
             except OSError, err:
                 raise EasyBuildError("Copying shared libraries to installation dir %s failed: %s", libdir, err)
 
