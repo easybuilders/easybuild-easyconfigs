@@ -49,6 +49,7 @@ from easybuild.framework.easyconfig.easyconfig import get_easyblock_class
 from easybuild.framework.easyconfig.parser import fetch_parameters_from_easyconfig
 from easybuild.framework.easyconfig.tools import dep_graph, get_paths_for, process_easyconfig
 from easybuild.tools import config
+from easybuild.tools.config import build_option
 from easybuild.tools.filetools import write_file
 from easybuild.tools.module_naming_scheme import GENERAL_CLASS
 from easybuild.tools.module_naming_scheme.easybuild_mns import EasyBuildMNS
@@ -113,7 +114,7 @@ class EasyConfigTest(TestCase):
                 if dep.get('external_module', False):
                     ec['dependencies'].remove(dep)
 
-        self.ordered_specs = resolve_dependencies(self.parsed_easyconfigs, retain_all_deps=True)
+        self.ordered_specs = resolve_dependencies(self.parsed_easyconfigs, modules_tool(), retain_all_deps=True)
 
     def test_dep_graph(self):
         """Unit test that builds a full dependency graph."""
@@ -263,8 +264,9 @@ def template_easyconfig_test(self, spec):
     fail_msg = "Easyconfig file %s not in expected subdirectory %s" % (spec, expected_subdir)
     self.assertEqual(expected_subdir, subdir, fail_msg)
 
-    # sanity check for software name
-    self.assertTrue(ec['name'], name)
+    # sanity check for software name, moduleclass
+    self.assertEqual(ec['name'], name)
+    self.assertTrue(ec['moduleclass'] in build_option('valid_module_classes'))
 
     # instantiate easyblock with easyconfig file
     app_class = get_easyblock_class(easyblock, name=name)
