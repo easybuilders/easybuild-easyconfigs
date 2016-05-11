@@ -45,7 +45,7 @@ import easybuild.tools.toolchain as toolchain
 from easybuild.easyblocks.generic.intelbase import IntelBase, ACTIVATION_NAME_2012, LICENSE_FILE_NAME_2012
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.build_log import EasyBuildError
-from easybuild.tools.filetools import rmtree2
+from easybuild.tools.filetools import apply_regex_substitutions, rmtree2
 from easybuild.tools.modules import get_software_root
 from easybuild.tools.run import run_cmd
 from easybuild.tools.systemtools import get_shared_lib_ext
@@ -227,15 +227,29 @@ class EB_imkl(IntelBase):
             # determine whether we're using a non-Intel GCC-based or PGI-based toolchain
             # can't use toolchain.comp_family, because of dummy toolchain used when installing imkl
             if get_software_root('icc') is None:
+                # check for PGI first, since there's a GCC underneath PGI too...
                 if get_software_root('PGI'):
                     compopt = 'compiler=pgi'
                 elif get_software_root('GCC'):
                     compopt = 'compiler=gnu'
                 else:
-                    raise EasyBuildError("Not using either Intel compilers, GCC nor PGI "
-                                         "don't know how to build wrapper libs")
+                    raise EasyBuildError("Not using Intel/GCC/PGI compilers, don't know how to build wrapper libs")
             else:
                 compopt = 'compiler=intel'
+
+            # patch makefiles for cdft wrappers when PGI is used as compiler
+            if get_software_root('PGI'):
+                regex_subs = [
+                    # pgi should be considered as a valid compiler
+                    ("intel gnu", "intel gnu pgi"),
+                    # transform 'gnu' case to 'pgi' case
+                    (r"ifeq \(\$\(compiler\),gnu\)", "ifeq ($(compiler),pgi)"),
+                    ('=gcc', '=pgcc'),
+                    ('-std=c99', '-c99'),
+                    ('-Wall', ''),
+                ]
+                for lib in cdftlibs:
+                    apply_regex_substitutions(os.path.join(interfacedir, lib, 'makefile'), regex_subs)
 
             for lib in fftw2libs + fftw3libs + cdftlibs:
                 buildopts = [compopt]
@@ -277,7 +291,6 @@ class EB_imkl(IntelBase):
 
                 allopts = [list(opts) for opts in itertools.product(intflags, precflags)]
 
-                patched = []
                 for flags, extraopts in itertools.product(['', '-fPIC'], allopts):
                     tup = (lib, flags, buildopts, extraopts)
                     self.log.debug("Building lib %s with: flags %s, buildopts %s, extraopts %s" % tup)
@@ -300,14 +313,6 @@ class EB_imkl(IntelBase):
                         self.log.info("Changed to interface %s directory %s" % (lib, intdir))
                     except OSError, err:
                         raise EasyBuildError("Can't change to interface %s directory %s: %s", lib, intdir, err)
-
-                    if lib in cdftlibs and get_software_root('PGI') and lib not in patched:
-                        # Have to patch the makefile for this library
-                        run_cmd("sed -i s/gnu/pgi/g makefile", log_all=True, simple=True)
-                        run_cmd("sed -i s/gcc/pgcc/g makefile", log_all=True, simple=True)
-                        run_cmd("sed -i s/-Wall//g makefile", log_all=True, simple=True)
-                        run_cmd("sed -i s/-std=c99/-c99/g makefile", log_all=True, simple=True)
-                        patched += [lib]
 
                     fullcmd = "%s %s" % (cmd, ' '.join(buildopts + extraopts))
                     res = run_cmd(fullcmd, log_all=True, simple=True)
@@ -344,6 +349,7 @@ class EB_imkl(IntelBase):
         if self.cfg['interfaces']:
             compsuff = '_intel'
             if get_software_root('icc') is None:
+                # check for PGI first, since there's a GCC underneath PGI too...
                 if get_software_root('PGI'):
                     compsuff = '_pgi'
                 elif get_software_root('GCC'):
