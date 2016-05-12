@@ -308,7 +308,9 @@ class EB_DOLFIN(CMakePythonPackage):
         txt = super(EB_DOLFIN, self).make_module_extra()
 
         # Dolfin needs to find Boost
-        txt += self.module_generator.set_environment('BOOST_DIR', self.boost_dir)
+        # check whether boost_dir is defined for compatibility with --module-only
+        if self.boost_dir:
+            txt += self.module_generator.set_environment('BOOST_DIR', self.boost_dir)
 
         envvars = ['I_MPI_CXX', 'I_MPI_CC']
         for envvar in envvars:

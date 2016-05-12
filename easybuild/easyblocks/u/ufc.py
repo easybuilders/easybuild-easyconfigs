@@ -79,6 +79,12 @@ class EB_UFC(CMakePythonPackage):
 
         super(EB_UFC, self).configure_step()
 
+    def test_step(self):
+        """No test suite available for UFC."""
+        # PythonPackage defines 'runtest' as 'True' by default, but ConfigureMake.test_step expects string value
+        # no test suite available anyway for UFC, so just pass through
+        pass
+
     def sanity_check_step(self):
         """Custom sanity check for UFC."""
         custom_paths = {
