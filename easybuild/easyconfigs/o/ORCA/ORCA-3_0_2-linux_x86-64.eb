@@ -1,0 +1,38 @@
+easyblock = "PackedBinary"
+
+name = "ORCA"
+version = '3_0_2-linux_x86-64'
+
+homepage = 'http://cec.mpg.de/forum/'
+description = """ORCA is a flexible, efficient and easy-to-use general purpose tool for quantum chemistry
+ with specific emphasis on spectroscopic properties of open-shell molecules.
+  It features a wide variety of standard quantum chemical methods ranging from semiempirical methods to DFT to single-
+ and multireference correlated ab initio methods.
+ It can also treat environmental and relativistic effects."""
+
+toolchain = {'name': 'dummy', 'version': ''}
+
+sources = ['%%(namelower)s_%s_%s.tbz' % (version.split('-')[0], '-'.join(version.split('-')[1:]))]
+
+# ORCA 3.0.2 is compiled only against OpenMPI 1.6.5 for Linux
+dependencies = [('OpenMPI', '1.6.5', '-GCC-4.7.2')]
+
+sanity_check_paths = {
+    'files': ['orca_%s%s' % (x, y) for x in ['anoint', 'casscf', 'cis', 'cleanup', 'cpscf',
+                                             'eprnmr', 'gtoint', 'mdci', 'mp2', 'mrci', 'pc',
+                                             'rocis', 'scf', 'scfgrad', 'soc']
+              for y in ["", "_mpi"]] +
+    ['orca_%s' % x for x in ['2mkl', 'asa', 'chelpg', 'ciprep', 'eca', 'ecplib',
+                             'euler', 'fci', 'fitpes', 'gstep', 'loc', 'mapspc',
+                                      'md', 'mergefrag', 'ndoint', 'numfreq', 'plot',
+                                      'pltvib', 'pop', 'rel', 'vib', 'vpot']] +
+    ['orca', 'otool_cosmo'],
+    'dirs': [],
+}
+
+modextravars = {
+    "SLURM_CPU_BIND" : "none",
+    "RSH_COMMAND"    : "ssh -x",
+}
+
+moduleclass = 'chem'
