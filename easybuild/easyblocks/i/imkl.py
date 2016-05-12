@@ -247,8 +247,9 @@ class EB_imkl(IntelBase):
                     ('=gcc', '=pgcc'),
                     # correct flag to use C99 standard
                     ('-std=c99', '-c99'),
-                    # -Wall is not a valid option for pgcc, no close equivalent
+                    # -Wall and -Werror are not valid options for pgcc, no close equivalent
                     ('-Wall', ''),
+                    ('-Werror', ''),
                 ]
                 for lib in cdftlibs:
                     apply_regex_substitutions(os.path.join(interfacedir, lib, 'makefile'), regex_subs)
