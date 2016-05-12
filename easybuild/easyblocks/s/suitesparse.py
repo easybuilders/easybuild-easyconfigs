@@ -77,12 +77,12 @@ class EB_SuiteSparse(ConfigureMake):
         parmetis = get_software_root('ParMETIS')
         if parmetis:
             metis_path = parmetis
-            metis_include = os.path.join( parmetis, 'include')
+            metis_include = os.path.join(parmetis, 'include')
             metis_libs = os.path.join(parmetis, get_software_libdir('ParMETIS'), 'libmetis.a')
 
         elif metis:
             metis_path = metis
-            metis_include = os.path.join( metis, 'include')
+            metis_include = os.path.join(metis, 'include')
             metis_libs = os.path.join(metis, get_software_libdir('METIS'), 'libmetis.a')
 
         else:
@@ -183,7 +183,7 @@ class EB_SuiteSparse(ConfigureMake):
             include_dirs = [self.config_name]
             ld_library_path = ['AMD/lib', 'BTF/lib', 'CAMD/lib', 'CCOLAMD/lib', 'CHOLAMD/lib', 'CHOLMOD/lib',
                                'COLAMD/lib/', 'CSparse/lib', 'CXSparse/lib', 'KLU/lib', 'LDL/lib', 'RBio/lib',
-                               'UMFPACK/lib', 'SuiteSparse_config']
+                               'UMFPACK/lib', self.config_name]
 
             guesses['CPATH'].extend(include_dirs)
             guesses['LD_LIBRARY_PATH'].extend(ld_library_path)
@@ -196,16 +196,18 @@ class EB_SuiteSparse(ConfigureMake):
 
         # Make sure that SuiteSparse did NOT compile its own Metis
         if os.path.exists(os.path.join(self.installdir, 'lib', 'libmetis.%s' % get_shared_lib_ext())):
-          raise EasyBuildError("SuiteSparse has compiled its own Metis. This will conflict with the Metis build."
-                               " The SuiteSparse EasyBlock need to be updated!")
+            raise EasyBuildError("SuiteSparse has compiled its own Metis. This will conflict with the Metis build."
+                                 " The SuiteSparse EasyBlock need to be updated!")
+
+        libnames = ['AMD', 'BTF', 'CAMD', 'CCOLAMD', 'CHOLMOD', 'COLAMD', 'CXSparse', 'KLU',
+                    'LDL', 'RBio', 'SPQR', 'UMFPACK']
+        libs = [os.path.join(x, 'lib', 'lib%s.a' % x.lower()) for x in libnames]
 
         if LooseVersion(self.version) < LooseVersion('4.0'):
             csparse_dir = 'CSparse3'
         else:
             csparse_dir = 'CSparse'
-
-        libnames = ["AMD", "BTF", "CAMD", "CCOLAMD", "CHOLMOD", "COLAMD", "CXSparse", "KLU", "LDL", "RBio", "SPQR", "UMFPACK"]
-        libs = [os.path.join(x, 'lib', 'lib%s.a' % x.lower()) for x in libnames] + [os.path.join(csparse_dir, 'lib', 'libcsparse.a')]
+        libs.append(os.path.join(csparse_dir, 'lib', 'libcsparse.a'))
 
         # Latest version of SuiteSparse also compiles shared library and put them in 'lib'
         shlib_ext = get_shared_lib_ext()
@@ -214,7 +216,7 @@ class EB_SuiteSparse(ConfigureMake):
 
         custom_paths = {
             'files': libs,
-            'dirs': ["MATLAB_Tools"],
+            'dirs': ['MATLAB_Tools'],
         }
 
         super(EB_SuiteSparse, self).sanity_check_step(custom_paths=custom_paths)
