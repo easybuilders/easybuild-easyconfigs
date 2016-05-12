@@ -1,5 +1,5 @@
 ##
-# Copyright 2015-2016 Ghent University
+# Copyright 2009-2016 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -23,39 +23,34 @@
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
 """
-EasyBuild support for Ruby, implemented as an easyblock
+EasyBuild support for building and installing libQGLViewer, implemented as an easyblock
 
-@author: Robert Schmidt (Ottawa Hospital Research Institute)
+@author: Javier Antonio Ruiz Bosch (Central University "Marta Abreu" of Las Villas, Cuba)
 """
 
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
+from easybuild.tools.run import run_cmd
 from easybuild.tools.systemtools import get_shared_lib_ext
 
-
-# seems like the quickest test for whether a gem is installed
-EXTS_FILTER_GEMS = ("gem list '^%(ext_name)s$' -i", "")
-
-
-class EB_Ruby(ConfigureMake):
-    """Building and installing Ruby including support for gems"""
-    
-    def prepare_for_extensions(self):
-        """Sets default class and filter for gems"""
-        self.cfg['exts_defaultclass'] = 'RubyGem'
-        self.cfg['exts_filter'] = EXTS_FILTER_GEMS
+class EB_libQGLViewer(ConfigureMake):
+    """Support for building/installing libQGLViewer."""
 
     def configure_step(self):
-        """Updates configure options for the Ruby base install"""
+        """Custom configuration procedure for libQGLViewer: qmake PREFIX=/install/path ..."""
 
-        self.cfg.update('configopts', "--disable-install-doc --enable-shared")
-        super(EB_Ruby, self).configure_step()
+        cmd = "%(preconfigopts)s qmake PREFIX=%(installdir)s %(configopts)s" % {
+            'preconfigopts': self.cfg['preconfigopts'],            
+            'installdir': self.installdir,
+            'configopts': self.cfg['configopts'],
+        }
+        run_cmd(cmd, log_all=True, simple=True)
 
     def sanity_check_step(self):
-        """Custom sanity check for Ruby gems"""
-        majver = '.'.join(self.version.split('.')[:2])
+        """Custom sanity check for libQGLViewer."""
+        shlib_ext = get_shared_lib_ext()
+        
         custom_paths = {
-            'files': ['bin/erb', 'bin/gem', 'bin/irb', 'bin/rake', 'bin/rdoc', 'bin/ri', 'bin/ruby',
-                      'lib/libruby.%s' % get_shared_lib_ext()],
-            'dirs': ['include/ruby-%s.0' % majver, 'lib/pkgconfig', 'lib/ruby/%s.0' % majver, 'lib/ruby/gems'],
+            'files': [('lib/libQGLViewer.prl', 'lib64/libQGLViewer.prl'),
+		      ('lib/libQGLViewer.%s' % shlib_ext, 'lib64/libQGLViewer.%s' % shlib_ext)],
+            'dirs': ['include/QGLViewer'],
         }
-        return super(EB_Ruby, self).sanity_check_step(custom_paths=custom_paths)
