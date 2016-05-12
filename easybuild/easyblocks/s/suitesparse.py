@@ -175,19 +175,19 @@ class EB_SuiteSparse(ConfigureMake):
         * add config dir and include to $CPATH so include files are found
         * add UMFPACK and AMD library, and lib dirs to $LD_LIBRARY_PATH
         """
-        # Latest version of SuiteSparse put shared libraries in 'lib'
-        if LooseVersion(self.version) >= LooseVersion('4.5'):
-            ld_library_path = ['lib']
-            include_dirs = ['include']
-        else:
-            ld_library_path = ['UMFPACK/Lib', 'AMD/Lib']
-            include_dirs = [self.config_name]
 
         guesses = super(EB_SuiteSparse, self).make_module_req_guess()
-        guesses.update({
-            'CPATH': include_dirs,
-            'LD_LIBRARY_PATH': ld_library_path,
-        })
+
+        # Previous versions of SuiteSparse used specific directories for includes and libraries
+        if LooseVersion(self.version) < LooseVersion('4.5'):
+            include_dirs = [self.config_name]
+            ld_library_path = ['AMD/lib', 'BTF/lib', 'CAMD/lib', 'CCOLAMD/lib', 'CHOLAMD/lib', 'CHOLMOD/lib',
+                               'COLAMD/lib/', 'CSparse/lib', 'CXSparse/lib', 'KLU/lib', 'LDL/lib', 'RBio/lib',
+                               'UMFPACK/lib', 'SuiteSparse_config']
+
+            guesses['CPATH'].extend(include_dirs)
+            guesses['LD_LIBRARY_PATH'].extend(ld_library_path)
+            guesses['LIBRARY_PATH'].extend(ld_library_path)
 
         return guesses
 
