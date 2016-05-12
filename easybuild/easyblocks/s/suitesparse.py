@@ -194,6 +194,11 @@ class EB_SuiteSparse(ConfigureMake):
     def sanity_check_step(self):
         """Custom sanity check for SuiteSparse."""
 
+        # Make sure that SuiteSparse did NOT compile its own Metis
+        if os.path.exists(os.path.join(self.installdir, 'lib', 'libmetis.%s' % get_shared_lib_ext())):
+          raise EasyBuildError("SuiteSparse has compiled its own Metis. This will conflict with the Metis build."
+                               " The SuiteSparse EasyBlock need to be updated!")
+
         if LooseVersion(self.version) < LooseVersion('4.0'):
             csparse_dir = 'CSparse3'
         else:
