@@ -39,6 +39,7 @@ from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.easyblocks.generic.cmakemake import CMakeMake
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.build_log import EasyBuildError
+from easybuild.tools.filetools import download_file, extract_file
 from easybuild.tools.modules import get_software_root
 from easybuild.tools.run import run_cmd
 from easybuild.tools.systemtools import get_platform_name
@@ -60,6 +61,8 @@ class EB_GROMACS(CMakeMake):
         """Initialize GROMACS-specific variables."""
         super(EB_GROMACS, self).__init__(*args, **kwargs)
         self.lib_subdir = ''
+        self.cmake_objdir_normal = ''
+        self.cmake_objdir_mdrun = ''
 
     def configure_step(self):
         """Custom configuration procedure for GROMACS: set configure options for configure or cmake."""
@@ -112,23 +115,20 @@ class EB_GROMACS(CMakeMake):
             # disable GUI tools
             self.cfg.update('configopts', "-DGMX_X11=OFF")
 
+            # set regression test path
+            prefix = 'regressiontests'
+            if any([src['name'].startswith(prefix) for src in self.src]):
+                major_minor_version = '.'.join(self.version.split('.')[:2])
+                self.cfg.update('configopts', "-DREGRESSIONTEST_PATH='%%(builddir)s/%s-%%(version)s' " % prefix)
+
             # enable OpenMP support if desired
             if self.toolchain.options.get('openmp', None):
                 self.cfg.update('configopts', "-DGMX_OPENMP=ON")
             else:
                 self.cfg.update('configopts', "-DGMX_OPENMP=OFF")
 
-            # enable MPI support if desired
-            if self.toolchain.options.get('usempi', None):
-                if self.cfg['mpi_numprocs'] == 0:
-                    self.log.info("No specific number of test MPI tasks requested -- using parallelism ({0})".format(self.cfg['parallel']))
-                    self.cfg['mpi_numprocs'] = self.cfg['parallel']
-                elif self.cfg['mpi_numprocs'] > self.cfg['parallel']:
-                    self.log.warning("Number of test MPI tasks ({0}) is greater than parallelism ({1})".format(self.cfg['mpi_numprocs'], self.cfg['parallel']))
-                self.cfg.update('configopts', "-DGMX_MPI=ON -DGMX_THREAD_MPI=OFF -DMPIEXEC={0} -DMPIEXEC_NUMPROC_FLAG={1} -DNUMPROC={2}".format(self.cfg['mpiexec'], self.cfg['mpiexec_numproc_flag'], self.cfg['mpi_numprocs']))
-                self.log.info("Using {0} as MPI executable when testing, with numprocs flag \"{1}\" and {2} tasks".format(self.cfg['mpiexec'], self.cfg['mpiexec_numproc_flag'], self.cfg['mpi_numprocs']))
-            else:
-                self.cfg.update('configopts', "-DGMX_MPI=OFF")
+            # Disable MPI support (for initial, serial/SMP build)
+            self.cfg.update('configopts', "-DGMX_MPI=OFF")
 
             # explicitly disable GPU support if CUDA is not available,
             # to avoid that GROMACS find and uses a system-wide CUDA compiler
@@ -152,77 +152,68 @@ class EB_GROMACS(CMakeMake):
                     libstr = os.path.join(lib_dir, libfile)
                     self.cfg.update('configopts', '-DGMX_%s_USER="%s"' % (libname, libstr))
 
-            # set regression test path
-            prefix = 'regressiontests'
-            if any([src['name'].startswith(prefix) for src in self.src]):
-                self.cfg.update('configopts', "-DREGRESSIONTEST_PATH='%%(builddir)s/%s-%%(version)s' " % prefix)
+            # no more GSL support in GROMACS 5.x, see http://redmine.gromacs.org/issues/1472
+            if LooseVersion(self.version) < LooseVersion('5.0'):
+                # enable GSL when it's provided
+                if get_software_root('GSL'):
+                    self.cfg.update('configopts', "-DGMX_GSL=ON")
+                else:
+                    self.cfg.update('configopts', "-DGMX_GSL=OFF")
 
-        # no more GSL support in GROMACS 5.x, see http://redmine.gromacs.org/issues/1472
-        if LooseVersion(self.version) < LooseVersion('5.0'):
-            # enable GSL when it's provided
-            if get_software_root('GSL'):
-                self.cfg.update('configopts', "-DGMX_GSL=ON")
-            else:
-                self.cfg.update('configopts', "-DGMX_GSL=OFF")
+            # complete configuration with configure_method of parent
+            self.cmake_objdir_normal = 'build-normal'
+            os.mkdir(self.cmake_objdir_normal)
+            os.chdir(self.cmake_objdir_normal)
+            out = super(EB_GROMACS, self).configure_step(srcdir='..')
 
-            # set regression test path
-            prefix = 'regressiontests'
-            if any([src['name'].startswith(prefix) for src in self.src]):
-                self.cfg.update('configopts', "-DREGRESSIONTEST_PATH='%%(builddir)s/%s-%%(version)s' " % prefix)
+            # for recent GROMACS versions, make very sure that a decent BLAS, LAPACK and FFT is found and used
+            if LooseVersion(self.version) >= LooseVersion('4.6.5'):
+                patterns = [
+                    r"Using external FFT library - \S*",
+                    r"Looking for dgemm_ - found",
+                    r"Looking for cheev_ - found",
+                ]
+                for pattern in patterns:
+                    regex = re.compile(pattern, re.M)
+                    if not regex.search(out):
+                        raise EasyBuildError("Pattern '%s' not found in GROMACS configuration output.", pattern)
 
-        # complete configuration with configure_method of parent
-        out = super(EB_GROMACS, self).configure_step()
-
-        # for recent GROMACS versions, make very sure that a decent BLAS, LAPACK and FFT is found and used
-        if LooseVersion(self.version) >= LooseVersion('4.6.5'):
-            patterns = [
-                r"Using external FFT library - \S*",
-                r"Looking for dgemm_ - found",
-                r"Looking for cheev_ - found",
-            ]
-            for pattern in patterns:
-                regex = re.compile(pattern, re.M)
-                if not regex.search(out):
-                    raise EasyBuildError("Pattern '%s' not found in GROMACS configuration output.", pattern)
+            os.chdir('..')
 
     def build_step(self):
-        """ For older versions of GROMACS, allow for a separate mdrun build if
-            MPI support has been requested. """
-        if LooseVersion(self.version) < LooseVersion('4.6'):
+        
+        if LooseVersion(self.version) >= LooseVersion('4.6'):
+            os.chdir(self.cmake_objdir_normal)
+        else:
             self.cfg.update("prebuildopts", 'LIBS="${EBVARLIBLAPACK} ${LIBS}"')
         super(EB_GROMACS, self).build_step()
-
-    def install_step(self):
-        """ For older versions of GROMACS, allow for a separate mdrun install
-            if MPI support has been requested. """
-        super(EB_GROMACS, self).install_step()
-        if LooseVersion(self.version) < LooseVersion('4.6'):
-            if self.toolchain.options.get('usempi', None):
-                cmd = "make distclean"
-                (out, _) = run_cmd(cmd, log_all=True, simple=False)
-                self.cfg.update('configopts', "--enable-mpi --program-suffix={0}".format(self.cfg['mpisuffix']))
-                ConfigureMake.configure_step(self)
-                self.cfg.update("buildopts", "mdrun")
-                super(EB_GROMACS, self).build_step()
-                cmd = "%s make install-mdrun %s" % (self.cfg['preinstallopts'], self.cfg['installopts'])
-                (out, _) = run_cmd(cmd, log_all=True, simple=False)
+        if LooseVersion(self.version) >= LooseVersion('4.6'):
+            os.chdir('..')
 
     def test_step(self):
-        """Specify to running tests is done using 'make check'."""
+        """Run the basic tests (but not necessarily the full regression tests)
+           using make check"""
         # allow to escape testing by setting runtest to False
         if not self.cfg['runtest'] and not isinstance(self.cfg['runtest'], bool):
             self.cfg['runtest'] = 'check'
-            if LooseVersion(self.version) < LooseVersion('4.6'):
+            # make very sure OMP_NUM_THREADS is set to 1, to avoid hanging GROMACS regression test
+            env.setvar('OMP_NUM_THREADS', '1')
+            if LooseVersion(self.version) >= LooseVersion('4.6'):
+                os.chdir(self.cmake_objdir_normal)
+            else:
                 self.cfg['runtest'] = 'LIBS="${EBVARLIBLAPACK} ${LIBS}" check'
-
-        # make very sure OMP_NUM_THREADS is set to 1, to avoid hanging GROMACS regression test
-        env.setvar('OMP_NUM_THREADS', '1')
-
-        super(EB_GROMACS, self).test_step()
+            super(EB_GROMACS, self).test_step()
+            if LooseVersion(self.version) >= LooseVersion('4.6'):
+                os.chdir('..')
 
     def install_step(self):
-        """Custom install step for GROMACS; figure out where libraries were installed to."""
+        """Custom install step for GROMACS; figure out where libraries were installed to.
+           Also, install the MPI version of the executable in a separate step."""
+        if LooseVersion(self.version) >= LooseVersion('4.6'):
+            os.chdir(self.cmake_objdir_normal)
         super(EB_GROMACS, self).install_step()
+        if LooseVersion(self.version) >= LooseVersion('4.6'):
+            os.chdir('..')
 
         # the GROMACS libraries get installed in different locations (deeper subdirectory), depending on the platform;
         # this is determined by the GNUInstallDirs CMake module;
@@ -243,9 +234,40 @@ class EB_GROMACS(CMakeMake):
                         self.lib_subdir = os.path.dirname(libpaths[0])[len(self.installdir)+1:]
                         self.log.info("Found lib subdirectory that contains %s: %s", libname, self.lib_subdir)
                         break
-
         if not self.lib_subdir:
             raise EasyBuildError("Failed to determine lib subdirectory in %s", self.installdir)
+
+        # Install a version with the MPI suffix
+        if self.toolchain.options.get('usempi', None):
+            if LooseVersion(self.version) < LooseVersion('4.6'):
+                cmd = "make distclean"
+                (out, _) = run_cmd(cmd, log_all=True, simple=False)
+                self.cfg.update('configopts', "--enable-mpi --program-suffix={0}".format(self.cfg['mpisuffix']))
+                ConfigureMake.configure_step(self)
+                self.cfg.update("buildopts", "mdrun")
+                super(EB_GROMACS, self).build_step()
+                cmd = "%s make install-mdrun %s" % (self.cfg['preinstallopts'], self.cfg['installopts'])
+                (out, _) = run_cmd(cmd, log_all=True, simple=False)
+            else:
+                cmake_objdir = "build-mdrun-only"
+                os.mkdir(cmake_objdir)
+                os.chdir(cmake_objdir)
+                self.cfg['configopts'] = re.sub(r'-DGMX_MPI=OFF', r'', self.cfg['configopts'])
+                if self.cfg['mpi_numprocs'] == 0:
+                    self.log.info("No specific number of test MPI tasks requested -- using parallelism ({0})".format(self.cfg['parallel']))
+                    self.cfg['mpi_numprocs'] = self.cfg['parallel']
+                elif self.cfg['mpi_numprocs'] > self.cfg['parallel']:
+                    self.log.warning("Number of test MPI tasks ({0}) is greater than parallelism ({1})".format(self.cfg['mpi_numprocs'], self.cfg['parallel']))
+                self.cfg.update('configopts', "-DGMX_MPI=ON -DGMX_THREAD_MPI=OFF -DMPIEXEC={0} -DMPIEXEC_NUMPROC_FLAG={1} -DNUMPROC={2} -DGMX_BUILD_MDRUN_ONLY=ON".format(self.cfg['mpiexec'], self.cfg['mpiexec_numproc_flag'], self.cfg['mpi_numprocs']))
+                self.log.info("Using {0} as MPI executable when testing, with numprocs flag \"{1}\" and {2} tasks".format(self.cfg['mpiexec'], self.cfg['mpiexec_numproc_flag'], self.cfg['mpi_numprocs']))
+
+                # Rebuild with MPI options
+                super(EB_GROMACS, self).configure_step(srcdir='..')
+                super(EB_GROMACS, self).build_step()
+                super(EB_GROMACS, self).install_step()
+                os.chdir('..')
+
+                self.log.info("A full regression test suite is available from the GROMACS web site")
 
     def make_module_req_guess(self):
         """Custom library subdirectories for GROMACS."""
@@ -269,20 +291,25 @@ class EB_GROMACS(CMakeMake):
         # in GROMACS v5.1, only 'gmx' binary is there
         # (only) in GROMACS v5.0, other binaries are symlinks to 'gmx'
         binaries = []
+        libnames = []
         if LooseVersion(self.version) < LooseVersion('5.1'):
             binaries.extend(['editconf', 'g_lie', 'genbox', 'genconf', 'mdrun'])
 
         if LooseVersion(self.version) >= LooseVersion('5.0'):
             binaries.append('gmx')
-            libnames = ['gromacs']
+            libnames.append('gromacs')
+            if self.toolchain.options.get('usempi', None):
+                binaries.append('mdrun{0}'.format(suff))
         else:
-            libnames = ['gmxana', 'gmx', 'md']
+            libnames.extend(['gmxana', 'gmx', 'md'])
             # I don't know when the gmxpreprocess library was introduced.
             # This LooseVersion number may have to be tweaked.
             if LooseVersion(self.version) > LooseVersion('3.3.3'):
                 libnames.append('gmxpreprocess')
+            if self.toolchain.options.get('usempi', None):
+                libnames.extend(['{0}{1}'.format(libname, suff) for libname in libnames])
 
-        libs = ['lib%s%s.a' % (libname, suff) for libname in libnames]
+        libs = ['lib%s.a' % libname for libname in libnames]
 
         # I don't know when the pkgconfig directory was introduced.
         # This LooseVersion number may have to be tweaked.
@@ -290,7 +317,7 @@ class EB_GROMACS(CMakeMake):
             dirs.append(os.path.join(self.lib_subdir, "pkgconfig"))
 
         custom_paths = {
-            'files': ['bin/%s%s' % (binary, suff) for binary in binaries] +
+            'files': ['bin/%s' % binary for binary in binaries] +
                      [os.path.join(self.lib_subdir, lib) for lib in libs],
             'dirs': dirs
         }
