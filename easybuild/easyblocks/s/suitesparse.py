@@ -40,7 +40,7 @@ from distutils.version import LooseVersion
 
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.tools.build_log import EasyBuildError
-from easybuild.tools.filetools import mkdir
+from easybuild.tools.filetools import mkdir, write_file
 from easybuild.tools.modules import get_software_root
 from easybuild.tools.modules import get_software_libdir
 from easybuild.tools.systemtools import get_shared_lib_ext
@@ -122,14 +122,9 @@ class EB_SuiteSparse(ConfigureMake):
 
         # add remaining entries at the end
         if cfgvars:
-            try:
-                f = open(fp, "a")
-                f.write("# lines below added automatically by EasyBuild\n")
-                for (var, val) in cfgvars.items():
-                    f.write("%s = %s\n" % (var, val))
-                f.close()
-            except IOError, err:
-                raise EasyBuildError("Failed to complete %s: %s", fp, err)
+            cfgtxt = '# lines below added automatically by EasyBuild\n'
+            cfgtxt += '\n'.join(["%s = %s" % (var, val) for (var, val) in cfgvars.items()])
+            write_file(fp, cfgtxt, append=True)
 
     def install_step(self):
         """Install by copying the contents of the builddir to the installdir (preserving permissions)"""
