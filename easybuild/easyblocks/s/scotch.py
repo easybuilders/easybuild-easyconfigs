@@ -119,8 +119,8 @@ class EB_SCOTCH(EasyBlock):
 
         if self.cfg['threadedmpi']: 
             cflags += " -DSCOTCH_PTHREAD"
-        # TODO For backwards compatability of v2.8.0 the following is necessary but could be removed on a major version upgrade
-        if self.cfg['threadedmpi'] is None and not self.toolchain.mpi_family() in [toolchain.INTELMPI, toolchain.QLOGICMPI]:
+        #TODO For backwards compatability of v2.8.0 the following is necessary but could be removed on a major version upgrade
+        if self.cfg['threadedmpi'] is None and self.toolchain.mpi_family() not in [toolchain.INTELMPI, toolchain.QLOGICMPI]:
             cflags += " -DSCOTCH_PTHREAD"
         
         # actually build
