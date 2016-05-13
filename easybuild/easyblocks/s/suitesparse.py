@@ -122,7 +122,7 @@ class EB_SuiteSparse(ConfigureMake):
         if cfgvars:
             try:
                 f = open(fp, "a")
-                f.write("# lines below added automatically by EasyBuild")
+                f.write("# lines below added automatically by EasyBuild\n")
                 for (var, val) in cfgvars.items():
                     f.write("%s = %s\n" % (var, val))
                 f.close()
