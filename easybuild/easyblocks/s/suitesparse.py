@@ -68,9 +68,11 @@ class EB_SuiteSparse(ConfigureMake):
             'CXX': os.getenv('MPICXX'),
             'F77': os.getenv('MPIF77'),
             'F77FLAGS': os.getenv('F77FLAGS'),
-            'BLAS': os.getenv('LIBBLAS_MT'),
-            'LAPACK': os.getenv('LIBLAPACK_MT'),
         }
+
+        # Set BLAS and LAPACK libraries as specified in SuiteSparse README.txt
+        self.cfg.update('buildopts', 'BLAS="%s"' % os.getenv('LIBBLAS_MT'))
+        self.cfg.update('buildopts', 'LAPACK="%s"' % os.getenv('LIBLAPACK_MT'))
 
         # Get METIS or ParMETIS settings
         metis = get_software_root('METIS')
