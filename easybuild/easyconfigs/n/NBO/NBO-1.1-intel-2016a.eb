@@ -1,0 +1,37 @@
+easyblock = 'MakeCp'
+
+name = 'NBO'
+version = '1.1'
+
+homepage = 'http://schmidt.chem.wisc.edu/nbosoftware'
+description = """Generalized Natural Bond Orbital algorithm to handle systems characterized by periodic symmetry."""
+
+toolchain = {'name': 'intel', 'version': '2016a'}
+toolchainopts = {'openmp': True}
+
+source_urls = ['http://schmidt.chem.wisc.edu/sites/schmidt.chem.wisc.edu/files/']
+sources = [
+    'periodic_nbo_v.%(version)s.tgz',
+    'projection_v.1.1.2.tgz',
+]
+
+patches = [
+    'NBO-%(version)s_MKL95.patch',
+    ('projection-1.1.2_MKL95.patch', '..'),
+]
+
+prebuildopts = "cd %(builddir)s/projection && "
+prebuildopts += 'make FFLAGS="$FFLAGS -I$LAPACK_INC_DIR/intel64/ilp64" && '
+prebuildopts += "cd %(builddir)s/periodic_nbo && "
+
+buildopts = 'FC="$FC" LD="$FC" FFLAGS="$FFLAGS -I$LAPACK_INC_DIR/intel64/ilp64" '
+buildopts += 'LDFLAGS="$FFLAGS $LDFLAGS $LIBLAPACK -lmkl_blas95_ilp64 -lmkl_lapack95_ilp64"'
+
+files_to_copy = [(['%(builddir)s/periodic_nbo/nbo.exe', '%(builddir)s/projection/projection.exe'], 'bin')]
+
+sanity_check_paths = {
+    'files': ['bin/nbo.exe', 'bin/projection.exe'],
+    'dirs': [],
+}
+
+moduleclass = 'chem'
