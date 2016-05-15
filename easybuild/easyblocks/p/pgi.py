@@ -57,7 +57,11 @@ variable library_path is
 default($if($LIBRARY_PATH,-L$replace($LIBRARY_PATH,":", -L)));
 
 # add the -L arguments to the link line
-append LDLIBARGS=$library_path; 
+append LDLIBARGS=$library_path;
+
+# also include the location where libm & co live on Debian-based systems
+# cfr. https://github.com/hpcugent/easybuild-easyblocks/pull/919
+append LDLIBARGS=-L/usr/lib/x86_64-linux-gnu;
 """
 
 
