@@ -105,8 +105,13 @@ class EB_Score_minus_P(ConfigureMake):
                                          mpi_fam, ', '.join(mpi_opts.keys()))
 
         # Auto-detection for dependencies mostly works fine, but hard specify paths anyway to have full control
+        #
+        # Notes:
+        #   - binutils: Pass include/lib directories separately, as different directory layouts may break Score-P's
+        #               configure, see https://github.com/geimer/easybuild-easyblocks/pull/4#issuecomment-219284755
         deps = {
-            'binutils': ['--with-libbfd=%s'],
+            'binutils': ['--with-libbfd-include=%s/include',
+                         '--with-libbfd-lib=%%s/%s' % get_software_libdir('binutils', fs=['libbfd.a'])],
             'libunwind': ['--with-libunwind=%s'],
             'Cube': ['--with-cube=%s/bin'],
             'CUDA': ['--with-libcudart=%s'],
