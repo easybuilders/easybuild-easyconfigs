@@ -1,0 +1,61 @@
+##
+# This is an easyconfig file for EasyBuild, see https://github.com/hpcugent/easybuild
+# Copyright:: Copyright 2013-2016 Juelich Supercomputing Centre, Germany
+# Authors::   Bernd Mohr <b.mohr@fz-juelich.de>
+#             Markus Geimer <m.geimer@fz-juelich.de>
+# License::   3-clause BSD
+#
+# This work is based on experiences from the UNITE project
+# http://apps.fz-juelich.de/unite/
+##
+
+easyblock = 'EB_Score_minus_P'
+
+name = 'Score-P'
+version = '2.0.1'
+
+homepage = 'http://www.score-p.org'
+description = """The Score-P measurement infrastructure is a highly scalable and
+ easy-to-use tool suite for profiling, event tracing, and online analysis of HPC
+ applications."""
+
+toolchain = {'name': 'foss', 'version': '2016a'}
+
+sources = ['scorep-%(version)s.tar.gz']
+source_urls = ['http://www.vi-hps.org/upload/packages/scorep/']
+
+# Backported fix to prevent build-score/configure from picking up CFLAGS etc.;
+# included in Score-P 2.0.2 and above
+patches = [
+    'Score-P-2.0.1_fix_score_configure.patch',
+]
+
+checksums = [
+    '031a82fa26e2c9412e55d964f92fc9e9',     # scorep-2.0.1.tar.gz
+    '557b3a292591740271be7f336d5b7473',     # Score-P-2.0.1_fix_score_configure.patch
+]
+
+dependencies = [
+    # binutils is implicitly available via GCC toolchain
+    # ('binutils', '2.25', '', ('GCCcore', '4.9.3')),
+    ('libunwind', '1.1'),
+    ('Cube', '4.3.4'),
+    ('OPARI2', '2.0'),
+    ('OTF2', '2.0'),
+    ('PAPI', '5.4.3'),
+    ('PDT', '3.22'),
+]
+
+configopts = '--enable-shared'
+
+sanity_check_paths = {
+    'files': ["bin/scorep", "include/scorep/SCOREP_User.h",
+              ("lib/libscorep_adapter_mpi_event.a", "lib64/libscorep_adapter_mpi_event.a"),
+              ("lib/libscorep_adapter_mpi_event.%s" % SHLIB_EXT, "lib64/libscorep_adapter_mpi_event.%s" % SHLIB_EXT)],
+    'dirs': [],
+}
+
+# Ensure that local metric documentation is found by Cube GUI
+modextrapaths = {'CUBE_DOCPATH': 'share/doc/scorep/profile'}
+
+moduleclass = 'perf'
