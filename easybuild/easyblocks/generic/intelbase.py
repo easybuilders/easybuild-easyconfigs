@@ -59,7 +59,7 @@ ACTIVATION_SERIAL = 'serial_number'  # use a serial number
 ACTIVATION_TRIAL = 'trial_lic'  # use trial activation
 ACTIVATION_TYPES = [
     ACTIVATION_EXIST_LIC,
-    ACTIVATION_EXIST_LIC,
+    ACTIVATION_LIC_FILE,
     ACTIVATION_LIC_SERVER,
     ACTIVATION_SERIAL,
     ACTIVATION_TRIAL,
@@ -257,15 +257,14 @@ class IntelBase(EasyBlock):
 
         # license file entry is only applicable with license file or server type of activation
         # also check whether specified activation type makes sense
-        lic_activation = self.cfg['license_activation']
         lic_file_server_activations = [ACTIVATION_LIC_FILE, ACTIVATION_LIC_SERVER]
         other_activations = [act for act in ACTIVATION_TYPES if act not in lic_file_server_activations]
         lic_file_entry = ""
-        if lic_activation in lic_file_server_activations:
+        if self.cfg['license_activation'] in lic_file_server_activations:
             lic_file_entry = "%(license_file_name)s=%(license_file)s"
         elif not self.cfg['license_activation'] in other_activations:
             raise EasyBuildError("Unknown type of activation specified: %s (known :%s)",
-                                 lic_activation, ACTIVATION_TYPES)
+                                 self.cfg['license_activation'], ACTIVATION_TYPES)
 
         silent = '\n'.join([
             "%(activation_name)s=%(activation)s",

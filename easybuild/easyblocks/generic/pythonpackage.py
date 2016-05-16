@@ -54,6 +54,7 @@ from easybuild.tools.run import run_cmd
 EASY_INSTALL_INSTALL_CMD = "%(python)s setup.py easy_install --prefix=%(prefix)s %(installopts)s %(loc)s"
 PIP_INSTALL_CMD = "pip install --prefix=%(prefix)s %(installopts)s %(loc)s"
 SETUP_PY_INSTALL_CMD = "%(python)s setup.py install --prefix=%(prefix)s %(installopts)s"
+SETUP_PY_DEVELOP_CMD = "%(python)s setup.py develop --prefix=%(prefix)s %(installopts)s"
 UNKNOWN = 'UNKNOWN'
 
 
@@ -182,6 +183,7 @@ class PythonPackage(ExtensionEasyBlock):
             'runtest': [True, "Run unit tests.", CUSTOM],  # overrides default
             'use_easy_install': [False, "Install using '%s'" % EASY_INSTALL_INSTALL_CMD, CUSTOM],
             'use_pip': [False, "Install using '%s'" % PIP_INSTALL_CMD, CUSTOM],
+            'use_setup_py_develop': [False, "Install using '%s'" % SETUP_PY_DEVELOP_CMD, CUSTOM],
             'zipped_egg': [False, "Install as a zipped eggs (requires use_easy_install)", CUSTOM],
         })
         return ExtensionEasyBlock.extra_options(extra_vars=extra_vars)
@@ -232,7 +234,11 @@ class PythonPackage(ExtensionEasyBlock):
 
         else:
             self.use_setup_py = True
-            self.install_cmd = SETUP_PY_INSTALL_CMD
+
+            if self.cfg.get('use_setup_py_develop', False):
+                self.install_cmd = SETUP_PY_DEVELOP_CMD
+            else:
+                self.install_cmd = SETUP_PY_INSTALL_CMD
 
             if self.cfg.get('zipped_egg', False):
                 raise EasyBuildError("Installing zipped eggs requires using easy_install or pip")

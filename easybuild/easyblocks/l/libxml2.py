@@ -74,6 +74,13 @@ class EB_libxml2(ConfigureMake, PythonPackage):
         """
         ConfigureMake.build_step(self)
 
+    def test_step(self):
+        """
+        Test libxml2 build using 'make check'.
+        """
+        self.cfg['runtest'] = 'check'
+        ConfigureMake.test_step(self)
+
     def install_step(self):
         """
         Install libxml2 and install python bindings
