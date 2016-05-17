@@ -117,7 +117,7 @@ class EB_numpy(FortranPythonPackage):
             def get_libs_for_mkl(varname):
                 """Get list of libraries as required for MKL patch file."""
                 libs = self.toolchain.variables['LIB%s' % varname].copy()
-                libs.try_remove(['pthread'])
+                libs.try_remove(['pthread', 'dl'])
                 tweaks = {
                     'prefix': '',
                     'prefix_begin_end': '-Wl:',
