@@ -1,11 +1,11 @@
 ##
-# Copyright 2009-2015 Ghent University
+# Copyright 2009-2016 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
 # with support of Ghent University (http://ugent.be/hpc),
 # the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
-# the Hercules foundation (http://www.herculesstichting.be/in_English)
+# Flemish Research Foundation (FWO) (http://www.fwo.be/en)
 # and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
 # http://github.com/hpcugent/easybuild
@@ -39,7 +39,7 @@ import easybuild.tools.toolchain as toolchain
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.build_log import EasyBuildError
-from easybuild.tools.modules import get_software_root
+from easybuild.tools.modules import get_software_root, get_software_libdir
 from easybuild.tools.ordereddict import OrderedDict
 from easybuild.tools.run import run_cmd, run_cmd_qa
 
@@ -181,9 +181,21 @@ class EB_ALADIN(EasyBlock):
         grib_api_f90_lib = os.path.join(get_software_root('grib_api'), 'lib', 'libgrib_api_f90.a')
         grib_api_inc = os.path.join(get_software_root('grib_api'), 'include')
         jasperlib = os.path.join(get_software_root('JasPer'), 'lib', 'libjasper.a')
-        netcdflib = os.path.join(get_software_root('netCDF'), 'lib', 'libnetcdff.a')
-        netcdfinc = os.path.join(get_software_root('netCDF'), 'include')
         mpilib = os.path.join(os.getenv('MPI_LIB_DIR'), os.getenv('MPI_LIB_SHARED'))
+
+        # netCDF
+        netcdf = get_software_root('netCDF')
+        netcdf_fortran = get_software_root('netCDF-Fortran')
+        if netcdf:
+            netcdfinc = os.path.join(netcdf, 'include')
+            if netcdf_fortran:
+                netcdflib = os.path.join(netcdf_fortran, get_software_libdir('netCDF-Fortran'), 'libnetcdff.a')
+            else:
+                netcdflib = os.path.join(netcdf, get_software_libdir('netCDF'), 'libnetcdff.a')
+            if not os.path.exists(netcdflib):
+                raise EasyBuildError("%s does not exist", netcdflib)
+        else:
+            raise EasyBuildError("netCDF(-Fortran) not available")
 
         ldpaths = [ldflag[2:] for ldflag in os.getenv('LDFLAGS').split(' ')]  # LDFLAGS have form '-L/path/to'
 

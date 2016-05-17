@@ -1,11 +1,11 @@
 ##
-# Copyright 2009-2015 Ghent University
+# Copyright 2009-2016 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
 # with support of Ghent University (http://ugent.be/hpc),
 # the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
-# the Hercules foundation (http://www.herculesstichting.be/in_English)
+# Flemish Research Foundation (FWO) (http://www.fwo.be/en)
 # and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
 # http://github.com/hpcugent/easybuild
@@ -38,7 +38,7 @@ import easybuild.tools.environment as env
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.modules import get_software_root
-
+from easybuild.tools.systemtools import get_shared_lib_ext
 
 class EB_HDF5(ConfigureMake):
     """Support for building/installing HDF5"""
@@ -92,15 +92,15 @@ class EB_HDF5(ConfigureMake):
         else:
             extra_binaries = ["bin/%s" % x for x in ["h5cc", "h5fc"]]
 
+        libs = ['', '_cpp', '_fortran', '_hl_cpp', '_hl', 'hl_fortran']
+        shlib_ext = get_shared_lib_ext()
         custom_paths = {
-                        'files': ["bin/h5%s" % x for x in ["2gif", "c++", "copy", "debug", "diff",
-                                                           "dump", "import", "jam","ls", "mkgrp",
-                                                           "perf_serial", "redeploy", "repack",
-                                                           "repart", "stat", "unjam"]] +
-                                 ["bin/gif2h5"] + extra_binaries +
-                                 ["lib/libhdf5%s.so" % x for x in ["_cpp", "_fortran", "_hl_cpp",
-                                                                   "_hl", "hl_fortran", ""]],
-                        'dirs': ['include']
-                       }
-
+            'files': ["bin/h5%s" % x for x in ["2gif", "c++", "copy", "debug", "diff",
+                                               "dump", "import", "jam","ls", "mkgrp",
+                                               "perf_serial", "redeploy", "repack",
+                                               "repart", "stat", "unjam"]] +
+                     ["bin/gif2h5"] + extra_binaries +
+                     ["lib/libhdf5%s.%s" % (l, shlib_ext) for l in libs],
+            'dirs': ['include'],
+        }
         super(EB_HDF5, self).sanity_check_step(custom_paths=custom_paths)

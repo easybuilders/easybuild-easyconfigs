@@ -1,11 +1,11 @@
 ##
-# Copyright 2009-2015 Ghent University
+# Copyright 2009-2016 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
 # with support of Ghent University (http://ugent.be/hpc),
 # the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
-# the Hercules foundation (http://www.herculesstichting.be/in_English)
+# Flemish Research Foundation (FWO) (http://www.fwo.be/en)
 # and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
 # http://github.com/hpcugent/easybuild
@@ -43,7 +43,7 @@ from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.modules import get_software_root
 from easybuild.tools.run import run_cmd
-from easybuild.tools.systemtools import get_cpu_speed
+from easybuild.tools.systemtools import get_cpu_speed, get_shared_lib_ext
 
 
 class EB_ATLAS(ConfigureMake):
@@ -187,7 +187,7 @@ class EB_ATLAS(ConfigureMake):
         """
         super(EB_ATLAS, self).install_step()
         if not self.cfg['full_lapack']:
-            for i in ['liblapack.a', 'liblapack.so']:
+            for i in ['liblapack.a', 'liblapack.%s' % get_shared_lib_ext()]:
                 lib = os.path.join(self.installdir, "lib", i[0])
                 if os.path.exists(lib):
                     os.rename(lib, os.path.join(self.installdir, "lib",
@@ -228,7 +228,8 @@ class EB_ATLAS(ConfigureMake):
         static_libs = ["lib/lib%s.a" % x for x in libs]
 
         if self.cfg['sharedlibs']:
-            shared_libs = ["lib/lib%s.so" % x for x in libs]
+            shlib_ext = get_shared_lib_ext()
+            shared_libs = ["lib/lib%s.%s" % (x, shlib_ext) for x in libs]
         else:
             shared_libs = []
 

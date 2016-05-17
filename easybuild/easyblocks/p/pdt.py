@@ -69,12 +69,6 @@ class EB_PDT(ConfigureMake):
         # The PDT build is triggered by 'make install', thus skip the 'make' step
         pass
 
-    def post_install_step(self):
-        """Custom post-installation procedure for PDT."""
-        # PDT install directory includes symbolic link to system header files
-        # Try to fix permissions (part of postprocessing) then fails
-        pass
-
     def sanity_check_step(self):
         """Custom sanity check for PDT."""
         custom_paths = {

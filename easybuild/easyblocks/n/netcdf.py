@@ -1,11 +1,11 @@
 ##
-# Copyright 2009-2015 Ghent University
+# Copyright 2009-2016 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
 # with support of Ghent University (http://ugent.be/hpc),
 # the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
-# the Hercules foundation (http://www.herculesstichting.be/in_English)
+# Flemish Research Foundation (FWO) (http://www.fwo.be/en)
 # and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
 # http://github.com/hpcugent/easybuild
@@ -40,7 +40,8 @@ import easybuild.tools.toolchain as toolchain
 from easybuild.easyblocks.generic.cmakemake import CMakeMake
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.tools.build_log import EasyBuildError
-from easybuild.tools.modules import get_software_root, get_software_version
+from easybuild.tools.modules import get_software_root, get_software_version, get_software_libdir
+from easybuild.tools.systemtools import get_shared_lib_ext
 
 
 class EB_netCDF(CMakeMake):
@@ -48,6 +49,8 @@ class EB_netCDF(CMakeMake):
 
     def configure_step(self):
         """Configure build: set config options and configure"""
+
+        shlib_ext = get_shared_lib_ext()
 
         if LooseVersion(self.version) < LooseVersion("4.3"):
             self.cfg.update('configopts', "--enable-shared")
@@ -65,9 +68,22 @@ class EB_netCDF(CMakeMake):
             ConfigureMake.configure_step(self)
 
         else:
-            hdf5 = get_software_root('HDF5')
-            if hdf5:
-                env.setvar('HDF5_ROOT', hdf5)
+            self.cfg.update('configopts', '-DCMAKE_BUILD_TYPE=RELEASE -DCMAKE_C_FLAGS_RELEASE="-DNDEBUG " ')
+            for (dep, libname) in [('cURL', 'curl'), ('HDF5', 'hdf5'), ('Szip', 'sz'), ('zlib', 'z')]:
+                dep_root = get_software_root(dep)
+                dep_libdir = get_software_libdir(dep)
+                if dep_root:
+                    incdir = os.path.join(dep_root, 'include')
+                    self.cfg.update('configopts', '-D%s_INCLUDE_DIR=%s ' % (dep.upper(), incdir))
+                    if dep == 'HDF5':
+                        env.setvar('HDF5_ROOT', dep_root)
+                        libhdf5 = os.path.join(dep_root, dep_libdir, 'libhdf5.%s' % shlib_ext)
+                        self.cfg.update('configopts', '-DHDF5_LIB=%s ' % libhdf5)
+                        libhdf5_hl = os.path.join(dep_root, dep_libdir, 'libhdf5_hl.%s' % shlib_ext)
+                        self.cfg.update('configopts', '-DHDF5_HL_LIB=%s ' % libhdf5_hl)
+                    else:
+                        libso = os.path.join(dep_root, dep_libdir, 'lib%s.%s' % (libname, shlib_ext))
+                        self.cfg.update('configopts', '-D%s_LIBRARY=%s ' % (dep.upper(), libso))
 
             CMakeMake.configure_step(self)
 
@@ -76,20 +92,22 @@ class EB_netCDF(CMakeMake):
         Custom sanity check for netCDF
         """
 
+        shlib_ext = get_shared_lib_ext()
+
         incs = ["netcdf.h"]
-        libs = ["libnetcdf.so", "libnetcdf.a"]
+        libs = ["libnetcdf.%s" % shlib_ext, "libnetcdf.a"]
         # since v4.2, the non-C libraries have been split off in seperate extensions_step
         # see netCDF-Fortran and netCDF-C++
         if LooseVersion(self.version) < LooseVersion("4.2"):
             incs += ["netcdf%s" % x for x in ["cpp.h", ".hh", ".inc", ".mod"]] + \
                     ["ncvalues.h", "typesizes.mod"]
-            libs += ["libnetcdf_c++.so", "libnetcdff.so",
+            libs += ["libnetcdf_c++.%s" % shlib_ext, "libnetcdff.%s" % shlib_ext,
                      "libnetcdf_c++.a", "libnetcdff.a"]
 
         custom_paths = {
                         'files': ["bin/nc%s" % x for x in ["-config", "copy", "dump",
                                                           "gen", "gen3"]] +
-                                 [("lib/%s" % x,"lib64/%s" % x) for x in libs] +
+                                 [("lib/%s" % x, "lib64/%s" % x) for x in libs] +
                                  ["include/%s" % x for x in incs],
                         'dirs': []
                        }

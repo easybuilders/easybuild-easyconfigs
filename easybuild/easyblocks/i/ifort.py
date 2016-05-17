@@ -1,11 +1,11 @@
 ##
-# Copyright 2009-2015 Ghent University
+# Copyright 2009-2016 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
 # with support of Ghent University (http://ugent.be/hpc),
 # the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
-# the Hercules foundation (http://www.herculesstichting.be/in_English)
+# Flemish Research Foundation (FWO) (http://www.fwo.be/en)
 # and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
 # http://github.com/hpcugent/easybuild
@@ -30,12 +30,15 @@ EasyBuild support for installing the Intel Fortran compiler suite, implemented a
 @author: Kenneth Hoste (Ghent University)
 @author: Pieter De Baets (Ghent University)
 @author: Jens Timmerman (Ghent University)
+@author: Ward Poelmans (Ghent University)
 """
 
+import os
 from distutils.version import LooseVersion
 
 from easybuild.easyblocks.generic.intelbase import IntelBase
 from easybuild.easyblocks.icc import EB_icc  #@UnresolvedImport
+from easybuild.tools.systemtools import get_shared_lib_ext
 
 
 class EB_ifort(EB_icc, IntelBase):
@@ -47,27 +50,26 @@ class EB_ifort(EB_icc, IntelBase):
 
     def sanity_check_step(self):
         """Custom sanity check paths for ifort."""
+        shlib_ext = get_shared_lib_ext()
 
-        binprefix = "bin/intel64"
-        libprefix = "lib/intel64/lib"
-        if LooseVersion(self.version) >= LooseVersion("2011"):
-            if LooseVersion(self.version) <= LooseVersion("2011.3.174"):
-                binprefix = "bin"
-            elif LooseVersion(self.version) >= LooseVersion("2013_sp1"):
-                binprefix = "bin"
-                libprefix = "lib/intel64/lib"
+        binprefix = 'bin/intel64'
+        libprefix = 'lib/intel64'
+        if LooseVersion(self.version) >= LooseVersion('2011'):
+            if LooseVersion(self.version) <= LooseVersion('2011.3.174'):
+                binprefix = 'bin'
+            elif LooseVersion(self.version) >= LooseVersion('2013_sp1'):
+                binprefix = 'bin'
             else:
-                libprefix = "compiler/lib/intel64/lib"
+                libprefix = 'compiler/lib/intel64'
 
-        bins = ["ifort"]
+        bins = ['ifort']
         if LooseVersion(self.version) < LooseVersion('2013'):
             # idb is not shipped with ifort anymore in 2013.x versions (it is with icc though)
-            bins.append("idb")
+            bins.append('idb')
 
+        libs = ['ifcore.a', 'ifcore.%s' % shlib_ext, 'iomp5.a', 'iomp5.%s' % shlib_ext]
         custom_paths = {
-            'files': ["%s/%s" % (binprefix, x) for x in bins] +
-                     ["%s%s" % (libprefix, x) for x in ["ifcore.a", "ifcore.so", "iomp5.a", "iomp5.so"]],
+            'files': [os.path.join(binprefix, x) for x in bins] + [os.path.join(libprefix, 'lib%s' % l) for l in libs],
             'dirs': [],
         }
-
         IntelBase.sanity_check_step(self, custom_paths=custom_paths)

@@ -1,11 +1,11 @@
 # #
-# Copyright 2009-2015 Ghent University
+# Copyright 2009-2016 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
 # with support of Ghent University (http://ugent.be/hpc),
 # the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
-# the Hercules foundation (http://www.herculesstichting.be/in_English)
+# Flemish Research Foundation (FWO) (http://www.fwo.be/en)
 # and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
 # http://github.com/hpcugent/easybuild
@@ -41,6 +41,7 @@ from easybuild.easyblocks.generic.intelbase import IntelBase, ACTIVATION_NAME_20
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.run import run_cmd
+from easybuild.tools.systemtools import get_shared_lib_ext
 
 
 class EB_impi(IntelBase):
@@ -133,12 +134,12 @@ EULA=accept
         if impiver == LooseVersion('4.1.1.036') or impiver >= LooseVersion('5.0.1.035'):
             # fix broken env scripts after the move
             for script in [os.path.join('intel64', 'bin', 'mpivars.csh'), os.path.join('mic', 'bin', 'mpivars.csh')]:
-                for line in fileinput.input(os.path.join(self.installdir, script), inplace=1, backup='.orig.eb'):
+                for line in fileinput.input(os.path.join(self.installdir, script), inplace=1, backup='.orig.easybuild'):
                     line = re.sub(r"^setenv I_MPI_ROOT.*", "setenv I_MPI_ROOT %s" % self.installdir, line)
                     sys.stdout.write(line)
             for script in [os.path.join('intel64', 'bin', 'mpivars.sh'), os.path.join('mic', 'bin', 'mpivars.sh')]:
-                for line in fileinput.input(os.path.join(self.installdir, script), inplace=1, backup='.orig.eb'):
-                    line = re.sub(r"^I_MPI_ROOT=", "I_MPI_ROOT=%s; export I_MPI_ROOT" % self.installdir, line)
+                for line in fileinput.input(os.path.join(self.installdir, script), inplace=1, backup='.orig.easybuild'):
+                    line = re.sub(r"^I_MPI_ROOT=.*", "I_MPI_ROOT=%s; export I_MPI_ROOT" % self.installdir, line)
                     sys.stdout.write(line)
 
     def sanity_check_step(self):
@@ -156,7 +157,7 @@ EULA=accept
             'files': ["bin%s/mpi%s" % (suff, x) for x in ["icc", "icpc", "ifort"]] +
                      ["include%s/mpi%s.h" % (suff, x) for x in ["cxx", "f", "", "o", "of"]] +
                      ["include%s/%s" % (suff, x) for x in ["i_malloc.h"] + mpi_mods] +
-                     ["lib%s/libmpi.so" % suff, "lib%s/libmpi.a" % suff],
+                     ["lib%s/libmpi.%s" % (suff, get_shared_lib_ext()), "lib%s/libmpi.a" % suff],
             'dirs': [],
         }
 

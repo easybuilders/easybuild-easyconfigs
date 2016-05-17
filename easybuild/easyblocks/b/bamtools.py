@@ -1,11 +1,11 @@
 ##
-# Copyright 2009-2015 The Cyprus Institute 
+# Copyright 2009-2016 The Cyprus Institute
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
 # with support of Ghent University (http://ugent.be/hpc),
 # the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
-# the Hercules foundation (http://www.herculesstichting.be/in_English)
+# Flemish Research Foundation (FWO) (http://www.fwo.be/en)
 # and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
 # http://github.com/hpcugent/easybuild
@@ -29,7 +29,7 @@ EasyBuild support for BamTools, implemented as an easyblock
 @author: Kenneth Hoste (Ghent University)
 """
 import os
-
+from distutils.version import LooseVersion
 from easybuild.easyblocks.generic.cmakemake import CMakeMake
 from easybuild.easyblocks.generic.makecp import MakeCp
 from easybuild.tools.build_log import EasyBuildError
@@ -58,10 +58,27 @@ class EB_BamTools(MakeCp, CMakeMake):
         sharedlib_ext = get_shared_lib_ext()
 
         custom_paths = {
-            'files': ["bin/bamtools", "include/shared/bamtools_global.h", "lib/libbamtools.a",
-                      "lib/libbamtools.%s" % sharedlib_ext, "lib/libbamtools-utils.%s" % sharedlib_ext,
-                      "lib/libjsoncpp.%s" % sharedlib_ext],
-            'dirs': ["include/api", "docs"]
+            'files': [
+                "bin/bamtools",
+                "include/shared/bamtools_global.h",
+                "lib/libbamtools.a",
+                "lib/libbamtools.%s" % sharedlib_ext
+            ],
+            'dirs': [
+                "include/api",
+                "docs"
+            ]
         }
-
+        if LooseVersion(self.version) < LooseVersion('2.3.0'):
+            # Buid environment changed:
+            # https://github.com/pezmaster31/bamtools/commit/9cfa70bfe9cdf1b6adc06beb88246b45fdd6250a
+            custom_paths['files'].extend([
+                "lib/libbamtools-utils.%s" % sharedlib_ext,
+                "lib/libjsoncpp.%s" % sharedlib_ext
+            ])
+        else:
+            custom_paths['files'].extend([
+                "lib/libbamtools-utils.a",
+                "lib/libjsoncpp.a"
+            ])
         super(EB_BamTools, self).sanity_check_step(custom_paths=custom_paths)

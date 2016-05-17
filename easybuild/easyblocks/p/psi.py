@@ -1,11 +1,11 @@
 ##
-# Copyright 2013-2015 Ghent University
+# Copyright 2013-2016 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
 # with support of Ghent University (http://ugent.be/hpc),
 # the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
-# the Hercules foundation (http://www.herculesstichting.be/in_English)
+# Flemish Research Foundation (FWO) (http://www.fwo.be/en)
 # and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
 # http://github.com/hpcugent/easybuild
@@ -30,6 +30,7 @@ EasyBuild support for building and installing PSI, implemented as an easyblock
 """
 
 from distutils.version import LooseVersion
+import glob
 import os
 import shutil
 import tempfile
@@ -154,7 +155,8 @@ class EB_PSI(CMakeMake):
         try:
             for subdir in ['obj', self.psi_srcdir]:
                 # copy symlinks as symlinks to work around broken symlinks
-                shutil.copytree(os.path.join(self.builddir, subdir), os.path.join(self.installdir, subdir), symlinks=True)
+                shutil.copytree(os.path.join(self.builddir, subdir), os.path.join(self.installdir, subdir),
+                                symlinks=True)
         except OSError, err:
             raise EasyBuildError("Failed to copy obj and unpacked sources to install dir: %s", err)
 
@@ -175,12 +177,16 @@ class EB_PSI(CMakeMake):
         """Custom sanity check for PSI."""
         custom_paths = {
             'files': ['bin/psi%s' % self.version.split('.')[0]],
-            'dirs': ['include', 'share/psi'],
+            'dirs': ['include', ('share/psi', 'share/psi4')],
         }
         super(EB_PSI, self).sanity_check_step(custom_paths=custom_paths)
 
     def make_module_extra(self):
         """Custom variables for PSI module."""
         txt = super(EB_PSI, self).make_module_extra()
-        txt += self.module_generator.set_environment('PSI4DATADIR', os.path.join(self.installdir, 'share', 'psi'))
+        psi4datadir = glob.glob(os.path.join(self.installdir, 'share', 'psi*'))
+        if len(psi4datadir) != 1:
+            raise EasyBuildError("Could not determine the PSI4 data dir, there are multiple possibilities: ",
+                                 psi4datadir)
+        txt += self.module_generator.set_environment('PSI4DATADIR', psi4datadir[0])
         return txt

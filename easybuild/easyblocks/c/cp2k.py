@@ -1,11 +1,11 @@
 ##
-# Copyright 2009-2015 Ghent University
+# Copyright 2009-2016 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
 # with support of Ghent University (http://ugent.be/hpc),
 # the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
-# the Hercules foundation (http://www.herculesstichting.be/in_English)
+# Flemish Research Foundation (FWO) (http://www.fwo.be/en)
 # and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
 # http://github.com/hpcugent/easybuild
@@ -31,6 +31,7 @@ EasyBuild support for building and installing CP2K, implemented as an easyblock
 @author: Pieter De Baets (Ghent University)
 @author: Jens Timmerman (Ghent University)
 @author: Ward Poelmans (Ghent University)
+@author: Luca Marsella (CSCS)
 """
 
 import fileinput
@@ -96,6 +97,7 @@ class EB_CP2K(EasyBlock):
             'maxtasks': [3, ("Maximum number of CP2K instances run at "
                              "the same time during testing"), CUSTOM],
             'runtest': [True, "Build and run CP2K tests", CUSTOM],
+            'plumed': [False, "Enable PLUMED support", CUSTOM],
         }
         return EasyBlock.extra_options(extra_vars)
 
@@ -190,6 +192,20 @@ class EB_CP2K(EasyBlock):
 
         if os.getenv('LIBSCALAPACK', None) is not None:
             options = self.configure_ScaLAPACK(options)
+
+        # PLUMED
+        if self.cfg["plumed"]:
+            if not get_software_root('PLUMED'):
+                raise EasyBuildError("The PLUMED module needs to be loaded to build CP2K with PLUMED support")
+            options['LIBS'] += ' -lplumed'
+            options['DFLAGS'] += ' -D__PLUMED2'
+
+        # CUDA
+        cuda = get_software_root('CUDA')
+        if cuda:
+            options['DFLAGS'] += ' -D__ACC -D__DBCSR_ACC'
+            options['LIBS'] += ' -lcudart -lcublas -lcufft -lrt'
+            options['NVCC'] = ' nvcc'
 
         # avoid group nesting
         options['LIBS'] = options['LIBS'].replace('-Wl,--start-group', '').replace('-Wl,--end-group', '')
@@ -295,7 +311,7 @@ class EB_CP2K(EasyBlock):
                     self.log.debug("Determined MPI2 compatibility based on loaded MPI module: %s")
                 else:
                     self.log.debug("MPI-2 supporting MPI library %s not loaded.")
-            
+
         if not mpi2:
             raise EasyBuildError("CP2K needs MPI-2, no known MPI-2 supporting library loaded?")
 
@@ -371,7 +387,7 @@ class EB_CP2K(EasyBlock):
             # throw a warning, since CP2K without LibInt doesn't make much sense
             self.log.warning("LibInt module not loaded, so building without LibInt support")
 
-            
+
         libxc = get_software_root('libxc')
         if libxc:
             cur_libxc_version = get_software_version('libxc')
