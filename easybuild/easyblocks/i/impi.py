@@ -175,6 +175,7 @@ EULA=accept
                 'LD_LIBRARY_PATH': lib_dirs,
                 'LIBRARY_PATH': lib_dirs,
                 'CPATH': include_dirs,
+                'MIC_LD_LIBRARY_PATH' : ['mic/lib'],
             }
         else:
             lib_dirs = ['lib/em64t', 'lib64']
@@ -184,6 +185,7 @@ EULA=accept
                 'LD_LIBRARY_PATH': lib_dirs,
                 'LIBRARY_PATH': lib_dirs,
                 'CPATH': include_dirs,
+                'MIC_LD_LIBRARY_PATH' : ['mic/lib'],
             }
 
     def make_module_extra(self):
