@@ -4,7 +4,7 @@
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
 # with support of Ghent University (http://ugent.be/hpc),
-# the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
+# the Flemish Supercomputer Centre (VSC) (https://www.vscentrum.be),
 # Flemish Research Foundation (FWO) (http://www.fwo.be/en)
 # and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
@@ -59,7 +59,7 @@ ACTIVATION_SERIAL = 'serial_number'  # use a serial number
 ACTIVATION_TRIAL = 'trial_lic'  # use trial activation
 ACTIVATION_TYPES = [
     ACTIVATION_EXIST_LIC,
-    ACTIVATION_EXIST_LIC,
+    ACTIVATION_LIC_FILE,
     ACTIVATION_LIC_SERVER,
     ACTIVATION_SERIAL,
     ACTIVATION_TRIAL,
@@ -257,15 +257,14 @@ class IntelBase(EasyBlock):
 
         # license file entry is only applicable with license file or server type of activation
         # also check whether specified activation type makes sense
-        lic_activation = self.cfg['license_activation']
         lic_file_server_activations = [ACTIVATION_LIC_FILE, ACTIVATION_LIC_SERVER]
         other_activations = [act for act in ACTIVATION_TYPES if act not in lic_file_server_activations]
         lic_file_entry = ""
-        if lic_activation in lic_file_server_activations:
+        if self.cfg['license_activation'] in lic_file_server_activations:
             lic_file_entry = "%(license_file_name)s=%(license_file)s"
         elif not self.cfg['license_activation'] in other_activations:
             raise EasyBuildError("Unknown type of activation specified: %s (known :%s)",
-                                 lic_activation, ACTIVATION_TYPES)
+                                 self.cfg['license_activation'], ACTIVATION_TYPES)
 
         silent = '\n'.join([
             "%(activation_name)s=%(activation)s",
@@ -331,7 +330,7 @@ class IntelBase(EasyBlock):
 
         # perform installation
         cmd = "./install.sh %s -s %s" % (tmppathopt, silentcfg)
-        return run_cmd(cmd, log_all=True, simple=True)
+        return run_cmd(cmd, log_all=True, simple=True, log_output=True)
 
     def move_after_install(self):
         """Move installed files to correct location after installation."""

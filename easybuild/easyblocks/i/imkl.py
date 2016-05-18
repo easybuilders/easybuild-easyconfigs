@@ -4,7 +4,7 @@
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
 # with support of Ghent University (http://ugent.be/hpc),
-# the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
+# the Flemish Supercomputer Centre (VSC) (https://www.vscentrum.be),
 # Flemish Research Foundation (FWO) (http://www.fwo.be/en)
 # and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
@@ -45,7 +45,7 @@ import easybuild.tools.toolchain as toolchain
 from easybuild.easyblocks.generic.intelbase import IntelBase, ACTIVATION_NAME_2012, LICENSE_FILE_NAME_2012
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.build_log import EasyBuildError
-from easybuild.tools.filetools import rmtree2
+from easybuild.tools.filetools import apply_regex_substitutions, rmtree2
 from easybuild.tools.modules import get_software_root
 from easybuild.tools.run import run_cmd
 from easybuild.tools.systemtools import get_shared_lib_ext
@@ -112,7 +112,9 @@ class EB_imkl(IntelBase):
                     'FPATH': ['mkl/include', 'mkl/include/fftw'],
                 }
                 if LooseVersion(self.version) >= LooseVersion('11.0'):
-                    if LooseVersion(self.version) >= LooseVersion('11.1'):
+                    if LooseVersion(self.version) >= LooseVersion('11.3'):
+                        retdict['MIC_LD_LIBRARY_PATH'] = ['lib/intel64_lin_mic', 'mkl/lib/mic'];
+                    elif LooseVersion(self.version) >= LooseVersion('11.1'):
                         retdict['MIC_LD_LIBRARY_PATH'] = ['lib/mic', 'mkl/lib/mic'];
                     else:
                         retdict['MIC_LD_LIBRARY_PATH'] = ['compiler/lib/mic', 'mkl/lib/mic'];
@@ -224,16 +226,35 @@ class EB_imkl(IntelBase):
                 raise EasyBuildError("Can't change to interfaces directory %s", interfacedir)
 
             compopt = None
-            # determine whether we're using a non-Intel GCC-based toolchain
+            # determine whether we're using a non-Intel GCC-based or PGI-based toolchain
             # can't use toolchain.comp_family, because of dummy toolchain used when installing imkl
             if get_software_root('icc') is None:
-                if get_software_root('GCC'):
+                # check for PGI first, since there's a GCC underneath PGI too...
+                if get_software_root('PGI'):
+                    compopt = 'compiler=pgi'
+                elif get_software_root('GCC'):
                     compopt = 'compiler=gnu'
                 else:
-                    raise EasyBuildError("Not using either Intel compilers nor GCC, "
-                                         "don't know how to build wrapper libs")
+                    raise EasyBuildError("Not using Intel/GCC/PGI compilers, don't know how to build wrapper libs")
             else:
                 compopt = 'compiler=intel'
+
+            # patch makefiles for cdft wrappers when PGI is used as compiler
+            if get_software_root('PGI'):
+                regex_subs = [
+                    # pgi should be considered as a valid compiler
+                    ("intel gnu", "intel gnu pgi"),
+                    # transform 'gnu' case to 'pgi' case
+                    (r"ifeq \(\$\(compiler\),gnu\)", "ifeq ($(compiler),pgi)"),
+                    ('=gcc', '=pgcc'),
+                    # correct flag to use C99 standard
+                    ('-std=c99', '-c99'),
+                    # -Wall and -Werror are not valid options for pgcc, no close equivalent
+                    ('-Wall', ''),
+                    ('-Werror', ''),
+                ]
+                for lib in cdftlibs:
+                    apply_regex_substitutions(os.path.join(interfacedir, lib, 'makefile'), regex_subs)
 
             for lib in fftw2libs + fftw3libs + cdftlibs:
                 buildopts = [compopt]
@@ -333,10 +354,13 @@ class EB_imkl(IntelBase):
         if self.cfg['interfaces']:
             compsuff = '_intel'
             if get_software_root('icc') is None:
-                if get_software_root('GCC'):
+                # check for PGI first, since there's a GCC underneath PGI too...
+                if get_software_root('PGI'):
+                    compsuff = '_pgi'
+                elif get_software_root('GCC'):
                     compsuff = '_gnu'
                 else:
-                    raise EasyBuildError("Not using Intel/GCC, don't know compiler suffix for FFTW libraries.")
+                    raise EasyBuildError("Not using Intel/GCC/PGI, don't know compiler suffix for FFTW libraries.")
 
             precs = ['_double', '_single']
             if ver < LooseVersion('11'):

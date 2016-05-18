@@ -4,7 +4,7 @@
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
 # with support of Ghent University (http://ugent.be/hpc),
-# the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
+# the Flemish Supercomputer Centre (VSC) (https://www.vscentrum.be),
 # Flemish Research Foundation (FWO) (http://www.fwo.be/en)
 # and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
@@ -41,6 +41,13 @@ from easybuild.tools.systemtools import get_shared_lib_ext
 
 class EB_libxml2(ConfigureMake, PythonPackage):
     """Support for building and installing libxml2 with python bindings"""
+
+    @staticmethod
+    def extra_options(extra_vars=None):
+        """Easyconfig parameters specific to libxml2."""
+        extra_vars = ConfigureMake.extra_options()
+        return PythonPackage.extra_options(extra_vars=extra_vars)
+
     def __init__(self, *args, **kwargs):
         """
         Constructor
@@ -66,6 +73,13 @@ class EB_libxml2(ConfigureMake, PythonPackage):
         Make libxml2 first, then make python bindings
         """
         ConfigureMake.build_step(self)
+
+    def test_step(self):
+        """
+        Test libxml2 build using 'make check'.
+        """
+        self.cfg['runtest'] = 'check'
+        ConfigureMake.test_step(self)
 
     def install_step(self):
         """

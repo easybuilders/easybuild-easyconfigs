@@ -4,7 +4,7 @@
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
 # with support of Ghent University (http://ugent.be/hpc),
-# the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
+# the Flemish Supercomputer Centre (VSC) (https://www.vscentrum.be),
 # Flemish Research Foundation (FWO) (http://www.fwo.be/en)
 # and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
@@ -184,9 +184,11 @@ class EB_PSI(CMakeMake):
     def make_module_extra(self):
         """Custom variables for PSI module."""
         txt = super(EB_PSI, self).make_module_extra()
-        psi4datadir = glob.glob(os.path.join(self.installdir, 'share', 'psi*'))
-        if len(psi4datadir) != 1:
-            raise EasyBuildError("Could not determine the PSI4 data dir, there are multiple possibilities: ",
-                                 psi4datadir)
-        txt += self.module_generator.set_environment('PSI4DATADIR', psi4datadir[0])
+        share_dir = os.path.join(self.installdir, 'share')
+        if os.path.exists(share_dir):
+            psi4datadir = glob.glob(os.path.join(share_dir, 'psi*'))
+            if len(psi4datadir) == 1:
+                txt += self.module_generator.set_environment('PSI4DATADIR', psi4datadir[0])
+            else:
+                raise EasyBuildError("Failed to find exactly one PSI4 data dir: %s", psi4datadir)
         return txt
