@@ -1,7 +1,8 @@
-easyblock = 'PythonPackage'
+easyblock = 'Bundle'
 
 name = 'matplotlib'
 version = '1.5.1'
+versionsuffix = '-Python-%(pyver)s'
 
 homepage = 'http://matplotlib.org'
 description = """matplotlib is a python 2D plotting library which produces publication quality figures in a variety of
@@ -10,23 +11,35 @@ description = """matplotlib is a python 2D plotting library which produces publi
 
 toolchain = {'name': 'intel', 'version': '2016a'}
 
-source_urls = [SOURCEFORGE_SOURCE]
-sources = [SOURCELOWER_TAR_GZ]
-
-pyver = '2.7.11'
-pyshortver = '.'.join(pyver.split('.')[:2])
-
-versionsuffix = '-Python-%s' % pyver
+# this is a bundle of Python packages
+exts_defaultclass = 'PythonPackage'
 
 dependencies = [
-    ('Python', pyver),
+    ('Python', '2.7.11'),
     ('freetype', '2.6.2'),
     ('libpng', '1.6.21'),
 ]
 
+exts_list = [
+    ('Cycler', '0.9.0', {
+        'modulename': 'cycler',
+        'source_urls': ['https://pypi.python.org/packages/source/C/Cycler'],
+        'source_tmpl': 'cycler-%(version)s.tar.gz',
+    }),
+    (name, version, {
+        'source_urls': ['https://pypi.python.org/packages/source/m/matplotlib'],
+        'patches': ['matplotlib-1.5.1_fix-Tcl-Tk-libdir.patch'],
+    }),
+]
+
+# specify that Bundle easyblock should run a full sanity check, rather than just trying to load the module
+full_sanity_check = True
+
 sanity_check_paths = {
     'files': [],
-    'dirs': ['lib/python%s/site-packages' % pyshortver],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
 }
+
+modextrapaths = {'PYTHONPATH': ['lib/python%(pyshortver)s/site-packages']}
 
 moduleclass = 'vis'
