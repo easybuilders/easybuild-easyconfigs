@@ -1,0 +1,75 @@
+easyblock = 'ConfigureMake'
+
+name = 'Mesa'
+version = '10.4.5'
+
+homepage = 'http://www.mesa3d.org/'
+description = """Mesa is an open-source implementation of the OpenGL specification -
+ a system for rendering interactive 3D graphics."""
+
+toolchain = {'name': 'intel', 'version': '2015a'}
+toolchainopts = {'optarch': True}
+
+sources = ['%(name)sLib-%(version)s.tar.gz']
+source_urls = [
+    'ftp://ftp.freedesktop.org/pub/mesa/%(version)s',
+    'ftp://ftp.freedesktop.org/pub/mesa/older-versions/%(version_major)s.x/%(version)s',
+]
+
+patches = ['Mesa-%(version)s_sse4_1.patch']
+
+pythonver = '2.7.9'
+pythonshortver = '.'.join(pythonver.split('.')[0:2])
+versionsuffix = '-%s-%s' % ('Python', pythonver)
+
+builddependencies = [
+    ('flex', '2.5.39'),
+    ('Bison', '3.0.2'),
+    ('Automake', '1.15'),
+    ('makedepend', '1.0.5'),
+    ('kbproto', '1.0.6'),
+    ('xextproto', '7.3.0'),
+    ('xproto', '7.0.27'),
+    ('libtool', '2.4.5'),
+    ('pkg-config', '0.28'),
+    ('glproto', '1.4.17'),
+    ('M4', '1.4.17')
+]
+
+dependencies = [
+    ('Python', pythonver),
+    ('libxml2', '2.9.2', versionsuffix),
+    ('libdrm', '2.4.59'),
+    ('libX11', '1.6.3', versionsuffix),
+    ('libXext', '1.3.3'),
+    ('libXfixes', '5.0.1'),
+    ('libXdamage', '1.1.4'),
+    ('libXfont', '1.5.1'),
+    ('LLVM', '3.6.2', versionsuffix),
+    ('eudev', '3.0'),
+]
+
+# Use the os provided libudev or the EB provided eudev
+#osdependencies = ['libudev']
+
+# GLU is not part anymore of Mesa package!
+configopts = " --disable-osmesa --disable-gallium-llvm --enable-glx --disable-dri --enable-xlib-glx"
+configopts += " --disable-driglx-direct --with-gallium-drivers='' --disable-egl"""
+
+# package-config files for os dependencies are in an os specific place
+#preconfigopts = ' PKG_CONFIG_PATH="$PKG_CONFIG_PATH:/usr/lib64/pkgconfig/:/usr/share/pkgconfig" '
+
+prebuildopts = 'env CPATH="$EBROOTLIBDRM/include/libdrm:$CPATH" '
+
+sanity_check_paths = {
+    'files': ['lib/libGL.%s' % SHLIB_EXT, 'include/GL/glext.h', 'include/GL/gl_mangle.h',
+              'include/GL/glx.h', 'include/GL/osmesa.h',
+              'include/GL/wglext.h', 'include/GL/gl.h',
+              'include/GL/glxext.h', 'include/GL/glx_mangle.h',
+              'include/GL/wmesa.h'],
+    'dirs': []
+}
+
+maxparallel = 1
+
+moduleclass = 'vis'

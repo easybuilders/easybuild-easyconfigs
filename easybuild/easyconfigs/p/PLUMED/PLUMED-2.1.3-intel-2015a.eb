@@ -1,0 +1,36 @@
+# by Ward Poelmans <wpoely86@gmail.com>
+
+easyblock = 'ConfigureMake'
+
+name = 'PLUMED'
+version = '2.1.3'
+
+homepage = 'http://www.plumed-code.org'
+description = """PLUMED is an open source library for free energy calculations in molecular systems which
+ works together with some of the most popular molecular dynamics engines. Free energy calculations can be 
+ performed as a function of many order parameters with a particular  focus on biological problems, using
+ state of the art methods such as metadynamics, umbrella sampling and Jarzynski-equation based steered MD.
+ The software, written in C++, can be easily interfaced with both fortran and C/C++ codes.
+"""
+
+toolchain = {'name': 'intel', 'version': '2015a'}
+toolchainopts = {'usempi': 'True'}
+
+source_urls = ['https://github.com/plumed/plumed2/archive/']
+sources = ['v%(version)s.tar.gz']
+
+patches = ['PLUMED-2.0.4_eb-env-vars.patch']
+
+skipsteps = ['configure']
+
+prebuildopts = " ./configure.sh linux.mpi.icc && source sourceme.sh && "
+preinstallopts = " export PLUMED_PREFIX=%(installdir)s && "
+
+sanity_check_paths = {
+    'files': ['bin/plumed', 'lib/libplumedKernel.%s' % SHLIB_EXT, 'lib/libplumed.%s' % SHLIB_EXT],
+    'dirs': ['lib/plumed']
+}
+
+modextrapaths = {'PLUMED_KERNEL': 'lib/libplumedKernel.%s' % SHLIB_EXT}
+
+moduleclass = 'chem'
