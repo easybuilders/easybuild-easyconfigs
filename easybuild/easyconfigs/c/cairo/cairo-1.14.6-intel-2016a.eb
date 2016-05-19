@@ -1,0 +1,56 @@
+easyblock = 'ConfigureMake'
+
+name = 'cairo'
+version = '1.14.6'
+
+homepage = 'http://cairographics.org'
+description = """Cairo is a 2D graphics library with support for multiple output devices.
+ Currently supported output targets include the X Window System (via both Xlib and XCB), Quartz, Win32, image buffers,
+ PostScript, PDF, and SVG file output. Experimental backends include OpenGL, BeOS, OS/2, and DirectFB"""
+
+toolchain = {'name': 'intel', 'version': '2016a'}
+
+source_urls = ['http://cairographics.org/releases/']
+sources = [SOURCE_TAR_XZ]
+
+glibver = '2.47.5'
+
+dependencies = [
+    ('bzip2', '1.0.6'),
+    ('zlib', '1.2.8'),
+    ('libpng', '1.6.21'),
+    ('freetype', '2.6.2'),
+    ('pixman', '0.34.0'),
+    ('fontconfig', '2.11.94'),
+    ('expat', '2.1.0'),
+    ('GLib', glibver),
+    ('libX11', '1.6.3'),
+    ('libxcb', '1.11.1'),
+    ('libXrender', '0.9.9'),
+    ('libXext', '1.3.3'),
+    ('libXau', '1.0.8'),
+    ('libXdmcp', '1.1.2'),
+]
+builddependencies = [
+    ('renderproto', '0.11'),
+    ('xproto', '7.0.28'),
+    ('xextproto', '7.3.0'),
+]
+
+# disable symbol lookup, which requires -lbfd, to avoid link issues with (non-PIC) libiberty.a provided by GCC
+configopts = "--enable-symbol-lookup=no --enable-gobject=yes --enable-svg=yes --enable-tee=yes "
+
+# workaround for "hidden symbol .* in .* is referenced by DSO" and "ld: final link failed: Bad value"
+buildopts = 'LD="$CC" LDFLAGS="$LDFLAGS -shared-intel"'
+
+sanity_check_paths = {
+    'files': ['bin/cairo-trace', 'lib/cairo/libcairo-trace.so', 'lib/cairo/libcairo-trace.a',
+              'lib/libcairo.a', 'lib/libcairo-gobject.a', 'lib/libcairo-script-interpreter.a',
+              'lib/libcairo-gobject.so', 'lib/libcairo-script-interpreter.so', 'lib/libcairo.so'] +
+             ['include/cairo/cairo%s.h' % x for x in ['', '-deprecated', '-features', '-ft', '-gobject', '-pdf', '-ps',
+                                                      '-script', '-script-interpreter', '-svg', '-version', '-xcb',
+                                                      '-xlib', '-xlib-xrender']],
+    'dirs': ['lib/pkgconfig'],
+}
+
+moduleclass = 'vis'
