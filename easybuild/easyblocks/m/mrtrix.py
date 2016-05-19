@@ -56,8 +56,10 @@ class EB_MRtrix(EasyBlock):
     def configure_step(self):
         """No configuration step for MRtrix."""
         if LooseVersion(self.version) >= LooseVersion('0.3'):
-            env.setvar('LD', "%s LDFLAGS OBJECTS -o EXECUTABLE" % os.getenv('CXX'))
-            env.setvar('LDLIB', "%s -shared LDLIB_FLAGS OBJECTS -o LIB" % os.getenv('CXX'))
+            if LooseVersion(self.version) < LooseVersion('0.3.13'):
+                env.setvar('LD', "%s LDFLAGS OBJECTS -o EXECUTABLE" % os.getenv('CXX'))
+                env.setvar('LDLIB', "%s -shared LDLIB_FLAGS OBJECTS -o LIB" % os.getenv('CXX'))
+
             env.setvar('QMAKE_CXX', os.getenv('CXX'))
             cmd = "python configure -verbose"
             run_cmd(cmd, log_all=True, simple=True, log_ok=True)
