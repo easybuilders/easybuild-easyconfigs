@@ -86,6 +86,7 @@ class EB_Inspector(IntelBase):
         guesses.update({
             'CPATH': [os.path.join(self.subdir, 'include')],
             'FPATH': [os.path.join(self.subdir, 'include')],
+            'MANPATH': [os.path.join(self.subdir, 'man')],
         })
 
         return guesses
@@ -95,10 +96,10 @@ class EB_Inspector(IntelBase):
 
         binaries = ['inspxe-cl', 'inspxe-feedback', 'inspxe-gui', 'inspxe-runmc', 'inspxe-runtc']
         if self.cfg['m32']:
-            files = ['bin32/%s' % x for x in binaries]
+            files = [os.path.join('bin32', b) for b in binaries]
             dirs = ['lib32', 'include']
         else:
-            files = ['bin64/%s' % x for x in binaries]
+            files = [os.path.join('bin64', b) for b in binaries]
             dirs = ['lib64', 'include']
 
         custom_paths = {
