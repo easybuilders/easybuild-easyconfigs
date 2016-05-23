@@ -47,6 +47,10 @@ class EB_Inspector(IntelBase):
         if LooseVersion(self.version) >= LooseVersion('2013_update7'):
             self.subdir = 'inspector_xe'
 
+    def make_installdir(self):
+        """Do not create installation directory, install script handles that already."""
+        pass
+
     def install_step(self):
         """
         Actual installation
