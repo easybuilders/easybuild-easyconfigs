@@ -27,6 +27,7 @@ EasyBuild support for installing Intel VTune, implemented as an easyblock
 
 @author: Kenneth Hoste (Ghent University)
 """
+import os
 from distutils.version import LooseVersion
 
 from easybuild.easyblocks.generic.intelbase import IntelBase, ACTIVATION_NAME_2012, LICENSE_FILE_NAME_2012
@@ -36,6 +37,20 @@ class EB_VTune(IntelBase):
     """
     Support for installing Intel VTune
     """
+
+    def __init__(self, *args, **kwargs):
+        """Easyblock constructor; define class variables."""
+        super(EB_VTune, self).__init__(*args, **kwargs)
+
+        # recent versions of Inspector are installed to a subdirectory
+        self.subdir = ''
+        if LooseVersion(self.version) >= LooseVersion('2013_update12'):
+            self.subdir = 'vtune_amplifier_xe'
+
+    def make_installdir(self):
+        """Do not create installation directory, install script handles that already."""
+        pass
+
     def install_step(self):
         """
         Actual installation
@@ -44,7 +59,7 @@ class EB_VTune(IntelBase):
         """
         silent_cfg_names_map = None
 
-        if LooseVersion(self.version) <= LooseVersion('2013_update10'):
+        if LooseVersion(self.version) <= LooseVersion('2013_update11'):
             silent_cfg_names_map = {
                 'activation_name': ACTIVATION_NAME_2012,
                 'license_file_name': LICENSE_FILE_NAME_2012,
@@ -61,21 +76,21 @@ class EB_VTune(IntelBase):
 
         if self.cfg['m32']:
             guesses.update({
-                'PATH': ['bin32'],
-                'LD_LIBRARY_PATH': ['lib32'],
-                'LIBRARY_PATH': ['lib32'],
+                'PATH': [os.path.join(self.subdir, 'bin32')],
+                'LD_LIBRARY_PATH': [os.path.join(self.subdir, 'lib32')],
+                'LIBRARY_PATH': [os.path.join(self.subdir, 'lib32')],
             })
         else:
             guesses.update({
-                'PATH': ['bin64'],
-                'LD_LIBRARY_PATH': ['lib64'],
-                'LIBRARY_PATH': ['lib64'],
+                'PATH': [os.path.join(self.subdir, 'bin64')],
+                'LD_LIBRARY_PATH': [os.path.join(self.subdir, 'lib64')],
+                'LIBRARY_PATH': [os.path.join(self.subdir, 'lib64')],
             })
 
         guesses.update({
-            'CPATH': ['include'],
-            'FPATH': ['include'],
-            'MANPATH': ['man'],
+            'CPATH': [os.path.join(self.subdir, 'include')],
+            'FPATH': [os.path.join(self.subdir, 'include')],
+            'MANPATH': [os.path.join(self.subdir, 'man')],
         })
 
         return guesses
@@ -83,17 +98,16 @@ class EB_VTune(IntelBase):
     def sanity_check_step(self):
         """Custom sanity check paths for Intel VTune."""
 
-        binaries = ['amplxe-cl', 'amplxe-configurator', 'amplxe-feedback', 'amplxe-gui', 'amplxe-runss']
+        binaries = ['amplxe-cl', 'amplxe-feedback', 'amplxe-gui', 'amplxe-runss']
         if self.cfg['m32']:
-            files = ["bin32/%s" % x for x in binaries]
-            dirs = ["lib32", "include"]
+            files = ['bin32/%s' % x for x in binaries]
+            dirs = ['lib32', 'include']
         else:
-            files = ["bin64/%s" % x for x in binaries]
-            dirs = ["lib64", "include"]
+            files = ['bin64/%s' % x for x in binaries]
+            dirs = ['lib64', 'include']
 
         custom_paths = {
-                        'files': files,
-                        'dirs': dirs,
-                       }
-
+            'files': [os.path.join(self.subdir, f) for f in files],
+            'dirs': [os.path.join(self.subdir, d) for d in dirs],
+        }
         super(EB_VTune, self).sanity_check_step(custom_paths=custom_paths)
