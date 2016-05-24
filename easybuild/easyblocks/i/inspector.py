@@ -27,6 +27,7 @@ EasyBuild support for installing Intel Inspector, implemented as an easyblock
 
 @author: Kenneth Hoste (Ghent University)
 """
+import os
 from distutils.version import LooseVersion
 
 from easybuild.easyblocks.generic.intelbase import IntelBase, ACTIVATION_NAME_2012, LICENSE_FILE_NAME_2012
@@ -36,6 +37,20 @@ class EB_Inspector(IntelBase):
     """
     Support for installing Intel Inspector
     """
+
+    def __init__(self, *args, **kwargs):
+        """Easyblock constructor; define class variables."""
+        super(EB_Inspector, self).__init__(*args, **kwargs)
+
+        # recent versions of Inspector are installed to a subdirectory
+        self.subdir = ''
+        if LooseVersion(self.version) >= LooseVersion('2013_update7'):
+            self.subdir = 'inspector_xe'
+
+    def make_installdir(self):
+        """Do not create installation directory, install script handles that already."""
+        pass
+
     def install_step(self):
         """
         Actual installation
@@ -61,20 +76,21 @@ class EB_Inspector(IntelBase):
 
         if self.cfg['m32']:
             guesses.update({
-                'PATH': ['bin32'],
-                'LD_LIBRARY_PATH': ['lib32'],
-                'LIBRARY_PATH': ['lib32'],
+                'PATH': [os.path.join(self.subdir, 'bin32')],
+                'LD_LIBRARY_PATH': [os.path.join(self.subdir, 'lib32')],
+                'LIBRARY_PATH': [os.path.join(self.subdir, 'lib32')],
             })
         else:
             guesses.update({
-                'PATH': ['bin64'],
-                'LD_LIBRARY_PATH': ['lib64'],
-                'LIBRARY_PATH': ['lib64'],
+                'PATH': [os.path.join(self.subdir, 'bin64')],
+                'LD_LIBRARY_PATH': [os.path.join(self.subdir, 'lib64')],
+                'LIBRARY_PATH': [os.path.join(self.subdir, 'lib64')],
             })
 
         guesses.update({
-            'CPATH': ['include'],
-            'FPATH': ['include'],
+            'CPATH': [os.path.join(self.subdir, 'include')],
+            'FPATH': [os.path.join(self.subdir, 'include')],
+            'MANPATH': [os.path.join(self.subdir, 'man')],
         })
 
         return guesses
@@ -84,15 +100,14 @@ class EB_Inspector(IntelBase):
 
         binaries = ['inspxe-cl', 'inspxe-feedback', 'inspxe-gui', 'inspxe-runmc', 'inspxe-runtc']
         if self.cfg['m32']:
-            files = ["bin32/%s" % x for x in binaries]
-            dirs = ["lib32", "include"]
+            files = [os.path.join('bin32', b) for b in binaries]
+            dirs = ['lib32', 'include']
         else:
-            files = ["bin64/%s" % x for x in binaries]
-            dirs = ["lib64", "include"]
+            files = [os.path.join('bin64', b) for b in binaries]
+            dirs = ['lib64', 'include']
 
         custom_paths = {
-                        'files': files,
-                        'dirs': dirs,
-                       }
-
+            'files': [os.path.join(self.subdir, f) for f in files],
+            'dirs': [os.path.join(self.subdir, d) for d in dirs],
+        }
         super(EB_Inspector, self).sanity_check_step(custom_paths=custom_paths)
