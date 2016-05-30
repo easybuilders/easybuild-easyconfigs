@@ -26,10 +26,12 @@
 EasyBuild support for building and installing MRtrix, implemented as an easyblock
 """
 import os
+import shutil
 from distutils.version import LooseVersion
 
 import easybuild.tools.environment as env
 from easybuild.framework.easyblock import EasyBlock
+from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.run import run_cmd
 from easybuild.tools.systemtools import get_shared_lib_ext
 
@@ -41,7 +43,7 @@ class EB_MRtrix(EasyBlock):
         """Initialize easyblock, enable build-in-installdir based on version."""
         super(EB_MRtrix, self).__init__(*args, **kwargs)
 
-        if LooseVersion(self.version) >= LooseVersion('0.3'):
+        if LooseVersion(self.version) >= LooseVersion('0.3') and LooseVersion(self.version) < LooseVersion('0.3.14'):
             self.build_in_installdir = True
             self.log.debug("Enabled build-in-installdir for version %s", self.version)
 
@@ -56,8 +58,10 @@ class EB_MRtrix(EasyBlock):
     def configure_step(self):
         """No configuration step for MRtrix."""
         if LooseVersion(self.version) >= LooseVersion('0.3'):
-            env.setvar('LD', "%s LDFLAGS OBJECTS -o EXECUTABLE" % os.getenv('CXX'))
-            env.setvar('LDLIB', "%s -shared LDLIB_FLAGS OBJECTS -o LIB" % os.getenv('CXX'))
+            if LooseVersion(self.version) < LooseVersion('0.3.13'):
+                env.setvar('LD', "%s LDFLAGS OBJECTS -o EXECUTABLE" % os.getenv('CXX'))
+                env.setvar('LDLIB', "%s -shared LDLIB_FLAGS OBJECTS -o LIB" % os.getenv('CXX'))
+
             env.setvar('QMAKE_CXX', os.getenv('CXX'))
             cmd = "python configure -verbose"
             run_cmd(cmd, log_all=True, simple=True, log_ok=True)
@@ -72,6 +76,14 @@ class EB_MRtrix(EasyBlock):
         if LooseVersion(self.version) < LooseVersion('0.3'):
             cmd = "python build -verbose install=%s linkto=" % self.installdir
             run_cmd(cmd, log_all=True, simple=True, log_ok=True)
+
+        elif LooseVersion(self.version) >= LooseVersion('0.3.14'):
+            release_dir = os.path.join(self.builddir, 'release')
+            try:
+                os.rmdir(self.installdir)
+                shutil.copytree(release_dir, self.installdir)
+            except OSError as err:
+                raise EasyBuildError("Failed to copy %s to %s: %s", release_dir, self.installdir, err)
 
     def sanity_check_step(self):
         """Custom sanity check for MRtrix."""
