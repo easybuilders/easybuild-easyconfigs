@@ -30,9 +30,11 @@ EasyBlock for installing Java, implemented as an easyblock
 
 import os
 import shutil
+import stat
 
 from distutils.version import LooseVersion
 from easybuild.easyblocks.generic.packedbinary import PackedBinary
+from easybuild.tools.filetools import adjust_permissions
 from easybuild.tools.run import run_cmd
 
 
@@ -45,14 +47,15 @@ class EB_Java(PackedBinary):
         """Unpack the source"""
         if LooseVersion(self.version) < LooseVersion('1.7'):
             try: 
-                os.chmod(self.src[0]['path'], 0755)
+                shutil.copy2(self.src[0]['path'], self.builddir)
+                adjust_permissions(self.builddir + "/" + self.src[0]['name'], stat.S_IXUSR, add=True)
             except OSError, err:
-                raise EasyBuildError("Failed adding execution permission to java installer: %s", err)
+                raise EasyBuildError("Failed copying installer to builddir or adjunting permissions: %s", err)
             try:
                 os.chdir(self.builddir)
             except OSError, err:
                 raise EasyBuildError("Failed to move to build dir: %s", err)
-            run_cmd(self.src[0]['path'], log_all=True, simple=True, inp='')
+            run_cmd(self.builddir + "/" + self.src[0]['name'], log_all=True, simple=True, inp='')
         else:
             PackedBinary.extract_step(self)
     
