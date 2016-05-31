@@ -44,6 +44,10 @@ class EB_Java(PackedBinary):
     def extract_step(self):
         """Unpack the source"""
         if LooseVersion(self.version) < LooseVersion('1.7'):
+            try: 
+                os.chmod(self.src[0]['path'], 0755)
+            except OSError, err:
+                raise EasyBuildError("Failed adding execution permission to java installer: %s", err)
             try:
                 os.chdir(self.builddir)
             except OSError, err:
