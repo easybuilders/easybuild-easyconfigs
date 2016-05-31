@@ -44,8 +44,11 @@ class EB_Java(PackedBinary):
     def extract_step(self):
         """Unpack the source"""
         if LooseVersion(self.version) < LooseVersion('1.7'):
-            cmd = 'cd %s; bash %s' % (self.builddir, self.src[0]['path'])
-            run_cmd(cmd, log_all=True, simple=True, inp='')
+            try:
+                os.chdir(self.builddir)
+            except OSError, err:
+                raise EasyBuildError("Failed to move to build dir: %s", err)
+            run_cmd(self.src[0]['path'], log_all=True, simple=True, inp='')
         else:
             PackedBinary.extract_step(self)
     
