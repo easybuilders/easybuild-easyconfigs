@@ -37,20 +37,15 @@ from easybuild.tools.run import run_cmd
 
 
 class EB_Java(PackedBinary):
-#class PackedBinary(Binary, EasyBlock):
     """Support for installing Java as a packed binary file (.tar.gz)
     Use the PackedBinary easyblock and set some extra paths.
     """
     
     def extract_step(self):
         """Unpack the source"""
-        #print LooseVersion(self.version)
-        #print self.src
         print self.builddir
         if LooseVersion(self.version) < LooseVersion('1.7'):
-            # uncompress java6 to build dir
             cmd = 'cd %s; yes | bash %s' % (self.builddir, self.src[0]['path'])
-            #print cmd
             run_cmd(cmd, log_all=True, simple=True)
         else:
             PackedBinary.extract_step(self)
