@@ -27,6 +27,10 @@ EasyBlock for installing Java, implemented as an easyblock
 
 @author: Jens Timmerman (Ghent University)
 """
+
+import os
+import shutil
+
 from distutils.version import LooseVersion
 from easybuild.easyblocks.generic.packedbinary import PackedBinary
 from easybuild.tools.run import run_cmd
@@ -48,10 +52,22 @@ class EB_Java(PackedBinary):
             cmd = 'cd %s; yes | bash %s' % (self.builddir, self.src[0]['path'])
             #print cmd
             run_cmd(cmd, log_all=True, simple=True)
-            cmd2 = 'cp -r %s/* %s' % (self.builddir, self.installdir)
-            run_cmd(cmd2, log_all=True, simple=True)
         else:
             PackedBinary.extract_step(self)
+    
+    def install_step(self):
+        if LooseVersion(self.version) < LooseVersion('1.7'):
+            src = self.builddir + '/' + 'jdk%s' % self.version
+            dst = self.installdir
+            for item in os.listdir(src):
+                s = os.path.join(src, item)
+                d = os.path.join(dst, item)
+                if os.path.isdir(s):
+                    shutil.copytree(s, d, symlinks=True, ignore=None)
+                else:
+                    shutil.copy2(s, d)
+        else:
+            PackedBinary.install_step(self)
 
     def make_module_extra(self):
         """
