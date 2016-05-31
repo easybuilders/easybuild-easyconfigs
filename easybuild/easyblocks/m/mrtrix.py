@@ -85,7 +85,7 @@ class EB_MRtrix(EasyBlock):
                 shutil.copytree(release_dir, self.installdir)
                 shutil.copytree(scripts_dir, os.path.join(self.installdir, 'scripts'))
             except OSError as err:
-                raise EasyBuildError("Failed to copy %s/%s to %s: %s", release_dir, scripts_dir, self.installdir, err)
+                raise EasyBuildError("Failed to copy %s & %s to %s: %s", release_dir, scripts_dir, self.installdir, err)
 
     def make_module_req_guess(self):
         """
