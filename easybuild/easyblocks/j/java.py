@@ -45,8 +45,8 @@ class EB_Java(PackedBinary):
         """Unpack the source"""
         print self.builddir
         if LooseVersion(self.version) < LooseVersion('1.7'):
-            cmd = 'cd %s; yes | bash %s' % (self.builddir, self.src[0]['path'])
-            run_cmd(cmd, log_all=True, simple=True)
+            cmd = 'cd %s; bash %s' % (self.builddir, self.src[0]['path'])
+            run_cmd(cmd, log_all=True, simple=True, inp='')
         else:
             PackedBinary.extract_step(self)
     
