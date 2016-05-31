@@ -54,15 +54,11 @@ class EB_Java(PackedBinary):
     
     def install_step(self):
         if LooseVersion(self.version) < LooseVersion('1.7'):
-            src = self.builddir + '/' + 'jdk%s' % self.version
-            dst = self.installdir
-            for item in os.listdir(src):
-                s = os.path.join(src, item)
-                d = os.path.join(dst, item)
-                if os.path.isdir(s):
-                    shutil.copytree(s, d, symlinks=True, ignore=None)
-                else:
-                    shutil.copy2(s, d)
+            try:
+                os.rmdir(self.installdir)
+                shutil.copytree(os.path.join(self.builddir, 'jdk%s' % self.version), self.installdir)
+            except OSError, err:
+                raise EasyBuildError("Failed to install by copying: %s", err)
         else:
             PackedBinary.install_step(self)
 
