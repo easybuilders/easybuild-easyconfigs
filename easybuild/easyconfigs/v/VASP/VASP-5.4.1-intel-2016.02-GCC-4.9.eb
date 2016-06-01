@@ -1,0 +1,36 @@
+easyblock = 'MakeCp'
+
+name = 'VASP'
+version = '5.4.1'
+
+homepage = 'http://www.vasp.at'
+description = """The Vienna Ab initio Simulation Package (VASP) is a computer program for atomic scale
+materials modelling, e.g. electronic structure calculations and quantum-mechanical molecular dynamics,
+from first principles."""
+
+toolchain = {'name': 'intel', 'version': '2016.02-GCC-4.9'}
+toolchainopts = {'usempi': True}
+
+# Vasp is proprietary software, see http://www.vasp.at/index.php/faqs on how to get access to the code
+sources = [SOURCELOWER_TAR_GZ]
+
+prebuildopts = 'cp arch/makefile.include.linux_intel ./makefile.include && '
+
+# path to libfftw3xf_intel.a is hardcoded in makefile.include
+prebuildopts += 'sed -i "s|\$(MKLROOT)/interfaces/fftw3xf|\$(FFTW_LIB_DIR)|" makefile.include && '
+
+# VASP uses LIBS as a list of folders
+prebuildopts += 'unset LIBS && '
+
+buildopts = 'all BLACS="$LIBBLACS" '
+
+parallel = 1
+
+files_to_copy = [(['bin/vasp_std', 'bin/vasp_gam', 'bin/vasp_ncl'], 'bin')]
+
+sanity_check_paths = {
+    'files': ['bin/vasp_std', 'bin/vasp_gam', 'bin/vasp_ncl'],
+    'dirs': []
+}
+
+moduleclass = 'phys'

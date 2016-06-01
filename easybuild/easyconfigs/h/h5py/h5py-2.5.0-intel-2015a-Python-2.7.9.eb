@@ -1,0 +1,36 @@
+easyblock = "PythonPackage"
+
+name = 'h5py'
+version = '2.5.0'
+
+homepage = 'http://www.h5py.org/'
+description = """HDF5 for Python (h5py) is a general-purpose Python interface to the Hierarchical Data Format library,
+ version 5. HDF5 is a versatile, mature scientific software library designed for the fast, flexible storage of enormous
+ amounts of data."""
+
+toolchain = {'name': 'intel', 'version': '2015a'}
+toolchainopts = {'usempi': True}
+
+source_urls = [PYPI_SOURCE]
+sources = [SOURCE_TAR_GZ]
+
+python = 'Python'
+pyver = '2.7.9'
+pyshortver = '.'.join(pyver.split('.')[0:2])
+versionsuffix = '-%s-%s' % (python, pyver)
+
+# to really use mpi enabled hdf5 we now seem to need a configure step
+prebuildopts = ' python setup.py configure --mpi --hdf5=$EBROOTHDF5 && '
+
+dependencies = [
+    (python, pyver),
+    ('HDF5', '1.8.14'),
+    ('pkgconfig', '1.1.0', '-Python-%(pyver)s'),
+]
+
+sanity_check_paths = {
+    'files': [],
+    'dirs': ['lib/python%s/site-packages/' % pyshortver],
+}
+
+moduleclass = 'data'

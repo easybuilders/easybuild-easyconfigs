@@ -1,0 +1,43 @@
+name = 'ROOT'
+version = 'v5.34.18'
+
+homepage = 'http://root.cern.ch/drupal/'
+description = """The ROOT system provides a set of OO frameworks with all the functionality
+    needed to handle and analyze large amounts of data in a very efficient way."""
+
+toolchain = {'name': 'ictce', 'version': '5.5.0'}
+toolchainopts = {'pic': True}
+
+sources = ['%(namelower)s_%(version)s.source.tar.gz']
+source_urls = ['ftp://root.cern.ch/root/']
+patches = [
+    'configure_FftwFromMkl_28.patch',
+    'ROOT-v5_recent-ifort.patch',
+]
+
+python = 'Python'
+pyver = '2.7.6'
+
+dependencies = [
+    ('GSL', '1.16'),
+    ('Mesa', '7.11.2', '-%s-%s' % (python, pyver)),
+    ('libxml2', '2.9.1', '-%s-%s' % (python, pyver)),
+    ('PCRE', '8.12'),
+    ('CFITSIO', '3.34'),
+    #('graphviz', '2.34.0'), Graphviz is optional, not in EB yet.
+    (python, pyver),
+]
+
+# architecture
+arch = 'linuxx8664icc'
+
+# disable features
+configopts = ' --disable-xft --disable-xrootd --disable-mysql'
+# enable features
+configopts += ' --enable-unuran --enable-table --enable-explicitlink --enable-minuit2 --enable-roofit'
+configopts += ' --with-gsl-incdir=$EBROOTGSL/include/gsl --with-gsl-libdir=$EBROOTGSL/lib'
+configopts += ' --with-fftw3-incdir=$EBROOTIMKL/mkl/include/fftw --with-fftw3-libdir=$EBROOTIMKL/mkl/lib/intel64'
+configopts += ' --with-xml-incdir=$EBROOTLIBXML2/include/libxml2/libxml --with-xml-libdir=$EBROOTLIBXML2/lib'
+configopts += ' --with-python-libdir=$EBROOTPYTHON/lib'
+
+moduleclass = 'data'

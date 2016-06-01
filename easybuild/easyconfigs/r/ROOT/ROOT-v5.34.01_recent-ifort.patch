@@ -1,0 +1,41 @@
+--- root/config/Makefile.linuxx8664icc.orig	2012-07-13 15:31:26.000000000 +0200
++++ root/config/Makefile.linuxx8664icc	2015-03-24 15:56:30.697799907 +0100
+@@ -85,6 +85,16 @@
+ ICC_GE_101    = 120
+ endif
+ 
++ifeq ($(ICC_MAJOR),15)
++CXXFLAGS     += -m64 -wd1572 -wd279
++CFLAGS       += -m64 -wd1572 -wd279
++CINTCXXFLAGS += -m64 -wd1572 -wd279
++CINTCFLAGS   += -m64 -wd1572 -wd279
++LDFLAGS      += -m64
++ICC_GE_9      = 15
++ICC_GE_101    = 150
++endif
++
+ # System libraries:
+ SYSLIBS       = -limf -lm -ldl $(OSTHREADLIBDIR) $(OSTHREADLIB) \
+                 $(ALLOCLIBDIR) $(ALLOCLIB) -rdynamic
+@@ -96,8 +106,13 @@
+ ifeq ($(F77),ifort)
+ F77           = ifort
+ F77FLAGS      = -fPIC
++ifeq ($(ICC_MAJOR),15)
++F77LIBS      := -L$(shell which ifort | sed -e 's|bin/ifort|lib/intel64|') \
++                -lifcore
++F77FLAGS     += -m64
++else
+ ifeq ($(ICC_MAJOR),12)
+-F77LIBS      := -L$(shell which ifort | sed -e 's|bin/intel64/ifort|compiler/lib|') \
++F77LIBS      := -L$(shell which ifort | sed -e 's|bin/intel64/ifort|compiler/lib/intel64|') \
+                 -lifcore
+ F77FLAGS     += -m64
+ else
+@@ -111,5 +126,6 @@
+ endif
+ endif
+ endif
++endif
+ 
+ # Extras

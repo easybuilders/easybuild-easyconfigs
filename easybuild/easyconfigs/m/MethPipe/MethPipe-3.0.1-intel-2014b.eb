@@ -1,0 +1,41 @@
+##
+# This file is an EasyBuild reciPY as per https://github.com/hpcugent/easybuild
+#
+# Copyright:: Copyright 2013-2014 The Cyprus Institute
+# Authors:: Thekla Loizou <t.loizou@cyi.ac.cy>
+# License:: MIT/GPL
+#
+##
+easyblock = 'MakeCp'
+
+name = 'MethPipe'
+version = '3.0.1'
+
+homepage = 'http://smithlab.usc.edu/methpipe/'
+description = """The MethPipe software package is a computational pipeline for 
+ analyzing bisulfite sequencing data (BS-seq, WGBS and RRBS)."""
+
+toolchain = {'name': 'intel', 'version': '2014b'}
+
+source_urls = ["http://smithlab.usc.edu/methbase/download"]
+sources = [SOURCELOWER_TAR_GZ]
+
+dependencies = [
+    ('GSL', '1.15'),
+    ('zlib', '1.2.7'),
+]
+
+opts = '"-L$EBROOTGSL/lib -lgsl -lgslcblas -L$EBROOTZLIB/lib -lz"'
+buildopts = 'all LIBS=%s && make install LIBS=%s' % (opts, opts)
+
+files_to_copy = ["bin", "docs"]
+
+sanity_check_paths = {
+    'files': ["bin/%s" % x for x in ["allelicmeth", "amrfinder", "amrtester", "bsrate", "dmr",
+                                     "duplicate-remover", "hmr", "hmr_plant", "lc_approx", "levels",
+                                     "merge-bsrate", "merge-methcounts", "methcounts", "methdiff",
+                                     "methstates", "pmd", "rmapbs", "rmapbs-pe", "roimethstat", "to-mr"]],
+    'dirs': ['docs'],
+}
+
+moduleclass = 'bio'

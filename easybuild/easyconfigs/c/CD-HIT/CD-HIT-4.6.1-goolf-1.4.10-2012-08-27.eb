@@ -1,0 +1,36 @@
+# This file is an EasyBuild reciPY as per https://github.com/hpcugent/easybuild
+# Author: Pablo Escobar Lopez
+# Swiss Institute of Bioinformatics
+# Biozentrum - University of Basel
+
+easyblock = 'MakeCp'
+
+name = "CD-HIT"
+version = "4.6.1"
+versionsuffix = "-2012-08-27"
+
+homepage = 'http://weizhong-lab.ucsd.edu/cd-hit/'
+description = """ CD-HIT is a very widely used program for clustering and 
+ comparing protein or nucleotide sequences."""
+
+toolchain = {'name': 'goolf', 'version': '1.4.10'}
+toolchainopts = {'openmp': True}
+
+source_urls = ['https://cdhit.googlecode.com/files/']
+sources = ['%(namelower)s-v%(version)s%(versionsuffix)s.tgz']
+
+# make sure compilation flags are passed down (e.g. to enable OpenMP)
+buildopts = ' CC="$CXX" CCFLAGS="$CPPFLAGS $CXXFLAGS"'
+
+# put here the list of generated executables when compiling
+list_of_executables = ["cd-hit", "cd-hit-est", "cd-hit-2d", "cd-hit-est-2d", "cd-hit-div", "cd-hit-454"]
+
+# this is the real EasyBuild line to copy all the executables and perl scripts to "bin"
+files_to_copy = [(list_of_executables, "bin"), (["*.pl"], 'bin'), "README", "doc", "license.txt"]
+
+sanity_check_paths = {
+    'files': ["bin/%s" % x for x in list_of_executables],
+    'dirs': [],
+}
+
+moduleclass = 'bio'
