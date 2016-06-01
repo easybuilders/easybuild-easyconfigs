@@ -182,6 +182,11 @@ class EB_GROMACS(CMakeMake):
         if self.toolchain.options.get('usempi', None):
             suff = '_mpi'
 
+        # Add the _d suffix to the suffix, in case of the double precission
+        if '-DGMX_DOUBLE=on' in self.cfg['configopts']:
+            suff = suff+'_d'
+
+
         # in GROMACS v5.1, only 'gmx' binary is there
         # (only) in GROMACS v5.0, other binaries are symlinks to 'gmx'
         binaries = []
