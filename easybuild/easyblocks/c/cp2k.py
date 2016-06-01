@@ -76,6 +76,7 @@ class EB_CP2K(EasyBlock):
         self.debug = ''
         self.fpic = ''
 
+        # used for both libsmm and libxsmm
         self.libsmm = ''
         self.modincpath = ''
         self.openmp = ''
@@ -94,7 +95,7 @@ class EB_CP2K(EasyBlock):
             'extradflags': ['', "Extra DFLAGS to be added", CUSTOM],
             'ignore_regtest_fails': [False, ("Ignore failures in regression test "
                                              "(should be used with care)"), CUSTOM],
-            'maxtasks': [3, ("Maximum number of CP2K instances run at "
+            'maxtasks': [4, ("Maximum number of CP2K instances run at "
                              "the same time during testing"), CUSTOM],
             'runtest': [True, "Build and run CP2K tests", CUSTOM],
             'plumed': [False, "Enable PLUMED support", CUSTOM],
@@ -143,9 +144,14 @@ class EB_CP2K(EasyBlock):
         if self.cfg['extradflags']:
             self.log.info("Using extra CFLAGS: %s" % self.cfg['extradflags'])
 
-        # libsmm support
+        # lib(x)smm support
         libsmm = get_software_root('libsmm')
-        if libsmm:
+        libxsmm = get_software_root('libxsmm')
+        if libxsmm:
+            self.cfg.update('extradflags', '-D__LIBXSMM')
+            self.libsmm = '-lxsmm'
+            self.log.debug('Using libxsmm %s' % libxsmm)
+        elif libsmm:
             libsmms = glob.glob(os.path.join(libsmm, 'lib', 'libsmm_*nn.a'))
             dfs = [os.path.basename(os.path.splitext(x)[0]).replace('lib', '-D__HAS_') for x in libsmms]
             moredflags = ' ' + ' '.join(dfs)
