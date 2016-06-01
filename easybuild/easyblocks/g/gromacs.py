@@ -188,7 +188,6 @@ class EB_GROMACS(CMakeMake):
         elif '-DGMX_DOUBLE=ON' in self.cfg['configopts']:
             suff = suff + '_d'
 
-
         # in GROMACS v5.1, only 'gmx' binary is there
         # (only) in GROMACS v5.0, other binaries are symlinks to 'gmx'
         binaries = []
