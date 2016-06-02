@@ -1,0 +1,41 @@
+fix compilation with Intel compilers, cfr. https://github.com/MRtrix3/mrtrix3/pull/622
+author: Kenneth Hoste (HPC-UGent)
+diff --git a/src/dwi/tractography/seeding/base.h b/src/dwi/tractography/seeding/base.h
+--- a/src/dwi/tractography/seeding/base.h
++++ b/src/dwi/tractography/seeding/base.h
+@@ -62,7 +62,7 @@ namespace MR
+       uint32_t get_count (ImageType& data)
+       {
+         std::atomic<uint32_t> count (0);
+-        ThreadedLoop (data).run ([&] (decltype(data)& v) { if (v.value()) count.fetch_add (1, std::memory_order_relaxed); }, data);
++        ThreadedLoop (data).run ([&] (ImageType& v) { if (v.value()) count.fetch_add (1, std::memory_order_relaxed); }, data);
+         return count;
+       }
+ 
+
+diff --git a/lib/adapter/base.h b/lib/adapter/base.h
+--- a/lib/adapter/base.h
++++ b/lib/adapter/base.h
+@@ -25,7 +25,7 @@ namespace MR
+   namespace Adapter
+   {
+ 
+-    template <template <class AdapterType> class AdapterType, class ImageType, typename... Args>
++    template <template <class ImageType> class AdapterType, class ImageType, typename... Args>
+       inline AdapterType<ImageType> make (const ImageType& parent, Args&&... args) {
+         return AdapterType<ImageType> (parent, std::forward<Args> (args)...);
+       }
+
+diff --git a/cmd/label2mesh.cpp b/cmd/label2mesh.cpp
+index 51299a7..8647245 100644
+--- a/cmd/label2mesh.cpp
++++ b/cmd/label2mesh.cpp
+@@ -103,7 +103,7 @@ void run ()
+         from.push_back (lower_corners[in][axis]);
+         dimensions.push_back (upper_corners[in][axis] - lower_corners[in][axis] + 1);
+       }
+-      Adapter::Subset<decltype(labels)> subset (labels, from, dimensions);
++      Adapter::Subset<Image<uint32_t>> subset (labels, from, dimensions);
+ 
+       auto scratch = Image<bool>::scratch (subset, "Node " + str(in) + " mask");
+       for (auto i = Loop (subset) (subset, scratch); i; ++i)
