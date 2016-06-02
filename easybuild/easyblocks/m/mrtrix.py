@@ -84,6 +84,8 @@ class EB_MRtrix(EasyBlock):
                 os.rmdir(self.installdir)
                 shutil.copytree(release_dir, self.installdir)
                 shutil.copytree(scripts_dir, os.path.join(self.installdir, 'scripts'))
+                # some scripts expect 'release/bin' to be there, so we put a symlink in place
+                os.symlink(self.installdir, os.path.join(self.installdir, 'release'))
             except OSError as err:
                 raise EasyBuildError("Failed to copy %s & %s to %s: %s", release_dir, scripts_dir, self.installdir, err)
 
