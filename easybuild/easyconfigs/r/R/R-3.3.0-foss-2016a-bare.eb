@@ -1,0 +1,75 @@
+name = 'R'
+version = '3.3.0'
+versionsuffix = '-bare'
+
+homepage = 'http://www.r-project.org/'
+description = """R is a free software environment for statistical computing and graphics."""
+
+toolchain = {'name': 'foss', 'version': '2016a'}
+
+sources = [SOURCE_TAR_GZ]
+source_urls = ['http://cran.us.r-project.org/src/base/R-%(version_major)s']
+
+# point R to BLAS and LAPACK
+preconfigopts = 'BLAS_LIBS="$LIBBLAS" LAPACK_LIBS="$LIBLAPACK"'
+
+# build with lapack and blas
+configopts = '--with-lapack --with-blas '
+
+# build with pic
+configopts += ' --with-pic '
+
+# build with threads
+configopts += ' --enable-threads '
+
+# build with shlib
+configopts += ' --enable-R-shlib '
+
+# build with X
+configopts += ' --with-x=yes '
+
+# build with Tcl/Tk
+configopts += ' --with-tcltk=yes '
+
+# help finding configs
+configopts += ' --with-tcl-config=$EBROOTTCL/lib/tclConfig.sh --with-tk-config=$EBROOTTK/lib/tkConfig.sh '
+
+# Enable graphics capabilities for plotting.
+configopts += ' --with-cairo --with-libpng --with-jpeglib --with-libtiff '
+
+# some recommended packages may fail in a parallel build (e.g. Matrix), and we're installing them anyway below
+configopts += ' --with-recommended-packages=no'
+ 
+osdependencies = [('openssl-devel', 'libssl-dev', 'libopenssl-devel', 'libicu-dev', 'libicu-devel')]
+
+dependencies = [
+    ('libreadline', '6.3'),
+    #('ncurses', '6.0'),
+    ('libpng', '1.6.21'),  # for plotting in R
+    ('libjpeg-turbo', '1.4.2'),  # for plottting in R
+    ('LibTIFF', '4.0.6'),   # rgdal
+    ('Java', '1.8.0_92', '', True),  # Java bindings are built if Java is found, might as well provide it
+    ('Tcl', '8.6.5'),  # for tcltk
+    ('Tk', '8.6.5', '-libX11-1.6.3'),  # for tcltk
+    ('cURL', '7.47.0'),  # for RCurl
+    ('libxml2', '2.9.3'),  # for XML
+    ('GDAL', '2.1.0'),  # for rgdal
+    ('PROJ', '4.9.2'), # for rgdal
+    ('libX11', '1.6.3'),  # for X11
+    ('libXt', '1.1.5'),  # for X11
+    ('Pango', '1.40.1'),
+    ('cairo', '1.14.6', '-GLib-2.48.0'),
+    ('PCRE', '8.38'),
+]
+
+name_tmpl = '%(name)s_%(version)s.tar.gz'
+ext_options = {
+    'source_urls': [
+        'http://cran.r-project.org/src/contrib/Archive/%(name)s',  # package archive
+        'http://cran.r-project.org/src/contrib/',  # current version of packages
+        'http://cran.freestatistics.org/src/contrib',  # mirror alternative for current packages
+    ],
+    'source_tmpl': name_tmpl,
+}
+
+moduleclass = 'lang'

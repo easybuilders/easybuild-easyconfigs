@@ -10,23 +10,30 @@ sources = [SOURCE_TAR_GZ]
 source_urls = ['http://cran.us.r-project.org/src/base/R-%(version_major)s']
 
 preconfigopts = 'BLAS_LIBS="$LIBBLAS" LAPACK_LIBS="$LIBLAPACK"'
-configopts = "--with-lapack --with-blas --with-pic --enable-threads --with-x=no --enable-R-shlib --with-tcltk "
-configopts += '--with-tcl-config="$EBROOTTCL"/lib/tclConfig.sh --with-tk-config="$EBROOTTK"/lib/tkConfig.sh '
+configopts = '--with-lapack --with-blas --with-pic --enable-threads --enable-R-shlib --with-tcltk --with-x '
+# enabling Tcl/Tk
+configopts += ' --with-tcl-config=$EBROOTTCL/lib/tclConfig.sh --with-tk-config=$EBROOTTK/lib/tkConfig.sh '
+# Enable graphics capabilities for plotting.
+configopts += ' --with-cairo --with-libpng --with-jpeglib --with-libtiff '
 # some recommended packages may fail in a parallel build (e.g. Matrix), and we're installing them anyway below
-configopts += " --with-recommended-packages=no"
+configopts += ' --with-recommended-packages=no'
+ 
+osdependencies = [('openssl-devel', 'libssl-dev', 'libopenssl-devel')]
 
 dependencies = [
     ('libreadline', '6.3'),
     ('ncurses', '6.0'),
     ('libpng', '1.6.21'),  # for plotting in R
     ('libjpeg-turbo', '1.4.2'),  # for plottting in R
-    ('Java', '1.8.0_72', '', True),  # Java bindings are built if Java is found, might as well provide it
-    ('Tcl', '8.6.4'),  # for tcltk
-    ('Tk', '8.6.4', '-no-X11'),  # for tcltk
+    ('LibTIFF', '4.0.6'),   # Cairo and rgdal
+    ('Java', '1.8.0_92', '', True),  # Java bindings are built if Java is found, might as well provide it
+    ('Tcl', '8.6.5'),  # for tcltk
+    ('Tk', '8.6.5', '-libX11-1.6.3'),  # for tcltk
     ('cURL', '7.47.0'),  # for RCurl
     ('libxml2', '2.9.3'),  # for XML
     ('GDAL', '2.1.0'),  # for rgdal
     ('PROJ', '4.9.2'), # for rgdal
+    ('cairo', '1.14.6'),
 ]
 
 name_tmpl = '%(name)s_%(version)s.tar.gz'
@@ -41,7 +48,7 @@ ext_options = {
 
 
 # !! order of packages is important !!
-# package versions updated May 16 2016
+# package versions updated May 26 2016
 exts_list = [
     # default libraries, only here to sanity check their presence
     'base',
@@ -124,7 +131,7 @@ exts_list = [
     ('permute', '0.9-0', ext_options),
     ('plotrix', '3.6-2', ext_options),
     ('randomForest', '4.6-12', ext_options),
-    ('scatterplot3d', '0.3-36', ext_options),
+    ('scatterplot3d', '0.3-37', ext_options),
     ('SparseM', '1.7', ext_options),
     ('tripack', '1.3-7', ext_options),
     ('irace', '1.07', ext_options),
@@ -182,8 +189,8 @@ exts_list = [
     ('DBI', '0.4-1', ext_options),
     ('foreign', '0.8-66', ext_options),
     ('gam', '1.12', ext_options),
-    ('gamlss.data', '4.3-2', ext_options),
-    ('gamlss.dist', '4.3-5', ext_options),
+    ('gamlss.data', '4.3-4', ext_options),
+    ('gamlss.dist', '4.3-6', ext_options),
     ('hwriter', '1.3.2', ext_options),
     ('KernSmooth', '2.23-15', ext_options),
     ('xts', '0.9-7', ext_options),
@@ -240,7 +247,7 @@ exts_list = [
     ('irlba', '2.0.0', ext_options),
     ('igraph', '1.0.1', ext_options),
     ('GeneNet', '1.2.13', ext_options),
-    ('ape', '3.4', ext_options),
+    ('ape', '3.5', ext_options),
     ('htmltools', '0.3.5', ext_options),
     ('RJSONIO', '1.3-0', ext_options),
     ('caTools', '1.17.1', ext_options),
@@ -271,7 +278,7 @@ exts_list = [
     ('knitr', '1.13', ext_options),
     ('rmarkdown', '0.9.6', ext_options),
     ('curl', '0.9.7', ext_options),
-    ('openssl', '0.9.3', ext_options),
+    ('openssl', '0.9.4', ext_options),
     ('httr', '1.1.0', ext_options),
     ('reshape', '0.8.5', ext_options),
     ('xml2', '0.1.2', ext_options),
@@ -294,7 +301,7 @@ exts_list = [
     ('dismo', '1.0-15', ext_options),
     ('expm', '0.999-0', ext_options),
     ('extrafontdb', '1.0', ext_options),
-    ('Rttf2pt1', '1.3.3', ext_options),
+    ('Rttf2pt1', '1.3.4', ext_options),
     ('extrafont', '0.17', ext_options),
     ('fields', '8.4-1', ext_options),
     ('shapefiles', '0.7', ext_options),
@@ -309,7 +316,6 @@ exts_list = [
     ('TH.data', '1.0-7', ext_options),
     ('multcomp', '1.4-5', ext_options),
     ('coin', '1.1-2', ext_options),
-    ('modeltools', '0.2-21', ext_options),
     ('party', '1.0-25', ext_options),
     ('mboost', '2.6-0', ext_options),
     ('msm', '1.6.1', ext_options),
@@ -348,7 +354,7 @@ exts_list = [
     ('pbkrtest', '0.4-6', ext_options),
     ('car', '2.1-2', ext_options),
     ('flashClust', '1.01-2', ext_options),
-    ('FactoMineR', '1.32', ext_options),
+    ('FactoMineR', '1.33', ext_options),
     ('flexclust', '1.3-4', ext_options),
     ('flexmix', '2.3-13', ext_options),
     ('prabclus', '2.2-6', ext_options),
@@ -428,7 +434,7 @@ exts_list = [
     ('Iso', '0.0-17', ext_options),
     ('penalized', '0.9-46', ext_options),
     ('clusterRepro', '0.5-1.1', ext_options),
-    ('randomForestSRC', '2.1.0', ext_options),
+    ('randomForestSRC', '2.2.0', ext_options),
     ('sm', '2.2-5.4', ext_options),
     ('psych', '1.6.4', ext_options),
     ('pbivnorm', '0.6.0', ext_options),
