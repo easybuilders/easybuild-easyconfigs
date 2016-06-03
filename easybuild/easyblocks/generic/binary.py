@@ -128,6 +128,7 @@ class Binary(EasyBlock):
         """Add the install directory to the PATH."""
 
         txt = super(Binary, self).make_module_extra()
-        txt += self.module_generator.prepend_paths("PATH", [''])
+        txt += self.module_generator.set_environment('CONDA_ENV', self.installdir)
+        txt += self.module_generator.set_environment('CONDA_DEFAULT_ENV', self.installdir)
         self.log.debug("make_module_extra added this: %s" % txt)
         return txt
