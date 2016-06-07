@@ -63,9 +63,9 @@ class EB_GROMACS(CMakeMake):
 
             # prefer static libraries, if available
             if self.toolchain.options['dynamic']:
-                self.cfg.update('configopts', "-DGMX_PREFER_STATIC_LIBS=ON")
-            else:
                 self.cfg.update('configopts', "-DGMX_PREFER_STATIC_LIBS=OFF")
+            else:
+                self.cfg.update('configopts', "-DGMX_PREFER_STATIC_LIBS=ON")
 
             # always specify to use external BLAS/LAPACK
             self.cfg.update('configopts', "-DGMX_EXTERNAL_BLAS=ON -DGMX_EXTERNAL_LAPACK=ON")
