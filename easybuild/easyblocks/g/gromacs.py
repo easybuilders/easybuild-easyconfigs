@@ -27,6 +27,8 @@ EasyBuild support for building and installing GROMACS, implemented as an easyblo
 
 @author: Kenneth Hoste (Ghent University)
 @author: Ward Poelmans (Ghent University)
+@author: Luca Marsella (CSCS)
+@author: Guilherme Peretti-Pezzi (CSCS)
 """
 import glob
 import os
@@ -60,7 +62,10 @@ class EB_GROMACS(CMakeMake):
             self.cfg.update('configopts', "-DCMAKE_BUILD_TYPE=Release")
 
             # prefer static libraries, if available
-            self.cfg.update('configopts', "-DGMX_PREFER_STATIC_LIBS=ON")
+            if self.toolchain.options['dynamic']:
+                self.cfg.update('configopts', "-DGMX_PREFER_STATIC_LIBS=ON")
+            else:
+                self.cfg.update('configopts', "-DGMX_PREFER_STATIC_LIBS=OFF")
 
             # always specify to use external BLAS/LAPACK
             self.cfg.update('configopts', "-DGMX_EXTERNAL_BLAS=ON -DGMX_EXTERNAL_LAPACK=ON")
@@ -97,7 +102,10 @@ class EB_GROMACS(CMakeMake):
                 for libname in ['BLAS', 'LAPACK']:
                     lib_dir = os.getenv('%s_LIB_DIR' % libname)
                     libs = os.getenv('LIB%s' % libname)
-                    self.cfg.update('configopts', '-DGMX_%s_USER="-L%s %s"' % (libname, lib_dir, libs))
+                    if self.toolchain.name.startswith('Cray'):
+                        self.cfg.update('configopts', '-DGMX_%s_USER="%s/libsci_gnu_mpi_mp.a"' % (libname, lib_dir))
+                    else:
+                        self.cfg.update('configopts', '-DGMX_%s_USER="-L%s %s"' % (libname, lib_dir, libs))
 
             # set regression test path
             prefix = 'regressiontests'
@@ -147,11 +155,19 @@ class EB_GROMACS(CMakeMake):
         # rather than trying to replicate the logic, we just figure out where the library was placed
 
         if LooseVersion(self.version) < LooseVersion('5.0'):
-            # libgmx.a or libgmx_mpi.a
-            libname = 'libgmx*.a'
+            if self.toolchain.options['dynamic']:
+                # libgmx.a or libgmx_mpi.a
+                libname = 'libgmx*.so'
+            else:
+                # libgmx.a or libgmx_mpi.a
+                libname = 'libgmx*.a'
         else:
-            # libgromacs.a or libgromacs_mpi.a
-            libname = 'libgromacs*.a'
+            if self.toolchain.options['dynamic']:
+                # libgromacs.a or libgromacs_mpi.a
+                libname = 'libgromacs*.so'
+            else:
+                # libgromacs.a or libgromacs_mpi.a
+                libname = 'libgromacs*.a'
 
         for libdir in ['lib', 'lib64']:
             if os.path.exists(os.path.join(self.installdir, libdir)):
@@ -196,7 +212,10 @@ class EB_GROMACS(CMakeMake):
         else:
             libnames = ['gromacs']
 
-        libs = ['lib%s%s.a' % (libname, suff) for libname in libnames]
+        if self.toolchain.options['dynamic']:
+            libs = ['lib%s%s.so' % (libname, suff) for libname in libnames]
+        else:
+            libs = ['lib%s%s.a' % (libname, suff) for libname in libnames]
 
         custom_paths = {
             'files': ['bin/%s%s' % (binary, suff) for binary in binaries] +
