@@ -41,7 +41,8 @@ from easybuild.easyblocks.generic.cmakemake import CMakeMake
 from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.modules import get_software_root
 from easybuild.tools.systemtools import get_platform_name
-
+from easybuild.tools.systemtools import get_shared_lib_ext
+import easybuild.tools.toolchain as toolchain
 
 class EB_GROMACS(CMakeMake):
     """Support for building/installing GROMACS."""
@@ -102,7 +103,7 @@ class EB_GROMACS(CMakeMake):
                 for libname in ['BLAS', 'LAPACK']:
                     lib_dir = os.getenv('%s_LIB_DIR' % libname)
                     libs = os.getenv('LIB%s' % libname)
-                    if self.toolchain.name.startswith('Cray'):
+                    if self.toolchain.toolchain_family() == toolchain.CRAYPE:
                         self.cfg.update('configopts', '-DGMX_%s_USER="%s/libsci_gnu_mpi_mp.a"' % (libname, lib_dir))
                     else:
                         self.cfg.update('configopts', '-DGMX_%s_USER="-L%s %s"' % (libname, lib_dir, libs))
@@ -154,20 +155,15 @@ class EB_GROMACS(CMakeMake):
         # this is determined by the GNUInstallDirs CMake module;
         # rather than trying to replicate the logic, we just figure out where the library was placed
 
-        if LooseVersion(self.version) < LooseVersion('5.0'):
-            if self.toolchain.options['dynamic']:
-                # libgmx.a or libgmx_mpi.a
-                libname = 'libgmx*.so'
-            else:
-                # libgmx.a or libgmx_mpi.a
-                libname = 'libgmx*.a'
+        if self.toolchain.options['dynamic']:
+            self.libext = get_shared_lib_ext()
         else:
-            if self.toolchain.options['dynamic']:
-                # libgromacs.a or libgromacs_mpi.a
-                libname = 'libgromacs*.so'
-            else:
-                # libgromacs.a or libgromacs_mpi.a
-                libname = 'libgromacs*.a'
+            self.libext = 'a'
+
+        if LooseVersion(self.version) < LooseVersion('5.0'):
+            libname = 'libgmx*.%s' % self.libext
+        else:
+            libname = 'libgromacs*.%s' % self.libext
 
         for libdir in ['lib', 'lib64']:
             if os.path.exists(os.path.join(self.installdir, libdir)):
@@ -212,10 +208,7 @@ class EB_GROMACS(CMakeMake):
         else:
             libnames = ['gromacs']
 
-        if self.toolchain.options['dynamic']:
-            libs = ['lib%s%s.so' % (libname, suff) for libname in libnames]
-        else:
-            libs = ['lib%s%s.a' % (libname, suff) for libname in libnames]
+        libs = ['lib%s%s.%s' % (libname, suff, self.libext) for libname in libnames]
 
         custom_paths = {
             'files': ['bin/%s%s' % (binary, suff) for binary in binaries] +
