@@ -49,7 +49,7 @@ class EB_VTune(IntelBase):
 
     def make_installdir(self):
         """Do not create installation directory, install script handles that already."""
-        pass
+        super(EB_VTune, self).make_installdir(dontcreate=True)
 
     def install_step(self):
         """
