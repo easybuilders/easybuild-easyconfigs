@@ -37,12 +37,11 @@ from distutils.version import LooseVersion
 from vsc.utils.missing import any
 
 import easybuild.tools.environment as env
+import easybuild.tools.toolchain as toolchain
 from easybuild.easyblocks.generic.cmakemake import CMakeMake
 from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.modules import get_software_root
-from easybuild.tools.systemtools import get_platform_name
-from easybuild.tools.systemtools import get_shared_lib_ext
-import easybuild.tools.toolchain as toolchain
+from easybuild.tools.systemtools import get_platform_name , get_shared_lib_ext
 
 class EB_GROMACS(CMakeMake):
     """Support for building/installing GROMACS."""
