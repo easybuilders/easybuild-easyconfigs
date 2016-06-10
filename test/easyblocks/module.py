@@ -4,7 +4,7 @@
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
 # with support of Ghent University (http://ugent.be/hpc),
-# the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
+# the Flemish Supercomputer Centre (VSC) (https://www.vscentrum.be),
 # Flemish Research Foundation (FWO) (http://www.fwo.be/en)
 # and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
@@ -209,7 +209,9 @@ def template_module_only_test(self, easyblock, name='foo', version='1.3.2', extr
             os.chdir(orig_workdir)
 
         modfile = os.path.join(TMPDIR, 'modules', 'all', 'foo', '1.3.2')
-        self.assertTrue(os.path.exists(modfile), "Module file %s was generated" % modfile)
+        luamodfile = '%s.lua' % modfile
+        self.assertTrue(os.path.exists(modfile) or os.path.exists(luamodfile),
+                        "Module file %s or %s was generated" % (modfile, luamodfile))
 
         # cleanup
         app.close_log()
@@ -248,8 +250,6 @@ def suite():
 
     # add dummy PrgEnv-gnu/1.2.3 module, required for testing CrayToolchain easyblock
     write_file(os.path.join(TMPDIR, 'modules', 'all', 'PrgEnv-gnu', '1.2.3'), "#%Module")
-
-    easyblocks = [e for e in easyblocks if 'cray' in e]
 
     for easyblock in easyblocks:
         # dynamically define new inner functions that can be added as class methods to ModuleOnlyTest
