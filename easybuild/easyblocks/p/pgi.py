@@ -8,7 +8,7 @@
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
 # with support of Ghent University (http://ugent.be/hpc),
-# the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
+# the Flemish Supercomputer Centre (VSC) (https://www.vscentrum.be),
 # Flemish Research Foundation (FWO) (http://www.fwo.be/en)
 # and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
@@ -41,8 +41,29 @@ import easybuild.tools.environment as env
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.build_log import EasyBuildError
-from easybuild.tools.filetools import find_flexlm_license
+from easybuild.tools.filetools import find_flexlm_license, write_file
 from easybuild.tools.run import run_cmd
+from easybuild.tools.modules import get_software_root
+
+
+# contents for siterc file to make PGI pick up $LIBRARY_PATH
+# cfr. https://www.pgroup.com/support/link.htm#lib_path_ldflags
+SITERC_LIBRARY_PATH = """
+# get the value of the environment variable LIBRARY_PATH
+variable LIBRARY_PATH is environment(LIBRARY_PATH);
+
+# split this value at colons, separate by -L, prepend 1st one by -L
+variable library_path is
+default($if($LIBRARY_PATH,-L$replace($LIBRARY_PATH,":", -L)));
+
+# add the -L arguments to the link line
+append LDLIBARGS=$library_path;
+
+# also include the location where libm & co live on Debian-based systems
+# cfr. https://github.com/hpcugent/easybuild-easyblocks/pull/919
+append LDLIBARGS=-L/usr/lib/x86_64-linux-gnu;
+"""
+
 
 class EB_PGI(EasyBlock):
     """
@@ -121,19 +142,33 @@ class EB_PGI(EasyBlock):
 
         cmd = "%s -x %s -g77 /" % (filename, install_abs_subdir)
         run_cmd(cmd, log_all=True, simple=True)
+        
+        # If an OS libnuma is NOT found, makelocalrc creates symbolic links to libpgnuma.so
+        # If we use the EB libnuma, delete those symbolic links to ensure they are not used
+        if get_software_root("numactl"):
+            for filename in ["libnuma.so", "libnuma.so.1"]:
+                path = os.path.join(install_abs_subdir, "lib", filename)
+                if os.path.islink(path):
+                    os.remove(path)
+
+        # install (or update) siterc file to make PGI consider $LIBRARY_PATH
+        siterc_path = os.path.join(self.installdir, self.install_subdir, 'bin', 'siterc')
+        write_file(siterc_path, SITERC_LIBRARY_PATH, append=True)
+        self.log.info("Appended instructions to pick up $LIBRARY_PATH to siterc file at %s: %s",
+                      siterc_path, SITERC_LIBRARY_PATH)
 
     def sanity_check_step(self):
         """Custom sanity check for PGI"""
         prefix = self.install_subdir
         custom_paths = {
-                        'files': [os.path.join(prefix, "bin", "pgcc")],
-                        'dirs': [os.path.join(prefix, "bin"), os.path.join(prefix, "lib"),
-                                 os.path.join(prefix, "include"), os.path.join(prefix, "man")]
-                       }
+            'files': [os.path.join(prefix, 'bin', x) for x in ['pgcc', 'pgc++', 'pgf77', 'pgfortran', 'siterc']],
+            'dirs': [os.path.join(prefix, 'bin'), os.path.join(prefix, 'lib'),
+                     os.path.join(prefix, 'include'), os.path.join(prefix, 'man')]
+        }
         super(EB_PGI, self).sanity_check_step(custom_paths=custom_paths)
 
     def make_module_req_guess(self):
-        """Prefix subdirectories in PGI install directory considered for environment variables defined in module file."""
+        """Prefix subdirectories in PGI install dir considered for environment variables defined in module file."""
         dirs = super(EB_PGI, self).make_module_req_guess()
         for key in dirs:
             dirs[key] = [os.path.join(self.install_subdir, d) for d in dirs[key]]
@@ -149,6 +184,7 @@ class EB_PGI(EasyBlock):
     def make_module_extra(self):
         """Add environment variables LM_LICENSE_FILE and PGI for license file and PGI location"""
         txt = super(EB_PGI, self).make_module_extra()
-        txt += self.module_generator.prepend_paths(self.license_env_var, [self.license_file], allow_abs=True, expand_relpaths=False)
+        txt += self.module_generator.prepend_paths(self.license_env_var, [self.license_file],
+                                                   allow_abs=True, expand_relpaths=False)
         txt += self.module_generator.set_environment('PGI', self.installdir)
         return txt

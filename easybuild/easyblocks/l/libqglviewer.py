@@ -23,45 +23,34 @@
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
 """
-EasyBuild support for building and installing freetype, implemented as an easyblock
+EasyBuild support for building and installing libQGLViewer, implemented as an easyblock
 
-@author: Kenneth Hoste (Ghent University)
+@author: Javier Antonio Ruiz Bosch (Central University "Marta Abreu" of Las Villas, Cuba)
 """
-import os
 
-import easybuild.tools.environment as env
-import easybuild.tools.toolchain as toolchain
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
-from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.run import run_cmd
 from easybuild.tools.systemtools import get_shared_lib_ext
 
+class EB_libQGLViewer(ConfigureMake):
+    """Support for building/installing libQGLViewer."""
 
-class EB_freetype(ConfigureMake):
-    """Support for building/installing freetype."""
+    def configure_step(self):
+        """Custom configuration procedure for libQGLViewer: qmake PREFIX=/install/path ..."""
 
-    def __init__(self, *args, **kwargs):
-        """Initialisation of custom class variables for freetype."""
-        super(EB_freetype, self).__init__(*args, **kwargs)
-
-        self.maj_ver = self.version.split('.')[0]
+        cmd = "%(preconfigopts)s qmake PREFIX=%(installdir)s %(configopts)s" % {
+            'preconfigopts': self.cfg['preconfigopts'],            
+            'installdir': self.installdir,
+            'configopts': self.cfg['configopts'],
+        }
+        run_cmd(cmd, log_all=True, simple=True)
 
     def sanity_check_step(self):
-        """Custom sanity check for freetype."""
+        """Custom sanity check for libQGLViewer."""
+        shlib_ext = get_shared_lib_ext()
+        
         custom_paths = {
-            'files': ['bin/freetype-config', 'lib/libfreetype.a', 'lib/libfreetype.%s' % get_shared_lib_ext(),
-                      'lib/pkgconfig/freetype%s.pc' % self.maj_ver],
-            'dirs': ['include/freetype%s' % self.maj_ver],
+            'files': [('lib/libQGLViewer.prl', 'lib64/libQGLViewer.prl'),
+		      ('lib/libQGLViewer.%s' % shlib_ext, 'lib64/libQGLViewer.%s' % shlib_ext)],
+            'dirs': ['include/QGLViewer'],
         }
-        super(EB_freetype, self).sanity_check_step(custom_paths=custom_paths)
-
-    def make_module_req_guess(self):
-        """Custom guess for CPATH for freetype."""
-
-        guesses = super(EB_freetype, self).make_module_req_guess()
-
-        guesses.update({
-                        'CPATH': ['include/freetype%s' % self.maj_ver],
-                       })
-
-        return guesses

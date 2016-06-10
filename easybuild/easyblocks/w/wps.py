@@ -4,7 +4,7 @@
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
 # with support of Ghent University (http://ugent.be/hpc),
-# the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
+# the Flemish Supercomputer Centre (VSC) (https://www.vscentrum.be),
 # Flemish Research Foundation (FWO) (http://www.fwo.be/en)
 # and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
@@ -345,28 +345,25 @@ class EB_WPS(EasyBlock):
 
     def sanity_check_step(self):
         """Custom sanity check for WPS."""
-
         custom_paths = {
-                        'files': ["WPS/%s" % x for x in ["geogrid.exe", "metgrid.exe",
-                                                         "ungrib.exe"]],
-                        'dirs': []
-                       }
-
+            'files': ['WPS/%s' % x for x in ['geogrid.exe', 'metgrid.exe', 'ungrib.exe']],
+            'dirs': [],
+        }
         super(EB_WPS, self).sanity_check_step(custom_paths=custom_paths)
 
     def make_module_req_guess(self):
         """Make sure PATH and LD_LIBRARY_PATH are set correctly."""
-
         return {
-                'PATH': [self.name],
-                'LD_LIBRARY_PATH': [self.name],
-                'MANPATH': [],
-               }
+            'PATH': [self.name],
+            'LD_LIBRARY_PATH': [self.name],
+            'MANPATH': [],
+        }
 
     def make_module_extra(self):
         """Add netCDF environment variables to module file."""
         txt = super(EB_WPS, self).make_module_extra()
-        txt += self.module_generator.set_environment('NETCDF', os.getenv('NETCDF'))
-        if os.getenv('NETCDFF', None) is not None:
-            txt += self.module_generator.set_environment('NETCDFF', os.getenv('NETCDFF'))
+        for var in ['NETCDF', 'NETCDFF']:
+            # check whether value is defined for compatibility with --module-only
+            if os.getenv(var) is not None:
+                txt += self.module_generator.set_environment(var, os.getenv(var))
         return txt
