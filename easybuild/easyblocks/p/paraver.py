@@ -68,11 +68,6 @@ class EB_Paraver(ConfigureMake):
         """Custom prepare step for Paraver: check required dependencies and collect information on them."""
         super(EB_Paraver, self).prepare_step()
 
-        # check for required Boost dependency
-        self.boost = get_software_root('Boost')
-        if not self.boost:
-            raise EasyBuildError("Boost is not available as a dependency")
-
         # determine value to pass to --with-wxpropgrid (library name)
         self.wxpropgrid = None
         wxpropertygrid_root = get_software_root('wxPropertyGrid')
@@ -86,8 +81,6 @@ class EB_Paraver(ConfigureMake):
             else:
                 tup = (libname_pattern, wxpropertygrid_libdir, wxpropgrid_libs)
                 raise EasyBuildError("Expected to find exactly one %s library in %s, found %s" % tup)
-        else:
-            raise EasyBuildError("wxPropertyGrid is not available as a dependency")
 
     def configure_step(self):
         """Custom configuration procedure for Paraver: template configuration options before using them."""
@@ -102,8 +95,16 @@ class EB_Paraver(ConfigureMake):
 
         print_msg("starting with component %s" % component, log=self.log)
 
+        # check for required Boost dependency
+        boost = get_software_root('Boost')
+        if not boost:
+            raise EasyBuildError("Boost is not available as a dependency")
+
+        if not self.wxpropgrid:
+            raise EasyBuildError("wxPropertyGrid is not available as a dependency")
+
         self.cfg['configopts'] = self.cfg['configopts'] % {
-            'boost': self.boost,
+            'boost': boost,
             'installdir': self.installdir,
             'wxpropgrid': self.wxpropgrid,
         }
