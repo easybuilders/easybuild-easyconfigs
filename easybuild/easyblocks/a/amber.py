@@ -200,7 +200,7 @@ class EB_Amber(ConfigureMake):
             if self.with_mpi:
                 binaries.append('pmemd.cuda.MPI')
         if self.with_mpi:
-            binaries.append(['pmemd.MPI', 'sander.MPI'])
+            binaries.extend(['pmemd.MPI', 'sander.MPI'])
 
         custom_paths = {
             'files': [os.path.join(self.installdir, 'bin', binary) for binary in binaries],
