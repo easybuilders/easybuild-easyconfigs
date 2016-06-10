@@ -4,7 +4,7 @@
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
 # with support of Ghent University (http://ugent.be/hpc),
-# the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
+# the Flemish Supercomputer Centre (VSC) (https://www.vscentrum.be),
 # Flemish Research Foundation (FWO) (http://www.fwo.be/en)
 # and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
@@ -354,22 +354,24 @@ class EB_OpenFOAM(EasyBlock):
         txt = super(EB_OpenFOAM, self).make_module_extra()
 
         env_vars = [
-            ("WM_PROJECT_VERSION", self.version),
-            ("FOAM_INST_DIR", self.installdir),
-            ("WM_COMPILER", self.wm_compiler),
-            ("WM_MPLIB", self.wm_mplib),
-            ("FOAM_BASH", os.path.join(self.installdir, self.openfoamdir, "etc", "bashrc")),
-            ("FOAM_CSH", os.path.join(self.installdir, self.openfoamdir, "etc", "cshrc")),
+            ('WM_PROJECT_VERSION', self.version),
+            ('FOAM_INST_DIR', self.installdir),
+            ('WM_COMPILER', self.wm_compiler),
+            ('WM_MPLIB', self.wm_mplib),
+            ('FOAM_BASH', os.path.join(self.installdir, self.openfoamdir, 'etc', 'bashrc')),
+            ('FOAM_CSH', os.path.join(self.installdir, self.openfoamdir, 'etc', 'cshrc')),
         ]
 
         # OpenFOAM >= 3.0.0 can use 64 bit integers
         if 'extend' not in self.name.lower() and LooseVersion(self.version) >= LooseVersion('3.0'):
             if self.toolchain.options['i8']:
-                env_vars += [("WM_LABEL_SIZE", '64')]
+                env_vars += [('WM_LABEL_SIZE', '64')]
             else:
-                env_vars += [("WM_LABEL_SIZE", '32')]
+                env_vars += [('WM_LABEL_SIZE', '32')]
 
         for (env_var, val) in env_vars:
-            txt += self.module_generator.set_environment(env_var, val)
+            # check whether value is defined for compatibility with --module-only
+            if val:
+                txt += self.module_generator.set_environment(env_var, val)
 
         return txt

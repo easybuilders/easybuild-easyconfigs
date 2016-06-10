@@ -53,14 +53,16 @@ class EB_PDT(ConfigureMake):
 
         # determine values for compiler flags to use
         known_compilers = {
+            toolchain.DUMMY: '-GNU',  # Assume that dummy toolchain uses a system-provided GCC
             toolchain.GCC: '-GNU',
             toolchain.INTELCOMP: '-icpc',
         }
         comp_fam = self.toolchain.comp_family()
         if comp_fam in known_compilers:
-            self.compiler_opt = known_compilers[comp_fam]
+            compiler_opt = known_compilers[comp_fam]
         else:
             raise EasyBuildError("Compiler family not supported yet: %s" % comp_fam)
+        self.cfg.update('configopts', compiler_opt)
 
         super(EB_PDT, self).configure_step()
 
