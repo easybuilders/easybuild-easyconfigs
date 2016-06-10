@@ -1,5 +1,5 @@
 ##
-# Copyright 2009-2015 Ghent University
+# Copyright 2009-2016 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -45,13 +45,12 @@ class EB_Extrae(ConfigureMake):
 
         # Optional dependences
         deps = {
-            'PAPI': ("--enable-sampling", "--with-papi=%s", "--without-papi"),
-            'libxml2': (" --enable-xml --enable-merge-in-trace", "", ""),
-            'libunwind': ("", "--with-unwind=%s", ""),
-            'Boost': ("", "--with-boost=%s", ""),
-            'libdwarf': ("", "--with-dwarf=%s", "--without-dwarf"),
-            # Extrae bug: currently fails if libbfd needs -lz
-            #'binutils': ("", "--with-binutils=%s", ""),
+            'binutils': ('', '--with-binutils=%s', ''),
+            'Boost': ('', '--with-boost=%s', ''),
+            'libdwarf': ('', '--with-dwarf=%s', '--without-dwarf'),
+            'libunwind': ('', '--with-unwind=%s', ''),
+            'libxml2': (' --enable-xml --enable-merge-in-trace', '', ''),
+            'PAPI': ('--enable-sampling', '--with-papi=%s', '--without-papi'),
         }
         for (dep_name, (with_opts, with_root_opt, without_opt)) in deps.items():
             dep_root = get_software_root(dep_name)
@@ -64,7 +63,7 @@ class EB_Extrae(ConfigureMake):
                 if without_opt:
                     self.cfg.update('configopts', without_opt)
 
-        # FIXME: make this optional dependencies
+        # TODO: make this optional dependencies
         self.cfg.update('configopts', "--without-dyninst")
 
         super(EB_Extrae, self).configure_step()
@@ -72,9 +71,7 @@ class EB_Extrae(ConfigureMake):
     def sanity_check_step(self):
         """Custom sanity check for Extrae."""
         custom_paths = {
-                        'files': ["bin/mpi2prv", "include/extrae_user_events.h",
-                                  ("lib/libmpitrace.a", "lib64/libmpitrace.a")],
-                        'dirs': [],
-                       }
-
+            'files': ['bin/mpi2prv', 'include/extrae_user_events.h', ('lib/libmpitrace.a', 'lib64/libmpitrace.a')],
+            'dirs': [],
+        }
         super(EB_Extrae, self).sanity_check_step(custom_paths=custom_paths)
