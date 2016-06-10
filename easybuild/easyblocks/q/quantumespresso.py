@@ -49,7 +49,7 @@ class EB_QuantumESPRESSO(ConfigureMake):
     def extra_options():
         """Custom easyconfig parameters for Quantum ESPRESSO."""
         extra_vars = {
-           'with_scalapack': [True, "Enable ScaLAPACK support", CUSTOM],
+            'with_scalapack': [True, "Enable ScaLAPACK support", CUSTOM],
         }
         return ConfigureMake.extra_options(extra_vars)
 
