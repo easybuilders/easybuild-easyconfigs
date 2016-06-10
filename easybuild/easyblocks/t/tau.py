@@ -156,13 +156,9 @@ class EB_TAU(ConfigureMake):
         comp_fam = self.toolchain.comp_family()
         if comp_fam in known_compilers:
             self.cc, self.cxx, self.fortran = known_compilers[comp_fam]
-        else:
-            raise EasyBuildError("Compiler family not supported yet: %s", comp_fam)
 
         # determine values for MPI flags
         self.mpi_inc_dir, self.mpi_lib_dir = os.getenv('MPI_INC_DIR'), os.getenv('MPI_LIB_DIR')
-        if self.mpi_inc_dir is None or self.mpi_lib_dir is None:
-            raise EasyBuildError("Failed to determine MPI include/library paths, no MPI available in toolchain?")
 
         # determine value for optional packages option template
         self.opt_pkgs_opts = ''
@@ -209,6 +205,11 @@ class EB_TAU(ConfigureMake):
 
     def configure_step(self):
         """Custom configuration procedure for TAU: template configuration options before using them."""
+        if self.cc is None or self.cxx is None or self.fortran is None:
+            raise EasyBuildError("Compiler family not supported yet: %s", self.toolchain.comp_family())
+
+        if self.mpi_inc_dir is None or self.mpi_lib_dir is None:
+            raise EasyBuildError("Failed to determine MPI include/library paths, no MPI available in toolchain?")
 
         # inform which backend/variant is being handled
         backend = (['tau'] + self.cfg['extra_backends'])[self.variant_index // 3]
