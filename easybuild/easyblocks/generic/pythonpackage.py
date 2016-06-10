@@ -4,7 +4,7 @@
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
 # with support of Ghent University (http://ugent.be/hpc),
-# the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
+# the Flemish Supercomputer Centre (VSC) (https://www.vscentrum.be),
 # Flemish Research Foundation (FWO) (http://www.fwo.be/en)
 # and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
@@ -54,6 +54,7 @@ from easybuild.tools.run import run_cmd
 EASY_INSTALL_INSTALL_CMD = "%(python)s setup.py easy_install --prefix=%(prefix)s %(installopts)s %(loc)s"
 PIP_INSTALL_CMD = "pip install --prefix=%(prefix)s %(installopts)s %(loc)s"
 SETUP_PY_INSTALL_CMD = "%(python)s setup.py install --prefix=%(prefix)s %(installopts)s"
+SETUP_PY_DEVELOP_CMD = "%(python)s setup.py develop --prefix=%(prefix)s %(installopts)s"
 UNKNOWN = 'UNKNOWN'
 
 
@@ -182,6 +183,7 @@ class PythonPackage(ExtensionEasyBlock):
             'runtest': [True, "Run unit tests.", CUSTOM],  # overrides default
             'use_easy_install': [False, "Install using '%s'" % EASY_INSTALL_INSTALL_CMD, CUSTOM],
             'use_pip': [False, "Install using '%s'" % PIP_INSTALL_CMD, CUSTOM],
+            'use_setup_py_develop': [False, "Install using '%s'" % SETUP_PY_DEVELOP_CMD, CUSTOM],
             'zipped_egg': [False, "Install as a zipped eggs (requires use_easy_install)", CUSTOM],
         })
         return ExtensionEasyBlock.extra_options(extra_vars=extra_vars)
@@ -232,7 +234,11 @@ class PythonPackage(ExtensionEasyBlock):
 
         else:
             self.use_setup_py = True
-            self.install_cmd = SETUP_PY_INSTALL_CMD
+
+            if self.cfg.get('use_setup_py_develop', False):
+                self.install_cmd = SETUP_PY_DEVELOP_CMD
+            else:
+                self.install_cmd = SETUP_PY_INSTALL_CMD
 
             if self.cfg.get('zipped_egg', False):
                 raise EasyBuildError("Installing zipped eggs requires using easy_install or pip")
@@ -343,11 +349,13 @@ class PythonPackage(ExtensionEasyBlock):
         super(PythonPackage, self).prerun()
         self.prepare_python()
 
+    def prepare_step(self):
+        """Prepare for building and installing this Python package."""
+        super(PythonPackage, self).prepare_step()
+        self.prepare_python()
+
     def configure_step(self):
         """Configure Python package build/install."""
-
-        # prepare for installing Python package
-        self.prepare_python()
 
         if self.sitecfg is not None:
             # used by some extensions, like numpy, to find certain libs
