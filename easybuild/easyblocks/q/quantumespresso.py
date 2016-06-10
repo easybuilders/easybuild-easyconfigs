@@ -49,6 +49,7 @@ class EB_QuantumESPRESSO(ConfigureMake):
     def extra_options():
         """Custom easyconfig parameters for Quantum ESPRESSO."""
         extra_vars = {
+            'hybrid': [False, "Enable hybrid build (with OpenMP)", CUSTOM],
             'with_scalapack': [True, "Enable ScaLAPACK support", CUSTOM],
         }
         return ConfigureMake.extra_options(extra_vars)
@@ -68,7 +69,7 @@ class EB_QuantumESPRESSO(ConfigureMake):
     def configure_step(self):
         """Custom configuration procedure for Quantum ESPRESSO."""
 
-        if self.toolchain.options.get('openmp', True):
+        if self.toolchain.options.get('openmp', False) or self.cfg['hybrid']:
             self.cfg.update('configopts', '--enable-openmp')
 
         if not self.toolchain.options.get('usempi', None):
@@ -114,7 +115,7 @@ class EB_QuantumESPRESSO(ConfigureMake):
         if self.toolchain.options.get('usempi', None):
             dflags.append('-D__MPI -D__PARA')
 
-        if self.toolchain.options.get('openmp', True):
+        if self.toolchain.options.get('openmp', False) or self.cfg['hybrid']:
             dflags.append(" -D__OPENMP")
 
         if self.cfg['with_scalapack']:
@@ -126,14 +127,14 @@ class EB_QuantumESPRESSO(ConfigureMake):
         repls.append(('DFLAGS', ' '.join(dflags), False))
 
         # complete C/Fortran compiler and LD flags
-        if self.toolchain.options.get('openmp', True):
+        if self.toolchain.options.get('openmp', True) or self.cfg['hybrid']:
             repls.append(('LDFLAGS', self.toolchain.get_flag('openmp'), True))
             repls.append(('(?:C|F90|F)FLAGS', self.toolchain.get_flag('openmp'), True))
 
         # obtain library settings
         libs = []
         for lib in ['BLAS', 'LAPACK', 'FFT', 'SCALAPACK']:
-            if self.toolchain.options.get('openmp', True):
+            if self.toolchain.options.get('openmp', False):
                 val = os.getenv('LIB%s_MT' % lib)
             else:
                 val = os.getenv('LIB%s' % lib)
