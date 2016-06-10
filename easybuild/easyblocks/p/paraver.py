@@ -64,21 +64,6 @@ class EB_Paraver(ConfigureMake):
 
         return super(EB_Paraver, self).run_all_steps(*args, **kwargs)
 
-    def guess_start_dir(self):
-        """Specify custom start dir dependending on component being handled."""
-        super(EB_Paraver, self).guess_start_dir()
-
-        component = self.components[self.current_component]
-
-        try:
-            os.chdir(component)
-        except OSError, err:
-            raise EasyBuildError("Failed to move to %s: %s" % (component, err))
-
-        self.log.info("Customized start directory for component %s: %s", component, self.cfg['start_dir'])
-
-        print_msg("starting with component %s" % component, log=self.log)
-
     def prepare_step(self):
         """Custom prepare step for Paraver: check required dependencies and collect information on them."""
         super(EB_Paraver, self).prepare_step()
@@ -106,6 +91,17 @@ class EB_Paraver(ConfigureMake):
 
     def configure_step(self):
         """Custom configuration procedure for Paraver: template configuration options before using them."""
+
+        component = self.components[self.current_component]
+        try:
+            os.chdir(component)
+        except OSError, err:
+            raise EasyBuildError("Failed to move to %s: %s" % (component, err))
+
+        self.log.info("Customized start directory for component %s: %s", component, self.getcwd())
+
+        print_msg("starting with component %s" % component, log=self.log)
+
         self.cfg['configopts'] = self.cfg['configopts'] % {
             'boost': self.boost,
             'installdir': self.installdir,
