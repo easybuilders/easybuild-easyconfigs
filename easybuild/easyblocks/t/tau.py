@@ -187,12 +187,6 @@ class EB_TAU(ConfigureMake):
 
                     self.variant_labels.append(variant_label)
 
-        # make sure selected default TAU makefile will be available
-        avail_makefiles = ['Makefile.' + l for l in self.variant_labels]
-        if self.cfg['tau_makefile'] not in avail_makefiles:
-            raise EasyBuildError("Specified tau_makefile %s will not be available (only: %s)",
-                                 self.cfg['tau_makefile'], avail_makefiles)
-
         # create install directory and make sure it does not get cleaned up again in the install step;
         # the first configure iteration already puts things in place in the install directory,
         # so that shouldn't get cleaned up afterwards...
@@ -210,6 +204,12 @@ class EB_TAU(ConfigureMake):
 
         if self.mpi_inc_dir is None or self.mpi_lib_dir is None:
             raise EasyBuildError("Failed to determine MPI include/library paths, no MPI available in toolchain?")
+
+        # make sure selected default TAU makefile will be available
+        avail_makefiles = ['Makefile.' + l for l in self.variant_labels]
+        if self.cfg['tau_makefile'] not in avail_makefiles:
+            raise EasyBuildError("Specified tau_makefile %s will not be available (only: %s)",
+                                 self.cfg['tau_makefile'], avail_makefiles)
 
         # inform which backend/variant is being handled
         backend = (['tau'] + self.cfg['extra_backends'])[self.variant_index // 3]
