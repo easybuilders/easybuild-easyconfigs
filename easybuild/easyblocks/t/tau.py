@@ -201,7 +201,7 @@ class EB_TAU(ConfigureMake):
         # the first configure iteration already puts things in place in the install directory,
         # so that shouldn't get cleaned up afterwards...
         self.log.info("Creating install dir %s before starting configure-build-install iterations", self.installdir)
-        mkdir(self.installdir, parents=True)
+        super(EB_TAU, self).make_installdir()
 
     def make_installdir(self):
         """Skip make install dir 'step', install dir is already created in prepare_step."""
