@@ -69,7 +69,7 @@ class EB_QuantumESPRESSO(ConfigureMake):
     def configure_step(self):
         """Custom configuration procedure for Quantum ESPRESSO."""
 
-        if self.cfg['hybrid']:
+        if self.toolchain.options.get('openmp', True):
             self.cfg.update('configopts', '--enable-openmp')
 
         if not self.toolchain.options.get('usempi', None):
@@ -115,7 +115,7 @@ class EB_QuantumESPRESSO(ConfigureMake):
         if self.toolchain.options.get('usempi', None):
             dflags.append('-D__MPI -D__PARA')
 
-        if self.cfg['hybrid']:
+        if self.toolchain.options.get('openmp', True):
             dflags.append(" -D__OPENMP")
 
         if self.cfg['with_scalapack']:
@@ -127,14 +127,17 @@ class EB_QuantumESPRESSO(ConfigureMake):
         repls.append(('DFLAGS', ' '.join(dflags), False))
 
         # complete C/Fortran compiler and LD flags
-        if self.cfg['hybrid']:
+        if self.toolchain.options.get('openmp', True):
             repls.append(('LDFLAGS', self.toolchain.get_flag('openmp'), True))
             repls.append(('(?:C|F90|F)FLAGS', self.toolchain.get_flag('openmp'), True))
 
         # obtain library settings
         libs = []
         for lib in ['BLAS', 'LAPACK', 'FFT', 'SCALAPACK']:
-            val = os.getenv('LIB%s' % lib)
+            if self.toolchain.options.get('openmp', True):
+                val = os.getenv('LIB%s_MT' % lib)
+            else:
+                val = os.getenv('LIB%s' % lib)
             repls.append(('%s_LIBS' % lib, val, False))
             libs.append(val)
         libs = ' '.join(libs)
