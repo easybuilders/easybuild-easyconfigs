@@ -49,7 +49,7 @@ class EB_Inspector(IntelBase):
 
     def make_installdir(self):
         """Do not create installation directory, install script handles that already."""
-        pass
+        super(EB_Inspector, self).make_installdir(dontcreate=True)
 
     def install_step(self):
         """
