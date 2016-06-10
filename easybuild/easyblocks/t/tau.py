@@ -176,7 +176,7 @@ class EB_TAU(ConfigureMake):
 
                     variant_label = 'tau'
                     # For non-GCC builds, the compiler name is encoded in the variant
-                    if self.cxx != 'g++':
+                    if self.cxx and self.cxx != 'g++':
                         variant_label += '-' + self.cxx
                     if get_software_root('PAPI'):
                         variant_label += '-papi'
