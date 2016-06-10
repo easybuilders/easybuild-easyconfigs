@@ -1,0 +1,59 @@
+easyblock = 'Bundle'
+
+name = 'i-cisTarget'
+version = '20160602'  # corresponds to f8be714885560ddabdb1612cf9921a348ffac468
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://gbiomed.kuleuven.be/apps/lcb/i-cisTarget'
+description = """An integrative genomics method for the prediction of regulatory features and cis-regulatory modules
+ in Human, Mouse, and Fly"""
+
+toolchain = {'name': 'intel', 'version': '2016a'}
+
+# this is a bundle of Python packages
+exts_defaultclass = 'PythonPackage'
+
+exts_list = [
+   # airspeed requires this specific version of cachetools
+    ('cachetools', '0.8.0', {
+        'source_urls': ['https://pypi.python.org/packages/source/c/cachetools/'],
+    }),
+    ('airspeed', '0.5.4dev-20150515', {
+        'source_urls': ['https://pypi.python.org/packages/source/a/airspeed/'],
+    }),
+    ('bx-python', '0.7.3', {
+        'source_urls': ['https://pypi.python.org/packages/source/b/bx-python/'],
+        'modulename': 'bx',
+    }),
+    ('Wand', '0.4.3', {
+        'source_urls': ['https://pypi.python.org/packages/source/W/Wand/'],
+        'modulename': 'wand.image',
+    }),
+    # i-cisTarget sources are not freely available, contact lcbtools@ls.kuleuven.be
+    (name, version, {
+        'source_tmpl': 'icisTarget-%(version)s.tar.gz',
+        'modulename': 'cistargetx',
+    }),
+]
+
+dependencies = [
+    ('Python', '2.7.11'),
+    ('matplotlib', '1.5.1', versionsuffix + '-freetype-2.6.3'),
+    ('MySQL-python', '1.2.5', versionsuffix + '-MariaDB-10.1.14'),
+    ('ImageMagick', '6.9.4-8'),
+    ('STAMP', '1.2'),
+    ('Cluster-Buster', '20160106'),
+    ('Kent_tools', '20130806', '-linux.x86_64', True),
+]
+
+modextrapaths = {'PYTHONPATH': ['lib/python%(pyshortver)s/site-packages']}
+
+# specify that Bundle easyblock should run a full sanity check, rather than just trying to load the module
+full_sanity_check = True
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in ['ctx-convert', 'ctx-db2r', 'ctx-gt', 'ctx-r2db', 'ctx-rcc']],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+moduleclass = 'bio'

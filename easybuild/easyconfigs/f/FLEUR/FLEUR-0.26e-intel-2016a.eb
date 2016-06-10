@@ -1,0 +1,45 @@
+easyblock = 'MakeCp'
+
+name = 'FLEUR'
+version = '0.26e'
+
+homepage = 'http://www.flapw.de/'
+description = """FLEUR is a feature-full, freely available FLAPW (full potential linearized augmented planewave) code,
+ based on density-functional theory."""
+
+toolchain = {'name': 'intel', 'version': '2016a'}
+toolchainopts = {'usempi': True, 'r8': True}
+
+# dowload requires registration, see http://www.flapw.de/pm/index.php?n=FLEUR.Downloads
+sources = ['v%s.tgz' % version.split('.')[1]]
+
+builddependencies = [('imake', '1.0.7')]
+
+dependencies = [
+    ('zlib', '1.2.8'),
+    ('Szip', '2.1'),
+    ('HDF5', '1.8.16'),
+#    ('Wannier90', '2.0.1'),  # only needed if '#define wann' is added to Imakefile
+]
+
+# define hardware platform to be 'parallel intel compiler, 64 bit, use scalapack')
+prebuildopts = "sed -i 's/^#define jureca/#define linux_evp_64/g' Imakefile && "
+# don't specialize for systems with structural symmetry
+prebuildopts += "sed -i 's/^#define inversion//g' Imakefile && "
+# no need to jump through hoops to make compilation work with older Fortran compilers
+prebuildopts += "sed -i 's/^#define f_90//g' Imakefile && "
+
+prebuildopts += "imake && "
+buildopts = 'FC="$FC" FFLAGS="$FFLAGS" HDFROOT=$EBROOTHDF5 fleur.x inpgen.x'
+
+# parallel build tends to fail
+parallel = 1
+
+files_to_copy = [(['fleur.x', 'inpgen.x'], 'bin')]
+
+sanity_check_paths = {
+    'files': ['bin/fleur.x', 'bin/inpgen.x'],
+    'dirs': [],
+}
+
+moduleclass = 'chem'
