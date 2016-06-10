@@ -68,6 +68,9 @@ class EB_Amber(ConfigureMake):
         self.build_in_installdir = True
         self.pylibdir = None
 
+        self.with_cuda = False
+        self.with_mpi = False
+
         env.setvar('AMBERHOME', self.installdir)
 
     def extract_step(self):
@@ -124,6 +127,7 @@ class EB_Amber(ConfigureMake):
         mpiroot = get_software_root(self.toolchain.MPI_MODULE_NAME[0])
         if mpiroot:
             env.setvar('MPI_HOME', mpiroot)
+            self.with_mpi = True
 
         common_configopts = [self.cfg['configopts'], '--no-updates', '-static', '-noX11']
 
@@ -164,6 +168,7 @@ class EB_Amber(ConfigureMake):
         cudaroot = get_software_root('CUDA')
         if cudaroot:
             env.setvar('CUDA_HOME', cudaroot)
+            self.with_cuda = True
             build_targets.append(('-cuda', 'test.cuda'))
             if self.toolchain.options.get('usempi', None):
                 build_targets.append(("-cuda -mpi", 'test.cuda_parallel'))
@@ -189,7 +194,14 @@ class EB_Amber(ConfigureMake):
 
     def sanity_check_step(self):
         """Custom sanity check for Amber."""
-        binaries = ['tleap', 'sander', 'sander.MPI', 'pmemd', 'pmemd.MPI', 'pmemd.cuda', 'pmemd.cuda.MPI']
+        binaries = ['pmemd', 'sander', 'tleap']
+        if self.with_cuda:
+            binaries.append('pmemd.cuda')
+            if self.with_mpi:
+                binaries.append('pmemd.cuda.MPI')
+        if self.with_mpi:
+            binaries.append(['pmemd.MPI', 'sander.MPI'])
+
         custom_paths = {
             'files': [os.path.join(self.installdir, 'bin', binary) for binary in binaries],
             'dirs': [],
