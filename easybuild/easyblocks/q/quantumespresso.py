@@ -102,7 +102,7 @@ class EB_QuantumESPRESSO(ConfigureMake):
         dflags.append(comp_fam_dflags[self.toolchain.comp_family()])
 
         if self.toolchain.options.get('openmp', False):
-            libffi = os.getenv('LIBFFT_MT')
+            libfft = os.getenv('LIBFFT_MT')
         else:
             libfft = os.getenv('LIBFFT')
         if libfft:
