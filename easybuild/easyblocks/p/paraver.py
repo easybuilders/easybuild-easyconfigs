@@ -91,7 +91,7 @@ class EB_Paraver(ConfigureMake):
         except OSError, err:
             raise EasyBuildError("Failed to move to %s: %s" % (component, err))
 
-        self.log.info("Customized start directory for component %s: %s", component, self.getcwd())
+        self.log.info("Customized start directory for component %s: %s", component, os.getcwd())
 
         print_msg("starting with component %s" % component, log=self.log)
 
