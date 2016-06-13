@@ -146,8 +146,8 @@ class EasyConfigTest(TestCase):
         if self.ordered_specs is None:
             self.process_all_easyconfigs()
 
-        for spec in self.ordered_specs:
-            self.assertFalse(check_conflicts([spec], modules_tool()), "No conflicts detected")
+        self.assertFalse(check_conflicts(self.ordered_specs, modules_tool(), check_inter_ec_conflicts=False),
+                         "No conflicts detected")
 
     def test_sanity_check_paths(self):
         """Make sure specified sanity check paths adher to the requirements."""
