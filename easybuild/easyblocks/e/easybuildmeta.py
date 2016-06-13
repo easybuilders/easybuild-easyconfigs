@@ -52,14 +52,15 @@ class EB_EasyBuildMeta(PythonPackage):
 
         self.easybuild_pkgs = ['easybuild-framework', 'easybuild-easyblocks', 'easybuild-easyconfigs']
         if LooseVersion(self.version) >= LooseVersion('2.0'):
-            # deliberately include vsc-base twice;
-            # first time to ensure the specified vsc-base package is available when framework gets installed
+            # deliberately include vsc-install & vsc-base twice;
+            # first time to ensure the specified vsc-install/vsc-base package is available when framework gets installed
             self.easybuild_pkgs.insert(0, 'vsc-base')
+            self.easybuild_pkgs.insert(0, 'vsc-install')
             # second time as last package to be installed, to ensure that the vsc-base version listed
             # in easy-install.pth is the one specified;
             # when installing the easybuild-* packages, the vsc-base version in easy-install.pth may be 'bumped'
             # if a newer vsc-base version is found somewhere (e.g. provided by the OS)
-            self.easybuild_pkgs.append('vsc-base')
+            self.easybuild_pkgs.extend(['vsc-base', 'vsc-install'])
 
     def check_readiness_step(self):
         """Make sure EasyBuild can be installed with a loaded EasyBuild module."""
@@ -83,8 +84,9 @@ class EB_EasyBuildMeta(PythonPackage):
             for pkg in self.easybuild_pkgs:
                 seldirs = [x for x in subdirs if x.startswith(pkg)]
                 if len(seldirs) != 1:
-                    # vsc-base sources are optional, can be pulled in from PyPi when installing easybuild-framework too
-                    if pkg != 'vsc-base':
+                    # vsc-install and vsc-base sources are optional,
+                    # they can be pulled in from PyPi when installing easybuild-framework too
+                    if pkg not in ['vsc-base', 'vsc-install']:
                         raise EasyBuildError("Failed to find EasyBuild %s package (subdirs: %s, seldirs: %s)",
                                              pkg, subdirs, seldirs)
 
@@ -119,7 +121,7 @@ class EB_EasyBuildMeta(PythonPackage):
         easy_install_pth = os.path.join(self.installdir, self.pylibdir, 'easy-install.pth')
         if os.path.exists(easy_install_pth):
             easy_install_pth_txt = read_file(easy_install_pth)
-            for pkg in self.easybuild_pkgs:
+            for pkg in [p for p in self.easybuild_pkgs if p != 'vsc-install']:
                 if pkg == 'vsc-base':
                     # don't include strict version check for vsc-base
                     pkg_regex = re.compile(r"^\./%s" % pkg.replace('-', '_'), re.M)
