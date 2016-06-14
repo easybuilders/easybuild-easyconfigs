@@ -170,7 +170,7 @@ class EB_TAU(ConfigureMake):
         # determine list of labels, based on selected (extra) backends, variants and optional packages
         self.variant_labels = []
         backend_labels = ['', '-epilog-scalasca-trace', '-scorep', '-vampirtrace-trace']
-        for backend, backend_label in zip(['tau'] + KNOWN_BACKENDS.keys(), backend_labels):
+        for backend, backend_label in zip(['tau'] + sorted(KNOWN_BACKENDS.keys()), backend_labels):
             if backend in ['tau'] + self.cfg['extra_backends']:
                 for pref, suff in [('-mpi', ''), ('', '-openmp-opari'), ('-mpi', '-openmp-opari')]:
 
