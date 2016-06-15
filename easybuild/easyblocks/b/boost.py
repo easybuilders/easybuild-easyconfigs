@@ -68,6 +68,7 @@ class EB_Boost(EasyBlock):
         extra_vars = {
             'boost_mpi': [False, "Build mpi boost module", CUSTOM],
             'toolset': [None, "Toolset to use for Boost configuration ('--with-toolset for bootstrap.sh')", CUSTOM],
+            'mpi_launcher': [None, "Launcher to use when running MPI regression tests", CUSTOM],
         }
         return EasyBlock.extra_options(extra_vars)
 
@@ -142,7 +143,7 @@ class EB_Boost(EasyBlock):
                         'using mpi ',
                         ': CC ',
                         ': <find-shared-library>mpich ',
-                        ': srun -n \ ',
+                        ': %s' % self.cfg['mpi_launcher'],
                         ';',
                         '',
                     ])
