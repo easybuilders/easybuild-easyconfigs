@@ -127,7 +127,8 @@ class MakeCp(ConfigureMake):
                         # copy directory
                         elif os.path.isdir(filepath):
                             self.log.debug("Copying directory %s to %s" % (filepath, target))
-                            shutil.copytree(filepath, os.path.join(target, os.path.basename(filepath)))
+                            fulltarget = os.path.join(target, os.path.basename(filepath))
+                            shutil.copytree(filepath, fulltarget, symlinks=self.cfg['keepsymlinks'])
                         else:
                             raise EasyBuildError("Can't copy non-existing path %s to %s", filepath, target)
 
