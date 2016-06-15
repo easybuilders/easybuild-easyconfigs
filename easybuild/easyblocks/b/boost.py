@@ -142,12 +142,12 @@ class EB_Boost(EasyBlock):
                         'using mpi ',
                         ': CC ',
                         ': <find-shared-library>mpich ',
-                        ': aprun -n \ ',
+                        ': srun -n \ ',
                         ';',
                         '',
                     ])
                 else: 
-                    self.log.info("Bailing out: PrgEnv-intel and PrgEnv-cray not supported")
+                    raise EasyBuildError("Bailing out: PrgEnv-intel and PrgEnv-cray not supported.")
             else:
                 txt = "using mpi : %s ;" % os.getenv("MPICXX")
 
