@@ -100,7 +100,7 @@ class Binary(EasyBlock):
             try:
                 # shutil.copytree doesn't allow the target directory to exist already
                 rmtree2(self.installdir)
-                shutil.copytree(self.cfg['start_dir'], self.installdir)
+                shutil.copytree(self.cfg['start_dir'], self.installdir, symlinks=self.cfg['keepsymlinks'])
             except OSError, err:
                 raise EasyBuildError("Failed to copy %s to %s: %s", self.cfg['start_dir'], self.installdir, err)
         else:
