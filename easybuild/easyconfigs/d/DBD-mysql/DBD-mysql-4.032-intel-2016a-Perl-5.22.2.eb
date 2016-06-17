@@ -1,0 +1,30 @@
+easyblock = 'PerlModule'
+
+name = 'DBD-mysql'
+version = '4.032'
+versionsuffix = '-Perl-%(perlver)s'
+
+homepage = 'http://search.cpan.org/~capttofu/DBD-mysql-%(version)s/'
+description = """Perl binding for MySQL"""
+
+toolchain = {'name': 'intel', 'version': '2016a'}
+
+source_urls = ['http://cpan.metacpan.org/authors/id/C/CA/CAPTTOFU/']
+sources = [SOURCE_TAR_GZ]
+
+dependencies = [
+    ('Perl', '5.22.2'),
+    ('MariaDB', '10.1.13'),
+]
+
+# force static linking of libmysqlclient to dance around problem with unresolved symbols
+configopts = '--libs="-L$EBROOTMARIADB/lib -Wl,-Bstatic -lmysqlclient -Wl,-Bdynamic -lpthread -lz -lrt -lssl -lcrypto"'
+
+options = {'modulename': 'DBD::mysql'}
+
+sanity_check_paths = {
+    'files': ['lib/perl5/site_perl/%(perlver)s/x86_64-linux-thread-multi/DBD/mysql.pm'],
+    'dirs': ['lib/perl5/site_perl/%(perlver)s/x86_64-linux-thread-multi/DBD/mysql'],
+}
+
+moduleclass = 'data'
