@@ -62,7 +62,7 @@ class EB_GROMACS(CMakeMake):
             self.cfg.update('configopts', "-DCMAKE_BUILD_TYPE=Release")
 
             # prefer static libraries, if available
-            if self.toolchain.options['dynamic']:
+            if self.toolchain.options.get('dynamic', False):
                 self.cfg.update('configopts', "-DGMX_PREFER_STATIC_LIBS=OFF")
             else:
                 self.cfg.update('configopts', "-DGMX_PREFER_STATIC_LIBS=ON")
@@ -154,7 +154,7 @@ class EB_GROMACS(CMakeMake):
         # this is determined by the GNUInstallDirs CMake module;
         # rather than trying to replicate the logic, we just figure out where the library was placed
 
-        if self.toolchain.options['dynamic']:
+        if self.toolchain.options.get('dynamic', False):
             self.libext = get_shared_lib_ext()
         else:
             self.libext = 'a'
