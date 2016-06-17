@@ -27,6 +27,7 @@ EasyBuild support for building and installing GROMACS, implemented as an easyblo
 
 @author: Kenneth Hoste (Ghent University)
 @author: Ward Poelmans (Ghent University)
+@author: Benjamin Roberts (The University of Auckland)
 @author: Luca Marsella (CSCS)
 @author: Guilherme Peretti-Pezzi (CSCS)
 """
@@ -65,8 +66,7 @@ class EB_GROMACS(CMakeMake):
         """Initialize GROMACS-specific variables."""
         super(EB_GROMACS, self).__init__(*args, **kwargs)
         self.lib_subdir = ''
-        self.cmake_objdir_normal = ''
-        self.cmake_objdir_mdrun = ''
+        self.pre_env = ''
 
     def configure_step(self):
         """Custom configuration procedure for GROMACS: set configure options for configure or cmake."""
@@ -78,7 +78,7 @@ class EB_GROMACS(CMakeMake):
 
             # Use external BLAS and LAPACK
             self.cfg.update('configopts', "--with-external-blas --with-external-lapack")
-            self.cfg.update("preconfigopts", 'LIBS="${EBVARLIBLAPACK} ${LIBS}"')
+            os.environ['LIBS'] = "%s %s" % (os.environ['LIBLAPACK'], os.environ['LIBS'])
 
             # Don't use the X window system
             self.cfg.update('configopts', "--without-x")
@@ -91,7 +91,7 @@ class EB_GROMACS(CMakeMake):
                 else:
                     self.cfg.update('configopts', "--disable-threads")
             elif self.toolchain.options.get('openmp', None):
-                raise EasyBuildError("GROMACS version {0} does not support OpenMP.".format(LooseVersion(self.version)))
+                raise EasyBuildError("GROMACS version %s does not support OpenMP" % self.version)
 
             # GSL support
             if get_software_root('GSL'):
@@ -99,13 +99,9 @@ class EB_GROMACS(CMakeMake):
             else:
                 self.cfg.update('configopts', "--without-gsl")
 
-            # I don't think it's necessary to explicitly set the location
-            # of math libraries (MKL and/or BLAS, LAPACK) but we shall see.
-
-            # Because ConfigureMake is (currently) an ancestral class of
-            # CMakeMake, we may not need to specify it as an ancestral class
-            # of gromacs.py.
+            # actually run configure via ancestor (not direct parent)
             ConfigureMake.configure_step(self)
+
         else:
             # build a release build
             self.cfg.update('configopts', "-DCMAKE_BUILD_TYPE=Release")
@@ -134,7 +130,7 @@ class EB_GROMACS(CMakeMake):
             else:
                 self.cfg.update('configopts', "-DGMX_OPENMP=OFF")
 
-            # Disable MPI support (for initial, serial/SMP build)
+            # disable MPI support for initial, serial/SMP build; actual MPI build is done later
             self.cfg.update('configopts', "-DGMX_MPI=OFF")
 
             # explicitly disable GPU support if CUDA is not available,
@@ -151,13 +147,13 @@ class EB_GROMACS(CMakeMake):
                 mkl_libs = [os.path.join(os.getenv('LAPACK_LIB_DIR'), lib) for lib in ['libmkl_lapack.a']]
                 self.cfg.update('configopts', '-DMKL_LIBRARIES="%s" ' % ';'.join(mkl_libs))
             else:
-                # This may not work in all versions of GROMACS post 4.6.
                 for libname in ['BLAS', 'LAPACK']:
                     lib_dir = os.getenv('%s_LIB_DIR' % libname)
                     libs = os.getenv('LIB%s' % libname)
                     if self.toolchain.toolchain_family() == toolchain.CRAYPE:
                         self.cfg.update('configopts', '-DGMX_%s_USER="%s/libsci_gnu_mpi_mp.a"' % (libname, lib_dir))
                     else:
+                        # FIXME
                         libfile = "lib" + libs.split('-l')[1].rstrip() + ".so"
                         libstr = os.path.join(lib_dir, libfile)
                         self.cfg.update('configopts', '-DGMX_%s_USER="%s"' % (libname, libstr))
@@ -170,15 +166,8 @@ class EB_GROMACS(CMakeMake):
                 else:
                     self.cfg.update('configopts', "-DGMX_GSL=OFF")
 
-            # set regression test path
-            prefix = 'regressiontests'
-            if any([src['name'].startswith(prefix) for src in self.src]):
-                self.cfg.update('configopts', "-DREGRESSIONTEST_PATH='%%(builddir)s/%s-%%(version)s' " % prefix)
-
             # complete configuration with configure_method of parent
-            self.cmake_objdir_normal = 'build-normal'
-            os.mkdir(self.cmake_objdir_normal)
-            os.chdir(self.cmake_objdir_normal)
+            self.cfg['separate_build_dir'] = True
             out = super(EB_GROMACS, self).configure_step(srcdir='..')
 
             # for recent GROMACS versions, make very sure that a decent BLAS, LAPACK and FFT is found and used
@@ -195,42 +184,23 @@ class EB_GROMACS(CMakeMake):
 
             os.chdir('..')
 
-    def build_step(self):
-
-        if LooseVersion(self.version) >= LooseVersion('4.6'):
-            os.chdir(self.cmake_objdir_normal)
-        else:
-            self.cfg.update("prebuildopts", 'LIBS="${EBVARLIBLAPACK} ${LIBS}"')
-
-        super(EB_GROMACS, self).build_step()
-
-        if LooseVersion(self.version) >= LooseVersion('4.6'):
-            os.chdir('..')
-
     def test_step(self):
-        """Run the basic tests (but not necessarily the full regression tests)
-           using make check"""
+        """Run the basic tests (but not necessarily the full regression tests) using make check"""
         # allow to escape testing by setting runtest to False
         if not self.cfg['runtest'] and not isinstance(self.cfg['runtest'], bool):
-            self.cfg['runtest'] = 'check'
+
             # make very sure OMP_NUM_THREADS is set to 1, to avoid hanging GROMACS regression test
             env.setvar('OMP_NUM_THREADS', '1')
-            if LooseVersion(self.version) >= LooseVersion('4.6'):
-                os.chdir(self.cmake_objdir_normal)
-            else:
-                self.cfg['runtest'] = 'LIBS="${EBVARLIBLAPACK} ${LIBS}" check'
+
+            self.cfg['runtest'] = 'check'
             super(EB_GROMACS, self).test_step()
-            if LooseVersion(self.version) >= LooseVersion('4.6'):
-                os.chdir('..')
 
     def install_step(self):
-        """Custom install step for GROMACS; figure out where libraries were installed to.
-           Also, install the MPI version of the executable in a separate step."""
-        if LooseVersion(self.version) >= LooseVersion('4.6'):
-            os.chdir(self.cmake_objdir_normal)
+        """
+        Custom install step for GROMACS; figure out where libraries were installed to.
+        Also, install the MPI version of the executable in a separate step.
+        """
         super(EB_GROMACS, self).install_step()
-        if LooseVersion(self.version) >= LooseVersion('4.6'):
-            os.chdir('..')
 
         # the GROMACS libraries get installed in different locations (deeper subdirectory), depending on the platform;
         # this is determined by the GNUInstallDirs CMake module;
@@ -325,27 +295,23 @@ class EB_GROMACS(CMakeMake):
             binaries.append('gmx')
             libnames.append('gromacs')
             if self.toolchain.options.get('usempi', None):
-                binaries.append('mdrun{0}'.format(suff))
+                binaries.append('mdrun' + suff)
         else:
             libnames.extend(['gmxana', 'gmx', 'md'])
-            # I don't know when the gmxpreprocess library was introduced.
-            # This LooseVersion number may have to be tweaked.
-            if LooseVersion(self.version) > LooseVersion('3.3.3'):
+            # note: gmxpreprocess may also already be there for earlier versions
+            if LooseVersion(self.version) > LooseVersion('4.6'):
                 libnames.append('gmxpreprocess')
             if self.toolchain.options.get('usempi', None):
-                libnames.extend(['{0}{1}'.format(libname, suff) for libname in libnames])
+                libnames.extend([libname + suff for libname in libnames])
 
         libs = ['lib%s%s.%s' % (libname, suff, self.libext) for libname in libnames]
 
-        # I don't know when the pkgconfig directory was introduced.
-        # This LooseVersion number may have to be tweaked.
-        if LooseVersion(self.version) > LooseVersion('3.3.3'):
-            dirs.append(os.path.join(self.lib_subdir, "pkgconfig"))
+        # pkgconfig dir not available for earlier versions, exact version to use here is unclear
+        if LooseVersion(self.version) >= LooseVersion('4.6'):
+            dirs.append(os.path.join(self.lib_subdir, 'pkgconfig'))
 
         custom_paths = {
-            'files': ['bin/%s' % binary for binary in binaries] +
-                     [os.path.join(self.lib_subdir, lib) for lib in libs],
+            'files': ['bin/%s' % binary for binary in binaries] + [os.path.join(self.lib_subdir, lib) for lib in libs],
             'dirs': dirs
         }
-
         super(EB_GROMACS, self).sanity_check_step(custom_paths=custom_paths)
