@@ -43,11 +43,11 @@ import re
 import shutil
 import sys
 
-from easybuild.tools.filetools import write_file
 import easybuild.tools.toolchain as toolchain
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.build_log import EasyBuildError
+from easybuild.tools.filetools import write_file
 from easybuild.tools.modules import get_software_root
 from easybuild.tools.run import run_cmd
 from easybuild.tools.systemtools import UNKNOWN, get_glibc_version, get_shared_lib_ext
@@ -128,8 +128,8 @@ class EB_Boost(EasyBlock):
 
             txt = ''
             # Check if using a Cray toolchain and configure MPI accordingly
-            if self.toolchain.name.startswith('Cray'):
-                if self.toolchain.PRGENV_MODULE_NAME_SUFFIX is 'gnu':
+            if self.toolchain.toolchain_family() == toolchain.CRAYPE:
+                if self.toolchain.PRGENV_MODULE_NAME_SUFFIX == 'gnu':
                     craympichdir = os.getenv('CRAY_MPICH2_DIR')
                     craygccversion = os.getenv('GCC_VERSION')
                     txt = '\n'.join([    
@@ -148,11 +148,11 @@ class EB_Boost(EasyBlock):
                         '',
                     ])
                 else: 
-                    raise EasyBuildError("Bailing out: PrgEnv-intel and PrgEnv-cray not supported.")
+                    raise EasyBuildError("Bailing out: only PrgEnv-gnu supported for now")
             else:
                 txt = "using mpi : %s ;" % os.getenv("MPICXX")
 
-        write_file('user-config.jam', txt, append=True)
+            write_file('user-config.jam', txt, append=True)
  
     def build_step(self):
         """Build Boost with bjam tool."""
