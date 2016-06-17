@@ -34,6 +34,7 @@ EasyBuild support for building and installing GROMACS, implemented as an easyblo
 import glob
 import os
 import re
+import shutil
 from distutils.version import LooseVersion
 from vsc.utils.missing import any
 
@@ -60,7 +61,7 @@ class EB_GROMACS(CMakeMake):
             'mpiexec_numproc_flag': ['-np', "Flag to introduce the number of MPI tasks when running tests", CUSTOM],
             'mpi_numprocs': [0, "Number of MPI tasks to use when running tests", CUSTOM],
         }
-        return ConfigureMake.extra_options(extra_vars)
+        return CMakeMake.extra_options(extra_vars)
 
     def __init__(self, *args, **kwargs):
         """Initialize GROMACS-specific variables."""
@@ -168,7 +169,7 @@ class EB_GROMACS(CMakeMake):
 
             # complete configuration with configure_method of parent
             self.cfg['separate_build_dir'] = True
-            out = super(EB_GROMACS, self).configure_step(srcdir='..')
+            out = super(EB_GROMACS, self).configure_step()
 
             # for recent GROMACS versions, make very sure that a decent BLAS, LAPACK and FFT is found and used
             if LooseVersion(self.version) >= LooseVersion('4.6.5'):
@@ -181,8 +182,6 @@ class EB_GROMACS(CMakeMake):
                     regex = re.compile(pattern, re.M)
                     if not regex.search(out):
                         raise EasyBuildError("Pattern '%s' not found in GROMACS configuration output.", pattern)
-
-            os.chdir('..')
 
     def test_step(self):
         """Run the basic tests (but not necessarily the full regression tests) using make check"""
@@ -230,32 +229,46 @@ class EB_GROMACS(CMakeMake):
         # Install a version with the MPI suffix
         if self.toolchain.options.get('usempi', None):
             if LooseVersion(self.version) < LooseVersion('4.6'):
+
                 cmd = "make distclean"
                 (out, _) = run_cmd(cmd, log_all=True, simple=False)
+
                 self.cfg.update('configopts', "--enable-mpi --program-suffix={0}".format(self.cfg['mpisuffix']))
                 ConfigureMake.configure_step(self)
-                self.cfg.update("buildopts", "mdrun")
-                super(EB_GROMACS, self).build_step()
-                cmd = "%s make install-mdrun %s" % (self.cfg['preinstallopts'], self.cfg['installopts'])
-                (out, _) = run_cmd(cmd, log_all=True, simple=False)
-            else:
-                cmake_objdir = "build-mdrun-only"
-                os.mkdir(cmake_objdir)
-                os.chdir(cmake_objdir)
-                self.cfg['configopts'] = re.sub(r'-DGMX_MPI=OFF', r'', self.cfg['configopts'])
-                if self.cfg['mpi_numprocs'] == 0:
-                    self.log.info("No specific number of test MPI tasks requested -- using parallelism ({0})".format(self.cfg['parallel']))
-                    self.cfg['mpi_numprocs'] = self.cfg['parallel']
-                elif self.cfg['mpi_numprocs'] > self.cfg['parallel']:
-                    self.log.warning("Number of test MPI tasks ({0}) is greater than parallelism ({1})".format(self.cfg['mpi_numprocs'], self.cfg['parallel']))
-                self.cfg.update('configopts', "-DGMX_MPI=ON -DGMX_THREAD_MPI=OFF -DMPIEXEC={0} -DMPIEXEC_NUMPROC_FLAG={1} -DNUMPROC={2} -DGMX_BUILD_MDRUN_ONLY=ON".format(self.cfg['mpiexec'], self.cfg['mpiexec_numproc_flag'], self.cfg['mpi_numprocs']))
-                self.log.info("Using {0} as MPI executable when testing, with numprocs flag \"{1}\" and {2} tasks".format(self.cfg['mpiexec'], self.cfg['mpiexec_numproc_flag'], self.cfg['mpi_numprocs']))
 
-                # Rebuild with MPI options
-                super(EB_GROMACS, self).configure_step(srcdir='..')
+                #self.cfg.update('buildopts', 'mdrun')  # FIXME
+                super(EB_GROMACS, self).build_step()
+
+                #cmd = "%s make install-mdrun %s" % (self.cfg['preinstallopts'], self.cfg['installopts'])  # FIXME
+                #(out, _) = run_cmd(cmd, log_all=True, simple=False)
+                super(EB_GROMACS, self).install_step()
+
+            else:
+                self.cfg['configopts'] = re.sub(r'-DGMX_MPI=OFF', r'', self.cfg['configopts'])
+
+                if self.cfg['mpi_numprocs'] == 0:
+                    self.log.info("No number of test MPI tasks specified -- using default: %s" % self.cfg['parallel'])
+                    self.cfg['mpi_numprocs'] = self.cfg['parallel']
+
+                elif self.cfg['mpi_numprocs'] > self.cfg['parallel']:
+                    self.log.warning("Number of test MPI tasks (%s) is greater than value for 'parallel': %s",
+                                     self.cfg['mpi_numprocs'], self.cfg['parallel'])
+
+                self.cfg.update('configopts', "-DGMX_MPI=ON -DGMX_THREAD_MPI=OFF -DMPIEXEC=%s" % self.cfg['mpiexec'])
+                self.cfg.update('configopts', "-DMPIEXEC_NUMPROC_FLAG=%s" % self.cfg['mpiexec_numproc_flag'])
+                self.cfg.update('configopts', "-DNUMPROC=%s" % self.cfg['mpi_numprocs'])
+                #self.cfg.update('configopts', "-DGMX_BUILD_MDRUN_ONLY=ON")  # FIXME
+
+                self.log.info("Using %s as MPI executable when testing, with numprocs flag '%s' and %s tasks",
+                              self.cfg['mpiexec'], self.cfg['mpiexec_numproc_flag'], self.cfg['mpi_numprocs'])
+
+                # clean up obj dir before reconfiguring
+                shutil.rmtree(os.path.join(self.builddir, 'easybuild_obj'))
+
+                # rebuild/install with MPI options
+                super(EB_GROMACS, self).configure_step()
                 super(EB_GROMACS, self).build_step()
                 super(EB_GROMACS, self).install_step()
-                os.chdir('..')
 
                 self.log.info("A full regression test suite is available from the GROMACS web site")
 
@@ -294,7 +307,7 @@ class EB_GROMACS(CMakeMake):
         if LooseVersion(self.version) >= LooseVersion('5.0'):
             binaries.append('gmx')
             libnames.append('gromacs')
-            if self.toolchain.options.get('usempi', None):
+            if LooseVersion(self.version) < LooseVersion('5.1') and self.toolchain.options.get('usempi', None):
                 binaries.append('mdrun' + suff)
         else:
             libnames.extend(['gmxana', 'gmx', 'md'])
