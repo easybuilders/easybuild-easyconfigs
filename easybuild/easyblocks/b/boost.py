@@ -152,7 +152,7 @@ class EB_Boost(EasyBlock):
             else:
                 txt = "using mpi : %s ;" % os.getenv("MPICXX")
 
-        write_file('user-config.jam', txt, append=True)
+            write_file('user-config.jam', txt, append=True)
  
     def build_step(self):
         """Build Boost with bjam tool."""
