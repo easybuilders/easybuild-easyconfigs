@@ -240,11 +240,8 @@ class EB_GROMACS(CMakeMake):
                 self.cfg.update('configopts', "--enable-mpi --program-suffix={0}".format(self.cfg['mpisuffix']))
                 ConfigureMake.configure_step(self)
 
-                #self.cfg.update('buildopts', 'mdrun')  # FIXME
                 super(EB_GROMACS, self).build_step()
 
-                #cmd = "%s make install-mdrun %s" % (self.cfg['preinstallopts'], self.cfg['installopts'])  # FIXME
-                #(out, _) = run_cmd(cmd, log_all=True, simple=False)
                 super(EB_GROMACS, self).install_step()
 
             else:
@@ -261,7 +258,6 @@ class EB_GROMACS(CMakeMake):
                 self.cfg.update('configopts', "-DGMX_MPI=ON -DGMX_THREAD_MPI=OFF -DMPIEXEC=%s" % self.cfg['mpiexec'])
                 self.cfg.update('configopts', "-DMPIEXEC_NUMPROC_FLAG=%s" % self.cfg['mpiexec_numproc_flag'])
                 self.cfg.update('configopts', "-DNUMPROC=%s" % self.cfg['mpi_numprocs'])
-                #self.cfg.update('configopts', "-DGMX_BUILD_MDRUN_ONLY=ON")  # FIXME
 
                 self.log.info("Using %s as MPI executable when testing, with numprocs flag '%s' and %s tasks",
                               self.cfg['mpiexec'], self.cfg['mpiexec_numproc_flag'], self.cfg['mpi_numprocs'])
