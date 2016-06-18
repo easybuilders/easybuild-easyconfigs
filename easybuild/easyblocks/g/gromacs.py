@@ -152,15 +152,14 @@ class EB_GROMACS(CMakeMake):
                 mkl_libs = [os.path.join(os.getenv('LAPACK_LIB_DIR'), lib) for lib in ['libmkl_lapack.a']]
                 self.cfg.update('configopts', '-DMKL_LIBRARIES="%s" ' % ';'.join(mkl_libs))
             else:
+                shlib_ext = get_shared_lib_ext()
                 for libname in ['BLAS', 'LAPACK']:
                     lib_dir = os.getenv('%s_LIB_DIR' % libname)
                     libs = os.getenv('LIB%s' % libname)
                     if self.toolchain.toolchain_family() == toolchain.CRAYPE:
                         self.cfg.update('configopts', '-DGMX_%s_USER="%s/libsci_gnu_mpi_mp.a"' % (libname, lib_dir))
                     else:
-                        # FIXME
-                        libfile = "lib" + libs.split('-l')[1].rstrip() + ".so"
-                        libstr = os.path.join(lib_dir, libfile)
+                        libstr = os.path.join(lib_dir, 'lib' + libs.split('-l')[1].rstrip() + shlib_ext)
                         self.cfg.update('configopts', '-DGMX_%s_USER="%s"' % (libname, libstr))
 
             # no more GSL support in GROMACS 5.x, see http://redmine.gromacs.org/issues/1472
