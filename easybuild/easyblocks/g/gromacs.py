@@ -56,6 +56,7 @@ class EB_GROMACS(CMakeMake):
     @staticmethod
     def extra_options():
         extra_vars = {
+            'double_precision': [False, "Build with double precision enabled (-DGMX_DOUBLE=ON)", CUSTOM],
             'mpisuffix': ['_mpi', "Suffix to append to MPI-enabled executables", CUSTOM],
             'mpiexec': ['mpirun', "MPI executable to use when running tests", CUSTOM],
             'mpiexec_numproc_flag': ['-np', "Flag to introduce the number of MPI tasks when running tests", CUSTOM],
@@ -112,6 +113,9 @@ class EB_GROMACS(CMakeMake):
                 self.cfg.update('configopts', "-DGMX_PREFER_STATIC_LIBS=OFF")
             else:
                 self.cfg.update('configopts', "-DGMX_PREFER_STATIC_LIBS=ON")
+
+            if self.cfg['double_precision']:
+                self.cfg.update('configopts', "-DGMX_DOUBLE=ON")
 
             # always specify to use external BLAS/LAPACK
             self.cfg.update('configopts', "-DGMX_EXTERNAL_BLAS=ON -DGMX_EXTERNAL_LAPACK=ON")
@@ -290,9 +294,7 @@ class EB_GROMACS(CMakeMake):
             suff = '_mpi'
 
         # Add the _d suffix to the suffix, in case of the double precission
-        if '-DGMX_DOUBLE=on' in self.cfg['configopts']:
-            suff = suff + '_d'
-        elif '-DGMX_DOUBLE=ON' in self.cfg['configopts']:
+        if re.search('DGMX_DOUBLE=(ON|YES|TRUE|Y|[1-9])', self.cfg['configopts'], re.I):
             suff = suff + '_d'
 
         dirs = [os.path.join('include', 'gromacs')]
