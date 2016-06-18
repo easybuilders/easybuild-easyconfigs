@@ -57,7 +57,7 @@ class EB_GROMACS(CMakeMake):
     def extra_options():
         extra_vars = {
             'double_precision': [False, "Build with double precision enabled (-DGMX_DOUBLE=ON)", CUSTOM],
-            'mpisuffix': ['_mpi', "Suffix to append to MPI-enabled executables", CUSTOM],
+            'mpisuffix': ['_mpi', "Suffix to append to MPI-enabled executables (only for GROMACS < 4.6)", CUSTOM],
             'mpiexec': ['mpirun', "MPI executable to use when running tests", CUSTOM],
             'mpiexec_numproc_flag': ['-np', "Flag to introduce the number of MPI tasks when running tests", CUSTOM],
             'mpi_numprocs': [0, "Number of MPI tasks to use when running tests", CUSTOM],
@@ -289,35 +289,40 @@ class EB_GROMACS(CMakeMake):
     def sanity_check_step(self):
         """Custom sanity check for GROMACS."""
 
-        suff = ''
-        if self.toolchain.options.get('usempi', None):
-            suff = '_mpi'
-
-        # Add the _d suffix to the suffix, in case of the double precission
-        if re.search('DGMX_DOUBLE=(ON|YES|TRUE|Y|[1-9])', self.cfg['configopts'], re.I):
-            suff = suff + '_d'
-
         dirs = [os.path.join('include', 'gromacs')]
 
         # in GROMACS v5.1, only 'gmx' binary is there
         # (only) in GROMACS v5.0, other binaries are symlinks to 'gmx'
-        binaries = []
+        bins = []
         libnames = []
         if LooseVersion(self.version) < LooseVersion('5.1'):
-            binaries.extend(['editconf', 'g_lie', 'genbox', 'genconf', 'mdrun'])
+            bins.extend(['editconf', 'g_lie', 'genbox', 'genconf', 'mdrun'])
 
         if LooseVersion(self.version) >= LooseVersion('5.0'):
-            binaries.append('gmx')
+            bins.append('gmx')
             libnames.append('gromacs')
             if LooseVersion(self.version) < LooseVersion('5.1') and self.toolchain.options.get('usempi', None):
-                binaries.append('mdrun' + suff)
+                bins.append('mdrun' + suff)
         else:
             libnames.extend(['gmxana', 'gmx', 'md'])
             # note: gmxpreprocess may also already be there for earlier versions
             if LooseVersion(self.version) > LooseVersion('4.6'):
                 libnames.append('gmxpreprocess')
-            if self.toolchain.options.get('usempi', None):
-                libnames.extend([libname + suff for libname in libnames])
+
+        # also check for MPI-specific binaries/libraries
+        if self.toolchain.options.get('usempi', None):
+            if LooseVersion(self.version) < LooseVersion('4.6'):
+                mpisuff = self.cfg['mpisuffix']
+            else:
+                mpisuff = '_mpi'
+
+            bins.extend([binary + mpisuff for binary in bins])
+            libnames.extend([libname + mpisuff for libname in libnames])
+
+        suff = ''
+        # add the _d suffix to the suffix, in case of the double precission
+        if re.search('DGMX_DOUBLE=(ON|YES|TRUE|Y|[1-9])', self.cfg['configopts'], re.I):
+            suff = '_d'
 
         libs = ['lib%s%s.%s' % (libname, suff, self.libext) for libname in libnames]
 
@@ -326,7 +331,7 @@ class EB_GROMACS(CMakeMake):
             dirs.append(os.path.join(self.lib_subdir, 'pkgconfig'))
 
         custom_paths = {
-            'files': ['bin/%s' % binary for binary in binaries] + [os.path.join(self.lib_subdir, lib) for lib in libs],
-            'dirs': dirs
+            'files': [os.path.join('bin', b + suff) for b in bins] + [os.path.join(self.lib_subdir, l) for l in libs],
+            'dirs': dirs,
         }
         super(EB_GROMACS, self).sanity_check_step(custom_paths=custom_paths)
