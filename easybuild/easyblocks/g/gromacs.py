@@ -154,9 +154,9 @@ class EB_GROMACS(CMakeMake):
             else:
                 shlib_ext = get_shared_lib_ext()
                 for libname in ['BLAS', 'LAPACK']:
-                    lib_dir = os.getenv('%s_LIB_DIR' % libname)
+                    libdir = os.getenv('%s_LIB_DIR' % libname)
                     if self.toolchain.toolchain_family() == toolchain.CRAYPE:
-                        self.cfg.update('configopts', '-DGMX_%s_USER="%s/libsci_gnu_mpi_mp.a"' % (libname, lib_dir))
+                        self.cfg.update('configopts', '-DGMX_%s_USER="%s/libsci_gnu_mpi_mp.a"' % (libname, libdir))
                     else:
                         libs = os.getenv('LIB%s' % libname)
                         self.cfg.update('configopts', '-DGMX_%s_USER="-L%s %s"' % (libname, libdir, libs))
