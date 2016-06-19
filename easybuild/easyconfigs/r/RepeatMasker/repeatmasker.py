@@ -31,7 +31,7 @@ import os
 import shutil
 
 from easybuild.framework.easyblock import EasyBlock
-from easybuild.easyblocks.generic.binary import PackedBinary
+from easybuild.easyblocks.generic.packedbinary import PackedBinary
 from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.run import run_cmd
 from easybuild.tools.modules import get_software_root, get_software_version
