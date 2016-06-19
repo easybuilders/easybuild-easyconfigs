@@ -297,7 +297,7 @@ class EB_GROMACS(CMakeMake):
             bins.append('gmx')
             libnames.append('gromacs')
             if LooseVersion(self.version) < LooseVersion('5.1') and self.toolchain.options.get('usempi', None):
-                bins.append('mdrun' + suff)
+                bins.append('mdrun')
         else:
             libnames.extend(['gmxana', 'gmx', 'md'])
             # note: gmxpreprocess may also already be there for earlier versions
