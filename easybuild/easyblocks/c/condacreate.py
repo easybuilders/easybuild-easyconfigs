@@ -106,9 +106,10 @@ class EB_CondaCreate(EasyBlock):
         env.setvar('CONDA_DEFAULT_ENV', self.installdir)
 
         if self.cfg['channels'] and self.cfg['requirements']:
-            cmd = "conda install -y --file {} -c {}".format(self.cfg['requirements'], self.cfg['channels'])
+            cmd = "conda install -y -c {} {}".format(self.cfg['channels'],
+                                                     self.cfg['requirements'])
         elif self.cfg['requirements']:
-            cmd = "conda install -y --file {} {}".format(self.cfg['requirements'], self.cfg['channels'])
+            cmd = "conda install -y {}".format(self.cfg['requirements'])
 
         run_cmd(cmd)
         self.log.info('Installed conda requirements')
