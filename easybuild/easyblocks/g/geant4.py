@@ -43,7 +43,8 @@ from easybuild.easyblocks.generic.cmakemake import CMakeMake
 from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.modules import get_software_root
 from easybuild.tools.run import run_cmd, run_cmd_qa
-from easybuild.tools.filetools import mkdir
+from easybuild.tools.filetools import mkdir, read_file, write_file
+
 
 class EB_Geant4(CMakeMake):
     """
@@ -338,9 +339,7 @@ class EB_Geant4(CMakeMake):
             os.chdir(mpiuidir)
 
             # tweak config file as needed
-            f = open("G4MPI.gmk", "r")
-            G4MPItxt = f.read()
-            f.close()
+            G4MPItxt = read_file('G4MPI.gmk')
 
             root_re = re.compile("(.*G4MPIROOT\s+=\s+).*", re.MULTILINE)
             cxx_re = re.compile("(.*CXX\s+:=\s+).*", re.MULTILINE)
@@ -353,9 +352,7 @@ class EB_Geant4(CMakeMake):
             self.log.debug("contents of G4MPI.gmk: %s" % G4MPItxt)
 
             shutil.copyfile("G4MPI.gmk", "G4MPI.gmk.ORIG")
-            f = open("G4MPI.gmk", "w")
-            f.write(G4MPItxt)
-            f.close()
+            write_file('G4MPI.gmk', G4MPItxt)
 
             # make sure the required environment variables are there
             env.setvar("G4INSTALL", self.installdir)
