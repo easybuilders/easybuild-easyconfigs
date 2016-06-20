@@ -270,11 +270,9 @@ class EB_Geant4(CMakeMake):
 
         if LooseVersion(self.version) >= LooseVersion("9.4"):
             super(EB_Geant4, self).install_step()
-            self.datadst = os.path.join(self.installdir,
-                                        'share',
-                                        '%s-%s' % (self.name, self.version.replace("p0", "")),
-                                        'data',
-                                        )
+            # '10.01.p03' -> '10.1.3'
+            shortver = self.version.replace('.0', '.').replace('.p0', '.')
+            self.datadst = os.path.join(self.installdir, 'share', '%s-%s' % (self.name, shortver), 'data')
 
             if LooseVersion(self.version) < LooseVersion("9.5"):
                 version_parts = self.version.split('.')
@@ -294,7 +292,7 @@ class EB_Geant4(CMakeMake):
                 self.datadst = os.path.join(self.installdir, 'data')
                 os.mkdir(self.datadst)
             except OSError, err:
-                raise EasyBuildError("Failed to create data destination file %s: %s", self.datadst, err)
+                raise EasyBuildError("Failed to create data destination dir %s: %s", self.datadst, err)
 
             datalist = ['G4ABLA%s' % self.cfg['G4ABLAVersion'],
                         'G4EMLOW%s' % self.cfg['G4EMLOWVersion'],
