@@ -156,10 +156,17 @@ class EB_GROMACS(CMakeMake):
                 for libname in ['BLAS', 'LAPACK']:
                     libdir = os.getenv('%s_LIB_DIR' % libname)
                     if self.toolchain.toolchain_family() == toolchain.CRAYPE:
-                        self.cfg.update('configopts', '-DGMX_%s_USER="%s/libsci_gnu_mpi_mp.a"' % (libname, libdir))
+                        libsci_mpi_mp_lib = glob.glob(os.path.join(libdir, 'libsci_*_mpi_mp.a'))
+                        if libsci_mpi_mp_lib:
+                            self.cfg.update('configopts', '-DGMX_%s_USER=%s' % (libname, libsci_mpi_mp_lib[0]))
+                        else:
+                            raise EasyBuildError("Failed to find libsci library to link with for %s", libname)
                     else:
-                        libs = os.getenv('LIB%s' % libname)
-                        self.cfg.update('configopts', '-DGMX_%s_USER="-L%s %s"' % (libname, libdir, libs))
+                        libs = os.getenv('%s_STATIC_LIBS' % libname).split(',')
+                        self.cfg.update('configopts', '-DGMX_%s_USER="%s"' % (libname, os.path.join(libdir, libs[0])))
+                        if 'libgfortran.a' in libs:
+                            for var in ['CFLAGS', 'CXXFLAGS', 'FFLAGS']:
+                                os.environ[var] = "%s -lgfortran" % os.getenv(var)
 
             # no more GSL support in GROMACS 5.x, see http://redmine.gromacs.org/issues/1472
             if LooseVersion(self.version) < LooseVersion('5.0'):
