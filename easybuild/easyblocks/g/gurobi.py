@@ -2,7 +2,6 @@ import os
 import shutil
 
 from easybuild.easyblocks.generic.tarball import Tarball
-from easybuild.framework.easyblock import EasyBlock
 from easybuild.tools.build_log import EasyBuildError
 
 
