@@ -42,8 +42,8 @@ class EB_Gurobi(Tarball):
     def configure_step(self):
         """No configuration for Gurobi."""
         # ensure a license file is specified
-        if self.cfg['license_file'] is None:
-            raise EasyBuildError("No license file specified.")
+        if self.cfg['license_file'] is None or not os.path.exists(self.cfg['license_file']):
+            raise EasyBuildError("No existing license file specified: %s", self.cfg['license_file'])
 
     def install_step(self):
         """Install Gurobi and license file."""
