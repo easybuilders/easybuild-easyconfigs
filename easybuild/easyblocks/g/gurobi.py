@@ -26,6 +26,14 @@ class EB_Gurobi(Tarball):
         except OSError, err:
             raise EasyBuildError("Failed to copy license file to %s: %s", lic_path, err)
 
+    def sanity_check_step(self):
+        """Custom sanity check for Gurobi."""
+        custom_paths = {
+            'files': ['bin/%s' % f for f in ['grbprobe', 'grbtune', 'gurobi_cl', 'gurobi.sh']],
+            'dirs': [],
+        }
+        super(EB_Gurobi, self).sanity_check_step(custom_paths=custom_paths)
+
     def make_module_extra(self):
         """Custom extra module file entries for Gurobi."""
         txt = super(EB_Gurobi, self).make_module_extra()
