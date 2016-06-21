@@ -23,7 +23,7 @@ class EB_Gurobi(Tarball):
         lic_path = os.path.join(self.installdir, 'gurobi.lic')
         try:
             shutil.copy2(self.cfg['license_file'], lic_path)
-        except OSError, err:
+        except OSError as err:
             raise EasyBuildError("Failed to copy license file to %s: %s", lic_path, err)
 
     def sanity_check_step(self):
