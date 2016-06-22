@@ -264,13 +264,16 @@ class EB_GROMACS(CMakeMake):
                     self.log.warning("Number of test MPI tasks (%s) is greater than value for 'parallel': %s",
                                      self.cfg['mpi_numprocs'], self.cfg['parallel'])
 
+                self.cfg.update('configopts', "-DGMX_MPI=ON -DGMX_THREAD_MPI=OFF")
+
                 mpiexec = which(self.cfg['mpiexec'])
-                if mpiexec is None:
+                if mpiexec:
+                    self.cfg.update('configopts', "-DMPIEXEC=%s" % mpiexec)
+                    self.cfg.update('configopts', "-DMPIEXEC_NUMPROC_FLAG=%s" % self.cfg['mpiexec_numproc_flag'])
+                    self.cfg.update('configopts', "-DNUMPROC=%s" % self.cfg['mpi_numprocs'])
+                elif self.cfg['runtest']:
                     raise EasyBuildError("'%s' not found in $PATH", self.cfg['mpiexec'])
 
-                self.cfg.update('configopts', "-DGMX_MPI=ON -DGMX_THREAD_MPI=OFF -DMPIEXEC=%s" % mpiexec)
-                self.cfg.update('configopts', "-DMPIEXEC_NUMPROC_FLAG=%s" % self.cfg['mpiexec_numproc_flag'])
-                self.cfg.update('configopts', "-DNUMPROC=%s" % self.cfg['mpi_numprocs'])
 
                 self.log.info("Using %s as MPI executable when testing, with numprocs flag '%s' and %s tasks",
                               self.cfg['mpiexec'], self.cfg['mpiexec_numproc_flag'], self.cfg['mpi_numprocs'])
