@@ -210,6 +210,8 @@ class EB_GROMACS(CMakeMake):
         Custom install step for GROMACS; figure out where libraries were installed to.
         Also, install the MPI version of the executable in a separate step.
         """
+        # run 'make install' in parallel since it involves more compilation
+        self.cfg.update('installopts', "-j %s" % self.cfg['parallel'])
         super(EB_GROMACS, self).install_step()
 
         # the GROMACS libraries get installed in different locations (deeper subdirectory), depending on the platform;
