@@ -44,7 +44,7 @@ from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.easyblocks.generic.cmakemake import CMakeMake
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.build_log import EasyBuildError
-from easybuild.tools.filetools import download_file, extract_file
+from easybuild.tools.filetools import download_file, extract_file, which
 from easybuild.tools.modules import get_software_root
 from easybuild.tools.run import run_cmd
 from easybuild.tools.systemtools import get_platform_name , get_shared_lib_ext
@@ -264,7 +264,11 @@ class EB_GROMACS(CMakeMake):
                     self.log.warning("Number of test MPI tasks (%s) is greater than value for 'parallel': %s",
                                      self.cfg['mpi_numprocs'], self.cfg['parallel'])
 
-                self.cfg.update('configopts', "-DGMX_MPI=ON -DGMX_THREAD_MPI=OFF -DMPIEXEC=%s" % self.cfg['mpiexec'])
+                mpiexec = which(self.cfg['mpiexec'])
+                if mpiexec is None:
+                    raise EasyBuildError("'%s' not found in $PATH", self.cfg['mpiexec'])
+
+                self.cfg.update('configopts', "-DGMX_MPI=ON -DGMX_THREAD_MPI=OFF -DMPIEXEC=%s" % mpiexec)
                 self.cfg.update('configopts', "-DMPIEXEC_NUMPROC_FLAG=%s" % self.cfg['mpiexec_numproc_flag'])
                 self.cfg.update('configopts', "-DNUMPROC=%s" % self.cfg['mpi_numprocs'])
 
