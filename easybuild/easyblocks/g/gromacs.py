@@ -80,7 +80,7 @@ class EB_GROMACS(CMakeMake):
 
             # Use external BLAS and LAPACK
             self.cfg.update('configopts', "--with-external-blas --with-external-lapack")
-            os.environ['LIBS'] = "%s %s" % (os.environ['LIBLAPACK'], os.environ['LIBS'])
+            env.setvar('LIBS', "%s %s" % (os.environ['LIBLAPACK'], os.environ['LIBS']))
 
             # Don't use the X window system
             self.cfg.update('configopts', "--without-x")
@@ -168,7 +168,7 @@ class EB_GROMACS(CMakeMake):
                         self.cfg.update('configopts', '-DGMX_%s_USER="%s"' % (libname, ';'.join(libpaths)))
                         # if libgfortran.a is listed, make sure it gets linked in too to avoiding linking issues
                         if 'libgfortran.a' in libs:
-                            os.environ['LDFLAGS'] = "%s -lgfortran -lm" % os.getenv('LDFLAGS')
+                            env.setvar('LDFLAGS', "%s -lgfortran -lm" % os.environ.get('LDFLAGS', ''))
 
             # no more GSL support in GROMACS 5.x, see http://redmine.gromacs.org/issues/1472
             if LooseVersion(self.version) < LooseVersion('5.0'):
