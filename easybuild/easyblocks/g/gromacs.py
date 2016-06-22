@@ -164,8 +164,9 @@ class EB_GROMACS(CMakeMake):
                     else:
                         # -DGMX_BLAS_USER & -DGMX_LAPACK_USER require full path to library
                         libs = os.getenv('%s_STATIC_LIBS' % libname).split(',')
-                        self.cfg.update('configopts', '-DGMX_%s_USER="%s"' % (libname, os.path.join(libdir, libs[0])))
-                        # if libgfortran.a is listed too, make sure it gets linked in too to avoiding linking issues
+                        libpaths = [os.path.join(libdir, lib) for lib in libs if lib != 'libgfortran.a']
+                        self.cfg.update('configopts', '-DGMX_%s_USER="%s"' % (libname, ';'.join(libpaths)))
+                        # if libgfortran.a is listed, make sure it gets linked in too to avoiding linking issues
                         if 'libgfortran.a' in libs:
                             os.environ['LDFLAGS'] = "%s -lgfortran -lm" % os.getenv('LDFLAGS')
 
