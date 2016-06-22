@@ -162,11 +162,12 @@ class EB_GROMACS(CMakeMake):
                         else:
                             raise EasyBuildError("Failed to find libsci library to link with for %s", libname)
                     else:
+                        # -DGMX_BLAS_USER & -DGMX_LAPACK_USER require full path to library
                         libs = os.getenv('%s_STATIC_LIBS' % libname).split(',')
                         self.cfg.update('configopts', '-DGMX_%s_USER="%s"' % (libname, os.path.join(libdir, libs[0])))
+                        # if libgfortran.a is listed too, make sure it gets linked in too to avoiding linking issues
                         if 'libgfortran.a' in libs:
-                            for var in ['CFLAGS', 'CXXFLAGS', 'FFLAGS']:
-                                os.environ[var] = "%s -lgfortran" % os.getenv(var)
+                            os.environ['LDFLAGS'] = "%s -lgfortran -lm" % os.getenv('LDFLAGS')
 
             # no more GSL support in GROMACS 5.x, see http://redmine.gromacs.org/issues/1472
             if LooseVersion(self.version) < LooseVersion('5.0'):
