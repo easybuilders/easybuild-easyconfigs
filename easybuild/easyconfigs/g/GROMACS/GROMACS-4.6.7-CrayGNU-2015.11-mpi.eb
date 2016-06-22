@@ -1,0 +1,45 @@
+##
+# This file is an EasyBuild reciPY as per https://github.com/hpcugent/easybuild
+#
+# Copyright:: Copyright 2012-2013 University of Luxembourg / LCSB, Cyprus Institute / CaSToRC, Ghent University
+# Authors::   Wiktor Jurkowski <wiktor.jurkowski@uni.lu>, Fotis Georgatos <fotis.georgatos@uni.lu>, \
+#             George Tsouloupas <g.tsouloupas@cyi.ac.cy>, Kenneth Hoste
+# License::   MIT/GPL
+# $Id$
+#
+# This work implements a part of the HPCBIOS project and is a component of the policy:
+# http://hpcbios.readthedocs.org/en/latest/HPCBIOS_2012-93.html
+##
+name = 'GROMACS'
+version = '4.6.7'
+versionsuffix = '-mpi'
+
+homepage = 'http://www.gromacs.org'
+description = """GROMACS is a versatile package to perform molecular dynamics,
+ i.e. simulate the Newtonian equations of motion for systems with hundreds to millions of particles."""
+
+toolchain = {'name': 'CrayGNU', 'version': '2015.11'}
+toolchainopts = {'usempi': True}
+
+# eg. ftp://ftp.gromacs.org/pub/gromacs/gromacs-4.6.tar.gz
+source_urls = [
+    'ftp://ftp.gromacs.org/pub/gromacs/',  # GROMACS sources
+    'http://gerrit.gromacs.org/download/',  # regression tests sources
+]
+sources = [
+    SOURCELOWER_TAR_GZ,
+    'regressiontests-%(version)s.tar.gz',
+]
+
+preconfigopts  = "export CMAKE_LIBRARY_PATH=$CMAKE_LIBRARY_PATH:$EBROOTFFTW/lib && "
+preconfigopts += "export CMAKE_INCLUDE_PATH=$CMAKE_INCLUDE_PATH:$EBROOTFFTW/include && "
+
+dependencies = [
+     ('fftw/3.3.4.5', EXTERNAL_MODULE),
+]
+
+builddependencies = [('CMake', '3.2.2')]
+
+runtest = False
+
+moduleclass = 'bio'
