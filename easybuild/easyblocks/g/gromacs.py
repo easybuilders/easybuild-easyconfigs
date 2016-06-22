@@ -277,7 +277,7 @@ class EB_GROMACS(CMakeMake):
                 # rebuild/test/install with MPI options
                 super(EB_GROMACS, self).configure_step()
                 super(EB_GROMACS, self).build_step()
-                super(EB_GROMACS, self).test_step()
+                self.test_step()
                 super(EB_GROMACS, self).install_step()
 
                 self.log.info("A full regression test suite is available from the GROMACS web site")
