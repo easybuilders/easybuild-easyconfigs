@@ -272,9 +272,10 @@ class EB_GROMACS(CMakeMake):
                 # clean up obj dir before reconfiguring
                 shutil.rmtree(os.path.join(self.builddir, 'easybuild_obj'))
 
-                # rebuild/install with MPI options
+                # rebuild/test/install with MPI options
                 super(EB_GROMACS, self).configure_step()
                 super(EB_GROMACS, self).build_step()
+                super(EB_GROMACS, self).test_step()
                 super(EB_GROMACS, self).install_step()
 
                 self.log.info("A full regression test suite is available from the GROMACS web site")
