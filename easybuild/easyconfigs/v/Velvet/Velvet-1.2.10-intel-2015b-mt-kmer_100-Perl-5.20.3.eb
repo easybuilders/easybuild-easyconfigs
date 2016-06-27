@@ -1,0 +1,39 @@
+##
+# This file is an EasyBuild reciPY as per https://github.com/hpcugent/easybuild
+#
+# Copyright:: Copyright 2012-2014 Uni.Lu/LCSB, NTUA, 2012-2013 The Cyprus Institute
+# Authors::   Cedric Laczny <cedric.laczny@uni.lu>, Fotis Georgatos <fotis@cern.ch>,
+#             Thekla Loizou <t.loizou@cyi.ac.cy>, Andreas Panteli <a.panteli@cyi.ac.cy>
+# License::   MIT/GPL
+# $Id$
+#
+# This work implements a part of the HPCBIOS project and is a component of the policy:
+# http://hpcbios.readthedocs.org/en/latest/HPCBIOS_2012-94.html
+##
+
+name = 'Velvet'
+version = '1.2.10'
+
+homepage = 'http://www.ebi.ac.uk/~zerbino/velvet/'
+description = """Sequence assembler for very short reads"""
+
+toolchain = {'name': 'intel', 'version': '2015b'}
+toolchainopts = {'optarch': True, 'pic': True, 'openmp': True}
+
+sources = ['%(namelower)s_%(version)s.tgz']
+source_urls = ['http://www.ebi.ac.uk/~zerbino/%(namelower)s']
+
+perlver = '5.20.3'
+kmer = '100'
+versionsuffix = '-mt-kmer_%s-Perl-%%(perlver)s' % kmer
+
+dependencies = [
+    ('Perl', perlver),
+    ('BioPerl', '1.6.923', '-Perl-%(perlver)s'),
+]
+
+buildopts = "OPENMP=1 MAXKMERLENGTH=%s" % kmer
+
+postinstallcmds = ["cd contrib/MetaVelvet-1.* && make && cd ../../ && cp -a contrib %(installdir)s/"]
+
+moduleclass = 'bio'

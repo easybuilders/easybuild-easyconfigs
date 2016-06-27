@@ -4,8 +4,8 @@
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
 # with support of Ghent University (http://ugent.be/hpc),
-# the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
-# the Hercules foundation (http://www.herculesstichting.be/in_English)
+# the Flemish Supercomputer Centre (VSC) (https://www.vscentrum.be),
+# Flemish Research Foundation (FWO) (http://www.fwo.be/en)
 # and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
 # http://github.com/hpcugent/easybuild
@@ -49,12 +49,13 @@ from easybuild.framework.easyconfig.easyconfig import get_easyblock_class
 from easybuild.framework.easyconfig.parser import fetch_parameters_from_easyconfig
 from easybuild.framework.easyconfig.tools import dep_graph, get_paths_for, process_easyconfig
 from easybuild.tools import config
+from easybuild.tools.config import build_option
 from easybuild.tools.filetools import write_file
 from easybuild.tools.module_naming_scheme import GENERAL_CLASS
 from easybuild.tools.module_naming_scheme.easybuild_mns import EasyBuildMNS
 from easybuild.tools.module_naming_scheme.utilities import det_full_ec_version
 from easybuild.tools.modules import modules_tool
-from easybuild.tools.robot import resolve_dependencies
+from easybuild.tools.robot import check_conflicts, resolve_dependencies
 from easybuild.tools.options import set_tmpdir
 
 
@@ -113,7 +114,7 @@ class EasyConfigTest(TestCase):
                 if dep.get('external_module', False):
                     ec['dependencies'].remove(dep)
 
-        self.ordered_specs = resolve_dependencies(self.parsed_easyconfigs, retain_all_deps=True)
+        self.ordered_specs = resolve_dependencies(self.parsed_easyconfigs, modules_tool(), retain_all_deps=True)
 
     def test_dep_graph(self):
         """Unit test that builds a full dependency graph."""
@@ -145,57 +146,8 @@ class EasyConfigTest(TestCase):
         if self.ordered_specs is None:
             self.process_all_easyconfigs()
 
-        def mk_dep_mod_name(spec):
-            return tuple(EasyBuildMNS().det_full_module_name(spec).split(os.path.sep))
-
-        # construct a dictionary: (name, installver) tuple to (build) dependencies
-        depmap = {}
-        for spec in self.ordered_specs:
-            # exclude external modules, since we can't check conflicts on them (we don't even know the software name)
-            build_deps = [mk_dep_mod_name(d) for d in spec['builddependencies'] if not d.get('external_module', False)]
-            deps = [mk_dep_mod_name(d) for d in spec['ec'].all_dependencies if not d.get('external_module', False)]
-
-            # separate runtime deps from build deps
-            runtime_deps = [d for d in deps if d not in build_deps]
-            key = tuple(spec['full_mod_name'].split(os.path.sep))
-            depmap.update({key: [build_deps, runtime_deps]})
-
-        # iteratively expand list of dependencies
-        depmap_last = None
-        while depmap != depmap_last:
-            depmap_last = copy.deepcopy(depmap)
-            for (spec, (build_deps, runtime_deps)) in depmap_last.items():
-                # extend runtime dependencies with non-build dependencies of own runtime dependencies
-                for dep in runtime_deps:
-                    depmap[spec][1].extend([d for d in depmap[dep][1] if d not in depmap[dep][0]])
-                depmap[spec][1] = sorted(nub(depmap[spec][1]))
-                # extend build dependencies with non-build dependencies of own build dependencies
-                for dep in build_deps:
-                    depmap[spec][0].extend([d for d in depmap[dep][1] if d not in depmap[dep][0]])
-                depmap[spec][0] = sorted(nub(depmap[spec][0]))
-
-        def check_conflict((name, installver), (name1, installver1), (name2, installver2)):
-            """Check whether dependencies with given name/(install) version conflict with each other."""
-            # dependencies with the same name should have the exact same install version
-            # if not => CONFLICT!
-            if name1 == name2 and installver1 != installver2:
-                specname = '%s-%s' % (name, installver)
-                vs_msg = "%s-%s vs %s-%s" % (name1, installver1, name2, installver2)
-                print "Conflict found for dependencies of %s: %s" % (specname, vs_msg)
-                return True
-            else:
-                return False
-
-        # for each of the easyconfigs, check whether the dependencies (incl. build deps) contain any conflicts
-        conflicts = False
-        for ((name, installver), (build_deps, runtime_deps)) in depmap.items():
-            # also check whether module itself clashes with any of its dependencies
-            for i, dep1 in enumerate(build_deps + runtime_deps + [(name, installver)]):
-                for dep2 in (build_deps + runtime_deps)[i+1:]:
-                    # don't worry about conflicts between module itself and any of its build deps
-                    if dep1 != (name, installver) or dep2 not in build_deps:
-                        conflicts |= check_conflict((name, installver), dep1, dep2)
-        self.assertFalse(conflicts, "No conflicts detected")
+        self.assertFalse(check_conflicts(self.ordered_specs, modules_tool(), check_inter_ec_conflicts=False),
+                         "No conflicts detected")
 
     def test_sanity_check_paths(self):
         """Make sure specified sanity check paths adher to the requirements."""
@@ -263,8 +215,9 @@ def template_easyconfig_test(self, spec):
     fail_msg = "Easyconfig file %s not in expected subdirectory %s" % (spec, expected_subdir)
     self.assertEqual(expected_subdir, subdir, fail_msg)
 
-    # sanity check for software name
-    self.assertTrue(ec['name'], name)
+    # sanity check for software name, moduleclass
+    self.assertEqual(ec['name'], name)
+    self.assertTrue(ec['moduleclass'] in build_option('valid_module_classes'))
 
     # instantiate easyblock with easyconfig file
     app_class = get_easyblock_class(easyblock, name=name)
@@ -338,19 +291,21 @@ def template_easyconfig_test(self, spec):
 
 def suite():
     """Return all easyblock initialisation tests."""
+    # dynamically generate a separate test for each of the available easyconfigs
+    # define new inner functions that can be added as class methods to InitTest
+    easyconfigs_path = get_paths_for('easyconfigs')[0]
+    cnt = 0
+    for (subpath, _, specs) in os.walk(easyconfigs_path, topdown=True):
+        for spec in specs:
+            if spec.endswith('.eb') and spec != 'TEMPLATE.eb':
+                cnt += 1
+                exec("def innertest(self): template_easyconfig_test(self, '%s')" % os.path.join(subpath, spec))
+                innertest.__doc__ = "Test for parsing of easyconfig %s" % spec
+                # double underscore so parsing tests are run first
+                innertest.__name__ = "test__parse_easyconfig_%s" % spec
+                setattr(EasyConfigTest, innertest.__name__, innertest)
 
-    # dynamically generate a separate test for each of the available easyblocks
-    easyconfigs_path = get_paths_for("easyconfigs")[0]
-    specs = glob.glob('%s/*/*/*.eb' % easyconfigs_path)
-
-    for spec in specs:
-        # dynamically define new inner functions that can be added as class methods to InitTest
-        exec("def innertest(self): template_easyconfig_test(self, '%s')" % spec)
-        spec = os.path.basename(spec)
-        innertest.__doc__ = "Test for parsing of easyconfig %s" % spec
-        innertest.__name__ = "test__parse_easyconfig_%s" % spec  # double underscore so parsing tests are run first
-        setattr(EasyConfigTest, innertest.__name__, innertest)
-
+    print "Found %s easyconfigs..." % cnt
     return TestLoader().loadTestsFromTestCase(EasyConfigTest)
 
 if __name__ == '__main__':

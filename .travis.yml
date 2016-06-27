@@ -1,0 +1,38 @@
+language: python
+python: 2.6
+env:
+  matrix:
+    - ENV_MOD_VERSION=3.2.10
+    - LMOD_VERSION=5.6.3 EASYBUILD_MODULES_TOOL=Lmod
+    - LMOD_VERSION=6.3.1 EASYBUILD_MODULES_TOOL=Lmod EASYBUILD_MODULE_SYNTAX=Lua
+matrix:
+  # mark build as finished as soon as job has failed
+  fast_finish: true
+  include:
+    # also test default configuration with Python 2.7
+    - python: 2.7
+      env: ENV_MOD_VERSION=3.2.10
+addons:
+  apt:
+    packages:
+      - tcl8.5
+install:
+    # required for test_dep_graph
+    - pip install python-graph-core python-graph-dot
+    # install easybuild-framework/easybuild-easyblocks (and dependencies)
+    # use 'develop' branch of framework/easyblocks, except when testing 'master'
+    - if [ "x$TRAVIS_BRANCH" = 'xmaster' ]; then BRANCH=master; else BRANCH=develop; fi
+    - cd $HOME
+    - git clone -b $BRANCH --depth 10 --single-branch https://github.com/hpcugent/easybuild-framework.git
+    - cd easybuild-framework; git log -n 1; cd -
+    - easy_install $PWD/easybuild-framework
+    - git clone -b $BRANCH --depth 10 --single-branch https://github.com/hpcugent/easybuild-easyblocks.git
+    - cd easybuild-easyblocks; git log -n 1; cd -
+    - easy_install $PWD/easybuild-easyblocks
+    # install environment modules tool using 'install_eb_dep.sh' script provided by easybuild-framework
+    - if [ ! -z $ENV_MOD_VERSION ]; then source $(which install_eb_dep.sh) modules-${ENV_MOD_VERSION} $HOME; fi
+    - if [ ! -z $LMOD_VERSION ]; then source $(which install_eb_dep.sh) lua-5.1.4.8 $HOME; fi
+    - if [ ! -z $LMOD_VERSION ]; then source $(which install_eb_dep.sh) Lmod-${LMOD_VERSION} $HOME; fi
+script:
+    - export PYTHONPATH=$TRAVIS_BUILD_DIR
+    - python -O -m test.easyconfigs.suite
