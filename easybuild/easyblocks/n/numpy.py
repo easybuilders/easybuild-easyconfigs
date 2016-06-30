@@ -219,7 +219,7 @@ class EB_numpy(FortranPythonPackage):
         tmpdir = tempfile.mkdtemp()
         abs_pylibdirs = [os.path.join(tmpdir, pylibdir) for pylibdir in self.all_pylibdirs]
         pythonpath = "export PYTHONPATH=%s &&" % os.pathsep.join(abs_pylibdirs + ['$PYTHONPATH'])
-        cmd = self.compose_install_command(tmpdir, extrapath=pythonpath)
+        cmd = self.compose_install_command(tmpdir, extrapath=pythonpath, installopts=self.installopts)
         run_cmd(cmd, log_all=True, simple=True, verbose=False)
 
         try:
