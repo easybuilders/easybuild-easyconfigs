@@ -178,6 +178,13 @@ class EB_GROMACS(CMakeMake):
                 else:
                     self.cfg.update('configopts', "-DGMX_GSL=OFF")
 
+            # include flags for linking to zlib/XZ in $LDFLAGS if they're listed as a dep;
+            # this is important for the tests, to correctly link against libxml2
+            if get_software_root('zlib'):
+                env.setvar('LDFLAGS', "%s -lz" % os.environ.get('LDFLAGS', ''))
+            if get_software_root('XZ'):
+                env.setvar('LDFLAGS', "%s -llzma" % os.environ.get('LDFLAGS', ''))
+
             # complete configuration with configure_method of parent
             self.cfg['separate_build_dir'] = True
             out = super(EB_GROMACS, self).configure_step()
