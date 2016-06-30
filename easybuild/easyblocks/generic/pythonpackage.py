@@ -293,7 +293,7 @@ class PythonPackage(ExtensionEasyBlock):
         # set Python lib directories
         self.set_pylibdirs()
 
-    def compose_install_command(self, prefix, extrapath=None):
+    def compose_install_command(self, prefix, extrapath=None, installopts=None):
         """Compose full install command."""
 
         # mainly for debugging
@@ -327,10 +327,13 @@ class PythonPackage(ExtensionEasyBlock):
             # specify path to 1st source file
             loc = self.src[0]['path']
 
+        if installopts is None:
+            installopts = self.cfg['installopts']
+
         cmd.extend([
             self.cfg['preinstallopts'],
             self.install_cmd % {
-                'installopts': self.cfg['installopts'],
+                'installopts': installopts,
                 'loc': loc,
                 'prefix': prefix,
                 'python': self.python_cmd,
