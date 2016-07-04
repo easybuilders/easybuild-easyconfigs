@@ -277,7 +277,7 @@ class EB_numpy(FortranPythonPackage):
         """Custom sanity check for numpy."""
 
         custom_paths = {
-            'files': [os.path.join(self.pylibdir, 'numpy', '__init__.py')],
+            'files': [self.pylibdir],
             'dirs': [],
         }
         custom_commands = [
