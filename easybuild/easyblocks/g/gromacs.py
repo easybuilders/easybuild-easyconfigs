@@ -100,10 +100,10 @@ class EB_GROMACS(CMakeMake):
                 self.cfg.update('configopts', '-DMKL_LIBRARIES="%s" ' % ';'.join(mkl_libs))
             else:
                 for libname in ['BLAS', 'LAPACK']:
-                    libdir = os.getenv('%s_LIB_DIR' % libname)
+                    lib_dir = os.getenv('%s_LIB_DIR' % libname)
                     libs = os.getenv('LIB%s' % libname)
                     if self.toolchain.toolchain_family() == toolchain.CRAYPE:
-                        libsci_mpi_mp_lib = glob.glob(os.path.join(libdir, 'libsci_*_mpi_mp.a'))
+                        libsci_mpi_mp_lib = glob.glob(os.path.join(lib_dir, 'libsci_*_mpi_mp.a'))
                         if libsci_mpi_mp_lib:
                             self.cfg.update('configopts', '-DGMX_%s_USER=%s' % (libname, libsci_mpi_mp_lib[0]))
                         else:
