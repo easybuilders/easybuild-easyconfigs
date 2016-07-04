@@ -138,14 +138,14 @@ class EB_PSI(CMakeMake):
             ConfigureMake.configure_step(self, cmd_prefix=self.cfg['start_dir'])
         else:
             self.log.info("Using CMake based build")
-            self.cfg['configopts'] += " -DPYTHON_INTERPRETER=%s " % os.path.join(pythonroot, 'bin', 'python')
-            self.cfg['configopts'] += "-DCMAKE_BUILD_TYPE=RelWithDebInfo "
+            self.cfg.update('configopts', ' -DPYTHON_INTERPRETER=%s' % os.path.join(pythonroot, 'bin', 'python'))
+            self.cfg.update('configopts', ' -DCMAKE_BUILD_TYPE=Release')
 
             if self.toolchain.options.get('usempi', None):
-                self.cfg['configopts'] += "-DENABLE_MPI=ON "
+                self.cfg.update('configopts', " -DENABLE_MPI=ON")
 
             if get_software_root('impi'):
-                self.cfg['configopts'] += "-DENABLE_CSR=ON -DBLAS_TYPE=MKL "
+                self.cfg.update('configopts', " -DENABLE_CSR=ON -DBLAS_TYPE=MKL")
 
             CMakeMake.configure_step(self, srcdir=self.cfg['start_dir'])
 
