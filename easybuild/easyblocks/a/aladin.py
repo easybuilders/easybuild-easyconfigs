@@ -152,7 +152,7 @@ class EB_ALADIN(EasyBlock):
                 os.remove(self.conf_filepath)
                 self.log.info("Removed existing gmpack config file %s" % self.conf_filepath)
 
-            archdir = os.path.dirname(self.conf_file)
+            archdir = os.path.dirname(self.conf_filepath)
             if not os.path.exists(archdir):
                 mkdir(archdir, parents=True)
 
