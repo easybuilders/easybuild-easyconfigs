@@ -1,0 +1,46 @@
+easyblock = 'EB_PSI'
+
+name = 'PSI4'
+version = '1.0'
+
+homepage = 'http://www.psicode.org/'
+description = """PSI4 is an open-source suite of ab initio quantum chemistry programs designed for
+ efficient, high-accuracy simulations of a variety of molecular properties. We can routinely perform
+ computations with more than 2500 basis functions running serially or in parallel."""
+
+toolchain = {'name': 'intel', 'version': '2016a'}
+toolchainopts = {'usempi': True}
+
+source_urls = ['https://github.com/psi4/psi4/archive/']
+sources = ['%(version)s.tar.gz']
+
+patches = [
+    'PSI4-plugin-fix.patch',
+    'PSI4-1.0-disable-ambit.patch',
+]
+
+python = 'Python'
+pyver = '2.7.11'
+pysuff = '-%s-%s' % (python, pyver)
+versionsuffix = pysuff
+
+dependencies = [
+    (python, pyver),
+    ('Boost', '1.61.0', pysuff),
+    ('PCMSolver', '1.1.3', pysuff),
+    ('CheMPS2', '1.7.1'),
+]
+
+builddependencies = [
+    ('CMake', '3.5.2'),
+    ('Perl', '5.22.1', '-bare'),  # for the test suite
+]
+
+configopts = '-DENABLE_MPI=ON -DENABLE_OMP=ON -DENABLE_UNIT_TESTS=ON -DENABLE_CHEMPS2=ON -DENABLE_PLUGINS=ON'
+configopts += ' -DENABLE_DUMMY_PLUGIN=ON -DCHEMPS2_ROOT=$EBROOTCHEMPS2'
+configopts += ' -DENABLE_PCMSOLVER=ON -DPCMSOLVER_ROOT=$EBROOTPCMSOLVER'
+
+# Execute 4 tests in parallel and disable the pubchem tests (they download things and don't work reliable)
+runtest = 'ARGS="-V -E \'pubchem1|pubchem2\' -j 4" test'
+
+moduleclass = 'chem'
