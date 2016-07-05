@@ -98,7 +98,7 @@ class EB_PSI(CMakeMake):
             raise EasyBuildError("Boost module not loaded.")
 
         # pre 4.0b5, they were using autotools, on newer it's CMake
-        if not os.path.exists(os.path.join(self.builddir, self.psi_srcdir, "CMakeLists.txt")):
+        if LooseVersion(self.version) <= LooseVersion("4.0b5") and self.cfg.name == "PSI":
             self.log.info("Using configure based build")
             env.setvar('PYTHON', os.path.join(pythonroot, 'bin', 'python'))
             env.setvar('USE_SYSTEM_BOOST', 'TRUE')
