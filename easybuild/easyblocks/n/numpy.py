@@ -308,7 +308,12 @@ class EB_numpy(FortranPythonPackage):
         super(EB_numpy, self).install_step()
 
         builddir = os.path.join(self.builddir, "numpy")
-        if os.path.isdir(builddir):
-            rmtree2(builddir)
-        else:
-            self.log.debug("build dir %s already clean" % builddir)
+        try:
+            if os.path.isdir(builddir):
+                os.chdir(self.builddir)
+                rmtree2(builddir)
+            else:
+                self.log.debug("build dir %s already clean" % builddir)
+
+        except OSError as err:
+            raise EasyBuildError("Failed to clean up numpy build dir %s: %s", builddir, err)
