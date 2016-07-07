@@ -70,10 +70,10 @@ class EB_SAMtools(ConfigureMake):
         self.lib_files = ["libbam.a"]
 
     def configure_step(self):
-        """
-        No configure
-        """
-        pass
+        """Ensure correct compiler command & flags are used via arguments to 'make' build command"""
+        for var in ['CC', 'CXX', 'CFLAGS', 'CXXFLAGS']:
+            if var in os.environ:
+                self.cfg.update('buildopts', '%s="%s"' % (var, os.getenv(var)))
 
     def install_step(self):
         """
