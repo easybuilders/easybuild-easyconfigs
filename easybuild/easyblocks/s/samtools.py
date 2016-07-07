@@ -71,7 +71,7 @@ class EB_SAMtools(ConfigureMake):
 
     def configure_step(self):
         """Ensure correct compiler command & flags are used via arguments to 'make' build command"""
-        for var in ['CC', 'CFLAGS']:
+        for var in ['CC', 'CXX', 'CFLAGS', 'CXXFLAGS']:
             if var in os.environ:
                 self.cfg.update('buildopts', '%s="%s"' % (var, os.getenv(var)))
 
