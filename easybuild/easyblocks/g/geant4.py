@@ -389,8 +389,8 @@ class EB_Geant4(CMakeMake):
                 txt += self.module_generator.set_environment('G4ABLADATA', g4abladata)
 
         if self.cfg['PhotonEvaporationVersion']:
-            g4levelgammadata = os.path.join(self.datadst, self.cfg['PhotonEvaporationVersion'])
-            txt += self.module_generator.set_environment('G4LEVELGAMMADATA', 'PhotonEvaporation%s' % g4levelgammadata)
+            g4levelgammadata = os.path.join(self.datadst, 'PhotonEvaporation%s' % self.cfg['PhotonEvaporationVersion'])
+            txt += self.module_generator.set_environment('G4LEVELGAMMADATA', g4levelgammadata)
 
         if self.cfg['G4RadioactiveDecayVersion']:
             g4radioactivedata = os.path.join(self.datadst, 'RadioactiveDecay%s' % self.cfg['G4RadioactiveDecayVersion'])
