@@ -92,6 +92,8 @@ class EB_CondaCreate(EasyBlock):
         if self.cfg['requirements']:
             self.install_conda_requirements()
 
+        self.post_install_step()
+
     def initialize_conda_env(self):
         """ Initialize the conda env """
 
@@ -100,39 +102,6 @@ class EB_CondaCreate(EasyBlock):
         run_cmd(cmd, log_all=True, simple=True)
         cmd = "conda create -y --no-deps -p {}".format(self.installdir)
         run_cmd(cmd, log_all=True, simple=True)
-
-    def set_conda_env(self):
-        """ Set the correct environmental variables for conda """
-
-        myEnv = os.environ.copy()
-        env.setvar('PATH', "{}/bin".format(self.installdir) + ":" + myEnv["PATH"])
-        env.setvar('CONDA_ENV', self.installdir)
-        env.setvar('CONDA_DEFAULT_ENV', self.installdir)
-
-    def install_conda_requirements(self):
-        """ Install requirements to conda env """
-
-        self.set_conda_env()
-
-        if self.cfg['channels'] and self.cfg['requirements']:
-            cmd = "conda install -y -c {} {}".format(self.cfg['channels'],
-                                                     self.cfg['requirements'])
-        elif self.cfg['requirements']:
-            cmd = "conda install -y {}".format(self.cfg['requirements'])
-
-        run_cmd(cmd)
-        self.log.info('Installed conda requirements')
-
-    def post_install_step(self):
-        """ User defined post install step """
-
-        if not self.cfg['post_install_cmd']:
-            pass
-        else:
-            self.log.debug('Post command run', self.cfg['post_install_cmd'])
-            self.set_conda_env()
-            run_cmd(self.cfg['post_install_cmd'])
-            self.log.info('Post command run {}'.format(self.cfg['post_install_cmd']))
 
     def make_module_extra(self):
         """Add the install directory to the PATH."""
@@ -152,3 +121,38 @@ class EB_CondaCreate(EasyBlock):
             'MANPATH': ['man', os.path.join('share', 'man')],
             'PKG_CONFIG_PATH': [os.path.join(x, 'pkgconfig') for x in ['lib', 'lib32', 'lib64', 'share']],
         }
+
+    def install_conda_requirements(self):
+        """ Install requirements to conda env """
+
+        self.set_conda_env()
+
+        if self.cfg['channels'] and self.cfg['requirements']:
+            cmd = "conda install -y -c {} {}".format(self.cfg['channels'],
+                                                     self.cfg['requirements'])
+        elif self.cfg['requirements']:
+            cmd = "conda install -y {}".format(self.cfg['requirements'])
+
+        run_cmd(cmd)
+        self.log.info('Installed conda requirements')
+
+    #These should be separate
+
+    def set_conda_env(self):
+        """ Set the correct environmental variables for conda """
+
+        myEnv = os.environ.copy()
+        env.setvar('PATH', "{}/bin".format(self.installdir) + ":" + myEnv["PATH"])
+        env.setvar('CONDA_ENV', self.installdir)
+        env.setvar('CONDA_DEFAULT_ENV', self.installdir)
+
+    def post_install_step(self):
+        """ User defined post install step """
+
+        if not self.cfg['post_install_cmd']:
+            pass
+        else:
+            self.log.debug('Post command run', self.cfg['post_install_cmd'])
+            self.set_conda_env()
+            run_cmd(self.cfg['post_install_cmd'])
+            self.log.info('Post command run {}'.format(self.cfg['post_install_cmd']))
