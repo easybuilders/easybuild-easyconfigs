@@ -48,7 +48,8 @@ class EB_CondaCreate(EasyBlock):
         extra_vars = EasyBlock.extra_options(extra_vars)
         extra_vars.update({
             'requirements': [None, "Requirements files", CUSTOM],
-            'channels': [None, "Channels", CUSTOM]
+            'channels': [None, "Custom conda channels", CUSTOM],
+            'post_install_cmd': [None, "Commands after install: pip install, cpanm install, etc", CUSTOM],
         })
         return extra_vars
 
@@ -60,17 +61,20 @@ class EB_CondaCreate(EasyBlock):
     def extract_step(self):
         """Move all source files to the build directory"""
 
-        self.src[0]['finalpath'] = self.builddir
+        if not self.src:
+            pass
+        else:
+            self.src[0]['finalpath'] = self.builddir
 
-        # copy source to build dir.
-        for source in self.src:
-            src = source['path']
-            dst = os.path.join(self.builddir, source['name'])
-            try:
-                shutil.copy2(src, self.builddir)
-                os.chmod(dst, stat.S_IRWXU)
-            except (OSError, IOError), err:
-                raise EasyBuildError("Couldn't copy %s to %s: %s", src, self.builddir, err)
+            # copy source to build dir.
+            for source in self.src:
+                src = source['path']
+                dst = os.path.join(self.builddir, source['name'])
+                try:
+                    shutil.copy2(src, self.builddir)
+                    os.chmod(dst, stat.S_IRWXU)
+                except (OSError, IOError), err:
+                    raise EasyBuildError("Couldn't copy %s to %s: %s", src, self.builddir, err)
 
     def configure_step(self):
         """No configuration, this is binary software"""
@@ -97,13 +101,18 @@ class EB_CondaCreate(EasyBlock):
         cmd = "conda create -y --no-deps -p {}".format(self.installdir)
         run_cmd(cmd, log_all=True, simple=True)
 
-    def install_conda_requirements(self):
-        """ Install requirements to conda env """
+    def set_conda_env(self):
+        """ Set the correct environmental variables for conda """
 
         myEnv = os.environ.copy()
         env.setvar('PATH', "{}/bin".format(self.installdir) + ":" + myEnv["PATH"])
         env.setvar('CONDA_ENV', self.installdir)
         env.setvar('CONDA_DEFAULT_ENV', self.installdir)
+
+    def install_conda_requirements(self):
+        """ Install requirements to conda env """
+
+        self.set_conda_env()
 
         if self.cfg['channels'] and self.cfg['requirements']:
             cmd = "conda install -y -c {} {}".format(self.cfg['channels'],
@@ -113,6 +122,17 @@ class EB_CondaCreate(EasyBlock):
 
         run_cmd(cmd)
         self.log.info('Installed conda requirements')
+
+    def post_install_step(self):
+        """ User defined post install step """
+
+        if not self.cfg['post_install_cmd']:
+            pass
+        else:
+            self.log.debug('Post command run', self.cfg['post_install_cmd'])
+            self.set_conda_env()
+            run_cmd(self.cfg['post_install_cmd'])
+            self.log.info('Post command run {}'.format(self.cfg['post_install_cmd']))
 
     def make_module_extra(self):
         """Add the install directory to the PATH."""
