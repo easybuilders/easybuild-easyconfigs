@@ -98,7 +98,8 @@ class EB_PSI(CMakeMake):
             raise EasyBuildError("Boost module not loaded.")
 
         # pre 4.0b5, they were using autotools, on newer it's CMake
-        if LooseVersion(self.version) <= LooseVersion("4.0b5"):
+        if LooseVersion(self.version) <= LooseVersion("4.0b5") and self.cfg.name == "PSI":
+            self.log.info("Using configure based build")
             env.setvar('PYTHON', os.path.join(pythonroot, 'bin', 'python'))
             env.setvar('USE_SYSTEM_BOOST', 'TRUE')
 
@@ -136,14 +137,15 @@ class EB_PSI(CMakeMake):
 
             ConfigureMake.configure_step(self, cmd_prefix=self.cfg['start_dir'])
         else:
-            self.cfg['configopts'] += "-DPYTHON_INTERPRETER=%s " % os.path.join(pythonroot, 'bin', 'python')
-            self.cfg['configopts'] += "-DCMAKE_BUILD_TYPE=Release "
+            self.log.info("Using CMake based build")
+            self.cfg.update('configopts', ' -DPYTHON_INTERPRETER=%s' % os.path.join(pythonroot, 'bin', 'python'))
+            self.cfg.update('configopts', ' -DCMAKE_BUILD_TYPE=Release')
 
             if self.toolchain.options.get('usempi', None):
-                self.cfg['configopts'] += "-DENABLE_MPI=ON "
+                self.cfg.update('configopts', " -DENABLE_MPI=ON")
 
             if get_software_root('impi'):
-                self.cfg['configopts'] += "-DENABLE_CSR=ON -DBLAS_TYPE=MKL "
+                self.cfg.update('configopts', " -DENABLE_CSR=ON -DBLAS_TYPE=MKL")
 
             CMakeMake.configure_step(self, srcdir=self.cfg['start_dir'])
 
@@ -176,7 +178,7 @@ class EB_PSI(CMakeMake):
     def sanity_check_step(self):
         """Custom sanity check for PSI."""
         custom_paths = {
-            'files': ['bin/psi%s' % self.version.split('.')[0]],
+            'files': ['bin/psi4'],
             'dirs': ['include', ('share/psi', 'share/psi4')],
         }
         super(EB_PSI, self).sanity_check_step(custom_paths=custom_paths)

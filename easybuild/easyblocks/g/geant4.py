@@ -43,7 +43,8 @@ from easybuild.easyblocks.generic.cmakemake import CMakeMake
 from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.modules import get_software_root
 from easybuild.tools.run import run_cmd, run_cmd_qa
-from easybuild.tools.filetools import mkdir
+from easybuild.tools.filetools import mkdir, read_file, write_file
+
 
 class EB_Geant4(CMakeMake):
     """
@@ -270,11 +271,9 @@ class EB_Geant4(CMakeMake):
 
         if LooseVersion(self.version) >= LooseVersion("9.4"):
             super(EB_Geant4, self).install_step()
-            self.datadst = os.path.join(self.installdir,
-                                        'share',
-                                        '%s-%s' % (self.name, self.version.replace("p0", "")),
-                                        'data',
-                                        )
+            # '10.01.p03' -> '10.1.3'
+            shortver = self.version.replace('.0', '.').replace('.p0', '.')
+            self.datadst = os.path.join(self.installdir, 'share', '%s-%s' % (self.name, shortver), 'data')
 
             if LooseVersion(self.version) < LooseVersion("9.5"):
                 version_parts = self.version.split('.')
@@ -294,7 +293,7 @@ class EB_Geant4(CMakeMake):
                 self.datadst = os.path.join(self.installdir, 'data')
                 os.mkdir(self.datadst)
             except OSError, err:
-                raise EasyBuildError("Failed to create data destination file %s: %s", self.datadst, err)
+                raise EasyBuildError("Failed to create data destination dir %s: %s", self.datadst, err)
 
             datalist = ['G4ABLA%s' % self.cfg['G4ABLAVersion'],
                         'G4EMLOW%s' % self.cfg['G4EMLOWVersion'],
@@ -340,9 +339,7 @@ class EB_Geant4(CMakeMake):
             os.chdir(mpiuidir)
 
             # tweak config file as needed
-            f = open("G4MPI.gmk", "r")
-            G4MPItxt = f.read()
-            f.close()
+            G4MPItxt = read_file('G4MPI.gmk')
 
             root_re = re.compile("(.*G4MPIROOT\s+=\s+).*", re.MULTILINE)
             cxx_re = re.compile("(.*CXX\s+:=\s+).*", re.MULTILINE)
@@ -355,9 +352,7 @@ class EB_Geant4(CMakeMake):
             self.log.debug("contents of G4MPI.gmk: %s" % G4MPItxt)
 
             shutil.copyfile("G4MPI.gmk", "G4MPI.gmk.ORIG")
-            f = open("G4MPI.gmk", "w")
-            f.write(G4MPItxt)
-            f.close()
+            write_file('G4MPI.gmk', G4MPItxt)
 
             # make sure the required environment variables are there
             env.setvar("G4INSTALL", self.installdir)
@@ -389,19 +384,25 @@ class EB_Geant4(CMakeMake):
             txt += self.module_generator.set_environment('G4INCLUDE', os.path.join(incdir, 'geant4'))
             txt += self.module_generator.set_environment('G4LIB', os.path.join(libdir, 'geant4'))
             txt += self.module_generator.set_environment('G4SYSTEM', self.g4system)
-            txt += self.module_generator.set_environment('G4ABLADATA',
-                                                        "%s/G4ABLA%s" % (self.datadst, self.cfg['G4ABLAVersion']))
+            if self.cfg['G4ABLAVersion']:
+                g4abladata = os.path.join(self.datadst, 'G4ABLA%s' % self.cfg['G4ABLAVersion'])
+                txt += self.module_generator.set_environment('G4ABLADATA', g4abladata)
 
-        txt += self.module_generator.set_environment('G4LEVELGAMMADATA',
-                                                    "%s/PhotonEvaporation%s" % (self.datadst,
-                                                                                self.cfg['PhotonEvaporationVersion']))
-        txt += self.module_generator.set_environment('G4RADIOACTIVEDATA',
-                                                    "%s/RadioactiveDecay%s" % (self.datadst,
-                                                                               self.cfg['G4RadioactiveDecayVersion']))
-        txt += self.module_generator.set_environment('G4LEDATA',
-                                                    "%s/G4EMLOW%s" % (self.datadst, self.cfg['G4EMLOWVersion']))
-        txt += self.module_generator.set_environment('G4NEUTRONHPDATA', "%s/G4NDL%s" % (self.datadst,
-                                                                                       self.cfg['G4NDLVersion']))
+        if self.cfg['PhotonEvaporationVersion']:
+            g4levelgammadata = os.path.join(self.datadst, 'PhotonEvaporation%s' % self.cfg['PhotonEvaporationVersion'])
+            txt += self.module_generator.set_environment('G4LEVELGAMMADATA', g4levelgammadata)
+
+        if self.cfg['G4RadioactiveDecayVersion']:
+            g4radioactivedata = os.path.join(self.datadst, 'RadioactiveDecay%s' % self.cfg['G4RadioactiveDecayVersion'])
+            txt += self.module_generator.set_environment('G4RADIOACTIVEDATA', g4radioactivedata)
+
+        if self.cfg['G4EMLOWVersion']:
+            g4ledata = os.path.join(self.datadst, 'G4EMLOW%s' % self.cfg['G4EMLOWVersion'])
+            txt += self.module_generator.set_environment('G4LEDATA', g4ledata)
+
+        if self.cfg['G4NDLVersion']:
+            g4neutronhpdata = os.path.join(self.datadst, 'G4NDL%s' % self.cfg['G4NDLVersion'])
+            txt += self.module_generator.set_environment('G4NEUTRONHPDATA', g4neutronhpdata)
 
         return txt
 

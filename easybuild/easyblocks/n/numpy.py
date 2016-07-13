@@ -40,7 +40,7 @@ import easybuild.tools.toolchain as toolchain
 from easybuild.easyblocks.generic.fortranpythonpackage import FortranPythonPackage
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.build_log import EasyBuildError
-from easybuild.tools.filetools import rmtree2
+from easybuild.tools.filetools import mkdir, rmtree2
 from easybuild.tools.modules import get_software_root
 from easybuild.tools.run import run_cmd
 from distutils.version import LooseVersion
@@ -217,7 +217,11 @@ class EB_numpy(FortranPythonPackage):
 
         # temporarily install numpy, it doesn't alow to be used straight from the source dir
         tmpdir = tempfile.mkdtemp()
-        cmd = "%s setup.py install --prefix=%s %s" % (self.python_cmd, tmpdir, self.installopts)
+        abs_pylibdirs = [os.path.join(tmpdir, pylibdir) for pylibdir in self.all_pylibdirs]
+        for pylibdir in abs_pylibdirs:
+            mkdir(pylibdir, parents=True)
+        pythonpath = "export PYTHONPATH=%s &&" % os.pathsep.join(abs_pylibdirs + ['$PYTHONPATH'])
+        cmd = self.compose_install_command(tmpdir, extrapath=pythonpath, installopts=self.installopts)
         run_cmd(cmd, log_all=True, simple=True, verbose=False)
 
         try:
@@ -229,7 +233,7 @@ class EB_numpy(FortranPythonPackage):
         # evaluate performance of numpy.dot (3 runs, 3 loops each)
         size = 1000
         cmd = ' '.join([
-            'export PYTHONPATH=%s:$PYTHONPATH &&' % os.path.join(tmpdir, self.pylibdir),
+            pythonpath,
             '%s -m timeit -n 3 -r 3' % self.python_cmd,
             '-s "import numpy; x = numpy.random.random((%(size)d, %(size)d))"' % {'size': size},
             '"numpy.dot(x, x.T)"',
@@ -273,8 +277,8 @@ class EB_numpy(FortranPythonPackage):
         """Custom sanity check for numpy."""
 
         custom_paths = {
-            'files': [os.path.join(self.pylibdir, 'numpy', '__init__.py')],
-            'dirs': [],
+            'files': [],
+            'dirs': [self.pylibdir],
         }
         custom_commands = [
             ('python', '-c "import numpy"'),
@@ -304,7 +308,12 @@ class EB_numpy(FortranPythonPackage):
         super(EB_numpy, self).install_step()
 
         builddir = os.path.join(self.builddir, "numpy")
-        if os.path.isdir(builddir):
-            rmtree2(builddir)
-        else:
-            self.log.debug("build dir %s already clean" % builddir)
+        try:
+            if os.path.isdir(builddir):
+                os.chdir(self.builddir)
+                rmtree2(builddir)
+            else:
+                self.log.debug("build dir %s already clean" % builddir)
+
+        except OSError as err:
+            raise EasyBuildError("Failed to clean up numpy build dir %s: %s", builddir, err)

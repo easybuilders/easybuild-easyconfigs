@@ -79,11 +79,24 @@ class EB_MRtrix(EasyBlock):
 
         elif LooseVersion(self.version) >= LooseVersion('0.3.14'):
             release_dir = os.path.join(self.builddir, 'release')
+            scripts_dir = os.path.join(self.builddir, 'scripts')
             try:
                 os.rmdir(self.installdir)
                 shutil.copytree(release_dir, self.installdir)
+                shutil.copytree(scripts_dir, os.path.join(self.installdir, 'scripts'))
+                # some scripts expect 'release/bin' to be there, so we put a symlink in place
+                os.symlink(self.installdir, os.path.join(self.installdir, 'release'))
             except OSError as err:
-                raise EasyBuildError("Failed to copy %s to %s: %s", release_dir, self.installdir, err)
+                raise EasyBuildError("Failed to copy %s & %s to %s: %s", release_dir, scripts_dir, self.installdir, err)
+
+    def make_module_req_guess(self):
+        """
+        Return list of subdirectories to consider to update environment variables;
+        also consider 'scripts' subdirectory for $PATH
+        """
+        guesses = super(EB_MRtrix, self).make_module_req_guess()
+        guesses['PATH'].append('scripts')
+        return guesses
 
     def sanity_check_step(self):
         """Custom sanity check for MRtrix."""
