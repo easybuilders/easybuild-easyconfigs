@@ -38,7 +38,6 @@ from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.filetools import rmtree2
 from easybuild.tools.run import run_cmd
 
-
 class EB_CondaEnv(EasyBlock):
     """Support for building/installing environments using conda env."""
 
