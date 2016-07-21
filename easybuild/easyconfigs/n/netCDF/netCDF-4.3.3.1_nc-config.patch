@@ -1,0 +1,72 @@
+diff -u netcdf-4.3.3.1.orig/CMakeLists.txt netcdf-4.3.3.1/CMakeLists.txt
+--- netcdf-4.3.3.1.orig/CMakeLists.txt	2016-07-06 16:00:38.443017000 +1200
++++ netcdf-4.3.3.1/CMakeLists.txt	2016-07-07 16:58:32.263028141 +1200
+@@ -433,7 +433,11 @@
+   # .cmake files.  If this is the case, they should
+   # specify HDF5_HL_LIB, HDF5_LIB, HDF5_INCLUDE_DIR manually.
+   IF(HDF5_LIB AND HDF5_HL_LIB AND HDF5_INCLUDE_DIR)
+-    SET(HDF5_LIBRARIES ${HDF5_LIB} ${HDF5_HL_LIB})
++    IF(HDF5_LIBRARY_DIR)
++      SET(HDF5_LIBRARIES "-L${HDF5_LIBRARY_DIR} ${HDF5_LIB} ${HDF5_HL_LIB}")
++    ELSE()
++      SET(HDF5_LIBRARIES ${HDF5_LIB} ${HDF5_HL_LIB})
++    ENDIF()
+     SET(HDF5_C_LIBRARIES ${HDF5_LIB})
+     SET(HDF5_HL_LIBRARIES ${HDF5_HL_LIB})
+     MESSAGE(STATUS "Using HDF5 Library: ${HDF5_LIB}")
+@@ -1390,6 +1394,41 @@
+ SET(includedir ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR})
+ SET(CC ${CMAKE_C_COMPILER})
+ 
++# Get dependency directories, needed for a correctly
++# functioning nc-config (needed in turn by GRASS)
++# (see https://lists.alioth.debian.org/pipermail/pkg-grass-devel/2015-July/034160.html)
++
++IF(USE_HDF5)
++  IF(DEFINED HDF5_LIBRARY_DIR)
++    SET(HDF5_LIBS "-L${HDF5_LIBRARY_DIR}")
++  ENDIF(DEFINED HDF5_LIBRARY_DIR)
++  IF(DEFINED HDF5_INCLUDE_DIR)
++    SET(HDF5_INCS "-I${HDF5_INCLUDE_DIR}")
++  ENDIF(DEFINED HDF5_INCLUDE_DIR)
++  IF(DEFINED SZIP_LIBRARY_DIR)
++    SET(SZIP_LIBS "-L${SZIP_LIBRARY_DIR}")
++  ENDIF(DEFINED SZIP_LIBRARY_DIR)
++  IF(DEFINED SZIP_INCLUDE_DIR)
++    SET(SZIP_INCS "-I${SZIP_INCLUDE_DIR}")
++  ENDIF(DEFINED SZIP_INCLUDE_DIR)
++ENDIF(USE_HDF5)
++IF(USE_ZLIB)
++  IF(DEFINED ZLIB_LIBRARY_DIR)
++    SET(ZLIB_LIBS "-L${ZLIB_LIBRARY_DIR}")
++  ENDIF(DEFINED ZLIB_LIBRARY_DIR)
++  IF(DEFINED ZLIB_INCLUDE_DIRS)
++    SET(ZLIB_INCS "-I${ZLIB_INCLUDE_DIRS}")
++  ENDIF(DEFINED ZLIB_INCLUDE_DIRS)
++ENDIF(USE_ZLIB)
++IF(USE_DAP)
++  IF(DEFINED CURL_LIBRARY_DIR)
++    SET(CURL_LIBS "-L${CURL_LIBRARY_DIR}")
++  ENDIF(DEFINED CURL_LIBRARY_DIR)
++  IF(DEFINED CURL_INCLUDE_DIRS)
++    SET(CURL_INCS "-I${CURL_INCLUDE_DIRS}")
++  ENDIF(DEFINED CURL_INCLUDE_DIRS)
++ENDIF(USE_DAP)
++	  
+ # Process all dependency libraries and create a string
+ # used when parsing netcdf.pc.in
+ 
+diff -u netcdf-4.3.3.1.orig/nc-config.cmake.in netcdf-4.3.3.1/nc-config.cmake.in
+--- netcdf-4.3.3.1.orig/nc-config.cmake.in	2016-07-06 16:00:38.592382000 +1200
++++ netcdf-4.3.3.1/nc-config.cmake.in	2016-07-07 17:00:55.107783000 +1200
+@@ -10,8 +10,8 @@
+ includedir="@CMAKE_INSTALL_PREFIX@/include"
+ 
+ cc="@CMAKE_C_COMPILER@"
+-cflags="-I@CMAKE_INSTALL_PREFIX@/include"
+-libs="-L@CMAKE_INSTALL_PREFIX@/lib @NC_LIBS@"
++cflags="-I@CMAKE_INSTALL_PREFIX@/include @HDF5_INCS@ @SZIP_INCS@ @ZLIB_INCS@ @CURL_INCS@"
++libs="-L@CMAKE_INSTALL_PREFIX@/lib @CURL_LIBS@ @ZLIB_LIBS@ @SZIP_LIBS@ @HDF5_LIBS@ @NC_LIBS@"
+ 
+ has_dap="@USE_DAP@"
+ if [ -z $has_dap ]; then
