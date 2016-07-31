@@ -151,5 +151,5 @@ class EB_CondaEnv(EasyBlock):
         else:
             self.log.debug('Post command run', self.cfg['post_install_cmd'])
             self.set_conda_env()
-            run_cmd(self.cfg['post_install_cmd'])
             self.log.info('Post command run {}'.format(self.cfg['post_install_cmd']))
+            run_cmd(self.cfg['post_install_cmd'])
