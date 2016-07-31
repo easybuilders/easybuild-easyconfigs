@@ -23,8 +23,9 @@
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
 """
-EasyBuild support for building and installing conda environments via conda create -p, implemented as an easyblock
-@author: Jillian Rowe (New York University Abu Dhabi)
+EasyBuild support for building and installing conda environments via conda env
+create -p, implemented as an easyblock @author: Jillian Rowe (New York
+University Abu Dhabi)
 """
 
 import os
@@ -33,11 +34,10 @@ import stat
 
 import easybuild.tools.environment as env
 from easybuild.framework.easyblock import EasyBlock
-from easybuild.framework.easyconfig import CUSTOM, MANDATORY
+from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.filetools import rmtree2
 from easybuild.tools.run import run_cmd
-
 
 class EB_CondaEnv(EasyBlock):
     """Support for building/installing environments using conda env."""
@@ -47,7 +47,8 @@ class EB_CondaEnv(EasyBlock):
         """Extra easyconfig parameters specific to EB_CondaEnv easyblock."""
         extra_vars = EasyBlock.extra_options(extra_vars)
         extra_vars.update({
-            'environment': ["environment.yml", "Environment.yml file", MANDATORY],
+            'remote_environment': [None, "Remote definition file", CUSTOM],
+            'environment_file': [None, "Environment.yml file. Either add a 'environment.yml' to your sources, or specify the full path here.", CUSTOM],
             'post_install_cmd': [None, "Commands after install: pip install, cpanm install, etc", CUSTOM],
         })
         return extra_vars
@@ -120,7 +121,14 @@ class EB_CondaEnv(EasyBlock):
 
         self.set_conda_env()
 
-        cmd = "conda env create -f {} -p {}".format(self.cfg['environment'], self.installdir)
+
+        if self.cfg['environment_file']:
+            cmd = "conda env create --force -f {} -p {}".format(self.cfg['environment_file'], self.installdir)
+        elif self.cfg['remote_environment']:
+            cmd = "conda env create --force {} -p {}".format(self.cfg['remote_environment'], self.installdir)
+        else:
+            cmd = "conda env create --force -p {}".format(self.installdir)
+
         run_cmd(cmd, log_all=True, simple=True)
 
         self.log.info('Installed conda env')
