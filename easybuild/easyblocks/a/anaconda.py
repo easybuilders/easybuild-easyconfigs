@@ -31,6 +31,7 @@ import shutil
 import os
 import stat
 
+import easybuild.tools.environment as env
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.run import run_cmd
