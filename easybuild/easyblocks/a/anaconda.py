@@ -109,6 +109,13 @@ class EB_anaconda(EasyBlock):
         }
 
     # These should go in their own place
+    def set_conda_env(self):
+        """ Set the correct environmental variables for conda """
+
+        myEnv = os.environ.copy()
+        env.setvar('PATH', "{}/bin".format(self.installdir) + ":" + myEnv["PATH"])
+        env.setvar('CONDA_ENV', self.installdir)
+        env.setvar('CONDA_DEFAULT_ENV', self.installdir)
 
     def post_install_step(self):
         """ User defined post install step """
