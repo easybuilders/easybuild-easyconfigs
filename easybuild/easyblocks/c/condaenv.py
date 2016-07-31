@@ -123,11 +123,11 @@ class EB_CondaEnv(EasyBlock):
 
 
         if self.cfg['environment_file']:
-            cmd = "conda env create --force -f {} -p {}".format(self.cfg['environment_file'], self.installdir)
+            cmd = "conda env create  -f {} -p {}".format(self.cfg['environment_file'], self.installdir)
         elif self.cfg['remote_environment']:
-            cmd = "conda env create --force {} -p {}".format(self.cfg['remote_environment'], self.installdir)
+            cmd = "conda env create  {} -p {}".format(self.cfg['remote_environment'], self.installdir)
         else:
-            cmd = "conda env create --force -p {}".format(self.installdir)
+            cmd = "conda env create  -p {}".format(self.installdir)
 
         run_cmd(cmd, log_all=True, simple=True)
 
