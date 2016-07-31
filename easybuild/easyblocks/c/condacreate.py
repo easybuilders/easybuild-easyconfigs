@@ -133,7 +133,7 @@ class EB_CondaCreate(EasyBlock):
         elif self.cfg['requirements']:
             cmd = "conda install -y {}".format(self.cfg['requirements'])
 
-        run_cmd(cmd)
+        run_cmd(cmd, log_all=True, simple=True)
         self.log.info('Installed conda requirements')
 
     #These should be separate

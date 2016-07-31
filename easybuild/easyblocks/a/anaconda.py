@@ -126,7 +126,7 @@ class EB_anaconda(EasyBlock):
         else:
             self.log.debug('Post command run', self.cfg['post_install_cmd'])
             self.set_conda_env()
-            run_cmd(self.cfg['post_install_cmd'])
+            run_cmd(self.cfg['post_install_cmd'], log_all=True, simple=True)
             self.log.info('Post command run {}'.format(self.cfg['post_install_cmd']))
 
     def initialize_conda_env(self):
