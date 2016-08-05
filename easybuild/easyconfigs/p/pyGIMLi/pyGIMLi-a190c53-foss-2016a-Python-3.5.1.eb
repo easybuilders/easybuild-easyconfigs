@@ -1,0 +1,68 @@
+easyblock = 'CMakeMake'
+
+name = 'pyGIMLi'
+#latest Git commit was:
+version = 'a190c53'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'http://www.pygimli.org/'
+description = """pyGIMLi is an open-source multi-method library for solving inverse
+ and forward tasks related to geophysical problems. Written in C++ and Python,
+ it offers both efficiency and flexibility allowing you to quickly build
+ your own robust inversion applications for the geophysical problem at hand."""
+
+toolchain = {'name': 'foss', 'version': '2016a'}
+
+#Only git repository: git clone https://github.com/gimli-org/gimli.git a190c53
+sources = [SOURCE_TBZ2]
+
+patches = ['%(name)s-%(version)s_openblas.patch']
+
+#pyGIMLi is picky about the version of CastXML/pygccxml/pyplusplus
+#Check scripts/buildThirdParty.sh
+builddependencies = [
+    ('CMake', '3.4.3'),
+    ('CastXML', 'd5934bd'),
+    ('pygccxml', '648e8da', '-Python-%(pyver)s'),
+    ('pyplusplus', '2c6c05b7a7d2', '-Python-%(pyver)s'),
+]
+
+dependencies = [
+    ('Python', '3.5.1'),
+    ('matplotlib', '1.5.1', '-Python-%(pyver)s'),
+    ('Clang', '3.7.1'),
+    ('Boost', '1.60.0', '-Python-%(pyver)s'),
+    ('zlib', '1.2.8'),
+    ('Triangle', '1.6'),
+    ('CppUnit', '1.12.1'),
+    ('SuiteSparse', '4.5.3', '-METIS-5.1.0'),
+]
+
+separate_build_dir = True
+
+configopts = '-DBOOST_ROOT=$EBROOTBOOST '
+configopts += '-DBLAS_LIBRARIES=$EBROOTOPENBLAS/lib/libopenblas.so '
+configopts += '-DLAPACK_LIBRARIES=$EBROOTOPENBLAS/lib/libopenblas.so '
+configopts += '-DCASTXML_EXECUTABLE=$EBROOTCASTXML/bin/castxml '
+configopts += '-DPYGCCXML_PATH=$EBROOTPYGCCXML/lib/python%(pyshortver)s/site-packages/ '
+configopts += '-DPYPLUSPLUS_PATH=$EBROOTPYPLUSPLUS/lib/python%(pyshortver)s/site-packages/ '
+
+buildopts = 'gimli pygimli apps'
+
+preinstallopts = 'mkdir -p %(installdir)s/lib/python%(pyshortver)s/site-packages '
+preinstallopts += '&& cp -a ../gimli/python/.  %(installdir)s/lib/python%(pyshortver)s/site-packages '
+preinstallopts += '&& cp -a ../easybuild_obj/lib/.  %(installdir)s/lib/ '
+preinstallopts += '&& mkdir %(installdir)s/bin '
+preinstallopts += '&& cp ../easybuild_obj/bin/*  %(installdir)s/bin ||'
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in ['bms2vtk', 'dc1dinv', 'dc1dsmooth', 'fdem1dinv', 'fdem1dsmooth',
+                                     'harmfit', 'invlinearmat', 'mrs1dblock', 'mrs1dsmooth',
+                                     'mt1dinv', 'mt1dsmooth', 'polyfit', 'ttinv', 'ttmod']]+
+             ['lib/libgimli.%s' % SHLIB_EXT, 'lib/python%(pyshortver)s/site-packages/pygimli.h'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages/%(namelower)s'],
+}
+
+modextrapaths = {'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages'}
+
+moduleclass = 'geo'
