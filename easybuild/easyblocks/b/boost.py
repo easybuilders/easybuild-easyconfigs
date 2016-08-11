@@ -34,6 +34,7 @@ EasyBuild support for Boost, implemented as an easyblock
 @author: Petar Forai (IMP/IMBA)
 @author: Luca Marsella (CSCS)
 @author: Guilherme Peretti-Pezzi (CSCS)
+@author: Joachim Hein (Lund University)
 """
 from distutils.version import LooseVersion
 import fileinput
