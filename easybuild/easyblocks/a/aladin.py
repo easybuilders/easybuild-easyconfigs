@@ -39,6 +39,7 @@ import easybuild.tools.toolchain as toolchain
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.build_log import EasyBuildError
+from easybuild.tools.filetools import apply_regex_substitutions, mkdir
 from easybuild.tools.modules import get_software_root, get_software_libdir
 from easybuild.tools.ordereddict import OrderedDict
 from easybuild.tools.run import run_cmd, run_cmd_qa
@@ -144,16 +145,16 @@ class EB_ALADIN(EasyBlock):
 
         # generate gmkpack configuration file
         self.conf_file = 'ALADIN_%s' % self.version
-        self.conf_filepath = os.path.join(self.builddir, 'arch', '%s.x' % self.conf_file)
+        self.conf_filepath = os.path.join(self.builddir, 'gmkpack_support', 'arch', '%s.x' % self.conf_file)
 
         try:
             if os.path.exists(self.conf_filepath):
                 os.remove(self.conf_filepath)
                 self.log.info("Removed existing gmpack config file %s" % self.conf_filepath)
 
-            archdir = os.path.join(self.builddir, 'arch')
+            archdir = os.path.dirname(self.conf_filepath)
             if not os.path.exists(archdir):
-                os.makedirs(archdir)
+                mkdir(archdir, parents=True)
 
         except OSError, err:
             raise EasyBuildError("Failed to remove existing file %s: %s", self.conf_filepath, err)
@@ -261,6 +262,10 @@ class EB_ALADIN(EasyBlock):
         env.setvar('HOMEPACK', os.path.join(self.installdir, 'pack'))
         env.setvar('HOMEBIN', os.path.join(self.installdir, 'pack'))
 
+        # patch config file to include right Fortran compiler flags
+        regex_subs = [(r"^(FRTFLAGS\s*=.*)$", r"\1 %s" % os.getenv('FFLAGS'))]
+        apply_regex_substitutions(self.conf_filepath, regex_subs)
+
     def build_step(self):
         """No separate build procedure for ALADIN (see install_step)."""
 
@@ -277,8 +282,8 @@ class EB_ALADIN(EasyBlock):
         """Custom install procedure for ALADIN."""
 
         try:
-            os.mkdir(os.getenv('ROOTPACK'))
-            os.mkdir(os.getenv('HOMEPACK'))
+            mkdir(os.getenv('ROOTPACK'), parents=True)
+            mkdir(os.getenv('HOMEPACK'), parents=True)
         except OSError, err:
             raise EasyBuildError("Failed to create rootpack dir in %s: %s", err)
 
