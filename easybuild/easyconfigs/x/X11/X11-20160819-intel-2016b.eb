@@ -1,0 +1,144 @@
+easyblock = 'Bundle'
+
+name = 'X11'
+version = '20160819'
+
+homepage = 'https://www.x.org'
+description = "The X Window System (X11) is a windowing system for bitmap displays"
+
+toolchain = {'name': 'intel', 'version': '2016b'}
+
+builddependencies = [
+    ('Autotools', '20150215'),
+    ('pkg-config', '0.29.1'),
+]
+
+# Python is required for xcb-proto
+allow_system_deps = [('Python', SYS_PYTHON_VERSION)]
+pyshortver = '.'.join(SYS_PYTHON_VERSION.split('.')[0:2])
+
+# all extensions can be installed with configure/make/make install
+exts_defaultclass = 'ConfigureMake'
+
+preconfigopts = "if [ -f autogen.sh ]; then ./autogen.sh; fi && "
+#preconfigopts += "CPATH=%(installdir)s/include LIBRARY_PATH=%(installdir)s/lib "
+#preconfigopts += "PKG_CONFIG_PATH=%(installdir)s/lib/pkgconfig"
+
+exts_list = [
+    ('xorg-macros', '1.19.0', {
+        'source_urls': ['http://cgit.freedesktop.org/xorg/util/macros/snapshot'],
+        'source_tmpl': 'util-macros-%(version)s.tar.gz',
+    }),
+    ('fixesproto', '5.0', {
+        'source_urls': [XORG_PROTO_SOURCE],
+    }),
+    ('glproto', '1.4.17', {
+        'source_urls': [XORG_PROTO_SOURCE],
+    }),
+    ('xextproto', '7.3.0', {
+        'source_urls': [XORG_PROTO_SOURCE],
+    }),
+    ('xcb-proto', '1.11', {
+        'source_urls': ['http://xcb.freedesktop.org/dist/'],
+    }),
+    ('inputproto', '2.3.1', {
+        'source_urls': [XORG_PROTO_SOURCE],
+    }),
+    ('xproto', '7.0.28', {
+        'source_urls': [XORG_PROTO_SOURCE],
+    }),
+    ('libpthread-stubs', '0.3', {
+        'source_urls': ['http://xcb.freedesktop.org/dist/'],
+    }),
+    ('kbproto', '1.0.7', {
+        'source_urls': [XORG_PROTO_SOURCE],
+    }),
+    ('xtrans', '1.3.5', {
+        'source_urls': [XORG_LIB_SOURCE],
+    }),
+    ('xineramaproto', '1.2.1', {
+        'source_urls': [XORG_PROTO_SOURCE],
+    }),
+    ('randrproto', '1.5.0', {
+        'source_urls': [XORG_PROTO_SOURCE],
+    }),
+    ('renderproto', '0.11', {
+        'source_urls': [XORG_PROTO_SOURCE],
+    }),
+    ('libXau', '1.0.8', {
+        'source_urls': [XORG_LIB_SOURCE],
+    }),
+    ('libxcb', '1.11.1', {
+        'source_urls': ['http://xcb.freedesktop.org/dist/'],
+    }),
+    ('xcb-util', '0.4.0', {
+        'source_urls': ['http://xcb.freedesktop.org/dist/'],
+    }),
+    ('xcb-util-image', '0.4.0', {
+        'source_urls': ['http://xcb.freedesktop.org/dist/'],
+    }),
+    ('xcb-util-keysyms', '0.4.0', {
+        'source_urls': ['http://xcb.freedesktop.org/dist/'],
+    }),
+    ('xcb-util-renderutil', '0.3.9', {
+        'source_urls': ['http://xcb.freedesktop.org/dist/'],
+    }),
+    ('xcb-util-wm', '0.4.1', {
+        'source_urls': ['http://xcb.freedesktop.org/dist/'],
+    }),
+    ('libxkbcommon', '0.6.1', {
+        'source_urls': ['http://xkbcommon.org/download/'],
+        'source_tmpl': 'libxkbcommon-%(version)s.tar.xz',
+    }),
+    ('libX11', '1.6.3', {
+        'source_urls': [XORG_LIB_SOURCE],
+    }),
+    ('libXrender', '0.9.9', {
+        'source_urls': [XORG_LIB_SOURCE],
+    }),
+    ('libICE', '1.0.9', {
+        'source_urls': [XORG_LIB_SOURCE],
+    }),
+    ('libSM', '1.2.2', {
+        'source_urls': [XORG_LIB_SOURCE],
+    }),
+    ('libXt', '1.1.5', {
+        'source_urls': [XORG_LIB_SOURCE],
+    }),
+    ('libXext', '1.3.3', {
+        'source_urls': [XORG_LIB_SOURCE],
+    }),
+    ('libXfixes', '5.0.2', {
+        'source_urls': [XORG_LIB_SOURCE],
+    }),
+    ('libXi', '1.7.6', {
+        'source_urls': [XORG_LIB_SOURCE],
+    }),
+    ('libXcursor', '1.1.14', {
+        'source_urls': [XORG_LIB_SOURCE],
+    }),
+    ('libXinerama', '1.1.3', {
+        'source_urls': [XORG_LIB_SOURCE],
+    }),
+    ('libXrandr', '1.5.0', {
+        'source_urls': [XORG_LIB_SOURCE],
+    }),
+]
+
+modextrapaths = {
+    'ACLOCAL_PATH': ['share/aclocal'],
+    'CPATH': ['include'],
+    'LIBRARY_PATH': ['lib'],
+    'PKG_CONFIG_PATH': ['lib/pkgconfig', 'share/pkgconfig'],
+}
+
+# specify that Bundle easyblock should run a full sanity check, rather than just trying to load the module
+full_sanity_check = True
+
+sanity_check_paths = {
+    'files': ['include/X11/Xlib.h', 'include/X11/Xutil.h'],
+    'dirs': ['include/GL', 'include/X11', 'include/X11/extensions', 'lib',
+             'lib/python%s/site-packages/xcbgen' % pyshortver, 'lib/pkgconfig', 'share/pkgconfig'],
+}
+
+moduleclass = 'vis'
