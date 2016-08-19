@@ -1,0 +1,50 @@
+# This is an easyconfig file for EasyBuild, see https://github.com/hpcugent/easybuild
+# Copyright:: Copyright 2013 Juelich Supercomputing Centre, Germany
+# Authors::   Bernd Mohr <b.mohr@fz-juelich.de>
+# License::   New BSD
+#
+# This work is based from experiences from the UNITE project
+# http://apps.fz-juelich.de/unite/
+##
+easyblock = 'ConfigureMake'
+
+name = 'VampirTrace'
+version = '5.14.4'
+
+homepage = 'http:/www.tu-dresden.de/zih/vampirtrace/'
+description = """VampirTrace is an open source library that allows detailed logging of program
+ execution for parallel applications using message passing (MPI) and threads (OpenMP), Pthreads)."""
+
+toolchain = {'name': 'gompi', 'version': '1.4.12-no-OFED'}
+toolchainopts = {'usempi': True}
+
+sources = [SOURCE_TAR_GZ]
+source_urls = ['http://wwwpub.zih.tu-dresden.de/%7Emlieber/dcount/dcount.php?package=vampirtrace&get=']
+
+dependencies = [
+    ('OTF', '1.12.4'),
+    ('PAPI', '5.2.0'),
+    ('PDT', '3.19'),
+]
+
+configopts  = 'MPIFC="$MPIF90"'
+
+# MPI suite should always be specified -- MUCH quicker and SAVER than autodetect
+# note: these options are toolchain specific!
+configopts += " --with-openmpi --enable-compinst=gnu"
+
+configopts += " --with-papi-dir=${EBROOTPAPI}"
+configopts += " --with-extern-otf-dir=${EBROOTOTF}"
+configopts += " --with-tau-instrumentor=${EBROOTPDT}/x86_64/bin/tau_instrumentor"
+configopts += " --with-pdt-cparse=${EBROOTPDT}/x86_64/bin/cparse"
+configopts += " --with-pdt-cxxparse=${EBROOTPDT}/x86_64/bin/cxxparse"
+configopts += " --with-pdt-fparse=${EBROOTPDT}/x86_64/bin/gfparse"
+# VamoirTrace does also support CUDA measurements - not yet tested
+# configopts += " --with-cuda-dir=${CUDADIR}"
+
+sanity_check_paths = {
+    'files': ['bin/vtcc', 'include/vampirtrace/vt_user.h', ('lib/libvt.a', 'lib64/libvt.a')],
+    'dirs': []
+}
+
+moduleclass = 'perf'
