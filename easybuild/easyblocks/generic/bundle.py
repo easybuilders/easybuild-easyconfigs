@@ -123,7 +123,7 @@ class Bundle(EasyBlock):
             elif easyblock == 'Bundle':
                 raise EasyBuildError("The '%s' easyblock can not be used to install components in a bundle", easyblock)
 
-            print_msg("installing bundle component %s v%s (%d/%d)..." % (cfg['name'], cfg['version'], idx, comp_cnt))
+            print_msg("installing bundle component %s v%s (%d/%d)..." % (cfg['name'], cfg['version'], idx+1, comp_cnt))
             self.log.info("Installing component %s v%s using easyblock %s", cfg['name'], cfg['version'], easyblock)
 
             comp = get_easyblock_class(easyblock, name=cfg['name'])(cfg)
