@@ -69,7 +69,7 @@ class EB_QuantumESPRESSO(ConfigureMake):
     def configure_step(self):
         """Custom configuration procedure for Quantum ESPRESSO."""
 
-        if self.cfg['hybrid']:
+        if self.toolchain.options.get('openmp', False) or self.cfg['hybrid']:
             self.cfg.update('configopts', '--enable-openmp')
 
         if not self.toolchain.options.get('usempi', None):
@@ -101,7 +101,10 @@ class EB_QuantumESPRESSO(ConfigureMake):
         }
         dflags.append(comp_fam_dflags[self.toolchain.comp_family()])
 
-        libfft = os.getenv('LIBFFT')
+        if self.toolchain.options.get('openmp', False):
+            libfft = os.getenv('LIBFFT_MT')
+        else:
+            libfft = os.getenv('LIBFFT')
         if libfft:
             if "fftw3" in libfft:
                 dflags.append('-D__FFTW3')
@@ -115,7 +118,7 @@ class EB_QuantumESPRESSO(ConfigureMake):
         if self.toolchain.options.get('usempi', None):
             dflags.append('-D__MPI -D__PARA')
 
-        if self.cfg['hybrid']:
+        if self.toolchain.options.get('openmp', False) or self.cfg['hybrid']:
             dflags.append(" -D__OPENMP")
 
         if self.cfg['with_scalapack']:
@@ -127,14 +130,17 @@ class EB_QuantumESPRESSO(ConfigureMake):
         repls.append(('DFLAGS', ' '.join(dflags), False))
 
         # complete C/Fortran compiler and LD flags
-        if self.cfg['hybrid']:
+        if self.toolchain.options.get('openmp', False) or self.cfg['hybrid']:
             repls.append(('LDFLAGS', self.toolchain.get_flag('openmp'), True))
             repls.append(('(?:C|F90|F)FLAGS', self.toolchain.get_flag('openmp'), True))
 
         # obtain library settings
         libs = []
         for lib in ['BLAS', 'LAPACK', 'FFT', 'SCALAPACK']:
-            val = os.getenv('LIB%s' % lib)
+            if self.toolchain.options.get('openmp', False):
+                val = os.getenv('LIB%s_MT' % lib)
+            else:
+                val = os.getenv('LIB%s' % lib)
             repls.append(('%s_LIBS' % lib, val, False))
             libs.append(val)
         libs = ' '.join(libs)
