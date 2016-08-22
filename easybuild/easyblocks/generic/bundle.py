@@ -37,7 +37,7 @@ import easybuild.tools.environment as env
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.framework.easyconfig.easyconfig import get_easyblock_class
-from easybuild.tools.build_log import EasyBuildError
+from easybuild.tools.build_log import EasyBuildError, print_msg
 from easybuild.tools.modules import get_software_root, get_software_version
 
 
@@ -122,6 +122,7 @@ class Bundle(EasyBlock):
             elif easyblock == 'Bundle':
                 raise EasyBuildError("The '%s' easyblock can not be used to install components in a bundle", easyblock)
 
+            print_msg("installing bundle component %s v%s..." % (cfg['name'], cfg['version']))
             self.log.info("Installing component %s v%s using easyblock %s", cfg['name'], cfg['version'], easyblock)
 
             comp = get_easyblock_class(easyblock, name=cfg['name'])(cfg)
