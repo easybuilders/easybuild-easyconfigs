@@ -31,7 +31,9 @@ EasyBuild support for installing a bundle of modules, implemented as a generic e
 @author: Pieter De Baets (Ghent University)
 @author: Jens Timmerman (Ghent University)
 """
+import os
 
+import easybuild.tools.environment as env
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.framework.easyconfig.easyconfig import get_easyblock_class
@@ -136,6 +138,20 @@ class Bundle(EasyBlock):
             comp.configure_step()
             comp.build_step()
             comp.install_step()
+
+            # update environment to ensure stuff provided by former components can be picked up by latter components
+            # once the installation is finalised, this is handled by the generated module
+            reqs = comp.make_module_req_guess()
+            for envvar in reqs:
+                for subdir in reqs[envvar]:
+                    curr_val = os.getenv(envvar, '')
+                    path = os.path.join(self.installdir, subdir)
+                    if not curr_val.startswith(path):
+                        if curr_val:
+                            new_val = '%s:%s' % (path, curr_val)
+                        else:
+                            new_val = path
+                        env.setvar(envvar, new_val)
 
     def make_module_extra(self):
         """Set extra stuff in module file, e.g. $EBROOT*, $EBVERSION*, etc."""
