@@ -115,6 +115,7 @@ class Bundle(EasyBlock):
 
     def install_step(self):
         """Install components, if specified."""
+        comp_cnt = len(self.cfg['components'])
         for idx, cfg in enumerate(self.comp_cfgs):
             easyblock = cfg.get('easyblock') or self.cfg['default_easyblock']
             if easyblock is None:
@@ -122,7 +123,7 @@ class Bundle(EasyBlock):
             elif easyblock == 'Bundle':
                 raise EasyBuildError("The '%s' easyblock can not be used to install components in a bundle", easyblock)
 
-            print_msg("installing bundle component %s v%s..." % (cfg['name'], cfg['version']))
+            print_msg("installing bundle component %s v%s (%d/%d)..." % (cfg['name'], cfg['version'], idx, comp_cnt))
             self.log.info("Installing component %s v%s using easyblock %s", cfg['name'], cfg['version'], easyblock)
 
             comp = get_easyblock_class(easyblock, name=cfg['name'])(cfg)
