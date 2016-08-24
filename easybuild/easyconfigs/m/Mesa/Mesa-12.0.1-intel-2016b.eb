@@ -1,3 +1,10 @@
+# the purpose of the easyconfig is to build a Mesa for software rendering,
+# not hardware rendering. This means you want at least SSE4.2. We build:
+# - llvmpipe: the high-performance Gallium LLVM driver
+# - swr: Intel's OpenSWR
+# it will try to use the llvmpipe by default. It you want swr, do:
+# GALLIUM_DRIVER=swr
+
 easyblock = 'ConfigureMake'
 
 name = 'Mesa'
@@ -24,26 +31,17 @@ builddependencies = [
 ]
 
 dependencies = [
-    ('libxml2', '2.9.4'),
+    ('Mako', '1.0.4'),
+    ('nettle', '3.2'),
     ('X11', '20160819'),
     ('libdrm', '2.4.70'),
     ('LLVM', '3.8.1'),
-#   ('eudev', '3.1.5'),
 ]
-
-# Use the os provided libudev or the EB provided eudev
-osdependencies = ['libudev']
 
 # GLU is not part anymore of Mesa package!
 configopts = " --disable-osmesa --enable-gallium-osmesa --enable-gallium-llvm --enable-glx --disable-dri"
 configopts += " --disable-driglx-direct --with-gallium-drivers='swrast,swr' --disable-egl"
 configopts += " --with-osmesa-bits=32 --enable-texture-float --enable-llvm-shared-libs "
-
-# package-config files for os dependencies are in an os specific place
-#preconfigopts = 'libtoolize && PKG_CONFIG_PATH="$PKG_CONFIG_PATH:/usr/lib64/pkgconfig/:/usr/share/pkgconfig" '
-#preconfigopts = ' libtoolize &&  '
-
-#prebuildopts = 'env CPATH="$EBROOTLIBDRM/include/libdrm:$CPATH" CFLAGS= '
 
 sanity_check_paths = {
     'files': ['lib/libGL.%s' % SHLIB_EXT, 'lib/libOSMesa.%s' % SHLIB_EXT, 'lib/libGLESv1_CM.%s' % SHLIB_EXT,
@@ -52,7 +50,5 @@ sanity_check_paths = {
               'include/GL/glx_mangle.h', 'include/GLES/gl.h', 'include/GLES2/gl2.h', 'include/GLES3/gl3.h'],
     'dirs': []
 }
-
-maxparallel = 1
 
 moduleclass = 'vis'
