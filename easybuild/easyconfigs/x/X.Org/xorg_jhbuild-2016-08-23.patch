@@ -1,0 +1,45 @@
+--- jhbuildrc.orig	2016-08-23 16:54:45.000000000 +0200
++++ jhbuildrc	2016-08-23 17:55:13.669085000 +0200
+@@ -14,7 +14,7 @@
+ 
+ # A string or list of strings specifying the name(s) of the module set(s) to use.
+ # It can be a full HTTP URL to an externally managed moduleset
+-moduleset = os.path.join(os.environ['HOME'], 'xorg/util/modular/xorg.modules')
++moduleset = os.path.join(os.environ['EBBUILDDIR'], 'xorg.modules')
+ 
+ # A list of strings specifying the modules to build.
+ # The list of modules actually built will be recursively expanded to include all the dependencies
+@@ -22,18 +22,22 @@ moduleset = os.path.join(os.environ['HOM
+ modules = [ 'The X Window System' ]
+ 
+ # A string specifying the directory to unpack source trees to.
+-checkoutroot = os.path.join(os.environ['HOME'])
++checkoutroot = os.path.join(os.environ['EBBUILDDIR'], 'xorg_sources')
+ 
+ # A string specifying the prefix to install modules to.
+ # The prefix must be an absolute path. This directory must be writable
+-prefix = os.path.join(os.environ['HOME'], 'xorg-build')
++prefix = os.path.join(os.environ['EBINSTALLDIR'])
+ 
+ # The following is required to make aclocal find our .m4 macros
+ os.environ['ACLOCAL'] = 'aclocal -I ' + os.path.join(prefix, 'share/aclocal')
+ 
+ # The following is required to make pkg-config find our .pc metadata files
+ os.environ['PKG_CONFIG_PATH'] = os.path.join(prefix, 'lib/pkgconfig') \
+-    + ':' + os.path.join(prefix, 'share/pkgconfig')
++    + ':' + os.path.join(prefix, 'share/pkgconfig') \
++    + ':' + os.path.join(os.environ['PKG_CONFIG_PATH'])
++
++# Make sure it finds any python modules we installed
++os.environ['PYTHONPATH'] =  os.path.join(os.environ['PYTHONPATH'])
+ 
+ # A boolean value that specifies whether to install libraries to lib64 directories.
+ # Defaults to 1 on Debian but now obsolete, using multi-arch nomenclature
+@@ -49,3 +53,7 @@ autogenargs=''
+ # A string listing additional arguments to be passed to make.
+ # Set makeargs to 'V=1' for verbose build output.
+ #makeargs = ''
++#
++sticky_date = os.environ['XORG_VERSION_DATE']
++skip = os.environ['XORG_SKIP_SET']
++
