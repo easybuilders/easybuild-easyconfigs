@@ -105,7 +105,9 @@ class EB_libxml2(ConfigureMake, PythonPackage):
         """
         Add python bindings to the pythonpath
         """
-        return PythonPackage.make_module_extra(self)
+        txt = PythonPackage.make_module_extra(self)
+        txt += self.module_generator.prepend_paths('CPATH', [os.path.join('include', 'libxml2')])
+        return txt
 
     def sanity_check_step(self):
         """Custom sanity check for libxml2"""
