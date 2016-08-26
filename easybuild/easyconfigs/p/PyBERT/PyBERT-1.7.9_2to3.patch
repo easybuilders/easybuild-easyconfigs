@@ -1,0 +1,415 @@
+# Python 2to3
+# Aug 25th 2016 by B. Hajgato (Free University Brussel - VUB)
+diff -ru PyBERT-1.7.9.org/pybert/cached_property_test.py PyBERT-1.7.9/pybert/cached_property_test.py
+--- PyBERT-1.7.9.org/pybert/cached_property_test.py	2015-03-17 01:17:32.000000000 +0100
++++ PyBERT-1.7.9/pybert/cached_property_test.py	2016-08-24 14:03:50.601202809 +0200
+@@ -20,8 +20,8 @@
+     """This handler is instantiated by the View and handles user button clicks."""
+ 
+     def do_print_y(self, info):
+-        print "y:", info.object.y
+-        print "z:", info.object.z
++        print("y:", info.object.y)
++        print("z:", info.object.z)
+ 
+ print_y = Action(name="Print y", action="do_print_y")
+     
+@@ -33,12 +33,12 @@
+ 
+     @cached_property
+     def _get_y(self):
+-        print "Just entered _get_y()."
++        print("Just entered _get_y().")
+         return arange(self.x)
+ 
+     @cached_property
+     def _get_z(self):
+-        print "Just entered _get_z()."
++        print("Just entered _get_z().")
+         y = self.y
+         return y ** 2
+ 
+diff -ru PyBERT-1.7.9.org/pybert/cdr.py PyBERT-1.7.9/pybert/cdr.py
+--- PyBERT-1.7.9.org/pybert/cdr.py	2015-02-14 17:11:29.000000000 +0100
++++ PyBERT-1.7.9/pybert/cdr.py	2016-08-24 14:03:46.258202609 +0200
+@@ -105,7 +105,7 @@
+ 
+         integral_correction      = integral_corrections[-1]
+ 
+-        samples = map(sign, samples)
++        samples = list(map(sign, samples))
+         if(samples[0] == samples[2]):   # No transition; no correction.
+             proportional_correction = 0.0
+         elif(samples[0] == samples[1]): # Early clock; increase period.
+diff -ru PyBERT-1.7.9.org/pybert/dfe.py PyBERT-1.7.9/pybert/dfe.py
+--- PyBERT-1.7.9.org/pybert/dfe.py	2015-04-15 16:21:49.000000000 +0200
++++ PyBERT-1.7.9/pybert/dfe.py	2016-08-24 14:03:47.935202686 +0200
+@@ -14,7 +14,7 @@
+ 
+ from numpy        import zeros, sign, array, prod
+ from scipy.signal import lfilter, iirfilter
+-from cdr          import CDR
++from .cdr          import CDR
+ 
+ gNch_taps       = 3           # Number of taps used in summing node filter.
+ 
+diff -ru PyBERT-1.7.9.org/pybert/doc/source/conf.py PyBERT-1.7.9/pybert/doc/source/conf.py
+--- PyBERT-1.7.9.org/pybert/doc/source/conf.py	2015-02-14 17:09:31.000000000 +0100
++++ PyBERT-1.7.9/pybert/doc/source/conf.py	2016-08-24 14:03:52.761202909 +0200
+@@ -49,8 +49,8 @@
+ master_doc = 'index'
+ 
+ # General information about the project.
+-project = u'PyBERT Developer Guide'
+-copyright = u'2015, David Banas'
++project = 'PyBERT Developer Guide'
++copyright = '2015, David Banas'
+ 
+ # The version info for the project you're documenting, acts as replacement for
+ # |version| and |release|, also used in various other places throughout the
+@@ -221,8 +221,8 @@
+ # (source start file, target name, title,
+ #  author, documentclass [howto, manual, or own class]).
+ latex_documents = [
+-  ('index', 'PyBERTDeveloperGuide.tex', u'PyBERT Developer Guide Documentation',
+-   u'David Banas', 'manual'),
++  ('index', 'PyBERTDeveloperGuide.tex', 'PyBERT Developer Guide Documentation',
++   'David Banas', 'manual'),
+ ]
+ 
+ # The name of an image file (relative to this directory) to place at the top of
+@@ -251,8 +251,8 @@
+ # One entry per manual page. List of tuples
+ # (source start file, name, description, authors, manual section).
+ man_pages = [
+-    ('index', 'pybertdeveloperguide', u'PyBERT Developer Guide Documentation',
+-     [u'David Banas'], 1)
++    ('index', 'pybertdeveloperguide', 'PyBERT Developer Guide Documentation',
++     ['David Banas'], 1)
+ ]
+ 
+ # If true, show URL addresses after external links.
+@@ -265,8 +265,8 @@
+ # (source start file, target name, title, author,
+ #  dir menu entry, description, category)
+ texinfo_documents = [
+-  ('index', 'PyBERTDeveloperGuide', u'PyBERT Developer Guide Documentation',
+-   u'David Banas', 'PyBERTDeveloperGuide', 'One line description of project.',
++  ('index', 'PyBERTDeveloperGuide', 'PyBERT Developer Guide Documentation',
++   'David Banas', 'PyBERTDeveloperGuide', 'One line description of project.',
+    'Miscellaneous'),
+ ]
+ 
+diff -ru PyBERT-1.7.9.org/pybert/lfsr.py PyBERT-1.7.9/pybert/lfsr.py
+--- PyBERT-1.7.9.org/pybert/lfsr.py	2015-03-30 18:29:34.000000000 +0200
++++ PyBERT-1.7.9/pybert/lfsr.py	2016-08-24 14:03:48.335202705 +0200
+@@ -1,3 +1,4 @@
++from functools import reduce
+ # Python LFSR generator
+ #
+ # Original author: David Banas
+diff -ru PyBERT-1.7.9.org/pybert/__main__.py PyBERT-1.7.9/pybert/__main__.py
+--- PyBERT-1.7.9.org/pybert/__main__.py	2014-11-29 23:37:28.000000000 +0100
++++ PyBERT-1.7.9/pybert/__main__.py	2016-08-24 14:03:48.728202723 +0200
+@@ -1,4 +1,4 @@
+-from pybert import *
++from .pybert import *
+ 
+ PyBERT().configure_traits(view=traits_view)
+ 
+diff -ru PyBERT-1.7.9.org/pybert/pybert_cntrl.py PyBERT-1.7.9/pybert/pybert_cntrl.py
+--- PyBERT-1.7.9.org/pybert/pybert_cntrl.py	2016-06-13 06:07:47.000000000 +0200
++++ PyBERT-1.7.9/pybert/pybert_cntrl.py	2016-08-25 10:32:30.503151027 +0200
+@@ -15,10 +15,10 @@
+ from numpy.fft    import fft, ifft
+ from scipy.signal import lfilter, iirfilter, freqz, fftconvolve
+ 
+-from dfe          import DFE
+-from cdr          import CDR
++from .dfe          import DFE
++from .cdr          import CDR
+ 
+-from pybert_util  import find_crossings, make_ctle, calc_jitter, moving_average, calc_eye
++from .pybert_util  import find_crossings, make_ctle, calc_jitter, moving_average, calc_eye
+ 
+ DEBUG           = False
+ MIN_BATHTUB_VAL = 1.e-18
+@@ -408,7 +408,7 @@
+     # - DFE output
+     try:
+         ignore_until  = (nui - eye_uis) * ui + 0.75 * ui  # 0.5 was causing an occasional misalignment.
+-        ideal_xings   = array(filter(lambda x: x > ignore_until, list(ideal_xings)))
++        ideal_xings   = array([x for x in list(ideal_xings) if x > ignore_until])
+         min_delay     = ignore_until + conv_dly
+         actual_xings  = find_crossings(t, dfe_out, decision_scaler, min_delay=min_delay,
+                                                                     mod_type=mod_type,
+@@ -510,7 +510,7 @@
+     self.plotdata.set_data("clk_per_hist_vals",  bin_counts)
+     self.plotdata.set_data("clk_spec",  10. * log10(clock_spec[1:]))  # Omit the d.c. value.
+     self.plotdata.set_data("clk_freqs",  spec_freqs[1:])
+-    self.plotdata.set_data("tap_weight_index", range(len(tap_weight)))
++    self.plotdata.set_data("tap_weight_index", list(range(len(tap_weight))))
+     self.plotdata.set_data("dfe_out",  self.dfe_out)
+     self.plotdata.set_data("ui_ests",  self.ui_ests)
+     self.plotdata.set_data("clocks",   self.clocks)
+@@ -591,7 +591,7 @@
+     self.plotdata.set_data("jitter_rejection_ratio", self.jitter_rejection_ratio[1:])
+ 
+     # Bathtubs
+-    half_len = len(jitter_ext_chnl) / 2
++    half_len = len(jitter_ext_chnl) // 2
+     #  - Channel
+     bathtub_chnl    = list(cumsum(jitter_ext_chnl[-1 : -(half_len + 1) : -1]))
+     bathtub_chnl.reverse()
+diff -ru PyBERT-1.7.9.org/pybert/pybert_plot.py PyBERT-1.7.9/pybert/pybert_plot.py
+--- PyBERT-1.7.9.org/pybert/pybert_plot.py	2016-04-24 01:46:57.000000000 +0200
++++ PyBERT-1.7.9/pybert/pybert_plot.py	2016-08-24 14:03:52.353202890 +0200
+@@ -10,7 +10,7 @@
+ 
+ from chaco.api       import Plot, GridPlotContainer, ColorMapper
+ from chaco.tools.api import PanTool, ZoomTool
+-from pybert_cntrl    import update_eyes
++from .pybert_cntrl    import update_eyes
+ 
+ def make_plots(self, n_dfe_taps):
+     """ Create the plots used by the PyBERT GUI."""
+diff -ru PyBERT-1.7.9.org/pybert/pybert_prof.py PyBERT-1.7.9/pybert/pybert_prof.py
+--- PyBERT-1.7.9.org/pybert/pybert_prof.py	2014-08-25 01:00:37.000000000 +0200
++++ PyBERT-1.7.9/pybert/pybert_prof.py	2016-08-24 14:03:51.718202861 +0200
+@@ -9,14 +9,14 @@
+ 
+ import profile
+ 
+-from pybert       import PyBERT
+-from pybert_cntrl import my_run_channel
++from .pybert       import PyBERT
++from .pybert_cntrl import my_run_channel
+ 
+ def main():
+     my_pybert = PyBERT()
+     my_pybert.nbits = 100000
+     my_run_channel(my_pybert)
+-    print len(my_pybert.chnl_out)
++    print(len(my_pybert.chnl_out))
+ 
+ if(__name__ == '__main__'):
+     main()
+diff -ru PyBERT-1.7.9.org/pybert/pybert.py PyBERT-1.7.9/pybert/pybert.py
+--- PyBERT-1.7.9.org/pybert/pybert.py	2016-06-13 06:14:02.000000000 +0200
++++ PyBERT-1.7.9/pybert/pybert.py	2016-08-24 14:03:45.826202589 +0200
+@@ -60,12 +60,12 @@
+ from chaco.tools.api import PanTool, ZoomTool, LegendTool, TraitsTool, DragZoom
+ from enable.component_editor import ComponentEditor
+ 
+-from pybert_view     import traits_view
+-from pybert_cntrl    import my_run_simulation, update_results, update_eyes
+-from pybert_util     import calc_gamma, calc_G, trim_impulse, import_qucs_csv, \
++from .pybert_view     import traits_view
++from .pybert_cntrl    import my_run_simulation, update_results, update_eyes
++from .pybert_util     import calc_gamma, calc_G, trim_impulse, import_qucs_csv, \
+                             make_ctle, lfsr_bits, safe_log10
+-from pybert_plot     import make_plots
+-from pybert_help     import help_str
++from .pybert_plot     import make_plots
++from .pybert_help     import help_str
+ 
+ debug          = False
+ gDebugStatus   = False
+@@ -146,7 +146,7 @@
+                     'fun' : lambda x: 0.7 - sum(abs(x))
+                 })
+ 
+-        bounds = zip(min_vals, max_vals)
++        bounds = list(zip(min_vals, max_vals))
+ 
+         if(gDebugOptimize):
+             res = minimize( self.do_opt_tx, old_taps, bounds=bounds,
+@@ -236,7 +236,7 @@
+                     'fun' : lambda x: 0.7 - sum(abs(x[:-1]))
+                 })
+ 
+-        bounds = zip(min_vals, max_vals)
++        bounds = list(zip(min_vals, max_vals))
+ 
+         if(gDebugOptimize):
+             res = minimize( self.do_coopt, vals, constraints=cons,
+@@ -615,7 +615,7 @@
+             seed    = randint(128)
+         bit_gen = lfsr_bits([7, 6], seed)
+         for i in range(pattern_len - 4):
+-            bits.append(bit_gen.next())
++            bits.append(next(bit_gen))
+ 
+         # The 4-bit prequels, below, are to ensure that the first zero crossing
+         # in the actual slicer input signal occurs. This is necessary, because
+@@ -1111,7 +1111,7 @@
+     # Changed property handlers.
+     def _status_str_changed(self):
+         if(gDebugStatus):
+-            print self.status_str
++            print(self.status_str)
+ 
+     def _pretap_enable_changed(self, new_value):
+         if(new_value == False):
+diff -ru PyBERT-1.7.9.org/pybert/pybert_util.py PyBERT-1.7.9/pybert/pybert_util.py
+--- PyBERT-1.7.9.org/pybert/pybert_util.py	2016-04-28 15:07:45.000000000 +0200
++++ PyBERT-1.7.9/pybert/pybert_util.py	2016-08-25 10:23:58.627544068 +0200
+@@ -17,9 +17,10 @@
+ from scipy.signal   import lfilter, iirfilter, invres, freqs, medfilt
+ from scipy.optimize import minimize, minimize_scalar
+ from scipy.stats    import norm
+-from dfe            import DFE
+-from cdr            import CDR
++from .dfe            import DFE
++from .cdr            import CDR
+ from pylab          import plot, show, legend
++from functools import reduce
+ 
+ debug          = False
+ gDebugOptimize = False
+@@ -75,7 +76,7 @@
+     try:
+         max_mag_x = max(abs(x))
+     except:
+-        print "len(x):", len(x)
++        print("len(x):", len(x))
+         raise
+     min_mag_x = min_init_dev * max_mag_x
+     i = 0
+@@ -101,21 +102,21 @@
+             i += 1
+ 
+     if(debug):
+-        print "min_delay: {}".format(min_delay)
+-        print "rising_first: {}".format(rising_first)
+-        print "i: {}".format(i)
+-        print "max_mag_x: {}".format(max_mag_x)
+-        print "min_mag_x: {}".format(min_mag_x)
+-        print "xings[0]: {}".format(xings[0])
+-        print "xings[i]: {}".format(xings[i])
++        print("min_delay: {}".format(min_delay))
++        print("rising_first: {}".format(rising_first))
++        print("i: {}".format(i))
++        print("max_mag_x: {}".format(max_mag_x))
++        print("min_mag_x: {}".format(min_mag_x))
++        print("xings[0]: {}".format(xings[0]))
++        print("xings[i]: {}".format(xings[i]))
+ 
+     try:
+         if(rising_first and diff_sign_x[xing_ix[i]] < 0.):
+             i += 1
+     except:
+-        print "len(diff_sign_x):", len(diff_sign_x)
+-        print "len(xing_ix):", len(xing_ix)
+-        print "i:", i
++        print("len(diff_sign_x):", len(diff_sign_x))
++        print("len(xing_ix):", len(xing_ix))
++        print("i:", i)
+         raise
+ 
+     return array(xings[i:])
+@@ -276,7 +277,7 @@
+         bin_centers     = [-ui / 2.] + [mean([bin_edges[i + 1], bin_edges[i + 2]]) \
+                             for i in range(len(bin_edges) - 3)] + [ui / 2.]
+ 
+-        return (array(map(float, hist)) / sum(hist), bin_centers)
++        return (array(list(map(float, hist))) / sum(hist), bin_centers)
+ 
+ 
+     # Check inputs.
+@@ -288,10 +289,10 @@
+     actual_xings = array(actual_xings) - (actual_xings[0] - ui / 2.)
+     xings_per_pattern = where(ideal_xings > (pattern_len * ui))[0][0]
+     if(xings_per_pattern % 2 or not xings_per_pattern):
+-        print "xings_per_pattern:", xings_per_pattern
+-        print "len(ideal_xings):", len(ideal_xings)
+-        print "min(ideal_xings):", min(ideal_xings)
+-        print "max(ideal_xings):", max(ideal_xings)
++        print("xings_per_pattern:", xings_per_pattern)
++        print("len(ideal_xings):", len(ideal_xings))
++        print("min(ideal_xings):", min(ideal_xings))
++        print("max(ideal_xings):", max(ideal_xings))
+         raise AssertionError("pybert_util.calc_jitter(): Odd number of (or, no) crossings per pattern detected!")
+     num_patterns = nui // pattern_len
+ 
+@@ -330,16 +331,16 @@
+     jitter  = array(jitter)
+ 
+     if(debug):
+-        print "mean(jitter):", mean(jitter)
+-        print "len(jitter):", len(jitter)
++        print("mean(jitter):", mean(jitter))
++        print("len(jitter):", len(jitter))
+ 
+     if(zero_mean):
+         jitter -= mean(jitter)
+ 
+     # Do the jitter decomposition.
+     # - Separate the rising and falling edges, shaped appropriately for averaging over the pattern period.
+-    tie_risings  = jitter.take(range(0, len(jitter), 2))
+-    tie_fallings = jitter.take(range(1, len(jitter), 2))
++    tie_risings  = jitter.take(list(range(0, len(jitter), 2)))
++    tie_fallings = jitter.take(list(range(1, len(jitter), 2)))
+     tie_risings.resize (num_patterns * xings_per_pattern // 2)
+     tie_fallings.resize(num_patterns * xings_per_pattern // 2)
+     tie_risings  = reshape(tie_risings,  (num_patterns, xings_per_pattern // 2))
+@@ -351,14 +352,14 @@
+         tie_fallings_ave = tie_fallings.mean(axis=0)
+         isi = max(tie_risings_ave.ptp(), tie_fallings_ave.ptp())
+     except:
+-        print "xings_per_pattern:", xings_per_pattern
+-        print "len(ideal_xings):", len(ideal_xings)
++        print("xings_per_pattern:", xings_per_pattern)
++        print("len(ideal_xings):", len(ideal_xings))
+         raise
+     isi = min(isi, ui) # Cap the ISI at the unit interval.
+     dcd = abs(mean(tie_risings_ave) - mean(tie_fallings_ave))
+ 
+     # - Subtract the data dependent jitter from the original TIE track, in order to yield the data independent jitter.
+-    tie_ave  = sum(zip(tie_risings_ave, tie_fallings_ave), ())
++    tie_ave  = sum(list(zip(tie_risings_ave, tie_fallings_ave)), ())
+     tie_ave  = resize(tie_ave, len(jitter))
+     tie_ind  = jitter - tie_ave
+ 
+@@ -370,7 +371,7 @@
+     y               = fft(x)
+     jitter_spectrum = abs(y[:len(y) / 2]) / sqrt(len(jitter)) # Normalized, in order to make power correct.
+     f0              = 1. / (ui * nui)
+-    spectrum_freqs  = [i * f0 for i in range(len(y) / 2)]
++    spectrum_freqs  = [i * f0 for i in range(len(y) // 2)]
+ 
+     # -- Use the data independent jitter spectrum for our calculations.
+     tie_ind_uniform, valid_ix = make_uniform(t_jitter, tie_ind, ui, nui)
+@@ -452,9 +453,9 @@
+     if(len(t) < len(jitter)):
+         jitter = jitter[:len(t)]
+ 
+-    run_lengths    = map(int, diff(t) / ui + 0.5)
++    run_lengths    = list(map(int, diff(t) / ui + 0.5))
+     valid_ix       = [0] + list(cumsum(run_lengths))
+-    valid_ix       = filter(lambda x: x < nbits, valid_ix)
++    valid_ix       = [x for x in valid_ix if x < nbits]
+     missing        = where(array(run_lengths) > 1)[0]
+     num_insertions = 0
+     jitter         = list(jitter) # Because we use 'insert'.
+@@ -763,7 +764,7 @@
+     with open(filename, mode='rU') as csv_file:
+         for line in csv_file:
+             try:
+-                tmp = map(float, concatenate(map(lambda s: s.split(','), line.split(';'))))
++                tmp = list(map(float, concatenate([s.split(',') for s in line.split(';')])))
+             except:
+                 continue
+             ts.append(tmp[0])
+diff -ru PyBERT-1.7.9.org/pybert/pybert_view.py PyBERT-1.7.9/pybert/pybert_view.py
+--- PyBERT-1.7.9.org/pybert/pybert_view.py	2016-04-24 01:47:43.000000000 +0200
++++ PyBERT-1.7.9/pybert/pybert_view.py	2016-08-24 14:03:53.307202934 +0200
+@@ -15,7 +15,7 @@
+                          TextEditor, TableEditor, ObjectColumn
+ from enable.component_editor import ComponentEditor
+ 
+-from pybert_cntrl import my_run_sweeps
++from .pybert_cntrl import my_run_sweeps
+ 
+ class RunSimThread(Thread):
+     'Used to run the simulation in its own thread, in order to preserve GUI responsiveness.'
