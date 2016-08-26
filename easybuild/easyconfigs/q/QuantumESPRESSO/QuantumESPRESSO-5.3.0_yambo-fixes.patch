@@ -1,0 +1,71 @@
+* make sure -nofor_main is also used when $FC is defined as mpif90 for yambo
+* fix check in yambo configure script w.r.t. preprocessing Fortran code by ignoring harmless warning in stderr output
+* force ifort mangling in yambo's netcdf
+author: Kenneth Hoste (HPC-UGent), adapted to espresso-5.3.0 and yambo-3.4.2 by Miguel Dias Costa (National University of Singapore)
+--- espresso-5.3.0/yambo-3.4.2/configure.orig	2016-05-26 16:18:16.177156000 +0800
++++ espresso-5.3.0/yambo-3.4.2/configure	2016-05-26 16:20:31.929218336 +0800
+@@ -6238,7 +6238,7 @@
+       ;;
+     *g95*)
+       ;;
+-    *ifort*)
++    *ifort*|*mpif90*)
+       $FC -v >& ver_
+       VER_8=`grep 8. ver_   | wc -l`
+       VER_9=`grep 9. ver_   | wc -l`
+@@ -6321,7 +6321,7 @@
+     FCMFLAG=""
+     OMPFLAGS="-fopenmp"
+     ;;
+-  *ifort*)
++  *ifort*|*mpif90*)
+     CPU_FLAG=""
+     case "${FCVERSION}" in
+       *11* | *12* | *13* |*14* | *15* )
+@@ -6365,7 +6365,7 @@
+     UFFLAGS="-g -O0 -fno-second-underscore"
+     FCMFLAG=""
+     ;;
+-  *ifort*)
++  *ifort*|*mpif90*)
+     CPU_FLAG=""
+     case "${FCVERSION}" in
+       *1*)
+@@ -6413,7 +6413,7 @@
+     UFFLAGS="-g -O0 -w"
+     OMPFLAGS="-openmp"
+     ;;
+-  *ifort*)
++  *ifort*|*mpif90*)
+     CPU_FLAG=""
+     case "${FCVERSION}" in
+       *1*)
+@@ -6472,7 +6472,7 @@
+     UFFLAGS="-g -O0 -w -tpp2"
+     OMPFLAGS="-openmp"
+     ;;
+-  *ifort*)
++  *ifort*|*mpif90*)
+     CPU_FLAG=""
+     case "${FCVERSION}" in
+       *11* | *12* | *13* |*14* |*15* )
+@@ -7651,7 +7651,7 @@
+ 
+ if ! test -s conftest.er1 || test -n "`grep successful conftest.er1`"  ; then
+  eval $CPP $CPPFLAGS conftest.F > conftest.${F90SUFFIX}
+- eval $FC $FCFLAGS -c conftest.${F90SUFFIX} 2> conftest.er2 >&5
++ eval $FC $FCFLAGS -c conftest.${F90SUFFIX} | grep -v "ifort: command line remark" 2> conftest.er2 >&5
+  if test -s conftest.er2 ; then
+   if ! test -n "`grep successful conftest.er2`"  ; then
+    acx_F90_ok=no ;
+--- espresso-5.3.0/yambo-3.4.2/lib/netcdf/Makefile.loc.orig	2016-06-02 17:29:53.816844000 +0800
++++ espresso-5.3.0/yambo-3.4.2/lib/netcdf/Makefile.loc	2016-06-02 17:30:45.579476000 +0800
+@@ -40,7 +40,7 @@
+ 	      FC="$(f90)" \
+ 	      FCFLAGS="$(f77flags)" \
+ 	      FFLAGS="$(f77flags)" \
+-	      CPPFLAGS="$(netcdf_aux)" \
++	      CPPFLAGS="$(netcdf_aux) -DpgiFortran" \
+ 	      F90="$(f90)" \
+ 	      F77="$(f77)" \
+ 	      INSTALL_DIR="$(INSTALL_DIR)" ); \
