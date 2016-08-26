@@ -1,5 +1,5 @@
 ##
-# Copyright 2013 Ghent University
+# Copyright 2013-2016 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -44,7 +44,8 @@ class EB_IMOD(Binary):
         # -dir: Choose location of installation directory
         # -skip: do not attempt to deploy resource files in /etc
         # -yes: do not prompt for confirmation
-        cmd = "tcsh {0}_{1}{2}.csh -dir {3} -skip -yes".format(self.name.lower(), self.version, self.cfg['versionsuffix'], self.installdir)
+        script = '{0}_{1}{2}.csh'.format(self.name.lower(), self.version, self.cfg['versionsuffix'])
+        cmd = "tcsh {0} -dir {1} -script {1} -skip -yes".format(script, self.installdir)
         run_cmd(cmd, log_all=True, simple=True)
         
         # The assumption by the install script is that installdir will be something
@@ -55,18 +56,21 @@ class EB_IMOD(Binary):
         # IMOD_DIR is correctly set in the module.
         link_to_remove = os.path.join(self.installdir, self.name)
         dir_to_remove = os.path.join(self.installdir, "{0}_{1}".format(self.name.lower(), self.version))
-        for file in os.listdir(dir_to_remove):
-            shutil.move(os.path.join(dir_to_remove, file), self.installdir)
-        if os.path.realpath(link_to_remove) != os.path.realpath(dir_to_remove):
-            raise EasyBuildError("Something went wrong -- {0} doesn't point to {1}".format(link_to_remove, dir_to_remove))
-        rmtree2(dir_to_remove)
-        os.remove(link_to_remove)
+        try:
+            for entry in os.listdir(dir_to_remove):
+                shutil.move(os.path.join(dir_to_remove, entry), self.installdir)
+            if os.path.realpath(link_to_remove) != os.path.realpath(dir_to_remove):
+                raise EasyBuildError("Something went wrong: %s doesn't point to %s", link_to_remove, dir_to_remove)
+            rmtree2(dir_to_remove)
+            os.remove(link_to_remove)
+        except OSError as err:
+            raise EasyBuildError("Failed to clean up install dir: %s", err)
 
     def sanity_check_step(self):
         """Custom sanity check for IMOD."""
         custom_paths = {
-            'files': ['IMOD-linux.sh', 'IMOD-linux.csh', 'installIMOD'],
-            'dirs': ['bin', 'lib'],
+            'files': ['bin/imod', 'IMOD-linux.sh', 'IMOD-linux.csh', 'installIMOD'],
+            'dirs': ['lib'],
         }
         super(EB_IMOD, self).sanity_check_step(custom_paths=custom_paths)
 
@@ -77,10 +81,13 @@ class EB_IMOD(Binary):
         txt += self.module_generator.set_environment('IMOD_PLUGIN_DIR', os.path.join(self.installdir, 'lib', 'imodplug'))
         txt += self.module_generator.set_environment('IMOD_QTLIBDIR', os.path.join(self.installdir, 'qtlib'))
         if os.getenv('JAVA_HOME') is None:
-            raise EasyBuildError("JAVA_HOME is not defined for some reason -- check environment")
+            raise EasyBuildError("$JAVA_HOME is not defined for some reason -- check environment")
         else:
             txt += self.module_generator.set_environment('IMOD_JAVADIR', os.getenv('JAVA_HOME'))
         txt += self.module_generator.set_environment('FOR_DISABLE_STACK_TRACE', '1')
         txt += self.module_generator.set_alias('subm', "submfg $* &")
-        txt += self.module_generator.msg_on_load("Please set the environment variable IMOD_CALIB_DIR if appropriate.")
+        txt += self.module_generator.msg_on_load("Please set the environment variable $IMOD_CALIB_DIR if appropriate.")
+
+        txt += self.module_generator.msg_on_load("bash users run: 'source $EBROOTIMOD/IMOD-linux.sh")
+        txt += self.module_generator.msg_on_load("csh users run: 'source $EBROOTIMOD/IMOD-linux.csh'")
         return txt
