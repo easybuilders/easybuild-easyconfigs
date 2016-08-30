@@ -38,6 +38,42 @@ from easybuild.tools.run import run_cmd
 from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.filetools import rmtree2
 
+def set_conda_env(installdir):
+    """ Set the correct environmental variables for conda """
+
+    myEnv = os.environ.copy()
+    env.setvar('PATH', "{}/bin".format(installdir) + ":" + myEnv["PATH"])
+    env.setvar('CONDA_ENV', installdir)
+    env.setvar('CONDA_DEFAULT_ENV', installdir)
+
+def pre_install_step(log, pre_install_cmd = None):
+    """ User defined pre install step """
+
+    if not pre_install_cmd:
+        pass
+    else:
+        log.debug('Pre command run', pre_install_cmd)
+        run_cmd(pre_install_cmd, log_all=True, simple=True)
+        log.info('Pre command run {}'.format(pre_install_cmd))
+
+def post_install_step(log, installdir, post_install_cmd):
+    """ User defined post install step """
+
+    if not post_install_cmd:
+        pass
+    else:
+        log.debug('Post command run', post_install_cmd)
+        set_conda_env(installdir)
+        run_cmd(post_install_cmd, log_all=True, simple=True)
+        log.info('Post command run {}'.format(post_install_cmd))
+
+def initialize_conda_env(installdir):
+    """ Initialize the conda env """
+
+    rmtree2(installdir)
+    cmd = "conda config --add create_default_packages setuptools"
+    run_cmd(cmd, log_all=True, simple=True)
+
 class EB_anaconda(EasyBlock):
     """Support for building/installing anaconda."""
 
@@ -46,6 +82,7 @@ class EB_anaconda(EasyBlock):
         """Extra easyconfig parameters specific to EB_anaconda easyblock."""
         extra_vars = EasyBlock.extra_options(extra_vars)
         extra_vars.update({
+            'pre_install_cmd': [None, "Commands before install: setting custom environmental variables, etc", CUSTOM],
             'post_install_cmd': [None, "Commands after install: pip install, cpanm install, etc", CUSTOM],
         })
         return extra_vars
@@ -81,6 +118,8 @@ class EB_anaconda(EasyBlock):
     def install_step(self):
         """Copy all files in build directory to the install directory"""
 
+        pre_install_step(self.log, self.cfg['pre_install_cmd'])
+
         rmtree2(self.installdir)
         sources = self.cfg['sources']
         install_script = sources[0]
@@ -90,7 +129,7 @@ class EB_anaconda(EasyBlock):
         self.log.info("Installing %s using command '%s'..." % (self.name, cmd))
         run_cmd(cmd, log_all=True, simple=True)
 
-        self.post_install_step()
+        post_install_step(self.log, self.installdir, self.cfg['post_install_cmd'])
 
     def make_module_extra(self):
         """Add the install directory to the PATH."""
@@ -108,30 +147,3 @@ class EB_anaconda(EasyBlock):
             'MANPATH': ['man', os.path.join('share', 'man')],
             'PKG_CONFIG_PATH': [os.path.join(x, 'pkgconfig') for x in ['lib', 'lib32', 'lib64', 'share']],
         }
-
-    # These should go in their own place
-    def set_conda_env(self):
-        """ Set the correct environmental variables for conda """
-
-        myEnv = os.environ.copy()
-        env.setvar('PATH', "{}/bin".format(self.installdir) + ":" + myEnv["PATH"])
-        env.setvar('CONDA_ENV', self.installdir)
-        env.setvar('CONDA_DEFAULT_ENV', self.installdir)
-
-    def post_install_step(self):
-        """ User defined post install step """
-
-        if not self.cfg['post_install_cmd']:
-            pass
-        else:
-            self.log.debug('Post command run', self.cfg['post_install_cmd'])
-            self.set_conda_env()
-            run_cmd(self.cfg['post_install_cmd'], log_all=True, simple=True)
-            self.log.info('Post command run {}'.format(self.cfg['post_install_cmd']))
-
-    def initialize_conda_env(self):
-        """ Initialize the conda env """
-
-        rmtree2(self.installdir)
-        cmd = "conda config --add create_default_packages setuptools"
-        run_cmd(cmd, log_all=True, simple=True)
