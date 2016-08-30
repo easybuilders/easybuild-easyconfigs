@@ -3,6 +3,8 @@ easyblock = 'Bundle'
 name = 'PyBERT'
 version = '1.7.9'
 versionsuffix = '-Python-%(pyver)s'
+mpl_version = '1.5.1'
+pyshortver = '%(pyshortver)s'
 
 homepage = 'https://github.com/capn-freako/PyBERT/wiki'
 description = """PyBERT is a serial communication link bit error rate tester (BERT)
@@ -38,7 +40,7 @@ builddependencies = [
 
 dependencies = [
     ('Python', '2.7.11'),
-    ('matplotlib', '1.5.1', versionsuffix),
+    ('matplotlib', mpl_version, versionsuffix),
     ('PyQt', '4.11.4', versionsuffix),
     # ReportLAB needs Pillow
     ('Pillow', '3.2.0', versionsuffix),
@@ -47,6 +49,12 @@ dependencies = [
     ('Pygments', '2.1.3', versionsuffix),
     ('libX11', '1.6.3'),
 ]
+
+# enable/kiva sometimes does find truetype fonts We can give matplotlib's ttf location
+# see http://osdir.com/ml/python-enthought-devel/2007-03/msg00351.html
+ttfpath = 'lib/python%s/site-packages/matplotlib-%s-py%s-linux-x86_64.egg/' \
+          'matplotlib/mpl_data' % (pyshortver, mpl_version, pyshortver)
+prebuildopts = 'env TTFPATH=$EBROOTMATPLOTLIB/%s &&' % ttfpath
 
 exts_list = [
     ('traits', '4.5.0', {
@@ -84,5 +92,8 @@ exts_list = [
 full_sanity_check = True
 
 modextrapaths = {'PYTHONPATH': ['lib/python%(pyshortver)s/site-packages']}
+
+modtclfooter = "prepend-path	TTFPATH	$::env(EBROOTMATPLOTLIB)/%s" % ttfpath
+modluafooter = 'prepend_path("TTFPATH", os.getenv("EBROOTMATPLOTLIB") .. "/%s")' % ttfpath
 
 moduleclass = 'vis'
