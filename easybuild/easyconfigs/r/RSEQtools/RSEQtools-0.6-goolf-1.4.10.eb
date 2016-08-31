@@ -1,0 +1,59 @@
+# This file is an EasyBuild reciPY as per https://github.com/hpcugent/easybuild
+# Author: Pablo Escobar Lopez
+# Swiss Institute of Bioinformatics
+# Biozentrum - University of Basel
+
+easyblock = 'MakeCp'
+
+name = 'RSEQtools'
+version = '0.6'
+
+homepage = 'http://rseqtools.gersteinlab.org'
+description = """ A modular framework to analyze RNA-Seq data using compact 
+ and anonymized data summaries."""
+
+toolchain = {'name': 'goolf', 'version': '1.4.10'}
+
+source_urls = ['http://archive.gersteinlab.org/proj/rnaseq/rseqtools/']
+sources = [SOURCE_TAR_GZ]
+
+dependencies = [
+    ('BLAT', '3.5'),
+    ('GSL', '1.16'),
+]
+
+# this apps is tricky to compile so we will do everything in prebuildopts
+#
+# firt define required environment variables
+prebuildopts = 'export BIOINFOGSLDIR=$EBROOTGSL && export BIOINFOCONFDIR=conf && '
+# now move to "bios" folder and run "make && make prod". Then come back to root folder
+prebuildopts += 'cd bios && make && make prod && cd - && '
+# now move to "mrf" folder, re-export the needed env var and run make
+prebuildopts += 'cd mrf && export BIOINFOCONFDIR=../bios/conf/ && '
+
+parallel = 1
+
+# these are all the binaries compiled in "mrf" folder
+binary_files = ["psl2mrf", "bowtie2mrf", "singleExport2mrf", "mrfSubsetByTargetName",
+                "mrfQuantifier", "mrfAnnotationCoverage", "mrf2wig", "mrf2gff", "mrfSampler",
+                "mrf2bgr", "wigSegmenter", "mrfMappingBias", "mrfSelectRegion", "mrfSelectSpliced",
+                "mrfSelectAnnotated", "createSpliceJunctionLibrary", "gff2interval", "export2fastq",
+                "mergeTranscripts", "interval2gff", "interval2sequences", "bed2interval",
+                "interval2bed", "mrf2sam", "sam2mrf", "mrfValidate", "bgrQuantifier",
+                "bgrSegmenter", "mrfCountRegion"]
+
+files_to_copy = [
+    (['mrf/%s' % x for x in binary_files], "bin"),
+    "LICENSE", "README", "bios", "mrf", "test"
+]
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in binary_files],
+    'dirs': []
+}
+
+modextravars = {
+    'BIOINFOCONFDIR': '%(installdir)s/bios/conf',
+}
+
+moduleclass = 'bio'

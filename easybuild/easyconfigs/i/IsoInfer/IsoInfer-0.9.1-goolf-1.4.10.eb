@@ -1,0 +1,47 @@
+# This file is an EasyBuild reciPY as per https://github.com/hpcugent/easybuild
+# Authors: Kenneth Hoste (UGent), Pablo Escobar Lopez (Unibas)
+
+easyblock = 'MakeCp'
+
+name = 'IsoInfer'
+version = '0.9.1'
+
+homepage = 'http://www.cs.ucr.edu/~jianxing/IsoInfer.html'
+description = """IsoInfer is a C/C++ program  to infer isoforms based on short RNA-Seq 
+ (single-end and paired-end) reads, exon-intron boundary and TSS/PAS information. 
+ This version of IsoInfer uses a unified way to handle different types of short reads 
+ with different lengths. """
+
+toolchain = {'name': 'goolf', 'version': '1.4.10'}
+
+sources = [
+    SOURCELOWER_TAR_GZ,  # main tarball first, so that start_dir is set correctly
+    'graphlib-0.3.tar.gz',
+]
+source_urls = ['http://www.cs.ucr.edu/~jianxing']
+
+dependencies = [
+    ('QuadProg++', '1.2.1'),
+    ('GLPK', '4.53'),
+    ('GSL', '1.16')
+]
+
+with_configure = True
+
+# build libgraph.a
+graphlib_version = '0.3'
+preconfigopts = "cd ../graphlib-%s && ./configure && make && " % graphlib_version
+# build isoinfer, make sure we can link to libgraph.a
+preconfigopts += "cd ../%(namelower)s-%(version)s && "
+preconfigopts += 'export LDFLAGS="$LDFLAGS -L%%(builddir)s/graphlib-%s/src" && ' % graphlib_version
+
+files_to_copy = [
+    (['src/isoinfer'], 'bin'),
+]
+
+sanity_check_paths = {
+    'files': ["bin/isoinfer"],
+    'dirs': [],
+}
+
+moduleclass = 'bio'

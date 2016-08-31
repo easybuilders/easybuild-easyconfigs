@@ -1,0 +1,38 @@
+# This file is an EasyBuild reciPY as per https://github.com/hpcugent/easybuild
+# Author: Pablo Escobar Lopez
+# sciCORE - University of Basel
+# SIB Swiss Institute of Bioinformatics 
+
+easyblock = 'MakeCp'
+
+name = 'ctffind'
+version = '4.0.17'
+
+homepage = 'http://grigoriefflab.janelia.org/ctffind4'
+description = """program for finding CTFs of electron micrographs"""
+
+toolchain = {'name': 'intel', 'version': '2015b'}
+toolchainopts = {'openmp': True}
+
+source_urls = ['http://grigoriefflab.janelia.org/sites/default/files/']
+sources = [SOURCELOWER_TAR_GZ]
+
+dependencies = [('GSL', '1.16')]
+
+# when running ./configure in the root folder it fails.
+# application doesn't provide a 'make install'
+prebuildopts = 'mkdir build && cd build && '
+prebuildopts += ' ../configure --enable-static --disable-debug --enable-optimisations --enable-openmp FC=${FC} F77=${F77} && '
+
+files_to_copy = [(['build/ctffind'], 'bin'), 'doc', 'scripts']
+
+parallel = 1
+                
+sanity_check_paths = {
+    'files': ['bin/ctffind'],
+    'dirs': [],
+}
+
+modloadmsg = """Define OMP_NUM_THREADS or use the command line option --omp-num-threads=N when using this application"""
+
+moduleclass = 'bio'

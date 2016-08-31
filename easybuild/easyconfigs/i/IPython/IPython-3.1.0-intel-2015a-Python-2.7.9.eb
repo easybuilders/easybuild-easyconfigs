@@ -1,0 +1,45 @@
+easyblock = "PythonPackage"
+
+name = 'IPython'
+version = '3.1.0'
+
+homepage = 'http://ipython.org/index.html'
+description = """IPython provides a rich architecture for interactive computing with:
+ Powerful interactive shells (terminal and Qt-based).
+ A browser-based notebook with support for code, text, mathematical expressions, inline plots and other rich media.
+ Support for interactive data visualization and use of GUI toolkits.
+ Flexible, embeddable interpreters to load into your own projects.
+ Easy to use, high performance tools for parallel computing."""
+
+toolchain = {'name': 'intel', 'version': '2015a'}
+
+sources = [SOURCELOWER_TAR_GZ]
+source_urls = [
+    PYPI_LOWER_SOURCE,
+    'http://archive.ipython.org/release/%(version)s/',
+]
+
+python = 'Python'
+pyver = '2.7.9'
+pyshortver = '.'.join(pyver.split('.')[:2])
+versionsuffix = '-%s-%s' % (python, pyver)
+
+dependencies = [
+    (python, pyver),
+    ('pysqlite', '2.6.3', versionsuffix),
+    ('PyZMQ', '14.6.0', '%s-zmq3' % versionsuffix),
+    ('requests', '2.6.2', versionsuffix),
+    ('Pygments', '2.0.2', versionsuffix),
+]
+
+# override extensions sanity check, default filter that imports a Python module doesn't work here
+exts_filter = ('ipython -h', "")
+
+sanity_check_paths = {
+    'files': [],
+    'dirs': ['lib/python%s/site-packages/IPython' % pyshortver],
+}
+
+sanity_check_commands = [('iptest', '')]
+
+moduleclass = 'tools'
