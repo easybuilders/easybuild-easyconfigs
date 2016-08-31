@@ -124,8 +124,16 @@ class EB_cppcheck(ConfigureMake):
         """
         Custom sanity check for cppcheck.
         """
-        custom_paths = {
-            'files': ['bin/cppcheck', 'bin/cppcheck-gui' ],
-            'dirs': ['.', 'bin/cfg']
-        }
+
+        if self.cfg['build_gui']:
+            custom_paths = {
+                'files': ['bin/cppcheck', 'bin/cppcheck-gui' ],
+                'dirs': ['.', 'bin/cfg']
+            }
+        else:
+            custom_paths = {
+                'files': ['bin/cppcheck' ],
+                'dirs': ['.']
+            }
+
         super(EB_cppcheck, self).sanity_check_step(custom_paths=custom_paths)
