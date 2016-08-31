@@ -63,10 +63,8 @@ class EB_HEALPix(ConfigureMake):
         self.comp_fam = self.toolchain.comp_family()
         if self.comp_fam == toolchain.INTELCOMP:  #@UndefinedVariable
             cxx_config = '4'  # linux_icc
-
         elif self.comp_fam == toolchain.GCC:  #@UndefinedVariable
             cxx_config = '2'  # generic_gcc
-
         else:
             raise EasyBuildError("Don't know how which C++ configuration for the used toolchain.")
 
@@ -102,6 +100,7 @@ class EB_HEALPix(ConfigureMake):
         """Custom build procedure for HEALPix."""
         # disable parallel build
         self.cfg['parallel'] = '1'
+        self.log.debug("Disabled parallel build")
         super(EB_HEALPix, self).build_step()
 
     def install_step(self):
