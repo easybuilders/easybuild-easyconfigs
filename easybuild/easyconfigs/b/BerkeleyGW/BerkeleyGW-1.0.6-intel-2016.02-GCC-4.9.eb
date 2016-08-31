@@ -1,0 +1,37 @@
+easyblock = 'ConfigureMake'
+
+name = 'BerkeleyGW'
+version = "1.0.6"
+
+homepage = 'http://www.berkeleygw.org'
+description = """The BerkeleyGW Package is a set of computer codes that calculates the quasiparticle
+ properties and the optical responses of a large variety of materials from bulk periodic crystals to
+ nanostructures such as slabs, wires and molecules."""
+
+toolchain = {'name': 'intel', 'version': '2016.02-GCC-4.9'}
+toolchainopts = {'usempi': True}
+
+source_urls = ['http://www.berkeleygw.org/releases/']
+sources = ['BGW-%(version)s.tar.gz']
+checksums = ['8740562da41e87a62eb8d457675e4bfd']
+
+skipsteps = ['configure']
+
+prebuildopts = 'cp config/generic.mpi.linux.mk arch.mk && '
+
+buildopts = 'all-flavors COMPFLAG=-DINTEL PARAFLAG="-DMPI -DOMP" DEBUGFLAG="" F90free="$MPIF90 -free" LINK="$MPIF90" '
+buildopts += 'FOPTS="$FFLAGS -qopenmp" MOD_OPT="-module " C_PARAFLAG="$PARAFLAG" CC_COMP="$MPICXX" C_COMP="$MPICC" '
+buildopts += 'C_LINK="$MPICXX" C_OPTS="$CFLAGS -qopenmp" MKLPATH="$MKLROOT" LAPACKLIB="$LIBLAPACK" '
+buildopts += 'BLACSDIR="$BLACS_LIB_DIR" BLACS="$LIBBLACS" SCALAPACKLIB="$LIBSCALAPACK" '
+buildopts += 'FFTWINCLUDE="$FFTW_INC_DIR" FFTWLIB="$MKLROOT/lib/intel64/libfftw2xf_double_intel.a" '
+
+installopts = 'INSTDIR=%(installdir)s'
+
+sanity_check_paths = {
+    'files': ['bin/'+prog+'.'+flavor+'.x'
+              for prog in ['epsilon', 'sigma', 'kernel', 'absorption']
+              for flavor in ['real', 'cplx']],
+    'dirs': []
+}
+
+moduleclass = 'phys'

@@ -1,0 +1,182 @@
+name = 'R'
+version = '3.1.0'
+
+homepage = 'http://www.r-project.org/'
+description = """R is a free software environment for statistical computing and graphics."""
+
+toolchain = {'name': 'ictce', 'version': '5.5.0'}
+
+sources = [SOURCE_TAR_GZ]
+source_urls = ['http://cran.us.r-project.org/src/base/R-%(version_major)s']
+
+preconfigopts = 'BLAS_LIBS="$LIBBLAS" LAPACK_LIBS="$LIBLAPACK"'
+configopts = "--with-lapack --with-blas --with-pic --enable-threads --with-x=no --enable-R-shlib"
+# some recommended packages may fail in a parallel build (e.g. Matrix), and we're installing them anyway below
+configopts += " --with-recommended-packages=no"
+
+dependencies = [
+    ('libreadline', '6.2'),
+    ('ncurses', '5.9'),
+    ('libpng', '1.6.9'),  # for plotting in R
+    ('Java', '1.7.0_60', '', True),  # Java bindings are built if Java is found, might as well provide it
+]
+
+name_tmpl = '%(name)s_%(version)s.tar.gz'
+ext_options = {
+    'source_urls': [
+        'http://cran.r-project.org/src/contrib/Archive/%(name)s',  # package archive
+        'http://cran.freestatistics.org/src/contrib',  # alternative for packages
+    ],
+    'source_tmpl': name_tmpl,
+}
+# Bioconductor packages have a different download url
+bioconductor_options = {
+    'source_urls': [
+        'http://www.bioconductor.org/packages/release/bioc/src/contrib/',
+        'http://www.bioconductor.org/packages/2.14/bioc/src/contrib/',
+    ],
+    'source_tmpl': name_tmpl,
+}
+# !! order of packages is important !!
+exts_list = [
+    # default libraries, only here to sanity check their presence
+    'base',
+    'datasets',
+    'graphics',
+    'grDevices',
+    'grid',
+    'methods',
+    'splines',
+    'stats',
+    'stats4',
+    'tools',
+    'utils',
+    # non-standard libraries, should be specified with fixed versions!
+    ('irace', '1.04', ext_options),
+    ('rJava', '0.9-6', ext_options),
+    ('lattice', '0.20-29', ext_options),
+    ('RColorBrewer', '1.0-5', ext_options),
+    ('latticeExtra', '0.6-26', ext_options),
+    ('Matrix', '1.1-3', ext_options),
+    ('png', '0.1-7', ext_options),
+    ('Rcpp', '0.11.1', ext_options),
+    ('quadprog', '1.5-5', ext_options),
+    ('BB', '2014.1-1', ext_options),
+    ('rlecuyer', '0.3-3', ext_options),
+    ('snow', '0.3-13', ext_options),
+    ('MASS', '7.3-33', ext_options),
+    ('class', '7.3-10', ext_options),
+    ('e1071', '1.6-3', ext_options),
+    ('nnet', '7.3-8', ext_options),
+    ('car', '2.0-20', ext_options),
+    ('colorspace', '1.2-4', ext_options),
+    ('DEoptimR', '1.0-1', ext_options),
+    ('robustbase', '0.91-1', ext_options),
+    ('sp', '1.0-15', ext_options),
+    ('vcd', '1.3-1', ext_options),
+    ('snowfall', '1.84-6', ext_options),
+    ('rpart', '4.1-8', ext_options),
+    ('randomForest', '4.6-7', ext_options),
+    ('mice', '2.21', ext_options),
+    ('nlme', '3.1-117', ext_options),
+    ('mgcv', '1.7-29', ext_options),
+    ('logistf', '1.21', ext_options),
+    ('akima', '0.5-11', ext_options),
+    ('bitops', '1.0-6', ext_options),
+    ('boot', '1.3-11', ext_options),
+    ('cluster', '1.15.2', ext_options),
+    ('coda', '0.16-1', ext_options),
+    ('codetools', '0.2-8', ext_options),
+    ('DBI', '0.2-7', ext_options),
+    ('foreign', '0.8-61', ext_options),
+    ('survival', '2.37-7', ext_options),
+    ('gam', '1.09.1', ext_options),
+    ('gamlss.data', '4.2-7', ext_options),
+    ('gamlss.dist', '4.2-7', ext_options),
+    ('hwriter', '1.3', ext_options),
+    ('KernSmooth', '2.23-12', ext_options),
+    ('zoo', '1.7-11', ext_options),
+    ('lmtest', '0.9-33', ext_options),
+    ('mnormt', '1.4-7', ext_options),
+    ('mvtnorm', '0.9-99992', ext_options),
+    ('numDeriv', '2012.9-1', ext_options),
+    ('pscl', '1.04.4', ext_options),
+    ('RSQLite', '0.11.4', ext_options),
+    ('sandwich', '2.3-0', ext_options),
+    ('sfsmisc', '1.0-25', ext_options),
+    ('spatial', '7.3-8', ext_options),
+    ('VGAM', '0.9-4', ext_options),
+    ('waveslim', '1.7.3', ext_options),
+    ('xtable', '1.7-3', ext_options),
+    ('profileModel', '0.5-9', ext_options),
+    ('brglm', '0.5-9', ext_options),
+    ('deSolve', '1.10-8', ext_options),
+    ('tseriesChaos', '0.1-13', ext_options),
+    ('tseries', '0.10-32', ext_options),
+    ('neuRosim', '0.2-10', ext_options),
+    ('fastICA', '1.2-0', ext_options),
+    ('R.methodsS3', '1.6.1', ext_options),
+    ('R.oo', '1.18.0', ext_options),
+    ('R.utils', '1.32.4', ext_options),
+    ('R.matlab', '3.0.1', ext_options),
+    ('Rniftilib', '0.0-32', ext_options),
+    ('iterators', '1.0.7', ext_options),
+    ('foreach', '1.4.2', ext_options),
+    ('BBmisc', '1.6', ext_options),
+    ('digest', '0.6.4', ext_options),
+    ('base64enc', '0.1-1', ext_options),
+    ('sendmailR', '1.1-2', ext_options),
+    ('brew', '1.0-6', ext_options),
+    ('plyr', '1.8.1', ext_options),
+    ('stringr', '0.6.2', ext_options),
+    ('fail', '1.2', ext_options),
+    ('BatchJobs', '1.2', ext_options),
+    ('BiocGenerics', '0.10.0', bioconductor_options),
+    ('Biobase', '2.24.0', bioconductor_options),
+    ('IRanges', '1.22.8', bioconductor_options),
+    ('GenomeInfoDb', '1.0.2', bioconductor_options),
+    ('AnnotationDbi', '1.26.0', bioconductor_options),
+    ('XVector', '0.4.0', bioconductor_options),
+    ('zlibbioc', '1.10.0', bioconductor_options),
+    ('Biostrings', '2.32.0', bioconductor_options),
+    ('GenomicRanges', '1.16.3', bioconductor_options),
+    ('Rsamtools', '1.16.0', bioconductor_options),
+    ('BSgenome', '1.32.0', bioconductor_options),
+    ('BiocParallel', '0.6.1', bioconductor_options),
+    ('GenomicAlignments', '1.0.1', bioconductor_options),
+    ('ShortRead', '1.22.0', bioconductor_options),
+    ('graph', '1.42.0', bioconductor_options),
+    ('gbm', '2.1', ext_options),
+    ('dichromat', '2.0-0', ext_options),
+    ('Formula', '1.1-1', ext_options),
+    ('Hmisc', '3.14-4', ext_options),
+    ('munsell', '0.4.2', ext_options),
+    ('labeling', '0.2', ext_options),
+    ('scales', '0.2.4', ext_options),
+    ('fastcluster', '1.1.13', ext_options),
+    ('reshape2', '1.4', ext_options),
+    ('gtable', '0.1.2', ext_options),
+    ('proto', '0.3-10', ext_options),
+    ('ggplot2', '1.0.0', ext_options),
+    ('reshape', '0.8.5', ext_options),
+    ('gsalib', '2.0', ext_options),
+    ('ape', '3.1-2', ext_options),
+    ('igraph', '0.7.1', ext_options),
+    ('fastmatch', '1.0-4', ext_options),
+    ('phangorn', '1.99-7', ext_options),
+    ('gdsfmt', '1.0.4', ext_options),
+    ('SNPRelate', '0.9.19', ext_options),
+    ('getopt', '1.20.0', ext_options),
+    ('miscTools', '0.6-16', ext_options),
+    ('maxLik', '1.2-0', ext_options),
+    ('statmod', '1.4.20', ext_options),
+    ('mlogit', '0.2-4', ext_options),
+    ('optparse', '1.2.0', ext_options),
+    ('permute', '0.8-3', ext_options),
+    ('vegan', '2.0-10', ext_options),
+    ('gtools', '3.4.1', ext_options),
+    ('combinat', '0.0-8', ext_options),
+    ('klaR', '0.6-11', ext_options),
+]
+
+moduleclass = 'lang'

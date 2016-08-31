@@ -1,0 +1,74 @@
+easyblock = 'ConfigureMake'
+
+name = 'Mesa'
+version = '10.5.5'
+
+homepage = 'http://www.mesa3d.org/'
+description = """Mesa is an open-source implementation of the OpenGL specification -
+ a system for rendering interactive 3D graphics."""
+
+toolchain = {'name': 'intel', 'version': '2015a'}
+toolchainopts = {'optarch': True}
+
+sources = [SOURCELOWER_TAR_GZ]
+source_urls = [
+    'ftp://ftp.freedesktop.org/pub/mesa/%(version)s',
+    'ftp://ftp.freedesktop.org/pub/mesa/older-versions/%(version_major)s.x/%(version)s',
+]
+
+pythonver = '2.7.10'
+pythonshortver = '.'.join(pythonver.split('.')[0:2])
+versionsuffix = '-%s-%s' % ('Python', pythonver)
+
+builddependencies = [
+    ('flex', '2.5.39', '', ('GCC', '4.9.2')),
+    ('Bison', '3.0.4', '', ('GCC', '4.9.2')),
+    ('Autotools', '20150119', '', ('GCC', '4.9.2')),
+    ('pkg-config', '0.28', '', ('GCC', '4.9.2')),
+    ('glproto', '1.4.17'),
+    ('kbproto', '1.0.6'),
+    ('xextproto', '7.3.0'),
+    ('xproto', '7.0.27'),
+    ('makedepend', '1.0.5'),
+    ('M4', '1.4.17', '', ('GCC', '4.9.2')),
+]
+
+dependencies = [
+    ('Python', pythonver),
+    ('libxml2', '2.9.2'),
+    ('libdrm', '2.4.59'),
+    ('libX11', '1.6.3', versionsuffix),
+    ('libXext', '1.3.3', versionsuffix),
+    ('libXfixes', '5.0.1'),
+    ('libXdamage', '1.1.4', versionsuffix),
+    ('libXfont', '1.5.1', versionsuffix),
+    ('LLVM', '3.6.2'),
+    ('eudev', '3.0'),
+]
+
+# Use the os provided libudev or the EB provided eudev
+#osdependencies = ['libudev']
+
+# GLU is not part anymore of Mesa package!
+configopts = " --disable-osmesa --enable-gallium-osmesa --enable-gallium-llvm --enable-glx --disable-dri --enable-xlib-glx"
+configopts += " --disable-driglx-direct --with-gallium-drivers='swrast' --disable-egl --with-osmesa-bits=32 --enable-texture-float "
+
+# package-config files for os dependencies are in an os specific place
+#preconfigopts = 'libtoolize && PKG_CONFIG_PATH="$PKG_CONFIG_PATH:/usr/lib64/pkgconfig/:/usr/share/pkgconfig" '
+preconfigopts = ' libtoolize &&  '
+
+prebuildopts = 'env CPATH="$EBROOTLIBDRM/include/libdrm:$CPATH" '
+
+sanity_check_paths = {
+    'files': ['lib/libGL.%s' % SHLIB_EXT, 'lib/libOSMesa.%s' % SHLIB_EXT,
+              'include/GL/glext.h', 'include/GL/gl_mangle.h',
+              'include/GL/glx.h', 'include/GL/osmesa.h',
+              'include/GL/wglext.h', 'include/GL/gl.h',
+              'include/GL/glxext.h', 'include/GL/glx_mangle.h',
+              'include/GL/wmesa.h'],
+    'dirs': []
+}
+
+maxparallel = 1
+
+moduleclass = 'vis'

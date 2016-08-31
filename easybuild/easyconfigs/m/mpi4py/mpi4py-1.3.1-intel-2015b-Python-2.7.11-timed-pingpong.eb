@@ -1,0 +1,34 @@
+easyblock = 'PythonPackage'
+
+name = 'mpi4py'
+version = '1.3.1'
+label = 'timed-pingpong'
+versionsuffix = '-Python-%%(pyver)s-%s' % label
+
+homepage = 'https://bitbucket.org/mpi4py/mpi4py'
+description = """MPI for Python (mpi4py) provides bindings of the Message Passing Interface (MPI) standard for
+ the Python programming language, allowing any Python program to exploit multiple processors."""
+
+toolchain = {'name': 'intel', 'version': '2015b'}
+
+source_urls = [BITBUCKET_DOWNLOADS]
+sources = [SOURCE_TAR_GZ]
+
+patches = ['mpi4py-%%(version)s_%s.patch' % label]
+
+dependencies = [('Python', '2.7.11')]
+
+# force rebuilding everything, including patched files
+buildopts = '--force'
+
+sanity_check_paths = {
+    'files': [],
+    'dirs': ['lib/python%(pyshortver)s/site-packages/mpi4py'],
+}
+
+# check that timed pingpong routines that are added via the patch are available
+sanity_check_commands = [
+    ('python', '-c "from mpi4py.MPI import Comm; import sys; sys.exit((1, 0)[\'PingpongRS\' in dir(Comm)])"'),
+]
+
+moduleclass = 'mpi'

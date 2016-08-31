@@ -1,0 +1,47 @@
+# This file is an EasyBuild reciPY as per https://github.com/hpcugent/easybuild
+# Author: Pablo Escobar Lopez
+# Swiss Institute of Bioinformatics
+# Biozentrum - University of Basel
+
+easyblock = 'CmdCp'
+
+name = 'Pindel'
+version = '0.2.5a7'
+
+homepage = 'http://gmt.genome.wustl.edu/packages/pindel/'
+description = """ Pindel can detect breakpoints of large deletions, medium sized 
+ insertions, inversions, tandem duplications and other structural variants at single-based 
+ resolution from next-gen sequence data. It uses a pattern growth approach to identify the 
+ breakpoints of these variants from paired-end short reads. """
+
+toolchain = {'name': 'goolf', 'version': '1.4.10'}
+toolchainopts = {'openmp': True}
+
+source_urls = ['https://github.com/genome/pindel/archive/']
+sources = ['v%(version)s.tar.gz']
+
+patches = ['pindel-perl-path.patch']
+
+dependencies = [
+    ('SAMtools', '0.1.19'),
+    ('zlib', '1.2.7')
+]
+
+cmds_map = [('.*', "CPATH=$EBROOTSAMTOOLS/include/bam:$CPATH ./INSTALL $EBROOTSAMTOOLS")]
+
+files_to_copy = [
+    (['pindel', 'sam2pindel', 'pindel2vcf', 'bam2pindel.pl', 'Adaptor.pm'], 'bin'),
+    "demo",
+    "gmt",
+    "gmt-web",
+    "test",
+    "README.md",
+    "RELEASE"
+]
+
+sanity_check_paths = {
+    'files': ['bin/pindel', 'bin/sam2pindel', 'bin/pindel2vcf', 'bin/bam2pindel.pl'],
+    'dirs': [],
+}
+
+moduleclass = 'bio'

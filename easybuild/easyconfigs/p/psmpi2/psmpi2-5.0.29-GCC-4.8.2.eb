@@ -1,0 +1,48 @@
+easyblock = 'ConfigureMake'
+
+name = 'psmpi2'
+version = '5.0.29'
+
+homepage = 'http://www.par-tec.com'
+description = """ParaStation is a robust and efficient cluster middleware, consisting 
+of a high-performance communication layer (MPI) and a sophisticated management layer."""
+
+toolchain = {'name': 'GCC', 'version': '4.8.2'}
+
+source_urls = ['https://github.com/ParaStation/%s/archive/' % name]
+sources = ['%s-1.zip' % version]
+
+# patch for potential lib vs. lib64 mismatches when installing on e.g. openSUSE
+patches = ['psmpi2-%(version)s_lib-dir.patch']
+
+dependencies = [
+    ('pscom', '5.0.43'),
+]
+
+# MPICH configure wants F90/F90FLAGS to be renamed to FC/FCFLAGS.
+preconfigopts = 'export FC="$F90"; export FCFLAGS="$F90FLAGS"; unset F90; unset F90FLAGS; '
+
+configopts = '--with-confset=default MPICH2_LDFLAGS=-lpscom'
+
+# parallel build tends to fail
+parallel = 1
+
+# create required VERSION file
+prebuildopts = "echo '%(version)s-1' > VERSION && "
+preinstallopts = prebuildopts
+
+sanity_check_paths = {
+    'files': ['bin/mpicc', 'bin/mpicxx', 'bin/mpic++', 'bin/mpif77', 'bin/mpif90',
+              'include/mpi.h', 'include/mpi.mod', 'include/mpif.h',
+              ('lib/libfmpich.a',    'lib64/libfmpich.a'),
+              ('lib/libfmpich.%s' % SHLIB_EXT,   'lib64/libfmpich.%s' % SHLIB_EXT),
+              ('lib/libmpich.a',     'lib64/libmpich.a'),
+              ('lib/libmpich.%s' % SHLIB_EXT,    'lib64/libmpich.%s' % SHLIB_EXT),
+              ('lib/libmpichcxx.a',  'lib64/libmpichcxx.a'),
+              ('lib/libmpichcxx.%s' % SHLIB_EXT, 'lib64/libmpichcxx.%s' % SHLIB_EXT),
+              ('lib/libmpichf90.a',  'lib64/libmpichf90.a'),
+              ('lib/libmpichf90.%s' % SHLIB_EXT, 'lib64/libmpichf90.%s' % SHLIB_EXT)],
+    'dirs': [],
+}
+
+moduleclass = 'mpi'

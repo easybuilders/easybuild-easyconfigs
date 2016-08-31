@@ -1,0 +1,36 @@
+easyblock = "ConfigureMake"
+
+name = 'ABINIT'
+version = '7.6.2'
+
+homepage = 'http://www.abinit.org/'
+description = """Abinit is a plane wave pseudopotential code for doing condensed phase electronic
+ structure calculations using DFT."""
+
+toolchain = {'name': 'foss', 'version': '2015a'}
+
+source_urls = ['http://ftp.abinit.org/']
+sources = [SOURCELOWER_TAR_GZ]
+
+patches = [
+    'ABINIT-%(version)s_named-constant.patch',
+    'ABINIT-%(version)s_odamix.patch',
+]
+
+dependencies = [
+    ('netCDF', '4.3.2'),
+    ('netCDF-Fortran', '4.4.0'),
+]
+
+configopts = '--enable-mpi --with-mpi-prefix="$EBROOTOPENMPI" --enable-fallbacks '
+configopts += '--with-netcdf-incs="-I$EBROOTNETCDF/include -I$EBROOTNETCDFMINFORTRAN/include" '
+configopts += '--with-netcdf-libs="-L$EBROOTNETCDF/lib64 -lnetcdf -L$EBROOTNETCDFMINFORTRAN/lib -lnetcdff" '
+configopts += '--with-fft-libs="-L$EBROOTFFTW/lib -lfftw3 -lfftw3f" --with-fft-flavor=fftw3 '
+configopts += '--with-trio-flavor=netcdf+etsf_io --with-dft-flavor=libxc --enable-gw-dpc'
+
+sanity_check_paths = {
+    'files': ["bin/abinit"],
+    'dirs': [],
+}
+
+moduleclass = 'chem'
