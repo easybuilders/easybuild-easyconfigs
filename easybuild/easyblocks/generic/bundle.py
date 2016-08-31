@@ -145,10 +145,11 @@ class Bundle(EasyBlock):
             # once the installation is finalised, this is handled by the generated module
             reqs = comp.make_module_req_guess()
             for envvar in reqs:
+                curr_val = os.getenv(envvar, '')
+                curr_paths = curr_val.split(os.pathsep)
                 for subdir in reqs[envvar]:
-                    curr_val = os.getenv(envvar, '')
                     path = os.path.join(self.installdir, subdir)
-                    if not curr_val.startswith(path):
+                    if path not in curr_paths:
                         if curr_val:
                             new_val = '%s:%s' % (path, curr_val)
                         else:
