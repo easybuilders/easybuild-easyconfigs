@@ -63,8 +63,9 @@ class EB_cppcheck(ConfigureMake):
             else:
                 cmd = 'qmake'
             
+            gui_dir = os.path.join(self.cfg['start_dir'], 'gui')
+
             try:
-                gui_dir = os.path.join(self.cfg['start_dir'], 'gui')
                 os.chdir(gui_dir)
                 run_cmd(cmd, log_all=True, simple=True)
                 os.chdir(self.cfg['start_dir'])
@@ -73,7 +74,6 @@ class EB_cppcheck(ConfigureMake):
 
         else:
             self.log.debug("Configuration of the GUI skipped")
-            pass
 
     def build_step(self, verbose=False):
         """
@@ -99,13 +99,11 @@ class EB_cppcheck(ConfigureMake):
        
         # The GUI doesn't have make install, so we copy it manually
         if self.cfg['build_gui']:
+            filepath = os.path.join(self.cfg['start_dir'], 'gui/', 'cppcheck-gui')
+
             try:
                 # make sure we're (still) in the start dir
                 os.chdir(self.cfg['start_dir'])
-
-                file_to_copy = 'cppcheck-gui'
-
-                filepath = os.path.join(self.cfg['start_dir'], 'gui/', file_to_copy)
 
                 # Perform the copy
                 target_dest = os.path.join(self.installdir, 'bin')
@@ -113,9 +111,9 @@ class EB_cppcheck(ConfigureMake):
                     self.log.debug("Copying file %s to %s" % (filepath, target_dest))
                     shutil.copy2(filepath, target_dest)
                 else:
-                    raise EasyBuildError("Can't copy non-existing path %s to %s", filepath, target_dest)
+                    raise EasyBuildError("Can't copy non-existing file %s to %s", filepath, target_dest)
                 
-                # Create cfg symlink. It shouldn't be necessary, but cppcheck-gui complaints otherwise
+                # Create cfg symlink. It shouldn't be necessary, but cppcheck-gui complains otherwise
                 # unless called with --data-dir
                 src = os.path.join(self.installdir, 'cfg')
                 dst = os.path.join(self.installdir, 'bin/cfg')
@@ -123,15 +121,15 @@ class EB_cppcheck(ConfigureMake):
                 os.symlink(src, dst)
 
             except OSError as err:
-                raise EasyBuildError("Copying %s to installation dir failed: %s", file_to_copy, err)
+                raise EasyBuildError("Copying %s to installation dir failed: %s", filepath, err)
 
     def sanity_check_step(self):
         """
         Custom sanity check for cppcheck.
         """
         custom_paths = {
-            'files': ['bin/cppcheck' ],
-            'dirs': ['.']
+            'files': ['bin/cppcheck'],
+            'dirs': []
         }
 
         if self.cfg['build_gui']:
