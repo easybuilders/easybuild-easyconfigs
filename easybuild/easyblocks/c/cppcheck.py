@@ -59,9 +59,9 @@ class EB_cppcheck(ConfigureMake):
         """
         if self.cfg['build_gui']:
             if self.cfg['have_rules']:
-                cmd = 'qmake HAVE_RULES=yes'
+                cmd = 'qmake QMAKE_CXX="$CXX" QMAKE_LINK=$CXX HAVE_RULES=yes'
             else:
-                cmd = 'qmake'
+                cmd = 'qmake QMAKE_CXX="$CXX" QMAKE_LINK=$CXX'
             
             gui_dir = os.path.join(self.cfg['start_dir'], 'gui')
 
