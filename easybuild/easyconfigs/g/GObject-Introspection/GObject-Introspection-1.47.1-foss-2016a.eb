@@ -1,0 +1,47 @@
+easyblock = 'ConfigureMake'
+
+name = 'GObject-Introspection'
+version = '1.47.1'
+
+homepage = 'https://wiki.gnome.org/GObjectIntrospection/'
+description = """GObject introspection is a middleware layer between C libraries
+ (using GObject) and language bindings. The C library can be scanned at
+ compile time and generate a metadata file, in addition to the actual
+ native C library. Then at runtime, language bindings can read this
+ metadata and automatically provide bindings to call into the C library."""
+
+toolchain = {'name': 'foss', 'version': '2016a'}
+
+source_urls = [FTPGNOME_SOURCE]
+sources = [SOURCELOWER_TAR_XZ]
+
+dependencies = [
+    ('Python', '2.7.11'),
+    ('GLib', '2.47.5'),
+    ('libffi', '3.2.1'),
+]
+
+builddependencies = [
+    ('Autotools', '20150215'),
+    ('flex', '2.6.0'),
+    ('Bison', '3.0.4'),
+    ('cairo', '1.14.6'),
+]
+
+preconfigopts = "env GI_SCANNER_DISABLE_CACHE=true "
+
+# avoid using hard-coded path to 'python' in shebang of scripts
+buildopts = "PYTHON=python"
+
+modextrapaths = {
+    'GI_TYPELIB_PATH': 'share',
+    'XDG_DATA_DIRS': 'share',
+}
+
+sanity_check_paths = {
+    'files': ['bin/g-ir-%s' % x for x in ['annotation-tool', 'compiler', 'generate', 'scanner']] +
+             ['lib/libgirepository-1.0.%s' % x for x in ['so', 'a']],
+    'dirs': ['include', 'share']
+}
+
+moduleclass = 'devel'
