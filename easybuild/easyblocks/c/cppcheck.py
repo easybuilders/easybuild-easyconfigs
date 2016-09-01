@@ -105,15 +105,15 @@ class EB_cppcheck(ConfigureMake):
 
                 file_to_copy = 'cppcheck-gui'
 
-                filepath = os.path.join(self.cfg['start_dir'], '/gui/', file_to_copy)
+                filepath = os.path.join(self.cfg['start_dir'], 'gui/', file_to_copy)
 
                 # Perform the copy
+                target_dest = os.path.join(self.installdir, 'bin')
                 if os.path.isfile(filepath):
-                    target_dest = os.path.join(self.installdir, 'bin')
                     self.log.debug("Copying file %s to %s" % (filepath, target_dest))
                     shutil.copy2(filepath, target_dest)
                 else:
-                    raise EasyBuildError("Can't copy non-existing path %s to %s", filepath, target)
+                    raise EasyBuildError("Can't copy non-existing path %s to %s", filepath, target_dest)
                 
                 # Create cfg symlink. It shouldn't be necessary, but cppcheck-gui complaints otherwise
                 # unless called with --data-dir
