@@ -30,6 +30,7 @@ implemented as an easyblock.
 @author: Alan O'Cais (Juelich Supercomputing Centre)
 @author: Kenneth Hoste (Ghent University)
 """
+from distutils.version import LooseVersion
 import os
 
 import easybuild.tools.environment as env
@@ -60,8 +61,7 @@ class EB_libxml2(ConfigureMake, PythonPackage):
 
     def configure_step(self):
         """
-        Configure and 
-        Test if python module is loaded
+        Configure libxml2 build
         """
         # only build with Python bindings if Python is listed as a dependency
         python = get_software_root('Python')
@@ -78,12 +78,13 @@ class EB_libxml2(ConfigureMake, PythonPackage):
         if zlib:
             self.cfg.update('configopts', '--with-zlib=%s' % zlib)
 
-        if self.with_python_bindings:
-            # enable building of Python bindings if Python is a dependency
-            self.cfg.update('configopts', "--with-python=%s" % os.path.join(python, 'bin', 'python'))
-            self.cfg.update('configopts', "--with-python-install-dir=%s" % os.path.join(self.installdir, self.pylibdir))
+        # enable building of Python bindings if Python is a dependency (or build them ourselves for old versions)
+        # disable building of Python bindings if Python is not a dependency
+        if self.with_python_bindings and LooseVersion(self.version) >= LooseVersion('2.9.2'):
+                libxml2_pylibdir = os.path.join(self.installdir, self.pylibdir)
+                self.cfg.update('configopts', "--with-python=%s" % os.path.join(python, 'bin', 'python'))
+                self.cfg.update('configopts', "--with-python-install-dir=%s" % libxml2_pylibdir)
         else:
-            # disable building of Python bindings if Python is not a dependency
             self.cfg.update('configopts', '--without-python')
 
         ConfigureMake.configure_step(self)
@@ -94,6 +95,28 @@ class EB_libxml2(ConfigureMake, PythonPackage):
 
         # test using 'make check' (done via test_step)
         self.cfg['runtest'] = 'check'
+
+    def install_step(self):
+        """
+        Custom install step for libxml2;
+        also build Python bindings ourselves if desired (only for older libxml2 versions
+        """
+        ConfigureMake.install_step(self)
+
+        if self.with_python_bindings and LooseVersion(self.version) < LooseVersion('2.9.2'):
+            try:
+                # We can only do the Python bindings after the initial installation
+                # since setup.py expects to find the include dir in the installation path
+                # and that only exists after installation
+                os.chdir('python')
+                PythonPackage.configure_step(self)
+                # set cflags to point to include folder for the compilation step to succeed
+                env.setvar('CFLAGS', "-I../include")
+                PythonPackage.build_step(self)
+                PythonPackage.install_step(self)
+                os.chdir('..')
+            except OSError as err:
+                raise EasyBuildError("Failed to install libxml2 Python bindings: %s", err)
 
     def make_module_extra(self):
         """
