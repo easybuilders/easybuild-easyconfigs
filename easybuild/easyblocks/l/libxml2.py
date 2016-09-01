@@ -28,6 +28,7 @@ implemented as an easyblock.
 
 @author: Jens Timmerman (Ghent University)
 @author: Alan O'Cais (Juelich Supercomputing Centre)
+@author: Kenneth Hoste (Ghent University)
 """
 import os
 
@@ -37,6 +38,7 @@ from easybuild.easyblocks.generic.pythonpackage import PythonPackage
 from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.modules import get_software_root
 from easybuild.tools.systemtools import get_shared_lib_ext
+from easybuild.tools.toolchain import DUMMY_TOOLCHAIN_NAME
 
 
 class EB_libxml2(ConfigureMake, PythonPackage):
@@ -50,23 +52,47 @@ class EB_libxml2(ConfigureMake, PythonPackage):
 
     def __init__(self, *args, **kwargs):
         """
-        Constructor
-        init as a pythonpackage, since that is also an application
+        Constructor: initialize via PythonPackage,
+        to ensure everything is set up as needed to build with Python bindings
         """
         PythonPackage.__init__(self, *args, **kwargs)
+        self.with_python_bindings = None
 
     def configure_step(self):
         """
         Configure and 
         Test if python module is loaded
         """
-        if not get_software_root('Python'):
-            raise EasyBuildError("Python module not loaded")
-        # We will do the python bindings ourselves so force them off
-        self.cfg.update('configopts', '--without-python')
+        # only build with Python bindings if Python is listed as a dependency
+        self.with_python_bindings = bool(get_software_root('Python'))
+
+        if self.toolchain.name != DUMMY_TOOLCHAIN_NAME:
+            self.cfg.update('configopts', "CC='%s' CXX='%s'" % (os.getenv('CC'), os.getenv('CXX')))
+
+        if self.toolchain.options.get('pic', False):
+            self.cfg.update('configopts', '--with-pic')
+
+        zlib = get_software_root('zlib')
+        if zlib:
+            self.cfg.update('configopts', '--with-zlib=%s' % zlib)
+
+        if self.with_python_bindings:
+            if not get_software_root('Python'):
+                raise EasyBuildError("Python module not loaded")
+
+            # we will do the python bindings ourselves so force them off
+            # this is required to ensure that the libxml2 Python bindings are installed in the right location,
+            # i.e. in the libxml2 install prefix rather than in the Python install prefix
+            self.cfg.update('configopts', '--without-python')
+        else:
+            # disable building of Python bindings if Python is not a dependency
+            self.cfg.update('configopts', '--without-python')
+
         ConfigureMake.configure_step(self)
-        # prepare for installing Python package
-        PythonPackage.prepare_python(self)
+
+        if self.with_python_bindings:
+            # prepare for installing Python package
+            PythonPackage.prepare_python(self)
 
     def build_step(self):
         """
@@ -87,35 +113,45 @@ class EB_libxml2(ConfigureMake, PythonPackage):
         """
         ConfigureMake.install_step(self)
 
-        try:
-            # We can only do the python bindings after the initial installation
-            # since setup.py expects to find the include dir in the installation path
-            # and that only exists after installation
-            os.chdir('python')
-            PythonPackage.configure_step(self)
-            # set cflags to point to include folder for the compilation step to succeed
-            env.setvar('CFLAGS', "-I../include")
-            PythonPackage.build_step(self)
-            PythonPackage.install_step(self)
-            os.chdir('..')
-        except OSError, err:
-            raise EasyBuildError("Failed to install libxml2 Python bindings: %s", err)
+        if self.with_python_bindings:
+            try:
+                # We can only do the python bindings after the initial installation
+                # since setup.py expects to find the include dir in the installation path
+                # and that only exists after installation
+                os.chdir('python')
+                PythonPackage.configure_step(self)
+                # set cflags to point to include folder for the compilation step to succeed
+                env.setvar('CFLAGS', "-I../include")
+                PythonPackage.build_step(self)
+                PythonPackage.install_step(self)
+                os.chdir('..')
+            except OSError as err:
+                raise EasyBuildError("Failed to install libxml2 Python bindings: %s", err)
 
     def make_module_extra(self):
         """
         Add python bindings to the pythonpath
         """
-        txt = PythonPackage.make_module_extra(self)
+        if self.with_python_bindings:
+            txt = PythonPackage.make_module_extra(self)
+        else:
+            txt = super(EB_libxml2, self).make_module_extra()
+
         txt += self.module_generator.prepend_paths('CPATH', [os.path.join('include', 'libxml2')])
         return txt
 
     def sanity_check_step(self):
         """Custom sanity check for libxml2"""
         shlib_ext = get_shared_lib_ext()
-        pyfiles = ['libxml2mod.%s' % shlib_ext, 'libxml2.py', 'drv_libxml2.py']
         custom_paths = {
-            'files': ["lib/libxml2.a", "lib/libxml2.%s" % shlib_ext] +
-                     [tuple([(os.path.join(d, f)) for d in self.all_pylibdirs]) for f in pyfiles],
-            'dirs': ["bin", tuple(self.all_pylibdirs), "include/libxml2/libxml"],
+            'files': [('lib/libxml2.a', 'lib64/libxml2.a'),
+                      ('lib/libxml2.%s' % shlib_ext, 'lib64/libxml2.%s' % shlib_ext)],
+            'dirs': ['bin', 'include/libxml2/libxml'],
         }
+
+        if self.with_python_bindings:
+            pyfiles = ['libxml2mod.%s' % shlib_ext, 'libxml2.py', 'drv_libxml2.py']
+            custom_paths['files'].extend([tuple([(os.path.join(d, f)) for d in self.all_pylibdirs]) for f in pyfiles])
+            custom_paths['dirs'].append(tuple(self.all_pylibdirs))
+
         ConfigureMake.sanity_check_step(self, custom_paths=custom_paths)
