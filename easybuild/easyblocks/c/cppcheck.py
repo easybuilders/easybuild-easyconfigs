@@ -58,7 +58,7 @@ class EB_cppcheck(ConfigureMake):
         Run qmake on the GUI, if necessary
         """
         if self.cfg['build_gui']:
-            cmd = 'qmake QMAKE_CXX="$CXX" QMAKE_LINK=$CXX'
+            cmd = 'qmake QMAKE_CXX="$CXX" QMAKE_LINK="$CXX"'
 
             if self.cfg['have_rules']:
                 cmd = ' '.join([cmd, 'HAVE_RULES=yes'])
