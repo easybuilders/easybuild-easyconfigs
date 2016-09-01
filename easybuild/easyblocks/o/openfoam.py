@@ -87,7 +87,8 @@ class EB_OpenFOAM(EasyBlock):
             try:
                 contents_installdir = os.listdir(self.installdir)
                 # it's one directory but has a wrong name
-                if len(contents_installdir) == 1 and os.path.isdir(os.path.join(self.installdir, contents_installdir[0])):
+                if len(contents_installdir) == 1 and \
+                   os.path.isdir(os.path.join(self.installdir, contents_installdir[0])):
                     source = os.path.join(self.installdir, contents_installdir[0])
                     target = os.path.join(self.installdir, self.openfoamdir)
                     self.log.debug("Renaming %s to %s", source, target)
@@ -104,7 +105,7 @@ class EB_OpenFOAM(EasyBlock):
             except OSError, err:
                 raise EasyBuildError("Failed to move all files to %s: %s", openfoam_installdir, err)
 
-    def patch_step(self):
+    def patch_step(self, beginpath=None):
         """Adjust start directory and start path for patching to correct directory."""
         self.cfg['start_dir'] = os.path.join(self.installdir, self.openfoamdir)
         super(EB_OpenFOAM, self).patch_step(beginpath=self.cfg['start_dir'])
@@ -206,7 +207,8 @@ class EB_OpenFOAM(EasyBlock):
         env.setvar("WM_COMPILER", self.wm_compiler)
 
         # set to an MPI unknown by OpenFOAM, since we're handling the MPI settings ourselves (via mpicc, etc.)
-        # Note: this name must contain 'MPI' so the MPI version of the Pstream library is built (cf src/Pstream/Allwmake)
+        # Note: this name must contain 'MPI' so the MPI version of the
+        # Pstream library is built (cf src/Pstream/Allwmake)
         self.wm_mplib = "EASYBUILDMPI"
         env.setvar("WM_MPLIB", self.wm_mplib)
 
@@ -270,7 +272,7 @@ class EB_OpenFOAM(EasyBlock):
                 "%s .*" % os.environ['CC'],
                 "wmake .*",
                 "Making dependency list for source file.*",
-                "\s*\^\s*",  # warning indicator
+                r"\s*\^\s*",  # warning indicator
                 "Cleaning .*",
             ]
             run_cmd_qa(cmd_tmpl % 'Allwmake.firstInstall', qa, no_qa=noqa, log_all=True, simple=True)
@@ -348,7 +350,7 @@ class EB_OpenFOAM(EasyBlock):
 
         super(EB_OpenFOAM, self).sanity_check_step(custom_paths=custom_paths)
 
-    def make_module_extra(self):
+    def make_module_extra(self, altroot=None, altversion=None):
         """Define extra environment variables required by OpenFOAM"""
 
         txt = super(EB_OpenFOAM, self).make_module_extra()
