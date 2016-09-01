@@ -14,19 +14,15 @@ sources = ['xorg.modules', 'jhbuildrc']
 
 source_urls = ['https://cgit.freedesktop.org/xorg/util/modular/plain/']
 
-patches = ['xorg_moduleset-%(version)s.patch', 'xorg_jhbuild-%(version)s.patch']
+patches = ['xorg_moduleset-2016-08-23.patch', 'xorg_jhbuild-2016-08-23.patch']
 
 builddependencies = [
-    ('binutils', '2.25'),
     ('jhbuild', '3.15.92'),
-    ('Autotools', '20150215'), 
-    ('pkg-config', '0.29.1'),
+    # jhbuild is python so it has a python dependency, we use a Python that includes the required Python modules for this build
+    ('Python', '2.7.12', '-Xorg'),
     ('git', '2.9.3'),
-    ('flex', '2.6.0'),
-    ('Bison', '3.0.4'),
     ('gperf', '3.0.4'),
     ('intltool', '0.51.0', '-Perl-5.24.0'),
-    ('gettext', '0.19.8'),
     ('Perl', '5.24.0'),
     ('XML-Parser', '2.44_01', '-Perl-5.24.0'),
 ]
@@ -38,8 +34,15 @@ dependencies = [
     ('zlib', '1.2.8'),
 ]
 
-preinstallopts = 'PYTHONPATH=/homeb/zam/ocaisa/temp/Python/lib EBBUILDDIR=%(builddir)s EBINSTALLDIR=%(installdir)s XORG_VERSION_DATE=%(version)s '
-preinstallopts += 'XORG_SKIP_SET="libAppleWM mtdev xf86-input-joystick xf86-video-ati xf86-video-geode xf86-video-modesetting xf86-video-sisusb xf86-video-v4l xf86-video-vmware xf86-video-wsfb xf86-input-evdev " '
+# Make sure it is using our Python2
+preinstallopts = 'echo "addpath(\'PYTHONPATH\', \'$PYTHONPATH\')" >> jhbuildrc && '
+preinstallopts += 'echo "os.environ[\'PYTHON\'] = \'$EBROOTPYTHON/bin/python2\'" >> jhbuildrc && '
+# The following environment variables are used by the patched jhbuildrc to point to our EasyBuild paths
+preinstallopts += 'EBBUILDDIR=%(builddir)s EBINSTALLDIR=%(installdir)s XORG_VERSION_DATE=%(version)s '
+# The packages below are the ones to be excluded from build
+xorg_skip = "libAppleWM mtdev xf86-input-joystick xf86-video-ati xf86-video-geode xf86-video-modesetting "
+xorg_skip += "xf86-video-sisusb xf86-video-v4l xf86-video-vmware xf86-video-wsfb xf86-input-evdev " 
+preinstallopts += 'XORG_SKIP_SET="%s" ' % (xorg_skip)
 install_cmd = 'jhbuild -f jhbuildrc'
 
 
@@ -48,4 +51,4 @@ sanity_check_paths = {
     'dirs': ['bin', 'lib'],
 }
 
-moduleclass = 'vis'
+moduleclass = 'lib'
