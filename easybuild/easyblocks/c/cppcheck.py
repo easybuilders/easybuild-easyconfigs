@@ -68,7 +68,7 @@ class EB_cppcheck(ConfigureMake):
                 os.chdir(gui_dir)
                 run_cmd(cmd, log_all=True, simple=True)
                 os.chdir(self.cfg['start_dir'])
-            except OSError, err:
+            except OSError as err:
                 raise EasyBuildError("Moving to %s and configure the GUI build failed: %s", gui_dir, err)
 
         else:
@@ -122,7 +122,7 @@ class EB_cppcheck(ConfigureMake):
                 self.log.debug("Creating symlink %s to %s" % (src, dst))
                 os.symlink(src, dst)
 
-            except OSError, err:
+            except OSError as err:
                 raise EasyBuildError("Copying %s to installation dir failed: %s", file_to_copy, err)
 
     def sanity_check_step(self):
