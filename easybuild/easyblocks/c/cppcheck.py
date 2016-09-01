@@ -29,7 +29,7 @@ import os
 import shutil
 
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
-from easybuild.framework.easyconfig import BUILD
+from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.run import run_cmd
 
@@ -45,28 +45,34 @@ class EB_cppcheck(ConfigureMake):
         Define if we are using rules or not, and if we are building the GUI
         """
         extra = {
-            'have_rules': [False, "Use rules", BUILD],
-            'build_gui': [False, "Build GUI", BUILD],
+            'have_rules': [False, "Use rules", CUSTOM],
+            'build_gui': [False, "Build GUI", CUSTOM],
         }
         if extra_vars is None:
             extra_vars = {}
         extra.update(extra_vars)
         return ConfigureMake.extra_options(extra_vars=extra)
 
-
     def configure_step(self):
         """
         Run qmake on the GUI, if necessary
         """
         if self.cfg['build_gui']:
-            os.chdir(self.cfg['start_dir']+'/gui')
             if self.cfg['have_rules']:
                 cmd = 'qmake HAVE_RULES=yes'
             else:
                 cmd = 'qmake'
-            run_cmd(cmd, log_all=True, simple=True)
-            os.chdir(self.cfg['start_dir'])
+            
+            try:
+                gui_dir = os.path.join(self.cfg['start_dir'], 'gui')
+                os.chdir(gui_dir)
+                run_cmd(cmd, log_all=True, simple=True)
+                os.chdir(self.cfg['start_dir'])
+            except OSError, err:
+                raise EasyBuildError("Moving to %s and configure the GUI build failed: %s", gui_dir, err)
+
         else:
+            self.log.debug("Configuration of the GUI skipped")
             pass
 
     def build_step(self, verbose=False):
@@ -81,7 +87,7 @@ class EB_cppcheck(ConfigureMake):
         super(EB_cppcheck, self).build_step(verbose=verbose)
         
         if self.cfg['build_gui']:
-            super(EB_cppcheck, self).build_step(verbose=verbose,path='gui')
+            super(EB_cppcheck, self).build_step(verbose=verbose, path='gui')
 
     def install_step(self):
         """
@@ -98,9 +104,8 @@ class EB_cppcheck(ConfigureMake):
                 os.chdir(self.cfg['start_dir'])
 
                 file_to_copy = 'cppcheck-gui'
-                self.log.debug("Copying cppcheck-gui")
 
-                filepath = self.cfg['start_dir'] + '/gui/' + file_to_copy
+                filepath = os.path.join(self.cfg['start_dir'], '/gui/', file_to_copy)
 
                 # Perform the copy
                 if os.path.isfile(filepath):
@@ -118,22 +123,19 @@ class EB_cppcheck(ConfigureMake):
                 os.symlink(src, dst)
 
             except OSError, err:
-                raise EasyBuildError("Copying %s to installation dir failed: %s", fil, err)
+                raise EasyBuildError("Copying %s to installation dir failed: %s", file_to_copy, err)
 
     def sanity_check_step(self):
         """
         Custom sanity check for cppcheck.
         """
+        custom_paths = {
+            'files': ['bin/cppcheck' ],
+            'dirs': ['.']
+        }
 
         if self.cfg['build_gui']:
-            custom_paths = {
-                'files': ['bin/cppcheck', 'bin/cppcheck-gui' ],
-                'dirs': ['.', 'bin/cfg']
-            }
-        else:
-            custom_paths = {
-                'files': ['bin/cppcheck' ],
-                'dirs': ['.']
-            }
+            custom_paths['files'].append('bin/cppcheck-gui')
+            custom_paths['dirs'].append('bin/cfg')
 
         super(EB_cppcheck, self).sanity_check_step(custom_paths=custom_paths)
