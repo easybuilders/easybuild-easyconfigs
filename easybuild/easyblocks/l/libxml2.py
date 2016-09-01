@@ -56,7 +56,7 @@ class EB_libxml2(ConfigureMake, PythonPackage):
         to ensure everything is set up as needed to build with Python bindings
         """
         PythonPackage.__init__(self, *args, **kwargs)
-        self.with_python_bindings = None
+        self.with_python_bindings = False
 
     def configure_step(self):
         """
@@ -64,7 +64,9 @@ class EB_libxml2(ConfigureMake, PythonPackage):
         Test if python module is loaded
         """
         # only build with Python bindings if Python is listed as a dependency
-        self.with_python_bindings = bool(get_software_root('Python'))
+        python = get_software_root('Python')
+        if python:
+            self.with_python_bindings = True
 
         if self.toolchain.name != DUMMY_TOOLCHAIN_NAME:
             self.cfg.update('configopts', "CC='%s' CXX='%s'" % (os.getenv('CC'), os.getenv('CXX')))
@@ -77,11 +79,9 @@ class EB_libxml2(ConfigureMake, PythonPackage):
             self.cfg.update('configopts', '--with-zlib=%s' % zlib)
 
         if self.with_python_bindings:
-            if not get_software_root('Python'):
-                raise EasyBuildError("Python module not loaded")
-
-            libxml2_pylibdir = os.path.join(self.installdir, self.pylibdir)
-            self.cfg.update('configopts', "--with-python --with-python-install-dir=%s" % libxml2_pylibdir)
+            # enable building of Python bindings if Python is a dependency
+            self.cfg.update('configopts', "--with-python=%s" % os.path.join(python, 'bin', 'python'))
+            self.cfg.update('configopts', "--with-python-install-dir=%s" % os.path.join(self.installdir, self.pylibdir))
         else:
             # disable building of Python bindings if Python is not a dependency
             self.cfg.update('configopts', '--without-python')
