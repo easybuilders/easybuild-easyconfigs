@@ -44,9 +44,10 @@ import easybuild.main as main
 import easybuild.tools.options as eboptions
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.framework.easyblock import EasyBlock
+from easybuild.framework.easyconfig.default import DEFAULT_CONFIG
 from easybuild.framework.easyconfig.easyconfig import EasyConfig
-from easybuild.framework.easyconfig.easyconfig import get_easyblock_class
-from easybuild.framework.easyconfig.parser import fetch_parameters_from_easyconfig
+from easybuild.framework.easyconfig.easyconfig import get_easyblock_class, resolve_template
+from easybuild.framework.easyconfig.parser import EasyConfigParser, fetch_parameters_from_easyconfig
 from easybuild.framework.easyconfig.tools import dep_graph, get_paths_for, process_easyconfig
 from easybuild.tools import config
 from easybuild.tools.config import build_option
@@ -269,7 +270,7 @@ def template_easyconfig_test(self, spec):
     os.close(handle)
 
     ec.dump(test_ecfile)
-    dumped_ec = EasyConfig(test_ecfile)
+    dumped_ec = EasyConfigParser(test_ecfile).get_config_dict()
     os.remove(test_ecfile)
 
     # inject dummy values for templates that are only known at a later stage
@@ -278,10 +279,16 @@ def template_easyconfig_test(self, spec):
         'installdir': '/dummy/installdir',
     }
     ec.template_values.update(dummy_template_values)
-    dumped_ec.template_values.update(dummy_template_values)
 
-    for key in sorted(ec._config):
-        self.assertEqual(ec[key], dumped_ec[key])
+    ec_dict = ec.parser.get_config_dict()
+    for key in sorted(ec_dict):
+        orig_val = resolve_template(ec_dict[key], ec.template_values)
+        if key not in DEFAULT_CONFIG or orig_val == DEFAULT_CONFIG[key][0]:
+            continue
+
+        dumped_val = resolve_template(dumped_ec[key], ec.template_values)
+
+        self.assertEqual(orig_val, dumped_val)
 
     # cache the parsed easyconfig, to avoid that it is parsed again
     self.parsed_easyconfigs.append(ecs[0])
