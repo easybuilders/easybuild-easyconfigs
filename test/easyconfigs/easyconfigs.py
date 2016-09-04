@@ -259,7 +259,8 @@ def template_easyconfig_test(self, spec):
                     self.assertTrue(os.path.isfile(ext_patch_full), msg)
 
     # check whether all extra_options defined for used easyblock are defined
-    for key in app.extra_options():
+    extra_opts = app.extra_options()
+    for key in extra_opts:
         self.assertTrue(key in app.cfg)
 
     app.close_log()
@@ -281,11 +282,19 @@ def template_easyconfig_test(self, spec):
     ec.template_values.update(dummy_template_values)
 
     ec_dict = ec.parser.get_config_dict()
-    for key in sorted(ec_dict):
-        orig_val = resolve_template(ec_dict[key], ec.template_values)
-        if key not in DEFAULT_CONFIG or orig_val == DEFAULT_CONFIG[key][0]:
+    keys = []
+    for key in ec_dict:
+        # skip parameters for which value is equal to default value
+        orig_val = ec_dict[key]
+        if key in DEFAULT_CONFIG and orig_val == DEFAULT_CONFIG[key][0]:
+            continue
+        if key in extra_opts and orig_val == extra_opts[key][0]:
+            continue
+        if key not in DEFAULT_CONFIG and key not in extra_opts:
             continue
 
+        keys.append(key)
+        orig_val = resolve_template(ec_dict[key], ec.template_values)
         dumped_val = resolve_template(dumped_ec[key], ec.template_values)
 
         self.assertEqual(orig_val, dumped_val)
@@ -295,6 +304,7 @@ def template_easyconfig_test(self, spec):
 
     # test passed, so set back to True
     single_tests_ok = True and prev_single_tests_ok
+
 
 def suite():
     """Return all easyblock initialisation tests."""
