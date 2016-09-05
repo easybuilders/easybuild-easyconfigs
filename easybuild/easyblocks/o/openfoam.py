@@ -86,10 +86,9 @@ class EB_OpenFOAM(EasyBlock):
             self.log.warning("Creating expected directory %s, and moving everything there" % openfoam_installdir)
             try:
                 contents_installdir = os.listdir(self.installdir)
+                source = os.path.join(self.installdir, contents_installdir[0])
                 # it's one directory but has a wrong name
-                if len(contents_installdir) == 1 and \
-                   os.path.isdir(os.path.join(self.installdir, contents_installdir[0])):
-                    source = os.path.join(self.installdir, contents_installdir[0])
+                if len(contents_installdir) == 1 and os.path.isdir(source):
                     target = os.path.join(self.installdir, self.openfoamdir)
                     self.log.debug("Renaming %s to %s", source, target)
                     os.rename(source, target)
