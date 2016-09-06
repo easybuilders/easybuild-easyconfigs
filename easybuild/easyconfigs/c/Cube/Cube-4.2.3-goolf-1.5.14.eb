@@ -1,0 +1,42 @@
+# This is an easyconfig file for EasyBuild, see https://github.com/hpcugent/easybuild
+# Authors::   Jordi Blasco <jordi.blasco@nesi.org.nz>
+# License::   New BSD
+#
+##
+
+easyblock = 'EB_Score_minus_P'
+
+name = "Cube"
+version = "4.2.3"
+
+homepage = 'http://www.scalasca.org/software/cube-4.x/download.html'
+description = """Cube, which is used as performance report explorer for Scalasca and
+ Score-P, is a generic tool for displaying a multi-dimensional performance space
+ consisting of the dimensions (i) performance metric, (ii) call path, and (iii) system
+ resource. Each dimension can be represented as a tree, where non-leaf nodes of the tree
+ can be collapsed or expanded to achieve the desired level of granularity."""
+
+toolchain = {'name': 'goolf', 'version': '1.5.14'}
+
+sources = [SOURCELOWER_TAR_GZ]
+source_urls = ['http://apps.fz-juelich.de/scalasca/releases/cube/%(version_major_minor)s/dist']
+
+checksums = [
+    '8f95b9531f5a8f8134f279c2767c9b20',    # cube-4.2.3.tar.gz
+]
+
+dependencies = [('Qt', '4.8.4')]
+
+# The Cube Java reader is currently only used by TAU, which ships it's own
+# copy as a jar file. If you really want to enable it, make sure to set
+# 'maxparallel=1', as automake's Java support has difficulties handling
+# parallel builds.
+configopts = "--without-java-reader"
+
+sanity_check_paths = {
+    'files': ["bin/cube", ("lib/libcube4.a", "lib64/libcube4.a"),
+              ("lib/libcube4.%s" % SHLIB_EXT, "lib64/libcube4.%s" % SHLIB_EXT)],
+    'dirs': ["include/cube", "include/cubew"],
+}
+
+moduleclass = 'perf'

@@ -1,0 +1,24 @@
+fix linking against EB-provided zlib
+author: Kenneth Hoste (Ghent University)
+--- trinityrnaseq-2.0.4/trinity-plugins/Makefile.orig	2015-02-14 20:34:09.000000000 +0100
++++ trinityrnaseq-2.0.4/trinity-plugins/Makefile	2016-02-16 11:21:03.430691000 +0100
+@@ -13,6 +13,9 @@
+ endif
+ 
+ 
++CC?=gcc
++CXX?=g++
++
+ #######################
+ ### Required by Trinity
+ #######################
+@@ -52,7 +55,8 @@
+ 
+ rsem:
+ 	tar -zxvf ${RSEM_CODE}.tar.gz
+-	cd ${RSEM_CODE} && $(MAKE) LIBCURSES="${RSEM_LIBCURSES}"
++	sed -i -e 's@-lz@-L${EBROOTZLIB}/lib -lz@g' ${RSEM_CODE}/Makefile
++	cd ${RSEM_CODE} && $(MAKE) LIBCURSES="${RSEM_LIBCURSES}" LIBPATH="-L${EBROOTNCURSES}/lib -L${EBROOTZLIB}/lib"
+ 	ln -sf ${RSEM_CODE} rsem
+ 
+ transdecoder_target:
