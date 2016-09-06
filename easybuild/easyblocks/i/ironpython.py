@@ -50,7 +50,7 @@ class EB_IronPython(EasyBlock):
     def extract_step(self):
         """Extract sources; strip off parent directory during unpack"""
         self.cfg.update('unpack_options', "--strip-components=1")
-        super(EB_Amber, self).extract_step()
+        super(EB_IronPython, self).extract_step()
 
     def configure_step(self):
         """No dedicated configure step for IronPython."""
