@@ -1,0 +1,38 @@
+name = 'OpenFOAM'
+version = '2.3.1'
+
+homepage = 'http://www.openfoam.com/'
+description = """OpenFOAM is a free, open source CFD software package. 
+ OpenFOAM has an extensive range of features to solve anything from complex fluid flows
+ involving chemical reactions, turbulence and heat transfer, 
+ to solid dynamics and electromagnetics."""
+
+toolchain = {'name': 'intel', 'version': '2015b'}
+
+source_urls = ['http://downloads.sourceforge.net/foam/%(version)s']
+sources = [
+    SOURCE_TGZ,
+    'ThirdParty-%(version)s.tgz',
+]
+
+patches = [
+    'OpenFOAM-%(version)s_cleanup.patch',
+    'OpenFOAM-2.3.0_libreadline.patch',
+    ('ThirdParty-%(version)s_cleanup.patch', ".."),  # patch should not be applied in OpenFOAM subdir
+]
+
+# fix for cyclic symlink issue, which may cause unpacking to fail
+# see also http://www.openfoam.org/mantisbt/view.php?id=1191
+# fixed in recent versions: https://github.com/OpenFOAM/OpenFOAM-2.3.x/commit/f7a485069c778495cc39b308580289f6c2d47163
+unpack_options = "--exclude=*tutorials/mesh/foamyHexMesh/mixerVessel/system/backgroundMeshDecomposition"
+unpack_options += " --exclude=*tutorials/mesh/foamyHexMesh/mixerVessel/system/cellShapeControlMesh"
+
+dependencies = [
+    ('libreadline', '6.3'),
+    ('SCOTCH', '6.0.4'),
+    ('ncurses', '5.9'),
+]
+
+builddependencies = [('flex', '2.5.39')]
+
+moduleclass = 'cae'
