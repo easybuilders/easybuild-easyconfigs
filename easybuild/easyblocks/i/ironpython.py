@@ -35,6 +35,7 @@ EasyBuild support for IronPython, implemented as an easyblock
 import os
 
 from easybuild.framework.easyblock import EasyBlock
+from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.run import run_cmd
 
 
@@ -62,11 +63,6 @@ class EB_IronPython(EasyBlock):
         cmd = "xbuild /p:Configuration=Release Solutions/%s.sln" % self.name
         run_cmd(cmd, log_all=True, simple=True)
 
-        try:
-            self.subdir = os.listdir(self.installdir)[0]
-        except OSError, err:
-            self.log.error("Failed to determine IronPython install subdir: %s" % err)
-
     def sanity_check_step(self):
         """Custom sanity check for IronPython."""
 
@@ -79,6 +75,11 @@ class EB_IronPython(EasyBlock):
 
     def make_module_req_guess(self):
         """Add IronPython binaries path to $PATH."""
+
+        try:
+            self.subdir = os.listdir(self.installdir)[0]
+        except OSError as err:
+            raise EasyBuildError("Failed to determine IronPython install subdir: %s", err)
 
         guesses = super(EB_IronPython, self).make_module_req_guess()
         guesses.update({

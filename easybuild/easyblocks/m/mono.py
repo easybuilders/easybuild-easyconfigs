@@ -39,6 +39,7 @@ import sys
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.easyblocks.generic.rpm import Rpm
 from easybuild.framework.easyblock import EasyBlock
+from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.config import source_path
 from easybuild.tools.filetools import apply_regex_substitutions, read_file
 from easybuild.tools.run import run_cmd
@@ -81,8 +82,8 @@ class EB_Mono(ConfigureMake, Rpm):
             monorpms_path = os.path.join(self.builddir, "monorpms")
             try:
                 os.makedirs(os.path.join(monorpms_path, 'rpm'))
-            except OSError, err:
-                self.log.error("Failed to create directories for installing Mono RPMs in: %s" % err)
+            except OSError as err:
+                raise EasyBuildError("Failed to create directories for installing Mono RPMs in: %s", err)
 
             self.src = self.rpms
             self.rebuildRPM = True
@@ -113,7 +114,7 @@ class EB_Mono(ConfigureMake, Rpm):
                     }
                     run_cmd(cmd,log_all=True,simple=True)
                 else:
-                    self.log.error("RPM file %s not found" % rpm['path'])
+                    raise EasyBuildError("RPM file %s not found", rpm['path'])
 
             # create patched version of gmcs command
             self.log.debug("Making our own copy of gmcs (one that works).")
@@ -121,8 +122,8 @@ class EB_Mono(ConfigureMake, Rpm):
             mygmcs_path = os.path.join(monorpms_path, 'usr', 'bin', 'mygmcs')
             try:
                 shutil.copy(os.path.join(monorpms_path, 'usr' ,'bin', 'gmcs'), mygmcs_path)
-            except OSError, err:
-                self.log.error("Failed to copy gmcs to %s: %s" % (mygmcs_path, err))
+            except OSError as err:
+                raise EasyBuildError("Failed to copy gmcs to %s: %s", mygmcs_path, err)
 
             rpls = [
                 ("exec /usr/bin/mono", "exec %s/usr/bin/mono" % monorpms_path),
