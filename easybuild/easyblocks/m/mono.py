@@ -31,8 +31,6 @@ EasyBuild support for Mono, implemented as an easyblock
 @author: Pieter De Baets (Ghent University)
 @author: Jens Timmerman (Ghent University)
 """
-
-import fileinput
 import re
 import os
 import shutil
@@ -41,12 +39,19 @@ import sys
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.easyblocks.generic.rpm import Rpm
 from easybuild.framework.easyblock import EasyBlock
-from easybuild.tools.filetools import run_cmd
 from easybuild.tools.config import source_path
+from easybuild.tools.filetools import apply_regex_substitutions, read_file
+from easybuild.tools.run import run_cmd
 
 
 class EB_Mono(ConfigureMake, Rpm):
     """Support for building/installing Mono."""
+
+    @staticmethod
+    def extra_options(extra_vars=None):
+        """Combine custom easyconfig parameters specific to ConfigureMake and Rpm generic easyblocks."""
+        extra_vars = ConfigureMake.extra_options()
+        return Rpm.extra_options(extra_vars=extra_vars)
 
     def __init__(self, *args, **kwargs):
         """Custom constructor for Mono easyblock, initialize custom class variables."""
@@ -119,24 +124,13 @@ class EB_Mono(ConfigureMake, Rpm):
             except OSError, err:
                 self.log.error("Failed to copy gmcs to %s: %s" % (mygmcs_path, err))
 
-            rpls = {
-                "exec /usr/bin/mono": "exec %s/usr/bin/mono" % monorpms_path,
-                "`/usr/bin/monodir`": "%s/usr/lib64/mono" % monorpms_path,
-            }
+            rpls = [
+                ("exec /usr/bin/mono", "exec %s/usr/bin/mono" % monorpms_path),
+                ("`/usr/bin/monodir`", "%s/usr/lib64/mono" % monorpms_path),
+            ]
+            apply_regex_substitutions(mygmcs_path, rpls)
 
-            for line in fileinput.input(mygmcs_path, inplace=1, backup='.orig'):
-                for (k,v) in rpls.items():
-                    line = re.sub(k, v, line)
-                sys.stdout.write(line)
-
-            try:
-                f = open(mygmcs_path, 'r')
-                txt = f.read()
-                f.close()
-            except IOError, err:
-                self.log.error("Failed to create patched version of gmcs: %s" % err)
-
-            self.log.debug("Patched version of gmcs (%s): %s" % (mygmcs_path, txt))
+            self.log.debug("Patched version of gmcs (%s): %s" % (mygmcs_path, read_file(mygmcs_path)))
 
             # initiate bootstrap: build/install Mono with installed RPMs to temporary path
             tmp_mono_path = os.path.join(self.builddir, "tmp_mono")
@@ -148,27 +142,27 @@ class EB_Mono(ConfigureMake, Rpm):
 
             config_cmd = "%s ./configure --prefix=%s %s" % (self.cfg['preconfigopts'], tmp_mono_path, self.cfg['configopts'])
             build_cmd = ' '.join([
-                "%(premakeopts)s"
+                "%(prebuildopts)s"
                 "make %(par)s",
                 "EXTERNAL_MCS=%(path)s/usr/bin/mygmcs",
                 "EXTERNAL_RUNTIME=%(path)s/usr/bin/mono",
-                "%(makeopts)s",
+                "%(buildopts)s",
             ]) %{
-                'premakeopts': self.cfg['premakeopts'],
+                'prebuildopts': self.cfg['prebuildopts'],
                 'par': par,
                 'path': monorpms_path,
-                'makeopts': self.cfg['makeopts'],
+                'buildopts': self.cfg['buildopts'],
             }
             install_cmd = "make install"
 
             for cmd in [config_cmd, build_cmd, install_cmd]:
                 run_cmd(cmd, log_all=True, simple=True)
 
-            more_makeopts = ' '.join([
+            more_buildopts = ' '.join([
                 "EXTERNAL_MCS=%(path)s/bin/gmcs",
                 "EXTERNAL_RUNTIME=%(path)s/bin/mono",
             ]) % {'path': tmp_mono_path}
-            self.cfg.update('makeopts', more_makeopts)
+            self.cfg.update('buildopts', more_buildopts)
 
             self.src = self.mono_srcs
 
