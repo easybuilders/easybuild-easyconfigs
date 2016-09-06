@@ -1,0 +1,116 @@
+# This file is an EasyBuild reciPY as per https://github.com/hpcugent/easybuild
+# Author: Pablo Escobar Lopez
+# sciCORE - University of Basel
+# SIB Swiss Institute of Bioinformatics 
+
+easyblock = 'Tarball'
+
+name = 'PRINSEQ'
+version = '0.20.4'
+
+homepage = 'http://prinseq.sourceforge.net'
+description = """A bioinformatics tool to PRe-process and show INformation of SEQuence data."""
+
+toolchain = {'name': 'goolf', 'version': '1.4.10'}
+
+source_urls = ['http://sourceforge.net/projects/prinseq/files/standalone/']
+sources = ['%(namelower)s-lite-%(version)s.tar.gz']
+
+perl = 'Perl'
+perlver = '5.16.3'
+versionsuffix = '-%s-%s' % (perl, perlver)
+
+dependencies = [
+    (perl, perlver),
+]
+
+# these are the perl libraries dependencies
+exts_defaultclass = 'PerlModule'
+exts_filter = ("perldoc -lm %(ext_name)s ", "")
+
+exts_list = [
+    ('ExtUtils::Depends', '0.405', {
+         'source_tmpl': 'ExtUtils-Depends-0.405.tar.gz',
+         'source_urls': ['https://cpan.metacpan.org/authors/id/X/XA/XAOC/'],
+    }),
+    ('ExtUtils::PkgConfig', '1.15', {
+         'source_tmpl': 'ExtUtils-PkgConfig-1.15.tar.gz',
+         'source_urls': ['https://cpan.metacpan.org/authors/id/X/XA/XAOC/'],
+    }),
+    ('Getopt::Long', '2.48', {
+         'source_tmpl': 'Getopt-Long-2.48.tar.gz',
+         'source_urls': ['https://cpan.metacpan.org/authors/id/J/JV/JV/'],
+    }),
+    ('Pod::Usage', '1.68', {
+        'source_tmpl': 'Pod-Usage-1.68.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/M/MA/MAREKR/'],
+    }),
+    ('File::Temp', '0.2304', {
+        'source_tmpl': 'File-Temp-0.2304.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/D/DA/DAGOLDEN/'],
+    }),
+    ('Digest::MD5', '2.54', {
+        'source_tmpl': 'Digest-MD5-2.54.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/G/GA/GAAS/'],
+    }),
+    ('File::Spec', '3.62', {
+        'source_tmpl': 'PathTools-3.62.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/R/RJ/RJBS/'],
+    }),
+    ('JSON', '2.90', {
+        'source_tmpl': 'JSON-2.90.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/M/MA/MAKAMAKA/'],
+    }),
+    ('Cairo', '1.106', {
+        'source_tmpl': 'Cairo-1.106.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/X/XA/XAOC/'],
+    }),
+    ('Statistics::PCA', '0.0.1', {
+        'source_tmpl': 'Statistics-PCA-0.0.1.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/D/DS/DSTH/'],
+    }),
+    ('MIME::Base64', '3.15', {
+        'source_tmpl': 'MIME-Base64-3.15.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/G/GA/GAAS/'],
+    }),
+    ('Math::Cephes::Matrix', '0.5304', {
+        'source_tmpl': 'Math-Cephes-0.5304.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/S/SH/SHLOMIF/'],
+    }),
+    ('Math::MatrixReal', '2.12', {
+        'source_tmpl': 'Math-MatrixReal-2.12.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/L/LE/LETO/'],
+    }),
+    ('Text::SimpleTable', '2.03', {
+        'source_tmpl': 'Text-SimpleTable-2.03.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/M/MR/MRAMBERG/'],
+    }),
+    ('Contextual::Return', '0.004008', {
+        'source_tmpl': 'Contextual-Return-0.004008.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/D/DC/DCONWAY/'],
+    }),
+    ('Want', '0.26', {
+        'source_tmpl': 'Want-0.26.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/R/RO/ROBIN/'],
+    }),
+]
+
+# this is the script which relies in many extra Perl libraries so we verify it's working fine
+sanity_check_commands = [('perl', '%(installdir)s/prinseq-graphs.pl')]
+
+modextrapaths = {
+    'PATH': "", # add installation dir to PATH
+    'PERL5LIB': 'lib/perl5/site_perl/%s/' % (perlver)
+}
+
+postinstallcmds = [
+    "sed -i -e 's|/usr/bin/perl|/usr/bin/env\ perl|' %(installdir)s/*.pl", # fix shebang line
+    "chmod +x %(installdir)s/*.pl" # add execution permission
+]  
+
+sanity_check_paths = {
+    'files': ['prinseq-lite.pl', 'prinseq-graphs.pl', 'prinseq-graphs-noPCA.pl'],
+    'dirs': []
+}
+
+moduleclass = 'bio'

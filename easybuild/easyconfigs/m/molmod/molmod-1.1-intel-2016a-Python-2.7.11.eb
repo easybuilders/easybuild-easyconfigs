@@ -1,0 +1,31 @@
+easyblock = 'PythonPackage'
+
+name = 'molmod'
+version = '1.1'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'http://molmod.github.io/molmod/'
+description = """MolMod is a Python library with many compoments that are useful to write molecular modeling programs."""
+
+toolchain = {'name': 'intel', 'version': '2016a'}
+
+source_urls = ['https://github.com/molmod/molmod/releases/download/v%(version)s']
+sources = [SOURCE_TAR_GZ]
+
+dependencies = [
+    ('Python', '2.7.11'),
+    ('matplotlib', '1.5.1', versionsuffix), 
+]
+
+runtest = "export MATPLOTLIBRC=$PWD; echo 'backend: agg' > $MATPLOTLIBRC/matplotlibrc;"
+runtest += "python setup.py build_ext -i; nosetests -v"
+
+# fix permissions issue on files in share/molmod subdir
+postinstallcmds = ['chmod -R o+r %(installdir)s/share/molmod']
+
+sanity_check_paths = {
+    'files': [],
+    'dirs': ['lib/python%(pyshortver)s/site-packages/molmod'],
+}
+
+moduleclass = 'math'
