@@ -1,0 +1,77 @@
+# patch to work around the hideous build system of plumed. We use the values
+# EB sets in the build system.
+diff -urN plumed-2.0.4.orig/configurations/linux.icc plumed-2.0.4/configurations/linux.icc
+--- plumed-2.0.4.orig/configurations/linux.icc	2014-09-15 11:41:47.000000000 +0200
++++ plumed-2.0.4/configurations/linux.icc	2014-12-01 14:54:42.000000000 +0100
+@@ -2,21 +2,21 @@
+ #CHECK_BOUNDARIES=-D_GLIBCXX_DEBUG
+ 
+-LIBS=-ldl
++LIBS:=-ldl $(LIBS)
+-DYNAMIC_LIBS=-lstdc++ -llapack -lblas
++DYNAMIC_LIBS:=-lstdc++ $(LIBS) $(LIBLAPACK)
+ DOUBLEPRECISION=-r8
+ 
+-CPPFLAGS=-D__PLUMED_HAS_DLOPEN $(CHECK_BOUNDARIES) -I. $(PLUMED_INCLUDE)
+-CXXFLAGS=-O -fPIC -Wall -wd981,383,1418
+-CFLAGS=-O -fPIC -Wall
++CPPFLAGS:=-D__PLUMED_HAS_DLOPEN $(CHECK_BOUNDARIES) -I. $(PLUMED_INCLUDE) $(CPPFLAGS)
++CXXFLAGS:=-O -fPIC -Wall -wd981,383,1418 $(CXXFLAGS)
++CFLAGS:=-O -fPIC -Wall $(CFLAGS)
+ 
+-LDFLAGS=-rdynamic
++LDFLAGS:=-rdynamic $(LDFLAGS)
+ SOEXT=so
+-LDSO=icc -shared $(CFLAGS)
+-LD=icpc
+-LDF90=ifort
+-CXX=icpc
+-CC=icc
+-FC=ifort
++LDSO:=$(CC) -shared $(CFLAGS)
++LD:=$(CXX)
++LDF90:=$(F90)
++CXX:=$(CXX)
++CC:=$(CC)
++FC:=$(F77)
+ 
+ GCCDEP=g++
+ 
+--- plumed-2.0.4.orig/configurations/linux.mpi.icc  2015-06-30 10:02:14.000000000 +0200
++++ plumed-2.0.4/configurations/linux.mpi.icc       2015-09-11 16:32:00.543631846 +0200
+@@ -1,22 +1,23 @@
+ 
+ #CHECK_BOUNDARIES=-D_GLIBCXX_DEBUG
+ 
+-LIBS=-ldl 
+-DYNAMIC_LIBS=-lstdc++ -llapack -lblas
++
++LIBS:=-ldl $(LIBS)
++DYNAMIC_LIBS:=-lstdc++ $(LIBS) $(LIBLAPACK)
+ DOUBLEPRECISION=-r8
+ 
+-CPPFLAGS=-D__PLUMED_HAS_DLOPEN -D__PLUMED_MPI $(CHECK_BOUNDARIES) -I. $(PLUMED_INCLUDE)
+-CXXFLAGS=-O -fPIC -Wall -wd981,383,1418
+-CFLAGS=-O -fPIC -Wall
++CPPFLAGS:=-D__PLUMED_HAS_DLOPEN -D__PLUMED_MPI $(CHECK_BOUNDARIES) -I. $(PLUMED_INCLUDE) $(CPPFLAGS)
++CXXFLAGS:=-O -fPIC -Wall -wd981,383,1418 $(CXXFLAGS)
++CFLAGS:=-O -fPIC -Wall $(CFLAGS)
+ 
+-LDFLAGS=-rdynamic
++LDFLAGS:=-rdynamic $(LDFLAGS)
+ SOEXT=so
+-LDSO=mpicc -shared $(CFLAGS)
+-LD=mpic++
+-LDF90=mpif90
+-CXX=mpic++
+-CC=mpicc
+-FC=mpif90
++LDSO:=$(CC) -shared $(CFLAGS)
++LD:=$(CXX)
++LDF90:=$(F90)
++CXX:=$(CXX)
++CC:=$(CC)
++FC:=$(F77)
+ 
+ GCCDEP=mpic++
+ 

@@ -1,0 +1,45 @@
+##
+# This file is an EasyBuild reciPY as per https://github.com/hpcugent/easybuild
+#
+# Copyright:: Copyright 2012-2014 Uni.Lu/LCSB, NTUA
+# Authors::   Cedric Laczny <cedric.laczny@uni.lu>, Fotis Georgatos <fotis@cern.ch>
+# License::   MIT/GPL
+# $Id$
+#
+# This work implements a part of the HPCBIOS project and is a component of the policy:
+# http://hpcbios.readthedocs.org/en/latest/HPCBIOS_2012-94.html
+##
+
+name = 'Cufflinks'
+version = "1.3.0"
+
+homepage = 'http://cole-trapnell-lab.github.io/cufflinks/'
+description = """Transcript assembly, differential expression, and differential regulation for RNA-Seq"""
+
+toolchain = {'name': 'goolf', 'version': '1.4.10'}
+toolchainopts = {'optarch': True, 'pic': True}
+
+sources = [SOURCELOWER_TAR_GZ]
+source_urls = ['http://cole-trapnell-lab.github.io/cufflinks/assets/downloads/']
+
+dependencies = [
+    ('Boost', '1.51.0', '-Python-2.7.3'),
+    ('SAMtools', '0.1.18'),
+    ('Eigen', '3.1.1'),
+    ('zlib', '1.2.7'),
+]
+
+patches = [
+    'Cufflinks_GCC-4.7.patch',
+    'cufflinks-1.x-ldflags.patch'
+]
+
+preconfigopts = 'env CPPFLAGS="-I$EBROOTEIGEN/include $CPPFLAGS" LDFLAGS="-lboost_system $LDFLAGS" '
+configopts = '--with-boost=$EBROOTBOOST --with-bam-libdir=${EBROOTSAMTOOLS}/lib'
+
+sanity_check_paths = {
+    'files': ['bin/cufflinks'],
+    'dirs': []
+}
+
+moduleclass = 'bio'
