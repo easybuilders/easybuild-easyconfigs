@@ -1,0 +1,67 @@
+easyblock = 'ConfigureMake'
+
+name = 'Graphviz'
+version = '2.38.0'
+
+homepage = 'http://www.graphviz.org/'
+description = """Graphviz is open source graph visualization software. Graph visualization
+ is a way of representing structural information as diagrams of
+ abstract graphs and networks. It has important applications in networking,
+ bioinformatics,  software engineering, database and web design, machine learning,
+ and in visual interfaces for other technical domains."""
+
+toolchain = {'name': 'intel', 'version': '2014b'}
+
+source_urls = ['http://www.graphviz.org/pub/graphviz/stable/SOURCES/']
+sources = [SOURCELOWER_TAR_GZ]
+
+python = "Python"
+pythonversion = '2.7.8'
+
+dependencies = [
+    ('cairo', '1.12.18'),
+    ('expat', '2.1.0'),
+    ('freetype', '2.5.3'),
+    ('fontconfig', '2.11.1'),
+    ('Ghostscript', '9.14'),
+    ('GLib', '2.40.0'),
+    ('GTS', '0.7.6'),
+    ('Java', '1.7.0_60', '', True),
+    ('libpng', '1.6.12'),
+    ('Pango', '1.36.7'),
+    ('Perl', '5.20.0'),
+    (python, pythonversion),
+    ('Qt', '4.8.6'),
+    ('SWIG', '3.0.2', '-%s-%s' % (python, pythonversion)),
+    ('Tcl', '8.6.2'),
+    ('zlib', '1.2.8'),
+]
+
+builddependencies = [
+    ('M4', '1.4.17'),
+]
+
+patches = [
+    'Graphviz-2.38.0_icc_vmalloc.patch',
+    'Graphviz-2.38.0_icc_sfio.patch',
+]
+
+configopts = '--enable-guile=no --enable-lua=no --enable-ocaml=no '
+configopts += '--enable-r=no --enable-ruby=no '
+
+prebuildopts = 'qmake -o cmd/gvedit/qMakefile cmd/gvedit/gvedit.pro && '
+
+sanity_check_paths = {
+    'files': ['bin/cluster', 'bin/dot', 'bin/gvmap',
+              'lib/libcdt.%s' % SHLIB_EXT, 'lib/libgvc.%s' % SHLIB_EXT, 'lib/libxdot.%s' % SHLIB_EXT],
+    'dirs': ['include']
+}
+
+modextrapaths = {
+    'PYTHONPATH': 'lib/graphviz/python',
+    'CLASSPATH': 'lib/graphviz/java/org/graphviz',
+    'LD_LIBRARY_PATH': 'lib/graphviz/java',
+    'TCLLIBPATH': 'lib/graphviz/tcl',
+}
+
+moduleclass = 'vis'

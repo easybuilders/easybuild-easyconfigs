@@ -1,0 +1,29 @@
+inspired by qhull-2003.1-pkgconfig.patch, available from git://pkgs.fedoraproject.org/qhull
+requires making CMake to fill in the gaps via 'configure_file(... @ONLY)'
+author: Kenneth Hoste (UGent)
+--- qhull/CMakeLists.txt.orig	2015-09-21 15:27:38.424110227 +0200
++++ qhull/CMakeLists.txt	2015-09-21 15:27:06.403494984 +0200
+@@ -430,3 +430,9 @@
+ install(FILES html/rbox.man          DESTINATION ${MAN_INSTALL_DIR} RENAME rbox.1)
+ install(FILES ${doc_FILES}           DESTINATION ${DOC_INSTALL_DIR})
+ install(DIRECTORY html/              DESTINATION ${DOC_INSTALL_DIR})
++
++CONFIGURE_FILE(
++  "${CMAKE_CURRENT_SOURCE_DIR}/qhull.pc.in"
++  "${CMAKE_CURRENT_BINARY_DIR}/qhull.pc"
++)
++INSTALL(FILES "${CMAKE_BINARY_DIR}/qhull.pc"  DESTINATION lib/pkgconfig)
+--- qhull/qhull.pc.in	1970-01-01 01:00:00.000000000 +0100
++++ qhull/qhull.pc.in	2012-07-08 08:04:07.795336862 +0200
+@@ -0,0 +1,11 @@
++prefix=@CMAKE_INSTALL_PREFIX@
++exec_prefix=${prefix}
++includedir=${prefix}/include
++libdir=${prefix}/lib
++
++Name: qhull
++Description: General dimension convex hull library
++Version: @qhull_VERSION2@
++Requires:
++Libs: -L${libdir} -lqhull -lm
++Cflags: -I${includedir}

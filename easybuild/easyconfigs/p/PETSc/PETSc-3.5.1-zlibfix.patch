@@ -1,0 +1,14 @@
+# Solves the problem with zlib. On certain systems binutils issue "no version information available"
+# due to easybuild provided zlib. The patch filters out lines contaning "no version information available"
+# from stderr in case of ar. PETSc decides based on the extistence of sderr whether a given program failed or not.
+# B. Hajgato August 7th 2014
+--- config/BuildSystem/config/setCompilers.py.orig	2014-06-30 20:42:41.000000000 +0200
++++ config/BuildSystem/config/setCompilers.py	2014-08-07 15:20:31.999008215 +0200
+@@ -1115,6 +1115,7 @@
+     arcUnix    = os.path.join(self.tmpDir, 'libconf1.a')
+     arcWindows = os.path.join(self.tmpDir, 'libconf1.lib')
+     def checkArchive(command, status, output, error):
++      error = '\n'.join([errx for errx in error.split('\n') if "no version information available" not in errx])
+       if error or status:
+         self.logError('archiver', status, output, error)
+         if os.path.isfile(objName):

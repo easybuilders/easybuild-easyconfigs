@@ -1,0 +1,52 @@
+easyblock = 'CMakeMake'
+
+name = 'ParaView'
+version = '4.4.0'
+versionsuffix = '-mpi'
+
+homepage = "http://www.paraview.org"
+description = "ParaView is a scientific parallel visualizer."
+
+toolchain = {'name': 'intel', 'version': '2015b'}
+toolchainopts = {'pic': True, 'usempi': True}
+
+download_suffix = 'download.php?submit=Download&version=v%(version_major_minor)s&type=source&os=all&downloadFile='
+source_urls = ['http://www.paraview.org/paraview-downloads/%s' % download_suffix]
+sources = ["ParaView-v%(version)s-source.tar.gz"]
+
+patches = ['%(name)s-%(version)s_missingheader.patch']
+
+python = 'Python'
+pyver = '2.7.10'
+pysuff = '-%s-%s' % (python, pyver)
+dependencies = [
+    ('Mesa', '11.0.2', pysuff),
+    ('libGLU', '9.0.0'),
+    ('libXt', '1.1.5'),
+    ('Qt', '4.8.7'),
+    ('libXext', '1.3.3'),
+    ('libX11', '1.6.3', pysuff),
+    ('zlib', '1.2.8'),
+]
+
+builddependencies = [('CMake', '3.3.2')]
+
+separate_build_dir = True
+
+maxparallel = 4
+
+configopts = '-DPARAVIEW_INSTALL_DEVELOPMENT_FILES=ON -DVTK_OPENGL_HAS_OSMESA=ON -DPARAVIEW_USE_MPI=ON '
+configopts += '-DOPENGL_INCLUDE_DIR=$EBROOTMESA/include -DOPENGL_gl_LIBRARY=$EBROOTMESA/lib/libGL.so '
+configopts += '-DOSMESA_INCLUDE_DIR=$EBROOTMESA/include -DOSMESA_LIBRARY=$EBROOTMESA/lib/libOSMesa.so '
+# Without internet connection turn off testing (uncomment the following line)
+#configopts += '-DBUILD_TESTING=OFF '
+# Or consult https://gitlab.kitware.com/vtk/vtk/blob/master/Documentation/dev/git/data.md
+# and download ExternalData to $EASYBUILD_SOURCEPATH and adjust -DExternalData_OBJECT_STORES accordingly
+# Without internet connection, comment the following two lines (configopts and prebuildopts)
+configopts += '-DExternalData_OBJECT_STORES=%(builddir)s/ExternalData '
+# The ParaView server can be cranky, test downloads are quite often failing, especially in the case
+# of parallel downloads. Using ; insted of && gives a second chance to download the test files, if the
+# first serial attempt would fail.
+prebuildopts = 'make VTKData ;'
+
+moduleclass = 'vis'

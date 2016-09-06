@@ -1,0 +1,46 @@
+easyblock = 'EB_OpenFOAM'
+
+name = 'OpenFOAM-Extend'
+version = '3.0'
+versionsuffix = '-20140227'
+
+homepage = 'http://www.extend-project.de/'
+description = """OpenFOAM is a free, open source CFD software package. 
+OpenFOAM has an extensive range of features to solve anything from complex fluid flows
+involving chemical reactions, turbulence and heat transfer, 
+to solid dynamics and electromagnetics."""
+
+toolchain = {'name': 'goolf', 'version': '1.4.10'}
+
+sources = ['foam-extend-%(version)s%(versionsuffix)s.tar.gz']
+
+patches = [
+    'OpenFOAM-Extend-%(version)s_METIS-ParMGridGen.patch',
+    'OpenFOAM-Extend-%(version)s_comp-mpi.patch',
+    'OpenFOAM-Extend-%(version)s_build-qa.patch',
+]
+
+dependencies = [
+    ('hwloc', '1.6.2', '', ('GCC', '4.7.2')),
+    ('ParMETIS', '4.0.3'),
+    ('METIS', '5.0.2'),  # order matters, METIS need to be listed after ParMETIS to get $CPATH right
+    ('SCOTCH', '5.1.12b_esmumps'),
+    ('Mesquite', '2.3.0'),
+    ('ParMGridGen', '1.0'),
+    ('Python', '2.7.6'),
+    # Libccmio v2.6.1, zoltan v3.5
+]
+
+builddependencies = [
+    ('flex', '2.5.35'),
+    ('Bison', '2.5'),
+    ('M4', '1.4.16'),
+    ('CMake', '2.8.12'),
+]
+
+prebuildopts = "(wcleanAll || echo 'all is fine') && "  # clean up everything first (and ignore any errors)
+
+# too many builds in parallel actually slows down the build
+maxparallel = 4
+
+moduleclass = 'cae'
