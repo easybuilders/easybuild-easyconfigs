@@ -35,7 +35,6 @@ EasyBuild support for IronPython, implemented as an easyblock
 import os
 
 from easybuild.framework.easyblock import EasyBlock
-from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.run import run_cmd
 
 
@@ -46,8 +45,12 @@ class EB_IronPython(EasyBlock):
         """Custom constructor for IronPython easyblock, indicate building in installdir."""
         super(EB_IronPython, self).__init__(*args, **kwargs)
 
-        self.subdir = None
         self.build_in_installdir = True
+
+    def extract_step(self):
+        """Extract sources; strip off parent directory during unpack"""
+        self.cfg.update('unpack_options', "--strip-components=1")
+        super(EB_Amber, self).extract_step()
 
     def configure_step(self):
         """No dedicated configure step for IronPython."""
@@ -66,23 +69,17 @@ class EB_IronPython(EasyBlock):
     def sanity_check_step(self):
         """Custom sanity check for IronPython."""
 
-        binpath = os.path.join(self.subdir, "bin", "Release")
+        binpath = os.path.join('bin', 'Release')
         custom_paths = {
             'files': [os.path.join(binpath, x) for x in ['ipy.exe', 'ipy64.exe', 'ipyw.exe', 'ipyw64.exe']],
-            'dirs': [os.path.join(self.subdir, x) for x in ['Config', 'Runtime', 'Tools', 'Util']],
+            'dirs': ['Config', 'Runtime', 'Tools', 'Util'],
         }
         super(EB_IronPython, self).sanity_check_step(custom_paths=custom_paths)
 
     def make_module_req_guess(self):
         """Add IronPython binaries path to $PATH."""
-
-        try:
-            self.subdir = os.listdir(self.installdir)[0]
-        except OSError as err:
-            raise EasyBuildError("Failed to determine IronPython install subdir: %s", err)
-
         guesses = super(EB_IronPython, self).make_module_req_guess()
         guesses.update({
-            'PATH': [os.path.join(self.subdir, "bin", "Release")],
+            'PATH': [os.path.join('bin', 'Release')],
         })
         return guesses

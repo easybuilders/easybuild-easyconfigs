@@ -38,9 +38,7 @@ import sys
 
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.easyblocks.generic.rpm import Rpm
-from easybuild.framework.easyblock import EasyBlock
 from easybuild.tools.build_log import EasyBuildError
-from easybuild.tools.config import source_path
 from easybuild.tools.filetools import apply_regex_substitutions, read_file
 from easybuild.tools.run import run_cmd
 

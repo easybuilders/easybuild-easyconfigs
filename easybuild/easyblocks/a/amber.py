@@ -189,7 +189,7 @@ class EB_Amber(ConfigureMake):
             if self.cfg['runtest']:
                 run_cmd("make %s" % testrule, log_all=True, simple=False)
 
-            # clean to prepare for next iteration
+            # clean, overruling the normal 'build'
             run_cmd("make clean")
 
     def sanity_check_step(self):
