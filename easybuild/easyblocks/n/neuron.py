@@ -39,6 +39,8 @@ from easybuild.tools.modules import get_software_root
 from easybuild.tools.run import run_cmd
 from easybuild.tools.systemtools import get_shared_lib_ext
 
+from distutils.version import LooseVersion
+
 
 class EB_NEURON(ConfigureMake):
     """Support for building/installing NEURON."""
@@ -57,6 +59,7 @@ class EB_NEURON(ConfigureMake):
 
         extra_vars = {
             'paranrn': [True, "Enable support for distributed simulations.", CUSTOM],
+            'enable_tests': [True, "Enable extensive testing in the sanity check step.", CUSTOM],
         }
         return ConfigureMake.extra_options(extra_vars)
 
@@ -120,10 +123,17 @@ class EB_NEURON(ConfigureMake):
         shlib_ext = get_shared_lib_ext()
         binpath = os.path.join(self.hostcpu, 'bin')
         libpath = os.path.join(self.hostcpu, 'lib', 'lib%s.' + shlib_ext)
+        binaries = ["bbswork.sh", "hel2mos1.sh", "ivoc", "memacs", "mkthreadsafe", "modlunit", "mos2nrn", 
+                    "mos2nrn2.sh", "neurondemo", "nocmodl", "oc"]
+
+        # hoc_ed is not included in the sources of 7.4. However, it is included in the binary distribution.
+        # Nevertheless, the binary has a date old enough (June 2014, instead of November 2015 like all the
+        # others) to be considered a mistake in the distribution
+        if LooseVersion(self.version) < LooseVersion('7.4'):
+            binaries.append("hoc_ed")
+
         custom_paths = {
-            'files': [os.path.join(binpath, x) for x in ["bbswork.sh", "hel2mos1.sh", "hoc_ed", "ivoc", "memacs",
-                                                         "mkthreadsafe", "modlunit", "mos2nrn", "mos2nrn2.sh",
-                                                         "neurondemo", "nocmodl", "oc"]] +
+            'files': [os.path.join(binpath, x) for x in binaries] +
                      [os.path.join(binpath, "nrn%s" % x) for x in ["gui", "iv", "iv_makefile", "ivmodl",
                                                                    "mech_makefile", "oc", "oc_makefile", "ocmodl"]] +
                      [libpath % x for x in ["ivoc", "ivos", "memacs", "meschach", "neuron_gnu", "nrniv", "nrnmpi",
@@ -132,56 +142,58 @@ class EB_NEURON(ConfigureMake):
         }
         super(EB_NEURON, self).sanity_check_step(custom_paths=custom_paths)
 
-        try:
-            fake_mod_data = self.load_fake_module()
-        except EasyBuildError, err:
-            self.log.debug("Loading fake module failed: %s" % err)
+        # Perform extra checks
+        if self.cfg['enable_tests']:
+            try:
+                fake_mod_data = self.load_fake_module()
+            except EasyBuildError, err:
+                self.log.debug("Loading fake module failed: %s" % err)
 
-        # test NEURON demo
-        inp = '\n'.join([
-                         "demo(3) // load the pyramidal cell model.",
-                         "init()  // initialise the model",
-                         "t       // should be zero",
-                         "soma.v  // will print -65",
-                         "run()   // run the simulation",
-                         "t       // should be 5, indicating that 5ms were simulated",
-                         "soma.v  // will print a value other than -65, indicating that the simulation was executed",
-                         "quit()",
-                        ])
-        (out, ec) = run_cmd("neurondemo", simple=False, log_all=True, log_output=True, inp=inp)
+            # test NEURON demo
+            inp = '\n'.join([
+                             "demo(3) // load the pyramidal cell model.",
+                             "init()  // initialise the model",
+                             "t       // should be zero",
+                             "soma.v  // will print -65",
+                             "run()   // run the simulation",
+                             "t       // should be 5, indicating that 5ms were simulated",
+                             "soma.v  // will print a value other than -65, indicating that the simulation was executed",
+                             "quit()",
+                            ])
+            (out, ec) = run_cmd("neurondemo", simple=False, log_all=True, log_output=True, inp=inp)
 
-        validate_regexp = re.compile("^\s+-65\s*\n\s+5\s*\n\s+-68.134337", re.M)
-        if ec or not validate_regexp.search(out):
-            raise EasyBuildError("Validation of NEURON demo run failed.")
-        else:
-            self.log.info("Validation of NEURON demo OK!")
+            validate_regexp = re.compile("^\s+-65\s*\n\s+5\s*\n\s+-68.134337", re.M)
+            if ec or not validate_regexp.search(out):
+                raise EasyBuildError("Validation of NEURON demo run failed.")
+            else:
+                self.log.info("Validation of NEURON demo OK!")
 
-        nproc = self.cfg['parallel']
+            nproc = self.cfg['parallel']
 
-        try:
-            cwd = os.getcwd()
-            os.chdir(os.path.join(self.cfg['start_dir'], 'src', 'parallel'))
+            try:
+                cwd = os.getcwd()
+                os.chdir(os.path.join(self.cfg['start_dir'], 'src', 'parallel'))
 
-            cmd = self.toolchain.mpi_cmd_for("nrniv -mpi test0.hoc", nproc)
-            (out, ec) = run_cmd(cmd, simple=False, log_all=True, log_output=True)
+                cmd = self.toolchain.mpi_cmd_for("nrniv -mpi test0.hoc", nproc)
+                (out, ec) = run_cmd(cmd, simple=False, log_all=True, log_output=True)
 
-            os.chdir(cwd)
-        except OSError, err:
-            raise EasyBuildError("Failed to run parallel hello world: %s", err)
+                os.chdir(cwd)
+            except OSError, err:
+                raise EasyBuildError("Failed to run parallel hello world: %s", err)
 
-        valid = True
-        for i in range(0, nproc):
-            validate_regexp = re.compile("I am %d of %d" % (i, nproc))
-            if not validate_regexp.search(out):
-                valid = False
-                break
-        if ec or not valid:
-            raise EasyBuildError("Validation of parallel hello world run failed.")
-        else:
-            self.log.info("Parallel hello world OK!")
+            valid = True
+            for i in range(0, nproc):
+                validate_regexp = re.compile("I am %d of %d" % (i, nproc))
+                if not validate_regexp.search(out):
+                    valid = False
+                    break
+            if ec or not valid:
+                raise EasyBuildError("Validation of parallel hello world run failed.")
+            else:
+                self.log.info("Parallel hello world OK!")
 
-        # cleanup
-        self.clean_up_fake_module(fake_mod_data)
+            # cleanup
+            self.clean_up_fake_module(fake_mod_data)
 
     def make_module_req_guess(self):
         """Custom guesses for environment variables (PATH, ...) for NEURON."""
