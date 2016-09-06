@@ -1,0 +1,34 @@
+# This file is an EasyBuild reciPY as per https://github.com/hpcugent/easybuild
+# Author: Bart Verleye
+# Center for eResearch, Auckland
+easyblock = 'ConfigureMakePythonPackage'
+
+name = 'SIP'
+version = '4.16.8'
+
+homepage = 'http://www.riverbankcomputing.com/software/sip/'
+description = """SIP is a tool that makes it very easy to create Python bindings for C and C++ libraries."""
+
+toolchain = {'name': 'foss', 'version': '2015a'}
+
+sources = [SOURCELOWER_TAR_GZ]
+source_urls = ['http://sourceforge.net/projects/pyqt/files/sip/sip-%(version)s']
+
+python = 'Python'
+pyver = '2.7.9'
+versionsuffix = '-%s-%s' % (python, pyver)
+
+dependencies = [(python, pyver)]
+
+pyshortver = '.'.join(pyver.split('.')[:2])
+configopts = "configure.py --bindir %(installdir)s/bin --incdir %(installdir)s/include "
+configopts += "--destdir %%(installdir)s/lib/python%s/site-packages" % pyshortver
+
+sanity_check_paths = {
+    'files': ['bin/sip', 'include/sip.h'] +
+             ['lib/python%s/site-packages/%s' % (pyshortver, x)
+              for x in ['sip.%s' % SHLIB_EXT, 'sipconfig.py', 'sipdistutils.py']],
+    'dirs': [],
+}
+
+moduleclass = 'lang'

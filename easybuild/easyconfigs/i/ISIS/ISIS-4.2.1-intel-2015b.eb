@@ -1,0 +1,52 @@
+easyblock = 'ConfigureMake'
+
+name = 'ISIS'
+version = '4.2.1'
+
+homepage = 'https://gforge.irsn.fr/gf/project/isis/'
+description = """ISIS is Computational Fluid Dynamics software based on CALIF3S and PELICANS libraries. It is
+ intensively used for simulation of fires and copes with a wide range of applications, including laminar or turbulent
+ flows, possibly reactive, governed by incompressible or low Mach number Navier-Stokes equations."""
+
+toolchain = {'name': 'intel', 'version': '2015b'}
+# disable optimizing for host architecture, may cause tests to fail due to issues with result validation
+toolchainopts = {'optarch': False}
+
+source_urls = ['https://gforge.irsn.fr/gf/download/frsrelease/3626/39835/']
+sources = [SOURCELOWER_TGZ]
+
+patches = [
+    'ISIS-%(version)s_impi.patch',
+    'ISIS-%(version)s_specify-system-in-tests.patch',
+]
+
+dependencies = [('METIS', '4.0.3')]
+
+skipsteps = ['configure', 'install']
+
+unpack_options = '--strip-components=1'
+buildininstalldir = True
+
+# options used both in build and test step
+commonopts = 'CCC="$CC" ISISHOME=%(installdir)s/ISIS '
+commonopts += 'WITH_MPI=1 MPIRUN=$EBROOTIMPI/bin64/mpiexec.hydra '
+commonopts += 'WITH_METIS=1 METISPATH=$EBROOTMETIS/lib '
+
+buildopts = "install LICENSE=accept " + commonopts
+
+parallel = 1
+
+runtest = 'test ' + commonopts
+runtest += '&& make test_install ' + commonopts
+runtest += '&& make test_MPI ' + commonopts
+runtest += '&& make test_METIS ' + commonopts
+
+binaries = ['isis', 'isis_batch', 'isis_run', 'isis_s2c', 'isis_sylvia']
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in ['init.csh', 'init.sh', 'xisis'] + binaries],
+    'dirs': ['CALIFS', 'ISIS', 'PELICANS'],
+}
+
+modextrapaths = {'ISISHOME': 'ISIS'}
+
+moduleclass = 'cae'

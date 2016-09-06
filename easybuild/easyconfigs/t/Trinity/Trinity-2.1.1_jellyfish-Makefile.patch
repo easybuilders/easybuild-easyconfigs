@@ -1,0 +1,30 @@
+use EasyBuild-provided zlib, don't hardcode gcc/g++ for jellyfish plugin
+authors: B. Hajgato (Vrije Universiteit Brussel), Kenneth Hoste (HPC-UGent)
+--- trinityrnaseq-2.1.1/trinity-plugins/Makefile.orig	2015-10-15 14:07:11.000000000 +0200
++++ trinityrnaseq-2.1.1/trinity-plugins/Makefile	2016-01-12 13:42:35.197202000 +0100
+@@ -2,6 +2,9 @@
+ JELLYFISH_CODE="jellyfish-2.1.4"
+ HTSLIB_CODE="htslib.github.Aug182015.tar.gz"
+ 
++CC?=gcc
++CXX?=g++
++
+ #######################
+ ### Required by Trinity
+ #######################
+@@ -18,12 +21,13 @@
+ 
+ samtools:
+ 	tar xvf samtools-0.1.19.tar.bz2
+-	cd samtools-0.1.19 && $(MAKE) LIBPATH=-ltinfo
++	sed -e 's/ -lz/ -L\$$\{EBROOTZLIB\}\/lib -lz/' -i samtools-0.1.19/misc/Makefile
++	cd samtools-0.1.19 && $(MAKE) LIBPATH=-L${EBROOTZLIB}/lib 
+ 	mv samtools-0.1.19/samtools ./BIN/.
+ 
+ jellyfish:
+ 	tar -zxvf ${JELLYFISH_CODE}.tar.gz && ln -sf ${JELLYFISH_CODE} tmp.jellyfish
+-	cd ./tmp.jellyfish/ && ./configure CC=gcc CXX=g++ --enable-static --disable-shared --prefix=`pwd` && $(MAKE) LDFLAGS="-lpthread -all-static" AM_CPPFLAGS="-Wall -Wnon-virtual-dtor -I"`pwd`"/include"
++	cd ./tmp.jellyfish/ && ./configure CC=$(CC) CXX=$(CXX) --enable-static --disable-shared --prefix=`pwd` && $(MAKE) LDFLAGS="-lpthread -all-static" AM_CPPFLAGS="-Wall -Wnon-virtual-dtor -I"`pwd`"/include"
+ 	mv tmp.jellyfish jellyfish
+ 
+ htslib_target:

@@ -1,0 +1,225 @@
+add support for using netCDF and netCDF-Fortran installations in separate paths
+author: Kenneth Hoste (HPC-UGent)
+diff -ru WRFV3.orig/arch/Config_new.pl WRFV3/arch/Config_new.pl
+--- WRFV3.orig/arch/Config_new.pl	2015-12-11 19:38:11.000000000 +0100
++++ WRFV3/arch/Config_new.pl	2016-04-27 12:07:59.419553000 +0200
+@@ -8,6 +8,7 @@
+ select((select(STDOUT), $|=1)[0]);
+ $sw_perl_path = perl ;
+ $sw_netcdf_path = "" ;
++$sw_netcdff_path = "" ; # for netCDF 4.2 and greater, Fortran lib may be in a different path
+ $sw_pnetcdf_path = "" ;
+ $sw_hdf5_path=""; 
+ $sw_phdf5_path=""; 
+@@ -87,6 +88,10 @@
+           }
+       }
+   }
++  if ( substr( $ARGV[0], 1, 8 ) eq "netcdff=" )
++  {
++    $sw_netcdff_path = substr( $ARGV[0], 9 ) ;
++  }
+   if ( substr( $ARGV[0], 1, 8 ) eq "pnetcdf=" )
+   {
+     $sw_pnetcdf_path = substr( $ARGV[0], 9 ) ;
+@@ -114,6 +119,7 @@
+   if ( substr( $ARGV[0], 1, 11 ) eq "USENETCDFF=" )
+   {
+     $sw_usenetcdff = substr( $ARGV[0], 12 ) ;
++    $sw_usenetcdff =~ s/!/ /g ;
+   }
+   if ( substr( $ARGV[0], 1, 10 ) eq "USENETCDF=" )
+   {
+@@ -417,6 +423,7 @@
+   {
+     $_ =~ s/CONFIGURE_PERL_PATH/$sw_perl_path/g ;
+     $_ =~ s/CONFIGURE_NETCDF_PATH/$sw_netcdf_path/g ;
++    $_ =~ s/CONFIGURE_NETCDFF_PATH/$sw_netcdff_path/g ;
+     $_ =~ s/CONFIGURE_PNETCDF_PATH/$sw_pnetcdf_path/g ;
+     $_ =~ s/CONFIGURE_HDF5_PATH/$sw_hdf5_path/g ;
+     $_ =~ s/CONFIGURE_PHDF5_PATH/$sw_phdf5_path/g ;
+Only in WRFV3/arch: Config_new.pl.orig
+diff -ru WRFV3.orig/arch/configure_new.defaults WRFV3/arch/configure_new.defaults
+--- WRFV3.orig/arch/configure_new.defaults	2016-02-29 07:22:29.000000000 +0100
++++ WRFV3/arch/configure_new.defaults	2016-04-27 12:07:59.429182000 +0200
+@@ -1626,6 +1626,7 @@
+ 
+ LIB_EXTERNAL    = \
+                      ../external/io_netcdf/libwrfio_nf.a CONFIGURE_NETCDF_PATH/lib/libnetcdf.lib \
++                     CONFIGURE_NETCDFF_PATH/lib/libnetcdff.lib \
+                      ../external/wavelet/libWavelet.a ../external/wavelet/lib_wavelet.a
+ ESMF_IO_LIB     =    ../external/esmf_time_f90/libesmf_time.a
+ LIB_BUNDLED     = \
+Only in WRFV3/arch: configure_new.defaults.orig
+diff -ru WRFV3.orig/arch/conf_tokens WRFV3/arch/conf_tokens
+--- WRFV3.orig/arch/conf_tokens	2008-02-26 16:39:38.000000000 +0100
++++ WRFV3/arch/conf_tokens	2016-04-27 12:07:59.435906000 +0200
+@@ -5,6 +5,7 @@
+        CONFIGURE_DMPARALLEL
+ CONFIGURE_RWORDSIZE
+ CONFIGURE_NETCDF_FLAG
++CONFIGURE_NETCDF_FLAG
+ CONFIGURE_GRIB2_FLAG
+ CONFIGURE_NETCDF_LIB_PATH
+ CONFIGURE_GRIB2_LIB
+@@ -13,4 +14,5 @@
+ CONFIGURE_WRFIO_NF 
+ CONFIGURE_WRFIO_GRIB2 
+ CONFIGURE_NETCDF_PATH
++CONFIGURE_NETCDFF_PATH
+ CONFIGURE_GRIB2_INC
+diff -ru WRFV3.orig/arch/postamble_new WRFV3/arch/postamble_new
+--- WRFV3.orig/arch/postamble_new	2016-02-05 22:22:09.000000000 +0100
++++ WRFV3/arch/postamble_new	2016-04-27 12:08:58.368686000 +0200
+@@ -45,6 +45,7 @@
+                       -I$(WRF_SRC_ROOT_DIR)/phys \
+                       -I$(WRF_SRC_ROOT_DIR)/chem -I$(WRF_SRC_ROOT_DIR)/inc \
+                       -I$(NETCDFPATH)/include \
++                      -I$(NETCDFFPATH)/include \
+                       CONFIGURE_RTTOV_INC
+ REGISTRY        =    Registry
+ CC_TOOLS_CFLAGS = CONFIGURE_NMM_CORE
+@@ -67,6 +68,7 @@
+ ENVCOMPDEFS     =    CONFIGURE_COMPILEFLAGS
+ CPPFLAGS        =    $(ARCHFLAGS) $(ENVCOMPDEFS) -I$(LIBINCLUDE) $(TRADFLAG) CONFIGURE_COMMS_INCLUDE
+ NETCDFPATH      =    CONFIGURE_NETCDF_PATH
+++NETCDFFPATH     =    CONFIGURE_NETCDFF_PATH
+ HDF5PATH        =    CONFIGURE_HDF5_PATH
+ WRFPLUSPATH     =    CONFIGURE_WRFPLUS_PATH
+ PNETCDFPATH     =    CONFIGURE_PNETCDF_PATH
+@@ -97,7 +99,7 @@
+ 
+ wrfio_nf : 
+ 	( cd $(WRF_SRC_ROOT_DIR)/external/io_netcdf ; \
+-          make $(J) NETCDFPATH="$(NETCDFPATH)" RANLIB="$(RANLIB)" CPP="$(CPP)" \
++          make $(J) NETCDFPATH="$(NETCDFPATH)" NETCDFFPATH="$(NETCDFFPATH)" RANLIB="$(RANLIB)" CPP="$(CPP)" \
+           CC="$(SCC)" CFLAGS="$(CFLAGS)" \
+           FC="$(SFC) $(PROMOTION) $(OMP) $(FCFLAGS)" TRADFLAG="$(TRADFLAG)" AR="$(AR)" ARFLAGS="$(ARFLAGS)" )
+ 
+Only in WRFV3/arch: postamble_new.orig
+Only in WRFV3/arch: postamble_new.rej
+diff -ru WRFV3.orig/configure WRFV3/configure
+--- WRFV3.orig/configure	2015-12-11 19:38:11.000000000 +0100
++++ WRFV3/configure	2016-04-27 12:58:24.475136000 +0200
+@@ -287,16 +287,28 @@
+ USENETCDFF=""  # see below
+ if [ -n "$NETCDF" ] ; then
+   echo "Will use NETCDF in dir: $NETCDF"
++  # for netCDF 4.2 and greater, the Fortran library is a separate install
++  if [ -z "$NETCDFF" ]; then
++    NETCDFF="$NETCDFF"
++  fi
+ # Oh UNIDATA, why make it so hard ...
+   if [ -f "$NETCDF/lib/libnetcdff.a" -o -f "$NETCDF/lib/libnetcdff.so" ] ; then
+     USENETCDFF="-lnetcdff"
+   else
+-    USENETCDFF=" "
++     if [ -f "$NETCDFF/lib/libnetcdff.a" -o -f "$NETCDFF/lib/libnetcdff.so" -o -f "$NETCDFF/lib64/libnetcdff.so" -o -f "$NETCDFF/lib64/libnetcdff.so" ] ; then
++       USENETCDFF="-L$NETCDFF/lib!-L$NETCDFF/lib64!-lnetcdff" # ! will be replaced with space
++     else
++       USENETCDFF=" "
++     fi
+   fi
+   if [ -f "$NETCDF/lib/libnetcdf.a" -o -f "$NETCDF/lib/libnetcdf.so" ] ; then
+     USENETCDF="-lnetcdf"
+   else
+-    USENETCDF=" "
++    if [ -f "$NETCDF/lib/libnetcdf.a" -o -f "$NETCDF/lib/libnetcdf.so" -o -f "$NETCDF/lib64/libnetcdf.a" -o -f "$NETCDF/lib64/libnetcdf.so" ] ; then
++      USENETCDF="-L$NETCDF/lib!-L$NETCDF/lib64!-lnetcdf" # ! will be replaced with space
++    else
++      USENETCDF=" "
++    fi
+   fi
+ else
+   echo "Will configure for use without NetCDF"
+@@ -595,7 +607,7 @@
+    srch=`grep -i "^#ARCH.*$os" arch/configure_new.defaults | grep -i "$mach"`
+    if [ -n "$srch" ] ; then
+      $PERL arch/Config_new.pl -dmparallel=$COMMLIB -ompparallel=$OMP -perl=$PERL \
+-          -netcdf=$NETCDF -pnetcdf=$PNETCDF -hdf5=$HDF5 -phdf5=$PHDF5 -os=$os -mach=$mach -ldflags=$ldflags \
++          -netcdf=$NETCDF -netcdff=$NETCDFF -pnetcdf=$PNETCDF -phdf5=$PHDF5 -os=$os -mach=$mach -ldflags=$ldflags \
+           -compileflags=$compileflags -opt_level=$opt_level -USENETCDFF=$USENETCDFF -USENETCDF=$USENETCDF \
+           -time=$FORTRAN_COMPILER_TIMER \
+           -wrf_core=$wrf_core -gpfs=$GPFS_PATH -curl=$CURL_PATH -dep_lib_path="$DEP_LIB_PATH"
+@@ -707,10 +719,10 @@
+ echo "If you wish to change the default options, edit the file:"
+ echo "     arch/configure_new.defaults"
+ 
+-if test -n "$NETCDF" ; then
+-  if [ ! -f $NETCDF/include/netcdf.inc ] ; then
++if test -n "$NETCDFF" ; then
++  if [ ! -f $NETCDFF/include/netcdf.inc ] ; then
+     echo
+-    echo "Error : Not found $NETCDF/include/netcdf.inc"
++    echo "Error : Not found $NETCDFF/include/netcdf.inc"
+     echo "        Please check this installation of NetCDF and re-run this configure script"
+     echo
+     if test -n "$NETCDF4" ; then
+@@ -719,7 +731,7 @@
+     fi
+     exit -1
+   fi
+-  grep nf_format_64bit $NETCDF/include/netcdf.inc > /dev/null
++  grep nf_format_64bit $NETCDFF/include/netcdf.inc > /dev/null
+   configure_aaaa=$? ; export configure_aaaa
+   if [ $configure_aaaa -a -z "$WRFIO_NCD_LARGE_FILE_SUPPORT" ] ; then
+     echo "NetCDF users note:"
+Only in WRFV3: configure.orig
+Only in WRFV3: configure.rej
+diff -ru WRFV3.orig/external/io_netcdf/makefile WRFV3/external/io_netcdf/makefile
+--- WRFV3.orig/external/io_netcdf/makefile	2014-07-13 01:39:10.000000000 +0200
++++ WRFV3/external/io_netcdf/makefile	2016-04-27 12:07:59.490731000 +0200
+@@ -3,9 +3,9 @@
+ OBJSL   = wrf_io.o field_routines.o module_wrfsi_static.o
+ OBJS    = $(OBJSL)
+ CODE    = ext_ncd_get_dom_ti.code ext_ncd_get_var_td.code ext_ncd_get_var_ti.code ext_ncd_put_dom_ti.code ext_ncd_put_var_td.code ext_ncd_put_var_ti.code transpose.code 
+-FFLAGS  =  $(FCFLAGS) -I$(NETCDFPATH)/include -I../ioapi_share
+-LIBS    = $(LIB_LOCAL) -L$(NETCDFPATH)/lib -lnetcdf
+-LIBFFS  = $(LIB_LOCAL) -L$(NETCDFPATH)/lib -lnetcdff -lnetcdf $(NETCDF4_DEP_LIB)
++FFLAGS  =  $(FCFLAGS) -I$(NETCDFFPATH)/include -I../ioapi_share
++LIBS    = $(LIB_LOCAL) -L$(NETCDFPATH)/lib -L$(NETCDFPATH)/lib64 -lnetcdf
++LIBFFS  = $(LIB_LOCAL) -L$(NETCDFPATH)/lib -L$(NETCDFPATH)/lib64 -L$(NETCDFFPATH)/lib -L$(NETCDFFPATH)/lib64 -lnetcdff -lnetcdf $(NETCDF4_DEP_LIB)
+ CPP1    = $(CPP) -P $(TRADFLAG)
+ M4      = m4 -Uinclude -Uindex -Ulen
+ AR      = ar
+@@ -24,7 +24,7 @@
+ 			$(RANLIB) $@
+ 
+ wrf_io.o:               wrf_io.F90 $(CODE)
+-			grep nf_format_64bit $(NETCDFPATH)/include/netcdf.inc ;\
++			grep nf_format_64bit $(NETCDFFPATH)/include/netcdf.inc ;\
+                         a=$$? ; export a ; \
+ 			if [ $$a -a "$$WRFIO_NCD_LARGE_FILE_SUPPORT" = "1" ] ; then \
+                           $(CPP1) -DWRFIO_NCD_LARGE_FILE_SUPPORT -I../ioapi_share wrf_io.F90 | $(M4) - > wrf_io.f ; \
+@@ -43,14 +43,14 @@
+ 	x=`echo "$(FC)" | awk '{print $$1}'` ; export x ; \
+ 	if [ $$x = "gfortran" ] ; then \
+            echo removing external declaration of iargc for gfortran ; \
+-	   $(CPP1) -I$(NETCDFPATH)/include -I../ioapi_share diffwrf.F90 | sed '/integer *, *external.*iargc/d' > diffwrf.f ;\
++	   $(CPP1) -I$(NETCDFFPATH)/include -I../ioapi_share diffwrf.F90 | sed '/integer *, *external.*iargc/d' > diffwrf.f ;\
+         else \
+-	   $(CPP1) -I$(NETCDFPATH)/include -I../ioapi_share diffwrf.F90 > diffwrf.f ; \
++	   $(CPP1) -I$(NETCDFFPATH)/include -I../ioapi_share diffwrf.F90 > diffwrf.f ; \
+         fi
+ 	$(FC) -c $(FFLAGS) diffwrf.f
+ 	@if [ \( -f ../../frame/wrf_debug.o \) -a \( -f ../../frame/module_wrf_error.o \) -a \( -f $(ESMF_MOD_DEPENDENCE) \) -a \( -f ../../frame/clog.o \) ] ; then \
+ 	  echo "diffwrf io_netcdf is being built now. " ; \
+-          if [ \( -f $(NETCDFPATH)/lib/libnetcdff.a -o -f $(NETCDFPATH)/lib/libnetcdff.so \) ] ; then \
++          if [ \( -f $(NETCDFFPATH)/lib/libnetcdff.a -o -f $(NETCDFFPATH)/lib/libnetcdff.so -o -f $(NETCDFFPATH)/lib64/libnetcdff.a -o -f $(NETCDFFPATH)/lib64/libnetcdff.so \) ] ; then \
+             $(FC) $(FFLAGS) $(LDFLAGS) -o diffwrf diffwrf.o $(OBJSL) ../../frame/wrf_debug.o ../../frame/module_wrf_error.o ../../frame/clog.o $(ESMF_IO_LIB_EXT) $(LIBFFS) ;\
+           else \
+             $(FC) $(FFLAGS) $(LDFLAGS) -o diffwrf diffwrf.o $(OBJSL) ../../frame/wrf_debug.o ../../frame/module_wrf_error.o ../../frame/clog.o $(ESMF_IO_LIB_EXT) $(LIBS) ;\
+diff -ru WRFV3.orig/Makefile WRFV3/Makefile
+--- WRFV3.orig/Makefile	2016-03-11 18:47:37.000000000 +0100
++++ WRFV3/Makefile	2016-04-27 12:09:30.391608000 +0200
+@@ -867,7 +867,7 @@
+ 	@ echo '--------------------------------------'
+ 	( cd frame ; $(MAKE) $(J) framework; \
+           cd ../external/io_netcdf ; \
+-          $(MAKE) NETCDFPATH="$(NETCDFPATH)" FC="$(FC) $(FCBASEOPTS)" RANLIB="$(RANLIB)" \
++          $(MAKE) NETCDFPATH="$(NETCDFPATH)" NETCDFFPATH="$(NETCDFFPATH)" FC="$(SFC) $(FCBASEOPTS)" RANLIB="$(RANLIB)" \
+                CPP="$(CPP)" LDFLAGS="$(LDFLAGS)" TRADFLAG="$(TRADFLAG)" ESMF_IO_LIB_EXT="$(ESMF_IO_LIB_EXT)" \
+ 	       LIB_LOCAL="$(LIB_LOCAL)" \
+                ESMF_MOD_DEPENDENCE="$(ESMF_MOD_DEPENDENCE)" AR="INTERNAL_BUILD_ERROR_SHOULD_NOT_NEED_AR" diffwrf; \
+Only in WRFV3: Makefile.orig
+Only in WRFV3: Makefile.rej

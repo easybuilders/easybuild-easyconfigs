@@ -1,0 +1,66 @@
+easyblock = 'ConfigureMake'
+
+name = 'AFNI'
+version = '20150717'
+
+homepage = 'http://afni.nimh.nih.gov/'
+description = """AFNI is a set of C programs for processing, analyzing, and displaying functional MRI (FMRI) data -
+ a technique for mapping human brain activity."""
+
+toolchain = {'name': 'intel', 'version': '2015a'}
+toolchainopts = {'openmp': True, 'pic': True}
+
+# download afni_src.tgz manually from http://afni.nimh.nih.gov/pub/dist/tgz/, and rename to include datestamp
+# detailed release notes are available at http://afni.nimh.nih.gov/pub/dist/doc/misc/history/afni_hist_level1_all.html
+# but last update doesn't match datestamp of most recent afni_src.tgz?
+sources = ['afni_src-%(version)s.tgz']
+checksums = ['985ce725a68c7b498e3402fd52b41811']
+
+patches = ['AFNI-%(version)s_omp-pragma-statement-fix.patch']
+
+libx11suff = '-libX11-1.6.3'
+
+pyver = '2.7.9'
+majpyver = '.'.join(pyver.split('.')[:2])
+dependencies = [
+    ('tcsh', '6.19.00'),
+    ('libXp', '1.0.3'),
+    ('libXt', '1.1.4', libx11suff),
+    ('libXpm', '3.5.11'),
+    ('libXmu', '1.1.2', libx11suff),
+    ('motif', '2.3.4', libx11suff),
+    ('R', '3.1.2'),
+    ('PyQt', '4.11.4', '-Python-%s' % pyver),
+    ('expat', '2.1.0'),
+    ('libpng', '1.6.16'),
+    ('libjpeg-turbo', '1.4.0'),
+    ('GSL', '1.16'),
+    ('GLib', '2.40.0'),  # must match version used in Qt (via PyQt)
+    ('zlib', '1.2.8'),
+]
+
+skipsteps = ['configure', 'install']
+
+prebuildopts = "cp Makefile.linux_openmp_64 Makefile && "
+buildopts = 'totality LGIFTI="$EBROOTEXPAT/lib/libexpat.a" LDPYTHON="-lpython%s" ' % majpyver
+buildopts += 'CC="${CC} ${CFLAGS} -fPIC -DREAD_WRITE_64 -DLINUX2 \$(CEXTRA)" '
+buildopts += 'CCVOL="${CC} ${CFLAGS} -fPIC -DREAD_WRITE_64 -DLINUX2 \$(CEXTRA)" '
+buildopts += 'CCFAST="${CC} ${CFLAGS} -fPIC -DREAD_WRITE_64 -DLINUX2 \$(CEXTRA)" '
+buildopts += 'CCOLD="${CC} ${CFLAGS} -fPIC -DREAD_WRITE_64 -DLINUX2 \$(CEXTRA)" '
+buildopts += 'CCMIN="${CC} ${CFLAGS} -fPIC -DREAD_WRITE_64 -DLINUX2 \$(CEXTRA)" '
+buildopts += 'CCSVD="${CC} ${CFLAGS} -fPIC -DREAD_WRITE_64 -DLINUX2 \$(CEXTRA)" '
+buildopts += 'LD="${CC} \$(CPROF)" LZLIB="${EBROOTZLIB}/lib/libz.a" XLIBS="-lXm -lXt" '
+buildopts += 'IFLAGS="-I. -I$EBROOTPYTHON/include/python%s ' % majpyver
+buildopts += '-I$EBROOTGLIB/lib/glib-2.0/include -I$EBROOTGLIB/include/glib-2.0"'
+buildopts += ' INSTALLDIR=%(installdir)s'
+
+parallel = 1
+
+modextrapaths = {'PATH': ['']}
+
+sanity_check_paths = {
+    'files': ['afni'],
+    'dirs': [],
+}
+
+moduleclass = 'bio'

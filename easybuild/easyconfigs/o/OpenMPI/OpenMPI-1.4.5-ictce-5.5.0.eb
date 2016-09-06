@@ -1,0 +1,36 @@
+easyblock = 'ConfigureMake'
+
+name = 'OpenMPI'
+version = "1.4.5"
+
+homepage = 'http://www.open-mpi.org/'
+description = """The Open MPI Project is an open source MPI-2 implementation."""
+
+toolchain = {'name': 'ictce', 'version': '5.5.0'}
+
+sources = [SOURCELOWER_TAR_GZ]
+source_urls = ['http://www.open-mpi.org/software/ompi/v%(version_major_minor)s/downloads']
+
+builddependencies = [
+    ('Automake', '1.14'),
+    ('Autoconf', '2.69'),
+]
+
+dependencies = [('hwloc', '1.7.2')]
+
+configopts = '--with-threads=posix --enable-shared --enable-mpi-thread-multiple --with-openib '
+configopts += '--enable-mpirun-prefix-by-default '  # suppress failure modes in relation to mpirun path
+configopts += '--with-hwloc=$EBROOTHWLOC '  # hwloc support
+configopts += '--disable-dlopen '  # statically link component, don't do dynamic loading
+
+# needed for --with-openib
+osdependencies = [('libibverbs-dev', 'libibverbs-devel')]
+
+libs = ["mpi_cxx", "mpi_f77", "mpi_f90", "mpi", "open-pal", "open-rte"]
+sanity_check_paths = {
+    'files': ["bin/%s" % binfile for binfile in ["ompi_info", "opal_wrapper", "orterun"]] +
+             ["lib/lib%s.%s" % (libfile, SHLIB_EXT) for libfile in libs],
+    'dirs': ["include/openmpi/ompi/mpi/cxx"],
+}
+
+moduleclass = 'mpi'
