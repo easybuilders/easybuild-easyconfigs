@@ -1,11 +1,11 @@
 ##
-# Copyright 2009-2013 Ghent University
+# Copyright 2009-2016 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
 # with support of Ghent University (http://ugent.be/hpc),
-# the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
-# the Hercules foundation (http://www.herculesstichting.be/in_English)
+# the Flemish Supercomputer Centre (VSC) (https://www.vscentrum.be),
+# Flemish Research Foundation (FWO) (http://www.fwo.be/en)
 # and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
 # http://github.com/hpcugent/easybuild
@@ -40,11 +40,22 @@ from distutils.version import LooseVersion
 
 import easybuild.tools.toolchain as toolchain
 from easybuild.framework.easyblock import EasyBlock
-from easybuild.tools.filetools import run_cmd, copytree
+from easybuild.framework.easyconfig import CUSTOM
+from easybuild.tools.build_log import EasyBuildError
+from easybuild.tools.filetools import copytree
+from easybuild.tools.run import run_cmd
 
 
 class EB_SCOTCH(EasyBlock):
     """Support for building/installing SCOTCH."""
+
+    @staticmethod
+    def extra_options(extra_vars=None):
+        """Define custom easyconfig parameters specific to Scotch."""
+        extra_vars = {
+            'threadedmpi': [None, "Use threaded MPI calls.", CUSTOM],
+        }
+        return EasyBlock.extra_options(extra_vars)
 
     def configure_step(self):
         """Configure SCOTCH build: locate the template makefile, copy it to a general Makefile.inc and patch it."""
@@ -56,7 +67,7 @@ class EB_SCOTCH(EasyBlock):
         elif comp_fam == toolchain.GCC:  #@UndefinedVariable
             makefilename = 'Makefile.inc.x86-64_pc_linux2'
         else:
-            self.log.error("Unknown compiler family used: %s" % comp_fam)
+            raise EasyBuildError("Unknown compiler family used: %s", comp_fam)
 
         # create Makefile.inc
         try:
@@ -66,7 +77,7 @@ class EB_SCOTCH(EasyBlock):
             shutil.copy2(src, dst)
             self.log.debug("Successfully copied Makefile.inc to src dir.")
         except OSError:
-            self.log.error("Copying Makefile.inc to src dir failed.")
+            raise EasyBuildError("Copying Makefile.inc to src dir failed.")
 
         # the default behaviour of these makefiles is still wrong
         # e.g., compiler settings, and we need -lpthread
@@ -80,14 +91,14 @@ class EB_SCOTCH(EasyBlock):
                 line = re.sub(r"^LDFLAGS\s*=(?P<ldflags>.*$)", "LDFLAGS\t=\g<ldflags> -lpthread", line)
                 sys.stdout.write(line)
         except IOError, err:
-            self.log.error("Can't modify/write Makefile in 'Makefile.inc': %s" % (err))
+            raise EasyBuildError("Can't modify/write Makefile in 'Makefile.inc': %s", err)
 
         # change to src dir for building
         try:
             os.chdir(srcdir)
             self.log.debug("Changing to src dir.")
         except OSError, err:
-            self.log.error("Failed to change to src dir: %s" % err)
+            raise EasyBuildError("Failed to change to src dir: %s", err)
 
     def build_step(self):
         """Build by running build_step, but with some special options for SCOTCH depending on the compiler."""
@@ -102,9 +113,16 @@ class EB_SCOTCH(EasyBlock):
         else:
             cflags += " -restrict -DIDXSIZE64"
 
-        if not self.toolchain.mpi_family() in [toolchain.INTELMPI, toolchain.QLOGICMPI]:  #@UndefinedVariable
-            cflags += " -DSCOTCH_PTHREAD"
+        #USE 64 bit index
+        if self.toolchain.options['i8']:
+            cflags += " -DINTSIZE64"
 
+        if self.cfg['threadedmpi']: 
+            cflags += " -DSCOTCH_PTHREAD"
+        #TODO For backwards compatability of v2.8.0 the following is necessary but could be removed on a major version upgrade
+        if self.cfg['threadedmpi'] is None and self.toolchain.mpi_family() not in [toolchain.INTELMPI, toolchain.QLOGICMPI]:
+            cflags += " -DSCOTCH_PTHREAD"
+        
         # actually build
         apps = ['scotch', 'ptscotch']
         if LooseVersion(self.version) >= LooseVersion('6.0'):
@@ -129,7 +147,7 @@ class EB_SCOTCH(EasyBlock):
                 copytree(src, dst, ignore=lambda path, files: [x for x in files if regmetis.match(x)])
 
         except OSError, err:
-            self.log.error("Copying %s to installation dir %s failed: %s" % (src, dst, err))
+            raise EasyBuildError("Copying %s to installation dir %s failed: %s", src, dst, err)
 
         # create group library file
         scotchlibdir = os.path.join(self.installdir, 'lib')
@@ -144,7 +162,7 @@ class EB_SCOTCH(EasyBlock):
             f.close()
             self.log.info("Successfully written group lib file: %s" % scotchgrouplib)
         except (IOError, OSError), err:
-            self.log.error("Can't write to file %s: %s" % (scotchgrouplib, err))
+            raise EasyBuildError("Can't write to file %s: %s", scotchgrouplib, err)
 
     def sanity_check_step(self):
         """Custom sanity check for SCOTCH."""

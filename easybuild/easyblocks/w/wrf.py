@@ -1,11 +1,11 @@
 ##
-# Copyright 2009-2013 Ghent University
+# Copyright 2009-2016 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
 # with support of Ghent University (http://ugent.be/hpc),
-# the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
-# the Hercules foundation (http://www.herculesstichting.be/in_English)
+# the Flemish Supercomputer Centre (VSC) (https://www.vscentrum.be),
+# Flemish Research Foundation (FWO) (http://www.fwo.be/en)
 # and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
 # http://github.com/hpcugent/easybuild
@@ -31,18 +31,21 @@ EasyBuild support for building and installing WRF, implemented as an easyblock
 @author: Pieter De Baets (Ghent University)
 @author: Jens Timmerman (Ghent University)
 """
-import fileinput
 import os
 import re
 import sys
 
+from distutils.version import LooseVersion
+
 import easybuild.tools.environment as env
 import easybuild.tools.toolchain as toolchain
-from easybuild.easyblocks.netcdf import set_netcdf_env_vars, get_netcdf_module_set_cmds  # @UnresolvedImport
+from easybuild.easyblocks.netcdf import set_netcdf_env_vars  # @UnresolvedImport
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import CUSTOM, MANDATORY
-from easybuild.tools.filetools import patch_perl_script_autoflush, run_cmd, run_cmd_qa
+from easybuild.tools.build_log import EasyBuildError
+from easybuild.tools.filetools import apply_regex_substitutions, patch_perl_script_autoflush
 from easybuild.tools.modules import get_software_root
+from easybuild.tools.run import run_cmd, run_cmd_qa
 
 
 class EB_WRF(EasyBlock):
@@ -55,8 +58,6 @@ class EB_WRF(EasyBlock):
         self.build_in_installdir = True
         self.wrfsubdir = None
         self.comp_fam = None
-
-        self.netcdf_mod_cmds = None
 
     @staticmethod
     def extra_options():
@@ -74,10 +75,8 @@ class EB_WRF(EasyBlock):
             - run configure script
             - adjust configure.wrf file if needed
         """
-
-        # netCDF dependency
+        # define $NETCDF* for netCDF dependency (used when creating WRF module file)
         set_netcdf_env_vars(self.log)
-        self.netcdf_mod_cmds = get_netcdf_module_set_cmds(self.log)
 
         # HDF5 (optional) dependency
         hdf5 = get_software_root('HDF5')
@@ -90,7 +89,7 @@ class EB_WRF(EasyBlock):
                     parallel_hdf5 = False
                     break
             if not (hdf5 or parallel_hdf5):
-                self.log.error("Parallel HDF5 module not loaded?")
+                raise EasyBuildError("Parallel HDF5 module not loaded?")
             else:
                 env.setvar('PHDF5', hdf5)
         else:
@@ -105,7 +104,7 @@ class EB_WRF(EasyBlock):
 
         else:
             if os.getenv('JASPERINC') or os.getenv('JASPERLIB'):
-                self.log.error("JasPer module not loaded, but JASPERINC and/or JASPERLIB still set?")
+                raise EasyBuildError("JasPer module not loaded, but JASPERINC and/or JASPERLIB still set?")
             else:
                 self.log.info("JasPer module not loaded, assuming that's OK...")
 
@@ -119,13 +118,19 @@ class EB_WRF(EasyBlock):
         build_type_option = None
         self.comp_fam = self.toolchain.comp_family()
         if self.comp_fam == toolchain.INTELCOMP:  #@UndefinedVariable
-            build_type_option = "Linux x86_64 i486 i586 i686, ifort compiler with icc"
+            if LooseVersion(self.version) >= LooseVersion('3.7'):
+                build_type_option = "INTEL\ \(ifort\/icc\)"
+            else:
+                build_type_option = "Linux x86_64 i486 i586 i686, ifort compiler with icc"
 
         elif self.comp_fam == toolchain.GCC:  #@UndefinedVariable
-            build_type_option = "x86_64 Linux, gfortran compiler with gcc"
+            if LooseVersion(self.version) >= LooseVersion('3.7'):
+                build_type_option = "GNU\ \(gfortran\/gcc\)"
+            else:
+                build_type_option = "x86_64 Linux, gfortran compiler with gcc"
 
         else:
-            self.log.error("Don't know how to figure out build type to select.")
+            raise EasyBuildError("Don't know how to figure out build type to select.")
 
         # fetch selected build type (and make sure it makes sense)
         known_build_types = ['serial', 'smpar', 'dmpar', 'dm+sm']
@@ -133,10 +138,25 @@ class EB_WRF(EasyBlock):
         bt = self.cfg['buildtype']
 
         if not bt in known_build_types:
-            self.log.error("Unknown build type: '%s'. Supported build types: %s" % (bt, known_build_types))
+            raise EasyBuildError("Unknown build type: '%s'. Supported build types: %s", bt, known_build_types)
 
         # fetch option number based on build type option and selected build type
-        build_type_question = "\s*(?P<nr>[0-9]+).\s*%s\s*\(%s\)" % (build_type_option, bt)
+        if LooseVersion(self.version) >= LooseVersion('3.7'):
+            # the two relevant lines in the configure output for WRF 3.8 are:
+            #  13. (serial)  14. (smpar)  15. (dmpar)  16. (dm+sm)   INTEL (ifort/icc)
+            #  32. (serial)  33. (smpar)  34. (dmpar)  35. (dm+sm)   GNU (gfortran/gcc)
+            build_type_question = "\s*(?P<nr>[0-9]+)\.\ \(%s\).*%s" % (bt, build_type_option)
+        else:
+            # the relevant lines in the configure output for WRF 3.6 are:
+            #  13.  Linux x86_64 i486 i586 i686, ifort compiler with icc  (serial)
+            #  14.  Linux x86_64 i486 i586 i686, ifort compiler with icc  (smpar)
+            #  15.  Linux x86_64 i486 i586 i686, ifort compiler with icc  (dmpar)
+            #  16.  Linux x86_64 i486 i586 i686, ifort compiler with icc  (dm+sm)
+            #  32.  x86_64 Linux, gfortran compiler with gcc   (serial)
+            #  33.  x86_64 Linux, gfortran compiler with gcc   (smpar)
+            #  34.  x86_64 Linux, gfortran compiler with gcc   (dmpar)
+            #  35.  x86_64 Linux, gfortran compiler with gcc   (dm+sm)
+            build_type_question = "\s*(?P<nr>[0-9]+).\s*%s\s*\(%s\)" % (build_type_option, bt)
 
         # run configure script
         cmd = "./configure"
@@ -166,10 +186,8 @@ class EB_WRF(EasyBlock):
                  'DM_FC': os.getenv('MPIF90'),
                  'DM_CC': "%s -DMPI2_SUPPORT" % os.getenv('MPICC'),
                 }
-        for line in fileinput.input(cfgfile, inplace=1, backup='.orig.comps'):
-            for (k, v) in comps.items():
-                line = re.sub(r"^(%s\s*=\s*).*$" % k, r"\1 %s" % v, line)
-            sys.stdout.write(line)
+        regex_subs = [(r"^(%s\s*=\s*).*$" % k, r"\1 %s" % v) for (k, v) in comps.items()]
+        apply_regex_substitutions(cfgfile, regex_subs)
 
         # rewrite optimization options if desired
         if self.cfg['rewriteopts']:
@@ -189,10 +207,11 @@ class EB_WRF(EasyBlock):
                         self.log.info("Updated %s to '%s'" % (envvar, os.getenv(envvar)))
 
             # replace -O3 with desired optimization options
-            for line in fileinput.input(cfgfile, inplace=1, backup='.orig.rewriteopts'):
-                line = re.sub(r"^(FCOPTIM.*)(\s-O3)(\s.*)$", r"\1 %s \3" % os.getenv('FFLAGS'), line)
-                line = re.sub(r"^(CFLAGS_LOCAL.*)(\s-O3)(\s.*)$", r"\1 %s \3" % os.getenv('CFLAGS'), line)
-                sys.stdout.write(line)
+            regex_subs = [
+                (r"^(FCOPTIM.*)(\s-O3)(\s.*)$", r"\1 %s \3" % os.getenv('FFLAGS')),
+                (r"^(CFLAGS_LOCAL.*)(\s-O3)(\s.*)$", r"\1 %s \3" % os.getenv('CFLAGS')),
+            ]
+            apply_regex_substitutions(cfgfile, regex_subs)
 
     def build_step(self):
         """Build and install WRF and testcases using provided compile script."""
@@ -218,11 +237,11 @@ class EB_WRF(EasyBlock):
 
             # get list of WRF test cases
             self.testcases = []
-            try:
+            if os.path.exists('test'):
                 self.testcases = os.listdir('test')
 
-            except OSError, err:
-                self.log.error("Failed to determine list of test cases: %s" % err)
+            elif not self.dry_run:
+                raise EasyBuildError("Test directory not found, failed to determine list of test cases")
 
             # exclude 2d testcases in non-parallel WRF builds
             if self.cfg['buildtype'] in self.parallel_build_types:
@@ -272,15 +291,13 @@ class EB_WRF(EasyBlock):
                     txt = f.read()
                     f.close()
                 except IOError, err:
-                    self.log.error("Failed to read output file %s: %s" % (fn, err))
+                    raise EasyBuildError("Failed to read output file %s: %s", fn, err)
 
                 if re_success.search(txt):
                     self.log.info("Test %s ran successfully." % test)
 
                 else:
-                    self.log.error("Test %s failed, pattern '%s' not found." % (test,
-                                                                                re_success.pattern
-                                                                                ))
+                    raise EasyBuildError("Test %s failed, pattern '%s' not found.", test, re_success.pattern)
 
                 # clean up stuff that gets in the way
                 fn_prefs = ["wrfinput_", "namelist.output", "wrfout_", "rsl.out.", "rsl.error."]
@@ -329,7 +346,7 @@ class EB_WRF(EasyBlock):
                     os.chdir('..')
 
                 except OSError, err:
-                    self.log.error("An error occured when running test %s: %s" % (test, err))
+                    raise EasyBuildError("An error occured when running test %s: %s", test, err)
 
     # building/installing is done in build_step, so we can run tests
     def install_step(self):
@@ -342,13 +359,15 @@ class EB_WRF(EasyBlock):
         mainver = self.version.split('.')[0]
         self.wrfsubdir = "WRFV%s" % mainver
 
-        fs = ["libwrflib.a", "wrf.exe", "ideal.exe", "real.exe", "ndown.exe", "nup.exe", "tc.exe"]
-        ds = ["main", "run"]
+        files = ['libwrflib.a', 'wrf.exe', 'ideal.exe', 'real.exe', 'ndown.exe', 'tc.exe']
+        # nup.exe was 'temporarily removed' in WRF v3.7, at least until 3.8
+        if LooseVersion(self.version) < LooseVersion('3.7'):
+            files.append('nup.exe')
 
         custom_paths = {
-                        'files': [os.path.join(self.wrfsubdir, "main", x) for x in fs],
-                        'dirs': [os.path.join(self.wrfsubdir, x) for x in ds]
-                       }
+            'files': [os.path.join(self.wrfsubdir, 'main', f) for f in files],
+            'dirs': [os.path.join(self.wrfsubdir, d) for d in ['main', 'run']],
+        }
 
         super(EB_WRF, self).sanity_check_step(custom_paths=custom_paths)
 
@@ -366,9 +385,9 @@ class EB_WRF(EasyBlock):
                }
 
     def make_module_extra(self):
-
+        """Add netCDF environment variables to module file."""
         txt = super(EB_WRF, self).make_module_extra()
-
-        txt += self.netcdf_mod_cmds
-
+        for netcdf_var in ['NETCDF', 'NETCDFF']:
+            if os.getenv(netcdf_var) is not None:
+                txt += self.module_generator.set_environment(netcdf_var, os.getenv(netcdf_var))
         return txt

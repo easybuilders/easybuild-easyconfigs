@@ -4,8 +4,8 @@
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
 # with support of Ghent University (http://ugent.be/hpc),
-# the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
-# the Hercules foundation (http://www.herculesstichting.be/in_English)
+# the Flemish Supercomputer Centre (VSC) (https://www.vscentrum.be),
+# Flemish Research Foundation (FWO) (http://www.fwo.be/en)
 # and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
 # http://github.com/hpcugent/easybuild
@@ -33,6 +33,7 @@ import os
 import shutil
 
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
+from easybuild.tools.build_log import EasyBuildError
 
 
 class EB_CBLAS(ConfigureMake):
@@ -48,18 +49,18 @@ class EB_CBLAS(ConfigureMake):
         try:
             shutil.copy2('Makefile.LINUX', 'Makefile.in')
         except OSError, err:
-            self.log.error("Failed to copy makefile: %s" % err)
+            raise EasyBuildError("Failed to copy makefile: %s", err)
 
-        if not self.cfg['makeopts']:
-            self.cfg.update('makeopts', 'all')
+        if not self.cfg['buildopts']:
+            self.cfg.update('buildopts', 'all')
 
-        self.cfg.update('makeopts', 'CC="%s"' % os.getenv('CC'))
-        self.cfg.update('makeopts', 'FC="%s"' % os.getenv('F77'))
-        self.cfg.update('makeopts', 'CFLAGS="%s -DADD_"' % os.getenv('CFLAGS'))
-        self.cfg.update('makeopts', 'FFLAGS="%s -DADD_"' % os.getenv('FFLAGS'))
+        self.cfg.update('buildopts', 'CC="%s"' % os.getenv('CC'))
+        self.cfg.update('buildopts', 'FC="%s"' % os.getenv('F77'))
+        self.cfg.update('buildopts', 'CFLAGS="%s -DADD_"' % os.getenv('CFLAGS'))
+        self.cfg.update('buildopts', 'FFLAGS="%s -DADD_"' % os.getenv('FFLAGS'))
         blas_lib_dir = os.getenv('BLAS_LIB_DIR')
         blas_libs = [os.path.join(blas_lib_dir, lib) for lib in os.getenv('BLAS_STATIC_LIBS').split(',')]
-        self.cfg.update('makeopts', 'BLLIB="%s"' % ' '.join(blas_libs))
+        self.cfg.update('buildopts', 'BLLIB="%s"' % ' '.join(blas_libs))
 
     # default build procedure should do
 
@@ -78,7 +79,7 @@ class EB_CBLAS(ConfigureMake):
                 for solib in glob.glob(os.path.join(srcdir, 'libcblas.so*')):
                     shutil.copy2(solib, targetdir)
         except OSError, err:
-            self.log.error("Failed to install CBLAS (srcdir: %s, targetdir: %s): %s" % (srcdir, targetdir, err))
+            raise EasyBuildError("Failed to install CBLAS (srcdir: %s, targetdir: %s): %s", srcdir, targetdir, err)
 
     def sanity_check_step(self):
         """

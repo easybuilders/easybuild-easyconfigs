@@ -4,8 +4,8 @@
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
 # with support of Ghent University (http://ugent.be/hpc),
-# the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
-# the Hercules foundation (http://www.herculesstichting.be/in_English)
+# the Flemish Supercomputer Centre (VSC) (https://www.vscentrum.be),
+# Flemish Research Foundation (FWO) (http://www.fwo.be/en)
 # and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
 # http://github.com/hpcugent/easybuild
@@ -24,7 +24,7 @@
 ##
 """
 @author: George Tsouloupas (The Cyprus Institute)
-@author: Fotis Georgatos (University of Luxembourg)
+@author: Fotis Georgatos (Uni.Lu, NTUA)
 @author: Kenneth Hoste (Ghent University)
 """
 import os
@@ -33,6 +33,8 @@ import glob
 
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.framework.easyconfig import BUILD, MANDATORY
+from easybuild.tools.build_log import EasyBuildError
+
 
 class MakeCp(ConfigureMake):
     """
@@ -44,7 +46,7 @@ class MakeCp(ConfigureMake):
         Define list of files or directories to be copied after make
         """
         extra = {
-            'files_to_copy': [{}, "List of files or dirs to copy", MANDATORY],
+            'files_to_copy': [[], "List of files or dirs to copy", MANDATORY],
             'with_configure': [False, "Run configure script before building", BUILD],
         }
         if extra_vars is None:
@@ -65,7 +67,7 @@ class MakeCp(ConfigureMake):
             # make sure we're (still) in the start dir
             os.chdir(self.cfg['start_dir'])
 
-            files_to_copy = self.cfg.get('files_to_copy', {})
+            files_to_copy = self.cfg.get('files_to_copy', [])
             self.log.debug("Starting install_step with files_to_copy: %s" % files_to_copy)
             for fil in files_to_copy:
                 if isinstance(fil, tuple):
@@ -74,18 +76,25 @@ class MakeCp(ConfigureMake):
                         files_specs = fil[0]
                         target = os.path.join(self.installdir, fil[1])
                     else:
-                        self.log.error("Only tuples of format '([<source files>], <target dir>)' supported.")
+                        raise EasyBuildError("Only tuples of format '([<source files>], <target dir>)' supported.")
                 # 'src_file' or 'src_dir'
                 elif isinstance(fil, basestring):
                     files_specs = [fil]
                     target = self.installdir
                 else:
-                    self.log.error("Found neither string nor tuple as file to copy: '%s' (type %s)" % (fil, type(fil)))
+                    raise EasyBuildError("Found neither string nor tuple as file to copy: '%s' (type %s)", fil, type(fil))
 
                 if not os.path.exists(target):
                     os.makedirs(target)
 
-                for files_spec in files_specs:
+                for orig_files_spec in files_specs:
+                    if isinstance(orig_files_spec, tuple):
+                        files_spec = orig_files_spec[0]
+                        dest = orig_files_spec[1]
+                    else:
+                        files_spec = orig_files_spec
+                        dest = None
+
                     # first look for files in start dir
                     filepaths = glob.glob(os.path.join(self.cfg['start_dir'], files_spec))
                     tup = (files_spec, self.cfg['start_dir'], filepaths)
@@ -100,19 +109,28 @@ class MakeCp(ConfigureMake):
 
                     # there should be at least one match per file spec
                     if not filepaths:
-                        self.log.error("No files matching '%s' found anywhere." % files_spec)
+                        raise EasyBuildError("No files matching '%s' found anywhere.", files_spec)
+
+                    if dest and len(filepaths) != 1:
+                        raise EasyBuildError("When a list with new names has been specified, the original file spec can \
+                                              only match a single file yet it gives: %s", filepaths)
 
                     for filepath in filepaths:
                         # copy individual file
                         if os.path.isfile(filepath):
-                            self.log.debug("Copying file %s to %s" % (filepath, target))
-                            shutil.copy2(filepath, target)
+                            if dest:
+                                target_dest = os.path.join(target, dest)
+                            else:
+                                target_dest = target
+                            self.log.debug("Copying file %s to %s" % (filepath, target_dest))
+                            shutil.copy2(filepath, target_dest)
                         # copy directory
                         elif os.path.isdir(filepath):
                             self.log.debug("Copying directory %s to %s" % (filepath, target))
-                            shutil.copytree(filepath, os.path.join(target, os.path.basename(filepath)))
+                            fulltarget = os.path.join(target, os.path.basename(filepath))
+                            shutil.copytree(filepath, fulltarget, symlinks=self.cfg['keepsymlinks'])
                         else:
-                            self.log.error("Can't copy non-existing path %s to %s" % (filepath, target))
+                            raise EasyBuildError("Can't copy non-existing path %s to %s", filepath, target)
 
         except OSError, err:
-            self.log.error("Copying %s to installation dir failed: %s" % (fil, err))
+            raise EasyBuildError("Copying %s to installation dir failed: %s", fil, err)

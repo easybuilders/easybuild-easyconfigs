@@ -1,11 +1,11 @@
 ##
-# Copyright 2009-2013 Ghent University
+# Copyright 2009-2016 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
 # with support of Ghent University (http://ugent.be/hpc),
-# the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
-# the Hercules foundation (http://www.herculesstichting.be/in_English)
+# the Flemish Supercomputer Centre (VSC) (https://www.vscentrum.be),
+# Flemish Research Foundation (FWO) (http://www.fwo.be/en)
 # and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
 # http://github.com/hpcugent/easybuild
@@ -35,7 +35,10 @@ import os
 
 from easybuild.easyblocks.generic.binary import Binary
 from easybuild.framework.easyblock import EasyBlock
-from easybuild.tools.filetools import run_cmd
+from easybuild.tools.build_log import EasyBuildError
+from easybuild.tools.run import run_cmd
+from distutils.version import LooseVersion
+
 
 class EB_ABAQUS(Binary):
     """Support for installing ABAQUS."""
@@ -70,14 +73,16 @@ class EB_ABAQUS(Binary):
             f.write(txt)
             f.close()
         except IOError, err:
-            self.log.error("Failed to create install properties file used for replaying installation: %s" % err)
+            raise EasyBuildError("Failed to create install properties file used for replaying installation: %s", err)
 
     def install_step(self):
         """Install ABAQUS using 'setup'."""
         os.chdir(self.builddir)
         if self.cfg['install_cmd'] is None:
             self.cfg['install_cmd'] = "%s/%s-%s/setup" % (self.builddir, self.name, self.version.split('-')[0])
-            self.cfg['install_cmd'] += " -nosystemcheck -replay %s" % self.replayfile
+            self.cfg['install_cmd'] += " -replay %s" % self.replayfile
+            if LooseVersion(self.version) < LooseVersion("6.13"):
+                self.cfg['install_cmd'] += " -nosystemcheck"
         super(EB_ABAQUS, self).install_step()
 
     def sanity_check_step(self):
@@ -88,7 +93,8 @@ class EB_ABAQUS(Binary):
             'files': [os.path.join("Commands", "abaqus")],
             'dirs': ["%s-%s" % ('.'.join(verparts[0:2]), verparts[2])]
         }
-        super(EB_ABAQUS, self).sanity_check_step(custom_paths=custom_paths)
+        custom_commands = [('abaqus', 'information=all')]
+        super(EB_ABAQUS, self).sanity_check_step(custom_paths=custom_paths, custom_commands=custom_commands)
 
     def make_module_req_guess(self):
         """Update PATH guesses for ABAQUS."""

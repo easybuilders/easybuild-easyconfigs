@@ -1,5 +1,6 @@
 ##
 # Copyright 2013 Dmitri Gribenko
+# Copyright 2013-2016 Ghent University
 #
 # This file is triple-licensed under GPLv2 (see below), MIT, and
 # BSD three-clause licenses.
@@ -7,8 +8,8 @@
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
 # with support of Ghent University (http://ugent.be/hpc),
-# the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
-# the Hercules foundation (http://www.herculesstichting.be/in_English)
+# the Flemish Supercomputer Centre (VSC) (https://www.vscentrum.be),
+# Flemish Research Foundation (FWO) (http://www.fwo.be/en)
 # and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
 # http://github.com/hpcugent/easybuild
@@ -35,15 +36,20 @@ Support for building and installing Clang, implemented as an easyblock.
 import fileinput
 import glob
 import os
+import re
 import shutil
 import sys
 from distutils.version import LooseVersion
 
 from easybuild.easyblocks.generic.cmakemake import CMakeMake
 from easybuild.framework.easyconfig import CUSTOM
-from easybuild.tools.filetools import run_cmd, mkdir
+from easybuild.tools import run
+from easybuild.tools.build_log import EasyBuildError
+from easybuild.tools.config import build_option
+from easybuild.tools.filetools import mkdir
 from easybuild.tools.modules import get_software_root
-from easybuild.tools.systemtools import get_os_name, get_os_version
+from easybuild.tools.run import run_cmd
+from easybuild.tools.systemtools import get_os_name, get_os_version, get_shared_lib_ext
 
 # List of all possible build targets for Clang
 CLANG_TARGETS = ["all", "AArch64", "ARM", "CppBackend", "Hexagon", "Mips",
@@ -56,13 +62,15 @@ class EB_Clang(CMakeMake):
 
     @staticmethod
     def extra_options():
-        extra_vars = [
-            ('assertions', [True, "Enable assertions.  Helps to catch bugs in Clang.", CUSTOM]),
-            ('build_targets', [["X86"], "Build targets for LLVM. Possible values: " + ', '.join(CLANG_TARGETS), CUSTOM]),
-            ('bootstrap', [True, "Bootstrap Clang using GCC", CUSTOM]),
-            ('usepolly', [False, "Build Clang with polly", CUSTOM]),
-            ('static_analyzer', [True, "Install the static analyser of Clang", CUSTOM]),
-        ]
+        extra_vars = {
+            'assertions': [True, "Enable assertions.  Helps to catch bugs in Clang.", CUSTOM],
+            'build_targets': [["X86"], "Build targets for LLVM. Possible values: " + ', '.join(CLANG_TARGETS), CUSTOM],
+            'bootstrap': [True, "Bootstrap Clang using GCC", CUSTOM],
+            'usepolly': [False, "Build Clang with polly", CUSTOM],
+            'static_analyzer': [True, "Install the static analyser of Clang", CUSTOM],
+            # The sanitizer tests often fail on HPC systems due to the 'weird' environment.
+            'skip_sanitizer_tests': [False, "Do not run the sanitizer tests", CUSTOM],
+        }
 
         return CMakeMake.extra_options(extra_vars)
 
@@ -79,22 +87,22 @@ class EB_Clang(CMakeMake):
         unknown_targets = [target for target in self.cfg['build_targets'] if target not in CLANG_TARGETS]
 
         if unknown_targets:
-            self.log.error("Some of the chosen build targets (%s) are not in %s." % (", ".join(unknown_targets),
-                                                                                     ", ".join(CLANG_TARGETS)))
+            raise EasyBuildError("Some of the chosen build targets (%s) are not in %s.",
+                                 ', '.join(unknown_targets), ', '.join(CLANG_TARGETS))
 
         if LooseVersion(self.version) < LooseVersion('3.4') and "R600" in self.cfg['build_targets']:
-            self.log.error("Build target R600 not supported in < Clang-3.4")
+            raise EasyBuildError("Build target R600 not supported in < Clang-3.4")
 
         if LooseVersion(self.version) > LooseVersion('3.3') and "MBlaze" in self.cfg['build_targets']:
-            self.log.error("Build target MBlaze is not supported anymore in > Clang-3.3")
+            raise EasyBuildError("Build target MBlaze is not supported anymore in > Clang-3.3")
 
     def check_readiness_step(self):
         """Fail early on RHEL 5.x and derivatives because of known bug in libc."""
         super(EB_Clang, self).check_readiness_step()
         # RHEL 5.x have a buggy libc.  Building stage 2 will fail.
         if get_os_name() in ['redhat', 'RHEL', 'centos', 'SL'] and get_os_version().startswith('5.'):
-            self.log.error(("Can not build clang on %s v5.x: libc is buggy, building stage 2 will fail.  " +
-                            "See http://stackoverflow.com/questions/7276828/") % get_os_name())
+            raise EasyBuildError("Can not build Clang on %s v5.x: libc is buggy, building stage 2 will fail. "
+                                 "See http://stackoverflow.com/questions/7276828/", get_os_name())
 
     def extract_step(self):
         """
@@ -102,6 +110,7 @@ class EB_Clang(CMakeMake):
         llvm/             Unpack llvm-*.tar.gz here
           projects/
             compiler-rt/  Unpack compiler-rt-*.tar.gz here
+            openmp/       Unpack openmp-*.tar.xz here
           tools/
             clang/        Unpack clang-*.tar.gz here
             polly/        Unpack polly-*.tar.gz here
@@ -117,41 +126,40 @@ class EB_Clang(CMakeMake):
                 break
 
         if self.llvm_src_dir is None:
-            self.log.error("Could not determine LLVM source root (LLVM source was not unpacked?)")
+            raise EasyBuildError("Could not determine LLVM source root (LLVM source was not unpacked?)")
 
-        compiler_rt_src_dirs = glob.glob('compiler-rt-*')
-        if len(compiler_rt_src_dirs) != 1:
-            self.log.error("Failed to find exactly one compiler-rt source directory: %s" % compiler_rt_src_dirs)
-        compiler_rt_src_dir = compiler_rt_src_dirs[0]
+        src_dirs = {}
 
-        src_dirs = {
-            compiler_rt_src_dir: os.path.join(self.llvm_src_dir, 'projects', 'compiler-rt')
-        }
+        def find_source_dir(globpatterns, targetdir):
+            """Search for directory with globpattern and rename it to targetdir"""
+            if not isinstance(globpatterns, list):
+                globpatterns = [globpatterns]
+
+            glob_src_dirs = [glob_dir for globpattern in globpatterns for glob_dir in glob.glob(globpattern)]
+            if len(glob_src_dirs) != 1:
+                raise EasyBuildError("Failed to find exactly one source directory for pattern %s: %s", globpatterns,
+                                     glob_src_dirs)
+            src_dirs[glob_src_dirs[0]] = targetdir
+
+        find_source_dir('compiler-rt-*', os.path.join(self.llvm_src_dir, 'projects', 'compiler-rt'))
 
         if self.cfg["usepolly"]:
-            polly_src_dirs = glob.glob('polly-*')
-            if len(polly_src_dirs) != 1:
-                self.log.error("Failed to find exactly one polly source directory: %s" % polly_src_dirs)
-            polly_src_dir = polly_src_dirs[0]
-            src_dirs[polly_src_dir] = os.path.join(self.llvm_src_dir, 'tools', 'polly')
+            find_source_dir('polly-*', os.path.join(self.llvm_src_dir, 'tools', 'polly'))
 
-        clang_src_dirs = glob.glob('clang-*') + glob.glob('cfe-*')
+        find_source_dir(['clang-*', 'cfe-*'], os.path.join(self.llvm_src_dir, 'tools', 'clang'))
 
-        if len(clang_src_dirs) != 1:
-            self.log.error("Failed to find exactly one clang source directory: %s" % clang_src_dirs)
-        clang_src_dir = clang_src_dirs[0]
+        if LooseVersion(self.version) >= LooseVersion('3.8'):
+            find_source_dir('openmp-*', os.path.join(self.llvm_src_dir, 'projects', 'openmp'))
 
-        src_dirs[clang_src_dir] = os.path.join(self.llvm_src_dir, 'tools', 'clang')
-
-        for tmp in self.src:
-            for (dir, new_path) in src_dirs.items():
-                if tmp['name'].startswith(dir):
-                    old_path = os.path.join(tmp['finalpath'], dir)
+        for src in self.src:
+            for (dirname, new_path) in src_dirs.items():
+                if src['name'].startswith(dirname):
+                    old_path = os.path.join(src['finalpath'], dirname)
                     try:
                         shutil.move(old_path, new_path)
                     except IOError, err:
-                        self.log.error("Failed to move %s to %s: %s" % (old_path, new_path, err))
-                    tmp['finalpath'] = new_path
+                        raise EasyBuildError("Failed to move %s to %s: %s", old_path, new_path, err)
+                    src['finalpath'] = new_path
                     break
 
     def configure_step(self):
@@ -162,14 +170,27 @@ class EB_Clang(CMakeMake):
             self.llvm_obj_dir_stage2 = os.path.join(self.builddir, 'llvm.obj.2')
             self.llvm_obj_dir_stage3 = os.path.join(self.builddir, 'llvm.obj.3')
 
-        # all sanitizer tests will fail when there's a limit on the vmem
-        # this is ugly but I haven't found a cleaner way so far
-        (vmemlim, ec) = run_cmd("ulimit -v", regexp=False)
-        if not vmemlim.startswith("unlimited"):
-            self.log.warn("There is a virtual memory limit set of %s KB. The tests of the "
-                          "sanitizers will be disabled as they need unlimited virtual "
-                          "memory." % vmemlim.strip())
-            self.disable_sanitizer_tests()
+        if LooseVersion(self.version) >= LooseVersion('3.3'):
+            disable_san_tests = False
+            # all sanitizer tests will fail when there's a limit on the vmem
+            # this is ugly but I haven't found a cleaner way so far
+            (vmemlim, ec) = run_cmd("ulimit -v", regexp=False)
+            if not vmemlim.startswith("unlimited"):
+                disable_san_tests = True
+                self.log.warn("There is a virtual memory limit set of %s KB. The tests of the "
+                              "sanitizers will be disabled as they need unlimited virtual "
+                              "memory unless --strict=error is used." % vmemlim.strip())
+
+            # the same goes for unlimited stacksize
+            (stacklim, ec) = run_cmd("ulimit -s", regexp=False)
+            if stacklim.startswith("unlimited"):
+                disable_san_tests = True
+                self.log.warn("The stacksize limit is set to unlimited. This causes the ThreadSanitizer "
+                              "to fail. The sanitizers tests will be disabled unless --strict=error is used.")
+
+            if (disable_san_tests or self.cfg['skip_sanitizer_tests']) and build_option('strict') != run.ERROR:
+                self.log.debug("Disabling the sanitizer tests")
+                self.disable_sanitizer_tests()
 
         # Create and enter build directory.
         mkdir(self.llvm_obj_dir_stage1)
@@ -194,31 +215,54 @@ class EB_Clang(CMakeMake):
         super(EB_Clang, self).configure_step(srcdir=self.llvm_src_dir)
 
     def disable_sanitizer_tests(self):
-        """Disable the tests of all the sanitizers"""
-        patchfiles = [
-            "projects/compiler-rt/lib/asan/CMakeLists.txt",
-            "projects/compiler-rt/lib/dfsan/CMakeLists.txt",
-            "projects/compiler-rt/lib/lsan/CMakeLists.txt",
-            "projects/compiler-rt/lib/msan/CMakeLists.txt",
-            "projects/compiler-rt/lib/tsan/CMakeLists.txt",
-            "projects/compiler-rt/lib/ubsan/CMakeLists.txt",
-        ]
+        """Disable the tests of all the sanitizers by removing the test directories from the build system"""
+        if LooseVersion(self.version) < LooseVersion('3.6'):
+            # for Clang 3.5 and lower, the tests are scattered over several CMakeLists.
+            # We loop over them, and patch out the rule that adds the sanitizers tests to the testsuite
+            patchfiles = [
+                "lib/asan",
+                "lib/dfsan",
+                "lib/lsan",
+                "lib/msan",
+                "lib/tsan",
+                "lib/ubsan",
+            ]
 
-        for patchfile in patchfiles:
+            for patchfile in patchfiles:
+                patchfile_fp = os.path.join(self.llvm_src_dir, "projects/compiler-rt", patchfile, "CMakeLists.txt")
+                if os.path.exists(patchfile_fp):
+                    self.log.debug("Patching %s in %s" % (patchfile, self.llvm_src_dir))
+                    try:
+                        for line in fileinput.input(patchfile_fp, inplace=1, backup='.orig'):
+                            if "add_subdirectory(lit_tests)" not in line:
+                                sys.stdout.write(line)
+                    except (IOError, OSError), err:
+                        raise EasyBuildError("Failed to patch %s: %s", patchfile_fp, err)
+                else:
+                    self.log.debug("Not patching non-existent %s in %s" % (patchfile, self.llvm_src_dir))
+
+            # There is a common part seperate for the specific saniters, we disable all
+            # the common tests
+            patchfile = "projects/compiler-rt/lib/sanitizer_common/CMakeLists.txt"
             try:
                 for line in fileinput.input("%s/%s" % (self.llvm_src_dir, patchfile), inplace=1, backup='.orig'):
-                    if "add_subdirectory(lit_tests)" not in line:
+                    if "add_subdirectory(tests)" not in line:
                         sys.stdout.write(line)
             except IOError, err:
-                self.log.error("Failed to patch %s/%s: %s" % (self.llvm_src_dir, patchfile, err))
-
-        patchfile = "projects/compiler-rt/lib/sanitizer_common/CMakeLists.txt"
-        try:
-            for line in fileinput.input("%s/%s" % (self.llvm_src_dir, patchfile), inplace=1, backup='.orig'):
-                if "add_subdirectory(tests)" not in line:
-                    sys.stdout.write(line)
-        except IOError, err:
-            self.log.error("Failed to patch %s/%s: %s" % (self.llvm_src_dir, patchfile, err))
+                raise EasyBuildError("Failed to patch %s/%s: %s", self.llvm_src_dir, patchfile, err)
+        else:
+            # In Clang 3.6, the sanitizer tests are grouped together in one CMakeLists
+            # We patch out adding the subdirectories with the sanitizer tests
+            patchfile = "projects/compiler-rt/test/CMakeLists.txt"
+            patchfile_fp = os.path.join(self.llvm_src_dir, patchfile)
+            self.log.debug("Patching %s in %s" % (patchfile, self.llvm_src_dir))
+            patch_regex = re.compile(r'add_subdirectory\((.*san|sanitizer_common)\)')
+            try:
+                for line in fileinput.input(patchfile_fp, inplace=1, backup='.orig'):
+                    if not patch_regex.search(line):
+                        sys.stdout.write(line)
+            except IOError, err:
+                raise EasyBuildError("Failed to patch %s: %s", patchfile_fp, err)
 
     def build_with_prev_stage(self, prev_obj, next_obj):
         """Build Clang stage N using Clang stage N-1"""
@@ -285,7 +329,7 @@ class EB_Clang(CMakeMake):
 
         # the static analyzer is not installed by default
         # we do it by hand
-        if self.cfg['static_analyzer']:
+        if self.cfg['static_analyzer'] and LooseVersion(self.version) < LooseVersion('3.8'):
             try:
                 tools_src_dir = os.path.join(self.llvm_src_dir, 'tools', 'clang', 'tools')
                 analyzer_target_dir = os.path.join(self.installdir, 'libexec', 'clang-analyzer')
@@ -301,15 +345,16 @@ class EB_Clang(CMakeMake):
                 os.makedirs(mandir)
                 shutil.copy2(os.path.join(tools_src_dir, 'scan-build', 'scan-build.1'), mandir)
             except OSError, err:
-                self.log.error("Failed to copy static analyzer dirs to install dir: %s" % err)
+                raise EasyBuildError("Failed to copy static analyzer dirs to install dir: %s", err)
 
     def sanity_check_step(self):
         """Custom sanity check for Clang."""
+        shlib_ext = get_shared_lib_ext()
         custom_paths = {
             'files': [
                 "bin/clang", "bin/clang++", "bin/llvm-ar", "bin/llvm-nm", "bin/llvm-as", "bin/opt", "bin/llvm-link",
                 "bin/llvm-config", "bin/llvm-symbolizer", "include/llvm-c/Core.h", "include/clang-c/Index.h",
-                "lib/libclang.so", "lib/clang/%s/include/stddef.h" % self.version,
+                "lib/libclang.%s" % shlib_ext, "lib/clang/%s/include/stddef.h" % self.version,
             ],
             'dirs': ["include/clang", "include/llvm", "lib/clang/%s/lib" % self.version],
         }
@@ -317,8 +362,11 @@ class EB_Clang(CMakeMake):
             custom_paths['files'].extend(["bin/scan-build", "bin/scan-view"])
 
         if self.cfg["usepolly"]:
-            custom_paths['files'].extend(["lib/LLVMPolly.so"])
+            custom_paths['files'].extend(["lib/LLVMPolly.%s" % shlib_ext])
             custom_paths['dirs'].extend(["include/polly"])
+
+        if LooseVersion(self.version) >= LooseVersion('3.8'):
+            custom_paths['files'].extend(["lib/libomp.%s" % shlib_ext, "lib/clang/%s/include/omp.h" % self.version])
 
         super(EB_Clang, self).sanity_check_step(custom_paths=custom_paths)
 
@@ -326,5 +374,6 @@ class EB_Clang(CMakeMake):
         """Custom variables for Clang module."""
         txt = super(EB_Clang, self).make_module_extra()
         # we set the symbolizer path so that asan/tsan give meanfull output by default
-        txt += self.moduleGenerator.set_environment('ASAN_SYMBOLIZER_PATH', '$root/bin/llvm-symbolizer')
+        asan_symbolizer_path = os.path.join(self.installdir, 'bin', 'llvm-symbolizer')
+        txt += self.module_generator.set_environment('ASAN_SYMBOLIZER_PATH', asan_symbolizer_path)
         return txt

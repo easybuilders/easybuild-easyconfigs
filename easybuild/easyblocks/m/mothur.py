@@ -4,8 +4,8 @@
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
 # with support of Ghent University (http://ugent.be/hpc),
-# the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
-# the Hercules foundation (http://www.herculesstichting.be/in_English)
+# the Flemish Supercomputer Centre (VSC) (https://www.vscentrum.be),
+# Flemish Research Foundation (FWO) (http://www.fwo.be/en)
 # and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
 # http://github.com/hpcugent/easybuild
@@ -32,6 +32,7 @@ import os
 import shutil
 
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
+from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.modules import get_software_root
 
 
@@ -45,28 +46,29 @@ class EB_Mothur(ConfigureMake):
         mothur_dirs = glob.glob(os.path.join(self.builddir, 'Mothur.*'))
         if len(mothur_dirs) == 1:
             self.cfg['start_dir'] = mothur_dirs[0]
-        else:
-            self.log.error("Failed to guess start directory in %s" % mothur_dirs)
+        elif len(os.listdir(self.builddir)) > 1:
+            # we only have an issue if the default guessing approach will not work
+            raise EasyBuildError("Failed to guess start directory from %s", mothur_dirs)
 
         super(EB_Mothur, self).guess_start_dir()
 
     def configure_step(self, cmd_prefix=''):
         """Configure Mothur build by setting make options."""
         # Fortran compiler and options
-        self.cfg.update('makeopts', 'FORTAN_COMPILER="%s" FORTRAN_FLAGS="%s"' % (os.getenv('F77'), os.getenv('FFLAGS')))
+        self.cfg.update('buildopts', 'FORTAN_COMPILER="%s" FORTRAN_FLAGS="%s"' % (os.getenv('F77'), os.getenv('FFLAGS')))
         # enable 64-bit build
         if not self.toolchain.options['32bit']:
-            self.cfg.update('makeopts', '64BIT_VERSION=yes')
+            self.cfg.update('buildopts', '64BIT_VERSION=yes')
         # enable readline support
         if get_software_root('libreadline') and get_software_root('ncurses'):
-            self.cfg.update('makeopts', 'USEREADLINE=yes')
+            self.cfg.update('buildopts', 'USEREADLINE=yes')
         # enable MPI support
         if self.toolchain.options.get('usempi', None):
-            self.cfg.update('makeopts', 'USEMPI=yes CXX="%s"' % os.getenv('MPICXX'))
-            self.cfg.update('premakeopts', 'CXXFLAGS="$CXXFLAGS -DMPICH_IGNORE_CXX_SEEK"')
+            self.cfg.update('buildopts', 'USEMPI=yes CXX="%s"' % os.getenv('MPICXX'))
+            self.cfg.update('prebuildopts', 'CXXFLAGS="$CXXFLAGS -DMPICH_IGNORE_CXX_SEEK"')
         # enable compression
         if get_software_root('bzip2') or get_software_root('gzip'):
-            self.cfg.update('makeopts', 'USE_COMPRESSION=yes')
+            self.cfg.update('buildopts', 'USE_COMPRESSION=yes')
 
     def install_step(self):
         """
@@ -81,7 +83,7 @@ class EB_Mothur(ConfigureMake):
                 srcfile = os.path.join(srcdir, filename)
                 shutil.copy2(srcfile, destdir)
         except OSError, err:
-            self.log.error("Copying %s to installation dir %s failed: %s", srcfile, destdir, err)
+            raise EasyBuildError("Copying %s to installation dir %s failed: %s", srcfile, destdir, err)
 
     def sanity_check_step(self):
         """Custom sanity check for Mothur."""

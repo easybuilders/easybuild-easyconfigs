@@ -1,11 +1,11 @@
 ##
-# Copyright 2009-2013 Ghent University
+# Copyright 2009-2016 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
 # with support of Ghent University (http://ugent.be/hpc),
-# the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
-# the Hercules foundation (http://www.herculesstichting.be/in_English)
+# the Flemish Supercomputer Centre (VSC) (https://www.vscentrum.be),
+# Flemish Research Foundation (FWO) (http://www.fwo.be/en)
 # and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
 # http://github.com/hpcugent/easybuild
@@ -36,7 +36,9 @@ import os
 import re
 import shutil
 
+from distutils.version import LooseVersion
 from easybuild.framework.easyblock import EasyBlock
+from easybuild.tools.build_log import EasyBuildError
 
 
 class EB_picard(EasyBlock):
@@ -57,7 +59,7 @@ class EB_picard(EasyBlock):
         if not re.search("%s/?$" % picard_tools_dir, self.cfg['start_dir']):
             self.cfg['start_dir'] = os.path.join(self.cfg['start_dir'], picard_tools_dir)
             if not os.path.exists(self.cfg['start_dir']):
-                self.log.error("Path %s to copy files from doesn't exist." % self.cfg['start_dir'])
+                raise EasyBuildError("Path %s to copy files from doesn't exist.", self.cfg['start_dir'])
 
         for jar in os.listdir(self.cfg['start_dir']):
             src = os.path.join(self.cfg['start_dir'], jar)
@@ -66,18 +68,31 @@ class EB_picard(EasyBlock):
                 shutil.copy2(src, dst)
                 self.log.info("Successfully copied %s to %s" % (src, dst))
             except OSError, err:
-                self.log.error("Failed to copy %s to %s (%s)" % (src, dst, err))
+                raise EasyBuildError("Failed to copy %s to %s (%s)", src, dst, err)
 
     def sanity_check_step(self):
         """Custom sanity check for picard"""
+        # All versions prior to 1.124 have this jar file
+        if LooseVersion(self.version) < LooseVersion('1.124'):
+            jar_files = ['picard-%s' % self.version]
+        else:
+            # Starting with v1.124 a major structural change was made to picard
+            # All versions >= 1.124 now only have these jar files
+            jar_files = [
+                'htsjdk-%s' % self.version,
+                'picard',
+                'picard-lib'
+            ]
+        
         custom_paths = {
-            'files': ["%s-%s.jar" % (x, self.version) for x in ['picard', 'sam']],
+            'files': ["%s.jar" % x for x in jar_files],
             'dirs': [],
         }
+
         super(EB_picard, self).sanity_check_step(custom_paths=custom_paths)
 
     def make_module_extra(self):
         """Add module entries specific to picard"""
         txt = super(EB_picard, self).make_module_extra()
-        txt += self.moduleGenerator.prepend_paths('PATH', '')
+        txt += self.module_generator.prepend_paths('PATH', '')
         return txt

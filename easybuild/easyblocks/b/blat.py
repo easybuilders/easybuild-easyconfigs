@@ -1,11 +1,11 @@
 ##
-# Copyright 2009-2013 the Cyprus Institute
+# Copyright 2009-2016 the Cyprus Institute
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
 # with support of Ghent University (http://ugent.be/hpc),
-# the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
-# the Hercules foundation (http://www.herculesstichting.be/in_English)
+# the Flemish Supercomputer Centre (VSC) (https://www.vscentrum.be),
+# Flemish Research Foundation (FWO) (http://www.fwo.be/en)
 # and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
 # http://github.com/hpcugent/easybuild
@@ -32,7 +32,8 @@ EasyBuild support for BLAT
 import os
 
 from easybuild.easyblocks.generic.makecp import MakeCp
-from easybuild.tools.filetools import run_cmd, mkdir
+from easybuild.tools.filetools import mkdir
+
 
 class EB_BLAT(MakeCp):
     """Support for building and installing BLAT."""
@@ -43,13 +44,8 @@ class EB_BLAT(MakeCp):
 
     def build_step(self, verbose=False):
         """Build BLAT using make and the appropriate options (e.g. BINDIR=)."""
-        paracmd = ''
-        if self.cfg['parallel']:
-            paracmd = "-j %s" % self.cfg['parallel']
-
+        self.cfg.update('prebuildopts', "MACHTYPE=x86_64")
         bindir = os.path.join(os.getcwd(), "bin")
+        self.cfg.update('buildopts', "BINDIR=%s" % bindir)
 
-        cmd = "MACHTYPE=x86_64 %s make %s BINDIR=%s" % (self.cfg['premakeopts'], paracmd, bindir)
-        (out, _) = run_cmd(cmd, log_all=True, simple=False, log_output=verbose)
-
-        return out
+        return super(EB_BLAT, self).build_step(verbose=verbose)

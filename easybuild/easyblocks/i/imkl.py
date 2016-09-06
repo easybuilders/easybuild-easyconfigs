@@ -1,11 +1,11 @@
 # #
-# Copyright 2009-2013 Ghent University
+# Copyright 2009-2016 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
 # with support of Ghent University (http://ugent.be/hpc),
-# the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
-# the Hercules foundation (http://www.herculesstichting.be/in_English)
+# the Flemish Supercomputer Centre (VSC) (https://www.vscentrum.be),
+# Flemish Research Foundation (FWO) (http://www.fwo.be/en)
 # and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
 # http://github.com/hpcugent/easybuild
@@ -31,18 +31,24 @@ EasyBuild support for installing the Intel Math Kernel Library (MKL), implemente
 @author: Pieter De Baets (Ghent University)
 @author: Jens Timmerman (Ghent University)
 @author: Ward Poelmans (Ghent University)
+@author: Lumir Jasiok (IT4Innovations)
 """
 
+import itertools
 import os
 import shutil
 import tempfile
 from distutils.version import LooseVersion
 
 import easybuild.tools.environment as env
+import easybuild.tools.toolchain as toolchain
 from easybuild.easyblocks.generic.intelbase import IntelBase, ACTIVATION_NAME_2012, LICENSE_FILE_NAME_2012
 from easybuild.framework.easyconfig import CUSTOM
-from easybuild.tools.filetools import rmtree2, run_cmd
+from easybuild.tools.build_log import EasyBuildError
+from easybuild.tools.filetools import apply_regex_substitutions, rmtree2
 from easybuild.tools.modules import get_software_root
+from easybuild.tools.run import run_cmd
+from easybuild.tools.systemtools import get_shared_lib_ext
 
 
 class EB_imkl(IntelBase):
@@ -82,7 +88,7 @@ class EB_imkl(IntelBase):
                 'license_file_name': LICENSE_FILE_NAME_2012,
             }
 
-        if LooseVersion(self.version) >= LooseVersion('11.1'):
+        if LooseVersion(self.version) >= LooseVersion('11.1') and self.install_components is None:
             silent_cfg_extras = {
                 'COMPONENTS': 'ALL',
             }
@@ -95,15 +101,24 @@ class EB_imkl(IntelBase):
         """
         if LooseVersion(self.version) >= LooseVersion('10.3'):
             if self.cfg['m32']:
-                self.log.error("32-bit not supported yet for IMKL v%s (>= 10.3)" % self.version)
-            return {
-                'PATH': ['bin', 'mkl/bin', 'mkl/bin/intel64', 'composerxe-2011/bin'],
-                'LD_LIBRARY_PATH': ['lib/intel64', 'mkl/lib/intel64'],
-                'LIBRARY_PATH': ['lib/intel64', 'mkl/lib/intel64'],
-                'MANPATH': ['man', 'man/en_US'],
-                'CPATH': ['mkl/include', 'mkl/include/fftw'],
-                'FPATH': ['mkl/include', 'mkl/include/fftw'],
-            }
+                raise EasyBuildError("32-bit not supported yet for IMKL v%s (>= 10.3)", self.version)
+            else:
+                retdict = {
+                    'PATH': ['bin', 'mkl/bin', 'mkl/bin/intel64', 'composerxe-2011/bin'],
+                    'LD_LIBRARY_PATH': ['lib/intel64', 'mkl/lib/intel64'],
+                    'LIBRARY_PATH': ['lib/intel64', 'mkl/lib/intel64'],
+                    'MANPATH': ['man', 'man/en_US'],
+                    'CPATH': ['mkl/include', 'mkl/include/fftw'],
+                    'FPATH': ['mkl/include', 'mkl/include/fftw'],
+                }
+                if LooseVersion(self.version) >= LooseVersion('11.0'):
+                    if LooseVersion(self.version) >= LooseVersion('11.3'):
+                        retdict['MIC_LD_LIBRARY_PATH'] = ['lib/intel64_lin_mic', 'mkl/lib/mic'];
+                    elif LooseVersion(self.version) >= LooseVersion('11.1'):
+                        retdict['MIC_LD_LIBRARY_PATH'] = ['lib/mic', 'mkl/lib/mic'];
+                    else:
+                        retdict['MIC_LD_LIBRARY_PATH'] = ['compiler/lib/mic', 'mkl/lib/mic'];
+                return retdict;
         else:
             if self.cfg['m32']:
                 return {
@@ -128,284 +143,272 @@ class EB_imkl(IntelBase):
     def make_module_extra(self):
         """Overwritten from Application to add extra txt"""
         txt = super(EB_imkl, self).make_module_extra()
-        txt += "prepend-path\t%s\t\t%s\n" % (self.license_env_var, self.license_file)
-        if self.cfg['m32']:
-            txt += "prepend-path\t%s\t\t$root/%s\n" % ('NLSPATH', 'idb/32/locale/%l_%t/%N')
-        else:
-            txt += "prepend-path\t%s\t\t$root/%s\n" % ('NLSPATH', 'idb/intel64/locale/%l_%t/%N')
-        txt += "setenv\t%s\t\t$root\n" % 'MKLROOT'
-
+        txt += self.module_generator.set_environment('MKLROOT', os.path.join(self.installdir, 'mkl'))
         return txt
 
     def post_install_step(self):
         """
-        The mkl directory structure has thoroughly changed as from version 10.3.
-        Hence post processing is quite different in both situations
+        Install group libraries and interfaces (if desired).
         """
+        super(EB_imkl, self).post_install_step()
+
+        shlib_ext = get_shared_lib_ext()
+
         # reload the dependencies
         self.load_dependency_modules()
 
-        if LooseVersion(self.version) >= LooseVersion('10.3'):
-            # Add convenient wrapper libs
-            # - form imkl 10.3
-
-            if self.cfg['m32']:
-                self.log.error("32-bit not supported yet for IMKL v%s (>=10.3)" % self.version)
-
+        if self.cfg['m32']:
             extra = {
-                'libmkl.so': 'GROUP (-lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core)',
+                'libmkl.%s' % shlib_ext : 'GROUP (-lmkl_intel -lmkl_intel_thread -lmkl_core)',
+                'libmkl_em64t.a': 'GROUP (libmkl_intel.a libmkl_intel_thread.a libmkl_core.a)',
+                'libmkl_solver.a': 'GROUP (libmkl_solver.a)',
+                'libmkl_scalapack.a': 'GROUP (libmkl_scalapack_core.a)',
+                'libmkl_lapack.a': 'GROUP (libmkl_intel.a libmkl_intel_thread.a libmkl_core.a)',
+                'libmkl_cdft.a': 'GROUP (libmkl_cdft_core.a)'
+            }
+        else:
+            extra = {
+                'libmkl.%s' % shlib_ext: 'GROUP (-lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core)',
                 'libmkl_em64t.a': 'GROUP (libmkl_intel_lp64.a libmkl_intel_thread.a libmkl_core.a)',
                 'libmkl_solver.a': 'GROUP (libmkl_solver_lp64.a)',
                 'libmkl_scalapack.a': 'GROUP (libmkl_scalapack_lp64.a)',
                 'libmkl_lapack.a': 'GROUP (libmkl_intel_lp64.a libmkl_intel_thread.a libmkl_core.a)',
                 'libmkl_cdft.a': 'GROUP (libmkl_cdft_core.a)'
             }
-            for fil, txt in extra.items():
-                dest = os.path.join(self.installdir, 'mkl/lib/intel64', fil)
-                if not os.path.exists(dest):
-                    try:
-                        f = open(dest, 'w')
-                        f.write(txt)
-                        f.close()
-                        self.log.info("File %s written" % dest)
-                    except:
-                        self.log.exception("Can't write file %s" % (dest))
 
-            # build the mkl interfaces (pic and no-pic)
+        if LooseVersion(self.version) >= LooseVersion('10.3'):
+            libsubdir = os.path.join('mkl', 'lib', 'intel64')
+        else:
+            if self.cfg['m32']:
+                libsubdir = os.path.join('lib', '32')
+            else:
+                libsubdir = os.path.join('lib', 'em64t')
 
-            if not self.cfg['interfaces']:
-                return
+        for fil, txt in extra.items():
+            dest = os.path.join(self.installdir, libsubdir, fil)
+            if not os.path.exists(dest):
+                try:
+                    f = open(dest, 'w')
+                    f.write(txt)
+                    f.close()
+                    self.log.info("File %s written" % dest)
+                except IOError, err:
+                    raise EasyBuildError("Can't write file %s: %s", dest, err)
 
-            # build the interfaces
-            # - blas95 and lapack95 need more work, ignore for now
+        # build the mkl interfaces, if desired
+        if self.cfg['interfaces']:
 
-            # lis1=['blas95','fftw2xc','fftw2xf','lapack95']
+            if LooseVersion(self.version) >= LooseVersion('10.3'):
+                intsubdir = os.path.join('mkl', 'interfaces')
+                inttarget = 'libintel64'
+            else:
+                intsubdir = 'interfaces'
+                if self.cfg['m32']:
+                    inttarget = 'lib32'
+                else:
+                    inttarget = 'libem64t'
+
+            cmd = "make -f makefile %s" % inttarget
+
+            # blas95 and lapack95 need more work, ignore for now
             # blas95 and lapack also need include/.mod to be processed
-            lis1 = ['fftw2xc', 'fftw2xf']
-            lis2 = ['fftw3xc', 'fftw3xf']
-            lis3 = []
-            if LooseVersion(self.version) < LooseVersion('11.1'):
-                lis3 = ['fftw2x_cdft', 'fftw3x_cdft']
+            fftw2libs = ['fftw2xc', 'fftw2xf']
+            fftw3libs = ['fftw3xc', 'fftw3xf']
+            cdftlibs = ['fftw2x_cdft']
+            if LooseVersion(self.version) >= LooseVersion('10.3'):
+                cdftlibs.append('fftw3x_cdft')
 
-            interfacedir = os.path.join(self.installdir, 'mkl/interfaces')
+            interfacedir = os.path.join(self.installdir, intsubdir)
             try:
                 os.chdir(interfacedir)
                 self.log.info("Changed to interfaces directory %s" % interfacedir)
-            except:
-                self.log.exception("Can't change to interfaces directory %s" % interfacedir)
+            except OSError, err:
+                raise EasyBuildError("Can't change to interfaces directory %s", interfacedir)
 
-            # compiler defaults to icc, but we could be using gcc to create gimkl.
-            makeopts = ''
-            if get_software_root('GCC'):  # can't use toolchain.comp_family, because of dummy toolchain
-                makeopts = 'compiler=gnu '
+            compopt = None
+            # determine whether we're using a non-Intel GCC-based or PGI-based toolchain
+            # can't use toolchain.comp_family, because of dummy toolchain used when installing imkl
+            if get_software_root('icc') is None:
+                # check for PGI first, since there's a GCC underneath PGI too...
+                if get_software_root('PGI'):
+                    compopt = 'compiler=pgi'
+                elif get_software_root('GCC'):
+                    compopt = 'compiler=gnu'
+                else:
+                    raise EasyBuildError("Not using Intel/GCC/PGI compilers, don't know how to build wrapper libs")
+            else:
+                compopt = 'compiler=intel'
 
-            for i in lis1 + lis2 + lis3:
-                if i in lis1:
-                    # use INSTALL_DIR and CFLAGS and COPTS
-                    cmd = "make -f makefile libintel64"
-                if i in lis2:
-                    # use install_to and CFLAGS
-                    cmd = "make -f makefile libintel64 install_to=$INSTALL_DIR"
-                if i in lis3:
-                    # use INSTALL_DIR and SPEC_OPT
-                    extramakeopts = ''
-                    # can't use toolchain.mpi_family, because of dummy toolchain
-                    if get_software_root('MPICH2') or get_software_root('MVAPICH2'):
-                        extramakeopts = 'mpi=mpich2'
-                    elif get_software_root('OpenMPI'):
-                        extramakeopts = 'mpi=openmpi'
-                    cmd = "make -f makefile libintel64 %s" % extramakeopts
+            # patch makefiles for cdft wrappers when PGI is used as compiler
+            if get_software_root('PGI'):
+                regex_subs = [
+                    # pgi should be considered as a valid compiler
+                    ("intel gnu", "intel gnu pgi"),
+                    # transform 'gnu' case to 'pgi' case
+                    (r"ifeq \(\$\(compiler\),gnu\)", "ifeq ($(compiler),pgi)"),
+                    ('=gcc', '=pgcc'),
+                    # correct flag to use C99 standard
+                    ('-std=c99', '-c99'),
+                    # -Wall and -Werror are not valid options for pgcc, no close equivalent
+                    ('-Wall', ''),
+                    ('-Werror', ''),
+                ]
+                for lib in cdftlibs:
+                    apply_regex_substitutions(os.path.join(interfacedir, lib, 'makefile'), regex_subs)
 
-                # add other make options as well
-                cmd = ' '.join([cmd, makeopts])
+            for lib in fftw2libs + fftw3libs + cdftlibs:
+                buildopts = [compopt]
+                if lib in fftw3libs:
+                    buildopts.append('install_to=$INSTALL_DIR')
+                elif lib in cdftlibs:
+                    mpi_spec = None
+                    # check whether MPI_FAMILY constant is defined, so mpi_family() can be used
+                    if hasattr(self.toolchain, 'MPI_FAMILY') and self.toolchain.MPI_FAMILY is not None:
+                        mpi_spec_by_fam = {
+                            toolchain.MPICH: 'mpich2',  # MPICH is MPICH v3.x, which is MPICH2 compatible
+                            toolchain.MPICH2: 'mpich2',
+                            toolchain.MVAPICH2: 'mpich2',
+                            toolchain.OPENMPI: 'openmpi',
+                        }
+                        mpi_fam = self.toolchain.mpi_family()
+                        mpi_spec = mpi_spec_by_fam.get(mpi_fam)
+                        self.log.debug("Determined MPI specification based on MPI toolchain component: %s" % mpi_spec)
+                    else:
+                        # can't use toolchain.mpi_family, because of dummy toolchain
+                        if get_software_root('MPICH2') or get_software_root('MVAPICH2'):
+                            mpi_spec = 'mpich2'
+                        elif get_software_root('OpenMPI'):
+                            mpi_spec = 'openmpi'
+                        self.log.debug("Determined MPI specification based on loaded MPI module: %s" % mpi_spec)
 
-                for opt in ['', '-fPIC']:
-                    try:
-                        tmpbuild = tempfile.mkdtemp()
-                        self.log.debug("Created temporary directory %s" % tmpbuild)
-                    except:
-                        self.log.exception("Creating temporary directory failed")
+                    if mpi_spec is not None:
+                        buildopts.append('mpi=%s' % mpi_spec)
+
+                precflags = ['']
+                if lib.startswith('fftw2x') and not self.cfg['m32']:
+                    # build both single and double precision variants
+                    precflags = ['PRECISION=MKL_DOUBLE', 'PRECISION=MKL_SINGLE']
+
+                intflags = ['']
+                if lib in cdftlibs and not self.cfg['m32']:
+                    # build both 32-bit and 64-bit interfaces
+                    intflags = ['interface=lp64', 'interface=ilp64']
+
+                allopts = [list(opts) for opts in itertools.product(intflags, precflags)]
+
+                for flags, extraopts in itertools.product(['', '-fPIC'], allopts):
+                    tup = (lib, flags, buildopts, extraopts)
+                    self.log.debug("Building lib %s with: flags %s, buildopts %s, extraopts %s" % tup)
+
+                    tmpbuild = tempfile.mkdtemp(dir=self.builddir)
+                    self.log.debug("Created temporary directory %s" % tmpbuild)
 
                     # always set INSTALL_DIR, SPEC_OPT, COPTS and CFLAGS
+                    # fftw2x(c|f): use $INSTALL_DIR, $CFLAGS and $COPTS
+                    # fftw3x(c|f): use $CFLAGS
+                    # fftw*cdft: use $INSTALL_DIR and $SPEC_OPT
                     env.setvar('INSTALL_DIR', tmpbuild)
-                    env.setvar('SPEC_OPT', opt)
-                    env.setvar('COPTS', opt)
-                    env.setvar('CFLAGS', opt)
+                    env.setvar('SPEC_OPT', flags)
+                    env.setvar('COPTS', flags)
+                    env.setvar('CFLAGS', flags)
 
                     try:
-                        intdir = os.path.join(interfacedir, i)
+                        intdir = os.path.join(interfacedir, lib)
                         os.chdir(intdir)
-                        self.log.info("Changed to interface %s directory %s" % (i, intdir))
-                    except:
-                        self.log.exception("Can't change to interface %s directory %s" % (i, intdir))
+                        self.log.info("Changed to interface %s directory %s" % (lib, intdir))
+                    except OSError, err:
+                        raise EasyBuildError("Can't change to interface %s directory %s: %s", lib, intdir, err)
 
-                    if not run_cmd(cmd, log_all=True, simple=True):
-                        self.log.error("Building %s (opt: %s) failed" % (i, opt))
+                    fullcmd = "%s %s" % (cmd, ' '.join(buildopts + extraopts))
+                    res = run_cmd(fullcmd, log_all=True, simple=True)
+                    if not res:
+                        raise EasyBuildError("Building %s (flags: %s, fullcmd: %s) failed", lib, flags, fullcmd)
 
-                    for fil in os.listdir(tmpbuild):
-                        if opt == '-fPIC':
+                    for fn in os.listdir(tmpbuild):
+                        src = os.path.join(tmpbuild, fn)
+                        if flags == '-fPIC':
                             # add _pic to filename
-                            ff = fil.split('.')
-                            newfil = '.'.join(ff[:-1]) + '_pic.' + ff[-1]
-                        else:
-                            newfil = fil
-                        dest = os.path.join(self.installdir, 'mkl/lib/intel64', newfil)
+                            ff = fn.split('.')
+                            fn = '.'.join(ff[:-1]) + '_pic.' + ff[-1]
+                        dest = os.path.join(self.installdir, libsubdir, fn)
                         try:
-                            src = os.path.join(tmpbuild, fil)
                             if os.path.isfile(src):
                                 shutil.move(src, dest)
                                 self.log.info("Moved %s to %s" % (src, dest))
-                        except:
-                            self.log.exception("Failed to move %s to %s" % (src, dest))
+                        except OSError, err:
+                            raise EasyBuildError("Failed to move %s to %s: %s", src, dest, err)
 
-                    try:
-                        rmtree2(tmpbuild)
-                        self.log.debug('Removed temporary directory %s' % tmpbuild)
-                    except:
-                        self.log.exception("Removing temporary directory %s failed" % tmpbuild)
-        else:
-            # Follow this procedure for mkl version lower than 10.3
-            # Extra
-            # - build the mkl interfaces (pic and no-pic)
-            # - add wrapper libs
-            #            Add convenient libs
-            # - form imkl 10.1
-            if self.cfg['m32']:
-                extra = {
-                    'libmkl.so': 'GROUP (-lmkl_intel -lmkl_intel_thread -lmkl_core)',
-                    'libmkl_em64t.a': 'GROUP (libmkl_intel.a libmkl_intel_thread.a libmkl_core.a)',
-                    'libmkl_solver.a': 'GROUP (libmkl_solver.a)',
-                    'libmkl_scalapack.a': 'GROUP (libmkl_scalapack_core.a)',
-                    'libmkl_lapack.a': 'GROUP (libmkl_intel.a libmkl_intel_thread.a libmkl_core.a)',
-                    'libmkl_cdft.a': 'GROUP (libmkl_cdft_core.a)'
-                }
-            else:
-                extra = {
-                    'libmkl.so': 'GROUP (-lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core)',
-                    'libmkl_em64t.a': 'GROUP (libmkl_intel_lp64.a libmkl_intel_thread.a libmkl_core.a)',
-                    'libmkl_solver.a': 'GROUP (libmkl_solver_lp64.a)',
-                    'libmkl_scalapack.a': 'GROUP (libmkl_scalapack_lp64.a)',
-                    'libmkl_lapack.a': 'GROUP (libmkl_intel_lp64.a libmkl_intel_thread.a libmkl_core.a)',
-                    'libmkl_cdft.a': 'GROUP (libmkl_cdft_core.a)'
-                }
-            for fil, txt in extra.items():
-                if self.cfg['m32']:
-                    dest = os.path.join(self.installdir, 'lib/32', fil)
-                else:
-                    dest = os.path.join(self.installdir, 'lib/em64t', fil)
-                if not os.path.exists(dest):
-                    try:
-                        f = open(dest, 'w')
-                        f.write(txt)
-                        f.close()
-                        self.log.info("File %s written" % dest)
-                    except:
-                        self.log.exception("Can't write file %s" % (dest))
-
-            if not self.cfg['interfaces']:
-                return
-
-            # build the interfaces
-            # - blas95 and lapack95 need more work, ignore for now
-            # lis1=['blas95','fftw2xc','fftw2x_cdft','fftw2xf','lapack95']
-            # blas95 and lapack also need include/.mod to be processed
-            lis1 = ['fftw2xc', 'fftw2x_cdft', 'fftw2xf']
-            lis2 = ['fftw3xc', 'fftw3xf']
-
-            interfacedir = os.path.join(self.installdir, 'interfaces')
-            try:
-                os.chdir(interfacedir)
-            except:
-                self.log.exception("Can't change to interfaces directory %s" % interfacedir)
-
-            interfacestarget = "libem64t"
-            if self.cfg['m32']:
-                interfacestarget = "lib32"
-
-            for i in lis1 + lis2:
-                if i in lis1:
-                    # use INSTALL_DIR and SPEC_OPT
-                    cmd = "make -f makefile %s" % interfacestarget
-                if i in lis2:
-                    # use install_to and CFLAGS
-                    cmd = "make -f makefile %s install_to=$INSTALL_DIR" % interfacestarget
-
-                for opt in ['', '-fPIC']:
-                    try:
-                        tmpbuild = tempfile.mkdtemp()
-                        self.log.debug("Created temporary directory %s" % tmpbuild)
-                    except:
-                        self.log.exception("Creating temporary directory failed")
-
-                    # always set INSTALL_DIR, SPEC_OPT and CFLAGS
-                    env.setvar('INSTALL_DIR', tmpbuild)
-                    env.setvar('SPEC_OPT', opt)
-                    env.setvar('CFLAGS', opt)
-
-                    try:
-                        intdir = os.path.join(interfacedir, i)
-                        os.chdir(intdir)
-                    except:
-                        self.log.exception("Can't change to interface %s directory %s" % (i, intdir))
-
-                    if not run_cmd(cmd, log_all=True, simple=True):
-                        self.log.error("Building %s (opt: %s) failed" % (i, opt))
-
-                    for fil in os.listdir(tmpbuild):
-                        if opt == '-fPIC':
-                            # add _pic to filename
-                            ff = fil.split('.')
-                            newfil = '.'.join(ff[:-1]) + '_pic.' + ff[-1]
-                        else:
-                            newfil = fil
-                        if self.cfg['m32']:
-                            dest = os.path.join(self.installdir, 'lib/32', newfil)
-                        else:
-                            dest = os.path.join(self.installdir, 'lib/em64t', newfil)
-                        try:
-                            src = os.path.join(tmpbuild, fil)
-                            shutil.move(src, dest)
-                            self.log.debug("Moved %s to %s" % (src, dest))
-                        except:
-                            self.log.exception("Failed to move %s to %s" % (src, dest))
-
-                    try:
-                        rmtree2(tmpbuild)
-                        self.log.debug('Removed temporary directory %s' % tmpbuild)
-                    except:
-                        self.log.exception("Removing temporary directory %s failed" % (tmpbuild))
+                    rmtree2(tmpbuild)
 
     def sanity_check_step(self):
         """Custom sanity check paths for Intel MKL."""
+        shlib_ext = get_shared_lib_ext()
+
         mklfiles = None
         mkldirs = None
         ver = LooseVersion(self.version)
-        libnames = ["libmkl_core.so", "libmkl_gnu_thread.so", "libmkl_intel_thread.so", "libmkl_sequential.so"]
-        libnames_extra = ["libmkl_blacs_intelmpi_%(suff)s.so", "libmkl_scalapack_%(suff)s.so"]
+        libs = ['libmkl_core.%s' % shlib_ext, 'libmkl_gnu_thread.%s' % shlib_ext,
+                'libmkl_intel_thread.%s' % shlib_ext, 'libmkl_sequential.%s' % shlib_ext]
+        extralibs = ['libmkl_blacs_intelmpi_%(suff)s.' + shlib_ext, 'libmkl_scalapack_%(suff)s.' + shlib_ext]
+
+        if self.cfg['interfaces']:
+            compsuff = '_intel'
+            if get_software_root('icc') is None:
+                # check for PGI first, since there's a GCC underneath PGI too...
+                if get_software_root('PGI'):
+                    compsuff = '_pgi'
+                elif get_software_root('GCC'):
+                    compsuff = '_gnu'
+                else:
+                    raise EasyBuildError("Not using Intel/GCC/PGI, don't know compiler suffix for FFTW libraries.")
+
+            precs = ['_double', '_single']
+            if ver < LooseVersion('11'):
+                # no precision suffix in libfftw2 libs before imkl v11
+                precs = ['']
+            fftw_vers = ['2x%s%s' % (x, prec) for x in ['c', 'f'] for prec in precs] + ['3xc', '3xf']
+            pics = ['', '_pic']
+            libs = ['libfftw%s%s%s.a' % (fftwver, compsuff, pic) for fftwver in fftw_vers for pic in pics]
+
+            fftw_cdft_vers = ['2x_cdft_DOUBLE']
+            if not self.cfg['m32']:
+                fftw_cdft_vers.append('2x_cdft_SINGLE')
+            if ver >= LooseVersion('10.3'):
+                fftw_cdft_vers.append('3x_cdft')
+            if ver >= LooseVersion('11.0.2'):
+                bits = ['_lp64']
+                if not self.cfg['m32']:
+                    bits.append('_ilp64')
+            else:
+                # no bits suffix in cdft libs before imkl v11.0.2
+                bits = ['']
+            libs += ['libfftw%s%s%s.a' % x for x in itertools.product(fftw_cdft_vers, bits, pics)]
 
         if ver >= LooseVersion('10.3'):
             if self.cfg['m32']:
-                self.log.error("Sanity check for 32-bit not implemented yet for IMKL v%s (>= 10.3)" % self.version)
+                raise EasyBuildError("Sanity check for 32-bit not implemented yet for IMKL v%s (>= 10.3)", self.version)
             else:
-                mkldirs = ["bin", "mkl/bin", "mkl/bin/intel64", "mkl/lib/intel64", "mkl/include"]
-                libnames += [lib % {'suff': suff} for lib in libnames_extra for suff in ['lp64', 'ilp64']]
-                mklfiles = ["mkl/lib/intel64/libmkl.so", "mkl/include/mkl.h"] + \
-                           ["mkl/lib/intel64/%s" % lib for lib in libnames]
+                mkldirs = ['bin', 'mkl/bin', 'mkl/lib/intel64', 'mkl/include']
+                if ver < LooseVersion('11.3'):
+                    mkldirs.append('mkl/bin/intel64')
+                libs += [lib % {'suff': suff} for lib in extralibs for suff in ['lp64', 'ilp64']]
+                mklfiles = ['mkl/lib/intel64/libmkl.%s' % shlib_ext, 'mkl/include/mkl.h'] + \
+                           ['mkl/lib/intel64/%s' % lib for lib in libs]
                 if ver >= LooseVersion('10.3.4') and ver < LooseVersion('11.1'):
-                    mkldirs += ["compiler/lib/intel64"]
+                    mkldirs += ['compiler/lib/intel64']
                 else:
-                    mkldirs += ["lib/intel64"]
+                    mkldirs += ['lib/intel64']
 
         else:
             if self.cfg['m32']:
-                mklfiles = ["lib/32/libmkl.so", "include/mkl.h"] + \
-                           ["lib/32/%s" % lib for lib in libnames]
-                mkldirs = ["lib/32", "include/32", "interfaces"]
+                mklfiles = ['lib/32/libmkl.%s' % shlib_ext, 'include/mkl.h'] + \
+                           ['lib/32/%s' % lib for lib in libs]
+                mkldirs = ['lib/32', 'include/32', 'interfaces']
             else:
-                libnames += [lib % {'suff': suff} for lib in libnames_extra for suff in ['lp64', 'ilp64']]
-                mklfiles = ["lib/em64t/libmkl.so", "include/mkl.h"] + \
-                           ["lib/em64t/%s" % lib for lib in libnames]
-                mkldirs = ["lib/em64t", "include/em64t", "interfaces"]
+                libs += [lib % {'suff': suff} for lib in extralibs for suff in ['lp64', 'ilp64']]
+                mklfiles = ['lib/em64t/libmkl.%s' % shlib_ext, 'include/mkl.h'] + \
+                           ['lib/em64t/%s' % lib for lib in libs]
+                mkldirs = ['lib/em64t', 'include/em64t', 'interfaces']
 
         custom_paths = {
             'files': mklfiles,

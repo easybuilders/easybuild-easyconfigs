@@ -1,11 +1,11 @@
 ##
-# Copyright 2009-2013 Ghent University
+# Copyright 2009-2016 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
 # with support of Ghent University (http://ugent.be/hpc),
-# the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
-# the Hercules foundation (http://www.herculesstichting.be/in_English)
+# the Flemish Supercomputer Centre (VSC) (https://www.vscentrum.be),
+# Flemish Research Foundation (FWO) (http://www.fwo.be/en)
 # and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
 # http://github.com/hpcugent/easybuild
@@ -35,7 +35,8 @@ import os
 
 import easybuild.tools.toolchain as toolchain
 from easybuild.easyblocks.generic.pythonpackage import PythonPackage
-from easybuild.tools.filetools import run_cmd
+from easybuild.tools.build_log import EasyBuildError
+from easybuild.tools.run import run_cmd
 
 
 class FortranPythonPackage(PythonPackage):
@@ -47,7 +48,7 @@ class FortranPythonPackage(PythonPackage):
         comp_fam = self.toolchain.comp_family()
 
         if comp_fam == toolchain.INTELCOMP:  # @UndefinedVariable
-            cmd = "python setup.py build --compiler=intel --fcompiler=intelem"
+            cmd = "%s setup.py build --compiler=intel --fcompiler=intelem" % self.python_cmd
 
         elif comp_fam in [toolchain.GCC, toolchain.CLANGGCC]:  # @UndefinedVariable
             cmdprefix = ""
@@ -62,9 +63,9 @@ class FortranPythonPackage(PythonPackage):
                                                                                               ldflags,
                                                                                               cmdprefix))
 
-            cmd = "%s python setup.py build --fcompiler=gnu95" % cmdprefix
+            cmd = "%s %s setup.py build --fcompiler=gnu95" % (cmdprefix, self.python_cmd)
 
         else:
-            self.log.error("Unknown family of compilers being used: %s" % comp_fam)
+            raise EasyBuildError("Unknown family of compilers being used: %s", comp_fam)
 
         run_cmd(cmd, log_all=True, simple=True)

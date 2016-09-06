@@ -1,11 +1,11 @@
 ##
-# Copyright 2009-2013 Ghent University
+# Copyright 2009-2016 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
 # with support of Ghent University (http://ugent.be/hpc),
-# the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
-# the Hercules foundation (http://www.herculesstichting.be/in_English)
+# the Flemish Supercomputer Centre (VSC) (https://www.vscentrum.be),
+# Flemish Research Foundation (FWO) (http://www.fwo.be/en)
 # and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
 # http://github.com/hpcugent/easybuild
@@ -30,9 +30,11 @@ EasyBuild support for Perl, implemented as an easyblock
 """
 
 import os
+import re
 
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
-from easybuild.tools.filetools import run_cmd
+from easybuild.framework.easyconfig import CUSTOM
+from easybuild.tools.run import run_cmd
 
 # perldoc -lm seems to be the safest way to test if a module is available, based on exit code
 EXTS_FILTER_PERL_MODULES = ("perldoc -lm %(ext_name)s ", "")
@@ -41,19 +43,43 @@ EXTS_FILTER_PERL_MODULES = ("perldoc -lm %(ext_name)s ", "")
 class EB_Perl(ConfigureMake):
     """Support for building and installing Perl."""
 
+    @staticmethod
+    def extra_options():
+        """Add extra config options specific to Perl."""
+        extra_vars = {
+            'use_perl_threads': [True, "Use internal Perl threads by means of the -Dusethreads compiler directive", CUSTOM],
+        }
+        return ConfigureMake.extra_options(extra_vars)
+
     def configure_step(self):
         """
         Configure Perl build: run ./Configure instead of ./configure with some different options
         """
-        configopts = ' '.join([
+        configopts = [
             self.cfg['configopts'],
-            "-Dusethreads",
-            '-Dcc="%s"' % os.getenv('CC'),
-            '-Dccflags="%s"' % os.getenv('CFLAGS'),
+            '-Dcc="{0}"'.format(os.getenv('CC')),
+            '-Dccflags="{0}"'.format(os.getenv('CFLAGS')),
             '-Dinc_version_list=none',
-        ])
-        cmd = './Configure -de %s -Dprefix="%s" ' % (configopts, self.installdir)
+        ]
+        if self.cfg['use_perl_threads']:
+            configopts.append('-Dusethreads')
+
+        cmd = './Configure -de %s -Dprefix="%s"' % (' '.join(configopts), self.installdir)
         run_cmd(cmd, log_all=True, simple=True)
+
+    def test_step(self):
+        """Test Perl build via 'make test'."""
+        # allow escaping with runtest = False
+        if self.cfg['runtest'] is None or self.cfg['runtest']:
+            if isinstance(self.cfg['runtest'], basestring):
+                cmd = "make %s" % self.cfg['runtest']
+            else:
+                cmd = "make test"
+
+            # specify locale to be used, to avoid that a handful of tests fail
+            cmd = "export LC_ALL=C && %s" % cmd
+
+            run_cmd(cmd, log_all=False, log_ok=False, simple=False)
 
     def prepare_for_extensions(self):
         """
@@ -98,5 +124,4 @@ def get_site_suffix(tag):
 def get_sitearch_suffix():
     """Deprecated more specific version of get_site_suffix. Only here for backward compatibility."""
     _log = fancylogger.getLogger('Perl.get_sitearch_suffix', fname=False)
-    _log.deprecated("Use get_site_suffix('sitearch') instead of get_sitearch_suffix()", "2.0")
-    return get_site_suffix('sitearch')
+    _log.nosupport("Use get_site_suffix('sitearch') instead of get_sitearch_suffix()", "2.0")
