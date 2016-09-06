@@ -1,0 +1,41 @@
+easyblock = 'Bundle'
+
+name = 'numba'
+version = '0.24.0'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'http://numba.pydata.org/'
+description = """Numba is an Open Source NumPy-aware optimizing compiler for Python sponsored by Continuum Analytics,
+ Inc. It uses the remarkable LLVM compiler infrastructure to compile Python syntax to machine code."""
+
+toolchain = {'name': 'intel', 'version': '2016a'}
+
+# this is a bundle of Python packages
+exts_defaultclass = 'PythonPackage'
+
+dependencies = [
+    ('Python', '3.5.1'),
+    ('LLVM', '3.7.1'),
+]
+
+exts_list = [
+    ('llvmlite', '0.9.0', {
+        'source_urls': ['https://pypi.python.org/packages/source/l/llvmlite/'],
+        'patches': ['llvmlite-0.9.0_fix-ffi-Makefile.patch'],
+    }),
+    (name, version, {
+        'source_urls': ['https://pypi.python.org/packages/source/n/numba/'],
+    }),
+]
+
+# specify that Bundle easyblock should run a full sanity check, rather than just trying to load the module
+full_sanity_check = True
+
+sanity_check_paths = {
+    'files': ['bin/numba', 'bin/pycc'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+modextrapaths = {'PYTHONPATH': ['lib/python%(pyshortver)s/site-packages']}
+
+moduleclass = 'lang'
