@@ -1,38 +1,66 @@
 # This file is an EasyBuild reciPY as per https://github.com/hpcugent/easybuild
 # Author: Pablo Escobar Lopez
-# Swiss Institute of Bioinformatics
-# Biozentrum - University of Basel
-# Author: Jens Timmerman, Ghent University
+# sciCORE - University of Basel
+# SIB Swiss Institute of Bioinformatics 
 
-easyblock = 'MakeCp'
+easyblock='MakeCp'
 
 name = 'tabix'
 version = '0.2.6'
 
 homepage = 'http://samtools.sourceforge.net'
-description = """ Generic indexer for TAB-delimited genome position files """
+description = """ Generic indexer for TAB-delimited genome position files """ 
 
 toolchain = {'name': 'goolf', 'version': '1.4.10'}
 
 source_urls = [('http://sourceforge.net/projects/samtools/files/', 'download')]
 sources = [SOURCE_TAR_BZ2]
 
-dependencies = [('zlib', '1.2.8')]
+patches = ['tabix-0.2.6-zlib.patch']
 
-buildopts = 'CFLAGS="-L$EBROOTZLIB/lib"'
+# deps needed to compile python and perl tabix bindings
+python = "Python"
+pythonversion = "2.7.5"
+pythonshortversion = ".".join(pythonversion.split(".")[:-1])
+
+dependencies = [
+    (python, pythonversion),
+    ('Perl', '5.16.3'),
+    ('zlib', '1.2.8')
+]
+
+hiddendependencies = [('zlib', '1.2.8')]
+
+# compile python binding
+prebuildopts = 'cd python && '
+prebuildopts += 'python setup.py install --prefix=%(builddir)s && '
+prebuildopts += 'cd .. && ' 
+
+# compile perl binding
+prebuildopts += 'cd perl && '
+prebuildopts += 'perl Makefile.PL PREFIX=%(builddir)s && '
+prebuildopts += 'make && make install && '
+prebuildopts += 'cd .. && '
 
 files_to_copy = [
     (["tabix", "bgzip", "tabix.py"], "bin"),
     (["tabix.1"], "man/man1"),
-    "example.gtf.gz",
+    "example.gtf.gz", 
     "example.gtf.gz.tbi",
-    "NEWS",
-    "ChangeLog"
-]
+    "NEWS", 
+    "ChangeLog", 
+    "../lib" # lib dir is where bindings are
+] 
 
 sanity_check_paths = {
     'files': ["bin/tabix", "bin/bgzip", "bin/tabix.py"],
-    'dirs': [""],
+    'dirs': ["lib"],
 }
+
+# define required env vars so the python and perl bindings are found
+modextrapaths = {
+    'PYTHONPATH': 'lib/python%s/site-packages' % (pythonshortversion),
+    'PERL5LIB': 'lib/perl5/site_perl'
+    }
 
 moduleclass = 'bio'
