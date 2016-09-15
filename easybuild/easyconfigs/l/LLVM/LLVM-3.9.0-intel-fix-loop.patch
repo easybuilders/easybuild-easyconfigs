@@ -1,0 +1,26 @@
+# Bug in intel compiler
+# Source: From https://sft.its.cern.ch/jira/browse/ROOT-8233
+diff -ur llvm-3.9.0rc3.src.orig/lib/Transforms/Utils/LoopUtils.cpp llvm-3.9.0rc3.src/lib/Transforms/Utils/LoopUtils.cpp
+--- llvm-3.9.0rc3.src.orig/lib/Transforms/Utils/LoopUtils.cpp	2016-06-11 23:48:25.000000000 +0200
++++ llvm-3.9.0rc3.src/lib/Transforms/Utils/LoopUtils.cpp	2016-09-01 11:40:34.394205219 +0200
+@@ -834,6 +834,11 @@
+   return UsedOutside;
+ }
+
++namespace llvm {
++  extern char &LoopSimplifyID;
++  extern char &LCSSAID;
++}
++
+ void llvm::getLoopAnalysisUsage(AnalysisUsage &AU) {
+   // By definition, all loop passes need the LoopInfo analysis and the
+   // Dominator tree it depends on. Because they all participate in the loop
+@@ -845,8 +850,6 @@
+
+   // We must also preserve LoopSimplify and LCSSA. We locally access their IDs
+   // here because users shouldn't directly get them from this header.
+-  extern char &LoopSimplifyID;
+-  extern char &LCSSAID;
+   AU.addRequiredID(LoopSimplifyID);
+   AU.addPreservedID(LoopSimplifyID);
+   AU.addRequiredID(LCSSAID);
