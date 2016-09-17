@@ -37,6 +37,7 @@ from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.build_log import EasyBuildError
+from easybuild.tools.config import build_option
 from easybuild.tools.filetools import apply_regex_substitutions, mkdir, read_file
 from easybuild.tools.run import run_cmd, run_cmd_qa
 
@@ -177,8 +178,11 @@ class EB_Molpro(ConfigureMake, Binary):
             # check 'main routes' only
             run_cmd("make quicktest")
 
-            # extensive test
-            run_cmd("make MOLPRO_OPTIONS='-n%s' test" % self.cfg['parallel'])
+            if build_option('mpi_tests'):
+                # extensive test
+                run_cmd("make MOLPRO_OPTIONS='-n%s' test" % self.cfg['parallel'])
+            else:
+                self.log.info("Skipping extensive testing of Molpro since MPI testing is disabled")
 
     def install_step(self):
         """

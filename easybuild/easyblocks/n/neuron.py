@@ -34,6 +34,7 @@ from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.easyblocks.generic.pythonpackage import det_pylibdir
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.build_log import EasyBuildError
+from easybuild.tools.config import build_option
 from easybuild.tools.filetools import adjust_permissions
 from easybuild.tools.modules import get_software_root
 from easybuild.tools.run import run_cmd
@@ -139,15 +140,15 @@ class EB_NEURON(ConfigureMake):
 
         # test NEURON demo
         inp = '\n'.join([
-                         "demo(3) // load the pyramidal cell model.",
-                         "init()  // initialise the model",
-                         "t       // should be zero",
-                         "soma.v  // will print -65",
-                         "run()   // run the simulation",
-                         "t       // should be 5, indicating that 5ms were simulated",
-                         "soma.v  // will print a value other than -65, indicating that the simulation was executed",
-                         "quit()",
-                        ])
+            "demo(3) // load the pyramidal cell model.",
+            "init()  // initialise the model",
+            "t       // should be zero",
+            "soma.v  // will print -65",
+            "run()   // run the simulation",
+            "t       // should be 5, indicating that 5ms were simulated",
+            "soma.v  // will print a value other than -65, indicating that the simulation was executed",
+            "quit()",
+        ])
         (out, ec) = run_cmd("neurondemo", simple=False, log_all=True, log_output=True, inp=inp)
 
         validate_regexp = re.compile("^\s+-65\s*\n\s+5\s*\n\s+-68.134337", re.M)
@@ -156,29 +157,31 @@ class EB_NEURON(ConfigureMake):
         else:
             self.log.info("Validation of NEURON demo OK!")
 
-        nproc = self.cfg['parallel']
+        if build_option('mpi_tests'):
+            nproc = self.cfg['parallel']
+            try:
+                cwd = os.getcwd()
+                os.chdir(os.path.join(self.cfg['start_dir'], 'src', 'parallel'))
 
-        try:
-            cwd = os.getcwd()
-            os.chdir(os.path.join(self.cfg['start_dir'], 'src', 'parallel'))
+                cmd = self.toolchain.mpi_cmd_for("nrniv -mpi test0.hoc", nproc)
+                (out, ec) = run_cmd(cmd, simple=False, log_all=True, log_output=True)
 
-            cmd = self.toolchain.mpi_cmd_for("nrniv -mpi test0.hoc", nproc)
-            (out, ec) = run_cmd(cmd, simple=False, log_all=True, log_output=True)
+                os.chdir(cwd)
+            except OSError, err:
+                raise EasyBuildError("Failed to run parallel hello world: %s", err)
 
-            os.chdir(cwd)
-        except OSError, err:
-            raise EasyBuildError("Failed to run parallel hello world: %s", err)
-
-        valid = True
-        for i in range(0, nproc):
-            validate_regexp = re.compile("I am %d of %d" % (i, nproc))
-            if not validate_regexp.search(out):
-                valid = False
-                break
-        if ec or not valid:
-            raise EasyBuildError("Validation of parallel hello world run failed.")
+            valid = True
+            for i in range(0, nproc):
+                validate_regexp = re.compile("I am %d of %d" % (i, nproc))
+                if not validate_regexp.search(out):
+                    valid = False
+                    break
+            if ec or not valid:
+                raise EasyBuildError("Validation of parallel hello world run failed.")
+            else:
+                self.log.info("Parallel hello world OK!")
         else:
-            self.log.info("Parallel hello world OK!")
+            self.log.info("Skipping MPI testing of NEURON since MPI testing is disabled")
 
         # cleanup
         self.clean_up_fake_module(fake_mod_data)

@@ -235,6 +235,11 @@ class EB_WRF(EasyBlock):
         """Build and run tests included in the WRF distribution."""
         if self.cfg['runtest']:
 
+            if self.cfg['buildtype'] in self.parallel_build_types and not build_option('mpi_tests'):
+                self.log.info("Skipping testing of WRF with build type '%s' since MPI testing is disabled",
+                              self.cfg['build_type'])
+                return
+
             # get list of WRF test cases
             self.testcases = []
             if os.path.exists('test'):

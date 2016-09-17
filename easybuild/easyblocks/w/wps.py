@@ -45,6 +45,7 @@ from easybuild.easyblocks.netcdf import set_netcdf_env_vars  #@UnresolvedImport
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import CUSTOM, MANDATORY
 from easybuild.tools.build_log import EasyBuildError
+from easybuild.tools.config import build_option
 from easybuild.tools.filetools import extract_file, patch_perl_script_autoflush, rmtree2
 from easybuild.tools.modules import get_software_root, get_software_version
 from easybuild.tools.run import run_cmd, run_cmd_qa
@@ -228,9 +229,13 @@ class EB_WPS(EasyBlock):
             """Run a WPS command, and check for success."""
 
             cmd = os.path.join(wpsdir, "%s.exe" % cmdname)
-            
+
             if mpi_cmd:
-                cmd = self.toolchain.mpi_cmd_for(cmd, 1)
+                if build_option('mpi_tests'):
+                    cmd = self.toolchain.mpi_cmd_for(cmd, 1)
+                else:
+                    self.log.info("Skipping MPI test for %s, since MPI tests are disabled", cmd)
+                    return
             
             (out, _) = run_cmd(cmd, log_all=True, simple=False)
 
