@@ -201,12 +201,9 @@ class IntelBase(EasyBlock):
         except OSError, err:
             raise EasyBuildError("Failed to symlink %s to %s: %s", self.home_subdir_local, self.home_subdir, err)
 
-    def configure_step(self):
-        """Configure: handle license file and clean home dir."""
-
-        # prepare (local) 'intel' home subdir
-        self.setup_local_home_subdir()
-        self.clean_home_subdir()
+    def prepare_step(self):
+        """Custom prepare step for IntelBase. Set up the license"""
+        super(IntelBase, self).prepare_step()
 
         default_lic_env_var = 'INTEL_LICENSE_FILE'
         lic_specs, self.license_env_var = find_flexlm_license(custom_env_vars=[default_lic_env_var],
@@ -235,7 +232,11 @@ class IntelBase(EasyBlock):
             msg += "specify 'license_file', or define $INTEL_LICENSE_FILE or $LM_LICENSE_FILE"
             raise EasyBuildError(msg)
 
-        # clean home directory
+    def configure_step(self):
+        """Configure: handle license file and clean home dir."""
+
+        # prepare (local) 'intel' home subdir
+        self.setup_local_home_subdir()
         self.clean_home_subdir()
 
         # determine list of components, based on 'components' easyconfig parameter (if specified)
