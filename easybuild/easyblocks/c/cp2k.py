@@ -837,5 +837,5 @@ class EB_CP2K(EasyBlock):
         txt = super(EB_CP2K, self).make_module_extra()
         if os.path.exists(os.path.join(self.installdir, 'data')):
             txt += self.module_generator.set_environment('CP2K_DATA_DIR',
-                                                         os.path.join(self.installdir, 'data')
+                                                          os.path.join(self.installdir, 'data'))
         return txt
