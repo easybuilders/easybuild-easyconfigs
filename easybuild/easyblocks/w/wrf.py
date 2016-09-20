@@ -43,6 +43,7 @@ from easybuild.easyblocks.netcdf import set_netcdf_env_vars  # @UnresolvedImport
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import CUSTOM, MANDATORY
 from easybuild.tools.build_log import EasyBuildError
+from easybuild.tools.config import build_option
 from easybuild.tools.filetools import apply_regex_substitutions, patch_perl_script_autoflush
 from easybuild.tools.modules import get_software_root
 from easybuild.tools.run import run_cmd, run_cmd_qa
