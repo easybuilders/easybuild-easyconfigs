@@ -831,7 +831,7 @@ class EB_CP2K(EasyBlock):
 
         super(EB_CP2K, self).sanity_check_step(custom_paths=custom_paths)
 
-    def make_mdule_extra(self):
+    def make_module_extra(self):
         """Set up a CP2K_DATA_DIR environment variable to find CP2K provided basis sets"""
 
         txt = super(EB_CP2K, self).make_module_extra()
