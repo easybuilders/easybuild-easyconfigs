@@ -4,7 +4,7 @@
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
 # with support of Ghent University (http://ugent.be/hpc),
-# the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
+# the Flemish Supercomputer Centre (VSC) (https://www.vscentrum.be),
 # Flemish Research Foundation (FWO) (http://www.fwo.be/en)
 # and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
@@ -127,7 +127,8 @@ class MakeCp(ConfigureMake):
                         # copy directory
                         elif os.path.isdir(filepath):
                             self.log.debug("Copying directory %s to %s" % (filepath, target))
-                            shutil.copytree(filepath, os.path.join(target, os.path.basename(filepath)))
+                            fulltarget = os.path.join(target, os.path.basename(filepath))
+                            shutil.copytree(filepath, fulltarget, symlinks=self.cfg['keepsymlinks'])
                         else:
                             raise EasyBuildError("Can't copy non-existing path %s to %s", filepath, target)
 

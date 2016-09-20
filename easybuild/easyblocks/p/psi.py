@@ -4,7 +4,7 @@
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
 # with support of Ghent University (http://ugent.be/hpc),
-# the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
+# the Flemish Supercomputer Centre (VSC) (https://www.vscentrum.be),
 # Flemish Research Foundation (FWO) (http://www.fwo.be/en)
 # and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
@@ -98,7 +98,8 @@ class EB_PSI(CMakeMake):
             raise EasyBuildError("Boost module not loaded.")
 
         # pre 4.0b5, they were using autotools, on newer it's CMake
-        if LooseVersion(self.version) <= LooseVersion("4.0b5"):
+        if LooseVersion(self.version) <= LooseVersion("4.0b5") and self.name == "PSI":
+            self.log.info("Using configure based build")
             env.setvar('PYTHON', os.path.join(pythonroot, 'bin', 'python'))
             env.setvar('USE_SYSTEM_BOOST', 'TRUE')
 
@@ -136,14 +137,24 @@ class EB_PSI(CMakeMake):
 
             ConfigureMake.configure_step(self, cmd_prefix=self.cfg['start_dir'])
         else:
-            self.cfg['configopts'] += "-DPYTHON_INTERPRETER=%s " % os.path.join(pythonroot, 'bin', 'python')
-            self.cfg['configopts'] += "-DCMAKE_BUILD_TYPE=Release "
+            self.log.info("Using CMake based build")
+            self.cfg.update('configopts', ' -DPYTHON_INTERPRETER=%s' % os.path.join(pythonroot, 'bin', 'python'))
+            self.cfg.update('configopts', ' -DCMAKE_BUILD_TYPE=Release')
 
             if self.toolchain.options.get('usempi', None):
-                self.cfg['configopts'] += "-DENABLE_MPI=ON "
+                self.cfg.update('configopts', " -DENABLE_MPI=ON")
 
             if get_software_root('impi'):
-                self.cfg['configopts'] += "-DENABLE_CSR=ON -DBLAS_TYPE=MKL "
+                self.cfg.update('configopts', " -DENABLE_CSR=ON -DBLAS_TYPE=MKL")
+
+            if self.name == 'PSI4':
+                pcmsolverroot = get_software_root('PCMSolver')
+                if pcmsolverroot:
+                    self.cfg.update('configopts', " -DENABLE_PCMSOLVER=ON -DPCMSOLVER_ROOT=%s" % pcmsolverroot)
+
+                chempsroot = get_software_root('CheMPS2')
+                if chempsroot:
+                    self.cfg.update('configopts', " -DENABLE_CHEMPS2=ON -DCHEMPS2_ROOT=%s" % chempsroot)
 
             CMakeMake.configure_step(self, srcdir=self.cfg['start_dir'])
 
@@ -176,7 +187,7 @@ class EB_PSI(CMakeMake):
     def sanity_check_step(self):
         """Custom sanity check for PSI."""
         custom_paths = {
-            'files': ['bin/psi%s' % self.version.split('.')[0]],
+            'files': ['bin/psi4'],
             'dirs': ['include', ('share/psi', 'share/psi4')],
         }
         super(EB_PSI, self).sanity_check_step(custom_paths=custom_paths)
@@ -184,9 +195,11 @@ class EB_PSI(CMakeMake):
     def make_module_extra(self):
         """Custom variables for PSI module."""
         txt = super(EB_PSI, self).make_module_extra()
-        psi4datadir = glob.glob(os.path.join(self.installdir, 'share', 'psi*'))
-        if len(psi4datadir) != 1:
-            raise EasyBuildError("Could not determine the PSI4 data dir, there are multiple possibilities: ",
-                                 psi4datadir)
-        txt += self.module_generator.set_environment('PSI4DATADIR', psi4datadir[0])
+        share_dir = os.path.join(self.installdir, 'share')
+        if os.path.exists(share_dir):
+            psi4datadir = glob.glob(os.path.join(share_dir, 'psi*'))
+            if len(psi4datadir) == 1:
+                txt += self.module_generator.set_environment('PSI4DATADIR', psi4datadir[0])
+            else:
+                raise EasyBuildError("Failed to find exactly one PSI4 data dir: %s", psi4datadir)
         return txt

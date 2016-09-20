@@ -4,7 +4,7 @@
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
 # with support of Ghent University (http://ugent.be/hpc),
-# the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
+# the Flemish Supercomputer Centre (VSC) (https://www.vscentrum.be),
 # Flemish Research Foundation (FWO) (http://www.fwo.be/en)
 # and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
@@ -31,6 +31,10 @@ EasyBuild support for Boost, implemented as an easyblock
 @author: Pieter De Baets (Ghent University)
 @author: Jens Timmerman (Ghent University)
 @author: Ward Poelmans (Ghent University)
+@author: Petar Forai (IMP/IMBA)
+@author: Luca Marsella (CSCS)
+@author: Guilherme Peretti-Pezzi (CSCS)
+@author: Joachim Hein (Lund University)
 """
 from distutils.version import LooseVersion
 import fileinput
@@ -44,6 +48,7 @@ import easybuild.tools.toolchain as toolchain
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.build_log import EasyBuildError
+from easybuild.tools.filetools import write_file
 from easybuild.tools.modules import get_software_root
 from easybuild.tools.run import run_cmd
 from easybuild.tools.systemtools import UNKNOWN, get_glibc_version, get_shared_lib_ext
@@ -64,6 +69,7 @@ class EB_Boost(EasyBlock):
         extra_vars = {
             'boost_mpi': [False, "Build mpi boost module", CUSTOM],
             'toolset': [None, "Toolset to use for Boost configuration ('--with-toolset for bootstrap.sh')", CUSTOM],
+            'mpi_launcher': [None, "Launcher to use when running MPI regression tests", CUSTOM],
         }
         return EasyBlock.extra_options(extra_vars)
 
@@ -120,10 +126,35 @@ class EB_Boost(EasyBlock):
             # configure the boost mpi module
             # http://www.boost.org/doc/libs/1_47_0/doc/html/mpi/getting_started.html
             # let Boost.Build know to look here for the config file
-            f = open('user-config.jam', 'a')
-            f.write("using mpi : %s ;" % os.getenv("MPICXX"))
-            f.close()
 
+            txt = ''
+            # Check if using a Cray toolchain and configure MPI accordingly
+            if self.toolchain.toolchain_family() == toolchain.CRAYPE:
+                if self.toolchain.PRGENV_MODULE_NAME_SUFFIX == 'gnu':
+                    craympichdir = os.getenv('CRAY_MPICH2_DIR')
+                    craygccversion = os.getenv('GCC_VERSION')
+                    txt = '\n'.join([    
+                        'local CRAY_MPICH2_DIR =  %s ;' % craympichdir,
+                        'using gcc ',
+                        ': %s' % craygccversion,
+                        ': CC ',
+                        ': <compileflags>-I$(CRAY_MPICH2_DIR)/include ',
+                        '  <linkflags>-L$(CRAY_MPICH2_DIR)/lib \ ',
+                        '; ',
+                        'using mpi ',
+                        ': CC ',
+                        ': <find-shared-library>mpich ',
+                        ': %s' % self.cfg['mpi_launcher'],
+                        ';',
+                        '',
+                    ])
+                else: 
+                    raise EasyBuildError("Bailing out: only PrgEnv-gnu supported for now")
+            else:
+                txt = "using mpi : %s ;" % os.getenv("MPICXX")
+
+            write_file('user-config.jam', txt, append=True)
+ 
     def build_step(self):
         """Build Boost with bjam tool."""
 
@@ -185,3 +216,10 @@ class EB_Boost(EasyBlock):
             custom_paths["files"].append('lib/libboost_python.%s' % shlib_ext)
 
         super(EB_Boost, self).sanity_check_step(custom_paths=custom_paths)
+
+    def make_module_extra(self):
+        """Set up a BOOST_ROOT environment variable to e.g. ease Boost handling by cmake"""
+        txt = super(EB_Boost, self).make_module_extra()
+        txt += self.module_generator.set_environment('BOOST_ROOT', self.installdir)
+        return txt
+    
