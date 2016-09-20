@@ -4,7 +4,7 @@
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
 # with support of Ghent University (http://ugent.be/hpc),
-# the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
+# the Flemish Supercomputer Centre (VSC) (https://www.vscentrum.be),
 # Flemish Research Foundation (FWO) (http://www.fwo.be/en)
 # and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
@@ -32,7 +32,9 @@ from distutils.version import LooseVersion
 
 import easybuild.tools.toolchain as toolchain
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
+from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.build_log import EasyBuildError
+from easybuild.tools.filetools import apply_regex_substitutions
 from easybuild.tools.run import run_cmd_qa
 from easybuild.tools.systemtools import get_shared_lib_ext
 
@@ -41,16 +43,36 @@ class EB_Qt(ConfigureMake):
     Support for building and installing Qt.
     """
 
+    @staticmethod
+    def extra_options():
+        extra_vars = {
+             'platform': [None, "Target platform to build for (e.g. linux-g++-64, linux-icc-64)", CUSTOM],
+        }
+        return ConfigureMake.extra_options(extra_vars)
+
     def configure_step(self):
         """Configure Qt using interactive `configure` script."""
 
         self.cfg.update('configopts', '-release')
 
+        platform = None
         comp_fam = self.toolchain.comp_family()
-        if comp_fam in [toolchain.GCC]:  #@UndefinedVariable
-            self.cfg.update('configopts', '-platform linux-g++-64')
+        if self.cfg['platform']:
+            platform = self.cfg['platform']
+        # if no platform is specified, try to derive it based on compiler in toolchain
+        elif comp_fam in [toolchain.GCC]:  #@UndefinedVariable
+            platform = 'linux-g++-64'
         elif comp_fam in [toolchain.INTELCOMP]:  #@UndefinedVariable
-            self.cfg.update('configopts', '-platform linux-icc-64')
+            if LooseVersion(self.version) >= LooseVersion('4'):
+                platform = 'linux-icc-64'
+            else:
+                platform = 'linux-icc'
+                # fix -fPIC flag (-KPIC is not correct for recent Intel compilers)
+                qmake_conf = os.path.join('mkspecs', platform, 'qmake.conf')
+                apply_regex_substitutions(qmake_conf, [('-KPIC', '-fPIC')])
+                
+        if platform:
+            self.cfg.update('configopts', "-platform %s" % platform)
         else:
             raise EasyBuildError("Don't know which platform to set based on compiler family.")
 
@@ -61,7 +83,7 @@ class EB_Qt(ConfigureMake):
         }
         no_qa = [
             "for .*pro",
-            r"%s.*" % os.getenv('CXX').replace('+', '\\+'),  # need to escape + in 'g++'
+            r"%s.*" % os.getenv('CXX', '').replace('+', '\\+'),  # need to escape + in 'g++'
             "Reading .*",
             "WARNING .*",
             "Project MESSAGE:.*",
@@ -73,20 +95,35 @@ class EB_Qt(ConfigureMake):
     def build_step(self):
         """Set $LD_LIBRARY_PATH before calling make, to ensure that all required libraries are found during linking."""
         # cfr. https://elist.ornl.gov/pipermail/visit-developers/2011-September/010063.html
-        self.cfg.update('prebuildopts', 'LD_LIBRARY_PATH=%s:$LD_LIBRARY_PATH' % os.path.join(self.cfg['start_dir'], 'lib'))
+
+        if LooseVersion(self.version) >= LooseVersion('5.6'):
+            libdirs = ['qtbase', 'qtdeclarative']
+        else:
+            libdirs = ['']
+
+        libdirs = [os.path.join(self.cfg['start_dir'], d, 'lib') for d in libdirs]
+        self.cfg.update('prebuildopts', 'LD_LIBRARY_PATH=%s' % os.pathsep.join(libdirs + ['$LD_LIBRARY_PATH']))
 
         super(EB_Qt, self).build_step()
 
     def sanity_check_step(self):
         """Custom sanity check for Qt."""
 
-        libversion = ''
-        if LooseVersion(self.version) >= LooseVersion('5'):
-            libversion = self.version.split('.')[0]
+        shlib_ext = get_shared_lib_ext()
+
+        if LooseVersion(self.version) >= LooseVersion('4'):
+            libversion = ''
+            if LooseVersion(self.version) >= LooseVersion('5'):
+                libversion = self.version.split('.')[0]
+
+            libfile = os.path.join('lib', 'libQt%sCore.%s' % (libversion, shlib_ext))
+
+        else:
+            libfile = os.path.join('lib', 'libqt.%s' % shlib_ext)
 
         custom_paths = {
-            'files': ["lib/libQt%sCore.%s" % (libversion, get_shared_lib_ext())],
-            'dirs': ["bin", "include", "plugins"],
+            'files': [libfile],
+            'dirs': ['bin', 'include', 'plugins'],
         }
 
         super(EB_Qt, self).sanity_check_step(custom_paths=custom_paths)

@@ -4,7 +4,7 @@
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
 # with support of Ghent University (http://ugent.be/hpc),
-# the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
+# the Flemish Supercomputer Centre (VSC) (https://www.vscentrum.be),
 # Flemish Research Foundation (FWO) (http://www.fwo.be/en)
 # and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
@@ -86,9 +86,9 @@ class EB_OpenFOAM(EasyBlock):
             self.log.warning("Creating expected directory %s, and moving everything there" % openfoam_installdir)
             try:
                 contents_installdir = os.listdir(self.installdir)
+                source = os.path.join(self.installdir, contents_installdir[0])
                 # it's one directory but has a wrong name
-                if len(contents_installdir) == 1 and os.path.isdir(os.path.join(self.installdir, contents_installdir[0])):
-                    source = os.path.join(self.installdir, contents_installdir[0])
+                if len(contents_installdir) == 1 and os.path.isdir(source):
                     target = os.path.join(self.installdir, self.openfoamdir)
                     self.log.debug("Renaming %s to %s", source, target)
                     os.rename(source, target)
@@ -104,7 +104,7 @@ class EB_OpenFOAM(EasyBlock):
             except OSError, err:
                 raise EasyBuildError("Failed to move all files to %s: %s", openfoam_installdir, err)
 
-    def patch_step(self):
+    def patch_step(self, beginpath=None):
         """Adjust start directory and start path for patching to correct directory."""
         self.cfg['start_dir'] = os.path.join(self.installdir, self.openfoamdir)
         super(EB_OpenFOAM, self).patch_step(beginpath=self.cfg['start_dir'])
@@ -206,7 +206,8 @@ class EB_OpenFOAM(EasyBlock):
         env.setvar("WM_COMPILER", self.wm_compiler)
 
         # set to an MPI unknown by OpenFOAM, since we're handling the MPI settings ourselves (via mpicc, etc.)
-        # Note: this name must contain 'MPI' so the MPI version of the Pstream library is built (cf src/Pstream/Allwmake)
+        # Note: this name must contain 'MPI' so the MPI version of the
+        # Pstream library is built (cf src/Pstream/Allwmake)
         self.wm_mplib = "EASYBUILDMPI"
         env.setvar("WM_MPLIB", self.wm_mplib)
 
@@ -270,7 +271,7 @@ class EB_OpenFOAM(EasyBlock):
                 "%s .*" % os.environ['CC'],
                 "wmake .*",
                 "Making dependency list for source file.*",
-                "\s*\^\s*",  # warning indicator
+                r"\s*\^\s*",  # warning indicator
                 "Cleaning .*",
             ]
             run_cmd_qa(cmd_tmpl % 'Allwmake.firstInstall', qa, no_qa=noqa, log_all=True, simple=True)
@@ -324,8 +325,8 @@ class EB_OpenFOAM(EasyBlock):
                [os.path.join(toolsdir, "%sFoam" % x) for x in ["boundary", "engine", "sonic"]] + \
                [os.path.join(toolsdir, "surface%s" % x) for x in ["Add", "Find", "Smooth"]] + \
                [os.path.join(toolsdir, x) for x in ["deformedGeom", "engineSwirl", "modifyMesh",
-                                                    "refineMesh", "vorticity"]]
-        # check for the Pstream and *Decomp libraries
+                                                    "refineMesh", "wdot"]]
+        # check for the Pstream and scotchDecomp libraries, there must be a dummy one and an mpi one
         if 'extend' in self.name.lower():
             libs = [os.path.join(libsdir, "libscotchDecomp.%s" % shlib_ext),
                     os.path.join(libsdir, "libmetisDecomp.%s" % shlib_ext)]
@@ -354,28 +355,30 @@ class EB_OpenFOAM(EasyBlock):
 
         super(EB_OpenFOAM, self).sanity_check_step(custom_paths=custom_paths)
 
-    def make_module_extra(self):
+    def make_module_extra(self, altroot=None, altversion=None):
         """Define extra environment variables required by OpenFOAM"""
 
         txt = super(EB_OpenFOAM, self).make_module_extra()
 
         env_vars = [
-            ("WM_PROJECT_VERSION", self.version),
-            ("FOAM_INST_DIR", self.installdir),
-            ("WM_COMPILER", self.wm_compiler),
-            ("WM_MPLIB", self.wm_mplib),
-            ("FOAM_BASH", os.path.join(self.installdir, self.openfoamdir, "etc", "bashrc")),
-            ("FOAM_CSH", os.path.join(self.installdir, self.openfoamdir, "etc", "cshrc")),
+            ('WM_PROJECT_VERSION', self.version),
+            ('FOAM_INST_DIR', self.installdir),
+            ('WM_COMPILER', self.wm_compiler),
+            ('WM_MPLIB', self.wm_mplib),
+            ('FOAM_BASH', os.path.join(self.installdir, self.openfoamdir, 'etc', 'bashrc')),
+            ('FOAM_CSH', os.path.join(self.installdir, self.openfoamdir, 'etc', 'cshrc')),
         ]
 
         # OpenFOAM >= 3.0.0 can use 64 bit integers
         if 'extend' not in self.name.lower() and LooseVersion(self.version) >= LooseVersion('3.0'):
             if self.toolchain.options['i8']:
-                env_vars += [("WM_LABEL_SIZE", '64')]
+                env_vars += [('WM_LABEL_SIZE', '64')]
             else:
-                env_vars += [("WM_LABEL_SIZE", '32')]
+                env_vars += [('WM_LABEL_SIZE', '32')]
 
         for (env_var, val) in env_vars:
-            txt += self.module_generator.set_environment(env_var, val)
+            # check whether value is defined for compatibility with --module-only
+            if val:
+                txt += self.module_generator.set_environment(env_var, val)
 
         return txt
