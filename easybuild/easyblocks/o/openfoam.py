@@ -109,6 +109,18 @@ class EB_OpenFOAM(EasyBlock):
         self.cfg['start_dir'] = os.path.join(self.installdir, self.openfoamdir)
         super(EB_OpenFOAM, self).patch_step(beginpath=self.cfg['start_dir'])
 
+    def prepare_step(self):
+        """Prepare for OpenFOAM install procedure."""
+        super(EB_OpenFOAM, self).prepare_step()
+
+        comp_fam = self.toolchain.comp_family()
+        if comp_fam == toolchain.GCC:  # @UndefinedVariable
+            self.wm_compiler = 'Gcc'
+        elif comp_fam == toolchain.INTELCOMP:  # @UndefinedVariable
+            self.wm_compiler = 'Icc'
+        else:
+            raise EasyBuildError("Unknown compiler family, don't know how to set WM_COMPILER")
+
     def configure_step(self):
         """Configure OpenFOAM build by setting appropriate environment variables."""
         # compiler & compiler flags
@@ -116,7 +128,6 @@ class EB_OpenFOAM(EasyBlock):
 
         extra_flags = ''
         if comp_fam == toolchain.GCC:  # @UndefinedVariable
-            self.wm_compiler = 'Gcc'
             if get_software_version('GCC') >= LooseVersion('4.8'):
                 # make sure non-gold version of ld is used, since OpenFOAM requires it
                 # see http://www.openfoam.org/mantisbt/view.php?id=685
@@ -127,13 +138,8 @@ class EB_OpenFOAM(EasyBlock):
                 extra_flags += ' -fpermissive'
 
         elif comp_fam == toolchain.INTELCOMP:  # @UndefinedVariable
-            self.wm_compiler = 'Icc'
-
             # make sure -no-prec-div is used with Intel compilers
             extra_flags = '-no-prec-div'
-
-        else:
-            raise EasyBuildError("Unknown compiler family, don't know how to set WM_COMPILER")
 
         for env_var in ['CFLAGS', 'CXXFLAGS']:
             env.setvar(env_var, "%s %s" % (os.environ.get(env_var, ''), extra_flags))
