@@ -27,10 +27,11 @@ Unit tests to check that easyblocks are compatible with --module-only.
 
 @author: Kenneth Hoste (Ghent University)
 """
-
+import copy
 import glob
 import os
 import re
+import shutil
 import sys
 import tempfile
 from vsc.utils import fancylogger
@@ -87,9 +88,19 @@ class ModuleOnlyTest(EnhancedTestCase):
 
     def setUp(self):
         """Setup test."""
+        super(ModuleOnlyTest, self).setUp()
+
         self.log = fancylogger.getLogger("EasyblocksModuleOnlyTest", fname=False)
         fd, self.eb_file = tempfile.mkstemp(prefix='easyblocks_module_only_test_', suffix='.eb')
         os.close(fd)
+
+        self.orig_environ = copy.deepcopy(os.environ)
+
+    def tearDown(self):
+        """Clean up after running test."""
+        super(ModuleOnlyTest, self).tearDown()
+
+        os.environ = self.orig_environ
 
     def test_make_module_pythonpackage(self):
         """Test make_module_step of PythonPackage easyblock."""
@@ -170,6 +181,8 @@ class ModuleOnlyTest(EnhancedTestCase):
 def template_module_only_test(self, easyblock, name='foo', version='1.3.2', extra_txt=''):
     """Test whether all easyblocks are compatible with --module-only."""
 
+    tmpdir = tempfile.mkdtemp()
+
     class_regex = re.compile("^class (.*)\(.*", re.M)
 
     self.log.debug("easyblock: %s" % easyblock)
@@ -187,6 +200,12 @@ def template_module_only_test(self, easyblock, name='foo', version='1.3.2', extr
 
         # figure out list of mandatory variables, and define with dummy values as necessary
         app_class = get_easyblock_class(ebname)
+
+        # easyblocks deriving from IntelBase require a license file to be found for --module-only
+        from easybuild.easyblocks.generic.intelbase import IntelBase
+        if app_class == IntelBase or IntelBase in app_class.__bases__:
+            os.environ['INTEL_LICENSE_FILE'] = os.path.join(tmpdir, 'intel.lic')
+            write_file(os.environ['INTEL_LICENSE_FILE'], '# dummy license')
 
         # extend easyconfig to make sure mandatory custom easyconfig paramters are defined
         extra_options = app_class.extra_options()
@@ -208,7 +227,7 @@ def template_module_only_test(self, easyblock, name='foo', version='1.3.2', extr
         finally:
             os.chdir(orig_workdir)
 
-        modfile = os.path.join(TMPDIR, 'modules', 'all', 'foo', '1.3.2')
+        modfile = os.path.join(TMPDIR, 'modules', 'all', name, version)
         luamodfile = '%s.lua' % modfile
         self.assertTrue(os.path.exists(modfile) or os.path.exists(luamodfile),
                         "Module file %s or %s was generated" % (modfile, luamodfile))
@@ -216,6 +235,7 @@ def template_module_only_test(self, easyblock, name='foo', version='1.3.2', extr
         # cleanup
         app.close_log()
         os.remove(app.logfile)
+        shutil.rmtree(tmpdir)
     else:
         self.assertTrue(False, "Class found in easyblock %s" % easyblock)
 
