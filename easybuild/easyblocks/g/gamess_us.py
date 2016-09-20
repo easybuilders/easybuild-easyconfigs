@@ -46,6 +46,7 @@ import easybuild.tools.toolchain as toolchain
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import CUSTOM, MANDATORY
 from easybuild.tools.build_log import EasyBuildError
+from easybuild.tools.config import build_option
 from easybuild.tools.filetools import mkdir, read_file, write_file
 from easybuild.tools.modules import get_software_root, get_software_version
 from easybuild.tools.run import run_cmd, run_cmd_qa
@@ -226,6 +227,11 @@ class EB_GAMESS_minus_US(EasyBlock):
         """Run GAMESS-US tests (if 'runtest' easyconfig parameter is set to True)."""
         # don't use provided 'runall' script for tests, since that only runs the tests single-core
         if self.cfg['runtest']:
+
+            if not build_option('mpi_tests'):
+                self.log.info("Skipping testing of GAMESS-US since MPI testing is disabled")
+                return
+
             try:
                 cwd = os.getcwd()
                 os.chdir(self.testdir)
