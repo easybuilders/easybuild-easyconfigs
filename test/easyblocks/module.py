@@ -4,7 +4,7 @@
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
 # with support of Ghent University (http://ugent.be/hpc),
-# the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
+# the Flemish Supercomputer Centre (VSC) (https://www.vscentrum.be),
 # Flemish Research Foundation (FWO) (http://www.fwo.be/en)
 # and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
@@ -31,6 +31,7 @@ Unit tests to check that easyblocks are compatible with --module-only.
 import glob
 import os
 import re
+import sys
 import tempfile
 from vsc.utils import fancylogger
 from unittest import TestLoader, main
@@ -105,7 +106,8 @@ class ModuleOnlyTest(EnhancedTestCase):
         write_file(os.path.join(app.installdir, 'bin', 'foo'), 'echo foo!')
         write_file(os.path.join(app.installdir, 'include', 'foo.h'), 'bar')
         write_file(os.path.join(app.installdir, 'lib', 'libfoo.a'), 'libfoo')
-        write_file(os.path.join(app.installdir, 'lib', 'python2.7', 'site-packages', 'foo.egg'), 'foo egg')
+        pyver = '.'.join(map(str, sys.version_info[:2]))
+        write_file(os.path.join(app.installdir, 'lib', 'python%s' % pyver, 'site-packages', 'foo.egg'), 'foo egg')
         write_file(os.path.join(app.installdir, 'lib64', 'pkgconfig', 'foo.pc'), 'libfoo: foo')
 
         # create module file
@@ -129,7 +131,7 @@ class ModuleOnlyTest(EnhancedTestCase):
             (r'^prepend.path.*\WLIBRARY_PATH\W.*lib"?\W*$', True),
             (r'^prepend.path.*\WPATH\W.*bin"?\W*$', True),
             (r'^prepend.path.*\WPKG_CONFIG_PATH\W.*lib64/pkgconfig"?\W*$', True),
-            (r'^prepend.path.*\WPYTHONPATH\W.*lib/python2.7/site-packages"?\W*$', True),
+            (r'^prepend.path.*\WPYTHONPATH\W.*lib/python2.[0-9]/site-packages"?\W*$', True),
             # lib64 doesn't contain any library files, so these are *not* included in $LD_LIBRARY_PATH or $LIBRARY_PATH
             (r'^prepend.path.*\WLD_LIBRARY_PATH\W.*lib64', False),
             (r'^prepend.path.*\WLIBRARY_PATH\W.*lib64', False),
@@ -142,6 +144,20 @@ class ModuleOnlyTest(EnhancedTestCase):
                 assert_msg = "Pattern '%s' not found in: %s" % (regex.pattern, modtxt)
 
             self.assertEqual(bool(regex.search(modtxt)), found, assert_msg)
+
+    def test_pythonpackage_det_pylibdir(self):
+        """Test det_pylibdir function from pythonpackage.py."""
+        from easybuild.easyblocks.generic.pythonpackage import det_pylibdir
+        for pylibdir in [det_pylibdir(), det_pylibdir(plat_specific=True), det_pylibdir(python_cmd=sys.executable)]:
+            self.assertTrue(pylibdir.startswith('lib') and '/python' in pylibdir and pylibdir.endswith('site-packages'))
+
+    def test_pythonpackage_pick_python_cmd(self):
+        """Test pick_python_cmd function from pythonpackage.py."""
+        from easybuild.easyblocks.generic.pythonpackage import pick_python_cmd
+        self.assertTrue(pick_python_cmd() is not None)
+        self.assertTrue(pick_python_cmd(2) is not None)
+        self.assertTrue(pick_python_cmd(2, 6) is not None)
+        self.assertTrue(pick_python_cmd(123, 456) is None)
 
     def tearDown(self):
         """Cleanup."""
@@ -193,13 +209,16 @@ def template_module_only_test(self, easyblock, name='foo', version='1.3.2', extr
             os.chdir(orig_workdir)
 
         modfile = os.path.join(TMPDIR, 'modules', 'all', 'foo', '1.3.2')
-        self.assertTrue(os.path.exists(modfile), "Module file %s was generated" % modfile)
+        luamodfile = '%s.lua' % modfile
+        self.assertTrue(os.path.exists(modfile) or os.path.exists(luamodfile),
+                        "Module file %s or %s was generated" % (modfile, luamodfile))
 
         # cleanup
         app.close_log()
         os.remove(app.logfile)
     else:
         self.assertTrue(False, "Class found in easyblock %s" % easyblock)
+
 
 def suite():
     """Return all easyblock --module-only tests."""
@@ -231,8 +250,6 @@ def suite():
 
     # add dummy PrgEnv-gnu/1.2.3 module, required for testing CrayToolchain easyblock
     write_file(os.path.join(TMPDIR, 'modules', 'all', 'PrgEnv-gnu', '1.2.3'), "#%Module")
-
-    easyblocks = [e for e in easyblocks if 'cray' in e]
 
     for easyblock in easyblocks:
         # dynamically define new inner functions that can be added as class methods to ModuleOnlyTest

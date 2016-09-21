@@ -4,7 +4,7 @@
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
 # with support of Ghent University (http://ugent.be/hpc),
-# the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
+# the Flemish Supercomputer Centre (VSC) (https://www.vscentrum.be),
 # the Hercules foundation (http://www.herculesstichting.be/in_English)
 # and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
@@ -58,23 +58,37 @@ class EB_MPICH(ConfigureMake):
         })
         return extra_vars
 
-    # There is a number of configuration options that are typically needed that are not present
-    # here. The reason is that this easyblock is intended to be used as a parent for other
-    # easyblocks like MVAPICH2 and PSMPI. Not all of them support the same options, so they
-    # are not included here.
-    def configure_step(self):
+    # MPICH configure script complains when F90 or F90FLAGS are set,
+    # they should be replaced with FC/FCFLAGS instead.
+    # Additionally, there are a set of variables (FCFLAGS among them) that should not be set at configure time,
+    # or they will leak in the mpix wrappers.
+    # Specific variables to be included in the wrapper exists, but they changed between MPICH 3.1.4 and MPICH 3.2
+    # and in a typical scenario we probably don't want them.
+    def correct_mpich_build_env(self):
         """
-        Custom configuration procedure for MPICH
-
-        * add common configure options for MPICH-based MPI libraries
-        * unset environment variables that leak into mpi* wrappers, and define $MPICHLIB_* equivalents instead
+        Method to correctly set the environment for MPICH and derivatives
         """
+        env_vars = ['CFLAGS', 'CPPFLAGS', 'CXXFLAGS', 'FCFLAGS', 'FFLAGS', 'LDFLAGS', 'LIBS']
+        vars_to_unset = ['F90', 'F90FLAGS']
+        for envvar in env_vars:
+            envvar_val = os.getenv(envvar)
+            if envvar_val:
+                new_envvar = 'MPICHLIB_%s' % envvar
+                new_envvar_val = os.getenv(new_envvar)
+                vars_to_unset.append(envvar)
+                if envvar_val == new_envvar_val:
+                    self.log.debug("$%s == $%s, just defined $%s as empty", envvar, new_envvar, envvar)
+                elif new_envvar_val is None:
+                    env.setvar(new_envvar, envvar_val)
+                else:
+                    raise EasyBuildError("Both $%s and $%s set, can I overwrite $%s with $%s (%s) ?",
+                                         envvar, new_envvar, new_envvar, envvar, envvar_val)
+        env.unset_env_vars(vars_to_unset)
 
-        # things might go wrong if a previous install dir is present, so let's get rid of it
-        if not self.cfg['keeppreviousinstall']:
-            self.log.info("Making sure any old installation is removed before we start the build...")
-            super(EB_MPICH, self).make_dir(self.installdir, True, dontcreateinstalldir=True)
-
+    def add_mpich_configopts(self):
+        """
+        Method to add common configure options for MPICH-based MPI libraries
+        """
         # additional configuration options
         add_configopts = []
 
@@ -97,35 +111,31 @@ class EB_MPICH(ConfigureMake):
         add_configopts.extend(['--enable-f77', '--enable-fc', '--enable-cxx'])
 
         self.cfg.update('configopts', ' '.join(add_configopts))
+ 
 
-        # MPICH configure script complains when F90 or F90FLAGS are set,
-        # they should be replaced with FC/FCFLAGS instead.
-        # Additionally, there are a set of variables (FCFLAGS among them) that should not be set at configure time,
-        # or they will leak in the mpix wrappers.
-        # Specific variables to be included in the wrapper exists, but they changed between MPICH 3.1.4 and MPICH 3.2
-        # and in a typical scenario we probably don't want them.
-        env_vars = ['CFLAGS', 'CPPFLAGS', 'CXXFLAGS', 'FCFLAGS', 'FFLAGS', 'LDFLAGS', 'LIBS']
-        vars_to_unset = ['F90', 'F90FLAGS']
-        for envvar in env_vars:
-            envvar_val = os.getenv(envvar)
-            if envvar_val:
-                new_envvar = 'MPICHLIB_%s' % envvar
-                new_envvar_val = os.getenv(new_envvar)
-                vars_to_unset.append(envvar)
-                if envvar_val == new_envvar_val:
-                    self.log.debug("$%s == $%s, just defined $%s as empty", envvar, new_envvar, envvar)
-                elif new_envvar_val is None:
-                    env.setvar(new_envvar, envvar_val)
-                else:
-                    raise EasyBuildError("Both $%s and $%s set, can I overwrite $%s with $%s (%s) ?",
-                                         envvar, new_envvar, new_envvar, envvar, envvar_val)
-        env.unset_env_vars(vars_to_unset)
+    def configure_step(self, add_mpich_configopts=True):
+        """
+        Custom configuration procedure for MPICH
+
+        * add common configure options for MPICH-based MPI libraries
+        * unset environment variables that leak into mpi* wrappers, and define $MPICHLIB_* equivalents instead
+        """
+
+        # things might go wrong if a previous install dir is present, so let's get rid of it
+        if not self.cfg['keeppreviousinstall']:
+            self.log.info("Making sure any old installation is removed before we start the build...")
+            super(EB_MPICH, self).make_dir(self.installdir, True, dontcreateinstalldir=True)
+        
+        if add_mpich_configopts:
+            self.add_mpich_configopts()
+
+        self.correct_mpich_build_env()
 
         super(EB_MPICH, self).configure_step()
 
     # make and make install are default
 
-    def sanity_check_step(self, custom_paths=None, use_new_libnames=None):
+    def sanity_check_step(self, custom_paths=None, use_new_libnames=None, check_launchers=True):
         """
         Custom sanity check for MPICH
         """
@@ -145,7 +155,10 @@ class EB_MPICH(ConfigureMake):
         else:
             libnames = ['fmpich', 'mpichcxx', 'mpichf90', 'mpich', 'mpl', 'opa']
 
-        binaries = ['mpicc', 'mpicxx', 'mpiexec', 'mpiexec.hydra', 'mpif77', 'mpif90', 'mpirun']
+        binaries = ['mpicc', 'mpicxx', 'mpif77', 'mpif90']
+        if check_launchers:
+            binaries.extend(['mpiexec', 'mpiexec.hydra', 'mpirun'])
+
         bins = [os.path.join('bin', x) for x in binaries]
         headers = [os.path.join('include', x) for x in ['mpi.h', 'mpicxx.h', 'mpif.h']]
         libs = [os.path.join('lib', 'lib%s.%s' % (l, e)) for l in libnames for e in ['a', shlib_ext]]

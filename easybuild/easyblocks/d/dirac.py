@@ -4,7 +4,7 @@
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
 # with support of Ghent University (http://ugent.be/hpc),
-# the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
+# the Flemish Supercomputer Centre (VSC) (https://www.vscentrum.be),
 # Flemish Research Foundation (FWO) (http://www.fwo.be/en)
 # and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
@@ -35,6 +35,7 @@ import easybuild.tools.toolchain as toolchain
 from easybuild.easyblocks.generic.cmakemake import CMakeMake
 from easybuild.framework.easyconfig import CUSTOM, MANDATORY
 from easybuild.tools.build_log import EasyBuildError
+from easybuild.tools.config import build_option
 from easybuild.tools.run import run_cmd
 
 
@@ -61,6 +62,11 @@ class EB_DIRAC(CMakeMake):
     def test_step(self):
         """Custom built-in test procedure for DIRAC."""
         if self.cfg['runtest']:
+
+            if not build_option('mpi_tests'):
+                self.log.info("Skipping testing of DIRAC since MPI testing is disabled")
+                return
+
             # set up test environment
             # see http://diracprogram.org/doc/release-14/installation/testing.html
             env.setvar('DIRAC_TMPDIR', tempfile.mkdtemp(prefix='dirac-test-'))

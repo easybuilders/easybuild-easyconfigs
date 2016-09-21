@@ -4,7 +4,7 @@
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
 # with support of Ghent University (http://ugent.be/hpc),
-# the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
+# the Flemish Supercomputer Centre (VSC) (https://www.vscentrum.be),
 # Flemish Research Foundation (FWO) (http://www.fwo.be/en)
 # and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
@@ -308,7 +308,9 @@ class EB_DOLFIN(CMakePythonPackage):
         txt = super(EB_DOLFIN, self).make_module_extra()
 
         # Dolfin needs to find Boost
-        txt += self.module_generator.set_environment('BOOST_DIR', self.boost_dir)
+        # check whether boost_dir is defined for compatibility with --module-only
+        if self.boost_dir:
+            txt += self.module_generator.set_environment('BOOST_DIR', self.boost_dir)
 
         envvars = ['I_MPI_CXX', 'I_MPI_CC']
         for envvar in envvars:

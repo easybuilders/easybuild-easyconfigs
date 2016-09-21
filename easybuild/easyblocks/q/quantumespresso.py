@@ -4,7 +4,7 @@
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
 # with support of Ghent University (http://ugent.be/hpc),
-# the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
+# the Flemish Supercomputer Centre (VSC) (https://www.vscentrum.be),
 # Flemish Research Foundation (FWO) (http://www.fwo.be/en)
 # and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
@@ -69,7 +69,7 @@ class EB_QuantumESPRESSO(ConfigureMake):
     def configure_step(self):
         """Custom configuration procedure for Quantum ESPRESSO."""
 
-        if self.cfg['hybrid']:
+        if self.toolchain.options.get('openmp', False) or self.cfg['hybrid']:
             self.cfg.update('configopts', '--enable-openmp')
 
         if not self.toolchain.options.get('usempi', None):
@@ -101,7 +101,10 @@ class EB_QuantumESPRESSO(ConfigureMake):
         }
         dflags.append(comp_fam_dflags[self.toolchain.comp_family()])
 
-        libfft = os.getenv('LIBFFT')
+        if self.toolchain.options.get('openmp', False):
+            libfft = os.getenv('LIBFFT_MT')
+        else:
+            libfft = os.getenv('LIBFFT')
         if libfft:
             if "fftw3" in libfft:
                 dflags.append('-D__FFTW3')
@@ -115,7 +118,7 @@ class EB_QuantumESPRESSO(ConfigureMake):
         if self.toolchain.options.get('usempi', None):
             dflags.append('-D__MPI -D__PARA')
 
-        if self.cfg['hybrid']:
+        if self.toolchain.options.get('openmp', False) or self.cfg['hybrid']:
             dflags.append(" -D__OPENMP")
 
         if self.cfg['with_scalapack']:
@@ -127,14 +130,17 @@ class EB_QuantumESPRESSO(ConfigureMake):
         repls.append(('DFLAGS', ' '.join(dflags), False))
 
         # complete C/Fortran compiler and LD flags
-        if self.cfg['hybrid']:
+        if self.toolchain.options.get('openmp', False) or self.cfg['hybrid']:
             repls.append(('LDFLAGS', self.toolchain.get_flag('openmp'), True))
             repls.append(('(?:C|F90|F)FLAGS', self.toolchain.get_flag('openmp'), True))
 
         # obtain library settings
         libs = []
         for lib in ['BLAS', 'LAPACK', 'FFT', 'SCALAPACK']:
-            val = os.getenv('LIB%s' % lib)
+            if self.toolchain.options.get('openmp', False):
+                val = os.getenv('LIB%s_MT' % lib)
+            else:
+                val = os.getenv('LIB%s' % lib)
             repls.append(('%s_LIBS' % lib, val, False))
             libs.append(val)
         libs = ' '.join(libs)
@@ -285,12 +291,13 @@ class EB_QuantumESPRESSO(ConfigureMake):
                 bins.extend(["pw2casino.x"])
 
         if 'pw' in self.cfg['buildopts'] or 'all' in self.cfg['buildopts']:
-            bins.extend(["band_plot.x", "dist.x", "ev.x", "kpoints.x", "pw.x", "pwi2xsf.x",
-                         "bands_FS.x", "kvecs_FS.x"])
+            bins.extend(["dist.x", "ev.x", "kpoints.x", "pw.x", "pwi2xsf.x"])
             if LooseVersion(self.version) > LooseVersion("5"):
                 bins.extend(["generate_vdW_kernel_table.x"])
             else:
                 bins.extend(["path_int.x"])
+            if LooseVersion(self.version) < LooseVersion("5.3.0"):
+                bins.extend(["band_plot.x", "bands_FS.x", "kvecs_FS.x"])
 
         if 'pwcond' in self.cfg['buildopts'] or 'pwall' in self.cfg['buildopts'] or \
            'all' in self.cfg['buildopts']:

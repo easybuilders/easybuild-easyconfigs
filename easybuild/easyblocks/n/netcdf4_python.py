@@ -4,7 +4,7 @@
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
 # with support of Ghent University (http://ugent.be/hpc),
-# the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
+# the Flemish Supercomputer Centre (VSC) (https://www.vscentrum.be),
 # Flemish Research Foundation (FWO) (http://www.fwo.be/en)
 # and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
@@ -64,7 +64,7 @@ class EB_netcdf4_minus_python(PythonPackage):
         """Run netcdf4-python tests."""
         self.testinstall = True
         cwd = os.getcwd()
-        self.testcmd = "cd %s/test && python run_all.py && cd %s" % (self.cfg['start_dir'], cwd)
+        self.testcmd = "cd %s/test && %s run_all.py && cd %s" % (self.cfg['start_dir'], self.python_cmd, cwd)
         super(EB_netcdf4_minus_python, self).test_step()
 
     def sanity_check_step(self):
