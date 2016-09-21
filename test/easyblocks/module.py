@@ -39,6 +39,9 @@ from unittest import TestLoader, main
 from vsc.utils.patterns import Singleton
 from vsc.utils.testing import EnhancedTestCase
 
+from easybuild.easyblocks.generic.intelbase import IntelBase
+from easybuild.easyblocks.imod import EB_IMOD
+from easybuild.easyblocks.openfoam import EB_OpenFOAM
 from easybuild.framework.easyconfig import easyconfig
 import easybuild.tools.module_naming_scheme.toolchain as mns_toolchain
 import easybuild.tools.options as eboptions
@@ -71,15 +74,18 @@ def cleanup():
 class ModuleOnlyTest(EnhancedTestCase):
     """ Baseclass for easyblock testcases """
 
-    def writeEC(self, easyblock, name='foo', version='1.3.2', extratxt=''):
+    def writeEC(self, easyblock, name='foo', version='1.3.2', extratxt='', toolchain=None):
         """ create temporary easyconfig file """
+        if toolchain is None:
+            toolchain = {'name': 'dummy', 'version': 'dummy'}
+
         txt = '\n'.join([
             'easyblock = "%s"',
             'name = "%s"' % name,
             'version = "%s"' % version,
             'homepage = "http://example.com"',
             'description = "Dummy easyconfig file."',
-            "toolchain = {'name': 'dummy', 'version': 'dummy'}",
+            "toolchain = {'name': '%(name)s', 'version': '%(version)s'}" % toolchain,
             'sources = []',
             extratxt,
         ])
@@ -198,14 +204,39 @@ def template_module_only_test(self, easyblock, name='foo', version='1.3.2', extr
         ebname = res.group(1)
         self.log.debug("Found class name for easyblock %s: %s" % (easyblock, ebname))
 
+        toolchain = None
+
         # figure out list of mandatory variables, and define with dummy values as necessary
         app_class = get_easyblock_class(ebname)
 
         # easyblocks deriving from IntelBase require a license file to be found for --module-only
-        from easybuild.easyblocks.generic.intelbase import IntelBase
         if app_class == IntelBase or IntelBase in app_class.__bases__:
             os.environ['INTEL_LICENSE_FILE'] = os.path.join(tmpdir, 'intel.lic')
             write_file(os.environ['INTEL_LICENSE_FILE'], '# dummy license')
+
+        if app_class == EB_IMOD:
+            # $JAVA_HOME must be set for IMOD
+            os.environ['JAVA_HOME'] = tmpdir
+
+        if app_class == EB_OpenFOAM:
+            # proper toolchain must be used for OpenFOAM(-Extend), to determine value to set for $WM_COMPILER
+            write_file(os.path.join(tmpdir, 'GCC', '4.9.3-2.25'), '\n'.join([
+                '#%Module',
+                'setenv EBROOTGCC %s' % tmpdir,
+                'setenv EBVERSIONGCC 4.9.3',
+            ]))
+            write_file(os.path.join(tmpdir, 'OpenMPI', '1.10.2-GCC-4.9.3-2.25'), '\n'.join([
+                '#%Module',
+                'setenv EBROOTOPENMPI %s' % tmpdir,
+                'setenv EBVERSIONOPENMPI 1.10.2',
+            ]))
+            write_file(os.path.join(tmpdir, 'gompi', '2016a'), '\n'.join([
+                '#%Module',
+                'module load GCC/4.9.3-2.25',
+                'module load OpenMPI/1.10.2-GCC-4.9.3-2.25',
+            ]))
+            os.environ['MODULEPATH'] = tmpdir
+            toolchain = {'name': 'gompi', 'version': '2016a'}
 
         # extend easyconfig to make sure mandatory custom easyconfig paramters are defined
         extra_options = app_class.extra_options()
@@ -214,7 +245,7 @@ def template_module_only_test(self, easyblock, name='foo', version='1.3.2', extr
                 extra_txt += '%s = "foo"\n' % key
 
         # write easyconfig file
-        self.writeEC(ebname, name=name, version=version, extratxt=extra_txt)
+        self.writeEC(ebname, name=name, version=version, extratxt=extra_txt, toolchain=toolchain)
 
         # initialize easyblock
         # if this doesn't fail, the test succeeds
