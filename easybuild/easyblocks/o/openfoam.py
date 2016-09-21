@@ -121,6 +121,10 @@ class EB_OpenFOAM(EasyBlock):
         else:
             raise EasyBuildError("Unknown compiler family, don't know how to set WM_COMPILER")
 
+        # set to an MPI unknown by OpenFOAM, since we're handling the MPI settings ourselves (via mpicc, etc.)
+        # Note: this name must contain 'MPI' so the MPI version of the Pstream library is built (cf src/Pstream/Allwmake)
+        self.wm_mplib = "EASYBUILDMPI"
+
     def configure_step(self):
         """Configure OpenFOAM build by setting appropriate environment variables."""
         # compiler & compiler flags
@@ -210,10 +214,6 @@ class EB_OpenFOAM(EasyBlock):
             env.setvar("WM_THIRD_PARTY_DIR", os.path.join(self.installdir, self.thrdpartydir))
 
         env.setvar("WM_COMPILER", self.wm_compiler)
-
-        # set to an MPI unknown by OpenFOAM, since we're handling the MPI settings ourselves (via mpicc, etc.)
-        # Note: this name must contain 'MPI' so the MPI version of the Pstream library is built (cf src/Pstream/Allwmake)
-        self.wm_mplib = "EASYBUILDMPI"
         env.setvar("WM_MPLIB", self.wm_mplib)
 
         # parallel build spec
