@@ -46,6 +46,7 @@ import easybuild.tools.toolchain as toolchain
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.build_log import EasyBuildError
+from easybuild.tools.config import build_option
 from easybuild.tools.modules import get_software_root, get_software_version
 from easybuild.tools.run import run_cmd
 from easybuild.tools.systemtools import get_avail_core_count
@@ -618,6 +619,10 @@ class EB_CP2K(EasyBlock):
         """Run regression test."""
 
         if self.cfg['runtest']:
+
+            if not build_option('mpi_tests'):
+                self.log.info("Skipping testing of CP2K since MPI testing is disabled")
+                return
 
             # change to root of build dir
             try:

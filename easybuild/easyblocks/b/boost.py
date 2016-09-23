@@ -34,6 +34,7 @@ EasyBuild support for Boost, implemented as an easyblock
 @author: Petar Forai (IMP/IMBA)
 @author: Luca Marsella (CSCS)
 @author: Guilherme Peretti-Pezzi (CSCS)
+@author: Joachim Hein (Lund University)
 """
 from distutils.version import LooseVersion
 import fileinput
@@ -215,3 +216,10 @@ class EB_Boost(EasyBlock):
             custom_paths["files"].append('lib/libboost_python.%s' % shlib_ext)
 
         super(EB_Boost, self).sanity_check_step(custom_paths=custom_paths)
+
+    def make_module_extra(self):
+        """Set up a BOOST_ROOT environment variable to e.g. ease Boost handling by cmake"""
+        txt = super(EB_Boost, self).make_module_extra()
+        txt += self.module_generator.set_environment('BOOST_ROOT', self.installdir)
+        return txt
+    

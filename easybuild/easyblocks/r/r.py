@@ -32,6 +32,7 @@ from distutils.version import LooseVersion
 
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.tools import environment
+from easybuild.tools.modules import get_software_root
 from easybuild.tools.systemtools import get_shared_lib_ext
 
 
@@ -56,7 +57,15 @@ class EB_R(ConfigureMake):
     def configure_step(self):
         """Configuration step, we set FC, F77 is already set by EasyBuild to the right compiler,
         FC is used for Fortan90"""
-        environment.setvar("FC", self.toolchain.get_variable('F90'))
+        environment.setvar('FC', self.toolchain.get_variable('F90'))
+
+        # make sure correct config script is used for Tcl/Tk
+        for dep in ['Tcl', 'Tk']:
+            root = get_software_root(dep)
+            if root:
+                dep_config = os.path.join(root, 'lib', '%sConfig.sh' % dep.lower())
+                self.cfg.update('configopts', '-with-%s-config=%s' % (dep.lower(), dep_config))
+
         ConfigureMake.configure_step(self)
     
     def make_module_req_guess(self):
