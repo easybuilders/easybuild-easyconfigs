@@ -263,6 +263,14 @@ def template_module_only_test(self, easyblock, name='foo', version='1.3.2', extr
         self.assertTrue(os.path.exists(modfile) or os.path.exists(luamodfile),
                         "Module file %s or %s was generated" % (modfile, luamodfile))
 
+        if os.path.exists(modfile):
+            modtxt = read_file(modfile)
+        else:
+            modtxt = read_file(luamodfile)
+
+        none_regex = re.compile('None')
+        self.assertFalse(none_regex.search(modtxt), "None not found in module file: %s" % modtxt)
+
         # cleanup
         app.close_log()
         os.remove(app.logfile)
