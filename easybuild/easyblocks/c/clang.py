@@ -198,16 +198,17 @@ class EB_Clang(CMakeMake):
 
         # GCC and Clang are installed in different prefixes and Clang will not
         # find the GCC installation on its own.
-        # First try with GCC
-        gcc_prefix = get_software_root('GCC')
+        # First try with GCCcore, as GCC built on top of GCCcore is just a wrapper for GCCcore and binutils,
+        # instead of a full-fledge compiler
+        gcc_prefix = get_software_root('GCCcore')
 
-        # If that doesn't work, try with GCCcore
+        # If that doesn't work, try with GCC
         if gcc_prefix == None:
-            gcc_prefix = get_software_root('GCCcore')
+            gcc_prefix = get_software_root('GCC')
         
         # If that doesn't work either, print error and exit
         if gcc_prefix == None:
-            raise EasyBuildError("Can't find GCC prefix")
+            raise EasyBuildError("Can't find GCC or GCCcore to use")
 
         self.cfg['configopts'] += "-DGCC_INSTALL_PREFIX='%s' " % gcc_prefix
         self.log.debug("Using %s as GCC_INSTALL_PREFIX" % gcc_prefix)
