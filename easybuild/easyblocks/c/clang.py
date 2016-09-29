@@ -203,15 +203,15 @@ class EB_Clang(CMakeMake):
         gcc_prefix = get_software_root('GCCcore')
 
         # If that doesn't work, try with GCC
-        if gcc_prefix == None:
+        if gcc_prefix is None:
             gcc_prefix = get_software_root('GCC')
         
         # If that doesn't work either, print error and exit
         if gcc_prefix == None:
             raise EasyBuildError("Can't find GCC or GCCcore to use")
 
-        self.cfg['configopts'] += "-DGCC_INSTALL_PREFIX='%s' " % gcc_prefix
-        self.log.debug("Using %s as GCC_INSTALL_PREFIX" % gcc_prefix)
+        self.cfg.update('configopts', "-DGCC_INSTALL_PREFIX='%s' " % gcc_prefix)
+        self.log.debug("Using %s as GCC_INSTALL_PREFIX", gcc_prefix)
 
         self.cfg['configopts'] += "-DCMAKE_BUILD_TYPE=Release "
         if self.cfg['assertions']:
