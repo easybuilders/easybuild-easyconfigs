@@ -207,7 +207,7 @@ class EB_Clang(CMakeMake):
             gcc_prefix = get_software_root('GCC')
         
         # If that doesn't work either, print error and exit
-        if gcc_prefix == None:
+        if gcc_prefix is None:
             raise EasyBuildError("Can't find GCC or GCCcore to use")
 
         self.cfg.update('configopts', "-DGCC_INSTALL_PREFIX='%s' " % gcc_prefix)
