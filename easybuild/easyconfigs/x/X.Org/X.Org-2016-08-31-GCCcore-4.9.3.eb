@@ -1,10 +1,11 @@
-easyblock = 'Binary'
+easyblock = 'EB_jhbuild'
 
 name = 'X.Org'
 version = '2016-08-31'
 
 homepage = 'https://www.x.org/wiki'
-description = """The X.Org project provides an open source implementation of the X Window System.
+description = """
+The X.Org project provides an open source implementation of the X Window System.
 The development work is being done in conjunction with the freedesktop.org
 community."""
 
@@ -25,6 +26,7 @@ builddependencies = [
     ('intltool', '0.51.0', '-Perl-5.24.0'),
     ('Perl', '5.24.0'),
     ('XML-Parser', '2.44_01', '-Perl-5.24.0'),
+    ('binutils', '2.25')
 ]
 
 dependencies = [
@@ -34,17 +36,12 @@ dependencies = [
     ('zlib', '1.2.8'),
 ]
 
-# Make sure it is using our Python2
-preinstallopts = 'echo "addpath(\'PYTHONPATH\', \'$PYTHONPATH\')" >> jhbuildrc && '
-preinstallopts += 'echo "os.environ[\'PYTHON\'] = \'$EBROOTPYTHON/bin/python2\'" >> jhbuildrc && '
-# The following environment variables are used by the patched jhbuildrc to point to our EasyBuild paths
-preinstallopts += 'EBBUILDDIR=%(builddir)s EBINSTALLDIR=%(installdir)s XORG_VERSION_DATE=%(version)s '
 # The packages below are the ones to be excluded from build
 xorg_skip = "libAppleWM mtdev xf86-input-joystick xf86-video-ati xf86-video-geode xf86-video-modesetting "
 xorg_skip += "xf86-video-sisusb xf86-video-v4l xf86-video-vmware xf86-video-wsfb xf86-input-evdev " 
-preinstallopts += 'XORG_SKIP_SET="%s" ' % (xorg_skip)
-install_cmd = 'jhbuild -f jhbuildrc'
 
+prebuildopts = 'XORG_VERSION_DATE=%(version)s '
+prebuildopts += ' XORG_SKIP_SET="%s" ' % xorg_skip
 
 sanity_check_paths = {
     'files': [
