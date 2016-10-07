@@ -154,8 +154,13 @@ class EB_QuantumESPRESSO(ConfigureMake):
 
         self.log.debug("List of replacements to perform: %s" % repls)
 
+        if LooseVersion(self.version) >= LooseVersion("6"):
+            make_ext = '.inc'
+        else:
+            make_ext = '.sys'
+
         # patch make.sys file
-        fn = os.path.join(self.cfg['start_dir'], 'make.sys')
+        fn = os.path.join(self.cfg['start_dir'], 'make' + make_ext)
         try:
             for line in fileinput.input(fn, inplace=1, backup='.orig.eb'):
                 for (k, v, keep) in repls:
@@ -181,7 +186,7 @@ class EB_QuantumESPRESSO(ConfigureMake):
 
         # patch default make.sys for wannier
         if LooseVersion(self.version) >= LooseVersion("5"):
-            fn = os.path.join(self.cfg['start_dir'], 'install', 'make_wannier90.sys')
+            fn = os.path.join(self.cfg['start_dir'], 'install', 'make_wannier90' + make_ext)
         else:
             fn = os.path.join(self.cfg['start_dir'], 'plugins', 'install', 'make_wannier90.sys')
         try:
