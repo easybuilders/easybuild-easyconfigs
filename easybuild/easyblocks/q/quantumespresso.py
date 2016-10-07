@@ -283,7 +283,9 @@ class EB_QuantumESPRESSO(ConfigureMake):
                 bins.extend(["neb.x", "path_interpolation.x"])
 
         if 'ph' in self.cfg['buildopts'] or 'all' in self.cfg['buildopts']:
-            bins.extend(["d3.x", "dynmat.x", "lambda.x", "matdyn.x", "ph.x", "phcg.x", "q2r.x"])
+            bins.extend(["dynmat.x", "lambda.x", "matdyn.x", "ph.x", "phcg.x", "q2r.x"])
+            if LooseVersion(self.version) < LooseVersion("6"):
+                bins.extend(["d3.x"])
             if LooseVersion(self.version) > LooseVersion("5"):
                 bins.extend(["fqha.x", "q2qstar.x"])
 
