@@ -60,7 +60,10 @@ class EB_QuantumESPRESSO(ConfigureMake):
 
         self.build_in_installdir = True
 
-        self.install_subdir = "espresso-%s" % self.version
+        if LooseVersion(self.version) >= LooseVersion("6"):
+            self.install_subdir = "qe-%s" % self.version
+        else:
+            self.install_subdir = "espresso-%s" % self.version
 
     def patch_step(self):
         """Patch files from build dir (not start dir)."""
@@ -227,8 +230,8 @@ class EB_QuantumESPRESSO(ConfigureMake):
 
         # move non-espresso directories to where they're expected and create symlinks
         try:
-            dirnames = [d for d in os.listdir(self.builddir) if not d.startswith('espresso')]
-            targetdir = os.path.join(self.builddir, "espresso-%s" % self.version)
+            dirnames = [d for d in os.listdir(self.builddir) if not d == self.install_subdir]
+            targetdir = os.path.join(self.builddir, self.install_subdir)
             for dirname in dirnames:
                 shutil.move(os.path.join(self.builddir, dirname), os.path.join(targetdir, dirname))
                 self.log.info("Moved %s into %s" % (dirname, targetdir))
