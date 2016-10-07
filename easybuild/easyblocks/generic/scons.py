@@ -27,12 +27,19 @@ EasyBuild support for building and installing SCons, implemented as an easyblock
 
 @author: Balazs Hajgato (Free University Brussels (VUB))
 """
-
 from easybuild.framework.easyblock import EasyBlock
+from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.run import run_cmd
 
 class SCons(EasyBlock):
     """Support for building/installing with SCons."""
+
+    @staticmethod
+    def extra_options():
+        extra_vars = {
+            'prefix_arg': ['PREFIX=', "Syntax for specifying installation prefix", CUSTOM],
+        }
+        return EasyBlock.extra_options(extra_vars)
 
     def configure_step(self):
         """
@@ -44,7 +51,11 @@ class SCons(EasyBlock):
         """
         Build with SCons 
         """
-        cmd = "%s scons %s PREFIX=%s" % (self.cfg['prebuildopts'], self.cfg['buildopts'], self.installdir)
+        cmd = "%(prebuildopts)s scons %(buildopts)s %(prefix)s" % {
+            'buildopts': self.cfg['buildopts'],
+            'prebuildopts': self.cfg['prebuildopts'],
+            'prefix': self.cfg['prefix_arg'] + self.installdir,
+        }
         (out, _) = run_cmd(cmd, log_all=True, log_output=verbose)
 
         return out
@@ -61,7 +72,11 @@ class SCons(EasyBlock):
         """
         Install with SCons
         """
-        cmd = "%s scons PREFIX=%s install %s" % (self.cfg['preinstallopts'], self.installdir, self.cfg['installopts'])
+        cmd = "%(preinstallopts)s scons %(prefix)s install %(installopts)s" % {
+            'installopts': self.cfg['installopts'],
+            'preinstallopts': self.cfg['preinstallopts'],
+            'prefix': self.cfg['prefix_arg'] + self.installdir,
+        }
         (out, _) = run_cmd(cmd, log_all=True)
 
         return out
