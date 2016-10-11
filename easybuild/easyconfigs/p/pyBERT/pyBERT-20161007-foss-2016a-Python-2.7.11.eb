@@ -1,0 +1,66 @@
+easyblock = 'CMakeMake'
+
+name = 'pyBERT'
+version = '20161007'
+commit_id = '761b5f7fd1d3d8b27dcded6d0433f7b4de951d22'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://gitlab.com/resistivity-net/bert'
+description = """Boundless Electrical Resistivity Tomography (BERT)"""
+
+toolchain = {'name': 'foss', 'version': '2016a'}
+
+source_urls = ['https://gitlab.com/resistivity-net/bert/repository/']
+
+sources = ['bert-master-%s.tar.gz' % commit_id]
+
+patches = ['pyBERT-20161007_cmake_install.patch']
+
+builddependencies = [
+    ('CMake', '3.4.3'),
+    ('CastXML', '20160617'),
+    ('pygccxml', '20160706', versionsuffix),
+    ('pyplusplus', '20160707', versionsuffix),
+]
+
+dependencies = [
+    ('Python', '2.7.11'),
+    ('pyGIMLi', '20160803', versionsuffix),
+    ('Boost', '1.60.0', versionsuffix),
+    ('Triangle', '1.6'),
+    ('Clang', '3.7.1'),
+]
+
+separate_build_dir = True
+
+configopts = '-DBOOST_ROOT=$EBROOTBOOST '
+configopts += '-DGIMLI_INCLUDE_DIR=$EBROOTPYGIMLI/cmake/ '
+configopts += '-DGIMLI_SRC=$EBROOTPYGIMLI/ '
+configopts += '-DGIMLI_BUILD=$EBROOTPYGIMLI/ '
+configopts += '-DTHIRDPARTY_DIR=TRUE '
+configopts += '-DEXTERNAL_DIR=$EBROOTTRIANGLE/ '
+configopts += '-DCASTXML_EXECUTABLE=$EBROOTCASTXML/bin/castxml '
+configopts += '-DPYGCCXML_PATH=$EBROOTPYGCCXML/lib/python%(pyshortver)s/site-packages/ '
+configopts += '-DPYPLUSPLUS_PATH=$EBROOTPYPLUSPLUS/lib/python%(pyshortver)s/site-packages/ '
+
+buildopts = 'bert1 pybert'
+
+installopts = ' && mkdir -p %(installdir)s/lib/python%(pyshortver)s/site-packages '
+installopts += '&& cp -a ../bert*/python/.  %(installdir)s/lib/python%(pyshortver)s/site-packages '
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in ['bert', 'bertNew2D', 'bertNew2DTopo', 'bertNew3D', 'bertNew3DTopo',
+                                     'bertopts.cfg', 'closeSurface', 'createParaMesh', 'createSecondaryMesh',
+                                     'createSurface', 'dcedit', 'dcinv', 'dcmod', 'dctriangle', 'meshconvert',
+                                     'paradepth', 'polyAddProfile', 'polyAddVIP', 'polyConvert',
+                                     'polyCreateCube', 'polyCreateFacet', 'polyCreateWorld', 'polyMerge',
+                                     'polyRefineVIPS', 'polyRotate', 'polyScale', 'polyTranslate',
+                                     'prepareMeshRefinement', 'va2b', 'vb2a']]+
+             ['lib/libbert.%s' % SHLIB_EXT, 'lib/libdcfemlib.%s' % SHLIB_EXT,
+              'lib/python%(pyshortver)s/site-packages/pybert.h'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages/%(namelower)s'],
+}
+
+modextrapaths = {'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages'}
+
+moduleclass = 'phys'
