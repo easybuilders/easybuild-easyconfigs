@@ -35,6 +35,7 @@ import os
 from distutils.version import LooseVersion
 
 from easybuild.easyblocks.generic.fortranpythonpackage import FortranPythonPackage
+from easybuild.tools.modules import get_software_root, get_software_version
 import easybuild.tools.toolchain as toolchain
 
 
@@ -60,9 +61,16 @@ class EB_scipy(FortranPythonPackage):
 
     def sanity_check_step(self, *args, **kwargs):
         """Custom sanity check for scipy."""
-        custom_paths = {
-            'files': [os.path.join(self.pylibdir, 'scipy', '__init__.py')],
-            'dirs': [],
-        }
+        if LooseVersion(self.version) >= LooseVersion('0.18'):
+            pyshortver = '.'.join(get_software_version('Python').split('.')[:2])
+            custom_paths = {
+                'files': [os.path.join(self.pylibdir, 'scipy-%s-py%s-linux-x86_64.egg' % (self.version, pyshortver), 'scipy', '__init__.py')],
+                'dirs': [],
+            }
+        else:
+            custom_paths = {
+                'files': [os.path.join(self.pylibdir, 'scipy', '__init__.py')],
+                'dirs': [],
+            }
         custom_commands = [(self.python_cmd, '-c "import scipy"')]
         return super(EB_scipy, self).sanity_check_step(custom_paths=custom_paths, custom_commands=custom_commands)
