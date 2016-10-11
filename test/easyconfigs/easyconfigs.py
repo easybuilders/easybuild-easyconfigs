@@ -169,7 +169,7 @@ class EasyConfigTest(TestCase):
 
     def test_easyconfig_locations(self):
         """Make sure all easyconfigs files are in the right location."""
-        easyconfig_dirs_regex = re.compile(r'/easybuild/easyconfigs/[a-z]/[^/]+$')
+        easyconfig_dirs_regex = re.compile(r'/easybuild/easyconfigs/[0a-z]/[^/]+$')
         topdir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
         for (dirpath, _, filenames) in os.walk(topdir):
             # ignore git/svn dirs
