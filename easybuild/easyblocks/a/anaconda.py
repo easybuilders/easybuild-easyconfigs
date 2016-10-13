@@ -23,7 +23,8 @@
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
 """
-EasyBuild support for building and installing the python distribution anaconda, implemented as an easyblock
+EasyBuild support for building and installing Anaconda, implemented as an easyblock
+
 @author: Jillian Rowe (New York University Abu Dhabi)
 """
 
@@ -32,23 +33,23 @@ import os
 import stat
 
 import easybuild.tools.environment as env
-from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import CUSTOM
+from easybuild.easyblocks.generic.binary import Binary
 from easybuild.tools.run import run_cmd
 from easybuild.tools.build_log import EasyBuildError
-from easybuild.tools.filetools import rmtree2
+from easybuild.tools.filetools import adjust_permissions, rmtree2
+
 
 def set_conda_env(installdir):
     """ Set the correct environmental variables for conda """
-
     myEnv = os.environ.copy()
     env.setvar('PATH', "{}/bin".format(installdir) + ":" + myEnv["PATH"])
     env.setvar('CONDA_ENV', installdir)
     env.setvar('CONDA_DEFAULT_ENV', installdir)
 
+
 def pre_install_step(log, pre_install_cmd = None):
     """ User defined pre install step """
-
     if not pre_install_cmd:
         pass
     else:
@@ -56,9 +57,9 @@ def pre_install_step(log, pre_install_cmd = None):
         run_cmd(pre_install_cmd, log_all=True, simple=True)
         log.info('Pre command run {}'.format(pre_install_cmd))
 
+
 def post_install_step(log, installdir, post_install_cmd):
     """ User defined post install step """
-
     if not post_install_cmd:
         pass
     else:
@@ -67,53 +68,26 @@ def post_install_step(log, installdir, post_install_cmd):
         run_cmd(post_install_cmd, log_all=True, simple=True)
         log.info('Post command run {}'.format(post_install_cmd))
 
+
 def initialize_conda_env(installdir):
     """ Initialize the conda env """
-
     rmtree2(installdir)
     cmd = "conda config --add create_default_packages setuptools"
     run_cmd(cmd, log_all=True, simple=True)
 
-class EB_anaconda(EasyBlock):
-    """Support for building/installing anaconda."""
+
+class EB_Anaconda(Binary):
+    """Support for building/installing Anaconda."""
 
     @staticmethod
     def extra_options(extra_vars=None):
-        """Extra easyconfig parameters specific to EB_anaconda easyblock."""
-        extra_vars = EasyBlock.extra_options(extra_vars)
+        """Extra easyconfig parameters specific to Anaconda."""
+        extra_vars = Binary.extra_options(extra_vars)
         extra_vars.update({
             'pre_install_cmd': [None, "Commands before install: setting custom environmental variables, etc", CUSTOM],
             'post_install_cmd': [None, "Commands after install: pip install, cpanm install, etc", CUSTOM],
         })
         return extra_vars
-
-    def __init__(self, *args, **kwargs):
-        """Initialize EB_anaconda-specific variables."""
-
-        super(EB_anaconda, self).__init__(*args, **kwargs)
-
-    def extract_step(self):
-        """Move all source files to the build directory"""
-
-        self.src[0]['finalpath'] = self.builddir
-
-        # copy source to build dir.
-        for source in self.src:
-            src = source['path']
-            dst = os.path.join(self.builddir, source['name'])
-            try:
-                shutil.copy2(src, self.builddir)
-                os.chmod(dst, stat.S_IRWXU)
-            except (OSError, IOError), err:
-                raise EasyBuildError("Couldn't copy %s to %s: %s", src, self.builddir, err)
-
-    def configure_step(self):
-        """No configuration, this is binary software"""
-        pass
-
-    def build_step(self):
-        """No compilation, this is binary software"""
-        pass
 
     def install_step(self):
         """Copy all files in build directory to the install directory"""
@@ -121,29 +95,33 @@ class EB_anaconda(EasyBlock):
         pre_install_step(self.log, self.cfg['pre_install_cmd'])
 
         rmtree2(self.installdir)
-        sources = self.cfg['sources']
-        install_script = sources[0]
+        install_script = self.src[0]['name']
 
-        cmd = "chmod 777 {} &&  ./{} -p {} -b -f".format(install_script, install_script, self.installdir )
+        adjust_permissions(os.path.join(self.builddir, install_script), stat.S_IRUSR|stat.S_IXUSR)
 
+        cmd = "./%s -p %s -b -f" % (install_script, self.installdir)
         self.log.info("Installing %s using command '%s'..." % (self.name, cmd))
         run_cmd(cmd, log_all=True, simple=True)
 
         post_install_step(self.log, self.installdir, self.cfg['post_install_cmd'])
-
-    def make_module_extra(self):
-        """Add the install directory to the PATH."""
-
-        txt = super(EB_anaconda, self).make_module_extra()
-        self.log.debug("make_module_extra added this: %s" % txt)
-        return txt
 
     def make_module_req_guess(self):
         """
         A dictionary of possible directories to look for.
         """
         return {
-            'PATH': ['bin', 'sbin'],
             'MANPATH': ['man', os.path.join('share', 'man')],
+            'PATH': ['bin', 'sbin'],
             'PKG_CONFIG_PATH': [os.path.join(x, 'pkgconfig') for x in ['lib', 'lib32', 'lib64', 'share']],
         }
+
+    def sanity_check_step(self):
+        """
+        Custom sanity check for Anaconda
+        """
+        bins = ['2to3', 'activate', 'conda', 'deactivate', 'ipython', 'pydoc', 'python', 'sqlite3']
+        custom_paths = {
+            'files': [os.path.join('bin', x) for x in bins],
+            'dirs': ['bin', 'etc', 'lib', 'pkgs'],
+        }
+        super(EB_Anaconda, self).sanity_check_step(custom_paths=custom_paths)
