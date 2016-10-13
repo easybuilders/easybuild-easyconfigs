@@ -125,7 +125,7 @@ class EB_Amber(ConfigureMake):
             env.setvar('MKL_HOME', mklroot)
 
         mpiroot = get_software_root(self.toolchain.MPI_MODULE_NAME[0])
-        if mpiroot:
+        if mpiroot and self.toolchain.options.get('usempi', None):
             env.setvar('MPI_HOME', mpiroot)
             self.with_mpi = True
 
@@ -160,7 +160,7 @@ class EB_Amber(ConfigureMake):
         # compose list of build targets
         build_targets = [('', 'test')]
 
-        if self.toolchain.options.get('usempi', None):
+        if self.with_mpi:
             build_targets.append(('-mpi', 'test.parallel'))
             # hardcode to 4 MPI processes, minimal required to run all tests
             env.setvar('DO_PARALLEL', 'mpirun -np 4')
@@ -170,7 +170,7 @@ class EB_Amber(ConfigureMake):
             env.setvar('CUDA_HOME', cudaroot)
             self.with_cuda = True
             build_targets.append(('-cuda', 'test.cuda'))
-            if self.toolchain.options.get('usempi', None):
+            if self.with_mpi:
                 build_targets.append(("-cuda -mpi", 'test.cuda_parallel'))
 
         ld_lib_path = os.environ.get('LD_LIBRARY_PATH', '')
