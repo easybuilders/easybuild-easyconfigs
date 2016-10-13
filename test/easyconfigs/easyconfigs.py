@@ -46,7 +46,7 @@ from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig.default import DEFAULT_CONFIG
 from easybuild.framework.easyconfig.easyconfig import EasyConfig
-from easybuild.framework.easyconfig.easyconfig import get_easyblock_class, resolve_template
+from easybuild.framework.easyconfig.easyconfig import get_easyblock_class, letter_dir_for, resolve_template
 from easybuild.framework.easyconfig.parser import EasyConfigParser, fetch_parameters_from_easyconfig
 from easybuild.framework.easyconfig.tools import dep_graph, get_paths_for, process_easyconfig
 from easybuild.tools import config
@@ -169,7 +169,7 @@ class EasyConfigTest(TestCase):
 
     def test_easyconfig_locations(self):
         """Make sure all easyconfigs files are in the right location."""
-        easyconfig_dirs_regex = re.compile(r'/easybuild/easyconfigs/[a-z]/[^/]+$')
+        easyconfig_dirs_regex = re.compile(r'/easybuild/easyconfigs/[0a-z]/[^/]+$')
         topdir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
         for (dirpath, _, filenames) in os.walk(topdir):
             # ignore git/svn dirs
@@ -211,7 +211,7 @@ def template_easyconfig_test(self, spec):
     name, easyblock = fetch_parameters_from_easyconfig(ec.rawtxt, ['name', 'easyblock'])
 
     # make sure easyconfig file is in expected location
-    expected_subdir = os.path.join('easybuild', 'easyconfigs', name.lower()[0], name)
+    expected_subdir = os.path.join('easybuild', 'easyconfigs', letter_dir_for(name), name)
     subdir = os.path.join(*spec.split(os.path.sep)[-5:-1])
     fail_msg = "Easyconfig file %s not in expected subdirectory %s" % (spec, expected_subdir)
     self.assertEqual(expected_subdir, subdir, fail_msg)
