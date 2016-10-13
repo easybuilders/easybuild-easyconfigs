@@ -296,10 +296,12 @@ class IntelBase(EasyBlock):
                 silent += 'COMPONENTS=%s\n' % self.install_components[0]
             elif self.install_components:
                 # a list of components is specified (needs quotes)
-		if LooseVersion(self.version) >= LooseVersion('2017.0.0'):
-		    silent += 'COMPONENTS=' + ';'.join(self.install_components) + '\n'
-		else:
-		    silent += 'COMPONENTS="' + ';'.join(self.install_components) + '"\n'
+                components = ';'.join(self.install_components)
+                if LooseVersion(self.version) >= LooseVersion('2017'):
+                    # for versions 2017.x and newer, double quotes should not be there...
+                    silent += 'COMPONENTS=%s\n' % components
+                else:
+                    silent += 'COMPONENTS="%s"\n' % components
             else:
                 raise EasyBuildError("Empty list of matching components obtained via %s", self.cfg['components'])
 
