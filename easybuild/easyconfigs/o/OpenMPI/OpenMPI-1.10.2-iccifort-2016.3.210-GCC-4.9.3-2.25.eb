@@ -9,23 +9,20 @@ description = """The Open MPI Project is an open source MPI-2 implementation."""
 toolchain = {'name': 'iccifort', 'version': '2016.3.210-GCC-4.9.3-2.25'}
 
 sources = [SOURCELOWER_TAR_GZ]
+source_urls = ['http://www.open-mpi.org/software/ompi/v%(version_major_minor)s/downloads']
 
-source_urls = ['http://www.open-mpi.org/software/ompi/v%(version_major_minor)s/downloads',]
 
 configopts = '--with-threads=posix --enable-shared --enable-mpi-thread-multiple --with-verbs '
 configopts += '--enable-mpirun-prefix-by-default '  # suppress failure modes in relation to mpirun path
-configopts += '--with-hwloc=/usr/local/packages/hwloc '  # hwloc support
+configopts += '--with-hwloc=$EBROOTHWLOC '  # hwloc support
 configopts += '--disable-dlopen '  # statically link component, don't do dynamic loading
-configopts += '--with-tm=/usr/local/packages/adaptive/torque ' # we want torque support as well
 
-
-configopts += '--enable-debug '
+dependencies = [('hwloc', '1.11.3')]
 
 # needed for --with-verbs
-osdependencies = [('libibverbs-dev', 'libibverbs-devel'), ('libpciaccess-devel'), ('libudev-devel', 'systemd-devel'),]
+osdependencies = [('libibverbs-dev', 'libibverbs-devel')]
 
 libs = ["mpi_cxx", "mpi_mpifh", "mpi", "ompitrace", "open-pal", "open-rte", "vt", "vt-hyb", "vt-mpi", "vt-mpi-unify"]
-
 sanity_check_paths = {
     'files': ["bin/%s" % binfile for binfile in ["ompi_info", "opal_wrapper", "orterun"]] +
              ["lib/lib%s.%s" % (libfile, SHLIB_EXT) for libfile in libs] +
@@ -33,9 +30,10 @@ sanity_check_paths = {
     'dirs': ["include/openmpi/ompi/mpi/cxx"],
 }
 
-modextravars = {
-    "MXM_LOG_LEVEL": "ERROR",
-    "MXM_LOG_FILE": "/dev/stderr",
-}
+sanity_check_commands = [
+    ('mpicc --version | grep icc', ''),
+    ('mpicxx --version | grep icpc', ''),
+    ('mpifort --version | grep ifort', ''),
+]
 
 moduleclass = 'mpi'
