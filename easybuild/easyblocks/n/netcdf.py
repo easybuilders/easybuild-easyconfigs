@@ -131,17 +131,3 @@ def set_netcdf_env_vars(log):
         else:
             env.setvar('NETCDFF', netcdff)
             log.debug("Set NETCDFF to %s" % netcdff)
-
-def get_netcdf_module_set_cmds(log):
-    """Get module setenv commands for netCDF."""
-    log.deprecated("Use self.module_generator.set_environment rather than relying on get_netcdf_module_set_cmds", '3.0')
-    netcdf = os.getenv('NETCDF')
-    if netcdf:
-        txt = "setenv NETCDF %s\n" % netcdf
-        # netCDF-Fortran is optional (only for netCDF v4.2 and later)
-        netcdff = os.getenv('NETCDFF')
-        if netcdff:
-            txt += "setenv NETCDFF %s\n" % netcdff
-        return txt
-    else:
-        raise EasyBuildError("NETCDF environment variable not set?")
