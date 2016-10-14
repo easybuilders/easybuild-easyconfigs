@@ -34,14 +34,17 @@ EasyBuild support for building and installing ScaLAPACK, implemented as an easyb
 
 import glob
 import os
-import shutil
 from distutils.version import LooseVersion
 
 import easybuild.tools.toolchain as toolchain
 from easybuild.easyblocks.blacs import det_interface  #@UnresolvedImport
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
-from easybuild.easyblocks.lapack import get_blas_lib as lapack_get_blas_lib  #@UnresolvedImport
+from easybuild.toolchains.linalg.atlas import Atlas
+from easybuild.toolchains.linalg.gotoblas import GotoBLAS
+from easybuild.toolchains.linalg.lapack import Lapack
+from easybuild.toolchains.linalg.openblas import OpenBLAS
 from easybuild.tools.build_log import EasyBuildError
+from easybuild.tools.filetools import copy_file
 from easybuild.tools.modules import get_software_root
 
 
@@ -56,33 +59,28 @@ class EB_ScaLAPACK(ConfigureMake):
         src = os.path.join(self.cfg['start_dir'], 'SLmake.inc.example')
         dest = os.path.join(self.cfg['start_dir'], 'SLmake.inc')
 
-        if not os.path.isfile(src):
-            raise EasyBuildError("Can't fin source file %s", src)
-
         if os.path.exists(dest):
             raise EasyBuildError("Destination file %s exists", dest)
-
-        try:
-            shutil.copy(src, dest)
-        except OSError, err:
-            raise EasyBuildError("Symlinking %s to %s failed: %s", src, dest, err)
+        else:
+            copy_file(src, dest)
 
         self.loosever = LooseVersion(self.version)
 
-        # make sure required dependencies are available
-        deps = [("LAPACK", "ACML", "OpenBLAS")]
-        self.log.deprecated("EB_ScaLAPACK.configure_step uses hardcoded list of LAPACK libs", '3.0')
+        # make sure required dependencies are available for BLAS/LAPACK
+        dep_grps = [('ACML', 'LAPACK', 'OpenBLAS')]
+
         # BLACS is only a dependency for ScaLAPACK versions prior to v2.0.0
-        if self.loosever < LooseVersion("2.0.0"):
-            deps.append(("BLACS",))
-        for depgrp in deps:
+        if self.loosever < LooseVersion('2.0.0'):
+            dep_grps.append([('BLACS',)])
+
+        for depgrp in dep_grps:
             ok = False
             for dep in depgrp:
                 if get_software_root(dep):
                     ok = True
                     break
             if not ok:
-                raise EasyBuildError("None of the following dependencies %s are available/loaded.", str(depgrp))
+                raise EasyBuildError("None of the following dependencies are available/loaded: %s", ', '.join(depgrp))
 
     def build_step(self):
         """Build ScaLAPACK using make after setting make options."""
@@ -101,32 +99,41 @@ class EB_ScaLAPACK(ConfigureMake):
         else:
             raise EasyBuildError("Don't know which compiler commands to use.")
 
-        # set BLAS and LAPACK libs
-        extra_makeopts = None
-        self.log.deprecated("EB_ScaLAPACK.build_step doesn't use toolchain support for BLAS/LAPACK libs", '3.0')
+        # determine build options BLAS and LAPACK libs
+        extra_makeopts = []
         if get_software_root('LAPACK'):
-            extra_makeopts = [
-                'BLASLIB="%s -lpthread"' % lapack_get_blas_lib(self.log),
-                'LAPACKLIB=%s/lib/liblapack.a' % get_software_root('LAPACK')
-            ]
+            lapack = get_software_root('LAPACK')
+            extra_makeopts.append('LAPACKLIB=%s' % os.path.join(lapack, 'lib', 'liblapack.a'))
+
+            for blas in [Atlas, GotoBLAS]:
+                blas_root = get_software_root(blas.BLAS_MODULE_NAME[0])
+                if blas_root:
+                    blas_libs = ' '.join(['-l%s' % lib for lib in blas.BLAS_LIB])
+                    extra_makeopts.append('BLASLIB="-L%s %s -lpthread"' % (os.path.join(blas_root, 'lib'), blas_libs))
+                    break
+
+            if not blas_root:
+                raise EasyBuildError("Failed to find a known BLAS library, don't know how to define 'BLASLIB'")
+
         elif get_software_root('ACML'):
             root = get_software_root('ACML')
             acml_static_lib = os.path.join(root, os.getenv('ACML_BASEDIR', 'NO_ACML_BASEDIR'), 'lib', 'libacml.a')
-            extra_makeopts = [
+            extra_makeopts.extend([
                 'BLASLIB="%s -lpthread"' % acml_static_lib,
                 'LAPACKLIB=%s' % acml_static_lib
-            ]
+            ])
         elif get_software_root('OpenBLAS'):
-            root = get_software_root('OpenBLAS')
-            extra_makeopts = [
-                'BLASLIB="%s -lpthread"' % lapack_get_blas_lib(self.log),
-                'LAPACKLIB="%s"' % lapack_get_blas_lib(self.log),
-            ]
+            libdir = os.path.join(get_software_root('OpenBLAS'), 'lib')
+            blas_libs = ' '.join(['-l%s' % lib for lib in OpenBLAS.BLAS_LIB])
+            extra_makeopts.extend([
+                'BLASLIB="-L%s %s -lpthread"' % (libdir, blas_libs),
+                'LAPACKLIB="-L%s %s"' % (libdir, blas_libs),
+            ])
         else:
-            raise EasyBuildError("LAPACK, ACML or OpenBLAS are not available, no idea how to set BLASLIB/LAPACKLIB make options.")
+            raise EasyBuildError("Unknown LAPACK library used, no idea how to set BLASLIB/LAPACKLIB make options")
 
         # build procedure changed in v2.0.0
-        if self.loosever < LooseVersion("2.0.0"):
+        if self.loosever < LooseVersion('2.0.0'):
 
             blacs = get_software_root('BLACS')
 
@@ -190,27 +197,17 @@ class EB_ScaLAPACK(ConfigureMake):
 
         # include files and libraries
         path_info = [
-            ("SRC", "include", ".h"), # include files
-            ("", "lib", ".a"), # libraries
+            ('SRC', 'include', '.h'), # include files
+            ('', 'lib', '.a'), # libraries
         ]
         for (srcdir, destdir, ext) in path_info:
 
             src = os.path.join(self.cfg['start_dir'], srcdir)
             dest = os.path.join(self.installdir, destdir)
 
-            try:
-                os.makedirs(dest)
-                os.chdir(src)
-
-                for lib in glob.glob('*%s' % ext):
-
-                    # copy file
-                    shutil.copy2(os.path.join(src, lib), dest)
-
-                    self.log.debug("Copied %s to %s" % (lib, dest))
-
-            except OSError, err:
-                raise EasyBuildError("Copying %s/*.%s to installation dir %s failed: %s", src, ext, dest, err)
+            for lib in glob.glob(os.path.join(src, '*%s' % ext)):
+                copy_file(src, dest)
+                self.log.debug("Copied %s to %s" % (lib, dest))
 
     def sanity_check_step(self):
         """Custom sanity check for ScaLAPACK."""
