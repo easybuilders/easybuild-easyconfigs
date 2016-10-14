@@ -39,6 +39,7 @@ from distutils.version import LooseVersion
 import easybuild.tools.toolchain as toolchain
 from easybuild.easyblocks.blacs import det_interface  #@UnresolvedImport
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
+from easybuild.toolchains.linalg.acml import Acml
 from easybuild.toolchains.linalg.atlas import Atlas
 from easybuild.toolchains.linalg.gotoblas import GotoBLAS
 from easybuild.toolchains.linalg.lapack import Lapack
@@ -66,22 +67,6 @@ class EB_ScaLAPACK(ConfigureMake):
 
         self.loosever = LooseVersion(self.version)
 
-        # make sure required dependencies are available for BLAS/LAPACK
-        dep_grps = [('ACML', 'LAPACK', 'OpenBLAS')]
-
-        # BLACS is only a dependency for ScaLAPACK versions prior to v2.0.0
-        if self.loosever < LooseVersion('2.0.0'):
-            dep_grps.append([('BLACS',)])
-
-        for depgrp in dep_grps:
-            ok = False
-            for dep in depgrp:
-                if get_software_root(dep):
-                    ok = True
-                    break
-            if not ok:
-                raise EasyBuildError("None of the following dependencies are available/loaded: %s", ', '.join(depgrp))
-
     def build_step(self):
         """Build ScaLAPACK using make after setting make options."""
 
@@ -101,8 +86,12 @@ class EB_ScaLAPACK(ConfigureMake):
 
         # determine build options BLAS and LAPACK libs
         extra_makeopts = []
-        if get_software_root('LAPACK'):
-            lapack = get_software_root('LAPACK')
+
+        acml = get_software_root(Acml.LAPACK_MODULE_NAME[0])
+        lapack = get_software_root(Lapack.LAPACK_MODULE_NAME[0])
+        openblas = get_software_root(OpenBLAS.LAPACK_MODULE_NAME[0])
+
+        if lapack:
             extra_makeopts.append('LAPACKLIB=%s' % os.path.join(lapack, 'lib', 'liblapack.a'))
 
             for blas in [Atlas, GotoBLAS]:
@@ -115,15 +104,15 @@ class EB_ScaLAPACK(ConfigureMake):
             if not blas_root:
                 raise EasyBuildError("Failed to find a known BLAS library, don't know how to define 'BLASLIB'")
 
-        elif get_software_root('ACML'):
-            root = get_software_root('ACML')
-            acml_static_lib = os.path.join(root, os.getenv('ACML_BASEDIR', 'NO_ACML_BASEDIR'), 'lib', 'libacml.a')
+        elif acml:
+            acml_base_dir = os.getenv('ACML_BASEDIR', 'NO_ACML_BASEDIR')
+            acml_static_lib = os.path.join(acml, acml_base_dir, 'lib', 'libacml.a')
             extra_makeopts.extend([
                 'BLASLIB="%s -lpthread"' % acml_static_lib,
                 'LAPACKLIB=%s' % acml_static_lib
             ])
-        elif get_software_root('OpenBLAS'):
-            libdir = os.path.join(get_software_root('OpenBLAS'), 'lib')
+        elif openblas:
+            libdir = os.path.join(openblas, 'lib')
             blas_libs = ' '.join(['-l%s' % lib for lib in OpenBLAS.BLAS_LIB])
             extra_makeopts.extend([
                 'BLASLIB="-L%s %s -lpthread"' % (libdir, blas_libs),
@@ -135,7 +124,9 @@ class EB_ScaLAPACK(ConfigureMake):
         # build procedure changed in v2.0.0
         if self.loosever < LooseVersion('2.0.0'):
 
-            blacs = get_software_root('BLACS')
+            blacs = get_software_root(Blacs.BLACS_MODULE_NAME[0])
+            if not blacs:
+                raise EasyBuildError("BLACS not available, yet required for ScaLAPACK version < 2.0.0")
 
             # determine interface
             interface = det_interface(self.log, os.path.join(blacs, 'bin'))
