@@ -41,6 +41,7 @@ from easybuild.easyblocks.blacs import det_interface  #@UnresolvedImport
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.toolchains.linalg.acml import Acml
 from easybuild.toolchains.linalg.atlas import Atlas
+from easybuild.toolchains.linalg.blacs import Blacs
 from easybuild.toolchains.linalg.gotoblas import GotoBLAS
 from easybuild.toolchains.linalg.lapack import Lapack
 from easybuild.toolchains.linalg.openblas import OpenBLAS
@@ -197,7 +198,7 @@ class EB_ScaLAPACK(ConfigureMake):
             dest = os.path.join(self.installdir, destdir)
 
             for lib in glob.glob(os.path.join(src, '*%s' % ext)):
-                copy_file(src, dest)
+                copy_file(lib, os.path.join(dest, os.path.basename(lib)))
                 self.log.debug("Copied %s to %s" % (lib, dest))
 
     def sanity_check_step(self):
