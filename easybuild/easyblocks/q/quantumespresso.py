@@ -60,7 +60,10 @@ class EB_QuantumESPRESSO(ConfigureMake):
 
         self.build_in_installdir = True
 
-        self.install_subdir = "espresso-%s" % self.version
+        if LooseVersion(self.version) >= LooseVersion("6"):
+            self.install_subdir = "qe-%s" % self.version
+        else:
+            self.install_subdir = "espresso-%s" % self.version
 
     def patch_step(self):
         """Patch files from build dir (not start dir)."""
@@ -151,8 +154,13 @@ class EB_QuantumESPRESSO(ConfigureMake):
 
         self.log.debug("List of replacements to perform: %s" % repls)
 
+        if LooseVersion(self.version) >= LooseVersion("6"):
+            make_ext = '.inc'
+        else:
+            make_ext = '.sys'
+
         # patch make.sys file
-        fn = os.path.join(self.cfg['start_dir'], 'make.sys')
+        fn = os.path.join(self.cfg['start_dir'], 'make' + make_ext)
         try:
             for line in fileinput.input(fn, inplace=1, backup='.orig.eb'):
                 for (k, v, keep) in repls:
@@ -178,7 +186,7 @@ class EB_QuantumESPRESSO(ConfigureMake):
 
         # patch default make.sys for wannier
         if LooseVersion(self.version) >= LooseVersion("5"):
-            fn = os.path.join(self.cfg['start_dir'], 'install', 'make_wannier90.sys')
+            fn = os.path.join(self.cfg['start_dir'], 'install', 'make_wannier90' + make_ext)
         else:
             fn = os.path.join(self.cfg['start_dir'], 'plugins', 'install', 'make_wannier90.sys')
         try:
@@ -227,8 +235,8 @@ class EB_QuantumESPRESSO(ConfigureMake):
 
         # move non-espresso directories to where they're expected and create symlinks
         try:
-            dirnames = [d for d in os.listdir(self.builddir) if not d.startswith('espresso')]
-            targetdir = os.path.join(self.builddir, "espresso-%s" % self.version)
+            dirnames = [d for d in os.listdir(self.builddir) if not d == self.install_subdir]
+            targetdir = os.path.join(self.builddir, self.install_subdir)
             for dirname in dirnames:
                 shutil.move(os.path.join(self.builddir, dirname), os.path.join(targetdir, dirname))
                 self.log.info("Moved %s into %s" % (dirname, targetdir))
@@ -275,7 +283,9 @@ class EB_QuantumESPRESSO(ConfigureMake):
                 bins.extend(["neb.x", "path_interpolation.x"])
 
         if 'ph' in self.cfg['buildopts'] or 'all' in self.cfg['buildopts']:
-            bins.extend(["d3.x", "dynmat.x", "lambda.x", "matdyn.x", "ph.x", "phcg.x", "q2r.x"])
+            bins.extend(["dynmat.x", "lambda.x", "matdyn.x", "ph.x", "phcg.x", "q2r.x"])
+            if LooseVersion(self.version) < LooseVersion("6"):
+                bins.extend(["d3.x"])
             if LooseVersion(self.version) > LooseVersion("5"):
                 bins.extend(["fqha.x", "q2qstar.x"])
 
