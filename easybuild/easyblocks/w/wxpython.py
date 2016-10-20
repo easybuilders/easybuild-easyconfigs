@@ -62,17 +62,20 @@ class EB_wxPython(PythonPackage):
             'dirs': ['include', 'share', self.pylibdir],
         }
 
-        # test using 'import wx'
+        # test using 'import wx' (i.e. don't use 'import wxPython')
         self.options['modulename'] = 'wx'
 
-        super(EB_wxPython, self).sanity_check_step(custom_paths=custom_paths)
+        # also test importing wxversion
+        custom_commands = [(self.python_cmd, '-c "import wxversion"')]
+
+        super(EB_wxPython, self).sanity_check_step(custom_paths=custom_paths, custom_commands=custom_commands)
 
     def make_module_extra(self):
         """Custom update for $PYTHONPATH for wxPython."""
         txt = super(EB_wxPython, self).make_module_extra()
 
-        # make sure that correct subdir is included in update to $PYTHONPATH
+        # make sure that correct subdir is also included to $PYTHONPATH
         majver = '.'.join(self.version.split('.')[:2])
-        txt = re.sub(self.pylibdir, os.path.join(self.pylibdir, 'wx-%s-gtk2' % majver), txt)
+        txt += self.module_generator.prepend_paths('PYTHONPATH', os.path.join(self.pylibdir, 'wx-%s-gtk2' % majver))
 
         return txt
