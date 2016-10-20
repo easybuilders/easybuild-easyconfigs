@@ -71,8 +71,8 @@ class EB_wxPython(PythonPackage):
         """Custom update for $PYTHONPATH for wxPython."""
         txt = super(EB_wxPython, self).make_module_extra()
 
-        # make sure that correct subdir is included in update to $PYTHONPATH
+        # make sure that correct subdir is also included in  $PYTHONPATH
         majver = '.'.join(self.version.split('.')[:2])
-        txt = re.sub(self.pylibdir, os.path.join(self.pylibdir, 'wx-%s-gtk2' % majver), txt)
+        txt += self.module_generator.prepend_paths('PYTHONPATH', os.path.join(self.pylibdir, 'wx-%s-gtk2' % majver))
 
         return txt
