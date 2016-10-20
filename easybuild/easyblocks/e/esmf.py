@@ -88,6 +88,8 @@ class EB_ESMF(ConfigureMake):
 
             # C++
             netcdfcxx = get_software_root('netCDF-C++')
+            if netcdfcxx is None:
+                netcdfcxx = get_software_root('netCDF-C++4')
             if netcdfcxx:
                 netcdf_libs = ["-L%s/lib" % netcdfcxx] + netcdf_libs + ["-lnetcdf_c++"]
             else:
