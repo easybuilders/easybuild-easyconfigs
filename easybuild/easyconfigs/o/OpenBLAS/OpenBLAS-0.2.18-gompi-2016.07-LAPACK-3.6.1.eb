@@ -3,6 +3,8 @@ easyblock = 'ConfigureMake'
 name = 'OpenBLAS'
 version = '0.2.18'
 
+obv = '%s-%s' % (name, version) # To be used in the lapack-x.y.z unpack cmd
+
 lapackver = '3.6.1'
 versionsuffix = '-LAPACK-%s' % lapackver
 
@@ -16,7 +18,7 @@ large_src = 'large.tgz'
 timing_src = 'timing.tgz'
 sources = [
     'v%(version)s.tar.gz',
-    lapack_src,
+    (lapack_src, 'mv %s/lapack-netlib %s/lapack-netlib.old; mkdir %s/lapack-netlib; tar -C %s/lapack-netlib --strip-components=1 -zxf %%s' % (obv, obv, obv, obv)),
     large_src,
     timing_src,
 ]
@@ -28,7 +30,6 @@ source_urls = [
 ]
 
 patches = [
-    (lapack_src, '.'),  # copy LAPACK tarball to unpacked OpenBLAS dir
     (large_src, '.'),
     (timing_src, '.'),
 ]
