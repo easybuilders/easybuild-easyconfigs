@@ -62,7 +62,7 @@ class EB_LAPACK(ConfigureMake):
         }
         return ConfigureMake.extra_options(extra_vars)
 
-    def get_blaslib():
+    def get_blaslib(self):
         """Determine build options to define BLASLIB with"""
         blaslib = None
 
