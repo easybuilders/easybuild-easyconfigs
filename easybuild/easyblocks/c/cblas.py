@@ -34,6 +34,7 @@ import os
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.filetools import copy_file
+from easybuild.tools.systemtools import get_shared_lib_ext
 
 
 class EB_CBLAS(ConfigureMake):
@@ -83,7 +84,7 @@ class EB_CBLAS(ConfigureMake):
         Custom sanity check for CBLAS.
         """
         custom_paths = {
-            'files': ["lib/libcblas.a"],
+            'files': ['lib/libcblas.a', 'lib/libcblas.%s' % get_shared_lib_ext()],
             'dirs': [],
         }
         super(EB_CBLAS, self).sanity_check_step(custom_paths=custom_paths)
