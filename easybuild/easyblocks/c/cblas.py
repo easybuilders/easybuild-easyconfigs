@@ -1,5 +1,5 @@
 ##
-# Copyright 2013 Ghent University
+# Copyright 2013-2016 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -30,10 +30,11 @@ EasyBuild support for building and installing CBLAS, implemented as an easyblock
 
 import glob
 import os
-import shutil
 
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.tools.build_log import EasyBuildError
+from easybuild.tools.filetools import copy_file
+from easybuild.tools.systemtools import get_shared_lib_ext
 
 
 class EB_CBLAS(ConfigureMake):
@@ -46,10 +47,7 @@ class EB_CBLAS(ConfigureMake):
         """
         Configure CBLAS build by copying Makefile.LINUX to Makefile.in, and setting make options
         """
-        try:
-            shutil.copy2('Makefile.LINUX', 'Makefile.in')
-        except OSError, err:
-            raise EasyBuildError("Failed to copy makefile: %s", err)
+        copy_file('Makefile.LINUX', 'Makefile.in')
 
         if not self.cfg['buildopts']:
             self.cfg.update('buildopts', 'all')
@@ -59,8 +57,12 @@ class EB_CBLAS(ConfigureMake):
         self.cfg.update('buildopts', 'CFLAGS="%s -DADD_"' % os.getenv('CFLAGS'))
         self.cfg.update('buildopts', 'FFLAGS="%s -DADD_"' % os.getenv('FFLAGS'))
         blas_lib_dir = os.getenv('BLAS_LIB_DIR')
-        blas_libs = [os.path.join(blas_lib_dir, lib) for lib in os.getenv('BLAS_STATIC_LIBS').split(',')]
-        self.cfg.update('buildopts', 'BLLIB="%s"' % ' '.join(blas_libs))
+        blas_libs = []
+        for blas_lib in os.getenv('BLAS_STATIC_LIBS').split(','):
+            blas_lib = os.path.join(blas_lib_dir, blas_lib)
+            if os.path.exists(blas_lib):
+                blas_libs.append(blas_lib)
+        self.cfg.update('buildopts', 'BLLIB="%s %s"' % (' '.join(blas_libs), os.getenv('LIBS', '')))
 
     # default build procedure should do
 
@@ -70,24 +72,19 @@ class EB_CBLAS(ConfigureMake):
         """
         srcdir = os.path.join(self.cfg['start_dir'], 'lib')
         targetdir = os.path.join(self.installdir, 'lib')
-        try:
-            os.makedirs(targetdir)
 
-            shutil.copy2(os.path.join(srcdir, 'cblas_LINUX.a'), os.path.join(targetdir, 'libcblas.a'))
-            srclib = os.path.join(srcdir, 'libcblas.so')
-            if os.path.exists(srclib):
-                for solib in glob.glob(os.path.join(srcdir, 'libcblas.so*')):
-                    shutil.copy2(solib, targetdir)
-        except OSError, err:
-            raise EasyBuildError("Failed to install CBLAS (srcdir: %s, targetdir: %s): %s", srcdir, targetdir, err)
+        copy_file(os.path.join(srcdir, 'cblas_LINUX.a'), os.path.join(targetdir, 'libcblas.a'))
+        srclib = os.path.join(srcdir, 'libcblas.so')
+        if os.path.exists(srclib):
+            for solib in glob.glob(os.path.join(srcdir, 'libcblas.so*')):
+                copy_file(solib, os.path.join(targetdir, os.path.basename(solib)))
 
     def sanity_check_step(self):
         """
         Custom sanity check for CBLAS.
         """
         custom_paths = {
-                        'files': ["lib/libcblas.a"],
-                        'dirs': [],
-                       }
-
+            'files': ['lib/libcblas.a', 'lib/libcblas.%s' % get_shared_lib_ext()],
+            'dirs': [],
+        }
         super(EB_CBLAS, self).sanity_check_step(custom_paths=custom_paths)
