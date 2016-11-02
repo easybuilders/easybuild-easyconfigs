@@ -46,6 +46,7 @@ class EB_Allinea(Binary):
         extra = Binary.extra_options(extra_vars)
         extra.update({
             'templates': [[], "List of templates.", CUSTOM],
+            'sysconfig': [None, "system.config file to install.", CUSTOM],
         })
         return extra
 
@@ -81,10 +82,33 @@ class EB_Allinea(Binary):
         # copy templates
         templ_path = os.path.join(self.installdir, 'templates')
         for templ in self.cfg['templates']:
+	    path = self.obtain_file(templ, extension='qtf')
+	    if path:
+		self.log.debug('Template file %s found' % path)
+	    else:
+		raise EasyBuildError('No template file named %s found', templ)
+
             try:
-                shutil.copy2(templ, templ_path)
+                shutil.copy(path, templ_path)
             except OSError, err:
                 raise EasyBuildError("Failed to copy template %s to %s: %s", templ, templ_path, err)
+
+        # copy system.config if requested
+	sysconf_path = os.path.join(self.installdir, 'system.config')
+	if self.cfg['sysconfig'] is not None:
+	    path = self.obtain_file(self.cfg['sysconfig'], extension=False)
+	    if path:
+		self.log.debug('system.config file %s found' % path)
+	    else:
+		raise EasyBuildError('No system.config file named %s found', sysconfig)
+            try:
+                shutil.copy(path, sysconf_path)
+            except OSError, err:
+                raise EasyBuildError("Failed to copy %s to %s: %s", path, sysconf_path, err)
+	    try:
+		os.chmod(sysconf_path, 0444)
+	    except OSError, err:
+                raise EasyBuildError("Failed to chmod %s: %s", sysconf_path, err)
 
     def sanity_check_step(self):
         """Custom sanity check for Allinea."""
