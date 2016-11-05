@@ -28,84 +28,66 @@ EasyBuild support for building and installing conda environments via conda creat
 """
 
 import os
-import shutil
-import stat
 
-import easybuild.tools.environment as env
-from easybuild.framework.easyblock import EasyBlock
+from easybuild.easyblocks.anaconda import initialize_conda_env, set_conda_env
+from easybuild.easyblocks.generic.binary import Binary
 from easybuild.framework.easyconfig import CUSTOM
-from easybuild.tools.build_log import EasyBuildError
-from easybuild.tools.filetools import rmtree2
 from easybuild.tools.run import run_cmd
-from easybuild.easyblocks.anaconda import post_install_step, pre_install_step, initialize_conda_env, set_conda_env
 
-class EB_CondaCreate(EasyBlock):
+
+class CondaCreate(Binary):
     """Support for building/installing CondaCreate."""
 
     @staticmethod
     def extra_options(extra_vars=None):
         """Extra easyconfig parameters specific to EB_CondaCreate easyblock."""
-        extra_vars = EasyBlock.extra_options(extra_vars)
+        extra_vars = Binary.extra_options(extra_vars)
         extra_vars.update({
-            'requirements': [None, "Requirements files", CUSTOM],
             'channels': [None, "Custom conda channels", CUSTOM],
             'post_install_cmd': [None, "Commands after install: pip install, cpanm install, etc", CUSTOM],
             'pre_install_cmd': [None, "Commands before install: setting environment variables, etc", CUSTOM],
+            'requirements': [None, "Requirements file", CUSTOM],
         })
         return extra_vars
 
-    def __init__(self, *args, **kwargs):
-        """Initialize EB_CondaCreate-specific variables."""
-        super(EB_CondaCreate, self).__init__(*args, **kwargs)
-
-
     def extract_step(self):
-        """Move all source files to the build directory"""
-
-        if not self.src:
-            pass
+        """No sources expected."""
+        if self.src:
+            super(EB_CondaCreate, self).extract_step()
         else:
-            self.src[0]['finalpath'] = self.builddir
-
-            # copy source to build dir.
-            for source in self.src:
-                src = source['path']
-                dst = os.path.join(self.builddir, source['name'])
-                try:
-                    shutil.copy2(src, self.builddir)
-                    os.chmod(dst, stat.S_IRWXU)
-                except (OSError, IOError), err:
-                    raise EasyBuildError("Couldn't copy %s to %s: %s", src, self.builddir, err)
-
-    def configure_step(self):
-        """No configuration, this is binary software"""
-        pass
-
-    def build_step(self):
-        """No compilation, this is binary software"""
-        pass
+            pass
 
     def install_step(self):
-        """Copy all files in build directory to the install directory"""
+        """Set up conda environment using 'conda create' and install using specified requirements."""
 
-        pre_install_step(self.log, self.cfg['pre_install_cmd'])
+        if self.cfg['pre_install_cmd']:
+            run_cmd(self.cfg['pre_install_cmd'], log_all=True, simple=True)
+
         initialize_conda_env(self.installdir)
 
-        cmd = "conda create -y  -p {}".format(self.installdir)
+        cmd = "conda create -y -p %s" % self.installdir
         run_cmd(cmd, log_all=True, simple=True)
 
         if self.cfg['requirements']:
-            self.install_conda_requirements()
+            set_conda_env(self.installdir)
 
-        post_install_step(self.log, self.installdir, self.cfg['post_install_cmd'])
+            if self.cfg['channels'] and self.cfg['requirements']:
+                cmd = "conda install -y -c %s %s" % (self.cfg['channels'], self.cfg['requirements'])
+            elif self.cfg['requirements']:
+                cmd = "conda install -y %s" % self.cfg['requirements']
+
+            run_cmd(cmd, log_all=True, simple=True)
+            self.log.info('Installed conda requirements')
+
+        if self.cfg['post_install_cmd']:
+            run_cmd(self.cfg['post_install_cmd'], log_all=True, simple=True)
 
     def make_module_extra(self):
         """Add the install directory to the PATH."""
-
-        txt = super(EB_CondaCreate, self).make_module_extra()
+        txt = super(CondaCreate, self).make_module_extra()
         txt += self.module_generator.set_environment('CONDA_ENV', self.installdir)
         txt += self.module_generator.set_environment('CONDA_DEFAULT_ENV', self.installdir)
-        self.log.debug("make_module_extra added this: %s" % txt)
+        self.log.debug("make_module_extra added this: %s", txt)
         return txt
 
     def make_module_req_guess(self):
@@ -117,17 +99,3 @@ class EB_CondaCreate(EasyBlock):
             'MANPATH': ['man', os.path.join('share', 'man')],
             'PKG_CONFIG_PATH': [os.path.join(x, 'pkgconfig') for x in ['lib', 'lib32', 'lib64', 'share']],
         }
-
-    def install_conda_requirements(self):
-        """ Install requirements to conda env """
-
-        set_conda_env(self.installdir)
-
-        if self.cfg['channels'] and self.cfg['requirements']:
-            cmd = "conda install -y -c {} {}".format(self.cfg['channels'],
-                                                     self.cfg['requirements'])
-        elif self.cfg['requirements']:
-            cmd = "conda install -y {}".format(self.cfg['requirements'])
-
-        run_cmd(cmd, log_all=True, simple=True)
-        self.log.info('Installed conda requirements')

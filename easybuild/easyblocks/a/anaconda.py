@@ -42,31 +42,9 @@ from easybuild.tools.filetools import adjust_permissions, rmtree2
 
 def set_conda_env(installdir):
     """ Set the correct environmental variables for conda """
-    myEnv = os.environ.copy()
-    env.setvar('PATH', "{}/bin".format(installdir) + ":" + myEnv["PATH"])
+    env.setvar('PATH', os.path.join(installdir, 'bin') + ':' + os.environ.get('PATH', ''))
     env.setvar('CONDA_ENV', installdir)
     env.setvar('CONDA_DEFAULT_ENV', installdir)
-
-
-def pre_install_step(log, pre_install_cmd = None):
-    """ User defined pre install step """
-    if not pre_install_cmd:
-        pass
-    else:
-        log.debug('Pre command run', pre_install_cmd)
-        run_cmd(pre_install_cmd, log_all=True, simple=True)
-        log.info('Pre command run {}'.format(pre_install_cmd))
-
-
-def post_install_step(log, installdir, post_install_cmd):
-    """ User defined post install step """
-    if not post_install_cmd:
-        pass
-    else:
-        log.debug('Post command run', post_install_cmd)
-        set_conda_env(installdir)
-        run_cmd(post_install_cmd, log_all=True, simple=True)
-        log.info('Post command run {}'.format(post_install_cmd))
 
 
 def initialize_conda_env(installdir):
@@ -92,7 +70,8 @@ class EB_Anaconda(Binary):
     def install_step(self):
         """Copy all files in build directory to the install directory"""
 
-        pre_install_step(self.log, self.cfg['pre_install_cmd'])
+        if self.cfg['pre_install_cmd']:
+            run_cmd(self.cfg['pre_install_cmd'], log_all=True, simple=True)
 
         rmtree2(self.installdir)
         install_script = self.src[0]['name']
@@ -103,7 +82,8 @@ class EB_Anaconda(Binary):
         self.log.info("Installing %s using command '%s'..." % (self.name, cmd))
         run_cmd(cmd, log_all=True, simple=True)
 
-        post_install_step(self.log, self.installdir, self.cfg['post_install_cmd'])
+        if self.cfg['post_install_cmd']:
+            run_cmd(self.cfg['post_install_cmd'], log_all=True, simple=True)
 
     def make_module_req_guess(self):
         """
