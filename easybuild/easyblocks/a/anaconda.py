@@ -40,20 +40,6 @@ from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.filetools import adjust_permissions, rmtree2
 
 
-def set_conda_env(installdir):
-    """ Set the correct environmental variables for conda """
-    env.setvar('PATH', os.path.join(installdir, 'bin') + ':' + os.environ.get('PATH', ''))
-    env.setvar('CONDA_ENV', installdir)
-    env.setvar('CONDA_DEFAULT_ENV', installdir)
-
-
-def initialize_conda_env(installdir):
-    """ Initialize the conda env """
-    rmtree2(installdir)
-    cmd = "conda config --add create_default_packages setuptools"
-    run_cmd(cmd, log_all=True, simple=True)
-
-
 class EB_Anaconda(Binary):
     """Support for building/installing Anaconda."""
 
