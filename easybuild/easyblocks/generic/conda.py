@@ -78,10 +78,13 @@ class Conda(Binary):
                 env_spec = self.cfg['remote_environment']
 
             self.set_conda_env()
-            run_cmd("conda env create %s -p %s" % (env_spec, self.installdir), log_all=True, simple=True)
+
+            cmd = "%s conda env create %s -p %s" % (self.cfg['preinstallopts'], env_spec, self.installdir)
+            run_cmd(cmd, log_all=True, simple=True)
 
         else:
-            run_cmd("conda create -y -p %s" % self.installdir, log_all=True, simple=True)
+            cmd = "%s conda create -y -p %s" % (self.cfg['preinstallopts'], self.installdir)
+            run_cmd(cmd, log_all=True, simple=True)
 
             if self.cfg['requirements']:
                 self.set_conda_env()
@@ -90,7 +93,9 @@ class Conda(Binary):
                 if self.cfg['channels']:
                     install_args += ' '.join('-c ' + chan for chan in self.cfg['channels'])
 
-                run_cmd("conda install " + install_args, log_all=True, simple=True)
+                cmd = "%s conda install %s" % (self.cfg['preinstallopts'], install_args)
+                run_cmd(cmd, log_all=True, simple=True)
+
                 self.log.info("Installed conda requirements")
 
     def make_module_extra(self):
