@@ -38,6 +38,7 @@ from easybuild.tools.modules import get_software_libdir, get_software_root
 from easybuild.tools.filetools import apply_regex_substitutions
 from easybuild.tools.run import run_cmd
 from easybuild.tools.systemtools import get_shared_lib_ext
+from easybuild.tools.toolchain import DUMMY_TOOLCHAIN_NAME
 
 
 class EB_binutils(ConfigureMake):
@@ -46,22 +47,25 @@ class EB_binutils(ConfigureMake):
     def configure_step(self):
         """Custom configuration procedure for binutils: statically link to zlib, configure options."""
 
-        # determine list of 'lib' directories to use rpath for;
-        # this should 'harden' the resulting binutils to bootstrap GCC (no trouble when other libstdc++ is build etc)
-        libdirs = []
-        for libdir in ['/usr/lib', '/usr/lib64', '/usr/lib/x86_64-linux-gnu/']:
-            # also consider /lib, /lib64
-            alt_libdir = libdir.replace('usr/', '')
+        libs = ''
 
-            if os.path.exists(libdir):
-                libdirs.append(libdir)
-                if os.path.exists(alt_libdir) and not os.path.samefile(libdir, alt_libdir):
+        if self.toolchain.name == DUMMY_TOOLCHAIN_NAME:
+            # determine list of 'lib' directories to use rpath for;
+            # this should 'harden' the resulting binutils to bootstrap GCC (no trouble when other libstdc++ is build etc)
+            libdirs = []
+            for libdir in ['/usr/lib', '/usr/lib64', '/usr/lib/x86_64-linux-gnu/']:
+                # also consider /lib, /lib64
+                alt_libdir = libdir.replace('usr/', '')
+
+                if os.path.exists(libdir):
+                    libdirs.append(libdir)
+                    if os.path.exists(alt_libdir) and not os.path.samefile(libdir, alt_libdir):
+                        libdirs.append(alt_libdir)
+
+                elif os.path.exists(alt_libdir):
                     libdirs.append(alt_libdir)
 
-            elif os.path.exists(alt_libdir):
-                libdirs.append(alt_libdir)
-
-        libs = ' '.join('-Wl,-rpath=%s' % libdir for libdir in libdirs)
+            libs += ' '.join('-Wl,-rpath=%s' % libdir for libdir in libdirs)
 
         # statically link to zlib if it is a (build) dependency
         zlibroot = get_software_root('zlib')
