@@ -47,16 +47,13 @@ class EB_Anaconda(Binary):
     def install_step(self):
         """Copy all files in build directory to the install directory"""
 
-        if self.cfg['pre_install_cmd']:
-            run_cmd(self.cfg['pre_install_cmd'], log_all=True, simple=True)
-
         rmtree2(self.installdir)
         install_script = self.src[0]['name']
 
         adjust_permissions(os.path.join(self.builddir, install_script), stat.S_IRUSR|stat.S_IXUSR)
         
         ##Change from pre_install_cmd to preinstallopts
-        cmd = "%s ./%s -p %s -b -f %s" % (self.cfg['preinstallopts'], install_script, self.installdir, self.cfg['installopts'])
+        cmd = "%s ./%s -p %s -b -f" % (self.cfg['preinstallopts'], install_script, self.installdir)
         self.log.info("Installing %s using command '%s'..." % (self.name, cmd))
         run_cmd(cmd, log_all=True, simple=True)
 
