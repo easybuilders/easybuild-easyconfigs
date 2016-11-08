@@ -39,6 +39,7 @@ from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.modules import get_software_root
 from easybuild.tools.systemtools import get_shared_lib_ext
+from easybuild.tools.config import build_option
 
 class EB_HDF5(ConfigureMake):
     """Support for building/installing HDF5"""
@@ -51,12 +52,16 @@ class EB_HDF5(ConfigureMake):
             ("Szip", "--with-szlib"),
             ("zlib", "--with-zlib"),
         ]
+        filter_deps = build_option('filter_deps')
         for (dep, opt) in deps:
             root = get_software_root(dep)
             if root:
                 self.cfg.update('configopts', '%s=%s' % (opt, root))
             else:
-                raise EasyBuildError("Dependency module %s not loaded.", dep)
+                if dep in filter_deps:
+                    self.cfg.update('configopts', '%s' % opt)
+                else:
+                    raise EasyBuildError("Dependency module %s not loaded.", dep)
 
         fcomp = 'FC="%s"' % os.getenv('F90')
 
