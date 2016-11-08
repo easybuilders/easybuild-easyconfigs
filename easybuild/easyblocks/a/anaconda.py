@@ -26,6 +26,7 @@
 EasyBuild support for building and installing Anaconda, implemented as an easyblock
 
 @author: Jillian Rowe (New York University Abu Dhabi)
+@author: Kenneth Hoste (HPC-UGent)
 """
 
 import shutil
@@ -43,16 +44,6 @@ from easybuild.tools.filetools import adjust_permissions, rmtree2
 class EB_Anaconda(Binary):
     """Support for building/installing Anaconda."""
 
-    @staticmethod
-    def extra_options(extra_vars=None):
-        """Extra easyconfig parameters specific to Anaconda."""
-        extra_vars = Binary.extra_options(extra_vars)
-        extra_vars.update({
-            'pre_install_cmd': [None, "Commands before install: setting custom environmental variables, etc", CUSTOM],
-            'post_install_cmd': [None, "Commands after install: pip install, cpanm install, etc", CUSTOM],
-        })
-        return extra_vars
-
     def install_step(self):
         """Copy all files in build directory to the install directory"""
 
@@ -63,13 +54,11 @@ class EB_Anaconda(Binary):
         install_script = self.src[0]['name']
 
         adjust_permissions(os.path.join(self.builddir, install_script), stat.S_IRUSR|stat.S_IXUSR)
-
-        cmd = "./%s -p %s -b -f" % (install_script, self.installdir)
+        
+        ##Change from pre_install_cmd to preinstallopts
+        cmd = "%s ./%s -p %s -b -f %s" % (self.cfg['preinstallopts'], install_script, self.installdir, self.cfg['installopts'])
         self.log.info("Installing %s using command '%s'..." % (self.name, cmd))
         run_cmd(cmd, log_all=True, simple=True)
-
-        if self.cfg['post_install_cmd']:
-            run_cmd(self.cfg['post_install_cmd'], log_all=True, simple=True)
 
     def make_module_req_guess(self):
         """
