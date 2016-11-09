@@ -28,34 +28,25 @@ EasyBuild support for installing Gurobi, implemented as an easyblock
 
 @author: Bob Dröge (University of Groningen)
 """
-
 import os
-import shutil
 
 from easybuild.easyblocks.generic.tarball import Tarball
 from easybuild.tools.build_log import EasyBuildError
+from easybuild.tools.filetools import copy_file
 
 
 class EB_Gurobi(Tarball):
     """Support for installing linux64 version of Gurobi."""
 
-    def configure_step(self):
-        """No configuration for Gurobi."""
-        # ensure a license file is specified
+    def install_step(self):
+        """Install Gurobi and license file."""
+        # make sure license file is available
         if self.cfg['license_file'] is None or not os.path.exists(self.cfg['license_file']):
             raise EasyBuildError("No existing license file specified: %s", self.cfg['license_file'])
 
-    def install_step(self):
-        """Install Gurobi and license file."""
-
         super(EB_Gurobi, self).install_step()
 
-        # copy license file
-        lic_path = os.path.join(self.installdir, 'gurobi.lic')
-        try:
-            shutil.copy2(self.cfg['license_file'], lic_path)
-        except OSError as err:
-            raise EasyBuildError("Failed to copy license file to %s: %s", lic_path, err)
+        copy_file(self.cfg['license_file'], os.path.join(self.installdir, 'gurobi.lic'))
 
     def sanity_check_step(self):
         """Custom sanity check for Gurobi."""
@@ -68,9 +59,6 @@ class EB_Gurobi(Tarball):
     def make_module_extra(self):
         """Custom extra module file entries for Gurobi."""
         txt = super(EB_Gurobi, self).make_module_extra()
-
         txt += self.module_generator.set_environment('GUROBI_HOME', self.installdir)
         txt += self.module_generator.set_environment('GRB_LICENSE_FILE', os.path.join(self.installdir, 'gurobi.lic'))
-
         return txt
-
