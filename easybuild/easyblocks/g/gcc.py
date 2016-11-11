@@ -61,7 +61,7 @@ class EB_GCC(ConfigureMake):
     def extra_options():
         extra_vars = {
             'languages': [[], "List of languages to build GCC for (--enable-languages)", CUSTOM],
-            'withlibiberty': [True, "Enable installing of libiberty", CUSTOM],
+            'withlibiberty': [False, "Enable installing of libiberty", CUSTOM],
             'withlto': [True, "Enable LTO support", CUSTOM],
             'withcloog': [False, "Build GCC with CLooG support", CUSTOM],
             'withppl': [False, "Build GCC with PPL support", CUSTOM],
