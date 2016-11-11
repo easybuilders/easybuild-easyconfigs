@@ -243,7 +243,7 @@ class EB_GCC(ConfigureMake):
 
         # enable building of libiberty, if desired
         if self.cfg['withlibiberty']:
-            self.configopts += "--enable-install-libiberty"
+            self.configopts += " --enable-install-libiberty"
 
         # enable link-time-optimization (LTO) support, if desired
         if self.cfg['withlto']:
