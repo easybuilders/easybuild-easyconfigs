@@ -32,16 +32,27 @@ import os
 import re
 from distutils.version import LooseVersion
 
+import easybuild.tools.environment as env
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
+from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.build_log import EasyBuildError
+from easybuild.tools.filetools import apply_regex_substitutions, copy_file
 from easybuild.tools.modules import get_software_libdir, get_software_root
-from easybuild.tools.filetools import apply_regex_substitutions
 from easybuild.tools.run import run_cmd
 from easybuild.tools.systemtools import get_shared_lib_ext
 
 
 class EB_binutils(ConfigureMake):
     """Support for building/installing binutils."""
+
+    @staticmethod
+    def extra_options(extra_vars=None):
+        """Extra easyconfig parameters specific to the binutils easyblock."""
+        extra_vars = ConfigureMake.extra_options(extra_vars=extra_vars)
+        extra_vars.update({
+            'install_libiberty': [True, "Also install libiberty (implies building with -fPIC)", CUSTOM],
+        })
+        return extra_vars
 
     def configure_step(self):
         """Custom configuration procedure for binutils: statically link to zlib, configure options."""
@@ -98,6 +109,29 @@ class EB_binutils(ConfigureMake):
 
         # complete configuration with configure_method of parent
         super(EB_binutils, self).configure_step()
+
+        if self.cfg['install_libiberty']:
+            cflags = os.getenv('CFLAGS')
+            if cflags:
+                env.setvar('CFLAGS', "%s -fPIC" % cflags)
+            else:
+                # if $CFLAGS is not defined, make sure we retain "-g -O2",
+                # since not specifying any optimization level implies -O0...
+                env.setvar('CFLAGS', "-g -O2 -fPIC")
+
+    def install_step(self):
+        """Install using 'make install', also install libiberty if desired."""
+        super(EB_binutils, self).install_step()
+
+        # only install libiberty if it's not there yet; it is installed by default for old binutils versionsuffix
+        libiberty_installed = glob.glob(os.path.join(self.installdir, 'lib*', 'libiberty.a'))
+        if self.cfg['install_libiberty'] and not libiberty_installed:
+            copy_file(os.path.join(self.cfg['start_dir'], 'include', 'libiberty.h'),
+                      os.path.join(self.installdir, 'include', 'libiberty.h'))
+            copy_file(os.path.join(self.cfg['start_dir'], 'libiberty', 'libiberty.a'),
+                      os.path.join(self.installdir, 'lib', 'libiberty.a'))
+            copy_file(os.path.join(self.cfg['start_dir'], 'libiberty', 'libiberty.texi'),
+                      os.path.join(self.installdir, 'info', 'libiberty.texi'))
 
     def sanity_check_step(self):
         """Custom sanity check for binutils."""
