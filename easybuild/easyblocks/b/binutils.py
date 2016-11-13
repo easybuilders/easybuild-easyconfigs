@@ -32,7 +32,6 @@ import os
 import re
 from distutils.version import LooseVersion
 
-import easybuild.tools.environment as env
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.build_log import EasyBuildError
@@ -113,11 +112,11 @@ class EB_binutils(ConfigureMake):
         if self.cfg['install_libiberty']:
             cflags = os.getenv('CFLAGS')
             if cflags:
-                env.setvar('CFLAGS', "%s -fPIC" % cflags)
+                self.cfg.update('buildopts', 'CFLAGS="$CFLAGS -fPIC"')
             else:
                 # if $CFLAGS is not defined, make sure we retain "-g -O2",
                 # since not specifying any optimization level implies -O0...
-                env.setvar('CFLAGS', "-g -O2 -fPIC")
+                self.cfg.update('buildopts', 'CFLAGS="-g -O2 -fPIC"')
 
     def install_step(self):
         """Install using 'make install', also install libiberty if desired."""
