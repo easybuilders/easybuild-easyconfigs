@@ -122,15 +122,20 @@ class EB_binutils(ConfigureMake):
         """Install using 'make install', also install libiberty if desired."""
         super(EB_binutils, self).install_step()
 
-        # only install libiberty if it's not there yet; it is installed by default for old binutils versionsuffix
-        libiberty_installed = glob.glob(os.path.join(self.installdir, 'lib*', 'libiberty.a'))
-        if self.cfg['install_libiberty'] and not libiberty_installed:
-            copy_file(os.path.join(self.cfg['start_dir'], 'include', 'libiberty.h'),
-                      os.path.join(self.installdir, 'include', 'libiberty.h'))
-            copy_file(os.path.join(self.cfg['start_dir'], 'libiberty', 'libiberty.a'),
-                      os.path.join(self.installdir, 'lib', 'libiberty.a'))
-            copy_file(os.path.join(self.cfg['start_dir'], 'libiberty', 'libiberty.texi'),
-                      os.path.join(self.installdir, 'info', 'libiberty.texi'))
+        # only install libiberty files if if they're not there yet;
+        # libiberty.a is installed by default for old binutils versions
+        if self.cfg['install_libiberty']:
+            if not os.path.exists(os.path.join(self.installdir, 'include', 'libiberty.h')):
+                copy_file(os.path.join(self.cfg['start_dir'], 'include', 'libiberty.h'),
+                          os.path.join(self.installdir, 'include', 'libiberty.h'))
+
+            if not glob.glob(os.path.join(self.installdir, 'lib*', 'libiberty.a')):
+                copy_file(os.path.join(self.cfg['start_dir'], 'libiberty', 'libiberty.a'),
+                          os.path.join(self.installdir, 'lib', 'libiberty.a'))
+
+            if not os.path.exists(os.path.join(self.installdir, 'info', 'libiberty.texi')):
+                copy_file(os.path.join(self.cfg['start_dir'], 'libiberty', 'libiberty.texi'),
+                          os.path.join(self.installdir, 'info', 'libiberty.texi'))
 
     def sanity_check_step(self):
         """Custom sanity check for binutils."""
