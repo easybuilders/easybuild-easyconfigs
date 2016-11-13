@@ -155,6 +155,9 @@ class EB_binutils(ConfigureMake):
             'dirs': [],
         }
 
+        if self.cfg['install_libiberty']:
+            custom_paths['files'].extend([os.path.join('lib', 'libiberty.a'), os.path.join('include', 'libiberty.h')])
+
         # if zlib is listed as a dependency, it should get linked in statically
         if get_software_root('zlib'):
             for binary in binaries:
