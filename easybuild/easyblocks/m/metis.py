@@ -57,7 +57,7 @@ class EB_METIS(ConfigureMake):
 
             if build_option('rpath'):
                 # patch Makefile to tell CMake not to wipe the RPATHs we inject...
-                apply_regex_substitutions('Makefile', [(r'^(CONFIG_FLAGS\s*=\s*)', r'\1-DCMAKE_SKIP_RPATH=ON ')])
+                apply_regex_substitutions('Makefile', [(r'^(CONFIG_FLAGS\s*=\s*)', r'\1 -DCMAKE_SKIP_RPATH=ON ')])
 
             cmd = "make %s config prefix=%s" % (self.cfg['configopts'], self.installdir)
             run_cmd(cmd, log_all=True, simple=True)
