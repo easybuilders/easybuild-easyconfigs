@@ -1,0 +1,57 @@
+easyblock = 'ConfigureMake'
+
+name = 'Mesa'
+version = '7.11.2'
+
+homepage = 'http://www.mesa3d.org/'
+description = """Mesa is an open-source implementation of the OpenGL specification -
+ a system for rendering interactive 3D graphics."""
+
+toolchain = {'name': 'ictce', 'version': '4.1.13'}
+toolchainopts = {'optarch': True}
+
+sources = ['%sLib-%s.tar.gz' % (name, version)]
+source_urls = [
+    'ftp://ftp.freedesktop.org/pub/mesa/%(version)s',
+    'ftp://ftp.freedesktop.org/pub/mesa/older-versions/%(version_major)s.x/%(version)s',
+]
+
+pythonver = '2.7.3'
+pythonshortver = '.'.join(pythonver.split('.')[0:2])
+versionsuffix = '-%s-%s' % ('Python', pythonver)
+
+dependencies = [
+    ('flex', '2.5.35'),
+    ('Bison', '2.5'),
+    ('makedepend', '1.0.4'),
+    ('Python', pythonver),
+    ('libxml2', '2.8.0', versionsuffix),
+    ('glproto', '1.4.16'),
+    ('libdrm', '2.4.27')
+]
+
+osdependencies = [
+    'libX11-devel',  # Xlibs.h
+    'xorg-x11-proto-devel',  # X.h, glproto, xproto
+    'libXdamage-devel',
+    'libXext-devel',
+    'libXfixes-devel',
+]
+
+configopts = " --disable-osmesa --enable-glu --disable-gallium-llvm --disable-gallium-gbm --enable-glx --with-driver=xlib"
+configopts += " --disable-driglx-direct --with-gallium-drivers='' --without-demos --disable-egl"""
+
+# package-config files for os dependencies are in an os specific place
+preconfigopts = ' PKG_CONFIG_PATH="$PKG_CONFIG_PATH:/usr/lib64/pkgconfig/:/usr/share/pkgconfig" '
+
+prebuildopts = 'env CPATH="$EBROOTLIBDRM/include/libdrm:$CPATH" '
+
+sanity_check_paths = {
+    'files': ['lib/libGL.%s' % SHLIB_EXT, 'lib/libGLU.%s' % SHLIB_EXT, 'include/GL/glext.h', 'include/GL/gl_mangle.h',
+              'include/GL/glu_mangle.h', 'include/GL/glx.h', 'include/GL/osmesa.h', 'include/GL/wglext.h',
+              'include/GL/gl.h', 'include/GL/glu.h', 'include/GL/glxext.h', 'include/GL/glx_mangle.h',
+              'include/GL/vms_x_fix.h', 'include/GL/wmesa.h'],
+    'dirs': [],
+}
+
+moduleclass = 'vis'

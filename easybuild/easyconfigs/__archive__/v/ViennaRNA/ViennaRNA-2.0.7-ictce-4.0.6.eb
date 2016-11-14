@@ -1,0 +1,46 @@
+##
+# This file is an EasyBuild reciPY as per https://github.com/hpcugent/easybuild
+#
+# Copyright:: Copyright 2012-2014 Uni.Lu/LCSB, NTUA
+# Authors::   Cedric Laczny <cedric.laczny@uni.lu>, Fotis Georgatos <fotis@cern.ch>
+# License::   MIT/GPL
+# $Id$
+#
+# This work implements a part of the HPCBIOS project and is a component of the policy:
+# http://hpcbios.readthedocs.org/en/latest/HPCBIOS_2012-94.html
+##
+
+easyblock = 'ConfigureMake'
+
+name = 'ViennaRNA'
+version = '2.0.7'
+
+homepage = 'http://www.tbi.univie.ac.at/~ronny/RNA/vrna2.html'
+description = """The Vienna RNA Package consists of a C code library and several
+stand-alone programs for the prediction and comparison of RNA secondary structures."""
+
+toolchain = {'name': 'ictce', 'version': '4.0.6'}
+toolchainopts = {'optarch': True, 'pic': True}
+
+sources = [SOURCE_TAR_GZ]
+source_urls = ['http://www.tbi.univie.ac.at/~ronny/RNA']
+
+patches = ['ViennaRNA_ictce-pragma.patch']
+
+# Prevents the "make install" step from trying to copy to _global_ perl dir and thus make easybuild fail.
+configopts = '--without-perl'
+# Alternatively, you may want to use the following to copy the perl-module to a "local" directory
+# Code NOT yet tested, therefor left here for future recycling
+#preconfigopts = 'env PERLPREFIX="/path/where/the/perl/module/shoud/go"'
+
+sanity_check_paths = {
+    'files': ['bin/RNA%s' % x for x in ['fold', 'eval', 'heat', 'pdist', 'distance',
+                                        'inverse', 'plot', 'subopt', 'Lfold', 'cofold',
+                                        'paln', 'duplex', 'alifold', 'plfold', 'up',
+                                        'aliduplex', 'Lalifold', '2Dfold', 'parconv',
+                                        'PKplex', 'plex', 'snoop', 'forester']] +
+    ['bin/Kinfold'],
+    'dirs': []
+}
+
+moduleclass = 'bio'
