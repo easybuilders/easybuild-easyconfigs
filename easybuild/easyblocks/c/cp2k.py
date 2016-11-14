@@ -791,7 +791,7 @@ class EB_CP2K(EasyBlock):
             try:
                 shutil.copytree(datadir, targetdir)
             except:
-                raise EasyBuildError("Copying data dir from %s to %s failed", srctests, targetdir)
+                raise EasyBuildError("Copying data dir from %s to %s failed", datadir, targetdir)
         else:
             self.log.info("Won't copy data dir. Source directory %s does not exist" % datadir)
 
