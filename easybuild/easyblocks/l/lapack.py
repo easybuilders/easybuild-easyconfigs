@@ -34,7 +34,6 @@ EasyBuild support for building and installing LAPACK, implemented as an easybloc
 
 import glob
 import os
-import shutil
 
 import easybuild.tools.toolchain as toolchain
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
@@ -43,34 +42,9 @@ from easybuild.toolchains.linalg.atlas import Atlas
 from easybuild.toolchains.linalg.gotoblas import GotoBLAS
 from easybuild.toolchains.linalg.openblas import OpenBLAS
 from easybuild.tools.build_log import EasyBuildError
+from easybuild.tools.filetools import copy_file
 from easybuild.tools.modules import get_software_root
 from easybuild.tools.run import run_cmd
-
-# also used for e.g. ScaLAPACK
-def get_blas_lib(log):
-    """
-    Determine BLAS lib to provide to e.g. LAPACK for building/testing
-    """
-    log.deprecated("get_blas_lib uses hardcoded list of known BLAS libs, should rely on toolchain support", '3.0')
-    blaslib = None
-    known_blas_libs = {
-                       'GotoBLAS': GotoBLAS.BLAS_LIB,
-                       'ATLAS': Atlas.BLAS_LIB,
-                       'OpenBLAS': OpenBLAS.BLAS_LIB,
-                      }
-    for (key, libs) in known_blas_libs.items():
-        root = get_software_root(key)
-        if root:
-            blaslib = "-L%s %s" % (os.path.join(root, 'lib'), ' '.join(['-l%s' % lib for lib in libs]))
-            log.debug("Using %s as BLAS lib" % root)
-            break
-        else:
-            log.debug("%s module not loaded" % key)
-
-    if not blaslib:
-        raise EasyBuildError("No or unknown BLAS lib loaded; known BLAS libs: %s", known_blas_libs.keys())
-
-    return blaslib
 
 
 class EB_LAPACK(ConfigureMake):
@@ -88,6 +62,23 @@ class EB_LAPACK(ConfigureMake):
         }
         return ConfigureMake.extra_options(extra_vars)
 
+    def get_blaslib(self):
+        """Determine build options to define BLASLIB with"""
+        blaslib = None
+
+        for blas in [Atlas, GotoBLAS, OpenBLAS]:
+            blas_modname = blas.BLAS_MODULE_NAME[0]
+            blas_root = get_software_root(blas_modname)
+            if blas_root:
+                blas_libs = ' '.join(['-l%s' % lib for lib in blas.BLAS_LIB])
+                blaslib = "-L%s %s " % (os.path.join(blas_root, 'lib'), blas_libs)
+                break
+
+        if not blaslib:
+            raise EasyBuildError("No or unknown BLAS library used!")
+
+        return blaslib
+
     def configure_step(self):
         """
         Configure LAPACK for build: copy build_step.inc and set make options
@@ -104,16 +95,10 @@ class EB_LAPACK(ConfigureMake):
         src = os.path.join(self.cfg['start_dir'], 'INSTALL', 'make.inc.%s' % makeinc)
         dest = os.path.join(self.cfg['start_dir'], 'make.inc')
 
-        if not os.path.isfile(src):
-            raise EasyBuildError("Can't find source file %s", src)
-
         if os.path.exists(dest):
             raise EasyBuildError("Destination file %s exists", dest)
-
-        try:
-            shutil.copy(src, dest)
-        except OSError, err:
-            raise EasyBuildError("Copying %s to %s failed: %s", src, dest, err)
+        else:
+            copy_file(src, dest)
 
         # set optimization flags
         fpic = ''
@@ -129,7 +114,7 @@ class EB_LAPACK(ConfigureMake):
         # supply blas lib (or not)
         if self.cfg['supply_blas']:
 
-            blaslib = get_blas_lib(self.log)
+            blaslib = self.get_blaslib()
 
             self.log.debug("Providing '%s' as BLAS lib" % blaslib)
             self.cfg.update('buildopts', 'BLASLIB="%s"' % blaslib)
@@ -171,11 +156,9 @@ class EB_LAPACK(ConfigureMake):
             os.makedirs(destdir)
 
             # copy all .a files
-            os.chdir(srcdir)
-            for lib in glob.glob('*.a'):
-                srcfile = os.path.join(srcdir, lib)
-                self.log.debug("Copying file %s to dir %s" % (srcfile, destdir))
-                shutil.copy2(srcfile, destdir)
+            for libfile in glob.glob(os.path.join(srcdir, '*.a')):
+                self.log.debug("Copying file %s to dir %s" % (libfile, destdir))
+                copy_file(libfile, os.path.join(destdir, os.path.basename(libfile)))
 
             # symlink libraries to sensible names, if they aren't renamed already
             for (fromfile, tofile) in [('liblapack_LINUX.a', 'liblapack.a'),
@@ -203,7 +186,7 @@ class EB_LAPACK(ConfigureMake):
             if not get_software_root('LAPACK'):
                 raise EasyBuildError("You need to make sure that the LAPACK module is loaded to perform testing.")
 
-            blaslib = get_blas_lib(self.log)
+            blaslib = self.get_blaslib()
 
             self.log.info('Running BLAS and LAPACK tests included.')
 

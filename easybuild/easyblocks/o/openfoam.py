@@ -109,6 +109,23 @@ class EB_OpenFOAM(EasyBlock):
         self.cfg['start_dir'] = os.path.join(self.installdir, self.openfoamdir)
         super(EB_OpenFOAM, self).patch_step(beginpath=self.cfg['start_dir'])
 
+    def prepare_step(self):
+        """Prepare for OpenFOAM install procedure."""
+        super(EB_OpenFOAM, self).prepare_step()
+
+        comp_fam = self.toolchain.comp_family()
+        if comp_fam == toolchain.GCC:  # @UndefinedVariable
+            self.wm_compiler = 'Gcc'
+        elif comp_fam == toolchain.INTELCOMP:  # @UndefinedVariable
+            self.wm_compiler = 'Icc'
+        else:
+            raise EasyBuildError("Unknown compiler family, don't know how to set WM_COMPILER")
+
+        # set to an MPI unknown by OpenFOAM, since we're handling the MPI settings ourselves (via mpicc, etc.)
+        # Note: this name must contain 'MPI' so the MPI version of the
+        # Pstream library is built (cf src/Pstream/Allwmake)
+        self.wm_mplib = "EASYBUILDMPI"
+
     def configure_step(self):
         """Configure OpenFOAM build by setting appropriate environment variables."""
         # compiler & compiler flags
@@ -116,7 +133,6 @@ class EB_OpenFOAM(EasyBlock):
 
         extra_flags = ''
         if comp_fam == toolchain.GCC:  # @UndefinedVariable
-            self.wm_compiler = 'Gcc'
             if get_software_version('GCC') >= LooseVersion('4.8'):
                 # make sure non-gold version of ld is used, since OpenFOAM requires it
                 # see http://www.openfoam.org/mantisbt/view.php?id=685
@@ -127,13 +143,8 @@ class EB_OpenFOAM(EasyBlock):
                 extra_flags += ' -fpermissive'
 
         elif comp_fam == toolchain.INTELCOMP:  # @UndefinedVariable
-            self.wm_compiler = 'Icc'
-
             # make sure -no-prec-div is used with Intel compilers
             extra_flags = '-no-prec-div'
-
-        else:
-            raise EasyBuildError("Unknown compiler family, don't know how to set WM_COMPILER")
 
         for env_var in ['CFLAGS', 'CXXFLAGS']:
             env.setvar(env_var, "%s %s" % (os.environ.get(env_var, ''), extra_flags))
@@ -204,11 +215,6 @@ class EB_OpenFOAM(EasyBlock):
             env.setvar("WM_THIRD_PARTY_DIR", os.path.join(self.installdir, self.thrdpartydir))
 
         env.setvar("WM_COMPILER", self.wm_compiler)
-
-        # set to an MPI unknown by OpenFOAM, since we're handling the MPI settings ourselves (via mpicc, etc.)
-        # Note: this name must contain 'MPI' so the MPI version of the
-        # Pstream library is built (cf src/Pstream/Allwmake)
-        self.wm_mplib = "EASYBUILDMPI"
         env.setvar("WM_MPLIB", self.wm_mplib)
 
         # parallel build spec
@@ -328,10 +334,16 @@ class EB_OpenFOAM(EasyBlock):
                                                     "refineMesh", "wdot"]]
         # check for the Pstream and scotchDecomp libraries, there must be a dummy one and an mpi one
         if 'extend' in self.name.lower():
-            libs = [os.path.join(libsdir, "libscotchDecomp.%s" % shlib_ext)]
+            libs = [os.path.join(libsdir, "libscotchDecomp.%s" % shlib_ext),
+                    os.path.join(libsdir, "libmetisDecomp.%s" % shlib_ext)]
             if LooseVersion(self.version) < LooseVersion('3.2'):
+                # Pstream should have both a dummy and a mpi one
                 libs.extend([os.path.join(libsdir, x, "libPstream.%s" % shlib_ext) for x in ["dummy", "mpi"]])
+                libs.extend([os.path.join(libsdir, "mpi", "libparMetisDecomp.%s" % shlib_ext)])
+            else:
+                libs.extend([os.path.join(libsdir, "libparMetisDecomp.%s" % shlib_ext)])
         else:
+            # there must be a dummy one and an mpi one for both
             libs = [os.path.join(libsdir, x, "libPstream.%s" % shlib_ext) for x in ["dummy", "mpi"]] + \
                    [os.path.join(libsdir, x, "libptscotchDecomp.%s" % shlib_ext) for x in ["dummy", "mpi"]] +\
                    [os.path.join(libsdir, "libscotchDecomp.%s" % shlib_ext)] + \

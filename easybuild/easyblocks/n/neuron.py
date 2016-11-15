@@ -34,6 +34,7 @@ from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.easyblocks.generic.pythonpackage import det_pylibdir
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.build_log import EasyBuildError
+from easybuild.tools.config import build_option
 from easybuild.tools.filetools import adjust_permissions
 from easybuild.tools.modules import get_software_root
 from easybuild.tools.run import run_cmd
@@ -59,7 +60,6 @@ class EB_NEURON(ConfigureMake):
 
         extra_vars = {
             'paranrn': [True, "Enable support for distributed simulations.", CUSTOM],
-            'enable_tests': [True, "Enable extensive testing in the sanity check step.", CUSTOM],
         }
         return ConfigureMake.extra_options(extra_vars)
 
@@ -142,34 +142,32 @@ class EB_NEURON(ConfigureMake):
         }
         super(EB_NEURON, self).sanity_check_step(custom_paths=custom_paths)
 
-        # Perform extra checks
-        if self.cfg['enable_tests']:
-            try:
-                fake_mod_data = self.load_fake_module()
-            except EasyBuildError, err:
-                self.log.debug("Loading fake module failed: %s" % err)
+        try:
+            fake_mod_data = self.load_fake_module()
+        except EasyBuildError, err:
+            self.log.debug("Loading fake module failed: %s" % err)
 
-            # test NEURON demo
-            inp = '\n'.join([
-                             "demo(3) // load the pyramidal cell model.",
-                             "init()  // initialise the model",
-                             "t       // should be zero",
-                             "soma.v  // will print -65",
-                             "run()   // run the simulation",
-                             "t       // should be 5, indicating that 5ms were simulated",
-                             "soma.v  // will print a value other than -65, indicating that the simulation was executed",
-                             "quit()",
-                            ])
-            (out, ec) = run_cmd("neurondemo", simple=False, log_all=True, log_output=True, inp=inp)
+        # test NEURON demo
+        inp = '\n'.join([
+            "demo(3) // load the pyramidal cell model.",
+            "init()  // initialise the model",
+            "t       // should be zero",
+            "soma.v  // will print -65",
+            "run()   // run the simulation",
+            "t       // should be 5, indicating that 5ms were simulated",
+            "soma.v  // will print a value other than -65, indicating that the simulation was executed",
+            "quit()",
+        ])
+        (out, ec) = run_cmd("neurondemo", simple=False, log_all=True, log_output=True, inp=inp)
 
-            validate_regexp = re.compile("^\s+-65\s*\n\s+5\s*\n\s+-68.134337", re.M)
-            if ec or not validate_regexp.search(out):
-                raise EasyBuildError("Validation of NEURON demo run failed.")
-            else:
-                self.log.info("Validation of NEURON demo OK!")
+        validate_regexp = re.compile("^\s+-65\s*\n\s+5\s*\n\s+-68.134337", re.M)
+        if ec or not validate_regexp.search(out):
+            raise EasyBuildError("Validation of NEURON demo run failed.")
+        else:
+            self.log.info("Validation of NEURON demo OK!")
 
+        if build_option('mpi_tests'):
             nproc = self.cfg['parallel']
-
             try:
                 cwd = os.getcwd()
                 os.chdir(os.path.join(self.cfg['start_dir'], 'src', 'parallel'))
@@ -191,9 +189,11 @@ class EB_NEURON(ConfigureMake):
                 raise EasyBuildError("Validation of parallel hello world run failed.")
             else:
                 self.log.info("Parallel hello world OK!")
+        else:
+            self.log.info("Skipping MPI testing of NEURON since MPI testing is disabled")
 
-            # cleanup
-            self.clean_up_fake_module(fake_mod_data)
+        # cleanup
+        self.clean_up_fake_module(fake_mod_data)
 
     def make_module_req_guess(self):
         """Custom guesses for environment variables (PATH, ...) for NEURON."""

@@ -34,6 +34,7 @@ import shutil
 
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.tools.build_log import EasyBuildError
+from easybuild.tools.config import build_option
 from easybuild.tools.filetools import mkdir
 from easybuild.tools.run import run_cmd
 
@@ -59,29 +60,35 @@ class EB_HPCG(ConfigureMake):
 
     def test_step(self):
         """Custom built-in test procedure for HPCG."""
-        objbindir = os.path.join(self.cfg['start_dir'], 'obj', 'bin')
-        # obtain equivalent of 'mpirun -np 2 xhpcg'
-        hpcg_mpi_cmd = self.toolchain.mpi_cmd_for("xhpcg", 2)
-        # 2 threads per MPI process (4 threads in total)
-        cmd = "PATH=%s:$PATH OMP_NUM_THREADS=2 %s" % (objbindir, hpcg_mpi_cmd)
-        run_cmd(cmd, simple=True, log_all=True, log_ok=True)
+        if self.cfg['runtest']:
 
-        # find log file, check for success
-        success_regex = re.compile(r"Scaled Residual \[[0-9.e-]+\]")
-        try:
-            hpcg_logs = glob.glob('hpcg_log*txt')
-            if len(hpcg_logs) == 1:
-                txt = open(hpcg_logs[0], 'r').read()
-                self.log.debug("Contents of HPCG log file %s: %s" % (hpcg_logs[0], txt))
-                if success_regex.search(txt):
-                    self.log.info("Found pattern '%s' in HPCG log file %s, OK!", success_regex.pattern, hpcg_logs[0])
+            if not build_option('mpi_tests'):
+                self.log.info("Skipping testing of HPCG since MPI testing is disabled")
+                return
+
+            objbindir = os.path.join(self.cfg['start_dir'], 'obj', 'bin')
+            # obtain equivalent of 'mpirun -np 2 xhpcg'
+            hpcg_mpi_cmd = self.toolchain.mpi_cmd_for("xhpcg", 2)
+            # 2 threads per MPI process (4 threads in total)
+            cmd = "PATH=%s:$PATH OMP_NUM_THREADS=2 %s" % (objbindir, hpcg_mpi_cmd)
+            run_cmd(cmd, simple=True, log_all=True, log_ok=True)
+
+            # find log file, check for success
+            success_regex = re.compile(r"Scaled Residual \[[0-9.e-]+\]")
+            try:
+                hpcg_logs = glob.glob('hpcg_log*txt')
+                if len(hpcg_logs) == 1:
+                    txt = open(hpcg_logs[0], 'r').read()
+                    self.log.debug("Contents of HPCG log file %s: %s" % (hpcg_logs[0], txt))
+                    if success_regex.search(txt):
+                        self.log.info("Found pattern '%s' in HPCG log file %s, OK!", success_regex.pattern, hpcg_logs[0])
+                    else:
+                        raise EasyBuildError("Failed to find pattern '%s' in HPCG log file %s",
+                                             success_regex.pattern, hpcg_logs[0])
                 else:
-                    raise EasyBuildError("Failed to find pattern '%s' in HPCG log file %s",
-                                         success_regex.pattern, hpcg_logs[0])
-            else:
-                raise EasyBuildError("Failed to find exactly one HPCG log file: %s", hpcg_logs)
-        except OSError, err:
-            raise EasyBuildError("Failed to check for success in HPCG log file: %s", err)
+                    raise EasyBuildError("Failed to find exactly one HPCG log file: %s", hpcg_logs)
+            except OSError, err:
+                raise EasyBuildError("Failed to check for success in HPCG log file: %s", err)
 
     def install_step(self):
         """Custom install procedure for HPCG."""

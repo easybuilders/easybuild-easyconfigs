@@ -39,6 +39,7 @@ import re
 import shutil
 import tempfile
 import glob
+from distutils.version import LooseVersion
 
 import easybuild.tools.environment as env
 from easybuild.framework.easyblock import EasyBlock
@@ -201,12 +202,9 @@ class IntelBase(EasyBlock):
         except OSError, err:
             raise EasyBuildError("Failed to symlink %s to %s: %s", self.home_subdir_local, self.home_subdir, err)
 
-    def configure_step(self):
-        """Configure: handle license file and clean home dir."""
-
-        # prepare (local) 'intel' home subdir
-        self.setup_local_home_subdir()
-        self.clean_home_subdir()
+    def prepare_step(self):
+        """Custom prepare step for IntelBase. Set up the license"""
+        super(IntelBase, self).prepare_step()
 
         default_lic_env_var = 'INTEL_LICENSE_FILE'
         lic_specs, self.license_env_var = find_flexlm_license(custom_env_vars=[default_lic_env_var],
@@ -235,7 +233,11 @@ class IntelBase(EasyBlock):
             msg += "specify 'license_file', or define $INTEL_LICENSE_FILE or $LM_LICENSE_FILE"
             raise EasyBuildError(msg)
 
-        # clean home directory
+    def configure_step(self):
+        """Configure: handle license file and clean home dir."""
+
+        # prepare (local) 'intel' home subdir
+        self.setup_local_home_subdir()
         self.clean_home_subdir()
 
         # determine list of components, based on 'components' easyconfig parameter (if specified)
@@ -294,7 +296,12 @@ class IntelBase(EasyBlock):
                 silent += 'COMPONENTS=%s\n' % self.install_components[0]
             elif self.install_components:
                 # a list of components is specified (needs quotes)
-                silent += 'COMPONENTS="' + ';'.join(self.install_components) + '"\n'
+                components = ';'.join(self.install_components)
+                if LooseVersion(self.version) >= LooseVersion('2017'):
+                    # for versions 2017.x and newer, double quotes should not be there...
+                    silent += 'COMPONENTS=%s\n' % components
+                else:
+                    silent += 'COMPONENTS="%s"\n' % components
             else:
                 raise EasyBuildError("Empty list of matching components obtained via %s", self.cfg['components'])
 

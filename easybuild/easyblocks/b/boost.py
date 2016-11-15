@@ -167,6 +167,10 @@ class EB_Boost(EasyBlock):
                 bjamoptions += " -s%s_INCLUDE=%s/include" % (lib.upper(), libroot)
                 bjamoptions += " -s%s_LIBPATH=%s/lib" % (lib.upper(), libroot)
 
+        paracmd = ''
+        if self.cfg['parallel']:
+            paracmd = "-j %s" % self.cfg['parallel']
+
         if self.cfg['boost_mpi']:
             self.log.info("Building boost_mpi library")
 
@@ -174,15 +178,15 @@ class EB_Boost(EasyBlock):
 
             # build mpi lib first
             # let bjam know about the user-config.jam file we created in the configure step
-            run_cmd("./bjam %s" % bjammpioptions, log_all=True, simple=True)
+            run_cmd("./bjam %s %s" % (bjammpioptions, paracmd), log_all=True, simple=True)
 
             # boost.mpi was built, let's 'install' it now
-            run_cmd("./bjam %s  install" % bjammpioptions, log_all=True, simple=True)
+            run_cmd("./bjam %s  install %s" % (bjammpioptions, paracmd), log_all=True, simple=True)
 
         # install remainder of boost libraries
         self.log.info("Installing boost libraries")
 
-        cmd = "./bjam %s install" % bjamoptions
+        cmd = "./bjam %s install %s" % (bjamoptions, paracmd)
         run_cmd(cmd, log_all=True, simple=True)
 
     def install_step(self):

@@ -26,7 +26,10 @@
 EasyBuild support for installing the Intel Advisor XE, implemented as an easyblock
 
 @author: Lumir Jasiok (IT4Innovations)
+@author: Damian Alvarez (Forschungszentrum Juelich GmbH)
 """
+
+from distutils.version import LooseVersion
 
 from easybuild.easyblocks.generic.intelbase import IntelBase
 
@@ -35,12 +38,20 @@ class EB_Advisor(IntelBase):
     Support for installing Intel Advisor XE
     """
 
+    def __init__(self, *args, **kwargs):
+        """Constructor, initialize class variables."""
+        super(EB_Advisor, self).__init__(*args, **kwargs)
+        if LooseVersion(self.version) < LooseVersion('2017'):
+            self.base_path = 'advisor_xe'
+        else:
+            self.base_path = 'advisor'
+
     def sanity_check_step(self):
         """Custom sanity check paths for Advisor"""
 
         custom_paths = {
             'files': [],
-            'dirs': ['advisor_xe/bin64', 'advisor_xe/lib64']
+            'dirs': ['%s/bin64' % self.base_path, '%s/lib64' % self.base_path]
         }
 
         super(EB_Advisor, self).sanity_check_step(custom_paths=custom_paths)
@@ -51,15 +62,15 @@ class EB_Advisor(IntelBase):
         """
         guesses = super(EB_Advisor, self).make_module_req_guess()
 
-        lib_path = 'advisor_xe/lib64'
-        include_path = 'advisor_xe/include'
+        lib_path = '%s/lib64' % self.base_path
+        include_path = '%s/include' % self.base_path
  
         guesses.update({
             'CPATH': [include_path],
             'INCLUDE': [include_path],
             'LD_LIBRARY_PATH': [lib_path],
             'LIBRARY_PATH': [lib_path],
-            'PATH': ['advisor_xe/bin64'],
+            'PATH': ['%s/bin64' % self.base_path],
         })
 
         return guesses

@@ -55,8 +55,6 @@ class EB_HDF5(ConfigureMake):
             root = get_software_root(dep)
             if root:
                 self.cfg.update('configopts', '%s=%s' % (opt, root))
-            else:
-                raise EasyBuildError("Dependency module %s not loaded.", dep)
 
         fcomp = 'FC="%s"' % os.getenv('F90')
 

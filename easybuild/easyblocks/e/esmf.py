@@ -91,7 +91,11 @@ class EB_ESMF(ConfigureMake):
             if netcdfcxx:
                 netcdf_libs = ["-L%s/lib" % netcdfcxx] + netcdf_libs + ["-lnetcdf_c++"]
             else:
-                netcdf_libs.append('-lnetcdf_c++')
+                netcdfcxx = get_software_root('netCDF-C++4')
+                if netcdfcxx:
+                    netcdf_libs = ["-L%s/lib" % netcdfcxx] + netcdf_libs + ["-lnetcdf_c++4"]
+                else:
+                    netcdf_libs.append('-lnetcdf_c++')
 
             env.setvar('ESMF_NETCDF_LIBS', ' '.join(netcdf_libs))
 

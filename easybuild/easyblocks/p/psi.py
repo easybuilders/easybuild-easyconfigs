@@ -98,7 +98,7 @@ class EB_PSI(CMakeMake):
             raise EasyBuildError("Boost module not loaded.")
 
         # pre 4.0b5, they were using autotools, on newer it's CMake
-        if LooseVersion(self.version) <= LooseVersion("4.0b5") and self.cfg.name == "PSI":
+        if LooseVersion(self.version) <= LooseVersion("4.0b5") and self.name == "PSI":
             self.log.info("Using configure based build")
             env.setvar('PYTHON', os.path.join(pythonroot, 'bin', 'python'))
             env.setvar('USE_SYSTEM_BOOST', 'TRUE')
@@ -146,6 +146,15 @@ class EB_PSI(CMakeMake):
 
             if get_software_root('impi'):
                 self.cfg.update('configopts', " -DENABLE_CSR=ON -DBLAS_TYPE=MKL")
+
+            if self.name == 'PSI4':
+                pcmsolverroot = get_software_root('PCMSolver')
+                if pcmsolverroot:
+                    self.cfg.update('configopts', " -DENABLE_PCMSOLVER=ON -DPCMSOLVER_ROOT=%s" % pcmsolverroot)
+
+                chempsroot = get_software_root('CheMPS2')
+                if chempsroot:
+                    self.cfg.update('configopts', " -DENABLE_CHEMPS2=ON -DCHEMPS2_ROOT=%s" % chempsroot)
 
             CMakeMake.configure_step(self, srcdir=self.cfg['start_dir'])
 

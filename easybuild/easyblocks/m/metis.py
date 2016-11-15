@@ -37,7 +37,8 @@ from distutils.version import LooseVersion
 
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.tools.build_log import EasyBuildError
-from easybuild.tools.filetools import mkdir
+from easybuild.tools.config import build_option
+from easybuild.tools.filetools import apply_regex_substitutions, mkdir
 from easybuild.tools.run import run_cmd
 
 
@@ -47,13 +48,16 @@ class EB_METIS(ConfigureMake):
     def __init__(self, *args, **kwargs):
         """Define custom class variables for METIS."""
         super(EB_METIS, self).__init__(*args, **kwargs)
-
         self.lib_exts = []
 
     def configure_step(self, *args, **kwargs):
         """Configure build using 'make config' (only for recent versions (>= v5))."""
 
         if LooseVersion(self.version) >= LooseVersion("5"):
+
+            if build_option('rpath'):
+                # patch Makefile to tell CMake not to wipe the RPATHs we inject...
+                apply_regex_substitutions('Makefile', [(r'^(CONFIG_FLAGS\s*=\s*)', r'\1 -DCMAKE_SKIP_RPATH=ON ')])
 
             cmd = "make %s config prefix=%s" % (self.cfg['configopts'], self.installdir)
             run_cmd(cmd, log_all=True, simple=True)
@@ -77,7 +81,7 @@ class EB_METIS(ConfigureMake):
         """
         Install by manually copying files to install dir, for old versions,
         or by running 'make install' for new versions.
-        
+
         Create symlinks where expected by other applications
         (in Lib instead of lib)
         """
