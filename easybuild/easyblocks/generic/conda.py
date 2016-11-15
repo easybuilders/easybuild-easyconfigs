@@ -79,11 +79,11 @@ class Conda(Binary):
 
             self.set_conda_env()
 
-            cmd = "%s conda env create %s -p %s" % (self.cfg['preinstallopts'], env_spec, self.installdir)
+            cmd = "%s conda env create --force %s -p %s" % (self.cfg['preinstallopts'], env_spec, self.installdir)
             run_cmd(cmd, log_all=True, simple=True)
 
         else:
-            cmd = "%s conda create -y -p %s" % (self.cfg['preinstallopts'], self.installdir)
+            cmd = "%s conda create --force -y -p %s" % (self.cfg['preinstallopts'], self.installdir)
             run_cmd(cmd, log_all=True, simple=True)
 
             if self.cfg['requirements']:
@@ -93,7 +93,7 @@ class Conda(Binary):
                 if self.cfg['channels']:
                     install_args += ' '.join('-c ' + chan for chan in self.cfg['channels'])
 
-                cmd = "%s conda install %s" % (self.cfg['preinstallopts'], install_args)
+                cmd = "conda install %s" % (install_args)
                 run_cmd(cmd, log_all=True, simple=True)
 
                 self.log.info("Installed conda requirements")
