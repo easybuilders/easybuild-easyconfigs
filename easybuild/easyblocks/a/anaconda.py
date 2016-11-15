@@ -29,16 +29,15 @@ EasyBuild support for building and installing Anaconda, implemented as an easybl
 @author: Kenneth Hoste (HPC-UGent)
 """
 
-import shutil
 import os
 import stat
 
 import easybuild.tools.environment as env
-from easybuild.framework.easyconfig import CUSTOM
 from easybuild.easyblocks.generic.binary import Binary
-from easybuild.tools.run import run_cmd
+from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.filetools import adjust_permissions, rmtree2
+from easybuild.tools.run import run_cmd
 
 
 class EB_Anaconda(Binary):
@@ -52,7 +51,6 @@ class EB_Anaconda(Binary):
 
         adjust_permissions(os.path.join(self.builddir, install_script), stat.S_IRUSR|stat.S_IXUSR)
         
-        ##Change from pre_install_cmd to preinstallopts
         cmd = "%s ./%s -p %s -b -f" % (self.cfg['preinstallopts'], install_script, self.installdir)
         self.log.info("Installing %s using command '%s'..." % (self.name, cmd))
         run_cmd(cmd, log_all=True, simple=True)
