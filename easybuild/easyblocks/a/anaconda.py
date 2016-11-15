@@ -71,7 +71,7 @@ class EB_Anaconda(Binary):
         """
         Custom sanity check for Anaconda
         """
-        bins = ['2to3', 'activate', 'conda', 'deactivate', 'ipython', 'pydoc', 'python', 'sqlite3']
+        bins = ['2to3',  'conda',  'ipython', 'pydoc', 'python', 'sqlite3']
         custom_paths = {
             'files': [os.path.join('bin', x) for x in bins],
             'dirs': ['bin', 'etc', 'lib', 'pkgs'],
