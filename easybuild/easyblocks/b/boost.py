@@ -178,7 +178,7 @@ class EB_Boost(EasyBlock):
 
             # build mpi lib first
             # let bjam know about the user-config.jam file we created in the configure step
-            run_cmd("./bjam %s %s" % bjammpioptions, paracmd, log_all=True, simple=True)
+            run_cmd("./bjam %s %s" % (bjammpioptions, paracmd), log_all=True, simple=True)
 
             # boost.mpi was built, let's 'install' it now
             run_cmd("./bjam %s  install %s" % (bjammpioptions, paracmd), log_all=True, simple=True)
