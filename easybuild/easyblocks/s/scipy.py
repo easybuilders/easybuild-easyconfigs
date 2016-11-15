@@ -61,8 +61,8 @@ class EB_scipy(FortranPythonPackage):
     def sanity_check_step(self, *args, **kwargs):
         """Custom sanity check for scipy."""
         custom_paths = {
-            'files': [os.path.join(self.pylibdir, 'scipy', '__init__.py')],
-            'dirs': [],
+            'files': [],
+            'dirs': [self.pylibdir],
         }
         custom_commands = [(self.python_cmd, '-c "import scipy"')]
         return super(EB_scipy, self).sanity_check_step(custom_paths=custom_paths, custom_commands=custom_commands)
