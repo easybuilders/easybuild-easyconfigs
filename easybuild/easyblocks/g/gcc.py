@@ -69,7 +69,7 @@ class EB_GCC(ConfigureMake):
             'pplwatchdog': [False, "Enable PPL watchdog", CUSTOM],
             'clooguseisl': [False, "Use ISL with CLooG or not", CUSTOM],
             'multilib': [False, "Build multilib gcc (both i386 and x86_64)", CUSTOM],
-            'prefer_lib_subdir': [True, "Configure GCC to prefer 'lib' subdirs over 'lib64' & co when linking", CUSTOM],
+            'prefer_lib_subdir': [False, "Configure GCC to prefer 'lib' subdirs over 'lib64' & co when linking", CUSTOM],
         }
         return ConfigureMake.extra_options(extra_vars)
 
