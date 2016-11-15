@@ -73,7 +73,7 @@ class EB_Mathematica(Binary):
         no_qa = [
             "Now installing.*\n\n.*\[.*\].*",
         ]
-        run_cmd_qa(cmd, qa, no_qa=no_qa, log_all=True, simple=True)
+        run_cmd_qa(cmd, qa, no_qa=no_qa, log_all=True, simple=True, maxhits=200)
 
         # add license server configuration file
         # some relevant documentation at http://reference.wolfram.com/mathematica/tutorial/ConfigurationFiles.html
