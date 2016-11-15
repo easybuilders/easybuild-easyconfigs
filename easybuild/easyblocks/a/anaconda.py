@@ -71,9 +71,8 @@ class EB_Anaconda(Binary):
         """
         Custom sanity check for Anaconda
         """
-        bins = ['2to3',  'conda',  'ipython', 'pydoc', 'python', 'sqlite3']
         custom_paths = {
-            'files': [os.path.join('bin', x) for x in bins],
+            'files': [os.path.join('bin', x) for x in ['2to3', 'conda', 'ipython', 'pydoc', 'python', 'sqlite3']],
             'dirs': ['bin', 'etc', 'lib', 'pkgs'],
         }
         super(EB_Anaconda, self).sanity_check_step(custom_paths=custom_paths)
