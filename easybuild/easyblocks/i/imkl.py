@@ -397,7 +397,10 @@ class EB_imkl(IntelBase):
                 if ver >= LooseVersion('10.3.4') and ver < LooseVersion('11.1'):
                     mkldirs += ['compiler/lib/intel64']
                 else:
-                    mkldirs += ['lib/intel64']
+                    if ver >= LooseVersion('2017.0.0'):
+                        mkldirs += ['lib/intel64_lin']
+                    else:
+                        mkldirs += ['lib/intel64']
 
         else:
             if self.cfg['m32']:
