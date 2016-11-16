@@ -1,0 +1,23 @@
+Yambo has a number of dependencies and also requires some specific CPPFLAGS. The
+way it is set up it doesn't deal very well with mpifort and mpicc being set as the
+serial compilers, mistaking them for icc and ifort due to bad pattern matching. The
+below solves these problems.
+
+diff -rupN qe-6.0_orig//install/plugins_makefile qe-6.0/install/plugins_makefile
+--- qe-6.0_orig//install/plugins_makefile	2016-10-04 15:31:51.000000000 +0200
++++ qe-6.0/install/plugins_makefile	2016-11-16 13:22:51.907157001 +0100
+@@ -163,8 +163,13 @@ configure-yambo: touch-dummy
+ 	 --with-fft-libs="$(FFT_LIBS)" \
+ 	 --with-scalapack-libs="$(SCALAPACK_LIBS)" \
+ 	 --with-blacs-libs="$(SCALAPACK_LIBS)" \
++         --with-libxc-path="$(EBROOTLIBXC)" \
++         --enable-netcdf-hdf5 \
++         --with-netcdf-path="$(EBROOTNETCDFMINFORTRAN)" \
++	 CPP="$(CPP)" \
++	 CPPFLAGS="-C -P $(CPPFLAGS)" \
+ 	 PFC="$(MPIF90)" \
+-	 FC="$(F90)" \
++	 FC="$(F90_SEQ)" \
+ 	 F77="$(F77)"
+ 	touch ./configure-yambo
+ 
