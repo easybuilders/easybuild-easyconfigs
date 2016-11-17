@@ -33,35 +33,49 @@ import re
 from distutils.version import LooseVersion
 
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
+from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.build_log import EasyBuildError
+from easybuild.tools.filetools import apply_regex_substitutions, copy_file
 from easybuild.tools.modules import get_software_libdir, get_software_root
-from easybuild.tools.filetools import apply_regex_substitutions
 from easybuild.tools.run import run_cmd
 from easybuild.tools.systemtools import get_shared_lib_ext
+from easybuild.tools.toolchain import DUMMY_TOOLCHAIN_NAME
 
 
 class EB_binutils(ConfigureMake):
     """Support for building/installing binutils."""
 
+    @staticmethod
+    def extra_options(extra_vars=None):
+        """Extra easyconfig parameters specific to the binutils easyblock."""
+        extra_vars = ConfigureMake.extra_options(extra_vars=extra_vars)
+        extra_vars.update({
+            'install_libiberty': [True, "Also install libiberty (implies building with -fPIC)", CUSTOM],
+        })
+        return extra_vars
+
     def configure_step(self):
         """Custom configuration procedure for binutils: statically link to zlib, configure options."""
 
-        # determine list of 'lib' directories to use rpath for;
-        # this should 'harden' the resulting binutils to bootstrap GCC (no trouble when other libstdc++ is build etc)
-        libdirs = []
-        for libdir in ['/usr/lib', '/usr/lib64', '/usr/lib/x86_64-linux-gnu/']:
-            # also consider /lib, /lib64
-            alt_libdir = libdir.replace('usr/', '')
+        libs = ''
 
-            if os.path.exists(libdir):
-                libdirs.append(libdir)
-                if os.path.exists(alt_libdir) and not os.path.samefile(libdir, alt_libdir):
+        if self.toolchain.name == DUMMY_TOOLCHAIN_NAME:
+            # determine list of 'lib' directories to use rpath for;
+            # this should 'harden' the resulting binutils to bootstrap GCC (no trouble when other libstdc++ is build etc)
+            libdirs = []
+            for libdir in ['/usr/lib', '/usr/lib64', '/usr/lib/x86_64-linux-gnu/']:
+                # also consider /lib, /lib64
+                alt_libdir = libdir.replace('usr/', '')
+
+                if os.path.exists(libdir):
+                    libdirs.append(libdir)
+                    if os.path.exists(alt_libdir) and not os.path.samefile(libdir, alt_libdir):
+                        libdirs.append(alt_libdir)
+
+                elif os.path.exists(alt_libdir):
                     libdirs.append(alt_libdir)
 
-            elif os.path.exists(alt_libdir):
-                libdirs.append(alt_libdir)
-
-        libs = ' '.join('-Wl,-rpath=%s' % libdir for libdir in libdirs)
+            libs += ' '.join('-Wl,-rpath=%s' % libdir for libdir in libdirs)
 
         # statically link to zlib if it is a (build) dependency
         zlibroot = get_software_root('zlib')
@@ -99,6 +113,34 @@ class EB_binutils(ConfigureMake):
         # complete configuration with configure_method of parent
         super(EB_binutils, self).configure_step()
 
+        if self.cfg['install_libiberty']:
+            cflags = os.getenv('CFLAGS')
+            if cflags:
+                self.cfg.update('buildopts', 'CFLAGS="$CFLAGS -fPIC"')
+            else:
+                # if $CFLAGS is not defined, make sure we retain "-g -O2",
+                # since not specifying any optimization level implies -O0...
+                self.cfg.update('buildopts', 'CFLAGS="-g -O2 -fPIC"')
+
+    def install_step(self):
+        """Install using 'make install', also install libiberty if desired."""
+        super(EB_binutils, self).install_step()
+
+        # only install libiberty files if if they're not there yet;
+        # libiberty.a is installed by default for old binutils versions
+        if self.cfg['install_libiberty']:
+            if not os.path.exists(os.path.join(self.installdir, 'include', 'libiberty.h')):
+                copy_file(os.path.join(self.cfg['start_dir'], 'include', 'libiberty.h'),
+                          os.path.join(self.installdir, 'include', 'libiberty.h'))
+
+            if not glob.glob(os.path.join(self.installdir, 'lib*', 'libiberty.a')):
+                copy_file(os.path.join(self.cfg['start_dir'], 'libiberty', 'libiberty.a'),
+                          os.path.join(self.installdir, 'lib', 'libiberty.a'))
+
+            if not os.path.exists(os.path.join(self.installdir, 'info', 'libiberty.texi')):
+                copy_file(os.path.join(self.cfg['start_dir'], 'libiberty', 'libiberty.texi'),
+                          os.path.join(self.installdir, 'info', 'libiberty.texi'))
+
     def sanity_check_step(self):
         """Custom sanity check for binutils."""
 
@@ -121,6 +163,12 @@ class EB_binutils(ConfigureMake):
                      [os.path.join('include', h) for h in headers],
             'dirs': [],
         }
+
+        if self.cfg['install_libiberty']:
+            custom_paths['files'].extend([
+                (os.path.join('lib', 'libiberty.a'), os.path.join('lib64', 'libiberty.a')),
+                os.path.join('include', 'libiberty.h'),
+            ])
 
         # if zlib is listed as a dependency, it should get linked in statically
         if get_software_root('zlib'):

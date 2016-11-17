@@ -37,6 +37,7 @@ import os
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.build_log import EasyBuildError
+from easybuild.tools.config import build_option
 from easybuild.tools.environment import setvar
 from easybuild.tools.run import run_cmd
 
@@ -96,10 +97,15 @@ class CMakeMake(ConfigureMake):
             if value is not None:
                 options.append("-D%s='%s'" % (option, value))
 
-        # show what CMake is doing by default
-        options.append("-DCMAKE_VERBOSE_MAKEFILE=ON")
+        if build_option('rpath'):
+            # instruct CMake not to fiddle with RPATH when --rpath is used, since it will undo stuff on install...
+            # https://github.com/LLNL/spack/blob/0f6a5cd38538e8969d11bd2167f11060b1f53b43/lib/spack/spack/build_environment.py#L416
+            options.append('-DCMAKE_SKIP_RPATH=ON')
 
-        options_string = " ".join(options)
+        # show what CMake is doing by default
+        options.append('-DCMAKE_VERBOSE_MAKEFILE=ON')
+
+        options_string = ' '.join(options)
 
         command = "%s cmake %s %s %s" % (self.cfg['preconfigopts'], srcdir, options_string, self.cfg['configopts'])
         (out, _) = run_cmd(command, log_all=True, simple=False)
