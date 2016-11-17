@@ -29,12 +29,14 @@ EasyBuild support for building and installing Allinea tools, implemented as an e
 """
 import os
 import shutil
+import stat
 from os.path import expanduser
 
 from easybuild.easyblocks.generic.binary import Binary
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.build_log import EasyBuildError
+from easybuild.tools.filetools import copy_file, adjust_permissions
 
 
 class EB_Allinea(Binary):
@@ -101,14 +103,10 @@ class EB_Allinea(Binary):
 		self.log.debug('system.config file %s found' % path)
 	    else:
 		raise EasyBuildError('No system.config file named %s found', sysconfig)
-            try:
-                shutil.copy(path, sysconf_path)
-            except OSError, err:
-                raise EasyBuildError("Failed to copy %s to %s: %s", path, sysconf_path, err)
-	    try:
-		os.chmod(sysconf_path, 0444)
-	    except OSError, err:
-                raise EasyBuildError("Failed to chmod %s: %s", sysconf_path, err)
+
+	    copy_file(path, sysconf_path)
+
+	    adjust_permissions(sysconf_path, stat.S_IRUSR|stat.S_IRGRP|stat.S_IROTH, recursive=False, relative=False)
 
     def sanity_check_step(self):
         """Custom sanity check for Allinea."""
