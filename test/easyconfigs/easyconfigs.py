@@ -172,8 +172,8 @@ class EasyConfigTest(TestCase):
         easyconfig_dirs_regex = re.compile(r'/easybuild/easyconfigs/[0a-z]/[^/]+$')
         topdir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
         for (dirpath, _, filenames) in os.walk(topdir):
-            # ignore git/svn dirs
-            if '/.git/' in dirpath or '/.svn/' in dirpath:
+            # ignore git/svn dirs & archived easyconfigs
+            if '/.git/' in dirpath or '/.svn/' in dirpath or '__archive__' in dirpath:
                 continue
             # check whether list of .eb files is non-empty
             easyconfig_files = [fn for fn in filenames if fn.endswith('eb')]
@@ -313,6 +313,11 @@ def suite():
     easyconfigs_path = get_paths_for('easyconfigs')[0]
     cnt = 0
     for (subpath, _, specs) in os.walk(easyconfigs_path, topdown=True):
+
+        # ignore archived easyconfigs
+        if '__archive__' in subpath:
+            continue
+
         for spec in specs:
             if spec.endswith('.eb') and spec != 'TEMPLATE.eb':
                 cnt += 1
