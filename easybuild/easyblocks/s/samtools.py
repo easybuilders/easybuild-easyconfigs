@@ -16,14 +16,14 @@ EasyBuild support for building SAMtools (SAM - Sequence Alignment/Map), implemen
 @author: Fotis Georgatos (Uni.Lu)
 @author: Kenneth Hoste (Ghent University)
 """
+from distutils.version import LooseVersion
 import os
 import shutil
 import stat
-from distutils.version import LooseVersion
 
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.tools.build_log import EasyBuildError
-from easybuild.tools.filetools import adjust_permissions
+from easybuild.tools.filetools import adjust_permissions, copy_file
 
 class EB_SAMtools(ConfigureMake):
     """
@@ -41,7 +41,7 @@ class EB_SAMtools(ConfigureMake):
                           "misc/soap2sam.pl", "misc/varfilter.py", "misc/wgsim_eval.pl",
                           "misc/zoom2sam.pl", "misc/md5sum-lite", "misc/md5fa", "misc/maq2sam-short",
                           "misc/maq2sam-long", "misc/wgsim", "samtools"]
-        
+
         self.include_files = ["bam.h", "bam2bcf.h", "bam_endian.h", "errmod.h",
                               "kprobaln.h",  "sam.h", "sam_header.h", "sample.h"]
 
@@ -55,7 +55,7 @@ class EB_SAMtools(ConfigureMake):
 
         if LooseVersion(self.version) >= LooseVersion('0.1.19') and LooseVersion(self.version) < LooseVersion('1.0'):
             self.bin_files += ["misc/bamcheck", "misc/plot-bamcheck"]
-        
+
         if LooseVersion(self.version) < LooseVersion('1.0'):
             self.bin_files += ["bcftools/vcfutils.pl", "bcftools/bcftools"]
             self.include_files += [ "bgzf.h", "faidx.h",  "khash.h", "klist.h", "knetfile.h", "razf.h",
@@ -75,38 +75,50 @@ class EB_SAMtools(ConfigureMake):
             if var in os.environ:
                 self.cfg.update('buildopts', '%s="%s"' % (var, os.getenv(var)))
 
+        # configuring with --prefix only supported with v1.3 and more recent
+        if LooseVersion(self.version) >= LooseVersion('1.3'):
+            super(EB_SAMtools, self).configure_step()
+
     def install_step(self):
         """
         Install by copying files to install dir
         """
+        install_files = [
+            ('include/bam', self.include_files),
+            ('lib', self.lib_files),
+        ]
 
-        for (srcdir, dest, files) in [
-                                      (self.cfg['start_dir'], 'bin', self.bin_files),
-                                      (self.cfg['start_dir'], 'lib', self.lib_files),
-                                      (self.cfg['start_dir'], 'include/bam', self.include_files)
-                                     ]:
+        # v1.3 and more recent supports 'make install', but this only installs (some of) the binaries...
+        if LooseVersion(self.version) >= LooseVersion('1.3'):
+            super(EB_SAMtools, self).install_step()
 
-            destdir = os.path.join(self.installdir, dest)
-            srcfile = None
-            try:
-                os.makedirs(destdir)
-                for filename in files:
-                    srcfile = os.path.join(srcdir, filename)
-                    shutil.copy2(srcfile, destdir)
-            except OSError, err:
-                raise EasyBuildError("Copying %s to installation dir %s failed: %s", srcfile, destdir, err)
+            # figure out which bin files are missing, and try copying them
+            missing_bin_files = []
+            for binfile in self.bin_files:
+                if not os.path.exists(os.path.join(self.installdir, 'bin', os.path.basename(binfile))):
+                    missing_bin_files.append(binfile)
+            install_files.append(('bin', missing_bin_files))
 
-        # fix permissions so ownwer group and others have R-X
-        adjust_permissions(self.installdir, stat.S_IRGRP|stat.S_IXGRP|stat.S_IROTH|stat.S_IXOTH, add=True, recursive=True)
+        else:
+            # copy binaries manually for older versions
+            install_files.append(('bin', self.bin_files))
+
+        self.log.debug("Installing files by copying them 'manually': %s", install_files)
+        for (destdir, files) in install_files:
+            for fn in files:
+                dest = os.path.join(self.installdir, destdir, os.path.basename(fn))
+                copy_file(os.path.join(self.cfg['start_dir'], fn), dest)
+
+            # enable r-x permissions for group/others
+            perms = stat.S_IRGRP|stat.S_IXGRP|stat.S_IROTH|stat.S_IXOTH
+            adjust_permissions(self.installdir, perms, add=True, recursive=True)
 
     def sanity_check_step(self):
         """Custom sanity check for SAMtools."""
-
         custom_paths = {
-                        'files': ['bin/%s' % x for x in [f.split('/')[-1] for f in self.bin_files]] +
-                                 ['lib/%s' % x for x in self.lib_files] +
-                                 ['include/bam/%s' % x for x in self.include_files],
-                        'dirs': []
-                       }
-
+            'files': [os.path.join('bin', os.path.basename(f)) for f in self.bin_files] +
+                     [os.path.join('include', 'bam', f) for f in self.include_files] +
+                     [os.path.join('lib', f) for f in self.lib_files],
+            'dirs': []
+        }
         super(EB_SAMtools, self).sanity_check_step(custom_paths=custom_paths)
