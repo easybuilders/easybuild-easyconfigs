@@ -1,0 +1,54 @@
+# This file is an EasyBuild reciPY as per https://github.com/hpcugent/easybuild
+# Author: Pablo Escobar Lopez
+# sciCORE - University of Basel
+# SIB Swiss Institute of Bioinformatics
+
+easyblock = 'ConfigureMake'
+
+name = 'Trinity'
+version = '2.3.2'
+
+homepage = 'http://trinityrnaseq.github.io/'
+description = """ Trinity assembles transcript sequences from Illumina RNA-Seq data. """
+
+toolchain = {'name': 'goolf', 'version': '1.7.20'}
+toolchainopts = {'openmp': True}
+
+source_urls = ['https://github.com/trinityrnaseq/trinityrnaseq/archive/']
+sources = ['%(name)s-v%(version)s.tar.gz']
+
+unpack_options = '--strip-components=1'
+
+patches = [
+    'chrysalis_commandline_noconsts_2012-10-05.patch',
+    'Trinity-%(version)s_jellyfish-Makefile.patch',
+]
+
+dependencies = [
+    ('Java', '1.8.0_92', '', True),
+    ('ant', '1.9.7', '-Java-%(javaver)s', True),
+    ('Bowtie', '1.1.2'),
+    ('Bowtie2', '2.2.9'),
+    ('ncurses', '5.9',),
+    ('zlib', '1.2.8'),
+    ('Perl', '5.22.2'),
+]
+
+skipsteps = ['configure', 'install']
+
+buildininstalldir = True
+
+buildopts = ' && make plugins'
+
+sanity_check_paths = {
+    'files': ["Chrysalis/Chrysalis", "Inchworm/bin/inchworm"],
+    'dirs': [""],
+}
+
+sanity_check_commands = [('cd', '$EBROOTTRINITY/sample_data/test_Trinity_Assembly && ./runMe.sh')]
+
+modextrapaths = {
+    'PATH': '',
+}
+
+moduleclass = 'bio'
