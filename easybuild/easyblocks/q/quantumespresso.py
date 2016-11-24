@@ -4,8 +4,8 @@
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
 # with support of Ghent University (http://ugent.be/hpc),
-# the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
-# the Hercules foundation (http://www.herculesstichting.be/in_English)
+# the Flemish Supercomputer Centre (VSC) (https://www.vscentrum.be),
+# Flemish Research Foundation (FWO) (http://www.fwo.be/en)
 # and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
 # http://github.com/hpcugent/easybuild
@@ -60,7 +60,10 @@ class EB_QuantumESPRESSO(ConfigureMake):
 
         self.build_in_installdir = True
 
-        self.install_subdir = "espresso-%s" % self.version
+        if LooseVersion(self.version) >= LooseVersion("6"):
+            self.install_subdir = "qe-%s" % self.version
+        else:
+            self.install_subdir = "espresso-%s" % self.version
 
     def patch_step(self):
         """Patch files from build dir (not start dir)."""
@@ -69,7 +72,7 @@ class EB_QuantumESPRESSO(ConfigureMake):
     def configure_step(self):
         """Custom configuration procedure for Quantum ESPRESSO."""
 
-        if self.cfg['hybrid']:
+        if self.toolchain.options.get('openmp', False) or self.cfg['hybrid']:
             self.cfg.update('configopts', '--enable-openmp')
 
         if not self.toolchain.options.get('usempi', None):
@@ -101,7 +104,10 @@ class EB_QuantumESPRESSO(ConfigureMake):
         }
         dflags.append(comp_fam_dflags[self.toolchain.comp_family()])
 
-        libfft = os.getenv('LIBFFT')
+        if self.toolchain.options.get('openmp', False):
+            libfft = os.getenv('LIBFFT_MT')
+        else:
+            libfft = os.getenv('LIBFFT')
         if libfft:
             if "fftw3" in libfft:
                 dflags.append('-D__FFTW3')
@@ -115,7 +121,7 @@ class EB_QuantumESPRESSO(ConfigureMake):
         if self.toolchain.options.get('usempi', None):
             dflags.append('-D__MPI -D__PARA')
 
-        if self.cfg['hybrid']:
+        if self.toolchain.options.get('openmp', False) or self.cfg['hybrid']:
             dflags.append(" -D__OPENMP")
 
         if self.cfg['with_scalapack']:
@@ -127,14 +133,17 @@ class EB_QuantumESPRESSO(ConfigureMake):
         repls.append(('DFLAGS', ' '.join(dflags), False))
 
         # complete C/Fortran compiler and LD flags
-        if self.cfg['hybrid']:
+        if self.toolchain.options.get('openmp', False) or self.cfg['hybrid']:
             repls.append(('LDFLAGS', self.toolchain.get_flag('openmp'), True))
             repls.append(('(?:C|F90|F)FLAGS', self.toolchain.get_flag('openmp'), True))
 
         # obtain library settings
         libs = []
         for lib in ['BLAS', 'LAPACK', 'FFT', 'SCALAPACK']:
-            val = os.getenv('LIB%s' % lib)
+            if self.toolchain.options.get('openmp', False):
+                val = os.getenv('LIB%s_MT' % lib)
+            else:
+                val = os.getenv('LIB%s' % lib)
             repls.append(('%s_LIBS' % lib, val, False))
             libs.append(val)
         libs = ' '.join(libs)
@@ -145,8 +154,13 @@ class EB_QuantumESPRESSO(ConfigureMake):
 
         self.log.debug("List of replacements to perform: %s" % repls)
 
+        if LooseVersion(self.version) >= LooseVersion("6"):
+            make_ext = '.inc'
+        else:
+            make_ext = '.sys'
+
         # patch make.sys file
-        fn = os.path.join(self.cfg['start_dir'], 'make.sys')
+        fn = os.path.join(self.cfg['start_dir'], 'make' + make_ext)
         try:
             for line in fileinput.input(fn, inplace=1, backup='.orig.eb'):
                 for (k, v, keep) in repls:
@@ -172,7 +186,7 @@ class EB_QuantumESPRESSO(ConfigureMake):
 
         # patch default make.sys for wannier
         if LooseVersion(self.version) >= LooseVersion("5"):
-            fn = os.path.join(self.cfg['start_dir'], 'install', 'make_wannier90.sys')
+            fn = os.path.join(self.cfg['start_dir'], 'install', 'make_wannier90' + make_ext)
         else:
             fn = os.path.join(self.cfg['start_dir'], 'plugins', 'install', 'make_wannier90.sys')
         try:
@@ -221,13 +235,16 @@ class EB_QuantumESPRESSO(ConfigureMake):
 
         # move non-espresso directories to where they're expected and create symlinks
         try:
-            dirnames = [d for d in os.listdir(self.builddir) if not d.startswith('espresso')]
-            targetdir = os.path.join(self.builddir, "espresso-%s" % self.version)
+            dirnames = [d for d in os.listdir(self.builddir) if not d == self.install_subdir]
+            targetdir = os.path.join(self.builddir, self.install_subdir)
             for dirname in dirnames:
                 shutil.move(os.path.join(self.builddir, dirname), os.path.join(targetdir, dirname))
                 self.log.info("Moved %s into %s" % (dirname, targetdir))
 
                 dirname_head = dirname.split('-')[0]
+                # Handle the case where the directory is preceded by 'qe-'
+                if dirname_head == 'qe':
+                    dirname_head = dirname.split('-')[1]
                 linkname = None
                 if dirname_head == 'sax':
                     linkname = 'SaX'
@@ -269,7 +286,9 @@ class EB_QuantumESPRESSO(ConfigureMake):
                 bins.extend(["neb.x", "path_interpolation.x"])
 
         if 'ph' in self.cfg['buildopts'] or 'all' in self.cfg['buildopts']:
-            bins.extend(["d3.x", "dynmat.x", "lambda.x", "matdyn.x", "ph.x", "phcg.x", "q2r.x"])
+            bins.extend(["dynmat.x", "lambda.x", "matdyn.x", "ph.x", "phcg.x", "q2r.x"])
+            if LooseVersion(self.version) < LooseVersion("6"):
+                bins.extend(["d3.x"])
             if LooseVersion(self.version) > LooseVersion("5"):
                 bins.extend(["fqha.x", "q2qstar.x"])
 
@@ -285,12 +304,13 @@ class EB_QuantumESPRESSO(ConfigureMake):
                 bins.extend(["pw2casino.x"])
 
         if 'pw' in self.cfg['buildopts'] or 'all' in self.cfg['buildopts']:
-            bins.extend(["band_plot.x", "dist.x", "ev.x", "kpoints.x", "pw.x", "pwi2xsf.x",
-                         "bands_FS.x", "kvecs_FS.x"])
+            bins.extend(["dist.x", "ev.x", "kpoints.x", "pw.x", "pwi2xsf.x"])
             if LooseVersion(self.version) > LooseVersion("5"):
                 bins.extend(["generate_vdW_kernel_table.x"])
             else:
                 bins.extend(["path_int.x"])
+            if LooseVersion(self.version) < LooseVersion("5.3.0"):
+                bins.extend(["band_plot.x", "bands_FS.x", "kvecs_FS.x"])
 
         if 'pwcond' in self.cfg['buildopts'] or 'pwall' in self.cfg['buildopts'] or \
            'all' in self.cfg['buildopts']:

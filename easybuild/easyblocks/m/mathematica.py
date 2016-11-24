@@ -4,8 +4,8 @@
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
 # with support of Ghent University (http://ugent.be/hpc),
-# the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
-# the Hercules foundation (http://www.herculesstichting.be/in_English)
+# the Flemish Supercomputer Centre (VSC) (https://www.vscentrum.be),
+# Flemish Research Foundation (FWO) (http://www.fwo.be/en)
 # and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
 # http://github.com/hpcugent/easybuild
@@ -73,7 +73,7 @@ class EB_Mathematica(Binary):
         no_qa = [
             "Now installing.*\n\n.*\[.*\].*",
         ]
-        run_cmd_qa(cmd, qa, no_qa=no_qa, log_all=True, simple=True)
+        run_cmd_qa(cmd, qa, no_qa=no_qa, log_all=True, simple=True, maxhits=200)
 
         # add license server configuration file
         # some relevant documentation at http://reference.wolfram.com/mathematica/tutorial/ConfigurationFiles.html

@@ -4,8 +4,8 @@
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
 # with support of Ghent University (http://ugent.be/hpc),
-# the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
-# the Hercules foundation (http://www.herculesstichting.be/in_English)
+# the Flemish Supercomputer Centre (VSC) (https://www.vscentrum.be),
+# Flemish Research Foundation (FWO) (http://www.fwo.be/en)
 # and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
 # http://github.com/hpcugent/easybuild
@@ -43,7 +43,7 @@ from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.modules import get_software_root
 from easybuild.tools.run import run_cmd
-from easybuild.tools.systemtools import get_cpu_speed, get_shared_lib_ext
+from easybuild.tools.systemtools import AMD, INTEL, get_cpu_speed, get_cpu_vendor, get_shared_lib_ext
 
 
 class EB_ATLAS(ConfigureMake):
@@ -87,12 +87,15 @@ class EB_ATLAS(ConfigureMake):
                     sys.stdout.write(line)
             self.log.warning('CPU throttling check ignored: NOT recommended!')
 
-        # use cycle accurate timer for timings
-        # see http://math-atlas.sourceforge.net/atlas_install/node23.html
-        # this should work on Linux with both GCC and Intel compilers
-        cpu_freq = int(get_cpu_speed())
-        self.cfg.update('configopts', "-D c -DPentiumCPS=%s" % cpu_freq)
-
+        if get_cpu_vendor() in [AMD, INTEL]:
+            # use cycle accurate timer for timings
+            # see http://math-atlas.sourceforge.net/atlas_install/node23.html
+            # this should work on Linux with both GCC and Intel compilers
+            cpu_freq = int(get_cpu_speed())
+            self.cfg.update('configopts', "-D c -DPentiumCPS=%s" % cpu_freq)
+        else:
+            # use -DWALL for non-x86, see http://math-atlas.sourceforge.net/atlas_install/node25.html
+            self.cfg.update('configopts', "-D c -DWALL")
 
         # if LAPACK is found, instruct ATLAS to provide a full LAPACK library
         # ATLAS only provides a few LAPACK routines natively

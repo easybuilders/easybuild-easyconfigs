@@ -4,8 +4,8 @@
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
 # with support of Ghent University (http://ugent.be/hpc),
-# the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
-# the Hercules foundation (http://www.herculesstichting.be/in_English)
+# the Flemish Supercomputer Centre (VSC) (https://www.vscentrum.be),
+# Flemish Research Foundation (FWO) (http://www.fwo.be/en)
 # and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
 # http://github.com/hpcugent/easybuild
@@ -95,10 +95,10 @@ class EB_HPL(ConfigureMake):
         extra_makeopts += 'CC="%(mpicc)s" MPICC="%(mpicc)s" LINKER="%(mpicc)s" ' % {'mpicc': os.getenv('MPICC')}
 
         # libraries: LAPACK and FFTW
-        extra_makeopts += 'LAlib="%s %s" ' % (os.getenv('LIBFFT'), os.getenv('LIBLAPACK_MT'))
+        extra_makeopts += 'LAlib="%s" ' % os.getenv('LIBLAPACK_MT')
 
         # HPL options
-        extra_makeopts += 'HPL_OPTS="%s -DUSING_FFTW" ' % os.getenv('CPPFLAGS')
+        extra_makeopts += 'HPL_OPTS="%s " ' % os.getenv('CPPFLAGS')
 
         # linker flags
         extra_makeopts += 'LINKFLAGS="%s %s %s" ' % (os.getenv('CFLAGS'), os.getenv('LDFLAGS'), os.getenv('LIBS', ''))

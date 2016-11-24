@@ -1,5 +1,6 @@
 ##
 # Copyright 2013 Dmitri Gribenko
+# Copyright 2013-2016 Ghent University
 #
 # This file is triple-licensed under GPLv2 (see below), MIT, and
 # BSD three-clause licenses.
@@ -7,8 +8,8 @@
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
 # with support of Ghent University (http://ugent.be/hpc),
-# the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
-# the Hercules foundation (http://www.herculesstichting.be/in_English)
+# the Flemish Supercomputer Centre (VSC) (https://www.vscentrum.be),
+# Flemish Research Foundation (FWO) (http://www.fwo.be/en)
 # and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
 # http://github.com/hpcugent/easybuild
@@ -109,6 +110,7 @@ class EB_Clang(CMakeMake):
         llvm/             Unpack llvm-*.tar.gz here
           projects/
             compiler-rt/  Unpack compiler-rt-*.tar.gz here
+            openmp/       Unpack openmp-*.tar.xz here
           tools/
             clang/        Unpack clang-*.tar.gz here
             polly/        Unpack polly-*.tar.gz here
@@ -126,39 +128,38 @@ class EB_Clang(CMakeMake):
         if self.llvm_src_dir is None:
             raise EasyBuildError("Could not determine LLVM source root (LLVM source was not unpacked?)")
 
-        compiler_rt_src_dirs = glob.glob('compiler-rt-*')
-        if len(compiler_rt_src_dirs) != 1:
-            raise EasyBuildError("Failed to find exactly one compiler-rt source directory: %s", compiler_rt_src_dirs)
-        compiler_rt_src_dir = compiler_rt_src_dirs[0]
+        src_dirs = {}
 
-        src_dirs = {
-            compiler_rt_src_dir: os.path.join(self.llvm_src_dir, 'projects', 'compiler-rt')
-        }
+        def find_source_dir(globpatterns, targetdir):
+            """Search for directory with globpattern and rename it to targetdir"""
+            if not isinstance(globpatterns, list):
+                globpatterns = [globpatterns]
+
+            glob_src_dirs = [glob_dir for globpattern in globpatterns for glob_dir in glob.glob(globpattern)]
+            if len(glob_src_dirs) != 1:
+                raise EasyBuildError("Failed to find exactly one source directory for pattern %s: %s", globpatterns,
+                                     glob_src_dirs)
+            src_dirs[glob_src_dirs[0]] = targetdir
+
+        find_source_dir('compiler-rt-*', os.path.join(self.llvm_src_dir, 'projects', 'compiler-rt'))
 
         if self.cfg["usepolly"]:
-            polly_src_dirs = glob.glob('polly-*')
-            if len(polly_src_dirs) != 1:
-                raise EasyBuildError("Failed to find exactly one polly source directory: %s", polly_src_dirs)
-            polly_src_dir = polly_src_dirs[0]
-            src_dirs[polly_src_dir] = os.path.join(self.llvm_src_dir, 'tools', 'polly')
+            find_source_dir('polly-*', os.path.join(self.llvm_src_dir, 'tools', 'polly'))
 
-        clang_src_dirs = glob.glob('clang-*') + glob.glob('cfe-*')
+        find_source_dir(['clang-*', 'cfe-*'], os.path.join(self.llvm_src_dir, 'tools', 'clang'))
 
-        if len(clang_src_dirs) != 1:
-            raise EasyBuildError("Failed to find exactly one clang source directory: %s", clang_src_dirs)
-        clang_src_dir = clang_src_dirs[0]
+        if LooseVersion(self.version) >= LooseVersion('3.8'):
+            find_source_dir('openmp-*', os.path.join(self.llvm_src_dir, 'projects', 'openmp'))
 
-        src_dirs[clang_src_dir] = os.path.join(self.llvm_src_dir, 'tools', 'clang')
-
-        for tmp in self.src:
-            for (dir, new_path) in src_dirs.items():
-                if tmp['name'].startswith(dir):
-                    old_path = os.path.join(tmp['finalpath'], dir)
+        for src in self.src:
+            for (dirname, new_path) in src_dirs.items():
+                if src['name'].startswith(dirname):
+                    old_path = os.path.join(src['finalpath'], dirname)
                     try:
                         shutil.move(old_path, new_path)
                     except IOError, err:
                         raise EasyBuildError("Failed to move %s to %s: %s", old_path, new_path, err)
-                    tmp['finalpath'] = new_path
+                    src['finalpath'] = new_path
                     break
 
     def configure_step(self):
@@ -197,7 +198,20 @@ class EB_Clang(CMakeMake):
 
         # GCC and Clang are installed in different prefixes and Clang will not
         # find the GCC installation on its own.
-        self.cfg['configopts'] += "-DGCC_INSTALL_PREFIX='%s' " % get_software_root('GCC')
+        # First try with GCCcore, as GCC built on top of GCCcore is just a wrapper for GCCcore and binutils,
+        # instead of a full-fledge compiler
+        gcc_prefix = get_software_root('GCCcore')
+
+        # If that doesn't work, try with GCC
+        if gcc_prefix is None:
+            gcc_prefix = get_software_root('GCC')
+        
+        # If that doesn't work either, print error and exit
+        if gcc_prefix is None:
+            raise EasyBuildError("Can't find GCC or GCCcore to use")
+
+        self.cfg.update('configopts', "-DGCC_INSTALL_PREFIX='%s' " % gcc_prefix)
+        self.log.debug("Using %s as GCC_INSTALL_PREFIX", gcc_prefix)
 
         self.cfg['configopts'] += "-DCMAKE_BUILD_TYPE=Release "
         if self.cfg['assertions']:
@@ -328,7 +342,7 @@ class EB_Clang(CMakeMake):
 
         # the static analyzer is not installed by default
         # we do it by hand
-        if self.cfg['static_analyzer']:
+        if self.cfg['static_analyzer'] and LooseVersion(self.version) < LooseVersion('3.8'):
             try:
                 tools_src_dir = os.path.join(self.llvm_src_dir, 'tools', 'clang', 'tools')
                 analyzer_target_dir = os.path.join(self.installdir, 'libexec', 'clang-analyzer')
@@ -363,6 +377,9 @@ class EB_Clang(CMakeMake):
         if self.cfg["usepolly"]:
             custom_paths['files'].extend(["lib/LLVMPolly.%s" % shlib_ext])
             custom_paths['dirs'].extend(["include/polly"])
+
+        if LooseVersion(self.version) >= LooseVersion('3.8'):
+            custom_paths['files'].extend(["lib/libomp.%s" % shlib_ext, "lib/clang/%s/include/omp.h" % self.version])
 
         super(EB_Clang, self).sanity_check_step(custom_paths=custom_paths)
 

@@ -23,6 +23,7 @@ import easybuild.tools.toolchain as toolchain
 from easybuild.easyblocks.generic.makecp import MakeCp
 from easybuild.framework.easyconfig import CUSTOM, MANDATORY
 from easybuild.tools.build_log import EasyBuildError
+from easybuild.tools.config import build_option
 from easybuild.tools.filetools import extract_file
 from easybuild.tools.modules import get_software_root, get_software_version
 from easybuild.tools.run import run_cmd
@@ -122,6 +123,11 @@ class EB_NAMD(MakeCp):
     def test_step(self):
         """Run NAMD test case."""
         if self.cfg['runtest']:
+
+            if not build_option('mpi_tests'):
+                self.log.info("Skipping testing of NAMD since MPI testing is disabled")
+                return
+
             namdcmd = os.path.join(self.cfg['start_dir'], self.namd_arch, 'namd%s' % self.version.split('.')[0])
             if self.cfg['charm_arch'].startswith('mpi'):
                 namdcmd = self.toolchain.mpi_cmd_for(namdcmd, 2)

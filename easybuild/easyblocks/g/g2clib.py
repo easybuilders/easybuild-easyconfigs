@@ -4,8 +4,8 @@
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
 # with support of Ghent University (http://ugent.be/hpc),
-# the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
-# the Hercules foundation (http://www.herculesstichting.be/in_English)
+# the Flemish Supercomputer Centre (VSC) (https://www.vscentrum.be),
+# Flemish Research Foundation (FWO) (http://www.fwo.be/en)
 # and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
 # http://github.com/hpcugent/easybuild
@@ -40,6 +40,8 @@ from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.modules import get_software_root
 
+from distutils.version import LooseVersion
+
 
 class EB_g2clib(ConfigureMake):
     """Support for building g2clib GRIB2 C library."""
@@ -68,9 +70,19 @@ class EB_g2clib(ConfigureMake):
             # copy library
             targetdir = os.path.join(self.installdir, "lib")
             os.mkdir(targetdir)
-            fn = "libgrib2c.a"
+            
+            # not documented AFAIK, but real
+            if LooseVersion(self.version) < LooseVersion('1.6.0'):
+                fn = "libgrib2c.a"
+            else:
+                fn = "libg2c_v%s.a" % self.version
+
             shutil.copyfile(os.path.join(self.cfg['start_dir'], fn),
                             os.path.join(targetdir, fn))
+
+            # make link so other software still finds libgrib2c.a
+            if LooseVersion(self.version) >= LooseVersion('1.6.0'):
+                os.symlink("libg2c_v%s.a" % self.version, os.path.join(targetdir,"libgrib2c.a"))
 
             # copy header files
             targetdir = os.path.join(self.installdir, "include")
