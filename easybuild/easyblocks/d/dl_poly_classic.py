@@ -33,12 +33,12 @@ import os
 import shutil
 
 from easybuild.tools.build_log import EasyBuildError
-from easybuild.tools.filetools import copytree
+from easybuild.tools.filetools import copy_file, copytree
 from easybuild.tools.run import run_cmd
-from easybuild.easyblocks.generic.makecp import MakeCp
+from easybuild.easyblocks.generic.configuremake import ConfigureMake
 
 
-class EB_DL_underscore_POLY_underscore_Classic(MakeCp):
+class EB_DL_underscore_POLY_underscore_Classic(ConfigureMake):
     """Support for building and installing DL_POLY Classic."""
 
     def __init__(self, *args, **kwargs):
@@ -48,32 +48,35 @@ class EB_DL_underscore_POLY_underscore_Classic(MakeCp):
         # check whether PLUMED is listed as a dependency
         self.with_plumed = 'PLUMED' in [dep['name'] for dep in self.cfg['dependencies']]
 
-    def extract_step(self):
-        """Move 'source' to 'srcmod' directory if PLUMED is used as a dependency."""
-        super(EB_DL_underscore_POLY_underscore_Classic, self).extract_step()
-
-        if self.with_plumed and not self.dry_run:
-            try:
-                os.rename('source', 'srcmod')
-            except OSError as err:
-                raise EasyBuildError("Failed to move 'source' directory to 'srcmod': %s", err)
-
-    def patch_step(self):
+    # create PLUMED patch in prepare_step rather than patch_step,
+    # so we can rely on being in the unpacked source directory
+    def prepare_step(self):
         """Generate PLUMED patch if PLUMED is listed as a dependency."""
-        diff_pat = 'dlpoly-*.diff'
-        try:
-            diff_hits = glob.glob(os.path.join(self.builddir, diff_pat))
-        except OSError as err:
-            raise EasyBuildError("Failed to find list of files/dirs that match '%s': %s", diff_pat, err)
+        super(EB_DL_underscore_POLY_underscore_Classic, self).prepare_step()
 
-        if len(diff_hits) == 1:
-            plumed_patch = os.path.splitext(os.path.basename(diff_hits[0]))[0]
-        else:
-            raise EasyBuildError("Expected to find exactly one match for '%s', found: %s", diff_pat, diff_hits)
+        if self.with_plumed:
+            # see https://groups.google.com/d/msg/plumed-users/cWaIDU5F6Bw/bZUW3J9cCAAJ
+            diff_pat = 'dlpoly-*.diff'
+            try:
+                diff_hits = glob.glob(os.path.join(self.builddir, diff_pat))
+            except OSError as err:
+                raise EasyBuildError("Failed to find list of files/dirs that match '%s': %s", diff_pat, err)
 
-        run_cmd("plumed-patch -p --runtime %s -d %s.diff" % (plumed_patch, os.path.join(self.builddir, plumed_patch)))
+            if len(diff_hits) == 1:
+                plumed_patch = diff_hits[0]
+            elif not self.dry_run:
+                raise EasyBuildError("Expected to find exactly one match for '%s' in %s, found: %s",
+                                     diff_pat, self.builddir, diff_hits)
 
-        super(EB_DL_underscore_POLY_underscore_Classic, self).patch_step()
+            if not self.dry_run:
+                try:
+                    os.rename('source', 'srcmod')
+                except OSError as err:
+                    raise EasyBuildError("Failed to move 'source' directory to 'srcmod': %s", err)
+
+            engine = os.path.splitext(os.path.basename(plumed_patch))[0]
+            cmd = "plumed-patch -p --runtime -e %s -d %s" % (engine, plumed_patch)
+            run_cmd(cmd, log_all=True, simple=True)
 
     def configure_step(self):
         """Copy the makefile to the source directory and use MPIF90 to do a parrallel build"""
@@ -85,16 +88,11 @@ class EB_DL_underscore_POLY_underscore_Classic(MakeCp):
         else:
             source_dir = 'source'
 
+        copy_file(os.path.join('build', 'MakePAR'), os.path.join(source_dir, 'Makefile'))
         try:
-            shutil.copy(os.path.join('build', 'MakePAR'), os.path.join(source_dir, 'Makefile'))
             os.chdir(source_dir)
-
         except OSError as err:
-            raise EasyBuildError("Failed to prepare configuration in %s: %s", source_dir, err)
-
-        self.cfg['with_configure'] = True
-
-        super(EB_DL_underscore_POLY_underscore_Classic, self).configure_step()
+            raise EasyBuildError("Failed to change to %s: %s", source_dir, err)
 
     def install_step(self):
         """Copy the executables to the installation directory"""
@@ -103,3 +101,11 @@ class EB_DL_underscore_POLY_underscore_Classic(MakeCp):
         install_path = os.path.join(self.cfg['start_dir'], 'execute')
         bin_path = os.path.join(self.installdir, 'bin')
         copytree(install_path, bin_path)
+
+    def sanity_check_step(self):
+        """Custom sanity check step for DL_POLY Classic"""
+        custom_paths = {
+            'files': ['bin/DLPOLY.X'],
+            'dirs': [],
+        }
+        super(EB_DL_underscore_POLY_underscore_Classic, self).sanity_check_step(custom_paths=custom_paths)
