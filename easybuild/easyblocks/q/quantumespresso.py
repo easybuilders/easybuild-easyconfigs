@@ -242,6 +242,9 @@ class EB_QuantumESPRESSO(ConfigureMake):
                 self.log.info("Moved %s into %s" % (dirname, targetdir))
 
                 dirname_head = dirname.split('-')[0]
+                # Handle the case where the directory is preceded by 'qe-'
+                if dirname_head == 'qe':
+                    dirname_head = dirname.split('-')[1]
                 linkname = None
                 if dirname_head == 'sax':
                     linkname = 'SaX'
