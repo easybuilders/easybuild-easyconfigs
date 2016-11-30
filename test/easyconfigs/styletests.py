@@ -58,7 +58,7 @@ class StyleTest(TestCase):
 
         result = check_easyconfigs_style(specs)
 
-        self.assertEqual(result, 0, "Found code style errors (and/or warnings).")
+        self.assertEqual(result, 0, "Found code style errors (and/or warnings): %s" % result)
 
 
 def suite():
