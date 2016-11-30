@@ -34,7 +34,7 @@ from unittest import TestCase, TestLoader, main
 from vsc.utils import fancylogger
 
 from easybuild.framework.easyconfig.tools import get_paths_for
-from easybuild.framework.easyconfig.style import style_conformance
+from easybuild.framework.easyconfig.style import check_easyconfigs_style
 
 try:
     import pep8
@@ -56,7 +56,7 @@ class StyleTest(TestCase):
         specs = glob.glob('%s/*/*/*.eb' % easyconfigs_path)
         specs = sorted(specs)
 
-        result = style_conformance(specs)
+        result = check_easyconfigs_style(specs)
 
         self.assertEqual(result, 0, "Found code style errors (and/or warnings).")
 
