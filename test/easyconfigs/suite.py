@@ -52,7 +52,7 @@ os.environ['EASYBUILD_DEPRECATED'] = '10000'
 os.environ['EASYBUILD_TMP_LOGDIR'] = tempfile.mkdtemp(prefix='easyconfigs_test_')
 
 # call suite() for each module and then run them all
-SUITE = unittest.TestSuite([x.suite() for x in [e, s])
+SUITE = unittest.TestSuite([x.suite() for x in [e, s]])
 
 # uses XMLTestRunner if possible, so we can output an XML file that can be supplied to Jenkins
 xml_msg = ""
