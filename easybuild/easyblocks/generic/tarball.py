@@ -71,3 +71,8 @@ class Tarball(EasyBlock):
             shutil.copytree(src, self.installdir, symlinks=self.cfg['keepsymlinks'])
         except OSError, err:
             raise EasyBuildError("Copying %s to installation dir %s failed: %s", src, self.installdir, err)
+    
+    def sanity_check_rpath(self):
+        """Skip the rpath sanity check, this is binary software"""
+        self.log.info("RPATH sanity check is skipped when using %s easyblock (derived from Tarball)",
+                      self.__class__.__name__)
