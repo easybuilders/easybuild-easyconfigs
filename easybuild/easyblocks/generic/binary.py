@@ -126,7 +126,7 @@ class Binary(EasyBlock):
 
     def sanity_check_rpath(self):
         """Skip the rpath sanity check, this is binary software"""
-        pass
+        self.log.info("Skipping RPATH sanity check for binary installations")
 
     def make_module_extra(self):
         """Add the install directory to the PATH."""
