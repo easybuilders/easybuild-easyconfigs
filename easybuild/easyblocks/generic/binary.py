@@ -126,7 +126,8 @@ class Binary(EasyBlock):
 
     def sanity_check_rpath(self):
         """Skip the rpath sanity check, this is binary software"""
-        self.log.info("Skipping RPATH sanity check for %s installations. This method is inherited from the Binary easyblock", self.__class__.__name__)
+        self.log.info("RPATH sanity check is skipped when using %s easyblock (derived from Binary)",
+              self.__class__.__name__)
 
     def make_module_extra(self):
         """Add the install directory to the PATH."""
