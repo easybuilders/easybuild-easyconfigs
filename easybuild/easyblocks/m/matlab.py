@@ -129,6 +129,11 @@ class EB_MATLAB(EasyBlock):
             'dirs': ["java/jar", "toolbox/compiler"],
         }
         super(EB_MATLAB, self).sanity_check_step(custom_paths=custom_paths)
+    
+    def sanity_check_rpath(self):
+        """Skip the rpath sanity check, this is binary software"""
+        self.log.info("RPATH sanity check is skipped when using %s easyblock",
+                      self.__class__.__name__)
 
     def make_module_extra(self):
         """Extend PATH and set proper _JAVA_OPTIONS (e.g., -Xmx)."""
