@@ -362,6 +362,11 @@ class IntelBase(EasyBlock):
             shutil.rmtree(os.path.join(self.installdir, self.name))
         except OSError, err:
             raise EasyBuildError("Failed to move contents of %s to %s: %s", subdir, self.installdir, err)
+    
+    def sanity_check_rpath(self):
+        """Skip the rpath sanity check, this is binary software"""
+        self.log.info("RPATH sanity check is skipped when using %s easyblock (derived from IntelBase)",
+                      self.__class__.__name__)
 
     def make_module_extra(self):
         """Custom variable definitions in module file."""
