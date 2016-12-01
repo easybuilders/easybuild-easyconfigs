@@ -85,6 +85,7 @@ class EB_DL_underscore_POLY_underscore_Classic(ConfigureMake):
 
         if self.with_plumed:
             source_dir = 'srcmod'
+            self.cfg.update('buildopts', 'LDFLAGS="${LDFLAGS} -lplumed -ldl"')
         else:
             source_dir = 'source'
 
