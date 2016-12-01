@@ -93,3 +93,8 @@ class EB_Maple(EasyBlock):
                         }
 
         super(EB_Maple, self).sanity_check_step(custom_paths=custom_paths)
+    
+    def sanity_check_rpath(self):
+        """Skip the rpath sanity check, this is binary software"""
+        self.log.info("RPATH sanity check is skipped when using %s easyblock",
+                      self.__class__.__name__)
