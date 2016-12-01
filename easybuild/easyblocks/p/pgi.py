@@ -166,6 +166,11 @@ class EB_PGI(EasyBlock):
                      os.path.join(prefix, 'include'), os.path.join(prefix, 'man')]
         }
         super(EB_PGI, self).sanity_check_step(custom_paths=custom_paths)
+    
+    def sanity_check_rpath(self):
+        """Skip the rpath sanity check, this is binary software"""
+        self.log.info("RPATH sanity check is skipped when using %s easyblock",
+                      self.__class__.__name__)
 
     def make_module_req_guess(self):
         """Prefix subdirectories in PGI install dir considered for environment variables defined in module file."""
