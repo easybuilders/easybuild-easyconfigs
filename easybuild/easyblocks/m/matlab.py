@@ -37,7 +37,7 @@ import os
 import shutil
 import stat
 
-from easybuild.framework.easyblock import EasyBlock
+from easybuild.easyblocks.generic.packedbinary import PackedBinary
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.filetools import adjust_permissions, read_file, write_file
@@ -45,7 +45,7 @@ from easybuild.tools.run import run_cmd
 from easybuild.tools.systemtools import get_shared_lib_ext
 
 
-class EB_MATLAB(EasyBlock):
+class EB_MATLAB(PackedBinary):
     """Support for installing MATLAB."""
 
     def __init__(self, *args, **kwargs):
@@ -59,7 +59,7 @@ class EB_MATLAB(EasyBlock):
         extra_vars = {
             'java_options': ['-Xmx256m', "$_JAVA_OPTIONS value set for install and in module file.", CUSTOM],
         }
-        return EasyBlock.extra_options(extra_vars)
+        return PackedBinary.extra_options(extra_vars)
 
     def configure_step(self):
         """Configure MATLAB installation: create license file."""
@@ -99,10 +99,6 @@ class EB_MATLAB(EasyBlock):
 
         self.log.debug('configuration file written to %s:\n %s', self.configfile, config)
 
-    def build_step(self):
-        """No building of MATLAB, no sources available."""
-        pass
-
     def install_step(self):
         """MATLAB install procedure using 'install' command."""
 
@@ -129,11 +125,6 @@ class EB_MATLAB(EasyBlock):
             'dirs': ["java/jar", "toolbox/compiler"],
         }
         super(EB_MATLAB, self).sanity_check_step(custom_paths=custom_paths)
-    
-    def sanity_check_rpath(self):
-        """Skip the rpath sanity check, this is binary software"""
-        self.log.info("RPATH sanity check is skipped when using %s easyblock",
-                      self.__class__.__name__)
 
     def make_module_extra(self):
         """Extend PATH and set proper _JAVA_OPTIONS (e.g., -Xmx)."""

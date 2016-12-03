@@ -72,7 +72,7 @@ class Binary(EasyBlock):
             self.log.info("Performing staged installation via %s" % self.installdir)
 
     def extract_step(self):
-        """Move all source files to the build directory"""
+        """Copy all source files to the build directory"""
 
         self.src[0]['finalpath'] = self.builddir
 
