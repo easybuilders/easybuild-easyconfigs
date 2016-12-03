@@ -37,6 +37,7 @@ import re
 import os
 import shutil
 import stat
+from distutils.version import LooseVersion
 
 from easybuild.easyblocks.generic.packedbinary import PackedBinary
 from easybuild.framework.easyconfig import CUSTOM
