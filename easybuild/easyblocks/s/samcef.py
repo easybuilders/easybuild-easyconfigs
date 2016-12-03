@@ -28,21 +28,13 @@ EasyBuild support for building and installing Samcef, implemented as an easybloc
 @author: Kenneth Hoste (Ghent University)
 """
 import stat
-from easybuild.framework.easyblock import EasyBlock
+from easybuild.easyblocks.generic.packedbinary import PackedBinary
 from easybuild.tools.filetools import adjust_permissions
 from easybuild.tools.run import run_cmd_qa
 
 
-class EB_Samcef(EasyBlock):
+class EB_Samcef(PackedBinary):
     """Support for building/installing Samcef."""
-
-    def configure_step(self):
-        """No configuration step for Samcef."""
-        pass
-
-    def build_step(self):
-        """No build step for Samcef."""
-        pass
 
     def install_step(self):
         """Custom install procedure for Samcef."""

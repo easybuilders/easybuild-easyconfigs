@@ -8,29 +8,21 @@ EasyBuild support for installing Chimera, implemented as an easyblock
 
 import os
 
-from easybuild.framework.easyblock import EasyBlock
+from easybuild.easyblocks.generic.packedbinary import PackedBinary
 from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.run import run_cmd
 
 
-class EB_Chimera(EasyBlock):
+class EB_Chimera(PackedBinary):
     """Support for installing Chimera."""
-    
+
     def extract_step(self, verbose=False):
         """Custom extraction of sources for Chimera: unpack installation file
         to obtain chimera.bin installer."""
-   
+
         cmd = "unzip -d %s %s" % (self.builddir, self.src[0]['path'])
         run_cmd(cmd, log_all=True, simple=True)
-        
-    def configure_step(self, cmd_prefix=''):
-        """ skip configure """
-        pass
-    
-    def build_step(self, verbose=False):
-        """ skip build """
-        pass
-    
+
     def install_step(self):
         """Install using chimera.bin."""
 

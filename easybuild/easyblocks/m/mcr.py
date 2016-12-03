@@ -38,15 +38,14 @@ import os
 import shutil
 import stat
 
-from distutils.version import LooseVersion
-from easybuild.framework.easyblock import EasyBlock
+from easybuild.easyblocks.generic.packedbinary import PackedBinary
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.filetools import adjust_permissions, read_file, write_file
 from easybuild.tools.run import run_cmd
 
 
-class EB_MCR(EasyBlock):
+class EB_MCR(PackedBinary):
     """Support for installing MCR."""
 
     def __init__(self, *args, **kwargs):
@@ -62,7 +61,7 @@ class EB_MCR(EasyBlock):
         extra_vars = {
             'java_options': ['-Xmx256m', "$_JAVA_OPTIONS value set for install and in module file.", CUSTOM],
         }
-        return EasyBlock.extra_options(extra_vars)
+        return PackedBinary.extra_options(extra_vars)
 
     def configure_step(self):
         """Configure MCR installation: create license file."""
@@ -84,10 +83,6 @@ class EB_MCR(EasyBlock):
         write_file(configfile, config)
 
         self.log.debug("configuration file written to %s:\n %s", configfile, config)
-
-    def build_step(self):
-        """No building of MCR, no sources available."""
-        pass
 
     def install_step(self):
         """MCR install procedure using 'install' command."""
@@ -124,11 +119,6 @@ class EB_MCR(EasyBlock):
             'dirs': [os.path.join(self.subdir, x, 'glnxa64') for x in ['runtime', 'bin', 'sys/os']],
         }
         super(EB_MCR, self).sanity_check_step(custom_paths=custom_paths)
-    
-    def sanity_check_rpath(self):
-        """Skip the rpath sanity check, this is binary software"""
-        self.log.info("RPATH sanity check is skipped when using %s easyblock",
-                      self.__class__.__name__)
 
     def make_module_extra(self):
         """Extend PATH and set proper _JAVA_OPTIONS (e.g., -Xmx)."""

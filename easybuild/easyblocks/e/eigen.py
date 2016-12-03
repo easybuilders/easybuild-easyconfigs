@@ -21,27 +21,15 @@ import os
 import shutil
 from distutils.version import LooseVersion
 
-from easybuild.framework.easyblock import EasyBlock
+from easybuild.easyblocks.generic.tarball import Tarball
 from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.filetools import mkdir
 
 
-class EB_Eigen(EasyBlock):
+class EB_Eigen(Tarball):
     """
     Support for building Eigen.
     """
-
-    def configure_step(self):
-        """
-        No configure for Eigen.
-        """
-        pass
-
-    def build_step(self):
-        """
-        No build for Eigen.
-        """
-        pass
 
     def install_step(self):
         """

@@ -35,22 +35,14 @@ Support for building and installing picard, implemented as an easyblock.
 import os
 import re
 import shutil
-
 from distutils.version import LooseVersion
-from easybuild.framework.easyblock import EasyBlock
+
+from easybuild.easyblocks.generic.tarball import Tarball
 from easybuild.tools.build_log import EasyBuildError
 
 
-class EB_picard(EasyBlock):
+class EB_picard(Tarball):
     """Support for building and installing picard."""
-
-    def configure_step(self):
-        """No configure step for picard"""
-        pass
-
-    def build_step(self):
-        """No build step for picard"""
-        pass
 
     def install_step(self):
         """Install picard by copying required files"""
@@ -83,7 +75,7 @@ class EB_picard(EasyBlock):
                 'picard',
                 'picard-lib'
             ]
-        
+
         custom_paths = {
             'files': ["%s.jar" % x for x in jar_files],
             'dirs': [],
