@@ -30,18 +30,14 @@ EasyBuild support for building and installing FDTD Solutions, implemented as an 
 import glob
 import os
 import shutil
+from easybuild.easyblocks.generic.packedbinary import PackedBinary
 from easybuild.easyblocks.generic.rpm import rebuild_rpm
-from easybuild.framework.easyblock import EasyBlock
 from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.run import run_cmd_qa
 
 
-class EB_FDTD_underscore_Solutions(EasyBlock):
+class EB_FDTD_underscore_Solutions(PackedBinary):
     """Support for building/installing FDTD Solutions."""
-
-    def configure_step(self):
-        """No configuration for FDTD Solutions."""
-        pass
 
     def build_step(self):
         """No build step for FDTD Solutions."""

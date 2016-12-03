@@ -31,22 +31,14 @@ EasyBuild support for ant, implemented as an easyblock
 import os
 import shutil
 
-from easybuild.framework.easyblock import EasyBlock
+from easybuild.easyblocks.generic.packedbinary import PackedBinary
 from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.modules import get_software_root, get_software_version
 from easybuild.tools.run import run_cmd
 
 
-class EB_ant(EasyBlock):
+class EB_ant(PackedBinary):
     """Support for building and installing ant."""
-
-    def configure_step(self):
-        """No configure step for ant."""
-        pass
-
-    def build_step(self):
-        """No build step for ant."""
-        pass
 
     def install_step(self):
         """Custom install procedure for ant."""
