@@ -31,12 +31,12 @@ import os
 import stat
 from distutils.version import LooseVersion
 
-from easybuild.framework.easyblock import EasyBlock
+from easybuild.easyblocks.generic.packedbinary import PackedBinary
 from easybuild.tools.filetools import adjust_permissions
 from easybuild.tools.run import run_cmd
 
 
-class EB_FLUENT(EasyBlock):
+class EB_FLUENT(PackedBinary):
     """Support for installing FLUENT."""
 
     def __init__(self, *args, **kwargs):
@@ -44,17 +44,8 @@ class EB_FLUENT(EasyBlock):
         super(EB_FLUENT, self).__init__(*args, **kwargs)
         self.fluent_verdir = 'v%s' % ''.join(self.version.split('.')[:2])
 
-    def configure_step(self):
-        """No configuration for FLUENT."""
-        pass
-
-    def build_step(self):
-        """No building for FLUENT."""
-        pass
-
     def install_step(self):
         """Custom install procedure for FLUENT."""
-
         extra_args =''
         # only include -noroot flag for older versions
         if LooseVersion(self.version) < LooseVersion('15.0'):

@@ -19,20 +19,20 @@ EasyBuild support for installing Totalview, implemented as an easyblock
 import os
 
 import easybuild.tools.environment as env
-from easybuild.framework.easyblock import EasyBlock
+from easybuild.easyblocks.generic.packedbinary import PackedBinary
 from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.filetools import find_flexlm_license
 from easybuild.tools.modules import get_software_root
 from easybuild.tools.run import run_cmd
 
 
-class EB_TotalView(EasyBlock):
+class EB_TotalView(PackedBinary):
     """EasyBlock for TotalView"""
 
     def __init__(self, *args, **kwargs):
         """Initialisation of custom class variables for Totalview"""
         super(EB_TotalView, self).__init__(*args, **kwargs)
-        
+
         self.license_file = 'UNKNOWN'
         self.license_env_var = 'UNKNOWN'
 
@@ -57,10 +57,6 @@ class EB_TotalView(EasyBlock):
         else:
             raise EasyBuildError("No viable license specifications found; specify 'license_file' or "+
                                  "define $LM_LICENSE_FILE")
-
-    def build_step(self):
-        """No building for TotalView."""
-        pass
 
     def install_step(self):
         """Custom install procedure for TotalView."""

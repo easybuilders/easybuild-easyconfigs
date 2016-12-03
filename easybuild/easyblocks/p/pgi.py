@@ -38,7 +38,7 @@ import re
 import sys
 
 import easybuild.tools.environment as env
-from easybuild.framework.easyblock import EasyBlock
+from easybuild.easyblocks.generic.packedbinary import PackedBinary
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.filetools import find_flexlm_license, write_file
@@ -65,7 +65,7 @@ append LDLIBARGS=-L/usr/lib/x86_64-linux-gnu;
 """
 
 
-class EB_PGI(EasyBlock):
+class EB_PGI(PackedBinary):
     """
     Support for installing the PGI compilers
     """
@@ -78,7 +78,7 @@ class EB_PGI(EasyBlock):
             'install_managed': [True, "Install OpenACC Unified Memory Evaluation package", CUSTOM],
             'install_nvidia': [True, "Install CUDA Toolkit Components", CUSTOM],
         }
-        return EasyBlock.extra_options(extra_vars)
+        return PackedBinary.extra_options(extra_vars)
 
     def __init__(self, *args, **kwargs):
         """Easyblock constructor, define custom class variables specific to PGI."""
@@ -91,7 +91,7 @@ class EB_PGI(EasyBlock):
 
     def configure_step(self):
         """
-        Handle license file. 
+        Handle license file.
         """
         default_lic_env_var = 'PGROUPD_LICENSE_FILE'
         lic_specs, self.license_env_var = find_flexlm_license(custom_env_vars=[default_lic_env_var],
@@ -110,13 +110,6 @@ class EB_PGI(EasyBlock):
         else:
             raise EasyBuildError("No viable license specifications found; specify 'license_file' or " +
                                  "define $PGROUPD_LICENSE_FILE or $LM_LICENSE_FILE")
-
-
-    def build_step(self):
-        """
-        Dummy build method: nothing to build
-        """
-        pass
 
     def install_step(self):
         """Install by running install command."""
@@ -142,7 +135,7 @@ class EB_PGI(EasyBlock):
 
         cmd = "%s -x %s -g77 /" % (filename, install_abs_subdir)
         run_cmd(cmd, log_all=True, simple=True)
-        
+
         # If an OS libnuma is NOT found, makelocalrc creates symbolic links to libpgnuma.so
         # If we use the EB libnuma, delete those symbolic links to ensure they are not used
         if get_software_root("numactl"):

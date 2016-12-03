@@ -72,7 +72,7 @@ class Binary(EasyBlock):
             self.log.info("Performing staged installation via %s" % self.installdir)
 
     def extract_step(self):
-        """Move all source files to the build directory"""
+        """Copy all source files to the build directory"""
 
         self.src[0]['finalpath'] = self.builddir
 
@@ -123,6 +123,11 @@ class Binary(EasyBlock):
                                      staged_installdir, self.installdir, err)
 
         super(Binary, self).post_install_step()
+
+    def sanity_check_rpath(self):
+        """Skip the rpath sanity check, this is binary software"""
+        self.log.info("RPATH sanity check is skipped when using %s easyblock (derived from Binary)",
+                      self.__class__.__name__)
 
     def make_module_extra(self):
         """Add the install directory to the PATH."""

@@ -31,26 +31,18 @@ EasyBuild support for installing ANSYS, implemented as an easyblock
 import os
 import stat
 
-from easybuild.framework.easyblock import EasyBlock
+from easybuild.easyblocks.generic.packedbinary import PackedBinary
 from easybuild.tools.run import run_cmd
 from easybuild.tools.filetools import adjust_permissions
 
 
-class EB_ANSYS(EasyBlock):
+class EB_ANSYS(PackedBinary):
     """Support for installing ANSYS."""
 
     def __init__(self, *args, **kwargs):
         """Initialize ANSYS-specific variables."""
         super(EB_ANSYS, self).__init__(*args, **kwargs)
         self.ansysver = "v%s" % ''.join(self.version.split('.')[0:2])
-
-    def configure_step(self):
-        """No configuration for ANSYS."""
-        pass
-
-    def build_step(self):
-        """No building for ANSYS."""
-        pass
 
     def install_step(self):
         """Custom install procedure for ANSYS."""

@@ -34,11 +34,11 @@ EasyBuild support for IronPython, implemented as an easyblock
 
 import os
 
-from easybuild.framework.easyblock import EasyBlock
+from easybuild.easyblocks.generic.packedbinary import PackedBinary
 from easybuild.tools.run import run_cmd
 
 
-class EB_IronPython(EasyBlock):
+class EB_IronPython(PackedBinary):
     """Support for building/installing IronPython."""
 
     def __init__(self, *args, **kwargs):
@@ -51,14 +51,6 @@ class EB_IronPython(EasyBlock):
         """Extract sources; strip off parent directory during unpack"""
         self.cfg.update('unpack_options', "--strip-components=1")
         super(EB_IronPython, self).extract_step()
-
-    def configure_step(self):
-        """No dedicated configure step for IronPython."""
-        pass
-
-    def build_step(self):
-        """No dedicated build step for IronPython."""
-        pass
 
     def install_step(self):
         """Custom install step for IronPython, using xbuild command."""
