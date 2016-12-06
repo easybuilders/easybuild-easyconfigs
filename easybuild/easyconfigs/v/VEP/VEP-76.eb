@@ -1,0 +1,56 @@
+#
+# EasyConfig for the Ensembl Variant Effect Predictor (VEP)
+#
+
+easyblock = 'Tarball'
+
+name = 'VEP'
+version = '76'
+
+homepage = 'http://www.ensembl.org/info/docs/tools/vep/script/index.html'
+description = """Tool for analysis, annotation, and prioritization of genomic variants
+using (cached) Ensembl databases."""
+
+toolchain = {'name': 'dummy', 'version': 'dummy'}
+
+dependencies = [
+    ('PerlPlus', '5.22.0', '-v16.11.1', ('foss', '2015b')),
+]
+
+source_urls = ['https://github.com/Ensembl/ensembl-tools/archive/release/']
+sources = ['%(version)s.zip']
+checksums = ['57d8eecf903a225bea4fc9ecc55832c7']
+patches = ['VEP-%(version)s.patch']
+
+#
+# Customizations for the install step.
+#
+start_dir = 'scripts/variant_effect_predictor/'
+
+perl_scripts = ['convert_cache.pl', 'filter_vep.pl', 'gtf2vep.pl', 'INSTALL.pl', 'variant_effect_predictor.pl']
+not_scripts = ['example_GRCh37.vcf', 'example_GRCh38.vcf', 'README.txt']
+
+#
+# Make scripts executable.
+# (Mode may by masked by umask.)
+#
+postinstallcmds = [
+    'chmod    a+x            %(installdir)s/*.pl',
+    'chmod -R g+rwX,o+rX,o-w %(installdir)s/*',
+    '%(installdir)s/INSTALL.pl --AUTO a',
+    #'%(installdir)s/INSTALL.pl --AUTO ac --CACHEDIR ${HPC_ENV_PREFIX}/Ensembl/VEP/%(version)s/ --SPECIES homo_sapiens --ASSEMBLY GRCh37'
+]
+
+sanity_check_paths = {
+    #'files': ["%s" % x for x in ["sra-stat", "sra-sort", "srapath", "bam-load"]],
+    'files': [perl_scripts, not_scripts],
+    'dirs': ['Bio'],
+}
+
+moduleclass = 'bio'
+modloadmsg = """WARNING: Do not violate Ensembl's reasonable use policy on the public servers by annotating large data sets (> 100 variants) 
+as this will result in a network ban. Use the cache instead when executing the Variant Effect Predictor (VEP) like this:
+
+    perl \\${EBROOTVEP}/variant_effect_predictor.pl --cache --offline --dir \\${HPC_ENV_PREFIX}/Ensembl/VEP/%(version)s/ --db_version=%(version)s --buffer 1000 --species homo_sapiens --other_options.... 
+
+"""
