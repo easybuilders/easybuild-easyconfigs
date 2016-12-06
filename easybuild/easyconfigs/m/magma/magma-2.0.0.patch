@@ -1,0 +1,112 @@
+Patch for correctly using variables by EasyBuild for
+ - the Cray wrappers and
+ - the CUDA path
+
+Author: Guilherme Peretti-Pezzi (CSCS)
+
+diff -ru magma-2.0.0.orig//Makefile magma-2.0.0/Makefile
+--- magma-2.0.0.orig//Makefile	2016-02-09 22:06:38.000000000 +0100
++++ magma-2.0.0/Makefile	2016-03-25 17:35:34.000000000 +0100
+@@ -4,7 +4,7 @@
+ # Users should make all changes in make.inc
+ # It should not be necesary to change anything in here.
+ 
+-include make.inc
++include make.inc.openblas
+ 
+ # defaults if nothing else is given in make.inc
+ CC         ?= gcc
+diff -ru magma-2.0.0.orig//make.inc.openblas magma-2.0.0/make.inc.openblas
+--- magma-2.0.0.orig//make.inc.openblas	2016-02-09 22:04:46.000000000 +0100
++++ magma-2.0.0/make.inc.openblas	2016-03-25 17:29:35.000000000 +0100
+@@ -1,72 +1,49 @@
+ #//////////////////////////////////////////////////////////////////////////////
+-#   -- MAGMA (version 2.0.0) --
++#   -- MAGMA (version 1.6.1) --
+ #      Univ. of Tennessee, Knoxville
+ #      Univ. of California, Berkeley
+ #      Univ. of Colorado, Denver
+-#      @date February 2016
++#      @date January 2015
+ #//////////////////////////////////////////////////////////////////////////////
+ 
+-# GPU_TARGET contains one or more of Fermi, Kepler, or Maxwell,
++# GPU_TARGET contains one or more of Tesla, Fermi, or Kepler,
+ # to specify for which GPUs you want to compile MAGMA:
+-#     Fermi   - NVIDIA compute capability 2.x cards
+-#     Kepler  - NVIDIA compute capability 3.x cards
+-#     Maxwell - NVIDIA compute capability 5.x cards
++#     Tesla  - NVIDIA compute capability 1.x cards (no longer supported in CUDA 6.5)
++#     Fermi  - NVIDIA compute capability 2.x cards
++#     Kepler - NVIDIA compute capability 3.x cards
+ # The default is "Fermi Kepler".
+-# Note that NVIDIA no longer supports 1.x cards, as of CUDA 6.5.
+ # See http://developer.nvidia.com/cuda-gpus
+ #
+ #GPU_TARGET ?= Fermi Kepler
++GPU_TARGET = Kepler
+ 
+-# --------------------
+-# programs
+-
+-CC        = gcc
+-CXX       = g++
++#CXX       = CC # Variable already defined by EasyBuild
++#CC        = cc # Variable already defined by EasyBuild
+ NVCC      = nvcc
+-FORT      = gfortran
++FORT      = $(F90)         
+ 
+ ARCH      = ar
+ ARCHFLAGS = cr
+ RANLIB    = ranlib
+ 
+-
+-# --------------------
+-# flags
+-
+ # Use -fPIC to make shared (.so) and static (.a) library;
+ # can be commented out if making only static library.
+ FPIC      = -fPIC
+ 
+-CFLAGS    = -O3 $(FPIC) -DADD_ -Wall -fopenmp 
+-FFLAGS    = -O3 $(FPIC) -DADD_ -Wall -Wno-unused-dummy-argument
+-F90FLAGS  = -O3 $(FPIC) -DADD_ -Wall -Wno-unused-dummy-argument -x f95-cpp-input
+-NVCCFLAGS = -O3         -DADD_       -Xcompiler "$(FPIC)"
++CFLAGS += -DADD_ -DMAGMA_SETAFFINITY
++CXXFLAGS += -DADD_ -DMAGMA_SETAFFINITY
++FFLAGS += -DADD_ -Wall -Wno-unused-dummy-argument
++F90FLAGS += -DADD_ -Wall -Wno-unused-dummy-argument -x f95-cpp-input
++NVCCFLAGS = -O3         -DADD_       -Xcompiler "-fno-strict-aliasing $(FPIC)"
+ LDFLAGS   =     $(FPIC)              -fopenmp
+ 
+-# C++11 (gcc >= 4.7) is not required, but has benefits like atomic operations
+-CXXFLAGS := $(CFLAGS) -std=c++11
+-CFLAGS   += -std=c99
+-
+-
+-# --------------------
+-# libraries
+-
+ # gcc with OpenBLAS (includes LAPACK)
+-LIB       = -lopenblas
+-
+-LIB      += -lcublas -lcusparse -lcudart
+-
+-
+-# --------------------
+-# directories
++LIB       = -lcublas -lcusparse
+ 
+ # define library directories preferably in your environment, or here.
+-#OPENBLASDIR ?= /usr/local/openblas
+-#CUDADIR ?= /usr/local/cuda
+--include make.check-openblas
+--include make.check-cuda
++CUDADIR=$(EBROOTCUDA)
+ 
+ LIBDIR    = -L$(CUDADIR)/lib64 \
+-            -L$(OPENBLASDIR)/lib
+ 
+ INC       = -I$(CUDADIR)/include
++prefix    = $(EBINSTALLPREFIX)
