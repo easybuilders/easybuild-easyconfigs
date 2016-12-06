@@ -44,9 +44,10 @@ import easybuild.main as main
 import easybuild.tools.options as eboptions
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.framework.easyblock import EasyBlock
+from easybuild.framework.easyconfig.default import DEFAULT_CONFIG
 from easybuild.framework.easyconfig.easyconfig import EasyConfig
-from easybuild.framework.easyconfig.easyconfig import get_easyblock_class
-from easybuild.framework.easyconfig.parser import fetch_parameters_from_easyconfig
+from easybuild.framework.easyconfig.easyconfig import get_easyblock_class, letter_dir_for, resolve_template
+from easybuild.framework.easyconfig.parser import EasyConfigParser, fetch_parameters_from_easyconfig
 from easybuild.framework.easyconfig.tools import dep_graph, get_paths_for, process_easyconfig
 from easybuild.tools import config
 from easybuild.tools.config import build_option
@@ -168,11 +169,11 @@ class EasyConfigTest(TestCase):
 
     def test_easyconfig_locations(self):
         """Make sure all easyconfigs files are in the right location."""
-        easyconfig_dirs_regex = re.compile(r'/easybuild/easyconfigs/[a-z]/[^/]+$')
+        easyconfig_dirs_regex = re.compile(r'/easybuild/easyconfigs/[0a-z]/[^/]+$')
         topdir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
         for (dirpath, _, filenames) in os.walk(topdir):
-            # ignore git/svn dirs
-            if '/.git/' in dirpath or '/.svn/' in dirpath:
+            # ignore git/svn dirs & archived easyconfigs
+            if '/.git/' in dirpath or '/.svn/' in dirpath or '__archive__' in dirpath:
                 continue
             # check whether list of .eb files is non-empty
             easyconfig_files = [fn for fn in filenames if fn.endswith('eb')]
@@ -210,7 +211,7 @@ def template_easyconfig_test(self, spec):
     name, easyblock = fetch_parameters_from_easyconfig(ec.rawtxt, ['name', 'easyblock'])
 
     # make sure easyconfig file is in expected location
-    expected_subdir = os.path.join('easybuild', 'easyconfigs', name.lower()[0], name)
+    expected_subdir = os.path.join('easybuild', 'easyconfigs', letter_dir_for(name), name)
     subdir = os.path.join(*spec.split(os.path.sep)[-5:-1])
     fail_msg = "Easyconfig file %s not in expected subdirectory %s" % (spec, expected_subdir)
     self.assertEqual(expected_subdir, subdir, fail_msg)
@@ -258,7 +259,8 @@ def template_easyconfig_test(self, spec):
                     self.assertTrue(os.path.isfile(ext_patch_full), msg)
 
     # check whether all extra_options defined for used easyblock are defined
-    for key in app.extra_options():
+    extra_opts = app.extra_options()
+    for key in extra_opts:
         self.assertTrue(key in app.cfg)
 
     app.close_log()
@@ -269,7 +271,7 @@ def template_easyconfig_test(self, spec):
     os.close(handle)
 
     ec.dump(test_ecfile)
-    dumped_ec = EasyConfig(test_ecfile)
+    dumped_ec = EasyConfigParser(test_ecfile).get_config_dict()
     os.remove(test_ecfile)
 
     # inject dummy values for templates that are only known at a later stage
@@ -278,16 +280,31 @@ def template_easyconfig_test(self, spec):
         'installdir': '/dummy/installdir',
     }
     ec.template_values.update(dummy_template_values)
-    dumped_ec.template_values.update(dummy_template_values)
 
-    for key in sorted(ec._config):
-        self.assertEqual(ec[key], dumped_ec[key])
+    ec_dict = ec.parser.get_config_dict()
+    keys = []
+    for key in ec_dict:
+        # skip parameters for which value is equal to default value
+        orig_val = ec_dict[key]
+        if key in DEFAULT_CONFIG and orig_val == DEFAULT_CONFIG[key][0]:
+            continue
+        if key in extra_opts and orig_val == extra_opts[key][0]:
+            continue
+        if key not in DEFAULT_CONFIG and key not in extra_opts:
+            continue
+
+        keys.append(key)
+        orig_val = resolve_template(ec_dict[key], ec.template_values)
+        dumped_val = resolve_template(dumped_ec[key], ec.template_values)
+
+        self.assertEqual(orig_val, dumped_val)
 
     # cache the parsed easyconfig, to avoid that it is parsed again
     self.parsed_easyconfigs.append(ecs[0])
 
     # test passed, so set back to True
     single_tests_ok = True and prev_single_tests_ok
+
 
 def suite():
     """Return all easyblock initialisation tests."""
@@ -296,6 +313,11 @@ def suite():
     easyconfigs_path = get_paths_for('easyconfigs')[0]
     cnt = 0
     for (subpath, _, specs) in os.walk(easyconfigs_path, topdown=True):
+
+        # ignore archived easyconfigs
+        if '__archive__' in subpath:
+            continue
+
         for spec in specs:
             if spec.endswith('.eb') and spec != 'TEMPLATE.eb':
                 cnt += 1
