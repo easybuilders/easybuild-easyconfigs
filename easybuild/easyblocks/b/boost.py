@@ -159,9 +159,14 @@ class EB_Boost(EasyBlock):
     def build_step(self):
         """Build Boost with bjam tool."""
 
-        cxxflags = os.environ['CXXFLAGS']
-        ldflags = os.environ['LDFLAGS']
-        bjamoptions = " --prefix=%s cxxflags='%s' linkflags='%s'" % (self.objdir, cxxflags, ldflags)
+        bjamoptions = " --prefix=%s" % self.objdir
+
+        cxxflags = os.getenv('CXXFLAGS')
+        if cxxflags is not None:
+            bjamoptions += " cxxflags='%s'" % cxxflags 
+        ldflags = os.getenv('LDFLAGS')
+        if ldflags is not None:
+            bjamoptions += " linkflags='%s'" % ldflags 
 
         # specify path for bzip2/zlib if module is loaded
         for lib in ["bzip2", "zlib"]:
