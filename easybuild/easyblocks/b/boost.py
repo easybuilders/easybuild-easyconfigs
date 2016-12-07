@@ -161,7 +161,7 @@ class EB_Boost(EasyBlock):
 
         cxxflags = os.environ['CXXFLAGS']
         ldflags = os.environ['LDFLAGS']
-        bjamoptions = " --prefix=%s cxxflags='%s' ='%s'" % (self.objdir, ldflags)
+        bjamoptions = " --prefix=%s cxxflags='%s' linkflags='%s'" % (self.objdir, cxxflags, ldflags)
 
         # specify path for bzip2/zlib if module is loaded
         for lib in ["bzip2", "zlib"]:
