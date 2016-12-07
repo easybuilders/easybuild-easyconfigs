@@ -1,0 +1,34 @@
+Also build the provided vcflib code which is used in some scripts.
+
+Fix hardcoded paths for vcflib binaries
+
+diff -ru freebayes.orig/Makefile freebayes/Makefile
+--- freebayes.orig/Makefile	2016-12-06 11:15:24.000000000 +0100
++++ freebayes/Makefile	2016-12-07 14:30:16.402958279 +0100
+@@ -1,5 +1,5 @@
+ all: vcflib/Makefile log
+-	cd src && $(MAKE)
++	cd src && $(MAKE) && cd ../vcflib/ && $(MAKE)
+ 
+ log: src/version_git.h
+ 	wget -q http://hypervolu.me/freebayes/build/$(shell cat src/version_git.h | grep v | cut -f 3 -d\  | sed s/\"//g) &
+diff -ru freebayes.orig/scripts/bgziptabix freebayes/scripts/bgziptabix
+--- freebayes.orig/scripts/bgziptabix	2016-12-06 11:15:24.000000000 +0100
++++ freebayes/scripts/bgziptabix	2016-12-07 14:50:11.245651038 +0100
+@@ -10,4 +10,4 @@
+ 
+ file=$1
+ 
+-bgzip >$file && tabix -fp vcf $file
++${EBROOTFREEBAYES}/vcflib/tabixpp/htslib/bgzip >$file && ${EBROOTFREEBAYES}/vcflib/tabixpp/htslib/tabix -fp vcf $file
+diff -ru freebayes.orig/scripts/freebayes-parallel freebayes/scripts/freebayes-parallel
+--- freebayes.orig/scripts/freebayes-parallel	2016-12-06 11:15:24.000000000 +0100
++++ freebayes/scripts/freebayes-parallel	2016-12-07 14:48:06.673806596 +0100
+@@ -36,5 +36,5 @@
+ #$command | head -100 | grep "^#" # generate header
+ # iterate over regions using gnu parallel to dispatch jobs
+ cat "$regionsfile" | parallel -k -j "$ncpus" "${command[@]}" --region {}
+-) | ../vcflib/scripts/vcffirstheader \
+-    | ../vcflib/bin/vcfstreamsort -w 1000 | vcfuniq # remove duplicates at region edges
++) | ${EBROOTFREEBAYES}/vcflib/scripts/vcffirstheader \
++    | ${EBROOTFREEBAYES}/vcflib/bin/vcfstreamsort -w 1000 | ${EBROOTFREEBAYES}/vcflib/bin/vcfuniq # remove duplicates at region edges
