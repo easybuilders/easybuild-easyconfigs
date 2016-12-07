@@ -35,6 +35,7 @@ EasyBuild support for Boost, implemented as an easyblock
 @author: Luca Marsella (CSCS)
 @author: Guilherme Peretti-Pezzi (CSCS)
 @author: Joachim Hein (Lund University)
+@author: Michele Dolfi (ETH Zurich)
 """
 from distutils.version import LooseVersion
 import fileinput
@@ -158,7 +159,9 @@ class EB_Boost(EasyBlock):
     def build_step(self):
         """Build Boost with bjam tool."""
 
-        bjamoptions = " --prefix=%s" % self.objdir
+        cxxflags = os.environ['CXXFLAGS']
+        ldflags = os.environ['LDFLAGS']
+        bjamoptions = " --prefix=%s cxxflags='%s' ='%s'" % (self.objdir, ldflags)
 
         # specify path for bzip2/zlib if module is loaded
         for lib in ["bzip2", "zlib"]:
