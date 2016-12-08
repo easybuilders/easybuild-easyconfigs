@@ -29,12 +29,14 @@ EasyBuild support for building and installing Allinea tools, implemented as an e
 """
 import os
 import shutil
+import stat
 from os.path import expanduser
 
 from easybuild.easyblocks.generic.binary import Binary
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.build_log import EasyBuildError
+from easybuild.tools.filetools import adjust_permissions, copy_file
 
 
 class EB_Allinea(Binary):
@@ -46,6 +48,7 @@ class EB_Allinea(Binary):
         extra = Binary.extra_options(extra_vars)
         extra.update({
             'templates': [[], "List of templates.", CUSTOM],
+            'sysconfig': [None, "system.config file to install.", CUSTOM],
         })
         return extra
 
@@ -81,10 +84,29 @@ class EB_Allinea(Binary):
         # copy templates
         templ_path = os.path.join(self.installdir, 'templates')
         for templ in self.cfg['templates']:
+            path = self.obtain_file(templ, extension='qtf')
+            if path:
+                self.log.debug('Template file %s found' % path)
+            else:
+                raise EasyBuildError('No template file named %s found', templ)
+
             try:
-                shutil.copy2(templ, templ_path)
+                # use shutil.copy (not copy2) so that permissions of copied file match with rest of installation
+                shutil.copy(path, templ_path)
             except OSError, err:
                 raise EasyBuildError("Failed to copy template %s to %s: %s", templ, templ_path, err)
+
+        # copy system.config if requested
+        sysconf_path = os.path.join(self.installdir, 'system.config')
+        if self.cfg['sysconfig'] is not None:
+            path = self.obtain_file(self.cfg['sysconfig'], extension=False)
+            if path:
+                self.log.debug('system.config file %s found' % path)
+            else:
+                raise EasyBuildError('No system.config file named %s found', sysconfig)
+
+            copy_file(path, sysconf_path)
+            adjust_permissions(sysconf_path, stat.S_IRUSR|stat.S_IRGRP|stat.S_IROTH, recursive=False, relative=False)
 
     def sanity_check_step(self):
         """Custom sanity check for Allinea."""
