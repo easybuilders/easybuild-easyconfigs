@@ -63,7 +63,6 @@ class EB_numpy(FortranPythonPackage):
 
         self.sitecfg = None
         self.sitecfgfn = 'site.cfg'
-        self.installopts = ''
         self.testinstall = True
         self.testcmd = "cd .. && %(python)s -c 'import numpy; numpy.test(verbose=2)'"
 
@@ -221,7 +220,7 @@ class EB_numpy(FortranPythonPackage):
         for pylibdir in abs_pylibdirs:
             mkdir(pylibdir, parents=True)
         pythonpath = "export PYTHONPATH=%s &&" % os.pathsep.join(abs_pylibdirs + ['$PYTHONPATH'])
-        cmd = self.compose_install_command(tmpdir, extrapath=pythonpath, installopts=self.installopts)
+        cmd = self.compose_install_command(tmpdir, extrapath=pythonpath)
         run_cmd(cmd, log_all=True, simple=True, verbose=False)
 
         try:
