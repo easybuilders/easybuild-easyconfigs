@@ -1,3 +1,764 @@
+All patches listed on http://www.nwchem-sw.org/index.php/Download are appended in this file. The descriptions of each patch can be found there as well.
+The patches are provided by NWChem.
+Index: src/config/makefile.h
+===================================================================
+--- src/config/makefile.h	(revision 27729)
++++ src/config/makefile.h	(revision 27844)
+@@ -2257,11 +2258,7 @@
+   DEFINES += -DFDIST
+ endif
+ 
+-_TOOLS_BUILD= $(shell [ -e ${NWCHEM_TOP}/src/tools/build/config.h ] && cat ${NWCHEM_TOP}/src/tools/build/config.h | awk ' /HAVE_SQRT/ {print "Y"}')
+-
+-ifeq ($(_TOOLS_BUILD),Y)
+ _USE_SCALAPACK = $(shell cat ${NWCHEM_TOP}/src/tools/build/config.h | awk ' /HAVE_SCALAPACK\ 1/ {print "Y"}')
+-endif
+ 
+ ifeq ($(_USE_SCALAPACK),Y)
+   DEFINES += -DSCALAPACK
+@@ -2286,8 +2283,8 @@
+ 	      -brename:.pdgetrf_,.pdgetrf \
+ 	      -brename:.pdgetrs_,.pdgetrs 
+ endif
+-  CORE_LIBS += $(ELPA) $(SCALAPACK) $(PBLAS) $(BLACS)
+ endif
++  CORE_LIBS += $(ELPA) $(SCALAPACK)
+ 
+ ifdef USE_64TO32
+       CORE_LIBS +=  -l64to32
+@@ -2436,18 +2433,11 @@
+  DEFINES += -DUSE_F90_ALLOCATABLE
+ endif
+ 
+-ifeq ($(_TOOLS_BUILD),Y)
+ # lower level libs used by communication libraries 
+ COMM_LIBS=  $(shell grep ARMCI_NETWORK_LIBS\ = ${NWCHEM_TOP}/src/tools/build/Makefile | cut -b 22-)
+ COMM_LIBS +=  $(shell grep ARMCI_NETWORK_LDFLAGS\ = ${NWCHEM_TOP}/src/tools/build/Makefile | cut -b 24-)
+ #comex bit
+-HAVE_COMEX = $(shell [ -e ${NWCHEM_TOP}/src/tools/build/comex/config.h ] && cat ${NWCHEM_TOP}/src/tools/build/comex/config.h| grep COMEX_NETWORK| awk ' / 1/ {print "Y"}')
+-ifeq ($(HAVE_COMEX),Y)
+-COMM_LIBS +=  $(shell grep LIBS\ = ${NWCHEM_TOP}/src/tools/build/comex/Makefile|grep -v _LIBS| cut -b 8-)
+-#we often need pthread, let's add it
+-COMM_LIBS += -lpthread
+-endif
+-endif
++COMM_LIBS +=  $(shell [ -e ${NWCHEM_TOP}/src/tools/build/comex/config.h ] && grep LIBS\ = ${NWCHEM_TOP}/src/tools/build/comex/Makefile|grep -v _LIBS| cut -b 8-) -lpthread
+ ifdef COMM_LIBS 
+  CORE_LIBS += $(COMM_LIBS) 
+ endif 
+Index: src/nwdft/scf_dft/dft_scf.F
+===================================================================
+--- src/nwdft/scf_dft/dft_scf.F	(revision 28116)
++++ src/nwdft/scf_dft/dft_scf.F	(revision 28117)
+@@ -1884,6 +1884,13 @@
+          if (abs(Edisp).gt.0.0d0) then
+           write(LuOut,224)Edisp
+          endif
++         if (cosmo_on.and.cosmo_phase.eq.2) then
++          if (do_cosmo_smd) then
++           write(LuOut,225) ecosmo+gcds
++          else
++           write(LuOut,225) ecosmo
++          end if
++         endif
+          if (do_zora) write(luout,2221) ener_scal
+          write(luout,2222) rho_n
+          write(luout,2223) dft_time
+@@ -2457,6 +2464,7 @@
+      &     '       Correlation energy =', f22.12/
+      &     ' Nuclear repulsion energy =', f22.12/)
+  224  format('    Dispersion correction =', f22.12/)
++ 225  format('             COSMO energy =', f22.12/)
+ c
+  2221 format('       Scaling correction =', f22.12/)
+  2222 format(' Numeric. integr. density =', f22.12/)
+Index: src/solvation/hnd_cosmo_lib.F
+===================================================================
+--- src/solvation/hnd_cosmo_lib.F	(revision 27880)
++++ src/solvation/hnd_cosmo_lib.F	(revision 27881)
+@@ -92,26 +92,32 @@
+ c    &    i_init,init))
+ c    & call errquit('hnd_cosset, malloc of init  failed',911,MA_ERR)
+ c
+-      stat = .true.
+-      stat = stat.and.ma_push_get(mt_dbl,3*nat,"xyzatm",l_i10,i10)
+-      stat = stat.and.ma_push_get(mt_dbl,  nat,"ratm",l_i20,i20)
+-      stat = stat.and.ma_push_get(mt_int,  nat,"nspa",l_i30,i30)
+-      stat = stat.and.ma_push_get(mt_int,  nat,"nppa",l_i40,i40)
+-      stat = stat.and.ma_push_get(mt_int,3*mxface,"ijkfac",l_i50,i50)
+-      stat = stat.and.ma_push_get(mt_dbl,3*mxface,"xyzseg",l_i60,i60)
+-      stat = stat.and.ma_push_get(mt_int,  mxface,"ijkseg",l_i70,i70)
+-      stat = stat.and.ma_push_get(mt_log,  mxface*nat,"insseg",
+-     &                                                l_i80,i80)
+-      stat = stat.and.ma_push_get(mt_dbl,3*mxface*nat,"xyzspa",
+-     &                                                l_i90,i90)
+-      stat = stat.and.ma_push_get(mt_int,  mxface*nat,"ijkspa",
+-     &                                                l_i100,i100)
+-      stat = stat.and.ma_push_get(mt_int,  mxface*nat,"numpps",
+-     &                                                l_i110,i110)
+-      stat = stat.and.ma_push_get(mt_dbl,3*mxapex    ,"apex",
+-     &                                                l_i120,i120)
+-      stat = stat.and.ma_push_get(mt_dbl,  mxface*nat,"xyzff",
+-     &                                                l_i130,i130)
++      if(.not.ma_push_get(mt_dbl,3*nat,"xyzatm",l_i10,i10))
++     c     call errquit('hndcosset: not enuf mem',0,MA_ERR)
++      if(.not.ma_push_get(mt_dbl,  nat,"ratm",l_i20,i20))
++     c     call errquit('hndcosset: not enuf mem',1,MA_ERR)
++      if(.not.ma_push_get(mt_int,  nat,"nspa",l_i30,i30))
++     c     call errquit('hndcosset: not enuf mem',2,MA_ERR)
++      if(.not.ma_push_get(mt_int,  nat,"nppa",l_i40,i40))
++     c     call errquit('hndcosset: not enuf mem',3,MA_ERR)
++      if(.not.ma_push_get(mt_int,3*mxface,"ijkfac",l_i50,i50))
++     c     call errquit('hndcosset: not enuf mem',4,MA_ERR)
++      if(.not.ma_push_get(mt_dbl,3*mxface,"xyzseg",l_i60,i60))
++     c     call errquit('hndcosset: not enuf mem',5,MA_ERR)
++      if(.not.ma_push_get(mt_int,  mxface,"ijkseg",l_i70,i70))
++     c     call errquit('hndcosset: not enuf mem',6,MA_ERR)
++      if(.not.ma_push_get(mt_log,  mxface*nat,"insseg",l_i80,i80))
++     c     call errquit('hndcosset: not enuf mem',7,MA_ERR)
++      if(.not.ma_push_get(mt_dbl,3*mxface*nat,"xyzspa",l_i90,i90))
++     c     call errquit('hndcosset: not enuf mem',8,MA_ERR)
++      if(.not.ma_push_get(mt_int,  mxface*nat,"ijkspa",l_i100,i100))
++     c     call errquit('hndcosset: not enuf mem',9,MA_ERR)
++      if(.not.ma_push_get(mt_int,  mxface*nat,"numpps",l_i110,i110))
++     c     call errquit('hndcosset: not enuf mem',10,MA_ERR)
++      if(.not.ma_push_get(mt_dbl,3*mxapex    ,"apex",l_i120,i120))
++     c     call errquit('hndcosset: not enuf mem',11,MA_ERR)
++      if(.not.ma_push_get(mt_dbl,  mxface*nat,"xyzff",l_i130,i130))
++     c     call errquit('hndcosset: not enuf mem',12,MA_ERR)
+ c     i10 =init                    ! xyzatm(3,nat)
+ c     i20 =i10 +3*nat              !   ratm(  nat)
+ c     i30 =i20 +  nat              !   nspa(  nat)
+@@ -129,9 +135,10 @@
+ c
+       call hnd_cossrf(nat,c,radius,nat,mxface,mxapex,
+      1                dbl_mb(i10),dbl_mb(i20),int_mb(i30),int_mb(i40),
+-     2                int_mb(i50),dbl_mb(i60),int_mb(i70),
+-     3                log_mb(i80),dbl_mb(i90),int_mb(i100),int_mb(i110),
++     2                int_mb(i50),dbl_mb(i60),int_mb(i70),log_mb(i80),
++     3                dbl_mb(i90),int_mb(i100),int_mb(i110),
+      4                dbl_mb(i120),dbl_mb(i130),rtdb)
++
+ c
+ c     ----- release memory block -----
+ c
+@@ -157,7 +164,7 @@
+ #include "global.fh"
+ #include "stdio.fh"
+ #include "cosmoP.fh"
+-c
++#include "mafdecls.fh"
+       integer rtdb, nat
+       integer mxatm
+       integer mxfac
+@@ -261,6 +268,7 @@
+ c
+ c     ----- create -solvent accessible surface- of the molecule -----
+ c
++
+       call hnd_cossas(nat,xyzatm,ratm,mxatm,
+      1                nspa,nppa,xyzspa,ijkspa,
+      2                nseg,nfac,xyzseg,ijkseg,insseg,
+@@ -366,6 +374,7 @@
+ #include "stdio.fh"
+ #include "bq.fh"
+ #include "prop.fh"
++cnew
+ #include "cosmoP.fh"
+ c
+       integer rtdb    !< [Input] The RTDB handle
+@@ -410,7 +419,6 @@
+       integer          numpps(  mxface,mxatom)
+       double precision  xyzff(  mxface,mxatom)
+       double precision zero, one
+-      data zero    /0.0d+00/
+       data one     /1.0d+00/
+       integer l_efcc, k_efcc, l_efcs, k_efcs, l_efcz, k_efcz
+       integer l_efclb, k_efclb, k_efciat, l_efciat
+@@ -464,7 +472,7 @@
+          do i=1,mxface
+             ijkspa(i,iat)=0
+             numpps(i,iat)=0
+-            xyzff(i,iat)=zero
++            xyzff(i,iat)=0d0
+          enddo
+       enddo
+ c
+@@ -473,7 +481,7 @@
+ c
+       do iat=1,nat
+ c
+-         if(ratm(iat).ne.zero) then
++         if(ratm(iat).ne.0d0) then
+             do iseg=1,nseg
+                ijkspa(iseg,iat)=ijkseg(iseg)
+                xyzff(iseg,iat)=one
+@@ -515,7 +523,7 @@
+                    enddo
+                  endif
+                else if (do_cosmo_model.eq.DO_COSMO_YK) then
+-                 if((jat.ne.iat).and.(ratm(jat).ne.zero)
++                 if((jat.ne.iat).and.(ratm(jat).ne.0d0)
+      1                        .and.(dij.lt.(ratm(iat)+rout(jat)))) then
+                    do iseg=1,nseg
+                      dum=dist(xyzspa(1,iseg,iat),
+@@ -615,7 +623,7 @@
+ c
+       nefc = 0
+       do iat=1,nat
+-         if(ratm(iat).ne.zero) then
++         if(ratm(iat).ne.0d0) then
+             do iseg=1,nseg
+                if(.not.insseg(iseg,iat)) nefc = nefc+1
+             enddo
+@@ -639,11 +647,11 @@
+ c           save segment surfaces
+ c           save segment to atom mapping
+ c
+-      srfmol=zero
+-      volmol=zero
++      srfmol=0d0
++      volmol=0d0
+       ief   =0
+       do iat=1,nat
+-         if(ratm(iat).ne.zero) then
++         if(ratm(iat).ne.0d0) then
+             if (do_cosmo_model.eq.DO_COSMO_KS) then
+               ratm_real=ratm(iat)-rsolv/bohr
+             else if (do_cosmo_model.eq.DO_COSMO_YK) then
+@@ -720,7 +728,7 @@
+       endif
+ c
+       do ief=1,nefc
+-         dbl_mb(k_efcz+ief-1)=zero
++         dbl_mb(k_efcz+ief-1)=0d0
+       enddo
+       do ief=1,nefc
+          byte_mb(k_efclb+(ief-1)*8)='        '
+@@ -877,6 +885,8 @@
+       implicit double precision (a-h,o-z)
+ #include "global.fh"
+ #include "stdio.fh"
++cnew
++#include "cosmoP.fh"
+ c
+ c              ----- starting from -icosahedron- -----
+ c
+Index: src/dplot/dplot_input.F
+===================================================================
+--- src/dplot/dplot_input.F	(revision 27986)
++++ src/dplot/dplot_input.F	(revision 27987)
+@@ -63,6 +63,7 @@
+       iroot     = 1
+       ltransden = .true.
+       ldiffden = .false.
++      tol_rho = 1d-40
+ c
+ c     try to get a scf movecs
+ c
+@@ -263,10 +264,10 @@
+       goto 10
+ c
+  1998 continue
+-      tol_rho = 1d-15
+       If (.not. inp_f(tol_rho))
+      &  Call ErrQuit('DPlot_Input: failed to read tol_rho',0,
+      &     INPUT_ERR)
++      tol_rho=max(1d-99,tol_rho)
+       goto 10
+ c
+  1999 continue
+Index: src/dplot/dplot_dump.F
+===================================================================
+--- src/dplot/dplot_dump.F	(revision 27986)
++++ src/dplot/dplot_dump.F	(revision 27987)
+@@ -90,7 +90,7 @@
+      .              No_Of_Spacings(3))
+ 99498          format(6E13.5)
+             enddo
+-            else
++         else
+             Do i = 1, nGrid
+                Write(Out_Unit,'(f15.10)')values(i)
+             End Do
+@@ -107,6 +107,7 @@
+             End Do
+             AppCh = Sum*Volume
+             Write(LuOut,*)
++            Write(LuOut,'(a,e30.5)')'  Tol_rho              = ',tol_rho
+             Write(LuOut,'(a,f30.5)')'  Sum of elements      = ',sum
+             Write(LuOut,'(a,f30.5)')'  Integration volume   = ',volume
+             Write(LuOut,'(a,f30.5)')'  Integrated Charge    = ',AppCh
+Index: src/driver/opt_drv.F
+===================================================================
+--- src/driver/opt_drv.F	(revision 28005)
++++ src/driver/opt_drv.F	(revision 28006)
+@@ -1641,7 +1641,7 @@
+       double precision lattice(6), scaler(3) ! periodic scaling
+       double precision dum1,dum2,dum3
+       double precision smalleig
+-      parameter (smalleig = 1.0d-4)
++      parameter (smalleig = 1.0d-8)
+       logical geom_print_zmatrix
+       external geom_print_zmatrix
+       logical ophigh
+Index: src/tools/ga-5-4/gaf2c/gaf2c.c
+===================================================================
+--- src/tools/ga-5-4/gaf2c/gaf2c.c	(revision 10630)
++++ src/tools/ga-5-4/gaf2c/gaf2c.c	(revision 10631)
+@@ -106,6 +106,7 @@
+     }
+     *argc = iargc;
+     *argv = iargv;
++    iargv[iargc] = 0;
+ }
+ 
+ 
+Index: src/tools/ga-5-4/tcgmsg/fapi.c
+===================================================================
+--- src/tools/ga-5-4/tcgmsg/fapi.c	(revision 10630)
++++ src/tools/ga-5-4/tcgmsg/fapi.c	(revision 10631)
+@@ -197,6 +197,7 @@
+         argv[i] = strdup(arg);
+     }
+ 
++    argv[argc] = 0;
+     tcgi_pbegin(argc, argv);
+     free(argv);
+ }
+Index: src/util/util_mpinap.c
+===================================================================
+--- src/util/util_mpinap.c	(revision 28079)
++++ src/util/util_mpinap.c	(revision 28083)
+@@ -17,7 +17,7 @@
+ #ifdef MPI
+   MPI_Comm_rank(MPI_COMM_WORLD,&myid);
+ #else
+-  myid=ga_nodeid_();
++  myid=GA_Nodeid();
+ #endif
+   sleeptime=(myid+1)/((long) *factor);
+ #ifdef DEBUG
+Index: src/util/util_getppn.c
+===================================================================
+--- src/util/util_getppn.c	(revision 28079)
++++ src/util/util_getppn.c	(revision 28083)
+@@ -8,6 +8,7 @@
+ #include <unistd.h>
+ #include <mpi.h>
+ #include "ga.h"
++#include "ga-mpi.h"
+ #include "typesf2c.h"
+ 
+ #if defined(__bgq__)
+Index: src/config/makefile.h
+===================================================================
+--- src/config/makefile.h	(revision 28470)
++++ src/config/makefile.h	(revision 28471)
+@@ -910,6 +910,7 @@
+         GNUMINOR=$(shell $(FC) -dM -E - < /dev/null 2> /dev/null | egrep __VERS | cut -c24)
+         GNU_GE_4_6 = $(shell [ $(GNUMAJOR) -gt 4 -o \( $(GNUMAJOR) -eq 4 -a $(GNUMINOR) -ge 6 \) ] && echo true)
+         GNU_GE_4_8 = $(shell [ $(GNUMAJOR) -gt 4 -o \( $(GNUMAJOR) -eq 4 -a $(GNUMINOR) -ge 8 \) ] && echo true)
++        GNU_GE_6 = $(shell [ $(GNUMAJOR) -ge 6  ] && echo true)
+         endif
+         ifeq ($(GNU_GE_4_6),true)
+         DEFINES  += -DGCC46
+@@ -921,6 +922,9 @@
+           
+           FOPTIONS += -Warray-bounds
+         endif
++        ifeq ($(GNU_GE_6),true)
++         FOPTIMIZE += -fno-tree-dominator-opts # solvation/hnd_cosmo_lib breaks
++        endif
+         ifdef USE_OPENMP
+            FOPTIONS  += -fopenmp
+            LDOPTIONS += -fopenmp
+@@ -1067,6 +1071,7 @@
+         GNUMINOR=$(shell $(FC) -dM -E - < /dev/null 2> /dev/null | egrep __VERS | cut -c24)
+         GNU_GE_4_6 = $(shell [ $(GNUMAJOR) -gt 4 -o \( $(GNUMAJOR) -eq 4 -a $(GNUMINOR) -ge 6 \) ] && echo true)
+         GNU_GE_4_8 = $(shell [ $(GNUMAJOR) -gt 4 -o \( $(GNUMAJOR) -eq 4 -a $(GNUMINOR) -ge 8 \) ] && echo true)
++        GNU_GE_6 = $(shell [ $(GNUMAJOR) -ge 6  ] && echo true)
+         ifeq ($(GNU_GE_4_6),true)
+          DEFINES  += -DGCC46
+         endif
+@@ -1076,6 +1081,9 @@
+ #gone          FFLAGS_FORGA += -fno-aggressive-loop-optimizations
+           FOPTIONS += -Warray-bounds
+         endif # GNU_GE_4_8
++        ifeq ($(GNU_GE_6),true)
++         FOPTIMIZE += -fno-tree-dominator-opts # solvation/hnd_cosmo_lib breaks
++        endif
+         endif # GNUMAJOR
+ 
+         ifdef USE_OPENMP
+--- src/config/makefile.h.orig	2016-07-22 08:45:52.100229544 -0700
++++ src/config/makefile.h	2016-07-22 08:49:00.321422169 -0700
+@@ -1565,6 +1565,7 @@
+         GNU_GE_4_6 = $(shell [ $(GNUMAJOR) -gt 4 -o \( $(GNUMAJOR) -eq 4 -a $(GNUMINOR) -ge 6 \) ] && echo true)
+         GNU_GE_4_8 = $(shell [ $(GNUMAJOR) -gt 4 -o \( $(GNUMAJOR) -eq 4 -a $(GNUMINOR) -ge 8 \) ] && echo true)
+         endif
++        GNU_GE_6 = $(shell [ $(GNUMAJOR) -ge 6  ] && echo true)
+         ifeq ($(GNU_GE_4_6),true)
+           DEFINES  += -DGCC46
+         endif
+@@ -1942,6 +1943,10 @@
+         FOPTIMIZE  += -O3 
+         FOPTIMIZE  += -mfpmath=sse -ffast-math
+         FOPTIMIZE  += -fprefetch-loop-arrays #-ftree-loop-linear
++        ifeq ($(GNU_GE_6),true)
++         FOPTIMIZE += -fno-tree-dominator-opts # solvation/hnd_cosmo_lib breaks
++        endif
++
+         ifeq ($(GNU_GE_4_8),true)
+           FOPTIMIZE  += -ftree-vectorize   -fopt-info-vec
+         endif
+Index: src/config/makefile.h
+===================================================================
+--- src/config/makefile.h	(revision 28485)
++++ src/config/makefile.h	(revision 28486)
+@@ -257,6 +257,13 @@
+     ifdef USE_ARUR
+         ARFLAGS = rU
+     endif
++# strip long paths when FC and/or CC are set from user
++  ifneq ($(FC),f77)
++   _FC = $(notdir $(FC))
++  endif
++  ifneq ($(CC),cc)
++   _CC = $(notdir $(CC))
++  endif
+ #
+ # Machine specific stuff
+ #
+Index: src/property/raman_input.F
+===================================================================
+--- src/property/raman_input.F	(revision 28032)
++++ src/property/raman_input.F	(revision 28033)
+@@ -47,6 +47,7 @@
+ c
+ c  set some defaults
+ c
++      field=' '
+       plot = 'normal' ! normal or resonance
+       line = 'lorentzian' !  lorentzian (l) or gaussian (g) lineshape
+       width = 20.0D+00 ! full-width at half maximum (FWHM) in 1/cm
+@@ -54,7 +55,6 @@
+       hyperraman = .false. ! flag to calculate hyperaman terms
+       vroa = .false. ! flag to calculate vibrational raman spec
+       rmmodes = 0
+-      first = 7
+       last = 10000
+       low = 0.0D+00
+       high = 100000.0D+00
+@@ -132,9 +132,9 @@
+       else if(inp_compare(.false.,'first',test)) then
+          if(.not. inp_i(first))
+      $     call errquit(pname//'missing value for first',911, INPUT_ERR)
+-         if (.not. rtdb_put(rtdb,'raman:first',mt_int,1,first))
+-     $     call errquit(pname//'rtdb put failed',0, RTDB_ERR)
+-c        --- determine first normal mode to use ---
++c        --- not setting default here, it will be set later after
++c            frequency calculation has been done so we know if we have
++c            a linear molecule or not
+       else if(inp_compare(.false.,'last',test)) then
+          if(.not. inp_i(last)) ! FA-06-16-12 bug-fixed (BEF: first AFT: last)
+      $     call errquit(pname//'missing value for last',911, INPUT_ERR)
+Index: src/property/task_raman.F
+===================================================================
+--- src/property/task_raman.F	(revision 28032)
++++ src/property/task_raman.F	(revision 28033)
+@@ -59,6 +59,7 @@
+ 
+       integer j,pos,first0 ! FA-06-15-12
+       logical preraman     ! FA-06-18-12
++      logical linear
+ 
+       character*32 pname
+ 
+@@ -107,6 +108,12 @@
+      $   call errquit(pname//'rtdb_put freq_done',911, RTDB_ERR)
+       endif
+ c
++c --------Figure out if molecule is linear------------    
++
++c     if vib module doesn't list molecule as linear, assume it is not
++      if (.not. rtdb_get(rtdb,'vib:linear',mt_log,1,linear))
++     $      linear=.false.
++c
+ c --------Create/load reference geometry to get the number of atoms------------    
+ 
+       if (.not.geom_create(geom,'geometry')) call errquit
+@@ -116,7 +123,11 @@
+       if (.not. geom_ncent(geom,nat)) 
+      &  call errquit(pname//'geom_ncent failed?',3, GEOM_ERR)
+       nc = nat*3
+-      rmmodes = nc-6
++      if (linear) then
++        rmmodes = nc-5
++      else
++        rmmodes = nc-6
++      end if
+ 
+ c      if (ga_nodeid().eq.0) then
+ c       write(*,1) nat,nc,rmmodes
+@@ -146,8 +157,13 @@
+      $      low  = 0.0D+00 ! lowest wavenumber  normal mode to use
+       if (.not. rtdb_get(rtdb,'raman:high',mt_dbl,1,high))
+      $      high = 100000.0D+00 ! Highest wavenumber normal mode to use
+-      if (.not. rtdb_get(rtdb,'raman:first',mt_int,1,first))
+-     $      first = 7 ! first normal mode to use
++      if (.not. rtdb_get(rtdb,'raman:first',mt_int,1,first)) then
++            if (linear) then
++              first = 6 ! first normal mode to use
++            else
++              first = 7 ! first normal mode to use
++            end if
++      end if
+       if (.not. rtdb_get(rtdb,'raman:last',mt_int,1,last))
+      $      last = 10000 ! last normal mode to use
+       if (.not. rtdb_get(rtdb,'raman:hyperraman',mt_log,1,hyperraman))
+@@ -156,7 +172,11 @@
+      $      vroa = .false. ! # flag to calculate vibrational 
+       if (.not. rtdb_get(rtdb,'raman:preraman',mt_log,1,preraman))
+      $      preraman = .false. ! # flag to do task_freq() and leave
+-      first0=7 ! constant
++      if (linear) then
++        first0=6 ! constant
++      else
++        first0=7 ! constant
++      end if
+ c ======== FA-debug =============== START
+ c      if (ga_nodeid().eq.0) then
+ c       write(*,2) plot,line,width,step_size,steps
+@@ -172,8 +192,13 @@
+          rmmodes = nc
+ c
+ c --- in case we want overide the defaults for modes to include ---
+-         if (.not. rtdb_get(rtdb,'raman:first',mt_int,1,first))
+-     $      first = 7 ! srtep size for displacement along modes
++         if (.not. rtdb_get(rtdb,'raman:first',mt_int,1,first)) then
++            if (linear) then
++              first = 6 ! srtep size for displacement along modes
++            else
++              first = 7 ! srtep size for displacement along modes
++            end if
++         end if
+       endif 
+ c
+ c ----------alocate space for freq and normal modes----------------------------
+@@ -294,7 +319,7 @@
+ c ------------enough setup really do the calculation------------------------
+       if (.not.preraman) then
+       call task_raman_doit(rtdb,geom,nc,nat,
+-     &                     first0, ! = 7 constant
++     &                     first0, ! = 6 or 7
+      &                     first,last,rmmodes,
+      &                     steps,nfreq,plot,line,width,
+      &                     step_size,
+@@ -336,7 +361,7 @@
+ c
+ c     == perform raman calculation ==
+       subroutine task_raman_doit(rtdb,geom,nc,nat,
+-     &                           first0, ! = 7 constant
++     &                           first0, ! = 6 or 7
+      &                           first,last,rmmodes,
+      &                           steps,nfreq,
+      &                           plot,line,width,
+@@ -495,7 +520,7 @@
+      &             lbl_raman,  ! in: raman label
+      &             begin,      ! in: 
+      &             last,       ! in: 
+-     &             first0,     ! in: = 7 constant
++     &             first0,     ! in: = 6 or 7
+      &             eigenvecs,  ! in: hessian data (modes)
+      &             eigenvals,  ! in: hessian data (frequencies)
+      &             mass,       ! in: mass(i) i=1,nat
+@@ -519,7 +544,7 @@
+      &             lbl_raman,  ! in: raman label
+      &             mode_ini,   ! in: 
+      &             mode_end,   ! in: 
+-     &             first0,     ! in: = 7 constant
++     &             first0,     ! in: = 6 or 7
+      &             eigenvecs,  ! in: hessian data (modes)
+      &             eigenvals,  ! in: hessian data (frequencies)
+      &             mass,       ! in: mass(i) i=1,nat
+@@ -541,7 +566,7 @@
+      &             lbl_raman,  ! in: raman label
+      &             begin,      ! in: starting mode
+      &             last,       ! in: ending   mode
+-     &             first0,     ! in: = 7 constant
++     &             first0,     ! in: = 6 or 7
+      &             eigenvecs,  ! in: hessian data (modes)
+      &             eigenvals,  ! in: hessian data (frequencies)
+      &             mass,       ! in: mass(i) i=1,nat
+@@ -596,7 +621,7 @@
+      &             rmmodes,    ! in: total nr. modes
+      &             rminfo,     ! in: stores raman info
+      &             nc,nat,     ! in: (nc,nat)=(nr coord,nr atoms)
+-     &             first0,     ! in: = 7 constant
++     &             first0,     ! in: = 6 or 7
+      &             eigenvecs,  ! in: hessian data (modes)
+      &             eigenvals,  ! in: hessian data (frequencies)
+      &             mass,       ! in: mass(i) i=1,nat
+@@ -757,7 +782,8 @@
+      &                 step_size,
+      &                 rminfo,
+      &                 eigenvecs,
+-     &                 mass)
++     &                 mass,
++     &                 first0)
+ c ======== FA: Writing to file rminfo ========= START
+ c         if (ga_nodeid().eq.0)
+ c     &     write(*,*) 'BEF raman_write() ...'
+@@ -783,7 +809,7 @@
+      &             lbl_raman,  ! in: raman label
+      &             begin,      ! in: starting mode
+      &             last,       ! in: ending   mode
+-     &             first0,     ! in: = 7 constant
++     &             first0,     ! in: = 6 or 7
+      &             eigenvecs,  ! in: hessian data (modes)
+      &             eigenvals,  ! in: hessian data (frequencies)
+      &             mass,       ! in: mass(i) i=1,nat
+@@ -890,7 +916,7 @@
+      &             rmmodes,    ! in: total nr. modes
+      &             rminfo,     ! in: stores raman info
+      &             nc,nat,     ! in: (nc,nat)=(nr coord,nr atoms)
+-     &             first0,     ! in: = 7 constant
++     &             first0,     ! in: = 6 or 7
+      &             eigenvecs,  ! in: hessian data (modes)
+      &             eigenvals,  ! in: hessian data (frequencies)
+      &             mass,       ! in: mass(i) i=1,nat
+@@ -915,7 +941,7 @@
+      &             lbl_raman,  ! in: raman label
+      &             mode_ini,   ! in: 
+      &             mode_end,   ! in: 
+-     &             first0,     ! in: = 7 constant
++     &             first0,     ! in: = 6 or 7
+      &             eigenvecs,  ! in: hessian data (modes)
+      &             eigenvals,  ! in: hessian data (frequencies)
+      &             mass,       ! in: mass(i) i=1,nat
+@@ -1036,7 +1062,7 @@
+      &             rmmodes,    ! in: total nr. modes
+      &             rminfo,     ! in: stores raman info
+      &             nc,nat,     ! in: (nc,nat)=(nr coord,nr atoms)
+-     &             first0,     ! in: = 7 constant
++     &             first0,     ! in: = 6 or 7
+      &             eigenvecs,  ! in: hessian data (modes)
+      &             eigenvals,  ! in: hessian data (frequencies)
+      &             mass,       ! in: mass(i) i=1,nat
+@@ -1058,7 +1084,7 @@
+      &             lbl_raman,  ! in: raman label
+      &             begin,      ! in: 
+      &             last,       ! in: 
+-     &             first0,     ! in: = 7 constant
++     &             first0,     ! in: = 6 or 7
+      &             eigenvecs,  ! in: hessian data (modes)
+      &             eigenvals,  ! in: hessian data (frequencies)
+      &             mass,       ! in: mass(i) i=1,nat
+@@ -1139,7 +1165,7 @@
+      &             rmmodes,    ! in: total nr. modes
+      &             rminfo,     ! in: stores raman info
+      &             nc,nat,     ! in: (nc,nat)=(nr coord,nr atoms)
+-     &             first0,     ! in: = 7 constant
++     &             first0,     ! in: = 6 or 7
+      &             eigenvecs,  ! in: hessian data (modes)
+      &             eigenvals,  ! in: hessian data (frequencies)
+      &             mass,       ! in: mass(i) i=1,nat
+Index: src/property/raman.F
+===================================================================
+--- src/property/raman.F	(revision 28032)
++++ src/property/raman.F	(revision 28033)
+@@ -29,8 +29,8 @@
+       integer rtdb    ! [input] rtdb handle
+       integer natom   ! [input] number of atoms
+       integer nat3    ! [input] 3*number of atoms
+-      integer first   ! first mode to consider in aoresponse (default =7 ramana =1 hyperraman)
+-      integer tmpmode ! set to fill rminfo from 1 ( not 7 for raman calc)
++      integer first   ! first mode to consider in aoresponse (default =6 or 7 raman =1 hyperraman)
++      integer tmpmode ! set to fill rminfo from 1 ( not 6 or 7 for raman calc)
+       integer rmmodes ! # of raman active modes
+ 
+       double precision rminfo(rmmodes,4) ! data for raman spec
+@@ -41,6 +41,10 @@
+       double precision ncoords(3,natom)    ! [scratch] coords after step
+       double precision steps(3,natom)     ! [scratch] step generated by vector and scaled
+ c
++      double precision length_of_step, scale
++      double precision ddot
++      external ddot
++c
+       parameter (bohr2ang=0.52917724924D+00) ! CONVERSION OF BOHR to ANGSTROMS
+ c -------------determine sign of the step---------------------------------
+       if (iii.eq.1) then
+@@ -57,13 +61,16 @@
+ c     &       i4,',',i4,',',i4,',',i4,',',f15.8,')')
+ c ======= FA-check rminfo(x,1) ======== END   
+ c --------------------------------------------------------------------
+-        ivec = 1
+-        do iatom = 1,natom
+-          do ixyz = 1,3
+-            steps(ixyz,iatom)=sign*step_size*eigenvecs(ivec,imode)
+-            ivec = ivec + 1
+-          enddo ! ixyz
+-        enddo ! iatom
++      ivec = 1
++      do iatom = 1,natom
++        do ixyz = 1,3
++          steps(ixyz,iatom)=eigenvecs(ivec,imode)
++          ivec = ivec + 1
++        enddo ! ixyz
++      enddo ! iatom
++      length_of_step = sqrt(ddot(nat3,steps,1,steps,1))
++      scale = sign*step_size/length_of_step
++      call dscal(nat3,scale,steps,1)
+ 
+       call daxpy(nat3,1.0d00,steps,1,ncoords,1) ! mult coords 
+       if (.not. geom_cart_coords_set(geom,ncoords))
+@@ -85,7 +92,8 @@
+      &                    step_size,! in : step of finite differencing
+      &                    rminfo,   ! in : Raman data
+      &                    eigenvecs,! in : normal modes eigenvectors (nat3,nat3)
+-     &                    mass)     ! in : mass
++     &                    mass,     ! in : mass
++     &                    first0)   ! in : first nonzero mode (6 or 7)
+ c
+ c Authors: Jonathan Mullin, Northwestern University (ver 1: Jan. 2011)
+ c          Fredy W. Aquino, Northwestern University (ver 2: Oct. 2012)
+@@ -108,6 +116,7 @@
+       integer imode   ! mode #
+       integer natom   ! [input] number of atoms
+       integer nat3    ! [input] 3*number of atoms
++      integer first0  ! [input] first nonzero mode (6 or 7)
+ c
+       double precision rminfo(rmmodes,4) ! raman data
+       double precision step_size,stepsize ! [input] step of finite differencing
+@@ -134,7 +143,7 @@
+       call dfill(3*natom,0.0D+00,tmode,1) ! 
+ c zero
+       stepsize = zero
+-      m = imode - 6 
++      m = imode - first0 + 1
+       j=1
+       i=1
+       ar2   = zero ! alpha real
+Index: src/symmetry/sym_abelian.F
+===================================================================
+--- src/symmetry/sym_abelian.F	(revision 27901)
++++ src/symmetry/sym_abelian.F	(revision 27902)
+@@ -10,9 +10,11 @@
+ c
+       character*8 group
+       integer nab, ind
+-      parameter (nab = 8)
++      parameter (nab = 18)
+       character*4 ab(nab)
+-      data ab/ 'C1','Cs','Ci','C2','D2','C2v','C2h','D2h'/
++      data ab/ 'C1','Cs','Ci','C2','D2','C2v','C2h','D2h',
++     C     'C3','C4','C5','C6','C7','C8',
++     C     'C3h','C4h','C5h','C6h'/
+ c
+       call sym_group_name(geom, group)
+ c
 Index: QA/tests/tddft_h2o_mxvc20/tddft_h2o_mxvc20.nw
 ===================================================================
 --- QA/tests/tddft_h2o_mxvc20/tddft_h2o_mxvc20.nw	(revision 27754)
@@ -6856,3 +7617,765 @@ Index: QA/tests/tddft_h2o_uhf_mxvc20/tddft_h2o_uhf_mxvc20.out
  
 - Total times  cpu:      128.2s     wall:      129.0s
 + Total times  cpu:       98.5s     wall:       99.0s
+Index: src/config/makefile.h
+===================================================================
+--- src/config/makefile.h	(revision 27828)
++++ src/config/makefile.h	(revision 27829)
+@@ -99,7 +99,8 @@
+ ifdef OLD_GA
+     LIBPATH = -L$(SRCDIR)/tools/lib/$(TARGET)
+ else
+-    LIBPATH = -L$(SRCDIR)/tools/install/lib
++    TOOLSLIB =  $(shell grep libdir\ =  $(NWCHEM_TOP)/src/tools/build/Makefile |grep -v pkgl|cut -b 25-)
++    LIBPATH = -L$(SRCDIR)/tools/install/$(TOOLSLIB) 
+ endif
+ 
+ #
+Index: src/NWints/texas/assemblx.f
+===================================================================
+--- src/NWints/texas/assemblx.f	(revision 28366)
++++ src/NWints/texas/assemblx.f	(working copy)
+@@ -133,7 +133,9 @@
+      * NQI,NQJ,NQK,NQL,NSIJ,NSKL,
+      * NQIJ,NQIJ1,NSIJ1,NQKL,NQKL1,NSKL1,ijbeg,klbeg
+ C
+-      common /logic4/ nfu(1)
++      integer lpar1
++      parameter(lpar1=34)
++      common /logic4/ nfu(lpar1)
+ c
+       dimension indx(*)
+       dimension xt1(nbls1,lt1,lt2)
+@@ -258,7 +260,9 @@
+      * lni,lnj,lnk,lnl,lnij,lnkl,lnijkl,MMAX,
+      * NQI,NQJ,NQK,NQL,NSIJ,NSKL,
+      * NQIJ,NQIJ1,NSIJ1,NQKL,NQKL1,NSKL1,ijbeg,klbeg
+-      common /logic4/ nfu(1)
++      integer lpar1
++      parameter(lpar1=34)
++      common /logic4/ nfu(lpar1)
+       dimension indx(*)
+       dimension xt1(nbls1,lt1,lt2)
+       dimension aax(nbls1),bbx(nbls1),ccx(nbls1)
+@@ -346,7 +350,9 @@
+      * lni,lnj,lnk,lnl,lnij,lnkl,lnijkl,MMAX,
+      * NQI,NQJ,NQK,NQL,NSIJ,NSKL,
+      * NQIJ,NQIJ1,NSIJ1,NQKL,NQKL1,NSKL1,ijbeg,klbeg
+-      common /logic4/ nfu(1)
++      integer lpar1
++      parameter(lpar1=34)
++      common /logic4/ nfu(lpar1)
+       dimension indx(*)
+       dimension xt1(nbls1,lt1,lt2)
+       dimension aax(nbls1),bbx(nbls1),ccx(nbls1)
+@@ -428,7 +434,9 @@
+      * NQI,NQJ,NQK,NQL,NSIJ,NSKL,
+      * NQIJ,NQIJ1,NSIJ1,NQKL,NQKL1,NSKL1,ijbeg,klbeg
+ C
+-      common /logic4/ nfu(1)
++      integer lpar1
++      parameter(lpar1=34)
++      common /logic4/ nfu(lpar1)
+ c
+       dimension indx(*)
+       dimension xt1(nbls1,lt1,lt2)
+@@ -626,7 +634,9 @@
+       character*11 scftype
+       character*8 where
+       common /runtype/ scftype,where
+-      common /logic4/ nfu(1)
++      integer lpar1
++      parameter(lpar1=34)
++      common /logic4/ nfu(lpar1)
+       COMMON/SHELL/LSHELLT,LSHELIJ,LSHELKL,LHELP,LCAS2(4),LCAS3(4)
+       common /lcases/ lcase
+       common/obarai/
+@@ -913,7 +923,9 @@
+      * NQI,NQJ,NQK,NQL,NSIJ,NSKL,
+      * NQIJ,NQIJ1,NSIJ1,NQKL,NQKL1,NSKL1,ijbeg,klbeg
+ C
+-      common /logic4/ nfu(1)
++      integer lpar1
++      parameter(lpar1=34)
++      common /logic4/ nfu(lpar1)
+ C
+       dimension indx(*)
+       dimension xt1(nbls1,lt1,lt2)
+@@ -972,7 +984,9 @@
+       implicit real*8 (a-h,o-z)
+       logical firstc
+ c
+-      common /logic4/ nfu(1)
++      integer lpar1
++      parameter(lpar1=34)
++      common /logic4/ nfu(lpar1)
+ c
+       dimension indx(*)
+       dimension xt1(nbls1,lt1,lt2)
+@@ -1045,7 +1059,9 @@
+      * NQI,NQJ,NQK,NQL,NSIJ,NSKL,
+      * NQIJ,NQIJ1,NSIJ1,NQKL,NQKL1,NSKL1,ijbeg,klbeg
+ C
+-      common /logic4/ nfu(1)
++      integer lpar1
++      parameter(lpar1=34)
++      common /logic4/ nfu(lpar1)
+ c
+       dimension indx(*)
+       dimension xt1(nbls1,lt1,lt2)
+@@ -1131,7 +1147,9 @@
+      * NQI,NQJ,NQK,NQL,NSIJ,NSKL,
+      * NQIJ,NQIJ1,NSIJ1,NQKL,NQKL1,NSKL1,ijbeg,klbeg
+ C
+-      common /logic4/ nfu(1)
++      integer lpar1
++      parameter(lpar1=34)
++      common /logic4/ nfu(lpar1)
+ c
+       dimension indx(*)
+       dimension xt1(nbls1,lt1,lt2)
+@@ -1217,7 +1235,9 @@
+      * NQI,NQJ,NQK,NQL,NSIJ,NSKL,
+      * NQIJ,NQIJ1,NSIJ1,NQKL,NQKL1,NSKL1,ijbeg,klbeg
+ C
+-      common /logic4/ nfu(1)
++      integer lpar1
++      parameter(lpar1=34)
++      common /logic4/ nfu(lpar1)
+ C
+       dimension indx(*)
+       dimension xt1(nbls1,lt1,lt2), bf3l(nbls,lt5,lt6)
+@@ -1385,7 +1405,9 @@
+       character*11 scftype
+       character*8 where
+       common /runtype/ scftype,where
+-      common /logic4/ nfu(1)
++      integer lpar1
++      parameter(lpar1=34)
++      common /logic4/ nfu(lpar1)
+       COMMON/SHELL/LSHELLT,LSHELIJ,LSHELKL,LHELP,LCAS2(4),LCAS3(4)
+       common /lcases/ lcase
+       common/obarai/
+@@ -1659,7 +1681,9 @@
+      * lni,lnj,lnk,lnl,lnij,lnkl,lnijkl,MMAX,
+      * NQI,NQJ,NQK,NQL,NSIJ,NSKL,
+      * NQIJ,NQIJ1,NSIJ1,NQKL,NQKL1,NSKL1,ijbeg,klbeg
+-      common /logic4/ nfu(1)
++      integer lpar1
++      parameter(lpar1=34)
++      common /logic4/ nfu(lpar1)
+       dimension indx(*)
+       dimension xt1(nbls1,lt1,lt2)
+       dimension bfij1(nbls,lt3,lt4)
+@@ -1707,7 +1731,9 @@
+      *                    bfij3,lt3,lt4, factij, indx, ij3b,kl3b)
+       implicit real*8 (a-h,o-z)
+       logical firstc
+-      common /logic4/ nfu(1)
++      integer lpar1
++      parameter(lpar1=34)
++      common /logic4/ nfu(lpar1)
+       dimension indx(*)
+       dimension xt1(nbls1,lt1,lt2)
+       dimension bfij3(nbls,lt3,lt4)
+@@ -1762,7 +1788,9 @@
+      * lni,lnj,lnk,lnl,lnij,lnkl,lnijkl,MMAX,
+      * NQI,NQJ,NQK,NQL,NSIJ,NSKL,
+      * NQIJ,NQIJ1,NSIJ1,NQKL,NQKL1,NSKL1,ijbeg,klbeg
+-      common /logic4/ nfu(1)
++      integer lpar1
++      parameter(lpar1=34)
++      common /logic4/ nfu(lpar1)
+       dimension indx(*)
+       dimension xt1(nbls1,lt1,lt2)
+       dimension bf2l1(nbls,lt3,lt4)
+@@ -1829,7 +1857,9 @@
+      * lni,lnj,lnk,lnl,lnij,lnkl,lnijkl,MMAX,
+      * NQI,NQJ,NQK,NQL,NSIJ,NSKL,
+      * NQIJ,NQIJ1,NSIJ1,NQKL,NQKL1,NSKL1,ijbeg,klbeg
+-      common /logic4/ nfu(1)
++      integer lpar1
++      parameter(lpar1=34)
++      common /logic4/ nfu(lpar1)
+       dimension indx(*)
+       dimension xt1(nbls1,lt1,lt2)
+       dimension bf3l(nbls,lt5,lt6)
+@@ -1895,7 +1925,9 @@
+      * lni,lnj,lnk,lnl,lnij,lnkl,lnijkl,MMAX,
+      * NQI,NQJ,NQK,NQL,NSIJ,NSKL,
+      * NQIJ,NQIJ1,NSIJ1,NQKL,NQKL1,NSKL1,ijbeg,klbeg
+-      common /logic4/ nfu(1)
++      integer lpar1
++      parameter(lpar1=34)
++      common /logic4/ nfu(lpar1)
+       dimension indx(*)
+       dimension xt1(nbls1,lt1,lt2), bf3l(nbls,lt5,lt6)
+ cccc  dimension facti(*), factkl(*)
+@@ -2018,7 +2050,9 @@
+      * lni,lnj,lnk,lnl,lnij,lnkl,lnijkl,MMAX,
+      * NQI,NQJ,NQK,NQL,NSIJ,NSKL,
+      * NQIJ,NQIJ1,NSIJ1,NQKL,NQKL1,NSKL1,ijbeg,klbeg
+-      common /logic4/ nfu(1)
++      integer lpar1
++      parameter(lpar1=34)
++      common /logic4/ nfu(lpar1)
+       dimension indx(*)
+       dimension xt1(nbls1,lt1,lt2)
+       dimension aax(nbls1),bbx(nbls1),ccx(nbls1)
+@@ -2110,7 +2144,9 @@
+      * lni,lnj,lnk,lnl,lnij,lnkl,lnijkl,MMAX,
+      * NQI,NQJ,NQK,NQL,NSIJ,NSKL,
+      * NQIJ,NQIJ1,NSIJ1,NQKL,NQKL1,NSKL1,ijbeg,klbeg
+-      common /logic4/ nfu(1)
++      integer lpar1
++      parameter(lpar1=34)
++      common /logic4/ nfu(lpar1)
+       dimension indx(*)
+       dimension xt1(nbls1,lt1,lt2)
+       dimension aax(nbls1),bbx(nbls1),ccx(nbls1)
+@@ -2196,7 +2232,9 @@
+      * NQI,NQJ,NQK,NQL,NSIJ,NSKL,
+      * NQIJ,NQIJ1,NSIJ1,NQKL,NQKL1,NSKL1,ijbeg,klbeg
+ C
+-      common /logic4/ nfu(1)
++      integer lpar1
++      parameter(lpar1=34)
++      common /logic4/ nfu(lpar1)
+ c
+       dimension indx(*)
+       dimension xt1(nbls1,lt1,lt2)
+Index: src/NWints/texas/derivat.f
+===================================================================
+--- src/NWints/texas/derivat.f	(revision 28366)
++++ src/NWints/texas/derivat.f	(working copy)
+@@ -16,7 +16,9 @@
+ c
+       implicit real*8 (a-h,o-z)
+ c
+-      common /logic4/ nfu(1)
++      integer lpar1
++      parameter (lpar1=34)
++      common /logic4/ nfu(lpar1)
+       common /big/ bl(1)
+       COMMON/SHELL/LSHELLT,LSHELIJ,LSHELKL,LHELP,LCAS2(4),LCAS3(4)
+       common /lcases/ lcase
+@@ -289,9 +291,15 @@
+      *                    nqij,nqkl, deriv,  xab,xcd, xyab,xycd)
+       implicit real*8 (a-h,o-z)
+ c
+-      common /logic4/ nfu(1)
+-      common /logic10/ nmxyz(3,1)
+-      common /logic11/ npxyz(3,1)
++      integer lpar1,lpar2,lpar3,lpar4,lpar5
++      parameter(lpar1=34,lpar2=6545,lpar3=4060,lpar4=10,lpar5=33)
++      common /logic1/ ndege(lpar4)
++      common /logic2/ len(lpar4)
++      common /logic3/ lensm(lpar5)
++      common /logic4/ nfu(lpar1)
++      common /logic9/ nia(3,lpar2)
++      common /logic10/ nmxyz(3,lpar2)
++      common /logic11/ npxyz(3,lpar3)
+ c
+       dimension buf2(nbls,lnijr,lnklr,ngcd)
+       dimension deriv(6,nbls,lnij,lnkl,ngcd)
+@@ -374,7 +382,9 @@
+ c
+       implicit real*8 (a-h,o-z)
+ c
+-      common /logic4/ nfu(1)
++      integer lpar1
++      parameter(lpar1=34)
++      common /logic4/ nfu(lpar1)
+       COMMON/SHELL/LSHELLT,LSHELIJ,LSHELKL,LHELP,LCAS2(4),LCAS3(4)
+       common /lcases/ lcase
+       common/obarai/
+@@ -705,10 +715,15 @@
+ c second-der. That's why dimension for buf2(ndim,*,*,*,*) has ndim=4
+ c for first- and ndim=10 for second-derivatives.
+ c
+-      common /logic4/ nfu(1)
+-      common /logic9/ nia(3,1)
+-      common /logic10/ nmxyz(3,1)
+-      common /logic11/ npxyz(3,1)
++      integer lpar1,lpar2,lpar3,lpar4,lpar5
++      parameter(lpar1=34,lpar2=6545,lpar3=4060,lpar4=10,lpar5=33)
++      common /logic1/ ndege(lpar4)
++      common /logic2/ len(lpar4)
++      common /logic3/ lensm(lpar5)
++      common /logic4/ nfu(lpar1)
++      common /logic9/ nia(3,lpar2)
++      common /logic10/ nmxyz(3,lpar2)
++      common /logic11/ npxyz(3,lpar3)
+ c
+ cccc  dimension buf2(4,nbls,lnijr,lnklr,ngcd) OR buf2(10,etc.)
+ c2002 dimension buf2(ndim,nbls,lnijr,lnklr,ngcd)
+@@ -862,7 +877,9 @@
+ c
+       implicit real*8 (a-h,o-z)
+ c
+-      common /logic4/ nfu(1)
++      integer lpar1
++      parameter(lpar1=34)
++      common /logic4/ nfu(lpar1)
+       COMMON/SHELL/LSHELLT,LSHELIJ,LSHELKL,LHELP,LCAS2(4),LCAS3(4)
+       common /lcases/ lcase
+       common/obarai/
+@@ -1131,10 +1148,15 @@
+      *                     nqij,nqkl,der2,xab)
+       implicit real*8 (a-h,o-z)
+ c
+-      common /logic4/ nfu(1)
+-      common /logic9/ nia(3,1)
+-      common /logic10/ nmxyz(3,1)
+-      common /logic11/ npxyz(3,1)
++      integer lpar1,lpar2,lpar3,lpar4,lpar5
++      parameter(lpar1=34,lpar2=6545,lpar3=4060,lpar4=10,lpar5=33)
++      common /logic1/ ndege(lpar4)
++      common /logic2/ len(lpar4)
++      common /logic3/ lensm(lpar5)
++      common /logic4/ nfu(lpar1)
++      common /logic9/ nia(3,lpar2)
++      common /logic10/ nmxyz(3,lpar2)
++      common /logic11/ npxyz(3,lpar3)
+ c
+ c2002 dimension buf2(10,nbls,lnijr,lnklr,ngcd)
+       dimension buf2(nbls,lnijr,lnklr,ngcd,10)
+@@ -1386,10 +1408,15 @@
+      *                    nqij,nqkl,
+      *                    nder_aa,der2)
+       implicit real*8 (a-h,o-z)
+-      common /logic4/ nfu(1)
+-      common /logic9/ nia(3,1)
+-      common /logic10/ nmxyz(3,1)
+-      common /logic11/ npxyz(3,1)
++      integer lpar1,lpar2,lpar3,lpar4,lpar5
++      parameter(lpar1=34,lpar2=6545,lpar3=4060,lpar4=10,lpar5=33)
++      common /logic1/ ndege(lpar4)
++      common /logic2/ len(lpar4)
++      common /logic3/ lensm(lpar5)
++      common /logic4/ nfu(lpar1)
++      common /logic9/ nia(3,lpar2)
++      common /logic10/ nmxyz(3,lpar2)
++      common /logic11/ npxyz(3,lpar3)
+ c
+       dimension buf2(nbls,lnijr,lnklr,ngcd,10)
+       dimension der2(45,nbls,lnij,lnkl,ngcd)
+@@ -1462,10 +1489,15 @@
+      *                    nqij,nqkl,
+      *                    nder_cc,der2)
+       implicit real*8 (a-h,o-z)
+-      common /logic4/ nfu(1)
+-      common /logic9/ nia(3,1)
+-      common /logic10/ nmxyz(3,1)
+-      common /logic11/ npxyz(3,1)
++      integer lpar1,lpar2,lpar3,lpar4,lpar5
++      parameter(lpar1=34,lpar2=6545,lpar3=4060,lpar4=10,lpar5=33)
++      common /logic1/ ndege(lpar4)
++      common /logic2/ len(lpar4)
++      common /logic3/ lensm(lpar5)
++      common /logic4/ nfu(lpar1)
++      common /logic9/ nia(3,lpar2)
++      common /logic10/ nmxyz(3,lpar2)
++      common /logic11/ npxyz(3,lpar3)
+ c
+ c2002 dimension buf2(10,nbls,lnijr,lnklr,ngcd)
+       dimension buf2(nbls,lnijr,lnklr,ngcd,10)
+@@ -1533,10 +1565,15 @@
+      *                    nqij,nqkl,
+      *                    nder_bb,der2,xab)
+       implicit real*8 (a-h,o-z)
+-      common /logic4/ nfu(1)
+-      common /logic9/ nia(3,1)
+-      common /logic10/ nmxyz(3,1)
+-      common /logic11/ npxyz(3,1)
++      integer lpar1,lpar2,lpar3,lpar4,lpar5
++      parameter(lpar1=34,lpar2=6545,lpar3=4060,lpar4=10,lpar5=33)
++      common /logic1/ ndege(lpar4)
++      common /logic2/ len(lpar4)
++      common /logic3/ lensm(lpar5)
++      common /logic4/ nfu(lpar1)
++      common /logic9/ nia(3,lpar2)
++      common /logic10/ nmxyz(3,lpar2)
++      common /logic11/ npxyz(3,lpar3)
+ c
+ c2002 dimension buf2(10,nbls,lnijr,lnklr,ngcd)
+       dimension buf2(nbls,lnijr,lnklr,ngcd,10)
+@@ -1592,10 +1629,15 @@
+      *                    nqij,nqkl,
+      *                    nder_ab,der2,xab)
+       implicit real*8 (a-h,o-z)
+-      common /logic4/ nfu(1)
+-      common /logic9/ nia(3,1)
+-      common /logic10/ nmxyz(3,1)
+-      common /logic11/ npxyz(3,1)
++      integer lpar1,lpar2,lpar3,lpar4,lpar5
++      parameter(lpar1=34,lpar2=6545,lpar3=4060,lpar4=10,lpar5=33)
++      common /logic1/ ndege(lpar4)
++      common /logic2/ len(lpar4)
++      common /logic3/ lensm(lpar5)
++      common /logic4/ nfu(lpar1)
++      common /logic9/ nia(3,lpar2)
++      common /logic10/ nmxyz(3,lpar2)
++      common /logic11/ npxyz(3,lpar3)
+ c
+ c2002 dimension buf2(10,nbls,lnijr,lnklr,ngcd)
+       dimension buf2(nbls,lnijr,lnklr,ngcd,10)
+@@ -1668,10 +1710,15 @@
+      *                    nqij,nqkl,
+      *                    nder_ac,der2)
+       implicit real*8 (a-h,o-z)
+-      common /logic4/ nfu(1)
+-      common /logic9/ nia(3,1)
+-      common /logic10/ nmxyz(3,1)
+-      common /logic11/ npxyz(3,1)
++      integer lpar1,lpar2,lpar3,lpar4,lpar5
++      parameter(lpar1=34,lpar2=6545,lpar3=4060,lpar4=10,lpar5=33)
++      common /logic1/ ndege(lpar4)
++      common /logic2/ len(lpar4)
++      common /logic3/ lensm(lpar5)
++      common /logic4/ nfu(lpar1)
++      common /logic9/ nia(3,lpar2)
++      common /logic10/ nmxyz(3,lpar2)
++      common /logic11/ npxyz(3,lpar3)
+ c
+ c2002 dimension buf2(10,nbls,lnijr,lnklr,ngcd)
+       dimension buf2(nbls,lnijr,lnklr,ngcd,10)
+@@ -1742,10 +1789,15 @@
+      *                    nqij,nqkl,
+      *                    nder_bc,der2,xab)
+       implicit real*8 (a-h,o-z)
+-      common /logic4/ nfu(1)
+-      common /logic9/ nia(3,1)
+-      common /logic10/ nmxyz(3,1)
+-      common /logic11/ npxyz(3,1)
++      integer lpar1,lpar2,lpar3,lpar4,lpar5
++      parameter(lpar1=34,lpar2=6545,lpar3=4060,lpar4=10,lpar5=33)
++      common /logic1/ ndege(lpar4)
++      common /logic2/ len(lpar4)
++      common /logic3/ lensm(lpar5)
++      common /logic4/ nfu(lpar1)
++      common /logic9/ nia(3,lpar2)
++      common /logic10/ nmxyz(3,lpar2)
++      common /logic11/ npxyz(3,lpar3)
+ c
+ c2002 dimension buf2(10,nbls,lnijr,lnklr,ngcd)
+       dimension buf2(nbls,lnijr,lnklr,ngcd,10)
+Index: src/NWints/texas/gencon.f
+===================================================================
+--- src/NWints/texas/gencon.f	(revision 28366)
++++ src/NWints/texas/gencon.f	(working copy)
+@@ -388,7 +388,15 @@
+      * lni,lnj,lnk,lnl,lnij,lnkl,lnijkl,mmax,
+      * nqi,nqj,nqk,nql,nsij,nskl,
+      * nqij,nqij1,nsij1,nqkl,nqkl1,nskl1,ijbeg,klbeg
+-      common /logic4/ nfu(1)
++      integer lpar1,lpar2,lpar3,lpar4,lpar5
++      parameter(lpar1=34,lpar2=6545,lpar3=4060,lpar4=10,lpar5=33)
++      common /logic1/ ndege(lpar4)
++      common /logic2/ len(lpar4)
++      common /logic3/ lensm(lpar5)
++      common /logic4/ nfu(lpar1)
++      common /logic9/ nia(3,lpar2)
++      common /logic10/ nmxyz(3,lpar2)
++      common /logic11/ npxyz(3,lpar3)
+       dimension indx(*)
+       dimension xt1(nbls1,lt1,lt2)
+       dimension buf2(nbls,lt1,lt2,ngcd)
+@@ -466,7 +474,15 @@
+      * NQI,NQJ,NQK,NQL,NSIJ,NSKL,
+      * NQIJ,NQIJ1,NSIJ1,NQKL,NQKL1,NSKL1,ijbeg,klbeg
+ c
+-      common /logic4/ nfu(1)
++      integer lpar1,lpar2,lpar3,lpar4,lpar5
++      parameter(lpar1=34,lpar2=6545,lpar3=4060,lpar4=10,lpar5=33)
++      common /logic1/ ndege(lpar4)
++      common /logic2/ len(lpar4)
++      common /logic3/ lensm(lpar5)
++      common /logic4/ nfu(lpar1)
++      common /logic9/ nia(3,lpar2)
++      common /logic10/ nmxyz(3,lpar2)
++      common /logic11/ npxyz(3,lpar3)
+ c
+       dimension indx(*)
+       dimension xt1(nbls1,lt1,lt2)
+@@ -579,7 +595,15 @@
+      * lni,lnj,lnk,lnl,lnij,lnkl,lnijkl,mmax,
+      * nqi,nqj,nqk,nql,nsij,nskl,
+      * nqij,nqij1,nsij1,nqkl,nqkl1,nskl1,ijbeg,klbeg
+-      common /logic4/ nfu(1)
++      integer lpar1,lpar2,lpar3,lpar4,lpar5
++      parameter(lpar1=34,lpar2=6545,lpar3=4060,lpar4=10,lpar5=33)
++      common /logic1/ ndege(lpar4)
++      common /logic2/ len(lpar4)
++      common /logic3/ lensm(lpar5)
++      common /logic4/ nfu(lpar1)
++      common /logic9/ nia(3,lpar2)
++      common /logic10/ nmxyz(3,lpar2)
++      common /logic11/ npxyz(3,lpar3)
+       dimension indx(*)
+       dimension xt1(nbls1,lt1,lt2)
+       dimension gcoef(nbls,ngcd)
+Index: src/NWints/texas/shells.f
+===================================================================
+--- src/NWints/texas/shells.f	(revision 28366)
++++ src/NWints/texas/shells.f	(working copy)
+@@ -5,7 +5,12 @@
+       common /contr/ ngci,ngcj,ngck,ngcl,lci,lcj,lck,lcl,lcij,lckl
+       common /lengt/ ilen,jlen,klen,llen, ilen1,jlen1,klen1,llen1
+       common /gcont/ ngci1,ngcj1,ngck1,ngcl1,ngcd
+-      common /logic2/ len(1)
++      integer lpar1,lpar4,lpar5
++      parameter(lpar1=34,lpar4=10,lpar5=33)
++      common /logic1/ ndege(lpar4)
++      common /logic2/ len(lpar4)
++      common /logic3/ lensm(lpar5)
++      common /logic4/ nfu(lpar1)
+       dimension inx(12,*)
+ c
+ c This subroutine sets up TYPE and LENGTH of shells and
+@@ -93,10 +98,12 @@
+      * NQI,NQJ,NQK,NQL,NSIJ,NSKL,
+      * NQIJ,NQIJ1,NSIJ1,NQKL,NQKL1,NSKL1,ijbeg,klbeg
+ C
+-      common /logic1/ ndege(1)
+-      common /logic2/ len(1)
+-      common /logic3/ lensm(1)
+-      common /logic4/ nfu(1)
++      integer lpar1,lpar4,lpar5
++      parameter(lpar1=34,lpar4=10,lpar5=33)
++      common /logic1/ ndege(lpar4)
++      common /logic2/ len(lpar4)
++      common /logic3/ lensm(lpar5)
++      common /logic4/ nfu(lpar1)
+ c
+       COMMON/SHELL/LSHELLT,LSHELIJ,LSHELKL,LHELP,LCAS2(4),LCAS3(4)
+       common /lcases/ lcase
+@@ -237,7 +244,15 @@
+      * lni,lnj,lnk,lnl,lnij,lnkl,lnijkl,MMAX,
+      * NQI,NQJ,NQK,NQL,NSIJ,NSKL,
+      * NQIJ,NQIJ1,NSIJ1,NQKL,NQKL1,NSKL1,ijbeg,klbeg
+-      common /logic3/ lensm(1)
++      integer lpar1,lpar2,lpar3,lpar4,lpar5
++      parameter(lpar1=34,lpar2=6545,lpar3=4060,lpar4=10,lpar5=33)
++      common /logic1/ ndege(lpar4)
++      common /logic2/ len(lpar4)
++      common /logic3/ lensm(lpar5)
++      common /logic4/ nfu(lpar1)
++      common /logic9/ nia(3,lpar2)
++      common /logic10/ nmxyz(3,lpar2)
++      common /logic11/ npxyz(3,lpar3)
+ c
+ C************************************************************
+ c
+Index: src/NWints/texas/zeroint.f
+===================================================================
+--- src/NWints/texas/zeroint.f	(revision 28366)
++++ src/NWints/texas/zeroint.f	(working copy)
+@@ -12,7 +12,9 @@
+       character*11 scftype
+       character*8 where
+       common /runtype/ scftype,where
+-      common /logic4/ nfu(1)
++      integer lpar1
++      parameter (lpar1=34)
++      common /logic4/ nfu(lpar1)
+       COMMON/SHELL/LSHELLT,LSHELIJ,LSHELKL,LHELP,LCAS2(4),LCAS3(4)
+       common /lcases/ lcase
+       common/obarai/
+Index: src/util/util_getppn.c
+===================================================================
+--- src/util/util_getppn.c	(revision 27443)
++++ src/util/util_getppn.c	(working copy)
+@@ -32,7 +33,9 @@
+ void FATR util_getppn_(Integer *ppn_out){
+ 
+ #if defined(__bgq__)
+-    *ppn_out = Kernel_ProcessCount();
++  *ppn_out = (Integer) Kernel_ProcessCount();
++  return;
++  if(0) {
+ #elif MPI_VERSION >= 3
+ 
+     int err;
+Index: src/util/GNUmakefile
+===================================================================
+--- src/util/GNUmakefile	(revision 27774)
++++ src/util/GNUmakefile	(revision 27782)
+@@ -234,7 +234,7 @@
+ 
+     USES_BLAS = util.fh ga_it_lsolve.F ga_maxelt.F ga_mix.F ga_iter_diag.F \
+                 ga_orthog.F dabsmax.F ga_normf.F corr_mk_ref.F ga_it2.F ga_lkain_ext.F util_file_name.F dgefa.f util_patch_test.F stpr_sjacobi.F util_dgeev.F \
+-		util_test_cholesky.F
++		util_test_cholesky.F dfill.f ga_lkain_2cpl3_ext.F ga_it2.F
+ 
+ ifdef SPEECH
+    LIB_DEFINES += -DSPEECH
+@@ -254,6 +254,7 @@
+ ifeq ($(TARGET),$(findstring $(TARGET),BGL BGP BGQ))
+ DEFINES += -DNEED_LOC
+ LIB_DEFINES += -DNO_UTIL_TESTS
++LIB_DEFINES += -I/bgsys/drivers/ppcfloor/firmware/include -I/bgsys/drivers/ppcfloor/spi/include/kernel
+ endif
+ 
+ ifdef SLURM
+Index: src/nwdft/xc/xc_vdw_main.F
+===================================================================
+--- src/nwdft/xc/xc_vdw_main.F	(revision 28691)
++++ src/nwdft/xc/xc_vdw_main.F	(revision 28692)
+@@ -477,6 +477,7 @@
+      +                     int(z(i)),UERR)
+             endif
+             do j=i+1,n
++               if (Z(j).ne.0) then
+                rij=dsqrt(
+      +            (x(1,i)-x(1,j))**2 +
+      +            (x(2,i)-x(2,j))**2 +
+@@ -484,6 +485,7 @@
+                xc_vdw_e=xc_vdw_e-c6ij_sk(i,j,z)*
+      *            fdmp(rij,r0(z(i))+r0(z(j)))*
+      *            (rij)**(-6.0d0)
++            endif
+             enddo
+           endif
+         enddo
+@@ -505,6 +507,7 @@
+         do i=1,n-1
+           if (Z(i).ne.0) then
+             do j=i+1,n
++               if (Z(j).ne.0) then
+                rij=dsqrt(
+      +            (x(1,i)-x(1,j))**2 +
+      +            (x(2,i)-x(2,j))**2 +
+@@ -517,6 +520,7 @@
+      *            (rij)**(-6.0d0)
+                e8=e8-c8*fdmp3(rij,r0AB(z(i),z(j))*sr8,alpha+2.0d0)*
+      *            (rij)**(-8.0d0)
++               endif
+             enddo
+           endif
+         enddo
+@@ -525,6 +529,7 @@
+         do i=1,n-1
+           if (Z(i).ne.0) then
+             do j=i+1,n
++               if (Z(j).ne.0) then
+                rij=dsqrt(
+      +            (x(1,i)-x(1,j))**2 +
+      +            (x(2,i)-x(2,j))**2 +
+@@ -536,6 +541,7 @@
+                r0bj=dsqrt(c8/c6d3)
+                e6=e6-c6d3*xc_fdmpbj(rij,r0bj,a1,a2,i6)
+                e8=e8-c8*xc_fdmpbj(rij,r0bj,a1,a2,i8)
++               endif
+             enddo
+           endif
+         enddo
+Index: src/nwdft/xc/xc_cvs98.F
+===================================================================
+--- src/nwdft/xc/xc_cvs98.F	(revision 27970)
++++ src/nwdft/xc/xc_cvs98.F	(revision 27971)
+@@ -160,12 +160,10 @@
+          GAA = (    delrho(n,1,1)*delrho(n,1,1) +
+      &                 delrho(n,2,1)*delrho(n,2,1) +
+      &                 delrho(n,3,1)*delrho(n,3,1))/4.0d0
+-         if(sqrt(gaa).lt.dtol) goto 20
+ c  In the bc95css subroutine, we use 2*TA as the tau, so we do not divide 
+ c  the tau by 2 here
+ 
+          TA = tau(n,1) 
+-         if(ta.lt.dtol) goto 20
+                   
+          Call vs98ss(tol_rho,PA,GAA,TA,FA,FPA,FGA,FTA,EUA,ZA,
+      &                ChiA,EUPA,ChiAP,ChiAG,ZAP,ZAT,ijzy)
+@@ -213,7 +211,6 @@
+ c  In the bc95css subroutine, we use 2*TA as the tau 
+ c
+          TA = tau(n,1)*2.0d0
+-         if(ta.lt.dtol) goto 25
+ 
+          Call vs98ss(tol_rho,PA,GAA,TA,FA,FPA,FGA,FTA,EUA,ZA,
+      &                ChiA,EUPA,ChiAP,ChiAG,ZAP,ZAT,ijzy)
+@@ -235,7 +232,6 @@
+ c
+  25       continue
+          PB = rho(n,3)
+-         if(PB.le.DTol) go to 30
+          GBB =   delrho(n,1,2)*delrho(n,1,2) +
+      &           delrho(n,2,2)*delrho(n,2,2) +
+      &          delrho(n,3,2)*delrho(n,3,2)
+@@ -242,7 +238,6 @@
+ 
+          TB = tau(n,2)*2.0d0
+ 
+-         if(tb.lt.dtol) goto 30
+          Call vs98ss(tol_rho,PB,GBB,TB,FB,FPB,FGB,FTB,EUB,ZB,
+      &                ChiB,EUPB,ChiBP,ChiBG,ZBP,ZBT,ijzy)
+          Ec = Ec + FB*qwght(n)          
+@@ -378,10 +373,9 @@
+       else
+         call errquit("vs98ss: illegal value of ijzy",ijzy,UERR)
+       endif
+-couch
+-c      DTol =1.0d-7 
++
+       dtol=tol_rho
+-      If(PX.le.DTol) then
++      If(PX.le.DTol.or.gx.le.dtol.or.tx.le.dtol) then
+         EUEG = Zero
+         Chi = Zero
+         EUEGP = Zero
+Index: src/64to32blas/xgesvd.F
+===================================================================
+--- src/64to32blas/xgesvd.F	(revision 0)
++++ src/64to32blas/xgesvd.F	(revision 28050)
+@@ -0,0 +1,25 @@
++      SUBROUTINE XGESVD( JOBU, JOBVT, M, N, A, LDA, S, U, LDU, 
++     $                   VT, LDVT,  WORK, LWORK, RWORK, INFO )
++* $Id: ygesvd.F 19697 2010-10-29 16:57:34Z d3y133 $
++      implicit none
++#include "y64.fh"
++      CHARACTER          JOBU, JOBVT
++      INTEGER            INFO, LDA, LDU, LDVT, LWORK, M, N
++      DOUBLE PRECISION   A( LDA, * ), S( * ), U( LDU, * ),
++     $                   VT( LDVT, * ), WORK( * ), RWORK(*)
++c
++      INTGR4            INFO4, LDA4, LDU4, LDVT4, LWORK4, M4, N4
++c
++      lda4=lda
++      ldu4=ldu
++      ldvt4=ldvt
++      m4=m
++      n4=n
++      lwork4=lwork
++c
++      call ZGESVD( JOBU, JOBVT, M4, N4, A, LDA4, S, U, LDU4, 
++     $                   VT, LDVT4,  WORK, LWORK4, RWORK, INFO4 )
++      info=info4
++
++      RETURN
++      END
+Index: src/64to32blas/GNUmakefile
+===================================================================
+--- src/64to32blas/GNUmakefile	(revision 28049)
++++ src/64to32blas/GNUmakefile	(revision 28050)
+@@ -10,7 +10,7 @@
+                  ypotri.o ypotrf.o ysygv.o ygeev.o ygeevx.o \
+                  ifily.o\
+                  xscal.o xaxpy.o xgemm.o xheev.o xcopy.o xdotc.o \
+-                 ixamax.o
++                 ixamax.o xgesvd.o
+ 
+         ifeq ($(BLAS_SIZE),8)
+ 	LIB_DEFINES += -DUSE_INTEGER8
+Index: src/config/data.64_to_32
+===================================================================
+--- src/config/data.64_to_32	(revision 28049)
++++ src/config/data.64_to_32	(revision 28050)
+@@ -50,6 +50,7 @@
+ zdotc      xdotc         
+ zdscal     xsscal        
+ zgemm      xgemm         
++zgesvd     xgesvd
+ zgemv      xgemv         
+ zgerc      xgerc         
+ zhemm      xhemm         
