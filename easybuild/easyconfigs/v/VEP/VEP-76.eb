@@ -1,0 +1,68 @@
+#
+# EasyConfig for the Ensembl Variant Effect Predictor (VEP)
+#
+
+easyblock = 'Tarball'
+
+name = 'VEP'
+version = '76'
+
+homepage = 'http://www.ensembl.org/info/docs/tools/vep/script/index.html'
+description = """Tool for analysis, annotation, and prioritization of genomic variants
+using (cached) Ensembl databases."""
+
+#
+# Don't use 'dummy' as toolchain version to make sure dependencies are loaded
+# both at build as well as at runtime. With 'dummy' as toolchain version,
+# dependencies will only be loaded at runtime.
+#
+#toolchain = {'name': 'dummy', 'version': 'dummy'}
+toolchain = {'name': 'dummy', 'version': ''}
+
+dependencies = [
+    ('PerlPlus', '5.22.0', '-v16.11.1', ('foss', '2015b')),
+]
+
+source_urls = ['https://github.com/Ensembl/ensembl-tools/archive/release/']
+sources = ['%(version)s.zip']
+patches = ['VEP-%(version)s.patch']
+checksums = [
+    '57d8eecf903a225bea4fc9ecc55832c7', # 76.zip
+    'f0fe5d110ba8fc6f27bd312d773f7fe8', # VEP-76.patch
+]
+
+#
+# Customizations for the install step.
+#
+start_dir = 'variant_effect_predictor'
+
+perl_scripts = ['convert_cache.pl', 'filter_vep.pl', 'gtf2vep.pl', 'INSTALL.pl', 'variant_effect_predictor.pl']
+not_scripts = ['example_GRCh37.vcf', 'example_GRCh38.vcf', 'README.txt']
+
+#
+# Make scripts executable and run VEP installer.
+# (Mode may by masked by umask.)
+#
+# NOTE: We only install the API for this old deprecated version of the VEP
+#       and skip installing cache + FastA reference sequences.
+#       This older version of the API is a dependency for CADD,
+#       which cannot use newer Ensembl API versions and comes with it's own modified caches.
+#
+postinstallcmds = [
+    'chmod    a+x            %(installdir)s/*.pl',
+    'chmod -R g+rwX,o+rX,o-w %(installdir)s/*',
+    '%s/INSTALL.pl --AUTO a --DESTDIR %s' % ('%(installdir)s', '%(installdir)s'),
+]
+
+sanity_check_paths = {
+    'files': [perl_scripts, not_scripts],
+    'dirs': ['Bio'],
+}
+
+moduleclass = 'bio'
+modloadmsg = """
+=======================================================================================================================================================================
+WARNING: This is a deprecated old VEP %(version)s, which relies on an old Ensembl API version %(version)s and was installed without Ensembl database caches.
+WARNING: This version is only to be used as a dependency for CADD, which is not compatible with newer VEP versions and comes with its own modified database caches.
+=======================================================================================================================================================================
+"""
