@@ -75,9 +75,10 @@ not_scripts = ['README', 'test_output.tsv.gz', 'test.vcf.gz']
 # (Mode may by masked by umask.)
 #
 postinstallcmds = [
+    'mv -v %(builddir)s/InDels.tsv.gz* %(builddir)s/whole_genome_SNVs.tsv.gz* %(installdir)s/prescored/',
+    'sed -i \'s|/home/user/bin/variant_effect_predictor|${EBROOTVEP}|\' %(installdir)s/bin/config.sh',
     'chmod    a+x            %(installdir)s/bin/*.sh %(installdir)s/bin/src/*.py',
     'chmod -R g+rwX,o+rX,o-w %(installdir)s/*',
-    'mv -v %(builddir)s/InDels.tsv.gz* %(builddir)s/whole_genome_SNVs.tsv.gz* %(installdir)s/prescored/',
 ]
 
 sanity_check_paths = {
@@ -88,13 +89,12 @@ sanity_check_paths = {
 }
 
 moduleclass = 'bio'
-modextravars = {'VEPpath': '${EBROOTVEP}/variant_effect_predictor.pl'}
 modextrapaths = {'PATH': 'bin'}
 modloadmsg = """
 ==================================================================================================
-INFO: To execute CADD choose between either score.sh or score_anno.sh and run:
+INFO: To execute CADD use score.sh (or score_anno.sh) and run:
 
-    \\[score.sh|score_anno.sh\\] path-to-input/variants.vcf.gz path-to-output/scored_variants.tsv.gz
+         score.sh  path-to-input/variants.vcf.gz  path-to-output/scored_variants.tsv.gz
 
 NOTE: input must be a valid bgzipped (not gzipped) VCF file.
 ==================================================================================================
