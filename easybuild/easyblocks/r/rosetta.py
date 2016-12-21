@@ -81,6 +81,12 @@ class EB_Rosetta(EasyBlock):
         except OSError, err:
             raise EasyBuildError("Getting Rosetta sources dir ready failed: %s", err)
 
+    def detect_cxx(self):
+        """Detect compiler name"""
+        self.cxx = os.getenv('CC_SEQ')
+        if self.cxx is None:
+            self.cxx = os.getenv('CC')
+
     def configure_step(self):
         """
         Configure build by creating tools/build/user.settings from configure options.
@@ -89,9 +95,7 @@ class EB_Rosetta(EasyBlock):
         defines = ['NDEBUG']
         self.cfg.update('buildopts', "mode=release")
 
-        self.cxx = os.getenv('CC_SEQ')
-        if self.cxx is None:
-            self.cxx = os.getenv('CC')
+        self.detect_cxx()
         cxx_ver = None
         if self.toolchain.comp_family() in [toolchain.GCC]:  #@UndefinedVariable
             cxx_ver = '.'.join(get_software_version('GCC').split('.')[:2])
@@ -257,6 +261,11 @@ class EB_Rosetta(EasyBlock):
 
     def sanity_check_step(self):
         """Custom sanity check for Rosetta."""
+
+        # self.cxx is usually set by the configure step, but if configure is
+        # not executed (e.g. with --module-only), we need to set it here.
+        if self.cxx is None:
+            self.detect_cxx()
 
         infix = ''
         if self.toolchain.options.get('usempi', None):

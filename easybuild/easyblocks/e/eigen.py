@@ -56,12 +56,12 @@ class EB_Eigen(Tarball):
         """Custom sanity check for Eigen."""
 
         # both in Eigen 2.x an 3.x
-        include_files = ['Array', 'Cholesky', 'Core', 'Dense', 'Eigen', 'Geometry', 'LU',
-                         'LeastSquares', 'QR', 'QtAlignedMalloc', 'SVD', 'Sparse', 'StdVector']
+        include_files = ['Cholesky', 'Core', 'Dense', 'Eigen', 'Geometry', 'LU',
+                         'QR', 'QtAlignedMalloc', 'SVD', 'Sparse', 'StdVector']
 
         if LooseVersion(self.version) >= LooseVersion('3.0'):
             # only in 3.x
-            include_files.extend(['CholmodSupport', 'Eigen2Support', 'Eigenvalues', 'Householder',
+            include_files.extend(['CholmodSupport', 'Eigenvalues', 'Householder',
                                   'IterativeLinearSolvers', 'Jacobi', 'OrderingMethods', 'PaStiXSupport',
                                   'PardisoSupport', 'SparseCholesky', 'SparseCore', 'StdDeque', 'StdList',
                                   'SuperLUSupport', 'UmfPackSupport'])
