@@ -37,16 +37,16 @@ import re
 import os
 import shutil
 import stat
-
 from distutils.version import LooseVersion
-from easybuild.framework.easyblock import EasyBlock
+
+from easybuild.easyblocks.generic.packedbinary import PackedBinary
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.filetools import adjust_permissions, read_file, write_file
 from easybuild.tools.run import run_cmd
 
 
-class EB_MCR(EasyBlock):
+class EB_MCR(PackedBinary):
     """Support for installing MCR."""
 
     def __init__(self, *args, **kwargs):
@@ -62,7 +62,7 @@ class EB_MCR(EasyBlock):
         extra_vars = {
             'java_options': ['-Xmx256m', "$_JAVA_OPTIONS value set for install and in module file.", CUSTOM],
         }
-        return EasyBlock.extra_options(extra_vars)
+        return PackedBinary.extra_options(extra_vars)
 
     def configure_step(self):
         """Configure MCR installation: create license file."""
@@ -84,10 +84,6 @@ class EB_MCR(EasyBlock):
         write_file(configfile, config)
 
         self.log.debug("configuration file written to %s:\n %s", configfile, config)
-
-    def build_step(self):
-        """No building of MCR, no sources available."""
-        pass
 
     def install_step(self):
         """MCR install procedure using 'install' command."""

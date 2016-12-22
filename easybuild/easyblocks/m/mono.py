@@ -31,6 +31,7 @@ EasyBuild support for Mono, implemented as an easyblock
 @author: Pieter De Baets (Ghent University)
 @author: Jens Timmerman (Ghent University)
 """
+from distutils.version import LooseVersion
 import re
 import os
 import shutil
@@ -171,8 +172,14 @@ class EB_Mono(ConfigureMake, Rpm):
     def sanity_check_step(self):
         """Custom sanity check for Mono."""
 
+        binaries = ['bin/mono', 'bin/xbuild']
+        if LooseVersion(self.version) >= LooseVersion('2.11'):
+            binaries.append('bin/mcs')
+        else:
+            binaries.append('bin/gmcs')
+
         custom_paths = {
-            'files': ['bin/mono', 'bin/gmcs', 'bin/xbuild'],
-            'dirs': ['include/mono-%s.0/mono' % self.version.split('.')[0], 'lib'],
+            'files': binaries,
+            'dirs': ['include/mono-2.0/mono', 'lib'],
         }
         ConfigureMake.sanity_check_step(self, custom_paths=custom_paths)

@@ -48,10 +48,10 @@ class FortranPythonPackage(PythonPackage):
         comp_fam = self.toolchain.comp_family()
 
         if comp_fam == toolchain.INTELCOMP:  # @UndefinedVariable
-            cmd = "%s setup.py build --compiler=intel --fcompiler=intelem" % self.python_cmd
+            self.cfg.update('buildopts', "--compiler=intel --fcompiler=intelem")
+            cmd = "%s %s setup.py build %s" % (self.cfg['prebuildopts'], self.python_cmd, self.cfg['buildopts'])
 
         elif comp_fam in [toolchain.GCC, toolchain.CLANGGCC]:  # @UndefinedVariable
-            cmdprefix = ""
             ldflags = os.getenv('LDFLAGS')
             if ldflags:
                 # LDFLAGS should not be set when building numpy/scipy, because it overwrites whatever numpy/scipy sets
@@ -62,10 +62,12 @@ class FortranPythonPackage(PythonPackage):
                 self.log.debug("LDFLAGS was %s, will be cleared before %s build with '%s'" % (self.name,
                                                                                               ldflags,
                                                                                               cmdprefix))
+                self.cfg.update('prebuildopts', cmdprefix)
 
-            cmd = "%s %s setup.py build --fcompiler=gnu95" % (cmdprefix, self.python_cmd)
+            self.cfg.update('buildopts', "--fcompiler=gnu95")
 
         else:
             raise EasyBuildError("Unknown family of compilers being used: %s", comp_fam)
 
+        cmd = "%s %s setup.py build %s" % (self.cfg['prebuildopts'], self.python_cmd, self.cfg['buildopts'])
         run_cmd(cmd, log_all=True, simple=True)

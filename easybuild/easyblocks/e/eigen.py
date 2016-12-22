@@ -21,27 +21,15 @@ import os
 import shutil
 from distutils.version import LooseVersion
 
-from easybuild.framework.easyblock import EasyBlock
+from easybuild.easyblocks.generic.tarball import Tarball
 from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.filetools import mkdir
 
 
-class EB_Eigen(EasyBlock):
+class EB_Eigen(Tarball):
     """
     Support for building Eigen.
     """
-
-    def configure_step(self):
-        """
-        No configure for Eigen.
-        """
-        pass
-
-    def build_step(self):
-        """
-        No build for Eigen.
-        """
-        pass
 
     def install_step(self):
         """
@@ -68,12 +56,12 @@ class EB_Eigen(EasyBlock):
         """Custom sanity check for Eigen."""
 
         # both in Eigen 2.x an 3.x
-        include_files = ['Array', 'Cholesky', 'Core', 'Dense', 'Eigen', 'Geometry', 'LU',
-                         'LeastSquares', 'QR', 'QtAlignedMalloc', 'SVD', 'Sparse', 'StdVector']
+        include_files = ['Cholesky', 'Core', 'Dense', 'Eigen', 'Geometry', 'LU',
+                         'QR', 'QtAlignedMalloc', 'SVD', 'Sparse', 'StdVector']
 
         if LooseVersion(self.version) >= LooseVersion('3.0'):
             # only in 3.x
-            include_files.extend(['CholmodSupport', 'Eigen2Support', 'Eigenvalues', 'Householder',
+            include_files.extend(['CholmodSupport', 'Eigenvalues', 'Householder',
                                   'IterativeLinearSolvers', 'Jacobi', 'OrderingMethods', 'PaStiXSupport',
                                   'PardisoSupport', 'SparseCholesky', 'SparseCore', 'StdDeque', 'StdList',
                                   'SuperLUSupport', 'UmfPackSupport'])

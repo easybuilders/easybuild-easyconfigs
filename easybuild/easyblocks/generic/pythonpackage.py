@@ -229,6 +229,9 @@ class PythonPackage(ExtensionEasyBlock):
             # don't auto-install dependencies
             self.cfg.update('installopts', '--no-deps')
 
+            # don't (try to) uninstall already availale versions of the package being installed
+            self.cfg.update('installopts', '--ignore-installed')
+
             if self.cfg.get('zipped_egg', False):
                 self.cfg.update('installopts', '--egg')
 
