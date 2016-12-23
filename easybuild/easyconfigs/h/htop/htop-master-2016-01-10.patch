@@ -1,0 +1,106 @@
+diff -ru htop-master.original/configure.ac htop-master.patched/configure.ac
+--- htop-master.original/configure.ac	2016-01-07 01:00:52.000000000 +0100
++++ htop-master.patched/configure.ac	2016-01-28 01:09:15.000000000 +0100
+@@ -185,6 +185,8 @@
+       AC_MSG_ERROR([You may want to use --disable-unicode or install libncursesw.])
+    ))))))
+ 
++   AC_CHECK_LIB([tinfo], [napms])
++
+    AC_CHECK_HEADERS([ncursesw/curses.h],[:],
+       [AC_CHECK_HEADERS([ncurses/ncurses.h],[:],
+          [AC_CHECK_HEADERS([ncurses/curses.h],[:],
+@@ -197,6 +199,8 @@
+       missing_libraries="$missing_libraries libncurses"
+    ))))
+    
++   AC_CHECK_LIB([tinfo], [napms])
++
+    AC_CHECK_HEADERS([curses.h],[:],
+       [AC_CHECK_HEADERS([ncurses/curses.h],[:],
+          [AC_CHECK_HEADERS([ncurses/ncurses.h],[:],
+diff -ru htop-master.original/linux/LinuxProcess.c htop-master.patched/linux/LinuxProcess.c
+--- htop-master.original/linux/LinuxProcess.c	2016-01-07 01:00:52.000000000 +0100
++++ htop-master.patched/linux/LinuxProcess.c	2016-01-28 01:09:43.000000000 +0100
+@@ -184,9 +184,15 @@
+    [M_LRS] = { .name = "M_LRS", .title = " LIB ", .description = "The library size of the process", .flags = 0, },
+    [M_DT] = { .name = "M_DT", .title = " DIRTY ", .description = "Size of the dirty pages of the process", .flags = 0, },
+    [ST_UID] = { .name = "ST_UID", .title = " UID ", .description = "User ID of the process owner", .flags = 0, },
+-   [PERCENT_CPU] = { .name = "PERCENT_CPU", .title = "CPU% ", .description = "Percentage of the CPU time the process used in the last sampling", .flags = 0, },
+-   [PERCENT_MEM] = { .name = "PERCENT_MEM", .title = "MEM% ", .description = "Percentage of the memory the process is using, based on resident memory size", .flags = 0, },
+-   [USER] = { .name = "USER", .title = "USER      ", .description = "Username of the process owner (or user ID if name cannot be determined)", .flags = 0, },
++/*
++   # 
++   # Patched PERCENT_CPU, PERCENT_MEM and USER formatting.
++   # When changing the column headers here: make sure to also patch the field values in ../Proces.c
++   #
++*/
++   [PERCENT_CPU] = { .name = "PERCENT_CPU", .title = "  CPU% ", .description = "Percentage of the CPU time the process used in the last sampling", .flags = 0, },
++   [PERCENT_MEM] = { .name = "PERCENT_MEM", .title = " MEM% ", .description = "Percentage of the memory the process is using, based on resident memory size", .flags = 0, },
++   [USER] = { .name = "USER", .title = "USER               ", .description = "Username of the process owner (or user ID if name cannot be determined)", .flags = 0, },
+    [TIME] = { .name = "TIME", .title = "  TIME+  ", .description = "Total time the process has spent in user and system time", .flags = 0, },
+    [NLWP] = { .name = "NLWP", .title = "NLWP ", .description = "Number of threads in the process", .flags = 0, },
+    [TGID] = { .name = "TGID", .title = "   TGID ", .description = "Thread group ID (i.e. process ID)", .flags = 0, },
+diff -ru htop-master.original/Process.c htop-master.patched/Process.c
+--- htop-master.original/Process.c	2016-01-07 01:00:52.000000000 +0100
++++ htop-master.patched/Process.c	2016-01-28 01:09:31.000000000 +0100
+@@ -357,21 +357,21 @@
+    bool coloring = this->settings->highlightMegabytes;
+ 
+    switch (field) {
++/*
++#
++# Patched PERCENT_CPU and PERCENT_MEM formatting.
++# When changed here: make sure to also patch the column headers in linux/LinuxProces.c
++#
++*/
+    case PERCENT_CPU: {
+-      if (this->percent_cpu > 999.9) {
+-         snprintf(buffer, n, "%4d ", (unsigned int)this->percent_cpu); 
+-      } else if (this->percent_cpu > 99.9) {
+-         snprintf(buffer, n, "%3d. ", (unsigned int)this->percent_cpu); 
+-      } else {
+-         snprintf(buffer, n, "%4.1f ", this->percent_cpu);
+-      }
++      snprintf(buffer, n, "%6.1f ", this->percent_cpu);
+       break;
+    }
+    case PERCENT_MEM: {
+       if (this->percent_mem > 99.9) {
+-         snprintf(buffer, n, "100. "); 
++         snprintf(buffer, n, "100.0 "); 
+       } else {
+-         snprintf(buffer, n, "%4.1f ", this->percent_mem);
++         snprintf(buffer, n, "%5.1f ", this->percent_mem);
+       }
+       break;
+    }
+@@ -450,17 +450,23 @@
+    case TGID: snprintf(buffer, n, Process_pidFormat, this->tgid); break;
+    case TPGID: snprintf(buffer, n, Process_pidFormat, this->tpgid); break;
+    case TTY_NR: snprintf(buffer, n, "%5u ", this->tty_nr); break;
++/*
++#
++# Patched USER formatting: doubled field size to accomodate long prefixed accounts from IDVault.
++# When changed here: make sure to also patch the column headers in linux/LinuxProces.c
++#
++*/
+    case USER: {
+       if (Process_getuid != (int) this->st_uid)
+          attr = CRT_colors[PROCESS_SHADOW];
+       if (this->user) {
+-         snprintf(buffer, n, "%-9s ", this->user);
++         snprintf(buffer, n, "%-18s ", this->user);
+       } else {
+-         snprintf(buffer, n, "%-9d ", this->st_uid);
++         snprintf(buffer, n, "%-18d ", this->st_uid);
+       }
+-      if (buffer[9] != '\0') {
+-         buffer[9] = ' ';
+-         buffer[10] = '\0';
++      if (buffer[18] != '\0') {
++         buffer[18] = ' ';
++         buffer[19] = '\0';
+       }
+       break;
+    }
