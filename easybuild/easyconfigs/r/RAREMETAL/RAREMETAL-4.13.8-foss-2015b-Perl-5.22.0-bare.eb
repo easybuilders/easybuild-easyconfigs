@@ -1,0 +1,63 @@
+#
+# This file is an EasyBuild reciPY as per https://github.com/hpcugent/easybuild
+#
+
+easyblock = 'MakeCp'
+
+name = 'RAREMETAL'
+namelower = name.lower()
+version = '4.13.8'
+
+homepage = "http://genome.sph.umich.edu/wiki/RAREMETAL-SOFTWARE"
+description = "Software for performing single variant and gene-level association tests."
+
+toolchain = {'name': 'foss', 'version': '2015b'}
+
+#
+# Example URL:
+# http://genome.sph.umich.edu/w/images/1/13/LINUX_raremetal.4.13.8.tgz
+#
+source_urls = [('http://genome.sph.umich.edu/w/images/1/13/')]
+sources = ['LINUX_%(namelower)s.%(version)s.tgz']
+checksums = ['9df6c115c4509ce841339ecaf18206ba']
+patches = ['%(name)s-%(version)s.patch']
+
+perl = 'Perl'
+perlver = '5.22.0'
+perlversuffix = '-bare'
+versionsuffix = '-%s-%s%s' % (perl, perlver, perlversuffix)
+dependencies = [
+    (perl, perlver, perlversuffix),
+    ('zlib', '1.2.8')
+]
+
+#
+# Some precompiled binary libs are provided wich will cause make to fail.
+# Need to clean and re-make libStatGen first.
+#
+prebuildopts = 'cd libStatGen && make clean && make && cd .. && '
+
+#
+# Install.
+#
+executables = ['raremetal', 'raremetalworker']
+files_to_copy = ['bin', 'README', 'data', (['script/calculateOddsRatio.pl'], 'bin/')]
+
+#
+# Make scripts executable.
+# (Mode may by masked by umask.)
+#
+postinstallcmds = [
+    'for executable in $(ls -1 %(installdir)s/bin/*.{bash,pl,py,R,sh} 2> /dev/null); do chmod 775 ${executable}; done', 
+    'chmod -R g+rwX,o+rX,o-w %(installdir)s/*'
+]
+
+#
+# Check if all binaries from the suite are present.
+#
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in executables],
+    'dirs': [],
+}
+
+moduleclass = 'bio'
