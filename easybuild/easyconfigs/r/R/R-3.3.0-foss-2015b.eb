@@ -1,0 +1,256 @@
+
+#
+# This EasyBuild config file for R was generated with generateEasyConfig.R
+#
+
+name = 'R'
+version = '3.3.0'
+homepage = 'http://www.r-project.org/'
+description = """R is a free software environment for statistical computing and graphics."""
+moduleclass = 'lang'
+toolchain = {'name': 'foss', 'version': '2015b'}
+
+sources = [SOURCE_TAR_GZ]
+source_urls = ['http://cran.us.r-project.org/src/base/R-%(version_major)s']
+
+#
+# Configure options.
+#
+# * Disabled R-shlib, because it fails to compile with the deps as provided with EB.
+# * LAPACK is built into BLAS, which will be detected correctly when LAPACK_LIBS is not specified.
+#
+#preconfigopts = 'BLAS_LIBS="$LIBBLAS" LAPACK_LIBS="$LIBLAPACK"'
+preconfigopts = 'BLAS_LIBS="$LIBBLAS"'
+configopts = '--with-lapack --with-blas --with-pic --enable-threads --with-x=no --enable-R-shlib'
+configopts += ' --with-tcl-config=$EBROOTTCL/lib/tclConfig.sh --with-tk-config=$EBROOTTK/lib/tkConfig.sh '
+
+#
+# Enable graphics capabilities for plotting.
+#
+configopts += ' --with-cairo --with-libpng --with-jpeglib --with-libtiff'
+#
+# Some recommended packages may fail in a parallel build (e.g. Matrix) and we're installing them anyway below.
+#
+configopts += ' --with-recommended-packages=no'
+
+dependencies = [
+    ('libreadline', '6.3'),
+    ('ncurses', '5.9'),
+    ('bzip2', '1.0.6'),
+    ('XZ', '5.2.2'),
+    ('libpng', '1.6.21'),            # For plotting in R
+    ('libjpeg-turbo', '1.4.2'),      # For plotting in R
+    ('LibTIFF', '4.0.4'),            # For plotting in R
+    ('Tcl', '8.6.4'),                # For Tcl/Tk
+    ('Tk', '8.6.4', '-no-X11'),      # For Tcl/Tk
+    ('cURL', '7.47.1'),              # For RCurl
+    ('libxml2', '2.9.2'),            # For XML
+    ('cairo', '1.14.6'),             # For plotting in R
+    ('Java', '1.8.0_45', '', True),  # Java bindings are built if Java is found, might as well provide it.
+    ('PCRE', '8.38'),                # For rphast package.
+]
+
+package_name_tmpl = '%(name)s_%(version)s.tar.gz'
+
+cran_options = {
+    'source_urls': [
+        'http://cran.r-project.org/src/contrib/',
+        'http://cran.r-project.org/src/contrib/Archive/%(name)s',
+    ],
+    'source_tmpl': package_name_tmpl,
+}
+
+bioconductor_options = {
+    'source_urls': [
+        'http://www.bioconductor.org/packages/release/bioc/src/contrib/',
+        'http://www.bioconductor.org/packages/release/data/annotation/src/contrib/',
+        'http://www.bioconductor.org/packages/release/data/experiment/src/contrib/',
+        'https://bioconductor.org/packages/3.3/bioc/src/contrib/',
+        'https://bioconductor.org/packages/3.3/data/annotation/src/contrib/',
+        'https://bioconductor.org/packages/3.3/data/experiment/src/contrib/',
+        'https://bioconductor.org/packages/3.3/extra/src/contrib/',
+    ],
+    'source_tmpl': package_name_tmpl,
+}
+
+
+#
+# R package list.
+#   * Order of packages is important!
+#   * Packages should be specified with fixed versions!
+#
+exts_list = [
+        # 
+        # Default libraries; only here to sanity check their presence.
+        #
+        'base',
+        'compiler',
+        'datasets',
+        'graphics',
+        'grDevices',
+        'grid',
+        'methods',
+        'parallel',
+        'splines',
+        'stats',
+        'stats4',
+        'tcltk',
+        'tools',
+        'utils',
+        #
+        # Other packages.
+        #
+        ('MASS', '7.3-45', cran_options),
+        ('combinat', '0.0-8', cran_options),
+        ('klaR', '0.6-12', cran_options),
+        ('lattice', '0.20-33', cran_options),
+        ('nlme', '3.1-127', cran_options),
+        ('cluster', '2.0.4', cran_options),
+        ('sp', '1.2-3', cran_options),
+        ('Matrix', '1.2-6', cran_options),
+        ('LearnBayes', '2.15', cran_options),
+        ('deldir', '0.1-12', cran_options),
+        ('boot', '1.3-18', cran_options),
+        ('coda', '0.18-1', cran_options),
+        ('gtools', '3.5.0', cran_options),
+        ('gdata', '2.17.0', cran_options),
+        ('gmodels', '2.16.2', cran_options),
+        ('spdep', '0.6-4', cran_options),
+        ('AlgDesign', '1.1-7.3', cran_options),
+        ('agricolae', '1.2-3', cran_options),
+        ('BiocGenerics', '0.18.0', bioconductor_options),
+        ('Biobase', '2.32.0', bioconductor_options),
+        ('S4Vectors', '0.10.1', bioconductor_options),
+        ('IRanges', '2.6.0', bioconductor_options),
+        ('DBI', '0.4-1', cran_options),
+        ('RSQLite', '1.0.0', cran_options),
+        ('AnnotationDbi', '1.34.3', bioconductor_options),
+        ('ape', '3.5', cran_options),
+        ('argparser', '0.4', cran_options),
+        ('BiocInstaller', '1.22.2', bioconductor_options),
+        ('lambda.r', '1.1.7', cran_options),
+        ('futile.options', '1.0.0', cran_options),
+        ('futile.logger', '1.4.1', cran_options),
+        ('snow', '0.4-1', cran_options),
+        ('BiocParallel', '1.6.2', bioconductor_options),
+        ('zlibbioc', '1.18.0', bioconductor_options),
+        ('XVector', '0.12.0', bioconductor_options),
+        ('Biostrings', '2.40.1', bioconductor_options),
+        ('bitops', '1.0-6', cran_options),
+        ('GenomeInfoDb', '1.8.1', bioconductor_options),
+        ('GenomicRanges', '1.24.0', bioconductor_options),
+        ('XML', '3.98-1.4', cran_options),
+        ('RCurl', '1.95-4.8', cran_options),
+        ('Rsamtools', '1.24.0', bioconductor_options),
+        ('SummarizedExperiment', '1.2.2', bioconductor_options),
+        ('GenomicAlignments', '1.8.0', bioconductor_options),
+        ('rtracklayer', '1.32.0', bioconductor_options),
+        ('BSgenome', '1.40.0', bioconductor_options),
+        ('BSgenome.Hsapiens.UCSC.hg19', '1.4.0', bioconductor_options),
+        ('Cairo', '1.5-9', cran_options),
+        ('mgcv', '1.8-12', cran_options),
+        ('nnet', '7.3-12', cran_options),
+        ('Rcpp', '0.12.5', cran_options),
+        ('minqa', '1.2.4', cran_options),
+        ('nloptr', '1.0.4', cran_options),
+        ('RcppEigen', '0.3.2.8.1', cran_options),
+        ('lme4', '1.1-12', cran_options),
+        ('pbkrtest', '0.4-6', cran_options),
+        ('SparseM', '1.7', cran_options),
+        ('MatrixModels', '0.4-1', cran_options),
+        ('quantreg', '5.24', cran_options),
+        ('car', '2.1-2', cran_options),
+        ('caTools', '1.17.1', cran_options),
+        ('chron', '2.3-47', cran_options),
+        ('class', '7.3-14', cran_options),
+        ('codetools', '0.2-14', cran_options),
+        ('CODEX', '1.4.0', bioconductor_options),
+        ('colorspace', '1.2-6', cran_options),
+        ('digest', '0.6.9', cran_options),
+        ('memoise', '1.0.0', cran_options),
+        ('crayon', '1.3.1', cran_options),
+        ('data.table', '1.9.6', cran_options),
+        ('DEoptimR', '1.0-4', cran_options),
+        ('dichromat', '2.0-0', cran_options),
+        ('DNAcopy', '1.46.0', bioconductor_options),
+        ('iterators', '1.0.8', cran_options),
+        ('foreach', '1.4.3', cran_options),
+        ('doParallel', '1.0.10', cran_options),
+        ('e1071', '1.6-7', cran_options),
+        ('limma', '3.28.5', bioconductor_options),
+        ('edgeR', '3.14.0', bioconductor_options),
+        ('stringi', '1.1.1', cran_options),
+        ('magrittr', '1.5', cran_options),
+        ('stringr', '1.0.0', cran_options),
+        ('evaluate', '0.9', cran_options),
+        ('foreign', '0.8-66', cran_options),
+        ('formatR', '1.4', cran_options),
+        ('gam', '1.12', cran_options),
+        ('gamlss.data', '4.3-4', cran_options),
+        ('gamlss.dist', '4.3-6', cran_options),
+        ('survival', '2.39-2', cran_options),
+        ('gamlss', '4.4-0', cran_options),
+        ('gbm', '2.1.1', cran_options),
+        ('getopt', '1.20.0', cran_options),
+        ('gtable', '0.2.0', cran_options),
+        ('plyr', '1.8.3', cran_options),
+        ('reshape2', '1.4.1', cran_options),
+        ('RColorBrewer', '1.1-2', cran_options),
+        ('munsell', '0.4.3', cran_options),
+        ('labeling', '0.3', cran_options),
+        ('scales', '0.4.0', cran_options),
+        ('ggplot2', '2.1.0', cran_options),
+        ('glmnet', '2.0-5', cran_options),
+        ('KernSmooth', '2.23-15', cran_options),
+        ('gplots', '3.0.1', cran_options),
+        ('gridExtra', '2.2.1', cran_options),
+        ('gsalib', '2.1', cran_options),
+        ('highr', '0.6', cran_options),
+        ('htmltools', '0.3.5', cran_options),
+        ('inlinedocs', '2013.9.3', cran_options),
+        ('mime', '0.4', cran_options),
+        ('markdown', '0.7.7', cran_options),
+        ('yaml', '2.1.13', cran_options),
+        ('knitr', '1.13', cran_options),
+        ('zoo', '1.7-13', cran_options),
+        ('lmtest', '0.9-34', cran_options),
+        ('logging', '0.7-103', cran_options),
+        ('logspline', '2.1.9', cran_options),
+        ('mcmc', '0.9-4', cran_options),
+        ('MCMCpack', '1.3-6', cran_options),
+        ('memisc', '0.99.6', cran_options),
+        ('mlbench', '2.1-1', cran_options),
+        ('mvtnorm', '1.0-5', cran_options),
+        ('nws', '1.7.0.1', cran_options),
+        ('optparse', '1.3.2', cran_options),
+        ('outliers', '0.14', cran_options),
+        ('penalized', '0.9-47', cran_options),
+        ('permute', '0.9-0', cran_options),
+        ('pixmap', '0.4-11', cran_options),
+        ('plotrix', '3.6-2', cran_options),
+        ('polyester', '1.8.2', bioconductor_options),
+        ('praise', '1.0.0', cran_options),
+        ('proto', '0.3-10', cran_options),
+        ('pscl', '1.4.9', cran_options),
+        ('R6', '2.1.2', cran_options),
+        ('randomForest', '4.6-12', cran_options),
+        ('reshape', '0.8.5', cran_options),
+        ('rgl', '0.95.1441', cran_options),
+        ('RGraphics', '2.0-14', cran_options),
+        ('rlecuyer', '0.3-4', cran_options),
+        ('rmarkdown', '0.9.6', cran_options),
+        ('robustbase', '0.92-5', cran_options),
+        ('rpart', '4.1-10', cran_options),
+        ('rphast', '1.6', cran_options),
+        ('sandwich', '2.3-4', cran_options),
+        ('sets', '1.0-16', cran_options),
+        ('spatial', '7.3-11', cran_options),
+        ('svUnit', '0.7-12', cran_options),
+        ('testit', '0.5', cran_options),
+        ('testthat', '1.0.2', cran_options),
+        ('vcd', '1.4-1', cran_options),
+        ('vegan', '2.3-5', cran_options),
+        ('WES.1KG.WUGSC', '1.4.0', bioconductor_options),
+        ('xhmmScripts', '1.1', cran_options),
+        ('xtable', '1.8-2', cran_options),
+]
