@@ -45,6 +45,7 @@ import easybuild.tools.options as eboptions
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig.default import DEFAULT_CONFIG
+from easybuild.framework.easyconfig.format.format import DEPENDENCY_PARAMETERS
 from easybuild.framework.easyconfig.easyconfig import EasyConfig
 from easybuild.framework.easyconfig.easyconfig import get_easyblock_class, letter_dir_for, resolve_template
 from easybuild.framework.easyconfig.parser import EasyConfigParser, fetch_parameters_from_easyconfig
@@ -282,7 +283,7 @@ def template_easyconfig_test(self, spec):
     ec.template_values.update(dummy_template_values)
 
     ec_dict = ec.parser.get_config_dict()
-    keys = []
+    orig_toolchain = ec_dict['toolchain']
     for key in ec_dict:
         # skip parameters for which value is equal to default value
         orig_val = ec_dict[key]
@@ -293,11 +294,38 @@ def template_easyconfig_test(self, spec):
         if key not in DEFAULT_CONFIG and key not in extra_opts:
             continue
 
-        keys.append(key)
         orig_val = resolve_template(ec_dict[key], ec.template_values)
         dumped_val = resolve_template(dumped_ec[key], ec.template_values)
 
-        self.assertEqual(orig_val, dumped_val)
+        # take into account that dumped value for *dependencies may include hard-coded subtoolchains
+        # if no easyconfig was found for the dependency with the 'parent' toolchain,
+        # if may get resolved using a subtoolchain, which is then hardcoded in the dumped easyconfig
+        if key in DEPENDENCY_PARAMETERS:
+            # number of dependencies should remain the same
+            self.assertEqual(len(orig_val), len(dumped_val))
+            for orig_dep, dumped_dep in zip(orig_val, dumped_val):
+                # name/version should always match
+                self.assertEqual(orig_dep[:2], dumped_dep[:2])
+
+                # 3rd value is versionsuffix;
+                if len(dumped_dep) >= 3:
+                    # if no versionsuffix was specified in original dep spec, then dumped value should be empty string
+                    if len(orig_dep) >= 3:
+                        self.assertEqual(dumped_dep[2], orig_dep[2])
+                    else:
+                        self.assertEqual(dumped_dep[2], '')
+
+                # 4th value is toolchain spec
+                if len(dumped_dep) >= 4:
+                    if len(orig_dep) >= 4:
+                        self.assertEqual(dumped_dep[3], orig_dep[3])
+                    else:
+                        # if a subtoolchain is specifed (only) in the dumped easyconfig,
+                        # it should *not* be the same as the parent toolchain
+                        self.assertNotEqual(dumped_dep[3], (orig_toolchain['name'], orig_toolchain['version']))
+
+        else:
+            self.assertEqual(orig_val, dumped_val)
 
     # cache the parsed easyconfig, to avoid that it is parsed again
     self.parsed_easyconfigs.append(ecs[0])
