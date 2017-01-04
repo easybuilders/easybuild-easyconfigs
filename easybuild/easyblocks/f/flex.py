@@ -27,7 +27,7 @@ EasyBuild support for building and installing flex, implemented as an easyblock
 
 @author: Kenneth Hoste (Ghent University)
 """
-
+from distutils.version import LooseVersion
 import os
 
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
@@ -53,11 +53,12 @@ class EB_flex(ConfigureMake):
 
     def sanity_check_step(self):
         """Custom sanity check for flex"""
-
         custom_paths =  {
-                         'files':["bin/%s" % x for x in ["flex", "lex", "lex++"]] + ["include/FlexLexer.h"] +
-                                 [("lib/lib%s.a" % x, "lib64/lib%s.a" % x) for x in ["fl", "fl_pic"]],
-                         'dirs':[]
-                        }
+            'files': [os.path.join('bin', x) for x in ['flex', 'lex', 'lex++']] + ['include/FlexLexer.h'] +
+                     [('lib/libfl.a', 'lib64/libfl.a')],
+            'dirs':[]
+        }
+        if LooseVersion(self.version) < LooseVersion('2.6.3'):
+            custom_paths['files'].append(('lib/libfl_pic.a', 'lib64/libfl_pic.a'))
 
         super(EB_flex, self).sanity_check_step(custom_paths=custom_paths)
