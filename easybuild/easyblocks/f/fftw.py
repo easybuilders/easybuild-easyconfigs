@@ -29,7 +29,9 @@ from vsc.utils.missing import nub
 
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.framework.easyconfig import CUSTOM
+from easybuild.tools.config import build_option
 from easybuild.tools.systemtools import X86_64, get_cpu_features
+from easybuild.tools.toolchain.compiler import OPTARCH_GENERIC
 
 
 FFTW_CPU_FEATURE_FLAGS_X86_64 = ['avx', 'avx2', 'avx512', 'sse2']
@@ -82,11 +84,13 @@ class EB_FFTW(ConfigureMake):
 
         self.log.info("List of CPU features: %s", cpu_features)
 
-        # auto-detect CPU features that can be used and are not enabled/disabled explicitly
-        for flag in FFTW_CPU_FEATURE_FLAGS:
-            if getattr(self, flag) is None and flag in cpu_features:
-                self.log.info("Enabling use of %s (should be supported based on CPU features)", flag.upper())
-                setattr(self, flag, True)
+        # auto-detect CPU features that can be used and are not enabled/disabled explicitly,
+        # but only if --optarch=GENERIC is not being used
+        if build_option('optarch') != OPTARCH_GENERIC:
+            for flag in FFTW_CPU_FEATURE_FLAGS:
+                if getattr(self, flag) is None and flag in cpu_features:
+                    self.log.info("Enabling use of %s (should be supported based on CPU features)", flag.upper())
+                    setattr(self, flag, True)
 
     def run_all_steps(self, *args, **kwargs):
         """
