@@ -32,7 +32,8 @@ from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.systemtools import X86_64, get_cpu_features
 
 
-FFTW_CPU_FEATURE_FLAGS = ['avx', 'avx2', 'avx512', 'sse2']
+FFTW_CPU_FEATURE_FLAGS_X84_64 = ['avx', 'avx2', 'avx512', 'sse2']
+FFTW_CPU_FEATURE_FLAGS = FFTW_CPU_FEATURE_FLAGS_X84_64 + ['altivec']
 FFTW_PRECISION_FLAGS = ['single', 'double', 'long-double', 'quad-precision']
 
 
@@ -118,9 +119,13 @@ class EB_FFTW(ConfigureMake):
 
                 # SSE2, AVX* only supported for single/double precision
                 if prec in ['single', 'double']:
-                    for flag in FFTW_CPU_FEATURE_FLAGS:
+                    for flag in FFTW_CPU_FEATURE_FLAGS_X86_64:
                         if getattr(self, flag):
                             prec_configopts.append('--enable-%s' % flag)
+
+                # Altivec (POWER) only for single precision
+                if prec == 'single' and self.altivec:
+                    prec_configopts.append('--enable-altivec')
 
                 # append additional configure options (may be empty string, but that's OK)
                 self.cfg.update('configopts', [' '.join(prec_configopts) + common_config_opts])
