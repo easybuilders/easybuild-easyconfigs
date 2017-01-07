@@ -32,8 +32,8 @@ from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.systemtools import X86_64, get_cpu_features
 
 
-FFTW_CPU_FEATURE_FLAGS_X84_64 = ['avx', 'avx2', 'avx512', 'sse2']
-FFTW_CPU_FEATURE_FLAGS = FFTW_CPU_FEATURE_FLAGS_X84_64 + ['altivec']
+FFTW_CPU_FEATURE_FLAGS_X86_64 = ['avx', 'avx2', 'avx512', 'sse2']
+FFTW_CPU_FEATURE_FLAGS = FFTW_CPU_FEATURE_FLAGS_X86_64 + ['altivec']
 FFTW_PRECISION_FLAGS = ['single', 'double', 'long-double', 'quad-precision']
 
 
