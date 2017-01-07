@@ -140,7 +140,7 @@ class EB_FFTW(ConfigureMake):
                         prec_configopts.append('--enable-%s' % flag)
 
                 # NEON (ARM) only for single precision and double precision (on AARCH64)
-                if (prec == 'single' and self.neon) or (prec == 'double' and self.asimd):
+                if (prec == 'single' and (self.asimd or self.neon)) or (prec == 'double' and self.asimd):
                     prec_configopts.append('--enable-neon')
 
                 # append additional configure options (may be empty string, but that's OK)
