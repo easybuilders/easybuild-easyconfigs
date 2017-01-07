@@ -24,6 +24,8 @@
 ##
 """
 EasyBuild support for building and installing FFTW, implemented as an easyblock
+
+@author: Kenneth Hoste (HPC-UGent)
 """
 from vsc.utils.missing import nub
 
@@ -35,7 +37,7 @@ from easybuild.tools.toolchain.compiler import OPTARCH_GENERIC
 
 
 # AVX*, FMA, SSE2 (x86_64 only)
-FFTW_CPU_FEATURE_FLAGS_SINGLE_DOUBLE = ['avx', 'avx2', 'avx512', 'fma', 'sse2']
+FFTW_CPU_FEATURE_FLAGS_SINGLE_DOUBLE = ['avx', 'avx2', 'avx512', 'fma', 'sse2', 'vsx']
 # Altivec (POWER), SSE (x86), NEON (ARM), FMA (x86_64)
 # asimd is CPU feature for extended NEON on AARCH64
 FFTW_CPU_FEATURE_FLAGS = FFTW_CPU_FEATURE_FLAGS_SINGLE_DOUBLE + ['altivec', 'asimd', 'neon', 'sse']
