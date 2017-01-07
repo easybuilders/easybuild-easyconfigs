@@ -34,11 +34,11 @@ from easybuild.tools.systemtools import X86_64, get_cpu_features
 from easybuild.tools.toolchain.compiler import OPTARCH_GENERIC
 
 
-# SSE2, AVX* (x86_64 only)
-FFTW_CPU_FEATURE_FLAGS_SINGLE_DOUBLE = ['avx', 'avx2', 'avx512', 'sse2']
+# AVX*, FMA, SSE2 (x86_64 only)
+FFTW_CPU_FEATURE_FLAGS_SINGLE_DOUBLE = ['avx', 'avx2', 'avx512', 'fma', 'sse2']
 # Altivec (POWER), SSE (x86), NEON (ARM), FMA (x86_64)
 # asimd is CPU feature for extended NEON on AARCH64
-FFTW_CPU_FEATURE_FLAGS = FFTW_CPU_FEATURE_FLAGS_SINGLE_DOUBLE + ['altivec', 'asimd', 'fma', 'neon', 'sse']
+FFTW_CPU_FEATURE_FLAGS = FFTW_CPU_FEATURE_FLAGS_SINGLE_DOUBLE + ['altivec', 'asimd', 'neon', 'sse']
 FFTW_PRECISION_FLAGS = ['single', 'double', 'long-double', 'quad-precision']
 
 
@@ -129,7 +129,10 @@ class EB_FFTW(ConfigureMake):
                 if prec in ['single', 'double']:
                     for flag in FFTW_CPU_FEATURE_FLAGS_SINGLE_DOUBLE:
                         if getattr(self, flag):
-                            prec_configopts.append('--enable-%s' % flag)
+                            if flag == 'fma':
+                                prec_configopts.append('--enable-avx-128-fma')
+                            else:
+                                prec_configopts.append('--enable-%s' % flag)
 
                 # Altivec (POWER) and SSE only for single precision
                 for flag in ['altivec', 'sse']:
@@ -139,10 +142,6 @@ class EB_FFTW(ConfigureMake):
                 # NEON (ARM) only for single precision and double precision (on AARCH64)
                 if (prec == 'single' and self.neon) or (prec == 'double' and self.asimd):
                     prec_configopts.append('--enable-neon')
-
-                # FMA support (only on recent x86_64)
-                if self.fma:
-                    prec_configopts.append('--enable-avx-128-fma')
 
                 # append additional configure options (may be empty string, but that's OK)
                 self.cfg.update('configopts', [' '.join(prec_configopts) + common_config_opts])
