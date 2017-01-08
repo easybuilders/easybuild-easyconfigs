@@ -32,7 +32,7 @@ from vsc.utils.missing import nub
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.config import build_option
-from easybuild.tools.systemtools import X86_64, get_cpu_features
+from easybuild.tools.systemtools import AARCH64, X86_64, get_cpu_architecture, get_cpu_features
 from easybuild.tools.toolchain.compiler import OPTARCH_GENERIC
 
 
@@ -92,8 +92,24 @@ class EB_FFTW(ConfigureMake):
 
         # auto-detect CPU features that can be used and are not enabled/disabled explicitly,
         # but only if --optarch=GENERIC is not being used
-        if self.cfg['auto_detect_cpu_features'] and build_option('optarch') != OPTARCH_GENERIC:
-            for flag in FFTW_CPU_FEATURE_FLAGS:
+        if self.cfg['auto_detect_cpu_features']:
+
+            # if --optarch=GENERIC is used, limit which CPU features we consider for auto-detection
+            if build_option('optarch') == OPTARCH_GENERIC:
+                cpu_arch = get_cpu_architecture()
+                if cpu_arch == X86_64:
+                    # SSE(2) is supported on all x86_64 architectures
+                    cpu_features = ['sse', 'sse2']
+                elif cpu_arch == AARCH64:
+                    # NEON is supported on all AARCH64 architectures (indicated with 'asimd')
+                    cpu_features = ['asimd']
+                else:
+                    cpu_features = []
+            else:
+                cpu_features = FFTW_CPU_FEATURE_FLAGS
+            self.log.info("CPU features considered for auto-detection: %s", cpu_features)
+
+            for flag in cpu_features:
                 if getattr(self, flag) is None and flag in cpu_features:
                     self.log.info("Enabling use of %s (should be supported based on CPU features)", flag.upper())
                     setattr(self, flag, True)
