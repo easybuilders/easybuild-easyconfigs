@@ -82,14 +82,6 @@ class EB_FFTW(ConfigureMake):
                 raise EasyBuildError("EasyBlock attribute '%s' already exists")
             setattr(self, flag, self.cfg['use_%s' % flag])
 
-        cpu_features = get_cpu_features()
-
-        # on macOS, AVX is indicated with 'avx1.0' rather than 'avx'
-        if 'avx1.0' in cpu_features:
-            cpu_features.append('avx')
-
-        self.log.info("List of CPU features: %s", cpu_features)
-
         # auto-detect CPU features that can be used and are not enabled/disabled explicitly,
         # but only if --optarch=GENERIC is not being used
         if self.cfg['auto_detect_cpu_features']:
@@ -109,8 +101,18 @@ class EB_FFTW(ConfigureMake):
                 cpu_features = FFTW_CPU_FEATURE_FLAGS
             self.log.info("CPU features considered for auto-detection: %s", cpu_features)
 
+            # get list of available CPU features, so we can check which ones to retain
+            avail_cpu_features = get_cpu_features()
+
+            # on macOS, AVX is indicated with 'avx1.0' rather than 'avx'
+            if 'avx1.0' in avail_cpu_features:
+                avail_cpu_features.append('avx')
+
+            self.log.info("List of available CPU features: %s", avail_cpu_features)
+
             for flag in cpu_features:
-                if getattr(self, flag) is None and flag in cpu_features:
+                # only enable use of a particular CPU feature if it's still undecided (i.e. None)
+                if getattr(self, flag) is None and flag in avail_cpu_features:
                     self.log.info("Enabling use of %s (should be supported based on CPU features)", flag.upper())
                     setattr(self, flag, True)
 
