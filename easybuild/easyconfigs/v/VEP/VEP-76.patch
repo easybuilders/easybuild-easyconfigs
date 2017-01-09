@@ -1,0 +1,47 @@
+diff -ru ensembl-tools-release-76.org/scripts/variant_effect_predictor/INSTALL.pl ensembl-tools-release-76.patched/scripts/variant_effect_predictor/INSTALL.pl
+--- ensembl-tools-release-76.org/scripts/variant_effect_predictor/INSTALL.pl	2014-09-19 10:17:36.000000000 +0200
++++ ensembl-tools-release-76.patched/scripts/variant_effect_predictor/INSTALL.pl	2016-12-06 13:37:40.000000000 +0100
+@@ -58,7 +58,9 @@
+ 
+ $DEST_DIR       .= '/Bio';
+ $ENS_GIT_ROOT ||= 'https://github.com/Ensembl/';
+-$BIOPERL_URL  ||= 'http://bioperl.org/DIST/BioPerl-1.6.1.tar.gz';
++#$BIOPERL_URL  ||= 'http://bioperl.org/DIST/BioPerl-1.6.1.tar.gz';
++#$BIOPERL_URL  ||= 'https://github.com/bioperl/bioperl-live/archive/bioperl-release-1-6-1.tar.gz';
++$BIOPERL_URL  ||= 'https://github.com/bioperl/bioperl-live/archive/release-1-6-924.zip';
+ $API_VERSION  ||= $VERSION;
+ $CACHE_URL    ||= "ftp://ftp.ensembl.org/pub/release-$API_VERSION/variation/VEP";
+ $CACHE_DIR    ||= $ENV{HOME} ? $ENV{HOME}.'/.vep' : 'cache';
+@@ -361,11 +363,29 @@
+ 
+ print " - moving files\n" unless $QUIET;
+ 
+-$bioperl_file =~ /(bioperl.+?)\.tar\.gz/i;
+-my $bioperl_dir = $1;
++#
++# Workaround for issue when uncompressed root folder of the tar.gz archive is named
++# slightly differently than the file name of the tar.gz archive.
++#
++#$bioperl_file =~ /(bioperl.+?)\.tar\.gz/i;
++#my $bioperl_dir = $1;
++#
++my @uncompressed_dirs = glob("$DEST_DIR/tmp/*bioperl*");
++if (scalar(@uncompressed_dirs) == 1) {
++    $bioperl_dir = basename($uncompressed_dirs[0]);
++    print "   - found bioperl dir = $bioperl_dir.\n";
++} else {
++    #print "DEBUG: First element in array uncompressed_dirs = $uncompressed_dirs[0].\n";
++    print "FATAL: Could not determine name of the uncompressed BioPerl directory\n";
++}
+ 
+ opendir BIO, "$DEST_DIR/tmp/$bioperl_dir/Bio/";
+-move("$DEST_DIR/tmp/$bioperl_dir/Bio/$_", "$DEST_DIR/$_") for readdir BIO;
++#move("$DEST_DIR/tmp/$bioperl_dir/Bio/$_", "$DEST_DIR/$_") for readdir BIO;
++while (readdir BIO) {
++    next if $_ =~ '^\.';
++    print "   - $DEST_DIR/tmp/$bioperl_dir/Bio/$_ -> $DEST_DIR/$_\n";
++    move("$DEST_DIR/tmp/$bioperl_dir/Bio/$_", "$DEST_DIR/$_") or die "FATAL: Failed to move $DEST_DIR/tmp/$bioperl_dir/Bio/$_ to $DEST_DIR/$_\n";
++}
+ closedir BIO;
+ 
+ rmtree("$DEST_DIR/tmp") or die "ERROR: Failed to remove directory $DEST_DIR/tmp\n";
