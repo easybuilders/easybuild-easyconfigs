@@ -1,0 +1,101 @@
+#
+# EasyConfig for Combined Annotation Dependent Depletion (CADD).
+#
+
+easyblock = 'Tarball'
+
+name = 'CADD'
+version = 'v1.3'
+
+homepage = 'http://cadd.gs.washington.edu/home'
+description = """Tool for scoring the deleteriousness of variants in the human genome."""
+
+#
+# Don't use 'dummy' as toolchain version to make sure dependencies are loaded
+# both at build as well as at runtime. With 'dummy' as toolchain version,
+# dependencies will only be loaded at runtime.
+#
+#toolchain = {'name': 'dummy', 'version': 'dummy'}
+toolchain = {'name': 'dummy', 'version': ''}
+
+dependencies = [
+    ('PerlPlus', '5.22.0', '-v17.01.1', ('foss', '2015b')),
+    ('Mozilla-CA', '20160104', '', ('dummy', 'dummy')),
+    ('PythonPlus', '2.7.10', '-v16.11.1', ('foss', '2015b')),
+    ('HTSlib', '1.3.2', '', ('foss', '2015b')),
+    ('SAMtools', '1.3.1', '', ('foss', '2015b')),
+    ('VEP', '76', '', ('dummy', '')),
+]
+
+#
+# Example URL: http://krishna.gs.washington.edu/download/%(name)s/v1.3/cadd_v1.3_scripts.tgz
+#
+source_urls = [
+    'http://krishna.gs.washington.edu/download/%(name)s/%(version)s/',  # Default URL for scripts prescored variants and primateWGA_annoUpdate.
+    'http://krishna.gs.washington.edu/download/%(name)s/v1.2/',         # Only for annotations which were not updated for v1.3 except for primates.
+]
+sources = [
+    'cadd_%(version)s_scripts.tgz',
+    'annotations.tgz',
+    #
+    # Overwrite the content of the annotations/primateWGA folder from annotation.tgz with the update from primateWGA_annoUpdate.tgz
+    # and then move the annotations folder inside the main CADD folder.
+    #
+    ('primateWGA_annoUpdate.tgz', 'rm -Rf annotations/primateWGA && tar -xzf %s && mv annotations %(name)s_%(version)s/'),
+    #
+    # Do not decompress the pre-scored variant files and their indices, but move them "as is" to the build dir.
+    #
+    ('InDels.tsv.gz.tbi',            'cp %s %(builddir)s'),
+    ('InDels.tsv.gz',                'cp %s %(builddir)s'),
+    ('whole_genome_SNVs.tsv.gz.tbi', 'cp %s %(builddir)s'),
+    ('whole_genome_SNVs.tsv.gz',     'cp %s %(builddir)s'),
+]
+checksums = [
+    'ae55f90dd1041650009965532d09933d', # cadd_v1.3_scripts.tgz
+    'dc43f2a3b4e07150639fce6fefac006b', # annotations.tgz
+    'a2a667958fbe2650d3dfd3f1513e1f17', # primateWGA_annoUpdate.tgz
+    '37d98e4da9f6a61aab9f3db179f9f69f', # InDels.tsv.gz.tbi
+    'add232ba847cb2bb862983f445a9482d', # InDels.tsv.gz
+    '8b2284bb66e327651bd64850a3f0a910', # whole_genome_SNVs.tsv.gz.tbi
+    'aca5795946b37c13a5170bd8554f5833', # whole_genome_SNVs.tsv.gz
+]
+
+#
+# Customizations for the install step.
+#
+bash_scripts = ['config.sh', 'score_anno.sh', 'score.sh']
+python_scripts = [
+    'annotateVEP.py', 'appendPHREDscore.py', 'EDict.py', 'extract_scored.py',
+    'impute.py', 'max_line_hierarchy.py', 'score_linModel.py', 'VCF2vepVCF.py',
+]
+not_scripts = ['README', 'test_output.tsv.gz', 'test.vcf.gz']
+
+#
+# Make scripts executable and move prescored variants to prescored subdir.
+# (Mode may by masked by umask.)
+#
+postinstallcmds = [
+    'mv -v %(builddir)s/InDels.tsv.gz* %(builddir)s/whole_genome_SNVs.tsv.gz* %(installdir)s/prescored/',
+    'sed -i \'s|/home/user/bin/variant_effect_predictor|${EBROOTVEP}|\' %(installdir)s/bin/config.sh',
+    'chmod    a+x            %(installdir)s/bin/*.sh %(installdir)s/bin/src/*.py',
+    'chmod -R g+rwX,o+rX,o-w %(installdir)s/*',
+]
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in bash_scripts]
+            +['bin/src/%s' % x for x in python_scripts]
+            +[not_scripts],
+    'dirs': ['annotations', 'bin', 'prescored'],
+}
+
+moduleclass = 'bio'
+modextrapaths = {'PATH': 'bin'}
+modloadmsg = """
+==================================================================================================
+INFO: To execute CADD use score.sh (or score_anno.sh) and run:
+
+         score.sh  path-to-input/variants.vcf.gz  path-to-output/scored_variants.tsv.gz
+
+NOTE: input must be a valid bgzipped (not gzipped) VCF file.
+==================================================================================================
+"""
