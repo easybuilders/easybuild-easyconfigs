@@ -152,7 +152,7 @@ class EB_CP2K(EasyBlock):
         libxsmm = get_software_root('libxsmm')
         if libxsmm:
             self.cfg.update('extradflags', '-D__LIBXSMM')
-            self.libsmm = '-lxsmm'
+            self.libsmm = '-lxsmm -lxsmmf'
             self.log.debug('Using libxsmm %s' % libxsmm)
         elif libsmm:
             libsmms = glob.glob(os.path.join(libsmm, 'lib', 'libsmm_*nn.a'))
@@ -581,8 +581,10 @@ class EB_CP2K(EasyBlock):
         })
 
         options['DFLAGS'] += ' -D__FFTW3'
-
-        options['LIBS'] += ' -L%s %s' % (os.getenv('FFT_LIB_DIR', '.'), os.getenv('LIBFFT', ''))
+        if self.cfg['type'] == 'psmp':
+            options['LIBS'] += ' -L%s %s' % (os.getenv('FFT_LIB_DIR', '.'), os.getenv('LIBFFT_MT', ''))  
+        else:
+            options['LIBS'] += ' -L%s %s' % (os.getenv('FFT_LIB_DIR', '.'), os.getenv('LIBFFT', ''))
 
         return options
 
