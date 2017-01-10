@@ -32,6 +32,7 @@ EasyBuild support for building and installing CP2K, implemented as an easyblock
 @author: Jens Timmerman (Ghent University)
 @author: Ward Poelmans (Ghent University)
 @author: Luca Marsella (CSCS)
+@author: Damian Alvarez (Forschungszentrum Juelich GmbH)
 """
 
 import fileinput
@@ -100,6 +101,7 @@ class EB_CP2K(EasyBlock):
                              "the same time during testing"), CUSTOM],
             'runtest': [True, "Build and run CP2K tests", CUSTOM],
             'plumed': [False, "Enable PLUMED support", CUSTOM],
+            'elpa': [False, "Enable ELPA support", CUSTOM],
         }
         return EasyBlock.extra_options(extra_vars)
 
@@ -206,6 +208,14 @@ class EB_CP2K(EasyBlock):
                 raise EasyBuildError("The PLUMED module needs to be loaded to build CP2K with PLUMED support")
             options['LIBS'] += ' -lplumed'
             options['DFLAGS'] += ' -D__PLUMED2'
+
+        # ELPA
+        if self.cfg["elpa"]:
+            if not get_software_root('ELPA'):
+                raise EasyBuildError("The ELPA module needs to be loaded to build CP2K with ELPA support")
+            options['LIBS'] += ' -lelpa'
+            options['DFLAGS'] += ' -D__ELPA3'
+            options['FCFLAGSOPT'] += ' -I%s ' % os.path.join(get_software_root('ELPA'),'include/elpa-%s/modules' % get_software_version('ELPA'))
 
         # CUDA
         cuda = get_software_root('CUDA')
@@ -435,7 +445,7 @@ class EB_CP2K(EasyBlock):
 
             'INCFLAGS': '$(DFLAGS) -I$(INTEL_INC) -I$(INTEL_INCF) %s' % extrainc,
 
-            'LDFLAGS': '$(INCFLAGS) -i-static',
+            'LDFLAGS': '$(INCFLAGS) ',
             'OBJECTS_ARCHITECTURE': 'machine_intel.o',
         })
 
@@ -449,6 +459,17 @@ class EB_CP2K(EasyBlock):
         options['FCFLAGSOPT2'] += ' $(INCFLAGS) %s -heap-arrays 64' % optarch
 
         ifortver = LooseVersion(get_software_version('ifort'))
+        
+        # -i-static has been deprecated prior to 2013, but was still usable. From 2015 it is not.
+        if ifortver < LooseVersion("2013"):
+            options['LDFLAGS'] += ' -i-static '  
+        else:
+            options['LDFLAGS'] += ' -static-intel ' 
+
+        # Otherwise it fails on linking, since there are 2 definitions of main
+        if LooseVersion(self.version) >= LooseVersion('4.1'):
+            options['LDFLAGS'] += ' -nofor-main ' 
+
         failmsg = "CP2K won't build correctly with the Intel %%s compilers prior to %%s, see %s" % intelurl
 
         if ifortver >= LooseVersion("2011") and ifortver < LooseVersion("2012"):
