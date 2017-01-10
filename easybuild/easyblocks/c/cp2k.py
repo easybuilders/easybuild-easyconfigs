@@ -765,6 +765,7 @@ class EB_CP2K(EasyBlock):
     def install_step(self):
         """Install built CP2K
         - copy from exe to bin
+        - copy data dir (if exists)
         - copy tests
         """
 
@@ -780,6 +781,19 @@ class EB_CP2K(EasyBlock):
                     shutil.copy2(exefile, targetdir)
         except OSError, err:
             raise EasyBuildError("Copying executables from %s to bin dir %s failed: %s", exedir, targetdir, err)
+
+        # copy data dir
+        datadir = os.path.join(self.cfg['start_dir'], 'data')
+        targetdir = os.path.join(self.installdir, 'data')
+        if os.path.exists(targetdir):
+            self.log.info("Won't copy data dir. Destination directory %s already exists" % targetdir)
+        elif os.path.exists(datadir):
+            try:
+                shutil.copytree(datadir, targetdir)
+            except:
+                raise EasyBuildError("Copying data dir from %s to %s failed", datadir, targetdir)
+        else:
+            self.log.info("Won't copy data dir. Source directory %s does not exist" % datadir)
 
         # copy tests
         srctests = os.path.join(self.cfg['start_dir'], 'tests')
@@ -816,3 +830,12 @@ class EB_CP2K(EasyBlock):
         }
 
         super(EB_CP2K, self).sanity_check_step(custom_paths=custom_paths)
+
+    def make_module_extra(self):
+        """Set up a CP2K_DATA_DIR environment variable to find CP2K provided basis sets"""
+
+        txt = super(EB_CP2K, self).make_module_extra()
+        datadir = os.path.join(self.installdir, 'data')
+        if os.path.exists(datadir):
+            txt += self.module_generator.set_environment('CP2K_DATA_DIR', datadir)
+        return txt
