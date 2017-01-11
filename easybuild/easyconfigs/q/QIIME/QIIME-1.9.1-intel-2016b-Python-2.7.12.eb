@@ -1,0 +1,113 @@
+# This file is an EasyBuild reciPY as per https://github.com/hpcugent/easybuild
+# Author: Pablo Escobar Lopez
+# sciCORE - University of Basel
+# SIB Swiss Institute of Bioinformatics 
+
+easyblock = 'Bundle'
+
+name = 'QIIME'
+version = '1.9.1'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'http://qiime.sourceforge.net/'
+description = """QIIME (canonically pronounced Chime) is a pipeline for performing microbial community analysis
+ that integrates many third party tools which have become standard in the field."""
+
+toolchain = {'name': 'intel', 'version': '2016b'}
+
+# required to build Denoiser
+builddependencies = [('GHC', '6.12.3', '', True)]
+
+dependencies = [
+    ('Python', '2.7.12'),  # also provides numpy, scipy, pandas
+    ('numpy', '1.9.2', versionsuffix),  # must be <= v1.9.2
+    ('scipy', '0.16.0', versionsuffix),  # must be v0.16.0
+    ('PyCogent', '1.5.3', versionsuffix),  # must be v1.5.3
+    ('matplotlib', '1.4.3', versionsuffix),  # must be <= v1.4.3
+    ('PyNAST', '1.2.2', versionsuffix),
+    ('UCLUST', '1.2.22q', '-i86linux64', True),
+    ('biom-format', '2.1.5', versionsuffix),
+    ('IPython', '3.2.3', versionsuffix),  # must be < 4.0.0
+    ('scikit-bio', '0.2.3', versionsuffix),  # must be < 0.3.0
+    ('emperor', '0.9.51', versionsuffix),
+    ('FastTree', '2.1.3'),
+    ('CD-HIT', '3.1.1', '-2007-02-01'),
+    ('MUSCLE', '3.8.31'),
+    ('BLAST', '2.2.22', '-Linux_x86_64', True),
+    ('BLAT', '3.5'),
+    ('RDP-Classifier', '2.2', '-Java-1.7.0_80', True),
+    ('RAxML', '7.3.0', '-pthreads'),
+    ('tax2tree', '1.0', versionsuffix),
+    ('R', '3.2.4'),
+    ('Mothur', '1.25.0'),
+    ('clearcut', '1.0.9'),
+    ('cdbfasta', '20100722'),
+    ('microbiomeutil', '2010-04-29', '-Perl-5.24.0'),  # provides ChimeraSlayer
+    ('BWA', '0.7.10'),
+    ('Infernal', '1.0.2'),
+    ('AmpliconNoise', '1.27'),
+    ('USEARCH', '5.2.236-6.1.544', '-i86linux32', True),
+    ('rtax', '0.984', '', True),
+    ('ea-utils', '1.1.2-537'),
+    ('SeqPrep', '1.1'),
+    ('gdata', '2.0.17', versionsuffix),
+    ('Cytoscape', '2.7.0', '-Java-1.7.0_80', True),
+    ('ParsInsert', '1.04'),
+    ('SourceTracker', '0.9.6', '', True),
+    ('sumaclust', '1.0.00'),
+    ('swarm', '1.2.19'),
+    ('SortMeRNA', '2.0'),
+]
+
+# this is a bundle of Python packages
+exts_defaultclass = 'PythonPackage'
+exts_filter = ('python -c "import %(ext_name)s"', '')
+
+exts_list = [
+    ('click', '6.6', {
+        'source_urls': ['https://pypi.io/packages/source/c/click/'],
+    }),
+    ('future', '0.16.0', {
+        'source_urls': ['https://pypi.io/packages/source/f/future'],
+    }),
+    ('qcli', '0.1.1', {
+        'source_urls': ['https://pypi.io/packages/source/q/qcli/'],
+    }),
+    ('qiime-default-reference', '0.1.3', {
+        'source_urls': ['https://pypi.io/packages/source/q/qiime-default-reference/'],
+        'modulename': 'qiime_default_reference',
+    }),
+    ('burrito', '0.9.1', {
+        'source_urls': ['https://pypi.io/packages/source/b/burrito/'],
+    }),
+    ('burrito-fillings', '0.1.1', {
+        'source_urls': ['https://pypi.io/packages/source/b/burrito-fillings/'],
+        'modulename': 'bfillings',
+    }),
+    # must be natsort version < 4.0.0
+    ('natsort', '3.5.6', {
+        'source_urls': ['https://pypi.python.org/packages/source/n/natsort/'],
+    }),
+    ('qiime', version, {
+        'source_urls': ['https://pypi.io/packages/source/q/qiime/'],
+	'patches': ['qiime-1.9.1-disable-building-external-deps.patch'],
+    }),
+]
+
+modextrapaths = {'PYTHONPATH': ['lib/python%(pyshortver)s/site-packages']}
+
+# specify that Bundle easyblock should run a full sanity check, rather than just trying to load the module
+full_sanity_check = True
+
+sanity_check_paths = {
+    'files': ['bin/print_qiime_config.py'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = [
+    ('print_qiime_config.py', '-t'),
+    ('print_qiime_config.py', '-tf'),
+    #('cd %(builddir)s/qiime/qiime-%(version)s/tests/ && python all_tests.py', ''), # this one crashes
+]
+
+moduleclass = 'bio'
