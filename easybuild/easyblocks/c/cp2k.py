@@ -33,6 +33,8 @@ EasyBuild support for building and installing CP2K, implemented as an easyblock
 @author: Ward Poelmans (Ghent University)
 @author: Luca Marsella (CSCS)
 @author: Damian Alvarez (Forschungszentrum Juelich GmbH)
+@author: Alan O'Cais (Forschungszentrum Juelich GmbH)
+@author: Balazs Hajgato (Free University Brussels (VUB))
 """
 
 import fileinput
@@ -101,7 +103,6 @@ class EB_CP2K(EasyBlock):
                              "the same time during testing"), CUSTOM],
             'runtest': [True, "Build and run CP2K tests", CUSTOM],
             'plumed': [False, "Enable PLUMED support", CUSTOM],
-            'elpa': [False, "Enable ELPA support", CUSTOM],
         }
         return EasyBlock.extra_options(extra_vars)
 
@@ -203,19 +204,21 @@ class EB_CP2K(EasyBlock):
             options = self.configure_ScaLAPACK(options)
 
         # PLUMED
-        if self.cfg["plumed"]:
-            if not get_software_root('PLUMED'):
-                raise EasyBuildError("The PLUMED module needs to be loaded to build CP2K with PLUMED support")
+        plumed = get_software_root('PLUMED')
+        if self.cfg['plumed'] and not plumed:
+            raise EasyBuildError("The PLUMED module needs to be loaded to build CP2K with PLUMED support")
+
+        if plumed:
             options['LIBS'] += ' -lplumed'
             options['DFLAGS'] += ' -D__PLUMED2'
 
         # ELPA
-        if self.cfg["elpa"]:
-            if not get_software_root('ELPA'):
-                raise EasyBuildError("The ELPA module needs to be loaded to build CP2K with ELPA support")
+        elpa = get_software_root('ELPA')
+        if elpa:
             options['LIBS'] += ' -lelpa'
             options['DFLAGS'] += ' -D__ELPA3'
-            options['FCFLAGSOPT'] += ' -I%s ' % os.path.join(get_software_root('ELPA'),'include/elpa-%s/modules' % get_software_version('ELPA'))
+            elpa_inc_dir = os.path.join(elpa, 'include', 'elpa-%s' % get_software_version('ELPA'), 'modules')
+            options['FCFLAGSOPT'] += ' -I%s ' % elpa_inc_dir
 
         # CUDA
         cuda = get_software_root('CUDA')
@@ -459,16 +462,16 @@ class EB_CP2K(EasyBlock):
         options['FCFLAGSOPT2'] += ' $(INCFLAGS) %s -heap-arrays 64' % optarch
 
         ifortver = LooseVersion(get_software_version('ifort'))
-        
+
         # -i-static has been deprecated prior to 2013, but was still usable. From 2015 it is not.
         if ifortver < LooseVersion("2013"):
-            options['LDFLAGS'] += ' -i-static '  
+            options['LDFLAGS'] += ' -i-static '
         else:
-            options['LDFLAGS'] += ' -static-intel ' 
+            options['LDFLAGS'] += ' -static-intel '
 
         # Otherwise it fails on linking, since there are 2 definitions of main
         if LooseVersion(self.version) >= LooseVersion('4.1'):
-            options['LDFLAGS'] += ' -nofor-main ' 
+            options['LDFLAGS'] += ' -nofor-main '
 
         failmsg = "CP2K won't build correctly with the Intel %%s compilers prior to %%s, see %s" % intelurl
 
@@ -582,9 +585,10 @@ class EB_CP2K(EasyBlock):
 
         options['DFLAGS'] += ' -D__FFTW3'
         if self.cfg['type'] == 'psmp':
-            options['LIBS'] += ' -L%s %s' % (os.getenv('FFT_LIB_DIR', '.'), os.getenv('LIBFFT_MT', ''))  
+            libfft = os.getenv('LIBFFT_MT', '')
         else:
-            options['LIBS'] += ' -L%s %s' % (os.getenv('FFT_LIB_DIR', '.'), os.getenv('LIBFFT', ''))
+            libfft = os.getenv('LIBFFT', '')
+        options['LIBS'] += ' -L%s %s' % (os.getenv('FFT_LIB_DIR', '.'), libfft)
 
         return options
 
