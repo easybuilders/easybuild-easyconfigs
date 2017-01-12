@@ -49,6 +49,7 @@ import easybuild.tools.toolchain as toolchain
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.build_log import EasyBuildError
+from easybuild.tools.filetools import write_file
 from easybuild.tools.config import build_option
 from easybuild.tools.modules import get_software_root, get_software_version
 from easybuild.tools.run import run_cmd
@@ -102,7 +103,7 @@ class EB_CP2K(EasyBlock):
             'maxtasks': [4, ("Maximum number of CP2K instances run at "
                              "the same time during testing"), CUSTOM],
             'runtest': [True, "Build and run CP2K tests", CUSTOM],
-            'plumed': [False, "Enable PLUMED support", CUSTOM],
+            'plumed': [None, "Enable PLUMED support", CUSTOM],
         }
         return EasyBlock.extra_options(extra_vars)
 
@@ -208,7 +209,9 @@ class EB_CP2K(EasyBlock):
         if self.cfg['plumed'] and not plumed:
             raise EasyBuildError("The PLUMED module needs to be loaded to build CP2K with PLUMED support")
 
-        if plumed:
+        # enable PLUMED support if PLUMED is listed as a dependency
+        # and PLUMED support is either explicitly enabled (plumed = True) or unspecified ('plumed' not defined)
+        if plumed and (self.cfg['plumed'] or self.cfg['plumed'] is None):
             options['LIBS'] += ' -lplumed'
             options['DFLAGS'] += ' -D__PLUMED2'
 
@@ -233,16 +236,10 @@ class EB_CP2K(EasyBlock):
         options['LIBS'] = "-Wl,--start-group %s -Wl,--end-group" % options['LIBS']
 
         # create arch file using options set
-        archfile = os.path.join(self.cfg['start_dir'], 'arch',
-                                '%s.%s' % (self.typearch, self.cfg['type']))
-        try:
-            txt = self._generate_makefile(options)
-            f = open(archfile, 'w')
-            f.write(txt)
-            f.close()
-            self.log.info("Content of makefile (%s):\n%s" % (archfile, txt))
-        except IOError, err:
-            raise EasyBuildError("Writing makefile %s failed: %s", archfile, err)
+        archfile = os.path.join(self.cfg['start_dir'], 'arch', '%s.%s' % (self.typearch, self.cfg['type']))
+        txt = self._generate_makefile(options)
+        write_file(archfile, txt)
+        self.log.info("Content of makefile (%s):\n%s" % (archfile, txt))
 
     def prepmodinc(self):
         """Prepare list of module files"""
@@ -714,13 +711,7 @@ class EB_CP2K(EasyBlock):
                 'mpicmd_prefix': self.toolchain.mpi_cmd_for('', test_core_cnt),
             }
 
-            try:
-                f = open(cfg_fn, "w")
-                f.write(cfg_txt)
-                f.close()
-            except IOError, err:
-                raise EasyBuildError("Failed to create config file %s: %s", cfg_fn, err)
-
+            write_file(cfg_fn, cfg_txt)
             self.log.debug("Contents of %s: %s" % (cfg_fn, cfg_txt))
 
             # run regression test
