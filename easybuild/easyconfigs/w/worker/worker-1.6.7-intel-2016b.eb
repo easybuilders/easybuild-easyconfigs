@@ -1,0 +1,65 @@
+easyblock = 'ConfigureMake'
+
+name = 'worker'
+version = '1.6.7'
+
+homepage = 'https://github.com/gjbex/worker'
+description = """The Worker framework has been developed to help deal with parameter exploration experiments
+ that would otherwise result in many jobs, forcing the user resort to scripting to retain her sanity;
+ see also https://vscentrum.be/neutral/documentation/cluster-doc/running-jobs/worker-framework."""
+
+toolchain = {'name': 'dummy', 'version': ''}
+
+source_urls = ['https://github.com/gjbex/worker/archive/']
+sources = ['%(version)s.tar.gz']
+
+tcname = 'intel'
+tcver = '2016b'
+builddependencies = [(tcname, tcver)]
+versionsuffix = '-%s-%s' % (tcname, tcver)
+
+exts_defaultclass = 'PerlModule'
+
+exts_list = [
+    ('Config::General', '2.61', {
+        'source_tmpl': 'Config-General-2.61.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/T/TL/TLINDEN'],
+    }),
+    ('IO::Stringy', '2.111', {
+        'source_tmpl': 'IO-stringy-2.111.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/D/DS/DSKOLL'],
+    }),
+    ('Text::CSV', '1.33', {
+        'source_tmpl': 'Text-CSV-1.33.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/M/MA/MAKAMAKA'],
+    }),
+    ('DBI', '1.636', {
+        'source_tmpl': 'DBI-1.636.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/T/TI/TIMB'],
+    }),
+    ('DBD::SQLite', '1.50', {
+        'source_tmpl': 'DBD-SQLite-1.50.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/I/IS/ISHIGAKI'],
+    }),
+    ('Date::Language', '2.30', {
+        'source_tmpl': 'TimeDate-2.30.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/G/GB/GBARR'],
+    }),
+]
+
+modextrapaths = {
+    'PERL5LIB': ['share/perl5', 'lib64/perl5'],
+}
+
+# adjust worker configuration file
+# note: tweak this to your local setup
+postinstallcmds = [
+    'sed -i "s/ cores_per_node = .*/ cores_per_node = 16/g" %(installdir)s/conf/worker.conf',
+    'sed -i "s@ qsub = .*@ qsub = `which qsub`@g" %(installdir)s/conf/worker.conf',
+    'sed -i "s/ email = .*/ email = hpc-support@example.com/g" %(installdir)s/conf/worker.conf',
+    'sed -i "s/ unload_modules = .*/ unload_modules = intel/g" %(installdir)s/conf/worker.conf',
+    'sed -i "s@ mpi_module = .*@ mpi_module = %s/%s@g" %%(installdir)s/conf/worker.conf' % (tcname, tcver),
+    'sed -i "s@ module_path = .*@ module_path = %(installdir)s/../../../modules/all@g" %(installdir)s/conf/worker.conf',
+]
+
+moduleclass = 'tools'
