@@ -27,8 +27,10 @@ EasyBuild support for OpenSSL, implemented as an easyblock
 
 @author: Kenneth Hoste (Ghent University)
 @author: Jens Timmerman (Ghent University)
+@author: Davide Vanzo (ACCRE - Vanderbilt University)
 """
 import os
+from distutils.version import LooseVersion
 
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.tools.build_log import EasyBuildError
@@ -57,15 +59,24 @@ class EB_OpenSSL(ConfigureMake):
         for libdir_cand in ['lib', 'lib64']:
             if os.path.exists(os.path.join(self.installdir, libdir_cand)):
                 libdir = libdir_cand
+
         if libdir is None:
             raise EasyBuildError("Failed to determine library directory.")
 
-        custom_paths = {
-            'files': [os.path.join(libdir, x) for x in ['libcrypto.a', 'libcrypto.so', 'libcrypto.so.1.0.0',
-                                                        'libssl.a', 'libssl.so', 'libssl.so.1.0.0']] +
-                     ['bin/openssl'],
-            'dirs': [os.path.join(libdir, 'engines')],
-        }
+        if LooseVersion(self.version) < LooseVersion("1.1"):
+            custom_paths = {
+                'files': [os.path.join(libdir, x) for x in ['libcrypto.a', 'libcrypto.so', 'libcrypto.so.1.0.0',
+                                                            'libssl.a', 'libssl.so', 'libssl.so.1.0.0']] +
+                         ['bin/openssl'],
+                'dirs': [os.path.join(libdir, 'engines')],
+            }
+        else:
+            custom_paths = {
+                'files': [os.path.join(libdir, x) for x in ['libcrypto.a', 'libcrypto.so', 'libcrypto.so.1.1',
+                                                            'libssl.a', 'libssl.so', 'libssl.so.1.1']] +
+                         ['bin/openssl'],
+                'dirs': [os.path.join(libdir, 'engines-1.1')],
+            }
 
         super(EB_OpenSSL, self).sanity_check_step(custom_paths=custom_paths)
     
