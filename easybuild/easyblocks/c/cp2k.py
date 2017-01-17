@@ -54,6 +54,7 @@ from easybuild.tools.config import build_option
 from easybuild.tools.modules import get_software_root, get_software_version
 from easybuild.tools.run import run_cmd
 from easybuild.tools.systemtools import get_avail_core_count
+from easybuild.tools.toolchain.compiler import OPTARCH_GENERIC
 
 # CP2K needs this version of libxc
 LIBXC_MIN_VERSION = '2.0.1'
@@ -332,6 +333,13 @@ class EB_CP2K(EasyBlock):
         if not mpi2:
             raise EasyBuildError("CP2K needs MPI-2, no known MPI-2 supporting library loaded?")
 
+        # pick up optarch value from toolchain, when optarch toolchain option is enabled or --optarch=GENERIC is used
+        optarch = ''
+        if self.toolchain.options.get('optarch', False) or build_option('optarch') == OPTARCH_GENERIC:
+            # take into account that a '-' is missing for the first compiler flag, but also that optarch may be empty
+            if self.toolchain.options.option('optarch'):
+                optarch = '-%s' % self.toolchain.options.option('optarch')
+
         options = {
             'CC': os.getenv('MPICC'),
             'CPP': '',
@@ -353,8 +361,8 @@ class EB_CP2K(EasyBlock):
             'LIBS': os.getenv('LIBS', ''),
 
             'FCFLAGSNOOPT': '$(DFLAGS) $(CFLAGS) -O0  $(FREE) $(FPIC) $(DEBUG)',
-            'FCFLAGSOPT': '-O2 $(FREE) $(SAFE) $(FPIC) $(DEBUG)',
-            'FCFLAGSOPT2': '-O1 $(FREE) $(SAFE) $(FPIC) $(DEBUG)'
+            'FCFLAGSOPT': '-O2 $(FREE) $(SAFE) $(FPIC) $(DEBUG) %s' % optarch,
+            'FCFLAGSOPT2': '-O1 $(FREE) $(SAFE) $(FPIC) $(DEBUG) %s' % optarch,
         }
 
         libint = get_software_root('LibInt')
@@ -451,12 +459,8 @@ class EB_CP2K(EasyBlock):
 
         options['DFLAGS'] += ' -D__INTEL'
 
-        optarch = ''
-        if self.toolchain.options['optarch']:
-            optarch = '-xHOST'
-
-        options['FCFLAGSOPT'] += ' $(INCFLAGS) %s -heap-arrays 64' % optarch
-        options['FCFLAGSOPT2'] += ' $(INCFLAGS) %s -heap-arrays 64' % optarch
+        options['FCFLAGSOPT'] += ' $(INCFLAGS) -heap-arrays 64'
+        options['FCFLAGSOPT2'] += ' $(INCFLAGS) -heap-arrays 64'
 
         ifortver = LooseVersion(get_software_version('ifort'))
 
@@ -509,12 +513,8 @@ class EB_CP2K(EasyBlock):
 
         options['DFLAGS'] += ' -D__GFORTRAN'
 
-        optarch = ''
-        if self.toolchain.options['optarch']:
-            optarch = '-march=native'
-
-        options['FCFLAGSOPT'] += ' $(DFLAGS) $(CFLAGS) %s -fmax-stack-var-size=32768' % optarch
-        options['FCFLAGSOPT2'] += ' $(DFLAGS) $(CFLAGS) %s' % optarch
+        options['FCFLAGSOPT'] += ' $(DFLAGS) $(CFLAGS) -fmax-stack-var-size=32768'
+        options['FCFLAGSOPT2'] += ' $(DFLAGS) $(CFLAGS)'
 
         return options
 
