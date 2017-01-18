@@ -1,0 +1,86 @@
+diff -ur numpy-1.12.0.orig/numpy/distutils/fcompiler/__init__.py numpy-1.12.0/numpy/distutils/fcompiler/__init__.py
+--- numpy-1.12.0.orig/numpy/distutils/fcompiler/__init__.py	2017-01-15 11:39:18.000000000 +0000
++++ numpy-1.12.0/numpy/distutils/fcompiler/__init__.py	2017-01-18 01:43:23.339156348 +0000
+@@ -628,7 +628,10 @@
+         return options
+ 
+     def library_option(self, lib):
+-        return "-l" + lib
++        if lib[0]=='-':
++            return lib
++        else:
++            return "-l" + lib
+     def library_dir_option(self, dir):
+         return "-L" + dir
+ 
+diff -ur numpy-1.12.0.orig/numpy/distutils/system_info.py numpy-1.12.0/numpy/distutils/system_info.py
+--- numpy-1.12.0.orig/numpy/distutils/system_info.py	2017-01-15 11:39:18.000000000 +0000
++++ numpy-1.12.0/numpy/distutils/system_info.py	2017-01-18 01:57:07.329677190 +0000
+@@ -675,7 +675,7 @@
+             if is_string(default):
+                 return [default]
+             return default
+-        return [b for b in [a.strip() for a in libs.split(',')] if b]
++        return [b for b in [a.strip().replace(':',',') for a in libs.split(',')] if b]
+ 
+     def get_libraries(self, key='libraries'):
+         if hasattr(self, '_lib_names'):
+@@ -736,6 +736,8 @@
+             lib_prefixes = ['', 'lib']
+         else:
+             lib_prefixes = ['lib']
++        if lib[0]=='-':
++            return lib
+         # for each library name, see if we can find a file for it.
+         for ext in exts:
+             for prefix in lib_prefixes:
+@@ -1064,16 +1066,13 @@
+         atlas = None
+         lapack = None
+         atlas_1 = None
+-        for d in lib_dirs:
+-            atlas = self.check_libs2(d, atlas_libs, [])
+-            lapack_atlas = self.check_libs2(d, ['lapack_atlas'], [])
+-            if atlas is not None:
+-                lib_dirs2 = [d] + self.combine_paths(d, ['atlas*', 'ATLAS*'])
+-                lapack = self.check_libs2(lib_dirs2, lapack_libs, [])
+-                if lapack is not None:
+-                    break
+-            if atlas:
+-                atlas_1 = atlas
++        atlas = self.check_libs2(lib_dirs, atlas_libs)
++        lapack_atlas = self.check_libs2(lib_dirs, ['lapack_atlas'])
++        if atlas is not None:
++            lib_dirs2 = lib_dirs + self.combine_paths(lib_dirs,['atlas*','ATLAS*'])
++            lapack = self.check_libs2(lib_dirs2, lapack_libs)
++        if atlas:
++            atlas_1 = atlas
+         log.info(self.__class__)
+         if atlas is None:
+             atlas = atlas_1
+@@ -1152,7 +1151,7 @@
+         info = {}
+         atlas_libs = self.get_libs('atlas_libs',
+                                    self._lib_names + self._lib_atlas)
+-        atlas = self.check_libs2(lib_dirs, atlas_libs, [])
++        atlas = self.check_libs2(lib_dirs, atlas_libs)
+         if atlas is None:
+             return
+         include_dirs = self.get_include_dirs()
+Only in numpy-1.12.0/numpy/distutils: system_info.py~
+diff -ur numpy-1.12.0.orig/numpy/distutils/unixccompiler.py numpy-1.12.0/numpy/distutils/unixccompiler.py
+--- numpy-1.12.0.orig/numpy/distutils/unixccompiler.py	2016-12-21 16:46:24.000000000 +0000
++++ numpy-1.12.0/numpy/distutils/unixccompiler.py	2017-01-18 01:43:23.339156348 +0000
+@@ -123,3 +123,12 @@
+ 
+ replace_method(UnixCCompiler, 'create_static_lib',
+                UnixCCompiler_create_static_lib)
++
++def UnixCCompiler_library_option(self, lib):
++    if lib[0]=='-':
++        return lib
++    else:
++        return "-l" + lib
++
++replace_method(UnixCCompiler, 'library_option',
++               UnixCCompiler_library_option)
