@@ -64,10 +64,11 @@ class EB_WPS(EasyBlock):
         self.compile_script = None
         testdata_urls = ["http://www2.mmm.ucar.edu/wrf/src/data/avn_data.tar.gz"]
         if LooseVersion(self.version) < LooseVersion('3.8'):
-            testdata_urls += ["http://www2.mmm.ucar.edu/wrf/src/wps_files/geog.tar.gz"]  # 697MB download, 16GB unpacked!
+            testdata_urls.append("http://www2.mmm.ucar.edu/wrf/src/wps_files/geog.tar.gz")  # 697MB download, 16GB unpacked!
         else:
-            testdata_urls += ["http://www2.mmm.ucar.edu/wrf/src/wps_files/geog_complete.tar.bz2"]  # 2.3GB download!
-        self.cfg['testdata'] = testdata_urls
+            testdata_urls.append("http://www2.mmm.ucar.edu/wrf/src/wps_files/geog_complete.tar.bz2")  # 2.3GB download!
+        if self.cfg.get('testdata') is None:
+            self.cfg['testdata'] = testdata_urls
 
     @staticmethod
     def extra_options():
