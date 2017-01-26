@@ -1,0 +1,46 @@
+# This file is an EasyBuild reciPY as per https://github.com/hpcugent/easybuild
+# Author: Pablo Escobar Lopez
+# sciCORE - University of Basel
+# SIB Swiss Institute of Bioinformatics
+
+easyblock = 'ConfigureMake'
+
+name = 'Gubbins'
+version = '1.4.10'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'http://sanger-pathogens.github.io/gubbins/'
+description = """Genealogies Unbiased By recomBinations In Nucleotide Sequences"""
+
+toolchain = {'name': 'goolf', 'version': '1.7.20'}
+
+source_urls = ['https://github.com/sanger-pathogens/gubbins/archive/']
+sources = ['v%(version)s.tar.gz']
+
+builddependencies = [
+    ('Autoconf', '2.69', '', True)
+]
+
+dependencies = [
+    ('Python', '3.5.2'),
+    ('zlib', '1.2.8')
+]
+
+parallel = 1
+
+preconfigopts = " autoreconf -f -i && "
+
+# shitty hack to install included python libraries
+# this will download python libs from the internet
+preinstallopts = "mkdir -p %(installdir)s/lib/python%(pyshortver)s/site-packages/ && "
+preinstallopts += "export PYTHONPATH=%(installdir)s/lib/python%(pyshortver)s/site-packages && "
+preinstallopts += "sed -i -e 's|setup.py\ install|setup.py\ install\ --prefix=%(installdir)s|' python/Makefile &&"
+
+modextrapaths = {'PYTHONPATH': ['lib/python%(pyshortver)s/site-packages']}
+
+sanity_check_paths = {
+    'files': ['bin/gubbins', 'bin/run_gubbins.py', 'lib/libgubbins.so', 'lib/libgubbins.a'],
+    'dirs': []
+}
+
+moduleclass = 'bio'
