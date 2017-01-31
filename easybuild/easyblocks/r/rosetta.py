@@ -67,7 +67,8 @@ class EB_Rosetta(EasyBlock):
             if len(subdirs) == 1:
                 prefix = os.path.join(self.builddir, subdirs[0])
             else:
-                raise EasyBuildError("Found multiple subdirectories, don't know which one to pick: %s", subdirs)
+                raise EasyBuildError("Found no or multiple subdirectories, expected exactly one: %s", subdirs)
+
             self.srcdir = os.path.join(prefix, 'rosetta_source')
             if not os.path.exists(self.srcdir):
                 self.srcdir = os.path.join(prefix, 'main', 'source')
@@ -83,6 +84,8 @@ class EB_Rosetta(EasyBlock):
 
     def detect_cxx(self):
         """Detect compiler name"""
+        # 'cxx' configure option excepts compiler name like 'gcc', 'icc', 'clang'; i.e. actually the C compiler command
+        # see also main/source/tools/build/basic.settings in Rosetta sources
         self.cxx = os.getenv('CC_SEQ')
         if self.cxx is None:
             self.cxx = os.getenv('CC')
