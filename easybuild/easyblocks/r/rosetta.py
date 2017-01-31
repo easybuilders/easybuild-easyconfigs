@@ -71,7 +71,7 @@ class EB_Rosetta(EasyBlock):
             self.srcdir = os.path.join(prefix, 'rosetta_source')
             if not os.path.exists(self.srcdir):
                 self.srcdir = os.path.join(prefix, 'main', 'source')
-            if not os.path.exists(self.srcdir): 
+            if not os.path.exists(self.srcdir):
                 src_tarball = os.path.join(prefix, 'rosetta%s_source.tgz' % self.version)
                 if os.path.isfile(src_tarball):
                     self.srcdir = extract_file(src_tarball, prefix)
@@ -259,6 +259,12 @@ class EB_Rosetta(EasyBlock):
         else:
             extract_and_copy('rosetta_tools%s', optional=True)
 
+    def make_module_extra(self):
+        """Define extra environment variables specific to Rosetta."""
+        txt = super(EB_Rosetta, self).make_module_extra()
+        txt += self.module_generator.set_environment('ROSETTA3_DB', os.path.join(self.installdir, 'database'))
+        return txt
+
     def sanity_check_step(self):
         """Custom sanity check for Rosetta."""
 
@@ -278,4 +284,3 @@ class EB_Rosetta(EasyBlock):
             'dirs':[],
         }
         super(EB_Rosetta, self).sanity_check_step(custom_paths=custom_paths)
-
