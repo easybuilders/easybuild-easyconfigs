@@ -61,6 +61,8 @@ class EB_EasyBuildMeta(PythonPackage):
             # when installing the easybuild-* packages, the vsc-base version in easy-install.pth may be 'bumped'
             # if a newer vsc-base version is found somewhere (e.g. provided by the OS)
             self.easybuild_pkgs.extend(['vsc-base', 'vsc-install'])
+            # consider setuptools first, in case it is listed as a sources
+            self.easybuild_pkgs.insert(0, 'setuptools')
 
     def check_readiness_step(self):
         """Make sure EasyBuild can be installed with a loaded EasyBuild module."""
@@ -84,14 +86,15 @@ class EB_EasyBuildMeta(PythonPackage):
             for pkg in self.easybuild_pkgs:
                 seldirs = [x for x in subdirs if x.startswith(pkg)]
                 if len(seldirs) != 1:
+                    # setuptools is optional since it may be available in the OS;
                     # vsc-install and vsc-base sources are optional,
                     # they can be pulled in from PyPi when installing easybuild-framework too
-                    if pkg not in ['vsc-base', 'vsc-install']:
-                        raise EasyBuildError("Failed to find EasyBuild %s package (subdirs: %s, seldirs: %s)",
+                    if pkg not in ['setuptools', 'vsc-base', 'vsc-install']:
+                        raise EasyBuildError("Failed to find required EasyBuild package %s (subdirs: %s, seldirs: %s)",
                                              pkg, subdirs, seldirs)
 
                 else:
-                    self.log.info("Installing EasyBuild package %s" % pkg)
+                    self.log.info("Installing package %s", pkg)
                     os.chdir(os.path.join(self.builddir, seldirs[0]))
                     super(EB_EasyBuildMeta, self).install_step()
 
@@ -121,7 +124,7 @@ class EB_EasyBuildMeta(PythonPackage):
         easy_install_pth = os.path.join(self.installdir, self.pylibdir, 'easy-install.pth')
         if os.path.exists(easy_install_pth):
             easy_install_pth_txt = read_file(easy_install_pth)
-            for pkg in [p for p in self.easybuild_pkgs if p != 'vsc-install']:
+            for pkg in [p for p in self.easybuild_pkgs if p not in ['setuptools', 'vsc-install']]:
                 if pkg == 'vsc-base':
                     # don't include strict version check for vsc-base
                     pkg_regex = re.compile(r"^\./%s" % pkg.replace('-', '_'), re.M)
