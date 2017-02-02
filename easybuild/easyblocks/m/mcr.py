@@ -119,16 +119,17 @@ class EB_MCR(EasyBlock):
 
     def sanity_check_step(self):
         """Custom sanity check for MCR."""
-        if self.version == "2016b":
-            custom_paths = {
-                'files': [],
-                'dirs': [os.path.join(self.subdir, x, 'glnxa64') for x in ['bin', 'cefclient/sys/os']],
-            }
+        custom_paths = {
+            'files': [],
+            'dirs': [os.path.join(self.subdir, 'bin', 'glnxa64')],
+        }
+        if LooseVersion(self.version) >= LooseVersion('2016b'):
+            custom_paths.append(os.path.join(self.subdir, 'cefclient', 'sys', 'os', 'glnxa64'))
         else:
-            custom_paths = {
-                'files': [],
-                'dirs': [os.path.join(self.subdir, x, 'glnxa64') for x in ['runtime', 'bin', 'sys/os']],
-            }
+            custom_paths.extend([
+                os.path.join(self.subdir, 'runtime', 'glnxa64'),
+                os.path.join(self.subdir, 'sys', 'os', 'glnxa64'),
+            ])
         super(EB_MCR, self).sanity_check_step(custom_paths=custom_paths)
 
     def make_module_extra(self):
