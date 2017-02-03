@@ -1,10 +1,10 @@
 ##
-# Copyright 2009-2016 Ghent University
-# Copyright 2009-2016 Stijn De Weirdt
+# Copyright 2009-2017 Ghent University
+# Copyright 2009-2017 Stijn De Weirdt
 # Copyright 2010 Dries Verdegem
-# Copyright 2010-2016 Kenneth Hoste
+# Copyright 2010-2017 Kenneth Hoste
 # Copyright 2011 Pieter De Baets
-# Copyright 2011-2016 Jens Timmerman
+# Copyright 2011-2017 Jens Timmerman
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),

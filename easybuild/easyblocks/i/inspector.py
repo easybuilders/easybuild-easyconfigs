@@ -44,8 +44,10 @@ class EB_Inspector(IntelBase):
 
         # recent versions of Inspector are installed to a subdirectory
         self.subdir = ''
-        if LooseVersion(self.version) >= LooseVersion('2013_update7'):
+        if LooseVersion(self.version) >= LooseVersion('2013_update7') and LooseVersion(self.version) < LooseVersion('2017'):
             self.subdir = 'inspector_xe'
+        elif LooseVersion(self.version) >= LooseVersion('2017'):
+            self.subdir = 'inspector'
 
     def make_installdir(self):
         """Do not create installation directory, install script handles that already."""

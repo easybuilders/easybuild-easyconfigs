@@ -1,5 +1,5 @@
 ##
-# Copyright 2009-2016 Ghent University
+# Copyright 2009-2017 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -67,11 +67,12 @@ class EB_Rosetta(EasyBlock):
             if len(subdirs) == 1:
                 prefix = os.path.join(self.builddir, subdirs[0])
             else:
-                raise EasyBuildError("Found multiple subdirectories, don't know which one to pick: %s", subdirs)
+                raise EasyBuildError("Found no or multiple subdirectories, expected exactly one: %s", subdirs)
+
             self.srcdir = os.path.join(prefix, 'rosetta_source')
             if not os.path.exists(self.srcdir):
                 self.srcdir = os.path.join(prefix, 'main', 'source')
-            if not os.path.exists(self.srcdir): 
+            if not os.path.exists(self.srcdir):
                 src_tarball = os.path.join(prefix, 'rosetta%s_source.tgz' % self.version)
                 if os.path.isfile(src_tarball):
                     self.srcdir = extract_file(src_tarball, prefix)
@@ -83,6 +84,8 @@ class EB_Rosetta(EasyBlock):
 
     def detect_cxx(self):
         """Detect compiler name"""
+        # 'cxx' configure option excepts compiler name like 'gcc', 'icc', 'clang'; i.e. actually the C compiler command
+        # see also main/source/tools/build/basic.settings in Rosetta sources
         self.cxx = os.getenv('CC_SEQ')
         if self.cxx is None:
             self.cxx = os.getenv('CC')
@@ -259,6 +262,12 @@ class EB_Rosetta(EasyBlock):
         else:
             extract_and_copy('rosetta_tools%s', optional=True)
 
+    def make_module_extra(self):
+        """Define extra environment variables specific to Rosetta."""
+        txt = super(EB_Rosetta, self).make_module_extra()
+        txt += self.module_generator.set_environment('ROSETTA3_DB', os.path.join(self.installdir, 'database'))
+        return txt
+
     def sanity_check_step(self):
         """Custom sanity check for Rosetta."""
 
@@ -278,4 +287,3 @@ class EB_Rosetta(EasyBlock):
             'dirs':[],
         }
         super(EB_Rosetta, self).sanity_check_step(custom_paths=custom_paths)
-

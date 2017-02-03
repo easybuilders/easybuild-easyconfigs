@@ -1,5 +1,5 @@
 ##
-# Copyright 2009-2016 Ghent University
+# Copyright 2009-2017 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -190,6 +190,9 @@ class EB_Boost(EasyBlock):
 
             # boost.mpi was built, let's 'install' it now
             run_cmd("./bjam %s  install %s" % (bjammpioptions, paracmd), log_all=True, simple=True)
+            
+            # cleanup previous build before proceeding with the full Boost
+            run_cmd("./bjam --clean-all", log_all=True, simple=True)
 
         # install remainder of boost libraries
         self.log.info("Installing boost libraries")

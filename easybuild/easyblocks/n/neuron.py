@@ -1,5 +1,5 @@
 ##
-# Copyright 2009-2016 Ghent University
+# Copyright 2009-2017 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -39,6 +39,8 @@ from easybuild.tools.filetools import adjust_permissions
 from easybuild.tools.modules import get_software_root
 from easybuild.tools.run import run_cmd
 from easybuild.tools.systemtools import get_shared_lib_ext
+
+from distutils.version import LooseVersion
 
 
 class EB_NEURON(ConfigureMake):
@@ -121,10 +123,17 @@ class EB_NEURON(ConfigureMake):
         shlib_ext = get_shared_lib_ext()
         binpath = os.path.join(self.hostcpu, 'bin')
         libpath = os.path.join(self.hostcpu, 'lib', 'lib%s.' + shlib_ext)
+        binaries = ["bbswork.sh", "hel2mos1.sh", "ivoc", "memacs", "mkthreadsafe", "modlunit", "mos2nrn", 
+                    "mos2nrn2.sh", "neurondemo", "nocmodl", "oc"]
+
+        # hoc_ed is not included in the sources of 7.4. However, it is included in the binary distribution.
+        # Nevertheless, the binary has a date old enough (June 2014, instead of November 2015 like all the
+        # others) to be considered a mistake in the distribution
+        if LooseVersion(self.version) < LooseVersion('7.4'):
+            binaries.append("hoc_ed")
+
         custom_paths = {
-            'files': [os.path.join(binpath, x) for x in ["bbswork.sh", "hel2mos1.sh", "hoc_ed", "ivoc", "memacs",
-                                                         "mkthreadsafe", "modlunit", "mos2nrn", "mos2nrn2.sh",
-                                                         "neurondemo", "nocmodl", "oc"]] +
+            'files': [os.path.join(binpath, x) for x in binaries] +
                      [os.path.join(binpath, "nrn%s" % x) for x in ["gui", "iv", "iv_makefile", "ivmodl",
                                                                    "mech_makefile", "oc", "oc_makefile", "ocmodl"]] +
                      [libpath % x for x in ["ivoc", "ivos", "memacs", "meschach", "neuron_gnu", "nrniv", "nrnmpi",

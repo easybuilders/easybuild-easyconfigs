@@ -1,5 +1,5 @@
 ##
-# Copyright 2009-2016 Ghent University
+# Copyright 2009-2017 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -34,7 +34,6 @@ EasyBuild support for building and installing WPS, implemented as an easyblock
 import fileinput
 import os
 import re
-import shutil
 import sys
 import tempfile
 from distutils.version import LooseVersion
@@ -46,7 +45,7 @@ from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import CUSTOM, MANDATORY
 from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.config import build_option
-from easybuild.tools.filetools import extract_file, patch_perl_script_autoflush, rmtree2
+from easybuild.tools.filetools import copy_file, extract_file, patch_perl_script_autoflush, rmtree2
 from easybuild.tools.modules import get_software_root, get_software_version
 from easybuild.tools.run import run_cmd, run_cmd_qa
 
@@ -63,17 +62,20 @@ class EB_WPS(EasyBlock):
         self.comp_fam = None
         self.wrfdir = None
         self.compile_script = None
+        testdata_urls = ["http://www2.mmm.ucar.edu/wrf/src/data/avn_data.tar.gz"]
+        if LooseVersion(self.version) < LooseVersion('3.8'):
+            testdata_urls.append("http://www2.mmm.ucar.edu/wrf/src/wps_files/geog.tar.gz")  # 697MB download, 16GB unpacked!
+        else:
+            testdata_urls.append("http://www2.mmm.ucar.edu/wrf/src/wps_files/geog_complete.tar.bz2")  # 2.3GB download!
+        if self.cfg.get('testdata') is None:
+            self.cfg['testdata'] = testdata_urls
 
     @staticmethod
     def extra_options():
-        testdata_urls = [
-            "http://www.mmm.ucar.edu/wrf/src/data/avn_data.tar.gz",
-            "http://www.mmm.ucar.edu/wrf/src/wps_files/geog.tar.gz",  # 697MB download, 16GB unpacked!
-        ]
         extra_vars = {
             'buildtype': [None, "Specify the type of build (smpar: OpenMP, dmpar: MPI).", MANDATORY],
             'runtest': [True, "Build and run WPS tests", CUSTOM],
-            'testdata': [testdata_urls, "URL to test data required to run WPS test", CUSTOM],
+            'testdata': [None, "URL to test data required to run WPS test", CUSTOM],
         }
         return EasyBlock.extra_options(extra_vars)
 
@@ -236,7 +238,7 @@ class EB_WPS(EasyBlock):
                 else:
                     self.log.info("Skipping MPI test for %s, since MPI tests are disabled", cmd)
                     return
-            
+
             (out, _) = run_cmd(cmd, log_all=True, simple=False)
 
             re_success = re.compile("Successful completion of %s" % cmdname)
@@ -266,10 +268,7 @@ class EB_WPS(EasyBlock):
                 for path in testdata_paths:
                     extract_file(path, tmpdir)
 
-                # copy namelist.wps file
-                fn = "namelist.wps"
-                shutil.copy2(os.path.join(wpsdir, fn), tmpdir)
-                namelist_file = os.path.join(tmpdir, fn)
+                namelist_file = os.path.join(tmpdir, 'namelist.wps')
 
                 # GEOGRID
 
@@ -277,7 +276,8 @@ class EB_WPS(EasyBlock):
                 for d in os.listdir(os.path.join(tmpdir, "geog")):
                     os.symlink(os.path.join(tmpdir, "geog", d), os.path.join(tmpdir, d))
 
-                # patch namelist.wps file for geogrib
+                # copy namelist.wps file and patch it for geogrid
+                copy_file(os.path.join(wpsdir, 'namelist.wps'), namelist_file)
                 for line in fileinput.input(namelist_file, inplace=1, backup='.orig.geogrid'):
                     line = re.sub(r"^(\s*geog_data_path\s*=\s*).*$", r"\1 '%s'" % tmpdir, line)
                     sys.stdout.write(line)
@@ -300,17 +300,21 @@ class EB_WPS(EasyBlock):
                 start = "%s:00:00" % fs[0][k:]
                 end = "%s:00:00" % fs[-1][k:]
 
-                # patch namelist.wps file for ungrib
-                shutil.copy2(os.path.join(wpsdir, "namelist.wps"), tmpdir)
-
+                # copy namelist.wps file and patch it for ungrib
+                copy_file(os.path.join(wpsdir, 'namelist.wps'), namelist_file)
                 for line in fileinput.input(namelist_file, inplace=1, backup='.orig.ungrib'):
                     line = re.sub(r"^(\s*start_date\s*=\s*).*$", r"\1 '%s','%s'," % (start, start), line)
                     line = re.sub(r"^(\s*end_date\s*=\s*).*$", r"\1 '%s','%s'," % (end, end), line)
                     sys.stdout.write(line)
 
                 # copy correct Vtable
-                shutil.copy2(os.path.join(wpsdir, "ungrib", "Variable_Tables", "Vtable.ARW"),
-                             os.path.join(tmpdir, "Vtable"))
+                vtable_dir = os.path.join(wpsdir, 'ungrib', 'Variable_Tables')
+                if os.path.exists(os.path.join(vtable_dir, 'Vtable.ARW')):
+                    copy_file(os.path.join(vtable_dir, 'Vtable.ARW'), os.path.join(tmpdir, 'Vtable'))
+                elif os.path.exists(os.path.join(vtable_dir, 'Vtable.ARW.UPP')):
+                    copy_file(os.path.join(vtable_dir, 'Vtable.ARW.UPP'), os.path.join(tmpdir, 'Vtable'))
+                else:
+                    raise EasyBuildError("Could not find Vtable file to use for testing ungrib")
 
                 # run link_grib.csh script
                 cmd = "%s %s*" % (os.path.join(wpsdir, "link_grib.csh"), grib_file_prefix)

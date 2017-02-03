@@ -1,5 +1,5 @@
 ##
-# Copyright 2009-2016 Ghent University
+# Copyright 2009-2017 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -27,8 +27,10 @@ EasyBuild support for OpenSSL, implemented as an easyblock
 
 @author: Kenneth Hoste (Ghent University)
 @author: Jens Timmerman (Ghent University)
+@author: Davide Vanzo (ACCRE - Vanderbilt University)
 """
 import os
+from distutils.version import LooseVersion
 
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.tools.build_log import EasyBuildError
@@ -57,15 +59,22 @@ class EB_OpenSSL(ConfigureMake):
         for libdir_cand in ['lib', 'lib64']:
             if os.path.exists(os.path.join(self.installdir, libdir_cand)):
                 libdir = libdir_cand
+
         if libdir is None:
             raise EasyBuildError("Failed to determine library directory.")
 
         custom_paths = {
-            'files': [os.path.join(libdir, x) for x in ['libcrypto.a', 'libcrypto.so', 'libcrypto.so.1.0.0',
-                                                        'libssl.a', 'libssl.so', 'libssl.so.1.0.0']] +
+            'files': [os.path.join(libdir, x) for x in ['libcrypto.a', 'libcrypto.so', 'libssl.a', 'libssl.so']] +
                      ['bin/openssl'],
-            'dirs': [os.path.join(libdir, 'engines')],
+            'dirs': [],
         }
+
+        if LooseVersion(self.version) < LooseVersion("1.1"):
+            custom_paths['files'].extend([os.path.join(libdir, 'libcrypto.so.1.0.0'), os.path.join(libdir, 'libssl.so.1.0.0')])
+            custom_paths['dirs'].append(os.path.join(libdir, 'engines'))
+        else:
+            custom_paths['files'].extend([os.path.join(libdir, 'libcrypto.so.1.1'), os.path.join(libdir, 'libssl.so.1.1')])
+            custom_paths['dirs'].append(os.path.join(libdir, 'engines-1.1'))
 
         super(EB_OpenSSL, self).sanity_check_step(custom_paths=custom_paths)
     
