@@ -32,7 +32,7 @@ from vsc.utils.missing import nub
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.config import build_option
-from easybuild.tools.systemtools import AARCH64, X86_64, get_cpu_architecture, get_cpu_features
+from easybuild.tools.systemtools import AARCH64, POWER, X86_64, get_cpu_architecture, get_cpu_features
 from easybuild.tools.toolchain.compiler import OPTARCH_GENERIC
 
 
@@ -41,7 +41,12 @@ FFTW_CPU_FEATURE_FLAGS_SINGLE_DOUBLE = ['avx', 'avx2', 'avx512', 'fma', 'sse2', 
 # Altivec (POWER), SSE (x86), NEON (ARM), FMA (x86_64)
 # asimd is CPU feature for extended NEON on AARCH64
 FFTW_CPU_FEATURE_FLAGS = FFTW_CPU_FEATURE_FLAGS_SINGLE_DOUBLE + ['altivec', 'asimd', 'neon', 'sse']
-FFTW_PRECISION_FLAGS = ['single', 'double', 'long-double', 'quad-precision']
+
+cpu_arch = get_cpu_architecture()
+if cpu_arch != POWER:
+    FFTW_PRECISION_FLAGS = ['single', 'double', 'long-double', 'quad-precision']
+else:
+    FFTW_PRECISION_FLAGS = ['single', 'double', 'long-double']
 
 
 class EB_FFTW(ConfigureMake):
@@ -179,7 +184,10 @@ class EB_FFTW(ConfigureMake):
         }
 
         extra_files = []
+        cpu_arch = get_cpu_architecture()
         for (prec, letter) in [('double', ''), ('long_double', 'l'), ('quad', 'q'), ('single', 'f')]:
+            if prec == 'quad' and cpu_arch == POWER:
+                continue
             if self.cfg['with_%s_prec' % prec]:
 
                 # precision-specific binaries
