@@ -11,8 +11,16 @@ description = """OpenCV (Open Source Computer Vision Library) is an open source 
 
 toolchain = {'name': 'foss', 'version': '2016b'}
 
-source_urls = ['https://github.com/Itseez/opencv/archive/']
-sources = ['%(version)s.zip']
+source_urls = [
+    'https://github.com/Itseez/opencv/archive/',
+    #The Hash is version dependent! see 3rdparty/ippicv/downloader.cmake
+    'https://raw.githubusercontent.com/Itseez/opencv_3rdparty/81a676001ca8075ada498583e4166079e5744668/ippicv',
+]
+
+sources = [
+    '%(version)s.zip',
+    ('ippicv_linux_20151201.tgz', 'cp %s %(builddir)s'),
+]
 
 builddependencies = [
     ('CMake', '3.5.2'),
@@ -32,6 +40,9 @@ dependencies = [
     ('GTK+', '2.24.31'),
 ]
 
+#The destination directory is "linux-<MD5>" see 3rdparty/ippicv/downloader.cmake
+preconfigopts = 'mkdir -p {0} && cp -a ../*.tgz {0}. &&'.format("3rdparty/ippicv/downloads/linux-808b791a6eac9ed78d32a7666804320e/")
+
 configopts = '-DCMAKE_BUILD_TYPE=RELEASE '
 configopts += '-DBUILD_PYTHON_SUPPORT=ON '
 configopts += '-DPYTHON_PACKAGES_PATH=%(installdir)s/lib/python%(pyshortver)s/site-packages '
@@ -49,6 +60,8 @@ configopts += '-DJASPER_INCLUDE_DIR=$EBROOTJASPER/include '
 configopts += '-DWITH_IPP=ON '
 configopts += '-DENABLE_SSE=ON -DENABLE_SSE2=ON -DENABLE_SSE3=ON '
 configopts += '-DWITH_CUDA=OFF '
+
+postinstallcmds = ["cp 3rdparty/ippicv/unpack/ippicv_lnx/lib/intel64/libippicv.*  %(installdir)s/lib"]
 
 sanity_check_paths = {
     'files': ['lib/libopencv_core.%s' % SHLIB_EXT ] +
