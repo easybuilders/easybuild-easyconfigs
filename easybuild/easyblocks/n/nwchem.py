@@ -178,18 +178,27 @@ class EB_NWChem(ConfigureMake):
         if LooseVersion(self.version) >= LooseVersion("6.5"):
             env.setvar('EACCSD','y') # enable EOM electron-attachemnt coupled cluster capability
             env.setvar('IPCCSD','y') # enable EOM ionization-potential coupled cluster capability
+            env.setvar('USE_NOIO', 'TRUE') # avoid doing I/O for the ddscf, mp2 and ccsd modules
 
         for var in ['USE_MPI', 'USE_MPIF', 'USE_MPIF4']:
             env.setvar(var, 'y')
         for var in ['CC', 'CXX', 'F90']:
             env.setvar('MPI_%s' % var, os.getenv('MPI%s' % var))
+        #if LooseVersion(self.version) <= LooseVersion("6.5"):
         env.setvar('MPI_LOC', os.path.dirname(os.getenv('MPI_INC_DIR')))
         env.setvar('MPI_LIB', os.getenv('MPI_LIB_DIR'))
         env.setvar('MPI_INCLUDE', os.getenv('MPI_INC_DIR'))
         libmpi = None
         mpi_family = self.toolchain.mpi_family()
         if mpi_family in toolchain.OPENMPI:
-            libmpi = "-lmpi_f90 -lmpi_f77 -lmpi -ldl -Wl,--export-dynamic -lnsl -lutil"
+            ompi_ver = get_software_version('OpenMPI')
+            if LooseVersion(ompi_ver) < LooseVersion("1.10"):
+                if LooseVersion(ompi_ver) < LooseVersion("1.8"):
+                    libmpi = "-lmpi_f90 -lmpi_f77 -lmpi -ldl -Wl,--export-dynamic -lnsl -lutil"
+                else:
+                    libmpi = "-lmpi_usempi -lmpi_mpifh -lmpi"
+            else:
+                libmpi = "-lmpi_usempif08 -lmpi_usempi_ignore_tkr -lmpi_mpifh -lmpi"
         elif mpi_family in [toolchain.INTELMPI]:
             if self.cfg['armci_network'] in ["MPI-MT"]:
                 libmpi = "-lmpigf -lmpigi -lmpi_ilp64 -lmpi_mt"
@@ -199,6 +208,9 @@ class EB_NWChem(ConfigureMake):
             libmpi = "-lmpichf90 -lmpich -lopa -lmpl -lrt -lpthread"
         else:
             raise EasyBuildError("Don't know how to set LIBMPI for %s", mpi_family)
+        if self.cfg['armci_network'] in ["OPENIB"]:
+            libmpi += " -libumad -libverbs -lpthread"
+        #if LooseVersion(self.version) <= LooseVersion("6.5"):
         env.setvar('LIBMPI', libmpi)
 
         # compiler optimization flags: set environment variables _and_ add them to list of make options
