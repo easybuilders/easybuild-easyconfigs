@@ -1,0 +1,48 @@
+easyblock = "ConfigureMake"
+
+name = "Julia"
+version = "0.5.0"
+
+homepage = "http://julialang.org"
+description = """A high-level, high-performance dynamic language for technical computing."""
+
+toolchain = {'name': 'intel', 'version': '2016b'}
+
+source_urls = ['https://github.com/JuliaLang/julia/releases/download']
+sources = [SOURCELOWER_TAR_GZ]
+
+skipsteps = ['configure']
+
+dependencies = [
+     ('SuiteSparse', '4.5.3', '-METIS-5.1.0'),
+     ('arpack-ng', '3.4.0'),
+     ('Curl', '7.49.1'),
+     ('GMP', '6.1.1'),
+     ('libunwind', '1.1'),
+     ('LLVM', '3.9.0'),
+     ('MPFR', '3.1.4'),
+     ('patchelf', '0.9'), # not available for intel-2016b
+     ('zlib', '1.2.8'),
+     ('PCRE2', '10.21'), # not available for intel-2016b
+]
+
+buildopts = " prefix=%(installdir)s"
+buildopts += " USE_SYSTEM_CURL=1 USE_SYSTEM_GMP=1 USE_SYSTEM_LIBUNWIND=1 USE_SYSTEM_LLVM=1"
+buildopts += " USE_SYSTEM_MPFR=1 USE_SYSTEM_PATCHELF=1 USE_SYSTEM_PCRE=1"
+buildopts += " USE_SYSTEM_SUITESPARSE=1 USE_SYSTEM_ZLIB=1 USE_SYSTEM_ARPACK=1"
+buildopts += " USEICC=1 USEIFC=1 USE_INTEL_MKL=1 USE_INTEL_MKL_FFT=1 USE_INTEL_LIBM=1"
+
+# dependencies without easyconfigs (the Julia build will download those and compile)
+# buildopts += " USE_SYSTEM_LIBGIT2=1 USE_SYSTEM_LIBSSH2=1 USE_SYSTEM_MBEDTLS=1"
+
+# Specifying JULIA_CPU_TARGET allows use on non-identical CPUs.  Doesn't affect JIT or linked toolchain components.
+# buildopts += "JULIA_CPU_TARGET=haswell"
+
+installopts = buildopts
+
+sanity_check_paths = {
+    'files': ["bin/julia"],
+    'dirs': ["lib"]
+}
+
+moduleclass = 'lang'
