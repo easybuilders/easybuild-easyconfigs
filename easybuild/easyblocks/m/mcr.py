@@ -71,9 +71,13 @@ class EB_MCR(EasyBlock):
         if LooseVersion(self.version) < LooseVersion('R2015a'):
             shutil.copyfile(os.path.join(self.cfg['start_dir'], 'installer_input.txt'), configfile)
             config = read_file(configfile)
-            config = re.sub(r"^# destinationFolder=.*", "destinationFolder=%s" % self.installdir, config, re.M)
-            config = re.sub(r"^# agreeToLicense=.*", "agreeToLicense=Yes", config, re.M)
-            config = re.sub(r"^# mode=.*", "mode=silent", config, re.M)
+            regdest = re.compile(r"^# destinationFolder=.*", re.M)
+            regagree = re.compile(r"^# agreeToLicense=.*", re.M)
+            regmode = re.compile(r"^# mode=.*", re.M)
+
+            config = regdest.sub("destinationFolder=%s" % self.installdir, config)
+            config = regagree.sub("agreeToLicense=Yes", config)
+            config = regmode.sub("mode=silent", config)
         else:
             config = '\n'.join([
                 "destinationFolder=%s" % self.installdir,
