@@ -76,7 +76,7 @@ class EB_Qt(ConfigureMake):
         else:
             raise EasyBuildError("Don't know which platform to set based on compiler family.")
 
-        cmd = "%s ./configure --prefix=%s %s" % (self.cfg['preconfigopts'], self.installdir, self.cfg['configopts'])
+        cmd = "%s ./configure -prefix %s %s" % (self.cfg['preconfigopts'], self.installdir, self.cfg['configopts'])
         qa = {
             "Type 'o' if you want to use the Open Source Edition.": 'o',
             "Do you accept the terms of either license?": 'yes',
