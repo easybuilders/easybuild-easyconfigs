@@ -124,9 +124,9 @@ class EB_MCR(EasyBlock):
             'dirs': [os.path.join(self.subdir, 'bin', 'glnxa64')],
         }
         if LooseVersion(self.version) >= LooseVersion('2016b'):
-            custom_paths.append(os.path.join(self.subdir, 'cefclient', 'sys', 'os', 'glnxa64'))
+            custom_paths['dirs'].append(os.path.join(self.subdir, 'cefclient', 'sys', 'os', 'glnxa64'))
         else:
-            custom_paths.extend([
+            custom_paths['dirs'].extend([
                 os.path.join(self.subdir, 'runtime', 'glnxa64'),
                 os.path.join(self.subdir, 'sys', 'os', 'glnxa64'),
             ])
