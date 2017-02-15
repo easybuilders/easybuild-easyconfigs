@@ -68,7 +68,7 @@ class EB_MCR(EasyBlock):
         """Configure MCR installation: create license file."""
 
         configfile = os.path.join(self.builddir, self.configfilename)
-        if LooseVersion(self.version) < LooseVersion('2015a'):
+        if LooseVersion(self.version) < LooseVersion('R2015a'):
             shutil.copyfile(os.path.join(self.cfg['start_dir'], 'installer_input.txt'), configfile)
             config = read_file(configfile)
             config = re.sub(r"^# destinationFolder=.*", "destinationFolder=%s" % self.installdir, config, re.M)
@@ -123,7 +123,7 @@ class EB_MCR(EasyBlock):
             'files': [],
             'dirs': [os.path.join(self.subdir, 'bin', 'glnxa64')],
         }
-        if LooseVersion(self.version) >= LooseVersion('2016b'):
+        if LooseVersion(self.version) >= LooseVersion('R2016b'):
             custom_paths['dirs'].append(os.path.join(self.subdir, 'cefclient', 'sys', 'os', 'glnxa64'))
         else:
             custom_paths['dirs'].extend([
