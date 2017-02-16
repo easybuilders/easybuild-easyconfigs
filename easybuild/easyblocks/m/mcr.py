@@ -71,6 +71,7 @@ class EB_MCR(EasyBlock):
         if LooseVersion(self.version) < LooseVersion('R2015a'):
             shutil.copyfile(os.path.join(self.cfg['start_dir'], 'installer_input.txt'), configfile)
             config = read_file(configfile)
+            # compile regex first since re.sub doesn't accept re.M flag for multiline regex in Python 2.6
             regdest = re.compile(r"^# destinationFolder=.*", re.M)
             regagree = re.compile(r"^# agreeToLicense=.*", re.M)
             regmode = re.compile(r"^# mode=.*", re.M)
