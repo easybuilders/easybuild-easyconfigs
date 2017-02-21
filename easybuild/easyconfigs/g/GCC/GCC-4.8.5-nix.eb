@@ -15,6 +15,7 @@ name = 'GCC'
 # and define $EBVERSION* accordingly (yet generate a module named GCC/system);
 # if an actual version is specified here, it will be checked against the version of the system compiler that was found
 version = '4.8.5'
+versionsuffix = '-nix'
 
 homepage = 'http://gcc.gnu.org/'
 description = """The GNU Compiler Collection includes front ends for C, C++, Objective-C, Fortran, Java, and Ada,
@@ -27,14 +28,11 @@ nix_attribute = 'gfortran48'
 
 moduleclass = 'compiler'
 
+modextravars = {"hardeningDisable": "stackprotector"}
+
 modluafooter = """
-local archs = os.getenv("RSNT_ARCHS") or ""
-for arch in archs:gmatch("%w+") do
-        prepend_path("MODULEPATH", "/cvmfs/soft.computecanada.ca/easybuild/modules/2017/" .. arch .. "/Compiler/gcc4.8")
-        prepend_path("MODULEPATH", "/cvmfs/soft.computecanada.ca/easybuild/modules/2017/" .. arch .. "/Compiler/mpi/gcc4.8")
-end
+prepend_path("MODULEPATH", "/cvmfs/soft.computecanada.ca/easybuild/modules/2017/" .. os.getenv("RSNT_ARCH") .. "/Compiler/gcc4.8")
 
 add_property("type_","tools")
 family("compiler")
-setenv("hardeningDisable","stackprotector")
 """
