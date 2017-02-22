@@ -14,9 +14,17 @@ toolchainopts = {'pic': True}
 sources = ['igraph-%(version)s.tar.gz']
 source_urls = ['https://github.com/igraph/igraph/releases/download/%(version)s']
 
-# Fix llapack and llblas when compiling with MKL
-# Fix aclocal which is hard-coded to version 1.14
-patches = ['igraph-0.7.1-no-lapack-no-blas.patch', 'igraph-0.7.1-fix-aclocal-version.patch']
+builddependencies = [('Autotools', '20150215')]
+
+patches = [
+	# Author: Maxime Boissonneault <maxime.boissonneault@calculquebec.ca>
+	# Remove explicit linking on -llapack and -llblas, which are not found when linking against MKL
+	'igraph-%(version)s-no-lapack-no-blas.patch', 
+	
+	# Author: Maxime Boissonneault <maxime.boissonneault@calculquebec.ca>
+	# Fix explicit version of aclocal (specified 1.14). Replaced with version 1.15 which corresponds to the 20150215 Autotools
+	'igraph-%(version)s-fix-aclocal-version.patch'
+	]
 
 # link against MKL rather than blas/lapack
 preconfigopts = "env LDFLAGS='-lmkl_intel_lp64 -lmkl_core -lmkl_sequential -lpthread -lm'"
