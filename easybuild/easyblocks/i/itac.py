@@ -140,4 +140,7 @@ EULA=accept
         txt += self.module_generator.set_environment('VT_ROOT', self.installdir)
         txt += self.module_generator.set_environment('VT_MPI', self.cfg['preferredmpi'])
         txt += self.module_generator.set_environment('VT_ADD_LIBS', "-ldwarf -lelf -lvtunwind -lnsl -lm -ldl -lpthread")
+        if LooseVersion(self.version) >= LooseVersion('9.0'):
+            txt += self.module_generator.set_environment('VT_LIB_DIR', self.installdir + "/lib")
+            txt += self.module_generator.set_environment('VT_SLIB_DIR', self.installdir + "/slib")
         return txt
