@@ -1,0 +1,85 @@
+##
+# This file is an EasyBuild reciPY as per https://github.com/hpcugent/easybuild
+#
+# Copyright:: Copyright 2012-2014 Uni.Lu/LCSB, NTUA
+# Authors::   Fotis Georgatos <fotis@cern.ch>, Kenneth Hoste (UGent)
+# License::   MIT/GPL
+# $Id$
+#
+# This work implements a part of the HPCBIOS project and is a component of the policy:
+# http://hpcbios.readthedocs.org/en/latest/HPCBIOS_2012-94.html
+##
+
+easyblock = 'ConfigureMake'
+
+name = 'BLAST+'
+version = '2.6.0'
+versionsuffix = '-Python-2.7.12'
+
+homepage = 'http://blast.ncbi.nlm.nih.gov/'
+description = """Basic Local Alignment Search Tool, or BLAST, is an algorithm
+ for comparing primary biological sequence information, such as the amino-acid
+ sequences of different proteins or the nucleotides of DNA sequences."""
+
+toolchain = {'name': 'intel', 'version': '2016b'}
+
+sources = ['ncbi-blast-%(version)s+-src.tar.gz']
+source_urls = ['http://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/%(version)s/']
+
+# The patch contains two fixes:
+# - The authors forgot to reinstall the correct root configure script (which is 
+#   available as configure.orig).
+# - A correction to Makefile.in.top, install-toolkit target: The last install
+#   created an error message, so it has been replaced by two commands that 
+#   hopefully perform the action that the authors intended.
+patches = ['%(name)s-%(version)s_general-fixes.patch']
+
+# Loading this version of Boost will also automatically load Python, and the configure
+# of BLAST+ will discover it and enable Python support.
+#dependencies = [ 
+#	('Boost', '1.63.0', versionsuffix),
+#	('GMP', '6.1.1'),
+#	('libpng', '1.6.26'),
+#	('libjpeg-turbo', '1.5.0')
+#]
+dependencies = []
+
+# Select library type
+configopts  = '--with-static '   # Build failed when --with-dll was added.
+# Executables to generate
+configopts += '--with-static-exe --with-bin-release --without-debug --with-strip '
+# Use a couple of build-in libraries rather than their independent
+# counte3rpart, even if they are installed in seperate modules, to reduce dependencies.
+configopts += '--without-z --without-bz2 --without-pcre '
+# Enable support for SRA/VDB. Don't use a version that is already on the system,
+# but just get it from GitHub and compile into BLAST+. This again reduces dependencies.
+configopts += '--with-downloaded-vdb '
+
+# Uncomment the following lines to enable support for a Python module.
+# Make sure it is compatible with the Python used by Boost should you enable
+# support for a Boost module with Python support
+dependencies.append( ('Python', '2.7.12') )
+configopts += '--with-python=$EBROOTPYTHON '
+
+# Uncomment the following lines to enable Boost
+dependencies.append( ('Boost', '1.63.0', '-Python-2.7.12') )
+configopts += '--with-boost=$EBROOTBOOST '
+
+# Uncomment to enable the use of GMP
+dependencies.append( ('GMP', '6.1.1') )
+configopts += '--with-gmp=$EBROOTGMP '
+
+# Uncomment to enable PNG-support
+dependencies.append( ('libpng', '1.6.26') )
+configopts += '--with-png=$EBROOTLIBPNG '
+
+# Uncomment to enable JPEG-support
+dependencies.append( ('libjpeg-turbo', '1.5.0') )
+configopts += '--with-jpeg=$EBROOTLIBJPEGMINTURBO '
+
+sanity_check_paths = {
+    'files': ["bin/blastn", "bin/blastp", "bin/blastx"],
+    'dirs': []
+}
+
+moduleclass = 'bio'
