@@ -1,0 +1,41 @@
+name = 'PETSc'
+version = '3.7.5'
+
+homepage = 'http://www.mcs.anl.gov/petsc'
+description = """PETSc, pronounced PET-see (the S is silent), is a suite of data structures and routines for the
+ scalable (parallel) solution of scientific applications modeled by partial differential equations."""
+
+toolchain = {'name': 'intel', 'version': '2016a'}
+toolchainopts = {'usempi': True, 'pic': True}
+
+source_urls = ['http://ftp.mcs.anl.gov/pub/petsc/release-snapshots']
+sources = [SOURCELOWER_TAR_GZ]
+
+shared_libs = 1
+pic = 1
+
+downloadinstall = True
+
+dependencies = [('HDF5','1.8.18')] 
+
+configopts = ""
+# compiles PETSc shared
+configopts += "--with-mkl_pardiso=1 --with-mkl_pardiso-dir=$MKLROOT "
+configopts += "--with-hdf5=1 --with-hdf5-dir=$EBROOTHDF5"
+
+# external packages that are downloaded
+external_packages = ['mumps', 'ptscotch', 'superlu', 'superlu_dist', 'parmetis', 'metis', 'ml', 'suitesparse', 'hypre', 'prometheus']
+# compiles the external dependencies non-shared
+external_packages_shared = "no"
+for p in external_packages:
+	configopts += "--download-%s=yes --download-%s-shared=%s " % (p,p,external_packages_shared)
+configopts += "--download-triangle=yes"   # download-triangle-shared is not supported
+
+builddependencies = [('CMake', '3.5.2')]
+
+moduleclass = 'numlib'
+
+modluafooter = """
+family("petsc")
+"""
+
