@@ -61,6 +61,7 @@ class EB_PETSc(ConfigureMake):
             'papi_inc': ['/usr/include', "Path for PAPI include files", CUSTOM],
             'papi_lib': ['/usr/lib64/libpapi.so', "Path for PAPI library", CUSTOM],
             'runtest': ['test', "Make target to test build", BUILD],
+            'downloadinstall': [False, "Indicates whether a download installation should be performed", CUSTOM],
         }
         return ConfigureMake.extra_options(extra_vars)
 
@@ -79,6 +80,11 @@ class EB_PETSc(ConfigureMake):
         Configure procedure is much more concise for older versions (< v3).
         """
         if LooseVersion(self.version) >= LooseVersion("3"):
+            # make the install dir first if we are doing a download install, then keep it for the rest of the way
+            if self.cfg["downloadinstall"]:
+                self.log.info("Creating the installation directory before the configure step because we are doing a download install.")
+                self.make_installdir()
+                self.cfg["keeppreviousinstall"] = True
 
             # compilers
             self.cfg.update('configopts', '--with-cc="%s"' % os.getenv('CC'))
