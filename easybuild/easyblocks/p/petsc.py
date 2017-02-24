@@ -61,7 +61,9 @@ class EB_PETSc(ConfigureMake):
             'papi_inc': ['/usr/include', "Path for PAPI include files", CUSTOM],
             'papi_lib': ['/usr/lib64/libpapi.so', "Path for PAPI library", CUSTOM],
             'runtest': ['test', "Make target to test build", BUILD],
-            'downloadinstall': [False, "Indicates whether a download installation should be performed", CUSTOM],
+            'download_packages_static': [None, "Lists the packages that should be downloaded and installed without shared objects", CUSTOM],
+            'download_packages_shared': [None, "Lists the packages that should be downloaded and installed with shared objects", CUSTOM]
+            'download_packages': [None, "Lists the packages that should be downloaded and installed without specifying static or shared (used the default for the package)", CUSTOM]
         }
         return ConfigureMake.extra_options(extra_vars)
 
@@ -81,10 +83,21 @@ class EB_PETSc(ConfigureMake):
         """
         if LooseVersion(self.version) >= LooseVersion("3"):
             # make the install dir first if we are doing a download install, then keep it for the rest of the way
-            if self.cfg["downloadinstall"]:
-                self.log.info("Creating the installation directory before the configure step because we are doing a download install.")
+            if self.cfg["download_packages"] or self.cfg["download_packages_static"] or self.cfg["download_packages_shared"]:
+                self.log.info("Creating the installation directory before the configure.")
                 self.make_installdir()
                 self.cfg["keeppreviousinstall"] = True
+                if self.cfg["download_packages"]:
+                    for p in self.cfg["download_packages"]:
+                        self.cfg.update('configopts', '--with-download-%s=1' % p)
+                if self.cfg["download_packages_static"]:
+                    for p in self.cfg["download_packages_static"]:
+                        self.cfg.update('configopts', '--with-download-%s=1' % p)
+                        self.cfg.update('configopts', '--with-download-%s-shared=0' % p)
+                if self.cfg["download_packages_shared"]:
+                    for p in self.cfg["download_packages_shared"]:
+                        self.cfg.update('configopts', '--with-download-%s=1' % p)
+                        self.cfg.update('configopts', '--with-download-%s-shared=1' % p)
 
             # compilers
             self.cfg.update('configopts', '--with-cc="%s"' % os.getenv('CC'))
