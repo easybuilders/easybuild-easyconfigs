@@ -284,6 +284,7 @@ class IntelBase(EasyBlock):
                 'license_file': self.license_file,
             }
         else:
+            self.log.debug("Easyconfig variable 'licenced' set to %s, ignoring license checks" % (self.cfg['licensed']))
             silent = '\n'
 
         silent = silent.join([
