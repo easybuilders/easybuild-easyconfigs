@@ -101,6 +101,9 @@ class IntelBase(EasyBlock):
         self.license_file = 'UNKNOWN'
         self.license_env_var = 'UNKNOWN'
 
+        # Initialise whether we need a runtime licence or not
+        self.requires_runtime_license = True
+
         self.home_subdir = os.path.join(os.getenv('HOME'), 'intel')
         common_tmp_dir = os.path.dirname(tempfile.gettempdir())  # common tmp directory, same across nodes
         self.home_subdir_local = os.path.join(common_tmp_dir, os.getenv('USER'), 'easybuild_intel')
