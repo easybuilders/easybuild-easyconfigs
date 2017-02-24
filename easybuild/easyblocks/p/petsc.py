@@ -62,8 +62,8 @@ class EB_PETSc(ConfigureMake):
             'papi_lib': ['/usr/lib64/libpapi.so', "Path for PAPI library", CUSTOM],
             'runtest': ['test', "Make target to test build", BUILD],
             'download_packages_static': [None, "Lists the packages that should be downloaded and installed without shared objects", CUSTOM],
-            'download_packages_shared': [None, "Lists the packages that should be downloaded and installed with shared objects", CUSTOM]
-            'download_packages': [None, "Lists the packages that should be downloaded and installed without specifying static or shared (used the default for the package)", CUSTOM]
+            'download_packages_shared': [None, "Lists the packages that should be downloaded and installed with shared objects", CUSTOM],
+            'download_packages': [None, "Lists the packages that should be downloaded and installed without specifying static or shared (used the default for the package)", CUSTOM],
         }
         return ConfigureMake.extra_options(extra_vars)
 
