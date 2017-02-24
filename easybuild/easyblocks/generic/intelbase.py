@@ -208,11 +208,8 @@ class IntelBase(EasyBlock):
         """Custom prepare step for IntelBase. Set up the license"""
         super(IntelBase, self).prepare_step()
 
-        # Decide if we need a license or not
-        if not self.cfg['requires_runtime_license'] or not requires_runtime_license:
-            self.requires_runtime_license = False
-        else:
-            self.requires_runtime_license = True
+        # Decide if we need a license or not (default is True because of defaults of individual Booleans)
+        self.requires_runtime_license = self.cfg['requires_runtime_license'] and requires_runtime_license
 
         if self.requires_runtime_license:
             default_lic_env_var = 'INTEL_LICENSE_FILE'
