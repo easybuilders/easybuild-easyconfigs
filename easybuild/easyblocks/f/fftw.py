@@ -117,8 +117,8 @@ class EB_FFTW(ConfigureMake):
                     setattr(self, flag, True)
 
         # Auto-disable quad-precision on ARM and POWER, as it is unsupported
-        if self.cfg['with_quad_precision'] and arch in [AARCH32, AARCH64, POWER]:
-            self.cfg['with_quad_precision'] = False
+        if self.cfg['with_quad_prec'] and arch in [AARCH32, AARCH64, POWER]:
+            self.cfg['with_quad_prec'] = False
             self.log.debug("Quad-precision automatically disabled; not supported on %s.", arch)
 
     def run_all_steps(self, *args, **kwargs):
