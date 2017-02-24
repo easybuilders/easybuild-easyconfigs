@@ -112,7 +112,8 @@ class IntelBase(EasyBlock):
         extra_vars = EasyBlock.extra_options(extra_vars)
         extra_vars.update({
             'license_activation': [ACTIVATION_LIC_SERVER, "License activation type", CUSTOM],
-            'licensed': [True, "Set to False if Intel software does not require a runtime licence", CUSTOM],
+            'requires_runtime_license': [True, "Set to False if Intel software does not require a runtime licence",
+                                         CUSTOM],
             # 'usetmppath':
             # workaround for older SL5 version (5.5 and earlier)
             # used to be True, but False since SL5.6/SL6
@@ -203,11 +204,17 @@ class IntelBase(EasyBlock):
         except OSError, err:
             raise EasyBuildError("Failed to symlink %s to %s: %s", self.home_subdir_local, self.home_subdir, err)
 
-    def prepare_step(self):
+    def prepare_step(self, requires_runtime_license=True):
         """Custom prepare step for IntelBase. Set up the license"""
         super(IntelBase, self).prepare_step()
 
-        if self.cfg['licensed']:
+        # Decide if we need a license or not
+        if not self.cfg['requires_runtime_license'] or not requires_runtime_license:
+            self.requires_runtime_license = False
+        else:
+            self.requires_runtime_license = True
+
+        if self.requires_runtime_license:
             default_lic_env_var = 'INTEL_LICENSE_FILE'
             lic_specs, self.license_env_var = find_flexlm_license(custom_env_vars=[default_lic_env_var],
                                                                   lic_specs=[self.cfg['license_file']])
@@ -262,7 +269,7 @@ class IntelBase(EasyBlock):
         if silent_cfg_names_map is None:
             silent_cfg_names_map = {}
 
-        if self.cfg['licensed']:
+        if self.requires_runtime_license:
             # license file entry is only applicable with license file or server type of activation
             # also check whether specified activation type makes sense
             lic_file_server_activations = [ACTIVATION_LIC_FILE, ACTIVATION_LIC_SERVER]
@@ -284,7 +291,10 @@ class IntelBase(EasyBlock):
                 'license_file': self.license_file,
             }
         else:
-            self.log.debug("Easyconfig variable 'licenced' set to %s, ignoring license checks" % (self.cfg['licensed']))
+            self.log.debug(
+                "Ignoring license checks: self.requires_runtime_license=%s self.cfg['requires_runtime_license']=%s"
+                % (self.requires_runtime_license, self.cfg['requires_runtime_license'])
+            )
             silent = '\n'
 
         silent = silent.join([
@@ -382,7 +392,7 @@ class IntelBase(EasyBlock):
         """Custom variable definitions in module file."""
         txt = super(IntelBase, self).make_module_extra()
 
-        if self.cfg['licensed']:
+        if self.requires_runtime_license:
             txt += self.module_generator.prepend_paths(self.license_env_var, [self.license_file],
                                                        allow_abs=True, expand_relpaths=False)
 
