@@ -115,7 +115,7 @@ class IntelBase(EasyBlock):
         extra_vars = EasyBlock.extra_options(extra_vars)
         extra_vars.update({
             'license_activation': [ACTIVATION_LIC_SERVER, "License activation type", CUSTOM],
-            'requires_runtime_license': [True, "Set to False if Intel software does not require a runtime licence",
+            'requires_runtime_license': [True, "Boolean indicating whether or not a runtime license is required",
                                          CUSTOM],
             # 'usetmppath':
             # workaround for older SL5 version (5.5 and earlier)
@@ -291,13 +291,10 @@ class IntelBase(EasyBlock):
                 'license_file': self.license_file,
             }
         else:
-            self.log.debug(
-                "Ignoring license checks: self.requires_runtime_license=%s self.cfg['requires_runtime_license']=%s"
-                % (self.requires_runtime_license, self.cfg['requires_runtime_license'])
-            )
-            silent = '\n'
+            self.log.debug("No license required, so not including license specifications in silent.cfg")
+            silent = ''
 
-        silent = silent.join([
+        silent += '\n'.join([
             "%(install_dir_name)s=%(install_dir)s",
             "ACCEPT_EULA=accept",
             "%(install_mode_name)s=%(install_mode)s",
