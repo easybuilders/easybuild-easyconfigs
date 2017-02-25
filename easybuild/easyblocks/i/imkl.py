@@ -73,9 +73,9 @@ class EB_imkl(IntelBase):
 
     def prepare_step(self):
         if LooseVersion(self.version) >= LooseVersion('2017.2.174'):
-            IntelBase.prepare_step(self, requires_runtime_license=False)
+            super(EB_imkl, self).prepare_step(requires_runtime_license=False)
         else:
-            IntelBase.prepare_step(self)
+            super(EB_imkl, self).prepare_step()
 
     def install_step(self):
         """
