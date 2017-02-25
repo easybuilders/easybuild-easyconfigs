@@ -83,14 +83,12 @@ class EB_PETSc(ConfigureMake):
         """
         if LooseVersion(self.version) >= LooseVersion("3"):
             # make the install dir first if we are doing a download install, then keep it for the rest of the way
-            if self.cfg["download_deps"] or self.cfg["download_deps_static"] or self.cfg["download_deps_shared"]:
+            deps = self.cfg["download_deps"] + self.cfg["download_deps_static"] + self.cfg["download_deps_shared"]
+            if deps:
                 self.log.info("Creating the installation directory before the configure.")
                 self.make_installdir()
                 self.cfg["keeppreviousinstall"] = True
-                deps = set( self.cfg["download_deps"]
-                            + self.cfg["download_deps_static"]
-                            + self.cfg["download_deps_shared"] )
-                for dep in deps:
+                for dep in set(deps):
                     self.cfg.update('configopts', '--download-%s=1' % dep)
                 for dep in self.cfg["download_deps_static"]:
                     self.cfg.update('configopts', '--download-%s-shared=0' % dep)
