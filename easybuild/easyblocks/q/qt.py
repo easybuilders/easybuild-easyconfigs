@@ -48,7 +48,12 @@ class EB_Qt(ConfigureMake):
         extra_vars = {
              'platform': [None, "Target platform to build for (e.g. linux-g++-64, linux-icc-64)", CUSTOM],
         }
-        return ConfigureMake.extra_options(extra_vars)
+        extra_vars = ConfigureMake.extra_options(extra_vars)
+
+        # allowing to specify prefix_opt doesn't make sense for Qt, since -prefix is hardcoded in configure_step
+        del extra_vars['prefix_opt']
+
+        return extra_vars
 
     def configure_step(self):
         """Configure Qt using interactive `configure` script."""
