@@ -1,0 +1,54 @@
+easyblock = 'EB_CGAL'
+
+name = 'CGAL'
+version = '4.9'
+pyver = '2.7.12'
+pyshortver = '2.7'
+pysubver = '-bare'
+versionsuffix = '-Python-%s%s' % (pyver, pysubver)
+
+homepage = 'http://www.cgal.org/'
+
+description = """
+ The goal of the CGAL Open Source Project is to provide easy access to
+ efficient and reliable geometric algorithms in the form of a C++ library.
+"""
+
+toolchain = {'name': 'iimpi', 'version': '2017A'}
+toolchainopts = {'strict': True}
+
+source_urls = ['https://github.com/CGAL/cgal/releases/download/releases%2FCGAL-%(version)s']
+sources = [SOURCE_TAR_XZ]
+
+dependencies = [
+    ('Boost', '1.61.0', versionsuffix),
+    ('GMP', '6.1.1'),
+    ('libGLU', '9.0.0', versionsuffix),
+    ('Mesa', '13.0.1', versionsuffix),
+    ('MPFR', '3.1.5'),
+    ('Qt5', '5.7.0', versionsuffix),
+]
+
+builddependencies = [
+    ('Eigen', '3.3.1'),
+]
+
+osdependencies = [
+    ('binutils'),
+    ('cmake'),
+    ('zlib'),
+]
+
+configopts = "-DOPENGL_INCLUDE_DIR=$EBROOTMESA/include\;$EBROOTLIBGLU/include "
+configopts += "-DOPENGL_gl_LIBRARY=$EBROOTMESA/lib/libGL.%s " % SHLIB_EXT
+configopts += "-DOPENGL_glu_LIBRARY=$EBROOTLIBGLU/lib/libGLU.%s " % SHLIB_EXT
+configopts += "-DWITH_ZLIB=ON -DWITH_MPFR=ON -DWITH_OpenGL=ON -DWITH_Eigen3=ON "
+configopts += "-DWITH_GMPXX=ON -DWITH_LAPACK=ON -DWITH_BLAS=ON "
+
+sanity_check_paths = {
+    'dirs': ['include/CGAL', 'lib64/CGAL'],
+    'files': ['bin/cgal_%s' % x for x in ["create_cmake_script", "make_macosx_app"]] +
+             ['lib64/libCGAL%s.%s' % (x, SHLIB_EXT) for x in ["", "_Core"]],
+}
+
+moduleclass = 'numlib'
