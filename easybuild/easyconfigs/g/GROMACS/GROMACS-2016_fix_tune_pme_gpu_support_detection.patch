@@ -1,0 +1,31 @@
+# Fix gpu support detection in tune_pme.
+# The output have changed, and there is now also OpenCL to deal with.
+# Åke Sandgren, 2016-10-14
+diff -ru gromacs-2016.orig/src/gromacs/gmxana/gmx_tune_pme.cpp gromacs-2016/src/gromacs/gmxana/gmx_tune_pme.cpp
+--- gromacs-2016.orig/src/gromacs/gmxana/gmx_tune_pme.cpp	2016-10-14 20:22:22.671638232 +0200
++++ gromacs-2016/src/gromacs/gmxana/gmx_tune_pme.cpp	2016-10-14 20:33:36.851386026 +0200
+@@ -659,10 +659,10 @@
+      * gmx_print_version_info() in the GMX_MPI section */
+     const char match_mpi[]     = "MPI library:        MPI";
+     const char match_mdrun[]   = "Executable: ";
+-    const char match_gpu[]     = "GPU support:        enabled";
++    const char match_nogpu[]   = "GPU support:        disabled";
+     gmx_bool   bMdrun          = FALSE;
+     gmx_bool   bMPI            = FALSE;
+-    gmx_bool   bHaveGpuSupport = FALSE;
++    gmx_bool   bHaveGpuSupport = TRUE;
+ 
+     /* Run a small test to see whether mpirun + mdrun work  */
+     fprintf(stdout, "Making sure that mdrun can be executed. ");
+@@ -702,9 +702,9 @@
+             {
+                 bMPI = TRUE;
+             }
+-            if (str_starts(line, match_gpu) )
++            if (str_starts(line, match_nogpu) )
+             {
+-                bHaveGpuSupport = TRUE;
++                bHaveGpuSupport = FALSE;
+             }
+         }
+     }
