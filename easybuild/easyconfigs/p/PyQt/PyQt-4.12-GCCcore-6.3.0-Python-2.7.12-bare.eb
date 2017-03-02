@@ -1,0 +1,55 @@
+# This file is an EasyBuild reciPY as per https://github.com/hpcugent/easybuild
+# Author: Bart Verleye
+# Center for eResearch, Auckland
+easyblock = 'ConfigureMakePythonPackage'
+
+name = 'PyQt'
+version = '4.12'
+pyver = '2.7.12'
+pyshortver = '2.7'
+pysubver = '-bare'
+versionsuffix = '-Python-%s%s' % (pyver, pysubver)
+
+
+homepage = 'http://www.riverbankcomputing.co.uk/software/pyqt'
+
+description = """
+ PyQt is a set of Python v2 and v3 bindings for
+ Digia's Qt application framework.
+"""
+
+toolchain = {'name': 'GCCcore', 'version': '6.3.0'}
+
+source_urls = ['http://sourceforge.net/projects/pyqt/files/PyQt4/PyQt-%(version)s']
+sources = ['PyQt4_gpl_x11-%(version)s.tar.gz']
+
+builddependencies = [
+    ('Python', pyver, pysubver),
+]
+
+dependencies = [
+    ('Qt', '4.8.7', versionsuffix),
+    ('SIP', '4.19', versionsuffix),
+]
+
+configopts = """\
+    configure-ng.py\
+    --confirm-license\
+    --destdir=%%(installdir)s/lib/python%s/site-packages\
+    --bindir=%%(installdir)s/bin\
+    --no-sip-files\
+""" % pyshortver
+
+#prebuildopts = 'exit 1 ; '
+
+options = {'modulename': '%(name)s%(version_major)s'}
+
+modextrapaths = {'PYTHONPATH': 'lib/python%s/site-packages' % pyshortver}
+
+sanity_check_paths = {
+    'dirs': ['lib/python%s/site-packages/%%(name)s%%(version_major)s'
+             % pyshortver],
+    'files': [],
+}
+
+moduleclass = 'vis'
