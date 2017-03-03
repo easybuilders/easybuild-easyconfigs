@@ -70,6 +70,26 @@ class EB_GROMACS(CMakeMake):
         self.lib_subdir = ''
         self.pre_env = ''
 
+        # check whether PLUMED is listed as a dependency
+        self.with_plumed = 'PLUMED' in [dep['name'] for dep in self.cfg['dependencies']]
+
+    # create PLUMED patch in prepare_step rather than patch_step,
+    # so we can rely on being in the unpacked source directory
+    def prepare_step(self):
+        """Generate PLUMED patch if PLUMED is listed as a dependency."""
+        super(EB_GROMACS, self).prepare_step()
+
+        if self.with_plumed:
+            # Need to check if plumed has an engine for this version
+            engine = 'gromacs-%s' % self.version
+
+            # Should use shared, static, or runtime patch depending on 
+            # setting of self.toolchain.options.get('dynamic')
+            # and adapt cmake flags accordingly as per instructions
+            # from plumed patch
+            cmd = "plumed patch -p -e %s" % engine
+            run_cmd(cmd, log_all=True, simple=True)
+
     def configure_step(self):
         """Custom configuration procedure for GROMACS: set configure options for configure or cmake."""
 
