@@ -193,7 +193,7 @@ class EB_NWChem(ConfigureMake):
         # set, the correct values are determined by the NWChem build
         # procedure automatically, see
         # http://www.nwchem-sw.org/index.php/Compiling_NWChem#MPI_variables
-        if LooseVersion(self.version) <= LooseVersion("6.5"):
+        if LooseVersion(self.version) < LooseVersion("6.6"):
             env.setvar('MPI_LOC', os.path.dirname(os.getenv('MPI_INC_DIR')))
             env.setvar('MPI_LIB', os.getenv('MPI_LIB_DIR'))
             env.setvar('MPI_INCLUDE', os.getenv('MPI_INC_DIR'))
