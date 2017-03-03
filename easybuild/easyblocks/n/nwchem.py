@@ -173,8 +173,10 @@ class EB_NWChem(ConfigureMake):
         env.setvar('USE_NOFSCHECK', 'TRUE')
         env.setvar('CCSDTLR', 'y')  # enable CCSDTLR 
         env.setvar('CCSDTQ', 'y') # enable CCSDTQ (compilation is long, executable is big)
+
         if LooseVersion(self.version) >= LooseVersion("6.2"):
             env.setvar('MRCC_METHODS','y') # enable multireference coupled cluster capability
+
         if LooseVersion(self.version) >= LooseVersion("6.5"):
             env.setvar('EACCSD','y') # enable EOM electron-attachemnt coupled cluster capability
             env.setvar('IPCCSD','y') # enable EOM ionization-potential coupled cluster capability
@@ -184,34 +186,41 @@ class EB_NWChem(ConfigureMake):
             env.setvar(var, 'y')
         for var in ['CC', 'CXX', 'F90']:
             env.setvar('MPI_%s' % var, os.getenv('MPI%s' % var))
-        #if LooseVersion(self.version) <= LooseVersion("6.5"):
-        env.setvar('MPI_LOC', os.path.dirname(os.getenv('MPI_INC_DIR')))
-        env.setvar('MPI_LIB', os.getenv('MPI_LIB_DIR'))
-        env.setvar('MPI_INCLUDE', os.getenv('MPI_INC_DIR'))
-        libmpi = None
-        mpi_family = self.toolchain.mpi_family()
-        if mpi_family in toolchain.OPENMPI:
-            ompi_ver = get_software_version('OpenMPI')
-            if LooseVersion(ompi_ver) < LooseVersion("1.10"):
-                if LooseVersion(ompi_ver) < LooseVersion("1.8"):
-                    libmpi = "-lmpi_f90 -lmpi_f77 -lmpi -ldl -Wl,--export-dynamic -lnsl -lutil"
+
+        libmpi = ""
+
+        # for NWChem 6.6 and newer, $LIBMPI & co should no longer be
+        # set, the correct values are determined by the NWChem build
+        # procedure automatically, see
+        # http://www.nwchem-sw.org/index.php/Compiling_NWChem#MPI_variables
+        if LooseVersion(self.version) <= LooseVersion("6.5"):
+            env.setvar('MPI_LOC', os.path.dirname(os.getenv('MPI_INC_DIR')))
+            env.setvar('MPI_LIB', os.getenv('MPI_LIB_DIR'))
+            env.setvar('MPI_INCLUDE', os.getenv('MPI_INC_DIR'))
+
+            mpi_family = self.toolchain.mpi_family()
+            if mpi_family in toolchain.OPENMPI:
+                ompi_ver = get_software_version('OpenMPI')
+                if LooseVersion(ompi_ver) < LooseVersion("1.10"):
+                    if LooseVersion(ompi_ver) < LooseVersion("1.8"):
+                        libmpi = "-lmpi_f90 -lmpi_f77 -lmpi -ldl -Wl,--export-dynamic -lnsl -lutil"
+                    else:
+                        libmpi = "-lmpi_usempi -lmpi_mpifh -lmpi"
                 else:
-                    libmpi = "-lmpi_usempi -lmpi_mpifh -lmpi"
+                    libmpi = "-lmpi_usempif08 -lmpi_usempi_ignore_tkr -lmpi_mpifh -lmpi"
+            elif mpi_family in [toolchain.INTELMPI]:
+                if self.cfg['armci_network'] in ["MPI-MT"]:
+                    libmpi = "-lmpigf -lmpigi -lmpi_ilp64 -lmpi_mt"
+                else:
+                    libmpi = "-lmpigf -lmpigi -lmpi_ilp64 -lmpi"
+            elif mpi_family in [toolchain.MPICH, toolchain.MPICH2]:
+                libmpi = "-lmpichf90 -lmpich -lopa -lmpl -lrt -lpthread"
             else:
-                libmpi = "-lmpi_usempif08 -lmpi_usempi_ignore_tkr -lmpi_mpifh -lmpi"
-        elif mpi_family in [toolchain.INTELMPI]:
-            if self.cfg['armci_network'] in ["MPI-MT"]:
-                libmpi = "-lmpigf -lmpigi -lmpi_ilp64 -lmpi_mt"
-            else:
-                libmpi = "-lmpigf -lmpigi -lmpi_ilp64 -lmpi"
-        elif mpi_family in [toolchain.MPICH, toolchain.MPICH2]:
-            libmpi = "-lmpichf90 -lmpich -lopa -lmpl -lrt -lpthread"
-        else:
-            raise EasyBuildError("Don't know how to set LIBMPI for %s", mpi_family)
+                raise EasyBuildError("Don't know how to set LIBMPI for %s", mpi_family)
+            env.setvar('LIBMPI', libmpi)
+
         if self.cfg['armci_network'] in ["OPENIB"]:
             libmpi += " -libumad -libverbs -lpthread"
-        #if LooseVersion(self.version) <= LooseVersion("6.5"):
-        env.setvar('LIBMPI', libmpi)
 
         # compiler optimization flags: set environment variables _and_ add them to list of make options
         self.setvar_env_makeopt('COPTIMIZE', os.getenv('CFLAGS'))
