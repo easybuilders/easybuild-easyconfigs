@@ -60,9 +60,9 @@ class EB_impi(IntelBase):
 
     def prepare_step(self):
         if LooseVersion(self.version) >= LooseVersion('2017.2.174'):
-            super(EB_imkl, self).prepare_step(requires_runtime_license=False)
+            super(EB_impi, self).prepare_step(requires_runtime_license=False)
         else:
-            super(EB_imkl, self).prepare_step()
+            super(EB_impi, self).prepare_step()
 
     def install_step(self):
         """
