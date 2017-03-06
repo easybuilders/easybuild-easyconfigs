@@ -1,0 +1,59 @@
+easyblock = 'CMakeMake'
+
+name = 'Caffe'
+version = 'rc3'
+
+cudaversion = '7.5.18'
+versionsuffix = '-CUDA-%s-Python-%%(pyver)s' % cudaversion
+
+homepage = 'https://github.com/BVLC/caffe'
+description = """
+Caffe is a deep learning framework made with expression, speed, 
+and modularity in mind. It is developed by the Berkeley Vision 
+and Learning Center (BVLC) and community contributors.
+"""
+
+toolchain = {'name': 'foss', 'version': '2016a'}
+toolchainopts = {'optarch': True, 'pic': True}
+
+sources = ['%(version)s.tar.gz']
+source_urls = ['https://github.com/BVLC/caffe/archive/']
+
+builddependencies = [
+    ('CMake', '3.4.3'),
+]
+
+protobuf_ver = '3.0.2'
+
+dependencies = [
+    ('glog', '0.3.4'),
+    ('gflags', '2.1.2'),
+    ('OpenCV', '3.1.0'),
+    ('CUDA', cudaversion, '', True),
+    ('cuDNN', '4.0', '', True),
+    ('LMDB', '0.9.18'),
+    ('LevelDB', '1.18'),
+    ('snappy', '1.1.3'),
+    ('protobuf', protobuf_ver),
+    ('protobuf-python', protobuf_ver, '-Python-%(pyver)s'),
+    ('HDF5', '1.8.16', '-serial'),
+    ('Boost', '1.61.0', '-Python-%(pyver)s'),
+    ('Python', '2.7.11'),
+    ('scikit-image', '0.12.3', '-Python-%(pyver)s')
+]
+
+configopts = '-DBLAS=open'
+
+modextrapaths = {'PYTHONPATH': ['python']}
+
+sanity_check_paths = {
+    'files': ['bin/caffe'] +
+             ['lib/%s' % x for x in ['libcaffe.so', 'libproto.a']] +
+             ['python/caffe/_caffe.so'] +
+             ['include/caffe/proto/caffe.pb.h'],
+    'dirs': [],
+}
+
+sanity_check_commands = [('python', "-c 'import caffe'")]
+
+moduleclass = 'devel'

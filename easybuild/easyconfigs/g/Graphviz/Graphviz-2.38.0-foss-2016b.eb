@@ -1,0 +1,62 @@
+easyblock = 'ConfigureMake'
+
+name = 'Graphviz'
+version = '2.38.0'
+
+homepage = 'http://www.graphviz.org/'
+description = """Graphviz is open source graph visualization software. Graph visualization
+ is a way of representing structural information as diagrams of
+ abstract graphs and networks. It has important applications in networking,
+ bioinformatics,  software engineering, database and web design, machine learning,
+ and in visual interfaces for other technical domains."""
+
+toolchain = {'name': 'foss', 'version': '2016b'}
+
+source_urls = ['http://www.graphviz.org/pub/graphviz/stable/SOURCES/']
+sources = [SOURCELOWER_TAR_GZ]
+
+dependencies = [
+    ('cairo', '1.14.6'),
+    ('expat', '2.2.0'),
+    ('freetype', '2.6.5'),
+    ('Ghostscript', '9.20'),
+    ('GTS', '0.7.6'),
+    ('Java', '1.8.0_92', '', True),
+    ('libpng', '1.6.24'),
+    ('Pango', '1.40.3'),
+    ('Perl', '5.24.0'),
+    ('Qt', '4.8.7'),
+    ('Tcl', '8.6.5'),
+    ('zlib', '1.2.8'),
+]
+
+builddependencies = [
+    ('M4', '1.4.17'),
+    ('SWIG', '3.0.10', '-Python-2.7.12'),
+]
+
+preconfigopts = "sed -i 's/install-data-hook$//g' tclpkg/Makefile.in && "
+configopts = '--enable-guile=no --enable-lua=no --enable-ocaml=no '
+configopts += '--enable-r=no --enable-ruby=no '
+
+prebuildopts = 'qmake -o cmd/gvedit/qMakefile cmd/gvedit/gvedit.pro && '
+
+sanity_check_paths = {
+    'files': ['bin/cluster', 'bin/dot', 'bin/gvmap',
+              'lib/libcdt.%s' % SHLIB_EXT, 'lib/libgvc.%s' % SHLIB_EXT, 'lib/libxdot.%s' % SHLIB_EXT],
+    'dirs': ['include', 'lib/graphviz']
+}
+
+sanity_check_commands = [
+    ("test ! -d $EBROOTTCL/lib/*/graphviz", ''),
+    ("test ! -d $EBROOTTCL/lib64/*/graphviz", ''),
+]
+
+modextrapaths = {
+    'PYTHONPATH': 'lib/graphviz/python',
+    'CLASSPATH': 'lib/graphviz/java/org/graphviz',
+    'LD_LIBRARY_PATH': 'lib/graphviz/java',
+    'TCLLIBPATH': 'lib/graphviz/tcl',
+}
+
+moduleclass = 'vis'
