@@ -1,0 +1,58 @@
+* #import is unknown pragma for icpc, but apparently it can be removed without problems...
+* translating 'a < b' to 'b > a' is required to dance around weird compiler error: error: expected a ">"
+* __is_trivial define is required to dance around bug in Intel compilers (intel/2016b), see https://software.intel.com/en-us/forums/intel-c-compiler/topic/685388
+* cast to bool is required because Intel compilers complaining there's no implicit conversion to bool when Boost 1.63.0 is used as dependency
+--- SPAdes-3.10.1/src/common/modules/path_extend/ideal_pair_info.hpp.orig	2017-03-02 20:23:08.979343521 +0100
++++ SPAdes-3.10.1/src/common/modules/path_extend/ideal_pair_info.hpp	2017-03-02 20:23:26.519525771 +0100
+@@ -14,7 +14,6 @@
+ 
+ #ifndef IDEAL_PAIR_INFO_HPP_
+ #define IDEAL_PAIR_INFO_HPP_
+-#import <vector>
+ #include "pipeline/graph_pack.hpp"
+ 
+ namespace path_extend {
+--- SPAdes-3.10.1/src/common/assembly_graph/dijkstra/dijkstra_algorithm.hpp.orig	2017-02-28 15:55:35.000000000 +0100
++++ SPAdes-3.10.1/src/common/assembly_graph/dijkstra/dijkstra_algorithm.hpp	2017-03-03 10:21:48.506197733 +0100
+@@ -39,7 +39,7 @@
+ 
+   bool operator()(T obj1, T obj2){
+       if(obj1.distance != obj2.distance)
+-          return obj2.distance < obj1.distance;
++          return obj1.distance > obj2.distance;
+       if(obj2.curr_vertex != obj1.curr_vertex)
+           return obj2.curr_vertex < obj1.curr_vertex;
+       if(obj2.prev_vertex != obj1.prev_vertex)
+--- SPAdes-3.10.1/src/projects/hammer/kmer_data.cpp.orig	2017-03-03 10:43:16.968935120 +0100
++++ SPAdes-3.10.1/src/projects/hammer/kmer_data.cpp	2017-03-03 10:43:31.249077107 +0100
+@@ -5,6 +5,8 @@
+ //* See file LICENSE for details.
+ //***************************************************************************
+ 
++#define __is_trivial(type)  __has_trivial_constructor(type) && __has_trivial_copy(type)
++
+ #include "kmer_data.hpp"
+ #include "io/reads/read_processor.hpp"
+ #include "valid_kmer_generator.hpp"
+--- SPAdes-3.10.1/src/projects/spades/pair_info_count.cpp.orig	2017-03-03 10:58:49.828152509 +0100
++++ SPAdes-3.10.1/src/projects/spades/pair_info_count.cpp	2017-03-03 10:59:37.228621259 +0100
+@@ -5,6 +5,8 @@
+ //* See file LICENSE for details.
+ //***************************************************************************
+ 
++#define __is_trivial(type)  __has_trivial_constructor(type) && __has_trivial_copy(type)
++
+ #include <paired_info/is_counter.hpp>
+ #include "io/dataset_support/read_converter.hpp"
+ 
+--- SPAdes-3.10.1/src/common/func/pred.hpp.orig	2017-03-03 11:28:14.735409679 +0100
++++ SPAdes-3.10.1/src/common/func/pred.hpp	2017-03-03 11:28:27.675533167 +0100
+@@ -33,7 +33,7 @@
+                 : data_(std::move(p)) { }
+ 
+         virtual bool operator()(T x) const override {
+-            return data_(x);
++            return (bool)data_(x);
+         }
+ 
+         P data_;
