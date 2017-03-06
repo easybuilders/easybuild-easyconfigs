@@ -1,0 +1,36 @@
+easyblock = 'Tarball'
+
+name = 'OrthoMCL'
+version = '2.0.8'
+versionsuffix = '-Perl-%(perlver)s'
+
+homepage = 'http://orthomcl.org/'
+description = """OrthoMCL is a genome-scale algorithm for grouping orthologous protein sequences."""
+
+toolchain = {'name': 'ictce', 'version': '5.3.0'}
+
+sources = ['%(namelower)sSoftware-v%(version)s.tar.gz']
+source_urls = ['http://orthomcl.org/common/downloads/software/v%(version_major_minor)s/']
+
+patches = ['orthomcl_fix-perl-hashbang.patch']
+
+dependencies = [
+    # a Perl installation providing the DBI module is required
+    ('Perl', '5.16.3'),
+    ('MCL', '12.135'),
+]
+
+sanity_check_paths = {
+    'files': ['bin/orthomcl%s' % bin for bin in ['AdjustFasta', 'BlastParser', 'DropSchema', 'DumpPairsFiles',
+                                                 'ExtractProteinIdsFromGroupsFile', 'ExtractProteinPairsFromGroupsFile',
+                                                 'FilterFasta', 'InstallSchema', 'LoadBlast', 'MclToGroups', 'Pairs',
+                                                 'ReduceFasta', 'ReduceGroups', 'RemoveIdenticalGroups', 'Singletons',
+                                                 'SortGroupMembersByScore', 'SortGroupsFile']],
+    'dirs': ['lib/perl/OrthoMCLEngine'],
+}
+
+modextrapaths = {'PERL5LIB': 'lib/perl'}
+
+sanity_check_commands = [('perl', '-e "use OrthoMCLEngine::Main::Base"')]
+
+moduleclass = 'bio'

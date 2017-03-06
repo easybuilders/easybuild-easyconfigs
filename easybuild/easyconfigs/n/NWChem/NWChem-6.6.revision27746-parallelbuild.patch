@@ -1,0 +1,82 @@
+# corrected parallel builds, no debug info and no vec reports
+# B. Hajgato Nov 13 2014
+diff -ru nwchem-6.6.orig/src/config/makefile.h nwchem-6.6/src/config/makefile.h
+--- nwchem-6.6.orig/src/config/makefile.h	2015-10-16 02:12:50.000000000 +0200
++++ nwchem-6.6/src/config/makefile.h	2017-01-12 10:43:00.000000000 +0100
+@@ -958,7 +958,7 @@
+     _FC=ifort
+ #ifort 9.1
+ #        LINK.f = ifort  $(LDFLAGS) 
+-        FOPTIONS   += -align    -mp1 -w -g -vec-report1
++        FOPTIONS   += -align    -mp1 -w -g
+   ifdef  USE_GPROF
+     FOPTIONS += -qp
+   endif
+@@ -1163,7 +1163,7 @@
+     CORE_SUBDIRS_EXTRA = blas lapack
+          CC = gcc
+      RANLIB = ranlib
+-  MAKEFLAGS = -j 1 --no-print-directory
++  MAKEFLAGS = -j 8 --no-print-directory
+     INSTALL = @echo $@ is built
+         CPP = gcc -E -nostdinc -undef -P
+    FCONVERT = (/bin/cp $< /tmp/$$$$.c; \
+@@ -1310,7 +1310,7 @@
+      _FC=ifc
+  endif
+   ifeq ($(_FC),ifc)
+-  FOPTIONS   =  -align    -mp1 -w -g -vec-report1
++  FOPTIONS   =  -align    -mp1 -w -g
+   ifdef  USE_GPROF
+     FOPTIONS += -qp
+   endif
+@@ -1372,7 +1372,7 @@
+       endif
+ 
+   ifeq ($(CC),icc)
+-    COPTIONS   =   -mp1 -w -g -vec-report1
++    COPTIONS   =   -mp1 -w -g
+     COPTIMIZE = -O3   -unroll 
+     ifeq ($(_CPU),i586)
+       COPTIMIZE +=  -tpp5 -xi # this are for PentiumII
+@@ -1740,7 +1740,7 @@
+ # only use EXPLICITF for offload because otherwise we want debugging to be easy
+ #           FOPTIONS +=  -Qoption,fpp,-P -Qoption,fpp,-c_com=no  -allow nofpp_comments 
+           ifdef USE_OPTREPORT
+-	  FOPTIONS += -qopt-report=1 -qopt-report-phase=vec 
++	  FOPTIONS += -qopt-report=0 -qopt-report-phase=vec 
+           endif
+ #to avoid compiler crashes on simd directive. e.g .Version 15.0.2.164 Build 20150121
+         ifdef USE_NOSIMD
+@@ -1748,7 +1748,6 @@
+         endif
+          ifdef USE_OPENMP
+            FOPTIONS += -qopenmp
+-           FOPTIONS += -qopt-report-phase=openmp
+            COPTIONS += -qopenmp
+            DEFINES+= -DUSE_OPENMP 
+          else
+@@ -1759,10 +1758,9 @@
+            endif
+          endif		   
+ 	   else
+-         FOPTIONS += -vec-report6
++         FOPTIONS += -vec-report0
+          ifdef USE_OPENMP
+            FOPTIONS += -openmp
+-           FOPTIONS += -openmp-report2
+            COPTIONS += -openmp
+            DEFINES+= -DUSE_OPENMP 
+          endif
+@@ -1885,10 +1883,9 @@
+    	      COPTIONS   +=  -qopt-report-phase:openmp
+             endif
+          else
+-   	   COPTIONS   += -vec-report=1
+             ifdef USE_OPENMP
+               COPTIONS += -openmp
+-   	      COPTIONS += -openmp-report=2
++   	      COPTIONS += -openmp-report=0
+             endif
+          endif
+          COPTIMIZE =  -O3
