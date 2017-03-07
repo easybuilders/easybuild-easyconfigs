@@ -1,0 +1,34 @@
+diff -Naur cy36t1_op2bf1/arp/phys_dmn/acntcls.F90 cy36t1_op2bf1.patched/arp/phys_dmn/acntcls.F90
+--- cy36t1_op2bf1/arp/phys_dmn/acntcls.F90	2012-12-19 13:34:18.000000000 +0100
++++ cy36t1_op2bf1.patched/arp/phys_dmn/acntcls.F90	2017-03-06 17:23:13.312917127 +0100
+@@ -139,6 +139,8 @@
+  & RGAMS    ,RALPD    ,RBETD    ,RGAMD  
+ USE YOMPHY0  , ONLY : VKARMN
+ 
++USE YOMLUN, ONLY : NULOUT
++
+ !-----------------------------------------------------------------------
+ 
+ IMPLICIT NONE
+@@ -219,10 +221,19 @@
+   ZRS=PDPHIT(JLON)/PDPHI(JLON)
+   ZLOGU=LOG(1.0_JPRB+ZRU*(EXP(ZBN)-1.0_JPRB))
+   ZLOGS=LOG(1.0_JPRB+ZRS*(EXP(ZBNH)-1.0_JPRB))
++
++#ifdef gnarls
++WRITE (NULOUT,*) __FILE__, __LINE__
++WRITE (NULOUT,*) 'JLON = ',JLON,'/',KFDIA,'; PSTAB = ',PSTAB(JLON)
++WRITE (NULOUT,*) 'ZRU = ',ZRU,'; ZBN = ',ZBN,'; ZBD = ',ZBD
++WRITE (NULOUT,*) 'ZRS = ',ZRS,'; ZBNH = ',ZBNH,'; ZBH = ',ZBH
++CALL FLUSH(NULOUT)
++#endif
++
+   ZCORU=PSTAB(JLON)*ZRU*(ZBN-ZBD)+(1.0_JPRB-PSTAB(JLON))*LOG(1.0_JPRB+ZRU &
+-   & *(EXP(MAX(0.0_JPRB,ZBN-ZBD))-1.0_JPRB))  
++   & *(EXP(MIN(20.0_JPRB,MAX(0.0_JPRB,ZBN-ZBD)))-1.0_JPRB))  
+   ZCORS=PSTAB(JLON)*ZRS*(ZBNH-ZBH)+(1.0_JPRB-PSTAB(JLON))*LOG(1.0_JPRB+ZRS &
+-   & *(EXP(MAX(0.0_JPRB,ZBNH-ZBH))-1.0_JPRB))  
++   & *(EXP(MIN(20.0_JPRB,MAX(0.0_JPRB,ZBNH-ZBH)))-1.0_JPRB))  
+ 
+ !     INTERPOLATION DES COMPOSANTES DU VENT.
+ !     INTERPOLATION OF WIND COMPONENTS.
