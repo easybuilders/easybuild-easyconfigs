@@ -101,6 +101,9 @@ class IntelBase(EasyBlock):
         self.license_file = 'UNKNOWN'
         self.license_env_var = 'UNKNOWN'
 
+        # Initialise whether we need a runtime licence or not
+        self.requires_runtime_license = True
+
         self.home_subdir = os.path.join(os.getenv('HOME'), 'intel')
         common_tmp_dir = os.path.dirname(tempfile.gettempdir())  # common tmp directory, same across nodes
         self.home_subdir_local = os.path.join(common_tmp_dir, os.getenv('USER'), 'easybuild_intel')
@@ -112,6 +115,8 @@ class IntelBase(EasyBlock):
         extra_vars = EasyBlock.extra_options(extra_vars)
         extra_vars.update({
             'license_activation': [ACTIVATION_LIC_SERVER, "License activation type", CUSTOM],
+            'requires_runtime_license': [True, "Boolean indicating whether or not a runtime license is required",
+                                         CUSTOM],
             # 'usetmppath':
             # workaround for older SL5 version (5.5 and earlier)
             # used to be True, but False since SL5.6/SL6
@@ -202,36 +207,40 @@ class IntelBase(EasyBlock):
         except OSError, err:
             raise EasyBuildError("Failed to symlink %s to %s: %s", self.home_subdir_local, self.home_subdir, err)
 
-    def prepare_step(self):
+    def prepare_step(self, requires_runtime_license=True):
         """Custom prepare step for IntelBase. Set up the license"""
         super(IntelBase, self).prepare_step()
 
-        default_lic_env_var = 'INTEL_LICENSE_FILE'
-        lic_specs, self.license_env_var = find_flexlm_license(custom_env_vars=[default_lic_env_var],
-                                                              lic_specs=[self.cfg['license_file']])
+        # Decide if we need a license or not (default is True because of defaults of individual Booleans)
+        self.requires_runtime_license = self.cfg['requires_runtime_license'] and requires_runtime_license
 
-        if lic_specs:
-            if self.license_env_var is None:
-                self.log.info("Using Intel license specifications from 'license_file': %s", lic_specs)
-                self.license_env_var = default_lic_env_var
+        if self.requires_runtime_license:
+            default_lic_env_var = 'INTEL_LICENSE_FILE'
+            lic_specs, self.license_env_var = find_flexlm_license(custom_env_vars=[default_lic_env_var],
+                                                                  lic_specs=[self.cfg['license_file']])
+
+            if lic_specs:
+                if self.license_env_var is None:
+                    self.log.info("Using Intel license specifications from 'license_file': %s", lic_specs)
+                    self.license_env_var = default_lic_env_var
+                else:
+                    self.log.info("Using Intel license specifications from $%s: %s", self.license_env_var, lic_specs)
+
+                self.license_file = os.pathsep.join(lic_specs)
+                env.setvar(self.license_env_var, self.license_file)
+
+                # if we have multiple retained lic specs, specify to 'use a license which exists on the system'
+                if len(lic_specs) > 1:
+                    self.log.debug("More than one license specs found, using '%s' license activation instead of '%s'",
+                                   ACTIVATION_EXIST_LIC, self.cfg['license_activation'])
+                    self.cfg['license_activation'] = ACTIVATION_EXIST_LIC
+
+                    # $INTEL_LICENSE_FILE should always be set during installation with existing license
+                    env.setvar(default_lic_env_var, self.license_file)
             else:
-                self.log.info("Using Intel license specifications from $%s: %s", self.license_env_var, lic_specs)
-
-            self.license_file = os.pathsep.join(lic_specs)
-            env.setvar(self.license_env_var, self.license_file)
-
-            # if we have multiple retained lic specs, specify to 'use a license which exists on the system'
-            if len(lic_specs) > 1:
-                self.log.debug("More than one license specs found, using '%s' license activation instead of '%s'",
-                               ACTIVATION_EXIST_LIC, self.cfg['license_activation'])
-                self.cfg['license_activation'] = ACTIVATION_EXIST_LIC
-
-                # $INTEL_LICENSE_FILE should always be set during installation with existing license
-                env.setvar(default_lic_env_var, self.license_file)
-        else:
-            msg = "No viable license specifications found; "
-            msg += "specify 'license_file', or define $INTEL_LICENSE_FILE or $LM_LICENSE_FILE"
-            raise EasyBuildError(msg)
+                msg = "No viable license specifications found; "
+                msg += "specify 'license_file', or define $INTEL_LICENSE_FILE or $LM_LICENSE_FILE"
+                raise EasyBuildError(msg)
 
     def configure_step(self):
         """Configure: handle license file and clean home dir."""
@@ -260,31 +269,39 @@ class IntelBase(EasyBlock):
         if silent_cfg_names_map is None:
             silent_cfg_names_map = {}
 
-        # license file entry is only applicable with license file or server type of activation
-        # also check whether specified activation type makes sense
-        lic_file_server_activations = [ACTIVATION_LIC_FILE, ACTIVATION_LIC_SERVER]
-        other_activations = [act for act in ACTIVATION_TYPES if act not in lic_file_server_activations]
-        lic_file_entry = ""
-        if self.cfg['license_activation'] in lic_file_server_activations:
-            lic_file_entry = "%(license_file_name)s=%(license_file)s"
-        elif not self.cfg['license_activation'] in other_activations:
-            raise EasyBuildError("Unknown type of activation specified: %s (known :%s)",
-                                 self.cfg['license_activation'], ACTIVATION_TYPES)
+        if self.requires_runtime_license:
+            # license file entry is only applicable with license file or server type of activation
+            # also check whether specified activation type makes sense
+            lic_file_server_activations = [ACTIVATION_LIC_FILE, ACTIVATION_LIC_SERVER]
+            other_activations = [act for act in ACTIVATION_TYPES if act not in lic_file_server_activations]
+            lic_file_entry = ""
+            if self.cfg['license_activation'] in lic_file_server_activations:
+                lic_file_entry = "%(license_file_name)s=%(license_file)s"
+            elif not self.cfg['license_activation'] in other_activations:
+                raise EasyBuildError("Unknown type of activation specified: %s (known :%s)",
+                                     self.cfg['license_activation'], ACTIVATION_TYPES)
+            silent = '\n'.join([
+                "%(activation_name)s=%(activation)s",
+                lic_file_entry,
+                ""  # Add a newline at the end, so we can easily append if needed
+            ]) % {
+                'activation_name': silent_cfg_names_map.get('activation_name', ACTIVATION_NAME),
+                'license_file_name': silent_cfg_names_map.get('license_file_name', LICENSE_FILE_NAME),
+                'activation': self.cfg['license_activation'],
+                'license_file': self.license_file,
+            }
+        else:
+            self.log.debug("No license required, so not including license specifications in silent.cfg")
+            silent = ''
 
-        silent = '\n'.join([
-            "%(activation_name)s=%(activation)s",
-            lic_file_entry,
+        silent += '\n'.join([
             "%(install_dir_name)s=%(install_dir)s",
             "ACCEPT_EULA=accept",
             "%(install_mode_name)s=%(install_mode)s",
             "CONTINUE_WITH_OPTIONAL_ERROR=yes",
             ""  # Add a newline at the end, so we can easily append if needed
         ]) % {
-            'activation_name': silent_cfg_names_map.get('activation_name', ACTIVATION_NAME),
-            'license_file_name': silent_cfg_names_map.get('license_file_name', LICENSE_FILE_NAME),
             'install_dir_name': silent_cfg_names_map.get('install_dir_name', INSTALL_DIR_NAME),
-            'activation': self.cfg['license_activation'],
-            'license_file': self.license_file,
             'install_dir': silent_cfg_names_map.get('install_dir', self.installdir),
             'install_mode': silent_cfg_names_map.get('install_mode', INSTALL_MODE_2015),
             'install_mode_name': silent_cfg_names_map.get('install_mode_name', INSTALL_MODE_NAME_2015),
@@ -372,8 +389,9 @@ class IntelBase(EasyBlock):
         """Custom variable definitions in module file."""
         txt = super(IntelBase, self).make_module_extra()
 
-        txt += self.module_generator.prepend_paths(self.license_env_var, [self.license_file],
-                                                   allow_abs=True, expand_relpaths=False)
+        if self.requires_runtime_license:
+            txt += self.module_generator.prepend_paths(self.license_env_var, [self.license_file],
+                                                       allow_abs=True, expand_relpaths=False)
 
         if self.cfg['m32']:
             nlspath = os.path.join('idb', '32', 'locale', '%l_%t', '%N')

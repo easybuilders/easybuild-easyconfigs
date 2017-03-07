@@ -95,6 +95,10 @@ class Bundle(EasyBlock):
             else:
                 raise EasyBuildError("No sources specification for component %d v%d", comp_name, comp_version)
 
+            if 'source_urls' in comp_specs:
+                # add per-component source_urls to list of bundle source_urls, expanding templates
+                self.cfg.update('source_urls', cfg['source_urls'])
+
             self.comp_cfgs.append(cfg)
 
         self.cfg.enable_templating = True
