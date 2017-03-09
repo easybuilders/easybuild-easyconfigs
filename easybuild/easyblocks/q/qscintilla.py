@@ -36,6 +36,7 @@ from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.filetools import apply_regex_substitutions, mkdir, symlink, write_file
 from easybuild.tools.modules import get_software_root
 from easybuild.tools.run import run_cmd
+from easybuild.tools.systemtools import get_shared_lib_ext
 
 
 class EB_QScintilla(ConfigureMake):
@@ -50,6 +51,7 @@ class EB_QScintilla(ConfigureMake):
         except OSError as err:
             raise EasyBuildError("Failed to change to %s: %s", srcdir, err)
 
+        # replace template values for install locations in qscintilla.pro configuration file
         regex_subs = [
             (r'\$\$\[QT_HOST_DATA\]', os.path.join(self.installdir, 'data')),
             (r'\$\$\[QT_INSTALL_DATA\]', os.path.join(self.installdir, 'data')),
@@ -77,7 +79,6 @@ class EB_QScintilla(ConfigureMake):
         # also install Python bindings if Python is included as a dependency
         python = get_software_root('Python')
         if python:
-
             pydir = os.path.join(self.cfg['start_dir'], 'Python')
             try:
                 os.chdir(pydir)
@@ -124,12 +125,12 @@ class EB_QScintilla(ConfigureMake):
         """Custom sanity check for QScintilla."""
 
         if LooseVersion(self.version) >= LooseVersion('2.10'):
-            qsci_lib = 'libqscintilla2_qt4.so'
+            qsci_lib = 'libqscintilla2_qt4'
         else:
-            qsci_lib = 'libqscintilla2.so'
+            qsci_lib = 'libqscintilla2'
 
         custom_paths = {
-            'files': [os.path.join('lib', qsci_lib)],
+            'files': [os.path.join('lib', qsci_lib + '.' + get_shared_lib_ext())],
             'dirs': ['data', os.path.join('include', 'Qsci'), os.path.join(det_pylibdir(), 'PyQt4'),
                      os.path.join('qsci', 'api', 'python'), os.path.join('share', 'sip', 'PyQt4'), 'trans'],
         }
