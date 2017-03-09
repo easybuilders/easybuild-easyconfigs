@@ -37,7 +37,6 @@ exts_list = [
 ]
 
 modextrapaths = {
-    #'PATH': "", # add installation dir to PATH
     'PERL5LIB': 'lib/perl5/site_perl/%(perlver)s/'
 }
 
@@ -51,17 +50,13 @@ sanity_check_paths = {
     'dirs': ['bin', 'binaries', 'db',  'db/cm', 'db/genus', 'db/hmm', 'db/kingdom', 'doc'],
 }
 
-# this is needed to build some databases required by the application
-# postinstallcmds doesn't work to do this because the module is not loaded
-# so we "abuse" the sanity_check_commands to generate the dbs
-sanity_check_commands = ["cd %(installdir)s/ && prokka --setupdb"]
-
 modloadmsg = "prokka scripts are located in \\$EBROOTPROKKA/bin; databases are located in \\$EBROOTPROKKA/db"
 
 
 postinstallcmds = [
     "sed -i -e 's|/usr/bin/perl\ \-w|/usr/bin/env\ perl|' %(installdir)s/bin/*", # fix shebang line
     "sed -i -e 's|/usr/bin/perl|/usr/bin/env\ perl|' %(installdir)s/bin/*", # fix shebang line
+    "%(installdir)s/bin/prokka --setupdb", # generate required databases
 ]  
 
 moduleclass = 'bio'
