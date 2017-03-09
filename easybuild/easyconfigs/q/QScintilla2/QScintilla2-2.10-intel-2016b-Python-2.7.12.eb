@@ -1,0 +1,52 @@
+easyblock = 'ConfigureMake'
+
+name = 'QScintilla2'
+version = '2.10'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://www.riverbankcomputing.com/software/qscintilla'
+description = "QScintilla is a port to Qt of Neil Hodgson's Scintilla C++ editor control"
+
+toolchain = {'name': 'intel', 'version': '2016b'}
+toolchainopts = {'pic': True, 'cstd': 'c++11'}
+
+source_urls = ['https://sourceforge.net/projects/pyqt/files/%(name)s/QScintilla-%(version)s/']
+sources = ['QScintilla_gpl-%(version)s.tar.gz']
+
+patches = ['QScintilla2-%(version)s_fix-link-python-bindings.patch']
+
+dependencies = [
+    ('Python', '2.7.12'),
+    ('PyQt', '4.12', versionsuffix),
+]
+
+start_dir = 'Qt4Qt5'
+
+skipsteps = ['configure']
+
+prebuildopts = "sed -i 's@\$\$\[QT_INSTALL_LIBS\]@%(installdir)s/lib@g' qscintilla.pro && "
+prebuildopts += "sed -i 's@\$\$\[QT_INSTALL_HEADERS\]@%(installdir)s/include@g' qscintilla.pro && "
+prebuildopts += "sed -i 's@\$\$\[QT_INSTALL_TRANSLATIONS\]@%(installdir)s/trans@g' qscintilla.pro && "
+prebuildopts += "sed -i 's@\$\$\[QT_INSTALL_DATA\]@%(installdir)s/data@g' qscintilla.pro && "
+prebuildopts += "sed -i 's@\$\$\[QT_HOST_DATA\]@%(installdir)s/data@g' qscintilla.pro && "
+prebuildopts += "qmake qscintilla.pro && "
+
+buildopts = 'CXXFLAGS="$CXXFLAGS \$(DEFINES)"'
+
+python_bindings_install_cmd = "cd ../Python && mkdir -p %(installdir)s/share/sip/PyQt4 && "
+python_bindings_install_cmd += "python configure.py --destdir %(installdir)s/lib/python%(pyshortver)s/site-packages/PyQt4 --qsci-sipdir %(installdir)s/share/sip/PyQt4 --qsci-incdir %(installdir)s/include --qsci-libdir %(installdir)s/lib --pyqt-sipdir $EBROOTPYQT/share/sip/PyQt4 --apidir %(installdir)s/qsci/api/python --no-stubs && "
+python_bindings_install_cmd += "make && make install && cd %(installdir)s/lib/python%(pyshortver)s/site-packages/PyQt4 && "
+python_bindings_install_cmd += "for x in $(ls $EBROOTPYQT/lib/python2.7/site-packages/PyQt4); do ln -s $EBROOTPYQT/lib/python2.7/site-packages/PyQt4/$x; done && "
+python_bindings_install_cmd += "rm __init__.py* && touch __init__.py"
+postinstallcmds = [python_bindings_install_cmd]
+
+modextrapaths = {'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages'}
+
+sanity_check_paths = {
+    'files': ['lib/libqscintilla2_qt4.so'],
+    'dirs': ['include/Qsci', 'lib/python%(pyshortver)s/site-packages/PyQt4', 'qsci/api/python', 'share/sip/PyQt4', 'trans'],
+}
+
+sanity_check_commands = ["python -c 'import PyQt4.Qsci'"]
+
+moduleclass = 'vis'
