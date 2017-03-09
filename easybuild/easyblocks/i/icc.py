@@ -141,16 +141,14 @@ class EB_icc(IntelBase):
             'IDB_HOME': ['bin/intel64'],
             'IPPROOT': ['ipp'],
             'LD_LIBRARY_PATH': ['lib'],
-            'LIBRARY_PATH': ['lib'],
-            'MANPATH': ['debugger/gdb/intel64/share/man', 'man', 'man/common', 'man/en_US', 'share/man'],
-            'PATH': ['bin'],
+            'MANPATH': ['debugger/gdb/intel64/share/man', 'man/common', 'man/en_US', 'share/man'],
+            'PATH': [],
             'TBBROOT': ['tbb'],
         }
 
         if self.cfg['m32']:
             # 32-bit toolchain
             guesses['PATH'].extend(['bin/ia32', 'tbb/bin/ia32'])
-            # in the end we set 'LIBRARY_PATH' equal to 'LD_LIBRARY_PATH'
             guesses['LD_LIBRARY_PATH'].append('lib/ia32')
 
         else:
@@ -164,7 +162,6 @@ class EB_icc(IntelBase):
                 'tbb/bin/intel64',
             ])
 
-            # in the end we set 'LIBRARY_PATH' equal to 'LD_LIBRARY_PATH'
             guesses['LD_LIBRARY_PATH'].extend([
                 'compiler/lib/intel64',
                 'debugger/ipt/intel64/lib',
@@ -196,8 +193,6 @@ class EB_icc(IntelBase):
             # 'lib/intel64' is deliberately listed last, so it gets precedence over subdirs
             guesses['LD_LIBRARY_PATH'].append('lib/intel64')
 
-        guesses['LIBRARY_PATH'] = guesses['LD_LIBRARY_PATH']
-
         # set debugger path
         if self.debuggerpath:
             guesses['PATH'].append(os.path.join(self.debuggerpath, 'gdb', 'intel64', 'bin'))
@@ -205,9 +200,19 @@ class EB_icc(IntelBase):
         # in recent Intel compiler distributions, the actual binaries are
         # in deeper directories, and symlinked in top-level directories
         # however, not all binaries are symlinked (e.g. mcpcom is not)
+        # we only need to include the deeper directories (same as compilervars.sh)
         if prefix and os.path.isdir(os.path.join(self.installdir, prefix)):
             for key, subdirs in guesses.items():
-                guesses[key].extend([os.path.join(prefix, subdir) for subdir in subdirs])
+                guesses[key] = [os.path.join(prefix, subdir) for subdir in subdirs]
+
+        # remove IDB_HOME if idb does not exist
+        idb_found = False
+        for guess in guesses['IDB_HOME']:
+            if os.path.isfile(os.path.join(self.installdir, guess, 'idb')):
+                idb_found = True
+                exit
+        if not idb_found:
+            del guesses['IDB_HOME']
 
         return guesses
 
