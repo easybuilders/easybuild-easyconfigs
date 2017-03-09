@@ -1,0 +1,67 @@
+# This file is an EasyBuild reciPY as per https://github.com/hpcugent/easybuild
+# Author: Pablo Escobar Lopez
+# sciCORE - University of Basel
+# SIB Swiss Institute of Bioinformatics 
+
+easyblock = 'Tarball'
+
+name = 'prokka'
+version = '1.11'
+versionsuffix = '-Perl-%(perlver)s'
+
+homepage = 'http://www.vicbioinformatics.com/software.prokka.shtml'
+description = """Prokka is a software tool for the rapid annotation of prokaryotic genomes."""
+
+toolchain = {'name': 'goolf', 'version': '1.7.20'}
+
+source_urls = ['https://github.com/tseemann/prokka/archive/']
+sources = ['v%(version)s.zip']
+
+dependencies = [
+    ('Perl', '5.22.2'),
+]
+
+# these are the perl libraries dependencies
+exts_defaultclass = 'PerlModule'
+exts_filter = ("perldoc -lm %(ext_name)s ", "")
+
+exts_list = [
+    ('Text::Unidecode', '1.30', {
+        'source_tmpl': 'Text-Unidecode-%(version)s.tar.gz',
+        'source_urls': ['http://search.cpan.org/CPAN/authors/id/S/SB/SBURKE/'],
+    }),
+    ('Bio::Perl', '1.7.0', {
+        'source_tmpl': 'release-1-7-0.zip',
+        'source_urls': ['https://github.com/bioperl/bioperl-live/archive/'],
+    }),
+]
+
+modextrapaths = {
+    #'PATH': "", # add installation dir to PATH
+    'PERL5LIB': 'lib/perl5/site_perl/%(perlver)s/'
+}
+
+bin_files = ['prokka', 'prokka-cdd_to_hmm', 'prokka-genpept_to_fasta_db', 'prokka-tigrfams_to_hmm',
+             'prokka-biocyc_to_fasta_db', 'prokka-clusters_to_hmm', 'prokka-hamap_to_hmm',
+             'prokka-uniprot_to_fasta_db', 'prokka-build_kingdom_dbs', 'prokka-genbank_to_fasta_db',
+             'prokka-make_tarball']
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in bin_files] + ['binaries/linux/aragorn', 'db/cm/Bacteria', 'doc/ToDoList.txt'],
+    'dirs': ['bin', 'binaries', 'db',  'db/cm', 'db/genus', 'db/hmm', 'db/kingdom', 'doc'],
+}
+
+# this is needed to build some databases required by the application
+# postinstallcmds doesn't work to do this because the module is not loaded
+# so we "abuse" the sanity_check_commands to generate the dbs
+sanity_check_commands = ["cd %(installdir)s/ && prokka --setupdb"]
+
+modloadmsg = "prokka scripts are located in \\$EBROOTPROKKA/bin; databases are located in \\$EBROOTPROKKA/db"
+
+
+postinstallcmds = [
+    "sed -i -e 's|/usr/bin/perl\ \-w|/usr/bin/env\ perl|' %(installdir)s/bin/*", # fix shebang line
+    "sed -i -e 's|/usr/bin/perl|/usr/bin/env\ perl|' %(installdir)s/bin/*", # fix shebang line
+]  
+
+moduleclass = 'bio'
