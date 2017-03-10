@@ -20,6 +20,7 @@ import os
 
 import easybuild.tools.environment as env
 from easybuild.easyblocks.generic.packedbinary import PackedBinary
+from easybuild.framework.easyconfig.types import ensure_iterable_license_specs
 from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.filetools import find_flexlm_license
 from easybuild.tools.modules import get_software_root
@@ -40,17 +41,8 @@ class EB_TotalView(PackedBinary):
         """
         Handle of license
         """
-        license_file = self.cfg['license_file']
-        if (license_file is None) or isinstance(license_file, basestring):
-            license_specs = [license_file]
-        elif isinstance(license_file, (list, tuple)) and all(isinstance(x, basestring) for x in license_file):
-            license_specs = license_file
-        else:
-            msg = "Unsupported type %s for easyconfig parameter 'license_file'! " % type(license_file)
-            msg += "Can either be None, a string, or a tuple/list of strings."
-            raise EasyBuildError(msg)
-
         default_lic_env_var = 'LM_LICENSE_FILE'
+        license_specs = ensure_iterable_license_specs(self.cfg['license_file'])
         lic_specs, self.license_env_var = find_flexlm_license(custom_env_vars=[default_lic_env_var],
                                                               lic_specs=license_specs)
 
