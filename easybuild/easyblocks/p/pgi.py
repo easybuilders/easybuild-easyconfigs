@@ -93,9 +93,19 @@ class EB_PGI(PackedBinary):
         """
         Handle license file.
         """
+        license_file = self.cfg['license_file']
+        if isinstance(license_file, basestring):
+            license_specs = [license_file]
+        elif isinstance(license_file, list):
+            license_specs = license_file
+        else:
+            msg = "Unsupported type for easyconfig parameter 'license_file'! "
+            msg += "Can either be a string or a list of strings."
+            raise EasyBuildError(msg)
+
         default_lic_env_var = 'PGROUPD_LICENSE_FILE'
         lic_specs, self.license_env_var = find_flexlm_license(custom_env_vars=[default_lic_env_var],
-                                                              lic_specs=[self.cfg['license_file']])
+                                                              lic_specs=license_specs)
 
         if lic_specs:
             if self.license_env_var is None:
