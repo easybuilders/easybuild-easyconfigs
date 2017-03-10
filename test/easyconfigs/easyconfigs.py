@@ -235,6 +235,11 @@ def template_easyconfig_test(self, spec):
     self.assertTrue(name, app.name)
     self.assertTrue(ec['version'], app.version)
 
+    # make sure that $root is not used, since it is not compatible with module files in Lua syntax
+    res = re.findall('.*\$root.*', ec.rawtxt, re.M)
+    error_msg = "Found use of '$root', not compatible with modules in Lua syntax, use '%%(installdir)s' instead: %s"
+    self.assertFalse(res, error_msg % res)
+
     # make sure all patch files are available
     specdir = os.path.dirname(spec)
     specfn = os.path.basename(spec)
