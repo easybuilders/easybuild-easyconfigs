@@ -218,11 +218,11 @@ class IntelBase(EasyBlock):
             license_file = self.cfg['license_file']
             if (license_file is None) or isinstance(license_file, basestring):
                 license_specs = [license_file]
-            elif isinstance(license_file, list):
+            elif isinstance(license_file, (list, tuple)) and all(isinstance(x, basestring) for x in license_file):
                 license_specs = license_file
             else:
-                msg = "Unsupported type for easyconfig parameter 'license_file'! "
-                msg += "Can either be None, a string, or a list of strings."
+                msg = "Unsupported type %s for easyconfig parameter 'license_file'! " % type(license_file)
+                msg += "Can either be None, a string, or a tuple/list of strings."
                 raise EasyBuildError(msg)
 
             default_lic_env_var = 'INTEL_LICENSE_FILE'
