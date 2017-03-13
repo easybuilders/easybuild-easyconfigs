@@ -1,0 +1,137 @@
+Only in qball_r140_working/examples/mgo_benchmark: mgo.N96.i
+Only in qball_r140_working/examples/mgo_benchmark: mgo.N96.out
+Only in qball_r140_working/examples/mgo_benchmark: mgo.N96.sys
+Only in qball_r140_working/: QBOX.patch
+diff -ru qball_r140/trunk/src/Context.C qball_r140_working/trunk/src/Context.C
+--- qball_r140/trunk/src/Context.C	2013-04-18 20:31:13.000000000 +0200
++++ qball_r140_working/trunk/src/Context.C	2017-03-10 12:19:09.026641211 +0100
+@@ -89,9 +89,9 @@
+ int Cblacs_pnum(int icontxt, int prow, int pcol)
+ { return 0;}
+ 
+-int Csys2blacs_handle(int comm) {
+-  return 0;
+-}
++//int Csys2blacs_handle(MPI_Comm* comm) {
++//  return 0;
++//}
+ void Cdgesd2d(int icontxt,int m,int n,double *A,int lda,int rdest,int cdest)
+ { return; }
+ 
+@@ -613,11 +613,12 @@
+   char order = 'C';
+   MPI_Comm_size(comm_,&nprocs);
+   MPI_Comm_rank(comm_,&mype_);
+-  int bhandle = Csys2blacs_handle(comm_);
++  //int bhandle = Csys2blacs_handle(comm_);
++  int bhandle = 0;
+   ictxt_ = bhandle;
+   Cblacs_gridinit( &ictxt_, &order, nprow, npcol );
+ 
+-  // get values of nprow_, npcol_, myrow_ and mycol_ in the new context
++  // get values of nprow_
+   if ( ictxt_ >= 0 )
+     Cblacs_gridinfo(ictxt_, &nprow_, &npcol_, &myrow_, &mycol_);
+   
+Only in qball_r140_working/trunk/src: .depend_linux_x86_64_intel
+Only in qball_r140_working/trunk/src: .depend_linux_x86_64_intel.bak
+diff -ru qball_r140/trunk/src/FourierTransform.h qball_r140_working/trunk/src/FourierTransform.h
+--- qball_r140/trunk/src/FourierTransform.h	2013-04-18 20:31:15.000000000 +0200
++++ qball_r140_working/trunk/src/FourierTransform.h	2017-03-10 10:47:52.288415850 +0100
+@@ -34,7 +34,7 @@
+ #include <vector>
+ 
+ #if USE_FFTW || USE_SPIRAL
+-#include "fftw.h"
++#include "fftw3.h"
+ #endif
+ 
+ #include "Timer.h"
+Only in qball_r140_working/trunk/src: .linux_x86_64_gnu.mk.swp
+diff -ru qball_r140/trunk/src/Makefile qball_r140_working/trunk/src/Makefile
+--- qball_r140/trunk/src/Makefile	2013-07-03 22:10:55.000000000 +0200
++++ qball_r140_working/trunk/src/Makefile	2017-03-10 12:40:42.030398018 +0100
+@@ -7,21 +7,53 @@
+ 
+ # If defined, use architecture file set with ARCH variable
+ ARCH ?= $(ARCHGUESS)
+-include $(ARCH).mk
+-#------------------------------------------------------------------------------
+-#
+-TESTEXECS=testMatrix testFTGrid testGridFunction testBasis \
+-testBlacsContext testSlaterDet testEnergyFunctional testSample \
+-testChargeDensity  testFourierTransform testSpecies testContext \
+-testEigenSolvers
+-
+-QBSRC=AtomSet.C Atom.C SymmetrySet.C Symmetry.C Species.C Wavefunction.C SlaterDet.C \
+-      EnergyFunctional.C SampleStepper.C Basis.C FourierTransform.C Matrix.C Context.C \
+-      sinft.C spline.C UnitCell.C StructureFactor.C ChargeDensity.C UserInterface.C RunCmd.C \
+-      LoadCmd.C SaveCmd.C SavesysCmd.C SavedenCmd.C SpeciesCmd.C SpeciesReader.C \
+-      SpeciesHandler.C XCPotential.C LDAFunctional.C PBEFunctional.C PBESolFunctional.C \
+-      PBERevFunctional.C BLYPFunctional.C NonLocalPotential.C SampleReader.C SampleWriter.C \
+-      StructuredDocumentHandler.C SampleHandler.C AtomSetHandler.C WavefunctionHandler.C \
++
++ PLT=LINUX_X86_64_GNU_SALOMON
++#-------------------------------------------------------------------------------
++ #FFTWDIR=/apps/all/FFTW/2.1.5-gompi-2015g
++ FFTWDIR=/apps/all/FFTW/3.3.4-gompi-2015g
++ FFTWLIB=$(FFTWDIR)/lib/libfftw.a
++# BLASDIR=$(HOME)/software/blas/blas-linux_x86-64
++# LAPACKDIR=$(HOME)/software/lapack/lapack-linux_x86-64
++# SCALAPACK_DIR = /apps/all/ScaLAPACK/2.0.2-gompi-2015b-OpenBLAS-0.2.14-LAPACK-3.5.0
++ SCALAPACK_DIR = /apps/all/ScaLAPACK/2.0.2-gompi-2015g-OpenBLAS-0.2.14-LAPACK-3.5.0
++ SCALAPACKLIB  = $(SCALAPACK_DIR)/lib/libscalapack.a
++ #BLASDIR = /apps/all/OpenBLAS/0.2.14-LAPACK-3.5.0/lib
++ BLASDIR = /apps/all/OpenBLAS/0.2.14-GNU-4.9.3-2.25-LAPACK-3.5.0
++ 
++# CC=gcc
++ #CFLAGS = -O3 
++ 
++ CXX=mpic++
++ LD=$(CXX)
++
++ DFLAGS +=  -DUSE_CSTDIO_LFS -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64
++ 
++	 INCLUDE = -I$(FFTWDIR)/include
++	 
++	 CXXFLAGS= -g -O3 -DUSE_MPI -DSCALAPACK -DADD_ -D$(PLT) $(INCLUDE) $(DFLAGS)
++
++	# LIBPATH = -L$(FFTWDIR) -L$(BLASDIR) -L$(LAPACKDIR)
++	# LIBS =  $(SCALAPACKLIB) -lgfortran -lfftw -lblas -llapack 
++	 LIBPATH = -L$(FFTWDIR) -L$(BLASDIR)
++	 #LIBS =  $(SCALAPACKLIB) -lfftw -omp -openmp -lmkl_core -lmkl_gnu_thread -lmkl_gf_lp64
++	 LIBS =  $(SCALAPACKLIB) -lfftw3 -fopenmp -lopenblas -lgfortran
++
++	# LDFLAGS = $(LIBPATH) $(LIBS) -Wl,-rpath,/usr/local/tools/mkl-8.1.1.004/lib
++	 LDFLAGS = $(LIBPATH) $(LIBS) 
++
++	TESTEXECS=testMatrix testFTGrid testGridFunction testBasis \
++	testBlacsContext testSlaterDet testEnergyFunctional testSample \
++	testChargeDensity  testFourierTransform testSpecies testContext \
++	testEigenSolvers
++
++	QBSRC=AtomSet.C Atom.C SymmetrySet.C Symmetry.C Species.C Wavefunction.C SlaterDet.C \
++				EnergyFunctional.C SampleStepper.C Basis.C FourierTransform.C Matrix.C Context.C \
++				sinft.C spline.C UnitCell.C StructureFactor.C ChargeDensity.C UserInterface.C RunCmd.C \
++				LoadCmd.C SaveCmd.C SavesysCmd.C SavedenCmd.C SpeciesCmd.C SpeciesReader.C \
++				SpeciesHandler.C XCPotential.C LDAFunctional.C PBEFunctional.C PBESolFunctional.C \
++				PBERevFunctional.C BLYPFunctional.C NonLocalPotential.C SampleReader.C SampleWriter.C \
++				StructuredDocumentHandler.C SampleHandler.C AtomSetHandler.C WavefunctionHandler.C \
+       XMLGFPreprocessor.C Base64Transcoder.C CPSampleStepper.C BOSampleStepper.C ParOptCmd.C \
+       ParallelOptimizer.C WavefunctionStepper.C SDWavefunctionStepper.C \
+       MDWavefunctionStepper.C SDIonicStepper.C MDIonicStepper.C BMDIonicStepper.C \
+@@ -41,9 +73,9 @@
+ QBOBJS = $(QBSRC:%.C=$(OBJDIR)/%.o)
+ KPTOBJS = $(KPTSRC:%.C=$(OBJDIR)/%.o)
+ SIMDOBJS = $(SIMDSRC:%.c=$(OBJDIR)/%.o)
+-ifdef CFLAGS
++#ifdef CFLAGS
+ 	QBOBJS += $(SIMDOBJS)
+-endif
++#endif
+ 
+ OBJDIR = objs-$(ARCH)
+ EXENAME = qb-$(ARCH)
+Only in qball_r140_working/trunk/src: Makefile.orig
+Only in qball_r140_working/trunk/src: objs-linux_x86_64_intel
+Only in qball_r140_working/trunk/src: qb-linux_x86_64_intel
