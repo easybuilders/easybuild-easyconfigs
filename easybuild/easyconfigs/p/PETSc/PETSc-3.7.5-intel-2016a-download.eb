@@ -1,5 +1,6 @@
 name = 'PETSc'
 version = '3.7.5'
+versionsuffix = '-downloaded_deps'
 
 homepage = 'http://www.mcs.anl.gov/petsc'
 description = """PETSc, pronounced PET-see (the S is silent), is a suite of data structures and routines for the
@@ -11,31 +12,32 @@ toolchainopts = {'usempi': True, 'pic': True}
 source_urls = ['http://ftp.mcs.anl.gov/pub/petsc/release-snapshots']
 sources = [SOURCELOWER_TAR_GZ]
 
+builddependencies = [('CMake', '3.5.2')]
 shared_libs = 1
 pic = 1
 
 downloadinstall = True
 
+# For these dependencies, we do not download them
 dependencies = [('HDF5','1.8.18')] 
-
 configopts = ""
-# compiles PETSc shared
 configopts += "--with-mkl_pardiso=1 --with-mkl_pardiso-dir=$MKLROOT "
 configopts += "--with-hdf5=1 --with-hdf5-dir=$EBROOTHDF5"
 
-# external packages that are downloaded
-external_packages = ['mumps', 'ptscotch', 'superlu', 'superlu_dist', 'parmetis', 'metis', 'ml', 'suitesparse', 'hypre', 'prometheus']
-# compiles the external dependencies non-shared
-external_packages_shared = "no"
-for p in external_packages:
-	configopts += "--download-%s=yes --download-%s-shared=%s " % (p,p,external_packages_shared)
-configopts += "--download-triangle=yes"   # download-triangle-shared is not supported
-
-builddependencies = [('CMake', '3.5.2')]
+# external packages that are downloaded with --download-<package>=1 and --download-<package>-static=1
+download_deps_static = [
+    'hypre', 
+    'metis', 
+    'ml', 
+    'mumps', 
+    'parmetis', 
+    'prometheus', 
+    'ptscotch', 
+    'suitesparse', 
+    'superlu', 
+    'superlu_dist'
+]
+# triangle cannot be downloaded with --download-triangle-static because it fails
+download_deps = ['triangle']
 
 moduleclass = 'numlib'
-
-modluafooter = """
-family("petsc")
-"""
-
