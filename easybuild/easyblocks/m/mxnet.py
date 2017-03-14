@@ -27,6 +27,7 @@ EasyBuild support for MXNet, implemented as an easyblock
 
 @author: Ward Poelmans (Free University of Brussels)
 """
+import glob
 import os
 import shutil
 from distutils.version import LooseVersion
@@ -36,7 +37,7 @@ from easybuild.easyblocks.generic.pythonpackage import PythonPackage
 from easybuild.easyblocks.generic.rpackage import RPackage
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.build_log import EasyBuildError
-from easybuild.tools.filetools import apply_regex_substitutions, copy_file, symlink, write_file, mkdir
+from easybuild.tools.filetools import apply_regex_substitutions, copy_file, mkdir, rmtree2, symlink, write_file
 from easybuild.tools.modules import get_software_root, get_software_version
 from easybuild.tools.systemtools import get_shared_lib_ext
 
@@ -45,7 +46,7 @@ class EB_MXNet(MakeCp):
     """Easyblock to build and install MXNet"""
 
     @staticmethod
-    def extra_options():
+    def extra_options(extra_vars=None):
         """Change default values of options"""
         extra = MakeCp.extra_options()
         # files_to_copy is not mandatory here
@@ -57,9 +58,9 @@ class EB_MXNet(MakeCp):
         super(EB_MXNet, self).__init__(*args, **kwargs)
 
         self.mxnet_src_dir = None
-        self.py_ext = PythonPackage(self, {'name': 'mxnet'})
+        self.py_ext = PythonPackage(self, {'name': self.name, 'version': self.version})
         self.py_ext.module_generator = self.module_generator
-        self.r_ext = RPackage(self, {'name': 'mxnet'})
+        self.r_ext = RPackage(self, {'name': self.name, 'version': self.version})
         self.r_ext.module_generator = self.module_generator
 
     def extract_step(self):
@@ -70,39 +71,30 @@ class EB_MXNet(MakeCp):
         # Extract everything into separate directories.
         super(EB_MXNet, self).extract_step()
 
-        # Find the full path to the directory that was unpacked from mxnet-*.tar.gz.
-        for srcdir in os.listdir(self.builddir):
-            if srcdir.startswith("mxnet-"):
-                self.mxnet_src_dir = os.path.join(self.builddir, srcdir)
-                break
-
-        if self.mxnet_src_dir is None:
-            raise EasyBuildError("Could not find the MXNet source directory")
-
-        self.log.debug("MXNet dir is: %s", self.mxnet_src_dir)
+        mxnet_dirs = glob.glob(os.path.join(self.builddir, 'mxnet-*'))
+        if len(mxnet_dirs) == 1:
+            self.mxnet_src_dir = mxnet_dirs[0]
+            self.log.debug("MXNet dir is: %s", self.mxnet_src_dir)
+        else:
+            raise EasyBuildError("Failed to find/isolate MXNet source directory: %s", mxnet_dirs)
 
         for srcdir in os.listdir(self.builddir):
-            if srcdir.startswith("mxnet-"):
-                continue
-            else:
+            if not srcdir.startswith('mxnet-'):
                 submodule, _, _ = srcdir.rpartition('-')
+                newdir = os.path.join(self.mxnet_src_dir, submodule)
+                olddir = os.path.join(self.builddir, srcdir)
+                # first remove empty existing directory
+                rmtree2(newdir)
                 try:
-                    newdir = os.path.join(self.mxnet_src_dir, submodule)
-                    olddir = os.path.join(self.builddir, srcdir)
-                    # first remove empty existing directory
-                    os.rmdir(newdir)
                     shutil.move(olddir, newdir)
                 except IOError, err:
                     raise EasyBuildError("Failed to move %s to %s: %s", olddir, newdir, err)
 
-        # the nnvm submodules has dmlc-core as a submodule too. Let's up a symlink in place.
-        try:
-            newdir = os.path.join(self.mxnet_src_dir, "nnvm", "dmlc-core")
-            olddir = os.path.join(self.mxnet_src_dir, "dmlc-core")
-            os.rmdir(newdir)
-            symlink(olddir, newdir)
-        except IOError, err:
-            raise EasyBuildError("Failed to symlink %s to %s: %s", olddir, newdir, err)
+        # the nnvm submodules has dmlc-core as a submodule too. Let's put a symlink in place.
+        newdir = os.path.join(self.mxnet_src_dir, "nnvm", "dmlc-core")
+        olddir = os.path.join(self.mxnet_src_dir, "dmlc-core")
+        rmtree2(newdir)
+        symlink(olddir, newdir)
 
     def configure_step(self):
         """Patch 'config.mk' file to use EB stuff"""
@@ -111,8 +103,8 @@ class EB_MXNet(MakeCp):
         regex_subs = [
             (r"export CC = gcc", r"# \g<0>"),
             (r"export CXX = g\+\+", r"# \g<0>"),
-            (r"(?P<var>ADD_LDFLAGS\s*=)\s*$", r"\g<var> %s" % os.environ['EBVARCFLAGS']),
-            (r"(?P<var>ADD_CFLAGS\s*=)\s*$", r"\g<var> %s" % os.environ['EBVARLDFLAGS']),
+            (r"(?P<var>ADD_CFLAGS\s*=)\s*$", r"\g<var> %s" % os.environ['CFLAGS']),
+            (r"(?P<var>ADD_LDFLAGS\s*=)\s*$", r"\g<var> %s" % os.environ['LDFLAGS']),
         ]
 
         toolchain_blas = self.toolchain.definition().get('BLAS', None)[0]
@@ -127,7 +119,6 @@ class EB_MXNet(MakeCp):
         elif toolchain_blas == 'OpenBLAS':
             blas = "openblas"
         elif toolchain_blas is None:
-            # This toolchain has no BLAS library
             raise EasyBuildError("No BLAS library found in the toolchain")
 
         regex_subs.append((r'USE_BLAS =.*', 'USE_BLAS = %s' % blas))
@@ -160,8 +151,8 @@ class EB_MXNet(MakeCp):
         try:
             os.chdir(self.r_ext.src)
             mkdir("inst")
-            symlink(os.path.join(self.installdir, "lib"), "inst/libs")
-            symlink(os.path.join(self.installdir, "include"), "inst/include")
+            symlink(os.path.join(self.installdir, "lib"), os.path.join("inst", "libs"))
+            symlink(os.path.join(self.installdir, "include"), os.path.join("inst", "include"))
         except IOError, err:
             raise EasyBuildError("Failed to prepare the 'inst' directory for the R bindings: %s", err)
 
