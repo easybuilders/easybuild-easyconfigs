@@ -57,8 +57,10 @@ class EB_MXNet(MakeCp):
         super(EB_MXNet, self).__init__(*args, **kwargs)
 
         self.mxnet_src_dir = None
-        self.py_ext = None
-        self.r_ext = None
+        self.py_ext = PythonPackage(self, {'name': 'mxnet'})
+        self.py_ext.module_generator = self.module_generator
+        self.r_ext = RPackage(self, {'name': 'mxnet'})
+        self.r_ext.module_generator = self.module_generator
 
     def extract_step(self):
         """
@@ -146,8 +148,6 @@ class EB_MXNet(MakeCp):
     def extensions_step(self):
         """Build & Install both Python and R extension"""
         # we start with the python bindings
-        self.py_ext = PythonPackage(self, {'name': 'mxnet'})
-        self.py_ext.module_generator = self.module_generator
         self.py_ext.src = os.path.join(self.mxnet_src_dir, "python")
         os.chdir(self.py_ext.src)
 
@@ -156,8 +156,6 @@ class EB_MXNet(MakeCp):
         self.py_ext.postrun()
 
         # next up, the R bindings
-        self.r_ext = RPackage(self, {'name': 'R-package'})
-        self.r_ext.module_generator = self.module_generator
         self.r_ext.src = os.path.join(self.mxnet_src_dir, "R-package")
         try:
             os.chdir(self.r_ext.src)
