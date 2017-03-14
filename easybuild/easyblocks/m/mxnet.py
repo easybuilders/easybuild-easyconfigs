@@ -173,17 +173,26 @@ class EB_MXNet(MakeCp):
 
     def sanity_check_step(self):
         """Check for main library files for MXNet"""
+        self.py_ext.sanity_check_step()
+        self.r_ext.sanity_check_step()
+
         custom_paths = {
             'files': ["lib/libmxnet.%s" % ext for ext in ['a', get_shared_lib_ext()]],
             'dirs': [],
         }
         super(EB_MXNet, self).sanity_check_step(custom_paths=custom_paths)
-        self.py_ext.sanity_check_step()
-        self.r_ext.sanity_check_step()
 
     def make_module_extra(self, *args, **kwargs):
         """Custom variables for MXNet module."""
         txt = super(EB_MXNet, self).make_module_extra(*args, **kwargs)
-        txt += self.py_ext.make_module_extra(*args, **kwargs)
-        txt += self.r_ext.make_module_extra(*args, **kwargs)
+
+        self.py_ext.set_pylibdirs()
+        for path in self.py_ext.all_pylibdirs:
+            fullpath = os.path.join(self.installdir, path)
+            # only extend $PYTHONPATH with existing, non-empty directories
+            if os.path.exists(fullpath) and os.listdir(fullpath):
+                txt += self.module_generator.prepend_paths('PYTHONPATH', path)
+
+        txt += self.module_generator.prepend_paths("R_LIBS", [''])  # prepend R_LIBS with install path
+
         return txt
