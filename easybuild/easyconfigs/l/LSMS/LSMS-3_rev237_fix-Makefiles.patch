@@ -1,0 +1,108 @@
+#change PATH and exports 
+#Golasowski Martin, martin.golasowski@vsb.cz, 2017 IT4Innovations
+--- LSMS_3_rev237/CBLAS/Makefile	2012-02-09 20:17:00.000000000 +0100
++++ LSMS_3_rev237_working/CBLAS/Makefile	2017-03-09 15:44:39.524649760 +0100
+@@ -1,6 +1,29 @@
+ dlvl = ./.
+ include $(dlvl)/Makefile.in
+-include ../architecture.h
++
++# export USE_GPTL=1
++export USE_OPENMP=1
++
++export ADD_LIBS += -L$(TOP_DIR)/lua/lib -L$(TOP_DIR)/CBLAS/lib/ -lcblas_LINUX -lmpi -lmpi_cxx -lhdf5 -lgfortran -lopenblas $(FPMPI_POST_LINK_OPTS)
++
++export INC_PATH += -I $(TOP_DIR)/CBLAS/include -I $(TOP_DIR)/lua/include
++
++export ADDITIONAL_TARGETS = CBLAS_target
++
++export BOOST_ROOT=$(TOP_DIR)
++
++
++ifdef USE_OPENMP
++  export CXX += -g -std=c++11 -I$(BOOST_ROOT) -fopenmp
++  #export CXX=CC -I$(BOOST_ROOT) -DUSE_PAPI -fopenmp
++  #export F77=ftn  -fopenmp
++  export F77 += -fopenmp
++else
++  export CXX += -std=c++11 -I$(BOOST_ROOT)
++  #export CXX=CC -I$(BOOST_ROOT) -DUSE_PAPI
++  #export F77=ftn 
++endif
++export LUACXX = $(CXX)
+ 
+ all: alllib alltst 
+ 
+--- LSMS_3_rev237/src/Test/buildKKRMatrixTest/Makefile	2012-02-15 19:41:17.000000000 +0100
++++ LSMS_3_rev237_working/src/Test/buildKKRMatrixTest/Makefile	2017-03-09 15:47:04.088863802 +0100
+@@ -3,7 +3,29 @@
+ export INC_PATH =
+ export LIBS :=
+ 
+-include $(TOP_DIR)/architecture.h
++# export USE_GPTL=1
++export USE_OPENMP=1
++
++export ADD_LIBS += -L$(TOP_DIR)/lua/lib -L$(TOP_DIR)/CBLAS/lib/ -lcblas_LINUX -lmpi -lmpi_cxx -lhdf5 -lgfortran -lopenblas $(FPMPI_POST_LINK_OPTS)
++
++export INC_PATH += -I $(TOP_DIR)/CBLAS/include -I $(TOP_DIR)/lua/include
++
++export ADDITIONAL_TARGETS = CBLAS_target
++
++export BOOST_ROOT=$(TOP_DIR)
++
++
++ifdef USE_OPENMP
++  export CXX += -g -std=c++11 -I$(BOOST_ROOT) -fopenmp
++  #export CXX=CC -I$(BOOST_ROOT) -DUSE_PAPI -fopenmp
++  #export F77=ftn  -fopenmp
++  export F77 += -fopenmp
++else
++  export CXX += -std=c++11 -I$(BOOST_ROOT)
++  #export CXX=CC -I$(BOOST_ROOT) -DUSE_PAPI
++  #export F77=ftn 
++endif
++export LUACXX = $(CXX)
+ 
+ export INC_PATH += -I $(TOP_DIR)/include -I $(TOP_DIR)/src
+ export MISC = $(TOP_DIR)/src/Misc
+--- LSMS_3_rev237/Makefile	2017-03-09 15:47:50.699882415 +0100
++++ LSMS_3_rev237_working/Makefile	2017-03-09 14:58:44.845436772 +0100
+@@ -1,10 +1,35 @@
+ 
+ export TOP_DIR = $(shell pwd)
+-export INC_PATH =
+ # export LIBS := -L$(TOP_DIR)/lua/lib -llua $(TOP_DIR)/mjson/mjson.a
+ export LIBS := $(TOP_DIR)/lua/lib/liblua.a $(TOP_DIR)/mjson/mjson.a
+ 
+-include architecture.h 
++export CC = gcc
++export CXX = g++
++export F77 = gfortran
++
++# export USE_GPTL=1
++export USE_OPENMP=1
++
++export ADD_LIBS += -L$(TOP_DIR)/lua/lib -L$(TOP_DIR)/CBLAS/lib/ -lcblas_LINUX -lmpi -lmpi_cxx -lhdf5 -lgfortran -lopenblas $(FPMPI_POST_LINK_OPTS)
++
++export INC_PATH += -I $(TOP_DIR)/CBLAS/include -I $(TOP_DIR)/lua/include
++
++export ADDITIONAL_TARGETS = CBLAS_target
++
++export BOOST_ROOT=$(TOP_DIR)
++
++
++ifdef USE_OPENMP
++  export CXX += -g -std=c++11 -I$(BOOST_ROOT) -fopenmp
++  #export CXX=CC -I$(BOOST_ROOT) -DUSE_PAPI -fopenmp
++  #export F77=ftn  -fopenmp
++  export F77 += -fopenmp
++else
++  export CXX += -std=c++11 -I$(BOOST_ROOT)
++  #export CXX=CC -I$(BOOST_ROOT) -DUSE_PAPI
++  #export F77=ftn 
++endif
++export LUACXX = $(CXX)
+ 
+ 
+ all: liblua $(ADDITIONAL_TARGETS) libmjson LSMS
