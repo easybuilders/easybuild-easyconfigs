@@ -37,7 +37,8 @@ from easybuild.easyblocks.generic.pythonpackage import PythonPackage
 from easybuild.easyblocks.generic.rpackage import RPackage
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.build_log import EasyBuildError
-from easybuild.tools.filetools import apply_regex_substitutions, copy_file, mkdir, rmtree2, symlink, write_file
+from easybuild.tools.filetools import apply_regex_substitutions, copy_file, change_dir, mkdir
+from easybuild.tools.filetools import rmtree2, symlink, write_file
 from easybuild.tools.modules import get_software_root, get_software_version
 from easybuild.tools.systemtools import get_shared_lib_ext
 
@@ -140,7 +141,7 @@ class EB_MXNet(MakeCp):
         """Build & Install both Python and R extension"""
         # we start with the python bindings
         self.py_ext.src = os.path.join(self.mxnet_src_dir, "python")
-        os.chdir(self.py_ext.src)
+        change_dir(self.py_ext.src)
 
         self.py_ext.prerun()
         self.py_ext.run(unpack_src=False)
@@ -148,13 +149,13 @@ class EB_MXNet(MakeCp):
 
         # next up, the R bindings
         self.r_ext.src = os.path.join(self.mxnet_src_dir, "R-package")
+        change_dir(self.r_ext.src)
+        mkdir("inst")
         try:
-            os.chdir(self.r_ext.src)
-            mkdir("inst")
             symlink(os.path.join(self.installdir, "lib"), os.path.join("inst", "libs"))
             symlink(os.path.join(self.installdir, "include"), os.path.join("inst", "include"))
         except IOError, err:
-            raise EasyBuildError("Failed to prepare the 'inst' directory for the R bindings: %s", err)
+            raise EasyBuildError("Failed to symlink lib and/or include directory for the R bindings: %s", err)
 
         namespace = ["import(Rcpp)", "import(methods)", ""]
         write_file("NAMESPACE", "\n".join(namespace))
