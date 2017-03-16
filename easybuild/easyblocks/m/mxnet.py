@@ -40,6 +40,7 @@ from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.filetools import apply_regex_substitutions, copy_file, change_dir, mkdir
 from easybuild.tools.filetools import rmtree2, symlink, write_file
 from easybuild.tools.modules import get_software_root, get_software_version
+from easybuild.tools.run import run_cmd
 from easybuild.tools.systemtools import get_shared_lib_ext
 
 
@@ -157,6 +158,7 @@ class EB_MXNet(MakeCp):
         except IOError, err:
             raise EasyBuildError("Failed to symlink lib and/or include directory for the R bindings: %s", err)
 
+        # MXNet doesn't provide a list of its R dependencies by default
         namespace = """# Export all names
 exportPattern(".")
 
@@ -171,9 +173,17 @@ magrittr,
 stringr
 )
 """
-
         write_file("NAMESPACE", namespace)
+        change_dir(self.mxnet_src_dir)
         self.r_ext.prerun()
+        # MXNet is just weird. To install the R extension, we have to:
+        # - First install the extension like it is
+        # - Let R export the extension again. By doing this, all the dependencies get
+        #   correctly filled and some mappings are done
+        # - Reinstal the exported version
+        self.r_ext.run()
+        run_cmd("R_LIBS=%s Rscript -e \"require(mxnet); mxnet:::mxnet.export(\\\"R-package\\\")\"" % self.installdir)
+        change_dir(self.r_ext.src)
         self.r_ext.run()
         self.r_ext.postrun()
 
