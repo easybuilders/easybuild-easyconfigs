@@ -157,8 +157,22 @@ class EB_MXNet(MakeCp):
         except IOError, err:
             raise EasyBuildError("Failed to symlink lib and/or include directory for the R bindings: %s", err)
 
-        namespace = ["import(Rcpp)", "import(methods)", ""]
-        write_file("NAMESPACE", "\n".join(namespace))
+        namespace = """# Export all names
+exportPattern(".")
+
+# Import all packages listed as Imports or Depends
+import(
+methods,
+Rcpp,
+DiagrammeR,
+data.table,
+jsonlite,
+magrittr,
+stringr
+)
+"""
+
+        write_file("NAMESPACE", namespace)
         self.r_ext.prerun()
         self.r_ext.run()
         self.r_ext.postrun()
