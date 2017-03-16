@@ -32,7 +32,7 @@ from vsc.utils.missing import nub
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.config import build_option
-from easybuild.tools.systemtools import AARCH64, X86_64, get_cpu_architecture, get_cpu_features
+from easybuild.tools.systemtools import AARCH32, AARCH64, POWER, X86_64, get_cpu_architecture, get_cpu_features
 from easybuild.tools.toolchain.compiler import OPTARCH_GENERIC
 
 
@@ -84,11 +84,11 @@ class EB_FFTW(ConfigureMake):
 
         # auto-detect CPU features that can be used and are not enabled/disabled explicitly,
         # but only if --optarch=GENERIC is not being used
+        cpu_arch = get_cpu_architecture()
         if self.cfg['auto_detect_cpu_features']:
 
             # if --optarch=GENERIC is used, limit which CPU features we consider for auto-detection
             if build_option('optarch') == OPTARCH_GENERIC:
-                cpu_arch = get_cpu_architecture()
                 if cpu_arch == X86_64:
                     # SSE(2) is supported on all x86_64 architectures
                     cpu_features = ['sse', 'sse2']
@@ -115,6 +115,11 @@ class EB_FFTW(ConfigureMake):
                 if getattr(self, flag) is None and flag in avail_cpu_features:
                     self.log.info("Enabling use of %s (should be supported based on CPU features)", flag.upper())
                     setattr(self, flag, True)
+
+        # Auto-disable quad-precision on ARM and POWER, as it is unsupported
+        if self.cfg['with_quad_prec'] and cpu_arch in [AARCH32, AARCH64, POWER]:
+            self.cfg['with_quad_prec'] = False
+            self.log.debug("Quad-precision automatically disabled; not supported on %s.", cpu_arch)
 
     def run_all_steps(self, *args, **kwargs):
         """
