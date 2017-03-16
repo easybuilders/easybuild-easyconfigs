@@ -87,7 +87,7 @@ class EB_PGI(PackedBinary):
         self.license_file = 'UNKNOWN'
         self.license_env_var = 'UNKNOWN' # Probably not really necessary for PGI
 
-        self.install_subdir = os.path.join('linux86-64', self.version)
+        self.pgi_install_subdir = os.path.join('linux86-64', self.version)
 
     def configure_step(self):
         """
@@ -127,7 +127,7 @@ class EB_PGI(PackedBinary):
         run_cmd(cmd, log_all=True, simple=True)
 
         # make sure localrc uses GCC in PATH, not always the system GCC, and does not use a system g77 but gfortran
-        install_abs_subdir = os.path.join(self.installdir, self.install_subdir)
+        install_abs_subdir = os.path.join(self.installdir, self.pgi_install_subdir)
         filename = os.path.join(install_abs_subdir, "bin", "makelocalrc")
         for line in fileinput.input(filename, inplace='1', backup='.orig'):
             line = re.sub(r"^PATH=/", r"#PATH=/", line)
@@ -145,14 +145,14 @@ class EB_PGI(PackedBinary):
                     os.remove(path)
 
         # install (or update) siterc file to make PGI consider $LIBRARY_PATH
-        siterc_path = os.path.join(self.installdir, self.install_subdir, 'bin', 'siterc')
+        siterc_path = os.path.join(self.installdir, self.pgi_install_subdir, 'bin', 'siterc')
         write_file(siterc_path, SITERC_LIBRARY_PATH, append=True)
         self.log.info("Appended instructions to pick up $LIBRARY_PATH to siterc file at %s: %s",
                       siterc_path, SITERC_LIBRARY_PATH)
 
     def sanity_check_step(self):
         """Custom sanity check for PGI"""
-        prefix = self.install_subdir
+        prefix = self.pgi_install_subdir
         custom_paths = {
             'files': [os.path.join(prefix, 'bin', x) for x in ['pgcc', 'pgc++', 'pgf77', 'pgfortran', 'siterc']],
             'dirs': [os.path.join(prefix, 'bin'), os.path.join(prefix, 'lib'),
@@ -164,7 +164,7 @@ class EB_PGI(PackedBinary):
         """Prefix subdirectories in PGI install dir considered for environment variables defined in module file."""
         dirs = super(EB_PGI, self).make_module_req_guess()
         for key in dirs:
-            dirs[key] = [os.path.join(self.install_subdir, d) for d in dirs[key]]
+            dirs[key] = [os.path.join(self.pgi_install_subdir, d) for d in dirs[key]]
 
         # $CPATH should not be defined in module for PGI, it causes problems
         # cfr. https://github.com/hpcugent/easybuild-easyblocks/issues/830
