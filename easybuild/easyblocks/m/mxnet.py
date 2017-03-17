@@ -152,11 +152,8 @@ class EB_MXNet(MakeCp):
         self.r_ext.src = os.path.join(self.mxnet_src_dir, "R-package")
         change_dir(self.r_ext.src)
         mkdir("inst")
-        try:
-            symlink(os.path.join(self.installdir, "lib"), os.path.join("inst", "libs"))
-            symlink(os.path.join(self.installdir, "include"), os.path.join("inst", "include"))
-        except IOError, err:
-            raise EasyBuildError("Failed to symlink lib and/or include directory for the R bindings: %s", err)
+        symlink(os.path.join(self.installdir, "lib"), os.path.join("inst", "libs"))
+        symlink(os.path.join(self.installdir, "include"), os.path.join("inst", "include"))
 
         # MXNet doesn't provide a list of its R dependencies by default
         namespace = """# Export all names
@@ -189,8 +186,19 @@ stringr
 
     def sanity_check_step(self):
         """Check for main library files for MXNet"""
-        self.py_ext.sanity_check_step()
-        self.r_ext.sanity_check_step()
+        # for the extension we are doing the loading of the fake module ourself
+        try:
+            fake_mod_data = self.load_fake_module()
+        except EasyBuildError, err:
+            raise EasyBuildError("Loading fake module failed: %s", err)
+
+        if not self.py_ext.sanity_check_step():
+            raise EasyBuildError("The sanity check of the Python bindings failed")
+
+        if not self.r_ext.sanity_check_step():
+            raise EasyBuildError("The sanity check of the R bindings failed")
+
+        self.clean_up_fake_module(fake_mod_data)
 
         custom_paths = {
             'files': ["lib/libmxnet.%s" % ext for ext in ['a', get_shared_lib_ext()]],
