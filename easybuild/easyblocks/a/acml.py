@@ -98,9 +98,8 @@ class EB_ACML(EasyBlock):
         txt += self.module_generator.set_environment('ACML_BASEDIR', basepaths[0])
         txt += self.module_generator.set_environment('ACML_BASEDIR_MT', basepaths[1])
 
-        for key in ['CPATH', 'FPATH']:
-            for path in basepaths:
-                txt += self.module_generator.prepend_paths(key, os.path.join(path, 'include'))
+        for path in basepaths:
+            txt += self.module_generator.prepend_paths('CPATH', os.path.join(path, 'include'))
 
         for key in ['LD_LIBRARY_PATH', 'LIBRARY_PATH']:
             for path in basepaths:
