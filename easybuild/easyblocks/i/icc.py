@@ -138,10 +138,8 @@ class EB_icc(IntelBase):
             # cfr. https://software.intel.com/en-us/forums/intel-c-compiler/topic/338378
             'CPATH': ['daal/include', 'ipp/include', 'mkl/include', 'tbb/include'],
             'DAALROOT': ['daal'],
-            'IDB_HOME': ['bin/intel64'],
             'IPPROOT': ['ipp'],
             'LD_LIBRARY_PATH': ['lib'],
-            'LIBRARY_PATH': ['lib'],
             'MANPATH': ['debugger/gdb/intel64/share/man', 'man/common', 'man/en_US', 'share/man'],
             'PATH': [],
             'TBBROOT': ['tbb'],
@@ -210,14 +208,10 @@ class EB_icc(IntelBase):
             for key, subdirs in guesses.items():
                 guesses[key] = [os.path.join(prefix, subdir) for subdir in subdirs]
 
-        # remove IDB_HOME if idb does not exist
-        idb_found = False
-        for guess in guesses['IDB_HOME']:
-            if os.path.isfile(os.path.join(self.installdir, guess, 'idb')):
-                idb_found = True
-                break
-        if not idb_found:
-            del guesses['IDB_HOME']
+        # only set $IDB_HOME if idb exists
+        idb_home_subdir = 'bin/intel64'
+        if os.path.isfile(os.path.join(self.installdir, idb_home_subdir, 'idb')):
+            guesses['IDB_HOME'] = [idb_home_subdir]
 
         return guesses
 
