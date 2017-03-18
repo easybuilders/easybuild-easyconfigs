@@ -36,8 +36,8 @@ from easybuild.tools.systemtools import AARCH32, AARCH64, POWER, X86_64, get_cpu
 from easybuild.tools.toolchain.compiler import OPTARCH_GENERIC
 
 
-# AVX*, FMA, SSE2 (x86_64 only)
-FFTW_CPU_FEATURE_FLAGS_SINGLE_DOUBLE = ['avx', 'avx2', 'avx512', 'fma', 'sse2', 'vsx']
+# AVX*, FMA4 (AMD Bulldozer+ only), SSE2 (x86_64 only)
+FFTW_CPU_FEATURE_FLAGS_SINGLE_DOUBLE = ['avx', 'avx2', 'avx512', 'fma4', 'sse2', 'vsx']
 # Altivec (POWER), SSE (x86), NEON (ARM), FMA (x86_64)
 # asimd is CPU feature for extended NEON on AARCH64
 FFTW_CPU_FEATURE_FLAGS = FFTW_CPU_FEATURE_FLAGS_SINGLE_DOUBLE + ['altivec', 'asimd', 'neon', 'sse']
@@ -62,8 +62,13 @@ class EB_FFTW(ConfigureMake):
             'with_threads': [True, "Enable building of FFTW threads library", CUSTOM],
         }
 
-        for flag in FFTW_CPU_FEATURE_FLAGS:
-            help_msg = "Configure with --enable-%s (if None, auto-detect support for %s)" % (flag, flag.upper())
+        for flag in FFTW_CPU_FEATURE_FLAGS + ['fma']:
+            if flag == 'fma4':
+                help_msg = "Configure with --enable-avx128-fma (if None, auto-detect support for FMA4, AMD-only)"
+            elif flag == 'fma':
+                help_msg = "Configure with --enable-avx128-fma (compatibility flag for use_fma4, if None, ignore)"
+            else:
+                help_msg = "Configure with --enable-%s (if None, auto-detect support for %s)" % (flag, flag.upper())
             extra_vars['use_%s' % flag] = [None, help_msg, CUSTOM]
 
         for prec in FFTW_PRECISION_FLAGS:
@@ -81,6 +86,9 @@ class EB_FFTW(ConfigureMake):
             if hasattr(self, flag):
                 raise EasyBuildError("EasyBlock attribute '%s' already exists")
             setattr(self, flag, self.cfg['use_%s' % flag])
+            # backwards compatibility: use use_fma setting if use_fma4 is not set
+            if flag == 'fma4' and self.cfg['use_fma4'] is None:
+                setattr(self, flag, self.cfg['use_fma'])
 
         # auto-detect CPU features that can be used and are not enabled/disabled explicitly,
         # but only if --optarch=GENERIC is not being used
@@ -154,7 +162,7 @@ class EB_FFTW(ConfigureMake):
                 if prec in ['single', 'double']:
                     for flag in FFTW_CPU_FEATURE_FLAGS_SINGLE_DOUBLE:
                         if getattr(self, flag):
-                            if flag == 'fma':
+                            if flag == 'fma4':
                                 prec_configopts.append('--enable-avx-128-fma')
                             else:
                                 prec_configopts.append('--enable-%s' % flag)
