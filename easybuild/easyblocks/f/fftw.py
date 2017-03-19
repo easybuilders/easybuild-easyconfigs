@@ -64,9 +64,9 @@ class EB_FFTW(ConfigureMake):
 
         for flag in FFTW_CPU_FEATURE_FLAGS + ['fma']:
             if flag == 'fma4':
-                help_msg = "Configure with --enable-avx128-fma (if None, auto-detect support for FMA4, AMD-only)"
+                help_msg = "Configure with --enable-avx-128-fma (if None, auto-detect support for FMA4, AMD-only)"
             elif flag == 'fma':
-                help_msg = "Configure with --enable-avx128-fma (compatibility flag for use_fma4, if None, ignore)"
+                help_msg = "Configure with --enable-avx-128-fma (compatibility flag for use_fma4, if None, ignore)"
             else:
                 help_msg = "Configure with --enable-%s (if None, auto-detect support for %s)" % (flag, flag.upper())
             extra_vars['use_%s' % flag] = [None, help_msg, CUSTOM]
