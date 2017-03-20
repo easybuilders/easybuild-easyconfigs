@@ -42,8 +42,8 @@ class EB_SAMtools(ConfigureMake):
                           "misc/zoom2sam.pl", "misc/md5sum-lite", "misc/md5fa", "misc/maq2sam-short",
                           "misc/maq2sam-long", "misc/wgsim", "samtools"]
 
-        self.include_files = ["bam.h", "bam2bcf.h", "bam_endian.h", "errmod.h",
-                              "kprobaln.h",  "sam.h", "sam_header.h", "sample.h"]
+        self.include_files = ["bam.h", "bam2bcf.h", "bam_endian.h", 
+                              "sam.h", "sam_header.h", "sample.h"]
 
         if LooseVersion(self.version) <= LooseVersion('0.1.18'):
             # seqtk is no longer there in v0.1.19
@@ -66,6 +66,10 @@ class EB_SAMtools(ConfigureMake):
         if LooseVersion(self.version) < LooseVersion('1.2'):
             # kaln aligner removed in 1.2 (commit 19c9f6)
             self.include_files += ["kaln.h"]
+
+        if LooseVersion(self.version) < LooseVersion('1.4'):
+            # errmod.h and kprobaln.h removed from 1.4
+            self.include_files += ["errmod.h", "kprobaln.h"]
 
         self.lib_files = ["libbam.a"]
 
