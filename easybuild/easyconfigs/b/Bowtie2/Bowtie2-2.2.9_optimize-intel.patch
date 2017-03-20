@@ -1,0 +1,22 @@
+# Adapt Bowtie2 makefile to use compiler flags that are suited for icpc.
+# Options are derived from the options that EasyBuild choses.
+# In particular, the compile is no longer restricted to SSE2 but now
+# uses -xHost so that AVX/AVX2 instructions will be attempted were appropriate,
+# as suggested by https://www.allinea.com/blog/201501/tuning-bowtie2-better-performance
+# Author: Kurt Lust, UAntwerp.
+--- bowtie2-2.2.9-orig/Makefile	2016-03-10 16:15:50.000000000 +0100
++++ bowtie2-2.2.9/Makefile	2017-03-20 11:06:20.521070416 +0100
+@@ -165,11 +165,9 @@
+   $(error bowtie2 compilation requires a 64-bit platform )
+ endif
+ 
+-SSE_FLAG=-msse2 
+-
+-DEBUG_FLAGS    = -O0 -g3 -m64 $(SSE_FLAG)
++DEBUG_FLAGS    = -std=c++11 -O0 -g3 -xHost -ftz -fp-speculation=safe -fp-model source
+ DEBUG_DEFS     = -DCOMPILER_OPTIONS="\"$(DEBUG_FLAGS) $(EXTRA_FLAGS)\""
+-RELEASE_FLAGS  = -O3 -m64 $(SSE_FLAG) -funroll-loops -g3
++RELEASE_FLAGS  = -std=c++11 -O2 -xHost -ftz -fp-speculation=safe -fp-model source
+ RELEASE_DEFS   = -DCOMPILER_OPTIONS="\"$(RELEASE_FLAGS) $(EXTRA_FLAGS)\""
+ NOASSERT_FLAGS = -DNDEBUG
+ FILE_FLAGS     = -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE
