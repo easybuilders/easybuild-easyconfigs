@@ -1,0 +1,42 @@
+# This file is an EasyBuild reciPY as per https://github.com/hpcugent/easybuild
+# Author: Pablo Escobar Lopez
+# sciCORE - University of Basel
+# SIB Swiss Institute of Bioinformatics 
+
+easyblock = "PythonPackage"
+
+name = 'disambiguate'
+version = '1.0.0' 
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = "https://github.com/AstraZeneca-NGS/disambiguate"
+description = "Disambiguation algorithm for reads aligned to human and mouse genomes using Tophat or BWA mem"
+
+toolchain = {'name': 'goolf', 'version': '1.7.20'}
+
+source_urls = ["https://github.com/AstraZeneca-NGS/disambiguate/archive/"]
+sources = ["v%(version)s.tar.gz"]
+
+dependencies = [
+    ('Python', '2.7.11'),
+    ('BamTools', '2.4.0'), 
+    ('zlib', '1.2.8'), 
+    ('Pysam', '0.9.0', versionsuffix), 
+]
+
+# this application provides a python implementation and a C++ implementation
+# in the postinstallcmds we compile the C++ version
+postinstallcmds = [
+    '$CXX $CXXFLAGS -I$EBROOTBAMTOOLS/include -I./ -L$EBROOTBAMTOOLS/lib -o disambiguate dismain.cpp -lz -lbamtools',
+    'cp disambiguate %(installdir)s/bin/'
+]
+
+# workaround to avoid the import sanity check
+options = {'modulename': 'os'}
+
+sanity_check_paths = {
+    'files': ['bin/disambiguate.py', 'bin/disambiguate'],
+    'dirs': [],
+}
+
+moduleclass = 'bio'
