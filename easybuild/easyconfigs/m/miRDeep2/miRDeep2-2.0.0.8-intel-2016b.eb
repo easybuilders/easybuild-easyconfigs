@@ -20,10 +20,15 @@ dependencies = [
     ('randfold', '2.0.1'),  # also provides SQUID
 ]
 
-install_cmd = "chmod a+x mirdeep*/src/*.pl && cp -a mirdeep*/src %(installdir)s/bin"
+install_cmd = "cp -a mirdeep*/src %(installdir)s/bin && chmod a+x %(installdir)s/bin/*.pl && "
+install_cmd += 'sed -i "s@#!/usr/bin/perl@#!$EBROOTPERL/bin/perl@" %(installdir)s/bin/*.pl && '
+install_cmd += "cp -a mirdeep*/Rfam_for_miRDeep.fa %(installdir)s && "
+
+# scripts include a hard check for a file called 'install_successful' in the install directory...
+install_cmd += "touch %(installdir)s/install_successful"
 
 sanity_check_paths = {
-    'files': ['bin/make_html.pl'],
+    'files': ['bin/mapper.pl', 'bin/miRDeep2.pl'],
     'dirs': [],
 }
 
