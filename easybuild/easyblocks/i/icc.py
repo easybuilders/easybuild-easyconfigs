@@ -121,7 +121,9 @@ class EB_icc(IntelBase):
             'dirs': [],
         }
 
-        super(EB_icc, self).sanity_check_step(custom_paths=custom_paths)
+        custom_commands = ["which icc"]
+
+        super(EB_icc, self).sanity_check_step(custom_paths=custom_paths, custom_commands=custom_commands)
 
     def make_module_req_guess(self):
         """
@@ -173,11 +175,11 @@ class EB_icc(IntelBase):
             ])
 
             if LooseVersion(self.version) < LooseVersion('2016'):
-                prefix = 'composer-xe-%s' % self.version
+                prefix = 'composer_xe_%s' % self.version
 
                 # debugger is dependent on $INTEL_PYTHONHOME since version 2015 and newer
                 if LooseVersion(self.version) >= LooseVersion('2015'):
-                    self.debuggerpath = os.path.join('composer-xe-%s' % self.version.split('.')[0], 'debugger')
+                    self.debuggerpath = os.path.join(prefix, 'debugger')
 
             else:
                 # new directory layout for Intel Parallel Studio XE 2016
