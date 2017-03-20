@@ -57,18 +57,19 @@ class EB_FFTW(ConfigureMake):
         """Custom easyconfig parameters for FFTW."""
         extra_vars = {
             'auto_detect_cpu_features': [True, "Auto-detect available CPU features, and configure accordingly", CUSTOM],
+            'use_fma': [None, "Configure with --enable-avx-128-fma (DEPRECATED, use 'use_fma4' instead)", CUSTOM],
             'with_mpi': [True, "Enable building of FFTW MPI library", CUSTOM],
             'with_openmp': [True, "Enable building of FFTW OpenMP library", CUSTOM],
             'with_threads': [True, "Enable building of FFTW threads library", CUSTOM],
         }
 
-        for flag in FFTW_CPU_FEATURE_FLAGS + ['fma']:
+        for flag in FFTW_CPU_FEATURE_FLAGS:
             if flag == 'fma4':
-                help_msg = "Configure with --enable-avx-128-fma (if None, auto-detect support for FMA4, AMD-only)"
-            elif flag == 'fma':
-                help_msg = "Configure with --enable-avx-128-fma (compatibility flag for use_fma4, if None, ignore)"
+                conf_opt = 'avx-128-fma'
             else:
-                help_msg = "Configure with --enable-%s (if None, auto-detect support for %s)" % (flag, flag.upper())
+                conf_opt = flag
+
+            help_msg = "Configure with --enable-%s (if None, auto-detect support for %s)" % (conf_opt, flag.upper())
             extra_vars['use_%s' % flag] = [None, help_msg, CUSTOM]
 
         for prec in FFTW_PRECISION_FLAGS:
@@ -86,9 +87,11 @@ class EB_FFTW(ConfigureMake):
             if hasattr(self, flag):
                 raise EasyBuildError("EasyBlock attribute '%s' already exists")
             setattr(self, flag, self.cfg['use_%s' % flag])
+
             # backwards compatibility: use use_fma setting if use_fma4 is not set
-            if flag == 'fma4' and self.cfg['use_fma4'] is None:
-                setattr(self, flag, self.cfg['use_fma'])
+            if flag == 'fma4' and self.cfg['use_fma4'] is None and self.cfg['use_fma'] is not None:
+                self.log.deprecated("Use 'use_fma4' instead of 'use_fma' easyconfig parameter", '4.0')
+                self.fma4 = self.cfg['use_fma']
 
         # auto-detect CPU features that can be used and are not enabled/disabled explicitly,
         # but only if --optarch=GENERIC is not being used
