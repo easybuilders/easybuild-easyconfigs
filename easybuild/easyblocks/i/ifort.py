@@ -72,4 +72,7 @@ class EB_ifort(EB_icc, IntelBase):
             'files': [os.path.join(binprefix, x) for x in bins] + [os.path.join(libprefix, 'lib%s' % l) for l in libs],
             'dirs': [],
         }
-        IntelBase.sanity_check_step(self, custom_paths=custom_paths)
+
+        custom_commands = ["which ifort"]
+
+        IntelBase.sanity_check_step(self, custom_paths=custom_paths, custom_commands=custom_commands)
