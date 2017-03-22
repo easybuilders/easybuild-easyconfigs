@@ -1,0 +1,37 @@
+easyblock = 'ConfigureMake'
+
+name = 'OpenMPI'
+version = '2.0.2'
+
+homepage = 'http://www.open-mpi.org/'
+description = """The Open MPI Project is an open source MPI-2 implementation."""
+
+toolchain = {'name': 'iccifort', 'version': '2016.4'}
+
+sources = [SOURCELOWER_TAR_GZ]
+
+source_urls = ['http://www.open-mpi.org/software/ompi/v%(version_major_minor)s/downloads',]
+
+builddependencies = [('CUDA', '8.0.44', '', ('iccifort', '2016.4'))]
+
+configopts = '--with-threads=posix --enable-shared --enable-mpi-thread-multiple --with-verbs '
+configopts += '--enable-mpirun-prefix-by-default '  # suppress failure modes in relation to mpirun path
+configopts += '--with-hwloc=$NIXUSER_PROFILE '  # hwloc support
+configopts += '--with-cuda=$CUDA_HOME '             # CUDA-aware build; N.B. --disable-dlopen is incompatible
+configopts += '--disable-mca-dso '       # but disable-mca-dso is compatible
+configopts += '--disable-wrapper-rpath ' # rpath is already done by Nix ld wrapper
+
+libs = ["mpi_mpifh", "mpi", "ompitrace", "open-pal", "open-rte"]
+sanity_check_paths = {
+    'files': ["bin/%s" % binfile for binfile in ["ompi_info", "opal_wrapper", "orterun"]] +
+             ["lib/lib%s.%s" % (libfile, SHLIB_EXT) for libfile in libs] +
+             ["include/%s.h" % x for x in ["mpi-ext", "mpif-config", "mpif", "mpi", "mpi_portable_platform"]],
+    'dirs': [],
+}
+
+moduleclass = 'mpi'
+
+modluafooter = """
+add_property("type_","mpi")
+family("mpi")
+"""
