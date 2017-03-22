@@ -69,6 +69,7 @@ class EB_Boost(EasyBlock):
         """Add extra easyconfig parameters for Boost."""
         extra_vars = {
             'boost_mpi': [False, "Build mpi boost module", CUSTOM],
+            'boost_multi_thread': [False, "Build boost with multi-thread option", CUSTOM],
             'toolset': [None, "Toolset to use for Boost configuration ('--with-toolset for bootstrap.sh')", CUSTOM],
             'mpi_launcher': [None, "Launcher to use when running MPI regression tests", CUSTOM],
         }
@@ -190,6 +191,20 @@ class EB_Boost(EasyBlock):
 
             # boost.mpi was built, let's 'install' it now
             run_cmd("./bjam %s  install %s" % (bjammpioptions, paracmd), log_all=True, simple=True)
+            
+            # cleanup previous build before proceeding with the full Boost
+            run_cmd("./bjam --clean-all", log_all=True, simple=True)
+
+        if self.cfg['boost_multi_thread']:
+            self.log.info("Building boost with multi threading")
+
+            bjammtoptions = "%s threading=multi --layout=tagged" % bjamoptions
+
+            # build multi-thread lib
+            run_cmd("./bjam %s %s" % (bjammtoptions, paracmd), log_all=True, simple=True)
+
+            # install the multi-thread version of boost
+            run_cmd("./bjam %s  install %s" % (bjammtoptions, paracmd), log_all=True, simple=True)
             
             # cleanup previous build before proceeding with the full Boost
             run_cmd("./bjam --clean-all", log_all=True, simple=True)
