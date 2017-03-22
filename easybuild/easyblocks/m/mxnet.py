@@ -37,8 +37,7 @@ from easybuild.easyblocks.generic.pythonpackage import PythonPackage
 from easybuild.easyblocks.generic.rpackage import RPackage
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.build_log import EasyBuildError
-from easybuild.tools.filetools import apply_regex_substitutions, copy_file, change_dir, mkdir
-from easybuild.tools.filetools import rmtree2, symlink, write_file
+from easybuild.tools.filetools import change_dir, mkdir, rmtree2, symlink, write_file
 from easybuild.tools.modules import get_software_root, get_software_version
 from easybuild.tools.run import run_cmd
 from easybuild.tools.systemtools import get_shared_lib_ext
@@ -118,26 +117,20 @@ class EB_MXNet(MakeCp):
     def prepare_step(self):
         """Prepare for building and installing MXNet."""
         super(EB_MXNet, self).prepare_step()
-        self.py_ext.prepare_step()
+        self.py_ext.prepare_python()
 
     def configure_step(self):
         """Patch 'config.mk' file to use EB stuff"""
-        copy_file('make/config.mk', '.')
-
-        regex_subs = [
-            (r"export CC = gcc", r"# \g<0>"),
-            (r"export CXX = g\+\+", r"# \g<0>"),
-            (r"(?P<var>ADD_CFLAGS\s*=)\s*$", r"\g<var> %s" % os.environ['CFLAGS']),
-            (r"(?P<var>ADD_LDFLAGS\s*=)\s*$", r"\g<var> %s" % os.environ['LDFLAGS']),
-        ]
+        for (var, env_var) in [('CC', 'CC'), ('CXX', 'CXX'), ('ADD_CFLAGS', 'CFLAGS'), ('ADD_LDFLAGS', 'LDFLAGS')]:
+            self.cfg.update('buildopts', '%s="%s"' % (var, os.getenv(env_var)))
 
         toolchain_blas = self.toolchain.definition().get('BLAS', None)[0]
         if toolchain_blas == 'imkl':
             blas = "mkl"
             imkl_version = get_software_version('imkl')
             if LooseVersion(imkl_version) >= LooseVersion('17'):
-                regex_subs.append(("USE_MKL2017 = 0", "USE_MKL2017 = 1"))
-            regex_subs.append((r"(?P<var>MKLML_ROOT=).*$", r"# \g<var>%s" % os.environ["MKLROOT"]))
+                self.cfg.update('buildopts', 'USE_MKL2017=1')
+            self.cfg.update('buildopts', 'MKLML_ROOT="%s"' % os.getenv("MKLROOT"))
         elif toolchain_blas in ['ACML', 'ATLAS']:
             blas = "atlas"
         elif toolchain_blas == 'OpenBLAS':
@@ -145,12 +138,10 @@ class EB_MXNet(MakeCp):
         elif toolchain_blas is None:
             raise EasyBuildError("No BLAS library found in the toolchain")
 
-        regex_subs.append((r'USE_BLAS =.*', 'USE_BLAS = %s' % blas))
+        self.cfg.update('buildopts', 'USE_BLAS="%s"' % blas)
 
         if get_software_root('NNPACK'):
-            regex_subs.append(("USE_NNPACK = 0", "USE_NNPACK = 1"))
-
-        apply_regex_substitutions('config.mk', regex_subs)
+            self.cfg.update('buildopts', 'USE_NNPACK=1')
 
         super(EB_MXNet, self).configure_step()
 
