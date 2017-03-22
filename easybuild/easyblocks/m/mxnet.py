@@ -117,8 +117,8 @@ class EB_MXNet(MakeCp):
 
     def prepare_step(self):
         """Prepare for building and installing MXNet."""
-        self.py_ext.prepare_step()
         super(EB_MXNet, self).prepare_step()
+        self.py_ext.prepare_step()
 
     def configure_step(self):
         """Patch 'config.mk' file to use EB stuff"""
