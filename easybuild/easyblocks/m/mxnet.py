@@ -43,6 +43,21 @@ from easybuild.tools.modules import get_software_root, get_software_version
 from easybuild.tools.run import run_cmd
 from easybuild.tools.systemtools import get_shared_lib_ext
 
+# the namespace file for the R extension
+r_namespace = """# Export all names
+exportPattern(".")
+
+# Import all packages listed as Imports or Depends
+import(
+methods,
+Rcpp,
+DiagrammeR,
+data.table,
+jsonlite,
+magrittr,
+stringr
+)
+"""
 
 class EB_MXNet(MakeCp):
     """Easyblock to build and install MXNet"""
@@ -80,8 +95,8 @@ class EB_MXNet(MakeCp):
         else:
             raise EasyBuildError("Failed to find/isolate MXNet source directory: %s", mxnet_dirs)
 
-        for srcdir in os.listdir(self.builddir):
-            if not srcdir.startswith('mxnet-'):
+        try:
+            for srcdir in [d for d in os.listdir(self.builddir) if not d.startswith('mxnet-')]:
                 submodule, _, _ = srcdir.rpartition('-')
                 newdir = os.path.join(self.mxnet_src_dir, submodule)
                 olddir = os.path.join(self.builddir, srcdir)
@@ -91,12 +106,19 @@ class EB_MXNet(MakeCp):
                     shutil.move(olddir, newdir)
                 except IOError, err:
                     raise EasyBuildError("Failed to move %s to %s: %s", olddir, newdir, err)
+        except (IOError, OSError) as err:
+            raise EasyBuildError("Failed to move the different source directories to the main directory: %s", err)
 
         # the nnvm submodules has dmlc-core as a submodule too. Let's put a symlink in place.
         newdir = os.path.join(self.mxnet_src_dir, "nnvm", "dmlc-core")
         olddir = os.path.join(self.mxnet_src_dir, "dmlc-core")
         rmtree2(newdir)
         symlink(olddir, newdir)
+
+    def prepare_step(self):
+        """Prepare for building and installing MXNet."""
+        self.py_ext.prepare_step()
+        super(EB_MXNet, self).prepare_step()
 
     def configure_step(self):
         """Patch 'config.mk' file to use EB stuff"""
@@ -156,21 +178,7 @@ class EB_MXNet(MakeCp):
         symlink(os.path.join(self.installdir, "include"), os.path.join("inst", "include"))
 
         # MXNet doesn't provide a list of its R dependencies by default
-        namespace = """# Export all names
-exportPattern(".")
-
-# Import all packages listed as Imports or Depends
-import(
-methods,
-Rcpp,
-DiagrammeR,
-data.table,
-jsonlite,
-magrittr,
-stringr
-)
-"""
-        write_file("NAMESPACE", namespace)
+        write_file("NAMESPACE", r_namespace)
         change_dir(self.mxnet_src_dir)
         self.r_ext.prerun()
         # MXNet is just weird. To install the R extension, we have to:
@@ -186,6 +194,12 @@ stringr
 
     def sanity_check_step(self):
         """Check for main library files for MXNet"""
+        custom_paths = {
+            'files': ['lib/libmxnet.a', 'lib/libmxnet.%s' % get_shared_lib_ext()],
+            'dirs': [],
+        }
+        super(EB_MXNet, self).sanity_check_step(custom_paths=custom_paths)
+
         # for the extension we are doing the loading of the fake module ourself
         try:
             fake_mod_data = self.load_fake_module()
@@ -200,17 +214,10 @@ stringr
 
         self.clean_up_fake_module(fake_mod_data)
 
-        custom_paths = {
-            'files': ["lib/libmxnet.%s" % ext for ext in ['a', get_shared_lib_ext()]],
-            'dirs': [],
-        }
-        super(EB_MXNet, self).sanity_check_step(custom_paths=custom_paths)
-
     def make_module_extra(self, *args, **kwargs):
         """Custom variables for MXNet module."""
         txt = super(EB_MXNet, self).make_module_extra(*args, **kwargs)
 
-        self.py_ext.set_pylibdirs()
         for path in self.py_ext.all_pylibdirs:
             fullpath = os.path.join(self.installdir, path)
             # only extend $PYTHONPATH with existing, non-empty directories
