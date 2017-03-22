@@ -244,6 +244,8 @@ class EB_Boost(EasyBlock):
             custom_paths["files"].append('lib/libboost_mpi.%s' % shlib_ext)
         if get_software_root('Python'):
             custom_paths["files"].append('lib/libboost_python.%s' % shlib_ext)
+        if self.cfg['boost_multi_thread']:
+            custom_paths["files"].append('lib/libboost_thread-mt.%s' % shlib_ext)
 
         super(EB_Boost, self).sanity_check_step(custom_paths=custom_paths)
 
