@@ -18,19 +18,25 @@ EasyBuild support for building and installing Bowtie2, implemented as an easyblo
 """
 from distutils.version import LooseVersion
 import os
-import shutil
 
-from easybuild.easyblocks.generic.configuremake import ConfigureMake
-from easybuild.tools.build_log import EasyBuildError
-from easybuild.tools.filetools import copy_file
+from easybuild.easyblocks.generic.makecp import MakeCp
+from easybuild.framework.easyconfig import CUSTOM
 
 
-class EB_Bowtie2(ConfigureMake):
+class EB_Bowtie2(MakeCp):
     """
     Support for building bowtie2 (ifast and sensitive read alignment)
     - create Make.UNKNOWN
     - build with make and install 
     """
+    @staticmethod
+    def extra_options(extra_vars=None):
+        """Change default values of options"""
+        extra = MakeCp.extra_options()
+        # files_to_copy is not mandatory here
+        extra['files_to_copy'][2] = CUSTOM
+        return extra
+
     def __init__(self, *args, **kwargs):
         """Bowtie2 easyblock constructor, define class variables."""
         super(EB_Bowtie2, self).__init__(*args, **kwargs)
@@ -70,16 +76,8 @@ class EB_Bowtie2(ConfigureMake):
         """
         Install by copying files to install dir
         """
-        for filename in self.bowtie2_files:
-            copy_file(os.path.join(self.cfg['start_dir'], filename), os.path.join(self.installdir, 'bin', filename))
-
-        for dirname in ['doc', 'example', 'scripts']:
-            srcdir = os.path.join(self.cfg['start_dir'], dirname)
-            targetdir = os.path.join(self.installdir, dirname)
-            try:
-                shutil.copytree(srcdir, targetdir)
-            except OSError as err:
-                raise EasyBuildError("Failed to copy %s directory to %s: %s", srcdir, targetdir, err)
+        self.cfg['files_to_copy'] = [(self.bowtie2_files, 'bin'), 'doc', 'example', 'scripts']
+        super(EB_Bowtie2, self).install_step()
 
     def sanity_check_step(self):
         """Custom sanity check for Bowtie2."""
