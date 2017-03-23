@@ -156,7 +156,16 @@ class EB_Boost(EasyBlock):
                 txt = "using mpi : %s ;" % os.getenv("MPICXX")
 
             write_file('user-config.jam', txt, append=True)
- 
+
+    def build_boost_variant(self,bjamoptions):
+        """Build Boost library with specified options for bjam."""
+        # build with specified options
+        run_cmd("./bjam %s %s" % (bjamoptions, paracmd), log_all=True, simple=True)
+        # install built Boost library
+        run_cmd("./bjam %s  install %s" % (bjammpioptions, paracmd), log_all=True, simple=True)
+        # clean up before proceeding with next build    
+        run_cmd("./bjam --clean-all", log_all=True, simple=True)
+
     def build_step(self):
         """Build Boost with bjam tool."""
 
@@ -182,48 +191,16 @@ class EB_Boost(EasyBlock):
 
         if self.cfg['boost_mpi']:
             self.log.info("Building boost_mpi library")
-
-            bjammpioptions = "%s --user-config=user-config.jam --with-mpi" % bjamoptions
-
-            # build mpi lib first
-            # let bjam know about the user-config.jam file we created in the configure step
-            run_cmd("./bjam %s %s" % (bjammpioptions, paracmd), log_all=True, simple=True)
-
-            # boost.mpi was built, let's 'install' it now
-            run_cmd("./bjam %s  install %s" % (bjammpioptions, paracmd), log_all=True, simple=True)
-            
-            # cleanup previous build before proceeding with the full Boost
-            run_cmd("./bjam --clean-all", log_all=True, simple=True)
+            build_boost_variant(bjamoptions + " --user-config=user-config.jam --with-mpi")
         
         if self.cfg['boost_multi_thread']:
             self.log.info("Building boost with multi threading")
-
-            bjammtoptions = "%s threading=multi --layout=tagged" % bjamoptions
-
-            # build multi-thread lib
-            run_cmd("./bjam %s %s" % (bjammtoptions, paracmd), log_all=True, simple=True)
-
-            # install the multi-thread version of boost
-            run_cmd("./bjam %s  install %s" % (bjammtoptions, paracmd), log_all=True, simple=True)
-            
-            # cleanup previous build before proceeding with the full Boost
-            run_cmd("./bjam --clean-all", log_all=True, simple=True)
+            build_boost_variant(bjamoptions + " threading=multi --layout=tagged")
 
         # if both boost_mpi and boost_multi_thread are enabled, build boost mpi with multi-thread support
         if self.cfg['boost_multi_thread'] and self.cfg['boost_mpi']:
             self.log.info("Building boost_mpi with multi threading")
-
-            bjammpimtoptions = "%s  --user-config=user-config.jam --with-mpi threading=multi --layout=tagged" % bjamoptions
-
-            # build mpi multi-thread lib
-            run_cmd("./bjam %s %s" % (bjammpimtoptions, paracmd), log_all=True, simple=True)
-
-            # install the multi-thread version of boost
-            run_cmd("./bjam %s  install %s" % (bjammpimtoptions, paracmd), log_all=True, simple=True)
-            
-            # cleanup previous build before proceeding with the full Boost
-            run_cmd("./bjam --clean-all", log_all=True, simple=True)
-
+            build_boost_variant(bjamoptions + " --user-config=user-config.jam --with-mpi threading=multi --layout=tagged")
 
         # install remainder of boost libraries
         self.log.info("Installing boost libraries")
