@@ -157,12 +157,12 @@ class EB_Boost(EasyBlock):
 
             write_file('user-config.jam', txt, append=True)
 
-    def build_boost_variant(self,bjamoptions):
+    def build_boost_variant(self,bjamoptions,paracmd):
         """Build Boost library with specified options for bjam."""
         # build with specified options
         run_cmd("./bjam %s %s" % (bjamoptions, paracmd), log_all=True, simple=True)
         # install built Boost library
-        run_cmd("./bjam %s  install %s" % (bjammpioptions, paracmd), log_all=True, simple=True)
+        run_cmd("./bjam %s  install %s" % (bjamoptions, paracmd), log_all=True, simple=True)
         # clean up before proceeding with next build    
         run_cmd("./bjam --clean-all", log_all=True, simple=True)
 
@@ -191,16 +191,16 @@ class EB_Boost(EasyBlock):
 
         if self.cfg['boost_mpi']:
             self.log.info("Building boost_mpi library")
-            self.build_boost_variant(bjamoptions + " --user-config=user-config.jam --with-mpi")
+            self.build_boost_variant(bjamoptions + " --user-config=user-config.jam --with-mpi",paracmd)
         
         if self.cfg['boost_multi_thread']:
             self.log.info("Building boost with multi threading")
-            self.build_boost_variant(bjamoptions + " threading=multi --layout=tagged")
+            self.build_boost_variant(bjamoptions + " threading=multi --layout=tagged",paracmd)
 
         # if both boost_mpi and boost_multi_thread are enabled, build boost mpi with multi-thread support
         if self.cfg['boost_multi_thread'] and self.cfg['boost_mpi']:
             self.log.info("Building boost_mpi with multi threading")
-            self.build_boost_variant(bjamoptions + " --user-config=user-config.jam --with-mpi threading=multi --layout=tagged")
+            self.build_boost_variant(bjamoptions + " --user-config=user-config.jam --with-mpi threading=multi --layout=tagged",paracmd)
 
         # install remainder of boost libraries
         self.log.info("Installing boost libraries")
