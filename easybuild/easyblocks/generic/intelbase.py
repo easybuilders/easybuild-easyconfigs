@@ -44,6 +44,7 @@ from distutils.version import LooseVersion
 import easybuild.tools.environment as env
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import CUSTOM
+from easybuild.framework.easyconfig.types import ensure_iterable_license_specs
 from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.filetools import find_flexlm_license, read_file
 from easybuild.tools.run import run_cmd
@@ -216,8 +217,9 @@ class IntelBase(EasyBlock):
 
         if self.requires_runtime_license:
             default_lic_env_var = 'INTEL_LICENSE_FILE'
+            license_specs = ensure_iterable_license_specs(self.cfg['license_file'])
             lic_specs, self.license_env_var = find_flexlm_license(custom_env_vars=[default_lic_env_var],
-                                                                  lic_specs=[self.cfg['license_file']])
+                                                                  lic_specs=license_specs)
 
             if lic_specs:
                 if self.license_env_var is None:
