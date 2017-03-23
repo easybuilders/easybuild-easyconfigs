@@ -110,6 +110,8 @@ class EB_WPS(EasyBlock):
         # libpng dependency check
         libpng = get_software_root('libpng')
         zlib = get_software_root('zlib')
+        libpnglib = ""
+        libpnginc = ""
         if libpng:
             paths = [libpng]
             if zlib:
