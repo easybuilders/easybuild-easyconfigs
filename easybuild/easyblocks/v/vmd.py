@@ -93,7 +93,7 @@ class EB_VMD(ConfigureMake):
         # source tarballs contains a 'plugins' and 'vmd-<version>' directory
         vmddir = os.path.join(self.cfg['start_dir'], '%s-%s' % (self.name.lower(), self.version))
 
-        # first, build plugins
+        # plugins need to be built first (see http://www.ks.uiuc.edu/Research/vmd/doxygen/compiling.html)
         change_dir(os.path.join(self.cfg['start_dir'], 'plugins'))
         cmd = "make LINUXAMD64 TCLLIB='-F%s' TCLINC='-I%s' %s" % (tcllib, tclinc, self.cfg['buildopts'])
         run_cmd(cmd, log_all=True, simple=False)
