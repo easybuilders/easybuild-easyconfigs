@@ -191,16 +191,17 @@ class EB_Boost(EasyBlock):
 
         if self.cfg['boost_mpi']:
             self.log.info("Building boost_mpi library")
-            self.build_boost_variant(bjamoptions + " --user-config=user-config.jam --with-mpi",paracmd)
+            self.build_boost_variant(bjamoptions + " --user-config=user-config.jam --with-mpi", paracmd)
         
         if self.cfg['boost_multi_thread']:
             self.log.info("Building boost with multi threading")
-            self.build_boost_variant(bjamoptions + " threading=multi --layout=tagged",paracmd)
+            self.build_boost_variant(bjamoptions + " threading=multi --layout=tagged", paracmd)
 
         # if both boost_mpi and boost_multi_thread are enabled, build boost mpi with multi-thread support
         if self.cfg['boost_multi_thread'] and self.cfg['boost_mpi']:
             self.log.info("Building boost_mpi with multi threading")
-            self.build_boost_variant(bjamoptions + " --user-config=user-config.jam --with-mpi threading=multi --layout=tagged",paracmd)
+            extra_bjamoptions = " --user-config=user-config.jam --with-mpi threading=multi --layout=tagged"
+            self.build_boost_variant(bjamoptions + extra_bjamoptions, paracmd)
 
         # install remainder of boost libraries
         self.log.info("Installing boost libraries")
