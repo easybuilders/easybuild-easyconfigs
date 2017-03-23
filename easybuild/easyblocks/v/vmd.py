@@ -1,5 +1,5 @@
 ##
-# Copyright 2009-2015 Ghent University
+# Copyright 2009-2017 Ghent University
 # Copyright 2015-2016 Stanford University
 #
 # This file is part of EasyBuild,
@@ -27,182 +27,133 @@
 EasyBuild support for VMD, implemented as an easyblock
 
 @author: Stephane Thiell (Stanford University)
+@author: Kenneth Hoste (HPC-UGent)
 """
 import os
 import shutil
 
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
-from easybuild.framework.easyconfig import CUSTOM, MANDATORY, BUILD
+from easybuild.easyblocks.generic.pythonpackage import det_pylibdir
 from easybuild.tools.build_log import EasyBuildError
-import easybuild.tools.environment as env
+from easybuild.tools.filetools import change_dir
 from easybuild.tools.run import run_cmd
 from easybuild.tools.modules import get_software_root, get_software_version
+import easybuild.tools.environment as env
 import easybuild.tools.toolchain as toolchain
 
 
 class EB_VMD(ConfigureMake):
     """Easyblock for building and installing VMD"""
 
-    @staticmethod
-    def extra_options(extra_vars=None):
-        """Extra easyconfig parameters specific to ConfigureMake."""
-        extra_vars = dict(ConfigureMake.extra_options(extra_vars))
-        extra_vars.update({
-            'actc_ver': ["1.1", "Version of the ACTC library.", CUSTOM],
-        })
-        return ConfigureMake.extra_options(extra_vars)
-
-    def __init__(self, *args, **kwargs):
-        super(EB_VMD, self).__init__(*args, **kwargs)
-        self.already_extracted = False
-
-    def prepare_step(self):
+    def configure_step(self):
         """
-        Pre-configure step.
+        Configure VMD for building.
         """
-        super(EB_VMD, self).prepare_step()
+        # make sure required dependencies are available
+        deps = {}
+        for dep in ['FLTK', 'Mesa', 'netCDF', 'Python', 'Tcl', 'Tk']:
+            deps[dep] = get_software_root(dep)
+            if deps[dep] is None:
+                raise EasyBuildError("Required dependency %s is missing", dep)
 
-        # Build shipped plugins as part of prepare_step
+        # optional dependencies
+        for dep in ['ACTC', 'CUDA', 'OptiX']:
+            deps[dep] = get_software_root(dep)
 
-        tclroot = get_software_root('Tcl')
-        if not tclroot:
-            raise EasyBuildError("Tcl is required to build VMD")
+        # specify Tcl/Tk locations & libraries
+        tclinc = os.path.join(deps['Tcl'], 'include')
+        tcllib = os.path.join(deps['Tcl'], 'lib')
+        env.setvar('TCL_INCLUDE_DIR', tclinc)
+        env.setvar('TCL_LIBRARY_DIR', tcllib)
 
-        netcdfroot = get_software_root('netCDF')
-        if not netcdfroot:
-            raise EasyBuildError("netCDF is required to build VMD")
+        env.setvar('TK_INCLUDE_DIR', os.path.join(deps['Tk'], 'include'))
+        env.setvar('TK_LIBRARY_DIR', os.path.join(deps['Tk'], 'lib'))
 
-        env.setvar('TCLLIB', '-F"%s"' % os.path.join(tclroot, 'lib'))
-        env.setvar('TCLINC', '-I"%s"' % os.path.join(tclroot, 'include'))
+        tclshortver = '.'.join(get_software_version('Tcl').split('.')[:2])
+        self.cfg.update('buildopts', 'TCLLDFLAGS="-ltcl%s"' % tclshortver)
 
-        vmddir = os.path.join(self.builddir, "%s-%s" % (self.name.lower(), self.version))
-        plugindir = os.path.join(vmddir, 'plugins')
+        # Python locations
+        pyshortver = '.'.join(get_software_version('Python').split('.')[:2])
+        env.setvar('PYTHON_INCLUDE_DIR', os.path.join(deps['Python'], 'include/python%s' % pyshortver))
+        pylibdir = det_pylibdir()
+        python_libdir = os.path.join(deps['Python'], os.path.dirname(pylibdir))
+        env.setvar('PYTHON_LIBRARY_DIR', python_libdir)
 
-        os.mkdir(plugindir)
-        env.setvar('PLUGINDIR', plugindir)
+        # numpy include location, easiest way to determine it is via numpy.get_include()
+        out, ec = run_cmd("python -c 'import numpy; print numpy.get_include()'", simple=False)
+        if ec:
+            raise EasyBuildError("Failed to determine numpy include directory: %s", out)
+        else:
+            env.setvar('NUMPY_INCLUDE_DIR', out.strip())
 
-        self.log.info("Generating VMD plugins in %s" % plugindir)
-        cmd = 'make LINUXAMD64 TCLLIB="%s" TCLINC="%s" && make distrib' % (os.getenv('TCLLIB'),
-                                                                           os.getenv('TCLINC'))
+        # compiler commands
+        self.cfg.update('buildopts', 'CC="%s"' % os.getenv('CC'))
+        self.cfg.update('buildopts', 'CCPP="%s"' % os.getenv('CXX'))
+
+        # source tarballs contains a 'plugins' and 'vmd-<version>' directory
+        vmddir = os.path.join(self.cfg['start_dir'], '%s-%s' % (self.name.lower(), self.version))
+
+        # first, build plugins
+        change_dir(os.path.join(self.cfg['start_dir'], 'plugins'))
+        cmd = "make LINUXAMD64 TCLLIB='-F%s' TCLINC='-I%s' %s" % (tcllib, tclinc, self.cfg['buildopts'])
         run_cmd(cmd, log_all=True, simple=False)
 
-        # prepare for configure: change to vmd dir
-        try:
-            os.chdir(vmddir)
-            self.log.debug("Changed to %s directory %s" % (self.name, vmddir))
-        except OSError, err:
-            raise EasyBuildError("Can't change to %s directory %s: %s", self.name, vmddir, err)
+        # create plugins distribution
+        plugindir = os.path.join(vmddir, 'plugins')
+        env.setvar('PLUGINDIR', plugindir)
+        self.log.info("Generating VMD plugins in %s", plugindir)
+        run_cmd("make distrib %s" % self.cfg['buildopts'], log_all=True, simple=False)
 
-    def configure_step(self):
-
-        tclroot = get_software_root('Tcl')
-        if not tclroot:
-            raise EasyBuildError("Tcl is required to build VMD")
-        env.setvar('TCL_INCLUDE_DIR', os.path.join(tclroot, 'include'))
-        env.setvar('TCL_LIBRARY_DIR', os.path.join(tclroot, 'lib'))
-
-        tkroot = get_software_root('Tk')
-        if not tkroot:
-            raise EasyBuildError("Tk is required to build VMD")
-        env.setvar('TK_INCLUDE_DIR', os.path.join(tkroot, 'include'))
-        env.setvar('TK_LIBRARY_DIR', os.path.join(tkroot, 'lib'))
-
-        pythonroot = get_software_root('Python')
-        if not pythonroot:
-            raise EasyBuildError("Python is required to build VMD")
-
-        # not so nice...
-        env.setvar('PYTHON_INCLUDE_DIR', os.path.join(pythonroot, 'include/python2.7'))
-        python_libdir = os.path.join(pythonroot, 'lib/python2.7')
-        env.setvar('PYTHON_LIBRARY_DIR', python_libdir)
-        env.setvar('NUMPY_INCLUDE_DIR', os.path.join(python_libdir,
-                                                     'site-packages/numpy/core/include/numpy'))
-
-        fltk = get_software_root('FLTK')
-        if not fltk:
-            raise EasyBuildError("FLTK is required to build VMD")
-
-        mesa = get_software_root('Mesa')
-        if not mesa:
-            raise EasyBuildError("Mesa is required to build VMD")
-
-        cuda = get_software_root('CUDA')
-        if cuda:
-            self.log.info("Building with CUDA %s support" % get_software_version('CUDA'))
-            optix = get_software_root('OptiX')
-            if optix:
-                self.log.info("Building with Nvidia OptiX %s support" % get_software_version('OptiX'))
+        # explicitely mention whether or not we're building with CUDA/OptiX support
+        if deps['CUDA']:
+            self.log.info("Building with CUDA %s support", get_software_version('CUDA'))
+            if deps['OptiX']:
+                self.log.info("Building with Nvidia OptiX %s support", get_software_version('OptiX'))
             else:
                 self.log.warn("Not building with Nvidia OptiX support!")
         else:
-            if 'CUDA' in self.cfg['configopts'].split():
-                raise EasyBuildError("CUDA defined in configopts but not loaded!")
-            else:
-                self.log.warn("Not building with CUDA nor OptiX support!")
+            self.log.warn("Not building with CUDA nor OptiX support!")
 
-        return super(EB_VMD, self).configure_step()
+        # see http://www.ks.uiuc.edu/Research/vmd/doxygen/configure.html
+        # LINUXAMD64: Linux 64-bit
+        # LP64: build VMD as 64-bit binary
+        # IMD: enable support for Interactive Molecular Dynamics (e.g. to connect to NAMD for remote simulations)
+        # PTHREADS: enable support for POSIX threads
+        # COLVARS: enable support for collective variables (related to NAMD/LAMMPS)
+        # NOSILENT: verbose build command
+        self.cfg.update('configopts', "LINUXAMD64 LP64 IMD PTHREADS COLVARS NOSILENT")
 
-    def build_step(self):
+        # add additional configopts based on available dependencies
+        for key in deps:
+            if deps[key]:
+                if key == 'Mesa':
+                    self.cfg.update('configopts', "OPENGL MESA")
+                elif key == 'OptiX':
+                    self.cfg.update('configopts', "LIBOPTIX")
+                elif key == 'Python':
+                    self.cfg.update('configopts', "PYTHON NUMPY")
+                else:
+                    self.cfg.update('configopts', key.upper())
 
-        vmddir = os.path.join(self.builddir, "%s-%s" % (self.name.lower(), self.version))
-        vmdlibdir = os.path.join(vmddir, 'lib')
-        vmdsrcdir = os.path.join(vmddir, 'src')
+        # configure for building with Intel compilers specifically
+        if self.toolchain.comp_family() == toolchain.INTELCOMP:
+            self.cfg.update('configopts', 'ICC')
 
-        # actc extracts to "actc-1.1"
-        actc_ver = self.cfg['actc_ver']
-        actcdir = os.path.join(self.builddir, "actc-%s" % actc_ver)
-        try:
-            os.chdir(actcdir)
-        except OSError, err:
-            raise EasyBuildError("Could not chdir to {0}: {1}".format(actcdir, err))
+        # specify install location using environment variables
+        env.setvar('VMDINSTALLBINDIR', os.path.join(self.installdir, 'bin'))
+        env.setvar('VMDINSTALLLIBRARYDIR', os.path.join(self.installdir, 'lib'))
 
-        actclibdir = os.path.join(vmdlibdir, 'actc')
-        shutil.rmtree(actclibdir, ignore_errors=True)
-        shutil.copytree(actcdir, actclibdir)
+        # configure in vmd-<version> directory
+        change_dir(vmddir)
+        run_cmd("%s ./configure %s" % (self.cfg['preconfigopts'], self.cfg['configopts']))
 
-        try:
-            os.chdir(actclibdir)
-            self.log.debug("Changed to actc directory %s" % actclibdir)
-        except OSError, err:
-            raise EasyBuildError("Can't change to actc directory %s: %s", actclibdir, err)
-
-        cmd = 'make'
-        run_cmd(cmd, log_all=True, simple=False)
-
-        # build VMD: change to src dir
-        try:
-            os.chdir(vmdsrcdir)
-            self.log.debug("Changed to %s src directory %s" % (self.name, vmdsrcdir))
-        except OSError, err:
-            raise EasyBuildError("Can't change to %s src directory %s: %s", self.name, vmdsrcdir, err)
-
-        super(EB_VMD, self).build_step()
-
-    def test_step(self):
-        pass
+        # change to 'src' subdirectory, ready for building
+        change_dir(os.path.join(vmddir, 'src'))
 
     def sanity_check_step(self):
         """Custom sanity check for VMD."""
-
         custom_paths = {
-                        'files': ['bin/vmd'],
-                        'dirs': ['bin'],
-                       }
-
+            'files': ['bin/vmd'],
+            'dirs': ['lib'],
+        }
         super(EB_VMD, self).sanity_check_step(custom_paths=custom_paths)
-
-    def make_module_req_guess(self):
-
-        guesses = super(EB_VMD, self).make_module_req_guess()
-
-        guesses.update({
-            'PATH': ['bin'],
-        })
-
-        return guesses
-
-    def make_module_extra(self):
-        """Add module entries specific to VMD"""
-        txt = super(EB_VMD, self).make_module_extra()
-        txt += self.module_generator.load_module("CUDA/%s" % get_software_version("CUDA"))
-        return txt
