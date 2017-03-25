@@ -68,12 +68,17 @@ class EB_MCR(PackedBinary):
         """Configure MCR installation: create license file."""
 
         configfile = os.path.join(self.builddir, self.configfilename)
-        if LooseVersion(self.version) < LooseVersion('2015a'):
+        if LooseVersion(self.version) < LooseVersion('R2015a'):
             shutil.copyfile(os.path.join(self.cfg['start_dir'], 'installer_input.txt'), configfile)
             config = read_file(configfile)
-            config = re.sub(r"^# destinationFolder=.*", "destinationFolder=%s" % self.installdir, config, re.M)
-            config = re.sub(r"^# agreeToLicense=.*", "agreeToLicense=Yes", config, re.M)
-            config = re.sub(r"^# mode=.*", "mode=silent", config, re.M)
+            # compile regex first since re.sub doesn't accept re.M flag for multiline regex in Python 2.6
+            regdest = re.compile(r"^# destinationFolder=.*", re.M)
+            regagree = re.compile(r"^# agreeToLicense=.*", re.M)
+            regmode = re.compile(r"^# mode=.*", re.M)
+
+            config = regdest.sub("destinationFolder=%s" % self.installdir, config)
+            config = regagree.sub("agreeToLicense=Yes", config)
+            config = regmode.sub("mode=silent", config)
         else:
             config = '\n'.join([
                 "destinationFolder=%s" % self.installdir,
@@ -117,8 +122,15 @@ class EB_MCR(PackedBinary):
         """Custom sanity check for MCR."""
         custom_paths = {
             'files': [],
-            'dirs': [os.path.join(self.subdir, x, 'glnxa64') for x in ['runtime', 'bin', 'sys/os']],
+            'dirs': [os.path.join(self.subdir, 'bin', 'glnxa64')],
         }
+        if LooseVersion(self.version) >= LooseVersion('R2016b'):
+            custom_paths['dirs'].append(os.path.join(self.subdir, 'cefclient', 'sys', 'os', 'glnxa64'))
+        else:
+            custom_paths['dirs'].extend([
+                os.path.join(self.subdir, 'runtime', 'glnxa64'),
+                os.path.join(self.subdir, 'sys', 'os', 'glnxa64'),
+            ])
         super(EB_MCR, self).sanity_check_step(custom_paths=custom_paths)
 
     def make_module_extra(self):

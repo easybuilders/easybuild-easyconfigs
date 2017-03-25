@@ -467,7 +467,8 @@ class PythonPackage(ExtensionEasyBlock):
         if not self.src:
             raise EasyBuildError("No source found for Python package %s, required for installation. (src: %s)",
                                  self.name, self.src)
-        kwargs.update({'unpack_src': True})
+        # we unpack unless explicitly told otherwise
+        kwargs.setdefault('unpack_src', True)
         super(PythonPackage, self).run(*args, **kwargs)
 
         # configure, build, test, install

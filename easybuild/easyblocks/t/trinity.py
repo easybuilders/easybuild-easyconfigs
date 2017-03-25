@@ -309,8 +309,10 @@ class EB_Trinity(EasyBlock):
         """Custom sanity check for Trinity."""
 
         version = LooseVersion(self.version)
-        if version >= LooseVersion('2.0') and version < LooseVersion('3.0'):
+        if version >= LooseVersion('2.0') and version < LooseVersion('2.3'):
             sep = '-'
+        elif version >= LooseVersion('2.3') and version < LooseVersion('3.0'):
+            sep = "-Trinity-v"
         else:
             sep = '_r'
 
