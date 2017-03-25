@@ -40,7 +40,7 @@ from distutils.version import LooseVersion
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.build_log import EasyBuildError
-from easybuild.tools.filetools import adjust_permissions, mkdir, write_file
+from easybuild.tools.filetools import adjust_permissions, apply_regex_substitutions, copy_file, mkdir, write_file
 from easybuild.tools.modules import get_software_libdir, get_software_root, get_software_version
 from easybuild.tools.run import run_cmd
 
@@ -55,6 +55,15 @@ class EB_Siesta(ConfigureMake):
         """Initialisation of custom class variables for Siesta."""
         super(EB_Siesta, self).__init__(*args, **kwargs)
 
+    @staticmethod
+    def extra_options(extra_vars=None):
+        """Define extra options for Siesta"""
+        extra = {
+            'with_transiesta': [True, "Build transiesta", CUSTOM],
+            'with_utils': [True, "Build all utils", CUSTOM],
+        }
+        return ConfigureMake.extra_options(extra_vars=extra)
+
     def configure_step(self):
         """
         Custom configure and build procedure for Siesta.
@@ -62,8 +71,34 @@ class EB_Siesta(ConfigureMake):
         - In addition there are multiple support tools to build
         """
 
-        # Make a temp installdir during the build of the various parts
+        start_dir = self.cfg['start_dir']
+        obj_dir = os.path.join(start_dir, 'Obj')
+        arch_make = os.path.join(obj_dir, 'arch.make')
         bindir = os.path.join(self.cfg['start_dir'], 'bin')
+
+        netcdff_loc = get_software_root('NetCDF-Fortran')
+
+        # enable OpenMP support if desired
+        openmp = self.toolchain.options.get('openmp', None)
+        if openmp:
+            scalapack = os.environ['LIBSCALAPACK_MT']
+            blacs = os.environ['LIBSCALAPACK_MT']
+            lapack = os.environ['LIBLAPACK_MT']
+            blas = os.environ['LIBBLAS_MT']
+        else:
+            scalapack = os.environ['LIBSCALAPACK']
+            blacs = os.environ['LIBSCALAPACK']
+            lapack = os.environ['LIBLAPACK']
+            blas = os.environ['LIBBLAS']
+
+        regex_subs = [
+            ('dc_lapack.a', ''),
+            (r'^NETCDF_INTERFACE\s*=.*$', ''),
+            ('libsiestaBLAS.a', ''),
+            ('libsiestaLAPACK.a', ''),
+        ]
+
+        # Make a temp installdir during the build of the various parts
         try:
             mkdir(bindir)
         except OSError, err:
@@ -71,101 +106,173 @@ class EB_Siesta(ConfigureMake):
 
         # change to actual build dir
         try:
-            os.chdir('Obj')
+            os.chdir(obj_dir)
         except OSError, err:
             raise EasyBuildError("Failed to change to build dir: %s", err)
 
         # Populate start_dir with makefiles
-        run_cmd('../Src/obj_setup.sh', log_all=True, simple=True, log_output=True)
+        run_cmd(os.path.join(start_dir, 'Src', 'obj_setup.sh'), log_all=True, simple=True, log_output=True)
 
-        # MPI?
-        if self.toolchain.options.get('usempi', None):
-            self.cfg.update('configopts', '--enable-mpi')
+        if LooseVersion(self.version) < LooseVersion("4.1-b2"):
+            # MPI?
+            if self.toolchain.options.get('usempi', None):
+                self.cfg.update('configopts', '--enable-mpi')
 
-        # BLAS and LAPACK
-        self.cfg.update('configopts', '--with-blas="$LIBBLAS"')
-        self.cfg.update('configopts', '--with-lapack="$LIBLAPACK"')
+            # BLAS and LAPACK
+            self.cfg.update('configopts', '--with-blas="%s"' % blas)
+            self.cfg.update('configopts', '--with-lapack="%s"' % lapack)
 
-        # ScaLAPACK (and BLACS)
-        self.cfg.update('configopts', '--with-scalapack="$LIBSCALAPACK"')
-        self.cfg.update('configopts', '--with-blacs="$LIBSCALAPACK"')
+            # ScaLAPACK (and BLACS)
+            self.cfg.update('configopts', '--with-scalapack="%s"' % scalapack)
+            self.cfg.update('configopts', '--with-blacs="$%s"' % blacs)
 
-        # NetCDF-Fortran
-        netcdff_loc = get_software_root('NetCDF-Fortran')
-        if netcdff_loc:
-            self.cfg.update('configopts', '--with-netcdf=-lnetcdff')
+            # NetCDF-Fortran
+            if netcdff_loc:
+                self.cfg.update('configopts', '--with-netcdf=-lnetcdff')
 
-        super(EB_Siesta, self).configure_step(cmd_prefix='../Src/')
+            super(EB_Siesta, self).configure_step(cmd_prefix='../Src/')
 
-        run_cmd('make', log_all=True, simple=True, log_output=True)
+        else: # there's no configure on newer versions
+
+            if self.toolchain.comp_family() in [toolchain.INTELCOMP]:
+                copy_file(os.path.join(obj_dir, 'intel.make'), arch_make)
+            else:
+                copy_file(os.path.join(obj_dir, 'gfortran.make'), arch_make)
+
+            if self.toolchain.options.get('usempi', None):
+                regex_subs.extend([
+                    (r"^(CC\s*=\s*).*$", r"\1%s" % os.environ['MPICC']),
+                    (r"^(FC\s*=\s*).*$", r"\1%s" % os.environ['MPIF90']),
+                    (r"^(FPPFLAGS\s*=.*)$", r"\1 -DMPI"),
+                    (r"^(FPPFLAGS\s*=.*)$", r"\1\nMPI_INTERFACE = libmpi_f90.a\nMPI_INCLUDE = ."),
+                ])
+                complibs = scalapack
+            else:
+                complibs = lapack
+
+            regex_subs.extend([
+                (r"^(LIBS\s*=\s).*$", r"\1 %s" % complibs),
+                # Needed for a couple of the utils
+                (r"^(COMP_LIBS\s*=.*)$", r"\1\nWXML = libwxml.a"),
+                (r"^(FFLAGS\s*=\s*).*$", r"\1 -fPIC %s" % os.environ['FCFLAGS']),
+                (r"^(LDFLAGS\s*=).*$", r"\1 %s %s" % (os.environ['FCFLAGS'], os.environ['LDFLAGS'])),
+            ])
+
+            if netcdff_loc:
+                regex_subs.extend([
+                    (r"^(COMP_LIBS\s*=.*)$", r"\1\nNETCDF_LIBS = -lnetcdff"),
+                    (r"^(LIBS\s*=.*)$", r"\1 $(NETCDF_LIBS)"),
+                    (r"^(FPPFLAGS\s*=.*)$", r"\1 -DCDF"),
+                ])
+
+        apply_regex_substitutions(arch_make, regex_subs)
+
+        run_cmd('make -j %s' % self.cfg['parallel'], log_all=True, simple=True, log_output=True)
 
         # Put binary in temporary install dir
         shutil.copy(os.path.join(self.cfg['start_dir'], 'Obj', 'siesta'),
                     bindir)
 
-        # Make the utils
-        try:
-            os.chdir('../Util')
-        except OSError, err:
-            raise EasyBuildError("Failed to change to Util dir: %s", err)
+        if self.cfg['with_utils']:
+            # Make the utils
+            try:
+                os.chdir(os.path.join(start_dir, 'Util'))
+            except OSError, err:
+                raise EasyBuildError("Failed to change to Util dir: %s", err)
 
-        # clean_all.sh is missing executable bit...
-        adjust_permissions('./clean_all.sh', stat.S_IXUSR, recursive=False, relative=True)
-        run_cmd('./clean_all.sh', log_all=True, simple=True, log_output=True)
-        run_cmd('./build_all.sh', log_all=True, simple=True, log_output=True)
+            # clean_all.sh might be missing executable bit...
+            adjust_permissions('./clean_all.sh', stat.S_IXUSR, recursive=False, relative=True)
+            run_cmd('./clean_all.sh', log_all=True, simple=True, log_output=True)
 
-        # Now move all the built utils to the temp installdir
-        expected_utils = [
-            'Eig2DOS/Eig2DOS',
-            'TBTrans/tbtrans',
-            'Vibra/Src/vibra', 'Vibra/Src/fcbuild',
-            'SiestaSubroutine/SimpleTest/Src/simple_pipes_serial',
-            'SiestaSubroutine/SimpleTest/Src/simple_pipes_parallel',
-            'SiestaSubroutine/ProtoNEB/Src/protoNEB',
-            'SiestaSubroutine/FmixMD/Src/para',
-            'SiestaSubroutine/FmixMD/Src/driver',
-            'SiestaSubroutine/FmixMD/Src/simple',
-            'Denchar/Src/denchar',
-            'pdosxml/pdosxml',
-            'WFS/readwfx', 'WFS/wfsnc2wfsx', 'WFS/readwf', 'WFS/wfs2wfsx',
-            'WFS/info_wfsx', 'WFS/wfsx2wfs',
-            'HSX/hs2hsx', 'HSX/hsx2hs',
-            'Optimizer/simplex', 'Optimizer/swarm',
-            'ON/lwf2cdf',
-            'DensityMatrix/dm2cdf', 'DensityMatrix/cdf2dm',
-            'Helpers/get_chem_labels',
-            'Grid/cdf2grid', 'Grid/cdf_laplacian', 'Grid/cdf2xsf',
-            'Grid/grid_rotate', 'Grid/g2c_ng', 'Grid/grid2cdf', 'Grid/grid2val',
-            'Grid/grid2cube',
-            'Bands/new.gnubands', 'Bands/eigfat2plot',
-            'Contrib/APostnikov/xv2xsf', 'Contrib/APostnikov/md2axsf',
-            'Contrib/APostnikov/vib2xsf', 'Contrib/APostnikov/fmpdos',
-            'Contrib/APostnikov/eig2bxsf', 'Contrib/APostnikov/rho2xsf',
-            'JobList/Src/getResults', 'JobList/Src/countJobs',
-            'JobList/Src/runJobs', 'JobList/Src/horizontal',
-            'Projections/orbmol_proj',
-            'COOP/mprop', 'COOP/dm_creator', 'COOP/fat',
-            'TBTrans_rep/tbtrans',
-            'Macroave/Src/macroave',
-            'Gen-basis/ioncat', 'Gen-basis/gen-basis',
-            'STM/simple-stm/plstm', 'STM/ol-stm/Src/stm',
-            'VCA/mixps', 'VCA/fractional',
-        ]
-        for f in expected_utils:
-            shutil.copy(os.path.join(self.cfg['start_dir'], 'Util', f),
-                    bindir)
+            if LooseVersion(self.version) >= LooseVersion("4.0"):
+                regex_subs_TS = [
+                    (r"^default:.*$", r""),
+                    (r"^EXE\s*=.*$", r""),
+                    (r"^(include\s*..ARCH_MAKE.*)$", r"EXE=tshs2tshs\ndefault: $(EXE)\n\1"),
+                    (r"^(INCFLAGS.*)$", r"\1 -I%s" % obj_dir),
+                ]
 
-        # Build transiesta
-        try:
-            os.chdir('../Obj')
-        except OSError, err:
-            raise EasyBuildError("Failed to change back to Obj dir: %s", err)
+                apply_regex_substitutions(os.path.join(self.cfg['start_dir'], 'Util', 'TS', 'tshs2tshs', 'Makefile'), regex_subs_TS)
 
-        run_cmd('make clean', log_all=True, simple=True, log_output=True)
-        run_cmd('make transiesta', log_all=True, simple=True, log_output=True)
+            regex_subs_UtilLDFLAGS = [
+                (r'(\$\(FC\)\s*-o\s)', r'$(FC) %s %s -o ' % (os.environ['FCFLAGS'], os.environ['LDFLAGS'])),
+            ]
+            apply_regex_substitutions(os.path.join(self.cfg['start_dir'], 'Util', 'Optimizer', 'Makefile'), regex_subs_UtilLDFLAGS)
+            apply_regex_substitutions(os.path.join(self.cfg['start_dir'], 'Util', 'JobList', 'Src', 'Makefile'), regex_subs_UtilLDFLAGS)
 
-        shutil.copy(os.path.join(self.cfg['start_dir'], 'Obj', 'transiesta'),
-                    bindir)
+            run_cmd('./build_all.sh', log_all=True, simple=True, log_output=True)
+
+            # Now move all the built utils to the temp installdir
+            expected_utils = [
+                'Bands/eigfat2plot',
+                'CMLComp/ccViz',
+                'Contrib/APostnikov/eig2bxsf', 'Contrib/APostnikov/rho2xsf',
+                'Contrib/APostnikov/vib2xsf', 'Contrib/APostnikov/fmpdos',
+                'Contrib/APostnikov/xv2xsf', 'Contrib/APostnikov/md2axsf',
+                'COOP/mprop', 'COOP/fat',
+                'Denchar/Src/denchar',
+                'DensityMatrix/dm2cdf', 'DensityMatrix/cdf2dm',
+                'Eig2DOS/Eig2DOS',
+                'Gen-basis/ioncat', 'Gen-basis/gen-basis',
+                'Grid/cdf2grid', 'Grid/cdf_laplacian', 'Grid/cdf2xsf',
+                'Grid/grid2cube',
+                'Grid/grid_rotate', 'Grid/g2c_ng', 'Grid/grid2cdf', 'Grid/grid2val',
+                'Helpers/get_chem_labels',
+                'HSX/hs2hsx', 'HSX/hsx2hs',
+                'JobList/Src/getResults', 'JobList/Src/countJobs',
+                'JobList/Src/runJobs', 'JobList/Src/horizontal',
+                'Macroave/Src/macroave',
+                'ON/lwf2cdf',
+                'Optimizer/simplex', 'Optimizer/swarm',
+                'pdosxml/pdosxml',
+                'Projections/orbmol_proj',
+                'SiestaSubroutine/FmixMD/Src/driver',
+                'SiestaSubroutine/FmixMD/Src/para',
+                'SiestaSubroutine/FmixMD/Src/simple',
+                'STM/simple-stm/plstm', 'STM/ol-stm/Src/stm',
+                'VCA/mixps', 'VCA/fractional',
+                'Vibra/Src/vibra', 'Vibra/Src/fcbuild',
+                'WFS/info_wfsx', 'WFS/wfsx2wfs',
+                'WFS/readwfx', 'WFS/wfsnc2wfsx', 'WFS/readwf', 'WFS/wfs2wfsx',
+            ]
+
+            if LooseVersion(self.version) <= LooseVersion("4.0"):
+                expected_utils.extend([
+                    'Bands/new.gnubands',
+                    'TBTrans/tbtrans',
+                ])
+
+            if LooseVersion(self.version) >= LooseVersion("4.0"):
+                expected_utils.extend([
+                    'SiestaSubroutine/ProtoNEB/Src/protoNEB',
+                    'SiestaSubroutine/SimpleTest/Src/simple_pipes_parallel',
+                    'SiestaSubroutine/SimpleTest/Src/simple_pipes_serial',
+                    'Sockets/f2fmaster', 'Sockets/f2fslave',
+                ])
+
+            if LooseVersion(self.version) >= LooseVersion("4.1"):
+                expected_utils.extend([
+                    'Bands/gnubands',
+                    'Grimme/fdf2grimme',
+                    'SpPivot/pvtsp',
+                    'TS/ts2ts/ts2ts', 'TS/tshs2tshs/tshs2tshs', 'TS/TBtrans/tbtrans',
+                ])
+
+            for f in expected_utils:
+                shutil.copy(os.path.join(self.cfg['start_dir'], 'Util', f), bindir)
+
+        if self.cfg['with_transiesta']:
+            # Build transiesta
+            try:
+                os.chdir(obj_dir)
+            except OSError, err:
+                raise EasyBuildError("Failed to change back to Obj dir: %s", err)
+
+            run_cmd('make clean', log_all=True, simple=True, log_output=True)
+            run_cmd('make -j %s transiesta' % self.cfg['parallel'], log_all=True, simple=True, log_output=True)
+
+            shutil.copy(os.path.join(self.cfg['start_dir'], 'Obj', 'transiesta'),
+                        bindir)
 
     def build_step(self):
         """No build step for Siesta."""
@@ -177,8 +284,7 @@ class EB_Siesta(ConfigureMake):
         try:
             # binary
             bindir = os.path.join(self.installdir, 'bin')
-            shutil.copytree(os.path.join(self.cfg['start_dir'], 'bin'),
-                        bindir)
+            shutil.copytree(os.path.join(self.cfg['start_dir'], 'bin'), bindir)
 
         except OSError, err:
             raise EasyBuildError("Failed to install Siesta: %s", err)
@@ -186,8 +292,16 @@ class EB_Siesta(ConfigureMake):
     def sanity_check_step(self):
         """Custom sanity check for Siesta."""
 
+        bins = ['bin/siesta']
+
+        if self.cfg['with_transiesta']:
+            bins.extend(['bin/transiesta'])
+
+        if self.cfg['with_utils']:
+            bins.extend(['bin/denchar'])
+
         custom_paths = {
-            'files': ['bin/siesta', 'bin/transiesta', 'bin/denchar'],
+            'files': bins,
             'dirs': [],
         }
 
