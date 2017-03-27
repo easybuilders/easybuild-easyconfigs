@@ -110,14 +110,16 @@ class EB_WPS(EasyBlock):
         # libpng dependency check
         libpng = get_software_root('libpng')
         zlib = get_software_root('zlib')
-        libpnglib = ""
-        libpnginc = ""
         if libpng:
             paths = [libpng]
             if zlib:
                 paths.insert(0, zlib)
             libpnginc = ' '.join(['-I%s' % os.path.join(path, 'include') for path in paths])
             libpnglib = ' '.join(['-L%s' % os.path.join(path, 'lib') for path in paths])
+        else:
+            # define these as empty, assume that libpng will be available via OS (e.g. due to --filter-deps=libpng)
+            libpnglib = ""
+            libpnginc = ""
 
         # JasPer dependency check + setting env vars
         jasper = get_software_root('JasPer')
