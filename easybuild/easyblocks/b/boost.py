@@ -79,10 +79,10 @@ class EB_Boost(EasyBlock):
         """Patch Boost source code before building."""
         super(EB_Boost, self).patch_step()
 
-        # TIME_UTC is also defined in recent glibc versions, so we need to rename it for old Boost versions (<= 1.47)
+        # TIME_UTC is also defined in recent glibc versions, so we need to rename it for old Boost versions (<= 1.49)
         glibc_version = get_glibc_version()
         old_glibc = glibc_version is not UNKNOWN and LooseVersion(glibc_version) > LooseVersion("2.15")
-        if old_glibc and LooseVersion(self.version) <= LooseVersion("1.47.0"):
+        if old_glibc and LooseVersion(self.version) <= LooseVersion("1.49.0"):
             self.log.info("Patching because the glibc version is too new")
             files_to_patch = ["boost/thread/xtime.hpp"] + glob.glob("libs/interprocess/test/*.hpp")
             files_to_patch += glob.glob("libs/spirit/classic/test/*.cpp") + glob.glob("libs/spirit/classic/test/*.inl")
