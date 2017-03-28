@@ -41,7 +41,6 @@ class EB_Doris(ConfigureMake):
 
     def configure_step(self):
         """Custom configuration procedure for Doris."""
-
         fftw = get_software_root('FFTW')
         if fftw is None:
             raise EasyBuildError("Required dependency FFTW is missing")
