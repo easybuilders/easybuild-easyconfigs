@@ -172,5 +172,7 @@ class EB_WRF_minus_Fire(EasyBlock):
     def make_module_extra(self):
         """Add netCDF environment variables to module file."""
         txt = super(EB_WRF_minus_Fire, self).make_module_extra()
-        txt += self.module_generator.set_environment('NETCDF', get_software_root('netCDF-Fortran'))
+        netcdf_fortran = get_software_root('netCDF-Fortran')
+        if netcdf_fortran:
+            txt += self.module_generator.set_environment('NETCDF', netcdf_fortran)
         return txt
