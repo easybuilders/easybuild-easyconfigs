@@ -64,19 +64,22 @@ class EB_WRF_minus_Fire(EasyBlock):
 
     def configure_step(self):
         """Custom configuration procedure for WRF-Fire."""
-
         change_dir('WRFV3')
 
         # define $NETCDF* for netCDF dependency
-        env.setvar('NETCDF', get_software_root('netCDF-Fortran'))
+        netcdf_fortran = get_software_root('netCDF-Fortran')
+        if netcdf_fortran:
+            env.setvar('NETCDF', netcdf_fortran)
+        else:
+            raise EasyBuildError("Required dependendy netCDF-Fortran is missing")
+
+        # instruct WRF-Fire to create netCDF v4 output files
+        env.setvar('WRFIO_NETCDF4_FILE_SUPPORT', '1')
 
         # define $PHDF5 for parallel HDF5 dependency
         hdf5 = get_software_root('HDF5')
         if hdf5 and os.path.exists(os.path.join(hdf5, 'bin', 'h5pcc')):
             env.setvar('PHDF5', hdf5)
-
-        # instruct WRF-Fire to create netCDF v4 output files
-        env.setvar('WRFIO_NETCDF4_FILE_SUPPORT', '1')
 
         # patch arch/Config_new.pl script, so that run_cmd_qa receives all output to answer questions
         patch_perl_script_autoflush(os.path.join('arch', 'Config_new.pl'))
@@ -97,8 +100,6 @@ class EB_WRF_minus_Fire(EasyBlock):
         qa = {
             "Compile for nesting? (1=basic, 2=preset moves, 3=vortex following) [default 1]:": '1',
         }
-        no_qa = [
-        ]
         std_qa = {
             # named group in match will be used to construct answer
             r"%s.*\n(.*\n)*Enter selection\s*\[[0-9]+-[0-9]+\]\s*:" % build_type_question: '%(nr)s',
