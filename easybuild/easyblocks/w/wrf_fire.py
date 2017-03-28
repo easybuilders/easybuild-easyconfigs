@@ -105,7 +105,7 @@ class EB_WRF_minus_Fire(EasyBlock):
             r"%s.*\n(.*\n)*Enter selection\s*\[[0-9]+-[0-9]+\]\s*:" % build_type_question: '%(nr)s',
         }
 
-        run_cmd_qa('./configure', qa, no_qa=no_qa, std_qa=std_qa, log_all=True, simple=True)
+        run_cmd_qa('./configure', qa, std_qa=std_qa, log_all=True, simple=True)
 
         cpp_flag = None
         if comp_fam == toolchain.INTELCOMP:
