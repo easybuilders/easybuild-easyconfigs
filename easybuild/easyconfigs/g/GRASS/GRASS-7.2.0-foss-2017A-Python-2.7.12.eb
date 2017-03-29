@@ -1,0 +1,90 @@
+# Authors:: Jack Perdue <j-perdue@tamu.edu> - TAMU HPRC - http://hprc.tamu.edu
+
+easyblock = 'ConfigureMake'
+
+name = 'GRASS'
+version = '7.2.0'
+gshortver = '72'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://grass.osgeo.org/'
+
+description = """
+ GRASS GIS, commonly referred to as GRASS (Geographic Resources Analysis
+ Support System), is a free and open source Geographic Information System
+ (GIS) software suite used for geospatial data management and analysis,
+ image processing, graphics and maps production, spatial modeling,
+ and visualization.
+"""
+
+toolchain = {'name': 'foss', 'version': '2017A'}
+toolchainopts = {'pic': True, 'optarch': True,
+                 'openmp': True, 'cstd': 'gnu++11'}
+
+# https://grass.osgeo.org/grass72/source/grass-7.2.0.tar.gz
+source_urls = ['https://grass.osgeo.org/grass%s/source/' % gshortver]
+sources = [SOURCELOWER_TAR_GZ]
+
+dependencies = [
+    ('cairo', '1.15.4', '%s-bare' % versionsuffix),
+    ('FFmpeg', '3.2.2', '%s-bare' % versionsuffix),
+    ('freetype', '2.7'),
+    ('GDAL', '2.1.2', '%s-bare' % versionsuffix),
+    ('GEOS', '3.5.0', '%s-bare' % versionsuffix),
+    ('libpng', '1.6.26'),
+    ('libpthread-stubs', '0.3'),
+    ('libreadline', '7.0'),
+    ('LibTIFF', '4.0.7'),
+    ('matplotlib', '1.5.3', '%s-bare' % versionsuffix),
+    ('Mesa', '13.0.1', '%s-bare' % versionsuffix),
+    ('netCDF', '4.4.1.1'),
+    ('PostgreSQL', '9.6.1', '%s-bare' % versionsuffix),
+    ('PROJ', '4.9.3'),
+    ('Python', '2.7.12'),
+    ('SQLite', '3.15.2'),
+    ('wxPython', '3.0.2.0', '%s-bare' % versionsuffix),
+]
+
+osdependencies = [
+    ('binutils'),
+    ('bison'),
+    ('flex'),
+    ('zlib'),
+]
+
+preconfigopts = """
+    sed -e 's/-lblas/-lopenblas/' -i.eb.blas configure
+    sed -e 's/-llapack/-lopenblas/' -i.eb.lapack configure
+    LDFLAGS="$LDFLAGS -lm -lpthread -fopenmp"
+"""
+
+configopts = """\
+    --with-blas\
+    --with-lapack\
+    --with-openmp\
+    --with-postgres\
+    --with-pthread\
+    --with-readline\
+    --with-x\
+    --with-geos=$EBROOTGEOS/bin/geos-config\
+    --with-wxwidgets=$EBROOTWXPYTHON/bin/wx-config\
+    --with-netcdf=$EBROOTNETCDF/bin/nc-config\
+    --with-blas-includes=$BLAS_INC_DIR\
+    --with-blas-libs=$BLAS_LIB_DIR\
+    --with-fftw-includes=$FFTW_INC_DIR\
+    --with-fftw-libs=$FFTW_LIB_DIR\
+    --with-lapack-includes=$LAPACK_INC_DIR\
+    --with-lapack-libs=$LAPACK_LIB_DIR\
+    --with-cairo-includes=$EBROOTCAIRO/include\
+    --with-cairo-libs=$EBROOTCAIRO/lib\
+    --with-postgres-includes=$EBROOTPOSTGRESQL/include\
+    --with-postgres-libs=$EBROOTPOSTGRESQL/lib\
+    --with-gdal=$EBROOTGDAL/bin/gdal-config
+"""
+
+sanity_check_paths = {
+    'dirs': ['bin', '%(namelower)s-%(version)s'],  # could test for more later
+    'files': ['bin/%%(namelower)s%s' % gshortver],
+}
+
+moduleclass = 'geo'
