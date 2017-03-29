@@ -6,7 +6,7 @@
 easyblock = "CmdCp"
 
 name = 'TensorFlow'
-version = '1.0.0'
+version = '1.0.1'
 pyver = '3.5.2'
 versionsuffix = '-Python-%s' % pyver
 
@@ -34,6 +34,8 @@ patches = [('tensorflow-v%(version)s-Python-%(pyver)s-foss.patch')]
 
 with_configure = False
 
+whl_file = "tensorflow-%(version)s-cp35-cp35m-linux_x86_64.whl"
+
 build_str  = "export TEST_TMPDIR=/dev/shm/$USER/bazelout/ && "
 build_str += "chmod +x configure-cscs.sh && "
 build_str += "./configure-cscs.sh && "
@@ -42,21 +44,21 @@ build_str += "find $TEST_TMPDIR -name protobuf.bzl -exec sed -i '/mnemonic=\"Pro
 build_str += "bazel build --verbose_failures --copt=-mavx --copt=-mavx2 --copt=-mfma --copt=-msse4.2 --copt=-msse4.1 "
 build_str += "-c opt //tensorflow/tools/pip_package:build_pip_package && "
 build_str += "bazel-bin/tensorflow/tools/pip_package/build_pip_package %(builddir)s &&"
-build_str += "pip install --no-deps --prefix  %(builddir)s %(builddir)s/tensorflow-%(version)s-cp35-cp35m-linux_x86_64.whl"
+build_str += "pip install --no-deps --prefix  %(builddir)s %(builddir)s/" + whl_file
 
 cmds_map = [
     ('v%(version)s.tar.gz', build_str),
 ]
 
 files_to_copy = [
-	      (['%(builddir)s/tensorflow-%(version)s-cp35-cp35m-linux_x86_64.whl'], '%(installdir)s'),
+	      (['%(builddir)s/' + whl_file], '%(installdir)s'),
 	      (['%(builddir)s/bin'], '%(installdir)s'),
 	      (['%(builddir)s/lib'], '%(installdir)s'),
 ]
 
 sanity_check_paths={
-    'files': ['%(builddir)s/tensorflow-%(version)s-cp35-cp35m-linux_x86_64.whl'],
-    'dirs': ['%(installdir)s/lib/python%(pyshortver)s/site-packages'],
+    'files': [whl_file],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
 }
 
 modextrapaths = {                                                                  
@@ -64,4 +66,3 @@ modextrapaths = {
 }
 
 moduleclass = 'devel'
-
