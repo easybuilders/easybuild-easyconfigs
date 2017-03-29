@@ -1,0 +1,47 @@
+easyblock = 'ConfigureMake'
+
+name = 'ROI_PAC'
+version = '3.0.1'
+versionsuffix = '-Perl-%(perlver)s'
+
+homepage = 'http://roipac.org/'
+description = """Repeat Orbit Interferometry PACkage (ROI_PAC), software for processing synthetic aperture radar data
+ to produce differential interferograms"""
+
+toolchain = {'name': 'intel', 'version': '2016b'}
+
+# download requires registration, see http://www.openchannelfoundation.org/projects/ROI_PAC
+sources = ['ROI_PAC_%s.tgz' % '_'.join(version.split('.'))]
+
+# FIXME: http://roipac.org/cgi-bin/moin.cgi/Patches
+
+builddependencies = [('Autotools', '20150215')]
+dependencies = [
+    ('FFTW', '3.3.6'),
+    ('GETORB', '2.3.2'),
+    ('Perl', '5.24.0'),
+]
+
+start_dir = 'ROI_PAC'
+
+postinstallcmds = [
+    # symlink to getorb requires in /bin subdirectory
+    "cd %(installdir)s/bin && ln -s $(which getorb)",
+    # also copy scripts and make sure they're excutable
+    "cp -a INT_SCR/* %(installdir)s/bin",
+    # fix shebang in Perl scripts
+    "sed -i 's@^#!.*/bin/perl.*@#!/usr/bin/env perl@g' %(installdir)s//bin/*.pl",
+]
+
+sanity_check_paths = {
+    'files': ['bin/getorb', 'bin/make_raw.pl', 'bin/roi'],
+    'dirs': [],
+}
+
+modextrapaths = {'PERL5LIB': 'bin'}
+modextravars = {
+    'INT_BIN': '%(installdir)s/bin',
+    'INT_SCR': '%(installdir)s/bin',
+}
+
+moduleclass = 'geo'
