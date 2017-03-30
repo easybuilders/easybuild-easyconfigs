@@ -10,10 +10,14 @@ description = """Repeat Orbit Interferometry PACkage (ROI_PAC), software for pro
 
 toolchain = {'name': 'intel', 'version': '2016b'}
 
-# download requires registration, see http://www.openchannelfoundation.org/projects/ROI_PAC
+# download of ROI_PAC tarball requires registration, see http://www.openchannelfoundation.org/projects/ROI_PAC
 sources = ['ROI_PAC_%s.tgz' % '_'.join(version.split('.'))]
 
-# FIXME: http://roipac.org/cgi-bin/moin.cgi/Patches
+# make_raw_alos.pl via http://roipac.org/cgi-bin/moin.cgi/ALOS_PALSAR?action=AttachFile&do=get&target=make_raw_alos.pl
+patches = [
+    'ROI_PAC-%(version)s_fix-IntSim.patch',
+    ('make_raw_alos.pl', 'ROI_PAC/INT_SCR'),
+]
 
 builddependencies = [('Autotools', '20150215')]
 dependencies = [
@@ -23,6 +27,8 @@ dependencies = [
 ]
 
 start_dir = 'ROI_PAC'
+
+installopts = "&& cd fip && $CC $CFLAGS -o add_rmgAmpPhs add_rmgAmpPhs.c && cp -a add_rmgAmpPhs %(installdir)s/bin"
 
 postinstallcmds = [
     # symlink to getorb requires in /bin subdirectory
@@ -34,7 +40,7 @@ postinstallcmds = [
 ]
 
 sanity_check_paths = {
-    'files': ['bin/getorb', 'bin/make_raw.pl', 'bin/roi'],
+    'files': ['bin/add_rmgAmpPhs', 'bin/getorb', 'bin/make_raw.pl', 'bin/make_raw_alos.pl', 'bin/roi'],
     'dirs': [],
 }
 
