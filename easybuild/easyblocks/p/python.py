@@ -41,6 +41,7 @@ from distutils.version import LooseVersion
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.modules import get_software_libdir, get_software_libdir, get_software_root, get_software_version
+from easybuild.tools.filetools import remove_file, symlink
 from easybuild.tools.run import run_cmd
 from easybuild.tools.systemtools import get_shared_lib_ext
 
@@ -59,6 +60,12 @@ class EB_Python(ConfigureMake):
     e.g., you can include numpy and scipy in a default Python installation
     but also provide newer updated numpy and scipy versions by creating a PythonPackage-derived easyblock for it.
     """
+
+    def __init__(self, *args, **kwargs):
+        """Constructor for Python easyblock."""
+        super(EB_Python, self).__init__(*args, **kwargs)
+
+        self.with_tk = None
 
     def prepare_for_extensions(self):
         """
@@ -122,6 +129,7 @@ class EB_Python(ConfigureMake):
             if tcltk_maj_min_ver != '.'.join(tkver.split('.')[:2]):
                 raise EasyBuildError("Tcl and Tk major/minor versions don't match: %s vs %s", tclver, tkver)
 
+            self.with_tk = True
             self.cfg.update('configopts', "--with-tcltk-includes='-I%s/include -I%s/include'" % (tcl, tk))
 
             tcl_libdir = os.path.join(tcl, get_software_libdir('Tcl'))
@@ -141,17 +149,13 @@ class EB_Python(ConfigureMake):
 
         python_binary_path = os.path.join(self.installdir, 'bin', 'python')
         if not os.path.isfile(python_binary_path):
-            pythonver = '.'.join(self.version.split('.')[0:2])
-            srcbin = "%s%s" % (python_binary_path, pythonver)
-            try:
-                os.symlink(srcbin, python_binary_path)
-            except OSError, err:
-                raise EasyBuildError("Failed to symlink %s to %s: %s", srcbin, python_binary_path, err)
+            pyver = '.'.join(self.version.split('.')[:2])
+            symlink(python_binary_path + pyver, python_binary_path)
 
     def sanity_check_step(self):
         """Custom sanity check for Python."""
 
-        pyver = "python%s" % '.'.join(self.version.split('.')[0:2])
+        pyver = 'python' + '.'.join(self.version.split('.')[:2])
 
         try:
             fake_mod_data = self.load_fake_module()
@@ -168,19 +172,25 @@ class EB_Python(ConfigureMake):
             else:
                 abiflags = abiflags.strip()
 
+        shlib_ext = get_shared_lib_ext()
         custom_paths = {
-            'files': ["bin/%s" % pyver, "lib/lib%s%s.%s" % (pyver, abiflags, get_shared_lib_ext())],
-            'dirs': ["include/%s%s" % (pyver, abiflags), "lib/%s" % pyver],
+            'files': [os.path.join('bin', pyver), os.path.join('lib', 'lib' + pyver + abiflags + '.' + shlib_ext)],
+            'dirs': [os.path.join('include', pyver + abiflags), os.path.join('lib', pyver)],
         }
+
+        if self.with_tk:
+            custom_paths['files'].append(os.path.join('lib', pyver, 'lib-dynload', '_tkinter.' + shlib_ext))
 
         # cleanup
         self.clean_up_fake_module(fake_mod_data)
 
         custom_commands = [
-            ('python', '--version'),
-            ('python', '-c "import _ctypes"'),  # make sure that foreign function interface (libffi) works
-            ('python', '-c "import _ssl"'),  # make sure SSL support is enabled one way or another
-            ('python', '-c "import readline"'),  # make sure readline support was built correctly
+            "python --version",
+            "python -c 'import _ctypes'",  # make sure that foreign function interface (libffi) works
+            "python -c 'import _ssl'",  # make sure SSL support is enabled one way or another
+            "python -c 'import readline'",  # make sure readline support was built correctly
         ]
+        if self.with_tk:
+            custom_commands.append("python -c 'import Tkinter'")
 
         super(EB_Python, self).sanity_check_step(custom_paths=custom_paths, custom_commands=custom_commands)
