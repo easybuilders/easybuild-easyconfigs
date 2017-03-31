@@ -152,12 +152,6 @@ class EB_Python(ConfigureMake):
         pyver = 'python' + '.'.join(self.version.split('.')[:2])
         shlib_ext = get_shared_lib_ext()
 
-        if '--with-tcltk' in self.cfg['configopts']:
-            tkinter_so = os.path.join(self.installdir, 'lib', pyver, 'lib-dynload', '_tkinter*.' + shlib_ext)
-            tkinter_so_hits = glob.glob(tkinter_so)
-            if len(tkinter_so_hits) != 1:
-                raise EasyBuildError("Expected to find exactly one _tkinter*.so: %s", tkinter_so_hits)
-
         try:
             fake_mod_data = self.load_fake_module()
         except EasyBuildError, err:
@@ -187,11 +181,21 @@ class EB_Python(ConfigureMake):
             "python -c 'import _ssl'",  # make sure SSL support is enabled one way or another
             "python -c 'import readline'",  # make sure readline support was built correctly
         ]
-        if '--with-tcltk' in self.cfg['configopts']:
+
+        if get_software_root('Tk'):
+            # also check whether importing tkinter module works, name is different for Python v2.x and v3.x
             if LooseVersion(self.version) >= LooseVersion('3'):
                 tkinter = 'tkinter'
             else:
                 tkinter = 'Tkinter'
             custom_commands.append("python -c 'import %s'" % tkinter)
+
+            # check whether _tkinter*.so is found, exact filename doesn't matter
+            tkinter_so = os.path.join(self.installdir, 'lib', pyver, 'lib-dynload', '_tkinter*.' + shlib_ext)
+            tkinter_so_hits = glob.glob(tkinter_so)
+            if len(tkinter_so_hits) == 1:
+                self.log.info("Found exactly one _tkinter*.so: %s", tkinter_so_hits[0])
+            else:
+                raise EasyBuildError("Expected to find exactly one _tkinter*.so: %s", tkinter_so_hits)
 
         super(EB_Python, self).sanity_check_step(custom_paths=custom_paths, custom_commands=custom_commands)
