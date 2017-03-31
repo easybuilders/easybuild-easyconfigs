@@ -32,6 +32,7 @@ EasyBuild support for building and installing Python, implemented as an easybloc
 @author: Jens Timmerman (Ghent University)
 """
 import copy
+import glob
 import os
 import re
 import fileinput
@@ -60,12 +61,6 @@ class EB_Python(ConfigureMake):
     e.g., you can include numpy and scipy in a default Python installation
     but also provide newer updated numpy and scipy versions by creating a PythonPackage-derived easyblock for it.
     """
-
-    def __init__(self, *args, **kwargs):
-        """Constructor for Python easyblock."""
-        super(EB_Python, self).__init__(*args, **kwargs)
-
-        self.with_tk = None
 
     def prepare_for_extensions(self):
         """
@@ -129,7 +124,6 @@ class EB_Python(ConfigureMake):
             if tcltk_maj_min_ver != '.'.join(tkver.split('.')[:2]):
                 raise EasyBuildError("Tcl and Tk major/minor versions don't match: %s vs %s", tclver, tkver)
 
-            self.with_tk = True
             self.cfg.update('configopts', "--with-tcltk-includes='-I%s/include -I%s/include'" % (tcl, tk))
 
             tcl_libdir = os.path.join(tcl, get_software_libdir('Tcl'))
@@ -156,6 +150,7 @@ class EB_Python(ConfigureMake):
         """Custom sanity check for Python."""
 
         pyver = 'python' + '.'.join(self.version.split('.')[:2])
+        shlib_ext = get_shared_lib_ext()
 
         try:
             fake_mod_data = self.load_fake_module()
@@ -172,14 +167,10 @@ class EB_Python(ConfigureMake):
             else:
                 abiflags = abiflags.strip()
 
-        shlib_ext = get_shared_lib_ext()
         custom_paths = {
             'files': [os.path.join('bin', pyver), os.path.join('lib', 'lib' + pyver + abiflags + '.' + shlib_ext)],
             'dirs': [os.path.join('include', pyver + abiflags), os.path.join('lib', pyver)],
         }
-
-        if self.with_tk:
-            custom_paths['files'].append(os.path.join('lib', pyver, 'lib-dynload', '_tkinter.' + shlib_ext))
 
         # cleanup
         self.clean_up_fake_module(fake_mod_data)
@@ -190,7 +181,21 @@ class EB_Python(ConfigureMake):
             "python -c 'import _ssl'",  # make sure SSL support is enabled one way or another
             "python -c 'import readline'",  # make sure readline support was built correctly
         ]
-        if self.with_tk:
-            custom_commands.append("python -c 'import Tkinter'")
+
+        if get_software_root('Tk'):
+            # also check whether importing tkinter module works, name is different for Python v2.x and v3.x
+            if LooseVersion(self.version) >= LooseVersion('3'):
+                tkinter = 'tkinter'
+            else:
+                tkinter = 'Tkinter'
+            custom_commands.append("python -c 'import %s'" % tkinter)
+
+            # check whether _tkinter*.so is found, exact filename doesn't matter
+            tkinter_so = os.path.join(self.installdir, 'lib', pyver, 'lib-dynload', '_tkinter*.' + shlib_ext)
+            tkinter_so_hits = glob.glob(tkinter_so)
+            if len(tkinter_so_hits) == 1:
+                self.log.info("Found exactly one _tkinter*.so: %s", tkinter_so_hits[0])
+            else:
+                raise EasyBuildError("Expected to find exactly one _tkinter*.so: %s", tkinter_so_hits)
 
         super(EB_Python, self).sanity_check_step(custom_paths=custom_paths, custom_commands=custom_commands)
