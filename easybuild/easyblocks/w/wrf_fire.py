@@ -64,7 +64,8 @@ class EB_WRF_minus_Fire(EasyBlock):
 
     def configure_step(self):
         """Custom configuration procedure for WRF-Fire."""
-        change_dir('WRFV3')
+
+        comp_fam = self.toolchain.comp_family()
 
         # define $NETCDF* for netCDF dependency
         netcdf_fortran = get_software_root('netCDF-Fortran')
@@ -73,13 +74,16 @@ class EB_WRF_minus_Fire(EasyBlock):
         else:
             raise EasyBuildError("Required dependendy netCDF-Fortran is missing")
 
-        # instruct WRF-Fire to create netCDF v4 output files
-        env.setvar('WRFIO_NETCDF4_FILE_SUPPORT', '1')
-
         # define $PHDF5 for parallel HDF5 dependency
         hdf5 = get_software_root('HDF5')
         if hdf5 and os.path.exists(os.path.join(hdf5, 'bin', 'h5pcc')):
             env.setvar('PHDF5', hdf5)
+
+        # first, configure WRF part
+        change_dir(os.path.join(self.cfg['start_dir'], 'WRFV3'))
+
+        # instruct WRF-Fire to create netCDF v4 output files
+        env.setvar('WRFIO_NETCDF4_FILE_SUPPORT', '1')
 
         # patch arch/Config_new.pl script, so that run_cmd_qa receives all output to answer questions
         patch_perl_script_autoflush(os.path.join('arch', 'Config_new.pl'))
@@ -90,11 +94,9 @@ class EB_WRF_minus_Fire(EasyBlock):
             toolchain.GCC: "x86_64 Linux, gfortran compiler with gcc",
             toolchain.PGI: "Linux x86_64, PGI compiler with pgcc",
         }
-        comp_fam = self.toolchain.comp_family()
-        if comp_fam in known_build_type_options:
-            build_type_option = known_build_type_options[comp_fam]
-        else:
-            raise EasyBuildError("Don't know how to figure out build type to select for compiler family %s", comp_fam)
+        build_type_option = known_build_type_options.get(comp_fam)
+        if build_type_option is None:
+            raise EasyBuildError("Don't know which WPS configure option to select for compiler family %s", comp_fam)
 
         build_type_question = "\s*(?P<nr>[0-9]+).\s*%s\s*\(%s\)" % (build_type_option, self.cfg['buildtype'])
         qa = {
@@ -104,7 +106,6 @@ class EB_WRF_minus_Fire(EasyBlock):
             # named group in match will be used to construct answer
             r"%s.*\n(.*\n)*Enter selection\s*\[[0-9]+-[0-9]+\]\s*:" % build_type_question: '%(nr)s',
         }
-
         run_cmd_qa('./configure', qa, std_qa=std_qa, log_all=True, simple=True)
 
         cpp_flag = None
@@ -129,18 +130,69 @@ class EB_WRF_minus_Fire(EasyBlock):
         regex_subs = [(r"^(%s\s*=\s*).*$" % k, r"\1 %s" % v) for (k, v) in comps.items()]
         apply_regex_substitutions('configure.wrf', regex_subs)
 
+        # also configure WPS part
+        change_dir(os.path.join(self.cfg['start_dir'], 'WPS'))
+
+        # patch arch/Config_new.pl script, so that run_cmd_qa receives all output to answer questions
+        patch_perl_script_autoflush(os.path.join('arch', 'Config.pl'))
+
+        # determine build type option to look for
+        known_build_type_options = {
+            toolchain.INTELCOMP: "PC Linux x86_64, Intel compiler",
+            toolchain.GCC: "PC Linux x86_64, g95 compiler",
+            toolchain.PGI: "PC Linux x86_64 (IA64 and Opteron), PGI compiler 5.2 or higher",
+        }
+        build_type_option = known_build_type_options.get(comp_fam)
+        if build_type_option is None:
+            raise EasyBuildError("Don't know which WPS configure option to select for compiler family %s", comp_fam)
+
+        known_wps_build_types = {
+            'dmpar': 'DM parallel',
+            'smpar': 'serial',
+        }
+        wps_build_type = known_wps_build_types.get(self.cfg['buildtype'])
+        if wps_build_type is None:
+            raise EasyBuildError("Don't know which WPS build type to pick for '%s'", self.cfg['builddtype'])
+
+        build_type_question = "\s*(?P<nr>[0-9]+).\s*%s.*%s(?!NO GRIB2)" % (build_type_option, wps_build_type)
+        std_qa = {
+            # named group in match will be used to construct answer
+            r"%s.*\n(.*\n)*Enter selection\s*\[[0-9]+-[0-9]+\]\s*:" % build_type_question: '%(nr)s',
+        }
+        run_cmd_qa('./configure', {}, std_qa=std_qa, log_all=True, simple=True)
+
+        # patch configure.wps to get things right
+        comps = {
+            'CC': '%s %s' % (os.getenv('MPICC'), os.getenv('CFLAGS')),
+            'FC': '%s %s' % (os.getenv('MPIF90'), os.getenv('F90FLAGS'))
+        }
+        regex_subs = [(r"^(%s\s*=\s*).*$" % k, r"\1 %s" % v) for (k, v) in comps.items()]
+        # specify that Fortran90 files have been preprocessed with cpp
+        regex_subs.extend([
+            (r"^(F77FLAGS\s*=\s*)", r"\1 %s " % cpp_flag),
+            (r"^(FFLAGS\s*=\s*)", r"\1 %s " % cpp_flag),
+        ])
+        apply_regex_substitutions('configure.wps', regex_subs)
+
     def build_step(self):
         """Custom build procedure for WRF-Fire."""
-        cmd = './compile'
 
+        cmd = './compile'
         if self.cfg['parallel']:
             cmd += " -j %d" % self.cfg['parallel']
+
+        # first, build WRF part
+        change_dir(os.path.join(self.cfg['start_dir'], 'WRFV3'))
         (out, ec) = run_cmd(cmd + ' em_fire', log_all=True, simple=False, log_ok=True)
+
+        # next, build WPS part
+        change_dir(os.path.join(self.cfg['start_dir'], 'WPS'))
+        (out, ec) = run_cmd('./compile', log_all=True, simple=False, log_ok=True)
 
     def test_step(self):
         """Custom built-in test procedure for WRF-Fire."""
         if self.cfg['runtest']:
-            change_dir(os.path.join('test', 'em_fire', 'hill'))
+            change_dir(os.path.join(self.cfg['start_dir'], 'WRFV3', 'test', 'em_fire', 'hill'))
 
             if self.cfg['buildtype'] in ['dmpar', 'smpar', 'dm+sm']:
                 test_cmd = "ulimit -s unlimited && %s && %s" % (self.toolchain.mpi_cmd_for("./ideal.exe", 1),
@@ -157,17 +209,18 @@ class EB_WRF_minus_Fire(EasyBlock):
     def sanity_check_step(self):
         """Custom sanity check for WRF-Fire."""
         custom_paths = {
-            'files': [os.path.join('WRFV3', 'main', f) for f in ['ideal.exe', 'libwrflib.a', 'wrf.exe']],
+            'files': [os.path.join('WRFV3', 'main', f) for f in ['ideal.exe', 'libwrflib.a', 'wrf.exe']] +
+                     [os.path.join('WPS', f) for f in ['geogrid.exe', 'metgrid.exe', 'ungrib.exe']],
             'dirs': [os.path.join('WRFV3', d) for d in ['main', 'run']],
         }
         super(EB_WRF_minus_Fire, self).sanity_check_step(custom_paths=custom_paths)
 
     def make_module_req_guess(self):
         """Custom guesses for generated WRF-Fire module file."""
-        maindir = os.path.join('WRFV3', 'main')
+        wrf_maindir = os.path.join('WRFV3', 'main')
         return {
-            'LD_LIBRARY_PATH': [maindir],
-            'PATH': [maindir],
+            'LD_LIBRARY_PATH': [wrf_maindir],
+            'PATH': [wrf_maindir, 'WPS'],
         }
 
     def make_module_extra(self):
