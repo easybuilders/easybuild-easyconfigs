@@ -78,6 +78,10 @@ class EB_Siesta(ConfigureMake):
 
         netcdff_loc = get_software_root('NetCDF-Fortran')
 
+        par = ''
+        if LooseVersion(self.version) >= LooseVersion("4.1"):
+            par = '-j %s' % self.cfg['parallel']
+
         # enable OpenMP support if desired
         openmp = self.toolchain.options.get('openmp', None)
         if openmp:
@@ -85,18 +89,35 @@ class EB_Siesta(ConfigureMake):
             blacs = os.environ['LIBSCALAPACK_MT']
             lapack = os.environ['LIBLAPACK_MT']
             blas = os.environ['LIBBLAS_MT']
+            if get_software_root('imkl') or get_software_root('FFTW'):
+                fftw = os.environ['LIBFFT_MT']
         else:
             scalapack = os.environ['LIBSCALAPACK']
             blacs = os.environ['LIBSCALAPACK']
             lapack = os.environ['LIBLAPACK']
             blas = os.environ['LIBBLAS']
+            if get_software_root('imkl') or get_software_root('FFTW'):
+                fftw = os.environ['LIBFFT']
 
         regex_subs = [
             ('dc_lapack.a', ''),
             (r'^NETCDF_INTERFACE\s*=.*$', ''),
             ('libsiestaBLAS.a', ''),
             ('libsiestaLAPACK.a', ''),
+            # Needed here to allow 4.1-b1 to be built with openmp
+            (r"^(LDFLAGS\s*=).*$", r"\1 %s %s" % (os.environ['FCFLAGS'], os.environ['LDFLAGS'])),
         ]
+
+	if netcdff_loc:
+	    # Needed for gfortran at least
+	    regex_subs.extend([
+		(r"^(ARFLAGS_EXTRA\s*=.*)$", r"\1\nNETCDF_INCFLAGS = -I%s/include" % netcdff_loc),
+	    ])
+
+        if fftw is not None:
+            regex_subs.extend([
+                (r'(FPPFLAGS\s*=.*)$', r'\1\nFFTW_INCFLAGS = -I%s\nFFTW_LIBS = -L%s %s' % (os.environ['FFTW_INC_DIR'], os.environ['FFTW_LIB_DIR'], fftw)),
+            ])
 
         # Make a temp installdir during the build of the various parts
         try:
@@ -124,13 +145,19 @@ class EB_Siesta(ConfigureMake):
 
             # ScaLAPACK (and BLACS)
             self.cfg.update('configopts', '--with-scalapack="%s"' % scalapack)
-            self.cfg.update('configopts', '--with-blacs="$%s"' % blacs)
+            self.cfg.update('configopts', '--with-blacs="%s"' % blacs)
 
             # NetCDF-Fortran
             if netcdff_loc:
                 self.cfg.update('configopts', '--with-netcdf=-lnetcdff')
 
             super(EB_Siesta, self).configure_step(cmd_prefix='../Src/')
+
+            if LooseVersion(self.version) > LooseVersion("4.0"):
+                regex_subs_Makefile = [
+                    (r'CFLAGS\)-c', r'CFLAGS) -c'),
+                ]
+                apply_regex_substitutions('Makefile', regex_subs_Makefile)
 
         else: # there's no configure on newer versions
 
@@ -155,7 +182,6 @@ class EB_Siesta(ConfigureMake):
                 # Needed for a couple of the utils
                 (r"^(COMP_LIBS\s*=.*)$", r"\1\nWXML = libwxml.a"),
                 (r"^(FFLAGS\s*=\s*).*$", r"\1 -fPIC %s" % os.environ['FCFLAGS']),
-                (r"^(LDFLAGS\s*=).*$", r"\1 %s %s" % (os.environ['FCFLAGS'], os.environ['LDFLAGS'])),
             ])
 
             if netcdff_loc:
@@ -167,7 +193,7 @@ class EB_Siesta(ConfigureMake):
 
         apply_regex_substitutions(arch_make, regex_subs)
 
-        run_cmd('make -j %s' % self.cfg['parallel'], log_all=True, simple=True, log_output=True)
+        run_cmd('make %s' % par, log_all=True, simple=True, log_output=True)
 
         # Put binary in temporary install dir
         shutil.copy(os.path.join(self.cfg['start_dir'], 'Obj', 'siesta'),
@@ -184,7 +210,7 @@ class EB_Siesta(ConfigureMake):
             adjust_permissions('./clean_all.sh', stat.S_IXUSR, recursive=False, relative=True)
             run_cmd('./clean_all.sh', log_all=True, simple=True, log_output=True)
 
-            if LooseVersion(self.version) >= LooseVersion("4.0"):
+            if LooseVersion(self.version) >= LooseVersion("4.1"):
                 regex_subs_TS = [
                     (r"^default:.*$", r""),
                     (r"^EXE\s*=.*$", r""),
@@ -193,6 +219,14 @@ class EB_Siesta(ConfigureMake):
                 ]
 
                 apply_regex_substitutions(os.path.join(self.cfg['start_dir'], 'Util', 'TS', 'tshs2tshs', 'Makefile'), regex_subs_TS)
+
+            # SUFFIX rules in wrong place
+            regex_subs_suffix = [
+                (r'^(\.SUFFIXES:.*)$', r''),
+                (r'^(include\s*\$\(ARCH_MAKE\).*)$', r'\1\n.SUFFIXES:\n.SUFFIXES: .c .f .F .o .a .f90 .F90'),
+            ]
+            apply_regex_substitutions(os.path.join(self.cfg['start_dir'], 'Util', 'Sockets', 'Makefile'), regex_subs_suffix)
+            apply_regex_substitutions(os.path.join(self.cfg['start_dir'], 'Util', 'SiestaSubroutine', 'SimpleTest', 'Src', 'Makefile'), regex_subs_suffix)
 
             regex_subs_UtilLDFLAGS = [
                 (r'(\$\(FC\)\s*-o\s)', r'$(FC) %s %s -o ' % (os.environ['FCFLAGS'], os.environ['LDFLAGS'])),
@@ -269,7 +303,7 @@ class EB_Siesta(ConfigureMake):
                 raise EasyBuildError("Failed to change back to Obj dir: %s", err)
 
             run_cmd('make clean', log_all=True, simple=True, log_output=True)
-            run_cmd('make -j %s transiesta' % self.cfg['parallel'], log_all=True, simple=True, log_output=True)
+            run_cmd('make %s transiesta' % par, log_all=True, simple=True, log_output=True)
 
             shutil.copy(os.path.join(self.cfg['start_dir'], 'Obj', 'transiesta'),
                         bindir)
