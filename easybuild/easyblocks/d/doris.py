@@ -48,10 +48,10 @@ class EB_Doris(ConfigureMake):
         # create installation directory (and /bin subdirectory) early, make sure it doesn't get removed later
         self.make_installdir()
         mkdir(os.path.join(self.installdir, 'bin'))
-        self.cfg["keeppreviousinstall"] = True
+        self.cfg['keeppreviousinstall'] = True
 
         # configure/build/install should be done from 'src' subdirectory
-        change_dir('src')
+        change_dir(os.path.join(self.cfg['start_dir'], 'src'))
 
         qa = {
             "===> Press enter to continue.": '',
@@ -73,17 +73,63 @@ class EB_Doris(ConfigureMake):
 
         run_cmd_qa('./configure', qa, std_qa=std_qa, log_all=True, simple=True)
 
+    def build_step(self):
+        """Custom build procedure for Doris."""
+        common_buildopts = self.cfg['buildopts']
+
+        # build Doris
+        change_dir(os.path.join(self.cfg['start_dir'], 'src'))
+
         # override some of the settings via options to 'make'
-        lflags = "-L%s -lfftw3 " % os.path.join(fftw, 'lib')
+        lflags = "-L%s -lfftw3 " % os.path.join(get_software_root('FFTW'), 'lib')
         lflags += "-L%s %s" % (os.getenv('LAPACK_LIB_DIR'), os.getenv('LIBLAPACK_MT'))
         self.cfg.update('buildopts', 'LFLAGS="%s"' % lflags)
-
         self.cfg.update('buildopts', 'CFLAGSOPT="%s \$(DEFS)"' % os.getenv('CXXFLAGS'))
+
+        super(EB_Doris, self).build_step()
+
+        # build SARtools
+        change_dir(os.path.join(self.cfg['start_dir'], 'SARtools'))
+
+        self.cfg['buildopts'] = common_buildopts
+        self.cfg.update('buildopts', 'CC="%s"' % os.getenv('CXX'))
+        cflags = os.getenv('CFLAGS') + " -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE"
+        self.cfg.update('buildopts', 'CFLAGS="%s"' % cflags)
+
+        super(EB_Doris, self).build_step()
+
+        # build ENVISAT_TOOLS
+        change_dir(os.path.join(self.cfg['start_dir'], 'ENVISAT_TOOLS'))
+
+        self.cfg['buildopts'] = common_buildopts
+        self.cfg.update('buildopts', 'CC="%s"' % os.getenv('CC'))
+        self.cfg.update('buildopts', 'CFLAGS="%s"' % os.getenv('CFLAGS'))
+
+        super(EB_Doris, self).build_step()
+
+    def install_step(self):
+        """Custom build procedure for Doris."""
+        # install Doris
+        change_dir(os.path.join(self.cfg['start_dir'], 'src'))
+        super(EB_Doris, self).install_step()
+
+        # install SARtools
+        self.cfg.update('installopts', 'INSTALL_DIR=%s' % os.path.join(self.installdir, 'bin'))
+        change_dir(os.path.join(self.cfg['start_dir'], 'SARtools'))
+        super(EB_Doris, self).install_step()
+
+        # install ENVISAT_TOOLS
+        change_dir(os.path.join(self.cfg['start_dir'], 'ENVISAT_TOOLS'))
+        self.cfg.update('installopts', 'CC="%s"' % os.getenv('CC'))
+        self.cfg.update('installopts', 'CFLAGS="%s"' % os.getenv('CFLAGS'))
+        super(EB_Doris, self).install_step()
 
     def sanity_check_step(self):
         """Custom sanity check for Doris."""
         custom_paths = {
-            'files': ['bin/cpx2ps', 'bin/doris', 'bin/plotcpm', 'bin/run'],
+            'files': [os.path.join('bin', x) for x in ['cpx2ps', 'doris', 'plotcpm', 'run']] +
+                     [os.path.join('bin', x) for x in ['bkconvert', 'cpxfiddle', 'flapjack', 'floatmult', 'wrap']] +
+                     [os.path.join('bin', x) for x in ['envisat_dump_header', 'envisat_dump_data']],
             'dirs': [],
         }
         super(EB_Doris, self).sanity_check_step(custom_paths=custom_paths)
