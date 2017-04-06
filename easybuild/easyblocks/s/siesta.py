@@ -1,5 +1,5 @@
 ##
-# Copyright 2009-2016 Ghent University
+# Copyright 2009-2017 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -25,35 +25,27 @@
 """
 EasyBuild support for building and installing Siesta, implemented as an easyblock
 
+@author: Miguel Dias Costa (National University of Singapore)
 @author: Ake Sandgren (Umea University)
 """
 import os
-import re
-import shutil
 import stat
-import tempfile
 
-import easybuild.tools.config as config
-import easybuild.tools.environment as env
 import easybuild.tools.toolchain as toolchain
 from distutils.version import LooseVersion
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.build_log import EasyBuildError
-from easybuild.tools.filetools import adjust_permissions, apply_regex_substitutions, copy_file, mkdir, write_file
-from easybuild.tools.modules import get_software_libdir, get_software_root, get_software_version
+from easybuild.tools.filetools import adjust_permissions, apply_regex_substitutions, change_dir, copy_file, copytree, mkdir
+from easybuild.tools.modules import get_software_root
 from easybuild.tools.run import run_cmd
 
 
 class EB_Siesta(ConfigureMake):
     """
     Support for building/installing Siesta.
-    - avoid parallel build, doesn't work
+    - avoid parallel build for older versions
     """
-
-    def __init__(self, *args, **kwargs):
-        """Initialisation of custom class variables for Siesta."""
-        super(EB_Siesta, self).__init__(*args, **kwargs)
 
     @staticmethod
     def extra_options(extra_vars=None):
@@ -83,21 +75,17 @@ class EB_Siesta(ConfigureMake):
             par = '-j %s' % self.cfg['parallel']
 
         # enable OpenMP support if desired
+        env_var_suff = ''
         openmp = self.toolchain.options.get('openmp', None)
         if openmp:
-            scalapack = os.environ['LIBSCALAPACK_MT']
-            blacs = os.environ['LIBSCALAPACK_MT']
-            lapack = os.environ['LIBLAPACK_MT']
-            blas = os.environ['LIBBLAS_MT']
-            if get_software_root('imkl') or get_software_root('FFTW'):
-                fftw = os.environ['LIBFFT_MT']
-        else:
-            scalapack = os.environ['LIBSCALAPACK']
-            blacs = os.environ['LIBSCALAPACK']
-            lapack = os.environ['LIBLAPACK']
-            blas = os.environ['LIBBLAS']
-            if get_software_root('imkl') or get_software_root('FFTW'):
-                fftw = os.environ['LIBFFT']
+            env_var_suff = '_MT'
+
+        scalapack = os.environ['LIBSCALAPACK' + env_var_suff]
+        blacs = os.environ['LIBSCALAPACK' + env_var_suff]
+        lapack = os.environ['LIBLAPACK' + env_var_suff]
+        blas = os.environ['LIBBLAS' + env_var_suff]
+        if get_software_root('imkl') or get_software_root('FFTW'):
+            fftw = os.environ['LIBFFT' + env_var_suff]
 
         regex_subs = [
             ('dc_lapack.a', ''),
@@ -108,28 +96,23 @@ class EB_Siesta(ConfigureMake):
             (r"^(LDFLAGS\s*=).*$", r"\1 %s %s" % (os.environ['FCFLAGS'], os.environ['LDFLAGS'])),
         ]
 
-	if netcdff_loc:
-	    # Needed for gfortran at least
-	    regex_subs.extend([
-		(r"^(ARFLAGS_EXTRA\s*=.*)$", r"\1\nNETCDF_INCFLAGS = -I%s/include" % netcdff_loc),
-	    ])
-
-        if fftw is not None:
+        if netcdff_loc:
+            # Needed for gfortran at least
             regex_subs.extend([
-                (r'(FPPFLAGS\s*=.*)$', r'\1\nFFTW_INCFLAGS = -I%s\nFFTW_LIBS = -L%s %s' % (os.environ['FFTW_INC_DIR'], os.environ['FFTW_LIB_DIR'], fftw)),
+                (r"^(ARFLAGS_EXTRA\s*=.*)$", r"\1\nNETCDF_INCFLAGS = -I%s/include" % netcdff_loc),
+            ])
+
+        if fftw:
+            fftw_inc, fftw_lib = os.environ['FFTW_INC_DIR'], os.environ['FFTW_LIB_DIR']
+            regex_subs.extend([
+                (r'(FPPFLAGS\s*=.*)$', r'\1\nFFTW_INCFLAGS = -I%s\nFFTW_LIBS = -L%s %s' % (fftw_inc, fftw_lib, fftw)),
             ])
 
         # Make a temp installdir during the build of the various parts
-        try:
-            mkdir(bindir)
-        except OSError, err:
-            raise EasyBuildError("Failed to create temp installdir %s: %s", bindir, err)
+        mkdir(bindir)
 
         # change to actual build dir
-        try:
-            os.chdir(obj_dir)
-        except OSError, err:
-            raise EasyBuildError("Failed to change to build dir: %s", err)
+        change_dir(obj_dir)
 
         # Populate start_dir with makefiles
         run_cmd(os.path.join(start_dir, 'Src', 'obj_setup.sh'), log_all=True, simple=True, log_output=True)
@@ -163,8 +146,10 @@ class EB_Siesta(ConfigureMake):
 
             if self.toolchain.comp_family() in [toolchain.INTELCOMP]:
                 copy_file(os.path.join(obj_dir, 'intel.make'), arch_make)
-            else:
+            elif self.toolchain.comp_family() in [toolchain.GCC]:
                 copy_file(os.path.join(obj_dir, 'gfortran.make'), arch_make)
+            else:
+                raise EasyBuildError("There is currently no support for compiler: %s", self.toolchain.comp_family())
 
             if self.toolchain.options.get('usempi', None):
                 regex_subs.extend([
@@ -196,15 +181,11 @@ class EB_Siesta(ConfigureMake):
         run_cmd('make %s' % par, log_all=True, simple=True, log_output=True)
 
         # Put binary in temporary install dir
-        shutil.copy(os.path.join(self.cfg['start_dir'], 'Obj', 'siesta'),
-                    bindir)
+        copy_file(os.path.join(self.cfg['start_dir'], 'Obj', 'siesta'), bindir)
 
         if self.cfg['with_utils']:
             # Make the utils
-            try:
-                os.chdir(os.path.join(start_dir, 'Util'))
-            except OSError, err:
-                raise EasyBuildError("Failed to change to Util dir: %s", err)
+            change_dir(os.path.join(start_dir, 'Util'))
 
             # clean_all.sh might be missing executable bit...
             adjust_permissions('./clean_all.sh', stat.S_IXUSR, recursive=False, relative=True)
@@ -225,14 +206,18 @@ class EB_Siesta(ConfigureMake):
                 (r'^(\.SUFFIXES:.*)$', r''),
                 (r'^(include\s*\$\(ARCH_MAKE\).*)$', r'\1\n.SUFFIXES:\n.SUFFIXES: .c .f .F .o .a .f90 .F90'),
             ]
-            apply_regex_substitutions(os.path.join(self.cfg['start_dir'], 'Util', 'Sockets', 'Makefile'), regex_subs_suffix)
-            apply_regex_substitutions(os.path.join(self.cfg['start_dir'], 'Util', 'SiestaSubroutine', 'SimpleTest', 'Src', 'Makefile'), regex_subs_suffix)
+            makefile = os.path.join(self.cfg['start_dir'], 'Util', 'Sockets', 'Makefile')
+            apply_regex_substitutions(makefile, regex_subs_suffix)
+            makefile = os.path.join(self.cfg['start_dir'], 'Util', 'SiestaSubroutine', 'SimpleTest', 'Src', 'Makefile')
+            apply_regex_substitutions(makefile, regex_subs_suffix)
 
             regex_subs_UtilLDFLAGS = [
                 (r'(\$\(FC\)\s*-o\s)', r'$(FC) %s %s -o ' % (os.environ['FCFLAGS'], os.environ['LDFLAGS'])),
             ]
-            apply_regex_substitutions(os.path.join(self.cfg['start_dir'], 'Util', 'Optimizer', 'Makefile'), regex_subs_UtilLDFLAGS)
-            apply_regex_substitutions(os.path.join(self.cfg['start_dir'], 'Util', 'JobList', 'Src', 'Makefile'), regex_subs_UtilLDFLAGS)
+            makefile = os.path.join(self.cfg['start_dir'], 'Util', 'Optimizer', 'Makefile')
+            apply_regex_substitutions(makefile, regex_subs_UtilLDFLAGS)
+            makefile = os.path.join(self.cfg['start_dir'], 'Util', 'JobList', 'Src', 'Makefile')
+            apply_regex_substitutions(makefile, regex_subs_UtilLDFLAGS)
 
             run_cmd('./build_all.sh', log_all=True, simple=True, log_output=True)
 
@@ -293,19 +278,16 @@ class EB_Siesta(ConfigureMake):
                 ])
 
             for f in expected_utils:
-                shutil.copy(os.path.join(self.cfg['start_dir'], 'Util', f), bindir)
+                copy_file(os.path.join(self.cfg['start_dir'], 'Util', f), bindir)
 
         if self.cfg['with_transiesta']:
             # Build transiesta
-            try:
-                os.chdir(obj_dir)
-            except OSError, err:
-                raise EasyBuildError("Failed to change back to Obj dir: %s", err)
+            change_dir(obj_dir)
 
             run_cmd('make clean', log_all=True, simple=True, log_output=True)
             run_cmd('make %s transiesta' % par, log_all=True, simple=True, log_output=True)
 
-            shutil.copy(os.path.join(self.cfg['start_dir'], 'Obj', 'transiesta'),
+            copy_file(os.path.join(self.cfg['start_dir'], 'Obj', 'transiesta'),
                         bindir)
 
     def build_step(self):
@@ -315,13 +297,9 @@ class EB_Siesta(ConfigureMake):
     def install_step(self):
         """Custom install procedure for Siesta."""
 
-        try:
-            # binary
-            bindir = os.path.join(self.installdir, 'bin')
-            shutil.copytree(os.path.join(self.cfg['start_dir'], 'bin'), bindir)
-
-        except OSError, err:
-            raise EasyBuildError("Failed to install Siesta: %s", err)
+        # binary
+        bindir = os.path.join(self.installdir, 'bin')
+        copytree(os.path.join(self.cfg['start_dir'], 'bin'), bindir)
 
     def sanity_check_step(self):
         """Custom sanity check for Siesta."""
