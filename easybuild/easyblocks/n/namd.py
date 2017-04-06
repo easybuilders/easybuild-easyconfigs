@@ -59,7 +59,7 @@ class EB_NAMD(MakeCp):
 
         # complete Charm ++ and NAMD architecture string with compiler family
         comp_fam = self.toolchain.comp_family()
-        if self.toolchain.options['usempi']:
+        if 'usempi' in self.toolchain.options and self.toolchain.options['usempi']:
             charm_arch_comp = 'mpicxx'
         else:
             charm_arch_comps = {
