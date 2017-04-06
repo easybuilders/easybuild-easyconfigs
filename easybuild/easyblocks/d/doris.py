@@ -93,7 +93,7 @@ class EB_Doris(ConfigureMake):
 
         self.cfg['buildopts'] = common_buildopts
         self.cfg.update('buildopts', 'CC="%s"' % os.getenv('CXX'))
-        cflags = os.getenv('CFLAGS') + " -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE"
+        cflags = os.getenv('CXXFLAGS') + " -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE"
         self.cfg.update('buildopts', 'CFLAGS="%s"' % cflags)
 
         super(EB_Doris, self).build_step()
@@ -126,10 +126,11 @@ class EB_Doris(ConfigureMake):
 
     def sanity_check_step(self):
         """Custom sanity check for Doris."""
+        doris_bins = ['cpx2ps', 'doris', 'plotcpm', 'run']
+        sartools_bins = ['bkconvert', 'cpxfiddle', 'flapjack', 'floatmult', 'wrap']
+        envisat_tools_bins = ['envisat_dump_header', 'envisat_dump_data']
         custom_paths = {
-            'files': [os.path.join('bin', x) for x in ['cpx2ps', 'doris', 'plotcpm', 'run']] +
-                     [os.path.join('bin', x) for x in ['bkconvert', 'cpxfiddle', 'flapjack', 'floatmult', 'wrap']] +
-                     [os.path.join('bin', x) for x in ['envisat_dump_header', 'envisat_dump_data']],
+            'files': [os.path.join('bin', x) for x in doris_bins + sartools_bins + envisat_tools_bins],
             'dirs': [],
         }
         super(EB_Doris, self).sanity_check_step(custom_paths=custom_paths)
