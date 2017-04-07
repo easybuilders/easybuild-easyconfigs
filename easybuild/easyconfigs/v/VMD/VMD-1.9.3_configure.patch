@@ -1,0 +1,116 @@
+fix hardcoded stuff in VMD configure script
+authors: Stephane Thiell (Stanford University), Kenneth Hoste (HPC-UGent)
+--- vmd-1.9.3/configure.orig	2016-12-01 08:11:33.000000000 +0100
++++ vmd-1.9.3/configure	2017-03-23 13:36:41.501910996 +0100
+@@ -466,7 +476,7 @@
+ 
+ $arch_cc          = "cc";
+ $arch_ccpp        = "CC";
+-$arch_nvcc        = "/usr/local/cuda-8.0/bin/nvcc";
++$arch_nvcc        = "nvcc";
+ $arch_nvccflags   = "--ptxas-options=-v " . 
+                     "-gencode arch=compute_30,code=compute_30 " .
+                     "-gencode arch=compute_30,code=sm_35 " .
+@@ -581,17 +591,17 @@
+ # location of Mesa library and include files; basically does the same
+ # as OpenGL.  This is based on the default instructions from the Mesa
+ # README; the include files should by default be in /usr/local/include/GL.
+-$mesa_dir         = "$vmd_library_dir/Mesa";
++$mesa_dir         = $ENV{'EBROOTMESA'};
+ $mesa_include     = "-I$mesa_dir/include";
+ $mesa_library     = "-L$mesa_dir/lib_$config_arch";
+ #$mesa_libs        = "-lMesaGL -lMesaGLU"; 
+-$mesa_libs        = "-lMesaGL"; 
++$mesa_libs        = "-lGL -lGLU";
+ $mesa_defines     = "-DUSELINEAXES -DVMDMESA -DVMDOPENGL";
+ @mesa_cc          = ();
+ @mesa_cu          = ();
+-@mesa_ccpp        = @opengl_ccpp;
+-@mesa_h           = @opengl_h;
+-@mesa_extra       = @opengl_extra;
++@mesa_ccpp        = ();
++@mesa_h           = ();
++@mesa_extra       = ();
+ 
+ 
+ #
+@@ -666,10 +676,10 @@
+ 
+ ################ FLTK GUI
+ $fltk_defines     = "-DVMDGUI -DVMDFLTK";
+-$fltk_dir         = "$vmd_library_dir/fltk";
++$fltk_dir         = $ENV{'EBROOTFLTK'};
+ $fltk_include     = "-I$fltk_dir/include";
+ $fltk_library     = "-L$fltk_dir/$config_arch";
+-$fltk_libs        = "-lfltk -lX11";
++$fltk_libs        = "-lfltk -lX11 -lXfixes -lXcursor -lXinerama";
+ #@fltk_cc          = ('forms_ui.c');
+ @fltk_cu          = ();
+ @fltk_ccpp        = ( 'ColorFltkMenu.C',
+@@ -729,8 +739,8 @@
+ if ($config_tk) { $tcl_include .= " -I$stock_tk_include_dir"; }
+ $tcl_library      = "-L$stock_tcl_library_dir";
+ if ($config_tk) { $tcl_library .= " -L$stock_tk_library_dir"; }
+-$tcl_libs         = "-ltcl8.5";  
+-if ($config_tk) { $tcl_libs = "-ltk8.5 -lX11 " . $tcl_libs; }
++$tcl_libs         = "-ltcl8.6";  
++if ($config_tk) { $tcl_libs = "-ltk8.6 -lX11 " . $tcl_libs; }
+ 
+ @tcl_cc           = ();
+ @tcl_cu           = ();
+@@ -922,7 +932,7 @@
+ #   This option enables the use of CUDA GPU acceleration functions.
+ #######################
+ $cuda_defines     = "-DVMDCUDA -DMSMPOT_CUDA";
+-$cuda_dir         = "/usr/local/cuda-8.0";
++$cuda_dir         = "$CUDA_HOME";
+ $cuda_include     = "";
+ $cuda_library     = "";
+ $cuda_libs        = "-Wl,-rpath -Wl,\$\$ORIGIN/ -lcudart_static";
+@@ -1042,7 +1052,7 @@
+ # $liboptix_dir         = "/usr/local/encap/NVIDIA-OptiX-SDK-3.6.3-linux64";
+ # $liboptix_dir         = "/usr/local/encap/NVIDIA-OptiX-SDK-3.8.0-linux64";
+ # $liboptix_dir         = "/usr/local/encap/NVIDIA-OptiX-SDK-3.9.0-linux64";
+-$liboptix_dir         = "/usr/local/encap/NVIDIA-OptiX-SDK-4.0.1-linux64";
++$liboptix_dir         = "$ENV{'EBROOTOPTIX'}";
+ # NCSA Blue Waters
+ # $liboptix_dir         = "/u/sciteam/stonej/local/NVIDIA-OptiX-SDK-3.6.3-linux64";
+ # $liboptix_dir         = "/u/sciteam/stonej/local/NVIDIA-OptiX-SDK-3.8.0-linux64";
+@@ -1310,8 +1320,8 @@
+ #######################
+ $actc_defines     = "-DVMDACTC";
+ $actc_dir         = "$vmd_library_dir/actc";
+-$actc_include     = "-I$actc_dir/include";
+-$actc_library     = "-L$actc_dir/lib_$config_arch";
++$actc_include     = "-I$actc_dir";
++$actc_library     = "-L$actc_dir";
+ $actc_libs        = "-lactc";
+ @actc_cc          = ();
+ @actc_cu          = ();
+@@ -1388,7 +1398,7 @@
+ $python_defines     = "-DVMDPYTHON";
+ $python_include     = "-I$stock_python_include_dir -I$stock_numpy_include_dir -I$stock_numpy_library_dir";
+ $python_library     = "-L$stock_python_library_dir";
+-$python_libs        = "-lpython2.5 -lpthread";
++$python_libs        = "-lpython2.7 -lpthread";
+ @python_h           = ('PythonTextInterp.h',
+                        'VMDTkinterMenu.h',
+ 		       'py_commands.h',
+@@ -2173,7 +2183,7 @@
+ 
+       if ($config_static) {
+         $arch_lopts       = "-static";
+-        $mesa_libs        = "-lMesaGL -L/usr/X11R6/lib -lXext -lX11";
++        $mesa_libs        = "-lGL -lGLU -L/usr/X11R6/lib64 -lXext -lX11";
+       } else {
+         $arch_lopts       = "";
+        # -rpath causes problems for people running Chromium..
+@@ -2303,7 +2313,7 @@
+     # they likely serve no useful purpose going forward.
+     if (!$config_opengl_dispatch) {
+       $opengl_dep_libs	= "-L/usr/X11R6/lib64 -lGL -lX11";
+-      $mesa_libs          = "-lMesaGL -L/usr/X11R6/lib64 -lXext -lX11";
++      $mesa_libs          = "-lGL -lGLU -L/usr/X11R6/lib64 -lXext -lX11";
+     }
+ 
+     # this is to make tcl happy
