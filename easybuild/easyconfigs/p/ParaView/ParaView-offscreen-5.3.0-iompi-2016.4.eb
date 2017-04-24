@@ -1,0 +1,40 @@
+easyblock = 'CMakeMake'
+
+name = 'ParaView-offscreen'
+version = '5.3.0'
+
+homepage = "http://www.paraview.org"
+description = "ParaView is a scientific parallel visualizer."
+
+toolchain = {'name': 'iompi', 'version': '2016.4'}
+toolchainopts = {'pic': True, 'usempi': True}
+
+download_suffix = 'download.php?submit=Download&version=v%(version_major_minor)s&type=source&os=all&downloadFile='
+source_urls = ['http://www.paraview.org/paraview-downloads/%s' % download_suffix]
+sources = ["ParaView-v%(version)s.tar.gz"]
+
+dependencies = [
+    ('HDF5', '1.8.18'),
+]
+
+separate_build_dir = True
+
+configopts = '-DCMAKE_SKIP_RPATH=ON '
+configopts += '-DPARAVIEW_INSTALL_DEVELOPMENT_FILES=ON -DVTK_OPENGL_HAS_OSMESA=ON -DPARAVIEW_USE_MPI=ON '
+configopts += '-DPARAVIEW_BUILD_QT_GUI=OFF -DPARAVIEW_USE_OSPRAY=ON -DOSPRAY_INSTALL_DIR=$NIXUSER_PROFILE '
+configopts += '-DVTK_USE_SYSTEM_HDF5=ON -DPARAVIEW_ENABLE_PYTHON=ON -DBUILD_SHARED_LIBS=ON '
+# if you want to build server only Paraview, uncomment the following line:
+configopts += '-DVTK_USE_X=OFF '
+
+# Without internet connection turn off testing (uncomment the following line)
+configopts += '-DBUILD_TESTING=OFF '
+# Or consult https://gitlab.kitware.com/vtk/vtk/blob/master/Documentation/dev/git/data.md
+# and download ExternalData to $EASYBUILD_SOURCEPATH and adjust -DExternalData_OBJECT_STORES accordingly
+# Without internet connection, comment the following two lines (configopts and prebuildopts)
+configopts += '-DExternalData_OBJECT_STORES=%(builddir)s/ExternalData '
+# The ParaView server can be cranky, test downloads are quite often failing, especially in the case
+# of parallel downloads. Using ; insted of && gives a second chance to download the test files, if the
+# first serial attempt would fail.
+prebuildopts = 'make VTKData ;'
+
+moduleclass = 'vis'
