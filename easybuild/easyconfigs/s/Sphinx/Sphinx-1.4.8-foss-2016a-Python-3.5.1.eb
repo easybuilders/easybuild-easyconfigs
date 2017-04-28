@@ -1,0 +1,74 @@
+easyblock = 'Bundle'
+
+name = 'Sphinx'
+version = '1.4.8'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'http://sphinx.pocoo.org/'
+description = """Sphinx is a tool that makes it easy to create intelligent and beautiful documentation.
+ It was originally created for the new Python documentation, and it has excellent facilities for the 
+ documentation of Python projects, but C/C++ is already supported as well, and it is planned to add 
+ special support for other languages as well."""
+
+toolchain = {'name': 'foss', 'version': '2016a'}
+
+# this is a bundle of Python packages
+exts_defaultclass = 'PythonPackage'
+
+dependencies = [
+    ('Python', '3.5.1'),
+    ('Pygments', '2.1.3', '-Python-%(pyver)s'),
+    ('requests', '2.10.0', versionsuffix),
+]
+
+exts_list = [
+    ('imagesize', '0.7.1', {
+        'source_urls': ['https://pypi.python.org/packages/source/i/imagesize/'],
+    }),
+    ('MarkupSafe', '0.23', {
+        'source_urls': ['https://pypi.io/packages/source/M/MarkupSafe/'],
+        'modulename': 'markupsafe',
+    }),
+    ('Docutils', '0.12', {
+        'source_tmpl': 'docutils-%(version)s.tar.gz',
+        'source_urls': [('http://sourceforge.net/projects/docutils/files/docutils/%(version)s/', 'download')],
+    }),
+    ('Jinja2', '2.8', {
+        'source_urls': ['https://pypi.python.org/packages/source/J/Jinja2/'],
+    }),
+    ('snowballstemmer', '1.2.1', {
+        'source_urls': ['https://pypi.python.org/packages/source/s/snowballstemmer/'],
+    }),
+    ('Babel', '2.3.4', {
+        'source_urls': ['https://pypi.python.org/packages/source/B/Babel/'],
+    }),
+    ('alabaster', '0.7.8', {
+        'source_urls': ['https://pypi.python.org/packages/source/a/alabaster/'],
+    }),
+    (name, version, {
+        'source_urls': ['https://pypi.python.org/packages/source/S/Sphinx/'],
+        'patches': ['Sphinx-%s-pdflatex_failing_tests.patch' % version],
+    }),
+    # sphinx_rtd_theme depends on Sphinx, and should be there to make the tests work
+    ('sphinx_rtd_theme', '0.1.10a0', {
+        'source_urls': ['https://pypi.python.org/packages/source/s/sphinx_rtd_theme/'],
+    }),
+]
+
+# Sphinx unit tests *after* installing extensions
+postinstallcmds = [' && '.join([
+    "cd %(builddir)s/%(name)s/%(name)s-%(version)s/",
+    "PYTHONPATH=%(installdir)s/lib/python%(pyshortver)s/site-packages/:$PYTHONPATH make test",
+])]
+
+# specify that Bundle easyblock should run a full sanity check, rather than just trying to load the module
+full_sanity_check = True
+
+sanity_check_paths = {
+    'files': ['bin/sphinx-%s' % x for x in ['apidoc', 'autogen', 'build', 'quickstart']],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+modextrapaths = {'PYTHONPATH': ['lib/python%(pyshortver)s/site-packages']}
+
+moduleclass = 'vis'
