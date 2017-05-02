@@ -1,0 +1,39 @@
+# ======================================================================
+# Fix known problems in WPS3.8 source code
+# (http://www2.mmm.ucar.edu/wrf/users/wpsv3.8/known-prob-3.8.html)
+# ======================================================================
+# 
+# NCAR CISL/RDA Data Type 113.0 (posted 6/16/2016)
+# ================================================
+# 
+#  Using this type of input data causes fields to shift approximately 1 degree
+#  longitude toward the east (when compared to raw ECMWF grib files.
+
+--- WPS.orig/ungrib/src/rd_grib1.F	2013-06-08 00:48:10.000000000 +0200
++++ WPS/ungrib/src/rd_grib1.F	2016-06-30 17:18:27.000000000 +0200
+@@ -406,7 +406,7 @@
+            !print *,'new dx = ',map%dx
+         endif
+      endif
+-     if ( ABS((map%ny-1) * map%dy - 2.*abs(map%lat1)) .lt. 1 ) then
++     if ( ABS((map%ny-1) * map%dy - 2.*abs(map%lat1)) .lt. 1. ) then
+         if ( ABS ( map%dy - (2.*abs(map%lat1)/real(map%ny-1)) ) .gt. 0.00001 ) then
+            !print *,'old dy = ',ginfo(9)
+            map%dy = 2.*abs(map%lat1)/real(map%ny-1)
+@@ -471,6 +471,16 @@
+      map%lat1 = ginfo(3)
+      write(tmp8,'(b8.8)') infogrid(5)
+      if (tmp8(5:5) .eq. '0') map%grid_wind = .false.
++!  If this is global data, then the dx and dy are more accurately
++!  computed by the number of points than the 3 digits grib permits.
++     if ( ABS(map%nx * map%dx - 360.) .lt. 1. ) then
++        if ( ABS ( map%dx - (360./real(map%nx)) ) .gt. 0.00001 ) then
++         ! print *,'old dx = ',ginfo(8)
++           map%dx = 360./real(map%nx)
++         ! print *,'new dx = ',map%dx
++        endif
++     endif
++
+ 
+   elseif (ksec2(4).eq.5) then ! Polar-Stereographic Grid.
+      map%igrid = 5
