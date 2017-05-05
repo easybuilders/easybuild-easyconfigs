@@ -327,8 +327,12 @@ class PythonPackage(ExtensionEasyBlock):
             # specify current directory
             loc = '.'
         else:
-            # specify path to 1st source file
-            loc = self.src[0]['path']
+            # for extensions, self.src specifies the location of the source file
+            # otherwise, self.src is a list of dicts, one element per source file
+            if isinstance(self.src, basestring):
+                loc = self.src
+            else:
+                loc = self.src[0]['path']
 
         if installopts is None:
             installopts = self.cfg['installopts']
@@ -468,7 +472,7 @@ class PythonPackage(ExtensionEasyBlock):
             raise EasyBuildError("No source found for Python package %s, required for installation. (src: %s)",
                                  self.name, self.src)
         # we unpack unless explicitly told otherwise
-        kwargs.setdefault('unpack_src', True)
+        kwargs.setdefault('unpack_src', self.cfg.get('unpack_sources', True))
         super(PythonPackage, self).run(*args, **kwargs)
 
         # configure, build, test, install

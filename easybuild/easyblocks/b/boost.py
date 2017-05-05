@@ -69,6 +69,7 @@ class EB_Boost(EasyBlock):
         """Add extra easyconfig parameters for Boost."""
         extra_vars = {
             'boost_mpi': [False, "Build mpi boost module", CUSTOM],
+            'boost_multi_thread': [False, "Build boost with multi-thread option", CUSTOM],
             'toolset': [None, "Toolset to use for Boost configuration ('--with-toolset for bootstrap.sh')", CUSTOM],
             'mpi_launcher': [None, "Launcher to use when running MPI regression tests", CUSTOM],
         }
@@ -78,10 +79,10 @@ class EB_Boost(EasyBlock):
         """Patch Boost source code before building."""
         super(EB_Boost, self).patch_step()
 
-        # TIME_UTC is also defined in recent glibc versions, so we need to rename it for old Boost versions (<= 1.47)
+        # TIME_UTC is also defined in recent glibc versions, so we need to rename it for old Boost versions (<= 1.49)
         glibc_version = get_glibc_version()
         old_glibc = glibc_version is not UNKNOWN and LooseVersion(glibc_version) > LooseVersion("2.15")
-        if old_glibc and LooseVersion(self.version) <= LooseVersion("1.47.0"):
+        if old_glibc and LooseVersion(self.version) <= LooseVersion("1.49.0"):
             self.log.info("Patching because the glibc version is too new")
             files_to_patch = ["boost/thread/xtime.hpp"] + glob.glob("libs/interprocess/test/*.hpp")
             files_to_patch += glob.glob("libs/spirit/classic/test/*.cpp") + glob.glob("libs/spirit/classic/test/*.inl")
@@ -155,7 +156,16 @@ class EB_Boost(EasyBlock):
                 txt = "using mpi : %s ;" % os.getenv("MPICXX")
 
             write_file('user-config.jam', txt, append=True)
- 
+
+    def build_boost_variant(self,bjamoptions,paracmd):
+        """Build Boost library with specified options for bjam."""
+        # build with specified options
+        run_cmd("./bjam %s %s" % (bjamoptions, paracmd), log_all=True, simple=True)
+        # install built Boost library
+        run_cmd("./bjam %s  install %s" % (bjamoptions, paracmd), log_all=True, simple=True)
+        # clean up before proceeding with next build    
+        run_cmd("./bjam --clean-all", log_all=True, simple=True)
+
     def build_step(self):
         """Build Boost with bjam tool."""
 
@@ -181,18 +191,17 @@ class EB_Boost(EasyBlock):
 
         if self.cfg['boost_mpi']:
             self.log.info("Building boost_mpi library")
+            self.build_boost_variant(bjamoptions + " --user-config=user-config.jam --with-mpi", paracmd)
+        
+        if self.cfg['boost_multi_thread']:
+            self.log.info("Building boost with multi threading")
+            self.build_boost_variant(bjamoptions + " threading=multi --layout=tagged", paracmd)
 
-            bjammpioptions = "%s --user-config=user-config.jam --with-mpi" % bjamoptions
-
-            # build mpi lib first
-            # let bjam know about the user-config.jam file we created in the configure step
-            run_cmd("./bjam %s %s" % (bjammpioptions, paracmd), log_all=True, simple=True)
-
-            # boost.mpi was built, let's 'install' it now
-            run_cmd("./bjam %s  install %s" % (bjammpioptions, paracmd), log_all=True, simple=True)
-            
-            # cleanup previous build before proceeding with the full Boost
-            run_cmd("./bjam --clean-all", log_all=True, simple=True)
+        # if both boost_mpi and boost_multi_thread are enabled, build boost mpi with multi-thread support
+        if self.cfg['boost_multi_thread'] and self.cfg['boost_mpi']:
+            self.log.info("Building boost_mpi with multi threading")
+            extra_bjamoptions = " --user-config=user-config.jam --with-mpi threading=multi --layout=tagged"
+            self.build_boost_variant(bjamoptions + extra_bjamoptions, paracmd)
 
         # install remainder of boost libraries
         self.log.info("Installing boost libraries")
@@ -229,6 +238,10 @@ class EB_Boost(EasyBlock):
             custom_paths["files"].append('lib/libboost_mpi.%s' % shlib_ext)
         if get_software_root('Python'):
             custom_paths["files"].append('lib/libboost_python.%s' % shlib_ext)
+        if self.cfg['boost_multi_thread']:
+            custom_paths["files"].append('lib/libboost_thread-mt.%s' % shlib_ext)
+        if self.cfg['boost_mpi'] and self.cfg['boost_multi_thread']:
+            custom_paths["files"].append('lib/libboost_mpi-mt.%s' % shlib_ext)
 
         super(EB_Boost, self).sanity_check_step(custom_paths=custom_paths)
 

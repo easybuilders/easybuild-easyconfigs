@@ -117,7 +117,9 @@ class EB_WPS(EasyBlock):
             libpnginc = ' '.join(['-I%s' % os.path.join(path, 'include') for path in paths])
             libpnglib = ' '.join(['-L%s' % os.path.join(path, 'lib') for path in paths])
         else:
-            raise EasyBuildError("libpng module not loaded?")
+            # define these as empty, assume that libpng will be available via OS (e.g. due to --filter-deps=libpng)
+            libpnglib = ""
+            libpnginc = ""
 
         # JasPer dependency check + setting env vars
         jasper = get_software_root('JasPer')
