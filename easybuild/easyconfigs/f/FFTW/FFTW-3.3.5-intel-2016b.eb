@@ -1,5 +1,3 @@
-easyblock = 'ConfigureMake'
-
 name = 'FFTW'
 version = '3.3.5'
 
@@ -13,22 +11,13 @@ toolchainopts = {'pic': True}
 sources = [SOURCELOWER_TAR_GZ]
 source_urls = [homepage]
 
-common_configopts = "--enable-threads --enable-openmp --with-pic"
-
 # no quad precision, requires GCC v4.6 or higher
 # see also http://www.fftw.org/doc/Extended-and-quadruple-precision-in-Fortran.html
-configopts = [
-    common_configopts + " --enable-single --enable-sse2 --enable-mpi",
-    common_configopts + " --enable-long-double --enable-mpi",
-    common_configopts + " --enable-sse2 --enable-mpi",  # default as last
-]
+with_quad_prec = False
 
-sanity_check_paths = {
-    'files': ['bin/fftw%s' % x for x in ['-wisdom', '-wisdom-to-conf', 'f-wisdom', 'l-wisdom']] +
-             ['include/fftw3%s' % x for x in ['-mpi.f03', '-mpi.h', '.f', '.f03',
-                                              '.h', 'l-mpi.f03', 'l.f03', 'q.f03']] +
-             ['lib/libfftw3%s%s.a' % (x, y) for x in ['', 'f', 'l'] for y in ['', '_mpi', '_omp', '_threads']],
-    'dirs': ['lib/pkgconfig'],
-}
+# compilation fails when configuring with --enable-avx-128-fma, Intel compilers do not support FMA4 instructions
+use_fma4 = False
+
+runtest = 'check'
 
 moduleclass = 'numlib'
