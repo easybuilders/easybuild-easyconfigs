@@ -36,7 +36,7 @@ from distutils.version import LooseVersion
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.build_log import EasyBuildError
-from easybuild.tools.filetools import adjust_permissions, apply_regex_substitutions, change_dir, copy_file, copytree, mkdir
+from easybuild.tools.filetools import adjust_permissions, apply_regex_substitutions, change_dir, copy_dir, copy_file, mkdir
 from easybuild.tools.modules import get_software_root
 from easybuild.tools.run import run_cmd
 
@@ -98,15 +98,11 @@ class EB_Siesta(ConfigureMake):
 
         if netcdff_loc:
             # Needed for gfortran at least
-            regex_subs.extend([
-                (r"^(ARFLAGS_EXTRA\s*=.*)$", r"\1\nNETCDF_INCFLAGS = -I%s/include" % netcdff_loc),
-            ])
+            regex_subs.append((r"^(ARFLAGS_EXTRA\s*=.*)$", r"\1\nNETCDF_INCFLAGS = -I%s/include" % netcdff_loc))
 
         if fftw:
             fftw_inc, fftw_lib = os.environ['FFTW_INC_DIR'], os.environ['FFTW_LIB_DIR']
-            regex_subs.extend([
-                (r'(FPPFLAGS\s*=.*)$', r'\1\nFFTW_INCFLAGS = -I%s\nFFTW_LIBS = -L%s %s' % (fftw_inc, fftw_lib, fftw)),
-            ])
+            regex_subs.append((r'(FPPFLAGS\s*=.*)$', r'\1\nFFTW_INCFLAGS = -I%s\nFFTW_LIBS = -L%s %s' % (fftw_inc, fftw_lib, fftw)))
 
         # Make a temp installdir during the build of the various parts
         mkdir(bindir)
@@ -134,6 +130,7 @@ class EB_Siesta(ConfigureMake):
             if netcdff_loc:
                 self.cfg.update('configopts', '--with-netcdf=-lnetcdff')
 
+            # Configure is run in obj_dir, configure script is in ../Src
             super(EB_Siesta, self).configure_step(cmd_prefix='../Src/')
 
             if LooseVersion(self.version) > LooseVersion("4.0"):
@@ -199,7 +196,8 @@ class EB_Siesta(ConfigureMake):
                     (r"^(INCFLAGS.*)$", r"\1 -I%s" % obj_dir),
                 ]
 
-                apply_regex_substitutions(os.path.join(self.cfg['start_dir'], 'Util', 'TS', 'tshs2tshs', 'Makefile'), regex_subs_TS)
+                makefile = os.path.join(self.cfg['start_dir'], 'Util', 'TS', 'tshs2tshs', 'Makefile')
+                apply_regex_substitutions(makefile, regex_subs_TS)
 
             # SUFFIX rules in wrong place
             regex_subs_suffix = [
@@ -277,8 +275,8 @@ class EB_Siesta(ConfigureMake):
                     'TS/ts2ts/ts2ts', 'TS/tshs2tshs/tshs2tshs', 'TS/TBtrans/tbtrans',
                 ])
 
-            for f in expected_utils:
-                copy_file(os.path.join(self.cfg['start_dir'], 'Util', f), bindir)
+            for util in expected_utils:
+                copy_file(os.path.join(self.cfg['start_dir'], 'Util', util), bindir)
 
         if self.cfg['with_transiesta']:
             # Build transiesta
@@ -299,7 +297,7 @@ class EB_Siesta(ConfigureMake):
 
         # binary
         bindir = os.path.join(self.installdir, 'bin')
-        copytree(os.path.join(self.cfg['start_dir'], 'bin'), bindir)
+        copy_dir(os.path.join(self.cfg['start_dir'], 'bin'), bindir)
 
     def sanity_check_step(self):
         """Custom sanity check for Siesta."""
@@ -307,10 +305,10 @@ class EB_Siesta(ConfigureMake):
         bins = ['bin/siesta']
 
         if self.cfg['with_transiesta']:
-            bins.extend(['bin/transiesta'])
+            bins.append('bin/transiesta')
 
         if self.cfg['with_utils']:
-            bins.extend(['bin/denchar'])
+            bins.append('bin/denchar')
 
         custom_paths = {
             'files': bins,
