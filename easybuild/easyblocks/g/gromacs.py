@@ -45,7 +45,7 @@ from easybuild.easyblocks.generic.cmakemake import CMakeMake
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.filetools import download_file, extract_file, which
-from easybuild.tools.modules import get_software_libdir, get_software_root
+from easybuild.tools.modules import get_software_libdir, get_software_root, get_software_version
 from easybuild.tools.run import run_cmd
 from easybuild.tools.systemtools import get_platform_name , get_shared_lib_ext
 
@@ -70,28 +70,26 @@ class EB_GROMACS(CMakeMake):
         self.lib_subdir = ''
         self.pre_env = ''
 
-    # create PLUMED patch in prepare_step rather than patch_step,
-    # so we can rely on being in the unpacked source directory
-    def prepare_step(self):
-        """Generate PLUMED patch if PLUMED is listed as a dependency."""
-        super(EB_GROMACS, self).prepare_step()
+    def configure_step(self):
+        """Custom configuration procedure for GROMACS: set configure options for configure or cmake."""
 
-        # check whether PLUMED is listed as a dependency
-        self.with_plumed = 'PLUMED' in [dep['name'] for dep in self.cfg['dependencies']]
-
-        if self.with_plumed:
+        # check whether PLUMED is loaded as a dependency
+        plumed_root = get_software_root('PLUMED')
+        if plumed_root:
             # Need to check if plumed has an engine for this version
             engine = 'gromacs-%s' % self.version
 
-            # Should use shared, static, or runtime patch depending on 
-            # setting of self.toolchain.options.get('dynamic')
-            # and adapt cmake flags accordingly as per instructions
-            # from "plumed patch"
-            cmd = "plumed patch -p -e %s" % engine
-            run_cmd(cmd, log_all=True, simple=True)
+            plumed_cmd = 'plumed patch -l'
+            (out, _) = run_cmd(plumed_cmd, log_all=True, simple=False)
+            find_engine = re.compile(engine)
+            if not find_engine.search(out):
+                raise EasyBuildError("There is no support in PLUMED version %s for GROMACS %s" %
+                    (get_software_version('PLUMED'), self.version))
 
-    def configure_step(self):
-        """Custom configuration procedure for GROMACS: set configure options for configure or cmake."""
+            # PLUMED patching must be done at different stages depending on
+            # version of gromacs. Just prepare first part of cmd here
+            plumed_cmd = "plumed patch -p -e %s" % engine
+
 
         if LooseVersion(self.version) < LooseVersion('4.6'):
             self.log.info("Using configure script for configuring GROMACS build.")
@@ -124,7 +122,26 @@ class EB_GROMACS(CMakeMake):
             # actually run configure via ancestor (not direct parent)
             ConfigureMake.configure_step(self)
 
+            # Now patch gromacs for plumed between configure and build
+            if plumed_root:
+                run_cmd(plumed_cmd, log_all=True, simple=True)
+
         else:
+            # Now patch gromacs for plumed before cmake
+            if plumed_root:
+                if LooseVersion(self.version) >= LooseVersion('5.1'):
+                    # Use shared or static patch depending on 
+                    # setting of self.toolchain.options.get('dynamic')
+                    # and adapt cmake flags accordingly as per instructions
+                    # from "plumed patch -i"
+                    if self.toolchain.options.get('dynamic', False):
+                        mode = 'shared'
+                    else:
+                        mode = 'static'
+                    plumed_cmd = plumed_cmd + ' -m %s' % mode
+
+                run_cmd(plumed_cmd, log_all=True, simple=True)
+
             # build a release build
             self.cfg.update('configopts', "-DCMAKE_BUILD_TYPE=Release")
 
@@ -133,6 +150,8 @@ class EB_GROMACS(CMakeMake):
                 self.cfg.update('configopts', "-DGMX_PREFER_STATIC_LIBS=OFF")
             else:
                 self.cfg.update('configopts', "-DGMX_PREFER_STATIC_LIBS=ON")
+                if plumed_root:
+                    self.cfg.update('configopts', "-DBUILD_SHARED_LIBS=OFF")
 
             if self.cfg['double_precision']:
                 self.cfg.update('configopts', "-DGMX_DOUBLE=ON")
