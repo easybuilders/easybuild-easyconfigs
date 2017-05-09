@@ -1,0 +1,43 @@
+easyblock = 'MakeCp'
+
+name = 'MXNet'
+version = '0.9.3'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'http://mxnet.io/' 
+description = """Flexible and Efficient Library for Deep Learning"""
+
+toolchain = {'name': 'intel', 'version': '2016b'}
+toolchainopts = {'cstd': 'c++11', 'opt': True, 'pic': True, 'openmp': True}
+
+# Download source from github, fix sub branches, checkout to version, 
+# clean the directory tree, make the tarball
+sources = [SOURCELOWER_TAR_GZ]
+
+patches = ['MXNet-%(version)s_config_mkl.patch']
+
+dependencies = [
+    ('Python', '2.7.12'),
+    ('graphviz', '0.5.1', versionsuffix),
+    ('OpenCV', '3.1.0'),
+]
+
+preconfigopts = ['cp make/config.mk . &&']
+
+buildopts = '&& mkdir -p %(builddir)s/mxnet/lib/python%(pyshortver)s/site-packages/ '
+buildopts += '&& cd python '
+buildopts += '&& env PYTHONPATH=$PYTHONPATH:%(builddir)s/mxnet/lib/python%(pyshortver)s/site-packages/ '
+buildopts += 'python setup.py install --prefix %(builddir)s/mxnet' 
+ 
+files_to_copy = ['lib']
+
+sanity_check_paths = {
+    'files': ['lib/libmxnet.%s' % SHLIB_EXT],
+    'dirs': ['lib/python%(pyshortver)s/site-packages/'],
+}
+
+sanity_check_commands = ["python -c 'import mxnet'"]
+
+modextrapaths = {'PYTHONPATH': ['lib/python%(pyshortver)s/site-packages/']}
+
+moduleclass = 'math'
