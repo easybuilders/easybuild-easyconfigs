@@ -1,0 +1,94 @@
+# This patch add two env vars (PSI_OBJ_INSTALL_DIR and PSI_SRC_INSTALL_DIR) to the
+# CMake build system. These vars set the location of the obj and the src dir after
+# install. PSI needs to know this when it generates a new plugin.
+# 
+# This patch is for the CMake build system
+#
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 49ff592..1ab885d 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -33,6 +33,13 @@ get_value(useroptUSE_SYSTEM_BOOST  USE_SYSTEM_BOOST   TRUE)
+ #OPTION MAX_AM_ERI    The maximum angular momentum to allow for integrals (1=p,2=d,3=f, etc.).  First and second derivatives are supported up to MAX_AM_ERI-1 and MAX_AM_ERI-2, respectively. (int)
+ get_value(useroptLIBINT_MAX_AM  MAX_AM_ERI  5)
+ 
++# values needed to build plugins after installing
++get_value(userinstall_srcdir PSI_SRC_INSTALL_DIR ${PROJECT_SOURCE_DIR})
++get_value(userinstall_objdir PSI_OBJ_INSTALL_DIR ${PROJECT_SOURCE_DIR})
++
++set(install_srcdir \"${userinstall_srcdir}\")
++set(install_objdir \"${userinstall_objdir}\")
++
+ set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${useroptLDFLAGS}")
+ set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${useroptCXX_FLAGS}")
+ set (CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} ${useroptF77_FLAGS}")
+diff --git a/configure.ac b/configure.ac
+index 6620f22..5984560 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -37,6 +37,20 @@ AC_DEFINE_UNQUOTED([PSI_TOP_SRCDIR],["$PSI_TOP_SRCDIR"])
+ PSI_TOP_OBJDIR=`pwd`
+ AC_DEFINE_UNQUOTED([PSI_TOP_OBJDIR],["$PSI_TOP_OBJDIR"])
+ 
++if test -z $PSI_OBJ_INSTALL_DIR; then
++        PSI_OBJ_INSTALL_DIR=`pwd`
++fi
++
++AC_ARG_VAR(PSI_OBJ_INSTALL_DIR,Directory where to place the psi object files)
++AC_DEFINE_UNQUOTED([PSI_OBJ_INSTALL_DIR], ["$PSI_OBJ_INSTALL_DIR"])
++
++if test -z $PSI_SRC_INSTALL_DIR; then
++        PSI_SRC_INSTALL_DIR=`pwd`
++fi
++
++AC_ARG_VAR(PSI_SRC_INSTALL_DIR,Directory where to place the psi source files)
++AC_DEFINE_UNQUOTED([PSI_SRC_INSTALL_DIR], ["$PSI_SRC_INSTALL_DIR"])
++
+ AC_CONFIG_AUX_DIR(bin)
+ AC_CONFIG_MACRO_DIR([m4])
+ 
+diff --git a/include/psiconfig.h.cmake.in b/include/psiconfig.h.cmake.in
+index 62bd240..32615a9 100644
+--- a/include/psiconfig.h.cmake.in
++++ b/include/psiconfig.h.cmake.in
+@@ -16,6 +16,10 @@
+ #define PSI_TOP_SRCDIR @top_srcdir@
+ #define PSI_TOP_OBJDIR @top_objdir@
+ 
++/* directories to use for new plugins */
++#define PSI_OBJ_INSTALL_DIR @install_srcdir@
++#define PSI_SRC_INSTALL_DIR @install_objdir@
++
+ /* The PSI4 Datadir */
+ #define INSTALLEDPSIDATADIR @psi4datadir@
+ 
+diff --git a/include/psiconfig.h.in b/include/psiconfig.h.in
+index d5b4a3f..fb14cc2 100644
+--- a/include/psiconfig.h.in
++++ b/include/psiconfig.h.in
+@@ -14,6 +14,10 @@
+ #define PSI_TOP_SRCDIR @top_srcdir@
+ #define PSI_TOP_OBJDIR @top_objdir@
+ 
++/* directories to use for new plugins */
++#undef PSI_OBJ_INSTALL_DIR
++#undef PSI_SRC_INSTALL_DIR
++
+ /* MPI? */
+ #undef HAVE_MPI
+ 
+diff --git a/src/bin/psi4/create_new_plugin.cc b/src/bin/psi4/create_new_plugin.cc
+index b0e904d..f09fd4d 100644
+--- a/src/bin/psi4/create_new_plugin.cc
++++ b/src/bin/psi4/create_new_plugin.cc
+@@ -128,8 +128,8 @@ class PluginFileManager{
+         Name[0] = ::toupper(Name[0]);
+ 
+         // Formatted strings, to be substituted in later
+-        std::string format_top_srcdir(PSI_TOP_SRCDIR);
+-        std::string format_top_objdir(PSI_TOP_OBJDIR);
++        std::string format_top_srcdir(PSI_SRC_INSTALL_DIR);
++        std::string format_top_objdir(PSI_OBJ_INSTALL_DIR);
+         std::string format_plugin(plugin_name_);
+         std::string format_PLUGIN = boost::algorithm::to_upper_copy(plugin_name_);
+ 
