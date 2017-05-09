@@ -1,0 +1,43 @@
+##
+# This file is an EasyBuild reciPY as per https://github.com/hpcugent/easybuild
+#
+# Copyright:: Copyright 2012-2013 University of Luxembourg/Luxembourg Centre for Systems Biomedicine
+# Authors::   Fotis Georgatos <fotis.georgatos@uni.lu>, Kenneth Hoste
+# License::   MIT/GPL
+# $Id$
+#
+# This work implements a part of the HPCBIOS project and is a component of the policy:
+# http://hpcbios.readthedocs.org/en/latest/HPCBIOS_2012-97.html
+##
+
+name = 'MATLAB'
+version = "2013a"
+
+homepage = 'http://www.mathworks.com/products/matlab'
+description = """MATLAB is a high-level language and interactive environment
+ that enables you to perform computationally intensive tasks faster than with
+ traditional programming languages such as C, C++, and Fortran."""
+
+toolchain = {'name': 'dummy', 'version': ''}
+
+builddependencies = [('p7zip', '9.20.1')] # 7z is able to extract from the .iso directly
+
+#sources = [('R%s_UNIX_MAC.iso' % version, '$EBROOTP7ZIP/bin/7z x %s && chmod -R u+rx . && ln -s . 2013a')]
+sources = [('R%s_UNIX_MAC.iso' % version, '7z x %s && chmod -R u+rx . && ln -s . 2013a')]
+source_urls = ['http://downloads.sourceforge.net/project/p7zip/p7zip/9.20.1']
+
+#start_dir = '..' # this is needed because otherwise the called ./install is the one from the 1st package (p7zip)
+#preinstallopts = 'export _JAVA_OPTIONS="${EB_MATLAB_JAVA_XMX:--Xmx512m}" ;' # this is very important to prevent subtle failures
+ 
+sanity_check_paths = {
+    'files': ["bin/matlab", "bin/mcc", "bin/glnxa64/MATLAB", "bin/glnxa64/mcc",
+              "runtime/glnxa64/libmwmclmcrrt.so", "toolbox/local/classpath.txt"],
+    'dirs': ["java/jar", "toolbox/compiler"],
+    }
+
+modextravars = {'_JAVA_OPTIONS': '-Xmx512m' }
+
+import os
+license_server = os.getenv('EB_MATLAB_LICENSE_SERVER', 'license.example.com')
+license_server_port = os.getenv('EB_MATLAB_LICENSE_SERVER_PORT', '00000')
+key = os.getenv('EB_MATLAB_KEY', '00000-00000-00000-00000-00000-00000-00000-00000-00000-00000')
